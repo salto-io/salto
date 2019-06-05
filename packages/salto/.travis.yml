@@ -1,0 +1,11 @@
+
+{
+  "language": "node_js",
+  "node_js": "8",
+  "services": [
+  ],
+  "script": [
+    "npm run build",
+    "npm run test"
+  ]
+}

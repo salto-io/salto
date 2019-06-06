@@ -16,6 +16,9 @@ tmp
 # Coverage reports
 coverage
 
+# Test reports
+/reports
+
 # API keys and secrets
 .env
 

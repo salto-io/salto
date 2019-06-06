@@ -6,9 +6,18 @@
         "**/dist": true,
         "**/coverge": true
     },
-    "typescript.referencesCodeLens.enabled": true,
-    "tslint.ignoreDefinitionFiles": false,
-    "tslint.autoFixOnSave": true,
+    "eslint.validate": [
+        "javascript",
+        "javascriptreact",
+        {
+            "language": "typescript",
+            "autoFix": true
+        },
+        {
+            "language": "typescriptreact",
+            "autoFix": true
+        },
+    ],
     "tslint.exclude": "**/node_modules/**/*",
     "appService.zipIgnorePattern": [
         ".vscode{,/**}"

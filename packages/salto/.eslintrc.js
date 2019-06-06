@@ -8,15 +8,14 @@ module.exports = {
     extends: [
         'eslint:recommended',
         'airbnb',
-        'prettier',
-        'plugin:prettier/recommended',
-        'prettier/react',
-        'prettier/@typescript-eslint',
         'plugin:@typescript-eslint/recommended',
         'plugin:import/errors',
         'plugin:import/warnings',
         'plugin:import/typescript',
         'plugin:jest/recommended',
+        'plugin:prettier/recommended',
+        'prettier/@typescript-eslint',
+        'prettier/react',
     ],
 
     globals: {
@@ -46,8 +45,15 @@ module.exports = {
         'react/destructuring-assignment': [0],
         'react/prefer-stateless-function': [0],
         'react/jsx-filename-extension': [1, { extensions: ['.tsx', '.jsx'] }],
-        'import/no-extraneous-dependencies': [0],
-        '@typescript-eslint/explicit-function-return-type': [0],
+        'lines-between-class-members': [1, 'always', {exceptAfterSingleLine: true}],
+        '@typescript-eslint/no-parameter-properties': [0],
+        '@typescript-eslint/explicit-function-return-type': [
+            'error', {
+                'allowTypedFunctionExpressions': true,
+                'allowExpressions': true,
+            }
+        ],
+        '@typescript-eslint/explicit-member-accessibility': [0],
         'jsx-a11y/anchor-is-valid': [0],
         'prettier/prettier': [
             'error',
@@ -59,6 +65,15 @@ module.exports = {
         indent: 'off',
         '@typescript-eslint/indent': 'off',
     },
+    overrides: [
+        {
+            files: ['*.ts', '*.tsx'],
+            rules: {
+                'no-useless-constructor': [0],
+                'no-empty-function': [0],
+            }
+        }
+    ],
     settings: {
         'import/resolver': {
             node: {

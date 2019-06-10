@@ -10,6 +10,26 @@
             "name": "Attach by Process ID",
             "processId": "${command:PickProcess}",
             "protocol": "inspector"
+        },
+        {
+            "name": "Launch Program",
+            "type": "node",
+            "request": "launch",
+            "internalConsoleOptions": "openOnSessionStart",
+            "protocol": "inspector",
+            "sourceMaps": true,
+            "cwd": "${workspaceRoot}",
+            // Use ts-node as drop-in replacement for node
+            // "runtimeExecutable": "${workspaceRoot}/node_modules/.bin/ts-node",
+            // Manually specify the args to pass
+            "runtimeArgs": [
+                "--nolazy",
+                "-r",
+                "ts-node/register"
+            ],
+            "args": [
+                "${workspaceRoot}/src/main.ts"
+            ]
         }
     ]
 }

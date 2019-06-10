@@ -6,6 +6,7 @@
         "**/dist": true,
         "**/coverge": true
     },
+    "typescript.tsdk": "./node_modules/typescript/lib",
     "eslint.validate": [
         "javascript",
         "javascriptreact",
@@ -18,9 +19,5 @@
             "autoFix": true
         },
     ],
-    "tslint.exclude": "**/node_modules/**/*",
-    "appService.zipIgnorePattern": [
-        ".vscode{,/**}"
-    ],
-    "appService.deploySubpath": ""
+    "editor.tabSize": 2
 }

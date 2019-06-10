@@ -8,7 +8,8 @@ module.exports = {
   transform: {
     '^.+\\.(ts|tsx)$': 'ts-jest',
   },
-  testMatch: ['**/test/**/*.test.(ts|js)'],
+  testMatch: ['<rootDir>/test/**/*.test.(ts|js)'],
+  testPathIgnorePatterns: ['<rootDir>/dist/'],
   testEnvironment: 'node',
   preset: 'ts-jest',
 }

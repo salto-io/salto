@@ -1,0 +1,2 @@
+# adapters
+SaaS specific adapters

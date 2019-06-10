@@ -17,7 +17,7 @@
       "program": "${workspaceFolder}/node_modules/jest/bin/jest"
     },
     {
-      "name": "Launch Program",
+      "name": "Fingerprint",
       "type": "node",
       "request": "launch",
       "internalConsoleOptions": "openOnSessionStart",
@@ -33,7 +33,7 @@
           "ts-node/register"
       ],
       "args": [
-          "${workspaceRoot}/src/main.ts"
+          "${workspaceRoot}/src/salesforce/fingerprint.ts"
       ]
     }
   ]

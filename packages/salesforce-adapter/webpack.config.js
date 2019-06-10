@@ -5,7 +5,7 @@ const path = require('path')
 
 module.exports = {
   mode: 'production',
-  entry: './src/main.ts',
+  entry: './src/salesforce/fingerprint.ts',
   target: 'node',
   devtool: 'inline-source-map',
   module: {

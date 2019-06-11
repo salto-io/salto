@@ -32,9 +32,7 @@
           "-r",
           "ts-node/register"
       ],
-      "args": [
-          "${workspaceRoot}/src/salesforce/fingerprint.ts"
-      ]
+      "args": ["${workspaceRoot}/src/tools/fingerprint.ts", "YOUR_USERNAME", "YOUR_PASSWORD", "TRUE_OR_FALSE_IF_SANDBOX_ACCOUNT"]
     }
   ]
 }

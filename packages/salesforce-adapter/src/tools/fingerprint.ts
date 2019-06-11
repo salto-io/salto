@@ -8,8 +8,8 @@ import {
 import * as winston from 'winston'
 
 /**
- * async main
-  : void */
+ * This method runs on your salesforce account and prints an "inventory" of the various entities it contains.
+ */
 async function main(): Promise<void> {
   const logger = winston.createLogger({
     level: 'info',
@@ -21,16 +21,24 @@ async function main(): Promise<void> {
     transports: [new winston.transports.Console()]
   })
 
-  const connectionOptions: ConnectionOptions = { version: '45.0' }
-  // For sandbox:
-  // let connectionOptions : ConnectionOptions = { version: "45.0", loginUrl: "https://test.salesforce.com/" }
+  // Process arguments. Slice the 2 first params which are the path to nodejs and the location of the script
+  const args = process.argv.slice(2)
+  const userName = args[0]
+  const password = args[1]
+  const sandbox = JSON.parse(args[2])
+
+  let connectionOptions: ConnectionOptions
+  if (sandbox) {
+    connectionOptions = {
+      version: '45.0',
+      loginUrl: 'https://test.salesforce.com/'
+    }
+  } else {
+    connectionOptions = { version: '45.0' }
+  }
   const conn = new Connection(connectionOptions)
-  // let loginResult : UserInfo = await conn.login("services-ldws@force.com.sandbox2", "dH4nAAWSuK5wPWQXTHRdGVXXRbKKbBbjUapN8OSb")
-  const loginResult = await conn.login(
-    'elad.mallel@salto.io',
-    '84YHpf9PmT4pihsiSGF8PJp6fzy9'
-  )
-  // let loginResult : UserInfo = await conn.login("services-ldws@force.com", "dH4nAAWSuK5wPWQaNBNH0u4EuEhD5z8vIzcd9yj3")
+  const loginResult = await conn.login(userName, password)
+
   logger.info(
     `UserInfo:\n org Id:${loginResult.organizationId}, User Id:${loginResult.id}, URL:${loginResult.url}`
   )

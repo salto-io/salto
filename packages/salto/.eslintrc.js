@@ -64,6 +64,7 @@ module.exports = {
         ],
         indent: 'off',
         '@typescript-eslint/indent': 'off',
+        'no-param-reassign': [2, { 'props': false }],
     },
     overrides: [
         {
@@ -71,6 +72,7 @@ module.exports = {
             rules: {
                 'no-useless-constructor': [0],
                 'no-empty-function': [0],
+                '@typescript-eslint/array-type': [0],
             }
         }
     ],

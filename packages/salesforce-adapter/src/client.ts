@@ -2,7 +2,9 @@ import {
   Connection,
   Field,
   MetadataObject,
-  DescribeGlobalSObjectResult
+  DescribeGlobalSObjectResult,
+  FileProperties,
+  MetadataInfo
 } from 'jsforce'
 
 const apiVersion = '45.0'
@@ -30,18 +32,33 @@ export default class SalesforceClient {
     }
   }
 
-  // Extract metadata object names
-  async listMetadataObjects(): Promise<MetadataObject[]> {
+  /**
+   * Extract metadata object names
+   */
+  async listMetadataTypes(): Promise<MetadataObject[]> {
     await this.login()
     const result = await this.conn.metadata.describe()
     return result.metadataObjects
   }
 
-  // Extract sobject names
+  async listMetadataObjects(type: string): Promise<FileProperties[]> {
+    await this.login()
+    return this.conn.metadata.list({ type })
+  }
+
+  /**
+   * Read metadata for salesforce object of specific type and name
+   */
+  async readMetadata(type: string, name: string): Promise<MetadataInfo> {
+    return (await this.conn.metadata.read(type, name)) as MetadataInfo
+  }
+
+  /**
+   * Extract sobject names
+   */
   async listSObjects(): Promise<DescribeGlobalSObjectResult[]> {
     await this.login()
-    const result = await this.conn.describeGlobal()
-    return result.sobjects
+    return (await this.conn.describeGlobal()).sobjects
   }
 
   async discoverSObject(objectName: string): Promise<Field[]> {

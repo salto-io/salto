@@ -1,20 +1,24 @@
-import SalesforceAdapter from '../src/adapter'
+import { MetadataInfo } from 'jsforce'
+
+import { SalesforceAdapter, ProfileInfo } from '../src/adapter'
 import SalesforceClient from '../src/client'
 
 jest.mock('../src/client')
 
 describe('Test SalesforceAdapter.discover', () => {
-  // Utility function that mock single object
+  /**
+   * Utility function that mock single object
+   */
   function mockSingleSObject(
     name: string,
     fields: Record<string, any>[]
-  ): SalesforceAdapter {
+  ): void {
     SalesforceClient.prototype.listSObjects = jest
       .fn()
       .mockImplementationOnce(() => {
         return [{ name }]
       })
-    SalesforceClient.prototype.listMetadataObjects = jest
+    SalesforceClient.prototype.listMetadataTypes = jest
       .fn()
       .mockImplementationOnce(() => {
         return []
@@ -24,7 +28,25 @@ describe('Test SalesforceAdapter.discover', () => {
       .mockImplementationOnce(() => {
         return fields
       })
+  }
 
+  function mockListMetadataObjects(result: MetadataInfo[] = []): void {
+    SalesforceClient.prototype.listMetadataObjects = jest
+      .fn()
+      .mockImplementationOnce(() => {
+        return result
+      })
+  }
+
+  function mockReadMetadata(result: MetadataInfo | ProfileInfo): void {
+    SalesforceClient.prototype.readMetadata = jest
+      .fn()
+      .mockImplementationOnce(() => {
+        return result
+      })
+  }
+
+  function createAdapter(): SalesforceAdapter {
     return new SalesforceAdapter({
       username: '',
       password: '',
@@ -34,7 +56,8 @@ describe('Test SalesforceAdapter.discover', () => {
   }
 
   it('should discover sobject with primitive types, validate type, label, required and default annotations', async () => {
-    const instance = mockSingleSObject('Lead', [
+    mockListMetadataObjects()
+    mockSingleSObject('Lead', [
       {
         name: 'LastName',
         type: 'string',
@@ -55,25 +78,27 @@ describe('Test SalesforceAdapter.discover', () => {
         defaultValue: false
       }
     ])
+    const instance = createAdapter()
     const result = await instance.discover()
 
     expect(result.length).toBe(1)
     const lead = result.pop()
 
-    expect(lead.last_name.type).toBe('string')
-    expect(lead.last_name.label).toBe('Last Name')
+    expect(lead.LastName.type).toBe('string')
+    expect(lead.LastName.label).toBe('Last Name')
     // Test Rquired true and false
-    expect(lead.last_name.required).toBe(false)
-    expect(lead.first_name.required).toBe(true)
+    expect(lead.LastName.required).toBe(false)
+    expect(lead.FirstName.required).toBe(true)
     // Default string and boolean
     // eslint-disable-next-line no-underscore-dangle
-    expect(lead.last_name._default).toBe('BLABLA')
+    expect(lead.LastName._default).toBe('BLABLA')
     // eslint-disable-next-line no-underscore-dangle
-    expect(lead.is_deleted._default).toBe(false)
+    expect(lead.IsDeleted._default).toBe(false)
   })
 
   it('should discover sobject with picklist field', async () => {
-    const instance = mockSingleSObject('Lead', [
+    mockListMetadataObjects()
+    mockSingleSObject('Lead', [
       {
         name: 'PrimaryC',
         type: 'picklist',
@@ -85,19 +110,21 @@ describe('Test SalesforceAdapter.discover', () => {
         ]
       }
     ])
+    const instance = createAdapter()
     const result = await instance.discover()
 
     expect(result.length).toBe(1)
     const lead = result.pop()
 
-    expect(lead.primary_c.type).toBe('picklist')
-    expect((lead.primary_c.values as string[]).join(';')).toBe('No;Yes')
+    expect(lead.PrimaryC.type).toBe('picklist')
+    expect((lead.PrimaryC.values as string[]).join(';')).toBe('No;Yes')
     // eslint-disable-next-line no-underscore-dangle
-    expect(lead.primary_c._default).toBe('Yes')
+    expect(lead.PrimaryC._default).toBe('Yes')
   })
 
   it('should discover sobject with combobox field', async () => {
-    const instance = mockSingleSObject('Lead', [
+    mockListMetadataObjects()
+    mockSingleSObject('Lead', [
       {
         name: 'PrimaryC',
         type: 'combobox',
@@ -109,16 +136,46 @@ describe('Test SalesforceAdapter.discover', () => {
         ]
       }
     ])
+    const instance = createAdapter()
     const result = await instance.discover()
 
     expect(result.length).toBe(1)
     const lead = result.pop()
 
-    expect(lead.primary_c.type).toBe('combobox')
-    expect((lead.primary_c.values as string[]).join(';')).toBe('No;Yes')
+    expect(lead.PrimaryC.type).toBe('combobox')
+    expect((lead.PrimaryC.values as string[]).join(';')).toBe('No;Yes')
     // eslint-disable-next-line no-underscore-dangle
-    expect(lead.primary_c._default.length).toBe(1)
+    expect(lead.PrimaryC._default.length).toBe(1)
     // eslint-disable-next-line no-underscore-dangle
-    expect(lead.primary_c._default.pop()).toBe('Yes')
+    expect(lead.PrimaryC._default.pop()).toBe('Yes')
+  })
+
+  it('should discover sobject permissions', async () => {
+    mockListMetadataObjects([{ fullName: 'admin' }])
+    mockReadMetadata({
+      fullName: 'admin',
+      fieldPermissions: [
+        {
+          field: 'Org__c.status',
+          readable: true,
+          editable: false
+        }
+      ]
+    })
+    mockSingleSObject('Org__c', [
+      {
+        name: 'status',
+        type: 'boolean',
+        label: 'Field',
+        nillable: false
+      }
+    ])
+    const instance = createAdapter()
+    const result = await instance.discover()
+
+    expect(result.length).toBe(1)
+    const org = result.pop()
+    expect(org.status.field_level_security.admin.readable).toBe(true)
+    expect(org.status.field_level_security.admin.editable).toBe(false)
   })
 })

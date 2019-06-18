@@ -18,11 +18,11 @@
     "lint": "eslint --fix --ext .js,.jsx,.ts,.tsx ./"
   },
   "dependencies": {
-    "@types/jsforce": "^1.9.7",
     "@types/lodash": "^4.14.133",
     "buffer": "^5.2.1",
     "events": "^3.0.0",
-    "jsforce": "^1.9.1",
+    "jsforce": "github:salto-io/jsforce",
+    "jsforce-types": "github:salto-io/jsforce-types",
     "lodash": "^4.17.11",
     "stream": "0.0.2",
     "winston": "^3.2.1"

@@ -15,8 +15,9 @@
         "paths": {
             "*": [
                 "node_modules/*",
-                "src/types/*"
-            ]
+                "src/types/*",
+            ],
+            "jsforce": ["node_modules/jsforce-types"]
         }
     },
     "include": [

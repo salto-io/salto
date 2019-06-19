@@ -1,4 +1,4 @@
-import { Field, MetadataInfo } from 'jsforce'
+import { Field, MetadataInfo, SaveResult } from 'jsforce'
 import SalesforceClient from './client'
 
 // TODO: handle snakeCase and __c
@@ -19,7 +19,74 @@ export interface ProfileInfo extends MetadataInfo {
   fieldPermissions: FieldPermissions[]
 }
 
+class CustomPicklistValue implements MetadataInfo {
+  constructor(public readonly fullName: string, readonly label?: string) {
+    if (!this.label) {
+      this.label = fullName
+    }
+  }
+}
+
+class CustomField implements MetadataInfo {
+  readonly fullName: string
+  // to be used for picklist and combobox types
+  readonly valueSet: { valueSetDefinition: { value: CustomPicklistValue[] } }
+
+  readonly length: number
+
+  constructor(
+    fullName: string,
+    public type: string,
+    public label?: string,
+    public required: boolean = false
+  ) {
+    this.fullName = `${fullName}__c`
+    if (this.type === 'Text') {
+      this.length = 80
+    }
+    if (this.type === 'Picklist') {
+      this.valueSet = {
+        valueSetDefinition: { value: [] as CustomPicklistValue[] }
+      }
+    }
+  }
+
+  public addPickListValues(values: string[]): void {
+    values.forEach(val => {
+      this.valueSet.valueSetDefinition.value.push(new CustomPicklistValue(val))
+    })
+  }
+}
+
+class CustomObject implements MetadataInfo {
+  readonly fullName: string
+  readonly pluralLabel: string
+
+  readonly deploymentStatus = 'Deployed'
+  readonly sharingModel = 'ReadWrite'
+  readonly nameField = {
+    type: 'Text',
+    label: 'Test Object Name'
+  }
+
+  constructor(
+    fullName: string,
+    public label: string,
+    public fields: CustomField[] = []
+  ) {
+    this.fullName = `${fullName}__c`
+    this.pluralLabel = `${this.label}s`
+  }
+}
+
 export class SalesforceAdapter {
+  static fieldTypeMapping: Record<string, string> = {
+    string: 'Text',
+    int: 'Number',
+    boolean: 'Checkbox',
+    picklist: 'Picklist'
+  }
+
   client: SalesforceClient
 
   constructor(conf: Config) {
@@ -30,6 +97,10 @@ export class SalesforceAdapter {
     )
   }
 
+  /**
+   * Discover configuration elements (types and instances in the given salesforce account)
+   * Account credentials were given in the constructor.
+   */
   async discover(): Promise<TypeElement[]> {
     // TODO: add here salesforce primitive data types
     const result = await Promise.all([
@@ -37,6 +108,44 @@ export class SalesforceAdapter {
       this.discoverMetadataTypes()
     ])
     return result[0].concat(result[1])
+  }
+
+  /**
+   * Add new type element
+   */
+  async add(element: TypeElement): Promise<boolean> {
+    // TODO: handle permissions
+    const customObject = new CustomObject(element.object, element.object)
+    Object.keys(element)
+      // skip object - not field name
+      .filter(name => {
+        return name !== 'object'
+      })
+      .forEach(fieldName => {
+        const field = new CustomField(
+          fieldName,
+          SalesforceAdapter.fieldTypeMapping[element[fieldName].type],
+          element[fieldName].label
+          // TODO: handle default values
+          // element[fieldName]._default
+        )
+        // TODO: handel combobox
+        if (field.type === 'picklist') {
+          field.addPickListValues(element.fieldName.values)
+        }
+        customObject.fields.push(field)
+      })
+    const result = await this.client.create('CustomObject', customObject)
+    if (Array.isArray(result)) {
+      return (result as SaveResult[])
+        .map(r => {
+          return r.success
+        })
+        .reduce((pre, current) => {
+          return pre && current
+        })
+    }
+    return (result as SaveResult).success
   }
 
   private async discoverMetadataTypes(): Promise<TypeElement[]> {

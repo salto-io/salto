@@ -50,3 +50,28 @@ describe.skip('Test Discover E2E', () => {
     expect(lead.Status._default).toBe('Open - Not Contacted')
   })
 })
+
+describe('Test Add E2E', () => {
+  // eslint-disable-next-line jest/no-disabled-tests
+  it.skip('test sobject add e2e with real account', async () => {
+    // set long timeout as we communicate with salesforce API
+    jest.setTimeout(300000)
+    const adapter = new SalesforceAdapter({
+      username: 'vanila@salto.io',
+      password: '!A123456',
+      token: 'rwVvOsh7HjF8Zki9ZmyQdeth',
+      sandbox: false
+    })
+
+    const result = await adapter.add({
+      object: 'test',
+      description: {
+        type: 'string',
+        label: 'test label',
+        required: false,
+        _default: 'test'
+      }
+    })
+    expect(result).toBe(true)
+  })
+})

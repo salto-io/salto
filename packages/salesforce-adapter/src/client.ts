@@ -4,7 +4,8 @@ import {
   MetadataObject,
   DescribeGlobalSObjectResult,
   FileProperties,
-  MetadataInfo
+  MetadataInfo,
+  SaveResult
 } from 'jsforce'
 
 const apiVersion = '45.0'
@@ -64,5 +65,13 @@ export default class SalesforceClient {
   async discoverSObject(objectName: string): Promise<Field[]> {
     await this.login()
     return (await this.conn.describe(objectName)).fields
+  }
+
+  async create(
+    type: string,
+    metadata: MetadataInfo | MetadataInfo[]
+  ): Promise<SaveResult | SaveResult[]> {
+    await this.login()
+    return this.conn.metadata.create(type, metadata)
   }
 }

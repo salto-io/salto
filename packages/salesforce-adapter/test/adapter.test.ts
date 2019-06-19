@@ -178,4 +178,33 @@ describe('Test SalesforceAdapter.discover', () => {
     expect(org.status.field_level_security.admin.readable).toBe(true)
     expect(org.status.field_level_security.admin.editable).toBe(false)
   })
+
+  it('should add new salesforce type', async () => {
+    const mockCreate = jest.fn().mockImplementationOnce(() => {
+      return { success: true }
+    })
+    SalesforceClient.prototype.create = mockCreate
+
+    const instance = createAdapter()
+    const result = await instance.add({
+      object: 'test',
+      description: {
+        type: 'string',
+        label: 'test label',
+        required: false,
+        _default: 'test'
+      }
+    })
+
+    expect(result).toBe(true)
+    expect(mockCreate.mock.calls.length).toBe(1)
+    const object = mockCreate.mock.calls[0][1]
+    expect(object.fullName).toBe('test__c')
+    expect(object.fields.length).toBe(1)
+    expect(object.fields[0].fullName).toBe('description__c')
+    expect(object.fields[0].type).toBe('Text')
+    expect(object.fields[0].length).toBe(80)
+    expect(object.fields[0].required).toBe(false)
+    expect(object.fields[0].label).toBe('test label')
+  })
 })

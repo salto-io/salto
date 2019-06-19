@@ -11,6 +11,9 @@ func convertValue(val cty.Value) interface{} {
 	t := val.Type()
 	switch {
 	case t.IsListType():
+		panic("lists are not supported - we expect to get tuple type")
+
+	case t.IsTupleType():
 		res := make([]interface{}, val.LengthInt())
 		var i int64
 		for i = 0; i < int64(val.LengthInt()); i++ {
@@ -49,8 +52,8 @@ func convertValue(val cty.Value) interface{} {
 // hclConverter walks the HCL tree and converts each node to a native go
 // value that can be serialized to javascript later
 type hclConverter struct {
-	path string
-	Obj  map[string]interface{}
+	path    string
+	JSValue map[string]interface{}
 
 	nestedConverter *hclConverter
 }
@@ -58,7 +61,7 @@ type hclConverter struct {
 func newHclConverter(path string) *hclConverter {
 	return &hclConverter{
 		path:            path,
-		Obj:             map[string]interface{}{},
+		JSValue:         map[string]interface{}{},
 		nestedConverter: nil,
 	}
 }
@@ -72,8 +75,8 @@ func (maker *hclConverter) Enter(node hclsyntax.Node) hcl.Diagnostics {
 	switch node.(type) {
 	case *hclsyntax.Body:
 		// Initialize attrs and blocks
-		maker.Obj["attrs"] = map[string]interface{}{}
-		maker.Obj["blocks"] = []interface{}{}
+		maker.JSValue["attrs"] = map[string]interface{}{}
+		maker.JSValue["blocks"] = []interface{}{}
 
 	case hclsyntax.Attributes:
 		// This just means we are entering the attributes list, not much to do with it since
@@ -115,7 +118,7 @@ func (maker *hclConverter) Exit(node hclsyntax.Node) hcl.Diagnostics {
 		attr := node.(*hclsyntax.Attribute)
 		val, evalErrs := attr.Expr.Value(nil)
 		// Convert evaluated value to something we can serialze to javascript
-		maker.Obj["attrs"].(map[string]interface{})[attr.Name] = convertValue(val)
+		maker.JSValue["attrs"].(map[string]interface{})[attr.Name] = convertValue(val)
 
 		maker.nestedConverter = nil
 		return evalErrs
@@ -125,13 +128,13 @@ func (maker *hclConverter) Exit(node hclsyntax.Node) hcl.Diagnostics {
 
 	case *hclsyntax.Block:
 		blk := node.(*hclsyntax.Block)
-		maker.nestedConverter.Obj["type"] = blk.Type
+		maker.nestedConverter.JSValue["type"] = blk.Type
 		labels := make([]interface{}, len(blk.Labels))
 		for i, label := range blk.Labels {
 			labels[i] = label
 		}
-		maker.nestedConverter.Obj["labels"] = labels
-		maker.Obj["blocks"] = append(maker.Obj["blocks"].([]interface{}), maker.nestedConverter.Obj)
+		maker.nestedConverter.JSValue["labels"] = labels
+		maker.JSValue["blocks"] = append(maker.JSValue["blocks"].([]interface{}), maker.nestedConverter.JSValue)
 
 		maker.nestedConverter = nil
 	}

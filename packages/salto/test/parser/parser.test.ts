@@ -45,4 +45,23 @@ describe('HCL Parser', () => {
     // eslint-disable-next-line no-underscore-dangle
     expect(typeBlock.blocks[1].attrs._default).toEqual(35)
   })
+
+  it('parses instance block', async () => {
+    const instanceDefBlock = `salto_employee me {
+      name = "person"
+      nicknames = [
+        "a", "s", "d"
+      ]
+    }`
+
+    const body = await HCLParser.Parse(Buffer.from(instanceDefBlock), 'none')
+    expect(body.blocks.length).toEqual(1)
+    const instBlock = body.blocks[0]
+    expect(instBlock.type).toEqual('salto_employee')
+    expect(instBlock.labels).toEqual(['me'])
+    expect(instBlock.attrs).toHaveProperty('name')
+    expect(instBlock.attrs.name).toEqual('person')
+    expect(instBlock.attrs).toHaveProperty('nicknames')
+    expect(instBlock.attrs.nicknames).toEqual(['a', 's', 'd'])
+  })
 })

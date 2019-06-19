@@ -40,7 +40,7 @@ func main() {
 
 	// Set return value
 	js.Global().Set("hclParserReturn", map[string]interface{}{
-		"value": jsMaker.Obj,
+		"value": jsMaker.JSValue,
 		"errors": map[string]interface{}{
 			"parse":   parseErrTxt,
 			"convert": convErrsTxt,

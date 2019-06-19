@@ -24,7 +24,6 @@ jobs:
             - node_modules
           key: v1-dependencies-{{ checksum "package.json" }}
 
-      # run tests!
       - run:
           name: Run Jest tests
           command: npx jest --ci --runInBand --forceExit --verbose --detectOpenHandles --reporters=default --reporters=jest-junit
@@ -37,11 +36,8 @@ jobs:
       - store_artifacts:
           path: reports
 
-      - store_artifacts:
-          path: coverage
-
       - run:
-          name: Diff coverage
-          command: npx coverage-diff-back || true
+          name: Upload coverage to codecov.io
+          command: npx codecov -f coverage/*.json
       
 

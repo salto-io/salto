@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@types/lodash": "^4.14.133",
+    "async-file": "^2.0.2",
     "lodash": "^4.17.11",
     "ts-loader": "^6.0.2",
     "ts-node": "^5.0.0",

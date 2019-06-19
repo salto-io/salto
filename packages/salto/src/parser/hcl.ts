@@ -1,13 +1,10 @@
-import fs from 'fs'
 import path from 'path'
+import * as fs from 'async-file'
 import './wasm_exec'
-import { promisify } from 'util'
 
 // Not sure why eslint ignores this definition from wasm_exec.d.ts but this doesn't work without the following disable
 // eslint-disable-next-line no-undef
 const go = new Go()
-
-const fsReadFile = promisify(fs.readFile)
 
 class HCLParser {
   private wasmData: Promise<Buffer> | null = null
@@ -18,7 +15,7 @@ class HCLParser {
       this.wasmData = (async () => {
         // Relative path from source location
         const modulePath = path.join(__dirname, '..', '..', 'dist', 'hcl.wasm')
-        return fsReadFile(modulePath)
+        return fs.readFile(modulePath)
       })()
     }
 

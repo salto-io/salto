@@ -7,17 +7,18 @@
     "url": "https://github.com/salto-io/salto"
   },
   "private": true,
-  "bin": "./dist/main.js",
+  "bin": "./src/main.ts",
   "scripts": {
     "prepare": "npm run build",
-    "build": "npm run lint && npm run build-ts",
+    "build": "npm run lint",
     "test": "jest --forceExit --coverage --verbose --detectOpenHandles",
     "watch-test": "npm run test -- --watchAll",
-    "build-ts": "tsc",
-    "watch-ts": "tsc -w",
     "lint": "eslint --fix --ext .js,.jsx,.ts,.tsx ./"
   },
   "dependencies": {
+    "typescript": "^3.4.5",
+    "ts-loader": "^6.0.2",
+    "ts-node": "^5.0.0",
     "@types/lodash": "^4.14.133",
     "lodash": "^4.17.11",
     "winston": "^3.2.1"
@@ -44,9 +45,6 @@
     "prettier": "^1.17.1",
     "shelljs": "^0.8.1",
     "supertest": "^3.0.0",
-    "ts-jest": "^24.0.2",
-    "ts-loader": "^6.0.2",
-    "ts-node": "^5.0.0",
-    "typescript": "^3.4.5"
+    "ts-jest": "^24.0.2"
   }
 }

@@ -27,7 +27,7 @@ jobs:
       # run tests!
       - run:
           name: Run Jest tests
-          command: npx jest --ci --runInBand --forceExit --coverage --verbose --detectOpenHandles --reporters=default --reporters=jest-junit
+          command: npx jest --ci --runInBand --forceExit --verbose --detectOpenHandles --reporters=default --reporters=jest-junit
           environment:
             JEST_JUNIT_OUTPUT: "reports/junit/js-test-results.xml"
 
@@ -37,4 +37,11 @@ jobs:
       - store_artifacts:
           path: reports
 
+      - store_artifacts:
+          path: coverage
+
+      - run:
+          name: Diff coverage
+          command: npx coverage-diff-back || true
+      
 

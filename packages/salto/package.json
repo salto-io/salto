@@ -16,11 +16,11 @@
     "lint": "eslint --fix --ext .js,.jsx,.ts,.tsx ./"
   },
   "dependencies": {
-    "typescript": "^3.4.5",
-    "ts-loader": "^6.0.2",
-    "ts-node": "^5.0.0",
     "@types/lodash": "^4.14.133",
     "lodash": "^4.17.11",
+    "ts-loader": "^6.0.2",
+    "ts-node": "^5.0.0",
+    "typescript": "^3.4.5",
     "winston": "^3.2.1"
   },
   "devDependencies": {
@@ -32,6 +32,7 @@
     "@typescript-eslint/parser": "^1.9.0",
     "chai": "^4.1.2",
     "concurrently": "^3.5.1",
+    "coverage-diff-back": "^0.1.0",
     "eslint": "^5.16.0",
     "eslint-config-airbnb": "^17.1.0",
     "eslint-config-prettier": "^4.3.0",

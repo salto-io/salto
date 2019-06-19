@@ -29,20 +29,21 @@ class HCLParser {
   async Parse(src: Buffer, filename: string): Promise<HCLBlock> {
     const wasmModule = await this.wasmModule
 
-    global.hclParserArgs = {
-      src,
-      filename,
+    try {
+      // Setup arguments to parse function
+      global.hclParserArgs = {
+        src,
+        filename,
+      }
+      // Call parse function from go
+      await go.run(wasmModule.instance)
+      // Return value should be populated by the above call
+      return global.hclParserReturn.value
+    } finally {
+      // cleanup args and return values
+      delete global.hclParserArgs
+      delete global.hclParserReturn
     }
-
-    await go.run(wasmModule.instance)
-
-    const result: HCLBlock = global.hclParserReturn.value
-
-    // cleanup
-    delete global.hclParserArgs
-    delete global.hclParserReturn
-
-    return result
   }
 }
 

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 function abspath {
     [[ $1 = /* ]] && echo "$1" || echo "$PWD/${1#./}"

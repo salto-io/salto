@@ -1,7 +1,7 @@
 import cli from '../src/cli/salto-cli'
 
 let outputData = ''
-/* eslint-disable-next-line explicit-function-return-type no-return-assign, @typescript-eslint/no-explicit-any */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function storeLog(inputs: any): void {
   outputData += inputs
 }

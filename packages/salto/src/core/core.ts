@@ -1,5 +1,7 @@
 import { EventEmitter } from 'events'
-import { Type, PrimitiveTypes, getType, TypeID } from './elements'
+import {
+  Type, PrimitiveTypes, getType, TypeID,
+} from './elements'
 
 export enum PlanActionType {
   ADD,
@@ -22,7 +24,7 @@ export class PlanAction {
     /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
     newValue?: any,
     /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-    oldValue?: any
+    oldValue?: any,
   ) {
     this.name = name
     this.actionType = actionType
@@ -59,9 +61,9 @@ export class SaltoCore extends EventEmitter {
     })
     saltoEmployee.fields.nicknames = getType(
       new TypeID({ adapter: 'salto', name: 'nicknames' }),
-      PrimitiveTypes.LIST
+      PrimitiveTypes.LIST,
     )
-    saltoEmployee.fields.nicknames.elementType = getType(new TypeID({ adapter: '', name: 'string'}))
+    saltoEmployee.fields.nicknames.elementType = getType(new TypeID({ adapter: '', name: 'string' }))
     /* eslint-disable-next-line @typescript-eslint/camelcase */
     saltoEmployee.fields.employee_resident = getType(new TypeID({ adapter: 'salto', name: 'address' })).clone({
       label: 'Employee Resident',
@@ -72,8 +74,7 @@ export class SaltoCore extends EventEmitter {
     saltoEmployee.fields.office = getType(new TypeID({ adapter: 'salto', name: 'office' })).clone({
       label: 'Based In',
     })
-    saltoEmployee.fields.office.fields.name.annotationsValues[Type.DEFAULT] =
-      'HQ'
+    saltoEmployee.fields.office.fields.name.annotationsValues[Type.DEFAULT] = 'HQ'
     saltoEmployee.fields.office.fields.location.fields.country.annotationsValues[
       Type.DEFAULT
     ] = 'IL'
@@ -103,10 +104,10 @@ export class SaltoCore extends EventEmitter {
             'label',
             PlanActionType.ADD,
             [],
-            'Do you have a sales team'
+            'Do you have a sales team',
           ),
           new PlanAction('defaultvalue', PlanActionType.ADD, [], false),
-        ]
+        ],
       ),
       new PlanAction(
         'salesforcelead how_many_sales_people',
@@ -117,10 +118,10 @@ export class SaltoCore extends EventEmitter {
             PlanActionType.MODIFY,
             [],
             false,
-            true
+            true,
           ),
           new PlanAction('values', PlanActionType.REMOVE),
-        ]
+        ],
       ),
       new PlanAction(
         'salesforcelead how_many_sales_people',
@@ -130,7 +131,7 @@ export class SaltoCore extends EventEmitter {
             'label',
             PlanActionType.ADD,
             [],
-            'How many Sales people?'
+            'How many Sales people?',
           ),
           new PlanAction('restrict_to_value_set', PlanActionType.ADD, [], true),
           new PlanAction('controlling_field', PlanActionType.ADD, [], 'test'),
@@ -138,9 +139,9 @@ export class SaltoCore extends EventEmitter {
             'values',
             PlanActionType.ADD,
             [],
-            ['1-10', '11-20', '21-30', '30+']
+            ['1-10', '11-20', '21-30', '30+'],
           ),
-        ]
+        ],
       ),
     ]
 

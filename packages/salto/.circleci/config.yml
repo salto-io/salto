@@ -3,7 +3,7 @@ jobs:
   build:
     docker:
       # specify the version you desire here
-      - image: circleci/node:12.3.1
+      - image: saltolabs/salto:0.0.4
 
     working_directory: ~/repo
 

@@ -10,9 +10,10 @@
   "bin": "./src/main.ts",
   "scripts": {
     "prepare": "npm run build",
-    "build": "npm run lint",
-    "test": "jest --forceExit --coverage --verbose --detectOpenHandles",
-    "watch-test": "npm run test -- --watchAll",
+    "build": "npm run lint && npm run build-go",
+    "test": "npm run build-go && jest --forceExit --verbose --detectOpenHandles",
+    "watch-test": "npm run build-go && npm run test -- --watchAll",
+    "build-go": "./src/parser/hcl_plugin/build.sh ./dist/hcl.wasm",
     "lint": "eslint --fix --ext .js,.jsx,.ts,.tsx ./"
   },
   "dependencies": {

@@ -1,0 +1,9 @@
+// Place your settings in this file to overwrite default and user settings.
+{
+    "editor.tabSize": 2,
+    "go.useLanguageServer": true,
+    "go.toolsEnvVars": {
+        "GOOS": "js",
+        "GOARCH": "wasm",
+    },
+}

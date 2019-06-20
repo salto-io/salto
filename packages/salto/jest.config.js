@@ -21,15 +21,15 @@ module.exports = {
     '!**/node_modules/**',
     '!<rootDir>/*.config.js',
     '!<rootDir>/(test|dist|coverage)/**',
-    '!<rootDir>/src/parser/wasm_exec.js',     // External source file
+    '!<rootDir>/src/parser/wasm_exec.js', // External source file
   ],
   coverageThreshold: {
     // Slowly start increasing here, never decrease!
     global: {
-      branches: 0,
-      functions: 0,
-      lines: 0,
-      statements: 0,
-    }
-  }
+      branches: 90,
+      functions: 90,
+      lines: 85,
+      statements: 90,
+    },
+  },
 }

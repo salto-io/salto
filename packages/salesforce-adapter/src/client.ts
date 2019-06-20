@@ -17,11 +17,11 @@ export default class SalesforceClient {
   constructor(
     private username: string,
     private password: string,
-    isSnadbox: boolean
+    isSandbox: boolean
   ) {
     this.conn = new Connection({
       version: apiVersion,
-      loginUrl: `https://${isSnadbox ? 'test' : 'login'}.salesforce.com/`
+      loginUrl: `https://${isSandbox ? 'test' : 'login'}.salesforce.com/`
     })
   }
 

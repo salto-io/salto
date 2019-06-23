@@ -72,7 +72,7 @@ module.exports = {
             rules: {
                 'no-useless-constructor': [0],
                 'no-empty-function': [0],
-                '@typescript-eslint/array-type': [0],
+                '@typescript-eslint/array-type': [0]
             }
         }
     ],

@@ -101,7 +101,7 @@ async function main(): Promise<void> {
       if (!results) {
         logger.info('Failed to describe value type %s', obj.xmlName)
       } else {
-        const sortedFields: ValueTypeField[] = results.ValueTypeFields.sort(
+        const sortedFields: ValueTypeField[] = results.valueTypeFields.sort(
           (a, b) => {
             return a.name.localeCompare(b.name)
           }

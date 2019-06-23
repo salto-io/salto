@@ -5,7 +5,7 @@ import SalesforceClient from '../src/client'
 
 jest.mock('../src/client')
 
-describe('Test SalesforceAdapter.discover', () => {
+describe('Test SalesforceAdapter', () => {
   /**
    * Utility function that mock single object
    */
@@ -206,5 +206,28 @@ describe('Test SalesforceAdapter.discover', () => {
     expect(object.fields[0].length).toBe(80)
     expect(object.fields[0].required).toBe(false)
     expect(object.fields[0].label).toBe('test label')
+  })
+
+  it('should remove a salesforce metadata component', async () => {
+    const mockDelete = jest.fn().mockImplementationOnce(() => {
+      return { success: true }
+    })
+    SalesforceClient.prototype.delete = mockDelete
+
+    const instance = createAdapter()
+    const result = await instance.remove({
+      object: 'test',
+      description: {
+        type: 'string',
+        label: 'test label',
+        required: false,
+        _default: 'test'
+      }
+    })
+
+    expect(result).toBe(true)
+    expect(mockDelete.mock.calls.length).toBe(1)
+    const fullName = mockDelete.mock.calls[0][1]
+    expect(fullName).toBe('test__c')
   })
 })

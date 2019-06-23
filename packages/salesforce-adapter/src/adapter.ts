@@ -1,5 +1,6 @@
 import { Field, MetadataInfo, SaveResult } from 'jsforce'
 import SalesforceClient from './client'
+import { CUSTOM_OBJECT } from './constants'
 
 // TODO: handle snakeCase and __c
 // should this be in TypeElement?
@@ -59,8 +60,17 @@ class CustomField implements MetadataInfo {
 }
 
 class CustomObject implements MetadataInfo {
+  static fieldTypeMapping: Record<string, string> = {
+    string: 'Text',
+    int: 'Number',
+    boolean: 'Checkbox',
+    picklist: 'Picklist'
+  }
+
   readonly fullName: string
+  readonly label: string
   readonly pluralLabel: string
+  readonly fields: CustomField[] = []
 
   readonly deploymentStatus = 'Deployed'
   readonly sharingModel = 'ReadWrite'
@@ -69,24 +79,33 @@ class CustomObject implements MetadataInfo {
     label: 'Test Object Name'
   }
 
-  constructor(
-    fullName: string,
-    public label: string,
-    public fields: CustomField[] = []
-  ) {
-    this.fullName = `${fullName}__c`
+  constructor(element: TypeElement) {
+    this.fullName = `${element.object}__c`
+    this.label = element.object
     this.pluralLabel = `${this.label}s`
+    Object.keys(element)
+      // skip object - not field name
+      .filter(name => {
+        return name !== 'object'
+      })
+      .forEach(fieldName => {
+        const field = new CustomField(
+          fieldName,
+          CustomObject.fieldTypeMapping[element[fieldName].type],
+          element[fieldName].label
+          // TODO: handle default values
+          // element[fieldName]._default
+        )
+        // TODO: handle combobox
+        if (field.type === 'picklist') {
+          field.addPickListValues(element.fieldName.values)
+        }
+        this.fields.push(field)
+      })
   }
 }
 
 export class SalesforceAdapter {
-  static fieldTypeMapping: Record<string, string> = {
-    string: 'Text',
-    int: 'Number',
-    boolean: 'Checkbox',
-    picklist: 'Picklist'
-  }
-
   client: SalesforceClient
 
   constructor(conf: Config) {
@@ -101,7 +120,7 @@ export class SalesforceAdapter {
    * Discover configuration elements (types and instances in the given salesforce account)
    * Account credentials were given in the constructor.
    */
-  async discover(): Promise<TypeElement[]> {
+  public async discover(): Promise<TypeElement[]> {
     // TODO: add here salesforce primitive data types
     const result = await Promise.all([
       this.discoverSObjects(),
@@ -113,29 +132,11 @@ export class SalesforceAdapter {
   /**
    * Add new type element
    */
-  async add(element: TypeElement): Promise<boolean> {
+  public async add(element: TypeElement): Promise<boolean> {
     // TODO: handle permissions
-    const customObject = new CustomObject(element.object, element.object)
-    Object.keys(element)
-      // skip object - not field name
-      .filter(name => {
-        return name !== 'object'
-      })
-      .forEach(fieldName => {
-        const field = new CustomField(
-          fieldName,
-          SalesforceAdapter.fieldTypeMapping[element[fieldName].type],
-          element[fieldName].label
-          // TODO: handle default values
-          // element[fieldName]._default
-        )
-        // TODO: handel combobox
-        if (field.type === 'picklist') {
-          field.addPickListValues(element.fieldName.values)
-        }
-        customObject.fields.push(field)
-      })
-    const result = await this.client.create('CustomObject', customObject)
+    const customObject = new CustomObject(element)
+    // TODO: Add creation of other types than CustomObject, according to the element.type
+    const result = await this.client.create(CUSTOM_OBJECT, customObject)
     if (Array.isArray(result)) {
       return (result as SaveResult[])
         .map(r => {
@@ -148,12 +149,28 @@ export class SalesforceAdapter {
     return (result as SaveResult).success
   }
 
+  /**
+   * Remove an element
+   * @param type The metadata type of the element to remove
+   * @param element The provided element to remove
+   * @returns true for success, false for failure
+   */
+  public async remove(element: TypeElement): Promise<boolean> {
+    // Build the custom object to retrieve the full name from
+    const customObject = new CustomObject(element)
+    const result = await this.client.delete(
+      CUSTOM_OBJECT,
+      customObject.fullName
+    )
+    return (result as SaveResult).success
+  }
+
   private async discoverMetadataTypes(): Promise<TypeElement[]> {
     const objects = await this.client.listMetadataTypes()
     return Promise.all(
       objects
         .filter(obj => {
-          return obj.xmlName !== 'CustomObject'
+          return obj.xmlName !== CUSTOM_OBJECT
         })
         .map(async obj => {
           return SalesforceAdapter.createMetadataTypeElement(obj.xmlName)

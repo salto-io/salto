@@ -1,4 +1,5 @@
 import { SalesforceAdapter } from '../src/adapter'
+import { CUSTOM_OBJECT } from '../src/constants'
 
 // This is turned off by default as it has SFDC rate limit implications
 // eslint-disable-next-line jest/no-disabled-tests
@@ -51,9 +52,10 @@ describe.skip('Test Discover E2E', () => {
   })
 })
 
-describe('Test Add E2E', () => {
+describe.skip('Test CRUD operations E2E', () => {
   // eslint-disable-next-line jest/no-disabled-tests
-  it.skip('test sobject add e2e with real account', async () => {
+  it('should add custom object metadata component e2e with real account', async () => {
+    // Setup
     // set long timeout as we communicate with salesforce API
     jest.setTimeout(300000)
     const adapter = new SalesforceAdapter({
@@ -63,7 +65,7 @@ describe('Test Add E2E', () => {
       sandbox: false
     })
 
-    const result = await adapter.add({
+    const element = {
       object: 'test',
       description: {
         type: 'string',
@@ -71,7 +73,53 @@ describe('Test Add E2E', () => {
         required: false,
         _default: 'test'
       }
+    }
+
+    // Test
+    const addResult = await adapter.add(element)
+    expect(addResult).toBe(true)
+    const readResult = await adapter.client.readMetadata(
+      CUSTOM_OBJECT,
+      'test__c'
+    )
+    expect(readResult.fullName).toBe('test__c')
+
+    // Clean-up
+    await adapter.remove(element)
+  })
+
+  it('should remove object metadata component e2e with real account', async () => {
+    // Setup
+    // set long timeout as we communicate with salesforce API
+    jest.setTimeout(300000)
+    const adapter = new SalesforceAdapter({
+      username: 'vanila@salto.io',
+      password: '!A123456',
+      token: 'rwVvOsh7HjF8Zki9ZmyQdeth',
+      sandbox: false
     })
-    expect(result).toBe(true)
+
+    const element = {
+      object: 'test',
+      description: {
+        type: 'string',
+        label: 'test label',
+        required: false,
+        _default: 'test'
+      }
+    }
+
+    const addResult = await adapter.add(element)
+    expect(addResult).toBe(true)
+
+    // Test
+    const removeResult = await adapter.remove(element)
+    expect(removeResult).toBe(true)
+
+    const readResult = await adapter.client.readMetadata(
+      CUSTOM_OBJECT,
+      'test__c'
+    )
+    expect(readResult.fullName).toBeUndefined()
   })
 })

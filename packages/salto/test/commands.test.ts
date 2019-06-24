@@ -36,7 +36,7 @@ describe('Test commands.ts', () => {
     cli.describe(['salto_office'])
     expect(outputData).toMatch('=== salto_office ===')
     expect(outputData).toMatch('Office Location')
-    expect(outputData).toMatch('salto_address')
+    expect(outputData).toMatch('address')
   })
 
   it('should output proper value when proper desc is provided for list', () => {

@@ -16,6 +16,29 @@ interface Values {
   [key: string]: any
 }
 type TypeMap = Record<string, Type>
+
+interface TypeIDArgs {
+  adapter?: string
+  name?: string
+}
+
+export class TypeID {
+  static readonly NAMESPACE_SEPERATOR = '_'
+
+  name?: string
+  adapter?: string
+  constructor(args: TypeIDArgs) {
+    this.name = args.name
+    this.adapter = args.adapter
+  }
+
+  getFullName(): string {
+    return [this.adapter, this.name]
+      .filter(part => !_.isEmpty(part))
+      .join(TypeID.NAMESPACE_SEPERATOR)
+  }
+}
+
 /**
  * An abstract class that represent the base type.
  * Contains the base function and fields.
@@ -26,26 +49,26 @@ export abstract class Type {
   public static DEFAULT = '_default'
 
   static registeredTypes: TypeMap = {}
-
-  readonly name: string
+  readonly typeID: TypeID
   annotations: TypeMap
   annotationsValues: Values
   constructor({
     annotations,
     annotationsValues,
-    name,
+    typeID,
   }: {
-    name: string
+    typeID: TypeID
     annotations: TypeMap
     annotationsValues: Values
   }) {
     this.annotations = annotations
     this.annotationsValues = annotationsValues
-    this.name = name
+    this.typeID = typeID
     // Prevents reregistration of clones, we only want to register
     // first creation
-    if (!Type.registeredTypes[name]) {
-      Type.registeredTypes[name] = this
+    const key = this.typeID.getFullName()
+    if (!Type.registeredTypes[key]) {
+      Type.registeredTypes[key] = this
     }
   }
 
@@ -90,17 +113,17 @@ export abstract class Type {
 export class PrimitiveType extends Type {
   primitive: PrimitiveTypes
   constructor({
-    name,
+    typeID,
     primitive,
     annotations = {},
     annotationsValues = {},
   }: {
-    name: string
+    typeID: TypeID
     primitive: PrimitiveTypes
     annotations?: TypeMap
     annotationsValues?: Values
   }) {
-    super({ name, annotations, annotationsValues })
+    super({ typeID, annotations, annotationsValues })
     this.primitive = primitive
   }
 
@@ -110,7 +133,7 @@ export class PrimitiveType extends Type {
    */
   clone(additionalAnnotationsValues: Values = {}): PrimitiveType {
     const res: PrimitiveType = new PrimitiveType({
-      name: this.name,
+      typeID: this.typeID,
       primitive: this.primitive,
       annotations: this.cloneAnnotations(),
       annotationsValues: this.cloneAnnotationsValues(),
@@ -127,17 +150,17 @@ export class ObjectType extends Type {
   fields: TypeMap
 
   constructor({
-    name,
+    typeID,
     fields = {},
     annotations = {},
     annotationsValues = {},
   }: {
-    name: string
+    typeID: TypeID
     fields?: TypeMap
     annotations?: TypeMap
     annotationsValues?: Values
   }) {
-    super({ name, annotations, annotationsValues })
+    super({ typeID, annotations, annotationsValues })
     this.fields = fields
   }
 
@@ -159,7 +182,7 @@ export class ObjectType extends Type {
     const clonedFields = this.cloneFields()
 
     const res: ObjectType = new ObjectType({
-      name: this.name,
+      typeID: this.typeID,
       fields: clonedFields,
       annotations: clonedAnnotations,
       annotationsValues: clonedAnnotationValues,
@@ -177,17 +200,17 @@ export class ObjectType extends Type {
 export class ListType extends Type {
   elementType?: Type
   constructor({
-    name,
+    typeID,
     elementType,
     annotations = {},
     annotationsValues = {},
   }: {
-    name: string
+    typeID: TypeID
     elementType?: Type
     annotations?: TypeMap
     annotationsValues?: Values
   }) {
-    super({ name, annotations, annotationsValues })
+    super({ typeID, annotations, annotationsValues })
     this.elementType = elementType
   }
 
@@ -203,7 +226,7 @@ export class ListType extends Type {
     const clonedAnnotationValues = this.cloneAnnotationsValues()
 
     const res: ListType = new ListType({
-      name: this.name,
+      typeID: this.typeID,
       elementType: clonedElementType,
       annotations: clonedAnnotations,
       annotationsValues: clonedAnnotationValues,
@@ -229,19 +252,20 @@ export class ListType extends Type {
  * @return {any} the requested type element.
  */
 export function getType(
-  name: string,
+  typeID: TypeID,
   type: PrimitiveTypes = PrimitiveTypes.OBJECT
   /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 ): any {
   // Using any here is ugly, but I can't find a better comiling solution. TODO - fix this
-  let res: Type = Type.registeredTypes[name]
+  const key = typeID.getFullName()
+  let res: Type = Type.registeredTypes[key]
   if (!res) {
     if (type === PrimitiveTypes.OBJECT) {
-      res = new ObjectType({ name })
+      res = new ObjectType({ typeID })
     } else if (type === PrimitiveTypes.LIST) {
-      res = new ListType({ name })
+      res = new ListType({ typeID })
     } else {
-      res = new PrimitiveType({ name, primitive: type })
+      res = new PrimitiveType({ typeID, primitive: type })
     }
   }
   return res

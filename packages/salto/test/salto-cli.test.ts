@@ -92,7 +92,7 @@ describe('Test commands.ts', () => {
     await new Promise(resolve => setTimeout(resolve, 100))
     expect(outputData).toMatch('=== salto_office ===')
     expect(outputData).toMatch('Office Location')
-    expect(outputData).toMatch('salto_address')
+    expect(outputData).toMatch('address')
   })
 
   it('should invoke the discover command', async () => {

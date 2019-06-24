@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events'
-import { Type, PrimitiveTypes, getType } from './elements'
+import { Type, PrimitiveTypes, getType, TypeID } from './elements'
 
 export enum PlanActionType {
   ADD,
@@ -40,36 +40,36 @@ export class SaltoCore extends EventEmitter {
 
   // eslint-disable-next-line class-methods-use-this
   getAllElements(): Type[] {
-    const saltoAddr = getType('salto_address')
-    saltoAddr.annotations.label = getType('string')
-    saltoAddr.fields.country = getType('string')
-    saltoAddr.fields.city = getType('string')
+    const saltoAddr = getType(new TypeID({ adapter: 'salto', name: 'address' }))
+    saltoAddr.annotations.label = getType(new TypeID({ adapter: '', name: 'string' }))
+    saltoAddr.fields.country = getType(new TypeID({ adapter: '', name: 'string' }))
+    saltoAddr.fields.city = getType(new TypeID({ adapter: '', name: 'string' }))
 
-    const saltoOffice = getType('salto_office')
-    saltoOffice.annotations.label = getType('string')
-    saltoOffice.fields.name = getType('string')
-    saltoOffice.fields.location = getType('salto_address').clone({
+    const saltoOffice = getType(new TypeID({ adapter: 'salto', name: 'office' }))
+    saltoOffice.annotations.label = getType(new TypeID({ adapter: '', name: 'string' }))
+    saltoOffice.fields.name = getType(new TypeID({ adapter: '', name: 'string' }))
+    saltoOffice.fields.location = getType(new TypeID({ adapter: 'salto', name: 'address' })).clone({
       label: 'Office Location',
       description: 'A location of an office',
     })
 
-    const saltoEmployee = getType('salto_employee')
-    saltoEmployee.fields.name = getType('string').clone({
+    const saltoEmployee = getType(new TypeID({ adapter: 'salto', name: 'employee' }))
+    saltoEmployee.fields.name = getType(new TypeID({ adapter: '', name: 'string' })).clone({
       _required: true,
     })
     saltoEmployee.fields.nicknames = getType(
-      'salto_nicknamed',
+      new TypeID({ adapter: 'salto', name: 'nicknames' }),
       PrimitiveTypes.LIST
     )
-    saltoEmployee.fields.nicknames.elementType = getType('string')
+    saltoEmployee.fields.nicknames.elementType = getType(new TypeID({ adapter: '', name: 'string'}))
     /* eslint-disable-next-line @typescript-eslint/camelcase */
-    saltoEmployee.fields.employee_resident = getType('salto_address').clone({
+    saltoEmployee.fields.employee_resident = getType(new TypeID({ adapter: 'salto', name: 'address' })).clone({
       label: 'Employee Resident',
     })
-    saltoEmployee.fields.company = getType('string').clone({
+    saltoEmployee.fields.company = getType(new TypeID({ adapter: '', name: 'string' })).clone({
       _default: 'salto',
     })
-    saltoEmployee.fields.office = getType('salto_office').clone({
+    saltoEmployee.fields.office = getType(new TypeID({ adapter: 'salto', name: 'office' })).clone({
       label: 'Based In',
     })
     saltoEmployee.fields.office.fields.name.annotationsValues[Type.DEFAULT] =

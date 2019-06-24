@@ -7,7 +7,7 @@
     "url": "https://github.com/salto-io/salto"
   },
   "private": true,
-  "bin": "./src/main.ts",
+  "bin": {"salto": "./bin/salto"},
   "scripts": {
     "prepare": "npm run build",
     "build": "npm run lint && npm run build-go",

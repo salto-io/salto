@@ -1,15 +1,16 @@
-import { topologicalSort, DiGraph } from 'jsnetworkx'
 import wu from 'wu'
 
-const updateSet = <T>(target: Set<T>, source: Iterable<T>):
-  void => wu(source).forEach(v => target.add(v))
+const updateSet = <T>(target: Set<T>, source: Iterable<T>): void => {
+  wu(source).forEach(target.add.bind(target))
+}
+
+const deleteFromSet = <T>(target: Set<T>, source: Iterable<T>): void => {
+  wu(source).forEach(target.delete.bind(target))
+}
 
 class DefaultMap<K, V> extends Map<K, V> {
-  constructor(
-    readonly initDefault: () => V,
-    entries?: ReadonlyArray<readonly [K, V]>,
-  ) {
-    super(entries)
+  constructor(readonly initDefault: () => V, entries?: Iterable<[K, V]>) {
+    super(wu(entries || []))
   }
 
   get(key: K): V {
@@ -17,50 +18,167 @@ class DefaultMap<K, V> extends Map<K, V> {
       return super.get(key) as V
     }
     const res = this.initDefault()
-    super.set(key, res)
+    this.set(key, res)
     return res
   }
 }
 
-export default class Graph<T> {
-  private readonly impl = new DiGraph(undefined, undefined)
-
-  addNode(node: T, ...dependents: T[]): void {
-    const graph = this.impl
-    graph.addNode(node)
-    dependents.forEach((dep: T) => graph.addEdge(node, dep))
+class NodeMap<T> extends DefaultMap<T, Set<T>> {
+  constructor(entries?: Iterable<[T, Set<T>]>) {
+    super(() => new Set<T>(), entries)
   }
 
-  topologicalSort(): Iterable<T> {
-    return topologicalSort(this.impl, undefined)
+  deleteValues(values: Iterable<T>): void {
+    this.forEach(s => deleteFromSet(s, values))
+  }
+
+  deleteKeys(keys: Iterable<T>): void {
+    wu(keys).forEach(this.delete.bind(this))
+  }
+
+  clone(): NodeMap<T> {
+    return new NodeMap<T>(wu(this).map(([k, v]) => [k, new Set<T>(v)]))
+  }
+
+  toString(): string {
+    return `${wu(this)
+      .map(([k, s]) => `${k}->${[...s]}`)
+      .toArray()
+      .join(', ')}`
+  }
+}
+
+export class CircularDependencyError<T> extends Error {
+  constructor(data: NodeMap<T>) {
+    super(`Circular dependencies exist among these items: ${data}`)
+  }
+}
+
+export class Graph<T> {
+  private readonly successors = new NodeMap<T>()
+  private readonly predecessors = new NodeMap<T>()
+
+  addNode(node: T, ...successors: T[]): void {
+    updateSet(this.successors.get(node), successors)
+    successors.forEach(successor => {
+      this.addNode(successor)
+      this.predecessors.get(successor).add(node)
+    })
+  }
+
+  private removeEdge(node: T, succ: T): void {
+    this.successors.get(node).delete(succ)
+    this.predecessors.get(succ).delete(node)
+  }
+
+  *topologicalSortIter(): IterableIterator<Set<T>> {
+    // Copy the input so as to leave it unmodified
+    const successors = this.successors.clone()
+
+    while (true) {
+      const nodesWithNoDeps = new Set<T>(
+        wu(successors)
+          .filter(([_item, succ]) => succ.size === 0)
+          .map(([item]) => item)
+      )
+
+      if (nodesWithNoDeps.size === 0) {
+        break
+      }
+
+      yield nodesWithNoDeps
+
+      successors.deleteKeys(nodesWithNoDeps)
+      successors.deleteValues(nodesWithNoDeps)
+    }
+
+    if (successors.size !== 0) {
+      throw new CircularDependencyError(successors)
+    }
+  }
+
+  topologicalSort(): T[][] {
+    return [...this.topologicalSortIter()].map(s => [...s])
+  }
+
+  *topologicalSortFlatIter(): IterableIterator<T> {
+    const iter = this.topologicalSortIter()[Symbol.iterator]()
+
+    while (true) {
+      const { done, value } = iter.next()
+      if (done) {
+        break
+      }
+
+      const itemsIter = value[Symbol.iterator]()
+
+      while (true) {
+        // eslint-disable-next-line no-shadow
+        const { done, value } = itemsIter.next()
+        if (done) {
+          break
+        }
+
+        yield value
+      }
+    }
+  }
+
+  topologicalSortFlat(): T[] {
+    return [...this.topologicalSortFlatIter()]
   }
 
   edges(): [T, T][] {
-    return this.impl.outEdges(undefined, undefined)
+    return [...this.edgesIter()]
+  }
+
+  *edgesIter(): IterableIterator<[T, T]> {
+    const succIter = this.successors.entries()[Symbol.iterator]()
+
+    while (true) {
+      const { done, value } = succIter.next()
+      if (done) {
+        break
+      }
+
+      const [item, depsSet] = value
+
+      const depsIter = depsSet[Symbol.iterator]()
+
+      while (true) {
+        // eslint-disable-next-line no-shadow
+        const { done, value } = depsIter.next()
+        if (done) {
+          break
+        }
+
+        yield [item, value]
+      }
+    }
   }
 
   // taken from: https://stackoverflow.com/a/32242282
-  removeRedundantEdges(): Graph<T> {
-    const indirectPredMap = new DefaultMap<T, Set<T>>(() => new Set<T>())
+  removeRedundantEdges(): this {
+    const indirectPredMap = new NodeMap<T>()
 
-    const graph = this.impl
-
-    topologicalSort(graph, undefined).forEach((node: T) => {
+    const removeDups = (node: T): void => {
       const indirectPred = indirectPredMap.get(node)
-      const directPred = graph.predecessors(node) as Array<T>
+      const directPred = [...this.predecessors.get(node)]
 
-      directPred
-        .filter(pred => indirectPred.has(pred))
-        .forEach(pred => graph.removeEdge(pred, node))
+      const dups = directPred.filter(pred => indirectPred.has(pred))
+
+      dups.forEach(pred => this.removeEdge(pred, node))
 
       updateSet(indirectPred, directPred)
 
-      const successors = graph.successors(node) as T[]
+      this.successors
+        .get(node)
+        .forEach(succ => updateSet(indirectPredMap.get(succ), indirectPred))
+    }
 
-      successors.forEach((succ: T) => {
-        updateSet(indirectPredMap.get(succ), indirectPred)
-      })
-    })
+    this.topologicalSortFlat()
+      .reverse()
+      .forEach(removeDups)
 
     return this
   }

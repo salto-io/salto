@@ -1,6 +1,12 @@
-import { Field, MetadataInfo, SaveResult } from 'jsforce'
+import { Field, SaveResult, ValueTypeField } from 'jsforce'
 import SalesforceClient from './client'
-import { CUSTOM_OBJECT } from './constants'
+import { CUSTOM_OBJECT, METADATA_OBJECT_NAME_FIELD } from './constants'
+import {
+  TypeElement,
+  CustomObject,
+  FieldPermissions,
+  ProfileInfo
+} from './salesforce_types'
 
 // TODO: handle snakeCase and __c
 // should this be in TypeElement?
@@ -8,104 +14,8 @@ import { CUSTOM_OBJECT } from './constants'
 
 // TODO: this should be replaced with Elements from core once ready
 type Config = Record<string, any>
-type TypeElement = Record<string, any>
 
-interface FieldPermissions {
-  field: string
-  editable: boolean
-  readable: boolean
-}
-
-export interface ProfileInfo extends MetadataInfo {
-  fieldPermissions: FieldPermissions[]
-}
-
-class CustomPicklistValue implements MetadataInfo {
-  constructor(public readonly fullName: string, readonly label?: string) {
-    if (!this.label) {
-      this.label = fullName
-    }
-  }
-}
-
-class CustomField implements MetadataInfo {
-  readonly fullName: string
-  // to be used for picklist and combobox types
-  readonly valueSet: { valueSetDefinition: { value: CustomPicklistValue[] } }
-
-  readonly length: number
-
-  constructor(
-    fullName: string,
-    public type: string,
-    public label?: string,
-    public required: boolean = false
-  ) {
-    this.fullName = `${fullName}__c`
-    if (this.type === 'Text') {
-      this.length = 80
-    }
-    if (this.type === 'Picklist') {
-      this.valueSet = {
-        valueSetDefinition: { value: [] as CustomPicklistValue[] }
-      }
-    }
-  }
-
-  public addPickListValues(values: string[]): void {
-    values.forEach(val => {
-      this.valueSet.valueSetDefinition.value.push(new CustomPicklistValue(val))
-    })
-  }
-}
-
-class CustomObject implements MetadataInfo {
-  static fieldTypeMapping: Record<string, string> = {
-    string: 'Text',
-    int: 'Number',
-    boolean: 'Checkbox',
-    picklist: 'Picklist'
-  }
-
-  readonly fullName: string
-  readonly label: string
-  readonly pluralLabel: string
-  readonly fields: CustomField[] = []
-
-  readonly deploymentStatus = 'Deployed'
-  readonly sharingModel = 'ReadWrite'
-  readonly nameField = {
-    type: 'Text',
-    label: 'Test Object Name'
-  }
-
-  constructor(element: TypeElement) {
-    this.fullName = `${element.object}__c`
-    this.label = element.object
-    this.pluralLabel = `${this.label}s`
-    Object.keys(element)
-      // skip object - not field name
-      .filter(name => {
-        return name !== 'object'
-      })
-      .forEach(fieldName => {
-        const field = new CustomField(
-          fieldName,
-          CustomObject.fieldTypeMapping[element[fieldName].type],
-          element[fieldName].label
-          // TODO: handle default values
-          // element[fieldName]._default
-        )
-        // TODO: handle combobox
-        if (field.type === 'picklist') {
-          field.addPickListValues(element.fieldName.values)
-        }
-        this.fields.push(field)
-      })
-  }
-}
-
-export class SalesforceAdapter {
+export default class SalesforceAdapter {
   client: SalesforceClient
 
   constructor(conf: Config) {
@@ -135,7 +45,6 @@ export class SalesforceAdapter {
   public async add(element: TypeElement): Promise<boolean> {
     // TODO: handle permissions
     const customObject = new CustomObject(element)
-    // TODO: Add creation of other types than CustomObject, according to the element.type
     const result = await this.client.create(CUSTOM_OBJECT, customObject)
     if (Array.isArray(result)) {
       return (result as SaveResult[])
@@ -173,14 +82,58 @@ export class SalesforceAdapter {
           return obj.xmlName !== CUSTOM_OBJECT
         })
         .map(async obj => {
-          return SalesforceAdapter.createMetadataTypeElement(obj.xmlName)
+          return this.createMetadataTypeElement(obj.xmlName)
         })
     )
   }
 
-  private static createMetadataTypeElement(objectName: string): TypeElement {
-    // TODO: use conn.metadata.describeValueType once we have it in our dependencies
-    return { object: objectName }
+  private async createMetadataTypeElement(
+    objectName: string
+  ): Promise<TypeElement> {
+    const element: TypeElement = { object: objectName }
+    const fields = await this.client.discoverMetadataObject(objectName)
+    if (!fields) {
+      return element
+    }
+    fields.forEach(field => {
+      if (field.name !== METADATA_OBJECT_NAME_FIELD) {
+        element[field.name] = SalesforceAdapter.createMetadataFieldTypeElement(
+          field
+        )
+      }
+    })
+    return element
+  }
+
+  private static createMetadataFieldTypeElement(
+    field: ValueTypeField
+  ): TypeElement {
+    const element: TypeElement = {
+      type: field.soapType,
+      required: field.valueRequired
+    }
+
+    if (field.picklistValues && field.picklistValues.length > 0) {
+      element.values = field.picklistValues.map(val => {
+        return val.value
+      })
+      const defaults = field.picklistValues
+        .filter(val => {
+          return val.defaultValue === true
+        })
+        .map(val => {
+          return val.value
+        })
+      if (defaults.length === 1) {
+        // eslint-disable-next-line no-underscore-dangle
+        element._default = defaults.pop()
+      } else {
+        // eslint-disable-next-line no-underscore-dangle
+        element._default = defaults
+      }
+    }
+
+    return element
   }
 
   private async discoverSObjects(): Promise<TypeElement[]> {

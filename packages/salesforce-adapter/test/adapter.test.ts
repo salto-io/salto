@@ -1,28 +1,35 @@
 import { MetadataInfo } from 'jsforce'
-
-import { SalesforceAdapter, ProfileInfo } from '../src/adapter'
+import SalesforceAdapter from '../src/adapter'
 import SalesforceClient from '../src/client'
+import { ProfileInfo } from '../src/salesforce_types'
 
 jest.mock('../src/client')
 
-describe('Test SalesforceAdapter', () => {
-  /**
-   * Utility function that mock single object
-   */
+describe('Test SalesforceAdapter.discover', () => {
+  // input should be DescribeGlobalSObjectResult, we will validate obj has at least name
+  function mockListSObjects(result: { name: string }[] = []): void {
+    SalesforceClient.prototype.listSObjects = jest
+      .fn()
+      .mockImplementationOnce(() => {
+        return result
+      })
+  }
+
+  // The result should be MetadataObject we will validate result has at lease xmlName
+  function mockListMetadataTypes(result: { xmlName: string }[] = []): void {
+    SalesforceClient.prototype.listMetadataTypes = jest
+      .fn()
+      .mockImplementationOnce(() => {
+        return result
+      })
+  }
+
   function mockSingleSObject(
     name: string,
     fields: Record<string, any>[]
   ): void {
-    SalesforceClient.prototype.listSObjects = jest
-      .fn()
-      .mockImplementationOnce(() => {
-        return [{ name }]
-      })
-    SalesforceClient.prototype.listMetadataTypes = jest
-      .fn()
-      .mockImplementationOnce(() => {
-        return []
-      })
+    mockListSObjects([{ name }])
+    mockListMetadataTypes()
     SalesforceClient.prototype.discoverSObject = jest
       .fn()
       .mockImplementationOnce(() => {
@@ -38,6 +45,18 @@ describe('Test SalesforceAdapter', () => {
       })
   }
 
+  function mockSingleMetadataObject(
+    xmlName: string,
+    fields: Record<string, any>[]
+  ): void {
+    mockListMetadataTypes([{ xmlName }])
+    SalesforceClient.prototype.discoverMetadataObject = jest
+      .fn()
+      .mockImplementationOnce(() => {
+        return fields
+      })
+  }
+
   function mockReadMetadata(result: MetadataInfo | ProfileInfo): void {
     SalesforceClient.prototype.readMetadata = jest
       .fn()
@@ -46,7 +65,7 @@ describe('Test SalesforceAdapter', () => {
       })
   }
 
-  function createAdapter(): SalesforceAdapter {
+  function adapter(): SalesforceAdapter {
     return new SalesforceAdapter({
       username: '',
       password: '',
@@ -78,8 +97,7 @@ describe('Test SalesforceAdapter', () => {
         defaultValue: false
       }
     ])
-    const instance = createAdapter()
-    const result = await instance.discover()
+    const result = await adapter().discover()
 
     expect(result.length).toBe(1)
     const lead = result.pop()
@@ -110,8 +128,7 @@ describe('Test SalesforceAdapter', () => {
         ]
       }
     ])
-    const instance = createAdapter()
-    const result = await instance.discover()
+    const result = await adapter().discover()
 
     expect(result.length).toBe(1)
     const lead = result.pop()
@@ -136,8 +153,7 @@ describe('Test SalesforceAdapter', () => {
         ]
       }
     ])
-    const instance = createAdapter()
-    const result = await instance.discover()
+    const result = await adapter().discover()
 
     expect(result.length).toBe(1)
     const lead = result.pop()
@@ -170,8 +186,7 @@ describe('Test SalesforceAdapter', () => {
         nillable: false
       }
     ])
-    const instance = createAdapter()
-    const result = await instance.discover()
+    const result = await adapter().discover()
 
     expect(result.length).toBe(1)
     const org = result.pop()
@@ -185,8 +200,7 @@ describe('Test SalesforceAdapter', () => {
     })
     SalesforceClient.prototype.create = mockCreate
 
-    const instance = createAdapter()
-    const result = await instance.add({
+    const result = await adapter().add({
       object: 'test',
       description: {
         type: 'string',
@@ -208,14 +222,55 @@ describe('Test SalesforceAdapter', () => {
     expect(object.fields[0].label).toBe('test label')
   })
 
+  it('should discover metadata object', async () => {
+    mockListSObjects()
+    mockListMetadataObjects()
+    mockSingleMetadataObject('Flow', [
+      {
+        name: 'Description',
+        soapType: 'string',
+        valueRequired: true
+      }
+    ])
+    const result = await adapter().discover()
+
+    expect(result.length).toBe(1)
+    const flow = result.pop()
+
+    expect(flow.Description.type).toBe('string')
+    expect(flow.Description.required).toBe(true)
+  })
+
+  it('should discover metadata object with picklist', async () => {
+    mockListSObjects()
+    mockListMetadataObjects()
+    mockSingleMetadataObject('Flow', [
+      {
+        name: 'Status',
+        soapType: 'Picklist',
+        valueRequired: false,
+        picklistValues: [{ defaultValue: true, value: 'BLA' }]
+      }
+    ])
+    const result = await adapter().discover()
+
+    expect(result.length).toBe(1)
+    const flow = result.pop()
+    expect(flow.Status.type).toBe('Picklist')
+    expect(flow.Status.required).toBe(false)
+    expect(flow.Status.values.length).toBe(1)
+    expect(flow.Status.values[0]).toBe('BLA')
+    // eslint-disable-next-line no-underscore-dangle
+    expect(flow.Status._default).toBe('BLA')
+  })
+
   it('should remove a salesforce metadata component', async () => {
     const mockDelete = jest.fn().mockImplementationOnce(() => {
       return { success: true }
     })
     SalesforceClient.prototype.delete = mockDelete
 
-    const instance = createAdapter()
-    const result = await instance.remove({
+    const result = await adapter().remove({
       object: 'test',
       description: {
         type: 'string',

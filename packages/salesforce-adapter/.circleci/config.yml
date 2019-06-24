@@ -36,5 +36,10 @@ jobs:
 
       - store_artifacts:
           path: reports
+      
+      # Code coverage
+      - run:
+          name: Upload coverage to codecov.io
+          command: npx codecov -f coverage/*.json
 
 

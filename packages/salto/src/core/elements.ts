@@ -48,7 +48,7 @@ export class TypeID {
 export abstract class Type {
   public static DEFAULT = '_default'
 
-  static registeredTypes: TypeMap = {}
+
   readonly typeID: TypeID
   annotations: TypeMap
   annotationsValues: Values
@@ -66,10 +66,6 @@ export abstract class Type {
     this.typeID = typeID
     // Prevents reregistration of clones, we only want to register
     // first creation
-    const key = this.typeID.getFullName()
-    if (!Type.registeredTypes[key]) {
-      Type.registeredTypes[key] = this
-    }
   }
 
   /**
@@ -237,38 +233,58 @@ export class ListType extends Type {
   }
 }
 
-/**
- * Create or returns a type according to the name provided. If the this is the first time
- * the type is requested, an empty type will be provided. Configure it from the outside as follows:
- *
- *  const saltoAddr = getType('salto_address')
- *  saltoAddr.annotations.label = getType('string')
- *  saltoAddr.fields.country = getType('string')
- *  saltoAddr.fields.city = getType('string')
- *
- * @param  {string} name the name of the type to get or create
- * @param  {PrimitiveTypes = PrimitiveTypes.OBJECT} type the type of the needed type. Used in order
- * to decide with class to create if the type is not yet registered.
- * @return {any} the requested type element.
- */
-export function getType(
-  typeID: TypeID,
-  type: PrimitiveTypes = PrimitiveTypes.OBJECT,
-  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-): any {
-  // Using any here is ugly, but I can't find a better comiling solution. TODO - fix this
-  const key = typeID.getFullName()
-  let res: Type = Type.registeredTypes[key]
-  if (!res) {
-    if (type === PrimitiveTypes.OBJECT) {
-      res = new ObjectType({ typeID })
-    } else if (type === PrimitiveTypes.LIST) {
-      res = new ListType({ typeID })
-    } else {
-      res = new PrimitiveType({ typeID, primitive: type })
-    }
+
+export class TypesRegistry {
+  registeredTypes: TypeMap
+  constructor(initTypes: Type[] = []) {
+    this.registeredTypes = {}
+    initTypes.forEach(type => this.registerType(type))
   }
-  return res
+
+  registerType(typeToRegister: Type): void {
+    const key = typeToRegister.typeID.getFullName()
+    const existingType = this.registeredTypes[key]
+    if (existingType) {
+      throw new Error('Type extension is not supported for now')
+    }
+    this.registeredTypes[key] = typeToRegister
+  }
+
+  hasType(typeID: TypeID): boolean {
+    const fullName = typeID.getFullName()
+    return Object.prototype.hasOwnProperty.call(this.registeredTypes, fullName)
+  }
+
+  getAllTypes(): Type[] {
+    return Object.values(this.registeredTypes)
+  }
+
+  getType(
+    typeID: TypeID,
+    type: PrimitiveTypes = PrimitiveTypes.OBJECT,
+    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+  ): any {
+    // Using any here is ugly, but I can't find a better comiling solution. TODO - fix this
+    const key = typeID.getFullName()
+    let res: Type = this.registeredTypes[key]
+    if (!res) {
+      if (type === PrimitiveTypes.OBJECT) {
+        res = new ObjectType({ typeID })
+      } else
+      if (type === PrimitiveTypes.LIST) {
+        res = new ListType({ typeID })
+      } else {
+        res = new PrimitiveType({ typeID, primitive: type })
+      }
+      this.registerType(res)
+    }
+    return res
+  }
+
+  merge(otherRegistry: TypesRegistry): TypesRegistry {
+    const allTypes = this.getAllTypes().concat(otherRegistry.getAllTypes())
+    return new TypesRegistry(allTypes)
+  }
 }
 
 export function isObjectType(element: Type | null): element is ObjectType {

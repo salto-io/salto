@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events'
 import {
-  Type, PrimitiveTypes, getType, TypeID,
+  Type, PrimitiveTypes, TypeID, TypesRegistry,
 } from './elements'
 
 export enum PlanActionType {
@@ -42,36 +42,38 @@ export class SaltoCore extends EventEmitter {
 
   // eslint-disable-next-line class-methods-use-this
   getAllElements(): Type[] {
-    const saltoAddr = getType(new TypeID({ adapter: 'salto', name: 'address' }))
-    saltoAddr.annotations.label = getType(new TypeID({ adapter: '', name: 'string' }))
-    saltoAddr.fields.country = getType(new TypeID({ adapter: '', name: 'string' }))
-    saltoAddr.fields.city = getType(new TypeID({ adapter: '', name: 'string' }))
+    const reg = new TypesRegistry()
+    const saltoAddr = reg.getType(new TypeID({ adapter: 'salto', name: 'address' }))
+    saltoAddr.annotations.label = reg.getType(new TypeID({ adapter: '', name: 'string' }))
+    saltoAddr.fields.country = reg.getType(new TypeID({ adapter: '', name: 'string' }))
+    saltoAddr.fields.city = reg.getType(new TypeID({ adapter: '', name: 'string' }))
 
-    const saltoOffice = getType(new TypeID({ adapter: 'salto', name: 'office' }))
-    saltoOffice.annotations.label = getType(new TypeID({ adapter: '', name: 'string' }))
-    saltoOffice.fields.name = getType(new TypeID({ adapter: '', name: 'string' }))
-    saltoOffice.fields.location = getType(new TypeID({ adapter: 'salto', name: 'address' })).clone({
+    const saltoOffice = reg.getType(new TypeID({ adapter: 'salto', name: 'office' }))
+    saltoOffice.annotations.label = reg.getType(new TypeID({ adapter: '', name: 'string' }))
+    saltoOffice.fields.name = reg.getType(new TypeID({ adapter: '', name: 'string' }))
+    saltoOffice.fields.location = reg.getType(new TypeID({ adapter: 'salto', name: 'address' })).clone({
       label: 'Office Location',
       description: 'A location of an office',
     })
 
-    const saltoEmployee = getType(new TypeID({ adapter: 'salto', name: 'employee' }))
-    saltoEmployee.fields.name = getType(new TypeID({ adapter: '', name: 'string' })).clone({
+    const saltoEmployee = reg.getType(new TypeID({ adapter: 'salto', name: 'employee' }))
+    saltoEmployee.fields.name = reg.getType(new TypeID({ adapter: '', name: 'string' })).clone({
       _required: true,
     })
-    saltoEmployee.fields.nicknames = getType(
+    saltoEmployee.fields.nicknames = reg.getType(
       new TypeID({ adapter: 'salto', name: 'nicknames' }),
       PrimitiveTypes.LIST,
     )
-    saltoEmployee.fields.nicknames.elementType = getType(new TypeID({ adapter: '', name: 'string' }))
+
+    saltoEmployee.fields.nicknames.elementType = reg.getType(new TypeID({ adapter: '', name: 'string' }))
     /* eslint-disable-next-line @typescript-eslint/camelcase */
-    saltoEmployee.fields.employee_resident = getType(new TypeID({ adapter: 'salto', name: 'address' })).clone({
+    saltoEmployee.fields.employee_resident = reg.getType(new TypeID({ adapter: 'salto', name: 'address' })).clone({
       label: 'Employee Resident',
     })
-    saltoEmployee.fields.company = getType(new TypeID({ adapter: '', name: 'string' })).clone({
+    saltoEmployee.fields.company = reg.getType(new TypeID({ adapter: '', name: 'string' })).clone({
       _default: 'salto',
     })
-    saltoEmployee.fields.office = getType(new TypeID({ adapter: 'salto', name: 'office' })).clone({
+    saltoEmployee.fields.office = reg.getType(new TypeID({ adapter: 'salto', name: 'office' })).clone({
       label: 'Based In',
     })
     saltoEmployee.fields.office.fields.name.annotationsValues[Type.DEFAULT] = 'HQ'

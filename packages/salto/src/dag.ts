@@ -1,16 +1,13 @@
 import { topologicalSort, DiGraph } from 'jsnetworkx'
 import wu from 'wu'
 
-const updateSet = <T>(target: Set<T>, source: Iterable<T>): void => {
-  wu(source).forEach((v: T) => {
-    target.add(v)
-  })
-}
+const updateSet = <T>(target: Set<T>, source: Iterable<T>):
+  void => wu(source).forEach(v => target.add(v))
 
 class DefaultMap<K, V> extends Map<K, V> {
   constructor(
     readonly initDefault: () => V,
-    entries?: ReadonlyArray<readonly [K, V]>
+    entries?: ReadonlyArray<readonly [K, V]>,
   ) {
     super(entries)
   }

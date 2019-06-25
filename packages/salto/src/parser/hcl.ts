@@ -2,7 +2,8 @@ import path from 'path'
 import * as fs from 'async-file'
 import './wasm_exec'
 
-// Not sure why eslint ignores this definition from wasm_exec.d.ts but this doesn't work without the following disable
+// Not sure why eslint ignores this definition from wasm_exec.d.ts,
+// but this doesn't work without the following disable
 // eslint-disable-next-line no-undef
 const go = new Go()
 
@@ -19,11 +20,10 @@ class HCLParser {
       })()
     }
 
-    return this.wasmData.then(data =>
-      // Not sure why eslint ignores this definition from webassembly.d.ts but this doesn't work without the following disable
-      // eslint-disable-next-line no-undef
-      WebAssembly.instantiate(data, go.importObject)
-    )
+    // Not sure why eslint ignores this definition from webassembly.d.ts,
+    //  but this doesn't work without the following disable
+    // eslint-disable-next-line no-undef
+    return this.wasmData.then(data => WebAssembly.instantiate(data, go.importObject))
   }
 
   async Parse(src: Buffer, filename: string): Promise<HCLBlock> {

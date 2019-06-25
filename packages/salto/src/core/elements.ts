@@ -78,7 +78,7 @@ export abstract class Type {
    */
   protected cloneAnnotations(): TypeMap {
     const clonedAnnotations: TypeMap = {}
-    Object.keys(this.annotations).forEach(key => {
+    Object.keys(this.annotations).forEach((key) => {
       clonedAnnotations[key] = this.annotations[key].clone()
     })
     return clonedAnnotations
@@ -94,7 +94,7 @@ export abstract class Type {
   protected annotate(annotationsValues: Values): void {
     // Should we overide? I'm adding right now as it seems more
     // usefull. (Roi R)
-    Object.keys(annotationsValues).forEach(key => {
+    Object.keys(annotationsValues).forEach((key) => {
       this.annotationsValues[key] = annotationsValues[key]
     })
   }
@@ -166,7 +166,7 @@ export class ObjectType extends Type {
 
   private cloneFields(): TypeMap {
     const clonedFields: TypeMap = {}
-    Object.keys(this.fields).forEach(key => {
+    Object.keys(this.fields).forEach((key) => {
       clonedFields[key] = this.fields[key].clone()
     })
     return clonedFields
@@ -253,7 +253,7 @@ export class ListType extends Type {
  */
 export function getType(
   typeID: TypeID,
-  type: PrimitiveTypes = PrimitiveTypes.OBJECT
+  type: PrimitiveTypes = PrimitiveTypes.OBJECT,
   /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 ): any {
   // Using any here is ugly, but I can't find a better comiling solution. TODO - fix this
@@ -280,7 +280,7 @@ export function isListType(element: Type | null): element is ListType {
 }
 
 export function isPrimitiveType(
-  element: Type | null
+  element: Type | null,
 ): element is PrimitiveType {
   return element instanceof PrimitiveType
 }

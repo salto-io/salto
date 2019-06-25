@@ -96,17 +96,17 @@ describe('Test elements.ts', () => {
     // Check you can create Primitive Type
     const st = getType(
       new TypeID({ adapter: '', name: 'string' }),
-      PrimitiveTypes.STRING
+      PrimitiveTypes.STRING,
     )
     expect(st).toBeInstanceOf(PrimitiveType)
     const ot = getType(
       new TypeID({ adapter: '', name: 'object' }),
-      PrimitiveTypes.OBJECT
+      PrimitiveTypes.OBJECT,
     )
     expect(ot).toBeInstanceOf(ObjectType)
     const lt = getType(
       new TypeID({ adapter: '', name: 'list' }),
-      PrimitiveTypes.LIST
+      PrimitiveTypes.LIST,
     )
     expect(lt).toBeInstanceOf(ListType)
   })
@@ -115,15 +115,15 @@ describe('Test elements.ts', () => {
     // Check you can create Primitive Type
     const st = getType(
       new TypeID({ adapter: '', name: 'string' }),
-      PrimitiveTypes.STRING
+      PrimitiveTypes.STRING,
     )
     const st2 = getType(
       new TypeID({ adapter: '', name: 'string' }),
-      PrimitiveTypes.STRING
+      PrimitiveTypes.STRING,
     )
     const st3 = getType(
       new TypeID({ adapter: '', name: 'string2' }),
-      PrimitiveTypes.STRING
+      PrimitiveTypes.STRING,
     )
     expect(st).toBe(st2)
     expect(st).not.toBe(st3)
@@ -147,10 +147,10 @@ describe('Test elements.ts', () => {
     // Object
     const saltoAddr = getType(new TypeID({ adapter: 'salto', name: 'address' }))
     saltoAddr.annotations.label = getType(
-      new TypeID({ adapter: '', name: 'string' })
+      new TypeID({ adapter: '', name: 'string' }),
     )
     saltoAddr.fields.country = getType(
-      new TypeID({ adapter: '', name: 'string' })
+      new TypeID({ adapter: '', name: 'string' }),
     )
     saltoAddr.fields.city = getType(new TypeID({ adapter: '', name: 'string' }))
 
@@ -160,7 +160,7 @@ describe('Test elements.ts', () => {
 
     const nicknames = getType(
       new TypeID({ adapter: 'salto', name: ' nicknamed' }),
-      PrimitiveTypes.LIST
+      PrimitiveTypes.LIST,
     )
     const nicknames2 = nicknames.clone()
 
@@ -169,7 +169,7 @@ describe('Test elements.ts', () => {
 
     const prim = getType(
       new TypeID({ adapter: '', name: 'prim' }),
-      PrimitiveTypes.STRING
+      PrimitiveTypes.STRING,
     )
     const prim2 = prim.clone()
 
@@ -186,7 +186,7 @@ describe('Test elements.ts', () => {
     // Object
     const saltoAddr = getType(new TypeID({ adapter: 'salto', name: 'address' }))
     saltoAddr.fields.country = getType(
-      new TypeID({ adapter: '', name: 'string' })
+      new TypeID({ adapter: '', name: 'string' }),
     )
     saltoAddr.fields.city = getType(new TypeID({ adapter: '', name: 'string' }))
 
@@ -196,7 +196,7 @@ describe('Test elements.ts', () => {
 
     const nicknames = getType(
       new TypeID({ adapter: 'salto', name: ' nicknamed' }),
-      PrimitiveTypes.LIST
+      PrimitiveTypes.LIST,
     )
     const nicknames2 = nicknames.clone(annotations)
 
@@ -205,7 +205,7 @@ describe('Test elements.ts', () => {
 
     const prim = getType(
       new TypeID({ adapter: '', name: 'prim' }),
-      PrimitiveTypes.STRING
+      PrimitiveTypes.STRING,
     )
     const prim2 = prim.clone(annotations)
 
@@ -216,15 +216,15 @@ describe('Test elements.ts', () => {
   it('should provide type guard for all types', () => {
     const pt = getType(
       new TypeID({ adapter: 'test', name: 'pt1' }),
-      PrimitiveTypes.STRING
+      PrimitiveTypes.STRING,
     )
     const ot = getType(
       new TypeID({ adapter: 'test', name: 'ot1' }),
-      PrimitiveTypes.OBJECT
+      PrimitiveTypes.OBJECT,
     )
     const lt = getType(
       new TypeID({ adapter: 'test', name: 'lt1' }),
-      PrimitiveTypes.LIST
+      PrimitiveTypes.LIST,
     )
     expect(isObjectType(ot)).toBeTruthy()
     expect(isListType(lt)).toBeTruthy()
@@ -234,11 +234,11 @@ describe('Test elements.ts', () => {
   it('should allow clone on a list element with an element type', () => {
     const pt = getType(
       new TypeID({ adapter: 'test', name: 'pt1' }),
-      PrimitiveTypes.STRING
+      PrimitiveTypes.STRING,
     )
     const lt1 = getType(
       new TypeID({ adapter: 'test', name: 'list1' }),
-      PrimitiveTypes.LIST
+      PrimitiveTypes.LIST,
     )
     lt1.elementType = pt
     const lt2 = lt1.clone()

@@ -35,7 +35,7 @@ function doDiscover(): void {
 
 function doDescribe(
   searchWords: string,
-  cmd: { recursionLevel: number }
+  cmd: { recursionLevel: number },
 ): void {
   cli.describe(parseDotSeperate(searchWords), cmd.recursionLevel)
 }
@@ -49,23 +49,23 @@ class SaltoCommander {
       .version('0.1.0')
       .name('salto-cli')
       .description(
-        'salto is a business operations as code tool, allowing one to manage all aspects of his business operations systems in code.'
+        'salto is a business operations as code tool, allowing one to manage all aspects of his business operations systems in code.',
       )
 
     this.command
       .command('apply')
       .description(
-        'Applies the blueprints in the current working directory onto the related services.'
+        'Applies the blueprints in the current working directory onto the related services.',
       )
       .option(
         '-d, --blueprintsdir <value>',
-        'A path to a directory containing the needed blueprints.'
+        'A path to a directory containing the needed blueprints.',
       )
       .option(
         '-b, --blueprint <value>',
         'A path to an input blueprint file',
         collect,
-        []
+        [],
       )
       .option('-f, --force', 'A path to an input blueprint file')
       .action(doApply)
@@ -73,24 +73,24 @@ class SaltoCommander {
     this.command
       .command('plan')
       .description(
-        'Shows the planned actions which will occur in the case of the next *apply* operation.'
+        'Shows the planned actions which will occur in the case of the next *apply* operation.',
       )
       .option(
         '-d, --blueprintsdir <value>',
-        'A path to a directory containing the needed blueprints.'
+        'A path to a directory containing the needed blueprints.',
       )
       .option(
         '-b, --blueprint <value>',
         'A path to an input blueprint file',
         collect,
-        []
+        [],
       )
       .action(doPlan)
 
     this.command
       .command('discover')
       .description(
-        'Generates blueprints and state files which represent the difference between the current state of the related services, and the configuration and state currently captured by salto.'
+        'Generates blueprints and state files which represent the difference between the current state of the related services, and the configuration and state currently captured by salto.',
       )
       .action(doDiscover)
 
@@ -100,10 +100,10 @@ class SaltoCommander {
         '-r --recursion-level <number>',
         'Set how many configuations levels will be shown',
         parseIntArg,
-        2
+        2,
       )
       .description(
-        'Shows all available types and attributes for the adapters of the related services.'
+        'Shows all available types and attributes for the adapters of the related services.',
       )
       .action(doDescribe)
   }

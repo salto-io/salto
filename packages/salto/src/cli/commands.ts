@@ -93,16 +93,12 @@ export default class Cli {
    * @returns {Promise<Array<string>>} A promise whos input is an array of the bp files pathes.
    */
   private static async getBluePrintsFromDir(
-    blueprintsDir: string
+    blueprintsDir: string,
   ): Promise<string[]> {
     const dirFiles = await fs.readdir(blueprintsDir)
     return dirFiles
-      .filter(f => {
-        return path.extname(f).toLowerCase() === '.bp'
-      })
-      .map(f => {
-        return path.join(blueprintsDir, f)
-      })
+      .filter(f => path.extname(f).toLowerCase() === '.bp')
+      .map(f => path.join(blueprintsDir, f))
   }
 
   /**
@@ -124,7 +120,7 @@ export default class Cli {
    */
   private static async loadBlueprints(
     blueprintsFiles: string[],
-    blueprintsDir?: string
+    blueprintsDir?: string,
   ): Promise<string[]> {
     try {
       let allBlueprintsFiles = blueprintsFiles
@@ -144,7 +140,8 @@ export default class Cli {
   /** ****************************************** */
 
   /**
-   * Normalize the values returned by the action plan object in order to print them nicely to the screen.
+   * Normalize the values returned by the action plan object in order to print them nicely to
+   * the screen.
    * This is needed for example in order to print strings with enclosing quatation marks, etc.
    * @param  {any} value the plan value to normalize
    * @return {string} a normnalized string of the value, ready to be printed
@@ -173,20 +170,20 @@ export default class Cli {
         [PlanActionType.ADD]: 0,
         [PlanActionType.MODIFY]: 0,
         [PlanActionType.REMOVE]: 0,
-      }
+      },
     )
     return (
-      `${chalk.bold('Plan: ')}${counter[PlanActionType.ADD]} to add` +
-      `  ${counter[PlanActionType.MODIFY]} to change` +
-      `  ${counter[PlanActionType.REMOVE]} to remove.`
+      `${chalk.bold('Plan: ')}${counter[PlanActionType.ADD]} to add`
+      + `  ${counter[PlanActionType.MODIFY]} to change`
+      + `  ${counter[PlanActionType.REMOVE]} to remove.`
     )
   }
 
   private static createdActionStepValue(step: PlanAction): string {
     if (step.actionType === PlanActionType.MODIFY) {
       return (
-        `${Cli.normalizeValuePrint(step.oldValue)}` +
-        ` => ${Cli.normalizeValuePrint(step.newValue)}`
+        `${Cli.normalizeValuePrint(step.oldValue)}`
+        + ` => ${Cli.normalizeValuePrint(step.newValue)}`
       )
     }
     if (step.actionType === PlanActionType.ADD) {
@@ -197,7 +194,7 @@ export default class Cli {
 
   private static createPlanStepTitle(
     step: PlanAction,
-    printModifiers?: boolean
+    printModifiers?: boolean,
   ): string {
     const modifier = printModifiers ? Prompts.MODIFIERS[step.actionType] : ' '
     const stepDesc = `${modifier} ${step.name}`
@@ -210,36 +207,31 @@ export default class Cli {
   private static createPlanStepOutput(
     step: PlanAction,
     printModifiers: boolean,
-    identLevel: number = 1
+    identLevel: number = 1,
   ): string {
     const stepTitle = Cli.createPlanStepTitle(step, printModifiers)
     const stepChildren = step.subChanges.map(
       (subChange: PlanAction): string => {
-        const printChildModifiers =
-          subChange.actionType === PlanActionType.MODIFY
+        const printChildModifiers = subChange.actionType === PlanActionType.MODIFY
         return this.createPlanStepOutput(
           subChange,
           printChildModifiers,
-          identLevel + 1
+          identLevel + 1,
         )
-      }
+      },
     )
 
     const allLines = [stepTitle].concat(stepChildren)
 
     const prefix = '\t'.repeat(identLevel)
     return allLines
-      .map(line => {
-        return prefix + line
-      })
+      .map(line => prefix + line)
       .join('\n')
   }
 
   private static createPlanStepsOutput(plan: PlanAction[]): string {
     return plan
-      .map(step => {
-        return Cli.createPlanStepOutput(step, true)
-      })
+      .map(step => Cli.createPlanStepOutput(step, true))
       .join('\n\n')
   }
 
@@ -259,11 +251,11 @@ export default class Cli {
   }
 
   /**
-   * Create a plan based on the provided blueprints. This is done by invoking the core apply function
-   * with the dry run flag set to true.
+   * Create a plan based on the provided blueprints. This is done by invoking the core apply
+   * function with the dry run flag set to true.
    * @param  {Array<string>} blueprints an array contaning the content of the blueprints files.
-   * @return {Promise} An array containing the plan action objects for the apply that would take place based
-   * on the current blueprints and state.
+   * @return {Promise} An array containing the plan action objects for the apply that would take
+   * place based on the current blueprints and state.
    */
   private async createPlan(blueprints: string[]): Promise<PlanAction[]> {
     try {
@@ -286,7 +278,7 @@ export default class Cli {
     // Need to cast to any as TS have issues with date subtruction
     if (this.currentActionStartTime) {
       let elapsed = Math.ceil(
-        (new Date().getTime() - this.currentActionStartTime.getTime()) / 1000
+        (new Date().getTime() - this.currentActionStartTime.getTime()) / 1000,
       )
       elapsed -= elapsed % 5
       const action = this.currentAction
@@ -295,8 +287,8 @@ export default class Cli {
           Cli.body(
             `${action.name}: Still ${
               Prompts.STARTACTION[action.actionType]
-            }... (${Math.ceil(elapsed)}s elapsed)`
-          )
+            }... (${Math.ceil(elapsed)}s elapsed)`,
+          ),
         )
       }
     }
@@ -311,18 +303,18 @@ export default class Cli {
    */
   private updateCurrentAction(action?: PlanAction): void {
     if (
-      this.currentActionPollerID &&
-      this.currentAction &&
-      this.currentActionStartTime
+      this.currentActionPollerID
+      && this.currentAction
+      && this.currentActionStartTime
     ) {
       clearInterval(this.currentActionPollerID)
       const elapsed = Math.ceil(
-        (new Date().getTime() - this.currentActionStartTime.getTime()) / 1000
+        (new Date().getTime() - this.currentActionStartTime.getTime()) / 1000,
       )
       Cli.print(
-        `${this.currentAction.name}: ` +
-          `${Prompts.ENDACTION[this.currentAction.actionType]} ` +
-          `completed after ${elapsed}s`
+        `${this.currentAction.name}: `
+          + `${Prompts.ENDACTION[this.currentAction.actionType]} `
+          + `completed after ${elapsed}s`,
       )
     }
     this.currentAction = action
@@ -331,13 +323,13 @@ export default class Cli {
       const output = [
         Cli.emptyLine(),
         Cli.body(
-          `${action.name}: ${Prompts.STARTACTION[action.actionType]}...`
+          `${action.name}: ${Prompts.STARTACTION[action.actionType]}...`,
         ),
       ].join('\n')
       Cli.print(output)
       this.currentActionPollerID = setInterval(
         () => this.pollCurentAction(),
-        this.currentActionPollerInterval
+        this.currentActionPollerInterval,
       )
     }
   }
@@ -377,7 +369,7 @@ export default class Cli {
   // eslint-disable-next-line no-console
   private formatSearchResults(
     result: SearchResult,
-    recursionLevel: number = 2
+    recursionLevel: number = 2,
   ): string {
     if (!(result && result.element)) {
       return Cli.notifyDescribeNoMatch()
@@ -396,7 +388,7 @@ export default class Cli {
   private static getMatchingElementName(
     searchWord: string,
     elementsNames: string[],
-    exactMatchOnly: boolean = true
+    exactMatchOnly: boolean = true,
   ): OptionalString {
     const options = {
       shouldSort: true,
@@ -420,14 +412,14 @@ export default class Cli {
   private static findElement(
     keyParts: string[],
     elements: TypeMap,
-    exactMatchOnly: boolean = true
+    exactMatchOnly: boolean = true,
   ): SearchResult {
     const searchWord = keyParts[0]
     const keyPartsRem = keyParts.slice(1)
     const bestKey = Cli.getMatchingElementName(
       searchWord,
       Object.keys(elements),
-      exactMatchOnly
+      exactMatchOnly,
     )
 
     if (!bestKey) {
@@ -443,10 +435,10 @@ export default class Cli {
 
       return res
         ? {
-            key: `${bestKey}.${res.key}`,
-            element: res.element,
-            isGuess: isGuess || res.isGuess,
-          }
+          key: `${bestKey}.${res.key}`,
+          element: res.element,
+          isGuess: isGuess || res.isGuess,
+        }
         : null
     }
     return { key: bestKey, element: bestElement, isGuess }
@@ -482,7 +474,7 @@ export default class Cli {
     try {
       const blueprints = await Cli.loadBlueprints(
         blueprintsFiles,
-        blueprintsDir
+        blueprintsDir,
       )
       const plan = await this.createPlan(blueprints)
       const output = [
@@ -510,12 +502,12 @@ export default class Cli {
   async apply(
     blueprintsFiles: string[],
     blueprintsDir?: string,
-    force?: boolean
+    force?: boolean,
   ): Promise<void> {
     try {
       const blueprints = await Cli.loadBlueprints(
         blueprintsFiles,
-        blueprintsDir
+        blueprintsDir,
       )
       const plan = await this.createPlan(blueprints)
       const planOutput = [
@@ -524,8 +516,7 @@ export default class Cli {
         Cli.createPlanOutput(plan),
       ].join('\n')
       Cli.print(planOutput)
-      const shouldExecute =
-        force || (await Cli.getUserBooleanInput(Prompts.SHOULDEXECUTREPLAN))
+      const shouldExecute = force || (await Cli.getUserBooleanInput(Prompts.SHOULDEXECUTREPLAN))
       if (shouldExecute) {
         Cli.print(Cli.header(Prompts.STARTAPPLYEXEC))
         this.executePlan(blueprints)
@@ -539,13 +530,14 @@ export default class Cli {
 
   async describe(
     searchWords: string[],
-    recursionLevel: number = 2
+    recursionLevel: number = 2,
   ): Promise<void> {
     const allElements = this.core.getAllElements()
     const elementsMap = Cli.createElementsMap(allElements)
-    const searchResult =
-      Cli.findElement(searchWords, elementsMap) || // First we try with exact match only
-      Cli.findElement(searchWords, elementsMap, false) // Then we allow near matches
+    // First we try with exact match only
+    const searchResult = Cli.findElement(searchWords, elementsMap)
+      // Then we allow near matches
+      || Cli.findElement(searchWords, elementsMap, false)
     Cli.print(this.formatSearchResults(searchResult, recursionLevel))
   }
 

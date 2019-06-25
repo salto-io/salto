@@ -12,10 +12,7 @@ declare class HclParserArgs {
 
 declare class HclParserReturn {
   value: HCLBlock
-  errors: {
-    parse: string[]
-    convert: string[]
-  }
+  errors: string[]
 }
 
 declare namespace NodeJS {

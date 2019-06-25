@@ -6,22 +6,33 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-// convertValue converts a cty.Value to the appropriate go native type
-func convertValue(val cty.Value) interface{} {
+// convertValue converts a cty.Value to the appropriate go native type so that it can be
+// serialized to javascript
+func convertValue(val cty.Value, path string) interface{} {
 	t := val.Type()
 	switch {
+	case t.HasDynamicTypes():
+		// Dynamic type means this is an expression that has external references
+		// We do not support this scenario yet but for now we also don't want to crash
+		return "*** dynamic ***"
+
+	case !val.IsKnown():
+		// This can happen with "<<EOF" type expressions that also reference variables
+		// We do not support this scenario yet but for now we also don't want to crash
+		return "*** unknown ***"
+
 	case t.IsTupleType():
 		res := make([]interface{}, val.LengthInt())
 		var i int64
 		for i = 0; i < int64(val.LengthInt()); i++ {
-			res[i] = convertValue(val.Index(cty.NumberIntVal(i)))
+			res[i] = convertValue(val.Index(cty.NumberIntVal(i)), path+"."+string(i))
 		}
 		return res
 
 	case t.IsObjectType():
 		res := map[string]interface{}{}
 		for k, v := range val.AsValueMap() {
-			res[k] = convertValue(v)
+			res[k] = convertValue(v, path+"."+k)
 		}
 		return res
 
@@ -35,7 +46,7 @@ func convertValue(val cty.Value) interface{} {
 		case cty.Bool:
 			return val.True()
 		default:
-			panic("unknown cty primitve type: " + t.FriendlyName())
+			panic("unknown cty primitve type: " + t.FriendlyName() + " at " + path)
 		}
 
 	// We should never get the following types from parsing since they will be parsed as less specific types
@@ -46,8 +57,7 @@ func convertValue(val cty.Value) interface{} {
 		panic("maps are not expected here - we expect to get an object type instead")
 	}
 
-	panic("unknown type to convert: " + t.FriendlyName())
-	return nil
+	panic("unknown type to convert: " + t.FriendlyName() + " at " + path)
 }
 
 // hclConverter walks the HCL tree and converts each node to a native go
@@ -96,7 +106,11 @@ func (maker *hclConverter) Enter(node hclsyntax.Node) hcl.Diagnostics {
 
 	case *hclsyntax.Block:
 		blk := node.(*hclsyntax.Block)
-		maker.nestedConverter = newHclConverter(maker.path + "/" + blk.Type)
+		pathAddition := blk.Type
+		for _, l := range blk.Labels {
+			pathAddition += "_" + l
+		}
+		maker.nestedConverter = newHclConverter(maker.path + "/" + pathAddition)
 	}
 	return hcl.Diagnostics{}
 }
@@ -119,7 +133,7 @@ func (maker *hclConverter) Exit(node hclsyntax.Node) hcl.Diagnostics {
 		attr := node.(*hclsyntax.Attribute)
 		val, evalErrs := attr.Expr.Value(nil)
 		// Convert evaluated value to something we can serialze to javascript
-		maker.JSValue["attrs"].(map[string]interface{})[attr.Name] = convertValue(val)
+		maker.JSValue["attrs"].(map[string]interface{})[attr.Name] = convertValue(val, maker.nestedConverter.path)
 
 		maker.nestedConverter = nil
 		return evalErrs

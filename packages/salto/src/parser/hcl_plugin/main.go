@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"syscall/js"
 
 	"github.com/hashicorp/hcl2/hcl"
@@ -9,6 +10,15 @@ import (
 
 func parseHCL(src []byte, filename string) (*hcl.File, hcl.Diagnostics) {
 	return hclsyntax.ParseConfig(src, filename, hcl.InitialPos)
+}
+
+func formatErr(err *hcl.Diagnostic) string {
+	return fmt.Sprintf(
+		"%s: %s: %s",
+		err.Subject.String(),
+		err.Summary,
+		err.Detail,
+	)
 }
 
 // main communicates with javascript by looking at a global object
@@ -29,21 +39,17 @@ func main() {
 	convErrs := hclsyntax.Walk(body.Body.(*hclsyntax.Body), jsMaker)
 
 	// Extract meaningful errors to report back
-	parseErrTxt := make([]interface{}, len(parseErrs))
+	errors := make([]interface{}, len(parseErrs)+len(convErrs))
 	for i, err := range parseErrs {
-		parseErrTxt[i] = err.Summary
+		errors[i] = formatErr(err)
 	}
-	convErrsTxt := make([]interface{}, len(convErrs))
 	for i, err := range convErrs {
-		convErrsTxt[i] = err.Summary
+		errors[len(parseErrs)+i] = formatErr(err)
 	}
 
 	// Set return value
 	js.Global().Set("hclParserReturn", map[string]interface{}{
-		"value": jsMaker.JSValue,
-		"errors": map[string]interface{}{
-			"parse":   parseErrTxt,
-			"convert": convErrsTxt,
-		},
+		"value":  jsMaker.JSValue,
+		"errors": errors,
 	})
 }

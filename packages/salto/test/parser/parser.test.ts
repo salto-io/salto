@@ -2,13 +2,11 @@ import HCLParser from '../../src/parser/hcl'
 
 describe('HCL Parser', () => {
   it('parses adapter config block', async () => {
-    expect.assertions(4)
-
     const configBlock = `salesforce { 
       user = "me" 
     }`
 
-    const body = await HCLParser.Parse(Buffer.from(configBlock), 'none')
+    const { body } = await HCLParser.Parse(Buffer.from(configBlock), 'none')
     expect(body.blocks.length).toEqual(1)
     const config = body.blocks[0]
     expect(config.type).toEqual('salesforce')
@@ -27,7 +25,7 @@ describe('HCL Parser', () => {
       }
     }`
 
-    const body = await HCLParser.Parse(Buffer.from(typeDefBlock), 'none')
+    const { body } = await HCLParser.Parse(Buffer.from(typeDefBlock), 'none')
     expect(body.blocks.length).toEqual(1)
     const typeBlock = body.blocks[0]
     expect(typeBlock.type).toEqual('type')
@@ -54,7 +52,10 @@ describe('HCL Parser', () => {
       ]
     }`
 
-    const body = await HCLParser.Parse(Buffer.from(instanceDefBlock), 'none')
+    const { body } = await HCLParser.Parse(
+      Buffer.from(instanceDefBlock),
+      'none',
+    )
     expect(body.blocks.length).toEqual(1)
     const instBlock = body.blocks[0]
     expect(instBlock.type).toEqual('salto_employee')
@@ -63,5 +64,37 @@ describe('HCL Parser', () => {
     expect(instBlock.attrs.name).toEqual('person')
     expect(instBlock.attrs).toHaveProperty('nicknames')
     expect(instBlock.attrs.nicknames).toEqual(['a', 's', 'd'])
+  })
+
+  it('parses multiline strings', async () => {
+    const blockDef = `type label {
+      thing = <<EOF
+        omg
+        asd
+        EOF
+    }`
+
+    const { body } = await HCLParser.Parse(Buffer.from(blockDef), 'none')
+    expect(body.blocks.length).toEqual(1)
+    expect(body.blocks[0].attrs).toHaveProperty('thing')
+    expect(body.blocks[0].attrs.thing).toEqual('        omg\n        asd\n')
+  })
+
+  describe('parse error', () => {
+    const blockDef = 'type some.thing {}'
+    let parseErrors: string[]
+
+    beforeAll(async () => {
+      const { errors } = await HCLParser.Parse(Buffer.from(blockDef), 'none')
+      parseErrors = errors
+    })
+
+    it('is not empty', () => {
+      expect(parseErrors.length).not.toEqual(0)
+    })
+
+    it('contains the error location', () => {
+      expect(parseErrors[0]).toContain('none:1')
+    })
   })
 })

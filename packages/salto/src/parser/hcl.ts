@@ -26,7 +26,10 @@ class HCLParser {
     return this.wasmData.then(data => WebAssembly.instantiate(data, go.importObject))
   }
 
-  async Parse(src: Buffer, filename: string): Promise<HCLBlock> {
+  async Parse(
+    src: Buffer,
+    filename: string,
+  ): Promise<{ body: HCLBlock; errors: string[] }> {
     const wasmModule = await this.wasmModule
 
     try {
@@ -38,7 +41,10 @@ class HCLParser {
       // Call parse function from go
       await go.run(wasmModule.instance)
       // Return value should be populated by the above call
-      return global.hclParserReturn.value
+      return {
+        body: global.hclParserReturn.value,
+        errors: global.hclParserReturn.errors,
+      }
     } finally {
       // cleanup args and return values
       delete global.hclParserArgs

@@ -311,4 +311,82 @@ describe('Test elements.ts', () => {
     expect(mergedReg.hasType(pt.typeID)).toBe(true)
     expect(mergedReg.hasType(pt2.typeID)).toBe(true)
   })
+
+  it('should return adapter dependency for all types', () => {
+    const pt = new PrimitiveType({
+      typeID: new TypeID({ adapter: 'salto', name: 'prim' }),
+      primitive: PrimitiveTypes.STRING,
+      annotations: {},
+      annotationsValues: {},
+    })
+
+    const ot = new ObjectType({
+      typeID: new TypeID({ adapter: 'salto', name: 'obj' }),
+      fields: {
+        strfield: pt,
+      },
+      annotations: {},
+      annotationsValues: {},
+    })
+
+    const lt = new ListType({
+      typeID: new TypeID({ adapter: 'salto', name: 'list' }),
+      annotations: {},
+      annotationsValues: {},
+    })
+
+    const adapterTypeId = new TypeID({adapter: 'salto'})
+    expect(pt.getDependencies()).toContainEqual(adapterTypeId)
+    expect(ot.getDependencies()).toContainEqual(adapterTypeId)
+    expect(lt.getDependencies()).toContainEqual(adapterTypeId)
+  })
+
+    it('should return field dependency for object types', () => {
+    const pt = new PrimitiveType({
+      typeID: new TypeID({ adapter: 'salto', name: 'prim' }),
+      primitive: PrimitiveTypes.STRING,
+      annotations: {},
+      annotationsValues: {},
+    })
+
+    const ot = new ObjectType({
+      typeID: new TypeID({ adapter: 'salto', name: 'obj' }),
+      fields: {
+        strfield: pt,
+      },
+      annotations: {},
+      annotationsValues: {},
+    })
+
+    expect(ot.getDependencies()).toContainEqual(pt.typeID)
+  })
+
+  it('should return elementType dependency for list types', () => {
+    const pt = new PrimitiveType({
+      typeID: new TypeID({ adapter: 'salto', name: 'prim' }),
+      primitive: PrimitiveTypes.STRING,
+      annotations: {},
+      annotationsValues: {},
+    })
+
+    const lt = new ListType({
+      typeID: new TypeID({ adapter: 'salto', name: 'list' }),
+      elementType: pt,
+      annotations: {},
+      annotationsValues: {},
+    })
+
+    expect(lt.getDependencies()).toContainEqual(pt.typeID)
+  })
+
+  it('should return no dependencies for adapter element (with no fields)', () => {
+    const ot = new ObjectType({
+      typeID: new TypeID({ adapter: 'salto' }),
+      fields: {
+      },
+      annotations: {},
+      annotationsValues: {},
+    })
+    expect(ot.getDependencies()).toHaveLength(0)
+  })
 })

@@ -95,6 +95,17 @@ export abstract class Type {
     })
   }
 
+  private getAdapterDependencies(): TypeID[] {
+    if (this.typeID.adapter && this.typeID.name) { //Not an adapter type or a builtin type
+      return [new TypeID({ adapter: this.typeID.adapter })]
+    }
+    return []
+  }
+
+  getDependencies(): TypeID[] {
+    return this.getAdapterDependencies()
+  }
+
   /**
    * Return an independent copy of this instance. Needs to be implemented
    * by each subclass as this is structure dependent.
@@ -168,6 +179,18 @@ export class ObjectType extends Type {
     return clonedFields
   }
 
+  private getFieldsDependencies(): TypeID[] {
+    const allFieldsTypeID = Object.values(this.fields).map(type => type.typeID)
+    const dependenciesSet = new Set(allFieldsTypeID)
+    return [...dependenciesSet]
+  }
+
+  getDependencies(): TypeID[] {
+    const baseDependencies = super.getDependencies()
+    const fieldDependencies = this.getFieldsDependencies()
+    return baseDependencies.concat(fieldDependencies)
+  }
+
   /**
    * Return an independent copy of this instance.
    * @return {ObjectType} the cloned instance
@@ -208,6 +231,19 @@ export class ListType extends Type {
   }) {
     super({ typeID, annotations, annotationsValues })
     this.elementType = elementType
+  }
+
+  private getElementTypeDependencies(): TypeID[] {
+    if (this.elementType) {
+      return [this.elementType.typeID]
+    }
+    return []
+  }
+
+  getDependencies(): TypeID[] {
+    const baseDependencies = super.getDependencies()
+    const elementTypeDependencies = this.getElementTypeDependencies()
+    return baseDependencies.concat(elementTypeDependencies)
   }
 
   /**

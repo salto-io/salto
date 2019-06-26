@@ -31,25 +31,51 @@ class HCLParser {
     return this.wasmModule.then(module => WebAssembly.instantiate(module, go.importObject))
   }
 
-  async Parse(
-    src: Buffer,
-    filename: string,
-  ): Promise<{ body: HCLBlock; errors: string[] }> {
+  async Parse(src: Buffer, filename: string): Promise<{ body: HCLBlock; errors: string[] }> {
     try {
-      // Setup arguments to parse function
-      global.hclParserArgs = {
-        src,
-        filename,
-      }
-      // Call parse function from go
-      await go.run(await this.wasmInstance)
+      await new Promise<void>(async (resolve) => {
+        // Setup arguments to parse function
+        global.hclParserFunc = 'parse'
+        global.hclParserArgs = {
+          src,
+          filename,
+          callback: resolve,
+        }
+
+        // Call parse from go, this will eventually call resolve through the callback
+        // We use await here so that the promise ctor will catch any errors that may arise from go
+        await go.run(await this.wasmInstance)
+      })
+
       // Return value should be populated by the above call
-      return {
-        body: global.hclParserReturn.value,
-        errors: global.hclParserReturn.errors,
-      }
+      return global.hclParserReturn as HclParseReturn
     } finally {
       // cleanup args and return values
+      delete global.hclParserFunc
+      delete global.hclParserArgs
+      delete global.hclParserReturn
+    }
+  }
+
+  async Dump(body: HCLBlock): Promise<Buffer> {
+    try {
+      await new Promise<void>(async (resolve) => {
+        // Setup arguments to dump function
+        global.hclParserFunc = 'dump'
+        global.hclParserArgs = {
+          body,
+          callback: resolve,
+        }
+        // Call dump from go, this will eventually call resolve through the callback
+        // We use await here so that the promise ctor will catch any errors that may arise from go
+        await go.run(await this.wasmInstance)
+      })
+
+      // Return value should be populated by the above call
+      return global.hclParserReturn as HclDumpReturn
+    } finally {
+      // cleanup args and return values
+      delete global.hclParserFunc
       delete global.hclParserArgs
       delete global.hclParserReturn
     }

@@ -5,19 +5,28 @@ declare class HCLBlock {
   blocks: HCLBlock[]
 }
 
-declare class HclParserArgs {
+declare class HclParseArgs {
   src: Buffer
   filename: string
+  callback: () => void
 }
 
-declare class HclParserReturn {
-  value: HCLBlock
+declare class HclParseReturn {
+  body: HCLBlock
   errors: string[]
 }
 
+declare class HclDumpArgs {
+  body: HCLBlock
+  callback: () => void
+}
+
+type HclDumpReturn = Buffer
+
 declare namespace NodeJS {
   interface Global {
-    hclParserArgs: HclParserArgs
-    hclParserReturn: HclParserReturn
+    hclParserFunc: string
+    hclParserArgs: HclParseArgs | HclDumpArgs
+    hclParserReturn: HclParseReturn | HclDumpReturn
   }
 }

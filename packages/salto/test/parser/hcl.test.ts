@@ -98,3 +98,49 @@ describe('HCL Parser', () => {
     })
   })
 })
+
+describe('HCL dump', () => {
+  const body = {
+    attrs: {},
+    blocks: [
+      {
+        type: 'type',
+        labels: ['lbl1', 'lbl2'],
+        attrs: {
+          attr: {
+            number: 1,
+            str: 'string',
+            lst: ['val1', 'val2'],
+            empty: [],
+            nested: {
+              val: 'so deep',
+            },
+          },
+        },
+        blocks: [],
+      },
+    ],
+  } as unknown
+  let serialized: string
+
+  beforeAll(async () => {
+    const buffer = await HCLParser.Dump(body as HCLBlock)
+    serialized = buffer.toString()
+  })
+
+  it('dumps type and labels', () => {
+    expect(serialized).toMatch('type "lbl1" "lbl2" {')
+  })
+  it('dumps numbers', () => {
+    expect(serialized).toMatch('number = 1')
+  })
+  it('dumps lists', () => {
+    expect(serialized).toMatch('lst = ["val1", "val2"]')
+  })
+  it('dumps empty list', () => {
+    expect(serialized).toMatch('empty = []')
+  })
+  it('handles nested attributes', () => {
+    expect(serialized).toMatch(/nested = { val = "so deep" }/m)
+  })
+})

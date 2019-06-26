@@ -6,11 +6,8 @@ import (
 
 	"github.com/hashicorp/hcl2/hcl"
 	"github.com/hashicorp/hcl2/hcl/hclsyntax"
+	"github.com/hashicorp/hcl2/hclwrite"
 )
-
-func parseHCL(src []byte, filename string) (*hcl.File, hcl.Diagnostics) {
-	return hclsyntax.ParseConfig(src, filename, hcl.InitialPos)
-}
 
 func formatErr(err *hcl.Diagnostic) string {
 	return fmt.Sprintf(
@@ -21,18 +18,21 @@ func formatErr(err *hcl.Diagnostic) string {
 	)
 }
 
-// main communicates with javascript by looking at a global object
-// we use this method because go does not support exporting functions in web assembly yet
-// see: https://github.com/golang/go/issues/25612
-func main() {
-	args := js.Global().Get("hclParserArgs")
-
+// ParseHCL parses a buffer with HCL data and returns the structure
+// Args:
+// 	src: buffer with data to parse
+// 	filename: the filename to include in error messages
+//
+// Returns:
+// 	value: The parsed body
+// 	errors: a list of error strings
+func ParseHCL(args js.Value) interface{} {
 	// Get input parameters
 	src := []byte(args.Get("src").String())
 	filename := args.Get("filename").String()
 
 	// Parse
-	body, parseErrs := parseHCL(src, filename)
+	body, parseErrs := hclsyntax.ParseConfig(src, filename, hcl.InitialPos)
 
 	// Serialize the body to a javascript compatible object
 	jsMaker := newHclConverter("#")
@@ -47,9 +47,50 @@ func main() {
 		errors[len(parseErrs)+i] = formatErr(err)
 	}
 
-	// Set return value
-	js.Global().Set("hclParserReturn", map[string]interface{}{
-		"value":  jsMaker.JSValue,
+	return map[string]interface{}{
+		"body":   jsMaker.JSValue,
 		"errors": errors,
-	})
+	}
+}
+
+// DumpHCL formats blocks to HCL syntax
+// Args:
+//  body: an object to be serialized to HCL
+//
+// Returns:
+//  value: A buffer with the serialized HCL
+func DumpHCL(args js.Value) interface{} {
+	file := hclwrite.NewEmptyFile()
+
+	fillBody(file.Body(), args.Get("body"))
+
+	return string(file.Bytes())
+}
+
+var exportedFuncs = map[string]func(js.Value) interface{}{
+	"parse": ParseHCL,
+	"dump":  DumpHCL,
+}
+
+// main communicates with javascript by looking at a global object
+// we use this method because go does not support exporting functions in web assembly yet
+// see: https://github.com/golang/go/issues/25612
+func main() {
+	funcName := js.Global().Get("hclParserFunc").String()
+	args := js.Global().Get("hclParserArgs")
+
+	op, exists := exportedFuncs[funcName]
+	var ret interface{}
+	if !exists {
+		ret = map[string]interface{}{
+			"errors": []interface{}{"Unknown function name " + funcName},
+		}
+	} else {
+		ret = op(args)
+	}
+
+	js.Global().Set("hclParserReturn", ret)
+	// Signal JS that we finished
+	callback := args.Get("callback")
+	callback.Invoke()
 }

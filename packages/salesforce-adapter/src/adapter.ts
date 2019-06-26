@@ -1,6 +1,7 @@
+/* eslint-disable class-methods-use-this */
 import { Field, SaveResult, ValueTypeField } from 'jsforce'
 import SalesforceClient from './client'
-import { CUSTOM_OBJECT, METADATA_OBJECT_NAME_FIELD } from './constants'
+import * as constants from './constants'
 import {
   TypeElement,
   CustomObject,
@@ -45,17 +46,18 @@ export default class SalesforceAdapter {
   public async add(element: TypeElement): Promise<boolean> {
     // TODO: handle permissions
     const customObject = new CustomObject(element)
-    const result = await this.client.create(CUSTOM_OBJECT, customObject)
-    if (Array.isArray(result)) {
-      return (result as SaveResult[])
-        .map(r => {
-          return r.success
-        })
-        .reduce((pre, current) => {
-          return pre && current
-        })
+    const result = await this.client.create(
+      constants.CUSTOM_OBJECT,
+      customObject
+    )
+    const saveResult = this.isSaveResultsSuccessful(result)
+
+    let permissionsResult: boolean
+    if (saveResult) {
+      permissionsResult = await this.updatePermissions(customObject)
     }
-    return (result as SaveResult).success
+
+    return saveResult && permissionsResult
   }
 
   /**
@@ -68,7 +70,7 @@ export default class SalesforceAdapter {
     // Build the custom object to retrieve the full name from
     const customObject = new CustomObject(element)
     const result = await this.client.delete(
-      CUSTOM_OBJECT,
+      constants.CUSTOM_OBJECT,
       customObject.fullName
     )
     return (result as SaveResult).success
@@ -79,7 +81,7 @@ export default class SalesforceAdapter {
     return Promise.all(
       objects
         .filter(obj => {
-          return obj.xmlName !== CUSTOM_OBJECT
+          return obj.xmlName !== constants.CUSTOM_OBJECT
         })
         .map(async obj => {
           return this.createMetadataTypeElement(obj.xmlName)
@@ -96,7 +98,7 @@ export default class SalesforceAdapter {
       return element
     }
     fields.forEach(field => {
-      if (field.name !== METADATA_OBJECT_NAME_FIELD) {
+      if (field.name !== constants.METADATA_OBJECT_NAME_FIELD) {
         element[field.name] = SalesforceAdapter.createMetadataFieldTypeElement(
           field
         )
@@ -170,15 +172,30 @@ export default class SalesforceAdapter {
     return sobjects
   }
 
+  private async updatePermissions(obj: CustomObject): Promise<boolean> {
+    const profile = new ProfileInfo(constants.PROFILE_NAME_SYSTEM_ADMINISTRATOR)
+    obj.fields.forEach(field => {
+      profile.fieldPermissions.push({
+        field: `${obj.fullName}.${field.fullName}`,
+        editable: true,
+        readable: true
+      })
+    })
+
+    const result = await this.client.update(
+      constants.METADATA_PROFILE_OBJECT,
+      profile
+    )
+    return (result as SaveResult).success
+  }
+
   private async createSObjectTypeElement(
     objectName: string
   ): Promise<TypeElement> {
     const element: TypeElement = { object: objectName }
     const fields = await this.client.discoverSObject(objectName)
     fields.forEach(field => {
-      element[field.name] = SalesforceAdapter.createSObjectFieldTypeElement(
-        field
-      )
+      element[field.name] = this.createSObjectFieldTypeElement(field)
     })
     return element
   }
@@ -190,7 +207,9 @@ export default class SalesforceAdapter {
   private async discoverPermissions(): Promise<
     Map<string, Map<string, FieldPermissions>>
   > {
-    const profiles = await this.client.listMetadataObjects('Profile')
+    const profiles = await this.client.listMetadataObjects(
+      constants.METADATA_PROFILE_OBJECT
+    )
     const profilesInfo = await Promise.all(
       profiles.map(prof => {
         return this.client.readMetadata('Profile', prof.fullName) as Promise<
@@ -213,7 +232,7 @@ export default class SalesforceAdapter {
     return permissions
   }
 
-  private static createSObjectFieldTypeElement(field: Field): TypeElement {
+  private createSObjectFieldTypeElement(field: Field): TypeElement {
     const element: TypeElement = {
       type: field.type,
       label: field.label,
@@ -245,5 +264,25 @@ export default class SalesforceAdapter {
     }
 
     return element
+  }
+
+  /**
+   * Checks whether an operation's SaveResult or SaveResult[] is successful
+   * @param saveResult either a single SaveResult or an array of SaveResult
+   * @returns true if all SaveResults are successful
+   */
+  private isSaveResultsSuccessful(
+    saveResult: SaveResult | SaveResult[]
+  ): boolean {
+    if (Array.isArray(saveResult)) {
+      return (saveResult as SaveResult[])
+        .map(r => {
+          return r.success
+        })
+        .reduce((pre, current) => {
+          return pre && current
+        })
+    }
+    return (saveResult as SaveResult).success
   }
 }

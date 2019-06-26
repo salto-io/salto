@@ -1,5 +1,5 @@
 import SalesforceAdapter from '../src/adapter'
-import { CUSTOM_OBJECT } from '../src/constants'
+import * as constants from '../src/constants'
 
 // This is turned off by default as it has SFDC rate limit implications
 // and this is very long test
@@ -83,7 +83,7 @@ describe.skip('Test Salesforce adapter E2E', () => {
         object: 'test',
         description: {
           type: 'string',
-          label: 'test label',
+          label: 'description label',
           required: false,
           _default: 'test'
         }
@@ -93,7 +93,7 @@ describe.skip('Test Salesforce adapter E2E', () => {
       // Test
       expect(addResult).toBe(true)
       const readResult = await sfAdapter.client.readMetadata(
-        CUSTOM_OBJECT,
+        constants.CUSTOM_OBJECT,
         'test__c'
       )
       expect(readResult.fullName).toBe('test__c')
@@ -112,7 +112,7 @@ describe.skip('Test Salesforce adapter E2E', () => {
         object: 'test',
         description: {
           type: 'string',
-          label: 'test label',
+          label: 'description label',
           required: false,
           _default: 'test'
         }
@@ -126,7 +126,7 @@ describe.skip('Test Salesforce adapter E2E', () => {
       expect(removeResult).toBe(true)
 
       const readResult = await sfAdapter.client.readMetadata(
-        CUSTOM_OBJECT,
+        constants.CUSTOM_OBJECT,
         'test__c'
       )
       expect(readResult.fullName).toBeUndefined()

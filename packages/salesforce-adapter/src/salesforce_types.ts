@@ -9,8 +9,11 @@ export interface FieldPermissions {
   readable: boolean
 }
 
-export interface ProfileInfo extends MetadataInfo {
+export class ProfileInfo implements MetadataInfo {
   fieldPermissions: FieldPermissions[]
+  constructor(public readonly fullName: string) {
+    this.fieldPermissions = []
+  }
 }
 
 class CustomPicklistValue implements MetadataInfo {

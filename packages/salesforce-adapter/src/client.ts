@@ -106,4 +106,18 @@ export default class SalesforceClient {
     await this.login()
     return this.conn.metadata.delete(metadataType, fullNames)
   }
+
+  /**
+   * Updates salesforce client
+   * @param metadataType The metadata type of the components to be updated
+   * @param metadata The metadata of the object
+   * @returns The save result of the requested update
+   */
+  public async update(
+    metadataType: string,
+    metadata: MetadataInfo | MetadataInfo[]
+  ): Promise<SaveResult | SaveResult[]> {
+    await this.login()
+    return this.conn.metadata.update(metadataType, metadata)
+  }
 }

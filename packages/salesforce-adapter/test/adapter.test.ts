@@ -2,6 +2,7 @@ import { MetadataInfo } from 'jsforce'
 import SalesforceAdapter from '../src/adapter'
 import SalesforceClient from '../src/client'
 import { ProfileInfo } from '../src/salesforce_types'
+import * as constants from '../src/constants'
 
 jest.mock('../src/client')
 
@@ -198,7 +199,11 @@ describe('Test SalesforceAdapter.discover', () => {
     const mockCreate = jest.fn().mockImplementationOnce(() => {
       return { success: true }
     })
+    const mockUpdate = jest.fn().mockImplementationOnce(() => {
+      return { success: true }
+    })
     SalesforceClient.prototype.create = mockCreate
+    SalesforceClient.prototype.update = mockUpdate
 
     const result = await adapter().add({
       object: 'test',
@@ -210,6 +215,7 @@ describe('Test SalesforceAdapter.discover', () => {
       }
     })
 
+    // Verify object creation
     expect(result).toBe(true)
     expect(mockCreate.mock.calls.length).toBe(1)
     const object = mockCreate.mock.calls[0][1]
@@ -220,6 +226,19 @@ describe('Test SalesforceAdapter.discover', () => {
     expect(object.fields[0].length).toBe(80)
     expect(object.fields[0].required).toBe(false)
     expect(object.fields[0].label).toBe('test label')
+
+    // Verify permissions creation
+    expect(mockUpdate.mock.calls.length).toBe(1)
+    const updateObject = mockUpdate.mock.calls[0][1]
+    expect(updateObject.fullName).toBe(
+      constants.PROFILE_NAME_SYSTEM_ADMINISTRATOR
+    )
+    expect(updateObject.fieldPermissions.length).toBe(1)
+    expect(updateObject.fieldPermissions[0].field).toBe(
+      'test__c.description__c'
+    )
+    expect(updateObject.fieldPermissions[0].editable).toBe(true)
+    expect(updateObject.fieldPermissions[0].readable).toBe(true)
   })
 
   it('should discover metadata object', async () => {

@@ -1,39 +1,16 @@
 import wu from 'wu'
+import { update as updateSet } from './collections/set'
+import { DefaultMap } from './collections/map'
 
-const updateSet = <T>(target: Set<T>, source: Iterable<T>): void => {
-  wu(source).forEach(target.add.bind(target))
-}
+const promiseAllToSingle = (promises: Iterable<Promise<void>>): Promise<void> =>
+  Promise.all(promises).then(() => undefined)
 
-const deleteFromSet = <T>(target: Set<T>, source: Iterable<T>): void => {
-  wu(source).forEach(target.delete.bind(target))
-}
-
-class DefaultMap<K, V> extends Map<K, V> {
-  constructor(readonly initDefault: () => V, entries?: Iterable<[K, V]>) {
-    super(wu(entries || []))
-  }
-
-  get(key: K): V {
-    if (this.has(key)) {
-      return super.get(key) as V
-    }
-    const res = this.initDefault()
-    this.set(key, res)
-    return res
-  }
-}
+export type AsyncNodeHandler<T> = (t: T) => Promise<void>
+export type NodeHandler<T> = (t: T) => void
 
 class NodeMap<T> extends DefaultMap<T, Set<T>> {
   constructor(entries?: Iterable<[T, Set<T>]>) {
     super(() => new Set<T>(), entries)
-  }
-
-  deleteValues(values: Iterable<T>): void {
-    this.forEach(s => deleteFromSet(s, values))
-  }
-
-  deleteKeys(keys: Iterable<T>): void {
-    wu(keys).forEach(this.delete.bind(this))
   }
 
   clone(): NodeMap<T> {
@@ -54,6 +31,26 @@ export class CircularDependencyError<T> extends Error {
   }
 }
 
+class SuccessorMap<T> extends NodeMap<T> {
+  freeNodes(source: Iterable<T>): Iterable<T> {
+    return wu(source).filter(node => this.get(node).size === 0)
+  }
+
+  // returns the affected successors
+  deleteNode(node: T): Iterable<T> {
+    this.delete(node)
+    return wu(this)
+      .filter(([_n, succ]) => succ.delete(node))
+      .map(([affectedNode]) => affectedNode)
+  }
+
+  ensureEmpty(): void {
+    if (this.size !== 0) {
+      throw new CircularDependencyError(this)
+    }
+  }
+}
+
 export class Graph<T> {
   private readonly successors = new NodeMap<T>()
   private readonly predecessors = new NodeMap<T>()
@@ -66,66 +63,13 @@ export class Graph<T> {
     })
   }
 
+  getSuccessors(node: T): Iterable<T> {
+    return this.successors.get(node)
+  }
+
   private removeEdge(node: T, succ: T): void {
     this.successors.get(node).delete(succ)
     this.predecessors.get(succ).delete(node)
-  }
-
-  *topologicalSortIter(): IterableIterator<Set<T>> {
-    // Copy the input so as to leave it unmodified
-    const successors = this.successors.clone()
-
-    while (true) {
-      const nodesWithNoDeps = new Set<T>(
-        wu(successors)
-          .filter(([_item, succ]) => succ.size === 0)
-          .map(([item]) => item)
-      )
-
-      if (nodesWithNoDeps.size === 0) {
-        break
-      }
-
-      yield nodesWithNoDeps
-
-      successors.deleteKeys(nodesWithNoDeps)
-      successors.deleteValues(nodesWithNoDeps)
-    }
-
-    if (successors.size !== 0) {
-      throw new CircularDependencyError(successors)
-    }
-  }
-
-  topologicalSort(): T[][] {
-    return [...this.topologicalSortIter()].map(s => [...s])
-  }
-
-  *topologicalSortFlatIter(): IterableIterator<T> {
-    const iter = this.topologicalSortIter()[Symbol.iterator]()
-
-    while (true) {
-      const { done, value } = iter.next()
-      if (done) {
-        break
-      }
-
-      const itemsIter = value[Symbol.iterator]()
-
-      while (true) {
-        // eslint-disable-next-line no-shadow
-        const { done, value } = itemsIter.next()
-        if (done) {
-          break
-        }
-
-        yield value
-      }
-    }
-  }
-
-  topologicalSortFlat(): T[] {
-    return [...this.topologicalSortFlatIter()]
   }
 
   edges(): [T, T][] {
@@ -171,15 +115,77 @@ export class Graph<T> {
 
       updateSet(indirectPred, directPred)
 
-      this.successors
-        .get(node)
+      this.successors.get(node)
         .forEach(succ => updateSet(indirectPredMap.get(succ), indirectPred))
     }
 
-    this.topologicalSortFlat()
+    [...this.topologicalSort()]
       .reverse()
       .forEach(removeDups)
 
     return this
+  }
+
+  private newSuccessorMap(): SuccessorMap<T> {
+    return new SuccessorMap<T>(this.successors.clone())
+  }
+
+  topologicalSortGroups(): Iterable<Iterable<T>> {
+    const successors = this.newSuccessorMap()
+
+    return {
+      [Symbol.iterator](): Iterator<Iterable<T>> {
+        let nextNodes: Iterable<T> = successors.keys()
+
+        return {
+          next(): IteratorResult<Iterable<T>> {
+            const freeNodes = [...successors.freeNodes(nextNodes)]
+            const done = freeNodes.length === 0
+
+            if (done) {
+              successors.ensureEmpty()
+            } else {
+              nextNodes = new Set<T>(wu(freeNodes).map(n => successors.deleteNode(n)).flatten())
+            }
+
+            return { done, value: freeNodes }
+          },
+        }
+      },
+    }
+  }
+
+  topologicalSort(): Iterable<T> {
+    return wu(this.topologicalSortGroups()).flatten()
+  }
+
+  async walk(handler: AsyncNodeHandler<T>): Promise<void> {
+    const successors = this.newSuccessorMap()
+
+    const next = (affectedSuccessors: Iterable<T>): Promise<void> =>
+      promiseAllToSingle(
+        wu(successors.freeNodes(affectedSuccessors))
+          .map(node => handler(node).then(() => next(successors.deleteNode(node))))
+      )
+
+    await next(successors.keys())
+
+    successors.ensureEmpty()
+  }
+
+  walkSync(handler: NodeHandler<T>): void {
+    const successors = this.newSuccessorMap()
+
+    const next = (affectedSuccessors: Iterable<T>): void => {
+      wu(successors.freeNodes(affectedSuccessors))
+        .forEach(node => {
+          handler(node)
+          next(successors.deleteNode(node))
+        })
+    }
+
+    next(successors.keys())
+
+    successors.ensureEmpty()
   }
 }

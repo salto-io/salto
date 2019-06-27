@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-require('ts-node').register()
-const saltoCommander = require('../src/cli/salto-cli.ts')
+const saltoCommander = require('../dist/src/cli/salto-cli.js')
 
 saltoCommander.default.parseAndRun(process.argv)

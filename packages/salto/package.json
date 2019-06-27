@@ -7,14 +7,22 @@
     "url": "https://github.com/salto-io/salto"
   },
   "private": true,
-  "bin": {"salto": "./bin/salto"},
+  "bin": {
+    "salto": "./bin/salto"
+  },
+  "files": [
+    "index.js",
+    "bin/**/*",
+    "dist/**/*"
+  ],
   "scripts": {
     "prepare": "npm run build",
-    "build": "npm run lint && npm run build-go",
+    "prepublishOnly": "npm test && npm run lint",
+    "build": "tsc && npm run build-go",
     "client": "npx ts-node src/cli/salto-cli.ts",
     "test": "jest --forceExit --verbose --detectOpenHandles",
     "watch-test": "npm run test -- --watchAll",
-    "build-go": "./src/parser/hcl_plugin/build.sh ./dist/hcl.wasm",
+    "build-go": "./src/parser/hcl_plugin/build.sh ./dist/hcl.wasm ./hcl.wasm",
     "lint": "eslint --fix --ext .js,.jsx,.ts,.tsx ./"
   },
   "dependencies": {

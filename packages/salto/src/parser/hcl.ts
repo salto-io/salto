@@ -15,7 +15,7 @@ class HCLParser {
       // Load web assembly module data once in the life of a parser
       this.wasmData = (async () => {
         // Relative path from source location
-        const modulePath = path.join(__dirname, '..', '..', 'dist', 'hcl.wasm')
+        const modulePath = path.join(__dirname, '..', '..', 'hcl.wasm')
         return fs.readFile(modulePath)
       })()
     }

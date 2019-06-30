@@ -1,4 +1,5 @@
 import { MetadataInfo } from 'jsforce'
+import { ObjectType, PrimitiveType, TypeID, PrimitiveTypes } from 'salto'
 import SalesforceAdapter from '../src/adapter'
 import SalesforceClient from '../src/client'
 import { ProfileInfo } from '../src/salesforce_types'
@@ -101,18 +102,18 @@ describe('Test SalesforceAdapter.discover', () => {
     const result = await adapter().discover()
 
     expect(result.length).toBe(1)
-    const lead = result.pop()
+    const lead = result.pop() as ObjectType
 
-    expect(lead.LastName.type).toBe('string')
-    expect(lead.LastName.label).toBe('Last Name')
+    expect(lead.fields.LastName.typeID.name).toBe('string')
+    expect(lead.fields.LastName.annotationsValues.label).toBe('Last Name')
     // Test Rquired true and false
-    expect(lead.LastName.required).toBe(false)
-    expect(lead.FirstName.required).toBe(true)
+    expect(lead.fields.LastName.annotationsValues.required).toBe(false)
+    expect(lead.fields.FirstName.annotationsValues.required).toBe(true)
     // Default string and boolean
     // eslint-disable-next-line no-underscore-dangle
-    expect(lead.LastName._default).toBe('BLABLA')
+    expect(lead.fields.LastName.annotationsValues._default).toBe('BLABLA')
     // eslint-disable-next-line no-underscore-dangle
-    expect(lead.IsDeleted._default).toBe(false)
+    expect(lead.fields.IsDeleted.annotationsValues._default).toBe(false)
   })
 
   it('should discover sobject with picklist field', async () => {
@@ -132,12 +133,14 @@ describe('Test SalesforceAdapter.discover', () => {
     const result = await adapter().discover()
 
     expect(result.length).toBe(1)
-    const lead = result.pop()
+    const lead = result.pop() as ObjectType
 
-    expect(lead.PrimaryC.type).toBe('picklist')
-    expect((lead.PrimaryC.values as string[]).join(';')).toBe('No;Yes')
+    expect(lead.fields.PrimaryC.typeID.name).toBe('picklist')
+    expect(
+      (lead.fields.PrimaryC.annotationsValues.values as string[]).join(';')
+    ).toBe('No;Yes')
     // eslint-disable-next-line no-underscore-dangle
-    expect(lead.PrimaryC._default).toBe('Yes')
+    expect(lead.fields.PrimaryC.annotationsValues._default).toBe('Yes')
   })
 
   it('should discover sobject with combobox field', async () => {
@@ -157,14 +160,16 @@ describe('Test SalesforceAdapter.discover', () => {
     const result = await adapter().discover()
 
     expect(result.length).toBe(1)
-    const lead = result.pop()
+    const lead = result.pop() as ObjectType
 
-    expect(lead.PrimaryC.type).toBe('combobox')
-    expect((lead.PrimaryC.values as string[]).join(';')).toBe('No;Yes')
+    expect(lead.fields.PrimaryC.typeID.name).toBe('combobox')
+    expect(
+      (lead.fields.PrimaryC.annotationsValues.values as string[]).join(';')
+    ).toBe('No;Yes')
     // eslint-disable-next-line no-underscore-dangle
-    expect(lead.PrimaryC._default.length).toBe(1)
+    expect(lead.fields.PrimaryC.annotationsValues._default.length).toBe(1)
     // eslint-disable-next-line no-underscore-dangle
-    expect(lead.PrimaryC._default.pop()).toBe('Yes')
+    expect(lead.fields.PrimaryC.annotationsValues._default.pop()).toBe('Yes')
   })
 
   it('should discover sobject permissions', async () => {
@@ -190,9 +195,13 @@ describe('Test SalesforceAdapter.discover', () => {
     const result = await adapter().discover()
 
     expect(result.length).toBe(1)
-    const org = result.pop()
-    expect(org.status.field_level_security.admin.readable).toBe(true)
-    expect(org.status.field_level_security.admin.editable).toBe(false)
+    const org = result.pop() as ObjectType
+    expect(
+      org.fields.status.annotationsValues.field_level_security.admin.readable
+    ).toBe(true)
+    expect(
+      org.fields.status.annotationsValues.field_level_security.admin.editable
+    ).toBe(false)
   })
 
   it('should add new salesforce type', async () => {
@@ -205,15 +214,25 @@ describe('Test SalesforceAdapter.discover', () => {
     SalesforceClient.prototype.create = mockCreate
     SalesforceClient.prototype.update = mockUpdate
 
-    const result = await adapter().add({
-      object: 'test',
-      description: {
-        type: 'string',
-        label: 'test label',
-        required: false,
-        _default: 'test'
-      }
-    })
+    const result = await adapter().add(
+      new ObjectType({
+        typeID: new TypeID({ adapter: constants.SALESFORCE, name: 'test' }),
+        fields: {
+          description: new PrimitiveType({
+            typeID: new TypeID({
+              adapter: constants.SALESFORCE,
+              name: 'string'
+            }),
+            primitive: PrimitiveTypes.STRING,
+            annotationsValues: {
+              required: false,
+              _default: 'test',
+              label: 'test label'
+            }
+          })
+        }
+      })
+    )
 
     // Verify object creation
     expect(result).toBe(true)
@@ -246,18 +265,32 @@ describe('Test SalesforceAdapter.discover', () => {
     mockListMetadataObjects()
     mockSingleMetadataObject('Flow', [
       {
-        name: 'Description',
+        name: 'description',
         soapType: 'string',
         valueRequired: true
+      },
+      {
+        name: 'isTemplate',
+        soapType: 'boolean',
+        valueRequired: false
+      },
+      {
+        name: 'actionCalls',
+        soapType: 'FlowActionCall'
       }
     ])
     const result = await adapter().discover()
 
     expect(result.length).toBe(1)
-    const flow = result.pop()
+    const flow = result.pop() as ObjectType
 
-    expect(flow.Description.type).toBe('string')
-    expect(flow.Description.required).toBe(true)
+    expect(flow.fields.description.typeID.name).toBe('string')
+    expect(flow.fields.description.annotationsValues.required).toBe(true)
+    expect(flow.fields.isTemplate.typeID.name).toBe('checkbox')
+    expect(flow.fields.isTemplate.annotationsValues.required).toBe(false)
+    expect(flow.fields.actionCalls.typeID.getFullName()).toBe(
+      'salesforce_FlowActionCall'
+    )
   })
 
   it('should discover metadata object with picklist', async () => {
@@ -269,18 +302,37 @@ describe('Test SalesforceAdapter.discover', () => {
         soapType: 'Picklist',
         valueRequired: false,
         picklistValues: [{ defaultValue: true, value: 'BLA' }]
+      },
+      {
+        name: 'StatusCombo',
+        soapType: 'Combobox',
+        valueRequired: true,
+        picklistValues: [
+          { defaultValue: true, value: 'BLA' },
+          { defaultValue: true, value: 'BLA2' }
+        ]
       }
     ])
     const result = await adapter().discover()
 
     expect(result.length).toBe(1)
-    const flow = result.pop()
-    expect(flow.Status.type).toBe('Picklist')
-    expect(flow.Status.required).toBe(false)
-    expect(flow.Status.values.length).toBe(1)
-    expect(flow.Status.values[0]).toBe('BLA')
+    const flow = result.pop() as ObjectType
+    // Validate picklist
+    expect(flow.fields.Status.typeID.name).toBe('Picklist')
+    expect(flow.fields.Status.annotationsValues.required).toBe(false)
+    expect(flow.fields.Status.annotationsValues.values.length).toBe(1)
+    expect(flow.fields.Status.annotationsValues.values[0]).toBe('BLA')
     // eslint-disable-next-line no-underscore-dangle
-    expect(flow.Status._default).toBe('BLA')
+    expect(flow.fields.Status.annotationsValues._default).toBe('BLA')
+
+    // Validate combobox
+    expect(flow.fields.StatusCombo.typeID.name).toBe('Combobox')
+    expect(flow.fields.StatusCombo.annotationsValues.required).toBe(true)
+    expect(flow.fields.StatusCombo.annotationsValues.values.length).toBe(2)
+    expect(flow.fields.StatusCombo.annotationsValues.values[0]).toBe('BLA')
+    expect(flow.fields.StatusCombo.annotationsValues.values[1]).toBe('BLA2')
+    // eslint-disable-next-line no-underscore-dangle
+    expect(flow.fields.StatusCombo.annotationsValues._default[1]).toBe('BLA2')
   })
 
   it('should remove a salesforce metadata component', async () => {
@@ -289,15 +341,25 @@ describe('Test SalesforceAdapter.discover', () => {
     })
     SalesforceClient.prototype.delete = mockDelete
 
-    const result = await adapter().remove({
-      object: 'test',
-      description: {
-        type: 'string',
-        label: 'test label',
-        required: false,
-        _default: 'test'
-      }
-    })
+    const result = await adapter().remove(
+      new ObjectType({
+        typeID: new TypeID({ adapter: constants.SALESFORCE, name: 'test' }),
+        fields: {
+          description: new PrimitiveType({
+            typeID: new TypeID({
+              adapter: constants.SALESFORCE,
+              name: 'string'
+            }),
+            primitive: PrimitiveTypes.STRING
+          })
+        },
+        annotationsValues: {
+          required: false,
+          _default: 'test',
+          label: 'test label'
+        }
+      })
+    )
 
     expect(result).toBe(true)
     expect(mockDelete.mock.calls.length).toBe(1)

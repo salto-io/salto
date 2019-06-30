@@ -1,7 +1,6 @@
 import { MetadataInfo } from 'jsforce'
-
-// TODO: this should be replaced with Elements from core once ready
-export type TypeElement = Record<string, any>
+import { ObjectType } from 'salto'
+import { LABEL, REQUIRED, PICKLIST_VALUES } from './constants'
 
 export interface FieldPermissions {
   field: string
@@ -52,17 +51,16 @@ export class CustomField implements MetadataInfo {
     if (this.type === 'Text') {
       this.length = 80
     }
-    if (this.type === 'Picklist' || this.type === 'Combobox') {
+
+    if (values) {
       this.valueSet = {
         valueSetDefinition: { value: [] as CustomPicklistValue[] }
       }
-      if (values) {
-        values.forEach(val => {
-          this.valueSet.valueSetDefinition.value.push(
-            new CustomPicklistValue(val)
-          )
-        })
-      }
+      values.forEach(val => {
+        this.valueSet.valueSetDefinition.value.push(
+          new CustomPicklistValue(val)
+        )
+      })
     }
   }
 }
@@ -80,27 +78,25 @@ export class CustomObject implements MetadataInfo {
     label: 'Test Object Name'
   }
 
-  constructor(element: TypeElement) {
-    this.fullName = `${element.object}__c`
-    this.label = element.object
+  constructor(element: ObjectType) {
+    this.fullName = `${element.typeID.name}__c`
+    this.label = element.typeID.name
     this.pluralLabel = `${this.label}s`
 
-    Object.keys(element)
-      // skip object - not field name - this will be changed once we move to real TypeElement
-      .filter(name => {
-        return name !== 'object'
-      })
-      .forEach(fieldName => {
-        const field = new CustomField(
+    Object.entries(element.fields).forEach(([fieldName, field]) => {
+      // TODO: handle default values
+      const annotations = field.annotationsValues
+      this.fields.push(
+        new CustomField(
           fieldName,
-          element[fieldName].type,
-          element[fieldName].label,
-          element[fieldName].required,
-          element[fieldName].values
-          // TODO: handle default values
-          // element[fieldName]._default
+          field.typeID.name,
+          annotations[LABEL],
+          annotations[REQUIRED],
+          annotations[PICKLIST_VALUES]
+          // TODO: use restricted picklist
+          // annotations[RESTRICTED_PICKLIST]
         )
-        this.fields.push(field)
-      })
+      )
+    })
   }
 }

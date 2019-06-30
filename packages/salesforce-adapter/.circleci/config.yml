@@ -2,8 +2,10 @@ version: 2
 jobs:
   build:
     docker:
-      # specify the version you desire here
-      - image: circleci/node:12.3.1
+      # we don't use here the default circleci node images because when installing salto we run go
+      # this should be changed once salesforce-adapter is depended only salto-adapter-api or when salto 
+      # is published to npm (and not depended via github)
+      - image: saltolabs/salto:0.0.4
 
     working_directory: ~/repo
 

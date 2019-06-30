@@ -1,3 +1,5 @@
+import { Type, PrimitiveType, ObjectType, TypeID, PrimitiveTypes } from 'salto'
+
 import SalesforceAdapter from '../src/adapter'
 import * as constants from '../src/constants'
 
@@ -15,7 +17,7 @@ describe.skip('Test Salesforce adapter E2E', () => {
   }
 
   describe('should discover account settings, e2e with real account', () => {
-    let result: Record<string, any>[]
+    let result: Type[]
 
     beforeAll(async done => {
       // set long timeout as we communicate with salesforce API
@@ -27,49 +29,55 @@ describe.skip('Test Salesforce adapter E2E', () => {
     it('should discover sobject', async () => {
       // Check few field types on lead object
       const lead = result
-        .filter(val => {
-          return val.object === 'Lead'
+        .filter(element => {
+          return element.typeID.name === 'Lead'
         })
-        .pop()
+        .pop() as ObjectType
 
       // Test few possible types
-      expect(lead.LastName.type).toBe('string')
-      expect(lead.Description.type).toBe('textarea')
-      expect(lead.Salutation.type).toBe('picklist')
+      expect(lead.fields.LastName.typeID.name).toBe('string')
+      expect(lead.fields.Description.typeID.name).toBe('textarea')
+      expect(lead.fields.Salutation.typeID.name).toBe('picklist')
 
       // Test label
-      expect(lead.LastName.label).toBe('Last Name')
+      expect(lead.fields.LastName.annotationsValues.label).toBe('Last Name')
 
       // Test true and false required
-      expect(lead.Description.required).toBe(true)
-      expect(lead.CreatedDate.required).toBe(false)
+      expect(lead.fields.Description.annotationsValues.required).toBe(true)
+      expect(lead.fields.CreatedDate.annotationsValues.required).toBe(false)
 
       // Test picklist restricted_pick_list prop
-      expect(lead.Industry.restricted_pick_list).toBe(false)
-      expect(lead.CleanStatus.restricted_pick_list).toBe(true)
+      expect(lead.fields.Industry.annotationsValues.restricted_pick_list).toBe(
+        false
+      )
+      expect(
+        lead.fields.CleanStatus.annotationsValues.restricted_pick_list
+      ).toBe(true)
 
       // Test picklist values
-      expect((lead.Salutation.values as string[]).join(';')).toBe(
-        'Mr.;Ms.;Mrs.;Dr.;Prof.'
-      )
+      expect(
+        (lead.fields.Salutation.annotationsValues.values as string[]).join(';')
+      ).toBe('Mr.;Ms.;Mrs.;Dr.;Prof.')
 
       // Test _default
       // TODO: add test to primitive with _default and combobox _default (no real example for lead)
       // eslint-disable-next-line no-underscore-dangle
-      expect(lead.Status._default).toBe('Open - Not Contacted')
+      expect(lead.fields.Status.annotationsValues._default).toBe(
+        'Open - Not Contacted'
+      )
     })
 
     it('should discover metadata object', () => {
       // Check few field types on lead object
       const flow = result
-        .filter(val => {
-          return val.object === 'Flow'
+        .filter(element => {
+          return element.typeID.name === 'Flow'
         })
-        .pop()
+        .pop() as ObjectType
 
-      expect(flow.description.type).toBe('string')
-      expect(flow.isTemplate.type).toBe('boolean')
-      expect(flow.actionCalls.type).toBe('FlowActionCall')
+      expect(flow.fields.description.typeID.name).toBe('string')
+      expect(flow.fields.isTemplate.typeID.name).toBe('checkbox')
+      expect(flow.fields.actionCalls.typeID.name).toBe('FlowActionCall')
     })
   })
 
@@ -79,15 +87,23 @@ describe.skip('Test Salesforce adapter E2E', () => {
       // set long timeout as we communicate with salesforce API
       jest.setTimeout(10000)
       const sfAdapter = adapter()
-      const element = {
-        object: 'test',
-        description: {
-          type: 'string',
-          label: 'description label',
-          required: false,
-          _default: 'test'
+      const element = new ObjectType({
+        typeID: new TypeID({ adapter: constants.SALESFORCE, name: 'test' }),
+        fields: {
+          description: new PrimitiveType({
+            typeID: new TypeID({
+              adapter: constants.SALESFORCE,
+              name: 'string'
+            }),
+            primitive: PrimitiveTypes.STRING,
+            annotationsValues: {
+              required: false,
+              _default: 'test',
+              label: 'description label'
+            }
+          })
         }
-      }
+      })
       const addResult = await sfAdapter.add(element)
 
       // Test
@@ -108,15 +124,23 @@ describe.skip('Test Salesforce adapter E2E', () => {
       jest.setTimeout(10000)
       const sfAdapter = adapter()
 
-      const element = {
-        object: 'test',
-        description: {
-          type: 'string',
-          label: 'description label',
-          required: false,
-          _default: 'test'
+      const element = new ObjectType({
+        typeID: new TypeID({ adapter: constants.SALESFORCE, name: 'test' }),
+        fields: {
+          description: new PrimitiveType({
+            typeID: new TypeID({
+              adapter: constants.SALESFORCE,
+              name: 'string'
+            }),
+            primitive: PrimitiveTypes.STRING,
+            annotationsValues: {
+              label: 'test label',
+              required: false,
+              _default: 'test'
+            }
+          })
         }
-      }
+      })
 
       const addResult = await sfAdapter.add(element)
       expect(addResult).toBe(true)

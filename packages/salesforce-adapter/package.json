@@ -24,6 +24,7 @@
     "jsforce": "github:salto-io/jsforce",
     "jsforce-types": "github:salto-io/jsforce-types",
     "lodash": "^4.17.11",
+    "salto": "github:salto-io/salto",
     "stream": "0.0.2",
     "winston": "^3.2.1"
   },

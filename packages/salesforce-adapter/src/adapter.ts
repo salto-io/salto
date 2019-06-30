@@ -1,13 +1,9 @@
 /* eslint-disable class-methods-use-this */
 import { Field, SaveResult, ValueTypeField } from 'jsforce'
+import { Type, TypesRegistry, ObjectType, TypeID, PrimitiveTypes } from 'salto'
 import SalesforceClient from './client'
 import * as constants from './constants'
-import {
-  TypeElement,
-  CustomObject,
-  FieldPermissions,
-  ProfileInfo
-} from './salesforce_types'
+import { CustomObject, FieldPermissions, ProfileInfo } from './salesforce_types'
 
 // TODO: handle snakeCase and __c
 // should this be in TypeElement?
@@ -16,8 +12,16 @@ import {
 // TODO: this should be replaced with Elements from core once ready
 type Config = Record<string, any>
 
+/**
+ * Return type for salesforce type name
+ *
+ * @param type name of salesforce type
+ */
+
 export default class SalesforceAdapter {
-  client: SalesforceClient
+  readonly client: SalesforceClient
+  // type registery used in discover
+  readonly types = new TypesRegistry()
 
   constructor(conf: Config) {
     this.client = new SalesforceClient(
@@ -27,11 +31,40 @@ export default class SalesforceAdapter {
     )
   }
 
+  private getType(name: string): Type {
+    switch (name.toLowerCase()) {
+      case 'string': {
+        return this.types
+          .getType(new TypeID({ adapter: '', name }), PrimitiveTypes.STRING)
+          .clone()
+      }
+      case 'number': {
+        // TODO: validate indeed we have this type in SFDC API
+        return this.types
+          .getType(new TypeID({ adapter: '', name }), PrimitiveTypes.NUMBER)
+          .clone()
+      }
+      case 'boolean': {
+        return this.types
+          .getType(
+            // TODO: take checkbox from constans
+            new TypeID({ adapter: constants.SALESFORCE, name: 'checkbox' })
+          )
+          .clone()
+      }
+      default: {
+        return this.types
+          .getType(new TypeID({ adapter: constants.SALESFORCE, name }))
+          .clone()
+      }
+    }
+  }
+
   /**
    * Discover configuration elements (types and instances in the given salesforce account)
    * Account credentials were given in the constructor.
    */
-  public async discover(): Promise<TypeElement[]> {
+  public async discover(): Promise<Type[]> {
     // TODO: add here salesforce primitive data types
     const result = await Promise.all([
       this.discoverSObjects(),
@@ -43,7 +76,7 @@ export default class SalesforceAdapter {
   /**
    * Add new type element
    */
-  public async add(element: TypeElement): Promise<boolean> {
+  public async add(element: ObjectType): Promise<boolean> {
     // TODO: handle permissions
     const customObject = new CustomObject(element)
     const result = await this.client.create(
@@ -66,7 +99,7 @@ export default class SalesforceAdapter {
    * @param element The provided element to remove
    * @returns true for success, false for failure
    */
-  public async remove(element: TypeElement): Promise<boolean> {
+  public async remove(element: ObjectType): Promise<boolean> {
     // Build the custom object to retrieve the full name from
     const customObject = new CustomObject(element)
     const result = await this.client.delete(
@@ -76,7 +109,7 @@ export default class SalesforceAdapter {
     return (result as SaveResult).success
   }
 
-  private async discoverMetadataTypes(): Promise<TypeElement[]> {
+  private async discoverMetadataTypes(): Promise<Type[]> {
     const objects = await this.client.listMetadataTypes()
     return Promise.all(
       objects
@@ -89,34 +122,26 @@ export default class SalesforceAdapter {
     )
   }
 
-  private async createMetadataTypeElement(
-    objectName: string
-  ): Promise<TypeElement> {
-    const element: TypeElement = { object: objectName }
+  private async createMetadataTypeElement(objectName: string): Promise<Type> {
+    const element = this.getType(objectName) as ObjectType
     const fields = await this.client.discoverMetadataObject(objectName)
     if (!fields) {
       return element
     }
     fields.forEach(field => {
       if (field.name !== constants.METADATA_OBJECT_NAME_FIELD) {
-        element[field.name] = SalesforceAdapter.createMetadataFieldTypeElement(
-          field
-        )
+        element.fields[field.name] = this.createMetadataFieldTypeElement(field)
       }
     })
     return element
   }
 
-  private static createMetadataFieldTypeElement(
-    field: ValueTypeField
-  ): TypeElement {
-    const element: TypeElement = {
-      type: field.soapType,
-      required: field.valueRequired
-    }
+  private createMetadataFieldTypeElement(field: ValueTypeField): Type {
+    const element = this.getType(field.soapType) as ObjectType
+    element.annotationsValues.required = field.valueRequired
 
     if (field.picklistValues && field.picklistValues.length > 0) {
-      element.values = field.picklistValues.map(val => {
+      element.annotationsValues.values = field.picklistValues.map(val => {
         return val.value
       })
       const defaults = field.picklistValues
@@ -128,17 +153,17 @@ export default class SalesforceAdapter {
         })
       if (defaults.length === 1) {
         // eslint-disable-next-line no-underscore-dangle
-        element._default = defaults.pop()
+        element.annotationsValues[Type.DEFAULT] = defaults.pop()
       } else {
         // eslint-disable-next-line no-underscore-dangle
-        element._default = defaults
+        element.annotationsValues[Type.DEFAULT] = defaults
       }
     }
 
     return element
   }
 
-  private async discoverSObjects(): Promise<TypeElement[]> {
+  private async discoverSObjects(): Promise<Type[]> {
     const sobjects = await Promise.all(
       (await this.client.listSObjects()).map(async obj => {
         return this.createSObjectTypeElement(obj.name)
@@ -148,27 +173,28 @@ export default class SalesforceAdapter {
     const permissions = await this.discoverPermissions()
     // add field permissions to all discovered elements
     // we don't use here forEach as we changed the element (linter issue)
-    for (let i = 0; i < sobjects.length; i += 1) {
-      // eslint-disable-next-line no-loop-func
-      Object.keys(sobjects[i]).forEach(field => {
-        // we skip object property as it's not a field
-        if (field !== 'object') {
-          const fieldPermission = permissions.get(
-            `${sobjects[i].object}.${field}`
-          )
-          if (fieldPermission) {
-            // eslint-disable-next-line @typescript-eslint/camelcase
-            sobjects[i][field].field_level_security = {}
-            fieldPermission.forEach((profilePermission, profile) => {
-              sobjects[i][field].field_level_security[profile] = {
-                editable: profilePermission.editable,
-                readable: profilePermission.readable
-              }
-            })
-          }
+    sobjects.forEach(sobject => {
+      Object.entries(sobject.fields).forEach(([fieldName, field]) => {
+        const fieldPermission = permissions.get(
+          `${sobject.typeID.name}.${fieldName}`
+        )
+        if (fieldPermission) {
+          // eslint-disable-next-line no-param-reassign
+          field.annotationsValues[
+            constants.FIELD_LEVEL_SECURITY_ANNOTATION
+          ] = {}
+          fieldPermission.forEach((profilePermission, profile) => {
+            // eslint-disable-next-line no-param-reassign
+            field.annotationsValues[constants.FIELD_LEVEL_SECURITY_ANNOTATION][
+              profile
+            ] = {
+              editable: profilePermission.editable,
+              readable: profilePermission.readable
+            }
+          })
         }
       })
-    }
+    })
     return sobjects
   }
 
@@ -191,11 +217,11 @@ export default class SalesforceAdapter {
 
   private async createSObjectTypeElement(
     objectName: string
-  ): Promise<TypeElement> {
-    const element: TypeElement = { object: objectName }
+  ): Promise<ObjectType> {
+    const element = this.getType(objectName) as ObjectType
     const fields = await this.client.discoverSObject(objectName)
     fields.forEach(field => {
-      element[field.name] = this.createSObjectFieldTypeElement(field)
+      element.fields[field.name] = this.createSObjectFieldTypeElement(field)
     })
     return element
   }
@@ -232,20 +258,21 @@ export default class SalesforceAdapter {
     return permissions
   }
 
-  private createSObjectFieldTypeElement(field: Field): TypeElement {
-    const element: TypeElement = {
-      type: field.type,
-      label: field.label,
-      required: field.nillable,
-      _default: field.defaultValue
-    }
+  private createSObjectFieldTypeElement(field: Field): Type {
+    const element: Type = this.getType(field.type)
+    const annotations = element.annotationsValues
+    annotations[constants.LABEL] = field.label
+    annotations[constants.REQUIRED] = field.nillable
+    annotations[Type.DEFAULT] = field.defaultValue
 
-    if (field.type === 'combobox' || field.type === 'picklist') {
-      // This will be translated to core element object, it's camelcase
-      // due to HCL naming conventions.
-      // eslint-disable-next-line @typescript-eslint/camelcase
-      element.restricted_pick_list = field.restrictedPicklist
-      element.values = field.picklistValues.map(val => val.value)
+    if (field.picklistValues && field.picklistValues.length > 0) {
+      annotations[constants.PICKLIST_VALUES] = field.picklistValues.map(
+        val => val.value
+      )
+      annotations[constants.RESTRICTED_PICKLIST] = false
+      if (field.restrictedPicklist) {
+        annotations[constants.RESTRICTED_PICKLIST] = field.restrictedPicklist
+      }
 
       const defaults = field.picklistValues
         .filter(val => {
@@ -254,11 +281,9 @@ export default class SalesforceAdapter {
         .map(val => val.value)
       if (defaults.length > 0) {
         if (field.type === 'picklist') {
-          // eslint-disable-next-line no-underscore-dangle
-          element._default = defaults.pop()
+          annotations[Type.DEFAULT] = defaults.pop()
         } else {
-          // eslint-disable-next-line no-underscore-dangle
-          element._default = defaults
+          annotations[Type.DEFAULT] = defaults
         }
       }
     }

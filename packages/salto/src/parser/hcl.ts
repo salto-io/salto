@@ -10,7 +10,10 @@ const go = new Go()
 class HCLParser {
   private wasmModule: Promise<WebAssembly.Module> | null = null
 
-  get wasmInstance(): Promise<WebAssembly.Instance> {
+  /**
+   * @returns a fresh instance of the HCL plugin web assembly module
+   */
+  private get wasmInstance(): Promise<WebAssembly.Instance> {
     if (this.wasmModule === null) {
       // Load web assembly module data once in the life of a parser
       this.wasmModule = (async () => {
@@ -31,7 +34,16 @@ class HCLParser {
     return this.wasmModule.then(module => WebAssembly.instantiate(module, go.importObject))
   }
 
-  async Parse(src: Buffer, filename: string): Promise<{ body: HCLBlock; errors: string[] }> {
+  /**
+   * Parse serialized HCL data
+   *
+   * @param src The data to parse
+   * @param filename The name of the file from which the data was read, this will be used
+   *  in error messages to specify the location of each error
+   * @returns body: The parsed HCL body
+   *          errors: a list of errors encountered during parsing
+   */
+  public async Parse(src: Buffer, filename: string): Promise<{ body: HCLBlock; errors: string[] }> {
     try {
       await new Promise<void>(async (resolve) => {
         // Setup arguments to parse function
@@ -57,7 +69,13 @@ class HCLParser {
     }
   }
 
-  async Dump(body: HCLBlock): Promise<Buffer> {
+  /**
+   * Serialize structured HCL data to buffer
+   *
+   * @param body The HCL data to dump
+   * @returns The serialized data
+   */
+  public async Dump(body: HCLBlock): Promise<Buffer> {
     try {
       await new Promise<void>(async (resolve) => {
         // Setup arguments to dump function

@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import wu from 'wu'
-import { CircularDependencyError, Graph, DiffResult } from '../src/dag'
+import { CircularDependencyError, DependencyGraph, DiffResult } from '../src/dag'
 
 class MaxCounter {
   private current: number = 0
@@ -22,10 +22,10 @@ class MaxCounter {
   }
 }
 
-describe('Graph', () => {
-  let graph: Graph<string>
+describe('DependencyGraph', () => {
+  let graph: DependencyGraph<string>
   beforeEach(() => {
-    graph = new Graph<string>()
+    graph = new DependencyGraph<string>()
   })
 
   describe('addNode', () => {
@@ -44,14 +44,14 @@ describe('Graph', () => {
     })
   })
 
-  describe('getSuccessors', () => {
+  describe('getDependencies', () => {
     describe('when a node exists and has successors', () => {
       beforeEach(() => {
         graph.addNode('n1', 'n2', 'n3')
       })
 
       it('should return them', () => {
-        expect(graph.getSuccessors('n1')).toEqual(['n2', 'n3'])
+        expect(graph.getDependencies('n1')).toEqual(['n2', 'n3'])
       })
     })
 
@@ -61,7 +61,7 @@ describe('Graph', () => {
       })
 
       it('should return an empty iterator', () => {
-        expect(graph.getSuccessors('n2')).toEqual([])
+        expect(graph.getDependencies('n2')).toEqual([])
       })
     })
 
@@ -71,7 +71,7 @@ describe('Graph', () => {
       })
 
       it('should return an empty iterator', () => {
-        expect(graph.getSuccessors('n3')).toEqual([])
+        expect(graph.getDependencies('n3')).toEqual([])
       })
 
       it('should not add it to the graph', () => {
@@ -80,10 +80,10 @@ describe('Graph', () => {
     })
   })
 
-  describe('topologicalSortGroups', () => {
+  describe('evaluationOrderGroups', () => {
     let res: string[][]
     const getResult = (): void => {
-      res = [...wu(graph.topologicalSortGroups()).map(g => [...g])]
+      res = [...wu(graph.evaluationOrderGroups()).map(g => [...g])]
     }
 
     describe('for a simple graph', () => {
@@ -108,10 +108,10 @@ describe('Graph', () => {
     })
   })
 
-  describe('topologicalSort', () => {
+  describe('evaluationOrder', () => {
     let res: string[]
     const getResult = (): void => {
-      res = [...wu(graph.topologicalSort())]
+      res = [...wu(graph.evaluationOrder())]
     }
 
     describe('for a simple graph', () => {
@@ -171,7 +171,7 @@ describe('Graph', () => {
       const handled = new Set<string>()
       handler = jest.fn((node: string) => {
         handled.add(node)
-        expect(wu(graph.getSuccessors(node)).every(n => handled.has(n))).toBeTruthy()
+        expect(wu(graph.getDependencies(node)).every(n => handled.has(n))).toBeTruthy()
       })
 
       graph.addNode('n2', 'n1')
@@ -204,7 +204,8 @@ describe('Graph', () => {
     let result: Promise<void>
     let concurrencyCounter: MaxCounter
 
-    const immediatePromise = (): Promise<void> => new Promise(setImmediate)
+    // simulates an async operation in zero time
+    const dummyAsyncOperation = (): Promise<void> => new Promise(resolve => setTimeout(resolve, 0))
 
     beforeEach(() => {
       concurrencyCounter = new MaxCounter()
@@ -213,8 +214,8 @@ describe('Graph', () => {
       handler = jest.fn(async node => {
         concurrencyCounter.increment()
         expect(handled).not.toContain(node)
-        expect(wu(graph.getSuccessors(node)).every(n => handled.has(n))).toBeTruthy()
-        await immediatePromise()
+        expect(wu(graph.getDependencies(node)).every(n => handled.has(n))).toBeTruthy()
+        await dummyAsyncOperation()
         handled.add(node)
         concurrencyCounter.decrement()
       })
@@ -258,15 +259,15 @@ describe('Graph', () => {
   })
 
   describe('diff', () => {
-    let g1: Graph<string>
-    let g2: Graph<string>
+    let g1: DependencyGraph<string>
+    let g2: DependencyGraph<string>
 
     describe('given two simple graphs', () => {
       let diffResult: DiffResult<string>
 
       beforeEach(() => {
-        g1 = new Graph<string>()
-        g2 = new Graph<string>()
+        g1 = new DependencyGraph<string>()
+        g2 = new DependencyGraph<string>()
 
         g1.addNode('n0', 'n1')
         g1.addNode('n3', 'n1', 'n2', 'n0')
@@ -277,26 +278,32 @@ describe('Graph', () => {
         diffResult = g1.diff(g2, n => n !== 'n3')
       })
 
-      it('should have the added nodes', () => {
-        expect(diffResult.graph.getSuccessors('n6')).toEqual([])
+      it('should return the added nodes', () => {
+        expect(diffResult.graph.getDependencies('n6')).toEqual([])
         expect(diffResult.actions.get('n6')).toBe('add')
 
-        expect(diffResult.graph.getSuccessors('n7')).toEqual(['n6'])
+        expect(diffResult.graph.getDependencies('n7')).toEqual(['n6'])
         expect(diffResult.actions.get('n7')).toBe('add')
       })
 
-      it('should have the removed nodes', () => {
-        expect(diffResult.graph.getSuccessors('n0')).toEqual(['n1'])
+      it('should return the removed nodes', () => {
+        expect(diffResult.graph.getDependencies('n0')).toEqual(['n1'])
         expect(diffResult.actions.get('n0')).toBe('remove')
+
+        expect(diffResult.graph.getDependencies('n5')).toEqual(['n4'])
+        expect(diffResult.actions.get('n5')).toBe('remove')
+
+        expect(diffResult.graph.getDependencies('n4')).toEqual([])
+        expect(diffResult.actions.get('n4')).toBe('remove')
       })
 
-      it('should have the modified nodes', () => {
-        expect(diffResult.graph.getSuccessors('n3')).toEqual(['n1', 'n2', 'n0'])
+      it('should return the modified nodes', () => {
+        expect(diffResult.graph.getDependencies('n3')).toEqual(['n1', 'n2', 'n0'])
         expect(diffResult.actions.get('n3')).toBe('modify')
       })
 
-      it('should have the unmodified nodes', () => {
-        expect(diffResult.graph.getSuccessors('n1')).toEqual([])
+      it('should return the unmodified nodes', () => {
+        expect(diffResult.graph.getDependencies('n1')).toEqual([])
         expect(diffResult.actions.get('n1')).toBeUndefined()
       })
     })

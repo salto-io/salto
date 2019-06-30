@@ -11,7 +11,7 @@ export type NodeHandler<T> = (t: T) => void
 export type DiffAction = 'add' | 'remove' | 'modify'
 
 export interface DiffResult<T> {
-  graph: Graph<T>
+  graph: DependencyGraph<T>
   actions: Map<T, DiffAction>
 }
 
@@ -38,19 +38,22 @@ export class CircularDependencyError<T> extends Error {
   }
 }
 
-class SuccessorMap<T> extends NodeMap<T> {
-  freeNodes(source: Iterable<T>): Iterable<T> {
+// helper structure used for visiting/walking the graph in evaluation (aka topological) order
+class DependencyMap<T> extends NodeMap<T> {
+  // returns nodes without dependencies - to be visited next in evaluation order
+  nodesWithNoDependencies(source: Iterable<T>): Iterable<T> {
     return wu(source).filter(node => this.get(node).size === 0)
   }
 
-  // returns the affected successors
+  // deletes a node and returns the affected nodes (nodes that depend on the deleted node)
   deleteNode(node: T): Iterable<T> {
     this.delete(node)
     return wu(this)
-      .filter(([_n, succ]) => succ.delete(node))
+      .filter(([_n, dep]) => dep.delete(node))
       .map(([affectedNode]) => affectedNode)
   }
 
+  // used after walking the graph had finished - any undeleted nodes represent a cycle
   ensureEmpty(): void {
     if (this.size !== 0) {
       throw new CircularDependencyError(this)
@@ -58,162 +61,136 @@ class SuccessorMap<T> extends NodeMap<T> {
   }
 }
 
-export class Graph<T> {
-  private readonly successors = new NodeMap<T>()
-  private readonly predecessors = new NodeMap<T>()
+export class DependencyGraph<T> {
+  private readonly dependencies = new NodeMap<T>()
+  private readonly reverseDependencies = new NodeMap<T>()
 
-  addNode(node: T, ...successors: T[]): void {
-    updateSet(this.successors.get(node), successors)
-    successors.forEach(successor => {
-      this.addNode(successor)
-      this.predecessors.get(successor).add(node)
+  addNode(node: T, ...dependsOn: T[]): void {
+    updateSet(this.dependencies.get(node), dependsOn)
+    dependsOn.forEach(dependency => {
+      this.addNode(dependency)
+      this.reverseDependencies.get(dependency).add(node)
     })
   }
 
-  getSuccessors(node: T): Iterable<T> {
-    return this.successors.has(node) ? [...this.successors.get(node)] : []
+  getDependencies(node: T): Iterable<T> {
+    return this.dependencies.has(node) ? [...this.dependencies.get(node)] : []
   }
 
-  private removeEdge(node: T, succ: T): void {
-    this.successors.get(node).delete(succ)
-    this.predecessors.get(succ).delete(node)
+  private removeEdge(node: T, dependsOn: T): void {
+    this.dependencies.get(node).delete(dependsOn)
+    this.reverseDependencies.get(dependsOn).delete(node)
   }
 
   edges(): [T, T][] {
     return [...this.edgesIter()]
   }
 
-  *edgesIter(): IterableIterator<[T, T]> {
-    const succIter = this.successors.entries()[Symbol.iterator]()
-
-    while (true) {
-      const { done, value } = succIter.next()
-      if (done) {
-        break
-      }
-
-      const [item, depsSet] = value
-
-      const depsIter = depsSet[Symbol.iterator]()
-
-      while (true) {
-        // eslint-disable-next-line no-shadow
-        const { done, value } = depsIter.next()
-        if (done) {
-          break
-        }
-
-        yield [item, value]
-      }
-    }
+  edgesIter(): IterableIterator<[T, T]> {
+    return wu(this.dependencies)
+      .map(([node, dependencies]) => wu(dependencies).map(dependency => [node, dependency]))
+      .flatten(true)
   }
 
   // taken from: https://stackoverflow.com/a/32242282
   removeRedundantEdges(): this {
-    const indirectPredMap = new NodeMap<T>()
+    const indirectReverseDepMap = new NodeMap<T>()
 
     const removeDups = (node: T): void => {
-      const indirectPred = indirectPredMap.get(node)
-      const directPred = [...this.predecessors.get(node)]
+      const indirectReverseDep = indirectReverseDepMap.get(node)
+      const directReverseDep = [...this.reverseDependencies.get(node)]
 
-      const dups = directPred.filter(pred => indirectPred.has(pred))
+      const dups = directReverseDep.filter(reverseDep => indirectReverseDep.has(reverseDep))
 
-      dups.forEach(pred => this.removeEdge(pred, node))
+      dups.forEach(reverseDep => this.removeEdge(reverseDep, node))
 
-      updateSet(indirectPred, directPred)
+      updateSet(indirectReverseDep, directReverseDep)
 
-      this.successors.get(node)
-        .forEach(succ => updateSet(indirectPredMap.get(succ), indirectPred))
+      this.dependencies.get(node)
+        .forEach(dependency => updateSet(indirectReverseDepMap.get(dependency), indirectReverseDep))
     }
 
-    [...this.topologicalSort()]
+    [...this.evaluationOrder()]
       .reverse()
       .forEach(removeDups)
 
     return this
   }
 
-  private newSuccessorMap(): SuccessorMap<T> {
-    return new SuccessorMap<T>(this.successors.clone())
+  private newDependencyMap(): DependencyMap<T> {
+    return new DependencyMap<T>(this.dependencies.clone())
   }
 
-  topologicalSortGroups(): Iterable<Iterable<T>> {
-    const successors = this.newSuccessorMap()
+  *evaluationOrderGroups(): IterableIterator<Iterable<T>> {
+    const dependencies = this.newDependencyMap()
+    let nextNodes: Iterable<T> = dependencies.keys()
 
-    return {
-      [Symbol.iterator](): Iterator<Iterable<T>> {
-        let nextNodes: Iterable<T> = successors.keys()
+    while (true) {
+      const freeNodes = [...dependencies.nodesWithNoDependencies(nextNodes)]
+      const done = freeNodes.length === 0
 
-        return {
-          next(): IteratorResult<Iterable<T>> {
-            const freeNodes = [...successors.freeNodes(nextNodes)]
-            const done = freeNodes.length === 0
+      if (done) {
+        dependencies.ensureEmpty()
+        break
+      }
 
-            if (done) {
-              successors.ensureEmpty()
-            } else {
-              nextNodes = new Set<T>(wu(freeNodes).map(n => successors.deleteNode(n)).flatten())
-            }
-
-            return { done, value: freeNodes }
-          },
-        }
-      },
+      nextNodes = new Set<T>(wu(freeNodes).map(n => dependencies.deleteNode(n)).flatten())
+      yield freeNodes
     }
   }
 
-  topologicalSort(): Iterable<T> {
-    return wu(this.topologicalSortGroups()).flatten()
+  evaluationOrder(): Iterable<T> {
+    return wu(this.evaluationOrderGroups()).flatten()
   }
 
   async walk(handler: AsyncNodeHandler<T>): Promise<void> {
-    const successors = this.newSuccessorMap()
+    const dependencies = this.newDependencyMap()
 
-    const next = (affectedSuccessors: Iterable<T>): Promise<void> =>
+    const next = (affectedNodes: Iterable<T>): Promise<void> =>
       promiseAllToSingle(
-        wu(successors.freeNodes(affectedSuccessors))
-          .map(node => handler(node).then(() => next(successors.deleteNode(node))))
+        wu(dependencies.nodesWithNoDependencies(affectedNodes))
+          .map(node => handler(node).then(() => next(dependencies.deleteNode(node))))
       )
 
-    await next(successors.keys())
+    await next(dependencies.keys())
 
-    successors.ensureEmpty()
+    dependencies.ensureEmpty()
   }
 
   walkSync(handler: NodeHandler<T>): void {
-    const successors = this.newSuccessorMap()
+    const dependencies = this.newDependencyMap()
 
-    const next = (affectedSuccessors: Iterable<T>): void => {
-      wu(successors.freeNodes(affectedSuccessors))
+    const next = (affectedNodes: Iterable<T>): void => {
+      wu(dependencies.nodesWithNoDependencies(affectedNodes))
         .forEach(node => {
           handler(node)
-          next(successors.deleteNode(node))
+          next(dependencies.deleteNode(node))
         })
     }
 
-    next(successors.keys())
+    next(dependencies.keys())
 
-    successors.ensureEmpty()
+    dependencies.ensureEmpty()
   }
 
-  diff(other: Graph<T>, equals: (node: T) => boolean): DiffResult<T> {
+  diff(other: DependencyGraph<T>, equals: (node: T) => boolean): DiffResult<T> {
     const actions = new Map<T, DiffAction>()
 
     const before = this
     const after = other
-    const result = new Graph<T>()
+    const result = new DependencyGraph<T>()
 
-    const allNodes = new Set<T>([...before.successors.keys(), ...after.successors.keys()])
+    const allNodes = new Set<T>([...before.dependencies.keys(), ...after.dependencies.keys()])
 
     allNodes.forEach(node => {
-      if (before.successors.has(node) && !after.successors.has(node)) {
-        result.addNode(node, ...before.successors.get(node))
+      if (before.dependencies.has(node) && !after.dependencies.has(node)) {
+        result.addNode(node, ...before.dependencies.get(node))
         actions.set(node, 'remove')
-      } else if (!before.successors.has(node) && after.successors.has(node)) {
-        result.addNode(node, ...after.successors.get(node))
+      } else if (!before.dependencies.has(node) && after.dependencies.has(node)) {
+        result.addNode(node, ...after.dependencies.get(node))
         actions.set(node, 'add')
       } else {
-        result.addNode(node, ...[...before.successors.get(node), ...after.successors.get(node)])
+        result.addNode(node, ...[...before.dependencies.get(node), ...after.dependencies.get(node)])
         if (!equals(node)) {
           actions.set(node, 'modify')
         }

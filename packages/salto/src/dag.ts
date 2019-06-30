@@ -8,6 +8,13 @@ const promiseAllToSingle = (promises: Iterable<Promise<void>>): Promise<void> =>
 export type AsyncNodeHandler<T> = (t: T) => Promise<void>
 export type NodeHandler<T> = (t: T) => void
 
+export type DiffAction = 'add' | 'remove' | 'modify'
+
+export interface DiffResult<T> {
+  graph: Graph<T>
+  actions: Map<T, DiffAction>
+}
+
 class NodeMap<T> extends DefaultMap<T, Set<T>> {
   constructor(entries?: Iterable<[T, Set<T>]>) {
     super(() => new Set<T>(), entries)
@@ -64,7 +71,7 @@ export class Graph<T> {
   }
 
   getSuccessors(node: T): Iterable<T> {
-    return this.successors.get(node)
+    return this.successors.has(node) ? [...this.successors.get(node)] : []
   }
 
   private removeEdge(node: T, succ: T): void {
@@ -187,5 +194,32 @@ export class Graph<T> {
     next(successors.keys())
 
     successors.ensureEmpty()
+  }
+
+  diff(other: Graph<T>, equals: (node: T) => boolean): DiffResult<T> {
+    const actions = new Map<T, DiffAction>()
+
+    const before = this
+    const after = other
+    const result = new Graph<T>()
+
+    const allNodes = new Set<T>([...before.successors.keys(), ...after.successors.keys()])
+
+    allNodes.forEach(node => {
+      if (before.successors.has(node) && !after.successors.has(node)) {
+        result.addNode(node, ...before.successors.get(node))
+        actions.set(node, 'remove')
+      } else if (!before.successors.has(node) && after.successors.has(node)) {
+        result.addNode(node, ...after.successors.get(node))
+        actions.set(node, 'add')
+      } else {
+        result.addNode(node, ...[...before.successors.get(node), ...after.successors.get(node)])
+        if (!equals(node)) {
+          actions.set(node, 'modify')
+        }
+      }
+    })
+
+    return { graph: result, actions }
   }
 }

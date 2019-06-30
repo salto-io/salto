@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import wu from 'wu'
-import { CircularDependencyError, Graph } from '../src/dag'
+import { CircularDependencyError, Graph, DiffResult } from '../src/dag'
 
 class MaxCounter {
   private current: number = 0
@@ -40,6 +40,42 @@ describe('Graph', () => {
       beforeEach(() => graph.addNode('n1'))
       it('should not create an edge', () => {
         expect(graph.edges().length).toEqual(0)
+      })
+    })
+  })
+
+  describe('getSuccessors', () => {
+    describe('when a node exists and has successors', () => {
+      beforeEach(() => {
+        graph.addNode('n1', 'n2', 'n3')
+      })
+
+      it('should return them', () => {
+        expect(graph.getSuccessors('n1')).toEqual(['n2', 'n3'])
+      })
+    })
+
+    describe('when a node exists and has no successors', () => {
+      beforeEach(() => {
+        graph.addNode('n1', 'n2')
+      })
+
+      it('should return an empty iterator', () => {
+        expect(graph.getSuccessors('n2')).toEqual([])
+      })
+    })
+
+    describe('when a node does not exist', () => {
+      beforeEach(() => {
+        graph.addNode('n1', 'n2')
+      })
+
+      it('should return an empty iterator', () => {
+        expect(graph.getSuccessors('n3')).toEqual([])
+      })
+
+      it('should not add it to the graph', () => {
+        expect(graph.edges()).toEqual([['n1', 'n2']])
       })
     })
   })
@@ -218,6 +254,51 @@ describe('Graph', () => {
         'should reject with CircularDependencyError',
         () => expect(result).rejects.toBeInstanceOf(CircularDependencyError)
       )
+    })
+  })
+
+  describe('diff', () => {
+    let g1: Graph<string>
+    let g2: Graph<string>
+
+    describe('given two simple graphs', () => {
+      let diffResult: DiffResult<string>
+
+      beforeEach(() => {
+        g1 = new Graph<string>()
+        g2 = new Graph<string>()
+
+        g1.addNode('n0', 'n1')
+        g1.addNode('n3', 'n1', 'n2', 'n0')
+        g2.addNode('n3', 'n1')
+        g1.addNode('n5', 'n4')
+        g2.addNode('n7', 'n6')
+
+        diffResult = g1.diff(g2, n => n !== 'n3')
+      })
+
+      it('should have the added nodes', () => {
+        expect(diffResult.graph.getSuccessors('n6')).toEqual([])
+        expect(diffResult.actions.get('n6')).toBe('add')
+
+        expect(diffResult.graph.getSuccessors('n7')).toEqual(['n6'])
+        expect(diffResult.actions.get('n7')).toBe('add')
+      })
+
+      it('should have the removed nodes', () => {
+        expect(diffResult.graph.getSuccessors('n0')).toEqual(['n1'])
+        expect(diffResult.actions.get('n0')).toBe('remove')
+      })
+
+      it('should have the modified nodes', () => {
+        expect(diffResult.graph.getSuccessors('n3')).toEqual(['n1', 'n2', 'n0'])
+        expect(diffResult.actions.get('n3')).toBe('modify')
+      })
+
+      it('should have the unmodified nodes', () => {
+        expect(diffResult.graph.getSuccessors('n1')).toEqual([])
+        expect(diffResult.actions.get('n1')).toBeUndefined()
+      })
     })
   })
 })

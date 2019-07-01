@@ -29,10 +29,12 @@ bower_components
 # Editors
 .idea
 *.iml
+*~
 
 # OS metadata
 .DS_Store
 Thumbs.db
 
-/dist
+# Ignore built ts files
+dist/**/*
 

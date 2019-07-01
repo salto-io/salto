@@ -43,7 +43,7 @@ class HCLParser {
    * @returns body: The parsed HCL body
    *          errors: a list of errors encountered during parsing
    */
-  public async Parse(src: Buffer, filename: string): Promise<{ body: HCLBlock; errors: string[] }> {
+  public async parse(src: Buffer, filename: string): Promise<{ body: HCLBlock; errors: string[] }> {
     try {
       await new Promise<void>(async (resolve) => {
         // Setup arguments to parse function
@@ -75,7 +75,7 @@ class HCLParser {
    * @param body The HCL data to dump
    * @returns The serialized data
    */
-  public async Dump(body: HCLBlock): Promise<Buffer> {
+  public async dump(body: HCLBlock): Promise<Buffer> {
     try {
       await new Promise<void>(async (resolve) => {
         // Setup arguments to dump function

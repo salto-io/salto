@@ -20,12 +20,14 @@ func formatErr(err *hcl.Diagnostic) string {
 
 // ParseHCL parses a buffer with HCL data and returns the structure
 // Args:
-// 	src: buffer with data to parse
-// 	filename: the filename to include in error messages
+// 	args: a js object that contains the following fields
+//		src: buffer with data to parse
+// 		filename: the filename to include in error messages
 //
 // Returns:
-// 	value: The parsed body
-// 	errors: a list of error strings
+// 	a js object that contains the following fields
+//	  body: The parsed body
+// 		errors: a list of error strings
 func ParseHCL(args js.Value) interface{} {
 	// Get input parameters
 	src := []byte(args.Get("src").String())
@@ -55,10 +57,11 @@ func ParseHCL(args js.Value) interface{} {
 
 // DumpHCL formats blocks to HCL syntax
 // Args:
-//  body: an object to be serialized to HCL
+//  args: a js object that contains the following fields
+//    body: an object to be serialized to HCL
 //
 // Returns:
-//  value: A buffer with the serialized HCL
+//  A buffer with the serialized HCL
 func DumpHCL(args js.Value) interface{} {
 	file := hclwrite.NewEmptyFile()
 

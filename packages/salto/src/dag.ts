@@ -7,15 +7,9 @@ const promiseAllToSingle = (promises: Iterable<Promise<void>>): Promise<void> =>
 
 export type AsyncNodeHandler<T> = (t: T) => Promise<void>
 export type NodeHandler<T> = (t: T) => void
+export type GraphNodeId = string | number
 
-export type DiffAction = 'add' | 'remove' | 'modify'
-
-export interface DiffResult<T> {
-  graph: DependencyGraph<T>
-  actions: Map<T, DiffAction>
-}
-
-class NodeMap<T> extends DefaultMap<T, Set<T>> {
+class NodeMap<T extends GraphNodeId> extends DefaultMap<T, Set<T>> {
   constructor(entries?: Iterable<[T, Set<T>]>) {
     super(() => new Set<T>(), entries)
   }
@@ -32,14 +26,14 @@ class NodeMap<T> extends DefaultMap<T, Set<T>> {
   }
 }
 
-export class CircularDependencyError<T> extends Error {
+export class CircularDependencyError<T extends GraphNodeId> extends Error {
   constructor(data: NodeMap<T>) {
     super(`Circular dependencies exist among these items: ${data}`)
   }
 }
 
 // helper structure used for visiting/walking the graph in evaluation (aka topological) order
-class DependencyMap<T> extends NodeMap<T> {
+class DependencyMap<T extends GraphNodeId> extends NodeMap<T> {
   // returns nodes without dependencies - to be visited next in evaluation order
   nodesWithNoDependencies(source: Iterable<T>): Iterable<T> {
     return wu(source).filter(node => this.get(node).size === 0)
@@ -61,7 +55,7 @@ class DependencyMap<T> extends NodeMap<T> {
   }
 }
 
-export class DependencyGraph<T> {
+export class DependencyGraph<T extends GraphNodeId> {
   private readonly dependencies = new NodeMap<T>()
   private readonly reverseDependencies = new NodeMap<T>()
 
@@ -171,32 +165,5 @@ export class DependencyGraph<T> {
     next(dependencies.keys())
 
     dependencies.ensureEmpty()
-  }
-
-  diff(other: DependencyGraph<T>, equals: (node: T) => boolean): DiffResult<T> {
-    const actions = new Map<T, DiffAction>()
-
-    const before = this
-    const after = other
-    const result = new DependencyGraph<T>()
-
-    const allNodes = new Set<T>([...before.dependencies.keys(), ...after.dependencies.keys()])
-
-    allNodes.forEach(node => {
-      if (before.dependencies.has(node) && !after.dependencies.has(node)) {
-        result.addNode(node, ...before.dependencies.get(node))
-        actions.set(node, 'remove')
-      } else if (!before.dependencies.has(node) && after.dependencies.has(node)) {
-        result.addNode(node, ...after.dependencies.get(node))
-        actions.set(node, 'add')
-      } else {
-        result.addNode(node, ...[...before.dependencies.get(node), ...after.dependencies.get(node)])
-        if (!equals(node)) {
-          actions.set(node, 'modify')
-        }
-      }
-    })
-
-    return { graph: result, actions }
   }
 }

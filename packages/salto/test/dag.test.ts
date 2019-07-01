@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import wu from 'wu'
-import { CircularDependencyError, DependencyGraph, DiffResult } from '../src/dag'
+import { CircularDependencyError, DependencyGraph } from '../src/dag'
 
 class MaxCounter {
   private current: number = 0
@@ -255,57 +255,6 @@ describe('DependencyGraph', () => {
         'should reject with CircularDependencyError',
         () => expect(result).rejects.toBeInstanceOf(CircularDependencyError)
       )
-    })
-  })
-
-  describe('diff', () => {
-    let g1: DependencyGraph<string>
-    let g2: DependencyGraph<string>
-
-    describe('given two simple graphs', () => {
-      let diffResult: DiffResult<string>
-
-      beforeEach(() => {
-        g1 = new DependencyGraph<string>()
-        g2 = new DependencyGraph<string>()
-
-        g1.addNode('n0', 'n1')
-        g1.addNode('n3', 'n1', 'n2', 'n0')
-        g2.addNode('n3', 'n1')
-        g1.addNode('n5', 'n4')
-        g2.addNode('n7', 'n6')
-
-        diffResult = g1.diff(g2, n => n !== 'n3')
-      })
-
-      it('should return the added nodes', () => {
-        expect(diffResult.graph.getDependencies('n6')).toEqual([])
-        expect(diffResult.actions.get('n6')).toBe('add')
-
-        expect(diffResult.graph.getDependencies('n7')).toEqual(['n6'])
-        expect(diffResult.actions.get('n7')).toBe('add')
-      })
-
-      it('should return the removed nodes', () => {
-        expect(diffResult.graph.getDependencies('n0')).toEqual(['n1'])
-        expect(diffResult.actions.get('n0')).toBe('remove')
-
-        expect(diffResult.graph.getDependencies('n5')).toEqual(['n4'])
-        expect(diffResult.actions.get('n5')).toBe('remove')
-
-        expect(diffResult.graph.getDependencies('n4')).toEqual([])
-        expect(diffResult.actions.get('n4')).toBe('remove')
-      })
-
-      it('should return the modified nodes', () => {
-        expect(diffResult.graph.getDependencies('n3')).toEqual(['n1', 'n2', 'n0'])
-        expect(diffResult.actions.get('n3')).toBe('modify')
-      })
-
-      it('should return the unmodified nodes', () => {
-        expect(diffResult.graph.getDependencies('n1')).toEqual([])
-        expect(diffResult.actions.get('n1')).toBeUndefined()
-      })
     })
   })
 })

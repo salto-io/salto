@@ -9,8 +9,9 @@
   "private": true,
   "scripts": {
     "prepare": "npm run build",
-    "build": "npm run lint && npm run build-go",
+    "build": "npm run lint && npm run build-ts",
     "client": "npx ts-node src/cli/salto-cli.ts",
+    "build-ts": "tsc",
     "test": "jest --forceExit --verbose --detectOpenHandles",
     "watch-test": "npm run test -- --watchAll",
     "build-go": "./src/parser/hcl_plugin/build.sh ./dist/hcl.wasm",

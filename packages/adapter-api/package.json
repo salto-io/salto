@@ -7,8 +7,7 @@
     "url": "https://github.com/salto-io/adapter-api"
   },
   "private": true,
-  "bin": "./dist/index",
-  "main": "./dist/index",
+  "main": "./dist/index.js",
   "scripts": {
     "prepack": "npm run build-ts",
     "prepare": "npm run build",

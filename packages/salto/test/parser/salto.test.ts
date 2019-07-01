@@ -1,6 +1,6 @@
 import Parser from '../../src/parser/salto'
 import {
-  ObjectType, PrimitiveType, PrimitiveTypes, TypesRegistry, Type,
+  ObjectType, PrimitiveType, PrimitiveTypes, TypesRegistry, Type, TypeID,
 } from '../../src/core/elements'
 
 describe('Salto parser', () => {
@@ -134,5 +134,63 @@ describe('Salto parser', () => {
     const body = 'bla {}'
     const parser = new Parser(new TypesRegistry())
     await expect(parser.parse(Buffer.from(body), 'none')).rejects.toThrow()
+  })
+})
+
+describe('Salto Dump', () => {
+  const registry = new TypesRegistry()
+
+  const primitive = registry.getType(
+    new TypeID({ adapter: 'salesforce', name: 'string' }),
+    PrimitiveTypes.STRING,
+  )
+  const model = registry.getType(new TypeID({ adapter: 'salesforce', name: 'test' })) as ObjectType
+  model.fields.name = primitive
+  model.annotationsValues = {
+    name: {
+      label: 'Name',
+    },
+    // eslint-disable-next-line @typescript-eslint/camelcase
+    lead_convert_settings: {
+      account: [
+        {
+          input: 'bla',
+          output: 'foo',
+        },
+      ],
+    },
+  }
+
+  let body: Buffer
+
+  beforeAll(async () => {
+    body = await Parser.dump([primitive, model])
+  })
+
+  it('dumps primitive string', () => {
+    expect(body).toMatch('type "salesforce_string" "is" "string" {')
+  })
+
+  describe('dumped model', () => {
+    it('has correct block type and label', () => {
+      expect(body).toMatch('model "salesforce_test" {')
+    })
+    it('has complex attributes', () => {
+      expect(body).toMatch(
+        /lead_convert_settings = {\s*account = \[{\s*input = "bla",\s*output = "foo"\s*}\]\s*}/m,
+      )
+    })
+    it('has fields', () => {
+      expect(body).toMatch(
+        /salesforce_string "name" {\s+label = "Name"\s+}/m,
+      )
+    })
+    it('can be parsed back', async () => {
+      const { elements, errors } = await new Parser(new TypesRegistry()).parse(body, 'none')
+      expect(errors.length).toEqual(0)
+      expect(elements.length).toEqual(2)
+      expect(elements[0]).toEqual(primitive)
+      expect(elements[1]).toEqual(model)
+    })
   })
 })

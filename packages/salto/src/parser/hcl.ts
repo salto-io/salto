@@ -45,7 +45,7 @@ class HCLParser {
    */
   public async parse(src: Buffer, filename: string): Promise<{ body: HCLBlock; errors: string[] }> {
     try {
-      await new Promise<void>(async (resolve) => {
+      await new Promise<void>(async resolve => {
         // Setup arguments to parse function
         global.hclParserFunc = 'parse'
         global.hclParserArgs = {
@@ -77,7 +77,7 @@ class HCLParser {
    */
   public async dump(body: HCLBlock): Promise<Buffer> {
     try {
-      await new Promise<void>(async (resolve) => {
+      await new Promise<void>(async resolve => {
         // Setup arguments to dump function
         global.hclParserFunc = 'dump'
         global.hclParserArgs = {

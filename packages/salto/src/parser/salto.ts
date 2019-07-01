@@ -1,34 +1,42 @@
+import * as _ from 'lodash'
+
 import HCLParser from './hcl'
 import {
   TypesRegistry, Type, TypeID, ObjectType, PrimitiveType, PrimitiveTypes,
+  isObjectType, isPrimitiveType,
 } from '../core/elements'
 
 enum Keywords {
   MODEL = 'model',
   TYPE_DEFINITION = 'type',
   TYPE_INHERITENCE_SEPARATOR = 'is',
+
+  // Primitive types
+  TYPE_STRING = 'string',
 }
 
 // Assume all primitives are strings for now
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const getPrimitiveType = (_typeName: string): PrimitiveTypes => PrimitiveTypes.STRING
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const getPrimitiveTypeName = (_primitiveType: PrimitiveTypes): string => Keywords.TYPE_STRING
 
 export default class Parser {
-  static getTypeID(fullname: string): TypeID {
+  private static getTypeID(fullname: string): TypeID {
     const separatorIdx = fullname.indexOf(TypeID.NAMESPACE_SEPERATOR)
     const adapter = fullname.slice(0, separatorIdx)
     const name = fullname.slice(separatorIdx + TypeID.NAMESPACE_SEPERATOR.length)
     return new TypeID({ adapter, name })
   }
 
-  types: TypesRegistry
+  private types: TypesRegistry
 
-  constructor(types: TypesRegistry) {
+  public constructor(types: TypesRegistry) {
     this.types = new TypesRegistry()
     this.types = this.types.merge(types)
   }
 
-  parseType(typeBlock: HCLBlock): Type {
+  private parseType(typeBlock: HCLBlock): Type {
     const [typeName] = typeBlock.labels
     const typeObj = this.types.getType(Parser.getTypeID(typeName)) as ObjectType
 
@@ -52,7 +60,7 @@ export default class Parser {
     return typeObj
   }
 
-  parsePrimitiveType(typeBlock: HCLBlock): PrimitiveType {
+  private parsePrimitiveType(typeBlock: HCLBlock): PrimitiveType {
     const [typeName, kw, baseType] = typeBlock.labels
     if (kw !== Keywords.TYPE_INHERITENCE_SEPARATOR) {
       throw new Error(`expected keyword ${Keywords.TYPE_INHERITENCE_SEPARATOR}. found ${kw}`)
@@ -64,7 +72,15 @@ export default class Parser {
     return typeObj
   }
 
-  async parse(blueprint: Buffer, filename: string):
+  /**
+   * Parse a blueprint
+   *
+   * @param blueprint A buffer the contains the blueprint to parse
+   * @param filename The name of the file from which the blueprint was read
+   * @returns elements: Type elements found in the blueprint
+   *          errors: Errors encountered during parsing
+   */
+  public async parse(blueprint: Buffer, filename: string):
     Promise<{ elements: Type[]; errors: string[] }> {
     const { body, errors } = await HCLParser.parse(blueprint, filename)
 
@@ -85,5 +101,63 @@ export default class Parser {
     })
 
     return { elements: this.types.getAllTypes(), errors }
+  }
+
+  /**
+   * Serialize elements to blueprint
+   *
+   * @param elements The elements to serialize
+   * @returns A buffer with the elements serialized as a blueprint
+   */
+  public static dump(elements: Type[]): Promise<Buffer> {
+    const blocks = elements.map(elem => {
+      let block: HCLBlock
+      if (isObjectType(elem)) {
+        // Clone the annotation values because we may delete some keys from there
+        const annotationValues = _.cloneDeep(elem.annotationsValues)
+        block = {
+          type: Keywords.MODEL,
+          labels: [elem.typeID.getFullName()],
+          attrs: annotationValues,
+          blocks: Object.entries(elem.fields).map(([fieldName, fieldType]: [string, Type]) => {
+            const fieldBlock: HCLBlock = {
+              type: fieldType.typeID.getFullName(),
+              labels: [fieldName],
+              attrs: elem.annotationsValues[fieldName] || {},
+              blocks: [],
+            }
+            // Remove the field annotations from the element annotations so they do not get
+            // serialized twice
+            delete annotationValues[fieldName]
+            return fieldBlock
+          }),
+        }
+      } else if (isPrimitiveType(elem)) {
+        block = {
+          type: Keywords.TYPE_DEFINITION,
+          labels: [
+            elem.typeID.getFullName(),
+            Keywords.TYPE_INHERITENCE_SEPARATOR,
+            getPrimitiveTypeName(elem.primitive),
+          ],
+          attrs: elem.annotationsValues,
+          blocks: [],
+        }
+      } else {
+        // Without this exception the linter won't allow us to return "block"
+        // since it might be uninitialized
+        throw new Error('unsupported type')
+      }
+      return block
+    })
+
+    const body: HCLBlock = {
+      type: '',
+      labels: [],
+      attrs: {},
+      blocks,
+    }
+
+    return HCLParser.dump(body)
   }
 }

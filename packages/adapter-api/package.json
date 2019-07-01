@@ -4,13 +4,14 @@
   "description": "Salto Adapter API",
   "repository": {
     "type": "git",
-    "url": "https://github.com/salto-io/salto"
+    "url": "https://github.com/salto-io/adapter-api"
   },
   "private": true,
   "bin": "./dist/index",
   "main": "./dist/index",
   "scripts": {
-    "prepare": "npm run build-ts",
+    "prepack": "npm run build-ts",
+    "prepare": "npm run build",
     "build": "npm run lint && npm run build-ts",
     "client": "npx ts-node src/cli/salto-cli.ts",
     "build-ts": "tsc",

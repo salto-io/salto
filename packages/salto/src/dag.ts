@@ -1,67 +1,169 @@
-import { topologicalSort, DiGraph } from 'jsnetworkx'
 import wu from 'wu'
+import { update as updateSet } from './collections/set'
+import { DefaultMap } from './collections/map'
 
-const updateSet = <T>(target: Set<T>, source: Iterable<T>):
-  void => wu(source).forEach(v => target.add(v))
+const promiseAllToSingle = (promises: Iterable<Promise<void>>): Promise<void> =>
+  Promise.all(promises).then(() => undefined)
 
-class DefaultMap<K, V> extends Map<K, V> {
-  constructor(
-    readonly initDefault: () => V,
-    entries?: ReadonlyArray<readonly [K, V]>,
-  ) {
-    super(entries)
+export type AsyncNodeHandler<T> = (t: T) => Promise<void>
+export type NodeHandler<T> = (t: T) => void
+export type GraphNodeId = string | number
+
+class NodeMap<T extends GraphNodeId> extends DefaultMap<T, Set<T>> {
+  constructor(entries?: Iterable<[T, Set<T>]>) {
+    super(() => new Set<T>(), entries)
   }
 
-  get(key: K): V {
-    if (this.has(key)) {
-      return super.get(key) as V
-    }
-    const res = this.initDefault()
-    super.set(key, res)
-    return res
+  clone(): NodeMap<T> {
+    return new NodeMap<T>(wu(this).map(([k, v]) => [k, new Set<T>(v)]))
+  }
+
+  toString(): string {
+    return `${wu(this)
+      .map(([k, s]) => `${k}->${[...s]}`)
+      .toArray()
+      .join(', ')}`
   }
 }
 
-export default class Graph<T> {
-  private readonly impl = new DiGraph(undefined, undefined)
+export class CircularDependencyError<T extends GraphNodeId> extends Error {
+  constructor(data: NodeMap<T>) {
+    super(`Circular dependencies exist among these items: ${data}`)
+  }
+}
 
-  addNode(node: T, ...dependents: T[]): void {
-    const graph = this.impl
-    graph.addNode(node)
-    dependents.forEach((dep: T) => graph.addEdge(node, dep))
+// helper structure used for visiting/walking the graph in evaluation (aka topological) order
+class DependencyMap<T extends GraphNodeId> extends NodeMap<T> {
+  // returns nodes without dependencies - to be visited next in evaluation order
+  nodesWithNoDependencies(source: Iterable<T>): Iterable<T> {
+    return wu(source).filter(node => this.get(node).size === 0)
   }
 
-  topologicalSort(): Iterable<T> {
-    return topologicalSort(this.impl, undefined)
+  // deletes a node and returns the affected nodes (nodes that depend on the deleted node)
+  deleteNode(node: T): Iterable<T> {
+    this.delete(node)
+    return wu(this)
+      .filter(([_n, dep]) => dep.delete(node))
+      .map(([affectedNode]) => affectedNode)
+  }
+
+  // used after walking the graph had finished - any undeleted nodes represent a cycle
+  ensureEmpty(): void {
+    if (this.size !== 0) {
+      throw new CircularDependencyError(this)
+    }
+  }
+}
+
+export class DependencyGraph<T extends GraphNodeId> {
+  private readonly dependencies = new NodeMap<T>()
+  private readonly reverseDependencies = new NodeMap<T>()
+
+  addNode(node: T, ...dependsOn: T[]): void {
+    updateSet(this.dependencies.get(node), dependsOn)
+    dependsOn.forEach(dependency => {
+      this.addNode(dependency)
+      this.reverseDependencies.get(dependency).add(node)
+    })
+  }
+
+  getDependencies(node: T): Iterable<T> {
+    return this.dependencies.has(node) ? [...this.dependencies.get(node)] : []
+  }
+
+  private removeEdge(node: T, dependsOn: T): void {
+    this.dependencies.get(node).delete(dependsOn)
+    this.reverseDependencies.get(dependsOn).delete(node)
   }
 
   edges(): [T, T][] {
-    return this.impl.outEdges(undefined, undefined)
+    return [...this.edgesIter()]
+  }
+
+  edgesIter(): IterableIterator<[T, T]> {
+    return wu(this.dependencies)
+      .map(([node, dependencies]) => wu(dependencies).map(dependency => [node, dependency]))
+      .flatten(true)
   }
 
   // taken from: https://stackoverflow.com/a/32242282
-  removeRedundantEdges(): Graph<T> {
-    const indirectPredMap = new DefaultMap<T, Set<T>>(() => new Set<T>())
+  removeRedundantEdges(): this {
+    const indirectReverseDepMap = new NodeMap<T>()
 
-    const graph = this.impl
+    const removeDups = (node: T): void => {
+      const indirectReverseDep = indirectReverseDepMap.get(node)
+      const directReverseDep = [...this.reverseDependencies.get(node)]
 
-    topologicalSort(graph, undefined).forEach((node: T) => {
-      const indirectPred = indirectPredMap.get(node)
-      const directPred = graph.predecessors(node) as Array<T>
+      const dups = directReverseDep.filter(reverseDep => indirectReverseDep.has(reverseDep))
 
-      directPred
-        .filter(pred => indirectPred.has(pred))
-        .forEach(pred => graph.removeEdge(pred, node))
+      dups.forEach(reverseDep => this.removeEdge(reverseDep, node))
 
-      updateSet(indirectPred, directPred)
+      updateSet(indirectReverseDep, directReverseDep)
 
-      const successors = graph.successors(node) as T[]
+      this.dependencies.get(node)
+        .forEach(dependency => updateSet(indirectReverseDepMap.get(dependency), indirectReverseDep))
+    }
 
-      successors.forEach((succ: T) => {
-        updateSet(indirectPredMap.get(succ), indirectPred)
-      })
-    })
+    [...this.evaluationOrder()]
+      .reverse()
+      .forEach(removeDups)
 
     return this
+  }
+
+  private newDependencyMap(): DependencyMap<T> {
+    return new DependencyMap<T>(this.dependencies.clone())
+  }
+
+  *evaluationOrderGroups(): IterableIterator<Iterable<T>> {
+    const dependencies = this.newDependencyMap()
+    let nextNodes: Iterable<T> = dependencies.keys()
+
+    while (true) {
+      const freeNodes = [...dependencies.nodesWithNoDependencies(nextNodes)]
+      const done = freeNodes.length === 0
+
+      if (done) {
+        dependencies.ensureEmpty()
+        break
+      }
+
+      nextNodes = new Set<T>(wu(freeNodes).map(n => dependencies.deleteNode(n)).flatten())
+      yield freeNodes
+    }
+  }
+
+  evaluationOrder(): Iterable<T> {
+    return wu(this.evaluationOrderGroups()).flatten()
+  }
+
+  async walk(handler: AsyncNodeHandler<T>): Promise<void> {
+    const dependencies = this.newDependencyMap()
+
+    const next = (affectedNodes: Iterable<T>): Promise<void> =>
+      promiseAllToSingle(
+        wu(dependencies.nodesWithNoDependencies(affectedNodes))
+          .map(node => handler(node).then(() => next(dependencies.deleteNode(node))))
+      )
+
+    await next(dependencies.keys())
+
+    dependencies.ensureEmpty()
+  }
+
+  walkSync(handler: NodeHandler<T>): void {
+    const dependencies = this.newDependencyMap()
+
+    const next = (affectedNodes: Iterable<T>): void => {
+      wu(dependencies.nodesWithNoDependencies(affectedNodes))
+        .forEach(node => {
+          handler(node)
+          next(dependencies.deleteNode(node))
+        })
+    }
+
+    next(dependencies.keys())
+
+    dependencies.ensureEmpty()
   }
 }

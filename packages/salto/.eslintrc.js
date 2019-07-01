@@ -51,8 +51,20 @@ module.exports = {
         'jsx-a11y/anchor-is-valid': [0],
         indent: ['error'],
         '@typescript-eslint/indent': 'off',
-        'no-param-reassign': [2, { 'props': false }],
         semi: ['error', 'never'],
+        'no-param-reassign': [2, { 'props': false }],
+        '@typescript-eslint/no-unused-vars': [1, { argsIgnorePattern: '^_' }],
+        'no-constant-condition': ['error', { checkLoops: false }],
+        'generator-star-spacing': ["error", { "before": true, "after": false }],
+        'arrow-parens': ['error', 'as-needed'],
+        'comma-dangle': ['error', {
+            functions: 'ignore',
+            arrays: 'always-multiline',
+            objects: 'always-multiline',
+            imports: 'always-multiline',
+            exports: 'always-multiline',
+        }],
+        'implicit-arrow-linebreak': ['off'],
     },
     overrides: [
         {

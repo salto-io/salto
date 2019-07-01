@@ -10,7 +10,10 @@ const go = new Go()
 class HCLParser {
   private wasmModule: Promise<WebAssembly.Module> | null = null
 
-  get wasmInstance(): Promise<WebAssembly.Instance> {
+  /**
+   * @returns a fresh instance of the HCL plugin web assembly module
+   */
+  private get wasmInstance(): Promise<WebAssembly.Instance> {
     if (this.wasmModule === null) {
       // Load web assembly module data once in the life of a parser
       this.wasmModule = (async () => {
@@ -31,25 +34,66 @@ class HCLParser {
     return this.wasmModule.then(module => WebAssembly.instantiate(module, go.importObject))
   }
 
-  async Parse(
-    src: Buffer,
-    filename: string,
-  ): Promise<{ body: HCLBlock; errors: string[] }> {
+  /**
+   * Parse serialized HCL data
+   *
+   * @param src The data to parse
+   * @param filename The name of the file from which the data was read, this will be used
+   *  in error messages to specify the location of each error
+   * @returns body: The parsed HCL body
+   *          errors: a list of errors encountered during parsing
+   */
+  public async parse(src: Buffer, filename: string): Promise<{ body: HCLBlock; errors: string[] }> {
     try {
-      // Setup arguments to parse function
-      global.hclParserArgs = {
-        src,
-        filename,
-      }
-      // Call parse function from go
-      await go.run(await this.wasmInstance)
+      await new Promise<void>(async (resolve) => {
+        // Setup arguments to parse function
+        global.hclParserFunc = 'parse'
+        global.hclParserArgs = {
+          src,
+          filename,
+          callback: resolve,
+        }
+
+        // Call parse from go, this will eventually call resolve through the callback
+        // We use await here so that the promise ctor will catch any errors that may arise from go
+        await go.run(await this.wasmInstance)
+      })
+
       // Return value should be populated by the above call
-      return {
-        body: global.hclParserReturn.value,
-        errors: global.hclParserReturn.errors,
-      }
+      return global.hclParserReturn as HclParseReturn
     } finally {
       // cleanup args and return values
+      delete global.hclParserFunc
+      delete global.hclParserArgs
+      delete global.hclParserReturn
+    }
+  }
+
+  /**
+   * Serialize structured HCL data to buffer
+   *
+   * @param body The HCL data to dump
+   * @returns The serialized data
+   */
+  public async dump(body: HCLBlock): Promise<Buffer> {
+    try {
+      await new Promise<void>(async (resolve) => {
+        // Setup arguments to dump function
+        global.hclParserFunc = 'dump'
+        global.hclParserArgs = {
+          body,
+          callback: resolve,
+        }
+        // Call dump from go, this will eventually call resolve through the callback
+        // We use await here so that the promise ctor will catch any errors that may arise from go
+        await go.run(await this.wasmInstance)
+      })
+
+      // Return value should be populated by the above call
+      return global.hclParserReturn as HclDumpReturn
+    } finally {
+      // cleanup args and return values
+      delete global.hclParserFunc
       delete global.hclParserArgs
       delete global.hclParserReturn
     }

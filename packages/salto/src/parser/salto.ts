@@ -36,7 +36,7 @@ export default class Parser {
       typeObj.annotationsValues[attrName] = attrValue
     })
 
-    typeBlock.blocks.forEach((block) => {
+    typeBlock.blocks.forEach(block => {
       if (block.labels.length === 1) {
         // Field block
         const fieldName = block.labels[0]
@@ -64,9 +64,9 @@ export default class Parser {
     return typeObj
   }
 
-  async Parse(blueprint: Buffer, filename: string):
+  async parse(blueprint: Buffer, filename: string):
     Promise<{ elements: Type[]; errors: string[] }> {
-    const { body, errors } = await HCLParser.Parse(blueprint, filename)
+    const { body, errors } = await HCLParser.parse(blueprint, filename)
 
     body.blocks.forEach((value: HCLBlock): Type => {
       let elem: Type

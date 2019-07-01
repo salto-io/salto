@@ -38,7 +38,7 @@ describe('Salto parser', () => {
       }`
 
       const parser = new Parser(new TypesRegistry())
-      const { elements } = await parser.Parse(Buffer.from(body), 'none')
+      const { elements } = await parser.parse(Buffer.from(body), 'none')
       parsedElements = elements
     })
 
@@ -127,12 +127,12 @@ describe('Salto parser', () => {
       type salesforce_string string {}
       `
       const parser = new Parser(new TypesRegistry())
-      await expect(parser.Parse(Buffer.from(body), 'none')).rejects.toThrow()
+      await expect(parser.parse(Buffer.from(body), 'none')).rejects.toThrow()
     })
   })
   it('fails on invalid top level syntax', async () => {
     const body = 'bla {}'
     const parser = new Parser(new TypesRegistry())
-    await expect(parser.Parse(Buffer.from(body), 'none')).rejects.toThrow()
+    await expect(parser.parse(Buffer.from(body), 'none')).rejects.toThrow()
   })
 })

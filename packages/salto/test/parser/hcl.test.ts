@@ -6,7 +6,7 @@ describe('HCL Parser', () => {
       user = "me" 
     }`
 
-    const { body } = await HCLParser.Parse(Buffer.from(configBlock), 'none')
+    const { body } = await HCLParser.parse(Buffer.from(configBlock), 'none')
     expect(body.blocks.length).toEqual(1)
     const config = body.blocks[0]
     expect(config.type).toEqual('salesforce')
@@ -25,7 +25,7 @@ describe('HCL Parser', () => {
       }
     }`
 
-    const { body } = await HCLParser.Parse(Buffer.from(typeDefBlock), 'none')
+    const { body } = await HCLParser.parse(Buffer.from(typeDefBlock), 'none')
     expect(body.blocks.length).toEqual(1)
     const typeBlock = body.blocks[0]
     expect(typeBlock.type).toEqual('type')
@@ -52,7 +52,7 @@ describe('HCL Parser', () => {
       ]
     }`
 
-    const { body } = await HCLParser.Parse(
+    const { body } = await HCLParser.parse(
       Buffer.from(instanceDefBlock),
       'none',
     )
@@ -74,7 +74,7 @@ describe('HCL Parser', () => {
         EOF
     }`
 
-    const { body } = await HCLParser.Parse(Buffer.from(blockDef), 'none')
+    const { body } = await HCLParser.parse(Buffer.from(blockDef), 'none')
     expect(body.blocks.length).toEqual(1)
     expect(body.blocks[0].attrs).toHaveProperty('thing')
     expect(body.blocks[0].attrs.thing).toEqual('        omg\n        asd\n')
@@ -85,7 +85,7 @@ describe('HCL Parser', () => {
     let parseErrors: string[]
 
     beforeAll(async () => {
-      const { errors } = await HCLParser.Parse(Buffer.from(blockDef), 'none')
+      const { errors } = await HCLParser.parse(Buffer.from(blockDef), 'none')
       parseErrors = errors
     })
 
@@ -96,5 +96,59 @@ describe('HCL Parser', () => {
     it('contains the error location', () => {
       expect(parseErrors[0]).toContain('none:1')
     })
+  })
+})
+
+describe('HCL dump', () => {
+  const body = {
+    attrs: {},
+    blocks: [
+      {
+        type: 'type',
+        labels: ['lbl1', 'lbl2'],
+        attrs: {
+          attr: {
+            number: 1,
+            str: 'string',
+            lst: ['val1', 'val2'],
+            empty: [],
+            nested: {
+              val: 'so deep',
+            },
+          },
+        },
+        blocks: [],
+      },
+    ],
+  } as unknown
+  let serialized: string
+
+  beforeAll(async () => {
+    const buffer = await HCLParser.dump(body as HCLBlock)
+    serialized = buffer.toString()
+  })
+
+  it('dumps type and labels', () => {
+    expect(serialized).toMatch('type "lbl1" "lbl2" {')
+  })
+  it('dumps numbers', () => {
+    expect(serialized).toMatch('number = 1')
+  })
+  it('dumps strings', () => {
+    expect(serialized).toMatch('str = "string"')
+  })
+  it('dumps lists', () => {
+    expect(serialized).toMatch('lst = ["val1", "val2"]')
+  })
+  it('dumps empty list', () => {
+    expect(serialized).toMatch('empty = []')
+  })
+  it('handles nested attributes', () => {
+    expect(serialized).toMatch(/nested = { val = "so deep" }/m)
+  })
+  it('dumps parsable text', async () => {
+    const parsed = await HCLParser.parse(Buffer.from(serialized), 'none')
+    expect(parsed.errors.length).toEqual(0)
+    expect(body).toEqual(parsed.body)
   })
 })

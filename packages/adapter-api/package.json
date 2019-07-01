@@ -7,8 +7,10 @@
     "url": "https://github.com/salto-io/salto"
   },
   "private": true,
+  "bin": "./dist/index",
+  "main": "./dist/index",
   "scripts": {
-    "prepare": "npm run build",
+    "prepare": "npm run build-ts",
     "build": "npm run lint && npm run build-ts",
     "client": "npx ts-node src/cli/salto-cli.ts",
     "build-ts": "tsc",

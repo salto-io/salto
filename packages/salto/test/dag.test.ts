@@ -205,7 +205,7 @@ describe('DependencyGraph', () => {
     let concurrencyCounter: MaxCounter
 
     // simulates an async operation in zero time
-    const dummyAsyncOperation = (): Promise<void> => new Promise(resolve => setTimeout(resolve, 0))
+    const dummyAsyncOperation = (): Promise<void> => new Promise(resolve => setImmediate(resolve))
 
     beforeEach(() => {
       concurrencyCounter = new MaxCounter()
@@ -230,7 +230,7 @@ describe('DependencyGraph', () => {
       beforeEach(() => {
         result = graph.walk(handler)
         return result
-      }, 0)
+      })
 
       it('should resolve the promise', () => {
         expect(result).resolves.toBeUndefined()

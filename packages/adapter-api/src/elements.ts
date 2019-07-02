@@ -47,6 +47,7 @@ export class TypeID {
  */
 export abstract class Type {
   public static DEFAULT = '_default'
+  public static REQUIRED = 'required'
 
 
   readonly typeID: TypeID

@@ -1,10 +1,10 @@
 import * as _ from 'lodash'
 
-import HCLParser from './hcl'
 import {
   TypesRegistry, Type, TypeID, ObjectType, PrimitiveType, PrimitiveTypes,
   isObjectType, isPrimitiveType,
-} from '../core/elements'
+} from 'adapter-api'
+import HCLParser from './hcl'
 
 enum Keywords {
   MODEL = 'model',
@@ -24,7 +24,7 @@ const getPrimitiveTypeName = (_primitiveType: PrimitiveTypes): string => Keyword
 export default class Parser {
   private static getTypeID(fullname: string): TypeID {
     const separatorIdx = fullname.indexOf(TypeID.NAMESPACE_SEPERATOR)
-    const adapter = fullname.slice(0, separatorIdx)
+    const adapter = (separatorIdx >= 0) ? fullname.slice(0, separatorIdx) : undefined
     const name = fullname.slice(separatorIdx + TypeID.NAMESPACE_SEPERATOR.length)
     return new TypeID({ adapter, name })
   }

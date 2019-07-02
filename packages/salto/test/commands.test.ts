@@ -1,4 +1,5 @@
 import Cli from '../src/cli/commands'
+import SaltoCoreMock from './core/mocks/core'
 
 let outputData = ''
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -10,7 +11,7 @@ function storeLog(inputs: any): void {
 console.log = jest.fn(storeLog)
 // eslint-disable-next-line no-console
 console.error = jest.fn(storeLog)
-const cli: Cli = new Cli()
+const cli: Cli = new Cli(new SaltoCoreMock())
 cli.currentActionPollerInterval = 1
 function resetConsoleOutput(): void {
   outputData = ''
@@ -25,62 +26,62 @@ describe('Test commands.ts', () => {
     expect(cli.discover).toBeDefined()
   })
 
-  it('should output not found when describing a complete mismatch', () => {
+  it('should output not found when describing a complete mismatch', async () => {
     resetConsoleOutput()
-    cli.describe(['XXX', 'ggg', 'A'])
+    await cli.describe(['XXX', 'ggg', 'A'])
     expect(outputData).toMatch('Unknown element type.')
   })
 
-  it('should output proper value when proper desc is provided', () => {
+  it('should output proper value when proper desc is provided', async () => {
     resetConsoleOutput()
-    cli.describe(['salto_office'])
+    await cli.describe(['salto_office'])
     expect(outputData).toMatch('=== salto_office ===')
     expect(outputData).toMatch('Office Location')
     expect(outputData).toMatch('address')
   })
 
-  it('should output proper value when proper desc is provided for list', () => {
+  it('should output proper value when proper desc is provided for list', async () => {
     resetConsoleOutput()
-    cli.describe(['salto_employee', 'nicknames'])
+    await cli.describe(['salto_employee', 'nicknames'])
     expect(outputData).toMatch('=== string ===')
   })
 
-  it('should output proper value when proper desc is provided for inner fields', () => {
+  it('should output proper value when proper desc is provided for inner fields', async () => {
     resetConsoleOutput()
-    cli.describe(['salto_office', 'location'])
+    await cli.describe(['salto_office', 'location'])
     expect(outputData).toMatch('=== salto_address ===')
   })
 
-  it('should suggest proper value when proper desc is provided start path', () => {
+  it('should suggest proper value when proper desc is provided start path', async () => {
     resetConsoleOutput()
-    cli.describe(['salto_offic', 'locatin', 'city'])
+    await cli.describe(['salto_offic', 'locatin', 'city'])
     expect(outputData).toMatch('Could not find what you were looking for.')
     expect(outputData).toMatch('salto_office.location.city')
   })
 
-  it('should suggest proper value when proper desc is provided end path', () => {
+  it('should suggest proper value when proper desc is provided end path', async () => {
     resetConsoleOutput()
-    cli.describe(['salto_office', 'locatin', 'cit'])
+    await cli.describe(['salto_office', 'locatin', 'cit'])
     expect(outputData).toMatch('Could not find what you were looking for.')
     expect(outputData).toMatch('salto_office.location.city')
   })
 
-  it('should suggest proper value when proper desc is provided mid path', () => {
+  it('should suggest proper value when proper desc is provided mid path', async () => {
     resetConsoleOutput()
-    cli.describe(['salto_office', 'locatin', 'city'])
+    await cli.describe(['salto_office', 'locatin', 'city'])
     expect(outputData).toMatch('Could not find what you were looking for.')
     expect(outputData).toMatch('salto_office.location.city')
   })
 
-  it('unknown type on single word', () => {
+  it('unknown type on single word', async () => {
     resetConsoleOutput()
-    cli.describe(['ZZZZZZZZZZZZZZZ'])
+    await cli.describe(['ZZZZZZZZZZZZZZZ'])
     expect(outputData).toMatch('Unknown element type.')
   })
 
-  it('suggest type on single word', () => {
+  it('suggest type on single word', async () => {
     resetConsoleOutput()
-    cli.describe(['salto_ofice'])
+    await cli.describe(['salto_ofice'])
     expect(outputData).toMatch('Did you mean')
   })
 

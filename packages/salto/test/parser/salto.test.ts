@@ -1,7 +1,7 @@
-import Parser from '../../src/parser/salto'
 import {
   ObjectType, PrimitiveType, PrimitiveTypes, TypesRegistry, Type, TypeID,
-} from '../../src/core/elements'
+} from 'adapter-api'
+import Parser from '../../src/parser/salto'
 
 describe('Salto parser', () => {
   describe('primitive and model', () => {

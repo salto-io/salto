@@ -2,48 +2,12 @@
 import { Command } from 'commander'
 import Cli from './commands'
 
-const cli = new Cli()
-
-function collect(value: string, prev: string[]): string[] {
-  return prev.concat([value])
-}
-
-function parseIntArg(value: string): number {
-  // parseInt takes a string and an optional radix
-  return parseInt(value, 10)
-}
-
-function parseDotSeperate(value: string): string[] {
-  return value.split('.')
-}
-
-function doApply(cmd: {
-  blueprint: string[]
-  blueprintsdir: string
-  force: boolean
-}): void {
-  cli.apply(cmd.blueprint, cmd.blueprintsdir, cmd.force)
-}
-
-function doPlan(cmd: { blueprint: string[]; blueprintsdir: string }): void {
-  cli.plan(cmd.blueprint, cmd.blueprintsdir)
-}
-
-function doDiscover(): void {
-  cli.discover()
-}
-
-function doDescribe(
-  searchWords: string,
-  cmd: { recursionLevel: number },
-): void {
-  cli.describe(parseDotSeperate(searchWords), cmd.recursionLevel)
-}
 
 class SaltoCommander {
   private command: Command
-
+  private cli: Cli
   constructor() {
+    this.cli = new Cli()
     this.command = new Command()
     this.command
       .version('0.1.0')
@@ -64,11 +28,11 @@ class SaltoCommander {
       .option(
         '-b, --blueprint <value>',
         'A path to an input blueprint file',
-        collect,
+        SaltoCommander.collect,
         [],
       )
       .option('-f, --force', 'A path to an input blueprint file')
-      .action(doApply)
+      .action(cmd => this.doApply(cmd))
 
     this.command
       .command('plan')
@@ -82,34 +46,70 @@ class SaltoCommander {
       .option(
         '-b, --blueprint <value>',
         'A path to an input blueprint file',
-        collect,
+        SaltoCommander.collect,
         [],
       )
-      .action(doPlan)
+      .action(cmd => this.doPlan(cmd))
 
     this.command
       .command('discover')
       .description(
         'Generates blueprints and state files which represent the difference between the current state of the related services, and the configuration and state currently captured by salto.',
       )
-      .action(doDiscover)
+      .action(() => this.doDiscover())
 
     this.command
       .command('describe <searchWords>')
       .option(
         '-r --recursion-level <number>',
         'Set how many configuations levels will be shown',
-        parseIntArg,
+        SaltoCommander.parseIntArg,
         2,
       )
       .description(
         'Shows all available types and attributes for the adapters of the related services.',
       )
-      .action(doDescribe)
+      .action((searchWords, cmd) => this.doDescribe(searchWords, cmd))
   }
 
   async parseAndRun(argv: string[]): Promise<void> {
     this.command.parse(argv)
+  }
+
+  private static collect(value: string, prev: string[]): string[] {
+    return prev.concat([value])
+  }
+
+  private static parseIntArg(value: string): number {
+    // parseInt takes a string and an optional radix
+    return parseInt(value, 10)
+  }
+
+  private static parseDotSeperate(value: string): string[] {
+    return value.split('.')
+  }
+
+  private doApply(cmd: {
+    blueprint: string[]
+    blueprintsdir: string
+    force: boolean
+  }): void {
+    this.cli.apply(cmd.blueprint, cmd.blueprintsdir, cmd.force)
+  }
+
+  private doPlan(cmd: { blueprint: string[]; blueprintsdir: string }): void {
+    this.cli.plan(cmd.blueprint, cmd.blueprintsdir)
+  }
+
+  private doDiscover(): void {
+    this.cli.discover()
+  }
+
+  private doDescribe(
+    searchWords: string,
+    cmd: { recursionLevel: number },
+  ): void {
+    this.cli.describe(SaltoCommander.parseDotSeperate(searchWords), cmd.recursionLevel)
   }
 }
 

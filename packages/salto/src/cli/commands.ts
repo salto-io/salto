@@ -6,9 +6,15 @@ import * as path from 'path'
 import Fuse from 'fuse.js'
 import _ from 'lodash'
 
+import {
+  PlanAction, PlanActionType,
+  Type, isListType, isObjectType,
+} from 'adapter-api'
 import Prompts from './prompts'
-import { SaltoCore, PlanAction, PlanActionType } from '../core/core'
-import { Type, isListType, isObjectType } from '../core/elements'
+import {
+  SaltoCore, Blueprint,
+} from '../core/core'
+
 
 type OptionalString = string | undefined
 type NotFound = null
@@ -27,8 +33,8 @@ export default class Cli {
   currentActionPollerID?: ReturnType<typeof setTimeout>
   currentActionPollerInterval: number = 5000
 
-  constructor() {
-    this.core = new SaltoCore()
+  constructor(core?: SaltoCore) {
+    this.core = core || new SaltoCore()
   }
 
   private static print(txt: string): void {
@@ -38,7 +44,7 @@ export default class Cli {
 
   private static printError(txt: string): void {
     // eslint-disable-next-line no-console
-    console.error(txt)
+    console.error(chalk.red(txt))
   }
 
   private static header(txt: string): string {
@@ -90,7 +96,7 @@ export default class Cli {
   /**
    * Extract the pathes of all of the blueprints file in a specific directory.
    * @param {string} blueprintsDir The path for the directory in which the bp files are present.
-   * @returns {Promise<Array<string>>} A promise whos input is an array of the bp files pathes.
+   * @returns {Promise<Array<Blueprint>>} A promise whos input is an array of the bp files pathes.
    */
   private static async getBluePrintsFromDir(
     blueprintsDir: string,
@@ -106,9 +112,11 @@ export default class Cli {
    * @param {string} blueprintsFile a path to a valid blueprints file.
    * @returns The content of the file.
    */
-  private static async loadBlueprint(blueprintsFile: string): Promise<string> {
-    const res = await fs.readFile(blueprintsFile, 'utf8')
-    return res
+  private static async loadBlueprint(blueprintFile: string): Promise<Blueprint> {
+    return {
+      buffer: await fs.readFile(blueprintFile, 'utf8'),
+      filename: blueprintFile,
+    }
   }
 
   /**
@@ -121,7 +129,7 @@ export default class Cli {
   private static async loadBlueprints(
     blueprintsFiles: string[],
     blueprintsDir?: string,
-  ): Promise<string[]> {
+  ): Promise<Blueprint[]> {
     try {
       let allBlueprintsFiles = blueprintsFiles
       if (blueprintsDir) {
@@ -157,7 +165,7 @@ export default class Cli {
     if (Array.isArray(value)) {
       return `[${value.map(Cli.normalizeValuePrint)}]`
     }
-    return value.toString()
+    return JSON.stringify(value)
   }
 
   private static createCountPlanActionTypesOutput(plan: PlanAction[]): string {
@@ -223,7 +231,7 @@ export default class Cli {
 
     const allLines = [stepTitle].concat(stepChildren)
 
-    const prefix = '\t'.repeat(identLevel)
+    const prefix = '  '.repeat(identLevel)
     return allLines
       .map(line => prefix + line)
       .join('\n')
@@ -257,7 +265,7 @@ export default class Cli {
    * @return {Promise} An array containing the plan action objects for the apply that would take
    * place based on the current blueprints and state.
    */
-  private async createPlan(blueprints: string[]): Promise<PlanAction[]> {
+  private async createPlan(blueprints: Blueprint[]): Promise<PlanAction[]> {
     try {
       const plan = await this.core.apply(blueprints, true)
       return plan
@@ -444,7 +452,7 @@ export default class Cli {
     return { key: bestKey, element: bestElement, isGuess }
   }
 
-  private async executePlan(blueprints: string[]): Promise<void> {
+  private async executePlan(blueprints: Blueprint[]): Promise<void> {
     try {
       Cli.print(Cli.header(Prompts.STARTAPPLY))
       this.core.on('progress', a => this.updateCurrentAction(a))
@@ -519,7 +527,7 @@ export default class Cli {
       const shouldExecute = force || (await Cli.getUserBooleanInput(Prompts.SHOULDEXECUTREPLAN))
       if (shouldExecute) {
         Cli.print(Cli.header(Prompts.STARTAPPLYEXEC))
-        this.executePlan(blueprints)
+        await this.executePlan(blueprints)
       } else {
         Cli.print(Cli.header(Prompts.CANCELAPPLY))
       }
@@ -532,7 +540,7 @@ export default class Cli {
     searchWords: string[],
     recursionLevel: number = 2,
   ): Promise<void> {
-    const allElements = this.core.getAllElements()
+    const allElements = await this.core.getAllElements([])
     const elementsMap = Cli.createElementsMap(allElements)
     // First we try with exact match only
     const searchResult = Cli.findElement(searchWords, elementsMap)

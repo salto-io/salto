@@ -1,4 +1,4 @@
-model salesforce_test {
+model salesforce.test {
 	string name {
 	  label = "Name"
 	  _required = true

@@ -1,157 +1,101 @@
 import { EventEmitter } from 'events'
+import _ from 'lodash'
 import {
-  Type, PrimitiveTypes, TypeID, TypesRegistry,
-} from './elements'
+  PlanAction, PlanActionType,
+  Type, TypesRegistry,
+} from 'adapter-api'
 
-export enum PlanActionType {
-  ADD,
-  MODIFY,
-  REMOVE,
-}
+import SalesforceAdapter from 'salesforce-adapter'
+import Parser from '../parser/salto'
 
-export class PlanAction {
-  name: string
-  actionType: PlanActionType
-  subChanges: PlanAction[]
-  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-  newValue: any
-  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-  oldValue: any
-  constructor(
-    name: string,
-    actionType: PlanActionType,
-    subChanges?: PlanAction[],
-    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-    newValue?: any,
-    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-    oldValue?: any,
-  ) {
-    this.name = name
-    this.actionType = actionType
-    this.subChanges = subChanges || []
-    this.newValue = newValue
-    this.oldValue = oldValue
-  }
+
+export interface Blueprint {
+  buffer: Buffer
+  filename: string
 }
 
 // Don't know if this should be extend or a delegation
 export class SaltoCore extends EventEmitter {
+  adapters: Record<string, SalesforceAdapter>
   constructor() {
     super()
+    this.adapters = {
+      salesforce: new SalesforceAdapter({
+        username: 'vanila@salto.io',
+        password: '!A123456',
+        token: 'rwVvOsh7HjF8Zki9ZmyQdeth',
+        sandbox: false,
+      }),
+    }
   }
 
   // eslint-disable-next-line class-methods-use-this
-  getAllElements(): Type[] {
-    const reg = new TypesRegistry()
-    const saltoAddr = reg.getType(new TypeID({ adapter: 'salto', name: 'address' }))
-    saltoAddr.annotations.label = reg.getType(new TypeID({ adapter: '', name: 'string' }))
-    saltoAddr.fields.country = reg.getType(new TypeID({ adapter: '', name: 'string' }))
-    saltoAddr.fields.city = reg.getType(new TypeID({ adapter: '', name: 'string' }))
+  async getAllElements(blueprints: Blueprint[]): Promise<Type[]> {
+    let elements: Type[] = []
+    const registry = new TypesRegistry()
+    for (let i = 0; i < blueprints.length; i += 1) {
+      const parser = new Parser(registry)
+      const bp = blueprints[i]
+      // Can't run parser in parrallel
+      // eslint-disable-next-line no-await-in-loop
+      const res = await parser.parse(bp.buffer, bp.filename)
+      if (res.errors.length > 0) {
+        throw new Error(`Failed to parse blueprints: ${res.errors.join('\n')}`)
+      }
+      elements = [...elements, ...res.elements]
+    }
+    return elements
+  }
 
-    const saltoOffice = reg.getType(new TypeID({ adapter: 'salto', name: 'office' }))
-    saltoOffice.annotations.label = reg.getType(new TypeID({ adapter: '', name: 'string' }))
-    saltoOffice.fields.name = reg.getType(new TypeID({ adapter: '', name: 'string' }))
-    saltoOffice.fields.location = reg.getType(new TypeID({ adapter: 'salto', name: 'address' })).clone({
-      label: 'Office Location',
-      description: 'A location of an office',
-    })
-
-    const saltoEmployee = reg.getType(new TypeID({ adapter: 'salto', name: 'employee' }))
-    saltoEmployee.fields.name = reg.getType(new TypeID({ adapter: '', name: 'string' })).clone({
-      _required: true,
-    })
-    saltoEmployee.fields.nicknames = reg.getType(
-      new TypeID({ adapter: 'salto', name: 'nicknames' }),
-      PrimitiveTypes.LIST,
+  // eslint-disable-next-line class-methods-use-this
+  private getPlan(allElements: Type[]): PlanAction[] {
+    const nonBuiltInElements = allElements.filter(e => e.typeID.adapter)
+    return nonBuiltInElements.map(
+      element => PlanAction.createFromElements(undefined, element, element.typeID.getFullName()),
     )
-
-    saltoEmployee.fields.nicknames.elementType = reg.getType(new TypeID({ adapter: '', name: 'string' }))
-    /* eslint-disable-next-line @typescript-eslint/camelcase */
-    saltoEmployee.fields.employee_resident = reg.getType(new TypeID({ adapter: 'salto', name: 'address' })).clone({
-      label: 'Employee Resident',
-    })
-    saltoEmployee.fields.company = reg.getType(new TypeID({ adapter: '', name: 'string' })).clone({
-      _default: 'salto',
-    })
-    saltoEmployee.fields.office = reg.getType(new TypeID({ adapter: 'salto', name: 'office' })).clone({
-      label: 'Based In',
-    })
-    saltoEmployee.fields.office.fields.name.annotationsValues[Type.DEFAULT] = 'HQ'
-    saltoEmployee.fields.office.fields.location.fields.country.annotationsValues[
-      Type.DEFAULT
-    ] = 'IL'
-    saltoEmployee.fields.office.fields.location.fields.city.annotationsValues[
-      Type.DEFAULT
-    ] = 'Raanana'
-
-    return [saltoAddr, saltoOffice, saltoEmployee]
   }
 
-  private async runChange(changes: PlanAction[]): Promise<void> {
-    if (changes.length > 0) {
-      const change = changes[0]
-      this.emit('progress', change)
-      await new Promise(resolve => setTimeout(resolve, 10))
-      await this.runChange(changes.slice(1))
+  private async applyAction(action: PlanAction): Promise<boolean> {
+    this.emit('progress', action)
+    /* istanbul ignore next */
+    const existingValue = action.newValue || action.oldValue || {}
+    const { typeID } = existingValue
+    const adapterName = typeID && typeID.adapter as string
+    const adapter = this.adapters[typeID.adapter]
+    if (!adapter) {
+      throw new Error(`Missing adapter for ${adapterName}`)
+    }
+    if (action.actionType === PlanActionType.ADD) {
+      return adapter.add(action.newValue)
+    }
+    /* istanbul ignore next */
+    if (action.actionType === PlanActionType.REMOVE) {
+      return adapter.remove(action.oldValue)
+    }
+
+    /* istanbul ignore next */
+    return adapter.remove(action.oldValue) || adapter.add(action.newValue)
+  }
+
+  private async applyActions(plan: PlanAction[]): Promise<void> {
+    if (!_.isEmpty(plan)) {
+      const nextAction = plan[0]
+      const remPlan = plan.slice(1)
+      const ok = await this.applyAction(nextAction)
+      if (!ok) {
+        throw new Error('Failed to created!')
+      }
+      await this.applyActions(remPlan)
     }
   }
 
-  async apply(_blueprints: string[], dryRun?: boolean): Promise<PlanAction[]> {
-    const changes = [
-      new PlanAction(
-        'salesforcelead do_you_have_a_sales_team',
-        PlanActionType.ADD,
-        [
-          new PlanAction(
-            'label',
-            PlanActionType.ADD,
-            [],
-            'Do you have a sales team',
-          ),
-          new PlanAction('defaultvalue', PlanActionType.ADD, [], false),
-        ],
-      ),
-      new PlanAction(
-        'salesforcelead how_many_sales_people',
-        PlanActionType.MODIFY,
-        [
-          new PlanAction(
-            'restricttovalueset',
-            PlanActionType.MODIFY,
-            [],
-            false,
-            true,
-          ),
-          new PlanAction('values', PlanActionType.REMOVE),
-        ],
-      ),
-      new PlanAction(
-        'salesforcelead how_many_sales_people',
-        PlanActionType.ADD,
-        [
-          new PlanAction(
-            'label',
-            PlanActionType.ADD,
-            [],
-            'How many Sales people?',
-          ),
-          new PlanAction('restrict_to_value_set', PlanActionType.ADD, [], true),
-          new PlanAction('controlling_field', PlanActionType.ADD, [], 'test'),
-          new PlanAction(
-            'values',
-            PlanActionType.ADD,
-            [],
-            ['1-10', '11-20', '21-30', '30+'],
-          ),
-        ],
-      ),
-    ]
-
+  async apply(blueprints: Blueprint[], dryRun?: boolean): Promise<PlanAction[]> {
+    const allElements = await this.getAllElements(blueprints)
+    const plan = this.getPlan(allElements)
     if (!dryRun) {
-      await this.runChange(changes)
+      await this.applyActions(plan)
     }
-
-    return changes
+    return plan
   }
 
   /* eslint-disable-next-line class-methods-use-this, @typescript-eslint/no-unused-vars */

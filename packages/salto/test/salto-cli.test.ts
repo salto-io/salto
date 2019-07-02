@@ -1,4 +1,8 @@
 import cli from '../src/cli/salto-cli'
+import Cli from '../src/cli/commands'
+import SaltoCoreMock from './core/mocks/core'
+
+Object.defineProperty(cli, 'cli', { get: () => new Cli(new SaltoCoreMock()) })
 
 let outputData = ''
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -1,4 +1,4 @@
-model salesforce_test {
+model jira_test {
 	string name {
 	  label = "Name"
 	  _required = true

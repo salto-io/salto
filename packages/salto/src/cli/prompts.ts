@@ -1,5 +1,5 @@
 import chalk from 'chalk'
-import { PlanActionType } from '../core/core'
+import { PlanActionType } from 'adapter-api'
 
 export default class Prompts {
   public static readonly PLANNEDFORAPPLY = ''

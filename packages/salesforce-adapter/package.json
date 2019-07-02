@@ -6,8 +6,12 @@
     "type": "git",
     "url": "https://github.com/salto-io/adapters"
   },
+  "files": [
+    "dist/**/*"
+  ],
   "private": true,
-  "bin": "./dist/main.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "prepare": "npm run build",
     "build": "npm run lint && npm run build-ts",
@@ -24,7 +28,7 @@
     "jsforce": "github:salto-io/jsforce",
     "jsforce-types": "github:salto-io/jsforce-types",
     "lodash": "^4.17.11",
-    "salto": "github:salto-io/salto",
+    "adapter-api": "github:salto-io/adapter-api",
     "stream": "0.0.2",
     "winston": "^3.2.1"
   },

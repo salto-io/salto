@@ -1,5 +1,5 @@
 import { MetadataInfo } from 'jsforce'
-import { ObjectType } from 'salto'
+import { ObjectType } from 'adapter-api'
 import { LABEL, REQUIRED, PICKLIST_VALUES } from './constants'
 
 export interface FieldPermissions {

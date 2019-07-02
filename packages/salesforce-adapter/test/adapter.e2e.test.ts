@@ -1,4 +1,10 @@
-import { Type, PrimitiveType, ObjectType, TypeID, PrimitiveTypes } from 'salto'
+import {
+  Type,
+  PrimitiveType,
+  ObjectType,
+  TypeID,
+  PrimitiveTypes
+} from 'adapter-api'
 
 import SalesforceAdapter from '../src/adapter'
 import * as constants from '../src/constants'

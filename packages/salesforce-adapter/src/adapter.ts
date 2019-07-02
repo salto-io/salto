@@ -1,6 +1,12 @@
 /* eslint-disable class-methods-use-this */
 import { Field, SaveResult, ValueTypeField } from 'jsforce'
-import { Type, TypesRegistry, ObjectType, TypeID, PrimitiveTypes } from 'salto'
+import {
+  Type,
+  TypesRegistry,
+  ObjectType,
+  TypeID,
+  PrimitiveTypes
+} from 'adapter-api'
 import SalesforceClient from './client'
 import * as constants from './constants'
 import { CustomObject, FieldPermissions, ProfileInfo } from './salesforce_types'

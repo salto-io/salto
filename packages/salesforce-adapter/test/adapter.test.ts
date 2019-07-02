@@ -1,5 +1,5 @@
 import { MetadataInfo } from 'jsforce'
-import { ObjectType, PrimitiveType, TypeID, PrimitiveTypes } from 'salto'
+import { ObjectType, PrimitiveType, TypeID, PrimitiveTypes } from 'adapter-api'
 import SalesforceAdapter from '../src/adapter'
 import SalesforceClient from '../src/client'
 import { ProfileInfo } from '../src/salesforce_types'

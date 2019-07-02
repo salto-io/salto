@@ -6,8 +6,12 @@
     "type": "git",
     "url": "https://github.com/salto-io/adapter-api"
   },
-  "private": true,
+  "private": true,  "files": [
+    "bin/**/*",
+    "dist/**/*"
+  ],
   "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "scripts": {
     "prepack": "npm run build-ts",
     "prepare": "npm run build",

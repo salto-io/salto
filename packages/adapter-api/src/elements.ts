@@ -87,7 +87,7 @@ export abstract class Type {
     return _.cloneDeep(this.annotationsValues)
   }
 
-  protected annotate(annotationsValues: Values): void {
+  annotate(annotationsValues: Values): void {
     // Should we overide? I'm adding right now as it seems more
     // usefull. (Roi R)
     Object.keys(annotationsValues).forEach((key) => {

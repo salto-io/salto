@@ -1,7 +1,7 @@
 declare class Go {
   constructor()
 
-  run(instance: any): Promise<void>
+  run(instance: any, args: string[]): Promise<void>
 
   importObject: {
     go: any

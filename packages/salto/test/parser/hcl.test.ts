@@ -1,3 +1,4 @@
+import _ from 'lodash'
 import HCLParser from '../../src/parser/hcl'
 
 describe('HCL Parser', () => {
@@ -78,6 +79,22 @@ describe('HCL Parser', () => {
     expect(body.blocks.length).toEqual(1)
     expect(body.blocks[0].attrs).toHaveProperty('thing')
     expect(body.blocks[0].attrs.thing).toEqual('        omg\n        asd\n')
+  })
+
+  it('can run concurrently', async () => {
+    const blockDef = 'type label {}'
+    const blocksToParse = _.times(3, () => blockDef)
+    const results = await Promise.all(blocksToParse.map(block => HCLParser.parse(Buffer.from(block), 'none')))
+    expect(results.length).toEqual(3)
+    // Check the first result
+    expect(results[0].body.blocks.length).toEqual(1)
+    expect(results[0].body.blocks[0].type).toEqual('type')
+    expect(results[0].body.blocks[0].labels).toEqual(['label'])
+    // Check all the rest are the same
+    results.reduce((prev, curr) => {
+      expect(prev).toEqual(curr)
+      return curr
+    })
   })
 
   describe('parse error', () => {

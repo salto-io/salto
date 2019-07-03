@@ -8,7 +8,6 @@ declare class HCLBlock {
 declare class HclParseArgs {
   src: Buffer
   filename: string
-  callback: () => void
 }
 
 declare class HclParseReturn {
@@ -18,15 +17,22 @@ declare class HclParseReturn {
 
 declare class HclDumpArgs {
   body: HCLBlock
-  callback: () => void
 }
 
 type HclDumpReturn = Buffer
 
+type HclArgs = HclParseArgs | HclDumpArgs
+type HclReturn = HclParseReturn | HclDumpReturn
+
+declare class HclCallContext {
+  func: 'parse' | 'dump'
+  callback?: () => void
+  args: HclArgs
+  return?: HclReturn
+}
+
 declare namespace NodeJS {
   interface Global {
-    hclParserFunc: string
-    hclParserArgs: HclParseArgs | HclDumpArgs
-    hclParserReturn: HclParseReturn | HclDumpReturn
+    hclParserCall: Record<number, HclCallContext>
   }
 }

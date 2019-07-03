@@ -27,9 +27,11 @@
     "lint": "eslint --fix --ext .js,.jsx,.ts,.tsx ./"
   },
   "dependencies": {
+    "@types/async": "^3.0.0",
     "@types/inquirer": "0.0.35",
     "@types/lodash": "^4.14.133",
     "adapter-api": "github:salto-io/adapter-api",
+    "async": "^3.1.0",
     "async-file": "^2.0.2",
     "chalk": "^2.3.0",
     "commander": "^2.20.0",

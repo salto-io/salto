@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"syscall/js"
 
 	"github.com/hashicorp/hcl2/hcl"
@@ -79,8 +80,10 @@ var exportedFuncs = map[string]func(js.Value) interface{}{
 // we use this method because go does not support exporting functions in web assembly yet
 // see: https://github.com/golang/go/issues/25612
 func main() {
-	funcName := js.Global().Get("hclParserFunc").String()
-	args := js.Global().Get("hclParserArgs")
+	callContext := js.Global().Get("hclParserCall").Get(os.Args[0])
+
+	funcName := callContext.Get("func").String()
+	args := callContext.Get("args")
 
 	op, exists := exportedFuncs[funcName]
 	var ret interface{}
@@ -92,8 +95,8 @@ func main() {
 		ret = op(args)
 	}
 
-	js.Global().Set("hclParserReturn", ret)
+	callContext.Set("return", ret)
 	// Signal JS that we finished
-	callback := args.Get("callback")
+	callback := callContext.Get("callback")
 	callback.Invoke()
 }

@@ -1,19 +1,24 @@
 import path from 'path'
 import * as fs from 'async-file'
 import './wasm_exec'
-
-// Not sure why eslint ignores this definition from wasm_exec.d.ts,
-// but this doesn't work without the following disable
-// eslint-disable-next-line no-undef
-const go = new Go()
+import { queue, AsyncQueue, ErrorCallback } from 'async'
 
 class HCLParser {
+  // Limit max concurrency to avoid web assembly out of memory errors
+  private static MAX_CONCURENCY = 10
+
   private wasmModule: Promise<WebAssembly.Module> | null = null
+  private parseQueue: AsyncQueue<HclCallContext>
+
+  public constructor() {
+    global.hclParserCall = {}
+    this.parseQueue = queue(this.pluginWorker.bind(this), HCLParser.MAX_CONCURENCY)
+  }
 
   /**
    * @returns a fresh instance of the HCL plugin web assembly module
    */
-  private get wasmInstance(): Promise<WebAssembly.Instance> {
+  private get wasmInstance(): Promise<{ go: Go; inst: WebAssembly.Instance }> {
     if (this.wasmModule === null) {
       // Load web assembly module data once in the life of a parser
       this.wasmModule = (async () => {
@@ -23,15 +28,52 @@ class HCLParser {
         // Not sure why eslint ignores this definition from webassembly.d.ts,
         // but this doesn't work without the following disable
         // eslint-disable-next-line no-undef
-        const wasmObj = await WebAssembly.instantiate(data, go.importObject)
+        const wasmObj = await WebAssembly.instantiate(data, new Go().importObject)
         return wasmObj.module
       })()
     }
 
-    // Not sure why eslint ignores this definition from webassembly.d.ts,
-    // but this doesn't work without the following disable
-    // eslint-disable-next-line no-undef
-    return this.wasmModule.then(module => WebAssembly.instantiate(module, go.importObject))
+    return this.wasmModule.then(async module => {
+      // Not sure why eslint ignores this definition from webassembly.d.ts,
+      // but this doesn't work without the following disable
+      // eslint-disable-next-line no-undef
+      const go = new Go()
+      // eslint-disable-next-line no-undef
+      return { go, inst: await WebAssembly.instantiate(module, go.importObject) }
+    })
+  }
+
+  private async pluginWorker(context: HclCallContext, done: ErrorCallback): Promise<void> {
+    // Place call context in global object
+    const currCalls = Object.keys(global.hclParserCall).map(k => Number.parseInt(k, 10))
+    const callId = currCalls.length === 0 ? 0 : Math.max(...currCalls) + 1
+    global.hclParserCall[callId] = context
+
+    try {
+      await new Promise<void>(async resolve => {
+        // Set callback function in context
+        context.callback = resolve
+
+        // Call the go code
+        const { go, inst } = await this.wasmInstance
+        await go.run(inst, [callId.toString()])
+      })
+
+      // Return value should be populated by the above call
+      done()
+    } finally {
+      // cleanup call context from global scope
+      delete global.hclParserCall[callId]
+    }
+  }
+
+  private callPlugin(context: HclCallContext): Promise<HclReturn> {
+    return new Promise<HclReturn>(resolve => {
+      this.parseQueue.push<HclReturn>(
+        context,
+        () => resolve(context.return)
+      )
+    })
   }
 
   /**
@@ -43,30 +85,8 @@ class HCLParser {
    * @returns body: The parsed HCL body
    *          errors: a list of errors encountered during parsing
    */
-  public async parse(src: Buffer, filename: string): Promise<{ body: HCLBlock; errors: string[] }> {
-    try {
-      await new Promise<void>(async resolve => {
-        // Setup arguments to parse function
-        global.hclParserFunc = 'parse'
-        global.hclParserArgs = {
-          src,
-          filename,
-          callback: resolve,
-        }
-
-        // Call parse from go, this will eventually call resolve through the callback
-        // We use await here so that the promise ctor will catch any errors that may arise from go
-        await go.run(await this.wasmInstance)
-      })
-
-      // Return value should be populated by the above call
-      return global.hclParserReturn as HclParseReturn
-    } finally {
-      // cleanup args and return values
-      delete global.hclParserFunc
-      delete global.hclParserArgs
-      delete global.hclParserReturn
-    }
+  public parse(src: Buffer, filename: string): Promise<HclParseReturn> {
+    return this.callPlugin({ func: 'parse', args: { src, filename } }) as Promise<HclParseReturn>
   }
 
   /**
@@ -75,28 +95,8 @@ class HCLParser {
    * @param body The HCL data to dump
    * @returns The serialized data
    */
-  public async dump(body: HCLBlock): Promise<Buffer> {
-    try {
-      await new Promise<void>(async resolve => {
-        // Setup arguments to dump function
-        global.hclParserFunc = 'dump'
-        global.hclParserArgs = {
-          body,
-          callback: resolve,
-        }
-        // Call dump from go, this will eventually call resolve through the callback
-        // We use await here so that the promise ctor will catch any errors that may arise from go
-        await go.run(await this.wasmInstance)
-      })
-
-      // Return value should be populated by the above call
-      return global.hclParserReturn as HclDumpReturn
-    } finally {
-      // cleanup args and return values
-      delete global.hclParserFunc
-      delete global.hclParserArgs
-      delete global.hclParserReturn
-    }
+  public dump(body: HCLBlock): Promise<HclDumpReturn> {
+    return this.callPlugin({ func: 'dump', args: { body } }) as Promise<HclDumpReturn>
   }
 }
 

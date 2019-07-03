@@ -368,7 +368,8 @@
 			};
 		}
 
-		async run(instance) {
+		// EDIT: added arguments here instead of using the global ones
+		async run(instance, args) {
 			this._inst = instance;
 			this._values = [ // TODO: garbage collection
 				NaN,
@@ -395,10 +396,10 @@
 				return ptr;
 			};
 
-			const argc = this.argv.length;
+			const argc = args.length;
 
 			const argvPtrs = [];
-			this.argv.forEach((arg) => {
+			args.forEach((arg) => {
 				argvPtrs.push(strPtr(arg));
 			});
 

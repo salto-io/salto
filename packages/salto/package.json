@@ -19,13 +19,20 @@
   "scripts": {
     "prepare": "npm run build",
     "prepublishOnly": "npm test && npm run lint",
-    "build": "tsc && npm run build-go",
+    "build": "npm run lint-fix && npm run tsc && npm run build-go",
     "client": "npx ts-node src/cli/salto-cli.ts",
     "test": "jest --forceExit --verbose --detectOpenHandles",
     "watch-test": "npm run test -- --watchAll",
+    "tsc": "tsc",
     "build-go": "./src/parser/hcl_plugin/build.sh ./dist/hcl.wasm ./hcl.wasm",
-    "lint": "eslint --fix --ext .js,.jsx,.ts,.tsx ./"
+    "lint": "eslint --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
+    "lint-fix": "npm run lint -- --fix",
+    "precommit-msg": "echo 'Pre-commit checks...' && exit 0"
   },
+  "pre-commit": [
+    "precommit-msg",
+    "lint"
+  ],
   "dependencies": {
     "@types/async": "^3.0.0",
     "@types/inquirer": "0.0.35",
@@ -69,6 +76,7 @@
     "eslint-plugin-react": "^7.13.0",
     "jest": "^24.0.0",
     "jest-junit": "^6.4.0",
+    "pre-commit": "^1.2.2",
     "shelljs": "^0.8.1",
     "supertest": "^3.0.0",
     "ts-jest": "^24.0.2"

@@ -58,6 +58,36 @@ describe('Test elements.ts', () => {
     expect(ot.fields.num_field).toBeInstanceOf(PrimitiveType)
     expect(ot.fields.str_field).toBeInstanceOf(PrimitiveType)
   })
+
+  it('should get fields not in other', () => {
+    const ptStr = new PrimitiveType({
+      typeID: new TypeID({ adapter: 'test', name: 'prim' }),
+      primitive: PrimitiveTypes.STRING
+    })
+    const ptNum = new PrimitiveType({
+      typeID: new TypeID({ adapter: 'test', name: 'prim' }),
+      primitive: PrimitiveTypes.NUMBER
+    })
+    const ot1 = new ObjectType({
+      typeID: new TypeID({ adapter: 'test', name: 'obj' }),
+      fields: {
+        /* eslint-disable-next-line @typescript-eslint/camelcase */
+        num_field: ptNum,
+        /* eslint-disable-next-line @typescript-eslint/camelcase */
+        str_field: ptStr,
+      }
+    })
+    const ot2 = new ObjectType({
+      typeID: new TypeID({ adapter: 'test', name: 'obj' }),
+      fields: {
+        /* eslint-disable-next-line @typescript-eslint/camelcase */
+        num_field: ptNum
+      }
+    })
+
+    expect(ot1.getFieldsThatAreNotInOther(ot2).join('')).toBe('str_field')
+  })
+
   it('should allow basic list type creations withh all params passed to the constructor', () => {
     const ptStr = new PrimitiveType({
       typeID: new TypeID({ adapter: 'test', name: 'prim' }),

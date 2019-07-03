@@ -32,7 +32,7 @@ export class CustomField implements MetadataInfo {
     combobox: 'Combobox'
   }
 
-  readonly fullName: string
+  fullName: string
   readonly type: string
   // To be used for picklist and combobox types
   readonly valueSet: { valueSetDefinition: { value: CustomPicklistValue[] } }

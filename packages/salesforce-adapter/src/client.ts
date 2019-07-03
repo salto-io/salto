@@ -83,6 +83,12 @@ export default class SalesforceClient {
     return (await this.conn.describe(objectName)).fields
   }
 
+  /**
+   * Creates a salesforce object
+   * @param type The metadata type of the components to be created
+   * @param metadata The metadata of the object
+   * @returns The save result of the requested creation
+   */
   // TODO: Extend the create API to create SObjects as well, not only metadata
   public async create(
     type: string,

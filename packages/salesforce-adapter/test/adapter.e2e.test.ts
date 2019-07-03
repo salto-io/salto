@@ -8,6 +8,7 @@ import {
 
 import SalesforceAdapter from '../src/adapter'
 import * as constants from '../src/constants'
+import { CustomObject } from '../src/salesforce_types'
 
 // This is turned off by default as it has SFDC rate limit implications
 // and this is very long test
@@ -87,7 +88,7 @@ describe.skip('Test Salesforce adapter E2E', () => {
     })
   })
 
-  describe('Test CRUD operations E2E', () => {
+  describe('should perform CRUD operations E2E', () => {
     it('should add custom object metadata component e2e with real account', async () => {
       // Setup
       // set long timeout as we communicate with salesforce API
@@ -160,6 +161,95 @@ describe.skip('Test Salesforce adapter E2E', () => {
         'test__c'
       )
       expect(readResult.fullName).toBeUndefined()
+    })
+
+    it('should modify an object by creating a new custom field and remove another one E2E', async () => {
+      // Setup
+      // set long timeout as we communicate with salesforce API
+      jest.setTimeout(15000)
+      const sfAdapter = adapter()
+
+      const oldElement = new ObjectType({
+        typeID: new TypeID({ adapter: constants.SALESFORCE, name: 'test' }),
+        fields: {
+          address: new PrimitiveType({
+            typeID: new TypeID({
+              adapter: constants.SALESFORCE,
+              name: 'string'
+            }),
+            primitive: PrimitiveTypes.STRING
+          }),
+          banana: new PrimitiveType({
+            typeID: new TypeID({
+              adapter: constants.SALESFORCE,
+              name: 'string'
+            }),
+            primitive: PrimitiveTypes.STRING
+          })
+        },
+        annotationsValues: {
+          required: false,
+          _default: 'test',
+          label: 'test label'
+        }
+      })
+
+      const addResult = await sfAdapter.add(oldElement)
+      // Verify setup was performed properly
+      expect(addResult).toBe(true)
+
+      const oldElementReadResult = (await sfAdapter.client.readMetadata(
+        constants.CUSTOM_OBJECT,
+        'test__c'
+      )) as CustomObject
+      expect(oldElementReadResult.fullName).toBe('test__c')
+      expect(oldElementReadResult.fields.map(f => f.fullName)).toContain(
+        'address__c'
+      )
+      expect(oldElementReadResult.fields.map(f => f.fullName)).toContain(
+        'banana__c'
+      )
+
+      const newElement = new ObjectType({
+        typeID: new TypeID({ adapter: constants.SALESFORCE, name: 'test' }),
+        fields: {
+          banana: new PrimitiveType({
+            typeID: new TypeID({
+              adapter: constants.SALESFORCE,
+              name: 'string'
+            }),
+            primitive: PrimitiveTypes.STRING
+          }),
+          description: new PrimitiveType({
+            typeID: new TypeID({
+              adapter: constants.SALESFORCE,
+              name: 'string'
+            }),
+            primitive: PrimitiveTypes.STRING
+          })
+        },
+        annotationsValues: {
+          required: false,
+          _default: 'test2',
+          label: 'test2 label'
+        }
+      })
+
+      // Test
+      const modificationResult = await sfAdapter.update(oldElement, newElement)
+      expect(modificationResult).toBe(true)
+
+      const readResult = (await sfAdapter.client.readMetadata(
+        constants.CUSTOM_OBJECT,
+        'test__c'
+      )) as CustomObject
+      expect(readResult.fullName).toBe('test__c')
+      expect(readResult.fields.map(f => f.fullName)).toContain('banana__c')
+      expect(readResult.fields.map(f => f.fullName)).toContain('description__c')
+      expect(readResult.fields.map(f => f.fullName)).not.toContain('address__c')
+
+      // Clean-up
+      await sfAdapter.remove(oldElement)
     })
   })
 })

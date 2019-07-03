@@ -366,4 +366,378 @@ describe('Test SalesforceAdapter.discover', () => {
     const fullName = mockDelete.mock.calls[0][1]
     expect(fullName).toBe('test__c')
   })
+
+  it('should fail an update of a salesforce metadata component if the fullnames are not the same', async () => {
+    const mockCreate = jest.fn().mockImplementationOnce(() => {
+      return { success: true }
+    })
+    const mockDelete = jest.fn().mockImplementationOnce(() => {
+      return { success: true }
+    })
+    const mockUpdate = jest.fn().mockImplementationOnce(() => {
+      return { success: true }
+    })
+    SalesforceClient.prototype.create = mockCreate
+    SalesforceClient.prototype.delete = mockDelete
+    SalesforceClient.prototype.update = mockUpdate
+
+    const result = await adapter().update(
+      new ObjectType({
+        typeID: new TypeID({ adapter: constants.SALESFORCE, name: 'test' }),
+        fields: {
+          description: new PrimitiveType({
+            typeID: new TypeID({
+              adapter: constants.SALESFORCE,
+              name: 'string'
+            }),
+            primitive: PrimitiveTypes.STRING
+          })
+        },
+        annotationsValues: {
+          required: false,
+          _default: 'test',
+          label: 'test label'
+        }
+      }),
+      new ObjectType({
+        typeID: new TypeID({ adapter: constants.SALESFORCE, name: 'test2' }),
+        fields: {
+          address: new PrimitiveType({
+            typeID: new TypeID({
+              adapter: constants.SALESFORCE,
+              name: 'string'
+            }),
+            primitive: PrimitiveTypes.STRING
+          })
+        },
+        annotationsValues: {
+          required: false,
+          _default: 'test2',
+          label: 'test2 label'
+        }
+      })
+    )
+
+    expect(result).toBe(false)
+    expect(mockCreate.mock.calls.length).toBe(0)
+    expect(mockDelete.mock.calls.length).toBe(0)
+    expect(mockUpdate.mock.calls.length).toBe(0)
+  })
+
+  it('should perform a successful update of a salesforce metadata component if the fullnames are the same', async () => {
+    const mockCreate = jest.fn().mockImplementationOnce(() => {
+      return { success: true }
+    })
+    const mockDelete = jest.fn().mockImplementationOnce(() => {
+      return { success: true }
+    })
+    const mockUpdate = jest.fn().mockImplementationOnce(() => {
+      return { success: true }
+    })
+    SalesforceClient.prototype.create = mockCreate
+    SalesforceClient.prototype.delete = mockDelete
+    SalesforceClient.prototype.update = mockUpdate
+
+    const result = await adapter().update(
+      new ObjectType({
+        typeID: new TypeID({ adapter: constants.SALESFORCE, name: 'test' }),
+        fields: {
+          description: new PrimitiveType({
+            typeID: new TypeID({
+              adapter: constants.SALESFORCE,
+              name: 'string'
+            }),
+            primitive: PrimitiveTypes.STRING
+          })
+        },
+        annotationsValues: {
+          required: false,
+          _default: 'test',
+          label: 'test label'
+        }
+      }),
+      new ObjectType({
+        typeID: new TypeID({ adapter: constants.SALESFORCE, name: 'test' }),
+        fields: {
+          address: new PrimitiveType({
+            typeID: new TypeID({
+              adapter: constants.SALESFORCE,
+              name: 'string'
+            }),
+            primitive: PrimitiveTypes.STRING
+          })
+        },
+        annotationsValues: {
+          required: false,
+          _default: 'test2',
+          label: 'test2 label'
+        }
+      })
+    )
+
+    expect(result).toBe(true)
+    expect(mockCreate.mock.calls.length).toBe(1)
+    expect(mockDelete.mock.calls.length).toBe(1)
+    expect(mockUpdate.mock.calls.length).toBe(1)
+  })
+
+  it("should only create new fields when the new object's change is only new fields", async () => {
+    const mockCreate = jest.fn().mockImplementationOnce(() => {
+      return { success: true }
+    })
+    const mockDelete = jest.fn().mockImplementationOnce(() => {
+      return { success: true }
+    })
+    const mockUpdate = jest.fn().mockImplementationOnce(() => {
+      return { success: true }
+    })
+    SalesforceClient.prototype.create = mockCreate
+    SalesforceClient.prototype.delete = mockDelete
+    SalesforceClient.prototype.update = mockUpdate
+
+    const result = await adapter().update(
+      new ObjectType({
+        typeID: new TypeID({ adapter: constants.SALESFORCE, name: 'test' }),
+        fields: {
+          address: new PrimitiveType({
+            typeID: new TypeID({
+              adapter: constants.SALESFORCE,
+              name: 'string'
+            }),
+            primitive: PrimitiveTypes.STRING
+          }),
+          banana: new PrimitiveType({
+            typeID: new TypeID({
+              adapter: constants.SALESFORCE,
+              name: 'string'
+            }),
+            primitive: PrimitiveTypes.STRING
+          })
+        },
+        annotationsValues: {
+          required: false,
+          _default: 'test',
+          label: 'test label'
+        }
+      }),
+      new ObjectType({
+        typeID: new TypeID({ adapter: constants.SALESFORCE, name: 'test' }),
+        fields: {
+          address: new PrimitiveType({
+            typeID: new TypeID({
+              adapter: constants.SALESFORCE,
+              name: 'string'
+            }),
+            primitive: PrimitiveTypes.STRING
+          }),
+          banana: new PrimitiveType({
+            typeID: new TypeID({
+              adapter: constants.SALESFORCE,
+              name: 'string'
+            }),
+            primitive: PrimitiveTypes.STRING
+          }),
+          description: new PrimitiveType({
+            typeID: new TypeID({
+              adapter: constants.SALESFORCE,
+              name: 'string'
+            }),
+            primitive: PrimitiveTypes.STRING
+          })
+        },
+        annotationsValues: {
+          required: false,
+          _default: 'test2',
+          label: 'test2 label'
+        }
+      })
+    )
+
+    expect(result).toBe(true)
+    expect(mockCreate.mock.calls.length).toBe(1)
+    expect(mockDelete.mock.calls.length).toBe(0)
+    expect(mockUpdate.mock.calls.length).toBe(1)
+    // Verify the custom fields creation
+    const fields = mockCreate.mock.calls[0][1]
+    expect(fields.length).toBe(1)
+    const field = fields[0]
+    expect(field.fullName).toBe('test__c.description__c')
+    expect(field.type).toBe('Text')
+    expect(field.length).toBe(80)
+    expect(field.required).toBe(false)
+    // Verify the field permissions update
+    const profileInfo = mockUpdate.mock.calls[0][1]
+    expect(profileInfo.fullName).toBe('Admin')
+    expect(profileInfo.fieldPermissions.length).toBe(1)
+    expect(profileInfo.fieldPermissions[0].field).toBe('test__c.description__c')
+    expect(profileInfo.fieldPermissions[0].editable).toBe(true)
+    expect(profileInfo.fieldPermissions[0].readable).toBe(true)
+  })
+
+  it('should only delete fields when the only change in the new object is that some fields no longer appear', async () => {
+    const mockCreate = jest.fn().mockImplementationOnce(() => {
+      return { success: true }
+    })
+    const mockDelete = jest.fn().mockImplementationOnce(() => {
+      return { success: true }
+    })
+    const mockUpdate = jest.fn().mockImplementationOnce(() => {
+      return { success: true }
+    })
+    SalesforceClient.prototype.create = mockCreate
+    SalesforceClient.prototype.delete = mockDelete
+    SalesforceClient.prototype.update = mockUpdate
+
+    const result = await adapter().update(
+      new ObjectType({
+        typeID: new TypeID({ adapter: constants.SALESFORCE, name: 'test' }),
+        fields: {
+          address: new PrimitiveType({
+            typeID: new TypeID({
+              adapter: constants.SALESFORCE,
+              name: 'string'
+            }),
+            primitive: PrimitiveTypes.STRING
+          }),
+          banana: new PrimitiveType({
+            typeID: new TypeID({
+              adapter: constants.SALESFORCE,
+              name: 'string'
+            }),
+            primitive: PrimitiveTypes.STRING
+          }),
+          description: new PrimitiveType({
+            typeID: new TypeID({
+              adapter: constants.SALESFORCE,
+              name: 'string'
+            }),
+            primitive: PrimitiveTypes.STRING
+          })
+        },
+        annotationsValues: {
+          required: false,
+          _default: 'test',
+          label: 'test label'
+        }
+      }),
+      new ObjectType({
+        typeID: new TypeID({ adapter: constants.SALESFORCE, name: 'test' }),
+        fields: {
+          description: new PrimitiveType({
+            typeID: new TypeID({
+              adapter: constants.SALESFORCE,
+              name: 'string'
+            }),
+            primitive: PrimitiveTypes.STRING
+          })
+        },
+        annotationsValues: {
+          required: false,
+          _default: 'test2',
+          label: 'test2 label'
+        }
+      })
+    )
+
+    expect(result).toBe(true)
+    expect(mockCreate.mock.calls.length).toBe(0)
+    expect(mockDelete.mock.calls.length).toBe(1)
+    expect(mockUpdate.mock.calls.length).toBe(0)
+    // Verify the custom fields deletion
+    const fields = mockDelete.mock.calls[0][1]
+    expect(fields.length).toBe(2)
+    expect(fields[0]).toBe('test__c.address__c')
+    expect(fields[1]).toBe('test__c.banana__c')
+  })
+  // Add a test that combines both
+  it('should both create & delete fields when some fields no longer appear in the new object and some fields are new', async () => {
+    const mockCreate = jest.fn().mockImplementationOnce(() => {
+      return { success: true }
+    })
+    const mockDelete = jest.fn().mockImplementationOnce(() => {
+      return { success: true }
+    })
+    const mockUpdate = jest.fn().mockImplementationOnce(() => {
+      return { success: true }
+    })
+    SalesforceClient.prototype.create = mockCreate
+    SalesforceClient.prototype.delete = mockDelete
+    SalesforceClient.prototype.update = mockUpdate
+
+    const result = await adapter().update(
+      new ObjectType({
+        typeID: new TypeID({ adapter: constants.SALESFORCE, name: 'test' }),
+        fields: {
+          address: new PrimitiveType({
+            typeID: new TypeID({
+              adapter: constants.SALESFORCE,
+              name: 'string'
+            }),
+            primitive: PrimitiveTypes.STRING
+          }),
+          banana: new PrimitiveType({
+            typeID: new TypeID({
+              adapter: constants.SALESFORCE,
+              name: 'string'
+            }),
+            primitive: PrimitiveTypes.STRING
+          })
+        },
+        annotationsValues: {
+          required: false,
+          _default: 'test',
+          label: 'test label'
+        }
+      }),
+      new ObjectType({
+        typeID: new TypeID({ adapter: constants.SALESFORCE, name: 'test' }),
+        fields: {
+          banana: new PrimitiveType({
+            typeID: new TypeID({
+              adapter: constants.SALESFORCE,
+              name: 'string'
+            }),
+            primitive: PrimitiveTypes.STRING
+          }),
+          description: new PrimitiveType({
+            typeID: new TypeID({
+              adapter: constants.SALESFORCE,
+              name: 'string'
+            }),
+            primitive: PrimitiveTypes.STRING
+          })
+        },
+        annotationsValues: {
+          required: false,
+          _default: 'test2',
+          label: 'test2 label'
+        }
+      })
+    )
+
+    expect(result).toBe(true)
+    expect(result).toBe(true)
+    expect(mockCreate.mock.calls.length).toBe(1)
+    expect(mockDelete.mock.calls.length).toBe(1)
+    expect(mockUpdate.mock.calls.length).toBe(1)
+    // Verify the custom fields creation
+    const addedFields = mockCreate.mock.calls[0][1]
+    expect(addedFields.length).toBe(1)
+    const field = addedFields[0]
+    expect(field.fullName).toBe('test__c.description__c')
+    expect(field.type).toBe('Text')
+    expect(field.length).toBe(80)
+    expect(field.required).toBe(false)
+    // Verify the field permissions update
+    const profileInfo = mockUpdate.mock.calls[0][1]
+    expect(profileInfo.fullName).toBe('Admin')
+    expect(profileInfo.fieldPermissions.length).toBe(1)
+    expect(profileInfo.fieldPermissions[0].field).toBe('test__c.description__c')
+    expect(profileInfo.fieldPermissions[0].editable).toBe(true)
+    expect(profileInfo.fieldPermissions[0].readable).toBe(true)
+    // Verify the custom fields deletion
+    const deletedFields = mockDelete.mock.calls[0][1]
+    expect(deletedFields.length).toBe(1)
+    expect(deletedFields[0]).toBe('test__c.address__c')
+  })
 })

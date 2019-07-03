@@ -1,3 +1,4 @@
+import * as fs from 'async-file'
 import cli from '../src/cli/salto-cli'
 import Cli from '../src/cli/commands'
 import SaltoCoreMock from './core/mocks/core'
@@ -100,18 +101,26 @@ describe('Test commands.ts', () => {
   })
 
   it('should invoke the discover command', async () => {
-    resetConsoleOutput()
-    const args = ['node', 'salto-cli.js', 'discover']
-    cli.parseAndRun(args)
-    await new Promise(resolve => setTimeout(resolve, 100))
-    expect(mockExit).toHaveBeenCalledWith(0)
+    try {
+      resetConsoleOutput()
+      const args = ['node', 'salto-cli.js', 'discover', '-o', 'tmp.bp']
+      cli.parseAndRun(args)
+      await new Promise(resolve => setTimeout(resolve, 100))
+      expect(mockExit).toHaveBeenCalledWith(0)
+    } finally {
+      fs.delete('tmp.bp')
+    }
   })
 
   it('should create the cli as singleton', async () => {
-    resetConsoleOutput()
-    const args = ['node', 'salto-cli.js', 'discover']
-    cli.parseAndRun(args)
-    await new Promise(resolve => setTimeout(resolve, 100))
-    expect(mockExit).toHaveBeenCalledWith(0)
+    try {
+      resetConsoleOutput()
+      const args = ['node', 'salto-cli.js', 'discover', '-o', 'tmp.bp']
+      cli.parseAndRun(args)
+      await new Promise(resolve => setTimeout(resolve, 100))
+      expect(mockExit).toHaveBeenCalledWith(0)
+    } finally {
+      fs.delete('tmp.bp')
+    }
   })
 })

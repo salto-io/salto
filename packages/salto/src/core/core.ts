@@ -102,4 +102,10 @@ export class SaltoCore extends EventEmitter {
   elementToHCL(element: Type, _maxDepth: number): string {
     return JSON.stringify(element, null, 2)
   }
+
+  async discover(): Promise<Blueprint> {
+    const types = await this.adapters.salesforce.discover()
+    const buffer = await Parser.dump(types)
+    return { buffer, filename: 'none' }
+  }
 }

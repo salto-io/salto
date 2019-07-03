@@ -1,7 +1,8 @@
 
 import * as fs from 'async-file'
-import { SaltoCore } from '../../src/core/core'
 import path from 'path'
+import { TypeID, PrimitiveType, PrimitiveTypes } from 'adapter-api'
+import { SaltoCore } from '../../src/core/core'
 
 describe('Test core.ts', () => {
   const core = new SaltoCore()
@@ -11,14 +12,20 @@ describe('Test core.ts', () => {
     }
     return true
   })
+  core.adapters.salesforce.discover = jest.fn(() => [
+    new PrimitiveType({
+      typeID: new TypeID({ adapter: 'salesforce', name: 'dummy' }),
+      primitive: PrimitiveTypes.STRING,
+    }),
+  ])
 
   it('Should return all elements in the blueprint', async () => {
     const blueprints = [{
-      buffer: await fs.readFile(path.join(__dirname, '..' , 'blueprints', 'salto.bp'), 'utf8'),
+      buffer: await fs.readFile(path.join(__dirname, '..', 'blueprints', 'salto.bp'), 'utf8'),
       filename: 'salto.bp',
     },
     {
-      buffer: await fs.readFile(path.join(__dirname, '..' , 'blueprints', 'salto2.bp'), 'utf8'),
+      buffer: await fs.readFile(path.join(__dirname, '..', 'blueprints', 'salto2.bp'), 'utf8'),
       filename: 'salto2.bp',
     },
     ]
@@ -31,7 +38,7 @@ describe('Test core.ts', () => {
 
   it('should throw an error if the bp is not valid', async () => {
     const blueprint = {
-      buffer: await fs.readFile(path.join(__dirname, '..' , 'blueprints', 'error.bp'), 'utf8'),
+      buffer: await fs.readFile(path.join(__dirname, '..', 'blueprints', 'error.bp'), 'utf8'),
       filename: 'error.bp',
     }
     await expect(core.getAllElements([blueprint])).rejects.toThrow()
@@ -39,7 +46,7 @@ describe('Test core.ts', () => {
 
   it('should create an apply plan', async () => {
     const blueprint = {
-      buffer: await fs.readFile(path.join(__dirname, '..' , 'blueprints', 'salto.bp'), 'utf8'),
+      buffer: await fs.readFile(path.join(__dirname, '..', 'blueprints', 'salto.bp'), 'utf8'),
       filename: 'salto.bp',
     }
     await core.apply([blueprint], true)
@@ -47,7 +54,7 @@ describe('Test core.ts', () => {
 
   it('should apply an apply plan', async () => {
     const blueprint = {
-      buffer: await fs.readFile(path.join(__dirname, '..' , 'blueprints', 'salto.bp'), 'utf8'),
+      buffer: await fs.readFile(path.join(__dirname, '..', 'blueprints', 'salto.bp'), 'utf8'),
       filename: 'salto.bp',
     }
     await core.apply([blueprint])
@@ -56,7 +63,7 @@ describe('Test core.ts', () => {
 
   it('should throw error on missing adapter', async () => {
     const blueprint = {
-      buffer: await fs.readFile(path.join(__dirname, '..' , 'blueprints', 'missing.bp'), 'utf8'),
+      buffer: await fs.readFile(path.join(__dirname, '..', 'blueprints', 'missing.bp'), 'utf8'),
       filename: 'salto.bp',
     }
     await expect(core.apply([blueprint], false)).rejects.toThrow()
@@ -64,9 +71,16 @@ describe('Test core.ts', () => {
 
   it('should throw error on adapter fail', async () => {
     const blueprint = {
-      buffer: await fs.readFile(path.join(__dirname, '..' , 'blueprints', 'fail.bp'), 'utf8'),
+      buffer: await fs.readFile(path.join(__dirname, '..', 'blueprints', 'fail.bp'), 'utf8'),
       filename: 'salto.bp',
     }
     await expect(core.apply([blueprint], false)).rejects.toThrow()
+  })
+
+  describe('discover', () => {
+    it('should return blueprint', async () => {
+      const bp = await core.discover()
+      expect(bp.buffer.toString()).toMatch(/type "?salesforce_dummy"? "?is"? "?string"?/)
+    })
   })
 })

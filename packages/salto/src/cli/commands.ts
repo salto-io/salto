@@ -143,6 +143,14 @@ export default class Cli {
     }
   }
 
+  /**
+   * Write blueprint to file
+   * @param blueprint The blueprint to dump
+   */
+  private static dumpBlueprint(blueprint: Blueprint): Promise<void> {
+    return fs.writeFile(blueprint.filename, blueprint.buffer)
+  }
+
   /** ****************************************** */
   /**         Plan private functions          * */
   /** ****************************************** */
@@ -554,8 +562,9 @@ export default class Cli {
     Cli.print('setenv!')
   }
 
-  // eslint-disable-next-line class-methods-use-this
-  async discover(): Promise<void> {
-    Cli.print('discover!')
+  async discover(outputFilename: string): Promise<void> {
+    const bp = await this.core.discover()
+    bp.filename = outputFilename
+    await Cli.dumpBlueprint(bp)
   }
 }

@@ -1,3 +1,5 @@
+import path from 'path'
+import * as fs from 'async-file'
 import Cli from '../src/cli/commands'
 import SaltoCoreMock from './core/mocks/core'
 
@@ -24,6 +26,17 @@ describe('Test commands.ts', () => {
 
   it('discover should be defined', () => {
     expect(cli.discover).toBeDefined()
+  })
+
+  it('discover should create file', async () => {
+    const outputName = path.join(__dirname, 'tmp.bp')
+    try {
+      await cli.discover(outputName)
+      expect(await fs.exists(outputName)).toBe(true)
+      expect((await fs.readFile(outputName)).toString()).toMatch('asd')
+    } finally {
+      fs.delete(outputName)
+    }
   })
 
   it('should output not found when describing a complete mismatch', async () => {

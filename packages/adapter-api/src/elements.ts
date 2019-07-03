@@ -22,7 +22,6 @@ interface TypeIDArgs {
   name?: string
 }
 
-
 export class TypeID {
   static readonly NAMESPACE_SEPERATOR = '_'
 
@@ -40,19 +39,13 @@ export class TypeID {
   }
 }
 
-export interface Element {
-  typeID: TypeID
-}
-
-type ElementMap = Record<string, Element>
-
 /**
  * An abstract class that represent the base type.
  * Contains the base function and fields.
  * Each subclass needs to implement the clone function as it is members
  * dependent.
  */
-export abstract class Type implements Element {
+export abstract class Type {
   public static DEFAULT = '_default'
   public static REQUIRED = 'required'
 
@@ -246,70 +239,57 @@ export class ListType extends Type {
   }
 }
 
-export class InstanceElement implements Element {
-  typeID: TypeID
-  type: Type
-  value: Values
-  constructor(typeID: TypeID, type: Type, value: Values) {
-    this.typeID = typeID
-    this.type = type
-    this.value = value
-  }
-}
 
-export class ElementsRegistry {
-  registeredElements: ElementMap
-  constructor(initElements: Element[] = []) {
-    this.registeredElements = {}
-    initElements.forEach(type => this.registerElement(type))
+export class TypesRegistry {
+  registeredTypes: TypeMap
+  constructor(initTypes: Type[] = []) {
+    this.registeredTypes = {}
+    initTypes.forEach(type => this.registerType(type))
   }
 
-  registerElement(elementToRegister: Element): void {
-    const key = elementToRegister.typeID.getFullName()
-    const existingElement = this.registeredElements[key]
-    if (existingElement) {
+  registerType(typeToRegister: Type): void {
+    const key = typeToRegister.typeID.getFullName()
+    const existingType = this.registeredTypes[key]
+    if (existingType) {
       throw new Error('Type extension is not supported for now')
     }
-    this.registeredElements[key] = elementToRegister
+    this.registeredTypes[key] = typeToRegister
   }
 
-  hasElement(typeID: TypeID): boolean {
+  hasType(typeID: TypeID): boolean {
     const fullName = typeID.getFullName()
-    return Object.prototype.hasOwnProperty.call(this.registeredElements, fullName)
+    return Object.prototype.hasOwnProperty.call(this.registeredTypes, fullName)
   }
 
-  getAllElements(): Element[] {
-    return Object.values(this.registeredElements)
+  getAllTypes(): Type[] {
+    return Object.values(this.registeredTypes)
   }
 
-  getElement(
+  getType(
     typeID: TypeID,
-    type: PrimitiveTypes|Type = PrimitiveTypes.OBJECT,
+    type: PrimitiveTypes = PrimitiveTypes.OBJECT,
     /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
   ): any {
     // Using any here is ugly, but I can't find a better comiling solution. TODO - fix this
     const key = typeID.getFullName()
-    let res: Element = this.registeredElements[key]
+    let res: Type = this.registeredTypes[key]
     if (!res) {
       if (type === PrimitiveTypes.OBJECT) {
         res = new ObjectType({ typeID })
       } else
       if (type === PrimitiveTypes.LIST) {
         res = new ListType({ typeID })
-      /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-      } else if (type as any in PrimitiveTypes) {
-        res = new PrimitiveType({ typeID, primitive: type as PrimitiveTypes })
       } else {
-        res = new InstanceElement(typeID, type as Type, {})
+        res = new PrimitiveType({ typeID, primitive: type })
       }
-      this.registerElement(res)
+      this.registerType(res)
     }
     return res
   }
 
-  merge(otherRegistry: ElementsRegistry): ElementsRegistry {
-    const allElements = this.getAllElements().concat(otherRegistry.getAllElements())
-    return new ElementsRegistry(allElements)
+  merge(otherRegistry: TypesRegistry): TypesRegistry {
+    const allTypes = this.getAllTypes().concat(otherRegistry.getAllTypes())
+    return new TypesRegistry(allTypes)
   }
 }
 
@@ -323,9 +303,8 @@ export function isListType(element: any): element is ListType {
   return element instanceof ListType
 }
 
-
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 export function isPrimitiveType(
-  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
   element: any,
 ): element is PrimitiveType {
   return element instanceof PrimitiveType

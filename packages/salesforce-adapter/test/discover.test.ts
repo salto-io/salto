@@ -1,11 +1,11 @@
 import { MetadataInfo } from 'jsforce'
-import { ObjectType } from 'adapter-api'
+import { ObjectType, Type } from 'adapter-api'
 import SalesforceAdapter from '../src/adapter'
-import SalesforceClient from '../src/client'
-import { ProfileInfo } from '../src/salesforce_types'
+import SalesforceClient from '../src/client/client'
+import { ProfileInfo } from '../src/client/types'
 import * as constants from '../src/constants'
 
-jest.mock('../src/client')
+jest.mock('../src/client/client')
 
 describe('Test SalesforceAdapter discover', () => {
   // input should be DescribeGlobalSObjectResult, we will validate obj has at least name
@@ -254,13 +254,9 @@ describe('Test SalesforceAdapter discover', () => {
     expect(flow.fields.description.typeID.name).toBe('string')
     // TODO: validate what is expected from this metadata type
     expect(flow.annotationsValues[constants.API_NAME]).toBe('Flow')
-    expect(flow.fields.description.annotationsValues[constants.REQUIRED]).toBe(
-      true
-    )
+    expect(flow.fields.description.annotationsValues[Type.REQUIRED]).toBe(true)
     expect(flow.fields.is_template.typeID.name).toBe('checkbox')
-    expect(flow.fields.is_template.annotationsValues[constants.REQUIRED]).toBe(
-      false
-    )
+    expect(flow.fields.is_template.annotationsValues[Type.REQUIRED]).toBe(false)
     expect(flow.fields.action_calls.typeID.getFullName()).toBe(
       'salesforce_FlowActionCall'
     )

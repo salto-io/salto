@@ -8,7 +8,7 @@ import {
 
 import SalesforceAdapter from '../src/adapter'
 import * as constants from '../src/constants'
-import { CustomObject } from '../src/salesforce_types'
+import { CustomObject } from '../src/client/types'
 
 // This is turned off by default as it has SFDC rate limit implications
 // and this is very long test

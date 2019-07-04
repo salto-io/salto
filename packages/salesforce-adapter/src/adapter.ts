@@ -1,32 +1,29 @@
-import { snakeCase, startCase, camelCase } from 'lodash'
 /* eslint-disable class-methods-use-this */
-import { Field, ValueTypeField, SaveResult } from 'jsforce'
-import {
-  Type,
-  TypesRegistry,
-  ObjectType,
-  TypeID,
-  PrimitiveTypes
-} from 'adapter-api'
+import { SaveResult } from 'jsforce'
+import { Type, ObjectType } from 'adapter-api'
 import { isArray } from 'util'
-import SalesforceClient from './client'
+import SalesforceClient from './client/client'
 import * as constants from './constants'
 import {
-  CustomObject,
-  CustomField,
   FieldPermissions,
   ProfileInfo,
   CompleteSaveResult,
   SfError
-} from './salesforce_types'
+} from './client/types'
+import {
+  toCustomField,
+  toCustomObject,
+  toProfileInfo,
+  sfCase,
+  bpCase,
+  fieldFullName,
+  Types,
+  fromValueTypeField,
+  fromField
+} from './transformer'
 
 // TODO: this should be replaced with Elements from core once ready
 type Config = Record<string, any>
-
-const sfCase = (name: string, custom: boolean = false): string =>
-  startCase(camelCase(name)) + (custom === true ? '__c' : '')
-const bpCase = (name: string): string =>
-  name.endsWith('__c') ? snakeCase(name).slice(0, -3) : snakeCase(name)
 
 // Diagnose client results
 const diagnose = (result: SaveResult | SaveResult[]): void => {
@@ -73,39 +70,12 @@ const annotateApiNameAndLabel = (element: ObjectType): void => {
   })
 }
 
-const fieldFullName = (typeApiName: string, fieldApiName: string): string =>
-  `${typeApiName}.${fieldApiName}`
-
-const toCustomField = (
-  field: Type,
-  fullname: boolean = false,
-  objectName: string = ''
-): CustomField =>
-  new CustomField(
-    fullname
-      ? fieldFullName(objectName, field.annotationsValues[constants.API_NAME])
-      : field.annotationsValues[constants.API_NAME],
-    field.typeID.name,
-    field.annotationsValues[constants.LABEL],
-    field.annotationsValues[constants.REQUIRED],
-    field.annotationsValues[constants.PICKLIST_VALUES]
-  )
-
-const toCustomObject = (element: ObjectType): CustomObject =>
-  new CustomObject(
-    element.annotationsValues[constants.API_NAME],
-    element.annotationsValues[constants.LABEL],
-    Object.values(element.fields).map(f => toCustomField(f))
-  )
-
 const apiName = (element: Type): string => {
   return element.annotationsValues[constants.API_NAME]
 }
 
 export default class SalesforceAdapter {
   readonly client: SalesforceClient
-  // type registery used in discover
-  readonly types = new TypesRegistry()
 
   constructor(conf: Config) {
     this.client = new SalesforceClient(
@@ -113,38 +83,6 @@ export default class SalesforceAdapter {
       conf.password + conf.token,
       conf.sandbox
     )
-  }
-
-  private getType(name: string): Type {
-    const typeName = bpCase(name)
-    switch (typeName) {
-      case 'string': {
-        return this.types
-          .getType(new TypeID({ adapter: '', name }), PrimitiveTypes.STRING)
-          .clone()
-      }
-      case 'double': {
-        return this.types
-          .getType(
-            new TypeID({ adapter: '', name: 'number' }),
-            PrimitiveTypes.NUMBER
-          )
-          .clone()
-      }
-      case 'boolean': {
-        return this.types
-          .getType(
-            // TODO: take checkbox from constans
-            new TypeID({ adapter: constants.SALESFORCE, name: 'checkbox' })
-          )
-          .clone()
-      }
-      default: {
-        return this.types
-          .getType(new TypeID({ adapter: constants.SALESFORCE, name }))
-          .clone()
-      }
-    }
   }
 
   /**
@@ -275,23 +213,21 @@ export default class SalesforceAdapter {
   }
 
   /**
-   * Creates permissions in a Profile object for custom fields
-   * @param fieldsForAddition The custom fields we create the permissions for
-   * @returns A ProfileInfo object that contains all the required permissions
+   * Creates permissions in a Profile object for custom fields and update it
+   * @param objectApiName The object api name
+   * @param fieldsApiNames The custom fields names
+   * @returns the update result
    */
   private async updatePermissions(
     objectApiName: string,
-    fieldsApiName: string[]
+    fieldsApiNames: string[]
   ): Promise<SaveResult | SaveResult[]> {
     return this.client.update(
       constants.METADATA_PROFILE_OBJECT,
-      new ProfileInfo(
+      toProfileInfo(
         constants.PROFILE_NAME_SYSTEM_ADMINISTRATOR,
-        fieldsApiName.map(f => ({
-          field: fieldFullName(objectApiName, f),
-          editable: true,
-          readable: true
-        }))
+        objectApiName,
+        fieldsApiNames
       )
     )
   }
@@ -328,7 +264,7 @@ export default class SalesforceAdapter {
   }
 
   private async createMetadataTypeElement(objectName: string): Promise<Type> {
-    const element = this.getType(objectName) as ObjectType
+    const element = Types.get(objectName) as ObjectType
     element.annotate({ [constants.API_NAME]: objectName })
     const fields = await this.client.discoverMetadataObject(objectName)
     if (!fields) {
@@ -336,36 +272,11 @@ export default class SalesforceAdapter {
     }
     fields.forEach(field => {
       if (field.name !== constants.METADATA_OBJECT_NAME_FIELD) {
-        const fieldElement = this.createMetadataFieldTypeElement(field)
+        const fieldElement = fromValueTypeField(field)
         fieldElement.annotate({ [constants.API_NAME]: field.name })
         element.fields[bpCase(field.name)] = fieldElement
       }
     })
-    return element
-  }
-
-  private createMetadataFieldTypeElement(field: ValueTypeField): Type {
-    const element = this.getType(field.soapType) as ObjectType
-    element.annotationsValues.required = field.valueRequired
-
-    if (field.picklistValues && field.picklistValues.length > 0) {
-      element.annotationsValues.values = field.picklistValues.map(
-        val => val.value
-      )
-      const defaults = field.picklistValues
-        .filter(val => {
-          return val.defaultValue === true
-        })
-        .map(val => val.value)
-      if (defaults.length === 1) {
-        // eslint-disable-next-line no-underscore-dangle
-        element.annotationsValues[Type.DEFAULT] = defaults.pop()
-      } else {
-        // eslint-disable-next-line no-underscore-dangle
-        element.annotationsValues[Type.DEFAULT] = defaults
-      }
-    }
-
     return element
   }
 
@@ -407,11 +318,11 @@ export default class SalesforceAdapter {
   private async createSObjectTypeElement(
     objectName: string
   ): Promise<ObjectType> {
-    const element = this.getType(objectName) as ObjectType
+    const element = Types.get(objectName) as ObjectType
     element.annotate({ [constants.API_NAME]: objectName })
     const fields = await this.client.discoverSObject(objectName)
     fields.forEach(field => {
-      const fieldElement = this.createSObjectFieldTypeElement(field)
+      const fieldElement = fromField(field)
       fieldElement.annotate({ [constants.API_NAME]: field.name })
       element.fields[bpCase(field.name)] = fieldElement
     })
@@ -449,38 +360,5 @@ export default class SalesforceAdapter {
     })
 
     return permissions
-  }
-
-  private createSObjectFieldTypeElement(field: Field): Type {
-    const element: Type = this.getType(field.type)
-    const annotations = element.annotationsValues
-    annotations[constants.LABEL] = field.label
-    annotations[constants.REQUIRED] = field.nillable
-    annotations[Type.DEFAULT] = field.defaultValue
-
-    if (field.picklistValues && field.picklistValues.length > 0) {
-      annotations[constants.PICKLIST_VALUES] = field.picklistValues.map(
-        val => val.value
-      )
-      annotations[constants.RESTRICTED_PICKLIST] = false
-      if (field.restrictedPicklist) {
-        annotations[constants.RESTRICTED_PICKLIST] = field.restrictedPicklist
-      }
-
-      const defaults = field.picklistValues
-        .filter(val => {
-          return val.defaultValue === true
-        })
-        .map(val => val.value)
-      if (defaults.length > 0) {
-        if (field.type === 'picklist') {
-          annotations[Type.DEFAULT] = defaults.pop()
-        } else {
-          annotations[Type.DEFAULT] = defaults
-        }
-      }
-    }
-
-    return element
   }
 }

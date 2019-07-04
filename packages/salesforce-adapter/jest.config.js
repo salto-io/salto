@@ -15,8 +15,7 @@ module.exports = {
     '!**/node_modules/**',
     '!<rootDir>/*.config.js',
     '!<rootDir>/src/tools/**', // At the moment we do not cover the tools
-    '!<rootDir>/src/client.ts', // Ignore abstraction layer above jsforce
-    '!<rootDir>/src/salesforce_types.ts', // Ignore API types
+    '!<rootDir>/src/client/client.ts', // Ignore abstraction layer above jsforce
     '!<rootDir>/(test|dist|coverage)/**'
   ],
   coverageThreshold: {

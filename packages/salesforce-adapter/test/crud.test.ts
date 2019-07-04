@@ -1,9 +1,9 @@
 import { ObjectType, PrimitiveType, TypeID, PrimitiveTypes } from 'adapter-api'
 import SalesforceAdapter from '../src/adapter'
-import SalesforceClient from '../src/client'
+import SalesforceClient from '../src/client/client'
 import * as constants from '../src/constants'
 
-jest.mock('../src/client')
+jest.mock('../src/client/client')
 
 describe('Test SalesforceAdapter CRUD', () => {
   function adapter(): SalesforceAdapter {

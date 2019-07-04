@@ -42,34 +42,34 @@ describe.skip('Test Salesforce adapter E2E', () => {
         .pop() as ObjectType
 
       // Test few possible types
-      expect(lead.fields.LastName.typeID.name).toBe('string')
-      expect(lead.fields.Description.typeID.name).toBe('textarea')
-      expect(lead.fields.Salutation.typeID.name).toBe('picklist')
+      expect(lead.fields.last_name.typeID.name).toBe('string')
+      expect(lead.fields.description.typeID.name).toBe('textarea')
+      expect(lead.fields.salutation.typeID.name).toBe('picklist')
 
       // Test label
-      expect(lead.fields.LastName.annotationsValues.label).toBe('Last Name')
+      expect(lead.fields.last_name.annotationsValues.label).toBe('Last Name')
 
       // Test true and false required
-      expect(lead.fields.Description.annotationsValues.required).toBe(true)
-      expect(lead.fields.CreatedDate.annotationsValues.required).toBe(false)
+      expect(lead.fields.description.annotationsValues.required).toBe(true)
+      expect(lead.fields.created_date.annotationsValues.required).toBe(false)
 
       // Test picklist restricted_pick_list prop
-      expect(lead.fields.Industry.annotationsValues.restricted_pick_list).toBe(
+      expect(lead.fields.industry.annotationsValues.restricted_pick_list).toBe(
         false
       )
       expect(
-        lead.fields.CleanStatus.annotationsValues.restricted_pick_list
+        lead.fields.clean_status.annotationsValues.restricted_pick_list
       ).toBe(true)
 
       // Test picklist values
       expect(
-        (lead.fields.Salutation.annotationsValues.values as string[]).join(';')
+        (lead.fields.salutation.annotationsValues.values as string[]).join(';')
       ).toBe('Mr.;Ms.;Mrs.;Dr.;Prof.')
 
       // Test _default
       // TODO: add test to primitive with _default and combobox _default (no real example for lead)
       // eslint-disable-next-line no-underscore-dangle
-      expect(lead.fields.Status.annotationsValues._default).toBe(
+      expect(lead.fields.status.annotationsValues._default).toBe(
         'Open - Not Contacted'
       )
     })
@@ -83,8 +83,8 @@ describe.skip('Test Salesforce adapter E2E', () => {
         .pop() as ObjectType
 
       expect(flow.fields.description.typeID.name).toBe('string')
-      expect(flow.fields.isTemplate.typeID.name).toBe('checkbox')
-      expect(flow.fields.actionCalls.typeID.name).toBe('FlowActionCall')
+      expect(flow.fields.is_template.typeID.name).toBe('checkbox')
+      expect(flow.fields.action_calls.typeID.name).toBe('FlowActionCall')
     })
   })
 
@@ -111,10 +111,14 @@ describe.skip('Test Salesforce adapter E2E', () => {
           })
         }
       })
-      const addResult = await sfAdapter.add(element)
+      const post = await sfAdapter.add(element)
 
       // Test
-      expect(addResult).toBe(true)
+      expect(post).toBeInstanceOf(Type)
+      expect(post.annotationsValues[constants.API_NAME]).toBe('Test__c')
+      expect(
+        post.fields.description.annotationsValues[constants.API_NAME]
+      ).toBe('Description__c')
       const readResult = await sfAdapter.client.readMetadata(
         constants.CUSTOM_OBJECT,
         'test__c'
@@ -122,7 +126,7 @@ describe.skip('Test Salesforce adapter E2E', () => {
       expect(readResult.fullName).toBe('test__c')
 
       // Clean-up
-      await sfAdapter.remove(element)
+      await sfAdapter.remove(post)
     })
 
     it('should remove object metadata component e2e with real account', async () => {
@@ -149,12 +153,11 @@ describe.skip('Test Salesforce adapter E2E', () => {
         }
       })
 
-      const addResult = await sfAdapter.add(element)
-      expect(addResult).toBe(true)
+      const post = await sfAdapter.add(element)
 
       // Test
-      const removeResult = await sfAdapter.remove(element)
-      expect(removeResult).toBe(true)
+      const removeResult = await sfAdapter.remove(post)
+      expect(removeResult).toBe(undefined)
 
       const readResult = await sfAdapter.client.readMetadata(
         constants.CUSTOM_OBJECT,
@@ -190,24 +193,26 @@ describe.skip('Test Salesforce adapter E2E', () => {
         annotationsValues: {
           required: false,
           _default: 'test',
-          label: 'test label'
+          label: 'test label',
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          api_name: 'Test__c'
         }
       })
 
       const addResult = await sfAdapter.add(oldElement)
       // Verify setup was performed properly
-      expect(addResult).toBe(true)
+      expect(addResult).toBeInstanceOf(ObjectType)
 
       const oldElementReadResult = (await sfAdapter.client.readMetadata(
         constants.CUSTOM_OBJECT,
-        'test__c'
+        'Test__c'
       )) as CustomObject
-      expect(oldElementReadResult.fullName).toBe('test__c')
+      expect(oldElementReadResult.fullName).toBe('Test__c')
       expect(oldElementReadResult.fields.map(f => f.fullName)).toContain(
-        'address__c'
+        'Address__c'
       )
       expect(oldElementReadResult.fields.map(f => f.fullName)).toContain(
-        'banana__c'
+        'Banana__c'
       )
 
       const newElement = new ObjectType({
@@ -241,12 +246,12 @@ describe.skip('Test Salesforce adapter E2E', () => {
 
       const readResult = (await sfAdapter.client.readMetadata(
         constants.CUSTOM_OBJECT,
-        'test__c'
+        'Test__c'
       )) as CustomObject
-      expect(readResult.fullName).toBe('test__c')
-      expect(readResult.fields.map(f => f.fullName)).toContain('banana__c')
-      expect(readResult.fields.map(f => f.fullName)).toContain('description__c')
-      expect(readResult.fields.map(f => f.fullName)).not.toContain('address__c')
+      expect(readResult.fullName).toBe('Test__c')
+      expect(readResult.fields.map(f => f.fullName)).toContain('Banana__c')
+      expect(readResult.fields.map(f => f.fullName)).toContain('Description__c')
+      expect(readResult.fields.map(f => f.fullName)).not.toContain('Address__c')
 
       // Clean-up
       await sfAdapter.remove(oldElement)

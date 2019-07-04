@@ -1,6 +1,4 @@
-import { MetadataInfo } from 'jsforce'
-import { ObjectType } from 'adapter-api'
-import { LABEL, REQUIRED, PICKLIST_VALUES } from './constants'
+import { MetadataInfo, SaveResult } from 'jsforce'
 
 export interface FieldPermissions {
   field: string
@@ -9,10 +7,10 @@ export interface FieldPermissions {
 }
 
 export class ProfileInfo implements MetadataInfo {
-  fieldPermissions: FieldPermissions[]
-  constructor(public readonly fullName: string) {
-    this.fieldPermissions = []
-  }
+  constructor(
+    public readonly fullName: string,
+    public fieldPermissions: FieldPermissions[] = []
+  ) {}
 }
 
 class CustomPicklistValue implements MetadataInfo {
@@ -32,7 +30,6 @@ export class CustomField implements MetadataInfo {
     combobox: 'Combobox'
   }
 
-  fullName: string
   readonly type: string
   // To be used for picklist and combobox types
   readonly valueSet: { valueSetDefinition: { value: CustomPicklistValue[] } }
@@ -40,13 +37,12 @@ export class CustomField implements MetadataInfo {
   readonly length: number
 
   constructor(
-    fullName: string,
+    public fullName: string,
     type: string,
-    public label?: string,
-    public required: boolean = false,
+    readonly label?: string,
+    readonly required: boolean = false,
     values?: string[]
   ) {
-    this.fullName = `${fullName}__c`
     this.type = CustomField.fieldTypeMapping[type]
     if (this.type === 'Text') {
       this.length = 80
@@ -66,8 +62,6 @@ export class CustomField implements MetadataInfo {
 }
 
 export class CustomObject implements MetadataInfo {
-  readonly fullName: string
-  readonly label: string
   readonly pluralLabel: string
   readonly fields: CustomField[] = []
 
@@ -78,25 +72,28 @@ export class CustomObject implements MetadataInfo {
     label: 'Test Object Name'
   }
 
-  constructor(element: ObjectType) {
-    this.fullName = `${element.typeID.name}__c`
-    this.label = element.typeID.name
+  constructor(
+    readonly fullName: string,
+    readonly label: string,
+    fields?: CustomField[]
+  ) {
     this.pluralLabel = `${this.label}s`
-
-    Object.entries(element.fields).forEach(([fieldName, field]) => {
-      // TODO: handle default values
-      const annotations = field.annotationsValues
-      this.fields.push(
-        new CustomField(
-          fieldName,
-          field.typeID.name,
-          annotations[LABEL],
-          annotations[REQUIRED],
-          annotations[PICKLIST_VALUES]
-          // TODO: use restricted picklist
-          // annotations[RESTRICTED_PICKLIST]
-        )
-      )
-    })
+    if (fields) {
+      this.fields = fields
+    }
   }
+}
+
+export interface SfError {
+  extendedErrorDetails: string[]
+  extendedErrorCode: number[]
+  fields: string[]
+  message: string
+  statusCode: number
+}
+
+export interface CompleteSaveResult extends SaveResult {
+  success: boolean
+  fullName: string
+  errors: SfError | SfError[]
 }

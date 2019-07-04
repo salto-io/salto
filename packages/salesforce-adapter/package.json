@@ -23,12 +23,12 @@
   },
   "dependencies": {
     "@types/lodash": "^4.14.133",
+    "adapter-api": "github:salto-io/adapter-api",
     "buffer": "^5.2.1",
     "events": "^3.0.0",
     "jsforce": "github:salto-io/jsforce",
     "jsforce-types": "github:salto-io/jsforce-types",
     "lodash": "^4.17.11",
-    "adapter-api": "github:salto-io/adapter-api",
     "stream": "0.0.2",
     "winston": "^3.2.1"
   },

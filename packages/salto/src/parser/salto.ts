@@ -13,13 +13,41 @@ enum Keywords {
 
   // Primitive types
   TYPE_STRING = 'string',
+  TYPE_NUMBER = 'number',
+  TYPE_BOOL = 'boolean',
+  TYPE_OBJECT = 'object',
 }
 
-// Assume all primitives are strings for now
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const getPrimitiveType = (_typeName: string): PrimitiveTypes => PrimitiveTypes.STRING
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const getPrimitiveTypeName = (_primitiveType: PrimitiveTypes): string => Keywords.TYPE_STRING
+/**
+ * @param typeName Type name in HCL syntax
+ * @returns Primitive type identifier
+ */
+const getPrimitiveType = (typeName: string): PrimitiveTypes => {
+  if (typeName === Keywords.TYPE_STRING) {
+    return PrimitiveTypes.STRING
+  }
+  if (typeName === Keywords.TYPE_NUMBER) {
+    return PrimitiveTypes.NUMBER
+  }
+  return PrimitiveTypes.BOOLEAN
+}
+
+/**
+ * @param primitiveType Primitive type identifier
+ * @returns Type name in HCL syntax
+ */
+const getPrimitiveTypeName = (primitiveType: PrimitiveTypes): string => {
+  if (primitiveType === PrimitiveTypes.STRING) {
+    return Keywords.TYPE_STRING
+  }
+  if (primitiveType === PrimitiveTypes.NUMBER) {
+    return Keywords.TYPE_NUMBER
+  }
+  if (primitiveType === PrimitiveTypes.BOOLEAN) {
+    return Keywords.TYPE_BOOL
+  }
+  return Keywords.TYPE_OBJECT
+}
 
 export default class Parser {
   private static getTypeID(fullname: string): TypeID {
@@ -60,10 +88,14 @@ export default class Parser {
     return typeObj
   }
 
-  private parsePrimitiveType(typeBlock: HCLBlock): PrimitiveType {
+  private parsePrimitiveType(typeBlock: HCLBlock): Type {
     const [typeName, kw, baseType] = typeBlock.labels
     if (kw !== Keywords.TYPE_INHERITENCE_SEPARATOR) {
       throw new Error(`expected keyword ${Keywords.TYPE_INHERITENCE_SEPARATOR}. found ${kw}`)
+    }
+    if (baseType === Keywords.TYPE_OBJECT) {
+      // Object types can have fields
+      return this.parseType(typeBlock)
     }
     const typeObj = this.types.getType(
       Parser.getTypeID(typeName), getPrimitiveType(baseType),

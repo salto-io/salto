@@ -1,5 +1,5 @@
 import {
-  ObjectType, PrimitiveType, PrimitiveTypes, TypesRegistry, Type, TypeID,
+  ObjectType, PrimitiveType, PrimitiveTypes, TypesRegistry, Type, TypeID, isObjectType,
 } from 'adapter-api'
 import Parser from '../../src/parser/salto'
 
@@ -10,6 +10,16 @@ describe('Salto parser', () => {
     beforeAll(async () => {
       const body = `
       type salesforce_string is string { 
+      }
+
+      type salesforce_number is number {
+      }
+
+      type salesforce_boolean is boolean {
+      }
+
+      type salesforce_type is object {
+        salesforce_number num {}
       }
 
       model salesforce_test {
@@ -44,11 +54,11 @@ describe('Salto parser', () => {
 
     describe('parse result', () => {
       it('should have two types', () => {
-        expect(parsedElements.length).toBe(2)
+        expect(parsedElements.length).toBe(5)
       })
     })
 
-    describe('primitive type', () => {
+    describe('string type', () => {
       let stringType: PrimitiveType
       beforeAll(() => {
         stringType = parsedElements[0] as PrimitiveType
@@ -58,10 +68,41 @@ describe('Salto parser', () => {
       })
     })
 
+    describe('number type', () => {
+      let numberType: PrimitiveType
+      beforeAll(() => {
+        numberType = parsedElements[1] as PrimitiveType
+      })
+      it('should have the correct type', () => {
+        expect(numberType.primitive).toBe(PrimitiveTypes.NUMBER)
+      })
+    })
+
+    describe('boolean type', () => {
+      let booleanType: PrimitiveType
+      beforeAll(() => {
+        booleanType = parsedElements[2] as PrimitiveType
+      })
+      it('should have the correct type', () => {
+        expect(booleanType.primitive).toBe(PrimitiveTypes.BOOLEAN)
+      })
+    })
+
+    describe('object type', () => {
+      let objectType: ObjectType
+      beforeAll(() => {
+        expect(isObjectType(parsedElements[3])).toBe(true)
+        objectType = parsedElements[3] as ObjectType
+      })
+      it('should have a number field', () => {
+        expect(objectType.fields).toHaveProperty('num')
+      })
+    })
+
     describe('model', () => {
       let model: ObjectType
       beforeAll(() => {
-        model = parsedElements[1] as ObjectType
+        model = parsedElements[4] as ObjectType
       })
       describe('new field', () => {
         it('should exist', () => {
@@ -138,14 +179,26 @@ describe('Salto parser', () => {
 })
 
 describe('Salto Dump', () => {
-  const registry = new TypesRegistry()
+  const strType = new PrimitiveType({
+    typeID: new TypeID({ adapter: 'salesforce', name: 'string' }),
+    primitive: PrimitiveTypes.STRING,
+  })
 
-  const primitive = registry.getType(
-    new TypeID({ adapter: 'salesforce', name: 'string' }),
-    PrimitiveTypes.STRING,
-  )
-  const model = registry.getType(new TypeID({ adapter: 'salesforce', name: 'test' })) as ObjectType
-  model.fields.name = primitive
+  const numType = new PrimitiveType({
+    typeID: new TypeID({ adapter: 'salesforce', name: 'number' }),
+    primitive: PrimitiveTypes.NUMBER,
+  })
+
+  const boolType = new PrimitiveType({
+    typeID: new TypeID({ adapter: 'salesforce', name: 'bool' }),
+    primitive: PrimitiveTypes.BOOLEAN,
+  })
+
+  const model = new ObjectType({
+    typeID: new TypeID({ adapter: 'salesforce', name: 'test' }),
+  })
+  model.fields.name = strType
+  model.fields.num = numType
   model.annotationsValues = {
     name: {
       label: 'Name',
@@ -164,7 +217,7 @@ describe('Salto Dump', () => {
   let body: Buffer
 
   beforeAll(async () => {
-    body = await Parser.dump([primitive, model])
+    body = await Parser.dump([strType, numType, boolType, model])
   })
 
   it('dumps primitive string', () => {
@@ -182,15 +235,24 @@ describe('Salto Dump', () => {
     })
     it('has fields', () => {
       expect(body).toMatch(
-        /salesforce_string "name" {\s+label = "Name"\s+}/m,
+        /salesforce_string "?name"? {\s+label = "Name"\s+}/m,
+      )
+      expect(body).toMatch(
+        /salesforce_number "?num"? {/m,
       )
     })
     it('can be parsed back', async () => {
       const { elements, errors } = await new Parser(new TypesRegistry()).parse(body, 'none')
       expect(errors.length).toEqual(0)
-      expect(elements.length).toEqual(2)
-      expect(elements[0]).toEqual(primitive)
-      expect(elements[1]).toEqual(model)
+      expect(elements.length).toEqual(4)
+      expect(elements[0]).toEqual(strType)
+      expect(elements[1]).toEqual(numType)
+      expect(elements[2]).toEqual(boolType)
+      // When parsing every field gets annotation values, even if they are empty
+      // this is not really a problem so it is ok to compare the parsed value with
+      // a slightly modified version of the original
+      model.annotationsValues.num = {}
+      expect(elements[3]).toEqual(model)
     })
   })
 })

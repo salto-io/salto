@@ -26,6 +26,7 @@ describe('Test SalesforceAdapter discover', () => {
 
   function mockSingleSObject(
     name: string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     fields: Record<string, any>[]
   ): void {
     mockListSObjects([{ name }])
@@ -43,6 +44,7 @@ describe('Test SalesforceAdapter discover', () => {
 
   function mockSingleMetadataObject(
     xmlName: string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     fields: Record<string, any>[]
   ): void {
     mockListMetadataTypes([{ xmlName }])

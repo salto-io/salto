@@ -65,6 +65,7 @@ async function main(): Promise<void> {
     await conn.query(
       'SELECT Id, OrganizationType, Name, instanceName, isSandbox FROM Organization',
       undefined,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (err, res: any) => {
         if (err) {
           logger.error(
@@ -131,10 +132,10 @@ async function main(): Promise<void> {
           logger.info(`   ${name.fullName}`)
           try {
             // eslint-disable-next-line no-await-in-loop
-            const meta: any = await conn.metadata.read(
+            const meta: { description: string } = await conn.metadata.read(
               obj.xmlName,
               name.fullName
-            )
+            ) as unknown as { description: string }
             if (meta.description) {
               logger.info(`       ${meta.description}`)
             }

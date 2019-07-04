@@ -6,20 +6,22 @@
     "type": "git",
     "url": "https://github.com/salto-io/salesforce-adapter"
   },
+  "private": true,
   "files": [
     "dist/**/*"
   ],
-  "private": true,
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "prepare": "npm run build",
+    "prepublishOnly": "npm test",
     "build": "npm run lint && npm run build-ts",
-    "test": "jest --forceExit --coverage --verbose --detectOpenHandles",
+    "test": "jest --forceExit --verbose --detectOpenHandles",
     "watch-test": "npm run test -- --watchAll",
     "build-ts": "tsc",
     "watch-ts": "tsc -w",
-    "lint": "eslint --fix --ext .js,.jsx,.ts,.tsx ./"
+    "lint": "eslint --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
+    "lint-fix": "npm run lint -- --fix"
   },
   "dependencies": {
     "@types/lodash": "^4.14.133",

@@ -55,7 +55,7 @@ export class SaltoCore extends EventEmitter {
     )
   }
 
-  private async applyAction(action: PlanAction): Promise<boolean> {
+  private async applyAction(action: PlanAction): Promise<void> {
     this.emit('progress', action)
     /* istanbul ignore next */
     const existingValue = action.newValue || action.oldValue || {}
@@ -66,25 +66,19 @@ export class SaltoCore extends EventEmitter {
       throw new Error(`Missing adapter for ${adapterName}`)
     }
     if (action.actionType === PlanActionType.ADD) {
-      return adapter.add(action.newValue)
+      await adapter.add(action.newValue)
     }
     /* istanbul ignore next */
     if (action.actionType === PlanActionType.REMOVE) {
-      return adapter.remove(action.oldValue)
+      await adapter.remove(action.oldValue)
     }
-
-    /* istanbul ignore next */
-    return adapter.remove(action.oldValue) || adapter.add(action.newValue)
   }
 
   private async applyActions(plan: PlanAction[]): Promise<void> {
     if (!_.isEmpty(plan)) {
       const nextAction = plan[0]
       const remPlan = plan.slice(1)
-      const ok = await this.applyAction(nextAction)
-      if (!ok) {
-        throw new Error('Failed to created!')
-      }
+      await this.applyAction(nextAction)
       await this.applyActions(remPlan)
     }
   }

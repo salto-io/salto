@@ -8,7 +8,7 @@ describe('Test core.ts', () => {
   const core = new SaltoCore()
   core.adapters.salesforce.add = jest.fn(async ap => {
     if (ap.typeID.name === 'fail') {
-      return false
+      throw new Error('failed')
     }
     return true
   })

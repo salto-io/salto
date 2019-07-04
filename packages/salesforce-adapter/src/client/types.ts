@@ -27,7 +27,7 @@ export class CustomField implements MetadataInfo {
     int: 'Number',
     boolean: 'Checkbox',
     picklist: 'Picklist',
-    combobox: 'Combobox'
+    combobox: 'Combobox',
   }
 
   readonly type: string
@@ -50,7 +50,7 @@ export class CustomField implements MetadataInfo {
 
     if (values) {
       this.valueSet = {
-        valueSetDefinition: { value: [] as CustomPicklistValue[] }
+        valueSetDefinition: { value: [] as CustomPicklistValue[] },
       }
       values.forEach(val => {
         this.valueSet.valueSetDefinition.value.push(
@@ -69,7 +69,7 @@ export class CustomObject implements MetadataInfo {
   readonly sharingModel = 'ReadWrite'
   readonly nameField = {
     type: 'Text',
-    label: 'Test Object Name'
+    label: 'Test Object Name',
   }
 
   constructor(

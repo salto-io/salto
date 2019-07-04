@@ -1,4 +1,5 @@
-// NOTE: this file is not currently used in the build process, since there is no need to package the dist directory into a single file
+// NOTE: this file is not currently used in the build process,
+// since there is no need to package the dist directory into a single file
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const path = require('path')
@@ -15,20 +16,20 @@ module.exports = {
         test: /\.(tsx?)|(jsx?)$/,
         exclude: /node_modules/,
         loader: 'eslint-loader',
-        options: 'fix'
+        options: 'fix',
       },
       {
         test: /\.tsx?$/,
         exclude: /node_modules/,
-        loader: 'ts-loader'
-      }
-    ]
+        loader: 'ts-loader',
+      },
+    ],
   },
   resolve: {
-    extensions: ['.tsx', '.ts', '.js']
+    extensions: ['.tsx', '.ts', '.js'],
   },
   output: {
     filename: 'bundle.js',
-    path: path.resolve(__dirname, 'dist')
-  }
+    path: path.resolve(__dirname, 'dist'),
+  },
 }

@@ -1,4 +1,6 @@
-import { ObjectType, PrimitiveType, TypeID, PrimitiveTypes } from 'adapter-api'
+import {
+  ObjectType, PrimitiveType, TypeID, PrimitiveTypes,
+} from 'adapter-api'
 import SalesforceAdapter from '../src/adapter'
 import SalesforceClient from '../src/client/client'
 import * as constants from '../src/constants'
@@ -11,17 +13,13 @@ describe('Test SalesforceAdapter CRUD', () => {
       username: '',
       password: '',
       token: '',
-      sandbox: false
+      sandbox: false,
     })
   }
 
   it('should add new salesforce type', async () => {
-    const mockCreate = jest.fn().mockImplementationOnce(() => {
-      return { success: true }
-    })
-    const mockUpdate = jest.fn().mockImplementationOnce(() => {
-      return { success: true }
-    })
+    const mockCreate = jest.fn().mockImplementationOnce(() => ({ success: true }))
+    const mockUpdate = jest.fn().mockImplementationOnce(() => ({ success: true }))
     SalesforceClient.prototype.create = mockCreate
     SalesforceClient.prototype.update = mockUpdate
 
@@ -32,16 +30,16 @@ describe('Test SalesforceAdapter CRUD', () => {
           description: new PrimitiveType({
             typeID: new TypeID({
               adapter: constants.SALESFORCE,
-              name: 'string'
+              name: 'string',
             }),
             primitive: PrimitiveTypes.STRING,
             annotationsValues: {
               required: false,
               _default: 'test',
-              label: 'test label'
-            }
-          })
-        }
+              label: 'test label',
+            },
+          }),
+        },
       })
     )
 
@@ -78,58 +76,50 @@ describe('Test SalesforceAdapter CRUD', () => {
   it('should fail add new salesforce type', async () => {
     SalesforceClient.prototype.create = jest
       .fn()
-      .mockImplementationOnce(async () => {
-        return {
-          success: false,
-          fullName: 'Test__c',
-          errors: [
-            {
-              message: 'Failed to add Test__c'
-            },
-            {
-              message: 'Additional message'
-            }
-          ]
-        }
-      })
+      .mockImplementationOnce(async () => ({
+        success: false,
+        fullName: 'Test__c',
+        errors: [
+          {
+            message: 'Failed to add Test__c',
+          },
+          {
+            message: 'Additional message',
+          },
+        ],
+      }))
 
     return expect(
       adapter().add(
         new ObjectType({
-          typeID: new TypeID({ adapter: constants.SALESFORCE, name: 'test' })
+          typeID: new TypeID({ adapter: constants.SALESFORCE, name: 'test' }),
         })
       )
     ).rejects.toEqual(new Error('Failed to add Test__c\nAdditional message'))
   })
 
   it('should fail add new salesforce type due to permissions', async () => {
-    SalesforceClient.prototype.create = jest.fn().mockImplementationOnce(() => {
-      return { success: true }
-    })
-    SalesforceClient.prototype.update = jest.fn().mockImplementationOnce(() => {
-      return {
-        success: false,
-        errors: [
-          {
-            message: 'Failed to update permissions'
-          }
-        ]
-      }
-    })
+    SalesforceClient.prototype.create = jest.fn().mockImplementationOnce(() => ({ success: true }))
+    SalesforceClient.prototype.update = jest.fn().mockImplementationOnce(() => ({
+      success: false,
+      errors: [
+        {
+          message: 'Failed to update permissions',
+        },
+      ],
+    }))
 
     return expect(
       adapter().add(
         new ObjectType({
-          typeID: new TypeID({ adapter: constants.SALESFORCE, name: 'test' })
+          typeID: new TypeID({ adapter: constants.SALESFORCE, name: 'test' }),
         })
       )
     ).rejects.toEqual(new Error('Failed to update permissions'))
   })
 
   it('should remove a salesforce metadata component', async () => {
-    const mockDelete = jest.fn().mockImplementationOnce(() => {
-      return { success: true }
-    })
+    const mockDelete = jest.fn().mockImplementationOnce(() => ({ success: true }))
     SalesforceClient.prototype.delete = mockDelete
 
     await adapter().remove(
@@ -139,15 +129,15 @@ describe('Test SalesforceAdapter CRUD', () => {
           description: new PrimitiveType({
             typeID: new TypeID({
               adapter: constants.SALESFORCE,
-              name: 'string'
+              name: 'string',
             }),
-            primitive: PrimitiveTypes.STRING
-          })
+            primitive: PrimitiveTypes.STRING,
+          }),
         },
         annotationsValues: {
           // eslint-disable-next-line @typescript-eslint/camelcase
-          api_name: 'Test__c'
-        }
+          api_name: 'Test__c',
+        },
       })
     )
 
@@ -157,17 +147,15 @@ describe('Test SalesforceAdapter CRUD', () => {
   })
 
   it('should fail remove new salesforce type', async () => {
-    SalesforceClient.prototype.delete = jest.fn().mockImplementationOnce(() => {
-      return {
-        success: false,
-        fullName: 'Test__c',
-        errors: [
-          {
-            message: 'Failed to remove Test__c'
-          }
-        ]
-      }
-    })
+    SalesforceClient.prototype.delete = jest.fn().mockImplementationOnce(() => ({
+      success: false,
+      fullName: 'Test__c',
+      errors: [
+        {
+          message: 'Failed to remove Test__c',
+        },
+      ],
+    }))
 
     return expect(
       adapter().remove(
@@ -175,23 +163,17 @@ describe('Test SalesforceAdapter CRUD', () => {
           typeID: new TypeID({ adapter: constants.SALESFORCE, name: 'test' }),
           annotationsValues: {
             // eslint-disable-next-line @typescript-eslint/camelcase
-            api_name: 'Test__c'
-          }
+            api_name: 'Test__c',
+          },
         })
       )
     ).rejects.toEqual(new Error('Failed to remove Test__c'))
   })
 
   it('should fail an update of a salesforce metadata component if the fullnames are not the same', async () => {
-    const mockCreate = jest.fn().mockImplementationOnce(() => {
-      return { success: true }
-    })
-    const mockDelete = jest.fn().mockImplementationOnce(() => {
-      return { success: true }
-    })
-    const mockUpdate = jest.fn().mockImplementationOnce(() => {
-      return { success: true }
-    })
+    const mockCreate = jest.fn().mockImplementationOnce(() => ({ success: true }))
+    const mockDelete = jest.fn().mockImplementationOnce(() => ({ success: true }))
+    const mockUpdate = jest.fn().mockImplementationOnce(() => ({ success: true }))
     SalesforceClient.prototype.create = mockCreate
     SalesforceClient.prototype.delete = mockDelete
     SalesforceClient.prototype.update = mockUpdate
@@ -204,18 +186,18 @@ describe('Test SalesforceAdapter CRUD', () => {
             description: new PrimitiveType({
               typeID: new TypeID({
                 adapter: constants.SALESFORCE,
-                name: 'string'
+                name: 'string',
               }),
-              primitive: PrimitiveTypes.STRING
-            })
+              primitive: PrimitiveTypes.STRING,
+            }),
           },
           annotationsValues: {
             required: false,
             _default: 'test',
             label: 'test label',
             // eslint-disable-next-line @typescript-eslint/camelcase
-            api_name: 'Test2__c'
-          }
+            api_name: 'Test2__c',
+          },
         }),
         new ObjectType({
           typeID: new TypeID({ adapter: constants.SALESFORCE, name: 'test' }),
@@ -223,16 +205,16 @@ describe('Test SalesforceAdapter CRUD', () => {
             address: new PrimitiveType({
               typeID: new TypeID({
                 adapter: constants.SALESFORCE,
-                name: 'string'
+                name: 'string',
               }),
-              primitive: PrimitiveTypes.STRING
-            })
+              primitive: PrimitiveTypes.STRING,
+            }),
           },
           annotationsValues: {
             required: false,
             _default: 'test2',
-            label: 'test2 label'
-          }
+            label: 'test2 label',
+          },
         })
       )
     ).rejects.toBeInstanceOf(Error)
@@ -243,15 +225,9 @@ describe('Test SalesforceAdapter CRUD', () => {
   })
 
   it('should perform a successful update of a salesforce metadata component if the fullnames are the same', async () => {
-    const mockCreate = jest.fn().mockImplementationOnce(() => {
-      return { success: true }
-    })
-    const mockDelete = jest.fn().mockImplementationOnce(() => {
-      return { success: true }
-    })
-    const mockUpdate = jest.fn().mockImplementationOnce(() => {
-      return { success: true }
-    })
+    const mockCreate = jest.fn().mockImplementationOnce(() => ({ success: true }))
+    const mockDelete = jest.fn().mockImplementationOnce(() => ({ success: true }))
+    const mockUpdate = jest.fn().mockImplementationOnce(() => ({ success: true }))
     SalesforceClient.prototype.create = mockCreate
     SalesforceClient.prototype.delete = mockDelete
     SalesforceClient.prototype.update = mockUpdate
@@ -263,18 +239,18 @@ describe('Test SalesforceAdapter CRUD', () => {
           description: new PrimitiveType({
             typeID: new TypeID({
               adapter: constants.SALESFORCE,
-              name: 'string'
+              name: 'string',
             }),
-            primitive: PrimitiveTypes.STRING
-          })
+            primitive: PrimitiveTypes.STRING,
+          }),
         },
         annotationsValues: {
           required: false,
           _default: 'test',
           label: 'test label',
           // eslint-disable-next-line @typescript-eslint/camelcase
-          api_name: 'Test__c'
-        }
+          api_name: 'Test__c',
+        },
       }),
       new ObjectType({
         typeID: new TypeID({ adapter: constants.SALESFORCE, name: 'test' }),
@@ -282,16 +258,16 @@ describe('Test SalesforceAdapter CRUD', () => {
           address: new PrimitiveType({
             typeID: new TypeID({
               adapter: constants.SALESFORCE,
-              name: 'string'
+              name: 'string',
             }),
-            primitive: PrimitiveTypes.STRING
-          })
+            primitive: PrimitiveTypes.STRING,
+          }),
         },
         annotationsValues: {
           required: false,
           _default: 'test2',
-          label: 'test2 label'
-        }
+          label: 'test2 label',
+        },
       })
     )
 
@@ -301,15 +277,10 @@ describe('Test SalesforceAdapter CRUD', () => {
     expect(mockUpdate.mock.calls.length).toBe(1)
   })
   it("should only create new fields when the new object's change is only new fields", async () => {
-    const mockCreate = jest.fn().mockImplementationOnce(() => {
-      return [{ success: true }, { success: true }]
-    })
-    const mockDelete = jest.fn().mockImplementationOnce(() => {
-      return { success: true }
-    })
-    const mockUpdate = jest.fn().mockImplementationOnce(() => {
-      return { success: true }
-    })
+    const mockCreate = jest.fn().mockImplementationOnce(() => [{ success: true },
+      { success: true }])
+    const mockDelete = jest.fn().mockImplementationOnce(() => ({ success: true }))
+    const mockUpdate = jest.fn().mockImplementationOnce(() => ({ success: true }))
     SalesforceClient.prototype.create = mockCreate
     SalesforceClient.prototype.delete = mockDelete
     SalesforceClient.prototype.update = mockUpdate
@@ -321,25 +292,25 @@ describe('Test SalesforceAdapter CRUD', () => {
           address: new PrimitiveType({
             typeID: new TypeID({
               adapter: constants.SALESFORCE,
-              name: 'string'
+              name: 'string',
             }),
-            primitive: PrimitiveTypes.STRING
+            primitive: PrimitiveTypes.STRING,
           }),
           banana: new PrimitiveType({
             typeID: new TypeID({
               adapter: constants.SALESFORCE,
-              name: 'string'
+              name: 'string',
             }),
-            primitive: PrimitiveTypes.STRING
-          })
+            primitive: PrimitiveTypes.STRING,
+          }),
         },
         annotationsValues: {
           required: false,
           _default: 'test',
           label: 'test label',
           // eslint-disable-next-line @typescript-eslint/camelcase
-          api_name: 'Test__c'
-        }
+          api_name: 'Test__c',
+        },
       }),
       new ObjectType({
         typeID: new TypeID({ adapter: constants.SALESFORCE, name: 'test' }),
@@ -347,37 +318,37 @@ describe('Test SalesforceAdapter CRUD', () => {
           address: new PrimitiveType({
             typeID: new TypeID({
               adapter: constants.SALESFORCE,
-              name: 'string'
+              name: 'string',
             }),
-            primitive: PrimitiveTypes.STRING
+            primitive: PrimitiveTypes.STRING,
           }),
           banana: new PrimitiveType({
             typeID: new TypeID({
               adapter: constants.SALESFORCE,
-              name: 'string'
+              name: 'string',
             }),
-            primitive: PrimitiveTypes.STRING
+            primitive: PrimitiveTypes.STRING,
           }),
           description: new PrimitiveType({
             typeID: new TypeID({
               adapter: constants.SALESFORCE,
-              name: 'string'
+              name: 'string',
             }),
-            primitive: PrimitiveTypes.STRING
+            primitive: PrimitiveTypes.STRING,
           }),
           apple: new PrimitiveType({
             typeID: new TypeID({
               adapter: constants.SALESFORCE,
-              name: 'double'
+              name: 'double',
             }),
-            primitive: PrimitiveTypes.NUMBER
-          })
+            primitive: PrimitiveTypes.NUMBER,
+          }),
         },
         annotationsValues: {
           required: false,
           _default: 'test2',
-          label: 'test2 label'
-        }
+          label: 'test2 label',
+        },
       })
     )
 
@@ -404,15 +375,9 @@ describe('Test SalesforceAdapter CRUD', () => {
   })
 
   it('should only delete fields when the only change in the new object is that some fields no longer appear', async () => {
-    const mockCreate = jest.fn().mockImplementationOnce(() => {
-      return { success: true }
-    })
-    const mockDelete = jest.fn().mockImplementationOnce(() => {
-      return { success: true }
-    })
-    const mockUpdate = jest.fn().mockImplementationOnce(() => {
-      return { success: true }
-    })
+    const mockCreate = jest.fn().mockImplementationOnce(() => ({ success: true }))
+    const mockDelete = jest.fn().mockImplementationOnce(() => ({ success: true }))
+    const mockUpdate = jest.fn().mockImplementationOnce(() => ({ success: true }))
     SalesforceClient.prototype.create = mockCreate
     SalesforceClient.prototype.delete = mockDelete
     SalesforceClient.prototype.update = mockUpdate
@@ -424,44 +389,44 @@ describe('Test SalesforceAdapter CRUD', () => {
           address: new PrimitiveType({
             typeID: new TypeID({
               adapter: constants.SALESFORCE,
-              name: 'string'
+              name: 'string',
             }),
             primitive: PrimitiveTypes.STRING,
             annotationsValues: {
               // eslint-disable-next-line @typescript-eslint/camelcase
-              api_name: 'Address__c'
-            }
+              api_name: 'Address__c',
+            },
           }),
           banana: new PrimitiveType({
             typeID: new TypeID({
               adapter: constants.SALESFORCE,
-              name: 'string'
+              name: 'string',
             }),
             primitive: PrimitiveTypes.STRING,
             annotationsValues: {
               // eslint-disable-next-line @typescript-eslint/camelcase
-              api_name: 'Banana__c'
-            }
+              api_name: 'Banana__c',
+            },
           }),
           description: new PrimitiveType({
             typeID: new TypeID({
               adapter: constants.SALESFORCE,
-              name: 'string'
+              name: 'string',
             }),
             primitive: PrimitiveTypes.STRING,
             annotationsValues: {
               // eslint-disable-next-line @typescript-eslint/camelcase
-              api_name: 'Description__c'
-            }
-          })
+              api_name: 'Description__c',
+            },
+          }),
         },
         annotationsValues: {
           required: false,
           _default: 'test',
           label: 'test label',
           // eslint-disable-next-line @typescript-eslint/camelcase
-          api_name: 'Test__c'
-        }
+          api_name: 'Test__c',
+        },
       }),
       new ObjectType({
         typeID: new TypeID({ adapter: constants.SALESFORCE, name: 'test' }),
@@ -469,20 +434,20 @@ describe('Test SalesforceAdapter CRUD', () => {
           description: new PrimitiveType({
             typeID: new TypeID({
               adapter: constants.SALESFORCE,
-              name: 'string'
+              name: 'string',
             }),
             primitive: PrimitiveTypes.STRING,
             annotationsValues: {
               // eslint-disable-next-line @typescript-eslint/camelcase
-              api_name: 'Description__c'
-            }
-          })
+              api_name: 'Description__c',
+            },
+          }),
         },
         annotationsValues: {
           required: false,
           _default: 'test2',
-          label: 'test2 label'
-        }
+          label: 'test2 label',
+        },
       })
     )
 
@@ -499,15 +464,9 @@ describe('Test SalesforceAdapter CRUD', () => {
 
   // Add a test that combines both
   it('should both create & delete fields when some fields no longer appear in the new object and some fields are new', async () => {
-    const mockCreate = jest.fn().mockImplementationOnce(() => {
-      return { success: true }
-    })
-    const mockDelete = jest.fn().mockImplementationOnce(() => {
-      return { success: true }
-    })
-    const mockUpdate = jest.fn().mockImplementationOnce(() => {
-      return { success: true }
-    })
+    const mockCreate = jest.fn().mockImplementationOnce(() => ({ success: true }))
+    const mockDelete = jest.fn().mockImplementationOnce(() => ({ success: true }))
+    const mockUpdate = jest.fn().mockImplementationOnce(() => ({ success: true }))
     SalesforceClient.prototype.create = mockCreate
     SalesforceClient.prototype.delete = mockDelete
     SalesforceClient.prototype.update = mockUpdate
@@ -519,33 +478,33 @@ describe('Test SalesforceAdapter CRUD', () => {
           address: new PrimitiveType({
             typeID: new TypeID({
               adapter: constants.SALESFORCE,
-              name: 'string'
+              name: 'string',
             }),
             primitive: PrimitiveTypes.STRING,
             annotationsValues: {
               // eslint-disable-next-line @typescript-eslint/camelcase
-              api_name: 'Address__c'
-            }
+              api_name: 'Address__c',
+            },
           }),
           banana: new PrimitiveType({
             typeID: new TypeID({
               adapter: constants.SALESFORCE,
-              name: 'string'
+              name: 'string',
             }),
             primitive: PrimitiveTypes.STRING,
             annotationsValues: {
               // eslint-disable-next-line @typescript-eslint/camelcase
-              api_name: 'Banana__c'
-            }
-          })
+              api_name: 'Banana__c',
+            },
+          }),
         },
         annotationsValues: {
           required: false,
           _default: 'test',
           label: 'test label',
           // eslint-disable-next-line @typescript-eslint/camelcase
-          api_name: 'Test__c'
-        }
+          api_name: 'Test__c',
+        },
       }),
       new ObjectType({
         typeID: new TypeID({ adapter: constants.SALESFORCE, name: 'test' }),
@@ -553,23 +512,23 @@ describe('Test SalesforceAdapter CRUD', () => {
           banana: new PrimitiveType({
             typeID: new TypeID({
               adapter: constants.SALESFORCE,
-              name: 'string'
+              name: 'string',
             }),
-            primitive: PrimitiveTypes.STRING
+            primitive: PrimitiveTypes.STRING,
           }),
           description: new PrimitiveType({
             typeID: new TypeID({
               adapter: constants.SALESFORCE,
-              name: 'string'
+              name: 'string',
             }),
-            primitive: PrimitiveTypes.STRING
-          })
+            primitive: PrimitiveTypes.STRING,
+          }),
         },
         annotationsValues: {
           required: false,
           _default: 'test2',
-          label: 'test2 label'
-        }
+          label: 'test2 label',
+        },
       })
     )
 

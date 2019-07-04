@@ -13,9 +13,6 @@ module.exports = {
         'plugin:import/warnings',
         'plugin:import/typescript',
         'plugin:jest/recommended',
-        'plugin:prettier/recommended',
-        'prettier/@typescript-eslint',
-        'prettier/react',
     ],
 
     globals: {
@@ -33,7 +30,7 @@ module.exports = {
         project: './tsconfig.json',
         tsconfigRootDir: './',
     },
-    plugins: ['react', 'prettier', 'import', 'jest', '@typescript-eslint'],
+    plugins: ['react', 'import', 'jest', '@typescript-eslint'],
     rules: {
         'linebreak-style': ['error', 'unix'],
         quotes: [
@@ -41,9 +38,6 @@ module.exports = {
             'single',
             { avoidEscape: true, allowTemplateLiterals: false },
         ],
-        'react/jsx-one-expression-per-line': [0],
-        'react/destructuring-assignment': [0],
-        'react/prefer-stateless-function': [0],
         'react/jsx-filename-extension': [1, { extensions: ['.tsx', '.jsx'] }],
         'lines-between-class-members': [1, 'always', {exceptAfterSingleLine: true}],
         '@typescript-eslint/no-parameter-properties': [0],
@@ -55,15 +49,22 @@ module.exports = {
         ],
         '@typescript-eslint/explicit-member-accessibility': [0],
         'jsx-a11y/anchor-is-valid': [0],
-        'prettier/prettier': [
-            'error',
-            {},
-            {
-                usePrettierrc: true,
-            },
-        ],
-        indent: 'off',
+        indent: ['error'],
         '@typescript-eslint/indent': 'off',
+        semi: ['error', 'never'],
+        'no-param-reassign': [2, { 'props': false }],
+        '@typescript-eslint/no-unused-vars': [1, { argsIgnorePattern: '^_' }],
+        'no-constant-condition': ['error', { checkLoops: false }],
+        'generator-star-spacing': ["error", { "before": true, "after": false }],
+        'arrow-parens': ['error', 'as-needed'],
+        'comma-dangle': ['error', {
+            functions: 'ignore',
+            arrays: 'always-multiline',
+            objects: 'always-multiline',
+            imports: 'always-multiline',
+            exports: 'always-multiline',
+        }],
+        'implicit-arrow-linebreak': ['off'],
     },
     overrides: [
         {
@@ -71,6 +72,8 @@ module.exports = {
             rules: {
                 'no-useless-constructor': [0],
                 'no-empty-function': [0],
+                '@typescript-eslint/array-type': [0],
+                '@typescript-eslint/member-delimiter-style': ['error', {multiline: {delimiter: 'none'}}]
             }
         }
     ],

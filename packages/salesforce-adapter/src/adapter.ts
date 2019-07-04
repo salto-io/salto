@@ -8,7 +8,7 @@ import {
   FieldPermissions,
   ProfileInfo,
   CompleteSaveResult,
-  SfError
+  SfError,
 } from './client/types'
 import {
   toCustomField,
@@ -19,7 +19,7 @@ import {
   fieldFullName,
   Types,
   fromValueTypeField,
-  fromField
+  fromField,
 } from './transformer'
 
 // TODO: this should be replaced with Elements from core once ready
@@ -56,7 +56,7 @@ const annotateApiNameAndLabel = (element: ObjectType): void => {
   const innerAnnotate = (obj: Type, name: string): void => {
     if (!obj.annotationsValues[constants.API_NAME]) {
       obj.annotate({
-        [constants.API_NAME]: sfCase(name, true)
+        [constants.API_NAME]: sfCase(name, true),
       })
     }
     if (!obj.annotationsValues[constants.LABEL]) {
@@ -70,9 +70,7 @@ const annotateApiNameAndLabel = (element: ObjectType): void => {
   })
 }
 
-const apiName = (element: Type): string => {
-  return element.annotationsValues[constants.API_NAME]
-}
+const apiName = (element: Type): string => element.annotationsValues[constants.API_NAME]
 
 export default class SalesforceAdapter {
   readonly client: SalesforceClient
@@ -93,7 +91,7 @@ export default class SalesforceAdapter {
     // TODO: add here salesforce primitive data types
     const result = await Promise.all([
       this.discoverSObjects(),
-      this.discoverMetadataTypes()
+      this.discoverMetadataTypes(),
     ])
     return result[0].concat(result[1])
   }
@@ -158,29 +156,25 @@ export default class SalesforceAdapter {
       )
     }
 
-    // Retrieve the custom fields for deletion (those that appear in the old object and not in the new)
-    // and delete them
+    // Retrieve the custom fields for deletion and delete them
     await this.deleteCustomFields(
       apiName(prevElement),
       Object.entries(prevElement.fields)
         .filter(field =>
-          prevElement.getFieldsThatAreNotInOther(post).includes(field[0])
-        )
+          prevElement.getFieldsThatAreNotInOther(post).includes(field[0]))
         .map(field => apiName(field[1]))
     )
 
-    // Retrieve the custom fields for addition (those that appear in the new object and not in the old)
-    // and create the custom fields and update the permissions
+    // Retrieve the custom fields for addition, create them and update the permissions
     await this.createFields(
       apiName(post),
       Object.entries(post.fields)
         .filter(field =>
-          post.getFieldsThatAreNotInOther(prevElement).includes(field[0])
-        )
+          post.getFieldsThatAreNotInOther(prevElement).includes(field[0]))
         .map(field => field[1])
     )
 
-    // TODO: Update the rest of the attributes in the retrieved old object and call the update method
+    // TODO: Update the rest of the attributes in the retrieved old objects
     return post
   }
 
@@ -256,9 +250,7 @@ export default class SalesforceAdapter {
     const objects = await this.client.listMetadataTypes()
     return Promise.all(
       objects
-        .filter(obj => {
-          return obj.xmlName !== constants.CUSTOM_OBJECT
-        })
+        .filter(obj => obj.xmlName !== constants.CUSTOM_OBJECT)
         .map(async obj => this.createMetadataTypeElement(obj.xmlName))
     )
   }
@@ -283,8 +275,7 @@ export default class SalesforceAdapter {
   private async discoverSObjects(): Promise<Type[]> {
     const sobjects = await Promise.all(
       (await this.client.listSObjects()).map(async obj =>
-        this.createSObjectTypeElement(obj.name)
-      )
+        this.createSObjectTypeElement(obj.name))
     )
     // discover permissions per field - we do this post element creation as we
     // fetch permssions for all fields in single call.
@@ -306,7 +297,7 @@ export default class SalesforceAdapter {
               bpCase(profile)
             ] = {
               editable: profilePermission.editable,
-              readable: profilePermission.readable
+              readable: profilePermission.readable,
             }
           })
         }
@@ -335,17 +326,15 @@ export default class SalesforceAdapter {
    */
   private async discoverPermissions(): Promise<
     Map<string, Map<string, FieldPermissions>>
-  > {
+    > {
     const profiles = await this.client.listMetadataObjects(
       constants.METADATA_PROFILE_OBJECT
     )
     const profilesInfo = await Promise.all(
-      profiles.map(prof => {
-        return this.client.readMetadata(
-          constants.METADATA_PROFILE_OBJECT,
-          prof.fullName
-        ) as Promise<ProfileInfo>
-      })
+      profiles.map(prof => this.client.readMetadata(
+        constants.METADATA_PROFILE_OBJECT,
+        prof.fullName
+      ) as Promise<ProfileInfo>)
     )
 
     const permissions = new Map<string, Map<string, FieldPermissions>>()

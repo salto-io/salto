@@ -12,18 +12,14 @@ describe('Test SalesforceAdapter discover', () => {
   function mockListSObjects(result: { name: string }[] = []): void {
     SalesforceClient.prototype.listSObjects = jest
       .fn()
-      .mockImplementationOnce(() => {
-        return result
-      })
+      .mockImplementationOnce(() => result)
   }
 
   // The result should be MetadataObject we will validate result has at lease xmlName
   function mockListMetadataTypes(result: { xmlName: string }[] = []): void {
     SalesforceClient.prototype.listMetadataTypes = jest
       .fn()
-      .mockImplementationOnce(() => {
-        return result
-      })
+      .mockImplementationOnce(() => result)
   }
 
   function mockSingleSObject(
@@ -34,17 +30,13 @@ describe('Test SalesforceAdapter discover', () => {
     mockListMetadataTypes()
     SalesforceClient.prototype.discoverSObject = jest
       .fn()
-      .mockImplementationOnce(() => {
-        return fields
-      })
+      .mockImplementationOnce(() => fields)
   }
 
   function mockListMetadataObjects(result: MetadataInfo[] = []): void {
     SalesforceClient.prototype.listMetadataObjects = jest
       .fn()
-      .mockImplementationOnce(() => {
-        return result
-      })
+      .mockImplementationOnce(() => result)
   }
 
   function mockSingleMetadataObject(
@@ -54,17 +46,13 @@ describe('Test SalesforceAdapter discover', () => {
     mockListMetadataTypes([{ xmlName }])
     SalesforceClient.prototype.discoverMetadataObject = jest
       .fn()
-      .mockImplementationOnce(() => {
-        return fields
-      })
+      .mockImplementationOnce(() => fields)
   }
 
   function mockReadMetadata(result: MetadataInfo | ProfileInfo): void {
     SalesforceClient.prototype.readMetadata = jest
       .fn()
-      .mockImplementationOnce(() => {
-        return result
-      })
+      .mockImplementationOnce(() => result)
   }
 
   function adapter(): SalesforceAdapter {
@@ -72,7 +60,7 @@ describe('Test SalesforceAdapter discover', () => {
       username: '',
       password: '',
       token: '',
-      sandbox: false
+      sandbox: false,
     })
   }
 
@@ -84,20 +72,20 @@ describe('Test SalesforceAdapter discover', () => {
         type: 'string',
         label: 'Last Name',
         nillable: false,
-        defaultValue: 'BLABLA'
+        defaultValue: 'BLABLA',
       },
       {
         name: 'FirstName',
         type: 'string',
         label: 'First Name',
-        nillable: true
+        nillable: true,
       },
       {
         name: 'IsDeleted',
         type: 'boolean',
         label: 'Is Deleted',
-        defaultValue: false
-      }
+        defaultValue: false,
+      },
     ])
     const result = await adapter().discover()
 
@@ -126,10 +114,10 @@ describe('Test SalesforceAdapter discover', () => {
         nillable: false,
         picklistValues: [
           { value: 'No', defaultValue: false },
-          { value: 'Yes', defaultValue: true }
+          { value: 'Yes', defaultValue: true },
         ],
-        restrictedPicklist: true
-      }
+        restrictedPicklist: true,
+      },
     ])
     const result = await adapter().discover()
 
@@ -157,9 +145,9 @@ describe('Test SalesforceAdapter discover', () => {
         nillable: false,
         picklistValues: [
           { value: 'No', defaultValue: false },
-          { value: 'Yes', defaultValue: true }
-        ]
-      }
+          { value: 'Yes', defaultValue: true },
+        ],
+      },
     ])
     const result = await adapter().discover()
 
@@ -183,8 +171,8 @@ describe('Test SalesforceAdapter discover', () => {
         name: 'DoubleField',
         type: 'double',
         label: 'DDD',
-        nillable: true
-      }
+        nillable: true,
+      },
     ])
     const result = await adapter().discover()
 
@@ -202,17 +190,17 @@ describe('Test SalesforceAdapter discover', () => {
         {
           field: 'Org__c.Status',
           readable: true,
-          editable: false
-        }
-      ]
+          editable: false,
+        },
+      ],
     })
     mockSingleSObject('Org__c', [
       {
         name: 'Status',
         type: 'boolean',
         label: 'Field',
-        nillable: false
-      }
+        nillable: false,
+      },
     ])
     const result = await adapter().discover()
 
@@ -234,17 +222,17 @@ describe('Test SalesforceAdapter discover', () => {
       {
         name: 'Description',
         soapType: 'string',
-        valueRequired: true
+        valueRequired: true,
       },
       {
         name: 'IsTemplate',
         soapType: 'boolean',
-        valueRequired: false
+        valueRequired: false,
       },
       {
         name: 'ActionCalls',
-        soapType: 'FlowActionCall'
-      }
+        soapType: 'FlowActionCall',
+      },
     ])
     const result = await adapter().discover()
 
@@ -270,7 +258,7 @@ describe('Test SalesforceAdapter discover', () => {
         name: 'Status',
         soapType: 'Picklist',
         valueRequired: false,
-        picklistValues: [{ defaultValue: true, value: 'BLA' }]
+        picklistValues: [{ defaultValue: true, value: 'BLA' }],
       },
       {
         name: 'StatusCombo',
@@ -278,9 +266,9 @@ describe('Test SalesforceAdapter discover', () => {
         valueRequired: true,
         picklistValues: [
           { defaultValue: true, value: 'BLA' },
-          { defaultValue: true, value: 'BLA2' }
-        ]
-      }
+          { defaultValue: true, value: 'BLA2' },
+        ],
+      },
     ])
     const result = await adapter().discover()
 

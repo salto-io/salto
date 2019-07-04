@@ -5,7 +5,7 @@ import {
   ObjectType,
   TypesRegistry,
   TypeID,
-  PrimitiveTypes
+  PrimitiveTypes,
 } from 'adapter-api'
 import { CustomObject, CustomField, ProfileInfo } from './client/types'
 import {
@@ -13,13 +13,13 @@ import {
   LABEL,
   PICKLIST_VALUES,
   SALESFORCE,
-  RESTRICTED_PICKLIST
+  RESTRICTED_PICKLIST,
 } from './constants'
 
 export const sfCase = (name: string, custom: boolean = false): string =>
   startCase(camelCase(name)) + (custom === true ? '__c' : '')
 export const bpCase = (name: string): string =>
-  name.endsWith('__c') ? snakeCase(name).slice(0, -3) : snakeCase(name)
+  (name.endsWith('__c') ? snakeCase(name).slice(0, -3) : snakeCase(name))
 
 export class Types {
   // type registery used in discover
@@ -89,16 +89,14 @@ export const toProfileInfo = (
   profile: string,
   objectApiName: string,
   fieldsApiName: string[]
-): ProfileInfo => {
-  return new ProfileInfo(
-    profile,
-    fieldsApiName.map(f => ({
-      field: `${objectApiName}.${f}`,
-      editable: true,
-      readable: true
-    }))
-  )
-}
+): ProfileInfo => new ProfileInfo(
+  profile,
+  fieldsApiName.map(f => ({
+    field: `${objectApiName}.${f}`,
+    editable: true,
+    readable: true,
+  }))
+)
 
 export const fromValueTypeField = (field: ValueTypeField): Type => {
   const element = Types.get(field.soapType) as ObjectType
@@ -109,9 +107,7 @@ export const fromValueTypeField = (field: ValueTypeField): Type => {
       val => val.value
     )
     const defaults = field.picklistValues
-      .filter(val => {
-        return val.defaultValue === true
-      })
+      .filter(val => val.defaultValue === true)
       .map(val => val.value)
     if (defaults.length === 1) {
       element.annotationsValues[Type.DEFAULT] = defaults.pop()
@@ -138,9 +134,7 @@ export const fromField = (field: Field): Type => {
     }
 
     const defaults = field.picklistValues
-      .filter(val => {
-        return val.defaultValue === true
-      })
+      .filter(val => val.defaultValue === true)
       .map(val => val.value)
     if (defaults.length > 0) {
       if (field.type === 'picklist') {

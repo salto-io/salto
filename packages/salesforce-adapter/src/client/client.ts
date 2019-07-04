@@ -6,7 +6,7 @@ import {
   FileProperties,
   MetadataInfo,
   SaveResult,
-  ValueTypeField
+  ValueTypeField,
 } from 'jsforce'
 
 const apiVersion = '45.0'
@@ -22,7 +22,7 @@ export default class SalesforceClient {
   ) {
     this.conn = new Connection({
       version: apiVersion,
-      loginUrl: `https://${isSandbox ? 'test' : 'login'}.salesforce.com/`
+      loginUrl: `https://${isSandbox ? 'test' : 'login'}.salesforce.com/`,
     })
   }
 

@@ -6,13 +6,14 @@ import {
   FileProperties,
   Connection,
   DescribeValueTypeResult,
-  ValueTypeField
+  ValueTypeField,
 } from 'jsforce'
 
 const developerEdition = 'Developer Edition'
 
 /**
- * This method runs on your salesforce account and prints an "inventory" of the various entities it contains.
+ * This method runs on your salesforce account and prints an "inventory" of the
+ * various entities it contains.
  */
 async function main(): Promise<void> {
   // Instantiate the logging mechanism
@@ -24,12 +25,13 @@ async function main(): Promise<void> {
     ),
     transports: [
       new winston.transports.Console({
-        format: winston.format.simple()
-      })
-    ]
+        format: winston.format.simple(),
+      }),
+    ],
   })
 
-  // Process arguments. Slice the 2 first params which are the path to nodejs and the location of the script
+  // Process arguments. Slice the 2 first params which are the path to nodejs and the location
+  // of the script
   const args = process.argv.slice(2)
   const userName = args[0]
   const password = args[1]
@@ -39,7 +41,7 @@ async function main(): Promise<void> {
   if (sandbox) {
     connectionOptions = {
       version: '45.0',
-      loginUrl: 'https://test.salesforce.com/'
+      loginUrl: 'https://test.salesforce.com/',
     }
   } else {
     connectionOptions = { version: '45.0' }
@@ -83,9 +85,7 @@ async function main(): Promise<void> {
   logger.info('============METADATA API=================')
   const metaResults: DescribeMetadataResult = await conn.metadata.describe()
   const sortedObjects: MetadataObject[] = metaResults.metadataObjects.sort(
-    (a, b) => {
-      return a.xmlName.localeCompare(b.xmlName)
-    }
+    (a, b) => a.xmlName.localeCompare(b.xmlName)
   )
 
   // Cannot run async statements inside an array forEach() loop
@@ -102,9 +102,7 @@ async function main(): Promise<void> {
         logger.info('Failed to describe value type %s', obj.xmlName)
       } else {
         const sortedFields: ValueTypeField[] = results.valueTypeFields.sort(
-          (a, b) => {
-            return a.name.localeCompare(b.name)
-          }
+          (a, b) => a.name.localeCompare(b.name)
         )
         // eslint-disable-next-line no-restricted-syntax
         for (const field of sortedFields) {
@@ -123,12 +121,11 @@ async function main(): Promise<void> {
       // We want to perform this synchronously, hence the await inside the loop
       // eslint-disable-next-line no-await-in-loop
       const results = await conn.metadata.list({
-        type: obj.xmlName
+        type: obj.xmlName,
       })
       if (results) {
-        const sortedNames: FileProperties[] = results.sort((a, b) => {
-          return a.fullName.localeCompare(b.fullName)
-        })
+        const sortedNames: FileProperties[] = results.sort((a, b) =>
+          a.fullName.localeCompare(b.fullName))
         // eslint-disable-next-line no-restricted-syntax
         for (const name of sortedNames) {
           logger.info(`   ${name.fullName}`)

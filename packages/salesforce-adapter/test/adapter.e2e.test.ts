@@ -3,7 +3,7 @@ import {
   PrimitiveType,
   ObjectType,
   TypeID,
-  PrimitiveTypes
+  PrimitiveTypes,
 } from 'adapter-api'
 
 import SalesforceAdapter from '../src/adapter'
@@ -14,14 +14,12 @@ import { CustomObject } from '../src/client/types'
 // and this is very long test
 // eslint-disable-next-line jest/no-disabled-tests
 describe.skip('Test Salesforce adapter E2E', () => {
-  const adapter = (): SalesforceAdapter => {
-    return new SalesforceAdapter({
-      username: 'vanila@salto.io',
-      password: '!A123456',
-      token: 'rwVvOsh7HjF8Zki9ZmyQdeth',
-      sandbox: false
-    })
-  }
+  const adapter = (): SalesforceAdapter => new SalesforceAdapter({
+    username: 'vanila@salto.io',
+    password: '!A123456',
+    token: 'rwVvOsh7HjF8Zki9ZmyQdeth',
+    sandbox: false,
+  })
 
   describe('should discover account settings, e2e with real account', () => {
     let result: Type[]
@@ -36,9 +34,7 @@ describe.skip('Test Salesforce adapter E2E', () => {
     it('should discover sobject', async () => {
       // Check few field types on lead object
       const lead = result
-        .filter(element => {
-          return element.typeID.name === 'Lead'
-        })
+        .filter(element => element.typeID.name === 'Lead')
         .pop() as ObjectType
 
       // Test few possible types
@@ -77,9 +73,7 @@ describe.skip('Test Salesforce adapter E2E', () => {
     it('should discover metadata object', () => {
       // Check few field types on lead object
       const flow = result
-        .filter(element => {
-          return element.typeID.name === 'Flow'
-        })
+        .filter(element => element.typeID.name === 'Flow')
         .pop() as ObjectType
 
       expect(flow.fields.description.typeID.name).toBe('string')
@@ -100,16 +94,16 @@ describe.skip('Test Salesforce adapter E2E', () => {
           description: new PrimitiveType({
             typeID: new TypeID({
               adapter: constants.SALESFORCE,
-              name: 'string'
+              name: 'string',
             }),
             primitive: PrimitiveTypes.STRING,
             annotationsValues: {
               required: false,
               _default: 'test',
-              label: 'description label'
-            }
-          })
-        }
+              label: 'description label',
+            },
+          }),
+        },
       })
       const post = await sfAdapter.add(element)
 
@@ -141,16 +135,16 @@ describe.skip('Test Salesforce adapter E2E', () => {
           description: new PrimitiveType({
             typeID: new TypeID({
               adapter: constants.SALESFORCE,
-              name: 'string'
+              name: 'string',
             }),
             primitive: PrimitiveTypes.STRING,
             annotationsValues: {
               label: 'test label',
               required: false,
-              _default: 'test'
-            }
-          })
-        }
+              _default: 'test',
+            },
+          }),
+        },
       })
 
       const post = await sfAdapter.add(element)
@@ -178,25 +172,25 @@ describe.skip('Test Salesforce adapter E2E', () => {
           address: new PrimitiveType({
             typeID: new TypeID({
               adapter: constants.SALESFORCE,
-              name: 'string'
+              name: 'string',
             }),
-            primitive: PrimitiveTypes.STRING
+            primitive: PrimitiveTypes.STRING,
           }),
           banana: new PrimitiveType({
             typeID: new TypeID({
               adapter: constants.SALESFORCE,
-              name: 'string'
+              name: 'string',
             }),
-            primitive: PrimitiveTypes.STRING
-          })
+            primitive: PrimitiveTypes.STRING,
+          }),
         },
         annotationsValues: {
           required: false,
           _default: 'test',
           label: 'test label',
           // eslint-disable-next-line @typescript-eslint/camelcase
-          api_name: 'Test__c'
-        }
+          api_name: 'Test__c',
+        },
       })
 
       const addResult = await sfAdapter.add(oldElement)
@@ -221,23 +215,23 @@ describe.skip('Test Salesforce adapter E2E', () => {
           banana: new PrimitiveType({
             typeID: new TypeID({
               adapter: constants.SALESFORCE,
-              name: 'string'
+              name: 'string',
             }),
-            primitive: PrimitiveTypes.STRING
+            primitive: PrimitiveTypes.STRING,
           }),
           description: new PrimitiveType({
             typeID: new TypeID({
               adapter: constants.SALESFORCE,
-              name: 'string'
+              name: 'string',
             }),
-            primitive: PrimitiveTypes.STRING
-          })
+            primitive: PrimitiveTypes.STRING,
+          }),
         },
         annotationsValues: {
           required: false,
           _default: 'test2',
-          label: 'test2 label'
-        }
+          label: 'test2 label',
+        },
       })
 
       // Test

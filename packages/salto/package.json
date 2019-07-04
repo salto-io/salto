@@ -24,7 +24,7 @@
     "test": "jest --forceExit --verbose --detectOpenHandles",
     "watch-test": "npm run test -- --watchAll",
     "tsc": "tsc",
-    "build-go": "./src/parser/hcl_plugin/build.sh ./dist/hcl.wasm ./hcl.wasm",
+    "build-go": "./src/parser/hcl_plugin/build.sh ./dist",
     "lint": "eslint --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
     "lint-fix": "npm run lint -- --fix",
     "precommit-msg": "echo 'Pre-commit checks...' && exit 0"

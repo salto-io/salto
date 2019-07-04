@@ -6,7 +6,8 @@
     "type": "git",
     "url": "https://github.com/salto-io/adapter-api"
   },
-  "private": true,  "files": [
+  "private": true,
+  "files": [
     "bin/**/*",
     "dist/**/*"
   ],

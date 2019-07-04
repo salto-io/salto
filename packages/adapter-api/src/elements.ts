@@ -199,7 +199,8 @@ export class ObjectType extends Type {
 
   getFieldsThatAreNotInOther(other: ObjectType): string[] {
     return Object.keys(this.fields).filter(
-      field => !Object.keys(other.fields).includes(field))
+      field => !Object.keys(other.fields).includes(field),
+    )
   }
 }
 

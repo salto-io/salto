@@ -62,11 +62,11 @@ describe('Test elements.ts', () => {
   it('should get fields not in other', () => {
     const ptStr = new PrimitiveType({
       typeID: new TypeID({ adapter: 'test', name: 'prim' }),
-      primitive: PrimitiveTypes.STRING
+      primitive: PrimitiveTypes.STRING,
     })
     const ptNum = new PrimitiveType({
       typeID: new TypeID({ adapter: 'test', name: 'prim' }),
-      primitive: PrimitiveTypes.NUMBER
+      primitive: PrimitiveTypes.NUMBER,
     })
     const ot1 = new ObjectType({
       typeID: new TypeID({ adapter: 'test', name: 'obj' }),
@@ -75,14 +75,14 @@ describe('Test elements.ts', () => {
         num_field: ptNum,
         /* eslint-disable-next-line @typescript-eslint/camelcase */
         str_field: ptStr,
-      }
+      },
     })
     const ot2 = new ObjectType({
       typeID: new TypeID({ adapter: 'test', name: 'obj' }),
       fields: {
         /* eslint-disable-next-line @typescript-eslint/camelcase */
-        num_field: ptNum
-      }
+        num_field: ptNum,
+      },
     })
 
     expect(ot1.getFieldsThatAreNotInOther(ot2).join('')).toBe('str_field')

@@ -6,6 +6,7 @@ import {
   PrimitiveTypes,
   PrimitiveType,
   TypeID,
+  InstanceElement,
 } from '../src/elements'
 
 // let outputData = ''
@@ -269,5 +270,82 @@ describe('Test plan.ts', () => {
 
   it('Should require at least one element to be defined', () => {
     expect(() => PlanAction.createFromElements(undefined, undefined, 'name')).toThrow()
+  })
+
+  it('Should handle new instance', () => {
+    const ptStr = new PrimitiveType({
+      typeID: new TypeID({ adapter: 'test', name: 'prim' }),
+      primitive: PrimitiveTypes.STRING,
+      annotations: {},
+      annotationsValues: {},
+    })
+    const ot = new ObjectType({
+      typeID: new TypeID({ adapter: 'test', name: 'obj' }),
+      fields: {
+        test: ptStr,
+      },
+      annotations: {},
+      annotationsValues: {},
+    })
+    const inst = new InstanceElement(
+      new TypeID({ adapter: 'test', name: 'test' }),
+      ot,
+      { test: 'AAA' },
+    )
+    const pa = PlanAction.createFromElements(undefined, inst, 'name')
+    expect(pa.actionType).toBe(PlanActionType.ADD)
+  })
+
+  it('Should handle removed instance', () => {
+    const ptStr = new PrimitiveType({
+      typeID: new TypeID({ adapter: 'test', name: 'prim' }),
+      primitive: PrimitiveTypes.STRING,
+      annotations: {},
+      annotationsValues: {},
+    })
+    const ot = new ObjectType({
+      typeID: new TypeID({ adapter: 'test', name: 'obj' }),
+      fields: {
+        test: ptStr,
+      },
+      annotations: {},
+      annotationsValues: {},
+    })
+    const inst = new InstanceElement(
+      new TypeID({ adapter: 'test', name: 'test' }),
+      ot,
+      { test: 'AAA' },
+    )
+    const pa = PlanAction.createFromElements(inst, undefined, 'name')
+    expect(pa.actionType).toBe(PlanActionType.REMOVE)
+  })
+
+  it('Should handle modified instance', () => {
+    const ptStr = new PrimitiveType({
+      typeID: new TypeID({ adapter: 'test', name: 'prim' }),
+      primitive: PrimitiveTypes.STRING,
+      annotations: {},
+      annotationsValues: {},
+    })
+    const ot = new ObjectType({
+      typeID: new TypeID({ adapter: 'test', name: 'obj' }),
+      fields: {
+        test: ptStr,
+      },
+      annotations: {},
+      annotationsValues: {},
+    })
+    const inst = new InstanceElement(
+      new TypeID({ adapter: 'test', name: 'test' }),
+      ot,
+      { test: 'AAA' },
+    )
+    const inst2 = new InstanceElement(
+      new TypeID({ adapter: 'test', name: 'test' }),
+      ot,
+      { test: 'BBB' },
+    )
+    const pa = PlanAction.createFromElements(inst, inst2, 'name')
+    expect(pa.actionType).toBe(PlanActionType.MODIFY)
   })
 })

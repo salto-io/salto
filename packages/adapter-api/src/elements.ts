@@ -82,7 +82,7 @@ export abstract class Type implements Element {
    */
   protected cloneAnnotations(): TypeMap {
     const clonedAnnotations: TypeMap = {}
-    Object.keys(this.annotations).forEach((key) => {
+    Object.keys(this.annotations).forEach(key => {
       clonedAnnotations[key] = this.annotations[key].clone()
     })
     return clonedAnnotations
@@ -98,7 +98,7 @@ export abstract class Type implements Element {
   annotate(annotationsValues: Values): void {
     // Should we overide? I'm adding right now as it seems more
     // usefull. (Roi R)
-    Object.keys(annotationsValues).forEach((key) => {
+    Object.keys(annotationsValues).forEach(key => {
       this.annotationsValues[key] = annotationsValues[key]
     })
   }
@@ -170,7 +170,7 @@ export class ObjectType extends Type {
 
   private cloneFields(): TypeMap {
     const clonedFields: TypeMap = {}
-    Object.keys(this.fields).forEach((key) => {
+    Object.keys(this.fields).forEach(key => {
       clonedFields[key] = this.fields[key].clone()
     })
     return clonedFields

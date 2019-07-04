@@ -39,7 +39,7 @@ export class PlanAction {
   private static createValuesChanges(oldValues: Values, newValues: Values): PlanAction[] {
     const allKeys = Object.keys(oldValues).concat(Object.keys(newValues))
 
-    return allKeys.map((k) => {
+    return allKeys.map(k => {
       let actionType
       if (oldValues[k] && newValues[k]) {
         actionType = PlanActionType.MODIFY

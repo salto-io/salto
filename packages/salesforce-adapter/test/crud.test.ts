@@ -1,5 +1,9 @@
 import {
-  ObjectType, PrimitiveType, TypeID, PrimitiveTypes,
+  ObjectType,
+  PrimitiveType,
+  TypeID,
+  PrimitiveTypes,
+  InstanceElement
 } from 'adapter-api'
 import SalesforceAdapter from '../src/adapter'
 import SalesforceClient from '../src/client/client'
@@ -9,12 +13,16 @@ jest.mock('../src/client/client')
 
 describe('Test SalesforceAdapter CRUD', () => {
   function adapter(): SalesforceAdapter {
-    return new SalesforceAdapter({
+    const configType = SalesforceAdapter.getConfigType()
+    const value = {
       username: '',
       password: '',
       token: '',
-      sandbox: false,
-    })
+      sandbox: false
+    }
+    const typeID = new TypeID({ adapter: 'salesforce' })
+    const config = new InstanceElement(typeID, configType, value)
+    return new SalesforceAdapter(config)
   }
 
   it('should add new salesforce type', async () => {

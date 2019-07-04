@@ -3,7 +3,7 @@ import { ValueTypeField, Field } from 'jsforce'
 import {
   Type,
   ObjectType,
-  TypesRegistry,
+  ElementsRegistry,
   TypeID,
   PrimitiveTypes,
 } from 'adapter-api'
@@ -23,19 +23,19 @@ export const bpCase = (name: string): string =>
 
 export class Types {
   // type registery used in discover
-  static readonly types = new TypesRegistry()
+  static readonly types = new ElementsRegistry()
 
   static get(name: string): Type {
     const typeName = bpCase(name)
     switch (typeName) {
       case 'string': {
         return this.types
-          .getType(new TypeID({ adapter: '', name }), PrimitiveTypes.STRING)
+          .getElement(new TypeID({ adapter: '', name }), PrimitiveTypes.STRING)
           .clone()
       }
       case 'double': {
         return this.types
-          .getType(
+          .getElement(
             new TypeID({ adapter: '', name: 'number' }),
             PrimitiveTypes.NUMBER
           )
@@ -43,7 +43,7 @@ export class Types {
       }
       case 'boolean': {
         return this.types
-          .getType(
+          .getElement(
             // TODO: take checkbox from constans
             new TypeID({ adapter: SALESFORCE, name: 'checkbox' })
           )
@@ -51,7 +51,7 @@ export class Types {
       }
       default: {
         return this.types
-          .getType(new TypeID({ adapter: SALESFORCE, name }))
+          .getElement(new TypeID({ adapter: SALESFORCE, name }))
           .clone()
       }
     }

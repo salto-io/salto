@@ -1,6 +1,12 @@
-/* eslint-disable class-methods-use-this */
+import {
+  Type,
+  ElementsRegistry,
+  ObjectType,
+  TypeID,
+  PrimitiveTypes,
+  InstanceElement
+} from 'adapter-api'
 import { SaveResult } from 'jsforce'
-import { Type, ObjectType } from 'adapter-api'
 import { isArray } from 'util'
 import SalesforceClient from './client/client'
 import * as constants from './constants'
@@ -21,9 +27,6 @@ import {
   fromValueTypeField,
   fromField,
 } from './transformer'
-
-// TODO: this should be replaced with Elements from core once ready
-type Config = Record<string, any>
 
 // Diagnose client results
 const diagnose = (result: SaveResult | SaveResult[]): void => {
@@ -75,11 +78,11 @@ const apiName = (element: Type): string => element.annotationsValues[constants.A
 export default class SalesforceAdapter {
   readonly client: SalesforceClient
 
-  constructor(conf: Config) {
+  constructor(conf: InstanceElement) {
     this.client = new SalesforceClient(
-      conf.username,
-      conf.password + conf.token,
-      conf.sandbox
+      conf.value.username,
+      conf.value.password + conf.value.token,
+      conf.value.sandbox
     )
   }
 
@@ -119,6 +122,40 @@ export default class SalesforceAdapter {
     diagnose(persmissionsResult)
 
     return post
+  }
+
+  /**
+   * @return {ObjectType} - The configuration type for the adapter.
+   * This is used by core to:
+   * 1) Locate the proper configuration type for the adapter,
+   * 2) Prompt the user in order to create an instance of it if it can't
+   *    find it in the blueprints
+   */
+  public static getConfigType(): ObjectType {
+    const registery = new ElementsRegistry()
+    const simpleString = registery.getElement(
+      new TypeID({ adapter: '', name: 'string' }),
+      PrimitiveTypes.STRING
+    )
+
+    const simpleBoolean = registery.getElement(
+      new TypeID({ adapter: '', name: 'boolean' }),
+      PrimitiveTypes.BOOLEAN
+    )
+
+    const config = new ObjectType({
+      typeID: new TypeID({ adapter: 'salesforce' }),
+      fields: {
+        username: simpleString,
+        password: simpleString,
+        token: simpleString,
+        sandbox: simpleBoolean
+      },
+      annotations: {},
+      annotationsValues: {}
+    })
+
+    return config
   }
 
   /**

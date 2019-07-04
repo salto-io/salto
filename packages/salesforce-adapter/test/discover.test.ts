@@ -1,5 +1,5 @@
 import { MetadataInfo } from 'jsforce'
-import { ObjectType, Type } from 'adapter-api'
+import { ObjectType, Type, InstanceElement, TypeID } from 'adapter-api'
 import SalesforceAdapter from '../src/adapter'
 import SalesforceClient from '../src/client/client'
 import { ProfileInfo } from '../src/client/types'
@@ -56,12 +56,16 @@ describe('Test SalesforceAdapter discover', () => {
   }
 
   function adapter(): SalesforceAdapter {
-    return new SalesforceAdapter({
-      username: '',
-      password: '',
-      token: '',
-      sandbox: false,
-    })
+    const configType = SalesforceAdapter.getConfigType()
+    const value = {
+      username: 'vanila@salto.io',
+      password: '!A123456',
+      token: 'rwVvOsh7HjF8Zki9ZmyQdeth',
+      sandbox: false
+    }
+    const typeID = new TypeID({ adapter: 'salesforce' })
+    const config = new InstanceElement(typeID, configType, value)
+    return new SalesforceAdapter(config)
   }
 
   it('should discover sobject with primitive types, validate type, label, required and default annotations', async () => {

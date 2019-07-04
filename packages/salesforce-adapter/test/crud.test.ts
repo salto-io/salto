@@ -3,7 +3,7 @@ import {
   PrimitiveType,
   TypeID,
   PrimitiveTypes,
-  InstanceElement
+  InstanceElement,
 } from 'adapter-api'
 import SalesforceAdapter from '../src/adapter'
 import SalesforceClient from '../src/client/client'
@@ -18,7 +18,7 @@ describe('Test SalesforceAdapter CRUD', () => {
       username: '',
       password: '',
       token: '',
-      sandbox: false
+      sandbox: false,
     }
     const typeID = new TypeID({ adapter: 'salesforce' })
     const config = new InstanceElement(typeID, configType, value)

@@ -4,7 +4,7 @@ import {
   ObjectType,
   TypeID,
   PrimitiveTypes,
-  InstanceElement
+  InstanceElement,
 } from 'adapter-api'
 import { SaveResult } from 'jsforce'
 import { isArray } from 'util'
@@ -149,10 +149,10 @@ export default class SalesforceAdapter {
         username: simpleString,
         password: simpleString,
         token: simpleString,
-        sandbox: simpleBoolean
+        sandbox: simpleBoolean,
       },
       annotations: {},
-      annotationsValues: {}
+      annotationsValues: {},
     })
 
     return config

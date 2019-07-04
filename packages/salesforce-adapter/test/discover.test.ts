@@ -1,5 +1,7 @@
 import { MetadataInfo } from 'jsforce'
-import { ObjectType, Type, InstanceElement, TypeID } from 'adapter-api'
+import {
+  ObjectType, Type, InstanceElement, TypeID,
+} from 'adapter-api'
 import SalesforceAdapter from '../src/adapter'
 import SalesforceClient from '../src/client/client'
 import { ProfileInfo } from '../src/client/types'
@@ -61,7 +63,7 @@ describe('Test SalesforceAdapter discover', () => {
       username: 'vanila@salto.io',
       password: '!A123456',
       token: 'rwVvOsh7HjF8Zki9ZmyQdeth',
-      sandbox: false
+      sandbox: false,
     }
     const typeID = new TypeID({ adapter: 'salesforce' })
     const config = new InstanceElement(typeID, configType, value)

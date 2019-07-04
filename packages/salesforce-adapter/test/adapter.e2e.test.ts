@@ -4,7 +4,7 @@ import {
   ObjectType,
   TypeID,
   PrimitiveTypes,
-  InstanceElement
+  InstanceElement,
 } from 'adapter-api'
 
 import SalesforceAdapter from '../src/adapter'
@@ -15,14 +15,13 @@ import { CustomObject } from '../src/client/types'
 // and this is very long test
 // eslint-disable-next-line jest/no-disabled-tests
 describe.skip('Test Salesforce adapter E2E', () => {
-
   const adapter = (): SalesforceAdapter => {
     const configType = SalesforceAdapter.getConfigType()
     const value = {
       username: 'vanila@salto.io',
       password: '!A123456',
       token: 'rwVvOsh7HjF8Zki9ZmyQdeth',
-      sandbox: false
+      sandbox: false,
     }
     const typeID = new TypeID({ adapter: 'salesforce' })
     const config = new InstanceElement(typeID, configType, value)

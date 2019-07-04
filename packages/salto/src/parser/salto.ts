@@ -1,8 +1,8 @@
 import * as _ from 'lodash'
 
 import {
-  TypesRegistry, Type, TypeID, ObjectType, PrimitiveType, PrimitiveTypes,
-  isObjectType, isPrimitiveType,
+  ElementsRegistry, Type, TypeID, ObjectType, PrimitiveType, PrimitiveTypes,
+  isObjectType, isPrimitiveType, Element,
 } from 'adapter-api'
 import HCLParser from './hcl'
 
@@ -57,16 +57,16 @@ export default class Parser {
     return new TypeID({ adapter, name })
   }
 
-  private types: TypesRegistry
+  private types: ElementsRegistry
 
-  public constructor(types: TypesRegistry) {
-    this.types = new TypesRegistry()
+  public constructor(types: ElementsRegistry) {
+    this.types = new ElementsRegistry()
     this.types = this.types.merge(types)
   }
 
   private parseType(typeBlock: HCLBlock): Type {
     const [typeName] = typeBlock.labels
-    const typeObj = this.types.getType(Parser.getTypeID(typeName)) as ObjectType
+    const typeObj = this.types.getElement(Parser.getTypeID(typeName)) as ObjectType
 
     Object.entries(typeBlock.attrs).forEach(([attrName, attrValue]) => {
       typeObj.annotationsValues[attrName] = attrValue
@@ -76,7 +76,7 @@ export default class Parser {
       if (block.labels.length === 1) {
         // Field block
         const fieldName = block.labels[0]
-        typeObj.fields[fieldName] = this.types.getType(Parser.getTypeID(block.type))
+        typeObj.fields[fieldName] = this.types.getElement(Parser.getTypeID(block.type))
         typeObj.annotationsValues[fieldName] = block.attrs
       } else {
         // This is something else, lets assume it is field overrides for now and we can extend
@@ -93,11 +93,12 @@ export default class Parser {
     if (kw !== Keywords.TYPE_INHERITENCE_SEPARATOR) {
       throw new Error(`expected keyword ${Keywords.TYPE_INHERITENCE_SEPARATOR}. found ${kw}`)
     }
+
     if (baseType === Keywords.TYPE_OBJECT) {
       // Object types can have fields
       return this.parseType(typeBlock)
     }
-    const typeObj = this.types.getType(
+    const typeObj = this.types.getElement(
       Parser.getTypeID(typeName), getPrimitiveType(baseType),
     ) as PrimitiveType
     typeObj.annotationsValues = typeBlock.attrs
@@ -113,7 +114,7 @@ export default class Parser {
    *          errors: Errors encountered during parsing
    */
   public async parse(blueprint: Buffer, filename: string):
-    Promise<{ elements: Type[]; errors: string[] }> {
+    Promise<{ elements: Element[]; errors: string[] }> {
     const { body, errors } = await HCLParser.parse(blueprint, filename)
 
     body.blocks.forEach((value: HCLBlock): Type => {
@@ -132,7 +133,7 @@ export default class Parser {
       return elem
     })
 
-    return { elements: this.types.getAllTypes(), errors }
+    return { elements: this.types.getAllElements(), errors }
   }
 
   /**

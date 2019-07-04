@@ -2,7 +2,7 @@ import { EventEmitter } from 'events'
 import _ from 'lodash'
 import {
   PlanAction, PlanActionType,
-  Type, TypesRegistry,
+  ElementsRegistry, InstanceElement, TypeID, Element,
 } from 'adapter-api'
 
 import SalesforceAdapter from 'salesforce-adapter'
@@ -19,20 +19,24 @@ export class SaltoCore extends EventEmitter {
   adapters: Record<string, SalesforceAdapter>
   constructor() {
     super()
+    const configType = SalesforceAdapter.getConfigType()
+    const value = {
+      username: 'vanila@salto.io',
+      password: '!A123456',
+      token: 'rwVvOsh7HjF8Zki9ZmyQdeth',
+      sandbox: false,
+    }
+    const typeID = new TypeID({ adapter: 'salesforce' })
+    const config = new InstanceElement(typeID, configType, value)
     this.adapters = {
-      salesforce: new SalesforceAdapter({
-        username: 'vanila@salto.io',
-        password: '!A123456',
-        token: 'rwVvOsh7HjF8Zki9ZmyQdeth',
-        sandbox: false,
-      }),
+      salesforce: new SalesforceAdapter(config),
     }
   }
 
   // eslint-disable-next-line class-methods-use-this
-  async getAllElements(blueprints: Blueprint[]): Promise<Type[]> {
-    let elements: Type[] = []
-    const registry = new TypesRegistry()
+  async getAllElements(blueprints: Blueprint[]): Promise<Element[]> {
+    let elements: Element[] = []
+    const registry = new ElementsRegistry()
     for (let i = 0; i < blueprints.length; i += 1) {
       const parser = new Parser(registry)
       const bp = blueprints[i]
@@ -48,7 +52,7 @@ export class SaltoCore extends EventEmitter {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  private getPlan(allElements: Type[]): PlanAction[] {
+  private getPlan(allElements: Element[]): PlanAction[] {
     const nonBuiltInElements = allElements.filter(e => e.typeID.adapter)
     return nonBuiltInElements.map(
       element => PlanAction.createFromElements(undefined, element, element.typeID.getFullName()),
@@ -93,7 +97,7 @@ export class SaltoCore extends EventEmitter {
   }
 
   /* eslint-disable-next-line class-methods-use-this, @typescript-eslint/no-unused-vars */
-  elementToHCL(element: Type, _maxDepth: number): string {
+  elementToHCL(element: Element, _maxDepth: number): string {
     return JSON.stringify(element, null, 2)
   }
 

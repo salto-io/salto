@@ -8,7 +8,7 @@ import _ from 'lodash'
 
 import {
   PlanAction, PlanActionType,
-  Type, isListType, isObjectType,
+  isListType, isObjectType, Element, isType,
 } from 'adapter-api'
 import Prompts from './prompts'
 import {
@@ -18,10 +18,10 @@ import {
 
 type OptionalString = string | undefined
 type NotFound = null
-type TypeMap = Record<string, Type>
+type ElementMap = Record<string, Element>
 interface FoundSearchResult {
   key: string
-  element: Type
+  element: Element
   isGuess: boolean
 }
 type SearchResult = FoundSearchResult | NotFound
@@ -354,8 +354,8 @@ export default class Cli {
   /**       Describe private functions        * */
   /** ****************************************** */
 
-  private static createElementsMap(elements: Type[]): TypeMap {
-    return elements.reduce((accumulator: TypeMap, element: Type) => {
+  private static createElementsMap(elements: Element[]): ElementMap {
+    return elements.reduce((accumulator: ElementMap, element: Element) => {
       accumulator[element.typeID.getFullName()] = element
       return accumulator
     }, {})
@@ -374,15 +374,13 @@ export default class Cli {
     ].join('\n')
   }
 
-  private static formatElementDescription(element: Type): string {
-    if (element.annotationsValues.description) {
+  private static formatElementDescription(element: Element): string {
+    if (isType(element) && element.annotationsValues.description) {
       return [Cli.emptyLine(), element.annotationsValues.description].join('\n')
     }
     return Cli.emptyLine()
   }
 
-  // No use for this right now, but its a part of the signature, will be removed on implementation
-  // eslint-disable-next-line no-console
   private formatSearchResults(
     result: SearchResult,
     recursionLevel: number = 2,
@@ -418,7 +416,7 @@ export default class Cli {
     return matches.length > 0 ? elementsNames[+matches[0]] : undefined
   }
 
-  private static skipListElement(element: Type): Type {
+  private static skipListElement(element: Element): Element {
     if (isListType(element) && element.elementType) {
       return Cli.skipListElement(element.elementType)
     }
@@ -427,7 +425,7 @@ export default class Cli {
 
   private static findElement(
     keyParts: string[],
-    elements: TypeMap,
+    elements: ElementMap,
     exactMatchOnly: boolean = true,
   ): SearchResult {
     const searchWord = keyParts[0]

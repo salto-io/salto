@@ -1,11 +1,11 @@
 import {
-  ObjectType, PrimitiveType, PrimitiveTypes, TypesRegistry, Type, TypeID, isObjectType,
+  ObjectType, PrimitiveType, PrimitiveTypes, ElementsRegistry, Element, TypeID, isObjectType,
 } from 'adapter-api'
 import Parser from '../../src/parser/salto'
 
 describe('Salto parser', () => {
   describe('primitive and model', () => {
-    let parsedElements: Type[]
+    let parsedElements: Element[]
 
     beforeAll(async () => {
       const body = `
@@ -47,7 +47,7 @@ describe('Salto parser', () => {
         }
       }`
 
-      const parser = new Parser(new TypesRegistry())
+      const parser = new Parser(new ElementsRegistry())
       const { elements } = await parser.parse(Buffer.from(body), 'none')
       parsedElements = elements
     })
@@ -167,13 +167,13 @@ describe('Salto parser', () => {
       const body = `
       type salesforce_string string {}
       `
-      const parser = new Parser(new TypesRegistry())
+      const parser = new Parser(new ElementsRegistry())
       await expect(parser.parse(Buffer.from(body), 'none')).rejects.toThrow()
     })
   })
   it('fails on invalid top level syntax', async () => {
     const body = 'bla {}'
-    const parser = new Parser(new TypesRegistry())
+    const parser = new Parser(new ElementsRegistry())
     await expect(parser.parse(Buffer.from(body), 'none')).rejects.toThrow()
   })
 })
@@ -199,6 +199,7 @@ describe('Salto Dump', () => {
   })
   model.fields.name = strType
   model.fields.num = numType
+
   model.annotationsValues = {
     name: {
       label: 'Name',
@@ -242,7 +243,7 @@ describe('Salto Dump', () => {
       )
     })
     it('can be parsed back', async () => {
-      const { elements, errors } = await new Parser(new TypesRegistry()).parse(body, 'none')
+      const { elements, errors } = await new Parser(new ElementsRegistry()).parse(body, 'none')
       expect(errors.length).toEqual(0)
       expect(elements.length).toEqual(4)
       expect(elements[0]).toEqual(strType)

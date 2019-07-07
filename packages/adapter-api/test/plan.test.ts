@@ -5,7 +5,7 @@ import {
   ListType,
   PrimitiveTypes,
   PrimitiveType,
-  TypeID,
+  ElemID,
   InstanceElement,
 } from '../src/elements'
 
@@ -28,26 +28,26 @@ import {
 describe('Test plan.ts', () => {
   it('Should create a plan from old elements', () => {
     const ptStr = new PrimitiveType({
-      typeID: new TypeID({ adapter: 'test', name: 'prim' }),
+      elemID: new ElemID({ adapter: 'test', name: 'prim' }),
       primitive: PrimitiveTypes.STRING,
       annotations: {},
       annotationsValues: {},
     })
     const ptNum = new PrimitiveType({
-      typeID: new TypeID({ adapter: 'test', name: 'prim' }),
+      elemID: new ElemID({ adapter: 'test', name: 'prim' }),
       primitive: PrimitiveTypes.NUMBER,
       annotations: {},
       annotationsValues: {},
     })
 
     const lt = new ListType({
-      typeID: new TypeID({ adapter: 'test', name: 'list' }),
+      elemID: new ElemID({ adapter: 'test', name: 'list' }),
       elementType: ptNum,
       annotations: {},
       annotationsValues: {},
     })
     const oldElement = new ObjectType({
-      typeID: new TypeID({ adapter: 'test', name: 'obj' }),
+      elemID: new ElemID({ adapter: 'test', name: 'obj' }),
       fields: {
         /* eslint-disable-next-line @typescript-eslint/camelcase */
         num_field: ptNum,
@@ -67,19 +67,19 @@ describe('Test plan.ts', () => {
 
   it('Should create a plan from new elements', () => {
     const ptStr = new PrimitiveType({
-      typeID: new TypeID({ adapter: 'test', name: 'prim' }),
+      elemID: new ElemID({ adapter: 'test', name: 'prim' }),
       primitive: PrimitiveTypes.STRING,
       annotations: {},
       annotationsValues: {},
     })
     const ptNum = new PrimitiveType({
-      typeID: new TypeID({ adapter: 'test', name: 'prim' }),
+      elemID: new ElemID({ adapter: 'test', name: 'prim' }),
       primitive: PrimitiveTypes.NUMBER,
       annotations: {},
       annotationsValues: {},
     })
     const newElement = new ObjectType({
-      typeID: new TypeID({ adapter: 'test', name: 'obj' }),
+      elemID: new ElemID({ adapter: 'test', name: 'obj' }),
       fields: {
         /* eslint-disable-next-line @typescript-eslint/camelcase */
         num_field: ptNum,
@@ -96,19 +96,19 @@ describe('Test plan.ts', () => {
 
   it('Should create a plan from old and new elements', () => {
     const ptStr = new PrimitiveType({
-      typeID: new TypeID({ adapter: 'test', name: 'prim' }),
+      elemID: new ElemID({ adapter: 'test', name: 'prim' }),
       primitive: PrimitiveTypes.STRING,
       annotations: {},
       annotationsValues: {},
     })
     const ptNum = new PrimitiveType({
-      typeID: new TypeID({ adapter: 'test', name: 'prim' }),
+      elemID: new ElemID({ adapter: 'test', name: 'prim' }),
       primitive: PrimitiveTypes.NUMBER,
       annotations: {},
       annotationsValues: {},
     })
     const newElement = new ObjectType({
-      typeID: new TypeID({ adapter: 'test', name: 'obj' }),
+      elemID: new ElemID({ adapter: 'test', name: 'obj' }),
       fields: {
         /* eslint-disable-next-line @typescript-eslint/camelcase */
         num_field: ptNum,
@@ -120,7 +120,7 @@ describe('Test plan.ts', () => {
     })
 
     const oldElement = new ObjectType({
-      typeID: new TypeID({ adapter: 'test', name: 'obj' }),
+      elemID: new ElemID({ adapter: 'test', name: 'obj' }),
       fields: {
         /* eslint-disable-next-line @typescript-eslint/camelcase */
         /* eslint-disable-next-line @typescript-eslint/camelcase */
@@ -136,28 +136,28 @@ describe('Test plan.ts', () => {
 
   it('Should create a plan from old and new elements with lists', () => {
     const ptNum = new PrimitiveType({
-      typeID: new TypeID({ adapter: 'test', name: 'prim' }),
+      elemID: new ElemID({ adapter: 'test', name: 'prim' }),
       primitive: PrimitiveTypes.NUMBER,
       annotations: {},
       annotationsValues: {},
     })
 
     const lt = new ListType({
-      typeID: new TypeID({ adapter: 'test', name: 'list' }),
+      elemID: new ElemID({ adapter: 'test', name: 'list' }),
       elementType: ptNum,
       annotations: {},
       annotationsValues: {},
     })
 
     const ptStr = new PrimitiveType({
-      typeID: new TypeID({ adapter: 'test', name: 'prim' }),
+      elemID: new ElemID({ adapter: 'test', name: 'prim' }),
       primitive: PrimitiveTypes.STRING,
       annotations: {},
       annotationsValues: {},
     })
 
     const newElement = new ObjectType({
-      typeID: new TypeID({ adapter: 'test', name: 'obj' }),
+      elemID: new ElemID({ adapter: 'test', name: 'obj' }),
       fields: {
         /* eslint-disable-next-line @typescript-eslint/camelcase */
         list_field: lt,
@@ -169,7 +169,7 @@ describe('Test plan.ts', () => {
     })
 
     const oldElement = new ObjectType({
-      typeID: new TypeID({ adapter: 'test', name: 'obj' }),
+      elemID: new ElemID({ adapter: 'test', name: 'obj' }),
       fields: {
         /* eslint-disable-next-line @typescript-eslint/camelcase */
         str_field: ptStr,
@@ -186,19 +186,19 @@ describe('Test plan.ts', () => {
 
   it('Should handle annotationsValues changes', () => {
     const ptStr = new PrimitiveType({
-      typeID: new TypeID({ adapter: 'test', name: 'prim' }),
+      elemID: new ElemID({ adapter: 'test', name: 'prim' }),
       primitive: PrimitiveTypes.STRING,
       annotations: {},
       annotationsValues: {},
     })
     const ptNum = new PrimitiveType({
-      typeID: new TypeID({ adapter: 'test', name: 'prim' }),
+      elemID: new ElemID({ adapter: 'test', name: 'prim' }),
       primitive: PrimitiveTypes.NUMBER,
       annotations: {},
       annotationsValues: {},
     })
     const newElement = new ObjectType({
-      typeID: new TypeID({ adapter: 'test', name: 'obj' }),
+      elemID: new ElemID({ adapter: 'test', name: 'obj' }),
       fields: {
         /* eslint-disable-next-line @typescript-eslint/camelcase */
         num_field: ptNum,
@@ -212,7 +212,7 @@ describe('Test plan.ts', () => {
     })
 
     const oldElement = new ObjectType({
-      typeID: new TypeID({ adapter: 'test', name: 'obj' }),
+      elemID: new ElemID({ adapter: 'test', name: 'obj' }),
       fields: {
         /* eslint-disable-next-line @typescript-eslint/camelcase */
         /* eslint-disable-next-line @typescript-eslint/camelcase */
@@ -230,19 +230,19 @@ describe('Test plan.ts', () => {
 
   it('Should handle annotations changes', () => {
     const ptStr = new PrimitiveType({
-      typeID: new TypeID({ adapter: 'test', name: 'prim' }),
+      elemID: new ElemID({ adapter: 'test', name: 'prim' }),
       primitive: PrimitiveTypes.STRING,
       annotations: {},
       annotationsValues: {},
     })
     const ptNum = new PrimitiveType({
-      typeID: new TypeID({ adapter: 'test', name: 'prim' }),
+      elemID: new ElemID({ adapter: 'test', name: 'prim' }),
       primitive: PrimitiveTypes.NUMBER,
       annotations: {},
       annotationsValues: {},
     })
     const newElement = new ObjectType({
-      typeID: new TypeID({ adapter: 'test', name: 'obj' }),
+      elemID: new ElemID({ adapter: 'test', name: 'obj' }),
       fields: {
         /* eslint-disable-next-line @typescript-eslint/camelcase */
         num_field: ptNum,
@@ -254,7 +254,7 @@ describe('Test plan.ts', () => {
     })
 
     const oldElement = new ObjectType({
-      typeID: new TypeID({ adapter: 'test', name: 'obj' }),
+      elemID: new ElemID({ adapter: 'test', name: 'obj' }),
       fields: {
         /* eslint-disable-next-line @typescript-eslint/camelcase */
         str_field: ptStr,
@@ -274,13 +274,13 @@ describe('Test plan.ts', () => {
 
   it('Should handle new instance', () => {
     const ptStr = new PrimitiveType({
-      typeID: new TypeID({ adapter: 'test', name: 'prim' }),
+      elemID: new ElemID({ adapter: 'test', name: 'prim' }),
       primitive: PrimitiveTypes.STRING,
       annotations: {},
       annotationsValues: {},
     })
     const ot = new ObjectType({
-      typeID: new TypeID({ adapter: 'test', name: 'obj' }),
+      elemID: new ElemID({ adapter: 'test', name: 'obj' }),
       fields: {
         test: ptStr,
       },
@@ -288,7 +288,7 @@ describe('Test plan.ts', () => {
       annotationsValues: {},
     })
     const inst = new InstanceElement(
-      new TypeID({ adapter: 'test', name: 'test' }),
+      new ElemID({ adapter: 'test', name: 'test' }),
       ot,
       { test: 'AAA' },
     )
@@ -298,13 +298,13 @@ describe('Test plan.ts', () => {
 
   it('Should handle removed instance', () => {
     const ptStr = new PrimitiveType({
-      typeID: new TypeID({ adapter: 'test', name: 'prim' }),
+      elemID: new ElemID({ adapter: 'test', name: 'prim' }),
       primitive: PrimitiveTypes.STRING,
       annotations: {},
       annotationsValues: {},
     })
     const ot = new ObjectType({
-      typeID: new TypeID({ adapter: 'test', name: 'obj' }),
+      elemID: new ElemID({ adapter: 'test', name: 'obj' }),
       fields: {
         test: ptStr,
       },
@@ -312,7 +312,7 @@ describe('Test plan.ts', () => {
       annotationsValues: {},
     })
     const inst = new InstanceElement(
-      new TypeID({ adapter: 'test', name: 'test' }),
+      new ElemID({ adapter: 'test', name: 'test' }),
       ot,
       { test: 'AAA' },
     )
@@ -322,13 +322,13 @@ describe('Test plan.ts', () => {
 
   it('Should handle modified instance', () => {
     const ptStr = new PrimitiveType({
-      typeID: new TypeID({ adapter: 'test', name: 'prim' }),
+      elemID: new ElemID({ adapter: 'test', name: 'prim' }),
       primitive: PrimitiveTypes.STRING,
       annotations: {},
       annotationsValues: {},
     })
     const ot = new ObjectType({
-      typeID: new TypeID({ adapter: 'test', name: 'obj' }),
+      elemID: new ElemID({ adapter: 'test', name: 'obj' }),
       fields: {
         test: ptStr,
       },
@@ -336,12 +336,12 @@ describe('Test plan.ts', () => {
       annotationsValues: {},
     })
     const inst = new InstanceElement(
-      new TypeID({ adapter: 'test', name: 'test' }),
+      new ElemID({ adapter: 'test', name: 'test' }),
       ot,
       { test: 'AAA' },
     )
     const inst2 = new InstanceElement(
-      new TypeID({ adapter: 'test', name: 'test' }),
+      new ElemID({ adapter: 'test', name: 'test' }),
       ot,
       { test: 'BBB' },
     )

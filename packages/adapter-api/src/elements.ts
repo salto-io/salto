@@ -17,18 +17,18 @@ export interface Values {
 }
 type TypeMap = Record<string, Type>
 
-interface TypeIDArgs {
+interface ElemIDArgs {
   adapter?: string
   name?: string
 }
 
 
-export class TypeID {
+export class ElemID {
   static readonly NAMESPACE_SEPERATOR = '_'
 
   name?: string
   adapter?: string
-  constructor(args: TypeIDArgs) {
+  constructor(args: ElemIDArgs) {
     this.name = args.name
     this.adapter = args.adapter
   }
@@ -36,12 +36,12 @@ export class TypeID {
   getFullName(): string {
     return [this.adapter, this.name]
       .filter(part => !_.isEmpty(part))
-      .join(TypeID.NAMESPACE_SEPERATOR)
+      .join(ElemID.NAMESPACE_SEPERATOR)
   }
 }
 
 export interface Element {
-  typeID: TypeID
+  elemID: ElemID
 }
 
 type ElementMap = Record<string, Element>
@@ -57,21 +57,21 @@ export abstract class Type implements Element {
   public static REQUIRED = 'required'
 
 
-  readonly typeID: TypeID
+  readonly elemID: ElemID
   annotations: TypeMap
   annotationsValues: Values
   constructor({
     annotations,
     annotationsValues,
-    typeID,
+    elemID,
   }: {
-    typeID: TypeID
+    elemID: ElemID
     annotations: TypeMap
     annotationsValues: Values
   }) {
     this.annotations = annotations
     this.annotationsValues = annotationsValues
-    this.typeID = typeID
+    this.elemID = elemID
     // Prevents reregistration of clones, we only want to register
     // first creation
   }
@@ -117,17 +117,17 @@ export abstract class Type implements Element {
 export class PrimitiveType extends Type {
   primitive: PrimitiveTypes
   constructor({
-    typeID,
+    elemID,
     primitive,
     annotations = {},
     annotationsValues = {},
   }: {
-    typeID: TypeID
+    elemID: ElemID
     primitive: PrimitiveTypes
     annotations?: TypeMap
     annotationsValues?: Values
   }) {
-    super({ typeID, annotations, annotationsValues })
+    super({ elemID, annotations, annotationsValues })
     this.primitive = primitive
   }
 
@@ -137,7 +137,7 @@ export class PrimitiveType extends Type {
    */
   clone(additionalAnnotationsValues: Values = {}): PrimitiveType {
     const res: PrimitiveType = new PrimitiveType({
-      typeID: this.typeID,
+      elemID: this.elemID,
       primitive: this.primitive,
       annotations: this.cloneAnnotations(),
       annotationsValues: this.cloneAnnotationsValues(),
@@ -154,17 +154,17 @@ export class ObjectType extends Type {
   fields: TypeMap
 
   constructor({
-    typeID,
+    elemID,
     fields = {},
     annotations = {},
     annotationsValues = {},
   }: {
-    typeID: TypeID
+    elemID: ElemID
     fields?: TypeMap
     annotations?: TypeMap
     annotationsValues?: Values
   }) {
-    super({ typeID, annotations, annotationsValues })
+    super({ elemID, annotations, annotationsValues })
     this.fields = fields
   }
 
@@ -186,7 +186,7 @@ export class ObjectType extends Type {
     const clonedFields = this.cloneFields()
 
     const res: ObjectType = new ObjectType({
-      typeID: this.typeID,
+      elemID: this.elemID,
       fields: clonedFields,
       annotations: clonedAnnotations,
       annotationsValues: clonedAnnotationValues,
@@ -210,17 +210,17 @@ export class ObjectType extends Type {
 export class ListType extends Type {
   elementType?: Type
   constructor({
-    typeID,
+    elemID,
     elementType,
     annotations = {},
     annotationsValues = {},
   }: {
-    typeID: TypeID
+    elemID: ElemID
     elementType?: Type
     annotations?: TypeMap
     annotationsValues?: Values
   }) {
-    super({ typeID, annotations, annotationsValues })
+    super({ elemID, annotations, annotationsValues })
     this.elementType = elementType
   }
 
@@ -236,7 +236,7 @@ export class ListType extends Type {
     const clonedAnnotationValues = this.cloneAnnotationsValues()
 
     const res: ListType = new ListType({
-      typeID: this.typeID,
+      elemID: this.elemID,
       elementType: clonedElementType,
       annotations: clonedAnnotations,
       annotationsValues: clonedAnnotationValues,
@@ -248,11 +248,11 @@ export class ListType extends Type {
 }
 
 export class InstanceElement implements Element {
-  typeID: TypeID
+  elemID: ElemID
   type: Type
   value: Values
-  constructor(typeID: TypeID, type: Type, value: Values) {
-    this.typeID = typeID
+  constructor(elemID: ElemID, type: Type, value: Values) {
+    this.elemID = elemID
     this.type = type
     this.value = value
   }
@@ -266,7 +266,7 @@ export class ElementsRegistry {
   }
 
   registerElement(elementToRegister: Element): void {
-    const key = elementToRegister.typeID.getFullName()
+    const key = elementToRegister.elemID.getFullName()
     const existingElement = this.registeredElements[key]
     if (existingElement) {
       throw new Error('Type extension is not supported for now')
@@ -274,8 +274,8 @@ export class ElementsRegistry {
     this.registeredElements[key] = elementToRegister
   }
 
-  hasElement(typeID: TypeID): boolean {
-    const fullName = typeID.getFullName()
+  hasElement(elemID: ElemID): boolean {
+    const fullName = elemID.getFullName()
     return Object.prototype.hasOwnProperty.call(this.registeredElements, fullName)
   }
 
@@ -284,24 +284,24 @@ export class ElementsRegistry {
   }
 
   getElement(
-    typeID: TypeID,
+    elemID: ElemID,
     type: PrimitiveTypes|Type = PrimitiveTypes.OBJECT,
     /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
   ): any {
     // Using any here is ugly, but I can't find a better comiling solution. TODO - fix this
-    const key = typeID.getFullName()
+    const key = elemID.getFullName()
     let res: Element = this.registeredElements[key]
     if (!res) {
       if (type === PrimitiveTypes.OBJECT) {
-        res = new ObjectType({ typeID })
+        res = new ObjectType({ elemID })
       } else
       if (type === PrimitiveTypes.LIST) {
-        res = new ListType({ typeID })
+        res = new ListType({ elemID })
       /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
       } else if (type as any in PrimitiveTypes) {
-        res = new PrimitiveType({ typeID, primitive: type as PrimitiveTypes })
+        res = new PrimitiveType({ elemID, primitive: type as PrimitiveTypes })
       } else {
-        res = new InstanceElement(typeID, type as Type, {})
+        res = new InstanceElement(elemID, type as Type, {})
       }
       this.registerElement(res)
     }

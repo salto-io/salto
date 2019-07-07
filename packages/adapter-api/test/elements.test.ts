@@ -7,44 +7,44 @@ import {
   isObjectType,
   isListType,
   isPrimitiveType,
-  TypeID,
+  ElemID,
   InstanceElement,
 } from '../src/elements'
 
 describe('Test elements.ts', () => {
   it('should create a basic primitive type with all params passed to the constructor', () => {
     const ptStr = new PrimitiveType({
-      typeID: new TypeID({ adapter: 'test', name: 'prim' }),
+      elemID: new ElemID({ adapter: 'test', name: 'prim' }),
       primitive: PrimitiveTypes.STRING,
       annotations: {},
       annotationsValues: {},
     })
-    expect(ptStr.typeID).toEqual({ adapter: 'test', name: 'prim' })
+    expect(ptStr.elemID).toEqual({ adapter: 'test', name: 'prim' })
     expect(ptStr.primitive).toBe(PrimitiveTypes.STRING)
     const ptNum = new PrimitiveType({
-      typeID: new TypeID({ adapter: 'test', name: 'prim' }),
+      elemID: new ElemID({ adapter: 'test', name: 'prim' }),
       primitive: PrimitiveTypes.NUMBER,
       annotations: {},
       annotationsValues: {},
     })
-    expect(ptNum.typeID).toEqual({ adapter: 'test', name: 'prim' })
+    expect(ptNum.elemID).toEqual({ adapter: 'test', name: 'prim' })
     expect(ptNum.primitive).toBe(PrimitiveTypes.NUMBER)
   })
   it('should create a basic object type with all params passed to the constructor', () => {
     const ptStr = new PrimitiveType({
-      typeID: new TypeID({ adapter: 'test', name: 'prim' }),
+      elemID: new ElemID({ adapter: 'test', name: 'prim' }),
       primitive: PrimitiveTypes.STRING,
       annotations: {},
       annotationsValues: {},
     })
     const ptNum = new PrimitiveType({
-      typeID: new TypeID({ adapter: 'test', name: 'prim' }),
+      elemID: new ElemID({ adapter: 'test', name: 'prim' }),
       primitive: PrimitiveTypes.NUMBER,
       annotations: {},
       annotationsValues: {},
     })
     const ot = new ObjectType({
-      typeID: new TypeID({ adapter: 'test', name: 'obj' }),
+      elemID: new ElemID({ adapter: 'test', name: 'obj' }),
       fields: {
         /* eslint-disable-next-line @typescript-eslint/camelcase */
         num_field: ptNum,
@@ -54,22 +54,22 @@ describe('Test elements.ts', () => {
       annotations: {},
       annotationsValues: {},
     })
-    expect(ot.typeID).toEqual({ adapter: 'test', name: 'obj' })
+    expect(ot.elemID).toEqual({ adapter: 'test', name: 'obj' })
     expect(ot.fields.num_field).toBeInstanceOf(PrimitiveType)
     expect(ot.fields.str_field).toBeInstanceOf(PrimitiveType)
   })
 
   it('should get fields not in other', () => {
     const ptStr = new PrimitiveType({
-      typeID: new TypeID({ adapter: 'test', name: 'prim' }),
+      elemID: new ElemID({ adapter: 'test', name: 'prim' }),
       primitive: PrimitiveTypes.STRING,
     })
     const ptNum = new PrimitiveType({
-      typeID: new TypeID({ adapter: 'test', name: 'prim' }),
+      elemID: new ElemID({ adapter: 'test', name: 'prim' }),
       primitive: PrimitiveTypes.NUMBER,
     })
     const ot1 = new ObjectType({
-      typeID: new TypeID({ adapter: 'test', name: 'obj' }),
+      elemID: new ElemID({ adapter: 'test', name: 'obj' }),
       fields: {
         /* eslint-disable-next-line @typescript-eslint/camelcase */
         num_field: ptNum,
@@ -78,7 +78,7 @@ describe('Test elements.ts', () => {
       },
     })
     const ot2 = new ObjectType({
-      typeID: new TypeID({ adapter: 'test', name: 'obj' }),
+      elemID: new ElemID({ adapter: 'test', name: 'obj' }),
       fields: {
         /* eslint-disable-next-line @typescript-eslint/camelcase */
         num_field: ptNum,
@@ -90,19 +90,19 @@ describe('Test elements.ts', () => {
 
   it('should allow basic list type creations withh all params passed to the constructor', () => {
     const ptStr = new PrimitiveType({
-      typeID: new TypeID({ adapter: 'test', name: 'prim' }),
+      elemID: new ElemID({ adapter: 'test', name: 'prim' }),
       primitive: PrimitiveTypes.STRING,
       annotations: {},
       annotationsValues: {},
     })
     const ptNum = new PrimitiveType({
-      typeID: new TypeID({ adapter: 'test', name: 'prim' }),
+      elemID: new ElemID({ adapter: 'test', name: 'prim' }),
       primitive: PrimitiveTypes.NUMBER,
       annotations: {},
       annotationsValues: {},
     })
     const ot = new ObjectType({
-      typeID: new TypeID({ adapter: 'test', name: 'obj' }),
+      elemID: new ElemID({ adapter: 'test', name: 'obj' }),
       fields: {
         /* eslint-disable-next-line @typescript-eslint/camelcase */
         num_field: ptNum,
@@ -114,12 +114,12 @@ describe('Test elements.ts', () => {
     })
 
     const lt = new ListType({
-      typeID: new TypeID({ adapter: 'test', name: 'list' }),
+      elemID: new ElemID({ adapter: 'test', name: 'list' }),
       elementType: ot,
       annotations: {},
       annotationsValues: {},
     })
-    expect(lt.typeID).toEqual({ adapter: 'test', name: 'list' })
+    expect(lt.elemID).toEqual({ adapter: 'test', name: 'list' })
     expect(lt.elementType).toBe(ot)
   })
 
@@ -127,17 +127,17 @@ describe('Test elements.ts', () => {
     const registery = new ElementsRegistry()
     // Check you can create Primitive Type
     const st = registery.getElement(
-      new TypeID({ adapter: '', name: 'string' }),
+      new ElemID({ adapter: '', name: 'string' }),
       PrimitiveTypes.STRING,
     )
     expect(st).toBeInstanceOf(PrimitiveType)
     const ot = registery.getElement(
-      new TypeID({ adapter: '', name: 'object' }),
+      new ElemID({ adapter: '', name: 'object' }),
       PrimitiveTypes.OBJECT,
     )
     expect(ot).toBeInstanceOf(ObjectType)
     const lt = registery.getElement(
-      new TypeID({ adapter: '', name: 'list' }),
+      new ElemID({ adapter: '', name: 'list' }),
       PrimitiveTypes.LIST,
     )
     expect(lt).toBeInstanceOf(ListType)
@@ -146,15 +146,15 @@ describe('Test elements.ts', () => {
   it('should reuse created types', () => {
     const registery = new ElementsRegistry()
     const st = registery.getElement(
-      new TypeID({ adapter: '', name: 'string' }),
+      new ElemID({ adapter: '', name: 'string' }),
       PrimitiveTypes.STRING,
     )
     const st2 = registery.getElement(
-      new TypeID({ adapter: '', name: 'string' }),
+      new ElemID({ adapter: '', name: 'string' }),
       PrimitiveTypes.STRING,
     )
     const st3 = registery.getElement(
-      new TypeID({ adapter: '', name: 'string2' }),
+      new ElemID({ adapter: '', name: 'string2' }),
       PrimitiveTypes.STRING,
     )
     expect(st).toBe(st2)
@@ -164,26 +164,26 @@ describe('Test elements.ts', () => {
   it('should register types that were registered explictly', () => {
     const registery = new ElementsRegistry()
     const ptStr = new PrimitiveType({
-      typeID: new TypeID({ adapter: 'test', name: 'out_reg' }),
+      elemID: new ElemID({ adapter: 'test', name: 'out_reg' }),
       primitive: PrimitiveTypes.STRING,
       annotations: {},
       annotationsValues: {},
     })
     registery.registerElement(ptStr)
-    const ptStr2 = registery.getElement(new TypeID({ adapter: 'test', name: 'out_reg' }))
+    const ptStr2 = registery.getElement(new ElemID({ adapter: 'test', name: 'out_reg' }))
     expect(ptStr).toBe(ptStr2)
   })
 
   it('should not allow registeration of same type id twice', () => {
     const registery = new ElementsRegistry()
     const ptStr = new PrimitiveType({
-      typeID: new TypeID({ adapter: 'test', name: 'out_reg' }),
+      elemID: new ElemID({ adapter: 'test', name: 'out_reg' }),
       primitive: PrimitiveTypes.STRING,
       annotations: {},
       annotationsValues: {},
     })
     const ptStr2 = new PrimitiveType({
-      typeID: new TypeID({ adapter: 'test', name: 'out_reg' }),
+      elemID: new ElemID({ adapter: 'test', name: 'out_reg' }),
       primitive: PrimitiveTypes.STRING,
       annotations: {},
       annotationsValues: {},
@@ -197,21 +197,21 @@ describe('Test elements.ts', () => {
 
   it('should allow clone without annotations.', () => {
     const registery = new ElementsRegistry()
-    const saltoAddr = registery.getElement(new TypeID({ adapter: 'salto', name: 'address' }))
+    const saltoAddr = registery.getElement(new ElemID({ adapter: 'salto', name: 'address' }))
     saltoAddr.annotations.label = registery.getElement(
-      new TypeID({ adapter: '', name: 'string' }),
+      new ElemID({ adapter: '', name: 'string' }),
     )
     saltoAddr.fields.country = registery.getElement(
-      new TypeID({ adapter: '', name: 'string' }),
+      new ElemID({ adapter: '', name: 'string' }),
     )
-    saltoAddr.fields.city = registery.getElement(new TypeID({ adapter: '', name: 'string' }))
+    saltoAddr.fields.city = registery.getElement(new ElemID({ adapter: '', name: 'string' }))
 
     const saltoAddr2 = saltoAddr.clone()
     expect(saltoAddr).not.toBe(saltoAddr2)
     expect(saltoAddr).toEqual(saltoAddr2)
 
     const nicknames = registery.getElement(
-      new TypeID({ adapter: 'salto', name: ' nicknamed' }),
+      new ElemID({ adapter: 'salto', name: ' nicknamed' }),
       PrimitiveTypes.LIST,
     )
     const nicknames2 = nicknames.clone()
@@ -220,7 +220,7 @@ describe('Test elements.ts', () => {
     expect(nicknames).toEqual(nicknames2)
 
     const prim = registery.getElement(
-      new TypeID({ adapter: '', name: 'prim' }),
+      new ElemID({ adapter: '', name: 'prim' }),
       PrimitiveTypes.STRING,
     )
     const prim2 = prim.clone()
@@ -236,18 +236,18 @@ describe('Test elements.ts', () => {
     annotations.label = 'label'
 
     // Object
-    const saltoAddr = registery.getElement(new TypeID({ adapter: 'salto', name: 'address' }))
+    const saltoAddr = registery.getElement(new ElemID({ adapter: 'salto', name: 'address' }))
     saltoAddr.fields.country = registery.getElement(
-      new TypeID({ adapter: '', name: 'string' }),
+      new ElemID({ adapter: '', name: 'string' }),
     )
-    saltoAddr.fields.city = registery.getElement(new TypeID({ adapter: '', name: 'string' }))
+    saltoAddr.fields.city = registery.getElement(new ElemID({ adapter: '', name: 'string' }))
 
     const saltoAddr2 = saltoAddr.clone(annotations)
     expect(saltoAddr).not.toBe(saltoAddr2)
     expect(saltoAddr2).toMatchObject(saltoAddr)
 
     const nicknames = registery.getElement(
-      new TypeID({ adapter: 'salto', name: ' nicknamed' }),
+      new ElemID({ adapter: 'salto', name: ' nicknamed' }),
       PrimitiveTypes.LIST,
     )
     const nicknames2 = nicknames.clone(annotations)
@@ -256,7 +256,7 @@ describe('Test elements.ts', () => {
     expect(nicknames2).toMatchObject(nicknames)
 
     const prim = registery.getElement(
-      new TypeID({ adapter: '', name: 'prim' }),
+      new ElemID({ adapter: '', name: 'prim' }),
       PrimitiveTypes.STRING,
     )
     const prim2 = prim.clone(annotations)
@@ -268,15 +268,15 @@ describe('Test elements.ts', () => {
   it('should provide type guard for all types', () => {
     const registery = new ElementsRegistry()
     const pt = registery.getElement(
-      new TypeID({ adapter: 'test', name: 'pt1' }),
+      new ElemID({ adapter: 'test', name: 'pt1' }),
       PrimitiveTypes.STRING,
     )
     const ot = registery.getElement(
-      new TypeID({ adapter: 'test', name: 'ot1' }),
+      new ElemID({ adapter: 'test', name: 'ot1' }),
       PrimitiveTypes.OBJECT,
     )
     const lt = registery.getElement(
-      new TypeID({ adapter: 'test', name: 'lt1' }),
+      new ElemID({ adapter: 'test', name: 'lt1' }),
       PrimitiveTypes.LIST,
     )
     expect(isObjectType(ot)).toBeTruthy()
@@ -287,11 +287,11 @@ describe('Test elements.ts', () => {
   it('should allow clone on a list element with an element type', () => {
     const registery = new ElementsRegistry()
     const pt = registery.getElement(
-      new TypeID({ adapter: 'test', name: 'pt1' }),
+      new ElemID({ adapter: 'test', name: 'pt1' }),
       PrimitiveTypes.STRING,
     )
     const lt1 = registery.getElement(
-      new TypeID({ adapter: 'test', name: 'list1' }),
+      new ElemID({ adapter: 'test', name: 'list1' }),
       PrimitiveTypes.LIST,
     )
     lt1.elementType = pt
@@ -302,20 +302,20 @@ describe('Test elements.ts', () => {
 
   it('should allow to init a registery with types', () => {
     const pt = new PrimitiveType({
-      typeID: new TypeID({ adapter: 'test', name: 'prim' }),
+      elemID: new ElemID({ adapter: 'test', name: 'prim' }),
       primitive: PrimitiveTypes.STRING,
       annotations: {},
       annotationsValues: {},
     })
     const pt2 = new PrimitiveType({
-      typeID: new TypeID({ adapter: 'test', name: 'prim2' }),
+      elemID: new ElemID({ adapter: 'test', name: 'prim2' }),
       primitive: PrimitiveTypes.STRING,
       annotations: {},
       annotationsValues: {},
     })
     const registery = new ElementsRegistry([pt, pt2])
-    expect(registery.hasElement(pt.typeID)).toBe(true)
-    expect(registery.hasElement(pt2.typeID)).toBe(true)
+    expect(registery.hasElement(pt.elemID)).toBe(true)
+    expect(registery.hasElement(pt2.elemID)).toBe(true)
 
     const allTypes = registery.getAllElements()
     expect(allTypes).toContain(pt)
@@ -324,13 +324,13 @@ describe('Test elements.ts', () => {
 
   it('should allow basic registery merge', () => {
     const pt = new PrimitiveType({
-      typeID: new TypeID({ adapter: 'test', name: 'prim' }),
+      elemID: new ElemID({ adapter: 'test', name: 'prim' }),
       primitive: PrimitiveTypes.STRING,
       annotations: {},
       annotationsValues: {},
     })
     const pt2 = new PrimitiveType({
-      typeID: new TypeID({ adapter: 'test', name: 'prim2' }),
+      elemID: new ElemID({ adapter: 'test', name: 'prim2' }),
       primitive: PrimitiveTypes.STRING,
       annotations: {},
       annotationsValues: {},
@@ -339,18 +339,18 @@ describe('Test elements.ts', () => {
     const registery2 = new ElementsRegistry([pt2])
     const mergedReg = registery.merge(registery2)
 
-    expect(mergedReg.hasElement(pt.typeID)).toBe(true)
-    expect(mergedReg.hasElement(pt2.typeID)).toBe(true)
+    expect(mergedReg.hasElement(pt.elemID)).toBe(true)
+    expect(mergedReg.hasElement(pt2.elemID)).toBe(true)
   })
 
   it('should create a basic instance element', () => {
     const registery = new ElementsRegistry()
     const ot = registery.getElement(
-      new TypeID({ adapter: 'test', name: 'ot1' }),
+      new ElemID({ adapter: 'test', name: 'ot1' }),
       PrimitiveTypes.OBJECT,
     )
-    const inst = new InstanceElement(new TypeID({ adapter: 'test', name: 'test' }), ot, { test: 'test' })
-    expect(inst.typeID).toEqual(new TypeID({ adapter: 'test', name: 'test' }))
+    const inst = new InstanceElement(new ElemID({ adapter: 'test', name: 'test' }), ot, { test: 'test' })
+    expect(inst.elemID).toEqual(new ElemID({ adapter: 'test', name: 'test' }))
     expect(inst.type).toBe(ot)
     expect(inst.value.test).toBe('test')
   })
@@ -358,11 +358,11 @@ describe('Test elements.ts', () => {
   it('should create a basic instance element from registery', () => {
     const registery = new ElementsRegistry()
     const ot = registery.getElement(
-      new TypeID({ adapter: 'test', name: 'ot1' }),
+      new ElemID({ adapter: 'test', name: 'ot1' }),
       PrimitiveTypes.OBJECT,
     )
     const inst = registery.getElement(
-      new TypeID({ adapter: 'test', name: 'inst' }),
+      new ElemID({ adapter: 'test', name: 'inst' }),
       ot,
     )
     expect(inst.type).toBe(ot)

@@ -63,7 +63,7 @@ export class CustomField implements MetadataInfo {
 
 export class CustomObject implements MetadataInfo {
   readonly pluralLabel: string
-  readonly fields: CustomField[] = []
+  readonly fields: CustomField[] | CustomField = []
 
   readonly deploymentStatus = 'Deployed'
   readonly sharingModel = 'ReadWrite'

@@ -27,7 +27,7 @@ jobs:
       # run tests!
       - run:
           name: Run Jest tests
-          command: npx jest --ci --runInBand --forceExit --coverage --verbose --detectOpenHandles --reporters=default --reporters=jest-junit
+          command: npx jest --ci --runInBand --forceExit --detectOpenHandles
           environment:
             JEST_JUNIT_OUTPUT: "reports/junit/js-test-results.xml"
 
@@ -42,4 +42,15 @@ jobs:
           name: Upload coverage to codecov.io
           command: npx codecov -f coverage/*.json
 
+      # run tests!
+      - run:
+          name: Run Jest e2e tests
+          command: npx jest --config jest.e2e.config.js --ci --runInBand --forceExit --detectOpenHandles
+          environment:
+            JEST_JUNIT_OUTPUT: "e2e-reports/junit/js-test-results.xml"
 
+      - store_test_results:
+          path: e2e-reports
+
+      - store_artifacts:
+          path: e2e-reports

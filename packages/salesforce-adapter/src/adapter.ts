@@ -2,7 +2,7 @@ import {
   Type,
   ElementsRegistry,
   ObjectType,
-  TypeID,
+  ElemID,
   PrimitiveTypes,
   InstanceElement,
 } from 'adapter-api'
@@ -67,7 +67,7 @@ const annotateApiNameAndLabel = (element: ObjectType): void => {
     }
   }
 
-  innerAnnotate(element, element.typeID.name)
+  innerAnnotate(element, element.elemID.name)
   Object.entries(element.fields).forEach(([fieldName, field]): void => {
     innerAnnotate(field, fieldName)
   })
@@ -134,17 +134,17 @@ export default class SalesforceAdapter {
   public static getConfigType(): ObjectType {
     const registery = new ElementsRegistry()
     const simpleString = registery.getElement(
-      new TypeID({ adapter: '', name: 'string' }),
+      new ElemID({ adapter: '', name: 'string' }),
       PrimitiveTypes.STRING
     )
 
     const simpleBoolean = registery.getElement(
-      new TypeID({ adapter: '', name: 'boolean' }),
+      new ElemID({ adapter: '', name: 'boolean' }),
       PrimitiveTypes.BOOLEAN
     )
 
     const config = new ObjectType({
-      typeID: new TypeID({ adapter: 'salesforce' }),
+      elemID: new ElemID({ adapter: 'salesforce' }),
       fields: {
         username: simpleString,
         password: simpleString,

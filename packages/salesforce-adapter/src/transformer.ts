@@ -4,7 +4,7 @@ import {
   Type,
   ObjectType,
   ElementsRegistry,
-  TypeID,
+  ElemID,
   PrimitiveTypes,
 } from 'adapter-api'
 import { CustomObject, CustomField, ProfileInfo } from './client/types'
@@ -30,13 +30,13 @@ export class Types {
     switch (typeName) {
       case 'string': {
         return this.types
-          .getElement(new TypeID({ adapter: '', name }), PrimitiveTypes.STRING)
+          .getElement(new ElemID({ adapter: '', name }), PrimitiveTypes.STRING)
           .clone()
       }
       case 'double': {
         return this.types
           .getElement(
-            new TypeID({ adapter: '', name: 'number' }),
+            new ElemID({ adapter: '', name: 'number' }),
             PrimitiveTypes.NUMBER
           )
           .clone()
@@ -45,13 +45,13 @@ export class Types {
         return this.types
           .getElement(
             // TODO: take checkbox from constans
-            new TypeID({ adapter: SALESFORCE, name: 'checkbox' })
+            new ElemID({ adapter: SALESFORCE, name: 'checkbox' })
           )
           .clone()
       }
       default: {
         return this.types
-          .getElement(new TypeID({ adapter: SALESFORCE, name }))
+          .getElement(new ElemID({ adapter: SALESFORCE, name }))
           .clone()
       }
     }
@@ -72,7 +72,7 @@ export const toCustomField = (
     fullname
       ? fieldFullName(objectName, field.annotationsValues[API_NAME])
       : field.annotationsValues[API_NAME],
-    field.typeID.name,
+    field.elemID.name,
     field.annotationsValues[LABEL],
     field.annotationsValues[Type.REQUIRED],
     field.annotationsValues[PICKLIST_VALUES]

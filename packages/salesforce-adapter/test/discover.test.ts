@@ -1,6 +1,6 @@
 import { MetadataInfo } from 'jsforce'
 import {
-  ObjectType, Type, InstanceElement, TypeID,
+  ObjectType, Type, InstanceElement, ElemID,
 } from 'adapter-api'
 import SalesforceAdapter from '../src/adapter'
 import SalesforceClient from '../src/client/client'
@@ -67,8 +67,8 @@ describe('Test SalesforceAdapter discover', () => {
       token: 'rwVvOsh7HjF8Zki9ZmyQdeth',
       sandbox: false,
     }
-    const typeID = new TypeID({ adapter: 'salesforce' })
-    const config = new InstanceElement(typeID, configType, value)
+    const elemID = new ElemID({ adapter: 'salesforce' })
+    const config = new InstanceElement(elemID, configType, value)
     return new SalesforceAdapter(config)
   }
 
@@ -100,7 +100,7 @@ describe('Test SalesforceAdapter discover', () => {
     expect(result.length).toBe(1)
     const lead = result.pop() as ObjectType
 
-    expect(lead.fields.last_name.typeID.name).toBe('string')
+    expect(lead.fields.last_name.elemID.name).toBe('string')
     expect(lead.fields.last_name.annotationsValues.label).toBe('Last Name')
     // Test Rquired true and false
     expect(lead.fields.last_name.annotationsValues.required).toBe(false)
@@ -132,7 +132,7 @@ describe('Test SalesforceAdapter discover', () => {
     expect(result.length).toBe(1)
     const lead = result.pop() as ObjectType
 
-    expect(lead.fields.primary_c.typeID.name).toBe('picklist')
+    expect(lead.fields.primary_c.elemID.name).toBe('picklist')
     expect(
       (lead.fields.primary_c.annotationsValues.values as string[]).join(';')
     ).toBe('No;Yes')
@@ -162,7 +162,7 @@ describe('Test SalesforceAdapter discover', () => {
     expect(result.length).toBe(1)
     const lead = result.pop() as ObjectType
 
-    expect(lead.fields.primary_c.typeID.name).toBe('combobox')
+    expect(lead.fields.primary_c.elemID.name).toBe('combobox')
     expect(
       (lead.fields.primary_c.annotationsValues.values as string[]).join(';')
     ).toBe('No;Yes')
@@ -187,7 +187,7 @@ describe('Test SalesforceAdapter discover', () => {
     expect(result.length).toBe(1)
     const lead = result.pop() as ObjectType
 
-    expect(lead.fields.double_field.typeID.name).toBe('number')
+    expect(lead.fields.double_field.elemID.name).toBe('number')
   })
 
   it('should discover sobject permissions', async () => {
@@ -247,13 +247,13 @@ describe('Test SalesforceAdapter discover', () => {
     expect(result.length).toBe(1)
     const flow = result.pop() as ObjectType
 
-    expect(flow.fields.description.typeID.name).toBe('string')
+    expect(flow.fields.description.elemID.name).toBe('string')
     // TODO: validate what is expected from this metadata type
     expect(flow.annotationsValues[constants.API_NAME]).toBe('Flow')
     expect(flow.fields.description.annotationsValues[Type.REQUIRED]).toBe(true)
-    expect(flow.fields.is_template.typeID.name).toBe('checkbox')
+    expect(flow.fields.is_template.elemID.name).toBe('checkbox')
     expect(flow.fields.is_template.annotationsValues[Type.REQUIRED]).toBe(false)
-    expect(flow.fields.action_calls.typeID.getFullName()).toBe(
+    expect(flow.fields.action_calls.elemID.getFullName()).toBe(
       'salesforce_FlowActionCall'
     )
   })
@@ -283,7 +283,7 @@ describe('Test SalesforceAdapter discover', () => {
     expect(result.length).toBe(1)
     const flow = result.pop() as ObjectType
     // Validate picklist
-    expect(flow.fields.status.typeID.name).toBe('Picklist')
+    expect(flow.fields.status.elemID.name).toBe('Picklist')
     expect(flow.fields.status.annotationsValues.required).toBe(false)
     expect(flow.fields.status.annotationsValues.values.length).toBe(1)
     expect(flow.fields.status.annotationsValues.values[0]).toBe('BLA')
@@ -291,7 +291,7 @@ describe('Test SalesforceAdapter discover', () => {
     expect(flow.fields.status.annotationsValues._default).toBe('BLA')
 
     // Validate combobox
-    expect(flow.fields.status_combo.typeID.name).toBe('Combobox')
+    expect(flow.fields.status_combo.elemID.name).toBe('Combobox')
     expect(flow.fields.status_combo.annotationsValues.required).toBe(true)
     expect(flow.fields.status_combo.annotationsValues.values.length).toBe(2)
     expect(flow.fields.status_combo.annotationsValues.values[0]).toBe('BLA')

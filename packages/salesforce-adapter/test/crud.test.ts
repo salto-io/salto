@@ -1,7 +1,7 @@
 import {
   ObjectType,
   PrimitiveType,
-  TypeID,
+  ElemID,
   PrimitiveTypes,
   InstanceElement,
 } from 'adapter-api'
@@ -20,8 +20,8 @@ describe('Test SalesforceAdapter CRUD', () => {
       token: '',
       sandbox: false,
     }
-    const typeID = new TypeID({ adapter: 'salesforce' })
-    const config = new InstanceElement(typeID, configType, value)
+    const elemID = new ElemID({ adapter: 'salesforce' })
+    const config = new InstanceElement(elemID, configType, value)
     return new SalesforceAdapter(config)
   }
 
@@ -33,10 +33,10 @@ describe('Test SalesforceAdapter CRUD', () => {
 
     const result = await adapter().add(
       new ObjectType({
-        typeID: new TypeID({ adapter: constants.SALESFORCE, name: 'test' }),
+        elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
         fields: {
           description: new PrimitiveType({
-            typeID: new TypeID({
+            elemID: new ElemID({
               adapter: constants.SALESFORCE,
               name: 'string',
             }),
@@ -100,7 +100,7 @@ describe('Test SalesforceAdapter CRUD', () => {
     return expect(
       adapter().add(
         new ObjectType({
-          typeID: new TypeID({ adapter: constants.SALESFORCE, name: 'test' }),
+          elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
         })
       )
     ).rejects.toEqual(new Error('Failed to add Test__c\nAdditional message'))
@@ -120,7 +120,7 @@ describe('Test SalesforceAdapter CRUD', () => {
     return expect(
       adapter().add(
         new ObjectType({
-          typeID: new TypeID({ adapter: constants.SALESFORCE, name: 'test' }),
+          elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
         })
       )
     ).rejects.toEqual(new Error('Failed to update permissions'))
@@ -132,10 +132,10 @@ describe('Test SalesforceAdapter CRUD', () => {
 
     await adapter().remove(
       new ObjectType({
-        typeID: new TypeID({ adapter: constants.SALESFORCE, name: 'test' }),
+        elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
         fields: {
           description: new PrimitiveType({
-            typeID: new TypeID({
+            elemID: new ElemID({
               adapter: constants.SALESFORCE,
               name: 'string',
             }),
@@ -168,7 +168,7 @@ describe('Test SalesforceAdapter CRUD', () => {
     return expect(
       adapter().remove(
         new ObjectType({
-          typeID: new TypeID({ adapter: constants.SALESFORCE, name: 'test' }),
+          elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
           annotationsValues: {
             // eslint-disable-next-line @typescript-eslint/camelcase
             api_name: 'Test__c',
@@ -189,10 +189,10 @@ describe('Test SalesforceAdapter CRUD', () => {
     expect(
       adapter().update(
         new ObjectType({
-          typeID: new TypeID({ adapter: constants.SALESFORCE, name: 'test2' }),
+          elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test2' }),
           fields: {
             description: new PrimitiveType({
-              typeID: new TypeID({
+              elemID: new ElemID({
                 adapter: constants.SALESFORCE,
                 name: 'string',
               }),
@@ -208,10 +208,10 @@ describe('Test SalesforceAdapter CRUD', () => {
           },
         }),
         new ObjectType({
-          typeID: new TypeID({ adapter: constants.SALESFORCE, name: 'test' }),
+          elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
           fields: {
             address: new PrimitiveType({
-              typeID: new TypeID({
+              elemID: new ElemID({
                 adapter: constants.SALESFORCE,
                 name: 'string',
               }),
@@ -242,10 +242,10 @@ describe('Test SalesforceAdapter CRUD', () => {
 
     const result = await adapter().update(
       new ObjectType({
-        typeID: new TypeID({ adapter: constants.SALESFORCE, name: 'test' }),
+        elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
         fields: {
           description: new PrimitiveType({
-            typeID: new TypeID({
+            elemID: new ElemID({
               adapter: constants.SALESFORCE,
               name: 'string',
             }),
@@ -261,10 +261,10 @@ describe('Test SalesforceAdapter CRUD', () => {
         },
       }),
       new ObjectType({
-        typeID: new TypeID({ adapter: constants.SALESFORCE, name: 'test' }),
+        elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
         fields: {
           address: new PrimitiveType({
-            typeID: new TypeID({
+            elemID: new ElemID({
               adapter: constants.SALESFORCE,
               name: 'string',
             }),
@@ -295,17 +295,17 @@ describe('Test SalesforceAdapter CRUD', () => {
 
     const result = await adapter().update(
       new ObjectType({
-        typeID: new TypeID({ adapter: constants.SALESFORCE, name: 'test' }),
+        elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
         fields: {
           address: new PrimitiveType({
-            typeID: new TypeID({
+            elemID: new ElemID({
               adapter: constants.SALESFORCE,
               name: 'string',
             }),
             primitive: PrimitiveTypes.STRING,
           }),
           banana: new PrimitiveType({
-            typeID: new TypeID({
+            elemID: new ElemID({
               adapter: constants.SALESFORCE,
               name: 'string',
             }),
@@ -321,31 +321,31 @@ describe('Test SalesforceAdapter CRUD', () => {
         },
       }),
       new ObjectType({
-        typeID: new TypeID({ adapter: constants.SALESFORCE, name: 'test' }),
+        elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
         fields: {
           address: new PrimitiveType({
-            typeID: new TypeID({
+            elemID: new ElemID({
               adapter: constants.SALESFORCE,
               name: 'string',
             }),
             primitive: PrimitiveTypes.STRING,
           }),
           banana: new PrimitiveType({
-            typeID: new TypeID({
+            elemID: new ElemID({
               adapter: constants.SALESFORCE,
               name: 'string',
             }),
             primitive: PrimitiveTypes.STRING,
           }),
           description: new PrimitiveType({
-            typeID: new TypeID({
+            elemID: new ElemID({
               adapter: constants.SALESFORCE,
               name: 'string',
             }),
             primitive: PrimitiveTypes.STRING,
           }),
           apple: new PrimitiveType({
-            typeID: new TypeID({
+            elemID: new ElemID({
               adapter: constants.SALESFORCE,
               name: 'double',
             }),
@@ -392,10 +392,10 @@ describe('Test SalesforceAdapter CRUD', () => {
 
     const result = await adapter().update(
       new ObjectType({
-        typeID: new TypeID({ adapter: constants.SALESFORCE, name: 'test' }),
+        elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
         fields: {
           address: new PrimitiveType({
-            typeID: new TypeID({
+            elemID: new ElemID({
               adapter: constants.SALESFORCE,
               name: 'string',
             }),
@@ -406,7 +406,7 @@ describe('Test SalesforceAdapter CRUD', () => {
             },
           }),
           banana: new PrimitiveType({
-            typeID: new TypeID({
+            elemID: new ElemID({
               adapter: constants.SALESFORCE,
               name: 'string',
             }),
@@ -417,7 +417,7 @@ describe('Test SalesforceAdapter CRUD', () => {
             },
           }),
           description: new PrimitiveType({
-            typeID: new TypeID({
+            elemID: new ElemID({
               adapter: constants.SALESFORCE,
               name: 'string',
             }),
@@ -437,10 +437,10 @@ describe('Test SalesforceAdapter CRUD', () => {
         },
       }),
       new ObjectType({
-        typeID: new TypeID({ adapter: constants.SALESFORCE, name: 'test' }),
+        elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
         fields: {
           description: new PrimitiveType({
-            typeID: new TypeID({
+            elemID: new ElemID({
               adapter: constants.SALESFORCE,
               name: 'string',
             }),
@@ -481,10 +481,10 @@ describe('Test SalesforceAdapter CRUD', () => {
 
     const result = await adapter().update(
       new ObjectType({
-        typeID: new TypeID({ adapter: constants.SALESFORCE, name: 'test' }),
+        elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
         fields: {
           address: new PrimitiveType({
-            typeID: new TypeID({
+            elemID: new ElemID({
               adapter: constants.SALESFORCE,
               name: 'string',
             }),
@@ -495,7 +495,7 @@ describe('Test SalesforceAdapter CRUD', () => {
             },
           }),
           banana: new PrimitiveType({
-            typeID: new TypeID({
+            elemID: new ElemID({
               adapter: constants.SALESFORCE,
               name: 'string',
             }),
@@ -515,17 +515,17 @@ describe('Test SalesforceAdapter CRUD', () => {
         },
       }),
       new ObjectType({
-        typeID: new TypeID({ adapter: constants.SALESFORCE, name: 'test' }),
+        elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
         fields: {
           banana: new PrimitiveType({
-            typeID: new TypeID({
+            elemID: new ElemID({
               adapter: constants.SALESFORCE,
               name: 'string',
             }),
             primitive: PrimitiveTypes.STRING,
           }),
           description: new PrimitiveType({
-            typeID: new TypeID({
+            elemID: new ElemID({
               adapter: constants.SALESFORCE,
               name: 'string',
             }),

@@ -2,7 +2,7 @@ import {
   Type,
   PrimitiveType,
   ObjectType,
-  TypeID,
+  ElemID,
   PrimitiveTypes,
   InstanceElement,
 } from 'adapter-api'
@@ -23,8 +23,8 @@ describe.skip('Test Salesforce adapter E2E', () => {
       token: 'rwVvOsh7HjF8Zki9ZmyQdeth',
       sandbox: false,
     }
-    const typeID = new TypeID({ adapter: 'salesforce' })
-    const config = new InstanceElement(typeID, configType, value)
+    const elemID = new ElemID({ adapter: 'salesforce' })
+    const config = new InstanceElement(elemID, configType, value)
     return new SalesforceAdapter(config)
   }
 
@@ -41,13 +41,13 @@ describe.skip('Test Salesforce adapter E2E', () => {
     it('should discover sobject', async () => {
       // Check few field types on lead object
       const lead = result
-        .filter(element => element.typeID.name === 'Lead')
+        .filter(element => element.elemID.name === 'Lead')
         .pop() as ObjectType
 
       // Test few possible types
-      expect(lead.fields.last_name.typeID.name).toBe('string')
-      expect(lead.fields.description.typeID.name).toBe('textarea')
-      expect(lead.fields.salutation.typeID.name).toBe('picklist')
+      expect(lead.fields.last_name.elemID.name).toBe('string')
+      expect(lead.fields.description.elemID.name).toBe('textarea')
+      expect(lead.fields.salutation.elemID.name).toBe('picklist')
 
       // Test label
       expect(lead.fields.last_name.annotationsValues.label).toBe('Last Name')
@@ -80,12 +80,12 @@ describe.skip('Test Salesforce adapter E2E', () => {
     it('should discover metadata object', () => {
       // Check few field types on lead object
       const flow = result
-        .filter(element => element.typeID.name === 'Flow')
+        .filter(element => element.elemID.name === 'Flow')
         .pop() as ObjectType
 
-      expect(flow.fields.description.typeID.name).toBe('string')
-      expect(flow.fields.is_template.typeID.name).toBe('checkbox')
-      expect(flow.fields.action_calls.typeID.name).toBe('FlowActionCall')
+      expect(flow.fields.description.elemID.name).toBe('string')
+      expect(flow.fields.is_template.elemID.name).toBe('checkbox')
+      expect(flow.fields.action_calls.elemID.name).toBe('FlowActionCall')
     })
   })
 
@@ -96,10 +96,10 @@ describe.skip('Test Salesforce adapter E2E', () => {
       jest.setTimeout(10000)
       const sfAdapter = adapter()
       const element = new ObjectType({
-        typeID: new TypeID({ adapter: constants.SALESFORCE, name: 'test' }),
+        elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
         fields: {
           description: new PrimitiveType({
-            typeID: new TypeID({
+            elemID: new ElemID({
               adapter: constants.SALESFORCE,
               name: 'string',
             }),
@@ -137,10 +137,10 @@ describe.skip('Test Salesforce adapter E2E', () => {
       const sfAdapter = adapter()
 
       const element = new ObjectType({
-        typeID: new TypeID({ adapter: constants.SALESFORCE, name: 'test' }),
+        elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
         fields: {
           description: new PrimitiveType({
-            typeID: new TypeID({
+            elemID: new ElemID({
               adapter: constants.SALESFORCE,
               name: 'string',
             }),
@@ -174,17 +174,17 @@ describe.skip('Test Salesforce adapter E2E', () => {
       const sfAdapter = adapter()
 
       const oldElement = new ObjectType({
-        typeID: new TypeID({ adapter: constants.SALESFORCE, name: 'test' }),
+        elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
         fields: {
           address: new PrimitiveType({
-            typeID: new TypeID({
+            elemID: new ElemID({
               adapter: constants.SALESFORCE,
               name: 'string',
             }),
             primitive: PrimitiveTypes.STRING,
           }),
           banana: new PrimitiveType({
-            typeID: new TypeID({
+            elemID: new ElemID({
               adapter: constants.SALESFORCE,
               name: 'string',
             }),
@@ -217,17 +217,17 @@ describe.skip('Test Salesforce adapter E2E', () => {
       )
 
       const newElement = new ObjectType({
-        typeID: new TypeID({ adapter: constants.SALESFORCE, name: 'test' }),
+        elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
         fields: {
           banana: new PrimitiveType({
-            typeID: new TypeID({
+            elemID: new ElemID({
               adapter: constants.SALESFORCE,
               name: 'string',
             }),
             primitive: PrimitiveTypes.STRING,
           }),
           description: new PrimitiveType({
-            typeID: new TypeID({
+            elemID: new ElemID({
               adapter: constants.SALESFORCE,
               name: 'string',
             }),

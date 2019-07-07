@@ -182,6 +182,9 @@ describe.skip('Test Salesforce adapter E2E', () => {
               name: 'string',
             }),
             primitive: PrimitiveTypes.STRING,
+            annotationsValues: {
+              [constants.API_NAME]: 'Address__c',
+            },
           }),
           banana: new PrimitiveType({
             elemID: new ElemID({
@@ -189,14 +192,16 @@ describe.skip('Test Salesforce adapter E2E', () => {
               name: 'string',
             }),
             primitive: PrimitiveTypes.STRING,
+            annotationsValues: {
+              [constants.API_NAME]: 'Banana__c',
+            },
           }),
         },
         annotationsValues: {
           required: false,
           _default: 'test',
           label: 'test label',
-          // eslint-disable-next-line @typescript-eslint/camelcase
-          api_name: 'Test__c',
+          [constants.API_NAME]: 'Test__c',
         },
       })
 
@@ -243,7 +248,7 @@ describe.skip('Test Salesforce adapter E2E', () => {
 
       // Test
       const modificationResult = await sfAdapter.update(oldElement, newElement)
-      expect(modificationResult).toBe(true)
+      expect(modificationResult).toBeInstanceOf(ObjectType)
 
       const readResult = (await sfAdapter.client.readMetadata(
         constants.CUSTOM_OBJECT,

@@ -5,6 +5,7 @@ import {
   PrimitiveTypes,
   InstanceElement,
 } from 'adapter-api'
+import { ProfileInfo } from '../src/client/types'
 import SalesforceAdapter from '../src/adapter'
 import SalesforceClient from '../src/client/client'
 import * as constants from '../src/constants'
@@ -27,9 +28,8 @@ describe('Test SalesforceAdapter CRUD', () => {
 
   it('should add new salesforce type', async () => {
     const mockCreate = jest.fn().mockImplementationOnce(() => ({ success: true }))
-    const mockUpdate = jest.fn().mockImplementationOnce(() => ({ success: true }))
     SalesforceClient.prototype.create = mockCreate
-    SalesforceClient.prototype.update = mockUpdate
+    SalesforceClient.prototype.update = jest.fn().mockImplementationOnce(() => ({ success: true }))
 
     const result = await adapter().add(
       new ObjectType({
@@ -66,20 +66,49 @@ describe('Test SalesforceAdapter CRUD', () => {
     expect(object.fields[0].length).toBe(80)
     expect(object.fields[0].required).toBe(false)
     expect(object.fields[0].label).toBe('test label')
+  })
+
+  it('should update field permissions upon new salesforce type', async () => {
+    SalesforceClient.prototype.create = jest.fn().mockImplementationOnce(() => ({ success: true }))
+    const mockUpdate = jest.fn().mockImplementationOnce(() => ({ success: true }))
+    SalesforceClient.prototype.update = mockUpdate
+
+    await adapter().add(
+      new ObjectType({
+        elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
+        fields: {
+          description: new PrimitiveType({
+            elemID: new ElemID({
+              adapter: constants.SALESFORCE,
+              name: 'string',
+            }),
+            primitive: PrimitiveTypes.STRING,
+            annotationsValues: {
+              [constants.FIELD_LEVEL_SECURITY]: {
+                admin: { editable: true, readable: true },
+                standard: { editable: false, readable: false },
+              },
+            },
+          }),
+        },
+      })
+    )
 
     // Verify permissions creation
     expect(mockUpdate.mock.calls.length).toBe(1)
-    const updateObject = mockUpdate.mock.calls[0][1]
-    expect(updateObject.fullName).toBe(
-      constants.PROFILE_NAME_SYSTEM_ADMINISTRATOR
-    )
-    expect(updateObject.fieldPermissions.length).toBe(1)
-    expect(updateObject.fieldPermissions[0].field).toBe(
-      'Test__c.Description__c'
-    )
-    expect(updateObject.fieldPermissions[0].editable).toBe(true)
-    expect(updateObject.fieldPermissions[0].readable).toBe(true)
+    const profiles = mockUpdate.mock.calls[0][1] as ProfileInfo[]
+    const admin = profiles.filter(p => p.fullName === 'Admin').pop()
+    expect(admin.fieldPermissions.length).toBe(1)
+    expect(admin.fieldPermissions[0].field).toBe('Test__c.Description__c')
+    expect(admin.fieldPermissions[0].editable).toBe(true)
+    expect(admin.fieldPermissions[0].readable).toBe(true)
+    const standard = profiles.filter(p => p.fullName === 'Standard').pop()
+    expect(standard.fieldPermissions.length).toBe(1)
+    expect(standard.fieldPermissions[0].field).toBe('Test__c.Description__c')
+    expect(standard.fieldPermissions[0].editable).toBe(false)
+    expect(standard.fieldPermissions[0].readable).toBe(false)
   })
+
 
   it('should fail add new salesforce type', async () => {
     SalesforceClient.prototype.create = jest
@@ -121,6 +150,18 @@ describe('Test SalesforceAdapter CRUD', () => {
       adapter().add(
         new ObjectType({
           elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
+          fields: {
+            description: new PrimitiveType({
+              elemID: new ElemID({
+                adapter: constants.SALESFORCE,
+                name: 'string',
+              }),
+              primitive: PrimitiveTypes.STRING,
+              annotationsValues: {
+                [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
+              },
+            }),
+          },
         })
       )
     ).rejects.toEqual(new Error('Failed to update permissions'))
@@ -143,8 +184,7 @@ describe('Test SalesforceAdapter CRUD', () => {
           }),
         },
         annotationsValues: {
-          // eslint-disable-next-line @typescript-eslint/camelcase
-          api_name: 'Test__c',
+          [constants.API_NAME]: 'Test__c',
         },
       })
     )
@@ -170,8 +210,7 @@ describe('Test SalesforceAdapter CRUD', () => {
         new ObjectType({
           elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
           annotationsValues: {
-            // eslint-disable-next-line @typescript-eslint/camelcase
-            api_name: 'Test__c',
+            [constants.API_NAME]: 'Test__c',
           },
         })
       )
@@ -203,8 +242,7 @@ describe('Test SalesforceAdapter CRUD', () => {
             required: false,
             _default: 'test',
             label: 'test label',
-            // eslint-disable-next-line @typescript-eslint/camelcase
-            api_name: 'Test2__c',
+            [constants.API_NAME]: 'Test2__c',
           },
         }),
         new ObjectType({
@@ -256,8 +294,7 @@ describe('Test SalesforceAdapter CRUD', () => {
           required: false,
           _default: 'test',
           label: 'test label',
-          // eslint-disable-next-line @typescript-eslint/camelcase
-          api_name: 'Test__c',
+          [constants.API_NAME]: 'Test__c',
         },
       }),
       new ObjectType({
@@ -269,11 +306,13 @@ describe('Test SalesforceAdapter CRUD', () => {
               name: 'string',
             }),
             primitive: PrimitiveTypes.STRING,
+            annotationsValues: {
+              label: 'test2 label',
+              [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
+            },
           }),
         },
         annotationsValues: {
-          required: false,
-          _default: 'test2',
           label: 'test2 label',
         },
       })
@@ -303,6 +342,9 @@ describe('Test SalesforceAdapter CRUD', () => {
               name: 'string',
             }),
             primitive: PrimitiveTypes.STRING,
+            annotationsValues: {
+              [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
+            },
           }),
           banana: new PrimitiveType({
             elemID: new ElemID({
@@ -310,14 +352,16 @@ describe('Test SalesforceAdapter CRUD', () => {
               name: 'string',
             }),
             primitive: PrimitiveTypes.STRING,
+            annotationsValues: {
+              [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
+            },
           }),
         },
         annotationsValues: {
           required: false,
           _default: 'test',
           label: 'test label',
-          // eslint-disable-next-line @typescript-eslint/camelcase
-          api_name: 'Test__c',
+          [constants.API_NAME]: 'Test__c',
         },
       }),
       new ObjectType({
@@ -329,6 +373,9 @@ describe('Test SalesforceAdapter CRUD', () => {
               name: 'string',
             }),
             primitive: PrimitiveTypes.STRING,
+            annotationsValues: {
+              [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
+            },
           }),
           banana: new PrimitiveType({
             elemID: new ElemID({
@@ -336,6 +383,9 @@ describe('Test SalesforceAdapter CRUD', () => {
               name: 'string',
             }),
             primitive: PrimitiveTypes.STRING,
+            annotationsValues: {
+              [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
+            },
           }),
           description: new PrimitiveType({
             elemID: new ElemID({
@@ -343,6 +393,9 @@ describe('Test SalesforceAdapter CRUD', () => {
               name: 'string',
             }),
             primitive: PrimitiveTypes.STRING,
+            annotationsValues: {
+              [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
+            },
           }),
           apple: new PrimitiveType({
             elemID: new ElemID({
@@ -350,6 +403,9 @@ describe('Test SalesforceAdapter CRUD', () => {
               name: 'double',
             }),
             primitive: PrimitiveTypes.NUMBER,
+            annotationsValues: {
+              [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
+            },
           }),
         },
         annotationsValues: {
@@ -373,7 +429,7 @@ describe('Test SalesforceAdapter CRUD', () => {
     expect(fields[0].required).toBe(false)
     expect(fields[1].fullName).toBe('Test__c.Apple__c')
     // Verify the field permissions update
-    const profileInfo = mockUpdate.mock.calls[0][1]
+    const profileInfo = mockUpdate.mock.calls[0][1][0]
     expect(profileInfo.fullName).toBe('Admin')
     expect(profileInfo.fieldPermissions.length).toBe(2)
     expect(profileInfo.fieldPermissions[0].field).toBe('Test__c.Description__c')
@@ -401,8 +457,7 @@ describe('Test SalesforceAdapter CRUD', () => {
             }),
             primitive: PrimitiveTypes.STRING,
             annotationsValues: {
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              api_name: 'Address__c',
+              [constants.API_NAME]: 'Address__c',
             },
           }),
           banana: new PrimitiveType({
@@ -412,8 +467,7 @@ describe('Test SalesforceAdapter CRUD', () => {
             }),
             primitive: PrimitiveTypes.STRING,
             annotationsValues: {
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              api_name: 'Banana__c',
+              [constants.API_NAME]: 'Banana__c',
             },
           }),
           description: new PrimitiveType({
@@ -423,8 +477,7 @@ describe('Test SalesforceAdapter CRUD', () => {
             }),
             primitive: PrimitiveTypes.STRING,
             annotationsValues: {
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              api_name: 'Description__c',
+              [constants.API_NAME]: 'Description__c',
             },
           }),
         },
@@ -432,8 +485,7 @@ describe('Test SalesforceAdapter CRUD', () => {
           required: false,
           _default: 'test',
           label: 'test label',
-          // eslint-disable-next-line @typescript-eslint/camelcase
-          api_name: 'Test__c',
+          [constants.API_NAME]: 'Test__c',
         },
       }),
       new ObjectType({
@@ -446,8 +498,7 @@ describe('Test SalesforceAdapter CRUD', () => {
             }),
             primitive: PrimitiveTypes.STRING,
             annotationsValues: {
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              api_name: 'Description__c',
+              [constants.API_NAME]: 'Description__c',
             },
           }),
         },
@@ -490,8 +541,8 @@ describe('Test SalesforceAdapter CRUD', () => {
             }),
             primitive: PrimitiveTypes.STRING,
             annotationsValues: {
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              api_name: 'Address__c',
+              [constants.API_NAME]: 'Address__c',
+              [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
             },
           }),
           banana: new PrimitiveType({
@@ -501,8 +552,8 @@ describe('Test SalesforceAdapter CRUD', () => {
             }),
             primitive: PrimitiveTypes.STRING,
             annotationsValues: {
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              api_name: 'Banana__c',
+              [constants.API_NAME]: 'Banana__c',
+              [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
             },
           }),
         },
@@ -510,8 +561,7 @@ describe('Test SalesforceAdapter CRUD', () => {
           required: false,
           _default: 'test',
           label: 'test label',
-          // eslint-disable-next-line @typescript-eslint/camelcase
-          api_name: 'Test__c',
+          [constants.API_NAME]: 'Test__c',
         },
       }),
       new ObjectType({
@@ -523,6 +573,9 @@ describe('Test SalesforceAdapter CRUD', () => {
               name: 'string',
             }),
             primitive: PrimitiveTypes.STRING,
+            annotationsValues: {
+              [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
+            },
           }),
           description: new PrimitiveType({
             elemID: new ElemID({
@@ -530,6 +583,9 @@ describe('Test SalesforceAdapter CRUD', () => {
               name: 'string',
             }),
             primitive: PrimitiveTypes.STRING,
+            annotationsValues: {
+              [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
+            },
           }),
         },
         annotationsValues: {
@@ -553,7 +609,7 @@ describe('Test SalesforceAdapter CRUD', () => {
     expect(field.length).toBe(80)
     expect(field.required).toBe(false)
     // Verify the field permissions update
-    const profileInfo = mockUpdate.mock.calls[0][1]
+    const profileInfo = mockUpdate.mock.calls[0][1][0]
     expect(profileInfo.fullName).toBe('Admin')
     expect(profileInfo.fieldPermissions.length).toBe(1)
     expect(profileInfo.fieldPermissions[0].field).toBe('Test__c.Description__c')

@@ -11,21 +11,11 @@ import { isArray } from 'util'
 import SalesforceClient from './client/client'
 import * as constants from './constants'
 import {
-  FieldPermissions,
-  ProfileInfo,
-  CompleteSaveResult,
-  SfError,
+  ProfileInfo, CompleteSaveResult, SfError,
 } from './client/types'
 import {
-  toCustomField,
-  toCustomObject,
-  toProfileInfo,
-  sfCase,
-  bpCase,
-  fieldFullName,
-  Types,
-  fromValueTypeField,
-  fromField,
+  toCustomField, toCustomObject, apiName, sfCase, bpCase, fieldFullName, Types,
+  fromValueTypeField, fromField, toProfiles, fromProfiles, FieldPermission as FieldPermissions,
 } from './transformer'
 
 // Diagnose client results
@@ -37,6 +27,9 @@ const diagnose = (result: SaveResult | SaveResult[]): void => {
     return error.message
   }
 
+  if (!result) {
+    return
+  }
   let errors: string[] = []
   if (isArray(result)) {
     errors = errors.concat(
@@ -72,8 +65,6 @@ const annotateApiNameAndLabel = (element: ObjectType): void => {
     innerAnnotate(field, fieldName)
   })
 }
-
-const apiName = (element: Type): string => element.annotationsValues[constants.API_NAME]
 
 export default class SalesforceAdapter {
   readonly client: SalesforceClient
@@ -115,10 +106,7 @@ export default class SalesforceAdapter {
     )
     diagnose(result)
 
-    const persmissionsResult = await this.updatePermissions(
-      apiName(post),
-      Object.values(post.fields).map(f => apiName(f))
-    )
+    const persmissionsResult = await this.updatePermissions(post, Object.values(post.fields))
     diagnose(persmissionsResult)
 
     return post
@@ -165,10 +153,7 @@ export default class SalesforceAdapter {
    * @returns true for success, false for failure
    */
   public async remove(element: ObjectType): Promise<void> {
-    const result = await this.client.delete(
-      constants.CUSTOM_OBJECT,
-      apiName(element)
-    )
+    const result = await this.client.delete(constants.CUSTOM_OBJECT, apiName(element))
     diagnose(result)
   }
 
@@ -194,22 +179,18 @@ export default class SalesforceAdapter {
     }
 
     // Retrieve the custom fields for deletion and delete them
-    await this.deleteCustomFields(
-      apiName(prevElement),
+    await this.deleteCustomFields(prevElement,
       Object.entries(prevElement.fields)
         .filter(field =>
           prevElement.getFieldsThatAreNotInOther(post).includes(field[0]))
-        .map(field => apiName(field[1]))
-    )
+        .map(field => field[1]))
 
     // Retrieve the custom fields for addition, create them and update the permissions
-    await this.createFields(
-      apiName(post),
+    await this.createFields(post,
       Object.entries(post.fields)
         .filter(field =>
           post.getFieldsThatAreNotInOther(prevElement).includes(field[0]))
-        .map(field => field[1])
-    )
+        .map(field => field[1]))
 
     // TODO: Update the rest of the attributes in the retrieved old objects
     return post
@@ -221,25 +202,17 @@ export default class SalesforceAdapter {
    * @param fieldsToAdd The fields to create
    * @returns successfully managed to create all fields with their permissions or not
    */
-  private async createFields(
-    relatedObjectApiName: string,
-    fieldsToAdd: Type[]
-  ): Promise<void> {
+  private async createFields(object: ObjectType, fieldsToAdd: Type[]): Promise<void> {
     if (fieldsToAdd.length === 0) return
 
     // Create the custom fields
-    const result = await this.client.create(
-      constants.CUSTOM_FIELD,
-      fieldsToAdd.map(f => toCustomField(f, true, relatedObjectApiName))
-    )
+    const result = await this.client.create(constants.CUSTOM_FIELD,
+      fieldsToAdd.map(f => toCustomField(f, true, object)))
     diagnose(result)
 
     // Create the permissions
     // Build the permissions in a Profile object for all the custom fields we will add
-    const permissionsResult = await this.updatePermissions(
-      relatedObjectApiName,
-      fieldsToAdd.map(apiName)
-    )
+    const permissionsResult = await this.updatePermissions(object, fieldsToAdd)
     diagnose(permissionsResult)
   }
 
@@ -249,18 +222,13 @@ export default class SalesforceAdapter {
    * @param fieldsApiNames The custom fields names
    * @returns the update result
    */
-  private async updatePermissions(
-    objectApiName: string,
-    fieldsApiNames: string[]
-  ): Promise<SaveResult | SaveResult[]> {
-    return this.client.update(
-      constants.METADATA_PROFILE_OBJECT,
-      toProfileInfo(
-        constants.PROFILE_NAME_SYSTEM_ADMINISTRATOR,
-        objectApiName,
-        fieldsApiNames
-      )
-    )
+  private async updatePermissions(element: ObjectType, fields: Type[]):
+  Promise<SaveResult | SaveResult[]> {
+    const profiles = toProfiles(element, fields)
+    if (profiles.length > 0) {
+      return this.client.update(constants.METADATA_PROFILE_OBJECT, profiles)
+    }
+    return undefined
   }
 
   /**
@@ -268,18 +236,13 @@ export default class SalesforceAdapter {
    * @param objectApiName the object api name those fields reside in
    * @param fieldsApiName the custom fields we wish to delete
    */
-  private async deleteCustomFields(
-    objectApiName: string,
-    fieldsApiName: string[]
-  ): Promise<void> {
-    if (fieldsApiName.length === 0) {
+  private async deleteCustomFields(element: ObjectType, fields: Type[]): Promise<void> {
+    if (fields.length === 0) {
       return
     }
 
-    const result = await this.client.delete(
-      constants.CUSTOM_FIELD,
-      fieldsApiName.map(field => fieldFullName(objectApiName, field))
-    )
+    const result = await this.client.delete(constants.CUSTOM_FIELD,
+      fields.map(field => fieldFullName(element, field)))
     diagnose(result)
   }
 
@@ -320,22 +283,12 @@ export default class SalesforceAdapter {
     // add field permissions to all discovered elements
     sobjects.forEach(sobject => {
       Object.values(sobject.fields).forEach(field => {
-        const fieldPermission = permissions.get(
-          `${sobject.annotationsValues[constants.API_NAME]}.${
-            field.annotationsValues[constants.API_NAME]
-          }`
-        )
+        const fieldPermission = permissions.get(fieldFullName(sobject, field))
         if (fieldPermission) {
-          // eslint-disable-next-line no-param-reassign
           field.annotationsValues[constants.FIELD_LEVEL_SECURITY] = {}
           fieldPermission.forEach((profilePermission, profile) => {
-            // eslint-disable-next-line no-param-reassign
             field.annotationsValues[constants.FIELD_LEVEL_SECURITY][
-              bpCase(profile)
-            ] = {
-              editable: profilePermission.editable,
-              readable: profilePermission.readable,
-            }
+              bpCase(profile)] = profilePermission
           })
         }
       })
@@ -362,8 +315,7 @@ export default class SalesforceAdapter {
    * return fullFieldName -> (profile -> permissions)
    */
   private async discoverPermissions(): Promise<
-    Map<string, Map<string, FieldPermissions>>
-    > {
+    Map<string, Map<string, FieldPermissions>>> {
     const profiles = await this.client.listMetadataObjects(
       constants.METADATA_PROFILE_OBJECT
     )
@@ -373,18 +325,6 @@ export default class SalesforceAdapter {
         prof.fullName
       ) as Promise<ProfileInfo>)
     )
-
-    const permissions = new Map<string, Map<string, FieldPermissions>>()
-    profilesInfo.forEach(info => {
-      info.fieldPermissions.forEach(fieldPermission => {
-        const name = fieldPermission.field
-        if (!permissions.has(name)) {
-          permissions.set(name, new Map<string, FieldPermissions>())
-        }
-        permissions.get(name).set(info.fullName, fieldPermission)
-      })
-    })
-
-    return permissions
+    return fromProfiles(profilesInfo)
   }
 }

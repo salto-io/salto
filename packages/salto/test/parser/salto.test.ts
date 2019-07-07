@@ -1,5 +1,5 @@
 import {
-  ObjectType, PrimitiveType, PrimitiveTypes, ElementsRegistry, Element, TypeID, isObjectType,
+  ObjectType, PrimitiveType, PrimitiveTypes, ElementsRegistry, Element, ElemID, isObjectType,
 } from 'adapter-api'
 import Parser from '../../src/parser/salto'
 
@@ -109,8 +109,8 @@ describe('Salto parser', () => {
           expect(model.fields).toHaveProperty('name')
         })
         it('should have the correct type', () => {
-          expect(model.fields.name.typeID.adapter).toBe('salesforce')
-          expect(model.fields.name.typeID.name).toBe('string')
+          expect(model.fields.name.elemID.adapter).toBe('salesforce')
+          expect(model.fields.name.elemID.name).toBe('string')
         })
         it('should have annotation values', () => {
           expect(model.annotationsValues).toHaveProperty('name')
@@ -180,22 +180,22 @@ describe('Salto parser', () => {
 
 describe('Salto Dump', () => {
   const strType = new PrimitiveType({
-    typeID: new TypeID({ adapter: 'salesforce', name: 'string' }),
+    elemID: new ElemID({ adapter: 'salesforce', name: 'string' }),
     primitive: PrimitiveTypes.STRING,
   })
 
   const numType = new PrimitiveType({
-    typeID: new TypeID({ adapter: 'salesforce', name: 'number' }),
+    elemID: new ElemID({ adapter: 'salesforce', name: 'number' }),
     primitive: PrimitiveTypes.NUMBER,
   })
 
   const boolType = new PrimitiveType({
-    typeID: new TypeID({ adapter: 'salesforce', name: 'bool' }),
+    elemID: new ElemID({ adapter: 'salesforce', name: 'bool' }),
     primitive: PrimitiveTypes.BOOLEAN,
   })
 
   const model = new ObjectType({
-    typeID: new TypeID({ adapter: 'salesforce', name: 'test' }),
+    elemID: new ElemID({ adapter: 'salesforce', name: 'test' }),
   })
   model.fields.name = strType
   model.fields.num = numType

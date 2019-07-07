@@ -2,7 +2,7 @@ import { EventEmitter } from 'events'
 import _ from 'lodash'
 import {
   PlanAction, PlanActionType,
-  ElementsRegistry, InstanceElement, TypeID, Element,
+  ElementsRegistry, InstanceElement, ElemID, Element,
 } from 'adapter-api'
 
 import SalesforceAdapter from 'salesforce-adapter'
@@ -26,8 +26,8 @@ export class SaltoCore extends EventEmitter {
       token: 'rwVvOsh7HjF8Zki9ZmyQdeth',
       sandbox: false,
     }
-    const typeID = new TypeID({ adapter: 'salesforce' })
-    const config = new InstanceElement(typeID, configType, value)
+    const elemID = new ElemID({ adapter: 'salesforce' })
+    const config = new InstanceElement(elemID, configType, value)
     this.adapters = {
       salesforce: new SalesforceAdapter(config),
     }
@@ -53,9 +53,9 @@ export class SaltoCore extends EventEmitter {
 
   // eslint-disable-next-line class-methods-use-this
   private getPlan(allElements: Element[]): PlanAction[] {
-    const nonBuiltInElements = allElements.filter(e => e.typeID.adapter)
+    const nonBuiltInElements = allElements.filter(e => e.elemID.adapter)
     return nonBuiltInElements.map(
-      element => PlanAction.createFromElements(undefined, element, element.typeID.getFullName()),
+      element => PlanAction.createFromElements(undefined, element, element.elemID.getFullName()),
     )
   }
 
@@ -63,9 +63,9 @@ export class SaltoCore extends EventEmitter {
     this.emit('progress', action)
     /* istanbul ignore next */
     const existingValue = action.newValue || action.oldValue || {}
-    const { typeID } = existingValue
-    const adapterName = typeID && typeID.adapter as string
-    const adapter = this.adapters[typeID.adapter]
+    const { elemID } = existingValue
+    const adapterName = elemID && elemID.adapter as string
+    const adapter = this.adapters[elemID.adapter]
     if (!adapter) {
       throw new Error(`Missing adapter for ${adapterName}`)
     }

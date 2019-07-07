@@ -1,20 +1,20 @@
 
 import * as fs from 'async-file'
 import path from 'path'
-import { TypeID, PrimitiveType, PrimitiveTypes } from 'adapter-api'
+import { ElemID, PrimitiveType, PrimitiveTypes } from 'adapter-api'
 import { SaltoCore } from '../../src/core/core'
 
 describe('Test core.ts', () => {
   const core = new SaltoCore()
   core.adapters.salesforce.add = jest.fn(async ap => {
-    if (ap.typeID.name === 'fail') {
+    if (ap.elemID.name === 'fail') {
       throw new Error('failed')
     }
     return true
   })
   core.adapters.salesforce.discover = jest.fn(() => [
     new PrimitiveType({
-      typeID: new TypeID({ adapter: 'salesforce', name: 'dummy' }),
+      elemID: new ElemID({ adapter: 'salesforce', name: 'dummy' }),
       primitive: PrimitiveTypes.STRING,
     }),
   ])
@@ -30,7 +30,7 @@ describe('Test core.ts', () => {
     },
     ]
     const elements = await core.getAllElements(blueprints)
-    const fullNames = elements.map(e => e.typeID.getFullName())
+    const fullNames = elements.map(e => e.elemID.getFullName())
     expect(fullNames).toEqual(
       expect.arrayContaining(['salesforce_test', 'salesforce_test2', 'string']),
     )

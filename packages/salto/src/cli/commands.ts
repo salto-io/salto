@@ -356,7 +356,7 @@ export default class Cli {
 
   private static createElementsMap(elements: Element[]): ElementMap {
     return elements.reduce((accumulator: ElementMap, element: Element) => {
-      accumulator[element.typeID.getFullName()] = element
+      accumulator[element.elemID.getFullName()] = element
       return accumulator
     }, {})
   }
@@ -392,7 +392,7 @@ export default class Cli {
       return Cli.notifyDescribeNearMatch(result)
     }
     const { element } = result
-    const elementName = element.typeID.getFullName()
+    const elementName = element.elemID.getFullName()
     const header = Cli.header(`=== ${elementName} ===`)
     const description = Cli.subHeader(Cli.formatElementDescription(element))
     const elementHCL = Cli.body(this.core.elementToHCL(element, recursionLevel))

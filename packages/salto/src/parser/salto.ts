@@ -1,7 +1,7 @@
 import * as _ from 'lodash'
 
 import {
-  ElementsRegistry, Type, TypeID, ObjectType, PrimitiveType, PrimitiveTypes,
+  ElementsRegistry, Type, ElemID, ObjectType, PrimitiveType, PrimitiveTypes,
   isObjectType, isPrimitiveType, Element,
 } from 'adapter-api'
 import HCLParser from './hcl'
@@ -50,11 +50,11 @@ const getPrimitiveTypeName = (primitiveType: PrimitiveTypes): string => {
 }
 
 export default class Parser {
-  private static getTypeID(fullname: string): TypeID {
-    const separatorIdx = fullname.indexOf(TypeID.NAMESPACE_SEPERATOR)
+  private static getElemID(fullname: string): ElemID {
+    const separatorIdx = fullname.indexOf(ElemID.NAMESPACE_SEPERATOR)
     const adapter = (separatorIdx >= 0) ? fullname.slice(0, separatorIdx) : undefined
-    const name = fullname.slice(separatorIdx + TypeID.NAMESPACE_SEPERATOR.length)
-    return new TypeID({ adapter, name })
+    const name = fullname.slice(separatorIdx + ElemID.NAMESPACE_SEPERATOR.length)
+    return new ElemID({ adapter, name })
   }
 
   private types: ElementsRegistry
@@ -66,7 +66,7 @@ export default class Parser {
 
   private parseType(typeBlock: HCLBlock): Type {
     const [typeName] = typeBlock.labels
-    const typeObj = this.types.getElement(Parser.getTypeID(typeName)) as ObjectType
+    const typeObj = this.types.getElement(Parser.getElemID(typeName)) as ObjectType
 
     Object.entries(typeBlock.attrs).forEach(([attrName, attrValue]) => {
       typeObj.annotationsValues[attrName] = attrValue
@@ -76,7 +76,7 @@ export default class Parser {
       if (block.labels.length === 1) {
         // Field block
         const fieldName = block.labels[0]
-        typeObj.fields[fieldName] = this.types.getElement(Parser.getTypeID(block.type))
+        typeObj.fields[fieldName] = this.types.getElement(Parser.getElemID(block.type))
         typeObj.annotationsValues[fieldName] = block.attrs
       } else {
         // This is something else, lets assume it is field overrides for now and we can extend
@@ -99,7 +99,7 @@ export default class Parser {
       return this.parseType(typeBlock)
     }
     const typeObj = this.types.getElement(
-      Parser.getTypeID(typeName), getPrimitiveType(baseType),
+      Parser.getElemID(typeName), getPrimitiveType(baseType),
     ) as PrimitiveType
     typeObj.annotationsValues = typeBlock.attrs
     return typeObj
@@ -150,11 +150,11 @@ export default class Parser {
         const annotationValues = _.cloneDeep(elem.annotationsValues)
         block = {
           type: Keywords.MODEL,
-          labels: [elem.typeID.getFullName()],
+          labels: [elem.elemID.getFullName()],
           attrs: annotationValues,
           blocks: Object.entries(elem.fields).map(([fieldName, fieldType]: [string, Type]) => {
             const fieldBlock: HCLBlock = {
-              type: fieldType.typeID.getFullName(),
+              type: fieldType.elemID.getFullName(),
               labels: [fieldName],
               attrs: elem.annotationsValues[fieldName] || {},
               blocks: [],
@@ -169,7 +169,7 @@ export default class Parser {
         block = {
           type: Keywords.TYPE_DEFINITION,
           labels: [
-            elem.typeID.getFullName(),
+            elem.elemID.getFullName(),
             Keywords.TYPE_INHERITENCE_SEPARATOR,
             getPrimitiveTypeName(elem.primitive),
           ],

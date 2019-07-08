@@ -123,7 +123,9 @@ export const getFieldAnnotations = (field: Field): Values => {
   const annotations: Values = {}
   annotations[LABEL] = field.label
   annotations[Type.REQUIRED] = field.nillable
-  annotations[Type.DEFAULT] = field.defaultValue
+  if (field.defaultValue !== null) {
+    annotations[Type.DEFAULT] = field.defaultValue
+  }
 
   if (field.picklistValues && field.picklistValues.length > 0) {
     annotations[PICKLIST_VALUES] = field.picklistValues.map(val => val.value)

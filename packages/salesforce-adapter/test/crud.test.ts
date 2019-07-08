@@ -219,17 +219,13 @@ describe('Test SalesforceAdapter CRUD', () => {
   })
 
   describe('Update operation tests', () => {
-    let mockCreate = jest.fn().mockImplementationOnce(() => ({ success: true }))
-    let mockDelete = jest.fn().mockImplementationOnce(() => ({ success: true }))
-    let mockUpdate = jest.fn().mockImplementationOnce(() => ({ success: true }))
+    let mockCreate: jest.Mock<unknown>
+    let mockDelete: jest.Mock<unknown>
+    let mockUpdate: jest.Mock<unknown>
     const mockReadResponseFileContents = fs.readFileSync('test/read_metadata_response_mock.json', 'utf8')
     const mockReadResponse = JSON.parse(mockReadResponseFileContents)
-    let mockRead = jest.fn().mockImplementationOnce(() => (mockReadResponse))
+    let mockRead: jest.Mock<unknown>
     beforeEach(() => {
-      mockCreate.mockClear()
-      mockDelete.mockClear()
-      mockUpdate.mockClear()
-      mockRead.mockClear()
       mockCreate = jest.fn().mockImplementationOnce(() => ({ success: true }))
       mockDelete = jest.fn().mockImplementationOnce(() => ({ success: true }))
       mockUpdate = jest.fn().mockImplementationOnce(() => ({ success: true }))
@@ -239,6 +235,7 @@ describe('Test SalesforceAdapter CRUD', () => {
       SalesforceClient.prototype.update = mockUpdate
       SalesforceClient.prototype.readMetadata = mockRead
     })
+
     it('should fail an update of a salesforce metadata component if the fullnames are not the same', async () => {
       expect(
         adapter().update(

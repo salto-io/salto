@@ -50,29 +50,29 @@ describe.skip('Test Salesforce adapter E2E', () => {
       expect(lead.fields.salutation.elemID.name).toBe('picklist')
 
       // Test label
-      expect(lead.fields.last_name.annotationsValues.label).toBe('Last Name')
+      expect(lead.annotationsValues.last_name.label).toBe('Last Name')
 
       // Test true and false required
-      expect(lead.fields.description.annotationsValues.required).toBe(true)
-      expect(lead.fields.created_date.annotationsValues.required).toBe(false)
+      expect(lead.annotationsValues.description.required).toBe(true)
+      expect(lead.annotationsValues.created_date.required).toBe(false)
 
       // Test picklist restricted_pick_list prop
-      expect(lead.fields.industry.annotationsValues.restricted_pick_list).toBe(
+      expect(lead.annotationsValues.industry.restricted_pick_list).toBe(
         false
       )
       expect(
-        lead.fields.clean_status.annotationsValues.restricted_pick_list
+        lead.annotationsValues.clean_status.restricted_pick_list
       ).toBe(true)
 
       // Test picklist values
       expect(
-        (lead.fields.salutation.annotationsValues.values as string[]).join(';')
+        (lead.annotationsValues.salutation.values as string[]).join(';')
       ).toBe('Mr.;Ms.;Mrs.;Dr.;Prof.')
 
       // Test _default
       // TODO: add test to primitive with _default and combobox _default (no real example for lead)
       // eslint-disable-next-line no-underscore-dangle
-      expect(lead.fields.status.annotationsValues._default).toBe(
+      expect(lead.annotationsValues.status._default).toBe(
         'Open - Not Contacted'
       )
     })
@@ -104,12 +104,14 @@ describe.skip('Test Salesforce adapter E2E', () => {
               name: 'string',
             }),
             primitive: PrimitiveTypes.STRING,
-            annotationsValues: {
-              required: false,
-              _default: 'test',
-              label: 'description label',
-            },
           }),
+        },
+        annotationsValues: {
+          description: {
+            required: false,
+            _default: 'test',
+            label: 'description label',
+          },
         },
       })
       const post = await sfAdapter.add(element)
@@ -118,7 +120,7 @@ describe.skip('Test Salesforce adapter E2E', () => {
       expect(post).toBeInstanceOf(Type)
       expect(post.annotationsValues[constants.API_NAME]).toBe('Test__c')
       expect(
-        post.fields.description.annotationsValues[constants.API_NAME]
+        post.annotationsValues.description[constants.API_NAME]
       ).toBe('Description__c')
       const readResult = await sfAdapter.client.readMetadata(
         constants.CUSTOM_OBJECT,
@@ -145,12 +147,14 @@ describe.skip('Test Salesforce adapter E2E', () => {
               name: 'string',
             }),
             primitive: PrimitiveTypes.STRING,
-            annotationsValues: {
-              label: 'test label',
-              required: false,
-              _default: 'test',
-            },
           }),
+        },
+        annotationsValues: {
+          description: {
+            label: 'test label',
+            required: false,
+            _default: 'test',
+          },
         },
       })
 
@@ -182,9 +186,6 @@ describe.skip('Test Salesforce adapter E2E', () => {
               name: 'string',
             }),
             primitive: PrimitiveTypes.STRING,
-            annotationsValues: {
-              [constants.API_NAME]: 'Address__c',
-            },
           }),
           banana: new PrimitiveType({
             elemID: new ElemID({
@@ -192,9 +193,6 @@ describe.skip('Test Salesforce adapter E2E', () => {
               name: 'string',
             }),
             primitive: PrimitiveTypes.STRING,
-            annotationsValues: {
-              [constants.API_NAME]: 'Banana__c',
-            },
           }),
         },
         annotationsValues: {
@@ -202,6 +200,12 @@ describe.skip('Test Salesforce adapter E2E', () => {
           _default: 'test',
           label: 'test label',
           [constants.API_NAME]: 'TestModifyFields__c',
+          address: {
+            [constants.API_NAME]: 'Address__c',
+          },
+          banana: {
+            [constants.API_NAME]: 'Banana__c',
+          },
         },
       })
 
@@ -278,10 +282,6 @@ describe.skip('Test Salesforce adapter E2E', () => {
               name: 'string',
             }),
             primitive: PrimitiveTypes.STRING,
-            annotationsValues: {
-              [constants.API_NAME]: 'Address__c',
-              label: 'Address',
-            },
           }),
           banana: new PrimitiveType({
             elemID: new ElemID({
@@ -289,10 +289,6 @@ describe.skip('Test Salesforce adapter E2E', () => {
               name: 'string',
             }),
             primitive: PrimitiveTypes.STRING,
-            annotationsValues: {
-              [constants.API_NAME]: 'Banana__c',
-              label: 'Banana',
-            },
           }),
         },
         annotationsValues: {
@@ -300,6 +296,14 @@ describe.skip('Test Salesforce adapter E2E', () => {
           _default: 'test',
           label: 'test label',
           [constants.API_NAME]: 'TestModifyAnnotations__c',
+          address: {
+            [constants.API_NAME]: 'Address__c',
+            label: 'Address',
+          },
+          banana: {
+            [constants.API_NAME]: 'Banana__c',
+            label: 'Banana',
+          },
         },
       })
 
@@ -324,10 +328,6 @@ describe.skip('Test Salesforce adapter E2E', () => {
               name: 'string',
             }),
             primitive: PrimitiveTypes.STRING,
-            annotationsValues: {
-              [constants.API_NAME]: 'Address__c',
-              label: 'Address',
-            },
           }),
           banana: new PrimitiveType({
             elemID: new ElemID({
@@ -335,16 +335,20 @@ describe.skip('Test Salesforce adapter E2E', () => {
               name: 'string',
             }),
             primitive: PrimitiveTypes.STRING,
-            annotationsValues: {
-              [constants.API_NAME]: 'Banana__c',
-              label: 'Banana',
-            },
           }),
         },
         annotationsValues: {
           required: false,
           _default: 'test2',
           label: 'test label 2',
+          address: {
+            [constants.API_NAME]: 'Address__c',
+            label: 'Address',
+          },
+          banana: {
+            [constants.API_NAME]: 'Banana__c',
+            label: 'Banana',
+          },
         },
       })
 

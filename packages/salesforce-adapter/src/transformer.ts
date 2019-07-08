@@ -1,7 +1,7 @@
 import { snakeCase, camelCase } from 'lodash'
 import { ValueTypeField, Field } from 'jsforce'
 import {
-  Type, ObjectType, ElementsRegistry, ElemID, PrimitiveTypes,
+  Type, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values,
 } from 'adapter-api'
 import { CustomObject, CustomField, ProfileInfo } from './client/types'
 import {
@@ -17,69 +17,69 @@ export const sfCase = (name: string, custom: boolean = false): string =>
 export const bpCase = (name: string): string =>
   (name.endsWith('__c') ? snakeCase(name).slice(0, -3) : snakeCase(name))
 
-export const apiName = (element: Type): string => element.annotationsValues[API_NAME]
+export const apiName = (element: Type, fieldName?: string): string => {
+  if (fieldName === undefined) {
+    return element.annotationsValues[API_NAME]
+  }
+  return element.getAnnotationValue(fieldName, API_NAME)
+}
 
 export class Types {
-  // type registery used in discover
-  static readonly types = new ElementsRegistry()
-
   static get(name: string): Type {
     const typeName = bpCase(name)
     switch (typeName) {
       case 'string': {
-        return this.types
-          .getElement(new ElemID({ adapter: '', name }), PrimitiveTypes.STRING)
-          .clone()
+        return new PrimitiveType({
+          elemID: new ElemID({ adapter: '', name }),
+          primitive: PrimitiveTypes.STRING,
+        })
       }
       case 'double': {
-        return this.types
-          .getElement(
-            new ElemID({ adapter: '', name: 'number' }),
-            PrimitiveTypes.NUMBER
-          )
-          .clone()
+        return new PrimitiveType({
+          elemID: new ElemID({ adapter: '', name: 'number' }),
+          primitive: PrimitiveTypes.NUMBER,
+        })
       }
       case 'boolean': {
-        return this.types
-          .getElement(
-            // TODO: take checkbox from constans
-            new ElemID({ adapter: SALESFORCE, name: 'checkbox' })
-          )
-          .clone()
+        return new PrimitiveType({
+          elemID: new ElemID({ adapter: '', name: 'checkbox' }),
+          primitive: PrimitiveTypes.BOOLEAN,
+        })
       }
       default: {
-        return this.types
-          .getElement(new ElemID({ adapter: SALESFORCE, name }))
-          .clone()
+        return new ObjectType({
+          elemID: new ElemID({ adapter: SALESFORCE, name }),
+        })
       }
     }
   }
 }
 
-export const fieldFullName = (object: ObjectType, field: Type): string =>
-  `${apiName(object)}.${apiName(field)}`
+export const fieldFullName = (object: ObjectType, fieldName: string): string =>
+  `${apiName(object)}.${apiName(object, fieldName)}`
 
-export const toCustomField = (field: Type, fullname: boolean = false, object?: ObjectType):
- CustomField =>
+export const toCustomField = (
+  object: ObjectType, name: string, fullname: boolean = false
+): CustomField =>
   new CustomField(
-    fullname ? fieldFullName(object, field) : apiName(field),
-    field.elemID.name,
-    field.annotationsValues[LABEL],
-    field.annotationsValues[Type.REQUIRED],
-    field.annotationsValues[PICKLIST_VALUES]
+    fullname ? fieldFullName(object, name) : apiName(object, name),
+    object.fields[name].elemID.name,
+    object.getAnnotationValue(name, LABEL),
+    object.getAnnotationValue(name, Type.REQUIRED),
+    object.getAnnotationValue(name, PICKLIST_VALUES),
   )
 
 export const toCustomObject = (element: ObjectType): CustomObject =>
   new CustomObject(
     apiName(element),
     element.annotationsValues[LABEL],
-    Object.values(element.fields).map(f => toCustomField(f))
+    Object.keys(element.fields).map(name => toCustomField(element, name))
   )
 
-export const toProfiles = (object: ObjectType, fields: Type[]): ProfileInfo[] => {
+export const toProfiles = (object: ObjectType, fields: string[]): ProfileInfo[] => {
   const profiles = new Map<string, ProfileInfo>()
   fields.forEach(field => {
-    const fieldPermissions = field.annotationsValues[FIELD_LEVEL_SECURITY]
+    const fieldPermissions = object.getAnnotationValue(field, FIELD_LEVEL_SECURITY)
     if (!fieldPermissions) {
       return
     }
@@ -99,30 +99,28 @@ export const toProfiles = (object: ObjectType, fields: Type[]): ProfileInfo[] =>
   return Array.from(profiles.values())
 }
 
-export const fromValueTypeField = (field: ValueTypeField): Type => {
-  const element = Types.get(field.soapType) as ObjectType
-  element.annotationsValues.required = field.valueRequired
+export const getValueTypeFieldAnnotations = (field: ValueTypeField): Values => {
+  const annotations: Values = {}
+  annotations.required = field.valueRequired
 
   if (field.picklistValues && field.picklistValues.length > 0) {
-    element.annotationsValues.values = field.picklistValues.map(
+    annotations.values = field.picklistValues.map(
       val => val.value
     )
     const defaults = field.picklistValues
       .filter(val => val.defaultValue === true)
       .map(val => val.value)
     if (defaults.length === 1) {
-      element.annotationsValues[Type.DEFAULT] = defaults.pop()
+      annotations[Type.DEFAULT] = defaults.pop()
     } else {
-      element.annotationsValues[Type.DEFAULT] = defaults
+      annotations[Type.DEFAULT] = defaults
     }
   }
-
-  return element
+  return annotations
 }
 
-export const fromField = (field: Field): Type => {
-  const element: Type = Types.get(field.type)
-  const annotations = element.annotationsValues
+export const getFieldAnnotations = (field: Field): Values => {
+  const annotations: Values = {}
   annotations[LABEL] = field.label
   annotations[Type.REQUIRED] = field.nillable
   annotations[Type.DEFAULT] = field.defaultValue
@@ -146,7 +144,7 @@ export const fromField = (field: Field): Type => {
     }
   }
 
-  return element
+  return annotations
 }
 
 export interface FieldPermission {editable: boolean; readable: boolean}

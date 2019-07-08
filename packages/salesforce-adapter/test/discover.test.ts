@@ -101,15 +101,15 @@ describe('Test SalesforceAdapter discover', () => {
     const lead = result.pop() as ObjectType
 
     expect(lead.fields.last_name.elemID.name).toBe('string')
-    expect(lead.fields.last_name.annotationsValues.label).toBe('Last Name')
+    expect(lead.annotationsValues.last_name.label).toBe('Last Name')
     // Test Rquired true and false
-    expect(lead.fields.last_name.annotationsValues.required).toBe(false)
-    expect(lead.fields.first_name.annotationsValues.required).toBe(true)
+    expect(lead.annotationsValues.last_name.required).toBe(false)
+    expect(lead.annotationsValues.first_name.required).toBe(true)
     // Default string and boolean
     // eslint-disable-next-line no-underscore-dangle
-    expect(lead.fields.last_name.annotationsValues._default).toBe('BLABLA')
+    expect(lead.annotationsValues.last_name._default).toBe('BLABLA')
     // eslint-disable-next-line no-underscore-dangle
-    expect(lead.fields.is_deleted.annotationsValues._default).toBe(false)
+    expect(lead.annotationsValues.is_deleted._default).toBe(false)
   })
 
   it('should discover sobject with picklist field', async () => {
@@ -134,12 +134,12 @@ describe('Test SalesforceAdapter discover', () => {
 
     expect(lead.fields.primary_c.elemID.name).toBe('picklist')
     expect(
-      (lead.fields.primary_c.annotationsValues.values as string[]).join(';')
+      (lead.annotationsValues.primary_c.values as string[]).join(';')
     ).toBe('No;Yes')
     // eslint-disable-next-line no-underscore-dangle
-    expect(lead.fields.primary_c.annotationsValues._default).toBe('Yes')
+    expect(lead.annotationsValues.primary_c._default).toBe('Yes')
     expect(
-      lead.fields.primary_c.annotationsValues[constants.RESTRICTED_PICKLIST]
+      lead.annotationsValues.primary_c[constants.RESTRICTED_PICKLIST]
     ).toBe(true)
   })
 
@@ -164,12 +164,12 @@ describe('Test SalesforceAdapter discover', () => {
 
     expect(lead.fields.primary_c.elemID.name).toBe('combobox')
     expect(
-      (lead.fields.primary_c.annotationsValues.values as string[]).join(';')
+      (lead.annotationsValues.primary_c.values as string[]).join(';')
     ).toBe('No;Yes')
     // eslint-disable-next-line no-underscore-dangle
-    expect(lead.fields.primary_c.annotationsValues._default.length).toBe(1)
+    expect(lead.annotationsValues.primary_c._default.length).toBe(1)
     // eslint-disable-next-line no-underscore-dangle
-    expect(lead.fields.primary_c.annotationsValues._default.pop()).toBe('Yes')
+    expect(lead.annotationsValues.primary_c._default.pop()).toBe('Yes')
   })
 
   it('should discover sobject with double field', async () => {
@@ -215,11 +215,11 @@ describe('Test SalesforceAdapter discover', () => {
     expect(result.length).toBe(1)
     const org = result.pop() as ObjectType
     expect(
-      org.fields.status.annotationsValues[constants.FIELD_LEVEL_SECURITY].admin
+      org.annotationsValues.status[constants.FIELD_LEVEL_SECURITY].admin
         .readable
     ).toBe(true)
     expect(
-      org.fields.status.annotationsValues.field_level_security.admin.editable
+      org.annotationsValues.status.field_level_security.admin.editable
     ).toBe(false)
   })
 
@@ -250,9 +250,9 @@ describe('Test SalesforceAdapter discover', () => {
     expect(flow.fields.description.elemID.name).toBe('string')
     // TODO: validate what is expected from this metadata type
     expect(flow.annotationsValues[constants.API_NAME]).toBe('Flow')
-    expect(flow.fields.description.annotationsValues[Type.REQUIRED]).toBe(true)
+    expect(flow.annotationsValues.description[Type.REQUIRED]).toBe(true)
     expect(flow.fields.is_template.elemID.name).toBe('checkbox')
-    expect(flow.fields.is_template.annotationsValues[Type.REQUIRED]).toBe(false)
+    expect(flow.annotationsValues.is_template[Type.REQUIRED]).toBe(false)
     expect(flow.fields.action_calls.elemID.getFullName()).toBe(
       'salesforce_FlowActionCall'
     )
@@ -284,20 +284,20 @@ describe('Test SalesforceAdapter discover', () => {
     const flow = result.pop() as ObjectType
     // Validate picklist
     expect(flow.fields.status.elemID.name).toBe('Picklist')
-    expect(flow.fields.status.annotationsValues.required).toBe(false)
-    expect(flow.fields.status.annotationsValues.values.length).toBe(1)
-    expect(flow.fields.status.annotationsValues.values[0]).toBe('BLA')
+    expect(flow.annotationsValues.status.required).toBe(false)
+    expect(flow.annotationsValues.status.values.length).toBe(1)
+    expect(flow.annotationsValues.status.values[0]).toBe('BLA')
     // eslint-disable-next-line no-underscore-dangle
-    expect(flow.fields.status.annotationsValues._default).toBe('BLA')
+    expect(flow.annotationsValues.status._default).toBe('BLA')
 
     // Validate combobox
     expect(flow.fields.status_combo.elemID.name).toBe('Combobox')
-    expect(flow.fields.status_combo.annotationsValues.required).toBe(true)
-    expect(flow.fields.status_combo.annotationsValues.values.length).toBe(2)
-    expect(flow.fields.status_combo.annotationsValues.values[0]).toBe('BLA')
-    expect(flow.fields.status_combo.annotationsValues.values[1]).toBe('BLA2')
+    expect(flow.annotationsValues.status_combo.required).toBe(true)
+    expect(flow.annotationsValues.status_combo.values.length).toBe(2)
+    expect(flow.annotationsValues.status_combo.values[0]).toBe('BLA')
+    expect(flow.annotationsValues.status_combo.values[1]).toBe('BLA2')
     // eslint-disable-next-line no-underscore-dangle
-    expect(flow.fields.status_combo.annotationsValues._default[1]).toBe('BLA2')
+    expect(flow.annotationsValues.status_combo._default[1]).toBe('BLA2')
   })
 
   it('should discover empty metadata object', async () => {

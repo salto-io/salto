@@ -42,12 +42,14 @@ describe('Test SalesforceAdapter CRUD', () => {
               name: 'string',
             }),
             primitive: PrimitiveTypes.STRING,
-            annotationsValues: {
-              required: false,
-              _default: 'test',
-              label: 'test label',
-            },
           }),
+        },
+        annotationsValues: {
+          description: {
+            required: false,
+            _default: 'test',
+            label: 'test label',
+          },
         },
       })
     )
@@ -55,7 +57,7 @@ describe('Test SalesforceAdapter CRUD', () => {
     // Verify object creation
     expect(result.annotationsValues[constants.API_NAME]).toBe('Test__c')
     expect(
-      result.fields.description.annotationsValues[constants.API_NAME]
+      result.annotationsValues.description[constants.API_NAME]
     ).toBe('Description__c')
 
     expect(mockCreate.mock.calls.length).toBe(1)
@@ -84,13 +86,15 @@ describe('Test SalesforceAdapter CRUD', () => {
               name: 'string',
             }),
             primitive: PrimitiveTypes.STRING,
-            annotationsValues: {
-              [constants.FIELD_LEVEL_SECURITY]: {
-                admin: { editable: true, readable: true },
-                standard: { editable: false, readable: false },
-              },
-            },
           }),
+        },
+        annotationsValues: {
+          description: {
+            [constants.FIELD_LEVEL_SECURITY]: {
+              admin: { editable: true, readable: true },
+              standard: { editable: false, readable: false },
+            },
+          },
         },
       })
     )
@@ -158,10 +162,12 @@ describe('Test SalesforceAdapter CRUD', () => {
                 name: 'string',
               }),
               primitive: PrimitiveTypes.STRING,
-              annotationsValues: {
-                [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
-              },
             }),
+          },
+          annotationsValues: {
+            description: {
+              [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
+            },
           },
         })
       )
@@ -311,14 +317,14 @@ describe('Test SalesforceAdapter CRUD', () => {
                 name: 'string',
               }),
               primitive: PrimitiveTypes.STRING,
-              annotationsValues: {
-                label: 'test2 label',
-                [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
-              },
             }),
           },
           annotationsValues: {
             label: 'test2 label',
+            address: {
+              label: 'test2 label',
+              [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
+            },
           },
         })
       )
@@ -342,9 +348,6 @@ describe('Test SalesforceAdapter CRUD', () => {
                 name: 'string',
               }),
               primitive: PrimitiveTypes.STRING,
-              annotationsValues: {
-                [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
-              },
             }),
             banana: new PrimitiveType({
               elemID: new ElemID({
@@ -352,9 +355,6 @@ describe('Test SalesforceAdapter CRUD', () => {
                 name: 'string',
               }),
               primitive: PrimitiveTypes.STRING,
-              annotationsValues: {
-                [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
-              },
             }),
           },
           annotationsValues: {
@@ -362,6 +362,12 @@ describe('Test SalesforceAdapter CRUD', () => {
             _default: 'test',
             label: 'test label',
             [constants.API_NAME]: 'Test__c',
+            address: {
+              [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
+            },
+            banana: {
+              [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
+            },
           },
         }),
         new ObjectType({
@@ -373,9 +379,6 @@ describe('Test SalesforceAdapter CRUD', () => {
                 name: 'string',
               }),
               primitive: PrimitiveTypes.STRING,
-              annotationsValues: {
-                [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
-              },
             }),
             banana: new PrimitiveType({
               elemID: new ElemID({
@@ -383,9 +386,6 @@ describe('Test SalesforceAdapter CRUD', () => {
                 name: 'string',
               }),
               primitive: PrimitiveTypes.STRING,
-              annotationsValues: {
-                [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
-              },
             }),
             description: new PrimitiveType({
               elemID: new ElemID({
@@ -393,9 +393,6 @@ describe('Test SalesforceAdapter CRUD', () => {
                 name: 'string',
               }),
               primitive: PrimitiveTypes.STRING,
-              annotationsValues: {
-                [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
-              },
             }),
             apple: new PrimitiveType({
               elemID: new ElemID({
@@ -403,15 +400,24 @@ describe('Test SalesforceAdapter CRUD', () => {
                 name: 'double',
               }),
               primitive: PrimitiveTypes.NUMBER,
-              annotationsValues: {
-                [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
-              },
             }),
           },
           annotationsValues: {
             required: false,
             _default: 'test2',
             label: 'test2 label',
+            address: {
+              [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
+            },
+            banana: {
+              [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
+            },
+            description: {
+              [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
+            },
+            apple: {
+              [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
+            },
           },
         })
       )
@@ -451,9 +457,6 @@ describe('Test SalesforceAdapter CRUD', () => {
                 name: 'string',
               }),
               primitive: PrimitiveTypes.STRING,
-              annotationsValues: {
-                [constants.API_NAME]: 'Address__c',
-              },
             }),
             banana: new PrimitiveType({
               elemID: new ElemID({
@@ -461,9 +464,6 @@ describe('Test SalesforceAdapter CRUD', () => {
                 name: 'string',
               }),
               primitive: PrimitiveTypes.STRING,
-              annotationsValues: {
-                [constants.API_NAME]: 'Banana__c',
-              },
             }),
             description: new PrimitiveType({
               elemID: new ElemID({
@@ -471,9 +471,6 @@ describe('Test SalesforceAdapter CRUD', () => {
                 name: 'string',
               }),
               primitive: PrimitiveTypes.STRING,
-              annotationsValues: {
-                [constants.API_NAME]: 'Description__c',
-              },
             }),
           },
           annotationsValues: {
@@ -481,6 +478,15 @@ describe('Test SalesforceAdapter CRUD', () => {
             _default: 'test',
             label: 'test label',
             [constants.API_NAME]: 'Test__c',
+            address: {
+              [constants.API_NAME]: 'Address__c',
+            },
+            banana: {
+              [constants.API_NAME]: 'Banana__c',
+            },
+            description: {
+              [constants.API_NAME]: 'Description__c',
+            },
           },
         }),
         new ObjectType({
@@ -492,15 +498,15 @@ describe('Test SalesforceAdapter CRUD', () => {
                 name: 'string',
               }),
               primitive: PrimitiveTypes.STRING,
-              annotationsValues: {
-                [constants.API_NAME]: 'Description__c',
-              },
             }),
           },
           annotationsValues: {
             required: false,
             _default: 'test2',
             label: 'test2 label',
+            description: {
+              [constants.API_NAME]: 'Description__c',
+            },
           },
         })
       )
@@ -527,10 +533,6 @@ describe('Test SalesforceAdapter CRUD', () => {
                 name: 'string',
               }),
               primitive: PrimitiveTypes.STRING,
-              annotationsValues: {
-                [constants.API_NAME]: 'Address__c',
-                [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
-              },
             }),
             banana: new PrimitiveType({
               elemID: new ElemID({
@@ -538,10 +540,6 @@ describe('Test SalesforceAdapter CRUD', () => {
                 name: 'string',
               }),
               primitive: PrimitiveTypes.STRING,
-              annotationsValues: {
-                [constants.API_NAME]: 'Banana__c',
-                [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
-              },
             }),
           },
           annotationsValues: {
@@ -549,6 +547,14 @@ describe('Test SalesforceAdapter CRUD', () => {
             _default: 'test',
             label: 'test label',
             [constants.API_NAME]: 'Test__c',
+            address: {
+              [constants.API_NAME]: 'Address__c',
+              [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
+            },
+            banana: {
+              [constants.API_NAME]: 'Banana__c',
+              [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
+            },
           },
         }),
         new ObjectType({
@@ -560,9 +566,6 @@ describe('Test SalesforceAdapter CRUD', () => {
                 name: 'string',
               }),
               primitive: PrimitiveTypes.STRING,
-              annotationsValues: {
-                [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
-              },
             }),
             description: new PrimitiveType({
               elemID: new ElemID({
@@ -570,15 +573,18 @@ describe('Test SalesforceAdapter CRUD', () => {
                 name: 'string',
               }),
               primitive: PrimitiveTypes.STRING,
-              annotationsValues: {
-                [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
-              },
             }),
           },
           annotationsValues: {
             required: false,
             _default: 'test2',
             label: 'test2 label',
+            banana: {
+              [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
+            },
+            description: {
+              [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
+            },
           },
         })
       )

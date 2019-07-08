@@ -88,6 +88,35 @@ describe('Test elements.ts', () => {
     expect(ot1.getFieldsThatAreNotInOther(ot2).join('')).toBe('str_field')
   })
 
+  it('should get intersection of fields', () => {
+    const ptStr = new PrimitiveType({
+      elemID: new ElemID({ adapter: 'test', name: 'prim' }),
+      primitive: PrimitiveTypes.STRING,
+    })
+    const ptNum = new PrimitiveType({
+      elemID: new ElemID({ adapter: 'test', name: 'prim' }),
+      primitive: PrimitiveTypes.NUMBER,
+    })
+    const ot1 = new ObjectType({
+      elemID: new ElemID({ adapter: 'test', name: 'obj' }),
+      fields: {
+        /* eslint-disable-next-line @typescript-eslint/camelcase */
+        num_field: ptNum,
+        /* eslint-disable-next-line @typescript-eslint/camelcase */
+        str_field: ptStr,
+      },
+    })
+    const ot2 = new ObjectType({
+      elemID: new ElemID({ adapter: 'test', name: 'obj' }),
+      fields: {
+        /* eslint-disable-next-line @typescript-eslint/camelcase */
+        num_field: ptNum,
+      },
+    })
+
+    expect(ot1.getMutualFieldsWithOther(ot2).join('')).toBe('num_field')
+  })
+
   it('should allow basic list type creations withh all params passed to the constructor', () => {
     const ptStr = new PrimitiveType({
       elemID: new ElemID({ adapter: 'test', name: 'prim' }),

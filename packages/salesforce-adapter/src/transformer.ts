@@ -1,4 +1,4 @@
-import { snakeCase, startCase, camelCase } from 'lodash'
+import { snakeCase, camelCase } from 'lodash'
 import { ValueTypeField, Field } from 'jsforce'
 import {
   Type, ObjectType, ElementsRegistry, ElemID, PrimitiveTypes,
@@ -8,8 +8,12 @@ import {
   API_NAME, LABEL, PICKLIST_VALUES, SALESFORCE, RESTRICTED_PICKLIST, FIELD_LEVEL_SECURITY,
 } from './constants'
 
+const capitalize = (s: string): string => {
+  if (typeof s !== 'string') return ''
+  return s.charAt(0).toUpperCase() + s.slice(1)
+}
 export const sfCase = (name: string, custom: boolean = false): string =>
-  startCase(camelCase(name)) + (custom === true ? '__c' : '')
+  capitalize(camelCase(name)) + (custom === true ? '__c' : '')
 export const bpCase = (name: string): string =>
   (name.endsWith('__c') ? snakeCase(name).slice(0, -3) : snakeCase(name))
 

@@ -174,7 +174,7 @@ describe.skip('Test Salesforce adapter E2E', () => {
       const sfAdapter = adapter()
 
       const oldElement = new ObjectType({
-        elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
+        elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test modify fields' }),
         fields: {
           address: new PrimitiveType({
             elemID: new ElemID({
@@ -201,7 +201,7 @@ describe.skip('Test Salesforce adapter E2E', () => {
           required: false,
           _default: 'test',
           label: 'test label',
-          [constants.API_NAME]: 'Test__c',
+          [constants.API_NAME]: 'TestModifyFields__c',
         },
       })
 
@@ -211,9 +211,9 @@ describe.skip('Test Salesforce adapter E2E', () => {
 
       const oldElementReadResult = (await sfAdapter.client.readMetadata(
         constants.CUSTOM_OBJECT,
-        'Test__c'
+        'TestModifyFields__c'
       )) as CustomObject
-      expect(oldElementReadResult.fullName).toBe('Test__c')
+      expect(oldElementReadResult.fullName).toBe('TestModifyFields__c')
       expect(oldElementReadResult.fields.map(f => f.fullName)).toContain(
         'Address__c'
       )
@@ -222,7 +222,7 @@ describe.skip('Test Salesforce adapter E2E', () => {
       )
 
       const newElement = new ObjectType({
-        elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
+        elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test modify fields' }),
         fields: {
           banana: new PrimitiveType({
             elemID: new ElemID({
@@ -252,12 +252,112 @@ describe.skip('Test Salesforce adapter E2E', () => {
 
       const readResult = (await sfAdapter.client.readMetadata(
         constants.CUSTOM_OBJECT,
-        'Test__c'
+        'TestModifyFields__c'
       )) as CustomObject
-      expect(readResult.fullName).toBe('Test__c')
+      expect(readResult.fullName).toBe('TestModifyFields__c')
       expect(readResult.fields.map(f => f.fullName)).toContain('Banana__c')
       expect(readResult.fields.map(f => f.fullName)).toContain('Description__c')
       expect(readResult.fields.map(f => f.fullName)).not.toContain('Address__c')
+
+      // Clean-up
+      await sfAdapter.remove(oldElement)
+    })
+
+    it("should modify an object's annotations E2E", async () => {
+      // Setup
+      // set long timeout as we communicate with salesforce API
+      jest.setTimeout(15000)
+      const sfAdapter = adapter()
+
+      const oldElement = new ObjectType({
+        elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test modify annotations' }),
+        fields: {
+          address: new PrimitiveType({
+            elemID: new ElemID({
+              adapter: constants.SALESFORCE,
+              name: 'string',
+            }),
+            primitive: PrimitiveTypes.STRING,
+            annotationsValues: {
+              [constants.API_NAME]: 'Address__c',
+              label: 'Address',
+            },
+          }),
+          banana: new PrimitiveType({
+            elemID: new ElemID({
+              adapter: constants.SALESFORCE,
+              name: 'string',
+            }),
+            primitive: PrimitiveTypes.STRING,
+            annotationsValues: {
+              [constants.API_NAME]: 'Banana__c',
+              label: 'Banana',
+            },
+          }),
+        },
+        annotationsValues: {
+          required: false,
+          _default: 'test',
+          label: 'test label',
+          [constants.API_NAME]: 'TestModifyAnnotations__c',
+        },
+      })
+
+      const addResult = await sfAdapter.add(oldElement)
+      // Verify setup was performed properly
+      expect(addResult).toBeInstanceOf(ObjectType)
+
+      const oldElementReadResult = (await sfAdapter.client.readMetadata(
+        constants.CUSTOM_OBJECT,
+        'TestModifyAnnotations__c'
+      )) as CustomObject
+
+      expect(oldElementReadResult.fullName).toBe('TestModifyAnnotations__c')
+      expect(oldElementReadResult.label).toBe('test label')
+
+      const newElement = new ObjectType({
+        elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test modify annotations' }),
+        fields: {
+          address: new PrimitiveType({
+            elemID: new ElemID({
+              adapter: constants.SALESFORCE,
+              name: 'string',
+            }),
+            primitive: PrimitiveTypes.STRING,
+            annotationsValues: {
+              [constants.API_NAME]: 'Address__c',
+              label: 'Address',
+            },
+          }),
+          banana: new PrimitiveType({
+            elemID: new ElemID({
+              adapter: constants.SALESFORCE,
+              name: 'string',
+            }),
+            primitive: PrimitiveTypes.STRING,
+            annotationsValues: {
+              [constants.API_NAME]: 'Banana__c',
+              label: 'Banana',
+            },
+          }),
+        },
+        annotationsValues: {
+          required: false,
+          _default: 'test2',
+          label: 'test label 2',
+        },
+      })
+
+      // Test
+      const modificationResult = await sfAdapter.update(oldElement, newElement)
+      expect(modificationResult).toBeInstanceOf(ObjectType)
+
+      const readResult = (await sfAdapter.client.readMetadata(
+        constants.CUSTOM_OBJECT,
+        'TestModifyAnnotations__c'
+      )) as CustomObject
+      expect(readResult.fullName).toBe('TestModifyAnnotations__c')
+      expect(readResult.label).toBe('test label 2')
 
       // Clean-up
       await sfAdapter.remove(oldElement)

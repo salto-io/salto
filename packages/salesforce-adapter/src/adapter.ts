@@ -5,6 +5,7 @@ import {
   ElemID,
   PrimitiveTypes,
   InstanceElement,
+  Values,
 } from 'adapter-api'
 import { SaveResult } from 'jsforce'
 import { isArray } from 'util'
@@ -50,7 +51,7 @@ const diagnose = (result: SaveResult | SaveResult[]): void => {
 // Add API name and label annotation if missing
 const annotateApiNameAndLabel = (element: ObjectType): void => {
   const innerAnnotate = (obj: Type, name: string): void => {
-    if (!obj.annotationsValues[constants.API_NAME]) {
+    if (!apiName(obj)) {
       obj.annotate({
         [constants.API_NAME]: sfCase(name, true),
       })
@@ -148,7 +149,6 @@ export default class SalesforceAdapter {
 
   /**
    * Remove an element
-   * @param type The metadata type of the element to remove
    * @param element The provided element to remove
    * @returns true for success, false for failure
    */
@@ -179,21 +179,54 @@ export default class SalesforceAdapter {
     }
 
     // Retrieve the custom fields for deletion and delete them
-    await this.deleteCustomFields(prevElement,
+    const deleteResult = this.deleteCustomFields(prevElement,
       Object.entries(prevElement.fields)
         .filter(field =>
           prevElement.getFieldsThatAreNotInOther(post).includes(field[0]))
         .map(field => field[1]))
 
     // Retrieve the custom fields for addition, create them and update the permissions
-    await this.createFields(post,
+    const createResult = this.createFields(post,
       Object.entries(post.fields)
         .filter(field =>
           post.getFieldsThatAreNotInOther(prevElement).includes(field[0]))
         .map(field => field[1]))
 
-    // TODO: Update the rest of the attributes in the retrieved old objects
+    // TODO: Intersect between the 2 objects, and check if the fields that remain,
+    // need to be updated.
+    // For each object, iterate on all the annotation values and permissions,
+    // see if they changed, and if so, perform an API call to update them.
+
+    await Promise.all([deleteResult, createResult])
+
+    // Update the annotation values - this can't be done asynchronously with the previous operations
+    await this.updateObject(post)
+
     return post
+  }
+
+  /**
+   * Updates the object in SFDC
+   * @param element the updated version of the object we wish to update its annotation values
+   */
+  private async updateObject(element: ObjectType): Promise<void> {
+    // Retrieve the object from SFDC
+    const retrievedObject: Values = await this.client.readMetadata(
+      constants.CUSTOM_OBJECT,
+      apiName(element)
+    )
+
+    // Update the annotations values
+    SalesforceAdapter.assignAnnotationsValuesFromNewToTargetObject(element, retrievedObject)
+
+    // Update it in SFDC
+    const updateResult = await this.client.update(
+      constants.CUSTOM_OBJECT,
+      // Need to send the object as any to be able to send it with all the data to the API
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      retrievedObject as any
+    )
+    diagnose(updateResult)
   }
 
   /**
@@ -326,5 +359,30 @@ export default class SalesforceAdapter {
       ) as Promise<ProfileInfo>)
     )
     return fromProfiles(profilesInfo)
+  }
+
+  /**
+   * Assigns annotations from a passed object to a target object retrieved as a response from SFDC.
+   * The target object will be sent again to SFDC for update purposes.
+   * The purpose of this function is to prepare the object's annotations (all its properties that we
+   * wish to update and are not fields) for being sent to SFDC.
+   * At the moment, this is the way for updating object's fields in SFDV (Retrieving it,
+   * updating it, and resending)
+   * @param newObject the new object that contains the updated fields we wish to chage their state
+   * in SFDC
+   * @param targetObject The target object we send to SFDC for update
+   */
+  private static assignAnnotationsValuesFromNewToTargetObject(
+    newObject: ObjectType,
+    // We need to use the any type here as this is an object retrieved from the API
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    targetObject: Record<string, any>
+  ): void {
+    Object.keys(newObject.annotationsValues).forEach(key => {
+      // Check if the field exists on the object retrieved from SFDC, otherwise it will fail
+      if (targetObject[key]) {
+        targetObject[key] = newObject.annotationsValues[key]
+      }
+    })
   }
 }

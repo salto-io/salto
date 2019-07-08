@@ -1,0 +1,74 @@
+{
+  "fullName": "Test__c",
+  "actionOverrides": [{
+    "actionName": "Accept",
+    "type": "Default"
+  }, {
+    "actionName": "CancelEdit",
+    "type": "Default"
+  }, {
+    "actionName": "Clone",
+    "type": "Default"
+  }, {
+    "actionName": "Delete",
+    "type": "Default"
+  }, {
+    "actionName": "Edit",
+    "type": "Default"
+  }, {
+    "actionName": "List",
+    "type": "Default"
+  }, {
+    "actionName": "New",
+    "type": "Default"
+  }, {
+    "actionName": "SaveEdit",
+    "type": "Default"
+  }, {
+    "actionName": "Tab",
+    "type": "Default"
+  }, {
+    "actionName": "View",
+    "type": "Default"
+  }],
+  "allowInChatterGroups": "false",
+  "compactLayoutAssignment": "SYSTEM",
+  "deploymentStatus": "Deployed",
+  "enableActivities": "false",
+  "enableBulkApi": "true",
+  "enableFeeds": "false",
+  "enableHistory": "false",
+  "enableLicensing": "false",
+  "enableReports": "false",
+  "enableSearch": "false",
+  "enableSharing": "true",
+  "enableStreamingApi": "true",
+  "fields": [{
+    "fullName": "address__c",
+    "externalId": "false",
+    "label": "Address",
+    "length": "80",
+    "required": "false",
+    "trackTrending": "false",
+    "type": "Text",
+    "unique": "false"
+  }, {
+    "fullName": "banana__c",
+    "externalId": "false",
+    "label": "Banana",
+    "length": "80",
+    "required": "false",
+    "trackTrending": "false",
+    "type": "Text",
+    "unique": "false"
+  }],
+  "label": "test",
+  "nameField": {
+    "label": "Test Object Name",
+    "type": "Text"
+  },
+  "pluralLabel": "tests",
+  "searchLayouts": "",
+  "sharingModel": "ReadWrite",
+  "visibility": "Public"
+}

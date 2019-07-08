@@ -104,6 +104,18 @@ export abstract class Type implements Element {
   }
 
   /**
+   * Get annotation value
+   * @param path Path to the annotation value
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  getAnnotationValue(...path: string[]): any {
+    return path.reduce(
+      (obj, key) => (obj === undefined ? undefined : obj[key]),
+      this.annotationsValues
+    )
+  }
+
+  /**
    * Return an independent copy of this instance. Needs to be implemented
    * by each subclass as this is structure dependent.
    * @return {Type} the cloned instance

@@ -367,4 +367,20 @@ describe('Test elements.ts', () => {
     )
     expect(inst.type).toBe(ot)
   })
+
+  it('should access nested annotation values', () => {
+    const elem = new ObjectType({
+      elemID: new ElemID({ adapter: 'test', name: 'ot1' }),
+      annotationsValues: {
+        test: {
+          nested: {
+            value: 1,
+          },
+        },
+      },
+    })
+
+    expect(elem.getAnnotationValue('test', 'nested', 'value')).toEqual(1)
+    expect(elem.getAnnotationValue('test', 'non', 'existing')).toBe(undefined)
+  })
 })

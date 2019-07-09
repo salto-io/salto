@@ -25,6 +25,7 @@ interface ElemIDArgs {
 
 export class ElemID {
   static readonly NAMESPACE_SEPERATOR = '_'
+  static readonly CONFIG_INSTANCE_NAME = '_config'
 
   name?: string
   adapter?: string

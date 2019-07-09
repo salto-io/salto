@@ -32,7 +32,7 @@ describe('Test core.ts', () => {
     const elements = await core.getAllElements(blueprints)
     const fullNames = elements.map(e => e.elemID.getFullName())
     expect(fullNames).toEqual(
-      expect.arrayContaining(['salesforce_test', 'salesforce_test2', 'string']),
+      expect.arrayContaining(['salesforce_test', 'salesforce_test2']),
     )
   })
 

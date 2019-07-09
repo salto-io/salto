@@ -1,8 +1,7 @@
 import { EventEmitter } from 'events'
 import _ from 'lodash'
 import {
-  PlanAction, PlanActionType,
-  ElementsRegistry, InstanceElement, ElemID, Element,
+  PlanAction, PlanActionType, InstanceElement, ElemID, Element,
 } from 'adapter-api'
 
 import SalesforceAdapter from 'salesforce-adapter'
@@ -35,18 +34,15 @@ export class SaltoCore extends EventEmitter {
 
   // eslint-disable-next-line class-methods-use-this
   async getAllElements(blueprints: Blueprint[]): Promise<Element[]> {
-    let elements: Element[] = []
-    const registry = new ElementsRegistry()
-    for (let i = 0; i < blueprints.length; i += 1) {
-      const parser = new Parser(registry)
-      const bp = blueprints[i]
-      // Can't run parser in parrallel
-      // eslint-disable-next-line no-await-in-loop
-      const res = await parser.parse(bp.buffer, bp.filename)
-      if (res.errors.length > 0) {
-        throw new Error(`Failed to parse blueprints: ${res.errors.join('\n')}`)
-      }
-      elements = [...elements, ...res.elements]
+    const parseResults = await Promise.all(blueprints.map(
+      bp => Parser.parse(bp.buffer, bp.filename)
+    ))
+
+    const elements = _.flatten(parseResults.map(r => r.elements))
+    const errors = _.flatten(parseResults.map(r => r.errors))
+
+    if (errors.length > 0) {
+      throw new Error(`Failed to parse blueprints: ${errors.join('\n')}`)
     }
     return elements
   }

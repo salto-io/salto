@@ -1,7 +1,7 @@
 import * as _ from 'lodash'
 
 import {
-  ElementsRegistry, Type, ElemID, ObjectType, PrimitiveType, PrimitiveTypes,
+  Type, ElemID, ObjectType, PrimitiveType, PrimitiveTypes,
   isObjectType, isPrimitiveType, Element,
 } from 'adapter-api'
 import HCLParser from './hcl'
@@ -57,26 +57,17 @@ export default class Parser {
     return new ElemID({ adapter, name })
   }
 
-  private types: ElementsRegistry
-
-  public constructor(types: ElementsRegistry) {
-    this.types = new ElementsRegistry()
-    this.types = this.types.merge(types)
-  }
-
-  private parseType(typeBlock: HCLBlock): Type {
+  private static parseType(typeBlock: HCLBlock): Type {
     const [typeName] = typeBlock.labels
-    const typeObj = this.types.getElement(Parser.getElemID(typeName)) as ObjectType
+    const typeObj = new ObjectType({ elemID: this.getElemID(typeName) })
 
-    Object.entries(typeBlock.attrs).forEach(([attrName, attrValue]) => {
-      typeObj.annotationsValues[attrName] = attrValue
-    })
+    typeObj.annotate(typeBlock.attrs)
 
     typeBlock.blocks.forEach(block => {
       if (block.labels.length === 1) {
         // Field block
         const fieldName = block.labels[0]
-        typeObj.fields[fieldName] = this.types.getElement(Parser.getElemID(block.type))
+        typeObj.fields[fieldName] = new ObjectType({ elemID: this.getElemID(block.type) })
         typeObj.annotationsValues[fieldName] = block.attrs
       } else {
         // This is something else, lets assume it is field overrides for now and we can extend
@@ -88,21 +79,21 @@ export default class Parser {
     return typeObj
   }
 
-  private parsePrimitiveType(typeBlock: HCLBlock): Type {
+  private static parsePrimitiveType(typeBlock: HCLBlock): Type {
     const [typeName, kw, baseType] = typeBlock.labels
     if (kw !== Keywords.TYPE_INHERITENCE_SEPARATOR) {
       throw new Error(`expected keyword ${Keywords.TYPE_INHERITENCE_SEPARATOR}. found ${kw}`)
     }
 
     if (baseType === Keywords.TYPE_OBJECT) {
-      // Object types can have fields
+      // There is currently no difference between an object type and a model
       return this.parseType(typeBlock)
     }
-    const typeObj = this.types.getElement(
-      Parser.getElemID(typeName), getPrimitiveType(baseType),
-    ) as PrimitiveType
-    typeObj.annotationsValues = typeBlock.attrs
-    return typeObj
+    return new PrimitiveType({
+      elemID: this.getElemID(typeName),
+      primitive: getPrimitiveType(baseType),
+      annotationsValues: typeBlock.attrs,
+    })
   }
 
   /**
@@ -113,27 +104,25 @@ export default class Parser {
    * @returns elements: Type elements found in the blueprint
    *          errors: Errors encountered during parsing
    */
-  public async parse(blueprint: Buffer, filename: string):
+  public static async parse(blueprint: Buffer, filename: string):
     Promise<{ elements: Element[]; errors: string[] }> {
     const { body, errors } = await HCLParser.parse(blueprint, filename)
 
-    body.blocks.forEach((value: HCLBlock): Type => {
-      let elem: Type
+    const elements = body.blocks.map((value: HCLBlock): Element => {
       if (value.type === Keywords.MODEL) {
-        elem = this.parseType(value)
+        return this.parseType(value)
         // TODO: we probably need to mark that elem is a model type so the adapter
         // will know it should create a new table for it
-      } else if (value.type === Keywords.TYPE_DEFINITION) {
-        elem = this.parsePrimitiveType(value)
-      } else {
-        // Without this exception the linter won't allow us to return elem
-        // since it might be uninitialized
-        throw new Error('unsupported block')
       }
-      return elem
+      if (value.type === Keywords.TYPE_DEFINITION) {
+        return this.parsePrimitiveType(value)
+      }
+      // Without this exception the linter won't allow us to end the function
+      // without a return value
+      throw new Error('unsupported block')
     })
 
-    return { elements: this.types.getAllElements(), errors }
+    return { elements, errors }
   }
 
   /**

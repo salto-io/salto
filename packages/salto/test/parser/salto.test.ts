@@ -1,7 +1,33 @@
 import {
-  ObjectType, PrimitiveType, PrimitiveTypes, ElementsRegistry, Element, ElemID, isObjectType,
+  ObjectType, PrimitiveType, PrimitiveTypes, Element, ElemID, isObjectType, Type,
 } from 'adapter-api'
 import Parser from '../../src/parser/salto'
+
+/**
+ * Compare two types and expect them to be the same.
+ * This is slightly different than just deep equality because
+ * in fields and annotations we only exepct the type ID to match
+ */
+const expectTypesToMatch = (expected: Type, actual: Type): void => {
+  expect(typeof expected).toBe(typeof actual)
+  expect(expected.elemID).toEqual(actual.elemID)
+  expect(expected.annotationsValues).toEqual(actual.annotationsValues)
+
+  const expectTypeMapToMatch = (
+    expectedTypes: Record<string, Type>,
+    actualTypes: Record<string, Type>
+  ): void => {
+    expect(Object.keys(expectedTypes)).toEqual(Object.keys(actualTypes))
+    Object.keys(expectedTypes).forEach(
+      key => expect(expectedTypes[key].elemID).toEqual(actualTypes[key].elemID)
+    )
+  }
+  expectTypeMapToMatch(expected.annotations, actual.annotations)
+
+  if (isObjectType(expected) && isObjectType(actual)) {
+    expectTypeMapToMatch(expected.fields, actual.fields)
+  }
+}
 
 describe('Salto parser', () => {
   describe('primitive and model', () => {
@@ -47,8 +73,7 @@ describe('Salto parser', () => {
         }
       }`
 
-      const parser = new Parser(new ElementsRegistry())
-      const { elements } = await parser.parse(Buffer.from(body), 'none')
+      const { elements } = await Parser.parse(Buffer.from(body), 'none')
       parsedElements = elements
     })
 
@@ -167,14 +192,12 @@ describe('Salto parser', () => {
       const body = `
       type salesforce_string string {}
       `
-      const parser = new Parser(new ElementsRegistry())
-      await expect(parser.parse(Buffer.from(body), 'none')).rejects.toThrow()
+      await expect(Parser.parse(Buffer.from(body), 'none')).rejects.toThrow()
     })
   })
   it('fails on invalid top level syntax', async () => {
     const body = 'bla {}'
-    const parser = new Parser(new ElementsRegistry())
-    await expect(parser.parse(Buffer.from(body), 'none')).rejects.toThrow()
+    await expect(Parser.parse(Buffer.from(body), 'none')).rejects.toThrow()
   })
 })
 
@@ -243,7 +266,7 @@ describe('Salto Dump', () => {
       )
     })
     it('can be parsed back', async () => {
-      const { elements, errors } = await new Parser(new ElementsRegistry()).parse(body, 'none')
+      const { elements, errors } = await Parser.parse(body, 'none')
       expect(errors.length).toEqual(0)
       expect(elements.length).toEqual(4)
       expect(elements[0]).toEqual(strType)
@@ -253,7 +276,7 @@ describe('Salto Dump', () => {
       // this is not really a problem so it is ok to compare the parsed value with
       // a slightly modified version of the original
       model.annotationsValues.num = {}
-      expect(elements[3]).toEqual(model)
+      expectTypesToMatch(elements[3] as Type, model)
     })
   })
 })

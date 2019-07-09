@@ -397,6 +397,18 @@ describe('Test elements.ts', () => {
     expect(inst.type).toBe(ot)
   })
 
+  it('should create fullname', () => {
+    const regName = new ElemID({ adapter: 'adapter', name: 'name' }).getFullName()
+    const nameMissing = new ElemID({ adapter: 'adapter', name: '' }).getFullName()
+    const adapterMissing = new ElemID({ adapter: '', name: 'name' }).getFullName()
+    const config = new ElemID({ adapter: 'adapter', name: ElemID.CONFIG_INSTANCE_NAME }).getFullName()
+
+    expect(regName).toBe('adapter_name')
+    expect(nameMissing).toBe('adapter')
+    expect(adapterMissing).toBe('name')
+    expect(config).toBe('adapter')
+  })
+
   it('should access nested annotation values', () => {
     const elem = new ObjectType({
       elemID: new ElemID({ adapter: 'test', name: 'ot1' }),

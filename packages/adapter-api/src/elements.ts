@@ -36,7 +36,7 @@ export class ElemID {
 
   getFullName(): string {
     return [this.adapter, this.name]
-      .filter(part => !_.isEmpty(part))
+      .filter(part => !_.isEmpty(part) && part !== ElemID.CONFIG_INSTANCE_NAME)
       .join(ElemID.NAMESPACE_SEPERATOR)
   }
 }

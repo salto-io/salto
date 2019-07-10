@@ -1,12 +1,12 @@
 import {
   Type, PrimitiveTypes, ElemID, ElementsRegistry, PlanActionType, PlanAction,
 } from 'adapter-api'
-import { SaltoCore, Blueprint } from '../../../src/core/core'
+import { SaltoCore, Blueprint, CoreCallbacks } from '../../../src/core/core'
 
 // Don't know if this should be extend or a delegation
 export default class SaltoCoreMock extends SaltoCore {
-  constructor() {
-    super()
+  constructor(callbacks: CoreCallbacks) {
+    super(callbacks)
   }
 
   // eslint-disable-next-line class-methods-use-this, @typescript-eslint/no-unused-vars

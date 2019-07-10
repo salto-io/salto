@@ -7,8 +7,8 @@ import Fuse from 'fuse.js'
 import _ from 'lodash'
 
 import {
-  PlanAction, PlanActionType,
-  isListType, isObjectType, Element, isType,
+  PlanAction, PlanActionType, isPrimitiveType, PrimitiveTypes, ElemID,
+  isListType, isObjectType, Element, isType, InstanceElement, Type, ObjectType,
 } from 'adapter-api'
 import Prompts from './prompts'
 import {
@@ -34,7 +34,9 @@ export default class Cli {
   currentActionPollerInterval: number = 5000
 
   constructor(core?: SaltoCore) {
-    this.core = core || new SaltoCore()
+    this.core = core || new SaltoCore({
+      getConfigFromUser: Cli.getConfigFromUser,
+    })
   }
 
   private static print(txt: string): void {
@@ -470,6 +472,34 @@ export default class Cli {
     }
   }
 
+  protected static getFieldInputType(field: Type): string {
+    if (!isPrimitiveType(field)) {
+      throw new Error('Only primitive configuration values are supported')
+    }
+    if (field.primitive === PrimitiveTypes.STRING) {
+      return 'input'
+    }
+    if (field.primitive === PrimitiveTypes.NUMBER) {
+      return 'number'
+    }
+    return 'confirm'
+  }
+
+  private static async getConfigFromUser(configType: ObjectType): Promise<InstanceElement> {
+    const questions = Object.keys(configType.fields).map(fieldName =>
+      ({
+        type: Cli.getFieldInputType(configType.fields[fieldName]),
+        name: fieldName,
+        message: `Enter ${fieldName} value:`,
+      }))
+    const values = await inquirer.prompt(questions)
+    const elemID = new ElemID({
+      adapter: configType.elemID.adapter,
+      name: ElemID.CONFIG_INSTANCE_NAME,
+    })
+    return new InstanceElement(elemID, configType, values)
+  }
+
   /** ******************************************* */
   /**            Public functions              * */
   /** ******************************************* */
@@ -560,9 +590,17 @@ export default class Cli {
     Cli.print('setenv!')
   }
 
-  async discover(outputFilename: string): Promise<void> {
-    const bp = await this.core.discover()
-    bp.filename = outputFilename
-    await Cli.dumpBlueprint(bp)
+  async discover(
+    outputFilename: string,
+    blueprintsFiles: string[],
+    blueprintsDir?: string,
+  ): Promise<void> {
+    const blueprints = await Cli.loadBlueprints(
+      blueprintsFiles,
+      blueprintsDir,
+    )
+    const outputBP = await this.core.discover(blueprints)
+    outputBP.filename = outputFilename
+    await Cli.dumpBlueprint(outputBP)
   }
 }

@@ -1,9 +1,25 @@
 import * as fs from 'async-file'
+import { ObjectType, InstanceElement, ElemID } from 'adapter-api'
 import cli from '../src/cli/salto-cli'
 import Cli from '../src/cli/commands'
 import SaltoCoreMock from './core/mocks/core'
 
-Object.defineProperty(cli, 'cli', { get: () => new Cli(new SaltoCoreMock()) })
+async function getConfigFromUser(configType: ObjectType): Promise<InstanceElement> {
+  const value = {
+    username: 'test@test',
+    password: 'test',
+    token: 'test',
+    sandbox: false,
+  }
+  const elemID = new ElemID({ adapter: 'salesforce', name: '_config' })
+  return new InstanceElement(elemID, configType, value)
+}
+
+Object.defineProperty(cli, 'cli', {
+  get: () => new Cli(new SaltoCoreMock({
+    getConfigFromUser,
+  })),
+})
 
 let outputData = ''
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

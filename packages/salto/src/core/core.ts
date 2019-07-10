@@ -1,7 +1,8 @@
 import { EventEmitter } from 'events'
 import _ from 'lodash'
 import {
-  PlanAction, PlanActionType, InstanceElement, ElemID, Element,
+  PlanAction, PlanActionType, ObjectType,
+  isInstanceElement, InstanceElement, Element,
 } from 'adapter-api'
 
 import SalesforceAdapter from 'salesforce-adapter'
@@ -13,23 +14,18 @@ export interface Blueprint {
   filename: string
 }
 
+export interface CoreCallbacks {
+  getConfigFromUser(configType: ObjectType): Promise<InstanceElement>
+}
+
 // Don't know if this should be extend or a delegation
 export class SaltoCore extends EventEmitter {
   adapters: Record<string, SalesforceAdapter>
-  constructor() {
+  callbacks: CoreCallbacks
+  constructor(callbacks: CoreCallbacks) {
     super()
-    const configType = SalesforceAdapter.getConfigType()
-    const value = {
-      username: 'vanila@salto.io',
-      password: '!A123456',
-      token: 'rwVvOsh7HjF8Zki9ZmyQdeth',
-      sandbox: false,
-    }
-    const elemID = new ElemID({ adapter: 'salesforce' })
-    const config = new InstanceElement(elemID, configType, value)
-    this.adapters = {
-      salesforce: new SalesforceAdapter(config),
-    }
+    this.callbacks = callbacks
+    this.adapters = {}
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -83,7 +79,32 @@ export class SaltoCore extends EventEmitter {
     }
   }
 
+  private async getConfigInstance(
+    elements: Element[],
+    configType: ObjectType
+  ): Promise<InstanceElement> {
+    const configElements = elements.filter(
+      element => isInstanceElement(element) && element.type === configType
+    )
+    const configElement = configElements.pop() as InstanceElement
+    if (configElement) {
+      return configElement
+    }
+    return this.callbacks.getConfigFromUser(configType)
+  }
+
+  private initAdapters(salesforceConfig: InstanceElement): void {
+    if (!this.adapters.salesforce) {
+      this.adapters.salesforce = new SalesforceAdapter(salesforceConfig)
+    }
+  }
+
   async apply(blueprints: Blueprint[], dryRun?: boolean): Promise<PlanAction[]> {
+    const elements = await this.getAllElements(blueprints)
+    const salesforceConfigType = SalesforceAdapter.getConfigType()
+    const salesforceConfig = await this.getConfigInstance(elements, salesforceConfigType)
+    await this.initAdapters(salesforceConfig)
+
     const allElements = await this.getAllElements(blueprints)
     const plan = this.getPlan(allElements)
     if (!dryRun) {
@@ -97,9 +118,14 @@ export class SaltoCore extends EventEmitter {
     return JSON.stringify(element, null, 2)
   }
 
-  async discover(): Promise<Blueprint> {
-    const types = await this.adapters.salesforce.discover()
-    const buffer = await Parser.dump(types)
+  async discover(blueprints: Blueprint[]): Promise<Blueprint> {
+    const elements = await this.getAllElements(blueprints)
+    const salesforceConfigType = SalesforceAdapter.getConfigType()
+    const salesforceConfig = await this.getConfigInstance(elements, salesforceConfigType)
+    await this.initAdapters(salesforceConfig)
+    const discoverElements = await this.adapters.salesforce.discover()
+    const uniqElements = [...discoverElements, salesforceConfig, salesforceConfigType]
+    const buffer = await Parser.dump(uniqElements)
     return { buffer, filename: 'none' }
   }
 }

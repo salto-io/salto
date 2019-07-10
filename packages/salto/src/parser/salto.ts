@@ -2,7 +2,7 @@ import * as _ from 'lodash'
 
 import {
   Type, ElemID, ObjectType, PrimitiveType, PrimitiveTypes,
-  isObjectType, isPrimitiveType, Element,
+  isObjectType, isPrimitiveType, Element, isInstanceElement,
 } from 'adapter-api'
 import HCLParser from './hcl'
 
@@ -17,6 +17,7 @@ enum Keywords {
   TYPE_BOOL = 'boolean',
   TYPE_OBJECT = 'object',
 }
+
 
 /**
  * @param typeName Type name in HCL syntax
@@ -131,7 +132,7 @@ export default class Parser {
    * @param elements The elements to serialize
    * @returns A buffer with the elements serialized as a blueprint
    */
-  public static dump(elements: Type[]): Promise<Buffer> {
+  public static dump(elements: Element[]): Promise<Buffer> {
     const blocks = elements.map(elem => {
       let block: HCLBlock
       if (isObjectType(elem)) {
@@ -163,6 +164,15 @@ export default class Parser {
             getPrimitiveTypeName(elem.primitive),
           ],
           attrs: elem.annotationsValues,
+          blocks: [],
+        }
+      } else if (isInstanceElement(elem)) {
+        block = {
+          type: elem.type.elemID.getFullName(),
+          labels: [
+            elem.elemID.name || '',
+          ],
+          attrs: elem.value,
           blocks: [],
         }
       } else {

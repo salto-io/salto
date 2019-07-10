@@ -1,23 +1,75 @@
-
 import * as fs from 'async-file'
 import path from 'path'
-import { ElemID, PrimitiveType, PrimitiveTypes } from 'adapter-api'
+import {
+  ElemID, PrimitiveType, PrimitiveTypes, InstanceElement, ObjectType,
+} from 'adapter-api'
+import SalesforceAdapter from 'salesforce-adapter'
 import { SaltoCore } from '../../src/core/core'
 
-describe('Test core.ts', () => {
-  const core = new SaltoCore()
-  core.adapters.salesforce.add = jest.fn(async ap => {
-    if (ap.elemID.name === 'fail') {
-      throw new Error('failed')
-    }
-    return true
+async function getConfigFromUser(configType: ObjectType): Promise<InstanceElement> {
+  const value = {
+    username: 'test@test',
+    password: 'test',
+    token: 'test',
+    sandbox: false,
+  }
+
+  const elemID = new ElemID({ adapter: 'salesforce' })
+  return new InstanceElement(elemID, configType, value)
+}
+
+const mockAdd = jest.fn(async ap => {
+  if (ap.elemID.name === 'fail') {
+    throw new Error('failed')
+  }
+  return true
+})
+
+const mockDiscover = jest.fn(() => [
+  new PrimitiveType({
+    elemID: new ElemID({ adapter: 'salesforce', name: 'dummy' }),
+    primitive: PrimitiveTypes.STRING,
+  }),
+])
+
+jest.mock('salesforce-adapter', () => jest.fn().mockImplementation(() => ({
+  add: mockAdd,
+  discover: mockDiscover,
+})))
+
+const mockGetConfigType = jest.fn(() => {
+  const simpleString = new PrimitiveType({
+    elemID: new ElemID({ adapter: '', name: 'string' }),
+    primitive: PrimitiveTypes.STRING,
   })
-  core.adapters.salesforce.discover = jest.fn(() => [
-    new PrimitiveType({
-      elemID: new ElemID({ adapter: 'salesforce', name: 'dummy' }),
-      primitive: PrimitiveTypes.STRING,
-    }),
-  ])
+
+  const simpleBoolean = new PrimitiveType({
+    elemID: new ElemID({ adapter: '', name: 'boolean' }),
+    primitive: PrimitiveTypes.BOOLEAN,
+  })
+
+  const config = new ObjectType({
+    elemID: new ElemID({ adapter: 'salesforce' }),
+    fields: {
+      username: simpleString,
+      password: simpleString,
+      token: simpleString,
+      sandbox: simpleBoolean,
+    },
+    annotations: {},
+    annotationsValues: {},
+  })
+
+  return config
+})
+
+SalesforceAdapter.getConfigType = mockGetConfigType.bind(SalesforceAdapter)
+
+
+describe('Test core.ts', () => {
+  const core = new SaltoCore({
+    getConfigFromUser,
+  })
 
   it('Should return all elements in the blueprint', async () => {
     const blueprints = [{
@@ -79,7 +131,7 @@ describe('Test core.ts', () => {
 
   describe('discover', () => {
     it('should return blueprint', async () => {
-      const bp = await core.discover()
+      const bp = await core.discover([])
       expect(bp.buffer.toString()).toMatch(/type "?salesforce_dummy"? "?is"? "?string"?/)
     })
   })

@@ -1,5 +1,9 @@
 import path from 'path'
 import * as fs from 'async-file'
+import {
+  ObjectType, InstanceElement, ElemID,
+  PrimitiveType, PrimitiveTypes, Type,
+} from 'adapter-api'
 import Cli from '../src/cli/commands'
 import SaltoCoreMock from './core/mocks/core'
 
@@ -9,14 +13,33 @@ function storeLog(inputs: any): void {
   outputData += inputs
 }
 
+async function getConfigFromUser(configType: ObjectType): Promise<InstanceElement> {
+  const value = {
+    username: 'test@test',
+    password: 'test',
+    token: 'test',
+    sandbox: false,
+  }
+  const elemID = new ElemID({ adapter: 'salesforce' })
+  return new InstanceElement(elemID, configType, value)
+}
 // eslint-disable-next-line no-console
 console.log = jest.fn(storeLog)
 // eslint-disable-next-line no-console
 console.error = jest.fn(storeLog)
-const cli: Cli = new Cli(new SaltoCoreMock())
+const cli: Cli = new Cli(new SaltoCoreMock({
+  getConfigFromUser,
+}))
+
 cli.currentActionPollerInterval = 1
 function resetConsoleOutput(): void {
   outputData = ''
+}
+
+class CliTester extends Cli {
+  public static testGetFieldInputType(field: Type): string {
+    return Cli.getFieldInputType(field)
+  }
 }
 
 describe('Test commands.ts', () => {
@@ -31,7 +54,7 @@ describe('Test commands.ts', () => {
   it('discover should create file', async () => {
     const outputName = path.join(__dirname, 'tmp.bp')
     try {
-      await cli.discover(outputName)
+      await cli.discover(outputName, [])
       expect(await fs.exists(outputName)).toBe(true)
       expect((await fs.readFile(outputName)).toString()).toMatch('asd')
     } finally {
@@ -138,5 +161,26 @@ describe('Test commands.ts', () => {
     expect(async () => {
       cli.setenv()
     }).not.toThrow()
+  })
+
+  it('should create proper inquier field', async () => {
+    const pts = new PrimitiveType({
+      elemID: new ElemID({ adapter: 'salesforce', name: 'dummy' }),
+      primitive: PrimitiveTypes.STRING,
+    })
+    const stRes = CliTester.testGetFieldInputType(pts)
+    const pti = new PrimitiveType({
+      elemID: new ElemID({ adapter: 'salesforce', name: 'dummy' }),
+      primitive: PrimitiveTypes.NUMBER,
+    })
+    const iRes = CliTester.testGetFieldInputType(pti)
+    const ptb = new PrimitiveType({
+      elemID: new ElemID({ adapter: 'salesforce', name: 'dummy' }),
+      primitive: PrimitiveTypes.BOOLEAN,
+    })
+    const bRes = CliTester.testGetFieldInputType(ptb)
+    expect(iRes).toBe('number')
+    expect(bRes).toBe('confirm')
+    expect(stRes).toBe('input')
   })
 })

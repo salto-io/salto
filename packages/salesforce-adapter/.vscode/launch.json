@@ -5,18 +5,6 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "type": "node",
-      "name": "vscode-jest-tests",
-      "request": "launch",
-      "args": [
-        "--runInBand"
-      ],
-      "cwd": "${workspaceFolder}",
-      "console": "integratedTerminal",
-      "internalConsoleOptions": "neverOpen",
-      "program": "${workspaceFolder}/node_modules/jest/bin/jest"
-    },
-    {
       "name": "Fingerprint",
       "type": "node",
       "request": "launch",

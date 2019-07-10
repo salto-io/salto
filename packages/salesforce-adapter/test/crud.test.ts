@@ -5,7 +5,6 @@ import {
   PrimitiveTypes,
   InstanceElement,
 } from 'adapter-api'
-import fs from 'fs'
 import { ProfileInfo } from '../src/client/types'
 import SalesforceAdapter from '../src/adapter'
 import SalesforceClient from '../src/client/client'
@@ -27,6 +26,14 @@ describe('Test SalesforceAdapter CRUD', () => {
     return new SalesforceAdapter(config)
   }
 
+  const stringType = new PrimitiveType({
+    elemID: new ElemID({
+      adapter: constants.SALESFORCE,
+      name: 'string',
+    }),
+    primitive: PrimitiveTypes.STRING,
+  })
+
   it('should add new salesforce type', async () => {
     const mockCreate = jest.fn().mockImplementationOnce(() => ({ success: true }))
     SalesforceClient.prototype.create = mockCreate
@@ -36,13 +43,7 @@ describe('Test SalesforceAdapter CRUD', () => {
       new ObjectType({
         elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
         fields: {
-          description: new PrimitiveType({
-            elemID: new ElemID({
-              adapter: constants.SALESFORCE,
-              name: 'string',
-            }),
-            primitive: PrimitiveTypes.STRING,
-          }),
+          description: stringType,
         },
         annotationsValues: {
           description: {
@@ -80,13 +81,7 @@ describe('Test SalesforceAdapter CRUD', () => {
       new ObjectType({
         elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
         fields: {
-          description: new PrimitiveType({
-            elemID: new ElemID({
-              adapter: constants.SALESFORCE,
-              name: 'string',
-            }),
-            primitive: PrimitiveTypes.STRING,
-          }),
+          description: stringType,
         },
         annotationsValues: {
           description: {
@@ -156,13 +151,7 @@ describe('Test SalesforceAdapter CRUD', () => {
         new ObjectType({
           elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
           fields: {
-            description: new PrimitiveType({
-              elemID: new ElemID({
-                adapter: constants.SALESFORCE,
-                name: 'string',
-              }),
-              primitive: PrimitiveTypes.STRING,
-            }),
+            description: stringType,
           },
           annotationsValues: {
             description: {
@@ -182,13 +171,7 @@ describe('Test SalesforceAdapter CRUD', () => {
       new ObjectType({
         elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
         fields: {
-          description: new PrimitiveType({
-            elemID: new ElemID({
-              adapter: constants.SALESFORCE,
-              name: 'string',
-            }),
-            primitive: PrimitiveTypes.STRING,
-          }),
+          description: stringType,
         },
         annotationsValues: {
           [constants.API_NAME]: 'Test__c',
@@ -228,18 +211,13 @@ describe('Test SalesforceAdapter CRUD', () => {
     let mockCreate: jest.Mock<unknown>
     let mockDelete: jest.Mock<unknown>
     let mockUpdate: jest.Mock<unknown>
-    const mockReadResponseFileContents = fs.readFileSync('test/read_metadata_response_mock.json', 'utf8')
-    const mockReadResponse = JSON.parse(mockReadResponseFileContents)
-    let mockRead: jest.Mock<unknown>
     beforeEach(() => {
       mockCreate = jest.fn().mockImplementationOnce(() => ({ success: true }))
       mockDelete = jest.fn().mockImplementationOnce(() => ({ success: true }))
       mockUpdate = jest.fn().mockImplementationOnce(() => ({ success: true }))
-      mockRead = jest.fn().mockImplementationOnce(() => (mockReadResponse))
       SalesforceClient.prototype.create = mockCreate
       SalesforceClient.prototype.delete = mockDelete
       SalesforceClient.prototype.update = mockUpdate
-      SalesforceClient.prototype.readMetadata = mockRead
     })
 
     it('should fail an update of a salesforce metadata component if the fullnames are not the same', async () => {
@@ -248,13 +226,7 @@ describe('Test SalesforceAdapter CRUD', () => {
           new ObjectType({
             elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test2' }),
             fields: {
-              description: new PrimitiveType({
-                elemID: new ElemID({
-                  adapter: constants.SALESFORCE,
-                  name: 'string',
-                }),
-                primitive: PrimitiveTypes.STRING,
-              }),
+              description: stringType,
             },
             annotationsValues: {
               required: false,
@@ -266,13 +238,7 @@ describe('Test SalesforceAdapter CRUD', () => {
           new ObjectType({
             elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
             fields: {
-              address: new PrimitiveType({
-                elemID: new ElemID({
-                  adapter: constants.SALESFORCE,
-                  name: 'string',
-                }),
-                primitive: PrimitiveTypes.STRING,
-              }),
+              address: stringType,
             },
             annotationsValues: {
               required: false,
@@ -293,13 +259,7 @@ describe('Test SalesforceAdapter CRUD', () => {
         new ObjectType({
           elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
           fields: {
-            description: new PrimitiveType({
-              elemID: new ElemID({
-                adapter: constants.SALESFORCE,
-                name: 'string',
-              }),
-              primitive: PrimitiveTypes.STRING,
-            }),
+            description: stringType,
           },
           annotationsValues: {
             required: false,
@@ -311,13 +271,7 @@ describe('Test SalesforceAdapter CRUD', () => {
         new ObjectType({
           elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
           fields: {
-            address: new PrimitiveType({
-              elemID: new ElemID({
-                adapter: constants.SALESFORCE,
-                name: 'string',
-              }),
-              primitive: PrimitiveTypes.STRING,
-            }),
+            address: stringType,
           },
           annotationsValues: {
             label: 'test2 label',
@@ -342,20 +296,8 @@ describe('Test SalesforceAdapter CRUD', () => {
         new ObjectType({
           elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
           fields: {
-            address: new PrimitiveType({
-              elemID: new ElemID({
-                adapter: constants.SALESFORCE,
-                name: 'string',
-              }),
-              primitive: PrimitiveTypes.STRING,
-            }),
-            banana: new PrimitiveType({
-              elemID: new ElemID({
-                adapter: constants.SALESFORCE,
-                name: 'string',
-              }),
-              primitive: PrimitiveTypes.STRING,
-            }),
+            address: stringType,
+            banana: stringType,
           },
           annotationsValues: {
             required: false,
@@ -373,34 +315,10 @@ describe('Test SalesforceAdapter CRUD', () => {
         new ObjectType({
           elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
           fields: {
-            address: new PrimitiveType({
-              elemID: new ElemID({
-                adapter: constants.SALESFORCE,
-                name: 'string',
-              }),
-              primitive: PrimitiveTypes.STRING,
-            }),
-            banana: new PrimitiveType({
-              elemID: new ElemID({
-                adapter: constants.SALESFORCE,
-                name: 'string',
-              }),
-              primitive: PrimitiveTypes.STRING,
-            }),
-            description: new PrimitiveType({
-              elemID: new ElemID({
-                adapter: constants.SALESFORCE,
-                name: 'string',
-              }),
-              primitive: PrimitiveTypes.STRING,
-            }),
-            apple: new PrimitiveType({
-              elemID: new ElemID({
-                adapter: constants.SALESFORCE,
-                name: 'double',
-              }),
-              primitive: PrimitiveTypes.NUMBER,
-            }),
+            address: stringType,
+            banana: stringType,
+            description: stringType,
+            apple: stringType,
           },
           annotationsValues: {
             required: false,
@@ -451,27 +369,9 @@ describe('Test SalesforceAdapter CRUD', () => {
         new ObjectType({
           elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
           fields: {
-            address: new PrimitiveType({
-              elemID: new ElemID({
-                adapter: constants.SALESFORCE,
-                name: 'string',
-              }),
-              primitive: PrimitiveTypes.STRING,
-            }),
-            banana: new PrimitiveType({
-              elemID: new ElemID({
-                adapter: constants.SALESFORCE,
-                name: 'string',
-              }),
-              primitive: PrimitiveTypes.STRING,
-            }),
-            description: new PrimitiveType({
-              elemID: new ElemID({
-                adapter: constants.SALESFORCE,
-                name: 'string',
-              }),
-              primitive: PrimitiveTypes.STRING,
-            }),
+            address: stringType,
+            banana: stringType,
+            description: stringType,
           },
           annotationsValues: {
             required: false,
@@ -492,13 +392,7 @@ describe('Test SalesforceAdapter CRUD', () => {
         new ObjectType({
           elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
           fields: {
-            description: new PrimitiveType({
-              elemID: new ElemID({
-                adapter: constants.SALESFORCE,
-                name: 'string',
-              }),
-              primitive: PrimitiveTypes.STRING,
-            }),
+            description: stringType,
           },
           annotationsValues: {
             required: false,
@@ -527,20 +421,8 @@ describe('Test SalesforceAdapter CRUD', () => {
         new ObjectType({
           elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
           fields: {
-            address: new PrimitiveType({
-              elemID: new ElemID({
-                adapter: constants.SALESFORCE,
-                name: 'string',
-              }),
-              primitive: PrimitiveTypes.STRING,
-            }),
-            banana: new PrimitiveType({
-              elemID: new ElemID({
-                adapter: constants.SALESFORCE,
-                name: 'string',
-              }),
-              primitive: PrimitiveTypes.STRING,
-            }),
+            address: stringType,
+            banana: stringType,
           },
           annotationsValues: {
             required: false,
@@ -560,20 +442,8 @@ describe('Test SalesforceAdapter CRUD', () => {
         new ObjectType({
           elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
           fields: {
-            banana: new PrimitiveType({
-              elemID: new ElemID({
-                adapter: constants.SALESFORCE,
-                name: 'string',
-              }),
-              primitive: PrimitiveTypes.STRING,
-            }),
-            description: new PrimitiveType({
-              elemID: new ElemID({
-                adapter: constants.SALESFORCE,
-                name: 'string',
-              }),
-              primitive: PrimitiveTypes.STRING,
-            }),
+            banana: stringType,
+            description: stringType,
           },
           annotationsValues: {
             required: false,
@@ -621,13 +491,7 @@ describe('Test SalesforceAdapter CRUD', () => {
         new ObjectType({
           elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
           fields: {
-            description: new PrimitiveType({
-              elemID: new ElemID({
-                adapter: constants.SALESFORCE,
-                name: 'string',
-              }),
-              primitive: PrimitiveTypes.STRING,
-            }),
+            description: stringType,
           },
           annotationsValues: {
             label: 'test label',
@@ -637,13 +501,7 @@ describe('Test SalesforceAdapter CRUD', () => {
         new ObjectType({
           elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
           fields: {
-            description: new PrimitiveType({
-              elemID: new ElemID({
-                adapter: constants.SALESFORCE,
-                name: 'string',
-              }),
-              primitive: PrimitiveTypes.STRING,
-            }),
+            description: stringType,
           },
           annotationsValues: {
             label: 'test2 label',
@@ -661,6 +519,106 @@ describe('Test SalesforceAdapter CRUD', () => {
       const objectSentForUpdate = mockUpdate.mock.calls[0][1]
       expect(objectSentForUpdate.fullName).toBe('Test__c')
       expect(objectSentForUpdate.label).toBe('test2 label')
+    })
+
+    it("should update the remaining fields' annotation values of the metadata object", async () => {
+      const result = await adapter().update(
+        new ObjectType({
+          elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
+          fields: {
+            address: stringType,
+            banana: stringType,
+            cat: stringType,
+          },
+          annotationsValues: {
+            required: false,
+            _default: 'test',
+            label: 'test label',
+            [constants.API_NAME]: 'Test__c',
+            address: {
+              [constants.API_NAME]: 'Address__c',
+              [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
+              [constants.LABEL]: 'Address',
+            },
+            banana: {
+              [constants.API_NAME]: 'Banana__c',
+              [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
+              [constants.LABEL]: 'Banana',
+            },
+            cat: {
+              [constants.API_NAME]: 'Cat__c',
+              [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
+              [constants.LABEL]: 'Cat',
+            },
+          },
+        }),
+        new ObjectType({
+          elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
+          fields: {
+            banana: stringType,
+            cat: stringType,
+            description: stringType,
+          },
+          annotationsValues: {
+            required: false,
+            _default: 'test',
+            label: 'test label',
+            [constants.API_NAME]: 'Test__c',
+            banana: {
+              [constants.API_NAME]: 'Banana__c',
+              // eslint-disable-next-line max-len
+              [constants.FIELD_LEVEL_SECURITY]: { Standard: { editable: false, readable: true } },
+              [constants.LABEL]: 'Banana Split',
+            },
+            cat: {
+              [constants.API_NAME]: 'Cat__c',
+              [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
+              [constants.LABEL]: 'Cat',
+            },
+            description: {
+              [constants.API_NAME]: 'Description__c',
+              [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
+              [constants.LABEL]: 'Description',
+            },
+          },
+        })
+      )
+
+      expect(result).toBeInstanceOf(ObjectType)
+      expect(mockCreate.mock.calls.length).toBe(1)
+      expect(mockDelete.mock.calls.length).toBe(1)
+      // Update is called twice, once for updating the object, and the second
+      // time for updating the permissions
+      expect(mockUpdate.mock.calls.length).toBe(3)
+      // Verify the custom fields creation
+      const addedFields = mockCreate.mock.calls[0][1]
+      expect(addedFields.length).toBe(1)
+      const field = addedFields[0]
+      expect(field.fullName).toBe('Test__c.Description__c')
+      expect(field.type).toBe('Text')
+      expect(field.length).toBe(80)
+      expect(field.required).toBe(false)
+      // Verify the field permissions creation
+      const newProfileInfo = mockUpdate.mock.calls[1][1][0]
+      expect(newProfileInfo.fullName).toBe('Admin')
+      expect(newProfileInfo.fieldPermissions.length).toBe(1)
+      expect(newProfileInfo.fieldPermissions[0].field).toBe('Test__c.Description__c')
+      expect(newProfileInfo.fieldPermissions[0].editable).toBe(true)
+      expect(newProfileInfo.fieldPermissions[0].readable).toBe(true)
+      // Verify the field permissions change
+      const changedProfileInfo = mockUpdate.mock.calls[0][1][0]
+      expect(changedProfileInfo.fullName).toBe('Standard')
+      expect(changedProfileInfo.fieldPermissions.length).toBe(1)
+      expect(changedProfileInfo.fieldPermissions[0].field).toBe('Test__c.Banana__c')
+      expect(changedProfileInfo.fieldPermissions[0].editable).toBe(false)
+      expect(changedProfileInfo.fieldPermissions[0].readable).toBe(true)
+      // Verify the custom field label change
+      const changedObject = mockUpdate.mock.calls[2][1]
+      expect(changedObject.fields[0].label).toBe('Banana Split')
+      // Verify the custom fields deletion
+      const deletedFields = mockDelete.mock.calls[0][1]
+      expect(deletedFields.length).toBe(1)
+      expect(deletedFields[0]).toBe('Test__c.Address__c')
     })
   })
 })

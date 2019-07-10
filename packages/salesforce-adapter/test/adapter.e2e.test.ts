@@ -267,7 +267,7 @@ describe.skip('Test Salesforce adapter E2E', () => {
       await sfAdapter.remove(oldElement)
     })
 
-    it("should modify an object's annotations E2E", async () => {
+    it("should modify an object's annotations and custom fields annotations E2E", async () => {
       // Setup
       // set long timeout as we communicate with salesforce API
       jest.setTimeout(15000)
@@ -318,6 +318,7 @@ describe.skip('Test Salesforce adapter E2E', () => {
 
       expect(oldElementReadResult.fullName).toBe('TestModifyAnnotations__c')
       expect(oldElementReadResult.label).toBe('test label')
+      expect((oldElementReadResult.fields.filter(f => f.fullName === 'Banana__c'))[0].label).toBe('Banana')
 
       const newElement = new ObjectType({
         elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test modify annotations' }),
@@ -347,7 +348,7 @@ describe.skip('Test Salesforce adapter E2E', () => {
           },
           banana: {
             [constants.API_NAME]: 'Banana__c',
-            label: 'Banana',
+            label: 'Banana Split',
           },
         },
       })
@@ -362,6 +363,7 @@ describe.skip('Test Salesforce adapter E2E', () => {
       )) as CustomObject
       expect(readResult.fullName).toBe('TestModifyAnnotations__c')
       expect(readResult.label).toBe('test label 2')
+      expect((readResult.fields.filter(f => f.fullName === 'Banana__c'))[0].label).toBe('Banana Split')
 
       // Clean-up
       await sfAdapter.remove(oldElement)

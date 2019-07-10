@@ -9,6 +9,7 @@ import {
 } from 'adapter-api'
 import { SaveResult } from 'jsforce'
 import { isArray } from 'util'
+import _ from 'lodash'
 import SalesforceClient from './client/client'
 import * as constants from './constants'
 import {
@@ -189,17 +190,53 @@ export default class SalesforceAdapter {
     const newFields = post.getFieldsThatAreNotInOther(prevElement)
     const createResult = this.createFields(post, newFields)
 
-    // TODO: Intersect between the 2 objects, and check if the fields that remain,
-    // need to be updated.
-    // For each object, iterate on all the annotation values and permissions,
-    // see if they changed, and if so, perform an API call to update them.
+    // Intersect between the 2 objects, and update the permissions of the fields that remain,
+    // if they have changed
+    const remainingFields = post.getMutualFieldsWithOther(prevElement)
+    const updatePermissionsResult = this.updateFieldsPermissions(remainingFields, prevElement, post)
 
     await Promise.all([deleteResult, createResult])
 
-    // Update the annotation values - this can't be done asynchronously with the previous operations
-    await this.updateObject(post)
+    // Update the annotation values - this can't be done asynchronously with the previous
+    // operations beacause the update API expects to receive the updated list of fields,
+    // hence the need to perform the fields deletion and creation first, and then update the
+    // object.
+    // We also await here on the updateFieldPermissions which we started before awaiting on the
+    // fields creation/deletion to minimize runtime
+    const updateObjectResult = this.updateObject(post)
+    await Promise.all([updatePermissionsResult, updateObjectResult])
 
     return post
+  }
+
+  /**
+   * Updates the fields permissions for an object's fields
+   * @param remainingFields An array that contains the names of the fields that remain after
+   * removing/deleting fields
+   * @param prevElement The previous object
+   * @param newElement The new object
+   */
+  private async updateFieldsPermissions(
+    remainingFields: string[],
+    prevElement: ObjectType,
+    newElement: ObjectType,
+  ): Promise<void> {
+    if (remainingFields.length === 0) {
+      return
+    }
+    const fieldsToUpdate = remainingFields.filter(field => (
+      !_.isEqual(
+        prevElement.getAnnotationValue(field, constants.FIELD_LEVEL_SECURITY),
+        newElement.getAnnotationValue(field, constants.FIELD_LEVEL_SECURITY),
+      )
+    ))
+
+    if (fieldsToUpdate.length > 0) {
+      // Create the permissions
+      // Build the permissions in a Profile object for all the custom fields we will add
+      const permissionsResult = await this.updatePermissions(newElement, fieldsToUpdate)
+      diagnose(permissionsResult)
+    }
   }
 
   /**
@@ -207,21 +244,9 @@ export default class SalesforceAdapter {
    * @param element the updated version of the object we wish to update its annotation values
    */
   private async updateObject(element: ObjectType): Promise<void> {
-    // Retrieve the object from SFDC
-    const retrievedObject: Values = await this.client.readMetadata(
-      constants.CUSTOM_OBJECT,
-      apiName(element)
-    )
-
-    // Update the annotations values
-    SalesforceAdapter.assignAnnotationsValuesFromNewToTargetObject(element, retrievedObject)
-
-    // Update it in SFDC
     const updateResult = await this.client.update(
       constants.CUSTOM_OBJECT,
-      // Need to send the object as any to be able to send it with all the data to the API
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      retrievedObject as any
+      toCustomObject(element)
     )
     diagnose(updateResult)
   }
@@ -364,30 +389,5 @@ export default class SalesforceAdapter {
       ) as Promise<ProfileInfo>)
     )
     return fromProfiles(profilesInfo)
-  }
-
-  /**
-   * Assigns annotations from a passed object to a target object retrieved as a response from SFDC.
-   * The target object will be sent again to SFDC for update purposes.
-   * The purpose of this function is to prepare the object's annotations (all its properties that we
-   * wish to update and are not fields) for being sent to SFDC.
-   * At the moment, this is the way for updating object's fields in SFDV (Retrieving it,
-   * updating it, and resending)
-   * @param newObject the new object that contains the updated fields we wish to chage their state
-   * in SFDC
-   * @param targetObject The target object we send to SFDC for update
-   */
-  private static assignAnnotationsValuesFromNewToTargetObject(
-    newObject: ObjectType,
-    // We need to use the any type here as this is an object retrieved from the API
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    targetObject: Record<string, any>
-  ): void {
-    Object.keys(newObject.annotationsValues).forEach(key => {
-      // Check if the field exists on the object retrieved from SFDC, otherwise it will fail
-      if (targetObject[key]) {
-        targetObject[key] = newObject.annotationsValues[key]
-      }
-    })
   }
 }

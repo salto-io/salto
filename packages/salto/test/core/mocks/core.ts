@@ -1,5 +1,5 @@
 import {
-  Type, PrimitiveTypes, ElemID, ElementsRegistry, PlanActionType, PlanAction,
+  Type, PrimitiveTypes, ElemID, PlanActionType, PlanAction, ObjectType, PrimitiveType, ListType,
 } from 'adapter-api'
 import { SaltoCore, Blueprint, CoreCallbacks } from '../../../src/core/core'
 
@@ -11,49 +11,66 @@ export default class SaltoCoreMock extends SaltoCore {
 
   // eslint-disable-next-line class-methods-use-this, @typescript-eslint/no-unused-vars
   async getAllElements(_blueprints: Blueprint[] = []): Promise<Type[]> {
-    const reg = new ElementsRegistry()
-    const saltoAddr = reg.getElement(new ElemID({ adapter: 'salto', name: 'address' }))
-    saltoAddr.annotations.label = reg.getElement(new ElemID({ adapter: '', name: 'string' }))
-    saltoAddr.fields.country = reg.getElement(new ElemID({ adapter: '', name: 'string' }))
-    saltoAddr.fields.city = reg.getElement(new ElemID({ adapter: '', name: 'string' }))
+    const stringType = new PrimitiveType({
+      elemID: new ElemID({ name: 'string' }),
+      primitive: PrimitiveTypes.STRING,
+    })
+    const saltoAddr = new ObjectType({
+      elemID: new ElemID({ adapter: 'salto', name: 'address' }),
+    })
+    saltoAddr.annotations.label = stringType
+    saltoAddr.fields.country = stringType
+    saltoAddr.fields.city = stringType
 
-    const saltoOffice = reg.getElement(new ElemID({ adapter: 'salto', name: 'office' }))
-    saltoOffice.annotations.label = reg.getElement(new ElemID({ adapter: '', name: 'string' }))
-    saltoOffice.fields.name = reg.getElement(new ElemID({ adapter: '', name: 'string' }))
-    saltoOffice.fields.location = reg.getElement(new ElemID({ adapter: 'salto', name: 'address' })).clone({
+    const saltoOffice = new ObjectType({
+      elemID: new ElemID({ adapter: 'salto', name: 'office' }),
+    })
+    saltoOffice.annotations.label = stringType
+    saltoOffice.fields.name = stringType
+    saltoOffice.fields.location = saltoAddr
+    saltoOffice.annotationsValues.location = {
       label: 'Office Location',
       description: 'A location of an office',
-    })
+    }
 
-    const saltoEmployee = reg.getElement(new ElemID({ adapter: 'salto', name: 'employee' }))
-    saltoEmployee.fields.name = reg.getElement(new ElemID({ adapter: '', name: 'string' })).clone({
+    const saltoEmployee = new ObjectType({
+      elemID: new ElemID({ adapter: 'salto', name: 'employee' }),
+    })
+    saltoEmployee.fields.name = stringType
+    saltoEmployee.annotationsValues.name = {
       _required: true,
+    }
+    saltoEmployee.fields.nicknames = new ListType({
+      elemID: new ElemID({ adapter: 'salto', name: 'nicknames' }),
+      elementType: stringType,
     })
-    saltoEmployee.fields.nicknames = reg.getElement(
-      new ElemID({ adapter: 'salto', name: 'nicknames' }),
-      PrimitiveTypes.LIST,
-    )
-
-    saltoEmployee.fields.nicknames.elementType = reg.getElement(new ElemID({ adapter: '', name: 'string' }))
     /* eslint-disable-next-line @typescript-eslint/camelcase */
-    saltoEmployee.fields.employee_resident = reg.getElement(new ElemID({ adapter: 'salto', name: 'address' })).clone({
+    saltoEmployee.fields.employee_resident = saltoAddr
+    /* eslint-disable-next-line @typescript-eslint/camelcase */
+    saltoEmployee.annotationsValues.employee_resident = {
       label: 'Employee Resident',
-    })
-    saltoEmployee.fields.company = reg.getElement(new ElemID({ adapter: '', name: 'string' })).clone({
+    }
+    saltoEmployee.fields.company = stringType
+    saltoEmployee.annotationsValues.company = {
       _default: 'salto',
-    })
-    saltoEmployee.fields.office = reg.getElement(new ElemID({ adapter: 'salto', name: 'office' })).clone({
+    }
+    saltoEmployee.fields.office = saltoOffice
+    saltoEmployee.annotationsValues.office = {
       label: 'Based In',
-    })
-    saltoEmployee.fields.office.fields.name.annotationsValues[Type.DEFAULT] = 'HQ'
-    saltoEmployee.fields.office.fields.location.fields.country.annotationsValues[
-      Type.DEFAULT
-    ] = 'IL'
-    saltoEmployee.fields.office.fields.location.fields.city.annotationsValues[
-      Type.DEFAULT
-    ] = 'Raanana'
+      name: {
+        [Type.DEFAULT]: 'HQ',
+      },
+      location: {
+        country: {
+          [Type.DEFAULT]: 'IL',
+        },
+        city: {
+          [Type.DEFAULT]: 'Raanana',
+        },
+      },
+    }
 
-    return [saltoAddr, saltoOffice, saltoEmployee]
+    return [stringType, saltoAddr, saltoOffice, saltoEmployee]
   }
 
   private async runChangeMock(changes: PlanAction[]): Promise<void> {

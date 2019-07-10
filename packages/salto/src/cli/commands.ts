@@ -427,14 +427,15 @@ export default class Cli {
 
   private static findElement(
     keyParts: string[],
-    elements: ElementMap,
+    topLevelElements: ElementMap,
+    searchElements: ElementMap,
     exactMatchOnly: boolean = true,
   ): SearchResult {
     const searchWord = keyParts[0]
     const keyPartsRem = keyParts.slice(1)
     const bestKey = Cli.getMatchingElementName(
       searchWord,
-      Object.keys(elements),
+      Object.keys(searchElements),
       exactMatchOnly,
     )
 
@@ -442,11 +443,12 @@ export default class Cli {
       return null
     }
 
-    const bestElement = Cli.skipListElement(elements[bestKey])
+    const bestElemId = Cli.skipListElement(searchElements[bestKey]).elemID
+    const bestElement = topLevelElements[bestElemId.getFullName()]
     const isGuess = bestKey !== searchWord
     if (!_.isEmpty(keyPartsRem)) {
       const res = isObjectType(bestElement)
-        ? Cli.findElement(keyPartsRem, bestElement.fields, exactMatchOnly)
+        ? Cli.findElement(keyPartsRem, topLevelElements, bestElement.fields, exactMatchOnly)
         : null
 
       return res
@@ -579,9 +581,9 @@ export default class Cli {
     const allElements = await this.core.getAllElements([])
     const elementsMap = Cli.createElementsMap(allElements)
     // First we try with exact match only
-    const searchResult = Cli.findElement(searchWords, elementsMap)
+    const searchResult = Cli.findElement(searchWords, elementsMap, elementsMap)
       // Then we allow near matches
-      || Cli.findElement(searchWords, elementsMap, false)
+      || Cli.findElement(searchWords, elementsMap, elementsMap, false)
     Cli.print(this.formatSearchResults(searchResult, recursionLevel))
   }
 

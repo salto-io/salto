@@ -1,5 +1,5 @@
 import {
-  ObjectType, PrimitiveType, PrimitiveTypes, Element, ElemID, isObjectType, Type,
+  ObjectType, PrimitiveType, PrimitiveTypes, Element, ElemID, isObjectType, Type, InstanceElement,
 } from 'adapter-api'
 import Parser from '../../src/parser/salto'
 
@@ -27,6 +27,17 @@ const expectTypesToMatch = (expected: Type, actual: Type): void => {
   if (isObjectType(expected) && isObjectType(actual)) {
     expectTypeMapToMatch(expected.fields, actual.fields)
   }
+}
+
+/**
+ * Compare two instance elements and expect them to be the same.
+ * This is slightly different than just deep equality beacuse we only expect
+ * the type ID to match and not the whole type instance
+ */
+const expectInstancesToMatch = (expected: InstanceElement, actual: InstanceElement): void => {
+  expect(expected.elemID).toEqual(actual.elemID)
+  expect(expected.value).toEqual(actual.value)
+  expect(expected.type.elemID).toEqual(actual.type.elemID)
 }
 
 describe('Salto parser', () => {
@@ -71,7 +82,16 @@ describe('Salto parser', () => {
             }
           ]
         }
-      }`
+      }
+      
+      salesforce_test inst {
+        name = "me"
+      }
+
+      salesforce {
+        username = "foo"
+      }
+      `
 
       const { elements } = await Parser.parse(Buffer.from(body), 'none')
       parsedElements = elements
@@ -79,7 +99,7 @@ describe('Salto parser', () => {
 
     describe('parse result', () => {
       it('should have two types', () => {
-        expect(parsedElements.length).toBe(5)
+        expect(parsedElements.length).toBe(7)
       })
     })
 
@@ -185,6 +205,44 @@ describe('Salto parser', () => {
         })
       })
     })
+
+    describe('instance', () => {
+      let inst: InstanceElement
+      beforeAll(() => {
+        inst = parsedElements[5] as InstanceElement
+      })
+      it('should have the right id', () => {
+        expect(inst.elemID.adapter).toEqual('salesforce')
+        expect(inst.elemID.name).toEqual('inst')
+      })
+      it('should have the right type', () => {
+        expect(inst.type.elemID.adapter).toEqual('salesforce')
+        expect(inst.type.elemID.name).toEqual('test')
+      })
+      it('should have values', () => {
+        expect(inst.value).toHaveProperty('name')
+        expect(inst.value.name).toEqual('me')
+      })
+    })
+
+    describe('config', () => {
+      let config: InstanceElement
+      beforeAll(() => {
+        config = parsedElements[6] as InstanceElement
+      })
+      it('should have the right id', () => {
+        expect(config.elemID.adapter).toEqual('salesforce')
+        expect(config.elemID.name).toEqual(ElemID.CONFIG_INSTANCE_NAME)
+      })
+      it('should have the right type', () => {
+        expect(config.type.elemID.adapter).toEqual('salesforce')
+        expect(config.type.elemID.name).toBeUndefined()
+      })
+      it('should have values', () => {
+        expect(config.value).toHaveProperty('username')
+        expect(config.value.username).toEqual('foo')
+      })
+    })
   })
 
   describe('error tests', () => {
@@ -196,8 +254,8 @@ describe('Salto parser', () => {
     })
   })
   it('fails on invalid top level syntax', async () => {
-    const body = 'bla {}'
-    await expect(Parser.parse(Buffer.from(body), 'none')).rejects.toThrow()
+    const body = 'bla'
+    expect((await Parser.parse(Buffer.from(body), 'none')).errors.length).not.toBe(0)
   })
 })
 
@@ -238,14 +296,42 @@ describe('Salto Dump', () => {
     },
   }
 
+  const instance = new InstanceElement(
+    new ElemID({ adapter: 'salesforce', name: 'me' }),
+    model,
+    {
+      name: 'me',
+      num: 7,
+    }
+  )
+
+  const config = new InstanceElement(
+    new ElemID({ adapter: 'salesforce', name: ElemID.CONFIG_INSTANCE_NAME }),
+    model,
+    {
+      name: 'other',
+      num: 5,
+    }
+  )
+
   let body: Buffer
 
   beforeAll(async () => {
-    body = await Parser.dump([strType, numType, boolType, model])
+    body = await Parser.dump([strType, numType, boolType, model, instance, config])
   })
 
-  it('dumps primitive string', () => {
+  it('dumps primitive types', () => {
     expect(body).toMatch('type "salesforce_string" "is" "string" {')
+    expect(body).toMatch('type "salesforce_number" "is" "number" {')
+    expect(body).toMatch('type "salesforce_bool" "is" "boolean" {')
+  })
+
+  it('dumps instance elements', () => {
+    expect(body).toMatch(/salesforce_test "?me"? {/)
+  })
+
+  it('dumps config elements', () => {
+    expect(body).toMatch(/salesforce_test {/)
   })
 
   describe('dumped model', () => {
@@ -268,7 +354,7 @@ describe('Salto Dump', () => {
     it('can be parsed back', async () => {
       const { elements, errors } = await Parser.parse(body, 'none')
       expect(errors.length).toEqual(0)
-      expect(elements.length).toEqual(4)
+      expect(elements.length).toEqual(6)
       expect(elements[0]).toEqual(strType)
       expect(elements[1]).toEqual(numType)
       expect(elements[2]).toEqual(boolType)
@@ -277,6 +363,8 @@ describe('Salto Dump', () => {
       // a slightly modified version of the original
       model.annotationsValues.num = {}
       expectTypesToMatch(elements[3] as Type, model)
+      expectInstancesToMatch(elements[4] as InstanceElement, instance)
+      expectInstancesToMatch(elements[5] as InstanceElement, config)
     })
   })
 })

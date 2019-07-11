@@ -2,7 +2,7 @@ import * as _ from 'lodash'
 
 import {
   Type, ElemID, ObjectType, PrimitiveType, PrimitiveTypes,
-  isObjectType, isPrimitiveType, Element, isInstanceElement,
+  isObjectType, isPrimitiveType, Element, isInstanceElement, InstanceElement,
 } from 'adapter-api'
 import HCLParser from './hcl'
 
@@ -97,6 +97,23 @@ export default class Parser {
     })
   }
 
+  private static parseInstance(instanceBlock: HCLBlock): Element {
+    let typeID = this.getElemID(instanceBlock.type)
+    if (typeID.adapter === undefined) {
+      // In this case if there is just a single name we have to assume it is actually the adapter
+      typeID = new ElemID({ adapter: typeID.name })
+    }
+    const name = instanceBlock.labels.length === 0
+      ? ElemID.CONFIG_INSTANCE_NAME
+      : instanceBlock.labels[0]
+
+    return new InstanceElement(
+      new ElemID({ adapter: typeID.adapter, name }),
+      new ObjectType({ elemID: typeID }),
+      instanceBlock.attrs,
+    )
+  }
+
   /**
    * Parse a blueprint
    *
@@ -117,6 +134,9 @@ export default class Parser {
       }
       if (value.type === Keywords.TYPE_DEFINITION) {
         return this.parsePrimitiveType(value)
+      }
+      if (value.labels.length === 0 || value.labels.length === 1) {
+        return this.parseInstance(value)
       }
       // Without this exception the linter won't allow us to end the function
       // without a return value
@@ -167,11 +187,13 @@ export default class Parser {
           blocks: [],
         }
       } else if (isInstanceElement(elem)) {
+        const labels = elem.elemID.name === ElemID.CONFIG_INSTANCE_NAME
+          ? []
+          : [elem.elemID.name || '']
+
         block = {
           type: elem.type.elemID.getFullName(),
-          labels: [
-            elem.elemID.name || '',
-          ],
+          labels,
           attrs: elem.value,
           blocks: [],
         }

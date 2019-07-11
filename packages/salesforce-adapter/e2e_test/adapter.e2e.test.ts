@@ -91,7 +91,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
   describe('should perform CRUD operations', () => {
     const sfAdapter = adapter()
 
-    const objectExist = async (name: string, fields?: string[], missingFields?: string[],
+    const objectExists = async (name: string, fields?: string[], missingFields?: string[],
       label?: string): Promise<boolean> => {
       const result = (await sfAdapter.client.readMetadata(constants.CUSTOM_OBJECT, name)
         ) as CustomObject
@@ -109,11 +109,20 @@ describe('Test Salesforce adapter E2E with real account', () => {
       return (!missingFields || missingFields.every(f => !fieldNames.includes(f)))
     }
 
-    const permissionsExists = async (profile: string, field: string): Promise<boolean> => {
+    const permissionExists = async (profile: string, fields: string[]): Promise<boolean[]> => {
       const profileInfo = (await sfAdapter.client.readMetadata(constants.METADATA_PROFILE_OBJECT,
         profile)) as ProfileInfo
-      return profileInfo.fieldPermissions.map(f => f.field).includes(field)
+      const fieldPermissions = profileInfo.fieldPermissions.map(f => f.field)
+      return fields.map(field => fieldPermissions.includes(field))
     }
+
+    const stringType = new PrimitiveType({
+      elemID: new ElemID({
+        adapter: constants.SALESFORCE,
+        name: 'string',
+      }),
+      primitive: PrimitiveTypes.STRING,
+    })
 
     it('should add custom object', async () => {
       const customObjectName = 'TestAddCustom__c'
@@ -132,17 +141,11 @@ describe('Test Salesforce adapter E2E with real account', () => {
           },
         },
         fields: {
-          description: new PrimitiveType({
-            elemID: new ElemID({
-              adapter: constants.SALESFORCE,
-              name: 'string',
-            }),
-            primitive: PrimitiveTypes.STRING,
-          }),
+          description: stringType,
         },
       })
 
-      if (await objectExist(customObjectName) === true) {
+      if (await objectExists(customObjectName) === true) {
         await sfAdapter.remove(element)
       }
       const post = await sfAdapter.add(element)
@@ -153,9 +156,9 @@ describe('Test Salesforce adapter E2E with real account', () => {
         post.annotationsValues.description[constants.API_NAME]
       ).toBe('Description__c')
 
-      expect(await objectExist(customObjectName)).toBe(true)
-      expect(await permissionsExists('Admin', `${customObjectName}.Description__c`)).toBe(true)
-      expect(await permissionsExists('Standard', `${customObjectName}.Description__c`)).toBe(true)
+      expect(await objectExists(customObjectName)).toBe(true)
+      expect((await permissionExists('Admin', [`${customObjectName}.Description__c`]))[0]).toBe(true)
+      expect((await permissionExists('Standard', [`${customObjectName}.Description__c`]))[0]).toBe(true)
 
       // Clean-up
       await sfAdapter.remove(post)
@@ -174,25 +177,19 @@ describe('Test Salesforce adapter E2E with real account', () => {
           },
         },
         fields: {
-          description: new PrimitiveType({
-            elemID: new ElemID({
-              adapter: constants.SALESFORCE,
-              name: 'string',
-            }),
-            primitive: PrimitiveTypes.STRING,
-          }),
+          description: stringType,
         },
       })
       // Setup
-      if (await objectExist(customObjectName) === false) {
+      if (await objectExists(customObjectName) === false) {
         await sfAdapter.add(element)
-        expect(await objectExist(customObjectName)).toBe(true)
+        expect(await objectExists(customObjectName)).toBe(true)
       }
       // Run
       const removeResult = await sfAdapter.remove(element)
       // Validate
       expect(removeResult).toBeUndefined()
-      expect(await objectExist(customObjectName)).toBe(false)
+      expect(await objectExists(customObjectName)).toBe(false)
     })
 
     it('should modify an object by creating a new custom field and remove another one', async () => {
@@ -200,20 +197,8 @@ describe('Test Salesforce adapter E2E with real account', () => {
       const oldElement = new ObjectType({
         elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test modify fields' }),
         fields: {
-          address: new PrimitiveType({
-            elemID: new ElemID({
-              adapter: constants.SALESFORCE,
-              name: 'string',
-            }),
-            primitive: PrimitiveTypes.STRING,
-          }),
-          banana: new PrimitiveType({
-            elemID: new ElemID({
-              adapter: constants.SALESFORCE,
-              name: 'string',
-            }),
-            primitive: PrimitiveTypes.STRING,
-          }),
+          address: stringType,
+          banana: stringType,
         },
         annotationsValues: {
           required: false,
@@ -229,32 +214,20 @@ describe('Test Salesforce adapter E2E with real account', () => {
         },
       })
 
-      if (await objectExist(customObjectName) === true) {
+      if (await objectExists(customObjectName) === true) {
         await sfAdapter.remove(oldElement)
       }
       const addResult = await sfAdapter.add(oldElement)
       // Verify setup was performed properly
       expect(addResult).toBeInstanceOf(ObjectType)
 
-      expect(await objectExist(customObjectName, ['Address__c', 'Banana__c'])).toBe(true)
+      expect(await objectExists(customObjectName, ['Address__c', 'Banana__c'])).toBe(true)
 
       const newElement = new ObjectType({
         elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test modify fields' }),
         fields: {
-          banana: new PrimitiveType({
-            elemID: new ElemID({
-              adapter: constants.SALESFORCE,
-              name: 'string',
-            }),
-            primitive: PrimitiveTypes.STRING,
-          }),
-          description: new PrimitiveType({
-            elemID: new ElemID({
-              adapter: constants.SALESFORCE,
-              name: 'string',
-            }),
-            primitive: PrimitiveTypes.STRING,
-          }),
+          banana: stringType,
+          description: stringType,
         },
         annotationsValues: {
           required: false,
@@ -277,9 +250,9 @@ describe('Test Salesforce adapter E2E with real account', () => {
       const modificationResult = await sfAdapter.update(oldElement, newElement)
 
       expect(modificationResult).toBeInstanceOf(ObjectType)
-      expect(await objectExist(customObjectName, ['Banana__c', 'Description__c'],
+      expect(await objectExists(customObjectName, ['Banana__c', 'Description__c'],
         ['Address__c'])).toBe(true)
-      expect(await permissionsExists('Admin', `${customObjectName}.Description__c`)).toBe(true)
+      expect((await permissionExists('Admin', [`${customObjectName}.Description__c`]))[0]).toBe(true)
 
       // Clean-up
       await sfAdapter.remove(oldElement)
@@ -290,20 +263,8 @@ describe('Test Salesforce adapter E2E with real account', () => {
       const oldElement = new ObjectType({
         elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test modify annotations' }),
         fields: {
-          address: new PrimitiveType({
-            elemID: new ElemID({
-              adapter: constants.SALESFORCE,
-              name: 'string',
-            }),
-            primitive: PrimitiveTypes.STRING,
-          }),
-          banana: new PrimitiveType({
-            elemID: new ElemID({
-              adapter: constants.SALESFORCE,
-              name: 'string',
-            }),
-            primitive: PrimitiveTypes.STRING,
-          }),
+          address: stringType,
+          banana: stringType,
         },
         annotationsValues: {
           required: false,
@@ -321,27 +282,15 @@ describe('Test Salesforce adapter E2E with real account', () => {
         },
       })
 
-      if (await objectExist(customObjectName) === false) {
+      if (await objectExists(customObjectName) === false) {
         await sfAdapter.add(oldElement)
       }
 
       const newElement = new ObjectType({
         elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test modify annotations' }),
         fields: {
-          address: new PrimitiveType({
-            elemID: new ElemID({
-              adapter: constants.SALESFORCE,
-              name: 'string',
-            }),
-            primitive: PrimitiveTypes.STRING,
-          }),
-          banana: new PrimitiveType({
-            elemID: new ElemID({
-              adapter: constants.SALESFORCE,
-              name: 'string',
-            }),
-            primitive: PrimitiveTypes.STRING,
-          }),
+          address: stringType,
+          banana: stringType,
         },
         annotationsValues: {
           required: false,
@@ -362,7 +311,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
       // Test
       const modificationResult = await sfAdapter.update(oldElement, newElement)
       expect(modificationResult).toBeInstanceOf(ObjectType)
-      expect(await objectExist(customObjectName, undefined, undefined, 'test label 2')).toBe(true)
+      expect(await objectExists(customObjectName, undefined, undefined, 'test label 2')).toBe(true)
 
       const readResult = (await sfAdapter.client.readMetadata(
         constants.CUSTOM_OBJECT,
@@ -371,6 +320,94 @@ describe('Test Salesforce adapter E2E with real account', () => {
       const label = isArray(readResult.fields) ? readResult.fields.filter(f => f.fullName === 'Banana__c')[0].label
         : readResult.fields.label
       expect(label).toBe('Banana Split')
+
+      // Clean-up
+      await sfAdapter.remove(oldElement)
+    })
+
+    it("should modify an object's custom fields' permissions E2E", async () => {
+      // Setup
+      const customObjectName = 'TestModifyCustomFieldsPermissions__c'
+      const oldElement = new ObjectType({
+        elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test modify custom field permissions' }),
+        fields: {
+          address: stringType,
+          banana: stringType,
+        },
+        annotationsValues: {
+          required: false,
+          _default: 'test',
+          label: 'test label',
+          [constants.API_NAME]: customObjectName,
+          address: {
+            [constants.API_NAME]: 'Address__c',
+            [constants.FIELD_LEVEL_SECURITY]: {
+              admin: { editable: true, readable: true },
+            },
+          },
+          banana: {
+            [constants.API_NAME]: 'Banana__c',
+            [constants.FIELD_LEVEL_SECURITY]: {
+              standard: { editable: true, readable: true },
+            },
+          },
+        },
+      })
+
+      if (await objectExists(customObjectName) === true) {
+        await sfAdapter.remove(oldElement)
+      }
+      const addResult = await sfAdapter.add(oldElement)
+      // Verify setup was performed properly
+      expect(addResult).toBeInstanceOf(ObjectType)
+
+      const newElement = new ObjectType({
+        elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test modify custom field permissions' }),
+        fields: {
+          address: stringType,
+          banana: stringType,
+        },
+        annotationsValues: {
+          required: false,
+          _default: 'test',
+          label: 'test label',
+          [constants.API_NAME]: customObjectName,
+          address: {
+            [constants.API_NAME]: 'Address__c',
+            [constants.FIELD_LEVEL_SECURITY]: {
+              standard: { editable: true, readable: true },
+            },
+          },
+          banana: {
+            [constants.API_NAME]: 'Banana__c',
+            [constants.FIELD_LEVEL_SECURITY]: {
+              admin: { editable: true, readable: true },
+              standard: { editable: true, readable: true },
+            },
+          },
+        },
+      })
+
+      // Test
+      const modificationResult = await sfAdapter.update(oldElement, newElement)
+      expect(modificationResult).toBeInstanceOf(ObjectType)
+
+      expect(await objectExists(customObjectName)).toBe(true)
+
+      const [addressStandardExists, bananaStandardExists] = await permissionExists(
+        'Standard',
+        [`${customObjectName}.Address__c`, `${customObjectName}.Banana__c`]
+      )
+      expect(addressStandardExists).toBe(true)
+      expect(bananaStandardExists).toBe(true)
+      // The addressAdminExists will be used once we figure out how to remove existing permission
+      const [/* addressAdminExists, */bananaAdminExists] = await permissionExists(
+        'Admin',
+        [`${customObjectName}.Address__c`, `${customObjectName}.Banana__c`]
+      )
+      // The following step is disabled until we figure out how to remove an existing permission
+      // expect(addressAdminExists).toBe(false)
+      expect(bananaAdminExists).toBe(true)
 
       // Clean-up
       await sfAdapter.remove(oldElement)

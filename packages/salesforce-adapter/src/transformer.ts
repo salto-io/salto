@@ -63,7 +63,7 @@ export const toCustomField = (
 ): CustomField =>
   new CustomField(
     fullname ? fieldFullName(object, name) : apiName(object, name),
-    object.fields[name].elemID.name,
+    object.fields[name].elemID.name as string,
     object.getAnnotationValue(name, LABEL),
     object.getAnnotationValue(name, Type.REQUIRED),
     object.getAnnotationValue(name, PICKLIST_VALUES),
@@ -89,7 +89,7 @@ export const toProfiles = (object: ObjectType, fields: string[]): ProfileInfo[] 
       if (!profiles.has(profile)) {
         profiles.set(profile, new ProfileInfo(sfCase(profile)))
       }
-      profiles.get(profile).fieldPermissions.push({
+      (profiles.get(profile) as ProfileInfo).fieldPermissions.push({
         field: fieldFullName(object, field),
         editable: permissions.editable,
         readable: permissions.readable,
@@ -162,7 +162,7 @@ Map<string, Map<string, FieldPermission>> => {
       if (!permissions.has(name)) {
         permissions.set(name, new Map<string, FieldPermission>())
       }
-      permissions.get(name).set(info.fullName, {
+      (permissions.get(name) as Map<string, FieldPermission>).set(info.fullName, {
         editable: fieldPermission.editable,
         readable: fieldPermission.readable,
       })

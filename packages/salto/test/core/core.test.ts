@@ -4,7 +4,7 @@ import {
   ElemID, PrimitiveType, PrimitiveTypes, InstanceElement, ObjectType,
 } from 'adapter-api'
 import SalesforceAdapter from 'salesforce-adapter'
-import { SaltoCore } from '../../src/core/core'
+import { SaltoCore, Blueprint } from '../../src/core/core'
 
 async function getConfigFromUser(configType: ObjectType): Promise<InstanceElement> {
   const value = {
@@ -71,16 +71,17 @@ describe('Test core.ts', () => {
     getConfigFromUser,
   })
 
+  const blueprintsDirectory = path.join(__dirname, '../../test', 'blueprints')
+
+  const readBlueprints = (...filenames: string[]): Promise<Blueprint[]> => Promise.all(
+    filenames.map(async (filename: string) => ({
+      buffer: await fs.readFile(path.join(blueprintsDirectory, filename), 'utf8'),
+      filename,
+    }))
+  )
+
   it('Should return all elements in the blueprint', async () => {
-    const blueprints = [{
-      buffer: await fs.readFile(path.join(__dirname, '..', 'blueprints', 'salto.bp'), 'utf8'),
-      filename: 'salto.bp',
-    },
-    {
-      buffer: await fs.readFile(path.join(__dirname, '..', 'blueprints', 'salto2.bp'), 'utf8'),
-      filename: 'salto2.bp',
-    },
-    ]
+    const blueprints = await readBlueprints('salto.bp', 'salto2.bp')
     const elements = await core.getAllElements(blueprints)
     const fullNames = elements.map(e => e.elemID.getFullName())
     expect(fullNames).toEqual(
@@ -88,45 +89,35 @@ describe('Test core.ts', () => {
     )
   })
 
-  it('should throw an error if the bp is not valid', async () => {
-    const blueprint = {
-      buffer: await fs.readFile(path.join(__dirname, '..', 'blueprints', 'error.bp'), 'utf8'),
-      filename: 'error.bp',
-    }
-    await expect(core.getAllElements([blueprint])).rejects.toThrow()
-  })
-
-  it('should create an apply plan', async () => {
-    const blueprint = {
-      buffer: await fs.readFile(path.join(__dirname, '..', 'blueprints', 'salto.bp'), 'utf8'),
-      filename: 'salto.bp',
-    }
-    await core.apply([blueprint], true)
-  })
-
-  it('should apply an apply plan', async () => {
-    const blueprint = {
-      buffer: await fs.readFile(path.join(__dirname, '..', 'blueprints', 'salto.bp'), 'utf8'),
-      filename: 'salto.bp',
-    }
-    await core.apply([blueprint])
-    expect(core.adapters.salesforce.add).toHaveBeenCalled()
+  it('should throw an error if the bp is not valid2', async () => {
+    const blueprints = await readBlueprints('error.bp')
+    await expect(core.getAllElements(blueprints)).rejects.toThrow()
   })
 
   it('should throw error on missing adapter', async () => {
-    const blueprint = {
-      buffer: await fs.readFile(path.join(__dirname, '..', 'blueprints', 'missing.bp'), 'utf8'),
-      filename: 'salto.bp',
-    }
-    await expect(core.apply([blueprint], false)).rejects.toThrow()
+    const blueprints = await readBlueprints('missing.bp')
+    await expect(core.apply(blueprints, false)).rejects.toThrow()
   })
 
   it('should throw error on adapter fail', async () => {
-    const blueprint = {
-      buffer: await fs.readFile(path.join(__dirname, '..', 'blueprints', 'fail.bp'), 'utf8'),
-      filename: 'salto.bp',
-    }
-    await expect(core.apply([blueprint], false)).rejects.toThrow()
+    const blueprints = await readBlueprints('fail.bp')
+    await expect(core.apply(blueprints, false)).rejects.toThrow()
+  })
+
+  describe('given a valid blueprint', () => {
+    let blueprints: Blueprint[]
+    beforeEach(async () => {
+      blueprints = await readBlueprints('salto.bp')
+    })
+
+    it('should create an apply plan', async () => {
+      await core.apply(blueprints, true)
+    })
+
+    it('should apply an apply plan', async () => {
+      await core.apply(blueprints)
+      expect(core.adapters.salesforce.add).toHaveBeenCalled()
+    })
   })
 
   describe('discover', () => {

@@ -1,0 +1,18 @@
+node_modules
+
+coverage
+/reports
+
+# Editors
+.idea
+*.iml
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# test results
+junit.xml
+
+# yarn
+yarn-error.log

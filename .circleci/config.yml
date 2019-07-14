@@ -13,23 +13,20 @@ jobs:
       # Download and cache dependencies
       - restore_cache:
           keys:
-            - v1-dependencies-{{ checksum "package-lock.json" }}
+            - v1-dependencies-{{ checksum "yarn.lock" }}
 
-      - run: npm install
+      - run: yarn
 
       - save_cache:
           paths:
             - node_modules
-          key: v1-dependencies-{{ checksum "package-lock.json" }}
+          key: v1-dependencies-{{ checksum "yarn.lock" }}
 
       - run:
           name: Run Jest tests
-          command: npx jest --ci --runInBand --forceExit --verbose --detectOpenHandles --reporters=default --reporters=jest-junit
+          command: yarn run jest -- --ci --runInBand --forceExit --verbose --detectOpenHandles --reporters=default --reporters=jest-junit
           environment:
             JEST_JUNIT_OUTPUT: "reports/junit/js-test-results.xml"
-
-      - store_test_results:
-          path: reports
 
       - store_artifacts:
           path: reports
@@ -37,5 +34,5 @@ jobs:
       - run:
           name: Upload coverage to codecov.io
           command: npx codecov -f coverage/*.json
-      
+
 

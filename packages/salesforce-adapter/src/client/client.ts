@@ -13,7 +13,7 @@ const apiVersion = '45.0'
 
 export default class SalesforceClient {
   private conn: Connection
-  private isLoggedIn: boolean
+  private isLoggedIn: boolean = false
 
   constructor(
     private username: string,

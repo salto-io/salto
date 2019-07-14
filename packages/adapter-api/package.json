@@ -4,7 +4,7 @@
   "description": "Salto Adapter API",
   "repository": {
     "type": "git",
-    "url": "https://github.com/salto-io/adapter-api"
+    "url": "https://github.com/salto-io/salto_monorepo"
   },
   "private": true,
   "files": [
@@ -42,7 +42,6 @@
     "@typescript-eslint/eslint-plugin": "^1.10.2",
     "@typescript-eslint/parser": "^1.10.2",
     "chai": "^4.1.2",
-    "codecov": "^3.5.0",
     "concurrently": "^3.5.1",
     "coverage-diff-back": "^0.1.0",
     "dts-gen": "^0.5.8",

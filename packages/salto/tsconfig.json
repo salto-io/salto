@@ -1,29 +1,21 @@
 {
+    "extends": "../../tsconfig.base.json",
     "compilerOptions": {
-        "declaration": true,
-        "module": "commonjs",
-        "esModuleInterop": true,
-        "target": "es6",
-        "noImplicitAny": true,
-        "moduleResolution": "node",
-        "noUnusedLocals": true,
-        "noUnusedParameters": true,
-        "strictNullChecks": true,
-        "strict": true,
-        "sourceMap": true,
-        "outDir": "dist",
         "baseUrl": ".",
+        "outDir": "dist",
         "paths": {
             "*": [
+                "src/types/*",
                 "node_modules/*",
-                "src/types/*"
+                "../../node_modules/*"
             ],
-            "jsforce": ["node_modules/jsforce-types"]
+            "jsforce": [
+                "../../node_modules/jsforce-types"
+            ]
         }
     },
     "include": [
         "index.ts",
         "src/**/*",
-        "test/**/*"
     ]
 }

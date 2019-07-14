@@ -123,7 +123,7 @@ describe('Test commands.ts', () => {
 
   it('should output the proper plan when the plan phase is invoked', async () => {
     resetConsoleOutput()
-    const blueprintsFiles = [`${__dirname}/blueprints/salto.bp`]
+    const blueprintsFiles = [`${__dirname}/../test/blueprints/salto.bp`]
     await cli.plan(blueprintsFiles)
     expect(outputData).toMatch('Salto will perform the following action')
     expect(outputData).toMatch('Do you have a sales team')
@@ -132,7 +132,7 @@ describe('Test commands.ts', () => {
 
   it('should output the proper plan when the plan phase is invoked with dir', async () => {
     resetConsoleOutput()
-    const blueprintsDir = `${__dirname}/blueprints`
+    const blueprintsDir = `${__dirname}/../test/blueprints`
 
     await cli.plan([], blueprintsDir)
     expect(outputData).toMatch('Salto will perform the following action')
@@ -142,7 +142,7 @@ describe('Test commands.ts', () => {
 
   it('should propmt the user for input after printing the plan when apply is invoked', async () => {
     resetConsoleOutput()
-    const blueprintsFiles = [`${__dirname}/blueprints/salto.bp`]
+    const blueprintsFiles = [`${__dirname}/../test/blueprints/salto.bp`]
     await cli.apply(blueprintsFiles, undefined, true)
     expect(outputData).toMatch('Salto will perform the following action')
     expect(outputData).toMatch('Salto-cli will start the apply step')
@@ -151,7 +151,7 @@ describe('Test commands.ts', () => {
 
   it('should throw error when the blueprint files do no exist', async () => {
     resetConsoleOutput()
-    const blueprintsFiles = [`${__dirname}/blueprints/salto_not_here.bp`]
+    const blueprintsFiles = [`${__dirname}/../test/blueprints/salto_not_here.bp`]
     await cli.apply(blueprintsFiles, undefined, true)
     expect(outputData).toMatch('Error: Failed to load blueprints files')
   })

@@ -1,8 +1,10 @@
-/* eslint-disable @typescript-eslint/no-var-requires */
+const deepMerge = require('../../build_utils/deep_merge')
 
-const _ = require('lodash')
-const defaults = require('./jest.common.config')
-
-module.exports = _.merge(defaults, {
-  testMatch: ['<rootDir>/e2e_test/**/*.test.(ts|js)'],
-})
+module.exports = deepMerge(
+  require('./jest.base.config.js'),
+  {
+    name: 'salesforce-adapter-e2e',
+    displayName: 'salesforce-adapter-e2e',
+    testMatch: ['<rootDir>/e2e_test/**/*.test.(ts|js)'],
+  }
+)

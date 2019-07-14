@@ -1,0 +1,63 @@
+{
+  "name": "salesforce-adapter",
+  "version": "0.1.0",
+  "description": "Salto Salesforce adapter",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/salto-io/salesforce-adapter"
+  },
+  "private": true,
+  "files": [
+    "dist/**/*"
+  ],
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "prepare": "npm run build",
+    "prepublishOnly": "npm test",
+    "build": "npm run lint && npm run build-ts",
+    "test": "jest --forceExit --detectOpenHandles",
+    "e2e-test": "jest --config=jest.e2e.config.js --forceExit --detectOpenHandles",
+    "watch-test": "npm run test -- --watchAll",
+    "build-ts": "tsc",
+    "watch-ts": "tsc -w",
+    "lint": "eslint --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
+    "lint-fix": "npm run lint -- --fix"
+  },
+  "dependencies": {
+    "@types/lodash": "^4.14.133",
+    "adapter-api": "github:salto-io/adapter-api",
+    "buffer": "^5.2.1",
+    "events": "^3.0.0",
+    "jsforce": "github:salto-io/jsforce",
+    "jsforce-types": "github:salto-io/jsforce-types",
+    "lodash": "^4.17.11",
+    "stream": "0.0.2",
+    "winston": "^3.2.1"
+  },
+  "devDependencies": {
+    "@types/jest": "^22.1.3",
+    "@types/node": "^9.4.6",
+    "@types/shelljs": "^0.7.8",
+    "@types/supertest": "^2.0.4",
+    "@typescript-eslint/eslint-plugin": "^1.9.0",
+    "@typescript-eslint/parser": "^1.9.0",
+    "chai": "^4.1.2",
+    "codecov": "^3.5.0",
+    "concurrently": "^3.5.1",
+    "eslint": "^5.16.0",
+    "eslint-config-airbnb": "^17.1.0",
+    "eslint-plugin-import": "^2.17.3",
+    "eslint-plugin-jest": "^22.6.4",
+    "eslint-plugin-jsx-a11y": "^6.2.1",
+    "eslint-plugin-react": "^7.13.0",
+    "jest": "^24.0.0",
+    "jest-junit": "^6.4.0",
+    "shelljs": "^0.8.1",
+    "supertest": "^3.0.0",
+    "ts-jest": "^24.0.2",
+    "ts-loader": "^6.0.2",
+    "ts-node": "^5.0.0",
+    "typescript": "^3.4.5"
+  }
+}

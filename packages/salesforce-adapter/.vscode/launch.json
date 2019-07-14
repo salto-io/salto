@@ -1,0 +1,74 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Fingerprint",
+      "type": "node",
+      "request": "launch",
+      "internalConsoleOptions": "openOnSessionStart",
+      "protocol": "inspector",
+      "sourceMaps": true,
+      "cwd": "${workspaceRoot}",
+      // Use ts-node as drop-in replacement for node
+      // "runtimeExecutable": "${workspaceRoot}/node_modules/.bin/ts-node",
+      // Manually specify the args to pass
+      "runtimeArgs": [
+          "--nolazy",
+          "-r",
+          "ts-node/register"
+      ],
+      "args": ["${workspaceRoot}/src/tools/fingerprint.ts", "YOUR_USERNAME", "YOUR_PASSWORD", "TRUE_OR_FALSE_IF_SANDBOX_ACCOUNT"]
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug Jest Tests",
+      "cwd": "${workspaceFolder}",
+      "args": [
+          "--inspect-brk",
+          "${workspaceRoot}/node_modules/.bin/jest",
+          "--runInBand",
+          "--config",
+          "${workspaceRoot}/jest.config.js"
+      ],
+      "windows": {
+          "args": [
+              "--inspect-brk",
+              "${workspaceRoot}/node_modules/jest/bin/jest.js",
+              "--runInBand",
+              "--config",
+              "${workspaceRoot}/jest.config.js"
+          ],
+      },
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen"
+  },
+  {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug Jest E2E Tests",
+      "cwd": "${workspaceFolder}",
+      "args": [
+          "--inspect-brk",
+          "${workspaceRoot}/node_modules/.bin/jest",
+          "--runInBand",
+          "--config",
+          "${workspaceRoot}/jest.e2e.config.js"
+      ],
+      "windows": {
+          "args": [
+              "--inspect-brk",
+              "${workspaceRoot}/node_modules/jest/bin/jest.js",
+              "--runInBand",
+              "--config",
+              "${workspaceRoot}/jest.config.js"
+          ],
+      },
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen"
+  },
+  ]
+}

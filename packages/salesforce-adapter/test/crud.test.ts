@@ -97,12 +97,12 @@ describe('Test SalesforceAdapter CRUD', () => {
     // Verify permissions creation
     expect(mockUpdate.mock.calls.length).toBe(1)
     const profiles = mockUpdate.mock.calls[0][1] as ProfileInfo[]
-    const admin = profiles.filter(p => p.fullName === 'Admin').pop()
+    const admin = profiles.filter(p => p.fullName === 'Admin').pop() as ProfileInfo
     expect(admin.fieldPermissions.length).toBe(1)
     expect(admin.fieldPermissions[0].field).toBe('Test__c.Description__c')
     expect(admin.fieldPermissions[0].editable).toBe(true)
     expect(admin.fieldPermissions[0].readable).toBe(true)
-    const standard = profiles.filter(p => p.fullName === 'Standard').pop()
+    const standard = profiles.filter(p => p.fullName === 'Standard').pop() as ProfileInfo
     expect(standard.fieldPermissions.length).toBe(1)
     expect(standard.fieldPermissions[0].field).toBe('Test__c.Description__c')
     expect(standard.fieldPermissions[0].editable).toBe(false)

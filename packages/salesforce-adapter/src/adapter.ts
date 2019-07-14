@@ -61,7 +61,7 @@ const annotateApiNameAndLabel = (element: ObjectType): void => {
     }
   }
 
-  innerAnnotate(element.annotationsValues, element.elemID.name)
+  innerAnnotate(element.annotationsValues, element.elemID.name as string)
   Object.keys(element.fields).forEach(fieldName => {
     // Initialize annotation values if needed
     if (element.annotationsValues[fieldName] === undefined) {
@@ -283,7 +283,7 @@ export default class SalesforceAdapter {
     if (profiles.length > 0) {
       return this.client.update(constants.METADATA_PROFILE_OBJECT, profiles)
     }
-    return undefined
+    return []
   }
 
   /**

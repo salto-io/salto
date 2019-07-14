@@ -7,11 +7,12 @@
 ### Build instructions
 
 ```
-npm install
-npm run build
+yarn
 ```
 
 ### Usage instructions
-Add "adapter-api" : "github:salto-io/adapter-api" to package.json
-Run NPM insall
+
+Add adapter-api to package.json: `yarn add adapter-api`
+Run `yarn install`
+
 import the needed modules from 'adapter-api'

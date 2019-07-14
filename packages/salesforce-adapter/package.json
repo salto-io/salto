@@ -4,7 +4,7 @@
   "description": "Salto Salesforce adapter",
   "repository": {
     "type": "git",
-    "url": "https://github.com/salto-io/salesforce-adapter"
+    "url": "https://github.com/salto-io/salto_monorepo"
   },
   "private": true,
   "files": [
@@ -13,24 +13,24 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "prepare": "npm run build",
-    "prepublishOnly": "npm test",
-    "build": "npm run lint && npm run build-ts",
+    "prepare": "yarn run build",
+    "prepublishOnly": "yarn test",
+    "build": "yarn run lint && yarn run build-ts",
     "test": "jest --forceExit --detectOpenHandles",
     "e2e-test": "jest --config=jest.e2e.config.js --forceExit --detectOpenHandles",
-    "watch-test": "npm run test -- --watchAll",
+    "watch-test": "yarn run test -- --watchAll",
     "build-ts": "tsc",
     "watch-ts": "tsc -w",
     "lint": "eslint --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
-    "lint-fix": "npm run lint -- --fix"
+    "lint-fix": "yarn run lint -- --fix"
   },
   "dependencies": {
     "@types/lodash": "^4.14.133",
-    "adapter-api": "github:salto-io/adapter-api",
+    "adapter-api": "0.1.0",
     "buffer": "^5.2.1",
     "events": "^3.0.0",
-    "jsforce": "github:salto-io/jsforce",
-    "jsforce-types": "github:salto-io/jsforce-types",
+    "jsforce": "https://github.com/salto-io/jsforce.git",
+    "jsforce-types": "https://github.com/salto-io/jsforce-types.git",
     "lodash": "^4.17.11",
     "stream": "0.0.2",
     "winston": "^3.2.1"
@@ -43,7 +43,6 @@
     "@typescript-eslint/eslint-plugin": "^1.9.0",
     "@typescript-eslint/parser": "^1.9.0",
     "chai": "^4.1.2",
-    "codecov": "^3.5.0",
     "concurrently": "^3.5.1",
     "eslint": "^5.16.0",
     "eslint-config-airbnb": "^17.1.0",

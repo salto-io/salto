@@ -63,7 +63,7 @@ describe('Test commands.ts', () => {
       'apply',
       '-f',
       '-b',
-      `${__dirname}/blueprints/salto.bp`,
+      `${__dirname}/../test/blueprints/salto.bp`,
     ]
     cli.parseAndRun(args)
     await new Promise(resolve => setTimeout(resolve, 100))
@@ -80,7 +80,7 @@ describe('Test commands.ts', () => {
       'apply',
       '-f',
       '-d',
-      `${__dirname}/blueprints`,
+      `${__dirname}/../test/blueprints`,
     ]
     cli.parseAndRun(args)
     await new Promise(resolve => setTimeout(resolve, 100))

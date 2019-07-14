@@ -1,16 +1,10 @@
-# salto
-
-[![CircleCI](https://circleci.com/gh/salto-io/salto.svg?style=shield&circle-token=e64029d1886e2965a8d51b09597054b5a1e84733)](https://circleci.com/gh/salto-io/salto) &nbsp; &nbsp; [![codecov](https://codecov.io/gh/salto-io/salto/branch/master/graph/badge.svg?token=eCQVglnkeG)](https://codecov.io/gh/salto-io/salto) 
-
----
-
 ### TODO high-level description of the project's goal
 
 ### Build instructions
 
 ```
-npm i
-npm run build
+yarn
+yarn run build
 ```
 
 ### Usage instructions
@@ -39,9 +33,9 @@ Use "salto [command] --help" for more information about a command.
 To run the cli without packaging:
 
 ```
-| => npm install
-| => npm run client -- <client args>
-| => npm run client -- --help
+| => yarn install
+| => yarn run client -- <client args>
+| => yarn run client -- --help
 Usage: salto-cli [options] [command]
 
 salto is a business operations as code tool, allowing one to manage all aspects of his business operations systems in code.

@@ -4,7 +4,7 @@
   "description": "Salto Adapter API",
   "repository": {
     "type": "git",
-    "url": "https://github.com/salto-io/adapter-api"
+    "url": "https://github.com/salto-io/salto_monorepo"
   },
   "private": true,
   "files": [
@@ -14,15 +14,15 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "prepare": "npm run build",
-    "prepublishOnly": "npm test",
-    "build": "npm run lint && npm run build-ts",
+    "prepare": "yarn run build",
+    "prepublishOnly": "yarn test",
+    "build": "yarn run lint && yarn run build-ts",
     "test": "jest --forceExit --verbose --detectOpenHandles",
-    "watch-test": "npm run test -- --watchAll",
+    "watch-test": "yarn run test -- --watchAll",
     "build-ts": "tsc",
     "watch-ts": "tsc -w",
     "lint": "eslint --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
-    "lint-fix": "npm run lint -- --fix"
+    "lint-fix": "yarn run lint -- --fix"
   },
   "dependencies": {
     "@types/lodash": "^4.14.133",
@@ -42,7 +42,6 @@
     "@typescript-eslint/eslint-plugin": "^1.10.2",
     "@typescript-eslint/parser": "^1.10.2",
     "chai": "^4.1.2",
-    "codecov": "^3.5.0",
     "concurrently": "^3.5.1",
     "coverage-diff-back": "^0.1.0",
     "dts-gen": "^0.5.8",

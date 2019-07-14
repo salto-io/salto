@@ -1,0 +1,8 @@
+{
+    "extends": "./tsconfig.base.json",
+    "references": [
+        { "path": "packages/adapter-api" },
+        { "path": "packages/salto" },
+        { "path": "packages/salesforce-adapter" }
+    ]
+}

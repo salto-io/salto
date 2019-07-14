@@ -1,5 +1,4 @@
 version: 2
-
 jobs:
   build:
     docker:
@@ -9,42 +8,25 @@ jobs:
     working_directory: ~/repo
 
     steps:
-      - restore_cache:
-          keys:
-            - v1-source-{{ .Branch }}-
-            - v1-source-
-
       - checkout
-
-      - save_cache:
-          key: v1-source-{{ .Branch }}
-          paths: .git
 
       # Download and cache dependencies
       - restore_cache:
           keys:
-            - v1-yarn-deps-{{ arch }}-{{ checksum "yarn.lock" }}
-            - v1-yarn-deps-{{ arch }}-
-            - v1-yarn-deps-
+            - v1-dependencies-{{ checksum "yarn.lock" }}
 
-      - run: yarn --frozen-lockfile
-
-      - run:
-          name: Run Jest tests
-          command: yarn run jest --forceExit --detectOpenHandles --reporters=default --reporters=jest-junit
-          environment:
-            JEST_JUNIT_OUTPUT: "reports/junit/test-results.xml"
+      - run: yarn
 
       - save_cache:
           paths:
             - node_modules
-            - ~/.cache/yarn
-            - .jest_cache
+          key: v1-dependencies-{{ checksum "yarn.lock" }}
 
-          key: v1-yarn-deps-{{ checksum "yarn.lock" }}
-
-      - store_test_results:
-          path: reports
+      - run:
+          name: Run Jest tests
+          command: yarn run jest -- --ci --runInBand --forceExit --verbose --detectOpenHandles --reporters=default --reporters=jest-junit
+          environment:
+            JEST_JUNIT_OUTPUT: "reports/junit/js-test-results.xml"
 
       - store_artifacts:
           path: reports
@@ -53,21 +35,4 @@ jobs:
           name: Upload coverage to codecov.io
           command: npx codecov -f coverage/*.json
 
-workflows:
-  version: 2
 
-  commit:
-    jobs:
-      - build
-
-  nightly:
-    triggers:
-      - schedule:
-          cron: "40 0 * * *"
-          filters:
-            branches:
-              only:
-                - master
-    jobs:
-      - build:
-          context: nightly

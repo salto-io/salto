@@ -3,6 +3,13 @@ const deepMerge = require('../../build_utils/deep_merge')
 module.exports = deepMerge(
   require('../../jest.base.config.js'),
   {
+    globals: {
+      'ts-jest': {
+        diagnostics: {
+          ignoreCodes: [7016, 7006],
+        },
+      },
+    },
     name: 'salesforce-adapter',
     displayName: 'salesforce-adapter',
     rootDir: `${__dirname}`,

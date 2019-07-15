@@ -12,7 +12,7 @@ export default class SaltoCoreMock extends SaltoCore {
   // eslint-disable-next-line class-methods-use-this, @typescript-eslint/no-unused-vars
   async getAllElements(_blueprints: Blueprint[] = []): Promise<Type[]> {
     const stringType = new PrimitiveType({
-      elemID: new ElemID(undefined, 'string'),
+      elemID: new ElemID('', 'string'),
       primitive: PrimitiveTypes.STRING,
     })
     const saltoAddr = new ObjectType({

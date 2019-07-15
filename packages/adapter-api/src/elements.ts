@@ -23,8 +23,8 @@ export class ElemID {
   static readonly CONFIG_INSTANCE_NAME = '_config'
 
   nameParts: string[]
-  adapter?: string
-  constructor(adapter: string|undefined, ...name: string[]) {
+  adapter: string
+  constructor(adapter: string, ...name: string[]) {
     this.adapter = adapter
     this.nameParts = name
   }

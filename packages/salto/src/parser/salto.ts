@@ -53,7 +53,7 @@ const getPrimitiveTypeName = (primitiveType: PrimitiveTypes): string => {
 export default class Parser {
   private static getElemID(fullname: string): ElemID {
     const separatorIdx = fullname.indexOf(ElemID.NAMESPACE_SEPERATOR)
-    const adapter = (separatorIdx >= 0) ? fullname.slice(0, separatorIdx) : undefined
+    const adapter = (separatorIdx >= 0) ? fullname.slice(0, separatorIdx) : ''
     const name = fullname.slice(separatorIdx + ElemID.NAMESPACE_SEPERATOR.length)
     return new ElemID(adapter, name)
   }
@@ -99,7 +99,7 @@ export default class Parser {
 
   private static parseInstance(instanceBlock: HCLBlock): Element {
     let typeID = this.getElemID(instanceBlock.type)
-    if (typeID.adapter === undefined && typeID.name.length > 0) {
+    if (_.isEmpty(typeID.adapter) && typeID.name.length > 0) {
       // In this case if there is just a single name we have to assume it is actually the adapter
       typeID = new ElemID(typeID.name)
     }

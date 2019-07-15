@@ -155,7 +155,7 @@ describe('Salto parser', () => {
         })
         it('should have the correct type', () => {
           expect(model.fields.name.elemID.adapter).toBe('salesforce')
-          expect(model.fields.name.elemID.name).toBe('string')
+          expect(model.fields.name.elemID.name).toEqual('string')
         })
         it('should have annotation values', () => {
           expect(model.annotationsValues).toHaveProperty('name')
@@ -236,7 +236,7 @@ describe('Salto parser', () => {
       })
       it('should have the right type', () => {
         expect(config.type.elemID.adapter).toEqual('salesforce')
-        expect(config.type.elemID.name).toBeUndefined()
+        expect(config.type.elemID.name).toEqual('')
       })
       it('should have values', () => {
         expect(config.value).toHaveProperty('username')
@@ -261,22 +261,22 @@ describe('Salto parser', () => {
 
 describe('Salto Dump', () => {
   const strType = new PrimitiveType({
-    elemID: new ElemID({ adapter: 'salesforce', name: 'string' }),
+    elemID: new ElemID('salesforce', 'string'),
     primitive: PrimitiveTypes.STRING,
   })
 
   const numType = new PrimitiveType({
-    elemID: new ElemID({ adapter: 'salesforce', name: 'number' }),
+    elemID: new ElemID('salesforce', 'number'),
     primitive: PrimitiveTypes.NUMBER,
   })
 
   const boolType = new PrimitiveType({
-    elemID: new ElemID({ adapter: 'salesforce', name: 'bool' }),
+    elemID: new ElemID('salesforce', 'bool'),
     primitive: PrimitiveTypes.BOOLEAN,
   })
 
   const model = new ObjectType({
-    elemID: new ElemID({ adapter: 'salesforce', name: 'test' }),
+    elemID: new ElemID('salesforce', 'test'),
   })
   model.fields.name = strType
   model.fields.num = numType
@@ -297,7 +297,7 @@ describe('Salto Dump', () => {
   }
 
   const instance = new InstanceElement(
-    new ElemID({ adapter: 'salesforce', name: 'me' }),
+    new ElemID('salesforce', 'me'),
     model,
     {
       name: 'me',
@@ -306,7 +306,7 @@ describe('Salto Dump', () => {
   )
 
   const config = new InstanceElement(
-    new ElemID({ adapter: 'salesforce', name: ElemID.CONFIG_INSTANCE_NAME }),
+    new ElemID('salesforce', ElemID.CONFIG_INSTANCE_NAME),
     model,
     {
       name: 'other',

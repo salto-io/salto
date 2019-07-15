@@ -20,7 +20,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
       token: 'rwVvOsh7HjF8Zki9ZmyQdeth',
       sandbox: false,
     }
-    const elemID = new ElemID({ adapter: 'salesforce' })
+    const elemID = new ElemID('salesforce')
     const config = new InstanceElement(elemID, configType, value)
     return new SalesforceAdapter(config)
   }
@@ -117,17 +117,14 @@ describe('Test Salesforce adapter E2E with real account', () => {
     }
 
     const stringType = new PrimitiveType({
-      elemID: new ElemID({
-        adapter: constants.SALESFORCE,
-        name: 'string',
-      }),
+      elemID: new ElemID(constants.SALESFORCE, 'string'),
       primitive: PrimitiveTypes.STRING,
     })
 
     it('should add custom object', async () => {
       const customObjectName = 'TestAddCustom__c'
       const element = new ObjectType({
-        elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
+        elemID: new ElemID(constants.SALESFORCE, 'test'),
         annotationsValues: {
           [constants.API_NAME]: customObjectName,
           description: {
@@ -167,7 +164,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
     it('should remove object', async () => {
       const customObjectName = 'TestRemoveCustom__c'
       const element = new ObjectType({
-        elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test remove custom' }),
+        elemID: new ElemID(constants.SALESFORCE, 'test remove custom'),
         annotationsValues: {
           [constants.API_NAME]: customObjectName,
           description: {
@@ -195,7 +192,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
     it('should modify an object by creating a new custom field and remove another one', async () => {
       const customObjectName = 'TestModifyCustom__c'
       const oldElement = new ObjectType({
-        elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test modify fields' }),
+        elemID: new ElemID(constants.SALESFORCE, 'test modify fields'),
         fields: {
           address: stringType,
           banana: stringType,
@@ -224,7 +221,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
       expect(await objectExists(customObjectName, ['Address__c', 'Banana__c'])).toBe(true)
 
       const newElement = new ObjectType({
-        elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test modify fields' }),
+        elemID: new ElemID(constants.SALESFORCE, 'test modify fields'),
         fields: {
           banana: stringType,
           description: stringType,
@@ -261,7 +258,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
     it("should modify an object's annotations", async () => {
       const customObjectName = 'TestModifyCustomAnnotations__c'
       const oldElement = new ObjectType({
-        elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test modify annotations' }),
+        elemID: new ElemID(constants.SALESFORCE, 'test modify annotations'),
         fields: {
           address: stringType,
           banana: stringType,
@@ -287,7 +284,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
       }
 
       const newElement = new ObjectType({
-        elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test modify annotations' }),
+        elemID: new ElemID(constants.SALESFORCE, 'test modify annotations'),
         fields: {
           address: stringType,
           banana: stringType,
@@ -329,7 +326,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
       // Setup
       const customObjectName = 'TestModifyCustomFieldsPermissions__c'
       const oldElement = new ObjectType({
-        elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test modify custom field permissions' }),
+        elemID: new ElemID(constants.SALESFORCE, 'test modify custom field permissions'),
         fields: {
           address: stringType,
           banana: stringType,
@@ -362,7 +359,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
       expect(addResult).toBeInstanceOf(ObjectType)
 
       const newElement = new ObjectType({
-        elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test modify custom field permissions' }),
+        elemID: new ElemID(constants.SALESFORCE, 'test modify custom field permissions'),
         fields: {
           address: stringType,
           banana: stringType,

@@ -495,10 +495,7 @@ export default class Cli {
         message: `Enter ${fieldName} value:`,
       }))
     const values = await inquirer.prompt(questions)
-    const elemID = new ElemID({
-      adapter: configType.elemID.adapter,
-      name: ElemID.CONFIG_INSTANCE_NAME,
-    })
+    const elemID = new ElemID(configType.elemID.adapter, ElemID.CONFIG_INSTANCE_NAME)
     return new InstanceElement(elemID, configType, values)
   }
 

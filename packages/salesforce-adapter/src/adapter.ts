@@ -127,17 +127,17 @@ export default class SalesforceAdapter {
   public static getConfigType(): ObjectType {
     const registery = new ElementsRegistry()
     const simpleString = registery.getElement(
-      new ElemID({ adapter: '', name: 'string' }),
+      new ElemID('', 'string'),
       PrimitiveTypes.STRING
     )
 
     const simpleBoolean = registery.getElement(
-      new ElemID({ adapter: '', name: 'boolean' }),
+      new ElemID('', 'boolean'),
       PrimitiveTypes.BOOLEAN
     )
 
     const config = new ObjectType({
-      elemID: new ElemID({ adapter: 'salesforce' }),
+      elemID: new ElemID('salesforce'),
       fields: {
         username: simpleString,
         password: simpleString,

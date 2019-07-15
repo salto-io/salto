@@ -17,21 +17,20 @@ export interface Values {
 }
 type TypeMap = Record<string, Type>
 
-interface ElemIDArgs {
-  adapter?: string
-  name?: string
-}
-
 
 export class ElemID {
   static readonly NAMESPACE_SEPERATOR = '_'
   static readonly CONFIG_INSTANCE_NAME = '_config'
 
-  name?: string
-  adapter?: string
-  constructor(args: ElemIDArgs) {
-    this.name = args.name
-    this.adapter = args.adapter
+  nameParts: string[]
+  adapter: string
+  constructor(adapter: string, ...name: string[]) {
+    this.adapter = adapter
+    this.nameParts = name
+  }
+
+  public get name(): string {
+    return this.nameParts.join(ElemID.NAMESPACE_SEPERATOR)
   }
 
   getFullName(): string {

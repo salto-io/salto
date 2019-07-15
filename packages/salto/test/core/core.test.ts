@@ -14,7 +14,7 @@ async function getConfigFromUser(configType: ObjectType): Promise<InstanceElemen
     sandbox: false,
   }
 
-  const elemID = new ElemID({ adapter: 'salesforce' })
+  const elemID = new ElemID('salesforce')
   return new InstanceElement(elemID, configType, value)
 }
 
@@ -27,7 +27,7 @@ const mockAdd = jest.fn(async ap => {
 
 const mockDiscover = jest.fn(() => [
   new PrimitiveType({
-    elemID: new ElemID({ adapter: 'salesforce', name: 'dummy' }),
+    elemID: new ElemID('salesforce', 'dummy'),
     primitive: PrimitiveTypes.STRING,
   }),
 ])
@@ -39,17 +39,17 @@ jest.mock('salesforce-adapter', () => jest.fn().mockImplementation(() => ({
 
 const mockGetConfigType = jest.fn(() => {
   const simpleString = new PrimitiveType({
-    elemID: new ElemID({ adapter: '', name: 'string' }),
+    elemID: new ElemID('', 'string'),
     primitive: PrimitiveTypes.STRING,
   })
 
   const simpleBoolean = new PrimitiveType({
-    elemID: new ElemID({ adapter: '', name: 'boolean' }),
+    elemID: new ElemID('', 'boolean'),
     primitive: PrimitiveTypes.BOOLEAN,
   })
 
   const config = new ObjectType({
-    elemID: new ElemID({ adapter: 'salesforce' }),
+    elemID: new ElemID('salesforce'),
     fields: {
       username: simpleString,
       password: simpleString,

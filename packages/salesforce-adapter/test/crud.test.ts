@@ -21,16 +21,13 @@ describe('Test SalesforceAdapter CRUD', () => {
       token: '',
       sandbox: false,
     }
-    const elemID = new ElemID({ adapter: 'salesforce' })
+    const elemID = new ElemID('salesforce')
     const config = new InstanceElement(elemID, configType, value)
     return new SalesforceAdapter(config)
   }
 
   const stringType = new PrimitiveType({
-    elemID: new ElemID({
-      adapter: constants.SALESFORCE,
-      name: 'string',
-    }),
+    elemID: new ElemID(constants.SALESFORCE, 'string'),
     primitive: PrimitiveTypes.STRING,
   })
 
@@ -41,7 +38,7 @@ describe('Test SalesforceAdapter CRUD', () => {
 
     const result = await adapter().add(
       new ObjectType({
-        elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
+        elemID: new ElemID(constants.SALESFORCE, 'test'),
         fields: {
           description: stringType,
         },
@@ -79,7 +76,7 @@ describe('Test SalesforceAdapter CRUD', () => {
 
     await adapter().add(
       new ObjectType({
-        elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
+        elemID: new ElemID(constants.SALESFORCE, 'test'),
         fields: {
           description: stringType,
         },
@@ -129,7 +126,7 @@ describe('Test SalesforceAdapter CRUD', () => {
     return expect(
       adapter().add(
         new ObjectType({
-          elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
+          elemID: new ElemID(constants.SALESFORCE, 'test'),
         })
       )
     ).rejects.toEqual(new Error('Failed to add Test__c\nAdditional message'))
@@ -149,7 +146,7 @@ describe('Test SalesforceAdapter CRUD', () => {
     return expect(
       adapter().add(
         new ObjectType({
-          elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
+          elemID: new ElemID(constants.SALESFORCE, 'test'),
           fields: {
             description: stringType,
           },
@@ -169,7 +166,7 @@ describe('Test SalesforceAdapter CRUD', () => {
 
     await adapter().remove(
       new ObjectType({
-        elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
+        elemID: new ElemID(constants.SALESFORCE, 'test'),
         fields: {
           description: stringType,
         },
@@ -198,7 +195,7 @@ describe('Test SalesforceAdapter CRUD', () => {
     return expect(
       adapter().remove(
         new ObjectType({
-          elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
+          elemID: new ElemID(constants.SALESFORCE, 'test'),
           annotationsValues: {
             [constants.API_NAME]: 'Test__c',
           },
@@ -224,7 +221,7 @@ describe('Test SalesforceAdapter CRUD', () => {
       expect(
         adapter().update(
           new ObjectType({
-            elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test2' }),
+            elemID: new ElemID(constants.SALESFORCE, 'test2'),
             fields: {
               description: stringType,
             },
@@ -236,7 +233,7 @@ describe('Test SalesforceAdapter CRUD', () => {
             },
           }),
           new ObjectType({
-            elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
+            elemID: new ElemID(constants.SALESFORCE, 'test'),
             fields: {
               address: stringType,
             },
@@ -257,7 +254,7 @@ describe('Test SalesforceAdapter CRUD', () => {
     it('should perform a successful update of a salesforce metadata component if the fullnames are the same', async () => {
       const result = await adapter().update(
         new ObjectType({
-          elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
+          elemID: new ElemID(constants.SALESFORCE, 'test'),
           fields: {
             description: stringType,
           },
@@ -269,7 +266,7 @@ describe('Test SalesforceAdapter CRUD', () => {
           },
         }),
         new ObjectType({
-          elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
+          elemID: new ElemID(constants.SALESFORCE, 'test'),
           fields: {
             address: stringType,
           },
@@ -294,7 +291,7 @@ describe('Test SalesforceAdapter CRUD', () => {
     it("should only create new fields when the new object's change is only new fields", async () => {
       const result = await adapter().update(
         new ObjectType({
-          elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
+          elemID: new ElemID(constants.SALESFORCE, 'test'),
           fields: {
             address: stringType,
             banana: stringType,
@@ -313,7 +310,7 @@ describe('Test SalesforceAdapter CRUD', () => {
           },
         }),
         new ObjectType({
-          elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
+          elemID: new ElemID(constants.SALESFORCE, 'test'),
           fields: {
             address: stringType,
             banana: stringType,
@@ -367,7 +364,7 @@ describe('Test SalesforceAdapter CRUD', () => {
     it('should only delete fields when the only change in the new object is that some fields no longer appear', async () => {
       const result = await adapter().update(
         new ObjectType({
-          elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
+          elemID: new ElemID(constants.SALESFORCE, 'test'),
           fields: {
             address: stringType,
             banana: stringType,
@@ -390,7 +387,7 @@ describe('Test SalesforceAdapter CRUD', () => {
           },
         }),
         new ObjectType({
-          elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
+          elemID: new ElemID(constants.SALESFORCE, 'test'),
           fields: {
             description: stringType,
           },
@@ -419,7 +416,7 @@ describe('Test SalesforceAdapter CRUD', () => {
     it('should both create & delete fields when some fields no longer appear in the new object and some fields are new', async () => {
       const result = await adapter().update(
         new ObjectType({
-          elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
+          elemID: new ElemID(constants.SALESFORCE, 'test'),
           fields: {
             address: stringType,
             banana: stringType,
@@ -440,7 +437,7 @@ describe('Test SalesforceAdapter CRUD', () => {
           },
         }),
         new ObjectType({
-          elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
+          elemID: new ElemID(constants.SALESFORCE, 'test'),
           fields: {
             banana: stringType,
             description: stringType,
@@ -489,7 +486,7 @@ describe('Test SalesforceAdapter CRUD', () => {
     it('should update the annotation values of the metadata object', async () => {
       const result = await adapter().update(
         new ObjectType({
-          elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
+          elemID: new ElemID(constants.SALESFORCE, 'test'),
           fields: {
             description: stringType,
           },
@@ -499,7 +496,7 @@ describe('Test SalesforceAdapter CRUD', () => {
           },
         }),
         new ObjectType({
-          elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
+          elemID: new ElemID(constants.SALESFORCE, 'test'),
           fields: {
             description: stringType,
           },
@@ -524,7 +521,7 @@ describe('Test SalesforceAdapter CRUD', () => {
     it("should update the remaining fields' annotation values of the metadata object", async () => {
       const result = await adapter().update(
         new ObjectType({
-          elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
+          elemID: new ElemID(constants.SALESFORCE, 'test'),
           fields: {
             address: stringType,
             banana: stringType,
@@ -553,7 +550,7 @@ describe('Test SalesforceAdapter CRUD', () => {
           },
         }),
         new ObjectType({
-          elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
+          elemID: new ElemID(constants.SALESFORCE, 'test'),
           fields: {
             banana: stringType,
             cat: stringType,

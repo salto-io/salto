@@ -17,17 +17,17 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "prepare": "npm run build",
-    "prepublishOnly": "npm test",
-    "build": "npm run lint && npm run build-ts && npm run build-go",
+    "prepare": "yarn run build",
+    "prepublishOnly": "yarn test",
+    "build": "yarn run lint && yarn run build-ts && yarn run build-go",
     "client": "npx ts-node src/cli/salto-cli.ts",
     "test": "jest --forceExit --verbose --detectOpenHandles",
-    "watch-test": "npm run test -- --watchAll",
+    "watch-test": "yarn run test -- --watchAll",
     "build-ts": "tsc",
     "watch-ts": "tsc -w",
     "build-go": "./src/parser/hcl_plugin/build.sh ./dist",
     "lint": "eslint --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
-    "lint-fix": "npm run lint -- --fix"
+    "lint-fix": "yarn run lint -- --fix"
   },
   "dependencies": {
     "@types/async": "^3.0.0",

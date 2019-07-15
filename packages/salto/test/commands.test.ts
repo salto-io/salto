@@ -20,7 +20,7 @@ async function getConfigFromUser(configType: ObjectType): Promise<InstanceElemen
     token: 'test',
     sandbox: false,
   }
-  const elemID = new ElemID({ adapter: 'salesforce' })
+  const elemID = new ElemID('salesforce')
   return new InstanceElement(elemID, configType, value)
 }
 // eslint-disable-next-line no-console
@@ -165,17 +165,17 @@ describe('Test commands.ts', () => {
 
   it('should create proper inquier field', async () => {
     const pts = new PrimitiveType({
-      elemID: new ElemID({ adapter: 'salesforce', name: 'dummy' }),
+      elemID: new ElemID('salesforce', 'dummy'),
       primitive: PrimitiveTypes.STRING,
     })
     const stRes = CliTester.testGetFieldInputType(pts)
     const pti = new PrimitiveType({
-      elemID: new ElemID({ adapter: 'salesforce', name: 'dummy' }),
+      elemID: new ElemID('salesforce', 'dummy'),
       primitive: PrimitiveTypes.NUMBER,
     })
     const iRes = CliTester.testGetFieldInputType(pti)
     const ptb = new PrimitiveType({
-      elemID: new ElemID({ adapter: 'salesforce', name: 'dummy' }),
+      elemID: new ElemID('salesforce', 'dummy'),
       primitive: PrimitiveTypes.BOOLEAN,
     })
     const bRes = CliTester.testGetFieldInputType(ptb)

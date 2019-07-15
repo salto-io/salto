@@ -13,16 +13,16 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "prepare": "npm run build",
-    "prepublishOnly": "npm test",
-    "build": "npm run lint && npm run build-ts",
+    "prepare": "yarn run build",
+    "prepublishOnly": "yarn test",
+    "build": "yarn run lint && yarn run build-ts",
     "test": "jest --forceExit --detectOpenHandles",
     "e2e-test": "jest --config=jest.e2e.config.js --forceExit --detectOpenHandles",
-    "watch-test": "npm run test -- --watchAll",
+    "watch-test": "yarn run test -- --watchAll",
     "build-ts": "tsc",
     "watch-ts": "tsc -w",
     "lint": "eslint --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
-    "lint-fix": "npm run lint -- --fix"
+    "lint-fix": "yarn run lint -- --fix"
   },
   "dependencies": {
     "@types/lodash": "^4.14.133",

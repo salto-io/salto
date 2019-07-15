@@ -24,7 +24,6 @@ jobs:
 
       - run:
           name: Run Jest tests
-          command: yarn run jest -- --ci --runInBand --forceExit --verbose --detectOpenHandles --reporters=default --reporters=jest-junit
           environment:
             JEST_JUNIT_OUTPUT: "reports/junit/js-test-results.xml"
 
@@ -34,5 +33,4 @@ jobs:
       - run:
           name: Upload coverage to codecov.io
           command: npx codecov -f coverage/*.json
-
 

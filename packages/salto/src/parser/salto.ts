@@ -55,7 +55,7 @@ export default class Parser {
     const separatorIdx = fullname.indexOf(ElemID.NAMESPACE_SEPERATOR)
     const adapter = (separatorIdx >= 0) ? fullname.slice(0, separatorIdx) : undefined
     const name = fullname.slice(separatorIdx + ElemID.NAMESPACE_SEPERATOR.length)
-    return new ElemID({ adapter, name })
+    return new ElemID(adapter, name)
   }
 
   private static parseType(typeBlock: HCLBlock): Type {
@@ -99,16 +99,16 @@ export default class Parser {
 
   private static parseInstance(instanceBlock: HCLBlock): Element {
     let typeID = this.getElemID(instanceBlock.type)
-    if (typeID.adapter === undefined) {
+    if (typeID.adapter === undefined && typeID.name.length > 0) {
       // In this case if there is just a single name we have to assume it is actually the adapter
-      typeID = new ElemID({ adapter: typeID.name })
+      typeID = new ElemID(typeID.name)
     }
     const name = instanceBlock.labels.length === 0
       ? ElemID.CONFIG_INSTANCE_NAME
       : instanceBlock.labels[0]
 
     return new InstanceElement(
-      new ElemID({ adapter: typeID.adapter, name }),
+      new ElemID(typeID.adapter, name),
       new ObjectType({ elemID: typeID }),
       instanceBlock.attrs,
     )
@@ -189,7 +189,7 @@ export default class Parser {
       } else if (isInstanceElement(elem)) {
         const labels = elem.elemID.name === ElemID.CONFIG_INSTANCE_NAME
           ? []
-          : [elem.elemID.name || '']
+          : [elem.elemID.name]
 
         block = {
           type: elem.type.elemID.getFullName(),

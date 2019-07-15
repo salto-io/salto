@@ -20,7 +20,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
       token: 'rwVvOsh7HjF8Zki9ZmyQdeth',
       sandbox: false,
     }
-    const elemID = new ElemID({ adapter: 'salesforce' })
+    const elemID = new ElemID('salesforce')
     const config = new InstanceElement(elemID, configType, value)
     return new SalesforceAdapter(config)
   }
@@ -127,7 +127,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
     it('should add custom object', async () => {
       const customObjectName = 'TestAddCustom__c'
       const element = new ObjectType({
-        elemID: new ElemID({ adapter: constants.SALESFORCE, name: 'test' }),
+        elemID: new ElemID(constants.SALESFORCE, 'test'),
         annotationsValues: {
           [constants.API_NAME]: customObjectName,
           description: {

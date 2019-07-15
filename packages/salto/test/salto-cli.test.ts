@@ -11,7 +11,7 @@ async function getConfigFromUser(configType: ObjectType): Promise<InstanceElemen
     token: 'test',
     sandbox: false,
   }
-  const elemID = new ElemID({ adapter: 'salesforce', name: '_config' })
+  const elemID = new ElemID('salesforce', '_config')
   return new InstanceElement(elemID, configType, value)
 }
 

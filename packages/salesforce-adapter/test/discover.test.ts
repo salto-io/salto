@@ -67,7 +67,7 @@ describe('Test SalesforceAdapter discover', () => {
       token: 'rwVvOsh7HjF8Zki9ZmyQdeth',
       sandbox: false,
     }
-    const elemID = new ElemID({ adapter: 'salesforce' })
+    const elemID = new ElemID('salesforce')
     const config = new InstanceElement(elemID, configType, value)
     return new SalesforceAdapter(config)
   }

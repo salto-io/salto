@@ -30,25 +30,25 @@ export class Types {
     switch (typeName) {
       case 'string': {
         return new PrimitiveType({
-          elemID: new ElemID({ adapter: '', name }),
+          elemID: new ElemID('', name),
           primitive: PrimitiveTypes.STRING,
         })
       }
       case 'double': {
         return new PrimitiveType({
-          elemID: new ElemID({ adapter: '', name: 'number' }),
+          elemID: new ElemID('', 'number'),
           primitive: PrimitiveTypes.NUMBER,
         })
       }
       case 'boolean': {
         return new PrimitiveType({
-          elemID: new ElemID({ adapter: '', name: 'checkbox' }),
+          elemID: new ElemID('', 'checkbox'),
           primitive: PrimitiveTypes.BOOLEAN,
         })
       }
       default: {
         return new ObjectType({
-          elemID: new ElemID({ adapter: SALESFORCE, name }),
+          elemID: new ElemID(SALESFORCE, name),
         })
       }
     }

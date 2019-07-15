@@ -12,18 +12,18 @@ export default class SaltoCoreMock extends SaltoCore {
   // eslint-disable-next-line class-methods-use-this, @typescript-eslint/no-unused-vars
   async getAllElements(_blueprints: Blueprint[] = []): Promise<Type[]> {
     const stringType = new PrimitiveType({
-      elemID: new ElemID({ name: 'string' }),
+      elemID: new ElemID(undefined, 'string'),
       primitive: PrimitiveTypes.STRING,
     })
     const saltoAddr = new ObjectType({
-      elemID: new ElemID({ adapter: 'salto', name: 'address' }),
+      elemID: new ElemID('salto', 'address'),
     })
     saltoAddr.annotations.label = stringType
     saltoAddr.fields.country = stringType
     saltoAddr.fields.city = stringType
 
     const saltoOffice = new ObjectType({
-      elemID: new ElemID({ adapter: 'salto', name: 'office' }),
+      elemID: new ElemID('salto', 'office'),
     })
     saltoOffice.annotations.label = stringType
     saltoOffice.fields.name = stringType
@@ -34,14 +34,14 @@ export default class SaltoCoreMock extends SaltoCore {
     }
 
     const saltoEmployee = new ObjectType({
-      elemID: new ElemID({ adapter: 'salto', name: 'employee' }),
+      elemID: new ElemID('salto', 'employee'),
     })
     saltoEmployee.fields.name = stringType
     saltoEmployee.annotationsValues.name = {
       _required: true,
     }
     saltoEmployee.fields.nicknames = new ListType({
-      elemID: new ElemID({ adapter: 'salto', name: 'nicknames' }),
+      elemID: new ElemID('salto', 'nicknames'),
       elementType: stringType,
     })
     /* eslint-disable-next-line @typescript-eslint/camelcase */

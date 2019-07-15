@@ -2,6 +2,7 @@ import { snakeCase, camelCase } from 'lodash'
 import { ValueTypeField, Field } from 'jsforce'
 import {
   Type, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values,
+  Field as TypeField,
 } from 'adapter-api'
 import { CustomObject, CustomField, ProfileInfo } from './client/types'
 import {
@@ -17,12 +18,10 @@ export const sfCase = (name: string, custom: boolean = false): string =>
 export const bpCase = (name: string): string =>
   (name.endsWith('__c') ? snakeCase(name).slice(0, -3) : snakeCase(name))
 
-export const apiName = (element: Type, fieldName?: string): string => {
-  if (fieldName === undefined) {
-    return element.annotationsValues[API_NAME]
-  }
-  return element.getAnnotationValue(fieldName, API_NAME)
-}
+export const apiName = (element: Type | TypeField): string => (
+  element.annotationsValues[API_NAME]
+)
+
 
 export class Types {
   static get(name: string): Type {
@@ -55,31 +54,31 @@ export class Types {
   }
 }
 
-export const fieldFullName = (object: ObjectType, fieldName: string): string =>
-  `${apiName(object)}.${apiName(object, fieldName)}`
+export const fieldFullName = (object: ObjectType, field: TypeField): string =>
+  `${apiName(object)}.${apiName(field)}`
 
 export const toCustomField = (
-  object: ObjectType, name: string, fullname: boolean = false
+  object: ObjectType, field: TypeField, fullname: boolean = false
 ): CustomField =>
   new CustomField(
-    fullname ? fieldFullName(object, name) : apiName(object, name),
-    object.fields[name].elemID.name as string,
-    object.getAnnotationValue(name, LABEL),
-    object.getAnnotationValue(name, Type.REQUIRED),
-    object.getAnnotationValue(name, PICKLIST_VALUES),
+    fullname ? fieldFullName(object, field) : apiName(field),
+    field.type.elemID.name,
+    field.annotationsValues[LABEL],
+    field.annotationsValues[Type.REQUIRED],
+    field.annotationsValues[PICKLIST_VALUES],
   )
 
 export const toCustomObject = (element: ObjectType): CustomObject =>
   new CustomObject(
     apiName(element),
     element.annotationsValues[LABEL],
-    Object.keys(element.fields).map(name => toCustomField(element, name))
+    Object.values(element.fields).map(field => toCustomField(element, field))
   )
 
-export const toProfiles = (object: ObjectType, fields: string[]): ProfileInfo[] => {
+export const toProfiles = (object: ObjectType, fields: TypeField[]): ProfileInfo[] => {
   const profiles = new Map<string, ProfileInfo>()
   fields.forEach(field => {
-    const fieldPermissions = object.getAnnotationValue(field, FIELD_LEVEL_SECURITY)
+    const fieldPermissions = field.annotationsValues[FIELD_LEVEL_SECURITY]
     if (!fieldPermissions) {
       return
     }

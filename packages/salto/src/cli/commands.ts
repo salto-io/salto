@@ -490,7 +490,7 @@ export default class Cli {
   private static async getConfigFromUser(configType: ObjectType): Promise<InstanceElement> {
     const questions = Object.keys(configType.fields).map(fieldName =>
       ({
-        type: Cli.getFieldInputType(configType.fields[fieldName]),
+        type: Cli.getFieldInputType(configType.fields[fieldName].type),
         name: fieldName,
         message: `Enter ${fieldName} value:`,
       }))

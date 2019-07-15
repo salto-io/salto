@@ -75,7 +75,7 @@ export class PlanAction {
 
     if (isObjectType(element)) {
       const fieldChanges = Object.keys(element.fields).map(
-        key => PlanAction.fillActionPlanWithType(element.fields[key], actionType, key),
+        key => PlanAction.fillActionPlanWithType(element.fields[key].type, actionType, key),
       )
       const subChanges = baseFill.concat(fieldChanges)
       return new PlanAction(name, actionType, subChanges, newValue, oldValue)
@@ -117,7 +117,9 @@ export class PlanAction {
 
       const fieldChanges = (isObjectType(oldValue) && isObjectType(newValue))
         ? Object.keys(oldValue.fields).map(
-          key => PlanAction.createFromElements(oldValue.fields[key], newValue.fields[key], key),
+          key => PlanAction.createFromElements(
+            oldValue.fields[key].type, newValue.fields[key].type, key
+          ),
         ) : []
 
       const valuesChanges = PlanAction.createValuesChanges(

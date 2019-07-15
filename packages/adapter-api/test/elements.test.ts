@@ -9,6 +9,7 @@ import {
   isPrimitiveType,
   ElemID,
   InstanceElement,
+  Field,
 } from '../src/elements'
 
 describe('Test elements.ts', () => {
@@ -49,17 +50,17 @@ describe('Test elements.ts', () => {
       elemID: new ElemID('test', 'obj'),
       fields: {
         /* eslint-disable-next-line @typescript-eslint/camelcase */
-        num_field: ptNum,
+        num_field: new Field(new ElemID('test', 'obj'), 'num_field', ptNum),
         /* eslint-disable-next-line @typescript-eslint/camelcase */
-        str_field: ptStr,
+        str_field: new Field(new ElemID('test', 'obj'), 'str_field', ptStr),
       },
       annotations: {},
       annotationsValues: {},
     })
     expect(ot.elemID.adapter).toEqual('test')
     expect(ot.elemID.name).toEqual('obj')
-    expect(ot.fields.num_field).toBeInstanceOf(PrimitiveType)
-    expect(ot.fields.str_field).toBeInstanceOf(PrimitiveType)
+    expect(ot.fields.num_field.type).toBeInstanceOf(PrimitiveType)
+    expect(ot.fields.str_field.type).toBeInstanceOf(PrimitiveType)
   })
 
   it('should get fields not in other', () => {
@@ -75,20 +76,20 @@ describe('Test elements.ts', () => {
       elemID: new ElemID('test', 'obj'),
       fields: {
         /* eslint-disable-next-line @typescript-eslint/camelcase */
-        num_field: ptNum,
+        num_field: new Field(new ElemID('test', 'obj'), 'num_field', ptNum),
         /* eslint-disable-next-line @typescript-eslint/camelcase */
-        str_field: ptStr,
+        str_field: new Field(new ElemID('test', 'obj'), 'str_field', ptStr),
       },
     })
     const ot2 = new ObjectType({
       elemID: new ElemID('test', 'obj'),
       fields: {
         /* eslint-disable-next-line @typescript-eslint/camelcase */
-        num_field: ptNum,
+        num_field: new Field(new ElemID('test', 'obj'), 'num_field', ptNum),
       },
     })
 
-    expect(ot1.getFieldsThatAreNotInOther(ot2).join('')).toBe('str_field')
+    expect(ot1.getFieldsThatAreNotInOther(ot2)).toEqual([ot1.fields.str_field])
   })
 
   it('should get intersection of fields', () => {
@@ -104,20 +105,20 @@ describe('Test elements.ts', () => {
       elemID: new ElemID('test', 'obj'),
       fields: {
         /* eslint-disable-next-line @typescript-eslint/camelcase */
-        num_field: ptNum,
+        num_field: new Field(new ElemID('test', 'obj'), 'num_field', ptNum),
         /* eslint-disable-next-line @typescript-eslint/camelcase */
-        str_field: ptStr,
+        str_field: new Field(new ElemID('test', 'obj'), 'str_field', ptStr),
       },
     })
     const ot2 = new ObjectType({
       elemID: new ElemID('test', 'obj'),
       fields: {
         /* eslint-disable-next-line @typescript-eslint/camelcase */
-        num_field: ptNum,
+        num_field: new Field(new ElemID('test', 'obj'), 'num_field', ptNum),
       },
     })
 
-    expect(ot1.getMutualFieldsWithOther(ot2).join('')).toBe('num_field')
+    expect(ot1.getMutualFieldsWithOther(ot2)).toEqual([ot1.fields.num_field])
   })
 
   it('should allow basic list type creations withh all params passed to the constructor', () => {
@@ -137,9 +138,9 @@ describe('Test elements.ts', () => {
       elemID: new ElemID('test', 'obj'),
       fields: {
         /* eslint-disable-next-line @typescript-eslint/camelcase */
-        num_field: ptNum,
+        num_field: new Field(new ElemID('test', 'obj'), 'num_field', ptNum),
         /* eslint-disable-next-line @typescript-eslint/camelcase */
-        str_field: ptStr,
+        str_field: new Field(new ElemID('test', 'obj'), 'str_field', ptStr),
       },
       annotations: {},
       annotationsValues: {},
@@ -411,21 +412,5 @@ describe('Test elements.ts', () => {
     expect(nameMissing).toBe('adapter')
     expect(adapterMissing).toBe('name')
     expect(config).toBe('adapter')
-  })
-
-  it('should access nested annotation values', () => {
-    const elem = new ObjectType({
-      elemID: new ElemID('test', 'ot1'),
-      annotationsValues: {
-        test: {
-          nested: {
-            value: 1,
-          },
-        },
-      },
-    })
-
-    expect(elem.getAnnotationValue('test', 'nested', 'value')).toEqual(1)
-    expect(elem.getAnnotationValue('test', 'non', 'existing')).toBe(undefined)
   })
 })

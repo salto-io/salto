@@ -15,6 +15,7 @@ export interface Values {
   /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
   [key: string]: any
 }
+type FieldMap = Record<string, Field>
 type TypeMap = Record<string, Type>
 
 
@@ -45,6 +46,35 @@ export interface Element {
 }
 
 type ElementMap = Record<string, Element>
+
+/**
+ * Represents a field inside a type
+ */
+export class Field implements Element {
+  readonly elemID: ElemID
+
+  public constructor(
+    parentID: ElemID,
+    public name: string,
+    public type: Type,
+    public annotationsValues: Values = {},
+  ) {
+    this.elemID = new ElemID(parentID.adapter, ...parentID.nameParts, name)
+  }
+
+  clone(): Field {
+    return new Field(
+      this.elemID,
+      this.name,
+      this.type,
+      _.cloneDeep(this.annotationsValues)
+    )
+  }
+
+  parentID(): ElemID {
+    return new ElemID(this.elemID.adapter, ...this.elemID.nameParts.slice(0, -1))
+  }
+}
 
 /**
  * An abstract class that represent the base type.
@@ -104,18 +134,6 @@ export abstract class Type implements Element {
   }
 
   /**
-   * Get annotation value
-   * @param path Path to the annotation value
-   */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  getAnnotationValue(...path: string[]): any {
-    return path.reduce(
-      (obj, key) => (obj === undefined ? undefined : obj[key]),
-      this.annotationsValues
-    )
-  }
-
-  /**
    * Return an independent copy of this instance. Needs to be implemented
    * by each subclass as this is structure dependent.
    * @return {Type} the cloned instance
@@ -163,7 +181,7 @@ export class PrimitiveType extends Type {
  * Defines a type that represents an object (Also NOT auto generated)
  */
 export class ObjectType extends Type {
-  fields: TypeMap
+  fields: FieldMap
 
   constructor({
     elemID,
@@ -172,7 +190,7 @@ export class ObjectType extends Type {
     annotationsValues = {},
   }: {
     elemID: ElemID
-    fields?: TypeMap
+    fields?: FieldMap
     annotations?: TypeMap
     annotationsValues?: Values
   }) {
@@ -180,8 +198,8 @@ export class ObjectType extends Type {
     this.fields = fields
   }
 
-  private cloneFields(): TypeMap {
-    const clonedFields: TypeMap = {}
+  private cloneFields(): FieldMap {
+    const clonedFields: FieldMap = {}
     Object.keys(this.fields).forEach(key => {
       clonedFields[key] = this.fields[key].clone()
     })
@@ -209,14 +227,14 @@ export class ObjectType extends Type {
     return res
   }
 
-  getFieldsThatAreNotInOther(other: this): string[] {
+  getFieldsThatAreNotInOther(other: this): Field[] {
     const otherSet = new Set<string>(Object.keys(other.fields))
-    return Object.keys(this.fields).filter(f => !otherSet.has(f))
+    return Object.values(this.fields).filter(f => !otherSet.has(f.name))
   }
 
-  getMutualFieldsWithOther(other: this): string[] {
+  getMutualFieldsWithOther(other: this): Field[] {
     const otherSet = new Set<string>(Object.keys(other.fields))
-    return Object.keys(this.fields).filter(f => otherSet.has(f))
+    return Object.values(this.fields).filter(f => otherSet.has(f.name))
   }
 }
 

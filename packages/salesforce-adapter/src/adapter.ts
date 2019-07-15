@@ -6,6 +6,7 @@ import {
   PrimitiveTypes,
   InstanceElement,
   Values,
+  Field,
 } from 'adapter-api'
 import { SaveResult } from 'jsforce'
 import { isArray } from 'util'
@@ -61,13 +62,9 @@ const annotateApiNameAndLabel = (element: ObjectType): void => {
     }
   }
 
-  innerAnnotate(element.annotationsValues, element.elemID.name as string)
-  Object.keys(element.fields).forEach(fieldName => {
-    // Initialize annotation values if needed
-    if (element.annotationsValues[fieldName] === undefined) {
-      element.annotationsValues[fieldName] = {}
-    }
-    innerAnnotate(element.annotationsValues[fieldName], fieldName)
+  innerAnnotate(element.annotationsValues, element.elemID.name)
+  Object.values(element.fields).forEach(field => {
+    innerAnnotate(field.annotationsValues, field.name)
   })
 }
 
@@ -111,7 +108,7 @@ export default class SalesforceAdapter {
     )
     diagnose(result)
 
-    const persmissionsResult = await this.updatePermissions(post, Object.keys(post.fields))
+    const persmissionsResult = await this.updatePermissions(post, Object.values(post.fields))
     diagnose(persmissionsResult)
 
     return post
@@ -136,13 +133,14 @@ export default class SalesforceAdapter {
       PrimitiveTypes.BOOLEAN
     )
 
+    const configID = new ElemID('salesforce')
     const config = new ObjectType({
-      elemID: new ElemID('salesforce'),
+      elemID: configID,
       fields: {
-        username: simpleString,
-        password: simpleString,
-        token: simpleString,
-        sandbox: simpleBoolean,
+        username: new Field(configID, 'username', simpleString),
+        password: new Field(configID, 'password', simpleString),
+        token: new Field(configID, 'token', simpleString),
+        sandbox: new Field(configID, 'sandbox', simpleBoolean),
       },
       annotations: {},
       annotationsValues: {},
@@ -192,7 +190,7 @@ export default class SalesforceAdapter {
 
     // Intersect between the 2 objects, and update the permissions of the fields that remain,
     // if they have changed
-    const remainingFields = post.getMutualFieldsWithOther(prevElement)
+    const remainingFields = post.getMutualFieldsWithOther(prevElement).map(f => f.name)
     const updatePermissionsResult = this.updateFieldsPermissions(remainingFields, prevElement, post)
 
     await Promise.all([deleteResult, createResult])
@@ -226,15 +224,18 @@ export default class SalesforceAdapter {
     }
     const fieldsToUpdate = remainingFields.filter(field => (
       !_.isEqual(
-        prevElement.getAnnotationValue(field, constants.FIELD_LEVEL_SECURITY),
-        newElement.getAnnotationValue(field, constants.FIELD_LEVEL_SECURITY),
+        prevElement.fields[field].annotationsValues[constants.FIELD_LEVEL_SECURITY],
+        newElement.fields[field].annotationsValues[constants.FIELD_LEVEL_SECURITY],
       )
     ))
 
     if (fieldsToUpdate.length > 0) {
       // Create the permissions
       // Build the permissions in a Profile object for all the custom fields we will add
-      const permissionsResult = await this.updatePermissions(newElement, fieldsToUpdate)
+      const permissionsResult = await this.updatePermissions(
+        newElement,
+        Object.values(newElement.fields).filter(f => fieldsToUpdate.includes(f.name)),
+      )
       diagnose(permissionsResult)
     }
   }
@@ -254,10 +255,10 @@ export default class SalesforceAdapter {
   /**
    * Creates custom fields and their corresponding field permissions
    * @param object the object that the fields belong to
-   * @param fieldsToAdd The names of the fields to create
+   * @param fieldsToAdd The fields to create
    * @returns successfully managed to create all fields with their permissions or not
    */
-  private async createFields(object: ObjectType, fieldsToAdd: string[]): Promise<void> {
+  private async createFields(object: ObjectType, fieldsToAdd: Field[]): Promise<void> {
     if (fieldsToAdd.length === 0) return
 
     // Create the custom fields
@@ -274,10 +275,10 @@ export default class SalesforceAdapter {
   /**
    * Creates permissions in a Profile object for custom fields and update it
    * @param element The object api name
-   * @param fields The custom fields names
+   * @param fields The custom fields
    * @returns the update result
    */
-  private async updatePermissions(element: ObjectType, fields: string[]):
+  private async updatePermissions(element: ObjectType, fields: Field[]):
   Promise<SaveResult | SaveResult[]> {
     const profiles = toProfiles(element, fields)
     if (profiles.length > 0) {
@@ -291,7 +292,7 @@ export default class SalesforceAdapter {
    * @param objectApiName the object api name those fields reside in
    * @param fieldsApiName the custom fields we wish to delete
    */
-  private async deleteCustomFields(element: ObjectType, fields: string[]): Promise<void> {
+  private async deleteCustomFields(element: ObjectType, fields: Field[]): Promise<void> {
     if (fields.length === 0) {
       return
     }
@@ -319,11 +320,15 @@ export default class SalesforceAdapter {
     }
     fields.forEach(field => {
       if (field.name !== constants.METADATA_OBJECT_NAME_FIELD) {
-        element.fields[bpCase(field.name)] = Types.get(field.soapType)
-        element.annotationsValues[bpCase(field.name)] = {
-          [constants.API_NAME]: field.name,
-          ...getValueTypeFieldAnnotations(field),
-        }
+        element.fields[bpCase(field.name)] = new Field(
+          element.elemID,
+          field.name,
+          Types.get(field.soapType),
+          {
+            [constants.API_NAME]: field.name,
+            ...getValueTypeFieldAnnotations(field),
+          },
+        )
       }
     })
     return element
@@ -340,13 +345,12 @@ export default class SalesforceAdapter {
     const permissions = await this.discoverPermissions()
     // add field permissions to all discovered elements
     sobjects.forEach(sobject => {
-      Object.keys(sobject.fields).forEach(fieldName => {
-        const fieldPermission = permissions.get(fieldFullName(sobject, fieldName))
+      Object.values(sobject.fields).forEach(field => {
+        const fieldPermission = permissions.get(fieldFullName(sobject, field))
         if (fieldPermission) {
-          const fieldAnnotationsValues = sobject.annotationsValues[fieldName]
-          fieldAnnotationsValues[constants.FIELD_LEVEL_SECURITY] = {}
+          field.annotationsValues[constants.FIELD_LEVEL_SECURITY] = {}
           fieldPermission.forEach((profilePermission, profile) => {
-            fieldAnnotationsValues[constants.FIELD_LEVEL_SECURITY][
+            field.annotationsValues[constants.FIELD_LEVEL_SECURITY][
               bpCase(profile)] = profilePermission
           })
         }
@@ -362,13 +366,15 @@ export default class SalesforceAdapter {
     element.annotate({ [constants.API_NAME]: objectName })
     const fields = await this.client.discoverSObject(objectName)
     fields.forEach(field => {
-      element.fields[bpCase(field.name)] = Types.get(field.type)
-      element.annotate({
-        [bpCase(field.name)]: {
+      element.fields[bpCase(field.name)] = new Field(
+        element.elemID,
+        bpCase(field.name),
+        Types.get(field.type),
+        {
           [constants.API_NAME]: field.name,
           ...getFieldAnnotations(field),
         },
-      })
+      )
     })
     return element
   }

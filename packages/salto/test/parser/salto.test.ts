@@ -1,5 +1,6 @@
 import {
   ObjectType, PrimitiveType, PrimitiveTypes, Element, ElemID, isObjectType, Type, InstanceElement,
+  Field,
 } from 'adapter-api'
 import Parser from '../../src/parser/salto'
 
@@ -8,24 +9,30 @@ import Parser from '../../src/parser/salto'
  * This is slightly different than just deep equality because
  * in fields and annotations we only exepct the type ID to match
  */
-const expectTypesToMatch = (expected: Type, actual: Type): void => {
-  expect(typeof expected).toBe(typeof actual)
-  expect(expected.elemID).toEqual(actual.elemID)
-  expect(expected.annotationsValues).toEqual(actual.annotationsValues)
+const expectTypesToMatch = (actual: Type, expected: Type): void => {
+  expect(typeof actual).toBe(typeof expected)
+  expect(actual.elemID).toEqual(expected.elemID)
+  expect(actual.annotationsValues).toEqual(expected.annotationsValues)
 
-  const expectTypeMapToMatch = (
-    expectedTypes: Record<string, Type>,
-    actualTypes: Record<string, Type>
-  ): void => {
-    expect(Object.keys(expectedTypes)).toEqual(Object.keys(actualTypes))
-    Object.keys(expectedTypes).forEach(
-      key => expect(expectedTypes[key].elemID).toEqual(actualTypes[key].elemID)
-    )
-  }
-  expectTypeMapToMatch(expected.annotations, actual.annotations)
+  // Check annotations match
+  expect(Object.keys(actual.annotate)).toEqual(Object.keys(expected.annotations))
+  Object.keys(expected.annotations).forEach(
+    key => expect(actual.annotations[key].elemID).toEqual(expected.annotations[key].elemID)
+  )
 
+  // Check fields match
   if (isObjectType(expected) && isObjectType(actual)) {
-    expectTypeMapToMatch(expected.fields, actual.fields)
+    expect(Object.keys(actual.fields)).toEqual(Object.keys(expected.fields))
+
+    Object.values(expected.fields).forEach(expectedField => {
+      expect(actual.fields).toHaveProperty(expectedField.name)
+      const actualField = actual.fields[expectedField.name]
+
+      expect(actualField.elemID).toEqual(expectedField.elemID)
+      expect(actualField.name).toEqual(expectedField.name)
+      expect(actualField.annotationsValues).toEqual(expectedField.annotationsValues)
+      expect(actualField.type.elemID).toEqual(expectedField.type.elemID)
+    })
   }
 }
 
@@ -154,16 +161,15 @@ describe('Salto parser', () => {
           expect(model.fields).toHaveProperty('name')
         })
         it('should have the correct type', () => {
-          expect(model.fields.name.elemID.adapter).toBe('salesforce')
-          expect(model.fields.name.elemID.name).toEqual('string')
+          expect(model.fields.name.type.elemID.adapter).toBe('salesforce')
+          expect(model.fields.name.type.elemID.name).toEqual('string')
         })
         it('should have annotation values', () => {
-          expect(model.annotationsValues).toHaveProperty('name')
-          expect(model.annotationsValues.name).toHaveProperty('label')
-          expect(model.annotationsValues.name.label).toEqual('Name')
-          expect(model.annotationsValues.name).toHaveProperty('_required')
+          expect(model.fields.name.annotationsValues).toHaveProperty('label')
+          expect(model.fields.name.annotationsValues.label).toEqual('Name')
+          expect(model.fields.name.annotationsValues).toHaveProperty('_required')
           // eslint-disable-next-line no-underscore-dangle
-          expect(model.annotationsValues.name._required).toEqual(true)
+          expect(model.fields.name.annotationsValues._required).toEqual(true)
         })
       })
 
@@ -278,13 +284,10 @@ describe('Salto Dump', () => {
   const model = new ObjectType({
     elemID: new ElemID('salesforce', 'test'),
   })
-  model.fields.name = strType
-  model.fields.num = numType
+  model.fields.name = new Field(model.elemID, 'name', strType, { label: 'Name' })
+  model.fields.num = new Field(model.elemID, 'num', numType)
 
   model.annotationsValues = {
-    name: {
-      label: 'Name',
-    },
     // eslint-disable-next-line @typescript-eslint/camelcase
     lead_convert_settings: {
       account: [
@@ -358,10 +361,6 @@ describe('Salto Dump', () => {
       expect(elements[0]).toEqual(strType)
       expect(elements[1]).toEqual(numType)
       expect(elements[2]).toEqual(boolType)
-      // When parsing every field gets annotation values, even if they are empty
-      // this is not really a problem so it is ok to compare the parsed value with
-      // a slightly modified version of the original
-      model.annotationsValues.num = {}
       expectTypesToMatch(elements[3] as Type, model)
       expectInstancesToMatch(elements[4] as InstanceElement, instance)
       expectInstancesToMatch(elements[5] as InstanceElement, config)

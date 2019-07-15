@@ -16,3 +16,6 @@ junit.xml
 
 # yarn
 yarn-error.log
+
+# jest
+/.jest_cache

@@ -81,7 +81,7 @@ describe('Test SalesforceAdapter CRUD', () => {
 
     await adapter().add(
       new ObjectType({
-        elemID: new ElemID(constants.SALESFORCE, 'test'),
+        elemID: mockElemID,
         fields: {
           state:
             new Field(

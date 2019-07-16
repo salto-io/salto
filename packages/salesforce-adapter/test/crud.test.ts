@@ -74,6 +74,41 @@ describe('Test SalesforceAdapter CRUD', () => {
     expect(object.fields[0].label).toBe('test label')
   })
 
+  it('should add new salesforce type with picklist field', async () => {
+    const mockCreate = jest.fn().mockImplementationOnce(() => ({ success: true }))
+    SalesforceClient.prototype.create = mockCreate
+    SalesforceClient.prototype.update = jest.fn().mockImplementationOnce(() => ({ success: true }))
+
+    await adapter().add(
+      new ObjectType({
+        elemID: new ElemID(constants.SALESFORCE, 'test'),
+        fields: {
+          state: new PrimitiveType({
+            elemID: new ElemID(constants.SALESFORCE, 'picklist'),
+            primitive: PrimitiveTypes.STRING,
+          }),
+        },
+        annotationsValues: {
+          state: {
+            required: false,
+            _default: 'NEW',
+            label: 'test label',
+            values: ['NEW', 'OLD']
+          },
+        },
+      })
+    )
+
+    // Verify object creation
+    expect(mockCreate.mock.calls.length).toBe(1)
+    const object = mockCreate.mock.calls[0][1]
+    expect(object.fields.length).toBe(1)
+    expect(object.fields[0].fullName).toBe('State__c')
+    expect(object.fields[0].type).toBe('Picklist')
+    expect(object.fields[0].valueSet.valueSetDefinition.value.map(v => v.fullName).join(';'))
+      .toBe('NEW;OLD')
+  })
+
   it('should update field permissions upon new salesforce type', async () => {
     SalesforceClient.prototype.create = jest.fn().mockImplementationOnce(() => ({ success: true }))
     const mockUpdate = jest.fn().mockImplementationOnce(() => ({ success: true }))

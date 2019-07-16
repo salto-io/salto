@@ -50,7 +50,7 @@ export class CustomField implements MetadataInfo {
       this.length = 80
     }
 
-    if (values && _.isEmpty(values)) {
+    if (values && !_.isEmpty(values)) {
       const valueSet = {
         valueSetDefinition: { value: [] as CustomPicklistValue[] },
       }

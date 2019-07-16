@@ -83,18 +83,21 @@ describe('Test SalesforceAdapter CRUD', () => {
       new ObjectType({
         elemID: new ElemID(constants.SALESFORCE, 'test'),
         fields: {
-          state: new PrimitiveType({
-            elemID: new ElemID(constants.SALESFORCE, 'picklist'),
-            primitive: PrimitiveTypes.STRING,
-          }),
-        },
-        annotationsValues: {
-          state: {
-            required: false,
-            _default: 'NEW',
-            label: 'test label',
-            values: ['NEW', 'OLD']
-          },
+          state:
+            new Field(
+              mockElemID,
+              'state',
+              new PrimitiveType({
+                elemID: new ElemID(constants.SALESFORCE, 'picklist'),
+                primitive: PrimitiveTypes.STRING,
+              }),
+              {
+                required: false,
+                _default: 'NEW',
+                label: 'test label',
+                values: ['NEW', 'OLD'],
+              },
+            ),
         },
       })
     )
@@ -105,7 +108,8 @@ describe('Test SalesforceAdapter CRUD', () => {
     expect(object.fields.length).toBe(1)
     expect(object.fields[0].fullName).toBe('State__c')
     expect(object.fields[0].type).toBe('Picklist')
-    expect(object.fields[0].valueSet.valueSetDefinition.value.map(v => v.fullName).join(';'))
+    expect(object.fields[0].valueSet.valueSetDefinition.value
+      .map((v: {fullName: string}) => v.fullName).join(';'))
       .toBe('NEW;OLD')
   })
 

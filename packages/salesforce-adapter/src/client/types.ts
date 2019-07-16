@@ -51,15 +51,11 @@ export class CustomField implements MetadataInfo {
     }
 
     if (values && !_.isEmpty(values)) {
-      const valueSet = {
-        valueSetDefinition: { value: [] as CustomPicklistValue[] },
+      this.valueSet = {
+        valueSetDefinition: {
+          value: values.map(val => new CustomPicklistValue(val)),
+        },
       }
-      values.forEach(val => {
-        valueSet.valueSetDefinition.value.push(
-          new CustomPicklistValue(val)
-        )
-      })
-      this.valueSet = valueSet
     }
   }
 }

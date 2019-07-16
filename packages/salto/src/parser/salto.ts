@@ -169,7 +169,7 @@ export default class Parser {
             const fieldBlock: HCLBlock = {
               type: field.type.elemID.getFullName(),
               labels: [field.name],
-              attrs: field.annotationsValues || {},
+              attrs: field.annotationsValues,
               blocks: [],
             }
             return fieldBlock

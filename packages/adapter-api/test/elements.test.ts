@@ -270,11 +270,10 @@ describe('Test elements.ts', () => {
     annotations.label = 'label'
 
     // Object
+    const stringType = registery.getElement(new ElemID('', 'string'))
     const saltoAddr = registery.getElement(new ElemID('salto', 'address'))
-    saltoAddr.fields.country = registery.getElement(
-      new ElemID('', 'string'),
-    )
-    saltoAddr.fields.city = registery.getElement(new ElemID('', 'string'))
+    saltoAddr.fields.country = new Field(saltoAddr.elemID, 'country', stringType)
+    saltoAddr.fields.city = new Field(saltoAddr.elemID, 'city', stringType)
 
     const saltoAddr2 = saltoAddr.clone(annotations)
     expect(saltoAddr).not.toBe(saltoAddr2)

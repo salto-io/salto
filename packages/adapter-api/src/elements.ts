@@ -64,7 +64,7 @@ export class Field implements Element {
 
   clone(): Field {
     return new Field(
-      this.elemID,
+      this.parentID(),
       this.name,
       this.type,
       _.cloneDeep(this.annotationsValues)

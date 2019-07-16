@@ -9,6 +9,8 @@ import SalesforceAdapter from 'salesforce-adapter'
 import { buildDiffGraph } from '../dag/diff'
 import { DataNodeMap } from '../dag/nodemap'
 import Parser from '../parser/salto'
+import { SaltoState } from '../state/state'
+import { BpState } from '../state/bp_state'
 
 export interface Blueprint {
   buffer: Buffer
@@ -21,12 +23,15 @@ export interface CoreCallbacks {
 
 // Don't know if this should be extend or a delegation
 export class SaltoCore extends EventEmitter {
+  private state: SaltoState
+
   adapters: Record<string, SalesforceAdapter>
   callbacks: CoreCallbacks
   constructor(callbacks: CoreCallbacks) {
     super()
     this.callbacks = callbacks
     this.adapters = {}
+    this.state = new BpState()
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -127,6 +132,8 @@ export class SaltoCore extends EventEmitter {
     await this.initAdapters(salesforceConfig)
     const discoverElements = await this.adapters.salesforce.discover()
     const uniqElements = [...discoverElements, salesforceConfig, salesforceConfigType]
+    // Save state
+    await this.state.saveState(discoverElements)
     const buffer = await Parser.dump(uniqElements)
     return { buffer, filename: 'none' }
   }

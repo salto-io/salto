@@ -4,9 +4,7 @@ module.exports = deepMerge(
   require('../../jest.base.config.js'),
   {
     collectCoverageFrom: [
-      '!<rootDir>/index.ts',
       '!<rootDir>/src/tools/**', // At the moment we do not cover the tools
-      '!<rootDir>/e2e_test/**',
     ],
     coverageThreshold: {
       // Slowly start increasing here, never decrease!

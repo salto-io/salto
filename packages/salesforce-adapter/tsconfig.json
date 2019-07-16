@@ -12,6 +12,8 @@
     },
     "include": [
         "src/**/*",
+        "test/**/*",
+        "e2e_test/**/*",
         "index.ts"
     ]
 }

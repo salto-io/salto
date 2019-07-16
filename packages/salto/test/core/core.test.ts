@@ -72,7 +72,7 @@ describe('Test core.ts', () => {
     getConfigFromUser,
   })
 
-  const blueprintsDirectory = path.join(__dirname, '../../test', 'blueprints')
+  const blueprintsDirectory = path.join(__dirname, '../../../test', 'blueprints')
 
   const readBlueprints = (...filenames: string[]): Promise<Blueprint[]> => Promise.all(
     filenames.map(async (filename: string) => ({

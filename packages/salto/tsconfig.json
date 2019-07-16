@@ -11,7 +11,8 @@
         }
     },
     "include": [
-        "index.ts",
-        "src/**/*"
+        "src/**/*",
+        "test/**/*",
+        "index.ts"
     ]
 }

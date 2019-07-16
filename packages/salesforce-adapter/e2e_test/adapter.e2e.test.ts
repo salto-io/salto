@@ -1,4 +1,3 @@
-/* eslint-disable jest/no-disabled-tests */
 import { isArray } from 'util'
 import {
   Type,
@@ -32,11 +31,11 @@ describe('Test Salesforce adapter E2E with real account', () => {
     jest.setTimeout(1000000)
   })
 
-  describe.skip('should discover account settings', () => {
+  describe('should discover account settings', () => {
     let result: Type[]
 
     beforeAll(async done => {
-      // result = await adapter().discover()
+      result = await adapter().discover()
       done()
     })
     it('should discover sobject', async () => {
@@ -103,7 +102,8 @@ describe('Test Salesforce adapter E2E with real account', () => {
       if (label && label !== result.label) {
         return false
       }
-      const fieldNames = isArray(result.fields) ? result.fields.map(rf => rf.fullName) : []
+      const fieldNames = isArray(result.fields) ? result.fields.map(rf => rf.fullName)
+        : [result.fields.fullName]
       if (fields && !fields.every(f => fieldNames.includes(f))) {
         return false
       }
@@ -167,7 +167,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
       await sfAdapter.remove(post)
     })
 
-    it.skip('should remove object', async () => {
+    it('should remove object', async () => {
       const customObjectName = 'TestRemoveCustom__c'
       const mockElemID = new ElemID(constants.SALESFORCE, 'test remove custom')
       const element = new ObjectType({
@@ -200,7 +200,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
       expect(await objectExists(customObjectName)).toBe(false)
     })
 
-    it.skip('should modify an object by creating a new custom field and remove another one', async () => {
+    it('should modify an object by creating a new custom field and remove another one', async () => {
       const customObjectName = 'TestModifyCustom__c'
       const mockElemID = new ElemID(constants.SALESFORCE, 'test modify fields')
       const oldElement = new ObjectType({
@@ -283,7 +283,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
       await sfAdapter.remove(oldElement)
     })
 
-    it.skip("should modify an object's annotations", async () => {
+    it("should modify an object's annotations", async () => {
       const customObjectName = 'TestModifyCustomAnnotations__c'
       const mockElemID = new ElemID(constants.SALESFORCE, 'test modify annotations')
       const oldElement = new ObjectType({
@@ -367,7 +367,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
       await sfAdapter.remove(oldElement)
     })
 
-    it.skip("should modify an object's custom fields' permissions E2E", async () => {
+    it("should modify an object's custom fields' permissions E2E", async () => {
       // Setup
       const customObjectName = 'TestModifyCustomFieldsPermissions__c'
       const mockElemID = new ElemID(constants.SALESFORCE, 'test modify custom field permissions')

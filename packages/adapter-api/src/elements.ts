@@ -62,6 +62,11 @@ export class Field implements Element {
     this.elemID = new ElemID(parentID.adapter, ...parentID.nameParts, name)
   }
 
+  /**
+   * Clones a field
+   * Note that the cloned field still has the same element ID so it cannot be used in a different
+   * object
+   */
   clone(): Field {
     return new Field(
       this.parentID(),

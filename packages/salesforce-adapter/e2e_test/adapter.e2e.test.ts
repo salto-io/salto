@@ -16,9 +16,9 @@ describe('Test Salesforce adapter E2E with real account', () => {
   const adapter = (): SalesforceAdapter => {
     const configType = SalesforceAdapter.getConfigType()
     const value = {
-      username: 'vanila@salto.io',
-      password: '!A123456',
-      token: 'rwVvOsh7HjF8Zki9ZmyQdeth',
+      username: process.env.SF_USER,
+      password: process.env.SF_PASSWORD,
+      token: process.env.SF_TOKEN,
       sandbox: false,
     }
     const elemID = new ElemID('salesforce')
@@ -95,19 +95,22 @@ describe('Test Salesforce adapter E2E with real account', () => {
     const objectExists = async (name: string, fields?: string[], missingFields?: string[],
       label?: string): Promise<boolean> => {
       const result = (await sfAdapter.client.readMetadata(constants.CUSTOM_OBJECT, name)
-        ) as CustomObject
+      ) as CustomObject
       if (!result || !result.fullName) {
         return false
       }
       if (label && label !== result.label) {
         return false
       }
-      const fieldNames = isArray(result.fields) ? result.fields.map(rf => rf.fullName)
-        : [result.fields.fullName]
-      if (fields && !fields.every(f => fieldNames.includes(f))) {
-        return false
+      if (fields || missingFields) {
+        const fieldNames = isArray(result.fields) ? result.fields.map(rf => rf.fullName)
+          : [result.fields.fullName]
+        if (fields && !fields.every(f => fieldNames.includes(f))) {
+          return false
+        }
+        return (!missingFields || missingFields.every(f => !fieldNames.includes(f)))
       }
-      return (!missingFields || missingFields.every(f => !fieldNames.includes(f)))
+      return true
     }
 
     const permissionExists = async (profile: string, fields: string[]): Promise<boolean[]> => {
@@ -316,9 +319,10 @@ describe('Test Salesforce adapter E2E with real account', () => {
         },
       })
 
-      if (await objectExists(customObjectName) === false) {
-        await sfAdapter.add(oldElement)
+      if (await objectExists(customObjectName)) {
+        await sfAdapter.remove(oldElement)
       }
+      await sfAdapter.add(oldElement)
 
       const newElement = new ObjectType({
         elemID: mockElemID,

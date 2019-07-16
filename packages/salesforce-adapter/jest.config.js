@@ -4,11 +4,7 @@ module.exports = deepMerge(
   require('./jest.base.config.js'),
   {
     globals: {
-      'ts-jest': {
-        diagnostics: {
-          ignoreCodes: [7016, 7006],
-        },
-      },
+      'ts-jest': {},
     },
     name: 'salesforce-adapter',
     displayName: 'salesforce-adapter',

@@ -4,7 +4,10 @@ module.exports = {
       tsConfig: 'tsconfig.json',
     },
   },
-  moduleFileExtensions: ['js', 'ts'],
+  moduleFileExtensions: ['ts', 'js'],
+  moduleNameMapper: {
+    '^jsforce/(.*)$': '../../node_modules/jsforce-types/$1',
+  },
   transform: {
     '^.+\\.(ts|tsx)$': 'ts-jest',
   },
@@ -13,7 +16,7 @@ module.exports = {
   ],
   testEnvironment: 'node',
   testPathIgnorePatterns: [
-    '<rootDir>/dist/'
+    '<rootDir>/dist/',
   ],
   preset: 'ts-jest',
   collectCoverage: true,

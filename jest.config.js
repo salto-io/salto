@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
 const _ = require('lodash')
 const fs = require('fs')
 const path = require('path')
@@ -28,6 +29,6 @@ module.exports = Object.assign(
     projects: ['packages/*'],
     coverageDirectory: '<rootDir>/coverage/',
     collectCoverageFrom,
-    cacheDirectory: '.jest_cache'
+    cacheDirectory: '.jest_cache',
   }
 )

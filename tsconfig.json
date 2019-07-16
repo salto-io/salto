@@ -1,5 +1,13 @@
 {
     "extends": "./tsconfig.base.json",
+    "compilerOptions": {
+        "baseUrl": ".",
+        "paths": {
+            "jsforce": [
+                "./node_modules/jsforce-types"
+            ]
+        }
+    },
     "references": [
         { "path": "packages/adapter-api" },
         { "path": "packages/salto" },

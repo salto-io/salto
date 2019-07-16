@@ -1,14 +1,10 @@
 {
     "extends": "../../tsconfig.base.json",
     "compilerOptions": {
-        "baseUrl": ".",
         "outDir": "dist",
+        "baseUrl": ".",
+        "declaration": true,
         "paths": {
-            "*": [
-                "src/types/*",
-                "node_modules/*",
-                "../../node_modules/*"
-            ],
             "jsforce": [
                 "../../node_modules/jsforce-types"
             ]
@@ -16,6 +12,6 @@
     },
     "include": [
         "index.ts",
-        "src/**/*",
+        "src/**/*"
     ]
 }

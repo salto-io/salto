@@ -5,7 +5,8 @@
   ],
   "name": "salto_monorepo",
   "devDependencies": {
-    "codecov": "^3.5.0"
+    "codecov": "^3.5.0",
+    "ts-jest": "^24.0.2"
   },
   "scripts": {
     "install": "yarn workspaces run build"

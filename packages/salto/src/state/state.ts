@@ -1,5 +1,8 @@
 import { Element, InstanceElement, Type } from "adapter-api"
 
+/**
+ * Salto state - an interface for managing the state between runs
+ */
 export interface SaltoState {
     /**
      * This method save the state

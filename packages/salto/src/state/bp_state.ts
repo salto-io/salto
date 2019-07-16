@@ -5,6 +5,9 @@ import { Blueprint } from "../core/core"
 import * as fs from 'async-file'
 import _ from "lodash";
 
+/**
+ * Bp state - manages the state in BP files
+ */
 export class BpState implements SaltoState {
     private static STATEPATH = './.salto/latest_state.bp'
     /**

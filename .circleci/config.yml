@@ -8,24 +8,39 @@ jobs:
     working_directory: ~/repo
 
     steps:
+      - restore_cache:
+          keys:
+            - v1-source-{{ .Branch }}-
+            - v1-source-
+
       - checkout
+
+      - save_cache:
+          key: v1-source-{{ .Branch }}
+          paths: .git
 
       # Download and cache dependencies
       - restore_cache:
           keys:
-            - v1-dependencies-{{ checksum "yarn.lock" }}
+            - v1-yarn-deps-{{ arch }}-{{ checksum "yarn.lock" }}
+            - v1-yarn-deps-{{ arch }}-
+            - v1-yarn-deps-
 
-      - run: yarn
+      - run: yarn --frozen-lockfile
+
+      - run:
+          name: Run Jest tests
+          command: yarn run jest --ci --forceExit --detectOpenHandles --reporters=default --reporters=jest-junit
+          environment:
+            JEST_JUNIT_OUTPUT: "reports/junit/js-test-results.xml"
 
       - save_cache:
           paths:
             - node_modules
-          key: v1-dependencies-{{ checksum "yarn.lock" }}
+            - ~/.cache/yarn
+            - .jest_cache
 
-      - run:
-          name: Run Jest tests
-          environment:
-            JEST_JUNIT_OUTPUT: "reports/junit/js-test-results.xml"
+          key: v1-yarn-deps-{{ checksum "yarn.lock" }}
 
       - store_artifacts:
           path: reports

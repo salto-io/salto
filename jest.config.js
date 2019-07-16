@@ -26,7 +26,8 @@ module.exports = Object.assign(
   require('./jest.base.config.js'),
   {
     projects: ['packages/*'],
-    coverageDirectory: "<rootDir>/coverage/",
+    coverageDirectory: '<rootDir>/coverage/',
     collectCoverageFrom,
+    cacheDirectory: '.jest_cache'
   }
 )

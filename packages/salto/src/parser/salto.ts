@@ -4,11 +4,13 @@ import {
   Type, ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field,
   isObjectType, isPrimitiveType, Element, isInstanceElement, InstanceElement,
 } from 'adapter-api'
+
 import HCLParser from './hcl'
 
 enum Keywords {
   MODEL = 'model',
   TYPE_DEFINITION = 'type',
+  LIST_DEFINITION = 'list',
   TYPE_INHERITENCE_SEPARATOR = 'is',
 
   // Primitive types
@@ -65,7 +67,19 @@ export default class Parser {
     typeObj.annotate(typeBlock.attrs)
 
     typeBlock.blocks.forEach(block => {
-      if (block.labels.length === 1) {
+      if (block.type === Keywords.LIST_DEFINITION) {
+        // List Field block
+        const fieldName = block.labels[1]
+        const listElementType = block.labels[0]
+        typeObj.fields[fieldName] = new Field(
+          typeObj.elemID,
+          fieldName,
+          new ObjectType({ elemID: this.getElemID(listElementType) }),
+          block.attrs,
+          true
+        )
+      }
+      else if (block.labels.length === 1) {
         // Field block
         const fieldName = block.labels[0]
         typeObj.fields[fieldName] = new Field(
@@ -150,6 +164,27 @@ export default class Parser {
     return { elements, errors }
   }
 
+  //
+  private static getListFieldBlock(field: Field): HCLBlock {
+    const fieldBlock: HCLBlock = {
+      type: Keywords.LIST_DEFINITION,
+      labels: [field.type.elemID.getFullName(), field.name],
+      attrs: field.annotationsValues || {},
+      blocks: [],
+    }
+    return fieldBlock
+  }
+
+  private static getFieldBlock(field: Field): HCLBlock {
+    const fieldBlock: HCLBlock = {
+      type: field.type.elemID.getFullName(),
+      labels: [field.name],
+      attrs: field.annotationsValues || {},
+      blocks: [],
+    }
+    return fieldBlock
+  }
+
   /**
    * Serialize elements to blueprint
    *
@@ -165,15 +200,9 @@ export default class Parser {
           type: Keywords.MODEL,
           labels: [elem.elemID.getFullName()],
           attrs: annotationsValues,
-          blocks: Object.values(elem.fields).map(field => {
-            const fieldBlock: HCLBlock = {
-              type: field.type.elemID.getFullName(),
-              labels: [field.name],
-              attrs: field.annotationsValues,
-              blocks: [],
-            }
-            return fieldBlock
-          }),
+          blocks: Object.values(elem.fields).map(field => ((field.isList)
+            ? this.getListFieldBlock(field)
+            : this.getFieldBlock(field))),
         }
       }
       if (isPrimitiveType(elem)) {

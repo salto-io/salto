@@ -68,6 +68,7 @@ export class Field implements Element {
     public name: string,
     public type: Type,
     public annotationsValues: Values = {},
+    public isList: boolean = false,
   ) {
     this.elemID = new ElemID(parentID.adapter, ...parentID.nameParts, name)
   }
@@ -82,7 +83,8 @@ export class Field implements Element {
       this.parentID(),
       this.name,
       this.type,
-      _.cloneDeep(this.annotationsValues)
+      _.cloneDeep(this.annotationsValues),
+      this.isList,
     )
   }
 

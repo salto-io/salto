@@ -1,4 +1,5 @@
 import { MetadataInfo, SaveResult } from 'jsforce'
+import _ from 'lodash'
 
 export interface FieldPermissions {
   field: string
@@ -49,7 +50,7 @@ export class CustomField implements MetadataInfo {
       this.length = 80
     }
 
-    if (values && values.length > 0) {
+    if (values && _.isEmpty(values)) {
       const valueSet = {
         valueSetDefinition: { value: [] as CustomPicklistValue[] },
       }

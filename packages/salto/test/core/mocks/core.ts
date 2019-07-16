@@ -1,5 +1,6 @@
 import {
   Type, PrimitiveTypes, ElemID, PlanActionType, PlanAction, ObjectType, PrimitiveType, ListType,
+  Field,
 } from 'adapter-api'
 import { SaltoCore, Blueprint, CoreCallbacks } from '../../../src/core/core'
 
@@ -15,60 +16,86 @@ export default class SaltoCoreMock extends SaltoCore {
       elemID: new ElemID('', 'string'),
       primitive: PrimitiveTypes.STRING,
     })
+    const addrElemID = new ElemID('salto', 'address')
     const saltoAddr = new ObjectType({
-      elemID: new ElemID('salto', 'address'),
+      elemID: addrElemID,
+      fields: {
+        country: new Field(addrElemID, 'country', stringType),
+        city: new Field(addrElemID, 'city', stringType),
+      },
     })
     saltoAddr.annotations.label = stringType
-    saltoAddr.fields.country = stringType
-    saltoAddr.fields.city = stringType
 
+    const officeElemID = new ElemID('salto', 'office')
     const saltoOffice = new ObjectType({
-      elemID: new ElemID('salto', 'office'),
+      elemID: officeElemID,
+      fields: {
+        name: new Field(officeElemID, 'name', stringType),
+        location: new Field(
+          officeElemID,
+          'location',
+          saltoAddr,
+          {
+            label: 'Office Location',
+            description: 'A location of an office',
+          },
+        ),
+      },
     })
     saltoOffice.annotations.label = stringType
-    saltoOffice.fields.name = stringType
-    saltoOffice.fields.location = saltoAddr
-    saltoOffice.annotationsValues.location = {
-      label: 'Office Location',
-      description: 'A location of an office',
-    }
 
+    const employeeElemID = new ElemID('salto', 'employee')
     const saltoEmployee = new ObjectType({
-      elemID: new ElemID('salto', 'employee'),
-    })
-    saltoEmployee.fields.name = stringType
-    saltoEmployee.annotationsValues.name = {
-      _required: true,
-    }
-    saltoEmployee.fields.nicknames = new ListType({
-      elemID: new ElemID('salto', 'nicknames'),
-      elementType: stringType,
-    })
-    /* eslint-disable-next-line @typescript-eslint/camelcase */
-    saltoEmployee.fields.employee_resident = saltoAddr
-    /* eslint-disable-next-line @typescript-eslint/camelcase */
-    saltoEmployee.annotationsValues.employee_resident = {
-      label: 'Employee Resident',
-    }
-    saltoEmployee.fields.company = stringType
-    saltoEmployee.annotationsValues.company = {
-      _default: 'salto',
-    }
-    saltoEmployee.fields.office = saltoOffice
-    saltoEmployee.annotationsValues.office = {
-      label: 'Based In',
-      name: {
-        [Type.DEFAULT]: 'HQ',
+      elemID: employeeElemID,
+      fields: {
+        name: new Field(
+          employeeElemID,
+          'name',
+          stringType,
+          { _required: true },
+        ),
+        nicknames: new Field(
+          employeeElemID,
+          'nicknames',
+          new ListType({
+            elemID: new ElemID('salto', 'nicknames'),
+            elementType: stringType,
+          }),
+        ),
+        /* eslint-disable-next-line @typescript-eslint/camelcase */
+        employee_resident: new Field(
+          employeeElemID,
+          'employee_resident',
+          saltoAddr,
+          { label: 'Employee Resident' }
+        ),
+        company: new Field(
+          employeeElemID,
+          'company',
+          stringType,
+          { _default: 'salto' },
+        ),
+        office: new Field(
+          employeeElemID,
+          'office',
+          saltoOffice,
+          {
+            label: 'Based In',
+            name: {
+              [Type.DEFAULT]: 'HQ',
+            },
+            location: {
+              country: {
+                [Type.DEFAULT]: 'IL',
+              },
+              city: {
+                [Type.DEFAULT]: 'Raanana',
+              },
+            },
+          },
+        ),
       },
-      location: {
-        country: {
-          [Type.DEFAULT]: 'IL',
-        },
-        city: {
-          [Type.DEFAULT]: 'Raanana',
-        },
-      },
-    }
+    })
 
     return [stringType, saltoAddr, saltoOffice, saltoEmployee]
   }

@@ -1,7 +1,7 @@
 import * as _ from 'lodash'
 
 import {
-  Type, ElemID, ObjectType, PrimitiveType, PrimitiveTypes,
+  Type, ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field,
   isObjectType, isPrimitiveType, Element, isInstanceElement, InstanceElement,
 } from 'adapter-api'
 import HCLParser from './hcl'
@@ -68,8 +68,12 @@ export default class Parser {
       if (block.labels.length === 1) {
         // Field block
         const fieldName = block.labels[0]
-        typeObj.fields[fieldName] = new ObjectType({ elemID: this.getElemID(block.type) })
-        typeObj.annotationsValues[fieldName] = block.attrs
+        typeObj.fields[fieldName] = new Field(
+          typeObj.elemID,
+          fieldName,
+          new ObjectType({ elemID: this.getElemID(block.type) }),
+          block.attrs,
+        )
       } else {
         // This is something else, lets assume it is field overrides for now and we can extend
         // this later as we support more parts of the language
@@ -154,29 +158,26 @@ export default class Parser {
    */
   public static dump(elements: Element[]): Promise<Buffer> {
     const blocks = elements.map(elem => {
-      let block: HCLBlock
       if (isObjectType(elem)) {
         // Clone the annotation values because we may delete some keys from there
-        const annotationValues = _.cloneDeep(elem.annotationsValues)
-        block = {
+        const annotationsValues = _.cloneDeep(elem.annotationsValues)
+        return {
           type: Keywords.MODEL,
           labels: [elem.elemID.getFullName()],
-          attrs: annotationValues,
-          blocks: Object.entries(elem.fields).map(([fieldName, fieldType]: [string, Type]) => {
+          attrs: annotationsValues,
+          blocks: Object.values(elem.fields).map(field => {
             const fieldBlock: HCLBlock = {
-              type: fieldType.elemID.getFullName(),
-              labels: [fieldName],
-              attrs: elem.annotationsValues[fieldName] || {},
+              type: field.type.elemID.getFullName(),
+              labels: [field.name],
+              attrs: field.annotationsValues,
               blocks: [],
             }
-            // Remove the field annotations from the element annotations so they do not get
-            // serialized twice
-            delete annotationValues[fieldName]
             return fieldBlock
           }),
         }
-      } else if (isPrimitiveType(elem)) {
-        block = {
+      }
+      if (isPrimitiveType(elem)) {
+        return {
           type: Keywords.TYPE_DEFINITION,
           labels: [
             elem.elemID.getFullName(),
@@ -186,23 +187,23 @@ export default class Parser {
           attrs: elem.annotationsValues,
           blocks: [],
         }
-      } else if (isInstanceElement(elem)) {
+      }
+      if (isInstanceElement(elem)) {
         const labels = elem.elemID.name === ElemID.CONFIG_INSTANCE_NAME
           ? []
           : [elem.elemID.name]
 
-        block = {
+        return {
           type: elem.type.elemID.getFullName(),
           labels,
           attrs: elem.value,
           blocks: [],
         }
-      } else {
-        // Without this exception the linter won't allow us to return "block"
-        // since it might be uninitialized
-        throw new Error('unsupported type')
       }
-      return block
+
+      // Without this exception the linter won't allow us to end the function
+      // without a return value
+      throw new Error('unsupported type')
     })
 
     const body: HCLBlock = {

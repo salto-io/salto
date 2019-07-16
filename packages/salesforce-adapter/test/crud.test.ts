@@ -4,6 +4,7 @@ import {
   ElemID,
   PrimitiveTypes,
   InstanceElement,
+  Field,
 } from 'adapter-api'
 import { ProfileInfo } from '../src/client/types'
 import SalesforceAdapter from '../src/adapter'
@@ -31,6 +32,8 @@ describe('Test SalesforceAdapter CRUD', () => {
     primitive: PrimitiveTypes.STRING,
   })
 
+  const mockElemID = new ElemID(constants.SALESFORCE, 'test')
+
   it('should add new salesforce type', async () => {
     const mockCreate = jest.fn().mockImplementationOnce(() => ({ success: true }))
     SalesforceClient.prototype.create = mockCreate
@@ -38,16 +41,18 @@ describe('Test SalesforceAdapter CRUD', () => {
 
     const result = await adapter().add(
       new ObjectType({
-        elemID: new ElemID(constants.SALESFORCE, 'test'),
+        elemID: mockElemID,
         fields: {
-          description: stringType,
-        },
-        annotationsValues: {
-          description: {
-            required: false,
-            _default: 'test',
-            label: 'test label',
-          },
+          description: new Field(
+            mockElemID,
+            'description',
+            stringType,
+            {
+              required: false,
+              _default: 'test',
+              label: 'test label',
+            },
+          ),
         },
       })
     )
@@ -55,7 +60,7 @@ describe('Test SalesforceAdapter CRUD', () => {
     // Verify object creation
     expect(result.annotationsValues[constants.API_NAME]).toBe('Test__c')
     expect(
-      result.annotationsValues.description[constants.API_NAME]
+      result.fields.description.annotationsValues[constants.API_NAME]
     ).toBe('Description__c')
 
     expect(mockCreate.mock.calls.length).toBe(1)
@@ -76,17 +81,19 @@ describe('Test SalesforceAdapter CRUD', () => {
 
     await adapter().add(
       new ObjectType({
-        elemID: new ElemID(constants.SALESFORCE, 'test'),
+        elemID: mockElemID,
         fields: {
-          description: stringType,
-        },
-        annotationsValues: {
-          description: {
-            [constants.FIELD_LEVEL_SECURITY]: {
-              admin: { editable: true, readable: true },
-              standard: { editable: false, readable: false },
-            },
-          },
+          description: new Field(
+            mockElemID,
+            'description',
+            stringType,
+            {
+              [constants.FIELD_LEVEL_SECURITY]: {
+                admin: { editable: true, readable: true },
+                standard: { editable: false, readable: false },
+              },
+            }
+          ),
         },
       })
     )
@@ -126,7 +133,7 @@ describe('Test SalesforceAdapter CRUD', () => {
     return expect(
       adapter().add(
         new ObjectType({
-          elemID: new ElemID(constants.SALESFORCE, 'test'),
+          elemID: mockElemID,
         })
       )
     ).rejects.toEqual(new Error('Failed to add Test__c\nAdditional message'))
@@ -146,14 +153,14 @@ describe('Test SalesforceAdapter CRUD', () => {
     return expect(
       adapter().add(
         new ObjectType({
-          elemID: new ElemID(constants.SALESFORCE, 'test'),
+          elemID: mockElemID,
           fields: {
-            description: stringType,
-          },
-          annotationsValues: {
-            description: {
-              [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
-            },
+            description: new Field(
+              mockElemID,
+              'description',
+              stringType,
+              { [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } } },
+            ),
           },
         })
       )
@@ -166,9 +173,13 @@ describe('Test SalesforceAdapter CRUD', () => {
 
     await adapter().remove(
       new ObjectType({
-        elemID: new ElemID(constants.SALESFORCE, 'test'),
+        elemID: mockElemID,
         fields: {
-          description: stringType,
+          description: new Field(
+            mockElemID,
+            'description',
+            stringType,
+          ),
         },
         annotationsValues: {
           [constants.API_NAME]: 'Test__c',
@@ -195,7 +206,7 @@ describe('Test SalesforceAdapter CRUD', () => {
     return expect(
       adapter().remove(
         new ObjectType({
-          elemID: new ElemID(constants.SALESFORCE, 'test'),
+          elemID: mockElemID,
           annotationsValues: {
             [constants.API_NAME]: 'Test__c',
           },
@@ -223,7 +234,11 @@ describe('Test SalesforceAdapter CRUD', () => {
           new ObjectType({
             elemID: new ElemID(constants.SALESFORCE, 'test2'),
             fields: {
-              description: stringType,
+              description: new Field(
+                mockElemID,
+                'description',
+                stringType,
+              ),
             },
             annotationsValues: {
               required: false,
@@ -233,9 +248,13 @@ describe('Test SalesforceAdapter CRUD', () => {
             },
           }),
           new ObjectType({
-            elemID: new ElemID(constants.SALESFORCE, 'test'),
+            elemID: mockElemID,
             fields: {
-              address: stringType,
+              address: new Field(
+                mockElemID,
+                'address',
+                stringType,
+              ),
             },
             annotationsValues: {
               required: false,
@@ -254,9 +273,13 @@ describe('Test SalesforceAdapter CRUD', () => {
     it('should perform a successful update of a salesforce metadata component if the fullnames are the same', async () => {
       const result = await adapter().update(
         new ObjectType({
-          elemID: new ElemID(constants.SALESFORCE, 'test'),
+          elemID: mockElemID,
           fields: {
-            description: stringType,
+            description: new Field(
+              mockElemID,
+              'description',
+              stringType,
+            ),
           },
           annotationsValues: {
             required: false,
@@ -266,16 +289,20 @@ describe('Test SalesforceAdapter CRUD', () => {
           },
         }),
         new ObjectType({
-          elemID: new ElemID(constants.SALESFORCE, 'test'),
+          elemID: mockElemID,
           fields: {
-            address: stringType,
+            address: new Field(
+              mockElemID,
+              'address',
+              stringType,
+              {
+                label: 'test2 label',
+                [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
+              },
+            ),
           },
           annotationsValues: {
             label: 'test2 label',
-            address: {
-              label: 'test2 label',
-              [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
-            },
           },
         })
       )
@@ -291,48 +318,72 @@ describe('Test SalesforceAdapter CRUD', () => {
     it("should only create new fields when the new object's change is only new fields", async () => {
       const result = await adapter().update(
         new ObjectType({
-          elemID: new ElemID(constants.SALESFORCE, 'test'),
+          elemID: mockElemID,
           fields: {
-            address: stringType,
-            banana: stringType,
+            address: new Field(
+              mockElemID,
+              'address',
+              stringType,
+              {
+                [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
+              },
+            ),
+            banana: new Field(
+              mockElemID,
+              'banana',
+              stringType,
+              {
+                [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
+              },
+            ),
           },
           annotationsValues: {
             required: false,
             _default: 'test',
             label: 'test label',
             [constants.API_NAME]: 'Test__c',
-            address: {
-              [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
-            },
-            banana: {
-              [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
-            },
           },
         }),
         new ObjectType({
-          elemID: new ElemID(constants.SALESFORCE, 'test'),
+          elemID: mockElemID,
           fields: {
-            address: stringType,
-            banana: stringType,
-            description: stringType,
-            apple: stringType,
+            address: new Field(
+              mockElemID,
+              'address',
+              stringType,
+              {
+                [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
+              },
+            ),
+            banana: new Field(
+              mockElemID,
+              'banana',
+              stringType,
+              {
+                [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
+              },
+            ),
+            description: new Field(
+              mockElemID,
+              'description',
+              stringType,
+              {
+                [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
+              },
+            ),
+            apple: new Field(
+              mockElemID,
+              'apple',
+              stringType,
+              {
+                [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
+              },
+            ),
           },
           annotationsValues: {
             required: false,
             _default: 'test2',
             label: 'test2 label',
-            address: {
-              [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
-            },
-            banana: {
-              [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
-            },
-            description: {
-              [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
-            },
-            apple: {
-              [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
-            },
           },
         })
       )
@@ -364,40 +415,56 @@ describe('Test SalesforceAdapter CRUD', () => {
     it('should only delete fields when the only change in the new object is that some fields no longer appear', async () => {
       const result = await adapter().update(
         new ObjectType({
-          elemID: new ElemID(constants.SALESFORCE, 'test'),
+          elemID: mockElemID,
           fields: {
-            address: stringType,
-            banana: stringType,
-            description: stringType,
+            address: new Field(
+              mockElemID,
+              'address',
+              stringType,
+              {
+                [constants.API_NAME]: 'Address__c',
+              },
+            ),
+            banana: new Field(
+              mockElemID,
+              'banana',
+              stringType,
+              {
+                [constants.API_NAME]: 'Banana__c',
+              },
+            ),
+            description: new Field(
+              mockElemID,
+              'description',
+              stringType,
+              {
+                [constants.API_NAME]: 'Description__c',
+              },
+            ),
           },
           annotationsValues: {
             required: false,
             _default: 'test',
             label: 'test label',
             [constants.API_NAME]: 'Test__c',
-            address: {
-              [constants.API_NAME]: 'Address__c',
-            },
-            banana: {
-              [constants.API_NAME]: 'Banana__c',
-            },
-            description: {
-              [constants.API_NAME]: 'Description__c',
-            },
           },
         }),
         new ObjectType({
-          elemID: new ElemID(constants.SALESFORCE, 'test'),
+          elemID: mockElemID,
           fields: {
-            description: stringType,
+            description: new Field(
+              mockElemID,
+              'description',
+              stringType,
+              {
+                [constants.API_NAME]: 'Description__c',
+              },
+            ),
           },
           annotationsValues: {
             required: false,
             _default: 'test2',
             label: 'test2 label',
-            description: {
-              [constants.API_NAME]: 'Description__c',
-            },
           },
         })
       )
@@ -416,42 +483,58 @@ describe('Test SalesforceAdapter CRUD', () => {
     it('should both create & delete fields when some fields no longer appear in the new object and some fields are new', async () => {
       const result = await adapter().update(
         new ObjectType({
-          elemID: new ElemID(constants.SALESFORCE, 'test'),
+          elemID: mockElemID,
           fields: {
-            address: stringType,
-            banana: stringType,
+            address: new Field(
+              mockElemID,
+              'address',
+              stringType,
+              {
+                [constants.API_NAME]: 'Address__c',
+                [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
+              },
+            ),
+            banana: new Field(
+              mockElemID,
+              'banana',
+              stringType,
+              {
+                [constants.API_NAME]: 'Banana__c',
+                [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
+              },
+            ),
           },
           annotationsValues: {
             required: false,
             _default: 'test',
             label: 'test label',
             [constants.API_NAME]: 'Test__c',
-            address: {
-              [constants.API_NAME]: 'Address__c',
-              [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
-            },
-            banana: {
-              [constants.API_NAME]: 'Banana__c',
-              [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
-            },
           },
         }),
         new ObjectType({
-          elemID: new ElemID(constants.SALESFORCE, 'test'),
+          elemID: mockElemID,
           fields: {
-            banana: stringType,
-            description: stringType,
+            banana: new Field(
+              mockElemID,
+              'banana',
+              stringType,
+              {
+                [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
+              },
+            ),
+            description: new Field(
+              mockElemID,
+              'description',
+              stringType,
+              {
+                [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
+              },
+            ),
           },
           annotationsValues: {
             required: false,
             _default: 'test2',
             label: 'test2 label',
-            banana: {
-              [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
-            },
-            description: {
-              [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
-            },
           },
         })
       )
@@ -486,9 +569,13 @@ describe('Test SalesforceAdapter CRUD', () => {
     it('should update the annotation values of the metadata object', async () => {
       const result = await adapter().update(
         new ObjectType({
-          elemID: new ElemID(constants.SALESFORCE, 'test'),
+          elemID: mockElemID,
           fields: {
-            description: stringType,
+            description: new Field(
+              mockElemID,
+              'description',
+              stringType,
+            ),
           },
           annotationsValues: {
             label: 'test label',
@@ -496,9 +583,13 @@ describe('Test SalesforceAdapter CRUD', () => {
           },
         }),
         new ObjectType({
-          elemID: new ElemID(constants.SALESFORCE, 'test'),
+          elemID: mockElemID,
           fields: {
-            description: stringType,
+            description: new Field(
+              mockElemID,
+              'description',
+              stringType,
+            ),
           },
           annotationsValues: {
             label: 'test2 label',
@@ -511,7 +602,7 @@ describe('Test SalesforceAdapter CRUD', () => {
       expect(mockCreate.mock.calls.length).toBe(0)
       expect(mockDelete.mock.calls.length).toBe(0)
       expect(mockUpdate.mock.calls.length).toBe(1)
-      // Verify the annotationValues update
+      // Verify the annotationsValues update
       // Verify the custom fields creation
       const objectSentForUpdate = mockUpdate.mock.calls[0][1]
       expect(objectSentForUpdate.fullName).toBe('Test__c')
@@ -521,62 +612,86 @@ describe('Test SalesforceAdapter CRUD', () => {
     it("should update the remaining fields' annotation values of the metadata object", async () => {
       const result = await adapter().update(
         new ObjectType({
-          elemID: new ElemID(constants.SALESFORCE, 'test'),
+          elemID: mockElemID,
           fields: {
-            address: stringType,
-            banana: stringType,
-            cat: stringType,
+            address: new Field(
+              mockElemID,
+              'address',
+              stringType,
+              {
+                [constants.API_NAME]: 'Address__c',
+                [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
+                [constants.LABEL]: 'Address',
+              },
+            ),
+            banana: new Field(
+              mockElemID,
+              'banana',
+              stringType,
+              {
+                [constants.API_NAME]: 'Banana__c',
+                [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
+                [constants.LABEL]: 'Banana',
+              },
+            ),
+            cat: new Field(
+              mockElemID,
+              'cat',
+              stringType,
+              {
+                [constants.API_NAME]: 'Cat__c',
+                [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
+                [constants.LABEL]: 'Cat',
+              },
+            ),
           },
           annotationsValues: {
             required: false,
             _default: 'test',
             label: 'test label',
             [constants.API_NAME]: 'Test__c',
-            address: {
-              [constants.API_NAME]: 'Address__c',
-              [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
-              [constants.LABEL]: 'Address',
-            },
-            banana: {
-              [constants.API_NAME]: 'Banana__c',
-              [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
-              [constants.LABEL]: 'Banana',
-            },
-            cat: {
-              [constants.API_NAME]: 'Cat__c',
-              [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
-              [constants.LABEL]: 'Cat',
-            },
           },
         }),
         new ObjectType({
-          elemID: new ElemID(constants.SALESFORCE, 'test'),
+          elemID: mockElemID,
           fields: {
-            banana: stringType,
-            cat: stringType,
-            description: stringType,
+            banana: new Field(
+              mockElemID,
+              'banana',
+              stringType,
+              {
+                [constants.API_NAME]: 'Banana__c',
+                // eslint-disable-next-line max-len
+                [constants.FIELD_LEVEL_SECURITY]: { Standard: { editable: false, readable: true } },
+                [constants.LABEL]: 'Banana Split',
+              },
+            ),
+            cat: new Field(
+              mockElemID,
+              'cat',
+              stringType,
+              {
+                [constants.API_NAME]: 'Cat__c',
+                [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
+                [constants.LABEL]: 'Cat',
+              },
+            ),
+            description: new Field(
+              mockElemID,
+              'description',
+              stringType,
+              {
+                [constants.API_NAME]: 'Description__c',
+                [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
+                [constants.LABEL]: 'Description',
+              },
+            ),
           },
           annotationsValues: {
             required: false,
             _default: 'test',
             label: 'test label',
             [constants.API_NAME]: 'Test__c',
-            banana: {
-              [constants.API_NAME]: 'Banana__c',
-              // eslint-disable-next-line max-len
-              [constants.FIELD_LEVEL_SECURITY]: { Standard: { editable: false, readable: true } },
-              [constants.LABEL]: 'Banana Split',
-            },
-            cat: {
-              [constants.API_NAME]: 'Cat__c',
-              [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
-              [constants.LABEL]: 'Cat',
-            },
-            description: {
-              [constants.API_NAME]: 'Description__c',
-              [constants.FIELD_LEVEL_SECURITY]: { admin: { editable: true, readable: true } },
-              [constants.LABEL]: 'Description',
-            },
           },
         })
       )

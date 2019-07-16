@@ -448,7 +448,12 @@ export default class Cli {
     const isGuess = bestKey !== searchWord
     if (!_.isEmpty(keyPartsRem)) {
       const res = isObjectType(bestElement)
-        ? Cli.findElement(keyPartsRem, topLevelElements, bestElement.fields, exactMatchOnly)
+        ? Cli.findElement(
+          keyPartsRem,
+          topLevelElements,
+          Object.assign({}, ...Object.values(bestElement.fields).map(f => ({ [f.name]: f.type }))),
+          exactMatchOnly
+        )
         : null
 
       return res

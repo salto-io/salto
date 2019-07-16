@@ -126,7 +126,7 @@ describe('Test commands.ts', () => {
     const blueprintsFiles = [`${__dirname}/../../test/blueprints/salto.bp`]
     await cli.plan(blueprintsFiles)
     expect(outputData).toMatch('Salto will perform the following action')
-    expect(outputData).toMatch('Do you have a sales team')
+    expect(outputData).toMatch('do_you_have_a_sales_team')
     expect(outputData).toMatch('Be sure to go over the plan')
   })
 
@@ -136,7 +136,7 @@ describe('Test commands.ts', () => {
 
     await cli.plan([], blueprintsDir)
     expect(outputData).toMatch('Salto will perform the following action')
-    expect(outputData).toMatch('Do you have a sales team')
+    expect(outputData).toMatch('do_you_have_a_sales_team')
     expect(outputData).toMatch('Be sure to go over the plan')
   })
 

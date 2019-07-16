@@ -17,7 +17,7 @@
     "prepublishOnly": "yarn test",
     "build": "yarn run lint && yarn run build-ts",
     "test": "jest --forceExit --detectOpenHandles",
-    "e2e-test": "jest --config=jest.e2e.config.js --forceExit --detectOpenHandles",
+    "e2e-test": "RUN_E2E_TESTS=1 jest --forceExit --detectOpenHandles",
     "watch-test": "yarn run test -- --watchAll",
     "build-ts": "tsc",
     "watch-ts": "tsc -w",

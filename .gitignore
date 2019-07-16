@@ -21,3 +21,8 @@ yarn-error.log
 
 # jest
 /.jest_cache
+
+#Compilation products
+*.js
+*.d.ts
+*.js.map

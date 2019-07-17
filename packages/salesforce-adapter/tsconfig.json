@@ -5,10 +5,6 @@
         "baseUrl": ".",
         "declaration": true,
         "paths": {
-            "*": [
-                "../../node_modules/*",
-                "src/types/*",
-            ],
             "jsforce": [
                 "../../node_modules/jsforce-types"
             ]
@@ -16,6 +12,8 @@
     },
     "include": [
         "src/**/*",
+        "test/**/*",
+        "e2e_test/**/*",
         "index.ts"
     ]
 }

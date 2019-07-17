@@ -6,6 +6,8 @@ coverage
 # Editors
 .idea
 *.iml
+*.swp
+*~
 
 # OS metadata
 .DS_Store

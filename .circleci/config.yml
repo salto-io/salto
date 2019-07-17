@@ -30,9 +30,10 @@ jobs:
 
       - run:
           name: Run Jest tests
-          command: yarn run jest --ci --forceExit --detectOpenHandles --reporters=default --reporters=jest-junit
+          command: yarn run jest --forceExit --detectOpenHandles --reporters=default --reporters=jest-junit
           environment:
-            JEST_JUNIT_OUTPUT: "reports/junit/js-test-results.xml"
+            JEST_JUNIT_OUTPUT: "reports/junit/test-results.xml"
+            RUN_E2E_TESTS: 1
 
       - save_cache:
           paths:
@@ -41,6 +42,9 @@ jobs:
             - .jest_cache
 
           key: v1-yarn-deps-{{ checksum "yarn.lock" }}
+
+      - store_test_results:
+          path: reports
 
       - store_artifacts:
           path: reports

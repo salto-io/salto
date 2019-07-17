@@ -7,6 +7,7 @@ import {
   PrimitiveType,
   ElemID,
   InstanceElement,
+  Field,
 } from '../src/elements'
 
 // let outputData = ''
@@ -50,11 +51,11 @@ describe('Test plan.ts', () => {
       elemID: new ElemID('test', 'obj'),
       fields: {
         /* eslint-disable-next-line @typescript-eslint/camelcase */
-        num_field: ptNum,
+        num_field: new Field(new ElemID('test', 'obj'), 'num_field', ptNum),
         /* eslint-disable-next-line @typescript-eslint/camelcase */
-        str_field: ptStr,
+        str_field: new Field(new ElemID('test', 'obj'), 'str_field', ptStr),
         /* eslint-disable-next-line @typescript-eslint/camelcase */
-        list_field: lt,
+        list_field: new Field(new ElemID('test', 'obj'), 'list_field', lt),
       },
       /* eslint-disable-next-line @typescript-eslint/camelcase */
       annotations: { str_anno: ptStr },
@@ -82,9 +83,9 @@ describe('Test plan.ts', () => {
       elemID: new ElemID('test', 'obj'),
       fields: {
         /* eslint-disable-next-line @typescript-eslint/camelcase */
-        num_field: ptNum,
+        num_field: new Field(new ElemID('test', 'obj'), 'num_field', ptNum),
         /* eslint-disable-next-line @typescript-eslint/camelcase */
-        str_field: ptStr,
+        str_field: new Field(new ElemID('test', 'obj'), 'str_field', ptStr),
       },
       annotations: {},
       annotationsValues: {},
@@ -111,9 +112,9 @@ describe('Test plan.ts', () => {
       elemID: new ElemID('test', 'obj'),
       fields: {
         /* eslint-disable-next-line @typescript-eslint/camelcase */
-        num_field: ptNum,
+        num_field: new Field(new ElemID('test', 'obj'), 'num_field', ptNum),
         /* eslint-disable-next-line @typescript-eslint/camelcase */
-        str_field: ptStr,
+        str_field: new Field(new ElemID('test', 'obj'), 'str_field', ptStr),
       },
       annotations: {},
       annotationsValues: {},
@@ -123,8 +124,7 @@ describe('Test plan.ts', () => {
       elemID: new ElemID('test', 'obj'),
       fields: {
         /* eslint-disable-next-line @typescript-eslint/camelcase */
-        /* eslint-disable-next-line @typescript-eslint/camelcase */
-        str_field: ptStr,
+        str_field: new Field(new ElemID('test', 'obj'), 'str_field', ptStr),
       },
       annotations: {},
       annotationsValues: {},
@@ -160,9 +160,9 @@ describe('Test plan.ts', () => {
       elemID: new ElemID('test', 'obj'),
       fields: {
         /* eslint-disable-next-line @typescript-eslint/camelcase */
-        list_field: lt,
+        list_field: new Field(new ElemID('test', 'obj'), 'list_field', lt),
         /* eslint-disable-next-line @typescript-eslint/camelcase */
-        str_field: ptStr,
+        str_field: new Field(new ElemID('test', 'obj'), 'str_field', ptStr),
       },
       annotations: {},
       annotationsValues: {},
@@ -172,9 +172,9 @@ describe('Test plan.ts', () => {
       elemID: new ElemID('test', 'obj'),
       fields: {
         /* eslint-disable-next-line @typescript-eslint/camelcase */
-        str_field: ptStr,
+        str_field: new Field(new ElemID('test', 'obj'), 'str_field', ptStr),
         /* eslint-disable-next-line @typescript-eslint/camelcase */
-        list_field: lt,
+        list_field: new Field(new ElemID('test', 'obj'), 'list_field', lt),
       },
       annotations: {},
       annotationsValues: {},
@@ -201,9 +201,9 @@ describe('Test plan.ts', () => {
       elemID: new ElemID('test', 'obj'),
       fields: {
         /* eslint-disable-next-line @typescript-eslint/camelcase */
-        num_field: ptNum,
+        num_field: new Field(new ElemID('test', 'obj'), 'num_field', ptNum),
         /* eslint-disable-next-line @typescript-eslint/camelcase */
-        str_field: ptStr,
+        str_field: new Field(new ElemID('test', 'obj'), 'str_field', ptStr),
       },
       annotations: {},
       annotationsValues: {
@@ -215,8 +215,7 @@ describe('Test plan.ts', () => {
       elemID: new ElemID('test', 'obj'),
       fields: {
         /* eslint-disable-next-line @typescript-eslint/camelcase */
-        /* eslint-disable-next-line @typescript-eslint/camelcase */
-        str_field: ptStr,
+        str_field: new Field(new ElemID('test', 'obj'), 'str_field', ptStr),
       },
       annotations: {},
       annotationsValues: {
@@ -245,9 +244,9 @@ describe('Test plan.ts', () => {
       elemID: new ElemID('test', 'obj'),
       fields: {
         /* eslint-disable-next-line @typescript-eslint/camelcase */
-        num_field: ptNum,
+        num_field: new Field(new ElemID('test', 'obj'), 'num_field', ptNum),
         /* eslint-disable-next-line @typescript-eslint/camelcase */
-        str_field: ptStr,
+        str_field: new Field(new ElemID('test', 'obj'), 'str_field', ptStr),
       },
       annotations: {},
       annotationsValues: {},
@@ -257,7 +256,7 @@ describe('Test plan.ts', () => {
       elemID: new ElemID('test', 'obj'),
       fields: {
         /* eslint-disable-next-line @typescript-eslint/camelcase */
-        str_field: ptStr,
+        str_field: new Field(new ElemID('test', 'obj'), 'str_field', ptStr),
       },
       /* eslint-disable-next-line @typescript-eslint/camelcase */
       annotations: { str_anno: ptStr },
@@ -282,7 +281,7 @@ describe('Test plan.ts', () => {
     const ot = new ObjectType({
       elemID: new ElemID('test', 'obj'),
       fields: {
-        test: ptStr,
+        test: new Field(new ElemID('test', 'obj'), 'test', ptStr),
       },
       annotations: {},
       annotationsValues: {},
@@ -306,7 +305,7 @@ describe('Test plan.ts', () => {
     const ot = new ObjectType({
       elemID: new ElemID('test', 'obj'),
       fields: {
-        test: ptStr,
+        test: new Field(new ElemID('test', 'obj'), 'test', ptStr),
       },
       annotations: {},
       annotationsValues: {},
@@ -330,7 +329,7 @@ describe('Test plan.ts', () => {
     const ot = new ObjectType({
       elemID: new ElemID('test', 'obj'),
       fields: {
-        test: ptStr,
+        test: new Field(new ElemID('test', 'obj'), 'test', ptStr),
       },
       annotations: {},
       annotationsValues: {},

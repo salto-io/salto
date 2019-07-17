@@ -1,7 +1,7 @@
 import * as fs from 'async-file'
 import path from 'path'
 import {
-  ElemID, PrimitiveType, PrimitiveTypes, InstanceElement, ObjectType,
+  ElemID, PrimitiveType, PrimitiveTypes, InstanceElement, ObjectType, Field,
 } from 'adapter-api'
 import SalesforceAdapter from 'salesforce-adapter'
 import { SaltoCore, Blueprint } from '../../src/core/core'
@@ -48,13 +48,14 @@ const mockGetConfigType = jest.fn(() => {
     primitive: PrimitiveTypes.BOOLEAN,
   })
 
+  const configID = new ElemID('salesforce')
   const config = new ObjectType({
-    elemID: new ElemID('salesforce'),
+    elemID: configID,
     fields: {
-      username: simpleString,
-      password: simpleString,
-      token: simpleString,
-      sandbox: simpleBoolean,
+      username: new Field(configID, 'username', simpleString),
+      password: new Field(configID, 'password', simpleString),
+      token: new Field(configID, 'token', simpleString),
+      sandbox: new Field(configID, 'sandbox', simpleBoolean),
     },
     annotations: {},
     annotationsValues: {},
@@ -71,7 +72,7 @@ describe('Test core.ts', () => {
     getConfigFromUser,
   })
 
-  const blueprintsDirectory = path.join(__dirname, '../../test', 'blueprints')
+  const blueprintsDirectory = path.join(__dirname, '../../../test', 'blueprints')
 
   const readBlueprints = (...filenames: string[]): Promise<Blueprint[]> => Promise.all(
     filenames.map(async (filename: string) => ({

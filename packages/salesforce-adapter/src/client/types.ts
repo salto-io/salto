@@ -1,4 +1,5 @@
 import { MetadataInfo, SaveResult } from 'jsforce'
+import _ from 'lodash'
 
 export interface FieldPermissions {
   field: string
@@ -32,9 +33,7 @@ export class CustomField implements MetadataInfo {
 
   readonly type: string
   // To be used for picklist and combobox types
-  readonly valueSet: { valueSetDefinition: { value: CustomPicklistValue[] } } = {
-    valueSetDefinition: { value: [] as CustomPicklistValue[] },
-  }
+  readonly valueSet?: { valueSetDefinition: { value: CustomPicklistValue[] } }
 
   // To be used for Text types fields
   readonly length: number = 0
@@ -51,15 +50,12 @@ export class CustomField implements MetadataInfo {
       this.length = 80
     }
 
-    if (values) {
+    if (values && !_.isEmpty(values)) {
       this.valueSet = {
-        valueSetDefinition: { value: [] as CustomPicklistValue[] },
+        valueSetDefinition: {
+          value: values.map(val => new CustomPicklistValue(val)),
+        },
       }
-      values.forEach(val => {
-        this.valueSet.valueSetDefinition.value.push(
-          new CustomPicklistValue(val)
-        )
-      })
     }
   }
 }

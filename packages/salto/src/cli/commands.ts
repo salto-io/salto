@@ -5,16 +5,16 @@ import * as fs from 'async-file'
 import * as path from 'path'
 import Fuse from 'fuse.js'
 import _ from 'lodash'
+import wu from 'wu'
 
 import {
-  PlanAction, PlanActionType, isPrimitiveType, PrimitiveTypes, ElemID,
+  Plan, PlanAction, isPrimitiveType, PrimitiveTypes, ElemID,
   isListType, isObjectType, Element, isType, InstanceElement, Type, ObjectType,
 } from 'adapter-api'
 import Prompts from './prompts'
 import {
   SaltoCore, Blueprint,
 } from '../core/core'
-
 
 type OptionalString = string | undefined
 type NotFound = null
@@ -178,48 +178,42 @@ export default class Cli {
     return JSON.stringify(value)
   }
 
-  private static createCountPlanActionTypesOutput(plan: PlanAction[]): string {
-    const counter = plan.reduce(
-      (accumulator, step) => {
-        accumulator[step.actionType] += 1
-        return accumulator
-      },
-      {
-        [PlanActionType.ADD]: 0,
-        [PlanActionType.MODIFY]: 0,
-        [PlanActionType.REMOVE]: 0,
-      },
-    )
+  private static createCountPlanActionTypesOutput(plan: Plan): string {
+    const counter = _.countBy(plan, 'action')
     return (
-      `${chalk.bold('Plan: ')}${counter[PlanActionType.ADD]} to add`
-      + `  ${counter[PlanActionType.MODIFY]} to change`
-      + `  ${counter[PlanActionType.REMOVE]} to remove.`
+      `${chalk.bold('Plan: ')}${counter.add} to add`
+      + `  ${counter.modify} to change`
+      + `  ${counter.remove} to remove.`
     )
   }
 
   private static createdActionStepValue(step: PlanAction): string {
-    if (step.actionType === PlanActionType.MODIFY) {
+    if (step.action === 'modify') {
       return (
-        `${Cli.normalizeValuePrint(step.oldValue)}`
-        + ` => ${Cli.normalizeValuePrint(step.newValue)}`
+        `${Cli.normalizeValuePrint(step.data.before)}`
+        + ` => ${Cli.normalizeValuePrint(step.data.after)}`
       )
     }
-    if (step.actionType === PlanActionType.ADD) {
-      return `${Cli.normalizeValuePrint(step.newValue)}`
+    if (step.action === 'add') {
+      return `${Cli.normalizeValuePrint(step.data.after)}`
     }
-    return `${Cli.normalizeValuePrint(step.oldValue)}`
+    return `${Cli.normalizeValuePrint(step.data.before)}`
+  }
+
+  private static createPlanActionName(step: PlanAction): string {
+    return step.data.before
+      ? step.data.before.elemID.getFullName()
+      : (step.data.after as Element).elemID.getFullName()
   }
 
   private static createPlanStepTitle(
     step: PlanAction,
     printModifiers?: boolean,
   ): string {
-    const modifier = printModifiers ? Prompts.MODIFIERS[step.actionType] : ' '
-    const stepDesc = `${modifier} ${step.name}`
+    const modifier = printModifiers ? Prompts.MODIFIERS[step.action] : ' '
+    const stepDesc = `${modifier} ${Cli.createPlanActionName(step)} ${step.action}`
     const stepValue = Cli.createdActionStepValue(step)
-    return step.subChanges.length > 0
-      ? stepDesc
-      : [stepDesc, stepValue].join(':')
+    return step.subChanges ? stepDesc : [stepDesc, stepValue].join(':')
   }
 
   private static createPlanStepOutput(
@@ -228,16 +222,12 @@ export default class Cli {
     identLevel: number = 1,
   ): string {
     const stepTitle = Cli.createPlanStepTitle(step, printModifiers)
-    const stepChildren = step.subChanges.map(
-      (subChange: PlanAction): string => {
-        const printChildModifiers = subChange.actionType === PlanActionType.MODIFY
-        return this.createPlanStepOutput(
-          subChange,
-          printChildModifiers,
-          identLevel + 1,
-        )
-      },
-    )
+    const stepChildren = step.subChanges
+      ? wu(step.subChanges).map((subChange: PlanAction): string => {
+        const printChildModifiers = subChange.action === 'modify'
+        return this.createPlanStepOutput(subChange, printChildModifiers, identLevel + 1)
+      }).toArray()
+      : []
 
     const allLines = [stepTitle].concat(stepChildren)
 
@@ -247,13 +237,12 @@ export default class Cli {
       .join('\n')
   }
 
-  private static createPlanStepsOutput(plan: PlanAction[]): string {
-    return plan
-      .map(step => Cli.createPlanStepOutput(step, true))
+  private static createPlanStepsOutput(plan: Plan): string {
+    return wu(plan).map(step => Cli.createPlanStepOutput(step, true)).toArray()
       .join('\n\n')
   }
 
-  private static createPlanOutput(plan: PlanAction[]): string {
+  private static createPlanOutput(plan: Plan): string {
     const actionCount = Cli.createCountPlanActionTypesOutput(plan)
     const planSteps = Cli.createPlanStepsOutput(plan)
     return [
@@ -275,7 +264,7 @@ export default class Cli {
    * @return {Promise} An array containing the plan action objects for the apply that would take
    * place based on the current blueprints and state.
    */
-  private async createPlan(blueprints: Blueprint[]): Promise<PlanAction[]> {
+  private async createPlan(blueprints: Blueprint[]): Promise<Plan> {
     try {
       const plan = await this.core.apply(blueprints, true)
       return plan
@@ -303,8 +292,8 @@ export default class Cli {
       if (action) {
         Cli.print(
           Cli.body(
-            `${action.name}: Still ${
-              Prompts.STARTACTION[action.actionType]
+            `${Cli.createPlanActionName(action)}: Still ${
+              Prompts.STARTACTION[action.action]
             }... (${Math.ceil(elapsed)}s elapsed)`,
           ),
         )
@@ -330,8 +319,8 @@ export default class Cli {
         (new Date().getTime() - this.currentActionStartTime.getTime()) / 1000,
       )
       Cli.print(
-        `${this.currentAction.name}: `
-          + `${Prompts.ENDACTION[this.currentAction.actionType]} `
+        `${Cli.createPlanActionName(this.currentAction)}: `
+          + `${Prompts.ENDACTION[this.currentAction.action]} `
           + `completed after ${elapsed}s`,
       )
     }
@@ -341,7 +330,7 @@ export default class Cli {
       const output = [
         Cli.emptyLine(),
         Cli.body(
-          `${action.name}: ${Prompts.STARTACTION[action.actionType]}...`,
+          `${Cli.createPlanActionName(action)}: ${Prompts.STARTACTION[action.action]}...`,
         ),
       ].join('\n')
       Cli.print(output)

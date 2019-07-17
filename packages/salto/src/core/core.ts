@@ -1,11 +1,13 @@
 import { EventEmitter } from 'events'
 import _ from 'lodash'
+import wu from 'wu'
 import {
-  PlanAction, PlanActionType, ObjectType,
-  isInstanceElement, InstanceElement, Element,
+  PlanAction, ObjectType, isInstanceElement, InstanceElement, Element, Plan,
 } from 'adapter-api'
-
 import SalesforceAdapter from 'salesforce-adapter'
+
+import { buildDiffGraph } from '../dag/diff'
+import { DataNodeMap } from '../dag/nodemap'
 import Parser from '../parser/salto'
 
 
@@ -44,39 +46,40 @@ export class SaltoCore extends EventEmitter {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  private getPlan(allElements: Element[]): PlanAction[] {
+  private getPlan(allElements: Element[]): Plan {
     const nonBuiltInElements = allElements.filter(e => e.elemID.adapter)
-    return nonBuiltInElements.map(
-      element => PlanAction.createFromElements(undefined, element, element.elemID.getFullName()),
-    )
+    const after = new DataNodeMap<Element>()
+    nonBuiltInElements.forEach(element => after.addNode(element.elemID.getFullName(), [], element))
+    // TODO: enable this once we support instances and we can add test coverage
+    // if (isInstanceElement(element)) {
+    //   dependsOn.push(element.type.elemID.getFullName())
+    // }
+    // TODO: split elements to fields and fields values
+    // TODO: before should come from state and we should implement the equals function
+    const diffGraph = buildDiffGraph(new DataNodeMap<Element>(), after, _n => false)
+    return wu(diffGraph.evaluationOrder()).map(id => (diffGraph.getData(id) as PlanAction))
   }
 
   private async applyAction(action: PlanAction): Promise<void> {
     this.emit('progress', action)
-    /* istanbul ignore next */
-    const existingValue = action.newValue || action.oldValue || {}
+    const existingValue = (action.data.after || action.data.before) as Element
     const { elemID } = existingValue
     const adapterName = elemID && elemID.adapter as string
-    const adapter = this.adapters[elemID.adapter]
+    const adapter = this.adapters[adapterName]
     if (!adapter) {
       throw new Error(`Missing adapter for ${adapterName}`)
     }
-    if (action.actionType === PlanActionType.ADD) {
-      await adapter.add(action.newValue)
+    if (action.action === 'add') {
+      await adapter.add(action.data.after as ObjectType)
     }
-    /* istanbul ignore next */
-    if (action.actionType === PlanActionType.REMOVE) {
-      await adapter.remove(action.oldValue)
+    if (action.action === 'remove') {
+      await adapter.remove(action.data.before as ObjectType)
     }
   }
 
-  private async applyActions(plan: PlanAction[]): Promise<void> {
-    if (!_.isEmpty(plan)) {
-      const nextAction = plan[0]
-      const remPlan = plan.slice(1)
-      await this.applyAction(nextAction)
-      await this.applyActions(remPlan)
-    }
+  private async applyActions(plan: Plan): Promise<void> {
+    return wu(plan).reduce((result, action) => result.then(() => this.applyAction(action)),
+      Promise.resolve())
   }
 
   private async getConfigInstance(
@@ -99,7 +102,7 @@ export class SaltoCore extends EventEmitter {
     }
   }
 
-  async apply(blueprints: Blueprint[], dryRun?: boolean): Promise<PlanAction[]> {
+  async apply(blueprints: Blueprint[], dryRun?: boolean): Promise<Plan> {
     const elements = await this.getAllElements(blueprints)
     const salesforceConfigType = SalesforceAdapter.getConfigType()
     const salesforceConfig = await this.getConfigInstance(elements, salesforceConfigType)

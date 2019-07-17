@@ -3,7 +3,8 @@ import {
   Field, Plan,
 } from 'adapter-api'
 import wu from 'wu'
-import { SaltoCore, Blueprint, CoreCallbacks } from '../../../src/core/core'
+import { SaltoCore, CoreCallbacks } from '../../../src/core/core'
+import Blueprint from '../../../src/core/blueprint'
 
 // Don't know if this should be extend or a delegation
 export default class SaltoCoreMock extends SaltoCore {

@@ -10,11 +10,7 @@ import { buildDiffGraph } from '../dag/diff'
 import { DataNodeMap } from '../dag/nodemap'
 import Parser from '../parser/salto'
 import State from '../state/state'
-
-export interface Blueprint {
-  buffer: Buffer
-  filename: string
-}
+import Blueprint from './blueprint'
 
 export interface CoreCallbacks {
   getConfigFromUser(configType: ObjectType): Promise<InstanceElement>

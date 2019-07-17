@@ -12,9 +12,8 @@ import {
   isListType, isObjectType, Element, isType, InstanceElement, Type, ObjectType,
 } from 'adapter-api'
 import Prompts from './prompts'
-import {
-  SaltoCore, Blueprint,
-} from '../core/core'
+import { SaltoCore } from '../core/core'
+import Blueprint from '../core/blueprint'
 
 type OptionalString = string | undefined
 type NotFound = null

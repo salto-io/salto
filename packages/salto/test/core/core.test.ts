@@ -6,6 +6,7 @@ import {
 import SalesforceAdapter from 'salesforce-adapter'
 import { SaltoCore, Blueprint } from '../../src/core/core'
 import State from '../../src/state/state'
+import Blueprint from '../../src/core/blueprint'
 
 async function getConfigFromUser(configType: ObjectType): Promise<InstanceElement> {
   const value = {

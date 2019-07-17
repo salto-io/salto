@@ -8,12 +8,10 @@ import {
   ElemID,
 } from 'adapter-api'
 import _ from 'lodash'
-import os from 'os'
 import State from '../../src/state/state'
 
 describe('Test state mechanism', () => {
   const stateErrorFile = 'stateerror.bp'
-  const stateFullPath = path.join(os.homedir(), '.salto/latest_state.bp')
   const blueprintsDirectory = path.join(__dirname, '../../../test', 'blueprints')
   const mySaas = 'mySaas'
   const stringType = new PrimitiveType({
@@ -23,7 +21,19 @@ describe('Test state mechanism', () => {
   const state = new State()
 
   beforeAll(async () => {
-    await fs.unlink(stateFullPath)
+    try {
+      await fs.unlink(State.STATEPATH)
+      // This remark is to prevent from failing if the state doesn't exist yet
+      /* eslint-disable no-empty */
+    } catch {}
+  })
+
+  afterEach(async () => {
+    try {
+      await fs.unlink(State.STATEPATH)
+      // This remark is to prevent from failing if the state doesn't exist yet
+      /* eslint-disable no-empty */
+    } catch {}
   })
 
   it('should save state successfully, retrieve it, save it again and get the same result', async () => {
@@ -67,9 +77,6 @@ describe('Test state mechanism', () => {
     const retreivedAgainState = await state.getLastState()
 
     expect(_.isEqual(retrievedState, retreivedAgainState)).toBeTruthy()
-
-    // Clean-up
-    await fs.unlink(stateFullPath)
   })
 
   it('should return an empty array if there is no saved state', async () => {
@@ -80,13 +87,10 @@ describe('Test state mechanism', () => {
   it('should throw an error if the state bp is not valid', async () => {
     // Setup
     const buffer = await fs.readFile(path.join(blueprintsDirectory, stateErrorFile), 'utf8')
-    await fs.createDirectory(path.dirname(stateFullPath))
-    await fs.writeFile(stateFullPath, buffer)
+    await fs.createDirectory(path.dirname(State.STATEPATH))
+    await fs.writeFile(State.STATEPATH, buffer)
 
     // Test
     await expect(state.getLastState()).rejects.toThrow()
-
-    // Clean-up
-    await fs.unlink(stateFullPath)
   })
 })

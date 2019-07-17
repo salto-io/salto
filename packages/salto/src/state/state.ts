@@ -9,7 +9,7 @@ import Parser from '../parser/salto'
  * Salto state - an interface for managing the state between runs
  */
 export default class State {
-    private static STATEPATH = path.join(os.homedir(), '.salto/latest_state.bp')
+    public static STATEPATH = path.join(os.homedir(), '.salto/latest_state.bp')
     /**
      * This method save the state
      * @param elements the elements to save

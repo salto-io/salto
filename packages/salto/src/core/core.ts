@@ -10,7 +10,6 @@ import { buildDiffGraph } from '../dag/diff'
 import { DataNodeMap } from '../dag/nodemap'
 import Parser from '../parser/salto'
 
-
 export interface Blueprint {
   buffer: Buffer
   filename: string

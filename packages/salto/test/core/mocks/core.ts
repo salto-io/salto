@@ -159,7 +159,8 @@ export default class SaltoCoreMock extends SaltoCore {
         SaltoCoreMock.remove('values')]),
       SaltoCoreMock.add('lead.how_many_sales_people', [SaltoCoreMock.add('label'),
         SaltoCoreMock.add('restrict_to_value_set'), SaltoCoreMock.add('controlling_field'),
-        SaltoCoreMock.add('values')])]
+        SaltoCoreMock.add('values')]),
+      SaltoCoreMock.remove('lead.status', [SaltoCoreMock.remove('label'), SaltoCoreMock.remove('defaultValue')])]
     if (!dryRun) {
       await this.runChangeMock(changes)
     }

@@ -94,10 +94,7 @@ export default class Parser {
         typeObj.fields[fieldName] = new Field(
           typeObj.elemID,
           fieldName,
-          new ObjectType({
-            elemID: this.getElemID(block.type),
-            isExtension,
-          }),
+          new ObjectType({ elemID: this.getElemID(block.type) }),
           block.attrs,
         )
       } else {

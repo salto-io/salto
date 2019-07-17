@@ -2,7 +2,7 @@ import { EventEmitter } from 'events'
 import _ from 'lodash'
 import wu from 'wu'
 import {
-  PlanAction, ObjectType, isInstanceElement, InstanceElement, Element, Plan,
+  PlanAction, ObjectType, isInstanceElement, InstanceElement, Element, Plan, ElemID,
 } from 'adapter-api'
 import SalesforceAdapter from 'salesforce-adapter'
 
@@ -51,7 +51,7 @@ export class SaltoCore extends EventEmitter {
   private async getPlan(allElements: Element[]): Promise<Plan> {
     const toNodeMap = (elements: Element[]): DataNodeMap<Element> => {
       const nodeMap = new DataNodeMap<Element>()
-      elements.filter(e => e.elemID.adapter)
+      elements.filter(e => e.elemID.name !== ElemID.CONFIG_INSTANCE_NAME)
         .forEach(element => nodeMap.addNode(element.elemID.getFullName(), [], element))
       return nodeMap
     }
@@ -82,6 +82,9 @@ export class SaltoCore extends EventEmitter {
     }
     if (action.action === 'remove') {
       await adapter.remove(action.data.before as ObjectType)
+    }
+    if (action.action === 'modify') {
+      await adapter.update(action.data.before as ObjectType, action.data.after as ObjectType)
     }
   }
 

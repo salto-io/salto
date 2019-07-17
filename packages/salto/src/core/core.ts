@@ -120,6 +120,9 @@ export class SaltoCore extends EventEmitter {
     const salesforceConfigType = SalesforceAdapter.getConfigType()
     const salesforceConfig = await this.getConfigInstance(elements, salesforceConfigType)
     await this.initAdapters(salesforceConfig)
+    if (!elements.includes(salesforceConfig)) {
+      elements.push(salesforceConfig)
+    }
 
     const plan = await this.getPlan(elements)
     if (!dryRun) {

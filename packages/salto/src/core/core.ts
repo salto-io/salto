@@ -4,13 +4,13 @@ import wu from 'wu'
 import {
   PlanAction, ObjectType, isInstanceElement, InstanceElement, Element, Plan, ElemID,
 } from 'adapter-api'
-import SalesforceAdapter from 'salesforce-adapter'
 
 import { buildDiffGraph } from '../dag/diff'
 import { DataNodeMap } from '../dag/nodemap'
 import Parser from '../parser/salto'
 import State from '../state/state'
 import Blueprint from './blueprint'
+import { adapters, init as initAdapters } from './adapters'
 
 export interface CoreCallbacks {
   getConfigFromUser(configType: ObjectType): Promise<InstanceElement>
@@ -19,12 +19,10 @@ export interface CoreCallbacks {
 // Don't know if this should be extend or a delegation
 export class SaltoCore extends EventEmitter {
   private state: State
-  adapters: Record<string, SalesforceAdapter>
   callbacks: CoreCallbacks
   constructor(callbacks: CoreCallbacks) {
     super()
     this.callbacks = callbacks
-    this.adapters = {}
     this.state = new State()
   }
 
@@ -67,12 +65,10 @@ export class SaltoCore extends EventEmitter {
 
   private async applyAction(action: PlanAction): Promise<void> {
     this.emit('progress', action)
-    const existingValue = (action.data.after || action.data.before) as Element
-    const { elemID } = existingValue
-    const adapterName = elemID && elemID.adapter as string
-    const adapter = this.adapters[adapterName]
+    const element = (action.data.after || action.data.before) as Element
+    const adapter = adapters[element.elemID.adapter]
     if (!adapter) {
-      throw new Error(`Missing adapter for ${adapterName}`)
+      throw new Error(`Missing adapter for ${element.elemID.adapter}`)
     }
     if (action.action === 'add') {
       await adapter.add(action.data.after as ObjectType)
@@ -90,35 +86,9 @@ export class SaltoCore extends EventEmitter {
       Promise.resolve())
   }
 
-  private async getConfigInstance(
-    elements: Element[],
-    configType: ObjectType
-  ): Promise<InstanceElement> {
-    const configElements = elements.filter(
-      element => isInstanceElement(element)
-      && element.type.elemID.getFullName() === configType.elemID.getFullName()
-    )
-    const configElement = configElements.pop() as InstanceElement
-    if (configElement) {
-      return configElement
-    }
-    return this.callbacks.getConfigFromUser(configType)
-  }
-
-  private initAdapters(salesforceConfig: InstanceElement): void {
-    if (!this.adapters.salesforce) {
-      this.adapters.salesforce = new SalesforceAdapter(salesforceConfig)
-    }
-  }
-
   async apply(blueprints: Blueprint[], dryRun?: boolean): Promise<Plan> {
     const elements = await this.getAllElements(blueprints)
-    const salesforceConfigType = SalesforceAdapter.getConfigType()
-    const salesforceConfig = await this.getConfigInstance(elements, salesforceConfigType)
-    await this.initAdapters(salesforceConfig)
-    if (!elements.includes(salesforceConfig)) {
-      elements.push(salesforceConfig)
-    }
+    initAdapters(elements, this.callbacks.getConfigFromUser)
 
     const plan = await this.getPlan(elements)
     if (!dryRun) {
@@ -129,14 +99,11 @@ export class SaltoCore extends EventEmitter {
 
   async discover(blueprints: Blueprint[]): Promise<Blueprint> {
     const elements = await this.getAllElements(blueprints)
-    const salesforceConfigType = SalesforceAdapter.getConfigType()
-    const salesforceConfig = await this.getConfigInstance(elements, salesforceConfigType)
-    await this.initAdapters(salesforceConfig)
-    const discoverElements = await this.adapters.salesforce.discover()
-    const uniqElements = [...discoverElements, salesforceConfig]
+    elements.push(...await initAdapters(elements, this.callbacks.getConfigFromUser))
+    Object.values(adapters).forEach(async adapter => elements.push(...await adapter.discover()))
     // Save state
-    await this.state.saveState(uniqElements)
-    const buffer = await Parser.dump(uniqElements)
+    await this.state.saveState(elements)
+    const buffer = await Parser.dump(elements)
     return { buffer, filename: 'none' }
   }
 }

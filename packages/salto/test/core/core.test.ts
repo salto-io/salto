@@ -7,6 +7,7 @@ import SalesforceAdapter from 'salesforce-adapter'
 import { SaltoCore, Blueprint } from '../../src/core/core'
 import State from '../../src/state/state'
 import Blueprint from '../../src/core/blueprint'
+import { adapters } from '../../src/core/adapters'
 
 async function getConfigFromUser(configType: ObjectType): Promise<InstanceElement> {
   const value = {
@@ -38,13 +39,6 @@ const mockDiscover = jest.fn(() => [
   }),
 ])
 
-jest.mock('salesforce-adapter', () => jest.fn().mockImplementation(() => ({
-  add: mockAdd,
-  remove: mockRemove,
-  update: mockUpdate,
-  discover: mockDiscover,
-})))
-
 const mockGetConfigType = jest.fn(() => {
   const simpleString = new PrimitiveType({
     elemID: new ElemID('', 'string'),
@@ -71,8 +65,6 @@ const mockGetConfigType = jest.fn(() => {
 
   return config
 })
-
-SalesforceAdapter.getConfigType = mockGetConfigType.bind(SalesforceAdapter)
 
 describe('Test core.ts', () => {
   // Mock empty state
@@ -129,7 +121,7 @@ describe('Test core.ts', () => {
 
     it('should apply an apply plan', async () => {
       await core.apply(blueprints)
-      expect(core.adapters.salesforce.add).toHaveBeenCalled()
+      expect(adapters.salesforce.add).toHaveBeenCalled()
     })
 
     it('should apply plan with remove based on state', async () => {

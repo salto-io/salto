@@ -60,17 +60,19 @@ describe('Test SalesforceAdapter discover', () => {
       .mockImplementationOnce(() => result)
   }
 
-  function adapter(): SalesforceAdapter {
-    const configType = SalesforceAdapter.getConfigType()
+  const adapter = (): SalesforceAdapter => {
+    const a = new SalesforceAdapter()
+    const configType = a.getConfigType()
     const value = {
-      username: 'vanila@salto.io',
-      password: '!A123456',
-      token: 'rwVvOsh7HjF8Zki9ZmyQdeth',
+      username: '',
+      password: '',
+      token: '',
       sandbox: false,
     }
     const elemID = new ElemID('salesforce')
     const config = new InstanceElement(elemID, configType, value)
-    return new SalesforceAdapter(config)
+    a.init(config)
+    return a
   }
 
   it('should discover sobject with primitive types, validate type, label, required and default annotations', async () => {

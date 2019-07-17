@@ -37,6 +37,8 @@ describe('Merger module', () => {
         },
       ],
     },
+    // eslint-disable-next-line @typescript-eslint/camelcase
+    anno_that: 'old',
   }
 
   const extension = new ObjectType({
@@ -71,9 +73,7 @@ describe('Merger module', () => {
 
   extension2.annotationsValues = {
     // eslint-disable-next-line @typescript-eslint/camelcase
-    anno_that: {
-      foo: 'foo',
-    },
+    anno_that: 'new',
   }
 
   const missingModelExt = new ObjectType({
@@ -160,6 +160,15 @@ describe('Merger module', () => {
     ]
     const merged = mergeElements(elements)
     expect(merged.length).toBe(4)
+    const mergedElement = merged.filter(e => e.elemID.name === 'test')[0] as ObjectType
+    expect(mergedElement).toBeDefined()
+    expect(mergedElement.fields.one).toBeDefined()
+    expect(mergedElement.fields.two).toBeDefined()
+    // eslint-disable-next-line @typescript-eslint/camelcase
+    expect(mergedElement.annotationsValues.anno_this).toBeDefined()
+    expect(mergedElement.annotationsValues.anno_that).toBe('new')
+    // eslint-disable-next-line @typescript-eslint/camelcase
+    expect(mergedElement.annotationsValues.lead_convert_settings).toBeDefined()
   })
 
   it('should not allow extensions that add a field twice', () => {

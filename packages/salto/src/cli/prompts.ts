@@ -1,5 +1,4 @@
 import chalk from 'chalk'
-import { PlanActionType } from 'adapter-api'
 
 export default class Prompts {
   public static readonly PLANNEDFORAPPLY = ''
@@ -18,29 +17,29 @@ export default class Prompts {
 but will not be persisted to local or remote state storage`
   public static readonly PLANNEDFORPLAN = ''
   public static readonly MODIFIERS = {
-    [PlanActionType.MODIFY]: chalk.yellow('M'),
-    [PlanActionType.ADD]: chalk.green('+'),
-    [PlanActionType.REMOVE]: chalk.red('-'),
+    modify: chalk.yellow('M'),
+    add: chalk.green('+'),
+    remove: chalk.red('-'),
   }
 
   public static readonly STARTACTION = {
-    [PlanActionType.MODIFY]: 'changing',
-    [PlanActionType.ADD]: 'creating',
-    [PlanActionType.REMOVE]: 'removing',
+    modify: 'changing',
+    add: 'creating',
+    remove: 'removing',
   }
 
   public static readonly ENDACTION = {
-    [PlanActionType.MODIFY]: 'Change',
-    [PlanActionType.ADD]: 'Creation',
-    [PlanActionType.REMOVE]: 'Removal',
+    modify: 'Change',
+    add: 'Creation',
+    remove: 'Removal',
   }
 
   public static readonly EXPLAINPLANRESULT = `An execution plan has been generated and is show below.
 Resources and actions are indicated with the following symbols:
 
-  ${Prompts.MODIFIERS[PlanActionType.ADD]} create
-  ${Prompts.MODIFIERS[PlanActionType.MODIFY]} change
-  ${Prompts.MODIFIERS[PlanActionType.REMOVE]} remove
+  ${Prompts.MODIFIERS.add} create
+  ${Prompts.MODIFIERS.modify} change
+  ${Prompts.MODIFIERS.remove} remove
 
 Salto will perform the following action:`
 

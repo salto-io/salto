@@ -47,6 +47,16 @@ export interface Element {
 
 type ElementMap = Record<string, Element>
 
+export type PlanActionType = 'add'|'remove'|'modify'
+
+export interface PlanAction {
+  action: PlanActionType
+  data: { before?: Element; after?: Element }
+  subChanges?: Plan
+}
+
+export type Plan = Iterable<PlanAction>
+
 /**
  * Represents a field inside a type
  */

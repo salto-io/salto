@@ -95,7 +95,7 @@ describe('Test commands.ts', () => {
     cli.parseAndRun(args)
     await new Promise(resolve => setTimeout(resolve, 100))
     expect(outputData).toMatch('Salto will perform the following action')
-    expect(outputData).toMatch('Do you have a sales team')
+    expect(outputData).toMatch('do_you_have_a_sales_team')
     expect(outputData).toMatch('Be sure to go over the plan')
   })
 

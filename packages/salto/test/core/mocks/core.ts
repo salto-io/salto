@@ -1,7 +1,8 @@
 import {
   Type, PrimitiveTypes, ElemID, PlanActionType, PlanAction, ObjectType, PrimitiveType, ListType,
-  Field,
+  Field, Plan,
 } from 'adapter-api'
+import wu from 'wu'
 import { SaltoCore, Blueprint, CoreCallbacks } from '../../../src/core/core'
 
 // Don't know if this should be extend or a delegation
@@ -100,67 +101,65 @@ export default class SaltoCoreMock extends SaltoCore {
     return [stringType, saltoAddr, saltoOffice, saltoEmployee]
   }
 
-  private async runChangeMock(changes: PlanAction[]): Promise<void> {
-    if (changes.length > 0) {
-      const change = changes[0]
-      this.emit('progress', change)
-      await new Promise(resolve => setTimeout(resolve, 10))
-      await this.runChangeMock(changes.slice(1))
+  private async runChangeMock(changes: Plan): Promise<void> {
+    return wu(changes).reduce((result, action) =>
+      result.then(() => {
+        setTimeout(() => this.emit('progress', action), 0)
+      }), Promise.resolve())
+  }
+
+  private static newAction(action: PlanActionType, before?: string, after?: string,
+    sub?: Plan): PlanAction {
+    const adapter = 'salesforce'
+    const actionFullName = before ? `${adapter}.${before}` : `${adapter}.${after}`
+
+    const data = {
+      before: before
+        ? { elemID: new ElemID(adapter, before) }
+        : undefined,
+      after: after
+        ? { elemID: new ElemID(adapter, after) }
+        : undefined,
     }
+    let subChanges: Plan | undefined
+    if (sub) {
+      subChanges = wu(sub).map(plan => {
+        if (plan.data.before) {
+          plan.data.before.elemID = new ElemID(adapter, actionFullName
+            + plan.data.before.elemID.name)
+        }
+        if (plan.data.after) {
+          plan.data.after.elemID = new ElemID(adapter, actionFullName
+            + plan.data.after.elemID.name)
+        }
+        return plan
+      })
+    }
+
+    return { action, data, subChanges }
+  }
+
+  private static add(name: string, sub: Plan = []): PlanAction {
+    return SaltoCoreMock.newAction('add', undefined, name, sub)
+  }
+
+  private static remove(name: string, sub: Plan = []): PlanAction {
+    return SaltoCoreMock.newAction('remove', name, undefined, sub)
+  }
+
+  private static modify(name: string, sub: Plan = []): PlanAction {
+    return SaltoCoreMock.newAction('modify', name, name, sub)
   }
 
   // eslint-disable-next-line class-methods-use-this, @typescript-eslint/no-unused-vars
-  async apply(_blueprints: Blueprint[], dryRun?: boolean): Promise<PlanAction[]> {
+  async apply(_blueprints: Blueprint[], dryRun?: boolean): Promise<Plan> {
     const changes = [
-      new PlanAction(
-        'salesforcelead do_you_have_a_sales_team',
-        PlanActionType.ADD,
-        [
-          new PlanAction(
-            'label',
-            PlanActionType.ADD,
-            [],
-            'Do you have a sales team',
-          ),
-          new PlanAction('defaultvalue', PlanActionType.ADD, [], false),
-        ],
-      ),
-      new PlanAction(
-        'salesforcelead how_many_sales_people',
-        PlanActionType.MODIFY,
-        [
-          new PlanAction(
-            'restricttovalueset',
-            PlanActionType.MODIFY,
-            [],
-            false,
-            true,
-          ),
-          new PlanAction('values', PlanActionType.REMOVE),
-        ],
-      ),
-      new PlanAction(
-        'salesforcelead how_many_sales_people',
-        PlanActionType.ADD,
-        [
-          new PlanAction(
-            'label',
-            PlanActionType.ADD,
-            [],
-            'How many Sales people?',
-          ),
-          new PlanAction('restrict_to_value_set', PlanActionType.ADD, [], true),
-          new PlanAction('controlling_field', PlanActionType.ADD, [], 'test'),
-          new PlanAction(
-            'values',
-            PlanActionType.ADD,
-            [],
-            ['1-10', '11-20', '21-30', '30+'],
-          ),
-        ],
-      ),
-    ]
-
+      SaltoCoreMock.add('lead.do_you_have_a_sales_team', [SaltoCoreMock.add('label'), SaltoCoreMock.add('defaultValue')]),
+      SaltoCoreMock.modify('salesforce.lead.how_many_sales_people', [SaltoCoreMock.modify('restricttovalueset'),
+        SaltoCoreMock.remove('values')]),
+      SaltoCoreMock.add('lead.how_many_sales_people', [SaltoCoreMock.add('label'),
+        SaltoCoreMock.add('restrict_to_value_set'), SaltoCoreMock.add('controlling_field'),
+        SaltoCoreMock.add('values')])]
     if (!dryRun) {
       await this.runChangeMock(changes)
     }

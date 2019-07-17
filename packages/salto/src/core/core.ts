@@ -47,6 +47,8 @@ export class SaltoCore extends EventEmitter {
   // eslint-disable-next-line class-methods-use-this
   private getPlan(allElements: Element[]): Plan {
     const nonBuiltInElements = allElements.filter(e => e.elemID.adapter)
+    // TODO: read from state
+    const before = new DataNodeMap<Element>()
     const after = new DataNodeMap<Element>()
     nonBuiltInElements.forEach(element => after.addNode(element.elemID.getFullName(), [], element))
     // TODO: enable this once we support instances and we can add test coverage
@@ -55,7 +57,8 @@ export class SaltoCore extends EventEmitter {
     // }
     // TODO: split elements to fields and fields values
     // TODO: before should come from state and we should implement the equals function
-    const diffGraph = buildDiffGraph(new DataNodeMap<Element>(), after, _n => false)
+    const diffGraph = buildDiffGraph(before, after,
+      id => _.isEqual(before.getData(id), after.getData(id)))
     return wu(diffGraph.evaluationOrder()).map(id => (diffGraph.getData(id) as PlanAction))
   }
 

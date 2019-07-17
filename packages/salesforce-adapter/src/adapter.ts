@@ -279,7 +279,7 @@ export default class SalesforceAdapter {
    * @returns the update result
    */
   private async updatePermissions(element: ObjectType, fields: Field[]):
-  Promise<SaveResult | SaveResult[]> {
+    Promise<SaveResult | SaveResult[]> {
     const profiles = toProfiles(element, fields)
     if (profiles.length > 0) {
       return this.client.update(constants.METADATA_PROFILE_OBJECT, profiles)

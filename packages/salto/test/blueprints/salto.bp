@@ -1,3 +1,10 @@
+salesforce {
+	username = "test@test"
+  password = "pass"
+  token = "token"
+  sandbox = false
+}
+
 model salesforce_test {
 	string name {
 	  label = "Name"

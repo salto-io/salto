@@ -1,5 +1,5 @@
 salesforce {
-	username = "test@test"
+  username = "test@test"
   password = "pass"
   token = "token"
   sandbox = false

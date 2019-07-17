@@ -69,6 +69,10 @@ const addExtention = (mergeMap: MergeHelpersMap, extension: ObjectType):
   return mergeMap
 }
 
+/**
+ * Merge a list of elements by applying all of the extensions on their
+ * base model. Throws error on illegal extensions.
+ */
 const mergeElements = (elements: Element[]): Element[] => {
   // Create an array of all the models
   const models = elements.filter(elem =>

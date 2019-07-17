@@ -78,8 +78,7 @@ export default class Parser {
           block.attrs,
           true
         )
-      }
-      else if (block.labels.length === 1) {
+      } else if (block.labels.length === 1) {
         // Field block
         const fieldName = block.labels[0]
         typeObj.fields[fieldName] = new Field(

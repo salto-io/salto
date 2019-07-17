@@ -167,11 +167,6 @@ describe('Salto parser', () => {
           expect(model.fields.name.type.elemID.adapter).toBe('salesforce')
           expect(model.fields.name.type.elemID.name).toEqual('string')
         })
-        it('should identify list fields', () => {
-          expect(model.fields.nicknames.type.elemID.adapter).toBe('salesforce')
-          expect(model.fields.nicknames.type.elemID.name).toEqual('string')
-          expect(model.fields.nicknames.isList).toBe(true)
-        })
         it('should have annotation values', () => {
           expect(model.fields.name.annotationsValues).toHaveProperty('label')
           expect(model.fields.name.annotationsValues.label).toEqual('Name')
@@ -184,7 +179,7 @@ describe('Salto parser', () => {
         it('should exist', () => {
           expect(model.fields).toHaveProperty('nicknames')
         })
-        it('should identify list fields', () => {
+        it('should have the correct type', () => {
           expect(model.fields.nicknames.type.elemID.adapter).toBe('salesforce')
           expect(model.fields.nicknames.type.elemID.name).toEqual('string')
           expect(model.fields.nicknames.isList).toBe(true)

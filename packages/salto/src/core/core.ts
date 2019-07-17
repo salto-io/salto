@@ -51,7 +51,8 @@ export class SaltoCore extends EventEmitter {
   private async getPlan(allElements: Element[]): Promise<Plan> {
     const toNodeMap = (elements: Element[]): DataNodeMap<Element> => {
       const nodeMap = new DataNodeMap<Element>()
-      elements.filter(e => e.elemID.name !== ElemID.CONFIG_INSTANCE_NAME)
+      elements.filter(e => e.elemID.adapter)
+        .filter(e => e.elemID.name !== ElemID.CONFIG_INSTANCE_NAME)
         .forEach(element => nodeMap.addNode(element.elemID.getFullName(), [], element))
       return nodeMap
     }
@@ -98,7 +99,8 @@ export class SaltoCore extends EventEmitter {
     configType: ObjectType
   ): Promise<InstanceElement> {
     const configElements = elements.filter(
-      element => isInstanceElement(element) && element.type === configType
+      element => isInstanceElement(element)
+      && element.type.elemID.getFullName() === configType.elemID.getFullName()
     )
     const configElement = configElements.pop() as InstanceElement
     if (configElement) {
@@ -119,8 +121,7 @@ export class SaltoCore extends EventEmitter {
     const salesforceConfig = await this.getConfigInstance(elements, salesforceConfigType)
     await this.initAdapters(salesforceConfig)
 
-    const allElements = await this.getAllElements(blueprints)
-    const plan = await this.getPlan(allElements)
+    const plan = await this.getPlan(elements)
     if (!dryRun) {
       await this.applyActions(plan)
     }
@@ -138,9 +139,9 @@ export class SaltoCore extends EventEmitter {
     const salesforceConfig = await this.getConfigInstance(elements, salesforceConfigType)
     await this.initAdapters(salesforceConfig)
     const discoverElements = await this.adapters.salesforce.discover()
-    const uniqElements = [...discoverElements, salesforceConfig, salesforceConfigType]
+    const uniqElements = [...discoverElements, salesforceConfig]
     // Save state
-    await this.state.saveState(discoverElements)
+    await this.state.saveState(uniqElements)
     const buffer = await Parser.dump(uniqElements)
     return { buffer, filename: 'none' }
   }

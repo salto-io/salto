@@ -72,6 +72,9 @@ describe('Salto parser', () => {
           _required = true
         }
 
+        list salesforce_string nicknames {
+        }
+
         fax {
           field_level_security = {
             all_profiles = {
@@ -172,7 +175,16 @@ describe('Salto parser', () => {
           expect(model.fields.name.annotationsValues._required).toEqual(true)
         })
       })
-
+      describe('list field', () => {
+        it('should exist', () => {
+          expect(model.fields).toHaveProperty('nicknames')
+        })
+        it('should have the correct type', () => {
+          expect(model.fields.nicknames.type.elemID.adapter).toBe('salesforce')
+          expect(model.fields.nicknames.type.elemID.name).toEqual('string')
+          expect(model.fields.nicknames.isList).toBe(true)
+        })
+      })
       describe('field override', () => {
         it('should exist', () => {
           expect(model.annotationsValues).toHaveProperty('fax')
@@ -286,6 +298,7 @@ describe('Salto Dump', () => {
   })
   model.fields.name = new Field(model.elemID, 'name', strType, { label: 'Name' })
   model.fields.num = new Field(model.elemID, 'num', numType)
+  model.fields.list = new Field(model.elemID, 'list', strType, {}, true)
 
   model.annotationsValues = {
     // eslint-disable-next-line @typescript-eslint/camelcase
@@ -352,6 +365,9 @@ describe('Salto Dump', () => {
       )
       expect(body).toMatch(
         /salesforce_number "?num"? {/m,
+      )
+      expect(body).toMatch(
+        /list "?salesforce_string"? "?list"? {/m
       )
     })
     it('can be parsed back', async () => {

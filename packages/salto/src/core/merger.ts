@@ -7,13 +7,13 @@ interface MergeHelper {
 }
 type MergeHelpersMap = Record<string, MergeHelper>
 
-const ensureLeagalAnnotaionOverides = (
+const validateLegalAnnotationOverrides = (
   helper: MergeHelper,
   extension: ObjectType
 ): void => {
   // FOR Ref: HCL spec, Extension, Note #3 should be handled
   // By the general annotaiton validation (That is, cannot add
-  // annotaion vlaues for undefined annotation)
+  // annotation vlaues for undefined annotation)
 
   // For Ref: HCL spec, Extension, Note #5
   Object.keys(extension.annotationsValues).forEach(key => {
@@ -25,7 +25,7 @@ const ensureLeagalAnnotaionOverides = (
   })
 }
 
-const ensureLegalFieldsAdditions = (
+const validateLegalFieldAdditions = (
   helper: MergeHelper,
   extension: ObjectType
 ): void => {
@@ -52,18 +52,18 @@ const addExtention = (mergeMap: MergeHelpersMap, extension: ObjectType):
     throw new Error('Missing model definition')
   }
 
-  ensureLeagalAnnotaionOverides(helper, extension)
-  ensureLegalFieldsAdditions(helper, extension)
+  validateLegalAnnotationOverrides(helper, extension)
+  validateLegalFieldAdditions(helper, extension)
 
   // We know all fields are new so we can safely add them
-  helper.model.fields = _.assign(
+  helper.model.fields = Object.assign(
     helper.model.fields,
     extension.fields
   )
 
   // We use assign and not merged to fully replace to account for
   // Ref: HCL spec, Extension, Note #4
-  helper.model.annotationsValues = _.assign(
+  helper.model.annotationsValues = Object.assign(
     helper.model.annotationsValues,
     extension.annotationsValues
   )

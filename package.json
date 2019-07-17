@@ -8,7 +8,6 @@
     "codecov": "^3.5.0"
   },
   "scripts": {
-    "install": "yarn workspaces run build",
-    "lint-fix" : "yarn workspaces run lint-fix"
+    "install": "yarn workspaces run build"
   }
 }

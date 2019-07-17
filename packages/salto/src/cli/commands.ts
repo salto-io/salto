@@ -500,7 +500,7 @@ export default class Cli {
   /**
    * Executes the apply action by:
    * 1) Loading the blueprints
-   * 2) Calculting the plan
+   * 2) Calculating the plan
    * 3) Displaying the plan to the user
    * @param  {Array<string>} blueprintsFiles an array of pathes to blueprints files
    * @param  {string} blueprintsDir (Optional) a directory containing blueprints files.
@@ -527,7 +527,7 @@ export default class Cli {
   /**
    * Executes the apply action by:
    * 1) Loading the blueprints
-   * 2) Calculting the plan
+   * 2) Calculating the plan
    * 3) Displaying the plan to the user
    * 4) Getting the user approval to execute the plan
    * 5) Execute the plan by invoking the apply method.

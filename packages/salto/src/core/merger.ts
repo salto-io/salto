@@ -30,12 +30,10 @@ const validateLegalFieldAdditions = (
   extension: ObjectType
 ): void => {
   Object.keys(extension.fields).forEach(key => {
-    // Ref: HCL spec, Extension, Note #2
     if (helper.ref.fields[key]) {
       throw new Error('Can not add a field that was defined '
         + 'in the main model definition')
     }
-    // Ref: HCL spec, Extension, Note #6
     if (helper.model.fields[key]) {
       throw new Error('A field can be only added by one extension')
     }
@@ -47,7 +45,6 @@ const addExtention = (mergeMap: MergeHelpersMap, extension: ObjectType):
   const key = extension.elemID.getFullName()
   const helper = mergeMap[key]
 
-  // Ref: HCL spec, Extension, Note #1
   if (!helper) {
     throw new Error('Missing model definition')
   }
@@ -61,8 +58,8 @@ const addExtention = (mergeMap: MergeHelpersMap, extension: ObjectType):
     extension.fields
   )
 
-  // We use assign and not merged to fully replace to account for
-  // Ref: HCL spec, Extension, Note #4
+  // We use assign and not merged to fully replace an annotation
+  // TODO? Change to merge and update validation.
   helper.model.annotationsValues = Object.assign(
     helper.model.annotationsValues,
     extension.annotationsValues

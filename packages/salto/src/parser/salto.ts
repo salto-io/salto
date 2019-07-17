@@ -163,7 +163,6 @@ export default class Parser {
     return { elements, errors }
   }
 
-  //
   private static getListFieldBlock(field: Field): HCLBlock {
     const fieldBlock: HCLBlock = {
       type: Keywords.LIST_DEFINITION,

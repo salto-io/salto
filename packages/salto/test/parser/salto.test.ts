@@ -73,7 +73,6 @@ describe('Salto parser', () => {
         }
 
         list salesforce_string nicknames {
-          label = "Nicknames"
         }
 
         fax {
@@ -181,7 +180,16 @@ describe('Salto parser', () => {
           expect(model.fields.name.annotationsValues._required).toEqual(true)
         })
       })
-
+      describe('list field', () => {
+        it('should exist', () => {
+          expect(model.fields).toHaveProperty('nicknames')
+        })
+        it('should identify list fields', () => {
+          expect(model.fields.nicknames.type.elemID.adapter).toBe('salesforce')
+          expect(model.fields.nicknames.type.elemID.name).toEqual('string')
+          expect(model.fields.nicknames.isList).toBe(true)
+        })
+      })
       describe('field override', () => {
         it('should exist', () => {
           expect(model.annotationsValues).toHaveProperty('fax')

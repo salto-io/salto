@@ -5,6 +5,7 @@ import {
 } from 'adapter-api'
 import SalesforceAdapter from 'salesforce-adapter'
 import { SaltoCore, Blueprint } from '../../src/core/core'
+import State from '../../src/state/state'
 
 async function getConfigFromUser(configType: ObjectType): Promise<InstanceElement> {
   const value = {
@@ -25,6 +26,10 @@ const mockAdd = jest.fn(async ap => {
   return true
 })
 
+const mockRemove = jest.fn(async _a => true)
+
+const mockUpdate = jest.fn(async (_b, _a) => true)
+
 const mockDiscover = jest.fn(() => [
   new PrimitiveType({
     elemID: new ElemID('salesforce', 'dummy'),
@@ -34,6 +39,8 @@ const mockDiscover = jest.fn(() => [
 
 jest.mock('salesforce-adapter', () => jest.fn().mockImplementation(() => ({
   add: mockAdd,
+  remove: mockRemove,
+  update: mockUpdate,
   discover: mockDiscover,
 })))
 
@@ -66,8 +73,12 @@ const mockGetConfigType = jest.fn(() => {
 
 SalesforceAdapter.getConfigType = mockGetConfigType.bind(SalesforceAdapter)
 
-
 describe('Test core.ts', () => {
+  // Mock empty state
+  jest.mock('../../src/state/state')
+  State.prototype.getLastState = jest.fn().mockImplementation(() => Promise.resolve([]))
+  State.prototype.saveState = jest.fn().mockImplementation(() => Promise.resolve())
+  // Create default core
   const core = new SaltoCore({
     getConfigFromUser,
   })
@@ -118,6 +129,27 @@ describe('Test core.ts', () => {
     it('should apply an apply plan', async () => {
       await core.apply(blueprints)
       expect(core.adapters.salesforce.add).toHaveBeenCalled()
+    })
+
+    it('should apply plan with remove based on state', async () => {
+      State.prototype.getLastState = jest.fn().mockImplementationOnce(() =>
+        Promise.resolve([new ObjectType({ elemID: new ElemID('salesforce', 'employee') })]))
+      const statefullCore = new SaltoCore({
+        getConfigFromUser,
+      })
+      await statefullCore.apply(blueprints)
+      expect(statefullCore.adapters.salesforce.add).toHaveBeenCalled()
+      expect(statefullCore.adapters.salesforce.remove).toHaveBeenCalled()
+    })
+
+    it('should apply plan with modification based on state', async () => {
+      State.prototype.getLastState = jest.fn().mockImplementationOnce(() =>
+        Promise.resolve([new ObjectType({ elemID: new ElemID('salesforce', 'test') })]))
+      const statefullCore = new SaltoCore({
+        getConfigFromUser,
+      })
+      await statefullCore.apply(blueprints)
+      expect(statefullCore.adapters.salesforce.update).toHaveBeenCalled()
     })
   })
 

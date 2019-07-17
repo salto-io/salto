@@ -1,13 +1,6 @@
-salesforce {
-  username = "test@test"
-  password = "pass"
-  token = "token"
-  sandbox = false
-}
-
-model salesforce_test {
+model salesforce.test {
 	string name {
-	  label = "Name"
+	  label = "Name
 	  _required = true
 	}
 
@@ -15,17 +8,16 @@ model salesforce_test {
 	  field_level_security = {
 	    all_profiles = {
 	      visible = false
-	      read_only = false
+	      read_only = fals
 	    }
 	  }
 	}
 
-	lead_convert_settings = {
+	lead_convert_settings = 
 	  account = [
 	      {
 	        input = "bla"
 	        output = "foo"
 	      }
-	  ]
 	}
 }

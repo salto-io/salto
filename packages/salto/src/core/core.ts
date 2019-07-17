@@ -22,12 +22,14 @@ export interface CoreCallbacks {
 
 // Don't know if this should be extend or a delegation
 export class SaltoCore extends EventEmitter {
+  private state: State
   adapters: Record<string, SalesforceAdapter>
   callbacks: CoreCallbacks
   constructor(callbacks: CoreCallbacks) {
     super()
     this.callbacks = callbacks
     this.adapters = {}
+    this.state = new State()
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -129,7 +131,7 @@ export class SaltoCore extends EventEmitter {
     const discoverElements = await this.adapters.salesforce.discover()
     const uniqElements = [...discoverElements, salesforceConfig, salesforceConfigType]
     // Save state
-    await State.saveState(discoverElements)
+    await this.state.saveState(discoverElements)
     const buffer = await Parser.dump(uniqElements)
     return { buffer, filename: 'none' }
   }

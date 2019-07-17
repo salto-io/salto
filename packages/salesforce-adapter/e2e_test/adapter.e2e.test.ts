@@ -1,4 +1,3 @@
-/* eslint-disable jest/no-disabled-tests */
 import { isArray } from 'util'
 import {
   Type,

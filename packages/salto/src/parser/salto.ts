@@ -12,7 +12,7 @@ enum Keywords {
   TYPE_DEFINITION = 'type',
   LIST_DEFINITION = 'list',
   TYPE_INHERITENCE_SEPARATOR = 'is',
-
+  EXTENSION_DEFINITION = 'extension',
   // Primitive types
   TYPE_STRING = 'string',
   TYPE_NUMBER = 'number',
@@ -52,6 +52,10 @@ const getPrimitiveTypeName = (primitiveType: PrimitiveTypes): string => {
   return Keywords.TYPE_OBJECT
 }
 
+const getObjectTypeLabels = (elem: ObjectType): string[] => ((elem.isExtension)
+  ? [Keywords.EXTENSION_DEFINITION, elem.elemID.getFullName()]
+  : [elem.elemID.getFullName()])
+
 export default class Parser {
   private static getElemID(fullname: string): ElemID {
     const separatorIdx = fullname.indexOf(ElemID.NAMESPACE_SEPERATOR)
@@ -61,8 +65,14 @@ export default class Parser {
   }
 
   private static parseType(typeBlock: HCLBlock): Type {
-    const [typeName] = typeBlock.labels
-    const typeObj = new ObjectType({ elemID: this.getElemID(typeName) })
+    const lastLabelIndex = typeBlock.labels.length - 1
+    const typeName = typeBlock.labels[lastLabelIndex]
+    const isExtension = typeBlock.labels[0] === Keywords.EXTENSION_DEFINITION
+
+    const typeObj = new ObjectType({
+      elemID: this.getElemID(typeName),
+      isExtension,
+    })
 
     typeObj.annotate(typeBlock.attrs)
 
@@ -84,7 +94,10 @@ export default class Parser {
         typeObj.fields[fieldName] = new Field(
           typeObj.elemID,
           fieldName,
-          new ObjectType({ elemID: this.getElemID(block.type) }),
+          new ObjectType({
+            elemID: this.getElemID(block.type),
+            isExtension,
+          }),
           block.attrs,
         )
       } else {
@@ -196,7 +209,7 @@ export default class Parser {
         const annotationsValues = _.cloneDeep(elem.annotationsValues)
         return {
           type: Keywords.MODEL,
-          labels: [elem.elemID.getFullName()],
+          labels: getObjectTypeLabels(elem),
           attrs: annotationsValues,
           blocks: Object.values(elem.fields).map(field => ((field.isList)
             ? this.getListFieldBlock(field)

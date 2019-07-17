@@ -101,6 +101,13 @@ describe('Salto parser', () => {
       salesforce {
         username = "foo"
       }
+
+      model extension salesforce_test {
+        salesforce_string extended {
+          label = "Added by extension"
+          _required = true
+        }
+      }
       `
 
       const { elements } = await Parser.parse(Buffer.from(body), 'none')
@@ -108,8 +115,8 @@ describe('Salto parser', () => {
     })
 
     describe('parse result', () => {
-      it('should have two types', () => {
-        expect(parsedElements.length).toBe(7)
+      it('should have all defined types', () => {
+        expect(parsedElements.length).toBe(8)
       })
     })
 
@@ -261,6 +268,24 @@ describe('Salto parser', () => {
         expect(config.value.username).toEqual('foo')
       })
     })
+
+    describe('extension', () => {
+      let orig: ObjectType
+      let extension: ObjectType
+      beforeAll(() => {
+        expect(isObjectType(parsedElements[7])).toBe(true)
+        orig = parsedElements[4] as ObjectType
+        extension = parsedElements[7] as ObjectType
+      })
+      it('should parse model extension as extension', () => {
+        expect(extension.isExtension).toBe(true)
+      })
+      it('should create the same elem id for extension and model', () => {
+        const origID = orig.elemID
+        const extID = extension.elemID
+        expect(extID).toEqual(origID)
+      })
+    })
   })
 
   describe('error tests', () => {
@@ -330,10 +355,21 @@ describe('Salto Dump', () => {
     }
   )
 
+  const extension = new ObjectType({
+    elemID: new ElemID('salesforce', 'test'),
+    isExtension: true,
+  })
+  extension.fields.expended = new Field(
+    extension.elemID,
+    'expended',
+    strType,
+    { label: 'Expended field' }
+  )
+
   let body: Buffer
 
   beforeAll(async () => {
-    body = await Parser.dump([strType, numType, boolType, model, instance, config])
+    body = await Parser.dump([strType, numType, boolType, model, instance, config, extension])
   })
 
   it('dumps primitive types', () => {
@@ -348,6 +384,19 @@ describe('Salto Dump', () => {
 
   it('dumps config elements', () => {
     expect(body).toMatch(/salesforce_test {/)
+  })
+
+  describe('dumped extension', () => {
+    it('is identidied as extension', () => {
+      expect(body).toMatch(
+        /model "?extension"? "?salesforce_test"? {/m
+      )
+    })
+    it('is has correct fields', () => {
+      expect(body).toMatch(
+        /salesforce_string "?expended"? {/m
+      )
+    })
   })
 
   describe('dumped model', () => {
@@ -373,13 +422,14 @@ describe('Salto Dump', () => {
     it('can be parsed back', async () => {
       const { elements, errors } = await Parser.parse(body, 'none')
       expect(errors.length).toEqual(0)
-      expect(elements.length).toEqual(6)
+      expect(elements.length).toEqual(7)
       expect(elements[0]).toEqual(strType)
       expect(elements[1]).toEqual(numType)
       expect(elements[2]).toEqual(boolType)
       expectTypesToMatch(elements[3] as Type, model)
       expectInstancesToMatch(elements[4] as InstanceElement, instance)
       expectInstancesToMatch(elements[5] as InstanceElement, config)
+      expectTypesToMatch(elements[6] as Type, extension)
     })
   })
 })

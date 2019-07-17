@@ -199,20 +199,24 @@ export class PrimitiveType extends Type {
  */
 export class ObjectType extends Type {
   fields: FieldMap
+  isExtension: boolean
 
   constructor({
     elemID,
     fields = {},
     annotations = {},
     annotationsValues = {},
+    isExtension = false,
   }: {
     elemID: ElemID
     fields?: FieldMap
     annotations?: TypeMap
     annotationsValues?: Values
+    isExtension?: boolean
   }) {
     super({ elemID, annotations, annotationsValues })
     this.fields = fields
+    this.isExtension = isExtension
   }
 
   private cloneFields(): FieldMap {

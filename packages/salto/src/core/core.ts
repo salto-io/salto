@@ -5,6 +5,7 @@ import {
   PlanAction, ObjectType, isInstanceElement, InstanceElement, Element, Plan,
 } from 'adapter-api'
 import SalesforceAdapter from 'salesforce-adapter'
+import mergeElements from './merger'
 
 import { buildDiffGraph } from '../dag/diff'
 import { DataNodeMap } from '../dag/nodemap'
@@ -41,7 +42,7 @@ export class SaltoCore extends EventEmitter {
     if (errors.length > 0) {
       throw new Error(`Failed to parse blueprints: ${errors.join('\n')}`)
     }
-    return elements
+    return mergeElements(elements)
   }
 
   // eslint-disable-next-line class-methods-use-this

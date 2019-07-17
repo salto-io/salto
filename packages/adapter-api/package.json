@@ -17,8 +17,10 @@
     "prepare": "yarn run build",
     "prepublishOnly": "yarn test",
     "build": "yarn run lint && yarn run build-ts",
-    "test": "jest --forceExit --verbose --detectOpenHandles",
-    "watch-test": "yarn run tsc-watch --onSuccess \"yarn run jest\"",
+    "test": "jest --forceExit --detectOpenHandles",
+    "clean-ts": "node ./node_modules/.bin/ts-cleaner -d dist -s . -v",
+    "clean-ts-test": "yarn run clean-ts && yarn run test",
+    "watch-test": "yarn run tsc-watch --onSuccess 'yarn run clean-ts-test'",
     "build-ts": "tsc",
     "watch-ts": "tsc -w",
     "lint": "eslint --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
@@ -51,6 +53,7 @@
     "jest-junit": "^6.4.0",
     "shelljs": "^0.8.1",
     "supertest": "^3.0.0",
+    "ts-cleaner": "^1.0.2",
     "tsc-watch": "^2.2.1",
     "typescript": "^3.5.3"
   }

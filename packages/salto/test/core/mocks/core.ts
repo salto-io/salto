@@ -168,11 +168,6 @@ export default class SaltoCoreMock extends SaltoCore {
     return changes
   }
 
-  /* eslint-disable-next-line class-methods-use-this, @typescript-eslint/no-unused-vars */
-  elementToHCL(element: Type, _maxDepth: number): string {
-    return JSON.stringify(element, null, 2)
-  }
-
   // eslint-disable-next-line class-methods-use-this
   async discover(): Promise<Blueprint> {
     return { buffer: Buffer.from('asd'), filename: 'none' }

@@ -128,11 +128,6 @@ export class SaltoCore extends EventEmitter {
     return plan
   }
 
-  /* eslint-disable-next-line class-methods-use-this, @typescript-eslint/no-unused-vars */
-  elementToHCL(element: Element, _maxDepth: number): string {
-    return JSON.stringify(element, null, 2)
-  }
-
   async discover(blueprints: Blueprint[]): Promise<Blueprint> {
     const elements = await this.getAllElements(blueprints)
     const salesforceConfigType = SalesforceAdapter.getConfigType()

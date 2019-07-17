@@ -372,7 +372,11 @@ export default class Cli {
     return Cli.emptyLine()
   }
 
-  private formatSearchResults(
+  private static elementToHCL(element: Element, _maxDepth: number): string {
+    return JSON.stringify(element, null, 2)
+  }
+
+  private static formatSearchResults(
     result: SearchResult,
     recursionLevel: number = 2,
   ): string {
@@ -386,7 +390,7 @@ export default class Cli {
     const elementName = element.elemID.getFullName()
     const header = Cli.header(`=== ${elementName} ===`)
     const description = Cli.subHeader(Cli.formatElementDescription(element))
-    const elementHCL = Cli.body(this.core.elementToHCL(element, recursionLevel))
+    const elementHCL = Cli.body(Cli.elementToHCL(element, recursionLevel))
     return [header, description, elementHCL].join('\n')
   }
 
@@ -575,7 +579,7 @@ export default class Cli {
     const searchResult = Cli.findElement(searchWords, elementsMap, elementsMap)
       // Then we allow near matches
       || Cli.findElement(searchWords, elementsMap, elementsMap, false)
-    Cli.print(this.formatSearchResults(searchResult, recursionLevel))
+    Cli.print(Cli.formatSearchResults(searchResult, recursionLevel))
   }
 
   // eslint-disable-next-line class-methods-use-this

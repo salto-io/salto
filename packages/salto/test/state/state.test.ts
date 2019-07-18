@@ -72,6 +72,7 @@ describe('Test state mechanism', () => {
     // Test
     const retrievedState = await state.getLastState()
     expect(retrievedState.length).toBe(1)
+    expect(_.isEqual(retrievedState[0], element)).toBeTruthy()
 
     await state.saveState(retrievedState)
     const retreivedAgainState = await state.getLastState()

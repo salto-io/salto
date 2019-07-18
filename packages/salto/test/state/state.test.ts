@@ -8,16 +8,12 @@ import {
   ElemID,
 } from 'adapter-api'
 import _ from 'lodash'
+import * as TestHelpers from '../common/helpers'
 import State from '../../src/state/state'
 
 describe('Test state mechanism', () => {
   const stateErrorFile = 'stateerror.bp'
   const blueprintsDirectory = path.join(__dirname, '../../../test', 'blueprints')
-  const mySaas = 'mySaas'
-  const stringType = new PrimitiveType({
-    elemID: new ElemID(mySaas, 'string'),
-    primitive: PrimitiveTypes.STRING,
-  })
   const state = new State()
 
   beforeAll(async () => {
@@ -38,6 +34,11 @@ describe('Test state mechanism', () => {
 
   it('should save state successfully, retrieve it, save it again and get the same result', async () => {
     // Setup
+    const mySaas = 'mySaas'
+    const stringType = new PrimitiveType({
+      elemID: new ElemID(mySaas, 'string'),
+      primitive: PrimitiveTypes.STRING,
+    })
     const mockElemID = new ElemID(mySaas, 'test_state')
     const element = new ObjectType({
       elemID: mockElemID,
@@ -72,7 +73,8 @@ describe('Test state mechanism', () => {
     // Test
     const retrievedState = await state.getLastState()
     expect(retrievedState.length).toBe(1)
-    expect(_.isEqual(retrievedState[0], element)).toBeTruthy()
+    const retrievedStateObjectType = retrievedState[0] as ObjectType
+    TestHelpers.expectTypesToMatch(retrievedStateObjectType, element)
 
     await state.saveState(retrievedState)
     const retreivedAgainState = await state.getLastState()

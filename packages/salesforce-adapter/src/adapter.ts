@@ -222,12 +222,40 @@ export default class SalesforceAdapter {
     if (remainingFields.length === 0) {
       return
     }
-    const fieldsToUpdate = remainingFields.filter(field => (
-      !_.isEqual(
-        prevElement.fields[field].annotationsValues[constants.FIELD_LEVEL_SECURITY],
-        newElement.fields[field].annotationsValues[constants.FIELD_LEVEL_SECURITY],
-      )
-    ))
+    const fieldsToUpdate: string[] = []
+    remainingFields.forEach(field => {
+      // eslint-disable-next-line max-len
+      const prevFieldPermissions = prevElement.fields[field].annotationsValues[constants.FIELD_LEVEL_SECURITY]
+      // eslint-disable-next-line max-len
+      let newFieldPermissions = newElement.fields[field].annotationsValues[constants.FIELD_LEVEL_SECURITY]
+      // Check if there is any permissions delta between the old and new objects' field
+      if (!_.isEqual(prevFieldPermissions, newFieldPermissions)) {
+        fieldsToUpdate.push(field)
+        // If there aren't any permissions on the new object's field, we copy them to the new one
+        // and update them to be not editable and not readable (remove them explicitly)
+        if (!newFieldPermissions) {
+          // eslint-disable-next-line max-len
+          newElement.fields[field].annotationsValues[constants.FIELD_LEVEL_SECURITY] = _.cloneDeep(prevFieldPermissions)
+          // eslint-disable-next-line max-len
+          newFieldPermissions = newElement.fields[field].annotationsValues[constants.FIELD_LEVEL_SECURITY]
+          Object.keys(prevFieldPermissions).forEach(securityUser => {
+            newFieldPermissions[securityUser] = { editable: false, readable: false }
+          })
+        } else if (prevFieldPermissions && newFieldPermissions) {
+          // If some permissions were removed, we will need to remove the permissions from the
+          // field explicitly
+          const newPermissions = new Set<string>(Object.keys(newFieldPermissions))
+          const removedPermissions = Object.keys(
+            prevFieldPermissions
+          ).filter(f => !newPermissions.has(f))
+          if (removedPermissions.length > 0) {
+            removedPermissions.forEach(securityUser => {
+              newFieldPermissions[securityUser] = { editable: false, readable: false }
+            })
+          }
+        }
+      }
+    })
 
     if (fieldsToUpdate.length > 0) {
       // Create the permissions

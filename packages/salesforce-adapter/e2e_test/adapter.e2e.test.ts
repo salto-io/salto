@@ -463,13 +463,11 @@ describe('Test Salesforce adapter E2E with real account', () => {
       )
       expect(addressStandardExists).toBe(true)
       expect(bananaStandardExists).toBe(true)
-      // The addressAdminExists will be used once we figure out how to remove existing permission
-      const [/* addressAdminExists, */bananaAdminExists] = await permissionExists(
+      const [addressAdminExists, bananaAdminExists] = await permissionExists(
         'Admin',
         [`${customObjectName}.Address__c`, `${customObjectName}.Banana__c`]
       )
-      // The following step is disabled until we figure out how to remove an existing permission
-      // expect(addressAdminExists).toBe(false)
+      expect(addressAdminExists).toBe(false)
       expect(bananaAdminExists).toBe(true)
 
       // Clean-up

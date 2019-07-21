@@ -6,7 +6,7 @@ declare class HCLBlock {
 }
 
 declare class HclParseArgs {
-  src: Buffer
+  src: string
   filename: string
 }
 

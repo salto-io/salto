@@ -1,7 +1,7 @@
 FROM circleci/node:12.3.1
 
 # Install go (needed for HCL parser WebAssembly build)
-RUN wget https://dl.google.com/go/go1.12.6.linux-amd64.tar.gz -O /tmp/go.tar.gz && \
+RUN wget https://dl.google.com/go/go1.13beta1.linux-amd64.tar.gz -O /tmp/go.tar.gz && \
     sudo tar -C /usr/local -xzf /tmp/go.tar.gz && \
     rm -f /tmp/go.tar.gz
 ENV PATH $PATH:/usr/local/go/bin

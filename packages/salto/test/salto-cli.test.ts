@@ -1,25 +1,5 @@
 import * as fs from 'async-file'
-import { ObjectType, InstanceElement, ElemID } from 'adapter-api'
-import cli from '../src/cli/salto-cli'
-import Cli from '../src/cli/commands'
-import SaltoCoreMock from './core/mocks/core'
-
-async function getConfigFromUser(configType: ObjectType): Promise<InstanceElement> {
-  const value = {
-    username: 'test@test',
-    password: 'test',
-    token: 'test',
-    sandbox: false,
-  }
-  const elemID = new ElemID('salesforce', '_config')
-  return new InstanceElement(elemID, configType, value)
-}
-
-Object.defineProperty(cli, 'cli', {
-  get: () => new Cli(new SaltoCoreMock({
-    getConfigFromUser,
-  })),
-})
+import SaltoCommander from '../src/cli/salto-cli'
 
 let outputData = ''
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -40,8 +20,25 @@ function resetConsoleOutput(): void {
 
 const mockExit = jest.spyOn(process, 'exit').mockImplementation(() => {})
 
+const mockApply = jest.fn().mockImplementation(() => {})
+const mockPlan = jest.fn().mockImplementation(() => {})
+const mockDiscover = jest.fn().mockImplementation(() => {})
+const mockDescribe = jest.fn().mockImplementation(() => {})
+
+jest.mock('../src/cli/commands', () => ({
+  apply: jest.fn().mockImplementation((bp, bpd, f) => mockApply(bp, bpd, f)),
+  discover: jest.fn().mockImplementation((o, bp, bpd) => mockDiscover(o, bp, bpd)),
+  plan: jest.fn().mockImplementation((bp, bpd) => mockPlan(bp, bpd)),
+  describe: jest.fn().mockImplementation(sw => mockDescribe(sw)),
+}))
+
 describe('Test commands.ts', () => {
+  const bp = `${__dirname}/../../test/blueprints/salto.bp`
+  const bpDir = `${__dirname}/../../test/blueprints`
+  const output = 'tmp.bp'
+
   it('should print the help file', async () => {
+    const cli = new SaltoCommander()
     resetConsoleOutput()
     const args = ['node', 'salto-cli.js', '--help']
     cli.parseAndRun(args)
@@ -49,13 +46,12 @@ describe('Test commands.ts', () => {
     expect(outputData).toMatch('Usage: salto-cli [options] [command]')
     expect(outputData).toMatch('apply [options]')
     expect(outputData).toMatch('plan [options]')
-    expect(outputData).toMatch('describe [options] <searchWords>')
+    expect(outputData).toMatch('describe <searchWords>')
     expect(mockExit).toHaveBeenCalledWith(0)
   })
 
-  it('should print the help for specific commands', () => {})
-
   it('should invoke the apply command', async () => {
+    const cli = new SaltoCommander()
     resetConsoleOutput()
     const args = [
       'node',
@@ -63,77 +59,89 @@ describe('Test commands.ts', () => {
       'apply',
       '-f',
       '-b',
-      `${__dirname}/../../test/blueprints/salto.bp`,
+      bp,
+      '-d',
+      bpDir,
     ]
-    cli.parseAndRun(args)
-    await new Promise(resolve => setTimeout(resolve, 100))
-    expect(outputData).toMatch('Salto will perform the following action')
-    expect(outputData).toMatch('Salto-cli will start the apply step')
-    expect(outputData).toMatch('do_you_have_a_sales_team')
+    await cli.parseAndRun(args)
+    expect(mockApply).toHaveBeenLastCalledWith([bp], bpDir, true)
   })
 
-  it('should invoke the apply command with blueprintsDir', async () => {
+  it('should invoke the plan command', async () => {
+    const cli = new SaltoCommander()
     resetConsoleOutput()
     const args = [
       'node',
       'salto-cli.js',
-      'apply',
+      'plan',
       '-f',
+      '-b',
+      bp,
       '-d',
-      `${__dirname}/../../test/blueprints`,
+      bpDir,
     ]
-    cli.parseAndRun(args)
-    await new Promise(resolve => setTimeout(resolve, 100))
-    expect(outputData).toMatch('Salto will perform the following action')
-    expect(outputData).toMatch('Salto-cli will start the apply step')
-    expect(outputData).toMatch('do_you_have_a_sales_team')
+    await cli.parseAndRun(args)
+    expect(mockPlan).toHaveBeenLastCalledWith([bp], bpDir)
   })
 
-  it('should invoke the plan command', async () => {
+  it('should invoke the plan command with blueprintsDir', async () => {
+    const cli = new SaltoCommander()
     resetConsoleOutput()
-    const args = ['node', 'salto-cli.js', 'plan']
-    cli.parseAndRun(args)
-    await new Promise(resolve => setTimeout(resolve, 100))
-    expect(outputData).toMatch('Salto will perform the following action')
-    expect(outputData).toMatch('do_you_have_a_sales_team')
-    expect(outputData).toMatch('Be sure to go over the plan')
+    const args = [
+      'node',
+      'salto-cli.js',
+      'plan',
+      '-f',
+      '-d',
+      bpDir,
+      '-b',
+      bp,
+    ]
+    await cli.parseAndRun(args)
+    expect(mockPlan).toHaveBeenLastCalledWith([bp], bpDir)
   })
 
   it('should invoke the describe command', async () => {
+    const cli = new SaltoCommander()
     resetConsoleOutput()
     const args = [
       'node',
       'salto-cli.js',
       'describe',
       'salto_office',
-      '-r',
-      '2c',
     ]
-    cli.parseAndRun(args)
-    await new Promise(resolve => setTimeout(resolve, 100))
-    expect(outputData).toMatch('=== salto_office ===')
-    expect(outputData).toMatch('Office Location')
-    expect(outputData).toMatch('address')
+    await cli.parseAndRun(args)
+    expect(mockDescribe).toHaveBeenLastCalledWith(['salto_office'])
   })
 
   it('should invoke the discover command', async () => {
+    const cli = new SaltoCommander()
     try {
       resetConsoleOutput()
-      const args = ['node', 'salto-cli.js', 'discover', '-o', 'tmp.bp']
-      cli.parseAndRun(args)
-      await new Promise(resolve => setTimeout(resolve, 100))
-      expect(mockExit).toHaveBeenCalledWith(0)
+      const args = [
+        'node',
+        'salto-cli.js',
+        'discover',
+        '-o',
+        output,
+        '-b',
+        bp,
+      ]
+      await cli.parseAndRun(args)
+      // await new Promise(resolve => setTimeout(resolve, 100))
+      expect(mockDiscover).toHaveBeenLastCalledWith(output, [bp], undefined)
     } finally {
       fs.delete('tmp.bp')
     }
   })
 
   it('should create the cli as singleton', async () => {
+    const cli = new SaltoCommander()
     try {
       resetConsoleOutput()
       const args = ['node', 'salto-cli.js', 'discover', '-o', 'tmp.bp']
-      cli.parseAndRun(args)
-      await new Promise(resolve => setTimeout(resolve, 100))
+      await cli.parseAndRun(args)
+      // await new Promise(resolve => setTimeout(resolve, 100))
       expect(mockExit).toHaveBeenCalledWith(0)
     } finally {
       fs.delete('tmp.bp')

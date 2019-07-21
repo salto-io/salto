@@ -1,13 +1,11 @@
 #!/usr/bin/env node
 import { Command } from 'commander'
-import Cli from './commands'
+import * as commands from './commands'
 
 
 class SaltoCommander {
   private command: Command
-  private cli: Cli
   constructor() {
-    this.cli = new Cli()
     this.command = new Command()
     this.command
       .version('0.1.0')
@@ -32,7 +30,7 @@ class SaltoCommander {
         [],
       )
       .option('-f, --force', 'A path to an input blueprint file')
-      .action(cmd => this.doApply(cmd))
+      .action(cmd => SaltoCommander.doApply(cmd))
 
     this.command
       .command('plan')
@@ -49,7 +47,7 @@ class SaltoCommander {
         SaltoCommander.collect,
         [],
       )
-      .action(cmd => this.doPlan(cmd))
+      .action(cmd => SaltoCommander.doPlan(cmd))
 
     this.command
       .command('discover')
@@ -70,20 +68,14 @@ class SaltoCommander {
         '-o, --outputfilename <path>',
         'A path to the output blueprint file',
       )
-      .action(cmd => this.doDiscover(cmd))
+      .action(cmd => SaltoCommander.doDiscover(cmd))
 
     this.command
       .command('describe <searchWords>')
-      .option(
-        '-r --recursion-level <number>',
-        'Set how many configuations levels will be shown',
-        SaltoCommander.parseIntArg,
-        2,
-      )
       .description(
         'Shows all available types and attributes for the adapters of the related services.',
       )
-      .action((searchWords, cmd) => this.doDescribe(searchWords, cmd))
+      .action(searchWords => SaltoCommander.doDescribe(searchWords))
   }
 
   async parseAndRun(argv: string[]): Promise<void> {
@@ -94,40 +86,34 @@ class SaltoCommander {
     return prev.concat([value])
   }
 
-  private static parseIntArg(value: string): number {
-    // parseInt takes a string and an optional radix
-    return parseInt(value, 10)
-  }
-
   private static parseDotSeperate(value: string): string[] {
     return value.split('.')
   }
 
-  private doApply(cmd: {
+  private static doApply(cmd: {
     blueprint: string[]
     blueprintsdir: string
     force: boolean
   }): void {
-    this.cli.apply(cmd.blueprint, cmd.blueprintsdir, cmd.force)
+    commands.apply(cmd.blueprint, cmd.blueprintsdir, cmd.force)
   }
 
-  private doPlan(cmd: { blueprint: string[]; blueprintsdir: string }): void {
-    this.cli.plan(cmd.blueprint, cmd.blueprintsdir)
+  private static doPlan(cmd: { blueprint: string[]; blueprintsdir: string }): void {
+    commands.plan(cmd.blueprint, cmd.blueprintsdir)
   }
 
-  private doDiscover(cmd: {
+  private static doDiscover(cmd: {
     outputfilename: string
     blueprint: string[]
     blueprintsdir: string
   }): void {
-    this.cli.discover(cmd.outputfilename, cmd.blueprint, cmd.blueprintsdir)
+    commands.discover(cmd.outputfilename, cmd.blueprint, cmd.blueprintsdir)
   }
 
-  private doDescribe(
-    searchWords: string,
-    cmd: { recursionLevel: number },
+  private static doDescribe(
+    searchWords: string
   ): void {
-    this.cli.describe(SaltoCommander.parseDotSeperate(searchWords), cmd.recursionLevel)
+    commands.describe(SaltoCommander.parseDotSeperate(searchWords))
   }
 }
 
@@ -139,4 +125,4 @@ if (typeof require !== 'undefined' && require.main === module) {
   saltoCommander.parseAndRun(process.argv)
 }
 
-export default new SaltoCommander()
+export default SaltoCommander

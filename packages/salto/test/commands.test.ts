@@ -1,11 +1,12 @@
 import path from 'path'
 import * as fs from 'async-file'
 import {
-  ObjectType, InstanceElement, ElemID,
-  PrimitiveType, PrimitiveTypes, Type,
+  ElemID, InstanceElement, ObjectType, PlanAction, Plan,
+  PrimitiveType, PrimitiveTypes,
 } from 'adapter-api'
-import Cli from '../src/cli/commands'
-import SaltoCoreMock from './core/mocks/core'
+import * as commands from '../src/cli/commands'
+import * as coreMock from './core/mocks/core'
+import { Blueprint } from '../src/core/core'
 
 let outputData = ''
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -13,48 +14,50 @@ function storeLog(inputs: any): void {
   outputData += inputs
 }
 
-async function getConfigFromUser(configType: ObjectType): Promise<InstanceElement> {
-  const value = {
-    username: 'test@test',
-    password: 'test',
-    token: 'test',
-    sandbox: false,
-  }
-  const elemID = new ElemID('salesforce')
-  return new InstanceElement(elemID, configType, value)
-}
 // eslint-disable-next-line no-console
 console.log = jest.fn(storeLog)
 // eslint-disable-next-line no-console
 console.error = jest.fn(storeLog)
-const cli: Cli = new Cli(new SaltoCoreMock({
-  getConfigFromUser,
-}))
 
-cli.currentActionPollerInterval = 1
 function resetConsoleOutput(): void {
   outputData = ''
 }
 
-class CliTester extends Cli {
-  public static testGetFieldInputType(field: Type): string {
-    return Cli.getFieldInputType(field)
-  }
-}
+const mockApply = coreMock.apply
+const mockDiscover = coreMock.discover
+const mockPlan = coreMock.plan
+const mockGetElements = coreMock.getAllElements
+
+jest.mock('../src/core/core', () => ({
+  apply: jest.fn().mockImplementation((
+    blueprints: Blueprint[],
+    fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
+    shouldApply: (plan: Plan) => Promise<boolean>,
+    reportProgress: (action: PlanAction) => void,
+    force: boolean = false
+  ) => mockApply(blueprints, fillConfig, shouldApply, reportProgress, force)),
+  discover: jest.fn().mockImplementation((
+    blueprints: Blueprint[],
+    fillConfig: (configType: ObjectType) => Promise<InstanceElement>
+  ) => mockDiscover(blueprints, fillConfig)),
+  plan: jest.fn().mockImplementation((bp: Blueprint[]) => mockPlan(bp)),
+  getAllElements: jest.fn().mockImplementation((bp: Blueprint[]) => mockGetElements(bp)),
+}))
+
 
 describe('Test commands.ts', () => {
   it('set env should be defined', () => {
-    expect(cli.setenv).toBeDefined()
+    expect(commands.setenv).toBeDefined()
   })
 
   it('discover should be defined', () => {
-    expect(cli.discover).toBeDefined()
+    expect(commands.discover).toBeDefined()
   })
 
   it('discover should create file', async () => {
     const outputName = path.join(__dirname, 'tmp.bp')
     try {
-      await cli.discover(outputName, [])
+      await commands.discover(outputName, [])
       expect(await fs.exists(outputName)).toBe(true)
       expect((await fs.readFile(outputName)).toString()).toMatch('asd')
     } finally {
@@ -64,13 +67,13 @@ describe('Test commands.ts', () => {
 
   it('should output not found when describing a complete mismatch', async () => {
     resetConsoleOutput()
-    await cli.describe(['XXX', 'ggg', 'A'])
+    await commands.describe(['XXX', 'ggg', 'A'])
     expect(outputData).toMatch('Unknown element type.')
   })
 
   it('should output proper value when proper desc is provided', async () => {
     resetConsoleOutput()
-    await cli.describe(['salto_office'])
+    await commands.describe(['salto_office'])
     expect(outputData).toMatch('=== salto_office ===')
     expect(outputData).toMatch('Office Location')
     expect(outputData).toMatch('address')
@@ -78,46 +81,46 @@ describe('Test commands.ts', () => {
 
   it('should output proper value when proper desc is provided for list', async () => {
     resetConsoleOutput()
-    await cli.describe(['salto_employee', 'nicknames'])
+    await commands.describe(['salto_employee', 'nicknames'])
     expect(outputData).toMatch('=== string ===')
   })
 
   it('should output proper value when proper desc is provided for inner fields', async () => {
     resetConsoleOutput()
-    await cli.describe(['salto_office', 'location'])
+    await commands.describe(['salto_office', 'location'])
     expect(outputData).toMatch('=== salto_address ===')
   })
 
   it('should suggest proper value when proper desc is provided start path', async () => {
     resetConsoleOutput()
-    await cli.describe(['salto_offic', 'locatin', 'city'])
+    await commands.describe(['salto_offic', 'locatin', 'city'])
     expect(outputData).toMatch('Could not find what you were looking for.')
     expect(outputData).toMatch('salto_office.location.city')
   })
 
   it('should suggest proper value when proper desc is provided end path', async () => {
     resetConsoleOutput()
-    await cli.describe(['salto_office', 'locatin', 'cit'])
+    await commands.describe(['salto_office', 'locatin', 'cit'])
     expect(outputData).toMatch('Could not find what you were looking for.')
     expect(outputData).toMatch('salto_office.location.city')
   })
 
   it('should suggest proper value when proper desc is provided mid path', async () => {
     resetConsoleOutput()
-    await cli.describe(['salto_office', 'locatin', 'city'])
+    await commands.describe(['salto_office', 'locatin', 'city'])
     expect(outputData).toMatch('Could not find what you were looking for.')
     expect(outputData).toMatch('salto_office.location.city')
   })
 
   it('unknown type on single word', async () => {
     resetConsoleOutput()
-    await cli.describe(['ZZZZZZZZZZZZZZZ'])
+    await commands.describe(['ZZZZZZZZZZZZZZZ'])
     expect(outputData).toMatch('Unknown element type.')
   })
 
   it('suggest type on single word', async () => {
     resetConsoleOutput()
-    await cli.describe(['salto_ofice'])
+    await commands.describe(['salto_ofice'])
     expect(outputData).toMatch('Did you mean')
   })
 
@@ -125,7 +128,7 @@ describe('Test commands.ts', () => {
     resetConsoleOutput()
     const blueprintsFiles = [`${__dirname}/../../test/blueprints/salto.bp`]
 
-    await cli.plan(blueprintsFiles)
+    await commands.plan(blueprintsFiles)
     expect(outputData).toMatch('Salto will perform the following action')
     expect(outputData).toMatch('do_you_have_a_sales_team')
     expect(outputData).toMatch('Be sure to go over the plan')
@@ -135,34 +138,23 @@ describe('Test commands.ts', () => {
     resetConsoleOutput()
     const blueprintsDir = `${__dirname}/../../test/blueprints`
 
-    await cli.plan([], blueprintsDir)
+    await commands.plan([], blueprintsDir)
     expect(outputData).toMatch('Salto will perform the following action')
     expect(outputData).toMatch('do_you_have_a_sales_team')
     expect(outputData).toMatch('Be sure to go over the plan')
   })
 
-  it('should propmt the user for input after printing the plan when apply is invoked', async () => {
-    resetConsoleOutput()
-    const blueprintsFiles = [`${__dirname}/../../test/blueprints/salto.bp`]
-
-    await cli.apply(blueprintsFiles, undefined, true)
-    expect(outputData).toMatch('Salto will perform the following action')
-    expect(outputData).toMatch('Salto-cli will start the apply step')
-    expect(outputData).toMatch('do_you_have_a_sales_team')
-  })
-
   it('should throw error when the blueprint files do no exist', async () => {
     resetConsoleOutput()
     const blueprintsFiles = [`${__dirname}/../../test/blueprints/salto_not_here.bp`]
-
-    await cli.apply(blueprintsFiles, undefined, true)
+    await commands.apply(blueprintsFiles, undefined, true)
     expect(outputData).toMatch('Error: Failed to load blueprints files')
   })
 
   it('should invoke setenv without errors', async () => {
     resetConsoleOutput()
     expect(async () => {
-      cli.setenv()
+      commands.setenv()
     }).not.toThrow()
   })
 
@@ -171,17 +163,17 @@ describe('Test commands.ts', () => {
       elemID: new ElemID('salesforce', 'dummy'),
       primitive: PrimitiveTypes.STRING,
     })
-    const stRes = CliTester.testGetFieldInputType(pts)
+    const stRes = commands.getFieldInputType(pts)
     const pti = new PrimitiveType({
       elemID: new ElemID('salesforce', 'dummy'),
       primitive: PrimitiveTypes.NUMBER,
     })
-    const iRes = CliTester.testGetFieldInputType(pti)
+    const iRes = commands.getFieldInputType(pti)
     const ptb = new PrimitiveType({
       elemID: new ElemID('salesforce', 'dummy'),
       primitive: PrimitiveTypes.BOOLEAN,
     })
-    const bRes = CliTester.testGetFieldInputType(ptb)
+    const bRes = commands.getFieldInputType(ptb)
     expect(iRes).toBe('number')
     expect(bRes).toBe('confirm')
     expect(stRes).toBe('input')

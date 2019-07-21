@@ -86,7 +86,7 @@ class HCLParser {
    *          errors: a list of errors encountered during parsing
    */
   public parse(src: Buffer, filename: string): Promise<HclParseReturn> {
-    return this.callPlugin({ func: 'parse', args: { src, filename } }) as Promise<HclParseReturn>
+    return this.callPlugin({ func: 'parse', args: { src: src.toString(), filename } }) as Promise<HclParseReturn>
   }
 
   /**

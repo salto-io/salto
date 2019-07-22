@@ -1,6 +1,13 @@
 import { MetadataInfo, SaveResult } from 'jsforce'
 import _ from 'lodash'
 
+export interface FieldLevelSecurity {
+  [profile: string]: {
+    editable: boolean
+    readable: boolean
+  }
+}
+
 export interface FieldPermissions {
   field: string
   editable: boolean

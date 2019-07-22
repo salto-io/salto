@@ -6,7 +6,7 @@ export default class Prompts {
   public static readonly EXPLAINAPPLY =
     "You know what this is all about don't you?!"
 
-  public static readonly SHOULDEXECUTREPLAN = 'Do you to perform these actions?'
+  public static readonly SHOULDEXECUTREPLAN = 'Do you want to perform these actions?'
 
   public static readonly STARTAPPLYEXEC = 'Starting the apply phase'
   public static readonly CANCELAPPLY = 'Canceling apply'
@@ -34,16 +34,16 @@ but will not be persisted to local or remote state storage`
     remove: 'Removal',
   }
 
-  public static readonly EXPLAINPLANRESULT = `An execution plan has been generated and is show below.
+  public static readonly EXPLAINPLANRESULT = `An execution plan has been generated and is shown below.
 Resources and actions are indicated with the following symbols:
 
   ${Prompts.MODIFIERS.add} create
   ${Prompts.MODIFIERS.modify} change
   ${Prompts.MODIFIERS.remove} remove
 
-Salto will perform the following action:`
+Salto will perform the following actions:`
 
-  public static readonly PLANDISCLAIMER = `Note: You did not choose the apply option to execute the plan, so Salto can't guarantee that 
+  public static readonly PLANDISCLAIMER = `Note: You did not choose the apply option to execute the plan, so Salto cannot guarantee that 
 exactly these actions will be performed if "Salto apply" is run. Be sure to go over the plan 
 output when invoking the apply command.
 `

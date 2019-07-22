@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import wu from 'wu'
 import {
-  PlanAction, ObjectType, isInstanceElement, InstanceElement, Element, Plan, ElemID,
+  PlanAction, ObjectType, InstanceElement, Element, Plan, ElemID,
 } from 'adapter-api'
 
 import { buildDiffGraph } from '../dag/diff'
@@ -9,22 +9,8 @@ import { DataNodeMap } from '../dag/nodemap'
 import Parser from '../parser/salto'
 import State from '../state/state'
 import Blueprint from './blueprint'
-import { adapters, init as initAdapters } from './adapters'
+import { Adapter, init as initAdapters } from './adapters'
 
-
-export const getAllElements = async (blueprints: Blueprint[]): Promise<Element[]> => {
-  const parseResults = await Promise.all(blueprints.map(
-    bp => Parser.parse(bp.buffer, bp.filename)
-  ))
-
-  const elements = _.flatten(parseResults.map(r => r.elements))
-  const errors = _.flatten(parseResults.map(r => r.errors))
-
-  if (errors.length > 0) {
-    throw new Error(`Failed to parse blueprints: ${errors.join('\n')}`)
-  }
-  return elements
-}
 
 const getPlan = async (allElements: Element[], state: State): Promise<Plan> => {
   const toNodeMap = (elements: Element[]): DataNodeMap<Element> => {
@@ -50,7 +36,7 @@ const getPlan = async (allElements: Element[], state: State): Promise<Plan> => {
 // Should be the adapter interface in the param, waiting for merge
 const applyAction = async (
   action: PlanAction,
-  adapters: Record<string, SalesforceAdapter>
+  adapters: Record<string, Adapter>
 ): Promise<void> => {
   const existingValue = (action.data.after || action.data.before) as Element
   const { elemID } = existingValue
@@ -71,33 +57,9 @@ const applyAction = async (
   }
 }
 
-const getConfigInstance = async (elements: Element[],
-  configType: ObjectType,
-  fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
-): Promise<InstanceElement> => {
-  const configElements = elements.filter(
-    element => isInstanceElement(element)
-    && element.type.elemID.getFullName() === configType.elemID.getFullName()
-  )
-  const configElement = configElements.pop() as InstanceElement
-  if (configElement) {
-    return configElement
-  }
-  return fillConfig(configType)
-}
-
-const initAdapters = (
-  salesforceConfig: InstanceElement
-): Record<string, SalesforceAdapter> => {
-  const adapters: Record<string, SalesforceAdapter> = {
-    salesforce: new SalesforceAdapter(salesforceConfig),
-  }
-  return adapters
-}
-
 const applyActions = async (
   plan: Plan,
-  adapters: Record<string, SalesforceAdapter>,
+  adapters: Record<string, Adapter>,
   reportProgress: (action: PlanAction) => void
 ): Promise<void> =>
   wu(plan).reduce((result, action) => result.then(
@@ -106,6 +68,20 @@ const applyActions = async (
       return applyAction(action, adapters)
     }
   ), Promise.resolve())
+
+export const getAllElements = async (blueprints: Blueprint[]): Promise<Element[]> => {
+  const parseResults = await Promise.all(blueprints.map(
+    bp => Parser.parse(bp.buffer, bp.filename)
+  ))
+
+  const elements = _.flatten(parseResults.map(r => r.elements))
+  const errors = _.flatten(parseResults.map(r => r.errors))
+
+  if (errors.length > 0) {
+    throw new Error(`Failed to parse blueprints: ${errors.join('\n')}`)
+  }
+  return elements
+}
 
 export const plan = async (
   blueprints: Blueprint[],
@@ -124,16 +100,10 @@ export const apply = async (
   reportProgress: (action: PlanAction) => void,
   force: boolean = false
 ): Promise<Plan> => {
-  const elements = await getAllElements(blueprints)
-  const salesforceConfigType = SalesforceAdapter.getConfigType()
-  const salesforceConfig = await getConfigInstance(
-    elements,
-    salesforceConfigType,
-    fillConfig
-  )
-  const adapters = initAdapters(salesforceConfig)
-
   const state = new State()
+  const elements = await getAllElements(blueprints)
+  const [adapters] = await initAdapters(elements, fillConfig)
+
   const actionPlan = await getPlan(elements, state)
   if (force || await shouldApply(actionPlan)) {
     await applyActions(actionPlan, adapters, reportProgress)
@@ -147,16 +117,10 @@ export const discover = async (
 ): Promise<Blueprint> => {
   const state = new State()
   const elements = await getAllElements(blueprints)
-  const salesforceConfigType = SalesforceAdapter.getConfigType()
-  const salesforceConfig = await getConfigInstance(
-    elements,
-    salesforceConfigType,
-    fillConfig
-  )
-  const adapters = initAdapters(salesforceConfig)
+  const [adapters, newAdapterConfigs] = await initAdapters(elements, fillConfig)
 
   const discoverElements = await adapters.salesforce.discover()
-  const uniqElements = [...discoverElements, salesforceConfig]
+  const uniqElements = [...discoverElements, ...Object.values(newAdapterConfigs)]
   // Save state
   await state.saveState(uniqElements)
   const buffer = await Parser.dump(uniqElements)

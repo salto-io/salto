@@ -6,7 +6,7 @@ import {
 } from 'adapter-api'
 import * as commands from '../src/cli/commands'
 import * as coreMock from './core/mocks/core'
-import { Blueprint } from '../src/core/core'
+import Blueprint from '../src/core/blueprint'
 
 let outputData = ''
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

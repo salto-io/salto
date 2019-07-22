@@ -4,11 +4,9 @@ import {
   ElemID, PrimitiveType, PrimitiveTypes, InstanceElement, ObjectType, Field,
   Plan,
 } from 'adapter-api'
-import SalesforceAdapter from 'salesforce-adapter'
 import * as core from '../../src/core/core'
 import State from '../../src/state/state'
 import Blueprint from '../../src/core/blueprint'
-import { adapters } from '../../src/core/adapters'
 
 const mockGetConfigFromUser = async (
   configType: ObjectType
@@ -37,17 +35,6 @@ const mockAdd = jest.fn(async ap => {
   return true
 })
 
-const mockRemove = jest.fn(async _a => true)
-
-const mockUpdate = jest.fn(async (_b, _a) => true)
-
-const mockDiscover = jest.fn(() => [
-  new PrimitiveType({
-    elemID: new ElemID('salesforce', 'dummy'),
-    primitive: PrimitiveTypes.STRING,
-  }),
-])
-
 const mockGetConfigType = jest.fn(() => {
   const simpleString = new PrimitiveType({
     elemID: new ElemID('', 'string'),
@@ -75,6 +62,32 @@ const mockGetConfigType = jest.fn(() => {
   return config
 })
 
+const mockRemove = jest.fn(_a => true)
+
+const mockUpdate = jest.fn((_b, _a) => true)
+
+const mockInit = jest.fn(_a => true)
+
+const mockDiscover = jest.fn(() => [
+  new PrimitiveType({
+    elemID: new ElemID('salesforce', 'dummy'),
+    primitive: PrimitiveTypes.STRING,
+  }),
+])
+
+const mockAdapter = {
+  getConfigType: mockGetConfigType,
+  init: mockInit,
+  discover: mockDiscover,
+  add: mockAdd,
+  remove: mockRemove,
+  update: mockUpdate,
+}
+
+jest.mock('../../src/core/adapters', () => ({
+  init: jest.fn().mockImplementation((_e, _c) => [{ salesforce: mockAdapter }, []]),
+}))
+
 describe('Test core.ts', () => {
   // Mock empty state
   jest.mock('../../src/state/state')
@@ -85,7 +98,7 @@ describe('Test core.ts', () => {
 
   const blueprintsDirectory = path.join(__dirname, '../../../test', 'blueprints')
 
-  const readBlueprints = (...filenames: string[]): Promise<core.Blueprint[]> => Promise.all(
+  const readBlueprints = (...filenames: string[]): Promise<Blueprint[]> => Promise.all(
     filenames.map(async (filename: string) => ({
       buffer: await fs.readFile(path.join(blueprintsDirectory, filename), 'utf8'),
       filename,
@@ -127,7 +140,7 @@ describe('Test core.ts', () => {
   })
 
   describe('given a valid blueprint', () => {
-    let blueprints: core.Blueprint[]
+    let blueprints: Blueprint[]
     beforeEach(async () => {
       blueprints = await readBlueprints('salto.bp')
     })

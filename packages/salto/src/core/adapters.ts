@@ -12,10 +12,9 @@ export interface Adapter {
   update(before: ObjectType, after: ObjectType): Promise<ObjectType>
 }
 
-export const adapters: Record<string, Adapter> = { salesforce: new SalesforceAdapter() }
-
 export const init = async (elements: Element[], fillConfig: (t: ObjectType) =>
-  Promise<InstanceElement>): Promise<InstanceElement[]> => {
+  Promise<InstanceElement>): Promise<[Record<string, Adapter>, InstanceElement[]]> => {
+  const adapters: Record<string, Adapter> = { salesforce: new SalesforceAdapter() }
   const configs = elements.filter(element => isInstanceElement(element)
     && element.type.elemID.name === ElemID.CONFIG_INSTANCE_NAME) as InstanceElement[]
   const newConfigs: InstanceElement[] = []
@@ -29,5 +28,5 @@ export const init = async (elements: Element[], fillConfig: (t: ObjectType) =>
     adapter.init(config)
   })
 
-  return Promise.resolve(newConfigs)
+  return [adapters, newConfigs]
 }

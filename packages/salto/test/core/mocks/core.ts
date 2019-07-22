@@ -3,7 +3,7 @@ import {
   Field, Plan, InstanceElement,
 } from 'adapter-api'
 import wu from 'wu'
-import { Blueprint } from '../../../src/core/blueprint'
+import Blueprint from '../../../src/core/blueprint'
 
 
 export const getAllElements = async (

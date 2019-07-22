@@ -16,11 +16,11 @@ export const init = async (elements: Element[], fillConfig: (t: ObjectType) =>
   Promise<InstanceElement>): Promise<[Record<string, Adapter>, InstanceElement[]]> => {
   const adapters: Record<string, Adapter> = { salesforce: new SalesforceAdapter() }
   const configs = elements.filter(element => isInstanceElement(element)
-    && element.type.elemID.name === ElemID.CONFIG_INSTANCE_NAME) as InstanceElement[]
+    && element.elemID.name === ElemID.CONFIG_INSTANCE_NAME) as InstanceElement[]
   const newConfigs: InstanceElement[] = []
 
   Object.values(adapters).forEach(async adapter => {
-    let config = configs.find(e => e.type.elemID.name === adapter.getConfigType().elemID.name)
+    let config = configs.find(e => e.type.elemID.adapter === adapter.getConfigType().elemID.adapter)
     if (!config) {
       config = await fillConfig(adapter.getConfigType())
       newConfigs.push(config)

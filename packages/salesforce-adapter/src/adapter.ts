@@ -14,7 +14,7 @@ import _ from 'lodash'
 import SalesforceClient from './client/client'
 import * as constants from './constants'
 import {
-  ProfileInfo, CompleteSaveResult, SfError, FieldLevelSecurity,
+  ProfileInfo, CompleteSaveResult, SfError,
 } from './client/types'
 import {
   toCustomField, toCustomObject, apiName, sfCase, bpCase, fieldFullName, Types,
@@ -215,20 +215,15 @@ export default class SalesforceAdapter {
     oldElementAnnotations: Values,
     newElementAnnotations: Values
   ): void {
+    if (!newElementAnnotations[constants.FIELD_LEVEL_SECURITY]) {
+      newElementAnnotations[constants.FIELD_LEVEL_SECURITY] = {}
+    }
     const newFieldLevelSecurity = newElementAnnotations[constants.FIELD_LEVEL_SECURITY]
     const oldFieldLevelSecurity = oldElementAnnotations[constants.FIELD_LEVEL_SECURITY]
-    // If there aren't any permissions on the new object's field, we copy them to the new one
-    // and update them to be not editable and not readable (remove them explicitly)
-    if (!newFieldLevelSecurity) {
-      // eslint-disable-next-line no-param-reassign
-      const emptyFieldLevelSecurity: FieldLevelSecurity = {}
-      newElementAnnotations[constants.FIELD_LEVEL_SECURITY] = emptyFieldLevelSecurity
-      Object.keys(oldFieldLevelSecurity).forEach(securityUser => {
-        emptyFieldLevelSecurity[securityUser] = { editable: false, readable: false }
-      })
-    } else if (oldFieldLevelSecurity && newFieldLevelSecurity) {
+    // If the delta is only new field permissions, then skip
+    if (oldFieldLevelSecurity) {
       // If some permissions were removed, we will need to remove the permissions from the
-      // field explicitly
+      // field explicitly (update them to be not editable and not readable)
       const newPermissions = new Set<string>(Object.keys(newFieldLevelSecurity))
       const removedPermissions = Object.keys(
         oldFieldLevelSecurity

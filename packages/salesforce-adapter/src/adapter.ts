@@ -8,7 +8,7 @@ import {
   Values,
   Field,
 } from 'adapter-api'
-import { SaveResult } from 'jsforce'
+import { SaveResult, ValueTypeField } from 'jsforce'
 import { isArray } from 'util'
 import _ from 'lodash'
 import SalesforceClient from './client/client'
@@ -89,7 +89,7 @@ export default class SalesforceAdapter {
       this.discoverSObjects(),
       this.discoverMetadataTypes(),
     ])
-    return result[0].concat(result[1])
+    return _.flatten(result)
   }
 
   /**
@@ -304,19 +304,32 @@ export default class SalesforceAdapter {
 
   private async discoverMetadataTypes(): Promise<Type[]> {
     const objects = await this.client.listMetadataTypes()
-    return Promise.all(
+    const knownTypes = new Set<string>()
+    return _.flatten(await Promise.all(
       objects
         .filter(obj => obj.xmlName !== constants.CUSTOM_OBJECT)
-        .map(async obj => this.createMetadataTypeElement(obj.xmlName))
-    )
+        .map(async obj => this.discoverMetadataType(obj.xmlName, knownTypes))
+    ))
   }
 
-  private async createMetadataTypeElement(objectName: string): Promise<Type> {
+  private async discoverMetadataType(objectName: string, knownTypes: Set<string>): Promise<Type[]> {
+    const fields = await this.client.discoverMetadataObject(objectName)
+    return SalesforceAdapter.createMetadataTypeElements(objectName, fields, knownTypes)
+  }
+
+  private static createMetadataTypeElements(
+    objectName: string,
+    fields: ValueTypeField[],
+    knownTypes: Set<string>,
+  ): Type[] {
+    if (knownTypes.has(objectName)) {
+      return []
+    }
+    knownTypes.add(objectName)
     const element = Types.get(objectName) as ObjectType
     element.annotate({ [constants.API_NAME]: objectName })
-    const fields = await this.client.discoverMetadataObject(objectName)
     if (!fields) {
-      return element
+      return [element]
     }
     fields.forEach(field => {
       if (field.name !== constants.METADATA_OBJECT_NAME_FIELD) {
@@ -331,7 +344,14 @@ export default class SalesforceAdapter {
         )
       }
     })
-    return element
+    const embeddedTypes = _.flatten(fields.filter(field => !_.isEmpty(field.fields)).map(
+      field => this.createMetadataTypeElements(
+        field.soapType,
+        Array.isArray(field.fields) ? field.fields : [field.fields],
+        knownTypes
+      )
+    ))
+    return _.flatten([element, embeddedTypes])
   }
 
   private async discoverSObjects(): Promise<Type[]> {

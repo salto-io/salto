@@ -14,8 +14,9 @@ import * as constants from '../src/constants'
 jest.mock('../src/client/client')
 
 describe('Test SalesforceAdapter CRUD', () => {
-  function adapter(): SalesforceAdapter {
-    const configType = SalesforceAdapter.getConfigType()
+  const adapter = (): SalesforceAdapter => {
+    const a = new SalesforceAdapter()
+    const configType = a.getConfigType()
     const value = {
       username: '',
       password: '',
@@ -24,7 +25,8 @@ describe('Test SalesforceAdapter CRUD', () => {
     }
     const elemID = new ElemID('salesforce')
     const config = new InstanceElement(elemID, configType, value)
-    return new SalesforceAdapter(config)
+    a.init(config)
+    return a
   }
 
   const stringType = new PrimitiveType({

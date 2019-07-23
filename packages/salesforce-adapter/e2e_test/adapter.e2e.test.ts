@@ -14,7 +14,8 @@ import { CustomObject, ProfileInfo } from '../src/client/types'
 
 describe('Test Salesforce adapter E2E with real account', () => {
   const adapter = (): SalesforceAdapter => {
-    const configType = SalesforceAdapter.getConfigType()
+    const a = new SalesforceAdapter()
+    const configType = a.getConfigType()
     const value = {
       username: process.env.SF_USER,
       password: process.env.SF_PASSWORD,
@@ -23,7 +24,8 @@ describe('Test Salesforce adapter E2E with real account', () => {
     }
     const elemID = new ElemID('salesforce')
     const config = new InstanceElement(elemID, configType, value)
-    return new SalesforceAdapter(config)
+    a.init(config)
+    return a
   }
 
   // Set long timeout as we communicate with salesforce API

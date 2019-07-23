@@ -69,10 +69,13 @@ const annotateApiNameAndLabel = (element: ObjectType): void => {
 }
 
 export default class SalesforceAdapter {
-  readonly client: SalesforceClient
+  private innerClient?: SalesforceClient
+  public get client(): SalesforceClient {
+    return this.innerClient as SalesforceClient
+  }
 
-  constructor(conf: InstanceElement) {
-    this.client = new SalesforceClient(
+  init(conf: InstanceElement): void {
+    this.innerClient = new SalesforceClient(
       conf.value.username,
       conf.value.password + conf.value.token,
       conf.value.sandbox
@@ -121,7 +124,9 @@ export default class SalesforceAdapter {
    * 2) Prompt the user in order to create an instance of it if it can't
    *    find it in the blueprints
    */
-  public static getConfigType(): ObjectType {
+  // disable class method use as we need this function for Adapter interface
+  // eslint-disable-next-line class-methods-use-this
+  public getConfigType(): ObjectType {
     const registery = new ElementsRegistry()
     const simpleString = registery.getElement(
       new ElemID('', 'string'),

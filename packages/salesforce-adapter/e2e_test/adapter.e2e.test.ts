@@ -43,7 +43,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
     it('should discover sobject', async () => {
       // Check few field types on lead object
       const lead = result
-        .filter(element => element.elemID.name === 'Lead')
+        .filter(element => element.elemID.name === 'lead')
         .pop() as ObjectType
 
       // Test few possible types
@@ -52,11 +52,11 @@ describe('Test Salesforce adapter E2E with real account', () => {
       expect(lead.fields.salutation.type.elemID.name).toBe('picklist')
 
       // Test label
-      expect(lead.fields.last_name.annotationsValues.label).toBe('Last Name')
+      expect(lead.fields.last_name.annotationsValues[constants.LABEL]).toBe('Last Name')
 
       // Test true and false required
-      expect(lead.fields.description.annotationsValues.required).toBe(true)
-      expect(lead.fields.created_date.annotationsValues.required).toBe(false)
+      expect(lead.fields.description.annotationsValues[Type.REQUIRED]).toBe(false)
+      expect(lead.fields.created_date.annotationsValues[Type.REQUIRED]).toBe(true)
 
       // Test picklist restricted_pick_list prop
       expect(lead.fields.industry.annotationsValues.restricted_pick_list).toBe(
@@ -74,7 +74,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
       // Test _default
       // TODO: add test to primitive with _default and combobox _default (no real example for lead)
       // eslint-disable-next-line no-underscore-dangle
-      expect(lead.fields.status.annotationsValues._default).toBe(
+      expect(lead.fields.status.annotationsValues[Type.DEFAULT]).toBe(
         'Open - Not Contacted'
       )
     })
@@ -82,12 +82,12 @@ describe('Test Salesforce adapter E2E with real account', () => {
     it('should discover metadata object', () => {
       // Check few field types on lead object
       const flow = result
-        .filter(element => element.elemID.name === 'Flow')
+        .filter(element => element.elemID.name === 'flow')
         .pop() as ObjectType
 
       expect(flow.fields.description.type.elemID.name).toBe('string')
-      expect(flow.fields.is_template.type.elemID.name).toBe('checkbox')
-      expect(flow.fields.action_calls.type.elemID.name).toBe('FlowActionCall')
+      expect(flow.fields.is_template.type.elemID.name).toBe('boolean')
+      expect(flow.fields.action_calls.type.elemID.name).toBe('flow_action_call')
     })
   })
 

@@ -4,29 +4,11 @@ import {
   ElemID, PrimitiveType, PrimitiveTypes, InstanceElement, ObjectType, Field,
   Plan,
 } from 'adapter-api'
+import * as commands from '../../src/core/commands'
 import * as core from '../../src/core/core'
 import State from '../../src/state/state'
 import Blueprint from '../../src/core/blueprint'
 
-const mockGetConfigFromUser = async (
-  configType: ObjectType
-): Promise<InstanceElement> => {
-  const value = {
-    username: 'test@test',
-    password: 'test',
-    token: 'test',
-    sandbox: false,
-  }
-
-  const elemID = new ElemID('salesforce')
-  return new InstanceElement(elemID, configType, value)
-}
-
-const mockShouldApplyYes = async (_plan: Plan): Promise<boolean> => true
-
-// const mockShouldApplyNo = async (_plan: Plan): Promise<boolean> => false
-
-const mockReportCurrentAction = jest.fn()
 
 const mockAdd = jest.fn(async ap => {
   if (ap.elemID.name === 'fail') {
@@ -88,13 +70,11 @@ jest.mock('../../src/core/adapters', () => ({
   init: jest.fn().mockImplementation((_e, _c) => [{ salesforce: mockAdapter }, []]),
 }))
 
-describe('Test core.ts', () => {
+describe('Test commands.ts and core.ts', () => {
   // Mock empty state
   jest.mock('../../src/state/state')
   State.prototype.getLastState = jest.fn().mockImplementation(() => Promise.resolve([]))
   State.prototype.saveState = jest.fn().mockImplementation(() => Promise.resolve())
-
-  // Mock get config from user
 
   const blueprintsDirectory = path.join(__dirname, '../../../test', 'blueprints')
 
@@ -104,6 +84,24 @@ describe('Test core.ts', () => {
       filename,
     }))
   )
+
+  const mockShouldApplyYes = async (_plan: Plan): Promise<boolean> => true
+
+  const mockReportCurrentAction = jest.fn()
+
+  const mockGetConfigFromUser = async (
+    configType: ObjectType
+  ): Promise<InstanceElement> => {
+    const value = {
+      username: 'test@test',
+      password: 'test',
+      token: 'test',
+      sandbox: false,
+    }
+
+    const elemID = new ElemID('salesforce')
+    return new InstanceElement(elemID, configType, value)
+  }
 
   it('Should return all elements in the blueprint', async () => {
     const blueprints = await readBlueprints('salto.bp', 'salto2.bp')
@@ -121,7 +119,7 @@ describe('Test core.ts', () => {
 
   it('should throw error on missing adapter', async () => {
     const blueprints = await readBlueprints('missing.bp')
-    await expect(core.apply(
+    await expect(commands.apply(
       blueprints,
       mockGetConfigFromUser,
       mockShouldApplyYes,
@@ -131,7 +129,7 @@ describe('Test core.ts', () => {
 
   it('should throw error on adapter fail', async () => {
     const blueprints = await readBlueprints('fail.bp')
-    await expect(core.apply(
+    await expect(commands.apply(
       blueprints,
       mockGetConfigFromUser,
       mockShouldApplyYes,
@@ -146,13 +144,13 @@ describe('Test core.ts', () => {
     })
 
     it('should create an apply plan using the plan method', async () => {
-      await core.plan(
+      await commands.plan(
         blueprints,
       )
     })
 
     it('should apply an apply plan', async () => {
-      await core.apply(
+      await commands.apply(
         blueprints,
         mockGetConfigFromUser,
         mockShouldApplyYes,
@@ -164,7 +162,7 @@ describe('Test core.ts', () => {
     it('should apply plan with remove based on state', async () => {
       State.prototype.getLastState = jest.fn().mockImplementationOnce(() =>
         Promise.resolve([new ObjectType({ elemID: new ElemID('salesforce', 'employee') })]))
-      await core.apply(
+      await commands.apply(
         blueprints,
         mockGetConfigFromUser,
         mockShouldApplyYes,
@@ -177,7 +175,7 @@ describe('Test core.ts', () => {
     it('should apply plan with modification based on state', async () => {
       State.prototype.getLastState = jest.fn().mockImplementationOnce(() =>
         Promise.resolve([new ObjectType({ elemID: new ElemID('salesforce', 'test') })]))
-      await core.apply(
+      await commands.apply(
         blueprints,
         mockGetConfigFromUser,
         mockShouldApplyYes,
@@ -189,7 +187,7 @@ describe('Test core.ts', () => {
 
   describe('discover', () => {
     it('should return blueprint', async () => {
-      const bp = await core.discover([], mockGetConfigFromUser)
+      const bp = await commands.discover([], mockGetConfigFromUser)
       expect(bp.buffer.toString()).toMatch(/type "?salesforce_dummy"? "?is"? "?string"?/)
     })
   })

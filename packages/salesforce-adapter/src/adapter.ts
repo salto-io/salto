@@ -323,6 +323,7 @@ export default class SalesforceAdapter {
     knownTypes: Set<string>,
   ): Type[] {
     if (knownTypes.has(objectName)) {
+      // Already created this type, no new types to return here
       return []
     }
     knownTypes.add(objectName)

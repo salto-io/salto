@@ -34,8 +34,8 @@ To run the cli without packaging:
 
 ```
 | => yarn install
-| => yarn run client -- <client args>
-| => yarn run client -- --help
+| => yarn run salto <client args>
+| => yarn run salto --help
 Usage: salto-cli [options] [command]
 
 salto is a business operations as code tool, allowing one to manage all aspects of his business operations systems in code.

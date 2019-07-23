@@ -128,7 +128,6 @@ describe('Test commands.ts', () => {
         bp,
       ]
       await cli.parseAndRun(args)
-      // await new Promise(resolve => setTimeout(resolve, 100))
       expect(mockDiscover).toHaveBeenLastCalledWith(output, [bp], undefined)
     } finally {
       fs.delete('tmp.bp')
@@ -141,7 +140,6 @@ describe('Test commands.ts', () => {
       resetConsoleOutput()
       const args = ['node', 'salto-cli.js', 'discover', '-o', 'tmp.bp']
       await cli.parseAndRun(args)
-      // await new Promise(resolve => setTimeout(resolve, 100))
       expect(mockExit).toHaveBeenCalledWith(0)
     } finally {
       fs.delete('tmp.bp')

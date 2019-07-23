@@ -12,8 +12,7 @@ export const plan = async (
 ): Promise<Plan> => {
   const elements = await getAllElements(blueprints)
 
-  const state = new State()
-  const actionPlan = await getPlan(elements, state)
+  const actionPlan = await getPlan(elements)
   return actionPlan
 }
 
@@ -24,11 +23,10 @@ export const apply = async (
   reportProgress: (action: PlanAction) => void,
   force: boolean = false
 ): Promise<Plan> => {
-  const state = new State()
   const elements = await getAllElements(blueprints)
   const [adapters] = await initAdapters(elements, fillConfig)
 
-  const actionPlan = await getPlan(elements, state)
+  const actionPlan = await getPlan(elements)
   if (force || await shouldApply(actionPlan)) {
     await applyActions(actionPlan, adapters, reportProgress)
   }

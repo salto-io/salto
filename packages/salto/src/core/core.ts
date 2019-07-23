@@ -33,7 +33,7 @@ const applyAction = async (
   }
 }
 
-export const getPlan = async (allElements: Element[], state: State): Promise<Plan> => {
+export const getPlan = async (allElements: Element[]): Promise<Plan> => {
   const toNodeMap = (elements: Element[]): DataNodeMap<Element> => {
     const nodeMap = new DataNodeMap<Element>()
     elements.filter(e => e.elemID.adapter)
@@ -41,6 +41,7 @@ export const getPlan = async (allElements: Element[], state: State): Promise<Pla
       .forEach(element => nodeMap.addNode(element.elemID.getFullName(), [], element))
     return nodeMap
   }
+  const state = new State()
   const before = toNodeMap(await state.getLastState())
   const after = toNodeMap(allElements)
 

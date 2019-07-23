@@ -4,10 +4,9 @@ import { loadBlueprints, dumpBlueprint } from './blueprint'
 import { getAllElements } from '../core/core'
 import {
   createPlanOutput, createActionStartOutput, createActionInProgressOutput,
-  createActionDoneOutput, formatSearchResults,
+  createActionDoneOutput, formatSearchResults, subHeader, print, printError,
 } from './formatter'
 import Prompts from './prompts'
-import { subHeader, print, printError } from './output'
 import { getConfigFromUser, shouldApply } from './callbacks'
 import * as commands from '../core/commands'
 import { createElementsMap, findElement } from '../core/search'
@@ -72,17 +71,20 @@ export const apply = async (
     }
   }
 
-  const updateCurrentAction = (action?: PlanAction): void => {
+  const endCurrentAction = (): void => {
     if (currentActionPollerID && currentAction && currentActionStartTime) {
       clearInterval(currentActionPollerID)
       print(createActionDoneOutput(currentAction, currentActionStartTime))
     }
+    currentAction = undefined
+  }
+
+  const updateCurrentAction = (action: PlanAction): void => {
+    endCurrentAction()
     currentAction = action
-    if (action) {
-      currentActionStartTime = new Date()
-      print(createActionStartOutput(action))
-      currentActionPollerID = setInterval(pollCurentAction, CURRENT_ACTION_POLL_INTERVAL)
-    }
+    currentActionStartTime = new Date()
+    print(createActionStartOutput(action))
+    currentActionPollerID = setInterval(pollCurentAction, CURRENT_ACTION_POLL_INTERVAL)
   }
 
   try {
@@ -97,9 +99,9 @@ export const apply = async (
       updateCurrentAction,
       force
     )
-    updateCurrentAction()
+    endCurrentAction()
   } catch (e) {
-    updateCurrentAction()
+    endCurrentAction()
     printError(e)
   }
 }

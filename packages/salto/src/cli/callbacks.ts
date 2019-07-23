@@ -3,8 +3,9 @@ import {
   Plan, Type, ObjectType, ElemID, InstanceElement,
   isPrimitiveType, PrimitiveTypes,
 } from 'adapter-api'
-import * as output from './output'
-import { createPlanOutput } from './formatter'
+import {
+  createPlanOutput, header, subHeader, print,
+} from './formatter'
 import Prompts from './prompts'
 
 const getUserBooleanInput = async (prompt: string): Promise<boolean> => {
@@ -19,16 +20,16 @@ const getUserBooleanInput = async (prompt: string): Promise<boolean> => {
 
 export const shouldApply = (actions: Plan): Promise<boolean> => {
   const planOutput = [
-    output.header(Prompts.STARTAPPLY),
-    output.subHeader(Prompts.EXPLAINAPPLY),
+    header(Prompts.STARTAPPLY),
+    subHeader(Prompts.EXPLAINAPPLY),
     createPlanOutput(actions),
   ].join('\n')
-  output.print(planOutput)
+  print(planOutput)
   const shouldExecute = getUserBooleanInput(Prompts.SHOULDEXECUTREPLAN)
   if (shouldExecute) {
-    output.print(output.header(Prompts.STARTAPPLYEXEC))
+    print(header(Prompts.STARTAPPLYEXEC))
   } else {
-    output.print(output.header(Prompts.CANCELAPPLY))
+    print(header(Prompts.CANCELAPPLY))
   }
   return shouldExecute
 }

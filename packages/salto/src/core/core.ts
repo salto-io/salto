@@ -52,7 +52,9 @@ export const getPlan = async (allElements: Element[]): Promise<Plan> => {
   // TODO: split elements to fields and fields values
   const diffGraph = buildDiffGraph(before, after,
     id => _.isEqual(before.getData(id), after.getData(id)))
-  return wu(diffGraph.evaluationOrder()).map(id => (diffGraph.getData(id) as PlanAction))
+  return wu(diffGraph.evaluationOrder()).map(
+    id => (diffGraph.getData(id) as PlanAction)
+  ).toArray()
 }
 
 export const applyActions = async (

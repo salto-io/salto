@@ -32,11 +32,11 @@ export const emptyLine = (): string => ''
 export const seperator = (): string => `\n${'-'.repeat(78)}\n`
 
 const createCountPlanActionTypesOutput = (plan: Plan): string => {
-  const counter = _.countBy(plan, 'action')
+  const counter = _.countBy(wu(plan).toArray(), 'action')
   return (
-    `${chalk.bold('Plan: ')}${counter.add} to add`
-    + `  ${counter.modify} to change`
-    + `  ${counter.remove} to remove.`
+    `${chalk.bold('Plan: ')}${counter.add || 0} to add`
+    + `, ${counter.modify || 0} to change`
+    + `, ${counter.remove || 0} to remove.`
   )
 }
 

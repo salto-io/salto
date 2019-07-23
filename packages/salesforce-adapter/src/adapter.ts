@@ -6,8 +6,9 @@ import {
   InstanceElement,
   Values,
   Field,
+  Element,
 } from 'adapter-api'
-import { SaveResult, ValueTypeField } from 'jsforce'
+import { SaveResult, ValueTypeField, MetadataInfo } from 'jsforce'
 import { isArray } from 'util'
 import _ from 'lodash'
 import SalesforceClient from './client/client'
@@ -17,8 +18,8 @@ import {
 } from './client/types'
 import {
   toCustomField, toCustomObject, apiName, sfCase, bpCase, fieldFullName, Types,
-  getValueTypeFieldElement, getSObjectFieldElement, toProfiles, fromProfiles,
-  FieldPermission as FieldPermissions,
+  getValueTypeFieldElement, getFieldAnnotations, toProfiles, fromProfiles,
+  FieldPermission as FieldPermissions, fromMetadataInfo,
 } from './transformer'
 
 // Diagnose client results
@@ -67,6 +68,9 @@ const annotateApiNameAndLabel = (element: ObjectType): void => {
   })
 }
 
+const DISCOVER_INSTANCES_METADATA_TYPES = ['profile', 'flow', 'layout', 'workflow',
+  'permission_set', 'queue', 'report', 'settings']
+
 export default class SalesforceAdapter {
   private innerClient?: SalesforceClient
   public get client(): SalesforceClient {
@@ -85,13 +89,12 @@ export default class SalesforceAdapter {
    * Discover configuration elements (types and instances in the given salesforce account)
    * Account credentials were given in the constructor.
    */
-  public async discover(): Promise<Type[]> {
+  public async discover(): Promise<Element[]> {
     // TODO: add here salesforce primitive data types
-    const result = await Promise.all([
-      this.discoverSObjects(),
-      this.discoverMetadataTypes(),
-    ])
-    return _.flatten(result)
+    const metadataTypes = await this.discoverMetadataTypes()
+    const result = await Promise.all([this.discoverSObjects(),
+      this.discoverMetadataInstances(metadataTypes)])
+    return _.flatten([metadataTypes, ...result] as Element[][])
   }
 
   /**
@@ -306,7 +309,7 @@ export default class SalesforceAdapter {
     Promise<SaveResult | SaveResult[]> {
     const profiles = toProfiles(element, fields)
     if (profiles.length > 0) {
-      return this.client.update(constants.METADATA_PROFILE_OBJECT, profiles)
+      return this.client.update(constants.PROFILE_METADATA_TYPE, profiles)
     }
     return []
   }
@@ -326,14 +329,16 @@ export default class SalesforceAdapter {
     diagnose(result)
   }
 
+  private async listMetadataTypes(): Promise<string[]> {
+    return (await this.client.listMetadataTypes()).map(obj => obj.xmlName)
+      .filter(obj => obj !== constants.CUSTOM_OBJECT)
+  }
+
   private async discoverMetadataTypes(): Promise<Type[]> {
-    const objects = await this.client.listMetadataTypes()
+    const typeNames = await this.listMetadataTypes()
     const knownTypes = new Set<string>()
-    return _.flatten(await Promise.all(
-      objects
-        .filter(obj => obj.xmlName !== constants.CUSTOM_OBJECT)
-        .map(async obj => this.discoverMetadataType(obj.xmlName, knownTypes))
-    ))
+    return _.flatten(await Promise.all(typeNames
+      .map(obj => this.discoverMetadataType(obj, knownTypes))))
   }
 
   private async discoverMetadataType(objectName: string, knownTypes: Set<string>): Promise<Type[]> {
@@ -375,6 +380,22 @@ export default class SalesforceAdapter {
       )
     ))
     return _.flatten([element, embeddedTypes])
+  }
+
+  private async discoverMetadataInstances(types: Type[]): Promise<InstanceElement[]> {
+    return _.flatten(await Promise.all(types
+      .filter(type => DISCOVER_INSTANCES_METADATA_TYPES.includes(type.elemID.name))
+      .map(async type => this.createInstanceElements(type))))
+  }
+
+  private async createInstanceElements(type: Type): Promise<InstanceElement[]> {
+    try {
+      const instances = await this.listMetadataInstances(apiName(type))
+      return instances.map(instance => new InstanceElement(new ElemID(constants.SALESFORCE,
+        bpCase(instance.fullName)), type, fromMetadataInfo(instance)))
+    } catch (e) {
+      return []
+    }
   }
 
   private async discoverSObjects(): Promise<Type[]> {
@@ -423,15 +444,29 @@ export default class SalesforceAdapter {
    */
   private async discoverPermissions(): Promise<
     Map<string, Map<string, FieldPermissions>>> {
-    const profiles = await this.client.listMetadataObjects(
-      constants.METADATA_PROFILE_OBJECT
+    return fromProfiles(
+      await this.listMetadataInstances(constants.PROFILE_METADATA_TYPE) as ProfileInfo[]
     )
-    const profilesInfo = await Promise.all(
-      profiles.map(prof => this.client.readMetadata(
-        constants.METADATA_PROFILE_OBJECT,
-        prof.fullName
-      ) as Promise<ProfileInfo>)
-    )
-    return fromProfiles(profilesInfo)
+  }
+
+  /**
+   * List all the instances of specific metatatype
+   * @param type the metadata type
+   */
+  private async listMetadataInstances(type: string): Promise<MetadataInfo[]> {
+    const objs = await this.client.listMetadataObjects(type)
+    if (!objs) {
+      return []
+    }
+    const names = objs.map(obj => obj.fullName)
+    // For some unknown reason, for metadata type = 'Settings', when calling readMetadata we should
+    // use type = 'Settings'+OBJNAME
+    if (type === constants.SETTINGS_METADATA_TYPE) {
+      return Promise.all(names
+        .map(name => this.client.readMetadata(name + type, name) as Promise<MetadataInfo>))
+    }
+
+    return _.flatten(await Promise.all(_.chunk(names, 10)
+      .map(chunk => this.client.readMetadata(type, chunk) as Promise<MetadataInfo[]>)))
   }
 }

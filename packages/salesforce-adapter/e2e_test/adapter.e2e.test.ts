@@ -7,6 +7,7 @@ import {
   PrimitiveTypes,
   InstanceElement,
   Field,
+  Element,
 } from 'adapter-api'
 import SalesforceAdapter from '../src/adapter'
 import * as constants from '../src/constants'
@@ -34,10 +35,14 @@ describe('Test Salesforce adapter E2E with real account', () => {
   })
 
   describe('should discover account settings', () => {
-    let result: Type[]
+    let result: Element[]
 
     beforeAll(async done => {
-      result = await adapter().discover()
+      try {
+        result = await adapter().discover()
+      } catch (e) {
+        // Catch and continue, we want done() to be called anyway, o/w test stuck
+      }
       done()
     })
     it('should discover sobject', async () => {
@@ -79,7 +84,6 @@ describe('Test Salesforce adapter E2E with real account', () => {
     })
 
     it('should discover metadata object', () => {
-      // Check few field types on lead object
       const flow = result
         .filter(element => element.elemID.name === 'flow')
         .pop() as ObjectType
@@ -87,6 +91,16 @@ describe('Test Salesforce adapter E2E with real account', () => {
       expect(flow.fields.description.type.elemID.name).toBe('string')
       expect(flow.fields.is_template.type.elemID.name).toBe('boolean')
       expect(flow.fields.action_calls.type.elemID.name).toBe('flow_action_call')
+    })
+
+    it('should discover metadata instance', () => {
+      const profile = result
+        .filter(element => element instanceof InstanceElement
+          && element.type.elemID.name === 'profile')
+        .pop() as InstanceElement
+
+      expect(profile.value.field_permissions[0].editable).toBeDefined()
+      expect(profile.value.record_type_visibilities.record_type).toBeDefined()
     })
   })
 
@@ -121,7 +135,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
         const unknownVariable = variable as unknown
         return typeof unknownVariable === 'string' ? JSON.parse(unknownVariable) : variable
       }
-      const profileInfo = (await sfAdapter.client.readMetadata(constants.METADATA_PROFILE_OBJECT,
+      const profileInfo = (await sfAdapter.client.readMetadata(constants.PROFILE_METADATA_TYPE,
         profile)) as ProfileInfo
       const fieldPermissionsMap = new Map<string, FieldPermissions>()
       profileInfo.fieldPermissions.map(f => fieldPermissionsMap.set(f.field, f))
@@ -397,7 +411,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
       await sfAdapter.remove(oldElement)
     })
 
-    it("should modify an object's custom fields' permissions E2E", async () => {
+    it("should modify an object's custom fields' permissions", async () => {
       // Setup
       const customObjectName = 'TestModifyCustomFieldsPermissions__c'
       const mockElemID = new ElemID(constants.SALESFORCE, 'test modify custom field permissions')

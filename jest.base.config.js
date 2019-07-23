@@ -1,4 +1,5 @@
 module.exports = {
+  verbose: true,
   testEnvironment: 'node',
   testMatch: ['<rootDir>/dist/test/**/*.test.js'],
   collectCoverage: true,

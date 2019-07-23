@@ -19,14 +19,15 @@ export const init = async (elements: Element[], fillConfig: (t: ObjectType) =>
     && element.elemID.name === ElemID.CONFIG_INSTANCE_NAME) as InstanceElement[]
   const newConfigs: InstanceElement[] = []
 
-  Object.values(adapters).forEach(async adapter => {
+  await Object.values(adapters).reduce(async (result, adapter) => {
+    await result
     let config = configs.find(e => e.type.elemID.adapter === adapter.getConfigType().elemID.adapter)
     if (!config) {
       config = await fillConfig(adapter.getConfigType())
       newConfigs.push(config)
     }
     adapter.init(config)
-  })
+  }, Promise.resolve())
 
   return [adapters, newConfigs]
 }

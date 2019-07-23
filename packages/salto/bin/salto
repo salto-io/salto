@@ -1,4 +1,4 @@
 #!/usr/bin/env node
 const saltoCommander = require('../dist/src/cli/salto-cli.js')
 
-saltoCommander.default.parseAndRun(process.argv)
+new saltoCommander.default().parseAndRun(process.argv)

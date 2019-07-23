@@ -413,6 +413,18 @@ describe('Test Salesforce adapter E2E with real account', () => {
               },
             },
           ),
+          delta: new Field(
+            mockElemID,
+            'delta',
+            stringType,
+            {
+              [constants.API_NAME]: 'Delta__c',
+              [constants.FIELD_LEVEL_SECURITY]: {
+                standard: { editable: false, readable: true },
+                admin: { editable: true, readable: true },
+              },
+            },
+          ),
         },
         annotationsValues: {
           required: false,
@@ -455,6 +467,17 @@ describe('Test Salesforce adapter E2E with real account', () => {
               },
             },
           ),
+          delta: new Field(
+            mockElemID,
+            'delta',
+            stringType,
+            {
+              [constants.API_NAME]: 'Delta__c',
+              [constants.FIELD_LEVEL_SECURITY]: {
+                standard: { editable: false, readable: true },
+              },
+            },
+          ),
         },
         annotationsValues: {
           required: false,
@@ -470,18 +493,24 @@ describe('Test Salesforce adapter E2E with real account', () => {
 
       expect(await objectExists(customObjectName)).toBe(true)
 
-      const [addressStandardExists, bananaStandardExists] = await permissionExists(
+      const [addressStandardExists,
+        bananaStandardExists,
+        deltaStandardExists] = await permissionExists(
         'Standard',
-        [`${customObjectName}.Address__c`, `${customObjectName}.Banana__c`]
+        [`${customObjectName}.Address__c`, `${customObjectName}.Banana__c`, `${customObjectName}.Delta__c`]
       )
       expect(addressStandardExists).toBeTruthy()
       expect(bananaStandardExists).toBeTruthy()
-      const [addressAdminExists, bananaAdminExists] = await permissionExists(
+      expect(deltaStandardExists).toBeTruthy()
+      const [addressAdminExists,
+        bananaAdminExists,
+        deltaAdminExists] = await permissionExists(
         'Admin',
-        [`${customObjectName}.Address__c`, `${customObjectName}.Banana__c`]
+        [`${customObjectName}.Address__c`, `${customObjectName}.Banana__c`, `${customObjectName}.Delta__c`]
       )
       expect(addressAdminExists).toBeFalsy()
       expect(bananaAdminExists).toBeTruthy()
+      expect(deltaAdminExists).toBeFalsy()
 
       // Clean-up
       await sfAdapter.remove(oldElement)

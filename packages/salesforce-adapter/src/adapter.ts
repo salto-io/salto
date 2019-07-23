@@ -246,6 +246,13 @@ export default class SalesforceAdapter {
     // Intersect between the 2 objects, and update the permissions of the fields that remain,
     // if they have changed
     const remainingFields = newElement.getMutualFieldsWithOther(prevElement).map(f => f.name)
+    // For each field, Update its permissions in the new element
+    remainingFields.forEach(field => {
+      SalesforceAdapter.updateFieldPermissionsInNewObject(
+        prevElement.fields[field].annotationsValues,
+        newElement.fields[field].annotationsValues
+      )
+    })
     const fieldsToUpdate = remainingFields.filter(field => (
       !_.isEqual(
         prevElement.fields[field].annotationsValues[constants.FIELD_LEVEL_SECURITY],
@@ -255,13 +262,6 @@ export default class SalesforceAdapter {
     if (fieldsToUpdate.length === 0) {
       return
     }
-    // For each field, Update its permissions in the new element
-    fieldsToUpdate.forEach(field => {
-      SalesforceAdapter.updateFieldPermissionsInNewObject(
-        prevElement.fields[field].annotationsValues,
-        newElement.fields[field].annotationsValues
-      )
-    })
     // Create the permissions
     // Build the permissions in a Profile object for all the custom fields we will add
     const permissionsResult = await this.updatePermissions(

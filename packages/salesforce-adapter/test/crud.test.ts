@@ -799,6 +799,29 @@ describe('Test SalesforceAdapter CRUD', () => {
                 },
               },
             ),
+            charlie: new Field(
+              mockElemID,
+              'charlie',
+              stringType,
+              {
+                [constants.API_NAME]: 'Charlie__c',
+                [constants.FIELD_LEVEL_SECURITY]: {
+                  standard: { editable: false, readable: false },
+                },
+              },
+            ),
+            delta: new Field(
+              mockElemID,
+              'delta',
+              stringType,
+              {
+                [constants.API_NAME]: 'Delta__c',
+                [constants.FIELD_LEVEL_SECURITY]: {
+                  standard: { editable: false, readable: true },
+                  admin: { editable: true, readable: true },
+                },
+              },
+            ),
           },
           annotationsValues: {
             required: false,
@@ -829,6 +852,25 @@ describe('Test SalesforceAdapter CRUD', () => {
                 [constants.API_NAME]: 'Banana__c',
               },
             ),
+            charlie: new Field(
+              mockElemID,
+              'charlie',
+              stringType,
+              {
+                [constants.API_NAME]: 'Charlie__c',
+              },
+            ),
+            delta: new Field(
+              mockElemID,
+              'delta',
+              stringType,
+              {
+                [constants.API_NAME]: 'Delta__c',
+                [constants.FIELD_LEVEL_SECURITY]: {
+                  standard: { editable: false, readable: true },
+                },
+              },
+            ),
           },
           annotationsValues: {
             required: false,
@@ -848,18 +890,28 @@ describe('Test SalesforceAdapter CRUD', () => {
       // Verify the field permissions change
       const updatedProfileInfo = mockUpdate.mock.calls[0][1]
       expect(updatedProfileInfo[0].fullName).toBe('Standard')
-      expect(updatedProfileInfo[0].fieldPermissions.length).toBe(2)
+      // The following line should be 3 becuase address & banana have changed.
+      // Charlie and Delta shouldn't be updated for Standard permission, but Delta should appear
+      // because this field's permissions has changed overall. Charlie's field permissions were
+      // not changed because it was editable:false, readable:false from the beginning
+      expect(updatedProfileInfo[0].fieldPermissions.length).toBe(3)
       expect(updatedProfileInfo[0].fieldPermissions[0].field).toBe('Test__c.Address__c')
       expect(updatedProfileInfo[0].fieldPermissions[0].editable).toBe(true)
       expect(updatedProfileInfo[0].fieldPermissions[0].readable).toBe(true)
       expect(updatedProfileInfo[0].fieldPermissions[1].field).toBe('Test__c.Banana__c')
       expect(updatedProfileInfo[0].fieldPermissions[1].editable).toBe(false)
       expect(updatedProfileInfo[0].fieldPermissions[1].readable).toBe(false)
+      expect(updatedProfileInfo[0].fieldPermissions[2].field).toBe('Test__c.Delta__c')
+      expect(updatedProfileInfo[0].fieldPermissions[2].editable).toBe(false)
+      expect(updatedProfileInfo[0].fieldPermissions[2].readable).toBe(true)
       expect(updatedProfileInfo[1].fullName).toBe('Admin')
-      expect(updatedProfileInfo[1].fieldPermissions.length).toBe(1)
+      expect(updatedProfileInfo[1].fieldPermissions.length).toBe(2)
       expect(updatedProfileInfo[1].fieldPermissions[0].field).toBe('Test__c.Address__c')
       expect(updatedProfileInfo[1].fieldPermissions[0].editable).toBe(false)
       expect(updatedProfileInfo[1].fieldPermissions[0].readable).toBe(false)
+      expect(updatedProfileInfo[1].fieldPermissions[1].field).toBe('Test__c.Delta__c')
+      expect(updatedProfileInfo[1].fieldPermissions[1].editable).toBe(false)
+      expect(updatedProfileInfo[1].fieldPermissions[1].readable).toBe(false)
     })
   })
 })

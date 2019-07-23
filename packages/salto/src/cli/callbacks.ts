@@ -4,7 +4,7 @@ import {
   isPrimitiveType, PrimitiveTypes,
 } from 'adapter-api'
 import * as output from './output'
-import { createPlanOutput } from './formater'
+import { createPlanOutput } from './formatter'
 import Prompts from './prompts'
 
 const getUserBooleanInput = async (prompt: string): Promise<boolean> => {

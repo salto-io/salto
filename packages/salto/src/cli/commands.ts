@@ -5,7 +5,7 @@ import { getAllElements } from '../core/core'
 import {
   createPlanOutput, createActionStartOutput, createActionInProgressOutput,
   createActionDoneOutput, formatSearchResults,
-} from './formater'
+} from './formatter'
 import Prompts from './prompts'
 import { subHeader, print, printError } from './output'
 import { getConfigFromUser, shouldApply } from './callbacks'

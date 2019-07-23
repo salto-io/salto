@@ -10,7 +10,7 @@ import {
 } from 'adapter-api'
 import SalesforceAdapter from '../src/adapter'
 import * as constants from '../src/constants'
-import { CustomObject, ProfileInfo } from '../src/client/types'
+import { CustomObject, ProfileInfo, FieldPermissions } from '../src/client/types'
 
 describe('Test Salesforce adapter E2E with real account', () => {
   const adapter = (): SalesforceAdapter => {
@@ -114,10 +114,23 @@ describe('Test Salesforce adapter E2E with real account', () => {
     }
 
     const permissionExists = async (profile: string, fields: string[]): Promise<boolean[]> => {
+      // The following const method is a workaround for a bug in SFDC metadata API that returns
+      // the editable and readable fields in FieldPermissions as string instead of boolean
+      const verifyBoolean = (variable: string | boolean): boolean => {
+        const unknownVariable = variable as unknown
+        return typeof unknownVariable === 'string' ? JSON.parse(unknownVariable) : variable
+      }
       const profileInfo = (await sfAdapter.client.readMetadata(constants.METADATA_PROFILE_OBJECT,
         profile)) as ProfileInfo
-      const fieldPermissions = profileInfo.fieldPermissions.map(f => f.field)
-      return fields.map(field => fieldPermissions.includes(field))
+      const fieldPermissionsMap = new Map<string, FieldPermissions>()
+      profileInfo.fieldPermissions.map(f => fieldPermissionsMap.set(f.field, f))
+      return fields.map(field => {
+        if (!fieldPermissionsMap.has(field)) {
+          return false
+        }
+        const fieldObject: FieldPermissions = fieldPermissionsMap.get(field) as FieldPermissions
+        return verifyBoolean(fieldObject.editable) || verifyBoolean(fieldObject.readable)
+      })
     }
 
     const stringType = new PrimitiveType({
@@ -461,14 +474,14 @@ describe('Test Salesforce adapter E2E with real account', () => {
         'Standard',
         [`${customObjectName}.Address__c`, `${customObjectName}.Banana__c`]
       )
-      expect(addressStandardExists).toBe(true)
-      expect(bananaStandardExists).toBe(true)
+      expect(addressStandardExists).toBeTruthy()
+      expect(bananaStandardExists).toBeTruthy()
       const [addressAdminExists, bananaAdminExists] = await permissionExists(
         'Admin',
         [`${customObjectName}.Address__c`, `${customObjectName}.Banana__c`]
       )
-      expect(addressAdminExists).toBe(false)
-      expect(bananaAdminExists).toBe(true)
+      expect(addressAdminExists).toBeFalsy()
+      expect(bananaAdminExists).toBeTruthy()
 
       // Clean-up
       await sfAdapter.remove(oldElement)

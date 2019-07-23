@@ -10,7 +10,7 @@ import {
 } from 'adapter-api'
 import SalesforceAdapter from '../src/adapter'
 import * as constants from '../src/constants'
-import { CustomObject, ProfileInfo } from '../src/client/types'
+import { CustomObject, ProfileInfo, FieldPermissions } from '../src/client/types'
 
 describe('Test Salesforce adapter E2E with real account', () => {
   const adapter = (): SalesforceAdapter => {
@@ -116,10 +116,23 @@ describe('Test Salesforce adapter E2E with real account', () => {
     }
 
     const permissionExists = async (profile: string, fields: string[]): Promise<boolean[]> => {
+      // The following const method is a workaround for a bug in SFDC metadata API that returns
+      // the editable and readable fields in FieldPermissions as string instead of boolean
+      const verifyBoolean = (variable: string | boolean): boolean => {
+        const unknownVariable = variable as unknown
+        return typeof unknownVariable === 'string' ? JSON.parse(unknownVariable) : variable
+      }
       const profileInfo = (await sfAdapter.client.readMetadata(constants.METADATA_PROFILE_OBJECT,
         profile)) as ProfileInfo
-      const fieldPermissions = profileInfo.fieldPermissions.map(f => f.field)
-      return fields.map(field => fieldPermissions.includes(field))
+      const fieldPermissionsMap = new Map<string, FieldPermissions>()
+      profileInfo.fieldPermissions.map(f => fieldPermissionsMap.set(f.field, f))
+      return fields.map(field => {
+        if (!fieldPermissionsMap.has(field)) {
+          return false
+        }
+        const fieldObject: FieldPermissions = fieldPermissionsMap.get(field) as FieldPermissions
+        return verifyBoolean(fieldObject.editable) || verifyBoolean(fieldObject.readable)
+      })
     }
 
     const stringType = new PrimitiveType({
@@ -402,6 +415,18 @@ describe('Test Salesforce adapter E2E with real account', () => {
               },
             },
           ),
+          delta: new Field(
+            mockElemID,
+            'delta',
+            stringType,
+            {
+              [constants.API_NAME]: 'Delta__c',
+              [constants.FIELD_LEVEL_SECURITY]: {
+                standard: { editable: false, readable: true },
+                admin: { editable: true, readable: true },
+              },
+            },
+          ),
         },
         annotationsValues: {
           required: false,
@@ -444,6 +469,17 @@ describe('Test Salesforce adapter E2E with real account', () => {
               },
             },
           ),
+          delta: new Field(
+            mockElemID,
+            'delta',
+            stringType,
+            {
+              [constants.API_NAME]: 'Delta__c',
+              [constants.FIELD_LEVEL_SECURITY]: {
+                standard: { editable: false, readable: true },
+              },
+            },
+          ),
         },
         annotationsValues: {
           required: false,
@@ -459,20 +495,24 @@ describe('Test Salesforce adapter E2E with real account', () => {
 
       expect(await objectExists(customObjectName)).toBe(true)
 
-      const [addressStandardExists, bananaStandardExists] = await permissionExists(
+      const [addressStandardExists,
+        bananaStandardExists,
+        deltaStandardExists] = await permissionExists(
         'Standard',
-        [`${customObjectName}.Address__c`, `${customObjectName}.Banana__c`]
+        [`${customObjectName}.Address__c`, `${customObjectName}.Banana__c`, `${customObjectName}.Delta__c`]
       )
-      expect(addressStandardExists).toBe(true)
-      expect(bananaStandardExists).toBe(true)
-      // The addressAdminExists will be used once we figure out how to remove existing permission
-      const [/* addressAdminExists, */bananaAdminExists] = await permissionExists(
+      expect(addressStandardExists).toBeTruthy()
+      expect(bananaStandardExists).toBeTruthy()
+      expect(deltaStandardExists).toBeTruthy()
+      const [addressAdminExists,
+        bananaAdminExists,
+        deltaAdminExists] = await permissionExists(
         'Admin',
-        [`${customObjectName}.Address__c`, `${customObjectName}.Banana__c`]
+        [`${customObjectName}.Address__c`, `${customObjectName}.Banana__c`, `${customObjectName}.Delta__c`]
       )
-      // The following step is disabled until we figure out how to remove an existing permission
-      // expect(addressAdminExists).toBe(false)
-      expect(bananaAdminExists).toBe(true)
+      expect(addressAdminExists).toBeFalsy()
+      expect(bananaAdminExists).toBeTruthy()
+      expect(deltaAdminExists).toBeFalsy()
 
       // Clean-up
       await sfAdapter.remove(oldElement)

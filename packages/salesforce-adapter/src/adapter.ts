@@ -181,10 +181,8 @@ export default class SalesforceAdapter {
     const newFields = post.getFieldsThatAreNotInOther(prevElement)
     const createResult = this.createFields(post, newFields)
 
-    // Intersect between the 2 objects, and update the permissions of the fields that remain,
-    // if they have changed
-    const remainingFields = post.getMutualFieldsWithOther(prevElement).map(f => f.name)
-    const updatePermissionsResult = this.updateFieldsPermissions(remainingFields, prevElement, post)
+    // Update the permissions of the fields that remain
+    const updatePermissionsResult = this.updateFieldsPermissions(prevElement, post)
 
     await Promise.all([deleteResult, createResult])
 
@@ -201,36 +199,69 @@ export default class SalesforceAdapter {
   }
 
   /**
+   * Updates required explicit field permissions in new object by comparing the field permissions
+   * in the new and old objects. Explicit field permissions are required for removed permissions
+   * @param oldElementAnnotations The old field annotation values
+   * @param newElementAnnotations The new field annotation values
+   */
+  private static updateFieldPermissionsInNewObject(
+    oldElementAnnotations: Values,
+    newElementAnnotations: Values
+  ): void {
+    if (!newElementAnnotations[constants.FIELD_LEVEL_SECURITY]) {
+      newElementAnnotations[constants.FIELD_LEVEL_SECURITY] = {}
+    }
+    const newFieldLevelSecurity = newElementAnnotations[constants.FIELD_LEVEL_SECURITY]
+    const oldFieldLevelSecurity = oldElementAnnotations[constants.FIELD_LEVEL_SECURITY]
+    // If the delta is only new field permissions, then skip
+    if (oldFieldLevelSecurity) {
+      // If some permissions were removed, we will need to remove the permissions from the
+      // field explicitly (update them to be not editable and not readable)
+      const newPermissions = new Set<string>(Object.keys(newFieldLevelSecurity))
+      const removedPermissions = Object.keys(
+        oldFieldLevelSecurity
+      ).filter(f => !newPermissions.has(f))
+      removedPermissions.forEach(securityUser => {
+        newFieldLevelSecurity[securityUser] = { editable: false, readable: false }
+      })
+    }
+  }
+
+  /**
    * Updates the fields permissions for an object's fields
-   * @param remainingFields An array that contains the names of the fields that remain after
-   * removing/deleting fields
    * @param prevElement The previous object
    * @param newElement The new object
    */
   private async updateFieldsPermissions(
-    remainingFields: string[],
     prevElement: ObjectType,
     newElement: ObjectType,
   ): Promise<void> {
-    if (remainingFields.length === 0) {
-      return
-    }
+    // Intersect between the 2 objects, and update the permissions of the fields that remain,
+    // if they have changed
+    const remainingFields = newElement.getMutualFieldsWithOther(prevElement).map(f => f.name)
+    // For each field, Update its permissions in the new element
+    remainingFields.forEach(field => {
+      SalesforceAdapter.updateFieldPermissionsInNewObject(
+        prevElement.fields[field].annotationsValues,
+        newElement.fields[field].annotationsValues
+      )
+    })
     const fieldsToUpdate = remainingFields.filter(field => (
       !_.isEqual(
         prevElement.fields[field].annotationsValues[constants.FIELD_LEVEL_SECURITY],
-        newElement.fields[field].annotationsValues[constants.FIELD_LEVEL_SECURITY],
+        newElement.fields[field].annotationsValues[constants.FIELD_LEVEL_SECURITY]
       )
     ))
-
-    if (fieldsToUpdate.length > 0) {
-      // Create the permissions
-      // Build the permissions in a Profile object for all the custom fields we will add
-      const permissionsResult = await this.updatePermissions(
-        newElement,
-        Object.values(newElement.fields).filter(f => fieldsToUpdate.includes(f.name)),
-      )
-      diagnose(permissionsResult)
+    if (fieldsToUpdate.length === 0) {
+      return
     }
+    // Create the permissions
+    // Build the permissions in a Profile object for all the custom fields we will add
+    const permissionsResult = await this.updatePermissions(
+      newElement,
+      Object.values(newElement.fields).filter(f => fieldsToUpdate.includes(f.name)),
+    )
+    diagnose(permissionsResult)
   }
 
   /**

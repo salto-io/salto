@@ -1,4 +1,5 @@
 import { MetadataInfo } from 'jsforce'
+import _ from 'lodash'
 import {
   ObjectType, Type, InstanceElement, ElemID,
 } from 'adapter-api'
@@ -308,5 +309,59 @@ describe('Test SalesforceAdapter discover', () => {
     expect(result.length).toBe(1)
     const empty = result.pop() as ObjectType
     expect(Object.keys(empty.fields).length).toBe(0)
+  })
+
+  it('should discover nested types', async () => {
+    mockListSObjects()
+    mockListMetadataObjects()
+    mockSingleMetadataObject('NestingType', [
+      { // Nested field with multiple subfields returns fields as array
+        name: 'field',
+        soapType: 'NestedType',
+        fields: [
+          {
+            name: 'nestedStr',
+            soapType: 'string',
+          },
+          {
+            name: 'nestedNum',
+            soapType: 'number',
+          },
+          {
+            name: 'doubleNested',
+            soapType: 'SingleFieldType',
+            fields: {
+              name: 'str',
+              soapType: 'string',
+            },
+          },
+        ],
+      },
+      { // Nested field with a single subfield returns fields as an object
+        name: 'otherField',
+        soapType: 'SingleFieldType',
+        fields: {
+          name: 'str',
+          soapType: 'string',
+        },
+      },
+    ])
+
+    const result = await adapter().discover()
+
+    expect(result).toHaveLength(3)
+    const types = _.assign({}, ...result.map(t => ({ [t.elemID.getFullName()]: t })))
+    const nestingType = types.salesforce_NestingType
+    const nestedType = types.salesforce_NestedType
+    const singleField = types.salesforce_SingleFieldType
+    expect(nestingType).not.toBeUndefined()
+    expect(nestingType.fields.field.type.elemID.name).toEqual('NestedType')
+    expect(nestingType.fields.other_field.type.elemID.name).toEqual('SingleFieldType')
+    expect(nestedType).not.toBeUndefined()
+    expect(nestedType.fields.nested_str.type.elemID.name).toEqual('string')
+    expect(nestedType.fields.nested_num.type.elemID.name).toEqual('number')
+    expect(nestedType.fields.double_nested.type.elemID.name).toEqual('SingleFieldType')
+    expect(singleField).not.toBeUndefined()
+    expect(singleField.fields.str.type.elemID.name).toEqual('string')
   })
 })

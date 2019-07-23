@@ -134,7 +134,7 @@ const newAction = (
           + plan.data.after.elemID.name)
       }
       return plan
-    })
+    }).toArray()
   }
 
   return { action, data, subChanges }

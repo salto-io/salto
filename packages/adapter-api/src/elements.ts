@@ -55,7 +55,7 @@ export interface PlanAction {
   subChanges?: Plan
 }
 
-export type Plan = Iterable<PlanAction>
+export type Plan = PlanAction[]
 
 /**
  * Represents a field inside a type

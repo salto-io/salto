@@ -2,7 +2,7 @@ import { snakeCase, camelCase } from 'lodash'
 import { ValueTypeField, Field } from 'jsforce'
 import {
   Type, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values,
-  Field as TypeField,
+  Field as TypeField, BuiltinTypes,
 } from 'adapter-api'
 import { CustomObject, CustomField, ProfileInfo } from './client/types'
 import {
@@ -24,33 +24,39 @@ export const apiName = (element: Type | TypeField): string => (
 
 
 export class Types {
-  static get(name: string): Type {
+  // Type mapping for custom objects
+  private static customObjectTypes: Record<string, Type> = {
+    string: new PrimitiveType({
+      elemID: new ElemID(SALESFORCE, 'string'),
+      primitive: PrimitiveTypes.STRING,
+    }),
+    double: new PrimitiveType({
+      elemID: new ElemID(SALESFORCE, 'number'),
+      primitive: PrimitiveTypes.NUMBER,
+    }),
+    boolean: new PrimitiveType({
+      elemID: new ElemID(SALESFORCE, 'checkbox'),
+      primitive: PrimitiveTypes.BOOLEAN,
+    }),
+  }
+
+  // Type mapping for metadata types
+  private static metadataTypes: Record<string, Type> = {
+    string: BuiltinTypes.STRING,
+    double: BuiltinTypes.NUMBER,
+    boolean: BuiltinTypes.BOOLEAN,
+  }
+
+  static get(name: string, customObject: boolean = true): Type {
+    const typeMapping = customObject ? this.customObjectTypes : this.metadataTypes
     const typeName = bpCase(name)
-    switch (typeName) {
-      case 'string': {
-        return new PrimitiveType({
-          elemID: new ElemID('', name),
-          primitive: PrimitiveTypes.STRING,
-        })
-      }
-      case 'double': {
-        return new PrimitiveType({
-          elemID: new ElemID('', 'number'),
-          primitive: PrimitiveTypes.NUMBER,
-        })
-      }
-      case 'boolean': {
-        return new PrimitiveType({
-          elemID: new ElemID('', 'checkbox'),
-          primitive: PrimitiveTypes.BOOLEAN,
-        })
-      }
-      default: {
-        return new ObjectType({
-          elemID: new ElemID(SALESFORCE, name),
-        })
-      }
+    const type = typeMapping[typeName]
+    if (type === undefined) {
+      return new ObjectType({
+        elemID: new ElemID(SALESFORCE, typeName),
+      })
     }
+    return type
   }
 }
 
@@ -98,14 +104,21 @@ export const toProfiles = (object: ObjectType, fields: TypeField[]): ProfileInfo
   return Array.from(profiles.values())
 }
 
-export const getValueTypeFieldAnnotations = (field: ValueTypeField): Values => {
-  const annotations: Values = {}
-  annotations.required = field.valueRequired
+export const getValueTypeFieldElement = (parentID: ElemID, field: ValueTypeField): TypeField => {
+  const bpFieldName = bpCase(field.name)
+  let bpFieldType = Types.get(field.soapType, false)
+  const annotations: Values = {
+    [Type.REQUIRED]: field.valueRequired,
+  }
 
   if (field.picklistValues && field.picklistValues.length > 0) {
-    annotations.values = field.picklistValues.map(
-      val => val.value
-    )
+    // In metadata types picklist values means this is actually an enum
+    // Currently it seems that we can assume all enums are string enums
+    bpFieldType = BuiltinTypes.STRING
+
+    annotations[Type.RESTRICTION] = {
+      values: field.picklistValues.map(val => val.value),
+    }
     const defaults = field.picklistValues
       .filter(val => val.defaultValue === true)
       .map(val => val.value)
@@ -115,13 +128,13 @@ export const getValueTypeFieldAnnotations = (field: ValueTypeField): Values => {
       annotations[Type.DEFAULT] = defaults
     }
   }
-  return annotations
+  return new TypeField(parentID, bpFieldName, bpFieldType, annotations)
 }
 
 export const getFieldAnnotations = (field: Field): Values => {
   const annotations: Values = {}
   annotations[LABEL] = field.label
-  annotations[Type.REQUIRED] = field.nillable
+  annotations[Type.REQUIRED] = !field.nillable
   if (field.defaultValue !== null) {
     annotations[Type.DEFAULT] = field.defaultValue
   }

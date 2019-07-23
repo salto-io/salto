@@ -106,13 +106,11 @@ describe('Test SalesforceAdapter discover', () => {
     expect(lead.fields.last_name.type.elemID.name).toBe('string')
     expect(lead.fields.last_name.annotationsValues.label).toBe('Last Name')
     // Test Rquired true and false
-    expect(lead.fields.last_name.annotationsValues.required).toBe(false)
-    expect(lead.fields.first_name.annotationsValues.required).toBe(true)
+    expect(lead.fields.last_name.annotationsValues[Type.REQUIRED]).toBe(true)
+    expect(lead.fields.first_name.annotationsValues[Type.REQUIRED]).toBe(false)
     // Default string and boolean
-    // eslint-disable-next-line no-underscore-dangle
-    expect(lead.fields.last_name.annotationsValues._default).toBe('BLABLA')
-    // eslint-disable-next-line no-underscore-dangle
-    expect(lead.fields.is_deleted.annotationsValues._default).toBe(false)
+    expect(lead.fields.last_name.annotationsValues[Type.DEFAULT]).toBe('BLABLA')
+    expect(lead.fields.is_deleted.annotationsValues[Type.DEFAULT]).toBe(false)
   })
 
   it('should discover sobject with picklist field', async () => {
@@ -243,6 +241,14 @@ describe('Test SalesforceAdapter discover', () => {
         name: 'ActionCalls',
         soapType: 'FlowActionCall',
       },
+      {
+        name: 'Enum',
+        soapType: 'SomeEnumType',
+        picklistValues: [
+          { value: 'yes', defaultValue: true },
+          { value: 'no', defaultValue: false },
+        ],
+      },
     ])
     const result = await adapter().discover()
 
@@ -253,53 +259,14 @@ describe('Test SalesforceAdapter discover', () => {
     // TODO: validate what is expected from this metadata type
     expect(flow.annotationsValues[constants.API_NAME]).toBe('Flow')
     expect(flow.fields.description.annotationsValues[Type.REQUIRED]).toBe(true)
-    expect(flow.fields.is_template.type.elemID.name).toBe('checkbox')
+    expect(flow.fields.is_template.type.elemID.name).toBe('boolean')
     expect(flow.fields.is_template.annotationsValues[Type.REQUIRED]).toBe(false)
-    expect(flow.fields.action_calls.type.elemID.getFullName()).toBe(
-      'salesforce_FlowActionCall'
-    )
-  })
-
-  it('should discover metadata object with picklist', async () => {
-    mockListSObjects()
-    mockListMetadataObjects()
-    mockSingleMetadataObject('Flow', [
-      {
-        name: 'Status',
-        soapType: 'Picklist',
-        valueRequired: false,
-        picklistValues: [{ defaultValue: true, value: 'BLA' }],
-      },
-      {
-        name: 'StatusCombo',
-        soapType: 'Combobox',
-        valueRequired: true,
-        picklistValues: [
-          { defaultValue: true, value: 'BLA' },
-          { defaultValue: true, value: 'BLA2' },
-        ],
-      },
-    ])
-    const result = await adapter().discover()
-
-    expect(result.length).toBe(1)
-    const flow = result.pop() as ObjectType
-    // Validate picklist
-    expect(flow.fields.status.type.elemID.name).toBe('Picklist')
-    expect(flow.fields.status.annotationsValues.required).toBe(false)
-    expect(flow.fields.status.annotationsValues.values.length).toBe(1)
-    expect(flow.fields.status.annotationsValues.values[0]).toBe('BLA')
-    // eslint-disable-next-line no-underscore-dangle
-    expect(flow.fields.status.annotationsValues._default).toBe('BLA')
-
-    // Validate combobox
-    expect(flow.fields.status_combo.type.elemID.name).toBe('Combobox')
-    expect(flow.fields.status_combo.annotationsValues.required).toBe(true)
-    expect(flow.fields.status_combo.annotationsValues.values.length).toBe(2)
-    expect(flow.fields.status_combo.annotationsValues.values[0]).toBe('BLA')
-    expect(flow.fields.status_combo.annotationsValues.values[1]).toBe('BLA2')
-    // eslint-disable-next-line no-underscore-dangle
-    expect(flow.fields.status_combo.annotationsValues._default[1]).toBe('BLA2')
+    expect(flow.fields.action_calls.type.elemID.name).toBe('flow_action_call')
+    expect(flow.fields.enum.type.elemID.name).toBe('string')
+    expect(flow.fields.enum.annotationsValues[Type.DEFAULT]).toBe('yes')
+    expect(flow.fields.enum.annotationsValues[Type.RESTRICTION]).toEqual({
+      values: ['yes', 'no'],
+    })
   })
 
   it('should discover empty metadata object', async () => {
@@ -313,7 +280,7 @@ describe('Test SalesforceAdapter discover', () => {
     expect(Object.keys(empty.fields).length).toBe(0)
   })
 
-  it('should discover nested types', async () => {
+  it('should discover nested metadata types', async () => {
     mockListSObjects()
     mockListMetadataObjects()
     mockSingleMetadataObject('NestingType', [
@@ -353,16 +320,16 @@ describe('Test SalesforceAdapter discover', () => {
 
     expect(result).toHaveLength(3)
     const types = _.assign({}, ...result.map(t => ({ [t.elemID.getFullName()]: t })))
-    const nestingType = types.salesforce_NestingType
-    const nestedType = types.salesforce_NestedType
-    const singleField = types.salesforce_SingleFieldType
+    const nestingType = types.salesforce_nesting_type
+    const nestedType = types.salesforce_nested_type
+    const singleField = types.salesforce_single_field_type
     expect(nestingType).not.toBeUndefined()
-    expect(nestingType.fields.field.type.elemID.name).toEqual('NestedType')
-    expect(nestingType.fields.other_field.type.elemID.name).toEqual('SingleFieldType')
+    expect(nestingType.fields.field.type.elemID.name).toEqual('nested_type')
+    expect(nestingType.fields.other_field.type.elemID.name).toEqual('single_field_type')
     expect(nestedType).not.toBeUndefined()
     expect(nestedType.fields.nested_str.type.elemID.name).toEqual('string')
     expect(nestedType.fields.nested_num.type.elemID.name).toEqual('number')
-    expect(nestedType.fields.double_nested.type.elemID.name).toEqual('SingleFieldType')
+    expect(nestedType.fields.double_nested.type.elemID.name).toEqual('single_field_type')
     expect(singleField).not.toBeUndefined()
     expect(singleField.fields.str.type.elemID.name).toEqual('string')
   })

@@ -101,7 +101,8 @@ export class Field implements Element {
  */
 export abstract class Type implements Element {
   public static DEFAULT = '_default'
-  public static REQUIRED = 'required'
+  public static REQUIRED = '_required'
+  public static RESTRICTION = '_restriction'
 
 
   readonly elemID: ElemID
@@ -364,6 +365,22 @@ export class ElementsRegistry {
     return new ElementsRegistry(allElements)
   }
 }
+
+export const BuiltinTypes: Record<string, PrimitiveType> = {
+  STRING: new PrimitiveType({
+    elemID: new ElemID('', 'string'),
+    primitive: PrimitiveTypes.STRING,
+  }),
+  NUMBER: new PrimitiveType({
+    elemID: new ElemID('', 'number'),
+    primitive: PrimitiveTypes.NUMBER,
+  }),
+  BOOLEAN: new PrimitiveType({
+    elemID: new ElemID('', 'boolean'),
+    primitive: PrimitiveTypes.BOOLEAN,
+  }),
+}
+
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 export function isType(element: any): element is Type {

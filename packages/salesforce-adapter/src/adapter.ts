@@ -1,9 +1,8 @@
 import {
+  BuiltinTypes,
   Type,
-  ElementsRegistry,
   ObjectType,
   ElemID,
-  PrimitiveTypes,
   InstanceElement,
   Values,
   Field,
@@ -18,7 +17,7 @@ import {
 } from './client/types'
 import {
   toCustomField, toCustomObject, apiName, sfCase, bpCase, fieldFullName, Types,
-  getValueTypeFieldAnnotations, getFieldAnnotations, toProfiles, fromProfiles,
+  getValueTypeFieldElement, getFieldAnnotations, toProfiles, fromProfiles,
   FieldPermission as FieldPermissions,
 } from './transformer'
 
@@ -127,25 +126,14 @@ export default class SalesforceAdapter {
   // disable class method use as we need this function for Adapter interface
   // eslint-disable-next-line class-methods-use-this
   public getConfigType(): ObjectType {
-    const registery = new ElementsRegistry()
-    const simpleString = registery.getElement(
-      new ElemID('', 'string'),
-      PrimitiveTypes.STRING
-    )
-
-    const simpleBoolean = registery.getElement(
-      new ElemID('', 'boolean'),
-      PrimitiveTypes.BOOLEAN
-    )
-
     const configID = new ElemID('salesforce')
     const config = new ObjectType({
       elemID: configID,
       fields: {
-        username: new Field(configID, 'username', simpleString),
-        password: new Field(configID, 'password', simpleString),
-        token: new Field(configID, 'token', simpleString),
-        sandbox: new Field(configID, 'sandbox', simpleBoolean),
+        username: new Field(configID, 'username', BuiltinTypes.STRING),
+        password: new Field(configID, 'password', BuiltinTypes.STRING),
+        token: new Field(configID, 'token', BuiltinTypes.STRING),
+        sandbox: new Field(configID, 'sandbox', BuiltinTypes.BOOLEAN),
       },
       annotations: {},
       annotationsValues: {},
@@ -332,24 +320,22 @@ export default class SalesforceAdapter {
       return []
     }
     knownTypes.add(objectName)
-    const element = Types.get(objectName) as ObjectType
+
+    const element = Types.get(objectName, false) as ObjectType
     element.annotate({ [constants.API_NAME]: objectName })
     if (!fields) {
       return [element]
     }
-    fields.forEach(field => {
-      if (field.name !== constants.METADATA_OBJECT_NAME_FIELD) {
-        element.fields[bpCase(field.name)] = new Field(
-          element.elemID,
-          field.name,
-          Types.get(field.soapType),
-          {
-            [constants.API_NAME]: field.name,
-            ...getValueTypeFieldAnnotations(field),
-          },
-        )
-      }
+
+    const fieldElements = fields.filter(
+      field => field.name !== constants.METADATA_OBJECT_NAME_FIELD
+    ).map(field => getValueTypeFieldElement(element.elemID, field))
+
+    // Set fields on elements
+    fieldElements.forEach(field => {
+      element.fields[field.name] = field
     })
+
     const embeddedTypes = _.flatten(fields.filter(field => !_.isEmpty(field.fields)).map(
       field => this.createMetadataTypeElements(
         field.soapType,

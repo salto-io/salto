@@ -1,8 +1,7 @@
 import path from 'path'
 import * as fs from 'async-file'
 import {
-  ElemID, InstanceElement, ObjectType, PlanAction, Plan,
-  PrimitiveType, PrimitiveTypes,
+  InstanceElement, ObjectType, PlanAction, Plan, BuiltinTypes,
 } from 'adapter-api'
 import * as commands from '../src/cli/commands'
 import { getFieldInputType } from '../src/cli/callbacks'
@@ -156,21 +155,9 @@ describe('Test commands.ts', () => {
   })
 
   it('should create proper inquier field', async () => {
-    const pts = new PrimitiveType({
-      elemID: new ElemID('salesforce', 'dummy'),
-      primitive: PrimitiveTypes.STRING,
-    })
-    const stRes = getFieldInputType(pts)
-    const pti = new PrimitiveType({
-      elemID: new ElemID('salesforce', 'dummy'),
-      primitive: PrimitiveTypes.NUMBER,
-    })
-    const iRes = getFieldInputType(pti)
-    const ptb = new PrimitiveType({
-      elemID: new ElemID('salesforce', 'dummy'),
-      primitive: PrimitiveTypes.BOOLEAN,
-    })
-    const bRes = getFieldInputType(ptb)
+    const stRes = getFieldInputType(BuiltinTypes.STRING)
+    const iRes = getFieldInputType(BuiltinTypes.NUMBER)
+    const bRes = getFieldInputType(BuiltinTypes.BOOLEAN)
     expect(iRes).toBe('number')
     expect(bRes).toBe('confirm')
     expect(stRes).toBe('input')

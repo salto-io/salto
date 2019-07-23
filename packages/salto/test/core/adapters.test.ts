@@ -1,5 +1,5 @@
 import {
-  InstanceElement, ObjectType, ElemID, PrimitiveType, PrimitiveTypes,
+  InstanceElement, ObjectType, ElemID, BuiltinTypes,
 } from 'adapter-api'
 import SalesforceAdapter from 'salesforce-adapter'
 import { init } from '../../src/core/adapters'
@@ -7,10 +7,7 @@ import { init } from '../../src/core/adapters'
 describe('Test adapters.ts', () => {
   const configType = new SalesforceAdapter().getConfigType()
 
-  const notConfigType = new PrimitiveType({
-    elemID: new ElemID('', 'string'),
-    primitive: PrimitiveTypes.STRING,
-  })
+  const notConfigType = BuiltinTypes.STRING
 
   const configElemID = new ElemID(
     configType.elemID.adapter,

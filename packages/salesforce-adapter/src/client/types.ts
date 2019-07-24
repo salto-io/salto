@@ -48,15 +48,14 @@ export class CustomField implements MetadataInfo {
     values?: string[],
     formula?: string,
   ) {
-    const typeName = formula ? type.replace('formula_', '') : type
-    this.type = CustomField.fieldTypeMapping[typeName]
+    this.type = CustomField.fieldTypeMapping[type]
     if (formula) {
       this.formula = formula
     } else {
       if (this.type === 'Text') {
         this.length = 80
       }
-      this.required = !!required
+      this.required = required
     }
 
     if (values && !_.isEmpty(values)) {

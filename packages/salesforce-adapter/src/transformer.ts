@@ -7,6 +7,7 @@ import {
 import { CustomObject, CustomField, ProfileInfo } from './client/types'
 import {
   API_NAME, LABEL, PICKLIST_VALUES, SALESFORCE, RESTRICTED_PICKLIST, FIELD_LEVEL_SECURITY, FORMULA,
+  FORMULA_TYPE_PREFIX,
 } from './constants'
 
 const capitalize = (s: string): string => {
@@ -22,6 +23,11 @@ export const apiName = (element: Type | TypeField): string => (
   element.annotationsValues[API_NAME]
 )
 
+const formulaTypeName = (baseTypeName: string): string =>
+  `${FORMULA_TYPE_PREFIX}${baseTypeName}`
+const fieldTypeName = (typeName: string): string => (
+  typeName.startsWith(FORMULA_TYPE_PREFIX) ? typeName.slice(FORMULA_TYPE_PREFIX.length) : typeName
+)
 
 export class Types {
   // Type mapping for custom objects
@@ -68,7 +74,7 @@ export const toCustomField = (
 ): CustomField =>
   new CustomField(
     fullname ? fieldFullName(object, field) : apiName(field),
-    field.type.elemID.name,
+    fieldTypeName(field.type.elemID.name),
     field.annotationsValues[LABEL],
     field.annotationsValues[Type.REQUIRED],
     field.annotationsValues[PICKLIST_VALUES],
@@ -146,7 +152,7 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
 
   if (field.picklistValues && field.picklistValues.length > 0) {
     annotations[PICKLIST_VALUES] = field.picklistValues.map(val => val.value)
-    annotations[RESTRICTED_PICKLIST] = !!field.restrictedPicklist
+    annotations[RESTRICTED_PICKLIST] = Boolean(field.restrictedPicklist)
 
     const defaults = field.picklistValues
       .filter(val => val.defaultValue === true)
@@ -161,7 +167,7 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
   }
 
   if (field.calculated) {
-    bpFieldType = Types.get(`formula_${bpFieldType.elemID.name}`)
+    bpFieldType = Types.get(formulaTypeName(bpFieldType.elemID.name))
     annotations[FORMULA] = field.calculatedFormula
   }
 

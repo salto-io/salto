@@ -20,18 +20,21 @@ but will not be persisted to local or remote state storage`
     modify: chalk.yellow('M'),
     add: chalk.green('+'),
     remove: chalk.red('-'),
+    eq: ' ',
   }
 
   public static readonly STARTACTION = {
     modify: 'changing',
     add: 'creating',
     remove: 'removing',
+    eq: '',
   }
 
   public static readonly ENDACTION = {
     modify: 'Change',
     add: 'Creation',
     remove: 'Removal',
+    eq: '',
   }
 
   public static readonly EXPLAINPLANRESULT = `An execution plan has been generated and is shown below.

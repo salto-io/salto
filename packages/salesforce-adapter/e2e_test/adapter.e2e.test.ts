@@ -83,7 +83,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
       )
     })
 
-    it('should discover metadata object', () => {
+    it('should discover metadata type', () => {
       const flow = result
         .filter(element => element.elemID.name === 'flow')
         .pop() as ObjectType
@@ -101,6 +101,15 @@ describe('Test Salesforce adapter E2E with real account', () => {
 
       expect(profile.value.field_permissions[0].editable).toBeDefined()
       expect(profile.value.record_type_visibilities.record_type).toBeDefined()
+    })
+
+    it('should discover settings instance', () => {
+      const quoteSettings = result
+        .filter(element => element instanceof InstanceElement
+          && element.elemID.name === 'quote')
+        .pop() as InstanceElement
+
+      expect(quoteSettings.value.enable_quote).toBeDefined()
     })
   })
 

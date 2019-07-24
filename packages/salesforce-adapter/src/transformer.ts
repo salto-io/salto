@@ -6,7 +6,7 @@ import {
 } from 'adapter-api'
 import { CustomObject, CustomField, ProfileInfo } from './client/types'
 import {
-  API_NAME, LABEL, PICKLIST_VALUES, SALESFORCE, RESTRICTED_PICKLIST, FIELD_LEVEL_SECURITY,
+  API_NAME, LABEL, PICKLIST_VALUES, SALESFORCE, RESTRICTED_PICKLIST, FIELD_LEVEL_SECURITY, FORMULA,
 } from './constants'
 
 const capitalize = (s: string): string => {
@@ -72,6 +72,7 @@ export const toCustomField = (
     field.annotationsValues[LABEL],
     field.annotationsValues[Type.REQUIRED],
     field.annotationsValues[PICKLIST_VALUES],
+    field.annotationsValues[FORMULA],
   )
 
 export const toCustomObject = (element: ObjectType): CustomObject =>
@@ -131,20 +132,21 @@ export const getValueTypeFieldElement = (parentID: ElemID, field: ValueTypeField
   return new TypeField(parentID, bpFieldName, bpFieldType, annotations)
 }
 
-export const getFieldAnnotations = (field: Field): Values => {
-  const annotations: Values = {}
-  annotations[LABEL] = field.label
-  annotations[Type.REQUIRED] = !field.nillable
+export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeField => {
+  const bpFieldName = bpCase(field.name)
+  let bpFieldType = Types.get(field.type)
+  const annotations: Values = {
+    [API_NAME]: field.name,
+    [LABEL]: field.label,
+    [Type.REQUIRED]: !field.nillable,
+  }
   if (field.defaultValue !== null) {
     annotations[Type.DEFAULT] = field.defaultValue
   }
 
   if (field.picklistValues && field.picklistValues.length > 0) {
     annotations[PICKLIST_VALUES] = field.picklistValues.map(val => val.value)
-    annotations[RESTRICTED_PICKLIST] = false
-    if (field.restrictedPicklist) {
-      annotations[RESTRICTED_PICKLIST] = field.restrictedPicklist
-    }
+    annotations[RESTRICTED_PICKLIST] = !!field.restrictedPicklist
 
     const defaults = field.picklistValues
       .filter(val => val.defaultValue === true)
@@ -158,7 +160,12 @@ export const getFieldAnnotations = (field: Field): Values => {
     }
   }
 
-  return annotations
+  if (field.calculated) {
+    bpFieldType = Types.get(`formula_${bpFieldType.elemID.name}`)
+    annotations[FORMULA] = field.calculatedFormula
+  }
+
+  return new TypeField(parentID, bpFieldName, bpFieldType, annotations)
 }
 
 export interface FieldPermission {editable: boolean; readable: boolean}

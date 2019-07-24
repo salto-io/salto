@@ -32,6 +32,8 @@ export class CustomField implements MetadataInfo {
   }
 
   readonly type: string
+  readonly required?: boolean
+  readonly formula?: string
   // To be used for picklist and combobox types
   readonly valueSet?: { valueSetDefinition: { value: CustomPicklistValue[] } }
 
@@ -42,12 +44,19 @@ export class CustomField implements MetadataInfo {
     public fullName: string,
     type: string,
     readonly label?: string,
-    readonly required: boolean = false,
-    values?: string[]
+    required: boolean = false,
+    values?: string[],
+    formula?: string,
   ) {
-    this.type = CustomField.fieldTypeMapping[type]
-    if (this.type === 'Text') {
-      this.length = 80
+    const typeName = formula ? type.replace('formula_', '') : type
+    this.type = CustomField.fieldTypeMapping[typeName]
+    if (formula) {
+      this.formula = formula
+    } else {
+      if (this.type === 'Text') {
+        this.length = 80
+      }
+      this.required = !!required
     }
 
     if (values && !_.isEmpty(values)) {

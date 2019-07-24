@@ -408,8 +408,10 @@ export default class SalesforceAdapter {
     const element = Types.get(objectName) as ObjectType
     element.annotate({ [constants.API_NAME]: objectName })
     const fields = await this.client.discoverSObject(objectName)
-    const elementFields = fields.map(field => getSObjectFieldElement(element.elemID, field))
-    elementFields.forEach(field => {
+    const fieldElements = fields.map(field => getSObjectFieldElement(element.elemID, field))
+
+    // Set fields on elements
+    fieldElements.forEach(field => {
       element.fields[field.name] = field
     })
     return element

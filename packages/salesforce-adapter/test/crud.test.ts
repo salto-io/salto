@@ -55,6 +55,15 @@ describe('Test SalesforceAdapter CRUD', () => {
               label: 'test label',
             },
           ),
+          formula: new Field(
+            mockElemID,
+            'formula',
+            stringType,
+            {
+              [constants.LABEL]: 'formula field',
+              [constants.FORMULA]: 'my formula',
+            },
+          ),
         },
       })
     )
@@ -68,12 +77,18 @@ describe('Test SalesforceAdapter CRUD', () => {
     expect(mockCreate.mock.calls.length).toBe(1)
     const object = mockCreate.mock.calls[0][1]
     expect(object.fullName).toBe('Test__c')
-    expect(object.fields.length).toBe(1)
-    expect(object.fields[0].fullName).toBe('Description__c')
-    expect(object.fields[0].type).toBe('Text')
-    expect(object.fields[0].length).toBe(80)
-    expect(object.fields[0].required).toBe(false)
-    expect(object.fields[0].label).toBe('test label')
+    expect(object.fields.length).toBe(2)
+    const [descriptionField, formulaField] = object.fields
+    expect(descriptionField.fullName).toBe('Description__c')
+    expect(descriptionField.type).toBe('Text')
+    expect(descriptionField.length).toBe(80)
+    expect(descriptionField.required).toBe(false)
+    expect(descriptionField.label).toBe('test label')
+    expect(formulaField.fullName).toBe('Formula__c')
+    expect(formulaField.type).toBe('Text')
+    expect(formulaField).not.toHaveProperty('required')
+    expect(formulaField.label).toBe('formula field')
+    expect(formulaField.formula).toBe('my formula')
   })
 
   it('should add new salesforce type with picklist field', async () => {

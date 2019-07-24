@@ -460,7 +460,7 @@ export default class SalesforceAdapter {
     }
     const names = objs.map(obj => obj.fullName)
     // For some unknown reason, for metadata type = 'Settings', when calling readMetadata we should
-    // use type = 'Settings'+OBJNAME
+    // use type = OBJNAME+'Settings'
     if (type === constants.SETTINGS_METADATA_TYPE) {
       return Promise.all(names
         .map(name => this.client.readMetadata(name + type, name) as Promise<MetadataInfo>))

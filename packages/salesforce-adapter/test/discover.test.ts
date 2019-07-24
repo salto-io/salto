@@ -205,6 +205,14 @@ describe('Test SalesforceAdapter discover', () => {
         { xmlName }])
       SalesforceClient.prototype.discoverMetadataObject = jest.fn().mockImplementation(() => fields)
     }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const mockSingleMetadataInstance = (name: string, data: Record<string, any>): void => {
+      SalesforceClient.prototype.listMetadataObjects = jest.fn().mockImplementation(() => [
+        { fullName: name }])
+      SalesforceClient.prototype.readMetadata = jest.fn().mockImplementation(() => data)
+    }
+
     it('should discover basic metadata type', async () => {
       mockSingleMetadataType('Flow', [
         {
@@ -310,37 +318,18 @@ describe('Test SalesforceAdapter discover', () => {
     })
 
     it('should discover metadata instance', async () => {
-      mockSingleMetadataType('Flow', [
-        {
-          name: 'Status',
-          soapType: 'Picklist',
-          valueRequired: false,
-          picklistValues: [{ defaultValue: true, value: 'BLA' }],
-        },
-        {
-          name: 'StatusCombo',
-          soapType: 'Combobox',
-          valueRequired: true,
-          picklistValues: [
-            { defaultValue: true, value: 'BLA' },
-            { defaultValue: true, value: 'BLA2' },
-          ],
-        },
-      ])
-      // Mock metadata instance
-      SalesforceClient.prototype.listMetadataObjects = jest.fn().mockImplementation(() => [
-        { fullName: 'FlowInstance' }])
-      SalesforceClient.prototype.readMetadata = jest.fn().mockImplementation(() => ({
+      mockSingleMetadataType('Flow', [])
+      mockSingleMetadataInstance('FlowInstance', {
         fullName: 'FlowInstance',
         fieldPermissions: [{ field: 'Field', editable: true, readable: false }],
         Bla: { Bla: true },
-      }))
+      })
 
       const result = await adapter().discover()
 
       expect(result.length).toBe(2)
       result.forEach(flow => {
-      // We want to validate only InstanceElement of Flow and not TypeElement
+        // We want to validate only InstanceElement of Flow and not TypeElement
         if (flow instanceof InstanceElement) {
         // Validate picklist
           expect(flow.type.elemID.getFullName()).toBe('salesforce_flow')

@@ -16,7 +16,7 @@ const capitalize = (s: string): string => {
 export const sfCase = (name: string, custom: boolean = false): string =>
   capitalize(camelCase(name)) + (custom === true ? '__c' : '')
 export const bpCase = (name: string): string =>
-  (name.endsWith('__c') ? snakeCase(name).slice(0, -3) : snakeCase(name))
+  (name.endsWith('__c') ? snakeCase(name).slice(0, -2) : snakeCase(name))
 
 export const apiName = (element: Type | TypeField): string => (
   element.annotationsValues[API_NAME]

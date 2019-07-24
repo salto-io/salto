@@ -1,4 +1,4 @@
-import { snakeCase, camelCase } from 'lodash'
+import _ from 'lodash'
 import { ValueTypeField, Field } from 'jsforce'
 import {
   Type, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values,
@@ -15,9 +15,9 @@ const capitalize = (s: string): string => {
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
 export const sfCase = (name: string, custom: boolean = false): string =>
-  capitalize(camelCase(name)) + (custom === true ? '__c' : '')
+  capitalize(_.camelCase(name)) + (custom === true ? '__c' : '')
 export const bpCase = (name: string): string =>
-  (name.endsWith('__c') ? snakeCase(name).slice(0, -2) : snakeCase(name))
+  (name.endsWith('__c') ? _.snakeCase(name).slice(0, -2) : _.snakeCase(name))
 
 export const apiName = (element: Type | TypeField): string => (
   element.annotationsValues[API_NAME]
@@ -166,7 +166,7 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
     }
   }
 
-  if (field.calculated) {
+  if (field.calculated && !_.isEmpty(field.calculatedFormula)) {
     bpFieldType = Types.get(formulaTypeName(bpFieldType.elemID.name))
     annotations[FORMULA] = field.calculatedFormula
   }

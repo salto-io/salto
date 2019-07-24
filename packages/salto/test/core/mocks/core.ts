@@ -1,5 +1,5 @@
 import {
-  Type, PrimitiveTypes, ElemID, PlanActionType, PlanAction, ObjectType, PrimitiveType, ListType,
+  Type, BuiltinTypes, ElemID, PlanActionType, PlanAction, ObjectType, ListType,
   Field, Plan, InstanceElement,
 } from 'adapter-api'
 import wu from 'wu'
@@ -9,25 +9,21 @@ import Blueprint from '../../../src/core/blueprint'
 export const getAllElements = async (
   _blueprints: Blueprint[] = []
 ): Promise<Type[]> => {
-  const stringType = new PrimitiveType({
-    elemID: new ElemID('', 'string'),
-    primitive: PrimitiveTypes.STRING,
-  })
   const addrElemID = new ElemID('salto', 'address')
   const saltoAddr = new ObjectType({
     elemID: addrElemID,
     fields: {
-      country: new Field(addrElemID, 'country', stringType),
-      city: new Field(addrElemID, 'city', stringType),
+      country: new Field(addrElemID, 'country', BuiltinTypes.STRING),
+      city: new Field(addrElemID, 'city', BuiltinTypes.STRING),
     },
   })
-  saltoAddr.annotations.label = stringType
+  saltoAddr.annotations.label = BuiltinTypes.STRING
 
   const officeElemID = new ElemID('salto', 'office')
   const saltoOffice = new ObjectType({
     elemID: officeElemID,
     fields: {
-      name: new Field(officeElemID, 'name', stringType),
+      name: new Field(officeElemID, 'name', BuiltinTypes.STRING),
       location: new Field(
         officeElemID,
         'location',
@@ -39,7 +35,7 @@ export const getAllElements = async (
       ),
     },
   })
-  saltoOffice.annotations.label = stringType
+  saltoOffice.annotations.label = BuiltinTypes.STRING
 
   const employeeElemID = new ElemID('salto', 'employee')
   const saltoEmployee = new ObjectType({
@@ -48,7 +44,7 @@ export const getAllElements = async (
       name: new Field(
         employeeElemID,
         'name',
-        stringType,
+        BuiltinTypes.STRING,
         { _required: true },
       ),
       nicknames: new Field(
@@ -56,7 +52,7 @@ export const getAllElements = async (
         'nicknames',
         new ListType({
           elemID: new ElemID('salto', 'nicknames'),
-          elementType: stringType,
+          elementType: BuiltinTypes.STRING,
         }),
       ),
       /* eslint-disable-next-line @typescript-eslint/camelcase */
@@ -69,7 +65,7 @@ export const getAllElements = async (
       company: new Field(
         employeeElemID,
         'company',
-        stringType,
+        BuiltinTypes.STRING,
         { _default: 'salto' },
       ),
       office: new Field(
@@ -94,7 +90,7 @@ export const getAllElements = async (
     },
   })
 
-  return [stringType, saltoAddr, saltoOffice, saltoEmployee]
+  return [BuiltinTypes.STRING, saltoAddr, saltoOffice, saltoEmployee]
 }
 
 const runChangeMock = async (
@@ -134,7 +130,7 @@ const newAction = (
           + plan.data.after.elemID.name)
       }
       return plan
-    })
+    }).toArray()
   }
 
   return { action, data, subChanges }

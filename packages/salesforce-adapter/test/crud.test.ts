@@ -740,8 +740,8 @@ describe('Test SalesforceAdapter CRUD', () => {
       expect(result).toBeInstanceOf(ObjectType)
       expect(mockCreate.mock.calls.length).toBe(1)
       expect(mockDelete.mock.calls.length).toBe(1)
-      // Update is called twice, once for updating the object, and the second
-      // time for updating the permissions
+      // Update is called 3 times, First time for updating the object's permissions, and the second
+      // time for updating the new field permissions, then once for updating the object
       expect(mockUpdate.mock.calls.length).toBe(3)
       // Verify the custom fields creation
       const addedFields = mockCreate.mock.calls[0][1]
@@ -772,6 +772,148 @@ describe('Test SalesforceAdapter CRUD', () => {
       const deletedFields = mockDelete.mock.calls[0][1]
       expect(deletedFields.length).toBe(1)
       expect(deletedFields[0]).toBe('Test__c.Address__c')
+    })
+
+    it("should properly update the remaining fields' permissions of the metadata object", async () => {
+      const result = await adapter().update(
+        new ObjectType({
+          elemID: mockElemID,
+          fields: {
+            address: new Field(
+              mockElemID,
+              'address',
+              stringType,
+              {
+                [constants.API_NAME]: 'Address__c',
+                [constants.FIELD_LEVEL_SECURITY]: {
+                  admin: { editable: true, readable: true },
+                },
+              },
+            ),
+            banana: new Field(
+              mockElemID,
+              'banana',
+              stringType,
+              {
+                [constants.API_NAME]: 'Banana__c',
+                [constants.FIELD_LEVEL_SECURITY]: {
+                  standard: { editable: true, readable: true },
+                },
+              },
+            ),
+            charlie: new Field(
+              mockElemID,
+              'charlie',
+              stringType,
+              {
+                [constants.API_NAME]: 'Charlie__c',
+                [constants.FIELD_LEVEL_SECURITY]: {
+                  standard: { editable: false, readable: false },
+                },
+              },
+            ),
+            delta: new Field(
+              mockElemID,
+              'delta',
+              stringType,
+              {
+                [constants.API_NAME]: 'Delta__c',
+                [constants.FIELD_LEVEL_SECURITY]: {
+                  standard: { editable: false, readable: true },
+                  admin: { editable: true, readable: true },
+                },
+              },
+            ),
+          },
+          annotationsValues: {
+            required: false,
+            _default: 'test',
+            label: 'test label',
+            [constants.API_NAME]: 'Test__c',
+          },
+        }),
+        new ObjectType({
+          elemID: mockElemID,
+          fields: {
+            address: new Field(
+              mockElemID,
+              'address',
+              stringType,
+              {
+                [constants.API_NAME]: 'Address__c',
+                [constants.FIELD_LEVEL_SECURITY]: {
+                  standard: { editable: true, readable: true },
+                },
+              },
+            ),
+            banana: new Field(
+              mockElemID,
+              'banana',
+              stringType,
+              {
+                [constants.API_NAME]: 'Banana__c',
+              },
+            ),
+            charlie: new Field(
+              mockElemID,
+              'charlie',
+              stringType,
+              {
+                [constants.API_NAME]: 'Charlie__c',
+              },
+            ),
+            delta: new Field(
+              mockElemID,
+              'delta',
+              stringType,
+              {
+                [constants.API_NAME]: 'Delta__c',
+                [constants.FIELD_LEVEL_SECURITY]: {
+                  standard: { editable: false, readable: true },
+                },
+              },
+            ),
+          },
+          annotationsValues: {
+            required: false,
+            _default: 'test',
+            label: 'test label',
+            [constants.API_NAME]: 'Test__c',
+          },
+        })
+      )
+
+      expect(result).toBeInstanceOf(ObjectType)
+      expect(mockCreate.mock.calls.length).toBe(0)
+      expect(mockDelete.mock.calls.length).toBe(0)
+      // Update is called twice, once for updating the object, and the second
+      // time for updating the permissions
+      expect(mockUpdate.mock.calls.length).toBe(2)
+      // Verify the field permissions change
+      const updatedProfileInfo = mockUpdate.mock.calls[0][1]
+      expect(updatedProfileInfo[0].fullName).toBe('Standard')
+      // The following line should be 3 becuase address & banana have changed.
+      // Charlie and Delta shouldn't be updated for Standard permission, but Delta should appear
+      // because this field's permissions has changed overall. Charlie's field permissions were
+      // not changed because it was editable:false, readable:false from the beginning
+      expect(updatedProfileInfo[0].fieldPermissions.length).toBe(3)
+      expect(updatedProfileInfo[0].fieldPermissions[0].field).toBe('Test__c.Address__c')
+      expect(updatedProfileInfo[0].fieldPermissions[0].editable).toBe(true)
+      expect(updatedProfileInfo[0].fieldPermissions[0].readable).toBe(true)
+      expect(updatedProfileInfo[0].fieldPermissions[1].field).toBe('Test__c.Banana__c')
+      expect(updatedProfileInfo[0].fieldPermissions[1].editable).toBe(false)
+      expect(updatedProfileInfo[0].fieldPermissions[1].readable).toBe(false)
+      expect(updatedProfileInfo[0].fieldPermissions[2].field).toBe('Test__c.Delta__c')
+      expect(updatedProfileInfo[0].fieldPermissions[2].editable).toBe(false)
+      expect(updatedProfileInfo[0].fieldPermissions[2].readable).toBe(true)
+      expect(updatedProfileInfo[1].fullName).toBe('Admin')
+      expect(updatedProfileInfo[1].fieldPermissions.length).toBe(2)
+      expect(updatedProfileInfo[1].fieldPermissions[0].field).toBe('Test__c.Address__c')
+      expect(updatedProfileInfo[1].fieldPermissions[0].editable).toBe(false)
+      expect(updatedProfileInfo[1].fieldPermissions[0].readable).toBe(false)
+      expect(updatedProfileInfo[1].fieldPermissions[1].field).toBe('Test__c.Delta__c')
+      expect(updatedProfileInfo[1].fieldPermissions[1].editable).toBe(false)
+      expect(updatedProfileInfo[1].fieldPermissions[1].readable).toBe(false)
     })
   })
 })

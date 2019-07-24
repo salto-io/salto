@@ -1,7 +1,7 @@
 import * as fs from 'async-file'
 import path from 'path'
 import {
-  ElemID, PrimitiveType, PrimitiveTypes, InstanceElement, ObjectType, Field,
+  ElemID, BuiltinTypes, InstanceElement, ObjectType, Field,
   Plan,
 } from 'adapter-api'
 import * as commands from '../../src/core/commands'
@@ -18,24 +18,14 @@ const mockAdd = jest.fn(async ap => {
 })
 
 const mockGetConfigType = jest.fn(() => {
-  const simpleString = new PrimitiveType({
-    elemID: new ElemID('', 'string'),
-    primitive: PrimitiveTypes.STRING,
-  })
-
-  const simpleBoolean = new PrimitiveType({
-    elemID: new ElemID('', 'boolean'),
-    primitive: PrimitiveTypes.BOOLEAN,
-  })
-
   const configID = new ElemID('salesforce')
   const config = new ObjectType({
     elemID: configID,
     fields: {
-      username: new Field(configID, 'username', simpleString),
-      password: new Field(configID, 'password', simpleString),
-      token: new Field(configID, 'token', simpleString),
-      sandbox: new Field(configID, 'sandbox', simpleBoolean),
+      username: new Field(configID, 'username', BuiltinTypes.STRING),
+      password: new Field(configID, 'password', BuiltinTypes.STRING),
+      token: new Field(configID, 'token', BuiltinTypes.STRING),
+      sandbox: new Field(configID, 'sandbox', BuiltinTypes.BOOLEAN),
     },
     annotations: {},
     annotationsValues: {},
@@ -51,10 +41,7 @@ const mockUpdate = jest.fn((_b, _a) => true)
 const mockInit = jest.fn(_a => true)
 
 const mockDiscover = jest.fn(() => [
-  new PrimitiveType({
-    elemID: new ElemID('salesforce', 'dummy'),
-    primitive: PrimitiveTypes.STRING,
-  }),
+  new ObjectType({ elemID: new ElemID('salesforce', 'dummy') }),
 ])
 
 const mockAdapter = {
@@ -188,7 +175,7 @@ describe('Test commands.ts and core.ts', () => {
   describe('discover', () => {
     it('should return blueprint', async () => {
       const bp = await commands.discover([], mockGetConfigFromUser)
-      expect(bp.buffer.toString()).toMatch(/type "?salesforce_dummy"? "?is"? "?string"?/)
+      expect(bp.buffer.toString()).toMatch(/model "?salesforce_dummy"? {/)
     })
   })
 })

@@ -10,7 +10,7 @@ import {
 } from 'adapter-api'
 import SalesforceAdapter from '../src/adapter'
 import * as constants from '../src/constants'
-import { CustomObject, ProfileInfo } from '../src/client/types'
+import { CustomObject, ProfileInfo, FieldPermissions } from '../src/client/types'
 
 describe('Test Salesforce adapter E2E with real account', () => {
   const adapter = (): SalesforceAdapter => {
@@ -43,7 +43,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
     it('should discover sobject', async () => {
       // Check few field types on lead object
       const lead = result
-        .filter(element => element.elemID.name === 'Lead')
+        .filter(element => element.elemID.name === 'lead')
         .pop() as ObjectType
 
       // Test few possible types
@@ -52,11 +52,11 @@ describe('Test Salesforce adapter E2E with real account', () => {
       expect(lead.fields.salutation.type.elemID.name).toBe('picklist')
 
       // Test label
-      expect(lead.fields.last_name.annotationsValues.label).toBe('Last Name')
+      expect(lead.fields.last_name.annotationsValues[constants.LABEL]).toBe('Last Name')
 
       // Test true and false required
-      expect(lead.fields.description.annotationsValues.required).toBe(true)
-      expect(lead.fields.created_date.annotationsValues.required).toBe(false)
+      expect(lead.fields.description.annotationsValues[Type.REQUIRED]).toBe(false)
+      expect(lead.fields.created_date.annotationsValues[Type.REQUIRED]).toBe(true)
 
       // Test picklist restricted_pick_list prop
       expect(lead.fields.industry.annotationsValues.restricted_pick_list).toBe(
@@ -74,7 +74,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
       // Test _default
       // TODO: add test to primitive with _default and combobox _default (no real example for lead)
       // eslint-disable-next-line no-underscore-dangle
-      expect(lead.fields.status.annotationsValues._default).toBe(
+      expect(lead.fields.status.annotationsValues[Type.DEFAULT]).toBe(
         'Open - Not Contacted'
       )
     })
@@ -82,12 +82,12 @@ describe('Test Salesforce adapter E2E with real account', () => {
     it('should discover metadata object', () => {
       // Check few field types on lead object
       const flow = result
-        .filter(element => element.elemID.name === 'Flow')
+        .filter(element => element.elemID.name === 'flow')
         .pop() as ObjectType
 
       expect(flow.fields.description.type.elemID.name).toBe('string')
-      expect(flow.fields.is_template.type.elemID.name).toBe('checkbox')
-      expect(flow.fields.action_calls.type.elemID.name).toBe('FlowActionCall')
+      expect(flow.fields.is_template.type.elemID.name).toBe('boolean')
+      expect(flow.fields.action_calls.type.elemID.name).toBe('flow_action_call')
     })
   })
 
@@ -116,10 +116,23 @@ describe('Test Salesforce adapter E2E with real account', () => {
     }
 
     const permissionExists = async (profile: string, fields: string[]): Promise<boolean[]> => {
+      // The following const method is a workaround for a bug in SFDC metadata API that returns
+      // the editable and readable fields in FieldPermissions as string instead of boolean
+      const verifyBoolean = (variable: string | boolean): boolean => {
+        const unknownVariable = variable as unknown
+        return typeof unknownVariable === 'string' ? JSON.parse(unknownVariable) : variable
+      }
       const profileInfo = (await sfAdapter.client.readMetadata(constants.METADATA_PROFILE_OBJECT,
         profile)) as ProfileInfo
-      const fieldPermissions = profileInfo.fieldPermissions.map(f => f.field)
-      return fields.map(field => fieldPermissions.includes(field))
+      const fieldPermissionsMap = new Map<string, FieldPermissions>()
+      profileInfo.fieldPermissions.map(f => fieldPermissionsMap.set(f.field, f))
+      return fields.map(field => {
+        if (!fieldPermissionsMap.has(field)) {
+          return false
+        }
+        const fieldObject: FieldPermissions = fieldPermissionsMap.get(field) as FieldPermissions
+        return verifyBoolean(fieldObject.editable) || verifyBoolean(fieldObject.readable)
+      })
     }
 
     const stringType = new PrimitiveType({
@@ -402,6 +415,18 @@ describe('Test Salesforce adapter E2E with real account', () => {
               },
             },
           ),
+          delta: new Field(
+            mockElemID,
+            'delta',
+            stringType,
+            {
+              [constants.API_NAME]: 'Delta__c',
+              [constants.FIELD_LEVEL_SECURITY]: {
+                standard: { editable: false, readable: true },
+                admin: { editable: true, readable: true },
+              },
+            },
+          ),
         },
         annotationsValues: {
           required: false,
@@ -444,6 +469,17 @@ describe('Test Salesforce adapter E2E with real account', () => {
               },
             },
           ),
+          delta: new Field(
+            mockElemID,
+            'delta',
+            stringType,
+            {
+              [constants.API_NAME]: 'Delta__c',
+              [constants.FIELD_LEVEL_SECURITY]: {
+                standard: { editable: false, readable: true },
+              },
+            },
+          ),
         },
         annotationsValues: {
           required: false,
@@ -459,20 +495,24 @@ describe('Test Salesforce adapter E2E with real account', () => {
 
       expect(await objectExists(customObjectName)).toBe(true)
 
-      const [addressStandardExists, bananaStandardExists] = await permissionExists(
+      const [addressStandardExists,
+        bananaStandardExists,
+        deltaStandardExists] = await permissionExists(
         'Standard',
-        [`${customObjectName}.Address__c`, `${customObjectName}.Banana__c`]
+        [`${customObjectName}.Address__c`, `${customObjectName}.Banana__c`, `${customObjectName}.Delta__c`]
       )
-      expect(addressStandardExists).toBe(true)
-      expect(bananaStandardExists).toBe(true)
-      // The addressAdminExists will be used once we figure out how to remove existing permission
-      const [/* addressAdminExists, */bananaAdminExists] = await permissionExists(
+      expect(addressStandardExists).toBeTruthy()
+      expect(bananaStandardExists).toBeTruthy()
+      expect(deltaStandardExists).toBeTruthy()
+      const [addressAdminExists,
+        bananaAdminExists,
+        deltaAdminExists] = await permissionExists(
         'Admin',
-        [`${customObjectName}.Address__c`, `${customObjectName}.Banana__c`]
+        [`${customObjectName}.Address__c`, `${customObjectName}.Banana__c`, `${customObjectName}.Delta__c`]
       )
-      // The following step is disabled until we figure out how to remove an existing permission
-      // expect(addressAdminExists).toBe(false)
-      expect(bananaAdminExists).toBe(true)
+      expect(addressAdminExists).toBeFalsy()
+      expect(bananaAdminExists).toBeTruthy()
+      expect(deltaAdminExists).toBeFalsy()
 
       // Clean-up
       await sfAdapter.remove(oldElement)

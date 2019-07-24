@@ -97,6 +97,12 @@ describe('Test SalesforceAdapter discover', () => {
         label: 'Is Deleted',
         defaultValue: false,
       },
+      {
+        name: 'Custom__c',
+        type: 'string',
+        label: 'Custom Field',
+        nillable: true,
+      },
     ])
     const result = await adapter().discover()
 
@@ -111,6 +117,8 @@ describe('Test SalesforceAdapter discover', () => {
     // Default string and boolean
     expect(lead.fields.last_name.annotationsValues[Type.DEFAULT]).toBe('BLABLA')
     expect(lead.fields.is_deleted.annotationsValues[Type.DEFAULT]).toBe(false)
+    // Custom type
+    expect(lead.fields.custom).not.toBeUndefined()
   })
 
   it('should discover sobject with picklist field', async () => {

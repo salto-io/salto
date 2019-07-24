@@ -119,6 +119,7 @@ describe('Test SalesforceAdapter discover', () => {
     expect(lead.fields.is_deleted.annotationsValues[Type.DEFAULT]).toBe(false)
     // Custom type
     expect(lead.fields.custom).not.toBeUndefined()
+    expect(lead.fields.custom.annotationsValues[constants.API_NAME]).toBe('Custom__c')
   })
 
   it('should discover sobject with picklist field', async () => {

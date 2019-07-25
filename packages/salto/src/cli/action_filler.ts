@@ -42,8 +42,8 @@ const createValuesChanges = (before: Values, after: Values): ActionPrintFormat[]
 const createRecordChanges = (
   before: Record<string, Field|Type>,
   after: Record<string, Field|Type>
-): ActionPrintFormat[] => Object.keys(before).concat(Object.keys(after)).map(name => {
-  const action = getActionType(before, after)
+): ActionPrintFormat[] => _.union(Object.keys(before).concat(Object.keys(after))).map(name => {
+  const action = getActionType(before[name], after[name])
   const subChanges = createValuesChanges(
     (before[name]) ? before[name].annotationsValues : {},
     (after[name]) ? after[name].annotationsValues : {}

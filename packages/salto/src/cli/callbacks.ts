@@ -29,7 +29,7 @@ export const shouldApply = async (actions: Plan): Promise<boolean> => {
   if (_.isEmpty(actions)) {
     return false
   }
-  const shouldExecute = getUserBooleanInput(Prompts.SHOULDEXECUTREPLAN)
+  const shouldExecute = await getUserBooleanInput(Prompts.SHOULDEXECUTREPLAN)
   if (shouldExecute) {
     print(header(Prompts.STARTAPPLYEXEC))
   } else {

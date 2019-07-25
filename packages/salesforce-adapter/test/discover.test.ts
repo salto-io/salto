@@ -97,6 +97,19 @@ describe('Test SalesforceAdapter discover', () => {
         label: 'Is Deleted',
         defaultValue: false,
       },
+      {
+        name: 'Custom__c',
+        type: 'string',
+        label: 'Custom Field',
+        nillable: true,
+      },
+      {
+        name: 'Formula__c',
+        type: 'string',
+        label: 'Dummy formula',
+        calculated: true,
+        calculatedFormula: 'my formula',
+      },
     ])
     const result = await adapter().discover()
 
@@ -111,6 +124,13 @@ describe('Test SalesforceAdapter discover', () => {
     // Default string and boolean
     expect(lead.fields.last_name.annotationsValues[Type.DEFAULT]).toBe('BLABLA')
     expect(lead.fields.is_deleted.annotationsValues[Type.DEFAULT]).toBe(false)
+    // Custom field
+    expect(lead.fields.custom).toBeDefined()
+    expect(lead.fields.custom.annotationsValues[constants.API_NAME]).toBe('Custom__c')
+    // Formula field
+    expect(lead.fields.formula).toBeDefined()
+    expect(lead.fields.formula.type.elemID.name).toBe('formula_string')
+    expect(lead.fields.formula.annotationsValues[constants.FORMULA]).toBe('my formula')
   })
 
   it('should discover sobject with picklist field', async () => {

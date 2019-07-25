@@ -1,3 +1,4 @@
+import _ from 'lodash'
 import * as inquirer from 'inquirer'
 import {
   Plan, Type, ObjectType, ElemID, InstanceElement,
@@ -18,14 +19,17 @@ const getUserBooleanInput = async (prompt: string): Promise<boolean> => {
   return answers.userInput
 }
 
-export const shouldApply = (actions: Plan): Promise<boolean> => {
+export const shouldApply = async (actions: Plan): Promise<boolean> => {
   const planOutput = [
     header(Prompts.STARTAPPLY),
     subHeader(Prompts.EXPLAINAPPLY),
     createPlanOutput(actions),
   ].join('\n')
   print(planOutput)
-  const shouldExecute = getUserBooleanInput(Prompts.SHOULDEXECUTREPLAN)
+  if (_.isEmpty(actions)) {
+    return false
+  }
+  const shouldExecute = await getUserBooleanInput(Prompts.SHOULDEXECUTREPLAN)
   if (shouldExecute) {
     print(header(Prompts.STARTAPPLYEXEC))
   } else {

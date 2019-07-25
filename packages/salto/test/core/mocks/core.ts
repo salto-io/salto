@@ -112,10 +112,10 @@ const newAction = (
 
   const data = {
     before: before
-      ? { elemID: new ElemID(adapter, before) }
+      ? new ObjectType({ elemID: new ElemID(adapter, before) })
       : undefined,
     after: after
-      ? { elemID: new ElemID(adapter, after) }
+      ? new ObjectType({ elemID: new ElemID(adapter, after) })
       : undefined,
   }
   let subChanges: Plan | undefined

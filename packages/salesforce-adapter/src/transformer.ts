@@ -1,5 +1,6 @@
 import _ from 'lodash'
-import { ValueTypeField, Field } from 'jsforce'
+import { ValueTypeField, Field, MetadataInfo } from 'jsforce'
+
 import {
   Type, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values,
   Field as TypeField, BuiltinTypes,
@@ -7,7 +8,7 @@ import {
 import { CustomObject, CustomField, ProfileInfo } from './client/types'
 import {
   API_NAME, LABEL, PICKLIST_VALUES, SALESFORCE, RESTRICTED_PICKLIST, FIELD_LEVEL_SECURITY, FORMULA,
-  FORMULA_TYPE_PREFIX,
+  FORMULA_TYPE_PREFIX, METADATA_OBJECT_NAME_FIELD,
 } from './constants'
 
 const capitalize = (s: string): string => {
@@ -182,6 +183,9 @@ export const fromProfiles = (profiles: ProfileInfo[]):
 Map<string, Map<string, FieldPermission>> => {
   const permissions = new Map<string, Map<string, FieldPermission>>()
   profiles.forEach(info => {
+    if (!info.fieldPermissions) {
+      return
+    }
     info.fieldPermissions.forEach(fieldPermission => {
       const name = fieldPermission.field
       if (!permissions.has(name)) {
@@ -195,4 +199,20 @@ Map<string, Map<string, FieldPermission>> => {
   })
 
   return permissions
+}
+
+export const fromMetadataInfo = (info: MetadataInfo): Values => {
+  const transform = (obj: Values): Values => {
+    const returnVal: Values = {}
+    Object.keys(obj).filter(key => key !== METADATA_OBJECT_NAME_FIELD)
+      .forEach(key => {
+        if (_.isObject(obj[key])) {
+          returnVal[bpCase(key)] = transform(obj[key])
+        } else {
+          returnVal[bpCase(key)] = obj[key]
+        }
+      })
+    return returnVal
+  }
+  return transform(info as Values)
 }

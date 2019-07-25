@@ -65,9 +65,10 @@ export default class SalesforceClient {
   /**
    * Read metadata for salesforce object of specific type and name
    */
-  public async readMetadata(type: string, name: string): Promise<MetadataInfo> {
+  public async readMetadata(type: string, name: string | string[]):
+  Promise<MetadataInfo | MetadataInfo[]> {
     await this.login()
-    return (await this.conn.metadata.read(type, name)) as MetadataInfo
+    return this.conn.metadata.read(type, name)
   }
 
   /**

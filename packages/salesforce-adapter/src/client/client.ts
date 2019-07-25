@@ -48,7 +48,7 @@ export default class SalesforceClient {
    * Read information about a value type
    * @param objectName The name of the metadata type for which you want metadata
    */
-  public async discoverMetadataObject(
+  public async describeMetadataType(
     objectName: string
   ): Promise<ValueTypeField[]> {
     await this.login()

@@ -11,6 +11,7 @@ import {
 } from 'adapter-api'
 import SalesforceAdapter from '../src/adapter'
 import * as constants from '../src/constants'
+import { FIELD_LEVEL_SECURITY_ANNOTATION, PROFILE_METADATA_TYPE } from '../src/aspects/profile'
 import { CustomObject, ProfileInfo, FieldPermissions } from '../src/client/types'
 
 describe('Test Salesforce adapter E2E with real account', () => {
@@ -144,7 +145,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
         const unknownVariable = variable as unknown
         return typeof unknownVariable === 'string' ? JSON.parse(unknownVariable) : variable
       }
-      const profileInfo = (await sfAdapter.client.readMetadata(constants.PROFILE_METADATA_TYPE,
+      const profileInfo = (await sfAdapter.client.readMetadata(PROFILE_METADATA_TYPE,
         profile)) as ProfileInfo
       const fieldPermissionsMap = new Map<string, FieldPermissions>()
       profileInfo.fieldPermissions.map(f => fieldPermissionsMap.set(f.field, f))
@@ -179,7 +180,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
               required: false,
               _default: 'test',
               label: 'description label',
-              [constants.FIELD_LEVEL_SECURITY]: {
+              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 admin: { editable: true, readable: true },
                 standard: { editable: true, readable: true },
               },
@@ -308,7 +309,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
             'description',
             stringType,
             {
-              [constants.FIELD_LEVEL_SECURITY]: {
+              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 admin: { editable: true, readable: true },
                 standard: { editable: true, readable: true },
               },
@@ -433,7 +434,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
             stringType,
             {
               [constants.API_NAME]: 'Address__c',
-              [constants.FIELD_LEVEL_SECURITY]: {
+              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 admin: { editable: true, readable: true },
               },
             },
@@ -444,7 +445,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
             stringType,
             {
               [constants.API_NAME]: 'Banana__c',
-              [constants.FIELD_LEVEL_SECURITY]: {
+              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 standard: { editable: true, readable: true },
               },
             },
@@ -455,7 +456,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
             stringType,
             {
               [constants.API_NAME]: 'Delta__c',
-              [constants.FIELD_LEVEL_SECURITY]: {
+              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 standard: { editable: false, readable: true },
                 admin: { editable: true, readable: true },
               },
@@ -486,7 +487,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
             stringType,
             {
               [constants.API_NAME]: 'Address__c',
-              [constants.FIELD_LEVEL_SECURITY]: {
+              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 standard: { editable: true, readable: true },
               },
             },
@@ -497,7 +498,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
             stringType,
             {
               [constants.API_NAME]: 'Banana__c',
-              [constants.FIELD_LEVEL_SECURITY]: {
+              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 admin: { editable: true, readable: true },
                 standard: { editable: true, readable: true },
               },
@@ -509,7 +510,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
             stringType,
             {
               [constants.API_NAME]: 'Delta__c',
-              [constants.FIELD_LEVEL_SECURITY]: {
+              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 standard: { editable: false, readable: true },
               },
             },

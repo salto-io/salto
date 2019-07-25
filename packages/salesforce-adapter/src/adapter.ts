@@ -17,7 +17,7 @@ import {
 } from './client/types'
 import {
   toCustomField, toCustomObject, apiName, sfCase, bpCase, fieldFullName, Types,
-  getValueTypeFieldElement, getFieldAnnotations, toProfiles, fromProfiles,
+  getValueTypeFieldElement, getSObjectFieldElement, toProfiles, fromProfiles,
   FieldPermission as FieldPermissions,
 } from './transformer'
 
@@ -408,16 +408,11 @@ export default class SalesforceAdapter {
     const element = Types.get(objectName) as ObjectType
     element.annotate({ [constants.API_NAME]: objectName })
     const fields = await this.client.discoverSObject(objectName)
-    fields.forEach(field => {
-      element.fields[bpCase(field.name)] = new Field(
-        element.elemID,
-        bpCase(field.name),
-        Types.get(field.type),
-        {
-          [constants.API_NAME]: field.name,
-          ...getFieldAnnotations(field),
-        },
-      )
+    const fieldElements = fields.map(field => getSObjectFieldElement(element.elemID, field))
+
+    // Set fields on elements
+    fieldElements.forEach(field => {
+      element.fields[field.name] = field
     })
     return element
   }

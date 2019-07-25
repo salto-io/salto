@@ -1,4 +1,4 @@
-import { snakeCase, camelCase } from 'lodash'
+import _ from 'lodash'
 import { ValueTypeField, Field } from 'jsforce'
 import {
   Type, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values,
@@ -6,7 +6,8 @@ import {
 } from 'adapter-api'
 import { CustomObject, CustomField, ProfileInfo } from './client/types'
 import {
-  API_NAME, LABEL, PICKLIST_VALUES, SALESFORCE, RESTRICTED_PICKLIST, FIELD_LEVEL_SECURITY,
+  API_NAME, LABEL, PICKLIST_VALUES, SALESFORCE, RESTRICTED_PICKLIST, FIELD_LEVEL_SECURITY, FORMULA,
+  FORMULA_TYPE_PREFIX,
 } from './constants'
 
 const capitalize = (s: string): string => {
@@ -14,14 +15,19 @@ const capitalize = (s: string): string => {
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
 export const sfCase = (name: string, custom: boolean = false): string =>
-  capitalize(camelCase(name)) + (custom === true ? '__c' : '')
+  capitalize(_.camelCase(name)) + (custom === true ? '__c' : '')
 export const bpCase = (name: string): string =>
-  (name.endsWith('__c') ? snakeCase(name).slice(0, -2) : snakeCase(name))
+  (name.endsWith('__c') ? _.snakeCase(name).slice(0, -2) : _.snakeCase(name))
 
 export const apiName = (element: Type | TypeField): string => (
   element.annotationsValues[API_NAME]
 )
 
+const formulaTypeName = (baseTypeName: string): string =>
+  `${FORMULA_TYPE_PREFIX}${baseTypeName}`
+const fieldTypeName = (typeName: string): string => (
+  typeName.startsWith(FORMULA_TYPE_PREFIX) ? typeName.slice(FORMULA_TYPE_PREFIX.length) : typeName
+)
 
 export class Types {
   // Type mapping for custom objects
@@ -68,10 +74,11 @@ export const toCustomField = (
 ): CustomField =>
   new CustomField(
     fullname ? fieldFullName(object, field) : apiName(field),
-    field.type.elemID.name,
+    fieldTypeName(field.type.elemID.name),
     field.annotationsValues[LABEL],
     field.annotationsValues[Type.REQUIRED],
     field.annotationsValues[PICKLIST_VALUES],
+    field.annotationsValues[FORMULA],
   )
 
 export const toCustomObject = (element: ObjectType): CustomObject =>
@@ -131,20 +138,21 @@ export const getValueTypeFieldElement = (parentID: ElemID, field: ValueTypeField
   return new TypeField(parentID, bpFieldName, bpFieldType, annotations)
 }
 
-export const getFieldAnnotations = (field: Field): Values => {
-  const annotations: Values = {}
-  annotations[LABEL] = field.label
-  annotations[Type.REQUIRED] = !field.nillable
+export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeField => {
+  const bpFieldName = bpCase(field.name)
+  let bpFieldType = Types.get(field.type)
+  const annotations: Values = {
+    [API_NAME]: field.name,
+    [LABEL]: field.label,
+    [Type.REQUIRED]: !field.nillable,
+  }
   if (field.defaultValue !== null) {
     annotations[Type.DEFAULT] = field.defaultValue
   }
 
   if (field.picklistValues && field.picklistValues.length > 0) {
     annotations[PICKLIST_VALUES] = field.picklistValues.map(val => val.value)
-    annotations[RESTRICTED_PICKLIST] = false
-    if (field.restrictedPicklist) {
-      annotations[RESTRICTED_PICKLIST] = field.restrictedPicklist
-    }
+    annotations[RESTRICTED_PICKLIST] = Boolean(field.restrictedPicklist)
 
     const defaults = field.picklistValues
       .filter(val => val.defaultValue === true)
@@ -158,7 +166,12 @@ export const getFieldAnnotations = (field: Field): Values => {
     }
   }
 
-  return annotations
+  if (field.calculated && !_.isEmpty(field.calculatedFormula)) {
+    bpFieldType = Types.get(formulaTypeName(bpFieldType.elemID.name))
+    annotations[FORMULA] = field.calculatedFormula
+  }
+
+  return new TypeField(parentID, bpFieldName, bpFieldType, annotations)
 }
 
 export interface FieldPermission {editable: boolean; readable: boolean}

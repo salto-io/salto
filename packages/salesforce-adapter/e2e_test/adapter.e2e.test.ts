@@ -73,7 +73,6 @@ describe('Test Salesforce adapter E2E with real account', () => {
 
       // Test _default
       // TODO: add test to primitive with _default and combobox _default (no real example for lead)
-      // eslint-disable-next-line no-underscore-dangle
       expect(lead.fields.status.annotationsValues[Type.DEFAULT]).toBe(
         'Open - Not Contacted'
       )
@@ -163,6 +162,15 @@ describe('Test Salesforce adapter E2E with real account', () => {
               },
             },
           ),
+          formula: new Field(
+            mockElemID,
+            'formula',
+            stringType,
+            {
+              label: 'Test formula',
+              [constants.FORMULA]: '"some text"',
+            },
+          ),
         },
       })
 
@@ -176,8 +184,11 @@ describe('Test Salesforce adapter E2E with real account', () => {
       expect(
         post.fields.description.annotationsValues[constants.API_NAME]
       ).toBe('Description__c')
+      expect(
+        post.fields.formula.annotationsValues[constants.API_NAME]
+      ).toBe('Formula__c')
 
-      expect(await objectExists(customObjectName)).toBe(true)
+      expect(await objectExists(customObjectName, ['Description__c', 'Formula__c'])).toBe(true)
       expect((await permissionExists('Admin', [`${customObjectName}.Description__c`]))[0]).toBe(true)
       expect((await permissionExists('Standard', [`${customObjectName}.Description__c`]))[0]).toBe(true)
 

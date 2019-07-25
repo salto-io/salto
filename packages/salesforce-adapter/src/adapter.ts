@@ -18,7 +18,7 @@ import {
 } from './client/types'
 import {
   toCustomField, toCustomObject, apiName, sfCase, bpCase, fieldFullName, Types,
-  getValueTypeFieldElement, getFieldAnnotations, toProfiles, fromProfiles,
+  getValueTypeFieldElement, toProfiles, fromProfiles, getSObjectFieldElement,
   FieldPermission as FieldPermissions, fromMetadataInfo,
 } from './transformer'
 

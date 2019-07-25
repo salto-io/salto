@@ -8,7 +8,7 @@ import {
 import { CustomObject, CustomField, ProfileInfo } from './client/types'
 import {
   API_NAME, LABEL, PICKLIST_VALUES, SALESFORCE, RESTRICTED_PICKLIST, FIELD_LEVEL_SECURITY, FORMULA,
-  FORMULA_TYPE_PREFIX,
+  FORMULA_TYPE_PREFIX, METADATA_OBJECT_NAME_FIELD,
 } from './constants'
 
 const capitalize = (s: string): string => {

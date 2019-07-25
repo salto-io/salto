@@ -64,6 +64,13 @@ describe('Test SalesforceAdapter discover', () => {
           label: 'Custom Field',
           nillable: true,
         },
+        {
+          name: 'Formula__c',
+          type: 'string',
+          label: 'Dummy formula',
+          calculated: true,
+          calculatedFormula: 'my formula',
+        },
       ])
       const result = await adapter().discover()
 

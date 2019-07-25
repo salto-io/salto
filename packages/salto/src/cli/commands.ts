@@ -38,7 +38,8 @@ export const plan = async (blueprintsFiles: string[], blueprintsDir?: string): P
     ].join('\n')
     print(output)
   } catch (e) {
-    printError(e)
+    // printError(e)
+    throw e
   }
 }
 

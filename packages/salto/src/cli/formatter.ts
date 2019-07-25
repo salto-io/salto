@@ -78,7 +78,7 @@ const createPlanStepTitle = (
   const modifier = printModifiers ? Prompts.MODIFIERS[step.action] : ' '
   const stepDesc = `${modifier} ${step.name}`
   const stepValue = createdActionStepValue(step)
-  return step.subChanges ? stepDesc : [stepDesc, stepValue].join(':')
+  return _.isEmpty(step.subChanges) ? [stepDesc, stepValue].join(': ') : stepDesc
 }
 
 const createPlanStepOutput = (
@@ -128,6 +128,13 @@ const getElapsedTime = (start: Date): number => Math.ceil(
 )
 
 export const createPlanOutput = (plan: Plan): string => {
+  if (_.isEmpty(plan)) {
+    return [
+      emptyLine(),
+      Prompts.EMPTY_PLAN,
+      emptyLine(),
+    ].join('\n')
+  }
   const actionCount = createCountPlanActionTypesOutput(plan)
   const planSteps = createPlanStepsOutput(plan)
   return [

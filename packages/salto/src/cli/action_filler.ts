@@ -15,10 +15,15 @@ export interface ActionPrintFormat {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const getActionType = (before: any, after: any): ActionPrintFormatType => {
-  if (before && after) {
-    return (_.isEqual(before, after)) ? 'eq' : 'modify'
+  const hasBefore = _.isObject(before) ? !_.isEmpty(before) : !_.isUndefined(before)
+  const hasAfter = _.isObject(after) ? !_.isEmpty(after) : !_.isUndefined(after)
+  if (before === after) {
+    return 'eq'
   }
-  if (!before && after) {
+  if (hasBefore && hasAfter) {
+    return 'modify'
+  }
+  if (!hasBefore && hasAfter) {
     return 'add'
   }
   return 'remove'
@@ -30,7 +35,7 @@ const createValuesChanges = (before: Values, after: Values): ActionPrintFormat[]
     const subChanges = (_.isPlainObject(before[name]) || _.isPlainObject(after[name]))
       ? createValuesChanges(before[name] || {}, after[name] || {}) : []
     return {
-      name, action, subChanges, data: { before, after },
+      name, action, subChanges, data: { before: before[name], after: after[name] },
     }
   })
 
@@ -48,11 +53,11 @@ const createRecordChanges = (
   }
 })
 
-const createFromObjectTypes = (
-  before?: ObjectType,
-  after?: ObjectType
+const createFromTypes = (
+  before?: Type,
+  after?: Type
 ): ActionPrintFormat => {
-  const name = ((before || after) as ObjectType).elemID.getFullName()
+  const name = ((before || after) as Type).elemID.getFullName()
   const action = getActionType(before, after)
   const annotationsValueChanges = createValuesChanges(
     (before) ? before.annotationsValues : {},
@@ -62,10 +67,11 @@ const createFromObjectTypes = (
     (before) ? before.annotations : {},
     (after) ? after.annotations : {}
   )
-  const fieldChanges = createRecordChanges(
-    (before) ? before.fields : {},
-    (after) ? after.fields : {}
-  )
+  const fieldChanges = isObjectType(before || after)
+    ? createRecordChanges(
+      (before) ? (before as ObjectType).fields : {},
+      (after) ? (after as ObjectType).fields : {}
+    ) : []
   const subChanges = [
     ...fieldChanges,
     ...annotationsChanges,
@@ -93,12 +99,8 @@ const createFromInstanceElements = (
 
 export const fillAction = (action: PlanAction): ActionPrintFormat => {
   const { before, after } = { ...action.data }
-  if (isObjectType(before || after)) {
-    return createFromObjectTypes(before as ObjectType, after as ObjectType)
-  }
   if (isInstanceElement(before || after)) {
     return createFromInstanceElements(before as InstanceElement, after as InstanceElement)
   }
-
-  throw new Error('unsupported fill action operation')
+  return createFromTypes(before as Type, after as Type)
 }

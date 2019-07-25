@@ -50,6 +50,7 @@ Salto will perform the following actions:`
 exactly these actions will be performed if "Salto apply" is run. Be sure to go over the plan 
 output when invoking the apply command.
 `
+  public static readonly EMPTY_PLAN = 'Nothing to do.'
 
   public static readonly DESCRIBE_NEAR_MATCH =
     'Could not find what you were looking for.'

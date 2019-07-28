@@ -12,6 +12,7 @@ export const RESTRICTED_PICKLIST = 'restricted_pick_list'
 export const PICKLIST_VALUES = 'values'
 export const API_NAME = 'api_name'
 export const FORMULA = 'formula'
+export const METADATA_TYPE = 'metadata_type'
 export const PRECISION = 'precision'
 export const SCALE = 'scale'
 export const FIELD_TYPE_NAMES = {

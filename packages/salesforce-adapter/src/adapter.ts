@@ -304,6 +304,7 @@ export default class SalesforceAdapter {
   private static createSObjectTypeElement(objectName: string, fields: SObjField[]): ObjectType {
     const element = Types.get(objectName) as ObjectType
     element.annotate({ [constants.API_NAME]: objectName })
+    element.annotate({ [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT })
     const fieldElements = fields.map(field => getSObjectFieldElement(element.elemID, field))
 
     // Set fields on elements

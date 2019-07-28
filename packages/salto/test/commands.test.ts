@@ -27,10 +27,9 @@ jest.mock('../src/core/commands', () => ({
     fillConfig: (configType: ObjectType) => Promise<InstanceElement>
   ) => mockDiscover(blueprints, fillConfig)),
   plan: jest.fn().mockImplementation((bp: Blueprint[]) => mockPlan(bp)),
-  getAllElements: jest.fn().mockImplementation((bp: Blueprint[]) => mockGetElements(bp)),
 }))
 
-jest.mock('../src/core/core', () => ({
+jest.mock('../src/parser/merger', () => ({
   getAllElements: jest.fn().mockImplementation((bp: Blueprint[]) => mockGetElements(bp)),
 }))
 

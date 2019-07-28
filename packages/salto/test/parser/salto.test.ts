@@ -221,6 +221,33 @@ describe('Salto parser', () => {
     })
   })
 
+  describe('updates', () => {
+    it('parse update fields', async () => {
+      const body = `
+        type salesforce_number is number {
+        }
+
+        type salesforce_type is object {
+          salesforce_number num {}
+        }
+
+        type salesforce_type is object {
+          update num {
+            label = "Name"
+            _required = true
+          }
+        }
+        `
+      const { elements } = await Parser.parse(Buffer.from(body), 'none')
+      const orig = elements[1] as ObjectType
+      const update = elements[2] as ObjectType
+      expect(orig.elemID).toEqual(update.elemID)
+      // eslint-disable-next-line no-console
+      console.log(JSON.stringify(update))
+      expect(update.fields.num.type.elemID.name).toBe('update')
+    })
+  })
+
   describe('error tests', () => {
     it('fails on invalid inheritence syntax', async () => {
       const body = `

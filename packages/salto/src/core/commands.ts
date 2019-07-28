@@ -1,8 +1,9 @@
 import {
   Plan, PlanAction, ObjectType, InstanceElement,
 } from 'adapter-api'
-import { getAllElements, getPlan, applyActions } from './core'
+import { getPlan, applyActions } from './core'
 import Parser from '../parser/salto'
+import { getAllElements } from '../parser/merger'
 import State from '../state/state'
 import { init as initAdapters } from './adapters'
 import Blueprint from './blueprint'

@@ -1,5 +1,6 @@
 import * as fs from 'async-file'
 import path from 'path'
+import os from 'os'
 import {
   PrimitiveType,
   Field,
@@ -13,12 +14,12 @@ import State from '../../src/state/state'
 
 describe('Test state mechanism', () => {
   const stateErrorFile = 'stateerror.bp'
+  const statePath = path.join(os.homedir(), '.salto/test_state.bp')
   const blueprintsDirectory = path.join(__dirname, '../../../test', 'blueprints')
-  const state = new State()
-
+  const state = new State(statePath)
   beforeAll(async () => {
     try {
-      await fs.unlink(State.STATEPATH)
+      await fs.unlink(statePath)
       // This remark is to prevent from failing if the state doesn't exist yet
       /* eslint-disable no-empty */
     } catch {}
@@ -26,7 +27,7 @@ describe('Test state mechanism', () => {
 
   afterEach(async () => {
     try {
-      await fs.unlink(State.STATEPATH)
+      await fs.unlink(statePath)
       // This remark is to prevent from failing if the state doesn't exist yet
       /* eslint-disable no-empty */
     } catch {}
@@ -90,8 +91,8 @@ describe('Test state mechanism', () => {
   it('should throw an error if the state bp is not valid', async () => {
     // Setup
     const buffer = await fs.readFile(path.join(blueprintsDirectory, stateErrorFile), 'utf8')
-    await fs.createDirectory(path.dirname(State.STATEPATH))
-    await fs.writeFile(State.STATEPATH, buffer)
+    await fs.createDirectory(path.dirname(statePath))
+    await fs.writeFile(statePath, buffer)
 
     // Test
     await expect(state.getLastState()).rejects.toThrow()

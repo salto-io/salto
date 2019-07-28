@@ -246,6 +246,7 @@ export default class SalesforceAdapter {
     }
     const element = Types.get(objectName, false) as ObjectType
     knownTypes.set(objectName, element)
+    element.annotate({ [constants.METADATA_TYPE]: objectName })
     if (!fields) {
       return [element]
     }

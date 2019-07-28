@@ -357,6 +357,7 @@ export default class SalesforceAdapter {
 
     const element = Types.get(objectName, false) as ObjectType
     element.annotate({ [constants.API_NAME]: objectName })
+    element.annotate({ [constants.METADATA_TYPE]: objectName })
     if (!fields) {
       return [element]
     }

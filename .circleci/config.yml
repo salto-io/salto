@@ -4,7 +4,7 @@ jobs:
   build:
     docker:
       # specify the version you desire here
-      - image: saltolabs/salto:0.0.5
+      - image: saltolabs/salto:0.0.6
 
     working_directory: ~/repo
 

@@ -2,9 +2,12 @@ import {
   ObjectType, ElemID, Field, BuiltinTypes, InstanceElement,
 } from 'adapter-api'
 import { mergeElements } from '../../src/parser/merger'
+import Keywords from '../../src/parser/keywords'
 
 describe('Merger', () => {
-  const updateType = new ObjectType({ elemID: new ElemID('', 'update') })
+  const updateType = new ObjectType(
+    { elemID: new ElemID('', Keywords.UPDATE_DEFINITION) }
+  )
   const baseElemID = new ElemID('salto', 'base')
   const base = new ObjectType({
     elemID: baseElemID,

@@ -3,9 +3,12 @@ import {
   ObjectType, isType, isObjectType, isInstanceElement, Element, Field,
 } from 'adapter-api'
 import Parser from './salto'
+import Keywords from './keywords'
 import Blueprint from '../core/blueprint'
 
-const isUpdate = (definition: Field): boolean => definition.type.elemID.name === 'update'
+const isUpdate = (
+  definition: Field
+): boolean => definition.type.elemID.name === Keywords.UPDATE_DEFINITION
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const validateNoDuplicates = (existingValue: any): void => {

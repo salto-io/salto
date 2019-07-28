@@ -4,6 +4,7 @@ import {
 } from 'adapter-api'
 import * as TestHelpers from '../common/helpers'
 import Parser from '../../src/parser/salto'
+import Keywords from '../../src/parser/keywords'
 
 describe('Salto parser', () => {
   describe('primitive and model', () => {
@@ -244,7 +245,7 @@ describe('Salto parser', () => {
       expect(orig.elemID).toEqual(update.elemID)
       // eslint-disable-next-line no-console
       console.log(JSON.stringify(update))
-      expect(update.fields.num.type.elemID.name).toBe('update')
+      expect(update.fields.num.type.elemID.name).toBe(Keywords.UPDATE_DEFINITION)
     })
   })
 

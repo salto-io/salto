@@ -403,7 +403,7 @@ export default class SalesforceAdapter {
       )
     )
     // discover permissions per field - we do this post element creation as we
-    // fetch permssions for all fields in single call.
+    // fetch permissions for all fields in single call.
     const permissions = await this.discoverPermissions()
     // add field permissions to all discovered elements
     sobjects.forEach(sobject => {

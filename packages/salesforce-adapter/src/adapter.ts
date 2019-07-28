@@ -426,6 +426,7 @@ export default class SalesforceAdapter {
   ): Promise<ObjectType> {
     const element = Types.get(objectName) as ObjectType
     element.annotate({ [constants.API_NAME]: objectName })
+    element.annotate({ [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT })
     const fields = await this.client.discoverSObject(objectName)
     const fieldElements = fields.map(field => getSObjectFieldElement(element.elemID, field))
 

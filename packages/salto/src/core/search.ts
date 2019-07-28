@@ -1,7 +1,7 @@
 import Fuse from 'fuse.js'
 import _ from 'lodash'
 
-import { isListType, isObjectType, Element } from 'adapter-api'
+import { isObjectType, Element } from 'adapter-api'
 
 type ElementMap = Record<string, Element>
 type NotFound = null
@@ -32,13 +32,6 @@ const getMatchingElementName = (
   return matches.length > 0 ? elementsNames[+matches[0]] : undefined
 }
 
-const skipListElement = (element: Element): Element => {
-  if (isListType(element) && element.elementType) {
-    return skipListElement(element.elementType)
-  }
-  return element
-}
-
 export const findElement = (
   keyParts: string[],
   topLevelElements: ElementMap,
@@ -57,7 +50,7 @@ export const findElement = (
     return null
   }
 
-  const bestElemId = skipListElement(searchElements[bestKey]).elemID
+  const bestElemId = searchElements[bestKey].elemID
   const bestElement = topLevelElements[bestElemId.getFullName()]
   const isGuess = bestKey !== searchWord
   if (!_.isEmpty(keyPartsRem)) {

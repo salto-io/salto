@@ -14,7 +14,7 @@ import {
 } from './client/types'
 import {
   toCustomField, toCustomObject, apiName, sfCase, fieldFullName, Types,
-  getValueTypeFieldElement, getSObjectFieldElement, fromMetadataInfo, sfTypeName, bpCase,
+  getValueTypeFieldElement, getSObjectFieldElement, fromMetadataInfo, sfTypeName, bpCase, toMetadataInfo,
 } from './transformer'
 import { AspectsManager } from './aspects/aspects'
 
@@ -134,9 +134,9 @@ export default class SalesforceAdapter {
   }
 
   /**
-   * Add new type element
-   * @param element the object to add
-   * @returns the updated object with extra info like api name and label
+   * Add new element
+   * @param element the object/instance to add
+   * @returns the updated element with extra info like api name, label and metadata type
    * @throws error in case of failure
    */
   public async add(element: Element): Promise<Element> {
@@ -154,6 +154,13 @@ export default class SalesforceAdapter {
 
       return post as Element
     }
+
+    const instance = element as InstanceElement
+    const result = await this.client.create(
+      instance.type.annotationsValues[constants.METADATA_TYPE],
+      toMetadataInfo(instance.value, instance.elemID.name)
+    )
+    diagnose(result)
 
     return element
   }

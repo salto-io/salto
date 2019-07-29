@@ -142,6 +142,7 @@ describe('Merger', () => {
       ]
       const merged = mergeElements(elements)
       expect(merged.length).toBe(2)
+      expect(merged[0]).toEqual(mergedObject)
     })
 
     it('throws error when multiple updates exists for same field', () => {

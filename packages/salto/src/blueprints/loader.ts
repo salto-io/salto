@@ -13,22 +13,24 @@ const isUpdate = (
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const validateNoDuplicates = (existingValue: any): void => {
-  if (!_.isUndefined(existingValue)) throw new Error('No duplicates allowed')
+  if (!_.isUndefined(existingValue)) throw new Error(`duplicated value ${existingValue}`)
 }
 
 const validateDefinitions = (bases: Field[], updates: Field[]): void => {
   // ensure only one base field and no less
+  const parentID = (bases[0] || updates[0]).parentID().getFullName()
+  const fieldName = (bases[0] || updates[0]).name
   if (bases.length === 0) {
-    throw new Error("Can't update a field with no base definition.")
+    throw new Error(`can't extend ${parentID}: field ${fieldName} has no base definition.`)
   }
   if (bases.length > 1) {
-    throw new Error("Can't have more then one base definition for a field")
+    throw new Error(`can't extend ${parentID}: field ${fieldName} has multiple base definition.`)
   }
   // Ensure each annotation value is updated at most once.
   try {
     _.mergeWith({}, ...updates.map(u => u.annotationsValues), validateNoDuplicates)
   } catch (e) {
-    throw new Error("Can't update an annotation value more then once")
+    throw new Error(`can't extend ${parentID}: ${e.message}`)
   }
 }
 

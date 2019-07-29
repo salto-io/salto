@@ -200,7 +200,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
       if (await objectExists(customObjectName) === true) {
         await sfAdapter.remove(element)
       }
-      const post = await sfAdapter.add(element)
+      const post = await sfAdapter.add(element) as ObjectType
 
       // Test
       expect(post).toBeInstanceOf(ObjectType)

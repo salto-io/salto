@@ -109,8 +109,8 @@ export default class SalesforceAdapter {
       annotateApiNameAndLabel(post)
 
       const result = await this.client.create(
-          constants.CUSTOM_OBJECT,
-          toCustomObject(post)
+        constants.CUSTOM_OBJECT,
+        toCustomObject(post)
       )
       diagnose(result)
 
@@ -123,8 +123,8 @@ export default class SalesforceAdapter {
     // Creating new instance
     const instance = element as InstanceElement
     const result = await this.client.create(
-        instance.type.annotationsValues[constants.METADATA_TYPE],
-        toMetadataInfo(instance.value, instance.elemID.name)
+      instance.type.annotationsValues[constants.METADATA_TYPE],
+      toMetadataInfo(instance.value, instance.elemID.name)
     )
     diagnose(result)
 

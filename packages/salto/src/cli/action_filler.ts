@@ -17,7 +17,7 @@ export interface ActionPrintFormat {
 const getActionType = (before: any, after: any): ActionPrintFormatType => {
   const hasBefore = _.isObject(before) ? !_.isEmpty(before) : !_.isUndefined(before)
   const hasAfter = _.isObject(after) ? !_.isEmpty(after) : !_.isUndefined(after)
-  if (before === after) {
+  if (_.isEqual(before, after)) {
     return 'eq'
   }
   if (hasBefore && hasAfter) {
@@ -29,13 +29,20 @@ const getActionType = (before: any, after: any): ActionPrintFormatType => {
   return 'remove'
 }
 
+const filterEQ = (
+  actions: ActionPrintFormat[]
+): ActionPrintFormat[] => actions.filter(a => a.action !== 'eq')
+
 const createValuesChanges = (before: Values, after: Values): ActionPrintFormat[] =>
   _.union(Object.keys(before), Object.keys(after)).map(name => {
     const action = getActionType(before[name], after[name])
     const subChanges = (_.isPlainObject(before[name]) || _.isPlainObject(after[name]))
       ? createValuesChanges(before[name] || {}, after[name] || {}) : []
     return {
-      name, action, subChanges, data: { before: before[name], after: after[name] },
+      name,
+      action,
+      subChanges: filterEQ(subChanges),
+      data: { before: before[name], after: after[name] },
     }
   })
 
@@ -49,7 +56,7 @@ const createRecordChanges = (
     (after[name]) ? after[name].annotationsValues : {}
   )
   return {
-    name, action, subChanges, data: { before, after },
+    name, action, subChanges: filterEQ(subChanges), data: { before, after },
   }
 })
 
@@ -77,8 +84,9 @@ const createFromTypes = (
     ...annotationsChanges,
     ...annotationsValueChanges,
   ]
+
   return {
-    name, action, subChanges, data: { before, after },
+    name, action, subChanges: filterEQ(subChanges), data: { before, after },
   }
 }
 
@@ -93,7 +101,7 @@ const createFromInstanceElements = (
   )
   const action = getActionType(before, after)
   return {
-    name, action, subChanges, data: { before, after },
+    name, action, subChanges: filterEQ(subChanges), data: { before, after },
   }
 }
 

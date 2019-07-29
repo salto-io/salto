@@ -89,7 +89,7 @@ const createPlanStepOutput = (
   const stepTitle = createPlanStepTitle(step, printModifiers)
   const stepChildren = step.subChanges
     ? wu(step.subChanges).map((subChange): string => {
-      const printChildModifiers = subChange.action === 'modify'
+      const printChildModifiers = subChange.action !== step.action
       return createPlanStepOutput(subChange, printChildModifiers, identLevel + 1)
     }).toArray()
     : []

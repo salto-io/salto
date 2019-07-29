@@ -7,7 +7,7 @@ import {
 
 import Prompts from './prompts'
 import { FoundSearchResult, SearchResult } from '../core/search'
-import { fillAction, ActionPrintFormat } from './action_filler'
+import { formatAction, ActionLineFormat } from './action_filler'
 
 export const print = (txt: string): void => {
   // eslint-disable-next-line no-console
@@ -40,61 +40,33 @@ const createCountPlanActionTypesOutput = (plan: Plan): string => {
   )
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const normalizeValuePrint = (value: any): string => {
-  if (typeof value === 'string') {
-    return `"${value}"`
-  }
-  if (typeof value === 'undefined') {
-    return 'undefined'
-  }
-  if (Array.isArray(value)) {
-    return `[${value.map(normalizeValuePrint)}]`
-  }
-  return JSON.stringify(value)
-}
-
-const createdActionStepValue = (step: ActionPrintFormat): string => {
-  if (step.action === 'modify') {
-    return (
-      `${normalizeValuePrint(step.data.before)}`
-      + ` => ${normalizeValuePrint(step.data.after)}`
-    )
-  }
-  if (step.action === 'add') {
-    return `${normalizeValuePrint(step.data.after)}`
-  }
-  return `${normalizeValuePrint(step.data.before)}`
-}
-
-const createPlanActionName = (step: ActionPrintFormat): string => (step.data.before
+const createPlanActionName = (step: PlanAction): string => (step.data.before
   ? step.data.before.elemID.getFullName()
   : (step.data.after as Element).elemID.getFullName())
 
 const createPlanStepTitle = (
-  step: ActionPrintFormat,
+  step: ActionLineFormat,
   printModifiers?: boolean,
 ): string => {
-  const modifier = printModifiers ? Prompts.MODIFIERS[step.action] : ' '
+  const modifier = printModifiers ? step.actionModifier : ' '
   const stepDesc = `${modifier} ${step.name}`
-  const stepValue = createdActionStepValue(step)
-  return _.isEmpty(step.subChanges) ? [stepDesc, stepValue].join(': ') : stepDesc
+  return [stepDesc, step.value].filter(n => n).join(': ')
 }
 
 const createPlanStepOutput = (
-  step: ActionPrintFormat,
+  formatedAction: ActionLineFormat,
   printModifiers: boolean,
   identLevel: number = 1,
 ): string => {
-  const stepTitle = createPlanStepTitle(step, printModifiers)
-  const stepChildren = step.subChanges
-    ? wu(step.subChanges).map((subChange): string => {
-      const printChildModifiers = subChange.action === 'modify'
-      return createPlanStepOutput(subChange, printChildModifiers, identLevel + 1)
+  const lineTitle = createPlanStepTitle(formatedAction, printModifiers)
+  const lineChildren = formatedAction.subLines
+    ? wu(formatedAction.subLines).map((subLine): string => {
+      const printChildModifiers = subLine.actionModifier !== formatedAction.actionModifier
+      return createPlanStepOutput(subLine, printChildModifiers, identLevel + 1)
     }).toArray()
     : []
 
-  const allLines = [stepTitle].concat(stepChildren)
+  const allLines = [lineTitle].concat(lineChildren)
 
   const prefix = '  '.repeat(identLevel)
   return allLines
@@ -104,7 +76,7 @@ const createPlanStepOutput = (
 
 const createPlanStepsOutput = (
   plan: Plan
-): string => wu(plan).map(step => createPlanStepOutput(fillAction(step), true))
+): string => wu(plan).map(step => createPlanStepOutput(formatAction(step), true))
   .toArray().join('\n\n')
 
 const notifyDescribeNoMatch = (): string => warn(Prompts.DESCRIBE_NOT_FOUND)
@@ -172,7 +144,7 @@ export const createActionDoneOutput = (
   currentActionStartTime: Date
 ): string => {
   const elapsed = getElapsedTime(currentActionStartTime)
-  return `${fillAction(currentAction).name}: `
+  return `${createPlanActionName(currentAction)}: `
         + `${Prompts.ENDACTION[currentAction.action]} `
         + `completed after ${elapsed}s`
 }
@@ -181,7 +153,7 @@ export const createActionStartOutput = (action: PlanAction): string => {
   const output = [
     emptyLine(),
     body(
-      `${fillAction(action).name}: ${Prompts.STARTACTION[action.action]}...`
+      `${createPlanActionName(action)}: ${Prompts.STARTACTION[action.action]}...`
     ),
   ]
   return output.join('\n')
@@ -190,7 +162,7 @@ export const createActionStartOutput = (action: PlanAction): string => {
 export const createActionInProgressOutput = (action: PlanAction, start: Date): string => {
   const elapsed = getElapsedTime(start)
   const elapsedRound = Math.ceil((elapsed - elapsed) % 5)
-  return body(`${createPlanActionName(fillAction(action))}: Still ${
+  return body(`${createPlanActionName(action)}: Still ${
     Prompts.STARTACTION[action.action]
   }... (${elapsedRound}s elapsed)`)
 }

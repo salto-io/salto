@@ -1,5 +1,5 @@
 import {
-  Type, BuiltinTypes, ElemID, PlanActionType, PlanAction, ObjectType, ListType,
+  Type, BuiltinTypes, ElemID, PlanActionType, PlanAction, ObjectType,
   Field, Plan, InstanceElement,
 } from 'adapter-api'
 import wu from 'wu'
@@ -50,10 +50,9 @@ export const getAllElements = async (
       nicknames: new Field(
         employeeElemID,
         'nicknames',
-        new ListType({
-          elemID: new ElemID('salto', 'nicknames'),
-          elementType: BuiltinTypes.STRING,
-        }),
+        BuiltinTypes.STRING,
+        {},
+        true
       ),
       /* eslint-disable-next-line @typescript-eslint/camelcase */
       employee_resident: new Field(

@@ -1,11 +1,9 @@
 import {
   ObjectType,
-  ListType,
   PrimitiveTypes,
   PrimitiveType,
   ElementsRegistry,
   isObjectType,
-  isListType,
   isPrimitiveType,
   ElemID,
   InstanceElement,
@@ -121,42 +119,6 @@ describe('Test elements.ts', () => {
     expect(ot1.getMutualFieldsWithOther(ot2)).toEqual([ot1.fields.num_field])
   })
 
-  it('should allow basic list type creations withh all params passed to the constructor', () => {
-    const ptStr = new PrimitiveType({
-      elemID: new ElemID('test', 'prim'),
-      primitive: PrimitiveTypes.STRING,
-      annotations: {},
-      annotationsValues: {},
-    })
-    const ptNum = new PrimitiveType({
-      elemID: new ElemID('test', 'prim'),
-      primitive: PrimitiveTypes.NUMBER,
-      annotations: {},
-      annotationsValues: {},
-    })
-    const ot = new ObjectType({
-      elemID: new ElemID('test', 'obj'),
-      fields: {
-        /* eslint-disable-next-line @typescript-eslint/camelcase */
-        num_field: new Field(new ElemID('test', 'obj'), 'num_field', ptNum),
-        /* eslint-disable-next-line @typescript-eslint/camelcase */
-        str_field: new Field(new ElemID('test', 'obj'), 'str_field', ptStr),
-      },
-      annotations: {},
-      annotationsValues: {},
-    })
-
-    const lt = new ListType({
-      elemID: new ElemID('test', 'list'),
-      elementType: ot,
-      annotations: {},
-      annotationsValues: {},
-    })
-    expect(lt.elemID.adapter).toEqual('test')
-    expect(lt.elemID.name).toEqual('list')
-    expect(lt.elementType).toBe(ot)
-  })
-
   it('should allow to create types from the correct type them using registery.getElement method', () => {
     const registery = new ElementsRegistry()
     // Check you can create Primitive Type
@@ -170,11 +132,6 @@ describe('Test elements.ts', () => {
       PrimitiveTypes.OBJECT,
     )
     expect(ot).toBeInstanceOf(ObjectType)
-    const lt = registery.getElement(
-      new ElemID('', 'list'),
-      PrimitiveTypes.LIST,
-    )
-    expect(lt).toBeInstanceOf(ListType)
   })
 
   it('should reuse created types', () => {
@@ -244,15 +201,6 @@ describe('Test elements.ts', () => {
     expect(saltoAddr).not.toBe(saltoAddr2)
     expect(saltoAddr).toEqual(saltoAddr2)
 
-    const nicknames = registery.getElement(
-      new ElemID('salto', 'nicknamed'),
-      PrimitiveTypes.LIST,
-    )
-    const nicknames2 = nicknames.clone()
-
-    expect(nicknames).not.toBe(nicknames2)
-    expect(nicknames).toEqual(nicknames2)
-
     const prim = registery.getElement(
       new ElemID('', 'prim'),
       PrimitiveTypes.STRING,
@@ -308,29 +256,8 @@ describe('Test elements.ts', () => {
       new ElemID('test', 'ot1'),
       PrimitiveTypes.OBJECT,
     )
-    const lt = registery.getElement(
-      new ElemID('test', 'lt1'),
-      PrimitiveTypes.LIST,
-    )
     expect(isObjectType(ot)).toBeTruthy()
-    expect(isListType(lt)).toBeTruthy()
     expect(isPrimitiveType(pt)).toBeTruthy()
-  })
-
-  it('should allow clone on a list element with an element type', () => {
-    const registery = new ElementsRegistry()
-    const pt = registery.getElement(
-      new ElemID('test', 'pt1'),
-      PrimitiveTypes.STRING,
-    )
-    const lt1 = registery.getElement(
-      new ElemID('test', 'list1'),
-      PrimitiveTypes.LIST,
-    )
-    lt1.elementType = pt
-    const lt2 = lt1.clone()
-    expect(lt1).not.toBe(lt2)
-    expect(lt2).toMatchObject(lt1)
   })
 
   it('should allow to init a registery with types', () => {

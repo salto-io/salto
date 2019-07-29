@@ -403,9 +403,9 @@ export default class SalesforceAdapter {
       _.chunk(await this.client.listSObjects(), 100).map(
         objChunk => this.client.describeSObjects(objChunk.map(obj => obj.name))
       ).map(
-        async objects => Promise.all((await objects).map(
+        async objects => (await objects).map(
           ({ name, fields }) => SalesforceAdapter.createSObjectTypeElement(name, fields)
-        ))
+        )
       )
     ))
     // discover permissions per field - we do this post element creation as we
@@ -427,10 +427,7 @@ export default class SalesforceAdapter {
     return sobjects
   }
 
-  private static async createSObjectTypeElement(
-    objectName: string,
-    fields: SObjField[],
-  ): Promise<ObjectType> {
+  private static createSObjectTypeElement(objectName: string, fields: SObjField[]): ObjectType {
     const element = Types.get(objectName) as ObjectType
     element.annotate({ [constants.API_NAME]: objectName })
     const fieldElements = fields.map(field => getSObjectFieldElement(element.elemID, field))

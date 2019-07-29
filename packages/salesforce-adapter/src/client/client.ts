@@ -7,6 +7,7 @@ import {
   MetadataInfo,
   SaveResult,
   ValueTypeField,
+  DescribeSObjectResult,
 } from 'jsforce'
 
 const apiVersion = '45.0'
@@ -79,9 +80,11 @@ export default class SalesforceClient {
     return (await this.conn.describeGlobal()).sobjects
   }
 
-  public async discoverSObject(objectName: string): Promise<Field[]> {
+  public async describeSObjects(objectNames: string[]):
+    Promise<{ name: string; fields: Field[]}[]> {
     await this.login()
-    return (await this.conn.describe(objectName)).fields
+    const objects = await this.conn.soap.describeSObjects(objectNames) as DescribeSObjectResult[]
+    return objects.map(obj => ({ name: obj.name, fields: obj.fields }))
   }
 
   /**

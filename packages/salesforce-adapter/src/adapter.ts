@@ -8,7 +8,9 @@ import {
   Field,
   Element,
 } from 'adapter-api'
-import { SaveResult, ValueTypeField, MetadataInfo } from 'jsforce'
+import {
+  SaveResult, ValueTypeField, MetadataInfo, Field as SObjField,
+} from 'jsforce'
 import { isArray } from 'util'
 import _ from 'lodash'
 import SalesforceClient from './client/client'
@@ -397,11 +399,15 @@ export default class SalesforceAdapter {
   }
 
   private async discoverSObjects(): Promise<Type[]> {
-    const sobjects = await Promise.all(
-      (await this.client.listSObjects()).map(
-        obj => this.createSObjectTypeElement(obj.name)
+    const sobjects = _.flatten(await Promise.all(
+      _.chunk(await this.client.listSObjects(), 100).map(
+        objChunk => this.client.describeSObjects(objChunk.map(obj => obj.name))
+      ).map(
+        async objects => (await objects).map(
+          ({ name, fields }) => SalesforceAdapter.createSObjectTypeElement(name, fields)
+        )
       )
-    )
+    ))
     // discover permissions per field - we do this post element creation as we
     // fetch permssions for all fields in single call.
     const permissions = await this.discoverPermissions()
@@ -421,12 +427,9 @@ export default class SalesforceAdapter {
     return sobjects
   }
 
-  private async createSObjectTypeElement(
-    objectName: string
-  ): Promise<ObjectType> {
+  private static createSObjectTypeElement(objectName: string, fields: SObjField[]): ObjectType {
     const element = Types.get(objectName) as ObjectType
     element.annotate({ [constants.API_NAME]: objectName })
-    const fields = await this.client.discoverSObject(objectName)
     const fieldElements = fields.map(field => getSObjectFieldElement(element.elemID, field))
 
     // Set fields on elements

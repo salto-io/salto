@@ -1,5 +1,7 @@
 import _ from 'lodash'
-import { ValueTypeField, Field, MetadataInfo } from 'jsforce'
+import {
+  ValueTypeField, Field, MetadataInfo, DefaultValueWithType,
+} from 'jsforce'
 
 import {
   Type, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values,
@@ -139,6 +141,33 @@ export const getValueTypeFieldElement = (parentID: ElemID, field: ValueTypeField
   return new TypeField(parentID, bpFieldName, bpFieldType, annotations)
 }
 
+type DefaultValueType = string | boolean | number
+
+const isDefaultWithType = (val: DefaultValueType | DefaultValueWithType):
+  val is DefaultValueWithType => new Set(_.keys(val)).has('_')
+
+const valueFromXsdType = (val: DefaultValueWithType): DefaultValueType => {
+  type ConvertFuncT = (v: string) => DefaultValueType
+  const convertFuncMap: Record<string, ConvertFuncT> = {
+    'xsd:string': String,
+    'xsd:boolean': v => v === 'true',
+    'xsd:double': Number,
+    'xsd:int': Number,
+    'xsd:long': Number,
+  }
+  const convertFunc = convertFuncMap[val.$['xsi:type']] || (v => v)
+  return convertFunc(val._)
+}
+
+const getDefaultValue = (field: Field): DefaultValueType | undefined => {
+  if (field.defaultValue === null || field.defaultValue === undefined) {
+    return undefined
+  }
+
+  return isDefaultWithType(field.defaultValue)
+    ? valueFromXsdType(field.defaultValue) : field.defaultValue
+}
+
 export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeField => {
   const bpFieldName = bpCase(field.name)
   let bpFieldType = Types.get(field.type)
@@ -147,8 +176,9 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
     [LABEL]: field.label,
     [Type.REQUIRED]: !field.nillable,
   }
-  if (field.defaultValue !== null) {
-    annotations[Type.DEFAULT] = field.defaultValue
+  const defaultValue = getDefaultValue(field)
+  if (defaultValue !== undefined) {
+    annotations[Type.DEFAULT] = defaultValue
   }
 
   if (field.picklistValues && field.picklistValues.length > 0) {

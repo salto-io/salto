@@ -33,7 +33,9 @@ describe('Test SalesforceAdapter discover', () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       fields: Record<string, any>[]): void => {
       SalesforceClient.prototype.listSObjects = jest.fn().mockImplementation(() => [{ name }])
-      SalesforceClient.prototype.discoverSObject = jest.fn().mockImplementation(() => fields)
+      SalesforceClient.prototype.describeSObjects = jest.fn().mockImplementation(
+        () => [{ name, fields }]
+      )
       SalesforceClient.prototype.listMetadataTypes = jest.fn().mockImplementation(() => [])
     }
 
@@ -44,7 +46,10 @@ describe('Test SalesforceAdapter discover', () => {
           type: 'string',
           label: 'Last Name',
           nillable: false,
-          defaultValue: 'BLABLA',
+          defaultValue: {
+            $: { 'xsi:type': 'xsd:string' },
+            _: 'BLABLA',
+          },
         },
         {
           name: 'FirstName',
@@ -56,13 +61,18 @@ describe('Test SalesforceAdapter discover', () => {
           name: 'IsDeleted',
           type: 'boolean',
           label: 'Is Deleted',
+          // Default values don't look like this in the API but we support it so we must test it
           defaultValue: false,
         },
         {
           name: 'Custom__c',
-          type: 'string',
+          type: 'boolean',
           label: 'Custom Field',
           nillable: true,
+          defaultValue: {
+            $: { 'xsi:type': 'xsd:boolean' },
+            _: 'false',
+          },
         },
         {
           name: 'Formula__c',
@@ -88,6 +98,7 @@ describe('Test SalesforceAdapter discover', () => {
       // Custom type
       expect(lead.fields.custom).not.toBeUndefined()
       expect(lead.fields.custom.annotationsValues[constants.API_NAME]).toBe('Custom__c')
+      expect(lead.fields.custom.annotationsValues[Type.DEFAULT]).toBe(false)
       // Formula field
       expect(lead.fields.formula).toBeDefined()
       expect(lead.fields.formula.type.elemID.name).toBe('formula_string')

@@ -39,9 +39,13 @@ const mergeFieldDefinitions = (
   const updates = definitions.filter(d => isUpdate(d))
   validateDefinitions(bases, updates)
   // If there is more then one base validation would have failed
-  const mergedField = bases[0].clone()
-  _.merge(mergedField.annotationsValues, ...updates.map(u => u.annotationsValues))
-  return mergedField
+  const base = bases[0]
+  const annotationsValues = _.merge(
+    {},
+    base.annotationsValues,
+    ...updates.map(u => u.annotationsValues)
+  )
+  return new Field(base.parentID(), base.name, base.type, annotationsValues, base.isList)
 }
 
 const mergeObjectDefinitions = (objects: ObjectType[]): ObjectType => {
@@ -113,7 +117,7 @@ const updateMergedTypes = (
 
 /**
  * Merge a list of elements by applying all updates, and replacing the pointers
- * to the updated elements. (Which also merge empty type defs.)
+ * to the updated elements.
  */
 export const mergeElements = (elements: Element[]): Element[] => {
   const mergedObjects = mergeObjects(elements.filter(e => isObjectType(e)) as ObjectType[])

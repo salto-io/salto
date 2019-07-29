@@ -103,6 +103,7 @@ export default class SalesforceAdapter {
    * @throws error in case of failure
    */
   public async add(element: Element): Promise<Element> {
+    // Adding new CustomObject when received ObjectType
     if (element instanceof ObjectType) {
       const post = element.clone()
       annotateApiNameAndLabel(post)
@@ -119,6 +120,7 @@ export default class SalesforceAdapter {
       return post as Element
     }
 
+    // Creating new instance
     const instance = element as InstanceElement
     const result = await this.client.create(
         instance.type.annotationsValues[constants.METADATA_TYPE],

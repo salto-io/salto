@@ -5,10 +5,9 @@ import {
   Plan,
 } from 'adapter-api'
 import * as commands from '../../src/core/commands'
-import * as core from '../../src/core/core'
 import State from '../../src/state/state'
-import Blueprint from '../../src/core/blueprint'
-
+import Blueprint from '../../src/blueprints/blueprint'
+import { getAllElements } from '../../src/blueprints/loader'
 
 const mockAdd = jest.fn(async ap => {
   if (ap.elemID.name === 'fail') {
@@ -92,7 +91,7 @@ describe('Test commands.ts and core.ts', () => {
 
   it('Should return all elements in the blueprint', async () => {
     const blueprints = await readBlueprints('salto.bp', 'salto2.bp')
-    const elements = await core.getAllElements(blueprints)
+    const elements = await getAllElements(blueprints)
     const fullNames = elements.map(e => e.elemID.getFullName())
     expect(fullNames).toEqual(
       expect.arrayContaining(['salesforce', 'salesforce_test', 'salesforce_test2']),
@@ -101,7 +100,7 @@ describe('Test commands.ts and core.ts', () => {
 
   it('should throw an error if the bp is not valid2', async () => {
     const blueprints = await readBlueprints('error.bp')
-    await expect(core.getAllElements(blueprints)).rejects.toThrow()
+    await expect(getAllElements(blueprints)).rejects.toThrow()
   })
 
   it('should throw error on missing adapter', async () => {

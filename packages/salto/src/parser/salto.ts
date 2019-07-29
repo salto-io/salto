@@ -4,7 +4,6 @@ import {
   Type, ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field,
   isObjectType, isPrimitiveType, Element, isInstanceElement, InstanceElement,
 } from 'adapter-api'
-
 import HCLParser from './hcl'
 
 enum Keywords {

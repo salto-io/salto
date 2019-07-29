@@ -1,7 +1,7 @@
 // This file will be soon merged into salto-cli
 import { PlanAction } from 'adapter-api'
 import { loadBlueprints, dumpBlueprint } from './blueprint'
-import { getAllElements } from '../core/core'
+import { getAllElements } from '../blueprints/loader'
 import {
   createPlanOutput, createActionStartOutput, createActionInProgressOutput,
   createActionDoneOutput, formatSearchResults, subHeader, print, printError,

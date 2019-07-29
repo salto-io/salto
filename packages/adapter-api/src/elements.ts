@@ -15,7 +15,7 @@ export interface Values {
   /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
   [key: string]: any
 }
-type FieldMap = Record<string, Field>
+export type FieldMap = Record<string, Field>
 type TypeMap = Record<string, Type>
 
 

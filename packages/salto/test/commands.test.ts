@@ -6,7 +6,7 @@ import {
 import * as commands from '../src/cli/commands'
 import { getFieldInputType } from '../src/cli/callbacks'
 import * as coreMock from './core/mocks/core'
-import Blueprint from '../src/core/blueprint'
+import Blueprint from '../src/blueprints/blueprint'
 
 
 const mockApply = coreMock.apply
@@ -27,10 +27,9 @@ jest.mock('../src/core/commands', () => ({
     fillConfig: (configType: ObjectType) => Promise<InstanceElement>
   ) => mockDiscover(blueprints, fillConfig)),
   plan: jest.fn().mockImplementation((bp: Blueprint[]) => mockPlan(bp)),
-  getAllElements: jest.fn().mockImplementation((bp: Blueprint[]) => mockGetElements(bp)),
 }))
 
-jest.mock('../src/core/core', () => ({
+jest.mock('../src/blueprints/loader', () => ({
   getAllElements: jest.fn().mockImplementation((bp: Blueprint[]) => mockGetElements(bp)),
 }))
 

@@ -6,7 +6,7 @@ import * as TestHelpers from '../common/helpers'
 import Parser from '../../src/parser/salto'
 
 describe('Salto parser', () => {
-  describe('primitive and model', () => {
+  describe('primitive, model and extensions', () => {
     let parsedElements: Element[]
 
     beforeAll(async () => {
@@ -51,13 +51,24 @@ describe('Salto parser', () => {
           ]
         }
       }
-      
+
       salesforce_test inst {
         name = "me"
       }
 
       salesforce {
         username = "foo"
+      }
+
+      model salesforce_type {
+        salesforce_number num {}
+      }
+
+      model salesforce_type {
+        update num {
+          label = "Name"
+          _required = true
+        }
       }
       `
 
@@ -67,7 +78,7 @@ describe('Salto parser', () => {
 
     describe('parse result', () => {
       it('should have two types', () => {
-        expect(parsedElements.length).toBe(7)
+        expect(parsedElements.length).toBe(9)
       })
     })
 
@@ -217,6 +228,15 @@ describe('Salto parser', () => {
       it('should have values', () => {
         expect(config.value).toHaveProperty('username')
         expect(config.value.username).toEqual('foo')
+      })
+    })
+
+    describe('updates', () => {
+      it('parse update fields', async () => {
+        const orig = parsedElements[7] as ObjectType
+        const update = parsedElements[8] as ObjectType
+        expect(orig.elemID).toEqual(update.elemID)
+        expect(update.fields.num.type.elemID.name).toBe('update')
       })
     })
   })

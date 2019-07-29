@@ -3,12 +3,13 @@ import {
   ObjectType, isType, isObjectType, isInstanceElement, Element, Field,
 } from 'adapter-api'
 import Parser from '../parser/salto'
-import Keywords from '../parser/keywords'
 import Blueprint from './blueprint'
+
+export const UPDATE_KEYWORD = 'update'
 
 const isUpdate = (
   definition: Field
-): boolean => definition.type.elemID.name === Keywords.UPDATE_DEFINITION
+): boolean => definition.type.elemID.name === UPDATE_KEYWORD
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const validateNoDuplicates = (existingValue: any): void => {
@@ -31,7 +32,7 @@ const validateDefinitions = (bases: Field[], updates: Field[]): void => {
   }
 }
 
-const mergeFieldsDefinitions = (
+const mergeFieldDefinitions = (
   definitions: Field[]
 ): Field => {
   const bases = definitions.filter(d => !isUpdate(d))
@@ -54,7 +55,7 @@ const mergeObjectDefinitions = (objects: ObjectType[]): ObjectType => {
     })
   })
 
-  const fields = _.mapValues(fieldDefs, mergeFieldsDefinitions)
+  const fields = _.mapValues(fieldDefs, mergeFieldDefinitions)
   // There are no rules in the spec on merging annotations and
   // annotations values so we simply merge without allowing duplicates
   const annotations = _.mergeWith(
@@ -73,7 +74,7 @@ const mergeObjectDefinitions = (objects: ObjectType[]): ObjectType => {
 }
 
 /**
- * Merge all of the object types by dividing into groups accorsing to elemID
+ * Merge all of the object types by dividing into groups according to elemID
  * and merging the defs
  */
 const mergeObjects = (

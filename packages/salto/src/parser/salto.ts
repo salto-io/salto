@@ -4,8 +4,20 @@ import {
   Type, ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field,
   isObjectType, isPrimitiveType, Element, isInstanceElement, InstanceElement,
 } from 'adapter-api'
-import Keywords from './keywords'
 import HCLParser from './hcl'
+
+enum Keywords {
+  MODEL = 'model',
+  TYPE_DEFINITION = 'type',
+  LIST_DEFINITION = 'list',
+  TYPE_INHERITENCE_SEPARATOR = 'is',
+
+  // Primitive types
+  TYPE_STRING = 'string',
+  TYPE_NUMBER = 'number',
+  TYPE_BOOL = 'boolean',
+  TYPE_OBJECT = 'object',
+}
 
 
 /**

@@ -1,12 +1,11 @@
 import {
   ObjectType, ElemID, Field, BuiltinTypes, InstanceElement,
 } from 'adapter-api'
-import { mergeElements } from '../src/blueprints/loader'
-import Keywords from '../src/parser/keywords'
+import { mergeElements, UPDATE_KEYWORD } from '../src/blueprints/loader'
 
 describe('Loader merging ability', () => {
   const updateType = new ObjectType(
-    { elemID: new ElemID('', Keywords.UPDATE_DEFINITION) }
+    { elemID: new ElemID('', UPDATE_KEYWORD) }
   )
   const baseElemID = new ElemID('salto', 'base')
   const base = new ObjectType({
@@ -21,7 +20,6 @@ describe('Loader merging ability', () => {
     elemID: new ElemID('salto', 'unrelated'),
     fields: {
       field1: new Field(baseElemID, 'field1', BuiltinTypes.STRING, { label: 'base' }),
-      field2: new Field(baseElemID, 'field2', BuiltinTypes.STRING, { label: 'base' }),
     },
   })
 
@@ -148,11 +146,7 @@ describe('Loader merging ability', () => {
     it('throws error when multiple updates exists for same field', () => {
       const elements = [
         base,
-        unrelated,
         update1,
-        update2,
-        updateAnno,
-        updateAnnoValues,
         multipleUpdate1,
       ]
       expect(() => mergeElements(elements)).toThrow()
@@ -161,11 +155,6 @@ describe('Loader merging ability', () => {
     it('throws error when attempting to update a no existing field', () => {
       const elements = [
         base,
-        unrelated,
-        update1,
-        update2,
-        updateAnno,
-        updateAnnoValues,
         missingUpdate,
       ]
       expect(() => mergeElements(elements)).toThrow()
@@ -174,11 +163,7 @@ describe('Loader merging ability', () => {
     it('throws error when multiple updates exists for same annotation', () => {
       const elements = [
         base,
-        unrelated,
-        update1,
-        update2,
         updateAnno,
-        updateAnnoValues,
         multipleUpdateAnno,
       ]
       expect(() => mergeElements(elements)).toThrow()
@@ -187,10 +172,6 @@ describe('Loader merging ability', () => {
     it('throws error when multiple updates exists for same annotation value', () => {
       const elements = [
         base,
-        unrelated,
-        update1,
-        update2,
-        updateAnno,
         updateAnnoValues,
         multipleUpdateAnnoValues,
       ]
@@ -200,11 +181,6 @@ describe('Loader merging ability', () => {
     it('throws error when multiple base field definitions', () => {
       const elements = [
         base,
-        unrelated,
-        update1,
-        update2,
-        updateAnno,
-        updateAnnoValues,
         multipleBase,
       ]
       expect(() => mergeElements(elements)).toThrow()

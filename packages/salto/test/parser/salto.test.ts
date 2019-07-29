@@ -4,10 +4,9 @@ import {
 } from 'adapter-api'
 import * as TestHelpers from '../common/helpers'
 import Parser from '../../src/parser/salto'
-import Keywords from '../../src/parser/keywords'
 
 describe('Salto parser', () => {
-  describe('primitive and model', () => {
+  describe('primitive, model and extensions', () => {
     let parsedElements: Element[]
 
     beforeAll(async () => {
@@ -52,13 +51,24 @@ describe('Salto parser', () => {
           ]
         }
       }
-      
+
       salesforce_test inst {
         name = "me"
       }
 
       salesforce {
         username = "foo"
+      }
+
+      model salesforce_type {
+        salesforce_number num {}
+      }
+
+      model salesforce_type {
+        update num {
+          label = "Name"
+          _required = true
+        }
       }
       `
 
@@ -68,7 +78,7 @@ describe('Salto parser', () => {
 
     describe('parse result', () => {
       it('should have two types', () => {
-        expect(parsedElements.length).toBe(7)
+        expect(parsedElements.length).toBe(9)
       })
     })
 
@@ -220,32 +230,14 @@ describe('Salto parser', () => {
         expect(config.value.username).toEqual('foo')
       })
     })
-  })
 
-  describe('updates', () => {
-    it('parse update fields', async () => {
-      const body = `
-        type salesforce_number is number {
-        }
-
-        type salesforce_type is object {
-          salesforce_number num {}
-        }
-
-        type salesforce_type is object {
-          update num {
-            label = "Name"
-            _required = true
-          }
-        }
-        `
-      const { elements } = await Parser.parse(Buffer.from(body), 'none')
-      const orig = elements[1] as ObjectType
-      const update = elements[2] as ObjectType
-      expect(orig.elemID).toEqual(update.elemID)
-      // eslint-disable-next-line no-console
-      console.log(JSON.stringify(update))
-      expect(update.fields.num.type.elemID.name).toBe(Keywords.UPDATE_DEFINITION)
+    describe('updates', () => {
+      it('parse update fields', async () => {
+        const orig = parsedElements[7] as ObjectType
+        const update = parsedElements[8] as ObjectType
+        expect(orig.elemID).toEqual(update.elemID)
+        expect(update.fields.num.type.elemID.name).toBe('update')
+      })
     })
   })
 

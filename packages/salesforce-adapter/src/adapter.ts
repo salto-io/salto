@@ -113,8 +113,8 @@ export default class SalesforceAdapter {
       )
       diagnose(result)
 
-      const persmissionsResult = await this.updatePermissions(post, Object.values(post.fields))
-      diagnose(persmissionsResult)
+      const permissionsResult = await this.updatePermissions(post, Object.values(post.fields))
+      diagnose(permissionsResult)
 
       return post as Element
     }

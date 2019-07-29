@@ -58,6 +58,7 @@ const annotateApiNameAndLabel = (element: ObjectType): void => {
     }
   }
 
+  element.annotate({ [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT })
   innerAnnotate(element.annotationsValues, element.elemID.name)
   Object.values(element.fields).forEach(field => {
     innerAnnotate(field.annotationsValues, field.name)

@@ -12,8 +12,8 @@ const isUpdate = (
 ): boolean => definition.type.elemID.name === UPDATE_KEYWORD
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const validateNoDuplicates = (existingValue: any): void => {
-  if (!_.isUndefined(existingValue)) throw new Error(`duplicated value ${existingValue}`)
+const validateNoDuplicates = (existingValue: any, _s: any, key: string): void => {
+  if (!_.isUndefined(existingValue)) throw new Error(`duplicated key ${key}`)
 }
 
 const validateDefinitions = (bases: Field[], updates: Field[]): void => {

@@ -256,49 +256,6 @@ export class ObjectType extends Type {
   }
 }
 
-/**
- * Defines a type that represents an array (OK I DID copy paste from prev comments.)
- */
-export class ListType extends Type {
-  elementType?: Type
-  constructor({
-    elemID,
-    elementType,
-    annotations = {},
-    annotationsValues = {},
-  }: {
-    elemID: ElemID
-    elementType?: Type
-    annotations?: TypeMap
-    annotationsValues?: Values
-  }) {
-    super({ elemID, annotations, annotationsValues })
-    this.elementType = elementType
-  }
-
-  /**
-   * Return an independent copy of this instance.
-   * @return {ListType} the cloned instance
-   */
-  clone(additionalAnnotationsValues: Values = {}): ListType {
-    const clonedElementType = this.elementType
-      ? this.elementType.clone()
-      : undefined
-    const clonedAnnotations = this.cloneAnnotations()
-    const clonedAnnotationValues = this.cloneAnnotationsValues()
-
-    const res: ListType = new ListType({
-      elemID: this.elemID,
-      elementType: clonedElementType,
-      annotations: clonedAnnotations,
-      annotationsValues: clonedAnnotationValues,
-    })
-
-    res.annotate(additionalAnnotationsValues)
-    return res
-  }
-}
-
 export class InstanceElement implements Element {
   elemID: ElemID
   type: Type
@@ -346,9 +303,6 @@ export class ElementsRegistry {
     if (!res) {
       if (type === PrimitiveTypes.OBJECT) {
         res = new ObjectType({ elemID })
-      } else
-      if (type === PrimitiveTypes.LIST) {
-        res = new ListType({ elemID })
       /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
       } else if (type as any in PrimitiveTypes) {
         res = new PrimitiveType({ elemID, primitive: type as PrimitiveTypes })
@@ -390,11 +344,6 @@ export function isType(element: any): element is Type {
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 export function isObjectType(element: any): element is ObjectType {
   return element instanceof ObjectType
-}
-
-/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-export function isListType(element: any): element is ListType {
-  return element instanceof ListType
 }
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */

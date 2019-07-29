@@ -22,9 +22,6 @@ const normalizeValuePrint = (value: any): string => {
   if (typeof value === 'string') {
     return `"${value}"`
   }
-  if (typeof value === 'undefined') {
-    return 'undefined'
-  }
   if (Array.isArray(value)) {
     return `[${value.map(normalizeValuePrint)}]`
   }

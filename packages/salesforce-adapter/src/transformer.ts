@@ -8,8 +8,7 @@ import {
 import { CustomObject, CustomField, ProfileInfo } from './client/types'
 import {
   API_NAME, LABEL, PICKLIST_VALUES, SALESFORCE, RESTRICTED_PICKLIST, FIELD_LEVEL_SECURITY, FORMULA,
-  FORMULA_TYPE_PREFIX, METADATA_OBJECT_NAME_FIELD,
-} from './constants'
+  FORMULA_TYPE_PREFIX} from './constants'
 
 const capitalize = (s: string): string => {
   if (typeof s !== 'string') return ''
@@ -201,18 +200,23 @@ Map<string, Map<string, FieldPermission>> => {
   return permissions
 }
 
-export const fromMetadataInfo = (info: MetadataInfo): Values => {
-  const transform = (obj: Values): Values => {
-    const returnVal: Values = {}
-    Object.keys(obj).filter(key => key !== METADATA_OBJECT_NAME_FIELD)
+const transform = (obj: Values, convert: (name : string) => string): Values => {
+  const returnVal: Values = {}
+  Object.keys(obj)
       .forEach(key => {
         if (_.isObject(obj[key])) {
-          returnVal[bpCase(key)] = transform(obj[key])
+          returnVal[convert(key)] = transform(obj[key], convert)
         } else {
-          returnVal[bpCase(key)] = obj[key]
+          returnVal[convert(key)] = obj[key]
         }
       })
-    return returnVal
-  }
-  return transform(info as Values)
+  return returnVal
+}
+
+export const fromMetadataInfo = (info: MetadataInfo): Values => {
+  return transform(info as Values, bpCase)
+}
+
+export const toMetadataInfo = (values: Values, fullName: string): MetadataInfo => {
+  return {fullName: fullName, ...transform(values, sfCase)}
 }

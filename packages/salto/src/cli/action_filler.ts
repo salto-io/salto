@@ -1,64 +1,94 @@
 import _ from 'lodash'
 import {
-  Field, Type, isObjectType, isInstanceElement, PlanActionType,
+  Field, Type, isObjectType, isInstanceElement,
   PlanAction, Values, ObjectType, InstanceElement,
 } from 'adapter-api'
+import Prompts from './prompts'
 
-type ActionPrintFormatType = PlanActionType | 'eq'
-export interface ActionPrintFormat {
+export interface ActionLineFormat {
   name: string
-  action: ActionPrintFormatType
-  subChanges: ActionPrintFormat[]
+  actionModifier: string
+  subLines: ActionLineFormat[]
+  value?: string
+}
+
+const exists = (
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  data: { before?: any; after?: any }
+  value: any
+): boolean => (_.isObject(value) ? !_.isEmpty(value) : !_.isUndefined(value))
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const normalizeValuePrint = (value: any): string => {
+  if (typeof value === 'string') {
+    return `"${value}"`
+  }
+  if (Array.isArray(value)) {
+    return `[${value.map(normalizeValuePrint)}]`
+  }
+  return JSON.stringify(value)
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const getActionType = (before: any, after: any): ActionPrintFormatType => {
-  const hasBefore = _.isObject(before) ? !_.isEmpty(before) : !_.isUndefined(before)
-  const hasAfter = _.isObject(after) ? !_.isEmpty(after) : !_.isUndefined(after)
-  if (before === after) {
-    return 'eq'
+const createdActionStepValue = (before?: any, after?: any): string|undefined => {
+  if (exists(before) && exists(after)) {
+    return `${normalizeValuePrint(before)} => ${normalizeValuePrint(after)}`
   }
-  if (hasBefore && hasAfter) {
-    return 'modify'
-  }
-  if (!hasBefore && hasAfter) {
-    return 'add'
-  }
-  return 'remove'
+  return normalizeValuePrint(before || after)
 }
 
-const createValuesChanges = (before: Values, after: Values): ActionPrintFormat[] =>
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const getActionModifer = (before: any, after: any): string => {
+  if (_.isEqual(before, after)) {
+    return ' '
+  }
+  if (exists(before) && exists(after)) {
+    return Prompts.MODIFIERS.modify
+  }
+  if (!exists(before) && exists(after)) {
+    return Prompts.MODIFIERS.add
+  }
+  return Prompts.MODIFIERS.remove
+}
+
+const filterEQ = (
+  actions: ActionLineFormat[]
+): ActionLineFormat[] => actions.filter(a => a.actionModifier !== ' ')
+
+const createValuesChanges = (before: Values, after: Values): ActionLineFormat[] =>
   _.union(Object.keys(before), Object.keys(after)).map(name => {
-    const action = getActionType(before[name], after[name])
-    const subChanges = (_.isPlainObject(before[name]) || _.isPlainObject(after[name]))
+    const actionModifier = getActionModifer(before[name], after[name])
+    const subLines = (_.isPlainObject(before[name]) || _.isPlainObject(after[name]))
       ? createValuesChanges(before[name] || {}, after[name] || {}) : []
     return {
-      name, action, subChanges, data: { before: before[name], after: after[name] },
+      name,
+      actionModifier,
+      subLines: filterEQ(subLines),
+      value: _.isEmpty(subLines) ? createdActionStepValue(before[name], after[name]) : undefined,
     }
   })
 
 const createRecordChanges = (
   before: Record<string, Field|Type>,
   after: Record<string, Field|Type>
-): ActionPrintFormat[] => _.union(Object.keys(before), Object.keys(after)).map(name => {
-  const action = getActionType(before[name], after[name])
-  const subChanges = createValuesChanges(
+): ActionLineFormat[] => _.union(Object.keys(before), Object.keys(after)).map(name => {
+  const actionModifier = getActionModifer(before[name], after[name])
+  const subLines = createValuesChanges(
     (before[name]) ? before[name].annotationsValues : {},
     (after[name]) ? after[name].annotationsValues : {}
   )
   return {
-    name, action, subChanges, data: { before, after },
+    name,
+    actionModifier,
+    subLines: filterEQ(subLines),
   }
 })
 
 const createFromTypes = (
   before?: Type,
   after?: Type
-): ActionPrintFormat => {
+): ActionLineFormat => {
   const name = ((before || after) as Type).elemID.getFullName()
-  const action = getActionType(before, after)
+  const actionModifier = getActionModifer(before, after)
   const annotationsValueChanges = createValuesChanges(
     (before) ? before.annotationsValues : {},
     (after) ? after.annotationsValues : {}
@@ -72,32 +102,37 @@ const createFromTypes = (
       (before) ? (before as ObjectType).fields : {},
       (after) ? (after as ObjectType).fields : {}
     ) : []
-  const subChanges = [
+  const subLines = [
     ...fieldChanges,
     ...annotationsChanges,
     ...annotationsValueChanges,
   ]
+
   return {
-    name, action, subChanges, data: { before, after },
+    name,
+    actionModifier,
+    subLines: filterEQ(subLines),
   }
 }
 
 const createFromInstanceElements = (
   before?: InstanceElement,
   after?: InstanceElement
-): ActionPrintFormat => {
+): ActionLineFormat => {
   const name = ((before || after) as InstanceElement).elemID.getFullName()
-  const subChanges = createValuesChanges(
+  const subLines = createValuesChanges(
     (before) ? before.value : {},
     (after) ? after.value : {}
   )
-  const action = getActionType(before, after)
+  const actionModifier = getActionModifer(before, after)
   return {
-    name, action, subChanges, data: { before, after },
+    name,
+    actionModifier,
+    subLines: filterEQ(subLines),
   }
 }
 
-export const fillAction = (action: PlanAction): ActionPrintFormat => {
+export const formatAction = (action: PlanAction): ActionLineFormat => {
   const { before, after } = { ...action.data }
   if (isInstanceElement(before || after)) {
     return createFromInstanceElements(before as InstanceElement, after as InstanceElement)

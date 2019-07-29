@@ -138,15 +138,23 @@ export default class SalesforceAdapter {
    * @returns the updated object with extra info like api name and label
    * @throws error in case of failure
    */
-  public async add(element: ObjectType): Promise<ObjectType> {
-    const post = element.clone()
-    annotateApiNameAndLabel(post)
+  public async add(element: Element): Promise<Element> {
+    if (element instanceof ObjectType) {
+      const post = element.clone()
+      annotateApiNameAndLabel(post)
 
-    const result = await this.client.create(constants.CUSTOM_OBJECT, toCustomObject(post))
-    const aspectsResult = await this.aspects.add(post)
-    diagnose([result as SaveResult, ...aspectsResult])
+      const result = await this.client.create(
+        constants.CUSTOM_OBJECT,
+        toCustomObject(post)
+      )
 
-    return post
+      const aspectsResult = await this.aspects.add(post)
+      diagnose([result as SaveResult, ...aspectsResult])
+
+      return post as Element
+    }
+
+    return element
   }
 
   /**

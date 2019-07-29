@@ -1,10 +1,10 @@
 import {
   ObjectType, ElemID, Field, BuiltinTypes, InstanceElement,
 } from 'adapter-api'
-import { mergeElements } from '../../src/parser/merger'
-import Keywords from '../../src/parser/keywords'
+import { mergeElements } from '../src/blueprints/loader'
+import Keywords from '../src/parser/keywords'
 
-describe('Merger', () => {
+describe('Loader merging ability', () => {
   const updateType = new ObjectType(
     { elemID: new ElemID('', Keywords.UPDATE_DEFINITION) }
   )

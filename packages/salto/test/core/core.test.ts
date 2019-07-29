@@ -6,8 +6,8 @@ import {
 } from 'adapter-api'
 import * as commands from '../../src/core/commands'
 import State from '../../src/state/state'
-import Blueprint from '../../src/core/blueprint'
-import { getAllElements } from '../../src/parser/merger'
+import Blueprint from '../../src/blueprints/blueprint'
+import { getAllElements } from '../../src/blueprints/loader'
 
 const mockAdd = jest.fn(async ap => {
   if (ap.elemID.name === 'fail') {

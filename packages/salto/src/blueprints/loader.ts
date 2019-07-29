@@ -2,9 +2,9 @@ import _ from 'lodash'
 import {
   ObjectType, isType, isObjectType, isInstanceElement, Element, Field,
 } from 'adapter-api'
-import Parser from './salto'
-import Keywords from './keywords'
-import Blueprint from '../core/blueprint'
+import Parser from '../parser/salto'
+import Keywords from '../parser/keywords'
+import Blueprint from './blueprint'
 
 const isUpdate = (
   definition: Field

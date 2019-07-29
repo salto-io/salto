@@ -3,10 +3,10 @@ import {
 } from 'adapter-api'
 import { getPlan, applyActions } from './core'
 import Parser from '../parser/salto'
-import { getAllElements } from '../parser/merger'
+import { getAllElements } from '../blueprints/loader'
 import State from '../state/state'
 import { init as initAdapters } from './adapters'
-import Blueprint from './blueprint'
+import Blueprint from '../blueprints/blueprint'
 
 export const plan = async (
   blueprints: Blueprint[],

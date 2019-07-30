@@ -4,6 +4,7 @@ import {
 } from 'adapter-api'
 import Parser from '../parser/salto'
 import Blueprint from './blueprint'
+import validateElements from './validator'
 
 export const UPDATE_KEYWORD = 'update'
 
@@ -141,5 +142,13 @@ export const getAllElements = async (blueprints: Blueprint[]): Promise<Element[]
   if (errors.length > 0) {
     throw new Error(`Failed to parse blueprints: ${errors.join('\n')}`)
   }
-  return mergeElements(elements)
+
+  const mergedElements = mergeElements(elements)
+  const validationErrors = validateElements(mergedElements)
+
+  if (validationErrors.length > 0) {
+    throw new Error(`Failed to validate blueprints: ${validationErrors.join('\n')}`)
+  }
+
+  return mergedElements
 }

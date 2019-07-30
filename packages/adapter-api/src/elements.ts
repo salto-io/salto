@@ -234,7 +234,7 @@ export class ObjectType extends Type {
     const clonedFields = this.cloneFields()
 
     const res: ObjectType = new ObjectType({
-      elemID: this.elemID,
+      elemID: new ElemID(this.elemID.adapter, ...this.elemID.nameParts),
       fields: clonedFields,
       annotations: clonedAnnotations,
       annotationsValues: clonedAnnotationValues,

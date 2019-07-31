@@ -167,14 +167,24 @@ export default class SalesforceAdapter {
   }
 
   /**
-   * Remove an element
-   * @param element The provided element to remove
-   * @returns true for success, false for failure
+   * Remove an element (object/instance)
+   * @param element to remove
    */
-  public async remove(element: ObjectType): Promise<void> {
-    const result = await this.client.delete(constants.CUSTOM_OBJECT, apiName(element))
-    const aspectsResult = await this.aspects.remove(element)
+  public async remove(element: Element): Promise<void> {
+    if (element instanceof ObjectType) {
+      const result = await this.client.delete(constants.CUSTOM_OBJECT, apiName(element))
+      const aspectsResult = await this.aspects.remove(element)
     diagnose([result as SaveResult, ...aspectsResult])
+
+      return
+    }
+
+    const instance = element as InstanceElement
+    const result = await this.client.delete(
+      instance.type.annotationsValues[constants.METADATA_TYPE],
+      sfCase(instance.elemID.name)
+    )
+    diagnose(result)
   }
 
   /**

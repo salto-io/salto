@@ -124,7 +124,7 @@ describe('Test SalesforceAdapter CRUD', () => {
               new Field(
                 mockElemID,
                 'state',
-                stringType,
+                Types.customObjectTypes.picklist,
                 {
                   required: false,
                   _default: 'NEW',

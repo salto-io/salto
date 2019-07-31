@@ -1,3 +1,4 @@
+import _ from 'lodash'
 import { Element } from 'adapter-api'
 import * as fs from 'async-file'
 import * as path from 'path'
@@ -37,10 +38,7 @@ export default class State {
     public async remove(elements: Element[]): Promise<void> {
       const current = await this.get()
       elements.forEach(element => {
-        const index = State.find(current, element)
-        if (index !== -1) {
-          current.splice(index, 1)
-        }
+        _.remove(current, _.matches(element))
       })
     }
 

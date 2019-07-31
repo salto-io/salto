@@ -72,6 +72,35 @@ describe('Test SalesforceAdapter CRUD', () => {
     expect(mockCreate.mock.calls[0][1].token).toBeUndefined()
   })
 
+  it('should fail add new salesforce instance', async () => {
+    SalesforceClient.prototype.create = jest
+      .fn()
+      .mockImplementationOnce(async () => ({
+        success: false,
+        fullName: 'Test__c',
+        errors: [
+          {
+            message: 'Failed to add Test__c',
+          },
+          {
+            message: 'Additional message',
+          },
+        ],
+      }))
+
+    return expect(
+      adapter().add(
+        new InstanceElement(mockElemID, new ObjectType({
+          elemID: mockElemID,
+          fields: {},
+          annotations: {},
+          annotationsValues: {},
+        }),
+        {})
+      )
+    ).rejects.toEqual(new Error('Failed to add Test__c\nAdditional message'))
+  })
+
   it('should add new salesforce type', async () => {
     const mockCreate = jest.fn().mockImplementationOnce(() => ({ success: true }))
     SalesforceClient.prototype.create = mockCreate

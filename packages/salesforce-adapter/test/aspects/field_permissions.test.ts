@@ -24,8 +24,6 @@ describe('Test Field Permissions aspect', () => {
           { [constants.API_NAME]: 'Description__c' }),
     },
     annotationsValues: {
-      required: false,
-      _default: 'test',
       label: 'test label',
       [constants.API_NAME]: 'Test__c',
     },

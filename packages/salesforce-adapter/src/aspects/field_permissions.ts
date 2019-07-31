@@ -29,7 +29,7 @@ const toProfiles = (object: ObjectType): ProfileInfo[] => {
     }
     Object.entries(fieldPermissions(field)).forEach(fieldLevelSecurity => {
       const profile = sfCase(fieldLevelSecurity[0])
-      const permissions = fieldLevelSecurity[1] as {editable: boolean; readable: boolean}
+      const permissions = fieldLevelSecurity[1] as { editable: boolean; readable: boolean }
       if (!profiles.has(profile)) {
         profiles.set(profile, new ProfileInfo(sfCase(profile)))
       }
@@ -43,23 +43,23 @@ const toProfiles = (object: ObjectType): ProfileInfo[] => {
   return Array.from(profiles.values())
 }
 
+type FieldPermissions = Map<string, {editable: boolean; readable: boolean}>
 /**
  * Transform list of ProfileInfo to map fieldFullName -> profileName -> FieldPermission
  */
-const fromProfiles = (profiles: ProfileInfo[]):
-Map<string, Map<string, {editable: boolean; readable: boolean}>> => {
-  const permissions = new Map<string, Map<string, {editable: boolean; readable: boolean}>>()
-  profiles.forEach(info => {
-    if (!info.fieldPermissions) {
+const fromProfiles = (profiles: ProfileInfo[]): Map<string, FieldPermissions> => {
+  const permissions = new Map<string, FieldPermissions>()
+  profiles.forEach(profile => {
+    if (!profile.fieldPermissions) {
       return
     }
-    info.fieldPermissions.forEach(fieldPermission => {
+    profile.fieldPermissions.forEach(fieldPermission => {
       const name = fieldPermission.field
       if (!permissions.has(name)) {
-        permissions.set(name, new Map<string, {editable: boolean; readable: boolean}>())
+        permissions.set(name, new Map<string, { editable: boolean; readable: boolean }>())
       }
-      (permissions.get(name) as Map<string, {editable: boolean; readable: boolean}>)
-        .set(info.fullName, {
+      (permissions.get(name) as Map<string, { editable: boolean; readable: boolean }>)
+        .set(profile.fullName, {
           editable: fieldPermission.editable,
           readable: fieldPermission.readable,
         })
@@ -81,8 +81,10 @@ const readProfiles = async (client: SalesforceClient): Promise<ProfileInfo[]> =>
 }
 
 /**
-* Discover all sobject field permissions
-* return fullFieldName -> (profile -> permissions)
+* Discover all sobject field permissions. This function will update the given elements in place.
+* @param client SFDC client
+* @param sobject the already discoverd SObjects, the aspect will add
+* field_level_security annotations.
 */
 const discover = async (client: SalesforceClient, sobjects: ObjectType[]): Promise<void> => {
   if (_.isEmpty(sobjects)) {
@@ -125,18 +127,18 @@ const update = async (client: SalesforceClient, before: ObjectType, after: Objec
   Promise<SaveResult[]> => {
   // Look for fields that used to have permissions and permission was deleted from BP
   // For those fields we will mark then as { editable: false, readable: false } explcit
-  before.getMutualFieldsWithOther(after).forEach(field => {
+  before.getMutualFieldsWithOther(after).forEach(beforeField => {
     // If the delta is only new field permissions, then skip
-    if (_.isEmpty(fieldPermissions(field))) {
+    if (_.isEmpty(fieldPermissions(beforeField))) {
       return
     }
-    if (_.isEmpty(fieldPermissions(after.fields[field.name]))) {
-      setEmptyFieldPermissions(after.fields[field.name])
+    if (_.isEmpty(fieldPermissions(after.fields[beforeField.name]))) {
+      setEmptyFieldPermissions(after.fields[beforeField.name])
     }
-    const afterFieldPermissions = fieldPermissions(after.fields[field.name])
+    const afterFieldPermissions = fieldPermissions(after.fields[beforeField.name])
     // If some permissions were removed, we will need to remove the permissions from the
     // field explicitly (update them to be not editable and not readable)
-    Object.keys(fieldPermissions(field)).forEach((p: string) => {
+    Object.keys(fieldPermissions(beforeField)).forEach((p: string) => {
       if (afterFieldPermissions[p] === undefined) {
         afterFieldPermissions[p] = { editable: false, readable: false }
       }

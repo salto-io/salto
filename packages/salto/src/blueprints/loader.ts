@@ -1,6 +1,8 @@
+/* eslint-disable  no-underscore-dangle */
 import _ from 'lodash'
 import {
-  ObjectType, isType, isObjectType, isInstanceElement, Element, Field,
+  ObjectType, isType, isObjectType, isInstanceElement, Element, Field, InstanceElement,
+  Type, Values,
 } from 'adapter-api'
 import Parser from '../parser/salto'
 import Blueprint from './blueprint'
@@ -80,23 +82,31 @@ const mergeObjectDefinitions = (objects: ObjectType[]): ObjectType => {
   })
 }
 
-const buildDefaults = (type: Type): Values => {
-  //If Object - return hash with field types defaults. If the hash is empty
-  //return undefined. If there is default - return it!
-  const def = type.annotationsValues._default
-  if (def === undefined && isObjectType(type)){
-
-  }
-  return def
+const buildObjectDefaults = (type: ObjectType): Values | undefined => {
+  const def = _(type.fields).mapValues(field =>
+    (field.annotationsValues._default === undefined
+      // eslint-disable-next-line @typescript-eslint/no-use-before-define
+      ? buildDefaults(field.type)
+      : field.annotationsValues._default)).pickBy(v => v !== undefined).value()
+  return _.isEmpty(def) ? undefined : def
 }
 
+const buildDefaults = (
+  type: Type
+): Values | undefined =>
+  (type.annotationsValues._default === undefined && isObjectType(type)
+    ? buildObjectDefaults(type)
+    : type.annotationsValues._default)
+
 const mergeInstanceDefinitions = (instances: InstanceElement[]): InstanceElement => {
-  const instance = _.mergeWith(
+  const refInst = instances[0]
+  const value = _.mergeWith(
     {},
-    ... instances,
+    ...instances.map(i => i.value),
     validateNoDuplicates
   )
-  return _.merge(buildDefaults(instance), instance)
+  const valueWithDefault = _.merge({}, buildDefaults(refInst.type) || {}, value)
+  return new InstanceElement(refInst.elemID, refInst.type, valueWithDefault)
 }
 /**
  * Merge all of the object types by dividing into groups according to elemID
@@ -110,7 +120,8 @@ const mergeObjects = (
 const mergeInstances = (
   instances: InstanceElement[]
 ): InstanceElement[] => _(instances).groupBy(i => i.elemID.getFullName())
-  .mapValues(mergeInstanceDefinitions).values().value()
+  .mapValues(mergeInstanceDefinitions).values()
+  .value()
 /**
  * Replace the pointers to all the merged elements to the merged version.
  */
@@ -145,9 +156,13 @@ const updateMergedTypes = (
  */
 export const mergeElements = (elements: Element[]): Element[] => {
   const mergedObjects = mergeObjects(elements.filter(e => isObjectType(e)) as ObjectType[])
+  const mergedInstances = mergeInstances(elements.filter(
+    e => isInstanceElement(e)
+  ) as InstanceElement[])
   const mergedElements = [
-    ...elements.filter(e => !isObjectType(e)),
+    ...elements.filter(e => !isObjectType(e) && !isInstanceElement(e)),
     ...Object.values(mergedObjects),
+    ...mergedInstances,
   ]
   return updateMergedTypes(mergedElements, mergedObjects)
 }

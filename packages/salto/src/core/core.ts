@@ -8,7 +8,8 @@ import { DataNodeMap } from '../dag/nodemap'
 import State from '../state/state'
 import { Adapter } from './adapters'
 
-const applyAction = async (state: State,
+const applyAction = async (
+  state: State,
   action: PlanAction,
   adapters: Record<string, Adapter>
 ): Promise<void> => {

@@ -5,6 +5,7 @@ import {
 import SalesforceAdapter from '../src/adapter'
 import SalesforceClient from '../src/client/client'
 import * as constants from '../src/constants'
+import { Types } from '../src/transformer'
 
 jest.mock('../src/client/client')
 
@@ -86,7 +87,7 @@ describe('Test SalesforceAdapter discover', () => {
       const result = await adapter().discover()
 
       const lead = result.filter(o => o.elemID.name === 'lead').pop() as ObjectType
-      expect(lead.fields.last_name.type.elemID.name).toBe('string')
+      expect(lead.fields.last_name.type.elemID.name).toBe('Text')
       expect(lead.fields.last_name.annotationsValues.label).toBe('Last Name')
       // Test Rquired true and false
       expect(lead.fields.last_name.annotationsValues[Type.REQUIRED]).toBe(true)
@@ -100,7 +101,7 @@ describe('Test SalesforceAdapter discover', () => {
       expect(lead.fields.custom.annotationsValues[Type.DEFAULT]).toBe(false)
       // Formula field
       expect(lead.fields.formula).toBeDefined()
-      expect(lead.fields.formula.type.elemID.name).toBe('formula_string')
+      expect(lead.fields.formula.type.elemID.name).toBe('formula_text')
       expect(lead.fields.formula.annotationsValues[constants.FORMULA]).toBe('my formula')
     })
 
@@ -121,7 +122,7 @@ describe('Test SalesforceAdapter discover', () => {
       const result = await adapter().discover()
 
       const lead = result.filter(o => o.elemID.name === 'lead').pop() as ObjectType
-      expect(lead.fields.primary_c.type.elemID.name).toBe('picklist')
+      expect(lead.fields.primary_c.type.elemID.name).toBe('Picklist')
       expect(
         (lead.fields.primary_c.annotationsValues.values as string[]).join(';')
       ).toBe('No;Yes')
@@ -170,7 +171,7 @@ describe('Test SalesforceAdapter discover', () => {
       const result = await adapter().discover()
 
       const lead = result.filter(o => o.elemID.name === 'lead').pop() as ObjectType
-      expect(lead.fields.double_field.type.elemID.name).toBe('number')
+      expect(lead.fields.double_field.type.elemID.name).toBe('Number')
     })
   })
 
@@ -270,7 +271,7 @@ describe('Test SalesforceAdapter discover', () => {
 
       const result = await adapter().discover()
 
-      expect(result).toHaveLength(3)
+      expect(result).toHaveLength(Object.keys(Types.customObjectTypes).length + 3)
       const types = _.assign({}, ...result.map(t => ({ [t.elemID.getFullName()]: t })))
       const nestingType = types.salesforce_nesting_type_type
       const nestedType = types.salesforce_nested_type_type

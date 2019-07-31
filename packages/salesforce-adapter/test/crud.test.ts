@@ -1,8 +1,6 @@
 import {
   ObjectType,
-  PrimitiveType,
   ElemID,
-  PrimitiveTypes,
   InstanceElement,
   Field,
 } from 'adapter-api'
@@ -12,6 +10,7 @@ import SalesforceAdapter from '../src/adapter'
 import SalesforceClient from '../src/client/client'
 import * as constants from '../src/constants'
 import { AspectsManager } from '../src/aspects/aspects'
+import { Types } from '../src/transformer'
 
 jest.mock('../src/client/client')
 jest.mock('../src/aspects/aspects')
@@ -32,10 +31,7 @@ describe('Test SalesforceAdapter CRUD', () => {
     return a
   }
 
-  const stringType = new PrimitiveType({
-    elemID: new ElemID(constants.SALESFORCE, 'string'),
-    primitive: PrimitiveTypes.STRING,
-  })
+  const stringType = Types.customObjectTypes.string
 
   const mockElemID = new ElemID(constants.SALESFORCE, 'test')
 
@@ -128,10 +124,7 @@ describe('Test SalesforceAdapter CRUD', () => {
               new Field(
                 mockElemID,
                 'state',
-                new PrimitiveType({
-                  elemID: new ElemID(constants.SALESFORCE, 'picklist'),
-                  primitive: PrimitiveTypes.STRING,
-                }),
+                stringType,
                 {
                   required: false,
                   _default: 'NEW',
@@ -152,6 +145,39 @@ describe('Test SalesforceAdapter CRUD', () => {
       expect(object.fields[0].valueSet.valueSetDefinition.value
         .map((v: {fullName: string}) => v.fullName).join(';'))
         .toBe('NEW;OLD')
+    })
+
+    it('should add new salesforce type with currency field', async () => {
+      await adapter().add(
+        new ObjectType({
+          elemID: mockElemID,
+          fields: {
+            state:
+              new Field(
+                mockElemID,
+                'currency',
+                Types.customObjectTypes.currency,
+                {
+                  required: false,
+                  _default: 25,
+                  label: 'Currency description label',
+                  scale: 3,
+                  precision: 18,
+                },
+              ),
+          },
+        })
+      )
+
+      // Verify object creation
+      expect(mockCreate.mock.calls.length).toBe(1)
+      const object = mockCreate.mock.calls[0][1]
+      expect(object.fields.length).toBe(1)
+      expect(object.fields[0].fullName).toBe('Currency__c')
+      expect(object.fields[0].type).toBe('Currency')
+      expect(object.fields[0].label).toBe('Currency description label')
+      expect(object.fields[0].scale).toBe(3)
+      expect(object.fields[0].precision).toBe(18)
     })
 
     it('should fail add new salesforce type', async () => {

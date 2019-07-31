@@ -12,3 +12,15 @@ export const RESTRICTED_PICKLIST = 'restricted_pick_list'
 export const PICKLIST_VALUES = 'values'
 export const API_NAME = 'api_name'
 export const FORMULA = 'formula'
+export const PRECISION = 'precision'
+export const SCALE = 'scale'
+export const FIELDS = {
+  TEXT: 'Text',
+  NUMBER: 'Number',
+  CHECKBOX: 'Checkbox',
+  DATE: 'Date',
+  TIME: 'Time',
+  DATETIME: 'DateTime',
+  CURRENCY: 'Currency',
+  PICKLIST: 'Picklist',
+}

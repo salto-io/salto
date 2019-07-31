@@ -23,32 +23,28 @@ class CustomPicklistValue implements MetadataInfo {
 }
 
 export class CustomField implements MetadataInfo {
-  private static readonly fieldTypeMapping: Record<string, string> = {
-    string: 'Text',
-    int: 'Number',
-    boolean: 'Checkbox',
-    picklist: 'Picklist',
-    combobox: 'Combobox',
-  }
-
   readonly type: string
-  readonly required?: boolean
-  readonly formula?: string
-  // To be used for picklist and combobox types
-  readonly valueSet?: { valueSetDefinition: { value: CustomPicklistValue[] } }
+  constructor(
+    public fullName: string,
+    type: string,
+    readonly label?: string,
+  ) {
+    this.type = type
+  }
+}
 
-  // To be used for Text types fields
+export class TextField extends CustomField {
   readonly length: number = 0
-
+  readonly formula?: string
+  readonly required?: boolean
   constructor(
     public fullName: string,
     type: string,
     readonly label?: string,
     required: boolean = false,
-    values?: string[],
     formula?: string,
   ) {
-    this.type = CustomField.fieldTypeMapping[type]
+    super(fullName, type, label)
     if (formula) {
       this.formula = formula
     } else {
@@ -57,7 +53,39 @@ export class CustomField implements MetadataInfo {
       }
       this.required = required
     }
+  }
+}
 
+export class CurrencyField extends CustomField {
+  scale: number = 0
+  precision: number = 0
+  readonly required?: boolean
+  constructor(
+    public fullName: string,
+    type: string,
+    scale: number,
+    precision: number,
+    readonly label?: string,
+    required: boolean = false,
+  ) {
+    super(fullName, type, label)
+    this.scale = scale
+    this.precision = precision
+    this.required = required
+  }
+}
+
+export class PicklistField extends CustomField {
+  readonly valueSet?: { valueSetDefinition: { value: CustomPicklistValue[] } }
+  readonly required?: boolean
+  constructor(
+    public fullName: string,
+    type: string,
+    readonly label?: string,
+    required: boolean = false,
+    values?: string[],
+  ) {
+    super(fullName, type, label)
     if (values && !_.isEmpty(values)) {
       this.valueSet = {
         valueSetDefinition: {
@@ -65,6 +93,33 @@ export class CustomField implements MetadataInfo {
         },
       }
     }
+    this.required = required
+  }
+}
+
+export class NumberField extends CustomField {
+  readonly required?: boolean
+  constructor(
+    public fullName: string,
+    type: string,
+    readonly label?: string,
+    required: boolean = false,
+  ) {
+    super(fullName, type, label)
+    this.required = required
+  }
+}
+
+export class CheckboxField extends CustomField {
+  readonly required?: boolean
+  constructor(
+    public fullName: string,
+    type: string,
+    readonly label?: string,
+    required: boolean = false,
+  ) {
+    super(fullName, type, label)
+    this.required = required
   }
 }
 

@@ -1,10 +1,8 @@
 import { isArray } from 'util'
 import {
   Type,
-  PrimitiveType,
   ObjectType,
   ElemID,
-  PrimitiveTypes,
   InstanceElement,
   Field,
   Element,
@@ -13,6 +11,7 @@ import SalesforceAdapter from '../src/adapter'
 import * as constants from '../src/constants'
 import { FIELD_LEVEL_SECURITY_ANNOTATION, PROFILE_METADATA_TYPE } from '../src/aspects/field_permissions'
 import { CustomObject, ProfileInfo, FieldPermissions } from '../src/client/types'
+import { Types } from '../src/transformer'
 
 describe('Test Salesforce adapter E2E with real account', () => {
   const adapter = (): SalesforceAdapter => {
@@ -53,9 +52,9 @@ describe('Test Salesforce adapter E2E with real account', () => {
         .pop() as ObjectType
 
       // Test few possible types
-      expect(lead.fields.last_name.type.elemID.name).toBe('string')
+      expect(lead.fields.last_name.type.elemID.name).toBe('Text')
       expect(lead.fields.description.type.elemID.name).toBe('textarea')
-      expect(lead.fields.salutation.type.elemID.name).toBe('picklist')
+      expect(lead.fields.salutation.type.elemID.name).toBe('Picklist')
 
       // Test label
       expect(lead.fields.last_name.annotationsValues[constants.LABEL]).toBe('Last Name')
@@ -150,10 +149,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
       })
     }
 
-    const stringType = new PrimitiveType({
-      elemID: new ElemID(constants.SALESFORCE, 'string'),
-      primitive: PrimitiveTypes.STRING,
-    })
+    const stringType = Types.customObjectTypes.string
 
     it('should add custom object', async () => {
       const customObjectName = 'TestAddCustom__c'
@@ -543,6 +539,49 @@ describe('Test Salesforce adapter E2E with real account', () => {
 
       // Clean-up
       await sfAdapter.remove(oldElement)
+    })
+
+    describe('test field types creation', () => {
+      it('should add a custom object with currency field', async () => {
+        const customObjectName = 'TestAddCustomWithCurrency__c'
+        const mockElemID = new ElemID(constants.SALESFORCE, 'test add custom object with currency field')
+        const element = new ObjectType({
+          elemID: mockElemID,
+          annotationsValues: {
+            [constants.API_NAME]: customObjectName,
+          },
+          fields: {
+            alpha: new Field(
+              mockElemID,
+              'alpha',
+              Types.customObjectTypes.currency,
+              {
+                required: false,
+                _default: 25,
+                label: 'Currency description label',
+                scale: 3,
+                precision: 18,
+              },
+            ),
+          },
+        })
+
+        if (await objectExists(customObjectName) === true) {
+          await sfAdapter.remove(element)
+        }
+        const post = await sfAdapter.add(element)
+
+        // Test
+        expect(post).toBeInstanceOf(ObjectType)
+        expect(
+          post.fields.alpha.annotationsValues[constants.API_NAME]
+        ).toBe('Alpha__c')
+
+        expect(await objectExists(customObjectName, ['Alpha__c'])).toBe(true)
+
+        // Clean-up
+        await sfAdapter.remove(post)
+      })
     })
   })
 })

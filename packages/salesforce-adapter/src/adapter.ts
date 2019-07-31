@@ -120,7 +120,11 @@ export default class SalesforceAdapter {
   public async discover(): Promise<Element[]> {
     // TODO: add here salesforce primitive data types
     const result = await Promise.all([this.discoverMetadataTypes(), this.discoverSObjects()])
-    return _.flatten([...result, await this.discoverMetadataInstances(result[0])] as Element[][])
+    return _.flatten(
+      [Types.getAllFieldTypes(),
+        ...result,
+        await this.discoverMetadataInstances(result[0])] as Element[][]
+    )
   }
 
   /**

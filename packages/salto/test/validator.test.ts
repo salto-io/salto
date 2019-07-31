@@ -4,7 +4,7 @@ import {
 } from 'adapter-api'
 import validateElements from '../src/blueprints/validator'
 
-describe('Loader merging ability', () => {
+describe('Elements validation', () => {
   const baseElemID = new ElemID('salto', 'simple')
   const simpleType = new ObjectType({
     elemID: baseElemID,

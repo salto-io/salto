@@ -11,7 +11,7 @@ import {
 } from 'adapter-api'
 import SalesforceAdapter from '../src/adapter'
 import * as constants from '../src/constants'
-import { FIELD_LEVEL_SECURITY_ANNOTATION, PROFILE_METADATA_TYPE } from '../src/aspects/profile'
+import { FIELD_LEVEL_SECURITY_ANNOTATION, PROFILE_METADATA_TYPE } from '../src/aspects/field_permissions'
 import { CustomObject, ProfileInfo, FieldPermissions } from '../src/client/types'
 
 describe('Test Salesforce adapter E2E with real account', () => {

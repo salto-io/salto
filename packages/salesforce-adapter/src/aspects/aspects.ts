@@ -2,7 +2,7 @@ import { ObjectType } from 'adapter-api'
 import { SaveResult } from 'jsforce-types'
 import _ from 'lodash'
 import SalesforceClient from '../client/client'
-import { aspect as profileAspect } from './profile'
+import { aspect as fieldPermissionsAspect } from './field_permissions'
 
 // Exported for testing purposes
 export interface SObjectAspect {
@@ -15,7 +15,7 @@ export interface SObjectAspect {
 // This is encapsulated as class for easier mocking of it
 export class AspectsManager {
   // This is not private and not readonly for testing purpose
-  aspects: SObjectAspect[] = [profileAspect]
+  aspects: SObjectAspect[] = [fieldPermissionsAspect]
   constructor(private readonly client: SalesforceClient) { }
 
   discover = async (sobjects: ObjectType[]): Promise<void[]> =>

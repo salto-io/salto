@@ -3,13 +3,13 @@ import {
 } from 'adapter-api'
 import _ from 'lodash'
 import { ProfileInfo } from '../../src/client/types'
-import { aspect, FIELD_LEVEL_SECURITY_ANNOTATION } from '../../src/aspects/profile'
+import { aspect, FIELD_LEVEL_SECURITY_ANNOTATION } from '../../src/aspects/field_permissions'
 import SalesforceClient from '../../src/client/client'
 import * as constants from '../../src/constants'
 
 jest.mock('../../src/client/client')
 
-describe('Test Profile aspect', () => {
+describe('Test Field Permissions aspect', () => {
   const client = (): SalesforceClient => new SalesforceClient('', '', false)
   const mockElemID = new ElemID(constants.SALESFORCE, 'test')
   const stringType = new PrimitiveType({
@@ -93,12 +93,12 @@ describe('Test Profile aspect', () => {
     expect(standardProfile.fieldPermissions[0].readable).toBe(true)
   })
 
-  it('should fail profile aspect add due to sfdc error', async () => {
+  it('should fail field permissions aspect add due to sfdc error', async () => {
     SalesforceClient.prototype.update = jest.fn().mockImplementationOnce(() => ([{
       success: false,
       errors: [
         {
-          message: 'Failed to update permissions',
+          message: 'Failed to update profile',
         },
       ],
     }]))
@@ -131,25 +131,26 @@ describe('Test Profile aspect', () => {
     expect(profileInfo.fieldPermissions[1].field).toBe('Test__c.Apple__c')
   })
 
-  it('should update profile upon update that include add and remove of fields', async () => {
-    const before = mockObject.clone()
-    before.fields = { address, banana }
+  it('should update field permissions upon update that include add and remove of fields',
+    async () => {
+      const before = mockObject.clone()
+      before.fields = { address, banana }
 
-    // After - banana was removed and apple was added
-    const after = mockObject.clone()
-    after.fields = { address, apple }
+      // After - banana was removed and apple was added
+      const after = mockObject.clone()
+      after.fields = { address, apple }
 
-    await aspect.update(client(), before, after)
+      await aspect.update(client(), before, after)
 
-    expect(mockUpdate.mock.calls.length).toBe(1)
-    // Verify the field permissions update
-    const profileInfo = mockUpdate.mock.calls[0][1][0]
-    expect(profileInfo.fullName).toBe('Admin')
-    expect(profileInfo.fieldPermissions.length).toBe(1)
-    expect(profileInfo.fieldPermissions[0].field).toBe('Test__c.Apple__c')
-    expect(profileInfo.fieldPermissions[0].editable).toBe(true)
-    expect(profileInfo.fieldPermissions[0].readable).toBe(true)
-  })
+      expect(mockUpdate.mock.calls.length).toBe(1)
+      // Verify the field permissions update
+      const profileInfo = mockUpdate.mock.calls[0][1][0]
+      expect(profileInfo.fullName).toBe('Admin')
+      expect(profileInfo.fieldPermissions.length).toBe(1)
+      expect(profileInfo.fieldPermissions[0].field).toBe('Test__c.Apple__c')
+      expect(profileInfo.fieldPermissions[0].editable).toBe(true)
+      expect(profileInfo.fieldPermissions[0].readable).toBe(true)
+    })
   it('should update the new profile on existing field', async () => {
     const before = mockObject.clone()
     before.fields = { ...before.fields, address }

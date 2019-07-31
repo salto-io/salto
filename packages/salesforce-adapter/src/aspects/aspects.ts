@@ -16,17 +16,17 @@ export interface SObjectAspect {
 export class AspectsManager {
   // This is not private and not readonly for testing purpose
   aspects: SObjectAspect[] = [profileAspect]
-  constructor(private readonly client: SalesforceClient) {}
+  constructor(private readonly client: SalesforceClient) { }
 
-  discover = async (sobjects: ObjectType[]): Promise<void> =>
-    this.aspects.forEach(aspect => aspect.discover(this.client, sobjects))
+  discover = async (sobjects: ObjectType[]): Promise<void[]> =>
+    Promise.all(this.aspects.map(aspect => aspect.discover(this.client, sobjects)))
 
   add = async (after: ObjectType): Promise<SaveResult[]> =>
     _.flatten(await Promise.all(this.aspects.map(aspect => aspect.add(this.client, after))))
 
-  update = async (before: ObjectType, after: ObjectType):
-  Promise<SaveResult[]> => _.flatten(await Promise.all(this.aspects
-    .map(aspect => aspect.update(this.client, before, after))))
+  update = async (before: ObjectType, after: ObjectType): Promise<SaveResult[]> =>
+    _.flatten(await Promise.all(this.aspects.map(aspect =>
+      aspect.update(this.client, before, after))))
 
   remove = async (before: ObjectType): Promise<SaveResult[]> =>
     _.flatten(await Promise.all(this.aspects.map(aspect => aspect.remove(this.client, before))))

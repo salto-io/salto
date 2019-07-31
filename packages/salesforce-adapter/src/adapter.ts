@@ -182,9 +182,9 @@ export default class SalesforceAdapter {
     // fields creation/deletion to minimize runtime
     const objectUpdateResult = await this.client.update(constants.CUSTOM_OBJECT,
       toCustomObject(post))
-    // Aspects should be updated once all object related properties update were over
+    // Aspects should be updated once all object related properties updates are over
     const aspectsResult = await this.aspects.update(prevElement, post)
-    diagnose([...fieldsUpdateResult[0], ...fieldsUpdateResult[1], objectUpdateResult as SaveResult,
+    diagnose([..._.flatten(fieldsUpdateResult), objectUpdateResult as SaveResult,
       ...aspectsResult])
 
     return post

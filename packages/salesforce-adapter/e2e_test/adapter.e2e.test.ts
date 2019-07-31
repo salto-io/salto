@@ -583,5 +583,46 @@ describe('Test Salesforce adapter E2E with real account', () => {
         await sfAdapter.remove(post)
       })
     })
+
+    it('should add new salesforce type with picklist field', async () => {
+      const customObjectName = 'TestAddCustomWithPicklist__c'
+      const mockElemID = new ElemID(constants.SALESFORCE, 'test add custom object with picklist field')
+      const element = new ObjectType({
+        elemID: mockElemID,
+        annotationsValues: {
+          [constants.API_NAME]: customObjectName,
+        },
+        fields: {
+          beta:
+              new Field(
+                mockElemID,
+                'beta',
+                Types.customObjectTypes.picklist,
+                {
+                  required: false,
+                  _default: 'NEW',
+                  label: 'test label',
+                  values: ['NEW', 'OLD'],
+                },
+              ),
+        },
+      })
+
+      if (await objectExists(customObjectName) === true) {
+        await sfAdapter.remove(element)
+      }
+      const post = await sfAdapter.add(element)
+
+      // Test
+      expect(post).toBeInstanceOf(ObjectType)
+      expect(
+        post.fields.beta.annotationsValues[constants.API_NAME]
+      ).toBe('Beta__c')
+
+      expect(await objectExists(customObjectName, ['Beta__c'])).toBe(true)
+
+      // Clean-up
+      await sfAdapter.remove(post)
+    })
   })
 })

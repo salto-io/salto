@@ -1,19 +1,19 @@
 import {
   Plan, PlanAction, ObjectType, InstanceElement,
 } from 'adapter-api'
-import { getPlan, applyActions } from './core'
+import { getPlan, applyActions, discoverAll } from './core'
+import { init as initAdapters } from './adapters'
 import Parser from '../parser/salto'
 import { getAllElements } from '../blueprints/loader'
-import State from '../state/state'
-import { init as initAdapters } from './adapters'
 import Blueprint from '../blueprints/blueprint'
+import State from '../state/state'
 
 export const plan = async (
   blueprints: Blueprint[],
 ): Promise<Plan> => {
   const elements = await getAllElements(blueprints)
-
-  const actionPlan = await getPlan(elements)
+  const state = new State()
+  const actionPlan = await getPlan(state, elements)
   return actionPlan
 }
 
@@ -25,27 +25,32 @@ export const apply = async (
   force: boolean = false
 ): Promise<Plan> => {
   const elements = await getAllElements(blueprints)
-  const [adapters] = await initAdapters(elements, fillConfig)
-
-  const actionPlan = await getPlan(elements)
-  if (force || await shouldApply(actionPlan)) {
-    await applyActions(actionPlan, adapters, reportProgress)
+  const state = new State()
+  try {
+    const actionPlan = await getPlan(state, elements)
+    if (force || await shouldApply(actionPlan)) {
+      const [adapters] = await initAdapters(elements, fillConfig)
+      await applyActions(state, actionPlan, adapters, reportProgress)
+    }
+    return actionPlan
+  } finally {
+    state.flush()
   }
-  return actionPlan
 }
 
 export const discover = async (
   blueprints: Blueprint[],
   fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
 ): Promise<Blueprint> => {
-  const state = new State()
   const elements = await getAllElements(blueprints)
   const [adapters, newAdapterConfigs] = await initAdapters(elements, fillConfig)
-
-  const discoverElements = await adapters.salesforce.discover()
-  const uniqElements = [...discoverElements, ...Object.values(newAdapterConfigs)]
-  // Save state
-  await state.saveState(uniqElements)
-  const buffer = await Parser.dump(uniqElements)
-  return { buffer, filename: 'none' }
+  const state = new State()
+  try {
+    const discoverElements = await discoverAll(state, adapters)
+    const uniqElements = [...discoverElements, ...Object.values(newAdapterConfigs)]
+    const buffer = await Parser.dump(uniqElements)
+    return { buffer, filename: 'none' }
+  } finally {
+    state.flush()
+  }
 }

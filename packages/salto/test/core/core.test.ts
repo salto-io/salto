@@ -56,11 +56,17 @@ jest.mock('../../src/core/adapters', () => ({
   init: jest.fn().mockImplementation((_e, _c) => [{ salesforce: mockAdapter }, []]),
 }))
 
+jest.mock('../../src/state/state')
+
 describe('Test commands.ts and core.ts', () => {
-  // Mock empty state
-  jest.mock('../../src/state/state')
-  State.prototype.getLastState = jest.fn().mockImplementation(() => Promise.resolve([]))
-  State.prototype.saveState = jest.fn().mockImplementation(() => Promise.resolve())
+  beforeEach(() => {
+    // Mock empty state
+    State.prototype.get = jest.fn().mockImplementation(() => Promise.resolve([]))
+    State.prototype.flush = jest.fn().mockImplementation(() => Promise.resolve())
+    State.prototype.override = jest.fn().mockImplementation(() => Promise.resolve())
+    State.prototype.remove = jest.fn().mockImplementation(() => Promise.resolve())
+    State.prototype.update = jest.fn().mockImplementation(() => Promise.resolve())
+  })
 
   const blueprintsDirectory = path.join(__dirname, '../../../test', 'blueprints')
 
@@ -146,7 +152,7 @@ describe('Test commands.ts and core.ts', () => {
     })
 
     it('should apply plan with remove based on state', async () => {
-      State.prototype.getLastState = jest.fn().mockImplementationOnce(() =>
+      State.prototype.get = jest.fn().mockImplementation(() =>
         Promise.resolve([new ObjectType({ elemID: new ElemID('salesforce', 'employee') })]))
       await commands.apply(
         blueprints,
@@ -159,8 +165,11 @@ describe('Test commands.ts and core.ts', () => {
     })
 
     it('should apply plan with modification based on state', async () => {
-      State.prototype.getLastState = jest.fn().mockImplementationOnce(() =>
+      const mockStateGet = jest.fn().mockImplementation(() =>
         Promise.resolve([new ObjectType({ elemID: new ElemID('salesforce', 'test') })]))
+      State.prototype.get = mockStateGet
+      const mockStateUpdate = jest.fn().mockImplementation(() => Promise.resolve())
+      State.prototype.update = mockStateUpdate
       await commands.apply(
         blueprints,
         mockGetConfigFromUser,
@@ -168,6 +177,8 @@ describe('Test commands.ts and core.ts', () => {
         mockReportCurrentAction
       )
       expect(mockUpdate).toHaveBeenCalled()
+      expect(mockStateGet).toHaveBeenCalled()
+      expect(mockStateUpdate).toHaveBeenCalled()
     })
   })
 

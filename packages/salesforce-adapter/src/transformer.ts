@@ -7,9 +7,9 @@ import {
   Type, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values,
   Field as TypeField, BuiltinTypes,
 } from 'adapter-api'
-import { CustomObject, CustomField, ProfileInfo } from './client/types'
+import { CustomObject, CustomField } from './client/types'
 import {
-  API_NAME, LABEL, PICKLIST_VALUES, SALESFORCE, RESTRICTED_PICKLIST, FIELD_LEVEL_SECURITY, FORMULA,
+  API_NAME, LABEL, PICKLIST_VALUES, SALESFORCE, RESTRICTED_PICKLIST, FORMULA,
   FORMULA_TYPE_PREFIX, METADATA_OBJECT_NAME_FIELD,
 } from './constants'
 
@@ -90,29 +90,6 @@ export const toCustomObject = (element: ObjectType): CustomObject =>
     element.annotationsValues[LABEL],
     Object.values(element.fields).map(field => toCustomField(element, field))
   )
-
-export const toProfiles = (object: ObjectType, fields: TypeField[]): ProfileInfo[] => {
-  const profiles = new Map<string, ProfileInfo>()
-  fields.forEach(field => {
-    const fieldPermissions = field.annotationsValues[FIELD_LEVEL_SECURITY]
-    if (!fieldPermissions) {
-      return
-    }
-    Object.entries(fieldPermissions).forEach(fieldLevelSecurity => {
-      const profile = sfCase(fieldLevelSecurity[0])
-      const permissions = fieldLevelSecurity[1] as {editable: boolean; readable: boolean}
-      if (!profiles.has(profile)) {
-        profiles.set(profile, new ProfileInfo(sfCase(profile)))
-      }
-      (profiles.get(profile) as ProfileInfo).fieldPermissions.push({
-        field: fieldFullName(object, field),
-        editable: permissions.editable,
-        readable: permissions.readable,
-      })
-    })
-  })
-  return Array.from(profiles.values())
-}
 
 export const getValueTypeFieldElement = (parentID: ElemID, field: ValueTypeField): TypeField => {
   const bpFieldName = bpCase(field.name)
@@ -203,32 +180,6 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
   }
 
   return new TypeField(parentID, bpFieldName, bpFieldType, annotations)
-}
-
-export interface FieldPermission {editable: boolean; readable: boolean}
-/**
- * Transform list of ProfileInfo to map fieldFullName -> profileName -> FieldPermission
- */
-export const fromProfiles = (profiles: ProfileInfo[]):
-Map<string, Map<string, FieldPermission>> => {
-  const permissions = new Map<string, Map<string, FieldPermission>>()
-  profiles.forEach(info => {
-    if (!info.fieldPermissions) {
-      return
-    }
-    info.fieldPermissions.forEach(fieldPermission => {
-      const name = fieldPermission.field
-      if (!permissions.has(name)) {
-        permissions.set(name, new Map<string, FieldPermission>())
-      }
-      (permissions.get(name) as Map<string, FieldPermission>).set(info.fullName, {
-        editable: fieldPermission.editable,
-        readable: fieldPermission.readable,
-      })
-    })
-  })
-
-  return permissions
 }
 
 export const fromMetadataInfo = (info: MetadataInfo): Values => {

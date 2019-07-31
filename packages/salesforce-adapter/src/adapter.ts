@@ -1,12 +1,6 @@
 import {
-  BuiltinTypes,
-  Type,
-  ObjectType,
-  ElemID,
-  InstanceElement,
-  Values,
-  Field,
-  Element,
+  BuiltinTypes, Type, ObjectType, ElemID, InstanceElement, Values,
+  Field, Element,
 } from 'adapter-api'
 import {
   SaveResult, ValueTypeField, MetadataInfo, Field as SObjField,
@@ -16,13 +10,13 @@ import _ from 'lodash'
 import SalesforceClient from './client/client'
 import * as constants from './constants'
 import {
-  ProfileInfo, CompleteSaveResult, SfError,
+  CompleteSaveResult, SfError,
 } from './client/types'
 import {
   toCustomField, toCustomObject, apiName, sfCase, bpCase, fieldFullName, Types,
-  getValueTypeFieldElement, toProfiles, fromProfiles, getSObjectFieldElement,
-  FieldPermission as FieldPermissions, fromMetadataInfo,
+  getValueTypeFieldElement, getSObjectFieldElement, fromMetadataInfo,
 } from './transformer'
+import { AspectsManager } from './aspects/aspects'
 
 // Diagnose client results
 const diagnose = (result: SaveResult | SaveResult[]): void => {
@@ -70,13 +64,18 @@ const annotateApiNameAndLabel = (element: ObjectType): void => {
   })
 }
 
-const DISCOVER_INSTANCES_METADATA_TYPES = ['profile', 'flow', 'layout', 'workflow',
-  'permission_set', 'queue', 'report', 'settings']
-
 export default class SalesforceAdapter {
+  // This is public as it should be exposed to tests
+  public static STANDALONE_METADATA_TYPES = ['flow', 'workflow', 'queue', 'report', 'settings']
+
   private innerClient?: SalesforceClient
   public get client(): SalesforceClient {
     return this.innerClient as SalesforceClient
+  }
+
+  private innerAspects?: AspectsManager
+  public get aspects(): AspectsManager {
+    return this.innerAspects as AspectsManager
   }
 
   init(conf: InstanceElement): void {
@@ -85,38 +84,7 @@ export default class SalesforceAdapter {
       conf.value.password + conf.value.token,
       conf.value.sandbox
     )
-  }
-
-  /**
-   * Discover configuration elements (types and instances in the given salesforce account)
-   * Account credentials were given in the constructor.
-   */
-  public async discover(): Promise<Element[]> {
-    // TODO: add here salesforce primitive data types
-    const result = await Promise.all([this.discoverMetadataTypes(), this.discoverSObjects()])
-    return _.flatten([...result, await this.discoverMetadataInstances(result[0])] as Element[][])
-  }
-
-  /**
-   * Add new type element
-   * @param element the object to add
-   * @returns the updated object with extra info like api name and label
-   * @throws error in case of failure
-   */
-  public async add(element: ObjectType): Promise<ObjectType> {
-    const post = element.clone()
-    annotateApiNameAndLabel(post)
-
-    const result = await this.client.create(
-      constants.CUSTOM_OBJECT,
-      toCustomObject(post)
-    )
-    diagnose(result)
-
-    const persmissionsResult = await this.updatePermissions(post, Object.values(post.fields))
-    diagnose(persmissionsResult)
-
-    return post
+    this.innerAspects = new AspectsManager(this.innerClient)
   }
 
   /**
@@ -146,13 +114,41 @@ export default class SalesforceAdapter {
   }
 
   /**
+   * Discover configuration elements (types and instances in the given salesforce account)
+   * Account credentials were given in the constructor.
+   */
+  public async discover(): Promise<Element[]> {
+    // TODO: add here salesforce primitive data types
+    const result = await Promise.all([this.discoverMetadataTypes(), this.discoverSObjects()])
+    return _.flatten([...result, await this.discoverMetadataInstances(result[0])] as Element[][])
+  }
+
+  /**
+   * Add new type element
+   * @param element the object to add
+   * @returns the updated object with extra info like api name and label
+   * @throws error in case of failure
+   */
+  public async add(element: ObjectType): Promise<ObjectType> {
+    const post = element.clone()
+    annotateApiNameAndLabel(post)
+
+    const result = await this.client.create(constants.CUSTOM_OBJECT, toCustomObject(post))
+    const aspectsResult = await this.aspects.add(post)
+    diagnose([result as SaveResult, ...aspectsResult])
+
+    return post
+  }
+
+  /**
    * Remove an element
    * @param element The provided element to remove
    * @returns true for success, false for failure
    */
   public async remove(element: ObjectType): Promise<void> {
     const result = await this.client.delete(constants.CUSTOM_OBJECT, apiName(element))
-    diagnose(result)
+    const aspectsResult = await this.aspects.remove(element)
+    diagnose([result as SaveResult, ...aspectsResult])
   }
 
   /**
@@ -161,10 +157,7 @@ export default class SalesforceAdapter {
    * @param newElement The new metadata of the object to replace
    * @returns true for success, false for failure
    */
-  public async update(
-    prevElement: ObjectType,
-    newElement: ObjectType
-  ): Promise<ObjectType> {
+  public async update(prevElement: ObjectType, newElement: ObjectType): Promise<ObjectType> {
     const post = newElement.clone()
     annotateApiNameAndLabel(post)
 
@@ -176,107 +169,25 @@ export default class SalesforceAdapter {
       )
     }
 
-    // Retrieve the custom fields for deletion and delete them
-    const deletedFields = prevElement.getFieldsThatAreNotInOther(post)
-    const deleteResult = this.deleteCustomFields(prevElement, deletedFields)
-
-    // Retrieve the custom fields for addition, create them and update the permissions
-    const newFields = post.getFieldsThatAreNotInOther(prevElement)
-    const createResult = this.createFields(post, newFields)
-
-    // Update the permissions of the fields that remain
-    const updatePermissionsResult = this.updateFieldsPermissions(prevElement, post)
-
-    await Promise.all([deleteResult, createResult])
-
+    const fieldsUpdateResult = await Promise.all([
+      // Retrieve the custom fields for deletion and delete them
+      this.deleteCustomFields(prevElement, prevElement.getFieldsThatAreNotInOther(post)),
+      // Retrieve the custom fields for addition and than create them
+      this.createFields(post, post.getFieldsThatAreNotInOther(prevElement))])
     // Update the annotation values - this can't be done asynchronously with the previous
     // operations beacause the update API expects to receive the updated list of fields,
     // hence the need to perform the fields deletion and creation first, and then update the
     // object.
     // We also await here on the updateFieldPermissions which we started before awaiting on the
     // fields creation/deletion to minimize runtime
-    const updateObjectResult = this.updateObject(post)
-    await Promise.all([updatePermissionsResult, updateObjectResult])
+    const objectUpdateResult = await this.client.update(constants.CUSTOM_OBJECT,
+      toCustomObject(post))
+    // Aspects should be updated once all object related properties updates are over
+    const aspectsResult = await this.aspects.update(prevElement, post)
+    diagnose([..._.flatten(fieldsUpdateResult), objectUpdateResult as SaveResult,
+      ...aspectsResult])
 
     return post
-  }
-
-  /**
-   * Updates required explicit field permissions in new object by comparing the field permissions
-   * in the new and old objects. Explicit field permissions are required for removed permissions
-   * @param oldElementAnnotations The old field annotation values
-   * @param newElementAnnotations The new field annotation values
-   */
-  private static updateFieldPermissionsInNewObject(
-    oldElementAnnotations: Values,
-    newElementAnnotations: Values
-  ): void {
-    if (!newElementAnnotations[constants.FIELD_LEVEL_SECURITY]) {
-      newElementAnnotations[constants.FIELD_LEVEL_SECURITY] = {}
-    }
-    const newFieldLevelSecurity = newElementAnnotations[constants.FIELD_LEVEL_SECURITY]
-    const oldFieldLevelSecurity = oldElementAnnotations[constants.FIELD_LEVEL_SECURITY]
-    // If the delta is only new field permissions, then skip
-    if (oldFieldLevelSecurity) {
-      // If some permissions were removed, we will need to remove the permissions from the
-      // field explicitly (update them to be not editable and not readable)
-      const newPermissions = new Set<string>(Object.keys(newFieldLevelSecurity))
-      const removedPermissions = Object.keys(
-        oldFieldLevelSecurity
-      ).filter(f => !newPermissions.has(f))
-      removedPermissions.forEach(securityUser => {
-        newFieldLevelSecurity[securityUser] = { editable: false, readable: false }
-      })
-    }
-  }
-
-  /**
-   * Updates the fields permissions for an object's fields
-   * @param prevElement The previous object
-   * @param newElement The new object
-   */
-  private async updateFieldsPermissions(
-    prevElement: ObjectType,
-    newElement: ObjectType,
-  ): Promise<void> {
-    // Intersect between the 2 objects, and update the permissions of the fields that remain,
-    // if they have changed
-    const remainingFields = newElement.getMutualFieldsWithOther(prevElement).map(f => f.name)
-    // For each field, Update its permissions in the new element
-    remainingFields.forEach(field => {
-      SalesforceAdapter.updateFieldPermissionsInNewObject(
-        prevElement.fields[field].annotationsValues,
-        newElement.fields[field].annotationsValues
-      )
-    })
-    const fieldsToUpdate = remainingFields.filter(field => (
-      !_.isEqual(
-        prevElement.fields[field].annotationsValues[constants.FIELD_LEVEL_SECURITY],
-        newElement.fields[field].annotationsValues[constants.FIELD_LEVEL_SECURITY]
-      )
-    ))
-    if (fieldsToUpdate.length === 0) {
-      return
-    }
-    // Create the permissions
-    // Build the permissions in a Profile object for all the custom fields we will add
-    const permissionsResult = await this.updatePermissions(
-      newElement,
-      Object.values(newElement.fields).filter(f => fieldsToUpdate.includes(f.name)),
-    )
-    diagnose(permissionsResult)
-  }
-
-  /**
-   * Updates the object in SFDC
-   * @param element the updated version of the object we wish to update its annotation values
-   */
-  private async updateObject(element: ObjectType): Promise<void> {
-    const updateResult = await this.client.update(
-      constants.CUSTOM_OBJECT,
-      toCustomObject(element)
-    )
-    diagnose(updateResult)
   }
 
   /**
@@ -285,33 +196,11 @@ export default class SalesforceAdapter {
    * @param fieldsToAdd The fields to create
    * @returns successfully managed to create all fields with their permissions or not
    */
-  private async createFields(object: ObjectType, fieldsToAdd: Field[]): Promise<void> {
-    if (fieldsToAdd.length === 0) return
-
+  private async createFields(object: ObjectType, fieldsToAdd: Field[]): Promise<SaveResult[]> {
+    if (fieldsToAdd.length === 0) return []
     // Create the custom fields
-    const result = await this.client.create(constants.CUSTOM_FIELD,
-      fieldsToAdd.map(f => toCustomField(object, f, true)))
-    diagnose(result)
-
-    // Create the permissions
-    // Build the permissions in a Profile object for all the custom fields we will add
-    const permissionsResult = await this.updatePermissions(object, fieldsToAdd)
-    diagnose(permissionsResult)
-  }
-
-  /**
-   * Creates permissions in a Profile object for custom fields and update it
-   * @param element The object api name
-   * @param fields The custom fields
-   * @returns the update result
-   */
-  private async updatePermissions(element: ObjectType, fields: Field[]):
-    Promise<SaveResult | SaveResult[]> {
-    const profiles = toProfiles(element, fields)
-    if (profiles.length > 0) {
-      return this.client.update(constants.PROFILE_METADATA_TYPE, profiles)
-    }
-    return []
+    return this.client.create(constants.CUSTOM_FIELD,
+      fieldsToAdd.map(f => toCustomField(object, f, true))) as Promise<SaveResult[]>
   }
 
   /**
@@ -319,30 +208,20 @@ export default class SalesforceAdapter {
    * @param objectApiName the object api name those fields reside in
    * @param fieldsApiName the custom fields we wish to delete
    */
-  private async deleteCustomFields(element: ObjectType, fields: Field[]): Promise<void> {
-    if (fields.length === 0) {
-      return
-    }
-
-    const result = await this.client.delete(constants.CUSTOM_FIELD,
-      fields.map(field => fieldFullName(element, field)))
-    diagnose(result)
-  }
-
-  private async listMetadataTypes(): Promise<string[]> {
-    return (await this.client.listMetadataTypes()).map(obj => obj.xmlName)
-      .filter(obj => obj !== constants.CUSTOM_OBJECT)
+  private async deleteCustomFields(element: ObjectType, fields: Field[]): Promise<SaveResult[]> {
+    if (fields.length === 0) return []
+    return this.client.delete(constants.CUSTOM_FIELD,
+      fields.map(field => fieldFullName(element, field))) as Promise<SaveResult[]>
   }
 
   private async discoverMetadataTypes(): Promise<Type[]> {
-    const typeNames = await this.listMetadataTypes()
     const knownTypes = new Set<string>()
-    return _.flatten(await Promise.all(typeNames
+    return _.flatten(await Promise.all(SalesforceAdapter.STANDALONE_METADATA_TYPES
       .map(obj => this.discoverMetadataType(obj, knownTypes))))
   }
 
   private async discoverMetadataType(objectName: string, knownTypes: Set<string>): Promise<Type[]> {
-    const fields = await this.client.discoverMetadataObject(objectName)
+    const fields = await this.client.describeMetadataType(objectName)
     return SalesforceAdapter.createMetadataTypeElements(objectName, fields, knownTypes)
   }
 
@@ -358,7 +237,6 @@ export default class SalesforceAdapter {
     knownTypes.add(objectName)
 
     const element = Types.get(objectName, false) as ObjectType
-    element.annotate({ [constants.API_NAME]: objectName })
     if (!fields) {
       return [element]
     }
@@ -383,14 +261,12 @@ export default class SalesforceAdapter {
   }
 
   private async discoverMetadataInstances(types: Type[]): Promise<InstanceElement[]> {
-    return _.flatten(await Promise.all(types
-      .filter(type => DISCOVER_INSTANCES_METADATA_TYPES.includes(type.elemID.name))
-      .map(async type => this.createInstanceElements(type))))
+    return _.flatten(await Promise.all(types.map(async type => this.createInstanceElements(type))))
   }
 
   private async createInstanceElements(type: Type): Promise<InstanceElement[]> {
     try {
-      const instances = await this.listMetadataInstances(apiName(type))
+      const instances = await this.listMetadataInstances(sfCase(type.elemID.name))
       return instances.map(instance => new InstanceElement(new ElemID(constants.SALESFORCE,
         bpCase(instance.fullName)), type, fromMetadataInfo(instance)))
     } catch (e) {
@@ -408,22 +284,7 @@ export default class SalesforceAdapter {
         )
       )
     ))
-    // discover permissions per field - we do this post element creation as we
-    // fetch permssions for all fields in single call.
-    const permissions = await this.discoverPermissions()
-    // add field permissions to all discovered elements
-    sobjects.forEach(sobject => {
-      Object.values(sobject.fields).forEach(field => {
-        const fieldPermission = permissions.get(fieldFullName(sobject, field))
-        if (fieldPermission) {
-          field.annotationsValues[constants.FIELD_LEVEL_SECURITY] = {}
-          fieldPermission.forEach((profilePermission, profile) => {
-            field.annotationsValues[constants.FIELD_LEVEL_SECURITY][
-              bpCase(profile)] = profilePermission
-          })
-        }
-      })
-    })
+    await this.aspects.discover(sobjects)
     return sobjects
   }
 
@@ -437,17 +298,6 @@ export default class SalesforceAdapter {
       element.fields[field.name] = field
     })
     return element
-  }
-
-  /**
-   * Discover all sobject field permissions
-   * return fullFieldName -> (profile -> permissions)
-   */
-  private async discoverPermissions(): Promise<
-    Map<string, Map<string, FieldPermissions>>> {
-    return fromProfiles(
-      await this.listMetadataInstances(constants.PROFILE_METADATA_TYPE) as ProfileInfo[]
-    )
   }
 
   /**

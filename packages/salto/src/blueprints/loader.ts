@@ -80,6 +80,24 @@ const mergeObjectDefinitions = (objects: ObjectType[]): ObjectType => {
   })
 }
 
+const buildDefaults = (type: Type): Values => {
+  //If Object - return hash with field types defaults. If the hash is empty
+  //return undefined. If there is default - return it!
+  const def = type.annotationsValues._default
+  if (def === undefined && isObjectType(type)){
+
+  }
+  return def
+}
+
+const mergeInstanceDefinitions = (instances: InstanceElement[]): InstanceElement => {
+  const instance = _.mergeWith(
+    {},
+    ... instances,
+    validateNoDuplicates
+  )
+  return _.merge(buildDefaults(instance), instance)
+}
 /**
  * Merge all of the object types by dividing into groups according to elemID
  * and merging the defs
@@ -89,7 +107,10 @@ const mergeObjects = (
 ): Record<string, ObjectType> => _(objects).groupBy(o => o.elemID.getFullName())
   .mapValues(mergeObjectDefinitions).value()
 
-
+const mergeInstances = (
+  instances: InstanceElement[]
+): InstanceElement[] => _(instances).groupBy(i => i.elemID.getFullName())
+  .mapValues(mergeInstanceDefinitions).values().value()
 /**
  * Replace the pointers to all the merged elements to the merged version.
  */

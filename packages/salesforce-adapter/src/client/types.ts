@@ -48,9 +48,7 @@ export class TextField extends CustomField {
     if (formula) {
       this.formula = formula
     } else {
-      if (this.type === 'Text') {
-        this.length = 80
-      }
+      this.length = 80
       this.required = required
     }
   }
@@ -98,15 +96,21 @@ export class PicklistField extends CustomField {
 }
 
 export class NumberField extends CustomField {
+  readonly formula?: string
   readonly required?: boolean
   constructor(
     public fullName: string,
     type: string,
     readonly label?: string,
     required: boolean = false,
+    formula?: string,
   ) {
     super(fullName, type, label)
-    this.required = required
+    if (formula) {
+      this.formula = formula
+    } else {
+      this.required = required
+    }
   }
 }
 

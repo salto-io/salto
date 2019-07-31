@@ -160,6 +160,7 @@ export const toCustomField = (
         fieldTypeName(field.type.elemID.name),
         field.annotationsValues[LABEL],
         field.annotationsValues[Type.REQUIRED],
+        field.annotationsValues[FORMULA],
       )
       break
 

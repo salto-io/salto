@@ -4,7 +4,7 @@ import {
   ElemID,
   PrimitiveTypes,
   InstanceElement,
-  Field,
+  Field, BuiltinTypes,
 } from 'adapter-api'
 import { ProfileInfo } from '../src/client/types'
 import SalesforceAdapter from '../src/adapter'
@@ -35,6 +35,42 @@ describe('Test SalesforceAdapter CRUD', () => {
   })
 
   const mockElemID = new ElemID(constants.SALESFORCE, 'test')
+
+  it('should add new salesforce instance', async () => {
+    const mockCreate = jest.fn().mockImplementationOnce(() => ({ success: true }))
+    SalesforceClient.prototype.create = mockCreate
+
+    const instance = new InstanceElement(mockElemID, new ObjectType({
+      elemID: mockElemID,
+      fields: {
+        username: new Field(mockElemID, 'username', BuiltinTypes.STRING),
+        password: new Field(mockElemID, 'password', BuiltinTypes.STRING),
+        token: new Field(mockElemID, 'token', BuiltinTypes.STRING),
+        sandbox: new Field(mockElemID, 'sandbox', BuiltinTypes.BOOLEAN),
+      },
+      annotations: {},
+      annotationsValues: { [constants.METADATA_TYPE]: 'flow' },
+    }),
+    {
+      token: 'instanceTest',
+    })
+
+    const result = await adapter().add(instance) as InstanceElement
+
+    expect(result).toBeInstanceOf(InstanceElement)
+    expect(result).toBe(instance)
+    expect(result.elemID.name).toBe(mockElemID.name)
+    expect(result.value.token).toBeDefined()
+    expect(result.value.token).toBe('instanceTest')
+    expect(result.value.Token).toBeUndefined()
+
+    expect(mockCreate.mock.calls.length).toBe(1)
+    expect(mockCreate.mock.calls[0].length).toBe(2)
+    expect(mockCreate.mock.calls[0][0]).toBe('flow')
+    expect(mockCreate.mock.calls[0][1].fullName).toBe(mockElemID.name)
+    expect(mockCreate.mock.calls[0][1].Token).toBe('instanceTest')
+    expect(mockCreate.mock.calls[0][1].token).toBeUndefined()
+  })
 
   it('should add new salesforce type', async () => {
     const mockCreate = jest.fn().mockImplementationOnce(() => ({ success: true }))

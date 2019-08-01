@@ -7,6 +7,7 @@ import { buildDiffGraph } from '../dag/diff'
 import { DataNodeMap } from '../dag/nodemap'
 import State from '../state/state'
 import { Adapter } from './adapters'
+import { mergeAndValidate } from '../blueprints/loader'
 
 const applyAction = async (
   state: State,
@@ -74,8 +75,8 @@ export const applyActions = async (state: State,
 
 export const discoverAll = async (state: State, adapters: Record<string, Adapter>):
 Promise<Element[]> => {
-  const result = _.flatten(await Promise.all(Object.values(adapters)
-    .map(adapter => adapter.discover())))
+  const result = mergeAndValidate(_.flatten(await Promise.all(Object.values(adapters)
+    .map(adapter => adapter.discover()))))
   state.override(result)
   return result
 }

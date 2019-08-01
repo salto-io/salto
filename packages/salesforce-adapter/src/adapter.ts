@@ -6,7 +6,7 @@ import {
   InstanceElement,
   Values,
   Field,
-  Element,
+  Element, isObjectType,
 } from 'adapter-api'
 import { SaveResult, ValueTypeField, MetadataInfo } from 'jsforce'
 import { isArray } from 'util'
@@ -104,7 +104,7 @@ export default class SalesforceAdapter {
    */
   public async add(element: Element): Promise<Element> {
     // Adding new CustomObject when received ObjectType
-    if (element instanceof ObjectType) {
+    if (isObjectType(element)) {
       const post = element.clone()
       annotateApiNameAndLabel(post)
 

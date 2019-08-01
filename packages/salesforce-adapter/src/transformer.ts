@@ -3,7 +3,7 @@ import { ValueTypeField, Field, MetadataInfo } from 'jsforce'
 
 import {
   Type, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values,
-  Field as TypeField, BuiltinTypes, InstanceElement, Element,
+  Field as TypeField, BuiltinTypes, Element, isInstanceElement,
 } from 'adapter-api'
 import { CustomObject, CustomField, ProfileInfo } from './client/types'
 import {
@@ -20,8 +20,8 @@ export const sfCase = (name: string, custom: boolean = false): string =>
 export const bpCase = (name: string): string =>
   (name.endsWith('__c') ? _.snakeCase(name).slice(0, -2) : _.snakeCase(name))
 
-export const apiName = (elem: Element): string => (
-  (elem instanceof InstanceElement) ? elem.elemID.name : elem.getAnnotationsValues()[API_NAME]
+export const apiName = (element: Element): string => (
+  (isInstanceElement(element)) ? element.elemID.name : element.getAnnotationsValues()[API_NAME]
 )
 
 export const metadataType = (element: Element): string => (

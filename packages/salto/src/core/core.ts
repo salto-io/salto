@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import wu from 'wu'
 import {
-  PlanAction, ObjectType, Element, Plan, ElemID,
+  PlanAction, ObjectType, Element, Plan, ElemID, isEqualElements,
 } from 'adapter-api'
 import { buildDiffGraph } from '../dag/diff'
 import { DataNodeMap } from '../dag/nodemap'
@@ -50,14 +50,11 @@ export const getPlan = async (state: State, allElements: Element[]): Promise<Pla
   //   dependsOn.push(element.type.elemID.getFullName())
   // }
   // TODO: split elements to fields and fields values
-  const diffGraph = buildDiffGraph(before, after,
-    id => {
-      const beforeData = before.getData(id)
-      const afterData = after.getData(id)
-      return beforeData
-          && afterData
-          && beforeData.isEqual(afterData)
-    })
+  const diffGraph = buildDiffGraph(
+    before,
+    after,
+    id => isEqualElements(before.getData(id), after.getData(id))
+  )
   return wu(diffGraph.evaluationOrder()).map(
     id => (diffGraph.getData(id) as PlanAction)
   ).toArray()

@@ -19,7 +19,7 @@ import {
 import {
   toCustomField, toCustomObject, apiName, sfCase, bpCase, fieldFullName, Types,
   getValueTypeFieldElement, toProfiles, fromProfiles, getSObjectFieldElement,
-  FieldPermission as FieldPermissions, fromMetadataInfo, toMetadataInfo,
+  FieldPermission as FieldPermissions, fromMetadataInfo, toMetadataInfo, metadataType,
 } from './transformer'
 
 // Diagnose client results
@@ -162,19 +162,7 @@ export default class SalesforceAdapter {
    * @param element to remove
    */
   public async remove(element: Element): Promise<void> {
-    if (element instanceof ObjectType) {
-      const result = await this.client.delete(constants.CUSTOM_OBJECT, apiName(element))
-      diagnose(result)
-
-      return
-    }
-
-    const instance = element as InstanceElement
-    const result = await this.client.delete(
-      instance.type.annotationsValues[constants.METADATA_TYPE],
-      sfCase(instance.elemID.name)
-    )
-    diagnose(result)
+    diagnose(await this.client.delete(metadataType(element), apiName(element)))
   }
 
   /**

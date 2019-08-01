@@ -3,12 +3,12 @@ import { ValueTypeField, Field, MetadataInfo } from 'jsforce'
 
 import {
   Type, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values,
-  Field as TypeField, BuiltinTypes,
+  Field as TypeField, BuiltinTypes, InstanceElement, Element,
 } from 'adapter-api'
 import { CustomObject, CustomField, ProfileInfo } from './client/types'
 import {
   API_NAME, LABEL, PICKLIST_VALUES, SALESFORCE, RESTRICTED_PICKLIST, FIELD_LEVEL_SECURITY, FORMULA,
-  FORMULA_TYPE_PREFIX, METADATA_OBJECT_NAME_FIELD,
+  FORMULA_TYPE_PREFIX, METADATA_OBJECT_NAME_FIELD, METADATA_TYPE, CUSTOM_OBJECT,
 } from './constants'
 
 const capitalize = (s: string): string => {
@@ -20,8 +20,13 @@ export const sfCase = (name: string, custom: boolean = false): string =>
 export const bpCase = (name: string): string =>
   (name.endsWith('__c') ? _.snakeCase(name).slice(0, -2) : _.snakeCase(name))
 
-export const apiName = (element: Type | TypeField): string => (
-  element.annotationsValues[API_NAME]
+export const apiName = (elem: Element): string => (
+  (elem instanceof InstanceElement) ? elem.elemID.name : elem.getAnnotationsValues()[API_NAME]
+)
+
+export const metadataType = (element: Element): string => (
+  (element instanceof InstanceElement) ? element.type.annotationsValues[METADATA_TYPE]
+    : CUSTOM_OBJECT
 )
 
 const formulaTypeName = (baseTypeName: string): string =>

@@ -43,6 +43,7 @@ export class ElemID {
 
 export interface Element {
   elemID: ElemID
+  getAnnotationsValues: () => Values
 }
 
 type ElementMap = Record<string, Element>
@@ -90,6 +91,10 @@ export class Field implements Element {
 
   parentID(): ElemID {
     return new ElemID(this.elemID.adapter, ...this.elemID.nameParts.slice(0, -1))
+  }
+
+  getAnnotationsValues(): Values {
+    return this.annotationsValues
   }
 }
 
@@ -157,6 +162,10 @@ export abstract class Type implements Element {
    * @return {Type} the cloned instance
    */
   abstract clone(annotationsValues?: Values): Type
+
+  getAnnotationsValues(): Values {
+    return this.annotationsValues
+  }
 }
 
 /**
@@ -307,6 +316,10 @@ export class InstanceElement implements Element {
     this.elemID = elemID
     this.type = type
     this.value = value
+  }
+
+  getAnnotationsValues(): Values {
+    return this.type.annotationsValues
   }
 }
 

@@ -1,6 +1,7 @@
 import _ from 'lodash'
 import {
-  ObjectType, isType, isObjectType, isInstanceElement, Element, Field,
+  ObjectType, isType, isObjectType, isInstanceElement, Element, Field, InstanceElement,
+  Type, Values,
 } from 'adapter-api'
 import Parser from '../parser/salto'
 import Blueprint from './blueprint'
@@ -80,6 +81,22 @@ const mergeObjectDefinitions = (objects: ObjectType[]): ObjectType => {
   })
 }
 
+const buildDefaults = (
+  type: Type
+): Values | undefined => {
+  const buildObjectDefaults = (object: ObjectType): Values | undefined => {
+    const def = _(object.fields).mapValues(field =>
+      (field.annotationsValues[Type.DEFAULT] === undefined
+        ? buildDefaults(field.type)
+        : field.annotationsValues[Type.DEFAULT])).pickBy(v => v !== undefined).value()
+    return _.isEmpty(def) ? undefined : def
+  }
+
+  return (type.annotationsValues[Type.DEFAULT] === undefined && isObjectType(type)
+    ? buildObjectDefaults(type)
+    : type.annotationsValues[Type.DEFAULT])
+}
+
 /**
  * Merge all of the object types by dividing into groups according to elemID
  * and merging the defs
@@ -89,7 +106,24 @@ const mergeObjects = (
 ): Record<string, ObjectType> => _(objects).groupBy(o => o.elemID.getFullName())
   .mapValues(mergeObjectDefinitions).value()
 
+const mergeInstances = (
+  instances: InstanceElement[]
+): InstanceElement[] => {
+  const mergeInstanceDefinitions = (instanceDefs: InstanceElement[]): InstanceElement => {
+    const refInst = instanceDefs[0]
+    const value = _.mergeWith(
+      {},
+      ...instanceDefs.map(i => i.value),
+      validateNoDuplicates
+    )
+    const valueWithDefault = _.merge({}, buildDefaults(refInst.type) || {}, value)
+    return new InstanceElement(refInst.elemID, refInst.type, valueWithDefault)
+  }
 
+  return _(instances).groupBy(i => i.elemID.getFullName())
+    .mapValues(mergeInstanceDefinitions).values()
+    .value()
+}
 /**
  * Replace the pointers to all the merged elements to the merged version.
  */
@@ -124,9 +158,13 @@ const updateMergedTypes = (
  */
 export const mergeElements = (elements: Element[]): Element[] => {
   const mergedObjects = mergeObjects(elements.filter(e => isObjectType(e)) as ObjectType[])
+  const mergedInstances = mergeInstances(elements.filter(
+    e => isInstanceElement(e)
+  ) as InstanceElement[])
   const mergedElements = [
-    ...elements.filter(e => !isObjectType(e)),
+    ...elements.filter(e => !isObjectType(e) && !isInstanceElement(e)),
     ...Object.values(mergedObjects),
+    ...mergedInstances,
   ]
   return updateMergedTypes(mergedElements, mergedObjects)
 }

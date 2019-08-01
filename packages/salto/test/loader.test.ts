@@ -1,5 +1,6 @@
 import {
-  ObjectType, ElemID, Field, BuiltinTypes, InstanceElement,
+  ObjectType, ElemID, Field, BuiltinTypes, InstanceElement, PrimitiveType,
+  PrimitiveTypes,
 } from 'adapter-api'
 import { mergeElements, UPDATE_KEYWORD } from '../src/blueprints/loader'
 
@@ -13,6 +14,12 @@ describe('Loader merging ability', () => {
     fields: {
       field1: new Field(baseElemID, 'field1', BuiltinTypes.STRING, { label: 'base' }),
       field2: new Field(baseElemID, 'field2', BuiltinTypes.STRING, { label: 'base' }),
+    },
+    annotationsValues: {
+      _default: {
+        field1: 'base1',
+        field2: 'base2',
+      },
     },
   })
 
@@ -93,6 +100,7 @@ describe('Loader merging ability', () => {
   const instanceElement = new InstanceElement(new ElemID('salto', 'inst'), base, {})
   const instanceElement2 = new InstanceElement(new ElemID('salto', 'inst2'), BuiltinTypes.STRING, {})
 
+
   const mergedObject = new ObjectType({
     elemID: baseElemID,
     fields: {
@@ -101,12 +109,15 @@ describe('Loader merging ability', () => {
     },
     annotationsValues: {
       anno1: 'updated',
+      _default: {
+        field1: 'base1',
+        field2: 'base2',
+      },
     },
     annotations: {
       anno1: BuiltinTypes.STRING,
     },
   })
-
 
   describe('merging updates', () => {
     it('does not modify an element list with no updates', () => {
@@ -201,6 +212,101 @@ describe('Loader merging ability', () => {
       ]
       const merged = mergeElements(elements)
       expect(merged.length).toBe(4)
+    })
+  })
+
+  describe('merging instances', () => {
+    const strType = new PrimitiveType({
+      elemID: new ElemID('salto', 'string'),
+      primitive: PrimitiveTypes.STRING,
+      annotationsValues: { _default: 'type' },
+    })
+    const nestedElemID = new ElemID('salto', 'nested')
+    const nested = new ObjectType({
+      elemID: nestedElemID,
+      fields: {
+        field1: new Field(nestedElemID, 'field1', strType, { _default: 'field1' }),
+        field2: new Field(nestedElemID, 'field2', strType),
+        base: new Field(nestedElemID, 'field2', base),
+      },
+    })
+    const ins1 = new InstanceElement(new ElemID('salto', 'ins'), nested, {
+      field1: 'ins1',
+      field2: 'ins1',
+    })
+    const ins2 = new InstanceElement(new ElemID('salto', 'ins'), nested, {
+      base: {
+        field1: 'ins2',
+        field2: 'ins2',
+      },
+    })
+    const shouldUseFieldDef = new InstanceElement(new ElemID('salto', 'ins'), nested, {
+      field2: 'ins1',
+    })
+    const shouldUseTypeDef = new InstanceElement(new ElemID('salto', 'ins'), nested, {
+      field1: 'ins1',
+    })
+
+    it('should merge instances', () => {
+      const elements = [ins1, ins2]
+      const merged = mergeElements(elements)
+      expect(merged.length).toBe(1)
+      const ins = merged[0] as InstanceElement
+      expect(ins.value).toEqual({
+        field1: 'ins1',
+        field2: 'ins1',
+        base: {
+          field1: 'ins2',
+          field2: 'ins2',
+        },
+      })
+    })
+
+    it('should use field defaults', () => {
+      const elements = [shouldUseFieldDef, ins2]
+      const merged = mergeElements(elements)
+      const ins = merged[0] as InstanceElement
+      expect(ins.value).toEqual({
+        field1: 'field1',
+        field2: 'ins1',
+        base: {
+          field1: 'ins2',
+          field2: 'ins2',
+        },
+      })
+    })
+
+    it('should use type defaults', () => {
+      const elements = [shouldUseTypeDef, ins2]
+      const merged = mergeElements(elements)
+      const ins = merged[0] as InstanceElement
+      expect(ins.value).toEqual({
+        field1: 'ins1',
+        field2: 'type',
+        base: {
+          field1: 'ins2',
+          field2: 'ins2',
+        },
+      })
+    })
+
+    it('should use object defaults', () => {
+      const elements = [ins1]
+      const merged = mergeElements(elements)
+      const ins = merged[0] as InstanceElement
+      expect(ins.value).toEqual({
+        field1: 'ins1',
+        field2: 'ins1',
+        base: {
+          field1: 'base1',
+          field2: 'base2',
+        },
+      })
+    })
+
+    it('should fail on multiple values for same key', () => {
+      const elements = [ins1, shouldUseFieldDef]
+      expect(() => mergeElements(elements)).toThrow()
     })
   })
 })

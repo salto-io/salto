@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-use-before-define */
 import * as _ from 'lodash'
 
 /**
@@ -43,6 +44,7 @@ export class ElemID {
 
 export interface Element {
   elemID: ElemID
+  isEqual(other: Element): boolean
 }
 
 type ElementMap = Record<string, Element>
@@ -71,6 +73,13 @@ export class Field implements Element {
     public isList: boolean = false,
   ) {
     this.elemID = new ElemID(parentID.adapter, ...parentID.nameParts, name)
+  }
+
+  isEqual(other: Element): boolean {
+    return isField(other)
+           && _.isEqual(this.type.elemID, other.type.elemID)
+           && _.isEqual(this.annotationsValues, other.annotationsValues)
+           && this.isList === other.isList
   }
 
   /**
@@ -143,6 +152,16 @@ export abstract class Type implements Element {
     return _.cloneDeep(this.annotationsValues)
   }
 
+  isEqual(other: Element): boolean {
+    return isType(other)
+          && _.isEqual(this.elemID, other.elemID)
+          && _.isEqual(
+            _.mapValues(this.annotations, a => a.elemID),
+            _.mapValues(other.annotations, a => a.elemID)
+          )
+          && _.isEqual(this.annotationsValues, other.annotationsValues)
+  }
+
   annotate(annotationsValues: Values): void {
     // Should we overide? I'm adding right now as it seems more
     // usefull. (Roi R)
@@ -177,6 +196,12 @@ export class PrimitiveType extends Type {
   }) {
     super({ elemID, annotations, annotationsValues })
     this.primitive = primitive
+  }
+
+  isEqual(other: Element): boolean {
+    return super.isEqual(other)
+           && isPrimitiveType(other)
+           && this.primitive === other.primitive
   }
 
   /**
@@ -224,6 +249,16 @@ export class ObjectType extends Type {
     return clonedFields
   }
 
+  isEqual(other: Element): boolean {
+    return super.isEqual(other)
+           && isObjectType(other)
+          && _.isEqual(
+            _.mapValues(this.fields, f => f.elemID),
+            _.mapValues(other.fields, f => f.elemID)
+          )
+          && _.every(Object.keys(this.fields).map(n => this.fields[n].isEqual(other.fields[n])))
+  }
+
   /**
    * Return an independent copy of this instance.
    * @return {ObjectType} the cloned instance
@@ -264,6 +299,12 @@ export class InstanceElement implements Element {
     this.elemID = elemID
     this.type = type
     this.value = value
+  }
+
+  isEqual(other: Element): boolean {
+    return isInstanceElement(other)
+           && _.isEqual(this.type.elemID, other.type.elemID)
+           && _.isEqual(this.value, other.value)
   }
 }
 
@@ -356,4 +397,9 @@ export function isPrimitiveType(
   element: any,
 ): element is PrimitiveType {
   return element instanceof PrimitiveType
+}
+
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+export function isField(element: any): element is Field {
+  return element instanceof Field
 }

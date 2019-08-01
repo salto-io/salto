@@ -1,3 +1,4 @@
+import _ from 'lodash'
 import {
   ObjectType,
   PrimitiveTypes,
@@ -8,6 +9,9 @@ import {
   ElemID,
   InstanceElement,
   Field,
+  isEqualElements,
+  isInstanceElement,
+  isType,
 } from '../src/elements'
 
 describe('Test elements.ts', () => {
@@ -338,5 +342,74 @@ describe('Test elements.ts', () => {
     expect(nameMissing).toBe('adapter')
     expect(adapterMissing).toBe('name')
     expect(config).toBe('adapter')
+  })
+
+  describe('isEqualElements and type guards', () => {
+    const pt = new PrimitiveType({
+      elemID: new ElemID('test', 'prim'),
+      primitive: PrimitiveTypes.STRING,
+      annotations: {},
+      annotationsValues: {},
+    })
+    const ot = new ObjectType({
+      elemID: new ElemID('test', 'obj'),
+      fields: {
+        str: new Field(new ElemID('test', 'obj'), 'str_field', pt),
+      },
+      annotations: {
+        anno: pt,
+      },
+      annotationsValues: {},
+    })
+    const strField = new Field(new ElemID('test', 'obj'), 'str_field', pt)
+    const inst = new InstanceElement(new ElemID('test', 'inst'), ot, { str: 'test' })
+    it('should identify equal primitive types', () => {
+      const pt2 = _.cloneDeep(pt)
+      expect(isEqualElements(pt, pt2)).toBe(true)
+    })
+
+    it('should identify equal object types', () => {
+      const ot2 = _.cloneDeep(ot)
+      expect(isEqualElements(ot, ot2)).toBe(true)
+    })
+
+    it('should identify equal fields', () => {
+      const strField2 = _.cloneDeep(strField)
+      expect(isEqualElements(strField, strField2)).toBe(true)
+    })
+
+    it('should identify equal instance elements', () => {
+      const inst2 = _.cloneDeep(inst)
+      expect(isEqualElements(inst, inst2)).toBe(true)
+    })
+
+    it('should identify one undefined as not euqal', () => {
+      expect(isEqualElements(inst, undefined)).toBe(false)
+      expect(isEqualElements(undefined, inst)).toBe(false)
+    })
+
+    it('should identify different elements as false', () => {
+      expect(isEqualElements(inst, ot)).toBe(false)
+    })
+
+    it('should identify primitive type', () => {
+      expect(isPrimitiveType(pt)).toBe(true)
+      expect(isPrimitiveType(inst)).toBe(false)
+    })
+
+    it('should identify types', () => {
+      expect(isType(inst)).toBe(false)
+      expect(isType(pt)).toBe(true)
+    })
+
+    it('should identify object types', () => {
+      expect(isObjectType(inst)).toBe(false)
+      expect(isObjectType(ot)).toBe(true)
+    })
+
+    it('should identify instance elements', () => {
+      expect(isInstanceElement(inst)).toBe(true)
+      expect(isInstanceElement(pt)).toBe(false)
+    })
   })
 })

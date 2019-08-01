@@ -15,7 +15,7 @@ import {
 import {
   toCustomField, toCustomObject, apiName, sfCase, fieldFullName, Types,
   getValueTypeFieldElement, getSObjectFieldElement, fromMetadataInfo, sfTypeName,
-  bpCase, toMetadataInfo,
+  bpCase, toMetadataInfo, metadataType,
 } from './transformer'
 import { AspectsManager } from './aspects/aspects'
 
@@ -171,20 +171,8 @@ export default class SalesforceAdapter {
    * @param element to remove
    */
   public async remove(element: Element): Promise<void> {
-    if (element instanceof ObjectType) {
-      const result = await this.client.delete(constants.CUSTOM_OBJECT, apiName(element))
-      const aspectsResult = await this.aspects.remove(element)
-    diagnose([result as SaveResult, ...aspectsResult])
-
-      return
-    }
-
-    const instance = element as InstanceElement
-    const result = await this.client.delete(
-      instance.type.annotationsValues[constants.METADATA_TYPE],
-      sfCase(instance.elemID.name)
-    )
-    diagnose(result)
+    diagnose(await this.client.delete(metadataType(element), apiName(element)))
+    diagnose(await this.aspects.remove(element))
   }
 
   /**

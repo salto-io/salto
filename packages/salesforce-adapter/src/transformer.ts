@@ -5,7 +5,7 @@ import {
 
 import {
   Type, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values,
-  Field as TypeField, BuiltinTypes, Element, isObjectType, isPrimitiveType,
+  Field as TypeField, BuiltinTypes, Element, isObjectType, isPrimitiveType, InstanceElement,
 } from 'adapter-api'
 import {
   CustomObject, CustomField,
@@ -13,7 +13,7 @@ import {
 import {
   API_NAME, LABEL, PICKLIST_VALUES, SALESFORCE, RESTRICTED_PICKLIST, FORMULA,
   FORMULA_TYPE_PREFIX, METADATA_TYPES_SUFFIX,
-  PRECISION, FIELD_TYPE_NAMES, FIELD_TYPE_API_NAMES,
+  PRECISION, FIELD_TYPE_NAMES, FIELD_TYPE_API_NAMES, METADATA_TYPE, CUSTOM_OBJECT,
 } from './constants'
 
 const capitalize = (s: string): string => {
@@ -38,8 +38,13 @@ export const bpNameParts = (name: string, customObject: boolean): string[] =>
   (customObject
     ? [bpCase(name)]
     : [bpCase(name), METADATA_TYPES_SUFFIX])
-export const apiName = (element: Type | TypeField): string => (
-  element.annotationsValues[API_NAME]
+export const apiName = (elem: Element): string => (
+  (elem instanceof InstanceElement) ? elem.elemID.name : elem.getAnnotationsValues()[API_NAME]
+)
+
+export const metadataType = (element: Element): string => (
+  (element instanceof InstanceElement) ? element.type.annotationsValues[METADATA_TYPE]
+    : CUSTOM_OBJECT
 )
 
 const formulaTypeName = (baseTypeName: string): string =>

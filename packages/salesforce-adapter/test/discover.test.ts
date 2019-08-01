@@ -87,7 +87,7 @@ describe('Test SalesforceAdapter discover', () => {
       const result = await adapter().discover()
 
       const lead = result.filter(o => o.elemID.name === 'lead').pop() as ObjectType
-      expect(lead.fields.last_name.type.elemID.name).toBe('Text')
+      expect(lead.fields.last_name.type.elemID.name).toBe('text')
       expect(lead.fields.last_name.annotationsValues.label).toBe('Last Name')
       // Test Rquired true and false
       expect(lead.fields.last_name.annotationsValues[Type.REQUIRED]).toBe(true)
@@ -122,7 +122,7 @@ describe('Test SalesforceAdapter discover', () => {
       const result = await adapter().discover()
 
       const lead = result.filter(o => o.elemID.name === 'lead').pop() as ObjectType
-      expect(lead.fields.primary_c.type.elemID.name).toBe('Picklist')
+      expect(lead.fields.primary_c.type.elemID.name).toBe('picklist')
       expect(
         (lead.fields.primary_c.annotationsValues.values as string[]).join(';')
       ).toBe('No;Yes')
@@ -171,7 +171,7 @@ describe('Test SalesforceAdapter discover', () => {
       const result = await adapter().discover()
 
       const lead = result.filter(o => o.elemID.name === 'lead').pop() as ObjectType
-      expect(lead.fields.double_field.type.elemID.name).toBe('Number')
+      expect(lead.fields.double_field.type.elemID.name).toBe('number')
     })
   })
 

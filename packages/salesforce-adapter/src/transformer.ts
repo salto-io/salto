@@ -246,6 +246,9 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
       annotations[key] = (field as any)[key]
     })
   }
+  // Set all type names to appear as lower case,
+  // differently than the Camel Casing when passing them to the API
+  bpFieldType.elemID.setNameToLower()
 
   return new TypeField(parentID, bpFieldName, bpFieldType, annotations)
 }

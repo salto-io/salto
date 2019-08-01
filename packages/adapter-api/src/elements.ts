@@ -34,6 +34,10 @@ export class ElemID {
     return this.nameParts.join(ElemID.NAMESPACE_SEPERATOR)
   }
 
+  setNameToLower(): void {
+    this.nameParts = this.nameParts.map(namePart => _.toLower(namePart))
+  }
+
   getFullName(): string {
     return [this.adapter, this.name]
       .filter(part => !_.isEmpty(part) && part !== ElemID.CONFIG_INSTANCE_NAME)

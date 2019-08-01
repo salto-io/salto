@@ -14,7 +14,7 @@ import {
 } from './client/types'
 import {
   toCustomField, toCustomObject, apiName, sfCase, bpCase, fieldFullName, Types,
-  getValueTypeFieldElement, getSObjectFieldElement, fromMetadataInfo,
+  getValueTypeFieldElement, getSObjectFieldElement, fromMetadataInfo, sfTypeName,
 } from './transformer'
 import { AspectsManager } from './aspects/aspects'
 
@@ -221,7 +221,7 @@ export default class SalesforceAdapter {
   }
 
   private async discoverMetadataType(objectName: string, knownTypes: Set<string>): Promise<Type[]> {
-    const fields = await this.client.describeMetadataType(sfCase(objectName))
+    const fields = await this.client.describeMetadataType(objectName)
     return SalesforceAdapter.createMetadataTypeElements(objectName, fields, knownTypes)
   }
 
@@ -266,9 +266,9 @@ export default class SalesforceAdapter {
 
   private async createInstanceElements(type: Type): Promise<InstanceElement[]> {
     try {
-      const instances = await this.listMetadataInstances(sfCase(type.elemID.name))
+      const instances = await this.listMetadataInstances(sfTypeName(type))
       return instances.map(instance => new InstanceElement(new ElemID(constants.SALESFORCE,
-        bpCase(instance.fullName)), type, fromMetadataInfo(instance)))
+        type.elemID.nameParts[0], bpCase(instance.fullName)), type, fromMetadataInfo(instance)))
     } catch (e) {
       return []
     }

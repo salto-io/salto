@@ -10,7 +10,7 @@ import {
 import { CustomObject, CustomField } from './client/types'
 import {
   API_NAME, LABEL, PICKLIST_VALUES, SALESFORCE, RESTRICTED_PICKLIST, FORMULA,
-  FORMULA_TYPE_PREFIX, METADATA_OBJECT_NAME_FIELD,
+  FORMULA_TYPE_PREFIX, METADATA_OBJECT_NAME_FIELD, METADATA_TYPES_SUFFIX,
 } from './constants'
 
 const capitalize = (s: string): string => {
@@ -21,6 +21,14 @@ export const sfCase = (name: string, custom: boolean = false): string =>
   capitalize(_.camelCase(name)) + (custom === true ? '__c' : '')
 export const bpCase = (name: string): string =>
   (name.endsWith('__c') ? _.snakeCase(name).slice(0, -2) : _.snakeCase(name))
+export const sfTypeName = (type: Type, customObject: boolean = false): string =>
+  (customObject
+    ? sfCase(type.elemID.name, customObject)
+    : type.elemID.nameParts.slice(0, -1).map(p => sfCase(p, customObject)).join())
+export const bpNameParts = (name: string, customObject: boolean): string[] =>
+  (customObject
+    ? [bpCase(name)]
+    : [bpCase(name), METADATA_TYPES_SUFFIX])
 
 export const apiName = (element: Type | TypeField): string => (
   element.annotationsValues[API_NAME]
@@ -34,7 +42,7 @@ const fieldTypeName = (typeName: string): string => (
 
 export class Types {
   // Type mapping for custom objects
-  private static customObjectTypes: Record<string, Type> = {
+  private static customObjectPrimitiveTypes: Record<string, Type> = {
     string: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, 'string'),
       primitive: PrimitiveTypes.STRING,
@@ -50,19 +58,20 @@ export class Types {
   }
 
   // Type mapping for metadata types
-  private static metadataTypes: Record<string, Type> = {
+  private static metadataPrimitiveTypes: Record<string, Type> = {
     string: BuiltinTypes.STRING,
     double: BuiltinTypes.NUMBER,
     boolean: BuiltinTypes.BOOLEAN,
   }
 
   static get(name: string, customObject: boolean = true): Type {
-    const typeMapping = customObject ? this.customObjectTypes : this.metadataTypes
-    const typeName = bpCase(name)
-    const type = typeMapping[typeName]
+    const type = customObject
+      ? this.customObjectPrimitiveTypes[name]
+      : this.metadataPrimitiveTypes[name]
+
     if (type === undefined) {
       return new ObjectType({
-        elemID: new ElemID(SALESFORCE, typeName),
+        elemID: new ElemID(SALESFORCE, ...bpNameParts(name, customObject)),
       })
     }
     return type

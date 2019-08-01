@@ -8,7 +8,7 @@ import {
 import { CustomObject, CustomField, ProfileInfo } from './client/types'
 import {
   API_NAME, LABEL, PICKLIST_VALUES, SALESFORCE, RESTRICTED_PICKLIST, FIELD_LEVEL_SECURITY, FORMULA,
-  FORMULA_TYPE_PREFIX, METADATA_OBJECT_NAME_FIELD, METADATA_TYPE, CUSTOM_OBJECT,
+  FORMULA_TYPE_PREFIX, METADATA_OBJECT_NAME_FIELD, METADATA_TYPE,
 } from './constants'
 
 const capitalize = (s: string): string => {
@@ -25,8 +25,7 @@ export const apiName = (elem: Element): string => (
 )
 
 export const metadataType = (element: Element): string => (
-  (element instanceof InstanceElement) ? element.type.annotationsValues[METADATA_TYPE]
-    : CUSTOM_OBJECT
+  element.getAnnotationsValues()[METADATA_TYPE]
 )
 
 const formulaTypeName = (baseTypeName: string): string =>

@@ -86,11 +86,11 @@ describe('Test Salesforce adapter E2E with real account', () => {
 
     it('should discover metadata type', () => {
       const flow = result
-        .filter(element => element.elemID.name === 'flow')
+        .filter(element => element.elemID.name === 'flow_type')
         .pop() as ObjectType
       expect(flow.fields.description.type.elemID.name).toBe('string')
       expect(flow.fields.is_template.type.elemID.name).toBe('boolean')
-      expect(flow.fields.action_calls.type.elemID.name).toBe('flow_action_call')
+      expect(flow.fields.action_calls.type.elemID.name).toBe('flow_action_call_type')
     })
 
     it('should discover settings instance', () => {
@@ -99,7 +99,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
       // once we support adding instances test can be improved
       const quoteSettings = result
         .filter(element => element instanceof InstanceElement
-          && element.elemID.name === 'quote')
+          && element.elemID.name === 'settings_quote')
         .pop() as InstanceElement
 
       expect(quoteSettings.value.enable_quote).toBeDefined()

@@ -218,15 +218,15 @@ describe('Test SalesforceAdapter discover', () => {
       ])
       const result = await adapter().discover()
 
-      const flow = result.filter(o => o.elemID.name === 'flow').pop() as ObjectType
       const describeMock = SalesforceClient.prototype.describeMetadataType as jest.Mock<unknown>
       expect(describeMock).toHaveBeenCalled()
       expect(describeMock.mock.calls[0][0]).toBe('Flow')
+      const flow = result.filter(o => o.elemID.name === 'flow_type').pop() as ObjectType
       expect(flow.fields.description.type.elemID.name).toBe('string')
       expect(flow.fields.description.annotationsValues[Type.REQUIRED]).toBe(true)
       expect(flow.fields.is_template.type.elemID.name).toBe('boolean')
       expect(flow.fields.is_template.annotationsValues[Type.REQUIRED]).toBe(false)
-      expect(flow.fields.action_calls.type.elemID.name).toBe('flow_action_call')
+      expect(flow.fields.action_calls.type.elemID.name).toBe('flow_action_call_type')
       expect(flow.fields.enum.type.elemID.name).toBe('string')
       expect(flow.fields.enum.annotationsValues[Type.DEFAULT]).toBe('yes')
       expect(flow.fields.enum.annotationsValues[Type.RESTRICTION]).toEqual({
@@ -245,7 +245,7 @@ describe('Test SalesforceAdapter discover', () => {
             },
             {
               name: 'nestedNum',
-              soapType: 'number',
+              soapType: 'double',
             },
             {
               name: 'doubleNested',
@@ -272,16 +272,16 @@ describe('Test SalesforceAdapter discover', () => {
 
       expect(result).toHaveLength(3)
       const types = _.assign({}, ...result.map(t => ({ [t.elemID.getFullName()]: t })))
-      const nestingType = types.salesforce_nesting_type
-      const nestedType = types.salesforce_nested_type
-      const singleField = types.salesforce_single_field_type
+      const nestingType = types.salesforce_nesting_type_type
+      const nestedType = types.salesforce_nested_type_type
+      const singleField = types.salesforce_single_field_type_type
       expect(nestingType).not.toBeUndefined()
-      expect(nestingType.fields.field.type.elemID.name).toEqual('nested_type')
-      expect(nestingType.fields.other_field.type.elemID.name).toEqual('single_field_type')
+      expect(nestingType.fields.field.type.elemID.name).toEqual('nested_type_type')
+      expect(nestingType.fields.other_field.type.elemID.name).toEqual('single_field_type_type')
       expect(nestedType).not.toBeUndefined()
       expect(nestedType.fields.nested_str.type.elemID.name).toEqual('string')
       expect(nestedType.fields.nested_num.type.elemID.name).toEqual('number')
-      expect(nestedType.fields.double_nested.type.elemID.name).toEqual('single_field_type')
+      expect(nestedType.fields.double_nested.type.elemID.name).toEqual('single_field_type_type')
       expect(singleField).not.toBeUndefined()
       expect(singleField.fields.str.type.elemID.name).toEqual('string')
     })
@@ -295,9 +295,9 @@ describe('Test SalesforceAdapter discover', () => {
       })
 
       const result = await adapter().discover()
-      const flow = result.filter(o => o.elemID.name === 'flow_instance').pop() as InstanceElement
-      expect(flow.type.elemID.getFullName()).toBe('salesforce_flow')
-      expect(flow.elemID.getFullName()).toBe('salesforce_flow_instance')
+      const flow = result.filter(o => o.elemID.name === 'flow_flow_instance').pop() as InstanceElement
+      expect(flow.type.elemID.getFullName()).toBe('salesforce_flow_type')
+      expect(flow.elemID.getFullName()).toBe('salesforce_flow_flow_instance')
       expect(flow.value.full_name).not.toBeDefined()
       expect(flow.value.field_permissions[0].field).toEqual('Field')
       expect(flow.value.field_permissions[0].editable).toBeTruthy()

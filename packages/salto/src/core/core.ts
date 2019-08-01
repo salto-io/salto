@@ -51,7 +51,13 @@ export const getPlan = async (state: State, allElements: Element[]): Promise<Pla
   // }
   // TODO: split elements to fields and fields values
   const diffGraph = buildDiffGraph(before, after,
-    id => _.isEqual(before.getData(id), after.getData(id)))
+    id => {
+      const beforeData = before.getData(id)
+      const afterData = after.getData(id)
+      return beforeData
+          && afterData
+          && beforeData.isEqual(afterData)
+    })
   return wu(diffGraph.evaluationOrder()).map(
     id => (diffGraph.getData(id) as PlanAction)
   ).toArray()

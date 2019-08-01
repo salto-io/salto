@@ -141,7 +141,7 @@ export default class SalesforceAdapter {
    * @throws error in case of failure
    */
   public async add(element: Element): Promise<Element> {
-    if (element instanceof ObjectType) {
+    if (isObjectType(element)) {
       const post = element.clone()
       annotateApiNameAndLabel(post)
 

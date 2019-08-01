@@ -5,7 +5,7 @@ import {
 
 import {
   Type, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values,
-  Field as TypeField, BuiltinTypes, Element, isObjectType, isPrimitiveType, InstanceElement,
+  Field as TypeField, BuiltinTypes, Element, isObjectType, isPrimitiveType, isInstanceElement,
 } from 'adapter-api'
 import {
   CustomObject, CustomField,
@@ -38,8 +38,8 @@ export const bpNameParts = (name: string, customObject: boolean): string[] =>
   (customObject
     ? [bpCase(name)]
     : [bpCase(name), METADATA_TYPES_SUFFIX])
-export const apiName = (elem: Element): string => (
-  (elem instanceof InstanceElement) ? elem.elemID.name : elem.getAnnotationsValues()[API_NAME]
+export const apiName = (element: Element): string => (
+  (isInstanceElement(element)) ? element.elemID.name : element.getAnnotationsValues()[API_NAME]
 )
 
 export const metadataType = (element: Element): string => (

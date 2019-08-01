@@ -13,7 +13,7 @@ import {
 import {
   API_NAME, LABEL, PICKLIST_VALUES, SALESFORCE, RESTRICTED_PICKLIST, FORMULA,
   FORMULA_TYPE_PREFIX, METADATA_TYPES_SUFFIX,
-  PRECISION, FIELD_TYPE_NAMES, FIELD_TYPE_API_NAMES, METADATA_TYPE, CUSTOM_OBJECT,
+  PRECISION, FIELD_TYPE_NAMES, FIELD_TYPE_API_NAMES, METADATA_TYPE,
 } from './constants'
 
 const capitalize = (s: string): string => {
@@ -43,8 +43,7 @@ export const apiName = (elem: Element): string => (
 )
 
 export const metadataType = (element: Element): string => (
-  (element instanceof InstanceElement) ? element.type.annotationsValues[METADATA_TYPE]
-    : CUSTOM_OBJECT
+  element.getAnnotationsValues()[METADATA_TYPE]
 )
 
 const formulaTypeName = (baseTypeName: string): string =>

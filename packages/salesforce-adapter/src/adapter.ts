@@ -66,7 +66,7 @@ const annotateApiNameAndLabel = (element: ObjectType): void => {
 
 export default class SalesforceAdapter {
   // This is public as it should be exposed to tests
-  public static STANDALONE_METADATA_TYPES = ['flow', 'workflow', 'queue', 'report', 'settings']
+  public static STANDALONE_METADATA_TYPES = ['Flow', 'Workflow', 'Queue', 'Report', 'Settings']
 
   private innerClient?: SalesforceClient
   public get client(): SalesforceClient {
@@ -221,7 +221,7 @@ export default class SalesforceAdapter {
   }
 
   private async discoverMetadataType(objectName: string, knownTypes: Set<string>): Promise<Type[]> {
-    const fields = await this.client.describeMetadataType(objectName)
+    const fields = await this.client.describeMetadataType(sfCase(objectName))
     return SalesforceAdapter.createMetadataTypeElements(objectName, fields, knownTypes)
   }
 
@@ -235,8 +235,8 @@ export default class SalesforceAdapter {
       return []
     }
     knownTypes.add(objectName)
-
     const element = Types.get(objectName, false) as ObjectType
+
     if (!fields) {
       return [element]
     }

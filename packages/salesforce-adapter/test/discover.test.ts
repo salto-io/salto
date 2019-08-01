@@ -219,6 +219,9 @@ describe('Test SalesforceAdapter discover', () => {
       const result = await adapter().discover()
 
       const flow = result.filter(o => o.elemID.name === 'flow').pop() as ObjectType
+      const describeMock = SalesforceClient.prototype.describeMetadataType as jest.Mock<unknown>
+      expect(describeMock).toHaveBeenCalled()
+      expect(describeMock.mock.calls[0][0]).toBe('Flow')
       expect(flow.fields.description.type.elemID.name).toBe('string')
       expect(flow.fields.description.annotationsValues[Type.REQUIRED]).toBe(true)
       expect(flow.fields.is_template.type.elemID.name).toBe('boolean')

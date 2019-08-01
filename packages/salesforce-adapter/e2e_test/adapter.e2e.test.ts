@@ -88,23 +88,15 @@ describe('Test Salesforce adapter E2E with real account', () => {
       const flow = result
         .filter(element => element.elemID.name === 'flow')
         .pop() as ObjectType
-
       expect(flow.fields.description.type.elemID.name).toBe('string')
       expect(flow.fields.is_template.type.elemID.name).toBe('boolean')
       expect(flow.fields.action_calls.type.elemID.name).toBe('flow_action_call')
     })
 
-    it('should discover metadata instance', () => {
-      const profile = result
-        .filter(element => element instanceof InstanceElement
-          && element.type.elemID.name === 'profile')
-        .pop() as InstanceElement
-
-      expect(profile.value.field_permissions[0].editable).toBeDefined()
-      expect(profile.value.record_type_visibilities.record_type).toBeDefined()
-    })
-
     it('should discover settings instance', () => {
+      // As we discover now only instances from the STANDALONE list,
+      // settings is the only one with instance by default.
+      // once we support adding instances test can be improved
       const quoteSettings = result
         .filter(element => element instanceof InstanceElement
           && element.elemID.name === 'quote')

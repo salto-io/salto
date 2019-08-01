@@ -8,7 +8,7 @@ import {
   Field as TypeField, BuiltinTypes,
 } from 'adapter-api'
 import {
-  CustomObject, CustomField, PicklistField, CurrencyField, TextField, NumberField, CheckboxField,
+  CustomObject, CustomField,
 } from './client/types'
 import {
   API_NAME, LABEL, PICKLIST_VALUES, SALESFORCE, RESTRICTED_PICKLIST, FORMULA,
@@ -47,7 +47,7 @@ const fieldTypeName = (typeName: string): string => (
 // Ref: https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/primitive_data_types.htm
 export class Types {
   // Type mapping for custom objects
-  private static customObjectTypes: Record<string, Type> = {
+  public static salesforceDataTypes: Record<string, Type> = {
     string: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELDS.TEXT),
       primitive: PrimitiveTypes.STRING,
@@ -99,7 +99,7 @@ export class Types {
 
   static get(name: string, customObject: boolean = true): Type {
     const type = customObject
-      ? this.customObjectPrimitiveTypes[name]
+      ? this.salesforceDataTypes[name]
       : this.metadataPrimitiveTypes[name]
 
     if (type === undefined) {
@@ -111,76 +111,37 @@ export class Types {
   }
 
   static getAllFieldTypes(): Type[] {
-    return Object.values(Types.customObjectTypes)
+    return Object.values(Types.salesforceDataTypes)
   }
 }
 
 export const fieldFullName = (object: ObjectType, field: TypeField): string =>
   `${apiName(object)}.${apiName(field)}`
 
+const allowedAnnotations = (key: string): string[] => (
+  Types.salesforceDataTypes[key] ? Object.keys(Types.salesforceDataTypes[key].annotations) : []
+)
+
 export const toCustomField = (
   object: ObjectType, field: TypeField, fullname: boolean = false
 ): CustomField => {
-  let newField: CustomField
-  switch (field.type.elemID.name) {
-    case FIELDS.PICKLIST:
-      newField = new PicklistField(
-        fullname ? fieldFullName(object, field) : apiName(field),
-        fieldTypeName(field.type.elemID.name),
-        field.annotationsValues[LABEL],
-        field.annotationsValues[Type.REQUIRED],
-        field.annotationsValues[PICKLIST_VALUES],
-      )
-      break
+  const newField = new CustomField(
+    fullname ? fieldFullName(object, field) : apiName(field),
+    fieldTypeName(field.type.elemID.name),
+    field.annotationsValues[LABEL],
+    field.annotationsValues[Type.REQUIRED],
+    field.annotationsValues[PICKLIST_VALUES],
+    field.annotationsValues[FORMULA],
+  )
 
-    case FIELDS.CURRENCY:
-      newField = new CurrencyField(
-        fullname ? fieldFullName(object, field) : apiName(field),
-        fieldTypeName(field.type.elemID.name),
-        field.annotationsValues[SCALE],
-        field.annotationsValues[PRECISION],
-        field.annotationsValues[LABEL],
-        field.annotationsValues[Type.REQUIRED],
-      )
-      break
+  _.assign(newField,
+    _.pickBy(
+      field.annotationsValues,
+      (_val, annotationValue) => allowedAnnotations(
+        _.toLower(field.type.elemID.name)
+      ).includes(annotationValue)
+    ))
 
-    case FIELDS.TEXT:
-      newField = new TextField(
-        fullname ? fieldFullName(object, field) : apiName(field),
-        fieldTypeName(field.type.elemID.name),
-        field.annotationsValues[LABEL],
-        field.annotationsValues[Type.REQUIRED],
-        field.annotationsValues[FORMULA],
-      )
-      break
-
-    case FIELDS.NUMBER:
-      newField = new NumberField(
-        fullname ? fieldFullName(object, field) : apiName(field),
-        fieldTypeName(field.type.elemID.name),
-        field.annotationsValues[LABEL],
-        field.annotationsValues[Type.REQUIRED],
-        field.annotationsValues[FORMULA],
-      )
-      break
-
-    case FIELDS.CHECKBOX:
-      newField = new CheckboxField(
-        fullname ? fieldFullName(object, field) : apiName(field),
-        fieldTypeName(field.type.elemID.name),
-        field.annotationsValues[LABEL],
-        field.annotationsValues[Type.REQUIRED],
-      )
-      break
-
-    default:
-      newField = new CustomField(
-        fullname ? fieldFullName(object, field) : apiName(field),
-        fieldTypeName(field.type.elemID.name),
-        field.annotationsValues[LABEL],
-      )
-      break
-  }
   return newField
 }
 

@@ -24,66 +24,36 @@ class CustomPicklistValue implements MetadataInfo {
 
 export class CustomField implements MetadataInfo {
   readonly type: string
-  constructor(
-    public fullName: string,
-    type: string,
-    readonly label?: string,
-  ) {
-    this.type = type
-  }
-}
-
-export class TextField extends CustomField {
-  readonly length: number = 0
+  readonly required?: boolean
   readonly formula?: string
-  readonly required?: boolean
-  constructor(
-    public fullName: string,
-    type: string,
-    readonly label?: string,
-    required: boolean = false,
-    formula?: string,
-  ) {
-    super(fullName, type, label)
-    if (formula) {
-      this.formula = formula
-    } else {
-      this.length = 80
-      this.required = required
-    }
-  }
-}
-
-export class CurrencyField extends CustomField {
-  scale: number = 0
-  precision: number = 0
-  readonly required?: boolean
-  constructor(
-    public fullName: string,
-    type: string,
-    scale: number,
-    precision: number,
-    readonly label?: string,
-    required: boolean = false,
-  ) {
-    super(fullName, type, label)
-    this.scale = scale
-    this.precision = precision
-    this.required = required
-  }
-}
-
-export class PicklistField extends CustomField {
+  // To be used for picklist and combobox types
   readonly valueSet?: { valueSetDefinition: { value: CustomPicklistValue[] } }
-  readonly required?: boolean
+
+  // To be used for Text types fields
+  readonly length?: number
+
+  // For the rest of the annotation values required by the rest of the field types:
+  scale?: number
+  precision?: number
+
   constructor(
     public fullName: string,
     type: string,
     readonly label?: string,
     required: boolean = false,
     values?: string[],
+    formula?: string,
   ) {
-    super(fullName, type, label)
+    this.type = type
+    if (formula) {
+      this.formula = formula
+    } else {
+      if (this.type === 'Text') {
+        this.length = 80
+      }
+      this.required = required
+    }
+
     if (values && !_.isEmpty(values)) {
       this.valueSet = {
         valueSetDefinition: {
@@ -91,39 +61,6 @@ export class PicklistField extends CustomField {
         },
       }
     }
-    this.required = required
-  }
-}
-
-export class NumberField extends CustomField {
-  readonly formula?: string
-  readonly required?: boolean
-  constructor(
-    public fullName: string,
-    type: string,
-    readonly label?: string,
-    required: boolean = false,
-    formula?: string,
-  ) {
-    super(fullName, type, label)
-    if (formula) {
-      this.formula = formula
-    } else {
-      this.required = required
-    }
-  }
-}
-
-export class CheckboxField extends CustomField {
-  readonly required?: boolean
-  constructor(
-    public fullName: string,
-    type: string,
-    readonly label?: string,
-    required: boolean = false,
-  ) {
-    super(fullName, type, label)
-    this.required = required
   }
 }
 

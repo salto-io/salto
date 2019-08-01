@@ -31,7 +31,7 @@ describe('Test SalesforceAdapter CRUD', () => {
     return a
   }
 
-  const stringType = Types.customObjectTypes.string
+  const stringType = Types.salesforceDataTypes.string
 
   const mockElemID = new ElemID(constants.SALESFORCE, 'test')
 
@@ -124,7 +124,7 @@ describe('Test SalesforceAdapter CRUD', () => {
               new Field(
                 mockElemID,
                 'state',
-                Types.customObjectTypes.picklist,
+                Types.salesforceDataTypes.picklist,
                 {
                   required: false,
                   _default: 'NEW',
@@ -156,7 +156,7 @@ describe('Test SalesforceAdapter CRUD', () => {
               new Field(
                 mockElemID,
                 'currency',
-                Types.customObjectTypes.currency,
+                Types.salesforceDataTypes.currency,
                 {
                   required: false,
                   _default: 25,

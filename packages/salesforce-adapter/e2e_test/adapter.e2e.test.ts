@@ -149,7 +149,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
       })
     }
 
-    const stringType = Types.customObjectTypes.string
+    const stringType = Types.salesforceDataTypes.string
 
     it('should add custom object', async () => {
       const customObjectName = 'TestAddCustom__c'
@@ -554,7 +554,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
             alpha: new Field(
               mockElemID,
               'alpha',
-              Types.customObjectTypes.currency,
+              Types.salesforceDataTypes.currency,
               {
                 required: false,
                 _default: 25,
@@ -597,7 +597,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
               new Field(
                 mockElemID,
                 'beta',
-                Types.customObjectTypes.picklist,
+                Types.salesforceDataTypes.picklist,
                 {
                   required: false,
                   _default: 'NEW',

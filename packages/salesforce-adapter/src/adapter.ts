@@ -103,28 +103,39 @@ export default class SalesforceAdapter {
    * @throws error in case of failure
    */
   public async add(element: Element): Promise<Element> {
-    // Adding new CustomObject when received ObjectType
     if (isObjectType(element)) {
-      const post = element.clone()
-      annotateApiNameAndLabel(post)
-
-      const result = await this.client.create(
-        constants.CUSTOM_OBJECT,
-        toCustomObject(post)
-      )
-      diagnose(result)
-
-      const permissionsResult = await this.updatePermissions(post, Object.values(post.fields))
-      diagnose(permissionsResult)
-
-      return post as Element
+      return this.addObject(element)
     }
 
-    // Creating new instance
-    const instance = element as InstanceElement
+    return this.addInstance(element as InstanceElement)
+  }
+
+  /**
+   * Add new object
+   * @param element of ObjectType to add
+   * @returns the updated object with extra info like api name, label and metadata type
+   * @throws error in case of failure
+   */
+  private async addObject(element: ObjectType): Promise<Element> {
+    const post = element.clone()
+    annotateApiNameAndLabel(post)
+
+    diagnose(await this.client.create(constants.CUSTOM_OBJECT, toCustomObject(post)))
+    diagnose(await this.updatePermissions(post, Object.values(post.fields)))
+
+    return post as Element
+  }
+
+  /**
+   * Add new Instance
+   * @param instance to add
+   * @returns the updated instance
+   * @throws error in case of failure
+   */
+  private async addInstance(element: InstanceElement): Promise<Element> {
     const result = await this.client.create(
-      instance.type.annotationsValues[constants.METADATA_TYPE],
-      toMetadataInfo(instance.value, instance.elemID.name)
+      element.type.annotationsValues[constants.METADATA_TYPE],
+      toMetadataInfo(element.value, element.elemID.name)
     )
     diagnose(result)
 

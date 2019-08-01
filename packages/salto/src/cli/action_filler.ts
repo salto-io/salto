@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import {
-  Field, Type, isObjectType, isInstanceElement,
+  Field, Type, isObjectType, isInstanceElement, isEqualElements,
   PlanAction, Values, ObjectType, InstanceElement,
 } from 'adapter-api'
 import Prompts from './prompts'
@@ -38,7 +38,7 @@ const createdActionStepValue = (before?: any, after?: any): string|undefined => 
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const getActionModifer = (before: any, after: any): string => {
-  if (_.isEqual(before, after)) {
+  if (isEqualElements(before, after) || _.isEqual(before, after)) {
     return ' '
   }
   if (exists(before) && exists(after)) {

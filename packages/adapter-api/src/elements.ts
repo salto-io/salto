@@ -73,6 +73,12 @@ export class Field implements Element {
     this.elemID = new ElemID(parentID.adapter, ...parentID.nameParts, name)
   }
 
+  isEqual(other: Field): boolean {
+    return _.isEqual(this.type.elemID, other.type.elemID)
+           && _.isEqual(this.annotationsValues, other.annotationsValues)
+           && this.isList === other.isList
+  }
+
   /**
    * Clones a field
    * Note that the cloned field still has the same element ID so it cannot be used in a different
@@ -143,6 +149,15 @@ export abstract class Type implements Element {
     return _.cloneDeep(this.annotationsValues)
   }
 
+  isEqual(other: Type): boolean {
+    return _.isEqual(this.elemID, other.elemID)
+          && _.isEqual(
+            _.mapValues(this.annotations, a => a.elemID),
+            _.mapValues(other.annotations, a => a.elemID)
+          )
+          && _.isEqual(this.annotationsValues, other.annotationsValues)
+  }
+
   annotate(annotationsValues: Values): void {
     // Should we overide? I'm adding right now as it seems more
     // usefull. (Roi R)
@@ -177,6 +192,11 @@ export class PrimitiveType extends Type {
   }) {
     super({ elemID, annotations, annotationsValues })
     this.primitive = primitive
+  }
+
+  isEqual(other: PrimitiveType): boolean {
+    return super.isEqual(other)
+           && this.primitive === other.primitive
   }
 
   /**
@@ -224,6 +244,15 @@ export class ObjectType extends Type {
     return clonedFields
   }
 
+  isEqual(other: ObjectType): boolean {
+    return super.isEqual(other)
+          && _.isEqual(
+            _.mapValues(this.fields, f => f.elemID),
+            _.mapValues(other.fields, f => f.elemID)
+          )
+          && _.every(Object.keys(this.fields).map(n => this.fields[n].isEqual(other.fields[n])))
+  }
+
   /**
    * Return an independent copy of this instance.
    * @return {ObjectType} the cloned instance
@@ -264,6 +293,11 @@ export class InstanceElement implements Element {
     this.elemID = elemID
     this.type = type
     this.value = value
+  }
+
+  isEqual(other: InstanceElement): boolean {
+    return _.isEqual(this.type.elemID, other.type.elemID)
+           && _.isEqual(this.value, other.value)
   }
 }
 
@@ -356,4 +390,28 @@ export function isPrimitiveType(
   element: any,
 ): element is PrimitiveType {
   return element instanceof PrimitiveType
+}
+
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+export function isField(element: any): element is Field {
+  return element instanceof Field
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function isEqualElements(first?: any, second?: any): boolean {
+  if (!(first && second)) {
+    return false
+  }
+  // first.isEqual line appears multiple times since the compiler is not smart
+  // enough to understand the 'they are the same type' concept when using or
+  if (isPrimitiveType(first) && isPrimitiveType(second)) {
+    return first.isEqual(second)
+  } if (isObjectType(first) && isObjectType(second)) {
+    return first.isEqual(second)
+  } if (isField(first) && isField(second)) {
+    return first.isEqual(second)
+  } if (isInstanceElement(first) && isInstanceElement(second)) {
+    return first.isEqual(second)
+  }
+  return false
 }

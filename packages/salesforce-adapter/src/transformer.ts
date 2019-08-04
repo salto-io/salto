@@ -38,8 +38,8 @@ export const bpNameParts = (name: string, customObject: boolean): string[] =>
   (customObject
     ? [bpCase(name)]
     : [bpCase(name), METADATA_TYPES_SUFFIX])
-export const apiName = (element: Element): string => (
-  (isInstanceElement(element)) ? element.elemID.name : element.getAnnotationsValues()[API_NAME]
+export const apiName = (elem: Element): string => (
+  (isInstanceElement(elem)) ? sfCase(elem.elemID.name) : elem.getAnnotationsValues()[API_NAME]
 )
 
 export const metadataType = (element: Element): string => (
@@ -313,5 +313,5 @@ export const fromMetadataInfo = (info: MetadataInfo, infoType: ObjectType): Valu
   transform(info as Values, infoType, bpCase)
 
 
-export const toMetadataInfo = (values: Values, fullName: string, infoType: ObjectType):
+export const toMetadataInfo = (fullName: string, values: Values, infoType: ObjectType):
   MetadataInfo => ({ fullName, ...transform(values, infoType, sfCase) })

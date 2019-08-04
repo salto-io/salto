@@ -173,7 +173,7 @@ export default class SalesforceAdapter {
   private async addInstance(element: InstanceElement): Promise<Element> {
     const result = await this.client.create(
       element.type.getAnnotationsValues()[constants.METADATA_TYPE],
-      toMetadataInfo(element.value, element.elemID.name, element.type as ObjectType)
+      toMetadataInfo(sfCase(element.elemID.name, element.type as ObjectType), element.value)
     )
     diagnose(result)
 

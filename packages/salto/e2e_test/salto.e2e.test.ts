@@ -1,0 +1,134 @@
+import * as fs from 'async-file'
+import _ from 'lodash'
+import SalesforceAdapter from 'salesforce-adapter'
+import {
+  InstanceElement, ElemID, ObjectType, Plan,
+} from 'adapter-api'
+import { discover, plan, apply } from '../src/cli/commands'
+import State from '../src/state/state'
+
+
+const saleforceAdapter = new SalesforceAdapter()
+const configType = saleforceAdapter.getConfigType()
+const mockGetConfigType = (_c: ObjectType): InstanceElement => new InstanceElement(
+  new ElemID(configType.elemID.adapter, ElemID.CONFIG_INSTANCE_NAME),
+  configType,
+  {
+    username: process.env.SF_USER,
+    password: process.env.SF_PASSWORD,
+    token: process.env.SF_TOKEN,
+    sandbox: false,
+  }
+)
+let lastPlan: Plan = []
+const mockShouldApply = (p: Plan): boolean => {
+  lastPlan = p
+  return true
+}
+
+jest.mock('../src/cli/callbacks', () => ({
+  getConfigFromUser: jest.fn().mockImplementation((c: ObjectType) => mockGetConfigType(c)),
+  shouldApply: jest.fn().mockImplementation((p: Plan) => mockShouldApply(p)),
+}))
+
+describe('Test commands e2e', () => {
+  const fileExists = async (path: string): Promise<boolean> => fs.exists(path)
+  const homePath = process.env.HOME || process.env.HOMEPATH || process.env.USERPROFILE
+  const { statePath } = new State()
+  const discoverOutputBP = `${homePath}/.salto/test_discover.bp`
+  const addModelBP = `${__dirname}/../../e2e_test//BP/add.bp`
+  const modifyModelBP = `${__dirname}/../../e2e_test/BP/modify.bp`
+  const adapter = new SalesforceAdapter()
+  adapter.init(mockGetConfigType(configType))
+
+  const objectExists = async (
+    name: string, fields: string[] = [], missingFields: string[] = []
+  ): Promise<boolean> => {
+    const result = (await adapter.client.readMetadata('CustomObject', name)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ) as any
+    if (!result || !result.fullName) {
+      return false
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const fieldNames = _.isArray(result.fields) ? result.fields.map((rf: any) => rf.fullName)
+      : [result.fields.fullName]
+    // eslint-disable-next-line no-console
+    console.log(fieldNames)
+    if (fields && !fields.every(f => fieldNames.includes(f))) {
+      return false
+    }
+    return (!missingFields || missingFields.every(f => !fieldNames.includes(f)))
+  }
+
+  beforeEach(() => {
+    lastPlan = []
+  })
+
+  beforeAll(async done => {
+    jest.setTimeout(5 * 60 * 1000)
+    done()
+  })
+
+  it('should run discover and create the state bp file', async done => {
+    await discover(discoverOutputBP, [])
+    expect(await fileExists(discoverOutputBP)).toBe(true)
+    expect(await fileExists(statePath)).toBe(true)
+    done()
+  })
+
+  it('should run plan on discover output and detect no changes', async done => {
+    await plan([discoverOutputBP])
+    expect(lastPlan.length).toBe(0)
+    done()
+  })
+
+  it('should apply the new change', async done => {
+    await apply([
+      discoverOutputBP,
+      addModelBP,
+    ])
+    expect(lastPlan.length).toBe(1)
+    const step = lastPlan[0]
+    expect(step.action).toBe('add')
+    expect(step.data.before).toBeUndefined()
+    expect(step.data.after).toBeDefined()
+    const after = step.data.after as ObjectType
+    expect(await objectExists(
+      `${after.elemID.name}__c`,
+      ['Name__c', 'Test__c']
+    )).toBe(true)
+    done()
+  })
+
+  it('should apply changes in the new model', async done => {
+    await apply([
+      discoverOutputBP,
+      modifyModelBP,
+    ])
+    expect(lastPlan.length).toBe(1)
+    const step = lastPlan[0]
+    expect(step.action).toBe('modify')
+    expect(step.data.before).toBeDefined()
+    expect(step.data.after).toBeDefined()
+    const after = step.data.after as ObjectType
+    expect(await objectExists(
+      `${after.elemID.name}__c`,
+      ['Name__c', 'Test2__c'],
+      ['Test__c']
+    )).toBe(true)
+    done()
+  })
+
+  it('should apply a delete for the model', async done => {
+    await apply([discoverOutputBP])
+    expect(lastPlan.length).toBe(1)
+    const step = lastPlan[0]
+    expect(step.action).toBe('remove')
+    expect(step.data.before).toBeDefined()
+    expect(step.data.after).toBeUndefined()
+    const before = step.data.before as ObjectType
+    expect(await objectExists(`${before.elemID.name}__c`)).toBe(false)
+    done()
+  })
+})

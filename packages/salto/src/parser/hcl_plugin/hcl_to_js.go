@@ -60,6 +60,22 @@ func convertValue(val cty.Value, path string) interface{} {
 	panic("unknown type to convert: " + t.FriendlyName() + " at " + path)
 }
 
+func convertPos(pos hcl.Pos) map[string]interface{} {
+	return map[string]interface{}{
+		"line": pos.Line,
+		"col":  pos.Column,
+		"byte": pos.Byte,
+	}
+}
+
+func convertSourceRange(src hcl.Range) map[string]interface{} {
+	return map[string]interface{}{
+		"start":    convertPos(src.Start),
+		"end":      convertPos(src.End),
+		"filename": src.Filename,
+	}
+}
+
 // hclConverter walks the HCL tree and converts each node to a native go
 // value that can be serialized to javascript later
 type hclConverter struct {
@@ -133,7 +149,10 @@ func (maker *hclConverter) Exit(node hclsyntax.Node) hcl.Diagnostics {
 		attr := node.(*hclsyntax.Attribute)
 		val, evalErrs := attr.Expr.Value(nil)
 		// Convert evaluated value to something we can serialze to javascript
-		maker.JSValue["attrs"].(map[string]interface{})[attr.Name] = convertValue(val, maker.nestedConverter.path)
+		maker.JSValue["attrs"].(map[string]interface{})[attr.Name] = map[string]interface{}{
+			"value":  convertValue(val, maker.nestedConverter.path),
+			"source": convertSourceRange(attr.Range()),
+		}
 
 		maker.nestedConverter = nil
 		return evalErrs
@@ -149,6 +168,7 @@ func (maker *hclConverter) Exit(node hclsyntax.Node) hcl.Diagnostics {
 			labels[i] = label
 		}
 		maker.nestedConverter.JSValue["labels"] = labels
+		maker.nestedConverter.JSValue["source"] = convertSourceRange(blk.Range())
 		maker.JSValue["blocks"] = append(maker.JSValue["blocks"].([]interface{}), maker.nestedConverter.JSValue)
 
 		maker.nestedConverter = nil

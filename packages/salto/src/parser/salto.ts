@@ -63,9 +63,10 @@ export default class Parser {
     const [typeName] = typeBlock.labels
     const typeObj = new ObjectType({ elemID: this.getElemID(typeName) })
 
-    typeObj.annotate(typeBlock.attrs)
+    typeObj.annotate(_.mapValues(typeBlock.attrs, val => val.value))
 
     typeBlock.blocks.forEach(block => {
+      const blockAttrs = _.mapValues(block.attrs, val => val.value)
       if (block.type === Keywords.LIST_DEFINITION) {
         // List Field block
         const fieldName = block.labels[1]
@@ -74,7 +75,7 @@ export default class Parser {
           typeObj.elemID,
           fieldName,
           new ObjectType({ elemID: this.getElemID(listElementType) }),
-          block.attrs,
+          blockAttrs,
           true
         )
       } else if (block.labels.length === 1) {
@@ -84,12 +85,12 @@ export default class Parser {
           typeObj.elemID,
           fieldName,
           new ObjectType({ elemID: this.getElemID(block.type) }),
-          block.attrs,
+          blockAttrs,
         )
       } else {
         // This is something else, lets assume it is field overrides for now and we can extend
         // this later as we support more parts of the language
-        typeObj.annotationsValues[block.type] = block.attrs
+        typeObj.annotationsValues[block.type] = blockAttrs
       }
     })
 
@@ -109,7 +110,7 @@ export default class Parser {
     return new PrimitiveType({
       elemID: this.getElemID(typeName),
       primitive: getPrimitiveType(baseType),
-      annotationsValues: typeBlock.attrs,
+      annotationsValues: _.mapValues(typeBlock.attrs, val => val.value),
     })
   }
 
@@ -126,7 +127,7 @@ export default class Parser {
     return new InstanceElement(
       new ElemID(typeID.adapter, name),
       new ObjectType({ elemID: typeID }),
-      instanceBlock.attrs,
+      _.mapValues(instanceBlock.attrs, val => val.value),
     )
   }
 

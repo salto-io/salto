@@ -1,8 +1,21 @@
+declare class SourcePos {
+  line: number
+  col: number
+  byte: number
+}
+
+declare class SourceRange {
+  filename: string
+  start: SourcePos
+  end: SourcePos
+}
+
 declare class HCLBlock {
   type: string
   labels: string[]
   attrs: Record<string, any>
   blocks: HCLBlock[]
+  source?: SourceRange
 }
 
 declare class HclParseArgs {

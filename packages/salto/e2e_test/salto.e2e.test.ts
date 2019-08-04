@@ -25,6 +25,7 @@ const mockShouldApply = (p: Plan): boolean => {
   lastPlan = p
   return true
 }
+
 jest.mock('../src/cli/callbacks', () => ({
   getConfigFromUser: jest.fn().mockImplementation((c: ObjectType) => mockGetConfigType(c)),
   shouldApply: jest.fn().mockImplementation((p: Plan) => mockShouldApply(p)),

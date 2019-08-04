@@ -21,3 +21,6 @@ yarn-error.log
 
 # jest
 /.jest_cache
+
+# vs code history
+.history/

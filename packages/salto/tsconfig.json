@@ -7,6 +7,9 @@
         "paths": {
             "jsforce": [
                 "../../node_modules/jsforce-types"
+            ],
+            "yargonaut": [
+                "src/types/yargonaut"
             ]
         }
     },

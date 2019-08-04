@@ -1,7 +1,7 @@
 // This file will be soon merged into salto-cli
 import { PlanAction } from 'adapter-api'
 import { loadBlueprints, dumpBlueprint } from './blueprint'
-import { getAllElements } from '../blueprints/blueprint'
+import { getAllElements, Blueprint } from '../blueprints/blueprint'
 import {
   createPlanOutput, createActionStartOutput, createActionInProgressOutput,
   createActionDoneOutput, formatSearchResults, subHeader, print, printError,
@@ -57,9 +57,8 @@ export const plan = async (blueprintsFiles: string[], blueprintsDir?: string): P
  * @return {Promise<void>} A promise indicating a sucssus, or a reject with
  * an informative error message.
  */
-export const apply = async (
-  blueprintsFiles: string[],
-  blueprintsDir?: string,
+export const applyBase = async (
+  blueprintLoader: () => Promise<Blueprint[]>,
   force?: boolean
 ): Promise<void> => {
   let currentAction: PlanAction | undefined
@@ -89,12 +88,8 @@ export const apply = async (
   }
 
   try {
-    const blueprints = await loadBlueprints(
-      blueprintsFiles,
-      blueprintsDir,
-    )
     await commands.apply(
-      blueprints,
+      await blueprintLoader(),
       getConfigFromUser,
       shouldApply,
       updateCurrentAction,
@@ -106,6 +101,15 @@ export const apply = async (
     printError(e)
   }
 }
+
+export const apply = async (
+  blueprintsFiles: string[],
+  blueprintsDir?: string,
+  force?: boolean
+): Promise<void> => applyBase(
+  () => loadBlueprints(blueprintsFiles, blueprintsDir),
+  force,
+)
 
 export const describe = async (
   searchWords: string[]
@@ -123,6 +127,18 @@ export const setenv = async (): Promise<void> => {
   print('setenv!')
 }
 
+export const discoverBase = async (
+  outputFilename: string,
+  blueprints: Blueprint[],
+): Promise<void> => {
+  const outputBP = await commands.discover(
+    blueprints,
+    getConfigFromUser
+  )
+  outputBP.filename = outputFilename
+  await dumpBlueprint(outputBP)
+}
+
 export const discover = async (
   outputFilename: string,
   blueprintsFiles: string[],
@@ -132,10 +148,5 @@ export const discover = async (
     blueprintsFiles,
     blueprintsDir,
   )
-  const outputBP = await commands.discover(
-    blueprints,
-    getConfigFromUser
-  )
-  outputBP.filename = outputFilename
-  await dumpBlueprint(outputBP)
+  return discoverBase(outputFilename, blueprints)
 }

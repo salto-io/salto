@@ -1,4 +1,14 @@
 #!/usr/bin/env node
-const saltoCommander = require('../dist/src/cli/salto-cli.js')
+require('source-map-support').install()
+const cli = require('../dist/src/cli/cli').default
 
-new saltoCommander.default().parseAndRun(process.argv)
+const {
+  stdin, stdout, stderr, argv,
+} = process
+
+const args = argv.slice(2)
+
+cli(
+  { args, stdin },
+  { stdout, stderr },
+).then(exitCode => process.exit(exitCode))

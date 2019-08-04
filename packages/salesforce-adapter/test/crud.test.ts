@@ -159,9 +159,9 @@ describe('Test SalesforceAdapter CRUD', () => {
 
       // Verify object creation
       expect(result).toBeInstanceOf(ObjectType)
-      expect(result.annotationsValues[constants.API_NAME]).toBe('Test__c')
+      expect(result.getAnnotationsValues()[constants.API_NAME]).toBe('Test__c')
       expect(
-        result.fields.description.annotationsValues[constants.API_NAME]
+        result.fields.description.getAnnotationsValues()[constants.API_NAME]
       ).toBe('Description__c')
 
       expect(mockCreate.mock.calls.length).toBe(1)

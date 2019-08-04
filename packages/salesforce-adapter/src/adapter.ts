@@ -60,9 +60,9 @@ const annotateApiNameAndLabel = (element: ObjectType): void => {
   }
 
   element.annotate({ [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT })
-  innerAnnotate(element.annotationsValues, element.elemID.name)
+  innerAnnotate(element.getAnnotationsValues(), element.elemID.name)
   Object.values(element.fields).forEach(field => {
-    innerAnnotate(field.annotationsValues, field.name)
+    innerAnnotate(field.getAnnotationsValues(), field.name)
   })
 }
 
@@ -172,7 +172,7 @@ export default class SalesforceAdapter {
    */
   private async addInstance(element: InstanceElement): Promise<Element> {
     const result = await this.client.create(
-      element.type.annotationsValues[constants.METADATA_TYPE],
+      element.type.getAnnotationsValues()[constants.METADATA_TYPE],
       toMetadataInfo(element.value, element.elemID.name, element.type as ObjectType)
     )
     diagnose(result)

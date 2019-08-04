@@ -144,10 +144,10 @@ export const toCustomField = (
   const newField = new CustomField(
     fullname ? fieldFullName(object, field) : apiName(field),
     FIELD_TYPE_API_NAMES[fieldTypeName(field.type.elemID.name)],
-    field.annotationsValues[LABEL],
-    field.annotationsValues[Type.REQUIRED],
-    field.annotationsValues[PICKLIST_VALUES],
-    field.annotationsValues[FORMULA],
+    field.getAnnotationsValues()[LABEL],
+    field.getAnnotationsValues()[Type.REQUIRED],
+    field.getAnnotationsValues()[PICKLIST_VALUES],
+    field.getAnnotationsValues()[FORMULA],
   )
 
   _.assign(newField,
@@ -164,7 +164,7 @@ export const toCustomField = (
 export const toCustomObject = (element: ObjectType): CustomObject =>
   new CustomObject(
     apiName(element),
-    element.annotationsValues[LABEL],
+    element.getAnnotationsValues()[LABEL],
     Object.values(element.fields).map(field => toCustomField(element, field))
   )
 

@@ -14,7 +14,7 @@ export const API_NAME = 'api_name'
 export const FORMULA = 'formula'
 export const PRECISION = 'precision'
 export const SCALE = 'scale'
-export const FIELDS = {
+export const FIELD_TYPE_NAMES = {
   TEXT: 'Text',
   NUMBER: 'Number',
   CHECKBOX: 'Checkbox',

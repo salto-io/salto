@@ -45,7 +45,7 @@ describe('Test SalesforceAdapter discover', () => {
       mockSingleSObject('Lead', [
         {
           name: 'LastName',
-          type: 'string',
+          type: 'text',
           label: 'Last Name',
           nillable: false,
           defaultValue: {
@@ -55,7 +55,7 @@ describe('Test SalesforceAdapter discover', () => {
         },
         {
           name: 'FirstName',
-          type: 'string',
+          type: 'text',
           label: 'First Name',
           nillable: true,
         },
@@ -78,7 +78,7 @@ describe('Test SalesforceAdapter discover', () => {
         },
         {
           name: 'Formula__c',
-          type: 'string',
+          type: 'text',
           label: 'Dummy formula',
           calculated: true,
           calculatedFormula: 'my formula',
@@ -159,19 +159,19 @@ describe('Test SalesforceAdapter discover', () => {
       expect(lead.fields.primary_c.annotationsValues._default.pop()).toBe('Yes')
     })
 
-    it('should discover sobject with double field', async () => {
+    it('should discover sobject with number field', async () => {
       mockSingleSObject('Lead', [
         {
-          name: 'DoubleField',
-          type: 'double',
-          label: 'DDD',
+          name: 'NumberField',
+          type: 'number',
+          label: 'Numero',
           nillable: true,
         },
       ])
       const result = await adapter().discover()
 
       const lead = result.filter(o => o.elemID.name === 'lead').pop() as ObjectType
-      expect(lead.fields.double_field.type.elemID.name).toBe('number')
+      expect(lead.fields.number_field.type.elemID.name).toBe('number')
     })
   })
 

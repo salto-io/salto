@@ -7,10 +7,16 @@ import {
   Field,
   Element,
 } from 'adapter-api'
+import { Field as FieldType, PicklistEntry } from 'jsforce'
+import _ from 'lodash';
 import SalesforceAdapter from '../src/adapter'
 import * as constants from '../src/constants'
 import { FIELD_LEVEL_SECURITY_ANNOTATION, PROFILE_METADATA_TYPE } from '../src/aspects/field_permissions'
-import { CustomObject, ProfileInfo, FieldPermissions } from '../src/client/types'
+import {
+  CustomObject,
+  ProfileInfo,
+  FieldPermissions,
+} from '../src/client/types'
 import { Types } from '../src/transformer'
 
 describe('Test Salesforce adapter E2E with real account', () => {
@@ -129,6 +135,10 @@ describe('Test Salesforce adapter E2E with real account', () => {
       return true
     }
 
+    const returnFieldsIfExist = async (name: string): Promise<
+      { name: string; fields: FieldType[]}[]
+    > => sfAdapter.client.describeSObjects([name])
+
     const permissionExists = async (profile: string, fields: string[]): Promise<boolean[]> => {
       // The following const method is a workaround for a bug in SFDC metadata API that returns
       // the editable and readable fields in FieldPermissions as string instead of boolean
@@ -165,8 +175,8 @@ describe('Test Salesforce adapter E2E with real account', () => {
             'description',
             stringType,
             {
-              required: false,
-              _default: 'test',
+              [Type.REQUIRED]: false,
+              [Type.DEFAULT]: 'test',
               label: 'description label',
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 admin: { editable: true, readable: true },
@@ -223,8 +233,8 @@ describe('Test Salesforce adapter E2E with real account', () => {
             stringType,
             {
               label: 'test label',
-              required: false,
-              _default: 'test',
+              [Type.REQUIRED]: false,
+              [Type.DEFAULT]: 'test',
             },
           ),
         },
@@ -265,8 +275,8 @@ describe('Test Salesforce adapter E2E with real account', () => {
           ),
         },
         annotationsValues: {
-          required: false,
-          _default: 'test',
+          [Type.REQUIRED]: false,
+          [Type.DEFAULT]: 'test',
           label: 'test label',
           [constants.API_NAME]: customObjectName,
         },
@@ -305,8 +315,8 @@ describe('Test Salesforce adapter E2E with real account', () => {
           ),
         },
         annotationsValues: {
-          required: false,
-          _default: 'test2',
+          [Type.REQUIRED]: false,
+          [Type.DEFAULT]: 'test2',
           label: 'test2 label',
           [constants.API_NAME]: customObjectName,
         },
@@ -350,8 +360,8 @@ describe('Test Salesforce adapter E2E with real account', () => {
           ),
         },
         annotationsValues: {
-          required: false,
-          _default: 'test',
+          [Type.REQUIRED]: false,
+          [Type.DEFAULT]: 'test',
           label: 'test label',
           [constants.API_NAME]: customObjectName,
         },
@@ -385,8 +395,8 @@ describe('Test Salesforce adapter E2E with real account', () => {
           ),
         },
         annotationsValues: {
-          required: false,
-          _default: 'test2',
+          [Type.REQUIRED]: false,
+          [Type.DEFAULT]: 'test2',
           label: 'test label 2',
           [constants.API_NAME]: customObjectName,
         },
@@ -452,8 +462,8 @@ describe('Test Salesforce adapter E2E with real account', () => {
           ),
         },
         annotationsValues: {
-          required: false,
-          _default: 'test',
+          [Type.REQUIRED]: false,
+          [Type.DEFAULT]: 'test',
           label: 'test label',
           [constants.API_NAME]: customObjectName,
         },
@@ -505,8 +515,8 @@ describe('Test Salesforce adapter E2E with real account', () => {
           ),
         },
         annotationsValues: {
-          required: false,
-          _default: 'test',
+          [Type.REQUIRED]: false,
+          [Type.DEFAULT]: 'test',
           label: 'test label',
           [constants.API_NAME]: customObjectName,
         },
@@ -541,70 +551,46 @@ describe('Test Salesforce adapter E2E with real account', () => {
       await sfAdapter.remove(oldElement)
     })
 
-    describe('test field types creation', () => {
-      it('should add a custom object with currency field', async () => {
-        const customObjectName = 'TestAddCustomWithCurrency__c'
-        const mockElemID = new ElemID(constants.SALESFORCE, 'test add custom object with currency field')
-        const element = new ObjectType({
-          elemID: mockElemID,
-          annotationsValues: {
-            [constants.API_NAME]: customObjectName,
-          },
-          fields: {
-            alpha: new Field(
-              mockElemID,
-              'alpha',
-              Types.salesforceDataTypes.currency,
-              {
-                required: false,
-                _default: 25,
-                label: 'Currency description label',
-                scale: 3,
-                precision: 18,
-              },
-            ),
-          },
-        })
-
-        if (await objectExists(customObjectName) === true) {
-          await sfAdapter.remove(element)
-        }
-        const post = await sfAdapter.add(element)
-
-        // Test
-        expect(post).toBeInstanceOf(ObjectType)
-        expect(
-          post.fields.alpha.annotationsValues[constants.API_NAME]
-        ).toBe('Alpha__c')
-
-        expect(await objectExists(customObjectName, ['Alpha__c'])).toBe(true)
-
-        // Clean-up
-        await sfAdapter.remove(post)
-      })
-    })
-
-    it('should add new salesforce type with picklist field', async () => {
-      const customObjectName = 'TestAddCustomWithPicklist__c'
-      const mockElemID = new ElemID(constants.SALESFORCE, 'test add custom object with picklist field')
+    it('should add a custom object with various field types', async () => {
+      const customObjectName = 'TestAddFieldTypes__c'
+      const mockElemID = new ElemID(constants.SALESFORCE, 'test add custom object with various field types')
       const element = new ObjectType({
         elemID: mockElemID,
         annotationsValues: {
           [constants.API_NAME]: customObjectName,
         },
         fields: {
-          beta:
-              new Field(
-                mockElemID,
-                'beta',
-                Types.salesforceDataTypes.picklist,
-                {
-                  required: false,
-                  _default: 'NEW',
-                  label: 'test label',
-                  values: ['NEW', 'OLD'],
-                },
-              ),
+          alpha: new Field(
+            mockElemID,
+            'alpha',
+            Types.salesforceDataTypes.currency,
+            {
+              [Type.REQUIRED]: false,
+              [Type.DEFAULT]: 25,
+              label: 'Currency description label',
+              scale: 3,
+              precision: 18,
+              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
+                admin: { editable: false, readable: true },
+                standard: { editable: false, readable: true },
+              },
+            },
+          ),
+          bravo: new Field(
+            mockElemID,
+            'bravo',
+            Types.salesforceDataTypes.picklist,
+            {
+              [Type.REQUIRED]: false,
+              [Type.DEFAULT]: 'NEW',
+              label: 'test label',
+              values: ['NEW', 'OLD'],
+              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
+                admin: { editable: false, readable: true },
+                standard: { editable: false, readable: true },
+              },
+            },
+          ),
         },
       })
 
@@ -616,10 +602,27 @@ describe('Test Salesforce adapter E2E with real account', () => {
       // Test
       expect(post).toBeInstanceOf(ObjectType)
       expect(
-        post.fields.beta.annotationsValues[constants.API_NAME]
-      ).toBe('Beta__c')
+        post.fields.alpha.annotationsValues[constants.API_NAME]
+      ).toBe('Alpha__c')
+      expect(
+        post.fields.bravo.annotationsValues[constants.API_NAME]
+      ).toBe('Bravo__c')
 
-      expect(await objectExists(customObjectName, ['Beta__c'])).toBe(true)
+      const objectFields = await returnFieldsIfExist(customObjectName)
+      expect(objectFields[0]).toBeDefined()
+      const allFields = objectFields[0].fields
+      // Verify currency
+      const currencyField = allFields.filter(field => field.name === 'Alpha__c')[0]
+      expect(currencyField).toBeDefined()
+      expect(currencyField.label).toBe('Currency description label')
+      expect(currencyField.scale).toBe(3)
+      expect(currencyField.precision).toBe(18)
+
+      // Verify picklist
+      const picklistField = allFields.filter(field => field.name === 'Bravo__c')[0]
+      expect(picklistField).toBeDefined()
+      expect(picklistField.label).toBe('test label')
+      expect(_.isEqual((picklistField.picklistValues as PicklistEntry[]).map(value => value.label), ['NEW', 'OLD'])).toBeTruthy()
 
       // Clean-up
       await sfAdapter.remove(post)

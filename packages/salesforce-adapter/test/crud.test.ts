@@ -3,6 +3,7 @@ import {
   ElemID,
   InstanceElement,
   Field,
+  Type,
 } from 'adapter-api'
 import _ from 'lodash'
 import { MetadataInfo, SaveResult } from 'jsforce-types'
@@ -31,7 +32,7 @@ describe('Test SalesforceAdapter CRUD', () => {
     return a
   }
 
-  const stringType = Types.salesforceDataTypes.string
+  const stringType = Types.salesforceDataTypes.text
 
   const mockElemID = new ElemID(constants.SALESFORCE, 'test')
 
@@ -74,8 +75,8 @@ describe('Test SalesforceAdapter CRUD', () => {
               'description',
               stringType,
               {
-                required: false,
-                _default: 'test',
+                [Type.REQUIRED]: false,
+                [Type.DEFAULT]: 'test',
                 label: 'test label',
               },
             ),
@@ -126,8 +127,8 @@ describe('Test SalesforceAdapter CRUD', () => {
                 'state',
                 Types.salesforceDataTypes.picklist,
                 {
-                  required: false,
-                  _default: 'NEW',
+                  [Type.REQUIRED]: false,
+                  [Type.DEFAULT]: 'NEW',
                   label: 'test label',
                   values: ['NEW', 'OLD'],
                 },
@@ -158,8 +159,8 @@ describe('Test SalesforceAdapter CRUD', () => {
                 'currency',
                 Types.salesforceDataTypes.currency,
                 {
-                  required: false,
-                  _default: 25,
+                  [Type.REQUIRED]: false,
+                  [Type.DEFAULT]: 25,
                   label: 'Currency description label',
                   scale: 3,
                   precision: 18,
@@ -268,8 +269,8 @@ describe('Test SalesforceAdapter CRUD', () => {
                 ),
               },
               annotationsValues: {
-                required: false,
-                _default: 'test',
+                [Type.REQUIRED]: false,
+                [Type.DEFAULT]: 'test',
                 label: 'test label',
                 [constants.API_NAME]: 'Test2__c',
               },
@@ -284,8 +285,8 @@ describe('Test SalesforceAdapter CRUD', () => {
                 ),
               },
               annotationsValues: {
-                required: false,
-                _default: 'test2',
+                [Type.REQUIRED]: false,
+                [Type.DEFAULT]: 'test2',
                 label: 'test2 label',
               },
             })
@@ -310,8 +311,8 @@ describe('Test SalesforceAdapter CRUD', () => {
             ),
           },
           annotationsValues: {
-            required: false,
-            _default: 'test',
+            [Type.REQUIRED]: false,
+            [Type.DEFAULT]: 'test',
             label: 'test label',
             [constants.API_NAME]: 'Test__c',
           },
@@ -358,8 +359,8 @@ describe('Test SalesforceAdapter CRUD', () => {
             ),
           },
           annotationsValues: {
-            required: false,
-            _default: 'test',
+            [Type.REQUIRED]: false,
+            [Type.DEFAULT]: 'test',
             label: 'test label',
             [constants.API_NAME]: 'Test__c',
           },
@@ -389,8 +390,8 @@ describe('Test SalesforceAdapter CRUD', () => {
             ),
           },
           annotationsValues: {
-            required: false,
-            _default: 'test2',
+            [Type.REQUIRED]: false,
+            [Type.DEFAULT]: 'test2',
             label: 'test2 label',
           },
         })
@@ -441,8 +442,8 @@ describe('Test SalesforceAdapter CRUD', () => {
             ),
           },
           annotationsValues: {
-            required: false,
-            _default: 'test',
+            [Type.REQUIRED]: false,
+            [Type.DEFAULT]: 'test',
             label: 'test label',
             [constants.API_NAME]: 'Test__c',
           },
@@ -460,8 +461,8 @@ describe('Test SalesforceAdapter CRUD', () => {
             ),
           },
           annotationsValues: {
-            required: false,
-            _default: 'test2',
+            [Type.REQUIRED]: false,
+            [Type.DEFAULT]: 'test2',
             label: 'test2 label',
           },
         })
@@ -501,8 +502,8 @@ describe('Test SalesforceAdapter CRUD', () => {
             ),
           },
           annotationsValues: {
-            required: false,
-            _default: 'test',
+            [Type.REQUIRED]: false,
+            [Type.DEFAULT]: 'test',
             label: 'test label',
             [constants.API_NAME]: 'Test__c',
           },
@@ -522,8 +523,8 @@ describe('Test SalesforceAdapter CRUD', () => {
             ),
           },
           annotationsValues: {
-            required: false,
-            _default: 'test2',
+            [Type.REQUIRED]: false,
+            [Type.DEFAULT]: 'test2',
             label: 'test2 label',
           },
         })
@@ -624,8 +625,8 @@ describe('Test SalesforceAdapter CRUD', () => {
             ),
           },
           annotationsValues: {
-            required: false,
-            _default: 'test',
+            [Type.REQUIRED]: false,
+            [Type.DEFAULT]: 'test',
             label: 'test label',
             [constants.API_NAME]: 'Test__c',
           },
@@ -662,8 +663,8 @@ describe('Test SalesforceAdapter CRUD', () => {
             ),
           },
           annotationsValues: {
-            required: false,
-            _default: 'test',
+            [Type.REQUIRED]: false,
+            [Type.DEFAULT]: 'test',
             label: 'test label',
             [constants.API_NAME]: 'Test__c',
           },
@@ -730,8 +731,8 @@ describe('Test SalesforceAdapter CRUD', () => {
             ),
           },
           annotationsValues: {
-            required: false,
-            _default: 'test',
+            [Type.REQUIRED]: false,
+            [Type.DEFAULT]: 'test',
             label: 'test label',
             [constants.API_NAME]: 'Test__c',
           },
@@ -773,8 +774,8 @@ describe('Test SalesforceAdapter CRUD', () => {
             ),
           },
           annotationsValues: {
-            required: false,
-            _default: 'test',
+            [Type.REQUIRED]: false,
+            [Type.DEFAULT]: 'test',
             label: 'test label',
             [constants.API_NAME]: 'Test__c',
           },

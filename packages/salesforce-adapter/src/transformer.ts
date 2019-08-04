@@ -12,7 +12,8 @@ import {
 } from './client/types'
 import {
   API_NAME, LABEL, PICKLIST_VALUES, SALESFORCE, RESTRICTED_PICKLIST, FORMULA,
-  FORMULA_TYPE_PREFIX, METADATA_OBJECT_NAME_FIELD, METADATA_TYPES_SUFFIX, PRECISION, FIELDS,
+  FORMULA_TYPE_PREFIX, METADATA_OBJECT_NAME_FIELD, METADATA_TYPES_SUFFIX,
+  PRECISION, FIELD_TYPE_NAMES,
 } from './constants'
 
 const capitalize = (s: string): string => {
@@ -42,42 +43,44 @@ const fieldTypeName = (typeName: string): string => (
   typeName.startsWith(FORMULA_TYPE_PREFIX) ? typeName.slice(FORMULA_TYPE_PREFIX.length) : typeName
 )
 
+const textType = new PrimitiveType({
+  elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.TEXT),
+  primitive: PrimitiveTypes.STRING,
+})
 // Defines SFDC built-in field types & built-in primitive data types
 // Ref: https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/field_types.htm
 // Ref: https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/primitive_data_types.htm
 export class Types {
   // Type mapping for custom objects
   public static salesforceDataTypes: Record<string, Type> = {
-    string: new PrimitiveType({
-      elemID: new ElemID(SALESFORCE, FIELDS.TEXT),
-      primitive: PrimitiveTypes.STRING,
-    }),
-    double: new PrimitiveType({
-      elemID: new ElemID(SALESFORCE, FIELDS.NUMBER),
+    string: textType,
+    text: textType,
+    number: new PrimitiveType({
+      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.NUMBER),
       primitive: PrimitiveTypes.NUMBER,
-    }),
-    int: new PrimitiveType({
-      elemID: new ElemID(SALESFORCE, FIELDS.NUMBER),
-      primitive: PrimitiveTypes.NUMBER,
+      annotations: {
+        scale: BuiltinTypes.NUMBER,
+        precision: BuiltinTypes.NUMBER,
+      },
     }),
     boolean: new PrimitiveType({
-      elemID: new ElemID(SALESFORCE, FIELDS.CHECKBOX),
+      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.CHECKBOX),
       primitive: PrimitiveTypes.BOOLEAN,
     }),
     date: new PrimitiveType({
-      elemID: new ElemID(SALESFORCE, FIELDS.DATE),
+      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.DATE),
       primitive: PrimitiveTypes.STRING,
     }),
     time: new PrimitiveType({
-      elemID: new ElemID(SALESFORCE, FIELDS.TIME),
+      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.TIME),
       primitive: PrimitiveTypes.STRING,
     }),
     datetime: new PrimitiveType({
-      elemID: new ElemID(SALESFORCE, FIELDS.DATETIME),
+      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.DATETIME),
       primitive: PrimitiveTypes.STRING,
     }),
     currency: new PrimitiveType({
-      elemID: new ElemID(SALESFORCE, FIELDS.CURRENCY),
+      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.CURRENCY),
       primitive: PrimitiveTypes.NUMBER,
       annotations: {
         scale: BuiltinTypes.NUMBER,
@@ -85,7 +88,7 @@ export class Types {
       },
     }),
     picklist: new PrimitiveType({
-      elemID: new ElemID(SALESFORCE, FIELDS.PICKLIST),
+      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.PICKLIST),
       primitive: PrimitiveTypes.STRING,
     }),
   }
@@ -97,10 +100,15 @@ export class Types {
     boolean: BuiltinTypes.BOOLEAN,
   }
 
-  static get(name: string, customObject: boolean = true): Type {
+  static get(name: string, customObject: boolean = true, isDiscover = false): Type {
     const type = customObject
       ? this.salesforceDataTypes[name]
       : this.metadataPrimitiveTypes[name]
+
+    if (isDiscover && type) {
+      const bpNamedParts = type.elemID.nameParts.map(part => bpCase(part))
+      type.elemID.nameParts = bpNamedParts
+    }
 
     if (type === undefined) {
       return new ObjectType({
@@ -125,9 +133,20 @@ const allowedAnnotations = (key: string): string[] => (
 export const toCustomField = (
   object: ObjectType, field: TypeField, fullname: boolean = false
 ): CustomField => {
+  // For creation that comes from Salto apply, make sure we convert to the required types:
+  let verifiedType = Types.salesforceDataTypes[fieldTypeName(field.type.elemID.name)]
+  if (verifiedType) {
+    field.type = verifiedType
+  } else {
+    verifiedType = new PrimitiveType({
+      elemID: new ElemID(SALESFORCE, fieldTypeName(field.type.elemID.name)),
+      primitive: PrimitiveTypes.STRING,
+    })
+  }
+
   const newField = new CustomField(
     fullname ? fieldFullName(object, field) : apiName(field),
-    fieldTypeName(field.type.elemID.name),
+    field.type.elemID.name,
     field.annotationsValues[LABEL],
     field.annotationsValues[Type.REQUIRED],
     field.annotationsValues[PICKLIST_VALUES],
@@ -208,7 +227,7 @@ const getDefaultValue = (field: Field): DefaultValueType | undefined => {
 
 export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeField => {
   const bpFieldName = bpCase(field.name)
-  let bpFieldType = Types.get(field.type)
+  let bpFieldType = Types.get(field.type, true, true)
   const annotations: Values = {
     [API_NAME]: field.name,
     [LABEL]: field.label,
@@ -234,6 +253,8 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
       }
     }
     if (field.type === 'multipicklist') {
+      // Precision is the field for multi-picklist in SFDC API that defines how many objects will
+      // be visible in the picklist in the UI. Why? Because.
       annotations[PRECISION] = field.precision
     }
   } else if (field.calculated && !_.isEmpty(field.calculatedFormula)) {
@@ -241,14 +262,16 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
     annotations[FORMULA] = field.calculatedFormula
   } else if (!_.isEmpty(bpFieldType.annotations)) {
     // For most of the field types (except for picklist & formula)
-    Object.keys(bpFieldType.annotations).forEach(key => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      annotations[key] = (field as any)[key]
-    })
+    _.assign(annotations,
+      _.pickBy(
+        field,
+        (_val, key) => allowedAnnotations(
+          _.toLower(bpFieldType.elemID.name)
+        ).includes(key)
+      ))
   }
   // Set all type names to appear as lower case,
   // differently than the Camel Casing when passing them to the API
-  bpFieldType.elemID.setNameToLower()
 
   return new TypeField(parentID, bpFieldName, bpFieldType, annotations)
 }

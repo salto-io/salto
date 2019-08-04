@@ -20,8 +20,8 @@ export const sfCase = (name: string, custom: boolean = false): string =>
 export const bpCase = (name: string): string =>
   (name.endsWith('__c') ? _.snakeCase(name).slice(0, -2) : _.snakeCase(name))
 
-export const apiName = (element: Element): string => (
-  (isInstanceElement(element)) ? element.elemID.name : element.getAnnotationsValues()[API_NAME]
+export const apiName = (elem: Element): string => (
+  (isInstanceElement(elem)) ? sfCase(elem.elemID.name) : elem.getAnnotationsValues()[API_NAME]
 )
 
 export const metadataType = (element: Element): string => (
@@ -220,5 +220,5 @@ const transform = (obj: Values, convert: (name: string) => string): Values => {
 
 export const fromMetadataInfo = (info: MetadataInfo): Values => transform(info as Values, bpCase)
 
-export const toMetadataInfo = (values: Values, fullName: string): MetadataInfo =>
+export const toMetadataInfo = (fullName: string, values: Values): MetadataInfo =>
   ({ fullName, ...transform(values, sfCase) })

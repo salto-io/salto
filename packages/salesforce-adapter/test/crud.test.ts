@@ -10,6 +10,7 @@ import { ProfileInfo } from '../src/client/types'
 import SalesforceAdapter from '../src/adapter'
 import SalesforceClient from '../src/client/client'
 import * as constants from '../src/constants'
+import { sfCase } from '../src/transformer'
 
 jest.mock('../src/client/client')
 
@@ -49,7 +50,7 @@ describe('Test SalesforceAdapter CRUD', () => {
         sandbox: new Field(mockElemID, 'sandbox', BuiltinTypes.BOOLEAN),
       },
       annotations: {},
-      annotationsValues: { [constants.METADATA_TYPE]: 'flow' },
+      annotationsValues: { [constants.METADATA_TYPE]: 'Flow' },
     }),
     {
       token: 'instanceTest',
@@ -66,8 +67,8 @@ describe('Test SalesforceAdapter CRUD', () => {
 
     expect(mockCreate.mock.calls.length).toBe(1)
     expect(mockCreate.mock.calls[0].length).toBe(2)
-    expect(mockCreate.mock.calls[0][0]).toBe('flow')
-    expect(mockCreate.mock.calls[0][1].fullName).toBe(mockElemID.name)
+    expect(mockCreate.mock.calls[0][0]).toBe('Flow')
+    expect(mockCreate.mock.calls[0][1].fullName).toBe(sfCase(mockElemID.name))
     expect(mockCreate.mock.calls[0][1].Token).toBe('instanceTest')
     expect(mockCreate.mock.calls[0][1].token).toBeUndefined()
   })
@@ -139,6 +140,7 @@ describe('Test SalesforceAdapter CRUD', () => {
     expect(
       result.fields.description.getAnnotationsValues()[constants.API_NAME]
     ).toBe('Description__c')
+    expect(result.getAnnotationsValues()[constants.METADATA_TYPE]).toBe(constants.CUSTOM_OBJECT)
 
     expect(mockCreate.mock.calls.length).toBe(1)
     const object = mockCreate.mock.calls[0][1]
@@ -303,14 +305,14 @@ describe('Test SalesforceAdapter CRUD', () => {
           sandbox: new Field(mockElemID, 'sandbox', BuiltinTypes.BOOLEAN),
         },
         annotations: {},
-        annotationsValues: { [constants.METADATA_TYPE]: 'flow' },
+        annotationsValues: { [constants.METADATA_TYPE]: 'Flow' },
       }),
       {})
     )
 
     expect(mockDelete.mock.calls.length).toBe(1)
-    expect(mockDelete.mock.calls[0][0]).toBe('flow')
-    expect(mockDelete.mock.calls[0][1]).toBe('test')
+    expect(mockDelete.mock.calls[0][0]).toBe('Flow')
+    expect(mockDelete.mock.calls[0][1]).toBe('Test')
   })
 
   it('should remove a salesforce metadata component', async () => {

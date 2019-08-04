@@ -57,28 +57,28 @@ describe('Test Salesforce adapter E2E with real account', () => {
       expect(lead.fields.salutation.type.elemID.name).toBe('picklist')
 
       // Test label
-      expect(lead.fields.last_name.annotationsValues[constants.LABEL]).toBe('Last Name')
+      expect(lead.fields.last_name.getAnnotationsValues()[constants.LABEL]).toBe('Last Name')
 
       // Test true and false required
-      expect(lead.fields.description.annotationsValues[Type.REQUIRED]).toBe(false)
-      expect(lead.fields.created_date.annotationsValues[Type.REQUIRED]).toBe(true)
+      expect(lead.fields.description.getAnnotationsValues()[Type.REQUIRED]).toBe(false)
+      expect(lead.fields.created_date.getAnnotationsValues()[Type.REQUIRED]).toBe(true)
 
       // Test picklist restricted_pick_list prop
-      expect(lead.fields.industry.annotationsValues.restricted_pick_list).toBe(
+      expect(lead.fields.industry.getAnnotationsValues().restricted_pick_list).toBe(
         false
       )
       expect(
-        lead.fields.clean_status.annotationsValues.restricted_pick_list
+        lead.fields.clean_status.getAnnotationsValues().restricted_pick_list
       ).toBe(true)
 
       // Test picklist values
       expect(
-        (lead.fields.salutation.annotationsValues.values as string[]).join(';')
+        (lead.fields.salutation.getAnnotationsValues().values as string[]).join(';')
       ).toBe('Mr.;Ms.;Mrs.;Dr.;Prof.')
 
       // Test _default
       // TODO: add test to primitive with _default and combobox _default (no real example for lead)
-      expect(lead.fields.status.annotationsValues[Type.DEFAULT]).toBe(
+      expect(lead.fields.status.getAnnotationsValues()[Type.DEFAULT]).toBe(
         'Open - Not Contacted'
       )
     })
@@ -205,10 +205,10 @@ describe('Test Salesforce adapter E2E with real account', () => {
       // Test
       expect(post).toBeInstanceOf(ObjectType)
       expect(
-        post.fields.description.annotationsValues[constants.API_NAME]
+        post.fields.description.getAnnotationsValues()[constants.API_NAME]
       ).toBe('Description__c')
       expect(
-        post.fields.formula.annotationsValues[constants.API_NAME]
+        post.fields.formula.getAnnotationsValues()[constants.API_NAME]
       ).toBe('Formula__c')
 
       expect(await objectExists(customObjectName, ['Description__c', 'Formula__c'])).toBe(true)

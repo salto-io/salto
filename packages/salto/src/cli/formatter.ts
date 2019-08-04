@@ -117,8 +117,8 @@ const notifyDescribeNearMatch = (result: FoundSearchResult): string => [
 ].join('\n')
 
 const formatElementDescription = (element: Element): string => {
-  if (isType(element) && element.annotationsValues.description) {
-    return [emptyLine(), element.annotationsValues.description].join('\n')
+  if (isType(element) && element.getAnnotationsValues().description) {
+    return [emptyLine(), element.getAnnotationsValues().description].join('\n')
   }
   return emptyLine()
 }

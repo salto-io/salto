@@ -45,8 +45,8 @@ const createRecordChanges = (
 ): ActionPrintFormat[] => _.union(Object.keys(before), Object.keys(after)).map(name => {
   const action = getActionType(before[name], after[name])
   const subChanges = createValuesChanges(
-    (before[name]) ? before[name].annotationsValues : {},
-    (after[name]) ? after[name].annotationsValues : {}
+    (before[name]) ? before[name].getAnnotationsValues() : {},
+    (after[name]) ? after[name].getAnnotationsValues() : {}
   )
   return {
     name, action, subChanges, data: { before, after },
@@ -60,8 +60,8 @@ const createFromTypes = (
   const name = ((before || after) as Type).elemID.getFullName()
   const action = getActionType(before, after)
   const annotationsValueChanges = createValuesChanges(
-    (before) ? before.annotationsValues : {},
-    (after) ? after.annotationsValues : {}
+    (before) ? before.getAnnotationsValues() : {},
+    (after) ? after.getAnnotationsValues() : {}
   )
   const annotationsChanges = createRecordChanges(
     (before) ? before.annotations : {},

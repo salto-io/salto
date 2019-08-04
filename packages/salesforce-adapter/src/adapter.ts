@@ -63,9 +63,9 @@ const annotateApiNameAndLabel = (element: ObjectType): void => {
   }
 
   element.annotate({ [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT })
-  innerAnnotate(element.annotationsValues, element.elemID.name)
+  innerAnnotate(element.getAnnotationsValues(), element.elemID.name)
   Object.values(element.fields).forEach(field => {
-    innerAnnotate(field.annotationsValues, field.name)
+    innerAnnotate(field.getAnnotationsValues(), field.name)
   })
 }
 
@@ -134,7 +134,7 @@ export default class SalesforceAdapter {
    */
   private async addInstance(element: InstanceElement): Promise<Element> {
     const result = await this.client.create(
-      element.type.annotationsValues[constants.METADATA_TYPE],
+      element.type.getAnnotationsValues()[constants.METADATA_TYPE],
       toMetadataInfo(element.value, element.elemID.name)
     )
     diagnose(result)
@@ -266,14 +266,14 @@ export default class SalesforceAdapter {
     // For each field, Update its permissions in the new element
     remainingFields.forEach(field => {
       SalesforceAdapter.updateFieldPermissionsInNewObject(
-        prevElement.fields[field].annotationsValues,
-        newElement.fields[field].annotationsValues
+        prevElement.fields[field].getAnnotationsValues(),
+        newElement.fields[field].getAnnotationsValues()
       )
     })
     const fieldsToUpdate = remainingFields.filter(field => (
       !_.isEqual(
-        prevElement.fields[field].annotationsValues[constants.FIELD_LEVEL_SECURITY],
-        newElement.fields[field].annotationsValues[constants.FIELD_LEVEL_SECURITY]
+        prevElement.fields[field].getAnnotationsValues()[constants.FIELD_LEVEL_SECURITY],
+        newElement.fields[field].getAnnotationsValues()[constants.FIELD_LEVEL_SECURITY]
       )
     ))
     if (fieldsToUpdate.length === 0) {
@@ -434,9 +434,9 @@ export default class SalesforceAdapter {
       Object.values(sobject.fields).forEach(field => {
         const fieldPermission = permissions.get(fieldFullName(sobject, field))
         if (fieldPermission) {
-          field.annotationsValues[constants.FIELD_LEVEL_SECURITY] = {}
+          field.getAnnotationsValues()[constants.FIELD_LEVEL_SECURITY] = {}
           fieldPermission.forEach((profilePermission, profile) => {
-            field.annotationsValues[constants.FIELD_LEVEL_SECURITY][
+            field.getAnnotationsValues()[constants.FIELD_LEVEL_SECURITY][
               bpCase(profile)] = profilePermission
           })
         }

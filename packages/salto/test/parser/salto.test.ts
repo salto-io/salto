@@ -126,11 +126,11 @@ describe('Salto parser', () => {
           expect(model.fields.name.type.elemID.name).toEqual('string')
         })
         it('should have annotation values', () => {
-          expect(model.fields.name.annotationsValues).toHaveProperty('label')
-          expect(model.fields.name.annotationsValues.label).toEqual('Name')
-          expect(model.fields.name.annotationsValues).toHaveProperty('_required')
+          expect(model.fields.name.getAnnotationsValues()).toHaveProperty('label')
+          expect(model.fields.name.getAnnotationsValues().label).toEqual('Name')
+          expect(model.fields.name.getAnnotationsValues()).toHaveProperty('_required')
           // eslint-disable-next-line no-underscore-dangle
-          expect(model.fields.name.annotationsValues._required).toEqual(true)
+          expect(model.fields.name.getAnnotationsValues()._required).toEqual(true)
         })
       })
       describe('list field', () => {
@@ -145,13 +145,13 @@ describe('Salto parser', () => {
       })
       describe('field override', () => {
         it('should exist', () => {
-          expect(model.annotationsValues).toHaveProperty('fax')
+          expect(model.getAnnotationsValues()).toHaveProperty('fax')
         })
         it('should not be a new field', () => {
           expect(model.fields).not.toHaveProperty('fax')
         })
         it('should have the correct value', () => {
-          expect(model.annotationsValues.fax).toEqual({
+          expect(model.getAnnotationsValues().fax).toEqual({
             // eslint-disable-next-line @typescript-eslint/camelcase
             field_level_security: {
               // eslint-disable-next-line @typescript-eslint/camelcase
@@ -167,10 +167,10 @@ describe('Salto parser', () => {
 
       describe('model annotations', () => {
         it('should exist', () => {
-          expect(model.annotationsValues).toHaveProperty('lead_convert_settings')
+          expect(model.getAnnotationsValues()).toHaveProperty('lead_convert_settings')
         })
         it('should have the correct value', () => {
-          expect(model.annotationsValues.lead_convert_settings).toEqual({
+          expect(model.getAnnotationsValues().lead_convert_settings).toEqual({
             account: [
               {
                 input: 'bla',
@@ -258,7 +258,7 @@ describe('Salto Dump', () => {
   model.fields.num = new Field(model.elemID, 'num', numType)
   model.fields.list = new Field(model.elemID, 'list', strType, {}, true)
 
-  model.annotationsValues = {
+  model.annotate({
     // eslint-disable-next-line @typescript-eslint/camelcase
     lead_convert_settings: {
       account: [
@@ -268,7 +268,7 @@ describe('Salto Dump', () => {
         },
       ],
     },
-  }
+  })
 
   const instance = new InstanceElement(
     new ElemID('salesforce', 'me'),

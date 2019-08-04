@@ -80,23 +80,23 @@ export const toCustomField = (
   new CustomField(
     fullname ? fieldFullName(object, field) : apiName(field),
     fieldTypeName(field.type.elemID.name),
-    field.annotationsValues[LABEL],
-    field.annotationsValues[Type.REQUIRED],
-    field.annotationsValues[PICKLIST_VALUES],
-    field.annotationsValues[FORMULA],
+    field.getAnnotationsValues()[LABEL],
+    field.getAnnotationsValues()[Type.REQUIRED],
+    field.getAnnotationsValues()[PICKLIST_VALUES],
+    field.getAnnotationsValues()[FORMULA],
   )
 
 export const toCustomObject = (element: ObjectType): CustomObject =>
   new CustomObject(
     apiName(element),
-    element.annotationsValues[LABEL],
+    element.getAnnotationsValues()[LABEL],
     Object.values(element.fields).map(field => toCustomField(element, field))
   )
 
 export const toProfiles = (object: ObjectType, fields: TypeField[]): ProfileInfo[] => {
   const profiles = new Map<string, ProfileInfo>()
   fields.forEach(field => {
-    const fieldPermissions = field.annotationsValues[FIELD_LEVEL_SECURITY]
+    const fieldPermissions = field.getAnnotationsValues()[FIELD_LEVEL_SECURITY]
     if (!fieldPermissions) {
       return
     }

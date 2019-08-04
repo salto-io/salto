@@ -68,7 +68,7 @@ export class Field implements Element {
     parentID: ElemID,
     public name: string,
     public type: Type,
-    public annotationsValues: Values = {},
+    private annotationsValues: Values = {},
     public isList: boolean = false,
   ) {
     this.elemID = new ElemID(parentID.adapter, ...parentID.nameParts, name)
@@ -112,7 +112,7 @@ export abstract class Type implements Element {
 
   readonly elemID: ElemID
   annotations: TypeMap
-  annotationsValues: Values
+  private readonly annotationsValues: Values
   constructor({
     annotations,
     annotationsValues,
@@ -319,7 +319,7 @@ export class InstanceElement implements Element {
   }
 
   getAnnotationsValues(): Values {
-    return this.type.annotationsValues
+    return this.type.getAnnotationsValues()
   }
 }
 

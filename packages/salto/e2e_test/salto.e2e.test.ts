@@ -10,9 +10,9 @@ import State from '../src/state/state'
 
 const configType = new ObjectType({ elemID: new ElemID('salesforce') })
 const configValues = {
-  username: process.env.SF_USER,
-  password: process.env.SF_PASSWORD,
-  token: process.env.SF_TOKEN,
+  username: process.env.SF_USER || '',
+  password: process.env.SF_PASSWORD || '',
+  token: process.env.SF_TOKEN || '',
   sandbox: false,
 }
 const mockGetConfigType = (_c: ObjectType): InstanceElement => new InstanceElement(

@@ -2,7 +2,7 @@ import {
   ObjectType, ElemID, Field, BuiltinTypes, InstanceElement, PrimitiveType,
   PrimitiveTypes,
 } from 'adapter-api'
-import { mergeElements, UPDATE_KEYWORD } from '../src/blueprints/loader'
+import { mergeElements, UPDATE_KEYWORD } from '../src/core/merger'
 
 describe('Loader merging ability', () => {
   const updateType = new ObjectType(

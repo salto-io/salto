@@ -299,7 +299,6 @@ describe('Test SalesforceAdapter discover', () => {
       const flow = result.filter(o => o.elemID.name === 'flow_flow_instance').pop() as InstanceElement
       expect(flow.type.elemID.getFullName()).toBe('salesforce_flow_type')
       expect(flow.elemID.getFullName()).toBe('salesforce_flow_flow_instance')
-      expect(flow.value.full_name).not.toBeDefined()
       expect(flow.value.field_permissions[0].field).toEqual('Field')
       expect(flow.value.field_permissions[0].editable).toBeTruthy()
       expect(flow.value.field_permissions[0].readable).not.toBeTruthy()

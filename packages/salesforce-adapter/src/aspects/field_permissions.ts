@@ -1,5 +1,5 @@
 import {
-  ObjectType, Values, Field,
+  ObjectType, Element, Values, Field,
 } from 'adapter-api'
 import _ from 'lodash'
 import { SaveResult } from 'jsforce-types'
@@ -43,7 +43,7 @@ const toProfiles = (object: ObjectType): ProfileInfo[] => {
   return Array.from(profiles.values())
 }
 
-type FieldPermissions = Map<string, {editable: boolean; readable: boolean}>
+type FieldPermissions = Map<string, { editable: boolean; readable: boolean }>
 /**
  * Transform list of ProfileInfo to map fieldFullName -> profileName -> FieldPermission
  */
@@ -86,7 +86,8 @@ const readProfiles = async (client: SalesforceClient): Promise<ProfileInfo[]> =>
 * @param sobject the already discoverd SObjects, the aspect will add
 * field_level_security annotations.
 */
-const discover = async (client: SalesforceClient, sobjects: ObjectType[]): Promise<void> => {
+const discover = async (client: SalesforceClient, elements: Element[]): Promise<void> => {
+  const sobjects = elements.filter(e => e instanceof ObjectType) as ObjectType[]
   if (_.isEmpty(sobjects)) {
     return
   }
@@ -110,10 +111,12 @@ const discover = async (client: SalesforceClient, sobjects: ObjectType[]): Promi
 * @param client salesfroce client
 * @param after the desired SObject type
 */
-const add = async (client: SalesforceClient, after: ObjectType): Promise<SaveResult[]> => {
-  const profiles = toProfiles(after)
-  if (profiles.length > 0) {
-    return client.update(PROFILE_METADATA_TYPE, profiles) as Promise<SaveResult[]>
+const add = async (client: SalesforceClient, after: Element): Promise<SaveResult[]> => {
+  if (after instanceof ObjectType) {
+    const profiles = toProfiles(after)
+    if (profiles.length > 0) {
+      return client.update(PROFILE_METADATA_TYPE, profiles) as Promise<SaveResult[]>
+    }
   }
   return []
 }
@@ -123,8 +126,12 @@ const add = async (client: SalesforceClient, after: ObjectType): Promise<SaveRes
 * @param before The previous object
 * @param after The new object
 */
-const update = async (client: SalesforceClient, before: ObjectType, after: ObjectType):
+const update = async (client: SalesforceClient, before: Element, after: Element):
   Promise<SaveResult[]> => {
+  if (!(before instanceof ObjectType) || !(after instanceof ObjectType)) {
+    return []
+  }
+
   // Look for fields that used to have permissions and permission was deleted from BP
   // For those fields we will mark then as { editable: false, readable: false } explcit
   before.getMutualFieldsWithOther(after).forEach(beforeField => {
@@ -168,6 +175,6 @@ export const aspect = {
   discover,
   add,
   update,
-  remove: (_client: SalesforceClient, _elem: ObjectType): Promise<SaveResult[]> =>
+  remove: (_client: SalesforceClient, _elem: Element): Promise<SaveResult[]> =>
     Promise.resolve([]),
 }

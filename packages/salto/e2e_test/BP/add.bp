@@ -1,0 +1,10 @@
+model salesforce_e2etest {
+  string name {
+    label = "Name"
+    _required = true
+  }
+  string test {
+    label = "test"
+    _required = true
+  }
+}

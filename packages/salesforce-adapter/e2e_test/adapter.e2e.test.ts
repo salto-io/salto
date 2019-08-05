@@ -155,7 +155,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
       })
     }
 
-    const stringType = Types.salesforceDataTypes.string
+    const stringType = Types.salesforceDataTypes.text
 
     it('should add custom object', async () => {
       const customObjectName = 'TestAddCustom__c'
@@ -596,14 +596,6 @@ describe('Test Salesforce adapter E2E with real account', () => {
       const post = await sfAdapter.add(element)
 
       // Test
-      expect(post).toBeInstanceOf(ObjectType)
-      expect(
-        post.fields.alpha.annotationsValues[constants.API_NAME]
-      ).toBe('Alpha__c')
-      expect(
-        post.fields.bravo.annotationsValues[constants.API_NAME]
-      ).toBe('Bravo__c')
-
       const objectFields = await sfAdapter.client.describeSObjects([customObjectName])
       expect(objectFields[0]).toBeDefined()
       const allFields = objectFields[0].fields

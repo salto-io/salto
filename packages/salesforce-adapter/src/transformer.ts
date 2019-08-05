@@ -244,7 +244,8 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
   } else if (field.calculated && !_.isEmpty(field.calculatedFormula)) {
     bpFieldType = Types.get(formulaTypeName(bpFieldType.elemID.name))
     annotations[FORMULA] = field.calculatedFormula
-  } else if (!_.isEmpty(bpFieldType.annotations)) {
+  }
+  if (!_.isEmpty(bpFieldType.annotations)) {
     // For most of the field types (except for picklist & formula)
     _.assign(annotations,
       _.pickBy(
@@ -254,8 +255,6 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
         ).includes(key)
       ))
   }
-  // Set all type names to appear as lower case,
-  // differently than the Camel Casing when passing them to the API
 
   return new TypeField(parentID, bpFieldName, bpFieldType, annotations)
 }

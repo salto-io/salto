@@ -4,11 +4,15 @@ import SalesforceClient from 'salesforce-adapter/dist/src/client/client'
 import {
   InstanceElement, ElemID, ObjectType, Plan,
 } from 'adapter-api'
+import {
+  SALESFORCE,
+  CUSTOM_OBJECT as CUSTOM_OBJECT_METATYPE,
+} from 'salesforce-adapter/dist/src/constants'
+import { CustomObject } from 'salesforce-adapter/dist/src/client/types'
 import { discover, plan, apply } from '../src/cli/commands'
 import State from '../src/state/state'
 
-
-const configType = new ObjectType({ elemID: new ElemID('salesforce') })
+const configType = new ObjectType({ elemID: new ElemID(SALESFORCE) })
 const configValues = {
   username: process.env.SF_USER || '',
   password: process.env.SF_PASSWORD || '',
@@ -26,6 +30,9 @@ const mockShouldApply = (p: Plan): boolean => {
   return true
 }
 
+// Attempting to access the functions on run time without the mock implementation, or
+// omitting the mock prefix in their names (YES I KNOW) will result in a runtime exception
+// to be thrown
 jest.mock('../src/cli/callbacks', () => ({
   getConfigFromUser: jest.fn().mockImplementation((c: ObjectType) => mockGetConfigType(c)),
   shouldApply: jest.fn().mockImplementation((p: Plan) => mockShouldApply(p)),
@@ -47,17 +54,15 @@ describe('Test commands e2e', () => {
   const objectExists = async (
     name: string, fields: string[] = [], missingFields: string[] = []
   ): Promise<boolean> => {
-    const result = (await client.readMetadata('CustomObject', name)
+    const result = (await client.readMetadata(CUSTOM_OBJECT_METATYPE, name)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ) as any
+    ) as CustomObject
     if (!result || !result.fullName) {
       return false
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const fieldNames = _.isArray(result.fields) ? result.fields.map((rf: any) => rf.fullName)
       : [result.fields.fullName]
-    // eslint-disable-next-line no-console
-    console.log(fieldNames)
     if (fields && !fields.every(f => fieldNames.includes(f))) {
       return false
     }

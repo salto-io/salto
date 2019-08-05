@@ -1,18 +1,23 @@
 import { isArray } from 'util'
 import {
   Type,
-  PrimitiveType,
   ObjectType,
   ElemID,
-  PrimitiveTypes,
   InstanceElement,
   Field,
   Element,
 } from 'adapter-api'
+import { PicklistEntry } from 'jsforce'
+import _ from 'lodash'
 import SalesforceAdapter from '../src/adapter'
 import * as constants from '../src/constants'
 import { FIELD_LEVEL_SECURITY_ANNOTATION, PROFILE_METADATA_TYPE } from '../src/aspects/field_permissions'
-import { CustomObject, ProfileInfo, FieldPermissions } from '../src/client/types'
+import {
+  CustomObject,
+  ProfileInfo,
+  FieldPermissions,
+} from '../src/client/types'
+import { Types } from '../src/transformer'
 
 describe('Test Salesforce adapter E2E with real account', () => {
   const adapter = (): SalesforceAdapter => {
@@ -53,7 +58,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
         .pop() as ObjectType
 
       // Test few possible types
-      expect(lead.fields.last_name.type.elemID.name).toBe('string')
+      expect(lead.fields.last_name.type.elemID.name).toBe('text')
       expect(lead.fields.description.type.elemID.name).toBe('textarea')
       expect(lead.fields.salutation.type.elemID.name).toBe('picklist')
 
@@ -150,10 +155,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
       })
     }
 
-    const stringType = new PrimitiveType({
-      elemID: new ElemID(constants.SALESFORCE, 'string'),
-      primitive: PrimitiveTypes.STRING,
-    })
+    const stringType = Types.salesforceDataTypes.text
 
     it('should add custom object', async () => {
       const customObjectName = 'TestAddCustom__c'
@@ -169,8 +171,8 @@ describe('Test Salesforce adapter E2E with real account', () => {
             'description',
             stringType,
             {
-              required: false,
-              _default: 'test',
+              [Type.REQUIRED]: false,
+              [Type.DEFAULT]: 'test',
               label: 'description label',
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 admin: { editable: true, readable: true },
@@ -227,8 +229,8 @@ describe('Test Salesforce adapter E2E with real account', () => {
             stringType,
             {
               label: 'test label',
-              required: false,
-              _default: 'test',
+              [Type.REQUIRED]: false,
+              [Type.DEFAULT]: 'test',
             },
           ),
         },
@@ -269,8 +271,8 @@ describe('Test Salesforce adapter E2E with real account', () => {
           ),
         },
         annotationsValues: {
-          required: false,
-          _default: 'test',
+          [Type.REQUIRED]: false,
+          [Type.DEFAULT]: 'test',
           label: 'test label',
           [constants.API_NAME]: customObjectName,
         },
@@ -309,8 +311,8 @@ describe('Test Salesforce adapter E2E with real account', () => {
           ),
         },
         annotationsValues: {
-          required: false,
-          _default: 'test2',
+          [Type.REQUIRED]: false,
+          [Type.DEFAULT]: 'test2',
           label: 'test2 label',
           [constants.API_NAME]: customObjectName,
         },
@@ -354,8 +356,8 @@ describe('Test Salesforce adapter E2E with real account', () => {
           ),
         },
         annotationsValues: {
-          required: false,
-          _default: 'test',
+          [Type.REQUIRED]: false,
+          [Type.DEFAULT]: 'test',
           label: 'test label',
           [constants.API_NAME]: customObjectName,
         },
@@ -389,8 +391,8 @@ describe('Test Salesforce adapter E2E with real account', () => {
           ),
         },
         annotationsValues: {
-          required: false,
-          _default: 'test2',
+          [Type.REQUIRED]: false,
+          [Type.DEFAULT]: 'test2',
           label: 'test label 2',
           [constants.API_NAME]: customObjectName,
         },
@@ -456,8 +458,8 @@ describe('Test Salesforce adapter E2E with real account', () => {
           ),
         },
         annotationsValues: {
-          required: false,
-          _default: 'test',
+          [Type.REQUIRED]: false,
+          [Type.DEFAULT]: 'test',
           label: 'test label',
           [constants.API_NAME]: customObjectName,
         },
@@ -509,8 +511,8 @@ describe('Test Salesforce adapter E2E with real account', () => {
           ),
         },
         annotationsValues: {
-          required: false,
-          _default: 'test',
+          [Type.REQUIRED]: false,
+          [Type.DEFAULT]: 'test',
           label: 'test label',
           [constants.API_NAME]: customObjectName,
         },
@@ -543,6 +545,75 @@ describe('Test Salesforce adapter E2E with real account', () => {
 
       // Clean-up
       await sfAdapter.remove(oldElement)
+    })
+
+    it('should add a custom object with various field types', async () => {
+      const customObjectName = 'TestAddFieldTypes__c'
+      const mockElemID = new ElemID(constants.SALESFORCE, 'test add custom object with various field types')
+      const element = new ObjectType({
+        elemID: mockElemID,
+        annotationsValues: {
+          [constants.API_NAME]: customObjectName,
+        },
+        fields: {
+          alpha: new Field(
+            mockElemID,
+            'alpha',
+            Types.salesforceDataTypes.currency,
+            {
+              [Type.REQUIRED]: false,
+              [Type.DEFAULT]: 25,
+              label: 'Currency description label',
+              scale: 3,
+              precision: 18,
+              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
+                admin: { editable: false, readable: true },
+                standard: { editable: false, readable: true },
+              },
+            },
+          ),
+          bravo: new Field(
+            mockElemID,
+            'bravo',
+            Types.salesforceDataTypes.picklist,
+            {
+              [Type.REQUIRED]: false,
+              [Type.DEFAULT]: 'NEW',
+              label: 'test label',
+              values: ['NEW', 'OLD'],
+              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
+                admin: { editable: false, readable: true },
+                standard: { editable: false, readable: true },
+              },
+            },
+          ),
+        },
+      })
+
+      if (await objectExists(customObjectName) === true) {
+        await sfAdapter.remove(element)
+      }
+      const post = await sfAdapter.add(element)
+
+      // Test
+      const objectFields = await sfAdapter.client.describeSObjects([customObjectName])
+      expect(objectFields[0]).toBeDefined()
+      const allFields = objectFields[0].fields
+      // Verify currency
+      const currencyField = allFields.filter(field => field.name === 'Alpha__c')[0]
+      expect(currencyField).toBeDefined()
+      expect(currencyField.label).toBe('Currency description label')
+      expect(currencyField.scale).toBe(3)
+      expect(currencyField.precision).toBe(18)
+
+      // Verify picklist
+      const picklistField = allFields.filter(field => field.name === 'Bravo__c')[0]
+      expect(picklistField).toBeDefined()
+      expect(picklistField.label).toBe('test label')
+      expect(_.isEqual((picklistField.picklistValues as PicklistEntry[]).map(value => value.label), ['NEW', 'OLD'])).toBeTruthy()
+
+      // Clean-up
+      await sfAdapter.remove(post)
     })
   })
 })

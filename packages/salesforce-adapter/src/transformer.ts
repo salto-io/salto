@@ -7,10 +7,13 @@ import {
   Type, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values,
   Field as TypeField, BuiltinTypes,
 } from 'adapter-api'
-import { CustomObject, CustomField } from './client/types'
+import {
+  CustomObject, CustomField,
+} from './client/types'
 import {
   API_NAME, LABEL, PICKLIST_VALUES, SALESFORCE, RESTRICTED_PICKLIST, FORMULA,
   FORMULA_TYPE_PREFIX, METADATA_OBJECT_NAME_FIELD, METADATA_TYPES_SUFFIX,
+  PRECISION, FIELD_TYPE_NAMES, FIELD_TYPE_API_NAMES,
 } from './constants'
 
 const capitalize = (s: string): string => {
@@ -40,20 +43,53 @@ const fieldTypeName = (typeName: string): string => (
   typeName.startsWith(FORMULA_TYPE_PREFIX) ? typeName.slice(FORMULA_TYPE_PREFIX.length) : typeName
 )
 
+const textType = new PrimitiveType({
+  elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.TEXT),
+  primitive: PrimitiveTypes.STRING,
+})
+// Defines SFDC built-in field types & built-in primitive data types
+// Ref: https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/field_types.htm
+// Ref: https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/primitive_data_types.htm
 export class Types {
   // Type mapping for custom objects
-  private static customObjectPrimitiveTypes: Record<string, Type> = {
-    string: new PrimitiveType({
-      elemID: new ElemID(SALESFORCE, 'string'),
-      primitive: PrimitiveTypes.STRING,
-    }),
-    double: new PrimitiveType({
-      elemID: new ElemID(SALESFORCE, 'number'),
+  public static salesforceDataTypes: Record<string, Type> = {
+    string: textType,
+    text: textType,
+    number: new PrimitiveType({
+      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.NUMBER),
       primitive: PrimitiveTypes.NUMBER,
+      annotations: {
+        scale: BuiltinTypes.NUMBER,
+        precision: BuiltinTypes.NUMBER,
+      },
     }),
     boolean: new PrimitiveType({
-      elemID: new ElemID(SALESFORCE, 'checkbox'),
+      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.CHECKBOX),
       primitive: PrimitiveTypes.BOOLEAN,
+    }),
+    date: new PrimitiveType({
+      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.DATE),
+      primitive: PrimitiveTypes.STRING,
+    }),
+    time: new PrimitiveType({
+      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.TIME),
+      primitive: PrimitiveTypes.STRING,
+    }),
+    datetime: new PrimitiveType({
+      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.DATETIME),
+      primitive: PrimitiveTypes.STRING,
+    }),
+    currency: new PrimitiveType({
+      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.CURRENCY),
+      primitive: PrimitiveTypes.NUMBER,
+      annotations: {
+        scale: BuiltinTypes.NUMBER,
+        precision: BuiltinTypes.NUMBER,
+      },
+    }),
+    picklist: new PrimitiveType({
+      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.PICKLIST),
+      primitive: PrimitiveTypes.STRING,
     }),
   }
 
@@ -66,7 +102,7 @@ export class Types {
 
   static get(name: string, customObject: boolean = true): Type {
     const type = customObject
-      ? this.customObjectPrimitiveTypes[name]
+      ? this.salesforceDataTypes[name]
       : this.metadataPrimitiveTypes[name]
 
     if (type === undefined) {
@@ -76,22 +112,41 @@ export class Types {
     }
     return type
   }
+
+  static getAllFieldTypes(): Type[] {
+    return Object.values(Types.salesforceDataTypes)
+  }
 }
 
 export const fieldFullName = (object: ObjectType, field: TypeField): string =>
   `${apiName(object)}.${apiName(field)}`
 
+const allowedAnnotations = (key: string): string[] => (
+  Types.salesforceDataTypes[key] ? Object.keys(Types.salesforceDataTypes[key].annotations) : []
+)
+
 export const toCustomField = (
   object: ObjectType, field: TypeField, fullname: boolean = false
-): CustomField =>
-  new CustomField(
+): CustomField => {
+  const newField = new CustomField(
     fullname ? fieldFullName(object, field) : apiName(field),
-    fieldTypeName(field.type.elemID.name),
+    FIELD_TYPE_API_NAMES[fieldTypeName(field.type.elemID.name)],
     field.annotationsValues[LABEL],
     field.annotationsValues[Type.REQUIRED],
     field.annotationsValues[PICKLIST_VALUES],
     field.annotationsValues[FORMULA],
   )
+
+  _.assign(newField,
+    _.pickBy(
+      field.annotationsValues,
+      (_val, annotationValue) => allowedAnnotations(
+        field.type.elemID.name
+      ).includes(annotationValue)
+    ))
+
+  return newField
+}
 
 export const toCustomObject = (element: ObjectType): CustomObject =>
   new CustomObject(
@@ -175,17 +230,30 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
       .filter(val => val.defaultValue === true)
       .map(val => val.value)
     if (defaults.length > 0) {
-      if (field.type === 'picklist') {
+      if (field.type.endsWith('picklist')) {
         annotations[Type.DEFAULT] = defaults.pop()
       } else {
         annotations[Type.DEFAULT] = defaults
       }
     }
-  }
-
-  if (field.calculated && !_.isEmpty(field.calculatedFormula)) {
+    if (field.type === 'multipicklist') {
+      // Precision is the field for multi-picklist in SFDC API that defines how many objects will
+      // be visible in the picklist in the UI. Why? Because.
+      annotations[PRECISION] = field.precision
+    }
+  } else if (field.calculated && !_.isEmpty(field.calculatedFormula)) {
     bpFieldType = Types.get(formulaTypeName(bpFieldType.elemID.name))
     annotations[FORMULA] = field.calculatedFormula
+  }
+  if (!_.isEmpty(bpFieldType.annotations)) {
+    // For most of the field types (except for picklist & formula)
+    _.assign(annotations,
+      _.pickBy(
+        field,
+        (_val, key) => allowedAnnotations(
+          _.toLower(bpFieldType.elemID.name)
+        ).includes(key)
+      ))
   }
 
   return new TypeField(parentID, bpFieldName, bpFieldType, annotations)

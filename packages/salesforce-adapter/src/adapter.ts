@@ -118,9 +118,13 @@ export default class SalesforceAdapter {
    * Account credentials were given in the constructor.
    */
   public async discover(): Promise<Element[]> {
-    // TODO: add here salesforce primitive data types
-    const result = await Promise.all([this.discoverMetadataTypes(), this.discoverSObjects()])
-    return _.flatten([...result, await this.discoverMetadataInstances(result[0])] as Element[][])
+    const fieldTypes = Types.getAllFieldTypes()
+    const metadataTypes = this.discoverMetadataTypes()
+    const sObjects = this.discoverSObjects()
+    const metadataInstances = this.discoverMetadataInstances(await metadataTypes)
+    return _.flatten(
+      await Promise.all([fieldTypes, metadataTypes, sObjects, metadataInstances]) as Element[][]
+    )
   }
 
   /**

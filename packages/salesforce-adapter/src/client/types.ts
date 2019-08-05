@@ -23,14 +23,6 @@ class CustomPicklistValue implements MetadataInfo {
 }
 
 export class CustomField implements MetadataInfo {
-  private static readonly fieldTypeMapping: Record<string, string> = {
-    string: 'Text',
-    int: 'Number',
-    boolean: 'Checkbox',
-    picklist: 'Picklist',
-    combobox: 'Combobox',
-  }
-
   readonly type: string
   readonly required?: boolean
   readonly formula?: string
@@ -38,7 +30,11 @@ export class CustomField implements MetadataInfo {
   readonly valueSet?: { valueSetDefinition: { value: CustomPicklistValue[] } }
 
   // To be used for Text types fields
-  readonly length: number = 0
+  readonly length?: number
+
+  // For the rest of the annotation values required by the rest of the field types:
+  scale?: number
+  precision?: number
 
   constructor(
     public fullName: string,
@@ -48,7 +44,7 @@ export class CustomField implements MetadataInfo {
     values?: string[],
     formula?: string,
   ) {
-    this.type = CustomField.fieldTypeMapping[type]
+    this.type = type
     if (formula) {
       this.formula = formula
     } else {

@@ -55,13 +55,11 @@ describe('Test commands e2e', () => {
     name: string, fields: string[] = [], missingFields: string[] = []
   ): Promise<boolean> => {
     const result = (await client.readMetadata(CUSTOM_OBJECT_METATYPE, name)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ) as CustomObject
     if (!result || !result.fullName) {
       return false
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const fieldNames = _.isArray(result.fields) ? result.fields.map((rf: any) => rf.fullName)
+    const fieldNames = _.isArray(result.fields) ? result.fields.map(rf => rf.fullName)
       : [result.fields.fullName]
     if (fields && !fields.every(f => fieldNames.includes(f))) {
       return false

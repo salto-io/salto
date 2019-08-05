@@ -67,5 +67,32 @@
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen"
         },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "discover",
+            "program": "${workspaceFolder}/../../node_modules/.bin/salto",
+            "cwd": "${workspaceFolder}",
+            "args": [
+              "discover",
+              "-b",
+              "${workspaceFolder}/salto_output/connection.bp",
+              "-o",
+              "${workspaceFolder}/salto_output/vanila.bp"
+            ]
+          },
+          {
+            "type": "node",
+            "request": "launch",
+            "name": "apply",
+            "program": "${workspaceFolder}/../../node_modules/.bin/salto",
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "args": [
+              "apply",
+              "-d",
+              "${workspaceFolder}/salto_output",
+            ]
+          },
     ]
 }

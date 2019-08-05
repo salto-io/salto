@@ -13,7 +13,7 @@ import {
 import {
   API_NAME, LABEL, PICKLIST_VALUES, SALESFORCE, RESTRICTED_PICKLIST, FORMULA,
   FORMULA_TYPE_PREFIX, METADATA_OBJECT_NAME_FIELD, METADATA_TYPES_SUFFIX,
-  PRECISION, FIELD_TYPE_NAMES,
+  PRECISION, FIELD_TYPE_NAMES, FIELD_TYPE_API_NAMES,
 } from './constants'
 
 const capitalize = (s: string): string => {
@@ -100,15 +100,10 @@ export class Types {
     boolean: BuiltinTypes.BOOLEAN,
   }
 
-  static get(name: string, customObject: boolean = true, isDiscover = false): Type {
+  static get(name: string, customObject: boolean = true): Type {
     const type = customObject
       ? this.salesforceDataTypes[name]
       : this.metadataPrimitiveTypes[name]
-
-    if (isDiscover && type) {
-      const bpNamedParts = type.elemID.nameParts.map(part => bpCase(part))
-      type.elemID.nameParts = bpNamedParts
-    }
 
     if (type === undefined) {
       return new ObjectType({
@@ -133,20 +128,9 @@ const allowedAnnotations = (key: string): string[] => (
 export const toCustomField = (
   object: ObjectType, field: TypeField, fullname: boolean = false
 ): CustomField => {
-  // For creation that comes from Salto apply, make sure we convert to the required types:
-  let verifiedType = Types.salesforceDataTypes[fieldTypeName(field.type.elemID.name)]
-  if (verifiedType) {
-    field.type = verifiedType
-  } else {
-    verifiedType = new PrimitiveType({
-      elemID: new ElemID(SALESFORCE, fieldTypeName(field.type.elemID.name)),
-      primitive: PrimitiveTypes.STRING,
-    })
-  }
-
   const newField = new CustomField(
     fullname ? fieldFullName(object, field) : apiName(field),
-    field.type.elemID.name,
+    FIELD_TYPE_API_NAMES[fieldTypeName(field.type.elemID.name)],
     field.annotationsValues[LABEL],
     field.annotationsValues[Type.REQUIRED],
     field.annotationsValues[PICKLIST_VALUES],
@@ -157,7 +141,7 @@ export const toCustomField = (
     _.pickBy(
       field.annotationsValues,
       (_val, annotationValue) => allowedAnnotations(
-        _.toLower(field.type.elemID.name)
+        field.type.elemID.name
       ).includes(annotationValue)
     ))
 
@@ -227,7 +211,7 @@ const getDefaultValue = (field: Field): DefaultValueType | undefined => {
 
 export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeField => {
   const bpFieldName = bpCase(field.name)
-  let bpFieldType = Types.get(field.type, true, true)
+  let bpFieldType = Types.get(field.type)
   const annotations: Values = {
     [API_NAME]: field.name,
     [LABEL]: field.label,

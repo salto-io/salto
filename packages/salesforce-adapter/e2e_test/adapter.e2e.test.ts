@@ -7,8 +7,8 @@ import {
   Field,
   Element,
 } from 'adapter-api'
-import { Field as FieldType, PicklistEntry } from 'jsforce'
-import _ from 'lodash';
+import { PicklistEntry } from 'jsforce'
+import _ from 'lodash'
 import SalesforceAdapter from '../src/adapter'
 import * as constants from '../src/constants'
 import { FIELD_LEVEL_SECURITY_ANNOTATION, PROFILE_METADATA_TYPE } from '../src/aspects/field_permissions'
@@ -134,10 +134,6 @@ describe('Test Salesforce adapter E2E with real account', () => {
       }
       return true
     }
-
-    const returnFieldsIfExist = async (name: string): Promise<
-      { name: string; fields: FieldType[]}[]
-    > => sfAdapter.client.describeSObjects([name])
 
     const permissionExists = async (profile: string, fields: string[]): Promise<boolean[]> => {
       // The following const method is a workaround for a bug in SFDC metadata API that returns
@@ -608,7 +604,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
         post.fields.bravo.annotationsValues[constants.API_NAME]
       ).toBe('Bravo__c')
 
-      const objectFields = await returnFieldsIfExist(customObjectName)
+      const objectFields = await sfAdapter.client.describeSObjects([customObjectName])
       expect(objectFields[0]).toBeDefined()
       const allFields = objectFields[0].fields
       // Verify currency

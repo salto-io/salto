@@ -3,9 +3,6 @@ import {
   ObjectType, isType, isObjectType, isInstanceElement, Element, Field, InstanceElement,
   Type, Values,
 } from 'adapter-api'
-import Parser from '../parser/salto'
-import Blueprint from './blueprint'
-import validateElements from './validator'
 
 export const UPDATE_KEYWORD = 'update'
 
@@ -167,30 +164,4 @@ export const mergeElements = (elements: Element[]): Element[] => {
     ...mergedInstances,
   ]
   return updateMergedTypes(mergedElements, mergedObjects)
-}
-
-export const mergeAndValidate = (elements: Element[]): Element[] => {
-  const mergedElements = mergeElements(elements)
-  const validationErrors = validateElements(mergedElements)
-
-  if (validationErrors.length > 0) {
-    throw new Error(`Failed to validate blueprints: ${validationErrors.join('\n')}`)
-  }
-
-  return mergedElements
-}
-
-export const getAllElements = async (blueprints: Blueprint[]): Promise<Element[]> => {
-  const parseResults = await Promise.all(blueprints.map(
-    bp => Parser.parse(bp.buffer, bp.filename)
-  ))
-
-  const elements = _.flatten(parseResults.map(r => r.elements))
-  const errors = _.flatten(parseResults.map(r => r.errors))
-
-  if (errors.length > 0) {
-    throw new Error(`Failed to parse blueprints: ${errors.join('\n')}`)
-  }
-
-  return mergeAndValidate(elements)
 }

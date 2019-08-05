@@ -7,7 +7,8 @@ import { buildDiffGraph } from '../dag/diff'
 import { DataNodeMap } from '../dag/nodemap'
 import State from '../state/state'
 import { Adapter } from './adapters'
-import { mergeAndValidate } from '../blueprints/loader'
+import { mergeElements } from './merger'
+import validateElements from './validator'
 
 const applyAction = async (
   state: State,
@@ -73,10 +74,21 @@ export const applyActions = async (state: State,
     }
   ), Promise.resolve())
 
+export const mergeAndValidate = (elements: Element[]): Element[] => {
+  const mergedElements = mergeElements(elements)
+  const validationErrors = validateElements(mergedElements)
+
+  if (validationErrors.length > 0) {
+    throw new Error(`Failed to validate blueprints: ${validationErrors.join('\n')}`)
+  }
+
+  return mergedElements
+}
+
 export const discoverAll = async (state: State, adapters: Record<string, Adapter>):
 Promise<Element[]> => {
-  const result = mergeAndValidate(_.flatten(await Promise.all(Object.values(adapters)
-    .map(adapter => adapter.discover()))))
-  state.override(result)
+  const result = _.flatten(await Promise.all(Object.values(adapters)
+    .map(adapter => adapter.discover())))
+  state.override(mergeAndValidate(result))
   return result
 }

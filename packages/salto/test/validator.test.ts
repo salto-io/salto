@@ -2,7 +2,7 @@ import _ from 'lodash'
 import {
   ObjectType, ElemID, Field, BuiltinTypes, InstanceElement,
 } from 'adapter-api'
-import validateElements from '../src/blueprints/validator'
+import validateElements from '../src/core/validator'
 
 describe('Elements validation', () => {
   const baseElemID = new ElemID('salto', 'simple')

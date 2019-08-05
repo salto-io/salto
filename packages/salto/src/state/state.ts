@@ -4,7 +4,7 @@ import * as fs from 'async-file'
 import * as path from 'path'
 import os from 'os'
 import Parser from '../parser/salto'
-import { mergeAndValidate } from '../blueprints/loader'
+import { getAllElements } from '../blueprints/blueprint'
 
 const STATEPATH = path.join(os.homedir(), '.salto/latest_state.bp')
 /**
@@ -74,18 +74,10 @@ export default class State {
           return []
         }
         buffer = await fs.readFile(this.statePath, 'utf8')
+        // force the await here so errors will be thrown in proper place
+        return (await getAllElements([{ buffer, filename: this.statePath }]))
       } catch (err) {
-        throw new Error(`Failed to access state file: ${err}`)
-      }
-      const parseResults = await Parser.parse(buffer, this.statePath)
-
-      if (parseResults.errors.length > 0) {
-        throw new Error(`Failed to parse last state: ${parseResults.errors.join('\n')}`)
-      }
-      try {
-        return mergeAndValidate(parseResults.elements)
-      } catch (e) {
-        throw new Error(`Failed to parse last state: ${e.message}`)
+        throw new Error(`Failed to load state: ${err}`)
       }
     }
 

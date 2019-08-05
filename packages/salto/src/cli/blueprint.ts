@@ -1,6 +1,6 @@
 import * as fs from 'async-file'
 import * as path from 'path'
-import Blueprint from '../blueprints/blueprint'
+import { Blueprint } from '../blueprints/blueprint'
 
 const getBluePrintsFromDir = async (
   blueprintsDir: string,

@@ -1,17 +1,19 @@
 import {
   Plan, PlanAction, ObjectType, InstanceElement,
 } from 'adapter-api'
-import { getPlan, applyActions, discoverAll } from './core'
+import {
+  getPlan, applyActions, discoverAll, mergeAndValidate,
+} from './core'
 import { init as initAdapters } from './adapters'
 import Parser from '../parser/salto'
-import { getAllElements } from '../blueprints/loader'
-import Blueprint from '../blueprints/blueprint'
+import { Blueprint, getAllElements } from '../blueprints/blueprint'
 import State from '../state/state'
+
 
 export const plan = async (
   blueprints: Blueprint[],
 ): Promise<Plan> => {
-  const elements = await getAllElements(blueprints)
+  const elements = mergeAndValidate(await getAllElements(blueprints))
   const state = new State()
   const actionPlan = await getPlan(state, elements)
   return actionPlan
@@ -24,7 +26,7 @@ export const apply = async (
   reportProgress: (action: PlanAction) => void,
   force: boolean = false
 ): Promise<Plan> => {
-  const elements = await getAllElements(blueprints)
+  const elements = mergeAndValidate(await getAllElements(blueprints))
   const state = new State()
   try {
     const actionPlan = await getPlan(state, elements)
@@ -42,7 +44,7 @@ export const discover = async (
   blueprints: Blueprint[],
   fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
 ): Promise<Blueprint> => {
-  const elements = await getAllElements(blueprints)
+  const elements = mergeAndValidate(await getAllElements(blueprints))
   const [adapters, newAdapterConfigs] = await initAdapters(elements, fillConfig)
   const state = new State()
   try {

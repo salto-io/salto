@@ -12,19 +12,32 @@ describe('HCL Parser', () => {
     const config = body.blocks[0]
     expect(config.type).toEqual('salesforce')
     expect(config.attrs).toHaveProperty('user')
-    expect(config.attrs.user).toEqual('me')
+    expect(config.attrs.user.value).toEqual('me')
   })
 
   it('parses type definition block', async () => {
     const typeDefBlock = `type compound salto_employee {
       string name {
+        // comment
         label = "Name"
       }
 
+      // another comment
       number num {
         _default = 35
       }
     }`
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const expectSourceLocation = (value: any, startLine: number, endLine: number): void => {
+      expect(value.source).toBeDefined()
+      if (value.src !== undefined) {
+        // If block is needed in order to fool the ts compiler
+        expect(value.source.filename).toEqual('none')
+        expect(value.source.start.line).toEqual(startLine)
+        expect(value.source.end.line).toEqual(endLine)
+      }
+    }
 
     const { body } = await HCLParser.parse(Buffer.from(typeDefBlock), 'none')
     expect(body.blocks.length).toEqual(1)
@@ -32,17 +45,23 @@ describe('HCL Parser', () => {
     expect(typeBlock.type).toEqual('type')
     expect(typeBlock.labels).toEqual(['compound', 'salto_employee'])
     expect(typeBlock.blocks.length).toEqual(2)
+    expectSourceLocation(typeBlock, 1, 11)
 
     expect(typeBlock.blocks[0].type).toEqual('string')
     expect(typeBlock.blocks[0].labels).toEqual(['name'])
     expect(typeBlock.blocks[0].attrs).toHaveProperty('label')
-    expect(typeBlock.blocks[0].attrs.label).toEqual('Name')
+    expect(typeBlock.blocks[0].attrs.label.value).toEqual('Name')
+    expectSourceLocation(typeBlock.blocks[0], 2, 5)
+    expectSourceLocation(typeBlock.blocks[0].attrs.label, 4, 4)
 
     expect(typeBlock.blocks[1].type).toEqual('number')
     expect(typeBlock.blocks[1].labels).toEqual(['num'])
     expect(typeBlock.blocks[1].attrs).toHaveProperty('_default')
     // eslint-disable-next-line no-underscore-dangle
-    expect(typeBlock.blocks[1].attrs._default).toEqual(35)
+    expect(typeBlock.blocks[1].attrs._default.value).toEqual(35)
+    expectSourceLocation(typeBlock.blocks[1], 8, 10)
+    // eslint-disable-next-line no-underscore-dangle
+    expectSourceLocation(typeBlock.blocks[1].attrs._default, 9, 9)
   })
 
   it('parses instance block', async () => {
@@ -62,9 +81,9 @@ describe('HCL Parser', () => {
     expect(instBlock.type).toEqual('salto_employee')
     expect(instBlock.labels).toEqual(['me'])
     expect(instBlock.attrs).toHaveProperty('name')
-    expect(instBlock.attrs.name).toEqual('person')
+    expect(instBlock.attrs.name.value).toEqual('person')
     expect(instBlock.attrs).toHaveProperty('nicknames')
-    expect(instBlock.attrs.nicknames).toEqual(['a', 's', 'd'])
+    expect(instBlock.attrs.nicknames.value).toEqual(['a', 's', 'd'])
   })
 
   it('parses multiline strings', async () => {
@@ -78,7 +97,7 @@ describe('HCL Parser', () => {
     const { body } = await HCLParser.parse(Buffer.from(blockDef), 'none')
     expect(body.blocks.length).toEqual(1)
     expect(body.blocks[0].attrs).toHaveProperty('thing')
-    expect(body.blocks[0].attrs.thing).toEqual('        omg\n        asd\n')
+    expect(body.blocks[0].attrs.thing.value).toEqual('        omg\n        asd\n')
   })
 
   it('can run concurrently', async () => {
@@ -166,6 +185,23 @@ describe('HCL dump', () => {
   it('dumps parsable text', async () => {
     const parsed = await HCLParser.parse(Buffer.from(serialized), 'none')
     expect(parsed.errors.length).toEqual(0)
-    expect(body).toEqual(parsed.body)
+    // Filter out source ranges since they are only generated during parsing
+    const removeSrcFromBlock = (block: HCLBlock): HCLBlock =>
+      _.mapValues(block, (val, key) => {
+        if (key === 'attrs') {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          return _.mapValues(val, (v: any) => v.value)
+        }
+        if (key === 'blocks') {
+          return (val as HCLBlock[]).map(blk => removeSrcFromBlock(blk))
+        }
+        if (key === 'source') {
+          return undefined
+        }
+        return val
+      }) as HCLBlock
+
+    const parsedBody = removeSrcFromBlock(parsed.body)
+    expect(body).toEqual(parsedBody)
   })
 })

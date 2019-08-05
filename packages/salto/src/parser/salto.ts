@@ -1,7 +1,7 @@
 import * as _ from 'lodash'
 
 import {
-  Type, ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field,
+  Type, ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field, Values,
   isObjectType, isPrimitiveType, Element, isInstanceElement, InstanceElement,
 } from 'adapter-api'
 import HCLParser from './hcl'
@@ -59,13 +59,18 @@ export default class Parser {
     return new ElemID(adapter, name)
   }
 
+  private static getAttrValues(block: HCLBlock): Values {
+    return _.mapValues(block.attrs, val => val.value)
+  }
+
   private static parseType(typeBlock: HCLBlock): Type {
     const [typeName] = typeBlock.labels
     const typeObj = new ObjectType({ elemID: this.getElemID(typeName) })
 
-    typeObj.annotate(typeBlock.attrs)
+    typeObj.annotate(this.getAttrValues(typeBlock))
 
     typeBlock.blocks.forEach(block => {
+      const blockAttrs = this.getAttrValues(block)
       if (block.type === Keywords.LIST_DEFINITION) {
         // List Field block
         const fieldName = block.labels[1]
@@ -74,7 +79,7 @@ export default class Parser {
           typeObj.elemID,
           fieldName,
           new ObjectType({ elemID: this.getElemID(listElementType) }),
-          block.attrs,
+          blockAttrs,
           true
         )
       } else if (block.labels.length === 1) {
@@ -84,12 +89,12 @@ export default class Parser {
           typeObj.elemID,
           fieldName,
           new ObjectType({ elemID: this.getElemID(block.type) }),
-          block.attrs,
+          blockAttrs,
         )
       } else {
         // This is something else, lets assume it is field overrides for now and we can extend
         // this later as we support more parts of the language
-        typeObj.annotationsValues[block.type] = block.attrs
+        typeObj.annotationsValues[block.type] = blockAttrs
       }
     })
 
@@ -109,7 +114,7 @@ export default class Parser {
     return new PrimitiveType({
       elemID: this.getElemID(typeName),
       primitive: getPrimitiveType(baseType),
-      annotationsValues: typeBlock.attrs,
+      annotationsValues: this.getAttrValues(typeBlock),
     })
   }
 
@@ -126,7 +131,7 @@ export default class Parser {
     return new InstanceElement(
       new ElemID(typeID.adapter, name),
       new ObjectType({ elemID: typeID }),
-      instanceBlock.attrs,
+      this.getAttrValues(instanceBlock),
     )
   }
 

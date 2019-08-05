@@ -1,7 +1,7 @@
 import * as _ from 'lodash'
 
 import {
-  Type, ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field,
+  Type, ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field, Values,
   isObjectType, isPrimitiveType, Element, isInstanceElement, InstanceElement,
 } from 'adapter-api'
 import HCLParser from './hcl'
@@ -59,14 +59,18 @@ export default class Parser {
     return new ElemID(adapter, name)
   }
 
+  private static getAttrValues(block: HCLBlock): Values {
+    return _.mapValues(block.attrs, val => val.value)
+  }
+
   private static parseType(typeBlock: HCLBlock): Type {
     const [typeName] = typeBlock.labels
     const typeObj = new ObjectType({ elemID: this.getElemID(typeName) })
 
-    typeObj.annotate(_.mapValues(typeBlock.attrs, val => val.value))
+    typeObj.annotate(this.getAttrValues(typeBlock))
 
     typeBlock.blocks.forEach(block => {
-      const blockAttrs = _.mapValues(block.attrs, val => val.value)
+      const blockAttrs = this.getAttrValues(block)
       if (block.type === Keywords.LIST_DEFINITION) {
         // List Field block
         const fieldName = block.labels[1]
@@ -110,7 +114,7 @@ export default class Parser {
     return new PrimitiveType({
       elemID: this.getElemID(typeName),
       primitive: getPrimitiveType(baseType),
-      annotationsValues: _.mapValues(typeBlock.attrs, val => val.value),
+      annotationsValues: this.getAttrValues(typeBlock),
     })
   }
 
@@ -127,7 +131,7 @@ export default class Parser {
     return new InstanceElement(
       new ElemID(typeID.adapter, name),
       new ObjectType({ elemID: typeID }),
-      _.mapValues(instanceBlock.attrs, val => val.value),
+      this.getAttrValues(instanceBlock),
     )
   }
 

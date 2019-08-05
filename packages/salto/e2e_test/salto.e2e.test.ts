@@ -1,6 +1,6 @@
 import * as fs from 'async-file'
 import _ from 'lodash'
-import SalesforceAdapter from 'salesforce-adapter'
+import SalesforceClient from 'salesforce-adapter/dist/src/client/client'
 import {
   InstanceElement, ElemID, ObjectType, Plan,
 } from 'adapter-api'
@@ -8,24 +8,23 @@ import { discover, plan, apply } from '../src/cli/commands'
 import State from '../src/state/state'
 
 
-const saleforceAdapter = new SalesforceAdapter()
-const configType = saleforceAdapter.getConfigType()
+const configType = new ObjectType({ elemID: new ElemID('salesforce') })
+const configValues = {
+  username: process.env.SF_USER,
+  password: process.env.SF_PASSWORD,
+  token: process.env.SF_TOKEN,
+  sandbox: false,
+}
 const mockGetConfigType = (_c: ObjectType): InstanceElement => new InstanceElement(
   new ElemID(configType.elemID.adapter, ElemID.CONFIG_INSTANCE_NAME),
   configType,
-  {
-    username: process.env.SF_USER,
-    password: process.env.SF_PASSWORD,
-    token: process.env.SF_TOKEN,
-    sandbox: false,
-  }
+  configValues
 )
 let lastPlan: Plan = []
 const mockShouldApply = (p: Plan): boolean => {
   lastPlan = p
   return true
 }
-
 jest.mock('../src/cli/callbacks', () => ({
   getConfigFromUser: jest.fn().mockImplementation((c: ObjectType) => mockGetConfigType(c)),
   shouldApply: jest.fn().mockImplementation((p: Plan) => mockShouldApply(p)),
@@ -38,13 +37,16 @@ describe('Test commands e2e', () => {
   const discoverOutputBP = `${homePath}/.salto/test_discover.bp`
   const addModelBP = `${__dirname}/../../e2e_test//BP/add.bp`
   const modifyModelBP = `${__dirname}/../../e2e_test/BP/modify.bp`
-  const adapter = new SalesforceAdapter()
-  adapter.init(mockGetConfigType(configType))
+  const client = new SalesforceClient(
+    configValues.username,
+    configValues.password + configValues.token,
+    configValues.sandbox
+  )
 
   const objectExists = async (
     name: string, fields: string[] = [], missingFields: string[] = []
   ): Promise<boolean> => {
-    const result = (await adapter.client.readMetadata('CustomObject', name)
+    const result = (await client.readMetadata('CustomObject', name)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ) as any
     if (!result || !result.fullName) {
@@ -67,6 +69,9 @@ describe('Test commands e2e', () => {
 
   beforeAll(async done => {
     jest.setTimeout(5 * 60 * 1000)
+    if (await objectExists('e2etest__c')) {
+      await client.delete('CustomObject', 'e2etest__c')
+    }
     done()
   })
 

@@ -12,7 +12,6 @@ module.exports = deepMerge(
     ].filter(p => p),
     testMatch: [
       process.env['RUN_E2E_TESTS'] && '<rootDir>/dist/e2e_test/**/*.test.js',
-      '<rootDir>/dist/e2e_test/**/*.test.js',
     ].filter(p => p),
     coverageThreshold: {
       // Slowly start increasing here, never decrease!

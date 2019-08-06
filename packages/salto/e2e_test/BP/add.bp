@@ -1,9 +1,9 @@
 model salesforce_e2etest {
-  text name {
+  salesforce_text name {
     label = "Name"
     _required = true
   }
-  text test {
+  salesforce_text test {
     label = "test"
     _required = true
   }

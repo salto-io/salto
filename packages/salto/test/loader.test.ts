@@ -1,6 +1,6 @@
 import {
   ObjectType, ElemID, Field, BuiltinTypes, InstanceElement, PrimitiveType,
-  PrimitiveTypes,
+  PrimitiveTypes, Type,
 } from 'adapter-api'
 import { mergeElements, UPDATE_KEYWORD } from '../src/core/merger'
 
@@ -307,6 +307,55 @@ describe('Loader merging ability', () => {
     it('should fail on multiple values for same key', () => {
       const elements = [ins1, shouldUseFieldDef]
       expect(() => mergeElements(elements)).toThrow()
+    })
+  })
+
+  describe('merging primitives', () => {
+    const strType = new PrimitiveType({
+      elemID: new ElemID('salto', 'string'),
+      primitive: PrimitiveTypes.STRING,
+      annotationsValues: { _default: 'type' },
+    })
+
+    const duplicateType = new PrimitiveType({
+      elemID: new ElemID('salto', 'string'),
+      primitive: PrimitiveTypes.STRING,
+      annotationsValues: { _default: 'type' },
+    })
+    it('should fail when more then one primitive is defined with same elemID', () => {
+      const elements = [strType, duplicateType]
+      expect(() => mergeElements(elements)).toThrow()
+    })
+  })
+
+  describe('replace type defs', () => {
+    const typeRef = (typeToRef: Type): ObjectType => new ObjectType({ elemID: typeToRef.elemID })
+
+    const strType = new PrimitiveType({
+      elemID: new ElemID('salto', 'string'),
+      primitive: PrimitiveTypes.STRING,
+      annotationsValues: { _default: 'type' },
+    })
+
+    const nestedElemID = new ElemID('salto', 'nested')
+
+    const nested = new ObjectType({
+      elemID: nestedElemID,
+      fields: {
+        prim: new Field(nestedElemID, 'field2', typeRef(strType)),
+        base: new Field(nestedElemID, 'field2', typeRef(base)),
+      },
+    })
+
+    it('should replace type refs with full types', () => {
+      const elements = mergeElements([
+        strType,
+        base,
+        nested,
+      ])
+      const element = elements[2] as ObjectType
+      expect(element.fields.prim.type).toEqual(strType)
+      expect(element.fields.base.type).toEqual(base)
     })
   })
 })

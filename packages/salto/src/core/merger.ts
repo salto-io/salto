@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import {
   ObjectType, isType, isObjectType, isInstanceElement, Element, Field, InstanceElement,
-  Type, Values,
+  Type, Values, PrimitiveType, isPrimitiveType,
 } from 'adapter-api'
 
 export const UPDATE_KEYWORD = 'update'
@@ -78,6 +78,14 @@ const mergeObjectDefinitions = (objects: ObjectType[]): ObjectType => {
   })
 }
 
+const mergePrimitiveDefinitions = (primtives: PrimitiveType[]): PrimitiveType => {
+  if (primtives.length > 1) {
+    throw new Error('Merging for primitive types is not supported.'
+                    + `Found duplicated element ${primtives[0].elemID.getFullName()}`)
+  }
+  return primtives[0]
+}
+
 const buildDefaults = (
   type: Type
 ): Values | undefined => {
@@ -121,30 +129,35 @@ const mergeInstances = (
     .mapValues(mergeInstanceDefinitions).values()
     .value()
 }
+
+const mergePrimitives = (
+  primitives: PrimitiveType[]
+): Record<string, PrimitiveType> => _(primitives).groupBy(p => p.elemID.getFullName())
+  .mapValues(mergePrimitiveDefinitions).value()
 /**
  * Replace the pointers to all the merged elements to the merged version.
  */
 const updateMergedTypes = (
   elements: Element[],
-  mergedObjects: Record<string, ObjectType>
+  mergedTypes: Record<string, Type>
 ): Element[] => elements.map(elem => {
   if (isType(elem)) {
     elem.annotations = _.mapValues(
       elem.annotations,
-      anno => mergedObjects[anno.elemID.getFullName()] || anno
+      anno => mergedTypes[anno.elemID.getFullName()] || anno
     )
   }
   if (isObjectType(elem)) {
     elem.fields = _.mapValues(
       elem.fields,
       field => {
-        field.type = mergedObjects[field.type.elemID.getFullName()] || field.type
+        field.type = mergedTypes[field.type.elemID.getFullName()] || field.type
         return field
       }
     )
   }
   if (isInstanceElement(elem)) {
-    elem.type = mergedObjects[elem.type.elemID.getFullName()] || elem.type
+    elem.type = mergedTypes[elem.type.elemID.getFullName()] || elem.type
   }
   return elem
 })
@@ -158,10 +171,13 @@ export const mergeElements = (elements: Element[]): Element[] => {
   const mergedInstances = mergeInstances(elements.filter(
     e => isInstanceElement(e)
   ) as InstanceElement[])
+  const mergedPrimitives = mergePrimitives(
+    elements.filter(e => isPrimitiveType(e)) as PrimitiveType[]
+  )
   const mergedElements = [
     ...elements.filter(e => !isObjectType(e) && !isInstanceElement(e)),
     ...Object.values(mergedObjects),
     ...mergedInstances,
   ]
-  return updateMergedTypes(mergedElements, mergedObjects)
+  return updateMergedTypes(mergedElements, _.merge({}, mergedObjects, mergedPrimitives))
 }

@@ -215,24 +215,30 @@ describe('Test SalesforceAdapter CRUD', () => {
         .toBe('NEW;OLD')
     })
 
-    it('Should add new salesforce type with currency field', async () => {
+    it('Should add new salesforce type with different field types', async () => {
       await adapter().add(
         new ObjectType({
           elemID: mockElemID,
           fields: {
-            state:
-              new Field(
-                mockElemID,
-                'currency',
-                Types.salesforceDataTypes.currency,
-                {
-                  [Type.REQUIRED]: false,
-                  [Type.DEFAULT]: 25,
-                  label: 'Currency description label',
-                  scale: 3,
-                  precision: 18,
-                },
-              ),
+            alpha: new Field(
+              mockElemID,
+              'currency',
+              Types.salesforceDataTypes.currency,
+              {
+                label: 'Currency description label',
+                scale: 3,
+                precision: 18,
+              },
+            ),
+            bravo: new Field(
+              mockElemID,
+              'auto',
+              Types.salesforceDataTypes.autonumber,
+              {
+                label: 'Autonumber description label',
+                displayFormat: 'ZZZ-{0000}',
+              },
+            ),
           },
         })
       )
@@ -240,12 +246,16 @@ describe('Test SalesforceAdapter CRUD', () => {
       // Verify object creation
       expect(mockCreate.mock.calls.length).toBe(1)
       const object = mockCreate.mock.calls[0][1]
-      expect(object.fields.length).toBe(1)
+      expect(object.fields.length).toBe(2)
       expect(object.fields[0].fullName).toBe('Currency__c')
       expect(object.fields[0].type).toBe('Currency')
       expect(object.fields[0].label).toBe('Currency description label')
       expect(object.fields[0].scale).toBe(3)
       expect(object.fields[0].precision).toBe(18)
+      expect(object.fields[1].fullName).toBe('Auto__c')
+      expect(object.fields[1].type).toBe('AutoNumber')
+      expect(object.fields[1].label).toBe('Autonumber description label')
+      expect(object.fields[1].displayFormat).toBe('ZZZ-{0000}')
     })
 
     it('Should fail add new salesforce type', async () => {

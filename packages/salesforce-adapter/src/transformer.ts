@@ -79,6 +79,13 @@ export class Types {
         precision: BuiltinTypes.NUMBER,
       },
     }),
+    autonumber: new PrimitiveType({
+      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.AUTONUMBER),
+      primitive: PrimitiveTypes.STRING,
+      annotations: {
+        displayFormat: BuiltinTypes.STRING,
+      },
+    }),
     boolean: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.CHECKBOX),
       primitive: PrimitiveTypes.BOOLEAN,
@@ -227,6 +234,8 @@ const getDefaultValue = (field: Field): DefaultValueType | undefined => {
     ? valueFromXsdType(field.defaultValue) : field.defaultValue
 }
 
+// The following method is used during the discovery process and is used in building the objects
+// described in the blue print
 export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeField => {
   const bpFieldName = bpCase(field.name)
   let bpFieldType = Types.get(field.type)
@@ -239,7 +248,7 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
   if (defaultValue !== undefined) {
     annotations[Type.DEFAULT] = defaultValue
   }
-
+  // Picklists
   if (field.picklistValues && field.picklistValues.length > 0) {
     annotations[PICKLIST_VALUES] = field.picklistValues.map(val => val.value)
     annotations[RESTRICTED_PICKLIST] = Boolean(field.restrictedPicklist)
@@ -259,6 +268,7 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
       // be visible in the picklist in the UI. Why? Because.
       annotations[PRECISION] = field.precision
     }
+  // Formulas
   } else if (field.calculated && !_.isEmpty(field.calculatedFormula)) {
     bpFieldType = Types.get(formulaTypeName(bpFieldType.elemID.name))
     annotations[FORMULA] = field.calculatedFormula

@@ -17,6 +17,7 @@ export const PRECISION = 'precision'
 export const SCALE = 'scale'
 export const FIELD_TYPE_NAMES = {
   STRING: 'string',
+  AUTONUMBER: 'autonumber',
   TEXT: 'text',
   NUMBER: 'number',
   CHECKBOX: 'checkbox',
@@ -28,6 +29,7 @@ export const FIELD_TYPE_NAMES = {
 }
 
 export const FIELD_TYPE_API_NAMES = {
+  [FIELD_TYPE_NAMES.AUTONUMBER]: 'AutoNumber',
   [FIELD_TYPE_NAMES.TEXT]: 'Text',
   [FIELD_TYPE_NAMES.NUMBER]: 'Number',
   [FIELD_TYPE_NAMES.CHECKBOX]: 'Checkbox',

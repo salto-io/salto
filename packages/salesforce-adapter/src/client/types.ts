@@ -35,6 +35,7 @@ export class CustomField implements MetadataInfo {
   // For the rest of the annotation values required by the rest of the field types:
   scale?: number
   precision?: number
+  displayFormat?: string
 
   constructor(
     public fullName: string,

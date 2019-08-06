@@ -650,8 +650,22 @@ describe('Test Salesforce adapter E2E with real account', () => {
             {
               [Type.REQUIRED]: false,
               [Type.DEFAULT]: 'NEW',
-              label: 'test label',
+              label: 'Picklist description label',
               values: ['NEW', 'OLD'],
+              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
+                admin: { editable: false, readable: true },
+                standard: { editable: false, readable: true },
+              },
+            },
+          ),
+          charlie: new Field(
+            mockElemID,
+            'charlie',
+            Types.salesforceDataTypes.autonumber,
+            {
+              [Type.REQUIRED]: false,
+              label: 'Autonumber description label',
+              displayFormat: 'ZZZ-{0000}',
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 admin: { editable: false, readable: true },
                 standard: { editable: false, readable: true },
@@ -680,8 +694,13 @@ describe('Test Salesforce adapter E2E with real account', () => {
       // Verify picklist
       const picklistField = allFields.filter(field => field.name === 'Bravo__c')[0]
       expect(picklistField).toBeDefined()
-      expect(picklistField.label).toBe('test label')
+      expect(picklistField.label).toBe('Picklist description label')
       expect(_.isEqual((picklistField.picklistValues as PicklistEntry[]).map(value => value.label), ['NEW', 'OLD'])).toBeTruthy()
+
+      // Verify autonumber
+      const autonumber = allFields.filter(field => field.name === 'Charlie__c')[0]
+      expect(autonumber).toBeDefined()
+      expect(autonumber.label).toBe('Autonumber description label')
 
       // Clean-up
       await sfAdapter.remove(post as ObjectType)

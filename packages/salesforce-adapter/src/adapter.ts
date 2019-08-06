@@ -13,8 +13,8 @@ import {
   CompleteSaveResult, SfError,
 } from './client/types'
 import {
-  toCustomField, toCustomObject, apiName, sfCase, bpCase, fieldFullName, Types,
-  getValueTypeFieldElement, getSObjectFieldElement, fromMetadataInfo, sfTypeName,
+  toCustomField, toCustomObject, apiName, sfCase, fieldFullName, Types,
+  getValueTypeFieldElement, getSObjectFieldElement, fromMetadataInfo, sfTypeName, bpCase,
 } from './transformer'
 import { AspectsManager } from './aspects/aspects'
 
@@ -66,7 +66,8 @@ const annotateApiNameAndLabel = (element: ObjectType): void => {
 
 export default class SalesforceAdapter {
   // This is public as it should be exposed to tests
-  public static STANDALONE_METADATA_TYPES = ['Flow', 'Workflow', 'Queue', 'Report', 'Settings']
+  public static DISCOVER_METADATA_TYPES_WHITELIST = ['Flow', 'Workflow', 'Queue', 'Report',
+    'Settings', 'Layout']
 
   private innerClient?: SalesforceClient
   public get client(): SalesforceClient {
@@ -122,9 +123,11 @@ export default class SalesforceAdapter {
     const metadataTypes = this.discoverMetadataTypes()
     const sObjects = this.discoverSObjects()
     const metadataInstances = this.discoverMetadataInstances(await metadataTypes)
-    return _.flatten(
+    const elements = _.flatten(
       await Promise.all([fieldTypes, metadataTypes, sObjects, metadataInstances]) as Element[][]
     )
+    this.aspects.discover(elements)
+    return elements
   }
 
   /**
@@ -220,7 +223,7 @@ export default class SalesforceAdapter {
 
   private async discoverMetadataTypes(): Promise<Type[]> {
     const knownTypes = new Set<string>()
-    return _.flatten(await Promise.all(SalesforceAdapter.STANDALONE_METADATA_TYPES
+    return _.flatten(await Promise.all(SalesforceAdapter.DISCOVER_METADATA_TYPES_WHITELIST
       .map(obj => this.discoverMetadataType(obj, knownTypes))))
   }
 
@@ -265,17 +268,20 @@ export default class SalesforceAdapter {
   }
 
   private async discoverMetadataInstances(types: Type[]): Promise<InstanceElement[]> {
-    return _.flatten(await Promise.all(types.map(async type => this.createInstanceElements(type))))
+    const instances = await Promise.all(types
+      .filter(t => SalesforceAdapter.DISCOVER_METADATA_TYPES_WHITELIST.includes(sfTypeName(t)))
+      .map(async t => this.createInstanceElements(t)))
+    return _.flatten(instances)
   }
 
   private async createInstanceElements(type: Type): Promise<InstanceElement[]> {
-    try {
-      const instances = await this.listMetadataInstances(sfTypeName(type))
-      return instances.map(instance => new InstanceElement(new ElemID(constants.SALESFORCE,
-        type.elemID.nameParts[0], bpCase(instance.fullName)), type, fromMetadataInfo(instance)))
-    } catch (e) {
-      return []
-    }
+    const instances = await this.listMetadataInstances(sfTypeName(type))
+    return instances.filter(i => i.fullName !== undefined)
+      .map(i => new InstanceElement(
+        new ElemID(constants.SALESFORCE, type.elemID.nameParts[0], bpCase(i.fullName)),
+        type,
+        fromMetadataInfo(i)
+      ))
   }
 
   private async discoverSObjects(): Promise<Type[]> {
@@ -288,7 +294,6 @@ export default class SalesforceAdapter {
         )
       )
     ))
-    await this.aspects.discover(sobjects)
     return sobjects
   }
 
@@ -320,7 +325,6 @@ export default class SalesforceAdapter {
       return Promise.all(names
         .map(name => this.client.readMetadata(name + type, name) as Promise<MetadataInfo>))
     }
-
     return _.flatten(await Promise.all(_.chunk(names, 10)
       .map(chunk => this.client.readMetadata(type, chunk) as Promise<MetadataInfo[]>)))
   }

@@ -1,11 +1,11 @@
 import { ObjectType, ElemID } from 'adapter-api'
 import SalesforceClient from '../../src/client/client'
-import { AspectsManager, SObjectAspect } from '../../src/aspects/aspects'
+import { AspectsManager, Aspect } from '../../src/aspects/aspects'
 
 jest.mock('../../src/client/client')
 
 describe('Test AspectsManager', () => {
-  let aspect: SObjectAspect
+  let aspect: Aspect
   let manager: AspectsManager
   const object = new ObjectType({ elemID: new ElemID('bla', 'test') })
   beforeEach(() => {

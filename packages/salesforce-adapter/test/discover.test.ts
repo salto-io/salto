@@ -180,7 +180,7 @@ describe('Test SalesforceAdapter discover', () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       fields: Record<string, any>[]): void => {
       SalesforceClient.prototype.listSObjects = jest.fn().mockImplementation(() => [])
-      SalesforceAdapter.STANDALONE_METADATA_TYPES = [xmlName]
+      SalesforceAdapter.DISCOVER_METADATA_TYPES_WHITELIST = [xmlName]
       SalesforceClient.prototype.describeMetadataType = jest.fn().mockImplementation(() => fields)
       SalesforceClient.prototype.listMetadataObjects = jest.fn().mockImplementation(() => [])
     }
@@ -267,7 +267,7 @@ describe('Test SalesforceAdapter discover', () => {
           },
         },
       ])
-      SalesforceAdapter.STANDALONE_METADATA_TYPES = ['nesting_type']
+      SalesforceAdapter.DISCOVER_METADATA_TYPES_WHITELIST = ['nesting_type']
 
       const result = await adapter().discover()
 
@@ -299,7 +299,6 @@ describe('Test SalesforceAdapter discover', () => {
       const flow = result.filter(o => o.elemID.name === 'flow_flow_instance').pop() as InstanceElement
       expect(flow.type.elemID.getFullName()).toBe('salesforce_flow_type')
       expect(flow.elemID.getFullName()).toBe('salesforce_flow_flow_instance')
-      expect(flow.value.full_name).not.toBeDefined()
       expect(flow.value.field_permissions[0].field).toEqual('Field')
       expect(flow.value.field_permissions[0].editable).toBeTruthy()
       expect(flow.value.field_permissions[0].readable).not.toBeTruthy()

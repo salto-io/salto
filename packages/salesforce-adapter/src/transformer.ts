@@ -5,14 +5,14 @@ import {
 
 import {
   Type, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values,
-  Field as TypeField, BuiltinTypes,
+  Field as TypeField, BuiltinTypes, Element,
 } from 'adapter-api'
 import {
   CustomObject, CustomField,
 } from './client/types'
 import {
   API_NAME, LABEL, PICKLIST_VALUES, SALESFORCE, RESTRICTED_PICKLIST, FORMULA,
-  FORMULA_TYPE_PREFIX, METADATA_OBJECT_NAME_FIELD, METADATA_TYPES_SUFFIX,
+  FORMULA_TYPE_PREFIX, METADATA_TYPES_SUFFIX,
   PRECISION, FIELD_TYPE_NAMES, FIELD_TYPE_API_NAMES,
 } from './constants'
 
@@ -22,17 +22,22 @@ const capitalize = (s: string): string => {
 }
 export const sfCase = (name: string, custom: boolean = false): string =>
   capitalize(_.camelCase(name)) + (custom === true ? '__c' : '')
-export const bpCase = (name: string): string =>
-  (name.endsWith('__c') ? _.snakeCase(name).slice(0, -2) : _.snakeCase(name))
+export const bpCase = (name: string): string => {
+  const bpName = (name.endsWith('__c') ? name.slice(0, -2) : name)
+  // Using specific replace for chars then _.unescape is not replacing well
+  // and we see in our responses for sfdc
+  return _.snakeCase(_.unescape(bpName.replace(/%26|%28|%29/g, ' ')))
+}
 export const sfTypeName = (type: Type, customObject: boolean = false): string =>
   (customObject
     ? sfCase(type.elemID.name, customObject)
-    : type.elemID.nameParts.slice(0, -1).map(p => sfCase(p, customObject)).join())
+    : type.elemID.nameParts.slice(0, -1).map(p => sfCase(p, customObject)).join(''))
+export const sfInstnaceName = (instance: Element): string =>
+  instance.elemID.nameParts.slice(1).map(p => sfCase(p, false)).join('')
 export const bpNameParts = (name: string, customObject: boolean): string[] =>
   (customObject
     ? [bpCase(name)]
     : [bpCase(name), METADATA_TYPES_SUFFIX])
-
 export const apiName = (element: Type | TypeField): string => (
   element.annotationsValues[API_NAME]
 )
@@ -262,14 +267,13 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
 export const fromMetadataInfo = (info: MetadataInfo): Values => {
   const transform = (obj: Values): Values => {
     const returnVal: Values = {}
-    Object.keys(obj).filter(key => key !== METADATA_OBJECT_NAME_FIELD)
-      .forEach(key => {
-        if (_.isObject(obj[key])) {
-          returnVal[bpCase(key)] = transform(obj[key])
-        } else {
-          returnVal[bpCase(key)] = obj[key]
-        }
-      })
+    Object.keys(obj).forEach(key => {
+      if (_.isObject(obj[key])) {
+        returnVal[bpCase(key)] = transform(obj[key])
+      } else if (key !== undefined) {
+        returnVal[bpCase(key)] = obj[key]
+      }
+    })
     return returnVal
   }
   return transform(info as Values)

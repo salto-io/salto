@@ -24,7 +24,7 @@ export const sfCase = (name: string, custom: boolean = false): string =>
   capitalize(_.camelCase(name)) + (custom === true ? '__c' : '')
 export const bpCase = (name: string): string => {
   const bpName = (name.endsWith('__c') ? name.slice(0, -2) : name)
-  // Using specific replace for chars than _.unescape is not replacing well
+  // Using specific replace for chars then _.unescape is not replacing well
   // and we see in our responses for sfdc
   return _.snakeCase(_.unescape(bpName.replace(/%26|%28|%29/g, ' ')))
 }

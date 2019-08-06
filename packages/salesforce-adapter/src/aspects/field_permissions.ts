@@ -1,5 +1,5 @@
 import {
-  ObjectType, Element, Values, Field,
+  ObjectType, Element, Values, Field, isObjectType,
 } from 'adapter-api'
 import _ from 'lodash'
 import { SaveResult } from 'jsforce-types'
@@ -87,7 +87,7 @@ const readProfiles = async (client: SalesforceClient): Promise<ProfileInfo[]> =>
 * field_level_security annotations.
 */
 const discover = async (client: SalesforceClient, elements: Element[]): Promise<void> => {
-  const sobjects = elements.filter(e => e instanceof ObjectType) as ObjectType[]
+  const sobjects = elements.filter(isObjectType)
   if (_.isEmpty(sobjects)) {
     return
   }
@@ -112,7 +112,7 @@ const discover = async (client: SalesforceClient, elements: Element[]): Promise<
 * @param after the desired SObject type
 */
 const add = async (client: SalesforceClient, after: Element): Promise<SaveResult[]> => {
-  if (after instanceof ObjectType) {
+  if (isObjectType(after)) {
     const profiles = toProfiles(after)
     if (profiles.length > 0) {
       return client.update(PROFILE_METADATA_TYPE, profiles) as Promise<SaveResult[]>
@@ -128,7 +128,7 @@ const add = async (client: SalesforceClient, after: Element): Promise<SaveResult
 */
 const update = async (client: SalesforceClient, before: Element, after: Element):
   Promise<SaveResult[]> => {
-  if (!(before instanceof ObjectType) || !(after instanceof ObjectType)) {
+  if (!(isObjectType(before) && isObjectType(after))) {
     return []
   }
 

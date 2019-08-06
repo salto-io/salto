@@ -180,7 +180,7 @@ describe('Test SalesforceAdapter discover', () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       fields: Record<string, any>[]): void => {
       SalesforceClient.prototype.listSObjects = jest.fn().mockImplementation(() => [])
-      SalesforceAdapter.STANDALONE_METADATA_TYPES = [xmlName]
+      SalesforceAdapter.DISCOVER_METADATA_TYPES_WHITELIST = [xmlName]
       SalesforceClient.prototype.describeMetadataType = jest.fn().mockImplementation(() => fields)
       SalesforceClient.prototype.listMetadataObjects = jest.fn().mockImplementation(() => [])
     }
@@ -267,7 +267,7 @@ describe('Test SalesforceAdapter discover', () => {
           },
         },
       ])
-      SalesforceAdapter.STANDALONE_METADATA_TYPES = ['nesting_type']
+      SalesforceAdapter.DISCOVER_METADATA_TYPES_WHITELIST = ['nesting_type']
 
       const result = await adapter().discover()
 

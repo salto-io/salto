@@ -66,8 +66,8 @@ const annotateApiNameAndLabel = (element: ObjectType): void => {
 
 export default class SalesforceAdapter {
   // This is public as it should be exposed to tests
-  public static STANDALONE_METADATA_TYPES = ['Flow', 'Workflow', 'Queue', 'Report', 'Settings',
-    'Layout']
+  public static DISCOVER_METADATA_TYPES_WHITELIST = ['Flow', 'Workflow', 'Queue', 'Report',
+    'Settings', 'Layout']
 
   private innerClient?: SalesforceClient
   public get client(): SalesforceClient {
@@ -223,7 +223,7 @@ export default class SalesforceAdapter {
 
   private async discoverMetadataTypes(): Promise<Type[]> {
     const knownTypes = new Set<string>()
-    return _.flatten(await Promise.all(SalesforceAdapter.STANDALONE_METADATA_TYPES
+    return _.flatten(await Promise.all(SalesforceAdapter.DISCOVER_METADATA_TYPES_WHITELIST
       .map(obj => this.discoverMetadataType(obj, knownTypes))))
   }
 
@@ -269,7 +269,7 @@ export default class SalesforceAdapter {
 
   private async discoverMetadataInstances(types: Type[]): Promise<InstanceElement[]> {
     const instances = await Promise.all(types
-      .filter(t => SalesforceAdapter.STANDALONE_METADATA_TYPES.includes(sfTypeName(t)))
+      .filter(t => SalesforceAdapter.DISCOVER_METADATA_TYPES_WHITELIST.includes(sfTypeName(t)))
       .map(async t => this.createInstanceElements(t)))
     return _.flatten(instances)
   }

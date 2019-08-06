@@ -1,7 +1,7 @@
 
 import _ from 'lodash'
 import {
-  ObjectType, Element, InstanceElement,
+  Element, isObjectType, isInstanceElement,
 } from 'adapter-api'
 import { SaveResult } from 'jsforce-types'
 import { METADATA_OBJECT_NAME_FIELD, API_NAME } from '../constants'
@@ -16,14 +16,14 @@ export const LAYOUT_ANNOTATION = 'layouts'
 * @param sobject the already discoverd elements
 */
 const discover = async (_client: SalesforceClient, elements: Element[]): Promise<void> => {
-  const sobjects = elements.filter(e => e instanceof ObjectType) as ObjectType[]
-  // Layout full name starts with related sobject and than '-'
-  const layoutRelatedObj = (e: InstanceElement): string =>
-    (e.value[bpCase(METADATA_OBJECT_NAME_FIELD)] as string).split('-')[0]
-  const layouts = _.groupBy(elements.filter(e => e instanceof InstanceElement
-    && e.type.elemID.nameParts[0] === LAYOUT_TYPE_NAME), layoutRelatedObj)
+  const sobjects = elements.filter(isObjectType)
+  const layouts = _.groupBy(elements.filter(isInstanceElement)
+    .filter(e => e.type.elemID.nameParts[0] === LAYOUT_TYPE_NAME),
+  // Layout full name starts with related sobject and then '-'
+  e => (e.value[bpCase(METADATA_OBJECT_NAME_FIELD)] as string).split('-')[0])
+
   sobjects.forEach(obj => {
-    const objLayouts = layouts[obj.annotationsValues[API_NAME]] as InstanceElement[]
+    const objLayouts = layouts[obj.annotationsValues[API_NAME]]
     if (objLayouts) {
       obj.annotate({ [LAYOUT_ANNOTATION]: objLayouts.map(l => l.elemID.getFullName()) })
     }

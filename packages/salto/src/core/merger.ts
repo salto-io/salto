@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import {
   ObjectType, isType, isObjectType, isInstanceElement, Element, Field, InstanceElement,
-  Type, Values, PrimitiveType, isPrimitiveType,
+  Type, Values, PrimitiveType, isPrimitiveType, BuiltinTypes,
 } from 'adapter-api'
 
 export const UPDATE_KEYWORD = 'update'
@@ -171,9 +171,10 @@ export const mergeElements = (elements: Element[]): Element[] => {
   const mergedInstances = mergeInstances(elements.filter(
     e => isInstanceElement(e)
   ) as InstanceElement[])
-  const mergedPrimitives = mergePrimitives(
-    elements.filter(e => isPrimitiveType(e)) as PrimitiveType[]
-  )
+  const mergedPrimitives = mergePrimitives([
+    ...elements.filter(e => isPrimitiveType(e)) as PrimitiveType[],
+    ...Object.values(BuiltinTypes),
+  ])
   const mergedElements = [
     ...elements.filter(e => !isObjectType(e) && !isInstanceElement(e)),
     ...Object.values(mergedObjects),

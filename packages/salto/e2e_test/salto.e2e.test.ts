@@ -40,7 +40,7 @@ jest.mock('../src/cli/callbacks', () => ({
 }))
 
 describe('Test commands e2e', () => {
-  const fileExists = async (path: string): Promise<boolean> => fs.exists(path)
+  const fileExists = async (p: string): Promise<boolean> => fs.exists(p)
   const homePath = process.env.HOME || process.env.HOMEPATH || process.env.USERPROFILE
   const { statePath } = new State()
   const discoverOutputBP = `${homePath}/BP/test_discover.bp`

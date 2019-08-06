@@ -1,4 +1,5 @@
 import * as fs from 'async-file'
+import * as path from 'path'
 import _ from 'lodash'
 import SalesforceClient from 'salesforce-adapter/dist/src/client/client'
 import {
@@ -42,7 +43,7 @@ describe('Test commands e2e', () => {
   const fileExists = async (path: string): Promise<boolean> => fs.exists(path)
   const homePath = process.env.HOME || process.env.HOMEPATH || process.env.USERPROFILE
   const { statePath } = new State()
-  const discoverOutputBP = `${homePath}/.salto/test_discover.bp`
+  const discoverOutputBP = `${homePath}/BP/test_discover.bp`
   const addModelBP = `${__dirname}/../../e2e_test//BP/add.bp`
   const modifyModelBP = `${__dirname}/../../e2e_test/BP/modify.bp`
   const client = new SalesforceClient(
@@ -76,6 +77,7 @@ describe('Test commands e2e', () => {
     if (await objectExists('e2etest__c')) {
       await client.delete('CustomObject', 'e2etest__c')
     }
+    await fs.createDirectory(path.dirname(discoverOutputBP))
     done()
   })
 

@@ -5,7 +5,7 @@ import {
 
 import {
   Type, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values,
-  Field as TypeField, BuiltinTypes, Element,
+  Field as TypeField, BuiltinTypes, Element, isObjectType, isPrimitiveType,
 } from 'adapter-api'
 import {
   CustomObject, CustomField,
@@ -160,9 +160,14 @@ export const toCustomObject = (element: ObjectType): CustomObject =>
     Object.values(element.fields).map(field => toCustomField(element, field))
   )
 
-export const getValueTypeFieldElement = (parentID: ElemID, field: ValueTypeField): TypeField => {
+export const getValueTypeFieldElement = (parentID: ElemID, field: ValueTypeField,
+  knonwTypes: Map<string, Type>): TypeField => {
   const bpFieldName = bpCase(field.name)
-  let bpFieldType = Types.get(field.soapType, false)
+  let bpFieldType = knonwTypes.has(field.soapType)
+    ? knonwTypes.get(field.soapType) as Type
+    // If type is not known type it have to be primitive,
+    // we create sub types before calling this function.
+    : Types.get(field.soapType, false)
   const annotations: Values = {
     [Type.REQUIRED]: field.valueRequired,
   }
@@ -264,17 +269,39 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
   return new TypeField(parentID, bpFieldName, bpFieldType, annotations)
 }
 
-export const fromMetadataInfo = (info: MetadataInfo): Values => {
-  const transform = (obj: Values): Values => {
-    const returnVal: Values = {}
-    Object.keys(obj).forEach(key => {
-      if (_.isObject(obj[key])) {
-        returnVal[bpCase(key)] = transform(obj[key])
-      } else if (key !== undefined) {
-        returnVal[bpCase(key)] = obj[key]
-      }
-    })
-    return returnVal
+export const fromMetadataInfo = (info: MetadataInfo, infoType: ObjectType): Values => {
+  const transformPrimitive = (val: string, primitive: PrimitiveTypes):
+    string | boolean | number => {
+    switch (primitive) {
+      case PrimitiveTypes.NUMBER:
+        return Number(val)
+      case PrimitiveTypes.BOOLEAN:
+        return (val.toLowerCase() === 'true')
+      case PrimitiveTypes.STRING:
+        return val
+      default:
+        return val
+    }
   }
-  return transform(info as Values)
+
+  const transform = (obj: Values, type: ObjectType): Values =>
+    _(obj).mapKeys((_value, key) => bpCase(key)).mapValues((value, key) => {
+      const field = type.fields[key]
+      if (field !== undefined) {
+        const fieldType = field.type
+        if (isObjectType(fieldType)) {
+          return field.isList
+            ? (value as []).map(v => transform(v, fieldType))
+            : transform(value, fieldType)
+        }
+        if (isPrimitiveType(fieldType)) {
+          return field.isList
+            ? (value as []).map(v => transformPrimitive(v, fieldType.primitive))
+            : transformPrimitive(value, fieldType.primitive)
+        }
+      }
+      return value
+    }).value()
+
+  return transform(info as Values, infoType)
 }

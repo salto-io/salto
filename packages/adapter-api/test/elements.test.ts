@@ -132,8 +132,7 @@ describe('Test elements.ts', () => {
     )
     expect(st).toBeInstanceOf(PrimitiveType)
     const ot = registery.getElement(
-      new ElemID('', 'object'),
-      PrimitiveTypes.OBJECT,
+      new ElemID('', 'object')
     )
     expect(ot).toBeInstanceOf(ObjectType)
   })
@@ -231,15 +230,6 @@ describe('Test elements.ts', () => {
     expect(saltoAddr).not.toBe(saltoAddr2)
     expect(saltoAddr2).toMatchObject(saltoAddr)
 
-    const nicknames = registery.getElement(
-      new ElemID('salto', 'nicknamed'),
-      PrimitiveTypes.LIST,
-    )
-    const nicknames2 = nicknames.clone(annotations)
-
-    expect(nicknames).not.toBe(nicknames2)
-    expect(nicknames2).toMatchObject(nicknames)
-
     const prim = registery.getElement(
       new ElemID('', 'prim'),
       PrimitiveTypes.STRING,
@@ -257,8 +247,7 @@ describe('Test elements.ts', () => {
       PrimitiveTypes.STRING,
     )
     const ot = registery.getElement(
-      new ElemID('test', 'ot1'),
-      PrimitiveTypes.OBJECT,
+      new ElemID('test', 'ot1')
     )
     expect(isObjectType(ot)).toBeTruthy()
     expect(isPrimitiveType(pt)).toBeTruthy()
@@ -310,8 +299,7 @@ describe('Test elements.ts', () => {
   it('should create a basic instance element', () => {
     const registery = new ElementsRegistry()
     const ot = registery.getElement(
-      new ElemID('test', 'ot1'),
-      PrimitiveTypes.OBJECT,
+      new ElemID('test', 'ot1')
     )
     const inst = new InstanceElement(new ElemID('test', 'test'), ot, { test: 'test' })
     expect(inst.elemID).toEqual(new ElemID('test', 'test'))
@@ -322,8 +310,7 @@ describe('Test elements.ts', () => {
   it('should create a basic instance element from registery', () => {
     const registery = new ElementsRegistry()
     const ot = registery.getElement(
-      new ElemID('test', 'ot1'),
-      PrimitiveTypes.OBJECT,
+      new ElemID('test', 'ot1')
     )
     const inst = registery.getElement(
       new ElemID('test', 'inst'),

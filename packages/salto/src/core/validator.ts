@@ -8,8 +8,6 @@ const primitiveValidators = {
   [PrimitiveTypes.STRING]: _.isString,
   [PrimitiveTypes.NUMBER]: _.isNumber,
   [PrimitiveTypes.BOOLEAN]: _.isBoolean,
-  [PrimitiveTypes.OBJECT]: _.isPlainObject,
-  [PrimitiveTypes.LIST]: _.isArray,
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

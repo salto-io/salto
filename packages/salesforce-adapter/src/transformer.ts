@@ -15,8 +15,11 @@ const capitalize = (s: string): string => {
   if (typeof s !== 'string') return ''
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
-export const sfCase = (name: string, custom: boolean = false): string =>
-  capitalize(_.camelCase(name)) + (custom === true ? '__c' : '')
+export const sfCase = (name: string, custom: boolean = false, capital: boolean = true): string => {
+  const sf = _.camelCase(name) + (custom ? '__c' : '')
+  return capital ? capitalize(sf) : sf
+}
+
 export const bpCase = (name: string): string =>
   (name.endsWith('__c') ? _.snakeCase(name).slice(0, -2) : _.snakeCase(name))
 
@@ -210,7 +213,8 @@ const transform = (obj: Values, convert: (name: string) => string): Values => {
   Object.keys(obj).filter(key => key !== METADATA_OBJECT_NAME_FIELD)
     .forEach(key => {
       if (_.isObject(obj[key])) {
-        returnVal[convert(key)] = transform(obj[key], convert)
+        returnVal[convert(key)] = _.isArray(obj[key])
+          ? (obj[key] as []).map(val => transform(val, convert)) : transform(obj[key], convert)
       } else {
         returnVal[convert(key)] = obj[key]
       }
@@ -221,4 +225,4 @@ const transform = (obj: Values, convert: (name: string) => string): Values => {
 export const fromMetadataInfo = (info: MetadataInfo): Values => transform(info as Values, bpCase)
 
 export const toMetadataInfo = (fullName: string, values: Values): MetadataInfo =>
-  ({ fullName, ...transform(values, sfCase) })
+  ({ fullName, ...transform(values, (name: string) => sfCase(name, false, false)) })

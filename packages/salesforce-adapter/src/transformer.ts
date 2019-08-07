@@ -288,6 +288,11 @@ export const fromMetadataInfo = (info: MetadataInfo, infoType: ObjectType): Valu
     _(obj).mapKeys((_value, key) => bpCase(key)).mapValues((value, key) => {
       const field = type.fields[key]
       if (field !== undefined) {
+        if (_.isArray(value)) {
+          // We fix our discovery based on instances values, this logic should be replaced to
+          // support well types without instances.
+          field.isList = true
+        }
         const fieldType = field.type
         if (isObjectType(fieldType)) {
           return field.isList

@@ -27,7 +27,6 @@ describe('Test SalesforceAdapter discover', () => {
 
   afterEach(() => {
     jest.resetAllMocks()
-    Types.dynamicTypes = {}
   })
 
   describe('should discover SObjects', () => {

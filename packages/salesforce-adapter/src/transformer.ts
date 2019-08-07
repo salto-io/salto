@@ -105,23 +105,15 @@ export class Types {
     boolean: BuiltinTypes.BOOLEAN,
   }
 
-  // This is not private for Testing purposes - we would like to reset it
-  // between tests
-  static dynamicTypes: Record<string, Type> = {}
-
   static get(name: string, customObject: boolean = true): Type {
     const type = customObject
       ? this.salesforceDataTypes[name]
       : this.metadataPrimitiveTypes[name]
 
     if (type === undefined) {
-      const registryKey = bpNameParts(name, customObject).join()
-      if (!this.dynamicTypes[registryKey]) {
-        this.dynamicTypes[registryKey] = new ObjectType({
-          elemID: new ElemID(SALESFORCE, ...bpNameParts(name, customObject)),
-        })
-      }
-      return this.dynamicTypes[registryKey]
+      return new ObjectType({
+        elemID: new ElemID(SALESFORCE, ...bpNameParts(name, customObject)),
+      })
     }
     return type
   }
@@ -168,9 +160,14 @@ export const toCustomObject = (element: ObjectType): CustomObject =>
     Object.values(element.fields).map(field => toCustomField(element, field))
   )
 
-export const getValueTypeFieldElement = (parentID: ElemID, field: ValueTypeField): TypeField => {
+export const getValueTypeFieldElement = (parentID: ElemID, field: ValueTypeField,
+  knonwTypes: Map<string, Type>): TypeField => {
   const bpFieldName = bpCase(field.name)
-  let bpFieldType = Types.get(field.soapType, false)
+  let bpFieldType = knonwTypes.has(field.soapType)
+    ? knonwTypes.get(field.soapType) as Type
+    // If type is not known type it have to be primitive,
+    // we create sub types before calling this function.
+    : Types.get(field.soapType, false)
   const annotations: Values = {
     [Type.REQUIRED]: field.valueRequired,
   }

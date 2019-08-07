@@ -222,12 +222,13 @@ export default class SalesforceAdapter {
   }
 
   private async discoverMetadataTypes(): Promise<Type[]> {
-    const knownTypes = new Set<string>()
+    const knownTypes = new Map<string, Type>()
     return _.flatten(await Promise.all(SalesforceAdapter.DISCOVER_METADATA_TYPES_WHITELIST
       .map(obj => this.discoverMetadataType(obj, knownTypes))))
   }
 
-  private async discoverMetadataType(objectName: string, knownTypes: Set<string>): Promise<Type[]> {
+  private async discoverMetadataType(objectName: string, knownTypes: Map<string, Type>):
+  Promise<Type[]> {
     const fields = await this.client.describeMetadataType(objectName)
     return SalesforceAdapter.createMetadataTypeElements(objectName, fields, knownTypes)
   }
@@ -235,25 +236,17 @@ export default class SalesforceAdapter {
   private static createMetadataTypeElements(
     objectName: string,
     fields: ValueTypeField[],
-    knownTypes: Set<string>,
+    knownTypes: Map<string, Type>,
   ): Type[] {
     if (knownTypes.has(objectName)) {
       // Already created this type, no new types to return here
       return []
     }
-    knownTypes.add(objectName)
     const element = Types.get(objectName, false) as ObjectType
-
+    knownTypes.set(objectName, element)
     if (!fields) {
       return [element]
     }
-
-    const fieldElements = fields.map(field => getValueTypeFieldElement(element.elemID, field))
-
-    // Set fields on elements
-    fieldElements.forEach(field => {
-      element.fields[field.name] = field
-    })
 
     const embeddedTypes = _.flatten(fields.filter(field => !_.isEmpty(field.fields)).map(
       field => this.createMetadataTypeElements(
@@ -262,6 +255,16 @@ export default class SalesforceAdapter {
         knownTypes
       )
     ))
+
+    const fieldElements = fields.map(field =>
+      getValueTypeFieldElement(element.elemID, field, knownTypes))
+
+    // Set fields on elements
+    fieldElements.forEach(field => {
+      element.fields[field.name] = field
+    })
+
+
     return _.flatten([element, embeddedTypes])
   }
 

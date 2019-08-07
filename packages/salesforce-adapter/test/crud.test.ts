@@ -96,8 +96,8 @@ describe('Test SalesforceAdapter CRUD', () => {
       expect(mockCreate.mock.calls[0].length).toBe(2)
       expect(mockCreate.mock.calls[0][0]).toBe('Flow')
       expect(mockCreate.mock.calls[0][1].fullName).toBe(sfCase(mockElemID.name))
-      expect(mockCreate.mock.calls[0][1].Token).toBe('instanceTest')
-      expect(mockCreate.mock.calls[0][1].token).toBeUndefined()
+      expect(mockCreate.mock.calls[0][1].token).toBeDefined()
+      expect(mockCreate.mock.calls[0][1].token).toBe('instanceTest')
     })
 
     it('should fail add new salesforce instance', async () => {

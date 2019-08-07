@@ -20,8 +20,11 @@ const capitalize = (s: string): string => {
   if (typeof s !== 'string') return ''
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
-export const sfCase = (name: string, custom: boolean = false): string =>
-  capitalize(_.camelCase(name)) + (custom === true ? '__c' : '')
+export const sfCase = (name: string, custom: boolean = false, capital: boolean = true): string => {
+  const sf = _.camelCase(name) + (custom ? '__c' : '')
+  return capital ? capitalize(sf) : sf
+}
+
 export const bpCase = (name: string): string => {
   const bpName = (name.endsWith('__c') ? name.slice(0, -2) : name)
   // Using specific replace for chars then _.unescape is not replacing well
@@ -314,4 +317,4 @@ export const fromMetadataInfo = (info: MetadataInfo, infoType: ObjectType): Valu
 
 
 export const toMetadataInfo = (fullName: string, values: Values, infoType: ObjectType):
-  MetadataInfo => ({ fullName, ...transform(values, infoType, sfCase) })
+  MetadataInfo => ({ fullName, ...transform(values, infoType,  (name: string) => sfCase(name, false, false)) })

@@ -7,7 +7,7 @@ import {
   Field,
   Element,
 } from 'adapter-api'
-import { PicklistEntry } from 'jsforce'
+import { PicklistEntry, MetadataInfo } from 'jsforce'
 import _ from 'lodash'
 import SalesforceAdapter from '../src/adapter'
 import * as constants from '../src/constants'
@@ -17,7 +17,7 @@ import {
   ProfileInfo,
   FieldPermissions,
 } from '../src/client/types'
-import { Types } from '../src/transformer'
+import { Types, sfCase } from '../src/transformer'
 
 describe('Test Salesforce adapter E2E with real account', () => {
   const adapter = (): SalesforceAdapter => {
@@ -155,6 +155,81 @@ describe('Test Salesforce adapter E2E with real account', () => {
       })
     }
 
+    const instanceExists = async (type: string, name: string): Promise<boolean> => {
+      const res = await sfAdapter.client.readMetadata(type, name) as MetadataInfo
+      if (!res.fullName) {
+        return false
+      }
+
+      return true
+    }
+
+    it('should add new profile instance', async () => {
+      const instanceElementName = 'TestAddProfileInstance__c'
+      const mockElemID = new ElemID(constants.SALESFORCE, instanceElementName)
+      const instance = new InstanceElement(mockElemID, new ObjectType({
+        elemID: mockElemID,
+        fields: {
+        },
+        annotations: {},
+        annotationsValues: {
+          [constants.METADATA_TYPE]: PROFILE_METADATA_TYPE,
+          [constants.API_NAME]: instanceElementName,
+        },
+      }),
+      {
+        fieldPermissions: [
+          {
+            field: 'Lead.Fax',
+            readable: true,
+            editable: false,
+          },
+          {
+            editable: false,
+            field: 'Account.AccountNumber',
+            readable: false,
+          },
+        ],
+        tabVisibilities: [
+          {
+            tab: 'standard-Account',
+            visibility: 'DefaultOff',
+          },
+        ],
+        userPermissions: [
+          {
+            enabled: false,
+            name: 'ConvertLeads',
+          },
+        ],
+        applicationVisibilities: [
+          {
+            application: 'standard__ServiceConsole',
+            default: false,
+            visible: true,
+          },
+        ],
+        description: 'new e2e profile',
+      })
+
+      if (await instanceExists(PROFILE_METADATA_TYPE, sfCase(instance.elemID.name))) {
+        await sfAdapter.remove(instance)
+      }
+
+      const post = await sfAdapter.add(instance) as InstanceElement
+
+      // Test
+      expect(post).toBe(instance)
+
+      expect(
+        await instanceExists(
+          post.type.getAnnotationsValues()[constants.METADATA_TYPE], sfCase(post.elemID.name)
+        )
+      ).toBeTruthy()
+
+      // Clean-up
+      await sfAdapter.remove(post)
+    })
     const stringType = Types.salesforceDataTypes.text
 
     it('should add custom object', async () => {

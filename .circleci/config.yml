@@ -11,7 +11,7 @@ jobs:
     steps:
       - restore_cache:
           keys:
-            - v1-source-{{ .Branch }}-
+            - v1-source-{{ .Branch }}
             - v1-source-
 
       - checkout
@@ -41,7 +41,7 @@ jobs:
             - ~/.cache/yarn
             - .jest_cache
 
-          key: v1-yarn-deps-{{ checksum "yarn.lock" }}
+          key: v1-yarn-deps-{{ arch }}-{{ checksum "yarn.lock" }}
 
       - store_test_results:
           path: reports

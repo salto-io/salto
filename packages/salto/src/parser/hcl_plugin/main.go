@@ -94,7 +94,6 @@ func main() {
 	} else {
 		ret = op(args)
 	}
-
 	callContext.Set("return", ret)
 	// Signal JS that we finished
 	callback := callContext.Get("callback")

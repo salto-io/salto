@@ -4,8 +4,9 @@ import (
 	"github.com/hashicorp/hcl2/hcl"
 	"github.com/hashicorp/hcl2/hcl/hclsyntax"
 	"github.com/zclconf/go-cty/cty"
+	"fmt"
+	"reflect"
 )
-
 // convertValue converts a cty.Value to the appropriate go native type so that it can be
 // serialized to javascript
 func convertValue(val cty.Value, path string) interface{} {
@@ -32,7 +33,7 @@ func convertValue(val cty.Value, path string) interface{} {
 	case t.IsObjectType():
 		res := map[string]interface{}{}
 		for k, v := range val.AsValueMap() {
-			res[k] = convertValue(v, path+"."+k)
+			res[k + "fff"] = convertValue(v, path+"."+k)
 		}
 		return res
 
@@ -99,6 +100,7 @@ func (maker *hclConverter) Enter(node hclsyntax.Node) hcl.Diagnostics {
 		return maker.nestedConverter.Enter(node)
 	}
 
+	fmt.Println(maker.path + ":::"+reflect.TypeOf(node).String())
 	switch node.(type) {
 	case *hclsyntax.Body:
 		// Initialize attrs and blocks
@@ -113,8 +115,10 @@ func (maker *hclConverter) Enter(node hclsyntax.Node) hcl.Diagnostics {
 		// Starting to parse an attribute, currently the nested converter doesn't really do
 		// anything besides marking that we expect more nodes inside the attribute.
 		// In the future if we parse the expressions themselves we might really need the converter
+		// 		attr := node.(*hclsyntax.Attribute)
 		attr := node.(*hclsyntax.Attribute)
 		maker.nestedConverter = newHclConverter(maker.path + "/" + attr.Name)
+		maker.nestedConverter.JSValue["expressions"] = []interface{}{}
 
 	case hclsyntax.Blocks:
 		// This just means we are entering the blocks list, not much to do with it since
@@ -127,7 +131,13 @@ func (maker *hclConverter) Enter(node hclsyntax.Node) hcl.Diagnostics {
 			pathAddition += "_" + l
 		}
 		maker.nestedConverter = newHclConverter(maker.path + "/" + pathAddition)
+
+	case *hclsyntax.TemplateExpr, *hclsyntax.TupleConsExpr, *hclsyntax.ObjectConsExpr:
+		maker.nestedConverter = newHclConverter(maker.path + "/exp")
+		maker.nestedConverter.JSValue["expressions"] = []interface{}{}
+
 	}
+
 	return hcl.Diagnostics{}
 }
 
@@ -147,15 +157,13 @@ func (maker *hclConverter) Exit(node hclsyntax.Node) hcl.Diagnostics {
 
 	case *hclsyntax.Attribute:
 		attr := node.(*hclsyntax.Attribute)
-		val, evalErrs := attr.Expr.Value(nil)
 		// Convert evaluated value to something we can serialze to javascript
 		maker.JSValue["attrs"].(map[string]interface{})[attr.Name] = map[string]interface{}{
-			"value":  convertValue(val, maker.nestedConverter.path),
 			"source": convertSourceRange(attr.Range()),
+			"expressions" : maker.nestedConverter.JSValue["expressions"],
 		}
 
 		maker.nestedConverter = nil
-		return evalErrs
 
 	case hclsyntax.Blocks:
 		// pass
@@ -172,6 +180,49 @@ func (maker *hclConverter) Exit(node hclsyntax.Node) hcl.Diagnostics {
 		maker.JSValue["blocks"] = append(maker.JSValue["blocks"].([]interface{}), maker.nestedConverter.JSValue)
 
 		maker.nestedConverter = nil
+
+	case *hclsyntax.LiteralValueExpr:
+		exp := node.(*hclsyntax.LiteralValueExpr)
+		val, evalErrs := exp.Value(nil)
+		maker.nestedConverter.JSValue["expressions"] = append(
+			maker.nestedConverter.JSValue["expressions"].([]interface{}), 
+			map[string]interface{}{
+				"type": "literal",
+				"value" : convertValue(val, maker.nestedConverter.path),
+			},
+		)
+		return evalErrs
+
+	case *hclsyntax.ObjectConsKeyExpr:
+		keyExp := node.(*hclsyntax.ObjectConsKeyExpr)
+		val, evalErrs := keyExp.Value(nil)
+		maker.nestedConverter.JSValue["key"] = convertValue(val, maker.nestedConverter.path)
+		return evalErrs
+
+	case *hclsyntax.TemplateExpr: 
+		maker.JSValue["expressions"] = append(
+			maker.JSValue["expressions"].([]interface{}),
+			map[string]interface{}{
+				"type": "template",
+				"expressions" : maker.nestedConverter.JSValue["expressions"],
+			},
+		)
+		maker.nestedConverter = nil
+
+	case *hclsyntax.TupleConsExpr: 
+		maker.JSValue["expressions"] = append(
+			maker.JSValue["expressions"].([]interface{}),
+			map[string]interface{}{
+				"type": "list",
+				"expressions" : maker.nestedConverter.JSValue["expressions"],
+			},
+		)
+		maker.nestedConverter = nil
+
+	case *hclsyntax.ObjectConsExpr:
+		maker.nestedConverter = nil
 	}
+
+
 	return hcl.Diagnostics{}
 }

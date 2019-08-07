@@ -10,7 +10,7 @@ import {
   DescribeSObjectResult,
 } from 'jsforce'
 
-const apiVersion = '45.0'
+const apiVersion = '46.0'
 
 export default class SalesforceClient {
   private conn: Connection

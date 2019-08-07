@@ -5,7 +5,7 @@ import {
 
 import {
   Type, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values,
-  Field as TypeField, BuiltinTypes, Element,
+  Field as TypeField, BuiltinTypes, Element, isObjectType, isPrimitiveType,
 } from 'adapter-api'
 import {
   CustomObject, CustomField,
@@ -105,15 +105,23 @@ export class Types {
     boolean: BuiltinTypes.BOOLEAN,
   }
 
+  // This is not private for Testing purposes - we would like to reset it
+  // between tests
+  static dynamicTypes: Record<string, Type> = {}
+
   static get(name: string, customObject: boolean = true): Type {
     const type = customObject
       ? this.salesforceDataTypes[name]
       : this.metadataPrimitiveTypes[name]
 
     if (type === undefined) {
-      return new ObjectType({
-        elemID: new ElemID(SALESFORCE, ...bpNameParts(name, customObject)),
-      })
+      const registryKey = bpNameParts(name, customObject).join()
+      if (!this.dynamicTypes[registryKey]) {
+        this.dynamicTypes[registryKey] = new ObjectType({
+          elemID: new ElemID(SALESFORCE, ...bpNameParts(name, customObject)),
+        })
+      }
+      return this.dynamicTypes[registryKey]
     }
     return type
   }
@@ -264,17 +272,41 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
   return new TypeField(parentID, bpFieldName, bpFieldType, annotations)
 }
 
-export const fromMetadataInfo = (info: MetadataInfo): Values => {
-  const transform = (obj: Values): Values => {
+export const fromMetadataInfo = (info: MetadataInfo, infoType: ObjectType): Values => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const transformPrimitive = (val: string, primitive: PrimitiveTypes):
+  string | boolean | number => {
+    switch (primitive) {
+      case PrimitiveTypes.NUMBER:
+        return Number(val)
+      case PrimitiveTypes.BOOLEAN:
+        return (val.toLowerCase() === 'true')
+      case PrimitiveTypes.STRING:
+        return val
+      default:
+        return val
+    }
+  }
+  const transform = (obj: Values, type: ObjectType): Values => {
     const returnVal: Values = {}
-    Object.keys(obj).forEach(key => {
-      if (_.isObject(obj[key])) {
-        returnVal[bpCase(key)] = transform(obj[key])
-      } else if (key !== undefined) {
-        returnVal[bpCase(key)] = obj[key]
+    Object.entries(obj).forEach(([key, value]) => {
+      const field = type.fields[bpCase(key)]
+      if (field === undefined) {
+        return
+      }
+      const fieldType = field.type
+      if (isObjectType(fieldType)) {
+        returnVal[bpCase(key)] = field.isList
+          ? (value as []).map(v => transform(v, fieldType))
+          : transform(value, fieldType)
+      } else if (isPrimitiveType(fieldType)) {
+        returnVal[bpCase(key)] = field.isList
+          ? (value as []).map(v => transformPrimitive(v, fieldType.primitive))
+          : transformPrimitive(value, fieldType.primitive)
       }
     })
     return returnVal
   }
-  return transform(info as Values)
+
+  return transform(info as Values, infoType)
 }

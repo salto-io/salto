@@ -7,8 +7,6 @@ export enum PrimitiveTypes {
   STRING,
   NUMBER,
   BOOLEAN,
-  OBJECT,
-  LIST,
 }
 
 export interface Values {
@@ -328,14 +326,14 @@ export class ElementsRegistry {
 
   getElement(
     elemID: ElemID,
-    type: PrimitiveTypes|Type = PrimitiveTypes.OBJECT,
+    type?: PrimitiveTypes|Type,
     /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
   ): any {
     // Using any here is ugly, but I can't find a better comiling solution. TODO - fix this
     const key = elemID.getFullName()
     let res: Element = this.registeredElements[key]
     if (!res) {
-      if (type === PrimitiveTypes.OBJECT) {
+      if (type === undefined) {
         res = new ObjectType({ elemID })
       /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
       } else if (type as any in PrimitiveTypes) {

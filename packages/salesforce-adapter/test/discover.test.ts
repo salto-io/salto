@@ -27,6 +27,7 @@ describe('Test SalesforceAdapter discover', () => {
 
   afterEach(() => {
     jest.resetAllMocks()
+    Types.dynamicTypes = {}
   })
 
   describe('should discover SObjects', () => {
@@ -288,23 +289,68 @@ describe('Test SalesforceAdapter discover', () => {
     })
 
     it('should discover metadata instance', async () => {
-      mockSingleMetadataType('Flow', [])
+      mockSingleMetadataType('Flow', [
+        {
+          isForeignKey: false,
+          isNameField: false,
+          minOccurs: null,
+          name: 'fieldPermissionsLike',
+          soapType: 'ProfileFieldLevelSecurity',
+          valueRequired: true,
+          picklistValues: [],
+          fields: [
+            {
+              isForeignKey: false,
+              isNameField: false,
+              minOccurs: 1,
+              name: 'editable',
+              soapType: 'boolean',
+              valueRequired: true,
+            }, {
+              isForeignKey: false,
+              isNameField: false,
+              minOccurs: 1,
+              name: 'field',
+              soapType: 'string',
+              valueRequired: true,
+            }, {
+              isForeignKey: false,
+              isNameField: false,
+              minOccurs: 0,
+              name: 'readable',
+              soapType: 'boolean',
+              valueRequired: true,
+            }],
+        },
+        {
+          name: 'bla',
+          soapType: 'Bla',
+          fields: {
+            name: 'bla',
+            soapType: 'double',
+          },
+        },
+        {
+          name: 'fullName',
+          soapType: 'string',
+        },
+      ])
+
       mockSingleMetadataInstance('FlowInstance', {
         fullName: 'FlowInstance',
-        fieldPermissions: [{ field: 'Field', editable: true, readable: false }],
-        Bla: { Bla: true },
+        fieldPermissionsLike: { field: 'Field', editable: 'true', readable: 'false' },
+        bla: { bla: '55' },
       })
 
       const result = await adapter().discover()
       const flow = result.filter(o => o.elemID.name === 'flow_flow_instance').pop() as InstanceElement
       expect(flow.type.elemID.getFullName()).toBe('salesforce_flow_type')
       expect(flow.elemID.getFullName()).toBe('salesforce_flow_flow_instance')
-      expect(flow.value.field_permissions[0].field).toEqual('Field')
-      expect(flow.value.field_permissions[0].editable).toBeTruthy()
-      expect(flow.value.field_permissions[0].readable).not.toBeTruthy()
-      expect(flow.value.bla.bla).toBeTruthy()
+      expect(flow.value.field_permissions_like.field).toEqual('Field')
+      expect(flow.value.field_permissions_like.editable).toBe(true)
+      expect(flow.value.field_permissions_like.readable).toBe(false)
+      expect(flow.value.bla.bla).toBe(55)
     })
-
     it('should discover settings instance', async () => {
       mockSingleMetadataType('Settings', [])
       mockSingleMetadataInstance('Quote', { fullName: 'QuoteSettings' })

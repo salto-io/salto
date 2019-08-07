@@ -1,6 +1,6 @@
 import {
   BuiltinTypes, Type, ObjectType, ElemID, InstanceElement, Values,
-  Field, Element,
+  Field, Element, isObjectType,
 } from 'adapter-api'
 import {
   SaveResult, ValueTypeField, MetadataInfo, Field as SObjField,
@@ -248,9 +248,7 @@ export default class SalesforceAdapter {
       return [element]
     }
 
-    const fieldElements = fields.filter(
-      field => field.name !== constants.METADATA_OBJECT_NAME_FIELD
-    ).map(field => getValueTypeFieldElement(element.elemID, field))
+    const fieldElements = fields.map(field => getValueTypeFieldElement(element.elemID, field))
 
     // Set fields on elements
     fieldElements.forEach(field => {
@@ -270,17 +268,18 @@ export default class SalesforceAdapter {
   private async discoverMetadataInstances(types: Type[]): Promise<InstanceElement[]> {
     const instances = await Promise.all(types
       .filter(t => SalesforceAdapter.DISCOVER_METADATA_TYPES_WHITELIST.includes(sfTypeName(t)))
+      .filter(isObjectType)
       .map(async t => this.createInstanceElements(t)))
     return _.flatten(instances)
   }
 
-  private async createInstanceElements(type: Type): Promise<InstanceElement[]> {
+  private async createInstanceElements(type: ObjectType): Promise<InstanceElement[]> {
     const instances = await this.listMetadataInstances(sfTypeName(type))
     return instances.filter(i => i.fullName !== undefined)
       .map(i => new InstanceElement(
         new ElemID(constants.SALESFORCE, type.elemID.nameParts[0], bpCase(i.fullName)),
         type,
-        fromMetadataInfo(i)
+        fromMetadataInfo(i, type)
       ))
   }
 

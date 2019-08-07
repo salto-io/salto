@@ -270,9 +270,8 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
 }
 
 export const fromMetadataInfo = (info: MetadataInfo, infoType: ObjectType): Values => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const transformPrimitive = (val: string, primitive: PrimitiveTypes):
-  string | boolean | number => {
+    string | boolean | number => {
     switch (primitive) {
       case PrimitiveTypes.NUMBER:
         return Number(val)
@@ -284,26 +283,25 @@ export const fromMetadataInfo = (info: MetadataInfo, infoType: ObjectType): Valu
         return val
     }
   }
-  const transform = (obj: Values, type: ObjectType): Values => {
-    const returnVal: Values = {}
-    Object.entries(obj).forEach(([key, value]) => {
-      const field = type.fields[bpCase(key)]
-      if (field === undefined) {
-        return
+
+  const transform = (obj: Values, type: ObjectType): Values =>
+    _(obj).mapKeys((_value, key) => bpCase(key)).mapValues((value, key) => {
+      const field = type.fields[key]
+      if (field !== undefined) {
+        const fieldType = field.type
+        if (isObjectType(fieldType)) {
+          return field.isList
+            ? (value as []).map(v => transform(v, fieldType))
+            : transform(value, fieldType)
+        }
+        if (isPrimitiveType(fieldType)) {
+          return field.isList
+            ? (value as []).map(v => transformPrimitive(v, fieldType.primitive))
+            : transformPrimitive(value, fieldType.primitive)
+        }
       }
-      const fieldType = field.type
-      if (isObjectType(fieldType)) {
-        returnVal[bpCase(key)] = field.isList
-          ? (value as []).map(v => transform(v, fieldType))
-          : transform(value, fieldType)
-      } else if (isPrimitiveType(fieldType)) {
-        returnVal[bpCase(key)] = field.isList
-          ? (value as []).map(v => transformPrimitive(v, fieldType.primitive))
-          : transformPrimitive(value, fieldType.primitive)
-      }
-    })
-    return returnVal
-  }
+      return value
+    }).value()
 
   return transform(info as Values, infoType)
 }

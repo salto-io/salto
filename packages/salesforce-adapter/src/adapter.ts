@@ -123,9 +123,11 @@ export default class SalesforceAdapter {
     const metadataTypes = this.discoverMetadataTypes()
     const sObjects = this.discoverSObjects()
     const metadataInstances = this.discoverMetadataInstances(await metadataTypes)
-    const elements = _.flatten(
-      await Promise.all([fieldTypes, metadataTypes, sObjects, metadataInstances]) as Element[][]
+    const discoverResult = await Promise.all(
+      [fieldTypes, metadataTypes, sObjects, metadataInstances]
     )
+    SalesforceAdapter.discoverLists(discoverResult[3])
+    const elements = _.flatten(discoverResult as Element[][])
     this.aspects.discover(elements)
     return elements
   }
@@ -309,6 +311,47 @@ export default class SalesforceAdapter {
       element.fields[field.name] = field
     })
     return element
+  }
+
+  private static discoverLists(instances: InstanceElement[]): void {
+    // This method iterate on types and corresponding values and run innerChange
+    // on every "node".
+    const recursion = (type: ObjectType, value: Values,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      innerChange: (field: Field, value: any) => void): any => {
+      Object.keys(type.fields).forEach(key => {
+        value[key] = innerChange(type.fields[key], value[key])
+        const fieldType = type.fields[key].type
+        if (isObjectType(fieldType)) {
+          if (_.isArray(value[key])) {
+            value[key].forEach((val: Values) => recursion(fieldType, val, innerChange))
+          } else {
+            recursion(fieldType, value[key], innerChange)
+          }
+        }
+      })
+    }
+
+    // First mark all lists as isList=true
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const markList = (field: Field, value: any): any => {
+      if (_.isArray(value)) {
+        field.isList = true
+      }
+      return value
+    }
+    instances.forEach(instnace => recursion(instnace.type as ObjectType, instnace.value, markList))
+
+
+    // Cast all lists to list
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const castLists = (field: Field, value: any): any => {
+      if (field.isList && !_.isArray(value)) {
+        return [value]
+      }
+      return value
+    }
+    instances.forEach(instnace => recursion(instnace.type as ObjectType, instnace.value, castLists))
   }
 
   /**

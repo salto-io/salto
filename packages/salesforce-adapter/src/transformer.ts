@@ -48,18 +48,16 @@ const fieldTypeName = (typeName: string): string => (
   typeName.startsWith(FORMULA_TYPE_PREFIX) ? typeName.slice(FORMULA_TYPE_PREFIX.length) : typeName
 )
 
-const textType = new PrimitiveType({
-  elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.TEXT),
-  primitive: PrimitiveTypes.STRING,
-})
 // Defines SFDC built-in field types & built-in primitive data types
 // Ref: https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/field_types.htm
 // Ref: https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/primitive_data_types.htm
 export class Types {
   // Type mapping for custom objects
   public static salesforceDataTypes: Record<string, Type> = {
-    string: textType,
-    text: textType,
+    text: new PrimitiveType({
+      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.TEXT),
+      primitive: PrimitiveTypes.STRING,
+    }),
     number: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.NUMBER),
       primitive: PrimitiveTypes.NUMBER,
@@ -288,19 +286,14 @@ export const fromMetadataInfo = (info: MetadataInfo, infoType: ObjectType): Valu
     _(obj).mapKeys((_value, key) => bpCase(key)).mapValues((value, key) => {
       const field = type.fields[key]
       if (field !== undefined) {
-        if (_.isArray(value)) {
-          // We fix our discovery based on instances values, this logic should be replaced to
-          // support well types without instances.
-          field.isList = true
-        }
         const fieldType = field.type
         if (isObjectType(fieldType)) {
-          return field.isList
+          return _.isArray(value)
             ? (value as []).map(v => transform(v, fieldType))
             : transform(value, fieldType)
         }
         if (isPrimitiveType(fieldType)) {
-          return field.isList
+          return _.isArray(value)
             ? (value as []).map(v => transformPrimitive(v, fieldType.primitive))
             : transformPrimitive(value, fieldType.primitive)
         }

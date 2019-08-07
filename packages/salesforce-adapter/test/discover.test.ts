@@ -187,11 +187,10 @@ describe('Test SalesforceAdapter discover', () => {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const mockSingleMetadataInstance = (name: string, data: Record<string, any>): void => {
-      SalesforceClient.prototype.listMetadataObjects = jest.fn().mockImplementation(() => [
-        { fullName: name }])
+      SalesforceClient.prototype.listMetadataObjects = jest.fn().mockImplementation(() =>
+        [{ fullName: name }])
       SalesforceClient.prototype.readMetadata = jest.fn().mockImplementation(() => data)
     }
-
     it('should discover basic metadata type', async () => {
       mockSingleMetadataType('Flow', [
         {
@@ -290,44 +289,22 @@ describe('Test SalesforceAdapter discover', () => {
     it('should discover metadata instance', async () => {
       mockSingleMetadataType('Flow', [
         {
-          isForeignKey: false,
-          isNameField: false,
-          minOccurs: null,
-          name: 'fieldPermissionsLike',
-          soapType: 'ProfileFieldLevelSecurity',
-          valueRequired: true,
-          picklistValues: [],
-          fields: [
-            {
-              isForeignKey: false,
-              isNameField: false,
-              minOccurs: 1,
-              name: 'editable',
-              soapType: 'boolean',
-              valueRequired: true,
-            }, {
-              isForeignKey: false,
-              isNameField: false,
-              minOccurs: 1,
-              name: 'field',
-              soapType: 'string',
-              valueRequired: true,
-            }, {
-              isForeignKey: false,
-              isNameField: false,
-              minOccurs: 0,
-              name: 'readable',
-              soapType: 'boolean',
-              valueRequired: true,
-            }],
-        },
-        {
           name: 'bla',
           soapType: 'Bla',
-          fields: {
-            name: 'bla',
-            soapType: 'double',
-          },
+          fields: [
+            {
+              name: 'bla',
+              soapType: 'double',
+            },
+            {
+              name: 'bla2',
+              soapType: 'boolean',
+            },
+            {
+              name: 'bla3',
+              soapType: 'boolean',
+            },
+          ],
         },
         {
           name: 'fullName',
@@ -337,23 +314,66 @@ describe('Test SalesforceAdapter discover', () => {
 
       mockSingleMetadataInstance('FlowInstance', {
         fullName: 'FlowInstance',
-        fieldPermissionsLike: [{ field: 'Field1', editable: 'true', readable: 'false' },
-          { field: 'Field2', editable: 'false', readable: 'true' }],
-        bla: { bla: '55' },
+        bla: { bla: '55', bla2: 'false', bla3: 'true' },
       })
 
       const result = await adapter().discover()
       const flow = result.filter(o => o.elemID.name === 'flow_flow_instance').pop() as InstanceElement
       expect(flow.type.elemID.getFullName()).toBe('salesforce_flow_type')
       expect(flow.elemID.getFullName()).toBe('salesforce_flow_flow_instance')
-      expect(flow.value.field_permissions_like[0].field).toEqual('Field1')
-      expect(flow.value.field_permissions_like[0].editable).toBe(true)
-      expect(flow.value.field_permissions_like[0].readable).toBe(false)
-      expect(flow.value.field_permissions_like[1].field).toEqual('Field2')
-      expect(flow.value.field_permissions_like[1].editable).toBe(false)
-      expect(flow.value.field_permissions_like[1].readable).toBe(true)
       expect(flow.value.bla.bla).toBe(55)
+      expect(flow.value.bla.bla_2).toBe(false)
+      expect(flow.value.bla.bla_3).toBe(true)
     })
+
+    it('should discover metadata types lists', async () => {
+      mockSingleMetadataType('Flow', [
+        {
+          name: 'fullName',
+          soapType: 'string',
+        },
+        {
+          name: 'listTest',
+          soapType: 'ListTest',
+          fields: [{
+            name: 'editable',
+            soapType: 'boolean',
+          },
+          {
+            name: 'field',
+            soapType: 'string',
+          }],
+        },
+      ])
+
+      SalesforceClient.prototype.listMetadataObjects = jest.fn().mockImplementation(() =>
+        [{ fullName: 'FlowInstance' }, { fullName: 'FlowInstance2' }])
+      SalesforceClient.prototype.readMetadata = jest.fn().mockImplementation(() => ([{
+        fullName: 'FlowInstance',
+        listTest: [{ field: 'Field1', editable: 'true' },
+          { field: 'Field2', editable: 'false' }],
+      },
+      {
+        fullName: 'FlowInstance2',
+        listTest: { field: 'Field11', editable: 'true' },
+      }]))
+
+      const result = await adapter().discover()
+      const flow = result.filter(o => o.elemID.name === 'flow_flow_instance').pop() as InstanceElement
+      expect(flow.type.elemID.getFullName()).toBe('salesforce_flow_type')
+      expect((flow.type as ObjectType).fields.list_test.isList).toBe(true)
+
+      expect(flow.elemID.getFullName()).toBe('salesforce_flow_flow_instance')
+      expect(flow.value.list_test[0].field).toEqual('Field1')
+      expect(flow.value.list_test[0].editable).toBe(true)
+      expect(flow.value.list_test[1].field).toEqual('Field2')
+      expect(flow.value.list_test[1].editable).toBe(false)
+
+      const flow2 = result.filter(o => o.elemID.name === 'flow_flow_instance_2').pop() as InstanceElement
+      expect(flow2.value.list_test[0].field).toEqual('Field11')
+      expect(flow2.value.list_test[0].editable).toBe(true)
+    })
+
     it('should discover settings instance', async () => {
       mockSingleMetadataType('Settings', [])
       mockSingleMetadataInstance('Quote', { fullName: 'QuoteSettings' })

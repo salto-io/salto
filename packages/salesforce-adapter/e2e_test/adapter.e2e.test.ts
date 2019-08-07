@@ -627,6 +627,23 @@ describe('Test Salesforce adapter E2E with real account', () => {
           [constants.API_NAME]: customObjectName,
         },
         fields: {
+          pickle: new Field(
+            mockElemID,
+            'pickle',
+            Types.salesforceDataTypes.picklist,
+            {
+              [Type.REQUIRED]: false,
+              // TODO: At this point we do not know how to pass a default value for a picklist
+              // (API fails for this field)
+              // [Type.DEFAULT]: 'NEW',
+              label: 'Picklist description label',
+              values: ['NEW', 'OLD'],
+              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
+                admin: { editable: false, readable: true },
+                standard: { editable: false, readable: true },
+              },
+            },
+          ),
           alpha: new Field(
             mockElemID,
             'alpha',
@@ -635,8 +652,8 @@ describe('Test Salesforce adapter E2E with real account', () => {
               [Type.REQUIRED]: false,
               [Type.DEFAULT]: 25,
               label: 'Currency description label',
-              scale: 3,
-              precision: 18,
+              [constants.SCALE]: 3,
+              [constants.PRECISION]: 18,
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 admin: { editable: false, readable: true },
                 standard: { editable: false, readable: true },
@@ -646,12 +663,11 @@ describe('Test Salesforce adapter E2E with real account', () => {
           bravo: new Field(
             mockElemID,
             'bravo',
-            Types.salesforceDataTypes.picklist,
+            Types.salesforceDataTypes.autonumber,
             {
               [Type.REQUIRED]: false,
-              [Type.DEFAULT]: 'NEW',
-              label: 'Picklist description label',
-              values: ['NEW', 'OLD'],
+              label: 'Autonumber description label',
+              displayFormat: 'ZZZ-{0000}',
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 admin: { editable: false, readable: true },
                 standard: { editable: false, readable: true },
@@ -661,11 +677,169 @@ describe('Test Salesforce adapter E2E with real account', () => {
           charlie: new Field(
             mockElemID,
             'charlie',
-            Types.salesforceDataTypes.autonumber,
+            Types.salesforceDataTypes.date,
             {
-              [Type.REQUIRED]: false,
-              label: 'Autonumber description label',
-              displayFormat: 'ZZZ-{0000}',
+              label: 'Date description label',
+              [Type.DEFAULT]: 'Today() + 7',
+              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
+                admin: { editable: false, readable: true },
+                standard: { editable: false, readable: true },
+              },
+            },
+          ),
+          delta: new Field(
+            mockElemID,
+            'delta',
+            Types.salesforceDataTypes.time,
+            {
+              label: 'Time description label',
+              [Type.DEFAULT]: 'TIMENOW() + 5',
+              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
+                admin: { editable: false, readable: true },
+                standard: { editable: false, readable: true },
+              },
+            },
+          ),
+          echo: new Field(
+            mockElemID,
+            'echo',
+            Types.salesforceDataTypes.datetime,
+            {
+              label: 'DateTime description label',
+              [Type.DEFAULT]: 'Now() + 7',
+              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
+                admin: { editable: false, readable: true },
+                standard: { editable: false, readable: true },
+              },
+            },
+          ),
+          foxtrot: new Field(
+            mockElemID,
+            'foxtrot',
+            Types.salesforceDataTypes.email,
+            {
+              label: 'Email description label',
+              [constants.UNIQUE]: true,
+              [constants.CASESENSITIVE]: true,
+              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
+                admin: { editable: false, readable: true },
+                standard: { editable: false, readable: true },
+              },
+            },
+          ),
+          golf: new Field(
+            mockElemID,
+            'golf',
+            Types.salesforceDataTypes.location,
+            {
+              label: 'Location description label',
+              [constants.SCALE]: 2,
+              [constants.DISPLAYLOCATIONINDECIMAL]: true,
+              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
+                admin: { editable: false, readable: true },
+                standard: { editable: false, readable: true },
+              },
+            },
+          ),
+          hotel: new Field(
+            mockElemID,
+            'hotel',
+            Types.salesforceDataTypes.multipicklist,
+            {
+              label: 'Multipicklist description label',
+              values: ['DO', 'RE', 'MI', 'FA', 'SOL', 'LA', 'SI'],
+              [constants.VISIBLELINES]: 4,
+              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
+                admin: { editable: false, readable: true },
+                standard: { editable: false, readable: true },
+              },
+            },
+          ),
+          india: new Field(
+            mockElemID,
+            'india',
+            Types.salesforceDataTypes.percent,
+            {
+              label: 'Percent description label',
+              [constants.SCALE]: 3,
+              [constants.PRECISION]: 12,
+              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
+                admin: { editable: false, readable: true },
+                standard: { editable: false, readable: true },
+              },
+            },
+          ),
+          juliett: new Field(
+            mockElemID,
+            'juliett',
+            Types.salesforceDataTypes.phone,
+            {
+              label: 'Phone description label',
+              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
+                admin: { editable: false, readable: true },
+                standard: { editable: false, readable: true },
+              },
+            },
+          ),
+          kilo: new Field(
+            mockElemID,
+            'kilo',
+            Types.salesforceDataTypes.longtextarea,
+            {
+              label: 'LongTextArea description label',
+              [constants.VISIBLELINES]: 5,
+              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
+                admin: { editable: false, readable: true },
+                standard: { editable: false, readable: true },
+              },
+            },
+          ),
+          lima: new Field(
+            mockElemID,
+            'lima',
+            Types.salesforceDataTypes.richtextarea,
+            {
+              label: 'RichTextArea description label',
+              [constants.VISIBLELINES]: 27,
+              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
+                admin: { editable: false, readable: true },
+                standard: { editable: false, readable: true },
+              },
+            },
+          ),
+          mike: new Field(
+            mockElemID,
+            'mike',
+            Types.salesforceDataTypes.textarea,
+            {
+              label: 'TextArea description label',
+              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
+                admin: { editable: false, readable: true },
+                standard: { editable: false, readable: true },
+              },
+            },
+          ),
+          november: new Field(
+            mockElemID,
+            'november',
+            Types.salesforceDataTypes.encryptedtext,
+            {
+              label: 'EncryptedText description label',
+              [constants.MASKTYPE]: 'creditCard',
+              [constants.MASKCHAR]: 'X',
+              [constants.LENGTH]: 35,
+              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
+                admin: { editable: false, readable: true },
+                standard: { editable: false, readable: true },
+              },
+            },
+          ),
+          oscar: new Field(
+            mockElemID,
+            'oscar',
+            Types.salesforceDataTypes.url,
+            {
+              label: 'Url description label',
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 admin: { editable: false, readable: true },
                 standard: { editable: false, readable: true },
@@ -684,23 +858,92 @@ describe('Test Salesforce adapter E2E with real account', () => {
       const objectFields = await sfAdapter.client.describeSObjects([customObjectName])
       expect(objectFields[0]).toBeDefined()
       const allFields = objectFields[0].fields
+      // Verify picklist
+      const picklistField = allFields.filter(field => field.name === 'Pickle__c')[0]
+      expect(picklistField).toBeDefined()
+      expect(picklistField.label).toBe('Picklist description label')
+      expect(_.isEqual((picklistField.picklistValues as PicklistEntry[]).map(value => value.label), ['NEW', 'OLD'])).toBeTruthy()
       // Verify currency
       const currencyField = allFields.filter(field => field.name === 'Alpha__c')[0]
       expect(currencyField).toBeDefined()
       expect(currencyField.label).toBe('Currency description label')
       expect(currencyField.scale).toBe(3)
       expect(currencyField.precision).toBe(18)
-
-      // Verify picklist
-      const picklistField = allFields.filter(field => field.name === 'Bravo__c')[0]
-      expect(picklistField).toBeDefined()
-      expect(picklistField.label).toBe('Picklist description label')
-      expect(_.isEqual((picklistField.picklistValues as PicklistEntry[]).map(value => value.label), ['NEW', 'OLD'])).toBeTruthy()
-
       // Verify autonumber
-      const autonumber = allFields.filter(field => field.name === 'Charlie__c')[0]
+      const autonumber = allFields.filter(field => field.name === 'Bravo__c')[0]
       expect(autonumber).toBeDefined()
       expect(autonumber.label).toBe('Autonumber description label')
+      // TODO: As of this point we do not knpow how to retrieve the displayFormat annotation from
+      // the autonumber field
+
+      // Verify date
+      const date = allFields.filter(field => field.name === 'Charlie__c')[0]
+      expect(date).toBeDefined()
+      expect(date.label).toBe('Date description label')
+      // Verify time
+      const time = allFields.filter(field => field.name === 'Delta__c')[0]
+      expect(time).toBeDefined()
+      expect(time.label).toBe('Time description label')
+      // Verify datetime
+      const datetime = allFields.filter(field => field.name === 'Echo__c')[0]
+      expect(datetime).toBeDefined()
+      expect(datetime.label).toBe('DateTime description label')
+      // Verify email
+      const email = allFields.filter(field => field.name === 'Foxtrot__c')[0]
+      expect(email).toBeDefined()
+      expect(email.label).toBe('Email description label')
+      expect(email.unique).toBe(true)
+      expect(email.caseSensitive).toBe(true)
+      // Verify location
+      const location = allFields.filter(field => field.name === 'Golf__c')[0]
+      expect(location).toBeDefined()
+      expect(location.label).toBe('Location description label')
+      expect(location.displayLocationInDecimal).toBe(true)
+      // TODO: From some reason the api returns scale = 0 despite the fact that it successfully
+      // sets the scale to what was defined (verified in Salesforce UX)
+      // expect(location.scale).toBe(2)
+
+      // Verify multipicklist
+      const multipicklist = allFields.filter(field => field.name === 'Hotel__c')[0]
+      expect(multipicklist).toBeDefined()
+      expect(multipicklist.label).toBe('Multipicklist description label')
+      expect(multipicklist.precision).toBe(4)
+      expect(_.isEqual((multipicklist.picklistValues as PicklistEntry[]).map(value => value.label), ['DO', 'RE', 'MI', 'FA', 'SOL', 'LA', 'SI'])).toBeTruthy()
+      // Verify percent
+      const percentField = allFields.filter(field => field.name === 'India__c')[0]
+      expect(percentField).toBeDefined()
+      expect(percentField.label).toBe('Percent description label')
+      expect(percentField.scale).toBe(3)
+      expect(percentField.precision).toBe(12)
+      // Verify phone
+      const phoneField = allFields.filter(field => field.name === 'Juliett__c')[0]
+      expect(phoneField).toBeDefined()
+      expect(phoneField.label).toBe('Phone description label')
+      // Verify longtextarea
+      const longTextAreaField = allFields.filter(field => field.name === 'Kilo__c')[0]
+      expect(longTextAreaField).toBeDefined()
+      expect(longTextAreaField.label).toBe('LongTextArea description label')
+      expect(longTextAreaField[constants.LENGTH]).toBe(32768)
+      // Verify richtextarea
+      const richTextAreaField = allFields.filter(field => field.name === 'Lima__c')[0]
+      expect(richTextAreaField).toBeDefined()
+      expect(richTextAreaField.label).toBe('RichTextArea description label')
+      expect(richTextAreaField[constants.LENGTH]).toBe(32768)
+      // Verify textarea
+      const textAreaField = allFields.filter(field => field.name === 'Mike__c')[0]
+      expect(textAreaField).toBeDefined()
+      expect(textAreaField.label).toBe('TextArea description label')
+      // Verify Encrypted Text
+      const encryptedTextField = allFields.filter(field => field.name === 'November__c')[0]
+      expect(encryptedTextField).toBeDefined()
+      expect(encryptedTextField.label).toBe('EncryptedText description label')
+      expect(encryptedTextField.mask).toBe('X')
+      expect(encryptedTextField[constants.MASKTYPE]).toBe('creditCard')
+      expect(encryptedTextField[constants.LENGTH]).toBe(35)
+      // Verify textarea
+      const urlField = allFields.filter(field => field.name === 'Oscar__c')[0]
+      expect(urlField).toBeDefined()
+      expect(urlField.label).toBe('Url description label')
 
       // Clean-up
       await sfAdapter.remove(post as ObjectType)

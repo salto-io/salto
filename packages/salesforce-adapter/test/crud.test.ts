@@ -226,8 +226,8 @@ describe('Test SalesforceAdapter CRUD', () => {
               Types.salesforceDataTypes.currency,
               {
                 label: 'Currency description label',
-                scale: 3,
-                precision: 18,
+                [constants.SCALE]: 3,
+                [constants.PRECISION]: 18,
               },
             ),
             bravo: new Field(
@@ -239,6 +239,126 @@ describe('Test SalesforceAdapter CRUD', () => {
                 displayFormat: 'ZZZ-{0000}',
               },
             ),
+            charlie: new Field(
+              mockElemID,
+              'date',
+              Types.salesforceDataTypes.date,
+              {
+                label: 'Date description label',
+                [Type.DEFAULT]: 'Today() + 7',
+              },
+            ),
+            delta: new Field(
+              mockElemID,
+              'time',
+              Types.salesforceDataTypes.time,
+              {
+                label: 'Time description label',
+                [Type.DEFAULT]: 'TIMENOW() + 5',
+              },
+            ),
+            echo: new Field(
+              mockElemID,
+              'datetime',
+              Types.salesforceDataTypes.datetime,
+              {
+                label: 'DateTime description label',
+                [Type.DEFAULT]: 'Now() + 7',
+              },
+            ),
+            foxtrot: new Field(
+              mockElemID,
+              'email',
+              Types.salesforceDataTypes.email,
+              {
+                label: 'Email description label',
+                [constants.UNIQUE]: true,
+                [constants.CASESENSITIVE]: true,
+              },
+            ),
+            golf: new Field(
+              mockElemID,
+              'location',
+              Types.salesforceDataTypes.location,
+              {
+                label: 'Location description label',
+                [constants.SCALE]: 2,
+                [constants.DISPLAYLOCATIONINDECIMAL]: true,
+              },
+            ),
+            hotel: new Field(
+              mockElemID,
+              'multipicklist',
+              Types.salesforceDataTypes.multipicklist,
+              {
+                label: 'Multipicklist description label',
+                values: ['DO', 'RE', 'MI', 'FA', 'SOL', 'LA', 'SI'],
+                [constants.VISIBLELINES]: 4,
+              },
+            ),
+            india: new Field(
+              mockElemID,
+              'percent',
+              Types.salesforceDataTypes.percent,
+              {
+                label: 'Percent description label',
+                [constants.SCALE]: 3,
+                [constants.PRECISION]: 12,
+              },
+            ),
+            juliett: new Field(
+              mockElemID,
+              'phone',
+              Types.salesforceDataTypes.phone,
+              {
+                label: 'Phone description label',
+              },
+            ),
+            kilo: new Field(
+              mockElemID,
+              'longtextarea',
+              Types.salesforceDataTypes.longtextarea,
+              {
+                label: 'LongTextArea description label',
+                [constants.VISIBLELINES]: 5,
+              },
+            ),
+            lima: new Field(
+              mockElemID,
+              'richtextarea',
+              Types.salesforceDataTypes.richtextarea,
+              {
+                label: 'RichTextArea description label',
+                [constants.VISIBLELINES]: 27,
+              },
+            ),
+            mike: new Field(
+              mockElemID,
+              'textarea',
+              Types.salesforceDataTypes.textarea,
+              {
+                label: 'TextArea description label',
+              },
+            ),
+            november: new Field(
+              mockElemID,
+              'encryptedtext',
+              Types.salesforceDataTypes.encryptedtext,
+              {
+                label: 'EncryptedText description label',
+                [constants.MASKTYPE]: 'creditCard',
+                [constants.MASKCHAR]: 'X',
+                [constants.LENGTH]: 35,
+              },
+            ),
+            oscar: new Field(
+              mockElemID,
+              'url',
+              Types.salesforceDataTypes.url,
+              {
+                label: 'Url description label',
+              },
+            ),
           },
         })
       )
@@ -246,16 +366,90 @@ describe('Test SalesforceAdapter CRUD', () => {
       // Verify object creation
       expect(mockCreate.mock.calls.length).toBe(1)
       const object = mockCreate.mock.calls[0][1]
-      expect(object.fields.length).toBe(2)
+      expect(object.fields.length).toBe(15)
+      // Currency
       expect(object.fields[0].fullName).toBe('Currency__c')
       expect(object.fields[0].type).toBe('Currency')
       expect(object.fields[0].label).toBe('Currency description label')
       expect(object.fields[0].scale).toBe(3)
       expect(object.fields[0].precision).toBe(18)
+      // Autonumber
       expect(object.fields[1].fullName).toBe('Auto__c')
       expect(object.fields[1].type).toBe('AutoNumber')
       expect(object.fields[1].label).toBe('Autonumber description label')
       expect(object.fields[1].displayFormat).toBe('ZZZ-{0000}')
+      // Date
+      expect(object.fields[2].fullName).toBe('Date__c')
+      expect(object.fields[2].type).toBe('Date')
+      expect(object.fields[2].label).toBe('Date description label')
+      expect(object.fields[2].defaultValue).toBe('Today() + 7')
+      // Time
+      expect(object.fields[3].fullName).toBe('Time__c')
+      expect(object.fields[3].type).toBe('Time')
+      expect(object.fields[3].label).toBe('Time description label')
+      expect(object.fields[3].defaultValue).toBe('TIMENOW() + 5')
+      // Datetime
+      expect(object.fields[4].fullName).toBe('Datetime__c')
+      expect(object.fields[4].type).toBe('DateTime')
+      expect(object.fields[4].label).toBe('DateTime description label')
+      expect(object.fields[4].defaultValue).toBe('Now() + 7')
+      // Email
+      expect(object.fields[5].fullName).toBe('Email__c')
+      expect(object.fields[5].type).toBe('Email')
+      expect(object.fields[5].label).toBe('Email description label')
+      expect(object.fields[5][constants.UNIQUE]).toBe(true)
+      expect(object.fields[5][constants.CASESENSITIVE]).toBe(true)
+      // Location
+      expect(object.fields[6].fullName).toBe('Location__c')
+      expect(object.fields[6].type).toBe('Location')
+      expect(object.fields[6].label).toBe('Location description label')
+      expect(object.fields[6][constants.DISPLAYLOCATIONINDECIMAL]).toBe(true)
+      expect(object.fields[6][constants.SCALE]).toBe(2)
+      // Multipicklist
+      expect(object.fields[7].fullName).toBe('Multipicklist__c')
+      expect(object.fields[7].type).toBe('MultiselectPicklist')
+      expect(object.fields[7].label).toBe('Multipicklist description label')
+      expect(object.fields[7][constants.VISIBLELINES]).toBe(4)
+      expect(object.fields[7].valueSet.valueSetDefinition.value
+        .map((v: {fullName: string}) => v.fullName).join(';'))
+        .toBe('DO;RE;MI;FA;SOL;LA;SI')
+      // Percent
+      expect(object.fields[8].fullName).toBe('Percent__c')
+      expect(object.fields[8].type).toBe('Percent')
+      expect(object.fields[8].label).toBe('Percent description label')
+      expect(object.fields[8].scale).toBe(3)
+      expect(object.fields[8].precision).toBe(12)
+      // Phone
+      expect(object.fields[9].fullName).toBe('Phone__c')
+      expect(object.fields[9].type).toBe('Phone')
+      expect(object.fields[9].label).toBe('Phone description label')
+      // Longtextarea
+      expect(object.fields[10].fullName).toBe('Longtextarea__c')
+      expect(object.fields[10].type).toBe('LongTextArea')
+      expect(object.fields[10].label).toBe('LongTextArea description label')
+      expect(object.fields[10][constants.VISIBLELINES]).toBe(5)
+      expect(object.fields[11][constants.LENGTH]).toBe(32768)
+      // Richtextarea
+      expect(object.fields[11].fullName).toBe('Richtextarea__c')
+      expect(object.fields[11].type).toBe('Html')
+      expect(object.fields[11].label).toBe('RichTextArea description label')
+      expect(object.fields[11][constants.VISIBLELINES]).toBe(27)
+      expect(object.fields[11][constants.LENGTH]).toBe(32768)
+      // Textarea
+      expect(object.fields[12].fullName).toBe('Textarea__c')
+      expect(object.fields[12].type).toBe('TextArea')
+      expect(object.fields[12].label).toBe('TextArea description label')
+      // EncryptedText
+      expect(object.fields[13].fullName).toBe('Encryptedtext__c')
+      expect(object.fields[13].type).toBe('EncryptedText')
+      expect(object.fields[13].label).toBe('EncryptedText description label')
+      expect(object.fields[13][constants.MASKCHAR]).toBe('X')
+      expect(object.fields[13][constants.MASKTYPE]).toBe('creditCard')
+      expect(object.fields[13][constants.LENGTH]).toBe(35)
+      // Url
+      expect(object.fields[14].fullName).toBe('Url__c')
+      expect(object.fields[14].type).toBe('Url')
+      expect(object.fields[14].label).toBe('Url description label')
     })
 
     it('Should fail add new salesforce type', async () => {

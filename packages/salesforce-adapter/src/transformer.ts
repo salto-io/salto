@@ -12,8 +12,8 @@ import {
 } from './client/types'
 import {
   API_NAME, LABEL, PICKLIST_VALUES, SALESFORCE, RESTRICTED_PICKLIST, FORMULA,
-  FORMULA_TYPE_PREFIX, METADATA_TYPES_SUFFIX,
-  PRECISION, FIELD_TYPE_NAMES, FIELD_TYPE_API_NAMES, METADATA_TYPE,
+  FORMULA_TYPE_PREFIX, METADATA_OBJECT_NAME_FIELD, METADATA_TYPES_SUFFIX,
+  FIELD_TYPE_NAMES, FIELD_TYPE_API_NAMES, VISIBLELINES, PRECISION,
 } from './constants'
 
 const capitalize = (s: string): string => {
@@ -70,6 +70,11 @@ export class Types {
     text: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.TEXT),
       primitive: PrimitiveTypes.STRING,
+      annotations: {
+        unique: BuiltinTypes.BOOLEAN,
+        caseSensitive: BuiltinTypes.BOOLEAN,
+        length: BuiltinTypes.NUMBER,
+      },
     }),
     number: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.NUMBER),
@@ -77,6 +82,7 @@ export class Types {
       annotations: {
         scale: BuiltinTypes.NUMBER,
         precision: BuiltinTypes.NUMBER,
+        unique: BuiltinTypes.BOOLEAN,
       },
     }),
     autonumber: new PrimitiveType({
@@ -112,6 +118,74 @@ export class Types {
     }),
     picklist: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.PICKLIST),
+      primitive: PrimitiveTypes.STRING,
+    }),
+    multipicklist: new PrimitiveType({
+      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.MULTIPICKLIST),
+      primitive: PrimitiveTypes.STRING,
+      annotations: {
+        visibleLines: BuiltinTypes.NUMBER,
+      },
+    }),
+    email: new PrimitiveType({
+      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.EMAIL),
+      primitive: PrimitiveTypes.STRING,
+      annotations: {
+        unique: BuiltinTypes.BOOLEAN,
+        caseSensitive: BuiltinTypes.BOOLEAN,
+      },
+    }),
+    location: new PrimitiveType({
+      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.LOCATION),
+      primitive: PrimitiveTypes.NUMBER,
+      annotations: {
+        displayLocationInDecimal: BuiltinTypes.BOOLEAN,
+        scale: BuiltinTypes.NUMBER,
+      },
+    }),
+    percent: new PrimitiveType({
+      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.PERCENT),
+      primitive: PrimitiveTypes.NUMBER,
+      annotations: {
+        scale: BuiltinTypes.NUMBER,
+        precision: BuiltinTypes.NUMBER,
+      },
+    }),
+    phone: new PrimitiveType({
+      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.PHONE),
+      primitive: PrimitiveTypes.STRING,
+    }),
+    longtextarea: new PrimitiveType({
+      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.LONGTEXTAREA),
+      primitive: PrimitiveTypes.STRING,
+      annotations: {
+        visibleLines: BuiltinTypes.NUMBER,
+        length: BuiltinTypes.NUMBER,
+      },
+    }),
+    richtextarea: new PrimitiveType({
+      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.RICHTEXTAREA),
+      primitive: PrimitiveTypes.STRING,
+      annotations: {
+        visibleLines: BuiltinTypes.NUMBER,
+        length: BuiltinTypes.NUMBER,
+      },
+    }),
+    textarea: new PrimitiveType({
+      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.TEXTAREA),
+      primitive: PrimitiveTypes.STRING,
+    }),
+    encryptedtext: new PrimitiveType({
+      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.ENCRYPTEDTEXT),
+      primitive: PrimitiveTypes.STRING,
+      annotations: {
+        maskChar: BuiltinTypes.STRING,
+        maskType: BuiltinTypes.STRING,
+        length: BuiltinTypes.NUMBER,
+      },
+    }),
+    url: new PrimitiveType({
+      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.URL),
       primitive: PrimitiveTypes.STRING,
     }),
   }
@@ -157,6 +231,7 @@ export const toCustomField = (
     FIELD_TYPE_API_NAMES[fieldTypeName(field.type.elemID.name)],
     field.getAnnotationsValues()[LABEL],
     field.getAnnotationsValues()[Type.REQUIRED],
+    field.getAnnotationsValues()[Type.DEFAULT],
     field.getAnnotationsValues()[PICKLIST_VALUES],
     field.getAnnotationsValues()[FORMULA],
   )
@@ -266,7 +341,7 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
     if (field.type === 'multipicklist') {
       // Precision is the field for multi-picklist in SFDC API that defines how many objects will
       // be visible in the picklist in the UI. Why? Because.
-      annotations[PRECISION] = field.precision
+      annotations[VISIBLELINES] = field.precision
     }
   // Formulas
   } else if (field.calculated && !_.isEmpty(field.calculatedFormula)) {

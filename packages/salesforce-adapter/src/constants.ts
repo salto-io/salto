@@ -15,27 +15,54 @@ export const FORMULA = 'formula'
 export const METADATA_TYPE = 'metadata_type'
 export const PRECISION = 'precision'
 export const SCALE = 'scale'
+export const UNIQUE = 'unique'
+export const CASESENSITIVE = 'caseSensitive'
+export const DISPLAYLOCATIONINDECIMAL = 'displayLocationInDecimal'
+export const VISIBLELINES = 'visibleLines'
+export const LENGTH = 'length'
+export const MASKCHAR = 'maskChar'
+export const MASKTYPE = 'maskType'
 export const FIELD_TYPE_NAMES = {
   STRING: 'string',
   AUTONUMBER: 'autonumber',
   TEXT: 'text',
   NUMBER: 'number',
+  PERCENT: 'percent',
   CHECKBOX: 'checkbox',
   DATE: 'date',
   TIME: 'time',
   DATETIME: 'datetime',
   CURRENCY: 'currency',
   PICKLIST: 'picklist',
+  MULTIPICKLIST: 'multipicklist',
+  EMAIL: 'email',
+  LOCATION: 'location',
+  PHONE: 'phone',
+  LONGTEXTAREA: 'longtextarea',
+  RICHTEXTAREA: 'richtextarea',
+  TEXTAREA: 'textarea',
+  ENCRYPTEDTEXT: 'encryptedtext',
+  URL: 'url',
 }
 
 export const FIELD_TYPE_API_NAMES = {
   [FIELD_TYPE_NAMES.AUTONUMBER]: 'AutoNumber',
   [FIELD_TYPE_NAMES.TEXT]: 'Text',
   [FIELD_TYPE_NAMES.NUMBER]: 'Number',
+  [FIELD_TYPE_NAMES.PERCENT]: 'Percent',
   [FIELD_TYPE_NAMES.CHECKBOX]: 'Checkbox',
   [FIELD_TYPE_NAMES.DATE]: 'Date',
   [FIELD_TYPE_NAMES.TIME]: 'Time',
   [FIELD_TYPE_NAMES.DATETIME]: 'DateTime',
   [FIELD_TYPE_NAMES.CURRENCY]: 'Currency',
   [FIELD_TYPE_NAMES.PICKLIST]: 'Picklist',
+  [FIELD_TYPE_NAMES.MULTIPICKLIST]: 'MultiselectPicklist',
+  [FIELD_TYPE_NAMES.EMAIL]: 'Email',
+  [FIELD_TYPE_NAMES.LOCATION]: 'Location',
+  [FIELD_TYPE_NAMES.PHONE]: 'Phone',
+  [FIELD_TYPE_NAMES.LONGTEXTAREA]: 'LongTextArea',
+  [FIELD_TYPE_NAMES.RICHTEXTAREA]: 'Html',
+  [FIELD_TYPE_NAMES.TEXTAREA]: 'TextArea',
+  [FIELD_TYPE_NAMES.ENCRYPTEDTEXT]: 'EncryptedText',
+  [FIELD_TYPE_NAMES.URL]: 'Url',
 }

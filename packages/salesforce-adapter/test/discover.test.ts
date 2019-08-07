@@ -337,7 +337,8 @@ describe('Test SalesforceAdapter discover', () => {
 
       mockSingleMetadataInstance('FlowInstance', {
         fullName: 'FlowInstance',
-        fieldPermissionsLike: { field: 'Field', editable: 'true', readable: 'false' },
+        fieldPermissionsLike: [{ field: 'Field1', editable: 'true', readable: 'false' },
+          { field: 'Field2', editable: 'false', readable: 'true' }],
         bla: { bla: '55' },
       })
 
@@ -345,9 +346,12 @@ describe('Test SalesforceAdapter discover', () => {
       const flow = result.filter(o => o.elemID.name === 'flow_flow_instance').pop() as InstanceElement
       expect(flow.type.elemID.getFullName()).toBe('salesforce_flow_type')
       expect(flow.elemID.getFullName()).toBe('salesforce_flow_flow_instance')
-      expect(flow.value.field_permissions_like.field).toEqual('Field')
-      expect(flow.value.field_permissions_like.editable).toBe(true)
-      expect(flow.value.field_permissions_like.readable).toBe(false)
+      expect(flow.value.field_permissions_like[0].field).toEqual('Field1')
+      expect(flow.value.field_permissions_like[0].editable).toBe(true)
+      expect(flow.value.field_permissions_like[0].readable).toBe(false)
+      expect(flow.value.field_permissions_like[1].field).toEqual('Field2')
+      expect(flow.value.field_permissions_like[1].editable).toBe(false)
+      expect(flow.value.field_permissions_like[1].readable).toBe(true)
       expect(flow.value.bla.bla).toBe(55)
     })
     it('should discover settings instance', async () => {

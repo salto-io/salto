@@ -10,11 +10,11 @@ export const evaluate = (exp: HCLExpression): any => {
   const evaluateList = (
     listExp: HCLComplexExpression
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ): any[] => listExp.expressions.map(e => evaluate(e))
+  ): any[] => listExp.expressions.map(evaluate)
 
   const evaluateTemplate = (
     templateExp: HCLComplexExpression
-  ): string => templateExp.expressions.map(e => evaluate(e)).join('')
+  ): string => templateExp.expressions.map(evaluate).join('')
 
   const evaluateMap = (
     mapExp: HCLComplexExpression

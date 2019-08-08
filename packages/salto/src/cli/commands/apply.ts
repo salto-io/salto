@@ -4,7 +4,7 @@ import { ParsedCliInput, CliCommand, CliOutput } from '../types'
 import { Blueprint } from '../../blueprints/blueprint'
 import * as bf from '../filters/blueprints'
 
-const task = (blueprints: Blueprint[], force: boolean): CliCommand => ({
+const command = (blueprints: Blueprint[], force: boolean): CliCommand => ({
   async execute(): Promise<void> {
     return commands.applyBase(() => Promise.resolve(blueprints), force)
   },
@@ -28,7 +28,7 @@ const builder = createCommandBuilder<bf.ParsedArgs, MyParsedCliInput>({
   filters: [bf.filter],
 
   async build(input: MyParsedCliInput, _output: CliOutput) {
-    return task(input.blueprints, input.args.yes)
+    return command(input.blueprints, input.args.yes)
   },
 })
 

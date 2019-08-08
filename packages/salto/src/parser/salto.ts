@@ -5,12 +5,7 @@ import {
   isObjectType, isPrimitiveType, Element, isInstanceElement, InstanceElement,
 } from 'adapter-api'
 import HCLParser from './hcl'
-import {LiteralExpression, ListExpression, TemplateExpression, Expression } from './expressions'
-
-type PlainExpression = 
-  { type: "list", expressions: PlainExpression[] }|
-  { type: "template", expressions: PlainExpression[] }|
-  { type: "literal", value: any }
+import { evaluate } from './expressions'
 
 enum Keywords {
   MODEL = 'model',
@@ -65,21 +60,8 @@ export default class Parser {
     return new ElemID(adapter, name)
   }
 
-  private static buildExpresion(plain: PlainExpression): Expression {
-    if (plain.type === 'literal') {
-      return new LiteralExpression(plain.value)
-    }
-    if (plain.type === 'list') {
-      return new ListExpression(plain.expressions.map(e => Parser.buildExpresion(e)))
-    }
-    if (plain.type === 'template') {
-      return new TemplateExpression(plain.expressions.map(e => Parser.buildExpresion(e)))
-    }
-    throw new Error('unsupported expressions type')
-  }
-
   private static getAttrValues(block: HCLBlock): Values {
-    return _.mapValues(block.attrs, val => Parser.buildExpresion(val.expressions[0]).evaluate())
+    return _.mapValues(block.attrs, val => evaluate(val.expressions[0]))
   }
 
   private static parseType(typeBlock: HCLBlock): Type {
@@ -165,7 +147,6 @@ export default class Parser {
   public static async parse(blueprint: Buffer, filename: string):
     Promise<{ elements: Element[]; errors: string[] }> {
     const { body, errors } = await HCLParser.parse(blueprint, filename)
-    // console.log(JSON.stringify(body, null, 2))
     const elements = body.blocks.map((value: HCLBlock): Element => {
       if (value.type === Keywords.MODEL) {
         return this.parseType(value)

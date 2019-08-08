@@ -31,7 +31,7 @@ func convertValue(val cty.Value, path string) interface{} {
 	case t.IsObjectType():
 		res := map[string]interface{}{}
 		for k, v := range val.AsValueMap() {
-			res[k + "fff"] = convertValue(v, path+"."+k)
+			res[k] = convertValue(v, path+"."+k)
 		}
 		return res
 

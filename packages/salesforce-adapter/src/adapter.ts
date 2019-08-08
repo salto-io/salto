@@ -323,7 +323,7 @@ export default class SalesforceAdapter {
   private static fixListsDiscovery(elements: Element[]): void {
     // This method iterate on types and corresponding values and run innerChange
     // on every "node".
-    const recursion = (type: ObjectType, value: Values,
+    const applyRecursive = (type: ObjectType, value: Values,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       innerChange: (field: Field, value: any) => void): any => {
       Object.keys(type.fields).forEach(key => {
@@ -332,9 +332,9 @@ export default class SalesforceAdapter {
         const fieldType = type.fields[key].type
         if (isObjectType(fieldType)) {
           if (_.isArray(value[key])) {
-            value[key].forEach((val: Values) => recursion(fieldType, val, innerChange))
+            value[key].forEach((val: Values) => applyRecursive(fieldType, val, innerChange))
           } else {
-            recursion(fieldType, value[key], innerChange)
+            applyRecursive(fieldType, value[key], innerChange)
           }
         }
       })
@@ -349,7 +349,7 @@ export default class SalesforceAdapter {
       return value
     }
     elements.filter(isInstanceElement).forEach(instnace =>
-      recursion(instnace.type as ObjectType, instnace.value, markList))
+      applyRecursive(instnace.type as ObjectType, instnace.value, markList))
 
 
     // Cast all lists to list
@@ -361,7 +361,7 @@ export default class SalesforceAdapter {
       return value
     }
     elements.filter(isInstanceElement).forEach(instnace =>
-      recursion(instnace.type as ObjectType, instnace.value, castLists))
+      applyRecursive(instnace.type as ObjectType, instnace.value, castLists))
   }
 
   /**

@@ -1,6 +1,6 @@
 import {
   BuiltinTypes, Type, ObjectType, ElemID, InstanceElement, Values,
-  Field, Element, isObjectType,
+  Field, Element, isObjectType, isInstanceElement,
 } from 'adapter-api'
 import {
   SaveResult, ValueTypeField, MetadataInfo, Field as SObjField,
@@ -123,11 +123,11 @@ export default class SalesforceAdapter {
     const metadataTypes = this.discoverMetadataTypes()
     const sObjects = this.discoverSObjects()
     const metadataInstances = this.discoverMetadataInstances(await metadataTypes)
-    const discoverResult = await Promise.all(
-      [fieldTypes, metadataTypes, sObjects, metadataInstances]
+    const elements = _.flatten(
+      await Promise.all([fieldTypes, metadataTypes, sObjects, metadataInstances]) as Element[][]
     )
-    SalesforceAdapter.discoverLists(discoverResult[3])
-    const elements = _.flatten(discoverResult as Element[][])
+
+    SalesforceAdapter.fixListsDiscovery(elements)
     this.aspects.discover(elements)
     return elements
   }
@@ -230,7 +230,7 @@ export default class SalesforceAdapter {
   }
 
   private async discoverMetadataType(objectName: string, knownTypes: Map<string, Type>):
-  Promise<Type[]> {
+    Promise<Type[]> {
     const fields = await this.client.describeMetadataType(objectName)
     return SalesforceAdapter.createMetadataTypeElements(objectName, fields, knownTypes)
   }
@@ -313,13 +313,21 @@ export default class SalesforceAdapter {
     return element
   }
 
-  private static discoverLists(instances: InstanceElement[]): void {
+  /**
+   * This method mark fields as list if we see instance with list values.
+   * After marking the field as list it will look for values with single value
+   * and fix the value to be list with single element.
+   * The method change the element inline and not create new element.
+   * @param elements the discovered elements.
+   */
+  private static fixListsDiscovery(elements: Element[]): void {
     // This method iterate on types and corresponding values and run innerChange
     // on every "node".
     const recursion = (type: ObjectType, value: Values,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       innerChange: (field: Field, value: any) => void): any => {
       Object.keys(type.fields).forEach(key => {
+        if (value[key] === undefined) return
         value[key] = innerChange(type.fields[key], value[key])
         const fieldType = type.fields[key].type
         if (isObjectType(fieldType)) {
@@ -340,7 +348,8 @@ export default class SalesforceAdapter {
       }
       return value
     }
-    instances.forEach(instnace => recursion(instnace.type as ObjectType, instnace.value, markList))
+    elements.filter(isInstanceElement).forEach(instnace =>
+      recursion(instnace.type as ObjectType, instnace.value, markList))
 
 
     // Cast all lists to list
@@ -351,7 +360,8 @@ export default class SalesforceAdapter {
       }
       return value
     }
-    instances.forEach(instnace => recursion(instnace.type as ObjectType, instnace.value, castLists))
+    elements.filter(isInstanceElement).forEach(instnace =>
+      recursion(instnace.type as ObjectType, instnace.value, castLists))
   }
 
   /**

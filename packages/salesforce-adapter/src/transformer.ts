@@ -183,8 +183,6 @@ export const getValueTypeFieldElement = (parentID: ElemID, field: ValueTypeField
       .map(val => val.value)
     if (defaults.length === 1) {
       annotations[Type.DEFAULT] = defaults.pop()
-    } else {
-      annotations[Type.DEFAULT] = defaults
     }
   }
   return new TypeField(parentID, bpFieldName, bpFieldType, annotations)

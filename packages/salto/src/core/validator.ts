@@ -1,3 +1,4 @@
+
 import _ from 'lodash'
 import {
   Element, isObjectType, isInstanceElement, Type, InstanceElement, Field, PrimitiveTypes,
@@ -14,7 +15,7 @@ const primitiveValidators = {
 const validateValue = (value: any, scheme: Type): string[] => {
   if ((isPrimitiveType(scheme) && !primitiveValidators[scheme.primitive](value))
      || (isObjectType(scheme) && !_.isPlainObject(value))) {
-    return [`Invalid value type for ${scheme.elemID.getFullName()} : ${value}`]
+    return [`Invalid value type for ${scheme.elemID.getFullName()} : ${JSON.stringify(value)}`]
   }
   if (isObjectType(scheme)) {
     return Object.keys(value).map(
@@ -29,7 +30,8 @@ const validateValue = (value: any, scheme: Type): string[] => {
 const validateFieldValue = (value: any, field: Field): string[] => {
   if (field.isList) {
     if (!_.isArray(value)) {
-      return [`Invalid value type for ${field.elemID.getFullName()}: expected list`]
+      return [`Invalid value type for ${field.elemID.getFullName()}: expected list and got ${
+        JSON.stringify(value)} for field ${field.name}`]
     }
     return value.map(v => validateValue(v, field.type)).reduce((acc, e) => [...acc, ...e], [])
   }

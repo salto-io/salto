@@ -91,7 +91,7 @@ const buildDefaults = (
 ): Values | undefined => {
   const buildObjectDefaults = (object: ObjectType): Values | undefined => {
     const def = _(object.fields).mapValues(field =>
-      (field.annotationsValues[Type.DEFAULT] === undefined
+      ((field.annotationsValues[Type.DEFAULT] === undefined && !field.isList)
         ? buildDefaults(field.type)
         : field.annotationsValues[Type.DEFAULT])).pickBy(v => v !== undefined).value()
     return _.isEmpty(def) ? undefined : def

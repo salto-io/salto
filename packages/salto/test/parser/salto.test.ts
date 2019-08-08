@@ -11,7 +11,7 @@ describe('Salto parser', () => {
 
     beforeAll(async () => {
       const body = `
-      type salesforce_string is string { 
+      type salesforce_string is string {
       }
 
       type salesforce_number is number {

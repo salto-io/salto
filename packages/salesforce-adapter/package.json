@@ -27,7 +27,6 @@
     "lint-fix": "yarn run lint -- --fix"
   },
   "dependencies": {
-    "@types/lodash": "^4.14.133",
     "adapter-api": "0.1.0",
     "buffer": "^5.2.1",
     "events": "^3.0.0",
@@ -38,14 +37,11 @@
     "winston": "^3.2.1"
   },
   "devDependencies": {
+    "@types/lodash": "^4.14.133",
     "@types/jest": "^22.1.3",
     "@types/node": "^9.4.6",
-    "@types/shelljs": "^0.7.8",
-    "@types/supertest": "^2.0.4",
     "@typescript-eslint/eslint-plugin": "^1.9.0",
     "@typescript-eslint/parser": "^1.9.0",
-    "chai": "^4.1.2",
-    "concurrently": "^3.5.1",
     "eslint": "^5.16.0",
     "eslint-config-airbnb": "^17.1.0",
     "eslint-plugin-import": "^2.17.3",
@@ -54,8 +50,6 @@
     "eslint-plugin-react": "^7.13.0",
     "jest": "^24.0.0",
     "jest-junit": "^6.4.0",
-    "shelljs": "^0.8.1",
-    "supertest": "^3.0.0",
     "ts-cleaner": "^1.0.2",
     "tsc-watch": "^2.2.1",
     "typescript": "^3.5.3"

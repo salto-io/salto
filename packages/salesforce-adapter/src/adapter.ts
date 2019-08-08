@@ -1,6 +1,6 @@
 import {
   BuiltinTypes, Type, ObjectType, ElemID, InstanceElement, Values,
-  Field, Element, isObjectType,
+  Field, Element, isObjectType, isInstanceElement,
 } from 'adapter-api'
 import {
   SaveResult, ValueTypeField, MetadataInfo, Field as SObjField,
@@ -126,6 +126,8 @@ export default class SalesforceAdapter {
     const elements = _.flatten(
       await Promise.all([fieldTypes, metadataTypes, sObjects, metadataInstances]) as Element[][]
     )
+
+    SalesforceAdapter.fixListsDiscovery(elements)
     this.aspects.discover(elements)
     return elements
   }
@@ -228,7 +230,7 @@ export default class SalesforceAdapter {
   }
 
   private async discoverMetadataType(objectName: string, knownTypes: Map<string, Type>):
-  Promise<Type[]> {
+    Promise<Type[]> {
     const fields = await this.client.describeMetadataType(objectName)
     return SalesforceAdapter.createMetadataTypeElements(objectName, fields, knownTypes)
   }
@@ -309,6 +311,57 @@ export default class SalesforceAdapter {
       element.fields[field.name] = field
     })
     return element
+  }
+
+  /**
+   * This method mark fields as list if we see instance with list values.
+   * After marking the field as list it will look for values with single value
+   * and fix the value to be list with single element.
+   * The method change the element inline and not create new element.
+   * @param elements the discovered elements.
+   */
+  private static fixListsDiscovery(elements: Element[]): void {
+    // This method iterate on types and corresponding values and run innerChange
+    // on every "node".
+    const applyRecursive = (type: ObjectType, value: Values,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      innerChange: (field: Field, value: any) => void): any => {
+      Object.keys(type.fields).forEach(key => {
+        if (value[key] === undefined) return
+        value[key] = innerChange(type.fields[key], value[key])
+        const fieldType = type.fields[key].type
+        if (isObjectType(fieldType)) {
+          if (_.isArray(value[key])) {
+            value[key].forEach((val: Values) => applyRecursive(fieldType, val, innerChange))
+          } else {
+            applyRecursive(fieldType, value[key], innerChange)
+          }
+        }
+      })
+    }
+
+    // First mark all lists as isList=true
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const markList = (field: Field, value: any): any => {
+      if (_.isArray(value)) {
+        field.isList = true
+      }
+      return value
+    }
+    elements.filter(isInstanceElement).forEach(instnace =>
+      applyRecursive(instnace.type as ObjectType, instnace.value, markList))
+
+
+    // Cast all lists to list
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const castLists = (field: Field, value: any): any => {
+      if (field.isList && !_.isArray(value)) {
+        return [value]
+      }
+      return value
+    }
+    elements.filter(isInstanceElement).forEach(instnace =>
+      applyRecursive(instnace.type as ObjectType, instnace.value, castLists))
   }
 
   /**

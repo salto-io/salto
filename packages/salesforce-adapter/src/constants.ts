@@ -15,6 +15,7 @@ export const FORMULA = 'formula'
 export const PRECISION = 'precision'
 export const SCALE = 'scale'
 export const FIELD_TYPE_NAMES = {
+  STRING: 'string',
   TEXT: 'text',
   NUMBER: 'number',
   CHECKBOX: 'checkbox',

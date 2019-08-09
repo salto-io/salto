@@ -54,6 +54,12 @@ const fieldTypeName = (typeName: string): string => (
 export class Types {
   // Type mapping for custom objects
   public static salesforceDataTypes: Record<string, Type> = {
+    // Adding string on top of a text is a temp solution as we are not supporting computed fields.
+    // As far as we know string appears only in compound fields (at least in Name).
+    string: new PrimitiveType({
+      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.STRING),
+      primitive: PrimitiveTypes.STRING,
+    }),
     text: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.TEXT),
       primitive: PrimitiveTypes.STRING,

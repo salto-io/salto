@@ -58,7 +58,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
         .pop() as ObjectType
 
       // Test few possible types
-      expect(lead.fields.last_name.type.elemID.name).toBe('text')
+      expect(lead.fields.last_name.type.elemID.name).toBe('string')
       expect(lead.fields.description.type.elemID.name).toBe('textarea')
       expect(lead.fields.salutation.type.elemID.name).toBe('picklist')
 

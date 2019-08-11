@@ -297,7 +297,7 @@ export default class SalesforceAdapter {
    * @param objectApiName the object api name those fields reside in
    * @param fieldsApiName the custom fields we wish to delete
    */
-  private async deleteCustomFields(element: Element, fields: Field[]): Promise<SaveResult[]> {
+  private async deleteCustomFields(element: Element, fields: Element[]): Promise<SaveResult[]> {
     if (fields.length === 0) return []
     return _.flatten(await Promise.all(_.chunk(fields, 10).map(chunk => this.client.delete(
       constants.CUSTOM_FIELD,

@@ -4,7 +4,6 @@ import devaluate from '../utils'
 import evaluate from '../../src/parser/expressions'
 
 describe('HCL Parser', () => {
-
   it('parses adapter config block', async () => {
     const configBlock = `salesforce { 
       user = "me" 

@@ -93,6 +93,69 @@ func newHclConverter(path string) *hclConverter {
 	}
 }
 
+func (maker *hclConverter) enterBody() {
+	maker.JSValue["attrs"] = map[string]interface{}{}
+	maker.JSValue["blocks"] = []interface{}{}
+}
+
+func (maker *hclConverter) enterBlock(blk *hclsyntax.Block) {
+	pathAddition := blk.Type
+	for _, l := range blk.Labels {
+		pathAddition += "_" + l
+	}
+	maker.nestedConverter = newHclConverter(maker.path + "/" + pathAddition)
+}
+
+func (maker *hclConverter) exitBlock(blk *hclsyntax.Block) {
+	maker.nestedConverter.JSValue["type"] = blk.Type
+	labels := make([]interface{}, len(blk.Labels))
+	for i, label := range blk.Labels {
+		labels[i] = label
+	}
+	maker.nestedConverter.JSValue["labels"] = labels
+	maker.nestedConverter.JSValue["source"] = convertSourceRange(blk.Range())
+	maker.JSValue["blocks"] = append(maker.JSValue["blocks"].([]interface{}), maker.nestedConverter.JSValue)
+
+	maker.nestedConverter = nil
+}
+
+func (maker *hclConverter) enterExpression(expType string) {
+	maker.nestedConverter = newHclConverter(maker.path + "/" + expType)
+	maker.nestedConverter.JSValue["expressions"] = []interface{}{}
+}
+
+func (maker *hclConverter) appendExpression(exp map[string]interface{}) {
+	maker.JSValue["expressions"] = append(
+		maker.JSValue["expressions"].([]interface{}), exp,
+	)
+}
+
+func (maker *hclConverter) exitExpression(expType string) {
+	maker.appendExpression(map[string]interface{}{
+		"type":        expType,
+		"expressions": maker.nestedConverter.JSValue["expressions"],
+	})
+	maker.nestedConverter = nil
+}
+
+func (maker *hclConverter) exitLiteralExpression(val cty.Value) {
+	maker.appendExpression(map[string]interface{}{
+		"type":  "literal",
+		"value": convertValue(val, maker.nestedConverter.path),
+		// Every expression need to have subexpressions
+		"expressions": []interface{}{},
+	})
+	maker.nestedConverter = nil
+}
+
+func (maker *hclConverter) exitAttribute(attr *hclsyntax.Attribute) {
+	maker.JSValue["attrs"].(map[string]interface{})[attr.Name] = map[string]interface{}{
+		"source":      convertSourceRange(attr.Range()),
+		"expressions": maker.nestedConverter.JSValue["expressions"],
+	}
+	maker.nestedConverter = nil
+}
+
 func (maker *hclConverter) Enter(node hclsyntax.Node) hcl.Diagnostics {
 	if maker.nestedConverter != nil {
 		// Let deepest nested maker handle the new element
@@ -101,20 +164,7 @@ func (maker *hclConverter) Enter(node hclsyntax.Node) hcl.Diagnostics {
 
 	switch node.(type) {
 	case *hclsyntax.Body:
-		// Initialize attrs and blocks
-		maker.JSValue["attrs"] = map[string]interface{}{}
-		maker.JSValue["blocks"] = []interface{}{}
-
-	case hclsyntax.Attributes:
-		// This just means we are entering the attributes list, not much to do with it since
-		// we will know we are in an attribute when we get one
-
-	case *hclsyntax.Attribute:
-		// Starting to parse an attribute, currently the nested converter doesn't really do
-		// anything besides marking that we expect more nodes inside the attribute.
-		// In the future if we parse the expressions themselves we might really need the converter
-		attr := node.(*hclsyntax.Attribute)
-		maker.nestedConverter = newHclConverter(maker.path + "/" + attr.Name)
+		maker.enterBody()
 
 	case hclsyntax.Blocks:
 		// This just means we are entering the blocks list, not much to do with it since
@@ -122,19 +172,39 @@ func (maker *hclConverter) Enter(node hclsyntax.Node) hcl.Diagnostics {
 
 	case *hclsyntax.Block:
 		blk := node.(*hclsyntax.Block)
-		pathAddition := blk.Type
-		for _, l := range blk.Labels {
-			pathAddition += "_" + l
-		}
-		maker.nestedConverter = newHclConverter(maker.path + "/" + pathAddition)
+		maker.enterBlock(blk)
+
+	case hclsyntax.Attributes:
+		// This just means we are entering the attributes list, not much to do with it since
+		// we will know we are in an attribute when we get one
+
+	case *hclsyntax.Attribute:
+		attr := node.(*hclsyntax.Attribute)
+		maker.enterExpression(attr.Name)
+
+	case *hclsyntax.TemplateExpr:
+		maker.enterExpression("template")
+
+	case *hclsyntax.TupleConsExpr:
+		maker.enterExpression("tuple")
+
+	case *hclsyntax.ObjectConsExpr:
+		maker.enterExpression("map")
+
+	case *hclsyntax.ObjectConsKeyExpr:
+		maker.enterExpression("object_key")
+
+	case *hclsyntax.LiteralValueExpr:
+		maker.enterExpression("literal")
 	}
+
 	return hcl.Diagnostics{}
 }
 
 func (maker *hclConverter) Exit(node hclsyntax.Node) hcl.Diagnostics {
 	if maker.nestedConverter != nil && maker.nestedConverter.nestedConverter != nil {
 		// Since every meaningful maker creates a nested maker on Enter, the second to last
-		// maker is the one that should handle an Exit
+		// maker is the one that should handle an exit
 		return maker.nestedConverter.Exit(node)
 	}
 
@@ -142,36 +212,42 @@ func (maker *hclConverter) Exit(node hclsyntax.Node) hcl.Diagnostics {
 	case *hclsyntax.Body:
 		// pass
 
-	case hclsyntax.Attributes:
-		// pass
-
-	case *hclsyntax.Attribute:
-		attr := node.(*hclsyntax.Attribute)
-		val, evalErrs := attr.Expr.Value(nil)
-		// Convert evaluated value to something we can serialze to javascript
-		maker.JSValue["attrs"].(map[string]interface{})[attr.Name] = map[string]interface{}{
-			"value":  convertValue(val, maker.nestedConverter.path),
-			"source": convertSourceRange(attr.Range()),
-		}
-
-		maker.nestedConverter = nil
-		return evalErrs
-
 	case hclsyntax.Blocks:
 		// pass
 
 	case *hclsyntax.Block:
 		blk := node.(*hclsyntax.Block)
-		maker.nestedConverter.JSValue["type"] = blk.Type
-		labels := make([]interface{}, len(blk.Labels))
-		for i, label := range blk.Labels {
-			labels[i] = label
-		}
-		maker.nestedConverter.JSValue["labels"] = labels
-		maker.nestedConverter.JSValue["source"] = convertSourceRange(blk.Range())
-		maker.JSValue["blocks"] = append(maker.JSValue["blocks"].([]interface{}), maker.nestedConverter.JSValue)
+		maker.exitBlock(blk)
 
-		maker.nestedConverter = nil
+	case hclsyntax.Attributes:
+		// pass
+
+	case *hclsyntax.Attribute:
+		attr := node.(*hclsyntax.Attribute)
+		maker.exitAttribute(attr)
+
+	case *hclsyntax.TemplateExpr:
+		maker.exitExpression("template")
+
+	case *hclsyntax.TupleConsExpr:
+		maker.exitExpression("list")
+
+	case *hclsyntax.ObjectConsExpr:
+		maker.exitExpression("map")
+
+	// For now we treat this like a literal
+	case *hclsyntax.ObjectConsKeyExpr:
+		exp := node.(*hclsyntax.ObjectConsKeyExpr)
+		val, evalErrs := exp.Value(nil)
+		maker.exitLiteralExpression(val)
+		return evalErrs
+
+	case *hclsyntax.LiteralValueExpr:
+		exp := node.(*hclsyntax.LiteralValueExpr)
+		val, evalErrs := exp.Value(nil)
+		maker.exitLiteralExpression(val)
+		return evalErrs
+
 	}
 	return hcl.Diagnostics{}
 }

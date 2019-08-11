@@ -5,6 +5,7 @@ import {
   isObjectType, isPrimitiveType, Element, isInstanceElement, InstanceElement,
 } from 'adapter-api'
 import HCLParser from './hcl'
+import evaluate from './expressions'
 
 enum Keywords {
   MODEL = 'model',
@@ -60,7 +61,7 @@ export default class Parser {
   }
 
   private static getAttrValues(block: HCLBlock): Values {
-    return _.mapValues(block.attrs, val => val.value)
+    return _.mapValues(block.attrs, val => evaluate(val.expressions[0]))
   }
 
   private static parseType(typeBlock: HCLBlock): Type {
@@ -146,7 +147,6 @@ export default class Parser {
   public static async parse(blueprint: Buffer, filename: string):
     Promise<{ elements: Element[]; errors: string[] }> {
     const { body, errors } = await HCLParser.parse(blueprint, filename)
-
     const elements = body.blocks.map((value: HCLBlock): Element => {
       if (value.type === Keywords.MODEL) {
         return this.parseType(value)

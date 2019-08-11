@@ -56,7 +56,6 @@ type ExpressionType = 'list'|'map'|'template'|'literal'
 declare class HCLExpression {
   type: ExpressionType
   expressions: HCLExpression[]
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   value?: any
 }
 

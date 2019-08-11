@@ -14,7 +14,8 @@ import {
 } from './client/types'
 import {
   toCustomField, toCustomObject, apiName, sfCase, fieldFullName, Types,
-  getValueTypeFieldElement, getSObjectFieldElement, fromMetadataInfo, sfTypeName, bpCase, toMetadataInfo,
+  getValueTypeFieldElement, getSObjectFieldElement, fromMetadataInfo, sfTypeName,
+  bpCase, toMetadataInfo,
 } from './transformer'
 import { AspectsManager } from './aspects/aspects'
 
@@ -158,7 +159,7 @@ export default class SalesforceAdapter {
     const instance = element as InstanceElement
     const result = await this.client.create(
       instance.type.annotationsValues[constants.METADATA_TYPE],
-      toMetadataInfo(instance.value, instance.elemID.name)
+      toMetadataInfo(instance.value, instance.elemID.name, instance.type as ObjectType)
     )
     diagnose(result)
 

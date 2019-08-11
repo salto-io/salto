@@ -195,7 +195,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
       if (await objectExists(customObjectName) === true) {
         await sfAdapter.remove(element)
       }
-      const post = await sfAdapter.add(element)
+      const post = await sfAdapter.add(element) as ObjectType
 
       // Test
       expect(post).toBeInstanceOf(ObjectType)
@@ -613,7 +613,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
       expect(_.isEqual((picklistField.picklistValues as PicklistEntry[]).map(value => value.label), ['NEW', 'OLD'])).toBeTruthy()
 
       // Clean-up
-      await sfAdapter.remove(post)
+      await sfAdapter.remove(post as ObjectType)
     })
   })
 })

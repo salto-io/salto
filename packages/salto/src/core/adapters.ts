@@ -7,7 +7,7 @@ export interface Adapter {
   getConfigType(): ObjectType
   init(config: InstanceElement): void
   discover(): Promise<Element[]>
-  add(element: ObjectType): Promise<ObjectType>
+  add(element: Element): Promise<Element>
   remove(element: Element): Promise<void>
   update(before: ObjectType, after: ObjectType): Promise<ObjectType>
 }

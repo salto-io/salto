@@ -271,7 +271,21 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
   return new TypeField(parentID, bpFieldName, bpFieldType, annotations)
 }
 
-const transform = (obj: Values, type: ObjectType, convert: (name : string) => string): Values =>
+const transformPrimitive = (val: string, primitive: PrimitiveTypes):
+  string | boolean | number => {
+  switch (primitive) {
+    case PrimitiveTypes.NUMBER:
+      return Number(val)
+    case PrimitiveTypes.BOOLEAN:
+      return (val.toLowerCase() === 'true')
+    case PrimitiveTypes.STRING:
+      return val
+    default:
+      return val
+  }
+}
+
+const transform = (obj: Values, type: ObjectType, convert: (name: string) => string): Values =>
   _(obj).mapKeys((_value, key) => convert(key)).mapValues((value, key) => {
     const field = type.fields[key]
     if (field !== undefined) {
@@ -291,25 +305,9 @@ const transform = (obj: Values, type: ObjectType, convert: (name : string) => st
     return value
   }).value()
 
-const transformPrimitive = (val: string, primitive: PrimitiveTypes):
-  string | boolean | number => {
-  switch (primitive) {
-    case PrimitiveTypes.NUMBER:
-      return Number(val)
-    case PrimitiveTypes.BOOLEAN:
-      return (val.toLowerCase() === 'true')
-    case PrimitiveTypes.STRING:
-      return val
-    default:
-      return val
-  }
-}
+export const fromMetadataInfo = (info: MetadataInfo, infoType: ObjectType): Values =>
+  transform(info as Values, infoType, bpCase)
 
-export const fromMetadataInfo = (info: MetadataInfo, infoType: ObjectType): Values => {
 
-  return transform(info as Values, infoType, bpCase)
-}
-
-export const toMetadataInfo = (values: Values, fullName: string, infoType: ObjectType): MetadataInfo => {
-  return {fullName: fullName, ...transform(values, infoType, sfCase)}
-}
+export const toMetadataInfo = (values: Values, fullName: string, infoType: ObjectType):
+  MetadataInfo => ({ fullName, ...transform(values, infoType, sfCase) })

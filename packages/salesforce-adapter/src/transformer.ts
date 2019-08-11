@@ -152,7 +152,7 @@ export const toCustomField = (
 
   _.assign(newField,
     _.pickBy(
-      field.annotationsValues,
+      field.getAnnotationsValues(),
       (_val, annotationValue) => allowedAnnotations(
         field.type.elemID.name
       ).includes(annotationValue)

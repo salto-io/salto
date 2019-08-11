@@ -100,6 +100,10 @@ export class Field implements Element {
   getAnnotationsValues(): Values {
     return this.annotationsValues
   }
+
+  setAnnotationsValues(values: Values): void {
+    this.annotationsValues = values
+  }
 }
 
 /**

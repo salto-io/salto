@@ -33,7 +33,7 @@ describe('Test layout aspect', () => {
 
       await aspect.discover(new SalesforceClient('', '', false), elements)
       const sobject = elements[0] as ObjectType
-      expect(sobject.annotationsValues[LAYOUT_ANNOTATION][0])
+      expect(sobject.getAnnotationsValues()[LAYOUT_ANNOTATION][0])
         .toBe(mockLayout.elemID.getFullName())
     }
 

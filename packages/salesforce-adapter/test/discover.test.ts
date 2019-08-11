@@ -98,7 +98,7 @@ describe('Test SalesforceAdapter discover', () => {
       // Custom type
       expect(lead.fields.custom).not.toBeUndefined()
       expect(lead.fields.custom.getAnnotationsValues()[constants.API_NAME]).toBe('Custom__c')
-      expect(lead.fields.custom.annotationsValues[Type.DEFAULT]).toBe(false)
+      expect(lead.fields.custom.getAnnotationsValues()[Type.DEFAULT]).toBe(false)
       // Formula field
       expect(lead.fields.formula).toBeDefined()
       expect(lead.fields.formula.type.elemID.name).toBe('formula_text')
@@ -223,7 +223,7 @@ describe('Test SalesforceAdapter discover', () => {
       expect(describeMock.mock.calls[0][0]).toBe('Flow')
       const flow = result.filter(o => o.elemID.name === 'flow_type').pop() as ObjectType
       expect(flow.fields.description.type.elemID.name).toBe('string')
-      expect(flow.fields.description.annotationsValues[Type.REQUIRED]).toBe(true)
+      expect(flow.fields.description.getAnnotationsValues()[Type.REQUIRED]).toBe(true)
       expect(flow.fields.is_template.type.elemID.name).toBe('boolean')
       expect(flow.fields.is_template.getAnnotationsValues()[Type.REQUIRED]).toBe(false)
       expect(flow.fields.action_calls.type.elemID.name).toBe('flow_action_call_type')

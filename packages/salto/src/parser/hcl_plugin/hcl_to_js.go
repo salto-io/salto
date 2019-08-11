@@ -103,7 +103,7 @@ func (maker *hclConverter) AppendExpression(exp map[string]interface{}){
 	)
 }
 
-func (maker *hclConverter) ExitExpression( string) {
+func (maker *hclConverter) ExitExpression(expType string) {
 	maker.AppendExpression(map[string]interface{}{
 		"type": expType,
 		"expressions" : maker.nestedConverter.JSValue["expressions"],

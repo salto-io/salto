@@ -1,47 +1,86 @@
 import _ from 'lodash'
 import yargs from 'yargs'
 import requireDirectory from 'require-directory'
-import { PromiseWithState, promiseWithState } from '../promise/promise'
-import {
-  CommandBuilder, ParsedCliInput, ArgsFilter, CliOutput,
-  CliCommand, YargsModuleOpts, YargsCommandBuilder,
-} from './types'
+import { PromiseWithState, promiseWithState } from '../promise/state'
+import { ParsedCliInput, CliOutput, CliCommand } from './types'
+import { Filter } from './filter'
 
-const transformParsedInput = (
-  input: ParsedCliInput, filters: ArgsFilter[]
-): Promise<ParsedCliInput> => (
-  filters.length
-    ? filters[0].transformParsedCliInput(input).then(
-      transformedInput => transformParsedInput(transformedInput, filters.slice(1))
-    )
-    : Promise.resolve(input)
-)
+export type CommandBuilder<
+  TArgs = {},
+  TParsedCliInput extends ParsedCliInput<TArgs> = ParsedCliInput<TArgs>,
+  > =
+  // Create a CliCommand given a parsed CLI input (output of yargs parser) and output interface
+  (input: TParsedCliInput, output: CliOutput) => Promise<CliCommand>
+
+export interface KeyedOptions { [key: string]: yargs.Options }
+export interface PositionalOptions { [key: string]: yargs.PositionalOptions }
+
+export interface YargsModuleOpts {
+  // Name of this command in the CLI, e.g., 'apply'
+  // If positional arguments are included, they also need to be specified here
+  // See: https://github.com/yargs/yargs/blob/master/docs/advanced.md#positional-arguments
+  command: string
+
+  // Additional or shorthand names, e.g, 'a'
+  aliases?: string[]
+
+  // Description to be shown in help
+  description: string
+
+  // Positional arguments
+  positional?: PositionalOptions
+
+  // Keyed arguments
+  keyed?: KeyedOptions
+}
+
+export interface YargsCommandBuilder<
+  TArgs = {},
+  TArgv extends yargs.Argv<TArgs> = yargs.Argv<TArgs>,
+  TParsedCliInput extends ParsedCliInput<TArgs> = ParsedCliInput<TArgs>,
+  > {
+  // Yargs CommandModule for this command
+  // See https://github.com/yargs/yargs/blob/master/docs/advanced.md#providing-a-command-module
+  yargsModule: Omit<yargs.CommandModule, 'handler'>
+
+  // Defines filters to apply on the yargs options and on the parsed CLI input
+  filters?: Filter<TArgs, TArgv, TParsedCliInput>
+
+  // Creates the actual command
+  build: CommandBuilder<TArgs, TParsedCliInput>
+}
 
 export const createCommandBuilder = <
-  TParsedArgs,
-  TParsedCliInput extends ParsedCliInput<TParsedArgs>,
->({ options, filters = [], build }: {
-  options: YargsModuleOpts
-  filters?: ArgsFilter[]
-  build: CommandBuilder<TParsedArgs, TParsedCliInput>
-}): YargsCommandBuilder<TParsedArgs, TParsedCliInput> => ({
+  TArgs = {},
+  TArgv extends yargs.Argv<TArgs> = yargs.Argv<TArgs>,
+  TParsedCliInput extends ParsedCliInput<TArgs> = ParsedCliInput<TArgs>,
+>(
+    { options, filters = [], build }:
+    {
+      options: YargsModuleOpts
+      filters?: Filter[]
+      build: CommandBuilder<TArgs, TParsedCliInput>
+    }): YargsCommandBuilder<TArgs, TArgv, TParsedCliInput> => ({
+
     yargsModule: {
       command: options.command,
       aliases: options.aliases,
       describe: options.description,
       builder: (parser: yargs.Argv) => {
         // apply positional arguments
-        (options.positional || []).reduce((res, [key, opt]) => res.positional(key, opt), parser)
+        Object.entries(options.positional || {})
+          .reduce((res, [key, opt]) => res.positional(key, opt), parser)
+
         // apply keyed arguments
         parser.options(options.keyed || {})
+
         // apply filters
-        filters.reduce((res, filter) => filter.transformParser(res), parser)
-        return parser
+        return Filter.applyParser(filters, parser)
       },
     },
 
     async build(input: TParsedCliInput, output: CliOutput): Promise<CliCommand> {
-      const transformedInput = await transformParsedInput(input, filters) as TParsedCliInput
+      const transformedInput = await Filter.applyParsedCliInput(filters, input) as TParsedCliInput
       return build(transformedInput, output)
     },
   })

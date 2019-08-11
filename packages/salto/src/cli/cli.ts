@@ -1,9 +1,7 @@
 import { EOL } from 'os'
-import {
-  CliInput, CliOutput, CliExitCode, YargsCommandBuilder,
-} from './types'
+import { CliInput, CliOutput, CliExitCode } from './types'
+import { YargsCommandBuilder, allBuilders } from './builder'
 import parse from './argparser'
-import { allBuilders } from './builder'
 
 export default async (
   input: CliInput,

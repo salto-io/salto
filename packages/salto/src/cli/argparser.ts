@@ -3,8 +3,8 @@ import _ from 'lodash'
 import yargonaut from 'yargonaut' // this must appear before the import from yargs
 import yargs from 'yargs/yargs'
 import { Argv, Arguments } from 'yargs'
-import { WriteStream, CommandBuilder, YargsCommandBuilder } from './types'
-import { registerBuilders } from './builder'
+import { WriteStream } from './types'
+import { registerBuilders, YargsCommandBuilder, CommandBuilder } from './builder'
 
 const LOGO_TEXT = 'Salto'
 const LOGO_FONT = '3D-ASCII'

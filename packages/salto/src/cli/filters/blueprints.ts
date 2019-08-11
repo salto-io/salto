@@ -1,19 +1,20 @@
 import yargs from 'yargs'
 import { Blueprint } from '../../blueprints/blueprint'
-import { ArgsFilter, ParsedCliInput } from '../types'
+import { ParsedCliInput } from '../types'
 import { loadBlueprints } from '../blueprint'
+import { ParserFilter, ParsedCliInputFilter } from '../filter'
 
-export interface AddedCliInput {
-  blueprints: Blueprint[]
-}
-
-export interface ParsedArgs {
+export interface Args {
   'blueprint': string[]
   'blueprints-dir': string
 }
 
-export const filter: ArgsFilter<ParsedArgs, AddedCliInput> = {
-  transformParser(parser: yargs.Argv): yargs.Argv {
+export type MyParsedCliInput = ParsedCliInput<Args> & { blueprints: Blueprint[] }
+
+type MyFilter = ParserFilter<Args> & ParsedCliInputFilter<Args, MyParsedCliInput>
+
+export const optionalFilter: MyFilter = {
+  transformParser(parser: yargs.Argv): yargs.Argv<Args> {
     return parser
       .options({
         'blueprints-dir': {
@@ -31,20 +32,24 @@ export const filter: ArgsFilter<ParsedArgs, AddedCliInput> = {
           array: true,
           requiresArg: true,
         },
-      })
-      .check((args: yargs.Arguments): true => {
+      }) as yargs.Argv<Args>
+  },
+
+  async transformParsedCliInput(input: ParsedCliInput<Args>): Promise<MyParsedCliInput> {
+    const args = input.args as yargs.Arguments<Args>
+    const blueprints = await loadBlueprints(args.blueprint || [], args['blueprints-dir'])
+    return Object.assign(input, { blueprints })
+  },
+}
+
+export const requiredFilter: MyFilter = Object.assign({}, optionalFilter, {
+  transformParser(parser: yargs.Argv): yargs.Argv<Args> {
+    return optionalFilter.transformParser(parser)
+      .check((args: yargs.Arguments<Args>): true => {
         if (!args.blueprint && !args['blueprints-dir']) {
           throw new Error('Must specify at least one of: blueprint, blueprints-dir')
         }
         return true
       })
   },
-
-  async transformParsedCliInput(
-    input: ParsedCliInput<ParsedArgs>
-  ): Promise<ParsedCliInput & AddedCliInput> {
-    return Object.assign(input, {
-      blueprints: await loadBlueprints(input.args.blueprint || [], input.args['blueprints-dir']),
-    })
-  },
-}
+})

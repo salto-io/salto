@@ -10,9 +10,10 @@ const command = (blueprints: Blueprint[], force: boolean): CliCommand => ({
   },
 })
 
-type MyParsedCliInput = ParsedCliInput<bf.ParsedArgs & { 'yes': boolean } > & bf.AddedCliInput
+type Args = bf.Args & { yes: boolean }
+type MyParsedCliInput = ParsedCliInput<Args> & bf.MyParsedCliInput
 
-const builder = createCommandBuilder<bf.ParsedArgs, MyParsedCliInput>({
+const builder = createCommandBuilder({
   options: {
     command: 'apply',
     aliases: ['a'],
@@ -25,7 +26,7 @@ const builder = createCommandBuilder<bf.ParsedArgs, MyParsedCliInput>({
     },
   },
 
-  filters: [bf.filter],
+  filters: [bf.requiredFilter],
 
   async build(input: MyParsedCliInput, _output: CliOutput) {
     return command(input.blueprints, input.args.yes)

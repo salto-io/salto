@@ -181,6 +181,7 @@ export class Types {
       annotations: {
         maskChar: BuiltinTypes.STRING,
         maskType: BuiltinTypes.STRING,
+        mask: BuiltinTypes.STRING,
         length: BuiltinTypes.NUMBER,
       },
     }),
@@ -310,7 +311,7 @@ const getDefaultValue = (field: Field): DefaultValueType | undefined => {
 }
 
 // The following method is used during the discovery process and is used in building the objects
-// described in the blue print
+// and their fields described in the blue print
 export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeField => {
   const bpFieldName = bpCase(field.name)
   let bpFieldType = Types.get(field.type)
@@ -322,6 +323,23 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
   const defaultValue = getDefaultValue(field)
   if (defaultValue !== undefined) {
     annotations[Type.DEFAULT] = defaultValue
+  }
+
+  // Handle specific field types that need to be converted from their primitive type to their
+  // Salesforce field type
+  if ((field.type === 'double' && !field.name.includes('Latitude') && !field.name.includes('Longitude'))
+  || field.type === 'int') { // number
+    bpFieldType = Types.get(FIELD_TYPE_NAMES.NUMBER)
+  } else if (field.type === 'textarea' && field.length > 255) { // long text area & rich text area
+    if (field.extraTypeInfo === 'plaintextarea') {
+      bpFieldType = Types.get(FIELD_TYPE_NAMES.LONGTEXTAREA)
+    } else if (field.extraTypeInfo === 'richtextarea') {
+      bpFieldType = Types.get(FIELD_TYPE_NAMES.RICHTEXTAREA)
+    }
+  } else if (field.autoNumber === true) { // autonumber
+    bpFieldType = Types.get(FIELD_TYPE_NAMES.AUTONUMBER)
+  } else if (field.type === 'encryptedstring') { // encrypted string
+    bpFieldType = Types.get(FIELD_TYPE_NAMES.ENCRYPTEDTEXT)
   }
   // Picklists
   if (field.picklistValues && field.picklistValues.length > 0) {

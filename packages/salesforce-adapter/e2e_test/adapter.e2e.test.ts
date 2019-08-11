@@ -846,6 +846,22 @@ describe('Test Salesforce adapter E2E with real account', () => {
               },
             },
           ),
+          papa: new Field(
+            mockElemID,
+            'papa',
+            Types.salesforceDataTypes.number,
+            {
+              [constants.SCALE]: 3,
+              [constants.PRECISION]: 15,
+              [constants.UNIQUE]: true,
+              [Type.DEFAULT]: 42,
+              label: 'Number description label',
+              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
+                admin: { editable: false, readable: true },
+                standard: { editable: false, readable: true },
+              },
+            },
+          ),
         },
       })
 
@@ -920,11 +936,15 @@ describe('Test Salesforce adapter E2E with real account', () => {
       expect(phoneField).toBeDefined()
       expect(phoneField.label).toBe('Phone description label')
       // Verify longtextarea
+      // TODO: We do not know how to retrieve the visible lines info when discovering
+      // long text area
       const longTextAreaField = allFields.filter(field => field.name === 'Kilo__c')[0]
       expect(longTextAreaField).toBeDefined()
       expect(longTextAreaField.label).toBe('LongTextArea description label')
       expect(longTextAreaField[constants.LENGTH]).toBe(32768)
       // Verify richtextarea
+      // TODO: We do not know how to retrieve the visible lines info when discovering
+      // rich text area
       const richTextAreaField = allFields.filter(field => field.name === 'Lima__c')[0]
       expect(richTextAreaField).toBeDefined()
       expect(richTextAreaField.label).toBe('RichTextArea description label')
@@ -944,6 +964,14 @@ describe('Test Salesforce adapter E2E with real account', () => {
       const urlField = allFields.filter(field => field.name === 'Oscar__c')[0]
       expect(urlField).toBeDefined()
       expect(urlField.label).toBe('Url description label')
+      // Verify number
+      const numberField = allFields.filter(field => field.name === 'Papa__c')[0]
+      expect(numberField).toBeDefined()
+      expect(numberField.label).toBe('Number description label')
+      expect(numberField.defaultValueFormula).toBe('42')
+      expect(numberField.scale).toBe(3)
+      expect(numberField.precision).toBe(15)
+      expect(numberField.unique).toBe(true)
 
       // Clean-up
       await sfAdapter.remove(post as ObjectType)

@@ -274,24 +274,23 @@ describe('Test SalesforceAdapter CRUD', () => {
   })
 
   describe('Test Remove operation', () => {
-
     it('Should remove a salesforce instance', async () => {
-      const mockDelete = jest.fn().mockImplementationOnce(() => ({ success: true }))
+      mockDelete = jest.fn().mockImplementationOnce(() => ({ success: true }))
       SalesforceClient.prototype.delete = mockDelete
 
       await adapter().remove(
         new InstanceElement(mockElemID, new ObjectType({
-            elemID: mockElemID,
-            fields: {
-              username: new Field(mockElemID, 'username', BuiltinTypes.STRING),
-              password: new Field(mockElemID, 'password', BuiltinTypes.STRING),
-              token: new Field(mockElemID, 'token', BuiltinTypes.STRING),
-              sandbox: new Field(mockElemID, 'sandbox', BuiltinTypes.BOOLEAN),
-            },
-            annotations: {},
-            annotationsValues: { [constants.METADATA_TYPE]: 'flow' },
-          }),
-          {})
+          elemID: mockElemID,
+          fields: {
+            username: new Field(mockElemID, 'username', BuiltinTypes.STRING),
+            password: new Field(mockElemID, 'password', BuiltinTypes.STRING),
+            token: new Field(mockElemID, 'token', BuiltinTypes.STRING),
+            sandbox: new Field(mockElemID, 'sandbox', BuiltinTypes.BOOLEAN),
+          },
+          annotations: {},
+          annotationsValues: { [constants.METADATA_TYPE]: 'flow' },
+        }),
+        {})
       )
 
       expect(mockDelete.mock.calls.length).toBe(1)

@@ -64,25 +64,24 @@ describe('Test SalesforceAdapter CRUD', () => {
     AspectsManager.prototype.remove = mockAspectsRemove
   })
 
-  describe('should add element', () => {
-    it('should add new salesforce instance', async () => {
-      const mockCreate = jest.fn().mockImplementationOnce(() => ({ success: true }))
+  describe('Test Add operation', () => {
+    it('Should add new instance', async () => {
       SalesforceClient.prototype.create = mockCreate
 
       const instance = new InstanceElement(mockElemID, new ObjectType({
-          elemID: mockElemID,
-          fields: {
-            username: new Field(mockElemID, 'username', BuiltinTypes.STRING),
-            password: new Field(mockElemID, 'password', BuiltinTypes.STRING),
-            token: new Field(mockElemID, 'token', BuiltinTypes.STRING),
-            sandbox: new Field(mockElemID, 'sandbox', BuiltinTypes.BOOLEAN),
-          },
-          annotations: {},
-          annotationsValues: { [constants.METADATA_TYPE]: 'flow' },
-        }),
-        {
-          token: 'instanceTest',
-        })
+        elemID: mockElemID,
+        fields: {
+          username: new Field(mockElemID, 'username', BuiltinTypes.STRING),
+          password: new Field(mockElemID, 'password', BuiltinTypes.STRING),
+          token: new Field(mockElemID, 'token', BuiltinTypes.STRING),
+          sandbox: new Field(mockElemID, 'sandbox', BuiltinTypes.BOOLEAN),
+        },
+        annotations: {},
+        annotationsValues: { [constants.METADATA_TYPE]: 'flow' },
+      }),
+      {
+        token: 'instanceTest',
+      })
 
       const result = await adapter().add(instance) as InstanceElement
 
@@ -101,7 +100,7 @@ describe('Test SalesforceAdapter CRUD', () => {
       expect(mockCreate.mock.calls[0][1].token).toBeUndefined()
     })
 
-    it('should add simple element', async () => {
+    it('Should add new element', async () => {
       const result = await adapter().add(
         new ObjectType({
           elemID: mockElemID,
@@ -154,7 +153,7 @@ describe('Test SalesforceAdapter CRUD', () => {
 
       expect(mockAspectsAdd.mock.calls.length).toBe(1)
     })
-    it('should add new salesforce type with picklist field', async () => {
+    it('Should add new salesforce type with picklist field', async () => {
       await adapter().add(
         new ObjectType({
           elemID: mockElemID,
@@ -186,7 +185,7 @@ describe('Test SalesforceAdapter CRUD', () => {
         .toBe('NEW;OLD')
     })
 
-    it('should add new salesforce type with currency field', async () => {
+    it('Should add new salesforce type with currency field', async () => {
       await adapter().add(
         new ObjectType({
           elemID: mockElemID,
@@ -219,7 +218,7 @@ describe('Test SalesforceAdapter CRUD', () => {
       expect(object.fields[0].precision).toBe(18)
     })
 
-    it('should fail add new salesforce type', async () => {
+    it('Should fail add new salesforce type', async () => {
       SalesforceClient.prototype.create = jest
         .fn()
         .mockImplementationOnce(async () => ({
@@ -245,8 +244,8 @@ describe('Test SalesforceAdapter CRUD', () => {
     })
   })
 
-  describe('should remove element', () => {
-    it('should remove a salesforce metadata component', async () => {
+  describe('Test Remove operation', () => {
+    it('Should remove a salesforce metadata component', async () => {
       await adapter().remove(
         new ObjectType({
           elemID: mockElemID,
@@ -268,6 +267,7 @@ describe('Test SalesforceAdapter CRUD', () => {
       expect(fullName).toBe('Test__c')
       expect(mockAspectsRemove.call.length).toBe(1)
     })
+
     it('should fail remove new salesforce type', async () => {
       SalesforceClient.prototype.delete = jest.fn().mockImplementationOnce(() => ({
         success: false,
@@ -292,8 +292,8 @@ describe('Test SalesforceAdapter CRUD', () => {
     })
   })
 
-  describe('Update operation tests', () => {
-    it('should fail an update of a salesforce metadata component if the fullnames are not the same',
+  describe('Test Update operation', () => {
+    it('Should fail an update of a salesforce metadata component if the fullnames are not the same',
       async () => {
         expect(
           adapter().update(
@@ -337,7 +337,7 @@ describe('Test SalesforceAdapter CRUD', () => {
         expect(mockAspectsUpdate.mock.calls.length).toBe(0)
       })
 
-    it('should perform a successful update', async () => {
+    it('Should perform a successful update', async () => {
       const result = await adapter().update(
         new ObjectType({
           elemID: mockElemID,
@@ -380,7 +380,7 @@ describe('Test SalesforceAdapter CRUD', () => {
       expect(mockAspectsUpdate.mock.calls.length).toBe(1)
     })
 
-    it("should only create new fields when the new object's change is only new fields", async () => {
+    it("Should only create new fields when the new object's change is only new fields", async () => {
       const result = await adapter().update(
         new ObjectType({
           elemID: mockElemID,
@@ -449,7 +449,7 @@ describe('Test SalesforceAdapter CRUD', () => {
       expect(fields[1].fullName).toBe('Test__c.Apple__c')
     })
 
-    it('should only delete fields when the only change in the new object is that some fields no longer appear', async () => {
+    it('Should only delete fields when the only change in the new object is that some fields no longer appear', async () => {
       const result = await adapter().update(
         new ObjectType({
           elemID: mockElemID,
@@ -517,7 +517,7 @@ describe('Test SalesforceAdapter CRUD', () => {
       expect(fields[1]).toBe('Test__c.Banana__c')
     })
 
-    it('should both create & delete fields when some fields no longer appear in the new object and some fields are new', async () => {
+    it('Should both create & delete fields when some fields no longer appear in the new object and some fields are new', async () => {
       const result = await adapter().update(
         new ObjectType({
           elemID: mockElemID,
@@ -586,7 +586,7 @@ describe('Test SalesforceAdapter CRUD', () => {
       expect(deletedFields[0]).toBe('Test__c.Address__c')
     })
 
-    it('should update the annotation values of the metadata object', async () => {
+    it('Should update the annotation values of the metadata object', async () => {
       const result = await adapter().update(
         new ObjectType({
           elemID: mockElemID,
@@ -629,7 +629,7 @@ describe('Test SalesforceAdapter CRUD', () => {
       expect(objectSentForUpdate.label).toBe('test2 label')
     })
 
-    it("should update the remaining fields' annotation values of the object", async () => {
+    it("Should update the remaining fields' annotation values of the object", async () => {
       const result = await adapter().update(
         new ObjectType({
           elemID: mockElemID,
@@ -730,7 +730,7 @@ describe('Test SalesforceAdapter CRUD', () => {
       expect(deletedFields[0]).toBe('Test__c.Address__c')
     })
 
-    it("should properly update the remaining fields' permissions of the metadata object", async () => {
+    it("Should properly update the remaining fields' permissions of the metadata object", async () => {
       const result = await adapter().update(
         new ObjectType({
           elemID: mockElemID,

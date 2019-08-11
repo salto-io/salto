@@ -9,7 +9,7 @@ export interface Adapter {
   discover(): Promise<Element[]>
   add(element: Element): Promise<Element>
   remove(element: Element): Promise<void>
-  update(before: ObjectType, after: ObjectType): Promise<ObjectType>
+  update(before: Element, after: Element): Promise<Element>
 }
 
 export const init = async (elements: Element[], fillConfig: (t: ObjectType) =>

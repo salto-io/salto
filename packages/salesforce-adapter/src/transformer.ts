@@ -208,7 +208,7 @@ export class Types {
   }
 }
 
-export const fieldFullName = (object: ObjectType, field: TypeField): string =>
+export const fieldFullName = (object: Element, field: TypeField): string =>
   `${apiName(object)}.${apiName(field)}`
 
 const allowedAnnotations = (key: string): string[] => (

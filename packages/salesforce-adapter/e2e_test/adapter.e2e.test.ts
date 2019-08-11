@@ -59,7 +59,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
 
       // Test few possible types
       expect(lead.fields.last_name.type.elemID.name).toBe('string')
-      expect(lead.fields.description.type.elemID.name).toBe('textarea')
+      expect(lead.fields.description.type.elemID.name).toBe('longtextarea')
       expect(lead.fields.salutation.type.elemID.name).toBe('picklist')
 
       // Test label
@@ -239,7 +239,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
             stringType,
             {
               [Type.REQUIRED]: false,
-              [Type.DEFAULT]: 'test',
+              [Type.DEFAULT]: '"test"',
               label: 'description label',
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 admin: { editable: true, readable: true },

@@ -310,7 +310,7 @@ const getDefaultValue = (field: Field): DefaultValueType | undefined => {
 }
 
 // The following method is used during the discovery process and is used in building the objects
-// and their fields described in the blue print
+// and their fields described in the blueprint
 export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeField => {
   const bpFieldName = bpCase(field.name)
   let bpFieldType = Types.get(field.type)
@@ -376,7 +376,14 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
       ))
   }
 
-  return new TypeField(parentID, bpFieldName, bpFieldType, annotations)
+  // Convert the annotations' names to bp case
+  const renamedAnnotations = {}
+  Object.keys(annotations).forEach(key => {
+    const usedKey = key.startsWith('_') ? key : bpCase(key)
+    _.assign(renamedAnnotations, { [usedKey]: annotations[key] })
+  })
+
+  return new TypeField(parentID, bpFieldName, bpFieldType, renamedAnnotations)
 }
 
 const transformPrimitive = (val: string, primitive: PrimitiveTypes):

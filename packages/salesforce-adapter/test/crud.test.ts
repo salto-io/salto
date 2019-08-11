@@ -101,35 +101,35 @@ describe('Test SalesforceAdapter CRUD', () => {
     })
 
     it('should fail add new salesforce instance', async () => {
-    SalesforceClient.prototype.create = jest
-      .fn()
-      .mockImplementationOnce(async () => ({
-        success: false,
-        fullName: 'Test__c',
-        errors: [
-          {
-            message: 'Failed to add Test__c',
-          },
-          {
-            message: 'Additional message',
-          },
-        ],
-      }))
+      SalesforceClient.prototype.create = jest
+        .fn()
+        .mockImplementationOnce(async () => ({
+          success: false,
+          fullName: 'Test__c',
+          errors: [
+            {
+              message: 'Failed to add Test__c',
+            },
+            {
+              message: 'Additional message',
+            },
+          ],
+        }))
 
-    return expect(
-      adapter().add(
-        new InstanceElement(mockElemID, new ObjectType({
-          elemID: mockElemID,
-          fields: {},
-          annotations: {},
-          annotationsValues: {},
-        }),
-        {})
-      )
-    ).rejects.toEqual(new Error('Failed to add Test__c\nAdditional message'))
-  })
+      return expect(
+        adapter().add(
+          new InstanceElement(mockElemID, new ObjectType({
+            elemID: mockElemID,
+            fields: {},
+            annotations: {},
+            annotationsValues: {},
+          }),
+          {})
+        )
+      ).rejects.toEqual(new Error('Failed to add Test__c\nAdditional message'))
+    })
 
-  it('Should add new element', async () => {
+    it('Should add new element', async () => {
       const result = await adapter().add(
         new ObjectType({
           elemID: mockElemID,

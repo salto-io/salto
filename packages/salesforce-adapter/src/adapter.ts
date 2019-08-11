@@ -128,7 +128,7 @@ export default class SalesforceAdapter {
     )
 
     SalesforceAdapter.fixListsDiscovery(elements)
-    this.aspects.discover(elements)
+    await this.aspects.discover(elements)
     return elements
   }
 

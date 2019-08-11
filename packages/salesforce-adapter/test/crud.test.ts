@@ -163,7 +163,7 @@ describe('Test SalesforceAdapter CRUD', () => {
       expect(
         result.fields.description.getAnnotationsValues()[constants.API_NAME]
       ).toBe('Description__c')
-    expect(result.getAnnotationsValues()[constants.METADATA_TYPE]).toBe(constants.CUSTOM_OBJECT)
+      expect(result.getAnnotationsValues()[constants.METADATA_TYPE]).toBe(constants.CUSTOM_OBJECT)
 
       expect(mockCreate.mock.calls.length).toBe(1)
       const object = mockCreate.mock.calls[0][1]

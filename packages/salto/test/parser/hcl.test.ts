@@ -4,7 +4,6 @@ import devaluate from '../utils'
 import evaluate from '../../src/parser/expressions'
 
 describe('HCL Parser', () => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 
   it('parses adapter config block', async () => {
     const configBlock = `salesforce { 

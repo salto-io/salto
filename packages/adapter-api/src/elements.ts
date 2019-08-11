@@ -41,6 +41,7 @@ export class ElemID {
 
 export interface Element {
   elemID: ElemID
+  getAnnotationsValues: () => Values
 }
 
 type ElementMap = Record<string, Element>
@@ -65,7 +66,7 @@ export class Field implements Element {
     parentID: ElemID,
     public name: string,
     public type: Type,
-    public annotationsValues: Values = {},
+    private annotationsValues: Values = {},
     public isList: boolean = false,
   ) {
     this.elemID = new ElemID(parentID.adapter, ...parentID.nameParts, name)
@@ -95,6 +96,14 @@ export class Field implements Element {
   parentID(): ElemID {
     return new ElemID(this.elemID.adapter, ...this.elemID.nameParts.slice(0, -1))
   }
+
+  getAnnotationsValues(): Values {
+    return this.annotationsValues
+  }
+
+  setAnnotationsValues(values: Values): void {
+    this.annotationsValues = values
+  }
 }
 
 /**
@@ -111,7 +120,7 @@ export abstract class Type implements Element {
 
   readonly elemID: ElemID
   annotations: TypeMap
-  annotationsValues: Values
+  private readonly annotationsValues: Values
   constructor({
     annotations,
     annotationsValues,
@@ -170,6 +179,10 @@ export abstract class Type implements Element {
    * @return {Type} the cloned instance
    */
   abstract clone(annotationsValues?: Values): Type
+
+  getAnnotationsValues(): Values {
+    return this.annotationsValues
+  }
 }
 
 /**
@@ -291,6 +304,10 @@ export class InstanceElement implements Element {
     this.elemID = elemID
     this.type = type
     this.value = value
+  }
+
+  getAnnotationsValues(): Values {
+    return this.type.getAnnotationsValues()
   }
 
   isEqual(other: InstanceElement): boolean {

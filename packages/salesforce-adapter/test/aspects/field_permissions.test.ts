@@ -65,15 +65,15 @@ describe('Test Field Permissions aspect', () => {
     const elements = [mockObject.clone()]
 
     await aspect.discover(client(), elements)
-    const security = elements[0].fields.description.annotationsValues[
+    const security = elements[0].fields.description.getAnnotationsValues()[
       FIELD_LEVEL_SECURITY_ANNOTATION]
     expect(security.admin.readable).toBe(true)
     expect(security.admin.editable).toBe(false)
   })
   it('should update field permissions upon new salesforce type', async () => {
     const after = mockObject.clone()
-    _.merge(after.fields.description.annotationsValues, admin)
-    _.merge(after.fields.description.annotationsValues, standard)
+    _.merge(after.fields.description.getAnnotationsValues(), admin)
+    _.merge(after.fields.description.getAnnotationsValues(), standard)
     await aspect.add(client(), after)
 
     // Verify permissions creation
@@ -101,7 +101,7 @@ describe('Test Field Permissions aspect', () => {
       ],
     }]))
     const after = mockObject.clone()
-    _.merge(after.fields.description.annotationsValues, admin)
+    _.merge(after.fields.description.getAnnotationsValues(), admin)
     const result = await aspect.add(client(), after)
 
     expect(result[0].success).toBe(false)
@@ -115,7 +115,7 @@ describe('Test Field Permissions aspect', () => {
     // Add apple field
     after.fields = { ...after.fields, apple }
     // Add permissions to existing field
-    _.merge(after.fields.description.annotationsValues, admin)
+    _.merge(after.fields.description.getAnnotationsValues(), admin)
     await aspect.update(client(), before, after)
 
     expect(mockUpdate.mock.calls.length).toBe(1)
@@ -154,11 +154,11 @@ describe('Test Field Permissions aspect', () => {
     before.fields = { ...before.fields, address }
     const after = before.clone()
     // Add admin permissions with editable=false for description field
-    _.merge(after.fields.description.annotationsValues, admin)
-    after.fields.description.annotationsValues[FIELD_LEVEL_SECURITY_ANNOTATION]
+    _.merge(after.fields.description.getAnnotationsValues(), admin)
+    after.fields.description.getAnnotationsValues()[FIELD_LEVEL_SECURITY_ANNOTATION]
       .admin.editable = false
     // Add standard profile field permissions to address
-    _.merge(after.fields.address.annotationsValues, standard)
+    _.merge(after.fields.address.getAnnotationsValues(), standard)
 
     await aspect.update(client(), before, after)
 
@@ -181,25 +181,25 @@ describe('Test Field Permissions aspect', () => {
     const before = mockObject.clone()
     before.fields = { address: address.clone(), banana, apple }
     // Add standard to address field (on top of admin)
-    _.merge(before.fields.address.annotationsValues, standard)
+    _.merge(before.fields.address.getAnnotationsValues(), standard)
     // Banana field will have only standard permissions
-    before.fields.banana.annotationsValues = {
-      [constants.API_NAME]: before.fields.banana.annotationsValues[constants.API_NAME],
+    before.fields.banana.setAnnotationsValues({
+      [constants.API_NAME]: before.fields.banana.getAnnotationsValues()[constants.API_NAME],
       ...standard,
-    }
+    })
 
     // after we have address with only standard and delta that has both admin and standard
     const after = mockObject.clone()
     after.fields = { address, delta, apple: apple.clone() }
     // Remove admin permissions from address field
-    after.fields.address.annotationsValues = {
-      [constants.API_NAME]: before.fields.address.annotationsValues[constants.API_NAME],
+    after.fields.address.setAnnotationsValues({
+      [constants.API_NAME]: before.fields.address.getAnnotationsValues()[constants.API_NAME],
       ...standard,
-    }
+    })
     // Apple has no field permissions as all
-    after.fields.apple.annotationsValues = {
-      [constants.API_NAME]: after.fields.apple.annotationsValues[constants.API_NAME],
-    }
+    after.fields.apple.setAnnotationsValues({
+      [constants.API_NAME]: after.fields.apple.getAnnotationsValues()[constants.API_NAME],
+    })
     await aspect.update(client(), before, after)
 
     expect(mockUpdate.mock.calls.length).toBe(1)

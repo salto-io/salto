@@ -38,17 +38,17 @@ const validateFieldValue = (value: any, field: Field): string[] => {
   return validateValue(value, field.type)
 }
 
-const validateField = (field: Field): string[] => Object.keys(field.annotationsValues).map(
+const validateField = (field: Field): string[] => Object.keys(field.getAnnotationsValues()).map(
   k => field.type.annotations[k] && validateValue(
-    field.annotationsValues[k],
+    field.getAnnotationsValues()[k],
     field.type.annotations[k]
   )
 ).filter(e => e).reduce((acc, e) => [...acc, ...e], [])
 
 const validateType = (element: Type): string[] => {
-  const errors = Object.keys(element.annotationsValues).map(
+  const errors = Object.keys(element.getAnnotationsValues()).map(
     k => element.annotations[k] && validateValue(
-      element.annotationsValues[k],
+      element.getAnnotationsValues()[k],
       element.annotations[k]
     )
   ).filter(e => e).reduce((acc, e) => [...acc, ...e], [])

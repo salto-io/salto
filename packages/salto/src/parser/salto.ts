@@ -95,7 +95,7 @@ export default class Parser {
       } else {
         // This is something else, lets assume it is field overrides for now and we can extend
         // this later as we support more parts of the language
-        typeObj.annotationsValues[block.type] = blockAttrs
+        typeObj.getAnnotationsValues()[block.type] = blockAttrs
       }
     })
 
@@ -171,7 +171,7 @@ export default class Parser {
     const fieldBlock: HCLBlock = {
       type: Keywords.LIST_DEFINITION,
       labels: [field.type.elemID.getFullName(), field.name],
-      attrs: field.annotationsValues || {},
+      attrs: field.getAnnotationsValues() || {},
       blocks: [],
     }
     return fieldBlock
@@ -181,7 +181,7 @@ export default class Parser {
     const fieldBlock: HCLBlock = {
       type: field.type.elemID.getFullName(),
       labels: [field.name],
-      attrs: field.annotationsValues || {},
+      attrs: field.getAnnotationsValues() || {},
       blocks: [],
     }
     return fieldBlock
@@ -197,7 +197,7 @@ export default class Parser {
     const blocks = elements.map(elem => {
       if (isObjectType(elem)) {
         // Clone the annotation values because we may delete some keys from there
-        const annotationsValues = _.cloneDeep(elem.annotationsValues)
+        const annotationsValues = _.cloneDeep(elem.getAnnotationsValues())
         return {
           type: Keywords.MODEL,
           labels: [elem.elemID.getFullName()],
@@ -215,7 +215,7 @@ export default class Parser {
             Keywords.TYPE_INHERITENCE_SEPARATOR,
             getPrimitiveTypeName(elem.primitive),
           ],
-          attrs: elem.annotationsValues,
+          attrs: elem.getAnnotationsValues(),
           blocks: [],
         }
       }

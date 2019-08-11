@@ -5,7 +5,7 @@ import {
 
 import {
   Type, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values,
-  Field as TypeField, BuiltinTypes, Element, isObjectType, isPrimitiveType,
+  Field as TypeField, BuiltinTypes, Element, isObjectType, isPrimitiveType, isInstanceElement,
 } from 'adapter-api'
 import {
   CustomObject, CustomField,
@@ -13,15 +13,18 @@ import {
 import {
   API_NAME, LABEL, PICKLIST_VALUES, SALESFORCE, RESTRICTED_PICKLIST, FORMULA,
   FORMULA_TYPE_PREFIX, METADATA_TYPES_SUFFIX,
-  PRECISION, FIELD_TYPE_NAMES, FIELD_TYPE_API_NAMES,
+  PRECISION, FIELD_TYPE_NAMES, FIELD_TYPE_API_NAMES, METADATA_TYPE,
 } from './constants'
 
 const capitalize = (s: string): string => {
   if (typeof s !== 'string') return ''
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
-export const sfCase = (name: string, custom: boolean = false): string =>
-  capitalize(_.camelCase(name)) + (custom === true ? '__c' : '')
+export const sfCase = (name: string, custom: boolean = false, capital: boolean = true): string => {
+  const sf = _.camelCase(name) + (custom ? '__c' : '')
+  return capital ? capitalize(sf) : sf
+}
+
 export const bpCase = (name: string): string => {
   const bpName = (name.endsWith('__c') ? name.slice(0, -2) : name)
   // Using specific replace for chars then _.unescape is not replacing well
@@ -38,8 +41,12 @@ export const bpNameParts = (name: string, customObject: boolean): string[] =>
   (customObject
     ? [bpCase(name)]
     : [bpCase(name), METADATA_TYPES_SUFFIX])
-export const apiName = (element: Type | TypeField): string => (
-  element.annotationsValues[API_NAME]
+export const apiName = (elem: Element): string => (
+  (isInstanceElement(elem)) ? sfCase(elem.elemID.name) : elem.getAnnotationsValues()[API_NAME]
+)
+
+export const metadataType = (element: Element): string => (
+  element.getAnnotationsValues()[METADATA_TYPE]
 )
 
 const formulaTypeName = (baseTypeName: string): string =>
@@ -140,15 +147,15 @@ export const toCustomField = (
   const newField = new CustomField(
     fullname ? fieldFullName(object, field) : apiName(field),
     FIELD_TYPE_API_NAMES[fieldTypeName(field.type.elemID.name)],
-    field.annotationsValues[LABEL],
-    field.annotationsValues[Type.REQUIRED],
-    field.annotationsValues[PICKLIST_VALUES],
-    field.annotationsValues[FORMULA],
+    field.getAnnotationsValues()[LABEL],
+    field.getAnnotationsValues()[Type.REQUIRED],
+    field.getAnnotationsValues()[PICKLIST_VALUES],
+    field.getAnnotationsValues()[FORMULA],
   )
 
   _.assign(newField,
     _.pickBy(
-      field.annotationsValues,
+      field.getAnnotationsValues(),
       (_val, annotationValue) => allowedAnnotations(
         field.type.elemID.name
       ).includes(annotationValue)
@@ -160,7 +167,7 @@ export const toCustomField = (
 export const toCustomObject = (element: ObjectType): CustomObject =>
   new CustomObject(
     apiName(element),
-    element.annotationsValues[LABEL],
+    element.getAnnotationsValues()[LABEL],
     Object.values(element.fields).map(field => toCustomField(element, field))
   )
 
@@ -271,39 +278,43 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
   return new TypeField(parentID, bpFieldName, bpFieldType, annotations)
 }
 
-export const fromMetadataInfo = (info: MetadataInfo, infoType: ObjectType): Values => {
-  const transformPrimitive = (val: string, primitive: PrimitiveTypes):
-    string | boolean | number => {
-    switch (primitive) {
-      case PrimitiveTypes.NUMBER:
-        return Number(val)
-      case PrimitiveTypes.BOOLEAN:
-        return (val.toLowerCase() === 'true')
-      case PrimitiveTypes.STRING:
-        return val
-      default:
-        return val
-    }
+const transformPrimitive = (val: string, primitive: PrimitiveTypes):
+  string | boolean | number => {
+  switch (primitive) {
+    case PrimitiveTypes.NUMBER:
+      return Number(val)
+    case PrimitiveTypes.BOOLEAN:
+      return (val.toLowerCase() === 'true')
+    case PrimitiveTypes.STRING:
+      return val
+    default:
+      return val
   }
-
-  const transform = (obj: Values, type: ObjectType): Values =>
-    _(obj).mapKeys((_value, key) => bpCase(key)).mapValues((value, key) => {
-      const field = type.fields[key]
-      if (field !== undefined) {
-        const fieldType = field.type
-        if (isObjectType(fieldType)) {
-          return _.isArray(value)
-            ? (value as []).map(v => transform(v, fieldType))
-            : transform(value, fieldType)
-        }
-        if (isPrimitiveType(fieldType)) {
-          return _.isArray(value)
-            ? (value as []).map(v => transformPrimitive(v, fieldType.primitive))
-            : transformPrimitive(value, fieldType.primitive)
-        }
-      }
-      return value
-    }).value()
-
-  return transform(info as Values, infoType)
 }
+
+const transform = (obj: Values, type: ObjectType, convert: (name: string) => string): Values =>
+  _(obj).mapKeys((_value, key) => convert(key)).mapValues((value, key) => {
+    const field = type.fields[key]
+    if (field !== undefined) {
+      const fieldType = field.type
+      if (isObjectType(fieldType)) {
+        return _.isArray(value)
+          ? (value as []).map(v => transform(v, fieldType, convert))
+          : transform(value, fieldType, convert)
+      }
+      if (isPrimitiveType(fieldType)) {
+        return _.isArray(value)
+          ? (value as []).map(v => transformPrimitive(v, fieldType.primitive))
+          : transformPrimitive(value, fieldType.primitive)
+      }
+    }
+    return value
+  }).value()
+
+export const fromMetadataInfo = (info: MetadataInfo, infoType: ObjectType): Values =>
+  transform(info as Values, infoType, bpCase)
+
+
+export const toMetadataInfo = (fullName: string, values: Values, infoType: ObjectType):
+  MetadataInfo =>
+  ({ fullName, ...transform(values, infoType, (name: string) => sfCase(name, false, false)) })

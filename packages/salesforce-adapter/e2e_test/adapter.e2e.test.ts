@@ -17,7 +17,7 @@ import {
   ProfileInfo,
   FieldPermissions,
 } from '../src/client/types'
-import { Types } from '../src/transformer'
+import { Types, sfCase } from '../src/transformer'
 
 describe('Test Salesforce adapter E2E with real account', () => {
   const adapter = (): SalesforceAdapter => {
@@ -63,28 +63,28 @@ describe('Test Salesforce adapter E2E with real account', () => {
       expect(lead.fields.salutation.type.elemID.name).toBe('picklist')
 
       // Test label
-      expect(lead.fields.last_name.annotationsValues[constants.LABEL]).toBe('Last Name')
+      expect(lead.fields.last_name.getAnnotationsValues()[constants.LABEL]).toBe('Last Name')
 
       // Test true and false required
-      expect(lead.fields.description.annotationsValues[Type.REQUIRED]).toBe(false)
-      expect(lead.fields.created_date.annotationsValues[Type.REQUIRED]).toBe(true)
+      expect(lead.fields.description.getAnnotationsValues()[Type.REQUIRED]).toBe(false)
+      expect(lead.fields.created_date.getAnnotationsValues()[Type.REQUIRED]).toBe(true)
 
       // Test picklist restricted_pick_list prop
-      expect(lead.fields.industry.annotationsValues.restricted_pick_list).toBe(
+      expect(lead.fields.industry.getAnnotationsValues().restricted_pick_list).toBe(
         false
       )
       expect(
-        lead.fields.clean_status.annotationsValues.restricted_pick_list
+        lead.fields.clean_status.getAnnotationsValues().restricted_pick_list
       ).toBe(true)
 
       // Test picklist values
       expect(
-        (lead.fields.salutation.annotationsValues.values as string[]).join(';')
+        (lead.fields.salutation.getAnnotationsValues().values as string[]).join(';')
       ).toBe('Mr.;Ms.;Mrs.;Dr.;Prof.')
 
       // Test _default
       // TODO: add test to primitive with _default and combobox _default (no real example for lead)
-      expect(lead.fields.status.annotationsValues[Type.DEFAULT]).toBe(
+      expect(lead.fields.status.getAnnotationsValues()[Type.DEFAULT]).toBe(
         'Open - Not Contacted'
       )
     })
@@ -114,9 +114,9 @@ describe('Test Salesforce adapter E2E with real account', () => {
   describe('should perform CRUD operations', () => {
     const sfAdapter = adapter()
 
-    const objectExists = async (name: string, fields?: string[], missingFields?: string[],
-      label?: string): Promise<boolean> => {
-      const result = (await sfAdapter.client.readMetadata(constants.CUSTOM_OBJECT, name)
+    const objectExists = async (type: string, name: string, fields?: string[],
+      missingFields?: string[], label?: string): Promise<boolean> => {
+      const result = (await sfAdapter.client.readMetadata(type, name)
       ) as CustomObject
       if (!result || !result.fullName) {
         return false
@@ -157,6 +157,73 @@ describe('Test Salesforce adapter E2E with real account', () => {
 
     const stringType = Types.salesforceDataTypes.text
 
+    it('should add new profile instance', async () => {
+      const instanceElementName = 'TestAddProfileInstance__c'
+      const mockElemID = new ElemID(constants.SALESFORCE, instanceElementName)
+      const instance = new InstanceElement(mockElemID, new ObjectType({
+        elemID: mockElemID,
+        fields: {
+        },
+        annotations: {},
+        annotationsValues: {
+          [constants.METADATA_TYPE]: PROFILE_METADATA_TYPE,
+          [constants.API_NAME]: instanceElementName,
+        },
+      }),
+      {
+        fieldPermissions: [
+          {
+            field: 'Lead.Fax',
+            readable: true,
+            editable: false,
+          },
+          {
+            editable: false,
+            field: 'Account.AccountNumber',
+            readable: false,
+          },
+        ],
+        tabVisibilities: [
+          {
+            tab: 'standard-Account',
+            visibility: 'DefaultOff',
+          },
+        ],
+        userPermissions: [
+          {
+            enabled: false,
+            name: 'ConvertLeads',
+          },
+        ],
+        applicationVisibilities: [
+          {
+            application: 'standard__ServiceConsole',
+            default: false,
+            visible: true,
+          },
+        ],
+        description: 'new e2e profile',
+      })
+
+      if (await objectExists(PROFILE_METADATA_TYPE, sfCase(instance.elemID.name))) {
+        await sfAdapter.remove(instance)
+      }
+
+      const post = await sfAdapter.add(instance) as InstanceElement
+
+      // Test
+      expect(post).toBe(instance)
+
+      expect(
+        await objectExists(
+          post.type.getAnnotationsValues()[constants.METADATA_TYPE], sfCase(post.elemID.name)
+        )
+      ).toBeTruthy()
+
+      // Clean-up
+      await sfAdapter.remove(post)
+    })
+
     it('should add custom object', async () => {
       const customObjectName = 'TestAddCustom__c'
       const mockElemID = new ElemID(constants.SALESFORCE, 'test')
@@ -192,21 +259,21 @@ describe('Test Salesforce adapter E2E with real account', () => {
         },
       })
 
-      if (await objectExists(customObjectName) === true) {
+      if (await objectExists(constants.CUSTOM_OBJECT, customObjectName) === true) {
         await sfAdapter.remove(element)
       }
-      const post = await sfAdapter.add(element)
+      const post = await sfAdapter.add(element) as ObjectType
 
       // Test
       expect(post).toBeInstanceOf(ObjectType)
       expect(
-        post.fields.description.annotationsValues[constants.API_NAME]
+        post.fields.description.getAnnotationsValues()[constants.API_NAME]
       ).toBe('Description__c')
       expect(
-        post.fields.formula.annotationsValues[constants.API_NAME]
+        post.fields.formula.getAnnotationsValues()[constants.API_NAME]
       ).toBe('Formula__c')
 
-      expect(await objectExists(customObjectName, ['Description__c', 'Formula__c'])).toBe(true)
+      expect(await objectExists(constants.CUSTOM_OBJECT, customObjectName, ['Description__c', 'Formula__c'])).toBe(true)
       expect((await permissionExists('Admin', [`${customObjectName}.Description__c`]))[0]).toBe(true)
       expect((await permissionExists('Standard', [`${customObjectName}.Description__c`]))[0]).toBe(true)
 
@@ -221,6 +288,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
         elemID: mockElemID,
         annotationsValues: {
           [constants.API_NAME]: customObjectName,
+          [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
         },
         fields: {
           description: new Field(
@@ -236,15 +304,15 @@ describe('Test Salesforce adapter E2E with real account', () => {
         },
       })
       // Setup
-      if (await objectExists(customObjectName) === false) {
+      if (await objectExists(constants.CUSTOM_OBJECT, customObjectName) === false) {
         await sfAdapter.add(element)
-        expect(await objectExists(customObjectName)).toBe(true)
+        expect(await objectExists(constants.CUSTOM_OBJECT, customObjectName)).toBe(true)
       }
       // Run
       const removeResult = await sfAdapter.remove(element)
       // Validate
       expect(removeResult).toBeUndefined()
-      expect(await objectExists(customObjectName)).toBe(false)
+      expect(await objectExists(constants.CUSTOM_OBJECT, customObjectName)).toBe(false)
     })
 
     it('should modify an object by creating a new custom field and remove another one', async () => {
@@ -275,17 +343,18 @@ describe('Test Salesforce adapter E2E with real account', () => {
           [Type.DEFAULT]: 'test',
           label: 'test label',
           [constants.API_NAME]: customObjectName,
+          [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
         },
       })
 
-      if (await objectExists(customObjectName) === true) {
+      if (await objectExists(constants.CUSTOM_OBJECT, customObjectName) === true) {
         await sfAdapter.remove(oldElement)
       }
       const addResult = await sfAdapter.add(oldElement)
       // Verify setup was performed properly
       expect(addResult).toBeInstanceOf(ObjectType)
 
-      expect(await objectExists(customObjectName, ['Address__c', 'Banana__c'])).toBe(true)
+      expect(await objectExists(constants.CUSTOM_OBJECT, customObjectName, ['Address__c', 'Banana__c'])).toBe(true)
 
       const newElement = new ObjectType({
         elemID: mockElemID,
@@ -322,7 +391,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
       const modificationResult = await sfAdapter.update(oldElement, newElement)
 
       expect(modificationResult).toBeInstanceOf(ObjectType)
-      expect(await objectExists(customObjectName, ['Banana__c', 'Description__c'],
+      expect(await objectExists(constants.CUSTOM_OBJECT, customObjectName, ['Banana__c', 'Description__c'],
         ['Address__c'])).toBe(true)
       expect((await permissionExists('Admin', [`${customObjectName}.Description__c`]))[0]).toBe(true)
 
@@ -360,10 +429,11 @@ describe('Test Salesforce adapter E2E with real account', () => {
           [Type.DEFAULT]: 'test',
           label: 'test label',
           [constants.API_NAME]: customObjectName,
+          [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
         },
       })
 
-      if (await objectExists(customObjectName)) {
+      if (await objectExists(constants.CUSTOM_OBJECT, customObjectName)) {
         await sfAdapter.remove(oldElement)
       }
       await sfAdapter.add(oldElement)
@@ -401,7 +471,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
       // Test
       const modificationResult = await sfAdapter.update(oldElement, newElement)
       expect(modificationResult).toBeInstanceOf(ObjectType)
-      expect(await objectExists(customObjectName, undefined, undefined, 'test label 2')).toBe(true)
+      expect(await objectExists(constants.CUSTOM_OBJECT, customObjectName, undefined, undefined, 'test label 2')).toBe(true)
 
       const readResult = (await sfAdapter.client.readMetadata(
         constants.CUSTOM_OBJECT,
@@ -462,10 +532,11 @@ describe('Test Salesforce adapter E2E with real account', () => {
           [Type.DEFAULT]: 'test',
           label: 'test label',
           [constants.API_NAME]: customObjectName,
+          [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
         },
       })
 
-      if (await objectExists(customObjectName) === true) {
+      if (await objectExists(constants.CUSTOM_OBJECT, customObjectName) === true) {
         await sfAdapter.remove(oldElement)
       }
       const addResult = await sfAdapter.add(oldElement)
@@ -522,7 +593,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
       const modificationResult = await sfAdapter.update(oldElement, newElement)
       expect(modificationResult).toBeInstanceOf(ObjectType)
 
-      expect(await objectExists(customObjectName)).toBe(true)
+      expect(await objectExists(constants.CUSTOM_OBJECT, customObjectName)).toBe(true)
 
       const [addressStandardExists,
         bananaStandardExists,
@@ -590,7 +661,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
         },
       })
 
-      if (await objectExists(customObjectName) === true) {
+      if (await objectExists(constants.CUSTOM_OBJECT, customObjectName) === true) {
         await sfAdapter.remove(element)
       }
       const post = await sfAdapter.add(element)
@@ -613,7 +684,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
       expect(_.isEqual((picklistField.picklistValues as PicklistEntry[]).map(value => value.label), ['NEW', 'OLD'])).toBeTruthy()
 
       // Clean-up
-      await sfAdapter.remove(post)
+      await sfAdapter.remove(post as ObjectType)
     })
   })
 })

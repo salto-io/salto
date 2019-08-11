@@ -65,45 +65,45 @@ describe('Elements validation', () => {
 
     it('should allow unspecified annotations', () => {
       const extType = _.cloneDeep(nestedType)
-      extType.fields.nested.annotationsValues.unspecstr = 'unspec'
-      extType.fields.nested.annotationsValues.unspecnum = 1
-      extType.fields.nested.annotationsValues.unspecbool = false
+      extType.fields.nested.getAnnotationsValues().unspecstr = 'unspec'
+      extType.fields.nested.getAnnotationsValues().unspecnum = 1
+      extType.fields.nested.getAnnotationsValues().unspecbool = false
       const errors = validateElements([extType])
       expect(errors.length).toBe(0)
     })
     it('should return error on bad str primitive type', () => {
       const badStr = _.cloneDeep(nestedType)
-      badStr.fields.nested.annotationsValues.annostr = 1
+      badStr.fields.nested.getAnnotationsValues().annostr = 1
       const errors = validateElements([badStr])
       expect(errors.length).toBe(1)
     })
     it('should return error on bad num primitive type', () => {
       const badNum = _.cloneDeep(nestedType)
-      badNum.fields.nested.annotationsValues.annonum = 'str'
+      badNum.fields.nested.getAnnotationsValues().annonum = 'str'
       const errors = validateElements([badNum])
       expect(errors.length).toBe(1)
     })
 
     it('should return error on bad bool primitive type', () => {
       const badBool = _.cloneDeep(nestedType)
-      badBool.fields.nested.annotationsValues.annoboolean = 1
+      badBool.fields.nested.getAnnotationsValues().annoboolean = 1
       const errors = validateElements([badBool])
       expect(errors.length).toBe(1)
     })
 
     it('should return error on nested annotation mismatch', () => {
       const badNested = _.cloneDeep(nestedType)
-      badNested.annotationsValues.nested = { str: 1 }
+      badNested.getAnnotationsValues().nested = { str: 1 }
       const errors = validateElements([badNested])
       expect(errors.length).toBe(1)
     })
 
     it('should return error object/primitive mismatch', () => {
       const badPrim = _.cloneDeep(nestedType)
-      badPrim.fields.nested.annotationsValues.annostr = {}
+      badPrim.fields.nested.getAnnotationsValues().annostr = {}
 
       const badObj = _.cloneDeep(nestedType)
-      badObj.annotationsValues.nested = 'not an object'
+      badObj.getAnnotationsValues().nested = 'not an object'
       const errors = validateElements([badObj, badPrim])
       expect(errors.length).toBe(2)
     })

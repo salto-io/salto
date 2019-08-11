@@ -27,7 +27,7 @@ const validateDefinitions = (bases: Field[], updates: Field[]): void => {
   }
   // Ensure each annotation value is updated at most once.
   try {
-    _.mergeWith({}, ...updates.map(u => u.annotationsValues), validateNoDuplicates)
+    _.mergeWith({}, ...updates.map(u => u.getAnnotationsValues()), validateNoDuplicates)
   } catch (e) {
     throw new Error(`can't extend ${parentID}: ${e.message}`)
   }
@@ -43,8 +43,8 @@ const mergeFieldDefinitions = (
   const base = bases[0]
   const annotationsValues = _.merge(
     {},
-    base.annotationsValues,
-    ...updates.map(u => u.annotationsValues)
+    base.getAnnotationsValues(),
+    ...updates.map(u => u.getAnnotationsValues())
   )
   return new Field(base.parentID(), base.name, base.type, annotationsValues, base.isList)
 }
@@ -70,7 +70,7 @@ const mergeObjectDefinitions = (objects: ObjectType[]): ObjectType => {
   )
   const annotationsValues = _.mergeWith(
     {},
-    ...objects.map(o => o.annotationsValues),
+    ...objects.map(o => o.getAnnotationsValues()),
     validateNoDuplicates
   )
   return new ObjectType({
@@ -91,15 +91,15 @@ const buildDefaults = (
 ): Values | undefined => {
   const buildObjectDefaults = (object: ObjectType): Values | undefined => {
     const def = _(object.fields).mapValues(field =>
-      ((field.annotationsValues[Type.DEFAULT] === undefined && !field.isList)
+      ((field.getAnnotationsValues()[Type.DEFAULT] === undefined && !field.isList)
         ? buildDefaults(field.type)
-        : field.annotationsValues[Type.DEFAULT])).pickBy(v => v !== undefined).value()
+        : field.getAnnotationsValues()[Type.DEFAULT])).pickBy(v => v !== undefined).value()
     return _.isEmpty(def) ? undefined : def
   }
 
-  return (type.annotationsValues[Type.DEFAULT] === undefined && isObjectType(type)
+  return (type.getAnnotationsValues()[Type.DEFAULT] === undefined && isObjectType(type)
     ? buildObjectDefaults(type)
-    : type.annotationsValues[Type.DEFAULT])
+    : type.getAnnotationsValues()[Type.DEFAULT])
 }
 
 /**

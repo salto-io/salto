@@ -88,21 +88,21 @@ describe('Test SalesforceAdapter discover', () => {
 
       const lead = result.filter(o => o.elemID.name === 'lead').pop() as ObjectType
       expect(lead.fields.last_name.type.elemID.name).toBe('text')
-      expect(lead.fields.last_name.annotationsValues.label).toBe('Last Name')
+      expect(lead.fields.last_name.getAnnotationsValues().label).toBe('Last Name')
       // Test Rquired true and false
-      expect(lead.fields.last_name.annotationsValues[Type.REQUIRED]).toBe(true)
-      expect(lead.fields.first_name.annotationsValues[Type.REQUIRED]).toBe(false)
+      expect(lead.fields.last_name.getAnnotationsValues()[Type.REQUIRED]).toBe(true)
+      expect(lead.fields.first_name.getAnnotationsValues()[Type.REQUIRED]).toBe(false)
       // Default string and boolean
-      expect(lead.fields.last_name.annotationsValues[Type.DEFAULT]).toBe('BLABLA')
-      expect(lead.fields.is_deleted.annotationsValues[Type.DEFAULT]).toBe(false)
+      expect(lead.fields.last_name.getAnnotationsValues()[Type.DEFAULT]).toBe('BLABLA')
+      expect(lead.fields.is_deleted.getAnnotationsValues()[Type.DEFAULT]).toBe(false)
       // Custom type
       expect(lead.fields.custom).not.toBeUndefined()
-      expect(lead.fields.custom.annotationsValues[constants.API_NAME]).toBe('Custom__c')
-      expect(lead.fields.custom.annotationsValues[Type.DEFAULT]).toBe(false)
+      expect(lead.fields.custom.getAnnotationsValues()[constants.API_NAME]).toBe('Custom__c')
+      expect(lead.fields.custom.getAnnotationsValues()[Type.DEFAULT]).toBe(false)
       // Formula field
       expect(lead.fields.formula).toBeDefined()
       expect(lead.fields.formula.type.elemID.name).toBe('formula_text')
-      expect(lead.fields.formula.annotationsValues[constants.FORMULA]).toBe('my formula')
+      expect(lead.fields.formula.getAnnotationsValues()[constants.FORMULA]).toBe('my formula')
     })
 
     it('should discover sobject with picklist field', async () => {
@@ -124,12 +124,12 @@ describe('Test SalesforceAdapter discover', () => {
       const lead = result.filter(o => o.elemID.name === 'lead').pop() as ObjectType
       expect(lead.fields.primary_c.type.elemID.name).toBe('picklist')
       expect(
-        (lead.fields.primary_c.annotationsValues.values as string[]).join(';')
+        (lead.fields.primary_c.getAnnotationsValues().values as string[]).join(';')
       ).toBe('No;Yes')
       // eslint-disable-next-line no-underscore-dangle
-      expect(lead.fields.primary_c.annotationsValues._default).toBe('Yes')
+      expect(lead.fields.primary_c.getAnnotationsValues()._default).toBe('Yes')
       expect(
-        lead.fields.primary_c.annotationsValues[constants.RESTRICTED_PICKLIST]
+        lead.fields.primary_c.getAnnotationsValues()[constants.RESTRICTED_PICKLIST]
       ).toBe(true)
     })
 
@@ -151,12 +151,12 @@ describe('Test SalesforceAdapter discover', () => {
       const lead = result.filter(o => o.elemID.name === 'lead').pop() as ObjectType
       expect(lead.fields.primary_c.type.elemID.name).toBe('combobox')
       expect(
-        (lead.fields.primary_c.annotationsValues.values as string[]).join(';')
+        (lead.fields.primary_c.getAnnotationsValues().values as string[]).join(';')
       ).toBe('No;Yes')
       // eslint-disable-next-line no-underscore-dangle
-      expect(lead.fields.primary_c.annotationsValues._default.length).toBe(1)
+      expect(lead.fields.primary_c.getAnnotationsValues()._default.length).toBe(1)
       // eslint-disable-next-line no-underscore-dangle
-      expect(lead.fields.primary_c.annotationsValues._default.pop()).toBe('Yes')
+      expect(lead.fields.primary_c.getAnnotationsValues()._default.pop()).toBe('Yes')
     })
 
     it('should discover sobject with number field', async () => {
@@ -223,13 +223,13 @@ describe('Test SalesforceAdapter discover', () => {
       expect(describeMock.mock.calls[0][0]).toBe('Flow')
       const flow = result.filter(o => o.elemID.name === 'flow_type').pop() as ObjectType
       expect(flow.fields.description.type.elemID.name).toBe('string')
-      expect(flow.fields.description.annotationsValues[Type.REQUIRED]).toBe(true)
+      expect(flow.fields.description.getAnnotationsValues()[Type.REQUIRED]).toBe(true)
       expect(flow.fields.is_template.type.elemID.name).toBe('boolean')
-      expect(flow.fields.is_template.annotationsValues[Type.REQUIRED]).toBe(false)
+      expect(flow.fields.is_template.getAnnotationsValues()[Type.REQUIRED]).toBe(false)
       expect(flow.fields.action_calls.type.elemID.name).toBe('flow_action_call_type')
       expect(flow.fields.enum.type.elemID.name).toBe('string')
-      expect(flow.fields.enum.annotationsValues[Type.DEFAULT]).toBe('yes')
-      expect(flow.fields.enum.annotationsValues[Type.RESTRICTION]).toEqual({
+      expect(flow.fields.enum.getAnnotationsValues()[Type.DEFAULT]).toBe('yes')
+      expect(flow.fields.enum.getAnnotationsValues()[Type.RESTRICTION]).toEqual({
         values: ['yes', 'no'],
       })
     })

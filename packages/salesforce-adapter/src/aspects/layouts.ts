@@ -23,7 +23,7 @@ const discover = async (_client: SalesforceClient, elements: Element[]): Promise
   e => (e.value[bpCase(METADATA_OBJECT_NAME_FIELD)] as string).split('-')[0])
 
   sobjects.forEach(obj => {
-    const objLayouts = layouts[obj.annotationsValues[API_NAME]]
+    const objLayouts = layouts[obj.getAnnotationsValues()[API_NAME]]
     if (objLayouts) {
       obj.annotate({ [LAYOUT_ANNOTATION]: objLayouts.map(l => l.elemID.getFullName()) })
     }

@@ -14,7 +14,8 @@ import {
 } from './client/types'
 import {
   toCustomField, toCustomObject, apiName, sfCase, fieldFullName, Types,
-  getValueTypeFieldElement, getSObjectFieldElement, fromMetadataInfo, sfTypeName, bpCase,
+  getValueTypeFieldElement, getSObjectFieldElement, fromMetadataInfo, sfTypeName,
+  bpCase, toMetadataInfo, metadataType,
 } from './transformer'
 import { AspectsManager } from './aspects/aspects'
 
@@ -58,9 +59,10 @@ const annotateApiNameAndLabel = (element: ObjectType): void => {
     }
   }
 
-  innerAnnotate(element.annotationsValues, element.elemID.name)
+  element.annotate({ [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT })
+  innerAnnotate(element.getAnnotationsValues(), element.elemID.name)
   Object.values(element.fields).forEach(field => {
-    innerAnnotate(field.annotationsValues, field.name)
+    innerAnnotate(field.getAnnotationsValues(), field.name)
   })
 }
 
@@ -133,31 +135,58 @@ export default class SalesforceAdapter {
   }
 
   /**
-   * Add new type element
-   * @param element the object to add
-   * @returns the updated object with extra info like api name and label
+   * Add new element
+   * @param element the object/instance to add
+   * @returns the updated element with extra info like api name, label and metadata type
    * @throws error in case of failure
    */
-  public async add(element: ObjectType): Promise<ObjectType> {
-    const post = element.clone()
-    annotateApiNameAndLabel(post)
+  public async add(element: Element): Promise<Element> {
+    if (isObjectType(element)) {
+      return this.addObject(element)
+    }
 
-    const result = await this.client.create(constants.CUSTOM_OBJECT, toCustomObject(post))
-    const aspectsResult = await this.aspects.add(post)
-    diagnose([result as SaveResult, ...aspectsResult])
-
-    return post
+    return this.addInstance(element as InstanceElement)
   }
 
   /**
-   * Remove an element
-   * @param element The provided element to remove
-   * @returns true for success, false for failure
+   * Add new object
+   * @param element of ObjectType to add
+   * @returns the updated object with extra info like api name, label and metadata type
+   * @throws error in case of failure
    */
-  public async remove(element: ObjectType): Promise<void> {
-    const result = await this.client.delete(constants.CUSTOM_OBJECT, apiName(element))
-    const aspectsResult = await this.aspects.remove(element)
-    diagnose([result as SaveResult, ...aspectsResult])
+  private async addObject(element: ObjectType): Promise<Element> {
+    const post = element.clone()
+    annotateApiNameAndLabel(post)
+
+    diagnose(await this.client.create(constants.CUSTOM_OBJECT, toCustomObject(post)))
+    diagnose(await this.aspects.add(post))
+
+    return post as Element
+  }
+
+  /**
+   * Add new Instance
+   * @param instance to add
+   * @returns the updated instance
+   * @throws error in case of failure
+   */
+  private async addInstance(element: InstanceElement): Promise<Element> {
+    const result = await this.client.create(
+      element.getAnnotationsValues()[constants.METADATA_TYPE],
+      toMetadataInfo(sfCase(element.elemID.name), element.value, element.type as ObjectType)
+    )
+    diagnose(result)
+
+    return element
+  }
+
+  /**
+   * Remove an element (object/instance)
+   * @param element to remove
+   */
+  public async remove(element: Element): Promise<void> {
+    diagnose(await this.client.delete(metadataType(element), apiName(element)))
+    diagnose(await this.aspects.remove(element))
   }
 
   /**
@@ -246,6 +275,7 @@ export default class SalesforceAdapter {
     }
     const element = Types.get(objectName, false) as ObjectType
     knownTypes.set(objectName, element)
+    element.annotate({ [constants.METADATA_TYPE]: objectName })
     if (!fields) {
       return [element]
     }
@@ -304,6 +334,7 @@ export default class SalesforceAdapter {
   private static createSObjectTypeElement(objectName: string, fields: SObjField[]): ObjectType {
     const element = Types.get(objectName) as ObjectType
     element.annotate({ [constants.API_NAME]: objectName })
+    element.annotate({ [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT })
     const fieldElements = fields.map(field => getSObjectFieldElement(element.elemID, field))
 
     // Set fields on elements

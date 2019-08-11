@@ -296,7 +296,6 @@ const transform = (obj: Values, type: ObjectType, convert: (name: string) => str
   _(obj).mapKeys((_value, key) => convert(key)).mapValues((value, key) => {
     const field = type.fields[key]
     if (field !== undefined) {
-
       const fieldType = field.type
       if (isObjectType(fieldType)) {
         return _.isArray(value)

@@ -1,5 +1,5 @@
 import devaluate from '../utils'
-import { evaluate } from '../../src/parser/expressions'
+import evaluate from '../../src/parser/expressions'
 
 describe('HCL Expression', () => {
   it('should evaluate strings', () => {

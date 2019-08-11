@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import HCLParser from '../../src/parser/hcl'
 import devaluate from '../utils'
-import { evaluate } from '../../src/parser/expressions'
+import evaluate from '../../src/parser/expressions'
 
 describe('HCL Parser', () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

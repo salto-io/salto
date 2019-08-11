@@ -32,6 +32,7 @@ declare class HclDumpArgs {
   body: HCLBlock
 }
 
+
 type HclDumpReturn = Buffer
 
 type HclArgs = HclParseArgs | HclDumpArgs
@@ -49,3 +50,13 @@ declare namespace NodeJS {
     hclParserCall: Record<number, HclCallContext>
   }
 }
+
+type ExpressionType = 'list'|'map'|'template'|'literal'
+
+declare class HCLExpression {
+  type: ExpressionType
+  expressions: HCLExpression[]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  value?: any
+}
+

@@ -5,7 +5,7 @@ import {
   isObjectType, isPrimitiveType, Element, isInstanceElement, InstanceElement,
 } from 'adapter-api'
 import HCLParser from './hcl'
-import { evaluate } from './expressions'
+import evaluate from './expressions'
 
 enum Keywords {
   MODEL = 'model',

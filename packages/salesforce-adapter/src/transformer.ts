@@ -113,6 +113,7 @@ export class Types {
   private static metadataPrimitiveTypes: Record<string, Type> = {
     string: BuiltinTypes.STRING,
     double: BuiltinTypes.NUMBER,
+    int: BuiltinTypes.NUMBER,
     boolean: BuiltinTypes.BOOLEAN,
   }
 
@@ -179,9 +180,7 @@ export const getValueTypeFieldElement = (parentID: ElemID, field: ValueTypeField
     // If type is not known type it have to be primitive,
     // we create sub types before calling this function.
     : Types.get(field.soapType, false)
-  const annotations: Values = {
-    [Type.REQUIRED]: field.valueRequired,
-  }
+  const annotations: Values = { [Type.REQUIRED]: field.valueRequired }
 
   if (field.picklistValues && field.picklistValues.length > 0) {
     // In metadata types picklist values means this is actually an enum
@@ -292,27 +291,51 @@ const transformPrimitive = (val: string, primitive: PrimitiveTypes):
   }
 }
 
-const transform = (obj: Values, type: ObjectType, convert: (name: string) => string): Values =>
+const transform = (obj: Values, type: ObjectType, convert: (name: string) => string,
+  strict: boolean = true): Values =>
   _(obj).mapKeys((_value, key) => convert(key)).mapValues((value, key) => {
+    // we get lists of empty strings that we would like to filter out
+    if (_.isArray(value) && _.isEmpty(value.filter(v => !_.isEmpty(v)))) {
+      return undefined
+    }
+    // we get empty strings that we would like to filter out, will filter non string cases too.
+    if (_.isEmpty(value)) {
+      return undefined
+    }
+
     const field = type.fields[key]
     if (field !== undefined) {
       const fieldType = field.type
       if (isObjectType(fieldType)) {
         return _.isArray(value)
-          ? (value as []).map(v => transform(v, fieldType, convert))
-          : transform(value, fieldType, convert)
+          ? value.map(v => transform(v, fieldType, convert, strict))
+            .filter(v => !_.isEmpty(v))
+          : transform(value, fieldType, convert, strict)
       }
       if (isPrimitiveType(fieldType)) {
         return _.isArray(value)
-          ? (value as []).map(v => transformPrimitive(v, fieldType.primitive))
+          ? value.map(v => transformPrimitive(v, fieldType.primitive)).filter(v => !_.isEmpty(v))
           : transformPrimitive(value, fieldType.primitive)
       }
     }
+    // We are not returning the value if it's not fit the type definition.
+    // We saw cases where we got for jsforce values empty values in unexpected
+    // format for example:
+    // "layoutColumns":["","",""] where layoutColumns suppose to be list of object
+    // with LayoutItem and reserve fields.
+    // return undefined
+    // We are not strict for salesforce Settings type as type definition is empty
+    // and each Setting looks different
+    if (strict) {
+      return undefined
+    }
     return value
-  }).value()
+  }).omitBy(_.isUndefined)
+    .value()
 
-export const fromMetadataInfo = (info: MetadataInfo, infoType: ObjectType): Values =>
-  transform(info as Values, infoType, bpCase)
+export const fromMetadataInfo = (info: MetadataInfo, infoType: ObjectType, strict: boolean = true):
+  Values =>
+  transform(info as Values, infoType, bpCase, strict)
 
 
 export const toMetadataInfo = (fullName: string, values: Values, infoType: ObjectType):

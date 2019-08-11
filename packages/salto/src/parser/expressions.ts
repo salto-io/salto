@@ -1,43 +1,24 @@
 import _ from 'lodash'
 
-export interface HCLExpression {type: string}
-export type HCLComplexExpression = HCLExpression&{expressions: HCLExpression[]}
+type ExpressionType = 'list'|'map'|'template'|'literal'
+export interface HCLExpression {
+  type: ExpressionType
+  expressions: HCLExpression[]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  value?: any
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type HCLLiteralExpression = HCLExpression&{value: any}
+type ExpEvaluator = (expression: HCLExpression) => any
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const evaluate = (exp: HCLExpression): any => {
-  const evaluateList = (
-    listExp: HCLComplexExpression
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ): any[] => listExp.expressions.map(evaluate)
-
-  const evaluateTemplate = (
-    templateExp: HCLComplexExpression
-  ): string => templateExp.expressions.map(evaluate).join('')
-
-  const evaluateMap = (
-    mapExp: HCLComplexExpression
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ): Record<string, any> => _(mapExp.expressions).map(
-    e => evaluate(e)
-  ).chunk(2).fromPairs()
-    .value()
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const evaluateLiteral = (literalExp: HCLLiteralExpression): any => literalExp.value
-
-  if (exp.type === 'list') {
-    return evaluateList(exp as HCLComplexExpression)
+export const evaluate: ExpEvaluator = expression => {
+  const evaluators: Record<ExpressionType, ExpEvaluator> = {
+    list: exp => exp.expressions.map(evaluate),
+    template: exp => exp.expressions.map(evaluate).join(''),
+    map: exp => _(exp.expressions).map(evaluate).chunk(2).fromPairs()
+      .value(),
+    literal: exp => exp.value,
   }
-  if (exp.type === 'template') {
-    return evaluateTemplate(exp as HCLComplexExpression)
-  }
-  if (exp.type === 'map') {
-    return evaluateMap(exp as HCLComplexExpression)
-  }
-  if (exp.type === 'literal') {
-    return evaluateLiteral(exp as HCLLiteralExpression)
-  }
-  throw new Error(`unsupported expression! ${exp.type}`)
+
+  return evaluators[expression.type](expression)
 }

@@ -5,6 +5,7 @@ import (
 	"github.com/hashicorp/hcl2/hcl/hclsyntax"
 	"github.com/zclconf/go-cty/cty"
 )
+
 // convertValue converts a cty.Value to the appropriate go native type so that it can be
 // serialized to javascript
 func convertValue(val cty.Value, path string) interface{} {
@@ -92,6 +93,32 @@ func newHclConverter(path string) *hclConverter {
 	}
 }
 
+func (maker *hclConverter) EnterBody() {
+	maker.JSValue["attrs"] = map[string]interface{}{}
+	maker.JSValue["blocks"] = []interface{}{}
+}
+
+func (maker *hclConverter) EnterBlock(blk *hclsyntax.Block) {
+	pathAddition := blk.Type
+	for _, l := range blk.Labels {
+		pathAddition += "_" + l
+	}
+	maker.nestedConverter = newHclConverter(maker.path + "/" + pathAddition)
+}
+
+func (maker *hclConverter) ExitBlock(blk *hclsyntax.Block) {
+	maker.nestedConverter.JSValue["type"] = blk.Type
+	labels := make([]interface{}, len(blk.Labels))
+	for i, label := range blk.Labels {
+		labels[i] = label
+	}
+	maker.nestedConverter.JSValue["labels"] = labels
+	maker.nestedConverter.JSValue["source"] = convertSourceRange(blk.Range())
+	maker.JSValue["blocks"] = append(maker.JSValue["blocks"].([]interface{}), maker.nestedConverter.JSValue)
+
+	maker.nestedConverter = nil
+}
+
 func (maker *hclConverter) EnterExpression(expType string) {
 	maker.nestedConverter = newHclConverter(maker.path + "/" + expType)
 	maker.nestedConverter.JSValue["expressions"] = []interface{}{}
@@ -115,6 +142,8 @@ func (maker *hclConverter) ExitLiteralExpression(val cty.Value) {
 	maker.AppendExpression(map[string]interface{}{
 			"type": "literal",
 			"value" : convertValue(val, maker.nestedConverter.path),
+			// Every expression need to have subexpressions
+			"expressions" : []interface{}{},
 	})	
 	maker.nestedConverter = nil	
 }
@@ -124,6 +153,7 @@ func (maker *hclConverter) ExitAttribute(attr *hclsyntax.Attribute) {
 		"source": convertSourceRange(attr.Range()),
 		"expressions" : maker.nestedConverter.JSValue["expressions"],
 	}
+	maker.nestedConverter = nil	
 }
 
 
@@ -135,9 +165,7 @@ func (maker *hclConverter) Enter(node hclsyntax.Node) hcl.Diagnostics {
 
 	switch node.(type) {
 	case *hclsyntax.Body:
-		// Initialize attrs and blocks
-		maker.JSValue["attrs"] = map[string]interface{}{}
-		maker.JSValue["blocks"] = []interface{}{}
+		maker.EnterBody()
 
 	case hclsyntax.Blocks:
 		// This just means we are entering the blocks list, not much to do with it since
@@ -145,11 +173,7 @@ func (maker *hclConverter) Enter(node hclsyntax.Node) hcl.Diagnostics {
 
 	case *hclsyntax.Block:
 		blk := node.(*hclsyntax.Block)
-		pathAddition := blk.Type
-		for _, l := range blk.Labels {
-			pathAddition += "_" + l
-		}
-		maker.nestedConverter = newHclConverter(maker.path + "/" + pathAddition)
+		maker.EnterBlock(blk)
 
 	case hclsyntax.Attributes:
 		// This just means we are entering the attributes list, not much to do with it since
@@ -168,12 +192,9 @@ func (maker *hclConverter) Enter(node hclsyntax.Node) hcl.Diagnostics {
 	case *hclsyntax.ObjectConsExpr:
 		maker.EnterExpression("map")
 
-	// For now we treat this like a literal
 	case *hclsyntax.ObjectConsKeyExpr:
-		maker.EnterExpression("literal")
+		maker.EnterExpression("object_key")
 
-	// We don't really need to create and expression here since the nestedConverter
-	// will not hold any values, but it here for consistency with other types
 	case *hclsyntax.LiteralValueExpr:
 		maker.EnterExpression("literal")
 	}
@@ -197,16 +218,7 @@ func (maker *hclConverter) Exit(node hclsyntax.Node) hcl.Diagnostics {
 		
 	case *hclsyntax.Block:
 		blk := node.(*hclsyntax.Block)
-		maker.nestedConverter.JSValue["type"] = blk.Type
-		labels := make([]interface{}, len(blk.Labels))
-		for i, label := range blk.Labels {
-			labels[i] = label
-		}
-		maker.nestedConverter.JSValue["labels"] = labels
-		maker.nestedConverter.JSValue["source"] = convertSourceRange(blk.Range())
-		maker.JSValue["blocks"] = append(maker.JSValue["blocks"].([]interface{}), maker.nestedConverter.JSValue)
-
-		maker.nestedConverter = nil
+		maker.ExitBlock(blk)
 
 	case hclsyntax.Attributes:
 		// pass
@@ -214,7 +226,6 @@ func (maker *hclConverter) Exit(node hclsyntax.Node) hcl.Diagnostics {
 	case *hclsyntax.Attribute:
 		attr := node.(*hclsyntax.Attribute)
 		maker.ExitAttribute(attr)
-		maker.nestedConverter = nil	
 
 	case *hclsyntax.TemplateExpr: 
 		maker.ExitExpression("template")

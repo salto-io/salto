@@ -1,50 +1,10 @@
 import _ from 'lodash'
 import HCLParser from '../../src/parser/hcl'
-import {
-  evaluate, HCLExpression, HCLComplexExpression, HCLLiteralExpression,
-} from '../../src/parser/expressions'
+import devaluate from '../utils'
+import { evaluate } from '../../src/parser/expressions'
 
 describe('HCL Parser', () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const devalute = (value: any): HCLExpression => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const devaluteValue = (v: any): HCLLiteralExpression => ({
-      type: 'literal',
-      value: v,
-    })
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const devaluteString = (str: string): HCLComplexExpression => ({
-      type: 'template',
-      expressions: [devaluteValue(str)],
-    })
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const devaluteArray = (arr: any[]): HCLComplexExpression => ({
-      type: 'list',
-      expressions: arr.map(e => devalute(e)),
-    })
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const devaluteObject = (obj: Record<string, any>): HCLComplexExpression => ({
-      type: 'map',
-      expressions: _(obj).entries().flatten().map(e => devalute(e))
-        .value(),
-    })
-
-    if (_.isString(value)) {
-      return devaluteString(value as string)
-    }
-    if (_.isArray(value)) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return devaluteArray(value as any[])
-    }
-    if (_.isPlainObject(value)) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return devaluteObject(value as Record<string, any>)
-    }
-    return devaluteValue(value)
-  }
 
   it('parses adapter config block', async () => {
     const configBlock = `salesforce { 
@@ -57,7 +17,7 @@ describe('HCL Parser', () => {
     expect(config.type).toEqual('salesforce')
     expect(config.attrs).toHaveProperty('user')
     expect(config.attrs.user).toHaveProperty('expressions')
-    expect(config.attrs.user.expressions).toEqual([devalute('me')])
+    expect(config.attrs.user.expressions).toEqual([devaluate('me')])
   })
 
   it('parses type definition block', async () => {
@@ -94,14 +54,14 @@ describe('HCL Parser', () => {
 
     expect(typeBlock.blocks[0].type).toEqual('string')
     expect(typeBlock.blocks[0].labels).toEqual(['name'])
-    expect(typeBlock.blocks[0].attrs.label.expressions).toEqual([devalute('Name')])
+    expect(typeBlock.blocks[0].attrs.label.expressions).toEqual([devaluate('Name')])
     expectSourceLocation(typeBlock.blocks[0], 2, 5)
     expectSourceLocation(typeBlock.blocks[0].attrs.label, 4, 4)
 
     expect(typeBlock.blocks[1].type).toEqual('number')
     expect(typeBlock.blocks[1].labels).toEqual(['num'])
     // eslint-disable-next-line no-underscore-dangle
-    expect(typeBlock.blocks[1].attrs._default.expressions).toEqual([devalute(35)])
+    expect(typeBlock.blocks[1].attrs._default.expressions).toEqual([devaluate(35)])
     expectSourceLocation(typeBlock.blocks[1], 8, 10)
     // eslint-disable-next-line no-underscore-dangle
     expectSourceLocation(typeBlock.blocks[1].attrs._default, 9, 9)
@@ -124,9 +84,9 @@ describe('HCL Parser', () => {
     expect(instBlock.type).toEqual('salto_employee')
     expect(instBlock.labels).toEqual(['me'])
     expect(instBlock.attrs).toHaveProperty('name')
-    expect(instBlock.attrs.name.expressions).toEqual([devalute('person')])
+    expect(instBlock.attrs.name.expressions).toEqual([devaluate('person')])
     expect(instBlock.attrs).toHaveProperty('nicknames')
-    expect(instBlock.attrs.nicknames.expressions).toEqual([devalute(['a', 's', 'd'])])
+    expect(instBlock.attrs.nicknames.expressions).toEqual([devaluate(['a', 's', 'd'])])
   })
 
   it('parses multiline strings', async () => {

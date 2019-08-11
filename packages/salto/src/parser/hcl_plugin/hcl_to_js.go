@@ -124,7 +124,7 @@ func (maker *hclConverter) EnterExpression(expType string) {
 	maker.nestedConverter.JSValue["expressions"] = []interface{}{}
 }
 
-func (maker *hclConverter) AppendExpression(exp map[string]interface{}){
+func (maker *hclConverter) AppendExpression(exp map[string]interface{}) {
 	maker.JSValue["expressions"] = append(
 		maker.JSValue["expressions"].([]interface{}), exp,
 	)
@@ -132,30 +132,29 @@ func (maker *hclConverter) AppendExpression(exp map[string]interface{}){
 
 func (maker *hclConverter) ExitExpression(expType string) {
 	maker.AppendExpression(map[string]interface{}{
-		"type": expType,
-		"expressions" : maker.nestedConverter.JSValue["expressions"],
+		"type":        expType,
+		"expressions": maker.nestedConverter.JSValue["expressions"],
 	})
-	maker.nestedConverter = nil	
+	maker.nestedConverter = nil
 }
 
 func (maker *hclConverter) ExitLiteralExpression(val cty.Value) {
 	maker.AppendExpression(map[string]interface{}{
-			"type": "literal",
-			"value" : convertValue(val, maker.nestedConverter.path),
-			// Every expression need to have subexpressions
-			"expressions" : []interface{}{},
-	})	
-	maker.nestedConverter = nil	
+		"type":  "literal",
+		"value": convertValue(val, maker.nestedConverter.path),
+		// Every expression need to have subexpressions
+		"expressions": []interface{}{},
+	})
+	maker.nestedConverter = nil
 }
 
 func (maker *hclConverter) ExitAttribute(attr *hclsyntax.Attribute) {
 	maker.JSValue["attrs"].(map[string]interface{})[attr.Name] = map[string]interface{}{
-		"source": convertSourceRange(attr.Range()),
-		"expressions" : maker.nestedConverter.JSValue["expressions"],
+		"source":      convertSourceRange(attr.Range()),
+		"expressions": maker.nestedConverter.JSValue["expressions"],
 	}
-	maker.nestedConverter = nil	
+	maker.nestedConverter = nil
 }
-
 
 func (maker *hclConverter) Enter(node hclsyntax.Node) hcl.Diagnostics {
 	if maker.nestedConverter != nil {
@@ -183,10 +182,10 @@ func (maker *hclConverter) Enter(node hclsyntax.Node) hcl.Diagnostics {
 		attr := node.(*hclsyntax.Attribute)
 		maker.EnterExpression(attr.Name)
 
-	case *hclsyntax.TemplateExpr: 
+	case *hclsyntax.TemplateExpr:
 		maker.EnterExpression("template")
 
-	case *hclsyntax.TupleConsExpr: 
+	case *hclsyntax.TupleConsExpr:
 		maker.EnterExpression("tuple")
 
 	case *hclsyntax.ObjectConsExpr:
@@ -212,25 +211,25 @@ func (maker *hclConverter) Exit(node hclsyntax.Node) hcl.Diagnostics {
 	switch node.(type) {
 	case *hclsyntax.Body:
 		// pass
-		
+
 	case hclsyntax.Blocks:
 		// pass
-		
+
 	case *hclsyntax.Block:
 		blk := node.(*hclsyntax.Block)
 		maker.ExitBlock(blk)
 
 	case hclsyntax.Attributes:
 		// pass
-		
+
 	case *hclsyntax.Attribute:
 		attr := node.(*hclsyntax.Attribute)
 		maker.ExitAttribute(attr)
 
-	case *hclsyntax.TemplateExpr: 
+	case *hclsyntax.TemplateExpr:
 		maker.ExitExpression("template")
 
-	case *hclsyntax.TupleConsExpr: 
+	case *hclsyntax.TupleConsExpr:
 		maker.ExitExpression("list")
 
 	case *hclsyntax.ObjectConsExpr:

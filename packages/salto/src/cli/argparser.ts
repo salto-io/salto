@@ -7,7 +7,7 @@ import { WriteStream, CommandBuilder, YargsCommandBuilder } from './types'
 import { registerBuilders } from './builder'
 
 const LOGO_TEXT = '\u00B0 salto' // \u00B0 is for the salto 'dot'
-const LOGO_FONT = 'standard'
+const LOGO_FONT = 'Standard'
 const MAX_WIDTH = 100
 
 const writeLogo = (outStream: WriteStream): void => {

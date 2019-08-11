@@ -19,7 +19,7 @@ describe('cli', () => {
       })
 
       it('outputs the salto logo', () => {
-        expect(o.err).toContain('|\\   ____\\|\\')
+        expect(o.err).toContain('| () |')
       })
 
       it('outputs help to stderr', () => {

@@ -163,7 +163,7 @@ describe('Test Salto Expressions', () => {
     expect(() => chained.map(e => resolve(e, chained))).toThrow()
   })
 
-  it('should fail on  unresolvable references', () => {
+  it('should fail on  unresolvable', () => {
     const firstRefID = new ElemID('salto', 'first')
     const secondRefID = new ElemID('salto', 'second')
     const firstRef = new InstanceElement(

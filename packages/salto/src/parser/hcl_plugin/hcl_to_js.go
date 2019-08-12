@@ -4,8 +4,6 @@ import (
 	"github.com/hashicorp/hcl2/hcl"
 	"github.com/hashicorp/hcl2/hcl/hclsyntax"
 	"github.com/zclconf/go-cty/cty"
-	"bytes"
-	"fmt"
 )
 
 // convertValue converts a cty.Value to the appropriate go native type so that it can be
@@ -82,7 +80,7 @@ func convertTraversal(traversal hcl.Traversal) []interface{} {
 	steps := make([]interface{}, len(traversal))
 	for i, step := range traversal {
 		switch tStep := step.(type) {
-		case hcl.TraverseRoot:
+		case hcl.TraverseRoot: 
 			steps[i] = tStep.Name
 		case hcl.TraverseAttr:
 			steps[i] = tStep.Name

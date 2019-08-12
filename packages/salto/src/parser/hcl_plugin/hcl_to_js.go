@@ -80,7 +80,7 @@ func convertTraversal(traversal hcl.Traversal) []interface{} {
 	steps := make([]interface{}, len(traversal))
 	for i, step := range traversal {
 		switch tStep := step.(type) {
-		case hcl.TraverseRoot: 
+		case hcl.TraverseRoot:
 			steps[i] = tStep.Name
 		case hcl.TraverseAttr:
 			steps[i] = tStep.Name

@@ -112,9 +112,10 @@ export const apply = async (
 )
 
 export const describe = async (
-  searchWords: string[]
+  searchWords: string[],
+  blueprints?: Blueprint[],
 ): Promise<void> => {
-  const allElements = await getAllElements([])
+  const allElements = await getAllElements(blueprints || [])
   const elementsMap = createElementsMap(allElements)
   // First we try with exact match only
   const searchResult = findElement(searchWords, elementsMap, elementsMap)

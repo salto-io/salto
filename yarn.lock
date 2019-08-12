@@ -3161,7 +3161,7 @@ jsesc@^2.5.1:
 
 "jsforce@https://github.com/salto-io/jsforce.git":
   version "1.9.1"
-  resolved "https://github.com/salto-io/jsforce.git#4365d0913134237cbc7ba0a95d8204eea1d305d9"
+  resolved "https://github.com/salto-io/jsforce.git#6353e2b8e43c7ed917a5b9d7b5ea568ca0aef3bf"
   dependencies:
     base64-url "^2.2.0"
     co-prompt "^1.0.0"

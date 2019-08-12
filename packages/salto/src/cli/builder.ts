@@ -36,15 +36,11 @@ export interface YargsModuleOpts {
 
 export interface YargsCommandBuilder<
   TArgs = {},
-  TArgv extends yargs.Argv<TArgs> = yargs.Argv<TArgs>,
   TParsedCliInput extends ParsedCliInput<TArgs> = ParsedCliInput<TArgs>,
   > {
   // Yargs CommandModule for this command
   // See https://github.com/yargs/yargs/blob/master/docs/advanced.md#providing-a-command-module
   yargsModule: Omit<yargs.CommandModule, 'handler'>
-
-  // Defines filters to apply on the yargs options and on the parsed CLI input
-  filters?: Filter<TArgs, TArgv, TParsedCliInput>
 
   // Creates the actual command
   build: CommandBuilder<TArgs, TParsedCliInput>
@@ -52,7 +48,6 @@ export interface YargsCommandBuilder<
 
 export const createCommandBuilder = <
   TArgs = {},
-  TArgv extends yargs.Argv<TArgs> = yargs.Argv<TArgs>,
   TParsedCliInput extends ParsedCliInput<TArgs> = ParsedCliInput<TArgs>,
 >(
     { options, filters = [], build }:
@@ -60,7 +55,7 @@ export const createCommandBuilder = <
       options: YargsModuleOpts
       filters?: Filter[]
       build: CommandBuilder<TArgs, TParsedCliInput>
-    }): YargsCommandBuilder<TArgs, TArgv, TParsedCliInput> => ({
+    }): YargsCommandBuilder<TArgs, TParsedCliInput> => ({
 
     yargsModule: {
       command: options.command,

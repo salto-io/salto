@@ -1,6 +1,6 @@
 import * as commands from '../commands'
 import { createCommandBuilder } from '../builder'
-import { ParsedCliInput, CliCommand, CliOutput } from '../types'
+import { CliCommand, CliOutput, ParsedCliInput } from '../types'
 import { Blueprint } from '../../blueprints/blueprint'
 import * as bf from '../filters/blueprints'
 
@@ -10,8 +10,8 @@ const command = (blueprints: Blueprint[], force: boolean): CliCommand => ({
   },
 })
 
-type Args = bf.Args & { yes: boolean }
-type MyParsedCliInput = ParsedCliInput<Args> & bf.MyParsedCliInput
+type ApplyArgs = bf.Args & { yes: boolean }
+type ApplyParsedCliInput = ParsedCliInput<ApplyArgs> & bf.BlueprintsParsedCliInput
 
 const builder = createCommandBuilder({
   options: {
@@ -28,7 +28,7 @@ const builder = createCommandBuilder({
 
   filters: [bf.requiredFilter],
 
-  async build(input: MyParsedCliInput, _output: CliOutput) {
+  async build(input: ApplyParsedCliInput, _output: CliOutput) {
     return command(input.blueprints, input.args.yes)
   },
 })

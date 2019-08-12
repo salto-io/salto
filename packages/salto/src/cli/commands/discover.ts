@@ -10,8 +10,8 @@ const command = (blueprints: Blueprint[], outputFilename: string): CliCommand =>
   },
 })
 
-type Args = bf.Args & { 'output-filename': string }
-type MyParsedCliInput = ParsedCliInput<Args> & bf.MyParsedCliInput
+type DiscoverArgs = bf.Args & { 'output-filename': string }
+type DiscoverParsedCliInput = ParsedCliInput<DiscoverArgs> & bf.BlueprintsParsedCliInput
 
 const builder = createCommandBuilder({
   options: {
@@ -30,7 +30,7 @@ const builder = createCommandBuilder({
 
   filters: [bf.optionalFilter],
 
-  async build(input: MyParsedCliInput, _output: CliOutput) {
+  async build(input: DiscoverParsedCliInput, _output: CliOutput) {
     return command(input.blueprints, input.args['output-filename'])
   },
 })

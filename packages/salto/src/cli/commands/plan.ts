@@ -13,8 +13,8 @@ const planTask = (blueprints: Blueprint[], { stdout }: CliOutput): CliCommand =>
   },
 })
 
-type Args = bf.Args
-type MyParsedCliInput = ParsedCliInput<Args> & bf.MyParsedCliInput
+type PlanArgs = bf.Args
+type PlanParsedCliInput = ParsedCliInput<PlanArgs> & bf.BlueprintsParsedCliInput
 
 const builder = createCommandBuilder({
   options: {
@@ -25,7 +25,7 @@ const builder = createCommandBuilder({
 
   filters: [bf.requiredFilter],
 
-  async build(input: MyParsedCliInput, output: CliOutput) {
+  async build(input: PlanParsedCliInput, output: CliOutput) {
     return planTask(input.blueprints, output)
   },
 })

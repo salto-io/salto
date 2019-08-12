@@ -4,10 +4,10 @@ import { ParsedCliInput } from './types'
 type Transformer<T1, T2 extends T1> = (v: T1) => T2
 type AsyncTransformer<T1, T2 extends T1> = (v: T1) => Promise<T2>
 
-export const apply = <T1, T2 extends T1>(input: T1, ...transformers: Transformer<T1, T2>[]): T2 =>
+const apply = <T1, T2 extends T1>(input: T1, ...transformers: Transformer<T1, T2>[]): T2 =>
   transformers.reduce((res, transformer) => transformer(res), input) as T2
 
-export const applyAsync = <T1, T2 extends T1>(
+const applyAsync = <T1, T2 extends T1>(
   input: T1, ...transformers: AsyncTransformer<T1, T2>[]
 ): Promise<T2> => (
     transformers.length
@@ -21,15 +21,15 @@ export interface ParserFilter<TArgs = {}, TArgv extends yargs.Argv<TArgs> = yarg
 
 export interface ParsedCliInputFilter<
   TArgs = {},
-  TParsedCliInput extends ParsedCliInput<TArgs> = ParsedCliInput<TArgs>> {
+  TParsedCliInput extends ParsedCliInput<TArgs> = ParsedCliInput<TArgs>
+> {
   transformParsedCliInput: AsyncTransformer<ParsedCliInput<TArgs>, TParsedCliInput>
 }
 
 export type Filter<
   TArgs = {},
-  TArgv extends yargs.Argv<TArgs> = yargs.Argv<TArgs>,
-  TParsedCliInput extends ParsedCliInput<TArgs> = ParsedCliInput<TArgs>,
-> = ParserFilter<TArgs, TArgv> | ParsedCliInputFilter<TArgs, TParsedCliInput>
+  TParsedCliInput extends ParsedCliInput<TArgs> = ParsedCliInput<TArgs>
+> = ParserFilter<TArgs> | ParsedCliInputFilter<TArgs>
 
 // namespace used for clarity here
 // eslint-disable-next-line @typescript-eslint/no-namespace

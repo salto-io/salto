@@ -9,11 +9,11 @@ export interface Args {
   'blueprints-dir': string
 }
 
-export type MyParsedCliInput = ParsedCliInput<Args> & { blueprints: Blueprint[] }
+export type BlueprintsParsedCliInput = ParsedCliInput<Args> & { blueprints: Blueprint[] }
 
-type MyFilter = ParserFilter<Args> & ParsedCliInputFilter<Args, MyParsedCliInput>
+type BlueprintsFilter = ParserFilter<Args> & ParsedCliInputFilter<Args, BlueprintsParsedCliInput>
 
-export const optionalFilter: MyFilter = {
+export const optionalFilter: BlueprintsFilter = {
   transformParser(parser: yargs.Argv): yargs.Argv<Args> {
     return parser
       .options({
@@ -35,14 +35,14 @@ export const optionalFilter: MyFilter = {
       }) as yargs.Argv<Args>
   },
 
-  async transformParsedCliInput(input: ParsedCliInput<Args>): Promise<MyParsedCliInput> {
+  async transformParsedCliInput(input: ParsedCliInput<Args>): Promise<BlueprintsParsedCliInput> {
     const args = input.args as yargs.Arguments<Args>
     const blueprints = await loadBlueprints(args.blueprint || [], args['blueprints-dir'])
     return Object.assign(input, { blueprints })
   },
 }
 
-export const requiredFilter: MyFilter = Object.assign({}, optionalFilter, {
+export const requiredFilter: BlueprintsFilter = Object.assign({}, optionalFilter, {
   transformParser(parser: yargs.Argv): yargs.Argv<Args> {
     return optionalFilter.transformParser(parser)
       .check((args: yargs.Arguments<Args>): true => {

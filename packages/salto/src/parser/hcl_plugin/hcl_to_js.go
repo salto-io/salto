@@ -4,6 +4,8 @@ import (
 	"github.com/hashicorp/hcl2/hcl"
 	"github.com/hashicorp/hcl2/hcl/hclsyntax"
 	"github.com/zclconf/go-cty/cty"
+	"bytes"
+	"fmt"
 )
 
 // convertValue converts a cty.Value to the appropriate go native type so that it can be
@@ -93,6 +95,7 @@ func convertTraversal(traversal hcl.Traversal) []interface{} {
 			}
 		}
 	}
+
 	return steps
 }
 

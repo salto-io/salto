@@ -241,7 +241,7 @@ export const toCustomField = (
         field.type.elemID.name
       ).includes(annotationValue)
     ))
-  
+
   // Convert the annotations' names to the required API name
   Object.keys(bpAnnotations).forEach(key => {
     const usedKey = FIELD_ANNOTATIONS_API_NAMES[key] ? FIELD_ANNOTATIONS_API_NAMES[key] : key
@@ -382,7 +382,7 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
           _.toLower(bpFieldType.elemID.name)
         ).includes(bpCase(key))
       ))
-    
+
     // Convert the annotations' names to bp case for those that are not already in that format
     // (annotations that consist of at least 2 words)
     const renamedAnnotations: Values = {}

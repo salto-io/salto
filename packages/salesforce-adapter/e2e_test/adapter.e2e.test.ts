@@ -240,7 +240,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
             {
               [Type.REQUIRED]: false,
               [Type.DEFAULT]: '"test"',
-              label: 'description label',
+              [constants.LABEL]: 'description label',
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 admin: { editable: true, readable: true },
                 standard: { editable: true, readable: true },
@@ -252,7 +252,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
             'formula',
             stringType,
             {
-              label: 'Test formula',
+              [constants.LABEL]: 'Test formula',
               [constants.FORMULA]: '"some text"',
             },
           ),
@@ -296,7 +296,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
             'description',
             stringType,
             {
-              label: 'test label',
+              [constants.LABEL]: 'test label',
               [Type.REQUIRED]: false,
               [Type.DEFAULT]: 'test',
             },
@@ -341,7 +341,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
         annotationsValues: {
           [Type.REQUIRED]: false,
           [Type.DEFAULT]: 'test',
-          label: 'test label',
+          [constants.LABEL]: 'test label',
           [constants.API_NAME]: customObjectName,
           [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
         },
@@ -382,7 +382,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
         annotationsValues: {
           [Type.REQUIRED]: false,
           [Type.DEFAULT]: 'test2',
-          label: 'test2 label',
+          [constants.LABEL]: 'test2 label',
           [constants.API_NAME]: customObjectName,
         },
       })
@@ -411,7 +411,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
             stringType,
             {
               [constants.API_NAME]: 'Address__c',
-              label: 'Address',
+              [constants.LABEL]: 'Address',
             },
           ),
           banana: new Field(
@@ -420,14 +420,14 @@ describe('Test Salesforce adapter E2E with real account', () => {
             stringType,
             {
               [constants.API_NAME]: 'Banana__c',
-              label: 'Banana',
+              [constants.LABEL]: 'Banana',
             },
           ),
         },
         annotationsValues: {
           [Type.REQUIRED]: false,
           [Type.DEFAULT]: 'test',
-          label: 'test label',
+          [constants.LABEL]: 'test label',
           [constants.API_NAME]: customObjectName,
           [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
         },
@@ -447,7 +447,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
             stringType,
             {
               [constants.API_NAME]: 'Address__c',
-              label: 'Address',
+              [constants.LABEL]: 'Address',
             },
           ),
           banana: new Field(
@@ -456,14 +456,14 @@ describe('Test Salesforce adapter E2E with real account', () => {
             stringType,
             {
               [constants.API_NAME]: 'Banana__c',
-              label: 'Banana Split',
+              [constants.LABEL]: 'Banana Split',
             },
           ),
         },
         annotationsValues: {
           [Type.REQUIRED]: false,
           [Type.DEFAULT]: 'test2',
-          label: 'test label 2',
+          [constants.LABEL]: 'test label 2',
           [constants.API_NAME]: customObjectName,
         },
       })
@@ -530,7 +530,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
         annotationsValues: {
           [Type.REQUIRED]: false,
           [Type.DEFAULT]: 'test',
-          label: 'test label',
+          [constants.LABEL]: 'test label',
           [constants.API_NAME]: customObjectName,
           [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
         },
@@ -584,7 +584,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
         annotationsValues: {
           [Type.REQUIRED]: false,
           [Type.DEFAULT]: 'test',
-          label: 'test label',
+          [constants.LABEL]: 'test label',
           [constants.API_NAME]: customObjectName,
         },
       })
@@ -636,7 +636,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
               // TODO: At this point we do not know how to pass a default value for a picklist
               // (API fails for this field)
               // [Type.DEFAULT]: 'NEW',
-              label: 'Picklist description label',
+              [constants.LABEL]: 'Picklist description label',
               values: ['NEW', 'OLD'],
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 admin: { editable: false, readable: true },
@@ -651,7 +651,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
             {
               [Type.REQUIRED]: false,
               [Type.DEFAULT]: 25,
-              label: 'Currency description label',
+              [constants.LABEL]: 'Currency description label',
               [constants.SCALE]: 3,
               [constants.PRECISION]: 18,
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
@@ -666,7 +666,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
             Types.salesforceDataTypes.autonumber,
             {
               [Type.REQUIRED]: false,
-              label: 'Autonumber description label',
+              [constants.LABEL]: 'Autonumber description label',
               displayFormat: 'ZZZ-{0000}',
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 admin: { editable: false, readable: true },
@@ -679,7 +679,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
             'charlie',
             Types.salesforceDataTypes.date,
             {
-              label: 'Date description label',
+              [constants.LABEL]: 'Date description label',
               [Type.DEFAULT]: 'Today() + 7',
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 admin: { editable: false, readable: true },
@@ -692,7 +692,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
             'delta',
             Types.salesforceDataTypes.time,
             {
-              label: 'Time description label',
+              [constants.LABEL]: 'Time description label',
               [Type.DEFAULT]: 'TIMENOW() + 5',
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 admin: { editable: false, readable: true },
@@ -705,7 +705,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
             'echo',
             Types.salesforceDataTypes.datetime,
             {
-              label: 'DateTime description label',
+              [constants.LABEL]: 'DateTime description label',
               [Type.DEFAULT]: 'Now() + 7',
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 admin: { editable: false, readable: true },
@@ -718,7 +718,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
             'foxtrot',
             Types.salesforceDataTypes.email,
             {
-              label: 'Email description label',
+              [constants.LABEL]: 'Email description label',
               [constants.UNIQUE]: true,
               [constants.CASESENSITIVE]: true,
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
@@ -732,7 +732,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
             'golf',
             Types.salesforceDataTypes.location,
             {
-              label: 'Location description label',
+              [constants.LABEL]: 'Location description label',
               [constants.SCALE]: 2,
               [constants.DISPLAYLOCATIONINDECIMAL]: true,
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
@@ -746,7 +746,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
             'hotel',
             Types.salesforceDataTypes.multipicklist,
             {
-              label: 'Multipicklist description label',
+              [constants.LABEL]: 'Multipicklist description label',
               values: ['DO', 'RE', 'MI', 'FA', 'SOL', 'LA', 'SI'],
               [constants.VISIBLELINES]: 4,
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
@@ -760,7 +760,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
             'india',
             Types.salesforceDataTypes.percent,
             {
-              label: 'Percent description label',
+              [constants.LABEL]: 'Percent description label',
               [constants.SCALE]: 3,
               [constants.PRECISION]: 12,
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
@@ -774,7 +774,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
             'juliett',
             Types.salesforceDataTypes.phone,
             {
-              label: 'Phone description label',
+              [constants.LABEL]: 'Phone description label',
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 admin: { editable: false, readable: true },
                 standard: { editable: false, readable: true },
@@ -786,7 +786,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
             'kilo',
             Types.salesforceDataTypes.longtextarea,
             {
-              label: 'LongTextArea description label',
+              [constants.LABEL]: 'LongTextArea description label',
               [constants.VISIBLELINES]: 5,
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 admin: { editable: false, readable: true },
@@ -799,7 +799,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
             'lima',
             Types.salesforceDataTypes.richtextarea,
             {
-              label: 'RichTextArea description label',
+              [constants.LABEL]: 'RichTextArea description label',
               [constants.VISIBLELINES]: 27,
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 admin: { editable: false, readable: true },
@@ -812,7 +812,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
             'mike',
             Types.salesforceDataTypes.textarea,
             {
-              label: 'TextArea description label',
+              [constants.LABEL]: 'TextArea description label',
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 admin: { editable: false, readable: true },
                 standard: { editable: false, readable: true },
@@ -824,7 +824,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
             'november',
             Types.salesforceDataTypes.encryptedtext,
             {
-              label: 'EncryptedText description label',
+              [constants.LABEL]: 'EncryptedText description label',
               [constants.MASKTYPE]: 'creditCard',
               [constants.MASKCHAR]: 'X',
               [constants.LENGTH]: 35,
@@ -839,7 +839,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
             'oscar',
             Types.salesforceDataTypes.url,
             {
-              label: 'Url description label',
+              [constants.LABEL]: 'Url description label',
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 admin: { editable: false, readable: true },
                 standard: { editable: false, readable: true },
@@ -855,7 +855,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
               [constants.PRECISION]: 15,
               [constants.UNIQUE]: true,
               [Type.DEFAULT]: 42,
-              label: 'Number description label',
+              [constants.LABEL]: 'Number description label',
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 admin: { editable: false, readable: true },
                 standard: { editable: false, readable: true },

@@ -10,8 +10,5 @@
   "scripts": {
     "install": "yarn workspaces run build",
     "lint-fix": "yarn workspaces run lint-fix"
-  },
-  "dependencies": {
-    "jsforce-types": "https://github.com/salto-io/jsforce-types.git"
   }
 }

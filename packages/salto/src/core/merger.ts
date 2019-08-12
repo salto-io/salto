@@ -3,6 +3,7 @@ import {
   ObjectType, isType, isObjectType, isInstanceElement, Element, Field, InstanceElement,
   Type, Values, PrimitiveType, isPrimitiveType, BuiltinTypes,
 } from 'adapter-api'
+import { resolve } from './expressions'
 
 export const UPDATE_KEYWORD = 'update'
 
@@ -180,5 +181,8 @@ export const mergeElements = (elements: Element[]): Element[] => {
     ...Object.values(mergedObjects),
     ...mergedInstances,
   ]
-  return updateMergedTypes(mergedElements, _.merge({}, mergedObjects, mergedPrimitives))
+  const updated = updateMergedTypes(mergedElements, _.merge({}, mergedObjects, mergedPrimitives))
+  // Caution - resolve has side effects and modifies the elements in updated.
+  // Needed in order to maintain the pointers
+  return updated.map(e => resolve(e, updated))
 }

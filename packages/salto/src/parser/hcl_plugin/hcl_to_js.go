@@ -4,6 +4,8 @@ import (
 	"github.com/hashicorp/hcl2/hcl"
 	"github.com/hashicorp/hcl2/hcl/hclsyntax"
 	"github.com/zclconf/go-cty/cty"
+	"bytes"
+	"fmt"
 )
 
 // convertValue converts a cty.Value to the appropriate go native type so that it can be
@@ -74,6 +76,31 @@ func convertSourceRange(src hcl.Range) map[string]interface{} {
 		"end":      convertPos(src.End),
 		"filename": src.Filename,
 	}
+}
+
+func convertTraversal(traversal hcl.Traversal) string {
+	var buf bytes.Buffer
+	for _, step := range traversal {
+		switch tStep := step.(type) {
+		case hcl.TraverseRoot:
+			buf.WriteString(tStep.Name)
+		case hcl.TraverseAttr:
+			buf.WriteByte('.')
+			buf.WriteString(tStep.Name)
+		case hcl.TraverseIndex:
+			keyTy := tStep.Key.Type()
+			buf.WriteByte('.')
+			if keyTy == cty.String {
+				buf.WriteString(tStep.Key.AsString())
+			} else if keyTy == cty.Number {
+				val, _ := tStep.Key.AsBigFloat().Float64() 
+				buf.WriteString(fmt.Sprintf("%.0f", val))
+			} else {
+				panic("complex indexes are not supported")
+			}
+		}
+	}
+	return buf.String()
 }
 
 // hclConverter walks the HCL tree and converts each node to a native go
@@ -156,6 +183,16 @@ func (maker *hclConverter) exitAttribute(attr *hclsyntax.Attribute) {
 	maker.nestedConverter = nil
 }
 
+func (maker *hclConverter) exitReferenceExpresion(traversal hcl.Traversal) {
+	maker.appendExpression(map[string]interface{}{
+		"type":  "reference",
+		"value": convertTraversal(traversal),
+		// Every expression need to have subexpressions
+		"expressions": []interface{}{},
+	})
+	maker.nestedConverter = nil	
+}
+
 func (maker *hclConverter) Enter(node hclsyntax.Node) hcl.Diagnostics {
 	if maker.nestedConverter != nil {
 		// Let deepest nested maker handle the new element
@@ -196,6 +233,10 @@ func (maker *hclConverter) Enter(node hclsyntax.Node) hcl.Diagnostics {
 
 	case *hclsyntax.LiteralValueExpr:
 		maker.enterExpression("literal")
+
+	case *hclsyntax.ScopeTraversalExpr:
+		maker.enterExpression("reference")
+
 	}
 
 	return hcl.Diagnostics{}
@@ -207,7 +248,6 @@ func (maker *hclConverter) Exit(node hclsyntax.Node) hcl.Diagnostics {
 		// maker is the one that should handle an exit
 		return maker.nestedConverter.Exit(node)
 	}
-
 	switch node.(type) {
 	case *hclsyntax.Body:
 		// pass
@@ -247,6 +287,10 @@ func (maker *hclConverter) Exit(node hclsyntax.Node) hcl.Diagnostics {
 		val, evalErrs := exp.Value(nil)
 		maker.exitLiteralExpression(val)
 		return evalErrs
+
+	case *hclsyntax.ScopeTraversalExpr:
+		ref := node.(*hclsyntax.ScopeTraversalExpr).AsTraversal()
+		maker.exitReferenceExpresion(ref)
 
 	}
 	return hcl.Diagnostics{}

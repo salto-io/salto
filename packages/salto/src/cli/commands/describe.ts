@@ -4,13 +4,13 @@ import { ParsedCliInput, CliCommand, CliOutput } from '../types'
 import { Blueprint } from '../../blueprints/blueprint'
 import * as bf from '../filters/blueprints'
 
-const command = (blueprints: Blueprint[], outputFilename: string): CliCommand => ({
+const command = (blueprints: Blueprint[], words: string[]): CliCommand => ({
   async execute(): Promise<void> {
-    return commands.discoverBase(outputFilename, blueprints)
+    return commands.describe(words, blueprints)
   },
 })
 
-type DescribeArgs = bf.Args & { 'output-filename': string }
+type DescribeArgs = bf.Args & { 'words': string[] }
 type DescribeParsedCliInput = ParsedCliInput<DescribeArgs> & bf.BlueprintsParsedCliInput
 
 const builder = createCommandBuilder({
@@ -30,7 +30,7 @@ const builder = createCommandBuilder({
   filters: [bf.requiredFilter],
 
   async build(input: DescribeParsedCliInput, _output: CliOutput) {
-    return command(input.blueprints, input.args['output-filename'])
+    return command(input.blueprints, input.args.words)
   },
 })
 

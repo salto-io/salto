@@ -26,10 +26,10 @@ export class ReferenceExpression {
       return (!_.isEmpty(this.path)) ? _.get(rootElement.value, this.path) : rootElement.value
     }
     if (isObjectType(rootElement) && rootElement.fields[this.path[0]]) {
-      return _.get(rootElement.fields[this.path[0]].annotationsValues, this.path.slice(1))
+      return _.get(rootElement.fields[this.path[0]].getAnnotationsValues(), this.path.slice(1))
     }
     if (isType(rootElement)) {
-      return _.get(rootElement.annotationsValues, this.path)
+      return _.get(rootElement.getAnnotationsValues(), this.path)
     }
 
     return undefined
@@ -69,7 +69,9 @@ export const resolve = (element: Element, contextElements: Element[]): Element =
     element.fields = _.cloneDeepWith(element.fields, referenceCloner)
   }
   if (isType(element)) {
-    element.annotationsValues = _.cloneDeepWith(element.annotationsValues, referenceCloner)
+    element.annotate(_.cloneDeepWith(
+      element.getAnnotationsValues(), referenceCloner
+    ))
   }
 
   return element

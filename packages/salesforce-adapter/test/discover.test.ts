@@ -326,6 +326,74 @@ describe('Test SalesforceAdapter discover', () => {
       expect(flow.value.bla.bla_3).toBe(true)
     })
 
+    it('should discover complicated metadata instance', async () => {
+      mockSingleMetadataType('Layout', [
+        {
+          name: 'fullName', soapType: 'string', valueRequired: true,
+        },
+        {
+          fields: [
+            {
+              name: 'label', soapType: 'string', valueRequired: true,
+            },
+            {
+              name: 'style', soapType: 'string', valueRequired: false,
+            },
+            {
+              fields: [{
+                fields: [
+                  {
+                    name: 'field', soapType: 'string', valueRequired: 'true',
+                  }, {
+                    name: 'behavior', soapType: 'string', valueRequired: 'true',
+                  },
+                ],
+                name: 'layoutItems',
+                soapType: 'LayoutItem',
+                valueRequired: 'true',
+              }, {
+                name: 'reserved', soapType: 'string', valueRequired: 'true',
+              }],
+              name: 'layoutColumns',
+              soapType: 'LayoutColumn',
+              valueRequired: true,
+            }],
+          name: 'layoutSections',
+          soapType: 'LayoutSection',
+        },
+      ])
+
+      mockSingleMetadataInstance('OrderLayout', {
+        fullName: 'Order-Order Layout',
+        layoutSections: [{
+          label: 'Description Information',
+          layoutColumns: [{ layoutItems: { behavior: 'Edit', field: 'Description' } },
+            { layoutItems: { behavior: 'Edit2', field: 'Description2' } }],
+        }, {
+          label: 'Additional Information',
+          layoutColumns: ['', ''],
+        }, {
+          layoutColumns: ['', '', ''],
+          style: 'CustomLinks',
+        },
+        {
+          layoutColumns: '',
+        }],
+      })
+
+      const result = await adapter().discover()
+      const layout = result.filter(o => o.elemID.name === 'layout_order_order_layout').pop() as InstanceElement
+      expect(layout.type.elemID.getFullName()).toBe('salesforce_layout_type')
+      expect(layout.value.full_name).toBe('Order-Order Layout')
+      expect(layout.value.layout_sections.length).toBe(3)
+      expect(layout.value.layout_sections[0].label).toBe('Description Information')
+      expect(layout.value.layout_sections[0].layout_columns[0].layout_items.behavior).toBe('Edit')
+      expect(layout.value.layout_sections[0].layout_columns[1].layout_items.field).toBe('Description2')
+      expect(layout.value.layout_sections[1].layout_columns).toBeUndefined()
+      expect(layout.value.layout_sections[1].label).toBe('Additional Information')
+      expect(layout.value.layout_sections[2].style).toBe('CustomLinks')
+    })
+
     it('should discover metadata types lists', async () => {
       mockSingleMetadataType('Flow', [
         {

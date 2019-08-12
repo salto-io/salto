@@ -314,7 +314,9 @@ export default class SalesforceAdapter {
       .map(i => new InstanceElement(
         new ElemID(constants.SALESFORCE, type.elemID.nameParts[0], bpCase(i.fullName)),
         type,
-        fromMetadataInfo(i, type)
+        fromMetadataInfo(i, type,
+          // Transfom of settings values shouldn't be strict
+          type.elemID.nameParts[0] !== bpCase(constants.SETTINGS_METADATA_TYPE))
       ))
   }
 
@@ -358,7 +360,7 @@ export default class SalesforceAdapter {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       innerChange: (field: Field, value: any) => void): any => {
       Object.keys(type.fields).forEach(key => {
-        if (value[key] === undefined) return
+        if (!value || !value[key]) return
         value[key] = innerChange(type.fields[key], value[key])
         const fieldType = type.fields[key].type
         if (isObjectType(fieldType)) {
@@ -388,6 +390,10 @@ export default class SalesforceAdapter {
     const castLists = (field: Field, value: any): any => {
       if (field.isList && !_.isArray(value)) {
         return [value]
+      }
+      // We get from sfdc api list with empty strings for empty object (possibly jsforce issue)
+      if (field.isList && _.isArray(value) && _.isEmpty(value.filter(v => !_.isEmpty(v)))) {
+        return []
       }
       return value
     }

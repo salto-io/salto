@@ -1,4 +1,4 @@
-import { promiseWithState, PromiseWithState } from '../../src/promise/promise'
+import { promiseWithState, PromiseWithState } from '../../src/promise/state'
 
 describe('promise', () => {
   describe('promiseWithState', () => {

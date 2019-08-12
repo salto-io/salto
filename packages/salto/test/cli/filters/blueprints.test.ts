@@ -1,11 +1,8 @@
 import { Blueprint } from '../../../src/blueprints/blueprint'
-import { createCommandBuilder } from '../../../src/cli/builder'
-import { ParsedCliInput, YargsCommandBuilder } from '../../../src/cli/types'
+import { createCommandBuilder, YargsCommandBuilder } from '../../../src/cli/builder'
 import * as blueprintsImpl from '../../../src/cli/blueprint'
 import * as bf from '../../../src/cli/filters/blueprints'
 import * as mocks from '../mocks'
-
-type MyParsedCliInput = ParsedCliInput<bf.ParsedArgs> & bf.AddedCliInput
 
 describe('blueprint filter', () => {
   beforeEach(() => {
@@ -15,7 +12,7 @@ describe('blueprint filter', () => {
   let out: mocks.MockCliOutput
   const buildFunc = jest.fn(() => Promise.resolve({ execute: () => Promise.resolve() }))
 
-  const builder = createCommandBuilder<bf.ParsedArgs, MyParsedCliInput>({
+  const builder = createCommandBuilder({
     options: {
       command: 'testCommand',
       aliases: ['t'],
@@ -28,7 +25,7 @@ describe('blueprint filter', () => {
       },
     },
 
-    filters: [bf.filter],
+    filters: [bf.requiredFilter],
 
     build: buildFunc,
   })

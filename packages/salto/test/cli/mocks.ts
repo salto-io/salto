@@ -1,7 +1,6 @@
 import _ from 'lodash'
-import { YargsCommandBuilder } from '../../src/cli/types'
+import { YargsCommandBuilder, allBuilders } from '../../src/cli/builder'
 import realCli from '../../src/cli/cli'
-import { allBuilders } from '../../src/cli/builder'
 
 export interface MockWriteStreamOpts { isTTY?: boolean; hasColors?: boolean }
 

@@ -40,35 +40,35 @@ describe('Test Salto Expressions', () => {
   })
 
   const simpleRefInst = new InstanceElement(new ElemID('salto', 'simpleref'), simpleRefType, {
-    test: new ReferenceExpression(`${baseInstID.getFullName()}.simple`),
+    test: new ReferenceExpression([baseInstID.getFullName(), 'simple']),
   })
 
   const nestedRefInst = new InstanceElement(new ElemID('salto', 'nesetedref'), simpleRefType, {
-    test: new ReferenceExpression(`${baseInstID.getFullName()}.obj.value`),
+    test: new ReferenceExpression([baseInstID.getFullName(), 'obj', 'value']),
   })
 
   const arrayRefInst = new InstanceElement(new ElemID('salto', 'arrayref'), simpleRefType, {
-    test0: new ReferenceExpression(`${baseInstID.getFullName()}.arr.0`),
-    test1: new ReferenceExpression(`${baseInstID.getFullName()}.arr.1`),
+    test0: new ReferenceExpression([baseInstID.getFullName(), 'arr', 0]),
+    test1: new ReferenceExpression([baseInstID.getFullName(), 'arr', 1]),
   })
 
   const annoRefInst = new InstanceElement(new ElemID('salto', 'annoref'), simpleRefType, {
-    test: new ReferenceExpression(`${baseElemID.getFullName()}.anno`),
+    test: new ReferenceExpression([baseElemID.getFullName(), 'anno']),
   })
 
   const fieldAnnoRefInst = new InstanceElement(new ElemID('salto', 'fieldref'), simpleRefType, {
-    test: new ReferenceExpression(`${baseElemID.getFullName()}.simple.anno`),
+    test: new ReferenceExpression([baseElemID.getFullName(), 'simple', 'anno']),
   })
 
   const chainedRefInst = new InstanceElement(
     new ElemID('salto', 'chainedref'), simpleRefType, {
-      test: new ReferenceExpression(`${simpleRefInst.elemID.getFullName()}.test`),
+      test: new ReferenceExpression([simpleRefInst.elemID.getFullName(), 'test']),
     }
   )
 
   const noPathInst = new InstanceElement(
     new ElemID('salto', 'nopath'), simpleRefType, {
-      test: new ReferenceExpression(`${baseInst.elemID.getFullName()}`),
+      test: new ReferenceExpression([baseInst.elemID.getFullName()]),
     }
   )
 
@@ -77,11 +77,11 @@ describe('Test Salto Expressions', () => {
     elemID: objectRefID,
     fields: {
       ref: new Field(baseElemID, 'simple', BuiltinTypes.STRING, {
-        anno: new ReferenceExpression(`${baseElemID.getFullName()}.anno`),
+        anno: new ReferenceExpression([baseElemID.getFullName(), 'anno']),
       }),
     },
     annotationsValues: {
-      anno: new ReferenceExpression(`${baseElemID.getFullName()}.anno`),
+      anno: new ReferenceExpression([baseElemID.getFullName(), 'anno']),
     },
   })
 
@@ -172,18 +172,18 @@ describe('Test Salto Expressions', () => {
     const firstRef = new InstanceElement(
       firstRefID,
       simpleRefType,
-      { test: new ReferenceExpression(`${secondRefID.getFullName()}.test`) }
+      { test: new ReferenceExpression([secondRefID.getFullName(), 'test']) }
     )
     const secondRef = new InstanceElement(
       secondRefID,
       simpleRefType,
-      { test: new ReferenceExpression(`${firstRefID.getFullName()}.test`) }
+      { test: new ReferenceExpression([firstRefID.getFullName(), 'test']) }
     )
     const chained = [firstRef, secondRef]
     expect(() => chained.map(e => resolve(e, chained))).toThrow()
   })
 
-  it('should fail on  unresolvable references', () => {
+  it('should fail on  unresolvable', () => {
     const firstRefID = new ElemID('salto', 'first')
     const secondRefID = new ElemID('salto', 'second')
     const firstRef = new InstanceElement(
@@ -194,9 +194,20 @@ describe('Test Salto Expressions', () => {
     const secondRef = new InstanceElement(
       secondRefID,
       simpleRefType,
-      { test: new ReferenceExpression(`${firstRefID.getFullName()}.test`) }
+      { test: new ReferenceExpression([firstRefID.getFullName(), 'test']) }
     )
     const bad = [firstRef, secondRef]
+    expect(() => bad.map(e => resolve(e, bad))).toThrow()
+  })
+
+  it('should fail on unresolvable roots', () => {
+    const firstRefID = new ElemID('salto', 'first')
+    const firstRef = new InstanceElement(
+      firstRefID,
+      simpleRefType,
+      { test: new ReferenceExpression(['noop', 'test']) }
+    )
+    const bad = [firstRef]
     expect(() => bad.map(e => resolve(e, bad))).toThrow()
   })
 })

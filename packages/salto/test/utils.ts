@@ -1,5 +1,5 @@
 import _ from 'lodash'
-
+import { ReferenceExpression } from '../src/core/expressions'
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const devaluate = (value: any): HCLExpression => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -28,6 +28,12 @@ const devaluate = (value: any): HCLExpression => {
       .value(),
   })
 
+  const devaluateReference = (ref: ReferenceExpression): HCLExpression => ({
+    type: 'reference',
+    value: ref.traversal.split(ReferenceExpression.TRAVERSAL_SEPERATOR),
+    expressions: [],
+  })
+
   if (_.isString(value)) {
     return devaluateString(value as string)
   }
@@ -39,6 +45,10 @@ const devaluate = (value: any): HCLExpression => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return devaluateObject(value as Record<string, any>)
   }
+  if (value instanceof ReferenceExpression) {
+    return devaluateReference(value)
+  }
+
   return devaluateValue(value)
 }
 

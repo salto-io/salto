@@ -1,14 +1,12 @@
 import * as fs from 'async-file'
-import * as path from 'path'
+import readdirp from 'readdirp'
 import { Blueprint } from '../blueprints/blueprint'
 
 const getBluePrintsFromDir = async (
   blueprintsDir: string,
 ): Promise<string[]> => {
-  const dirFiles = await fs.readdir(blueprintsDir)
-  return dirFiles
-    .filter(f => path.extname(f).toLowerCase() === '.bp')
-    .map(f => path.join(blueprintsDir, f))
+  const entries = await readdirp.promise(blueprintsDir, { fileFilter: '*.bp' })
+  return entries.map(e => e.fullPath)
 }
 
 const loadBlueprint = async (blueprintFile: string): Promise<Blueprint> => ({

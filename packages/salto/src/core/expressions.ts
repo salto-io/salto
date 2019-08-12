@@ -12,7 +12,7 @@ export class ReferenceExpression {
   constructor(traversalParts: Value[]) {
     const nameParts = traversalParts[0].split(ElemID.NAMESPACE_SEPERATOR)
     this.root = new ElemID(nameParts[0], ...nameParts.slice(1))
-    this.path = (traversalParts.length > 1) ? traversalParts.slice(1) : []
+    this.path = traversalParts.slice(1)
     this.traversal = traversalParts.join(ReferenceExpression.TRAVERSAL_SEPERATOR)
   }
 
@@ -36,7 +36,7 @@ export class ReferenceExpression {
   }
 
   resolve(contextElements: Element[], visited: string[] = []): Value {
-    if (!_.isEmpty(visited.filter(e => this.traversal === e))) {
+    if (visited.includes(this.traversal)) {
       throw new Error(`can not resolve reference ${this.traversal} - circular dependency detected`)
     }
 

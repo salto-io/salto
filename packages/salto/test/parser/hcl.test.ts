@@ -102,21 +102,6 @@ describe('HCL Parser', () => {
     expect(body.blocks[0].attrs.thing.expressions[0].expressions.length).toEqual(2)
   })
 
-  it('parses references', async () => {
-    const blockDef = `type label {
-        thing = a.b
-        that = ">>>\${a.b}<<<"
-      }`
-
-    const { body } = await HCLParser.parse(Buffer.from(blockDef), 'none')
-    expect(body.blocks.length).toEqual(1)
-    expect(body.blocks[0].attrs).toHaveProperty('thing')
-    expect(body.blocks[0].attrs.thing.expressions[0].type).toEqual('reference')
-    expect(body.blocks[0].attrs.thing.expressions[0].value).toEqual(['a', 'b'])
-    expect(body.blocks[0].attrs.that.expressions[0].type).toEqual('template')
-    expect(body.blocks[0].attrs.that.expressions[0].expressions.length).toEqual(3)
-  })
-
   it('can run concurrently', async () => {
     const blockDef = 'type label {}'
     const blocksToParse = _.times(3, () => blockDef)

@@ -3,7 +3,6 @@ import {
   ObjectType, isType, isObjectType, isInstanceElement, Element, Field, InstanceElement,
   Type, Values, PrimitiveType, isPrimitiveType, BuiltinTypes,
 } from 'adapter-api'
-import { resolve } from './expressions'
 
 export const UPDATE_KEYWORD = 'update'
 
@@ -181,7 +180,5 @@ export const mergeElements = (elements: Element[]): Element[] => {
     ...Object.values(mergedObjects),
     ...mergedInstances,
   ]
-
-  const updated = updateMergedTypes(mergedElements, _.merge({}, mergedObjects, mergedPrimitives))
-  return updated.map(e => resolve(e, updated))
+  return updateMergedTypes(mergedElements, _.merge({}, mergedObjects, mergedPrimitives))
 }

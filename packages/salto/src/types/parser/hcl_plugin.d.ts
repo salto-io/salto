@@ -51,7 +51,7 @@ declare namespace NodeJS {
   }
 }
 
-type ExpressionType = 'list'|'map'|'template'|'literal'|'reference'
+type ExpressionType = 'list'|'map'|'template'|'literal'
 
 declare class HCLExpression {
   type: ExpressionType

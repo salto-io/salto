@@ -76,26 +76,6 @@ func convertSourceRange(src hcl.Range) map[string]interface{} {
 	}
 }
 
-func convertTraversal(traversal hcl.Traversal) []interface{} {
-	steps := make([]interface{}, len(traversal))
-	for i, step := range traversal {
-		switch tStep := step.(type) {
-		case hcl.TraverseRoot:
-			steps[i] = tStep.Name
-		case hcl.TraverseAttr:
-			steps[i] = tStep.Name
-		case hcl.TraverseIndex:
-			keyTy := tStep.Key.Type()
-			if keyTy.IsPrimitiveType() {
-				steps[i] = convertValue(tStep.Key, "")
-			} else {
-				panic("complex indexes are not supported")
-			}
-		}
-	}
-	return steps
-}
-
 // hclConverter walks the HCL tree and converts each node to a native go
 // value that can be serialized to javascript later
 type hclConverter struct {
@@ -176,15 +156,6 @@ func (maker *hclConverter) exitAttribute(attr *hclsyntax.Attribute) {
 	maker.nestedConverter = nil
 }
 
-func (maker *hclConverter) exitReferenceExpresion(traversal hcl.Traversal) {
-	maker.appendExpression(map[string]interface{}{
-		"type":        "reference",
-		"value":       convertTraversal(traversal),
-		"expressions": []interface{}{},
-	})
-	maker.nestedConverter = nil
-}
-
 func (maker *hclConverter) Enter(node hclsyntax.Node) hcl.Diagnostics {
 	if maker.nestedConverter != nil {
 		// Let deepest nested maker handle the new element
@@ -225,10 +196,6 @@ func (maker *hclConverter) Enter(node hclsyntax.Node) hcl.Diagnostics {
 
 	case *hclsyntax.LiteralValueExpr:
 		maker.enterExpression("literal")
-
-	case *hclsyntax.ScopeTraversalExpr:
-		maker.enterExpression("reference")
-
 	}
 
 	return hcl.Diagnostics{}
@@ -240,6 +207,7 @@ func (maker *hclConverter) Exit(node hclsyntax.Node) hcl.Diagnostics {
 		// maker is the one that should handle an exit
 		return maker.nestedConverter.Exit(node)
 	}
+
 	switch node.(type) {
 	case *hclsyntax.Body:
 		// pass
@@ -279,10 +247,6 @@ func (maker *hclConverter) Exit(node hclsyntax.Node) hcl.Diagnostics {
 		val, evalErrs := exp.Value(nil)
 		maker.exitLiteralExpression(val)
 		return evalErrs
-
-	case *hclsyntax.ScopeTraversalExpr:
-		ref := node.(*hclsyntax.ScopeTraversalExpr).AsTraversal()
-		maker.exitReferenceExpresion(ref)
 
 	}
 	return hcl.Diagnostics{}

@@ -4,8 +4,6 @@ import (
 	"github.com/hashicorp/hcl2/hcl"
 	"github.com/hashicorp/hcl2/hcl/hclsyntax"
 	"github.com/zclconf/go-cty/cty"
-	"bytes"
-	"fmt"
 )
 
 // convertValue converts a cty.Value to the appropriate go native type so that it can be
@@ -78,29 +76,24 @@ func convertSourceRange(src hcl.Range) map[string]interface{} {
 	}
 }
 
-func convertTraversal(traversal hcl.Traversal) string {
-	var buf bytes.Buffer
-	for _, step := range traversal {
+func convertTraversal(traversal hcl.Traversal) []interface{} {
+	steps := make([]interface{}, len(traversal))
+	for i, step := range traversal {
 		switch tStep := step.(type) {
-		case hcl.TraverseRoot:
-			buf.WriteString(tStep.Name)
+		case hcl.TraverseRoot: 
+			steps[i] = tStep.Name
 		case hcl.TraverseAttr:
-			buf.WriteByte('.')
-			buf.WriteString(tStep.Name)
+			steps[i] = tStep.Name
 		case hcl.TraverseIndex:
 			keyTy := tStep.Key.Type()
-			buf.WriteByte('.')
-			if keyTy == cty.String {
-				buf.WriteString(tStep.Key.AsString())
-			} else if keyTy == cty.Number {
-				val, _ := tStep.Key.AsBigFloat().Float64() 
-				buf.WriteString(fmt.Sprintf("%.0f", val))
+			if keyTy.IsPrimitiveType() {
+				steps[i] = convertValue(tStep.Key, "")
 			} else {
 				panic("complex indexes are not supported")
 			}
 		}
 	}
-	return buf.String()
+	return steps
 }
 
 // hclConverter walks the HCL tree and converts each node to a native go
@@ -185,12 +178,11 @@ func (maker *hclConverter) exitAttribute(attr *hclsyntax.Attribute) {
 
 func (maker *hclConverter) exitReferenceExpresion(traversal hcl.Traversal) {
 	maker.appendExpression(map[string]interface{}{
-		"type":  "reference",
-		"value": convertTraversal(traversal),
-		// Every expression need to have subexpressions
+		"type":        "reference",
+		"value":       convertTraversal(traversal),
 		"expressions": []interface{}{},
 	})
-	maker.nestedConverter = nil	
+	maker.nestedConverter = nil
 }
 
 func (maker *hclConverter) Enter(node hclsyntax.Node) hcl.Diagnostics {

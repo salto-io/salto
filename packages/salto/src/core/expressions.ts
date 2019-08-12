@@ -1,25 +1,19 @@
 import _ from 'lodash'
 
 import {
-  ElemID, Element, isObjectType, isInstanceElement, isType,
+  ElemID, Element, isObjectType, isInstanceElement, isType, Value,
 } from 'adapter-api'
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type ResolvedRef = any
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Value = any
 
 export class ReferenceExpression {
   static readonly TRAVERSAL_SEPERATOR = '.'
   traversal: string
   root: ElemID
   path: string[]
-  constructor(traversal: string) {
-    const traversalParts = traversal.split(ReferenceExpression.TRAVERSAL_SEPERATOR)
+  constructor(traversalParts: Value[]) {
     const nameParts = traversalParts[0].split(ElemID.NAMESPACE_SEPERATOR)
     this.root = new ElemID(nameParts[0], ...nameParts.slice(1))
     this.path = (traversalParts.length > 1) ? traversalParts.slice(1) : []
-    this.traversal = traversal
+    this.traversal = traversalParts.join(ReferenceExpression.TRAVERSAL_SEPERATOR)
   }
 
   static isReferenceExpresion(value: Value): value is ReferenceExpression {
@@ -27,10 +21,9 @@ export class ReferenceExpression {
   }
 
   // This is only wrapped as function so that the error validation would be simpler
-  private resolvePath(rootElement: Element): ResolvedRef {
-    const hasPath = this.path.length > 0
+  private resolvePath(rootElement: Element): Value {
     if (isInstanceElement(rootElement)) {
-      return (hasPath) ? _.get(rootElement.value, this.path) : rootElement.value
+      return (!_.isEmpty(this.path)) ? _.get(rootElement.value, this.path) : rootElement.value
     }
     if (isObjectType(rootElement) && rootElement.fields[this.path[0]]) {
       return _.get(rootElement.fields[this.path[0]].annotationsValues, this.path.slice(1))
@@ -42,13 +35,17 @@ export class ReferenceExpression {
     return undefined
   }
 
-  resolve(contextElements: Element[], visited: string[] = []): ResolvedRef {
-    // Validation should throw an error if there is not match, or more than one match
-    if (visited.filter(e => this.traversal === e).length > 0) {
+  resolve(contextElements: Element[], visited: string[] = []): Value {
+    if (!_.isEmpty(visited.filter(e => this.traversal === e))) {
       throw new Error(`can not resolve reference ${this.traversal} - circular dependency detected`)
     }
 
+    // Validation should throw an error if there is not match, or more than one match
     const rootElement = contextElements.filter(e => _.isEqual(this.root, e.elemID))[0]
+    if (rootElement === undefined) {
+      throw new Error(`Can not resolve reference ${this.traversal}`)
+    }
+
     const value = this.resolvePath(rootElement)
     if (value === undefined) {
       throw new Error(`Can not resolve reference ${this.traversal}`)
@@ -61,7 +58,7 @@ export class ReferenceExpression {
 }
 
 export const resolve = (element: Element, contextElements: Element[]): Element => {
-  const referenceCloner = (v: Value): ResolvedRef => (
+  const referenceCloner = (v: Value): Value => (
     ReferenceExpression.isReferenceExpresion(v) ? v.resolve(contextElements) : undefined
   )
 

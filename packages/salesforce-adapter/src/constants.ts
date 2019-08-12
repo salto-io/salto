@@ -13,15 +13,6 @@ export const PICKLIST_VALUES = 'values'
 export const API_NAME = 'api_name'
 export const FORMULA = 'formula'
 export const METADATA_TYPE = 'metadata_type'
-export const PRECISION = 'precision'
-export const SCALE = 'scale'
-export const UNIQUE = 'unique'
-export const CASESENSITIVE = 'caseSensitive'
-export const DISPLAYLOCATIONINDECIMAL = 'displayLocationInDecimal'
-export const VISIBLELINES = 'visibleLines'
-export const LENGTH = 'length'
-export const MASKCHAR = 'maskChar'
-export const MASKTYPE = 'maskType'
 export const FIELD_TYPE_NAMES = {
   STRING: 'string',
   AUTONUMBER: 'autonumber',
@@ -65,4 +56,32 @@ export const FIELD_TYPE_API_NAMES = {
   [FIELD_TYPE_NAMES.TEXTAREA]: 'TextArea',
   [FIELD_TYPE_NAMES.ENCRYPTEDTEXT]: 'EncryptedText',
   [FIELD_TYPE_NAMES.URL]: 'Url',
+}
+
+export const FIELD_ANNOTATIONS = {
+  UNIQUE: 'unique',
+  CASE_SENSITIVE: 'case_sensitive',
+  LENGTH: 'length',
+  SCALE: 'scale',
+  PRECISION: 'precision',
+  DISPLAY_FORMAT: 'display_format',
+  VISIBLE_LINES: 'visible_lines',
+  MASK_CHAR: 'mask_char',
+  MASK_TYPE: 'mask_type',
+  MASK: 'mask',
+  DISPLAY_LOCATION_IN_DECIMAL: 'display_location_in_decimal',
+}
+
+export const FIELD_ANNOTATIONS_API_NAMES = {
+  [FIELD_ANNOTATIONS.UNIQUE]: 'unique',
+  [FIELD_ANNOTATIONS.CASE_SENSITIVE]: 'caseSensitive',
+  [FIELD_ANNOTATIONS.LENGTH]: 'length',
+  [FIELD_ANNOTATIONS.SCALE]: 'scale',
+  [FIELD_ANNOTATIONS.PRECISION]: 'precision',
+  [FIELD_ANNOTATIONS.DISPLAY_FORMAT]: 'displayFormat',
+  [FIELD_ANNOTATIONS.VISIBLE_LINES]: 'visibleLines',
+  [FIELD_ANNOTATIONS.MASK_CHAR]: 'maskChar',
+  [FIELD_ANNOTATIONS.MASK_TYPE]: 'maskType',
+  [FIELD_ANNOTATIONS.MASK]: 'mask',
+  [FIELD_ANNOTATIONS.DISPLAY_LOCATION_IN_DECIMAL]: 'displayLocationInDecimal',
 }

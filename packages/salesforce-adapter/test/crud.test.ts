@@ -225,9 +225,9 @@ describe('Test SalesforceAdapter CRUD', () => {
               'currency',
               Types.salesforceDataTypes.currency,
               {
-                label: 'Currency description label',
-                [constants.SCALE]: 3,
-                [constants.PRECISION]: 18,
+                [constants.LABEL]: 'Currency description label',
+                [constants.FIELD_ANNOTATIONS.SCALE]: 3,
+                [constants.FIELD_ANNOTATIONS.PRECISION]: 18,
               },
             ),
             bravo: new Field(
@@ -235,8 +235,8 @@ describe('Test SalesforceAdapter CRUD', () => {
               'auto',
               Types.salesforceDataTypes.autonumber,
               {
-                label: 'Autonumber description label',
-                displayFormat: 'ZZZ-{0000}',
+                [constants.LABEL]: 'Autonumber description label',
+                [constants.FIELD_ANNOTATIONS.DISPLAY_FORMAT]: 'ZZZ-{0000}',
               },
             ),
             charlie: new Field(
@@ -244,7 +244,7 @@ describe('Test SalesforceAdapter CRUD', () => {
               'date',
               Types.salesforceDataTypes.date,
               {
-                label: 'Date description label',
+                [constants.LABEL]: 'Date description label',
                 [Type.DEFAULT]: 'Today() + 7',
               },
             ),
@@ -253,7 +253,7 @@ describe('Test SalesforceAdapter CRUD', () => {
               'time',
               Types.salesforceDataTypes.time,
               {
-                label: 'Time description label',
+                [constants.LABEL]: 'Time description label',
                 [Type.DEFAULT]: 'TIMENOW() + 5',
               },
             ),
@@ -262,7 +262,7 @@ describe('Test SalesforceAdapter CRUD', () => {
               'datetime',
               Types.salesforceDataTypes.datetime,
               {
-                label: 'DateTime description label',
+                [constants.LABEL]: 'DateTime description label',
                 [Type.DEFAULT]: 'Now() + 7',
               },
             ),
@@ -271,9 +271,9 @@ describe('Test SalesforceAdapter CRUD', () => {
               'email',
               Types.salesforceDataTypes.email,
               {
-                label: 'Email description label',
-                [constants.UNIQUE]: true,
-                [constants.CASESENSITIVE]: true,
+                [constants.LABEL]: 'Email description label',
+                [constants.FIELD_ANNOTATIONS.UNIQUE]: true,
+                [constants.FIELD_ANNOTATIONS.CASE_SENSITIVE]: true,
               },
             ),
             golf: new Field(
@@ -281,9 +281,9 @@ describe('Test SalesforceAdapter CRUD', () => {
               'location',
               Types.salesforceDataTypes.location,
               {
-                label: 'Location description label',
-                [constants.SCALE]: 2,
-                [constants.DISPLAYLOCATIONINDECIMAL]: true,
+                [constants.LABEL]: 'Location description label',
+                [constants.FIELD_ANNOTATIONS.SCALE]: 2,
+                [constants.FIELD_ANNOTATIONS.DISPLAY_LOCATION_IN_DECIMAL]: true,
               },
             ),
             hotel: new Field(
@@ -291,9 +291,9 @@ describe('Test SalesforceAdapter CRUD', () => {
               'multipicklist',
               Types.salesforceDataTypes.multipicklist,
               {
-                label: 'Multipicklist description label',
+                [constants.LABEL]: 'Multipicklist description label',
                 values: ['DO', 'RE', 'MI', 'FA', 'SOL', 'LA', 'SI'],
-                [constants.VISIBLELINES]: 4,
+                [constants.FIELD_ANNOTATIONS.VISIBLE_LINES]: 4,
               },
             ),
             india: new Field(
@@ -301,9 +301,9 @@ describe('Test SalesforceAdapter CRUD', () => {
               'percent',
               Types.salesforceDataTypes.percent,
               {
-                label: 'Percent description label',
-                [constants.SCALE]: 3,
-                [constants.PRECISION]: 12,
+                [constants.LABEL]: 'Percent description label',
+                [constants.FIELD_ANNOTATIONS.SCALE]: 3,
+                [constants.FIELD_ANNOTATIONS.PRECISION]: 12,
               },
             ),
             juliett: new Field(
@@ -311,7 +311,7 @@ describe('Test SalesforceAdapter CRUD', () => {
               'phone',
               Types.salesforceDataTypes.phone,
               {
-                label: 'Phone description label',
+                [constants.LABEL]: 'Phone description label',
               },
             ),
             kilo: new Field(
@@ -319,8 +319,8 @@ describe('Test SalesforceAdapter CRUD', () => {
               'longtextarea',
               Types.salesforceDataTypes.longtextarea,
               {
-                label: 'LongTextArea description label',
-                [constants.VISIBLELINES]: 5,
+                [constants.LABEL]: 'LongTextArea description label',
+                [constants.FIELD_ANNOTATIONS.VISIBLE_LINES]: 5,
               },
             ),
             lima: new Field(
@@ -328,8 +328,8 @@ describe('Test SalesforceAdapter CRUD', () => {
               'richtextarea',
               Types.salesforceDataTypes.richtextarea,
               {
-                label: 'RichTextArea description label',
-                [constants.VISIBLELINES]: 27,
+                [constants.LABEL]: 'RichTextArea description label',
+                [constants.FIELD_ANNOTATIONS.VISIBLE_LINES]: 27,
               },
             ),
             mike: new Field(
@@ -337,7 +337,7 @@ describe('Test SalesforceAdapter CRUD', () => {
               'textarea',
               Types.salesforceDataTypes.textarea,
               {
-                label: 'TextArea description label',
+                [constants.LABEL]: 'TextArea description label',
               },
             ),
             november: new Field(
@@ -345,10 +345,10 @@ describe('Test SalesforceAdapter CRUD', () => {
               'encryptedtext',
               Types.salesforceDataTypes.encryptedtext,
               {
-                label: 'EncryptedText description label',
-                [constants.MASKTYPE]: 'creditCard',
-                [constants.MASKCHAR]: 'X',
-                [constants.LENGTH]: 35,
+                [constants.LABEL]: 'EncryptedText description label',
+                [constants.FIELD_ANNOTATIONS.MASK_TYPE]: 'creditCard',
+                [constants.FIELD_ANNOTATIONS.MASK_CHAR]: 'X',
+                [constants.FIELD_ANNOTATIONS.LENGTH]: 35,
               },
             ),
             oscar: new Field(
@@ -356,7 +356,7 @@ describe('Test SalesforceAdapter CRUD', () => {
               'url',
               Types.salesforceDataTypes.url,
               {
-                label: 'Url description label',
+                [constants.LABEL]: 'Url description label',
               },
             ),
           },
@@ -397,19 +397,19 @@ describe('Test SalesforceAdapter CRUD', () => {
       expect(object.fields[5].fullName).toBe('Email__c')
       expect(object.fields[5].type).toBe('Email')
       expect(object.fields[5].label).toBe('Email description label')
-      expect(object.fields[5][constants.UNIQUE]).toBe(true)
-      expect(object.fields[5][constants.CASESENSITIVE]).toBe(true)
+      expect(object.fields[5].unique).toBe(true)
+      expect(object.fields[5].caseSensitive).toBe(true)
       // Location
       expect(object.fields[6].fullName).toBe('Location__c')
       expect(object.fields[6].type).toBe('Location')
       expect(object.fields[6].label).toBe('Location description label')
-      expect(object.fields[6][constants.DISPLAYLOCATIONINDECIMAL]).toBe(true)
-      expect(object.fields[6][constants.SCALE]).toBe(2)
+      expect(object.fields[6].displayLocationInDecimal).toBe(true)
+      expect(object.fields[6].scale).toBe(2)
       // Multipicklist
       expect(object.fields[7].fullName).toBe('Multipicklist__c')
       expect(object.fields[7].type).toBe('MultiselectPicklist')
       expect(object.fields[7].label).toBe('Multipicklist description label')
-      expect(object.fields[7][constants.VISIBLELINES]).toBe(4)
+      expect(object.fields[7].visibleLines).toBe(4)
       expect(object.fields[7].valueSet.valueSetDefinition.value
         .map((v: {fullName: string}) => v.fullName).join(';'))
         .toBe('DO;RE;MI;FA;SOL;LA;SI')
@@ -427,14 +427,14 @@ describe('Test SalesforceAdapter CRUD', () => {
       expect(object.fields[10].fullName).toBe('Longtextarea__c')
       expect(object.fields[10].type).toBe('LongTextArea')
       expect(object.fields[10].label).toBe('LongTextArea description label')
-      expect(object.fields[10][constants.VISIBLELINES]).toBe(5)
-      expect(object.fields[11][constants.LENGTH]).toBe(32768)
+      expect(object.fields[10].visibleLines).toBe(5)
+      expect(object.fields[11].length).toBe(32768)
       // Richtextarea
       expect(object.fields[11].fullName).toBe('Richtextarea__c')
       expect(object.fields[11].type).toBe('Html')
       expect(object.fields[11].label).toBe('RichTextArea description label')
-      expect(object.fields[11][constants.VISIBLELINES]).toBe(27)
-      expect(object.fields[11][constants.LENGTH]).toBe(32768)
+      expect(object.fields[11].visibleLines).toBe(27)
+      expect(object.fields[11].length).toBe(32768)
       // Textarea
       expect(object.fields[12].fullName).toBe('Textarea__c')
       expect(object.fields[12].type).toBe('TextArea')
@@ -443,9 +443,9 @@ describe('Test SalesforceAdapter CRUD', () => {
       expect(object.fields[13].fullName).toBe('Encryptedtext__c')
       expect(object.fields[13].type).toBe('EncryptedText')
       expect(object.fields[13].label).toBe('EncryptedText description label')
-      expect(object.fields[13][constants.MASKCHAR]).toBe('X')
-      expect(object.fields[13][constants.MASKTYPE]).toBe('creditCard')
-      expect(object.fields[13][constants.LENGTH]).toBe(35)
+      expect(object.fields[13].maskChar).toBe('X')
+      expect(object.fields[13].maskType).toBe('creditCard')
+      expect(object.fields[13].length).toBe(35)
       // Url
       expect(object.fields[14].fullName).toBe('Url__c')
       expect(object.fields[14].type).toBe('Url')

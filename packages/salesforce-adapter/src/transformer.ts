@@ -12,8 +12,10 @@ import {
 } from './client/types'
 import {
   API_NAME, LABEL, PICKLIST_VALUES, SALESFORCE, RESTRICTED_PICKLIST, FORMULA,
-  FORMULA_TYPE_PREFIX, METADATA_TYPES_SUFFIX, FIELD_TYPE_NAMES, FIELD_TYPE_API_NAMES, VISIBLELINES,
+  FORMULA_TYPE_PREFIX, METADATA_TYPES_SUFFIX, FIELD_TYPE_NAMES, FIELD_TYPE_API_NAMES,
   METADATA_TYPE,
+  FIELD_ANNOTATIONS,
+  FIELD_ANNOTATIONS_API_NAMES,
 } from './constants'
 
 const capitalize = (s: string): string => {
@@ -61,35 +63,29 @@ const fieldTypeName = (typeName: string): string => (
 export class Types {
   // Type mapping for custom objects
   public static salesforceDataTypes: Record<string, Type> = {
-    // Adding string on top of a text is a temp solution as we are not supporting computed fields.
-    // As far as we know string appears only in compound fields (at least in Name).
-    string: new PrimitiveType({
-      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.STRING),
-      primitive: PrimitiveTypes.STRING,
-    }),
     text: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.TEXT),
       primitive: PrimitiveTypes.STRING,
       annotations: {
-        unique: BuiltinTypes.BOOLEAN,
-        caseSensitive: BuiltinTypes.BOOLEAN,
-        length: BuiltinTypes.NUMBER,
+        [FIELD_ANNOTATIONS.UNIQUE]: BuiltinTypes.BOOLEAN,
+        [FIELD_ANNOTATIONS.CASE_SENSITIVE]: BuiltinTypes.BOOLEAN,
+        [FIELD_ANNOTATIONS.LENGTH]: BuiltinTypes.NUMBER,
       },
     }),
     number: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.NUMBER),
       primitive: PrimitiveTypes.NUMBER,
       annotations: {
-        scale: BuiltinTypes.NUMBER,
-        precision: BuiltinTypes.NUMBER,
-        unique: BuiltinTypes.BOOLEAN,
+        [FIELD_ANNOTATIONS.SCALE]: BuiltinTypes.NUMBER,
+        [FIELD_ANNOTATIONS.PRECISION]: BuiltinTypes.NUMBER,
+        [FIELD_ANNOTATIONS.UNIQUE]: BuiltinTypes.BOOLEAN,
       },
     }),
     autonumber: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.AUTONUMBER),
       primitive: PrimitiveTypes.STRING,
       annotations: {
-        displayFormat: BuiltinTypes.STRING,
+        [FIELD_ANNOTATIONS.DISPLAY_FORMAT]: BuiltinTypes.STRING,
       },
     }),
     boolean: new PrimitiveType({
@@ -112,8 +108,8 @@ export class Types {
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.CURRENCY),
       primitive: PrimitiveTypes.NUMBER,
       annotations: {
-        scale: BuiltinTypes.NUMBER,
-        precision: BuiltinTypes.NUMBER,
+        [FIELD_ANNOTATIONS.SCALE]: BuiltinTypes.NUMBER,
+        [FIELD_ANNOTATIONS.PRECISION]: BuiltinTypes.NUMBER,
       },
     }),
     picklist: new PrimitiveType({
@@ -124,31 +120,31 @@ export class Types {
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.MULTIPICKLIST),
       primitive: PrimitiveTypes.STRING,
       annotations: {
-        visibleLines: BuiltinTypes.NUMBER,
+        [FIELD_ANNOTATIONS.VISIBLE_LINES]: BuiltinTypes.NUMBER,
       },
     }),
     email: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.EMAIL),
       primitive: PrimitiveTypes.STRING,
       annotations: {
-        unique: BuiltinTypes.BOOLEAN,
-        caseSensitive: BuiltinTypes.BOOLEAN,
+        [FIELD_ANNOTATIONS.UNIQUE]: BuiltinTypes.BOOLEAN,
+        [FIELD_ANNOTATIONS.CASE_SENSITIVE]: BuiltinTypes.BOOLEAN,
       },
     }),
     location: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.LOCATION),
       primitive: PrimitiveTypes.NUMBER,
       annotations: {
-        displayLocationInDecimal: BuiltinTypes.BOOLEAN,
-        scale: BuiltinTypes.NUMBER,
+        [FIELD_ANNOTATIONS.DISPLAY_LOCATION_IN_DECIMAL]: BuiltinTypes.BOOLEAN,
+        [FIELD_ANNOTATIONS.SCALE]: BuiltinTypes.NUMBER,
       },
     }),
     percent: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.PERCENT),
       primitive: PrimitiveTypes.NUMBER,
       annotations: {
-        scale: BuiltinTypes.NUMBER,
-        precision: BuiltinTypes.NUMBER,
+        [FIELD_ANNOTATIONS.SCALE]: BuiltinTypes.NUMBER,
+        [FIELD_ANNOTATIONS.PRECISION]: BuiltinTypes.NUMBER,
       },
     }),
     phone: new PrimitiveType({
@@ -159,16 +155,16 @@ export class Types {
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.LONGTEXTAREA),
       primitive: PrimitiveTypes.STRING,
       annotations: {
-        visibleLines: BuiltinTypes.NUMBER,
-        length: BuiltinTypes.NUMBER,
+        [FIELD_ANNOTATIONS.VISIBLE_LINES]: BuiltinTypes.NUMBER,
+        [FIELD_ANNOTATIONS.LENGTH]: BuiltinTypes.NUMBER,
       },
     }),
     richtextarea: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.RICHTEXTAREA),
       primitive: PrimitiveTypes.STRING,
       annotations: {
-        visibleLines: BuiltinTypes.NUMBER,
-        length: BuiltinTypes.NUMBER,
+        [FIELD_ANNOTATIONS.VISIBLE_LINES]: BuiltinTypes.NUMBER,
+        [FIELD_ANNOTATIONS.LENGTH]: BuiltinTypes.NUMBER,
       },
     }),
     textarea: new PrimitiveType({
@@ -179,10 +175,10 @@ export class Types {
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.ENCRYPTEDTEXT),
       primitive: PrimitiveTypes.STRING,
       annotations: {
-        maskChar: BuiltinTypes.STRING,
-        maskType: BuiltinTypes.STRING,
-        mask: BuiltinTypes.STRING,
-        length: BuiltinTypes.NUMBER,
+        [FIELD_ANNOTATIONS.MASK_CHAR]: BuiltinTypes.STRING,
+        [FIELD_ANNOTATIONS.MASK_TYPE]: BuiltinTypes.STRING,
+        [FIELD_ANNOTATIONS.MASK]: BuiltinTypes.STRING,
+        [FIELD_ANNOTATIONS.LENGTH]: BuiltinTypes.NUMBER,
       },
     }),
     url: new PrimitiveType({
@@ -237,13 +233,20 @@ export const toCustomField = (
     field.getAnnotationsValues()[FORMULA],
   )
 
-  _.assign(newField,
+  const bpAnnotations: Values = {}
+  _.assign(bpAnnotations,
     _.pickBy(
       field.getAnnotationsValues(),
       (_val, annotationValue) => allowedAnnotations(
         field.type.elemID.name
       ).includes(annotationValue)
     ))
+  
+  // Convert the annotations' names to the required API name
+  Object.keys(bpAnnotations).forEach(key => {
+    const usedKey = FIELD_ANNOTATIONS_API_NAMES[key] ? FIELD_ANNOTATIONS_API_NAMES[key] : key
+    _.assign(newField, { [usedKey]: bpAnnotations[key] })
+  })
 
   return newField
 }
@@ -327,8 +330,12 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
 
   // Handle specific field types that need to be converted from their primitive type to their
   // Salesforce field type
-  if ((field.type === 'double' && !field.name.includes('Latitude') && !field.name.includes('Longitude'))
-  || field.type === 'int') { // number
+  if (field.autoNumber === true) { // autonumber (needs to be first because its type in the field
+    // returned from the API is string)
+    bpFieldType = Types.get(FIELD_TYPE_NAMES.AUTONUMBER)
+  } else if (field.type === 'string' && !field.compoundFieldName) { // string
+    bpFieldType = Types.get(FIELD_TYPE_NAMES.TEXT)
+  } else if ((field.type === 'double' && !field.compoundFieldName) || field.type === 'int') { // number
     bpFieldType = Types.get(FIELD_TYPE_NAMES.NUMBER)
   } else if (field.type === 'textarea' && field.length > 255) { // long text area & rich text area
     if (field.extraTypeInfo === 'plaintextarea') {
@@ -336,8 +343,6 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
     } else if (field.extraTypeInfo === 'richtextarea') {
       bpFieldType = Types.get(FIELD_TYPE_NAMES.RICHTEXTAREA)
     }
-  } else if (field.autoNumber === true) { // autonumber
-    bpFieldType = Types.get(FIELD_TYPE_NAMES.AUTONUMBER)
   } else if (field.type === 'encryptedstring') { // encrypted string
     bpFieldType = Types.get(FIELD_TYPE_NAMES.ENCRYPTEDTEXT)
   }
@@ -359,7 +364,7 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
     if (field.type === 'multipicklist') {
       // Precision is the field for multi-picklist in SFDC API that defines how many objects will
       // be visible in the picklist in the UI. Why? Because.
-      annotations[VISIBLELINES] = field.precision
+      annotations[FIELD_ANNOTATIONS.VISIBLE_LINES] = field.precision
     }
   // Formulas
   } else if (field.calculated && !_.isEmpty(field.calculatedFormula)) {
@@ -367,24 +372,27 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
     annotations[FORMULA] = field.calculatedFormula
   }
   if (!_.isEmpty(bpFieldType.annotations)) {
-    // For most of the field types (except for picklist & formula)
-    _.assign(annotations,
+    // Assign the additional annotations including ones not in the bp case format
+    // (ones that were received from the api in SF format)
+    const additionalAnnotations: Values = {}
+    _.assign(additionalAnnotations,
       _.pickBy(
         field,
         (_val, key) => allowedAnnotations(
           _.toLower(bpFieldType.elemID.name)
-        ).includes(key)
+        ).includes(bpCase(key))
       ))
+    
+    // Convert the annotations' names to bp case for those that are not already in that format
+    // (annotations that consist of at least 2 words)
+    const renamedAnnotations: Values = {}
+    Object.keys(additionalAnnotations).forEach(key => {
+      renamedAnnotations[bpCase(key)] = additionalAnnotations[key]
+    })
+    _.assign(annotations, renamedAnnotations)
   }
 
-  // Convert the annotations' names to bp case
-  const renamedAnnotations = {}
-  Object.keys(annotations).forEach(key => {
-    const usedKey = key.startsWith('_') ? key : bpCase(key)
-    _.assign(renamedAnnotations, { [usedKey]: annotations[key] })
-  })
-
-  return new TypeField(parentID, bpFieldName, bpFieldType, renamedAnnotations)
+  return new TypeField(parentID, bpFieldName, bpFieldType, annotations)
 }
 
 const transformPrimitive = (val: string, primitive: PrimitiveTypes):

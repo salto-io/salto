@@ -298,7 +298,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
             {
               [constants.LABEL]: 'test label',
               [Type.REQUIRED]: false,
-              [Type.DEFAULT]: 'test',
+              [Type.DEFAULT]: '"test"',
             },
           ),
         },
@@ -621,6 +621,9 @@ describe('Test Salesforce adapter E2E with real account', () => {
     it('should add a custom object with various field types', async () => {
       const customObjectName = 'TestAddFieldTypes__c'
       const mockElemID = new ElemID(constants.SALESFORCE, 'test add custom object with various field types')
+      const adminReadable = {
+        admin: { editable: false, readable: true },
+      }
       const element = new ObjectType({
         elemID: mockElemID,
         annotationsValues: {
@@ -638,10 +641,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
               // [Type.DEFAULT]: 'NEW',
               [constants.LABEL]: 'Picklist description label',
               values: ['NEW', 'OLD'],
-              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
-                admin: { editable: false, readable: true },
-                standard: { editable: false, readable: true },
-              },
+              [FIELD_LEVEL_SECURITY_ANNOTATION]: adminReadable,
             },
           ),
           alpha: new Field(
@@ -652,12 +652,9 @@ describe('Test Salesforce adapter E2E with real account', () => {
               [Type.REQUIRED]: false,
               [Type.DEFAULT]: 25,
               [constants.LABEL]: 'Currency description label',
-              [constants.SCALE]: 3,
-              [constants.PRECISION]: 18,
-              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
-                admin: { editable: false, readable: true },
-                standard: { editable: false, readable: true },
-              },
+              [constants.FIELD_ANNOTATIONS.SCALE]: 3,
+              [constants.FIELD_ANNOTATIONS.PRECISION]: 18,
+              [FIELD_LEVEL_SECURITY_ANNOTATION]: adminReadable,
             },
           ),
           bravo: new Field(
@@ -667,11 +664,8 @@ describe('Test Salesforce adapter E2E with real account', () => {
             {
               [Type.REQUIRED]: false,
               [constants.LABEL]: 'Autonumber description label',
-              displayFormat: 'ZZZ-{0000}',
-              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
-                admin: { editable: false, readable: true },
-                standard: { editable: false, readable: true },
-              },
+              [constants.FIELD_ANNOTATIONS.DISPLAY_FORMAT]: 'ZZZ-{0000}',
+              [FIELD_LEVEL_SECURITY_ANNOTATION]: adminReadable,
             },
           ),
           charlie: new Field(
@@ -681,10 +675,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
             {
               [constants.LABEL]: 'Date description label',
               [Type.DEFAULT]: 'Today() + 7',
-              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
-                admin: { editable: false, readable: true },
-                standard: { editable: false, readable: true },
-              },
+              [FIELD_LEVEL_SECURITY_ANNOTATION]: adminReadable,
             },
           ),
           delta: new Field(
@@ -694,10 +685,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
             {
               [constants.LABEL]: 'Time description label',
               [Type.DEFAULT]: 'TIMENOW() + 5',
-              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
-                admin: { editable: false, readable: true },
-                standard: { editable: false, readable: true },
-              },
+              [FIELD_LEVEL_SECURITY_ANNOTATION]: adminReadable,
             },
           ),
           echo: new Field(
@@ -707,10 +695,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
             {
               [constants.LABEL]: 'DateTime description label',
               [Type.DEFAULT]: 'Now() + 7',
-              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
-                admin: { editable: false, readable: true },
-                standard: { editable: false, readable: true },
-              },
+              [FIELD_LEVEL_SECURITY_ANNOTATION]: adminReadable,
             },
           ),
           foxtrot: new Field(
@@ -719,12 +704,9 @@ describe('Test Salesforce adapter E2E with real account', () => {
             Types.salesforceDataTypes.email,
             {
               [constants.LABEL]: 'Email description label',
-              [constants.UNIQUE]: true,
-              [constants.CASESENSITIVE]: true,
-              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
-                admin: { editable: false, readable: true },
-                standard: { editable: false, readable: true },
-              },
+              [constants.FIELD_ANNOTATIONS.UNIQUE]: true,
+              [constants.FIELD_ANNOTATIONS.CASE_SENSITIVE]: true,
+              [FIELD_LEVEL_SECURITY_ANNOTATION]: adminReadable,
             },
           ),
           golf: new Field(
@@ -733,12 +715,9 @@ describe('Test Salesforce adapter E2E with real account', () => {
             Types.salesforceDataTypes.location,
             {
               [constants.LABEL]: 'Location description label',
-              [constants.SCALE]: 2,
-              [constants.DISPLAYLOCATIONINDECIMAL]: true,
-              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
-                admin: { editable: false, readable: true },
-                standard: { editable: false, readable: true },
-              },
+              [constants.FIELD_ANNOTATIONS.SCALE]: 2,
+              [constants.FIELD_ANNOTATIONS.DISPLAY_LOCATION_IN_DECIMAL]: true,
+              [FIELD_LEVEL_SECURITY_ANNOTATION]: adminReadable,
             },
           ),
           hotel: new Field(
@@ -748,11 +727,8 @@ describe('Test Salesforce adapter E2E with real account', () => {
             {
               [constants.LABEL]: 'Multipicklist description label',
               values: ['DO', 'RE', 'MI', 'FA', 'SOL', 'LA', 'SI'],
-              [constants.VISIBLELINES]: 4,
-              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
-                admin: { editable: false, readable: true },
-                standard: { editable: false, readable: true },
-              },
+              [constants.FIELD_ANNOTATIONS.VISIBLE_LINES]: 4,
+              [FIELD_LEVEL_SECURITY_ANNOTATION]: adminReadable,
             },
           ),
           india: new Field(
@@ -761,12 +737,9 @@ describe('Test Salesforce adapter E2E with real account', () => {
             Types.salesforceDataTypes.percent,
             {
               [constants.LABEL]: 'Percent description label',
-              [constants.SCALE]: 3,
-              [constants.PRECISION]: 12,
-              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
-                admin: { editable: false, readable: true },
-                standard: { editable: false, readable: true },
-              },
+              [constants.FIELD_ANNOTATIONS.SCALE]: 3,
+              [constants.FIELD_ANNOTATIONS.PRECISION]: 12,
+              [FIELD_LEVEL_SECURITY_ANNOTATION]: adminReadable,
             },
           ),
           juliett: new Field(
@@ -775,10 +748,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
             Types.salesforceDataTypes.phone,
             {
               [constants.LABEL]: 'Phone description label',
-              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
-                admin: { editable: false, readable: true },
-                standard: { editable: false, readable: true },
-              },
+              [FIELD_LEVEL_SECURITY_ANNOTATION]: adminReadable,
             },
           ),
           kilo: new Field(
@@ -787,11 +757,8 @@ describe('Test Salesforce adapter E2E with real account', () => {
             Types.salesforceDataTypes.longtextarea,
             {
               [constants.LABEL]: 'LongTextArea description label',
-              [constants.VISIBLELINES]: 5,
-              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
-                admin: { editable: false, readable: true },
-                standard: { editable: false, readable: true },
-              },
+              [constants.FIELD_ANNOTATIONS.VISIBLE_LINES]: 5,
+              [FIELD_LEVEL_SECURITY_ANNOTATION]: adminReadable,
             },
           ),
           lima: new Field(
@@ -800,11 +767,8 @@ describe('Test Salesforce adapter E2E with real account', () => {
             Types.salesforceDataTypes.richtextarea,
             {
               [constants.LABEL]: 'RichTextArea description label',
-              [constants.VISIBLELINES]: 27,
-              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
-                admin: { editable: false, readable: true },
-                standard: { editable: false, readable: true },
-              },
+              [constants.FIELD_ANNOTATIONS.VISIBLE_LINES]: 27,
+              [FIELD_LEVEL_SECURITY_ANNOTATION]: adminReadable,
             },
           ),
           mike: new Field(
@@ -813,10 +777,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
             Types.salesforceDataTypes.textarea,
             {
               [constants.LABEL]: 'TextArea description label',
-              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
-                admin: { editable: false, readable: true },
-                standard: { editable: false, readable: true },
-              },
+              [FIELD_LEVEL_SECURITY_ANNOTATION]: adminReadable,
             },
           ),
           november: new Field(
@@ -825,13 +786,10 @@ describe('Test Salesforce adapter E2E with real account', () => {
             Types.salesforceDataTypes.encryptedtext,
             {
               [constants.LABEL]: 'EncryptedText description label',
-              [constants.MASKTYPE]: 'creditCard',
-              [constants.MASKCHAR]: 'X',
-              [constants.LENGTH]: 35,
-              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
-                admin: { editable: false, readable: true },
-                standard: { editable: false, readable: true },
-              },
+              [constants.FIELD_ANNOTATIONS.MASK_TYPE]: 'creditCard',
+              [constants.FIELD_ANNOTATIONS.MASK_CHAR]: 'X',
+              [constants.FIELD_ANNOTATIONS.LENGTH]: 35,
+              [FIELD_LEVEL_SECURITY_ANNOTATION]: adminReadable,
             },
           ),
           oscar: new Field(
@@ -840,10 +798,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
             Types.salesforceDataTypes.url,
             {
               [constants.LABEL]: 'Url description label',
-              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
-                admin: { editable: false, readable: true },
-                standard: { editable: false, readable: true },
-              },
+              [FIELD_LEVEL_SECURITY_ANNOTATION]: adminReadable,
             },
           ),
           papa: new Field(
@@ -851,15 +806,12 @@ describe('Test Salesforce adapter E2E with real account', () => {
             'papa',
             Types.salesforceDataTypes.number,
             {
-              [constants.SCALE]: 3,
-              [constants.PRECISION]: 15,
-              [constants.UNIQUE]: true,
+              [constants.FIELD_ANNOTATIONS.SCALE]: 3,
+              [constants.FIELD_ANNOTATIONS.PRECISION]: 15,
+              [constants.FIELD_ANNOTATIONS.UNIQUE]: true,
               [Type.DEFAULT]: 42,
               [constants.LABEL]: 'Number description label',
-              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
-                admin: { editable: false, readable: true },
-                standard: { editable: false, readable: true },
-              },
+              [FIELD_LEVEL_SECURITY_ANNOTATION]: adminReadable,
             },
           ),
         },
@@ -941,14 +893,14 @@ describe('Test Salesforce adapter E2E with real account', () => {
       const longTextAreaField = allFields.filter(field => field.name === 'Kilo__c')[0]
       expect(longTextAreaField).toBeDefined()
       expect(longTextAreaField.label).toBe('LongTextArea description label')
-      expect(longTextAreaField[constants.LENGTH]).toBe(32768)
+      expect(longTextAreaField.length).toBe(32768)
       // Verify richtextarea
       // TODO: We do not know how to retrieve the visible lines info when discovering
       // rich text area
       const richTextAreaField = allFields.filter(field => field.name === 'Lima__c')[0]
       expect(richTextAreaField).toBeDefined()
       expect(richTextAreaField.label).toBe('RichTextArea description label')
-      expect(richTextAreaField[constants.LENGTH]).toBe(32768)
+      expect(richTextAreaField.length).toBe(32768)
       // Verify textarea
       const textAreaField = allFields.filter(field => field.name === 'Mike__c')[0]
       expect(textAreaField).toBeDefined()
@@ -958,8 +910,8 @@ describe('Test Salesforce adapter E2E with real account', () => {
       expect(encryptedTextField).toBeDefined()
       expect(encryptedTextField.label).toBe('EncryptedText description label')
       expect(encryptedTextField.mask).toBe('X')
-      expect(encryptedTextField[constants.MASKTYPE]).toBe('creditCard')
-      expect(encryptedTextField[constants.LENGTH]).toBe(35)
+      expect(encryptedTextField.maskType).toBe('creditCard')
+      expect(encryptedTextField.length).toBe(35)
       // Verify textarea
       const urlField = allFields.filter(field => field.name === 'Oscar__c')[0]
       expect(urlField).toBeDefined()

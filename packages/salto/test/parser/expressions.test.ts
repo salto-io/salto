@@ -1,6 +1,5 @@
 import devaluate from '../utils'
 import evaluate from '../../src/parser/expressions'
-import { ReferenceExpression } from '../../src/core/expressions'
 
 describe('HCL Expression', () => {
   it('should evaluate strings', () => {
@@ -29,12 +28,6 @@ describe('HCL Expression', () => {
 
   it('should evaluate boolean', () => {
     const ref = true
-    const exp = devaluate(ref)
-    expect(evaluate(exp)).toEqual(ref)
-  })
-
-  it('should evaluate reference', () => {
-    const ref = new ReferenceExpression(['a', 'b', 'c'])
     const exp = devaluate(ref)
     expect(evaluate(exp)).toEqual(ref)
   })

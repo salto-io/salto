@@ -58,6 +58,7 @@ const fieldTypeName = (typeName: string): string => (
 // Defines SFDC built-in field types & built-in primitive data types
 // Ref: https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/field_types.htm
 // Ref: https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/primitive_data_types.htm
+// Ref: https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_field_types.htm#meta_type_fieldtype
 export class Types {
   // Type mapping for custom objects
   public static salesforceDataTypes: Record<string, Type> = {

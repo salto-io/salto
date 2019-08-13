@@ -101,68 +101,48 @@ describe('Test Salto Expressions', () => {
 
   const resolved = elements.map(e => resolve(e, elements))
 
-  it('should not modify simple values', () => {
-    const element = resolved.filter(
-      e => _.isEqual(e.elemID, noRefInst.elemID)
-    )[0] as InstanceElement
+  const gerResolvedElement = (elemID: ElemID): InstanceElement => resolved.filter(
+    e => _.isEqual(e.elemID, elemID)
+  )[0] as InstanceElement
 
+  it('should not modify simple values', () => {
+    const element = gerResolvedElement(noRefInst.elemID)
     expect(element.value.test).toEqual(`${baseInstID.getFullName()}.simple`)
   })
 
   it('should resolve simple references', () => {
-    const element = resolved.filter(
-      e => _.isEqual(e.elemID, simpleRefInst.elemID)
-    )[0] as InstanceElement
-
+    const element = gerResolvedElement(simpleRefInst.elemID)
     expect(element.value.test).toEqual('simple')
   })
 
   it('should resolve nested references', () => {
-    const element = resolved.filter(
-      e => _.isEqual(e.elemID, nestedRefInst.elemID)
-    )[0] as InstanceElement
-
+    const element = gerResolvedElement(nestedRefInst.elemID)
     expect(element.value.test).toEqual('nested')
   })
 
   it('should resolve array references', () => {
-    const element = resolved.filter(
-      e => _.isEqual(e.elemID, arrayRefInst.elemID)
-    )[0] as InstanceElement
-
+    const element = gerResolvedElement(arrayRefInst.elemID)
     expect(element.value.test0).toEqual('A')
     expect(element.value.test1).toEqual('B')
   })
 
   it('should resolve annotations references', () => {
-    const element = resolved.filter(
-      e => _.isEqual(e.elemID, annoRefInst.elemID)
-    )[0] as InstanceElement
-
+    const element = gerResolvedElement(annoRefInst.elemID)
     expect(element.value.test).toEqual('base_anno')
   })
 
   it('should resolve field annotation values references', () => {
-    const element = resolved.filter(
-      e => _.isEqual(e.elemID, fieldAnnoRefInst.elemID)
-    )[0] as InstanceElement
-
+    const element = gerResolvedElement(fieldAnnoRefInst.elemID)
     expect(element.value.test).toEqual('field_anno')
   })
 
   it('should resolve references with no path', () => {
-    const element = resolved.filter(
-      e => _.isEqual(e.elemID, noPathInst.elemID)
-    )[0] as InstanceElement
-
+    const element = gerResolvedElement(noPathInst.elemID)
     expect(element.value.test).toEqual(baseInst.value)
   })
 
   it('should resolve chanined references', () => {
-    const element = resolved.filter(
-      e => _.isEqual(e.elemID, chainedRefInst.elemID)
-    )[0] as InstanceElement
-
+    const element = gerResolvedElement(chainedRefInst.elemID)
     expect(element.value.test).toEqual('simple')
   })
 

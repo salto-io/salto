@@ -13,7 +13,6 @@ import * as constants from '../src/constants'
 import { Types, sfCase } from '../src/transformer'
 
 jest.mock('../src/client/client')
-jest.mock('../src/aspects/aspects')
 
 describe('Test SalesforceAdapter CRUD', () => {
   const adapter = (): SalesforceAdapter => {

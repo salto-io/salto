@@ -359,6 +359,38 @@ describe('Test SalesforceAdapter CRUD', () => {
                 [constants.LABEL]: 'Url description label',
               },
             ),
+            papa: new Field(
+              mockElemID,
+              'picklist',
+              Types.salesforceDataTypes.picklist,
+              {
+                [constants.LABEL]: 'Picklist description label',
+                values: ['DO', 'RE', 'MI', 'FA', 'SOL', 'LA', 'SI'],
+              },
+            ),
+            quebec: new Field(
+              mockElemID,
+              'text',
+              Types.salesforceDataTypes.text,
+              {
+                [constants.LABEL]: 'Text description label',
+                values: ['DO', 'RE', 'MI', 'FA', 'SOL', 'LA', 'SI'],
+                [constants.FIELD_ANNOTATIONS.UNIQUE]: true,
+                [constants.FIELD_ANNOTATIONS.CASE_SENSITIVE]: true,
+                [constants.FIELD_ANNOTATIONS.LENGTH]: 90,
+              },
+            ),
+            Romeo: new Field(
+              mockElemID,
+              'number',
+              Types.salesforceDataTypes.number,
+              {
+                [constants.LABEL]: 'Number description label',
+                [constants.FIELD_ANNOTATIONS.SCALE]: 12,
+                [constants.FIELD_ANNOTATIONS.PRECISION]: 8,
+                [constants.FIELD_ANNOTATIONS.UNIQUE]: true,
+              },
+            ),
           },
         })
       )
@@ -366,7 +398,7 @@ describe('Test SalesforceAdapter CRUD', () => {
       // Verify object creation
       expect(mockCreate.mock.calls.length).toBe(1)
       const object = mockCreate.mock.calls[0][1]
-      expect(object.fields.length).toBe(15)
+      expect(object.fields.length).toBe(18)
       // Currency
       expect(object.fields[0].fullName).toBe('Currency__c')
       expect(object.fields[0].type).toBe('Currency')
@@ -450,6 +482,27 @@ describe('Test SalesforceAdapter CRUD', () => {
       expect(object.fields[14].fullName).toBe('Url__c')
       expect(object.fields[14].type).toBe('Url')
       expect(object.fields[14].label).toBe('Url description label')
+      // Picklist
+      expect(object.fields[15].fullName).toBe('Picklist__c')
+      expect(object.fields[15].type).toBe('Picklist')
+      expect(object.fields[15].label).toBe('Picklist description label')
+      expect(object.fields[15].valueSet.valueSetDefinition.value
+        .map((v: {fullName: string}) => v.fullName).join(';'))
+        .toBe('DO;RE;MI;FA;SOL;LA;SI')
+      // Text
+      expect(object.fields[16].fullName).toBe('Text__c')
+      expect(object.fields[16].type).toBe('Text')
+      expect(object.fields[16].label).toBe('Text description label')
+      expect(object.fields[16].unique).toBe(true)
+      expect(object.fields[16].caseSensitive).toBe(true)
+      expect(object.fields[16].length).toBe(90)
+      // Number
+      expect(object.fields[17].fullName).toBe('Number__c')
+      expect(object.fields[17].type).toBe('Number')
+      expect(object.fields[17].label).toBe('Number description label')
+      expect(object.fields[17].unique).toBe(true)
+      expect(object.fields[17].scale).toBe(12)
+      expect(object.fields[17].precision).toBe(8)
     })
 
     it('Should fail add new salesforce type', async () => {

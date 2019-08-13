@@ -173,6 +173,74 @@ describe('Test SalesforceAdapter discover', () => {
       const lead = result.filter(o => o.elemID.name === 'lead').pop() as ObjectType
       expect(lead.fields.number_field.type.elemID.name).toBe('number')
     })
+
+    it('should discover sobject with various field types', async () => {
+      mockSingleSObject('Lead', [
+        {
+          name: 'AutoNumber',
+          type: 'string',
+          label: 'AutoNumero',
+          autoNumber: true,
+        },
+        {
+          name: 'String',
+          type: 'string',
+          label: 'Stringo',
+        },
+        {
+          name: 'Number',
+          type: 'double',
+          label: 'Numero',
+        },
+        {
+          name: 'TextArea',
+          type: 'textarea',
+          label: 'Texto Areato',
+          length: 255,
+        },
+        {
+          name: 'LongTextArea',
+          type: 'textarea',
+          label: 'Longo Texto Areato',
+          length: 280,
+          extraTypeInfo: 'plaintextarea',
+        },
+        {
+          name: 'RichTextArea',
+          type: 'textarea',
+          label: 'Richo Texto Areato',
+          length: 280,
+          extraTypeInfo: 'richtextarea',
+        },
+        {
+          name: 'EncryptedString',
+          type: 'encryptedstring',
+          label: 'Encrypto Stringo',
+        },
+        {
+          name: 'MultiPickList',
+          type: 'multipicklist',
+          label: 'Multo Picklisto',
+          precision: 5,
+          picklistValues: [
+            { value: 'No', defaultValue: false },
+            { value: 'Yes', defaultValue: true },
+          ],
+        },
+      ])
+      const result = await adapter().discover()
+
+      const lead = result.filter(o => o.elemID.name === 'lead').pop() as ObjectType
+      expect(lead.fields.auto_number.type.elemID.name).toBe('autonumber')
+      expect(lead.fields.string.type.elemID.name).toBe('text')
+      expect(lead.fields.number.type.elemID.name).toBe('number')
+      expect(lead.fields.text_area.type.elemID.name).toBe('textarea')
+      expect(lead.fields.long_text_area.type.elemID.name).toBe('longtextarea')
+      expect(lead.fields.rich_text_area.type.elemID.name).toBe('richtextarea')
+      expect(lead.fields.encrypted_string.type.elemID.name).toBe('encryptedtext')
+      expect(lead.fields.multi_pick_list.type.elemID.name).toBe('multipicklist')
+      expect(lead.fields.multi_pick_list.getAnnotationsValues()[constants.FIELD_ANNOTATIONS.VISIBLE_LINES]).toBe(5)
+    })
   })
 
   describe('should discover metadata types', () => {

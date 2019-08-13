@@ -36,7 +36,7 @@ export const apply = async (
     }
     return actionPlan
   } finally {
-    state.flush()
+    await state.flush()
   }
 }
 

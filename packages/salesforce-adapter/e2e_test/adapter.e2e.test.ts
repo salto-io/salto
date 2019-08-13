@@ -630,6 +630,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
         elemID: mockElemID,
         annotationsValues: {
           [constants.API_NAME]: customObjectName,
+          [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
         },
         fields: {
           pickle: new Field(
@@ -920,6 +921,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
       const textAreaField = allFields.filter(field => field.name === 'Mike__c')[0]
       expect(textAreaField).toBeDefined()
       expect(textAreaField.label).toBe('TextArea description label')
+      expect(textAreaField.type).toBe('textarea')
       // Verify Encrypted Text
       const encryptedTextField = allFields.filter(field => field.name === 'November__c')[0]
       expect(encryptedTextField).toBeDefined()
@@ -932,7 +934,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
       const urlField = allFields.filter(field => field.name === 'Oscar__c')[0]
       expect(urlField).toBeDefined()
       expect(urlField.label).toBe('Url description label')
-      expect(urlField.type).toBe('textarea')
+      expect(urlField.type).toBe('url')
       // Verify number
       const numberField = allFields.filter(field => field.name === 'Papa__c')[0]
       expect(numberField).toBeDefined()

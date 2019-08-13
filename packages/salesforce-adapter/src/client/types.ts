@@ -84,7 +84,7 @@ export class CustomField implements MetadataInfo {
       }
     }
 
-    if (defaultVal) {
+    if (defaultVal !== undefined) {
       this.defaultValue = defaultVal
     }
   }

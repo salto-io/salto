@@ -239,7 +239,8 @@ describe('Test SalesforceAdapter discover', () => {
       expect(lead.fields.rich_text_area.type.elemID.name).toBe('richtextarea')
       expect(lead.fields.encrypted_string.type.elemID.name).toBe('encryptedtext')
       expect(lead.fields.multi_pick_list.type.elemID.name).toBe('multipicklist')
-      expect(lead.fields.multi_pick_list.getAnnotationsValues()[constants.FIELD_ANNOTATIONS.VISIBLE_LINES]).toBe(5)
+      expect(lead.fields.multi_pick_list
+        .getAnnotationsValues()[constants.FIELD_ANNOTATIONS.VISIBLE_LINES]).toBe(5)
     })
   })
 

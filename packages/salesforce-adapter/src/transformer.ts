@@ -13,9 +13,7 @@ import {
 import {
   API_NAME, LABEL, PICKLIST_VALUES, SALESFORCE, RESTRICTED_PICKLIST, FORMULA,
   FORMULA_TYPE_PREFIX, METADATA_TYPES_SUFFIX, FIELD_TYPE_NAMES, FIELD_TYPE_API_NAMES,
-  METADATA_TYPE,
-  FIELD_ANNOTATIONS,
-  FIELD_ANNOTATIONS_API_NAMES,
+  METADATA_TYPE, FIELD_ANNOTATIONS,
 } from './constants'
 
 const capitalize = (s: string): string => {
@@ -233,21 +231,15 @@ export const toCustomField = (
     field.getAnnotationsValues()[FORMULA],
   )
 
-  const bpAnnotations: Values = {}
-  _.assign(bpAnnotations,
-    _.pickBy(
-      field.getAnnotationsValues(),
-      (_val, annotationValue) => allowedAnnotations(
-        field.type.elemID.name
-      ).includes(annotationValue)
-    ))
-
   // Convert the annotations' names to the required API name
-  Object.keys(bpAnnotations).forEach(key => {
-    const usedKey = FIELD_ANNOTATIONS_API_NAMES[key] ? FIELD_ANNOTATIONS_API_NAMES[key] : key
-    _.assign(newField, { [usedKey]: bpAnnotations[key] })
-  })
-
+  _.assign(newField,
+    _.mapKeys(
+      _.pickBy(field.getAnnotationsValues(),
+        (_val, annotationValue) => allowedAnnotations(
+          field.type.elemID.name
+        ).includes(annotationValue)),
+      (_val, key) => sfCase(key, false, false)
+    ))
   return newField
 }
 
@@ -330,7 +322,7 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
 
   // Handle specific field types that need to be converted from their primitive type to their
   // Salesforce field type
-  if (field.autoNumber === true) { // autonumber (needs to be first because its type in the field
+  if (field.autoNumber) { // autonumber (needs to be first because its type in the field
     // returned from the API is string)
     bpFieldType = Types.get(FIELD_TYPE_NAMES.AUTONUMBER)
   } else if (field.type === 'string' && !field.compoundFieldName) { // string
@@ -372,24 +364,17 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
     annotations[FORMULA] = field.calculatedFormula
   }
   if (!_.isEmpty(bpFieldType.annotations)) {
-    // Assign the additional annotations including ones not in the bp case format
-    // (ones that were received from the api in SF format)
-    const additionalAnnotations: Values = {}
-    _.assign(additionalAnnotations,
+    // Convert the annotations' names to bp case for those that are not already in that format
+    // (annotations that consist of at least 2 words) and assign the additional annotations
+    // (ones that were received from the api)
+    _.assign(annotations,
       _.pickBy(
-        field,
+        _.mapKeys(field,
+          (_val, key) => bpCase(key)),
         (_val, key) => allowedAnnotations(
           _.toLower(bpFieldType.elemID.name)
-        ).includes(bpCase(key))
+        ).includes(key)
       ))
-
-    // Convert the annotations' names to bp case for those that are not already in that format
-    // (annotations that consist of at least 2 words)
-    const renamedAnnotations: Values = {}
-    Object.keys(additionalAnnotations).forEach(key => {
-      renamedAnnotations[bpCase(key)] = additionalAnnotations[key]
-    })
-    _.assign(annotations, renamedAnnotations)
   }
 
   return new TypeField(parentID, bpFieldName, bpFieldType, annotations)

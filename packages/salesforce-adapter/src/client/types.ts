@@ -64,8 +64,6 @@ export class CustomField implements MetadataInfo {
           this.length = 80
           break
         case 'LongTextArea':
-          this.length = 32768
-          break
         case 'Html':
           this.length = 32768
           break

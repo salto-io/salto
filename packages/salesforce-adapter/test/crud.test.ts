@@ -10,7 +10,6 @@ import { MetadataInfo, SaveResult } from 'jsforce-types'
 import SalesforceAdapter from '../src/adapter'
 import SalesforceClient from '../src/client/client'
 import * as constants from '../src/constants'
-import { AspectsManager } from '../src/aspects/aspects'
 import { Types, sfCase } from '../src/transformer'
 
 jest.mock('../src/client/client')
@@ -29,6 +28,7 @@ describe('Test SalesforceAdapter CRUD', () => {
     const elemID = new ElemID('salesforce')
     const config = new InstanceElement(elemID, configType, value)
     a.init(config)
+    a.filters = []
     return a
   }
 
@@ -39,10 +39,6 @@ describe('Test SalesforceAdapter CRUD', () => {
   let mockCreate: jest.Mock<unknown>
   let mockDelete: jest.Mock<unknown>
   let mockUpdate: jest.Mock<unknown>
-  let mockAspectsUpdate: jest.Mock<unknown>
-  let mockAspectsAdd: jest.Mock<unknown>
-  let mockAspectsRemove: jest.Mock<unknown>
-
   beforeEach(() => {
     const saveResultMock = (_type: string, objects: MetadataInfo|MetadataInfo[]):
   SaveResult| SaveResult[] =>
@@ -55,13 +51,6 @@ describe('Test SalesforceAdapter CRUD', () => {
     SalesforceClient.prototype.delete = mockDelete
     mockUpdate = jest.fn().mockImplementationOnce(saveResultMock)
     SalesforceClient.prototype.update = mockUpdate
-    mockAspectsAdd = jest.fn().mockImplementationOnce(_after => Promise.resolve([]))
-    AspectsManager.prototype.add = mockAspectsAdd
-    mockAspectsUpdate = jest.fn().mockImplementationOnce((_before, _after) =>
-      Promise.resolve([]))
-    AspectsManager.prototype.update = mockAspectsUpdate
-    mockAspectsRemove = jest.fn().mockImplementationOnce(_before => Promise.resolve([]))
-    AspectsManager.prototype.remove = mockAspectsRemove
   })
 
   describe('Test Add operation', () => {
@@ -180,8 +169,6 @@ describe('Test SalesforceAdapter CRUD', () => {
       expect(formulaField).not.toHaveProperty('required')
       expect(formulaField.label).toBe('formula field')
       expect(formulaField.formula).toBe('my formula')
-
-      expect(mockAspectsAdd.mock.calls.length).toBe(1)
     })
     it('Should add new salesforce type with picklist field', async () => {
       await adapter().add(
@@ -319,7 +306,6 @@ describe('Test SalesforceAdapter CRUD', () => {
       expect(mockDelete.mock.calls.length).toBe(1)
       const fullName = mockDelete.mock.calls[0][1]
       expect(fullName).toBe('Test__c')
-      expect(mockAspectsRemove.call.length).toBe(1)
     })
 
     it('should fail remove new salesforce type', async () => {
@@ -388,7 +374,6 @@ describe('Test SalesforceAdapter CRUD', () => {
         expect(mockCreate.mock.calls.length).toBe(0)
         expect(mockDelete.mock.calls.length).toBe(0)
         expect(mockUpdate.mock.calls.length).toBe(0)
-        expect(mockAspectsUpdate.mock.calls.length).toBe(0)
       })
 
     it('Should perform a successful update', async () => {
@@ -431,7 +416,6 @@ describe('Test SalesforceAdapter CRUD', () => {
       expect(mockCreate.mock.calls.length).toBe(1)
       expect(mockDelete.mock.calls.length).toBe(1)
       expect(mockUpdate.mock.calls.length).toBe(1)
-      expect(mockAspectsUpdate.mock.calls.length).toBe(1)
     })
 
     it("Should only create new fields when the new object's change is only new fields", async () => {

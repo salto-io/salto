@@ -2,14 +2,14 @@ import {
   ObjectType, ElemID, InstanceElement,
 } from 'adapter-api'
 import _ from 'lodash'
-import { aspect, LAYOUT_ANNOTATION, LAYOUT_TYPE_NAME } from '../../src/aspects/layouts'
+import { filter, LAYOUT_ANNOTATION, LAYOUT_TYPE_NAME } from '../../src/filters/layouts'
 import SalesforceClient from '../../src/client/client'
 import * as constants from '../../src/constants'
 import { bpCase } from '../../src/transformer'
 
 jest.mock('../../src/client/client')
 
-describe('Test layout aspect', () => {
+describe('Test layout filter', () => {
   const mockSObject = new ObjectType({
     elemID: new ElemID(constants.SALESFORCE, 'test'),
     annotationsValues: {},
@@ -31,7 +31,7 @@ describe('Test layout aspect', () => {
       testLayout.value[bpCase(constants.METADATA_OBJECT_NAME_FIELD)] = `${apiName}-Test layout`
       const elements = [testSObj, testLayout]
 
-      await aspect.discover(new SalesforceClient('', '', false), elements)
+      await filter.onDiscover(new SalesforceClient('', '', false), elements)
       const sobject = elements[0] as ObjectType
       expect(sobject.getAnnotationsValues()[LAYOUT_ANNOTATION][0])
         .toBe(mockLayout.elemID.getFullName())

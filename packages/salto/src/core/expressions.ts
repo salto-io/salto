@@ -4,13 +4,8 @@ import {
   ElemID, Element, isObjectType, isInstanceElement, isType, Value,
 } from 'adapter-api'
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type ResolvedRef = any
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Value = any
-
 interface Expression {
-  resolve(contextElements: Element[], visited?: string[]): ResolvedRef
+  resolve(contextElements: Element[], visited?: string[]): Value
 }
 
 type TemplatePart = string|Expression
@@ -73,13 +68,13 @@ export class TemplateExpression {
     this.parts = parts
   }
 
-  resolve(contextElements: Element[], visited: string[] = []): ResolvedRef {
+  resolve(contextElements: Element[], visited: string[] = []): Value {
     return this.parts.map(p => (isExpression(p) ? p.resolve(contextElements, visited) : p)).join('')
   }
 }
 
 export const resolve = (element: Element, contextElements: Element[]): Element => {
-  const referenceCloner = (v: Value): ResolvedRef => (
+  const referenceCloner = (v: Value): Value => (
     isExpression(v) ? v.resolve(contextElements) : undefined
   )
 

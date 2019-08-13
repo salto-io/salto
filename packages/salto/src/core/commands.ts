@@ -53,6 +53,6 @@ export const discover = async (
     const buffer = await Parser.dump(uniqElements)
     return { buffer, filename: 'none' }
   } finally {
-    state.flush()
+    await state.flush()
   }
 }

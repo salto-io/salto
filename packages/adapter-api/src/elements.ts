@@ -9,9 +9,10 @@ export enum PrimitiveTypes {
   BOOLEAN,
 }
 
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+export type Value = any
 export interface Values {
-  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-  [key: string]: any
+  [key: string]: Value
 }
 export type FieldMap = Record<string, Field>
 type TypeMap = Record<string, Type>

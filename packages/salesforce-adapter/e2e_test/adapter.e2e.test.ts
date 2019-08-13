@@ -59,7 +59,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
 
       // Test few possible types
       expect(lead.fields.last_name.type.elemID.name).toBe('string')
-      expect(lead.fields.description.type.elemID.name).toBe('textarea')
+      expect(lead.fields.description.type.elemID.name).toBe('longtextarea')
       expect(lead.fields.salutation.type.elemID.name).toBe('picklist')
 
       // Test label
@@ -239,8 +239,8 @@ describe('Test Salesforce adapter E2E with real account', () => {
             stringType,
             {
               [Type.REQUIRED]: false,
-              [Type.DEFAULT]: 'test',
-              label: 'description label',
+              [Type.DEFAULT]: '"test"',
+              [constants.LABEL]: 'description label',
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 admin: { editable: true, readable: true },
                 standard: { editable: true, readable: true },
@@ -252,7 +252,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
             'formula',
             stringType,
             {
-              label: 'Test formula',
+              [constants.LABEL]: 'Test formula',
               [constants.FORMULA]: '"some text"',
             },
           ),
@@ -296,9 +296,9 @@ describe('Test Salesforce adapter E2E with real account', () => {
             'description',
             stringType,
             {
-              label: 'test label',
+              [constants.LABEL]: 'test label',
               [Type.REQUIRED]: false,
-              [Type.DEFAULT]: 'test',
+              [Type.DEFAULT]: '"test"',
             },
           ),
         },
@@ -341,7 +341,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
         annotationsValues: {
           [Type.REQUIRED]: false,
           [Type.DEFAULT]: 'test',
-          label: 'test label',
+          [constants.LABEL]: 'test label',
           [constants.API_NAME]: customObjectName,
           [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
         },
@@ -382,7 +382,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
         annotationsValues: {
           [Type.REQUIRED]: false,
           [Type.DEFAULT]: 'test2',
-          label: 'test2 label',
+          [constants.LABEL]: 'test2 label',
           [constants.API_NAME]: customObjectName,
         },
       })
@@ -411,7 +411,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
             stringType,
             {
               [constants.API_NAME]: 'Address__c',
-              label: 'Address',
+              [constants.LABEL]: 'Address',
             },
           ),
           banana: new Field(
@@ -420,14 +420,14 @@ describe('Test Salesforce adapter E2E with real account', () => {
             stringType,
             {
               [constants.API_NAME]: 'Banana__c',
-              label: 'Banana',
+              [constants.LABEL]: 'Banana',
             },
           ),
         },
         annotationsValues: {
           [Type.REQUIRED]: false,
           [Type.DEFAULT]: 'test',
-          label: 'test label',
+          [constants.LABEL]: 'test label',
           [constants.API_NAME]: customObjectName,
           [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
         },
@@ -447,7 +447,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
             stringType,
             {
               [constants.API_NAME]: 'Address__c',
-              label: 'Address',
+              [constants.LABEL]: 'Address',
             },
           ),
           banana: new Field(
@@ -456,14 +456,14 @@ describe('Test Salesforce adapter E2E with real account', () => {
             stringType,
             {
               [constants.API_NAME]: 'Banana__c',
-              label: 'Banana Split',
+              [constants.LABEL]: 'Banana Split',
             },
           ),
         },
         annotationsValues: {
           [Type.REQUIRED]: false,
           [Type.DEFAULT]: 'test2',
-          label: 'test label 2',
+          [constants.LABEL]: 'test label 2',
           [constants.API_NAME]: customObjectName,
         },
       })
@@ -530,7 +530,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
         annotationsValues: {
           [Type.REQUIRED]: false,
           [Type.DEFAULT]: 'test',
-          label: 'test label',
+          [constants.LABEL]: 'test label',
           [constants.API_NAME]: customObjectName,
           [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
         },
@@ -584,7 +584,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
         annotationsValues: {
           [Type.REQUIRED]: false,
           [Type.DEFAULT]: 'test',
-          label: 'test label',
+          [constants.LABEL]: 'test label',
           [constants.API_NAME]: customObjectName,
         },
       })
@@ -621,12 +621,32 @@ describe('Test Salesforce adapter E2E with real account', () => {
     it('should add a custom object with various field types', async () => {
       const customObjectName = 'TestAddFieldTypes__c'
       const mockElemID = new ElemID(constants.SALESFORCE, 'test add custom object with various field types')
+      const adminReadable = {
+        [FIELD_LEVEL_SECURITY_ANNOTATION]: {
+          admin: { editable: false, readable: true },
+        },
+      }
       const element = new ObjectType({
         elemID: mockElemID,
         annotationsValues: {
           [constants.API_NAME]: customObjectName,
+          [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
         },
         fields: {
+          pickle: new Field(
+            mockElemID,
+            'pickle',
+            Types.salesforceDataTypes.picklist,
+            {
+              [Type.REQUIRED]: false,
+              // TODO: At this point we do not know how to pass a default value for a picklist
+              // (API fails for this field)
+              // [Type.DEFAULT]: 'NEW',
+              [constants.LABEL]: 'Picklist description label',
+              values: ['NEW', 'OLD'],
+              ...adminReadable,
+            },
+          ),
           alpha: new Field(
             mockElemID,
             'alpha',
@@ -634,28 +654,167 @@ describe('Test Salesforce adapter E2E with real account', () => {
             {
               [Type.REQUIRED]: false,
               [Type.DEFAULT]: 25,
-              label: 'Currency description label',
-              scale: 3,
-              precision: 18,
-              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
-                admin: { editable: false, readable: true },
-                standard: { editable: false, readable: true },
-              },
+              [constants.LABEL]: 'Currency description label',
+              [constants.FIELD_ANNOTATIONS.SCALE]: 3,
+              [constants.FIELD_ANNOTATIONS.PRECISION]: 18,
+              ...adminReadable,
             },
           ),
           bravo: new Field(
             mockElemID,
             'bravo',
-            Types.salesforceDataTypes.picklist,
+            Types.salesforceDataTypes.autonumber,
             {
               [Type.REQUIRED]: false,
-              [Type.DEFAULT]: 'NEW',
-              label: 'test label',
-              values: ['NEW', 'OLD'],
-              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
-                admin: { editable: false, readable: true },
-                standard: { editable: false, readable: true },
-              },
+              [constants.LABEL]: 'Autonumber description label',
+              [constants.FIELD_ANNOTATIONS.DISPLAY_FORMAT]: 'ZZZ-{0000}',
+              ...adminReadable,
+            },
+          ),
+          charlie: new Field(
+            mockElemID,
+            'charlie',
+            Types.salesforceDataTypes.date,
+            {
+              [constants.LABEL]: 'Date description label',
+              [Type.DEFAULT]: 'Today() + 7',
+              ...adminReadable,
+            },
+          ),
+          delta: new Field(
+            mockElemID,
+            'delta',
+            Types.salesforceDataTypes.time,
+            {
+              [constants.LABEL]: 'Time description label',
+              [Type.DEFAULT]: 'TIMENOW() + 5',
+              ...adminReadable,
+            },
+          ),
+          echo: new Field(
+            mockElemID,
+            'echo',
+            Types.salesforceDataTypes.datetime,
+            {
+              [constants.LABEL]: 'DateTime description label',
+              [Type.DEFAULT]: 'Now() + 7',
+              ...adminReadable,
+            },
+          ),
+          foxtrot: new Field(
+            mockElemID,
+            'foxtrot',
+            Types.salesforceDataTypes.email,
+            {
+              [constants.LABEL]: 'Email description label',
+              [constants.FIELD_ANNOTATIONS.UNIQUE]: true,
+              [constants.FIELD_ANNOTATIONS.CASE_SENSITIVE]: true,
+              ...adminReadable,
+            },
+          ),
+          golf: new Field(
+            mockElemID,
+            'golf',
+            Types.salesforceDataTypes.location,
+            {
+              [constants.LABEL]: 'Location description label',
+              [constants.FIELD_ANNOTATIONS.SCALE]: 2,
+              [constants.FIELD_ANNOTATIONS.DISPLAY_LOCATION_IN_DECIMAL]: true,
+              ...adminReadable,
+            },
+          ),
+          hotel: new Field(
+            mockElemID,
+            'hotel',
+            Types.salesforceDataTypes.multipicklist,
+            {
+              [constants.LABEL]: 'Multipicklist description label',
+              values: ['DO', 'RE', 'MI', 'FA', 'SOL', 'LA', 'SI'],
+              [constants.FIELD_ANNOTATIONS.VISIBLE_LINES]: 4,
+              ...adminReadable,
+            },
+          ),
+          india: new Field(
+            mockElemID,
+            'india',
+            Types.salesforceDataTypes.percent,
+            {
+              [constants.LABEL]: 'Percent description label',
+              [constants.FIELD_ANNOTATIONS.SCALE]: 3,
+              [constants.FIELD_ANNOTATIONS.PRECISION]: 12,
+              ...adminReadable,
+            },
+          ),
+          juliett: new Field(
+            mockElemID,
+            'juliett',
+            Types.salesforceDataTypes.phone,
+            {
+              [constants.LABEL]: 'Phone description label',
+              ...adminReadable,
+            },
+          ),
+          kilo: new Field(
+            mockElemID,
+            'kilo',
+            Types.salesforceDataTypes.longtextarea,
+            {
+              [constants.LABEL]: 'LongTextArea description label',
+              [constants.FIELD_ANNOTATIONS.VISIBLE_LINES]: 5,
+              ...adminReadable,
+            },
+          ),
+          lima: new Field(
+            mockElemID,
+            'lima',
+            Types.salesforceDataTypes.richtextarea,
+            {
+              [constants.LABEL]: 'RichTextArea description label',
+              [constants.FIELD_ANNOTATIONS.VISIBLE_LINES]: 27,
+              ...adminReadable,
+            },
+          ),
+          mike: new Field(
+            mockElemID,
+            'mike',
+            Types.salesforceDataTypes.textarea,
+            {
+              [constants.LABEL]: 'TextArea description label',
+              ...adminReadable,
+            },
+          ),
+          november: new Field(
+            mockElemID,
+            'november',
+            Types.salesforceDataTypes.encryptedtext,
+            {
+              [constants.LABEL]: 'EncryptedText description label',
+              [constants.FIELD_ANNOTATIONS.MASK_TYPE]: 'creditCard',
+              [constants.FIELD_ANNOTATIONS.MASK_CHAR]: 'X',
+              [constants.FIELD_ANNOTATIONS.LENGTH]: 35,
+              ...adminReadable,
+            },
+          ),
+          oscar: new Field(
+            mockElemID,
+            'oscar',
+            Types.salesforceDataTypes.url,
+            {
+              [constants.LABEL]: 'Url description label',
+              ...adminReadable,
+            },
+          ),
+          papa: new Field(
+            mockElemID,
+            'papa',
+            Types.salesforceDataTypes.number,
+            {
+              [constants.FIELD_ANNOTATIONS.SCALE]: 3,
+              [constants.FIELD_ANNOTATIONS.PRECISION]: 15,
+              [constants.FIELD_ANNOTATIONS.UNIQUE]: true,
+              [Type.DEFAULT]: 42,
+              [constants.LABEL]: 'Number description label',
+              ...adminReadable,
             },
           ),
         },
@@ -670,18 +829,121 @@ describe('Test Salesforce adapter E2E with real account', () => {
       const objectFields = await sfAdapter.client.describeSObjects([customObjectName])
       expect(objectFields[0]).toBeDefined()
       const allFields = objectFields[0].fields
+      // Verify picklist
+      const picklistField = allFields.filter(field => field.name === 'Pickle__c')[0]
+      expect(picklistField).toBeDefined()
+      expect(picklistField.label).toBe('Picklist description label')
+      expect(picklistField.type).toBe('picklist')
+      expect(_.isEqual((picklistField.picklistValues as PicklistEntry[]).map(value => value.label), ['NEW', 'OLD'])).toBeTruthy()
       // Verify currency
       const currencyField = allFields.filter(field => field.name === 'Alpha__c')[0]
       expect(currencyField).toBeDefined()
       expect(currencyField.label).toBe('Currency description label')
       expect(currencyField.scale).toBe(3)
       expect(currencyField.precision).toBe(18)
+      expect(currencyField.type).toBe('currency')
+      // Verify autonumber
+      const autonumber = allFields.filter(field => field.name === 'Bravo__c')[0]
+      expect(autonumber).toBeDefined()
+      expect(autonumber.label).toBe('Autonumber description label')
+      expect(autonumber.type).toBe('string')
+      // TODO: As of this point we do not knpow how to retrieve the displayFormat annotation from
+      // the autonumber field
 
-      // Verify picklist
-      const picklistField = allFields.filter(field => field.name === 'Bravo__c')[0]
-      expect(picklistField).toBeDefined()
-      expect(picklistField.label).toBe('test label')
-      expect(_.isEqual((picklistField.picklistValues as PicklistEntry[]).map(value => value.label), ['NEW', 'OLD'])).toBeTruthy()
+      // Verify date
+      const date = allFields.filter(field => field.name === 'Charlie__c')[0]
+      expect(date).toBeDefined()
+      expect(date.label).toBe('Date description label')
+      expect(date.type).toBe('date')
+      // Verify time
+      const time = allFields.filter(field => field.name === 'Delta__c')[0]
+      expect(time).toBeDefined()
+      expect(time.label).toBe('Time description label')
+      expect(time.type).toBe('time')
+      // Verify datetime
+      const datetime = allFields.filter(field => field.name === 'Echo__c')[0]
+      expect(datetime).toBeDefined()
+      expect(datetime.label).toBe('DateTime description label')
+      expect(datetime.type).toBe('datetime')
+      // Verify email
+      const email = allFields.filter(field => field.name === 'Foxtrot__c')[0]
+      expect(email).toBeDefined()
+      expect(email.label).toBe('Email description label')
+      expect(email.type).toBe('email')
+      expect(email.unique).toBe(true)
+      expect(email.caseSensitive).toBe(true)
+      // Verify location
+      const location = allFields.filter(field => field.name === 'Golf__c')[0]
+      expect(location).toBeDefined()
+      expect(location.label).toBe('Location description label')
+      expect(location.type).toBe('location')
+      expect(location.displayLocationInDecimal).toBe(true)
+      // TODO: From some reason the api returns scale = 0 despite the fact that it successfully
+      // sets the scale to what was defined (verified in Salesforce UX)
+      // expect(location.scale).toBe(2)
+
+      // Verify multipicklist
+      const multipicklist = allFields.filter(field => field.name === 'Hotel__c')[0]
+      expect(multipicklist).toBeDefined()
+      expect(multipicklist.label).toBe('Multipicklist description label')
+      expect(multipicklist.type).toBe('multipicklist')
+      expect(multipicklist.precision).toBe(4)
+      expect(_.isEqual((multipicklist.picklistValues as PicklistEntry[]).map(value => value.label), ['DO', 'RE', 'MI', 'FA', 'SOL', 'LA', 'SI'])).toBeTruthy()
+      // Verify percent
+      const percentField = allFields.filter(field => field.name === 'India__c')[0]
+      expect(percentField).toBeDefined()
+      expect(percentField.label).toBe('Percent description label')
+      expect(percentField.type).toBe('percent')
+      expect(percentField.scale).toBe(3)
+      expect(percentField.precision).toBe(12)
+      // Verify phone
+      const phoneField = allFields.filter(field => field.name === 'Juliett__c')[0]
+      expect(phoneField).toBeDefined()
+      expect(phoneField.label).toBe('Phone description label')
+      expect(phoneField.type).toBe('phone')
+      // Verify longtextarea
+      // TODO: We do not know how to retrieve the visible lines info when discovering
+      // long text area
+      const longTextAreaField = allFields.filter(field => field.name === 'Kilo__c')[0]
+      expect(longTextAreaField).toBeDefined()
+      expect(longTextAreaField.label).toBe('LongTextArea description label')
+      expect(longTextAreaField.type).toBe('textarea')
+      expect(longTextAreaField.length).toBe(32768)
+      // Verify richtextarea
+      // TODO: We do not know how to retrieve the visible lines info when discovering
+      // rich text area
+      const richTextAreaField = allFields.filter(field => field.name === 'Lima__c')[0]
+      expect(richTextAreaField).toBeDefined()
+      expect(richTextAreaField.label).toBe('RichTextArea description label')
+      expect(richTextAreaField.type).toBe('textarea')
+      expect(richTextAreaField.length).toBe(32768)
+      // Verify textarea
+      const textAreaField = allFields.filter(field => field.name === 'Mike__c')[0]
+      expect(textAreaField).toBeDefined()
+      expect(textAreaField.label).toBe('TextArea description label')
+      expect(textAreaField.type).toBe('textarea')
+      // Verify Encrypted Text
+      const encryptedTextField = allFields.filter(field => field.name === 'November__c')[0]
+      expect(encryptedTextField).toBeDefined()
+      expect(encryptedTextField.label).toBe('EncryptedText description label')
+      expect(encryptedTextField.type).toBe('encryptedstring')
+      expect(encryptedTextField.mask).toBe('X')
+      expect(encryptedTextField.maskType).toBe('creditCard')
+      expect(encryptedTextField.length).toBe(35)
+      // Verify textarea
+      const urlField = allFields.filter(field => field.name === 'Oscar__c')[0]
+      expect(urlField).toBeDefined()
+      expect(urlField.label).toBe('Url description label')
+      expect(urlField.type).toBe('url')
+      // Verify number
+      const numberField = allFields.filter(field => field.name === 'Papa__c')[0]
+      expect(numberField).toBeDefined()
+      expect(numberField.label).toBe('Number description label')
+      expect(numberField.type).toBe('double')
+      expect(numberField.defaultValueFormula).toBe('42')
+      expect(numberField.scale).toBe(3)
+      expect(numberField.precision).toBe(15)
+      expect(numberField.unique).toBe(true)
 
       // Clean-up
       await sfAdapter.remove(post as ObjectType)

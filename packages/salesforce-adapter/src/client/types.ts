@@ -23,8 +23,11 @@ class CustomPicklistValue implements MetadataInfo {
 }
 
 export class CustomField implements MetadataInfo {
+  // Common field annotations
   readonly type: string
   readonly required?: boolean
+  readonly defaultValue?: string
+  // For formula fields
   readonly formula?: string
   // To be used for picklist and combobox types
   readonly valueSet?: { valueSetDefinition: { value: CustomPicklistValue[] } }
@@ -35,12 +38,20 @@ export class CustomField implements MetadataInfo {
   // For the rest of the annotation values required by the rest of the field types:
   scale?: number
   precision?: number
+  displayFormat?: string
+  unique?: boolean
+  caseSensitive?: boolean
+  displayLocationInDecimal?: boolean
+  visibleLines?: number
+  maskType?: string
+  maskChar?: string
 
   constructor(
     public fullName: string,
     type: string,
     readonly label?: string,
     required: boolean = false,
+    defaultVal?: string,
     values?: string[],
     formula?: string,
   ) {
@@ -48,8 +59,19 @@ export class CustomField implements MetadataInfo {
     if (formula) {
       this.formula = formula
     } else {
-      if (this.type === 'Text') {
-        this.length = 80
+      switch (this.type) {
+        case 'Text':
+          this.length = 80
+          break
+        case 'LongTextArea':
+        case 'Html':
+          this.length = 32768
+          break
+        case 'EncryptedText':
+          this.length = 32
+          break
+        default:
+          break
       }
       this.required = required
     }
@@ -60,6 +82,10 @@ export class CustomField implements MetadataInfo {
           value: values.map(val => new CustomPicklistValue(val)),
         },
       }
+    }
+
+    if (defaultVal !== undefined) {
+      this.defaultValue = defaultVal
     }
   }
 }

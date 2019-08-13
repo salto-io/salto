@@ -12,8 +12,8 @@ import {
 } from './client/types'
 import {
   API_NAME, LABEL, PICKLIST_VALUES, SALESFORCE, RESTRICTED_PICKLIST, FORMULA,
-  FORMULA_TYPE_PREFIX, METADATA_TYPES_SUFFIX,
-  PRECISION, FIELD_TYPE_NAMES, FIELD_TYPE_API_NAMES, METADATA_TYPE,
+  FORMULA_TYPE_PREFIX, METADATA_TYPES_SUFFIX, FIELD_TYPE_NAMES, FIELD_TYPE_API_NAMES,
+  METADATA_TYPE, FIELD_ANNOTATIONS,
 } from './constants'
 
 const capitalize = (s: string): string => {
@@ -58,25 +58,33 @@ const fieldTypeName = (typeName: string): string => (
 // Defines SFDC built-in field types & built-in primitive data types
 // Ref: https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/field_types.htm
 // Ref: https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/primitive_data_types.htm
+// Ref: https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_field_types.htm#meta_type_fieldtype
 export class Types {
   // Type mapping for custom objects
   public static salesforceDataTypes: Record<string, Type> = {
-    // Adding string on top of a text is a temp solution as we are not supporting computed fields.
-    // As far as we know string appears only in compound fields (at least in Name).
-    string: new PrimitiveType({
-      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.STRING),
-      primitive: PrimitiveTypes.STRING,
-    }),
     text: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.TEXT),
       primitive: PrimitiveTypes.STRING,
+      annotations: {
+        [FIELD_ANNOTATIONS.UNIQUE]: BuiltinTypes.BOOLEAN,
+        [FIELD_ANNOTATIONS.CASE_SENSITIVE]: BuiltinTypes.BOOLEAN,
+        [FIELD_ANNOTATIONS.LENGTH]: BuiltinTypes.NUMBER,
+      },
     }),
     number: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.NUMBER),
       primitive: PrimitiveTypes.NUMBER,
       annotations: {
-        scale: BuiltinTypes.NUMBER,
-        precision: BuiltinTypes.NUMBER,
+        [FIELD_ANNOTATIONS.SCALE]: BuiltinTypes.NUMBER,
+        [FIELD_ANNOTATIONS.PRECISION]: BuiltinTypes.NUMBER,
+        [FIELD_ANNOTATIONS.UNIQUE]: BuiltinTypes.BOOLEAN,
+      },
+    }),
+    autonumber: new PrimitiveType({
+      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.AUTONUMBER),
+      primitive: PrimitiveTypes.STRING,
+      annotations: {
+        [FIELD_ANNOTATIONS.DISPLAY_FORMAT]: BuiltinTypes.STRING,
       },
     }),
     boolean: new PrimitiveType({
@@ -99,12 +107,81 @@ export class Types {
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.CURRENCY),
       primitive: PrimitiveTypes.NUMBER,
       annotations: {
-        scale: BuiltinTypes.NUMBER,
-        precision: BuiltinTypes.NUMBER,
+        [FIELD_ANNOTATIONS.SCALE]: BuiltinTypes.NUMBER,
+        [FIELD_ANNOTATIONS.PRECISION]: BuiltinTypes.NUMBER,
       },
     }),
     picklist: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.PICKLIST),
+      primitive: PrimitiveTypes.STRING,
+    }),
+    multipicklist: new PrimitiveType({
+      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.MULTIPICKLIST),
+      primitive: PrimitiveTypes.STRING,
+      annotations: {
+        [FIELD_ANNOTATIONS.VISIBLE_LINES]: BuiltinTypes.NUMBER,
+      },
+    }),
+    email: new PrimitiveType({
+      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.EMAIL),
+      primitive: PrimitiveTypes.STRING,
+      annotations: {
+        [FIELD_ANNOTATIONS.UNIQUE]: BuiltinTypes.BOOLEAN,
+        [FIELD_ANNOTATIONS.CASE_SENSITIVE]: BuiltinTypes.BOOLEAN,
+      },
+    }),
+    location: new PrimitiveType({
+      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.LOCATION),
+      primitive: PrimitiveTypes.NUMBER,
+      annotations: {
+        [FIELD_ANNOTATIONS.DISPLAY_LOCATION_IN_DECIMAL]: BuiltinTypes.BOOLEAN,
+        [FIELD_ANNOTATIONS.SCALE]: BuiltinTypes.NUMBER,
+      },
+    }),
+    percent: new PrimitiveType({
+      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.PERCENT),
+      primitive: PrimitiveTypes.NUMBER,
+      annotations: {
+        [FIELD_ANNOTATIONS.SCALE]: BuiltinTypes.NUMBER,
+        [FIELD_ANNOTATIONS.PRECISION]: BuiltinTypes.NUMBER,
+      },
+    }),
+    phone: new PrimitiveType({
+      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.PHONE),
+      primitive: PrimitiveTypes.STRING,
+    }),
+    longtextarea: new PrimitiveType({
+      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.LONGTEXTAREA),
+      primitive: PrimitiveTypes.STRING,
+      annotations: {
+        [FIELD_ANNOTATIONS.VISIBLE_LINES]: BuiltinTypes.NUMBER,
+        [FIELD_ANNOTATIONS.LENGTH]: BuiltinTypes.NUMBER,
+      },
+    }),
+    richtextarea: new PrimitiveType({
+      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.RICHTEXTAREA),
+      primitive: PrimitiveTypes.STRING,
+      annotations: {
+        [FIELD_ANNOTATIONS.VISIBLE_LINES]: BuiltinTypes.NUMBER,
+        [FIELD_ANNOTATIONS.LENGTH]: BuiltinTypes.NUMBER,
+      },
+    }),
+    textarea: new PrimitiveType({
+      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.TEXTAREA),
+      primitive: PrimitiveTypes.STRING,
+    }),
+    encryptedtext: new PrimitiveType({
+      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.ENCRYPTEDTEXT),
+      primitive: PrimitiveTypes.STRING,
+      annotations: {
+        [FIELD_ANNOTATIONS.MASK_CHAR]: BuiltinTypes.STRING,
+        [FIELD_ANNOTATIONS.MASK_TYPE]: BuiltinTypes.STRING,
+        [FIELD_ANNOTATIONS.MASK]: BuiltinTypes.STRING,
+        [FIELD_ANNOTATIONS.LENGTH]: BuiltinTypes.NUMBER,
+      },
+    }),
+    url: new PrimitiveType({
+      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.URL),
       primitive: PrimitiveTypes.STRING,
     }),
   }
@@ -150,18 +227,20 @@ export const toCustomField = (
     FIELD_TYPE_API_NAMES[fieldTypeName(field.type.elemID.name)],
     field.getAnnotationsValues()[LABEL],
     field.getAnnotationsValues()[Type.REQUIRED],
+    field.getAnnotationsValues()[Type.DEFAULT],
     field.getAnnotationsValues()[PICKLIST_VALUES],
     field.getAnnotationsValues()[FORMULA],
   )
 
+  // Convert the annotations' names to the required API name
   _.assign(newField,
-    _.pickBy(
-      field.getAnnotationsValues(),
-      (_val, annotationValue) => allowedAnnotations(
-        field.type.elemID.name
-      ).includes(annotationValue)
+    _.mapKeys(
+      _.pickBy(field.getAnnotationsValues(),
+        (_val, annotationValue) => allowedAnnotations(
+          field.type.elemID.name
+        ).includes(annotationValue)),
+      (_val, key) => sfCase(key, false, false)
     ))
-
   return newField
 }
 
@@ -227,6 +306,8 @@ const getDefaultValue = (field: Field): DefaultValueType | undefined => {
     ? valueFromXsdType(field.defaultValue) : field.defaultValue
 }
 
+// The following method is used during the discovery process and is used in building the objects
+// and their fields described in the blueprint
 export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeField => {
   const bpFieldName = bpCase(field.name)
   let bpFieldType = Types.get(field.type)
@@ -240,6 +321,25 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
     annotations[Type.DEFAULT] = defaultValue
   }
 
+  // Handle specific field types that need to be converted from their primitive type to their
+  // Salesforce field type
+  if (field.autoNumber) { // autonumber (needs to be first because its type in the field
+    // returned from the API is string)
+    bpFieldType = Types.get(FIELD_TYPE_NAMES.AUTONUMBER)
+  } else if (field.type === 'string' && !field.compoundFieldName) { // string
+    bpFieldType = Types.get(FIELD_TYPE_NAMES.TEXT)
+  } else if ((field.type === 'double' && !field.compoundFieldName) || field.type === 'int') { // number
+    bpFieldType = Types.get(FIELD_TYPE_NAMES.NUMBER)
+  } else if (field.type === 'textarea' && field.length > 255) { // long text area & rich text area
+    if (field.extraTypeInfo === 'plaintextarea') {
+      bpFieldType = Types.get(FIELD_TYPE_NAMES.LONGTEXTAREA)
+    } else if (field.extraTypeInfo === 'richtextarea') {
+      bpFieldType = Types.get(FIELD_TYPE_NAMES.RICHTEXTAREA)
+    }
+  } else if (field.type === 'encryptedstring') { // encrypted string
+    bpFieldType = Types.get(FIELD_TYPE_NAMES.ENCRYPTEDTEXT)
+  }
+  // Picklists
   if (field.picklistValues && field.picklistValues.length > 0) {
     annotations[PICKLIST_VALUES] = field.picklistValues.map(val => val.value)
     annotations[RESTRICTED_PICKLIST] = Boolean(field.restrictedPicklist)
@@ -257,17 +357,21 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
     if (field.type === 'multipicklist') {
       // Precision is the field for multi-picklist in SFDC API that defines how many objects will
       // be visible in the picklist in the UI. Why? Because.
-      annotations[PRECISION] = field.precision
+      annotations[FIELD_ANNOTATIONS.VISIBLE_LINES] = field.precision
     }
+  // Formulas
   } else if (field.calculated && !_.isEmpty(field.calculatedFormula)) {
     bpFieldType = Types.get(formulaTypeName(bpFieldType.elemID.name))
     annotations[FORMULA] = field.calculatedFormula
   }
   if (!_.isEmpty(bpFieldType.annotations)) {
-    // For most of the field types (except for picklist & formula)
+    // Convert the annotations' names to bp case for those that are not already in that format
+    // (annotations that consist of at least 2 words) and assign the additional annotations
+    // (ones that were received from the api)
     _.assign(annotations,
       _.pickBy(
-        field,
+        _.mapKeys(field,
+          (_val, key) => bpCase(key)),
         (_val, key) => allowedAnnotations(
           _.toLower(bpFieldType.elemID.name)
         ).includes(key)

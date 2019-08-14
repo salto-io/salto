@@ -93,6 +93,7 @@ func convertTraversal(traversal hcl.Traversal) []interface{} {
 			}
 		}
 	}
+
 	return steps
 }
 

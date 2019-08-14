@@ -219,8 +219,8 @@ export const toCustomField = (
   object: ObjectType, field: TypeField, fullname: boolean = false
 ): CustomField => {
   const type = Types.get(fieldTypeName(field.type.elemID.name))
-  const fieldType = type ? FIELD_TYPE_API_NAMES[type.elemID.name]
-    : fieldTypeName(field.type.elemID.name)
+  const fieldType = FIELD_TYPE_API_NAMES[type.elemID.name]
+    || fieldTypeName(field.type.elemID.name)
   const newField = new CustomField(
     fullname ? fieldFullName(object, field) : apiName(field),
     fieldType,

@@ -319,6 +319,32 @@ export class InstanceElement implements Element {
     return _.isEqual(this.type.elemID, other.type.elemID)
            && _.isEqual(this.value, other.value)
   }
+
+  /**
+   * Find all values that are in this.values and not in prev (this.values / prevValues)
+   * Or different (same key and different value).
+   *
+   * Value can be string, object or Array. in case of array we treat each index as Independent,
+   * So we need to iterate over the array and check equality for each one.
+   *
+   * @param prevValues to compare
+   * @return All values which unique (not in prev) or different.
+   */
+  getValuesThatNotInPrevOrDifferent(prevValues: Values): Values {
+    const returnVal: Values = {}
+    const preMap = new Map(Object.entries(prevValues))
+    Object.keys(this.value)
+      .forEach(key => {
+        if (!_.isEqual(preMap.get(key), this.value[key])) {
+          returnVal[key] = _.isArray(this.value[key])
+            /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+            ? this.value[key].filter((f: any) => preMap.get(key).some((v: any) => _.isEqual(f, v)))
+            : this.value[key]
+        }
+      })
+
+    return returnVal
+  }
 }
 
 export class ElementsRegistry {

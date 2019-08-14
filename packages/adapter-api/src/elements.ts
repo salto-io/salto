@@ -332,13 +332,13 @@ export class InstanceElement implements Element {
    */
   getValuesThatNotInPrevOrDifferent(prevValues: Values): Values {
     const returnVal: Values = {}
-    const preMap = new Map(Object.entries(prevValues))
+    const prev = new Map(Object.entries(prevValues))
     Object.keys(this.value)
       .forEach(key => {
-        if (!_.isEqual(preMap.get(key), this.value[key])) {
-          returnVal[key] = _.isArray(this.value[key]) && _.isArray(preMap.get(key))
+        if (!_.isEqual(prev.get(key), this.value[key])) {
+          returnVal[key] = _.isArray(this.value[key]) && _.isArray(prev.get(key))
             /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-            ? this.value[key].filter((f: any) => preMap.get(key).some((v: any) => !_.isEqual(f, v)))
+            ? this.value[key].filter((f: any) => prev.get(key).some((v: any) => !_.isEqual(f, v)))
             : this.value[key]
         }
       })

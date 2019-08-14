@@ -1,4 +1,4 @@
-model jira_test {
+type jira_test {
 	string name {
 	  label = "Name"
 	  _required = true

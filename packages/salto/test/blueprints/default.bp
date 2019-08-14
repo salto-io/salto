@@ -1,4 +1,4 @@
-model salesforce_demo {
+type salesforce_demo {
 	string name {
 	  label = "Name"
 	  _required = true
@@ -23,7 +23,7 @@ model salesforce_demo {
 	}
 }
 
-model salesforce_demo2 {
+type salesforce_demo2 {
 	string namosh {
 	  label = "Name"
 	  _required = true

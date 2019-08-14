@@ -17,7 +17,8 @@ import {
   getValueTypeFieldElement, getSObjectFieldElement, fromMetadataInfo, sfTypeName,
   bpCase, toMetadataInfo, metadataType,
 } from './transformer'
-import { AspectsManager } from './aspects/aspects'
+import { filter as layoutFilter } from './filters/layouts'
+import { filter as fieldPermissionsFilter } from './filters/field_permissions'
 
 // Diagnose client results
 const diagnose = (result: SaveResult | SaveResult[]): void => {
@@ -35,7 +36,7 @@ const diagnose = (result: SaveResult | SaveResult[]): void => {
   if (isArray(result)) {
     errors = errors.concat(
       (result as CompleteSaveResult[])
-        .filter(r => r.errors !== undefined)
+        .filter(r => r && r.errors)
         .map(r => errorMessage(r.errors))
     )
   } else if ((result as CompleteSaveResult).errors) {
@@ -71,14 +72,11 @@ export default class SalesforceAdapter {
   public static DISCOVER_METADATA_TYPES_WHITELIST = ['Flow', 'Workflow', 'Queue', 'Report',
     'Settings', 'Layout']
 
+  filters = [fieldPermissionsFilter, layoutFilter]
+
   private innerClient?: SalesforceClient
   public get client(): SalesforceClient {
     return this.innerClient as SalesforceClient
-  }
-
-  private innerAspects?: AspectsManager
-  public get aspects(): AspectsManager {
-    return this.innerAspects as AspectsManager
   }
 
   init(conf: InstanceElement): void {
@@ -87,7 +85,6 @@ export default class SalesforceAdapter {
       conf.value.password + conf.value.token,
       conf.value.sandbox
     )
-    this.innerAspects = new AspectsManager(this.innerClient)
   }
 
   /**
@@ -130,7 +127,7 @@ export default class SalesforceAdapter {
     )
 
     SalesforceAdapter.fixListsDiscovery(elements)
-    await this.aspects.discover(elements)
+    await this.runFiltersOnDiscover(elements)
     return elements
   }
 
@@ -141,11 +138,15 @@ export default class SalesforceAdapter {
    * @throws error in case of failure
    */
   public async add(element: Element): Promise<Element> {
+    let post: Element
     if (isObjectType(element)) {
-      return this.addObject(element)
+      post = await this.addObject(element)
+    } else {
+      post = await this.addInstance(element as InstanceElement)
     }
+    diagnose(await this.runFiltersOnAdd(post))
 
-    return this.addInstance(element as InstanceElement)
+    return post
   }
 
   /**
@@ -159,7 +160,6 @@ export default class SalesforceAdapter {
     annotateApiNameAndLabel(post)
 
     diagnose(await this.client.create(constants.CUSTOM_OBJECT, toCustomObject(post)))
-    diagnose(await this.aspects.add(post))
 
     return post as Element
   }
@@ -186,7 +186,7 @@ export default class SalesforceAdapter {
    */
   public async remove(element: Element): Promise<void> {
     diagnose(await this.client.delete(metadataType(element), apiName(element)))
-    diagnose(await this.aspects.remove(element))
+    diagnose(await this.runFiltersOnRemove(element))
   }
 
   /**
@@ -221,9 +221,9 @@ export default class SalesforceAdapter {
     const objectUpdateResult = await this.client.update(constants.CUSTOM_OBJECT,
       toCustomObject(post))
     // Aspects should be updated once all object related properties updates are over
-    const aspectsResult = await this.aspects.update(prevElement, post)
+    const filtersResult = await this.runFiltersOnUpdate(prevElement, post)
     diagnose([..._.flatten(fieldsUpdateResult), objectUpdateResult as SaveResult,
-      ...aspectsResult])
+      ...filtersResult])
 
     return post
   }
@@ -419,5 +419,27 @@ export default class SalesforceAdapter {
     }
     return _.flatten(await Promise.all(_.chunk(names, 10)
       .map(chunk => this.client.readMetadata(type, chunk) as Promise<MetadataInfo[]>)))
+  }
+
+  // Filter related functions
+  private async runFiltersOnDiscover(elements: Element[]): Promise<void[]> {
+    return Promise.all(this.filters.map(filter =>
+      filter.onDiscover(this.client, elements)))
+  }
+
+  private async runFiltersOnAdd(after: Element): Promise<SaveResult[]> {
+    return _.flatten(await Promise.all(this.filters.map(filter =>
+      filter.onAdd(this.client, after))))
+  }
+
+
+  private async runFiltersOnUpdate(before: Element, after: Element): Promise<SaveResult[]> {
+    return _.flatten(await Promise.all(this.filters.map(filter =>
+      filter.onUpdate(this.client, before, after))))
+  }
+
+  private async runFiltersOnRemove(before: Element): Promise<SaveResult[]> {
+    return _.flatten(await Promise.all(this.filters.map(filter =>
+      filter.onRemove(this.client, before))))
   }
 }

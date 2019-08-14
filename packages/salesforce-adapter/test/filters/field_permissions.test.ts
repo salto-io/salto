@@ -3,13 +3,13 @@ import {
 } from 'adapter-api'
 import _ from 'lodash'
 import { ProfileInfo } from '../../src/client/types'
-import { aspect, FIELD_LEVEL_SECURITY_ANNOTATION } from '../../src/aspects/field_permissions'
+import { filter, FIELD_LEVEL_SECURITY_ANNOTATION } from '../../src/filters/field_permissions'
 import SalesforceClient from '../../src/client/client'
 import * as constants from '../../src/constants'
 
 jest.mock('../../src/client/client')
 
-describe('Test Field Permissions aspect', () => {
+describe('Test Field Permissions filter', () => {
   const client = (): SalesforceClient => new SalesforceClient('', '', false)
   const mockElemID = new ElemID(constants.SALESFORCE, 'test')
   const stringType = new PrimitiveType({
@@ -64,7 +64,7 @@ describe('Test Field Permissions aspect', () => {
     }]))
     const elements = [mockObject.clone()]
 
-    await aspect.discover(client(), elements)
+    await filter.onDiscover(client(), elements)
     const security = elements[0].fields.description.getAnnotationsValues()[
       FIELD_LEVEL_SECURITY_ANNOTATION]
     expect(security.admin.readable).toBe(true)
@@ -74,7 +74,7 @@ describe('Test Field Permissions aspect', () => {
     const after = mockObject.clone()
     _.merge(after.fields.description.getAnnotationsValues(), admin)
     _.merge(after.fields.description.getAnnotationsValues(), standard)
-    await aspect.add(client(), after)
+    await filter.onAdd(client(), after)
 
     // Verify permissions creation
     expect(mockUpdate.mock.calls.length).toBe(1)
@@ -91,7 +91,7 @@ describe('Test Field Permissions aspect', () => {
     expect(standardProfile.fieldPermissions[0].readable).toBe(true)
   })
 
-  it('should fail field permissions aspect add due to sfdc error', async () => {
+  it('should fail field permissions filter add due to sfdc error', async () => {
     SalesforceClient.prototype.update = jest.fn().mockImplementationOnce(() => ([{
       success: false,
       errors: [
@@ -102,7 +102,7 @@ describe('Test Field Permissions aspect', () => {
     }]))
     const after = mockObject.clone()
     _.merge(after.fields.description.getAnnotationsValues(), admin)
-    const result = await aspect.add(client(), after)
+    const result = await filter.onAdd(client(), after)
 
     expect(result[0].success).toBe(false)
   })
@@ -116,7 +116,7 @@ describe('Test Field Permissions aspect', () => {
     after.fields = { ...after.fields, apple }
     // Add permissions to existing field
     _.merge(after.fields.description.getAnnotationsValues(), admin)
-    await aspect.update(client(), before, after)
+    await filter.onUpdate(client(), before, after)
 
     expect(mockUpdate.mock.calls.length).toBe(1)
     // Verify the field permissions update
@@ -138,7 +138,7 @@ describe('Test Field Permissions aspect', () => {
       const after = mockObject.clone()
       after.fields = { address, apple }
 
-      await aspect.update(client(), before, after)
+      await filter.onUpdate(client(), before, after)
 
       expect(mockUpdate.mock.calls.length).toBe(1)
       // Verify the field permissions update
@@ -160,7 +160,7 @@ describe('Test Field Permissions aspect', () => {
     // Add standard profile field permissions to address
     _.merge(after.fields.address.getAnnotationsValues(), standard)
 
-    await aspect.update(client(), before, after)
+    await filter.onUpdate(client(), before, after)
 
     // Verify the field permissions creation
     const newProfileInfo = mockUpdate.mock.calls[0][1][0]
@@ -200,7 +200,7 @@ describe('Test Field Permissions aspect', () => {
     after.fields.apple.setAnnotationsValues({
       [constants.API_NAME]: after.fields.apple.getAnnotationsValues()[constants.API_NAME],
     })
-    await aspect.update(client(), before, after)
+    await filter.onUpdate(client(), before, after)
 
     expect(mockUpdate.mock.calls.length).toBe(1)
     // Verify the field permissions change
@@ -225,7 +225,7 @@ describe('Test Field Permissions aspect', () => {
   })
 
   it('remove should pass', async () => {
-    const result = await aspect.remove(client(), mockObject)
+    const result = await filter.onRemove(client(), mockObject)
     expect(result.length).toBe(0)
   })
 })

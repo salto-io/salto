@@ -11,7 +11,7 @@ import { PicklistEntry } from 'jsforce'
 import _ from 'lodash'
 import SalesforceAdapter from '../src/adapter'
 import * as constants from '../src/constants'
-import { FIELD_LEVEL_SECURITY_ANNOTATION, PROFILE_METADATA_TYPE } from '../src/aspects/field_permissions'
+import { FIELD_LEVEL_SECURITY_ANNOTATION, PROFILE_METADATA_TYPE } from '../src/filters/field_permissions'
 import {
   CustomObject,
   ProfileInfo,

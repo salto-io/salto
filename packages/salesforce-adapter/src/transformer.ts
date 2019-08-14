@@ -196,8 +196,8 @@ export class Types {
 
   static get(name: string, customObject: boolean = true): Type {
     const type = customObject
-      ? this.salesforceDataTypes[name]
-      : this.metadataPrimitiveTypes[name]
+      ? this.salesforceDataTypes[name.toLowerCase()]
+      : this.metadataPrimitiveTypes[name.toLowerCase()]
 
     if (type === undefined) {
       return new ObjectType({
@@ -382,13 +382,16 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
 }
 
 const transformPrimitive = (val: string, primitive: PrimitiveTypes):
-  string | boolean | number => {
+  string | boolean | number | undefined => {
   switch (primitive) {
     case PrimitiveTypes.NUMBER:
       return Number(val)
     case PrimitiveTypes.BOOLEAN:
       return (val.toLowerCase() === 'true')
     case PrimitiveTypes.STRING:
+      if (val.length === 0) {
+        return undefined
+      }
       return val
     default:
       return val
@@ -396,8 +399,8 @@ const transformPrimitive = (val: string, primitive: PrimitiveTypes):
 }
 
 const transform = (obj: Values, type: ObjectType, convert: (name: string) => string,
-  strict: boolean = true): Values =>
-  _(obj).mapKeys((_value, key) => convert(key)).mapValues((value, key) => {
+  strict: boolean = true): Values | undefined => {
+  const result = _(obj).mapKeys((_value, key) => convert(key)).mapValues((value, key) => {
     // we get lists of empty strings that we would like to filter out
     if (_.isArray(value) && _.isEmpty(value.filter(v => !_.isEmpty(v)))) {
       return undefined
@@ -436,9 +439,11 @@ const transform = (obj: Values, type: ObjectType, convert: (name: string) => str
     return value
   }).omitBy(_.isUndefined)
     .value()
+  return _.isEmpty(result) ? undefined : result
+}
 
 export const fromMetadataInfo = (info: MetadataInfo, infoType: ObjectType, strict: boolean = true):
-  Values =>
+  Values | undefined =>
   transform(info as Values, infoType, bpCase, strict)
 
 

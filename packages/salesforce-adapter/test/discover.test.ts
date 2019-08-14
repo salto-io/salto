@@ -430,6 +430,23 @@ describe('Test SalesforceAdapter discover', () => {
           name: 'layoutSections',
           soapType: 'LayoutSection',
         },
+        {
+          fields: [
+            {
+              name: 'name', soapType: 'string', valueRequired: true,
+            },
+            {
+              fields: [
+                {
+                  name: 'stringValue', soapType: 'string', valueRequired: 'true',
+                }],
+              name: 'value',
+              soapType: 'Value',
+              valueRequired: true,
+            }],
+          name: 'processMetadataValues',
+          soapType: 'ProcessMetadataValue',
+        },
       ])
 
       mockSingleMetadataInstance('OrderLayout', {
@@ -448,6 +465,9 @@ describe('Test SalesforceAdapter discover', () => {
         {
           layoutColumns: '',
         }],
+        processMetadataValues: [{ name: 'dataType', value: { stringValue: 'Boolean' } },
+          { name: 'leftHandSideReferenceTo', value: '' },
+          { name: 'leftHandSideReferenceTo2', value: { stringValue: '' } }],
       })
 
       const result = await adapter().discover()
@@ -461,6 +481,10 @@ describe('Test SalesforceAdapter discover', () => {
       expect(layout.value.layout_sections[1].layout_columns).toBeUndefined()
       expect(layout.value.layout_sections[1].label).toBe('Additional Information')
       expect(layout.value.layout_sections[2].style).toBe('CustomLinks')
+      expect(layout.value.process_metadata_values[1].name).toBe('leftHandSideReferenceTo')
+      expect(layout.value.process_metadata_values[1].value).toBeUndefined()
+      expect(layout.value.process_metadata_values[2].name).toBe('leftHandSideReferenceTo2')
+      expect(layout.value.process_metadata_values[2].value).toBeUndefined()
     })
 
     it('should discover metadata types lists', async () => {

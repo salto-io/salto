@@ -1,0 +1,42 @@
+{
+	"name": "salto-vscode",
+	"displayName": "salto-vscode",
+	"description": "",
+	"version": "0.0.1",
+	"engines": {
+		"vscode": "^1.37.0"
+	},
+	"categories": [
+		"Other"
+	],
+	"activationEvents": [
+		"onCommand:extension.helloWorld"
+	],
+	"main": "./dist/extension.js",
+	"contributes": {
+		"commands": [
+			{
+				"command": "extension.helloWorld",
+				"title": "Hello World"
+			}
+		]
+	},
+	"scripts": {
+		"vscode:prepublish": "yarn run build",
+		"build": "tsc -p ./",
+		"watch": "tsc -watch -p ./",
+		"pretest": "yarn run build",
+		"test": "node ./dist/test/runTest.js"
+	},
+	"devDependencies": {
+		"@types/glob": "^7.1.1",
+		"@types/jest-cli": "^23.6.0",
+		"@types/node": "^10.12.21",
+		"@types/vscode": "1.37",
+		"jest-cli": "^24.8.0",
+		"jest-core": "^0.0.0",
+		"tslint": "^5.12.1",
+		"typescript": "^3.3.1",
+		"vscode-test": "^1.0.2"
+	}
+}

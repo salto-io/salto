@@ -403,6 +403,105 @@ describe('Test Salesforce adapter E2E with real account', () => {
       await sfAdapter.remove(oldElement)
     })
 
+    it('should modify an instance', async () => {
+      const instanceElementName = 'TestProfileInstanceUpdate__c'
+      const mockElemID = new ElemID(constants.SALESFORCE, instanceElementName)
+      const oldInstance = new InstanceElement(mockElemID, new ObjectType({
+        elemID: mockElemID,
+        fields: {
+        },
+        annotations: {},
+        annotationsValues: {
+          [constants.METADATA_TYPE]: PROFILE_METADATA_TYPE,
+          [constants.API_NAME]: instanceElementName,
+        },
+      }),
+      {
+        fieldPermissions: [
+          {
+            field: 'Lead.Fax',
+            readable: true,
+            editable: false,
+          },
+          {
+            editable: false,
+            field: 'Account.AccountNumber',
+            readable: false,
+          },
+        ],
+        tabVisibilities: [
+          {
+            tab: 'standard-Account',
+            visibility: 'DefaultOff',
+          },
+        ],
+        applicationVisibilities: [
+          {
+            application: 'standard__ServiceConsole',
+            default: false,
+            visible: true,
+          },
+        ],
+        description: 'new e2e profile',
+      })
+
+
+      const newInstance = new InstanceElement(mockElemID, new ObjectType({
+        elemID: mockElemID,
+        fields: {
+        },
+        annotations: {},
+        annotationsValues: {
+          [constants.METADATA_TYPE]: PROFILE_METADATA_TYPE,
+          [constants.API_NAME]: instanceElementName,
+        },
+      }),
+      {
+        fieldPermissions: [
+          {
+            field: 'Lead.Fax',
+            readable: true,
+            editable: false,
+          },
+          {
+            editable: false,
+            field: 'Account.AccountNumber',
+            readable: false,
+          },
+        ],
+        tabVisibilities: [
+          {
+            tab: 'standard-Account',
+            visibility: 'DefaultOff',
+          },
+        ],
+        applicationVisibilities: [
+          {
+            application: 'standard__ServiceConsole',
+            default: false,
+            visible: true,
+          },
+        ],
+        description: 'updated e2e profile',
+
+      })
+
+
+      if (await objectExists(PROFILE_METADATA_TYPE, sfCase(oldInstance.elemID.name))) {
+        await sfAdapter.remove(oldInstance)
+      }
+
+      const post = await sfAdapter.add(oldInstance) as InstanceElement
+      const updateResult = await sfAdapter.update(oldInstance, newInstance)
+
+      // Test
+      expect(updateResult).toBe(newInstance)
+
+
+      // Clean-up
+      await sfAdapter.remove(post)
+    })
+
     it("should modify an object's annotations", async () => {
       const customObjectName = 'TestModifyCustomAnnotations__c'
       const mockElemID = new ElemID(constants.SALESFORCE, 'test modify annotations')

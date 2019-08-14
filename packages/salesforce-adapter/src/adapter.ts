@@ -36,7 +36,7 @@ const diagnose = (result: SaveResult | SaveResult[]): void => {
   if (isArray(result)) {
     errors = errors.concat(
       (result as CompleteSaveResult[])
-        .filter(r => r && r.errors !== undefined)
+        .filter(r => r && r.errors)
         .map(r => errorMessage(r.errors))
     )
   } else if ((result as CompleteSaveResult).errors) {

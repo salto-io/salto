@@ -5,7 +5,7 @@ salesforce {
   sandbox = false
 }
 
-model salesforce_test {
+type salesforce_test {
 	string name {
 	  label = "Name"
 	  _required = true

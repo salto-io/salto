@@ -8,7 +8,6 @@ import HCLParser from './hcl'
 import evaluate from './expressions'
 
 enum Keywords {
-  MODEL = 'model',
   TYPE_DEFINITION = 'type',
   LIST_DEFINITION = 'list',
   TYPE_INHERITENCE_SEPARATOR = 'is',
@@ -20,6 +19,7 @@ enum Keywords {
   TYPE_OBJECT = 'object',
 }
 
+const QUOTE_MARKER = 'Q_MARKER'
 
 /**
  * @param typeName Type name in HCL syntax
@@ -51,6 +51,18 @@ const getPrimitiveTypeName = (primitiveType: PrimitiveTypes): string => {
   }
   return Keywords.TYPE_OBJECT
 }
+
+const markQuote = (value: string): string => `${QUOTE_MARKER}${value}${QUOTE_MARKER}`
+
+const markBlockQuotes = (block: HCLBlock): HCLBlock => {
+  block.labels = block.labels.map(markQuote)
+  block.blocks = block.blocks.map(markBlockQuotes)
+  return block
+}
+
+const removeQuotes = (
+  value: HclDumpReturn
+): HclDumpReturn => value.replace(new RegExp(`"${QUOTE_MARKER}|${QUOTE_MARKER}"`, 'g'), '')
 
 export default class Parser {
   private static getElemID(fullname: string): ElemID {
@@ -148,13 +160,11 @@ export default class Parser {
     Promise<{ elements: Element[]; errors: string[] }> {
     const { body, errors } = await HCLParser.parse(blueprint, filename)
     const elements = body.blocks.map((value: HCLBlock): Element => {
-      if (value.type === Keywords.MODEL) {
-        return this.parseType(value)
-        // TODO: we probably need to mark that elem is a model type so the adapter
-        // will know it should create a new table for it
+      if (value.type === Keywords.TYPE_DEFINITION && value.labels.length > 1) {
+        return this.parsePrimitiveType(value)
       }
       if (value.type === Keywords.TYPE_DEFINITION) {
-        return this.parsePrimitiveType(value)
+        return this.parseType(value)
       }
       if (value.labels.length === 0 || value.labels.length === 1) {
         return this.parseInstance(value)
@@ -193,13 +203,13 @@ export default class Parser {
    * @param elements The elements to serialize
    * @returns A buffer with the elements serialized as a blueprint
    */
-  public static dump(elements: Element[]): Promise<Buffer> {
+  public static async dump(elements: Element[]): Promise<HclDumpReturn> {
     const blocks = elements.map(elem => {
       if (isObjectType(elem)) {
         // Clone the annotation values because we may delete some keys from there
         const annotationsValues = _.cloneDeep(elem.getAnnotationsValues())
         return {
-          type: Keywords.MODEL,
+          type: Keywords.TYPE_DEFINITION,
           labels: [elem.elemID.getFullName()],
           attrs: annotationsValues,
           blocks: Object.values(elem.fields).map(field => ((field.isList)
@@ -241,9 +251,9 @@ export default class Parser {
       type: '',
       labels: [],
       attrs: {},
-      blocks,
+      blocks: blocks.map(markBlockQuotes),
     }
 
-    return HCLParser.dump(body)
+    return removeQuotes(await HCLParser.dump(body))
   }
 }

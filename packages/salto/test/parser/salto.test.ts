@@ -24,7 +24,7 @@ describe('Salto parser', () => {
         salesforce_number num {}
       }
 
-      model salesforce_test {
+      type salesforce_test {
         salesforce_string name {
           label = "Name"
           _required = true
@@ -60,11 +60,11 @@ describe('Salto parser', () => {
         username = "foo"
       }
 
-      model salesforce_type {
+      type salesforce_type {
         salesforce_number num {}
       }
 
-      model salesforce_type {
+      type salesforce_type {
         update num {
           label = "Name"
           _required = true
@@ -308,20 +308,20 @@ describe('Salto Dump', () => {
     }
   )
 
-  let body: Buffer
+  let body: string
 
   beforeAll(async () => {
     body = await Parser.dump([strType, numType, boolType, model, instance, config])
   })
 
   it('dumps primitive types', () => {
-    expect(body).toMatch('type "salesforce_string" "is" "string" {')
-    expect(body).toMatch('type "salesforce_number" "is" "number" {')
-    expect(body).toMatch('type "salesforce_bool" "is" "boolean" {')
+    expect(body).toMatch(/type salesforce_string is string {/)
+    expect(body).toMatch(/type salesforce_number is number {/)
+    expect(body).toMatch(/type salesforce_bool is boolean {/)
   })
 
   it('dumps instance elements', () => {
-    expect(body).toMatch(/salesforce_test "?me"? {/)
+    expect(body).toMatch(/salesforce_test me {/)
   })
 
   it('dumps config elements', () => {
@@ -330,7 +330,7 @@ describe('Salto Dump', () => {
 
   describe('dumped model', () => {
     it('has correct block type and label', () => {
-      expect(body).toMatch('model "salesforce_test" {')
+      expect(body).toMatch(/type salesforce_test {/)
     })
     it('has complex attributes', () => {
       expect(body).toMatch(
@@ -339,17 +339,17 @@ describe('Salto Dump', () => {
     })
     it('has fields', () => {
       expect(body).toMatch(
-        /salesforce_string "?name"? {\s+label = "Name"\s+}/m,
+        /salesforce_string name {\s+label = "Name"\s+}/m,
       )
       expect(body).toMatch(
-        /salesforce_number "?num"? {/m,
+        /salesforce_number num {/m,
       )
       expect(body).toMatch(
-        /list "?salesforce_string"? "?list"? {/m
+        /list salesforce_string list {/m
       )
     })
     it('can be parsed back', async () => {
-      const { elements, errors } = await Parser.parse(body, 'none')
+      const { elements, errors } = await Parser.parse(Buffer.from(body), 'none')
       expect(errors.length).toEqual(0)
       expect(elements.length).toEqual(6)
       expect(elements[0]).toEqual(strType)

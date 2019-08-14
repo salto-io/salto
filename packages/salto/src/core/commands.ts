@@ -50,7 +50,7 @@ export const discover = async (
   try {
     const discoverElements = await discoverAll(state, adapters)
     const uniqElements = [...discoverElements, ...Object.values(newAdapterConfigs)]
-    const buffer = await Parser.dump(uniqElements)
+    const buffer = Buffer.from(await Parser.dump(uniqElements))
     return { buffer, filename: 'none' }
   } finally {
     await state.flush()

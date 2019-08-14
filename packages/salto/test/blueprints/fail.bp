@@ -1,4 +1,4 @@
-model salesforce_fail {
+type salesforce_fail {
 	string name {
 	  label = "Name"
 	  _required = true

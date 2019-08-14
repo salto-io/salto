@@ -33,7 +33,7 @@ declare class HclDumpArgs {
 }
 
 
-type HclDumpReturn = Buffer
+type HclDumpReturn = string
 
 type HclArgs = HclParseArgs | HclDumpArgs
 type HclReturn = HclParseReturn | HclDumpReturn

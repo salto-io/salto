@@ -67,6 +67,16 @@ const annotateApiNameAndLabel = (element: ObjectType): void => {
   })
 }
 
+const validateApiName = (prevElement: Element, newElement: Element): void => {
+  if (apiName(prevElement) !== apiName(newElement)) {
+    throw Error(
+      `Failed to update element as api names prev=${apiName(
+        prevElement
+      )} and new=${apiName(newElement)} are different`
+    )
+  }
+}
+
 export default class SalesforceAdapter {
   private static DISCOVER_METADATA_TYPES_BLACKLIST = [
     'ApexClass', // For some reason we cannot access this from the metadata API
@@ -204,62 +214,93 @@ export default class SalesforceAdapter {
   }
 
   /**
-   * Updates a custom object
-   * @param prevElement The metadata of the old object
-   * @param newElement The new metadata of the object to replace
-   * @returns true for success, false for failure
+   * Updates an Element
+   * @param prevElement The metadata of the old element
+   * @param newElement The new metadata of the element to replace
+   * @returns the updated element
    */
   public async update(prevElement: Element, newElement: Element): Promise<Element> {
     if (isObjectType(prevElement) && isObjectType(newElement)) {
-      const post = newElement.clone()
-      annotateApiNameAndLabel(post)
+      return this.updateObject(prevElement, newElement)
+    }
 
-      const pre = prevElement.clone()
-      annotateApiNameAndLabel(pre)
-
-      if (apiName(post) !== apiName(prevElement)) {
-        throw Error(
-          `Failed to update element as api names pre=${apiName(
-            prevElement
-          )} and post=${apiName(post)} are different`
-        )
-      }
-
-      const fieldsUpdateResult = await Promise.all([
-      // Retrieve the custom fields for deletion and delete them
-        this.deleteCustomFields(prevElement, prevElement.getFieldsThatAreNotInOther(post)),
-        // Retrieve the custom fields for addition and than create them
-        this.createFields(post, post.getFieldsThatAreNotInOther(prevElement)),
-        // Update the remaining fields that were changed
-        this.updateFields(post, post.getMutualFieldsWithOther(pre).filter(afterField =>
-          !_.isEqual(afterField.getAnnotationsValues(),
-            pre.fields[afterField.name].getAnnotationsValues())))])
-      // Update the annotation values - this can't be done asynchronously with the previous
-      // operations beacause the update API expects to receive the updated list of fields,
-      // hence the need to perform the fields deletion and creation first, and then update the
-      // object.
-      // We also await here on the updateFieldPermissions which we started before awaiting on the
-      // fields creation/deletion to minimize runtime
-      // IMPORTANT: We don't update a built-in object (such as Lead, Customer, etc.)
-      // The update API currently allows us to add/remove custom fields to such objects, but not
-      // to update them.
-      let objectUpdateResult: SaveResult | SaveResult[] = []
-      if (apiName(post).endsWith(constants.SALESFORCE_CUSTOM_SUFFIX)
-    // Don't update the object unless its annotations values have changed
-    && !_.isEqual(pre.getAnnotationsValues(), post.getAnnotationsValues())) {
-        objectUpdateResult = await this.client.update(constants.CUSTOM_OBJECT,
-          toCustomObject(post, false)) // Update the object without its fields
-      }
-
-      // Aspects should be updated once all object related properties updates are over
-      const filtersResult = await this.runFiltersOnUpdate(prevElement, post)
-      diagnose([..._.flatten(fieldsUpdateResult), objectUpdateResult as SaveResult,
-        ...filtersResult])
-
-      return post
+    if (isInstanceElement(prevElement) && isInstanceElement(newElement)) {
+      return this.updateInstance(prevElement, newElement)
     }
 
     return newElement
+  }
+
+  /**
+   * Update a custom object
+   * @param prevObject The metadata of the old object
+   * @param newObject The new metadata of the object to replace
+   * @returns the updated object
+   */
+  private async updateObject(prevObject: ObjectType, newObject: ObjectType): Promise<ObjectType> {
+    const clonedObject = newObject.clone()
+    annotateApiNameAndLabel(clonedObject)
+
+    validateApiName(prevObject, clonedObject)
+
+    const pre = prevObject.clone()
+    annotateApiNameAndLabel(pre)
+
+    const fieldsUpdateResult = await Promise.all([
+      // Retrieve the custom fields for deletion and delete them
+      this.deleteCustomFields(prevObject, prevObject.getFieldsThatAreNotInOther(clonedObject)),
+      // Retrieve the custom fields for addition and than create them
+      this.createFields(clonedObject, clonedObject.getFieldsThatAreNotInOther(prevObject)),
+      // Update the remaining fields that were changed
+      this.updateFields(clonedObject,
+        clonedObject.getMutualFieldsWithOther(pre).filter(afterField =>
+          !_.isEqual(afterField.getAnnotationsValues(),
+            pre.fields[afterField.name].getAnnotationsValues()))),
+    ])
+    // Update the annotation values - this can't be done asynchronously with the previous
+    // operations because the update API expects to receive the updated list of fields,
+    // hence the need to perform the fields deletion and creation first, and then update the
+    // object.
+    // We also await here on the updateFieldPermissions which we started before awaiting on the
+    // fields creation/deletion to minimize runtime
+    // IMPORTANT: We don't update a built-in object (such as Lead, Customer, etc.)
+    // The update API currently allows us to add/remove custom fields to such objects, but not
+    // to update them.
+    let objectUpdateResult: SaveResult | SaveResult[] = []
+    if (apiName(clonedObject).endsWith(constants.SALESFORCE_CUSTOM_SUFFIX)
+      // Don't update the object unless its annotations values have changed
+      && !_.isEqual(pre.getAnnotationsValues(), clonedObject.getAnnotationsValues())) {
+      objectUpdateResult = await this.client.update(constants.CUSTOM_OBJECT,
+        toCustomObject(clonedObject, false)) // Update the object without its fields
+    }
+
+    // Aspects should be updated once all object related properties updates are over
+    const filtersResult = await this.runFiltersOnUpdate(prevObject, clonedObject)
+    diagnose([..._.flatten(fieldsUpdateResult), objectUpdateResult as SaveResult,
+      ...filtersResult])
+
+    return clonedObject
+  }
+
+  /**
+   * Update an instance
+   * @param prevInstance The metadata of the old instance
+   * @param newInstance The new metadata of the instance to replace
+   * @returns the updated instance
+   */
+  private async updateInstance(prevInstance: InstanceElement, newInstance: InstanceElement):
+    Promise<InstanceElement> {
+    validateApiName(prevInstance, newInstance)
+
+    const instanceUpdateResult = await this.client.update(
+      newInstance.getAnnotationsValues()[constants.METADATA_TYPE],
+      toMetadataInfo(sfCase(newInstance.elemID.name),
+        newInstance.getValuesThatNotInPrevOrDifferent(prevInstance.value),
+        newInstance.type as ObjectType)
+    )
+
+    diagnose(instanceUpdateResult)
+    return newInstance
   }
 
   /**
@@ -488,7 +529,7 @@ export default class SalesforceAdapter {
   }
 
   /**
-   * List all the instances of specific metatatype
+   * List all the instances of specific metadataType
    * @param type the metadata type
    */
   private async listMetadataInstances(type: string): Promise<MetadataInfo[]> {

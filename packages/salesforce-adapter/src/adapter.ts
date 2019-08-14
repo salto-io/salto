@@ -316,7 +316,7 @@ export default class SalesforceAdapter {
         type,
         fromMetadataInfo(i, type,
           // Transfom of settings values shouldn't be strict
-          type.elemID.nameParts[0] !== bpCase(constants.SETTINGS_METADATA_TYPE)) || {}
+          type.elemID.nameParts[0] !== bpCase(constants.SETTINGS_METADATA_TYPE))
       ))
   }
 

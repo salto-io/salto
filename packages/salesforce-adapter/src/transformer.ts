@@ -443,8 +443,8 @@ const transform = (obj: Values, type: ObjectType, convert: (name: string) => str
 }
 
 export const fromMetadataInfo = (info: MetadataInfo, infoType: ObjectType, strict: boolean = true):
-  Values | undefined =>
-  transform(info as Values, infoType, bpCase, strict)
+  Values =>
+  transform(info as Values, infoType, bpCase, strict) || {}
 
 
 export const toMetadataInfo = (fullName: string, values: Values, infoType: ObjectType):

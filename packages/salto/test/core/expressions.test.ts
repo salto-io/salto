@@ -65,7 +65,6 @@ describe('Test Salto Expressions', () => {
       new ElemID('salto', 'chainedref'), simpleRefType, {
         test: new ReferenceExpression([simpleRefInst.elemID.getFullName(), 'test']),
       }
->>>>>>> added tempalte ref
     )
 
     const noPathInst = new InstanceElement(

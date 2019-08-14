@@ -3,7 +3,7 @@ import { SaveResult } from 'jsforce-types'
 import SalesforceClient from '../client/client'
 
 // Filter interface, filters will be activated upon adapter discover, add, update and remove
-// operations. The filter will responsible for specific business logic.
+// operations. The filter will be responsible for specific business logic.
 // For example, field permissions filter will add field_level_security annotation and will read
 // it and update permissions accordingly.
 export default interface Filter {

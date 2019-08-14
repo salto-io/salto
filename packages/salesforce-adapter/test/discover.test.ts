@@ -433,7 +433,8 @@ describe('Test SalesforceAdapter discover', () => {
         {
           fields: [
             {
-              name: 'name', soapType: 'string', valueRequired: true,
+              // This use her 'String' and not 'string' on purpose, we saw similar response.
+              name: 'name', soapType: 'String', valueRequired: true,
             },
             {
               fields: [
@@ -481,6 +482,8 @@ describe('Test SalesforceAdapter discover', () => {
       expect(layout.value.layout_sections[1].layout_columns).toBeUndefined()
       expect(layout.value.layout_sections[1].label).toBe('Additional Information')
       expect(layout.value.layout_sections[2].style).toBe('CustomLinks')
+      expect(((layout.type as ObjectType).fields.process_metadata_values.type as ObjectType)
+        .fields.name.type.elemID.name).toBe('string')
       expect(layout.value.process_metadata_values[1].name).toBe('leftHandSideReferenceTo')
       expect(layout.value.process_metadata_values[1].value).toBeUndefined()
       expect(layout.value.process_metadata_values[2].name).toBe('leftHandSideReferenceTo2')

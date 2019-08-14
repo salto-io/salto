@@ -3,7 +3,7 @@ import {
   PrimitiveType, ElemID, Field, Element,
   ObjectType, InstanceElement, isType, isElement,
 } from 'adapter-api'
-import { mergeElements } from '../core/merger'
+import { updateMergedTypes } from '../core/merger'
 
 // There are two issues with naive json stringification:
 //
@@ -16,19 +16,20 @@ import { mergeElements } from '../core/merger'
 //
 // To address this issue the serialization process:
 //
-// 1. Adds a 'cls' field with the class name to the object during the serialization.
+// 1. Adds a '_salto_class' field with the class name to the object during the serialization.
 // 2. Replaces all of the pointers with "placeholder" objects
 //
 // The deserialization process recover the information by creating the classes based
-// on the cls field, and then replacing the placeholders using the regular merge method.
+// on the _salto_class field, and then replacing the placeholders using the regular merge method.
 
+const CLASS_NAME = '_salto_class'
 export const serialize = (elements: Element[]): string => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const elementReplacer = (_k: string, e: any): any => {
     if (isElement(e)) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const o = e as {[key: string]: any}
-      o.cls = e.constructor.name
+      o[CLASS_NAME] = e.constructor.name
       return o
     }
     return e
@@ -73,11 +74,14 @@ export const deserialize = (data: string): Element[] => {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const elementReviver = (_k: string, v: any): any => {
-    if (v.cls) {
-      return revivers[v.cls](v)
+    if (v[CLASS_NAME]) {
+      return revivers[v[CLASS_NAME]](v)
     }
     return v
   }
-
-  return mergeElements(JSON.parse(data, elementReviver))
+  const elements = JSON.parse(data, elementReviver)
+  return updateMergedTypes(
+    elements,
+    _(elements).groupBy(e => e.elemID.getFullName()).mapValues(v => v[0]).value()
+  )
 }

@@ -18,7 +18,7 @@ const validateNoDuplicates = (existingValue: any, _s: any, key: string): void =>
 
 const validateDefinitions = (bases: Field[], updates: Field[]): void => {
   // ensure only one base field and no less
-  const parentID = (bases[0] || updates[0]).parentID().getFullName()
+  const parentID = (bases[0] || updates[0]).parentID.getFullName()
   const fieldName = (bases[0] || updates[0]).name
   if (bases.length === 0) {
     throw new Error(`can't extend ${parentID}: field ${fieldName} has no base definition.`)
@@ -47,7 +47,7 @@ const mergeFieldDefinitions = (
     base.getAnnotationsValues(),
     ...updates.map(u => u.getAnnotationsValues())
   )
-  return new Field(base.parentID(), base.name, base.type, annotationsValues, base.isList)
+  return new Field(base.parentID, base.name, base.type, annotationsValues, base.isList)
 }
 
 const mergeObjectDefinitions = (objects: ObjectType[]): ObjectType => {

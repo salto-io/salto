@@ -19,6 +19,7 @@ enum Keywords {
   TYPE_OBJECT = 'object',
 }
 
+const QUOTE_MARKER = 'Q_MARKER'
 
 /**
  * @param typeName Type name in HCL syntax
@@ -51,7 +52,7 @@ const getPrimitiveTypeName = (primitiveType: PrimitiveTypes): string => {
   return Keywords.TYPE_OBJECT
 }
 
-const markQuote = (value: string): string => `DELPREV${value}DELNEXT`
+const markQuote = (value: string): string => `${QUOTE_MARKER}${value}${QUOTE_MARKER}`
 
 const markBlockQuotes = (block: HCLBlock): HCLBlock => {
   block.labels = block.labels.map(markQuote)
@@ -61,7 +62,7 @@ const markBlockQuotes = (block: HCLBlock): HCLBlock => {
 
 const removeQuotes = (
   value: HclDumpReturn
-): HclDumpReturn => value.replace(/"DELPREV/g, '').replace(/DELNEXT"/g, '')
+): HclDumpReturn => value.replace(new RegExp(`"${QUOTE_MARKER}|${QUOTE_MARKER}"`, 'g'), '')
 
 export default class Parser {
   private static getElemID(fullname: string): ElemID {

@@ -243,13 +243,11 @@ export const toCustomField = (
   return newField
 }
 
-const forbiddenFieldTypes = new Set<string>(['id', 'reference'])
 export const toCustomObject = (element: ObjectType): CustomObject =>
   new CustomObject(
     apiName(element),
     element.getAnnotationsValues()[LABEL],
-    Object.values(element.fields).filter(field => !forbiddenFieldTypes.has(field.type.elemID.name))
-      .map(field => toCustomField(element, field))
+    Object.values(element.fields).map(field => toCustomField(element, field))
   )
 
 export const getValueTypeFieldElement = (parentID: ElemID, field: ValueTypeField,

@@ -232,8 +232,16 @@ export default class SalesforceAdapter {
     // object.
     // We also await here on the updateFieldPermissions which we started before awaiting on the
     // fields creation/deletion to minimize runtime
-    const objectUpdateResult = await this.client.update(constants.CUSTOM_OBJECT,
-      toCustomObject(post))
+    // IMPORTANT: We don't update a built-in object (such as Lead, Customer, etc.)
+    // The update API currently allows us to add/remove custom fields to such objects, but not
+    // to update them.
+    const newCustomObject = toCustomObject(post)
+    let objectUpdateResult: SaveResult | SaveResult[] = []
+    if (newCustomObject.fullName.endsWith('__c')) {
+      objectUpdateResult = await this.client.update(constants.CUSTOM_OBJECT,
+        toCustomObject(post))
+    }
+
     // Aspects should be updated once all object related properties updates are over
     const filtersResult = await this.runFiltersOnUpdate(prevElement, post)
     diagnose([..._.flatten(fieldsUpdateResult), objectUpdateResult as SaveResult,

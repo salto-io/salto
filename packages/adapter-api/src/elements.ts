@@ -336,9 +336,9 @@ export class InstanceElement implements Element {
     Object.keys(this.value)
       .forEach(key => {
         if (!_.isEqual(preMap.get(key), this.value[key])) {
-          returnVal[key] = _.isArray(this.value[key])
+          returnVal[key] = _.isArray(this.value[key]) && _.isArray(preMap.get(key))
             /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-            ? this.value[key].filter((f: any) => preMap.get(key).some((v: any) => _.isEqual(f, v)))
+            ? this.value[key].filter((f: any) => preMap.get(key).some((v: any) => !_.isEqual(f, v)))
             : this.value[key]
         }
       })

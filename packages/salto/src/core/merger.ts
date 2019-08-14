@@ -138,7 +138,7 @@ const mergePrimitives = (
 /**
  * Replace the pointers to all the merged elements to the merged version.
  */
-const updateMergedTypes = (
+export const updateMergedTypes = (
   elements: Element[],
   mergedTypes: Record<string, Type>
 ): Element[] => elements.map(elem => {

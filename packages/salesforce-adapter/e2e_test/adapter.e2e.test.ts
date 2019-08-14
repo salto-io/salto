@@ -231,6 +231,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
         elemID: mockElemID,
         annotationsValues: {
           [constants.API_NAME]: customObjectName,
+          [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
         },
         fields: {
           description: new Field(

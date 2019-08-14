@@ -5,6 +5,23 @@ import {
 } from 'adapter-api'
 import { mergeElements } from '../core/merger'
 
+// There are two issues with naive json stringification:
+//
+// 1) The class type information and methods are lost
+//
+// 2) Pointers are dumped by value, so if multiple object
+//    point to the same object (for example, multiple type
+//    instances for the same type) then the stringify process
+//    will result in multiple copies of that object.
+//
+// To address this issue the serialization process:
+//
+// 1. Adds a 'cls' field with the class name to the object during the serialization.
+// 2. Replaces all of the pointers with "placeholder" objects
+//
+// The deserialization process recover the information by creating the classes based
+// on the cls field, and then replacing the placeholders using the regular merge method.
+
 export const serialize = (elements: Element[]): string => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const elementReplacer = (_k: string, e: any): any => {

@@ -448,4 +448,7 @@ export const fromMetadataInfo = (info: MetadataInfo, infoType: ObjectType, stric
 
 export const toMetadataInfo = (fullName: string, values: Values, infoType: ObjectType):
   MetadataInfo =>
-  ({ fullName, ...transform(values, infoType, (name: string) => sfCase(name, false, false)) })
+  ({
+    fullName,
+    ...transform(values, infoType, (name: string) => sfCase(name, false, false), false),
+  })

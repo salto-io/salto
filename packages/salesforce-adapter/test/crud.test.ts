@@ -11,7 +11,7 @@ import SalesforceAdapter from '../src/adapter'
 import SalesforceClient from '../src/client/client'
 import * as constants from '../src/constants'
 import { Types, sfCase } from '../src/transformer'
-import { PROFILE_METADATA_TYPE } from '../src/aspects/field_permissions'
+import { PROFILE_METADATA_TYPE } from '../src/filters/field_permissions'
 
 jest.mock('../src/client/client')
 

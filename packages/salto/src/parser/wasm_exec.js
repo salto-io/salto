@@ -240,6 +240,10 @@
 						delete this._inst;
 						delete this._values;
 						delete this._refs;
+						// Clear any timeouts that have not returned yet because they cannot
+						// return to an inactive instance
+						this._scheduledTimeouts.forEach(timeout => clearTimeout(timeout))
+						this._scheduledTimeouts.clear()
 						this.exit(code);
 					},
 

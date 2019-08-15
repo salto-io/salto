@@ -66,13 +66,12 @@ export default class State {
      * @returns the elements that represent the last saved state
      */
     private async read(): Promise<Element[]> {
-      let data: string
       try {
         const exists = await fs.exists(this.statePath)
         if (!exists) {
           return []
         }
-        data = await fs.readFile(this.statePath, 'utf8')
+        const data = await fs.readFile(this.statePath, 'utf8')
         return deserialize(data)
       } catch (err) {
         throw new Error(`Failed to load state: ${err}`)

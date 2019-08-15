@@ -1,4 +1,4 @@
-model salesforce_e2etest {
+type salesforce_e2etest {
   salesforce_text name {
     label = "Name"
     _required = true

@@ -71,3 +71,14 @@ workflows:
     jobs:
       - build:
           context: nightly
+
+workflows:
+  version: 1
+  post-commit:
+    jobs:
+      - build:
+          context: nightly
+          filters:
+            branches:
+              only:
+                - master

@@ -1,9 +1,10 @@
 import _ from 'lodash'
 import * as inquirer from 'inquirer'
 import {
-  Plan, Type, ObjectType, ElemID, InstanceElement,
+  Type, ObjectType, ElemID, InstanceElement,
   isPrimitiveType, PrimitiveTypes,
 } from 'adapter-api'
+import { Plan } from '../core/plan'
 import {
   createPlanOutput, header, subHeader, print,
 } from './formatter'

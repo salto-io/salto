@@ -33,6 +33,7 @@
   },
   "dependencies": {
     "adapter-api": "0.1.0",
+    "@salto/dag": "0.1.0",
     "async": "^3.1.0",
     "async-file": "^2.0.2",
     "chalk": "^2.3.0",

@@ -1,5 +1,5 @@
 import {
-  InstanceElement, ObjectType, ElemID, BuiltinTypes,
+  InstanceElement, ObjectType, ElemID,
 } from 'adapter-api'
 import { creator } from 'salesforce-adapter'
 import initAdapters from '../../src/core/adapters/adapters'
@@ -7,7 +7,7 @@ import initAdapters from '../../src/core/adapters/adapters'
 describe('Test adapters.ts', () => {
   const { configType } = creator
 
-  const notConfigType = BuiltinTypes.STRING
+  const notConfigType = new ObjectType({ elemID: new ElemID('salesforce', 'not_config') })
 
   const configElemID = new ElemID(
     configType.elemID.adapter,

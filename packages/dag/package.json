@@ -1,0 +1,32 @@
+{
+  "name": "@salto/dag",
+  "version": "0.1.0",
+  "description": "directed acyclic graph implementation including - dag diff and node grouping",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/salto-io/salto_monorepo"
+  },
+  "private": true,
+  "files": [
+    "dist/**/*"
+  ],
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "prepare": "yarn run build",
+    "prepublishOnly": "yarn test",
+    "build": "yarn run lint && yarn run build-ts",
+    "test": "jest --forceExit --detectOpenHandles",
+    "clean-ts": "node ./node_modules/.bin/ts-cleaner -d dist -s . -v",
+    "clean-ts-test": "yarn run clean-ts && yarn run test",
+    "watch-test": "yarn run tsc-watch --onSuccess 'yarn run clean-ts-test'",
+    "build-ts": "tsc",
+    "watch-ts": "tsc -w",
+    "lint": "eslint --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
+    "lint-fix": "yarn run lint -- --fix"
+  },
+  "dependencies": {
+    "lodash": "^4.17.15",
+    "wu": "^2.1.0"
+  }
+}

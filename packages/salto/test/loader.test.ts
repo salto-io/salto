@@ -98,8 +98,7 @@ describe('Loader merging ability', () => {
   })
 
   const instanceElement = new InstanceElement(new ElemID('salto', 'inst'), base, {})
-  const instanceElement2 = new InstanceElement(new ElemID('salto', 'inst2'), BuiltinTypes.STRING, {})
-
+  const instanceElement2 = new InstanceElement(new ElemID('salto', 'inst2'), unrelated, {})
 
   const mergedObject = new ObjectType({
     elemID: baseElemID,

@@ -1,13 +1,13 @@
 // This file will be soon merged into salto-cli
 import path from 'path'
 import * as sourceMapSupport from 'source-map-support'
-import { PlanAction } from 'adapter-api'
 import { loadBlueprints, dumpBlueprints } from './blueprint'
 import { dumpCsv } from './csv'
 import { getAllElements, Blueprint } from '../blueprints/blueprint'
+import { PlanItem } from '../core/plan'
 import {
   createPlanOutput, createActionStartOutput, createActionInProgressOutput,
-  createActionDoneOutput, formatSearchResults, subHeader, print, printError,
+  createItemDoneOutput, formatSearchResults, subHeader, print, printError,
 } from './formatter'
 import Prompts from './prompts'
 import { getConfigFromUser, shouldApply } from './callbacks'
@@ -64,7 +64,7 @@ export const applyBase = async (
   blueprintLoader: () => Promise<Blueprint[]>,
   force?: boolean
 ): Promise<void> => {
-  let currentAction: PlanAction | undefined
+  let currentAction: PlanItem | undefined
   let currentActionStartTime: Date | undefined
   let currentActionPollerID: ReturnType<typeof setTimeout> | undefined
 
@@ -77,12 +77,12 @@ export const applyBase = async (
   const endCurrentAction = (): void => {
     if (currentActionPollerID && currentAction && currentActionStartTime) {
       clearInterval(currentActionPollerID)
-      print(createActionDoneOutput(currentAction, currentActionStartTime))
+      print(createItemDoneOutput(currentAction, currentActionStartTime))
     }
     currentAction = undefined
   }
 
-  const updateCurrentAction = (action: PlanAction): void => {
+  const updateCurrentAction = (action: PlanItem): void => {
     endCurrentAction()
     currentAction = action
     currentActionStartTime = new Date()

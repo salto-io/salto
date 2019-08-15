@@ -54,7 +54,7 @@ jobs:
           command: if [[ "${RUN_E2E_TESTS}" != "1" && "${RUN_E2E_TESTS}" != "true" ]]; then npx codecov -f coverage/*.json; fi
 
 workflows:
-  version: 2
+  version: 3
 
   commit:
     jobs:
@@ -72,8 +72,6 @@ workflows:
       - build:
           context: nightly
 
-workflows:
-  version: 1
   post-commit:
     jobs:
       - build:

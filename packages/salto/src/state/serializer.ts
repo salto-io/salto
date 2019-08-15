@@ -80,8 +80,5 @@ export const deserialize = (data: string): Element[] => {
     return v
   }
   const elements = JSON.parse(data, elementReviver)
-  return updateMergedTypes(
-    elements,
-    _(elements).groupBy(e => e.elemID.getFullName()).mapValues(v => v[0]).value()
-  )
+  return updateMergedTypes(elements, _.keyBy(elements, e => e.elemID.getFullName()))
 }

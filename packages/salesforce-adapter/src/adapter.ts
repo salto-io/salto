@@ -237,9 +237,9 @@ export default class SalesforceAdapter {
     // to update them.
     const newCustomObject = toCustomObject(post)
     let objectUpdateResult: SaveResult | SaveResult[] = []
-    if (newCustomObject.fullName.endsWith('__c') &&
+    if (newCustomObject.fullName.endsWith('__c')
     // Don't update the object unless its annotations values havd changed
-    !_.isEqual(prevElement.getAnnotationsValues(), newElement.getAnnotationsValues())) {
+    && !_.isEqual(prevElement.getAnnotationsValues(), newElement.getAnnotationsValues())) {
       objectUpdateResult = await this.client.update(constants.CUSTOM_OBJECT,
         newCustomObject)
     }

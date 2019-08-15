@@ -3,8 +3,7 @@ import { Element } from 'adapter-api'
 import * as fs from 'async-file'
 import * as path from 'path'
 import os from 'os'
-import Parser from '../parser/salto'
-import { getAllElements } from '../blueprints/blueprint'
+import { serialize, deserialize } from './serializer'
 
 const STATEPATH = path.join(os.homedir(), '.salto/latest_state.bp')
 /**
@@ -49,7 +48,7 @@ export default class State {
     public async flush(): Promise<void> {
       // If state is not loaded we don't have anything to save
       if (!this.state) return
-      const buffer = await Parser.dump(this.state)
+      const buffer = serialize(this.state)
       await fs.createDirectory(path.dirname(this.statePath))
       await fs.writeFile(this.statePath, buffer)
     }
@@ -67,15 +66,13 @@ export default class State {
      * @returns the elements that represent the last saved state
      */
     private async read(): Promise<Element[]> {
-      let buffer: Buffer
       try {
         const exists = await fs.exists(this.statePath)
         if (!exists) {
           return []
         }
-        buffer = await fs.readFile(this.statePath, 'utf8')
-        // force the await here so errors will be thrown in proper place
-        return (await getAllElements([{ buffer, filename: this.statePath }]))
+        const data = await fs.readFile(this.statePath, 'utf8')
+        return deserialize(data)
       } catch (err) {
         throw new Error(`Failed to load state: ${err}`)
       }

@@ -30,11 +30,26 @@ jobs:
       - run: yarn --frozen-lockfile
 
       - run:
-          name: Run Jest tests
+          name: Run Jest tests without E2E
           command: yarn run jest --forceExit --detectOpenHandles --reporters=default --reporters=jest-junit
           environment:
-            JEST_JUNIT_OUTPUT: "reports/junit/test-results.xml"
+            JEST_JUNIT_OUTPUT: "reports/jest/test-results.xml"
+            # Disable E2E tests
+            RUN_E2E_TESTS: ""
 
+      - run:
+          name: Upload coverage to codecov.io
+          command: npx codecov -f coverage/*.json
+
+      - run:
+          name: Run only Jest E2E tests if specified
+          command: |
+            if [[ "${RUN_E2E_TESTS}" == "1" || "${RUN_E2E_TESTS}" == "true" ]]; then 
+              yarn run jest --forceExit --detectOpenHandles --reporters=default --reporters=jest-junit --testPathPattern '/e2e_test/'
+            fi
+          environment:
+            JEST_JUNIT_OUTPUT: "reports/jest-e2e/test-results.xml"
+ 
       - save_cache:
           paths:
             - node_modules
@@ -49,9 +64,6 @@ jobs:
       - store_artifacts:
           path: reports
 
-      - run:
-          name: Upload coverage to codecov.io
-          command: if [[ "${RUN_E2E_TESTS}" != "1" && "${RUN_E2E_TESTS}" != "true" ]]; then npx codecov -f coverage/*.json; fi
 
 workflows:
   version: 2

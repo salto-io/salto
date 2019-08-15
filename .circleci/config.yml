@@ -58,7 +58,11 @@ workflows:
 
   commit:
     jobs:
-      - build
+      - build:
+          filters:
+            branches:
+              ignore:
+                - master
 
   nightly:
     triggers:
@@ -75,7 +79,7 @@ workflows:
   post-commit:
     jobs:
       - build:
-          context: nightly
+          context: master
           filters:
             branches:
               only:

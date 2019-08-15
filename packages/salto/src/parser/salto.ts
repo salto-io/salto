@@ -203,7 +203,7 @@ export default class Parser {
    * @param elements The elements to serialize
    * @returns A buffer with the elements serialized as a blueprint
    */
-  public static async dump(elements: Element[]): Promise<HclDumpReturn> {
+  public static async dump(elements: Element[]): Promise<string> {
     const blocks = elements.map(elem => {
       if (isObjectType(elem)) {
         // Clone the annotation values because we may delete some keys from there

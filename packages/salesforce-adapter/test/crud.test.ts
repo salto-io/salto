@@ -1017,14 +1017,14 @@ describe('Test SalesforceAdapter CRUD', () => {
       expect(field.required).toBe(false)
       // Verify the custom field label change
       const changedObject = mockUpdate.mock.calls[0][1]
-      expect(changedObject.fields[0].label).toBe('Banana Split')
+      expect(changedObject[0].label).toBe('Banana Split')
       // Verify the custom fields deletion
       const deletedFields = mockDelete.mock.calls[0][1]
       expect(deletedFields.length).toBe(1)
       expect(deletedFields[0]).toBe('Test__c.Address__c')
     })
 
-    it("Should properly update the remaining fields' permissions of the metadata object", async () => {
+    it('Should not update the object if remaining fields did not change', async () => {
       const result = await adapter().update(
         new ObjectType({
           elemID: mockElemID,
@@ -1043,22 +1043,6 @@ describe('Test SalesforceAdapter CRUD', () => {
               stringType,
               {
                 [constants.API_NAME]: 'Banana__c',
-              },
-            ),
-            charlie: new Field(
-              mockElemID,
-              'charlie',
-              stringType,
-              {
-                [constants.API_NAME]: 'Charlie__c',
-              },
-            ),
-            delta: new Field(
-              mockElemID,
-              'delta',
-              stringType,
-              {
-                [constants.API_NAME]: 'Delta__c',
               },
             ),
           },
@@ -1088,22 +1072,6 @@ describe('Test SalesforceAdapter CRUD', () => {
                 [constants.API_NAME]: 'Banana__c',
               },
             ),
-            charlie: new Field(
-              mockElemID,
-              'charlie',
-              stringType,
-              {
-                [constants.API_NAME]: 'Charlie__c',
-              },
-            ),
-            delta: new Field(
-              mockElemID,
-              'delta',
-              stringType,
-              {
-                [constants.API_NAME]: 'Delta__c',
-              },
-            ),
           },
           annotationsValues: {
             [Type.REQUIRED]: false,
@@ -1117,7 +1085,7 @@ describe('Test SalesforceAdapter CRUD', () => {
       expect(result).toBeInstanceOf(ObjectType)
       expect(mockCreate.mock.calls.length).toBe(0)
       expect(mockDelete.mock.calls.length).toBe(0)
-      expect(mockUpdate.mock.calls.length).toBe(1)
+      expect(mockUpdate.mock.calls.length).toBe(0)
     })
   })
 })

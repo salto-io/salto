@@ -237,19 +237,38 @@ export default class SalesforceAdapter {
     // to update them.
     const newCustomObject = toCustomObject(post)
     let objectUpdateResult: SaveResult | SaveResult[] = []
+    let fieldsOnlyUpdateResult: SaveResult[] = []
     if (newCustomObject.fullName.endsWith('__c')
     // Don't update the object unless its annotations values havd changed
     && !_.isEqual(prevElement.getAnnotationsValues(), newElement.getAnnotationsValues())) {
       objectUpdateResult = await this.client.update(constants.CUSTOM_OBJECT,
         newCustomObject)
+    } else { // Update the remaining fields that were changed
+      const updatedFields = newElement.getMutualFieldsWithOther(prevElement).filter(afterField =>
+        !_.isEqual(afterField.getAnnotationsValues(),
+          prevElement.fields[afterField.name].getAnnotationsValues()))
+      fieldsOnlyUpdateResult = await this.updateFields(post, updatedFields)
     }
 
     // Aspects should be updated once all object related properties updates are over
     const filtersResult = await this.runFiltersOnUpdate(prevElement, post)
     diagnose([..._.flatten(fieldsUpdateResult), objectUpdateResult as SaveResult,
-      ...filtersResult])
+      ...fieldsOnlyUpdateResult, ...filtersResult])
 
     return post
+  }
+
+  /**
+   * Updates custom fields
+   * @param object the object that the fields belong to
+   * @param fieldsToUpdate The fields to update
+   * @returns successfully managed to update all fields
+   */
+  private async updateFields(object: ObjectType, fieldsToUpdate: Field[]): Promise<SaveResult[]> {
+    if (fieldsToUpdate.length === 0) return []
+    // Update the custom fields
+    return this.client.update(constants.CUSTOM_FIELD,
+      fieldsToUpdate.map(f => toCustomField(object, f, true))) as Promise<SaveResult[]>
   }
 
   /**

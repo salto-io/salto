@@ -78,7 +78,7 @@ export const deserialize = (data: string): Element[] => {
     }
     return v
   }
-  
+
   const elements = JSON.parse(data, elementReviver) as Element[]
   const typeMap = _.keyBy(elements.filter(isType), e => e.elemID.getFullName())
   elements.forEach(element => {

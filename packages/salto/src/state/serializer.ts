@@ -3,7 +3,6 @@ import {
   PrimitiveType, ElemID, Field, Element,
   ObjectType, InstanceElement, isType, isElement,
 } from 'adapter-api'
-import { updateMergedTypes } from '../core/merger'
 
 // There are two issues with naive json stringification:
 //
@@ -37,7 +36,7 @@ export const serialize = (elements: Element[]): string => {
 
   const weakElements = elements.map(element => _.cloneDeepWith(
     element,
-    (v, k) => ((k && isType(v)) ? new ObjectType({ elemID: v.elemID }) : undefined)
+    (v, k) => ((k !== undefined && isType(v)) ? new ObjectType({ elemID: v.elemID }) : undefined)
   ))
 
   return JSON.stringify(weakElements, elementReplacer)
@@ -79,6 +78,14 @@ export const deserialize = (data: string): Element[] => {
     }
     return v
   }
-  const elements = JSON.parse(data, elementReviver)
-  return updateMergedTypes(elements, _.keyBy(elements, e => e.elemID.getFullName()))
+  
+  const elements = JSON.parse(data, elementReviver) as Element[]
+  const typeMap = _.keyBy(elements.filter(isType), e => e.elemID.getFullName())
+  elements.forEach(element => {
+    _.keys(element).forEach(k => {
+      _.set(element, k, _.cloneDeepWith(_.get(element, k), v =>
+        (isType(v) ? typeMap[v.elemID.getFullName()] : undefined)))
+    })
+  })
+  return elements
 }

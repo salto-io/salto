@@ -1127,6 +1127,20 @@ describe('Test SalesforceAdapter CRUD', () => {
       expect(mockCreate.mock.calls.length).toBe(0)
       expect(mockDelete.mock.calls.length).toBe(0)
       expect(mockUpdate.mock.calls.length).toBe(2)
+      // Verify the custom field update
+      const updatedFields = mockUpdate.mock.calls[0][1]
+      expect(updatedFields.length).toBe(1)
+      const field = updatedFields[0]
+      expect(field.fullName).toBe('Test__c.Banana__c')
+      expect(field.type).toBe('Text')
+      expect(field.label).toBe('Banana Split')
+      expect(field.length).toBe(80)
+      expect(field.required).toBe(false)
+      // Verify the object update
+      const updatedObject = mockUpdate.mock.calls[1][1]
+      expect(updatedObject.fullName).toBe('Test__c')
+      expect(updatedObject.label).toBe('test2 label')
+      expect(updatedObject.fields).toBeUndefined()
     })
   })
 })

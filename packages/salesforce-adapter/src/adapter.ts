@@ -247,7 +247,7 @@ export default class SalesforceAdapter {
     // Don't update the object unless its annotations values have changed
     && !_.isEqual(pre.getAnnotationsValues(), post.getAnnotationsValues())) {
       objectUpdateResult = await this.client.update(constants.CUSTOM_OBJECT,
-        toCustomObject(post))
+        _.omit(toCustomObject(post), 'fields')) // Update the object without its fields
     }
 
     // Aspects should be updated once all object related properties updates are over

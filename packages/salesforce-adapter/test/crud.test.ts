@@ -1087,14 +1087,6 @@ describe('Test SalesforceAdapter CRUD', () => {
         new ObjectType({
           elemID: mockElemID,
           fields: {
-            address: new Field(
-              mockElemID,
-              'address',
-              stringType,
-              {
-                [constants.API_NAME]: 'Address__c',
-              },
-            ),
             banana: new Field(
               mockElemID,
               'banana',
@@ -1122,11 +1114,6 @@ describe('Test SalesforceAdapter CRUD', () => {
                 [constants.LABEL]: 'Banana Split',
               },
             ),
-            description: new Field(
-              mockElemID,
-              'description',
-              stringType,
-            ),
           },
           annotationsValues: {
             [Type.REQUIRED]: false,
@@ -1137,21 +1124,9 @@ describe('Test SalesforceAdapter CRUD', () => {
       )
 
       expect(result).toBeInstanceOf(ObjectType)
-      expect(mockCreate.mock.calls.length).toBe(1)
-      expect(mockDelete.mock.calls.length).toBe(1)
+      expect(mockCreate.mock.calls.length).toBe(0)
+      expect(mockDelete.mock.calls.length).toBe(0)
       expect(mockUpdate.mock.calls.length).toBe(2)
-      // Verify the custom fields creation
-      const addedFields = mockCreate.mock.calls[0][1]
-      expect(addedFields.length).toBe(1)
-      const field = addedFields[0]
-      expect(field.fullName).toBe('Test__c.Description__c')
-      expect(field.type).toBe('Text')
-      expect(field.length).toBe(80)
-      expect(field.required).toBe(false)
-      // Verify the custom fields deletion
-      const deletedFields = mockDelete.mock.calls[0][1]
-      expect(deletedFields.length).toBe(1)
-      expect(deletedFields[0]).toBe('Test__c.Address__c')
     })
   })
 })

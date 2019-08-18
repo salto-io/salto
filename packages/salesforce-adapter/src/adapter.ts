@@ -196,7 +196,7 @@ export default class SalesforceAdapter {
    */
   private async addInstance(element: InstanceElement): Promise<Element> {
     const result = await this.client.create(
-      element.getAnnotationsValues()[constants.METADATA_TYPE],
+      metadataType(element),
       toMetadataInfo(sfCase(element.elemID.name), element.value, element.type as ObjectType)
     )
     diagnose(result)
@@ -261,8 +261,6 @@ export default class SalesforceAdapter {
     // operations because the update API expects to receive the updated list of fields,
     // hence the need to perform the fields deletion and creation first, and then update the
     // object.
-    // We also await here on the updateFieldPermissions which we started before awaiting on the
-    // fields creation/deletion to minimize runtime
     // IMPORTANT: We don't update a built-in object (such as Lead, Customer, etc.)
     // The update API currently allows us to add/remove custom fields to such objects, but not
     // to update them.
@@ -270,8 +268,10 @@ export default class SalesforceAdapter {
     if (apiName(clonedObject).endsWith(constants.SALESFORCE_CUSTOM_SUFFIX)
       // Don't update the object unless its annotations values have changed
       && !_.isEqual(pre.getAnnotationsValues(), clonedObject.getAnnotationsValues())) {
-      objectUpdateResult = await this.client.update(constants.CUSTOM_OBJECT,
-        toCustomObject(clonedObject, false)) // Update the object without its fields
+      objectUpdateResult = await this.client.update(
+        metadataType(clonedObject),
+        toCustomObject(clonedObject, false)
+      ) // Update the object without its fields
     }
 
     // Aspects should be updated once all object related properties updates are over
@@ -293,7 +293,7 @@ export default class SalesforceAdapter {
     validateApiName(prevInstance, newInstance)
 
     const instanceUpdateResult = await this.client.update(
-      newInstance.getAnnotationsValues()[constants.METADATA_TYPE],
+      metadataType(newInstance),
       toMetadataInfo(sfCase(newInstance.elemID.name),
         newInstance.getValuesThatNotInPrevOrDifferent(prevInstance.value),
         newInstance.type as ObjectType)

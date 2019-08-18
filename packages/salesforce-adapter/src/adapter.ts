@@ -213,6 +213,9 @@ export default class SalesforceAdapter {
     const post = newElement.clone()
     annotateApiNameAndLabel(post)
 
+    const pre = prevElement.clone()
+    annotateApiNameAndLabel(pre)
+
     if (apiName(post) !== apiName(prevElement)) {
       throw Error(
         `Failed to update element as api names pre=${apiName(
@@ -225,7 +228,11 @@ export default class SalesforceAdapter {
       // Retrieve the custom fields for deletion and delete them
       this.deleteCustomFields(prevElement, prevElement.getFieldsThatAreNotInOther(post)),
       // Retrieve the custom fields for addition and than create them
-      this.createFields(post, post.getFieldsThatAreNotInOther(prevElement))])
+      this.createFields(post, post.getFieldsThatAreNotInOther(prevElement)),
+      // Update the remaining fields that were changed
+      this.updateFields(post, post.getMutualFieldsWithOther(pre).filter(afterField =>
+        !_.isEqual(afterField.getAnnotationsValues(),
+          pre.fields[afterField.name].getAnnotationsValues())))])
     // Update the annotation values - this can't be done asynchronously with the previous
     // operations beacause the update API expects to receive the updated list of fields,
     // hence the need to perform the fields deletion and creation first, and then update the
@@ -235,25 +242,18 @@ export default class SalesforceAdapter {
     // IMPORTANT: We don't update a built-in object (such as Lead, Customer, etc.)
     // The update API currently allows us to add/remove custom fields to such objects, but not
     // to update them.
-    const newCustomObject = toCustomObject(post)
     let objectUpdateResult: SaveResult | SaveResult[] = []
-    let fieldsOnlyUpdateResult: SaveResult[] = []
-    if (newCustomObject.fullName.endsWith('__c')
-    // Don't update the object unless its annotations values havd changed
-    && !_.isEqual(prevElement.getAnnotationsValues(), newElement.getAnnotationsValues())) {
+    if (apiName(post).endsWith(constants.SALESFORCE_CUSTOM_SUFFIX)
+    // Don't update the object unless its annotations values have changed
+    && !_.isEqual(pre.getAnnotationsValues(), post.getAnnotationsValues())) {
       objectUpdateResult = await this.client.update(constants.CUSTOM_OBJECT,
-        newCustomObject)
-    } else { // Update the remaining fields that were changed
-      const updatedFields = newElement.getMutualFieldsWithOther(prevElement).filter(afterField =>
-        !_.isEqual(afterField.getAnnotationsValues(),
-          prevElement.fields[afterField.name].getAnnotationsValues()))
-      fieldsOnlyUpdateResult = await this.updateFields(post, updatedFields)
+        toCustomObject(post))
     }
 
     // Aspects should be updated once all object related properties updates are over
     const filtersResult = await this.runFiltersOnUpdate(prevElement, post)
     diagnose([..._.flatten(fieldsUpdateResult), objectUpdateResult as SaveResult,
-      ...fieldsOnlyUpdateResult, ...filtersResult])
+      ...filtersResult])
 
     return post
   }

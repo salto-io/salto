@@ -38,9 +38,14 @@ const mockUpdate = jest.fn((_b, _a) => true)
 
 const mockInit = jest.fn(_a => true)
 
-const mockDiscover = jest.fn(() => [
-  new ObjectType({ elemID: new ElemID('salesforce', 'dummy') }),
-])
+const mockDiscover = jest.fn(() => {
+  const objType = new ObjectType({ elemID: new ElemID('salesforce', 'dummy') })
+  return [
+    objType,
+    new InstanceElement(new ElemID('salesforce', 'instance_1'), objType, {}, ['records', 'dummy']),
+    new InstanceElement(new ElemID('salesforce', 'instance_2'), objType, {}, ['records', 'dummy']),
+  ]
+})
 
 const mockAdapter = {
   getConfigType: mockGetConfigType,
@@ -184,8 +189,12 @@ describe('Test commands.ts and core.ts', () => {
   describe('discover', () => {
     it('should return blueprint', async () => {
       const bps = await commands.discover([], mockGetConfigFromUser)
-      expect(bps).toHaveLength(1)
+      expect(bps).toHaveLength(2)
       expect(bps[0].buffer.toString()).toMatch(/type "?salesforce_dummy"? {/)
+      // Both instances should be dumped to the same path
+      expect(bps[1].buffer.toString()).toMatch(/instance_1/)
+      expect(bps[1].buffer.toString()).toMatch(/instance_2/)
+      expect(bps[1].filename).toEqual(path.join('records', 'dummy'))
     })
   })
 })

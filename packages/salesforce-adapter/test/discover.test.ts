@@ -463,7 +463,11 @@ describe('Test SalesforceAdapter discover', () => {
         }],
         processMetadataValues: [{ name: 'dataType', value: { stringValue: 'Boolean' } },
           { name: 'leftHandSideReferenceTo', value: '' },
-          { name: 'leftHandSideReferenceTo2', value: { stringValue: '' } }],
+          { name: 'leftHandSideReferenceTo2', value: { stringValue: '' } },
+          {
+            name: 'leftHandSideReferenceTo3',
+            value: { stringValue: { $: { 'xsi:nil': 'true' } } },
+          }],
       })
 
       const result = await adapter().discover()
@@ -483,6 +487,8 @@ describe('Test SalesforceAdapter discover', () => {
       expect(layout.value.process_metadata_values[1].value).toBeUndefined()
       expect(layout.value.process_metadata_values[2].name).toBe('leftHandSideReferenceTo2')
       expect(layout.value.process_metadata_values[2].value).toBeUndefined()
+      expect(layout.value.process_metadata_values[3].name).toBe('leftHandSideReferenceTo3')
+      expect(layout.value.process_metadata_values[3].value.string_value).toBeNull()
     })
 
     it('should discover metadata types lists', async () => {

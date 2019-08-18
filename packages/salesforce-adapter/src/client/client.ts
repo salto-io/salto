@@ -1,6 +1,5 @@
 import {
   Connection,
-  Field,
   MetadataObject,
   DescribeGlobalSObjectResult,
   FileProperties,
@@ -11,6 +10,10 @@ import {
 } from 'jsforce'
 
 const apiVersion = '46.0'
+
+// Make sure results are lists with no undefined values in them
+const ensureListResult = <T>(result: T|T[]): T[] =>
+  (Array.isArray(result) ? result : [result]).filter(item => item !== undefined)
 
 export default class SalesforceClient {
   private conn: Connection
@@ -60,7 +63,7 @@ export default class SalesforceClient {
 
   public async listMetadataObjects(type: string): Promise<FileProperties[]> {
     await this.login()
-    return this.conn.metadata.list({ type })
+    return ensureListResult(await this.conn.metadata.list({ type }))
   }
 
   /**
@@ -81,10 +84,9 @@ export default class SalesforceClient {
   }
 
   public async describeSObjects(objectNames: string[]):
-    Promise<{ name: string; fields: Field[]}[]> {
+    Promise<DescribeSObjectResult[]> {
     await this.login()
-    const objects = await this.conn.soap.describeSObjects(objectNames) as DescribeSObjectResult[]
-    return objects.map(obj => ({ name: obj.name, fields: obj.fields }))
+    return ensureListResult(await this.conn.soap.describeSObjects(objectNames))
   }
 
   /**

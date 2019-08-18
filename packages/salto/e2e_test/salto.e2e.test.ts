@@ -1,5 +1,4 @@
 import * as fs from 'async-file'
-import * as path from 'path'
 import _ from 'lodash'
 import SalesforceClient from 'salesforce-adapter/dist/src/client/client'
 import {
@@ -40,10 +39,10 @@ jest.mock('../src/cli/callbacks', () => ({
 }))
 
 describe('Test commands e2e', () => {
-  const fileExists = async (p: string): Promise<boolean> => fs.exists(p)
+  const pathExists = async (p: string): Promise<boolean> => fs.exists(p)
   const homePath = process.env.HOME || process.env.HOMEPATH || process.env.USERPROFILE
   const { statePath } = new State()
-  const discoverOutputBP = `${homePath}/BP/test_discover.bp`
+  const discoverOutputDir = `${homePath}/BP/test_discover`
   const addModelBP = `${__dirname}/../../e2e_test//BP/add.bp`
   const modifyModelBP = `${__dirname}/../../e2e_test/BP/modify.bp`
   const client = new SalesforceClient(
@@ -77,28 +76,26 @@ describe('Test commands e2e', () => {
     if (await objectExists('e2etest__c')) {
       await client.delete('CustomObject', 'e2etest__c')
     }
-    await fs.createDirectory(path.dirname(discoverOutputBP))
     done()
   })
 
+  afterAll(() => fs.delete(discoverOutputDir))
+
   it('should run discover and create the state bp file', async done => {
-    await discover(discoverOutputBP, [])
-    expect(await fileExists(discoverOutputBP)).toBe(true)
-    expect(await fileExists(statePath)).toBe(true)
+    await discover(discoverOutputDir, [])
+    expect(await pathExists(discoverOutputDir)).toBe(true)
+    expect(await pathExists(statePath)).toBe(true)
     done()
   })
 
   it('should run plan on discover output and detect no changes', async done => {
-    await plan([discoverOutputBP])
+    await plan([], discoverOutputDir)
     expect(lastPlan.length).toBe(0)
     done()
   })
 
   it('should apply the new change', async done => {
-    await apply([
-      discoverOutputBP,
-      addModelBP,
-    ])
+    await apply([addModelBP], discoverOutputDir)
     expect(lastPlan.length).toBe(1)
     const step = lastPlan[0]
     expect(step.action).toBe('add')
@@ -113,10 +110,7 @@ describe('Test commands e2e', () => {
   })
 
   it('should apply changes in the new model', async done => {
-    await apply([
-      discoverOutputBP,
-      modifyModelBP,
-    ])
+    await apply([modifyModelBP], discoverOutputDir)
     expect(lastPlan.length).toBe(1)
     const step = lastPlan[0]
     expect(step.action).toBe('modify')
@@ -132,7 +126,7 @@ describe('Test commands e2e', () => {
   })
 
   it('should apply a delete for the model', async done => {
-    await apply([discoverOutputBP])
+    await apply([], discoverOutputDir)
     expect(lastPlan.length).toBe(1)
     const step = lastPlan[0]
     expect(step.action).toBe('remove')

@@ -1,4 +1,5 @@
 import * as fs from 'async-file'
+import path from 'path'
 import readdirp from 'readdirp'
 import { Blueprint } from '../blueprints/blueprint'
 
@@ -42,6 +43,13 @@ export const loadBlueprints = async (
  * Write blueprint to file
  * @param blueprint The blueprint to dump
  */
-export const dumpBlueprint = (
-  blueprint: Blueprint
-): Promise<void> => fs.writeFile(blueprint.filename, blueprint.buffer)
+export const dumpBlueprints = async (
+  blueprints: Blueprint[]
+): Promise<void> => {
+  await Promise.all(blueprints.map(
+    async bp => {
+      await fs.mkdirp(path.dirname(bp.filename))
+      await fs.writeFile(bp.filename, bp.buffer)
+    }
+  ))
+}

@@ -91,11 +91,11 @@ describe('Test Salesforce adapter E2E with real account', () => {
 
     it('should discover metadata type', () => {
       const flow = result
-        .filter(element => element.elemID.name === 'flow_type')
+        .filter(element => element.elemID.name === 'flow')
         .pop() as ObjectType
       expect(flow.fields.description.type.elemID.name).toBe('string')
       expect(flow.fields.is_template.type.elemID.name).toBe('boolean')
-      expect(flow.fields.action_calls.type.elemID.name).toBe('flow_action_call_type')
+      expect(flow.fields.action_calls.type.elemID.name).toBe('flow_action_call')
     })
 
     it('should discover settings instance', () => {

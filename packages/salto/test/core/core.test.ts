@@ -183,8 +183,9 @@ describe('Test commands.ts and core.ts', () => {
 
   describe('discover', () => {
     it('should return blueprint', async () => {
-      const bp = await commands.discover([], mockGetConfigFromUser)
-      expect(bp.buffer.toString()).toMatch(/type "?salesforce_dummy"? {/)
+      const bps = await commands.discover([], mockGetConfigFromUser)
+      expect(bps).toHaveLength(1)
+      expect(bps[0].buffer.toString()).toMatch(/type "?salesforce_dummy"? {/)
     })
   })
 })

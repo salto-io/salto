@@ -1,6 +1,7 @@
 // This file will be soon merged into salto-cli
+import path from 'path'
 import { PlanAction } from 'adapter-api'
-import { loadBlueprints, dumpBlueprint } from './blueprint'
+import { loadBlueprints, dumpBlueprints } from './blueprint'
 import { getAllElements, Blueprint } from '../blueprints/blueprint'
 import {
   createPlanOutput, createActionStartOutput, createActionInProgressOutput,
@@ -129,19 +130,19 @@ export const setenv = async (): Promise<void> => {
 }
 
 export const discoverBase = async (
-  outputFilename: string,
+  outputDir: string,
   blueprints: Blueprint[],
 ): Promise<void> => {
-  const outputBP = await commands.discover(
+  const outputBPs = await commands.discover(
     blueprints,
     getConfigFromUser
   )
-  outputBP.filename = outputFilename
-  await dumpBlueprint(outputBP)
+  outputBPs.forEach(bp => { bp.filename = path.join(outputDir, `${bp.filename}.bp`) })
+  await dumpBlueprints(outputBPs)
 }
 
 export const discover = async (
-  outputFilename: string,
+  outputDir: string,
   blueprintsFiles: string[],
   blueprintsDir?: string,
 ): Promise<void> => {
@@ -149,5 +150,5 @@ export const discover = async (
     blueprintsFiles,
     blueprintsDir,
   )
-  return discoverBase(outputFilename, blueprints)
+  return discoverBase(outputDir, blueprints)
 }

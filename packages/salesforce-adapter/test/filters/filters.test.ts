@@ -1,5 +1,6 @@
 import { ObjectType, ElemID, InstanceElement } from 'adapter-api'
 import SalesforceAdapter from '../../src/adapter'
+import SalesforceClient from '../../src/client/client'
 import { API_NAME } from '../../src/constants'
 import Filter from '../../src/filters/filter'
 
@@ -22,6 +23,8 @@ describe('Test adapter calls filters', () => {
   }
 
   beforeEach(() => {
+    SalesforceClient.prototype.listMetadataTypes = jest.fn().mockImplementationOnce(() => [])
+    SalesforceClient.prototype.listMetadataObjects = jest.fn().mockImplementationOnce(() => [])
     filter = {
       onDiscover: jest.fn().mockImplementationOnce(elements => elements),
       onAdd: jest.fn().mockImplementationOnce(() => ([{ success: true }])),

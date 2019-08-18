@@ -14,7 +14,7 @@ import {
 } from './client/types'
 import {
   toCustomField, toCustomObject, apiName, sfCase, fieldFullName, Types,
-  getValueTypeFieldElement, getSObjectFieldElement, fromMetadataInfo, sfTypeName,
+  getValueTypeFieldElement, getSObjectFieldElement, fromMetadataInfo,
   bpCase, toMetadataInfo, metadataType,
 } from './transformer'
 import { filter as layoutFilter } from './filters/layouts'
@@ -68,9 +68,11 @@ const annotateApiNameAndLabel = (element: ObjectType): void => {
 }
 
 export default class SalesforceAdapter {
-  // This is public as it should be exposed to tests
-  public static DISCOVER_METADATA_TYPES_WHITELIST = ['Flow', 'Workflow', 'Queue', 'Report',
-    'Settings', 'Layout']
+  private static DISCOVER_METADATA_TYPES_BLACKLIST = [
+    'ApexClass', // For some reason we cannot access this from the metadata API
+    'InstalledPackage', // Instances of this don't actually have an ID and they contain duplicates
+    'CustomObject', // We have special treatment for this type
+  ]
 
   filters = [fieldPermissionsFilter, layoutFilter]
 
@@ -119,9 +121,11 @@ export default class SalesforceAdapter {
    */
   public async discover(): Promise<Element[]> {
     const fieldTypes = Types.getAllFieldTypes()
-    const metadataTypes = this.discoverMetadataTypes()
-    const sObjects = this.discoverSObjects()
-    const metadataInstances = this.discoverMetadataInstances(await metadataTypes)
+    const metadataTypeNames = (await this.client.listMetadataTypes()).map(x => x.xmlName)
+    const metadataTypes = this.discoverMetadataTypes(metadataTypeNames)
+    const sObjects = this.discoverSObjects(await metadataTypes)
+    const metadataInstances = this.discoverMetadataInstances(metadataTypeNames, await metadataTypes)
+
     const elements = _.flatten(
       await Promise.all([fieldTypes, metadataTypes, sObjects, metadataInstances]) as Element[][]
     )
@@ -252,9 +256,10 @@ export default class SalesforceAdapter {
       fields.map(field => fieldFullName(element, field))) as Promise<SaveResult[]>
   }
 
-  private async discoverMetadataTypes(): Promise<Type[]> {
+  private async discoverMetadataTypes(typeNames: string[]): Promise<Type[]> {
     const knownTypes = new Map<string, Type>()
-    return _.flatten(await Promise.all(SalesforceAdapter.DISCOVER_METADATA_TYPES_WHITELIST
+    return _.flatten(await Promise.all(typeNames
+      .filter(name => !SalesforceAdapter.DISCOVER_METADATA_TYPES_BLACKLIST.includes(name))
       .map(obj => this.discoverMetadataType(obj, knownTypes))))
   }
 
@@ -268,6 +273,7 @@ export default class SalesforceAdapter {
     objectName: string,
     fields: ValueTypeField[],
     knownTypes: Map<string, Type>,
+    isSubtype: boolean = false,
   ): Type[] {
     if (knownTypes.has(objectName)) {
       // Already created this type, no new types to return here
@@ -276,6 +282,7 @@ export default class SalesforceAdapter {
     const element = Types.get(objectName, false) as ObjectType
     knownTypes.set(objectName, element)
     element.annotate({ [constants.METADATA_TYPE]: objectName })
+    element.path = ['types', ...(isSubtype ? ['subtypes'] : []), element.elemID.name]
     if (!fields) {
       return [element]
     }
@@ -288,6 +295,7 @@ export default class SalesforceAdapter {
         field.soapType,
         Array.isArray(field.fields) ? field.fields : [field.fields],
         knownTypes,
+        true,
       )
     ))
 
@@ -308,47 +316,66 @@ export default class SalesforceAdapter {
       element.fields[field.name] = field
     })
 
-
     return _.flatten([element, embeddedTypes])
   }
 
-  private async discoverMetadataInstances(types: Type[]): Promise<InstanceElement[]> {
+  private async discoverMetadataInstances(typeNames: string[], types: Type[]):
+    Promise<InstanceElement[]> {
     const instances = await Promise.all(types
-      .filter(t => SalesforceAdapter.DISCOVER_METADATA_TYPES_WHITELIST.includes(sfTypeName(t)))
       .filter(isObjectType)
-      .map(async t => this.createInstanceElements(t)))
+      .filter(t => typeNames.includes(sfCase(t.elemID.name)))
+      .map(t => this.createInstanceElements(t)))
     return _.flatten(instances)
   }
 
   private async createInstanceElements(type: ObjectType): Promise<InstanceElement[]> {
-    const instances = await this.listMetadataInstances(sfTypeName(type))
+    const typeName = sfCase(type.elemID.name)
+    const isSettings = typeName === constants.SETTINGS_METADATA_TYPE
+    const instances = await this.listMetadataInstances(typeName)
     return instances.filter(i => i.fullName !== undefined)
       .map(i => new InstanceElement(
-        new ElemID(constants.SALESFORCE, type.elemID.nameParts[0], bpCase(i.fullName)),
+        new ElemID(constants.SALESFORCE, type.elemID.name, bpCase(i.fullName)),
         type,
-        fromMetadataInfo(i, type,
-          // Transfom of settings values shouldn't be strict
-          type.elemID.nameParts[0] !== bpCase(constants.SETTINGS_METADATA_TYPE))
+        fromMetadataInfo(i, type, !isSettings), // Transfom of settings values shouldn't be strict
+        isSettings ? ['settings'] : ['records', type.elemID.name, bpCase(i.fullName)],
       ))
   }
 
-  private async discoverSObjects(): Promise<Type[]> {
-    const sobjects = _.flatten(await Promise.all(
-      _.chunk(await this.client.listSObjects(), 100).map(
-        objChunk => this.client.describeSObjects(objChunk.map(obj => obj.name))
-      ).map(
-        async objects => (await objects).map(
-          ({ name, fields }) => SalesforceAdapter.createSObjectTypeElement(name, fields)
-        )
-      )
-    ))
+  private async discoverSObjects(metadataTypes: Type[]): Promise<Type[]> {
+    const customObjectNames = new Set(
+      (await this.client.listMetadataObjects(constants.CUSTOM_OBJECT))
+        .map(obj => obj.fullName)
+    )
+    const metadataTypeNames = new Set(metadataTypes.map(elem => elem.elemID.name))
+
+    const sobjects = await Promise.all(_.flatten(await Promise.all(
+      _(await this.client.listSObjects())
+        .map(obj => obj.name)
+        .filter(name => !metadataTypeNames.has(bpCase(name)))
+        .chunk(100)
+        .map(nameChunk => this.client.describeSObjects(nameChunk))
+        .map(async objects => (await objects).map(
+          async ({ name, fields }) => SalesforceAdapter.createSObjectTypeElement(
+            name, fields, await customObjectNames
+          )
+        ))
+        .value()
+    )))
     return sobjects
   }
 
-  private static createSObjectTypeElement(objectName: string, fields: SObjField[]): ObjectType {
+  private static createSObjectTypeElement(
+    objectName: string,
+    fields: SObjField[],
+    customObjectNames: Set<string>,
+  ): Type {
     const element = Types.get(objectName) as ObjectType
     element.annotate({ [constants.API_NAME]: objectName })
     element.annotate({ [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT })
+    element.path = [
+      ...(customObjectNames.has(objectName) ? ['objects'] : ['types', 'object']),
+      element.elemID.name,
+    ]
     const fieldElements = fields.map(field => getSObjectFieldElement(element.elemID, field))
 
     // Set fields on elements

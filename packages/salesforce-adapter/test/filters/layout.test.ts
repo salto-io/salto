@@ -18,7 +18,7 @@ describe('Test layout filter', () => {
   const mockLayout = new InstanceElement(
     new ElemID(constants.SALESFORCE, LAYOUT_TYPE_NAME, 'test_test_layout'),
     new ObjectType({
-      elemID: new ElemID(constants.SALESFORCE, LAYOUT_TYPE_NAME, constants.METADATA_TYPES_SUFFIX),
+      elemID: new ElemID(constants.SALESFORCE, LAYOUT_TYPE_NAME),
     }),
     {},
   )

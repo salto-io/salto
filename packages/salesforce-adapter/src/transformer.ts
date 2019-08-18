@@ -12,7 +12,7 @@ import {
 } from './client/types'
 import {
   API_NAME, LABEL, PICKLIST_VALUES, SALESFORCE, RESTRICTED_PICKLIST, FORMULA,
-  FORMULA_TYPE_PREFIX, METADATA_TYPES_SUFFIX, FIELD_TYPE_NAMES, FIELD_TYPE_API_NAMES,
+  FORMULA_TYPE_PREFIX, FIELD_TYPE_NAMES, FIELD_TYPE_API_NAMES,
   METADATA_TYPE, FIELD_ANNOTATIONS,
 } from './constants'
 
@@ -31,16 +31,8 @@ export const bpCase = (name: string): string => {
   // and we see in our responses for sfdc
   return _.snakeCase(_.unescape(bpName.replace(/%26|%28|%29/g, ' ')))
 }
-export const sfTypeName = (type: Type, customObject: boolean = false): string =>
-  (customObject
-    ? sfCase(type.elemID.name, customObject)
-    : type.elemID.nameParts.slice(0, -1).map(p => sfCase(p, customObject)).join(''))
 export const sfInstnaceName = (instance: Element): string =>
   instance.elemID.nameParts.slice(1).map(p => sfCase(p, false)).join('')
-export const bpNameParts = (name: string, customObject: boolean): string[] =>
-  (customObject
-    ? [bpCase(name)]
-    : [bpCase(name), METADATA_TYPES_SUFFIX])
 export const apiName = (elem: Element): string => (
   (isInstanceElement(elem)) ? sfCase(elem.elemID.name) : elem.getAnnotationsValues()[API_NAME]
 )
@@ -201,14 +193,18 @@ export class Types {
 
     if (type === undefined) {
       return new ObjectType({
-        elemID: new ElemID(SALESFORCE, ...bpNameParts(name, customObject)),
+        elemID: new ElemID(SALESFORCE, bpCase(name)),
       })
     }
     return type
   }
 
   static getAllFieldTypes(): Type[] {
-    return Object.values(Types.salesforceDataTypes)
+    return Object.values(Types.salesforceDataTypes).map(type => {
+      const fieldType = type.clone()
+      fieldType.path = ['types', 'field_types']
+      return fieldType
+    })
   }
 }
 

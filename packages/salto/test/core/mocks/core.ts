@@ -177,4 +177,4 @@ export const apply = async (
 export const discover = async (
   _blueprints: Blueprint[],
   _fillConfig: (configType: ObjectType) => Promise<InstanceElement>
-): Promise<Blueprint> => ({ buffer: Buffer.from('asd'), filename: 'none' })
+): Promise<Blueprint[]> => [({ buffer: Buffer.from('asd'), filename: 'none' })]

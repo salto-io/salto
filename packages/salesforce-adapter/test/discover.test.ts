@@ -30,15 +30,24 @@ describe('Test SalesforceAdapter discover', () => {
   })
 
   describe('should discover SObjects', () => {
-    const mockSingleSObject = (name: string,
+    const mockSingleSObject = (
+      name: string,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      fields: Record<string, any>[]): void => {
-      SalesforceClient.prototype.listSObjects = jest.fn().mockImplementation(() => [{ name }])
+      fields: Record<string, any>[],
+      isMetadataType: boolean = false,
+      isCustomObject: boolean = true
+    ): void => {
+      SalesforceClient.prototype.listSObjects = jest.fn().mockImplementation(async () => [{ name }])
       SalesforceClient.prototype.describeSObjects = jest.fn().mockImplementation(
-        () => [{ name, fields }]
+        async () => [{ name, fields }]
       )
-      SalesforceClient.prototype.listMetadataTypes = jest.fn().mockImplementation(() => [])
-      SalesforceClient.prototype.listMetadataObjects = jest.fn().mockImplementation(() => [])
+      SalesforceClient.prototype.listMetadataTypes = jest.fn().mockImplementation(async () => [
+        constants.CUSTOM_OBJECT, ...(isMetadataType ? [name] : []),
+      ].map(xmlName => ({ xmlName })))
+      SalesforceClient.prototype.describeMetadataType = jest.fn().mockImplementation(async () => [])
+      SalesforceClient.prototype.listMetadataObjects = jest.fn().mockImplementation(async type => (
+        (type === constants.CUSTOM_OBJECT && isCustomObject) ? [{ fullName: name }] : []
+      ))
     }
 
     it('should discover sobject with primitive types, validate type, label, required and default annotations', async () => {
@@ -87,6 +96,7 @@ describe('Test SalesforceAdapter discover', () => {
       const result = await adapter().discover()
 
       const lead = result.filter(o => o.elemID.name === 'lead').pop() as ObjectType
+      expect(lead.path).toEqual(['objects', 'lead'])
       expect(lead.fields.last_name.type.elemID.name).toBe('text')
       expect(lead.fields.last_name.getAnnotationsValues().label).toBe('Last Name')
       // Test Rquired true and false
@@ -242,23 +252,53 @@ describe('Test SalesforceAdapter discover', () => {
       expect(lead.fields.multi_pick_list
         .getAnnotationsValues()[constants.FIELD_ANNOTATIONS.VISIBLE_LINES]).toBe(5)
     })
+
+    it('should place SObjects that are not custom objects in the types directory', async () => {
+      mockSingleSObject('Test', [
+        { name: 'dummy', label: 'dummy', type: 'string' },
+      ], false, false)
+
+      const result = await adapter().discover()
+
+      const test = result.filter(o => o.elemID.name === 'test').pop() as ObjectType
+      expect(test).toBeDefined()
+      expect(test.path).toEqual(['types', 'object', 'test'])
+    })
+
+    it('should not discover SObjects that conflict with metadata types', async () => {
+      mockSingleSObject('Flow', [
+        { name: 'dummy', label: 'dummy', type: 'string' },
+      ], true)
+
+      const result = await adapter().discover()
+
+      const flow = result.filter(o => o.elemID.name === 'flow').pop() as ObjectType
+      expect(flow).toBeDefined() // We do expect to get the metadata type here
+      expect(Object.keys(flow.fields)).toHaveLength(0)
+      expect(flow.path).toEqual(['types', 'flow'])
+    })
   })
 
   describe('should discover metadata types', () => {
     const mockSingleMetadataType = (xmlName: string,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       fields: Record<string, any>[]): void => {
-      SalesforceClient.prototype.listSObjects = jest.fn().mockImplementation(() => [])
-      SalesforceAdapter.DISCOVER_METADATA_TYPES_WHITELIST = [xmlName]
-      SalesforceClient.prototype.describeMetadataType = jest.fn().mockImplementation(() => fields)
-      SalesforceClient.prototype.listMetadataObjects = jest.fn().mockImplementation(() => [])
+      SalesforceClient.prototype.listSObjects = jest.fn().mockImplementation(async () => [])
+      SalesforceClient.prototype.listMetadataTypes = jest.fn().mockImplementation(
+        async () => [{ xmlName }]
+      )
+      SalesforceClient.prototype.describeMetadataType = jest.fn().mockImplementation(
+        async () => fields
+      )
+      SalesforceClient.prototype.listMetadataObjects = jest.fn().mockImplementation(async () => [])
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const mockSingleMetadataInstance = (name: string, data: Record<string, any>): void => {
-      SalesforceClient.prototype.listMetadataObjects = jest.fn().mockImplementation(() =>
-        [{ fullName: name }])
-      SalesforceClient.prototype.readMetadata = jest.fn().mockImplementation(() => data)
+      SalesforceClient.prototype.listMetadataObjects = jest.fn().mockImplementation(
+        async () => [{ fullName: name }]
+      )
+      SalesforceClient.prototype.readMetadata = jest.fn().mockImplementation(async () => data)
     }
     it('should discover basic metadata type', async () => {
       mockSingleMetadataType('Flow', [
@@ -286,7 +326,7 @@ describe('Test SalesforceAdapter discover', () => {
       const describeMock = SalesforceClient.prototype.describeMetadataType as jest.Mock<unknown>
       expect(describeMock).toHaveBeenCalled()
       expect(describeMock.mock.calls[0][0]).toBe('Flow')
-      const flow = result.filter(o => o.elemID.name === 'flow_type').pop() as ObjectType
+      const flow = result.filter(o => o.elemID.name === 'flow').pop() as ObjectType
       expect(flow.fields.description.type.elemID.name).toBe('string')
       expect(flow.fields.description.getAnnotationsValues()[Type.REQUIRED]).toBe(true)
       expect(flow.fields.is_template.type.elemID.name).toBe('boolean')
@@ -296,6 +336,7 @@ describe('Test SalesforceAdapter discover', () => {
       expect(flow.fields.enum.getAnnotationsValues()[Type.RESTRICTION]).toEqual({
         values: ['yes', 'no'],
       })
+      expect(flow.path).toEqual(['types', 'flow'])
     })
     it('should discover nested metadata types', async () => {
       mockSingleMetadataType('NestingType', [
@@ -330,22 +371,21 @@ describe('Test SalesforceAdapter discover', () => {
           },
         },
       ])
-      SalesforceAdapter.DISCOVER_METADATA_TYPES_WHITELIST = ['nesting_type']
 
       const result = await adapter().discover()
 
       expect(result).toHaveLength(Object.keys(Types.salesforceDataTypes).length + 3)
       const types = _.assign({}, ...result.map(t => ({ [t.elemID.getFullName()]: t })))
-      const nestingType = types.salesforce_nesting_type_type
-      const nestedType = types.salesforce_nested_type_type
-      const singleField = types.salesforce_single_field_type_type
+      const nestingType = types.salesforce_nesting_type
+      const nestedType = types.salesforce_nested_type
+      const singleField = types.salesforce_single_field_type
       expect(nestingType).not.toBeUndefined()
-      expect(nestingType.fields.field.type.elemID.name).toEqual('nested_type_type')
-      expect(nestingType.fields.other_field.type.elemID.name).toEqual('single_field_type_type')
+      expect(nestingType.fields.field.type.elemID.name).toEqual('nested_type')
+      expect(nestingType.fields.other_field.type.elemID.name).toEqual('single_field_type')
       expect(nestedType).not.toBeUndefined()
       expect(nestedType.fields.nested_str.type.elemID.name).toEqual('string')
       expect(nestedType.fields.nested_num.type.elemID.name).toEqual('number')
-      expect(nestedType.fields.double_nested.type.elemID.name).toEqual('single_field_type_type')
+      expect(nestedType.fields.double_nested.type.elemID.name).toEqual('single_field_type')
       expect(singleField).not.toBeUndefined()
       expect(singleField.fields.str.type.elemID.name).toEqual('string')
     })
@@ -383,7 +423,7 @@ describe('Test SalesforceAdapter discover', () => {
 
       const result = await adapter().discover()
       const flow = result.filter(o => o.elemID.name === 'flow_flow_instance').pop() as InstanceElement
-      expect(flow.type.elemID.getFullName()).toBe('salesforce_flow_type')
+      expect(flow.type.elemID.getFullName()).toBe('salesforce_flow')
       expect(flow.elemID.getFullName()).toBe('salesforce_flow_flow_instance')
       expect(flow.value.bla.bla).toBe(55)
       expect(flow.value.bla.bla_2).toBe(false)
@@ -472,7 +512,7 @@ describe('Test SalesforceAdapter discover', () => {
 
       const result = await adapter().discover()
       const layout = result.filter(o => o.elemID.name === 'layout_order_order_layout').pop() as InstanceElement
-      expect(layout.type.elemID.getFullName()).toBe('salesforce_layout_type')
+      expect(layout.type.elemID.getFullName()).toBe('salesforce_layout')
       expect(layout.value.full_name).toBe('Order-Order Layout')
       expect(layout.value.layout_sections.length).toBe(3)
       expect(layout.value.layout_sections[0].label).toBe('Description Information')
@@ -511,9 +551,9 @@ describe('Test SalesforceAdapter discover', () => {
         },
       ])
 
-      SalesforceClient.prototype.listMetadataObjects = jest.fn().mockImplementation(() =>
+      SalesforceClient.prototype.listMetadataObjects = jest.fn().mockImplementation(async () =>
         [{ fullName: 'FlowInstance' }, { fullName: 'FlowInstance2' }])
-      SalesforceClient.prototype.readMetadata = jest.fn().mockImplementation(() => ([{
+      SalesforceClient.prototype.readMetadata = jest.fn().mockImplementation(async () => ([{
         fullName: 'FlowInstance',
         listTest: [{ field: 'Field1', editable: 'true' },
           { field: 'Field2', editable: 'false' }],
@@ -525,7 +565,7 @@ describe('Test SalesforceAdapter discover', () => {
 
       const result = await adapter().discover()
       const flow = result.filter(o => o.elemID.name === 'flow_flow_instance').pop() as InstanceElement
-      expect(flow.type.elemID.getFullName()).toBe('salesforce_flow_type')
+      expect(flow.type.elemID.getFullName()).toBe('salesforce_flow')
       expect((flow.type as ObjectType).fields.list_test.isList).toBe(true)
 
       expect(flow.elemID.getFullName()).toBe('salesforce_flow_flow_instance')

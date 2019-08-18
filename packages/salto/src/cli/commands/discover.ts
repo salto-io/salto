@@ -4,13 +4,13 @@ import { ParsedCliInput, CliCommand, CliOutput } from '../types'
 import { Blueprint } from '../../blueprints/blueprint'
 import * as bf from '../filters/blueprints'
 
-const command = (blueprints: Blueprint[], outputFilename: string): CliCommand => ({
+const command = (blueprints: Blueprint[], outputDir: string): CliCommand => ({
   async execute(): Promise<void> {
-    return commands.discoverBase(outputFilename, blueprints)
+    return commands.discoverBase(outputDir, blueprints)
   },
 })
 
-type DiscoverArgs = bf.Args & { 'output-filename': string }
+type DiscoverArgs = bf.Args & { 'output-dir': string }
 type DiscoverParsedCliInput = ParsedCliInput<DiscoverArgs> & bf.BlueprintsParsedCliInput
 
 const builder = createCommandBuilder({
@@ -19,9 +19,9 @@ const builder = createCommandBuilder({
     aliases: ['d'],
     description: 'Generates blueprints and state files',
     keyed: {
-      'output-filename': {
+      'output-dir': {
         alias: ['o'],
-        describe: 'A path to the output blueprint file',
+        describe: 'A path to the output blueprints directory',
         string: true,
         demandOption: true,
       },
@@ -31,7 +31,7 @@ const builder = createCommandBuilder({
   filters: [bf.optionalFilter],
 
   async build(input: DiscoverParsedCliInput, _output: CliOutput) {
-    return command(input.blueprints, input.args['output-filename'])
+    return command(input.blueprints, input.args['output-dir'])
   },
 })
 

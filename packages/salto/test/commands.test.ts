@@ -63,13 +63,17 @@ describe('Test commands.ts', () => {
   })
 
   it('discover should create file', async () => {
-    const outputName = path.join(__dirname, 'tmp.bp')
+    const outputDir = path.join(__dirname, '__test_discover')
     try {
-      await commands.discover(outputName, [])
-      expect(await fs.exists(outputName)).toBe(true)
-      expect((await fs.readFile(outputName)).toString()).toMatch('asd')
+      // Cleanup before running discover
+      await fs.delete(outputDir)
+
+      await commands.discover(outputDir, [])
+      const outputPath = path.join(outputDir, 'none.bp')
+      expect(await fs.exists(outputDir)).toBe(true)
+      expect((await fs.readFile(outputPath)).toString()).toMatch('asd')
     } finally {
-      fs.delete(outputName)
+      await fs.delete(outputDir)
     }
   })
 

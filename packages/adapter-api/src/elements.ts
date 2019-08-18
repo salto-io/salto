@@ -42,6 +42,7 @@ export class ElemID {
 
 export interface Element {
   elemID: ElemID
+  path?: string[]
   getAnnotationsValues: () => Values
 }
 
@@ -120,6 +121,7 @@ export abstract class Type implements Element {
 
 
   readonly elemID: ElemID
+  path?: string[]
   annotations: TypeMap
   private readonly annotationsValues: Values
   constructor({
@@ -299,12 +301,14 @@ export class ObjectType extends Type {
 
 export class InstanceElement implements Element {
   elemID: ElemID
+  path?: string[]
   type: Type
   value: Values
-  constructor(elemID: ElemID, type: Type, value: Values) {
+  constructor(elemID: ElemID, type: Type, value: Values, path?: string[]) {
     this.elemID = elemID
     this.type = type
     this.value = value
+    this.path = path
   }
 
   getAnnotationsValues(): Values {

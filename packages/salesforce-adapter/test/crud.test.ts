@@ -39,8 +39,8 @@ describe('Test SalesforceAdapter CRUD', () => {
   let mockDelete: jest.Mock<unknown>
   let mockUpdate: jest.Mock<unknown>
   beforeEach(() => {
-    const saveResultMock = (_type: string, objects: MetadataInfo|MetadataInfo[]):
-  SaveResult| SaveResult[] =>
+    const saveResultMock = async (_type: string, objects: MetadataInfo|MetadataInfo[]):
+  Promise<SaveResult| SaveResult[]> =>
       (_.isArray(objects)
         ? [{ fullName: objects[0].fullName, success: true }]
         : [{ fullName: objects.fullName, success: true }])
@@ -565,7 +565,7 @@ describe('Test SalesforceAdapter CRUD', () => {
     })
 
     it('should fail remove new salesforce type', async () => {
-      SalesforceClient.prototype.delete = jest.fn().mockImplementationOnce(() => ({
+      SalesforceClient.prototype.delete = jest.fn().mockImplementationOnce(async () => ({
         success: false,
         fullName: 'Test__c',
         errors: [

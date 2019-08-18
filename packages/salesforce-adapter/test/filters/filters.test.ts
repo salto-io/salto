@@ -23,8 +23,10 @@ describe('Test adapter calls filters', () => {
   }
 
   beforeEach(() => {
-    SalesforceClient.prototype.listMetadataTypes = jest.fn().mockImplementationOnce(() => [])
-    SalesforceClient.prototype.listMetadataObjects = jest.fn().mockImplementationOnce(() => [])
+    SalesforceClient.prototype.listMetadataTypes = jest.fn().mockImplementationOnce(async () => [])
+    SalesforceClient.prototype.listMetadataObjects = jest.fn().mockImplementationOnce(
+      async () => []
+    )
     filter = {
       onDiscover: jest.fn().mockImplementationOnce(elements => elements),
       onAdd: jest.fn().mockImplementationOnce(() => ([{ success: true }])),

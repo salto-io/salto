@@ -121,10 +121,20 @@ export default class SalesforceAdapter {
    */
   public async discover(): Promise<Element[]> {
     const fieldTypes = Types.getAllFieldTypes()
-    const metadataTypeNames = (await this.client.listMetadataTypes()).map(x => x.xmlName)
+    const metadataTypeNames = this.client.listMetadataTypes().then(
+      types => types.map(x => x.xmlName)
+    )
     const metadataTypes = this.discoverMetadataTypes(metadataTypeNames)
-    const sObjects = this.discoverSObjects(await metadataTypes)
-    const metadataInstances = this.discoverMetadataInstances(metadataTypeNames, await metadataTypes)
+    const metadataInstances = this.discoverMetadataInstances(metadataTypeNames, metadataTypes)
+
+    // Filter out types returned as both metadata types and SObjects
+    const sObjects = this.discoverSObjects().then(
+      async types => {
+        // All metadata type names include subtypes as well as the "top level" type names
+        const allMetadataTypeNames = new Set((await metadataTypes).map(elem => elem.elemID.name))
+        return types.filter(t => !allMetadataTypeNames.has(t.elemID.name))
+      }
+    )
 
     const elements = _.flatten(
       await Promise.all([fieldTypes, metadataTypes, sObjects, metadataInstances]) as Element[][]
@@ -256,9 +266,9 @@ export default class SalesforceAdapter {
       fields.map(field => fieldFullName(element, field))) as Promise<SaveResult[]>
   }
 
-  private async discoverMetadataTypes(typeNames: string[]): Promise<Type[]> {
+  private async discoverMetadataTypes(typeNames: Promise<string[]>): Promise<Type[]> {
     const knownTypes = new Map<string, Type>()
-    return _.flatten(await Promise.all(typeNames
+    return _.flatten(await Promise.all((await typeNames)
       .filter(name => !SalesforceAdapter.DISCOVER_METADATA_TYPES_BLACKLIST.includes(name))
       .map(obj => this.discoverMetadataType(obj, knownTypes))))
   }
@@ -319,11 +329,12 @@ export default class SalesforceAdapter {
     return _.flatten([element, embeddedTypes])
   }
 
-  private async discoverMetadataInstances(typeNames: string[], types: Type[]):
+  private async discoverMetadataInstances(typeNames: Promise<string[]>, types: Promise<Type[]>):
     Promise<InstanceElement[]> {
-    const instances = await Promise.all(types
+    const topLevelTypeNames = await typeNames
+    const instances = await Promise.all((await types)
       .filter(isObjectType)
-      .filter(t => typeNames.includes(sfCase(t.elemID.name)))
+      .filter(t => topLevelTypeNames.includes(sfCase(t.elemID.name)))
       .map(t => this.createInstanceElements(t)))
     return _.flatten(instances)
   }
@@ -341,17 +352,14 @@ export default class SalesforceAdapter {
       ))
   }
 
-  private async discoverSObjects(metadataTypes: Type[]): Promise<Type[]> {
-    const customObjectNames = new Set(
-      (await this.client.listMetadataObjects(constants.CUSTOM_OBJECT))
-        .map(obj => obj.fullName)
+  private async discoverSObjects(): Promise<Type[]> {
+    const customObjectNames = this.client.listMetadataObjects(constants.CUSTOM_OBJECT).then(
+      objs => new Set(objs.map(obj => obj.fullName))
     )
-    const metadataTypeNames = new Set(metadataTypes.map(elem => elem.elemID.name))
 
     const sobjects = await Promise.all(_.flatten(await Promise.all(
       _(await this.client.listSObjects())
-        .map(obj => obj.name)
-        .filter(name => !metadataTypeNames.has(bpCase(name)))
+        .map(sobj => sobj.name)
         .chunk(100)
         .map(nameChunk => this.client.describeSObjects(nameChunk))
         .map(async objects => (await objects).map(

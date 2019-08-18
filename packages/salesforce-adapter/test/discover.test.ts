@@ -37,17 +37,17 @@ describe('Test SalesforceAdapter discover', () => {
       isMetadataType: boolean = false,
       isCustomObject: boolean = true
     ): void => {
-      SalesforceClient.prototype.listSObjects = jest.fn().mockImplementation(() => [{ name }])
+      SalesforceClient.prototype.listSObjects = jest.fn().mockImplementation(async () => [{ name }])
       SalesforceClient.prototype.describeSObjects = jest.fn().mockImplementation(
-        () => [{ name, fields }]
+        async () => [{ name, fields }]
       )
-      SalesforceClient.prototype.listMetadataTypes = jest.fn().mockImplementation(() => [
+      SalesforceClient.prototype.listMetadataTypes = jest.fn().mockImplementation(async () => [
         constants.CUSTOM_OBJECT, ...(isMetadataType ? [name] : []),
       ].map(xmlName => ({ xmlName })))
-      SalesforceClient.prototype.describeMetadataType = jest.fn().mockImplementation(() => [])
-      SalesforceClient.prototype.listMetadataObjects = jest.fn().mockImplementation(
-        type => ((type === constants.CUSTOM_OBJECT && isCustomObject) ? [{ fullName: name }] : [])
-      )
+      SalesforceClient.prototype.describeMetadataType = jest.fn().mockImplementation(async () => [])
+      SalesforceClient.prototype.listMetadataObjects = jest.fn().mockImplementation(async type => (
+        (type === constants.CUSTOM_OBJECT && isCustomObject) ? [{ fullName: name }] : []
+      ))
     }
 
     it('should discover sobject with primitive types, validate type, label, required and default annotations', async () => {
@@ -283,19 +283,22 @@ describe('Test SalesforceAdapter discover', () => {
     const mockSingleMetadataType = (xmlName: string,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       fields: Record<string, any>[]): void => {
-      SalesforceClient.prototype.listSObjects = jest.fn().mockImplementation(() => [])
+      SalesforceClient.prototype.listSObjects = jest.fn().mockImplementation(async () => [])
       SalesforceClient.prototype.listMetadataTypes = jest.fn().mockImplementation(
-        () => [{ xmlName }]
+        async () => [{ xmlName }]
       )
-      SalesforceClient.prototype.describeMetadataType = jest.fn().mockImplementation(() => fields)
-      SalesforceClient.prototype.listMetadataObjects = jest.fn().mockImplementation(() => [])
+      SalesforceClient.prototype.describeMetadataType = jest.fn().mockImplementation(
+        async () => fields
+      )
+      SalesforceClient.prototype.listMetadataObjects = jest.fn().mockImplementation(async () => [])
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const mockSingleMetadataInstance = (name: string, data: Record<string, any>): void => {
-      SalesforceClient.prototype.listMetadataObjects = jest.fn().mockImplementation(() =>
-        [{ fullName: name }])
-      SalesforceClient.prototype.readMetadata = jest.fn().mockImplementation(() => data)
+      SalesforceClient.prototype.listMetadataObjects = jest.fn().mockImplementation(
+        async () => [{ fullName: name }]
+      )
+      SalesforceClient.prototype.readMetadata = jest.fn().mockImplementation(async () => data)
     }
     it('should discover basic metadata type', async () => {
       mockSingleMetadataType('Flow', [
@@ -548,9 +551,9 @@ describe('Test SalesforceAdapter discover', () => {
         },
       ])
 
-      SalesforceClient.prototype.listMetadataObjects = jest.fn().mockImplementation(() =>
+      SalesforceClient.prototype.listMetadataObjects = jest.fn().mockImplementation(async () =>
         [{ fullName: 'FlowInstance' }, { fullName: 'FlowInstance2' }])
-      SalesforceClient.prototype.readMetadata = jest.fn().mockImplementation(() => ([{
+      SalesforceClient.prototype.readMetadata = jest.fn().mockImplementation(async () => ([{
         fullName: 'FlowInstance',
         listTest: [{ field: 'Field1', editable: 'true' },
           { field: 'Field2', editable: 'false' }],

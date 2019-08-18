@@ -374,12 +374,16 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
 }
 
 const transformPrimitive = (val: string, primitive: PrimitiveTypes):
-  string | boolean | number | undefined => {
+  string | boolean | number | null | undefined => {
+  // Salesforce returns nulls as objects
+  if (_.isObject(val) && _.get(val, ['$', 'xsi:nil']) === 'true') {
+    return null
+  }
   switch (primitive) {
     case PrimitiveTypes.NUMBER:
       return Number(val)
     case PrimitiveTypes.BOOLEAN:
-      return (val.toLowerCase() === 'true')
+      return val.toLowerCase() === 'true'
     case PrimitiveTypes.STRING:
       if (val.length === 0) {
         return undefined

@@ -254,18 +254,10 @@ export const toCustomObject = (element: ObjectType): CustomObject =>
 export const getValueTypeFieldElement = (parentID: ElemID, field: ValueTypeField,
   knonwTypes: Map<string, Type>): TypeField => {
   const bpFieldName = bpCase(field.name)
-  let bpFieldType = knonwTypes.has(field.soapType)
-    ? knonwTypes.get(field.soapType) as Type
-    // If type is not known type it have to be primitive,
-    // we create sub types before calling this function.
-    : Types.get(field.soapType, false)
+  const bpFieldType = knonwTypes.get(field.soapType) || Types.get(field.soapType, false)
   const annotations: Values = { [Type.REQUIRED]: field.valueRequired }
 
   if (field.picklistValues && field.picklistValues.length > 0) {
-    // In metadata types picklist values means this is actually an enum
-    // Currently it seems that we can assume all enums are string enums
-    bpFieldType = BuiltinTypes.STRING
-
     annotations[Type.RESTRICTION] = {
       values: field.picklistValues.map(val => val.value),
     }

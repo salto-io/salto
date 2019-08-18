@@ -273,10 +273,6 @@ describe('Test SalesforceAdapter discover', () => {
           valueRequired: false,
         },
         {
-          name: 'ActionCalls',
-          soapType: 'FlowActionCall',
-        },
-        {
           name: 'Enum',
           soapType: 'SomeEnumType',
           picklistValues: [
@@ -295,7 +291,6 @@ describe('Test SalesforceAdapter discover', () => {
       expect(flow.fields.description.getAnnotationsValues()[Type.REQUIRED]).toBe(true)
       expect(flow.fields.is_template.type.elemID.name).toBe('boolean')
       expect(flow.fields.is_template.getAnnotationsValues()[Type.REQUIRED]).toBe(false)
-      expect(flow.fields.action_calls.type.elemID.name).toBe('flow_action_call_type')
       expect(flow.fields.enum.type.elemID.name).toBe('string')
       expect(flow.fields.enum.getAnnotationsValues()[Type.DEFAULT]).toBe('yes')
       expect(flow.fields.enum.getAnnotationsValues()[Type.RESTRICTION]).toEqual({

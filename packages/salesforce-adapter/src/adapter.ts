@@ -1,6 +1,6 @@
 import {
   BuiltinTypes, Type, ObjectType, ElemID, InstanceElement, Values,
-  Field, Element, isObjectType, isInstanceElement,
+  Field, Element, isObjectType, isInstanceElement, isPrimitiveType,
 } from 'adapter-api'
 import {
   SaveResult, ValueTypeField, MetadataInfo, Field as SObjField,
@@ -280,13 +280,25 @@ export default class SalesforceAdapter {
       return [element]
     }
 
+    // We need to create embedded types BEFORE creating this element's fields
+    // in order to make sure all internal types we may need are updated in the
+    // knownTypes map
     const embeddedTypes = _.flatten(fields.filter(field => !_.isEmpty(field.fields)).map(
       field => this.createMetadataTypeElements(
         field.soapType,
         Array.isArray(field.fields) ? field.fields : [field.fields],
-        knownTypes
+        knownTypes,
       )
     ))
+
+    // Enum fields sometimes show up with a type name that is not primitive but also does not
+    // have fields (so we won't create an embedded type for it). it seems like these "empty" types
+    // are always supposed to be a string with some restriction so we map all non primitive "empty"
+    // types to string
+    fields
+      .filter(field => _.isEmpty(field.fields))
+      .filter(field => !isPrimitiveType(Types.get(field.soapType, false)))
+      .forEach(field => knownTypes.set(field.soapType, BuiltinTypes.STRING))
 
     const fieldElements = fields.map(field =>
       getValueTypeFieldElement(element.elemID, field, knownTypes))

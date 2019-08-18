@@ -5,9 +5,10 @@ import {
   ElemID,
   InstanceElement,
   Field,
+  Value,
   Element,
 } from 'adapter-api'
-import { PicklistEntry } from 'jsforce'
+import { MetadataInfo, PicklistEntry } from 'jsforce'
 import _ from 'lodash'
 import SalesforceAdapter from '../src/adapter'
 import * as constants from '../src/constants'
@@ -17,7 +18,9 @@ import {
   ProfileInfo,
   FieldPermissions,
 } from '../src/client/types'
-import { Types, sfCase } from '../src/transformer'
+import {
+  Types, sfCase, bpCase, fromMetadataInfo,
+} from '../src/transformer'
 
 describe('Test Salesforce adapter E2E with real account', () => {
   const adapter = (): SalesforceAdapter => {
@@ -136,6 +139,29 @@ describe('Test Salesforce adapter E2E with real account', () => {
         return (!missingFields || missingFields.every(f => !fieldNames.includes(f)))
       }
       return true
+    }
+
+    const getInstance = async (type: string, name: string): Promise<InstanceElement> => {
+      const mockElemID = new ElemID(constants.SALESFORCE, name)
+      const result = (await sfAdapter.client.readMetadata(type, name)
+      ) as MetadataInfo
+
+      const obt = new ObjectType({
+        elemID: mockElemID,
+        fields: {
+        },
+        annotations: {},
+        annotationsValues: {
+          [constants.METADATA_TYPE]: PROFILE_METADATA_TYPE,
+          [constants.API_NAME]: name,
+        },
+      })
+
+      return new InstanceElement(
+        new ElemID(constants.SALESFORCE, name, bpCase(result.fullName)),
+        obt,
+        fromMetadataInfo(result, obt, false)
+      )
     }
 
     const permissionExists = async (profile: string, fields: string[]): Promise<boolean[]> => {
@@ -420,13 +446,13 @@ describe('Test Salesforce adapter E2E with real account', () => {
         fieldPermissions: [
           {
             field: 'Lead.Fax',
-            readable: true,
-            editable: false,
+            readable: 'true',
+            editable: 'false',
           },
           {
-            editable: false,
+            editable: 'false',
             field: 'Account.AccountNumber',
-            readable: false,
+            readable: 'false',
           },
         ],
         tabVisibilities: [
@@ -438,8 +464,8 @@ describe('Test Salesforce adapter E2E with real account', () => {
         applicationVisibilities: [
           {
             application: 'standard__ServiceConsole',
-            default: false,
-            visible: true,
+            default: 'false',
+            visible: 'true',
           },
         ],
         description: 'new e2e profile',
@@ -460,13 +486,18 @@ describe('Test Salesforce adapter E2E with real account', () => {
         fieldPermissions: [
           {
             field: 'Lead.Fax',
-            readable: true,
-            editable: false,
+            readable: 'true',
+            editable: 'true',
           },
           {
-            editable: false,
+            editable: 'false',
             field: 'Account.AccountNumber',
-            readable: false,
+            readable: 'false',
+          },
+          {
+            editable: 'false',
+            field: 'Account.AnnualRevenue',
+            readable: 'false',
           },
         ],
         tabVisibilities: [
@@ -478,14 +509,13 @@ describe('Test Salesforce adapter E2E with real account', () => {
         applicationVisibilities: [
           {
             application: 'standard__ServiceConsole',
-            default: false,
-            visible: true,
+            default: 'false',
+            visible: 'true',
           },
         ],
         description: 'updated e2e profile',
 
       })
-
 
       if (await objectExists(PROFILE_METADATA_TYPE, sfCase(oldInstance.elemID.name))) {
         await sfAdapter.remove(oldInstance)
@@ -497,6 +527,31 @@ describe('Test Salesforce adapter E2E with real account', () => {
       // Test
       expect(updateResult).toBe(newInstance)
 
+      // Checking that the saved instance identical to newInstance
+      const savedInstance = await getInstance(
+        PROFILE_METADATA_TYPE, sfCase(oldInstance.elemID.name)
+      )
+      const valuesMap = new Map<string, Value>()
+      // @ts-ignore
+      savedInstance.value.field_permissions.map(f => valuesMap.set(f.field, f))
+      // @ts-ignore
+      savedInstance.value.tab_visibilities.map(f => valuesMap.set(f.tab, f))
+      // @ts-ignore
+      savedInstance.value.application_visibilities.map(f => valuesMap.set(f.application, f))
+
+      expect(valuesMap.get(newInstance.value.fieldPermissions[0].field))
+        .toEqual(newInstance.value.fieldPermissions[0])
+      expect(valuesMap.get(newInstance.value.fieldPermissions[1].field))
+        .toEqual(newInstance.value.fieldPermissions[1])
+      expect(valuesMap.get(newInstance.value.fieldPermissions[2].field))
+        .toEqual(newInstance.value.fieldPermissions[2])
+      expect(valuesMap.get(newInstance.value.tabVisibilities[0].tab))
+        .toEqual(newInstance.value.tabVisibilities[0])
+      expect(valuesMap.get(newInstance.value.applicationVisibilities[0].application))
+        .toEqual(newInstance.value.applicationVisibilities[0])
+
+      expect(valuesMap.get(oldInstance.value.fieldPermissions[0].field)).not
+        .toEqual(oldInstance.value.fieldPermissions[0])
 
       // Clean-up
       await sfAdapter.remove(post)

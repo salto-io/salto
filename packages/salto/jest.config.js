@@ -8,10 +8,6 @@ module.exports = deepMerge(
     rootDir: `${__dirname}`,
     collectCoverageFrom: [
       '!**/wasm_exec.*', // External source file
-      !process.env['RUN_E2E_TESTS'] && '!dist/e2e_test/**/*',
-    ].filter(p => p),
-    testMatch: [
-      process.env['RUN_E2E_TESTS'] && '<rootDir>/dist/e2e_test/**/*.test.js',
     ].filter(p => p),
     coverageThreshold: {
       // Slowly start increasing here, never decrease!

@@ -13,7 +13,7 @@ import {
 import {
   API_NAME, LABEL, PICKLIST_VALUES, SALESFORCE, RESTRICTED_PICKLIST, FORMULA,
   FORMULA_TYPE_PREFIX, FIELD_TYPE_NAMES, FIELD_TYPE_API_NAMES,
-  METADATA_TYPE, FIELD_ANNOTATIONS, SALESFORCE_CUSTOM_SUFFIX,
+  METADATA_TYPE, FIELD_ANNOTATIONS, SALESFORCE_CUSTOM_SUFFIX, MAX_PICKLIST_VALUES,
 } from './constants'
 
 const capitalize = (s: string): string => {
@@ -255,8 +255,10 @@ export const getValueTypeFieldElement = (parentID: ElemID, field: ValueTypeField
   const annotations: Values = { [Type.REQUIRED]: field.valueRequired }
 
   if (field.picklistValues && field.picklistValues.length > 0) {
-    annotations[Type.RESTRICTION] = {
-      values: field.picklistValues.map(val => val.value),
+    if (field.picklistValues.length < MAX_PICKLIST_VALUES) {
+      annotations[Type.RESTRICTION] = {
+        values: field.picklistValues.map(val => val.value),
+      }
     }
     const defaults = field.picklistValues
       .filter(val => val.defaultValue === true)

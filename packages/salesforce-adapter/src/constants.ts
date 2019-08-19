@@ -71,3 +71,6 @@ export const FIELD_ANNOTATIONS = {
   MASK: 'mask',
   DISPLAY_LOCATION_IN_DECIMAL: 'display_location_in_decimal',
 }
+
+// Limits
+export const MAX_PICKLIST_VALUES = 500

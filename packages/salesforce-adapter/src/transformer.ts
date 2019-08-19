@@ -13,7 +13,7 @@ import {
 import {
   API_NAME, LABEL, PICKLIST_VALUES, SALESFORCE, RESTRICTED_PICKLIST, FORMULA,
   FORMULA_TYPE_PREFIX, FIELD_TYPE_NAMES, FIELD_TYPE_API_NAMES,
-  METADATA_TYPE, FIELD_ANNOTATIONS, SALESFORCE_CUSTOM_SUFFIX, MAX_PICKLIST_VALUES,
+  METADATA_TYPE, FIELD_ANNOTATIONS, SALESFORCE_CUSTOM_SUFFIX, MAX_METADATA_RESTRICTION_VALUES,
 } from './constants'
 
 const capitalize = (s: string): string => {
@@ -255,7 +255,11 @@ export const getValueTypeFieldElement = (parentID: ElemID, field: ValueTypeField
   const annotations: Values = { [Type.REQUIRED]: field.valueRequired }
 
   if (field.picklistValues && field.picklistValues.length > 0) {
-    if (field.picklistValues.length < MAX_PICKLIST_VALUES) {
+    // picklist values in metadata types are used to restrict a field to a list of allowed values
+    // because some fields can allow all fields names / all object names this restriction list
+    // might be very large and cause memory problems on parsing, so we choose to omit the
+    // restriction where there are too many possible values
+    if (field.picklistValues.length < MAX_METADATA_RESTRICTION_VALUES) {
       annotations[Type.RESTRICTION] = {
         values: field.picklistValues.map(val => val.value),
       }

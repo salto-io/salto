@@ -73,4 +73,4 @@ export const FIELD_ANNOTATIONS = {
 }
 
 // Limits
-export const MAX_PICKLIST_VALUES = 500
+export const MAX_METADATA_RESTRICTION_VALUES = 500

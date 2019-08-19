@@ -188,8 +188,10 @@ describe('Test Salesforce adapter E2E with real account', () => {
 
     it('should add new profile instance', async () => {
       const instanceElementName = 'TestAddProfileInstance__c'
-      const mockElemID = new ElemID(constants.SALESFORCE, instanceElementName)
-      const instance = new InstanceElement(mockElemID, new ObjectType({
+      const mockElemID = new ElemID(constants.SALESFORCE, 'test')
+      const mockInstanceID = new ElemID(constants.SALESFORCE, instanceElementName)
+
+      const instance = new InstanceElement(mockInstanceID, new ObjectType({
         elemID: mockElemID,
         fields: {
         },
@@ -431,8 +433,9 @@ describe('Test Salesforce adapter E2E with real account', () => {
 
     it('should modify an instance', async () => {
       const instanceElementName = 'TestProfileInstanceUpdate__c'
-      const mockElemID = new ElemID(constants.SALESFORCE, instanceElementName)
-      const oldInstance = new InstanceElement(mockElemID, new ObjectType({
+      const mockElemID = new ElemID(constants.SALESFORCE, 'test')
+      const mockInstanceID = new ElemID(constants.SALESFORCE, instanceElementName)
+      const oldInstance = new InstanceElement(mockInstanceID, new ObjectType({
         elemID: mockElemID,
         fields: {
         },
@@ -472,7 +475,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
       })
 
 
-      const newInstance = new InstanceElement(mockElemID, new ObjectType({
+      const newInstance = new InstanceElement(mockInstanceID, new ObjectType({
         elemID: mockElemID,
         fields: {
         },

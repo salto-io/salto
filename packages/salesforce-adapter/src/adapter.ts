@@ -247,7 +247,7 @@ export default class SalesforceAdapter {
     // Don't update the object unless its annotations values have changed
     && !_.isEqual(pre.getAnnotationsValues(), post.getAnnotationsValues())) {
       objectUpdateResult = await this.client.update(constants.CUSTOM_OBJECT,
-        _.omit(toCustomObject(post), 'fields')) // Update the object without its fields
+        toCustomObject(post, false)) // Update the object without its fields
     }
 
     // Aspects should be updated once all object related properties updates are over
@@ -267,8 +267,10 @@ export default class SalesforceAdapter {
   private async updateFields(object: ObjectType, fieldsToUpdate: Field[]): Promise<SaveResult[]> {
     if (fieldsToUpdate.length === 0) return []
     // Update the custom fields
-    return this.client.update(constants.CUSTOM_FIELD,
-      fieldsToUpdate.map(f => toCustomField(object, f, true))) as Promise<SaveResult[]>
+    return _.flatten(await Promise.all(_.chunk(fieldsToUpdate, 10).map(chunk => this.client.update(
+      constants.CUSTOM_FIELD,
+      chunk.map(f => toCustomField(object, f, true))
+    ) as Promise<SaveResult[]>)))
   }
 
   /**
@@ -280,8 +282,10 @@ export default class SalesforceAdapter {
   private async createFields(object: ObjectType, fieldsToAdd: Field[]): Promise<SaveResult[]> {
     if (fieldsToAdd.length === 0) return []
     // Create the custom fields
-    return this.client.create(constants.CUSTOM_FIELD,
-      fieldsToAdd.map(f => toCustomField(object, f, true))) as Promise<SaveResult[]>
+    return _.flatten(await Promise.all(_.chunk(fieldsToAdd, 10).map(chunk => this.client.create(
+      constants.CUSTOM_FIELD,
+      chunk.map(f => toCustomField(object, f, true))
+    ) as Promise<SaveResult[]>)))
   }
 
   /**
@@ -291,8 +295,10 @@ export default class SalesforceAdapter {
    */
   private async deleteCustomFields(element: ObjectType, fields: Field[]): Promise<SaveResult[]> {
     if (fields.length === 0) return []
-    return this.client.delete(constants.CUSTOM_FIELD,
-      fields.map(field => fieldFullName(element, field))) as Promise<SaveResult[]>
+    return _.flatten(await Promise.all(_.chunk(fields, 10).map(chunk => this.client.delete(
+      constants.CUSTOM_FIELD,
+      chunk.map(field => fieldFullName(element, field))
+    ) as Promise<SaveResult[]>)))
   }
 
   private async discoverMetadataTypes(typeNames: Promise<string[]>): Promise<Type[]> {

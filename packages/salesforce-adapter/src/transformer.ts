@@ -218,12 +218,9 @@ const allowedAnnotations = (key: string): string[] => (
 export const toCustomField = (
   object: ObjectType, field: TypeField, fullname: boolean = false
 ): CustomField => {
-  const type = Types.get(fieldTypeName(field.type.elemID.name))
-  const fieldType = FIELD_TYPE_API_NAMES[type.elemID.name]
-    || fieldTypeName(field.type.elemID.name)
   const newField = new CustomField(
     fullname ? fieldFullName(object, field) : apiName(field),
-    fieldType,
+    FIELD_TYPE_API_NAMES[fieldTypeName(field.type.elemID.name)],
     field.getAnnotationsValues()[LABEL],
     field.getAnnotationsValues()[Type.REQUIRED],
     field.getAnnotationsValues()[Type.DEFAULT],
@@ -243,11 +240,12 @@ export const toCustomField = (
   return newField
 }
 
-export const toCustomObject = (element: ObjectType): CustomObject =>
+export const toCustomObject = (element: ObjectType, includeFields = true): CustomObject =>
   new CustomObject(
     apiName(element),
     element.getAnnotationsValues()[LABEL],
-    Object.values(element.fields).map(field => toCustomField(element, field))
+    includeFields ? Object.values(element.fields).map(field => toCustomField(element, field))
+      : undefined
   )
 
 export const getValueTypeFieldElement = (parentID: ElemID, field: ValueTypeField,

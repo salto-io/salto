@@ -6,6 +6,15 @@ import { queue, AsyncQueue, ErrorCallback } from 'async'
 class HCLParser {
   // Limit max concurrency to avoid web assembly out of memory errors
   private static MAX_CONCURENCY = 10
+  // Execution env vars for Go webassembly
+  private static GO_ENV = {
+    // Go garbage collection target percentage (lower means more aggressive, default is 100)
+    GOGC: '20',
+    // Go garbage collection strategy, it seems like concurrent strategies do not work well
+    // and causes the code to crash with bad pointers to go heap, so we set the strategy to
+    // "stop the world" in every collection cycle to make grabage collection single threaded
+    GODEBUG: 'gcstoptheworld=2',
+  }
 
   private wasmModule: Promise<WebAssembly.Module> | null = null
   private parseQueue: AsyncQueue<HclCallContext>
@@ -28,8 +37,7 @@ class HCLParser {
         // Not sure why eslint ignores this definition from webassembly.d.ts,
         // but this doesn't work without the following disable
         // eslint-disable-next-line no-undef
-        const wasmObj = await WebAssembly.instantiate(data, new Go().importObject)
-        return wasmObj.module
+        return WebAssembly.compile(data)
       })()
     }
 
@@ -38,6 +46,7 @@ class HCLParser {
       // but this doesn't work without the following disable
       // eslint-disable-next-line no-undef
       const go = new Go()
+      go.env = HCLParser.GO_ENV
       // eslint-disable-next-line no-undef
       return { go, inst: await WebAssembly.instantiate(module, go.importObject) }
     })

@@ -13,7 +13,7 @@ import {
 import {
   API_NAME, LABEL, PICKLIST_VALUES, SALESFORCE, RESTRICTED_PICKLIST, FORMULA,
   FORMULA_TYPE_PREFIX, FIELD_TYPE_NAMES, FIELD_TYPE_API_NAMES,
-  METADATA_TYPE, FIELD_ANNOTATIONS,
+  METADATA_TYPE, FIELD_ANNOTATIONS, SALESFORCE_CUSTOM_SUFFIX,
 } from './constants'
 
 const capitalize = (s: string): string => {
@@ -21,12 +21,12 @@ const capitalize = (s: string): string => {
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
 export const sfCase = (name: string, custom: boolean = false, capital: boolean = true): string => {
-  const sf = _.camelCase(name) + (custom ? '__c' : '')
+  const sf = _.camelCase(name) + (custom ? SALESFORCE_CUSTOM_SUFFIX : '')
   return capital ? capitalize(sf) : sf
 }
 
 export const bpCase = (name: string): string => {
-  const bpName = (name.endsWith('__c') ? name.slice(0, -2) : name)
+  const bpName = (name.endsWith(SALESFORCE_CUSTOM_SUFFIX) ? name.slice(0, -2) : name)
   // Using specific replace for chars then _.unescape is not replacing well
   // and we see in our responses for sfdc
   return _.snakeCase(_.unescape(bpName.replace(/%26|%28|%29/g, ' ')))
@@ -240,11 +240,12 @@ export const toCustomField = (
   return newField
 }
 
-export const toCustomObject = (element: ObjectType): CustomObject =>
+export const toCustomObject = (element: ObjectType, includeFields = true): CustomObject =>
   new CustomObject(
     apiName(element),
     element.getAnnotationsValues()[LABEL],
-    Object.values(element.fields).map(field => toCustomField(element, field))
+    includeFields ? Object.values(element.fields).map(field => toCustomField(element, field))
+      : undefined
   )
 
 export const getValueTypeFieldElement = (parentID: ElemID, field: ValueTypeField,

@@ -59,8 +59,11 @@ describe('Test commands e2e', () => {
     if (!result || !result.fullName) {
       return false
     }
-    const fieldNames = _.isArray(result.fields) ? result.fields.map(rf => rf.fullName)
-      : [result.fields.fullName]
+    let fieldNames: string[] = []
+    if (result.fields) {
+      fieldNames = _.isArray(result.fields) ? result.fields.map(rf => rf.fullName)
+        : [result.fields.fullName]
+    }
     if (fields && !fields.every(f => fieldNames.includes(f))) {
       return false
     }

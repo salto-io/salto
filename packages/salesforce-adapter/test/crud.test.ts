@@ -723,8 +723,8 @@ describe('Test SalesforceAdapter CRUD', () => {
           },
           annotationsValues: {
             [Type.REQUIRED]: false,
-            [Type.DEFAULT]: 'test2',
-            label: 'test2 label',
+            [Type.DEFAULT]: 'test',
+            label: 'test label',
           },
         })
       )
@@ -732,7 +732,7 @@ describe('Test SalesforceAdapter CRUD', () => {
       expect(result).toBeInstanceOf(ObjectType)
       expect(mockCreate.mock.calls.length).toBe(1)
       expect(mockDelete.mock.calls.length).toBe(0)
-      expect(mockUpdate.mock.calls.length).toBe(1)
+      expect(mockUpdate.mock.calls.length).toBe(0)
       // Verify the custom fields creation
       const fields = mockCreate.mock.calls[0][1]
       expect(fields.length).toBe(2)
@@ -856,8 +856,8 @@ describe('Test SalesforceAdapter CRUD', () => {
           },
           annotationsValues: {
             [Type.REQUIRED]: false,
-            [Type.DEFAULT]: 'test2',
-            label: 'test2 label',
+            [Type.DEFAULT]: 'test',
+            label: 'test label',
           },
         })
       )
@@ -865,7 +865,7 @@ describe('Test SalesforceAdapter CRUD', () => {
       expect(result).toBeInstanceOf(ObjectType)
       expect(mockCreate.mock.calls.length).toBe(1)
       expect(mockDelete.mock.calls.length).toBe(1)
-      expect(mockUpdate.mock.calls.length).toBe(1)
+      expect(mockUpdate.mock.calls.length).toBe(0)
       // Verify the custom fields creation
       const addedFields = mockCreate.mock.calls[0][1]
       expect(addedFields.length).toBe(1)
@@ -1017,14 +1017,14 @@ describe('Test SalesforceAdapter CRUD', () => {
       expect(field.required).toBe(false)
       // Verify the custom field label change
       const changedObject = mockUpdate.mock.calls[0][1]
-      expect(changedObject.fields[0].label).toBe('Banana Split')
+      expect(changedObject[0].label).toBe('Banana Split')
       // Verify the custom fields deletion
       const deletedFields = mockDelete.mock.calls[0][1]
       expect(deletedFields.length).toBe(1)
       expect(deletedFields[0]).toBe('Test__c.Address__c')
     })
 
-    it("Should properly update the remaining fields' permissions of the metadata object", async () => {
+    it('Should not update the object if remaining fields did not change', async () => {
       const result = await adapter().update(
         new ObjectType({
           elemID: mockElemID,
@@ -1033,33 +1033,11 @@ describe('Test SalesforceAdapter CRUD', () => {
               mockElemID,
               'address',
               stringType,
-              {
-                [constants.API_NAME]: 'Address__c',
-              },
             ),
             banana: new Field(
               mockElemID,
               'banana',
               stringType,
-              {
-                [constants.API_NAME]: 'Banana__c',
-              },
-            ),
-            charlie: new Field(
-              mockElemID,
-              'charlie',
-              stringType,
-              {
-                [constants.API_NAME]: 'Charlie__c',
-              },
-            ),
-            delta: new Field(
-              mockElemID,
-              'delta',
-              stringType,
-              {
-                [constants.API_NAME]: 'Delta__c',
-              },
             ),
           },
           annotationsValues: {
@@ -1088,22 +1066,6 @@ describe('Test SalesforceAdapter CRUD', () => {
                 [constants.API_NAME]: 'Banana__c',
               },
             ),
-            charlie: new Field(
-              mockElemID,
-              'charlie',
-              stringType,
-              {
-                [constants.API_NAME]: 'Charlie__c',
-              },
-            ),
-            delta: new Field(
-              mockElemID,
-              'delta',
-              stringType,
-              {
-                [constants.API_NAME]: 'Delta__c',
-              },
-            ),
           },
           annotationsValues: {
             [Type.REQUIRED]: false,
@@ -1117,7 +1079,68 @@ describe('Test SalesforceAdapter CRUD', () => {
       expect(result).toBeInstanceOf(ObjectType)
       expect(mockCreate.mock.calls.length).toBe(0)
       expect(mockDelete.mock.calls.length).toBe(0)
-      expect(mockUpdate.mock.calls.length).toBe(1)
+      expect(mockUpdate.mock.calls.length).toBe(0)
+    })
+
+    it('Should perform 2 updates on the object if object annotations change and fields that remain change', async () => {
+      const result = await adapter().update(
+        new ObjectType({
+          elemID: mockElemID,
+          fields: {
+            banana: new Field(
+              mockElemID,
+              'banana',
+              stringType,
+              {
+                [constants.API_NAME]: 'Banana__c',
+              },
+            ),
+          },
+          annotationsValues: {
+            [Type.REQUIRED]: false,
+            [Type.DEFAULT]: 'test',
+            label: 'test label',
+            [constants.API_NAME]: 'Test__c',
+          },
+        }),
+        new ObjectType({
+          elemID: mockElemID,
+          fields: {
+            banana: new Field(
+              mockElemID,
+              'banana',
+              stringType,
+              {
+                [constants.LABEL]: 'Banana Split',
+              },
+            ),
+          },
+          annotationsValues: {
+            [Type.REQUIRED]: false,
+            [Type.DEFAULT]: 'test2',
+            label: 'test2 label',
+          },
+        })
+      )
+
+      expect(result).toBeInstanceOf(ObjectType)
+      expect(mockCreate.mock.calls.length).toBe(0)
+      expect(mockDelete.mock.calls.length).toBe(0)
+      expect(mockUpdate.mock.calls.length).toBe(2)
+      // Verify the custom field update
+      const updatedFields = mockUpdate.mock.calls[0][1]
+      expect(updatedFields.length).toBe(1)
+      const field = updatedFields[0]
+      expect(field.fullName).toBe('Test__c.Banana__c')
+      expect(field.type).toBe('Text')
+      expect(field.label).toBe('Banana Split')
+      expect(field.length).toBe(80)
+      expect(field.required).toBe(false)
+      // Verify the object update
+      const updatedObject = mockUpdate.mock.calls[1][1]
+      expect(updatedObject.fullName).toBe('Test__c')
+      expect(updatedObject.label).toBe('test2 label')
+      expect(updatedObject.fields).toBeUndefined()
     })
   })
 })

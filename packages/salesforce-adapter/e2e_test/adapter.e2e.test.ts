@@ -532,23 +532,25 @@ describe('Test Salesforce adapter E2E with real account', () => {
         PROFILE_METADATA_TYPE, sfCase(oldInstance.elemID.name)
       )
       const valuesMap = new Map<string, Value>()
+      const savedValues = savedInstance.value
+      const newValues = newInstance.value
       // @ts-ignore
-      savedInstance.value.field_permissions.map(f => valuesMap.set(f.field, f))
+      savedValues.field_permissions.map(f => valuesMap.set(f.field, f))
       // @ts-ignore
-      savedInstance.value.tab_visibilities.map(f => valuesMap.set(f.tab, f))
+      savedValues.tab_visibilities.map(f => valuesMap.set(f.tab, f))
       // @ts-ignore
-      savedInstance.value.application_visibilities.map(f => valuesMap.set(f.application, f))
+      savedValues.application_visibilities.map(f => valuesMap.set(f.application, f))
 
-      expect(valuesMap.get(newInstance.value.fieldPermissions[0].field))
-        .toEqual(newInstance.value.fieldPermissions[0])
-      expect(valuesMap.get(newInstance.value.fieldPermissions[1].field))
-        .toEqual(newInstance.value.fieldPermissions[1])
-      expect(valuesMap.get(newInstance.value.fieldPermissions[2].field))
-        .toEqual(newInstance.value.fieldPermissions[2])
-      expect(valuesMap.get(newInstance.value.tabVisibilities[0].tab))
-        .toEqual(newInstance.value.tabVisibilities[0])
-      expect(valuesMap.get(newInstance.value.applicationVisibilities[0].application))
-        .toEqual(newInstance.value.applicationVisibilities[0])
+      expect(valuesMap.get(newValues.fieldPermissions[0].field))
+        .toEqual(newValues.fieldPermissions[0])
+      expect(valuesMap.get(newValues.fieldPermissions[1].field))
+        .toEqual(newValues.fieldPermissions[1])
+      expect(valuesMap.get(newValues.fieldPermissions[2].field))
+        .toEqual(newValues.fieldPermissions[2])
+      expect(valuesMap.get(newValues.tabVisibilities[0].tab))
+        .toEqual(newValues.tabVisibilities[0])
+      expect(valuesMap.get(newValues.applicationVisibilities[0].application))
+        .toEqual(newValues.applicationVisibilities[0])
 
       expect(valuesMap.get(oldInstance.value.fieldPermissions[0].field)).not
         .toEqual(oldInstance.value.fieldPermissions[0])

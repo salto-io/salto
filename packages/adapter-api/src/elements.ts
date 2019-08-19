@@ -334,14 +334,15 @@ export class InstanceElement implements Element {
     const returnVal: Values = {}
     const prev = new Map(Object.entries(prevValues))
     Object.keys(this.value)
-      .forEach(key => {
+      .map(key => {
         if (!_.isEqual(prev.get(key), this.value[key])) {
           returnVal[key] = _.isArray(this.value[key]) && _.isArray(prev.get(key))
             /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
             ? this.value[key].filter((f: any) => prev.get(key).some((v: any) => !_.isEqual(f, v)))
             : this.value[key]
         }
-      })
+        return returnVal
+      }).values()
 
     return returnVal
   }

@@ -59,7 +59,7 @@ describe('Test commands e2e', () => {
     if (!result || !result.fullName) {
       return false
     }
-    let fieldNames: string[]
+    let fieldNames: string[] = []
     if (result.fields) {
       fieldNames = _.isArray(result.fields) ? result.fields.map(rf => rf.fullName)
         : [result.fields.fullName]

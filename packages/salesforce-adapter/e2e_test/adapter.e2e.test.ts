@@ -125,7 +125,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
         return false
       }
       if (fields || missingFields) {
-        let fieldNames: string[]
+        let fieldNames: string[] = []
         if (result.fields) {
           fieldNames = isArray(result.fields) ? result.fields.map(rf => rf.fullName)
             : [result.fields.fullName]

@@ -10,7 +10,7 @@ module.exports = deepMerge(
       '!<rootDir>/dist/src/client/client.js',
       '!<rootDir>/dist/src/tools/**', // At the moment we do not cover the tools
       '!<rootDir>/dist/index.js',
-    ].filter(p => p),
+    ],
     coverageThreshold: {
       './src/client/types.ts': {
         branches: 49,

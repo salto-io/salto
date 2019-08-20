@@ -8,7 +8,7 @@ module.exports = deepMerge(
     rootDir: `${__dirname}`,
     collectCoverageFrom: [
       '!**/wasm_exec.*', // External source file
-    ].filter(p => p),
+    ],
     coverageThreshold: {
       // Slowly start increasing here, never decrease!
       global: {

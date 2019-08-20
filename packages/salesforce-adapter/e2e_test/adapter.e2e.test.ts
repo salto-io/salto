@@ -8,7 +8,7 @@ import {
   Value,
   Element,
 } from 'adapter-api'
-import { MetadataInfo, PicklistEntry } from 'jsforce'
+import { PicklistEntry } from 'jsforce'
 import _ from 'lodash'
 import SalesforceAdapter from '../src/adapter'
 import * as constants from '../src/constants'
@@ -19,7 +19,7 @@ import {
   FieldPermissions,
 } from '../src/client/types'
 import {
-  Types, sfCase, bpCase, fromMetadataInfo,
+  Types, sfCase,
 } from '../src/transformer'
 
 describe('Test Salesforce adapter E2E with real account', () => {
@@ -139,29 +139,6 @@ describe('Test Salesforce adapter E2E with real account', () => {
         return (!missingFields || missingFields.every(f => !fieldNames.includes(f)))
       }
       return true
-    }
-
-    const getInstance = async (type: string, name: string): Promise<InstanceElement> => {
-      const mockElemID = new ElemID(constants.SALESFORCE, name)
-      const result = (await sfAdapter.client.readMetadata(type, name)
-      ) as MetadataInfo
-
-      const obt = new ObjectType({
-        elemID: mockElemID,
-        fields: {
-        },
-        annotations: {},
-        annotationsValues: {
-          [constants.METADATA_TYPE]: PROFILE_METADATA_TYPE,
-          [constants.API_NAME]: name,
-        },
-      })
-
-      return new InstanceElement(
-        new ElemID(constants.SALESFORCE, name, bpCase(result.fullName)),
-        obt,
-        fromMetadataInfo(result, obt, false)
-      )
     }
 
     const permissionExists = async (profile: string, fields: string[]): Promise<boolean[]> => {
@@ -531,18 +508,17 @@ describe('Test Salesforce adapter E2E with real account', () => {
       expect(updateResult).toBe(newInstance)
 
       // Checking that the saved instance identical to newInstance
-      const savedInstance = await getInstance(
+      const savedInstance = await sfAdapter.client.readMetadata(
         PROFILE_METADATA_TYPE, sfCase(oldInstance.elemID.name)
       )
       const valuesMap = new Map<string, Value>()
-      const savedValues = savedInstance.value
       const newValues = newInstance.value
       // @ts-ignore
-      savedValues.field_permissions.map(f => valuesMap.set(f.field, f))
+      savedInstance.fieldPermissions.map(f => valuesMap.set(f.field, f))
       // @ts-ignore
-      savedValues.tab_visibilities.map(f => valuesMap.set(f.tab, f))
+      savedInstance.tabVisibilities.map(f => valuesMap.set(f.tab, f))
       // @ts-ignore
-      savedValues.application_visibilities.map(f => valuesMap.set(f.application, f))
+      savedInstance.applicationVisibilities.map(f => valuesMap.set(f.application, f))
 
       expect(valuesMap.get(newValues.fieldPermissions[0].field))
         .toEqual(newValues.fieldPermissions[0])

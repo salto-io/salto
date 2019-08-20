@@ -10,11 +10,7 @@ module.exports = deepMerge(
       '!<rootDir>/dist/src/client/client.js',
       '!<rootDir>/dist/src/tools/**', // At the moment we do not cover the tools
       '!<rootDir>/dist/index.js',
-      !process.env['RUN_E2E_TESTS'] && '!dist/e2e_test/**/*',
-    ].filter(p => p),
-    testMatch: [
-      process.env['RUN_E2E_TESTS'] && '<rootDir>/dist/e2e_test/**/*.test.js',
-    ].filter(p => p),
+    ],
     coverageThreshold: {
       './src/client/types.ts': {
         branches: 49,

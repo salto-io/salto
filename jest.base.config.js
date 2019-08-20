@@ -1,7 +1,11 @@
 module.exports = {
   verbose: true,
   testEnvironment: 'node',
-  testMatch: ['<rootDir>/dist/test/**/*.test.js'],
+  testMatch: [
+    process.env['RUN_E2E_TESTS']
+      ? '<rootDir>/dist/e2e_test/**/*.test.js'
+      : '<rootDir>/dist/test/**/*.test.js'
+  ],
   collectCoverage: true,
   coverageReporters: ['json', 'lcov', 'text', 'clover', 'json-summary'],
   collectCoverageFrom: [
@@ -11,5 +15,6 @@ module.exports = {
     '!*.config.js',
     '!coverage/**',
     '!dist/test/**',
+    '!dist/e2e_test/**',
   ],
 }

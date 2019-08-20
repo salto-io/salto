@@ -3,10 +3,7 @@ version: 2
 jobs:
   build:
     docker:
-      # specify the version you desire here
       - image: saltolabs/salto:0.0.6
-
-    working_directory: ~/repo
 
     steps:
       - restore_cache:
@@ -29,29 +26,60 @@ jobs:
 
       - run: yarn --frozen-lockfile
 
-      - run:
-          name: Run Jest tests
-          command: yarn run jest --forceExit --detectOpenHandles --reporters=default --reporters=jest-junit
-          environment:
-            JEST_JUNIT_OUTPUT: "reports/junit/test-results.xml"
-
       - save_cache:
           paths:
             - node_modules
             - ~/.cache/yarn
-            - .jest_cache
 
           key: v1-yarn-deps-{{ arch }}-{{ checksum "yarn.lock" }}
+
+      - persist_to_workspace:
+          root: .
+          paths: '*'
+
+  unittest:
+    docker:
+      - image: circleci/node:12.3.1
+
+    steps:
+      - attach_workspace:
+          at: .
+
+      - run:
+          name: Run Jest tests
+          command: yarn run jest --forceExit --detectOpenHandles --reporters=default --reporters=jest-junit
+          environment:
+            JEST_JUNIT_OUTPUT: "reports/unittests/test-results.xml"
+
 
       - store_test_results:
           path: reports
 
-      - store_artifacts:
+      - run:
+          name: Upload coverage to codecov.io
+          command: npx codecov -F unit_test -f coverage/*.json
+
+  e2e_test:
+    docker:
+      - image: circleci/node:12.3.1
+
+    steps:
+      - attach_workspace:
+          at: .
+
+      - run:
+          name: Run E2E tests
+          command: yarn run jest --forceExit --detectOpenHandles --reporters=default --reporters=jest-junit
+          environment:
+            RUN_E2E_TESTS: '1'
+            JEST_JUNIT_OUTPUT: "reports/e2e/test-results.xml"
+
+      - store_test_results:
           path: reports
 
       - run:
           name: Upload coverage to codecov.io
-          command: if [[ "${RUN_E2E_TESTS}" != "1" && "${RUN_E2E_TESTS}" != "true" ]]; then npx codecov -f coverage/*.json; fi
+          command: npx codecov -F e2e_test -f coverage/*.json
 
 workflows:
   version: 2
@@ -63,24 +91,20 @@ workflows:
             branches:
               ignore:
                 - master
-
-  nightly:
-    triggers:
-      - schedule:
-          cron: "40 0 * * *"
-          filters:
-            branches:
-              only:
-                - master
-    jobs:
-      - build:
-          context: nightly
+      - unittest:
+          requires:
+            - build
 
   post-commit:
     jobs:
       - build:
-          context: master
           filters:
             branches:
               only:
                 - master
+      - unittest:
+          requires:
+            - build
+      - e2e_test:
+          requires:
+            - build

@@ -12,7 +12,7 @@ coverage:
         if_not_found: success
         if_ci_failed: error
         only_pulls: false
-        flags: null
+        flags: unit_test
         paths: null
     patch:
       default:
@@ -26,8 +26,11 @@ coverage:
         if_not_found: success
         if_ci_failed: error
         only_pulls: false
-        flags: null
+        flags: unit_test
         paths: null
 parsers:
   javascript:
     enable_partials: yes
+flags:
+  e2e_test:
+    joined: false

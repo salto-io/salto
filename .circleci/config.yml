@@ -35,7 +35,11 @@ jobs:
 
       - persist_to_workspace:
           root: .
-          paths: '*'
+          paths:
+            - '*.json'
+            - 'dist'
+            - 'packages'
+            - 'node_modules'
 
   unittest:
     docker:

@@ -17,7 +17,7 @@ jest.mock('../src/client/client')
 
 describe('Test SalesforceAdapter CRUD', () => {
   const adapter = (): SalesforceAdapter => {
-    const a = new SalesforceAdapter()
+    const a = new SalesforceAdapter({ filters: [] })
     const configType = a.getConfigType()
     const value = {
       username: '',
@@ -28,7 +28,6 @@ describe('Test SalesforceAdapter CRUD', () => {
     const elemID = new ElemID('salesforce')
     const config = new InstanceElement(elemID, configType, value)
     a.init(config)
-    a.filters = []
     return a
   }
 

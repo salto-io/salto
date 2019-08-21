@@ -19,6 +19,7 @@ import {
 } from './transformer'
 import { filter as layoutFilter } from './filters/layouts'
 import { filter as fieldPermissionsFilter } from './filters/field_permissions'
+import Filter from './filters/filter'
 
 // Diagnose client results
 const diagnose = (result: SaveResult | SaveResult[]): void => {
@@ -77,20 +78,39 @@ const validateApiName = (prevElement: Element, newElement: Element): void => {
   }
 }
 
-export default class SalesforceAdapter {
-  private static DISCOVER_METADATA_TYPES_BLACKLIST = [
-    'ApexClass', // For some reason we cannot access this from the metadata API
-    'InstalledPackage', // Instances of this don't actually have an ID and they contain duplicates
-    'CustomObject', // We have special treatment for this type
-  ]
-
+interface SalesforceAdapterParams {
   // Metadata types that we want to treat as top level types (discover instances of them)
   // even though they are not returned as top level metadata types from the API
-  private static DISCOVER_METADATA_SUBTYPE_INSTANCES = [
-    'ValidationRule', // This is a subtype of CustomObject
-  ]
+  metadataAdditionalTypes?: string[]
 
-  filters = [fieldPermissionsFilter, layoutFilter]
+  // Metadata types that we do not want to discover even though they are returned as top level
+  // types from the API
+  metadataTypeBlacklist?: string[]
+
+  // Filters to apply to all adapter operations
+  filters?: Filter[]
+}
+
+export default class SalesforceAdapter {
+  private metadataAdditionalTypes: string[]
+  private metadataTypeBlacklist: string[]
+  private filters: Filter[]
+
+  public constructor({
+    metadataAdditionalTypes = [
+      'ValidationRule', // This is a subtype of CustomObject
+    ],
+    metadataTypeBlacklist = [
+      'ApexClass', // For some reason we cannot access this from the metadata API
+      'InstalledPackage', // Instances of this don't actually have an ID and they contain duplicates
+      'CustomObject', // We have special treatment for this type
+    ],
+    filters = [fieldPermissionsFilter, layoutFilter],
+  }: SalesforceAdapterParams = {}) {
+    this.metadataAdditionalTypes = metadataAdditionalTypes
+    this.metadataTypeBlacklist = metadataTypeBlacklist
+    this.filters = filters
+  }
 
   private innerClient?: SalesforceClient
   public get client(): SalesforceClient {
@@ -140,7 +160,7 @@ export default class SalesforceAdapter {
     const metadataTypeNames = this.client.listMetadataTypes().then(
       types => types
         .map(x => x.xmlName)
-        .concat(SalesforceAdapter.DISCOVER_METADATA_SUBTYPE_INSTANCES)
+        .concat(this.metadataAdditionalTypes)
     )
     const metadataTypes = this.discoverMetadataTypes(metadataTypeNames)
     const metadataInstances = this.discoverMetadataInstances(metadataTypeNames, metadataTypes)
@@ -357,7 +377,7 @@ export default class SalesforceAdapter {
   private async discoverMetadataTypes(typeNames: Promise<string[]>): Promise<Type[]> {
     const knownTypes = new Map<string, Type>()
     return _.flatten(await Promise.all((await typeNames)
-      .filter(name => !SalesforceAdapter.DISCOVER_METADATA_TYPES_BLACKLIST.includes(name))
+      .filter(name => !this.metadataTypeBlacklist.includes(name))
       .map(obj => this.discoverMetadataType(obj, knownTypes))))
   }
 

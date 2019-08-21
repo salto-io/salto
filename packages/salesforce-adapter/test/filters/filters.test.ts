@@ -13,12 +13,11 @@ describe('Test adapter calls filters', () => {
     annotationsValues: { [API_NAME]: 'Bla__c' },
   })
   const adapter = (): SalesforceAdapter => {
-    const a = new SalesforceAdapter()
+    const a = new SalesforceAdapter({ filters: [filter] })
     a.init(new InstanceElement(new ElemID('salesforce'), a.getConfigType(),
       {
         username: '', password: '', token: '', sandbox: false,
       }))
-    a.filters = [filter]
     return a
   }
 

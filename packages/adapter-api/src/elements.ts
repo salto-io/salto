@@ -328,8 +328,7 @@ export class InstanceElement implements Element {
    * @return All values which unique (not in prev) or different.
    */
   getValuesThatNotInPrevOrDifferent(prevValues: Values): Values {
-    const prev = new Map(Object.entries(prevValues))
-    return _.pickBy(this.value, (val, key) => !_.isEqual(val, prev.get(key)))
+    return _.pickBy(this.value, (val, key) => !_.isEqual(val, prevValues[key]))
   }
 }
 

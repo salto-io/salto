@@ -11,7 +11,7 @@ jest.mock('../src/client/client')
 
 describe('Test SalesforceAdapter discover', () => {
   const adapter = (): SalesforceAdapter => {
-    const a = new SalesforceAdapter()
+    const a = new SalesforceAdapter({ metadataAdditionalTypes: [] })
     const configType = a.getConfigType()
     const value = {
       username: '',

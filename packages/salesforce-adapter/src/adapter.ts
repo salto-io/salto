@@ -84,6 +84,12 @@ export default class SalesforceAdapter {
     'CustomObject', // We have special treatment for this type
   ]
 
+  // Metadata types that we want to treat as top level types (discover instances of them)
+  // even though they are not returned as top level metadata types from the API
+  private static DISCOVER_METADATA_SUBTYPE_INSTANCES = [
+    'ValidationRule', // This is a subtype of CustomObject
+  ]
+
   filters = [fieldPermissionsFilter, layoutFilter]
 
   private innerClient?: SalesforceClient
@@ -132,7 +138,9 @@ export default class SalesforceAdapter {
   public async discover(): Promise<Element[]> {
     const fieldTypes = Types.getAllFieldTypes()
     const metadataTypeNames = this.client.listMetadataTypes().then(
-      types => types.map(x => x.xmlName)
+      types => types
+        .map(x => x.xmlName)
+        .concat(SalesforceAdapter.DISCOVER_METADATA_SUBTYPE_INSTANCES)
     )
     const metadataTypes = this.discoverMetadataTypes(metadataTypeNames)
     const metadataInstances = this.discoverMetadataInstances(metadataTypeNames, metadataTypes)

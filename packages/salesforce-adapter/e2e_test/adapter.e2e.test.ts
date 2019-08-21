@@ -5,6 +5,7 @@ import {
   ElemID,
   InstanceElement,
   Field,
+  Value,
   Element,
 } from 'adapter-api'
 import { PicklistEntry } from 'jsforce'
@@ -17,7 +18,9 @@ import {
   ProfileInfo,
   FieldPermissions,
 } from '../src/client/types'
-import { Types, sfCase } from '../src/transformer'
+import {
+  Types, sfCase,
+} from '../src/transformer'
 
 describe('Test Salesforce adapter E2E with real account', () => {
   const adapter = (): SalesforceAdapter => {
@@ -162,8 +165,10 @@ describe('Test Salesforce adapter E2E with real account', () => {
 
     it('should add new profile instance', async () => {
       const instanceElementName = 'TestAddProfileInstance__c'
-      const mockElemID = new ElemID(constants.SALESFORCE, instanceElementName)
-      const instance = new InstanceElement(mockElemID, new ObjectType({
+      const mockElemID = new ElemID(constants.SALESFORCE, 'test')
+      const mockInstanceID = new ElemID(constants.SALESFORCE, instanceElementName)
+
+      const instance = new InstanceElement(mockInstanceID, new ObjectType({
         elemID: mockElemID,
         fields: {
         },
@@ -401,6 +406,135 @@ describe('Test Salesforce adapter E2E with real account', () => {
 
       // Clean-up
       await sfAdapter.remove(oldElement)
+    })
+
+    it('should modify an instance', async () => {
+      const instanceElementName = 'TestProfileInstanceUpdate__c'
+      const mockElemID = new ElemID(constants.SALESFORCE, 'test')
+      const mockInstanceID = new ElemID(constants.SALESFORCE, instanceElementName)
+      const oldInstance = new InstanceElement(mockInstanceID, new ObjectType({
+        elemID: mockElemID,
+        fields: {
+        },
+        annotations: {},
+        annotationsValues: {
+          [constants.METADATA_TYPE]: PROFILE_METADATA_TYPE,
+          [constants.API_NAME]: instanceElementName,
+        },
+      }),
+      {
+        fieldPermissions: [
+          {
+            field: 'Lead.Fax',
+            readable: 'true',
+            editable: 'false',
+          },
+          {
+            editable: 'false',
+            field: 'Account.AccountNumber',
+            readable: 'false',
+          },
+        ],
+        tabVisibilities: [
+          {
+            tab: 'standard-Account',
+            visibility: 'DefaultOff',
+          },
+        ],
+        applicationVisibilities: [
+          {
+            application: 'standard__ServiceConsole',
+            default: 'false',
+            visible: 'true',
+          },
+        ],
+        description: 'new e2e profile',
+      })
+
+      const newInstance = new InstanceElement(mockInstanceID, new ObjectType({
+        elemID: mockElemID,
+        fields: {
+        },
+        annotations: {},
+        annotationsValues: {
+          [constants.METADATA_TYPE]: PROFILE_METADATA_TYPE,
+          [constants.API_NAME]: instanceElementName,
+        },
+      }),
+      {
+        fieldPermissions: [
+          {
+            field: 'Lead.Fax',
+            readable: 'true',
+            editable: 'true',
+          },
+          {
+            editable: 'false',
+            field: 'Account.AccountNumber',
+            readable: 'false',
+          },
+          {
+            editable: 'false',
+            field: 'Account.AnnualRevenue',
+            readable: 'false',
+          },
+        ],
+        tabVisibilities: [
+          {
+            tab: 'standard-Account',
+            visibility: 'DefaultOff',
+          },
+        ],
+        applicationVisibilities: [
+          {
+            application: 'standard__ServiceConsole',
+            default: 'false',
+            visible: 'true',
+          },
+        ],
+        description: 'updated e2e profile',
+
+      })
+
+      if (await objectExists(PROFILE_METADATA_TYPE, sfCase(oldInstance.elemID.name))) {
+        await sfAdapter.remove(oldInstance)
+      }
+
+      const post = await sfAdapter.add(oldInstance) as InstanceElement
+      const updateResult = await sfAdapter.update(oldInstance, newInstance)
+
+      // Test
+      expect(updateResult).toBe(newInstance)
+
+      // Checking that the saved instance identical to newInstance
+      const savedInstance = await sfAdapter.client.readMetadata(
+        PROFILE_METADATA_TYPE, sfCase(newInstance.elemID.name)
+      )
+      const valuesMap = new Map<string, Value>()
+      const newValues = newInstance.value
+      // @ts-ignore
+      savedInstance.fieldPermissions.map(f => valuesMap.set(f.field, f))
+      // @ts-ignore
+      savedInstance.tabVisibilities.map(f => valuesMap.set(f.tab, f))
+      // @ts-ignore
+      savedInstance.applicationVisibilities.map(f => valuesMap.set(f.application, f))
+
+      expect(valuesMap.get(newValues.fieldPermissions[0].field))
+        .toEqual(newValues.fieldPermissions[0])
+      expect(valuesMap.get(newValues.fieldPermissions[1].field))
+        .toEqual(newValues.fieldPermissions[1])
+      expect(valuesMap.get(newValues.fieldPermissions[2].field))
+        .toEqual(newValues.fieldPermissions[2])
+      expect(valuesMap.get(newValues.tabVisibilities[0].tab))
+        .toEqual(newValues.tabVisibilities[0])
+      expect(valuesMap.get(newValues.applicationVisibilities[0].application))
+        .toEqual(newValues.applicationVisibilities[0])
+
+      expect(valuesMap.get(oldInstance.value.fieldPermissions[0].field)).not
+        .toEqual(oldInstance.value.fieldPermissions[0])
+
+      // Clean-up
+      await sfAdapter.remove(post)
     })
 
     it("should modify an object's annotations", async () => {

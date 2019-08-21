@@ -11,6 +11,7 @@ import SalesforceAdapter from '../src/adapter'
 import SalesforceClient from '../src/client/client'
 import * as constants from '../src/constants'
 import { Types, sfCase } from '../src/transformer'
+import { PROFILE_METADATA_TYPE } from '../src/filters/field_permissions'
 
 jest.mock('../src/client/client')
 
@@ -34,6 +35,8 @@ describe('Test SalesforceAdapter CRUD', () => {
   const stringType = Types.salesforceDataTypes.text
 
   const mockElemID = new ElemID(constants.SALESFORCE, 'test')
+  const mockInstanceID = new ElemID(constants.SALESFORCE, 'instance')
+
 
   let mockCreate: jest.Mock<unknown>
   let mockDelete: jest.Mock<unknown>
@@ -56,7 +59,7 @@ describe('Test SalesforceAdapter CRUD', () => {
     it('Should add new instance', async () => {
       SalesforceClient.prototype.create = mockCreate
 
-      const instance = new InstanceElement(mockElemID, new ObjectType({
+      const instance = new InstanceElement(mockInstanceID, new ObjectType({
         elemID: mockElemID,
         fields: {
           username: new Field(mockElemID, 'username', BuiltinTypes.STRING),
@@ -75,7 +78,7 @@ describe('Test SalesforceAdapter CRUD', () => {
 
       expect(result).toBeInstanceOf(InstanceElement)
       expect(result).toBe(instance)
-      expect(result.elemID.name).toBe(mockElemID.name)
+      expect(result.elemID.name).toBe(mockInstanceID.name)
       expect(result.value.token).toBeDefined()
       expect(result.value.token).toBe('instanceTest')
       expect(result.value.Token).toBeUndefined()
@@ -83,12 +86,12 @@ describe('Test SalesforceAdapter CRUD', () => {
       expect(mockCreate.mock.calls.length).toBe(1)
       expect(mockCreate.mock.calls[0].length).toBe(2)
       expect(mockCreate.mock.calls[0][0]).toBe('Flow')
-      expect(mockCreate.mock.calls[0][1].fullName).toBe(sfCase(mockElemID.name))
+      expect(mockCreate.mock.calls[0][1].fullName).toBe(sfCase(mockInstanceID.name))
       expect(mockCreate.mock.calls[0][1].token).toBeDefined()
       expect(mockCreate.mock.calls[0][1].token).toBe('instanceTest')
     })
 
-    it('should fail add new salesforce instance', async () => {
+    it('should fail add new instance', async () => {
       SalesforceClient.prototype.create = jest
         .fn()
         .mockImplementationOnce(async () => ({
@@ -106,7 +109,7 @@ describe('Test SalesforceAdapter CRUD', () => {
 
       return expect(
         adapter().add(
-          new InstanceElement(mockElemID, new ObjectType({
+          new InstanceElement(mockInstanceID, new ObjectType({
             elemID: mockElemID,
             fields: {},
             annotations: {},
@@ -518,12 +521,12 @@ describe('Test SalesforceAdapter CRUD', () => {
   })
 
   describe('Test Remove operation', () => {
-    it('Should remove a salesforce instance', async () => {
+    it('Should remove a instance', async () => {
       mockDelete = jest.fn().mockImplementationOnce(() => ({ success: true }))
       SalesforceClient.prototype.delete = mockDelete
 
       await adapter().remove(
-        new InstanceElement(mockElemID, new ObjectType({
+        new InstanceElement(mockInstanceID, new ObjectType({
           elemID: mockElemID,
           fields: {
             username: new Field(mockElemID, 'username', BuiltinTypes.STRING),
@@ -539,7 +542,7 @@ describe('Test SalesforceAdapter CRUD', () => {
 
       expect(mockDelete.mock.calls.length).toBe(1)
       expect(mockDelete.mock.calls[0][0]).toBe('Flow')
-      expect(mockDelete.mock.calls[0][1]).toBe('Test')
+      expect(mockDelete.mock.calls[0][1]).toBe('Instance')
     })
 
     it('Should remove a salesforce metadata component', async () => {
@@ -589,9 +592,39 @@ describe('Test SalesforceAdapter CRUD', () => {
   })
 
   describe('Test Update operation', () => {
-    it('Should fail an update of a salesforce metadata component if the fullnames are not the same',
+    it('Should fail an update of a salesforce metadata instance, fullNames are not the same',
       async () => {
-        expect(
+        await expect(
+          adapter().update(
+            new InstanceElement(mockInstanceID, new ObjectType({
+              elemID: mockElemID,
+              fields: {
+              },
+              annotations: {},
+              annotationsValues: {
+                [constants.METADATA_TYPE]: PROFILE_METADATA_TYPE,
+              },
+            }),
+            {}),
+            new InstanceElement(new ElemID(constants.SALESFORCE, 'wrong'), new ObjectType({
+              elemID: mockElemID,
+              fields: {
+              },
+              annotations: {},
+              annotationsValues: {
+                [constants.METADATA_TYPE]: PROFILE_METADATA_TYPE,
+              },
+            }),
+            {})
+          )
+        ).rejects.toThrow()
+
+        expect(mockUpdate.mock.calls.length).toBe(0)
+      })
+
+    it('Should fail an update of SObject when the fullNames are not the same',
+      async () => {
+        await expect(
           adapter().update(
             new ObjectType({
               elemID: new ElemID(constants.SALESFORCE, 'test2'),
@@ -625,14 +658,105 @@ describe('Test SalesforceAdapter CRUD', () => {
               },
             })
           )
-        ).rejects.toBeInstanceOf(Error)
+        ).rejects.toThrow()
 
         expect(mockCreate.mock.calls.length).toBe(0)
         expect(mockDelete.mock.calls.length).toBe(0)
         expect(mockUpdate.mock.calls.length).toBe(0)
       })
 
-    it('Should perform a successful update', async () => {
+    it('Should perform a successful instance update',
+      async () => {
+        await expect(
+          adapter().update(
+            new InstanceElement(mockInstanceID, new ObjectType({
+              elemID: mockElemID,
+              fields: {
+              },
+              annotations: {},
+              annotationsValues: {
+                [constants.METADATA_TYPE]: PROFILE_METADATA_TYPE,
+              },
+            }),
+            {
+              tabVisibilities: [
+                {
+                  tab: 'standard-Account',
+                  visibility: 'DefaultOff',
+                },
+              ],
+              userPermissions: [
+                {
+                  enabled: false,
+                  name: 'ConvertLeads',
+                },
+              ],
+              fieldPermissions: [
+                {
+                  field: 'Lead.Fax',
+                  readable: false,
+                  editable: false,
+                },
+              ],
+              description: 'old unit test instance profile',
+            },),
+            new InstanceElement(mockInstanceID, new ObjectType({
+              elemID: mockElemID,
+              fields: {
+              },
+              annotations: {},
+              annotationsValues: {
+                [constants.METADATA_TYPE]: PROFILE_METADATA_TYPE,
+              },
+            }),
+            {
+              userPermissions: [
+                {
+                  enabled: false,
+                  name: 'ConvertLeads',
+                },
+              ],
+              fieldPermissions: [
+                {
+                  field: 'Lead.Fax',
+                  readable: false,
+                  editable: false,
+                },
+                {
+                  editable: false,
+                  field: 'Account.AccountNumber',
+                  readable: false,
+                },
+              ],
+              tabVisibilities: [
+                {
+                  tab: 'standard-Account',
+                  visibility: 'DefaultOff',
+                },
+              ],
+              applicationVisibilities: [
+                {
+                  application: 'standard__ServiceConsole',
+                  default: false,
+                  visible: true,
+                },
+              ],
+              description: 'new unit test instance profile',
+            },)
+          )
+        ).resolves.toBeInstanceOf(InstanceElement)
+
+        expect(mockUpdate.mock.calls.length).toBe(1)
+        expect(mockUpdate.mock.calls[0][0]).toEqual(PROFILE_METADATA_TYPE)
+        expect(mockUpdate.mock.calls[0][1].fullName).toEqual(sfCase(mockInstanceID.name))
+        expect(mockUpdate.mock.calls[0][1].description).toEqual('new unit test instance profile')
+        expect(mockUpdate.mock.calls[0][1].userPermissions).toBeUndefined()
+        expect(mockUpdate.mock.calls[0][1].fieldPermissions).toHaveLength(2)
+        expect(mockUpdate.mock.calls[0][1].applicationVisibilities).toHaveLength(1)
+        expect(mockUpdate.mock.calls[0][1].tabVisibilities).toBeUndefined()
+      })
+
+    it('Should perform a successful Object update', async () => {
       const result = await adapter().update(
         new ObjectType({
           elemID: mockElemID,

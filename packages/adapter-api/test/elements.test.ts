@@ -94,6 +94,93 @@ describe('Test elements.ts', () => {
     expect(ot1.getFieldsThatAreNotInOther(ot2)).toEqual([ot1.fields.str_field])
   })
 
+  it('Should test getValuesThatNotInPrevOrDifferent func', () => {
+    const prevInstance = new InstanceElement(new ElemID('test', 'diff'), new ObjectType({
+      elemID: new ElemID('test', 'diff'),
+      fields: {
+      },
+      annotations: {},
+      annotationsValues: {
+      },
+    }),
+    {
+      userPermissions: [
+        {
+          enabled: false,
+          name: 'ConvertLeads',
+        },
+      ],
+      fieldPermissions: [
+        {
+          field: 'Lead.Fax',
+          readable: false,
+          editable: false,
+        },
+      ],
+      description: 'old unit test instance profile',
+    },)
+
+    const newInstance = new InstanceElement(new ElemID('test', 'diff'), new ObjectType({
+      elemID: new ElemID('test', 'diff'),
+      fields: {
+      },
+      annotations: {},
+      annotationsValues: {
+      },
+    }),
+    {
+      userPermissions: [
+        {
+          enabled: false,
+          name: 'ConvertLeads',
+        },
+      ],
+      fieldPermissions: [
+        {
+          field: 'Lead.Fax',
+          readable: false,
+          editable: false,
+        },
+        {
+          editable: false,
+          field: 'Account.AccountNumber',
+          readable: false,
+        },
+      ],
+      applicationVisibilities: [
+        {
+          application: 'standard__ServiceConsole',
+          default: false,
+          visible: true,
+        },
+      ],
+      description: 'new unit test instance profile',
+    },)
+
+    expect(newInstance.getValuesThatNotInPrevOrDifferent(prevInstance.value)).toMatchObject({
+      fieldPermissions: [
+        {
+          field: 'Lead.Fax',
+          readable: false,
+          editable: false,
+        },
+        {
+          editable: false,
+          field: 'Account.AccountNumber',
+          readable: false,
+        },
+      ],
+      applicationVisibilities: [
+        {
+          application: 'standard__ServiceConsole',
+          default: false,
+          visible: true,
+        },
+      ],
+      description: 'new unit test instance profile',
+    },)
+  })
+
   it('should get intersection of fields', () => {
     const ptStr = new PrimitiveType({
       elemID: new ElemID('test', 'prim'),

@@ -6,7 +6,7 @@ export const FORMULA_TYPE_PREFIX = 'formula_'
 export const SETTINGS_METADATA_TYPE = 'Settings'
 export const SALESFORCE_CUSTOM_SUFFIX = '__c'
 
-// Anotations
+// Annotations
 export const LABEL = 'label'
 export const RESTRICTED_PICKLIST = 'restricted_pick_list'
 export const PICKLIST_VALUES = 'values'

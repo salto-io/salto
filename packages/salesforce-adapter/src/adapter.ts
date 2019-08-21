@@ -179,13 +179,13 @@ export default class SalesforceAdapter {
    * @returns the updated object with extra info like api name, label and metadata type
    * @throws error in case of failure
    */
-  private async addObject(element: ObjectType): Promise<Element> {
+  private async addObject(element: ObjectType): Promise<ObjectType> {
     const post = element.clone()
     annotateApiNameAndLabel(post)
 
     diagnose(await this.client.create(constants.CUSTOM_OBJECT, toCustomObject(post)))
 
-    return post as Element
+    return post
   }
 
   /**
@@ -194,7 +194,7 @@ export default class SalesforceAdapter {
    * @returns the updated instance
    * @throws error in case of failure
    */
-  private async addInstance(element: InstanceElement): Promise<Element> {
+  private async addInstance(element: InstanceElement): Promise<InstanceElement> {
     const result = await this.client.create(
       metadataType(element),
       toMetadataInfo(sfCase(element.elemID.name), element.value, element.type as ObjectType)
@@ -338,7 +338,7 @@ export default class SalesforceAdapter {
    * @param element the object api name those fields reside in
    * @param fields the custom fields we wish to delete
    */
-  private async deleteCustomFields(element: Element, fields: Field[]): Promise<SaveResult[]> {
+  private async deleteCustomFields(element: ObjectType, fields: Field[]): Promise<SaveResult[]> {
     if (fields.length === 0) return []
     return _.flatten(await Promise.all(_.chunk(fields, 10).map(chunk => this.client.delete(
       constants.CUSTOM_FIELD,

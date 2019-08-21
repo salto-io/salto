@@ -239,7 +239,6 @@ describe('Test Salesforce adapter E2E with real account', () => {
         elemID: mockElemID,
         annotationsValues: {
           [constants.API_NAME]: customObjectName,
-          [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
         },
         fields: {
           description: new Field(
@@ -268,8 +267,10 @@ describe('Test Salesforce adapter E2E with real account', () => {
         },
       })
 
-      if (await objectExists(constants.CUSTOM_OBJECT, customObjectName) === true) {
-        await sfAdapter.remove(element)
+      if (await objectExists(constants.CUSTOM_OBJECT, customObjectName)) {
+        await sfAdapter.remove(
+          element.clone({ [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT })
+        )
       }
       const post = await sfAdapter.add(element) as ObjectType
 
@@ -313,7 +314,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
         },
       })
       // Setup
-      if (await objectExists(constants.CUSTOM_OBJECT, customObjectName) === false) {
+      if (!await objectExists(constants.CUSTOM_OBJECT, customObjectName)) {
         await sfAdapter.add(element)
         expect(await objectExists(constants.CUSTOM_OBJECT, customObjectName)).toBe(true)
       }
@@ -356,7 +357,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
         },
       })
 
-      if (await objectExists(constants.CUSTOM_OBJECT, customObjectName) === true) {
+      if (await objectExists(constants.CUSTOM_OBJECT, customObjectName)) {
         await sfAdapter.remove(oldElement)
       }
       const addResult = await sfAdapter.add(oldElement)
@@ -677,7 +678,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
         },
       })
 
-      if (await objectExists(constants.CUSTOM_OBJECT, customObjectName) === true) {
+      if (await objectExists(constants.CUSTOM_OBJECT, customObjectName)) {
         await sfAdapter.remove(oldElement)
       }
       const addResult = await sfAdapter.add(oldElement)
@@ -771,7 +772,6 @@ describe('Test Salesforce adapter E2E with real account', () => {
         elemID: mockElemID,
         annotationsValues: {
           [constants.API_NAME]: customObjectName,
-          [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
         },
         fields: {
           pickle: new Field(
@@ -961,8 +961,10 @@ describe('Test Salesforce adapter E2E with real account', () => {
         },
       })
 
-      if (await objectExists(constants.CUSTOM_OBJECT, customObjectName) === true) {
-        await sfAdapter.remove(element)
+      if (await objectExists(constants.CUSTOM_OBJECT, customObjectName)) {
+        await sfAdapter.remove(
+          element.clone({ [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT })
+        )
       }
       const post = await sfAdapter.add(element)
 

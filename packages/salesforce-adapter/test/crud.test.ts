@@ -679,6 +679,12 @@ describe('Test SalesforceAdapter CRUD', () => {
               },
             }),
             {
+              tabVisibilities: [
+                {
+                  tab: 'standard-Account',
+                  visibility: 'DefaultOff',
+                },
+              ],
               userPermissions: [
                 {
                   enabled: false,
@@ -722,6 +728,12 @@ describe('Test SalesforceAdapter CRUD', () => {
                   readable: false,
                 },
               ],
+              tabVisibilities: [
+                {
+                  tab: 'standard-Account',
+                  visibility: 'DefaultOff',
+                },
+              ],
               applicationVisibilities: [
                 {
                   application: 'standard__ServiceConsole',
@@ -739,8 +751,9 @@ describe('Test SalesforceAdapter CRUD', () => {
         expect(mockUpdate.mock.calls[0][1].fullName).toEqual(sfCase(mockInstanceID.name))
         expect(mockUpdate.mock.calls[0][1].description).toEqual('new unit test instance profile')
         expect(mockUpdate.mock.calls[0][1].userPermissions).toBeUndefined()
-        expect(mockUpdate.mock.calls[0][1].fieldPermissions).toHaveLength(1)
-        expect(mockUpdate.mock.calls[0][1].fieldPermissions[0]).toEqual({ editable: false, field: 'Account.AccountNumber', readable: false })
+        expect(mockUpdate.mock.calls[0][1].fieldPermissions).toHaveLength(2)
+        expect(mockUpdate.mock.calls[0][1].applicationVisibilities).toHaveLength(1)
+        expect(mockUpdate.mock.calls[0][1].tabVisibilities).toBeUndefined()
       })
 
     it('Should perform a successful Object update', async () => {

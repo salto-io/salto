@@ -451,7 +451,6 @@ describe('Test Salesforce adapter E2E with real account', () => {
         description: 'new e2e profile',
       })
 
-
       const newInstance = new InstanceElement(mockInstanceID, new ObjectType({
         elemID: mockElemID,
         fields: {
@@ -509,7 +508,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
 
       // Checking that the saved instance identical to newInstance
       const savedInstance = await sfAdapter.client.readMetadata(
-        PROFILE_METADATA_TYPE, sfCase(oldInstance.elemID.name)
+        PROFILE_METADATA_TYPE, sfCase(newInstance.elemID.name)
       )
       const valuesMap = new Map<string, Value>()
       const newValues = newInstance.value

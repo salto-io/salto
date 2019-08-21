@@ -160,6 +160,11 @@ describe('Test elements.ts', () => {
     expect(newInstance.getValuesThatNotInPrevOrDifferent(prevInstance.value)).toMatchObject({
       fieldPermissions: [
         {
+          field: 'Lead.Fax',
+          readable: false,
+          editable: false,
+        },
+        {
           editable: false,
           field: 'Account.AccountNumber',
           readable: false,

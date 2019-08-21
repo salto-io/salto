@@ -12,7 +12,7 @@ const primitiveValidators = {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const validateValue = (value: any, scheme: Type): string[] => {
+const validateValue = (value: any, scheme: Type, elements: Element[] = []): string[] => {
   if ((isPrimitiveType(scheme) && !primitiveValidators[scheme.primitive](value))
      || (isObjectType(scheme) && !_.isPlainObject(value))) {
     return [`Invalid value type for ${scheme.elemID.getFullName()} : ${JSON.stringify(value)}`]
@@ -45,11 +45,12 @@ const validateField = (field: Field): string[] => Object.keys(field.getAnnotatio
   )
 ).filter(e => e).reduce((acc, e) => [...acc, ...e], [])
 
-const validateType = (element: Type): string[] => {
+const validateType = (element: Type, elements: Element[]): string[] => {
   const errors = Object.keys(element.getAnnotationsValues()).map(
     k => element.annotations[k] && validateValue(
       element.getAnnotationsValues()[k],
-      element.annotations[k]
+      element.annotations[k],
+      elements
     )
   ).filter(e => e).reduce((acc, e) => [...acc, ...e], [])
   if (isObjectType(element)) {
@@ -69,7 +70,7 @@ const validateElements = (elements: Element[]): string[] => elements.map(element
   if (isInstanceElement(element)) {
     return validateInstanceElement(element)
   }
-  return validateType(element as Type)
+  return validateType(element as Type, elements)
 }).reduce((acc, e) => [...acc, ...e], [])
 
 export default validateElements

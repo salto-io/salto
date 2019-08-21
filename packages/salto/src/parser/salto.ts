@@ -2,7 +2,7 @@ import * as _ from 'lodash'
 
 import {
   Type, ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field, Values,
-  isObjectType, isPrimitiveType, Element, isInstanceElement, InstanceElement,
+  isObjectType, isPrimitiveType, Element, isInstanceElement, InstanceElement, BuiltinTypes,
 } from 'adapter-api'
 import HCLParser from './hcl'
 import evaluate from './expressions'
@@ -76,6 +76,14 @@ export default class Parser {
     return _.mapValues(block.attrs, val => evaluate(val.expressions[0]))
   }
 
+  private static getNestedBlocks(block: HCLBlock): Record<string, Type> {
+    const result: Record<string, Type> = {}
+    block.blocks.forEach(innerBlock => {
+      result[innerBlock.labels[0]] = BuiltinTypes[PrimitiveTypes[getPrimitiveType(innerBlock.type)]]
+    })
+    return result
+  }
+
   private static parseType(typeBlock: HCLBlock): Type {
     const [typeName] = typeBlock.labels
     const typeObj = new ObjectType({ elemID: this.getElemID(typeName) })
@@ -123,6 +131,15 @@ export default class Parser {
     if (baseType === Keywords.TYPE_OBJECT) {
       // There is currently no difference between an object type and a model
       return this.parseType(typeBlock)
+    }
+
+    if (typeBlock.blocks && typeBlock.blocks.length > 0) {
+      return new PrimitiveType({
+        elemID: this.getElemID(typeName),
+        primitive: getPrimitiveType(baseType),
+        annotations: this.getNestedBlocks(typeBlock),
+        annotationsValues: this.getAttrValues(typeBlock),
+      })
     }
     return new PrimitiveType({
       elemID: this.getElemID(typeName),
@@ -226,7 +243,8 @@ export default class Parser {
             getPrimitiveTypeName(elem.primitive),
           ],
           attrs: elem.getAnnotationsValues(),
-          blocks: [],
+          blocks: Object.keys(elem.annotations)
+            .map(key => this.getFieldBlock(new Field(elem.elemID, key, elem.annotations[key]))),
         }
       }
       if (isInstanceElement(elem)) {

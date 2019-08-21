@@ -521,7 +521,7 @@ describe('Test SalesforceAdapter CRUD', () => {
   })
 
   describe('Test Remove operation', () => {
-    it('Should remove aa instance', async () => {
+    it('Should remove a instance', async () => {
       mockDelete = jest.fn().mockImplementationOnce(() => ({ success: true }))
       SalesforceClient.prototype.delete = mockDelete
 

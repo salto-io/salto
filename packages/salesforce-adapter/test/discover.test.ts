@@ -265,9 +265,9 @@ describe('Test SalesforceAdapter discover', () => {
 
       const result = await adapter().discover()
 
-      const testElems = result.filter(o => o.elemID.name === 'test') as ObjectType[]
-      expect(testElems).toHaveLength(2)
-      const [test, testCustomizations] = testElems
+      const testElements = result.filter(o => o.elemID.name === 'test') as ObjectType[]
+      expect(testElements).toHaveLength(2)
+      const [test, testCustomizations] = testElements
       expect(test.path).toEqual(['objects', 'standard', 'test'])
       expect(test.fields.dummy).toBeDefined()
       expect(test.fields.custom_field).toBeUndefined()
@@ -288,9 +288,9 @@ describe('Test SalesforceAdapter discover', () => {
 
       const result = await adapter().discover()
 
-      const testElems = result.filter(o => o.elemID.name === 'test') as ObjectType[]
-      expect(testElems).toHaveLength(1)
-      const [test] = testElems
+      const testElements = result.filter(o => o.elemID.name === 'test') as ObjectType[]
+      expect(testElements).toHaveLength(1)
+      const [test] = testElements
       expect(test.path).toEqual(['types', 'object', 'test'])
       expect(test.fields.dummy).toBeDefined()
       expect(test.fields.custom_field).toBeDefined()
@@ -308,10 +308,10 @@ describe('Test SalesforceAdapter discover', () => {
 
       const result = await adapter().discover()
 
-      const testElems = result.filter(o => o.elemID.name === 'test') as ObjectType[]
+      const testElements = result.filter(o => o.elemID.name === 'test') as ObjectType[]
       // custom objects should not be split
-      expect(testElems).toHaveLength(1)
-      const [test] = testElems
+      expect(testElements).toHaveLength(1)
+      const [test] = testElements
       expect(test.path).toEqual(['objects', 'custom', 'test'])
       expect(test.fields.dummy).toBeDefined()
       expect(test.fields.custom_field).toBeDefined()

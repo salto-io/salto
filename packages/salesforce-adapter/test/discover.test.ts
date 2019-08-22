@@ -35,18 +35,19 @@ describe('Test SalesforceAdapter discover', () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       fields: Record<string, any>[],
       isMetadataType: boolean = false,
-      isCustomObject: boolean = true
+      isInCustomObjectList: boolean = true,
+      custom: boolean = false,
     ): void => {
       SalesforceClient.prototype.listSObjects = jest.fn().mockImplementation(async () => [{ name }])
       SalesforceClient.prototype.describeSObjects = jest.fn().mockImplementation(
-        async () => [{ name, fields }]
+        async () => [{ name, custom, fields }]
       )
       SalesforceClient.prototype.listMetadataTypes = jest.fn().mockImplementation(async () => [
         constants.CUSTOM_OBJECT, ...(isMetadataType ? [name] : []),
       ].map(xmlName => ({ xmlName })))
       SalesforceClient.prototype.describeMetadataType = jest.fn().mockImplementation(async () => [])
       SalesforceClient.prototype.listMetadataObjects = jest.fn().mockImplementation(async type => (
-        (type === constants.CUSTOM_OBJECT && isCustomObject) ? [{ fullName: name }] : []
+        (type === constants.CUSTOM_OBJECT && isInCustomObjectList) ? [{ fullName: name }] : []
       ))
     }
 
@@ -96,7 +97,6 @@ describe('Test SalesforceAdapter discover', () => {
       const result = await adapter().discover()
 
       const lead = result.filter(o => o.elemID.name === 'lead').pop() as ObjectType
-      expect(lead.path).toEqual(['objects', 'lead'])
       expect(lead.fields.last_name.type.elemID.name).toBe('text')
       expect(lead.fields.last_name.getAnnotationsValues().label).toBe('Last Name')
       // Test Rquired true and false
@@ -253,16 +253,68 @@ describe('Test SalesforceAdapter discover', () => {
         .getAnnotationsValues()[constants.FIELD_ANNOTATIONS.VISIBLE_LINES]).toBe(5)
     })
 
+    it('should split customizations to different elements', async () => {
+      mockSingleSObject('Test', [
+        {
+          name: 'dummy', label: 'dummy', type: 'string',
+        },
+        {
+          name: 'CustomField__c', label: 'custom field', type: 'string', custom: true,
+        },
+      ])
+
+      const result = await adapter().discover()
+
+      const testElements = result.filter(o => o.elemID.name === 'test') as ObjectType[]
+      expect(testElements).toHaveLength(2)
+      const [test, testCustomizations] = testElements
+      expect(test.path).toEqual(['objects', 'standard', 'test'])
+      expect(test.fields.dummy).toBeDefined()
+      expect(test.fields.custom_field).toBeUndefined()
+      expect(testCustomizations.path).toEqual(['objects', 'custom', 'test'])
+      expect(testCustomizations.fields.dummy).toBeUndefined()
+      expect(testCustomizations.fields.custom_field).toBeDefined()
+    })
+
     it('should place SObjects that are not custom objects in the types directory', async () => {
       mockSingleSObject('Test', [
-        { name: 'dummy', label: 'dummy', type: 'string' },
+        {
+          name: 'dummy', label: 'dummy', type: 'string',
+        },
+        {
+          name: 'CustomField__c', label: 'custom field', type: 'string', custom: true,
+        },
       ], false, false)
 
       const result = await adapter().discover()
 
-      const test = result.filter(o => o.elemID.name === 'test').pop() as ObjectType
-      expect(test).toBeDefined()
+      const testElements = result.filter(o => o.elemID.name === 'test') as ObjectType[]
+      expect(testElements).toHaveLength(1)
+      const [test] = testElements
       expect(test.path).toEqual(['types', 'object', 'test'])
+      expect(test.fields.dummy).toBeDefined()
+      expect(test.fields.custom_field).toBeDefined()
+    })
+
+    it('should not split custom SObjects', async () => {
+      mockSingleSObject('Test__c', [
+        {
+          name: 'dummy', label: 'dummy', type: 'string',
+        },
+        {
+          name: 'CustomField__c', label: 'custom field', type: 'string', custom: true,
+        },
+      ], false, true, true)
+
+      const result = await adapter().discover()
+
+      const testElements = result.filter(o => o.elemID.name === 'test') as ObjectType[]
+      // custom objects should not be split
+      expect(testElements).toHaveLength(1)
+      const [test] = testElements
+      expect(test.path).toEqual(['objects', 'custom', 'test'])
+      expect(test.fields.dummy).toBeDefined()
+      expect(test.fields.custom_field).toBeDefined()
     })
 
     it('should not discover SObjects that conflict with metadata types', async () => {

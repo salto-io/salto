@@ -465,40 +465,74 @@ export default class SalesforceAdapter {
       objs => new Set(objs.map(obj => obj.fullName))
     )
 
-    const sobjects = await Promise.all(_.flatten(await Promise.all(
+    return _.flatten(await Promise.all(_.flatten(await Promise.all(
       _(await this.client.listSObjects())
         .map(sobj => sobj.name)
         .chunk(100)
         .map(nameChunk => this.client.describeSObjects(nameChunk))
-        .map(async objects => (await objects).map(
-          async ({ name, fields }) => SalesforceAdapter.createSObjectTypeElement(
-            name, fields, await customObjectNames
-          )
-        ))
+        .map(async objects => (await objects).map(async ({ name, custom, fields }) =>
+          SalesforceAdapter.createSObjectTypes(name, custom, fields, await customObjectNames)))
         .value()
-    )))
-    return sobjects
+    ))))
   }
 
-  private static createSObjectTypeElement(
+  private static createSObjectTypes(
     objectName: string,
+    isCustom: boolean,
     fields: SObjField[],
     customObjectNames: Set<string>,
-  ): Type {
+  ): Type[] {
     const element = Types.get(objectName) as ObjectType
     element.annotate({ [constants.API_NAME]: objectName })
     element.annotate({ [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT })
-    element.path = [
-      ...(customObjectNames.has(objectName) ? ['objects'] : ['types', 'object']),
-      element.elemID.name,
-    ]
-    const fieldElements = fields.map(field => getSObjectFieldElement(element.elemID, field))
 
-    // Set fields on elements
-    fieldElements.forEach(field => {
-      element.fields[field.name] = field
+    // Set standard fields on element
+    fields
+      .filter(f => !f.custom)
+      .map(f => getSObjectFieldElement(element.elemID, f))
+      .forEach(field => {
+        element.fields[field.name] = field
+      })
+
+    // Create custom fields (if any)
+    const customFields = fields
+      .filter(f => f.custom)
+      .map(f => getSObjectFieldElement(element.elemID, f))
+
+    if (!customObjectNames.has(objectName)) {
+      // This is not a custom object type, no need to separate standard part from custom part
+      customFields.forEach(field => {
+        element.fields[field.name] = field
+      })
+      element.path = ['types', 'object', element.elemID.name]
+      return [element]
+    }
+
+    if (isCustom) {
+      // This is custom object, we treat standard fields as if they were custom as well
+      // so we put all fields in the same element definition
+      customFields.forEach(field => {
+        element.fields[field.name] = field
+      })
+      element.path = ['objects', 'custom', element.elemID.name]
+      return [element]
+    }
+
+    // This is a standard object
+    element.path = ['objects', 'standard', element.elemID.name]
+
+    if (_.isEmpty(customFields)) {
+      // No custom parts, only standard element needed
+      return [element]
+    }
+
+    // Custom fields go in a separate element
+    const customPart = Types.get(objectName) as ObjectType
+    customFields.forEach(field => {
+      customPart.fields[field.name] = field
     })
-    return element
+    customPart.path = ['objects', 'custom', customPart.elemID.name]
+    return [element, customPart]
   }
 
   /**

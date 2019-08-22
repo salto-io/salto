@@ -19,6 +19,7 @@ import {
 } from './transformer'
 import { filter as layoutFilter } from './filters/layouts'
 import { filter as fieldPermissionsFilter } from './filters/field_permissions'
+import { filter as validationRulesFilter } from './filters/validation_rules'
 import Filter from './filters/filter'
 
 // Diagnose client results
@@ -105,7 +106,7 @@ export default class SalesforceAdapter {
       'InstalledPackage', // Instances of this don't actually have an ID and they contain duplicates
       'CustomObject', // We have special treatment for this type
     ],
-    filters = [fieldPermissionsFilter, layoutFilter],
+    filters = [fieldPermissionsFilter, layoutFilter, validationRulesFilter],
   }: SalesforceAdapterParams = {}) {
     this.metadataAdditionalTypes = metadataAdditionalTypes
     this.metadataTypeBlacklist = metadataTypeBlacklist

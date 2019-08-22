@@ -465,7 +465,7 @@ export default class SalesforceAdapter {
       objs => new Set(objs.map(obj => obj.fullName))
     )
 
-    const sobjects = _.flatten(await Promise.all(_.flatten(await Promise.all(
+    return _.flatten(await Promise.all(_.flatten(await Promise.all(
       _(await this.client.listSObjects())
         .map(sobj => sobj.name)
         .chunk(100)
@@ -474,7 +474,6 @@ export default class SalesforceAdapter {
           SalesforceAdapter.createSObjectTypes(name, custom, fields, await customObjectNames)))
         .value()
     ))))
-    return sobjects
   }
 
   private static createSObjectTypes(

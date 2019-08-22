@@ -87,7 +87,7 @@ describe('Salto parser', () => {
     })
 
     describe('parse result', () => {
-      it('should have ten types', () => {
+      it('should have all types', () => {
         expect(parsedElements.length).toBe(10)
       })
     })

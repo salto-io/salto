@@ -73,11 +73,13 @@ describe('Salto parser', () => {
       }
 
       type salesforce_field is number {
-        number scale {
-        }
-        number precision {
-        }
-        boolean unique {
+        annotations {
+          number scale {
+          }
+          number precision {
+          }
+          boolean unique {
+          }
         }
       }
       `
@@ -368,6 +370,7 @@ describe('Salto Dump', () => {
 
   it('dumps complex field type', () => {
     expect(body).toMatch(/type salesforce_field is number {/)
+    expect(body).toMatch(/annotations {/)
     expect(body).toMatch(/number alice {/)
     expect(body).toMatch(/number bob {/)
     expect(body).toMatch(/boolean tom {/)

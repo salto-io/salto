@@ -11,6 +11,7 @@ enum Keywords {
   TYPE_DEFINITION = 'type',
   LIST_DEFINITION = 'list',
   TYPE_INHERITENCE_SEPARATOR = 'is',
+  ANNOTATIONS_DEFINITION = 'annotations',
 
   // Primitive types
   TYPE_STRING = 'string',
@@ -76,11 +77,17 @@ export default class Parser {
     return _.mapValues(block.attrs, val => evaluate(val.expressions[0]))
   }
 
-  private static getNestedBlocks(block: HCLBlock): Record<string, Type> {
+  private static getAnnotations(block: HCLBlock): Record<string, Type> {
     const result: Record<string, Type> = {}
-    block.blocks.forEach(innerBlock => {
-      result[innerBlock.labels[0]] = BuiltinTypes[PrimitiveTypes[getPrimitiveType(innerBlock.type)]]
-    })
+    const annotationsBlock = block.blocks
+      .find(b => b.type === Keywords.ANNOTATIONS_DEFINITION)
+    if (annotationsBlock) {
+      annotationsBlock.blocks.forEach(innerBlock => {
+        // eslint-disable-next-line max-len
+        result[innerBlock.labels[0]] = BuiltinTypes[PrimitiveTypes[getPrimitiveType(innerBlock.type)]]
+      })
+    }
+
     return result
   }
 
@@ -133,17 +140,10 @@ export default class Parser {
       return this.parseType(typeBlock)
     }
 
-    if (typeBlock.blocks && typeBlock.blocks.length > 0) {
-      return new PrimitiveType({
-        elemID: this.getElemID(typeName),
-        primitive: getPrimitiveType(baseType),
-        annotations: this.getNestedBlocks(typeBlock),
-        annotationsValues: this.getAttrValues(typeBlock),
-      })
-    }
     return new PrimitiveType({
       elemID: this.getElemID(typeName),
       primitive: getPrimitiveType(baseType),
+      annotations: this.getAnnotations(typeBlock),
       annotationsValues: this.getAttrValues(typeBlock),
     })
   }
@@ -214,6 +214,17 @@ export default class Parser {
     return fieldBlock
   }
 
+  private static getAnnotationsBlock(element: PrimitiveType): HCLBlock {
+    const annotationsBlock: HCLBlock = {
+      type: '',
+      labels: [Keywords.ANNOTATIONS_DEFINITION],
+      attrs: {},
+      blocks: Object.keys(element.annotations)
+        .map(key => this.getFieldBlock(new Field(element.elemID, key, element.annotations[key]))),
+    }
+    return annotationsBlock
+  }
+
   /**
    * Serialize elements to blueprint
    *
@@ -243,8 +254,7 @@ export default class Parser {
             getPrimitiveTypeName(elem.primitive),
           ],
           attrs: elem.getAnnotationsValues(),
-          blocks: Object.keys(elem.annotations)
-            .map(key => this.getFieldBlock(new Field(elem.elemID, key, elem.annotations[key]))),
+          blocks: Object.keys(elem.annotations).length > 0 ? [this.getAnnotationsBlock(elem)] : [],
         }
       }
       if (isInstanceElement(elem)) {

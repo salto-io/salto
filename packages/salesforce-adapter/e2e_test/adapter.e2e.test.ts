@@ -56,9 +56,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
     })
     it('should discover sobject', async () => {
       // Check few field types on lead object
-      const lead = result
-        .filter(element => element.elemID.name === 'lead')
-        .pop() as ObjectType
+      const lead = result.filter(element => element.elemID.name === 'lead')[0] as ObjectType
 
       // Test few possible types
       expect(lead.fields.last_name.type.elemID.name).toBe('string')

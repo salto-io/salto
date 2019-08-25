@@ -1,8 +1,7 @@
-import * as _ from 'lodash'
-
+import _ from 'lodash'
 import {
   Type, ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field, Values,
-  isObjectType, isPrimitiveType, Element, isInstanceElement, InstanceElement, BuiltinTypes,
+  isObjectType, isPrimitiveType, Element, isInstanceElement, InstanceElement,
 } from 'adapter-api'
 import HCLParser from './hcl'
 import evaluate from './expressions'
@@ -78,17 +77,13 @@ export default class Parser {
   }
 
   private static getAnnotations(block: HCLBlock): Record<string, Type> {
-    const result: Record<string, Type> = {}
-    const annotationsBlock = block.blocks
-      .find(b => b.type === Keywords.ANNOTATIONS_DEFINITION)
-    if (annotationsBlock) {
-      annotationsBlock.blocks.forEach(innerBlock => {
-        // eslint-disable-next-line max-len
-        result[innerBlock.labels[0]] = BuiltinTypes[PrimitiveTypes[getPrimitiveType(innerBlock.type)]]
-      })
-    }
-
-    return result
+    return block.blocks
+      .filter(b => b.type === Keywords.ANNOTATIONS_DEFINITION)
+      .map(b => _(b.blocks)
+        .map(blk => [blk.labels[0], new ObjectType({ elemID: this.getElemID(blk.type) })])
+        .fromPairs()
+        .value())
+      .pop() || {}
   }
 
   private static parseType(typeBlock: HCLBlock): Type {
@@ -216,8 +211,8 @@ export default class Parser {
 
   private static getAnnotationsBlock(element: PrimitiveType): HCLBlock {
     const annotationsBlock: HCLBlock = {
-      type: '',
-      labels: [Keywords.ANNOTATIONS_DEFINITION],
+      type: Keywords.ANNOTATIONS_DEFINITION,
+      labels: [],
       attrs: {},
       blocks: Object.keys(element.annotations)
         .map(key => this.getFieldBlock(new Field(element.elemID, key, element.annotations[key]))),

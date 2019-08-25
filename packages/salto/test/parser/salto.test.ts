@@ -262,12 +262,9 @@ describe('Salto parser', () => {
       })
 
       it('should have the right annotations', () => {
-        const scaleAnnotation = numberType.annotations.scale as PrimitiveType
-        expect(scaleAnnotation.primitive).toEqual(1)
-        const precisionAnnotation = numberType.annotations.precision as PrimitiveType
-        expect(precisionAnnotation.primitive).toEqual(1)
-        const uniqueAnnotation = numberType.annotations.unique as PrimitiveType
-        expect(uniqueAnnotation.primitive).toEqual(2)
+        expect(numberType.annotations.scale.elemID.getFullName()).toEqual('number')
+        expect(numberType.annotations.precision.elemID.getFullName()).toEqual('number')
+        expect(numberType.annotations.unique.elemID.getFullName()).toEqual('boolean')
       })
     })
   })
@@ -368,13 +365,11 @@ describe('Salto Dump', () => {
     expect(body).toMatch(/type salesforce_bool is boolean {/)
   })
 
-  it('dumps complex field type', () => {
-    expect(body).toMatch(/type salesforce_field is number {/)
-    expect(body).toMatch(/annotations {/)
-    expect(body).toMatch(/number alice {/)
-    expect(body).toMatch(/number bob {/)
-    expect(body).toMatch(/boolean tom {/)
-    expect(body).toMatch(/string jerry {/)
+  it('dumps primitive field type annotations', () => {
+    expect(body).toMatch(/type salesforce_field is number {.*?annotations {.*?number alice {/s)
+    expect(body).toMatch(/type salesforce_field is number {.*?annotations {.*?number bob {/s)
+    expect(body).toMatch(/type salesforce_field is number {.*?annotations {.*?boolean tom {/s)
+    expect(body).toMatch(/type salesforce_field is number {.*?annotations {.*?string jerry {/s)
   })
 
   it('dumps instance elements', () => {
@@ -412,7 +407,7 @@ describe('Salto Dump', () => {
       expect(elements[0]).toEqual(strType)
       expect(elements[1]).toEqual(numType)
       expect(elements[2]).toEqual(boolType)
-      expect(elements[3]).toEqual(fieldType)
+      TestHelpers.expectTypesToMatch(elements[3] as Type, fieldType)
       TestHelpers.expectTypesToMatch(elements[4] as Type, model)
       TestHelpers.expectInstancesToMatch(elements[5] as InstanceElement, instance)
       TestHelpers.expectInstancesToMatch(elements[6] as InstanceElement, config)

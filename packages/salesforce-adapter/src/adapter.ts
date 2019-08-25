@@ -21,6 +21,8 @@ import { filter as layoutFilter } from './filters/layouts'
 import { filter as fieldPermissionsFilter } from './filters/field_permissions'
 import { filter as validationRulesFilter } from './filters/validation_rules'
 import { filter as assignmentRulesFilter } from './filters/assignment_rules'
+import convertListsFilter from './filters/convert_lists'
+import convertTypeFilter from './filters/convert_types'
 import Filter from './filters/filter'
 
 // Diagnose client results
@@ -107,7 +109,15 @@ export default class SalesforceAdapter {
       'InstalledPackage', // Instances of this don't actually have an ID and they contain duplicates
       'CustomObject', // We have special treatment for this type
     ],
-    filters = [fieldPermissionsFilter, layoutFilter, validationRulesFilter, assignmentRulesFilter],
+    filters = [
+      fieldPermissionsFilter,
+      layoutFilter,
+      validationRulesFilter,
+      assignmentRulesFilter,
+      // The following filters should remain last in order to make sure they fix all elements
+      convertListsFilter,
+      convertTypeFilter,
+    ],
   }: SalesforceAdapterParams = {}) {
     this.metadataAdditionalTypes = metadataAdditionalTypes
     this.metadataTypeBlacklist = metadataTypeBlacklist
@@ -180,7 +190,6 @@ export default class SalesforceAdapter {
       await Promise.all([fieldTypes, metadataTypes, sObjects, metadataInstances]) as Element[][]
     )
 
-    SalesforceAdapter.fixListsDiscovery(elements)
     await this.runFiltersOnDiscover(elements)
     return elements
   }
@@ -459,7 +468,7 @@ export default class SalesforceAdapter {
       .map(i => new InstanceElement(
         new ElemID(constants.SALESFORCE, type.elemID.name, bpCase(i.fullName)),
         type,
-        fromMetadataInfo(i, type, !isSettings), // Transfom of settings values shouldn't be strict
+        fromMetadataInfo(i),
         isSettings ? ['settings'] : ['records', type.elemID.name, bpCase(i.fullName)],
       ))
   }
@@ -540,61 +549,6 @@ export default class SalesforceAdapter {
   }
 
   /**
-   * This method mark fields as list if we see instance with list values.
-   * After marking the field as list it will look for values with single value
-   * and fix the value to be list with single element.
-   * The method change the element inline and not create new element.
-   * @param elements the discovered elements.
-   */
-  private static fixListsDiscovery(elements: Element[]): void {
-    // This method iterate on types and corresponding values and run innerChange
-    // on every "node".
-    const applyRecursive = (type: ObjectType, value: Values,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      innerChange: (field: Field, value: any) => void): any => {
-      Object.keys(type.fields).forEach(key => {
-        if (!value || !value[key]) return
-        value[key] = innerChange(type.fields[key], value[key])
-        const fieldType = type.fields[key].type
-        if (isObjectType(fieldType)) {
-          if (_.isArray(value[key])) {
-            value[key].forEach((val: Values) => applyRecursive(fieldType, val, innerChange))
-          } else {
-            applyRecursive(fieldType, value[key], innerChange)
-          }
-        }
-      })
-    }
-
-    // First mark all lists as isList=true
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const markList = (field: Field, value: any): any => {
-      if (_.isArray(value)) {
-        field.isList = true
-      }
-      return value
-    }
-    elements.filter(isInstanceElement).forEach(instnace =>
-      applyRecursive(instnace.type as ObjectType, instnace.value, markList))
-
-
-    // Cast all lists to list
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const castLists = (field: Field, value: any): any => {
-      if (field.isList && !_.isArray(value)) {
-        return [value]
-      }
-      // We get from sfdc api list with empty strings for empty object (possibly jsforce issue)
-      if (field.isList && _.isArray(value) && _.isEmpty(value.filter(v => !_.isEmpty(v)))) {
-        return []
-      }
-      return value
-    }
-    elements.filter(isInstanceElement).forEach(instnace =>
-      applyRecursive(instnace.type as ObjectType, instnace.value, castLists))
-  }
-
-  /**
    * List all the instances of specific metadataType
    * @param type the metadata type
    */
@@ -615,9 +569,12 @@ export default class SalesforceAdapter {
   }
 
   // Filter related functions
-  private async runFiltersOnDiscover(elements: Element[]): Promise<void[]> {
-    return Promise.all(this.filters.map(filter =>
-      filter.onDiscover(this.client, elements)))
+  private async runFiltersOnDiscover(elements: Element[]): Promise<void> {
+    // Discover filters order is important so they should run one after the other
+    return this.filters.reduce(
+      (prevRes, filter) => prevRes.then(() => filter.onDiscover(this.client, elements)),
+      Promise.resolve(),
+    )
   }
 
   private async runFiltersOnAdd(after: Element): Promise<SaveResult[]> {

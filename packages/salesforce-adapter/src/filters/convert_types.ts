@@ -49,7 +49,8 @@ const transform = (obj: Values, type: ObjectType, strict: boolean = true): Value
       }
       if (isPrimitiveType(fieldType)) {
         return _.isArray(value)
-          ? value.map(v => transformPrimitive(v, fieldType.primitive)).filter(v => !_.isEmpty(v))
+          ? value.map(v => transformPrimitive(v, fieldType.primitive))
+            .filter(v => !_.isArrayLike(v) || !_.isEmpty(v))
           : transformPrimitive(value, fieldType.primitive)
       }
     }

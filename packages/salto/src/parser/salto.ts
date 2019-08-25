@@ -1,5 +1,4 @@
-import * as _ from 'lodash'
-
+import _ from 'lodash'
 import {
   Type, ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field, Values,
   isObjectType, isPrimitiveType, Element, isInstanceElement, InstanceElement,
@@ -11,6 +10,7 @@ enum Keywords {
   TYPE_DEFINITION = 'type',
   LIST_DEFINITION = 'list',
   TYPE_INHERITENCE_SEPARATOR = 'is',
+  ANNOTATIONS_DEFINITION = 'annotations',
 
   // Primitive types
   TYPE_STRING = 'string',
@@ -76,6 +76,16 @@ export default class Parser {
     return _.mapValues(block.attrs, val => evaluate(val.expressions[0]))
   }
 
+  private static getAnnotations(block: HCLBlock): Record<string, Type> {
+    return block.blocks
+      .filter(b => b.type === Keywords.ANNOTATIONS_DEFINITION)
+      .map(b => _(b.blocks)
+        .map(blk => [blk.labels[0], new ObjectType({ elemID: this.getElemID(blk.type) })])
+        .fromPairs()
+        .value())
+      .pop() || {}
+  }
+
   private static parseType(typeBlock: HCLBlock): Type {
     const [typeName] = typeBlock.labels
     const typeObj = new ObjectType({ elemID: this.getElemID(typeName) })
@@ -124,9 +134,11 @@ export default class Parser {
       // There is currently no difference between an object type and a model
       return this.parseType(typeBlock)
     }
+
     return new PrimitiveType({
       elemID: this.getElemID(typeName),
       primitive: getPrimitiveType(baseType),
+      annotations: this.getAnnotations(typeBlock),
       annotationsValues: this.getAttrValues(typeBlock),
     })
   }
@@ -197,6 +209,17 @@ export default class Parser {
     return fieldBlock
   }
 
+  private static getAnnotationsBlock(element: PrimitiveType): HCLBlock {
+    const annotationsBlock: HCLBlock = {
+      type: Keywords.ANNOTATIONS_DEFINITION,
+      labels: [],
+      attrs: {},
+      blocks: Object.keys(element.annotations)
+        .map(key => this.getFieldBlock(new Field(element.elemID, key, element.annotations[key]))),
+    }
+    return annotationsBlock
+  }
+
   /**
    * Serialize elements to blueprint
    *
@@ -226,7 +249,7 @@ export default class Parser {
             getPrimitiveTypeName(elem.primitive),
           ],
           attrs: elem.getAnnotationsValues(),
-          blocks: [],
+          blocks: Object.keys(elem.annotations).length > 0 ? [this.getAnnotationsBlock(elem)] : [],
         }
       }
       if (isInstanceElement(elem)) {

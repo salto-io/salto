@@ -1,6 +1,7 @@
 import {
   ObjectType, PrimitiveType, PrimitiveTypes, Element, ElemID, isObjectType, Type, InstanceElement,
   Field,
+  BuiltinTypes,
 } from 'adapter-api'
 import * as TestHelpers from '../common/helpers'
 import Parser from '../../src/parser/salto'
@@ -70,6 +71,17 @@ describe('Salto parser', () => {
           _required = true
         }
       }
+
+      type salesforce_field is number {
+        annotations {
+          number scale {
+          }
+          number precision {
+          }
+          boolean unique {
+          }
+        }
+      }
       `
 
       const { elements } = await Parser.parse(Buffer.from(body), 'none')
@@ -77,8 +89,8 @@ describe('Salto parser', () => {
     })
 
     describe('parse result', () => {
-      it('should have two types', () => {
-        expect(parsedElements.length).toBe(9)
+      it('should have all types', () => {
+        expect(parsedElements.length).toBe(10)
       })
     })
 
@@ -239,6 +251,22 @@ describe('Salto parser', () => {
         expect(update.fields.num.type.elemID.name).toBe('update')
       })
     })
+
+    describe('field type', () => {
+      let numberType: PrimitiveType
+      beforeAll(() => {
+        numberType = parsedElements[9] as PrimitiveType
+      })
+      it('should have the correct type', () => {
+        expect(numberType.primitive).toBe(PrimitiveTypes.NUMBER)
+      })
+
+      it('should have the right annotations', () => {
+        expect(numberType.annotations.scale.elemID.getFullName()).toEqual('number')
+        expect(numberType.annotations.precision.elemID.getFullName()).toEqual('number')
+        expect(numberType.annotations.unique.elemID.getFullName()).toEqual('boolean')
+      })
+    })
   })
 
   describe('error tests', () => {
@@ -271,12 +299,29 @@ describe('Salto Dump', () => {
     primitive: PrimitiveTypes.BOOLEAN,
   })
 
+  const fieldType = new PrimitiveType({
+    elemID: new ElemID('salesforce', 'field'),
+    primitive: PrimitiveTypes.NUMBER,
+    annotations: {
+      alice: BuiltinTypes.NUMBER,
+      bob: BuiltinTypes.NUMBER,
+      tom: BuiltinTypes.BOOLEAN,
+      jerry: BuiltinTypes.STRING,
+    },
+  })
+
   const model = new ObjectType({
     elemID: new ElemID('salesforce', 'test'),
   })
   model.fields.name = new Field(model.elemID, 'name', strType, { label: 'Name' })
   model.fields.num = new Field(model.elemID, 'num', numType)
   model.fields.list = new Field(model.elemID, 'list', strType, {}, true)
+  model.fields.field = new Field(model.elemID, 'field', fieldType, {
+    alice: 1,
+    bob: 2,
+    tom: true,
+    jerry: 'mouse',
+  })
 
   model.annotate({
     // eslint-disable-next-line @typescript-eslint/camelcase
@@ -311,13 +356,20 @@ describe('Salto Dump', () => {
   let body: string
 
   beforeAll(async () => {
-    body = await Parser.dump([strType, numType, boolType, model, instance, config])
+    body = await Parser.dump([strType, numType, boolType, fieldType, model, instance, config])
   })
 
   it('dumps primitive types', () => {
     expect(body).toMatch(/type salesforce_string is string {/)
     expect(body).toMatch(/type salesforce_number is number {/)
     expect(body).toMatch(/type salesforce_bool is boolean {/)
+  })
+
+  it('dumps primitive field type annotations', () => {
+    expect(body).toMatch(/type salesforce_field is number {.*?annotations {.*?number alice {/s)
+    expect(body).toMatch(/type salesforce_field is number {.*?annotations {.*?number bob {/s)
+    expect(body).toMatch(/type salesforce_field is number {.*?annotations {.*?boolean tom {/s)
+    expect(body).toMatch(/type salesforce_field is number {.*?annotations {.*?string jerry {/s)
   })
 
   it('dumps instance elements', () => {
@@ -351,13 +403,14 @@ describe('Salto Dump', () => {
     it('can be parsed back', async () => {
       const { elements, errors } = await Parser.parse(Buffer.from(body), 'none')
       expect(errors.length).toEqual(0)
-      expect(elements.length).toEqual(6)
+      expect(elements.length).toEqual(7)
       expect(elements[0]).toEqual(strType)
       expect(elements[1]).toEqual(numType)
       expect(elements[2]).toEqual(boolType)
-      TestHelpers.expectTypesToMatch(elements[3] as Type, model)
-      TestHelpers.expectInstancesToMatch(elements[4] as InstanceElement, instance)
-      TestHelpers.expectInstancesToMatch(elements[5] as InstanceElement, config)
+      TestHelpers.expectTypesToMatch(elements[3] as Type, fieldType)
+      TestHelpers.expectTypesToMatch(elements[4] as Type, model)
+      TestHelpers.expectInstancesToMatch(elements[5] as InstanceElement, instance)
+      TestHelpers.expectInstancesToMatch(elements[6] as InstanceElement, config)
     })
   })
 })

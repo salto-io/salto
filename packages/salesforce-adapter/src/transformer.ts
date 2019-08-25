@@ -12,7 +12,7 @@ import {
 } from './client/types'
 import {
   API_NAME, LABEL, PICKLIST_VALUES, SALESFORCE, RESTRICTED_PICKLIST, FORMULA,
-  FORMULA_TYPE_PREFIX, FIELD_TYPE_NAMES, FIELD_TYPE_API_NAMES,
+  FORMULA_TYPE_PREFIX, FIELD_TYPE_NAMES, FIELD_TYPE_API_NAMES, METADATA_OBJECT_NAME_FIELD,
   METADATA_TYPE, FIELD_ANNOTATIONS, SALESFORCE_CUSTOM_SUFFIX, MAX_METADATA_RESTRICTION_VALUES,
 } from './constants'
 
@@ -33,8 +33,14 @@ export const bpCase = (name: string): string => {
 }
 export const sfInstnaceName = (instance: Element): string =>
   instance.elemID.nameParts.slice(1).map(p => sfCase(p, false)).join('')
+
 export const apiName = (elem: Element): string => (
-  (isInstanceElement(elem)) ? sfCase(elem.elemID.name) : elem.getAnnotationsValues()[API_NAME]
+  isInstanceElement(elem)
+    // Instance API name comes from the full name value, fallback to the elem ID
+    ? elem.value[bpCase(METADATA_OBJECT_NAME_FIELD)] || sfCase(elem.elemID.name)
+    // Object/Field name comes from the annotation, Fallback to the element ID. we assume
+    // it is custom because all standard objects and fields get the annotation in discover
+    : elem.getAnnotationsValues()[API_NAME] || sfCase(elem.elemID.nameParts.slice(-1)[0], true)
 )
 
 export const metadataType = (element: Element): string => (

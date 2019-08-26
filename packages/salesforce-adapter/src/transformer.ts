@@ -415,7 +415,7 @@ const transform = (obj: Values, type: ObjectType, convert: (name: string) => str
       return undefined
     }
 
-    const field = type.fields[key]
+    const field = type.fields[key] || type.fields[bpCase(key)]
     if (field !== undefined) {
       const fieldType = field.type
       if (isObjectType(fieldType)) {

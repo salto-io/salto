@@ -23,6 +23,7 @@ import { filter as validationRulesFilter } from './filters/validation_rules'
 import { filter as assignmentRulesFilter } from './filters/assignment_rules'
 import convertListsFilter from './filters/convert_lists'
 import convertTypeFilter from './filters/convert_types'
+import missingFieldsFilter from './filters/missing_fields'
 import Filter from './filters/filter'
 
 // Diagnose client results
@@ -114,6 +115,7 @@ export default class SalesforceAdapter {
       layoutFilter,
       validationRulesFilter,
       assignmentRulesFilter,
+      missingFieldsFilter,
       // The following filters should remain last in order to make sure they fix all elements
       convertListsFilter,
       convertTypeFilter,

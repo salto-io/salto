@@ -160,6 +160,94 @@ describe('Test Salesforce adapter E2E with real account', () => {
     }
 
     const stringType = Types.salesforceDataTypes.text
+    const emailType = Types.salesforceDataTypes.email
+
+    it('should add new queue instance', async () => {
+      const name = 'TestAddQueueInstance'
+
+      const mockElemID = new ElemID(constants.SALESFORCE, 'test')
+      const sobjectType = new ObjectType({
+        elemID: mockElemID,
+        fields: {
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          sobject_type: new Field(
+            mockElemID,
+            'sobject_type',
+            stringType,
+            {
+              [Type.REQUIRED]: true,
+            },
+          ),
+        },
+      })
+
+      const q = new InstanceElement(new ElemID(constants.SALESFORCE, name), new ObjectType({
+        elemID: mockElemID,
+        fields: {
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          queue_sobject: new Field(
+            mockElemID,
+            'queue_sobject',
+            sobjectType,
+            {
+              [Type.REQUIRED]: true,
+            },
+          ),
+          name: new Field(
+            mockElemID,
+            'name',
+            stringType,
+            {
+              [Type.REQUIRED]: true,
+            },
+          ),
+          email: new Field(
+            mockElemID,
+            'email',
+            emailType,
+            {
+              [Type.REQUIRED]: true,
+            },
+          ),
+        },
+        annotations: {},
+        annotationsValues: {
+          [constants.METADATA_TYPE]: 'Queue',
+          [constants.API_NAME]: name,
+        },
+      }),
+      {
+        // eslint-disable-next-line @typescript-eslint/camelcase
+        queue_sobject: [
+          {
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            sobject_type: 'Case',
+          },
+          {
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            sobject_type: 'Lead',
+          },
+        ],
+        name: 'oren',
+        email: 'bla@gmail.com',
+      })
+
+      if (await objectExists(q.type.getAnnotationsValues()[constants.METADATA_TYPE],
+        sfCase(q.elemID.name))) {
+        await sfAdapter.remove(q)
+      }
+
+      const post = await sfAdapter.add(q) as InstanceElement
+
+      expect(
+        await objectExists(
+          post.type.getAnnotationsValues()[constants.METADATA_TYPE], sfCase(post.elemID.name)
+        )
+      ).toBeTruthy()
+
+      // Clean-up
+      await sfAdapter.remove(post)
+    })
 
     it('should add new profile instance', async () => {
       const instanceElementName = 'TestAddProfileInstance__c'

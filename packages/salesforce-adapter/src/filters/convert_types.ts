@@ -4,6 +4,7 @@ import {
 } from 'adapter-api'
 import Filter from './filter'
 import { SETTINGS_METADATA_TYPE } from '../constants'
+import { bpCase } from '../transformer'
 
 const transformPrimitive = (val: string, primitive: PrimitiveTypes):
   string | boolean | number | null | undefined => {
@@ -90,7 +91,7 @@ const filter: Filter = {
       .filter(instance => isObjectType(instance.type))
       .forEach(instance => {
         // Settings have no type fields so their conversion is non-strict
-        const strict = instance.type.elemID.name !== SETTINGS_METADATA_TYPE
+        const strict = instance.type.elemID.name !== bpCase(SETTINGS_METADATA_TYPE)
         instance.value = transform(instance.value, instance.type as ObjectType, strict) || {}
       })
   },

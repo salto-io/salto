@@ -5,7 +5,7 @@ import {
 
 import {
   Type, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values,
-  Field as TypeField, BuiltinTypes, Element, isObjectType, isPrimitiveType, isInstanceElement,
+  Field as TypeField, BuiltinTypes, Element, isInstanceElement,
 } from 'adapter-api'
 import {
   CustomObject, CustomField,
@@ -382,79 +382,32 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
   return new TypeField(parentID, bpFieldName, bpFieldType, annotations)
 }
 
-const transformPrimitive = (val: string, primitive: PrimitiveTypes):
-  string | boolean | number | null | undefined => {
-  // Salesforce returns nulls as objects
-  if (_.isObject(val) && _.get(val, ['$', 'xsi:nil']) === 'true') {
-    return null
+/**
+ * Apply transoform function on all keys in a values map recursively
+ *
+ * @param obj Input object to transform
+ * @param func Transform function to apply to all keys
+ */
+const mapKeysRecursive = (obj: Values, func: (key: string) => string): Values => {
+  if (_.isArray(obj)) {
+    return obj.map(val => mapKeysRecursive(val, func))
   }
-  switch (primitive) {
-    case PrimitiveTypes.NUMBER:
-      return Number(val)
-    case PrimitiveTypes.BOOLEAN:
-      return val.toLowerCase() === 'true'
-    case PrimitiveTypes.STRING:
-      if (val.length === 0) {
-        return undefined
-      }
-      return val
-    default:
-      return val
+  if (_.isObject(obj)) {
+    return _(obj)
+      .mapKeys((_val, key) => func(key))
+      .mapValues(val => mapKeysRecursive(val, func))
+      .value()
   }
+  return obj
 }
 
-const transform = (obj: Values, type: ObjectType, convert: (name: string) => string,
-  strict: boolean = true): Values | undefined => {
-  const result = _(obj).mapKeys((_value, key) => convert(key)).mapValues((value, key) => {
-    // we get lists of empty strings that we would like to filter out
-    if (_.isArray(value) && _.isEmpty(value.filter(v => !_.isEmpty(v)))) {
-      return undefined
-    }
-    // we get empty strings that we would like to filter out, will filter non string cases too.
-    if (_.isEmpty(value)) {
-      return undefined
-    }
-
-    const field = type.fields[key]
-    if (field !== undefined) {
-      const fieldType = field.type
-      if (isObjectType(fieldType)) {
-        return _.isArray(value)
-          ? value.map(v => transform(v, fieldType, convert, strict))
-            .filter(v => !_.isEmpty(v))
-          : transform(value, fieldType, convert, strict)
-      }
-      if (isPrimitiveType(fieldType)) {
-        return _.isArray(value)
-          ? value.map(v => transformPrimitive(v, fieldType.primitive)).filter(v => !_.isEmpty(v))
-          : transformPrimitive(value, fieldType.primitive)
-      }
-    }
-    // We are not returning the value if it's not fit the type definition.
-    // We saw cases where we got for jsforce values empty values in unexpected
-    // format for example:
-    // "layoutColumns":["","",""] where layoutColumns suppose to be list of object
-    // with LayoutItem and reserve fields.
-    // return undefined
-    // We are not strict for salesforce Settings type as type definition is empty
-    // and each Setting looks different
-    if (strict) {
-      return undefined
-    }
-    return value
-  }).omitBy(_.isUndefined)
-    .value()
-  return _.isEmpty(result) ? undefined : result
-}
-
-export const fromMetadataInfo = (info: MetadataInfo, infoType: ObjectType, strict: boolean = true):
-  Values =>
-  transform(info as Values, infoType, bpCase, strict) || {}
+export const fromMetadataInfo = (info: MetadataInfo):
+  Values => mapKeysRecursive(info, bpCase)
 
 
-export const toMetadataInfo = (fullName: string, values: Values, infoType: ObjectType):
+export const toMetadataInfo = (fullName: string, values: Values, _infoType: ObjectType):
   MetadataInfo =>
   ({
     fullName,
-    ...transform(values, infoType, (name: string) => sfCase(name, false, false), false),
+    ...mapKeysRecursive(values, name => sfCase(name, false, false)),
   })

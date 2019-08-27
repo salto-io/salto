@@ -8,14 +8,12 @@ import SalesforceClient from '../client/client'
 
 interface MissingField {
   name: string
-  // One of type (builtin type instance) or typeName (salesforce type name) must be specified
-  type?: Type
-  typeName?: string
+  type: Type | string
   annotationValues?: Values
   isList?: boolean
 }
 
-const salesforceMissingFields: Record<string, MissingField[]> = {
+const defaultMissingFields: Record<string, MissingField[]> = {
   // eslint-disable-next-line @typescript-eslint/camelcase
   filter_item: [
     {
@@ -35,7 +33,7 @@ const salesforceMissingFields: Record<string, MissingField[]> = {
   lead_convert_settings: [
     {
       name: 'object_mapping',
-      typeName: 'object_mapping',
+      type: 'object_mapping',
       isList: true,
     },
   ],
@@ -53,7 +51,7 @@ const salesforceMissingFields: Record<string, MissingField[]> = {
 
 export class MissingFieldsFilter implements Filter {
   constructor(
-    private missingFields: Record<string, MissingField[]> = salesforceMissingFields
+    private missingFields: Record<string, MissingField[]> = defaultMissingFields
   ) {}
 
   async onDiscover(_client: SalesforceClient, elements: Element[]): Promise<void> {
@@ -72,7 +70,7 @@ export class MissingFieldsFilter implements Filter {
           .map(f => [f.name, new Field(
             elem.elemID,
             f.name,
-            f.type || typeMap[f.typeName as string],
+            isType(f.type) ? f.type : typeMap[f.type],
             f.annotationValues || {},
             f.isList === true,
           )])

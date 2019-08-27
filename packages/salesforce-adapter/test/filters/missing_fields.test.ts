@@ -19,7 +19,7 @@ describe('Test layout filter', () => {
       },
       {
         name: 'complex',
-        typeName: 'complex_type',
+        type: 'complex_type',
       },
     ],
   })

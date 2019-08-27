@@ -1,10 +1,8 @@
 import _ from 'lodash'
-import { SaveResult } from 'jsforce-types'
 import {
-  Element, isObjectType, Field, Values, Type, isType, BuiltinTypes,
+  isObjectType, Field, Values, Type, isType, BuiltinTypes,
 } from 'adapter-api'
 import Filter from './filter'
-import SalesforceClient from '../client/client'
 
 interface MissingField {
   name: string
@@ -13,7 +11,7 @@ interface MissingField {
   isList?: boolean
 }
 
-const defaultMissingFields: Record<string, MissingField[]> = {
+const allMissingFields: Record<string, MissingField[]> = {
   // eslint-disable-next-line @typescript-eslint/camelcase
   filter_item: [
     {
@@ -49,12 +47,8 @@ const defaultMissingFields: Record<string, MissingField[]> = {
   ],
 }
 
-export class MissingFieldsFilter implements Filter {
-  constructor(
-    private missingFields: Record<string, MissingField[]> = defaultMissingFields
-  ) {}
-
-  async onDiscover(_client: SalesforceClient, elements: Element[]): Promise<void> {
+export const makeFilter = (missingFields: Record<string, MissingField[]>): Filter => ({
+  onDiscover: async function onDiscover(_client, elements) {
     // We need a mapping of all the types so we can replace type names with the correct types
     const typeMap = _(elements)
       .filter(isType)
@@ -64,7 +58,7 @@ export class MissingFieldsFilter implements Filter {
 
     // Add missing fields to types
     elements.filter(isObjectType).forEach(elem => {
-      const fieldsToAdd = this.missingFields[elem.elemID.name]
+      const fieldsToAdd = missingFields[elem.elemID.name]
       if (fieldsToAdd !== undefined) {
         _.assign(elem.fields, _(fieldsToAdd)
           .map(f => [f.name, new Field(
@@ -78,22 +72,10 @@ export class MissingFieldsFilter implements Filter {
           .value())
       }
     })
-  }
+  },
+  onAdd: async (_client, _elem) => [],
+  onUpdate: async (_client, _elem1, _elem2) => [],
+  onRemove: async (_client, _elem) => [],
+})
 
-  // eslint-disable-next-line class-methods-use-this
-  async onAdd(_client: SalesforceClient, _elem: Element): Promise<SaveResult[]> {
-    return []
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  async onUpdate(_c: SalesforceClient, _elem1: Element, _elem2: Element): Promise<SaveResult[]> {
-    return []
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  async onRemove(_client: SalesforceClient, _elem: Element): Promise<SaveResult[]> {
-    return []
-  }
-}
-
-export default new MissingFieldsFilter()
+export default makeFilter(allMissingFields)

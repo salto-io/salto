@@ -1,7 +1,7 @@
 import {
   ObjectType, ElemID, Field, BuiltinTypes,
 } from 'adapter-api'
-import { MissingFieldsFilter } from '../../src/filters/missing_fields'
+import { makeFilter } from '../../src/filters/missing_fields'
 import SalesforceClient from '../../src/client/client'
 import * as constants from '../../src/constants'
 
@@ -9,7 +9,7 @@ jest.mock('../../src/client/client')
 
 describe('Test layout filter', () => {
   const client = new SalesforceClient('', '', false)
-  const filter = new MissingFieldsFilter({
+  const filter = makeFilter({
     test: [
       {
         name: 'lst',

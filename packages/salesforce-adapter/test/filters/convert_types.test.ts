@@ -5,6 +5,7 @@ import {
 import filter from '../../src/filters/convert_types'
 import SalesforceClient from '../../src/client/client'
 import * as constants from '../../src/constants'
+import { bpCase } from '../../src/transformer'
 
 jest.mock('../../src/client/client')
 
@@ -36,12 +37,23 @@ describe('Test convert types filter', () => {
     },
   )
 
+  const mockSettings = new InstanceElement(
+    new ElemID(constants.SALESFORCE, 'settings', 'test_settings'),
+    new ObjectType({
+      elemID: new ElemID(constants.SALESFORCE, bpCase(constants.SETTINGS_METADATA_TYPE)),
+    }),
+    {
+      setting: 'true',
+    },
+  )
+
   let testElements: Element[]
 
   beforeEach(() => {
     testElements = [
       mockType,
       _.clone(mockInstance),
+      _.clone(mockSettings),
     ]
   })
 
@@ -65,6 +77,11 @@ describe('Test convert types filter', () => {
 
     it('should convert nulls', () => {
       expect(inst.value.nullStr).toBe(null)
+    })
+
+    it('should not change settings', () => {
+      const settingsInst = testElements[2] as InstanceElement
+      expect(settingsInst).toEqual(mockSettings)
     })
   })
 

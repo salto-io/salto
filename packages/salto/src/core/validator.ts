@@ -12,9 +12,38 @@ const primitiveValidators = {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
+const validateRequired = (value: any, scheme: Type): string[] => {
+  if (isObjectType(scheme)) {
+    return Object.keys(scheme.fields).map(
+      // eslint-disable-next-line @typescript-eslint/no-use-before-define
+      k => validateRequiredValue(value[k], scheme.fields[k])
+    ).filter(e => e).reduce((acc, e) => [...acc, ...e], [])
+  }
+
+  return []
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const validateRequiredValue = (value: any, field: Field): string[] => {
+  if (value === undefined) {
+    return field.getAnnotationsValues()[Type.REQUIRED] === true
+      ? [`Field ${field.name} is required but has no value`] : []
+  }
+
+  if (field.isList) {
+    return _.isArray(value)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ? value.map((v: any) => validateRequired(v, field.type)).reduce((acc: any, e: any) =>
+        [...acc, ...e], []) : []
+  }
+
+  return validateRequired(value, field.type)
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const validateValue = (value: any, scheme: Type): string[] => {
   if ((isPrimitiveType(scheme) && !primitiveValidators[scheme.primitive](value))
-     || (isObjectType(scheme) && !_.isPlainObject(value))) {
+    || (isObjectType(scheme) && !_.isPlainObject(value))) {
     return [`Invalid value type for ${scheme.elemID.getFullName()} : ${JSON.stringify(value)}`]
   }
   if (isObjectType(scheme)) {
@@ -63,7 +92,8 @@ const validateType = (element: Type): string[] => {
 
 const validateInstanceElement = (
   element: InstanceElement
-): string[] => validateValue(element.value, element.type)
+): string[] => [...validateValue(element.value, element.type),
+  ...validateRequired(element.value, element.type)]
 
 const validateElements = (elements: Element[]): string[] => elements.map(element => {
   if (isInstanceElement(element)) {

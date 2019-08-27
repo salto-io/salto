@@ -7,9 +7,11 @@ import {
   SaveResult,
   ValueTypeField,
   DescribeSObjectResult,
+  DeployResult,
 } from 'jsforce'
 
-const apiVersion = '46.0'
+export const API_VERSION = '46.0'
+export const METADATA_NAMESPACE = 'http://soap.sforce.com/2006/04/metadata'
 
 // Make sure results are lists with no undefined values in them
 const ensureListResult = <T>(result: T|T[]): T[] =>
@@ -25,9 +27,12 @@ export default class SalesforceClient {
     isSandbox: boolean
   ) {
     this.conn = new Connection({
-      version: apiVersion,
+      version: API_VERSION,
       loginUrl: `https://${isSandbox ? 'test' : 'login'}.salesforce.com/`,
     })
+    // Set poll interval and timeout for deploy
+    this.conn.metadata.pollTimeout = 3000
+    this.conn.metadata.pollTimeout = 30000
   }
 
   // In the future this can be replaced with decorators - currently experimental feature
@@ -56,7 +61,7 @@ export default class SalesforceClient {
   ): Promise<ValueTypeField[]> {
     await this.login()
     const result = await this.conn.metadata.describeValueType(
-      `{http://soap.sforce.com/2006/04/metadata}${objectName}`
+      `{${METADATA_NAMESPACE}}${objectName}`
     )
     return result.valueTypeFields
   }
@@ -131,5 +136,15 @@ export default class SalesforceClient {
   ): Promise<SaveResult | SaveResult[]> {
     await this.login()
     return this.conn.metadata.update(metadataType, metadata)
+  }
+
+  /**
+   * Updates salesforce metadata with the Deploy API
+   * @param zip The package zip
+   * @returns The save result of the requested update
+   */
+  public async deploy(zip: Buffer): Promise<DeployResult> {
+    await this.login()
+    return this.conn.metadata.deploy(zip, { rollbackOnError: true }).complete(true)
   }
 }

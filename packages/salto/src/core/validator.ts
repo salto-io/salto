@@ -13,10 +13,10 @@ const primitiveValidators = {
 
 const validateRequired = (value: Value, type: Type): string[] => {
   if (isObjectType(type)) {
-    return Object.keys(type.fields).map(
+    return _.flatten(Object.keys(type.fields).map(
       // eslint-disable-next-line @typescript-eslint/no-use-before-define
       k => validateRequiredValue(value[k], type.fields[k])
-    ).filter(e => e).reduce((acc, e) => [...acc, ...e], [])
+    ).filter(e => !_.isUndefined(e)))
   }
 
   return []
@@ -31,8 +31,7 @@ const validateRequiredValue = (value: Value, field: Field): string[] => {
   if (field.isList) {
     return _.isArray(value)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ? value.map((v: any) => validateRequired(v, field.type)).reduce((acc: any, e: any) =>
-        [...acc, ...e], []) : []
+      ? _.flatten(value.map((v: any) => validateRequired(v, field.type))) : []
   }
 
   return validateRequired(value, field.type)
@@ -44,10 +43,10 @@ const validateValue = (value: Value, type: Type): string[] => {
     return [`Invalid value type for ${type.elemID.getFullName()} : ${JSON.stringify(value)}`]
   }
   if (isObjectType(type)) {
-    return Object.keys(value).map(
+    return _.flatten(Object.keys(value).map(
       // eslint-disable-next-line @typescript-eslint/no-use-before-define
       k => type.fields[k] && validateFieldValue(value[k], type.fields[k])
-    ).filter(e => e).reduce((acc, e) => [...acc, ...e], [])
+    ).filter(e => !_.isUndefined(e)))
   }
   return []
 }
@@ -58,30 +57,24 @@ const validateFieldValue = (value: Value, field: Field): string[] => {
       return [`Invalid value type for ${field.elemID.getFullName()}: expected list and got ${
         JSON.stringify(value)} for field ${field.name}`]
     }
-    return value.map(v => validateValue(v, field.type)).reduce((acc, e) => [...acc, ...e], [])
+    return _.flatten(value.map(v => validateValue(v, field.type)))
   }
   return validateValue(value, field.type)
 }
 
-const validateField = (field: Field): string[] => Object.keys(field.getAnnotationsValues()).map(
-  k => field.type.annotations[k] && validateValue(
-    field.getAnnotationsValues()[k],
-    field.type.annotations[k]
-  )
-).filter(e => e).reduce((acc, e) => [...acc, ...e], [])
+const validateField = (field: Field): string[] =>
+  _.flatten(Object.keys(field.getAnnotationsValues()).map(k => field.type.annotations[k]
+    && validateValue(field.getAnnotationsValues()[k], field.type.annotations[k]))
+    .filter(e => !_.isUndefined(e)))
 
 const validateType = (element: Type): string[] => {
-  const errors = Object.keys(element.getAnnotationsValues()).map(
-    k => element.annotations[k] && validateValue(
-      element.getAnnotationsValues()[k],
-      element.annotations[k]
-    )
-  ).filter(e => e).reduce((acc, e) => [...acc, ...e], [])
+  const errors = _.flatten(Object.keys(element.getAnnotationsValues()).map(
+    k => element.annotations[k]
+      && validateValue(element.getAnnotationsValues()[k], element.annotations[k])
+  ).filter(e => !_.isUndefined(e)))
+
   if (isObjectType(element)) {
-    return [
-      ...errors,
-      ...Object.values(element.fields).map(validateField).reduce((acc, e) => [...acc, ...e], []),
-    ]
+    return [...errors, ..._.flatten(Object.values(element.fields).map(validateField))]
   }
   return errors
 }
@@ -91,11 +84,11 @@ const validateInstanceElement = (
 ): string[] => [...validateValue(element.value, element.type),
   ...validateRequired(element.value, element.type)]
 
-const validateElements = (elements: Element[]): string[] => elements.map(element => {
+const validateElements = (elements: Element[]): string[] => _.flatten(elements.map(element => {
   if (isInstanceElement(element)) {
     return validateInstanceElement(element)
   }
   return validateType(element as Type)
-}).reduce((acc, e) => [...acc, ...e], [])
+}))
 
 export default validateElements

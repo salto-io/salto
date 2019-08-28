@@ -28,7 +28,7 @@ const transformPrimitive = (val: string, primitive: PrimitiveTypes):
   }
 }
 
-const transform = (obj: Values, type: ObjectType, strict: boolean = true): Values | undefined => {
+const transform = (obj: Values, type: ObjectType, strict = true): Values | undefined => {
   const result = _(obj).mapValues((value, key) => {
     // we get lists of empty strings that we would like to filter out
     if (_.isArray(value) && _.isEmpty(value.filter(v => !_.isEmpty(v)))) {

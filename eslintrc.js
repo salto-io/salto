@@ -73,7 +73,8 @@ module.exports = {
                 'no-useless-constructor': [0],
                 'no-empty-function': [0],
                 '@typescript-eslint/array-type': [0],
-                '@typescript-eslint/member-delimiter-style': ['error', {multiline: {delimiter: 'none'}}]
+                '@typescript-eslint/member-delimiter-style': ['error', {multiline: {delimiter: 'none'}}],
+                '@typescript-eslint/ban-ts-ignore': [0],
             }
         },
     ],

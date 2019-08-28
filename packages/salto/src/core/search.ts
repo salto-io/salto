@@ -18,7 +18,7 @@ export type SearchResult = FoundSearchResult | NotFound
 const getMatchingElementName = (
   searchWord: string,
   elementsNames: string[],
-  exactMatchOnly: boolean = true,
+  exactMatchOnly = true,
 ): OptionalString => {
   const options = {
     shouldSort: true,
@@ -36,7 +36,7 @@ export const findElement = (
   keyParts: string[],
   topLevelElements: ElementMap,
   searchElements: ElementMap,
-  exactMatchOnly: boolean = true,
+  exactMatchOnly = true,
 ): SearchResult => {
   const searchWord = keyParts[0]
   const keyPartsRem = keyParts.slice(1)

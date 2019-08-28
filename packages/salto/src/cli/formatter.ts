@@ -56,7 +56,7 @@ const createPlanStepTitle = (
 const createPlanStepOutput = (
   formatedAction: ActionLineFormat,
   printModifiers: boolean,
-  identLevel: number = 1,
+  identLevel = 1,
 ): string => {
   const lineTitle = createPlanStepTitle(formatedAction, printModifiers)
   const lineChildren = formatedAction.subLines

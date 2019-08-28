@@ -163,7 +163,7 @@ export const apply = async (
   _fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
   shouldApply: (plan: Plan) => Promise<boolean>,
   reportProgress: (action: PlanAction) => void,
-  force: boolean = false
+  force = false
 ): Promise<Plan> => {
   const changes = await plan(blueprints)
   if (force || await shouldApply(changes)) {

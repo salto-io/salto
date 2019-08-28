@@ -238,7 +238,7 @@ export default class SalesforceAdapter {
   private async addInstance(element: InstanceElement): Promise<InstanceElement> {
     const result = await this.client.create(
       metadataType(element),
-      toMetadataInfo(apiName(element), element.value, element.type as ObjectType)
+      toMetadataInfo(apiName(element), element.value)
     )
     diagnose(result)
 
@@ -337,8 +337,7 @@ export default class SalesforceAdapter {
       metadataType(newInstance),
       toMetadataInfo(
         apiName(newInstance),
-        newInstance.getValuesThatNotInPrevOrDifferent(prevInstance.value),
-        newInstance.type as ObjectType
+        newInstance.getValuesThatNotInPrevOrDifferent(prevInstance.value)
       )
     )
 

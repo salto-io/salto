@@ -405,7 +405,7 @@ export const fromMetadataInfo = (info: MetadataInfo):
   Values => mapKeysRecursive(info, bpCase)
 
 
-export const toMetadataInfo = (fullName: string, values: Values, _infoType: ObjectType):
+export const toMetadataInfo = (fullName: string, values: Values):
   MetadataInfo =>
   ({
     fullName,

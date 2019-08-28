@@ -1,3 +1,4 @@
+import _ from 'lodash'
 import {
   Connection,
   MetadataObject,
@@ -9,13 +10,17 @@ import {
   DescribeSObjectResult,
   DeployResult,
 } from 'jsforce'
+import makeArray from './make_array'
 
 export const API_VERSION = '46.0'
 export const METADATA_NAMESPACE = 'http://soap.sforce.com/2006/04/metadata'
 
+// Salesforce limitation of maximum number of items per create/update/delete calls
+const MAX_ITEMS_IN_REQUEST = 10
+
 // Make sure results are lists with no undefined values in them
 const ensureListResult = <T>(result: T|T[]): T[] =>
-  (Array.isArray(result) ? result : [result]).filter(item => item !== undefined)
+  makeArray(result).filter(item => item !== undefined)
 
 export default class SalesforceClient {
   private conn: Connection
@@ -41,6 +46,15 @@ export default class SalesforceClient {
       await this.conn.login(this.username, this.password)
       this.isLoggedIn = true
     }
+  }
+
+  private static async sendChunked<TIn>(
+    input: TIn | TIn[],
+    sendRequest: (chunk: TIn[]) => Promise<SaveResult[] | SaveResult>,
+  ): Promise<SaveResult[]> {
+    const chunks = _.chunk(makeArray(input), MAX_ITEMS_IN_REQUEST)
+    const results = await Promise.all(chunks.map(sendRequest))
+    return _.flatten(results.map(makeArray))
   }
 
   /**
@@ -104,9 +118,12 @@ export default class SalesforceClient {
   public async create(
     type: string,
     metadata: MetadataInfo | MetadataInfo[]
-  ): Promise<SaveResult | SaveResult[]> {
+  ): Promise<SaveResult[]> {
     await this.login()
-    return this.conn.metadata.create(type, metadata)
+    return SalesforceClient.sendChunked(
+      metadata,
+      chunk => this.conn.metadata.create(type, chunk),
+    )
   }
 
   /**
@@ -119,9 +136,12 @@ export default class SalesforceClient {
   public async delete(
     metadataType: string,
     fullNames: string | string[]
-  ): Promise<SaveResult | SaveResult[]> {
+  ): Promise<SaveResult[]> {
     await this.login()
-    return this.conn.metadata.delete(metadataType, fullNames)
+    return SalesforceClient.sendChunked(
+      fullNames,
+      chunk => this.conn.metadata.delete(metadataType, chunk),
+    )
   }
 
   /**
@@ -133,9 +153,12 @@ export default class SalesforceClient {
   public async update(
     metadataType: string,
     metadata: MetadataInfo | MetadataInfo[]
-  ): Promise<SaveResult | SaveResult[]> {
+  ): Promise<SaveResult[]> {
     await this.login()
-    return this.conn.metadata.update(metadataType, metadata)
+    return SalesforceClient.sendChunked(
+      metadata,
+      chunk => this.conn.metadata.update(metadataType, chunk),
+    )
   }
 
   /**

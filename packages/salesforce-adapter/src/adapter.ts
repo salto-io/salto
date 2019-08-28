@@ -5,7 +5,6 @@ import {
 import {
   SaveResult, ValueTypeField, MetadataInfo, Field as SObjField, DeployResult,
 } from 'jsforce'
-import { isArray } from 'util'
 import _ from 'lodash'
 import SalesforceClient from './client/client'
 import * as constants from './constants'
@@ -25,33 +24,23 @@ import convertListsFilter from './filters/convert_lists'
 import convertTypeFilter from './filters/convert_types'
 import missingFieldsFilter from './filters/missing_fields'
 import Filter from './filters/filter'
+import makeArray from './client/make_array'
 
 // Diagnose client results
 const diagnose = (result: SaveResult | SaveResult[]): void => {
-  const errorMessage = (error: SfError | SfError[]): string => {
-    if (isArray(error)) {
-      return error.map(e => e.message).join('\n')
-    }
-    return error.message
-  }
+  const errorMessage = (error: SfError | SfError[]): string =>
+    makeArray(error).map(e => e.message).join('\n')
 
   if (!result) {
     return
   }
-  let errors: string[] = []
-  if (isArray(result)) {
-    errors = errors.concat(
-      (result as CompleteSaveResult[])
-        .filter(r => r && r.errors)
-        .map(r => errorMessage(r.errors))
-    )
-  } else if ((result as CompleteSaveResult).errors) {
-    errors.push(errorMessage((result as CompleteSaveResult).errors))
-  }
+
+  const errors = makeArray(result)
+    .map(r => r as CompleteSaveResult)
+    .filter(r => (r as CompleteSaveResult).errors)
 
   if (errors.length > 0) {
-    // TODO: use CrudError
-    throw Error(errors.join('\n'))
+    throw new Error(errors.map(r => errorMessage(r.errors)).join('\n'))
   }
 }
 
@@ -319,6 +308,7 @@ export default class SalesforceAdapter {
           !_.isEqual(afterField.getAnnotationsValues(),
             pre.fields[afterField.name].getAnnotationsValues()))),
     ])
+
     // Update the annotation values - this can't be done asynchronously with the previous
     // operations because the update API expects to receive the updated list of fields,
     // hence the need to perform the fields deletion and creation first, and then update the
@@ -326,7 +316,7 @@ export default class SalesforceAdapter {
     // IMPORTANT: We don't update a built-in object (such as Lead, Customer, etc.)
     // The update API currently allows us to add/remove custom fields to such objects, but not
     // to update them.
-    let objectUpdateResult: SaveResult | SaveResult[] = []
+    let objectUpdateResult: SaveResult[] = []
     if (apiName(clonedObject).endsWith(constants.SALESFORCE_CUSTOM_SUFFIX)
       // Don't update the object unless its annotations values have changed
       && !_.isEqual(pre.getAnnotationsValues(), clonedObject.getAnnotationsValues())) {
@@ -338,8 +328,10 @@ export default class SalesforceAdapter {
 
     // Aspects should be updated once all object related properties updates are over
     const filtersResult = await this.runFiltersOnUpdate(prevObject, clonedObject)
-    diagnose([..._.flatten(fieldsUpdateResult), objectUpdateResult as SaveResult,
-      ...filtersResult])
+
+    diagnose(_.flatten(fieldsUpdateResult))
+    diagnose(objectUpdateResult)
+    diagnose(filtersResult)
 
     return clonedObject
   }
@@ -374,12 +366,10 @@ export default class SalesforceAdapter {
    * @returns successfully managed to update all fields
    */
   private async updateFields(object: ObjectType, fieldsToUpdate: Field[]): Promise<SaveResult[]> {
-    if (fieldsToUpdate.length === 0) return []
-    // Update the custom fields
-    return _.flatten(await Promise.all(_.chunk(fieldsToUpdate, 10).map(chunk => this.client.update(
+    return this.client.update(
       constants.CUSTOM_FIELD,
-      chunk.map(f => toCustomField(object, f, true))
-    ) as Promise<SaveResult[]>)))
+      fieldsToUpdate.map(f => toCustomField(object, f, true)),
+    )
   }
 
   /**
@@ -389,12 +379,11 @@ export default class SalesforceAdapter {
    * @returns successfully managed to create all fields with their permissions or not
    */
   private async createFields(object: ObjectType, fieldsToAdd: Field[]): Promise<SaveResult[]> {
-    if (fieldsToAdd.length === 0) return []
     // Create the custom fields
-    return _.flatten(await Promise.all(_.chunk(fieldsToAdd, 10).map(chunk => this.client.create(
+    return this.client.create(
       constants.CUSTOM_FIELD,
-      chunk.map(f => toCustomField(object, f, true))
-    ) as Promise<SaveResult[]>)))
+      fieldsToAdd.map(f => toCustomField(object, f, true)),
+    )
   }
 
   /**
@@ -403,11 +392,10 @@ export default class SalesforceAdapter {
    * @param fields the custom fields we wish to delete
    */
   private async deleteCustomFields(element: ObjectType, fields: Field[]): Promise<SaveResult[]> {
-    if (fields.length === 0) return []
-    return _.flatten(await Promise.all(_.chunk(fields, 10).map(chunk => this.client.delete(
+    return this.client.delete(
       constants.CUSTOM_FIELD,
-      chunk.map(field => fieldFullName(element, field))
-    ) as Promise<SaveResult[]>)))
+      fields.map(field => fieldFullName(element, field)),
+    )
   }
 
   private async discoverMetadataTypes(typeNames: Promise<string[]>): Promise<Type[]> {
@@ -447,7 +435,7 @@ export default class SalesforceAdapter {
     const embeddedTypes = _.flatten(fields.filter(field => !_.isEmpty(field.fields)).map(
       field => this.createMetadataTypeElements(
         field.soapType,
-        Array.isArray(field.fields) ? field.fields : [field.fields],
+        makeArray(field.fields),
         knownTypes,
         true,
       )

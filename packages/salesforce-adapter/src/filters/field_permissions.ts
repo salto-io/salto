@@ -111,9 +111,7 @@ export const filter: Filter = {
   onAdd: async (client: SalesforceClient, after: Element): Promise<SaveResult[]> => {
     if (isObjectType(after)) {
       const profiles = toProfiles(after)
-      if (profiles.length > 0) {
-        return client.update(PROFILE_METADATA_TYPE, profiles) as Promise<SaveResult[]>
-      }
+      return client.update(PROFILE_METADATA_TYPE, profiles)
     }
     return []
   },
@@ -157,10 +155,7 @@ export const filter: Filter = {
       return { fullName: p.fullName, fieldPermissions: fields }
     }).filter(p => p.fieldPermissions.length > 0)
 
-    if (profiles.length > 0) {
-      return client.update(PROFILE_METADATA_TYPE, profiles) as Promise<SaveResult[]>
-    }
-    return []
+    return client.update(PROFILE_METADATA_TYPE, profiles)
   },
 
   onRemove: (_client: SalesforceClient, _elem: Element): Promise<SaveResult[]> =>

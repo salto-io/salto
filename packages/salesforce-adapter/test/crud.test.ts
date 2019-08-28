@@ -14,6 +14,7 @@ import SalesforceClient from '../src/client/client'
 import * as constants from '../src/constants'
 import { Types, sfCase } from '../src/transformer'
 import { PROFILE_METADATA_TYPE } from '../src/filters/field_permissions'
+import makeArray from '../src/client/make_array'
 
 jest.mock('../src/client/client')
 
@@ -68,10 +69,7 @@ describe('Test SalesforceAdapter CRUD', () => {
   let mockDeploy: jest.Mock<unknown>
   beforeEach(() => {
     const saveResultMock = async (_type: string, objects: MetadataInfo|MetadataInfo[]):
-  Promise<SaveResult| SaveResult[]> =>
-      (_.isArray(objects)
-        ? [{ fullName: objects[0].fullName, success: true }]
-        : [{ fullName: objects.fullName, success: true }])
+  Promise<SaveResult| SaveResult[]> => [{ fullName: makeArray(objects)[0].fullName, success: true }]
     const deployResultMock = async (_zip: Buffer): Promise<DeployResult> => getDeployResult(true)
     mockCreate = jest.fn().mockImplementationOnce(saveResultMock)
     SalesforceClient.prototype.create = mockCreate

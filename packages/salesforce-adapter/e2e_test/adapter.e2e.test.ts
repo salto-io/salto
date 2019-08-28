@@ -1,4 +1,3 @@
-import { isArray } from 'util'
 import {
   Type,
   ObjectType,
@@ -22,6 +21,7 @@ import {
 import {
   Types, sfCase, fromMetadataInfo,
 } from '../src/transformer'
+import makeArray from '../src/client/make_array'
 
 describe('Test Salesforce adapter E2E with real account', () => {
   const adapter = (): SalesforceAdapter => {
@@ -127,11 +127,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
         return false
       }
       if (fields || missingFields) {
-        let fieldNames: string[] = []
-        if (result.fields) {
-          fieldNames = isArray(result.fields) ? result.fields.map(rf => rf.fullName)
-            : [result.fields.fullName]
-        }
+        const fieldNames = makeArray(result.fields || []).map(rf => rf.fullName)
         if (fields && !fields.every(f => fieldNames.includes(f))) {
           return false
         }
@@ -614,12 +610,9 @@ describe('Test Salesforce adapter E2E with real account', () => {
         constants.CUSTOM_OBJECT,
         customObjectName
       )) as CustomObject
-      let label: string | undefined
-      if (readResult.fields) {
-        label = isArray(readResult.fields) ? readResult.fields.filter(f => f.fullName === 'Banana__c')[0].label
-          : readResult.fields.label
-      }
-      expect(label).toBe('Banana Split')
+      const field = makeArray(readResult.fields || []).filter(f => f.fullName === 'Banana__c')[0]
+      expect(field).toBeDefined()
+      expect(field.label).toBe('Banana Split')
 
       // Clean-up
       await sfAdapter.remove(oldElement)

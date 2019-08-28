@@ -1,5 +1,6 @@
 // This file will be soon merged into salto-cli
 import path from 'path'
+import * as sourceMapSupport from 'source-map-support'
 import { PlanAction } from 'adapter-api'
 import { loadBlueprints, dumpBlueprints } from './blueprint'
 import { getAllElements, Blueprint } from '../blueprints/blueprint'
@@ -99,7 +100,11 @@ export const applyBase = async (
     endCurrentAction()
   } catch (e) {
     endCurrentAction()
-    printError(e)
+    const errorSource = sourceMapSupport.getErrorSource(e)
+    if (errorSource) {
+      printError(errorSource)
+    }
+    printError(e.stack || e)
   }
 }
 

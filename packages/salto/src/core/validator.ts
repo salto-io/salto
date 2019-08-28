@@ -21,7 +21,7 @@ const validateRequired = (value: Value, type: Type): ValidationError[] => {
     return _.flatten(Object.keys(type.fields).map(
       // eslint-disable-next-line @typescript-eslint/no-use-before-define
       k => validateRequiredValue(value[k], type.fields[k])
-    ).filter(e => !_.isUndefined(e)))
+    ))
   }
 
   return []
@@ -50,10 +50,10 @@ const validateValue = (value: Value, type: Type): ValidationError[] => {
   }
 
   if (isObjectType(type)) {
-    return _.flatten(Object.keys(value).map(
+    return _.flatten(Object.keys(value).filter(k => type.fields[k]).map(
       // eslint-disable-next-line @typescript-eslint/no-use-before-define
-      k => type.fields[k] && validateFieldValue(value[k], type.fields[k])
-    ).filter(e => !_.isUndefined(e)))
+      k => validateFieldValue(value[k], type.fields[k])
+    ))
   }
 
   return []
@@ -73,15 +73,15 @@ const validateFieldValue = (value: Value, field: Field): ValidationError[] => {
 }
 
 const validateField = (field: Field): ValidationError[] =>
-  _.flatten(Object.keys(field.getAnnotationsValues()).map(k => field.type.annotations[k]
-    && validateValue(field.getAnnotationsValues()[k], field.type.annotations[k]))
-    .filter(e => !_.isUndefined(e)))
+  _.flatten(Object.keys(field.getAnnotationsValues())
+    .filter(k => field.type.annotations[k])
+    .map(k => validateValue(field.getAnnotationsValues()[k], field.type.annotations[k])))
 
 const validateType = (element: Type): ValidationError[] => {
-  const errors = _.flatten(Object.keys(element.getAnnotationsValues()).map(
-    k => element.annotations[k]
-      && validateValue(element.getAnnotationsValues()[k], element.annotations[k])
-  ).filter(e => !_.isUndefined(e)))
+  const errors = _.flatten(Object.keys(element.getAnnotationsValues())
+    .filter(k => element.annotations[k]).map(
+      k => validateValue(element.getAnnotationsValues()[k], element.annotations[k])
+    ))
 
   if (isObjectType(element)) {
     return [...errors, ..._.flatten(Object.values(element.fields).map(validateField))]

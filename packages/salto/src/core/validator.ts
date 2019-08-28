@@ -2,7 +2,7 @@
 import _ from 'lodash'
 import {
   Element, isObjectType, isInstanceElement, Type, InstanceElement, Field, PrimitiveTypes,
-  isPrimitiveType,
+  isPrimitiveType, Value,
 } from 'adapter-api'
 
 const primitiveValidators = {
@@ -11,8 +11,7 @@ const primitiveValidators = {
   [PrimitiveTypes.BOOLEAN]: _.isBoolean,
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const validateRequired = (value: any, scheme: Type): string[] => {
+const validateRequired = (value: Value, scheme: Type): string[] => {
   if (isObjectType(scheme)) {
     return Object.keys(scheme.fields).map(
       // eslint-disable-next-line @typescript-eslint/no-use-before-define
@@ -23,8 +22,7 @@ const validateRequired = (value: any, scheme: Type): string[] => {
   return []
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const validateRequiredValue = (value: any, field: Field): string[] => {
+const validateRequiredValue = (value: Value, field: Field): string[] => {
   if (value === undefined) {
     return field.getAnnotationsValues()[Type.REQUIRED] === true
       ? [`Field ${field.name} is required but has no value`] : []
@@ -40,8 +38,7 @@ const validateRequiredValue = (value: any, field: Field): string[] => {
   return validateRequired(value, field.type)
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const validateValue = (value: any, scheme: Type): string[] => {
+const validateValue = (value: Value, scheme: Type): string[] => {
   if ((isPrimitiveType(scheme) && !primitiveValidators[scheme.primitive](value))
     || (isObjectType(scheme) && !_.isPlainObject(value))) {
     return [`Invalid value type for ${scheme.elemID.getFullName()} : ${JSON.stringify(value)}`]
@@ -55,8 +52,7 @@ const validateValue = (value: any, scheme: Type): string[] => {
   return []
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const validateFieldValue = (value: any, field: Field): string[] => {
+const validateFieldValue = (value: Value, field: Field): string[] => {
   if (field.isList) {
     if (!_.isArray(value)) {
       return [`Invalid value type for ${field.elemID.getFullName()}: expected list and got ${

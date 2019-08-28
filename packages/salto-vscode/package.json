@@ -14,6 +14,32 @@
 	],
 	"main": "./dist/extension.js",
 	"contributes": {
+		"languages": [
+			{
+				"id": "blueprint",
+				"aliases": [
+					"Blueprint",
+					"blueprint"
+				],
+				"extensions": [
+					".bp"
+				],
+				"configuration": "./language-configuration.json"
+			},
+			{
+				"id": "json",
+				"extensions": [
+					".tfstate"
+				]
+			}
+		],
+		"grammars": [
+			{
+				"language": "blueprint",
+				"scopeName": "source.blueprint",
+				"path": "./syntaxes/blueprint.json"
+			}
+		],
 		"commands": [
 			{
 				"command": "extension.helloWorld",

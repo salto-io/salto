@@ -79,7 +79,8 @@ export const mergeAndValidate = (elements: Element[]): Element[] => {
   const validationErrors = validateElements(mergedElements)
 
   if (validationErrors.length > 0) {
-    throw new Error(`Failed to validate blueprints: ${validationErrors.join('\n')}`)
+    throw new Error(`Failed to validate blueprints:
+    ${validationErrors.map(e => e.message).join('\n')}`)
   }
 
   return mergedElements

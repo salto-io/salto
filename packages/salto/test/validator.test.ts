@@ -122,7 +122,7 @@ describe('Elements validation', () => {
     })
 
     describe('validate values/annotations corresponding', () => {
-      it('should success when all required fields are exists with values', () => {
+      it('should succeed when all required fields exist with values', () => {
         const extType = _.cloneDeep(nestedType)
 
         extType.fields.reqNested.getAnnotationsValues()[Type.REQUIRED] = true

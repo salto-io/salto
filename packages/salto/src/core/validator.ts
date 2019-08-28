@@ -11,11 +11,11 @@ const primitiveValidators = {
   [PrimitiveTypes.BOOLEAN]: _.isBoolean,
 }
 
-const validateRequired = (value: Value, scheme: Type): string[] => {
-  if (isObjectType(scheme)) {
-    return Object.keys(scheme.fields).map(
+const validateRequired = (value: Value, type: Type): string[] => {
+  if (isObjectType(type)) {
+    return Object.keys(type.fields).map(
       // eslint-disable-next-line @typescript-eslint/no-use-before-define
-      k => validateRequiredValue(value[k], scheme.fields[k])
+      k => validateRequiredValue(value[k], type.fields[k])
     ).filter(e => e).reduce((acc, e) => [...acc, ...e], [])
   }
 
@@ -38,15 +38,15 @@ const validateRequiredValue = (value: Value, field: Field): string[] => {
   return validateRequired(value, field.type)
 }
 
-const validateValue = (value: Value, scheme: Type): string[] => {
-  if ((isPrimitiveType(scheme) && !primitiveValidators[scheme.primitive](value))
-    || (isObjectType(scheme) && !_.isPlainObject(value))) {
-    return [`Invalid value type for ${scheme.elemID.getFullName()} : ${JSON.stringify(value)}`]
+const validateValue = (value: Value, type: Type): string[] => {
+  if ((isPrimitiveType(type) && !primitiveValidators[type.primitive](value))
+    || (isObjectType(type) && !_.isPlainObject(value))) {
+    return [`Invalid value type for ${type.elemID.getFullName()} : ${JSON.stringify(value)}`]
   }
-  if (isObjectType(scheme)) {
+  if (isObjectType(type)) {
     return Object.keys(value).map(
       // eslint-disable-next-line @typescript-eslint/no-use-before-define
-      k => scheme.fields[k] && validateFieldValue(value[k], scheme.fields[k])
+      k => type.fields[k] && validateFieldValue(value[k], type.fields[k])
     ).filter(e => e).reduce((acc, e) => [...acc, ...e], [])
   }
   return []

@@ -90,14 +90,18 @@ const validateType = (element: Type): ValidationError[] => {
   return errors
 }
 
-const validateInstanceElement = (element: InstanceElement): ValidationError[] =>
-  [...validateValue(element.value, element.type),
-    ...validateRequired(element.value, element.type)]
+const instanceElementValidators = [
+  validateValue,
+  validateRequired,
+]
+
+const validateInstanceElements = (element: InstanceElement): ValidationError[] =>
+  _.flatten(instanceElementValidators.map(v => v(element.value, element.type)))
 
 const validateElements = (elements: Element[]): ValidationError[] =>
   _.flatten(elements.map(element => {
     if (isInstanceElement(element)) {
-      return validateInstanceElement(element)
+      return validateInstanceElements(element)
     }
     return validateType(element as Type)
   }))

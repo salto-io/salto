@@ -145,7 +145,7 @@ describe('Elements validation', () => {
         extInst.type = extType
         const errors = validateElements([extInst])
         expect(errors).toHaveLength(1)
-        expect(errors[0]).toEqual(`Field ${extType.fields.reqStr.name} is required but has no value`)
+        expect(errors[0].message).toEqual(`Field ${extType.fields.reqStr.name} is required but has no value`)
       })
 
       it('should return error when required object field is missing', () => {
@@ -155,7 +155,7 @@ describe('Elements validation', () => {
         extInst.type = extType
         const errors = validateElements([extInst])
         expect(errors).toHaveLength(1)
-        expect(errors[0])
+        expect(errors[0].message)
           .toEqual(`Field ${extType.fields.reqNested.name} is required but has no value`)
       })
 
@@ -178,7 +178,7 @@ describe('Elements validation', () => {
 
         const errors = validateElements([extInst])
         expect(errors).toHaveLength(1)
-        expect(errors[0])
+        expect(errors[0].message)
           .toEqual(`Field ${simpleType.fields.bool.name} is required but has no value`)
       })
     })

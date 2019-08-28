@@ -35,8 +35,7 @@ const validateRequiredValue = (value: Value, field: Field): ValidationError[] =>
 
   if (field.isList) {
     return _.isArray(value)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ? _.flatten(value.map((v: any) => validateRequired(v, field.type))) : []
+      ? _.flatten(value.map(v => validateRequired(v, field.type))) : []
   }
 
   return validateRequired(value, field.type)

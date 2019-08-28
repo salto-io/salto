@@ -6,7 +6,11 @@ import { Blueprint } from '../blueprints/blueprint'
 const getBluePrintsFromDir = async (
   blueprintsDir: string,
 ): Promise<string[]> => {
-  const entries = await readdirp.promise(blueprintsDir, { fileFilter: '*.bp' })
+  const entries = await readdirp.promise(blueprintsDir, {
+    fileFilter: '*.bp',
+    directoryFilter: e => e.basename[0] !== '.',
+  })
+
   return entries.map(e => e.fullPath)
 }
 

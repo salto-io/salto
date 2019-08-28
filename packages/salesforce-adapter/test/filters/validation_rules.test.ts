@@ -2,7 +2,8 @@ import _ from 'lodash'
 import {
   ObjectType, ElemID, InstanceElement, Element,
 } from 'adapter-api'
-import { filter, VALIDATION_RULE_TYPE, VALIDATION_RULE_ANNOTATION } from '../../src/filters/validation_rules'
+import { FilterInstanceWith } from '../../src/filter'
+import { filter as makeFilter, VALIDATION_RULE_TYPE, VALIDATION_RULE_ANNOTATION } from '../../src/filters/validation_rules'
 import SalesforceClient from '../../src/client/client'
 import * as constants from '../../src/constants'
 import { bpCase } from '../../src/transformer'
@@ -11,6 +12,7 @@ jest.mock('../../src/client/client')
 
 describe('Test layout filter', () => {
   const client = new SalesforceClient('', '', false)
+  const filter = makeFilter(client) as FilterInstanceWith<'onDiscover'>
 
   const mockSObject = new ObjectType({
     elemID: new ElemID(constants.SALESFORCE, 'test'),
@@ -38,29 +40,11 @@ describe('Test layout filter', () => {
 
   describe('validation rule discover', () => {
     it('should add relation between validation rule to related sobject', async () => {
-      await filter.onDiscover(client, testElements)
+      await filter.onDiscover(testElements)
       const [sobject] = testElements
       expect(sobject.getAnnotationsValues()[VALIDATION_RULE_ANNOTATION]).toEqual(
         [mockValidationRule.elemID.getFullName()]
       )
-    })
-  })
-
-  describe('validation rule on add', () => {
-    it('should have no effect', async () => {
-      expect(await filter.onAdd(client, mockSObject)).toHaveLength(0)
-    })
-  })
-
-  describe('validation rule on update', () => {
-    it('should have no effect', async () => {
-      expect(await filter.onUpdate(client, mockSObject, mockSObject)).toHaveLength(0)
-    })
-  })
-
-  describe('validation rule on remove', () => {
-    it('should have no effect', async () => {
-      expect(await filter.onRemove(client, mockSObject)).toHaveLength(0)
     })
   })
 })

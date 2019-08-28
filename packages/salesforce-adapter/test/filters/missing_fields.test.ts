@@ -4,6 +4,7 @@ import {
 import { makeFilter } from '../../src/filters/missing_fields'
 import SalesforceClient from '../../src/client/client'
 import * as constants from '../../src/constants'
+import { FilterInstanceWith } from '../../src/filter'
 
 jest.mock('../../src/client/client')
 
@@ -22,7 +23,7 @@ describe('Test layout filter', () => {
         type: 'complex_type',
       },
     ],
-  })
+  })(client) as FilterInstanceWith<'onDiscover'>
 
   const mockObjId = new ElemID(constants.SALESFORCE, 'test')
   const mockType = new ObjectType({
@@ -46,7 +47,7 @@ describe('Test layout filter', () => {
   })
 
   describe('on discover', () => {
-    beforeEach(() => filter.onDiscover(client, testElements))
+    beforeEach(() => filter.onDiscover(testElements))
 
     it('should add primitive list fields', async () => {
       const [testType] = testElements
@@ -67,24 +68,6 @@ describe('Test layout filter', () => {
     it('should keep existing fields unchanged', async () => {
       const [testType] = testElements
       expect(testType.fields.existing).toEqual(mockType.fields.existing)
-    })
-  })
-
-  describe('on add', () => {
-    it('should have no effect', async () => {
-      expect(await filter.onAdd(client, mockType)).toHaveLength(0)
-    })
-  })
-
-  describe('on update', () => {
-    it('should have no effect', async () => {
-      expect(await filter.onUpdate(client, mockType, mockType)).toHaveLength(0)
-    })
-  })
-
-  describe('on remove', () => {
-    it('should have no effect', async () => {
-      expect(await filter.onRemove(client, mockType)).toHaveLength(0)
     })
   })
 })

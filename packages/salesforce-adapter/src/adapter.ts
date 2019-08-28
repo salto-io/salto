@@ -23,7 +23,9 @@ import { filter as assignmentRulesFilter } from './filters/assignment_rules'
 import convertListsFilter from './filters/convert_lists'
 import convertTypeFilter from './filters/convert_types'
 import missingFieldsFilter from './filters/missing_fields'
-import Filter from './filters/filter'
+import {
+  Filter, FilterInstance, FilterInstanceWith, onlyInstancesWith,
+} from './filter'
 import makeArray from './client/make_array'
 
 // Diagnose client results
@@ -600,28 +602,40 @@ export default class SalesforceAdapter {
     return this.client.readMetadata(type, names)
   }
 
+  private filterInstances<M extends keyof FilterInstance>(m: M): FilterInstanceWith<M>[] {
+    const filterInstances = this.filters.map(f => f(this.client))
+    return onlyInstancesWith(m, filterInstances)
+  }
+
   // Filter related functions
+
   private async runFiltersOnDiscover(elements: Element[]): Promise<void> {
     // Discover filters order is important so they should run one after the other
-    return this.filters.reduce(
-      (prevRes, filter) => prevRes.then(() => filter.onDiscover(this.client, elements)),
+    return this.filterInstances('onDiscover').reduce(
+      (prevRes, filter) => prevRes.then(() => filter.onDiscover(elements)),
       Promise.resolve(),
     )
   }
 
+  private async runFiltersInParallel<M extends keyof FilterInstance>(
+    m: M,
+    run: (f: FilterInstanceWith<M>) => Promise<SaveResult[]>
+  ): Promise<SaveResult[]> {
+    return _.flatten(
+      await Promise.all(this.filterInstances(m).map(run))
+    )
+  }
+
   private async runFiltersOnAdd(after: Element): Promise<SaveResult[]> {
-    return _.flatten(await Promise.all(this.filters.map(filter =>
-      filter.onAdd(this.client, after))))
+    return this.runFiltersInParallel('onAdd', filter => filter.onAdd(after))
   }
 
 
   private async runFiltersOnUpdate(before: Element, after: Element): Promise<SaveResult[]> {
-    return _.flatten(await Promise.all(this.filters.map(filter =>
-      filter.onUpdate(this.client, before, after))))
+    return this.runFiltersInParallel('onUpdate', filter => filter.onUpdate(before, after))
   }
 
   private async runFiltersOnRemove(before: Element): Promise<SaveResult[]> {
-    return _.flatten(await Promise.all(this.filters.map(filter =>
-      filter.onRemove(this.client, before))))
+    return this.runFiltersInParallel('onRemove', filter => filter.onRemove(before))
   }
 }

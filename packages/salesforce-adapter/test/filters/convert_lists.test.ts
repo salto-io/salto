@@ -2,9 +2,10 @@ import _ from 'lodash'
 import {
   ObjectType, ElemID, InstanceElement, Element, Field, BuiltinTypes,
 } from 'adapter-api'
-import filter from '../../src/filters/convert_lists'
+import makeFilter from '../../src/filters/convert_lists'
 import SalesforceClient from '../../src/client/client'
 import * as constants from '../../src/constants'
+import { FilterInstanceWith } from '../../src/filter'
 
 jest.mock('../../src/client/client')
 
@@ -40,6 +41,8 @@ describe('Test convert lists filter', () => {
 
   let testElements: Element[]
 
+  const filter = makeFilter(client) as FilterInstanceWith<'onDiscover'>
+
   beforeEach(() => {
     const typeClone = mockType.clone()
     testElements = [
@@ -55,7 +58,7 @@ describe('Test convert lists filter', () => {
     let lstInst: InstanceElement
 
     beforeEach(async () => {
-      await filter.onDiscover(client, testElements)
+      await filter.onDiscover(testElements)
       type = testElements[0] as ObjectType
       lstInst = testElements[1] as InstanceElement
       nonLstInst = testElements[2] as InstanceElement
@@ -74,24 +77,6 @@ describe('Test convert lists filter', () => {
     it('should leave non lists unchanged', () => {
       expect(lstInst.value.single).toEqual('val')
       expect(nonLstInst.value.single).toEqual('val')
-    })
-  })
-
-  describe('on add', () => {
-    it('should have no effect', async () => {
-      expect(await filter.onAdd(client, mockType)).toHaveLength(0)
-    })
-  })
-
-  describe('on update', () => {
-    it('should have no effect', async () => {
-      expect(await filter.onUpdate(client, mockType, mockType)).toHaveLength(0)
-    })
-  })
-
-  describe('on remove', () => {
-    it('should have no effect', async () => {
-      expect(await filter.onRemove(client, mockType)).toHaveLength(0)
     })
   })
 })

@@ -1,8 +1,8 @@
 import _ from 'lodash'
 import {
-  isObjectType, Field, Values, Value, ObjectType, isInstanceElement,
+  Element, isObjectType, Field, Values, Value, ObjectType, isInstanceElement,
 } from 'adapter-api'
-import Filter from './filter'
+import { Filter } from '../filter'
 
 /**
  * Mark list fields as lists if there is any instance that has a list value in the field.
@@ -11,14 +11,14 @@ import Filter from './filter'
  * After marking all fields as lists we also convert all values that should be lists to a list
  * This step is needed because the API never returns lists of length 1
  */
-const filter: Filter = {
+const filter: Filter = () => ({
   /**
    * Upon discover, mark all list fields as list fields in all discoverd types
    *
    * @param client SFDC client
    * @param elements the already discoverd elements
    */
-  onDiscover: async (_client, elements) => {
+  onDiscover: async (elements: Element[]) => {
     // This method iterate on types and corresponding values and run innerChange
     // on every "node".
     const applyRecursive = (type: ObjectType, value: Values,
@@ -61,9 +61,6 @@ const filter: Filter = {
     elements.filter(isInstanceElement).forEach(instnace =>
       applyRecursive(instnace.type as ObjectType, instnace.value, castLists))
   },
-  onAdd: async (_client, _elem) => [],
-  onUpdate: async (_client, _elem1, _elem2) => [],
-  onRemove: async (_client, _elem) => [],
-}
+})
 
 export default filter

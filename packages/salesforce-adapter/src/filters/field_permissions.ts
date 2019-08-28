@@ -7,7 +7,7 @@ import {
   sfCase, fieldFullName, bpCase,
 } from '../transformer'
 import SalesforceClient from '../client/client'
-import Filter from './filter'
+import { Filter } from '../filter'
 import { ProfileInfo } from '../client/types'
 
 export const FIELD_LEVEL_SECURITY_ANNOTATION = 'field_level_security'
@@ -83,8 +83,8 @@ const readProfiles = async (client: SalesforceClient): Promise<ProfileInfo[]> =>
  * Field permissions filter. Handle the mapping from sobject field FIELD_LEVEL_SECURITY_ANNOTATION
  * annotation and Profile.fieldsPermissions.
  */
-export const filter: Filter = {
-  onDiscover: async (client: SalesforceClient, elements: Element[]): Promise<void> => {
+export const filter: Filter = (client: SalesforceClient) => ({
+  onDiscover: async (elements: Element[]): Promise<void> => {
     const sobjects = elements.filter(isObjectType)
     if (_.isEmpty(sobjects)) {
       return
@@ -104,7 +104,7 @@ export const filter: Filter = {
     })
   },
 
-  onAdd: async (client: SalesforceClient, after: Element): Promise<SaveResult[]> => {
+  onAdd: async (after: Element): Promise<SaveResult[]> => {
     if (isObjectType(after)) {
       const profiles = toProfiles(after)
       return client.update(PROFILE_METADATA_TYPE, profiles)
@@ -112,7 +112,7 @@ export const filter: Filter = {
     return []
   },
 
-  onUpdate: async (client: SalesforceClient, before: Element, after: Element):
+  onUpdate: async (before: Element, after: Element):
     Promise<SaveResult[]> => {
     if (!(isObjectType(before) && isObjectType(after))) {
       return []
@@ -153,7 +153,4 @@ export const filter: Filter = {
 
     return client.update(PROFILE_METADATA_TYPE, profiles)
   },
-
-  onRemove: (_client: SalesforceClient, _elem: Element): Promise<SaveResult[]> =>
-    Promise.resolve([]),
-}
+})

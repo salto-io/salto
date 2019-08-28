@@ -2,7 +2,7 @@ import _ from 'lodash'
 import {
   isObjectType, Field, Values, Type, isType, BuiltinTypes,
 } from 'adapter-api'
-import Filter from './filter'
+import { Filter } from '../filter'
 
 interface MissingField {
   name: string
@@ -47,8 +47,10 @@ const allMissingFields: Record<string, MissingField[]> = {
   ],
 }
 
-export const makeFilter = (missingFields: Record<string, MissingField[]>): Filter => ({
-  onDiscover: async function onDiscover(_client, elements) {
+export const makeFilter = (
+  missingFields: Record<string, MissingField[]>
+): Filter => () => ({
+  onDiscover: async function onDiscover(elements) {
     // We need a mapping of all the types so we can replace type names with the correct types
     const typeMap = _(elements)
       .filter(isType)
@@ -73,9 +75,6 @@ export const makeFilter = (missingFields: Record<string, MissingField[]>): Filte
       }
     })
   },
-  onAdd: async (_client, _elem) => [],
-  onUpdate: async (_client, _elem1, _elem2) => [],
-  onRemove: async (_client, _elem) => [],
 })
 
 export default makeFilter(allMissingFields)

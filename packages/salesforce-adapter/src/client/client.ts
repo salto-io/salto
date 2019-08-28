@@ -17,7 +17,7 @@ const ensureListResult = <T>(result: T|T[]): T[] =>
 
 export default class SalesforceClient {
   private conn: Connection
-  private isLoggedIn: boolean = false
+  private isLoggedIn = false
 
   constructor(
     private username: string,

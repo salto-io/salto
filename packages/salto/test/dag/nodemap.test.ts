@@ -5,8 +5,8 @@ import {
 } from '../../src/dag/nodemap'
 
 class MaxCounter {
-  private current: number = 0
-  private max: number = 0
+  private current = 0
+  private max = 0
 
   increment(): void {
     this.current += 1

@@ -405,7 +405,7 @@ export default class SalesforceAdapter {
     objectName: string,
     fields: ValueTypeField[],
     knownTypes: Map<string, Type>,
-    isSubtype: boolean = false,
+    isSubtype = false,
   ): Type[] {
     if (knownTypes.has(objectName)) {
       // Already created this type, no new types to return here

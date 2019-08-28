@@ -20,7 +20,7 @@ jest.mock('../src/core/commands', () => ({
     fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
     shouldApply: (plan: Plan) => Promise<boolean>,
     reportProgress: (action: PlanAction) => void,
-    force: boolean = false
+    force = false
   ) => mockApply(blueprints, fillConfig, shouldApply, reportProgress, force)),
   discover: jest.fn().mockImplementation((
     blueprints: Blueprint[],

@@ -50,7 +50,7 @@ export class CustomField implements MetadataInfo {
     public fullName: string,
     type: string,
     readonly label?: string,
-    required: boolean = false,
+    required = false,
     defaultVal?: string,
     values?: string[],
     formula?: string,

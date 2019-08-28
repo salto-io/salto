@@ -20,7 +20,7 @@ const capitalize = (s: string): string => {
   if (typeof s !== 'string') return ''
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
-export const sfCase = (name: string, custom: boolean = false, capital: boolean = true): string => {
+export const sfCase = (name: string, custom = false, capital = true): string => {
   const sf = _.camelCase(name) + (custom ? SALESFORCE_CUSTOM_SUFFIX : '')
   return capital ? capitalize(sf) : sf
 }
@@ -192,7 +192,7 @@ export class Types {
     boolean: BuiltinTypes.BOOLEAN,
   }
 
-  static get(name: string, customObject: boolean = true): Type {
+  static get(name: string, customObject = true): Type {
     const type = customObject
       ? this.salesforceDataTypes[name.toLowerCase()]
       : this.metadataPrimitiveTypes[name.toLowerCase()]
@@ -222,7 +222,7 @@ const allowedAnnotations = (key: string): string[] => (
 )
 
 export const toCustomField = (
-  object: ObjectType, field: TypeField, fullname: boolean = false
+  object: ObjectType, field: TypeField, fullname = false
 ): CustomField => {
   const newField = new CustomField(
     fullname ? fieldFullName(object, field) : apiName(field),

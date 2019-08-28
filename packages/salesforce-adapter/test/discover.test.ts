@@ -34,9 +34,9 @@ describe('Test SalesforceAdapter discover', () => {
       name: string,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       fields: Record<string, any>[],
-      isMetadataType: boolean = false,
-      isInCustomObjectList: boolean = true,
-      custom: boolean = false,
+      isMetadataType = false,
+      isInCustomObjectList = true,
+      custom = false,
     ): void => {
       SalesforceClient.prototype.listSObjects = jest.fn().mockImplementation(async () => [{ name }])
       SalesforceClient.prototype.describeSObjects = jest.fn().mockImplementation(

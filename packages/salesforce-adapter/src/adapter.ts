@@ -150,7 +150,7 @@ export default class SalesforceAdapter {
   // eslint-disable-next-line class-methods-use-this
   public getConfigType(): ObjectType {
     const configID = new ElemID('salesforce')
-    const config = new ObjectType({
+    return new ObjectType({
       elemID: configID,
       fields: {
         username: new Field(configID, 'username', BuiltinTypes.STRING),
@@ -161,8 +161,6 @@ export default class SalesforceAdapter {
       annotations: {},
       annotationsValues: {},
     })
-
-    return config
   }
 
   /**
@@ -231,7 +229,7 @@ export default class SalesforceAdapter {
 
   /**
    * Add new Instance
-   * @param instance to add
+   * @param element to add
    * @returns the updated instance
    * @throws error in case of failure
    */

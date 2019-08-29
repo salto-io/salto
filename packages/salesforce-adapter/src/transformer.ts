@@ -16,10 +16,7 @@ import {
   METADATA_TYPE, FIELD_ANNOTATIONS, SALESFORCE_CUSTOM_SUFFIX, MAX_METADATA_RESTRICTION_VALUES,
 } from './constants'
 
-const capitalize = (s: string): string => {
-  if (typeof s !== 'string') return ''
-  return s.charAt(0).toUpperCase() + s.slice(1)
-}
+const capitalize = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1)
 export const sfCase = (name: string, custom = false, capital = true): string => {
   const sf = _.camelCase(name) + (custom ? SALESFORCE_CUSTOM_SUFFIX : '')
   return capital ? capitalize(sf) : sf
@@ -258,7 +255,8 @@ export const getValueTypeFieldElement = (parentID: ElemID, field: ValueTypeField
   knonwTypes: Map<string, Type>): TypeField => {
   const bpFieldName = bpCase(field.name)
   const bpFieldType = knonwTypes.get(field.soapType) || Types.get(field.soapType, false)
-  const annotations: Values = { [Type.REQUIRED]: field.valueRequired }
+  // mark required as false until SALTO-45 will be resolved
+  const annotations: Values = { [Type.REQUIRED]: false }
 
   if (field.picklistValues && field.picklistValues.length > 0) {
     // picklist values in metadata types are used to restrict a field to a list of allowed values
@@ -271,7 +269,7 @@ export const getValueTypeFieldElement = (parentID: ElemID, field: ValueTypeField
       }
     }
     const defaults = field.picklistValues
-      .filter(val => val.defaultValue === true)
+      .filter(val => val.defaultValue)
       .map(val => val.value)
     if (defaults.length === 1) {
       annotations[Type.DEFAULT] = defaults.pop()
@@ -346,7 +344,7 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
     annotations[RESTRICTED_PICKLIST] = Boolean(field.restrictedPicklist)
 
     const defaults = field.picklistValues
-      .filter(val => val.defaultValue === true)
+      .filter(val => val.defaultValue)
       .map(val => val.value)
     if (defaults.length > 0) {
       if (field.type.endsWith('picklist')) {

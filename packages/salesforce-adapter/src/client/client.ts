@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import {
-  Connection,
+  Connection as RealConnection,
   MetadataObject,
   DescribeGlobalSObjectResult,
   FileProperties,
@@ -11,12 +11,22 @@ import {
   DeployResult,
 } from 'jsforce'
 import makeArray from './make_array'
+import Connection from './connection'
 
 export const API_VERSION = '46.0'
 export const METADATA_NAMESPACE = 'http://soap.sforce.com/2006/04/metadata'
 
 // Salesforce limitation of maximum number of items per create/update/delete calls
-const MAX_ITEMS_IN_REQUEST = 10
+//  https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_createMetadata.htm
+const MAX_ITEMS_IN_WRITE_REQUEST = 10
+
+// Salesforce limitation of maximum number of items per describeSObjects
+//  https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/sforce_api_calls_describesobjects.htm?search_text=describeSObjects
+const MAX_ITEMS_IN_DESCRIBE_REQUEST = 100
+
+// Salesforce limitation of maximum number of items per readMetadata calls
+//  https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_readMetadata.htm
+const MAX_ITEMS_IN_READ_METADATA_REQUEST = 10
 
 // Make sure results are lists with no undefined values in them
 const ensureListResult = <T>(result: T|T[]): T[] =>
@@ -29,15 +39,22 @@ export default class SalesforceClient {
   constructor(
     private username: string,
     private password: string,
-    isSandbox: boolean
+    isSandbox: boolean,
+    { connection }: { connection?: Connection } = {}
   ) {
-    this.conn = new Connection({
+    this.conn = connection || SalesforceClient.realConnection(isSandbox)
+  }
+
+  private static realConnection(isSandbox: boolean): Connection {
+    const connection = new RealConnection({
       version: API_VERSION,
       loginUrl: `https://${isSandbox ? 'test' : 'login'}.salesforce.com/`,
     })
     // Set poll interval and timeout for deploy
-    this.conn.metadata.pollTimeout = 3000
-    this.conn.metadata.pollTimeout = 30000
+    connection.metadata.pollInterval = 3000
+    connection.metadata.pollTimeout = 30000
+
+    return connection
   }
 
   // In the future this can be replaced with decorators - currently experimental feature
@@ -48,12 +65,14 @@ export default class SalesforceClient {
     }
   }
 
-  private static async sendChunked<TIn>(
+  private static async sendChunked<TIn, TOut>(
     input: TIn | TIn[],
-    sendRequest: (chunk: TIn[]) => Promise<SaveResult[] | SaveResult>,
-  ): Promise<SaveResult[]> {
-    const chunks = _.chunk(makeArray(input), MAX_ITEMS_IN_REQUEST)
-    const results = await Promise.all(chunks.map(sendRequest))
+    sendChunk: (chunk: TIn[]) => Promise<TOut | TOut[]>,
+    chunkSize = MAX_ITEMS_IN_WRITE_REQUEST,
+  ): Promise<TOut[]> {
+    const chunks = _.chunk(makeArray(input), chunkSize)
+    const promises: Promise<TOut[]>[] = chunks.map(chunk => sendChunk(chunk).then(makeArray))
+    const results = await Promise.all(promises)
     return _.flatten(results.map(makeArray))
   }
 
@@ -88,10 +107,16 @@ export default class SalesforceClient {
   /**
    * Read metadata for salesforce object of specific type and name
    */
-  public async readMetadata(type: string, name: string | string[]):
-  Promise<MetadataInfo | MetadataInfo[]> {
+  public async readMetadata(
+    type: string, name: string | string[]
+  ): Promise<MetadataInfo[]> {
     await this.login()
-    return this.conn.metadata.read(type, name)
+    const names = makeArray(name)
+    return SalesforceClient.sendChunked(
+      names,
+      chunk => this.conn.metadata.read(type, chunk),
+      MAX_ITEMS_IN_READ_METADATA_REQUEST,
+    )
   }
 
   /**
@@ -105,7 +130,12 @@ export default class SalesforceClient {
   public async describeSObjects(objectNames: string[]):
     Promise<DescribeSObjectResult[]> {
     await this.login()
-    return ensureListResult(await this.conn.soap.describeSObjects(objectNames))
+    const result = await SalesforceClient.sendChunked(
+      objectNames,
+      chunk => this.conn.soap.describeSObjects(chunk),
+      MAX_ITEMS_IN_DESCRIBE_REQUEST,
+    )
+    return result.filter(item => item !== undefined)
   }
 
   /**

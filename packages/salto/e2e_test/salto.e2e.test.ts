@@ -55,7 +55,7 @@ describe('Test commands e2e', () => {
     name: string, fields: string[] = [], missingFields: string[] = []
   ): Promise<boolean> => {
     const result = (await client.readMetadata(CUSTOM_OBJECT_METATYPE, name)
-    ) as CustomObject
+    )[0] as CustomObject
     if (!result || !result.fullName) {
       return false
     }

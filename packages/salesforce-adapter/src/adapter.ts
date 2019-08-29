@@ -36,6 +36,7 @@ const diagnose = (result: SaveResult | SaveResult[]): void => {
   }
 
   const errors = makeArray(result)
+    .filter(r => r)
     .map(r => r as CompleteSaveResult)
     .filter(r => (r as CompleteSaveResult).errors)
 
@@ -87,7 +88,7 @@ const validateApiName = (prevElement: Element, newElement: Element): void => {
   }
 }
 
-interface SalesforceAdapterParams {
+export interface SalesforceAdapterParams {
   // Metadata types that we want to treat as top level types (discover instances of them)
   // even though they are not returned as top level metadata types from the API
   metadataAdditionalTypes?: string[]
@@ -101,6 +102,9 @@ interface SalesforceAdapterParams {
 
   // Filters to apply to all adapter operations
   filters?: Filter[]
+
+  // override client to use (a new SalesforceClient is created if not specified)
+  client?: SalesforceClient
 }
 
 export default class SalesforceAdapter {
@@ -131,20 +135,25 @@ export default class SalesforceAdapter {
       convertListsFilter,
       convertTypeFilter,
     ],
+    client,
   }: SalesforceAdapterParams = {}) {
     this.metadataAdditionalTypes = metadataAdditionalTypes
     this.metadataTypeBlacklist = metadataTypeBlacklist
     this.metadataToUpdateWithDeploy = metadataToUpdateWithDeploy
     this.filters = filters
+    this.innerClient = client
   }
 
   private innerClient?: SalesforceClient
   public get client(): SalesforceClient {
-    return this.innerClient as SalesforceClient
+    if (!this.innerClient) {
+      throw new Error('client not initialized')
+    }
+    return this.innerClient
   }
 
   init(conf: InstanceElement): void {
-    this.innerClient = new SalesforceClient(
+    this.innerClient = this.innerClient || new SalesforceClient(
       conf.value.username,
       conf.value.password + conf.value.token,
       conf.value.sandbox
@@ -475,7 +484,8 @@ export default class SalesforceAdapter {
     const typeName = sfCase(type.elemID.name)
     const isSettings = typeName === constants.SETTINGS_METADATA_TYPE
     const instances = await this.listMetadataInstances(typeName)
-    return instances.filter(i => i.fullName !== undefined)
+    return instances
+      .filter(i => i.fullName !== undefined)
       .map(i => new InstanceElement(
         new ElemID(constants.SALESFORCE, type.elemID.name, bpCase(i.fullName)),
         type,
@@ -485,19 +495,23 @@ export default class SalesforceAdapter {
   }
 
   private async discoverSObjects(): Promise<Type[]> {
-    const customObjectNames = this.client.listMetadataObjects(constants.CUSTOM_OBJECT).then(
-      objs => new Set(objs.map(obj => obj.fullName))
+    const [customObjects, sobjectsList] = await Promise.all([
+      this.client.listMetadataObjects(constants.CUSTOM_OBJECT),
+      this.client.listSObjects(),
+    ])
+
+    const customObjectNames = new Set(customObjects.map(o => o.fullName))
+    const sobjectNames = sobjectsList.map(sobj => sobj.name)
+
+    const sobjectsDescription = await this.client.describeSObjects(sobjectNames)
+
+    const sobjects = sobjectsDescription.map(
+      ({ name, custom, fields }) => SalesforceAdapter.createSObjectTypes(
+        name, custom, fields, customObjectNames
+      )
     )
 
-    return _.flatten(await Promise.all(_.flatten(await Promise.all(
-      _(await this.client.listSObjects())
-        .map(sobj => sobj.name)
-        .chunk(100)
-        .map(nameChunk => this.client.describeSObjects(nameChunk))
-        .map(async objects => (await objects).map(async ({ name, custom, fields }) =>
-          SalesforceAdapter.createSObjectTypes(name, custom, fields, await customObjectNames)))
-        .value()
-    ))))
+    return _.flatten(sobjects)
   }
 
   private static createSObjectTypes(
@@ -569,14 +583,16 @@ export default class SalesforceAdapter {
       return []
     }
     const names = objs.map(obj => obj.fullName)
-    // For some unknown reason, for metadata type = 'Settings', when calling readMetadata we should
-    // use type = OBJNAME+'Settings'
+
+    // For some unknown reason, for metadata type = 'Settings', when calling readMetadata we
+    // should use type = OBJNAME+'Settings'
     if (type === constants.SETTINGS_METADATA_TYPE) {
-      return Promise.all(names
-        .map(name => this.client.readMetadata(name + type, name) as Promise<MetadataInfo>))
+      return Promise.all(
+        names.map(name => this.client.readMetadata(name + type, name))
+      ).then(_.flatten)
     }
-    return _.flatten(await Promise.all(_.chunk(names, 10)
-      .map(chunk => this.client.readMetadata(type, chunk) as Promise<MetadataInfo[]>)))
+
+    return this.client.readMetadata(type, names)
   }
 
   // Filter related functions

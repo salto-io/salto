@@ -74,12 +74,8 @@ const fromProfiles = (profiles: ProfileInfo[]): Map<string, FieldPermissions> =>
 const readProfiles = async (client: SalesforceClient): Promise<ProfileInfo[]> => {
   const profilesNames = (await client.listMetadataObjects(PROFILE_METADATA_TYPE))
     .map(obj => obj.fullName)
-  if (_.isEmpty(profilesNames)) {
-    return []
-  }
 
-  return _.flatten(await Promise.all(_.chunk(profilesNames, 10)
-    .map(chunk => client.readMetadata(PROFILE_METADATA_TYPE, chunk) as Promise<ProfileInfo[]>)))
+  return client.readMetadata(PROFILE_METADATA_TYPE, profilesNames) as Promise<ProfileInfo[]>
 }
 // ---
 

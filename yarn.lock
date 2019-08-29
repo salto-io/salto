@@ -3217,11 +3217,11 @@ jsesc@^2.5.1:
 
 "jsforce-types@https://github.com/salto-io/jsforce-types.git":
   version "0.1.0"
-  resolved "https://github.com/salto-io/jsforce-types.git#5c7c0bb596d1a3492eb595e174c3fed2112cf16a"
+  resolved "https://github.com/salto-io/jsforce-types.git#bf760649928d510c4e08fb90b14b5a914adca68e"
 
 "jsforce@https://github.com/salto-io/jsforce.git":
   version "1.9.1"
-  resolved "https://github.com/salto-io/jsforce.git#6353e2b8e43c7ed917a5b9d7b5ea568ca0aef3bf"
+  resolved "https://github.com/salto-io/jsforce.git#dad52dd730e289298d574b873f74ba5d9f28e7bb"
   dependencies:
     base64-url "^2.2.0"
     co-prompt "^1.0.0"

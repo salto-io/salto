@@ -16,7 +16,11 @@ import {
   METADATA_TYPE, FIELD_ANNOTATIONS, SALESFORCE_CUSTOM_SUFFIX, MAX_METADATA_RESTRICTION_VALUES,
 } from './constants'
 
-const capitalize = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1)
+const capitalize = (s: string): string => {
+  if (typeof s !== 'string') return ''
+  return s.charAt(0).toUpperCase() + s.slice(1)
+}
+
 export const sfCase = (name: string, custom = false, capital = true): string => {
   const sf = _.camelCase(name) + (custom ? SALESFORCE_CUSTOM_SUFFIX : '')
   return capital ? capitalize(sf) : sf

@@ -8,7 +8,7 @@ import {
   SaveResult,
   ValueTypeField,
   DescribeSObjectResult,
-  DeployResult,
+  QueryResult,
 } from 'jsforce'
 import {
   CompleteSaveResult, SfError,
@@ -75,6 +75,13 @@ export default class SalesforceClient {
     const promises: Promise<TOut[]>[] = chunks.map(chunk => sendChunk(chunk).then(makeArray))
     const results = await Promise.all(promises)
     return _.flatten(results)
+  }
+  
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public async runQuery(objectType: string): Promise<QueryResult<any>> {
+    this.login()
+    const result = await this.conn.query(objectType)
+    return result
   }
 
   private static validateSaveResult(result: SaveResult[]): SaveResult[] {
@@ -167,6 +174,12 @@ export default class SalesforceClient {
       chunk => this.conn.soap.describeSObjects(chunk),
       MAX_ITEMS_IN_DESCRIBE_REQUEST,
     )
+  }
+
+  public async describeSObject(objectName: string):
+    Promise<DescribeSObjectResult[]> {
+    await this.login()
+    return ensureListResult(await this.conn.describe(objectName))
   }
 
   /**

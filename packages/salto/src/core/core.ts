@@ -93,3 +93,10 @@ Promise<Element[]> => {
   state.override(mergeAndValidate(result))
   return result
 }
+
+export const getInstancesOfType = async (typeId: string, adapters: Record<string, Adapter>):
+Promise<object[]> => {
+  const result = _.flatten(await Promise.all(Object.values(adapters)
+    .map(adapter => adapter.getInstancesOfType(typeId))))
+  return result
+}

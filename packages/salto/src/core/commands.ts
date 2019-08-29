@@ -4,7 +4,7 @@ import {
   Plan, PlanAction, ObjectType, InstanceElement,
 } from 'adapter-api'
 import {
-  getPlan, applyActions, discoverAll, mergeAndValidate,
+  getPlan, applyActions, discoverAll, mergeAndValidate, getInstancesOfType,
 } from './core'
 import { init as initAdapters } from './adapters'
 import Parser from '../parser/salto'
@@ -68,4 +68,15 @@ export const discover = async (
   } finally {
     await state.flush()
   }
+}
+
+export const exportToCsv = async (
+  typeId: string,
+  blueprints: Blueprint[],
+  fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
+): Promise<object[]> => {
+  const elements = mergeAndValidate(await getAllElements(blueprints))
+  const [adapters] = await initAdapters(elements, fillConfig)
+  const instanceObjects = await getInstancesOfType(typeId, adapters)
+  return instanceObjects
 }

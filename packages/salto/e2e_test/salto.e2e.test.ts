@@ -1,3 +1,4 @@
+import path from 'path'
 import * as fs from 'async-file'
 import _ from 'lodash'
 import SalesforceClient from 'salesforce-adapter/dist/src/client/client'
@@ -9,7 +10,7 @@ import {
   CUSTOM_OBJECT as CUSTOM_OBJECT_METATYPE,
 } from 'salesforce-adapter/dist/src/constants'
 import { CustomObject } from 'salesforce-adapter/dist/src/client/types'
-import { discover, plan, apply } from '../src/cli/commands'
+import { discover, plan, apply, exportBase } from '../src/cli/commands'
 import State from '../src/state/state'
 
 const configType = new ObjectType({ elemID: new ElemID(SALESFORCE) })
@@ -29,6 +30,7 @@ const mockShouldApply = (p: Plan): boolean => {
   lastPlan = p
   return true
 }
+const leadObjectName = 'Lead'
 
 // Attempting to access the functions on run time without the mock implementation, or
 // omitting the mock prefix in their names (YES I KNOW) will result in a runtime exception
@@ -43,6 +45,8 @@ describe('Test commands e2e', () => {
   const homePath = process.env.HOME || process.env.HOMEPATH || process.env.USERPROFILE
   const { statePath } = new State()
   const discoverOutputDir = `${homePath}/BP/test_discover`
+  const exportOutputDir = `${homePath}/export`
+  const exportFile = 'export_test.csv'
   const addModelBP = `${__dirname}/../../e2e_test//BP/add.bp`
   const modifyModelBP = `${__dirname}/../../e2e_test/BP/modify.bp`
   const client = new SalesforceClient(
@@ -82,7 +86,10 @@ describe('Test commands e2e', () => {
     done()
   })
 
-  afterAll(() => fs.delete(discoverOutputDir))
+  afterAll(async () => {
+    await fs.delete(discoverOutputDir)
+    await fs.delete(exportOutputDir)
+  })
 
   it('should run discover and create the state bp file', async done => {
     await discover(discoverOutputDir, [])
@@ -137,6 +144,13 @@ describe('Test commands e2e', () => {
     expect(step.data.after).toBeUndefined()
     const before = step.data.before as ObjectType
     expect(await objectExists(`${before.elemID.name}__c`)).toBe(false)
+    done()
+  })
+
+  it('should run export and save the data in csv file', async done => {
+    const exportOutputFullPath = path.join(exportOutputDir, exportFile)
+    await exportBase(leadObjectName, exportOutputFullPath, [])
+    expect(await pathExists(exportOutputFullPath)).toBe(true)
     done()
   })
 })

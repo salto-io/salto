@@ -13,6 +13,7 @@ const mockApply = coreMock.apply
 const mockDiscover = coreMock.discover
 const mockPlan = coreMock.plan
 const mockGetElements = coreMock.getAllElements
+const mockExportToCsv = coreMock.exportToCsv
 
 jest.mock('../src/core/commands', () => ({
   apply: jest.fn().mockImplementation((
@@ -27,6 +28,11 @@ jest.mock('../src/core/commands', () => ({
     fillConfig: (configType: ObjectType) => Promise<InstanceElement>
   ) => mockDiscover(blueprints, fillConfig)),
   plan: jest.fn().mockImplementation((bp: Blueprint[]) => mockPlan(bp)),
+  exportToCsv: jest.fn().mockImplementation((
+    typeId: string,
+    blueprints: Blueprint[],
+    fillConfig: (configType: ObjectType) => Promise<InstanceElement>
+  ) => mockExportToCsv(typeId, blueprints, fillConfig)),
 }))
 
 jest.mock('../src/blueprints/blueprint', () => ({
@@ -164,5 +170,22 @@ describe('Test commands.ts', () => {
     expect(iRes).toBe('number')
     expect(bRes).toBe('confirm')
     expect(stRes).toBe('input')
+  })
+
+  it('export should create a csv file', async () => {
+    const outputPath = path.join(__dirname, '__test_export.csv')
+    try {
+      // Cleanup before running discover
+      await fs.delete(outputPath)
+
+      await commands.exportBase('Test', outputPath, [])
+      expect(await fs.exists(outputPath)).toBe(true)
+      expect((await fs.readFile(outputPath)).toString()).toMatch(/"Id","FirstName","LastName","Email","Gender"/s)
+      expect((await fs.readFile(outputPath)).toString()).toMatch(/1,"Daile","Limeburn","dlimeburn0@blogs.com","Female"/s)
+      expect((await fs.readFile(outputPath)).toString()).toMatch(/2,"Murial","Morson","mmorson1@google.nl","Female"/s)
+      expect((await fs.readFile(outputPath)).toString()).toMatch(/3,"Minna","Noe","mnoe2@wikimedia.org","Female"/s)
+    } finally {
+      await fs.delete(outputPath)
+    }
   })
 })

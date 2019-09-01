@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import {
-  Element, isObjectType, isInstanceElement, Type, InstanceElement, Field, PrimitiveTypes,
+  Element, isObjectType, isInstanceElement, Type, InstanceElement, Field, PrimitiveTypes, Values,
   isPrimitiveType, Value,
 } from 'adapter-api'
 
@@ -16,29 +16,72 @@ const primitiveValidators = {
   [PrimitiveTypes.BOOLEAN]: _.isBoolean,
 }
 
-const validateRequired = (value: Value, type: Type): ValidationError[] => {
+const validateAnnotations = (value: Value, type: Type): ValidationError[] => {
   if (isObjectType(type)) {
     return _.flatten(Object.keys(type.fields).map(
       // eslint-disable-next-line @typescript-eslint/no-use-before-define
-      k => validateRequiredValue(value[k], type.fields[k])
+      k => validateAnnotationsValues(value[k], type.fields[k])
     ))
   }
 
   return []
 }
 
-const validateRequiredValue = (value: Value, field: Field): ValidationError[] => {
+/**
+ *
+ * @param value
+ * @param restAnnotationsValues
+ * @param name
+ */
+const validateRestrictionsValue = (value: Value, restAnnotationsValues: Values, name: string):
+  ValidationError[] => {
+  // Restrictions is empty
+  if (restAnnotationsValues === undefined) {
+    return []
+  }
+
+  // Values should be array
+  const possibleValues = restAnnotationsValues.values
+  if (!_.isArray(possibleValues)) {
+    return []
+  }
+
+  // When value is array we iterate (validate) each element
+  if (_.isArray(value)) {
+    return _.flatten(value.map(v => validateRestrictionsValue(v, restAnnotationsValues, name)))
+  }
+
+  // The 'real' validation: is value is one of possibleValues
+  if (!possibleValues.some(i => _.isEqual(i, value))) {
+    return [new ValidationError(
+      `Value ${value} doesn't valid for field ${name},
+            can accept only ${possibleValues}`
+    )]
+  }
+
+  return []
+}
+
+const validateAnnotationsValues = (value: Value, field: Field): ValidationError[] => {
+  // Checking _required annotation
   if (value === undefined) {
     return field.getAnnotationsValues()[Type.REQUIRED] === true
       ? [new ValidationError(`Field ${field.name} is required but has no value`)] : []
   }
 
-  if (field.isList) {
-    return _.isArray(value)
-      ? _.flatten(value.map(v => validateRequired(v, field.type))) : []
+  // Checking _restriction annotation
+  if (isPrimitiveType(field.type)) {
+    return validateRestrictionsValue(value, field.getAnnotationsValues()[Type.RESTRICTION],
+      field.elemID.getFullName())
   }
 
-  return validateRequired(value, field.type)
+  // Apply validateAnnotations for each element in our values list
+  if (field.isList) {
+    return _.isArray(value)
+      ? _.flatten(value.map(v => validateAnnotations(v, field.type))) : []
+  }
+
+  return validateAnnotations(value, field.type)
 }
 
 const validateValue = (value: Value, type: Type): ValidationError[] => {
@@ -91,7 +134,7 @@ const validateType = (element: Type): ValidationError[] => {
 
 const instanceElementValidators = [
   validateValue,
-  validateRequired,
+  validateAnnotations,
 ]
 
 const validateInstanceElements = (element: InstanceElement): ValidationError[] =>

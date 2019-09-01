@@ -1,3 +1,4 @@
+import _ from 'lodash'
 import {
   ObjectType,
   ElemID,
@@ -6,7 +7,6 @@ import {
   Field, BuiltinTypes,
   Type,
 } from 'adapter-api'
-import _ from 'lodash'
 import {
   MetadataInfo, SaveResult, DeployResult, DeployDetails,
 } from 'jsforce'

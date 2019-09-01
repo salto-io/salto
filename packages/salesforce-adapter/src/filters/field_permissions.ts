@@ -2,7 +2,7 @@ import {
   ObjectType, Element, Values, Field, isObjectType,
 } from 'adapter-api'
 import _ from 'lodash'
-import { SaveResult } from 'jsforce-types'
+import { SaveResult } from 'jsforce'
 import {
   sfCase, fieldFullName, bpCase,
 } from '../transformer'

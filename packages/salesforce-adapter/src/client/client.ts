@@ -16,15 +16,17 @@ import Connection from './connection'
 export const API_VERSION = '46.0'
 export const METADATA_NAMESPACE = 'http://soap.sforce.com/2006/04/metadata'
 
-// Salesforce limitation of maximum number of items per create/update/delete calls
+// Salesforce limitation of maximum number of items per create/update/delete call
 //  https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_createMetadata.htm
+//  https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_updateMetadata.htm
+//  https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_deleteMetadata.htm
 const MAX_ITEMS_IN_WRITE_REQUEST = 10
 
-// Salesforce limitation of maximum number of items per describeSObjects
+// Salesforce limitation of maximum number of items per describeSObjects call
 //  https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/sforce_api_calls_describesobjects.htm?search_text=describeSObjects
 const MAX_ITEMS_IN_DESCRIBE_REQUEST = 100
 
-// Salesforce limitation of maximum number of items per readMetadata calls
+// Salesforce limitation of maximum number of items per readMetadata call
 //  https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_readMetadata.htm
 const MAX_ITEMS_IN_READ_METADATA_REQUEST = 10
 
@@ -73,7 +75,7 @@ export default class SalesforceClient {
     const chunks = _.chunk(makeArray(input), chunkSize)
     const promises: Promise<TOut[]>[] = chunks.map(chunk => sendChunk(chunk).then(makeArray))
     const results = await Promise.all(promises)
-    return _.flatten(results.map(makeArray))
+    return _.flatten(results)
   }
 
   /**

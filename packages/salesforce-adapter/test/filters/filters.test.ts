@@ -1,6 +1,5 @@
 import { ObjectType, ElemID, InstanceElement } from 'adapter-api'
 import SalesforceAdapter from '../../src/adapter'
-// import Connection from '../../src/client/connection'
 import { API_NAME } from '../../src/constants'
 import Filter from '../../src/filters/filter'
 import SalesforceClient from '../../src/client/client'

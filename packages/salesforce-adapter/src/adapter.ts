@@ -38,7 +38,7 @@ const diagnose = (result: SaveResult | SaveResult[]): void => {
   const errors = makeArray(result)
     .filter(r => r)
     .map(r => r as CompleteSaveResult)
-    .filter(r => (r as CompleteSaveResult).errors)
+    .filter(r => r.errors)
 
   if (errors.length > 0) {
     throw new Error(errors.map(r => errorMessage(r.errors)).join('\n'))

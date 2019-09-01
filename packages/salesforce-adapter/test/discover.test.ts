@@ -390,7 +390,7 @@ describe('SalesforceAdapter discover', () => {
 
       const describeMock = connection.metadata.describeValueType as jest.Mock<unknown>
       expect(describeMock).toHaveBeenCalled()
-      expect(describeMock.mock.calls[0][0]).toMatch(/Flow$/)
+      expect(describeMock.mock.calls[0][0]).toBe('{http://soap.sforce.com/2006/04/metadata}Flow')
       const flow = result.filter(o => o.elemID.name === 'flow').pop() as ObjectType
       expect(flow.fields.description.type.elemID.name).toBe('string')
       // TODO: remove comment when SALTO-45 will be resolved

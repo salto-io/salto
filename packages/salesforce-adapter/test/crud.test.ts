@@ -172,7 +172,7 @@ describe('SalesforceAdapter CRUD', () => {
             {
               [Type.REQUIRED]: false,
               [Type.DEFAULT]: 'test',
-              label: 'test label',
+              [constants.LABEL]: 'test label',
             },
           ),
           formula: new Field(

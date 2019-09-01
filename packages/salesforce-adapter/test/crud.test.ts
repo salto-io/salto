@@ -97,7 +97,7 @@ describe('SalesforceAdapter CRUD', () => {
         }
       )
 
-      describe('when then request succeeds', () => {
+      describe('when the request succeeds', () => {
         let result: InstanceElement
 
         beforeEach(async () => {

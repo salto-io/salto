@@ -1153,11 +1153,8 @@ describe('Test Salesforce adapter E2E with real account', () => {
         await sfAdapter.update(before, after)
 
         const updatedRules = await getRulesFromClient()
-        // Since assignment rules order is not relevant we have to sort them before comparing
-        const getFullName = (val: Values): Value => val.full_name
-        expect(_.sortBy(updatedRules.assignment_rule, getFullName)).toEqual(
-          _.sortBy(after.value.assignment_rule, getFullName)
-        )
+        // Since assignment rules order is not relevant so we have to compare sets
+        expect(new Set(updatedRules.assignment_rule)).toEqual(new Set(after.value.assignment_rule))
 
         // Because removing assignment rules does not work currently, we have to clean up with a
         // different api call, this part of the test should be changed once removing rules works

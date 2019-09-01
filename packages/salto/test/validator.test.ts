@@ -197,6 +197,13 @@ describe('Elements validation', () => {
           expect(validateElements([extInst])).toHaveLength(0)
         })
 
+        it('should succeed when restrictions values doesnt a list', () => {
+          const extType = _.cloneDeep(nestedType)
+          extType.fields.restrictStr.getAnnotationsValues()[Type.RESTRICTION] = { values: 'str' }
+          extInst.type = extType
+          expect(validateElements([extInst])).toHaveLength(0)
+        })
+
         it('should return an error when fields values doesnt match restrictions', () => {
           extInst.value.restrictStr = 'wrongValue'
           extInst.value.nested.str = 'wrongValue2'

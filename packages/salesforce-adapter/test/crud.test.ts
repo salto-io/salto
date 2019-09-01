@@ -120,9 +120,6 @@ describe('SalesforceAdapter CRUD', () => {
             fullName: sfCase(mockInstanceID.name),
             token: 'instanceTest',
           })
-          // expect(mockCreate.mock.calls[0][1].fullName).toBe(sfCase(mockInstanceID.name))
-          // expect(mockCreate.mock.calls[0][1].token).toBeDefined()
-          // expect(mockCreate.mock.calls[0][1].token).toBe('instanceTest')
         })
       })
 

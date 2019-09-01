@@ -7,8 +7,9 @@ import {
   Field,
   Value,
   Element,
+  Values,
 } from 'adapter-api'
-import { PicklistEntry } from 'jsforce'
+import { PicklistEntry, MetadataInfo } from 'jsforce'
 import _ from 'lodash'
 import SalesforceAdapter from '../src/adapter'
 import * as constants from '../src/constants'
@@ -19,7 +20,7 @@ import {
   FieldPermissions,
 } from '../src/client/types'
 import {
-  Types, sfCase,
+  Types, sfCase, fromMetadataInfo,
 } from '../src/transformer'
 
 describe('Test Salesforce adapter E2E with real account', () => {
@@ -1086,6 +1087,114 @@ describe('Test Salesforce adapter E2E with real account', () => {
 
       // Clean-up
       await sfAdapter.remove(post as ObjectType)
+    })
+
+    // Assignment rules are special because they use the Deploy API so they get their own test
+    describe('assignment rules manipulation', () => {
+      const getRulesFromClient = async (): Promise<Values> => fromMetadataInfo(
+        await sfAdapter.client.readMetadata('AssignmentRules', 'Lead') as MetadataInfo
+      )
+
+      const dummyAssignmentRulesType = new ObjectType({
+        elemID: new ElemID(constants.SALESFORCE, 'assignment_rules'),
+        annotationsValues: {
+          [constants.METADATA_TYPE]: 'AssignmentRules',
+        },
+      })
+
+      let before: InstanceElement
+      let after: InstanceElement
+      let validAssignment: Values
+
+      beforeAll(async () => {
+        before = new InstanceElement(
+          new ElemID(constants.SALESFORCE, 'lead_assignment_rules'),
+          dummyAssignmentRulesType,
+          await getRulesFromClient(),
+        )
+        validAssignment = _.omit(
+          _.flatten([_.flatten([before.value.assignment_rule])[0].rule_entry]).pop(),
+          'criteria_items'
+        )
+      })
+
+      beforeEach(async () => {
+        after = new InstanceElement(
+          before.elemID,
+          before.type,
+          _.cloneDeep(before.value),
+        )
+      })
+
+      afterEach(async () => {
+        await sfAdapter.update(after, before)
+      })
+
+      it('should create rule', async () => {
+        // eslint-disable-next-line @typescript-eslint/camelcase
+        after.value.assignment_rule = _.flatten([
+          after.value.assignment_rule,
+          {
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            full_name: 'NonStandard',
+            active: 'false',
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            rule_entry: _.merge({}, validAssignment, {
+              // eslint-disable-next-line @typescript-eslint/camelcase
+              criteria_items: {
+                field: 'Lead.City',
+                operation: 'equals',
+                value: 'Here',
+              },
+            }),
+          },
+        ])
+
+        await sfAdapter.update(before, after)
+
+        const updatedRules = await getRulesFromClient()
+        // Since assignment rules order is not relevant so we have to compare sets
+        expect(new Set(updatedRules.assignment_rule)).toEqual(new Set(after.value.assignment_rule))
+
+        // Because removing assignment rules does not work currently, we have to clean up with a
+        // different api call, this part of the test should be changed once removing rules works
+        // we should be issuing another `sfAdater.update` call here in order to remove the rule
+        await sfAdapter.client.delete('AssignmentRule', 'Lead.NonStandard')
+
+        // TODO: test deletion of assignment rule once it is fixed
+      })
+
+      it('should update existing', async () => {
+        // eslint-disable-next-line @typescript-eslint/camelcase
+        const rule = _.flatten([after.value.assignment_rule])[0]
+        // eslint-disable-next-line @typescript-eslint/camelcase
+        rule.rule_entry = _.flatten([rule.rule_entry])
+        rule.rule_entry.push(_.merge({}, validAssignment, {
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          assigned_to: validAssignment.assigned_to,
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          assigned_to_type: validAssignment.assigned_to_type,
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          criteria_items: [
+            {
+              field: 'Lead.City',
+              operation: 'startsWith',
+              value: 'A',
+            },
+            {
+              field: 'Lead.Country',
+              operation: 'startsWith',
+              value: 'B',
+            },
+          ],
+        }))
+        _.flatten([rule.rule_entry[0].criteria_items])[0].value = 'bla'
+
+        await sfAdapter.update(before, after)
+
+        const updatedRules = await getRulesFromClient()
+        expect(updatedRules).toEqual(after.value)
+      })
     })
   })
 })

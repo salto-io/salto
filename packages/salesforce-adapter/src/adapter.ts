@@ -3,7 +3,7 @@ import {
   Field, Element, isObjectType, isInstanceElement, isPrimitiveType,
 } from 'adapter-api'
 import {
-  SaveResult, ValueTypeField, MetadataInfo, Field as SObjField,
+  SaveResult, ValueTypeField, MetadataInfo, Field as SObjField, DeployResult,
 } from 'jsforce'
 import { isArray } from 'util'
 import _ from 'lodash'
@@ -15,7 +15,7 @@ import {
 import {
   toCustomField, toCustomObject, apiName, sfCase, fieldFullName, Types,
   getValueTypeFieldElement, getSObjectFieldElement, fromMetadataInfo,
-  bpCase, toMetadataInfo, metadataType,
+  bpCase, toMetadataInfo, metadataType, toMetadataPackageZip,
 } from './transformer'
 import { filter as layoutFilter } from './filters/layouts'
 import { filter as fieldPermissionsFilter } from './filters/field_permissions'
@@ -55,6 +55,21 @@ const diagnose = (result: SaveResult | SaveResult[]): void => {
   }
 }
 
+// Diagnose deploy result
+const diagnoseDeploy = (result: DeployResult): void => {
+  if (result.success) {
+    return
+  }
+
+  const errors = _(result.details)
+    .map(detail => detail.componentFailures || [])
+    .flatten()
+    .filter(component => !component.success)
+    .map(failure => `${failure.componentType}.${failure.fullName}: ${failure.problem}`)
+    .value()
+  throw new Error(errors.join('\n'))
+}
+
 // Add API name and label annotation if missing
 const annotateApiNameAndLabel = (element: ObjectType): void => {
   const innerAnnotate = (annotations: Values, name: string): void => {
@@ -92,6 +107,9 @@ interface SalesforceAdapterParams {
   // types from the API
   metadataTypeBlacklist?: string[]
 
+  // Metadata types that we have to update using the deploy API endpoint
+  metadataToUpdateWithDeploy?: string[]
+
   // Filters to apply to all adapter operations
   filters?: Filter[]
 }
@@ -99,6 +117,7 @@ interface SalesforceAdapterParams {
 export default class SalesforceAdapter {
   private metadataAdditionalTypes: string[]
   private metadataTypeBlacklist: string[]
+  private metadataToUpdateWithDeploy: string[]
   private filters: Filter[]
 
   public constructor({
@@ -109,6 +128,9 @@ export default class SalesforceAdapter {
       'ApexClass', // For some reason we cannot access this from the metadata API
       'InstalledPackage', // Instances of this don't actually have an ID and they contain duplicates
       'CustomObject', // We have special treatment for this type
+    ],
+    metadataToUpdateWithDeploy = [
+      'AssignmentRules',
     ],
     filters = [
       fieldPermissionsFilter,
@@ -123,6 +145,7 @@ export default class SalesforceAdapter {
   }: SalesforceAdapterParams = {}) {
     this.metadataAdditionalTypes = metadataAdditionalTypes
     this.metadataTypeBlacklist = metadataTypeBlacklist
+    this.metadataToUpdateWithDeploy = metadataToUpdateWithDeploy
     this.filters = filters
   }
 
@@ -331,15 +354,16 @@ export default class SalesforceAdapter {
     Promise<InstanceElement> {
     validateApiName(prevInstance, newInstance)
 
-    const instanceUpdateResult = await this.client.update(
-      metadataType(newInstance),
-      toMetadataInfo(
+    const typeName = metadataType(newInstance)
+    if (this.metadataToUpdateWithDeploy.includes(typeName)) {
+      diagnoseDeploy(await this.client.deploy(await toMetadataPackageZip(newInstance)))
+    } else {
+      diagnose(await this.client.update(typeName, toMetadataInfo(
         apiName(newInstance),
         newInstance.getValuesThatNotInPrevOrDifferent(prevInstance.value)
-      )
-    )
+      )))
+    }
 
-    diagnose(instanceUpdateResult)
     return newInstance
   }
 

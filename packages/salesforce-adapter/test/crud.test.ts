@@ -6,7 +6,9 @@ import {
   Type,
 } from 'adapter-api'
 import _ from 'lodash'
-import { MetadataInfo, SaveResult } from 'jsforce-types'
+import {
+  MetadataInfo, SaveResult, DeployResult, DeployDetails,
+} from 'jsforce-types'
 import SalesforceAdapter from '../src/adapter'
 import SalesforceClient from '../src/client/client'
 import * as constants from '../src/constants'
@@ -16,8 +18,13 @@ import { PROFILE_METADATA_TYPE } from '../src/filters/field_permissions'
 jest.mock('../src/client/client')
 
 describe('Test SalesforceAdapter CRUD', () => {
+  const deployTypeName = 'DeployType'
+
   const adapter = (): SalesforceAdapter => {
-    const a = new SalesforceAdapter({ filters: [] })
+    const a = new SalesforceAdapter({
+      metadataToUpdateWithDeploy: [deployTypeName],
+      filters: [],
+    })
     const configType = a.getConfigType()
     const value = {
       username: '',
@@ -36,22 +43,44 @@ describe('Test SalesforceAdapter CRUD', () => {
   const mockElemID = new ElemID(constants.SALESFORCE, 'test')
   const mockInstanceID = new ElemID(constants.SALESFORCE, 'instance')
 
+  const getDeployResult = (success: boolean, details?: DeployDetails[]): DeployResult => ({
+    id: '',
+    checkOnly: false,
+    completedDate: '',
+    createdDate: '',
+    done: true,
+    details,
+    lastModifiedDate: '',
+    numberComponentErrors: 0,
+    numberComponentsDeployed: 0,
+    numberComponentsTotal: 0,
+    numberTestErrors: 0,
+    numberTestsCompleted: 0,
+    numberTestsTotal: 0,
+    startDate: '',
+    status: success ? 'Done' : 'Failed',
+    success,
+  })
 
   let mockCreate: jest.Mock<unknown>
   let mockDelete: jest.Mock<unknown>
   let mockUpdate: jest.Mock<unknown>
+  let mockDeploy: jest.Mock<unknown>
   beforeEach(() => {
     const saveResultMock = async (_type: string, objects: MetadataInfo|MetadataInfo[]):
   Promise<SaveResult| SaveResult[]> =>
       (_.isArray(objects)
         ? [{ fullName: objects[0].fullName, success: true }]
         : [{ fullName: objects.fullName, success: true }])
+    const deployResultMock = async (_zip: Buffer): Promise<DeployResult> => getDeployResult(true)
     mockCreate = jest.fn().mockImplementationOnce(saveResultMock)
     SalesforceClient.prototype.create = mockCreate
     mockDelete = jest.fn().mockImplementationOnce(saveResultMock)
     SalesforceClient.prototype.delete = mockDelete
     mockUpdate = jest.fn().mockImplementationOnce(saveResultMock)
     SalesforceClient.prototype.update = mockUpdate
+    mockDeploy = jest.fn().mockImplementationOnce(deployResultMock)
+    SalesforceClient.prototype.deploy = mockDeploy
   })
 
   describe('Test Add operation', () => {
@@ -1264,6 +1293,65 @@ describe('Test SalesforceAdapter CRUD', () => {
       expect(updatedObject.fullName).toBe('Test__c')
       expect(updatedObject.label).toBe('test2 label')
       expect(updatedObject.fields).toBeUndefined()
+    })
+
+    describe('update with deploy', () => {
+      const deployTypeId = new ElemID(constants.SALESFORCE, 'deploy_type')
+      const deployType = new ObjectType({
+        elemID: deployTypeId,
+        annotationsValues: {
+          [constants.METADATA_TYPE]: 'DeployType',
+        },
+        fields: {
+          dummy: new Field(deployTypeId, 'dummy', BuiltinTypes.STRING),
+        },
+      })
+      const before = new InstanceElement(
+        new ElemID(constants.SALESFORCE, 'deploy_inst'),
+        deployType,
+        { dummy: 'before' },
+      )
+      const after = new InstanceElement(
+        before.elemID,
+        before.type,
+        _.cloneDeep(before.value),
+      )
+      after.value.dummy = 'after'
+
+      it('should update with deploy for specific types', async () => {
+        await adapter().update(before, after)
+        expect(mockDeploy).toHaveBeenCalled()
+        expect(mockUpdate).not.toHaveBeenCalled()
+      })
+
+      it('should throw error on failed deploy', async () => {
+        const getDeployDetails = (type: string, name: string, problem: string): DeployDetails => ({
+          componentFailures: [{
+            changed: false,
+            columnNumber: 0,
+            componentType: type,
+            created: false,
+            createdDate: '',
+            deleted: false,
+            fileName: '',
+            fullName: name,
+            id: '',
+            lineNumber: 0,
+            problem,
+            problemType: 'Error',
+            success: false,
+          }],
+        })
+        SalesforceClient.prototype.deploy = jest.fn().mockImplementationOnce(
+          async (_zip: Buffer): Promise<DeployResult> => getDeployResult(false, [
+            getDeployDetails('Component', 'InstName', 'my error'),
+            getDeployDetails('Component', 'OtherInst', 'some error'),
+          ])
+        )
+        await expect(adapter().update(before, after)).rejects.toThrow(
+          /Component.*InstName.*my error.*Component.*OtherInst.*some error/s
+        )
+      })
     })
   })
 })

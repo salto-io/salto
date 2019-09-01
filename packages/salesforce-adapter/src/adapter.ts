@@ -3,7 +3,7 @@ import {
   Field, Element, isObjectType, isInstanceElement, isPrimitiveType,
 } from 'adapter-api'
 import {
-  SaveResult, ValueTypeField, MetadataInfo, Field as SObjField, DeployResult,
+  SaveResult, ValueTypeField, MetadataInfo, Field as SObjField, DeployResult, DescribeSObjectResult,
 } from 'jsforce'
 import _ from 'lodash'
 import SalesforceClient from './client/client'
@@ -495,17 +495,22 @@ export default class SalesforceAdapter {
   }
 
   private async discoverSObjects(): Promise<Type[]> {
-    const [customObjects, sobjectsList] = await Promise.all([
-      this.client.listMetadataObjects(constants.CUSTOM_OBJECT),
-      this.client.listSObjects(),
+    const getSobjectDescriptions = async (): Promise<DescribeSObjectResult[]> => {
+      const sobjectsList = await this.client.listSObjects()
+      const sobjectNames = sobjectsList.map(sobj => sobj.name)
+      return this.client.describeSObjects(sobjectNames)
+    }
+
+    const getCustomObjectNames = async (): Promise<Set<string>> => {
+      const customObjects = await this.client.listMetadataObjects(constants.CUSTOM_OBJECT)
+      return new Set(customObjects.map(o => o.fullName))
+    }
+
+    const [customObjectNames, sobjectsDescriptions] = await Promise.all([
+      getCustomObjectNames(), getSobjectDescriptions(),
     ])
 
-    const customObjectNames = new Set(customObjects.map(o => o.fullName))
-    const sobjectNames = sobjectsList.map(sobj => sobj.name)
-
-    const sobjectsDescription = await this.client.describeSObjects(sobjectNames)
-
-    const sobjects = sobjectsDescription.map(
+    const sobjects = sobjectsDescriptions.map(
       ({ name, custom, fields }) => SalesforceAdapter.createSObjectTypes(
         name, custom, fields, customObjectNames
       )

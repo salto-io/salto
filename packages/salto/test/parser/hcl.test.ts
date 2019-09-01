@@ -135,6 +135,18 @@ describe('HCL Parser', () => {
     })
   })
 
+  // If this test fails you probably replaced wasm_exec with a newer version and did not modify
+  // the TextEncoder and Decoder to ignore DOM. See the old wasm_exec file lines 100:101
+  it('Ignore BOM when parsing', async () => {
+    const blockDef = `type voodoo {
+      thing = "\ufeffHIDE"
+    }`
+    const { body } = await HCLParser.parse(Buffer.from(blockDef), 'none')
+    expect(body.blocks.length).toEqual(1)
+    expect(body.blocks[0].attrs).toHaveProperty('thing')
+    expect(evaluate(body.blocks[0].attrs.thing.expressions[0]).length).toEqual(5)
+  })
+
   describe('parse error', () => {
     const blockDef = 'type some.thing {}'
     let parseErrors: string[]

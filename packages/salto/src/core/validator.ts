@@ -27,20 +27,31 @@ const validateAnnotations = (value: Value, type: Type): ValidationError[] => {
   return []
 }
 
+/**
+ *
+ * @param value
+ * @param restAnnotationsValues
+ * @param name
+ */
 const validateRestrictionsValue = (value: Value, restAnnotationsValues: Values, name: string):
   ValidationError[] => {
+  // Restrictions is empty
   if (restAnnotationsValues === undefined) {
     return []
   }
 
+  // Values should be array
   const possibleValues = restAnnotationsValues.values
   if (!_.isArray(possibleValues)) {
     return []
   }
+
+  // When value is array we iterate (validate) each element
   if (_.isArray(value)) {
     return _.flatten(value.map(v => validateRestrictionsValue(v, restAnnotationsValues, name)))
   }
 
+  // The 'real' validation: is value is one of possibleValues
   if (!possibleValues.some(i => _.isEqual(i, value))) {
     return [new ValidationError(
       `Value ${value} doesn't valid for field ${name},
@@ -52,16 +63,19 @@ const validateRestrictionsValue = (value: Value, restAnnotationsValues: Values, 
 }
 
 const validateAnnotationsValues = (value: Value, field: Field): ValidationError[] => {
+  // Checking _required annotation
   if (value === undefined) {
     return field.getAnnotationsValues()[Type.REQUIRED] === true
       ? [new ValidationError(`Field ${field.name} is required but has no value`)] : []
   }
 
+  // Checking _restriction annotation
   if (isPrimitiveType(field.type)) {
     return validateRestrictionsValue(value, field.getAnnotationsValues()[Type.RESTRICTION],
       field.elemID.getFullName())
   }
 
+  // Apply validateAnnotations for each element in our values list
   if (field.isList) {
     return _.isArray(value)
       ? _.flatten(value.map(v => validateAnnotations(v, field.type))) : []

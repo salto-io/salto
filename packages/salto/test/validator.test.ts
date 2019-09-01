@@ -9,7 +9,7 @@ describe('Elements validation', () => {
   const simpleType = new ObjectType({
     elemID: baseElemID,
     fields: {
-      str: new Field(baseElemID, 'str', BuiltinTypes.STRING),
+      str: new Field(baseElemID, 'str', BuiltinTypes.STRING, { _restriction: { values: ['str'] } }),
       num: new Field(baseElemID, 'num', BuiltinTypes.NUMBER),
       bool: new Field(baseElemID, 'bool', BuiltinTypes.BOOLEAN, { _required: true }),
     },
@@ -36,6 +36,13 @@ describe('Elements validation', () => {
       flatbool: new Field(nestedElemID, 'flatbool', BuiltinTypes.BOOLEAN),
       list: new Field(nestedElemID, 'list', BuiltinTypes.STRING, {}, true),
       reqStr: new Field(nestedElemID, 'reqStr', BuiltinTypes.STRING),
+      restrictStr: new Field(nestedElemID, 'restrictStr', BuiltinTypes.STRING, {
+        _restriction: {
+          values: [
+            'restriction1', 'restriction2',
+          ],
+        },
+      }),
       reqNested: new Field(nestedElemID, 'reqNested', simpleType, {
       }),
     },
@@ -111,7 +118,8 @@ describe('Elements validation', () => {
         flatstr: 'str',
         flatnum: 1,
         flatbool: true,
-        list: ['item', 'item'],
+        list: ['item', 'item2'],
+        restrictStr: 'restriction1',
       }
     )
 
@@ -122,64 +130,97 @@ describe('Elements validation', () => {
     })
 
     describe('validate values/annotations corresponding', () => {
-      it('should succeed when all required fields exist with values', () => {
-        const extType = _.cloneDeep(nestedType)
+      describe('required annotation', () => {
+        it('should succeed when all required fields exist with values', () => {
+          const extType = _.cloneDeep(nestedType)
 
-        extType.fields.reqNested.getAnnotationsValues()[Type.REQUIRED] = true
-        extType.fields.reqStr.getAnnotationsValues()[Type.REQUIRED] = true
-        extInst.type = extType
-        extInst.value.reqStr = 'string'
-        extInst.value.reqNested = {
-          str: 'str',
-          num: 1,
-          bool: true,
-        }
-        const errors = validateElements([extInst])
-        expect(errors).toHaveLength(0)
-      })
-
-      it('should return error when required primitive field is missing', () => {
-        const extType = _.cloneDeep(nestedType)
-
-        extType.fields.reqStr.getAnnotationsValues()[Type.REQUIRED] = true
-        extInst.type = extType
-        const errors = validateElements([extInst])
-        expect(errors).toHaveLength(1)
-        expect(errors[0].message).toEqual(`Field ${extType.fields.reqStr.name} is required but has no value`)
-      })
-
-      it('should return error when required object field is missing', () => {
-        const extType = _.cloneDeep(nestedType)
-
-        extType.fields.reqNested.getAnnotationsValues()[Type.REQUIRED] = true
-        extInst.type = extType
-        const errors = validateElements([extInst])
-        expect(errors).toHaveLength(1)
-        expect(errors[0].message)
-          .toEqual(`Field ${extType.fields.reqNested.name} is required but has no value`)
-      })
-
-      it('should return error when lists elements missing required fields', () => {
-        const extType = _.cloneDeep(nestedType)
-
-        extType.fields.reqNested.isList = true
-        extInst.type = extType
-        extInst.value.reqNested = [
-          {
+          extType.fields.reqNested.getAnnotationsValues()[Type.REQUIRED] = true
+          extType.fields.reqStr.getAnnotationsValues()[Type.REQUIRED] = true
+          extInst.type = extType
+          extInst.value.reqStr = 'string'
+          extInst.value.reqNested = {
             str: 'str',
             num: 1,
             bool: true,
-          },
-          {
-            str: 'str',
-            num: 1,
-          },
-        ]
+          }
+          const errors = validateElements([extInst])
+          expect(errors).toHaveLength(0)
+        })
 
-        const errors = validateElements([extInst])
-        expect(errors).toHaveLength(1)
-        expect(errors[0].message)
-          .toEqual(`Field ${simpleType.fields.bool.name} is required but has no value`)
+        it('should return error when required primitive field is missing', () => {
+          const extType = _.cloneDeep(nestedType)
+
+          extType.fields.reqStr.getAnnotationsValues()[Type.REQUIRED] = true
+          extInst.type = extType
+          const errors = validateElements([extInst])
+          expect(errors).toHaveLength(1)
+          expect(errors[0].message).toEqual(`Field ${extType.fields.reqStr.name} is required but has no value`)
+        })
+
+        it('should return error when required object field is missing', () => {
+          const extType = _.cloneDeep(nestedType)
+
+          extType.fields.reqNested.getAnnotationsValues()[Type.REQUIRED] = true
+          extInst.type = extType
+          const errors = validateElements([extInst])
+          expect(errors).toHaveLength(1)
+          expect(errors[0].message)
+            .toEqual(`Field ${extType.fields.reqNested.name} is required but has no value`)
+        })
+
+        it('should return error when lists elements missing required fields', () => {
+          const extType = _.cloneDeep(nestedType)
+
+          extType.fields.reqNested.isList = true
+          extInst.type = extType
+          extInst.value.reqNested = [
+            {
+              str: 'str',
+              num: 1,
+              bool: true,
+            },
+            {
+              str: 'str',
+              num: 1,
+            },
+          ]
+
+          const errors = validateElements([extInst])
+          expect(errors).toHaveLength(1)
+          expect(errors[0].message)
+            .toEqual(`Field ${simpleType.fields.bool.name} is required but has no value`)
+        })
+      })
+
+      describe('restriction annotation', () => {
+        it('should succeed when all values corresponds to restrictions', () => {
+          expect(validateElements([extInst])).toHaveLength(0)
+        })
+
+        it('should return an error when fields values doesnt match restrictions', () => {
+          extInst.value.restrictStr = 'wrongValue'
+          extInst.value.nested.str = 'wrongValue2'
+
+          const errors = validateElements([extInst])
+          expect(errors).toHaveLength(2)
+          expect(errors.some(err => _.isEqual(err.message, `Value ${extInst.value.restrictStr} doesn't valid for field ${nestedType.fields
+            .restrictStr.elemID.getFullName()},
+            can accept only ${nestedType.fields.restrictStr.getAnnotationsValues()[Type.RESTRICTION]
+    .values}`))).toBeTruthy()
+          expect(errors.some(err => _.isEqual(err.message, `Value ${extInst.value.nested.str} doesn't valid for field ${simpleType.fields
+            .str.elemID.getFullName()},
+            can accept only ${simpleType.fields.str.getAnnotationsValues()[Type.RESTRICTION]
+    .values}`))).toBeTruthy()
+        })
+
+
+        it('should return an error when list fields values doesnt match restrictions', () => {
+          const extType = _.cloneDeep(nestedType)
+          extType.fields.list.getAnnotationsValues()[Type.RESTRICTION] = { values: ['restriction'] }
+          extInst.type = extType
+
+          expect(validateElements([extInst])).toHaveLength(2)
+        })
       })
     })
 
@@ -218,7 +259,7 @@ describe('Elements validation', () => {
       it('should return error on nested string value mismatch', () => {
         extInst.value.nested.str = 1
         const errors = validateElements([extInst])
-        expect(errors).toHaveLength(1)
+        expect(errors).toHaveLength(2)
       })
 
       it('should return error on nested num value mismatch', () => {

@@ -96,9 +96,9 @@
 	}
 
 	// End of polyfills for common API.
-
-	const encoder = new TextEncoder("utf-8");
-	const decoder = new TextDecoder("utf-8");
+	// Salesforce returns BOM as a regular char, so we need to go along... 
+	const encoder = new TextEncoder("utf-8", {ignoreBOM: true});
+	const decoder = new TextDecoder("utf-8", {ignoreBOM: true});
 
 	global.Go = class {
 		constructor() {

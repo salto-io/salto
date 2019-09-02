@@ -65,7 +65,7 @@ export class Field implements Element {
   readonly elemID: ElemID
 
   public constructor(
-    parentID: ElemID,
+    public parentID: ElemID,
     public name: string,
     public type: Type,
     private annotationsValues: Values = {},
@@ -87,16 +87,12 @@ export class Field implements Element {
    */
   clone(): Field {
     return new Field(
-      this.parentID(),
+      this.parentID,
       this.name,
       this.type,
       _.cloneDeep(this.annotationsValues),
       this.isList,
     )
-  }
-
-  parentID(): ElemID {
-    return new ElemID(this.elemID.adapter, ...this.elemID.nameParts.slice(0, -1))
   }
 
   getAnnotationsValues(): Values {
@@ -400,6 +396,11 @@ export const BuiltinTypes: Record<string, PrimitiveType> = {
   }),
 }
 
+
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+export function isElement(value: any): value is Element {
+  return value && value.elemID && value.elemID instanceof ElemID
+}
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 export function isType(element: any): element is Type {

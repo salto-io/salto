@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import {
-  Element, isObjectType, isInstanceElement, Type, InstanceElement, Field, PrimitiveTypes, Values,
+  Element, isObjectType, isInstanceElement, Type, InstanceElement, Field, PrimitiveTypes,
   isPrimitiveType, Value,
 } from 'adapter-api'
 
@@ -16,6 +16,11 @@ const primitiveValidators = {
   [PrimitiveTypes.BOOLEAN]: _.isBoolean,
 }
 
+/**
+ * Validate that all type fields values corresponding with core annotations (required, restriction)
+ * @param value
+ * @param type
+ */
 const validateAnnotations = (value: Value, type: Type): ValidationError[] => {
   if (isObjectType(type)) {
     return _.flatten(Object.keys(type.fields).map(
@@ -28,51 +33,54 @@ const validateAnnotations = (value: Value, type: Type): ValidationError[] => {
 }
 
 /**
- *
- * @param value
- * @param restAnnotationsValues
- * @param name
+ * Validate that field values corresponding with core annotations (_required, _restriction)
+ * @param value- the field value
+ * @param field
  */
-const validateRestrictionsValue = (value: Value, restAnnotationsValues: Values, name: string):
-  ValidationError[] => {
-  // Restrictions is empty
-  if (restAnnotationsValues === undefined) {
-    return []
-  }
-
-  // Values should be array
-  const possibleValues = restAnnotationsValues.values
-  if (!_.isArray(possibleValues)) {
-    return []
-  }
-
-  // When value is array we iterate (validate) each element
-  if (_.isArray(value)) {
-    return _.flatten(value.map(v => validateRestrictionsValue(v, restAnnotationsValues, name)))
-  }
-
-  // The 'real' validation: is value is one of possibleValues
-  if (!possibleValues.some(i => _.isEqual(i, value))) {
-    return [new ValidationError(
-      `Value ${value} doesn't valid for field ${name},
-            can accept only ${possibleValues}`
-    )]
-  }
-
-  return []
-}
-
 const validateAnnotationsValues = (value: Value, field: Field): ValidationError[] => {
+  const validateRestrictionsValue = (val: Value):
+    ValidationError[] => {
+    const restrictionValues = field.getAnnotationsValues()[Type.RESTRICTION]
+
+    // Restrictions is empty
+    if (restrictionValues === undefined) {
+      return []
+    }
+
+    // Values should be array
+    const possibleValues = restrictionValues.values
+    if (!_.isArray(possibleValues)) {
+      return []
+    }
+
+    // When value is array we iterate (validate) each element
+    if (_.isArray(val)) {
+      return _.flatten(val.map(v => validateRestrictionsValue(v)))
+    }
+
+    // The 'real' validation: is value is one of possibleValues
+    if (!possibleValues.some(i => _.isEqual(i, val))) {
+      return [new ValidationError(
+        `Value ${val} doesn't valid for field ${field.elemID.getFullName()},
+            can accept only ${possibleValues}`
+      )]
+    }
+
+    return []
+  }
+
+  const validateRequiredValue = (): ValidationError[] =>
+    (field.getAnnotationsValues()[Type.REQUIRED] === true
+      ? [new ValidationError(`Field ${field.name} is required but has no value`)] : [])
+
   // Checking _required annotation
   if (value === undefined) {
-    return field.getAnnotationsValues()[Type.REQUIRED] === true
-      ? [new ValidationError(`Field ${field.name} is required but has no value`)] : []
+    return validateRequiredValue()
   }
 
   // Checking _restriction annotation
   if (isPrimitiveType(field.type)) {
-    return validateRestrictionsValue(value, field.getAnnotationsValues()[Type.RESTRICTION],
-      field.elemID.getFullName())
+    return validateRestrictionsValue(value)
   }
 
   // Apply validateAnnotations for each element in our values list

@@ -3,14 +3,11 @@ import {
   Field, Element, isObjectType, isInstanceElement, isPrimitiveType,
 } from 'adapter-api'
 import {
-  SaveResult, ValueTypeField, MetadataInfo, Field as SObjField, DeployResult, DescribeSObjectResult,
+  SaveResult, ValueTypeField, MetadataInfo, Field as SObjField, DescribeSObjectResult,
 } from 'jsforce'
 import _ from 'lodash'
 import SalesforceClient from './client/client'
 import * as constants from './constants'
-import {
-  CompleteSaveResult, SfError,
-} from './client/types'
 import {
   toCustomField, toCustomObject, apiName, sfCase, fieldFullName, Types,
   getValueTypeFieldElement, getSObjectFieldElement, fromMetadataInfo,
@@ -25,40 +22,6 @@ import convertTypeFilter from './filters/convert_types'
 import missingFieldsFilter from './filters/missing_fields'
 import Filter from './filters/filter'
 import makeArray from './client/make_array'
-
-// Diagnose client results
-const diagnose = (result: SaveResult | SaveResult[]): void => {
-  const errorMessage = (error: SfError | SfError[]): string =>
-    makeArray(error).map(e => e.message).join('\n')
-
-  if (!result) {
-    return
-  }
-
-  const errors = makeArray(result)
-    .filter(r => r)
-    .map(r => r as CompleteSaveResult)
-    .filter(r => r.errors)
-
-  if (errors.length > 0) {
-    throw new Error(errors.map(r => errorMessage(r.errors)).join('\n'))
-  }
-}
-
-// Diagnose deploy result
-const diagnoseDeploy = (result: DeployResult): void => {
-  if (result.success) {
-    return
-  }
-
-  const errors = _(result.details)
-    .map(detail => detail.componentFailures || [])
-    .flatten()
-    .filter(component => !component.success)
-    .map(failure => `${failure.componentType}.${failure.fullName}: ${failure.problem}`)
-    .value()
-  throw new Error(errors.join('\n'))
-}
 
 // Add API name and label annotation if missing
 const annotateApiNameAndLabel = (element: ObjectType): void => {
@@ -228,7 +191,8 @@ export default class SalesforceAdapter {
     } else {
       post = await this.addInstance(element as InstanceElement)
     }
-    diagnose(await this.runFiltersOnAdd(post))
+
+    await this.runFiltersOnAdd(post)
 
     return post
   }
@@ -243,7 +207,7 @@ export default class SalesforceAdapter {
     const post = element.clone()
     annotateApiNameAndLabel(post)
 
-    diagnose(await this.client.create(constants.CUSTOM_OBJECT, toCustomObject(post)))
+    await this.client.create(constants.CUSTOM_OBJECT, toCustomObject(post))
 
     return post
   }
@@ -255,11 +219,10 @@ export default class SalesforceAdapter {
    * @throws error in case of failure
    */
   private async addInstance(element: InstanceElement): Promise<InstanceElement> {
-    const result = await this.client.create(
+    await this.client.create(
       metadataType(element),
       toMetadataInfo(apiName(element), element.value)
     )
-    diagnose(result)
 
     return element
   }
@@ -269,8 +232,8 @@ export default class SalesforceAdapter {
    * @param element to remove
    */
   public async remove(element: Element): Promise<void> {
-    diagnose(await this.client.delete(metadataType(element), apiName(element)))
-    diagnose(await this.runFiltersOnRemove(element))
+    await this.client.delete(metadataType(element), apiName(element))
+    await this.runFiltersOnRemove(element)
   }
 
   /**
@@ -306,7 +269,7 @@ export default class SalesforceAdapter {
     const pre = prevObject.clone()
     annotateApiNameAndLabel(pre)
 
-    const fieldsUpdateResult = await Promise.all([
+    await Promise.all([
       // Retrieve the custom fields for deletion and delete them
       this.deleteCustomFields(prevObject, prevObject.getFieldsThatAreNotInOther(clonedObject)),
       // Retrieve the custom fields for addition and than create them
@@ -325,22 +288,17 @@ export default class SalesforceAdapter {
     // IMPORTANT: We don't update a built-in object (such as Lead, Customer, etc.)
     // The update API currently allows us to add/remove custom fields to such objects, but not
     // to update them.
-    let objectUpdateResult: SaveResult[] = []
     if (apiName(clonedObject).endsWith(constants.SALESFORCE_CUSTOM_SUFFIX)
       // Don't update the object unless its annotations values have changed
       && !_.isEqual(pre.getAnnotationsValues(), clonedObject.getAnnotationsValues())) {
-      objectUpdateResult = await this.client.update(
+      await this.client.update(
         metadataType(clonedObject),
         toCustomObject(clonedObject, false)
       ) // Update the object without its fields
     }
 
     // Aspects should be updated once all object related properties updates are over
-    const filtersResult = await this.runFiltersOnUpdate(prevObject, clonedObject)
-
-    diagnose(_.flatten(fieldsUpdateResult))
-    diagnose(objectUpdateResult)
-    diagnose(filtersResult)
+    await this.runFiltersOnUpdate(prevObject, clonedObject)
 
     return clonedObject
   }
@@ -357,12 +315,12 @@ export default class SalesforceAdapter {
 
     const typeName = metadataType(newInstance)
     if (this.metadataToUpdateWithDeploy.includes(typeName)) {
-      diagnoseDeploy(await this.client.deploy(await toMetadataPackageZip(newInstance)))
+      await this.client.deploy(await toMetadataPackageZip(newInstance))
     } else {
-      diagnose(await this.client.update(typeName, toMetadataInfo(
+      await this.client.update(typeName, toMetadataInfo(
         apiName(newInstance),
         newInstance.getValuesThatNotInPrevOrDifferent(prevInstance.value)
-      )))
+      ))
     }
 
     return newInstance

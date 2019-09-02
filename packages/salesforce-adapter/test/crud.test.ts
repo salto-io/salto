@@ -846,11 +846,11 @@ describe('SalesforceAdapter CRUD', () => {
           expect(mockUpdate.mock.calls[0][0]).toEqual(PROFILE_METADATA_TYPE)
           const obj = mockUpdate.mock.calls[0][1][0]
           expect(obj.fullName).toEqual(sfCase(mockInstanceID.name))
-          expect(obj.description).toEqual('new unit test instance profile')
-          expect(obj.userPermissions).toBeUndefined()
-          expect(obj.fieldPermissions).toHaveLength(2)
-          expect(obj.applicationVisibilities).toHaveLength(1)
-          expect(obj.tabVisibilities).toBeUndefined()
+          expect(obj.description).toEqual(newElement.value.description)
+          expect(obj.userPermissions).toEqual(newElement.value.userPermissions)
+          expect(obj.fieldPermissions).toEqual(newElement.value.fieldPermissions)
+          expect(obj.applicationVisibilities).toEqual(newElement.value.applicationVisibilities)
+          expect(obj.tabVisibilities).toEqual(newElement.value.tabVisibilities)
         })
       })
 

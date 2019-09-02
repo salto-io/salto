@@ -319,7 +319,10 @@ export default class SalesforceAdapter {
     } else {
       await this.client.update(typeName, toMetadataInfo(
         apiName(newInstance),
-        newInstance.getValuesThatNotInPrevOrDifferent(prevInstance.value)
+        // As SALTO-79 Conclusions we decided to send the entire newInstance to salesforce API
+        // instead of only the delta (changes between newInstance & prevInstance).
+        // until we have a better understanding of update behavior for all fields types.
+        newInstance.value
       ))
     }
 

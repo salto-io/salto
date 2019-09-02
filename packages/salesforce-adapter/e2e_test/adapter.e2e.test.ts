@@ -263,7 +263,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
         },
       })
 
-      if (await objectExists(constants.CUSTOM_OBJECT, customObjectName) === true) {
+      if (await objectExists(constants.CUSTOM_OBJECT, customObjectName)) {
         await sfAdapter.remove(element)
       }
       const post = await sfAdapter.add(element) as ObjectType
@@ -308,7 +308,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
         },
       })
       // Setup
-      if (await objectExists(constants.CUSTOM_OBJECT, customObjectName) === false) {
+      if (!await objectExists(constants.CUSTOM_OBJECT, customObjectName)) {
         await sfAdapter.add(element)
         expect(await objectExists(constants.CUSTOM_OBJECT, customObjectName)).toBe(true)
       }
@@ -351,7 +351,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
         },
       })
 
-      if (await objectExists(constants.CUSTOM_OBJECT, customObjectName) === true) {
+      if (await objectExists(constants.CUSTOM_OBJECT, customObjectName)) {
         await sfAdapter.remove(oldElement)
       }
       const addResult = await sfAdapter.add(oldElement)
@@ -517,19 +517,15 @@ describe('Test Salesforce adapter E2E with real account', () => {
       savedInstance.tabVisibilities.forEach((f: Value) => valuesMap.set(f.tab, f))
       savedInstance.applicationVisibilities.forEach((f: Value) => valuesMap.set(f.application, f))
 
-      expect(valuesMap.get(newValues.fieldPermissions[0].field))
-        .toEqual(newValues.fieldPermissions[0])
-      expect(valuesMap.get(newValues.fieldPermissions[1].field))
-        .toEqual(newValues.fieldPermissions[1])
-      expect(valuesMap.get(newValues.fieldPermissions[2].field))
-        .toEqual(newValues.fieldPermissions[2])
-      expect(valuesMap.get(newValues.tabVisibilities[0].tab))
-        .toEqual(newValues.tabVisibilities[0])
-      expect(valuesMap.get(newValues.applicationVisibilities[0].application))
-        .toEqual(newValues.applicationVisibilities[0])
+      expect((newValues.fieldPermissions as []).some((v: Value) =>
+        _.isEqual(v, valuesMap.get(v.field)))).toBeTruthy()
 
-      expect(valuesMap.get(oldInstance.value.fieldPermissions[0].field)).not
-        .toEqual(oldInstance.value.fieldPermissions[0])
+      expect((newValues.tabVisibilities as []).some((v: Value) =>
+        _.isEqual(v, valuesMap.get(v.tab)))).toBeTruthy()
+
+      expect((newValues.applicationVisibilities as []).some((v: Value) =>
+        _.isEqual(v, valuesMap.get(v.application)))).toBeTruthy()
+
 
       // Clean-up
       await sfAdapter.remove(post)
@@ -672,7 +668,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
         },
       })
 
-      if (await objectExists(constants.CUSTOM_OBJECT, customObjectName) === true) {
+      if (await objectExists(constants.CUSTOM_OBJECT, customObjectName)) {
         await sfAdapter.remove(oldElement)
       }
       const addResult = await sfAdapter.add(oldElement)
@@ -956,7 +952,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
         },
       })
 
-      if (await objectExists(constants.CUSTOM_OBJECT, customObjectName) === true) {
+      if (await objectExists(constants.CUSTOM_OBJECT, customObjectName)) {
         await sfAdapter.remove(element)
       }
       const post = await sfAdapter.add(element)

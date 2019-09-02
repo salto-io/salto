@@ -30,10 +30,6 @@ const MAX_ITEMS_IN_DESCRIBE_REQUEST = 100
 //  https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_readMetadata.htm
 const MAX_ITEMS_IN_READ_METADATA_REQUEST = 10
 
-// Make sure results are lists with no undefined values in them
-const ensureListResult = <T>(result: T|T[]): T[] =>
-  makeArray(result).filter(item => item !== undefined)
-
 export default class SalesforceClient {
   private conn: Connection
   private isLoggedIn = false
@@ -73,7 +69,7 @@ export default class SalesforceClient {
     chunkSize = MAX_ITEMS_IN_WRITE_REQUEST,
   ): Promise<TOut[]> {
     const chunks = _.chunk(makeArray(input), chunkSize)
-    const promises: Promise<TOut[]>[] = chunks.map(chunk => sendChunk(chunk).then(ensureListResult))
+    const promises: Promise<TOut[]>[] = chunks.map(chunk => sendChunk(chunk).then(makeArray))
     const results = await Promise.all(promises)
     return _.flatten(results)
   }
@@ -103,7 +99,7 @@ export default class SalesforceClient {
 
   public async listMetadataObjects(type: string): Promise<FileProperties[]> {
     await this.login()
-    return ensureListResult(await this.conn.metadata.list({ type }))
+    return makeArray(await this.conn.metadata.list({ type }))
   }
 
   /**

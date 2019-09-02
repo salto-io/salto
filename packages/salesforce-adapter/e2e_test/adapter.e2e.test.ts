@@ -127,7 +127,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
         return false
       }
       if (fields || missingFields) {
-        const fieldNames = makeArray(result.fields || []).map(rf => rf.fullName)
+        const fieldNames = makeArray(result.fields).map(rf => rf.fullName)
         if (fields && !fields.every(f => fieldNames.includes(f))) {
           return false
         }
@@ -613,7 +613,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
         constants.CUSTOM_OBJECT,
         customObjectName
       ))[0] as CustomObject
-      const field = makeArray(readResult.fields || []).filter(f => f.fullName === 'Banana__c')[0]
+      const field = makeArray(readResult.fields).filter(f => f.fullName === 'Banana__c')[0]
       expect(field).toBeDefined()
       expect(field.label).toBe('Banana Split')
 

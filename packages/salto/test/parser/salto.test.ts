@@ -386,7 +386,7 @@ describe('Salto Dump', () => {
     })
     it('has complex attributes', () => {
       expect(body).toMatch(
-        /lead_convert_settings = {\s*account = \[{\s*input = "bla",\s*output = "foo"\s*}\]\s*}/m,
+        /lead_convert_settings = {\s*account = \[\s*{\s*input\s*=\s*"bla",\s*output\s*=\s*"foo"\s*}\s*\]\s*}/m,
       )
     })
     it('has fields', () => {

@@ -2,11 +2,11 @@ import _ from 'lodash'
 import {
   ObjectType, ElemID, InstanceElement, Element,
 } from 'adapter-api'
-import { filter as makeFilter, ASSIGNMENT_RULES_TYPE_NAME } from '../../src/filters/assignment_rules'
+import filterCreator, { ASSIGNMENT_RULES_TYPE_NAME } from '../../src/filters/assignment_rules'
 import SalesforceClient from '../../src/client/client'
 import * as constants from '../../src/constants'
 import { bpCase } from '../../src/transformer'
-import { FilterInstanceWith } from '../../src/filter'
+import { FilterWith } from '../../src/filter'
 
 jest.mock('../../src/client/client')
 
@@ -25,7 +25,7 @@ describe('Test layout filter', () => {
 
   let testElements: Element[]
 
-  const filter = makeFilter(client) as FilterInstanceWith<'onDiscover'>
+  const filter = filterCreator({ client }) as FilterWith<'onDiscover'>
 
   beforeEach(() => {
     testElements = [

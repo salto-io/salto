@@ -7,7 +7,7 @@ import {
   sfCase, fieldFullName, bpCase,
 } from '../transformer'
 import SalesforceClient from '../client/client'
-import { Filter } from '../filter'
+import { FilterCreator } from '../filter'
 import { ProfileInfo } from '../client/types'
 
 export const FIELD_LEVEL_SECURITY_ANNOTATION = 'field_level_security'
@@ -83,7 +83,7 @@ const readProfiles = async (client: SalesforceClient): Promise<ProfileInfo[]> =>
  * Field permissions filter. Handle the mapping from sobject field FIELD_LEVEL_SECURITY_ANNOTATION
  * annotation and Profile.fieldsPermissions.
  */
-export const filter: Filter = (client: SalesforceClient) => ({
+const filterCreator: FilterCreator = ({ client }) => ({
   onDiscover: async (elements: Element[]): Promise<void> => {
     const sobjects = elements.filter(isObjectType)
     if (_.isEmpty(sobjects)) {
@@ -154,3 +154,5 @@ export const filter: Filter = (client: SalesforceClient) => ({
     return client.update(PROFILE_METADATA_TYPE, profiles)
   },
 })
+
+export default filterCreator

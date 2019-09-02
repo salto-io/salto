@@ -5,7 +5,7 @@ import {
 import makeFilter from '../../src/filters/convert_lists'
 import SalesforceClient from '../../src/client/client'
 import * as constants from '../../src/constants'
-import { FilterInstanceWith } from '../../src/filter'
+import { FilterWith } from '../../src/filter'
 
 jest.mock('../../src/client/client')
 
@@ -41,7 +41,7 @@ describe('Test convert lists filter', () => {
 
   let testElements: Element[]
 
-  const filter = makeFilter(client) as FilterInstanceWith<'onDiscover'>
+  const filter = makeFilter({ client }) as FilterWith<'onDiscover'>
 
   beforeEach(() => {
     const typeClone = mockType.clone()

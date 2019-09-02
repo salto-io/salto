@@ -4,7 +4,7 @@ import {
 import { makeFilter } from '../../src/filters/missing_fields'
 import SalesforceClient from '../../src/client/client'
 import * as constants from '../../src/constants'
-import { FilterInstanceWith } from '../../src/filter'
+import { FilterWith } from '../../src/filter'
 
 jest.mock('../../src/client/client')
 
@@ -23,7 +23,7 @@ describe('Test layout filter', () => {
         type: 'complex_type',
       },
     ],
-  })(client) as FilterInstanceWith<'onDiscover'>
+  })({ client }) as FilterWith<'onDiscover'>
 
   const mockObjId = new ElemID(constants.SALESFORCE, 'test')
   const mockType = new ObjectType({

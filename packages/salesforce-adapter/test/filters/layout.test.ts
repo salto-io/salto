@@ -2,11 +2,11 @@ import {
   ObjectType, ElemID, InstanceElement,
 } from 'adapter-api'
 import _ from 'lodash'
-import { filter as makeFilter, LAYOUT_ANNOTATION, LAYOUT_TYPE_NAME } from '../../src/filters/layouts'
+import makeFilter, { LAYOUT_ANNOTATION, LAYOUT_TYPE_NAME } from '../../src/filters/layouts'
 import SalesforceClient from '../../src/client/client'
 import * as constants from '../../src/constants'
 import { bpCase } from '../../src/transformer'
-import { FilterInstanceWith } from '../../src/filter'
+import { FilterWith } from '../../src/filter'
 
 jest.mock('../../src/client/client')
 
@@ -26,7 +26,7 @@ describe('Test layout filter', () => {
     {},
   )
 
-  const filter = makeFilter(client) as FilterInstanceWith<'onDiscover'>
+  const filter = makeFilter({ client }) as FilterWith<'onDiscover'>
 
   describe('Test layout discover', () => {
     const discover = async (apiName: string): Promise<void> => {

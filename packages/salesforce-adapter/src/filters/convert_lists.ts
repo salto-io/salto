@@ -2,7 +2,7 @@ import _ from 'lodash'
 import {
   Element, isObjectType, Field, Values, Value, ObjectType, isInstanceElement,
 } from 'adapter-api'
-import { Filter } from '../filter'
+import { FilterCreator } from '../filter'
 
 /**
  * Mark list fields as lists if there is any instance that has a list value in the field.
@@ -11,7 +11,7 @@ import { Filter } from '../filter'
  * After marking all fields as lists we also convert all values that should be lists to a list
  * This step is needed because the API never returns lists of length 1
  */
-const filter: Filter = () => ({
+const filter: FilterCreator = () => ({
   /**
    * Upon discover, mark all list fields as list fields in all discoverd types
    *

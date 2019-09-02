@@ -4,7 +4,7 @@ import {
   Element, isInstanceElement, isObjectType,
 } from 'adapter-api'
 import { apiName } from '../transformer'
-import { Filter } from '../filter'
+import { FilterCreator } from '../filter'
 
 export const LAYOUT_TYPE_NAME = 'layout'
 export const LAYOUT_ANNOTATION = 'layouts'
@@ -12,7 +12,7 @@ export const LAYOUT_ANNOTATION = 'layouts'
 /**
 * Declare the layout filter, this filter adds reference from the sobject to it's layouts.
 */
-export const filter: Filter = () => ({
+const filterCreator: FilterCreator = () => ({
   /**
    * Upon discover, add layout annotations to relevant sobjects.
    *
@@ -37,3 +37,5 @@ export const filter: Filter = () => ({
       })
   },
 })
+
+export default filterCreator

@@ -2,7 +2,7 @@ import _ from 'lodash'
 import {
   Element, isObjectType, PrimitiveTypes, Values, ObjectType, isPrimitiveType, isInstanceElement,
 } from 'adapter-api'
-import { Filter } from '../filter'
+import { FilterCreator } from '../filter'
 import { SETTINGS_METADATA_TYPE } from '../constants'
 import { bpCase } from '../transformer'
 
@@ -77,7 +77,7 @@ const transform = (obj: Values, type: ObjectType, strict = true): Values | undef
  * Convert types of values in instance elements to match the expected types according to the
  * instance type definition.
  */
-const filter: Filter = () => ({
+const filterCreator: FilterCreator = () => ({
   /**
    * Upon discover, convert all instance values to their correct type according to the
    * type definitions
@@ -97,4 +97,4 @@ const filter: Filter = () => ({
   },
 })
 
-export default filter
+export default filterCreator

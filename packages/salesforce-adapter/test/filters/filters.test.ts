@@ -1,6 +1,6 @@
 import { ObjectType, ElemID, InstanceElement } from 'adapter-api'
 import SalesforceAdapter from '../../src/adapter'
-import { FilterInstanceWith, Filter } from '../../src/filter'
+import { FilterWith, FilterCreator } from '../../src/filter'
 import { API_NAME } from '../../src/constants'
 import SalesforceClient from '../../src/client/client'
 
@@ -14,8 +14,8 @@ describe('SalesforceAdapter filters', () => {
 
   let adapter: SalesforceAdapter
 
-  const makeAdapter = (filters: Filter[]): SalesforceAdapter => {
-    const a = new SalesforceAdapter({ filters })
+  const makeAdapter = (filterCreators: FilterCreator[]): SalesforceAdapter => {
+    const a = new SalesforceAdapter({ filterCreators })
     a.init(new InstanceElement(new ElemID('salesforce'), a.getConfigType(),
       {
         username: '', password: '', token: '', sandbox: false,
@@ -24,7 +24,7 @@ describe('SalesforceAdapter filters', () => {
   }
 
   describe('when filter methods are implemented', () => {
-    let filter: FilterInstanceWith<'onDiscover' | 'onAdd' | 'onUpdate' | 'onRemove'>
+    let filter: FilterWith<'onDiscover' | 'onAdd' | 'onUpdate' | 'onRemove'>
 
     beforeEach(() => {
       SalesforceClient.prototype.listMetadataTypes = jest.fn()

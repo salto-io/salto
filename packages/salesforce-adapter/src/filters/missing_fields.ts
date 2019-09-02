@@ -2,7 +2,7 @@ import _ from 'lodash'
 import {
   isObjectType, Field, Values, Type, isType, BuiltinTypes,
 } from 'adapter-api'
-import { Filter } from '../filter'
+import { FilterCreator } from '../filter'
 
 interface MissingField {
   name: string
@@ -49,7 +49,7 @@ const allMissingFields: Record<string, MissingField[]> = {
 
 export const makeFilter = (
   missingFields: Record<string, MissingField[]>
-): Filter => () => ({
+): FilterCreator => () => ({
   onDiscover: async function onDiscover(elements) {
     // We need a mapping of all the types so we can replace type names with the correct types
     const typeMap = _(elements)

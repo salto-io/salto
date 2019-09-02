@@ -56,7 +56,7 @@ describe('SalesforceAdapter CRUD', () => {
   beforeEach(() => {
     ({ connection, adapter } = mockAdpater({
       adapterParams: {
-        filters: [],
+        filterCreators: [],
         metadataToUpdateWithDeploy: [deployTypeName],
       },
     }))

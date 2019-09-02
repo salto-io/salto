@@ -2,8 +2,10 @@ import _ from 'lodash'
 import {
   ObjectType, ElemID, InstanceElement, Element,
 } from 'adapter-api'
-import { FilterInstanceWith } from '../../src/filter'
-import { filter as makeFilter, VALIDATION_RULE_TYPE, VALIDATION_RULE_ANNOTATION } from '../../src/filters/validation_rules'
+import { FilterWith } from '../../src/filter'
+import filterCreator, {
+  VALIDATION_RULE_TYPE, VALIDATION_RULE_ANNOTATION,
+} from '../../src/filters/validation_rules'
 import SalesforceClient from '../../src/client/client'
 import * as constants from '../../src/constants'
 import { bpCase } from '../../src/transformer'
@@ -12,7 +14,7 @@ jest.mock('../../src/client/client')
 
 describe('Test layout filter', () => {
   const client = new SalesforceClient('', '', false)
-  const filter = makeFilter(client) as FilterInstanceWith<'onDiscover'>
+  const filter = filterCreator({ client }) as FilterWith<'onDiscover'>
 
   const mockSObject = new ObjectType({
     elemID: new ElemID(constants.SALESFORCE, 'test'),

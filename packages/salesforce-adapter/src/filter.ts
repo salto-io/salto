@@ -7,18 +7,18 @@ import SalesforceClient from './client/client'
 // operations. The filter will be responsible for specific business logic.
 // For example, field permissions filter will add field_level_security annotation and will read
 // it and update permissions accordingly.
-export type FilterInstance = Partial<{
+export type Filter = Partial<{
   onDiscover(elements: Element[]): Promise<void>
   onAdd(after: Element): Promise<SaveResult[]>
   onUpdate(before: Element, after: Element): Promise<SaveResult[]>
   onRemove(before: Element): Promise<SaveResult[]>
 }>
 
-export type FilterInstanceWith<M extends keyof FilterInstance> = HasMember<FilterInstance, M>
+export type FilterWith<M extends keyof Filter> = HasMember<Filter, M>
 
-export const onlyInstancesWith = <M extends keyof FilterInstance>(
+export const filtersWith = <M extends keyof Filter>(
   m: M,
-  filters: FilterInstance[],
-): FilterInstanceWith<M>[] => filterHasMember<FilterInstance, M>(m, filters)
+  filters: Filter[],
+): FilterWith<M>[] => filterHasMember<Filter, M>(m, filters)
 
-export type Filter = (client: SalesforceClient) => FilterInstance
+export type FilterCreator = (opts: { client: SalesforceClient }) => Filter

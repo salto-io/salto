@@ -2,7 +2,7 @@ import _ from 'lodash'
 import {
   Element, isInstanceElement, ElemID,
 } from 'adapter-api'
-import { Filter } from '../filter'
+import { FilterCreator } from '../filter'
 import { apiName, bpCase } from '../transformer'
 
 export const ASSIGNMENT_RULES_TYPE_NAME = 'assignment_rules'
@@ -11,7 +11,7 @@ export const ASSIGNMENT_RULES_TYPE_NAME = 'assignment_rules'
 * Declare the assignment rules filter, this filter renames assignment rules instances to match
 * the names in the Salesforce UI
 */
-export const filter: Filter = () => ({
+const filterCreator: FilterCreator = () => ({
   /**
    * Upon discover, rename assignment rules instances
    *
@@ -32,3 +32,5 @@ export const filter: Filter = () => ({
       })
   },
 })
+
+export default filterCreator

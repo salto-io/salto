@@ -3,12 +3,12 @@ import {
 } from 'adapter-api'
 import _ from 'lodash'
 import { ProfileInfo } from '../../src/client/types'
-import {
-  filter as makeFilter, FIELD_LEVEL_SECURITY_ANNOTATION,
+import filterCreator, {
+  FIELD_LEVEL_SECURITY_ANNOTATION,
 } from '../../src/filters/field_permissions'
 import SalesforceClient from '../../src/client/client'
 import * as constants from '../../src/constants'
-import { FilterInstanceWith } from '../../src/filter'
+import { FilterWith } from '../../src/filter'
 
 jest.mock('../../src/client/client')
 
@@ -48,8 +48,8 @@ describe('Test Field Permissions filter', () => {
 
   let mockUpdate: jest.Mock<unknown>
 
-  type FilterType = FilterInstanceWith<'onDiscover' | 'onAdd' | 'onUpdate'>
-  const filter = (): FilterType => makeFilter(client()) as FilterType
+  type FilterType = FilterWith<'onDiscover' | 'onAdd' | 'onUpdate'>
+  const filter = (): FilterType => filterCreator({ client: client() }) as FilterType
 
   beforeEach(() => {
     mockUpdate = jest.fn().mockImplementationOnce(() => ([{ success: true }]))

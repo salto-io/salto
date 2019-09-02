@@ -1,12 +1,12 @@
 import _ from 'lodash'
 import { Element, isInstanceElement, isObjectType } from 'adapter-api'
-import { Filter } from '../filter'
+import { FilterCreator } from '../filter'
 import { apiName } from '../transformer'
 
 export const VALIDATION_RULE_TYPE = 'validation_rule'
 export const VALIDATION_RULE_ANNOTATION = 'validation_rules'
 
-export const filter: Filter = () => ({
+const filterCreator: FilterCreator = () => ({
   onDiscover: async (elements: Element[]) => {
     const rulesByObject = _(elements)
       .filter(isInstanceElement)
@@ -25,3 +25,5 @@ export const filter: Filter = () => ({
       })
   },
 })
+
+export default filterCreator

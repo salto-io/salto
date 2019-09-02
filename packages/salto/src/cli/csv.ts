@@ -8,7 +8,14 @@ import { parseAsync } from 'json2csv'
  */
 export const dumpCsv = async (objects: object[], outputPath: string): Promise<void> => {
   await fs.mkdirp(path.dirname(outputPath))
-  const csvString = await parseAsync(objects)
+  let csvString = await parseAsync(objects)
+  const rows = csvString.split('\n')
+  let header = rows.shift()
+  if (header) {
+    header = header.replace(/"/g, '')
+    rows.unshift(header)
+    csvString = rows.join('\n')
+  }
   await fs.writeFile(outputPath, csvString)
 }
 

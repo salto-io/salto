@@ -185,14 +185,9 @@ export default class SalesforceAdapter {
    * @param typeId the type name to retrieve
    */
   public async getInstancesOfType(typeId: string): Promise<object[]> {
-    let fields = ''
     // Populate the fields list in the query with commas between the field names
     const objectDescription = await this.client.describeSObject(typeId)
-    objectDescription[0].fields.forEach(field => {
-      fields += `${field.name},`
-    })
-    // Remove the last comma
-    fields = fields.slice(0, -1)
+    const fields = objectDescription[0].fields.map(f => f.name).join(',')
     // Finalize the query string
     const queryString = `SELECT ${fields} FROM ${typeId}`
     const result = await this.client.runQuery(queryString)

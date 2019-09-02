@@ -180,7 +180,7 @@ describe('Test commands.ts', () => {
 
       await commands.exportBase('Test', outputPath, [])
       expect(await fs.exists(outputPath)).toBe(true)
-      expect((await fs.readFile(outputPath)).toString()).toMatch(/"Id","FirstName","LastName","Email","Gender"/s)
+      expect((await fs.readFile(outputPath)).toString()).toMatch(/Id,FirstName,LastName,Email,Gender/s)
       expect((await fs.readFile(outputPath)).toString()).toMatch(/1,"Daile","Limeburn","dlimeburn0@blogs.com","Female"/s)
       expect((await fs.readFile(outputPath)).toString()).toMatch(/2,"Murial","Morson","mmorson1@google.nl","Female"/s)
       expect((await fs.readFile(outputPath)).toString()).toMatch(/3,"Minna","Noe","mnoe2@wikimedia.org","Female"/s)

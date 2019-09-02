@@ -10,6 +10,9 @@ import {
   DescribeSObjectResult,
   DeployResult,
 } from 'jsforce'
+import {
+  CompleteSaveResult, SfError,
+} from './types'
 import makeArray from './make_array'
 import Connection from './connection'
 
@@ -72,6 +75,37 @@ export default class SalesforceClient {
     const promises: Promise<TOut[]>[] = chunks.map(chunk => sendChunk(chunk).then(makeArray))
     const results = await Promise.all(promises)
     return _.flatten(results)
+  }
+
+  private static validateSaveResult(result: SaveResult[]): SaveResult[] {
+    const errorMessage = (error: SfError | SfError[]): string =>
+      makeArray(error).map(e => e.message).join('\n')
+
+    const errors = makeArray(result)
+      .filter(r => r)
+      .map(r => r as CompleteSaveResult)
+      .filter(r => r.errors)
+
+    if (errors.length > 0) {
+      throw new Error(errors.map(r => errorMessage(r.errors)).join('\n'))
+    }
+
+    return result
+  }
+
+  private static validateDeployResult(result: DeployResult): DeployResult {
+    if (result.success) {
+      return result
+    }
+
+    const errors = _(result.details)
+      .map(detail => detail.componentFailures || [])
+      .flatten()
+      .filter(component => !component.success)
+      .map(failure => `${failure.componentType}.${failure.fullName}: ${failure.problem}`)
+      .value()
+
+    throw new Error(errors.join('\n'))
   }
 
   /**
@@ -147,9 +181,11 @@ export default class SalesforceClient {
     metadata: MetadataInfo | MetadataInfo[]
   ): Promise<SaveResult[]> {
     await this.login()
-    return SalesforceClient.sendChunked(
-      metadata,
-      chunk => this.conn.metadata.create(type, chunk),
+    return SalesforceClient.validateSaveResult(
+      await SalesforceClient.sendChunked(
+        metadata,
+        chunk => this.conn.metadata.create(type, chunk),
+      )
     )
   }
 
@@ -165,9 +201,11 @@ export default class SalesforceClient {
     fullNames: string | string[]
   ): Promise<SaveResult[]> {
     await this.login()
-    return SalesforceClient.sendChunked(
-      fullNames,
-      chunk => this.conn.metadata.delete(metadataType, chunk),
+    return SalesforceClient.validateSaveResult(
+      await SalesforceClient.sendChunked(
+        fullNames,
+        chunk => this.conn.metadata.delete(metadataType, chunk),
+      )
     )
   }
 
@@ -182,9 +220,11 @@ export default class SalesforceClient {
     metadata: MetadataInfo | MetadataInfo[]
   ): Promise<SaveResult[]> {
     await this.login()
-    return SalesforceClient.sendChunked(
-      metadata,
-      chunk => this.conn.metadata.update(metadataType, chunk),
+    return SalesforceClient.validateSaveResult(
+      await SalesforceClient.sendChunked(
+        metadata,
+        chunk => this.conn.metadata.update(metadataType, chunk),
+      )
     )
   }
 
@@ -195,6 +235,8 @@ export default class SalesforceClient {
    */
   public async deploy(zip: Buffer): Promise<DeployResult> {
     await this.login()
-    return this.conn.metadata.deploy(zip, { rollbackOnError: true }).complete(true)
+    return SalesforceClient.validateDeployResult(
+      await this.conn.metadata.deploy(zip, { rollbackOnError: true }).complete(true)
+    )
   }
 }

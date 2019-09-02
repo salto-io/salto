@@ -2,10 +2,11 @@ import _ from 'lodash'
 import {
   ObjectType, ElemID, InstanceElement, Element, Field, BuiltinTypes,
 } from 'adapter-api'
-import filter from '../../src/filters/convert_types'
+import makeFilter from '../../src/filters/convert_types'
 import SalesforceClient from '../../src/client/client'
 import * as constants from '../../src/constants'
 import { bpCase } from '../../src/transformer'
+import { FilterWith } from '../../src/filter'
 
 jest.mock('../../src/client/client')
 
@@ -49,6 +50,8 @@ describe('Test convert types filter', () => {
 
   let testElements: Element[]
 
+  const filter = makeFilter({ client }) as FilterWith<'onDiscover'>
+
   beforeEach(() => {
     testElements = [
       mockType,
@@ -61,7 +64,7 @@ describe('Test convert types filter', () => {
     let inst: InstanceElement
 
     beforeEach(async () => {
-      await filter.onDiscover(client, testElements)
+      await filter.onDiscover(testElements)
       inst = testElements[1] as InstanceElement
     })
 
@@ -82,24 +85,6 @@ describe('Test convert types filter', () => {
     it('should not change settings', () => {
       const settingsInst = testElements[2] as InstanceElement
       expect(settingsInst).toEqual(mockSettings)
-    })
-  })
-
-  describe('on add', () => {
-    it('should have no effect', async () => {
-      expect(await filter.onAdd(client, mockType)).toHaveLength(0)
-    })
-  })
-
-  describe('on update', () => {
-    it('should have no effect', async () => {
-      expect(await filter.onUpdate(client, mockType, mockType)).toHaveLength(0)
-    })
-  })
-
-  describe('on remove', () => {
-    it('should have no effect', async () => {
-      expect(await filter.onRemove(client, mockType)).toHaveLength(0)
     })
   })
 })

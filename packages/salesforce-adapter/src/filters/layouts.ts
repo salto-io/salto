@@ -1,12 +1,10 @@
 
 import _ from 'lodash'
 import {
-  Element, isObjectType, isInstanceElement,
+  Element, isInstanceElement, isObjectType,
 } from 'adapter-api'
-import { SaveResult } from 'jsforce-types'
 import { apiName } from '../transformer'
-import Filter from './filter'
-import SalesforceClient from '../client/client'
+import { FilterCreator } from '../filter'
 
 export const LAYOUT_TYPE_NAME = 'layout'
 export const LAYOUT_ANNOTATION = 'layouts'
@@ -14,14 +12,14 @@ export const LAYOUT_ANNOTATION = 'layouts'
 /**
 * Declare the layout filter, this filter adds reference from the sobject to it's layouts.
 */
-export const filter: Filter = {
+const filterCreator: FilterCreator = () => ({
   /**
    * Upon discover, add layout annotations to relevant sobjects.
    *
    * @param client SFDC client
    * @param sobject the already discoverd elements
    */
-  onDiscover: async (_client: SalesforceClient, elements: Element[]): Promise<void> => {
+  onDiscover: async (elements: Element[]): Promise<void> => {
     const layouts = _(elements)
       .filter(isInstanceElement)
       .filter(e => e.type.elemID.name === LAYOUT_TYPE_NAME)
@@ -38,11 +36,6 @@ export const filter: Filter = {
         }
       })
   },
-  // In the future we will generate empty layout for new custom objects
-  onAdd: (_client: SalesforceClient, _elem: Element): Promise<SaveResult[]> =>
-    Promise.resolve([]),
-  onUpdate: (_client: SalesforceClient, _elem1: Element, _elem2: Element):
-    Promise<SaveResult[]> => Promise.resolve([]),
-  onRemove: (_client: SalesforceClient, _elem: Element): Promise<SaveResult[]> =>
-    Promise.resolve([]),
-}
+})
+
+export default filterCreator

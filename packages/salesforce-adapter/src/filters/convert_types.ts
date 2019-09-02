@@ -1,8 +1,8 @@
 import _ from 'lodash'
 import {
-  isObjectType, PrimitiveTypes, Values, ObjectType, isPrimitiveType, isInstanceElement,
+  Element, isObjectType, PrimitiveTypes, Values, ObjectType, isPrimitiveType, isInstanceElement,
 } from 'adapter-api'
-import Filter from './filter'
+import { FilterCreator } from '../filter'
 import { SETTINGS_METADATA_TYPE } from '../constants'
 import { bpCase } from '../transformer'
 
@@ -77,7 +77,7 @@ const transform = (obj: Values, type: ObjectType, strict = true): Values | undef
  * Convert types of values in instance elements to match the expected types according to the
  * instance type definition.
  */
-const filter: Filter = {
+const filterCreator: FilterCreator = () => ({
   /**
    * Upon discover, convert all instance values to their correct type according to the
    * type definitions
@@ -85,7 +85,7 @@ const filter: Filter = {
    * @param client SFDC client
    * @param elements the already discoverd elements
    */
-  onDiscover: async (_client, elements) => {
+  onDiscover: async (elements: Element[]) => {
     elements
       .filter(isInstanceElement)
       .filter(instance => isObjectType(instance.type))
@@ -95,9 +95,6 @@ const filter: Filter = {
         instance.value = transform(instance.value, instance.type as ObjectType, strict) || {}
       })
   },
-  onAdd: async (_client, _elem) => [],
-  onUpdate: async (_client, _elem1, _elem2) => [],
-  onRemove: async (_client, _elem) => [],
-}
+})
 
-export default filter
+export default filterCreator

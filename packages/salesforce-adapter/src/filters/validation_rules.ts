@@ -1,13 +1,13 @@
 import _ from 'lodash'
-import { isInstanceElement, isObjectType } from 'adapter-api'
-import Filter from './filter'
+import { Element, isInstanceElement, isObjectType } from 'adapter-api'
+import { FilterCreator } from '../filter'
 import { apiName } from '../transformer'
 
 export const VALIDATION_RULE_TYPE = 'validation_rule'
 export const VALIDATION_RULE_ANNOTATION = 'validation_rules'
 
-export const filter: Filter = {
-  onDiscover: async (_client, elements) => {
+const filterCreator: FilterCreator = () => ({
+  onDiscover: async (elements: Element[]) => {
     const rulesByObject = _(elements)
       .filter(isInstanceElement)
       .filter(e => e.type.elemID.name === VALIDATION_RULE_TYPE)
@@ -24,7 +24,6 @@ export const filter: Filter = {
         }
       })
   },
-  onAdd: async (_client, _after) => [],
-  onUpdate: async (_client, _before, _after) => [],
-  onRemove: async (_client, _before) => [],
-}
+})
+
+export default filterCreator

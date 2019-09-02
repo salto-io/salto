@@ -13,14 +13,16 @@ import {
   getValueTypeFieldElement, getSObjectFieldElement, fromMetadataInfo,
   bpCase, toMetadataInfo, metadataType, toMetadataPackageZip,
 } from './transformer'
-import { filter as layoutFilter } from './filters/layouts'
-import { filter as fieldPermissionsFilter } from './filters/field_permissions'
-import { filter as validationRulesFilter } from './filters/validation_rules'
-import { filter as assignmentRulesFilter } from './filters/assignment_rules'
+import layoutFilter from './filters/layouts'
+import fieldPermissionsFilter from './filters/field_permissions'
+import validationRulesFilter from './filters/validation_rules'
+import assignmentRulesFilter from './filters/assignment_rules'
 import convertListsFilter from './filters/convert_lists'
 import convertTypeFilter from './filters/convert_types'
 import missingFieldsFilter from './filters/missing_fields'
-import Filter from './filters/filter'
+import {
+  FilterCreator, Filter, FilterWith, filtersWith,
+} from './filter'
 import makeArray from './client/make_array'
 
 // Add API name and label annotation if missing
@@ -64,7 +66,7 @@ export interface SalesforceAdapterParams {
   metadataToUpdateWithDeploy?: string[]
 
   // Filters to apply to all adapter operations
-  filters?: Filter[]
+  filterCreators?: FilterCreator[]
 
   // override client to use (a new SalesforceClient is created if not specified)
   client?: SalesforceClient
@@ -74,7 +76,7 @@ export default class SalesforceAdapter {
   private metadataAdditionalTypes: string[]
   private metadataTypeBlacklist: string[]
   private metadataToUpdateWithDeploy: string[]
-  private filters: Filter[]
+  private filterCreators: FilterCreator[]
 
   public constructor({
     metadataAdditionalTypes = [
@@ -88,7 +90,7 @@ export default class SalesforceAdapter {
     metadataToUpdateWithDeploy = [
       'AssignmentRules',
     ],
-    filters = [
+    filterCreators: filterCreators = [
       fieldPermissionsFilter,
       layoutFilter,
       validationRulesFilter,
@@ -103,7 +105,7 @@ export default class SalesforceAdapter {
     this.metadataAdditionalTypes = metadataAdditionalTypes
     this.metadataTypeBlacklist = metadataTypeBlacklist
     this.metadataToUpdateWithDeploy = metadataToUpdateWithDeploy
-    this.filters = filters
+    this.filterCreators = filterCreators
     this.innerClient = client
   }
 
@@ -558,28 +560,40 @@ export default class SalesforceAdapter {
     return this.client.readMetadata(type, names)
   }
 
+  private filtersWith<M extends keyof Filter>(m: M): FilterWith<M>[] {
+    const allFilters = this.filterCreators.map(f => f({ client: this.client }))
+    return filtersWith(m, allFilters)
+  }
+
   // Filter related functions
+
   private async runFiltersOnDiscover(elements: Element[]): Promise<void> {
     // Discover filters order is important so they should run one after the other
-    return this.filters.reduce(
-      (prevRes, filter) => prevRes.then(() => filter.onDiscover(this.client, elements)),
+    return this.filtersWith('onDiscover').reduce(
+      (prevRes, filter) => prevRes.then(() => filter.onDiscover(elements)),
       Promise.resolve(),
     )
   }
 
+  private async runFiltersInParallel<M extends keyof Filter>(
+    m: M,
+    run: (f: FilterWith<M>) => Promise<SaveResult[]>
+  ): Promise<SaveResult[]> {
+    return _.flatten(
+      await Promise.all(this.filtersWith(m).map(run))
+    )
+  }
+
   private async runFiltersOnAdd(after: Element): Promise<SaveResult[]> {
-    return _.flatten(await Promise.all(this.filters.map(filter =>
-      filter.onAdd(this.client, after))))
+    return this.runFiltersInParallel('onAdd', filter => filter.onAdd(after))
   }
 
 
   private async runFiltersOnUpdate(before: Element, after: Element): Promise<SaveResult[]> {
-    return _.flatten(await Promise.all(this.filters.map(filter =>
-      filter.onUpdate(this.client, before, after))))
+    return this.runFiltersInParallel('onUpdate', filter => filter.onUpdate(before, after))
   }
 
   private async runFiltersOnRemove(before: Element): Promise<SaveResult[]> {
-    return _.flatten(await Promise.all(this.filters.map(filter =>
-      filter.onRemove(this.client, before))))
+    return this.runFiltersInParallel('onRemove', filter => filter.onRemove(before))
   }
 }

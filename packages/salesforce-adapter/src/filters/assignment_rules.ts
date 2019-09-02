@@ -1,8 +1,8 @@
 import _ from 'lodash'
 import {
-  isInstanceElement, ElemID,
+  Element, isInstanceElement, ElemID,
 } from 'adapter-api'
-import Filter from './filter'
+import { FilterCreator } from '../filter'
 import { apiName, bpCase } from '../transformer'
 
 export const ASSIGNMENT_RULES_TYPE_NAME = 'assignment_rules'
@@ -11,14 +11,14 @@ export const ASSIGNMENT_RULES_TYPE_NAME = 'assignment_rules'
 * Declare the assignment rules filter, this filter renames assignment rules instances to match
 * the names in the Salesforce UI
 */
-export const filter: Filter = {
+const filterCreator: FilterCreator = () => ({
   /**
    * Upon discover, rename assignment rules instances
    *
    * @param client SFDC client
    * @param elements the already discoverd elements
    */
-  onDiscover: async (_client, elements) => {
+  onDiscover: async (elements: Element[]) => {
     _(elements)
       .filter(isInstanceElement)
       .filter(e => e.type.elemID.name === ASSIGNMENT_RULES_TYPE_NAME)
@@ -31,7 +31,6 @@ export const filter: Filter = {
         rule.elemID = new ElemID(rule.elemID.adapter, newName)
       })
   },
-  onAdd: async (_client, _elem) => [],
-  onUpdate: async (_client, _elem1, _elem2) => [],
-  onRemove: async (_client, _elem) => [],
-}
+})
+
+export default filterCreator

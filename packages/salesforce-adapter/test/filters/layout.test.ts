@@ -2,10 +2,11 @@ import {
   ObjectType, ElemID, InstanceElement,
 } from 'adapter-api'
 import _ from 'lodash'
-import { filter, LAYOUT_ANNOTATION, LAYOUT_TYPE_NAME } from '../../src/filters/layouts'
+import makeFilter, { LAYOUT_ANNOTATION, LAYOUT_TYPE_NAME } from '../../src/filters/layouts'
 import SalesforceClient from '../../src/client/client'
 import * as constants from '../../src/constants'
 import { bpCase } from '../../src/transformer'
+import { FilterWith } from '../../src/filter'
 
 jest.mock('../../src/client/client')
 
@@ -25,6 +26,8 @@ describe('Test layout filter', () => {
     {},
   )
 
+  const filter = makeFilter({ client }) as FilterWith<'onDiscover'>
+
   describe('Test layout discover', () => {
     const discover = async (apiName: string): Promise<void> => {
       const testSObj = mockSObject.clone()
@@ -33,7 +36,7 @@ describe('Test layout filter', () => {
       testLayout.value[bpCase(constants.METADATA_OBJECT_NAME_FIELD)] = `${apiName}-Test layout`
       const elements = [testSObj, testLayout]
 
-      await filter.onDiscover(client, elements)
+      await filter.onDiscover(elements)
       const sobject = elements[0] as ObjectType
       expect(sobject.getAnnotationsValues()[LAYOUT_ANNOTATION][0])
         .toBe(mockLayout.elemID.getFullName())
@@ -44,24 +47,6 @@ describe('Test layout filter', () => {
     })
     it('should add relation between layout to related custom sobject', async () => {
       await discover('Test__c')
-    })
-  })
-
-  describe('layouts on add', () => {
-    it('should have no effect', async () => {
-      expect(await filter.onAdd(client, mockSObject)).toHaveLength(0)
-    })
-  })
-
-  describe('layouts on update', () => {
-    it('should have no effect', async () => {
-      expect(await filter.onUpdate(client, mockSObject, mockSObject)).toHaveLength(0)
-    })
-  })
-
-  describe('layouts on remove', () => {
-    it('should have no effect', async () => {
-      expect(await filter.onRemove(client, mockSObject)).toHaveLength(0)
     })
   })
 })

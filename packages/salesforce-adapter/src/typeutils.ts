@@ -12,8 +12,7 @@ export const hasMember = <T, M extends keyof T>(
   o: T,
 ): o is HasMember<T, M> => !!o[m]
 
+// filters an array of T and returns only the items that have the specified member M
 export const filterHasMember = <T, M extends keyof T>(
   m: M, objs: T[]
-): HasMember<T, M>[] => objs.filter(
-  f => hasMember(m, f)
-) as HasMember<T, M>[]
+): HasMember<T, M>[] => objs.filter(f => hasMember(m, f)) as HasMember<T, M>[]

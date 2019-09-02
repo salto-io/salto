@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import {
-  PrimitiveType, ElemID, Field, Element,
+  PrimitiveType, ElemID, Field, Element, BuiltinTypes,
   ObjectType, InstanceElement, isType, isElement,
 } from 'adapter-api'
 
@@ -80,7 +80,9 @@ export const deserialize = (data: string): Element[] => {
   }
 
   const elements = JSON.parse(data, elementReviver) as Element[]
-  const typeMap = _.keyBy(elements.filter(isType), e => e.elemID.getFullName())
+  const elementsMap = _.keyBy(elements.filter(isType), e => e.elemID.getFullName())
+  const builtinMap = _(BuiltinTypes).values().keyBy(b => b.elemID.getFullName()).value()
+  const typeMap = _.merge({}, elementsMap, builtinMap)
   elements.forEach(element => {
     _.keys(element).forEach(k => {
       _.set(element, k, _.cloneDeepWith(_.get(element, k), v =>

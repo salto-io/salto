@@ -399,7 +399,7 @@ export const BuiltinTypes: Record<string, PrimitiveType> = {
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 export function isElement(value: any): value is Element {
-  return value.elemID && value.elemID instanceof ElemID
+  return value && value.elemID && value.elemID instanceof ElemID
 }
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */

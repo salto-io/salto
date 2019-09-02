@@ -502,6 +502,14 @@ describe('NodeMap', () => {
         () => expect(result).rejects.toBeInstanceOf(CircularDependencyError)
       )
     })
+
+    describe('when the handler throws an error', () => {
+      class MyError extends Error {}
+      it(
+        'throws the error',
+        () => expect(subject.walk(() => { throw new MyError() })).rejects.toThrow(MyError),
+      )
+    })
   })
 
   describe('reverse', () => {

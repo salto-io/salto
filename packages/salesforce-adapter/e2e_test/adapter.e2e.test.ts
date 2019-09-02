@@ -22,22 +22,10 @@ import {
 import {
   Types, sfCase, fromMetadataInfo,
 } from '../src/transformer'
+import mockAdapter from '../test/adapter'
 
 describe('Test Salesforce adapter E2E with real account', () => {
-  const adapter = (): SalesforceAdapter => {
-    const a = new SalesforceAdapter()
-    const configType = a.getConfigType()
-    const value = {
-      username: process.env.SF_USER,
-      password: process.env.SF_PASSWORD,
-      token: process.env.SF_TOKEN,
-      sandbox: false,
-    }
-    const elemID = new ElemID('salesforce')
-    const config = new InstanceElement(elemID, configType, value)
-    a.init(config)
-    return a
-  }
+  const adapter = (): SalesforceAdapter => mockAdapter().adapter
 
   // Set long timeout as we communicate with salesforce API
   beforeAll(() => {

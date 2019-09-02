@@ -1,6 +1,6 @@
 import {
   BuiltinTypes, Type, ObjectType, ElemID, InstanceElement, Values,
-  Field, Element, isObjectType, isInstanceElement, isPrimitiveType,
+  Field, Element, isObjectType, isInstanceElement, isPrimitiveType, AdapterCreator,
 } from 'adapter-api'
 import {
   SaveResult, ValueTypeField, MetadataInfo, Field as SObjField, DescribeSObjectResult,
@@ -68,9 +68,15 @@ export interface SalesforceAdapterParams {
   // Filters to apply to all adapter operations
   filterCreators?: FilterCreator[]
 
-  // override client to use (a new SalesforceClient is created if not specified)
-  client?: SalesforceClient
+  // client to use, or config InstanceElement used to create the client
+  clientOrConfig: SalesforceClient | InstanceElement
 }
+
+const clientFromConfig = (config: InstanceElement): SalesforceClient => new SalesforceClient(
+  config.value.username,
+  config.value.password + config.value.token,
+  config.value.sandbox
+)
 
 export default class SalesforceAdapter {
   private metadataAdditionalTypes: string[]
@@ -100,13 +106,15 @@ export default class SalesforceAdapter {
       convertListsFilter,
       convertTypeFilter,
     ],
-    client,
-  }: SalesforceAdapterParams = {}) {
+    clientOrConfig,
+  }: SalesforceAdapterParams) {
     this.metadataAdditionalTypes = metadataAdditionalTypes
     this.metadataTypeBlacklist = metadataTypeBlacklist
     this.metadataToUpdateWithDeploy = metadataToUpdateWithDeploy
     this.filterCreators = filterCreators
-    this.innerClient = client
+    this.innerClient = isInstanceElement(clientOrConfig)
+      ? clientFromConfig(clientOrConfig)
+      : clientOrConfig
   }
 
   private innerClient?: SalesforceClient
@@ -115,38 +123,6 @@ export default class SalesforceAdapter {
       throw new Error('client not initialized')
     }
     return this.innerClient
-  }
-
-  init(conf: InstanceElement): void {
-    this.innerClient = this.innerClient || new SalesforceClient(
-      conf.value.username,
-      conf.value.password + conf.value.token,
-      conf.value.sandbox
-    )
-  }
-
-  /**
-   * @return {ObjectType} - The configuration type for the adapter.
-   * This is used by core to:
-   * 1) Locate the proper configuration type for the adapter,
-   * 2) Prompt the user in order to create an instance of it if it can't
-   *    find it in the blueprints
-   */
-  // disable class method use as we need this function for Adapter interface
-  // eslint-disable-next-line class-methods-use-this
-  public getConfigType(): ObjectType {
-    const configID = new ElemID('salesforce')
-    return new ObjectType({
-      elemID: configID,
-      fields: {
-        username: new Field(configID, 'username', BuiltinTypes.STRING),
-        password: new Field(configID, 'password', BuiltinTypes.STRING),
-        token: new Field(configID, 'token', BuiltinTypes.STRING),
-        sandbox: new Field(configID, 'sandbox', BuiltinTypes.BOOLEAN),
-      },
-      annotations: {},
-      annotationsValues: {},
-    })
   }
 
   /**
@@ -621,4 +597,23 @@ export default class SalesforceAdapter {
   private async runFiltersOnRemove(before: Element): Promise<SaveResult[]> {
     return this.runFiltersInParallel('onRemove', filter => filter.onRemove(before))
   }
+}
+
+const configID = new ElemID('salesforce')
+
+const configType = new ObjectType({
+  elemID: configID,
+  fields: {
+    username: new Field(configID, 'username', BuiltinTypes.STRING),
+    password: new Field(configID, 'password', BuiltinTypes.STRING),
+    token: new Field(configID, 'token', BuiltinTypes.STRING),
+    sandbox: new Field(configID, 'sandbox', BuiltinTypes.BOOLEAN),
+  },
+  annotations: {},
+  annotationsValues: {},
+})
+
+export const creator: AdapterCreator = {
+  create: ({ config }) => new SalesforceAdapter({ clientOrConfig: config }),
+  configType,
 }

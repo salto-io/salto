@@ -1,1 +1,1 @@
-export { default } from './src/adapter'
+export { default, creator } from './src/adapter'

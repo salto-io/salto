@@ -6,7 +6,7 @@ import {
 import {
   getPlan, applyActions, discoverAll, mergeAndValidate, getInstancesOfType,
 } from './core'
-import { init as initAdapters } from './adapters'
+import initAdapters from './adapters/adapters'
 import Parser from '../parser/salto'
 import { Blueprint, getAllElements } from '../blueprints/blueprint'
 import State from '../state/state'

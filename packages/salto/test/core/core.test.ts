@@ -1,12 +1,12 @@
 import * as fs from 'async-file'
 import path from 'path'
 import {
-  ElemID, BuiltinTypes, InstanceElement, ObjectType, Field,
-  Plan,
+  ElemID, InstanceElement, ObjectType, Plan, AdapterCreator, Field, BuiltinTypes,
 } from 'adapter-api'
 import * as commands from '../../src/core/commands'
 import State from '../../src/state/state'
 import { Blueprint, getAllElements } from '../../src/blueprints/blueprint'
+import adapterCreators from '../../src/core/adapters/creators'
 
 const mockAdd = jest.fn(async ap => {
   if (ap.elemID.name === 'fail') {
@@ -15,26 +15,22 @@ const mockAdd = jest.fn(async ap => {
   return true
 })
 
-const mockGetConfigType = jest.fn(() => {
-  const configID = new ElemID('salesforce')
-  return new ObjectType({
-    elemID: configID,
-    fields: {
-      username: new Field(configID, 'username', BuiltinTypes.STRING),
-      password: new Field(configID, 'password', BuiltinTypes.STRING),
-      token: new Field(configID, 'token', BuiltinTypes.STRING),
-      sandbox: new Field(configID, 'sandbox', BuiltinTypes.BOOLEAN),
-    },
-    annotations: {},
-    annotationsValues: {},
-  })
+const configID = new ElemID('salesforce')
+const mockConfigType = new ObjectType({
+  elemID: configID,
+  fields: {
+    username: new Field(configID, 'username', BuiltinTypes.STRING),
+    password: new Field(configID, 'password', BuiltinTypes.STRING),
+    token: new Field(configID, 'token', BuiltinTypes.STRING),
+    sandbox: new Field(configID, 'sandbox', BuiltinTypes.BOOLEAN),
+  },
+  annotations: {},
+  annotationsValues: {},
 })
 
 const mockRemove = jest.fn(_a => true)
 
 const mockUpdate = jest.fn((_b, _a) => true)
-
-const mockInit = jest.fn(_a => true)
 
 const mockDiscover = jest.fn(() => {
   const objType = new ObjectType({ elemID: new ElemID('salesforce', 'dummy') })
@@ -45,20 +41,23 @@ const mockDiscover = jest.fn(() => {
   ]
 })
 
-const mockAdapter = {
-  getConfigType: mockGetConfigType,
-  init: mockInit,
-  discover: mockDiscover,
-  add: mockAdd,
-  remove: mockRemove,
-  update: mockUpdate,
+const mockGetInstancesOfType = jest.fn(() => Promise.resolve([]))
+
+const mockAdapterCreator: AdapterCreator = {
+  create: () => ({
+    discover: mockDiscover,
+    add: mockAdd,
+    remove: mockRemove,
+    update: mockUpdate,
+    getInstancesOfType: mockGetInstancesOfType,
+  }),
+  configType: mockConfigType,
 }
 
-jest.mock('../../src/core/adapters', () => ({
-  init: jest.fn().mockImplementation((_e, _c) => [{ salesforce: mockAdapter }, []]),
-}))
-
+jest.mock('../../src/core/adapters/creators')
 jest.mock('../../src/state/state')
+
+adapterCreators.salesforce = mockAdapterCreator
 
 describe('Test commands.ts and core.ts', () => {
   beforeEach(() => {
@@ -187,12 +186,13 @@ describe('Test commands.ts and core.ts', () => {
   describe('discover', () => {
     it('should return blueprint', async () => {
       const bps = await commands.discover([], mockGetConfigFromUser)
-      expect(bps).toHaveLength(2)
-      expect(bps[0].buffer.toString()).toMatch(/type "?salesforce_dummy"? {/)
+      expect(bps).toHaveLength(3)
+      expect(bps[0].filename).toBe('config')
+      expect(bps[1].buffer.toString()).toMatch(/type "?salesforce_dummy"? {/)
       // Both instances should be dumped to the same path
-      expect(bps[1].buffer.toString()).toMatch(/instance_1/)
-      expect(bps[1].buffer.toString()).toMatch(/instance_2/)
-      expect(bps[1].filename).toEqual(path.join('records', 'dummy'))
+      expect(bps[2].buffer.toString()).toMatch(/instance_1/)
+      expect(bps[2].buffer.toString()).toMatch(/instance_2/)
+      expect(bps[2].filename).toEqual(path.join('records', 'dummy'))
     })
   })
 })

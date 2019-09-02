@@ -1,8 +1,9 @@
-import { ObjectType, ElemID, InstanceElement } from 'adapter-api'
+import { ObjectType, ElemID } from 'adapter-api'
 import SalesforceAdapter from '../../src/adapter'
 import { FilterWith, FilterCreator } from '../../src/filter'
 import { API_NAME } from '../../src/constants'
 import SalesforceClient from '../../src/client/client'
+import mockAdapter from '../adapter'
 
 jest.mock('../../src/client/client')
 
@@ -14,14 +15,9 @@ describe('SalesforceAdapter filters', () => {
 
   let adapter: SalesforceAdapter
 
-  const makeAdapter = (filterCreators: FilterCreator[]): SalesforceAdapter => {
-    const a = new SalesforceAdapter({ filterCreators })
-    a.init(new InstanceElement(new ElemID('salesforce'), a.getConfigType(),
-      {
-        username: '', password: '', token: '', sandbox: false,
-      }))
-    return a
-  }
+  const makeAdapter = (
+    filterCreators: FilterCreator[]
+  ): SalesforceAdapter => mockAdapter({ adapterParams: { filterCreators } }).adapter
 
   describe('when filter methods are implemented', () => {
     let filter: FilterWith<'onDiscover' | 'onAdd' | 'onUpdate' | 'onRemove'>

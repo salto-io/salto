@@ -73,7 +73,7 @@ export default class SalesforceClient {
     chunkSize = MAX_ITEMS_IN_WRITE_REQUEST,
   ): Promise<TOut[]> {
     const chunks = _.chunk(makeArray(input), chunkSize)
-    const promises: Promise<TOut[]>[] = chunks.map(chunk => sendChunk(chunk).then(makeArray))
+    const promises: Promise<TOut[]>[] = chunks.map(chunk => sendChunk(chunk).then(ensureListResult))
     const results = await Promise.all(promises)
     return _.flatten(results)
   }
@@ -132,12 +132,11 @@ export default class SalesforceClient {
   public async describeSObjects(objectNames: string[]):
     Promise<DescribeSObjectResult[]> {
     await this.login()
-    const result = await SalesforceClient.sendChunked(
+    return SalesforceClient.sendChunked(
       objectNames,
       chunk => this.conn.soap.describeSObjects(chunk),
       MAX_ITEMS_IN_DESCRIBE_REQUEST,
     )
-    return result.filter(item => item !== undefined)
   }
 
   /**

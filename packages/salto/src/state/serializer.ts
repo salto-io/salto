@@ -21,13 +21,11 @@ import {
 // The deserialization process recover the information by creating the classes based
 // on the _salto_class field, and then replacing the placeholders using the regular merge method.
 
-// const CLASS_NAME = '_salto_class'
 interface ClassName {className: string}
 export const serialize = (elements: Element[]): string => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const elementReplacer = (_k: string, e: any): any => {
     if (isElement(e)) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const o = e as Element & ClassName
       o.className = e.constructor.name
       return o

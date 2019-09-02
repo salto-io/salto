@@ -3,9 +3,8 @@ import {
   Field, Element, isObjectType, isInstanceElement, isPrimitiveType,
 } from 'adapter-api'
 import {
-  SaveResult, ValueTypeField, MetadataInfo, Field as SObjField, DeployResult,
+  SaveResult, ValueTypeField, MetadataInfo, Field as SObjField, DeployResult, DescribeSObjectResult,
 } from 'jsforce'
-import { isArray } from 'util'
 import _ from 'lodash'
 import SalesforceClient from './client/client'
 import * as constants from './constants'
@@ -25,33 +24,24 @@ import convertListsFilter from './filters/convert_lists'
 import convertTypeFilter from './filters/convert_types'
 import missingFieldsFilter from './filters/missing_fields'
 import Filter from './filters/filter'
+import makeArray from './client/make_array'
 
 // Diagnose client results
 const diagnose = (result: SaveResult | SaveResult[]): void => {
-  const errorMessage = (error: SfError | SfError[]): string => {
-    if (isArray(error)) {
-      return error.map(e => e.message).join('\n')
-    }
-    return error.message
-  }
+  const errorMessage = (error: SfError | SfError[]): string =>
+    makeArray(error).map(e => e.message).join('\n')
 
   if (!result) {
     return
   }
-  let errors: string[] = []
-  if (isArray(result)) {
-    errors = errors.concat(
-      (result as CompleteSaveResult[])
-        .filter(r => r && r.errors)
-        .map(r => errorMessage(r.errors))
-    )
-  } else if ((result as CompleteSaveResult).errors) {
-    errors.push(errorMessage((result as CompleteSaveResult).errors))
-  }
+
+  const errors = makeArray(result)
+    .filter(r => r)
+    .map(r => r as CompleteSaveResult)
+    .filter(r => r.errors)
 
   if (errors.length > 0) {
-    // TODO: use CrudError
-    throw Error(errors.join('\n'))
+    throw new Error(errors.map(r => errorMessage(r.errors)).join('\n'))
   }
 }
 
@@ -98,7 +88,7 @@ const validateApiName = (prevElement: Element, newElement: Element): void => {
   }
 }
 
-interface SalesforceAdapterParams {
+export interface SalesforceAdapterParams {
   // Metadata types that we want to treat as top level types (discover instances of them)
   // even though they are not returned as top level metadata types from the API
   metadataAdditionalTypes?: string[]
@@ -112,6 +102,9 @@ interface SalesforceAdapterParams {
 
   // Filters to apply to all adapter operations
   filters?: Filter[]
+
+  // override client to use (a new SalesforceClient is created if not specified)
+  client?: SalesforceClient
 }
 
 export default class SalesforceAdapter {
@@ -142,20 +135,25 @@ export default class SalesforceAdapter {
       convertListsFilter,
       convertTypeFilter,
     ],
+    client,
   }: SalesforceAdapterParams = {}) {
     this.metadataAdditionalTypes = metadataAdditionalTypes
     this.metadataTypeBlacklist = metadataTypeBlacklist
     this.metadataToUpdateWithDeploy = metadataToUpdateWithDeploy
     this.filters = filters
+    this.innerClient = client
   }
 
   private innerClient?: SalesforceClient
   public get client(): SalesforceClient {
-    return this.innerClient as SalesforceClient
+    if (!this.innerClient) {
+      throw new Error('client not initialized')
+    }
+    return this.innerClient
   }
 
   init(conf: InstanceElement): void {
-    this.innerClient = new SalesforceClient(
+    this.innerClient = this.innerClient || new SalesforceClient(
       conf.value.username,
       conf.value.password + conf.value.token,
       conf.value.sandbox
@@ -319,6 +317,7 @@ export default class SalesforceAdapter {
           !_.isEqual(afterField.getAnnotationsValues(),
             pre.fields[afterField.name].getAnnotationsValues()))),
     ])
+
     // Update the annotation values - this can't be done asynchronously with the previous
     // operations because the update API expects to receive the updated list of fields,
     // hence the need to perform the fields deletion and creation first, and then update the
@@ -326,7 +325,7 @@ export default class SalesforceAdapter {
     // IMPORTANT: We don't update a built-in object (such as Lead, Customer, etc.)
     // The update API currently allows us to add/remove custom fields to such objects, but not
     // to update them.
-    let objectUpdateResult: SaveResult | SaveResult[] = []
+    let objectUpdateResult: SaveResult[] = []
     if (apiName(clonedObject).endsWith(constants.SALESFORCE_CUSTOM_SUFFIX)
       // Don't update the object unless its annotations values have changed
       && !_.isEqual(pre.getAnnotationsValues(), clonedObject.getAnnotationsValues())) {
@@ -338,8 +337,10 @@ export default class SalesforceAdapter {
 
     // Aspects should be updated once all object related properties updates are over
     const filtersResult = await this.runFiltersOnUpdate(prevObject, clonedObject)
-    diagnose([..._.flatten(fieldsUpdateResult), objectUpdateResult as SaveResult,
-      ...filtersResult])
+
+    diagnose(_.flatten(fieldsUpdateResult))
+    diagnose(objectUpdateResult)
+    diagnose(filtersResult)
 
     return clonedObject
   }
@@ -374,12 +375,10 @@ export default class SalesforceAdapter {
    * @returns successfully managed to update all fields
    */
   private async updateFields(object: ObjectType, fieldsToUpdate: Field[]): Promise<SaveResult[]> {
-    if (fieldsToUpdate.length === 0) return []
-    // Update the custom fields
-    return _.flatten(await Promise.all(_.chunk(fieldsToUpdate, 10).map(chunk => this.client.update(
+    return this.client.update(
       constants.CUSTOM_FIELD,
-      chunk.map(f => toCustomField(object, f, true))
-    ) as Promise<SaveResult[]>)))
+      fieldsToUpdate.map(f => toCustomField(object, f, true)),
+    )
   }
 
   /**
@@ -389,12 +388,11 @@ export default class SalesforceAdapter {
    * @returns successfully managed to create all fields with their permissions or not
    */
   private async createFields(object: ObjectType, fieldsToAdd: Field[]): Promise<SaveResult[]> {
-    if (fieldsToAdd.length === 0) return []
     // Create the custom fields
-    return _.flatten(await Promise.all(_.chunk(fieldsToAdd, 10).map(chunk => this.client.create(
+    return this.client.create(
       constants.CUSTOM_FIELD,
-      chunk.map(f => toCustomField(object, f, true))
-    ) as Promise<SaveResult[]>)))
+      fieldsToAdd.map(f => toCustomField(object, f, true)),
+    )
   }
 
   /**
@@ -403,11 +401,10 @@ export default class SalesforceAdapter {
    * @param fields the custom fields we wish to delete
    */
   private async deleteCustomFields(element: ObjectType, fields: Field[]): Promise<SaveResult[]> {
-    if (fields.length === 0) return []
-    return _.flatten(await Promise.all(_.chunk(fields, 10).map(chunk => this.client.delete(
+    return this.client.delete(
       constants.CUSTOM_FIELD,
-      chunk.map(field => fieldFullName(element, field))
-    ) as Promise<SaveResult[]>)))
+      fields.map(field => fieldFullName(element, field)),
+    )
   }
 
   private async discoverMetadataTypes(typeNames: Promise<string[]>): Promise<Type[]> {
@@ -447,7 +444,7 @@ export default class SalesforceAdapter {
     const embeddedTypes = _.flatten(fields.filter(field => !_.isEmpty(field.fields)).map(
       field => this.createMetadataTypeElements(
         field.soapType,
-        Array.isArray(field.fields) ? field.fields : [field.fields],
+        makeArray(field.fields),
         knownTypes,
         true,
       )
@@ -487,7 +484,8 @@ export default class SalesforceAdapter {
     const typeName = sfCase(type.elemID.name)
     const isSettings = typeName === constants.SETTINGS_METADATA_TYPE
     const instances = await this.listMetadataInstances(typeName)
-    return instances.filter(i => i.fullName !== undefined)
+    return instances
+      .filter(i => i.fullName !== undefined)
       .map(i => new InstanceElement(
         new ElemID(constants.SALESFORCE, type.elemID.name, bpCase(i.fullName)),
         type,
@@ -497,19 +495,28 @@ export default class SalesforceAdapter {
   }
 
   private async discoverSObjects(): Promise<Type[]> {
-    const customObjectNames = this.client.listMetadataObjects(constants.CUSTOM_OBJECT).then(
-      objs => new Set(objs.map(obj => obj.fullName))
+    const getSobjectDescriptions = async (): Promise<DescribeSObjectResult[]> => {
+      const sobjectsList = await this.client.listSObjects()
+      const sobjectNames = sobjectsList.map(sobj => sobj.name)
+      return this.client.describeSObjects(sobjectNames)
+    }
+
+    const getCustomObjectNames = async (): Promise<Set<string>> => {
+      const customObjects = await this.client.listMetadataObjects(constants.CUSTOM_OBJECT)
+      return new Set(customObjects.map(o => o.fullName))
+    }
+
+    const [customObjectNames, sobjectsDescriptions] = await Promise.all([
+      getCustomObjectNames(), getSobjectDescriptions(),
+    ])
+
+    const sobjects = sobjectsDescriptions.map(
+      ({ name, custom, fields }) => SalesforceAdapter.createSObjectTypes(
+        name, custom, fields, customObjectNames
+      )
     )
 
-    return _.flatten(await Promise.all(_.flatten(await Promise.all(
-      _(await this.client.listSObjects())
-        .map(sobj => sobj.name)
-        .chunk(100)
-        .map(nameChunk => this.client.describeSObjects(nameChunk))
-        .map(async objects => (await objects).map(async ({ name, custom, fields }) =>
-          SalesforceAdapter.createSObjectTypes(name, custom, fields, await customObjectNames)))
-        .value()
-    ))))
+    return _.flatten(sobjects)
   }
 
   private static createSObjectTypes(
@@ -581,14 +588,16 @@ export default class SalesforceAdapter {
       return []
     }
     const names = objs.map(obj => obj.fullName)
-    // For some unknown reason, for metadata type = 'Settings', when calling readMetadata we should
-    // use type = OBJNAME+'Settings'
+
+    // For some unknown reason, for metadata type = 'Settings', when calling readMetadata we
+    // should use type = OBJNAME+'Settings'
     if (type === constants.SETTINGS_METADATA_TYPE) {
-      return Promise.all(names
-        .map(name => this.client.readMetadata(name + type, name) as Promise<MetadataInfo>))
+      return Promise.all(
+        names.map(name => this.client.readMetadata(name + type, name))
+      ).then(_.flatten)
     }
-    return _.flatten(await Promise.all(_.chunk(names, 10)
-      .map(chunk => this.client.readMetadata(type, chunk) as Promise<MetadataInfo[]>)))
+
+    return this.client.readMetadata(type, names)
   }
 
   // Filter related functions

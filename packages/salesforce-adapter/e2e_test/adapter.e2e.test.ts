@@ -1,4 +1,4 @@
-import { isArray } from 'util'
+import _ from 'lodash'
 import {
   Type,
   ObjectType,
@@ -9,8 +9,8 @@ import {
   Element,
   Values,
 } from 'adapter-api'
-import { PicklistEntry, MetadataInfo } from 'jsforce'
-import _ from 'lodash'
+import { PicklistEntry } from 'jsforce'
+import makeArray from '../src/client/make_array'
 import SalesforceAdapter from '../src/adapter'
 import * as constants from '../src/constants'
 import { FIELD_LEVEL_SECURITY_ANNOTATION, PROFILE_METADATA_TYPE } from '../src/filters/field_permissions'
@@ -119,7 +119,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
     const objectExists = async (type: string, name: string, fields?: string[],
       missingFields?: string[], label?: string): Promise<boolean> => {
       const result = (await sfAdapter.client.readMetadata(type, name)
-      ) as CustomObject
+      )[0] as CustomObject
       if (!result || !result.fullName) {
         return false
       }
@@ -127,11 +127,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
         return false
       }
       if (fields || missingFields) {
-        let fieldNames: string[] = []
-        if (result.fields) {
-          fieldNames = isArray(result.fields) ? result.fields.map(rf => rf.fullName)
-            : [result.fields.fullName]
-        }
+        const fieldNames = makeArray(result.fields).map(rf => rf.fullName)
         if (fields && !fields.every(f => fieldNames.includes(f))) {
           return false
         }
@@ -148,7 +144,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
         return typeof unknownVariable === 'string' ? JSON.parse(unknownVariable) : variable
       }
       const profileInfo = (await sfAdapter.client.readMetadata(PROFILE_METADATA_TYPE,
-        profile)) as ProfileInfo
+        profile))[0] as ProfileInfo
       const fieldPermissionsMap = new Map<string, FieldPermissions>()
       profileInfo.fieldPermissions.map(f => fieldPermissionsMap.set(f.field, f))
       return fields.map(field => {
@@ -506,17 +502,20 @@ describe('Test Salesforce adapter E2E with real account', () => {
       expect(updateResult).toBe(newInstance)
 
       // Checking that the saved instance identical to newInstance
-      const savedInstance = await sfAdapter.client.readMetadata(
+      const savedInstance = (await sfAdapter.client.readMetadata(
         PROFILE_METADATA_TYPE, sfCase(newInstance.elemID.name)
-      )
+      ))[0] as Profile
+
+      type Profile = ProfileInfo & {
+        tabVisibilities: Record<string, Value>
+        applicationVisibilities: Record<string, Value>
+      }
+
       const valuesMap = new Map<string, Value>()
       const newValues = newInstance.value
-      // @ts-ignore
-      savedInstance.fieldPermissions.map(f => valuesMap.set(f.field, f))
-      // @ts-ignore
-      savedInstance.tabVisibilities.map(f => valuesMap.set(f.tab, f))
-      // @ts-ignore
-      savedInstance.applicationVisibilities.map(f => valuesMap.set(f.application, f))
+      savedInstance.fieldPermissions.forEach(f => valuesMap.set(f.field, f))
+      savedInstance.tabVisibilities.forEach((f: Value) => valuesMap.set(f.tab, f))
+      savedInstance.applicationVisibilities.forEach((f: Value) => valuesMap.set(f.application, f))
 
       expect(valuesMap.get(newValues.fieldPermissions[0].field))
         .toEqual(newValues.fieldPermissions[0])
@@ -613,13 +612,10 @@ describe('Test Salesforce adapter E2E with real account', () => {
       const readResult = (await sfAdapter.client.readMetadata(
         constants.CUSTOM_OBJECT,
         customObjectName
-      )) as CustomObject
-      let label: string | undefined
-      if (readResult.fields) {
-        label = isArray(readResult.fields) ? readResult.fields.filter(f => f.fullName === 'Banana__c')[0].label
-          : readResult.fields.label
-      }
-      expect(label).toBe('Banana Split')
+      ))[0] as CustomObject
+      const field = makeArray(readResult.fields).filter(f => f.fullName === 'Banana__c')[0]
+      expect(field).toBeDefined()
+      expect(field.label).toBe('Banana Split')
 
       // Clean-up
       await sfAdapter.remove(oldElement)
@@ -1092,7 +1088,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
     // Assignment rules are special because they use the Deploy API so they get their own test
     describe('assignment rules manipulation', () => {
       const getRulesFromClient = async (): Promise<Values> => fromMetadataInfo(
-        await sfAdapter.client.readMetadata('AssignmentRules', 'Lead') as MetadataInfo
+        (await sfAdapter.client.readMetadata('AssignmentRules', 'Lead'))[0]
       )
 
       const dummyAssignmentRulesType = new ObjectType({

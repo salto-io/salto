@@ -1,5 +1,5 @@
 import { Element } from 'adapter-api'
-import { SaveResult } from 'jsforce-types'
+import { SaveResult } from 'jsforce'
 import SalesforceClient from '../client/client'
 
 // Filter interface, filters will be activated upon adapter discover, add, update and remove

@@ -2,7 +2,7 @@ import {
   ObjectType, Element, Values, Field, isObjectType,
 } from 'adapter-api'
 import _ from 'lodash'
-import { SaveResult } from 'jsforce-types'
+import { SaveResult } from 'jsforce'
 import {
   sfCase, fieldFullName, bpCase,
 } from '../transformer'
@@ -74,12 +74,8 @@ const fromProfiles = (profiles: ProfileInfo[]): Map<string, FieldPermissions> =>
 const readProfiles = async (client: SalesforceClient): Promise<ProfileInfo[]> => {
   const profilesNames = (await client.listMetadataObjects(PROFILE_METADATA_TYPE))
     .map(obj => obj.fullName)
-  if (_.isEmpty(profilesNames)) {
-    return []
-  }
 
-  return _.flatten(await Promise.all(_.chunk(profilesNames, 10)
-    .map(chunk => client.readMetadata(PROFILE_METADATA_TYPE, chunk) as Promise<ProfileInfo[]>)))
+  return client.readMetadata(PROFILE_METADATA_TYPE, profilesNames) as Promise<ProfileInfo[]>
 }
 // ---
 
@@ -111,9 +107,7 @@ export const filter: Filter = {
   onAdd: async (client: SalesforceClient, after: Element): Promise<SaveResult[]> => {
     if (isObjectType(after)) {
       const profiles = toProfiles(after)
-      if (profiles.length > 0) {
-        return client.update(PROFILE_METADATA_TYPE, profiles) as Promise<SaveResult[]>
-      }
+      return client.update(PROFILE_METADATA_TYPE, profiles)
     }
     return []
   },
@@ -157,10 +151,7 @@ export const filter: Filter = {
       return { fullName: p.fullName, fieldPermissions: fields }
     }).filter(p => p.fieldPermissions.length > 0)
 
-    if (profiles.length > 0) {
-      return client.update(PROFILE_METADATA_TYPE, profiles) as Promise<SaveResult[]>
-    }
-    return []
+    return client.update(PROFILE_METADATA_TYPE, profiles)
   },
 
   onRemove: (_client: SalesforceClient, _elem: Element): Promise<SaveResult[]> =>

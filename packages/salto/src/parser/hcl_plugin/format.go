@@ -37,20 +37,31 @@ func isFirstInLine(tokens hclwrite.Tokens, pos int) bool {
 //We only need to add new lines in attr values which are arrays or
 //objects, if they are not already properly formated.
 func newLineAfterToken(tokens hclwrite.Tokens, i int) bool {
-	var after *hclwrite.Token
+	var before, after *hclwrite.Token
 	subject := tokens[i]
+	if i > 0 {
+		before = tokens[i-1]
+	} else {
+		before = nilToken
+	}
 	if i+1 < len(tokens) {
 		after = tokens[i+1]
 	} else {
 		after = nilToken
 	}
 	switch subject.Type {
-	case hclsyntax.TokenOBrack, hclsyntax.TokenComma, hclsyntax.TokenOBrace:
+	case hclsyntax.TokenOBrack:
+		return after.Type != hclsyntax.TokenNewline && after.Type != hclsyntax.TokenCBrack
+	case hclsyntax.TokenComma:
 		return after.Type != hclsyntax.TokenNewline
+	case hclsyntax.TokenOBrace:
+		return after.Type != hclsyntax.TokenNewline && after.Type != hclsyntax.TokenCBrace
 	}
 	switch after.Type {
-	case hclsyntax.TokenCBrack, hclsyntax.TokenCBrace:
-		return !isFirstInLine(tokens, i+1)
+	case hclsyntax.TokenCBrack:
+		return !isFirstInLine(tokens, i+1) && before.Type != hclsyntax.TokenOBrack
+	case hclsyntax.TokenCBrace:
+		return !isFirstInLine(tokens, i+1) && before.Type != hclsyntax.TokenOBrace
 	}
 	return false
 }

@@ -1,6 +1,5 @@
 import path from 'path'
 import * as fs from 'async-file'
-import _ from 'lodash'
 import {
   InstanceElement, ElemID, ObjectType,
 } from 'adapter-api'

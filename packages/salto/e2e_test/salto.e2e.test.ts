@@ -9,7 +9,9 @@ import {
   CUSTOM_OBJECT as CUSTOM_OBJECT_METATYPE,
 } from 'salesforce-adapter/dist/src/constants'
 import { CustomObject } from 'salesforce-adapter/dist/src/client/types'
-import { discover, plan, apply } from '../src/cli/commands'
+import {
+  discover, plan, apply,
+} from '../src/cli/commands'
 import State from '../src/state/state'
 
 const configType = new ObjectType({ elemID: new ElemID(SALESFORCE) })

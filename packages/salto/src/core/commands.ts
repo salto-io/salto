@@ -4,7 +4,7 @@ import {
   Plan, PlanAction, ObjectType, InstanceElement,
 } from 'adapter-api'
 import {
-  getPlan, applyActions, discoverAll, mergeAndValidate,
+  getPlan, applyActions, discoverAll, mergeAndValidate, getInstancesOfType,
 } from './core'
 import { init as initAdapters } from './adapters'
 import Parser from '../parser/salto'
@@ -67,4 +67,22 @@ export const discover = async (
   } finally {
     await state.flush()
   }
+}
+
+export const exportToCsv = async (
+  typeId: string,
+  blueprints: Blueprint[],
+  fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
+): Promise<InstanceElement[]> => {
+  // Find the corresponding element in the state
+  const state = new State()
+  const stateElements = await state.get()
+  const types = stateElements.filter(elem => elem.elemID.getFullName() === typeId)
+  if (types.length === 0) {
+    throw new Error(`Couldn't find the type you are looking for: ${typeId}. Have you run salto discover yet?`)
+  }
+  const elements = mergeAndValidate(await getAllElements(blueprints))
+  const [adapters] = await initAdapters(elements, fillConfig)
+  const instanceObjects = await getInstancesOfType(types[0] as ObjectType, adapters)
+  return instanceObjects
 }

@@ -178,3 +178,41 @@ export const discover = async (
   _blueprints: Blueprint[],
   _fillConfig: (configType: ObjectType) => Promise<InstanceElement>
 ): Promise<Blueprint[]> => [({ buffer: Buffer.from('asd'), filename: 'none' })]
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const exportToCsv = async (
+  _typeId: string,
+  _blueprints: Blueprint[],
+  _fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
+): Promise<InstanceElement[]> => {
+  const testType = new ObjectType({
+    elemID: new ElemID('salesforce', 'test'),
+  })
+  const elemID = new ElemID('salesforce')
+  const values = [
+    {
+      Id: 1,
+      FirstName: 'Daile',
+      LastName: 'Limeburn',
+      Email: 'dlimeburn0@blogs.com',
+      Gender: 'Female',
+    }, {
+      Id: 2,
+      FirstName: 'Murial',
+      LastName: 'Morson',
+      Email: 'mmorson1@google.nl',
+      Gender: 'Female',
+    }, {
+      Id: 3,
+      FirstName: 'Minna',
+      LastName: 'Noe',
+      Email: 'mnoe2@wikimedia.org',
+      Gender: 'Female',
+    },
+  ]
+  return values.map(value => new InstanceElement(
+    elemID,
+    testType,
+    value
+  ))
+}

@@ -3,6 +3,7 @@ import path from 'path'
 import * as sourceMapSupport from 'source-map-support'
 import { PlanAction } from 'adapter-api'
 import { loadBlueprints, dumpBlueprints } from './blueprint'
+import { dumpCsv } from './csv'
 import { getAllElements, Blueprint } from '../blueprints/blueprint'
 import {
   createPlanOutput, createActionStartOutput, createActionInProgressOutput,
@@ -156,4 +157,22 @@ export const discover = async (
     blueprintsDir,
   )
   return discoverBase(outputDir, blueprints)
+}
+
+export const exportBase = async (
+  typeName: string,
+  outputPath: string,
+  blueprints: Blueprint[],
+): Promise<void> => {
+  const outputObjects = await commands.exportToCsv(
+    typeName,
+    blueprints,
+    getConfigFromUser
+  )
+
+  // Check if output path is provided, otherwise use the template
+  // <working dir>/<typeName>_<current timestamp>.csv
+  const outPath = outputPath || path.join(path.resolve('./'), `${typeName}_${Date.now()}.csv`)
+
+  await dumpCsv(outputObjects.map(instance => instance.value), outPath)
 }

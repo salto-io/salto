@@ -2,7 +2,7 @@ import { Stream } from 'stream'
 import {
   MetadataObject, ValueTypeField, MetadataInfo, SaveResult, ListMetadataQuery, FileProperties,
   DescribeSObjectResult, DescribeGlobalSObjectResult,
-  DeployOptions, DeployResultLocator, DeployResult,
+  DeployOptions, DeployResultLocator, DeployResult, QueryResult,
 } from 'jsforce'
 
 export interface Metadata {
@@ -37,4 +37,6 @@ export default interface Connection {
   metadata: Metadata
   soap: Soap
   describeGlobal(): Promise<Global>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  query(soql: string): Promise<QueryResult<any>>
 }

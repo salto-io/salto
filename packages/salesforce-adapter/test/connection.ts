@@ -17,6 +17,7 @@ const mockConnection: () => Connection = () => ({
   } as Soap,
 
   describeGlobal: jest.fn().mockImplementation(async () => ({ sobjects: [] })),
+  query: jest.fn(),
 })
 
 export default mockConnection

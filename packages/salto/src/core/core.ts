@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import wu from 'wu'
 import {
-  PlanAction, ObjectType, Element, Plan, ElemID, isEqualElements,
+  PlanAction, ObjectType, Element, Plan, ElemID, isEqualElements, InstanceElement,
 } from 'adapter-api'
 import { buildDiffGraph } from '../dag/diff'
 import { DataNodeMap } from '../dag/nodemap'
@@ -92,4 +92,13 @@ Promise<Element[]> => {
     .map(adapter => adapter.discover())))
   state.override(mergeAndValidate(result))
   return result
+}
+
+export const getInstancesOfType = async (type: ObjectType, adapters: Record<string, Adapter>):
+Promise<InstanceElement[]> => {
+  const adapter = adapters[type.elemID.adapter]
+  if (!adapter) {
+    throw new Error(`Failed to find the adapter for the given type: ${type.elemID.getFullName()}`)
+  }
+  return adapter.getInstancesOfType(type)
 }

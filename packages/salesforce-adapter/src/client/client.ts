@@ -8,6 +8,7 @@ import {
   SaveResult,
   ValueTypeField,
   DescribeSObjectResult,
+  QueryResult,
   DeployResult,
 } from 'jsforce'
 import {
@@ -75,6 +76,13 @@ export default class SalesforceClient {
     const promises: Promise<TOut[]>[] = chunks.map(chunk => sendChunk(chunk).then(makeArray))
     const results = await Promise.all(promises)
     return _.flatten(results)
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public async runQuery(queryString: string): Promise<QueryResult<any>> {
+    await this.login()
+    const result = await this.conn.query(queryString)
+    return result
   }
 
   private static validateSaveResult(result: SaveResult[]): SaveResult[] {

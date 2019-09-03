@@ -67,27 +67,27 @@ func newLineAfterToken(tokens hclwrite.Tokens, i int) bool {
 }
 
 func formatNewLines(tokens hclwrite.Tokens) hclwrite.Tokens {
-	formatedTokens := make(hclwrite.Tokens, 0)
+	formattedTokens := make(hclwrite.Tokens, 0)
 	for i, token := range tokens {
-		formatedTokens = append(formatedTokens, token)
+		formattedTokens = append(formattedTokens, token)
 		if newLineAfterToken(tokens, i) {
-			formatedTokens = append(formatedTokens, newLineToken)
+			formattedTokens = append(formattedTokens, newLineToken)
 		}
 	}
-	return formatedTokens
+	return formattedTokens
 }
 
 func createWriterTokens(nativeTokens hclsyntax.Tokens) hclwrite.Tokens {
 	tokBuf := make(hclwrite.Tokens, len(nativeTokens))
 	var lastByteOffset int
-	for i, mainToken := range nativeTokens {
+	for i := range nativeTokens {
 		tokBuf[i] = &hclwrite.Token{
-			Type:         mainToken.Type,
-			Bytes:        mainToken.Bytes,
-			SpacesBefore: mainToken.Range.Start.Byte - lastByteOffset,
+			Type:         nativeTokens[i].Type,
+			Bytes:        nativeTokens[i].Bytes,
+			SpacesBefore: nativeTokens[i].Range.Start.Byte - lastByteOffset,
 		}
 
-		lastByteOffset = mainToken.Range.End.Byte
+		lastByteOffset = nativeTokens[i].Range.End.Byte
 	}
 	return tokBuf
 }

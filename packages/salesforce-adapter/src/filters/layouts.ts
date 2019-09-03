@@ -16,8 +16,7 @@ const filterCreator: FilterCreator = () => ({
   /**
    * Upon discover, add layout annotations to relevant sobjects.
    *
-   * @param client SFDC client
-   * @param sobject the already discoverd elements
+   * @param elements the already discovered elements
    */
   onDiscover: async (elements: Element[]): Promise<void> => {
     const layouts = _(elements)

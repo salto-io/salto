@@ -1,10 +1,10 @@
 import _ from 'lodash'
 import path from 'path'
 import {
-  Plan, PlanAction, ObjectType, InstanceElement,
+  InstanceElement, ObjectType, Plan, PlanAction,
 } from 'adapter-api'
 import {
-  getPlan, applyActions, discoverAll, mergeAndValidate,
+  applyActions, discoverAll, getPlan, mergeAndValidate,
 } from './core'
 import { init as initAdapters } from './adapters'
 import Parser from '../parser/salto'
@@ -17,8 +17,7 @@ export const plan = async (
 ): Promise<Plan> => {
   const elements = mergeAndValidate(await getAllElements(blueprints))
   const state = new State()
-  const actionPlan = await getPlan(state, elements)
-  return actionPlan
+  return getPlan(state, elements)
 }
 
 export const apply = async (

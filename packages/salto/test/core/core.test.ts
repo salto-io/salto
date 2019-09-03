@@ -1,8 +1,7 @@
 import * as fs from 'async-file'
 import path from 'path'
 import {
-  ElemID, BuiltinTypes, InstanceElement, ObjectType, Field,
-  Plan,
+  BuiltinTypes, ElemID, Field, InstanceElement, ObjectType, Plan,
 } from 'adapter-api'
 import * as commands from '../../src/core/commands'
 import State from '../../src/state/state'
@@ -17,7 +16,7 @@ const mockAdd = jest.fn(async ap => {
 
 const mockGetConfigType = jest.fn(() => {
   const configID = new ElemID('salesforce')
-  const config = new ObjectType({
+  return new ObjectType({
     elemID: configID,
     fields: {
       username: new Field(configID, 'username', BuiltinTypes.STRING),
@@ -28,8 +27,6 @@ const mockGetConfigType = jest.fn(() => {
     annotations: {},
     annotationsValues: {},
   })
-
-  return config
 })
 
 const mockRemove = jest.fn(_a => true)

@@ -1,7 +1,17 @@
 import _ from 'lodash'
 import {
-  Type, ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field, Values,
-  isObjectType, isPrimitiveType, Element, isInstanceElement, InstanceElement,
+  Element,
+  ElemID,
+  Field,
+  InstanceElement,
+  isInstanceElement,
+  isObjectType,
+  isPrimitiveType,
+  ObjectType,
+  PrimitiveType,
+  PrimitiveTypes,
+  Type,
+  Values,
 } from 'adapter-api'
 import HCLParser from './hcl'
 import evaluate from './expressions'
@@ -190,34 +200,31 @@ export default class Parser {
   }
 
   private static getListFieldBlock(field: Field): HCLBlock {
-    const fieldBlock: HCLBlock = {
+    return {
       type: Keywords.LIST_DEFINITION,
       labels: [field.type.elemID.getFullName(), field.name],
       attrs: field.getAnnotationsValues() || {},
       blocks: [],
     }
-    return fieldBlock
   }
 
   private static getFieldBlock(field: Field): HCLBlock {
-    const fieldBlock: HCLBlock = {
+    return {
       type: field.type.elemID.getFullName(),
       labels: [field.name],
       attrs: field.getAnnotationsValues() || {},
       blocks: [],
     }
-    return fieldBlock
   }
 
   private static getAnnotationsBlock(element: PrimitiveType): HCLBlock {
-    const annotationsBlock: HCLBlock = {
+    return {
       type: Keywords.ANNOTATIONS_DEFINITION,
       labels: [],
       attrs: {},
       blocks: Object.keys(element.annotations)
         .map(key => this.getFieldBlock(new Field(element.elemID, key, element.annotations[key]))),
     }
-    return annotationsBlock
   }
 
   /**

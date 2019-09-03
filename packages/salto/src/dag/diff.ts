@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import wu from 'wu'
-import { intersection, difference } from '../collections/set'
-import { NodeId, DataNodeMap } from './nodemap'
+import { difference, intersection } from '../collections/set'
+import { DataNodeMap, NodeId } from './nodemap'
 
 export interface DiffData<T> {
   before?: T
@@ -145,7 +145,7 @@ export const buildDiffGraph = (() => {
     })
   }
 
-  const build = <T>(
+  return <T>(
     before: DataNodeMap<T>,
     after: DataNodeMap<T>,
     equals: (id: NodeId) => boolean,
@@ -174,6 +174,4 @@ export const buildDiffGraph = (() => {
       result,
     )
   }
-
-  return build
 })()

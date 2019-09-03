@@ -74,9 +74,16 @@ export const exportToCsv = async (
   typeId: string,
   blueprints: Blueprint[],
   fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
-): Promise<object[]> => {
+): Promise<InstanceElement[]> => {
+  // Find the corresponding element in the state
+  const state = new State()
+  const stateElements = await state.get()
+  const types = stateElements.filter(elem => elem.elemID.getFullName() === typeId)
+  if (types.length === 0) {
+    throw new Error(`Couldn't find the type you are looking for: ${typeId}. Have you run salto discover yet?`)
+  }
   const elements = mergeAndValidate(await getAllElements(blueprints))
   const [adapters] = await initAdapters(elements, fillConfig)
-  const instanceObjects = await getInstancesOfType(typeId, adapters)
+  const instanceObjects = await getInstancesOfType(types[0] as ObjectType, adapters)
   return instanceObjects
 }

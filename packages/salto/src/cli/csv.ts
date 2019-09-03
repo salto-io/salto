@@ -1,4 +1,4 @@
-import * as fs from 'async-file'
+import * as asyncfile from 'async-file'
 import path from 'path'
 import { parseAsync } from 'json2csv'
 
@@ -7,7 +7,7 @@ import { parseAsync } from 'json2csv'
  * @param blueprint The blueprint to dump
  */
 export const dumpCsv = async (objects: object[], outputPath: string): Promise<void> => {
-  await fs.mkdirp(path.dirname(outputPath))
+  await asyncfile.mkdirp(path.dirname(outputPath))
   let csvString = await parseAsync(objects)
   const rows = csvString.split('\n')
   let header = rows.shift()
@@ -16,7 +16,7 @@ export const dumpCsv = async (objects: object[], outputPath: string): Promise<vo
     rows.unshift(header)
     csvString = rows.join('\n')
   }
-  await fs.writeFile(outputPath, csvString)
+  await asyncfile.writeFile(outputPath, csvString)
 }
 
 export default dumpCsv

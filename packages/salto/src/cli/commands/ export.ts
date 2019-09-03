@@ -4,24 +4,24 @@ import { ParsedCliInput, CliCommand, CliOutput } from '../types'
 import { Blueprint } from '../../blueprints/blueprint'
 import * as bf from '../filters/blueprints'
 
-const command = (blueprints: Blueprint[], typeId: string, outputPath: string): CliCommand => ({
+const command = (blueprints: Blueprint[], typeName: string, outputPath: string): CliCommand => ({
   async execute(): Promise<void> {
-    return commands.exportBase(typeId, outputPath, blueprints)
+    return commands.exportBase(typeName, outputPath, blueprints)
   },
 })
 
-type DiscoverArgs = bf.Args & { 'typeId': string; 'output-path': string }
+type DiscoverArgs = bf.Args & { 'typeName': string; 'output-path': string }
 type DiscoverParsedCliInput = ParsedCliInput<DiscoverArgs> & bf.BlueprintsParsedCliInput
 
 const builder = createCommandBuilder({
   options: {
-    command: 'export <typeId>',
+    command: 'export <typeName>',
     aliases: ['e'],
     description: 'Exports all objects of a given type to CSV',
     positional: {
-      typeId: {
+      typeName: {
         type: 'string',
-        description: 'The type id of the instances for export',
+        description: 'The type name of the instances for export as it appears in the blueprint',
         default: undefined, // Prevent "default: []" in the help
       },
     },
@@ -38,7 +38,7 @@ const builder = createCommandBuilder({
   filters: [bf.optionalFilter],
 
   async build(input: DiscoverParsedCliInput, _output: CliOutput) {
-    return command(input.blueprints, input.args.typeId, input.args['output-path'])
+    return command(input.blueprints, input.args.typeName, input.args['output-path'])
   },
 })
 

@@ -32,7 +32,6 @@
     "lint-fix": "yarn run lint -- --fix"
   },
   "dependencies": {
-    "@types/json2csv": "^4.5.0",
     "adapter-api": "0.1.0",
     "async": "^3.1.0",
     "async-file": "^2.0.2",
@@ -63,6 +62,7 @@
     "@types/yargs": "^13.0.0",
     "@typescript-eslint/eslint-plugin": "^2.0.0",
     "@typescript-eslint/parser": "^1.10.2",
+    "@types/json2csv": "^4.5.0",
     "dts-gen": "^0.5.8",
     "eslint": "^6.2.2",
     "eslint-config-airbnb": "^17.1.0",

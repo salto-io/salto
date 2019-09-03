@@ -175,7 +175,7 @@ describe('Test commands.ts', () => {
   it('export should create a csv file', async () => {
     const outputPath = path.join(__dirname, '__test_export.csv')
     try {
-      // Cleanup before running discover
+      // Cleanup before running export
       await fs.delete(outputPath)
 
       await commands.exportBase('Test', outputPath, [])

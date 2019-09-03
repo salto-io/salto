@@ -10,7 +10,7 @@ export interface Adapter {
   add(element: Element): Promise<Element>
   remove(element: Element): Promise<void>
   update(before: Element, after: Element): Promise<Element>
-  getInstancesOfType(typeId: string): Promise<object[]>
+  getInstancesOfType(typeId: ObjectType): Promise<InstanceElement[]>
 }
 
 export const init = async (elements: Element[], fillConfig: (t: ObjectType) =>

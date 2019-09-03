@@ -182,18 +182,24 @@ export default class SalesforceAdapter {
 
   /**
    * Retrieve all the instances of a given type
-   * @param typeId the type name to retrieve
+   * @param type the object type of which to retrieve instances
    */
-  public async getInstancesOfType(typeId: string): Promise<object[]> {
+  public async getInstancesOfType(type: ObjectType): Promise<InstanceElement[]> {
     // Populate the fields list in the query with commas between the field names
-    const objectDescription = await this.client.describeSObject(typeId)
-    const fields = objectDescription[0].fields.map(f => f.name).join(',')
+    const fields = Object.values(type.fields)
+      .map(field => field.getAnnotationsValues()[constants.API_NAME])
+    const typeId = type.getAnnotationsValues()[constants.API_NAME]
     // Finalize the query string
     const queryString = `SELECT ${fields} FROM ${typeId}`
     const result = await this.client.runQuery(queryString)
     // Ommit the "attributes" field from the objects
-    return result.records.map(obj => _.pickBy(obj, (_value, key) =>
+    const results = result.records.map(obj => _.pickBy(obj, (_value, key) =>
       key !== 'attributes'))
+    return results.map(res => new InstanceElement(
+      new ElemID(constants.SALESFORCE, type.elemID.name),
+      type,
+      res
+    ))
   }
 
   /**

@@ -160,19 +160,19 @@ export const discover = async (
 }
 
 export const exportBase = async (
-  typeId: string,
+  typeName: string,
   outputPath: string,
   blueprints: Blueprint[],
 ): Promise<void> => {
   const outputObjects = await commands.exportToCsv(
-    typeId,
+    typeName,
     blueprints,
     getConfigFromUser
   )
 
   // Check if output path is provided, otherwise use the template
-  // <working dir>/<typeID>_<current timestamp>.csv
-  const outPath = outputPath || path.join(path.resolve('./'), `${typeId}_${Date.now()}.csv`)
+  // <working dir>/<typeName>_<current timestamp>.csv
+  const outPath = outputPath || path.join(path.resolve('./'), `${typeName}_${Date.now()}.csv`)
 
-  await dumpCsv(outputObjects, outPath)
+  await dumpCsv(outputObjects.map(instance => instance.value), outPath)
 }

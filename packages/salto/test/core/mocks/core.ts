@@ -184,8 +184,12 @@ export const exportToCsv = async (
   _typeId: string,
   _blueprints: Blueprint[],
   _fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
-): Promise<object[]> => {
-  const objects = [
+): Promise<InstanceElement[]> => {
+  const testType = new ObjectType({
+    elemID: new ElemID('salesforce', 'test'),
+  })
+  const elemID = new ElemID('salesforce')
+  const values = [
     {
       Id: 1,
       FirstName: 'Daile',
@@ -206,5 +210,9 @@ export const exportToCsv = async (
       Gender: 'Female',
     },
   ]
-  return objects
+  return values.map(value => new InstanceElement(
+    elemID,
+    testType,
+    value
+  ))
 }

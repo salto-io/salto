@@ -65,10 +65,8 @@ func ParseHCL(args js.Value) interface{} {
 //  A buffer with the serialized HCL
 func DumpHCL(args js.Value) interface{} {
 	file := hclwrite.NewEmptyFile()
-
 	fillBody(file.Body(), args.Get("body"))
-
-	return string(file.Bytes())
+	return string(format(file.Bytes()))
 }
 
 var exportedFuncs = map[string]func(js.Value) interface{}{

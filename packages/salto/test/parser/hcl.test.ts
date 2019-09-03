@@ -198,19 +198,19 @@ describe('HCL Parser', () => {
       expect(serialized).toMatch('type "lbl1" "lbl2" {')
     })
     it('dumps numbers', () => {
-      expect(serialized).toMatch('number = 1')
+      expect(serialized).toMatch(/number\s*=\s*1/m)
     })
     it('dumps strings', () => {
-      expect(serialized).toMatch('str = "string"')
+      expect(serialized).toMatch(/str\s*=\s*"string"/m)
     })
     it('dumps lists', () => {
-      expect(serialized).toMatch('lst = ["val1", "val2"]')
+      expect(serialized).toMatch(/lst\s*=\s*[\s*"val1",\s*"val2"\s*]/m)
     })
     it('dumps empty list', () => {
-      expect(serialized).toMatch('empty = []')
+      expect(serialized).toMatch(/empty\s*=\s*\[\]/m)
     })
     it('handles nested attributes', () => {
-      expect(serialized).toMatch(/nested = { val = "so deep" }/m)
+      expect(serialized).toMatch(/nested\s*=\s*{\s*val\s*=\s*"so deep"\s*}/m)
     })
     it('dumps parsable text', async () => {
       const parsed = await HCLParser.parse(Buffer.from(serialized), 'none')

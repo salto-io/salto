@@ -1,6 +1,7 @@
 package main
 
 import (
+	"sort"
 	"syscall/js"
 
 	"github.com/hashicorp/hcl2/hclwrite"
@@ -54,9 +55,14 @@ func getBlock(body *hclwrite.Body, block js.Value) *hclwrite.Block {
 func fillBody(body *hclwrite.Body, value js.Value) {
 	// Fill Attributes
 	attrs := value.Get("attrs")
-	attrsMap := convertJsToCty(attrs)
-	for k, v := range attrsMap.AsValueMap() {
-		body.SetAttributeValue(k, v)
+	attrsMap := convertJsToCty(attrs).AsValueMap()
+	attrsKeys := make([]string, 0, len(attrsMap))
+	for k := range attrsMap {
+		attrsKeys = append(attrsKeys, k)
+	}
+	sort.Strings(attrsKeys)
+	for _, k := range attrsKeys {
+		body.SetAttributeValue(k, attrsMap[k])
 	}
 
 	// Fill blocks

@@ -33,9 +33,9 @@ func isFirstInLine(tokens hclwrite.Tokens, pos int) bool {
 	return true
 }
 
-//Decides where a new newline token is needed.
-//We only need to add new lines in attr values which are arrays or
-//objects, if they are not already properly formated.
+// Decides where a new newline token is needed.
+// We only need to add new lines in attr values which are arrays or
+// objects, if they are not already properly formated.
 func newLineAfterToken(tokens hclwrite.Tokens, i int) bool {
 	var before, after *hclwrite.Token
 	subject := tokens[i]
@@ -92,7 +92,7 @@ func createWriterTokens(nativeTokens hclsyntax.Tokens) hclwrite.Tokens {
 	return tokBuf
 }
 
-// The default HCL formatter does add newlines in lists an objects so we
+// The default HCL formatter doesn't add newlines in lists an objects so we
 // created this method to add new lines where desired, and then call the
 // default formatter.
 func format(src []byte) []byte {

@@ -100,5 +100,5 @@ Promise<InstanceElement[]> => {
   if (!adapter) {
     throw new Error(`Failed to find the adapter for the given type: ${type.elemID.getFullName()}`)
   }
-  return await adapter.getInstancesOfType(type)
+  return adapter.getInstancesOfType(type)
 }

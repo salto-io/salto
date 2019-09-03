@@ -1,6 +1,5 @@
 .history
 coverage
 dist
-.vscode
 .vscode-test
 

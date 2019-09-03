@@ -17,8 +17,7 @@ export const plan = async (
 ): Promise<Plan> => {
   const elements = mergeAndValidate(await getAllElements(blueprints))
   const state = new State()
-  const actionPlan = await getPlan(state, elements)
-  return actionPlan
+  return getPlan(state, elements)
 }
 
 export const apply = async (

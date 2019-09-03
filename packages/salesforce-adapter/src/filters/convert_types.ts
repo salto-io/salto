@@ -82,7 +82,6 @@ const filterCreator: FilterCreator = () => ({
    * Upon discover, convert all instance values to their correct type according to the
    * type definitions
    *
-   * @param client SFDC client
    * @param elements the already discoverd elements
    */
   onDiscover: async (elements: Element[]) => {

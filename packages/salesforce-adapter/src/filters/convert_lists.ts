@@ -6,7 +6,7 @@ import { FilterCreator } from '../filter'
 
 /**
  * Mark list fields as lists if there is any instance that has a list value in the field.
- * Unfortunatly it seems like this is the only way to know if a field is a list or a single value
+ * Unfortunately it seems like this is the only way to know if a field is a list or a single value
  * in the Salesforce API.
  * After marking all fields as lists we also convert all values that should be lists to a list
  * This step is needed because the API never returns lists of length 1
@@ -15,7 +15,6 @@ const filter: FilterCreator = () => ({
   /**
    * Upon discover, mark all list fields as list fields in all discoverd types
    *
-   * @param client SFDC client
    * @param elements the already discoverd elements
    */
   onDiscover: async (elements: Element[]) => {

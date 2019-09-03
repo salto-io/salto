@@ -145,7 +145,7 @@ export const buildDiffGraph = (() => {
     })
   }
 
-  const build = <T>(
+  return <T>(
     before: DataNodeMap<T>,
     after: DataNodeMap<T>,
     equals: (id: NodeId) => boolean,
@@ -174,6 +174,4 @@ export const buildDiffGraph = (() => {
       result,
     )
   }
-
-  return build
 })()

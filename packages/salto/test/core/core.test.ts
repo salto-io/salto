@@ -17,7 +17,7 @@ const mockAdd = jest.fn(async ap => {
 
 const mockGetConfigType = jest.fn(() => {
   const configID = new ElemID('salesforce')
-  const config = new ObjectType({
+  return new ObjectType({
     elemID: configID,
     fields: {
       username: new Field(configID, 'username', BuiltinTypes.STRING),
@@ -28,8 +28,6 @@ const mockGetConfigType = jest.fn(() => {
     annotations: {},
     annotationsValues: {},
   })
-
-  return config
 })
 
 const mockRemove = jest.fn(_a => true)

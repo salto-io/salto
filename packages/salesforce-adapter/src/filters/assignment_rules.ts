@@ -15,7 +15,6 @@ const filterCreator: FilterCreator = () => ({
   /**
    * Upon discover, rename assignment rules instances
    *
-   * @param client SFDC client
    * @param elements the already discoverd elements
    */
   onDiscover: async (elements: Element[]) => {

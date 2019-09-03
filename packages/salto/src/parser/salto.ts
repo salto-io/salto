@@ -1,17 +1,7 @@
 import _ from 'lodash'
 import {
-  Element,
-  ElemID,
-  Field,
-  InstanceElement,
-  isInstanceElement,
-  isObjectType,
-  isPrimitiveType,
-  ObjectType,
-  PrimitiveType,
-  PrimitiveTypes,
-  Type,
-  Values,
+  Type, ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field, Values,
+  isObjectType, isPrimitiveType, Element, isInstanceElement, InstanceElement,
 } from 'adapter-api'
 import HCLParser from './hcl'
 import evaluate from './expressions'

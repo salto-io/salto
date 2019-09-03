@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import wu from 'wu'
-import { difference, intersection } from '../collections/set'
-import { DataNodeMap, NodeId } from './nodemap'
+import { intersection, difference } from '../collections/set'
+import { NodeId, DataNodeMap } from './nodemap'
 
 export interface DiffData<T> {
   before?: T

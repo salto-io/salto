@@ -1,7 +1,8 @@
 import * as fs from 'async-file'
 import path from 'path'
 import {
-  BuiltinTypes, ElemID, Field, InstanceElement, ObjectType, Plan,
+  ElemID, BuiltinTypes, InstanceElement, ObjectType, Field,
+  Plan,
 } from 'adapter-api'
 import * as commands from '../../src/core/commands'
 import State from '../../src/state/state'

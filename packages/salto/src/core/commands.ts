@@ -1,10 +1,10 @@
 import _ from 'lodash'
 import path from 'path'
 import {
-  InstanceElement, ObjectType, Plan, PlanAction,
+  Plan, PlanAction, ObjectType, InstanceElement,
 } from 'adapter-api'
 import {
-  applyActions, discoverAll, getPlan, mergeAndValidate,
+  getPlan, applyActions, discoverAll, mergeAndValidate,
 } from './core'
 import { init as initAdapters } from './adapters'
 import Parser from '../parser/salto'

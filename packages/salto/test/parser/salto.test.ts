@@ -4,14 +4,14 @@ import {
   BuiltinTypes,
 } from 'adapter-api'
 import * as TestHelpers from '../common/helpers'
-import Parser from '../../src/parser/salto'
+import Parser, { SourceMap } from '../../src/parser/salto'
 
 describe('Salto parser', () => {
   describe('primitive, model and extensions', () => {
-    let parsedElements: Element[]
+    let elements: Element[]
+    let sourceMap: SourceMap
 
-    beforeAll(async () => {
-      const body = `
+    const body = `
       type salesforce_string is string {
       }
 
@@ -34,7 +34,7 @@ describe('Salto parser', () => {
         list salesforce_string nicknames {
         }
 
-        fax {
+        salesforce_phone fax {
           field_level_security = {
             all_profiles = {
               visible = false
@@ -84,20 +84,20 @@ describe('Salto parser', () => {
       }
       `
 
-      const { elements } = await Parser.parse(Buffer.from(body), 'none')
-      parsedElements = elements
+    beforeAll(async () => {
+      ({ elements, sourceMap } = await Parser.parse(Buffer.from(body), 'none'))
     })
 
     describe('parse result', () => {
       it('should have all types', () => {
-        expect(parsedElements.length).toBe(10)
+        expect(elements.length).toBe(10)
       })
     })
 
     describe('string type', () => {
       let stringType: PrimitiveType
       beforeAll(() => {
-        stringType = parsedElements[0] as PrimitiveType
+        stringType = elements[0] as PrimitiveType
       })
       it('should have the correct type', () => {
         expect(stringType.primitive).toBe(PrimitiveTypes.STRING)
@@ -107,7 +107,7 @@ describe('Salto parser', () => {
     describe('number type', () => {
       let numberType: PrimitiveType
       beforeAll(() => {
-        numberType = parsedElements[1] as PrimitiveType
+        numberType = elements[1] as PrimitiveType
       })
       it('should have the correct type', () => {
         expect(numberType.primitive).toBe(PrimitiveTypes.NUMBER)
@@ -117,7 +117,7 @@ describe('Salto parser', () => {
     describe('boolean type', () => {
       let booleanType: PrimitiveType
       beforeAll(() => {
-        booleanType = parsedElements[2] as PrimitiveType
+        booleanType = elements[2] as PrimitiveType
       })
       it('should have the correct type', () => {
         expect(booleanType.primitive).toBe(PrimitiveTypes.BOOLEAN)
@@ -127,8 +127,8 @@ describe('Salto parser', () => {
     describe('object type', () => {
       let objectType: ObjectType
       beforeAll(() => {
-        expect(isObjectType(parsedElements[3])).toBe(true)
-        objectType = parsedElements[3] as ObjectType
+        expect(isObjectType(elements[3])).toBe(true)
+        objectType = elements[3] as ObjectType
       })
       it('should have a number field', () => {
         expect(objectType.fields).toHaveProperty('num')
@@ -138,7 +138,7 @@ describe('Salto parser', () => {
     describe('model', () => {
       let model: ObjectType
       beforeAll(() => {
-        model = parsedElements[4] as ObjectType
+        model = elements[4] as ObjectType
       })
       describe('new field', () => {
         it('should exist', () => {
@@ -166,15 +166,12 @@ describe('Salto parser', () => {
           expect(model.fields.nicknames.isList).toBe(true)
         })
       })
-      describe('field override', () => {
+      describe('field annotations', () => {
         it('should exist', () => {
-          expect(model.getAnnotationsValues()).toHaveProperty('fax')
-        })
-        it('should not be a new field', () => {
-          expect(model.fields).not.toHaveProperty('fax')
+          expect(model.fields).toHaveProperty('fax')
         })
         it('should have the correct value', () => {
-          expect(model.getAnnotationsValues().fax).toEqual({
+          expect(model.fields.fax.getAnnotationsValues()).toEqual({
             // eslint-disable-next-line @typescript-eslint/camelcase
             field_level_security: {
               // eslint-disable-next-line @typescript-eslint/camelcase
@@ -208,7 +205,7 @@ describe('Salto parser', () => {
     describe('instance', () => {
       let inst: InstanceElement
       beforeAll(() => {
-        inst = parsedElements[5] as InstanceElement
+        inst = elements[5] as InstanceElement
       })
       it('should have the right id', () => {
         expect(inst.elemID.adapter).toEqual('salesforce')
@@ -227,7 +224,7 @@ describe('Salto parser', () => {
     describe('config', () => {
       let config: InstanceElement
       beforeAll(() => {
-        config = parsedElements[6] as InstanceElement
+        config = elements[6] as InstanceElement
       })
       it('should have the right id', () => {
         expect(config.elemID.adapter).toEqual('salesforce')
@@ -245,8 +242,8 @@ describe('Salto parser', () => {
 
     describe('updates', () => {
       it('parse update fields', async () => {
-        const orig = parsedElements[7] as ObjectType
-        const update = parsedElements[8] as ObjectType
+        const orig = elements[7] as ObjectType
+        const update = elements[8] as ObjectType
         expect(orig.elemID).toEqual(update.elemID)
         expect(update.fields.num.type.elemID.name).toBe('update')
       })
@@ -255,7 +252,7 @@ describe('Salto parser', () => {
     describe('field type', () => {
       let numberType: PrimitiveType
       beforeAll(() => {
-        numberType = parsedElements[9] as PrimitiveType
+        numberType = elements[9] as PrimitiveType
       })
       it('should have the correct type', () => {
         expect(numberType.primitive).toBe(PrimitiveTypes.NUMBER)
@@ -265,6 +262,27 @@ describe('Salto parser', () => {
         expect(numberType.annotations.scale.elemID.getFullName()).toEqual('number')
         expect(numberType.annotations.precision.elemID.getFullName()).toEqual('number')
         expect(numberType.annotations.unique.elemID.getFullName()).toEqual('boolean')
+      })
+    })
+
+    describe('source map', () => {
+      let model: ObjectType
+      beforeAll(() => {
+        model = elements[4] as ObjectType
+      })
+
+      it('should contain all top level elements', () => {
+        elements.forEach(elem => expect(sourceMap).toHaveProperty(elem.elemID.getFullName()))
+      })
+      it('should have correct start and end positions', () => {
+        const modelSource = sourceMap[model.elemID.getFullName()]
+        expect(modelSource.start.line).toBe(15)
+        expect(modelSource.end.line).toBe(41)
+      })
+      it('should contain fields', () => {
+        Object.values(model.fields).forEach(
+          field => expect(sourceMap).toHaveProperty(field.elemID.getFullName())
+        )
       })
     })
   })

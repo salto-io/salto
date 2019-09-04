@@ -2,10 +2,9 @@ import * as fs from 'async-file'
 import _ from 'lodash'
 import SalesforceClient from 'salesforce-adapter/dist/src/client/client'
 import {
-  InstanceElement, ElemID, ObjectType, Plan,
+  ObjectType, Plan, InstanceElement,
 } from 'adapter-api'
 import {
-  SALESFORCE,
   CUSTOM_OBJECT as CUSTOM_OBJECT_METATYPE,
 } from 'salesforce-adapter/dist/src/constants'
 import { CustomObject } from 'salesforce-adapter/dist/src/client/types'
@@ -13,19 +12,12 @@ import {
   discover, plan, apply,
 } from '../src/cli/commands'
 import State from '../src/state/state'
+import adapterConfigs from './adapter_configs'
+import createCredentials from './credentials'
 
-const configType = new ObjectType({ elemID: new ElemID(SALESFORCE) })
-const configValues = {
-  username: process.env.SF_USER || '',
-  password: process.env.SF_PASSWORD || '',
-  token: process.env.SF_TOKEN || '',
-  sandbox: false,
-}
-const mockGetConfigType = (_c: ObjectType): InstanceElement => new InstanceElement(
-  new ElemID(configType.elemID.adapter, ElemID.CONFIG_INSTANCE_NAME),
-  configType,
-  configValues
-)
+const credentials = createCredentials()
+const mockGetConfigType = (): InstanceElement => adapterConfigs.salesforce()
+
 let lastPlan: Plan = []
 const mockShouldApply = (p: Plan): boolean => {
   lastPlan = p
@@ -36,22 +28,18 @@ const mockShouldApply = (p: Plan): boolean => {
 // omitting the mock prefix in their names (YES I KNOW) will result in a runtime exception
 // to be thrown
 jest.mock('../src/cli/callbacks', () => ({
-  getConfigFromUser: jest.fn().mockImplementation((c: ObjectType) => mockGetConfigType(c)),
+  getConfigFromUser: jest.fn().mockImplementation(() => mockGetConfigType()),
   shouldApply: jest.fn().mockImplementation((p: Plan) => mockShouldApply(p)),
 }))
 
-describe('Test commands e2e', () => {
+describe('commands e2e', () => {
   const pathExists = async (p: string): Promise<boolean> => fs.exists(p)
   const homePath = process.env.HOME || process.env.HOMEPATH || process.env.USERPROFILE
   const { statePath } = new State()
   const discoverOutputDir = `${homePath}/BP/test_discover`
   const addModelBP = `${__dirname}/../../e2e_test//BP/add.bp`
   const modifyModelBP = `${__dirname}/../../e2e_test/BP/modify.bp`
-  const client = new SalesforceClient(
-    configValues.username,
-    configValues.password + configValues.token,
-    configValues.sandbox
-  )
+  const client = new SalesforceClient({ credentials: credentials.salesforce })
 
   const objectExists = async (
     name: string, fields: string[] = [], missingFields: string[] = []

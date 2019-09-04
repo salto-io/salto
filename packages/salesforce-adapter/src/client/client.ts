@@ -34,17 +34,28 @@ const MAX_ITEMS_IN_DESCRIBE_REQUEST = 100
 //  https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_readMetadata.htm
 const MAX_ITEMS_IN_READ_METADATA_REQUEST = 10
 
+export type Credentials = {
+  username: string
+  password: string
+  apiToken?: string
+  isSandbox: boolean
+}
+
+export type SalesforceClientOpts = {
+  credentials: Credentials
+  connection?: Connection
+}
+
 export default class SalesforceClient {
-  private conn: Connection
+  private readonly conn: Connection
   private isLoggedIn = false
+  private readonly credentials: Credentials
 
   constructor(
-    private username: string,
-    private password: string,
-    isSandbox: boolean,
-    { connection }: { connection?: Connection } = {}
+    { credentials, connection }: SalesforceClientOpts
   ) {
-    this.conn = connection || SalesforceClient.realConnection(isSandbox)
+    this.credentials = credentials
+    this.conn = connection || SalesforceClient.realConnection(credentials.isSandbox)
   }
 
   private static realConnection(isSandbox: boolean): Connection {
@@ -60,9 +71,10 @@ export default class SalesforceClient {
   }
 
   // In the future this can be replaced with decorators - currently experimental feature
-  private async login(): Promise<void> {
+  private async ensureLoggedIn(): Promise<void> {
     if (!this.isLoggedIn) {
-      await this.conn.login(this.username, this.password)
+      const { username, password, apiToken } = this.credentials
+      await this.conn.login(username, password + (apiToken || ''))
       this.isLoggedIn = true
     }
   }
@@ -80,7 +92,7 @@ export default class SalesforceClient {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public async runQuery(queryString: string): Promise<QueryResult<any>> {
-    await this.login()
+    await this.ensureLoggedIn()
     const result = await this.conn.query(queryString)
     return result
   }
@@ -120,7 +132,7 @@ export default class SalesforceClient {
    * Extract metadata object names
    */
   public async listMetadataTypes(): Promise<MetadataObject[]> {
-    await this.login()
+    await this.ensureLoggedIn()
     const result = await this.conn.metadata.describe()
     return result.metadataObjects
   }
@@ -132,7 +144,7 @@ export default class SalesforceClient {
   public async describeMetadataType(
     objectName: string
   ): Promise<ValueTypeField[]> {
-    await this.login()
+    await this.ensureLoggedIn()
     const result = await this.conn.metadata.describeValueType(
       `{${METADATA_NAMESPACE}}${objectName}`
     )
@@ -140,7 +152,7 @@ export default class SalesforceClient {
   }
 
   public async listMetadataObjects(type: string): Promise<FileProperties[]> {
-    await this.login()
+    await this.ensureLoggedIn()
     return makeArray(await this.conn.metadata.list({ type }))
   }
 
@@ -150,7 +162,7 @@ export default class SalesforceClient {
   public async readMetadata(
     type: string, name: string | string[]
   ): Promise<MetadataInfo[]> {
-    await this.login()
+    await this.ensureLoggedIn()
     const names = makeArray(name)
     return SalesforceClient.sendChunked(
       names,
@@ -163,13 +175,13 @@ export default class SalesforceClient {
    * Extract sobject names
    */
   public async listSObjects(): Promise<DescribeGlobalSObjectResult[]> {
-    await this.login()
+    await this.ensureLoggedIn()
     return (await this.conn.describeGlobal()).sobjects
   }
 
   public async describeSObjects(objectNames: string[]):
     Promise<DescribeSObjectResult[]> {
-    await this.login()
+    await this.ensureLoggedIn()
     return SalesforceClient.sendChunked(
       objectNames,
       chunk => this.conn.soap.describeSObjects(chunk),
@@ -188,7 +200,7 @@ export default class SalesforceClient {
     type: string,
     metadata: MetadataInfo | MetadataInfo[]
   ): Promise<SaveResult[]> {
-    await this.login()
+    await this.ensureLoggedIn()
     return SalesforceClient.validateSaveResult(
       await SalesforceClient.sendChunked(
         metadata,
@@ -208,7 +220,7 @@ export default class SalesforceClient {
     metadataType: string,
     fullNames: string | string[]
   ): Promise<SaveResult[]> {
-    await this.login()
+    await this.ensureLoggedIn()
     return SalesforceClient.validateSaveResult(
       await SalesforceClient.sendChunked(
         fullNames,
@@ -227,7 +239,7 @@ export default class SalesforceClient {
     metadataType: string,
     metadata: MetadataInfo | MetadataInfo[]
   ): Promise<SaveResult[]> {
-    await this.login()
+    await this.ensureLoggedIn()
     return SalesforceClient.validateSaveResult(
       await SalesforceClient.sendChunked(
         metadata,
@@ -242,7 +254,7 @@ export default class SalesforceClient {
    * @returns The save result of the requested update
    */
   public async deploy(zip: Buffer): Promise<DeployResult> {
-    await this.login()
+    await this.ensureLoggedIn()
     return SalesforceClient.validateDeployResult(
       await this.conn.metadata.deploy(zip, { rollbackOnError: true }).complete(true)
     )

@@ -3,14 +3,12 @@ import {
   ObjectType, ElemID, InstanceElement, Element, Field, BuiltinTypes,
 } from 'adapter-api'
 import makeFilter from '../../src/filters/convert_lists'
-import SalesforceClient from '../../src/client/client'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
+import mockClient from '../client'
 
-jest.mock('../../src/client/client')
-
-describe('Test convert lists filter', () => {
-  const client = new SalesforceClient('', '', false)
+describe('convert lists filter', () => {
+  const { client } = mockClient()
 
   const mockObjId = new ElemID(constants.SALESFORCE, 'test')
   const mockType = new ObjectType({

@@ -13,8 +13,6 @@ import { PicklistEntry } from 'jsforce'
 import makeArray from '../src/client/make_array'
 import * as constants from '../src/constants'
 import { FIELD_LEVEL_SECURITY_ANNOTATION, PROFILE_METADATA_TYPE } from '../src/filters/field_permissions'
-import SalesforceClient from '../src/client/client'
-import SalesforceAdapter from '../src/adapter'
 import {
   CustomObject,
   ProfileInfo,
@@ -23,23 +21,10 @@ import {
 import {
   Types, sfCase, fromMetadataInfo,
 } from '../src/transformer'
+import realAdapter from './adapter'
 
-describe('Test Salesforce adapter E2E with real account', () => {
-  const requiredEnvVar = (name: string): string => {
-    const result = process.env[name]
-    if (!result) {
-      throw new Error(`required env var ${name} missing or empty`)
-    }
-    return result
-  }
-
-  const client = new SalesforceClient(
-    requiredEnvVar('SF_USER'),
-    requiredEnvVar('SF_PASSWORD') + requiredEnvVar('SF_TOKEN'),
-    false,
-  )
-
-  const adapter = new SalesforceAdapter({ clientOrConfig: client })
+describe('Salesforce adapter E2E with real account', () => {
+  const { adapter, client } = realAdapter()
 
   // Set long timeout as we communicate with salesforce API
   beforeAll(() => {

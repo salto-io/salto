@@ -3,13 +3,12 @@ import {
   ElemID,
   Field,
 } from 'adapter-api'
-import SalesforceAdapter from '../src/adapter'
 import * as constants from '../src/constants'
 import { Types } from '../src/transformer'
-import mockAdapter from '../test/adapter'
+import realAdapter from './adapter'
 
-describe('Test Salesforce adapter E2E REST API with real account', () => {
-  const adapter = (): SalesforceAdapter => mockAdapter().adapter
+describe('Adapter E2E REST API with real account', () => {
+  const { adapter } = realAdapter()
 
   const sfLeadName = 'Lead'
   const stringType = Types.salesforceDataTypes.text
@@ -20,7 +19,6 @@ describe('Test Salesforce adapter E2E REST API with real account', () => {
   })
 
   describe('Read data', () => {
-    const sfAdapter = adapter()
     it('should read instances of specific type', async () => {
       const leadElemID = new ElemID(constants.SALESFORCE, 'lead')
       const leadType = new ObjectType({
@@ -49,7 +47,7 @@ describe('Test Salesforce adapter E2E REST API with real account', () => {
         },
       })
 
-      const result = await sfAdapter.getInstancesOfType(leadType)
+      const result = await adapter.getInstancesOfType(leadType)
 
       // Test
       expect(result[0].value.FirstName).toBeDefined()

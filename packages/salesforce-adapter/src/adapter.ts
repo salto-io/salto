@@ -6,7 +6,7 @@ import {
   SaveResult, ValueTypeField, MetadataInfo, Field as SObjField, DescribeSObjectResult,
 } from 'jsforce'
 import _ from 'lodash'
-import SalesforceClient from './client/client'
+import SalesforceClient, { Credentials } from './client/client'
 import * as constants from './constants'
 import {
   toCustomField, toCustomObject, apiName, sfCase, fieldFullName, Types,
@@ -68,15 +68,9 @@ export interface SalesforceAdapterParams {
   // Filters to apply to all adapter operations
   filterCreators?: FilterCreator[]
 
-  // client to use, or config InstanceElement used to create the client
-  clientOrConfig: SalesforceClient | InstanceElement
+  // client to use
+  client: SalesforceClient
 }
-
-const clientFromConfig = (config: InstanceElement): SalesforceClient => new SalesforceClient(
-  config.value.username,
-  config.value.password + config.value.token,
-  config.value.sandbox
-)
 
 export default class SalesforceAdapter {
   private metadataAdditionalTypes: string[]
@@ -106,15 +100,13 @@ export default class SalesforceAdapter {
       convertListsFilter,
       convertTypeFilter,
     ],
-    clientOrConfig,
+    client,
   }: SalesforceAdapterParams) {
     this.metadataAdditionalTypes = metadataAdditionalTypes
     this.metadataTypeBlacklist = metadataTypeBlacklist
     this.metadataToUpdateWithDeploy = metadataToUpdateWithDeploy
     this.filterCreators = filterCreators
-    this.client = isInstanceElement(clientOrConfig)
-      ? clientFromConfig(clientOrConfig)
-      : clientOrConfig
+    this.client = client
   }
 
   private client: SalesforceClient
@@ -607,7 +599,20 @@ const configType = new ObjectType({
   annotationsValues: {},
 })
 
+const credentialsFromConfig = (config: InstanceElement): Credentials => ({
+  username: config.value.username,
+  password: config.value.password,
+  apiToken: config.value.token,
+  isSandbox: config.value.sandbox,
+})
+
+const clientFromConfig = (config: InstanceElement): SalesforceClient => new SalesforceClient({
+  credentials: credentialsFromConfig(config),
+})
+
 export const creator: AdapterCreator = {
-  create: ({ config }) => new SalesforceAdapter({ clientOrConfig: config }),
+  create: ({ config }) => new SalesforceAdapter({
+    client: clientFromConfig(config),
+  }),
   configType,
 }

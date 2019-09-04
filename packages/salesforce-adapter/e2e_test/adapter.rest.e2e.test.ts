@@ -3,30 +3,13 @@ import {
   ElemID,
   Field,
 } from 'adapter-api'
-import SalesforceAdapter from '../src/adapter'
 import * as constants from '../src/constants'
 import { Types } from '../src/transformer'
-import SalesforceClient from '../src/client/client'
+import { adapter } from './adapter.e2e.test';
 
 describe('Test Salesforce adapter E2E REST API with real account', () => {
   const sfLeadName = 'Lead'
   const stringType = Types.salesforceDataTypes.text
-
-  const requiredEnvVar = (name: string): string => {
-    const result = process.env[name]
-    if (!result) {
-      throw new Error(`required env var ${name} missing or empty`)
-    }
-    return result
-  }
-
-  const client = new SalesforceClient(
-    requiredEnvVar('SF_USER'),
-    requiredEnvVar('SF_PASSWORD') + requiredEnvVar('SF_TOKEN'),
-    false,
-  )
-
-  const adapter = new SalesforceAdapter({ clientOrConfig: client })
 
   // Set long timeout as we communicate with salesforce API
   beforeAll(() => {

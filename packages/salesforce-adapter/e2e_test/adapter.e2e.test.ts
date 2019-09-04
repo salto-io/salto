@@ -39,9 +39,9 @@ const client = new SalesforceClient(
 )
 
 export const adapter = new SalesforceAdapter({ clientOrConfig: client })
+export default adapter
 
-describe('Test Salesforce adapter E2E with real account', () => {  
-
+describe('Test Salesforce adapter E2E with real account', () => {
   // Set long timeout as we communicate with salesforce API
   beforeAll(() => {
     jest.setTimeout(1000000)

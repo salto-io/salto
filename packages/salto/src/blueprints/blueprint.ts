@@ -1,16 +1,26 @@
 import _ from 'lodash'
 import { Element } from 'adapter-api'
-import Parser from '../parser/salto'
+import Parser, { SourceMap } from '../parser/salto'
 
 export interface Blueprint {
   buffer: Buffer
   filename: string
 }
 
+export interface ParsedBlueprint extends Blueprint {
+  elements: Element[]
+  errors: string[]
+  sourceMap: SourceMap
+}
+
+export const parseBlueprints = (blueprints: Blueprint[]): Promise<ParsedBlueprint[]> =>
+  Promise.all(blueprints.map(async bp => ({
+    ...bp,
+    ...(await Parser.parse(bp.buffer, bp.filename)),
+  })))
+
 export const getAllElements = async (blueprints: Blueprint[]): Promise<Element[]> => {
-  const parseResults = await Promise.all(blueprints.map(
-    bp => Parser.parse(bp.buffer, bp.filename)
-  ))
+  const parseResults = await parseBlueprints(blueprints)
 
   const elements = _.flatten(parseResults.map(r => r.elements))
   const errors = _.flatten(parseResults.map(r => r.errors))

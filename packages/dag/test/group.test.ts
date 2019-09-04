@@ -1,5 +1,5 @@
 import { isString } from 'util'
-import { SetId } from '@salto/utils/collections/set'
+import { SetId } from '@salto/lowerdash/collections/set'
 import { buildGroupedGraph, GroupedNodeMap, Group } from '../src/group'
 import { DataNodeMap } from '../src/nodemap'
 

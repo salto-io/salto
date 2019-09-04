@@ -2,7 +2,7 @@ import _ from 'lodash'
 import {
   InstanceElement, Element, ObjectType, isInstanceElement, Adapter,
 } from 'adapter-api'
-import { resolveValues } from '@salto/utils/promises/object'
+import { resolveValues } from '@salto/lowerdash/promises/object'
 import adapterCreators from './creators'
 
 const initAdapters = async (

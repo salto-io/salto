@@ -1,4 +1,4 @@
-import { SetId, equals as setEquals } from '@salto/utils/collections/set'
+import { SetId, equals as setEquals } from '@salto/lowerdash/collections/set'
 import {
   buildDiffGraph, DiffGraph, DiffNode,
 } from '../src/diff'

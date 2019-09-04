@@ -7,7 +7,7 @@ module.exports = {
       : '<rootDir>/dist/test/**/*.test.js'
   ],
   moduleNameMapper: {
-    '^@salto/utils/(.*)': '<rootDir>/../../node_modules/@salto/utils/dist/src/$1',
+    '^@salto/lowerdash/(.*)': '<rootDir>/../../node_modules/@salto/lowerdash/dist/src/$1',
   },
   collectCoverage: true,
   coverageReporters: ['json', 'lcov', 'text', 'clover', 'json-summary'],

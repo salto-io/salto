@@ -8,8 +8,8 @@
             "jsforce": [
                 "../../node_modules/jsforce-types"
             ],
-            "@salto/utils/*": [
-                "../../node_modules/@salto/utils/dist/src/*"
+            "@salto/lowerdash/*": [
+                "../../node_modules/@salto/lowerdash/dist/src/*"
             ]
         }
     },

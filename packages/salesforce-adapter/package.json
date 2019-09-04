@@ -27,7 +27,7 @@
     "lint-fix": "yarn run lint -- --fix"
   },
   "dependencies": {
-    "@salto/utils": "0.1.0",
+    "@salto/lowerdash": "0.1.0",
     "adapter-api": "0.1.0",
     "buffer": "^5.2.1",
     "events": "^3.0.0",

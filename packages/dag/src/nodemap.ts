@@ -1,6 +1,6 @@
 import wu from 'wu'
-import { SetId, update as updateSet, intersection } from '@salto/utils/collections/set'
-import { DefaultMap } from '@salto/utils/collections/map'
+import { SetId, update as updateSet, intersection } from '@salto/lowerdash/collections/set'
+import { DefaultMap } from '@salto/lowerdash/collections/map'
 
 export type NodeId = SetId
 

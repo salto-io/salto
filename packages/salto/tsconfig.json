@@ -11,8 +11,8 @@
             "yargonaut": [
                 "src/types/yargonaut"
             ],
-            "@salto/utils/*": [
-                "../../node_modules/@salto/utils/dist/src/*"
+            "@salto/lowerdash/*": [
+                "../../node_modules/@salto/lowerdash/dist/src/*"
             ]
         }
     },

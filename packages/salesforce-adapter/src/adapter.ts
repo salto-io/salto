@@ -112,18 +112,12 @@ export default class SalesforceAdapter {
     this.metadataTypeBlacklist = metadataTypeBlacklist
     this.metadataToUpdateWithDeploy = metadataToUpdateWithDeploy
     this.filterCreators = filterCreators
-    this.innerClient = isInstanceElement(clientOrConfig)
+    this.client = isInstanceElement(clientOrConfig)
       ? clientFromConfig(clientOrConfig)
       : clientOrConfig
   }
 
-  private innerClient?: SalesforceClient
-  public get client(): SalesforceClient {
-    if (!this.innerClient) {
-      throw new Error('client not initialized')
-    }
-    return this.innerClient
-  }
+  private client: SalesforceClient
 
   /**
    * Discover configuration elements (types and instances in the given salesforce account)

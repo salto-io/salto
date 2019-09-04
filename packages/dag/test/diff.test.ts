@@ -1,8 +1,8 @@
 import {
   buildDiffGraph, DiffGraph, DiffNode,
-} from '../../src/dag/diff'
-import { DataNodeMap } from '../../src/dag/nodemap'
-import { SetId, equals as setEquals } from '../../src/collections/set'
+} from '../src/diff'
+import { DataNodeMap } from '../src/nodemap'
+import { SetId, equals as setEquals } from '../src/set'
 
 describe('buildDiffGraph', () => {
   let subject: DiffGraph<string>

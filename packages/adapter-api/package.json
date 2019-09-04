@@ -27,6 +27,7 @@
     "lint-fix": "yarn run lint -- --fix"
   },
   "dependencies": {
+    "@salto/dag": "0.1.0",
     "lodash": "^4.17.11"
   },
   "devDependencies": {

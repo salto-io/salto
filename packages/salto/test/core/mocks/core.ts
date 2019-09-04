@@ -1,14 +1,16 @@
 import {
-  Type, BuiltinTypes, ElemID, PlanActionType, PlanAction, ObjectType,
-  Field, Plan, InstanceElement,
+  Type, BuiltinTypes, ElemID, Change, ObjectType,
+  Field, InstanceElement, Element,
 } from 'adapter-api'
 import wu from 'wu'
+import _ from 'lodash'
+import { Group, DataNodeMap } from '@salto/dag'
 import { Blueprint } from '../../../src/blueprints/blueprint'
-
+import { Plan, PlanItem, PlanItemId } from '../../../src/core/plan'
 
 export const getAllElements = async (
   _blueprints: Blueprint[] = []
-): Promise<Type[]> => {
+): Promise<Element[]> => {
   const addrElemID = new ElemID('salto', 'address')
   const saltoAddr = new ObjectType({
     elemID: addrElemID,
@@ -89,72 +91,72 @@ export const getAllElements = async (
     },
   })
 
-  return [BuiltinTypes.STRING, saltoAddr, saltoOffice, saltoEmployee]
+  const saltoEmployeeInstance = new InstanceElement(new ElemID('salto', 'employee_instance'),
+    saltoEmployee, { name: 'FirstEmployee' })
+
+  return [BuiltinTypes.STRING, saltoAddr, saltoOffice, saltoEmployee, saltoEmployeeInstance]
 }
 
 const runChangeMock = async (
   changes: Plan,
-  reportProgress: (action: PlanAction) => void
-): Promise<void> => wu(changes).reduce((result, action) =>
+  reportProgress: (action: PlanItem) => void
+): Promise<void> => wu(changes.itemsByEvalOrder()).reduce((result, action) =>
   result.then(() => {
     setTimeout(() => reportProgress(action), 0)
   }), Promise.resolve())
 
-const newAction = (
-  action: PlanActionType,
-  before?: string,
-  after?: string,
-  sub?: Plan
-): PlanAction => {
+const newAction = (before?: string, after?: string): Change => {
   const adapter = 'salesforce'
-  const actionFullName = before ? `${adapter}.${before}` : `${adapter}.${after}`
-
-  const data = {
-    before: before
-      ? new ObjectType({ elemID: new ElemID(adapter, before) })
-      : undefined,
-    after: after
-      ? new ObjectType({ elemID: new ElemID(adapter, after) })
-      : undefined,
+  if (before && after) {
+    return {
+      action: 'modify',
+      data: {
+        before: new ObjectType({ elemID: new ElemID(adapter, before) }),
+        after: new ObjectType({ elemID: new ElemID(adapter, after) }),
+      },
+    }
   }
-  let subChanges: Plan | undefined
-  if (sub) {
-    subChanges = wu(sub).map(plan => {
-      if (plan.data.before) {
-        plan.data.before.elemID = new ElemID(adapter, actionFullName
-          + plan.data.before.elemID.name)
-      }
-      if (plan.data.after) {
-        plan.data.after.elemID = new ElemID(adapter, actionFullName
-          + plan.data.after.elemID.name)
-      }
-      return plan
-    }).toArray()
+  if (before) {
+    return {
+      action: 'remove',
+      data: { before: new ObjectType({ elemID: new ElemID(adapter, before) }) },
+    }
   }
-
-  return { action, data, subChanges }
+  return {
+    action: 'add',
+    data: {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      after: new ObjectType({ elemID: new ElemID(adapter, after!) }),
+    },
+  }
 }
 
-const add = (name: string, sub: Plan = []): PlanAction => newAction('add', undefined, name, sub)
-
-const remove = (name: string, sub: Plan = []): PlanAction => newAction('remove', name, undefined, sub)
-
-const modify = (name: string, sub: Plan = []): PlanAction => newAction('modify', name, name, sub)
+const add = (name: string): Change => newAction(undefined, name)
+const remove = (name: string): Change => newAction(name, undefined)
+const modify = (name: string): Change => newAction(name, name)
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const plan = async (
   _blueprints: Blueprint[],
 ): Promise<Plan> => {
-  const changes = [
-    add('lead.do_you_have_a_sales_team', [add('label'), add('defaultValue')]),
-    modify('salesforce.lead.how_many_sales_people', [modify('restricttovalueset'),
-      remove('values')]),
-    add('lead.how_many_sales_people', [add('label'),
-      add('restrict_to_value_set'), add('controlling_field'),
-      add('values')]),
-    remove('lead.status', [remove('label'), remove('defaultValue')])]
+  const result = new DataNodeMap<Group<Change>>() as Plan
 
-  return changes
+  const items = new Map<PlanItemId, Change>([
+    ['lead', modify('lead')],
+    ['lead_do_you_have_a_sales_team', add('lead_do_you_have_a_sales_team')],
+    ['lead_how_many_sales_people', modify('lead_do_you_have_a_sales_team')],
+    ['lead_status', remove('lead_status')],
+  ])
+  const planItem = {
+    items,
+    groupKey: 'lead',
+    data: () => wu(items.values()).toArray(),
+    parent: () => modify('lead'),
+  }
+  result.addNode(_.uniqueId(), [], planItem)
+
+  result.itemsByEvalOrder = (): Iterable<PlanItem> => [planItem]
+  return result
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -162,7 +164,7 @@ export const apply = async (
   blueprints: Blueprint[],
   _fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
   shouldApply: (plan: Plan) => Promise<boolean>,
-  reportProgress: (action: PlanAction) => void,
+  reportProgress: (action: PlanItem) => void,
   force = false
 ): Promise<Plan> => {
   const changes = await plan(blueprints)

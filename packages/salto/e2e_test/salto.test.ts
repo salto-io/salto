@@ -2,15 +2,17 @@ import * as fs from 'async-file'
 import _ from 'lodash'
 import SalesforceClient from 'salesforce-adapter/dist/src/client/client'
 import {
-  ObjectType, Plan, InstanceElement,
+  InstanceElement, ObjectType, getChangeElement,
 } from 'adapter-api'
 import {
   CUSTOM_OBJECT as CUSTOM_OBJECT_METATYPE,
 } from 'salesforce-adapter/dist/src/constants'
 import { CustomObject } from 'salesforce-adapter/dist/src/client/types'
+import wu from 'wu'
 import {
   discover, plan, apply,
 } from '../src/cli/commands'
+import { Plan } from '../src/core/plan'
 import State from '../src/state/state'
 import adapterConfigs from './adapter_configs'
 import createCredentials from './credentials'
@@ -18,7 +20,7 @@ import createCredentials from './credentials'
 const credentials = createCredentials()
 const mockGetConfigType = (): InstanceElement => adapterConfigs.salesforce()
 
-let lastPlan: Plan = []
+let lastPlan: Plan
 const mockShouldApply = (p: Plan): boolean => {
   lastPlan = p
   return true
@@ -60,8 +62,11 @@ describe('commands e2e', () => {
     return (!missingFields || missingFields.every(f => !fieldNames.includes(f)))
   }
 
+
   beforeEach(() => {
-    lastPlan = []
+    if (lastPlan) {
+      lastPlan.clear()
+    }
   })
 
   beforeAll(async done => {
@@ -83,20 +88,19 @@ describe('commands e2e', () => {
 
   it('should run plan on discover output and detect no changes', async done => {
     await plan([], discoverOutputDir)
-    expect(lastPlan.length).toBe(0)
+    expect(lastPlan).toBeUndefined()
     done()
   })
 
   it('should apply the new change', async done => {
     await apply([addModelBP], discoverOutputDir)
-    expect(lastPlan.length).toBe(1)
-    const step = lastPlan[0]
-    expect(step.action).toBe('add')
-    expect(step.data.before).toBeUndefined()
-    expect(step.data.after).toBeDefined()
-    const after = step.data.after as ObjectType
+    expect(lastPlan.size).toBe(1)
+    const step = wu(lastPlan.itemsByEvalOrder()).next().value
+    const parent = step.parent()
+    expect(parent.action).toBe('add')
+    expect(getChangeElement(parent)).toBeInstanceOf(ObjectType)
     expect(await objectExists(
-      `${after.elemID.name}__c`,
+      `${getChangeElement(parent).elemID.name}__c`,
       ['Name__c', 'Test__c']
     )).toBe(true)
     done()
@@ -104,14 +108,11 @@ describe('commands e2e', () => {
 
   it('should apply changes in the new model', async done => {
     await apply([modifyModelBP], discoverOutputDir)
-    expect(lastPlan.length).toBe(1)
-    const step = lastPlan[0]
-    expect(step.action).toBe('modify')
-    expect(step.data.before).toBeDefined()
-    expect(step.data.after).toBeDefined()
-    const after = step.data.after as ObjectType
+    expect(lastPlan.size).toBe(1)
+    const step = wu(lastPlan.itemsByEvalOrder()).next().value
+    expect(step.parent().action).toBe('modify')
     expect(await objectExists(
-      `${after.elemID.name}__c`,
+      `${getChangeElement(step.parent()).elemID.name}__c`,
       ['Name__c', 'Test2__c'],
       ['Test__c']
     )).toBe(true)
@@ -120,13 +121,10 @@ describe('commands e2e', () => {
 
   it('should apply a delete for the model', async done => {
     await apply([], discoverOutputDir)
-    expect(lastPlan.length).toBe(1)
-    const step = lastPlan[0]
-    expect(step.action).toBe('remove')
-    expect(step.data.before).toBeDefined()
-    expect(step.data.after).toBeUndefined()
-    const before = step.data.before as ObjectType
-    expect(await objectExists(`${before.elemID.name}__c`)).toBe(false)
+    expect(lastPlan.size).toBe(1)
+    const step = wu(lastPlan.itemsByEvalOrder()).next().value
+    expect(step.parent().action).toBe('remove')
+    expect(await objectExists(`${getChangeElement(step.parent()).elemID.name}__c`)).toBe(false)
     done()
   })
 })

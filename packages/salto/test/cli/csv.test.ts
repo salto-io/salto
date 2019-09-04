@@ -8,7 +8,7 @@ const outputPath = path.join(csvDumpOutputDir, exportFile)
 
 describe('CSV reader/writer', () => {
   beforeEach(() => {
-    jest.setTimeout(20)
+    jest.setTimeout(1000)
   })
 
   describe('Write to CSV', () => {
@@ -41,10 +41,11 @@ describe('CSV reader/writer', () => {
     it('should write an array of objects properly to CSV', async () => {
       await csv.dumpCsv(values, outputPath)
       expect(await asyncfile.exists(outputPath)).toBe(true)
-      expect((await asyncfile.readFile(outputPath)).toString()).toMatch(/Id,FirstName,LastName,Email,Gender/s)
-      expect((await asyncfile.readFile(outputPath)).toString()).toMatch(/1,"Daile","Limeburn","dlimeburn0@blogs.com","Female"/s)
-      expect((await asyncfile.readFile(outputPath)).toString()).toMatch(/2,"Murial","Morson","mmorson1@google.nl","Female"/s)
-      expect((await asyncfile.readFile(outputPath)).toString()).toMatch(/3,"Minna","Noe","mnoe2@wikimedia.org","Female"/s)
+      const fileString = (await asyncfile.readFile(outputPath)).toString()
+      expect(fileString).toMatch(/Id,FirstName,LastName,Email,Gender/s)
+      expect(fileString).toMatch(/1,"Daile","Limeburn","dlimeburn0@blogs.com","Female"/s)
+      expect(fileString).toMatch(/2,"Murial","Morson","mmorson1@google.nl","Female"/s)
+      expect(fileString).toMatch(/3,"Minna","Noe","mnoe2@wikimedia.org","Female"/s)
     })
   })
 })

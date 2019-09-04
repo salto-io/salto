@@ -10,13 +10,13 @@ export type Mocks = {
 }
 
 export type Opts = {
-  adapterParams?: SalesforceAdapterParams
+  adapterParams?: Partial<SalesforceAdapterParams>
 }
+
 const mockAdapter = ({ adapterParams }: Opts = {}): Mocks => {
   const connection = createConnection()
   const client = new SalesforceClient('', '', false, { connection })
-  const adapter = new SalesforceAdapter({ client, ...adapterParams || {} })
-
+  const adapter = new SalesforceAdapter({ clientOrConfig: client, ...adapterParams || {} })
   return { connection, client, adapter }
 }
 

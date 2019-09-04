@@ -1,11 +1,11 @@
 import {
   InstanceElement, ObjectType, ElemID, BuiltinTypes,
 } from 'adapter-api'
-import SalesforceAdapter from 'salesforce-adapter'
-import { init } from '../../src/core/adapters'
+import { creator } from 'salesforce-adapter'
+import initAdapters from '../../src/core/adapters/adapters'
 
 describe('Test adapters.ts', () => {
-  const configType = new SalesforceAdapter().getConfigType()
+  const { configType } = creator
 
   const notConfigType = BuiltinTypes.STRING
 
@@ -67,7 +67,7 @@ describe('Test adapters.ts', () => {
       RedHeringWrongAdapter,
       bpConfig,
     ]
-    const [adapters, newConfigs] = await init(elements, fillConfig)
+    const [adapters, newConfigs] = await initAdapters(elements, fillConfig)
     expect(adapters.salesforce).toBeDefined()
     expect(newConfigs.length).toBe(0)
   })
@@ -78,7 +78,7 @@ describe('Test adapters.ts', () => {
       RedHeringNotConfig,
       RedHeringWrongAdapter,
     ]
-    const [adapters, newConfigs] = await init(elements, fillConfig)
+    const [adapters, newConfigs] = await initAdapters(elements, fillConfig)
     expect(adapters.salesforce).toBeDefined()
     expect(newConfigs.length).toEqual(1)
     expect(newConfigs[0]).toBe(userConfig)

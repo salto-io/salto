@@ -1,28 +1,15 @@
 import {
   ObjectType,
   ElemID,
-  InstanceElement,
   Field,
 } from 'adapter-api'
 import SalesforceAdapter from '../src/adapter'
 import * as constants from '../src/constants'
 import { Types } from '../src/transformer'
+import mockAdapter from '../test/adapter'
 
 describe('Test Salesforce adapter E2E REST API with real account', () => {
-  const adapter = (): SalesforceAdapter => {
-    const a = new SalesforceAdapter()
-    const configType = a.getConfigType()
-    const value = {
-      username: process.env.SF_USER,
-      password: process.env.SF_PASSWORD,
-      token: process.env.SF_TOKEN,
-      sandbox: false,
-    }
-    const elemID = new ElemID('salesforce')
-    const config = new InstanceElement(elemID, configType, value)
-    a.init(config)
-    return a
-  }
+  const adapter = (): SalesforceAdapter => mockAdapter().adapter
 
   const sfLeadName = 'Lead'
   const stringType = Types.salesforceDataTypes.text

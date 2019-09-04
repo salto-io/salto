@@ -1,12 +1,11 @@
 import _ from 'lodash'
 import wu from 'wu'
 import {
-  PlanAction, ObjectType, Element, Plan, ElemID, isEqualElements, InstanceElement,
+  PlanAction, ObjectType, Element, Plan, ElemID, isEqualElements, Adapter, InstanceElement,
 } from 'adapter-api'
 import { buildDiffGraph } from '../dag/diff'
 import { DataNodeMap } from '../dag/nodemap'
 import State from '../state/state'
-import { Adapter } from './adapters'
 import { mergeElements } from './merger'
 import validateElements from './validator'
 

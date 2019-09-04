@@ -11,7 +11,6 @@ import {
 } from 'adapter-api'
 import { PicklistEntry } from 'jsforce'
 import makeArray from '../src/client/make_array'
-import SalesforceAdapter from '../src/adapter'
 import * as constants from '../src/constants'
 import { FIELD_LEVEL_SECURITY_ANNOTATION, PROFILE_METADATA_TYPE } from '../src/filters/field_permissions'
 import {
@@ -22,23 +21,9 @@ import {
 import {
   Types, sfCase, fromMetadataInfo,
 } from '../src/transformer'
+import mockAdapter from '../test/adapter'
 
 describe('Test Salesforce adapter E2E with real account', () => {
-  const adapter = (): SalesforceAdapter => {
-    const a = new SalesforceAdapter()
-    const configType = a.getConfigType()
-    const value = {
-      username: process.env.SF_USER,
-      password: process.env.SF_PASSWORD,
-      token: process.env.SF_TOKEN,
-      sandbox: false,
-    }
-    const elemID = new ElemID('salesforce')
-    const config = new InstanceElement(elemID, configType, value)
-    a.init(config)
-    return a
-  }
-
   // Set long timeout as we communicate with salesforce API
   beforeAll(() => {
     jest.setTimeout(1000000)
@@ -49,7 +34,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
 
     beforeAll(async done => {
       try {
-        result = await adapter().discover()
+        result = await mockAdapter().adapter.discover()
       } catch (e) {
         // Catch and continue, we want done() to be called anyway, o/w test stuck
       }
@@ -114,11 +99,11 @@ describe('Test Salesforce adapter E2E with real account', () => {
   })
 
   describe('should perform CRUD operations', () => {
-    const sfAdapter = adapter()
+    const { adapter: sfAdapter, client: sfClient } = mockAdapter()
 
     const objectExists = async (type: string, name: string, fields?: string[],
       missingFields?: string[], label?: string): Promise<boolean> => {
-      const result = (await sfAdapter.client.readMetadata(type, name)
+      const result = (await sfClient.readMetadata(type, name)
       )[0] as CustomObject
       if (!result || !result.fullName) {
         return false
@@ -143,7 +128,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
         const unknownVariable = variable as unknown
         return typeof unknownVariable === 'string' ? JSON.parse(unknownVariable) : variable
       }
-      const profileInfo = (await sfAdapter.client.readMetadata(PROFILE_METADATA_TYPE,
+      const profileInfo = (await sfClient.readMetadata(PROFILE_METADATA_TYPE,
         profile))[0] as ProfileInfo
       const fieldPermissionsMap = new Map<string, FieldPermissions>()
       profileInfo.fieldPermissions.map(f => fieldPermissionsMap.set(f.field, f))
@@ -502,7 +487,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
       expect(updateResult).toBe(newInstance)
 
       // Checking that the saved instance identical to newInstance
-      const savedInstance = (await sfAdapter.client.readMetadata(
+      const savedInstance = (await sfClient.readMetadata(
         PROFILE_METADATA_TYPE, sfCase(newInstance.elemID.name)
       ))[0] as Profile
 
@@ -605,7 +590,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
       expect(modificationResult).toBeInstanceOf(ObjectType)
       expect(await objectExists(constants.CUSTOM_OBJECT, customObjectName, undefined, undefined, 'test label 2')).toBe(true)
 
-      const readResult = (await sfAdapter.client.readMetadata(
+      const readResult = (await sfClient.readMetadata(
         constants.CUSTOM_OBJECT,
         customObjectName
       ))[0] as CustomObject
@@ -958,7 +943,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
       const post = await sfAdapter.add(element)
 
       // Test
-      const objectFields = await sfAdapter.client.describeSObjects([customObjectName])
+      const objectFields = await sfClient.describeSObjects([customObjectName])
       expect(objectFields[0]).toBeDefined()
       const allFields = objectFields[0].fields
       // Verify picklist
@@ -1084,7 +1069,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
     // Assignment rules are special because they use the Deploy API so they get their own test
     describe('assignment rules manipulation', () => {
       const getRulesFromClient = async (): Promise<Values> => fromMetadataInfo(
-        (await sfAdapter.client.readMetadata('AssignmentRules', 'Lead'))[0]
+        (await sfClient.readMetadata('AssignmentRules', 'Lead'))[0]
       )
 
       const dummyAssignmentRulesType = new ObjectType({
@@ -1151,7 +1136,7 @@ describe('Test Salesforce adapter E2E with real account', () => {
         // Because removing assignment rules does not work currently, we have to clean up with a
         // different api call, this part of the test should be changed once removing rules works
         // we should be issuing another `sfAdater.update` call here in order to remove the rule
-        await sfAdapter.client.delete('AssignmentRule', 'Lead.NonStandard')
+        await sfClient.delete('AssignmentRule', 'Lead.NonStandard')
 
         // TODO: test deletion of assignment rule once it is fixed
       })

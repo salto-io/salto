@@ -1,12 +1,13 @@
 import _ from 'lodash'
 import path from 'path'
 import {
-  Plan, PlanAction, ObjectType, InstanceElement,
+  ObjectType, InstanceElement,
 } from 'adapter-api'
 import {
-  getPlan, applyActions, discoverAll, mergeAndValidate, getInstancesOfType,
+  applyActions, discoverAll, mergeAndValidate, getInstancesOfType,
 } from './core'
 import initAdapters from './adapters/adapters'
+import { getPlan, Plan, PlanItem } from './plan'
 import Parser from '../parser/salto'
 import { Blueprint, getAllElements } from '../blueprints/blueprint'
 import State from '../state/state'
@@ -24,7 +25,7 @@ export const apply = async (
   blueprints: Blueprint[],
   fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
   shouldApply: (plan: Plan) => Promise<boolean>,
-  reportProgress: (action: PlanAction) => void,
+  reportProgress: (action: PlanItem) => void,
   force = false
 ): Promise<Plan> => {
   const elements = mergeAndValidate(await getAllElements(blueprints))

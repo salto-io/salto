@@ -1,4 +1,4 @@
-import * as _ from 'lodash'
+import _ from 'lodash'
 
 /**
  * Defines the list of supported types.
@@ -14,6 +14,7 @@ export type Value = any
 export interface Values {
   [key: string]: Value
 }
+
 export type FieldMap = Record<string, Field>
 type TypeMap = Record<string, Type>
 
@@ -29,14 +30,17 @@ export class ElemID {
     this.nameParts = name
   }
 
-  public get name(): string {
+  get name(): string {
     return this.nameParts.join(ElemID.NAMESPACE_SEPERATOR)
   }
 
   getFullName(): string {
-    return [this.adapter, this.name]
-      .filter(part => !_.isEmpty(part) && part !== ElemID.CONFIG_INSTANCE_NAME)
-      .join(ElemID.NAMESPACE_SEPERATOR)
+    return this.isConfig() ? this.adapter
+      : [this.adapter, this.name].filter(p => !_.isEmpty(p)).join(ElemID.NAMESPACE_SEPERATOR)
+  }
+
+  isConfig(): boolean {
+    return _.isEmpty(this.name) || this.name === ElemID.CONFIG_INSTANCE_NAME
   }
 }
 
@@ -47,16 +51,6 @@ export interface Element {
 }
 
 type ElementMap = Record<string, Element>
-
-export type PlanActionType = 'add'|'remove'|'modify'
-
-export interface PlanAction {
-  action: PlanActionType
-  data: { before?: Element; after?: Element }
-  subChanges?: Plan
-}
-
-export type Plan = PlanAction[]
 
 /**
  * Represents a field inside a type
@@ -157,10 +151,14 @@ export abstract class Type implements Element {
 
   isEqual(other: Type): boolean {
     return _.isEqual(this.elemID, other.elemID)
-          && _.isEqual(
-            _.mapValues(this.annotations, a => a.elemID),
-            _.mapValues(other.annotations, a => a.elemID)
-          )
+          && this.isAnnotationsEqual(other)
+  }
+
+  isAnnotationsEqual(other: Type): boolean {
+    return _.isEqual(
+      _.mapValues(this.annotations, a => a.elemID),
+      _.mapValues(other.annotations, a => a.elemID)
+    )
           && _.isEqual(this.annotationsValues, other.annotationsValues)
   }
 
@@ -298,9 +296,9 @@ export class ObjectType extends Type {
 export class InstanceElement implements Element {
   elemID: ElemID
   path?: string[]
-  type: Type
+  type: ObjectType
   value: Values
-  constructor(elemID: ElemID, type: Type, value: Values, path?: string[]) {
+  constructor(elemID: ElemID, type: ObjectType, value: Values, path?: string[]) {
     this.elemID = elemID
     this.type = type
     this.value = value
@@ -355,7 +353,7 @@ export class ElementsRegistry {
 
   getElement(
     elemID: ElemID,
-    type?: PrimitiveTypes|Type,
+    type?: PrimitiveTypes|ObjectType,
     /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
   ): any {
     // Using any here is ugly, but I can't find a better comiling solution. TODO - fix this
@@ -368,7 +366,7 @@ export class ElementsRegistry {
       } else if (type as any in PrimitiveTypes) {
         res = new PrimitiveType({ elemID, primitive: type as PrimitiveTypes })
       } else {
-        res = new InstanceElement(elemID, type as Type, {})
+        res = new InstanceElement(elemID, type as ObjectType, {})
       }
       this.registerElement(res)
     }

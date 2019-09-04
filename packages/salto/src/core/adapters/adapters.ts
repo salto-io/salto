@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import {
-  InstanceElement, Element, ObjectType, isInstanceElement, ElemID, Adapter,
+  InstanceElement, Element, ObjectType, isInstanceElement, Adapter,
 } from 'adapter-api'
 import adapterCreators from './creators'
 
@@ -8,14 +8,12 @@ const initAdapters = async (
   elements: Element[],
   fillConfig: (t: ObjectType) => Promise<InstanceElement>
 ): Promise<[Record<string, Adapter>, InstanceElement[]]> => {
-  const configs = elements.filter(
-    e => isInstanceElement(e) && e.elemID.name === ElemID.CONFIG_INSTANCE_NAME
-  ) as InstanceElement[]
-
+  const configs = elements.filter(isInstanceElement)
+    .filter(e => e.elemID.isConfig())
   const newConfigs: InstanceElement[] = []
 
   const findConfig = async (configType: ObjectType): Promise<InstanceElement> => {
-    let config = configs.find(e => e.type.elemID.adapter === configType.elemID.adapter)
+    let config = configs.find(e => e.elemID.adapter === configType.elemID.adapter)
     if (!config) {
       config = await fillConfig(configType)
       newConfigs.push(config)

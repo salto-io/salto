@@ -1,77 +1,50 @@
 import _ from 'lodash'
-import wu from 'wu'
 import {
-  PlanAction, ObjectType, Element, Plan, ElemID, isEqualElements, Adapter, InstanceElement,
+  ObjectType, Element, getChangeElement, Adapter, InstanceElement,
 } from 'adapter-api'
-import { buildDiffGraph } from '../dag/diff'
-import { DataNodeMap } from '../dag/nodemap'
 import State from '../state/state'
 import { mergeElements } from './merger'
 import validateElements from './validator'
+import { Plan, PlanItem, PlanItemId } from './plan'
 
+// TODO: move apply and discover functions to dedicated files
 const applyAction = async (
   state: State,
-  action: PlanAction,
+  action: PlanItem,
   adapters: Record<string, Adapter>
 ): Promise<void> => {
-  const existingValue = (action.data.after || action.data.before) as Element
-  const { elemID } = existingValue
+  const parent = action.parent()
+  const { elemID } = getChangeElement(parent)
   const adapterName = elemID && elemID.adapter as string
   const adapter = adapters[adapterName]
 
   if (!adapter) {
     throw new Error(`Missing adapter for ${adapterName}`)
   }
-  if (action.action === 'add') {
-    state.update([await adapter.add(action.data.after as ObjectType)])
+  if (parent.action === 'add') {
+    await state.update([await adapter.add(parent.data.after as ObjectType)])
   }
-  if (action.action === 'remove') {
-    await adapter.remove(action.data.before as ObjectType)
-    state.remove([action.data.before as Element])
+  if (parent.action === 'remove') {
+    await adapter.remove(parent.data.before as ObjectType)
+    await state.remove([parent.data.before as Element])
   }
-  if (action.action === 'modify') {
-    state.update([
-      await adapter.update(action.data.before as ObjectType, action.data.after as ObjectType)])
+  if (parent.action === 'modify') {
+    await state.update([
+      await adapter.update(parent.data.before as ObjectType, parent.data.after as ObjectType)])
   }
-}
-
-export const getPlan = async (state: State, allElements: Element[]): Promise<Plan> => {
-  const toNodeMap = (elements: Element[]): DataNodeMap<Element> => {
-    const nodeMap = new DataNodeMap<Element>()
-    elements.filter(e => e.elemID.adapter)
-      .filter(e => e.elemID.name !== ElemID.CONFIG_INSTANCE_NAME)
-      .forEach(element => nodeMap.addNode(element.elemID.getFullName(), [], element))
-    return nodeMap
-  }
-  const before = toNodeMap(await state.get())
-  const after = toNodeMap(allElements)
-
-  // TODO: enable this once we support instances and we can add test coverage
-  // if (isInstanceElement(element)) {
-  //   dependsOn.push(element.type.elemID.getFullName())
-  // }
-  // TODO: split elements to fields and fields values
-  const diffGraph = buildDiffGraph(
-    before,
-    after,
-    id => isEqualElements(before.getData(id), after.getData(id))
-  )
-  return wu(diffGraph.evaluationOrder()).map(
-    id => (diffGraph.getData(id) as PlanAction)
-  ).toArray()
 }
 
 export const applyActions = async (state: State,
   plan: Plan,
   adapters: Record<string, Adapter>,
-  reportProgress: (action: PlanAction) => void
+  reportProgress: (action: PlanItem) => void
 ): Promise<void> =>
-  wu(plan).reduce((result, action) => result.then(
-    () => {
-      reportProgress(action)
-      return applyAction(state, action, adapters)
-    }
-  ), Promise.resolve())
+  plan.walk((itemId: PlanItemId): Promise<void> => {
+    const item = plan.getItem(itemId) as PlanItem
+    reportProgress(item)
+    return applyAction(state, item, adapters)
+  })
+
 
 export const mergeAndValidate = (elements: Element[]): Element[] => {
   const mergedElements = mergeElements(elements)

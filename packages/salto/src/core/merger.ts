@@ -123,7 +123,7 @@ const mergeInstances = (
       validateNoDuplicates
     )
     const valueWithDefault = _.merge({}, buildDefaults(refInst.type) || {}, value)
-    return new InstanceElement(refInst.elemID, refInst.type, valueWithDefault)
+    return new InstanceElement(refInst.elemID, refInst.type as ObjectType, valueWithDefault)
   }
 
   return _(instances).groupBy(i => i.elemID.getFullName())
@@ -158,7 +158,7 @@ const updateMergedTypes = (
     )
   }
   if (isInstanceElement(elem)) {
-    elem.type = mergedTypes[elem.type.elemID.getFullName()] || elem.type
+    elem.type = mergedTypes[elem.type.elemID.getFullName()] as ObjectType || elem.type
   }
   return elem
 })

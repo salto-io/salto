@@ -219,8 +219,7 @@ describe('HCL Parser', () => {
       const removeSrcFromBlock = (block: HCLBlock): HCLBlock =>
         _.mapValues(block, (val, key) => {
           if (key === 'attrs') {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            return _.mapValues(val, (v: any) => evaluate(v.expressions[0]))
+            return _.mapValues(val as Record<string, HCLAttribute>, v => evaluate(v.expressions[0]))
           }
           if (key === 'blocks') {
             return (val as HCLBlock[]).map(blk => removeSrcFromBlock(blk))

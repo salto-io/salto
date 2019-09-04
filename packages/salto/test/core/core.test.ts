@@ -1,12 +1,13 @@
 import * as fs from 'async-file'
 import path from 'path'
 import {
-  ElemID, InstanceElement, ObjectType, Plan, AdapterCreator, Field, BuiltinTypes,
+  ElemID, InstanceElement, ObjectType, AdapterCreator, Field, BuiltinTypes,
 } from 'adapter-api'
 import * as commands from '../../src/core/commands'
 import State from '../../src/state/state'
 import { Blueprint, getAllElements } from '../../src/blueprints/blueprint'
 import adapterCreators from '../../src/core/adapters/creators'
+import { Plan } from '../../src/core/plan'
 
 const mockAdd = jest.fn(async ap => {
   if (ap.elemID.name === 'fail') {

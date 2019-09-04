@@ -6,6 +6,8 @@ import {
 import HCLParser from './hcl'
 import evaluate from './expressions'
 
+export type SourceMap = Record<string, SourceRange>
+
 enum Keywords {
   TYPE_DEFINITION = 'type',
   LIST_DEFINITION = 'list',
@@ -72,8 +74,20 @@ export default class Parser {
     return new ElemID(adapter, name)
   }
 
-  private static getAttrValues(block: HCLBlock): Values {
-    return _.mapValues(block.attrs, val => evaluate(val.expressions[0]))
+  private static addToSourceMap(
+    sourceMap: SourceMap,
+    id: ElemID,
+    source: HCLBlock | HCLAttribute
+  ): void {
+    sourceMap[id.getFullName()] = source.source as SourceRange
+  }
+
+  private static getAttrValues(block: HCLBlock, sourceMap: SourceMap, parentId: ElemID): Values {
+    return _.mapValues(block.attrs, (val, key) => {
+      const attrId = new ElemID(parentId.adapter, ...parentId.nameParts, key)
+      this.addToSourceMap(sourceMap, attrId, val)
+      return evaluate(val.expressions[0])
+    })
   }
 
   private static getAnnotations(block: HCLBlock): Record<string, Type> {
@@ -86,45 +100,42 @@ export default class Parser {
       .pop() || {}
   }
 
-  private static parseType(typeBlock: HCLBlock): Type {
+  private static parseType(typeBlock: HCLBlock, sourceMap: SourceMap): Type {
     const [typeName] = typeBlock.labels
     const typeObj = new ObjectType({ elemID: this.getElemID(typeName) })
+    this.addToSourceMap(sourceMap, typeObj.elemID, typeBlock)
 
-    typeObj.annotate(this.getAttrValues(typeBlock))
+    typeObj.annotate(this.getAttrValues(typeBlock, sourceMap, typeObj.elemID))
 
-    typeBlock.blocks.forEach(block => {
-      const blockAttrs = this.getAttrValues(block)
-      if (block.type === Keywords.LIST_DEFINITION) {
-        // List Field block
-        const fieldName = block.labels[1]
-        const listElementType = block.labels[0]
-        typeObj.fields[fieldName] = new Field(
+    const isFieldBlock = (block: HCLBlock): boolean =>
+      (block.type === Keywords.LIST_DEFINITION || block.labels.length === 1)
+
+    // Parse type fields
+    typeBlock.blocks
+      .filter(isFieldBlock)
+      .forEach(block => {
+        const isList = block.type === Keywords.LIST_DEFINITION
+        const fieldName = isList ? block.labels[1] : block.labels[0]
+        const fieldTypeName = isList ? block.labels[0] : block.type
+        const field = new Field(
           typeObj.elemID,
           fieldName,
-          new ObjectType({ elemID: this.getElemID(listElementType) }),
-          blockAttrs,
-          true
+          new ObjectType({ elemID: this.getElemID(fieldTypeName) }),
+          this.getAttrValues(block, sourceMap, new ElemID(
+            typeObj.elemID.adapter, ...typeObj.elemID.nameParts, fieldName,
+          )),
+          isList,
         )
-      } else if (block.labels.length === 1) {
-        // Field block
-        const fieldName = block.labels[0]
-        typeObj.fields[fieldName] = new Field(
-          typeObj.elemID,
-          fieldName,
-          new ObjectType({ elemID: this.getElemID(block.type) }),
-          blockAttrs,
-        )
-      } else {
-        // This is something else, lets assume it is field overrides for now and we can extend
-        // this later as we support more parts of the language
-        typeObj.getAnnotationsValues()[block.type] = blockAttrs
-      }
-    })
+        this.addToSourceMap(sourceMap, field.elemID, block)
+        typeObj.fields[fieldName] = field
+      })
+
+    // TODO: add error if there are any unparsed blocks
 
     return typeObj
   }
 
-  private static parsePrimitiveType(typeBlock: HCLBlock): Type {
+  private static parsePrimitiveType(typeBlock: HCLBlock, sourceMap: SourceMap): Type {
     const [typeName, kw, baseType] = typeBlock.labels
     if (kw !== Keywords.TYPE_INHERITENCE_SEPARATOR) {
       throw new Error(`expected keyword ${Keywords.TYPE_INHERITENCE_SEPARATOR}. found ${kw}`)
@@ -132,18 +143,20 @@ export default class Parser {
 
     if (baseType === Keywords.TYPE_OBJECT) {
       // There is currently no difference between an object type and a model
-      return this.parseType(typeBlock)
+      return this.parseType(typeBlock, sourceMap)
     }
 
-    return new PrimitiveType({
+    const typeObj = new PrimitiveType({
       elemID: this.getElemID(typeName),
       primitive: getPrimitiveType(baseType),
       annotations: this.getAnnotations(typeBlock),
-      annotationsValues: this.getAttrValues(typeBlock),
+      annotationsValues: this.getAttrValues(typeBlock, sourceMap, this.getElemID(typeName)),
     })
+    this.addToSourceMap(sourceMap, typeObj.elemID, typeBlock)
+    return typeObj
   }
 
-  private static parseInstance(instanceBlock: HCLBlock): Element {
+  private static parseInstance(instanceBlock: HCLBlock, sourceMap: SourceMap): Element {
     let typeID = this.getElemID(instanceBlock.type)
     if (_.isEmpty(typeID.adapter) && typeID.name.length > 0) {
       // In this case if there is just a single name we have to assume it is actually the adapter
@@ -153,11 +166,13 @@ export default class Parser {
       ? ElemID.CONFIG_INSTANCE_NAME
       : instanceBlock.labels[0]
 
-    return new InstanceElement(
+    const inst = new InstanceElement(
       new ElemID(typeID.adapter, name),
       new ObjectType({ elemID: typeID }),
-      this.getAttrValues(instanceBlock),
+      this.getAttrValues(instanceBlock, sourceMap, new ElemID(typeID.adapter, name)),
     )
+    this.addToSourceMap(sourceMap, inst.elemID, instanceBlock)
+    return inst
   }
 
   /**
@@ -169,24 +184,25 @@ export default class Parser {
    *          errors: Errors encountered during parsing
    */
   public static async parse(blueprint: Buffer, filename: string):
-    Promise<{ elements: Element[]; errors: string[] }> {
+    Promise<{ elements: Element[]; errors: string[]; sourceMap: SourceMap }> {
     const { body, errors } = await HCLParser.parse(blueprint, filename)
+    const sourceMap = {}
     const elements = body.blocks.map((value: HCLBlock): Element => {
       if (value.type === Keywords.TYPE_DEFINITION && value.labels.length > 1) {
-        return this.parsePrimitiveType(value)
+        return this.parsePrimitiveType(value, sourceMap)
       }
       if (value.type === Keywords.TYPE_DEFINITION) {
-        return this.parseType(value)
+        return this.parseType(value, sourceMap)
       }
       if (value.labels.length === 0 || value.labels.length === 1) {
-        return this.parseInstance(value)
+        return this.parseInstance(value, sourceMap)
       }
       // Without this exception the linter won't allow us to end the function
       // without a return value
       throw new Error('unsupported block')
     })
 
-    return { elements, errors }
+    return { elements, errors, sourceMap }
   }
 
   private static getListFieldBlock(field: Field): HCLBlock {

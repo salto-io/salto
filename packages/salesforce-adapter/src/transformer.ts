@@ -406,7 +406,6 @@ const mapKeysRecursive = (obj: Values, func: (key: string) => string): Values =>
 export const fromMetadataInfo = (info: MetadataInfo):
   Values => mapKeysRecursive(info, bpCase)
 
-
 export const toMetadataInfo = (fullName: string, values: Values):
   MetadataInfo =>
   ({

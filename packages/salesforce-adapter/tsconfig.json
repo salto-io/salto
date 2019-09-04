@@ -7,6 +7,9 @@
         "paths": {
             "jsforce": [
                 "../../node_modules/jsforce-types"
+            ],
+            "@salto/utils/*": [
+                "../../node_modules/@salto/utils/dist/src/*"
             ]
         }
     },

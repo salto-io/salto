@@ -2,7 +2,7 @@ import wu from 'wu'
 import _ from 'lodash'
 import {
   NodeMap, NodeId, CircularDependencyError, DataNodeMap,
-} from '../../src/dag/nodemap'
+} from '../src/nodemap'
 
 class MaxCounter {
   private current = 0

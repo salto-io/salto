@@ -154,13 +154,17 @@ export class NodeMap
     dependencies.ensureEmpty()
   }
 
-  tryTransform(transform: (nodeMap: this) => NodeId): this {
+  tryTransform(transform: (nodeMap: this) => NodeId, callbacks?: {onSuccess?: () => void
+    onError?: () => void}): this {
     const transformed = this.clone()
     const affectedNodeId = transform(transformed)
 
-    return transformed.hasCycle(affectedNodeId)
-      ? this
-      : transformed
+    if (transformed.hasCycle(affectedNodeId)) {
+      if (callbacks && callbacks.onError) callbacks.onError()
+      return this
+    }
+    if (callbacks && callbacks.onSuccess) callbacks.onSuccess()
+    return transformed
   }
 
   reverse(): this {
@@ -215,6 +219,10 @@ export class DataNodeMap<T> extends NodeMap {
 
   getData(id: NodeId): T | undefined {
     return this.nodeData.get(id)
+  }
+
+  setData(id: NodeId, data: T): void {
+    this.nodeData.set(id, data)
   }
 
   reverse(): this {

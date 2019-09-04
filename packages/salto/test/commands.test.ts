@@ -1,12 +1,13 @@
 import path from 'path'
 import * as fs from 'async-file'
 import {
-  InstanceElement, ObjectType, PlanAction, Plan, BuiltinTypes,
+  InstanceElement, ObjectType, BuiltinTypes,
 } from 'adapter-api'
 import * as commands from '../src/cli/commands'
 import { getFieldInputType } from '../src/cli/callbacks'
 import * as coreMock from './core/mocks/core'
 import { Blueprint } from '../src/blueprints/blueprint'
+import { Plan, PlanItem } from '../src/core/plan'
 
 
 const mockApply = coreMock.apply
@@ -20,7 +21,7 @@ jest.mock('../src/core/commands', () => ({
     blueprints: Blueprint[],
     fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
     shouldApply: (plan: Plan) => Promise<boolean>,
-    reportProgress: (action: PlanAction) => void,
+    reportProgress: (action: PlanItem) => void,
     force = false
   ) => mockApply(blueprints, fillConfig, shouldApply, reportProgress, force)),
   discover: jest.fn().mockImplementation((

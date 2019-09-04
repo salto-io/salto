@@ -10,10 +10,23 @@ declare class SourceRange {
   end: SourcePos
 }
 
+type ExpressionType = 'list'|'map'|'template'|'literal'|'reference'
+
+declare class HCLExpression {
+  type: ExpressionType
+  expressions: HCLExpression[]
+  value?: any
+}
+
+declare class HCLAttribute {
+  source: SourceRange
+  expressions: HCLExpression[]
+}
+
 declare class HCLBlock {
   type: string
   labels: string[]
-  attrs: Record<string, any>
+  attrs: Record<string, HCLAttribute>
   blocks: HCLBlock[]
   source?: SourceRange
 }
@@ -50,12 +63,3 @@ declare namespace NodeJS {
     hclParserCall: Record<number, HclCallContext>
   }
 }
-
-type ExpressionType = 'list'|'map'|'template'|'literal'|'reference'
-
-declare class HCLExpression {
-  type: ExpressionType
-  expressions: HCLExpression[]
-  value?: any
-}
-

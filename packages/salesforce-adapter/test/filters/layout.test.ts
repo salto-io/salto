@@ -3,15 +3,13 @@ import {
 } from 'adapter-api'
 import _ from 'lodash'
 import makeFilter, { LAYOUT_ANNOTATION, LAYOUT_TYPE_NAME } from '../../src/filters/layouts'
-import SalesforceClient from '../../src/client/client'
 import * as constants from '../../src/constants'
 import { bpCase } from '../../src/transformer'
 import { FilterWith } from '../../src/filter'
-
-jest.mock('../../src/client/client')
+import mockClient from '../client'
 
 describe('Test layout filter', () => {
-  const client = new SalesforceClient('', '', false)
+  const { client } = mockClient()
 
   const mockSObject = new ObjectType({
     elemID: new ElemID(constants.SALESFORCE, 'test'),

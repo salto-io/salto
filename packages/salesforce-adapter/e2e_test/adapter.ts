@@ -1,10 +1,8 @@
-import Connection from '../src/client/connection'
 import SalesforceClient from '../src/client/client'
 import SalesforceAdapter, { SalesforceAdapterParams } from '../src/adapter'
-import createClient from './client'
+import realClient from './client'
 
-export type Mocks = {
-  connection: Connection
+export type Reals = {
   client: SalesforceClient
   adapter: SalesforceAdapter
 }
@@ -13,10 +11,10 @@ export type Opts = {
   adapterParams?: Partial<SalesforceAdapterParams>
 }
 
-const mockAdapter = ({ adapterParams }: Opts = {}): Mocks => {
-  const { connection, client } = createClient()
+const realAdapter = ({ adapterParams }: Opts = {}): Reals => {
+  const client = (adapterParams && adapterParams.client) || realClient()
   const adapter = new SalesforceAdapter({ client, ...adapterParams || {} })
-  return { connection, client, adapter }
+  return { client, adapter }
 }
 
-export default mockAdapter
+export default realAdapter

@@ -2,14 +2,12 @@ import {
   ObjectType, ElemID, Field, BuiltinTypes,
 } from 'adapter-api'
 import { makeFilter } from '../../src/filters/missing_fields'
-import SalesforceClient from '../../src/client/client'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
-
-jest.mock('../../src/client/client')
+import mockClient from '../client'
 
 describe('Test layout filter', () => {
-  const client = new SalesforceClient('', '', false)
+  const { client } = mockClient()
   const filter = makeFilter({
     test: [
       {

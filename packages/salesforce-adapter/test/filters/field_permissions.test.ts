@@ -9,11 +9,10 @@ import filterCreator, {
 import SalesforceClient from '../../src/client/client'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
+import mockClient from '../client'
 
-jest.mock('../../src/client/client')
-
-describe('Test Field Permissions filter', () => {
-  const client = (): SalesforceClient => new SalesforceClient('', '', false)
+describe('Field Permissions filter', () => {
+  const { client } = mockClient()
   const mockElemID = new ElemID(constants.SALESFORCE, 'test')
   const stringType = new PrimitiveType({
     elemID: new ElemID(constants.SALESFORCE, 'string'),
@@ -49,7 +48,7 @@ describe('Test Field Permissions filter', () => {
   let mockUpdate: jest.Mock<unknown>
 
   type FilterType = FilterWith<'onDiscover' | 'onAdd' | 'onUpdate'>
-  const filter = (): FilterType => filterCreator({ client: client() }) as FilterType
+  const filter = (): FilterType => filterCreator({ client }) as FilterType
 
   beforeEach(() => {
     mockUpdate = jest.fn().mockImplementationOnce(() => ([{ success: true }]))

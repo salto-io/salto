@@ -65,6 +65,7 @@ module.exports = {
             exports: 'always-multiline',
         }],
         'implicit-arrow-linebreak': ['off'],
+        'import/prefer-default-export': ['off'],
     },
     overrides: [
         {
@@ -75,6 +76,8 @@ module.exports = {
                 '@typescript-eslint/array-type': [0],
                 '@typescript-eslint/member-delimiter-style': ['error', {multiline: {delimiter: 'none'}}],
                 '@typescript-eslint/ban-ts-ignore': [0],
+                'max-classes-per-file': [0],
+                'import/no-unresolved': [0], // unable to read paths from tsconfig.json
             }
         },
     ],
@@ -84,5 +87,8 @@ module.exports = {
                 paths: ['./'],
             },
         },
+        react: {
+            version: '16.9' // not using react now, set to disable warning
+        }
     },
 }

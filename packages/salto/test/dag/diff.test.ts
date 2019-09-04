@@ -1,8 +1,8 @@
+import { SetId, equals as setEquals } from '@salto/utils/collections/set'
 import {
   buildDiffGraph, DiffGraph, DiffNode,
 } from '../../src/dag/diff'
 import { DataNodeMap } from '../../src/dag/nodemap'
-import { SetId, equals as setEquals } from '../../src/collections/set'
 
 describe('buildDiffGraph', () => {
   let subject: DiffGraph<string>

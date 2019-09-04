@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import yargs from 'yargs'
 import requireDirectory from 'require-directory'
-import { PromiseWithState, promiseWithState } from '../promise/state'
+import { PromiseWithState, promiseWithState } from '@salto/utils/promises/state'
 import { ParsedCliInput, CliOutput, CliCommand } from './types'
 import { Filter } from './filter'
 

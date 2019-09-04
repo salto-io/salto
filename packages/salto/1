@@ -1,0 +1,1493 @@
+yarn run v1.17.3
+$ eslint --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./ --debug 2
+2019-09-03T15:04:03.640Z eslint:cli CLI args: [ '--max-warnings', '0', '--ext', '.js,.jsx,.ts,.tsx', './', '--debug', '2' ]
+2019-09-03T15:04:03.642Z eslint:cli Running on files
+2019-09-03T15:04:03.644Z eslint:ignored-paths baseDir = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:03.644Z eslint:ignored-paths addPatternRelativeToCwd:
+  original = "/node_modules/*"
+  cooked   = "/node_modules/*"
+2019-09-03T15:04:03.645Z eslint:ignored-paths addPatternRelativeToCwd:
+  original = "/bower_components/*"
+  cooked   = "/bower_components/*"
+2019-09-03T15:04:03.645Z eslint:ignored-paths addPatternRelativeToCwd:
+  original = ".*"
+  cooked   = ".*"
+2019-09-03T15:04:03.645Z eslint:ignored-paths addPatternRelativeToCwd:
+  original = "!../"
+  cooked   = "!../"
+2019-09-03T15:04:03.645Z eslint:ignored-paths Looking for ignore file in /Users/roy/salto_monorepo/packages/salto
+2019-09-03T15:04:03.645Z eslint:ignored-paths Loaded ignore file /Users/roy/salto_monorepo/packages/salto/.eslintignore
+2019-09-03T15:04:03.645Z eslint:ignored-paths Adding /Users/roy/salto_monorepo/packages/salto/.eslintignore
+2019-09-03T15:04:03.645Z eslint:ignored-paths addPatternRelativeToIgnoreFile:
+  original = "/dist"
+  cooked   = "/dist"
+2019-09-03T15:04:03.646Z eslint:ignored-paths addPatternRelativeToIgnoreFile:
+  original = "*.d.ts"
+  cooked   = "*.d.ts"
+2019-09-03T15:04:03.646Z eslint:ignored-paths addPatternRelativeToIgnoreFile:
+  original = "*.config.js"
+  cooked   = "*.config.js"
+2019-09-03T15:04:03.646Z eslint:ignored-paths addPatternRelativeToIgnoreFile:
+  original = "/dist"
+  cooked   = "/dist"
+2019-09-03T15:04:03.646Z eslint:ignored-paths addPatternRelativeToIgnoreFile:
+  original = "*.d.ts"
+  cooked   = "*.d.ts"
+2019-09-03T15:04:03.646Z eslint:ignored-paths addPatternRelativeToIgnoreFile:
+  original = "*.config.js"
+  cooked   = "*.config.js"
+2019-09-03T15:04:03.646Z eslint:ignored-paths baseDir = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:03.646Z eslint:ignored-paths addPatternRelativeToCwd:
+  original = "/node_modules/*"
+  cooked   = "/node_modules/*"
+2019-09-03T15:04:03.646Z eslint:ignored-paths addPatternRelativeToCwd:
+  original = "/bower_components/*"
+  cooked   = "/bower_components/*"
+2019-09-03T15:04:03.646Z eslint:ignored-paths Looking for ignore file in /Users/roy/salto_monorepo/packages/salto
+2019-09-03T15:04:03.646Z eslint:ignored-paths Loaded ignore file /Users/roy/salto_monorepo/packages/salto/.eslintignore
+2019-09-03T15:04:03.646Z eslint:ignored-paths Adding /Users/roy/salto_monorepo/packages/salto/.eslintignore
+2019-09-03T15:04:03.646Z eslint:ignored-paths addPatternRelativeToIgnoreFile:
+  original = "/dist"
+  cooked   = "/dist"
+2019-09-03T15:04:03.646Z eslint:ignored-paths addPatternRelativeToIgnoreFile:
+  original = "*.d.ts"
+  cooked   = "*.d.ts"
+2019-09-03T15:04:03.646Z eslint:ignored-paths addPatternRelativeToIgnoreFile:
+  original = "*.config.js"
+  cooked   = "*.config.js"
+2019-09-03T15:04:03.646Z eslint:ignored-paths addPatternRelativeToIgnoreFile:
+  original = "/dist"
+  cooked   = "/dist"
+2019-09-03T15:04:03.646Z eslint:ignored-paths addPatternRelativeToIgnoreFile:
+  original = "*.d.ts"
+  cooked   = "*.d.ts"
+2019-09-03T15:04:03.646Z eslint:ignored-paths addPatternRelativeToIgnoreFile:
+  original = "*.config.js"
+  cooked   = "*.config.js"
+2019-09-03T15:04:03.647Z eslint:file-enumerator Start to iterate files: [ './', '2' ]
+2019-09-03T15:04:03.647Z eslint:file-enumerator Directory: /Users/roy/salto_monorepo/packages/salto
+2019-09-03T15:04:03.648Z eslint:ignored-paths contains:
+2019-09-03T15:04:03.648Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/"
+2019-09-03T15:04:03.648Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:03.648Z eslint:ignored-paths   relative = ""
+2019-09-03T15:04:03.648Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:03.648Z eslint:file-enumerator Enter the directory: /Users/roy/salto_monorepo/packages/salto
+2019-09-03T15:04:03.648Z eslint:cascading-config-array-factory Load config files for /Users/roy/salto_monorepo/packages/salto.
+2019-09-03T15:04:03.648Z eslint:cascading-config-array-factory No cache found: /Users/roy/salto_monorepo/packages/salto.
+2019-09-03T15:04:03.649Z eslint:config-array-factory Loading JS config file: /Users/roy/salto_monorepo/packages/salto/.eslintrc.js
+2019-09-03T15:04:03.649Z eslint:config-array-factory Config file found: /Users/roy/salto_monorepo/packages/salto/.eslintrc.js
+2019-09-03T15:04:03.658Z eslint:config-array-factory Loading {extends:"eslint:recommended"} relative to /Users/roy/salto_monorepo/packages/salto/.eslintrc.js
+2019-09-03T15:04:03.658Z eslint:config-array-factory Loading JS config file: /Users/roy/salto_monorepo/node_modules/eslint/conf/eslint-recommended.js
+2019-09-03T15:04:03.659Z eslint:config-array-factory Loading {extends:"airbnb"} relative to /Users/roy/salto_monorepo/packages/salto/.eslintrc.js
+2019-09-03T15:04:03.660Z eslint:config-array-factory Loaded: eslint-config-airbnb@17.1.1 (/Users/roy/salto_monorepo/node_modules/eslint-config-airbnb/index.js)
+2019-09-03T15:04:03.660Z eslint:config-array-factory Loading JS config file: /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb/index.js
+2019-09-03T15:04:03.660Z eslint:config-array-factory Loading {extends:"/Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/index.js"} relative to /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb/index.js
+2019-09-03T15:04:03.660Z eslint:config-array-factory package.json was not found: Cannot find module '/Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/index.js/package.json'
+Require stack:
+- /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb/index.js
+2019-09-03T15:04:03.660Z eslint:config-array-factory Loaded: /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/index.js (/Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/index.js)
+2019-09-03T15:04:03.660Z eslint:config-array-factory Loading JS config file: /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/index.js
+2019-09-03T15:04:03.661Z eslint:config-array-factory Loading {extends:"/Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/best-practices.js"} relative to /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/index.js
+2019-09-03T15:04:03.661Z eslint:config-array-factory package.json was not found: Cannot find module '/Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/best-practices.js/package.json'
+Require stack:
+- /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/index.js
+2019-09-03T15:04:03.661Z eslint:config-array-factory Loaded: /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/best-practices.js (/Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/best-practices.js)
+2019-09-03T15:04:03.661Z eslint:config-array-factory Loading JS config file: /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/best-practices.js
+2019-09-03T15:04:03.661Z eslint:config-array-factory Loading {extends:"/Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/errors.js"} relative to /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/index.js
+2019-09-03T15:04:03.662Z eslint:config-array-factory package.json was not found: Cannot find module '/Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/errors.js/package.json'
+Require stack:
+- /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/index.js
+2019-09-03T15:04:03.662Z eslint:config-array-factory Loaded: /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/errors.js (/Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/errors.js)
+2019-09-03T15:04:03.662Z eslint:config-array-factory Loading JS config file: /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/errors.js
+2019-09-03T15:04:03.662Z eslint:config-array-factory Loading {extends:"/Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/node.js"} relative to /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/index.js
+2019-09-03T15:04:03.662Z eslint:config-array-factory package.json was not found: Cannot find module '/Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/node.js/package.json'
+Require stack:
+- /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/index.js
+2019-09-03T15:04:03.662Z eslint:config-array-factory Loaded: /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/node.js (/Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/node.js)
+2019-09-03T15:04:03.662Z eslint:config-array-factory Loading JS config file: /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/node.js
+2019-09-03T15:04:03.662Z eslint:config-array-factory Loading {extends:"/Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/style.js"} relative to /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/index.js
+2019-09-03T15:04:03.662Z eslint:config-array-factory package.json was not found: Cannot find module '/Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/style.js/package.json'
+Require stack:
+- /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/index.js
+2019-09-03T15:04:03.662Z eslint:config-array-factory Loaded: /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/style.js (/Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/style.js)
+2019-09-03T15:04:03.663Z eslint:config-array-factory Loading JS config file: /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/style.js
+2019-09-03T15:04:03.663Z eslint:config-array-factory Loading {extends:"/Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/variables.js"} relative to /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/index.js
+2019-09-03T15:04:03.663Z eslint:config-array-factory package.json was not found: Cannot find module '/Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/variables.js/package.json'
+Require stack:
+- /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/index.js
+2019-09-03T15:04:03.663Z eslint:config-array-factory Loaded: /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/variables.js (/Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/variables.js)
+2019-09-03T15:04:03.663Z eslint:config-array-factory Loading JS config file: /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/variables.js
+2019-09-03T15:04:03.664Z eslint:config-array-factory Loading {extends:"/Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/es6.js"} relative to /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/index.js
+2019-09-03T15:04:03.664Z eslint:config-array-factory package.json was not found: Cannot find module '/Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/es6.js/package.json'
+Require stack:
+- /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/index.js
+2019-09-03T15:04:03.664Z eslint:config-array-factory Loaded: /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/es6.js (/Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/es6.js)
+2019-09-03T15:04:03.664Z eslint:config-array-factory Loading JS config file: /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/es6.js
+2019-09-03T15:04:03.664Z eslint:config-array-factory Loading {extends:"/Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/imports.js"} relative to /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/index.js
+2019-09-03T15:04:03.664Z eslint:config-array-factory package.json was not found: Cannot find module '/Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/imports.js/package.json'
+Require stack:
+- /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/index.js
+2019-09-03T15:04:03.664Z eslint:config-array-factory Loaded: /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/imports.js (/Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/imports.js)
+2019-09-03T15:04:03.664Z eslint:config-array-factory Loading JS config file: /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/imports.js
+2019-09-03T15:04:03.665Z eslint:config-array-factory Loading plugin "import" from /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/imports.js
+2019-09-03T15:04:03.667Z eslint:config-array-factory Loaded: eslint-plugin-import@2.18.0 (/Users/roy/salto_monorepo/node_modules/eslint-plugin-import/lib/index.js)
+2019-09-03T15:04:03.723Z eslint:config-array-factory Loading {extends:"/Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/strict.js"} relative to /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb/index.js
+2019-09-03T15:04:03.724Z eslint:config-array-factory package.json was not found: Cannot find module '/Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/strict.js/package.json'
+Require stack:
+- /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb/index.js
+2019-09-03T15:04:03.724Z eslint:config-array-factory Loaded: /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/strict.js (/Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/strict.js)
+2019-09-03T15:04:03.724Z eslint:config-array-factory Loading JS config file: /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/strict.js
+2019-09-03T15:04:03.724Z eslint:config-array-factory Loading {extends:"/Users/roy/salto_monorepo/node_modules/eslint-config-airbnb/rules/react.js"} relative to /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb/index.js
+2019-09-03T15:04:03.725Z eslint:config-array-factory package.json was not found: Cannot find module '/Users/roy/salto_monorepo/node_modules/eslint-config-airbnb/rules/react.js/package.json'
+Require stack:
+- /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb/index.js
+2019-09-03T15:04:03.725Z eslint:config-array-factory Loaded: /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb/rules/react.js (/Users/roy/salto_monorepo/node_modules/eslint-config-airbnb/rules/react.js)
+2019-09-03T15:04:03.725Z eslint:config-array-factory Loading JS config file: /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb/rules/react.js
+2019-09-03T15:04:03.727Z eslint:config-array-factory Loading plugin "react" from /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb/rules/react.js
+2019-09-03T15:04:03.727Z eslint:config-array-factory Loaded: eslint-plugin-react@7.14.2 (/Users/roy/salto_monorepo/node_modules/eslint-plugin-react/index.js)
+2019-09-03T15:04:03.758Z eslint:config-array-factory Loading {extends:"/Users/roy/salto_monorepo/node_modules/eslint-config-airbnb/rules/react-a11y.js"} relative to /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb/index.js
+2019-09-03T15:04:03.758Z eslint:config-array-factory package.json was not found: Cannot find module '/Users/roy/salto_monorepo/node_modules/eslint-config-airbnb/rules/react-a11y.js/package.json'
+Require stack:
+- /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb/index.js
+2019-09-03T15:04:03.758Z eslint:config-array-factory Loaded: /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb/rules/react-a11y.js (/Users/roy/salto_monorepo/node_modules/eslint-config-airbnb/rules/react-a11y.js)
+2019-09-03T15:04:03.758Z eslint:config-array-factory Loading JS config file: /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb/rules/react-a11y.js
+2019-09-03T15:04:03.759Z eslint:config-array-factory Loading plugin "jsx-a11y" from /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb/rules/react-a11y.js
+2019-09-03T15:04:03.759Z eslint:config-array-factory Loaded: eslint-plugin-jsx-a11y@6.2.3 (/Users/roy/salto_monorepo/node_modules/eslint-plugin-jsx-a11y/lib/index.js)
+2019-09-03T15:04:03.822Z eslint:config-array-factory Loading plugin "react" from /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb/rules/react-a11y.js
+2019-09-03T15:04:03.822Z eslint:config-array-factory Loaded: eslint-plugin-react@7.14.2 (/Users/roy/salto_monorepo/node_modules/eslint-plugin-react/index.js)
+2019-09-03T15:04:03.823Z eslint:config-array-factory Loading {extends:"plugin:@typescript-eslint/recommended"} relative to /Users/roy/salto_monorepo/packages/salto/.eslintrc.js
+2019-09-03T15:04:03.823Z eslint:config-array-factory Loading plugin "@typescript-eslint" from /Users/roy/salto_monorepo/packages/salto/.eslintrc.js
+2019-09-03T15:04:03.823Z eslint:config-array-factory Loaded: @typescript-eslint/eslint-plugin@2.0.0 (/Users/roy/salto_monorepo/node_modules/@typescript-eslint/eslint-plugin/dist/index.js)
+2019-09-03T15:04:03.936Z eslint:config-array-factory Loading {extends:"./configs/base.json"} relative to /Users/roy/salto_monorepo/node_modules/@typescript-eslint/eslint-plugin/dist/index.js
+2019-09-03T15:04:03.936Z eslint:config-array-factory package.json was not found: Cannot find module './configs/base.json/package.json'
+Require stack:
+- /Users/roy/salto_monorepo/node_modules/@typescript-eslint/eslint-plugin/dist/index.js
+2019-09-03T15:04:03.936Z eslint:config-array-factory Loaded: ./configs/base.json (/Users/roy/salto_monorepo/node_modules/@typescript-eslint/eslint-plugin/dist/configs/base.json)
+2019-09-03T15:04:03.936Z eslint:config-array-factory Loading JSON config file: /Users/roy/salto_monorepo/node_modules/@typescript-eslint/eslint-plugin/dist/configs/base.json
+2019-09-03T15:04:03.937Z eslint:config-array-factory Loading parser "@typescript-eslint/parser" from /Users/roy/salto_monorepo/node_modules/@typescript-eslint/eslint-plugin/dist/configs/base.json
+2019-09-03T15:04:03.937Z eslint:config-array-factory Loaded: @typescript-eslint/parser@1.12.0 (/Users/roy/salto_monorepo/node_modules/@typescript-eslint/parser/dist/parser.js)
+2019-09-03T15:04:03.960Z eslint:config-array-factory Loading plugin "@typescript-eslint" from /Users/roy/salto_monorepo/node_modules/@typescript-eslint/eslint-plugin/dist/configs/base.json
+2019-09-03T15:04:03.961Z eslint:config-array-factory Loaded: @typescript-eslint/eslint-plugin@2.0.0 (/Users/roy/salto_monorepo/node_modules/@typescript-eslint/eslint-plugin/dist/index.js)
+2019-09-03T15:04:03.961Z eslint:config-array-factory Loading {extends:"plugin:import/errors"} relative to /Users/roy/salto_monorepo/packages/salto/.eslintrc.js
+2019-09-03T15:04:03.961Z eslint:config-array-factory Loading plugin "import" from /Users/roy/salto_monorepo/packages/salto/.eslintrc.js
+2019-09-03T15:04:03.961Z eslint:config-array-factory Loaded: eslint-plugin-import@2.18.0 (/Users/roy/salto_monorepo/node_modules/eslint-plugin-import/lib/index.js)
+2019-09-03T15:04:03.961Z eslint:config-array-factory Loading plugin "import" from /Users/roy/salto_monorepo/node_modules/eslint-plugin-import/lib/index.js
+2019-09-03T15:04:03.961Z eslint:config-array-factory Loaded: eslint-plugin-import@2.18.0 (/Users/roy/salto_monorepo/node_modules/eslint-plugin-import/lib/index.js)
+2019-09-03T15:04:03.961Z eslint:config-array-factory Loading {extends:"plugin:import/warnings"} relative to /Users/roy/salto_monorepo/packages/salto/.eslintrc.js
+2019-09-03T15:04:03.961Z eslint:config-array-factory Loading plugin "import" from /Users/roy/salto_monorepo/packages/salto/.eslintrc.js
+2019-09-03T15:04:03.961Z eslint:config-array-factory Loaded: eslint-plugin-import@2.18.0 (/Users/roy/salto_monorepo/node_modules/eslint-plugin-import/lib/index.js)
+2019-09-03T15:04:03.961Z eslint:config-array-factory Loading plugin "import" from /Users/roy/salto_monorepo/node_modules/eslint-plugin-import/lib/index.js
+2019-09-03T15:04:03.961Z eslint:config-array-factory Loaded: eslint-plugin-import@2.18.0 (/Users/roy/salto_monorepo/node_modules/eslint-plugin-import/lib/index.js)
+2019-09-03T15:04:03.961Z eslint:config-array-factory Loading {extends:"plugin:import/typescript"} relative to /Users/roy/salto_monorepo/packages/salto/.eslintrc.js
+2019-09-03T15:04:03.964Z eslint:config-array-factory Loading plugin "import" from /Users/roy/salto_monorepo/packages/salto/.eslintrc.js
+2019-09-03T15:04:03.964Z eslint:config-array-factory Loaded: eslint-plugin-import@2.18.0 (/Users/roy/salto_monorepo/node_modules/eslint-plugin-import/lib/index.js)
+2019-09-03T15:04:03.964Z eslint:config-array-factory Loading {extends:"plugin:jest/recommended"} relative to /Users/roy/salto_monorepo/packages/salto/.eslintrc.js
+2019-09-03T15:04:03.964Z eslint:config-array-factory Loading plugin "jest" from /Users/roy/salto_monorepo/packages/salto/.eslintrc.js
+2019-09-03T15:04:03.964Z eslint:config-array-factory Loaded: eslint-plugin-jest@22.7.2 (/Users/roy/salto_monorepo/node_modules/eslint-plugin-jest/lib/index.js)
+2019-09-03T15:04:03.970Z eslint:config-array-factory Loading plugin "jest" from /Users/roy/salto_monorepo/node_modules/eslint-plugin-jest/lib/index.js
+2019-09-03T15:04:03.970Z eslint:config-array-factory Loaded: eslint-plugin-jest@22.7.2 (/Users/roy/salto_monorepo/node_modules/eslint-plugin-jest/lib/index.js)
+2019-09-03T15:04:03.971Z eslint:config-array-factory Loading parser "@typescript-eslint/parser" from /Users/roy/salto_monorepo/packages/salto/.eslintrc.js
+2019-09-03T15:04:03.971Z eslint:config-array-factory Loaded: @typescript-eslint/parser@1.12.0 (/Users/roy/salto_monorepo/node_modules/@typescript-eslint/parser/dist/parser.js)
+2019-09-03T15:04:03.971Z eslint:config-array-factory Loading plugin "react" from /Users/roy/salto_monorepo/packages/salto/.eslintrc.js
+2019-09-03T15:04:03.971Z eslint:config-array-factory Loaded: eslint-plugin-react@7.14.2 (/Users/roy/salto_monorepo/node_modules/eslint-plugin-react/index.js)
+2019-09-03T15:04:03.971Z eslint:config-array-factory Loading plugin "import" from /Users/roy/salto_monorepo/packages/salto/.eslintrc.js
+2019-09-03T15:04:03.971Z eslint:config-array-factory Loaded: eslint-plugin-import@2.18.0 (/Users/roy/salto_monorepo/node_modules/eslint-plugin-import/lib/index.js)
+2019-09-03T15:04:03.971Z eslint:config-array-factory Loading plugin "jest" from /Users/roy/salto_monorepo/packages/salto/.eslintrc.js
+2019-09-03T15:04:03.971Z eslint:config-array-factory Loaded: eslint-plugin-jest@22.7.2 (/Users/roy/salto_monorepo/node_modules/eslint-plugin-jest/lib/index.js)
+2019-09-03T15:04:03.971Z eslint:config-array-factory Loading plugin "@typescript-eslint" from /Users/roy/salto_monorepo/packages/salto/.eslintrc.js
+2019-09-03T15:04:03.971Z eslint:config-array-factory Loaded: @typescript-eslint/eslint-plugin@2.0.0 (/Users/roy/salto_monorepo/node_modules/@typescript-eslint/eslint-plugin/dist/index.js)
+2019-09-03T15:04:03.972Z eslint:cascading-config-array-factory No cache found: /Users/roy/salto_monorepo/packages.
+2019-09-03T15:04:03.972Z eslint:config-array-factory Config file not found on /Users/roy/salto_monorepo/packages
+2019-09-03T15:04:03.972Z eslint:cascading-config-array-factory No cache found: /Users/roy/salto_monorepo.
+2019-09-03T15:04:03.972Z eslint:config-array-factory Loading package.json config file: /Users/roy/salto_monorepo/package.json
+2019-09-03T15:04:03.972Z eslint:config-array-factory Loading JSON config file: /Users/roy/salto_monorepo/package.json
+2019-09-03T15:04:03.972Z eslint:config-array-factory Error reading package.json file: /Users/roy/salto_monorepo/package.json
+2019-09-03T15:04:03.972Z eslint:config-array-factory Config file not found on /Users/roy/salto_monorepo
+2019-09-03T15:04:03.972Z eslint:cascading-config-array-factory No cache found: /Users/roy.
+2019-09-03T15:04:03.972Z eslint:cascading-config-array-factory Stop traversing because of considered root.
+2019-09-03T15:04:03.973Z eslint:rules Loading rule 'constructor-super' (remaining=266)
+2019-09-03T15:04:03.974Z eslint:rules Loading rule 'for-direction' (remaining=265)
+2019-09-03T15:04:03.974Z eslint:rules Loading rule 'getter-return' (remaining=264)
+2019-09-03T15:04:03.975Z eslint:rules Loading rule 'no-async-promise-executor' (remaining=263)
+2019-09-03T15:04:03.975Z eslint:rules Loading rule 'no-case-declarations' (remaining=262)
+2019-09-03T15:04:03.976Z eslint:rules Loading rule 'no-class-assign' (remaining=261)
+2019-09-03T15:04:03.976Z eslint:rules Loading rule 'no-compare-neg-zero' (remaining=260)
+2019-09-03T15:04:03.976Z eslint:rules Loading rule 'no-cond-assign' (remaining=259)
+2019-09-03T15:04:03.977Z eslint:rules Loading rule 'no-const-assign' (remaining=258)
+2019-09-03T15:04:03.977Z eslint:rules Loading rule 'no-constant-condition' (remaining=257)
+2019-09-03T15:04:03.978Z eslint:rules Loading rule 'no-control-regex' (remaining=256)
+2019-09-03T15:04:03.978Z eslint:rules Loading rule 'no-debugger' (remaining=255)
+2019-09-03T15:04:03.978Z eslint:rules Loading rule 'no-delete-var' (remaining=254)
+2019-09-03T15:04:03.978Z eslint:rules Loading rule 'no-dupe-args' (remaining=253)
+2019-09-03T15:04:03.979Z eslint:rules Loading rule 'no-dupe-class-members' (remaining=252)
+2019-09-03T15:04:03.979Z eslint:rules Loading rule 'no-dupe-keys' (remaining=251)
+2019-09-03T15:04:03.979Z eslint:rules Loading rule 'no-duplicate-case' (remaining=250)
+2019-09-03T15:04:03.979Z eslint:rules Loading rule 'no-empty' (remaining=249)
+2019-09-03T15:04:03.980Z eslint:rules Loading rule 'no-empty-character-class' (remaining=248)
+2019-09-03T15:04:03.980Z eslint:rules Loading rule 'no-empty-pattern' (remaining=247)
+2019-09-03T15:04:03.980Z eslint:rules Loading rule 'no-ex-assign' (remaining=246)
+2019-09-03T15:04:03.980Z eslint:rules Loading rule 'no-extra-boolean-cast' (remaining=245)
+2019-09-03T15:04:03.981Z eslint:rules Loading rule 'no-extra-semi' (remaining=244)
+2019-09-03T15:04:03.981Z eslint:rules Loading rule 'no-fallthrough' (remaining=243)
+2019-09-03T15:04:03.982Z eslint:rules Loading rule 'no-func-assign' (remaining=242)
+2019-09-03T15:04:03.982Z eslint:rules Loading rule 'no-global-assign' (remaining=241)
+2019-09-03T15:04:03.983Z eslint:rules Loading rule 'no-inner-declarations' (remaining=240)
+2019-09-03T15:04:03.983Z eslint:rules Loading rule 'no-invalid-regexp' (remaining=239)
+2019-09-03T15:04:03.984Z eslint:rules Loading rule 'no-irregular-whitespace' (remaining=238)
+2019-09-03T15:04:03.985Z eslint:rules Loading rule 'no-misleading-character-class' (remaining=237)
+2019-09-03T15:04:03.986Z eslint:rules Loading rule 'no-mixed-spaces-and-tabs' (remaining=236)
+2019-09-03T15:04:03.986Z eslint:rules Loading rule 'no-new-symbol' (remaining=235)
+2019-09-03T15:04:03.986Z eslint:rules Loading rule 'no-obj-calls' (remaining=234)
+2019-09-03T15:04:03.987Z eslint:rules Loading rule 'no-octal' (remaining=233)
+2019-09-03T15:04:03.987Z eslint:rules Loading rule 'no-prototype-builtins' (remaining=232)
+2019-09-03T15:04:03.987Z eslint:rules Loading rule 'no-redeclare' (remaining=231)
+2019-09-03T15:04:03.988Z eslint:rules Loading rule 'no-regex-spaces' (remaining=230)
+2019-09-03T15:04:03.988Z eslint:rules Loading rule 'no-self-assign' (remaining=229)
+2019-09-03T15:04:03.989Z eslint:rules Loading rule 'no-shadow-restricted-names' (remaining=228)
+2019-09-03T15:04:03.989Z eslint:rules Loading rule 'no-sparse-arrays' (remaining=227)
+2019-09-03T15:04:03.989Z eslint:rules Loading rule 'no-this-before-super' (remaining=226)
+2019-09-03T15:04:03.989Z eslint:rules Loading rule 'no-undef' (remaining=225)
+2019-09-03T15:04:03.990Z eslint:rules Loading rule 'no-unexpected-multiline' (remaining=224)
+2019-09-03T15:04:03.990Z eslint:rules Loading rule 'no-unreachable' (remaining=223)
+2019-09-03T15:04:03.990Z eslint:rules Loading rule 'no-unsafe-finally' (remaining=222)
+2019-09-03T15:04:03.990Z eslint:rules Loading rule 'no-unsafe-negation' (remaining=221)
+2019-09-03T15:04:03.991Z eslint:rules Loading rule 'no-unused-labels' (remaining=220)
+2019-09-03T15:04:03.991Z eslint:rules Loading rule 'no-unused-vars' (remaining=219)
+2019-09-03T15:04:03.992Z eslint:rules Loading rule 'no-useless-catch' (remaining=218)
+2019-09-03T15:04:03.992Z eslint:rules Loading rule 'no-useless-escape' (remaining=217)
+2019-09-03T15:04:03.992Z eslint:rules Loading rule 'no-with' (remaining=216)
+2019-09-03T15:04:03.993Z eslint:rules Loading rule 'require-atomic-updates' (remaining=215)
+2019-09-03T15:04:03.993Z eslint:rules Loading rule 'require-yield' (remaining=214)
+2019-09-03T15:04:03.993Z eslint:rules Loading rule 'use-isnan' (remaining=213)
+2019-09-03T15:04:03.993Z eslint:rules Loading rule 'valid-typeof' (remaining=212)
+2019-09-03T15:04:03.994Z eslint:rules Loading rule 'accessor-pairs' (remaining=211)
+2019-09-03T15:04:03.994Z eslint:rules Loading rule 'array-callback-return' (remaining=210)
+2019-09-03T15:04:03.995Z eslint:rules Loading rule 'block-scoped-var' (remaining=209)
+2019-09-03T15:04:03.995Z eslint:rules Loading rule 'complexity' (remaining=208)
+2019-09-03T15:04:03.995Z eslint:rules Loading rule 'class-methods-use-this' (remaining=207)
+2019-09-03T15:04:03.996Z eslint:rules Loading rule 'consistent-return' (remaining=206)
+2019-09-03T15:04:03.997Z eslint:rules Loading rule 'curly' (remaining=205)
+2019-09-03T15:04:03.998Z eslint:rules Loading rule 'default-case' (remaining=204)
+2019-09-03T15:04:03.999Z eslint:rules Loading rule 'dot-notation' (remaining=203)
+2019-09-03T15:04:04.000Z eslint:rules Loading rule 'dot-location' (remaining=202)
+2019-09-03T15:04:04.000Z eslint:rules Loading rule 'eqeqeq' (remaining=201)
+2019-09-03T15:04:04.001Z eslint:rules Loading rule 'guard-for-in' (remaining=200)
+2019-09-03T15:04:04.001Z eslint:rules Loading rule 'max-classes-per-file' (remaining=199)
+2019-09-03T15:04:04.001Z eslint:rules Loading rule 'no-alert' (remaining=198)
+2019-09-03T15:04:04.002Z eslint:rules Loading rule 'no-caller' (remaining=197)
+2019-09-03T15:04:04.002Z eslint:rules Loading rule 'no-div-regex' (remaining=196)
+2019-09-03T15:04:04.002Z eslint:rules Loading rule 'no-else-return' (remaining=195)
+2019-09-03T15:04:04.003Z eslint:rules Loading rule 'no-empty-function' (remaining=194)
+2019-09-03T15:04:04.003Z eslint:rules Loading rule 'no-eq-null' (remaining=193)
+2019-09-03T15:04:04.003Z eslint:rules Loading rule 'no-eval' (remaining=192)
+2019-09-03T15:04:04.004Z eslint:rules Loading rule 'no-extend-native' (remaining=191)
+2019-09-03T15:04:04.004Z eslint:rules Loading rule 'no-extra-bind' (remaining=190)
+2019-09-03T15:04:04.005Z eslint:rules Loading rule 'no-extra-label' (remaining=189)
+2019-09-03T15:04:04.005Z eslint:rules Loading rule 'no-floating-decimal' (remaining=188)
+2019-09-03T15:04:04.005Z eslint:rules Loading rule 'no-native-reassign' (remaining=187)
+2019-09-03T15:04:04.005Z eslint:rules Loading rule 'no-implicit-coercion' (remaining=186)
+2019-09-03T15:04:04.005Z eslint:rules Loading rule 'no-implicit-globals' (remaining=185)
+2019-09-03T15:04:04.006Z eslint:rules Loading rule 'no-implied-eval' (remaining=184)
+2019-09-03T15:04:04.007Z eslint:rules Loading rule 'no-invalid-this' (remaining=183)
+2019-09-03T15:04:04.007Z eslint:rules Loading rule 'no-iterator' (remaining=182)
+2019-09-03T15:04:04.007Z eslint:rules Loading rule 'no-labels' (remaining=181)
+2019-09-03T15:04:04.008Z eslint:rules Loading rule 'no-lone-blocks' (remaining=180)
+2019-09-03T15:04:04.008Z eslint:rules Loading rule 'no-loop-func' (remaining=179)
+2019-09-03T15:04:04.008Z eslint:rules Loading rule 'no-magic-numbers' (remaining=178)
+2019-09-03T15:04:04.008Z eslint:rules Loading rule 'no-multi-spaces' (remaining=177)
+2019-09-03T15:04:04.009Z eslint:rules Loading rule 'no-multi-str' (remaining=176)
+2019-09-03T15:04:04.009Z eslint:rules Loading rule 'no-new' (remaining=175)
+2019-09-03T15:04:04.009Z eslint:rules Loading rule 'no-new-func' (remaining=174)
+2019-09-03T15:04:04.010Z eslint:rules Loading rule 'no-new-wrappers' (remaining=173)
+2019-09-03T15:04:04.010Z eslint:rules Loading rule 'no-octal-escape' (remaining=172)
+2019-09-03T15:04:04.010Z eslint:rules Loading rule 'no-param-reassign' (remaining=171)
+2019-09-03T15:04:04.012Z eslint:rules Loading rule 'no-proto' (remaining=170)
+2019-09-03T15:04:04.012Z eslint:rules Loading rule 'no-restricted-properties' (remaining=169)
+2019-09-03T15:04:04.013Z eslint:rules Loading rule 'no-return-assign' (remaining=168)
+2019-09-03T15:04:04.013Z eslint:rules Loading rule 'no-return-await' (remaining=167)
+2019-09-03T15:04:04.014Z eslint:rules Loading rule 'no-script-url' (remaining=166)
+2019-09-03T15:04:04.014Z eslint:rules Loading rule 'no-self-compare' (remaining=165)
+2019-09-03T15:04:04.014Z eslint:rules Loading rule 'no-sequences' (remaining=164)
+2019-09-03T15:04:04.014Z eslint:rules Loading rule 'no-throw-literal' (remaining=163)
+2019-09-03T15:04:04.014Z eslint:rules Loading rule 'no-unmodified-loop-condition' (remaining=162)
+2019-09-03T15:04:04.015Z eslint:rules Loading rule 'no-unused-expressions' (remaining=161)
+2019-09-03T15:04:04.015Z eslint:rules Loading rule 'no-useless-call' (remaining=160)
+2019-09-03T15:04:04.016Z eslint:rules Loading rule 'no-useless-concat' (remaining=159)
+2019-09-03T15:04:04.016Z eslint:rules Loading rule 'no-useless-return' (remaining=158)
+2019-09-03T15:04:04.016Z eslint:rules Loading rule 'no-void' (remaining=157)
+2019-09-03T15:04:04.016Z eslint:rules Loading rule 'no-warning-comments' (remaining=156)
+2019-09-03T15:04:04.016Z eslint:rules Loading rule 'prefer-promise-reject-errors' (remaining=155)
+2019-09-03T15:04:04.017Z eslint:rules Loading rule 'prefer-named-capture-group' (remaining=154)
+2019-09-03T15:04:04.017Z eslint:rules Loading rule 'radix' (remaining=153)
+2019-09-03T15:04:04.018Z eslint:rules Loading rule 'require-await' (remaining=152)
+2019-09-03T15:04:04.018Z eslint:rules Loading rule 'require-unicode-regexp' (remaining=151)
+2019-09-03T15:04:04.018Z eslint:rules Loading rule 'vars-on-top' (remaining=150)
+2019-09-03T15:04:04.018Z eslint:rules Loading rule 'wrap-iife' (remaining=149)
+2019-09-03T15:04:04.019Z eslint:rules Loading rule 'yoda' (remaining=148)
+2019-09-03T15:04:04.019Z eslint:rules Loading rule 'no-await-in-loop' (remaining=147)
+2019-09-03T15:04:04.020Z eslint:rules Loading rule 'no-console' (remaining=146)
+2019-09-03T15:04:04.020Z eslint:rules Loading rule 'no-extra-parens' (remaining=145)
+2019-09-03T15:04:04.020Z eslint:rules Loading rule 'no-template-curly-in-string' (remaining=144)
+2019-09-03T15:04:04.021Z eslint:rules Loading rule 'no-negated-in-lhs' (remaining=143)
+2019-09-03T15:04:04.021Z eslint:rules Loading rule 'valid-jsdoc' (remaining=142)
+2019-09-03T15:04:04.022Z eslint:rules Loading rule 'callback-return' (remaining=141)
+2019-09-03T15:04:04.022Z eslint:rules Loading rule 'global-require' (remaining=140)
+2019-09-03T15:04:04.022Z eslint:rules Loading rule 'handle-callback-err' (remaining=139)
+2019-09-03T15:04:04.023Z eslint:rules Loading rule 'no-buffer-constructor' (remaining=138)
+2019-09-03T15:04:04.023Z eslint:rules Loading rule 'no-mixed-requires' (remaining=137)
+2019-09-03T15:04:04.023Z eslint:rules Loading rule 'no-new-require' (remaining=136)
+2019-09-03T15:04:04.023Z eslint:rules Loading rule 'no-path-concat' (remaining=135)
+2019-09-03T15:04:04.023Z eslint:rules Loading rule 'no-process-env' (remaining=134)
+2019-09-03T15:04:04.024Z eslint:rules Loading rule 'no-process-exit' (remaining=133)
+2019-09-03T15:04:04.024Z eslint:rules Loading rule 'no-restricted-modules' (remaining=132)
+2019-09-03T15:04:04.024Z eslint:rules Loading rule 'no-sync' (remaining=131)
+2019-09-03T15:04:04.024Z eslint:rules Loading rule 'array-bracket-newline' (remaining=130)
+2019-09-03T15:04:04.024Z eslint:rules Loading rule 'array-element-newline' (remaining=129)
+2019-09-03T15:04:04.025Z eslint:rules Loading rule 'array-bracket-spacing' (remaining=128)
+2019-09-03T15:04:04.026Z eslint:rules Loading rule 'block-spacing' (remaining=127)
+2019-09-03T15:04:04.026Z eslint:rules Loading rule 'brace-style' (remaining=126)
+2019-09-03T15:04:04.027Z eslint:rules Loading rule 'camelcase' (remaining=125)
+2019-09-03T15:04:04.028Z eslint:rules Loading rule 'capitalized-comments' (remaining=124)
+2019-09-03T15:04:04.028Z eslint:rules Loading rule 'comma-dangle' (remaining=123)
+2019-09-03T15:04:04.030Z eslint:rules Loading rule 'comma-spacing' (remaining=122)
+2019-09-03T15:04:04.030Z eslint:rules Loading rule 'comma-style' (remaining=121)
+2019-09-03T15:04:04.031Z eslint:rules Loading rule 'computed-property-spacing' (remaining=120)
+2019-09-03T15:04:04.032Z eslint:rules Loading rule 'consistent-this' (remaining=119)
+2019-09-03T15:04:04.032Z eslint:rules Loading rule 'eol-last' (remaining=118)
+2019-09-03T15:04:04.032Z eslint:rules Loading rule 'func-call-spacing' (remaining=117)
+2019-09-03T15:04:04.033Z eslint:rules Loading rule 'func-name-matching' (remaining=116)
+2019-09-03T15:04:04.033Z eslint:rules Loading rule 'func-names' (remaining=115)
+2019-09-03T15:04:04.034Z eslint:rules Loading rule 'func-style' (remaining=114)
+2019-09-03T15:04:04.034Z eslint:rules Loading rule 'function-paren-newline' (remaining=113)
+2019-09-03T15:04:04.036Z eslint:rules Loading rule 'id-blacklist' (remaining=112)
+2019-09-03T15:04:04.036Z eslint:rules Loading rule 'id-length' (remaining=111)
+2019-09-03T15:04:04.036Z eslint:rules Loading rule 'id-match' (remaining=110)
+2019-09-03T15:04:04.036Z eslint:rules Loading rule 'implicit-arrow-linebreak' (remaining=109)
+2019-09-03T15:04:04.037Z eslint:rules Loading rule 'indent' (remaining=108)
+2019-09-03T15:04:04.042Z eslint:rules Loading rule 'jsx-quotes' (remaining=107)
+2019-09-03T15:04:04.042Z eslint:rules Loading rule 'key-spacing' (remaining=106)
+2019-09-03T15:04:04.046Z eslint:rules Loading rule 'keyword-spacing' (remaining=105)
+2019-09-03T15:04:04.068Z eslint:rules Loading rule 'line-comment-position' (remaining=104)
+2019-09-03T15:04:04.068Z eslint:rules Loading rule 'linebreak-style' (remaining=103)
+2019-09-03T15:04:04.069Z eslint:rules Loading rule 'lines-between-class-members' (remaining=102)
+2019-09-03T15:04:04.070Z eslint:rules Loading rule 'lines-around-comment' (remaining=101)
+2019-09-03T15:04:04.070Z eslint:rules Loading rule 'lines-around-directive' (remaining=100)
+2019-09-03T15:04:04.071Z eslint:rules Loading rule 'max-depth' (remaining=99)
+2019-09-03T15:04:04.073Z eslint:rules Loading rule 'max-len' (remaining=98)
+2019-09-03T15:04:04.077Z eslint:rules Loading rule 'max-lines' (remaining=97)
+2019-09-03T15:04:04.077Z eslint:rules Loading rule 'max-lines-per-function' (remaining=96)
+2019-09-03T15:04:04.078Z eslint:rules Loading rule 'max-nested-callbacks' (remaining=95)
+2019-09-03T15:04:04.078Z eslint:rules Loading rule 'max-params' (remaining=94)
+2019-09-03T15:04:04.078Z eslint:rules Loading rule 'max-statements' (remaining=93)
+2019-09-03T15:04:04.078Z eslint:rules Loading rule 'max-statements-per-line' (remaining=92)
+2019-09-03T15:04:04.079Z eslint:rules Loading rule 'multiline-comment-style' (remaining=91)
+2019-09-03T15:04:04.079Z eslint:rules Loading rule 'multiline-ternary' (remaining=90)
+2019-09-03T15:04:04.079Z eslint:rules Loading rule 'new-cap' (remaining=89)
+2019-09-03T15:04:04.081Z eslint:rules Loading rule 'new-parens' (remaining=88)
+2019-09-03T15:04:04.082Z eslint:rules Loading rule 'newline-after-var' (remaining=87)
+2019-09-03T15:04:04.082Z eslint:rules Loading rule 'newline-before-return' (remaining=86)
+2019-09-03T15:04:04.082Z eslint:rules Loading rule 'newline-per-chained-call' (remaining=85)
+2019-09-03T15:04:04.083Z eslint:rules Loading rule 'no-array-constructor' (remaining=84)
+2019-09-03T15:04:04.084Z eslint:rules Loading rule 'no-bitwise' (remaining=83)
+2019-09-03T15:04:04.085Z eslint:rules Loading rule 'no-continue' (remaining=82)
+2019-09-03T15:04:04.085Z eslint:rules Loading rule 'no-inline-comments' (remaining=81)
+2019-09-03T15:04:04.085Z eslint:rules Loading rule 'no-lonely-if' (remaining=80)
+2019-09-03T15:04:04.085Z eslint:rules Loading rule 'no-mixed-operators' (remaining=79)
+2019-09-03T15:04:04.086Z eslint:rules Loading rule 'no-multi-assign' (remaining=78)
+2019-09-03T15:04:04.087Z eslint:rules Loading rule 'no-multiple-empty-lines' (remaining=77)
+2019-09-03T15:04:04.088Z eslint:rules Loading rule 'no-negated-condition' (remaining=76)
+2019-09-03T15:04:04.088Z eslint:rules Loading rule 'no-nested-ternary' (remaining=75)
+2019-09-03T15:04:04.088Z eslint:rules Loading rule 'no-new-object' (remaining=74)
+2019-09-03T15:04:04.088Z eslint:rules Loading rule 'no-plusplus' (remaining=73)
+2019-09-03T15:04:04.089Z eslint:rules Loading rule 'no-restricted-syntax' (remaining=72)
+2019-09-03T15:04:04.090Z eslint:rules Loading rule 'no-spaced-func' (remaining=71)
+2019-09-03T15:04:04.090Z eslint:rules Loading rule 'no-tabs' (remaining=70)
+2019-09-03T15:04:04.091Z eslint:rules Loading rule 'no-ternary' (remaining=69)
+2019-09-03T15:04:04.091Z eslint:rules Loading rule 'no-trailing-spaces' (remaining=68)
+2019-09-03T15:04:04.092Z eslint:rules Loading rule 'no-underscore-dangle' (remaining=67)
+2019-09-03T15:04:04.093Z eslint:rules Loading rule 'no-unneeded-ternary' (remaining=66)
+2019-09-03T15:04:04.094Z eslint:rules Loading rule 'no-whitespace-before-property' (remaining=65)
+2019-09-03T15:04:04.094Z eslint:rules Loading rule 'nonblock-statement-body-position' (remaining=64)
+2019-09-03T15:04:04.095Z eslint:rules Loading rule 'object-curly-spacing' (remaining=63)
+2019-09-03T15:04:04.096Z eslint:rules Loading rule 'object-curly-newline' (remaining=62)
+2019-09-03T15:04:04.101Z eslint:rules Loading rule 'object-property-newline' (remaining=61)
+2019-09-03T15:04:04.102Z eslint:rules Loading rule 'one-var' (remaining=60)
+2019-09-03T15:04:04.103Z eslint:rules Loading rule 'one-var-declaration-per-line' (remaining=59)
+2019-09-03T15:04:04.104Z eslint:rules Loading rule 'operator-assignment' (remaining=58)
+2019-09-03T15:04:04.104Z eslint:rules Loading rule 'operator-linebreak' (remaining=57)
+2019-09-03T15:04:04.105Z eslint:rules Loading rule 'padded-blocks' (remaining=56)
+2019-09-03T15:04:04.106Z eslint:rules Loading rule 'padding-line-between-statements' (remaining=55)
+2019-09-03T15:04:04.107Z eslint:rules Loading rule 'prefer-object-spread' (remaining=54)
+2019-09-03T15:04:04.107Z eslint:rules Loading rule 'quote-props' (remaining=53)
+2019-09-03T15:04:04.108Z eslint:rules Loading rule 'quotes' (remaining=52)
+2019-09-03T15:04:04.109Z eslint:rules Loading rule 'require-jsdoc' (remaining=51)
+2019-09-03T15:04:04.110Z eslint:rules Loading rule 'semi' (remaining=50)
+2019-09-03T15:04:04.111Z eslint:rules Loading rule 'semi-spacing' (remaining=49)
+2019-09-03T15:04:04.111Z eslint:rules Loading rule 'semi-style' (remaining=48)
+2019-09-03T15:04:04.112Z eslint:rules Loading rule 'sort-keys' (remaining=47)
+2019-09-03T15:04:04.112Z eslint:rules Loading rule 'sort-vars' (remaining=46)
+2019-09-03T15:04:04.112Z eslint:rules Loading rule 'space-before-blocks' (remaining=45)
+2019-09-03T15:04:04.113Z eslint:rules Loading rule 'space-before-function-paren' (remaining=44)
+2019-09-03T15:04:04.115Z eslint:rules Loading rule 'space-in-parens' (remaining=43)
+2019-09-03T15:04:04.116Z eslint:rules Loading rule 'space-infix-ops' (remaining=42)
+2019-09-03T15:04:04.117Z eslint:rules Loading rule 'space-unary-ops' (remaining=41)
+2019-09-03T15:04:04.118Z eslint:rules Loading rule 'spaced-comment' (remaining=40)
+2019-09-03T15:04:04.120Z eslint:rules Loading rule 'switch-colon-spacing' (remaining=39)
+2019-09-03T15:04:04.120Z eslint:rules Loading rule 'template-tag-spacing' (remaining=38)
+2019-09-03T15:04:04.121Z eslint:rules Loading rule 'unicode-bom' (remaining=37)
+2019-09-03T15:04:04.121Z eslint:rules Loading rule 'wrap-regex' (remaining=36)
+2019-09-03T15:04:04.121Z eslint:rules Loading rule 'init-declarations' (remaining=35)
+2019-09-03T15:04:04.121Z eslint:rules Loading rule 'no-catch-shadow' (remaining=34)
+2019-09-03T15:04:04.122Z eslint:rules Loading rule 'no-label-var' (remaining=33)
+2019-09-03T15:04:04.122Z eslint:rules Loading rule 'no-restricted-globals' (remaining=32)
+2019-09-03T15:04:04.123Z eslint:rules Loading rule 'no-shadow' (remaining=31)
+2019-09-03T15:04:04.124Z eslint:rules Loading rule 'no-undef-init' (remaining=30)
+2019-09-03T15:04:04.124Z eslint:rules Loading rule 'no-undefined' (remaining=29)
+2019-09-03T15:04:04.125Z eslint:rules Loading rule 'no-use-before-define' (remaining=28)
+2019-09-03T15:04:04.126Z eslint:rules Loading rule 'arrow-body-style' (remaining=27)
+2019-09-03T15:04:04.127Z eslint:rules Loading rule 'arrow-parens' (remaining=26)
+2019-09-03T15:04:04.127Z eslint:rules Loading rule 'arrow-spacing' (remaining=25)
+2019-09-03T15:04:04.128Z eslint:rules Loading rule 'generator-star-spacing' (remaining=24)
+2019-09-03T15:04:04.130Z eslint:rules Loading rule 'no-confusing-arrow' (remaining=23)
+2019-09-03T15:04:04.131Z eslint:rules Loading rule 'no-duplicate-imports' (remaining=22)
+2019-09-03T15:04:04.131Z eslint:rules Loading rule 'no-restricted-imports' (remaining=21)
+2019-09-03T15:04:04.131Z eslint:rules Loading rule 'no-useless-computed-key' (remaining=20)
+2019-09-03T15:04:04.132Z eslint:rules Loading rule 'no-useless-constructor' (remaining=19)
+2019-09-03T15:04:04.132Z eslint:rules Loading rule 'no-useless-rename' (remaining=18)
+2019-09-03T15:04:04.132Z eslint:rules Loading rule 'no-var' (remaining=17)
+2019-09-03T15:04:04.133Z eslint:rules Loading rule 'object-shorthand' (remaining=16)
+2019-09-03T15:04:04.134Z eslint:rules Loading rule 'prefer-arrow-callback' (remaining=15)
+2019-09-03T15:04:04.135Z eslint:rules Loading rule 'prefer-const' (remaining=14)
+2019-09-03T15:04:04.136Z eslint:rules Loading rule 'prefer-destructuring' (remaining=13)
+2019-09-03T15:04:04.138Z eslint:rules Loading rule 'prefer-numeric-literals' (remaining=12)
+2019-09-03T15:04:04.138Z eslint:rules Loading rule 'prefer-reflect' (remaining=11)
+2019-09-03T15:04:04.138Z eslint:rules Loading rule 'prefer-rest-params' (remaining=10)
+2019-09-03T15:04:04.138Z eslint:rules Loading rule 'prefer-spread' (remaining=9)
+2019-09-03T15:04:04.138Z eslint:rules Loading rule 'prefer-template' (remaining=8)
+2019-09-03T15:04:04.139Z eslint:rules Loading rule 'rest-spread-spacing' (remaining=7)
+2019-09-03T15:04:04.139Z eslint:rules Loading rule 'sort-imports' (remaining=6)
+2019-09-03T15:04:04.139Z eslint:rules Loading rule 'symbol-description' (remaining=5)
+2019-09-03T15:04:04.139Z eslint:rules Loading rule 'template-curly-spacing' (remaining=4)
+2019-09-03T15:04:04.140Z eslint:rules Loading rule 'yield-star-spacing' (remaining=3)
+2019-09-03T15:04:04.148Z eslint:rules Loading rule 'strict' (remaining=2)
+2019-09-03T15:04:04.200Z eslint:cascading-config-array-factory Configuration was determined: ConfigArray [ { name: '.eslintrc.js » eslint:recommended', filePath: '/Users/roy/salto_monorepo/node_modules/eslint/conf/eslint-recommended.js', criteria: null, env: undefined, globals: undefined, noInlineConfig: undefined, parser: undefined, parserOptions: undefined, plugins: undefined, processor: undefined, root: undefined, rules: { 'constructor-super': 'error', 'for-direction': 'error', 'getter-return': 'error', 'no-async-promise-executor': 'error', 'no-case-declarations': 'error', 'no-class-assign': 'error', 'no-compare-neg-zero': 'error', 'no-cond-assign': 'error', 'no-const-assign': 'error', 'no-constant-condition': 'error', 'no-control-regex': 'error', 'no-debugger': 'error', 'no-delete-var': 'error', 'no-dupe-args': 'error', 'no-dupe-class-members': 'error', 'no-dupe-keys': 'error', 'no-duplicate-case': 'error', 'no-empty': 'error', 'no-empty-character-class': 'error', 'no-empty-pattern': 'error', 'no-ex-assign': 'error', 'no-extra-boolean-cast': 'error', 'no-extra-semi': 'error', 'no-fallthrough': 'error', 'no-func-assign': 'error', 'no-global-assign': 'error', 'no-inner-declarations': 'error', 'no-invalid-regexp': 'error', 'no-irregular-whitespace': 'error', 'no-misleading-character-class': 'error', 'no-mixed-spaces-and-tabs': 'error', 'no-new-symbol': 'error', 'no-obj-calls': 'error', 'no-octal': 'error', 'no-prototype-builtins': 'error', 'no-redeclare': 'error', 'no-regex-spaces': 'error', 'no-self-assign': 'error', 'no-shadow-restricted-names': 'error', 'no-sparse-arrays': 'error', 'no-this-before-super': 'error', 'no-undef': 'error', 'no-unexpected-multiline': 'error', 'no-unreachable': 'error', 'no-unsafe-finally': 'error', 'no-unsafe-negation': 'error', 'no-unused-labels': 'error', 'no-unused-vars': 'error', 'no-useless-catch': 'error', 'no-useless-escape': 'error', 'no-with': 'error', 'require-atomic-updates': 'error', 'require-yield': 'error', 'use-isnan': 'error', 'valid-typeof': 'error' }, settings: undefined }, { name: '.eslintrc.js » eslint-config-airbnb » /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/index.js » /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/best-practices.js', filePath: '/Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/best-practices.js', criteria: null, env: undefined, globals: undefined, noInlineConfig: undefined, parser: undefined, parserOptions: undefined, plugins: undefined, processor: undefined, root: undefined, rules: { 'accessor-pairs': 'off', 'array-callback-return': [Array], 'block-scoped-var': 'error', complexity: [Array], 'class-methods-use-this': [Array], 'consistent-return': 'error', curly: [Array], 'default-case': [Array], 'dot-notation': [Array], 'dot-location': [Array], eqeqeq: [Array], 'guard-for-in': 'error', 'max-classes-per-file': [Array], 'no-alert': 'warn', 'no-caller': 'error', 'no-case-declarations': 'error', 'no-div-regex': 'off', 'no-else-return': [Array], 'no-empty-function': [Array], 'no-empty-pattern': 'error', 'no-eq-null': 'off', 'no-eval': 'error', 'no-extend-native': 'error', 'no-extra-bind': 'error', 'no-extra-label': 'error', 'no-fallthrough': 'error', 'no-floating-decimal': 'error', 'no-global-assign': [Array], 'no-native-reassign': 'off', 'no-implicit-coercion': [Array], 'no-implicit-globals': 'off', 'no-implied-eval': 'error', 'no-invalid-this': 'off', 'no-iterator': 'error', 'no-labels': [Array], 'no-lone-blocks': 'error', 'no-loop-func': 'error', 'no-magic-numbers': [Array], 'no-multi-spaces': [Array], 'no-multi-str': 'error', 'no-new': 'error', 'no-new-func': 'error', 'no-new-wrappers': 'error', 'no-octal': 'error', 'no-octal-escape': 'error', 'no-param-reassign': [Array], 'no-proto': 'error', 'no-redeclare': 'error', 'no-restricted-properties': [Array], 'no-return-assign': [Array], 'no-return-await': 'error', 'no-script-url': 'error', 'no-self-assign': [Array], 'no-self-compare': 'error', 'no-sequences': 'error', 'no-throw-literal': 'error', 'no-unmodified-loop-condition': 'off', 'no-unused-expressions': [Array], 'no-unused-labels': 'error', 'no-useless-call': 'off', 'no-useless-catch': 'off', 'no-useless-concat': 'error', 'no-useless-escape': 'error', 'no-useless-return': 'error', 'no-void': 'error', 'no-warning-comments': [Array], 'no-with': 'error', 'prefer-promise-reject-errors': [Array], 'prefer-named-capture-group': 'off', radix: 'error', 'require-await': 'off', 'require-unicode-regexp': 'off', 'vars-on-top': 'error', 'wrap-iife': [Array], yoda: 'error' }, settings: undefined }, { name: '.eslintrc.js » eslint-config-airbnb » /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/index.js » /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/errors.js', filePath: '/Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/errors.js', criteria: null, env: undefined, globals: undefined, noInlineConfig: undefined, parser: undefined, parserOptions: undefined, plugins: undefined, processor: undefined, root: undefined, rules: { 'for-direction': 'error', 'getter-return': [Array], 'no-async-promise-executor': 'off', 'no-await-in-loop': 'error', 'no-compare-neg-zero': 'error', 'no-cond-assign': [Array], 'no-console': 'warn', 'no-constant-condition': 'warn', 'no-control-regex': 'error', 'no-debugger': 'error', 'no-dupe-args': 'error', 'no-dupe-keys': 'error', 'no-duplicate-case': 'error', 'no-empty': 'error', 'no-empty-character-class': 'error', 'no-ex-assign': 'error', 'no-extra-boolean-cast': 'error', 'no-extra-parens': [Array], 'no-extra-semi': 'error', 'no-func-assign': 'error', 'no-inner-declarations': 'error', 'no-invalid-regexp': 'error', 'no-irregular-whitespace': 'error', 'no-misleading-character-class': 'off', 'no-obj-calls': 'error', 'no-prototype-builtins': 'error', 'no-regex-spaces': 'error', 'no-sparse-arrays': 'error', 'no-template-curly-in-string': 'error', 'no-unexpected-multiline': 'error', 'no-unreachable': 'error', 'no-unsafe-finally': 'error', 'no-unsafe-negation': 'error', 'no-negated-in-lhs': 'off', 'require-atomic-updates': 'off', 'use-isnan': 'error', 'valid-jsdoc': 'off', 'valid-typeof': [Array] }, settings: undefined }, { name: '.eslintrc.js » eslint-config-airbnb » /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/index.js » /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/node.js', filePath: '/Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/node.js', criteria: null, env: { node: true }, globals: undefined, noInlineConfig: undefined, parser: undefined, parserOptions: undefined, plugins: undefined, processor: undefined, root: undefined, rules: { 'callback-return': 'off', 'global-require': 'error', 'handle-callback-err': 'off', 'no-buffer-constructor': 'error', 'no-mixed-requires': [Array], 'no-new-require': 'error', 'no-path-concat': 'error', 'no-process-env': 'off', 'no-process-exit': 'off', 'no-restricted-modules': 'off', 'no-sync': 'off' }, settings: undefined }, { name: '.eslintrc.js » eslint-config-airbnb » /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/index.js » /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/style.js', filePath: '/Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/style.js', criteria: null, env: undefined, globals: undefined, noInlineConfig: undefined, parser: undefined, parserOptions: undefined, plugins: undefined, processor: undefined, root: undefined, rules: { 'array-bracket-newline': [Array], 'array-element-newline': [Array], 'array-bracket-spacing': [Array], 'block-spacing': [Array], 'brace-style': [Array], camelcase: [Array], 'capitalized-comments': [Array], 'comma-dangle': [Array], 'comma-spacing': [Array], 'comma-style': [Array], 'computed-property-spacing': [Array], 'consistent-this': 'off', 'eol-last': [Array], 'func-call-spacing': [Array], 'func-name-matching': [Array], 'func-names': 'warn', 'func-style': [Array], 'function-paren-newline': [Array], 'id-blacklist': 'off', 'id-length': 'off', 'id-match': 'off', 'implicit-arrow-linebreak': [Array], indent: [Array], 'jsx-quotes': [Array], 'key-spacing': [Array], 'keyword-spacing': [Array], 'line-comment-position': [Array], 'linebreak-style': [Array], 'lines-between-class-members': [Array], 'lines-around-comment': 'off', 'lines-around-directive': [Array], 'max-depth': [Array], 'max-len': [Array], 'max-lines': [Array], 'max-lines-per-function': [Array], 'max-nested-callbacks': 'off', 'max-params': [Array], 'max-statements': [Array], 'max-statements-per-line': [Array], 'multiline-comment-style': [Array], 'multiline-ternary': [Array], 'new-cap': [Array], 'new-parens': 'error', 'newline-after-var': 'off', 'newline-before-return': 'off', 'newline-per-chained-call': [Array], 'no-array-constructor': 'error', 'no-bitwise': 'error', 'no-continue': 'error', 'no-inline-comments': 'off', 'no-lonely-if': 'error', 'no-mixed-operators': [Array], 'no-mixed-spaces-and-tabs': 'error', 'no-multi-assign': [Array], 'no-multiple-empty-lines': [Array], 'no-negated-condition': 'off', 'no-nested-ternary': 'error', 'no-new-object': 'error', 'no-plusplus': 'error', 'no-restricted-syntax': [Array], 'no-spaced-func': 'error', 'no-tabs': 'error', 'no-ternary': 'off', 'no-trailing-spaces': [Array], 'no-underscore-dangle': [Array], 'no-unneeded-ternary': [Array], 'no-whitespace-before-property': 'error', 'nonblock-statement-body-position': [Array], 'object-curly-spacing': [Array], 'object-curly-newline': [Array], 'object-property-newline': [Array], 'one-var': [Array], 'one-var-declaration-per-line': [Array], 'operator-assignment': [Array], 'operator-linebreak': [Array], 'padded-blocks': [Array], 'padding-line-between-statements': 'off', 'prefer-object-spread': 'off', 'quote-props': [Array], quotes: [Array], 'require-jsdoc': 'off', semi: [Array], 'semi-spacing': [Array], 'semi-style': [Array], 'sort-keys': [Array], 'sort-vars': 'off', 'space-before-blocks': 'error', 'space-before-function-paren': [Array], 'space-in-parens': [Array], 'space-infix-ops': 'error', 'space-unary-ops': [Array], 'spaced-comment': [Array], 'switch-colon-spacing': [Array], 'template-tag-spacing': [Array], 'unicode-bom': [Array], 'wrap-regex': 'off' }, settings: undefined }, { name: '.eslintrc.js » eslint-config-airbnb » /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/index.js » /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/variables.js', filePath: '/Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/variables.js', criteria: null, env: undefined, globals: undefined, noInlineConfig: undefined, parser: undefined, parserOptions: undefined, plugins: undefined, processor: undefined, root: undefined, rules: { 'init-declarations': 'off', 'no-catch-shadow': 'off', 'no-delete-var': 'error', 'no-label-var': 'error', 'no-restricted-globals': [Array], 'no-shadow': 'error', 'no-shadow-restricted-names': 'error', 'no-undef': 'error', 'no-undef-init': 'error', 'no-undefined': 'off', 'no-unused-vars': [Array], 'no-use-before-define': [Array] }, settings: undefined }, { name: '.eslintrc.js » eslint-config-airbnb » /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/index.js » /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/es6.js', filePath: '/Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/es6.js', criteria: null, env: { es6: true }, globals: undefined, noInlineConfig: undefined, parser: undefined, parserOptions: { ecmaVersion: 6, sourceType: 'module', ecmaFeatures: [Object] }, plugins: undefined, processor: undefined, root: undefined, rules: { 'arrow-body-style': [Array], 'arrow-parens': [Array], 'arrow-spacing': [Array], 'constructor-super': 'error', 'generator-star-spacing': [Array], 'no-class-assign': 'error', 'no-confusing-arrow': [Array], 'no-const-assign': 'error', 'no-dupe-class-members': 'error', 'no-duplicate-imports': 'off', 'no-new-symbol': 'error', 'no-restricted-imports': [Array], 'no-this-before-super': 'error', 'no-useless-computed-key': 'error', 'no-useless-constructor': 'error', 'no-useless-rename': [Array], 'no-var': 'error', 'object-shorthand': [Array], 'prefer-arrow-callback': [Array], 'prefer-const': [Array], 'prefer-destructuring': [Array], 'prefer-numeric-literals': 'error', 'prefer-reflect': 'off', 'prefer-rest-params': 'error', 'prefer-spread': 'error', 'prefer-template': 'error', 'require-yield': 'error', 'rest-spread-spacing': [Array], 'sort-imports': [Array], 'symbol-description': 'error', 'template-curly-spacing': 'error', 'yield-star-spacing': [Array] }, settings: undefined }, { name: '.eslintrc.js » eslint-config-airbnb » /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/index.js » /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/imports.js', filePath: '/Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/imports.js', criteria: null, env: { es6: true }, globals: undefined, noInlineConfig: undefined, parser: undefined, parserOptions: { ecmaVersion: 6, sourceType: 'module' }, plugins: { import: [Object] }, processor: undefined, root: undefined, rules: { 'import/no-unresolved': [Array], 'import/named': 'error', 'import/default': 'off', 'import/namespace': 'off', 'import/export': 'error', 'import/no-named-as-default': 'error', 'import/no-named-as-default-member': 'error', 'import/no-deprecated': 'off', 'import/no-extraneous-dependencies': [Array], 'import/no-mutable-exports': 'error', 'import/no-commonjs': 'off', 'import/no-amd': 'error', 'import/no-nodejs-modules': 'off', 'import/first': 'error', 'import/imports-first': 'off', 'import/no-duplicates': 'error', 'import/no-namespace': 'off', 'import/extensions': [Array], 'import/order': [Array], 'import/newline-after-import': 'error', 'import/prefer-default-export': 'error', 'import/no-restricted-paths': 'off', 'import/max-dependencies': [Array], 'import/no-absolute-path': 'error', 'import/no-dynamic-require': 'error', 'import/no-internal-modules': [Array], 'import/unambiguous': 'off', 'import/no-webpack-loader-syntax': 'error', 'import/no-unassigned-import': 'off', 'import/no-named-default': 'error', 'import/no-anonymous-default-export': [Array], 'import/exports-last': 'off', 'import/group-exports': 'off', 'import/no-default-export': 'off', 'import/no-named-export': 'off', 'import/no-self-import': 'error', 'import/no-cycle': [Array], 'import/no-useless-path-segments': 'error', 'import/dynamic-import-chunkname': [Array], 'import/no-relative-parent-imports': 'off', 'import/no-unused-modules': [Array] }, settings: { 'import/resolver': [Object], 'import/extensions': [Array], 'import/core-modules': [], 'import/ignore': [Array] } }, { name: '.eslintrc.js » eslint-config-airbnb » /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/index.js', filePath: '/Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/index.js', criteria: null, env: undefined, globals: undefined, noInlineConfig: undefined, parser: undefined, parserOptions: { ecmaVersion: 2018, sourceType: 'module' }, plugins: undefined, processor: undefined, root: undefined, rules: { strict: 'error' }, settings: undefined }, { name: '.eslintrc.js » eslint-config-airbnb » /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/strict.js', filePath: '/Users/roy/salto_monorepo/node_modules/eslint-config-airbnb-base/rules/strict.js', criteria: null, env: undefined, globals: undefined, noInlineConfig: undefined, parser: undefined, parserOptions: undefined, plugins: undefined, processor: undefined, root: undefined, rules: { strict: [Array] }, settings: undefined }, { name: '.eslintrc.js » eslint-config-airbnb » /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb/rules/react.js', filePath: '/Users/roy/salto_monorepo/node_modules/eslint-config-airbnb/rules/react.js', criteria: null, env: undefined, globals: undefined, noInlineConfig: undefined, parser: undefined, parserOptions: { ecmaFeatures: [Object] }, plugins: { react: [Object] }, processor: undefined, root: undefined, rules: { 'no-underscore-dangle': [Array], 'jsx-quotes': [Array], 'class-methods-use-this': [Array], 'react/display-name': [Array], 'react/forbid-prop-types': [Array], 'react/forbid-dom-props': [Array], 'react/jsx-boolean-value': [Array], 'react/jsx-closing-bracket-location': [Array], 'react/jsx-closing-tag-location': 'error', 'react/jsx-curly-spacing': [Array], 'react/jsx-handler-names': [Array], 'react/jsx-indent-props': [Array], 'react/jsx-key': 'off', 'react/jsx-max-props-per-line': [Array], 'react/jsx-no-bind': [Array], 'react/jsx-no-duplicate-props': [Array], 'react/jsx-no-literals': [Array], 'react/jsx-no-undef': 'error', 'react/jsx-pascal-case': [Array], 'react/sort-prop-types': [Array], 'react/jsx-sort-prop-types': 'off', 'react/jsx-sort-props': [Array], 'react/jsx-sort-default-props': [Array], 'react/jsx-uses-react': [Array], 'react/jsx-uses-vars': 'error', 'react/no-danger': 'warn', 'react/no-deprecated': [Array], 'react/no-did-mount-set-state': 'off', 'react/no-did-update-set-state': 'error', 'react/no-will-update-set-state': 'error', 'react/no-direct-mutation-state': 'off', 'react/no-is-mounted': 'error', 'react/no-multi-comp': 'off', 'react/no-set-state': 'off', 'react/no-string-refs': 'error', 'react/no-unknown-property': 'error', 'react/prefer-es6-class': [Array], 'react/prefer-stateless-function': [Array], 'react/prop-types': [Array], 'react/react-in-jsx-scope': 'error', 'react/require-render-return': 'error', 'react/self-closing-comp': 'error', 'react/sort-comp': [Array], 'react/jsx-wrap-multilines': [Array], 'react/jsx-first-prop-new-line': [Array], 'react/jsx-equals-spacing': [Array], 'react/jsx-indent': [Array], 'react/jsx-no-target-blank': [Array], 'react/jsx-filename-extension': [Array], 'react/jsx-no-comment-textnodes': 'error', 'react/no-render-return-value': 'error', 'react/require-optimization': [Array], 'react/no-find-dom-node': 'error', 'react/forbid-component-props': [Array], 'react/forbid-elements': [Array], 'react/no-danger-with-children': 'error', 'react/no-unused-prop-types': [Array], 'react/style-prop-object': 'error', 'react/no-unescaped-entities': 'error', 'react/no-children-prop': 'error', 'react/jsx-tag-spacing': [Array], 'react/jsx-space-before-closing': [Array], 'react/no-array-index-key': 'error', 'react/require-default-props': [Array], 'react/forbid-foreign-prop-types': [Array], 'react/void-dom-elements-no-children': 'error', 'react/default-props-match-prop-types': [Array], 'react/no-redundant-should-component-update': 'error', 'react/no-unused-state': 'error', 'react/boolean-prop-naming': [Array], 'react/no-typos': 'error', 'react/jsx-curly-brace-presence': [Array], 'react/jsx-one-expression-per-line': [Array], 'react/destructuring-assignment': [Array], 'react/no-access-state-in-setstate': 'error', 'react/button-has-type': [Array], 'react/jsx-child-element-spacing': 'off', 'react/no-this-in-sfc': 'error', 'react/jsx-max-depth': 'off', 'react/jsx-props-no-multi-spaces': 'error', 'react/no-unsafe': 'off', 'react/jsx-fragments': [Array] }, settings: { 'import/resolver': [Object], react: [Object], propWrapperFunctions: [Array] } }, { name: '.eslintrc.js » eslint-config-airbnb » /Users/roy/salto_monorepo/node_modules/eslint-config-airbnb/rules/react-a11y.js', filePath: '/Users/roy/salto_monorepo/node_modules/eslint-config-airbnb/rules/react-a11y.js', criteria: null, env: undefined, globals: undefined, noInlineConfig: undefined, parser: undefined, parserOptions: { ecmaFeatures: [Object] }, plugins: { 'jsx-a11y': [Object], react: [Object] }, processor: undefined, root: undefined, rules: { 'jsx-a11y/anchor-has-content': [Array], 'jsx-a11y/aria-role': [Array], 'jsx-a11y/aria-props': 'error', 'jsx-a11y/aria-proptypes': 'error', 'jsx-a11y/aria-unsupported-elements': 'error', 'jsx-a11y/alt-text': [Array], 'jsx-a11y/img-redundant-alt': 'error', 'jsx-a11y/label-has-for': [Array], 'jsx-a11y/label-has-associated-control': [Array], 'jsx-a11y/mouse-events-have-key-events': 'error', 'jsx-a11y/no-access-key': 'error', 'jsx-a11y/no-onchange': 'off', 'jsx-a11y/interactive-supports-focus': 'error', 'jsx-a11y/role-has-required-aria-props': 'error', 'jsx-a11y/role-supports-aria-props': 'error', 'jsx-a11y/tabindex-no-positive': 'error', 'jsx-a11y/heading-has-content': [Array], 'jsx-a11y/html-has-lang': 'error', 'jsx-a11y/lang': 'error', 'jsx-a11y/no-distracting-elements': [Array], 'jsx-a11y/scope': 'error', 'jsx-a11y/click-events-have-key-events': 'error', 'jsx-a11y/no-static-element-interactions': [Array], 'jsx-a11y/no-noninteractive-element-interactions': [Array], 'jsx-a11y/accessible-emoji': 'error', 'jsx-a11y/aria-activedescendant-has-tabindex': 'error', 'jsx-a11y/iframe-has-title': 'error', 'jsx-a11y/no-autofocus': [Array], 'jsx-a11y/no-redundant-roles': 'error', 'jsx-a11y/media-has-caption': [Array], 'jsx-a11y/no-interactive-element-to-noninteractive-role': [Array], 'jsx-a11y/no-noninteractive-element-to-interactive-role': [Array], 'jsx-a11y/no-noninteractive-tabindex': [Array], 'jsx-a11y/anchor-is-valid': [Array] }, settings: undefined }, { name: '.eslintrc.js » eslint-config-airbnb', filePath: '/Users/roy/salto_monorepo/node_modules/eslint-config-airbnb/index.js', criteria: null, env: undefined, globals: undefined, noInlineConfig: undefined, parser: undefined, parserOptions: undefined, plugins: undefined, processor: undefined, root: undefined, rules: {}, settings: undefined }, { name: '.eslintrc.js » plugin:@typescript-eslint/recommended » ./configs/base.json', filePath: '/Users/roy/salto_monorepo/node_modules/@typescript-eslint/eslint-plugin/dist/configs/base.json', criteria: null, env: undefined, globals: undefined, noInlineConfig: undefined, parser: { error: null, filePath: '/Users/roy/salto_monorepo/node_modules/@typescript-eslint/parser/dist/parser.js', id: '@typescript-eslint/parser', importerName: '.eslintrc.js » plugin:@typescript-eslint/recommended » ./configs/base.json', importerPath: '/Users/roy/salto_monorepo/node_modules/@typescript-eslint/eslint-plugin/dist/configs/base.json' }, parserOptions: { sourceType: 'module' }, plugins: { '@typescript-eslint': [Object] }, processor: undefined, root: undefined, rules: undefined, settings: undefined }, { name: '.eslintrc.js » plugin:@typescript-eslint/recommended', filePath: '/Users/roy/salto_monorepo/node_modules/@typescript-eslint/eslint-plugin/dist/index.js', criteria: null, env: undefined, globals: undefined, noInlineConfig: undefined, parser: undefined, parserOptions: undefined, plugins: undefined, processor: undefined, root: undefined, rules: { '@typescript-eslint/adjacent-overload-signatures': 'error', '@typescript-eslint/ban-ts-ignore': 'error', '@typescript-eslint/ban-types': 'error', camelcase: 'off', '@typescript-eslint/camelcase': 'error', '@typescript-eslint/class-name-casing': 'error', '@typescript-eslint/consistent-type-assertions': 'error', '@typescript-eslint/explicit-function-return-type': 'warn', '@typescript-eslint/interface-name-prefix': 'error', '@typescript-eslint/member-delimiter-style': 'error', 'no-array-constructor': 'off', '@typescript-eslint/no-array-constructor': 'error', 'no-empty-function': 'off', '@typescript-eslint/no-empty-function': 'error', '@typescript-eslint/no-empty-interface': 'error', '@typescript-eslint/no-explicit-any': 'warn', '@typescript-eslint/no-inferrable-types': 'error', '@typescript-eslint/no-misused-new': 'error', '@typescript-eslint/no-namespace': 'error', '@typescript-eslint/no-non-null-assertion': 'warn', '@typescript-eslint/no-this-alias': 'error', 'no-unused-vars': 'off', '@typescript-eslint/no-unused-vars': 'warn', 'no-use-before-define': 'off', '@typescript-eslint/no-use-before-define': 'error', '@typescript-eslint/no-var-requires': 'error', '@typescript-eslint/prefer-namespace-keyword': 'error', '@typescript-eslint/triple-slash-reference': 'error', '@typescript-eslint/type-annotation-spacing': 'error', 'no-var': 'error', 'prefer-const': 'error', 'prefer-rest-params': 'error', 'prefer-spread': 'error' }, settings: undefined }, { name: '.eslintrc.js » plugin:import/errors', filePath: '/Users/roy/salto_monorepo/node_modules/eslint-plugin-import/lib/index.js', criteria: null, env: undefined, globals: undefined, noInlineConfig: undefined, parser: undefined, parserOptions: undefined, plugins: { import: [Object] }, processor: undefined, root: undefined, rules: { 'import/no-unresolved': 2, 'import/named': 2, 'import/namespace': 2, 'import/default': 2, 'import/export': 2 }, settings: undefined }, { name: '.eslintrc.js » plugin:import/warnings', filePath: '/Users/roy/salto_monorepo/node_modules/eslint-plugin-import/lib/index.js', criteria: null, env: undefined, globals: undefined, noInlineConfig: undefined, parser: undefined, parserOptions: undefined, plugins: { import: [Object] }, processor: undefined, root: undefined, rules: { 'import/no-named-as-default': 1, 'import/no-named-as-default-member': 1, 'import/no-duplicates': 1 }, settings: undefined }, { name: '.eslintrc.js » plugin:import/typescript', filePath: '/Users/roy/salto_monorepo/node_modules/eslint-plugin-import/lib/index.js', criteria: null, env: undefined, globals: undefined, noInlineConfig: undefined, parser: undefined, parserOptions: undefined, plugins: undefined, processor: undefined, root: undefined, rules: undefined, settings: { 'import/extensions': [Array], 'import/parsers': [Object], 'import/resolver': [Object] } }, { name: '.eslintrc.js » plugin:jest/recommended#processors["jest/.snap"]', filePath: '/Users/roy/salto_monorepo/node_modules/eslint-plugin-jest/lib/index.js', criteria: { includes: [Array], excludes: null, basePath: '/Users/roy/salto_monorepo/packages/salto' }, env: undefined, globals: undefined, noInlineConfig: undefined, parser: undefined, parserOptions: undefined, plugins: undefined, processor: 'jest/.snap', root: undefined, rules: undefined, settings: undefined }, { name: '.eslintrc.js » plugin:jest/recommended', filePath: '/Users/roy/salto_monorepo/node_modules/eslint-plugin-jest/lib/index.js', criteria: null, env: { 'jest/globals': true }, globals: undefined, noInlineConfig: undefined, parser: undefined, parserOptions: undefined, plugins: { jest: [Object] }, processor: undefined, root: undefined, rules: { 'jest/no-alias-methods': 'warn', 'jest/no-disabled-tests': 'warn', 'jest/no-focused-tests': 'error', 'jest/no-identical-title': 'error', 'jest/no-jest-import': 'error', 'jest/no-jasmine-globals': 'warn', 'jest/no-test-prefixes': 'error', 'jest/valid-describe': 'error', 'jest/valid-expect': 'error', 'jest/valid-expect-in-promise': 'error' }, settings: undefined }, { name: '.eslintrc.js#processors["jest/.snap"]', filePath: '/Users/roy/salto_monorepo/packages/salto/.eslintrc.js', criteria: { includes: [Array], excludes: null, basePath: '/Users/roy/salto_monorepo/packages/salto' }, env: undefined, globals: undefined, noInlineConfig: undefined, parser: undefined, parserOptions: undefined, plugins: undefined, processor: 'jest/.snap', root: undefined, rules: undefined, settings: undefined }, { name: '.eslintrc.js', filePath: '/Users/roy/salto_monorepo/packages/salto/.eslintrc.js', criteria: null, env: { es6: true, jest: true, node: true }, globals: { Atomics: 'readonly', SharedArrayBuffer: 'readonly' }, noInlineConfig: undefined, parser: { error: null, filePath: '/Users/roy/salto_monorepo/node_modules/@typescript-eslint/parser/dist/parser.js', id: '@typescript-eslint/parser', importerName: '.eslintrc.js', importerPath: '/Users/roy/salto_monorepo/packages/salto/.eslintrc.js' }, parserOptions: { ecmaFeatures: [Object], ecmaVersion: 2018, sourceType: 'module', useJSXTextNode: true, project: './tsconfig.json', tsconfigRootDir: './' }, plugins: { react: [Object], import: [Object], jest: [Object], '@typescript-eslint': [Object] }, processor: undefined, root: undefined, rules: { 'linebreak-style': [Array], quotes: [Array], 'react/jsx-filename-extension': [Array], 'lines-between-class-members': [Array], '@typescript-eslint/no-parameter-properties': [Array], '@typescript-eslint/explicit-function-return-type': [Array], '@typescript-eslint/explicit-member-accessibility': [Array], 'jsx-a11y/anchor-is-valid': [Array], indent: [Array], '@typescript-eslint/indent': 'off', semi: [Array], 'no-param-reassign': [Array], '@typescript-eslint/no-unused-vars': [Array], 'no-constant-condition': [Array], 'generator-star-spacing': [Array], 'arrow-parens': [Array], 'comma-dangle': [Array], 'implicit-arrow-linebreak': [Array] }, settings: { 'import/resolver': [Object] } }, { name: '.eslintrc.js#overrides[0]', filePath: '/Users/roy/salto_monorepo/packages/salto/.eslintrc.js', criteria: { includes: [Array], excludes: null, basePath: '/Users/roy/salto_monorepo/packages/salto' }, env: undefined, globals: undefined, noInlineConfig: undefined, parser: undefined, parserOptions: undefined, plugins: undefined, processor: undefined, root: undefined, rules: { 'no-useless-constructor': [Array], 'no-empty-function': [Array], '@typescript-eslint/array-type': [Array], '@typescript-eslint/member-delimiter-style': [Array], '@typescript-eslint/ban-ts-ignore': [Array] }, settings: undefined } ] on /Users/roy/salto_monorepo/packages/salto
+2019-09-03T15:04:04.201Z eslint:ignored-paths contains:
+2019-09-03T15:04:04.201Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/.env.example"
+2019-09-03T15:04:04.201Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:04.201Z eslint:ignored-paths   relative = ".env.example"
+2019-09-03T15:04:04.201Z eslint:ignored-paths   result   = true
+2019-09-03T15:04:04.201Z eslint:file-enumerator Didn't match: .env.example
+2019-09-03T15:04:04.201Z eslint:ignored-paths contains:
+2019-09-03T15:04:04.201Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/.eslintignore"
+2019-09-03T15:04:04.201Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:04.201Z eslint:ignored-paths   relative = ".eslintignore"
+2019-09-03T15:04:04.201Z eslint:ignored-paths   result   = true
+2019-09-03T15:04:04.201Z eslint:file-enumerator Didn't match: .eslintignore
+2019-09-03T15:04:04.201Z eslint:ignored-paths contains:
+2019-09-03T15:04:04.201Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/.eslintrc.js"
+2019-09-03T15:04:04.201Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:04.201Z eslint:ignored-paths   relative = ".eslintrc.js"
+2019-09-03T15:04:04.201Z eslint:ignored-paths   result   = true
+2019-09-03T15:04:04.201Z eslint:file-enumerator Yield: .eslintrc.js but ignored
+2019-09-03T15:04:04.201Z eslint:ignored-paths contains:
+2019-09-03T15:04:04.201Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/.gitignore"
+2019-09-03T15:04:04.201Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:04.201Z eslint:ignored-paths   relative = ".gitignore"
+2019-09-03T15:04:04.201Z eslint:ignored-paths   result   = true
+2019-09-03T15:04:04.201Z eslint:file-enumerator Didn't match: .gitignore
+2019-09-03T15:04:04.201Z eslint:ignored-paths contains:
+2019-09-03T15:04:04.201Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/.history/"
+2019-09-03T15:04:04.202Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:04.202Z eslint:ignored-paths   relative = ".history/"
+2019-09-03T15:04:04.202Z eslint:ignored-paths   result   = true
+2019-09-03T15:04:04.202Z eslint:ignored-paths contains:
+2019-09-03T15:04:04.202Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/.travis.yml"
+2019-09-03T15:04:04.202Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:04.202Z eslint:ignored-paths   relative = ".travis.yml"
+2019-09-03T15:04:04.202Z eslint:ignored-paths   result   = true
+2019-09-03T15:04:04.202Z eslint:file-enumerator Didn't match: .travis.yml
+2019-09-03T15:04:04.202Z eslint:ignored-paths contains:
+2019-09-03T15:04:04.202Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/.vscode/"
+2019-09-03T15:04:04.202Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:04.202Z eslint:ignored-paths   relative = ".vscode/"
+2019-09-03T15:04:04.202Z eslint:ignored-paths   result   = true
+2019-09-03T15:04:04.202Z eslint:ignored-paths contains:
+2019-09-03T15:04:04.202Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/1"
+2019-09-03T15:04:04.202Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:04.202Z eslint:ignored-paths   relative = "1"
+2019-09-03T15:04:04.202Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:04.202Z eslint:file-enumerator Didn't match: 1
+2019-09-03T15:04:04.202Z eslint:ignored-paths contains:
+2019-09-03T15:04:04.202Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/README.md"
+2019-09-03T15:04:04.202Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:04.202Z eslint:ignored-paths   relative = "README.md"
+2019-09-03T15:04:04.202Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:04.202Z eslint:file-enumerator Didn't match: README.md
+2019-09-03T15:04:04.202Z eslint:ignored-paths contains:
+2019-09-03T15:04:04.202Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/bin/"
+2019-09-03T15:04:04.202Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:04.202Z eslint:ignored-paths   relative = "bin/"
+2019-09-03T15:04:04.202Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:04.202Z eslint:file-enumerator Enter the directory: /Users/roy/salto_monorepo/packages/salto/bin
+2019-09-03T15:04:04.203Z eslint:cascading-config-array-factory Load config files for /Users/roy/salto_monorepo/packages/salto/bin.
+2019-09-03T15:04:04.203Z eslint:cascading-config-array-factory No cache found: /Users/roy/salto_monorepo/packages/salto/bin.
+2019-09-03T15:04:04.203Z eslint:config-array-factory Config file not found on /Users/roy/salto_monorepo/packages/salto/bin
+2019-09-03T15:04:04.203Z eslint:cascading-config-array-factory Cache hit: /Users/roy/salto_monorepo/packages/salto.
+2019-09-03T15:04:04.203Z eslint:ignored-paths contains:
+2019-09-03T15:04:04.203Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/bin/salto"
+2019-09-03T15:04:04.203Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:04.203Z eslint:ignored-paths   relative = "bin/salto"
+2019-09-03T15:04:04.203Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:04.203Z eslint:file-enumerator Didn't match: salto
+2019-09-03T15:04:04.203Z eslint:file-enumerator Leave the directory: /Users/roy/salto_monorepo/packages/salto/bin
+2019-09-03T15:04:04.203Z eslint:ignored-paths contains:
+2019-09-03T15:04:04.203Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/"
+2019-09-03T15:04:04.203Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:04.203Z eslint:ignored-paths   relative = "coverage/"
+2019-09-03T15:04:04.203Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:04.203Z eslint:file-enumerator Enter the directory: /Users/roy/salto_monorepo/packages/salto/coverage
+2019-09-03T15:04:04.203Z eslint:cascading-config-array-factory Load config files for /Users/roy/salto_monorepo/packages/salto/coverage.
+2019-09-03T15:04:04.203Z eslint:cascading-config-array-factory No cache found: /Users/roy/salto_monorepo/packages/salto/coverage.
+2019-09-03T15:04:04.203Z eslint:config-array-factory Config file not found on /Users/roy/salto_monorepo/packages/salto/coverage
+2019-09-03T15:04:04.203Z eslint:cascading-config-array-factory Cache hit: /Users/roy/salto_monorepo/packages/salto.
+2019-09-03T15:04:04.203Z eslint:ignored-paths contains:
+2019-09-03T15:04:04.203Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/clover.xml"
+2019-09-03T15:04:04.203Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:04.203Z eslint:ignored-paths   relative = "coverage/clover.xml"
+2019-09-03T15:04:04.203Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:04.203Z eslint:file-enumerator Didn't match: clover.xml
+2019-09-03T15:04:04.203Z eslint:ignored-paths contains:
+2019-09-03T15:04:04.203Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/coverage-final.json"
+2019-09-03T15:04:04.203Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:04.203Z eslint:ignored-paths   relative = "coverage/coverage-final.json"
+2019-09-03T15:04:04.203Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:04.204Z eslint:file-enumerator Didn't match: coverage-final.json
+2019-09-03T15:04:04.204Z eslint:ignored-paths contains:
+2019-09-03T15:04:04.204Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/coverage-summary.json"
+2019-09-03T15:04:04.204Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:04.204Z eslint:ignored-paths   relative = "coverage/coverage-summary.json"
+2019-09-03T15:04:04.204Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:04.204Z eslint:file-enumerator Didn't match: coverage-summary.json
+2019-09-03T15:04:04.204Z eslint:ignored-paths contains:
+2019-09-03T15:04:04.204Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/"
+2019-09-03T15:04:04.204Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:04.204Z eslint:ignored-paths   relative = "coverage/lcov-report/"
+2019-09-03T15:04:04.204Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:04.204Z eslint:file-enumerator Enter the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report
+2019-09-03T15:04:04.204Z eslint:cascading-config-array-factory Load config files for /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report.
+2019-09-03T15:04:04.204Z eslint:cascading-config-array-factory No cache found: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report.
+2019-09-03T15:04:04.204Z eslint:config-array-factory Config file not found on /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report
+2019-09-03T15:04:04.204Z eslint:cascading-config-array-factory Cache hit: /Users/roy/salto_monorepo/packages/salto/coverage.
+2019-09-03T15:04:04.204Z eslint:ignored-paths contains:
+2019-09-03T15:04:04.204Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/base.css"
+2019-09-03T15:04:04.204Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:04.204Z eslint:ignored-paths   relative = "coverage/lcov-report/base.css"
+2019-09-03T15:04:04.205Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:04.205Z eslint:file-enumerator Didn't match: base.css
+2019-09-03T15:04:04.205Z eslint:ignored-paths contains:
+2019-09-03T15:04:04.205Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/block-navigation.js"
+2019-09-03T15:04:04.205Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:04.205Z eslint:ignored-paths   relative = "coverage/lcov-report/block-navigation.js"
+2019-09-03T15:04:04.205Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:04.205Z eslint:file-enumerator Yield: block-navigation.js
+2019-09-03T15:04:04.205Z eslint:cli-engine Lint /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/block-navigation.js
+2019-09-03T15:04:04.205Z eslint:linter Linting code for /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/block-navigation.js (pass 1)
+2019-09-03T15:04:04.205Z eslint:linter Verify
+2019-09-03T15:04:04.205Z eslint:linter With ConfigArray: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/block-navigation.js
+2019-09-03T15:04:05.906Z eslint:config-comment-parser Parsing list config
+2019-09-03T15:04:06.030Z eslint:linter Generating fixed text for /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/block-navigation.js (pass 1)
+2019-09-03T15:04:06.030Z eslint:source-code-fixer Applying fixes
+2019-09-03T15:04:06.030Z eslint:source-code-fixer shouldFix parameter was false, not attempting fixes
+2019-09-03T15:04:06.030Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.030Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/blueprints/"
+2019-09-03T15:04:06.030Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.030Z eslint:ignored-paths   relative = "coverage/lcov-report/blueprints/"
+2019-09-03T15:04:06.031Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.031Z eslint:file-enumerator Enter the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/blueprints
+2019-09-03T15:04:06.031Z eslint:cascading-config-array-factory Load config files for /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/blueprints.
+2019-09-03T15:04:06.031Z eslint:cascading-config-array-factory No cache found: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/blueprints.
+2019-09-03T15:04:06.031Z eslint:config-array-factory Config file not found on /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/blueprints
+2019-09-03T15:04:06.031Z eslint:cascading-config-array-factory Cache hit: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report.
+2019-09-03T15:04:06.031Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.031Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/blueprints/blueprint.ts.html"
+2019-09-03T15:04:06.031Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.031Z eslint:ignored-paths   relative = "coverage/lcov-report/blueprints/blueprint.ts.html"
+2019-09-03T15:04:06.031Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.031Z eslint:file-enumerator Didn't match: blueprint.ts.html
+2019-09-03T15:04:06.031Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.031Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/blueprints/index.html"
+2019-09-03T15:04:06.031Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.031Z eslint:ignored-paths   relative = "coverage/lcov-report/blueprints/index.html"
+2019-09-03T15:04:06.031Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.031Z eslint:file-enumerator Didn't match: index.html
+2019-09-03T15:04:06.031Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.031Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/blueprints/loader.ts.html"
+2019-09-03T15:04:06.031Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.031Z eslint:ignored-paths   relative = "coverage/lcov-report/blueprints/loader.ts.html"
+2019-09-03T15:04:06.031Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.031Z eslint:file-enumerator Didn't match: loader.ts.html
+2019-09-03T15:04:06.031Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.031Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/blueprints/validator.ts.html"
+2019-09-03T15:04:06.031Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.031Z eslint:ignored-paths   relative = "coverage/lcov-report/blueprints/validator.ts.html"
+2019-09-03T15:04:06.031Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.031Z eslint:file-enumerator Didn't match: validator.ts.html
+2019-09-03T15:04:06.031Z eslint:file-enumerator Leave the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/blueprints
+2019-09-03T15:04:06.031Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.031Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/cli/"
+2019-09-03T15:04:06.031Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.031Z eslint:ignored-paths   relative = "coverage/lcov-report/cli/"
+2019-09-03T15:04:06.032Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.032Z eslint:file-enumerator Enter the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/cli
+2019-09-03T15:04:06.032Z eslint:cascading-config-array-factory Load config files for /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/cli.
+2019-09-03T15:04:06.032Z eslint:cascading-config-array-factory No cache found: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/cli.
+2019-09-03T15:04:06.032Z eslint:config-array-factory Config file not found on /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/cli
+2019-09-03T15:04:06.032Z eslint:cascading-config-array-factory Cache hit: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report.
+2019-09-03T15:04:06.032Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.032Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/cli/action_filler.ts.html"
+2019-09-03T15:04:06.032Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.032Z eslint:ignored-paths   relative = "coverage/lcov-report/cli/action_filler.ts.html"
+2019-09-03T15:04:06.032Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.032Z eslint:file-enumerator Didn't match: action_filler.ts.html
+2019-09-03T15:04:06.032Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.032Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/cli/aliases.ts.html"
+2019-09-03T15:04:06.032Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.032Z eslint:ignored-paths   relative = "coverage/lcov-report/cli/aliases.ts.html"
+2019-09-03T15:04:06.032Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.032Z eslint:file-enumerator Didn't match: aliases.ts.html
+2019-09-03T15:04:06.032Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.032Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/cli/argparser.ts.html"
+2019-09-03T15:04:06.032Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.032Z eslint:ignored-paths   relative = "coverage/lcov-report/cli/argparser.ts.html"
+2019-09-03T15:04:06.032Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.032Z eslint:file-enumerator Didn't match: argparser.ts.html
+2019-09-03T15:04:06.032Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.032Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/cli/args.ts.html"
+2019-09-03T15:04:06.032Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.032Z eslint:ignored-paths   relative = "coverage/lcov-report/cli/args.ts.html"
+2019-09-03T15:04:06.032Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.033Z eslint:file-enumerator Didn't match: args.ts.html
+2019-09-03T15:04:06.033Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.033Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/cli/blueprint.ts.html"
+2019-09-03T15:04:06.033Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.033Z eslint:ignored-paths   relative = "coverage/lcov-report/cli/blueprint.ts.html"
+2019-09-03T15:04:06.033Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.033Z eslint:file-enumerator Didn't match: blueprint.ts.html
+2019-09-03T15:04:06.033Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.033Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/cli/builder.ts.html"
+2019-09-03T15:04:06.033Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.033Z eslint:ignored-paths   relative = "coverage/lcov-report/cli/builder.ts.html"
+2019-09-03T15:04:06.033Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.033Z eslint:file-enumerator Didn't match: builder.ts.html
+2019-09-03T15:04:06.033Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.033Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/cli/callbacks.ts.html"
+2019-09-03T15:04:06.033Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.033Z eslint:ignored-paths   relative = "coverage/lcov-report/cli/callbacks.ts.html"
+2019-09-03T15:04:06.033Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.033Z eslint:file-enumerator Didn't match: callbacks.ts.html
+2019-09-03T15:04:06.033Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.033Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/cli/cli.ts.html"
+2019-09-03T15:04:06.033Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.033Z eslint:ignored-paths   relative = "coverage/lcov-report/cli/cli.ts.html"
+2019-09-03T15:04:06.033Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.033Z eslint:file-enumerator Didn't match: cli.ts.html
+2019-09-03T15:04:06.033Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.033Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/cli/commands/"
+2019-09-03T15:04:06.033Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.033Z eslint:ignored-paths   relative = "coverage/lcov-report/cli/commands/"
+2019-09-03T15:04:06.033Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.033Z eslint:file-enumerator Enter the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/cli/commands
+2019-09-03T15:04:06.033Z eslint:cascading-config-array-factory Load config files for /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/cli/commands.
+2019-09-03T15:04:06.033Z eslint:cascading-config-array-factory No cache found: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/cli/commands.
+2019-09-03T15:04:06.033Z eslint:config-array-factory Config file not found on /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/cli/commands
+2019-09-03T15:04:06.033Z eslint:cascading-config-array-factory Cache hit: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/cli.
+2019-09-03T15:04:06.033Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.033Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/cli/commands/apply.ts.html"
+2019-09-03T15:04:06.033Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.033Z eslint:ignored-paths   relative = "coverage/lcov-report/cli/commands/apply.ts.html"
+2019-09-03T15:04:06.033Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.033Z eslint:file-enumerator Didn't match: apply.ts.html
+2019-09-03T15:04:06.034Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.034Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/cli/commands/index.html"
+2019-09-03T15:04:06.034Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.034Z eslint:ignored-paths   relative = "coverage/lcov-report/cli/commands/index.html"
+2019-09-03T15:04:06.034Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.034Z eslint:file-enumerator Didn't match: index.html
+2019-09-03T15:04:06.034Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.034Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/cli/commands/plan.ts.html"
+2019-09-03T15:04:06.034Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.034Z eslint:ignored-paths   relative = "coverage/lcov-report/cli/commands/plan.ts.html"
+2019-09-03T15:04:06.034Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.034Z eslint:file-enumerator Didn't match: plan.ts.html
+2019-09-03T15:04:06.034Z eslint:file-enumerator Leave the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/cli/commands
+2019-09-03T15:04:06.034Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.034Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/cli/commands.ts.html"
+2019-09-03T15:04:06.034Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.034Z eslint:ignored-paths   relative = "coverage/lcov-report/cli/commands.ts.html"
+2019-09-03T15:04:06.034Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.034Z eslint:file-enumerator Didn't match: commands.ts.html
+2019-09-03T15:04:06.034Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.034Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/cli/filters/"
+2019-09-03T15:04:06.034Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.034Z eslint:ignored-paths   relative = "coverage/lcov-report/cli/filters/"
+2019-09-03T15:04:06.034Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.034Z eslint:file-enumerator Enter the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/cli/filters
+2019-09-03T15:04:06.034Z eslint:cascading-config-array-factory Load config files for /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/cli/filters.
+2019-09-03T15:04:06.034Z eslint:cascading-config-array-factory No cache found: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/cli/filters.
+2019-09-03T15:04:06.034Z eslint:config-array-factory Config file not found on /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/cli/filters
+2019-09-03T15:04:06.034Z eslint:cascading-config-array-factory Cache hit: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/cli.
+2019-09-03T15:04:06.034Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.034Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/cli/filters/blueprints.ts.html"
+2019-09-03T15:04:06.034Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.034Z eslint:ignored-paths   relative = "coverage/lcov-report/cli/filters/blueprints.ts.html"
+2019-09-03T15:04:06.034Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.034Z eslint:file-enumerator Didn't match: blueprints.ts.html
+2019-09-03T15:04:06.035Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.035Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/cli/filters/index.html"
+2019-09-03T15:04:06.035Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.035Z eslint:ignored-paths   relative = "coverage/lcov-report/cli/filters/index.html"
+2019-09-03T15:04:06.035Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.035Z eslint:file-enumerator Didn't match: index.html
+2019-09-03T15:04:06.035Z eslint:file-enumerator Leave the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/cli/filters
+2019-09-03T15:04:06.035Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.035Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/cli/formatter.ts.html"
+2019-09-03T15:04:06.035Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.035Z eslint:ignored-paths   relative = "coverage/lcov-report/cli/formatter.ts.html"
+2019-09-03T15:04:06.035Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.035Z eslint:file-enumerator Didn't match: formatter.ts.html
+2019-09-03T15:04:06.035Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.035Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/cli/index.html"
+2019-09-03T15:04:06.035Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.035Z eslint:ignored-paths   relative = "coverage/lcov-report/cli/index.html"
+2019-09-03T15:04:06.035Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.035Z eslint:file-enumerator Didn't match: index.html
+2019-09-03T15:04:06.035Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.035Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/cli/prompts.ts.html"
+2019-09-03T15:04:06.035Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.035Z eslint:ignored-paths   relative = "coverage/lcov-report/cli/prompts.ts.html"
+2019-09-03T15:04:06.035Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.035Z eslint:file-enumerator Didn't match: prompts.ts.html
+2019-09-03T15:04:06.035Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.035Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/cli/salto-cli.ts.html"
+2019-09-03T15:04:06.035Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.035Z eslint:ignored-paths   relative = "coverage/lcov-report/cli/salto-cli.ts.html"
+2019-09-03T15:04:06.035Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.035Z eslint:file-enumerator Didn't match: salto-cli.ts.html
+2019-09-03T15:04:06.035Z eslint:file-enumerator Leave the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/cli
+2019-09-03T15:04:06.035Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.035Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/collections/"
+2019-09-03T15:04:06.035Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.036Z eslint:ignored-paths   relative = "coverage/lcov-report/collections/"
+2019-09-03T15:04:06.036Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.036Z eslint:file-enumerator Enter the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/collections
+2019-09-03T15:04:06.036Z eslint:cascading-config-array-factory Load config files for /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/collections.
+2019-09-03T15:04:06.036Z eslint:cascading-config-array-factory No cache found: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/collections.
+2019-09-03T15:04:06.036Z eslint:config-array-factory Config file not found on /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/collections
+2019-09-03T15:04:06.036Z eslint:cascading-config-array-factory Cache hit: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report.
+2019-09-03T15:04:06.036Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.036Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/collections/index.html"
+2019-09-03T15:04:06.036Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.036Z eslint:ignored-paths   relative = "coverage/lcov-report/collections/index.html"
+2019-09-03T15:04:06.036Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.036Z eslint:file-enumerator Didn't match: index.html
+2019-09-03T15:04:06.036Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.036Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/collections/map.js.html"
+2019-09-03T15:04:06.036Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.036Z eslint:ignored-paths   relative = "coverage/lcov-report/collections/map.js.html"
+2019-09-03T15:04:06.036Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.036Z eslint:file-enumerator Didn't match: map.js.html
+2019-09-03T15:04:06.036Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.036Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/collections/map.ts.html"
+2019-09-03T15:04:06.036Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.036Z eslint:ignored-paths   relative = "coverage/lcov-report/collections/map.ts.html"
+2019-09-03T15:04:06.036Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.036Z eslint:file-enumerator Didn't match: map.ts.html
+2019-09-03T15:04:06.036Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.036Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/collections/set.js.html"
+2019-09-03T15:04:06.036Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.036Z eslint:ignored-paths   relative = "coverage/lcov-report/collections/set.js.html"
+2019-09-03T15:04:06.036Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.036Z eslint:file-enumerator Didn't match: set.js.html
+2019-09-03T15:04:06.036Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.036Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/collections/set.ts.html"
+2019-09-03T15:04:06.036Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.036Z eslint:ignored-paths   relative = "coverage/lcov-report/collections/set.ts.html"
+2019-09-03T15:04:06.036Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.036Z eslint:file-enumerator Didn't match: set.ts.html
+2019-09-03T15:04:06.036Z eslint:file-enumerator Leave the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/collections
+2019-09-03T15:04:06.036Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.036Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/core/"
+2019-09-03T15:04:06.036Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.036Z eslint:ignored-paths   relative = "coverage/lcov-report/core/"
+2019-09-03T15:04:06.036Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.036Z eslint:file-enumerator Enter the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/core
+2019-09-03T15:04:06.037Z eslint:cascading-config-array-factory Load config files for /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/core.
+2019-09-03T15:04:06.037Z eslint:cascading-config-array-factory No cache found: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/core.
+2019-09-03T15:04:06.037Z eslint:config-array-factory Config file not found on /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/core
+2019-09-03T15:04:06.037Z eslint:cascading-config-array-factory Cache hit: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report.
+2019-09-03T15:04:06.037Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.037Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/core/adapters.ts.html"
+2019-09-03T15:04:06.037Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.037Z eslint:ignored-paths   relative = "coverage/lcov-report/core/adapters.ts.html"
+2019-09-03T15:04:06.037Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.037Z eslint:file-enumerator Didn't match: adapters.ts.html
+2019-09-03T15:04:06.037Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.037Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/core/commands.ts.html"
+2019-09-03T15:04:06.037Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.037Z eslint:ignored-paths   relative = "coverage/lcov-report/core/commands.ts.html"
+2019-09-03T15:04:06.037Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.037Z eslint:file-enumerator Didn't match: commands.ts.html
+2019-09-03T15:04:06.037Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.037Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/core/core.ts.html"
+2019-09-03T15:04:06.037Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.037Z eslint:ignored-paths   relative = "coverage/lcov-report/core/core.ts.html"
+2019-09-03T15:04:06.037Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.037Z eslint:file-enumerator Didn't match: core.ts.html
+2019-09-03T15:04:06.037Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.037Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/core/index.html"
+2019-09-03T15:04:06.037Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.037Z eslint:ignored-paths   relative = "coverage/lcov-report/core/index.html"
+2019-09-03T15:04:06.037Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.037Z eslint:file-enumerator Didn't match: index.html
+2019-09-03T15:04:06.037Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.037Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/core/merger.ts.html"
+2019-09-03T15:04:06.037Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.037Z eslint:ignored-paths   relative = "coverage/lcov-report/core/merger.ts.html"
+2019-09-03T15:04:06.037Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.037Z eslint:file-enumerator Didn't match: merger.ts.html
+2019-09-03T15:04:06.037Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.037Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/core/search.ts.html"
+2019-09-03T15:04:06.037Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.037Z eslint:ignored-paths   relative = "coverage/lcov-report/core/search.ts.html"
+2019-09-03T15:04:06.037Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.037Z eslint:file-enumerator Didn't match: search.ts.html
+2019-09-03T15:04:06.037Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.038Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/core/tasks/"
+2019-09-03T15:04:06.038Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.038Z eslint:ignored-paths   relative = "coverage/lcov-report/core/tasks/"
+2019-09-03T15:04:06.038Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.038Z eslint:file-enumerator Enter the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/core/tasks
+2019-09-03T15:04:06.038Z eslint:cascading-config-array-factory Load config files for /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/core/tasks.
+2019-09-03T15:04:06.038Z eslint:cascading-config-array-factory No cache found: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/core/tasks.
+2019-09-03T15:04:06.038Z eslint:config-array-factory Config file not found on /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/core/tasks
+2019-09-03T15:04:06.038Z eslint:cascading-config-array-factory Cache hit: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/core.
+2019-09-03T15:04:06.038Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.038Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/core/tasks/apply.ts.html"
+2019-09-03T15:04:06.038Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.038Z eslint:ignored-paths   relative = "coverage/lcov-report/core/tasks/apply.ts.html"
+2019-09-03T15:04:06.038Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.038Z eslint:file-enumerator Didn't match: apply.ts.html
+2019-09-03T15:04:06.038Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.038Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/core/tasks/index.html"
+2019-09-03T15:04:06.038Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.038Z eslint:ignored-paths   relative = "coverage/lcov-report/core/tasks/index.html"
+2019-09-03T15:04:06.038Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.038Z eslint:file-enumerator Didn't match: index.html
+2019-09-03T15:04:06.038Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.038Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/core/tasks/plan.ts.html"
+2019-09-03T15:04:06.038Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.038Z eslint:ignored-paths   relative = "coverage/lcov-report/core/tasks/plan.ts.html"
+2019-09-03T15:04:06.038Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.038Z eslint:file-enumerator Didn't match: plan.ts.html
+2019-09-03T15:04:06.038Z eslint:file-enumerator Leave the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/core/tasks
+2019-09-03T15:04:06.038Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.038Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/core/validator.ts.html"
+2019-09-03T15:04:06.038Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.038Z eslint:ignored-paths   relative = "coverage/lcov-report/core/validator.ts.html"
+2019-09-03T15:04:06.038Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.038Z eslint:file-enumerator Didn't match: validator.ts.html
+2019-09-03T15:04:06.038Z eslint:file-enumerator Leave the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/core
+2019-09-03T15:04:06.038Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.038Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dag/"
+2019-09-03T15:04:06.038Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.038Z eslint:ignored-paths   relative = "coverage/lcov-report/dag/"
+2019-09-03T15:04:06.038Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.038Z eslint:file-enumerator Enter the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dag
+2019-09-03T15:04:06.038Z eslint:cascading-config-array-factory Load config files for /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dag.
+2019-09-03T15:04:06.038Z eslint:cascading-config-array-factory No cache found: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dag.
+2019-09-03T15:04:06.039Z eslint:config-array-factory Config file not found on /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dag
+2019-09-03T15:04:06.039Z eslint:cascading-config-array-factory Cache hit: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report.
+2019-09-03T15:04:06.039Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.039Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dag/diff.ts.html"
+2019-09-03T15:04:06.039Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.039Z eslint:ignored-paths   relative = "coverage/lcov-report/dag/diff.ts.html"
+2019-09-03T15:04:06.039Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.039Z eslint:file-enumerator Didn't match: diff.ts.html
+2019-09-03T15:04:06.039Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.039Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dag/index.html"
+2019-09-03T15:04:06.039Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.039Z eslint:ignored-paths   relative = "coverage/lcov-report/dag/index.html"
+2019-09-03T15:04:06.039Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.039Z eslint:file-enumerator Didn't match: index.html
+2019-09-03T15:04:06.039Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.039Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dag/nodemap.ts.html"
+2019-09-03T15:04:06.039Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.039Z eslint:ignored-paths   relative = "coverage/lcov-report/dag/nodemap.ts.html"
+2019-09-03T15:04:06.039Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.039Z eslint:file-enumerator Didn't match: nodemap.ts.html
+2019-09-03T15:04:06.039Z eslint:file-enumerator Leave the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dag
+2019-09-03T15:04:06.039Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.039Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/"
+2019-09-03T15:04:06.039Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.039Z eslint:ignored-paths   relative = "coverage/lcov-report/dist/"
+2019-09-03T15:04:06.039Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.039Z eslint:file-enumerator Enter the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist
+2019-09-03T15:04:06.039Z eslint:cascading-config-array-factory Load config files for /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist.
+2019-09-03T15:04:06.039Z eslint:cascading-config-array-factory No cache found: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist.
+2019-09-03T15:04:06.039Z eslint:config-array-factory Config file not found on /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist
+2019-09-03T15:04:06.039Z eslint:cascading-config-array-factory Cache hit: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report.
+2019-09-03T15:04:06.039Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.039Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/index.html"
+2019-09-03T15:04:06.039Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.039Z eslint:ignored-paths   relative = "coverage/lcov-report/dist/index.html"
+2019-09-03T15:04:06.039Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.039Z eslint:file-enumerator Didn't match: index.html
+2019-09-03T15:04:06.039Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.039Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/index.js.html"
+2019-09-03T15:04:06.039Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.039Z eslint:ignored-paths   relative = "coverage/lcov-report/dist/index.js.html"
+2019-09-03T15:04:06.039Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.039Z eslint:file-enumerator Didn't match: index.js.html
+2019-09-03T15:04:06.040Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.040Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src/"
+2019-09-03T15:04:06.040Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.040Z eslint:ignored-paths   relative = "coverage/lcov-report/dist/src/"
+2019-09-03T15:04:06.040Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.040Z eslint:file-enumerator Enter the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src
+2019-09-03T15:04:06.040Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.040Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src/cli/"
+2019-09-03T15:04:06.040Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.040Z eslint:ignored-paths   relative = "coverage/lcov-report/dist/src/cli/"
+2019-09-03T15:04:06.040Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.040Z eslint:file-enumerator Enter the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src/cli
+2019-09-03T15:04:06.040Z eslint:cascading-config-array-factory Load config files for /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src/cli.
+2019-09-03T15:04:06.040Z eslint:cascading-config-array-factory No cache found: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src/cli.
+2019-09-03T15:04:06.040Z eslint:config-array-factory Config file not found on /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src/cli
+2019-09-03T15:04:06.040Z eslint:cascading-config-array-factory No cache found: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src.
+2019-09-03T15:04:06.040Z eslint:config-array-factory Config file not found on /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src
+2019-09-03T15:04:06.040Z eslint:cascading-config-array-factory Cache hit: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist.
+2019-09-03T15:04:06.040Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.040Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src/cli/commands.js.html"
+2019-09-03T15:04:06.040Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.040Z eslint:ignored-paths   relative = "coverage/lcov-report/dist/src/cli/commands.js.html"
+2019-09-03T15:04:06.040Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.040Z eslint:file-enumerator Didn't match: commands.js.html
+2019-09-03T15:04:06.040Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.040Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src/cli/index.html"
+2019-09-03T15:04:06.040Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.040Z eslint:ignored-paths   relative = "coverage/lcov-report/dist/src/cli/index.html"
+2019-09-03T15:04:06.040Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.040Z eslint:file-enumerator Didn't match: index.html
+2019-09-03T15:04:06.040Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.040Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src/cli/prompts.js.html"
+2019-09-03T15:04:06.040Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.040Z eslint:ignored-paths   relative = "coverage/lcov-report/dist/src/cli/prompts.js.html"
+2019-09-03T15:04:06.040Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.040Z eslint:file-enumerator Didn't match: prompts.js.html
+2019-09-03T15:04:06.040Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.040Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src/cli/salto-cli.js.html"
+2019-09-03T15:04:06.040Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.040Z eslint:ignored-paths   relative = "coverage/lcov-report/dist/src/cli/salto-cli.js.html"
+2019-09-03T15:04:06.040Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.041Z eslint:file-enumerator Didn't match: salto-cli.js.html
+2019-09-03T15:04:06.041Z eslint:file-enumerator Leave the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src/cli
+2019-09-03T15:04:06.041Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.041Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src/collections/"
+2019-09-03T15:04:06.041Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.041Z eslint:ignored-paths   relative = "coverage/lcov-report/dist/src/collections/"
+2019-09-03T15:04:06.041Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.041Z eslint:file-enumerator Enter the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src/collections
+2019-09-03T15:04:06.041Z eslint:cascading-config-array-factory Load config files for /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src/collections.
+2019-09-03T15:04:06.041Z eslint:cascading-config-array-factory No cache found: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src/collections.
+2019-09-03T15:04:06.041Z eslint:config-array-factory Config file not found on /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src/collections
+2019-09-03T15:04:06.041Z eslint:cascading-config-array-factory Cache hit: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src.
+2019-09-03T15:04:06.041Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.041Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src/collections/index.html"
+2019-09-03T15:04:06.041Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.041Z eslint:ignored-paths   relative = "coverage/lcov-report/dist/src/collections/index.html"
+2019-09-03T15:04:06.041Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.041Z eslint:file-enumerator Didn't match: index.html
+2019-09-03T15:04:06.041Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.041Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src/collections/map.js.html"
+2019-09-03T15:04:06.041Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.041Z eslint:ignored-paths   relative = "coverage/lcov-report/dist/src/collections/map.js.html"
+2019-09-03T15:04:06.041Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.041Z eslint:file-enumerator Didn't match: map.js.html
+2019-09-03T15:04:06.041Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.041Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src/collections/set.js.html"
+2019-09-03T15:04:06.041Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.041Z eslint:ignored-paths   relative = "coverage/lcov-report/dist/src/collections/set.js.html"
+2019-09-03T15:04:06.041Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.041Z eslint:file-enumerator Didn't match: set.js.html
+2019-09-03T15:04:06.041Z eslint:file-enumerator Leave the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src/collections
+2019-09-03T15:04:06.041Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.041Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src/core/"
+2019-09-03T15:04:06.041Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.041Z eslint:ignored-paths   relative = "coverage/lcov-report/dist/src/core/"
+2019-09-03T15:04:06.041Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.041Z eslint:file-enumerator Enter the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src/core
+2019-09-03T15:04:06.041Z eslint:cascading-config-array-factory Load config files for /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src/core.
+2019-09-03T15:04:06.041Z eslint:cascading-config-array-factory No cache found: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src/core.
+2019-09-03T15:04:06.041Z eslint:config-array-factory Config file not found on /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src/core
+2019-09-03T15:04:06.041Z eslint:cascading-config-array-factory Cache hit: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src.
+2019-09-03T15:04:06.042Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.042Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src/core/core.js.html"
+2019-09-03T15:04:06.042Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.042Z eslint:ignored-paths   relative = "coverage/lcov-report/dist/src/core/core.js.html"
+2019-09-03T15:04:06.042Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.042Z eslint:file-enumerator Didn't match: core.js.html
+2019-09-03T15:04:06.042Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.042Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src/core/index.html"
+2019-09-03T15:04:06.042Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.042Z eslint:ignored-paths   relative = "coverage/lcov-report/dist/src/core/index.html"
+2019-09-03T15:04:06.042Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.042Z eslint:file-enumerator Didn't match: index.html
+2019-09-03T15:04:06.042Z eslint:file-enumerator Leave the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src/core
+2019-09-03T15:04:06.042Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.042Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src/dag/"
+2019-09-03T15:04:06.042Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.042Z eslint:ignored-paths   relative = "coverage/lcov-report/dist/src/dag/"
+2019-09-03T15:04:06.042Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.042Z eslint:file-enumerator Enter the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src/dag
+2019-09-03T15:04:06.042Z eslint:cascading-config-array-factory Load config files for /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src/dag.
+2019-09-03T15:04:06.042Z eslint:cascading-config-array-factory No cache found: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src/dag.
+2019-09-03T15:04:06.042Z eslint:config-array-factory Config file not found on /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src/dag
+2019-09-03T15:04:06.042Z eslint:cascading-config-array-factory Cache hit: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src.
+2019-09-03T15:04:06.042Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.042Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src/dag/diff.js.html"
+2019-09-03T15:04:06.042Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.042Z eslint:ignored-paths   relative = "coverage/lcov-report/dist/src/dag/diff.js.html"
+2019-09-03T15:04:06.042Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.042Z eslint:file-enumerator Didn't match: diff.js.html
+2019-09-03T15:04:06.042Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.042Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src/dag/index.html"
+2019-09-03T15:04:06.042Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.042Z eslint:ignored-paths   relative = "coverage/lcov-report/dist/src/dag/index.html"
+2019-09-03T15:04:06.042Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.042Z eslint:file-enumerator Didn't match: index.html
+2019-09-03T15:04:06.042Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.042Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src/dag/nodemap.js.html"
+2019-09-03T15:04:06.042Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.042Z eslint:ignored-paths   relative = "coverage/lcov-report/dist/src/dag/nodemap.js.html"
+2019-09-03T15:04:06.042Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.042Z eslint:file-enumerator Didn't match: nodemap.js.html
+2019-09-03T15:04:06.042Z eslint:file-enumerator Leave the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src/dag
+2019-09-03T15:04:06.042Z eslint:cascading-config-array-factory Load config files for /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src.
+2019-09-03T15:04:06.042Z eslint:cascading-config-array-factory Cache hit: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src.
+2019-09-03T15:04:06.043Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.043Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src/index.html"
+2019-09-03T15:04:06.043Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.043Z eslint:ignored-paths   relative = "coverage/lcov-report/dist/src/index.html"
+2019-09-03T15:04:06.043Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.043Z eslint:file-enumerator Didn't match: index.html
+2019-09-03T15:04:06.043Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.043Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src/log.js.html"
+2019-09-03T15:04:06.043Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.043Z eslint:ignored-paths   relative = "coverage/lcov-report/dist/src/log.js.html"
+2019-09-03T15:04:06.043Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.043Z eslint:file-enumerator Didn't match: log.js.html
+2019-09-03T15:04:06.043Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.043Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src/parser/"
+2019-09-03T15:04:06.043Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.043Z eslint:ignored-paths   relative = "coverage/lcov-report/dist/src/parser/"
+2019-09-03T15:04:06.043Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.043Z eslint:file-enumerator Enter the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src/parser
+2019-09-03T15:04:06.043Z eslint:cascading-config-array-factory Load config files for /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src/parser.
+2019-09-03T15:04:06.043Z eslint:cascading-config-array-factory No cache found: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src/parser.
+2019-09-03T15:04:06.043Z eslint:config-array-factory Config file not found on /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src/parser
+2019-09-03T15:04:06.043Z eslint:cascading-config-array-factory Cache hit: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src.
+2019-09-03T15:04:06.043Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.043Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src/parser/hcl.js.html"
+2019-09-03T15:04:06.043Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.043Z eslint:ignored-paths   relative = "coverage/lcov-report/dist/src/parser/hcl.js.html"
+2019-09-03T15:04:06.043Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.043Z eslint:file-enumerator Didn't match: hcl.js.html
+2019-09-03T15:04:06.043Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.043Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src/parser/index.html"
+2019-09-03T15:04:06.043Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.043Z eslint:ignored-paths   relative = "coverage/lcov-report/dist/src/parser/index.html"
+2019-09-03T15:04:06.043Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.043Z eslint:file-enumerator Didn't match: index.html
+2019-09-03T15:04:06.043Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.043Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src/parser/salto.js.html"
+2019-09-03T15:04:06.043Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.043Z eslint:ignored-paths   relative = "coverage/lcov-report/dist/src/parser/salto.js.html"
+2019-09-03T15:04:06.043Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.043Z eslint:file-enumerator Didn't match: salto.js.html
+2019-09-03T15:04:06.043Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.043Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src/parser/wasm_exec.js.html"
+2019-09-03T15:04:06.043Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.044Z eslint:ignored-paths   relative = "coverage/lcov-report/dist/src/parser/wasm_exec.js.html"
+2019-09-03T15:04:06.044Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.044Z eslint:file-enumerator Didn't match: wasm_exec.js.html
+2019-09-03T15:04:06.044Z eslint:file-enumerator Leave the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src/parser
+2019-09-03T15:04:06.044Z eslint:file-enumerator Leave the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/src
+2019-09-03T15:04:06.044Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.044Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/test/"
+2019-09-03T15:04:06.044Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.044Z eslint:ignored-paths   relative = "coverage/lcov-report/dist/test/"
+2019-09-03T15:04:06.044Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.044Z eslint:file-enumerator Enter the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/test
+2019-09-03T15:04:06.044Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.044Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/test/core/"
+2019-09-03T15:04:06.044Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.044Z eslint:ignored-paths   relative = "coverage/lcov-report/dist/test/core/"
+2019-09-03T15:04:06.044Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.044Z eslint:file-enumerator Enter the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/test/core
+2019-09-03T15:04:06.044Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.044Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/test/core/mocks/"
+2019-09-03T15:04:06.044Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.044Z eslint:ignored-paths   relative = "coverage/lcov-report/dist/test/core/mocks/"
+2019-09-03T15:04:06.044Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.044Z eslint:file-enumerator Enter the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/test/core/mocks
+2019-09-03T15:04:06.044Z eslint:cascading-config-array-factory Load config files for /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/test/core/mocks.
+2019-09-03T15:04:06.044Z eslint:cascading-config-array-factory No cache found: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/test/core/mocks.
+2019-09-03T15:04:06.044Z eslint:config-array-factory Config file not found on /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/test/core/mocks
+2019-09-03T15:04:06.044Z eslint:cascading-config-array-factory No cache found: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/test/core.
+2019-09-03T15:04:06.044Z eslint:config-array-factory Config file not found on /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/test/core
+2019-09-03T15:04:06.044Z eslint:cascading-config-array-factory No cache found: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/test.
+2019-09-03T15:04:06.044Z eslint:config-array-factory Config file not found on /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/test
+2019-09-03T15:04:06.044Z eslint:cascading-config-array-factory Cache hit: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist.
+2019-09-03T15:04:06.044Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.045Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/test/core/mocks/core.js.html"
+2019-09-03T15:04:06.045Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.045Z eslint:ignored-paths   relative = "coverage/lcov-report/dist/test/core/mocks/core.js.html"
+2019-09-03T15:04:06.045Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.045Z eslint:file-enumerator Didn't match: core.js.html
+2019-09-03T15:04:06.045Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.045Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/test/core/mocks/index.html"
+2019-09-03T15:04:06.045Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.045Z eslint:ignored-paths   relative = "coverage/lcov-report/dist/test/core/mocks/index.html"
+2019-09-03T15:04:06.045Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.045Z eslint:file-enumerator Didn't match: index.html
+2019-09-03T15:04:06.045Z eslint:file-enumerator Leave the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/test/core/mocks
+2019-09-03T15:04:06.045Z eslint:file-enumerator Leave the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/test/core
+2019-09-03T15:04:06.045Z eslint:file-enumerator Leave the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist/test
+2019-09-03T15:04:06.045Z eslint:file-enumerator Leave the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/dist
+2019-09-03T15:04:06.045Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.045Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/index.html"
+2019-09-03T15:04:06.045Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.045Z eslint:ignored-paths   relative = "coverage/lcov-report/index.html"
+2019-09-03T15:04:06.045Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.045Z eslint:file-enumerator Didn't match: index.html
+2019-09-03T15:04:06.045Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.045Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/parser/"
+2019-09-03T15:04:06.045Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.045Z eslint:ignored-paths   relative = "coverage/lcov-report/parser/"
+2019-09-03T15:04:06.045Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.045Z eslint:file-enumerator Enter the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/parser
+2019-09-03T15:04:06.045Z eslint:cascading-config-array-factory Load config files for /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/parser.
+2019-09-03T15:04:06.045Z eslint:cascading-config-array-factory No cache found: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/parser.
+2019-09-03T15:04:06.045Z eslint:config-array-factory Config file not found on /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/parser
+2019-09-03T15:04:06.045Z eslint:cascading-config-array-factory Cache hit: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report.
+2019-09-03T15:04:06.045Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.045Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/parser/hcl.ts.html"
+2019-09-03T15:04:06.045Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.045Z eslint:ignored-paths   relative = "coverage/lcov-report/parser/hcl.ts.html"
+2019-09-03T15:04:06.045Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.045Z eslint:file-enumerator Didn't match: hcl.ts.html
+2019-09-03T15:04:06.045Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.045Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/parser/index.html"
+2019-09-03T15:04:06.045Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.045Z eslint:ignored-paths   relative = "coverage/lcov-report/parser/index.html"
+2019-09-03T15:04:06.045Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.045Z eslint:file-enumerator Didn't match: index.html
+2019-09-03T15:04:06.045Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.045Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/parser/salto.ts.html"
+2019-09-03T15:04:06.045Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.045Z eslint:ignored-paths   relative = "coverage/lcov-report/parser/salto.ts.html"
+2019-09-03T15:04:06.045Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.045Z eslint:file-enumerator Didn't match: salto.ts.html
+2019-09-03T15:04:06.046Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.046Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/parser/wasm_exec.js.html"
+2019-09-03T15:04:06.046Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.046Z eslint:ignored-paths   relative = "coverage/lcov-report/parser/wasm_exec.js.html"
+2019-09-03T15:04:06.046Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.046Z eslint:file-enumerator Didn't match: wasm_exec.js.html
+2019-09-03T15:04:06.046Z eslint:file-enumerator Leave the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/parser
+2019-09-03T15:04:06.046Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.046Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/prettify.css"
+2019-09-03T15:04:06.046Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.046Z eslint:ignored-paths   relative = "coverage/lcov-report/prettify.css"
+2019-09-03T15:04:06.046Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.046Z eslint:file-enumerator Didn't match: prettify.css
+2019-09-03T15:04:06.046Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.046Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/prettify.js"
+2019-09-03T15:04:06.046Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.046Z eslint:ignored-paths   relative = "coverage/lcov-report/prettify.js"
+2019-09-03T15:04:06.046Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.046Z eslint:file-enumerator Yield: prettify.js
+2019-09-03T15:04:06.046Z eslint:cli-engine Lint /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/prettify.js
+2019-09-03T15:04:06.046Z eslint:linter Linting code for /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/prettify.js (pass 1)
+2019-09-03T15:04:06.046Z eslint:linter Verify
+2019-09-03T15:04:06.046Z eslint:linter With ConfigArray: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/prettify.js
+2019-09-03T15:04:06.470Z eslint:config-comment-parser Parsing list config
+2019-09-03T15:04:06.812Z eslint:linter Generating fixed text for /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/prettify.js (pass 1)
+2019-09-03T15:04:06.812Z eslint:source-code-fixer Applying fixes
+2019-09-03T15:04:06.812Z eslint:source-code-fixer shouldFix parameter was false, not attempting fixes
+2019-09-03T15:04:06.812Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.812Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/promise/"
+2019-09-03T15:04:06.812Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.812Z eslint:ignored-paths   relative = "coverage/lcov-report/promise/"
+2019-09-03T15:04:06.812Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.812Z eslint:file-enumerator Enter the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/promise
+2019-09-03T15:04:06.812Z eslint:cascading-config-array-factory Load config files for /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/promise.
+2019-09-03T15:04:06.812Z eslint:cascading-config-array-factory No cache found: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/promise.
+2019-09-03T15:04:06.812Z eslint:config-array-factory Config file not found on /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/promise
+2019-09-03T15:04:06.812Z eslint:cascading-config-array-factory Cache hit: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report.
+2019-09-03T15:04:06.812Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.812Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/promise/index.html"
+2019-09-03T15:04:06.812Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.812Z eslint:ignored-paths   relative = "coverage/lcov-report/promise/index.html"
+2019-09-03T15:04:06.812Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.812Z eslint:file-enumerator Didn't match: index.html
+2019-09-03T15:04:06.813Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.813Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/promise/promise.ts.html"
+2019-09-03T15:04:06.813Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.813Z eslint:ignored-paths   relative = "coverage/lcov-report/promise/promise.ts.html"
+2019-09-03T15:04:06.813Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.813Z eslint:file-enumerator Didn't match: promise.ts.html
+2019-09-03T15:04:06.813Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.813Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/promise/state.ts.html"
+2019-09-03T15:04:06.813Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.813Z eslint:ignored-paths   relative = "coverage/lcov-report/promise/state.ts.html"
+2019-09-03T15:04:06.813Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.813Z eslint:file-enumerator Didn't match: state.ts.html
+2019-09-03T15:04:06.813Z eslint:file-enumerator Leave the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/promise
+2019-09-03T15:04:06.813Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.813Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/"
+2019-09-03T15:04:06.813Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.813Z eslint:ignored-paths   relative = "coverage/lcov-report/salto/"
+2019-09-03T15:04:06.813Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.813Z eslint:file-enumerator Enter the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto
+2019-09-03T15:04:06.813Z eslint:cascading-config-array-factory Load config files for /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto.
+2019-09-03T15:04:06.813Z eslint:cascading-config-array-factory No cache found: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto.
+2019-09-03T15:04:06.813Z eslint:config-array-factory Config file not found on /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto
+2019-09-03T15:04:06.813Z eslint:cascading-config-array-factory Cache hit: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report.
+2019-09-03T15:04:06.813Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.813Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/index.html"
+2019-09-03T15:04:06.813Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.813Z eslint:ignored-paths   relative = "coverage/lcov-report/salto/index.html"
+2019-09-03T15:04:06.813Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.813Z eslint:file-enumerator Didn't match: index.html
+2019-09-03T15:04:06.813Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.813Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/index.js.html"
+2019-09-03T15:04:06.813Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.813Z eslint:ignored-paths   relative = "coverage/lcov-report/salto/index.js.html"
+2019-09-03T15:04:06.813Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.813Z eslint:file-enumerator Didn't match: index.js.html
+2019-09-03T15:04:06.813Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.813Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/"
+2019-09-03T15:04:06.813Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.813Z eslint:ignored-paths   relative = "coverage/lcov-report/salto/src/"
+2019-09-03T15:04:06.813Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.813Z eslint:file-enumerator Enter the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src
+2019-09-03T15:04:06.814Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.814Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/cli/"
+2019-09-03T15:04:06.814Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.814Z eslint:ignored-paths   relative = "coverage/lcov-report/salto/src/cli/"
+2019-09-03T15:04:06.814Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.814Z eslint:file-enumerator Enter the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/cli
+2019-09-03T15:04:06.814Z eslint:cascading-config-array-factory Load config files for /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/cli.
+2019-09-03T15:04:06.814Z eslint:cascading-config-array-factory No cache found: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/cli.
+2019-09-03T15:04:06.814Z eslint:config-array-factory Config file not found on /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/cli
+2019-09-03T15:04:06.814Z eslint:cascading-config-array-factory No cache found: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src.
+2019-09-03T15:04:06.814Z eslint:config-array-factory Config file not found on /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src
+2019-09-03T15:04:06.814Z eslint:cascading-config-array-factory Cache hit: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto.
+2019-09-03T15:04:06.814Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.814Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/cli/commands.js.html"
+2019-09-03T15:04:06.814Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.814Z eslint:ignored-paths   relative = "coverage/lcov-report/salto/src/cli/commands.js.html"
+2019-09-03T15:04:06.814Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.814Z eslint:file-enumerator Didn't match: commands.js.html
+2019-09-03T15:04:06.814Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.814Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/cli/index.html"
+2019-09-03T15:04:06.814Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.814Z eslint:ignored-paths   relative = "coverage/lcov-report/salto/src/cli/index.html"
+2019-09-03T15:04:06.814Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.814Z eslint:file-enumerator Didn't match: index.html
+2019-09-03T15:04:06.814Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.814Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/cli/prompts.ts.html"
+2019-09-03T15:04:06.814Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.814Z eslint:ignored-paths   relative = "coverage/lcov-report/salto/src/cli/prompts.ts.html"
+2019-09-03T15:04:06.814Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.814Z eslint:file-enumerator Didn't match: prompts.ts.html
+2019-09-03T15:04:06.814Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.814Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/cli/salto-cli.js.html"
+2019-09-03T15:04:06.814Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.814Z eslint:ignored-paths   relative = "coverage/lcov-report/salto/src/cli/salto-cli.js.html"
+2019-09-03T15:04:06.814Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.814Z eslint:file-enumerator Didn't match: salto-cli.js.html
+2019-09-03T15:04:06.814Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.814Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/cli/salto-cli.ts.html"
+2019-09-03T15:04:06.814Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.814Z eslint:ignored-paths   relative = "coverage/lcov-report/salto/src/cli/salto-cli.ts.html"
+2019-09-03T15:04:06.815Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.815Z eslint:file-enumerator Didn't match: salto-cli.ts.html
+2019-09-03T15:04:06.815Z eslint:file-enumerator Leave the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/cli
+2019-09-03T15:04:06.815Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.815Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/collections/"
+2019-09-03T15:04:06.815Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.815Z eslint:ignored-paths   relative = "coverage/lcov-report/salto/src/collections/"
+2019-09-03T15:04:06.815Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.815Z eslint:file-enumerator Enter the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/collections
+2019-09-03T15:04:06.815Z eslint:cascading-config-array-factory Load config files for /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/collections.
+2019-09-03T15:04:06.815Z eslint:cascading-config-array-factory No cache found: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/collections.
+2019-09-03T15:04:06.815Z eslint:config-array-factory Config file not found on /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/collections
+2019-09-03T15:04:06.815Z eslint:cascading-config-array-factory Cache hit: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src.
+2019-09-03T15:04:06.815Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.815Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/collections/index.html"
+2019-09-03T15:04:06.815Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.815Z eslint:ignored-paths   relative = "coverage/lcov-report/salto/src/collections/index.html"
+2019-09-03T15:04:06.815Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.815Z eslint:file-enumerator Didn't match: index.html
+2019-09-03T15:04:06.815Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.815Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/collections/map.js.html"
+2019-09-03T15:04:06.815Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.815Z eslint:ignored-paths   relative = "coverage/lcov-report/salto/src/collections/map.js.html"
+2019-09-03T15:04:06.815Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.815Z eslint:file-enumerator Didn't match: map.js.html
+2019-09-03T15:04:06.815Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.815Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/collections/map.ts.html"
+2019-09-03T15:04:06.815Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.815Z eslint:ignored-paths   relative = "coverage/lcov-report/salto/src/collections/map.ts.html"
+2019-09-03T15:04:06.815Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.815Z eslint:file-enumerator Didn't match: map.ts.html
+2019-09-03T15:04:06.815Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.815Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/collections/set.js.html"
+2019-09-03T15:04:06.815Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.815Z eslint:ignored-paths   relative = "coverage/lcov-report/salto/src/collections/set.js.html"
+2019-09-03T15:04:06.815Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.815Z eslint:file-enumerator Didn't match: set.js.html
+2019-09-03T15:04:06.815Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.815Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/collections/set.ts.html"
+2019-09-03T15:04:06.815Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.815Z eslint:ignored-paths   relative = "coverage/lcov-report/salto/src/collections/set.ts.html"
+2019-09-03T15:04:06.815Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.815Z eslint:file-enumerator Didn't match: set.ts.html
+2019-09-03T15:04:06.815Z eslint:file-enumerator Leave the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/collections
+2019-09-03T15:04:06.816Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.816Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/core/"
+2019-09-03T15:04:06.816Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.816Z eslint:ignored-paths   relative = "coverage/lcov-report/salto/src/core/"
+2019-09-03T15:04:06.816Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.816Z eslint:file-enumerator Enter the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/core
+2019-09-03T15:04:06.816Z eslint:cascading-config-array-factory Load config files for /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/core.
+2019-09-03T15:04:06.816Z eslint:cascading-config-array-factory No cache found: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/core.
+2019-09-03T15:04:06.816Z eslint:config-array-factory Config file not found on /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/core
+2019-09-03T15:04:06.816Z eslint:cascading-config-array-factory Cache hit: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src.
+2019-09-03T15:04:06.816Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.816Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/core/core.ts.html"
+2019-09-03T15:04:06.816Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.816Z eslint:ignored-paths   relative = "coverage/lcov-report/salto/src/core/core.ts.html"
+2019-09-03T15:04:06.816Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.816Z eslint:file-enumerator Didn't match: core.ts.html
+2019-09-03T15:04:06.816Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.816Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/core/index.html"
+2019-09-03T15:04:06.816Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.816Z eslint:ignored-paths   relative = "coverage/lcov-report/salto/src/core/index.html"
+2019-09-03T15:04:06.816Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.816Z eslint:file-enumerator Didn't match: index.html
+2019-09-03T15:04:06.816Z eslint:file-enumerator Leave the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/core
+2019-09-03T15:04:06.816Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.816Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/dag/"
+2019-09-03T15:04:06.816Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.816Z eslint:ignored-paths   relative = "coverage/lcov-report/salto/src/dag/"
+2019-09-03T15:04:06.816Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.816Z eslint:file-enumerator Enter the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/dag
+2019-09-03T15:04:06.816Z eslint:cascading-config-array-factory Load config files for /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/dag.
+2019-09-03T15:04:06.816Z eslint:cascading-config-array-factory No cache found: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/dag.
+2019-09-03T15:04:06.816Z eslint:config-array-factory Config file not found on /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/dag
+2019-09-03T15:04:06.816Z eslint:cascading-config-array-factory Cache hit: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src.
+2019-09-03T15:04:06.816Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.816Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/dag/diff.js.html"
+2019-09-03T15:04:06.816Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.816Z eslint:ignored-paths   relative = "coverage/lcov-report/salto/src/dag/diff.js.html"
+2019-09-03T15:04:06.816Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.816Z eslint:file-enumerator Didn't match: diff.js.html
+2019-09-03T15:04:06.817Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.817Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/dag/diff.ts.html"
+2019-09-03T15:04:06.817Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.817Z eslint:ignored-paths   relative = "coverage/lcov-report/salto/src/dag/diff.ts.html"
+2019-09-03T15:04:06.817Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.817Z eslint:file-enumerator Didn't match: diff.ts.html
+2019-09-03T15:04:06.817Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.817Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/dag/index.html"
+2019-09-03T15:04:06.817Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.817Z eslint:ignored-paths   relative = "coverage/lcov-report/salto/src/dag/index.html"
+2019-09-03T15:04:06.817Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.817Z eslint:file-enumerator Didn't match: index.html
+2019-09-03T15:04:06.817Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.817Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/dag/nodemap.ts.html"
+2019-09-03T15:04:06.817Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.817Z eslint:ignored-paths   relative = "coverage/lcov-report/salto/src/dag/nodemap.ts.html"
+2019-09-03T15:04:06.817Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.817Z eslint:file-enumerator Didn't match: nodemap.ts.html
+2019-09-03T15:04:06.817Z eslint:file-enumerator Leave the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/dag
+2019-09-03T15:04:06.817Z eslint:cascading-config-array-factory Load config files for /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src.
+2019-09-03T15:04:06.817Z eslint:cascading-config-array-factory Cache hit: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src.
+2019-09-03T15:04:06.817Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.817Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/index.html"
+2019-09-03T15:04:06.817Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.817Z eslint:ignored-paths   relative = "coverage/lcov-report/salto/src/index.html"
+2019-09-03T15:04:06.817Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.817Z eslint:file-enumerator Didn't match: index.html
+2019-09-03T15:04:06.817Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.817Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/log.js.html"
+2019-09-03T15:04:06.817Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.817Z eslint:ignored-paths   relative = "coverage/lcov-report/salto/src/log.js.html"
+2019-09-03T15:04:06.817Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.817Z eslint:file-enumerator Didn't match: log.js.html
+2019-09-03T15:04:06.817Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.817Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/parser/"
+2019-09-03T15:04:06.817Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.817Z eslint:ignored-paths   relative = "coverage/lcov-report/salto/src/parser/"
+2019-09-03T15:04:06.817Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.817Z eslint:file-enumerator Enter the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/parser
+2019-09-03T15:04:06.817Z eslint:cascading-config-array-factory Load config files for /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/parser.
+2019-09-03T15:04:06.817Z eslint:cascading-config-array-factory No cache found: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/parser.
+2019-09-03T15:04:06.817Z eslint:config-array-factory Config file not found on /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/parser
+2019-09-03T15:04:06.817Z eslint:cascading-config-array-factory Cache hit: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src.
+2019-09-03T15:04:06.817Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.817Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/parser/hcl.js.html"
+2019-09-03T15:04:06.818Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.818Z eslint:ignored-paths   relative = "coverage/lcov-report/salto/src/parser/hcl.js.html"
+2019-09-03T15:04:06.818Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.818Z eslint:file-enumerator Didn't match: hcl.js.html
+2019-09-03T15:04:06.818Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.818Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/parser/hcl.ts.html"
+2019-09-03T15:04:06.818Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.818Z eslint:ignored-paths   relative = "coverage/lcov-report/salto/src/parser/hcl.ts.html"
+2019-09-03T15:04:06.818Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.818Z eslint:file-enumerator Didn't match: hcl.ts.html
+2019-09-03T15:04:06.818Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.818Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/parser/index.html"
+2019-09-03T15:04:06.818Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.818Z eslint:ignored-paths   relative = "coverage/lcov-report/salto/src/parser/index.html"
+2019-09-03T15:04:06.818Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.818Z eslint:file-enumerator Didn't match: index.html
+2019-09-03T15:04:06.818Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.818Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/parser/salto.js.html"
+2019-09-03T15:04:06.818Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.818Z eslint:ignored-paths   relative = "coverage/lcov-report/salto/src/parser/salto.js.html"
+2019-09-03T15:04:06.818Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.818Z eslint:file-enumerator Didn't match: salto.js.html
+2019-09-03T15:04:06.818Z eslint:file-enumerator Leave the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src/parser
+2019-09-03T15:04:06.818Z eslint:file-enumerator Leave the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto/src
+2019-09-03T15:04:06.818Z eslint:file-enumerator Leave the directory: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/salto
+2019-09-03T15:04:06.818Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.818Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/sort-arrow-sprite.png"
+2019-09-03T15:04:06.818Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.818Z eslint:ignored-paths   relative = "coverage/lcov-report/sort-arrow-sprite.png"
+2019-09-03T15:04:06.818Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.818Z eslint:file-enumerator Didn't match: sort-arrow-sprite.png
+2019-09-03T15:04:06.818Z eslint:ignored-paths contains:
+2019-09-03T15:04:06.818Z eslint:ignored-paths   target   = "/Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/sorter.js"
+2019-09-03T15:04:06.818Z eslint:ignored-paths   base     = "/Users/roy/salto_monorepo/packages/salto"
+2019-09-03T15:04:06.818Z eslint:ignored-paths   relative = "coverage/lcov-report/sorter.js"
+2019-09-03T15:04:06.818Z eslint:ignored-paths   result   = false
+2019-09-03T15:04:06.818Z eslint:file-enumerator Yield: sorter.js
+2019-09-03T15:04:06.818Z eslint:cli-engine Lint /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/sorter.js
+2019-09-03T15:04:06.818Z eslint:linter Linting code for /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/sorter.js (pass 1)
+2019-09-03T15:04:06.818Z eslint:linter Verify
+2019-09-03T15:04:06.818Z eslint:linter With ConfigArray: /Users/roy/salto_monorepo/packages/salto/coverage/lcov-report/sorter.js

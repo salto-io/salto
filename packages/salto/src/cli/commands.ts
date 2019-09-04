@@ -27,6 +27,8 @@ const CURRENT_ACTION_POLL_INTERVAL = 5000
  * an informative error message.
  */
 export const plan = async (blueprintsFiles: string[], blueprintsDir?: string): Promise<void> => {
+  // catch side effects are commented out for debugging
+  // eslint-disable-next-line no-useless-catch
   try {
     const blueprints = await loadBlueprints(
       blueprintsFiles,

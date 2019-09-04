@@ -478,9 +478,7 @@ describe('NodeMap', () => {
         return result
       }, 0)
 
-      it('should resolve the promise', () => {
-        expect(result).resolves.toBeUndefined()
-      })
+      it('should resolve the promise', () => expect(result).resolves.toBeUndefined())
 
       it('should call the handler in the correct order', () => {
         expect(_.flatten(handler.mock.calls)).toEqual([1, 2, 5, 3, 4])

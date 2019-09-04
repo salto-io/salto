@@ -9,9 +9,6 @@ module.exports = deepMerge(
     collectCoverageFrom: [
       '!**/wasm_exec.*', // External source file
     ],
-    moduleNameMapper: {
-      '^@salto/utils/(.*)': '<rootDir>/../../node_modules/@salto/utils/dist/src/$1',
-    },
     coverageThreshold: {
       // Slowly start increasing here, never decrease!
       global: {

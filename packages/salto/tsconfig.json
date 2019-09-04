@@ -10,6 +10,9 @@
             ],
             "yargonaut": [
                 "src/types/yargonaut"
+            ],
+            "@salto/utils/*": [
+                "../../node_modules/@salto/utils/dist/src/*"
             ]
         }
     },

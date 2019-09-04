@@ -42,14 +42,17 @@ export const optionalFilter: BlueprintsFilter = {
   },
 }
 
-export const requiredFilter: BlueprintsFilter = Object.assign({}, optionalFilter, {
-  transformParser(parser: yargs.Argv): yargs.Argv<Args> {
-    return optionalFilter.transformParser(parser)
-      .check((args: yargs.Arguments<Args>): true => {
-        if (!args.blueprint && !args['blueprints-dir']) {
-          throw new Error('Must specify at least one of: blueprint, blueprints-dir')
-        }
-        return true
-      })
+export const requiredFilter: BlueprintsFilter = {
+  ...optionalFilter,
+  ...{
+    transformParser(parser: yargs.Argv): yargs.Argv<Args> {
+      return optionalFilter.transformParser(parser)
+        .check((args: yargs.Arguments<Args>): true => {
+          if (!args.blueprint && !args['blueprints-dir']) {
+            throw new Error('Must specify at least one of: blueprint, blueprints-dir')
+          }
+          return true
+        })
+    },
   },
-})
+}

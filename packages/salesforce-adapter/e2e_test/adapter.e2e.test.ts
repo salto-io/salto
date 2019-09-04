@@ -24,23 +24,24 @@ import {
   Types, sfCase, fromMetadataInfo,
 } from '../src/transformer'
 
-describe('Test Salesforce adapter E2E with real account', () => {
-  const requiredEnvVar = (name: string): string => {
-    const result = process.env[name]
-    if (!result) {
-      throw new Error(`required env var ${name} missing or empty`)
-    }
-    return result
+const requiredEnvVar = (name: string): string => {
+  const result = process.env[name]
+  if (!result) {
+    throw new Error(`required env var ${name} missing or empty`)
   }
+  return result
+}
 
-  const client = new SalesforceClient(
-    requiredEnvVar('SF_USER'),
-    requiredEnvVar('SF_PASSWORD') + requiredEnvVar('SF_TOKEN'),
-    false,
-  )
+const client = new SalesforceClient(
+  requiredEnvVar('SF_USER'),
+  requiredEnvVar('SF_PASSWORD') + requiredEnvVar('SF_TOKEN'),
+  false,
+)
 
-  const adapter = new SalesforceAdapter({ clientOrConfig: client })
+export const adapter = new SalesforceAdapter({ clientOrConfig: client })
+export default adapter
 
+describe('Test Salesforce adapter E2E with real account', () => {
   // Set long timeout as we communicate with salesforce API
   beforeAll(() => {
     jest.setTimeout(1000000)

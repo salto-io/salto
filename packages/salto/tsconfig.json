@@ -11,6 +11,8 @@
             "yargonaut": [
                 "src/types/yargonaut"
             ],
+            // allow imports from subdirectories:
+            // e.g, "import Set from '@salto/lowerdash/collections/set'"
             "@salto/lowerdash/*": [
                 "../../node_modules/@salto/lowerdash/dist/src/*"
             ]

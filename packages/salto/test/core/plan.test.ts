@@ -2,10 +2,7 @@ import _ from 'lodash'
 import wu from 'wu'
 import {
   ElemID, ObjectType, Field, BuiltinTypes, Type, InstanceElement,
-  Change,
-  AddChange,
-  RemovalChange,
-  getChangeElement,
+  Change, getChangeElement,
 } from 'adapter-api'
 import State from '../../src/state/state'
 import * as coreMock from './mocks/core'
@@ -50,13 +47,23 @@ describe('getPlan', () => {
     expect(planItem.items.size).toBe(3)
     const change = getChange(planItem, newElemID)
     expect(change.action).toBe('add')
-    expect((change as AddChange).data.after).toEqual(newElement)
-    expect(getChange(planItem, newElement.fields.country.elemID).action).toBe('add')
-    expect((getChange(planItem, newElement.fields.country.elemID) as AddChange).data.after)
-      .toEqual(newElement.fields.country)
-    expect(getChange(planItem, newElement.fields.city.elemID).action).toBe('add')
-    expect((getChange(planItem, newElement.fields.city.elemID) as AddChange).data.after)
-      .toEqual(newElement.fields.city)
+    // Adding those if's  below to prevent ts errors
+    if (change.action === 'add') {
+      expect(change.data.after).toEqual(newElement)
+    }
+    // Field country validation
+    const countryChange = getChange(planItem, newElement.fields.country.elemID)
+    expect(countryChange.action).toBe('add')
+    if (countryChange.action === 'add') {
+      expect(countryChange.data.after).toEqual(newElement.fields.country)
+    }
+
+    // Field city validation
+    const cityChange = getChange(planItem, newElement.fields.city.elemID)
+    expect(cityChange.action).toBe('add')
+    if (cityChange.action === 'add') {
+      expect(cityChange.data.after).toEqual(newElement.fields.city)
+    }
   })
 
   it('should create plan with remove change', async () => {
@@ -67,8 +74,11 @@ describe('getPlan', () => {
     const planItem = getFirstPlanItem(plan)
     const removed = pre[pre.length - 1]
     expect(planItem.groupKey).toBe(removed.elemID.getFullName())
-    expect(getChange(planItem, removed.elemID).action).toBe('remove')
-    expect((getChange(planItem, removed.elemID) as RemovalChange).data.before).toEqual(removed)
+    const removedChange = getChange(planItem, removed.elemID)
+    expect(removedChange.action).toBe('remove')
+    if (removedChange.action === 'remove') {
+      expect(removedChange.data.before).toEqual(removed)
+    }
   })
 
   it('should create plan with modification changes due to field changes', async () => {

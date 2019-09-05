@@ -10,10 +10,39 @@
 		"Other"
 	],
 	"activationEvents": [
-		"*"
+		"workspaceContains:**/*.bp"
 	],
-	"main": "./dist/extension.js",
+	"main": "./dist/src/extension.js",
 	"contributes": {
+		"configuration": {
+	        "title": "Salto",
+	        "properties": {
+	            "salto.salto_exe_path": {
+	                "type": "string",
+	                "scope": "machine",
+	                "default": "/usr/local/bin/salto",
+	                "description": "Path to the salto executable"
+	            },
+	            "salto.additionalBlueprintDirs": {
+	                "type": "array",
+	                "default": [],
+	                "scope": "resource",
+	                "description": "Paths to additional BP dirs that should be included"
+	            },
+	            "salto.additionalBlueprints": {
+	                "type": "array",
+	                "default": [],
+	                "scope": "resource",
+	                "description": "Paths to additional BP that should be included"
+	            },
+	            "salto.discover_output_dir": {
+	                "type": "string",
+	                "default": ".",
+	                "scope": "resource",
+	                "description": "Paths to discover output directory"
+	            }
+	        }
+	    },
 		"languages": [
 			{
 				"id": "blueprint",
@@ -40,17 +69,38 @@
 				"path": "./syntaxes/blueprint.json"
 			}
 		],
-		"commands": []
+		"commands": [
+			{
+				"command": "salto.printMergedElementsNames",
+				"title" : "Salto Debug: Print Merged Elements Names"
+			},
+			{
+				"command": "salto.printMergedElementsCount",
+				"title" : "Salto Debug: Print Merged Elements Count"
+			},
+			{
+				"command": "salto.printErrors",
+				"title" : "Salto Debug: Print Errors"
+			}
+		]
 	},
 	"scripts": {
-		"vscode:prepublish": "yarn run build",
-		"build": "yarn install && tsc -p ./",
-		"watch": "tsc -watch -p ./",
-		"pretest": "yarn run build",
-		"test": "node ./dist/test/runTest.js"
+		"vscode:prepublish": "yarn run build && yarn test",
+	    "prepublishOnly": "yarn test",
+	    "build": "yarn run lint && yarn run build-ts",
+	    "build-ts": "tsc",
+	    "watch": "tsc -w",
+		"test": "jest --forceExit --detectOpenHandles",
+	    "clean-ts": "node ./node_modules/.bin/ts-cleaner -d dist -s . -v",
+	    "clean-ts-test": "yarn run clean-ts && yarn run test",
+	    "watch-test": "yarn run tsc-watch --onSuccess 'yarn run clean-ts-test'",
+	    "lint": "eslint --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
+	    "lint-fix": "yarn run lint -- --fix"
 	},
 	"dependencies": {
-		"salto" : "0.1.0"
+		"salto" : "0.1.0",
+		"adapter-api" : "0.1.0",
+   		"lodash": "^4.17.11"
 	},
 	"devDependencies": {
 		"@types/glob": "^7.1.1",

@@ -1,21 +1,22 @@
 import {
-  InstanceElement, ElemID, ObjectType,
+  InstanceElement, ElemID,
 } from 'adapter-api'
 import {
-  adapterId as salesforceAdapterId,
+  creator as salesforceAdapterCreator,
+  testHelpers as salesforceTestHelpers,
 } from 'salesforce-adapter'
-import createCredentials from './credentials'
 
 export default {
   salesforce: (): InstanceElement => {
-    const configType = new ObjectType({ elemID: new ElemID(salesforceAdapterId) })
-    const credentials = createCredentials()
+    const credentials = salesforceTestHelpers.credentials()
     const configValues = {
-      username: credentials.salesforce.username,
-      password: credentials.salesforce.password,
-      token: credentials.salesforce.apiToken,
-      sandbox: credentials.salesforce.isSandbox,
+      username: credentials.username,
+      password: credentials.password,
+      token: credentials.apiToken,
+      sandbox: credentials.isSandbox,
     }
+
+    const { configType } = salesforceAdapterCreator
 
     return new InstanceElement(
       new ElemID(configType.elemID.adapter, ElemID.CONFIG_INSTANCE_NAME),

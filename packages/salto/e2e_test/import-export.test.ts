@@ -1,35 +1,21 @@
 import path from 'path'
 import * as fs from 'async-file'
-import {
-  InstanceElement, ElemID, ObjectType,
-} from 'adapter-api'
-import {
-  SALESFORCE,
-} from 'salesforce-adapter/dist/src/constants'
+import { InstanceElement } from 'adapter-api'
 import {
   discover, exportBase,
 } from '../src/cli/commands'
 import State from '../src/state/state'
+import adapterConfigs from './adapter_configs'
 
-const configType = new ObjectType({ elemID: new ElemID(SALESFORCE) })
-const configValues = {
-  username: process.env.SF_USER || '',
-  password: process.env.SF_PASSWORD || '',
-  token: process.env.SF_TOKEN || '',
-  sandbox: false,
-}
-const mockGetConfigType = (_c: ObjectType): InstanceElement => new InstanceElement(
-  new ElemID(configType.elemID.adapter, ElemID.CONFIG_INSTANCE_NAME),
-  configType,
-  configValues
-)
 const sfLeadObjectName = 'salesforce_lead'
+
+const mockGetConfigType = (): InstanceElement => adapterConfigs.salesforce()
 
 // Attempting to access the functions on run time without the mock implementation, or
 // omitting the mock prefix in their names (YES I KNOW) will result in a runtime exception
 // to be thrown
 jest.mock('../src/cli/callbacks', () => ({
-  getConfigFromUser: jest.fn().mockImplementation((c: ObjectType) => mockGetConfigType(c)),
+  getConfigFromUser: jest.fn().mockImplementation(() => mockGetConfigType()),
 }))
 
 describe('Test import-export commands e2e', () => {

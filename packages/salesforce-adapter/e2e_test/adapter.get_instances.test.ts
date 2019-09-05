@@ -5,9 +5,11 @@ import {
 } from 'adapter-api'
 import * as constants from '../src/constants'
 import { Types } from '../src/transformer'
-import { adapter } from './adapter.e2e.test'
+import realAdapter from './adapter'
 
-describe('Test Salesforce adapter E2E REST API with real account', () => {
+describe('Adapter E2E REST API with real account', () => {
+  const { adapter } = realAdapter()
+
   const sfLeadName = 'Lead'
   const stringType = Types.salesforceDataTypes.text
 

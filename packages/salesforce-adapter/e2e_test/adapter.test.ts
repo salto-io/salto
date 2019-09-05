@@ -13,8 +13,6 @@ import { PicklistEntry } from 'jsforce'
 import makeArray from '../src/client/make_array'
 import * as constants from '../src/constants'
 import { FIELD_LEVEL_SECURITY_ANNOTATION, PROFILE_METADATA_TYPE } from '../src/filters/field_permissions'
-import SalesforceClient from '../src/client/client'
-import SalesforceAdapter from '../src/adapter'
 import {
   CustomObject,
   ProfileInfo,
@@ -23,25 +21,11 @@ import {
 import {
   Types, sfCase, fromMetadataInfo,
 } from '../src/transformer'
+import realAdapter from './adapter'
 
-const requiredEnvVar = (name: string): string => {
-  const result = process.env[name]
-  if (!result) {
-    throw new Error(`required env var ${name} missing or empty`)
-  }
-  return result
-}
+describe('Salesforce adapter E2E with real account', () => {
+  const { adapter, client } = realAdapter()
 
-const client = new SalesforceClient(
-  requiredEnvVar('SF_USER'),
-  requiredEnvVar('SF_PASSWORD') + requiredEnvVar('SF_TOKEN'),
-  false,
-)
-
-export const adapter = new SalesforceAdapter({ clientOrConfig: client })
-export default adapter
-
-describe('Test Salesforce adapter E2E with real account', () => {
   // Set long timeout as we communicate with salesforce API
   beforeAll(() => {
     jest.setTimeout(1000000)

@@ -3,15 +3,13 @@ import {
   ObjectType, ElemID, InstanceElement, Element,
 } from 'adapter-api'
 import filterCreator, { ASSIGNMENT_RULES_TYPE_NAME } from '../../src/filters/assignment_rules'
-import SalesforceClient from '../../src/client/client'
 import * as constants from '../../src/constants'
 import { bpCase } from '../../src/transformer'
 import { FilterWith } from '../../src/filter'
-
-jest.mock('../../src/client/client')
+import mockClient from '../client'
 
 describe('Test layout filter', () => {
-  const client = new SalesforceClient('', '', false)
+  const { client } = mockClient()
 
   const mockRuleInstance = new InstanceElement(
     new ElemID(constants.SALESFORCE, ASSIGNMENT_RULES_TYPE_NAME, 'lead'),

@@ -6,14 +6,12 @@ import { FilterWith } from '../../src/filter'
 import filterCreator, {
   VALIDATION_RULE_TYPE, VALIDATION_RULE_ANNOTATION,
 } from '../../src/filters/validation_rules'
-import SalesforceClient from '../../src/client/client'
 import * as constants from '../../src/constants'
 import { bpCase } from '../../src/transformer'
+import mockClient from '../client'
 
-jest.mock('../../src/client/client')
-
-describe('Test layout filter', () => {
-  const client = new SalesforceClient('', '', false)
+describe('validation rules filter', () => {
+  const { client } = mockClient()
   const filter = filterCreator({ client }) as FilterWith<'onDiscover'>
 
   const mockSObject = new ObjectType({

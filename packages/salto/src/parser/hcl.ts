@@ -59,6 +59,8 @@ class HCLParser {
     global.hclParserCall[callId] = context
 
     try {
+      // TODO: maybe refactor this?
+      // eslint-disable-next-line no-async-promise-executor
       await new Promise<void>(async resolve => {
         // Set callback function in context
         context.callback = resolve

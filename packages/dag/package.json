@@ -26,7 +26,20 @@
     "lint-fix": "yarn run lint -- --fix"
   },
   "dependencies": {
+    "@salto/lowerdash": "0.1.0",
     "lodash": "^4.17.15",
     "wu": "^2.1.0"
+  },
+  "devDependencies": {
+    "eslint": "^6.2.2",
+    "eslint-config-airbnb": "18.0.1",
+    "eslint-plugin-import": "^2.18.2",
+    "eslint-plugin-jest": "^22.6.4",
+    "eslint-plugin-jsx-a11y": "^6.2.1",
+    "eslint-plugin-react": "^7.14.3",
+    "eslint-plugin-react-hooks": "^1.7.0",
+    "jest": "^24.0.0",
+    "jest-junit": "^6.4.0",
+    "typescript": "^3.5.3"
   }
 }

@@ -1,7 +1,7 @@
 import { isString } from 'util'
+import { SetId } from '@salto/lowerdash/collections/set'
 import { buildGroupedGraph, GroupedNodeMap, Group } from '../src/group'
 import { DataNodeMap } from '../src/nodemap'
-import { SetId } from '../src/set'
 
 describe('buildGroupGraph', () => {
   let subject: GroupedNodeMap<string>

@@ -1,3 +1,1 @@
-/dist
-*.d.ts
-*.config.js
+../../.eslintignore

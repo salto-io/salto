@@ -2,6 +2,7 @@ import _ from 'lodash'
 import {
   InstanceElement, Element, ObjectType, isInstanceElement, Adapter,
 } from 'adapter-api'
+import { resolveValues } from '@salto/lowerdash/promises/object'
 import adapterCreators from './creators'
 
 const initAdapters = async (
@@ -21,14 +22,14 @@ const initAdapters = async (
     return config
   }
 
-  const adapterEntries = await Promise.all(
-    Object.entries(adapterCreators).map(async ([adapterName, creator]) => {
-      const adapter = await creator.create({ config: await findConfig(creator.configType) })
-      return [adapterName, adapter]
-    })
+  const adapterPromises: Record<string, Promise<Adapter>> = _.mapValues(
+    adapterCreators, async creator => {
+      const config = await findConfig(creator.configType)
+      return creator.create({ config })
+    }
   )
 
-  const adapters = _.fromPairs(adapterEntries)
+  const adapters = await resolveValues(adapterPromises)
 
   return [adapters, newConfigs]
 }

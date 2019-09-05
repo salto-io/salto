@@ -1,0 +1,9 @@
+type salto_complex {
+	salto_string str {
+
+	}
+
+	salto_number num {
+	
+	}
+}

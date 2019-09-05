@@ -1,0 +1,5 @@
+type salto_string is string {
+}
+
+type salto_number is number {
+}

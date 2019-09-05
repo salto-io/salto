@@ -1,24 +1,60 @@
+import _ from 'lodash'
+
 import { Element } from 'adapter-api'
-import Parser from 'salto/dist/src/parser/salto'
-import Parser from 'salto/dist/src/parser/salto'
+import {
+  loadBlueprints, parseBlueprints, mergeElements, validateElements,
+} from 'salto'
 
 type SaltoError = string
 interface ElementsMap {
-	[key: string]: Element[]
+  [key: string]: Element[]
 }
-interface SaltoWorkspace {
-	fileElements: ElementsMap
-	mergedElements: Element[]
-	errors: SaltoError[]
+export interface SaltoWorkspace {
+  baseDir: string
+  fileElements: ElementsMap
+  mergedElements?: Element[]
+  fileErrors: { [key: string]: SaltoError[] }
+}
+const NO_FILE = '*'
+
+const updateWorkspace = (workspace: SaltoWorkspace): SaltoWorkspace => {
+  const allElements = _(workspace.fileElements).values().flatten().value()
+  try {
+    workspace.mergedElements = mergeElements(allElements)
+    workspace.fileErrors[NO_FILE] = validateElements(workspace.mergedElements).map(e => e.message)
+  } catch (e) {
+    workspace.mergedElements = []
+    workspace.fileErrors[NO_FILE] = [e.message]
+  }
+  return workspace
 }
 
-const workspaces : { [key: string] : SaltoWorkspace } = {}
+export const initWorkspace = async (
+  baseDir: string,
+  _additionalBPDirs: string[] = [], // Ignored until loadBPs will support multiple dirs
+  additionalBPs: string[] = []
+): Promise<SaltoWorkspace> => {
+  const blueprints = await loadBlueprints(additionalBPs, baseDir)
+  const parsedBuleprints = await parseBlueprints(blueprints)
+  const fileElements = _(parsedBuleprints).keyBy('filename').mapValues('elements').value()
+  const fileErrors = _(parsedBuleprints).keyBy('filename').mapValues('errors').value()
+  const workspace = updateWorkspace({
+    baseDir,
+    fileElements,
+    fileErrors,
+  })
 
-const initWorkspace = async (workspaceName: string, baseDir: string): Promise<void> => {
-	const blueprints = loadBlueprints(baseDir)
-	const parseResults = blueprints.map( bp => {
-		const { elements, errors } = Parser.parse(bp.buffer, bp.filename)
-		return { elements, errors, name: bp.filename }
-	})
-	
+  return workspace
+}
+
+export const updateFile = async (
+  workspace: SaltoWorkspace,
+  filename: string,
+  content: string
+): Promise<SaltoWorkspace> => {
+  const bp = { filename, buffer: Buffer.from(content, 'utf8') }
+  const parseResult = (await parseBlueprints([bp]))[0]
+  workspace.fileElements[filename] = parseResult.elements
+  workspace.fileErrors[filename] = parseResult.errors
+  return updateWorkspace(workspace)
 }

@@ -6,16 +6,19 @@ module.exports = deepMerge(
     name: 'salto-vscode',
     displayName: 'salto-vscode',
     rootDir: `${__dirname}`,
-    moduleFileExtensions: ['js', 'json', 'node'],
-    coveragePathIgnorePatterns: ['/node_modules/', '<rootDir>/[^/]+\.js']
-    // coverageThreshold: {
-    //   // Slowly start increasing here, never decrease!
-    //   global: {
-    //     branches: 90,
-    //     functions: 90,
-    //     lines: 85,
-    //     statements: 90,
-    //   },
-    // },
+    collectCoverageFrom: [
+      // This file is only used as a bridge with vsc. The overhead of mocking vsc has bad ROI.
+      '!**/extension.*', 
+      '!**/salto/debug.*'
+    ],
+    coverageThreshold: {
+      // Slowly start increasing here, never decrease!
+      global: {
+        branches: 90,
+        functions: 90,
+        lines: 85,
+        statements: 90,
+      },
+    },
   }
 )

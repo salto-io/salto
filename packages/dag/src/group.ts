@@ -35,35 +35,38 @@ export class GroupedNodeMap<T> extends DataNodeMap<Group<T>> {
   }
 }
 
-export const buildGroupedGraph = <T>(source: DataNodeMap<T>,
-  groupKey: (id: NodeId) => string): GroupedNodeMap<T> => {
-  let result = new GroupedNodeMap<T>()
-  const findGroupDependencies = (nodeId: NodeId): Iterable<NodeId> =>
-    wu(source.get(nodeId))
-      .map(dep => result.getGroupIdFromItemId(dep))
-      .reject(_.isUndefined) as Iterable<NodeId>
+export const buildGroupedGraph = <T>(source: DataNodeMap<T>, groupKey: (id: NodeId) => string):
+GroupedNodeMap<T> => {
+  const mergeCandidates = new Map<string, NodeId>()
+  return (wu(source.evaluationOrder())
 
-  const groupKeyToLastGroupId = new Map<string, NodeId>()
-  wu(source.evaluationOrder()).forEach(nodeId => {
-    const node = source.getData(nodeId)
-    if (!node) return
-    const newGroupId = _.uniqueId(`${groupKey(nodeId)}-`)
-    const newGroup = {
-      groupKey: groupKey(nodeId),
-      items: new Map<NodeId, T>([[nodeId, node]]),
-    }
-    result.addNode(newGroupId, findGroupDependencies(nodeId), newGroup)
+    .map((nodeId: NodeId): Group<T> | undefined => {
+      const node = source.getData(nodeId)
+      if (!node) return undefined
+      return {
+        groupKey: groupKey(nodeId),
+        items: new Map<NodeId, T>([[nodeId, node]]),
+      }
+    }).reject(_.isUndefined) as wu.WuIterable<Group<T>>)
 
-    const mergeCandidate = groupKeyToLastGroupId.get(groupKey(nodeId))
-    if (mergeCandidate) {
-      result = result.tryTransform((groupGraph: GroupedNodeMap<T>): NodeId => {
-        groupGraph.merge(newGroupId, mergeCandidate)
-        return mergeCandidate
-      }, { onError: () => groupKeyToLastGroupId.set(groupKey(nodeId), newGroupId) })
-    } else {
-      groupKeyToLastGroupId.set(groupKey(nodeId), newGroupId)
-    }
-  })
+    .reduce((result, group) => {
+      const deps = wu(group.items.keys())
+        .map(nodeId => source.get(nodeId)).flatten()
+        .map(dep => result.getGroupIdFromItemId(dep))
+        .reject(_.isUndefined) as Iterable<NodeId>
+      const groupId = _.uniqueId(`${group.groupKey}-`)
+      result.addNode(groupId, deps, group)
 
-  return result
+      // Try to merge withe existing node
+      const mergeCandidate = mergeCandidates.get(group.groupKey)
+      if (mergeCandidate) {
+        return result.tryTransform((groupGraph: GroupedNodeMap<T>): NodeId => {
+          groupGraph.merge(groupId, mergeCandidate)
+          return mergeCandidate
+        }, { onError: () => mergeCandidates.set(group.groupKey, groupId) })
+      }
+
+      mergeCandidates.set(group.groupKey, groupId)
+      return result
+    }, new GroupedNodeMap<T>())
 }

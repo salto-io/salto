@@ -10,7 +10,7 @@
 		"Other"
 	],
 	"activationEvents": [
-		"onCommand:extension.helloWorld"
+		"*"
 	],
 	"main": "./dist/extension.js",
 	"contributes": {
@@ -40,19 +40,17 @@
 				"path": "./syntaxes/blueprint.json"
 			}
 		],
-		"commands": [
-			{
-				"command": "extension.helloWorld",
-				"title": "Hello World"
-			}
-		]
+		"commands": []
 	},
 	"scripts": {
 		"vscode:prepublish": "yarn run build",
-		"build": "tsc -p ./",
+		"build": "yarn install && tsc -p ./",
 		"watch": "tsc -watch -p ./",
 		"pretest": "yarn run build",
 		"test": "node ./dist/test/runTest.js"
+	},
+	"dependencies": {
+		"salto" : "0.1.0"
 	},
 	"devDependencies": {
 		"@types/glob": "^7.1.1",

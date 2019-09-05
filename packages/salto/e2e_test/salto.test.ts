@@ -1,13 +1,13 @@
 import * as fs from 'async-file'
 import _ from 'lodash'
-import SalesforceClient from 'salesforce-adapter/dist/src/client/client'
+import {
+  testHelpers as salesforceTestHelpers,
+  testTypes as salesforceTestTypes,
+  SalesforceClient,
+} from 'salesforce-adapter'
 import {
   InstanceElement, ObjectType, getChangeElement,
 } from 'adapter-api'
-import {
-  CUSTOM_OBJECT as CUSTOM_OBJECT_METATYPE,
-} from 'salesforce-adapter/dist/src/constants'
-import { CustomObject } from 'salesforce-adapter/dist/src/client/types'
 import wu from 'wu'
 import {
   discover, plan, apply,
@@ -15,9 +15,8 @@ import {
 import { Plan } from '../src/core/plan'
 import State from '../src/state/state'
 import adapterConfigs from './adapter_configs'
-import createCredentials from './credentials'
 
-const credentials = createCredentials()
+const credentials = salesforceTestHelpers.credentials()
 const mockGetConfigType = (): InstanceElement => adapterConfigs.salesforce()
 
 let lastPlan: Plan
@@ -41,13 +40,14 @@ describe('commands e2e', () => {
   const discoverOutputDir = `${homePath}/BP/test_discover`
   const addModelBP = `${__dirname}/../../e2e_test//BP/add.bp`
   const modifyModelBP = `${__dirname}/../../e2e_test/BP/modify.bp`
-  const client = new SalesforceClient({ credentials: credentials.salesforce })
+  const client = new SalesforceClient({ credentials })
 
   const objectExists = async (
     name: string, fields: string[] = [], missingFields: string[] = []
   ): Promise<boolean> => {
-    const result = (await client.readMetadata(CUSTOM_OBJECT_METATYPE, name)
-    )[0] as CustomObject
+    const result = (
+      await client.readMetadata(salesforceTestHelpers.CUSTOM_OBJECT, name)
+    )[0] as salesforceTestTypes.CustomObject
     if (!result || !result.fullName) {
       return false
     }
@@ -69,30 +69,28 @@ describe('commands e2e', () => {
     }
   })
 
-  beforeAll(async done => {
+  beforeAll(async () => {
     jest.setTimeout(5 * 60 * 1000)
     if (await objectExists('e2etest__c')) {
+      // TODO 'CustomObject' is a magic string
       await client.delete('CustomObject', 'e2etest__c')
     }
-    done()
   })
 
   afterAll(() => fs.delete(discoverOutputDir))
 
-  it('should run discover and create the state bp file', async done => {
+  it('should run discover and create the state bp file', async () => {
     await discover(discoverOutputDir, [])
     expect(await pathExists(discoverOutputDir)).toBe(true)
     expect(await pathExists(statePath)).toBe(true)
-    done()
   })
 
-  it('should run plan on discover output and detect no changes', async done => {
+  it('should run plan on discover output and detect no changes', async () => {
     await plan([], discoverOutputDir)
     expect(lastPlan).toBeUndefined()
-    done()
   })
 
-  it('should apply the new change', async done => {
+  it('should apply the new change', async () => {
     await apply([addModelBP], discoverOutputDir)
     expect(lastPlan.size).toBe(1)
     const step = wu(lastPlan.itemsByEvalOrder()).next().value
@@ -103,10 +101,9 @@ describe('commands e2e', () => {
       `${getChangeElement(parent).elemID.name}__c`,
       ['Name__c', 'Test__c']
     )).toBe(true)
-    done()
   })
 
-  it('should apply changes in the new model', async done => {
+  it('should apply changes in the new model', async () => {
     await apply([modifyModelBP], discoverOutputDir)
     expect(lastPlan.size).toBe(1)
     const step = wu(lastPlan.itemsByEvalOrder()).next().value
@@ -116,15 +113,13 @@ describe('commands e2e', () => {
       ['Name__c', 'Test2__c'],
       ['Test__c']
     )).toBe(true)
-    done()
   })
 
-  it('should apply a delete for the model', async done => {
+  it('should apply a delete for the model', async () => {
     await apply([], discoverOutputDir)
     expect(lastPlan.size).toBe(1)
     const step = wu(lastPlan.itemsByEvalOrder()).next().value
     expect(step.parent().action).toBe('remove')
     expect(await objectExists(`${getChangeElement(step.parent()).elemID.name}__c`)).toBe(false)
-    done()
   })
 })

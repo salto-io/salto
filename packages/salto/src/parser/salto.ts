@@ -9,6 +9,18 @@ import evaluate from './expressions'
 
 export type SourceMap = DefaultMap<string, SourceRange[]>
 
+interface SourcePos {
+  line: number
+  col: number
+  byte: number
+}
+
+interface SourceRange {
+  filename: string
+  start: SourcePos
+  end: SourcePos
+}
+
 enum Keywords {
   TYPE_DEFINITION = 'type',
   LIST_DEFINITION = 'list',

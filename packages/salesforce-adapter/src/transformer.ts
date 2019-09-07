@@ -3,18 +3,20 @@ import {
   ValueTypeField, Field, MetadataInfo, DefaultValueWithType, QueryResult,
 } from 'jsforce'
 import JSZip from 'jszip'
-
 import {
   Type, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values, Value,
   Field as TypeField, BuiltinTypes, Element, isInstanceElement, InstanceElement,
 } from 'adapter-api'
-import { CustomObject, CustomField } from './client/types'
+import {
+  CustomObject, CustomField, MetadataField, StandardValueSet,
+} from './client/types'
 import { API_VERSION, METADATA_NAMESPACE } from './client/client'
 import {
   API_NAME, LABEL, PICKLIST_VALUES, SALESFORCE, RESTRICTED_PICKLIST, FORMULA,
   FORMULA_TYPE_PREFIX, FIELD_TYPE_NAMES, FIELD_TYPE_API_NAMES, METADATA_OBJECT_NAME_FIELD,
   METADATA_TYPE, FIELD_ANNOTATIONS, SALESFORCE_CUSTOM_SUFFIX, MAX_METADATA_RESTRICTION_VALUES,
 } from './constants'
+
 
 const capitalize = (s: string): string => {
   if (typeof s !== 'string') return ''
@@ -44,15 +46,24 @@ export const apiName = (elem: Element): string => (
     : elem.getAnnotationsValues()[API_NAME] || sfCase(elem.elemID.nameParts.slice(-1)[0], true)
 )
 
-export const metadataType = (element: Element): string => (
-  element.getAnnotationsValues()[METADATA_TYPE]
-)
-
-const formulaTypeName = (baseTypeName: string): string =>
-  `${FORMULA_TYPE_PREFIX}${baseTypeName}`
 const fieldTypeName = (typeName: string): string => (
   typeName.startsWith(FORMULA_TYPE_PREFIX) ? typeName.slice(FORMULA_TYPE_PREFIX.length) : typeName
 )
+
+const isCustomELement = (element: Element): boolean => (
+  apiName(element).endsWith(SALESFORCE_CUSTOM_SUFFIX)
+)
+
+export const isStandardValueSet = (field: TypeField): boolean =>
+  field.name !== undefined && !isCustomELement(field)
+    && fieldTypeName(field.type.elemID.name) === FIELD_TYPE_NAMES.PICKLIST
+
+
+export const metadataType = (element: Element): string =>
+  element.getAnnotationsValues()[METADATA_TYPE]
+
+const formulaTypeName = (baseTypeName: string): string =>
+  `${FORMULA_TYPE_PREFIX}${baseTypeName}`
 
 // Defines SFDC built-in field types & built-in primitive data types
 // Ref: https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/field_types.htm
@@ -222,36 +233,72 @@ const allowedAnnotations = (key: string): string[] => (
   Types.salesforceDataTypes[key] ? Object.keys(Types.salesforceDataTypes[key].annotations) : []
 )
 
-export const toCustomField = (
+const calculateFullName = (
+  object: ObjectType,
+  field: TypeField,
+  fullname = false
+): string =>
+  (fullname ? fieldFullName(object, field) : apiName(field))
+
+
+const convertAnnotationsForApi = (
+  newField: MetadataField,
+  field: TypeField
+): MetadataField => _.assign(
+  {},
+  newField,
+  _.mapKeys(
+    _.pickBy(field.getAnnotationsValues(),
+      (_val, annotationValue) => allowedAnnotations(
+        field.type.elemID.name
+      ).includes(annotationValue)),
+    (_val, key) => sfCase(key, false, false)
+  )
+)
+
+
+const createCustomField = (
   object: ObjectType, field: TypeField, fullname = false
-): CustomField => {
-  const newField = new CustomField(
-    fullname ? fieldFullName(object, field) : apiName(field),
-    FIELD_TYPE_API_NAMES[fieldTypeName(field.type.elemID.name)],
-    field.getAnnotationsValues()[LABEL],
-    field.getAnnotationsValues()[Type.REQUIRED],
-    field.getAnnotationsValues()[Type.DEFAULT],
-    field.getAnnotationsValues()[PICKLIST_VALUES],
-    field.getAnnotationsValues()[FORMULA],
+): CustomField => new CustomField(
+  calculateFullName(object, field, fullname),
+  FIELD_TYPE_API_NAMES[fieldTypeName(field.type.elemID.name)],
+  field.getAnnotationsValues()[LABEL],
+  field.getAnnotationsValues()[Type.REQUIRED],
+  field.getAnnotationsValues()[Type.DEFAULT],
+  field.getAnnotationsValues()[PICKLIST_VALUES],
+  field.getAnnotationsValues()[FORMULA],
+)
+
+const createStandardValueSet = (
+  object: ObjectType, field: TypeField
+): StandardValueSet => new StandardValueSet(
+  calculateFullName(object, field, false),
+  field.getAnnotationsValues()[PICKLIST_VALUES],
+)
+
+export const createMetadataField = (
+  object: ObjectType, field: TypeField, fullname = false
+): MetadataField => {
+  if (isStandardValueSet(field)) {
+    return createStandardValueSet(object, field)
+  }
+  return createCustomField(object, field, fullname)
+}
+
+export const toMetadataField = (
+  object: ObjectType, field: TypeField, fullname = false
+): MetadataField =>
+  convertAnnotationsForApi(
+    createMetadataField(object, field, fullname),
+    field
   )
 
-  // Convert the annotations' names to the required API name
-  _.assign(newField,
-    _.mapKeys(
-      _.pickBy(field.getAnnotationsValues(),
-        (_val, annotationValue) => allowedAnnotations(
-          field.type.elemID.name
-        ).includes(annotationValue)),
-      (_val, key) => sfCase(key, false, false)
-    ))
-  return newField
-}
 
 export const toCustomObject = (element: ObjectType, includeFields = true): CustomObject =>
   new CustomObject(
     apiName(element),
     element.getAnnotationsValues()[LABEL],
-    includeFields ? Object.values(element.fields).map(field => toCustomField(element, field))
+    includeFields ? Object.values(element.fields).map(field => toMetadataField(element, field))
       : undefined
   )
 

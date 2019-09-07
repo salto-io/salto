@@ -1,6 +1,7 @@
 export const SALESFORCE = 'salesforce'
 export const CUSTOM_FIELD = 'CustomField'
 export const CUSTOM_OBJECT = 'CustomObject'
+export const STANDARD_VALUE_SET = 'StandardValueSet'
 export const METADATA_OBJECT_NAME_FIELD = 'fullName'
 export const FORMULA_TYPE_PREFIX = 'formula_'
 export const SETTINGS_METADATA_TYPE = 'Settings'

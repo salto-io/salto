@@ -17,6 +17,7 @@ import {
   CustomObject,
   ProfileInfo,
   FieldPermissions,
+  CustomField,
 } from '../src/client/types'
 import {
   Types, sfCase, fromMetadataInfo,
@@ -596,7 +597,7 @@ describe('Salesforce adapter E2E with real account', () => {
       ))[0] as CustomObject
       const field = makeArray(readResult.fields).filter(f => f.fullName === 'Banana__c')[0]
       expect(field).toBeDefined()
-      expect(field.label).toBe('Banana Split')
+      expect((field as CustomField).label).toBe('Banana Split')
 
       // Clean-up
       await adapter.remove(oldElement)

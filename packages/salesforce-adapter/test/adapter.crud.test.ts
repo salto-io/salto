@@ -1445,6 +1445,67 @@ describe('SalesforceAdapter CRUD', () => {
             expect(updatedObject.fields).toBeUndefined()
           })
         })
+        describe('when standard picklist field values are changed', () => {
+          const oldElement = new ObjectType({
+            elemID: mockElemID,
+            fields: {
+              state: new Field(
+                mockElemID,
+                'state',
+                Types.salesforceDataTypes.picklist,
+                {
+                  [Type.REQUIRED]: false,
+                  [Type.DEFAULT]: 'NEW',
+                  [constants.API_NAME]: 'State',
+                  label: 'test label',
+                  values: ['NEW', 'OLD'],
+                },
+              ),
+            },
+          })
+
+          const newElement = new ObjectType({
+            elemID: mockElemID,
+            fields: {
+              state: new Field(
+                mockElemID,
+                'state',
+                Types.salesforceDataTypes.picklist,
+                {
+                  [Type.REQUIRED]: false,
+                  [Type.DEFAULT]: 'NEW',
+                  [constants.API_NAME]: 'State',
+                  label: 'test label',
+                  values: ['NEW', 'OLD', 'LULU'],
+                },
+              ),
+            },
+          })
+
+          beforeEach(async () => {
+            result = await adapter.update(oldElement, newElement)
+          })
+
+          it('should return an instance of ObjectType', () => {
+            expect(result).toBeInstanceOf(ObjectType)
+          })
+
+          it('should call update once', () => {
+            expect(mockCreate.mock.calls.length).toBe(0)
+            expect(mockDelete.mock.calls.length).toBe(0)
+            expect(mockUpdate.mock.calls.length).toBe(1)
+          })
+
+          it('should call update correctly standard value set field update', () => {
+            // Verify the custom field update
+            const updatedFields = mockUpdate.mock.calls[0][1]
+            expect(updatedFields.length).toBe(1)
+            const field = updatedFields[0]
+            expect(field.fullName).toBe('State')
+            expect(field.sorted).toBe(false)
+            expect(field.standardValue.map((v: {fullName: string}) => v.fullName).join(';')).toBe('NEW;OLD;LULU')
+          })
+        })
       })
     })
 

@@ -11,7 +11,7 @@ export class ProfileInfo implements MetadataInfo {
   constructor(
     public readonly fullName: string,
     public fieldPermissions: FieldPermissions[] = []
-  ) {}
+  ) { }
 }
 
 class CustomPicklistValue implements MetadataInfo {
@@ -22,8 +22,39 @@ class CustomPicklistValue implements MetadataInfo {
   }
 }
 
-export class CustomField implements MetadataInfo {
-  // Common field annotations
+
+class StandardPicklistValue implements MetadataInfo {
+  constructor(
+    public readonly fullName: string,
+    readonly label?: string,
+  ) {
+    if (!this.label) {
+      this.label = fullName
+    }
+  }
+}
+
+export abstract class MetadataField implements MetadataInfo {
+  constructor(
+    public fullName: string
+  ) {}
+}
+export class StandardValueSet extends MetadataField {
+  readonly sorted: boolean = false
+  readonly standardValue: StandardPicklistValue[]
+
+  constructor(
+    public fullName: string,
+    values: string[],
+  ) {
+    super(fullName)
+    this.standardValue = values.map(v => new StandardPicklistValue(v))
+  }
+}
+
+
+export class CustomField extends MetadataField {
+// Common field annotations
   readonly type: string
   readonly required?: boolean
   readonly defaultValue?: string
@@ -55,6 +86,7 @@ export class CustomField implements MetadataInfo {
     values?: string[],
     formula?: string,
   ) {
+    super(fullName)
     this.type = type
     if (formula) {
       this.formula = formula
@@ -83,7 +115,6 @@ export class CustomField implements MetadataInfo {
         },
       }
     }
-
     if (defaultVal !== undefined) {
       this.defaultValue = defaultVal
     }
@@ -92,7 +123,7 @@ export class CustomField implements MetadataInfo {
 
 export class CustomObject implements MetadataInfo {
   readonly pluralLabel: string
-  readonly fields?: CustomField[] | CustomField
+  readonly fields?: MetadataField[] | MetadataField
 
   readonly deploymentStatus = 'Deployed'
   readonly sharingModel = 'ReadWrite'
@@ -104,7 +135,7 @@ export class CustomObject implements MetadataInfo {
   constructor(
     readonly fullName: string,
     readonly label: string,
-    fields?: CustomField[]
+    fields?: MetadataField[]
   ) {
     this.pluralLabel = `${this.label}s`
     if (fields) {

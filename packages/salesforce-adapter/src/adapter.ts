@@ -10,9 +10,10 @@ import { collections } from '@salto/lowerdash'
 import SalesforceClient, { Credentials } from './client/client'
 import * as constants from './constants'
 import {
-  toCustomField, toCustomObject, apiName, sfCase, fieldFullName, Types,
+  toMetadataField, toCustomObject, apiName, sfCase, fieldFullName, Types,
   getValueTypeFieldElement, getSObjectFieldElement, fromMetadataInfo,
   bpCase, toMetadataInfo, metadataType, toMetadataPackageZip, toInstanceElements,
+  isStandardValueSet,
 } from './transformer'
 import layoutFilter from './filters/layouts'
 import fieldPermissionsFilter from './filters/field_permissions'
@@ -319,9 +320,23 @@ export default class SalesforceAdapter {
    * @returns successfully managed to update all fields
    */
   private async updateFields(object: ObjectType, fieldsToUpdate: Field[]): Promise<SaveResult[]> {
+    const [standardValueSetFields, customFields] = _.partition(fieldsToUpdate, isStandardValueSet)
+    return Promise.all(
+      [
+        this.updateFieldsOfType(constants.CUSTOM_FIELD, object, customFields),
+        this.updateFieldsOfType(constants.STANDARD_VALUE_SET, object, standardValueSetFields),
+      ]
+    ).then(res => _.reduce(res, (a: SaveResult[], b: SaveResult[]) => _.concat(a, b), []))
+  }
+
+  private async updateFieldsOfType(
+    metadataFieldType: string,
+    object: ObjectType,
+    fieldsToUpdate: Field[]
+  ): Promise<SaveResult[]> {
     return this.client.update(
-      constants.CUSTOM_FIELD,
-      fieldsToUpdate.map(f => toCustomField(object, f, true)),
+      metadataFieldType,
+      fieldsToUpdate.map(f => toMetadataField(object, f, true))
     )
   }
 
@@ -335,7 +350,7 @@ export default class SalesforceAdapter {
     // Create the custom fields
     return this.client.create(
       constants.CUSTOM_FIELD,
-      fieldsToAdd.map(f => toCustomField(object, f, true)),
+      fieldsToAdd.map(f => toMetadataField(object, f, true)),
     )
   }
 

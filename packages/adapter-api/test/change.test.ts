@@ -1,6 +1,6 @@
 import {
   ObjectType, ElemID, BuiltinTypes, Field, InstanceElement,
-} from 'src/elements'
+} from '../src/elements'
 import { getChangeElement } from '../src/change'
 
 describe('change.ts', () => {

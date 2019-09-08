@@ -1,5 +1,5 @@
 import _ from 'lodash'
-
+import { HCLExpression, ExpressionType } from './hcl'
 import { ReferenceExpression, TemplateExpression } from '../core/expressions'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

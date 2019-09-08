@@ -1,5 +1,5 @@
 import _ from 'lodash'
-import HCLParser from '../../src/parser/hcl'
+import HCLParser, { HCLBlock, HCLAttribute } from '../../src/parser/hcl'
 import devaluate from '../utils'
 import evaluate from '../../src/parser/expressions'
 

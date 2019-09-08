@@ -21,7 +21,7 @@ describe('Salto parser', () => {
       type salesforce_boolean is boolean {
       }
 
-      type salesforce_type is object {
+      type salesforce_obj is object {
         salesforce_number num {}
       }
 
@@ -272,17 +272,26 @@ describe('Salto parser', () => {
       })
 
       it('should contain all top level elements', () => {
-        elements.forEach(elem => expect(sourceMap).toHaveProperty(elem.elemID.getFullName()))
+        elements.forEach(
+          elem => expect(sourceMap.get(elem.elemID.getFullName())).not.toHaveLength(0)
+        )
       })
       it('should have correct start and end positions', () => {
-        const modelSource = sourceMap[model.elemID.getFullName()]
-        expect(modelSource.start.line).toBe(15)
-        expect(modelSource.end.line).toBe(41)
+        const modelSource = sourceMap.get(model.elemID.getFullName())
+        expect(modelSource).toHaveLength(1)
+        expect(modelSource[0].start.line).toBe(15)
+        expect(modelSource[0].end.line).toBe(41)
       })
       it('should contain fields', () => {
         Object.values(model.fields).forEach(
-          field => expect(sourceMap).toHaveProperty(field.elemID.getFullName())
+          field => expect(sourceMap.get(field.elemID.getFullName())).not.toHaveLength(0)
         )
+      })
+      it('should have all definitions of a field', () => {
+        const updatedType = elements[7] as ObjectType
+        const updatedField = Object.values(updatedType.fields)[0]
+        const fieldSource = sourceMap.get(updatedField.elemID.getFullName())
+        expect(fieldSource).toHaveLength(2)
       })
     })
   })

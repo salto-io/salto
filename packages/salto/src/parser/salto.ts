@@ -3,10 +3,11 @@ import {
   Type, ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field, Values,
   isObjectType, isPrimitiveType, Element, isInstanceElement, InstanceElement,
 } from 'adapter-api'
+import { DefaultMap } from '@salto/lowerdash/collections/map'
 import HCLParser from './hcl'
 import evaluate from './expressions'
 
-export type SourceMap = Record<string, SourceRange>
+export type SourceMap = DefaultMap<string, SourceRange[]>
 
 enum Keywords {
   TYPE_DEFINITION = 'type',
@@ -79,7 +80,7 @@ export default class Parser {
     id: ElemID,
     source: HCLBlock | HCLAttribute
   ): void {
-    sourceMap[id.getFullName()] = source.source as SourceRange
+    sourceMap.get(id.getFullName()).push(source.source as SourceRange)
   }
 
   private static getAttrValues(block: HCLBlock, sourceMap: SourceMap, parentId: ElemID): Values {
@@ -186,7 +187,7 @@ export default class Parser {
   public static async parse(blueprint: Buffer, filename: string):
     Promise<{ elements: Element[]; errors: string[]; sourceMap: SourceMap }> {
     const { body, errors } = await HCLParser.parse(blueprint, filename)
-    const sourceMap = {}
+    const sourceMap = new DefaultMap<string, SourceRange[]>(() => [])
     const elements = body.blocks.map((value: HCLBlock): Element => {
       if (value.type === Keywords.TYPE_DEFINITION && value.labels.length > 1) {
         return this.parsePrimitiveType(value, sourceMap)

@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env node --experimental-exports
 require('source-map-support').install()
 const cli = require('../dist/src/cli/cli').default
 

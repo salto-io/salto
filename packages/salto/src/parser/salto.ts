@@ -9,17 +9,6 @@ import HCLParser, {
 } from './hcl'
 import evaluate from './expressions'
 
-interface SourcePos {
-  line: number
-  col: number
-  byte: number
-}
-
-interface SourceRange {
-  filename: string
-  start: SourcePos
-  end: SourcePos
-}
 
 export type SourceMap = DefaultMap<string, SourceRange[]>
 

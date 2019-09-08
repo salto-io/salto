@@ -65,7 +65,7 @@ export default class SalesforceClient {
     })
     // Set poll interval and timeout for deploy
     connection.metadata.pollInterval = 3000
-    connection.metadata.pollTimeout = 30000
+    connection.metadata.pollTimeout = 60000
 
     return connection
   }

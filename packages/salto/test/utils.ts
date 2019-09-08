@@ -1,4 +1,5 @@
 import _ from 'lodash'
+import { HCLExpression } from '../src/parser/hcl'
 import { ReferenceExpression, TemplateExpression } from '../src/core/expressions'
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const devaluate = (value: any): HCLExpression => {

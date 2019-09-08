@@ -43,10 +43,11 @@ GroupedNodeMap<T> => {
     .map((nodeId: NodeId): Group<T> | undefined => {
       const node = source.getData(nodeId)
       if (!node) return undefined
-      return {
+      const groupNodes = {
         groupKey: groupKey(nodeId),
         items: new Map<NodeId, T>([[nodeId, node]]),
       }
+      return groupNodes
     }).reject(_.isUndefined) as wu.WuIterable<Group<T>>)
 
     .reduce((result, group) => {
@@ -57,10 +58,10 @@ GroupedNodeMap<T> => {
       const groupId = _.uniqueId(`${group.groupKey}-`)
       result.addNode(groupId, deps, group)
 
-      // Try to merge withe existing node
+      // Try to merge with existing node
       const mergeCandidate = mergeCandidates.get(group.groupKey)
       if (mergeCandidate) {
-        return result.tryTransform((groupGraph: GroupedNodeMap<T>): NodeId => {
+        return result.tryTransform(groupGraph => {
           groupGraph.merge(groupId, mergeCandidate)
           return mergeCandidate
         }, { onError: () => mergeCandidates.set(group.groupKey, groupId) })

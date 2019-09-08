@@ -97,6 +97,13 @@ export default class SalesforceClient {
     return result
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public async queryMore(locator: string): Promise<QueryResult<any>> {
+    await this.ensureLoggedIn()
+    const result = await this.conn.queryMore(locator)
+    return result
+  }
+
   private static validateSaveResult(result: SaveResult[]): SaveResult[] {
     const errorMessage = (error: SfError | SfError[]): string =>
       makeArray(error).map(e => e.message).join('\n')

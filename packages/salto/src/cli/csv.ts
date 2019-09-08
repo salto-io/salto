@@ -11,7 +11,7 @@ import { parseAsync } from 'json2csv'
 export const dumpCsv = async (
   objects: object[],
   outputPath: string,
-  append = false): Promise<void> => {
+  append: boolean): Promise<void> => {
   await asyncfile.mkdirp(path.dirname(outputPath))
   let csvString: string
   if (!append) { // If this is the first chunk, create the headers
@@ -23,10 +23,11 @@ export const dumpCsv = async (
       rows.unshift(header)
       csvString = rows.join('\n')
     }
+    await asyncfile.writeFile(outputPath, csvString)
   } else { // Otherwise do not create the headers as we only append data
     csvString = await parseAsync(objects, { header: false })
+    await asyncfile.writeFile(outputPath, csvString, { flag: 'a' })
   }
-  await asyncfile.writeFile(outputPath, csvString)
 }
 
 export default dumpCsv

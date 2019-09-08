@@ -74,7 +74,7 @@ export const exportToCsv = async (
   typeId: string,
   blueprints: Blueprint[],
   fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
-): Promise<InstanceElement[]> => {
+): Promise<AsyncIterable<InstanceElement[]>> => {
   // Find the corresponding element in the state
   const state = new State()
   const stateElements = await state.get()
@@ -84,6 +84,6 @@ export const exportToCsv = async (
   }
   const elements = mergeAndValidate(await getAllElements(blueprints))
   const [adapters] = await initAdapters(elements, fillConfig)
-  const instanceObjects = await getInstancesOfType(type as ObjectType, adapters)
+  const instanceObjects = getInstancesOfType(type as ObjectType, adapters)
   return instanceObjects
 }

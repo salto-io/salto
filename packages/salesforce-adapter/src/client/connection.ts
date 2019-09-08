@@ -39,4 +39,6 @@ export default interface Connection {
   describeGlobal(): Promise<Global>
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   query(soql: string): Promise<QueryResult<any>>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  queryMore(locator: string): Promise<QueryResult<any>>
 }

@@ -207,18 +207,13 @@ const mockIterator = async function *mockIterator(): AsyncIterable<InstanceEleme
       Gender: 'Female',
     },
   ]
-  let used = false
-  if (!used) {
-    used = true
-    yield values.map(value => new InstanceElement(
-      elemID,
-      testType,
-      value
-    ))
-  }
+  yield values.map(value => new InstanceElement(
+    elemID,
+    testType,
+    value
+  ))
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const exportToCsv = async (
   _typeId: string,
   _blueprints: Blueprint[],

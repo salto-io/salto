@@ -84,6 +84,5 @@ export const exportToCsv = async (
   }
   const elements = mergeAndValidate(await getAllElements(blueprints))
   const [adapters] = await initAdapters(elements, fillConfig)
-  const instanceObjects = getInstancesOfType(type as ObjectType, adapters)
-  return instanceObjects
+  return getInstancesOfType(type as ObjectType, adapters)
 }

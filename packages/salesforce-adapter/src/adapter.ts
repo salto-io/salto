@@ -1,6 +1,6 @@
 import {
   BuiltinTypes, Type, ObjectType, ElemID, InstanceElement, Values,
-  Field, Element, isObjectType, isInstanceElement, isPrimitiveType, AdapterCreator,
+  Field, Element, isObjectType, isInstanceElement, isPrimitiveType, AdapterCreator, Value,
 } from 'adapter-api'
 import {
   SaveResult, ValueTypeField, MetadataInfo, Field as SObjField, DescribeSObjectResult, QueryResult,
@@ -11,7 +11,7 @@ import * as constants from './constants'
 import {
   toCustomField, toCustomObject, apiName, sfCase, fieldFullName, Types,
   getValueTypeFieldElement, getSObjectFieldElement, fromMetadataInfo,
-  bpCase, toMetadataInfo, metadataType, toMetadataPackageZip,
+  bpCase, toMetadataInfo, metadataType, toMetadataPackageZip, toInstanceElements,
 } from './transformer'
 import layoutFilter from './filters/layouts'
 import fieldPermissionsFilter from './filters/field_permissions'
@@ -148,43 +148,14 @@ export default class SalesforceAdapter {
    * @param type the object type of which to retrieve instances
    */
   public async *getInstancesOfType(type: ObjectType): AsyncIterable<InstanceElement[]> {
-    let nextUrlLocator: string | undefined
-    let done = false
-    const typeId = type.getAnnotationsValues()[constants.API_NAME]
+    let results = await this.getFirstBatchOfInstances(type)
 
-    while (!done) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let result: QueryResult<any> | undefined
-      // Check if we have stored the type and we have a next page link
-      if (!nextUrlLocator) { // if this is the first iteration for this typeId,
-        // build the query and opulate the fields names list in the query
-        const fields = Object.values(type.fields)
-          .map(field => field.getAnnotationsValues()[constants.API_NAME])
-        const queryString = `SELECT ${fields} FROM ${typeId}`
+    while (true) {
+      yield toInstanceElements(type, results)
+      if (results.nextRecordsUrl !== undefined) {
         // eslint-disable-next-line no-await-in-loop
-        result = await this.client.runQuery(queryString)
-      } else { // If we haven't reached the last page already and we have a next records URL
-        // eslint-disable-next-line no-await-in-loop
-        result = await this.client.queryMore(nextUrlLocator)
-      }
-
-      // This is a double check that done === true & nextRecordsUrl === undefined
-      if (result.done && !result.nextRecordsUrl) {
-        done = true
-      } else {
-        // Save the next records page URL
-        nextUrlLocator = result.nextRecordsUrl
-      }
-      // Omit the "attributes" field from the objects
-      const results = result.records.map(obj => _.pickBy(obj, (_value, key) =>
-        key !== 'attributes'))
-
-      // Convert the result to Instance Elements
-      yield results.map(res => new InstanceElement(
-        new ElemID(constants.SALESFORCE, type.elemID.name),
-        type,
-        res
-      ))
+        results = await this.client.queryMore(results.nextRecordsUrl)
+      } else break
     }
   }
 
@@ -606,6 +577,12 @@ export default class SalesforceAdapter {
 
   private async runFiltersOnRemove(before: Element): Promise<SaveResult[]> {
     return this.runFiltersInParallel('onRemove', filter => filter.onRemove(before))
+  }
+
+  private async getFirstBatchOfInstances(type: ObjectType): Promise <QueryResult<Value>> {
+    // build the initial query and populate the fields names list in the query
+    const queryString = `SELECT ${Object.values(type.fields).map(apiName)} FROM ${apiName(type)}`
+    return this.client.runQuery(queryString)
   }
 }
 

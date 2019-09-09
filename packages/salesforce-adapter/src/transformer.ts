@@ -259,15 +259,18 @@ const convertAnnotationsForApi = (
 
 const createCustomField = (
   object: ObjectType, field: TypeField, fullname = false
-): CustomField => new CustomField(
-  calculateFullName(object, field, fullname),
-  FIELD_TYPE_API_NAMES[fieldTypeName(field.type.elemID.name)],
-  field.getAnnotationsValues()[LABEL],
-  field.getAnnotationsValues()[Type.REQUIRED],
-  field.getAnnotationsValues()[Type.DEFAULT],
-  field.getAnnotationsValues()[PICKLIST_VALUES],
-  field.getAnnotationsValues()[FORMULA],
-)
+): CustomField => {
+  const fieldAnnotations = field.getAnnotationsValues()
+  return new CustomField(
+    calculateFullName(object, field, fullname),
+    FIELD_TYPE_API_NAMES[fieldTypeName(field.type.elemID.name)],
+    fieldAnnotations[LABEL],
+    fieldAnnotations[Type.REQUIRED],
+    fieldAnnotations[Type.DEFAULT],
+    fieldAnnotations[PICKLIST_VALUES],
+    fieldAnnotations[FORMULA],
+  )
+}
 
 const createStandardValueSet = (
   object: ObjectType, field: TypeField

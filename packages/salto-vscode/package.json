@@ -81,6 +81,10 @@
 			{
 				"command": "salto.printErrors",
 				"title" : "Salto Debug: Print Errors"
+			},
+			{
+				"command" : "salto.getCursorContext",
+				"title" : "Salto Debug: Cursor Context"
 			}
 		]
 	},

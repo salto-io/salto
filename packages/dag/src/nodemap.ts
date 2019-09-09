@@ -158,11 +158,9 @@ export class NodeMap
   tryTransform(transform: (nodeMap: this) => NodeId): [this, boolean] {
     const transformed = this.clone()
     const affectedNodeId = transform(transformed)
-
-    if (transformed.hasCycle(affectedNodeId)) {
-      return [this, false]
-    }
-    return [transformed, true]
+    const hasCycles = transformed.hasCycle(affectedNodeId)
+    const result = hasCycles ? this : transformed
+    return [result, !hasCycles]
   }
 
   reverse(): this {

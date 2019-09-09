@@ -36,9 +36,7 @@ export const initWorkspace = async (
   additionalBPs: string[] = []
 ): Promise<SaltoWorkspace> => {
   const blueprints = await loadBlueprints(additionalBPs, baseDir)
-  const parsedBlueprints = await parseBlueprints(blueprints)
-  const fileElements = _(parsedBlueprints).keyBy('filename').mapValues('elements').value()
-  const fileErrors = _(parsedBlueprints).keyBy('filename').mapValues('errors').value()
+  const parsedBlueprints = _.keyBy(await parseBlueprints(blueprints), 'filename')
   return updateWorkspace({
     baseDir,
     parsedBlueprints,

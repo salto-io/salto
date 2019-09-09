@@ -1,7 +1,9 @@
 import _ from 'lodash'
 import wu from 'wu'
-import { intersection, difference } from '@salto/lowerdash/collections/set'
+import { collections } from '@salto/lowerdash'
 import { NodeId, DataNodeMap } from './nodemap'
+
+const { intersection, difference } = collections.set
 
 export interface DiffData<T> {
   before?: T

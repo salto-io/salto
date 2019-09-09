@@ -6,11 +6,6 @@ module.exports = {
       ? '<rootDir>/dist/e2e_test/**/*.test.js'
       : '<rootDir>/dist/test/**/*.test.js'
   ],
-  moduleNameMapper: {
-    // allow imports from subdirectories:
-    // e.g, "import Set from '@salto/lowerdash/collections/set'"
-    '^@salto/lowerdash/(.*)': '<rootDir>/../../node_modules/@salto/lowerdash/dist/src/$1',
-  },
   collectCoverage: true,
   coverageReporters: ['json', 'lcov', 'text', 'clover', 'json-summary'],
   collectCoverageFrom: [

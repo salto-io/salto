@@ -15,11 +15,6 @@ import { SaltoWorkspace } from './workspace'
  * TODO - Should we exclude this file from the final build when created?
  */
 
-
-//TODO define context Object
-//Create context chain
-//
-
 type PositionContextPart = 'body'|'definition'
 
 interface EditorPosition {
@@ -123,8 +118,8 @@ export const debugFunctions: { [key: string] : (workspace: SaltoWorkspace) => vo
     console.log((workspace.mergedElements || []).length)
   },
   'salto.printErrors' : (workspace: SaltoWorkspace): void => {
-    _.keys(workspace.parsedBlueprints).forEach(k => {
-      const errors = workspace.parsedBlueprints[k].errors
+    _.keys(workspace.fileErrors).forEach(k => {
+      const errors = workspace.fileErrors[k]
       if (errors.length > 0) {
         console.log(`======== ${k} =========`)
         console.log(errors.join("\n"))

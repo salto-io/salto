@@ -2,7 +2,7 @@ import _ from 'lodash'
 import {
   InstanceElement, Element, ObjectType, isInstanceElement, Adapter,
 } from 'adapter-api'
-import { resolveValues } from '@salto/lowerdash/promises/object'
+import { promises } from '@salto/lowerdash'
 import adapterCreators from './creators'
 
 const initAdapters = async (
@@ -29,7 +29,7 @@ const initAdapters = async (
     }
   )
 
-  const adapters = await resolveValues(adapterPromises)
+  const adapters = await promises.object.resolveValues(adapterPromises)
 
   return [adapters, newConfigs]
 }

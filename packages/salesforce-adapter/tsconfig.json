@@ -7,11 +7,6 @@
         "paths": {
             "jsforce": [
                 "../../node_modules/jsforce-types"
-            ],
-            // allow imports from subdirectories:
-            // e.g, "import Set from '@salto/lowerdash/collections/set'"
-            "@salto/lowerdash/*": [
-                "../../node_modules/@salto/lowerdash/dist/src/*"
             ]
         }
     },

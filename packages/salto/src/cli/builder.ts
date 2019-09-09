@@ -1,9 +1,11 @@
 import _ from 'lodash'
 import yargs from 'yargs'
 import requireDirectory from 'require-directory'
-import { PromiseWithState, promiseWithState } from '@salto/lowerdash/promises/state'
+import { promises } from '@salto/lowerdash'
 import { ParsedCliInput, CliOutput, CliCommand } from './types'
 import { Filter } from './filter'
+
+const { promiseWithState } = promises.state
 
 export type CommandBuilder<
   TArgs = {},
@@ -100,5 +102,5 @@ export const allBuilders = _.values(requireDirectory(
 
 export const registerBuilders = (
   parser: yargs.Argv, builders: YargsCommandBuilder[] = allBuilders
-): PromiseWithState<CommandBuilder> =>
+): promises.state.PromiseWithState<CommandBuilder> =>
   promiseWithState(Promise.race(builders.map(builder => registerBuilder(parser, builder))))

@@ -12,9 +12,6 @@
   ],
   "main": "dist/src",
   "types": "dist/src/index.d.ts",
-  "exports": {
-    "./": "./dist/src/"
-  },
   "scripts": {
     "prepare": "yarn run build",
     "prepublishOnly": "yarn test",

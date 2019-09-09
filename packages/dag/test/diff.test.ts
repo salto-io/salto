@@ -1,8 +1,10 @@
-import { SetId, equals as setEquals } from '@salto/lowerdash/collections/set'
+import { collections } from '@salto/lowerdash'
 import {
   buildDiffGraph, DiffGraph, DiffNode,
 } from '../src/diff'
 import { DataNodeMap } from '../src/nodemap'
+
+const { equals: setEquals } = collections.set
 
 describe('buildDiffGraph', () => {
   let subject: DiffGraph<string>
@@ -14,7 +16,7 @@ describe('buildDiffGraph', () => {
     after.clear()
   })
 
-  const depsEqual = (n: SetId): boolean => setEquals(before.get(n), after.get(n))
+  const depsEqual = (n: collections.set.SetId): boolean => setEquals(before.get(n), after.get(n))
   const getDiffNodes = (): DiffNode<string>[] => [...subject.evaluationOrder()]
     .map(diffNodeId => subject.getData(diffNodeId) as DiffNode<string>)
 

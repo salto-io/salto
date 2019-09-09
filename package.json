@@ -8,7 +8,7 @@
     "codecov": "^3.5.0"
   },
   "scripts": {
-    "install": "yarn workspace @salto/lowerdash run build && yarn workspace adapter-api run build && yarn workspace salto run build && yarn workspaces run build",
+    "install": "for p in {@salto/lowerdash,@salto/dag,adapter-api,salesforce-adapter,salto,salto-vscode}; do yarn workspace ${p} run build; done",
     "lint-fix": "yarn workspaces run lint-fix"
   }
 }

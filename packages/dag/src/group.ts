@@ -61,12 +61,14 @@ GroupedNodeMap<T> => {
       // Try to merge with existing node
       const mergeCandidate = mergeCandidates.get(group.groupKey)
       if (mergeCandidate) {
-        return result.tryTransform(groupGraph => {
+        const [transformed, success] = result.tryTransform(groupGraph => {
           groupGraph.merge(groupId, mergeCandidate)
           return mergeCandidate
-        }, { onError: () => mergeCandidates.set(group.groupKey, groupId) })
+        })
+        if (success) return transformed
       }
 
+      // If merge failed, we need to update state of mergeCandidates
       mergeCandidates.set(group.groupKey, groupId)
       return result
     }, new GroupedNodeMap<T>())

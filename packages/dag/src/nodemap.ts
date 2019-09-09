@@ -155,17 +155,14 @@ export class NodeMap
     dependencies.ensureEmpty()
   }
 
-  tryTransform(transform: (nodeMap: this) => NodeId, callbacks?: {onSuccess?: () => void
-    onError?: () => void}): this {
+  tryTransform(transform: (nodeMap: this) => NodeId): [this, boolean] {
     const transformed = this.clone()
     const affectedNodeId = transform(transformed)
 
     if (transformed.hasCycle(affectedNodeId)) {
-      if (callbacks && callbacks.onError) callbacks.onError()
-      return this
+      return [this, false]
     }
-    if (callbacks && callbacks.onSuccess) callbacks.onSuccess()
-    return transformed
+    return [transformed, true]
   }
 
   reverse(): this {

@@ -146,7 +146,7 @@ export const buildDiffGraph = (() => {
     return target.tryTransform(t => {
       mergeNodes(t, [removalNodeId, additionNodeId], modificationNodeId, modificationNode)
       return modificationNodeId
-    })
+    })[0]
   }
 
   return <T>(

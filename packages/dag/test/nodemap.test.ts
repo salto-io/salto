@@ -572,7 +572,8 @@ describe('NodeMap', () => {
       beforeEach(() => {
         subject.addNode(1, [2])
         subject.addNode(2, [3, 4])
-        transformResult = subject.tryTransform(nm => [...nm.deleteNode(1)][0])
+        const [result] = subject.tryTransform(nm => [...nm.deleteNode(1)][0])
+        transformResult = result
       })
 
       it('should return a new NodeMap', () => {
@@ -587,11 +588,12 @@ describe('NodeMap', () => {
     describe('when the transformation creates a cycle', () => {
       beforeEach(() => {
         subject.addNode(1, [2])
-        transformResult = subject.tryTransform(nm => {
+        const [result] = subject.tryTransform(nm => {
           nm.addNode(2, [3])
           nm.addNode(3, [1, 2])
           return 2
         })
+        transformResult = result
       })
 
       it('should return the original NodeMap', () => {

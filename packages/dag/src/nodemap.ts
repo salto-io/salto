@@ -154,17 +154,12 @@ export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<Node
     dependencies.ensureEmpty()
   }
 
-  tryTransform(transform: (nodeMap: this) => NodeId, callbacks?: {onSuccess?: () => void
-    onError?: () => void}): this {
+  tryTransform(transform: (nodeMap: this) => NodeId): [this, boolean] {
     const transformed = this.clone()
     const affectedNodeId = transform(transformed)
-
-    if (transformed.hasCycle(affectedNodeId)) {
-      if (callbacks && callbacks.onError) callbacks.onError()
-      return this
-    }
-    if (callbacks && callbacks.onSuccess) callbacks.onSuccess()
-    return transformed
+    const hasCycles = transformed.hasCycle(affectedNodeId)
+    const result = hasCycles ? this : transformed
+    return [result, !hasCycles]
   }
 
   reverse(): this {

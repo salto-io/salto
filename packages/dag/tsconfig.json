@@ -4,13 +4,6 @@
         "outDir": "dist",
         "baseUrl": ".",
         "declaration": true,
-        "paths": {
-            // allow imports from subdirectories:
-            // e.g, "import Set from '@salto/lowerdash/collections/set'"
-            "@salto/lowerdash/*": [
-                "../../node_modules/@salto/lowerdash/dist/src/*"
-            ]
-        }
     },
     "include": [
         "src/**/*",

@@ -1,12 +1,12 @@
 import { isString } from 'util'
-import { SetId } from '@salto/lowerdash/collections/set'
+import { collections } from '@salto/lowerdash'
 import { buildGroupedGraph, GroupedNodeMap, Group } from '../src/group'
 import { DataNodeMap } from '../src/nodemap'
 
 describe('buildGroupGraph', () => {
   let subject: GroupedNodeMap<string>
   const origin = new DataNodeMap<string>()
-  const groupKey = (name: SetId): string => (isString(name) ? name.split('_')[0] : '')
+  const groupKey = (name: collections.set.SetId): string => (isString(name) ? name.split('_')[0] : '')
 
   beforeEach(() => {
     origin.clear()

@@ -1,8 +1,9 @@
 import wu from 'wu'
-import { SetId, update as updateSet, intersection } from '@salto/lowerdash/collections/set'
-import { DefaultMap } from '@salto/lowerdash/collections/map'
+import { collections } from '@salto/lowerdash'
 
-export type NodeId = SetId
+const { update: updateSet, intersection } = collections.set
+
+export type NodeId = collections.set.SetId
 
 export class CircularDependencyError extends Error {
   constructor(nodes: NodeMap) {
@@ -20,7 +21,7 @@ const promiseAllToSingle = (promises: Iterable<Promise<void>>): Promise<void> =>
 // Does not store data other than IDs.
 // Includes logic to walk the graph in evaluation order, while removing each processed node.
 export class NodeMap
-  extends DefaultMap<NodeId, Set<NodeId>> {
+  extends collections.map.DefaultMap<NodeId, Set<NodeId>> {
   constructor(entries?: Iterable<[NodeId, Set<NodeId>]>) {
     const defaultInit = (): Set<NodeId> => new Set<NodeId>()
     super(defaultInit, entries)

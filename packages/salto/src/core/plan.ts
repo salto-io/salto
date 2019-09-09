@@ -11,8 +11,10 @@ import State from '../state/state'
 
 export type PlanItemId = NodeId
 export type PlanItem = Group<Change> & {parent: () => Change}
-export type Plan = DataNodeMap<Group<Change>> & {itemsByEvalOrder: () => Iterable<PlanItem>
-  getItem: (id: PlanItemId) => PlanItem | undefined}
+export type Plan = DataNodeMap<Group<Change>> & {
+  itemsByEvalOrder: () => Iterable<PlanItem>
+  getItem: (id: PlanItemId) => PlanItem
+}
 
 /**
  * Util function that returns string id based on elemId
@@ -24,7 +26,7 @@ type Node = ObjectType | InstanceElement | Field
 /**
  * Check if 2 nodes in the DAG are equals or not
  */
-const isEqualsNode = (node1: Node | undefined, node2: Node | undefined): boolean => {
+const isEqualsNode = (node1: Node, node2: Node): boolean => {
   if (isObjectType(node1) && isObjectType(node2)) {
     // We would like to check equality only on type level prop (annotations) and not fields
     return node1.isAnnotationsEqual(node2)
@@ -75,38 +77,36 @@ export const getPlan = async (state: State, allElements: Element[]): Promise<Pla
   // Build the plan
   const groupKey = (nodeId: NodeId): string => {
     const diffNode = diffGraph.getData(nodeId)
-    if (_.isUndefined(diffNode)) return '*undefined*'
     const element = getChangeElement(diffNode)
-    if (isField(element)) {
-      return id(element.parentID)
-    }
-    // if element is not field it's ObjectType or InstanceElement
-    return id(element.elemID)
+    const elemId = isField(element) ? element.parentID : element.elemID
+    return id(elemId)
   }
 
-  const addParentAccessor = (group: Group<Change>|undefined): PlanItem | undefined => {
-    if (group === undefined) return undefined
-    const planItem = group as PlanItem
-    planItem.parent = (): Change => wu(group.items.values()).find(change =>
-      getChangeElement(change).elemID.getFullName() === group.groupKey)
-      || {
-        action: 'modify',
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        data: { before: before.getData(group.groupKey)!, after: after.getData(group.groupKey)! },
-      }
-    return planItem
-  }
+  const addParentAccessor = (group: Group<Change>): PlanItem => Object.assign(group, {
+    parent(): Change {
+      return wu(group.items.values()).find(change =>
+        getChangeElement(change).elemID.getFullName() === group.groupKey)
+        || {
+          action: 'modify',
+          data: { before: before.getData(group.groupKey), after: after.getData(group.groupKey) },
+        }
+    },
+  })
 
-  const addPlanFunctions = (groupGraph: DataNodeMap<Group<Change>>): Plan => {
-    const result = groupGraph as Plan
-    result.itemsByEvalOrder = (): Iterable<PlanItem> => wu(groupGraph.evaluationOrder())
-      .map(item => result.getData(item))
-      .reject(_.isUndefined)
-      .map(addParentAccessor) as Iterable<PlanItem>
-    result.getItem = (planItemId: PlanItemId): PlanItem | undefined =>
-      addParentAccessor(result.getData(planItemId))
-    return result
-  }
+  const addPlanFunctions = (groupGraph: DataNodeMap<Group<Change>>): Plan => Object.assign(
+    groupGraph,
+    {
+      itemsByEvalOrder(): Iterable<PlanItem> {
+        return wu(groupGraph.evaluationOrder())
+          .map(item => groupGraph.getData(item))
+          .map(addParentAccessor)
+      },
+
+      getItem(planItemId: PlanItemId): PlanItem {
+        return addParentAccessor(groupGraph.getData(planItemId))
+      },
+    },
+  )
 
   return addPlanFunctions(buildGroupedGraph(diffGraph, groupKey))
 }

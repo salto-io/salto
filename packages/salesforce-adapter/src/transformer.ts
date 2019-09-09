@@ -276,23 +276,18 @@ const createStandardValueSet = (
   field.getAnnotationsValues()[PICKLIST_VALUES],
 )
 
-export const createMetadataField = (
-  object: ObjectType, field: TypeField, fullname = false
-): MetadataField => {
-  if (isStandardValueSet(field)) {
-    return createStandardValueSet(object, field)
-  }
-  return createCustomField(object, field, fullname)
-}
-
 export const toMetadataField = (
-  object: ObjectType, field: TypeField, fullname = false
-): MetadataField =>
-  convertAnnotationsForApi(
-    createMetadataField(object, field, fullname),
-    field
-  )
+  object: ObjectType, typeField: TypeField, fullname = false
+): MetadataField => {
+  const metadataField = isStandardValueSet(typeField)
+    ? createStandardValueSet(object, typeField)
+    : createCustomField(object, typeField, fullname)
 
+  return convertAnnotationsForApi(
+    metadataField,
+    typeField
+  )
+}
 
 export const toCustomObject = (element: ObjectType, includeFields = true): CustomObject =>
   new CustomObject(

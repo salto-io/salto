@@ -3,6 +3,67 @@ import * as fs from 'async-file'
 import './wasm_exec'
 import { queue, AsyncQueue, ErrorCallback } from 'async'
 
+interface SourcePos {
+  line: number
+  col: number
+  byte: number
+}
+
+export interface SourceRange {
+  filename: string
+  start: SourcePos
+  end: SourcePos
+}
+
+export type ExpressionType = 'list'|'map'|'template'|'literal'|'reference'
+
+export interface HCLExpression {
+  type: ExpressionType
+  expressions: HCLExpression[]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  value?: any
+}
+
+export interface HCLAttribute {
+  source: SourceRange
+  expressions: HCLExpression[]
+}
+
+export interface HCLBlock {
+  type: string
+  labels: string[]
+  attrs: Record<string, HCLAttribute>
+  blocks: HCLBlock[]
+  source?: SourceRange
+}
+
+interface HclParseArgs {
+  src: string
+  filename: string
+}
+
+interface HclParseReturn {
+  body: HCLBlock
+  errors: string[]
+}
+
+interface HclDumpArgs {
+  body: HCLBlock
+}
+
+
+export type HclDumpReturn = string
+
+type HclArgs = HclParseArgs | HclDumpArgs
+type HclReturn = HclParseReturn | HclDumpReturn
+
+interface HclCallContext {
+  func: 'parse' | 'dump'
+  callback?: () => void
+  args: HclArgs
+  return?: HclReturn
+}
+
 class HCLParser {
   // Limit max concurrency to avoid web assembly out of memory errors
   private static MAX_CONCURENCY = 10
@@ -54,9 +115,10 @@ class HCLParser {
 
   private async pluginWorker(context: HclCallContext, done: ErrorCallback): Promise<void> {
     // Place call context in global object
-    const currCalls = Object.keys(global.hclParserCall).map(k => Number.parseInt(k, 10))
+    const { hclParserCall } = global
+    const currCalls = Object.keys(hclParserCall).map(k => Number.parseInt(k, 10))
     const callId = currCalls.length === 0 ? 0 : Math.max(...currCalls) + 1
-    global.hclParserCall[callId] = context
+    hclParserCall[callId] = context
 
     try {
       // TODO: maybe refactor this?
@@ -74,7 +136,7 @@ class HCLParser {
       done()
     } finally {
       // cleanup call context from global scope
-      delete global.hclParserCall[callId]
+      delete hclParserCall[callId]
     }
   }
 

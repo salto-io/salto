@@ -4,7 +4,9 @@ import {
   isObjectType, isPrimitiveType, Element, isInstanceElement, InstanceElement,
 } from 'adapter-api'
 import { collections } from '@salto/lowerdash'
-import HCLParser from './hcl'
+import HCLParser, {
+  SourceRange, HCLBlock, HCLAttribute, HclDumpReturn,
+} from './hcl'
 import evaluate from './expressions'
 
 export type SourceMap = collections.map.DefaultMap<string, SourceRange[]>

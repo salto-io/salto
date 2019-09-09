@@ -1,0 +1,348 @@
+{
+  "fileTypes": [
+    "bp"
+  ],
+  "name": "Blueprint",
+  "patterns": [
+    {
+      "match": "^\\s*(})",
+      "name": "punctuation.definition.tag.blueprint"
+    },
+    {
+      "begin": "#|//",
+      "captures": {
+        "0": {
+          "name": "punctuation.definition.comment.blueprint"
+        }
+      },
+      "comment": "Comments",
+      "end": "$\\n?",
+      "name": "comment.line.number-sign.blueprint"
+    },
+    {
+      "begin": "/\\*",
+      "captures": {
+        "0": {
+          "name": "punctuation.definition.comment.blueprint"
+        }
+      },
+      "comment": "Block comments",
+      "end": "\\*/",
+      "name": "comment.block.blueprint"
+    },
+    {
+      "comment": "Language constants (true, false, yes, no, on, off)",
+      "match": "\\b(true|false|yes|no|on|off)\\b",
+      "name": "constant.language.blueprint"
+    },
+    {
+      "comment": "Primitive types",
+      "match": "\\b(string|number|boolean|object)\\b",
+      "name": "support.type.primitive.blueprint"
+    },
+    {
+      "comment": "Numbers",
+      "match": "\\b([0-9]+)([kKmMgG]b?)?\\b",
+      "name": "constant.numeric.blueprint"
+    },
+    {
+      "comment": "Hex numbers",
+      "match": "\\b(0x[0-9A-Fa-f]+)([kKmMgG]b?)?\\b",
+      "name": "constant.numeric.blueprint"
+    },
+    {
+      "captures": {
+        "1": {
+          "name": "storage.type.function.blueprint"
+        },
+        "2": {
+          "name": "string.blueprint punctuation.definition.string.begin.blueprint"
+        },
+        "3": {
+          "name": "entity.name.section.blueprint"
+        },
+        "4": {
+          "name": "punctuation.definition.tag.blueprint"
+        },
+        "5": {
+          "name": "string.value.blueprint"
+        },
+        "6": {
+          "name": "string.blueprint punctuation.definition.string.end.blueprint"
+        },
+        "7": {
+          "name": "constant.language.blueprint"
+        },
+        "8": {
+          "name": "support.type.primitive.blueprint"
+        },
+        "9": {
+          "name": "string.blueprint punctuation.definition.string.begin.blueprint"
+        },
+        "10": {
+          "name": "string.value.blueprint"
+        },
+        "11": {
+          "name": "string.blueprint punctuation.definition.string.end.blueprint"
+        },
+        "12": {
+          "name": "punctuation.definition.tag.blueprint"
+        }
+      },
+      "match": "(resource|data|type|extension)\\s+(\")?([\\w]+)(?:(\\.)(\\w+))?(\")?(?:\\s+(is)\\s+(string|object|boolean|number))?(?:\\s+(\")?([\\w\\-]+)(\")?)?\\s+({)",
+      "name": "meta.resource.blueprint"
+    },
+    {
+      "captures": {
+        "1": {
+          "name": "storage.type.function.blueprint"
+        },
+        "2": {
+          "name": "string.blueprint punctuation.definition.string.begin.blueprint"
+        },
+        "3": {
+          "name": "string.value.blueprint"
+        },
+        "4": {
+          "name": "string.blueprint punctuation.definition.string.end.blueprint"
+        },
+        "5": {
+          "name": "punctuation.definition.tag.blueprint"
+        }
+      },
+      "match": "(provider|provisioner|variable|output|module|atlas)\\s+(\")?([\\w\\-]+)(\")?\\s+({)"
+    },
+    {
+      "captures": {
+        "1": {
+          "name": "storage.type.function.blueprint"
+        },
+        "2": {
+          "name": "punctuation.definition.tag.blueprint"
+        }
+      },
+      "match": "(locals|blueprint)\\s+({)"
+    },
+    {
+      "captures": {
+        "1": {
+          "name": "entity.name.section.blueprint"
+        },
+        "2": {
+          "name": "punctuation.definition.tag.blueprint"
+        },
+        "3": {
+          "name": "variable.assignment.blueprint"
+        },
+        "4": {
+          "name": "string.value.blueprint"
+        }
+      },
+      "match": "(salesforce)(\\.)([\\w.]+)(?:\\s+(\\w+)\\s+{)?"
+    },
+    {
+      "captures": {
+        "0": {
+          "name": "storage.type.function.blueprint"
+        }
+      },
+      "match": "(annotations)\\s+{"
+    },
+    {
+      "captures": {
+        "1": {
+          "name": "variable.other.assignment.blueprint"
+        },
+        "2": {
+          "name": "keyword.operator.blueprint"
+        }
+      },
+      "comment": "Value assignments (left hand side not in double quotes)",
+      "match": "([\\w_-]+)\\s*(=)\\s*"
+    },
+    {
+      "captures": {
+        "1": {
+          "name": "punctuation.quote.double.blueprint"
+        },
+        "2": {
+          "name": "variable.assignment.blueprint"
+        },
+        "3": {
+          "name": "punctuation.quote.double.blueprint"
+        },
+        "4": {
+          "name": "keyword.operator.blueprint"
+        }
+      },
+      "comment": "Value assignments (left hand side in double quotes)",
+      "match": "(\")([\\w_-]+)(\")\\s*(=)\\s*"
+    },
+    {
+      "captures": {
+        "0": {
+          "name": "entity.name.function.blueprint"
+        }
+      },
+      "comment": "Function Calls",
+      "match": "([\\w-]+)\\s*\\("
+    },
+    {
+      "captures": {
+        "0": {
+          "name": "variable.other.blueprint"
+        }
+      },
+      "comment": "Variables",
+      "match": "([\\w-]+)"
+    },
+    {
+      "captures": {
+        "1": {
+          "name": "entity.name.section.blueprint"
+        },
+        "2": {
+          "name": "punctuation.definition.tag.blueprint"
+        }
+      },
+      "comment": "Maps",
+      "match": "([\\w\\-_]+)\\s+({)"
+    },
+    {
+      "include": "#strings"
+    },
+    {
+      "include": "#heredoc"
+    }
+  ],
+  "repository": {
+    "string_interpolation": {
+      "patterns": [
+        {
+          "begin": "\\$\\{",
+          "beginCaptures": {
+            "0": {
+              "name": "entity.tag.embedded.start.blueprint"
+            }
+          },
+          "end": "\\s*\\}",
+          "endCaptures": {
+            "0": {
+              "name": "entity.tag.embedded.end.blueprint"
+            }
+          },
+          "name": "source.blueprint.embedded.source",
+          "patterns": [
+            {
+              "include": "$self"
+            },
+            {
+              "include": "#string_interpolation_functions"
+            },
+            {
+              "include": "#string_interpolation_keywords"
+            },
+            {
+              "captures": {
+                "0": {
+                  "name": "keyword.control.period.blueprint"
+                }
+              },
+              "match": "(\\.)"
+            },
+            {
+              "include": "#strings"
+            }
+          ]
+        }
+      ]
+    },
+    "string_interpolation_functions": {
+      "begin": "(base64decode|base64encode|base64sha256|ceil|cidrnetmask|compact|distinct|file|floor|keys|length|lower|md5|pathexpand|replace|sha1|sha256|signum|sort|timestamp|title|trimspace|upper|uuid|values|cidrhost|cidrsubnet|coalesce|concat|element|format|formatlist|from|index|join|jsonencode|length|list|lookup|map|max|merge|min|slice|split|substr|zipmap)(\\()",
+      "beginCaptures": {
+        "1": {
+          "name": "keyword.other.function.inline.blueprint"
+        },
+        "2": {
+          "name": "keyword.other.section.begin.blueprint"
+        }
+      },
+      "comment": "Builtin functions",
+      "end": "(\\))",
+      "endCaptures": {
+        "1": {
+          "name": "keyword.other.section.end.blueprint"
+        }
+      },
+      "patterns": [
+        {
+          "include": "$self"
+        },
+        {
+          "include": "#string_interpolation_keywords"
+        }
+      ]
+    },
+    "string_interpolation_keywords": {
+      "captures": {
+        "0": {
+          "name": "entity.other.attribute-name.blueprint"
+        }
+      },
+      "match": "(local|blueprint|var|self|count|module|path|data)(\\.[\\w\\-\\*]+)+"
+    },
+    "strings": {
+      "begin": "\\\"",
+      "beginCaptures": {
+        "0": {
+          "name": "string.blueprint punctuation.definition.string.begin.blueprint"
+        }
+      },
+      "comment": "Strings",
+      "end": "\\\"",
+      "endCaptures": {
+        "0": {
+          "name": "string.blueprint punctuation.definition.string.end.blueprint"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#string_interpolation"
+        },
+        {
+          "match": "([\\w\\-\\/\\._\\\\%]+)",
+          "name": "string.quoted.double.blueprint"
+        }
+      ]
+    },
+    "heredoc": {
+      "begin": "(?>\\s*<<\\s?(\\w+))",
+      "beginCaptures": {
+        "0": {
+          "name": "string.blueprint punctuation.definition.string.begin.blueprint"
+        },
+        "1": {
+          "name": "keyword.operator.heredoc.blueprint"
+        }
+      },
+      "comment": "Heredoc",
+      "end": "\\1$",
+      "endCaptures": {
+        "0": {
+          "name": "string.blueprint punctuation.definition.string.end.blueprint keyword.operator.heredoc.blueprint"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#string_interpolation"
+        },
+        {
+          "match": "([\\w\\-\\/\\._\\\\%]+)",
+          "name": "string.quoted.double.blueprint"
+        }
+      ]
+    }
+  },
+  "scopeName": "source.blueprint",
+  "uuid": "9060ca81-906d-4f19-a91a-159f4eb119d6"
+}

@@ -25,7 +25,8 @@ describe('TEST', () => {
     expect(workspace.mergedElements).toBeDefined()
     expect(workspace.mergedElements && workspace.mergedElements.length).toBe(4)
     expect(_.keys(workspace.parsedBlueprints).length).toBe(3)
-    expect(_(workspace.parsedBlueprints).values().map('errors').flatten().value().length).toBe(1)
+    expect(_(workspace.parsedBlueprints).values().map('errors').flatten()
+      .value().length).toBe(1)
   })
 
   it('should update a single file', async () => {

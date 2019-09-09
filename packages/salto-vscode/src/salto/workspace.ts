@@ -2,7 +2,7 @@ import _ from 'lodash'
 
 import { Element } from 'adapter-api'
 import {
-  loadBlueprints, parseBlueprints, mergeElements, validateElements, ParsedBlueprint
+  loadBlueprints, parseBlueprints, mergeElements, validateElements, ParsedBlueprint,
 } from 'salto'
 
 type SaltoError = string
@@ -18,7 +18,8 @@ export interface SaltoWorkspace {
 }
 
 const updateWorkspace = (workspace: SaltoWorkspace): SaltoWorkspace => {
-  const allElements = _(workspace.parsedBlueprints).values().map('elements').flatten().value()
+  const allElements = _(workspace.parsedBlueprints).values().map('elements').flatten()
+    .value()
   try {
     workspace.mergedElements = mergeElements(allElements)
     workspace.generalErrors = validateElements(workspace.mergedElements).map(e => e.message)
@@ -41,7 +42,7 @@ export const initWorkspace = async (
   return updateWorkspace({
     baseDir,
     parsedBlueprints,
-    generalErrors: []
+    generalErrors: [],
   })
 }
 

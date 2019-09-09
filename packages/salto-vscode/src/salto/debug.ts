@@ -29,52 +29,90 @@ interface EditorPosition {
 
 interface EditorRange {
   start: EditorPosition
-  end: EditorRange
+  end: EditorPosition
+}
+
+interface ReferencedRange {
+  range: EditorRange
+  ref: string
 }
 
 interface PositionContext {
-  parentContext: PositionContext
+  parent?: PositionContext
   range: EditorRange
   part: PositionContextPart
-  salto_ref: string
+  ref?: string
 }
 
-const isConatined = (inner: EditorRange, outter: EditorRange): boolean => {
-  const startsBefore = (outter.start.line !== inner.start.line) ?
-        outter.start.line < inner.start.line : outter.start.col <= inner.start.col
-  const endsAfter = (outter.end.line !== inner.end.line) ?
-        outter.end.line > inner.end.line : outter.end.col >= inner.end.col
-  return startsBefore && endsAfter
+const getPositionConextPart = (
+  refRange: ReferencedRange, 
+  position: EditorPosition
+): PositionContextPart => {
+  return (position.line === refRange.range.start.line) ? 'definition' : 'body'
+}
+
+const buildPositionContext = (
+  ranges: ReferencedRange[],
+  position: EditorPosition,
+  parent?: PositionContext,
+): PositionContext => {
+  // If ranges are empty - we are not included in any context, so we are in the global scope.
+  if (ranges.length == 0) {
+    return {
+      range: {start: {line: 0, col: 0}, end: {line: Number.MAX_VALUE, col: Number.MAX_VALUE}},
+      part: 'body'
+    }
+  } 
+
+  const refRange = ranges[0]
+  const encapsulatedRanges = ranges.slice(1)
+  const context = {
+    parent,
+    range : refRange.range,
+    ref : refRange.ref,
+    part : getPositionConextPart(refRange, position)
+  }
+
+  return (encapsulatedRanges.length > 0) ? 
+         buildPositionContext(encapsulatedRanges, position, context) : context
 }
 
 const getContext = (
   workspace: SaltoWorkspace, 
   filename: string, 
-  position: vscode.Position): PositionContext => {
+  position: EditorPosition): PositionContext => {
 
-  const encapluatationComparator = (EditorRange: rangeA, EditorRange: rangeB): number => {
-    if (isConatined(rangeA, rangeB) && isConatined(rangeB, rangeA)) return 0
-    if (isConatined(rangeA, rangeB)) return -1
+  const isContained = (inner: EditorRange, outter: EditorRange): boolean => {
+    const startsBefore = (outter.start.line !== inner.start.line) ?
+          outter.start.line < inner.start.line : outter.start.col <= inner.start.col
+    const endsAfter = (outter.end.line !== inner.end.line) ?
+          outter.end.line > inner.end.line : outter.end.col >= inner.end.col
+    return startsBefore && endsAfter
+  }
+
+  const encapluatationComparator = (left: ReferencedRange, right: ReferencedRange): number => {
+    if (isContained(left.range, right.range) && isContained(right.range, left.range)) return 0
+    if (isContained(left.range, right.range)) return -1
     return 1
   }
+
   const parsedBlueprints = workspace.parsedBlueprints[filename]
-  const cursorRange = {
-    start: {
-      line: position.line + 1,
-      col: position.charecter,
-    },
-    end: {
-      line: position.line + 1,
-      col: position.charecter,
-    }
-  }
+  const cursorRange = { start: position, end: position }
 
-  const encapsulatingRanges = Object.entries(parsedBlueprints.sourceMap).filter( 
-    ([_k,v]) => isConatined(cursorRange, v) //TODO, CHANGE TO LIST, RENAME VARS
+
+  // We create a list of ReferencedRanges by flattening the sourcemap
+  const flatRanges = Object.entries(parsedBlueprints.sourceMap).map(
+    ([ref, ranges]) => ranges.map(
+      (range: ReferencedRange) => ({ref, range})
+    )
+  )
+
+  // We created a list of sorted ReferencedRanges which contains the cursor in them
+  // and are sorted so that each range contains all of the following ranges in the array
+  const encapsulatingRanges = flatRanges.filter(
+    r => isContained(cursorRange, r.range)
   ).sort(encapluatationComparator)
-
-
-  return JSON.stringify(candidates.map(([k, _v]) => k))
+  return buildPositionContext(encapsulatingRanges, position)
 }
 
 export const debugFunctions: { [key: string] : (workspace: SaltoWorkspace) => void } = {
@@ -99,7 +137,7 @@ export const debugFunctions: { [key: string] : (workspace: SaltoWorkspace) => vo
       const position = editor.selection.active
       console.log("Curor at:::::=>", position)
       const fn = editor.document.fileName
-      console.log("====", getContext(workspace, fn, position))
+      console.log("====", getContext(workspace, fn, {line: position.line, col: position.character}))
     }
     else {
       console.log("No active editor :(")

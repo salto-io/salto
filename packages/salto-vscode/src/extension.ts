@@ -36,6 +36,8 @@ const onDidChangeConfiguration = async (
 }
 
 export const activate = async (context: vscode.ExtensionContext): Promise<void> => {
+  // eslint-disable-next-line no-console
+  console.log('Workspace init started', new Date())
   const { name, rootPath } = vscode.workspace
   if (name && rootPath) {
     const settings = vscode.workspace.getConfiguration('salto')

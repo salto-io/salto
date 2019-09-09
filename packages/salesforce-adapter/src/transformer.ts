@@ -50,12 +50,12 @@ const fieldTypeName = (typeName: string): string => (
   typeName.startsWith(FORMULA_TYPE_PREFIX) ? typeName.slice(FORMULA_TYPE_PREFIX.length) : typeName
 )
 
-const isCustomELement = (element: Element): boolean => (
+const isCustomElement = (element: Element): boolean => (
   apiName(element).endsWith(SALESFORCE_CUSTOM_SUFFIX)
 )
 
 export const isStandardValueSet = (field: TypeField): boolean =>
-  field.name !== undefined && !isCustomELement(field)
+  field.name !== undefined && !isCustomElement(field)
     && fieldTypeName(field.type.elemID.name) === FIELD_TYPE_NAMES.PICKLIST
 
 

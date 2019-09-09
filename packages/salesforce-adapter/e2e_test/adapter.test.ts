@@ -1084,6 +1084,9 @@ describe('Salesforce adapter E2E with real account', () => {
       let validAssignment: Values
 
       beforeAll(async () => {
+        // Make sure our test rule does not exist before we start
+        await client.delete('AssignmentRule', 'Lead.NonStandard').catch(() => undefined)
+
         before = new InstanceElement(
           new ElemID(constants.SALESFORCE, 'lead_assignment_rules'),
           dummyAssignmentRulesType,

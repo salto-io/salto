@@ -629,8 +629,12 @@ describe('DataNodeMap', () => {
         expect(subject.getData(4)).toBe(n4d)
       })
 
-      it('should return undefined for nodes only specified in the deps', () => {
-        expect(subject.getData(2)).toBeUndefined()
+      it('should throw for nodes only specified in the deps', () => {
+        expect(() => subject.getData(2)).toThrowError(/\b2\b.*\bNode has no data/)
+      })
+
+      it('should throw for nonexistent nodes', () => {
+        expect(() => subject.getData(14)).toThrowError(/\b14\b.*\bNode does not exist/)
       })
     })
   })

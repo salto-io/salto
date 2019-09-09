@@ -66,8 +66,8 @@ Promise<Element[]> => {
   return result
 }
 
-export const getInstancesOfType = async (type: ObjectType, adapters: Record<string, Adapter>):
-Promise<InstanceElement[]> => {
+export const getInstancesOfType = (type: ObjectType, adapters: Record<string, Adapter>):
+AsyncIterable<InstanceElement[]> => {
   const adapter = adapters[type.elemID.adapter]
   if (!adapter) {
     throw new Error(`Failed to find the adapter for the given type: ${type.elemID.getFullName()}`)

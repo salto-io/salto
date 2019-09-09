@@ -2,12 +2,13 @@ import {
   ObjectType,
   ElemID,
   Field,
+  InstanceElement,
 } from 'adapter-api'
 import * as constants from '../src/constants'
 import { Types } from '../src/transformer'
 import realAdapter from './adapter'
 
-describe('Adapter E2E REST API with real account', () => {
+describe('Adapter E2E import-export related operations with real account', () => {
   const { adapter } = realAdapter()
 
   const sfLeadName = 'Lead'
@@ -47,11 +48,18 @@ describe('Adapter E2E REST API with real account', () => {
         },
       })
 
-      const result = await adapter.getInstancesOfType(leadType)
+      const iterator = adapter.getInstancesOfType(leadType)[Symbol.asyncIterator]()
+      const firstBatch = async (): Promise<InstanceElement[]> => {
+        const { done, value } = await iterator.next()
+        if (done) {
+          return []
+        }
+        return value
+      }
 
-      // Test
-      expect(result[0].value.FirstName).toBeDefined()
-      expect(result[0].value.LastName).toBeDefined()
+      const results = await firstBatch()
+      expect(results[0].value.FirstName).toBeDefined()
+      expect(results[0].value.LastName).toBeDefined()
     })
   })
 })

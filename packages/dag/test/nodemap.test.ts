@@ -630,11 +630,11 @@ describe('DataNodeMap', () => {
       })
 
       it('should throw for nodes only specified in the deps', () => {
-        expect(() => subject.getData(2)).toThrowError(/\b2\b.*\bNode has no data/)
+        expect(() => subject.getData(2)).toThrow(/\b2\b.*\bNode has no data/)
       })
 
       it('should throw for nonexistent nodes', () => {
-        expect(() => subject.getData(14)).toThrowError(/\b14\b.*\bNode does not exist/)
+        expect(() => subject.getData(14)).toThrow(/\b14\b.*\bNode does not exist/)
       })
     })
   })

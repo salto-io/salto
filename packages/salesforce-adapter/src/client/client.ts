@@ -1,4 +1,5 @@
 import _ from 'lodash'
+import { collections } from '@salto/lowerdash'
 import {
   Connection as RealConnection,
   MetadataObject,
@@ -15,8 +16,9 @@ import { Value } from 'adapter-api'
 import {
   CompleteSaveResult, SfError,
 } from './types'
-import makeArray from './make_array'
 import Connection from './connection'
+
+const { makeArray } = collections.array
 
 export const API_VERSION = '46.0'
 export const METADATA_NAMESPACE = 'http://soap.sforce.com/2006/04/metadata'

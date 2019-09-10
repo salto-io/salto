@@ -1,6 +1,6 @@
 import { Element } from 'adapter-api'
 import { SaveResult } from 'jsforce-types'
-import { HasMember, filterHasMember } from './typeutils'
+import { types } from '@salto/lowerdash'
 import SalesforceClient from './client/client'
 
 // Filter interface, filters will be activated upon adapter discover, add, update and remove
@@ -14,11 +14,11 @@ export type Filter = Partial<{
   onRemove(before: Element): Promise<SaveResult[]>
 }>
 
-export type FilterWith<M extends keyof Filter> = HasMember<Filter, M>
+export type FilterWith<M extends keyof Filter> = types.HasMember<Filter, M>
 
 export const filtersWith = <M extends keyof Filter>(
   m: M,
   filters: Filter[],
-): FilterWith<M>[] => filterHasMember<Filter, M>(m, filters)
+): FilterWith<M>[] => types.filterHasMember<Filter, M>(m, filters)
 
 export type FilterCreator = (opts: { client: SalesforceClient }) => Filter

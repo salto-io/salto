@@ -6,6 +6,7 @@ import {
   SaveResult, ValueTypeField, MetadataInfo, Field as SObjField, DescribeSObjectResult, QueryResult,
 } from 'jsforce'
 import _ from 'lodash'
+import { collections } from '@salto/lowerdash'
 import SalesforceClient, { Credentials } from './client/client'
 import * as constants from './constants'
 import {
@@ -23,7 +24,8 @@ import missingFieldsFilter from './filters/missing_fields'
 import {
   FilterCreator, Filter, FilterWith, filtersWith,
 } from './filter'
-import makeArray from './client/make_array'
+
+const { makeArray } = collections.array
 
 // Add API name and label annotation if missing
 const annotateApiNameAndLabel = (element: ObjectType): void => {

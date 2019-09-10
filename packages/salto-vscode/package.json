@@ -54,12 +54,6 @@
 					".bp"
 				],
 				"configuration": "./language-configuration.json"
-			},
-			{
-				"id": "json",
-				"extensions": [
-					".tfstate"
-				]
 			}
 		],
 		"grammars": [

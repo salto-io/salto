@@ -5,9 +5,7 @@ import * as bf from '../../../src/cli/filters/blueprints'
 import * as mocks from '../mocks'
 
 describe('blueprint filter', () => {
-  beforeEach(() => {
-    jest.setTimeout(20)
-  })
+  jest.setTimeout(200)
 
   let out: mocks.MockCliOutput
   const buildFunc = jest.fn(() => Promise.resolve({ execute: () => Promise.resolve() }))

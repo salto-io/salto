@@ -7,10 +7,6 @@ const exportFile = 'dump_csv_test.csv'
 const outputPath = path.join(csvDumpOutputDir, exportFile)
 
 describe('CSV reader/writer', () => {
-  beforeEach(() => {
-    jest.setTimeout(1000)
-  })
-
   describe('Write to CSV', () => {
     const values = [
       {

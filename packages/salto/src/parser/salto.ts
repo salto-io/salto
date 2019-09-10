@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import {
-  Type, ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field, Values,
-  isObjectType, isPrimitiveType, Element, isInstanceElement, InstanceElement,
+  Type, ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field, Values, isObjectType,
+  isPrimitiveType, Element, isInstanceElement, InstanceElement, isField, isElement,
 } from 'adapter-api'
 import { collections } from '@salto/lowerdash'
 import HCLParser, {
@@ -212,7 +212,7 @@ export default class Parser {
     return {
       type: Keywords.LIST_DEFINITION,
       labels: [field.type.elemID.getFullName(), field.name],
-      attrs: field.getAnnotationsValues() || {},
+      attrs: field.getAnnotationsValues(),
       blocks: [],
     }
   }
@@ -221,78 +221,99 @@ export default class Parser {
     return {
       type: field.type.elemID.getFullName(),
       labels: [field.name],
-      attrs: field.getAnnotationsValues() || {},
+      attrs: field.getAnnotationsValues(),
       blocks: [],
     }
   }
 
-  private static getAnnotationsBlock(element: PrimitiveType): HCLBlock {
-    return {
+  private static getAnnotationsBlock(element: Type): HCLBlock[] {
+    return _.isEmpty(element.annotations) ? [] : [{
       type: Keywords.ANNOTATIONS_DEFINITION,
       labels: [],
       attrs: {},
-      blocks: Object.keys(element.annotations)
-        .map(key => this.getFieldBlock(new Field(element.elemID, key, element.annotations[key]))),
+      blocks: Object.entries(element.annotations).map(([key, type]) => ({
+        type: type.elemID.getFullName(),
+        labels: [key],
+        attrs: {},
+        blocks: [],
+      })),
+    }]
+  }
+
+  private static getElementBlock(elem: Element): HCLBlock {
+    if (isObjectType(elem)) {
+      return {
+        type: Keywords.TYPE_DEFINITION,
+        labels: [elem.elemID.getFullName()],
+        attrs: elem.getAnnotationsValues(),
+        blocks: this.getAnnotationsBlock(elem).concat(
+          Object.values(elem.fields).map(f => this.getBlock(f))
+        ),
+      }
+    }
+    if (isPrimitiveType(elem)) {
+      return {
+        type: Keywords.TYPE_DEFINITION,
+        labels: [
+          elem.elemID.getFullName(),
+          Keywords.TYPE_INHERITENCE_SEPARATOR,
+          getPrimitiveTypeName(elem.primitive),
+        ],
+        attrs: elem.getAnnotationsValues(),
+        blocks: this.getAnnotationsBlock(elem),
+      }
+    }
+    if (isInstanceElement(elem)) {
+      return {
+        type: elem.type.elemID.getFullName(),
+        labels: elem.elemID.isConfig() ? [] : [elem.elemID.name],
+        attrs: elem.value,
+        blocks: [],
+      }
+    }
+    // Without this exception the linter won't allow us to end the function
+    // without a return value
+    throw new Error('Unsupported element type')
+  }
+
+  private static getBlock(value: Element | Values): HCLBlock {
+    if (isField(value)) {
+      return value.isList ? this.getListFieldBlock(value) : this.getFieldBlock(value)
+    }
+    if (isElement(value)) {
+      return this.getElementBlock(value)
+    }
+    // If we reach this point we are serializing values
+    return {
+      type: '',
+      labels: [],
+      attrs: value as Values,
+      blocks: [],
     }
   }
 
   /**
    * Serialize elements to blueprint
    *
-   * @param elements The elements to serialize
+   * @param elementsOrValues The element(s) or attributes to serialize
    * @returns A buffer with the elements serialized as a blueprint
    */
-  public static async dump(elements: Element[]): Promise<string> {
-    const blocks = elements.map(elem => {
-      if (isObjectType(elem)) {
-        // Clone the annotation values because we may delete some keys from there
-        const annotationsValues = _.cloneDeep(elem.getAnnotationsValues())
-        return {
-          type: Keywords.TYPE_DEFINITION,
-          labels: [elem.elemID.getFullName()],
-          attrs: annotationsValues,
-          blocks: Object.values(elem.fields).map(field => ((field.isList)
-            ? this.getListFieldBlock(field)
-            : this.getFieldBlock(field))),
-        }
-      }
-      if (isPrimitiveType(elem)) {
-        return {
-          type: Keywords.TYPE_DEFINITION,
-          labels: [
-            elem.elemID.getFullName(),
-            Keywords.TYPE_INHERITENCE_SEPARATOR,
-            getPrimitiveTypeName(elem.primitive),
-          ],
-          attrs: elem.getAnnotationsValues(),
-          blocks: Object.keys(elem.annotations).length > 0 ? [this.getAnnotationsBlock(elem)] : [],
-        }
-      }
-      if (isInstanceElement(elem)) {
-        const labels = elem.elemID.name === ElemID.CONFIG_INSTANCE_NAME
-          ? []
-          : [elem.elemID.name]
-
-        return {
-          type: elem.type.elemID.getFullName(),
-          labels,
-          attrs: elem.value,
-          blocks: [],
-        }
-      }
-
-      // Without this exception the linter won't allow us to end the function
-      // without a return value
-      throw new Error('unsupported type')
-    })
-
-    const body: HCLBlock = {
+  static async dump(elementsOrValues: Element | Element[] | Values): Promise<string> {
+    const wrapBlocks = (blocks: HCLBlock[]): HCLBlock => ({
       type: '',
       labels: [],
       attrs: {},
-      blocks: blocks.map(markBlockQuotes),
-    }
+      blocks,
+    })
 
+    // If we got a single element, put it in an array because we need to wrap it with an empty block
+    const elemListOrValues = isElement(elementsOrValues) ? [elementsOrValues] : elementsOrValues
+
+    const body = _.isArray(elemListOrValues)
+      ? wrapBlocks(elemListOrValues.map(e => this.getBlock(e)))
+      : this.getBlock(elemListOrValues)
+
+    body.blocks = body.blocks.map(markBlockQuotes)
     return removeQuotes(await HCLParser.dump(body))
   }
 }

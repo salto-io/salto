@@ -80,7 +80,11 @@
 			},
 			{
 				"command": "salto.printErrors",
-				"title": "Salto Debug: Print Errors"
+				"title" : "Salto Debug: Print Errors"
+			},
+			{
+				"command" : "salto.getCursorContext",
+				"title" : "Salto Debug: Cursor Context"
 			}
 		]
 	},
@@ -98,9 +102,10 @@
 		"lint-fix": "yarn run lint -- --fix"
 	},
 	"dependencies": {
-		"adapter-api": "0.1.0",
+		"salto" : "0.1.0",
+		"adapter-api" : "0.1.0",
 		"lodash": "^4.17.11",
-		"salto": "0.1.0"
+		"wu": "^2.1.0"
 	},
 	"devDependencies": {
 		"@types/glob": "^7.1.1",

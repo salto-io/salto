@@ -1,6 +1,8 @@
 /* eslint-disable */
 import _ from 'lodash'
+import * as vscode from 'vscode'
 import { SaltoWorkspace } from './workspace'
+import getPositionContext from './context'
 /**
  * This file is used in order to quickly create debug functions on the loaded
  * workspace. Just add them to the map below, and to package.json. 
@@ -14,7 +16,6 @@ import { SaltoWorkspace } from './workspace'
  * TODO - Should we exclude this file from the final build when created?
  */
 
-
 export const debugFunctions: { [key: string] : (workspace: SaltoWorkspace) => void } = {
   'salto.printMergedElementsNames' : (workspace: SaltoWorkspace): void => {
     (workspace.mergedElements || []).forEach(e => console.log(e.elemID.getFullName()))
@@ -23,12 +24,28 @@ export const debugFunctions: { [key: string] : (workspace: SaltoWorkspace) => vo
     console.log((workspace.mergedElements || []).length)
   },
   'salto.printErrors' : (workspace: SaltoWorkspace): void => {
-    _.keys(workspace.fileErrors).forEach(k => {
-      const errors = workspace.fileErrors[k]
+    if (workspace.generalErrors.length > 0) {
+      console.log("========= General =======")
+      console.log(workspace.generalErrors.join("\n"))
+    }
+    _.keys(workspace.parsedBlueprints).forEach(k => {
+      const errors = workspace.parsedBlueprints[k].errors
       if (errors.length > 0) {
         console.log(`======== ${k} =========`)
         console.log(errors.join("\n"))
       }
     })
-  }
+    console.log("RR")
+  },
+  'salto.getCursorContext' : (workspace: SaltoWorkspace): void => {
+    const editor = vscode.window.activeTextEditor
+    if (editor) {
+      const position = editor.selection.active
+      const ctx = getPositionContext(workspace, editor.document.fileName, {line: position.line + 1, col: position.character})
+      console.log("------", ctx)
+    }
+    else {
+      console.log("No active editor :(")
+    }
+  },
 }

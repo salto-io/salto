@@ -1482,9 +1482,11 @@ describe('SalesforceAdapter CRUD', () => {
             },
           })
 
+
           beforeEach(async () => {
             result = await adapter.update(oldElement, newElement)
           })
+
 
           it('should return an instance of ObjectType', () => {
             expect(result).toBeInstanceOf(ObjectType)
@@ -1496,11 +1498,14 @@ describe('SalesforceAdapter CRUD', () => {
             expect(mockUpdate.mock.calls.length).toBe(1)
           })
 
-          it('should call update correctly standard value set field update', () => {
+          it('should update one field', () => {
             // Verify the custom field update
             const updatedFields = mockUpdate.mock.calls[0][1]
             expect(updatedFields.length).toBe(1)
-            const field = updatedFields[0]
+          })
+
+          it('should update field values correctly', () => {
+            const field = mockUpdate.mock.calls[0][1][0]
             expect(field.fullName).toBe('State')
             expect(field.sorted).toBe(false)
             expect(field.standardValue.map((v: {fullName: string}) => v.fullName).join(';')).toBe('NEW;OLD;LULU')

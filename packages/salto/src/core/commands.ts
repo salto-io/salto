@@ -18,7 +18,7 @@ export const plan = async (
 ): Promise<Plan> => {
   const elements = mergeAndValidate(await getAllElements(blueprints))
   const state = new State()
-  return getPlan(state, elements)
+  return getPlan(await state.get(), elements)
 }
 
 export const apply = async (
@@ -31,7 +31,7 @@ export const apply = async (
   const elements = mergeAndValidate(await getAllElements(blueprints))
   const state = new State()
   try {
-    const actionPlan = await getPlan(state, elements)
+    const actionPlan = getPlan(await state.get(), elements)
     if (force || await shouldApply(actionPlan)) {
       const [adapters] = await initAdapters(elements, fillConfig)
       await applyActions(state, actionPlan, adapters, reportProgress)

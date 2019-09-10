@@ -22,14 +22,13 @@ describe('getPlan', () => {
       getChangeElement(change).elemID.getFullName() === elemID.getFullName())!
 
   it('should create empty plan', async () => {
-    const allElements = coreMock.getAllElements([])
-    State.prototype.get = jest.fn().mockImplementation(() => allElements)
-    const plan = await getPlan(new State(), await allElements)
+    const allElements = await coreMock.getAllElements([])
+    const plan = getPlan(allElements, allElements)
     expect(plan.size).toBe(0)
   })
 
   it('should create plan with add change', async () => {
-    const allElements = coreMock.getAllElements([])
+    const allElements = await coreMock.getAllElements([])
     const newElemID = new ElemID('salto', 'additional')
     const newElement = new ObjectType({
       elemID: newElemID,
@@ -40,7 +39,7 @@ describe('getPlan', () => {
     })
     const state = new State()
     state.get = jest.fn().mockImplementation(() => allElements)
-    const plan = await getPlan(state, [...await allElements, newElement])
+    const plan = getPlan(allElements, [...allElements, newElement])
     expect(plan.size).toBe(1)
     const planItem = getFirstPlanItem(plan)
     expect(planItem.groupKey).toBe(newElemID.getFullName())
@@ -68,8 +67,7 @@ describe('getPlan', () => {
 
   it('should create plan with remove change', async () => {
     const pre = await coreMock.getAllElements([])
-    State.prototype.get = jest.fn().mockImplementation(() => pre)
-    const plan = await getPlan(new State(), pre.slice(0, pre.length - 1))
+    const plan = getPlan(pre, pre.slice(0, pre.length - 1))
     expect(plan.size).toBe(1)
     const planItem = getFirstPlanItem(plan)
     const removed = pre[pre.length - 1]
@@ -83,16 +81,13 @@ describe('getPlan', () => {
 
   it('should create plan with modification changes due to field changes', async () => {
     const pre = await coreMock.getAllElements([])
-    const state = new State()
-    state.get = jest.fn().mockImplementation(() => pre)
-
     const post = _.cloneDeep(pre)
     const employee = post[post.length - 2] as ObjectType
     // Adding new field
     employee.fields.new = new Field(employee.elemID, 'new', BuiltinTypes.STRING)
     // Changing existng field
     employee.fields.name.getAnnotationsValues()[Type.REQUIRED] = false
-    const plan = await getPlan(state, post)
+    const plan = getPlan(pre, post)
     expect(plan.size).toBe(1)
     const planItem = getFirstPlanItem(plan)
     expect(planItem.groupKey).toBe(employee.elemID.getFullName())
@@ -103,13 +98,10 @@ describe('getPlan', () => {
 
   it('should create plan with modification changes due to value change', async () => {
     const pre = await coreMock.getAllElements([])
-    const state = new State()
-    state.get = jest.fn().mockImplementation(() => pre)
-
     const post = _.cloneDeep(pre)
     const employee = post[post.length - 1] as InstanceElement
     employee.value.name = 'SecondEmployee'
-    const plan = await getPlan(state, post)
+    const plan = getPlan(pre, post)
     expect(plan.size).toBe(1)
     const planItem = getFirstPlanItem(plan)
     expect(planItem.groupKey).toBe(employee.elemID.getFullName())
@@ -119,13 +111,11 @@ describe('getPlan', () => {
   it('should create plan with modification change in primary element (no inner changes)',
     async () => {
       const pre = await coreMock.getAllElements([])
-      const state = new State()
-      state.get = jest.fn().mockImplementation(() => pre)
       const post = _.cloneDeep(pre)
       const employee = post[post.length - 2] as ObjectType
       employee.annotations.new = BuiltinTypes.STRING
       employee.annotate({ new: 'new' })
-      const plan = await getPlan(state, post)
+      const plan = getPlan(pre, post)
 
       expect(plan.size).toBe(1)
       const planItem = getFirstPlanItem(plan)

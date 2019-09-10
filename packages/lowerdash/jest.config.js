@@ -7,15 +7,15 @@ module.exports = deepMerge(
     displayName: 'salto',
     rootDir: `${__dirname}`,
     collectCoverageFrom: [
-      '!**/wasm_exec.*', // External source file
+      '!<rootDir>/dist/index.js',
     ],
     coverageThreshold: {
       // Slowly start increasing here, never decrease!
       global: {
-        branches: 90,
-        functions: 90,
-        lines: 85,
-        statements: 90,
+        branches: 98,
+        functions: 98,
+        lines: 98,
+        statements: 98,
       },
     },
   }

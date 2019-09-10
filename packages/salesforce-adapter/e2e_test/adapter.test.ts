@@ -10,7 +10,7 @@ import {
   Values,
 } from 'adapter-api'
 import { PicklistEntry } from 'jsforce'
-import makeArray from '../src/client/make_array'
+import { collections } from '@salto/lowerdash'
 import * as constants from '../src/constants'
 import { FIELD_LEVEL_SECURITY_ANNOTATION, PROFILE_METADATA_TYPE } from '../src/filters/field_permissions'
 import {
@@ -22,6 +22,8 @@ import {
   Types, sfCase, fromMetadataInfo,
 } from '../src/transformer'
 import realAdapter from './adapter'
+
+const { makeArray } = collections.array
 
 describe('Salesforce adapter E2E with real account', () => {
   const { adapter, client } = realAdapter()

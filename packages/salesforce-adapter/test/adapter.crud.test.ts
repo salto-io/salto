@@ -1,4 +1,5 @@
 import _ from 'lodash'
+import { collections } from '@salto/lowerdash'
 import {
   ObjectType,
   ElemID,
@@ -14,9 +15,10 @@ import SalesforceAdapter from '../src/adapter'
 import * as constants from '../src/constants'
 import { Types, sfCase } from '../src/transformer'
 import { PROFILE_METADATA_TYPE } from '../src/filters/field_permissions'
-import makeArray from '../src/client/make_array'
 import Connection from '../src/client/connection'
 import mockAdpater from './adapter'
+
+const { makeArray } = collections.array
 
 describe('SalesforceAdapter CRUD', () => {
   let connection: Connection

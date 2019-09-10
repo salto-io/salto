@@ -7,7 +7,6 @@ import {
 import {
   buildDiffGraph, buildGroupedGraph, Group, DataNodeMap, NodeId,
 } from '@salto/dag'
-import State from '../state/state'
 
 export type PlanItemId = NodeId
 export type PlanItem = Group<Change> & {parent: () => Change}
@@ -66,10 +65,10 @@ const toNodeMap = (elements: Element[]): DataNodeMap<Node> => {
   return nodeMap
 }
 
-export const getPlan = async (state: State, allElements: Element[]): Promise<Plan> => {
+export const getPlan = (beforeElements: Element[], afterElements: Element[]): Plan => {
   // getPlan
-  const before = toNodeMap(await state.get())
-  const after = toNodeMap(allElements)
+  const before = toNodeMap(beforeElements)
+  const after = toNodeMap(afterElements)
   // Calculate the diff
   const diffGraph = buildDiffGraph(before, after,
     nodeId => isEqualsNode(before.getData(nodeId), after.getData(nodeId)))

@@ -9,16 +9,6 @@ import { Plan, PlanItem } from '../core/plan'
 import Prompts from './prompts'
 import { FoundSearchResult, SearchResult } from '../core/search'
 
-export const print = (txt: string): void => {
-  // eslint-disable-next-line no-console
-  console.log(txt)
-}
-
-export const printError = (txt: string): void => {
-  // eslint-disable-next-line no-console
-  console.error(chalk.red(txt))
-}
-
 export const header = (txt: string): string => chalk.bold(txt)
 
 export const subHeader = (txt: string): string => chalk.grey(txt)
@@ -245,6 +235,7 @@ export const createPlanOutput = (plan: Plan): string => {
     planSteps,
     emptyLine(),
     actionCount,
+    subHeader(Prompts.PLANDISCLAIMER),
   ].join('\n')
 }
 

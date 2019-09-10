@@ -1,6 +1,6 @@
 import path from 'path'
 import * as asyncfile from 'async-file'
-import * as csv from '../../src/cli/csv'
+import * as csv from '../../src/core/csv'
 
 const csvDumpOutputDir = `${__dirname}/tmp/csv`
 const exportFile = 'dump_csv_test.csv'

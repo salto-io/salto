@@ -1,9 +1,9 @@
 import path from 'path'
 import * as fs from 'async-file'
 import { InstanceElement } from 'adapter-api'
-import {
-  discover, exportBase,
-} from '../src/cli/commands'
+import { loadBlueprints } from '../src/core/blueprint'
+import { command as discover } from '../src/cli/commands/discover'
+import { command as exportCommand } from '../src/cli/commands/export'
 import State from '../src/state/state'
 import adapterConfigs from './adapter_configs'
 
@@ -26,6 +26,7 @@ describe('Test import-export commands e2e', () => {
   const exportOutputDir = `${homePath}/tmp/export`
   const exportFile = 'export_test.csv'
 
+
   beforeEach(async () => {
     await fs.delete(discoverOutputDir)
     await fs.delete(exportOutputDir)
@@ -35,15 +36,18 @@ describe('Test import-export commands e2e', () => {
   jest.setTimeout(5 * 60 * 1000)
 
   it('should run export and save the data in csv file after discover', async () => {
-    await discover(discoverOutputDir, [])
+    await discover(await loadBlueprints([]), discoverOutputDir).execute()
     const exportOutputFullPath = path.join(exportOutputDir, exportFile)
-    await exportBase(sfLeadObjectName, exportOutputFullPath, [])
+    await exportCommand(await loadBlueprints([], discoverOutputDir), sfLeadObjectName,
+      exportOutputFullPath).execute()
     expect(await pathExists(exportOutputFullPath)).toBe(true)
   })
 
   it('should fail export if discover was not run beforehand', async () => {
     const exportOutputFullPath = path.join(exportOutputDir, exportFile)
-    await expect(exportBase(sfLeadObjectName, exportOutputFullPath, [])).rejects
+    const command = exportCommand(await loadBlueprints([], discoverOutputDir), sfLeadObjectName,
+      exportOutputFullPath)
+    await expect(command.execute()).rejects
       .toThrow(`Couldn't find the type you are looking for: ${sfLeadObjectName}. Have you run salto discover yet?`)
     expect(await pathExists(exportOutputFullPath)).toBe(false)
   })

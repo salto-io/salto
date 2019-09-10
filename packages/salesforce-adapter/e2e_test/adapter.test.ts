@@ -25,7 +25,7 @@ import realAdapter from './adapter'
 
 describe('Salesforce adapter E2E with real account', () => {
   const { adapter, client } = realAdapter()
-  
+
   // Set long timeout as we communicate with salesforce API
   jest.setTimeout(1000000)
 

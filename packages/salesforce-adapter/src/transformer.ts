@@ -244,18 +244,16 @@ const calculateFullName = (
 const convertAnnotationsForApi = (
   newField: MetadataField,
   field: TypeField
-): MetadataField => _.assign(
-  {},
-  newField,
-  _.mapKeys(
-    _.pickBy(field.getAnnotationsValues(),
-      (_val, annotationValue) => allowedAnnotations(
-        field.type.elemID.name
-      ).includes(annotationValue)),
-    (_val, key) => sfCase(key, false, false)
+): MetadataField => {
+  const allowedAnnotationValues = allowedAnnotations(field.type.elemID.name)
+  const filteredAnnotations = _.pick(field.getAnnotationsValues(), allowedAnnotationValues)
+  const annotationsForApi = _.mapKeys(filteredAnnotations, (_val, key) => sfCase(key, false, false))
+  return _.assign(
+    {},
+    newField,
+    annotationsForApi
   )
-)
-
+}
 
 const createCustomField = (
   object: ObjectType, field: TypeField, fullname = false

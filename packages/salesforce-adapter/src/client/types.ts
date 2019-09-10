@@ -14,7 +14,7 @@ export class ProfileInfo implements MetadataInfo {
   ) { }
 }
 
-class CustomPicklistValue implements MetadataInfo {
+class PicklistValue implements MetadataInfo {
   constructor(public readonly fullName: string, readonly label?: string) {
     if (!this.label) {
       this.label = fullName
@@ -22,38 +22,20 @@ class CustomPicklistValue implements MetadataInfo {
   }
 }
 
-
-class StandardPicklistValue implements MetadataInfo {
-  constructor(
-    public readonly fullName: string,
-    readonly label?: string,
-  ) {
-    if (!this.label) {
-      this.label = fullName
-    }
-  }
-}
-
-export abstract class MetadataField implements MetadataInfo {
-  constructor(
-    public fullName: string
-  ) {}
-}
-export class StandardValueSet extends MetadataField {
+export class StandardValueSet implements MetadataInfo {
   readonly sorted: boolean = false
-  readonly standardValue: StandardPicklistValue[]
+  readonly standardValue: PicklistValue[]
 
   constructor(
     public fullName: string,
     values: string[],
   ) {
-    super(fullName)
-    this.standardValue = values.map(v => new StandardPicklistValue(v))
+    this.standardValue = values.map(v => new PicklistValue(v))
   }
 }
 
 
-export class CustomField extends MetadataField {
+export class CustomField implements MetadataInfo {
 // Common field annotations
   readonly type: string
   readonly required?: boolean
@@ -61,7 +43,7 @@ export class CustomField extends MetadataField {
   // For formula fields
   readonly formula?: string
   // To be used for picklist and combobox types
-  readonly valueSet?: { valueSetDefinition: { value: CustomPicklistValue[] } }
+  readonly valueSet?: { valueSetDefinition: { value: PicklistValue[] } }
 
   // To be used for Text types fields
   readonly length?: number
@@ -86,7 +68,6 @@ export class CustomField extends MetadataField {
     values?: string[],
     formula?: string,
   ) {
-    super(fullName)
     this.type = type
     if (formula) {
       this.formula = formula
@@ -111,7 +92,7 @@ export class CustomField extends MetadataField {
     if (values && !_.isEmpty(values)) {
       this.valueSet = {
         valueSetDefinition: {
-          value: values.map(val => new CustomPicklistValue(val)),
+          value: values.map(val => new PicklistValue(val)),
         },
       }
     }
@@ -123,7 +104,7 @@ export class CustomField extends MetadataField {
 
 export class CustomObject implements MetadataInfo {
   readonly pluralLabel: string
-  readonly fields?: MetadataField[] | MetadataField
+  readonly fields?: MetadataInfo[] | MetadataInfo
 
   readonly deploymentStatus = 'Deployed'
   readonly sharingModel = 'ReadWrite'
@@ -135,7 +116,7 @@ export class CustomObject implements MetadataInfo {
   constructor(
     readonly fullName: string,
     readonly label: string,
-    fields?: MetadataField[]
+    fields?: MetadataInfo[]
   ) {
     this.pluralLabel = `${this.label}s`
     if (fields) {

@@ -8,7 +8,7 @@ import {
   Field as TypeField, BuiltinTypes, Element, isInstanceElement, InstanceElement,
 } from 'adapter-api'
 import {
-  CustomObject, CustomField, MetadataField, StandardValueSet,
+  CustomObject, CustomField, StandardValueSet,
 } from './client/types'
 import { API_VERSION, METADATA_NAMESPACE } from './client/client'
 import {
@@ -242,9 +242,9 @@ const calculateFullName = (
 
 
 const convertAnnotationsForApi = (
-  newField: MetadataField,
+  newField: MetadataInfo,
   field: TypeField
-): MetadataField => {
+): MetadataInfo => {
   const allowedAnnotationValues = allowedAnnotations(field.type.elemID.name)
   const filteredAnnotations = _.pick(field.getAnnotationsValues(), allowedAnnotationValues)
   const annotationsForApi = _.mapKeys(filteredAnnotations, (_val, key) => sfCase(key, false, false))
@@ -279,7 +279,7 @@ const createStandardValueSet = (
 
 export const toMetadataField = (
   object: ObjectType, typeField: TypeField, fullname = false
-): MetadataField => {
+): MetadataInfo => {
   const metadataField = isStandardValueSet(typeField)
     ? createStandardValueSet(object, typeField)
     : createCustomField(object, typeField, fullname)

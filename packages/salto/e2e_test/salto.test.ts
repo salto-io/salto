@@ -69,8 +69,8 @@ describe('commands e2e', () => {
     }
   })
 
+  jest.setTimeout(5 * 60 * 1000)
   beforeAll(async () => {
-    jest.setTimeout(5 * 60 * 1000)
     if (await objectExists('e2etest__c')) {
       // TODO 'CustomObject' is a magic string
       await client.delete('CustomObject', 'e2etest__c')

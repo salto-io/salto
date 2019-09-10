@@ -4,9 +4,7 @@ import applyBuilder from '../../src/cli/commands/apply'
 describe('cli', () => {
   let o: mocks.MockCliOutput
 
-  beforeEach(() => {
-    jest.setTimeout(20)
-  })
+  jest.setTimeout(200)
 
   it('should pass', () => {
     expect(true).toBeTruthy()

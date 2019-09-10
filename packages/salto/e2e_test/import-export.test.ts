@@ -32,7 +32,7 @@ describe('Test import-export commands e2e', () => {
     await fs.delete(statePath)
   })
 
-  beforeAll(() => jest.setTimeout(5 * 60 * 1000))
+  jest.setTimeout(5 * 60 * 1000)
 
   it('should run export and save the data in csv file after discover', async () => {
     await discover(discoverOutputDir, [])

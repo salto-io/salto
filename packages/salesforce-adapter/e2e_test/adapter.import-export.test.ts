@@ -15,9 +15,7 @@ describe('Adapter E2E import-export related operations with real account', () =>
   const stringType = Types.salesforceDataTypes.text
 
   // Set long timeout as we communicate with salesforce API
-  beforeAll(() => {
-    jest.setTimeout(1000000)
-  })
+  jest.setTimeout(1000000)
 
   describe('Read data', () => {
     it('should read instances of specific type', async () => {

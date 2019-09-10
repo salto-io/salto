@@ -1,0 +1,41 @@
+type salto_str is string {
+	annotations {
+		boolean _required {
+
+		}
+	}
+}
+
+type salto_obj {
+	salto_str str {
+		_required = true
+	}
+	annotations {
+		string label {
+
+		}
+	}
+}
+
+type salto_complex {
+
+	salto_obj object {
+		label = "LABEL"
+	}
+
+	salto_str name {
+		_required = false
+	}
+
+}
+
+salto_complex inst {
+
+	obj = {
+		str = "STRING"
+	}
+
+	name = "Humbert Humbert"
+
+}
+

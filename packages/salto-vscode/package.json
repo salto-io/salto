@@ -104,7 +104,8 @@
 	"dependencies": {
 		"salto" : "0.1.0",
 		"adapter-api" : "0.1.0",
-   		"lodash": "^4.17.11"
+		"lodash": "^4.17.11",
+		"wu": "^2.1.0"
 	},
 	"devDependencies": {
 		"@types/glob": "^7.1.1",

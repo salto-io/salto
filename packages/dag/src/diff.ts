@@ -5,11 +5,6 @@ import { NodeId, DataNodeMap } from './nodemap'
 
 const { intersection, difference } = collections.set
 
-export interface DiffData<T> {
-  before?: T
-  after?: T
-}
-
 export type DiffNodeId = string
 
 interface BaseDiffNode {originalId: NodeId}
@@ -93,7 +88,7 @@ export const buildDiffGraph = (() => {
         const diffNode: AdditionDiffNode<T> = {
           action: 'add',
           originalId,
-          data: { after: afterNodeMap.getData(originalId) as T },
+          data: { after: afterNodeMap.getData(originalId) },
         }
 
         const deps = calcDeps(addAdditionNode, originalId)
@@ -108,7 +103,7 @@ export const buildDiffGraph = (() => {
   }
 
   const mergeNodes = <T>(
-    target: DiffGraph<T>, oldIds: NodeId[], newId: NodeId, newData?: DiffNode<T>
+    target: DiffGraph<T>, oldIds: NodeId[], newId: NodeId, newData: DiffNode<T>
   ): void => {
     const deps = new Set<NodeId>(wu.chain(oldIds.map(id => target.get(id))).flatten())
 
@@ -146,7 +141,7 @@ export const buildDiffGraph = (() => {
     return target.tryTransform(t => {
       mergeNodes(t, [removalNodeId, additionNodeId], modificationNodeId, modificationNode)
       return modificationNodeId
-    })
+    })[0]
   }
 
   return <T>(

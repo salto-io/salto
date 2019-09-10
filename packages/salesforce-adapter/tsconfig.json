@@ -8,7 +8,10 @@
             "jsforce": [
                 "../../node_modules/jsforce-types"
             ]
-        }
+        },
+        "lib": [
+            "esnext.asynciterable"
+          ]
     },
     "include": [
         "src/**/*",

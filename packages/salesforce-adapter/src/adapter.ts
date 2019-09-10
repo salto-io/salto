@@ -1,9 +1,9 @@
 import {
   BuiltinTypes, Type, ObjectType, ElemID, InstanceElement, Values,
-  Field, Element, isObjectType, isInstanceElement, isPrimitiveType, AdapterCreator,
+  Field, Element, isObjectType, isInstanceElement, isPrimitiveType, AdapterCreator, Value,
 } from 'adapter-api'
 import {
-  SaveResult, ValueTypeField, MetadataInfo, Field as SObjField, DescribeSObjectResult,
+  SaveResult, ValueTypeField, MetadataInfo, Field as SObjField, DescribeSObjectResult, QueryResult,
 } from 'jsforce'
 import _ from 'lodash'
 import SalesforceClient, { Credentials } from './client/client'
@@ -11,7 +11,7 @@ import * as constants from './constants'
 import {
   toCustomField, toCustomObject, apiName, sfCase, fieldFullName, Types,
   getValueTypeFieldElement, getSObjectFieldElement, fromMetadataInfo,
-  bpCase, toMetadataInfo, metadataType, toMetadataPackageZip,
+  bpCase, toMetadataInfo, metadataType, toMetadataPackageZip, toInstanceElements,
 } from './transformer'
 import layoutFilter from './filters/layouts'
 import fieldPermissionsFilter from './filters/field_permissions'
@@ -143,25 +143,20 @@ export default class SalesforceAdapter {
   }
 
   /**
-   * Retrieve all the instances of a given type
+   * Retrieve all the instances of a given type.
+   * The function returns an iterator because each API call retrieves the next 2000 instances
    * @param type the object type of which to retrieve instances
    */
-  public async getInstancesOfType(type: ObjectType): Promise<InstanceElement[]> {
-    // Populate the fields list in the query with commas between the field names
-    const fields = Object.values(type.fields)
-      .map(field => field.getAnnotationsValues()[constants.API_NAME])
-    const typeId = type.getAnnotationsValues()[constants.API_NAME]
-    // Finalize the query string
-    const queryString = `SELECT ${fields} FROM ${typeId}`
-    const result = await this.client.runQuery(queryString)
-    // Ommit the "attributes" field from the objects
-    const results = result.records.map(obj => _.pickBy(obj, (_value, key) =>
-      key !== 'attributes'))
-    return results.map(res => new InstanceElement(
-      new ElemID(constants.SALESFORCE, type.elemID.name),
-      type,
-      res
-    ))
+  public async *getInstancesOfType(type: ObjectType): AsyncIterable<InstanceElement[]> {
+    let results = await this.getFirstBatchOfInstances(type)
+
+    while (true) {
+      yield toInstanceElements(type, results)
+      if (results.nextRecordsUrl !== undefined) {
+        // eslint-disable-next-line no-await-in-loop
+        results = await this.client.queryMore(results.nextRecordsUrl)
+      } else break
+    }
   }
 
   /**
@@ -582,6 +577,12 @@ export default class SalesforceAdapter {
 
   private async runFiltersOnRemove(before: Element): Promise<SaveResult[]> {
     return this.runFiltersInParallel('onRemove', filter => filter.onRemove(before))
+  }
+
+  private async getFirstBatchOfInstances(type: ObjectType): Promise <QueryResult<Value>> {
+    // build the initial query and populate the fields names list in the query
+    const queryString = `SELECT ${Object.values(type.fields).map(apiName)} FROM ${apiName(type)}`
+    return this.client.runQuery(queryString)
   }
 }
 

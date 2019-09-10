@@ -11,6 +11,7 @@ import {
   QueryResult,
   DeployResult,
 } from 'jsforce'
+import { Value } from 'adapter-api'
 import {
   CompleteSaveResult, SfError,
 } from './types'
@@ -90,11 +91,14 @@ export default class SalesforceClient {
     return _.flatten(results)
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  public async runQuery(queryString: string): Promise<QueryResult<any>> {
+  public async runQuery(queryString: string): Promise<QueryResult<Value>> {
     await this.ensureLoggedIn()
-    const result = await this.conn.query(queryString)
-    return result
+    return this.conn.query(queryString)
+  }
+
+  public async queryMore(locator: string): Promise<QueryResult<Value>> {
+    await this.ensureLoggedIn()
+    return this.conn.queryMore(locator)
   }
 
   private static validateSaveResult(result: SaveResult[]): SaveResult[] {

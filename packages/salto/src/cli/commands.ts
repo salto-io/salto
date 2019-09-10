@@ -166,7 +166,7 @@ export const exportBase = async (
   outputPath: string,
   blueprints: Blueprint[],
 ): Promise<void> => {
-  const outputObjects = await commands.exportToCsv(
+  const outputObjectsIterator = await commands.exportToCsv(
     typeName,
     blueprints,
     getConfigFromUser
@@ -176,5 +176,10 @@ export const exportBase = async (
   // <working dir>/<typeName>_<current timestamp>.csv
   const outPath = outputPath || path.join(path.resolve('./'), `${typeName}_${Date.now()}.csv`)
 
-  await dumpCsv(outputObjects.map(instance => instance.value), outPath)
+  let toAppend = false
+  // eslint-disable-next-line no-restricted-syntax
+  for await (const objects of outputObjectsIterator) {
+    await dumpCsv(objects.map(instance => instance.value), outPath, toAppend)
+    toAppend = true
+  }
 }

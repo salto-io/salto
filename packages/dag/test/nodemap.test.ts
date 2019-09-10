@@ -572,7 +572,8 @@ describe('NodeMap', () => {
       beforeEach(() => {
         subject.addNode(1, [2])
         subject.addNode(2, [3, 4])
-        transformResult = subject.tryTransform(nm => [...nm.deleteNode(1)][0])
+        const [result] = subject.tryTransform(nm => [...nm.deleteNode(1)][0])
+        transformResult = result
       })
 
       it('should return a new NodeMap', () => {
@@ -587,11 +588,12 @@ describe('NodeMap', () => {
     describe('when the transformation creates a cycle', () => {
       beforeEach(() => {
         subject.addNode(1, [2])
-        transformResult = subject.tryTransform(nm => {
+        const [result] = subject.tryTransform(nm => {
           nm.addNode(2, [3])
           nm.addNode(3, [1, 2])
           return 2
         })
+        transformResult = result
       })
 
       it('should return the original NodeMap', () => {
@@ -629,8 +631,12 @@ describe('DataNodeMap', () => {
         expect(subject.getData(4)).toBe(n4d)
       })
 
-      it('should return undefined for nodes only specified in the deps', () => {
-        expect(subject.getData(2)).toBeUndefined()
+      it('should throw for nodes only specified in the deps', () => {
+        expect(() => subject.getData(2)).toThrow(/\b2\b.*\bNode has no data/)
+      })
+
+      it('should throw for nonexistent nodes', () => {
+        expect(() => subject.getData(14)).toThrow(/\b14\b.*\bNode does not exist/)
       })
     })
   })

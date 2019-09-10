@@ -15,34 +15,34 @@
 	"main": "./dist/src/extension.js",
 	"contributes": {
 		"configuration": {
-	        "title": "Salto",
-	        "properties": {
-	            "salto.salto_exe_path": {
-	                "type": "string",
-	                "scope": "machine",
-	                "default": "/usr/local/bin/salto",
-	                "description": "Path to the salto executable"
-	            },
-	            "salto.additionalBlueprintDirs": {
-	                "type": "array",
-	                "default": [],
-	                "scope": "resource",
-	                "description": "Paths to additional BP dirs that should be included"
-	            },
-	            "salto.additionalBlueprints": {
-	                "type": "array",
-	                "default": [],
-	                "scope": "resource",
-	                "description": "Paths to additional BP that should be included"
-	            },
-	            "salto.discover_output_dir": {
-	                "type": "string",
-	                "default": ".",
-	                "scope": "resource",
-	                "description": "Paths to discover output directory"
-	            }
-	        }
-	    },
+			"title": "Salto",
+			"properties": {
+				"salto.salto_exe_path": {
+					"type": "string",
+					"scope": "machine",
+					"default": "/usr/local/bin/salto",
+					"description": "Path to the salto executable"
+				},
+				"salto.additionalBlueprintDirs": {
+					"type": "array",
+					"default": [],
+					"scope": "resource",
+					"description": "Paths to additional BP dirs that should be included"
+				},
+				"salto.additionalBlueprints": {
+					"type": "array",
+					"default": [],
+					"scope": "resource",
+					"description": "Paths to additional BP that should be included"
+				},
+				"salto.discover_output_dir": {
+					"type": "string",
+					"default": ".",
+					"scope": "resource",
+					"description": "Paths to discover output directory"
+				}
+			}
+		},
 		"languages": [
 			{
 				"id": "blueprint",
@@ -72,11 +72,11 @@
 		"commands": [
 			{
 				"command": "salto.printMergedElementsNames",
-				"title" : "Salto Debug: Print Merged Elements Names"
+				"title": "Salto Debug: Print Merged Elements Names"
 			},
 			{
 				"command": "salto.printMergedElementsCount",
-				"title" : "Salto Debug: Print Merged Elements Count"
+				"title": "Salto Debug: Print Merged Elements Count"
 			},
 			{
 				"command": "salto.printErrors",
@@ -90,16 +90,16 @@
 	},
 	"scripts": {
 		"vscode:prepublish": "yarn run build && yarn test",
-	    "prepublishOnly": "yarn test",
-	    "build": "yarn run lint && yarn run build-ts",
-	    "build-ts": "tsc",
-	    "watch": "tsc -w",
+		"prepublishOnly": "yarn test",
+		"build": "yarn run lint && yarn run build-ts",
+		"build-ts": "tsc",
+		"watch": "tsc -w",
 		"test": "jest --forceExit --detectOpenHandles",
-	    "clean-ts": "node ./node_modules/.bin/ts-cleaner -d dist -s . -v",
-	    "clean-ts-test": "yarn run clean-ts && yarn run test",
-	    "watch-test": "yarn run tsc-watch --onSuccess 'yarn run clean-ts-test'",
-	    "lint": "eslint --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
-	    "lint-fix": "yarn run lint -- --fix"
+		"clean-ts": "node ./node_modules/.bin/ts-cleaner -d dist -s . -v",
+		"clean-ts-test": "yarn run clean-ts && yarn run test",
+		"watch-test": "yarn run tsc-watch --onSuccess 'yarn run clean-ts-test'",
+		"lint": "eslint --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
+		"lint-fix": "yarn run lint -- --fix"
 	},
 	"dependencies": {
 		"salto" : "0.1.0",
@@ -112,6 +112,7 @@
 		"@types/jest-cli": "^23.6.0",
 		"@types/node": "^10.12.21",
 		"@types/vscode": "1.37",
+		"jest-circus": "^24.9.0",
 		"jest-cli": "^24.8.0",
 		"jest-core": "^0.0.0",
 		"tslint": "^5.12.1",

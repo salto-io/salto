@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import {
-  ValueTypeField, Field, MetadataInfo, DefaultValueWithType,
+  ValueTypeField, Field, MetadataInfo, DefaultValueWithType, QueryResult,
 } from 'jsforce'
 import JSZip from 'jszip'
 
@@ -448,4 +448,18 @@ export const toMetadataPackageZip = (instance: InstanceElement): Promise<Buffer>
     toMetadataXml(typeName, toMetadataInfo(instanceName, instance.value)),
   )
   return zip.generateAsync({ type: 'nodebuffer' })
+}
+
+export const toInstanceElements = (type: ObjectType, queryResult: QueryResult<Value>):
+InstanceElement[] => {
+  // Omit the "attributes" field from the objects
+  const results = queryResult.records.map(obj => _.pickBy(obj, (_value, key) =>
+    key !== 'attributes'))
+
+  // Convert the result to Instance Elements
+  return results.map(res => new InstanceElement(
+    new ElemID(SALESFORCE, type.elemID.name, res.Id),
+    type,
+    res
+  ))
 }

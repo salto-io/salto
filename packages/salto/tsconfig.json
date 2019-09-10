@@ -12,7 +12,10 @@
             "yargonaut": [
                 "src/types/yargonaut"
             ]
-        }
+        },
+        "lib": [
+            "esnext.asynciterable"
+          ]
     },
     "include": [
         "src/**/*",

@@ -6,7 +6,7 @@ const { update: updateSet, intersection } = collections.set
 export type NodeId = collections.set.SetId
 
 export class CircularDependencyError extends Error {
-  constructor(nodes: NodeMap) {
+  constructor(nodes: AbstractNodeMap) {
     super(`Circular dependencies exist among these items: ${nodes}`)
   }
 }
@@ -20,8 +20,7 @@ const promiseAllToSingle = (promises: Iterable<Promise<void>>): Promise<void> =>
 // Basic dependency map: nodeId => dependsOnNodeId[]
 // Does not store data other than IDs.
 // Includes logic to walk the graph in evaluation order, while removing each processed node.
-export class NodeMap
-  extends collections.map.DefaultMap<NodeId, Set<NodeId>> {
+export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<NodeId>> {
   constructor(entries?: Iterable<[NodeId, Set<NodeId>]>) {
     const defaultInit = (): Set<NodeId> => new Set<NodeId>()
     super(defaultInit, entries)
@@ -45,10 +44,10 @@ export class NodeMap
     return new Set<NodeId>(wu.chain(this.keys(), wu(this.values()).flatten(true)))
   }
 
-  addNode(id: NodeId, dependsOn: Iterable<NodeId> = []): void {
+  protected addNodeBase(id: NodeId, dependsOn: Iterable<NodeId> = []): void {
     updateSet(this.get(id), dependsOn)
     wu(dependsOn).forEach(dependency => {
-      this.addNode(dependency)
+      this.addNodeBase(dependency)
     })
   }
 
@@ -155,30 +154,25 @@ export class NodeMap
     dependencies.ensureEmpty()
   }
 
-  tryTransform(transform: (nodeMap: this) => NodeId, callbacks?: {onSuccess?: () => void
-    onError?: () => void}): this {
+  tryTransform(transform: (nodeMap: this) => NodeId): [this, boolean] {
     const transformed = this.clone()
     const affectedNodeId = transform(transformed)
-
-    if (transformed.hasCycle(affectedNodeId)) {
-      if (callbacks && callbacks.onError) callbacks.onError()
-      return this
-    }
-    if (callbacks && callbacks.onSuccess) callbacks.onSuccess()
-    return transformed
+    const hasCycles = transformed.hasCycle(affectedNodeId)
+    const result = hasCycles ? this : transformed
+    return [result, !hasCycles]
   }
 
   reverse(): this {
     const result = new (this.constructor as new() => this)()
     wu(this.entries()).forEach(([id, deps]) => {
-      deps.forEach(d => result.addNode(d, [id]))
+      deps.forEach(d => result.addNodeBase(d, [id]))
     })
     return result
   }
 
   // taken from: https://stackoverflow.com/a/32242282
   removeRedundantEdges(): this {
-    const indirectReverseDepMap = new NodeMap()
+    const indirectReverseDepMap = new AbstractNodeMap()
     const reverse = this.reverse()
 
     const removeDups = (id: NodeId): void => {
@@ -202,15 +196,19 @@ export class NodeMap
   }
 }
 
+export class NodeMap extends AbstractNodeMap {
+  addNode(id: NodeId, dependsOn: Iterable<NodeId> = []): void {
+    return super.addNodeBase(id, dependsOn)
+  }
+}
+
 // This class adds storage of node data to NodeMap
-export class DataNodeMap<T> extends NodeMap {
+export class DataNodeMap<T> extends AbstractNodeMap {
   protected readonly nodeData = new Map<NodeId, T>()
 
-  addNode(id: NodeId, dependsOn: Iterable<NodeId> = [], data?: T): void {
-    super.addNode(id, dependsOn)
-    if (data !== undefined) {
-      this.nodeData.set(id, data)
-    }
+  addNode(id: NodeId, dependsOn: Iterable<NodeId> = [], data: T): void {
+    super.addNodeBase(id, dependsOn)
+    this.nodeData.set(id, data)
   }
 
   deleteNode(id: NodeId): NodeId[] {
@@ -218,8 +216,13 @@ export class DataNodeMap<T> extends NodeMap {
     return super.deleteNode(id)
   }
 
-  getData(id: NodeId): T | undefined {
-    return this.nodeData.get(id)
+  getData(id: NodeId): T {
+    const result = this.nodeData.get(id)
+    if (result === undefined) {
+      const reason = this.has(id) ? 'Node has no data' : 'Node does not exist'
+      throw new Error(`Cannot get data of "${id}": ${reason}`)
+    }
+    return this.nodeData.get(id) as T
   }
 
   setData(id: NodeId, data: T): void {
@@ -236,7 +239,7 @@ export class DataNodeMap<T> extends NodeMap {
   }
 
   private setDataFrom(source: this): this {
-    wu(source.nodeData).forEach(([id, data]) => this.nodeData.set(id, data))
+    wu(source.nodeData).forEach(([id, data]) => this.setData(id, data))
     return this
   }
 

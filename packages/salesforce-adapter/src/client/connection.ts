@@ -4,6 +4,7 @@ import {
   DescribeSObjectResult, DescribeGlobalSObjectResult,
   DeployOptions, DeployResultLocator, DeployResult, QueryResult,
 } from 'jsforce'
+import { Value } from 'adapter-api'
 
 export interface Metadata {
   describe(): Promise<{ metadataObjects: MetadataObject[] }>
@@ -37,6 +38,6 @@ export default interface Connection {
   metadata: Metadata
   soap: Soap
   describeGlobal(): Promise<Global>
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  query(soql: string): Promise<QueryResult<any>>
+  query(soql: string): Promise<QueryResult<Value>>
+  queryMore(locator: string): Promise<QueryResult<Value>>
 }

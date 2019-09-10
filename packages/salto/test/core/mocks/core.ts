@@ -181,12 +181,7 @@ export const discover = async (
   _fillConfig: (configType: ObjectType) => Promise<InstanceElement>
 ): Promise<Blueprint[]> => [({ buffer: Buffer.from('asd'), filename: 'none' })]
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export const exportToCsv = async (
-  _typeId: string,
-  _blueprints: Blueprint[],
-  _fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
-): Promise<InstanceElement[]> => {
+const mockIterator = async function *mockIterator(): AsyncIterable<InstanceElement[]> {
   const testType = new ObjectType({
     elemID: new ElemID('salesforce', 'test'),
   })
@@ -212,9 +207,15 @@ export const exportToCsv = async (
       Gender: 'Female',
     },
   ]
-  return values.map(value => new InstanceElement(
+  yield values.map(value => new InstanceElement(
     elemID,
     testType,
     value
   ))
 }
+
+export const exportToCsv = async (
+  _typeId: string,
+  _blueprints: Blueprint[],
+  _fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
+): Promise<AsyncIterable<InstanceElement[]>> => mockIterator()

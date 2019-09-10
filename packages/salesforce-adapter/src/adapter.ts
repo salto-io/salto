@@ -321,12 +321,10 @@ export default class SalesforceAdapter {
    */
   private async updateFields(object: ObjectType, fieldsToUpdate: Field[]): Promise<SaveResult[]> {
     const [standardValueSetFields, customFields] = _.partition(fieldsToUpdate, isStandardValueSet)
-    return Promise.all(
-      [
-        this.updateFieldsOfType(constants.CUSTOM_FIELD, object, customFields),
-        this.updateFieldsOfType(constants.STANDARD_VALUE_SET, object, standardValueSetFields),
-      ]
-    ).then(res => _.reduce(res, (a: SaveResult[], b: SaveResult[]) => _.concat(a, b), []))
+    return _.flatten(await Promise.all([
+      this.updateFieldsOfType(constants.CUSTOM_FIELD, object, customFields),
+      this.updateFieldsOfType(constants.STANDARD_VALUE_SET, object, standardValueSetFields),
+    ]))
   }
 
   private async updateFieldsOfType(

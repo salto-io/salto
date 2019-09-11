@@ -5,12 +5,13 @@ import {
 } from 'adapter-api'
 import { collections } from '@salto/lowerdash'
 import HCLParser, {
-  SourceRange, HCLBlock, HCLAttribute, HclDumpReturn, SourceMap,
+  SourceRange, HCLBlock, HCLAttribute, HclDumpReturn, SourceMap, ParseError,
 } from './hcl'
 import evaluate from './expressions'
 
-// Re-export this type because we do not want code outside the parser to import hcl
+// Re-export these types because we do not want code outside the parser to import hcl
 export type SourceMap = SourceMap
+export type ParseError = ParseError
 
 enum Keywords {
   TYPE_DEFINITION = 'type',
@@ -185,7 +186,7 @@ export default class Parser {
    *          errors: Errors encountered during parsing
    */
   public static async parse(blueprint: Buffer, filename: string):
-    Promise<{ elements: Element[]; errors: string[]; sourceMap: SourceMap }> {
+    Promise<{ elements: Element[]; errors: ParseError[]; sourceMap: SourceMap }> {
     const { body, errors } = await HCLParser.parse(blueprint, filename)
     const sourceMap = new collections.map.DefaultMap<string, SourceRange[]>(() => [])
     const elements = body.blocks.map((value: HCLBlock): Element => {

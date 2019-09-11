@@ -8,7 +8,7 @@ import (
 
 // convertValue converts a cty.Value to the appropriate go native type so that it can be
 // serialized to javascript
-func convertValue(val cty.Value, path string) interface{} {
+func convertValue(val *cty.Value, path string) interface{} {
 	t := val.Type()
 	switch {
 	case t.HasDynamicTypes():
@@ -25,14 +25,15 @@ func convertValue(val cty.Value, path string) interface{} {
 		res := make([]interface{}, val.LengthInt())
 		var i int64
 		for i = 0; i < int64(val.LengthInt()); i++ {
-			res[i] = convertValue(val.Index(cty.NumberIntVal(i)), path+"."+string(i))
+			item := val.Index(cty.NumberIntVal(i))
+			res[i] = convertValue(&item, path+"."+string(i))
 		}
 		return res
 
 	case t.IsObjectType():
 		res := map[string]interface{}{}
 		for k, v := range val.AsValueMap() {
-			res[k] = convertValue(v, path+"."+k)
+			res[k] = convertValue(&v, path+"."+k)
 		}
 		return res
 
@@ -60,22 +61,6 @@ func convertValue(val cty.Value, path string) interface{} {
 	panic("unknown type to convert: " + t.FriendlyName() + " at " + path)
 }
 
-func convertPos(pos hcl.Pos) map[string]interface{} {
-	return map[string]interface{}{
-		"line": pos.Line,
-		"col":  pos.Column,
-		"byte": pos.Byte,
-	}
-}
-
-func convertSourceRange(src hcl.Range) map[string]interface{} {
-	return map[string]interface{}{
-		"start":    convertPos(src.Start),
-		"end":      convertPos(src.End),
-		"filename": src.Filename,
-	}
-}
-
 func convertTraversal(traversal hcl.Traversal) []interface{} {
 	steps := make([]interface{}, len(traversal))
 	for i, step := range traversal {
@@ -87,7 +72,7 @@ func convertTraversal(traversal hcl.Traversal) []interface{} {
 		case hcl.TraverseIndex:
 			keyTy := tStep.Key.Type()
 			if keyTy.IsPrimitiveType() {
-				steps[i] = convertValue(tStep.Key, "")
+				steps[i] = convertValue(&tStep.Key, "")
 			} else {
 				panic("complex indexes are not supported")
 			}
@@ -134,7 +119,8 @@ func (maker *hclConverter) exitBlock(blk *hclsyntax.Block) {
 		labels[i] = label
 	}
 	maker.nestedConverter.JSValue["labels"] = labels
-	maker.nestedConverter.JSValue["source"] = convertSourceRange(blk.Range())
+	source := blk.Range()
+	maker.nestedConverter.JSValue["source"] = convertSourceRange(&source)
 	maker.JSValue["blocks"] = append(maker.JSValue["blocks"].([]interface{}), maker.nestedConverter.JSValue)
 
 	maker.nestedConverter = nil
@@ -151,7 +137,7 @@ func (maker *hclConverter) appendExpression(exp map[string]interface{}) {
 	)
 }
 
-func (maker *hclConverter) exitExpression(expType string, src hcl.Range) {
+func (maker *hclConverter) exitExpression(expType string, src *hcl.Range) {
 	maker.appendExpression(map[string]interface{}{
 		"type":        expType,
 		"expressions": maker.nestedConverter.JSValue["expressions"],
@@ -160,7 +146,7 @@ func (maker *hclConverter) exitExpression(expType string, src hcl.Range) {
 	maker.nestedConverter = nil
 }
 
-func (maker *hclConverter) exitLiteralExpression(val cty.Value, src hcl.Range) {
+func (maker *hclConverter) exitLiteralExpression(val *cty.Value, src *hcl.Range) {
 	maker.appendExpression(map[string]interface{}{
 		"type":   "literal",
 		"value":  convertValue(val, maker.nestedConverter.path),
@@ -172,14 +158,15 @@ func (maker *hclConverter) exitLiteralExpression(val cty.Value, src hcl.Range) {
 }
 
 func (maker *hclConverter) exitAttribute(attr *hclsyntax.Attribute) {
+	source := attr.Range()
 	maker.JSValue["attrs"].(map[string]interface{})[attr.Name] = map[string]interface{}{
-		"source":      convertSourceRange(attr.Range()),
+		"source":      convertSourceRange(&source),
 		"expressions": maker.nestedConverter.JSValue["expressions"],
 	}
 	maker.nestedConverter = nil
 }
 
-func (maker *hclConverter) exitReferenceExpresion(traversal hcl.Traversal, src hcl.Range) {
+func (maker *hclConverter) exitReferenceExpresion(traversal hcl.Traversal, src *hcl.Range) {
 	maker.appendExpression(map[string]interface{}{
 		"type":        "reference",
 		"value":       convertTraversal(traversal),
@@ -264,33 +251,39 @@ func (maker *hclConverter) Exit(node hclsyntax.Node) hcl.Diagnostics {
 
 	case *hclsyntax.TemplateExpr:
 		exp := node.(*hclsyntax.TemplateExpr)
-		maker.exitExpression("template", exp.Range())
+		expRange := exp.Range()
+		maker.exitExpression("template", &expRange)
 
 	case *hclsyntax.TupleConsExpr:
 		exp := node.(*hclsyntax.TupleConsExpr)
-		maker.exitExpression("list", exp.Range())
+		expRange := exp.Range()
+		maker.exitExpression("list", &expRange)
 
 	case *hclsyntax.ObjectConsExpr:
 		exp := node.(*hclsyntax.ObjectConsExpr)
-		maker.exitExpression("map", exp.Range())
+		expRange := exp.Range()
+		maker.exitExpression("map", &expRange)
 
 	// For now we treat this like a literal
 	case *hclsyntax.ObjectConsKeyExpr:
 		exp := node.(*hclsyntax.ObjectConsKeyExpr)
 		val, evalErrs := exp.Value(nil)
-		maker.exitLiteralExpression(val, exp.Range())
+		expRange := exp.Range()
+		maker.exitLiteralExpression(&val, &expRange)
 		return evalErrs
 
 	case *hclsyntax.LiteralValueExpr:
 		exp := node.(*hclsyntax.LiteralValueExpr)
 		val, evalErrs := exp.Value(nil)
-		maker.exitLiteralExpression(val, exp.Range())
+		expRange := exp.Range()
+		maker.exitLiteralExpression(&val, &expRange)
 		return evalErrs
 
 	case *hclsyntax.ScopeTraversalExpr:
 		exp := node.(*hclsyntax.ScopeTraversalExpr)
 		ref := exp.AsTraversal()
-		maker.exitReferenceExpresion(ref, exp.Range())
+		expRange := exp.Range()
+		maker.exitReferenceExpresion(ref, &expRange)
 
 	}
 	return hcl.Diagnostics{}

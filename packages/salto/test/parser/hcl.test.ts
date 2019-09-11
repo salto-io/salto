@@ -1,5 +1,7 @@
 import _ from 'lodash'
-import HCLParser, { HCLBlock, HCLAttribute, HCLExpression } from '../../src/parser/hcl'
+import HCLParser, {
+  HCLBlock, HCLAttribute, HCLExpression, ParseError,
+} from '../../src/parser/hcl'
 import devaluate from '../utils'
 import evaluate from '../../src/parser/expressions'
 
@@ -24,8 +26,8 @@ const expectSourceLocation = (value: any, startLine: number, endLine: number): v
 
 describe('HCL Parser', () => {
   it('parses adapter config block', async () => {
-    const configBlock = `salesforce { 
-      user = "me" 
+    const configBlock = `salesforce {
+      user = "me"
     }`
 
     const { body } = await HCLParser.parse(Buffer.from(configBlock), 'none')
@@ -160,19 +162,53 @@ describe('HCL Parser', () => {
 
   describe('parse error', () => {
     const blockDef = 'type some.thing {}'
-    let parseErrors: string[]
+    let errors: ParseError[]
 
     beforeAll(async () => {
-      const { errors } = await HCLParser.parse(Buffer.from(blockDef), 'none')
-      parseErrors = errors
+      ({ errors } = await HCLParser.parse(Buffer.from(blockDef), 'none'))
     })
 
     it('is not empty', () => {
-      expect(parseErrors.length).not.toEqual(0)
+      expect(errors.length).not.toEqual(0)
     })
 
     it('contains the error location', () => {
-      expect(parseErrors[0]).toContain('none:1')
+      expect(errors[0].subject.start).toMatchObject({ line: 1, col: 10 })
+      expect(errors[0].subject.filename).toBe('none')
+    })
+
+    it('contains the error summary', () => {
+      expect(errors[0].summary).toBe('Invalid block definition')
+    })
+
+    it('contains the error detail', () => {
+      expect(errors[0].detail).not.toBeFalsy()
+    })
+  })
+
+  describe('traversal error', () => {
+    const blockDef = 'type sometype { a = { foo.bar = 5 } }'
+    let errors: ParseError[]
+
+    beforeAll(async () => {
+      ({ errors } = await HCLParser.parse(Buffer.from(blockDef), 'none'))
+    })
+
+    it('is not empty', () => {
+      expect(errors.length).not.toEqual(0)
+    })
+
+    it('contains the error location', () => {
+      expect(errors[0].subject.start).toMatchObject({ line: 1, col: 23 })
+      expect(errors[0].subject.filename).toBe('none')
+    })
+
+    it('contains the error summary', () => {
+      expect(errors[0].summary).toBe('Ambiguous attribute key')
+    })
+
+    it('contains the error detail', () => {
+      expect(errors[0].detail).not.toBeFalsy()
     })
   })
 

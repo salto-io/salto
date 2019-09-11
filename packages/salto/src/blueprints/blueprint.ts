@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import { Element } from 'adapter-api'
-import Parser, { SourceMap } from '../parser/salto'
+import Parser, { SourceMap, ParseError } from '../parser/salto'
 
 export interface Blueprint {
   buffer: Buffer
@@ -9,7 +9,7 @@ export interface Blueprint {
 
 export interface ParsedBlueprint extends Blueprint {
   elements: Element[]
-  errors: string[]
+  errors: ParseError[]
   sourceMap: SourceMap
 }
 

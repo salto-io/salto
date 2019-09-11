@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"syscall/js"
 
@@ -10,13 +9,21 @@ import (
 	"github.com/hashicorp/hcl2/hclwrite"
 )
 
-func formatErr(err *hcl.Diagnostic) string {
-	return fmt.Sprintf(
-		"%s: %s: %s",
-		err.Subject.String(),
-		err.Summary,
-		err.Detail,
-	)
+func convertAllDiagnostics(
+	parserErrs hcl.Diagnostics,
+	traversalErrs hcl.Diagnostics,
+) []interface{} {
+	result := make([]interface{}, 0, len(parserErrs) + len(traversalErrs))
+
+	for _, err := range parserErrs {
+		result = append(result, convertDiagnostic(err))
+	}
+
+	for _, err := range traversalErrs {
+		result = append(result, convertDiagnostic(err))
+	}
+
+	return result
 }
 
 // ParseHCL parses a buffer with HCL data and returns the structure
@@ -41,18 +48,9 @@ func ParseHCL(args js.Value) interface{} {
 	jsMaker := newHclConverter("#")
 	convErrs := hclsyntax.Walk(body.Body.(*hclsyntax.Body), jsMaker)
 
-	// Extract meaningful errors to report back
-	errors := make([]interface{}, len(parseErrs)+len(convErrs))
-	for i, err := range parseErrs {
-		errors[i] = formatErr(err)
-	}
-	for i, err := range convErrs {
-		errors[len(parseErrs)+i] = formatErr(err)
-	}
-
 	return map[string]interface{}{
 		"body":   jsMaker.JSValue,
-		"errors": errors,
+		"errors": convertAllDiagnostics(parseErrs, convErrs),
 	}
 }
 

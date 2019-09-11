@@ -1,5 +1,6 @@
 import path from 'path'
 import * as fs from 'async-file'
+import { collections } from '@salto/lowerdash'
 import './wasm_exec'
 import { queue, AsyncQueue, ErrorCallback } from 'async'
 
@@ -15,11 +16,14 @@ export interface SourceRange {
   end: SourcePos
 }
 
+export type SourceMap = collections.map.DefaultMap<string, SourceRange[]>
+
 export type ExpressionType = 'list'|'map'|'template'|'literal'|'reference'
 
 export interface HCLExpression {
   type: ExpressionType
   expressions: HCLExpression[]
+  source?: SourceRange
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   value?: any
 }

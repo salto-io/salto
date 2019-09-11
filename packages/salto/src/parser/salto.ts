@@ -5,11 +5,12 @@ import {
 } from 'adapter-api'
 import { collections } from '@salto/lowerdash'
 import HCLParser, {
-  SourceRange, HCLBlock, HCLAttribute, HclDumpReturn,
+  SourceRange, HCLBlock, HCLAttribute, HclDumpReturn, SourceMap,
 } from './hcl'
 import evaluate from './expressions'
 
-export type SourceMap = collections.map.DefaultMap<string, SourceRange[]>
+// Re-export this type because we do not want code outside the parser to import hcl
+export type SourceMap = SourceMap
 
 enum Keywords {
   TYPE_DEFINITION = 'type',
@@ -86,11 +87,10 @@ export default class Parser {
   }
 
   private static getAttrValues(block: HCLBlock, sourceMap: SourceMap, parentId: ElemID): Values {
-    return _.mapValues(block.attrs, (val, key) => {
-      const attrId = new ElemID(parentId.adapter, ...parentId.nameParts, key)
-      this.addToSourceMap(sourceMap, attrId, val)
-      return evaluate(val.expressions[0])
-    })
+    return _.mapValues(
+      block.attrs,
+      (val, key) => evaluate(val.expressions[0], parentId.nestedId(key), sourceMap)
+    )
   }
 
   private static getAnnotations(block: HCLBlock): Record<string, Type> {
@@ -124,9 +124,7 @@ export default class Parser {
           typeObj.elemID,
           fieldName,
           new ObjectType({ elemID: this.getElemID(fieldTypeName) }),
-          this.getAttrValues(block, sourceMap, new ElemID(
-            typeObj.elemID.adapter, ...typeObj.elemID.nameParts, fieldName,
-          )),
+          this.getAttrValues(block, sourceMap, typeObj.elemID.nestedId(fieldName)),
           isList,
         )
         this.addToSourceMap(sourceMap, field.elemID, block)

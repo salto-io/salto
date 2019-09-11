@@ -293,6 +293,15 @@ describe('Salto parser', () => {
         const fieldSource = sourceMap.get(updatedField.elemID.getFullName())
         expect(fieldSource).toHaveLength(2)
       })
+      it('should contain nested attribute values', () => {
+        const nestedAttrId = model.elemID
+          .nestedId('lead_convert_settings')
+          .nestedId('account')
+          .nestedId('0')
+          .nestedId('input')
+        const nestedAttrSource = sourceMap.get(nestedAttrId.getFullName())
+        expect(nestedAttrSource).toHaveLength(1)
+      })
     })
   })
 

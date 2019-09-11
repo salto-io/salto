@@ -1,20 +1,35 @@
 import _ from 'lodash'
-import { HCLExpression, ExpressionType } from './hcl'
+import { Value, ElemID } from 'adapter-api'
+import {
+  HCLExpression, ExpressionType, SourceMap, SourceRange,
+} from './hcl'
 import { ReferenceExpression, TemplateExpression } from '../core/expressions'
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type ExpEvaluator = (expression: HCLExpression) => any
+type ExpEvaluator = (expression: HCLExpression) => Value
 
-const evaluate: ExpEvaluator = expression => {
+const evaluate = (expression: HCLExpression, baseId?: ElemID, srcMap?: SourceMap): Value => {
+  const evalSubExpression = (exp: HCLExpression, key: string): Value =>
+    evaluate(exp, baseId && baseId.nestedId(key), srcMap)
+
   const evaluators: Record<ExpressionType, ExpEvaluator> = {
-    list: exp => exp.expressions.map(evaluate),
+    list: exp => exp.expressions.map((e, idx) => evalSubExpression(e, idx.toString())),
     template: exp => (exp.expressions.filter(e => e.type !== 'literal').length === 0
-      ? exp.expressions.map(evaluate).join('')
-      : new TemplateExpression(exp.expressions.map(evaluate))),
-    map: exp => _(exp.expressions).map(evaluate).chunk(2).fromPairs()
+      ? exp.expressions.map(e => evaluate(e)).join('')
+      : new TemplateExpression(exp.expressions.map(e => evaluate(e)))),
+    map: exp => _(exp.expressions)
+      .chunk(2)
+      .map(([keyExp, valExp]) => {
+        const key = evaluate(keyExp)
+        return [key, evalSubExpression(valExp, key)]
+      })
+      .fromPairs()
       .value(),
     literal: exp => exp.value,
     reference: exp => new ReferenceExpression(exp.value),
+  }
+
+  if (srcMap !== undefined && baseId !== undefined) {
+    srcMap.get(baseId.getFullName()).push(expression.source as SourceRange)
   }
   return evaluators[expression.type](expression)
 }

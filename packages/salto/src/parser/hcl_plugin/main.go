@@ -16,11 +16,11 @@ func convertAllDiagnostics(
 	result := make([]interface{}, 0, len(parserErrs) + len(traversalErrs))
 
 	for _, err := range parserErrs {
-		result = append(result, convertDiagnostic(err, "parser"))
+		result = append(result, convertDiagnostic(err))
 	}
 
 	for _, err := range traversalErrs {
-		result = append(result, convertDiagnostic(err, "traversal"))
+		result = append(result, convertDiagnostic(err))
 	}
 
 	return result

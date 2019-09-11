@@ -1,18 +1,15 @@
 import _ from 'lodash'
 import { Element } from 'adapter-api'
-import Parser, { SourceMap } from '../parser/salto'
-import { Error as HclError } from '../parser/hcl'
+import Parser, { SourceMap, ParseError } from '../parser/salto'
 
 export interface Blueprint {
   buffer: Buffer
   filename: string
 }
 
-export type Error = HclError
-
 export interface ParsedBlueprint extends Blueprint {
   elements: Element[]
-  errors: Error[]
+  errors: ParseError[]
   sourceMap: SourceMap
 }
 

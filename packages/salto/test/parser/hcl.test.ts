@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import HCLParser, {
-  HCLBlock, HCLAttribute, HCLExpression, Error as HclError,
+  HCLBlock, HCLAttribute, HCLExpression, ParseError,
 } from '../../src/parser/hcl'
 import devaluate from '../utils'
 import evaluate from '../../src/parser/expressions'
@@ -162,7 +162,7 @@ describe('HCL Parser', () => {
 
   describe('parse error', () => {
     const blockDef = 'type some.thing {}'
-    let errors: HclError[]
+    let errors: ParseError[]
 
     beforeAll(async () => {
       ({ errors } = await HCLParser.parse(Buffer.from(blockDef), 'none'))
@@ -170,7 +170,6 @@ describe('HCL Parser', () => {
 
     it('is not empty', () => {
       expect(errors.length).not.toEqual(0)
-      expect(errors[0].type).toBe('parser')
     })
 
     it('contains the error location', () => {
@@ -189,7 +188,7 @@ describe('HCL Parser', () => {
 
   describe('traversal error', () => {
     const blockDef = 'type sometype { a = { foo.bar = 5 } }'
-    let errors: HclError[]
+    let errors: ParseError[]
 
     beforeAll(async () => {
       ({ errors } = await HCLParser.parse(Buffer.from(blockDef), 'none'))
@@ -197,7 +196,6 @@ describe('HCL Parser', () => {
 
     it('is not empty', () => {
       expect(errors.length).not.toEqual(0)
-      expect(errors[0].type).toBe('traversal')
     })
 
     it('contains the error location', () => {

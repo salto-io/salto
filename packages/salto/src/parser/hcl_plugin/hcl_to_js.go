@@ -8,7 +8,7 @@ import (
 
 // convertValue converts a cty.Value to the appropriate go native type so that it can be
 // serialized to javascript
-func convertValue(val cty.Value, path string) interface{} {
+func convertValue(val *cty.Value, path string) interface{} {
 	t := val.Type()
 	switch {
 	case t.HasDynamicTypes():
@@ -25,14 +25,15 @@ func convertValue(val cty.Value, path string) interface{} {
 		res := make([]interface{}, val.LengthInt())
 		var i int64
 		for i = 0; i < int64(val.LengthInt()); i++ {
-			res[i] = convertValue(val.Index(cty.NumberIntVal(i)), path+"."+string(i))
+			item := val.Index(cty.NumberIntVal(i))
+			res[i] = convertValue(&item, path+"."+string(i))
 		}
 		return res
 
 	case t.IsObjectType():
 		res := map[string]interface{}{}
 		for k, v := range val.AsValueMap() {
-			res[k] = convertValue(v, path+"."+k)
+			res[k] = convertValue(&v, path+"."+k)
 		}
 		return res
 
@@ -71,7 +72,7 @@ func convertTraversal(traversal hcl.Traversal) []interface{} {
 		case hcl.TraverseIndex:
 			keyTy := tStep.Key.Type()
 			if keyTy.IsPrimitiveType() {
-				steps[i] = convertValue(tStep.Key, "")
+				steps[i] = convertValue(&tStep.Key, "")
 			} else {
 				panic("complex indexes are not supported")
 			}
@@ -145,7 +146,7 @@ func (maker *hclConverter) exitExpression(expType string, src *hcl.Range) {
 	maker.nestedConverter = nil
 }
 
-func (maker *hclConverter) exitLiteralExpression(val cty.Value, src *hcl.Range) {
+func (maker *hclConverter) exitLiteralExpression(val *cty.Value, src *hcl.Range) {
 	maker.appendExpression(map[string]interface{}{
 		"type":   "literal",
 		"value":  convertValue(val, maker.nestedConverter.path),
@@ -268,14 +269,14 @@ func (maker *hclConverter) Exit(node hclsyntax.Node) hcl.Diagnostics {
 		exp := node.(*hclsyntax.ObjectConsKeyExpr)
 		val, evalErrs := exp.Value(nil)
 		expRange := exp.Range()
-		maker.exitLiteralExpression(val, &expRange)
+		maker.exitLiteralExpression(&val, &expRange)
 		return evalErrs
 
 	case *hclsyntax.LiteralValueExpr:
 		exp := node.(*hclsyntax.LiteralValueExpr)
 		val, evalErrs := exp.Value(nil)
 		expRange := exp.Range()
-		maker.exitLiteralExpression(val, &expRange)
+		maker.exitLiteralExpression(&val, &expRange)
 		return evalErrs
 
 	case *hclsyntax.ScopeTraversalExpr:

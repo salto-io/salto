@@ -20,9 +20,8 @@ func convertSourceRange(src *hcl.Range) map[string]interface{} {
 	}
 }
 
-func convertDiagnostic(err *hcl.Diagnostic, errType string) map[string]interface{} {
+func convertDiagnostic(err *hcl.Diagnostic) map[string]interface{} {
 	result := map[string]interface{}{
-		"type":     errType,
 		"severity": int(err.Severity),
 		"summary":  err.Summary,
 		"detail":   err.Detail,

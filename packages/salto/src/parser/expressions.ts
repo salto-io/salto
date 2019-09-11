@@ -9,7 +9,7 @@ type ExpEvaluator = (expression: HCLExpression) => Value
 
 const evaluate = (expression: HCLExpression, baseId?: ElemID, srcMap?: SourceMap): Value => {
   const evalSubExpression = (exp: HCLExpression, key: string): Value =>
-    evaluate(exp, baseId && baseId.nestedId(key), srcMap)
+    evaluate(exp, baseId && baseId.createNestedID(key), srcMap)
 
   const evaluators: Record<ExpressionType, ExpEvaluator> = {
     list: exp => exp.expressions.map((e, idx) => evalSubExpression(e, idx.toString())),

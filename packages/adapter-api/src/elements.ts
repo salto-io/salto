@@ -43,7 +43,7 @@ export class ElemID {
     return _.isEmpty(this.name) || this.name === ElemID.CONFIG_INSTANCE_NAME
   }
 
-  nestedId(namePart: string): ElemID {
+  createNestedID(namePart: string): ElemID {
     return new ElemID(this.adapter, ...this.nameParts, namePart)
   }
 }
@@ -69,7 +69,7 @@ export class Field implements Element {
     private annotationsValues: Values = {},
     public isList: boolean = false,
   ) {
-    this.elemID = parentID.nestedId(name)
+    this.elemID = parentID.createNestedID(name)
   }
 
   isEqual(other: Field): boolean {

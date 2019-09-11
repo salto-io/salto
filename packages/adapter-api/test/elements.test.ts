@@ -501,9 +501,9 @@ describe('Test elements.ts', () => {
         expect(exampleId.isConfig()).toBe(false)
       })
     })
-    describe('nestedId', () => {
+    describe('createNestedID', () => {
       it('should create an ID with one additional name part', () => {
-        expect(exampleId.nestedId('test').nameParts).toEqual(['example', 'test'])
+        expect(exampleId.createNestedID('test').nameParts).toEqual(['example', 'test'])
       })
     })
   })

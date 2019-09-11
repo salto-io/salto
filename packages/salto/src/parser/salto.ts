@@ -89,7 +89,7 @@ export default class Parser {
   private static getAttrValues(block: HCLBlock, sourceMap: SourceMap, parentId: ElemID): Values {
     return _.mapValues(
       block.attrs,
-      (val, key) => evaluate(val.expressions[0], parentId.nestedId(key), sourceMap)
+      (val, key) => evaluate(val.expressions[0], parentId.createNestedID(key), sourceMap)
     )
   }
 
@@ -124,7 +124,7 @@ export default class Parser {
           typeObj.elemID,
           fieldName,
           new ObjectType({ elemID: this.getElemID(fieldTypeName) }),
-          this.getAttrValues(block, sourceMap, typeObj.elemID.nestedId(fieldName)),
+          this.getAttrValues(block, sourceMap, typeObj.elemID.createNestedID(fieldName)),
           isList,
         )
         this.addToSourceMap(sourceMap, field.elemID, block)

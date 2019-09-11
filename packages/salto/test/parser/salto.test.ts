@@ -295,10 +295,10 @@ describe('Salto parser', () => {
       })
       it('should contain nested attribute values', () => {
         const nestedAttrId = model.elemID
-          .nestedId('lead_convert_settings')
-          .nestedId('account')
-          .nestedId('0')
-          .nestedId('input')
+          .createNestedID('lead_convert_settings')
+          .createNestedID('account')
+          .createNestedID('0')
+          .createNestedID('input')
         const nestedAttrSource = sourceMap.get(nestedAttrId.getFullName())
         expect(nestedAttrSource).toHaveLength(1)
       })

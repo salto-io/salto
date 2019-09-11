@@ -5,6 +5,7 @@ import { provideWorkspaceCompletionItems } from './salto/completions/provider'
 import { getPositionContext } from './salto/context'
 import { debugFunctions } from './salto/debug'
 
+
 /**
  * This files act as a bridge between VSC and the salto specific functionality.
  */
@@ -67,7 +68,6 @@ const createProvider = (
     )
   },
 })
-
 
 export const activate = async (context: vscode.ExtensionContext): Promise<void> => {
   // eslint-disable-next-line no-console

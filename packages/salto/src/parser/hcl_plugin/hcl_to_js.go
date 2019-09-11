@@ -60,22 +60,6 @@ func convertValue(val cty.Value, path string) interface{} {
 	panic("unknown type to convert: " + t.FriendlyName() + " at " + path)
 }
 
-func convertPos(pos hcl.Pos) map[string]interface{} {
-	return map[string]interface{}{
-		"line": pos.Line,
-		"col":  pos.Column,
-		"byte": pos.Byte,
-	}
-}
-
-func convertSourceRange(src hcl.Range) map[string]interface{} {
-	return map[string]interface{}{
-		"start":    convertPos(src.Start),
-		"end":      convertPos(src.End),
-		"filename": src.Filename,
-	}
-}
-
 func convertTraversal(traversal hcl.Traversal) []interface{} {
 	steps := make([]interface{}, len(traversal))
 	for i, step := range traversal {
@@ -134,7 +118,8 @@ func (maker *hclConverter) exitBlock(blk *hclsyntax.Block) {
 		labels[i] = label
 	}
 	maker.nestedConverter.JSValue["labels"] = labels
-	maker.nestedConverter.JSValue["source"] = convertSourceRange(blk.Range())
+	source := blk.Range()
+	maker.nestedConverter.JSValue["source"] = convertSourceRange(&source)
 	maker.JSValue["blocks"] = append(maker.JSValue["blocks"].([]interface{}), maker.nestedConverter.JSValue)
 
 	maker.nestedConverter = nil
@@ -170,8 +155,9 @@ func (maker *hclConverter) exitLiteralExpression(val cty.Value) {
 }
 
 func (maker *hclConverter) exitAttribute(attr *hclsyntax.Attribute) {
+	source := attr.Range()
 	maker.JSValue["attrs"].(map[string]interface{})[attr.Name] = map[string]interface{}{
-		"source":      convertSourceRange(attr.Range()),
+		"source":      convertSourceRange(&source),
 		"expressions": maker.nestedConverter.JSValue["expressions"],
 	}
 	maker.nestedConverter = nil

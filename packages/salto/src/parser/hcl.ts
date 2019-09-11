@@ -37,6 +37,18 @@ export interface HCLBlock {
   source?: SourceRange
 }
 
+// hcl.Diagnostic struct taken from
+// https://github.com/hashicorp/hcl2/blob/f45c1cd/hcl/diagnostic.go#L26
+// TODO: include expression and evalContext when it's needed
+export interface Error {
+  type: 'parser' | 'traversal'
+  severity: number
+  summary: string
+  detail: string
+  subject: SourceRange
+  context?: SourceRange
+}
+
 interface HclParseArgs {
   src: string
   filename: string
@@ -44,7 +56,7 @@ interface HclParseArgs {
 
 interface HclParseReturn {
   body: HCLBlock
-  errors: string[]
+  errors: Error[]
 }
 
 interface HclDumpArgs {

@@ -6,6 +6,7 @@ import { getPositionContext, EditorPosition } from './salto/context'
 import { debugFunctions } from './salto/debug'
 import { provideWorkspaceDefinition } from './salto/definitions'
 
+
 /**
  * This files act as a bridge between VSC and the salto specific functionality.
  */
@@ -83,25 +84,6 @@ const createCompletionsProvider = (
         }
         return item
       }
-    )
-  },
-})
-
-const createDefinitionsProvider = (
-  workspaceName: string
-): vscode.DefinitionProvider => ({
-  provideDefinition: (
-    doc: vscode.TextDocument,
-    position: vscode.Position,
-  ): vscode.Definition => {
-    const workspace = workspaces[workspaceName]
-    const context = getPositionContext(workspace, doc.fileName, VsPosToSaltoPos(position))
-    const currenToken = doc.getText(doc.getWordRangeAtPosition(position))
-    return provideWorkspaceDefinition(workspace, context, currenToken).map(
-      def => new vscode.Location(
-        vscode.Uri.file(def.filename),
-        SaltoPosToVsPos(def.range.start)
-      )
     )
   },
 })

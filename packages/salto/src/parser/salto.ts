@@ -152,7 +152,7 @@ export default class Parser {
       elemID: this.getElemID(typeName),
       primitive: getPrimitiveType(baseType),
       annotations: this.getAnnotations(typeBlock),
-      annotationsValues: this.getAttrValues(typeBlock, sourceMap, this.getElemID(typeName)),
+      annotationValues: this.getAttrValues(typeBlock, sourceMap, this.getElemID(typeName)),
     })
     this.addToSourceMap(sourceMap, typeObj.elemID, typeBlock)
     return typeObj
@@ -211,7 +211,7 @@ export default class Parser {
     return {
       type: Keywords.LIST_DEFINITION,
       labels: [field.type.elemID.getFullName(), field.name],
-      attrs: field.getAnnotationsValues(),
+      attrs: field.annotationValues,
       blocks: [],
     }
   }
@@ -220,7 +220,7 @@ export default class Parser {
     return {
       type: field.type.elemID.getFullName(),
       labels: [field.name],
-      attrs: field.getAnnotationsValues(),
+      attrs: field.annotationValues,
       blocks: [],
     }
   }
@@ -244,7 +244,7 @@ export default class Parser {
       return {
         type: Keywords.TYPE_DEFINITION,
         labels: [elem.elemID.getFullName()],
-        attrs: elem.getAnnotationsValues(),
+        attrs: elem.annotationValues,
         blocks: this.getAnnotationsBlock(elem).concat(
           Object.values(elem.fields).map(f => this.getBlock(f))
         ),
@@ -258,7 +258,7 @@ export default class Parser {
           Keywords.TYPE_INHERITENCE_SEPARATOR,
           getPrimitiveTypeName(elem.primitive),
         ],
-        attrs: elem.getAnnotationsValues(),
+        attrs: elem.annotationValues,
         blocks: this.getAnnotationsBlock(elem),
       }
     }

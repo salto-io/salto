@@ -41,7 +41,7 @@ describe('Adapter E2E import-export related operations with real account', () =>
           ),
         },
         annotations: {},
-        annotationsValues: {
+        annotationValues: {
           [constants.API_NAME]: sfLeadName,
         },
       })

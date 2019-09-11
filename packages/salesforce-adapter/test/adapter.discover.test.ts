@@ -102,21 +102,21 @@ describe('SalesforceAdapter discover', () => {
 
       const lead = result.filter(o => o.elemID.name === 'lead').pop() as ObjectType
       expect(lead.fields.last_name.type.elemID.name).toBe('text')
-      expect(lead.fields.last_name.getAnnotationsValues().label).toBe('Last Name')
+      expect(lead.fields.last_name.annotationValues.label).toBe('Last Name')
       // Test Rquired true and false
-      expect(lead.fields.last_name.getAnnotationsValues()[Type.REQUIRED]).toBe(true)
-      expect(lead.fields.first_name.getAnnotationsValues()[Type.REQUIRED]).toBe(false)
+      expect(lead.fields.last_name.annotationValues[Type.REQUIRED]).toBe(true)
+      expect(lead.fields.first_name.annotationValues[Type.REQUIRED]).toBe(false)
       // Default string and boolean
-      expect(lead.fields.last_name.getAnnotationsValues()[Type.DEFAULT]).toBe('BLABLA')
-      expect(lead.fields.is_deleted.getAnnotationsValues()[Type.DEFAULT]).toBe(false)
+      expect(lead.fields.last_name.annotationValues[Type.DEFAULT]).toBe('BLABLA')
+      expect(lead.fields.is_deleted.annotationValues[Type.DEFAULT]).toBe(false)
       // Custom type
       expect(lead.fields.custom).not.toBeUndefined()
-      expect(lead.fields.custom.getAnnotationsValues()[constants.API_NAME]).toBe('Custom__c')
-      expect(lead.fields.custom.getAnnotationsValues()[Type.DEFAULT]).toBe(false)
+      expect(lead.fields.custom.annotationValues[constants.API_NAME]).toBe('Custom__c')
+      expect(lead.fields.custom.annotationValues[Type.DEFAULT]).toBe(false)
       // Formula field
       expect(lead.fields.formula).toBeDefined()
       expect(lead.fields.formula.type.elemID.name).toBe('formula_text')
-      expect(lead.fields.formula.getAnnotationsValues()[constants.FORMULA]).toBe('my formula')
+      expect(lead.fields.formula.annotationValues[constants.FORMULA]).toBe('my formula')
     })
 
     it('should discover sobject with picklist field', async () => {
@@ -138,12 +138,12 @@ describe('SalesforceAdapter discover', () => {
       const lead = result.filter(o => o.elemID.name === 'lead').pop() as ObjectType
       expect(lead.fields.primary_c.type.elemID.name).toBe('picklist')
       expect(
-        (lead.fields.primary_c.getAnnotationsValues().values as string[]).join(';')
+        (lead.fields.primary_c.annotationValues.values as string[]).join(';')
       ).toBe('No;Yes')
       // eslint-disable-next-line no-underscore-dangle
-      expect(lead.fields.primary_c.getAnnotationsValues()._default).toBe('Yes')
+      expect(lead.fields.primary_c.annotationValues._default).toBe('Yes')
       expect(
-        lead.fields.primary_c.getAnnotationsValues()[constants.RESTRICTED_PICKLIST]
+        lead.fields.primary_c.annotationValues[constants.RESTRICTED_PICKLIST]
       ).toBe(true)
     })
 
@@ -165,12 +165,12 @@ describe('SalesforceAdapter discover', () => {
       const lead = result.filter(o => o.elemID.name === 'lead').pop() as ObjectType
       expect(lead.fields.primary_c.type.elemID.name).toBe('combobox')
       expect(
-        (lead.fields.primary_c.getAnnotationsValues().values as string[]).join(';')
+        (lead.fields.primary_c.annotationValues.values as string[]).join(';')
       ).toBe('No;Yes')
       // eslint-disable-next-line no-underscore-dangle
-      expect(lead.fields.primary_c.getAnnotationsValues()._default.length).toBe(1)
+      expect(lead.fields.primary_c.annotationValues._default.length).toBe(1)
       // eslint-disable-next-line no-underscore-dangle
-      expect(lead.fields.primary_c.getAnnotationsValues()._default.pop()).toBe('Yes')
+      expect(lead.fields.primary_c.annotationValues._default.pop()).toBe('Yes')
     })
 
     it('should discover sobject with number field', async () => {
@@ -254,7 +254,7 @@ describe('SalesforceAdapter discover', () => {
       expect(lead.fields.encrypted_string.type.elemID.name).toBe('encryptedtext')
       expect(lead.fields.multi_pick_list.type.elemID.name).toBe('multipicklist')
       expect(lead.fields.multi_pick_list
-        .getAnnotationsValues()[constants.FIELD_ANNOTATIONS.VISIBLE_LINES]).toBe(5)
+        .annotationValues[constants.FIELD_ANNOTATIONS.VISIBLE_LINES]).toBe(5)
     })
 
     it('should split customizations to different elements', async () => {
@@ -394,12 +394,12 @@ describe('SalesforceAdapter discover', () => {
       const flow = result.filter(o => o.elemID.name === 'flow').pop() as ObjectType
       expect(flow.fields.description.type.elemID.name).toBe('string')
       // TODO: remove comment when SALTO-45 will be resolved
-      // expect(flow.fields.description.getAnnotationsValues()[Type.REQUIRED]).toBe(true)
+      // expect(flow.fields.description.annotationValues[Type.REQUIRED]).toBe(true)
       expect(flow.fields.is_template.type.elemID.name).toBe('boolean')
-      expect(flow.fields.is_template.getAnnotationsValues()[Type.REQUIRED]).toBe(false)
+      expect(flow.fields.is_template.annotationValues[Type.REQUIRED]).toBe(false)
       expect(flow.fields.enum.type.elemID.name).toBe('string')
-      expect(flow.fields.enum.getAnnotationsValues()[Type.DEFAULT]).toBe('yes')
-      expect(flow.fields.enum.getAnnotationsValues()[Type.RESTRICTION]).toEqual({
+      expect(flow.fields.enum.annotationValues[Type.DEFAULT]).toBe('yes')
+      expect(flow.fields.enum.annotationValues[Type.RESTRICTION]).toEqual({
         values: ['yes', 'no'],
       })
       expect(flow.path).toEqual(['types', 'flow'])

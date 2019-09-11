@@ -10,7 +10,7 @@ import {
 export const expectTypesToMatch = (actual: Type, expected: Type): void => {
   expect(typeof actual).toBe(typeof expected)
   expect(actual.elemID).toEqual(expected.elemID)
-  expect(actual.getAnnotationsValues()).toEqual(expected.getAnnotationsValues())
+  expect(actual.annotationValues).toEqual(expected.annotationValues)
 
   // Check annotations match
   expect(Object.keys(actual.annotations)).toEqual(Object.keys(expected.annotations))
@@ -28,7 +28,7 @@ export const expectTypesToMatch = (actual: Type, expected: Type): void => {
 
       expect(actualField.elemID).toEqual(expectedField.elemID)
       expect(actualField.name).toEqual(expectedField.name)
-      expect(actualField.getAnnotationsValues()).toEqual(expectedField.getAnnotationsValues())
+      expect(actualField.annotationValues).toEqual(expectedField.annotationValues)
       expect(actualField.type.elemID).toEqual(expectedField.type.elemID)
     })
   }

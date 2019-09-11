@@ -96,8 +96,8 @@ const createAnnotationsChanges = (
   after: Record<string, Type>
 ): PlanItemDescription[] => _.union(Object.keys(before), Object.keys(after)).map(name => {
   const subLines = createValuesChanges(
-    (before[name]) ? before[name].getAnnotationsValues() : {},
-    (after[name]) ? after[name].getAnnotationsValues() : {}
+    (before[name]) ? before[name].annotationValues : {},
+    (after[name]) ? after[name].annotationValues : {}
   )
   return {
     name,
@@ -114,16 +114,16 @@ const formatObjectTypePlanItem = (item: PlanItem): PlanItemDescription => {
   if (typeChange && typeChange.action === 'modify') {
     // Collect element level changes
     const { before, after } = typeChange.data
-    subLines = [...createValuesChanges(_.get(before, 'annotationsValues', {}),
-      _.get(after, 'annotationsValues', {})),
+    subLines = [...createValuesChanges(_.get(before, 'annotationValues', {}),
+      _.get(after, 'annotationValues', {})),
     ...createAnnotationsChanges(_.get(before, 'annotations', {}), _.get(after, 'annotations', {})),
     ]
   }
 
   subLines = [...subLines, ...wu(item.items.values()).reject(isRoot).map(change => {
     // Collect field level change
-    const beforeValues = change.action === 'add' ? {} : change.data.before.getAnnotationsValues()
-    const afterValues = change.action === 'remove' ? {} : change.data.after.getAnnotationsValues()
+    const beforeValues = change.action === 'add' ? {} : change.data.before.annotationValues
+    const afterValues = change.action === 'remove' ? {} : change.data.after.annotationValues
     const sub = createValuesChanges(beforeValues, afterValues)
     return {
       name: fullName(change),
@@ -210,8 +210,8 @@ const createPlanStepsOutput = (plan: Plan): string => {
 }
 
 const formatElementDescription = (element: Element): string => {
-  if (isType(element) && element.getAnnotationsValues().description) {
-    return [emptyLine(), element.getAnnotationsValues().description].join('\n')
+  if (isType(element) && element.annotationValues.description) {
+    return [emptyLine(), element.annotationValues.description].join('\n')
   }
   return emptyLine()
 }

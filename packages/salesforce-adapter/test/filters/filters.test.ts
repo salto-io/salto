@@ -10,7 +10,7 @@ jest.mock('../../src/client/client')
 describe('SalesforceAdapter filters', () => {
   const object = new ObjectType({
     elemID: new ElemID('bla', 'test'),
-    annotationsValues: { [API_NAME]: 'Bla__c' },
+    annotationValues: { [API_NAME]: 'Bla__c' },
   })
 
   let adapter: SalesforceAdapter

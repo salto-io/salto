@@ -40,7 +40,7 @@ const validateAnnotations = (value: Value, type: Type): ValidationError[] => {
 const validateAnnotationsValues = (value: Value, field: Field): ValidationError[] => {
   const validateRestrictionsValue = (val: Value):
     ValidationError[] => {
-    const restrictionValues = field.getAnnotationsValues()[Type.RESTRICTION]
+    const restrictionValues = field.annotationValues[Type.RESTRICTION]
 
     // Restrictions is empty
     if (restrictionValues === undefined) {
@@ -70,7 +70,7 @@ const validateAnnotationsValues = (value: Value, field: Field): ValidationError[
   }
 
   const validateRequiredValue = (): ValidationError[] =>
-    (field.getAnnotationsValues()[Type.REQUIRED] === true
+    (field.annotationValues[Type.REQUIRED] === true
       ? [new ValidationError(`Field ${field.name} is required but has no value`)] : [])
 
   // Checking _required annotation
@@ -114,7 +114,7 @@ const validateFieldValue = (value: Value, field: Field): ValidationError[] => {
   if (field.isList) {
     if (!_.isArray(value)) {
       return [new ValidationError(
-        `Invalid value type for ${field.elemID.getFullName()}: expected list and got 
+        `Invalid value type for ${field.elemID.getFullName()}: expected list and got
       ${JSON.stringify(value)} for field ${field.name}`
       )]
     }
@@ -124,14 +124,14 @@ const validateFieldValue = (value: Value, field: Field): ValidationError[] => {
 }
 
 const validateField = (field: Field): ValidationError[] =>
-  _.flatten(Object.keys(field.getAnnotationsValues())
+  _.flatten(Object.keys(field.annotationValues)
     .filter(k => field.type.annotations[k])
-    .map(k => validateValue(field.getAnnotationsValues()[k], field.type.annotations[k])))
+    .map(k => validateValue(field.annotationValues[k], field.type.annotations[k])))
 
 const validateType = (element: Type): ValidationError[] => {
-  const errors = _.flatten(Object.keys(element.getAnnotationsValues())
+  const errors = _.flatten(Object.keys(element.annotationValues)
     .filter(k => element.annotations[k]).map(
-      k => validateValue(element.getAnnotationsValues()[k], element.annotations[k])
+      k => validateValue(element.annotationValues[k], element.annotations[k])
     ))
 
   if (isObjectType(element)) {

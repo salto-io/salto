@@ -149,11 +149,11 @@ describe('Salto parser', () => {
           expect(model.fields.name.type.elemID.name).toEqual('string')
         })
         it('should have annotation values', () => {
-          expect(model.fields.name.getAnnotationsValues()).toHaveProperty('label')
-          expect(model.fields.name.getAnnotationsValues().label).toEqual('Name')
-          expect(model.fields.name.getAnnotationsValues()).toHaveProperty('_required')
+          expect(model.fields.name.annotationValues).toHaveProperty('label')
+          expect(model.fields.name.annotationValues.label).toEqual('Name')
+          expect(model.fields.name.annotationValues).toHaveProperty('_required')
           // eslint-disable-next-line no-underscore-dangle
-          expect(model.fields.name.getAnnotationsValues()._required).toEqual(true)
+          expect(model.fields.name.annotationValues._required).toEqual(true)
         })
       })
       describe('list field', () => {
@@ -171,7 +171,7 @@ describe('Salto parser', () => {
           expect(model.fields).toHaveProperty('fax')
         })
         it('should have the correct value', () => {
-          expect(model.fields.fax.getAnnotationsValues()).toEqual({
+          expect(model.fields.fax.annotationValues).toEqual({
             // eslint-disable-next-line @typescript-eslint/camelcase
             field_level_security: {
               // eslint-disable-next-line @typescript-eslint/camelcase
@@ -187,10 +187,10 @@ describe('Salto parser', () => {
 
       describe('model annotations', () => {
         it('should exist', () => {
-          expect(model.getAnnotationsValues()).toHaveProperty('lead_convert_settings')
+          expect(model.annotationValues).toHaveProperty('lead_convert_settings')
         })
         it('should have the correct value', () => {
-          expect(model.getAnnotationsValues().lead_convert_settings).toEqual({
+          expect(model.annotationValues.lead_convert_settings).toEqual({
             account: [
               {
                 input: 'bla',

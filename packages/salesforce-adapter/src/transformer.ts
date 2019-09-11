@@ -41,11 +41,11 @@ export const apiName = (elem: Element): string => (
     ? elem.value[bpCase(METADATA_OBJECT_NAME_FIELD)] || sfCase(elem.elemID.name)
     // Object/Field name comes from the annotation, Fallback to the element ID. we assume
     // it is custom because all standard objects and fields get the annotation in discover
-    : elem.getAnnotationsValues()[API_NAME] || sfCase(elem.elemID.nameParts.slice(-1)[0], true)
+    : elem.annotationValues[API_NAME] || sfCase(elem.elemID.nameParts.slice(-1)[0], true)
 )
 
 export const metadataType = (element: Element): string => (
-  element.getAnnotationsValues()[METADATA_TYPE]
+  element.annotationValues[METADATA_TYPE]
 )
 
 const formulaTypeName = (baseTypeName: string): string =>
@@ -228,17 +228,17 @@ export const toCustomField = (
   const newField = new CustomField(
     fullname ? fieldFullName(object, field) : apiName(field),
     FIELD_TYPE_API_NAMES[fieldTypeName(field.type.elemID.name)],
-    field.getAnnotationsValues()[LABEL],
-    field.getAnnotationsValues()[Type.REQUIRED],
-    field.getAnnotationsValues()[Type.DEFAULT],
-    field.getAnnotationsValues()[PICKLIST_VALUES],
-    field.getAnnotationsValues()[FORMULA],
+    field.annotationValues[LABEL],
+    field.annotationValues[Type.REQUIRED],
+    field.annotationValues[Type.DEFAULT],
+    field.annotationValues[PICKLIST_VALUES],
+    field.annotationValues[FORMULA],
   )
 
   // Convert the annotations' names to the required API name
   _.assign(newField,
     _.mapKeys(
-      _.pickBy(field.getAnnotationsValues(),
+      _.pickBy(field.annotationValues,
         (_val, annotationValue) => allowedAnnotations(
           field.type.elemID.name
         ).includes(annotationValue)),
@@ -250,7 +250,7 @@ export const toCustomField = (
 export const toCustomObject = (element: ObjectType, includeFields = true): CustomObject =>
   new CustomObject(
     apiName(element),
-    element.getAnnotationsValues()[LABEL],
+    element.annotationValues[LABEL],
     includeFields ? Object.values(element.fields).map(field => toCustomField(element, field))
       : undefined
   )

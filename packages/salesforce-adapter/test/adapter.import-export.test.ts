@@ -27,7 +27,7 @@ describe('SalesforceAdapter import-export operations', () => {
       elemID: new ElemID(constants.SALESFORCE, 'test'),
       fields: {},
       annotations: {},
-      annotationsValues: {
+      annotationValues: {
         [constants.API_NAME]: 'Test__c',
       },
     })

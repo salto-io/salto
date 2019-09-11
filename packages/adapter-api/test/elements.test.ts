@@ -486,4 +486,25 @@ describe('Test elements.ts', () => {
       expect(isInstanceElement(pt)).toBe(false)
     })
   })
+  describe('ElemID', () => {
+    const exampleId = new ElemID('adapter', 'example')
+    describe('isConfig', () => {
+      const configTypeId = new ElemID('adapter')
+      const configInstId = new ElemID('adapter', ElemID.CONFIG_INSTANCE_NAME)
+      it('should return true for config type ID', () => {
+        expect(configTypeId.isConfig()).toBe(true)
+      })
+      it('should return true for config instance ID', () => {
+        expect(configInstId.isConfig()).toBe(true)
+      })
+      it('should return false for other IDs', () => {
+        expect(exampleId.isConfig()).toBe(false)
+      })
+    })
+    describe('createNestedID', () => {
+      it('should create an ID with one additional name part', () => {
+        expect(exampleId.createNestedID('test').nameParts).toEqual(['example', 'test'])
+      })
+    })
+  })
 })

@@ -42,6 +42,10 @@ export class ElemID {
   isConfig(): boolean {
     return _.isEmpty(this.name) || this.name === ElemID.CONFIG_INSTANCE_NAME
   }
+
+  createNestedID(namePart: string): ElemID {
+    return new ElemID(this.adapter, ...this.nameParts, namePart)
+  }
 }
 
 export interface Element {
@@ -65,7 +69,7 @@ export class Field implements Element {
     private annotationsValues: Values = {},
     public isList: boolean = false,
   ) {
-    this.elemID = new ElemID(parentID.adapter, ...parentID.nameParts, name)
+    this.elemID = parentID.createNestedID(name)
   }
 
   isEqual(other: Field): boolean {

@@ -1,7 +1,26 @@
 import _ from 'lodash'
-import HCLParser, { HCLBlock, HCLAttribute } from '../../src/parser/hcl'
+import HCLParser, { HCLBlock, HCLAttribute, HCLExpression } from '../../src/parser/hcl'
 import devaluate from '../utils'
 import evaluate from '../../src/parser/expressions'
+
+const omitSource = (exp: HCLExpression): HCLExpression =>
+  _.mapValues(exp, (val, key) => {
+    if (key === 'source') {
+      return undefined
+    }
+    if (key === 'expressions') {
+      return val.map(omitSource)
+    }
+    return val
+  })
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const expectSourceLocation = (value: any, startLine: number, endLine: number): void => {
+  expect(value.source).toBeDefined()
+  expect(value.source.filename).toEqual('none')
+  expect(value.source.start.line).toEqual(startLine)
+  expect(value.source.end.line).toEqual(endLine)
+}
 
 describe('HCL Parser', () => {
   it('parses adapter config block', async () => {
@@ -15,7 +34,7 @@ describe('HCL Parser', () => {
     expect(config.type).toEqual('salesforce')
     expect(config.attrs).toHaveProperty('user')
     expect(config.attrs.user).toHaveProperty('expressions')
-    expect(config.attrs.user.expressions).toEqual([devaluate('me')])
+    expect(omitSource(config.attrs.user.expressions[0])).toEqual(devaluate('me'))
   })
 
   it('parses type definition block', async () => {
@@ -31,17 +50,6 @@ describe('HCL Parser', () => {
         }
       }`
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const expectSourceLocation = (value: any, startLine: number, endLine: number): void => {
-      expect(value.source).toBeDefined()
-      if (value.src !== undefined) {
-        // If block is needed in order to fool the ts compiler
-        expect(value.source.filename).toEqual('none')
-        expect(value.source.start.line).toEqual(startLine)
-        expect(value.source.end.line).toEqual(endLine)
-      }
-    }
-
     const { body } = await HCLParser.parse(Buffer.from(typeDefBlock), 'none')
     expect(body.blocks.length).toEqual(1)
     const typeBlock = body.blocks[0]
@@ -52,14 +60,14 @@ describe('HCL Parser', () => {
 
     expect(typeBlock.blocks[0].type).toEqual('string')
     expect(typeBlock.blocks[0].labels).toEqual(['name'])
-    expect(typeBlock.blocks[0].attrs.label.expressions).toEqual([devaluate('Name')])
+    expect(omitSource(typeBlock.blocks[0].attrs.label.expressions[0])).toEqual(devaluate('Name'))
     expectSourceLocation(typeBlock.blocks[0], 2, 5)
     expectSourceLocation(typeBlock.blocks[0].attrs.label, 4, 4)
 
     expect(typeBlock.blocks[1].type).toEqual('number')
     expect(typeBlock.blocks[1].labels).toEqual(['num'])
     // eslint-disable-next-line no-underscore-dangle
-    expect(typeBlock.blocks[1].attrs._default.expressions).toEqual([devaluate(35)])
+    expect(omitSource(typeBlock.blocks[1].attrs._default.expressions[0])).toEqual(devaluate(35))
     expectSourceLocation(typeBlock.blocks[1], 8, 10)
     // eslint-disable-next-line no-underscore-dangle
     expectSourceLocation(typeBlock.blocks[1].attrs._default, 9, 9)
@@ -82,9 +90,12 @@ describe('HCL Parser', () => {
     expect(instBlock.type).toEqual('salto_employee')
     expect(instBlock.labels).toEqual(['me'])
     expect(instBlock.attrs).toHaveProperty('name')
-    expect(instBlock.attrs.name.expressions).toEqual([devaluate('person')])
+    expect(omitSource(instBlock.attrs.name.expressions[0])).toEqual(devaluate('person'))
     expect(instBlock.attrs).toHaveProperty('nicknames')
-    expect(instBlock.attrs.nicknames.expressions).toEqual([devaluate(['a', 's', 'd'])])
+    expect(instBlock.attrs.nicknames.expressions).toBeDefined()
+    const nicknamesExpr = instBlock.attrs.nicknames.expressions[0]
+    expect(omitSource(nicknamesExpr)).toEqual(devaluate(['a', 's', 'd']))
+    nicknamesExpr.expressions.map(e => expectSourceLocation(e, 4, 4))
   })
 
   it('parses multiline strings', async () => {

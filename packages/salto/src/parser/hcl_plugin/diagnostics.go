@@ -29,17 +29,9 @@ func convertDiagnostic(err *hcl.Diagnostic, errType string) map[string]interface
 		"subject":  convertSourceRange(err.Subject),
 	}
 
-	if (err.Context != nil) {
+	if err.Context != nil {
 		result["context"] = convertSourceRange(err.Context)
 	}
 
-	return result
-}
-
-func convertDiagnostics(errs hcl.Diagnostics, errType string) []interface{} {
-	result := make([]interface{}, len(errs))
-	for i, err := range errs {
-		result[i] = convertDiagnostic(err, errType)
-	}
 	return result
 }

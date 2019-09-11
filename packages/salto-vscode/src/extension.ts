@@ -1,7 +1,7 @@
 import * as vscode from 'vscode'
 import _ from 'lodash'
 import { initWorkspace, updateFile, SaltoWorkspace } from './salto/workspace'
-import { debugFunctions } from './salto/debug'
+import { debugFunctions, createProvider } from './salto/debug'
 
 /**
  * This files act as a bridge between VSC and the salto specific functionality.
@@ -35,6 +35,8 @@ const onDidChangeConfiguration = async (
   )
 }
 
+
+
 export const activate = async (context: vscode.ExtensionContext): Promise<void> => {
   // eslint-disable-next-line no-console
   console.log('Workspace init started', new Date())
@@ -46,7 +48,14 @@ export const activate = async (context: vscode.ExtensionContext): Promise<void> 
       settings.additionalBlueprintDirs,
       settings.additionalBlueprints
     )
+
+    const completionProvider = vscode.languages.registerCompletionItemProvider(
+      { scheme: 'file', pattern: {base: rootPath, pattern: "*.bp"}},
+      createProvider(workspaces[name]),
+      "_"
+    )
     context.subscriptions.push(
+      completionProvider,
       vscode.workspace.onDidChangeTextDocument(e => onDidChangeTextDocument(e, name)),
       vscode.workspace.onDidChangeConfiguration(e => onDidChangeConfiguration(e, name, settings)),
       // A shortcut for registering all debug commands from debug.ts

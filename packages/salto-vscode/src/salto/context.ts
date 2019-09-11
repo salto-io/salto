@@ -28,7 +28,7 @@ interface ContextReference {
   path: string
 }
 
-interface PositionContext {
+export interface PositionContext {
   range: EditorRange
   part: PositionContextPart
   type: PositionContextType
@@ -72,9 +72,15 @@ const getContextReference = (
 }
 
 const getPositionConextPart = (
-  refRange: NamedRange,
-  position: EditorPosition
-): PositionContextPart => ((position.line === refRange.range.start.line) ? 'definition' : 'body')
+  contextRange: NamedRange,
+  position: EditorPosition,
+  ref?: ContextReference
+): PositionContextPart => {
+  if (ref && ref.path.length > 0) {
+    return 'body'
+  }
+  return (position.line === contextRange.range.start.line) ? 'definition' : 'body'
+}
 
 const getPositionConextType = (ref?: ContextReference): PositionContextType => {
   if (!ref) {
@@ -110,7 +116,7 @@ const buildPositionContext = (
     parent,
     ref,
     range: range.range,
-    part: getPositionConextPart(range, position),
+    part: getPositionConextPart(range, position, ref),
     type: getPositionConextType(ref),
   }
 
@@ -118,7 +124,7 @@ const buildPositionContext = (
     ? buildPositionContext(workspace, encapsulatedRanges, position, context) : context
 }
 
-const getPositionContext = (
+export const getPositionContext = (
   workspace: SaltoWorkspace,
   filename: string,
   position: EditorPosition
@@ -153,5 +159,3 @@ const getPositionContext = (
   ).sort(encapluatationComparator)
   return buildPositionContext(workspace, encapsulatingRanges, position)
 }
-
-export default getPositionContext

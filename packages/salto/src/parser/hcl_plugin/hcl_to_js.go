@@ -136,18 +136,20 @@ func (maker *hclConverter) appendExpression(exp map[string]interface{}) {
 	)
 }
 
-func (maker *hclConverter) exitExpression(expType string) {
+func (maker *hclConverter) exitExpression(expType string, src *hcl.Range) {
 	maker.appendExpression(map[string]interface{}{
 		"type":        expType,
 		"expressions": maker.nestedConverter.JSValue["expressions"],
+		"source":      convertSourceRange(src),
 	})
 	maker.nestedConverter = nil
 }
 
-func (maker *hclConverter) exitLiteralExpression(val cty.Value) {
+func (maker *hclConverter) exitLiteralExpression(val cty.Value, src *hcl.Range) {
 	maker.appendExpression(map[string]interface{}{
-		"type":  "literal",
-		"value": convertValue(val, maker.nestedConverter.path),
+		"type":   "literal",
+		"value":  convertValue(val, maker.nestedConverter.path),
+		"source": convertSourceRange(src),
 		// Every expression need to have subexpressions
 		"expressions": []interface{}{},
 	})
@@ -163,11 +165,12 @@ func (maker *hclConverter) exitAttribute(attr *hclsyntax.Attribute) {
 	maker.nestedConverter = nil
 }
 
-func (maker *hclConverter) exitReferenceExpresion(traversal hcl.Traversal) {
+func (maker *hclConverter) exitReferenceExpresion(traversal hcl.Traversal, src *hcl.Range) {
 	maker.appendExpression(map[string]interface{}{
 		"type":        "reference",
 		"value":       convertTraversal(traversal),
 		"expressions": []interface{}{},
+		"source":      convertSourceRange(src),
 	})
 	maker.nestedConverter = nil
 }
@@ -246,30 +249,40 @@ func (maker *hclConverter) Exit(node hclsyntax.Node) hcl.Diagnostics {
 		maker.exitAttribute(attr)
 
 	case *hclsyntax.TemplateExpr:
-		maker.exitExpression("template")
+		exp := node.(*hclsyntax.TemplateExpr)
+		expRange := exp.Range()
+		maker.exitExpression("template", &expRange)
 
 	case *hclsyntax.TupleConsExpr:
-		maker.exitExpression("list")
+		exp := node.(*hclsyntax.TupleConsExpr)
+		expRange := exp.Range()
+		maker.exitExpression("list", &expRange)
 
 	case *hclsyntax.ObjectConsExpr:
-		maker.exitExpression("map")
+		exp := node.(*hclsyntax.ObjectConsExpr)
+		expRange := exp.Range()
+		maker.exitExpression("map", &expRange)
 
 	// For now we treat this like a literal
 	case *hclsyntax.ObjectConsKeyExpr:
 		exp := node.(*hclsyntax.ObjectConsKeyExpr)
 		val, evalErrs := exp.Value(nil)
-		maker.exitLiteralExpression(val)
+		expRange := exp.Range()
+		maker.exitLiteralExpression(val, &expRange)
 		return evalErrs
 
 	case *hclsyntax.LiteralValueExpr:
 		exp := node.(*hclsyntax.LiteralValueExpr)
 		val, evalErrs := exp.Value(nil)
-		maker.exitLiteralExpression(val)
+		expRange := exp.Range()
+		maker.exitLiteralExpression(val, &expRange)
 		return evalErrs
 
 	case *hclsyntax.ScopeTraversalExpr:
-		ref := node.(*hclsyntax.ScopeTraversalExpr).AsTraversal()
-		maker.exitReferenceExpresion(ref)
+		exp := node.(*hclsyntax.ScopeTraversalExpr)
+		ref := exp.AsTraversal()
+		expRange := exp.Range()
+		maker.exitReferenceExpresion(ref, &expRange)
 
 	}
 	return hcl.Diagnostics{}

@@ -39,13 +39,27 @@ describe('apply command', () => {
       command = new ApplyCommand([], true, cliOutput)
     })
 
-    it('should print progress', async () => {
-      const plan = await coreMock.plan([])
-      wu(plan.itemsByEvalOrder()).forEach(item => command.updateCurrentAction(item))
-      expect(cliOutput.stdout.content).toMatch('salesforce_lead: changing...')
-      command.endCurrentAction()
-      expect(cliOutput.stdout.content.search('salesforce_lead: Change completed')).toBeGreaterThan(0)
+    describe('should print progress', () => {
+      const plan = coreMock.plan([])
+
+      it('should print progress upon update', async () => {
+        wu((await plan).itemsByEvalOrder()).forEach(item => command.updateCurrentAction(item))
+        expect(cliOutput.stdout.content).toMatch('salesforce_lead: changing...')
+      })
+
+      describe('end current action', () => {
+        beforeEach(async () => {
+          const planItem = wu((await plan).itemsByEvalOrder()).next().value
+          command.updateCurrentAction(planItem)
+        })
+
+        it('should print progress upon update', () => {
+          command.endCurrentAction()
+          expect(cliOutput.stdout.content.search('Change completed')).toBeGreaterThan(0)
+        })
+      })
     })
+
     it('should run apply', async () => {
       await command.execute()
       const { content } = cliOutput.stdout

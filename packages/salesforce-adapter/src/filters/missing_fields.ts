@@ -7,7 +7,7 @@ import { FilterCreator } from '../filter'
 interface MissingField {
   name: string
   type: Type | string
-  annotationValues?: Values
+  annotations?: Values
   isList?: boolean
 }
 
@@ -17,7 +17,7 @@ const allMissingFields: Record<string, MissingField[]> = {
     {
       name: 'operation',
       type: BuiltinTypes.STRING,
-      annotationValues: {
+      annotations: {
         [Type.RESTRICTION]: {
           values: [
             'equals', 'notEqual', 'lessThan', 'greaterThan', 'lessOrEqual', 'greaterOrEqual',
@@ -40,7 +40,7 @@ const allMissingFields: Record<string, MissingField[]> = {
     {
       name: 'assigned_to_type',
       type: BuiltinTypes.STRING,
-      annotationValues: {
+      annotations: {
         [Type.RESTRICTION]: { values: ['User', 'Queue'] },
       },
     },
@@ -67,7 +67,7 @@ export const makeFilter = (
             elem.elemID,
             f.name,
             isType(f.type) ? f.type : typeMap[f.type],
-            f.annotationValues || {},
+            f.annotations || {},
             f.isList === true,
           )])
           .fromPairs()

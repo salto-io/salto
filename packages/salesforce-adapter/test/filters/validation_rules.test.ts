@@ -16,7 +16,7 @@ describe('validation rules filter', () => {
 
   const mockSObject = new ObjectType({
     elemID: new ElemID(constants.SALESFORCE, 'test'),
-    annotationValues: {},
+    annotations: {},
   })
 
   const mockValidationRule = new InstanceElement(
@@ -42,7 +42,7 @@ describe('validation rules filter', () => {
     it('should add relation between validation rule to related sobject', async () => {
       await filter.onDiscover(testElements)
       const [sobject] = testElements
-      expect(sobject.annotationValues[VALIDATION_RULE_ANNOTATION]).toEqual(
+      expect(sobject.annotations[VALIDATION_RULE_ANNOTATION]).toEqual(
         [mockValidationRule.elemID.getFullName()]
       )
     })

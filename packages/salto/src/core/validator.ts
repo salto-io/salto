@@ -40,7 +40,7 @@ const validateAnnotations = (value: Value, type: Type): ValidationError[] => {
 const validateAnnotationsValues = (value: Value, field: Field): ValidationError[] => {
   const validateRestrictionsValue = (val: Value):
     ValidationError[] => {
-    const restrictionValues = field.annotationValues[Type.RESTRICTION]
+    const restrictionValues = field.annotations[Type.RESTRICTION]
 
     // Restrictions is empty
     if (restrictionValues === undefined) {
@@ -70,7 +70,7 @@ const validateAnnotationsValues = (value: Value, field: Field): ValidationError[
   }
 
   const validateRequiredValue = (): ValidationError[] =>
-    (field.annotationValues[Type.REQUIRED] === true
+    (field.annotations[Type.REQUIRED] === true
       ? [new ValidationError(`Field ${field.name} is required but has no value`)] : [])
 
   // Checking _required annotation
@@ -124,14 +124,14 @@ const validateFieldValue = (value: Value, field: Field): ValidationError[] => {
 }
 
 const validateField = (field: Field): ValidationError[] =>
-  _.flatten(Object.keys(field.annotationValues)
+  _.flatten(Object.keys(field.annotations)
     .filter(k => field.type.annotationsDescriptor[k])
-    .map(k => validateValue(field.annotationValues[k], field.type.annotationsDescriptor[k])))
+    .map(k => validateValue(field.annotations[k], field.type.annotationsDescriptor[k])))
 
 const validateType = (element: Type): ValidationError[] => {
-  const errors = _.flatten(Object.keys(element.annotationValues)
+  const errors = _.flatten(Object.keys(element.annotations)
     .filter(k => element.annotationsDescriptor[k]).map(
-      k => validateValue(element.annotationValues[k], element.annotationsDescriptor[k])
+      k => validateValue(element.annotations[k], element.annotationsDescriptor[k])
     ))
 
   if (isObjectType(element)) {

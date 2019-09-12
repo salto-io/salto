@@ -44,7 +44,7 @@ describe('Test state mechanism', () => {
         },
       ),
     },
-    annotationValues: {
+    annotations: {
       required: false,
       _default: 'test',
       label: 'test label',

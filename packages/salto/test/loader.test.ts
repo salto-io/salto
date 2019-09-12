@@ -15,7 +15,7 @@ describe('Loader merging ability', () => {
       field1: new Field(baseElemID, 'field1', BuiltinTypes.STRING, { label: 'base' }),
       field2: new Field(baseElemID, 'field2', BuiltinTypes.STRING, { label: 'base' }),
     },
-    annotationValues: {
+    annotations: {
       _default: {
         field1: 'base1',
         field2: 'base2',
@@ -63,7 +63,7 @@ describe('Loader merging ability', () => {
   const updateAnnoValues = new ObjectType({
     elemID: baseElemID,
     fields: {},
-    annotationValues: {
+    annotations: {
       anno1: 'updated',
     },
   })
@@ -71,7 +71,7 @@ describe('Loader merging ability', () => {
   const multipleUpdateAnnoValues = new ObjectType({
     elemID: baseElemID,
     fields: {},
-    annotationValues: {
+    annotations: {
       anno1: 'updated',
     },
   })
@@ -106,7 +106,7 @@ describe('Loader merging ability', () => {
       field1: new Field(baseElemID, 'field1', BuiltinTypes.STRING, { label: 'update1' }),
       field2: new Field(baseElemID, 'field2', BuiltinTypes.STRING, { label: 'update2' }),
     },
-    annotationValues: {
+    annotations: {
       anno1: 'updated',
       _default: {
         field1: 'base1',
@@ -218,7 +218,7 @@ describe('Loader merging ability', () => {
     const strType = new PrimitiveType({
       elemID: new ElemID('salto', 'string'),
       primitive: PrimitiveTypes.STRING,
-      annotationValues: { _default: 'type' },
+      annotations: { _default: 'type' },
     })
     const nestedElemID = new ElemID('salto', 'nested')
     const nested = new ObjectType({
@@ -313,13 +313,13 @@ describe('Loader merging ability', () => {
     const strType = new PrimitiveType({
       elemID: new ElemID('salto', 'string'),
       primitive: PrimitiveTypes.STRING,
-      annotationValues: { _default: 'type' },
+      annotations: { _default: 'type' },
     })
 
     const duplicateType = new PrimitiveType({
       elemID: new ElemID('salto', 'string'),
       primitive: PrimitiveTypes.STRING,
-      annotationValues: { _default: 'type' },
+      annotations: { _default: 'type' },
     })
     it('should fail when more then one primitive is defined with same elemID', () => {
       const elements = [strType, duplicateType]
@@ -333,7 +333,7 @@ describe('Loader merging ability', () => {
     const strType = new PrimitiveType({
       elemID: new ElemID('salto', 'string'),
       primitive: PrimitiveTypes.STRING,
-      annotationValues: { _default: 'type' },
+      annotations: { _default: 'type' },
     })
 
     const nestedElemID = new ElemID('salto', 'nested')

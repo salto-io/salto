@@ -13,7 +13,7 @@ describe('Test layout filter', () => {
       {
         name: 'lst',
         type: BuiltinTypes.STRING,
-        annotationValues: { dummy: true },
+        annotations: { dummy: true },
         isList: true,
       },
       {
@@ -32,7 +32,7 @@ describe('Test layout filter', () => {
   })
   const complexType = new ObjectType({
     elemID: new ElemID(constants.SALESFORCE, 'complex_type'),
-    annotationValues: { marker: 'here' },
+    annotations: { marker: 'here' },
   })
 
   let testElements: ObjectType[]
@@ -51,7 +51,7 @@ describe('Test layout filter', () => {
       const [testType] = testElements
       expect(testType.fields.lst).toBeDefined()
       expect(testType.fields.lst.isList).toBe(true)
-      expect(testType.fields.lst.annotationValues).toEqual({ dummy: true })
+      expect(testType.fields.lst.annotations).toEqual({ dummy: true })
       expect(testType.fields.lst.type).toEqual(BuiltinTypes.STRING)
     })
 
@@ -59,7 +59,7 @@ describe('Test layout filter', () => {
       const [testType] = testElements
       expect(testType.fields.complex).toBeDefined()
       expect(testType.fields.complex.isList).toBe(false)
-      expect(testType.fields.complex.annotationValues).toEqual({})
+      expect(testType.fields.complex.annotations).toEqual({})
       expect(testType.fields.complex.type).toEqual(complexType)
     })
 

@@ -25,7 +25,7 @@ describe('Field Permissions filter', () => {
         new Field(mockElemID, 'description', stringType,
           { [constants.API_NAME]: 'Description__c' }),
     },
-    annotationValues: {
+    annotations: {
       label: 'test label',
       [constants.API_NAME]: 'Test__c',
     },
@@ -71,15 +71,15 @@ describe('Field Permissions filter', () => {
     const elements = [mockObject.clone()]
 
     await filter().onDiscover(elements)
-    const security = elements[0].fields.description.annotationValues[
+    const security = elements[0].fields.description.annotations[
       FIELD_LEVEL_SECURITY_ANNOTATION]
     expect(security.admin.readable).toBe(true)
     expect(security.admin.editable).toBe(false)
   })
   it('should update field permissions upon new salesforce type', async () => {
     const after = mockObject.clone()
-    _.merge(after.fields.description.annotationValues, admin)
-    _.merge(after.fields.description.annotationValues, standard)
+    _.merge(after.fields.description.annotations, admin)
+    _.merge(after.fields.description.annotations, standard)
     await filter().onAdd(after)
 
     // Verify permissions creation
@@ -107,7 +107,7 @@ describe('Field Permissions filter', () => {
       ],
     }]))
     const after = mockObject.clone()
-    _.merge(after.fields.description.annotationValues, admin)
+    _.merge(after.fields.description.annotations, admin)
     const result = await filter().onAdd(after)
 
     expect(result[0].success).toBe(false)
@@ -121,7 +121,7 @@ describe('Field Permissions filter', () => {
     // Add apple field
     after.fields = { ...after.fields, apple }
     // Add permissions to existing field
-    _.merge(after.fields.description.annotationValues, admin)
+    _.merge(after.fields.description.annotations, admin)
     await filter().onUpdate(before, after)
 
     expect(mockUpdate.mock.calls.length).toBe(1)
@@ -160,11 +160,11 @@ describe('Field Permissions filter', () => {
     before.fields = { ...before.fields, address }
     const after = before.clone()
     // Add admin permissions with editable=false for description field
-    _.merge(after.fields.description.annotationValues, admin)
-    after.fields.description.annotationValues[FIELD_LEVEL_SECURITY_ANNOTATION]
+    _.merge(after.fields.description.annotations, admin)
+    after.fields.description.annotations[FIELD_LEVEL_SECURITY_ANNOTATION]
       .admin.editable = false
     // Add standard profile field permissions to address
-    _.merge(after.fields.address.annotationValues, standard)
+    _.merge(after.fields.address.annotations, standard)
 
     await filter().onUpdate(before, after)
 
@@ -187,10 +187,10 @@ describe('Field Permissions filter', () => {
     const before = mockObject.clone()
     before.fields = { address: address.clone(), banana, apple }
     // Add standard to address field (on top of admin)
-    _.merge(before.fields.address.annotationValues, standard)
+    _.merge(before.fields.address.annotations, standard)
     // Banana field will have only standard permissions
-    before.fields.banana.annotationValues = {
-      [constants.API_NAME]: before.fields.banana.annotationValues[constants.API_NAME],
+    before.fields.banana.annotations = {
+      [constants.API_NAME]: before.fields.banana.annotations[constants.API_NAME],
       ...standard,
     }
 
@@ -198,13 +198,13 @@ describe('Field Permissions filter', () => {
     const after = mockObject.clone()
     after.fields = { address, delta, apple: apple.clone() }
     // Remove admin permissions from address field
-    after.fields.address.annotationValues = {
-      [constants.API_NAME]: before.fields.address.annotationValues[constants.API_NAME],
+    after.fields.address.annotations = {
+      [constants.API_NAME]: before.fields.address.annotations[constants.API_NAME],
       ...standard,
     }
     // Apple has no field permissions as all
-    after.fields.apple.annotationValues = {
-      [constants.API_NAME]: after.fields.apple.annotationValues[constants.API_NAME],
+    after.fields.apple.annotations = {
+      [constants.API_NAME]: after.fields.apple.annotations[constants.API_NAME],
     }
     await filter().onUpdate(before, after)
 

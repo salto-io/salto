@@ -96,8 +96,8 @@ const createAnnotationsChanges = (
   after: Record<string, Type>
 ): PlanItemDescription[] => _.union(Object.keys(before), Object.keys(after)).map(name => {
   const subLines = createValuesChanges(
-    (before[name]) ? before[name].annotationValues : {},
-    (after[name]) ? after[name].annotationValues : {}
+    (before[name]) ? before[name].annotations : {},
+    (after[name]) ? after[name].annotations : {}
   )
   return {
     name,
@@ -116,8 +116,8 @@ const formatObjectTypePlanItem = (item: PlanItem): PlanItemDescription => {
     const { before, after } = typeChange.data
     subLines = [
       ...createValuesChanges(
-        _.get(before, 'annotationValues', {}),
-        _.get(after, 'annotationValues', {}),
+        _.get(before, 'annotations', {}),
+        _.get(after, 'annotations', {}),
       ),
       ...createAnnotationsChanges(
         _.get(before, 'annotationsDescriptor', {}),
@@ -128,8 +128,8 @@ const formatObjectTypePlanItem = (item: PlanItem): PlanItemDescription => {
 
   subLines = [...subLines, ...wu(item.items.values()).reject(isRoot).map(change => {
     // Collect field level change
-    const beforeValues = change.action === 'add' ? {} : change.data.before.annotationValues
-    const afterValues = change.action === 'remove' ? {} : change.data.after.annotationValues
+    const beforeValues = change.action === 'add' ? {} : change.data.before.annotations
+    const afterValues = change.action === 'remove' ? {} : change.data.after.annotations
     const sub = createValuesChanges(beforeValues, afterValues)
     return {
       name: fullName(change),
@@ -216,8 +216,8 @@ const createPlanStepsOutput = (plan: Plan): string => {
 }
 
 const formatElementDescription = (element: Element): string => {
-  if (isType(element) && element.annotationValues.description) {
-    return [emptyLine(), element.annotationValues.description].join('\n')
+  if (isType(element) && element.annotations.description) {
+    return [emptyLine(), element.annotations.description].join('\n')
   }
   return emptyLine()
 }

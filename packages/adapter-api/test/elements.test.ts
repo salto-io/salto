@@ -20,7 +20,7 @@ describe('Test elements.ts', () => {
       elemID: new ElemID('test', 'prim'),
       primitive: PrimitiveTypes.STRING,
       annotationsDescriptor: {},
-      annotationValues: {},
+      annotations: {},
     })
     expect(ptStr.elemID.adapter).toEqual('test')
     expect(ptStr.elemID.name).toEqual('prim')
@@ -29,7 +29,7 @@ describe('Test elements.ts', () => {
       elemID: new ElemID('test', 'prim'),
       primitive: PrimitiveTypes.NUMBER,
       annotationsDescriptor: {},
-      annotationValues: {},
+      annotations: {},
     })
     expect(ptNum.elemID.adapter).toEqual('test')
     expect(ptNum.elemID.name).toEqual('prim')
@@ -40,13 +40,13 @@ describe('Test elements.ts', () => {
       elemID: new ElemID('test', 'prim'),
       primitive: PrimitiveTypes.STRING,
       annotationsDescriptor: {},
-      annotationValues: {},
+      annotations: {},
     })
     const ptNum = new PrimitiveType({
       elemID: new ElemID('test', 'prim'),
       primitive: PrimitiveTypes.NUMBER,
       annotationsDescriptor: {},
-      annotationValues: {},
+      annotations: {},
     })
     const ot = new ObjectType({
       elemID: new ElemID('test', 'obj'),
@@ -57,7 +57,7 @@ describe('Test elements.ts', () => {
         str_field: new Field(new ElemID('test', 'obj'), 'str_field', ptStr),
       },
       annotationsDescriptor: {},
-      annotationValues: {},
+      annotations: {},
     })
     expect(ot.elemID.adapter).toEqual('test')
     expect(ot.elemID.name).toEqual('obj')
@@ -100,7 +100,7 @@ describe('Test elements.ts', () => {
       fields: {
       },
       annotationsDescriptor: {},
-      annotationValues: {
+      annotations: {
       },
     }),
     {
@@ -125,7 +125,7 @@ describe('Test elements.ts', () => {
       fields: {
       },
       annotationsDescriptor: {},
-      annotationValues: {
+      annotations: {
       },
     }),
     {
@@ -248,7 +248,7 @@ describe('Test elements.ts', () => {
       elemID: new ElemID('test', 'out_reg'),
       primitive: PrimitiveTypes.STRING,
       annotationsDescriptor: {},
-      annotationValues: {},
+      annotations: {},
     })
     registery.registerElement(ptStr)
     const ptStr2 = registery.getElement(new ElemID('test', 'out_reg'))
@@ -261,13 +261,13 @@ describe('Test elements.ts', () => {
       elemID: new ElemID('test', 'out_reg'),
       primitive: PrimitiveTypes.STRING,
       annotationsDescriptor: {},
-      annotationValues: {},
+      annotations: {},
     })
     const ptStr2 = new PrimitiveType({
       elemID: new ElemID('test', 'out_reg'),
       primitive: PrimitiveTypes.STRING,
       annotationsDescriptor: {},
-      annotationValues: {},
+      annotations: {},
     })
     registery.registerElement(ptStr)
     expect(() => {
@@ -345,13 +345,13 @@ describe('Test elements.ts', () => {
       elemID: new ElemID('test', 'prim'),
       primitive: PrimitiveTypes.STRING,
       annotationsDescriptor: {},
-      annotationValues: {},
+      annotations: {},
     })
     const pt2 = new PrimitiveType({
       elemID: new ElemID('test', 'prim2'),
       primitive: PrimitiveTypes.STRING,
       annotationsDescriptor: {},
-      annotationValues: {},
+      annotations: {},
     })
     const registery = new ElementsRegistry([pt, pt2])
     expect(registery.hasElement(pt.elemID)).toBe(true)
@@ -367,13 +367,13 @@ describe('Test elements.ts', () => {
       elemID: new ElemID('test', 'prim'),
       primitive: PrimitiveTypes.STRING,
       annotationsDescriptor: {},
-      annotationValues: {},
+      annotations: {},
     })
     const pt2 = new PrimitiveType({
       elemID: new ElemID('test', 'prim2'),
       primitive: PrimitiveTypes.STRING,
       annotationsDescriptor: {},
-      annotationValues: {},
+      annotations: {},
     })
     const registery = new ElementsRegistry([pt])
     const registery2 = new ElementsRegistry([pt2])
@@ -423,7 +423,7 @@ describe('Test elements.ts', () => {
       elemID: new ElemID('test', 'prim'),
       primitive: PrimitiveTypes.STRING,
       annotationsDescriptor: {},
-      annotationValues: {},
+      annotations: {},
     })
     const ot = new ObjectType({
       elemID: new ElemID('test', 'obj'),
@@ -433,7 +433,7 @@ describe('Test elements.ts', () => {
       annotationsDescriptor: {
         anno: pt,
       },
-      annotationValues: {},
+      annotations: {},
     })
     const strField = new Field(new ElemID('test', 'obj'), 'str_field', pt)
     const inst = new InstanceElement(new ElemID('test', 'inst'), ot, { str: 'test' })

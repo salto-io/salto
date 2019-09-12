@@ -161,6 +161,16 @@ export default class SalesforceAdapter {
   }
 
   /**
+   * Imports instances of type from the data stream
+   * @param type the object type of which to import
+   * @param data the stream that contains the object instances to import
+   * @returns a promise that represents action completion
+   */
+  public async importInstancesOfType(type: ObjectType, data: Stream): Promise<void> {
+    await this.client.loadBulk(apiName(type), data)
+  }
+
+  /**
    * Add new element
    * @param element the object/instance to add
    * @returns the updated element with extra info like api name, label and metadata type

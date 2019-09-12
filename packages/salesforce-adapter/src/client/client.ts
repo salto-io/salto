@@ -11,8 +11,10 @@ import {
   DescribeSObjectResult,
   QueryResult,
   DeployResult,
+  BatchResultInfo,
 } from 'jsforce'
 import { Value } from 'adapter-api'
+import { Stream } from 'stream'
 import {
   CompleteSaveResult, SfError,
 } from './types'
@@ -264,5 +266,21 @@ export default class SalesforceClient {
     return SalesforceClient.validateDeployResult(
       await this.conn.metadata.deploy(zip, { rollbackOnError: true }).complete(true)
     )
+  }
+
+  /**
+   * Loads a stream of CSV data to the bulk API
+   * @param type The type of the objects to upsert
+   * @param csvContents The stream with the CSV contents
+   * @returns The BatchResultInfo which contains success/errors for each entry
+   */
+  public async loadBulk(type: string, csvContents: Stream): Promise<BatchResultInfo[]> {
+    await this.ensureLoggedIn()
+    // Initiate the batch job
+    const batch = this.conn.bulk.load(type, 'upsert', { extIdField: 'Id', concurrencyMode: 'Parallel' }, csvContents)
+    // We need to wait for the job to execute (this what the next line does),
+    // otherwise the retrieve() will fail
+    await batch.then()
+    return await batch.retrieve() as BatchResultInfo[]
   }
 }

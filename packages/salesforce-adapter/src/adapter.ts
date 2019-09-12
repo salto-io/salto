@@ -7,6 +7,7 @@ import {
 } from 'jsforce'
 import _ from 'lodash'
 import { collections } from '@salto/lowerdash'
+import { Stream } from 'stream'
 import SalesforceClient, { Credentials } from './client/client'
 import * as constants from './constants'
 import {
@@ -159,6 +160,16 @@ export default class SalesforceAdapter {
         results = await this.client.queryMore(results.nextRecordsUrl)
       } else break
     }
+  }
+
+  /**
+   * Imports instances of type from the data stream
+   * @param type the object type of which to import
+   * @param data the stream that contains the object instances to import
+   * @returns a promise that represents action completion
+   */
+  public async importInstancesOfType(type: ObjectType, data: Stream): Promise<void> {
+    await this.client.loadBulk(apiName(type), data)
   }
 
   /**

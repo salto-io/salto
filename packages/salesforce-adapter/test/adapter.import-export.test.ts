@@ -1,12 +1,14 @@
 import {
   ObjectType, ElemID, InstanceElement,
 } from 'adapter-api'
+import { Stream } from 'stream'
 import SalesforceAdapter from '../src/adapter'
 import Connection from '../src/client/connection'
 import mockAdpater from './adapter'
 import * as constants from '../src/constants'
 
 describe('SalesforceAdapter import-export operations', () => {
+  let batch: { then: jest.Mock<unknown>; retrieve: jest.Mock<unknown> }
   let connection: Connection
   let adapter: SalesforceAdapter
 
@@ -118,6 +120,37 @@ describe('SalesforceAdapter import-export operations', () => {
         const queryMoreMock = connection.queryMore as jest.Mock<unknown>
         expect(queryMoreMock).toHaveBeenCalled()
       })
+    })
+  })
+
+  describe('Import instances of type', () => {
+    let mockLoad: jest.Mock<unknown>
+    let mockThen: jest.Mock<unknown>
+    let mockRetrieve: jest.Mock<unknown>
+
+    beforeEach(() => {
+      mockLoad = jest.fn()
+      mockThen = jest.fn()
+      mockRetrieve = jest.fn()
+      batch = { then: mockThen, retrieve: mockRetrieve }
+      mockLoad.mockReturnValue(batch)
+      connection.bulk.load = mockLoad
+    })
+
+    const testObjectType = 'Test__c'
+
+    const testType = new ObjectType({
+      elemID: new ElemID(constants.SALESFORCE, 'test'),
+      fields: {},
+      annotations: {},
+      annotationsValues: {
+        [constants.API_NAME]: testObjectType,
+      },
+    })
+
+    it('should call the bulk API with the correct object type name', async () => {
+      await adapter.importInstancesOfType(testType, new Stream())
+      expect(mockLoad.mock.calls[0][0]).toEqual(testObjectType)
     })
   })
 })

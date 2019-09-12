@@ -117,7 +117,7 @@ export abstract class Type implements Element {
   }: {
     elemID: ElemID
     annotationsDescriptor: TypeMap
-      annotations: Values
+    annotations: Values
   }) {
     this.annotationsDescriptor = annotationsDescriptor
     this.annotations = annotations

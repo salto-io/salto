@@ -53,19 +53,19 @@ export const deserialize = (data: string): Element[] => {
       elemID: new ElemID(v.elemID.adapter, ...v.elemID.nameParts),
       fields: v.fields,
       annotations: v.annotations,
-      annotationsValues: v.annotationsValues,
+      annotationValues: v.annotationValues,
     }),
     [PrimitiveType.name]: v => new PrimitiveType({
       elemID: new ElemID(v.elemID.adapter, ...v.elemID.nameParts),
       primitive: v.primitive,
       annotations: v.annotations,
-      annotationsValues: v.annotationsValues,
+      annotationValues: v.annotationValues,
     }),
     [Field.name]: v => new Field(
       new ElemID(v.parentID.adapter, ...v.parentID.nameParts),
       v.name,
       v.type,
-      v.annotationsValues,
+      v.annotationValues,
       v.isList,
     ),
   }

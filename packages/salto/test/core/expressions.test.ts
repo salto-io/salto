@@ -20,7 +20,7 @@ describe('Test Salto Expressions', () => {
         })),
         arr: new Field(baseElemID, 'arr', BuiltinTypes.STRING, {}, true),
       },
-      annotationsValues: {
+      annotationValues: {
         anno: 'base_anno',
       },
     })
@@ -81,7 +81,7 @@ describe('Test Salto Expressions', () => {
           anno: new ReferenceExpression([baseElemID.getFullName(), 'anno']),
         }),
       },
-      annotationsValues: {
+      annotationValues: {
         anno: new ReferenceExpression([baseElemID.getFullName(), 'anno']),
       },
     })

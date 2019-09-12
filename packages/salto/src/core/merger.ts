@@ -28,7 +28,7 @@ const validateDefinitions = (bases: Field[], updates: Field[]): void => {
   }
   // Ensure each annotation value is updated at most once.
   try {
-    _.mergeWith({}, ...updates.map(u => u.getAnnotationsValues()), validateNoDuplicates)
+    _.mergeWith({}, ...updates.map(u => u.annotationValues), validateNoDuplicates)
   } catch (e) {
     throw new Error(`can't extend ${parentID}: ${e.message}`)
   }
@@ -42,12 +42,12 @@ const mergeFieldDefinitions = (
   validateDefinitions(bases, updates)
   // If there is more then one base validation would have failed
   const base = bases[0]
-  const annotationsValues = _.merge(
+  const annotationValues = _.merge(
     {},
-    base.getAnnotationsValues(),
-    ...updates.map(u => u.getAnnotationsValues())
+    base.annotationValues,
+    ...updates.map(u => u.annotationValues)
   )
-  return new Field(base.parentID, base.name, base.type, annotationsValues, base.isList)
+  return new Field(base.parentID, base.name, base.type, annotationValues, base.isList)
 }
 
 const mergeObjectDefinitions = (objects: ObjectType[]): ObjectType => {
@@ -69,13 +69,13 @@ const mergeObjectDefinitions = (objects: ObjectType[]): ObjectType => {
     ...objects.map(o => o.annotations),
     validateNoDuplicates
   )
-  const annotationsValues = _.mergeWith(
+  const annotationValues = _.mergeWith(
     {},
-    ...objects.map(o => o.getAnnotationsValues()),
+    ...objects.map(o => o.annotationValues),
     validateNoDuplicates
   )
   return new ObjectType({
-    elemID, fields, annotations, annotationsValues,
+    elemID, fields, annotations, annotationValues,
   })
 }
 
@@ -92,15 +92,15 @@ const buildDefaults = (
 ): Values | undefined => {
   const buildObjectDefaults = (object: ObjectType): Values | undefined => {
     const def = _(object.fields).mapValues(field =>
-      ((field.getAnnotationsValues()[Type.DEFAULT] === undefined && !field.isList)
+      ((field.annotationValues[Type.DEFAULT] === undefined && !field.isList)
         ? buildDefaults(field.type)
-        : field.getAnnotationsValues()[Type.DEFAULT])).pickBy(v => v !== undefined).value()
+        : field.annotationValues[Type.DEFAULT])).pickBy(v => v !== undefined).value()
     return _.isEmpty(def) ? undefined : def
   }
 
-  return (type.getAnnotationsValues()[Type.DEFAULT] === undefined && isObjectType(type)
+  return (type.annotationValues[Type.DEFAULT] === undefined && isObjectType(type)
     ? buildObjectDefaults(type)
-    : type.getAnnotationsValues()[Type.DEFAULT])
+    : type.annotationValues[Type.DEFAULT])
 }
 
 /**

@@ -9,7 +9,7 @@ describe('transofmer', () => {
   const dummyTypeId = new ElemID('adapter', 'dummy')
   const dummyType = new ObjectType({
     elemID: dummyTypeId,
-    annotationsValues: {
+    annotationValues: {
       [METADATA_TYPE]: 'Dummy',
     },
     fields: {

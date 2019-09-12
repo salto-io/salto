@@ -92,7 +92,7 @@ describe('SalesforceAdapter CRUD', () => {
             sandbox: new Field(mockElemID, 'sandbox', BuiltinTypes.BOOLEAN),
           },
           annotations: {},
-          annotationsValues: { [constants.METADATA_TYPE]: 'Flow' },
+          annotationValues: { [constants.METADATA_TYPE]: 'Flow' },
         }),
         {
           token: 'instanceTest',
@@ -146,7 +146,7 @@ describe('SalesforceAdapter CRUD', () => {
                 elemID: mockElemID,
                 fields: {},
                 annotations: {},
-                annotationsValues: {},
+                annotationValues: {},
               }),
               {},
             )
@@ -195,11 +195,11 @@ describe('SalesforceAdapter CRUD', () => {
       it('should add the new element', () => {
         // Verify object creation
         expect(result).toBeInstanceOf(ObjectType)
-        expect(result.getAnnotationsValues()[constants.API_NAME]).toBe('Test__c')
+        expect(result.annotationValues[constants.API_NAME]).toBe('Test__c')
         expect(
-          result.fields.description.getAnnotationsValues()[constants.API_NAME]
+          result.fields.description.annotationValues[constants.API_NAME]
         ).toBe('Description__c')
-        expect(result.getAnnotationsValues()[constants.METADATA_TYPE]).toBe(constants.CUSTOM_OBJECT)
+        expect(result.annotationValues[constants.METADATA_TYPE]).toBe(constants.CUSTOM_OBJECT)
 
         expect(mockCreate.mock.calls.length).toBe(1)
         expect(mockCreate.mock.calls[0][1]).toHaveLength(1)
@@ -257,7 +257,7 @@ describe('SalesforceAdapter CRUD', () => {
 
       it('should return the created element', () => {
         expect(result).toMatchObject(element)
-        expect(result.getAnnotationsValues()).toBeDefined()
+        expect(result.annotationValues).toBeDefined()
       })
     })
 
@@ -575,7 +575,7 @@ describe('SalesforceAdapter CRUD', () => {
               sandbox: new Field(mockElemID, 'sandbox', BuiltinTypes.BOOLEAN),
             },
             annotations: {},
-            annotationsValues: { [constants.METADATA_TYPE]: 'Flow' },
+            annotationValues: { [constants.METADATA_TYPE]: 'Flow' },
           }),
           {},
         )
@@ -601,7 +601,7 @@ describe('SalesforceAdapter CRUD', () => {
               stringType,
             ),
           },
-          annotationsValues: {
+          annotationValues: {
             [constants.API_NAME]: 'Test__c',
           },
         })
@@ -621,7 +621,7 @@ describe('SalesforceAdapter CRUD', () => {
     describe('when the request fails', () => {
       const element = new ObjectType({
         elemID: mockElemID,
-        annotationsValues: {
+        annotationValues: {
           [constants.API_NAME]: 'Test__c',
         },
       })
@@ -657,7 +657,7 @@ describe('SalesforceAdapter CRUD', () => {
           elemID: mockElemID,
           fields: {},
           annotations: {},
-          annotationsValues: {
+          annotationValues: {
             [constants.METADATA_TYPE]: PROFILE_METADATA_TYPE,
           },
         }),
@@ -670,7 +670,7 @@ describe('SalesforceAdapter CRUD', () => {
           elemID: mockElemID,
           fields: {},
           annotations: {},
-          annotationsValues: {
+          annotationValues: {
             [constants.METADATA_TYPE]: PROFILE_METADATA_TYPE,
           },
         }),
@@ -706,7 +706,7 @@ describe('SalesforceAdapter CRUD', () => {
             stringType,
           ),
         },
-        annotationsValues: {
+        annotationValues: {
           [Type.REQUIRED]: false,
           [Type.DEFAULT]: 'test',
           label: 'test label',
@@ -723,7 +723,7 @@ describe('SalesforceAdapter CRUD', () => {
             stringType,
           ),
         },
-        annotationsValues: {
+        annotationValues: {
           [Type.REQUIRED]: false,
           [Type.DEFAULT]: 'test2',
           label: 'test2 label',
@@ -760,7 +760,7 @@ describe('SalesforceAdapter CRUD', () => {
             fields: {
             },
             annotations: {},
-            annotationsValues: {
+            annotationValues: {
               [constants.METADATA_TYPE]: PROFILE_METADATA_TYPE,
             },
           }),
@@ -795,7 +795,7 @@ describe('SalesforceAdapter CRUD', () => {
             fields: {
             },
             annotations: {},
-            annotationsValues: {
+            annotationValues: {
               [constants.METADATA_TYPE]: PROFILE_METADATA_TYPE,
             },
           }),
@@ -867,7 +867,7 @@ describe('SalesforceAdapter CRUD', () => {
                 stringType,
               ),
             },
-            annotationsValues: {
+            annotationValues: {
               [Type.REQUIRED]: false,
               [Type.DEFAULT]: 'test',
               label: 'test label',
@@ -887,7 +887,7 @@ describe('SalesforceAdapter CRUD', () => {
                 },
               ),
             },
-            annotationsValues: {
+            annotationValues: {
               label: 'test2 label',
             },
           })
@@ -922,7 +922,7 @@ describe('SalesforceAdapter CRUD', () => {
                 stringType,
               ),
             },
-            annotationsValues: {
+            annotationValues: {
               [Type.REQUIRED]: false,
               [Type.DEFAULT]: 'test',
               label: 'test label',
@@ -954,7 +954,7 @@ describe('SalesforceAdapter CRUD', () => {
                 stringType,
               ),
             },
-            annotationsValues: {
+            annotationValues: {
               [Type.REQUIRED]: false,
               [Type.DEFAULT]: 'test',
               label: 'test label',
@@ -1013,7 +1013,7 @@ describe('SalesforceAdapter CRUD', () => {
                 },
               ),
             },
-            annotationsValues: {
+            annotationValues: {
               [Type.REQUIRED]: false,
               [Type.DEFAULT]: 'test',
               label: 'test label',
@@ -1033,7 +1033,7 @@ describe('SalesforceAdapter CRUD', () => {
                 },
               ),
             },
-            annotationsValues: {
+            annotationValues: {
               [Type.REQUIRED]: false,
               [Type.DEFAULT]: 'test2',
               label: 'test2 label',
@@ -1081,7 +1081,7 @@ describe('SalesforceAdapter CRUD', () => {
                 },
               ),
             },
-            annotationsValues: {
+            annotationValues: {
               [Type.REQUIRED]: false,
               [Type.DEFAULT]: 'test',
               label: 'test label',
@@ -1103,7 +1103,7 @@ describe('SalesforceAdapter CRUD', () => {
                 stringType,
               ),
             },
-            annotationsValues: {
+            annotationValues: {
               [Type.REQUIRED]: false,
               [Type.DEFAULT]: 'test',
               label: 'test label',
@@ -1153,7 +1153,7 @@ describe('SalesforceAdapter CRUD', () => {
                 stringType,
               ),
             },
-            annotationsValues: {
+            annotationValues: {
               label: 'test label',
               [constants.API_NAME]: 'Test__c',
             },
@@ -1168,7 +1168,7 @@ describe('SalesforceAdapter CRUD', () => {
                 stringType,
               ),
             },
-            annotationsValues: {
+            annotationValues: {
               label: 'test2 label',
               [constants.API_NAME]: 'Test__c',
             },
@@ -1227,7 +1227,7 @@ describe('SalesforceAdapter CRUD', () => {
                 },
               ),
             },
-            annotationsValues: {
+            annotationValues: {
               [Type.REQUIRED]: false,
               [Type.DEFAULT]: 'test',
               label: 'test label',
@@ -1266,7 +1266,7 @@ describe('SalesforceAdapter CRUD', () => {
                 },
               ),
             },
-            annotationsValues: {
+            annotationValues: {
               [Type.REQUIRED]: false,
               [Type.DEFAULT]: 'test',
               label: 'test label',
@@ -1321,7 +1321,7 @@ describe('SalesforceAdapter CRUD', () => {
                 stringType,
               ),
             },
-            annotationsValues: {
+            annotationValues: {
               [Type.REQUIRED]: false,
               [Type.DEFAULT]: 'test',
               label: 'test label',
@@ -1349,7 +1349,7 @@ describe('SalesforceAdapter CRUD', () => {
                 },
               ),
             },
-            annotationsValues: {
+            annotationValues: {
               [Type.REQUIRED]: false,
               [Type.DEFAULT]: 'test',
               label: 'test label',
@@ -1385,7 +1385,7 @@ describe('SalesforceAdapter CRUD', () => {
                 },
               ),
             },
-            annotationsValues: {
+            annotationValues: {
               [Type.REQUIRED]: false,
               [Type.DEFAULT]: 'test',
               label: 'test label',
@@ -1405,7 +1405,7 @@ describe('SalesforceAdapter CRUD', () => {
                 },
               ),
             },
-            annotationsValues: {
+            annotationValues: {
               [Type.REQUIRED]: false,
               [Type.DEFAULT]: 'test2',
               label: 'test2 label',
@@ -1452,7 +1452,7 @@ describe('SalesforceAdapter CRUD', () => {
       const deployTypeId = new ElemID(constants.SALESFORCE, 'deploy_type')
       const deployType = new ObjectType({
         elemID: deployTypeId,
-        annotationsValues: {
+        annotationValues: {
           [constants.METADATA_TYPE]: 'DeployType',
         },
         fields: {

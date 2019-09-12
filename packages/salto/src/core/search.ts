@@ -32,7 +32,7 @@ const getMatchingElementName = (
   return matches.length > 0 ? elementsNames[+matches[0]] : undefined
 }
 
-export const findElement = (
+const findInnerElement = (
   keyParts: string[],
   topLevelElements: ElementMap,
   searchElements: ElementMap,
@@ -55,7 +55,7 @@ export const findElement = (
   const isGuess = bestKey !== searchWord
   if (!_.isEmpty(keyPartsRem)) {
     const res = isObjectType(bestElement)
-      ? findElement(
+      ? findInnerElement(
         keyPartsRem,
         topLevelElements,
         Object.assign({}, ...Object.values(bestElement.fields).map(f => ({ [f.name]: f.type }))),
@@ -74,7 +74,7 @@ export const findElement = (
   return { key: bestKey, element: bestElement, isGuess }
 }
 
-export const createElementsMap = (
+const createElementsMap = (
   elements: Element[]
 ): ElementMap => elements.reduce(
   (accumulator: ElementMap, element: Element) => {
@@ -82,3 +82,11 @@ export const createElementsMap = (
     return accumulator
   }, {}
 )
+
+export const findElement = (searchWords: string[], allElements: Element[]): SearchResult => {
+  const elementsMap = createElementsMap(allElements)
+  // First we try with exact match only
+  return findInnerElement(searchWords, elementsMap, elementsMap)
+  // Then we allow near matches
+  || findInnerElement(searchWords, elementsMap, elementsMap, false)
+}

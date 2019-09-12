@@ -1,9 +1,23 @@
+import _ from 'lodash'
+import { Element } from 'adapter-api'
+
 import * as fs from 'async-file'
 import path from 'path'
 import readdirp from 'readdirp'
-import { Blueprint } from '../blueprints/blueprint'
+import Parser, { SourceMap, ParseError } from '../parser/salto'
 
-const getBluePrintsFromDir = async (
+export interface Blueprint {
+  buffer: Buffer
+  filename: string
+}
+
+export interface ParsedBlueprint extends Blueprint {
+  elements: Element[]
+  errors: ParseError[]
+  sourceMap: SourceMap
+}
+
+const getBlueprintsFromDir = async (
   blueprintsDir: string,
 ): Promise<string[]> => {
   const entries = await readdirp.promise(blueprintsDir, {
@@ -33,7 +47,7 @@ export const loadBlueprints = async (
   try {
     let allBlueprintsFiles = blueprintsFiles
     if (blueprintsDir) {
-      const dirFiles = await getBluePrintsFromDir(blueprintsDir)
+      const dirFiles = await getBlueprintsFromDir(blueprintsDir)
       allBlueprintsFiles = allBlueprintsFiles.concat(dirFiles)
     }
     const blueprints = allBlueprintsFiles.map(loadBlueprint)
@@ -56,4 +70,23 @@ export const dumpBlueprints = async (
       await fs.writeFile(bp.filename, bp.buffer)
     }
   ))
+}
+
+export const parseBlueprints = (blueprints: Blueprint[]): Promise<ParsedBlueprint[]> =>
+  Promise.all(blueprints.map(async bp => ({
+    ...bp,
+    ...(await Parser.parse(bp.buffer, bp.filename)),
+  })))
+
+export const getAllElements = async (blueprints: Blueprint[]): Promise<Element[]> => {
+  const parseResults = await parseBlueprints(blueprints)
+
+  const elements = _.flatten(parseResults.map(r => r.elements))
+  const errors = _.flatten(parseResults.map(r => r.errors))
+
+  if (errors.length > 0) {
+    throw new Error(`Failed to parse blueprints: ${errors.join('\n')}`)
+  }
+
+  return elements
 }

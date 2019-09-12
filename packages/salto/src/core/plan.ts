@@ -5,12 +5,12 @@ import {
   Field, isField, InstanceElement, Change, getChangeElement,
 } from 'adapter-api'
 import {
-  buildDiffGraph, buildGroupedGraph, Group, DataNodeMap, NodeId,
+  buildDiffGraph, buildGroupedGraph, Group, DataNodeMap, NodeId, GroupedNodeMap,
 } from '@salto/dag'
 
 export type PlanItemId = NodeId
 export type PlanItem = Group<Change> & {parent: () => Change}
-export type Plan = DataNodeMap<Group<Change>> & {
+export type Plan = GroupedNodeMap<Change> & {
   itemsByEvalOrder: () => Iterable<PlanItem>
   getItem: (id: PlanItemId) => PlanItem
 }
@@ -92,7 +92,7 @@ export const getPlan = (beforeElements: Element[], afterElements: Element[]): Pl
     },
   })
 
-  const addPlanFunctions = (groupGraph: DataNodeMap<Group<Change>>): Plan => Object.assign(
+  const addPlanFunctions = (groupGraph: GroupedNodeMap<Change>): Plan => Object.assign(
     groupGraph,
     {
       itemsByEvalOrder(): Iterable<PlanItem> {

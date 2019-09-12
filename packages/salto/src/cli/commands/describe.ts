@@ -1,12 +1,15 @@
-import * as commands from '../commands'
 import { createCommandBuilder } from '../builder'
 import { ParsedCliInput, CliCommand, CliOutput } from '../types'
-import { Blueprint } from '../../blueprints/blueprint'
+import { Blueprint } from '../../core/blueprint'
 import * as bf from '../filters/blueprints'
+import { formatSearchResults } from '../formatter'
+import { describeElement } from '../../core/commands'
 
-const command = (blueprints: Blueprint[], words: string[]): CliCommand => ({
+export const command = (blueprints: Blueprint[], words: string[], { stdout }: CliOutput):
+CliCommand => ({
   async execute(): Promise<void> {
-    return commands.describe(words, blueprints)
+    const searchResult = await describeElement(words, blueprints)
+    stdout.write(formatSearchResults(searchResult))
   },
 })
 
@@ -29,8 +32,8 @@ const builder = createCommandBuilder({
 
   filters: [bf.requiredFilter],
 
-  async build(input: DescribeParsedCliInput, _output: CliOutput) {
-    return command(input.blueprints, input.args.words)
+  async build(input: DescribeParsedCliInput, output: CliOutput) {
+    return command(input.blueprints, input.args.words, output)
   },
 })
 

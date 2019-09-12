@@ -9,9 +9,9 @@ import {
 import initAdapters from './adapters/adapters'
 import { getPlan, Plan, PlanItem } from './plan'
 import Parser from '../parser/salto'
-import { Blueprint, getAllElements } from '../blueprints/blueprint'
+import { Blueprint, getAllElements } from './blueprint'
 import State from '../state/state'
-
+import { findElement, SearchResult } from './search'
 
 export const plan = async (
   blueprints: Blueprint[],
@@ -70,6 +70,14 @@ export const discover = async (
   }
 }
 
+export const describeElement = async (
+  searchWords: string[],
+  blueprints: Blueprint[] = [],
+): Promise<SearchResult> => {
+  const allElements = await getAllElements(blueprints)
+  return findElement(searchWords, allElements)
+}
+
 export const exportToCsv = async (
   typeId: string,
   blueprints: Blueprint[],
@@ -84,5 +92,6 @@ export const exportToCsv = async (
   }
   const elements = mergeAndValidate(await getAllElements(blueprints))
   const [adapters] = await initAdapters(elements, fillConfig)
+
   return getInstancesOfType(type as ObjectType, adapters)
 }

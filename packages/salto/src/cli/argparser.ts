@@ -52,7 +52,11 @@ const monkeyPatchShowHelpForColors = (parser: Argv, outStream: WriteStream): voi
   // wrapping a function without changing its args
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   parser.showHelp = _.wrap(parser.showHelp, (savedShowHelp, ...args: any[]) => {
-    if (outStream.isTTY && outStream.hasColors()) {
+    if (
+      outStream.isTTY
+      && typeof outStream.getColorDepth === 'function'
+      && outStream.getColorDepth() > 1
+    ) {
       yargonaut.style('green')
     }
 

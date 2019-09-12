@@ -15,7 +15,7 @@ export class MockWriteStream {
   isTTY: boolean
 
   write(s: string): void { this.content += s }
-  hasColors(): boolean { return this.colors }
+  getColorDepth(): number { return this.colors ? 8 : 1 }
 }
 
 export interface MockCliOutput {

@@ -2,7 +2,7 @@ import yargs from 'yargs'
 
 export interface WriteStream {
   write(s: string): void
-  hasColors(): boolean
+  getColorDepth(): number
   isTTY: boolean
 }
 

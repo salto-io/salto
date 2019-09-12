@@ -39,9 +39,9 @@ const annotateApiNameAndLabel = (element: ObjectType): void => {
   }
 
   element.annotate({ [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT })
-  innerAnnotate(element.annotationValues, element.elemID.name)
+  innerAnnotate(element.annotations, element.elemID.name)
   Object.values(element.fields).forEach(field => {
-    innerAnnotate(field.annotationValues, field.name)
+    innerAnnotate(field.annotations, field.name)
   })
 }
 
@@ -260,8 +260,8 @@ export default class SalesforceAdapter {
       // Update the remaining fields that were changed
       this.updateFields(clonedObject,
         clonedObject.getMutualFieldsWithOther(pre).filter(afterField =>
-          !_.isEqual(afterField.annotationValues,
-            pre.fields[afterField.name].annotationValues))),
+          !_.isEqual(afterField.annotations,
+            pre.fields[afterField.name].annotations))),
     ])
 
     // Update the annotation values - this can't be done asynchronously with the previous
@@ -273,7 +273,7 @@ export default class SalesforceAdapter {
     // to update them.
     if (apiName(clonedObject).endsWith(constants.SALESFORCE_CUSTOM_SUFFIX)
       // Don't update the object unless its annotations values have changed
-      && !_.isEqual(pre.annotationValues, clonedObject.annotationValues)) {
+      && !_.isEqual(pre.annotations, clonedObject.annotations)) {
       await this.client.update(
         metadataType(clonedObject),
         toCustomObject(clonedObject, false)
@@ -598,8 +598,8 @@ const configType = new ObjectType({
     token: new Field(configID, 'token', BuiltinTypes.STRING),
     sandbox: new Field(configID, 'sandbox', BuiltinTypes.BOOLEAN),
   },
+  annotationTypes: {},
   annotations: {},
-  annotationValues: {},
 })
 
 const credentialsFromConfig = (config: InstanceElement): Credentials => ({

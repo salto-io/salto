@@ -15,12 +15,12 @@ export const PROFILE_METADATA_TYPE = 'Profile'
 
 // --- Utils functions
 const fieldPermissions = (field: Field): Values =>
-  (field.annotationValues[FIELD_LEVEL_SECURITY_ANNOTATION]
-    ? field.annotationValues[FIELD_LEVEL_SECURITY_ANNOTATION]
+  (field.annotations[FIELD_LEVEL_SECURITY_ANNOTATION]
+    ? field.annotations[FIELD_LEVEL_SECURITY_ANNOTATION]
     : {})
 
 const setEmptyFieldPermissions = (field: Field): void => {
-  field.annotationValues[FIELD_LEVEL_SECURITY_ANNOTATION] = {}
+  field.annotations[FIELD_LEVEL_SECURITY_ANNOTATION] = {}
 }
 
 const toProfiles = (object: ObjectType): ProfileInfo[] => {

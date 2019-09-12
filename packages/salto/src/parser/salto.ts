@@ -94,7 +94,7 @@ export default class Parser {
     )
   }
 
-  private static getAnnotations(block: HCLBlock): Record<string, Type> {
+  private static getAnnotationTypes(block: HCLBlock): Record<string, Type> {
     return block.blocks
       .filter(b => b.type === Keywords.ANNOTATIONS_DEFINITION)
       .map(b => _(b.blocks)
@@ -151,8 +151,8 @@ export default class Parser {
     const typeObj = new PrimitiveType({
       elemID: this.getElemID(typeName),
       primitive: getPrimitiveType(baseType),
-      annotations: this.getAnnotations(typeBlock),
-      annotationValues: this.getAttrValues(typeBlock, sourceMap, this.getElemID(typeName)),
+      annotationTypes: this.getAnnotationTypes(typeBlock),
+      annotations: this.getAttrValues(typeBlock, sourceMap, this.getElemID(typeName)),
     })
     this.addToSourceMap(sourceMap, typeObj.elemID, typeBlock)
     return typeObj
@@ -211,7 +211,7 @@ export default class Parser {
     return {
       type: Keywords.LIST_DEFINITION,
       labels: [field.type.elemID.getFullName(), field.name],
-      attrs: field.annotationValues,
+      attrs: field.annotations,
       blocks: [],
     }
   }
@@ -220,17 +220,17 @@ export default class Parser {
     return {
       type: field.type.elemID.getFullName(),
       labels: [field.name],
-      attrs: field.annotationValues,
+      attrs: field.annotations,
       blocks: [],
     }
   }
 
   private static getAnnotationsBlock(element: Type): HCLBlock[] {
-    return _.isEmpty(element.annotations) ? [] : [{
+    return _.isEmpty(element.annotationTypes) ? [] : [{
       type: Keywords.ANNOTATIONS_DEFINITION,
       labels: [],
       attrs: {},
-      blocks: Object.entries(element.annotations).map(([key, type]) => ({
+      blocks: Object.entries(element.annotationTypes).map(([key, type]) => ({
         type: type.elemID.getFullName(),
         labels: [key],
         attrs: {},
@@ -244,7 +244,7 @@ export default class Parser {
       return {
         type: Keywords.TYPE_DEFINITION,
         labels: [elem.elemID.getFullName()],
-        attrs: elem.annotationValues,
+        attrs: elem.annotations,
         blocks: this.getAnnotationsBlock(elem).concat(
           Object.values(elem.fields).map(f => this.getBlock(f))
         ),
@@ -258,7 +258,7 @@ export default class Parser {
           Keywords.TYPE_INHERITENCE_SEPARATOR,
           getPrimitiveTypeName(elem.primitive),
         ],
-        attrs: elem.annotationValues,
+        attrs: elem.annotations,
         blocks: this.getAnnotationsBlock(elem),
       }
     }

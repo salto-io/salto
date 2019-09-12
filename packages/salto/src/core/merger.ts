@@ -28,7 +28,7 @@ const validateDefinitions = (bases: Field[], updates: Field[]): void => {
   }
   // Ensure each annotation value is updated at most once.
   try {
-    _.mergeWith({}, ...updates.map(u => u.annotationValues), validateNoDuplicates)
+    _.mergeWith({}, ...updates.map(u => u.annotations), validateNoDuplicates)
   } catch (e) {
     throw new Error(`can't extend ${parentID}: ${e.message}`)
   }
@@ -42,12 +42,12 @@ const mergeFieldDefinitions = (
   validateDefinitions(bases, updates)
   // If there is more then one base validation would have failed
   const base = bases[0]
-  const annotationValues = _.merge(
+  const annotations = _.merge(
     {},
-    base.annotationValues,
-    ...updates.map(u => u.annotationValues)
+    base.annotations,
+    ...updates.map(u => u.annotations)
   )
-  return new Field(base.parentID, base.name, base.type, annotationValues, base.isList)
+  return new Field(base.parentID, base.name, base.type, annotations, base.isList)
 }
 
 const mergeObjectDefinitions = (objects: ObjectType[]): ObjectType => {
@@ -64,18 +64,18 @@ const mergeObjectDefinitions = (objects: ObjectType[]): ObjectType => {
   const fields = _.mapValues(fieldDefs, mergeFieldDefinitions)
   // There are no rules in the spec on merging annotations and
   // annotations values so we simply merge without allowing duplicates
+  const annotationTypes = _.mergeWith(
+    {},
+    ...objects.map(o => o.annotationTypes),
+    validateNoDuplicates
+  )
   const annotations = _.mergeWith(
     {},
     ...objects.map(o => o.annotations),
     validateNoDuplicates
   )
-  const annotationValues = _.mergeWith(
-    {},
-    ...objects.map(o => o.annotationValues),
-    validateNoDuplicates
-  )
   return new ObjectType({
-    elemID, fields, annotations, annotationValues,
+    elemID, fields, annotationTypes, annotations,
   })
 }
 
@@ -92,15 +92,15 @@ const buildDefaults = (
 ): Values | undefined => {
   const buildObjectDefaults = (object: ObjectType): Values | undefined => {
     const def = _(object.fields).mapValues(field =>
-      ((field.annotationValues[Type.DEFAULT] === undefined && !field.isList)
+      ((field.annotations[Type.DEFAULT] === undefined && !field.isList)
         ? buildDefaults(field.type)
-        : field.annotationValues[Type.DEFAULT])).pickBy(v => v !== undefined).value()
+        : field.annotations[Type.DEFAULT])).pickBy(v => v !== undefined).value()
     return _.isEmpty(def) ? undefined : def
   }
 
-  return (type.annotationValues[Type.DEFAULT] === undefined && isObjectType(type)
+  return (type.annotations[Type.DEFAULT] === undefined && isObjectType(type)
     ? buildObjectDefaults(type)
-    : type.annotationValues[Type.DEFAULT])
+    : type.annotations[Type.DEFAULT])
 }
 
 /**
@@ -143,8 +143,8 @@ const updateMergedTypes = (
   mergedTypes: Record<string, Type>
 ): Element[] => elements.map(elem => {
   if (isType(elem)) {
-    elem.annotations = _.mapValues(
-      elem.annotations,
+    elem.annotationTypes = _.mapValues(
+      elem.annotationTypes,
       anno => mergedTypes[anno.elemID.getFullName()] || anno
     )
   }

@@ -86,7 +86,7 @@ describe('getPlan', () => {
     // Adding new field
     employee.fields.new = new Field(employee.elemID, 'new', BuiltinTypes.STRING)
     // Changing existng field
-    employee.fields.name.annotationValues[Type.REQUIRED] = false
+    employee.fields.name.annotations[Type.REQUIRED] = false
     const plan = getPlan(pre, post)
     expect(plan.size).toBe(1)
     const planItem = getFirstPlanItem(plan)
@@ -113,7 +113,7 @@ describe('getPlan', () => {
       const pre = await coreMock.getAllElements([])
       const post = _.cloneDeep(pre)
       const employee = post[post.length - 2] as ObjectType
-      employee.annotations.new = BuiltinTypes.STRING
+      employee.annotationTypes.new = BuiltinTypes.STRING
       employee.annotate({ new: 'new' })
       const plan = getPlan(pre, post)
 

@@ -51,7 +51,7 @@ export class ElemID {
 export interface Element {
   elemID: ElemID
   path?: string[]
-  annotationValues: Values
+  annotations: Values
 }
 
 type ElementMap = Record<string, Element>
@@ -66,7 +66,7 @@ export class Field implements Element {
     public parentID: ElemID,
     public name: string,
     public type: Type,
-    public annotationValues: Values = {},
+    public annotations: Values = {},
     public isList: boolean = false,
   ) {
     this.elemID = parentID.createNestedID(name)
@@ -74,7 +74,7 @@ export class Field implements Element {
 
   isEqual(other: Field): boolean {
     return _.isEqual(this.type.elemID, other.type.elemID)
-           && _.isEqual(this.annotationValues, other.annotationValues)
+           && _.isEqual(this.annotations, other.annotations)
            && this.isList === other.isList
   }
 
@@ -88,7 +88,7 @@ export class Field implements Element {
       this.parentID,
       this.name,
       this.type,
-      _.cloneDeep(this.annotationValues),
+      _.cloneDeep(this.annotations),
       this.isList,
     )
   }
@@ -108,19 +108,19 @@ export abstract class Type implements Element {
 
   readonly elemID: ElemID
   path?: string[]
-  annotations: TypeMap
-  public readonly annotationValues: Values
+  annotationTypes: TypeMap
+  public readonly annotations: Values
   constructor({
+    annotationTypes,
     annotations,
-    annotationValues,
     elemID,
   }: {
     elemID: ElemID
-    annotations: TypeMap
-    annotationValues: Values
+    annotationTypes: TypeMap
+    annotations: Values
   }) {
+    this.annotationTypes = annotationTypes
     this.annotations = annotations
-    this.annotationValues = annotationValues
     this.elemID = elemID
     // Prevents reregistration of clones, we only want to register
     // first creation
@@ -130,19 +130,19 @@ export abstract class Type implements Element {
    * Return a deep copy of the instance annotations by recursivally
    * cloning all annotations (by invoking their clone method)
    */
-  protected cloneAnnotations(): TypeMap {
-    const clonedAnnotations: TypeMap = {}
-    Object.keys(this.annotations).forEach(key => {
-      clonedAnnotations[key] = this.annotations[key].clone()
+  protected cloneAnnotationTypes(): TypeMap {
+    const clonedAnnotationTypes: TypeMap = {}
+    Object.keys(this.annotationTypes).forEach(key => {
+      clonedAnnotationTypes[key] = this.annotationTypes[key].clone()
     })
-    return clonedAnnotations
+    return clonedAnnotationTypes
   }
 
   /**
    * Return a deep copy of the instance annotations values.
    */
-  protected cloneAnnotationsValues(): Values {
-    return _.cloneDeep(this.annotationValues)
+  protected cloneAnnotations(): Values {
+    return _.cloneDeep(this.annotations)
   }
 
   isEqual(other: Type): boolean {
@@ -152,17 +152,17 @@ export abstract class Type implements Element {
 
   isAnnotationsEqual(other: Type): boolean {
     return _.isEqual(
-      _.mapValues(this.annotations, a => a.elemID),
-      _.mapValues(other.annotations, a => a.elemID)
+      _.mapValues(this.annotationTypes, a => a.elemID),
+      _.mapValues(other.annotationTypes, a => a.elemID)
     )
-          && _.isEqual(this.annotationValues, other.annotationValues)
+          && _.isEqual(this.annotations, other.annotations)
   }
 
-  annotate(annotationValues: Values): void {
+  annotate(annotations: Values): void {
     // Should we overide? I'm adding right now as it seems more
     // usefull. (Roi R)
-    Object.keys(annotationValues).forEach(key => {
-      this.annotationValues[key] = annotationValues[key]
+    Object.keys(annotations).forEach(key => {
+      this.annotations[key] = annotations[key]
     })
   }
 
@@ -171,7 +171,7 @@ export abstract class Type implements Element {
    * by each subclass as this is structure dependent.
    * @return {Type} the cloned instance
    */
-  abstract clone(annotationValues?: Values): Type
+  abstract clone(annotations?: Values): Type
 }
 
 /**
@@ -182,15 +182,15 @@ export class PrimitiveType extends Type {
   constructor({
     elemID,
     primitive,
+    annotationTypes = {},
     annotations = {},
-    annotationValues = {},
   }: {
     elemID: ElemID
     primitive: PrimitiveTypes
-    annotations?: TypeMap
-    annotationValues?: Values
+    annotationTypes?: TypeMap
+    annotations?: Values
   }) {
-    super({ elemID, annotations, annotationValues })
+    super({ elemID, annotationTypes, annotations })
     this.primitive = primitive
   }
 
@@ -203,14 +203,14 @@ export class PrimitiveType extends Type {
    * Return an independent copy of this instance.
    * @return {PrimitiveType} the cloned instance
    */
-  clone(additionalAnnotationsValues: Values = {}): PrimitiveType {
+  clone(additionalAnnotations: Values = {}): PrimitiveType {
     const res: PrimitiveType = new PrimitiveType({
       elemID: this.elemID,
       primitive: this.primitive,
+      annotationTypes: this.cloneAnnotationTypes(),
       annotations: this.cloneAnnotations(),
-      annotationValues: this.cloneAnnotationsValues(),
     })
-    res.annotate(additionalAnnotationsValues)
+    res.annotate(additionalAnnotations)
     return res
   }
 }
@@ -224,15 +224,15 @@ export class ObjectType extends Type {
   constructor({
     elemID,
     fields = {},
+    annotationTypes = {},
     annotations = {},
-    annotationValues = {},
   }: {
     elemID: ElemID
     fields?: FieldMap
-    annotations?: TypeMap
-    annotationValues?: Values
+    annotationTypes?: TypeMap
+      annotations?: Values
   }) {
-    super({ elemID, annotations, annotationValues })
+    super({ elemID, annotationTypes, annotations })
     this.fields = fields
   }
 
@@ -257,19 +257,19 @@ export class ObjectType extends Type {
    * Return an independent copy of this instance.
    * @return {ObjectType} the cloned instance
    */
-  clone(additionalAnnotationsValues: Values = {}): ObjectType {
+  clone(additionalAnnotations: Values = {}): ObjectType {
+    const clonedAnnotationTypes = this.cloneAnnotationTypes()
     const clonedAnnotations = this.cloneAnnotations()
-    const clonedAnnotationValues = this.cloneAnnotationsValues()
     const clonedFields = this.cloneFields()
 
     const res: ObjectType = new ObjectType({
       elemID: new ElemID(this.elemID.adapter, ...this.elemID.nameParts),
       fields: clonedFields,
+      annotationTypes: clonedAnnotationTypes,
       annotations: clonedAnnotations,
-      annotationValues: clonedAnnotationValues,
     })
 
-    res.annotate(additionalAnnotationsValues)
+    res.annotate(additionalAnnotations)
 
     return res
   }
@@ -297,8 +297,8 @@ export class InstanceElement implements Element {
     this.path = path
   }
 
-  get annotationValues(): Values {
-    return this.type.annotationValues
+  get annotations(): Values {
+    return this.type.annotations
   }
 
   isEqual(other: InstanceElement): boolean {

@@ -149,11 +149,11 @@ describe('Salto parser', () => {
           expect(model.fields.name.type.elemID.name).toEqual('string')
         })
         it('should have annotation values', () => {
-          expect(model.fields.name.annotationValues).toHaveProperty('label')
-          expect(model.fields.name.annotationValues.label).toEqual('Name')
-          expect(model.fields.name.annotationValues).toHaveProperty('_required')
+          expect(model.fields.name.annotations).toHaveProperty('label')
+          expect(model.fields.name.annotations.label).toEqual('Name')
+          expect(model.fields.name.annotations).toHaveProperty('_required')
           // eslint-disable-next-line no-underscore-dangle
-          expect(model.fields.name.annotationValues._required).toEqual(true)
+          expect(model.fields.name.annotations._required).toEqual(true)
         })
       })
       describe('list field', () => {
@@ -171,7 +171,7 @@ describe('Salto parser', () => {
           expect(model.fields).toHaveProperty('fax')
         })
         it('should have the correct value', () => {
-          expect(model.fields.fax.annotationValues).toEqual({
+          expect(model.fields.fax.annotations).toEqual({
             // eslint-disable-next-line @typescript-eslint/camelcase
             field_level_security: {
               // eslint-disable-next-line @typescript-eslint/camelcase
@@ -187,10 +187,10 @@ describe('Salto parser', () => {
 
       describe('model annotations', () => {
         it('should exist', () => {
-          expect(model.annotationValues).toHaveProperty('lead_convert_settings')
+          expect(model.annotations).toHaveProperty('lead_convert_settings')
         })
         it('should have the correct value', () => {
-          expect(model.annotationValues.lead_convert_settings).toEqual({
+          expect(model.annotations.lead_convert_settings).toEqual({
             account: [
               {
                 input: 'bla',
@@ -259,9 +259,9 @@ describe('Salto parser', () => {
       })
 
       it('should have the right annotations', () => {
-        expect(numberType.annotations.scale.elemID.getFullName()).toEqual('number')
-        expect(numberType.annotations.precision.elemID.getFullName()).toEqual('number')
-        expect(numberType.annotations.unique.elemID.getFullName()).toEqual('boolean')
+        expect(numberType.annotationTypes.scale.elemID.getFullName()).toEqual('number')
+        expect(numberType.annotationTypes.precision.elemID.getFullName()).toEqual('number')
+        expect(numberType.annotationTypes.unique.elemID.getFullName()).toEqual('boolean')
       })
     })
 
@@ -338,7 +338,7 @@ describe('Salto Dump', () => {
   const fieldType = new PrimitiveType({
     elemID: new ElemID('salesforce', 'field'),
     primitive: PrimitiveTypes.NUMBER,
-    annotations: {
+    annotationTypes: {
       alice: BuiltinTypes.NUMBER,
       bob: BuiltinTypes.NUMBER,
       tom: BuiltinTypes.BOOLEAN,

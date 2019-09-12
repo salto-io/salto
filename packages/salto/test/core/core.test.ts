@@ -25,8 +25,8 @@ const mockConfigType = new ObjectType({
     token: new Field(configID, 'token', BuiltinTypes.STRING),
     sandbox: new Field(configID, 'sandbox', BuiltinTypes.BOOLEAN),
   },
+  annotationTypes: {},
   annotations: {},
-  annotationValues: {},
 })
 
 const mockRemove = jest.fn(_a => true)

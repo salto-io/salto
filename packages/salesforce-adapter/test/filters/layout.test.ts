@@ -13,7 +13,7 @@ describe('Test layout filter', () => {
 
   const mockSObject = new ObjectType({
     elemID: new ElemID(constants.SALESFORCE, 'test'),
-    annotationValues: {},
+    annotations: {},
   })
 
   const mockLayout = new InstanceElement(
@@ -36,7 +36,7 @@ describe('Test layout filter', () => {
 
       await filter.onDiscover(elements)
       const sobject = elements[0] as ObjectType
-      expect(sobject.annotationValues[LAYOUT_ANNOTATION][0])
+      expect(sobject.annotations[LAYOUT_ANNOTATION][0])
         .toBe(mockLayout.elemID.getFullName())
     }
 

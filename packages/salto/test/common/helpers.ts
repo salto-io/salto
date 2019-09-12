@@ -13,9 +13,13 @@ export const expectTypesToMatch = (actual: Type, expected: Type): void => {
   expect(actual.annotationValues).toEqual(expected.annotationValues)
 
   // Check annotations match
-  expect(Object.keys(actual.annotations)).toEqual(Object.keys(expected.annotations))
-  Object.keys(expected.annotations).forEach(
-    key => expect(actual.annotations[key].elemID).toEqual(expected.annotations[key].elemID)
+  expect(
+    Object.keys(actual.annotationsDescriptor)
+  ).toEqual(Object.keys(expected.annotationsDescriptor))
+  Object.keys(expected.annotationsDescriptor).forEach(
+    key => expect(
+      actual.annotationsDescriptor[key].elemID
+    ).toEqual(expected.annotationsDescriptor[key].elemID)
   )
 
   // Check fields match

@@ -114,9 +114,15 @@ const formatObjectTypePlanItem = (item: PlanItem): PlanItemDescription => {
   if (typeChange && typeChange.action === 'modify') {
     // Collect element level changes
     const { before, after } = typeChange.data
-    subLines = [...createValuesChanges(_.get(before, 'annotationValues', {}),
-      _.get(after, 'annotationValues', {})),
-    ...createAnnotationsChanges(_.get(before, 'annotations', {}), _.get(after, 'annotations', {})),
+    subLines = [
+      ...createValuesChanges(
+        _.get(before, 'annotationValues', {}),
+        _.get(after, 'annotationValues', {}),
+      ),
+      ...createAnnotationsChanges(
+        _.get(before, 'annotationsDescriptor', {}),
+        _.get(after, 'annotationsDescriptor', {}),
+      ),
     ]
   }
 

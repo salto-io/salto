@@ -13,7 +13,7 @@ describe('Elements validation', () => {
       num: new Field(baseElemID, 'num', BuiltinTypes.NUMBER),
       bool: new Field(baseElemID, 'bool', BuiltinTypes.BOOLEAN, { _required: true }),
     },
-    annotations: {
+    annotationsDescriptor: {
       annostr: BuiltinTypes.STRING,
       annonum: BuiltinTypes.NUMBER,
       annoboolean: BuiltinTypes.BOOLEAN,
@@ -46,7 +46,7 @@ describe('Elements validation', () => {
       reqNested: new Field(nestedElemID, 'reqNested', simpleType, {
       }),
     },
-    annotations: {
+    annotationsDescriptor: {
       nested: simpleType,
     },
   })

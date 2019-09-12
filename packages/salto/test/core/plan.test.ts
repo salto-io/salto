@@ -113,7 +113,7 @@ describe('getPlan', () => {
       const pre = await coreMock.getAllElements([])
       const post = _.cloneDeep(pre)
       const employee = post[post.length - 2] as ObjectType
-      employee.annotations.new = BuiltinTypes.STRING
+      employee.annotationsDescriptor.new = BuiltinTypes.STRING
       employee.annotate({ new: 'new' })
       const plan = getPlan(pre, post)
 

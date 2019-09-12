@@ -19,7 +19,7 @@ describe('Test elements.ts', () => {
     const ptStr = new PrimitiveType({
       elemID: new ElemID('test', 'prim'),
       primitive: PrimitiveTypes.STRING,
-      annotations: {},
+      annotationsDescriptor: {},
       annotationValues: {},
     })
     expect(ptStr.elemID.adapter).toEqual('test')
@@ -28,7 +28,7 @@ describe('Test elements.ts', () => {
     const ptNum = new PrimitiveType({
       elemID: new ElemID('test', 'prim'),
       primitive: PrimitiveTypes.NUMBER,
-      annotations: {},
+      annotationsDescriptor: {},
       annotationValues: {},
     })
     expect(ptNum.elemID.adapter).toEqual('test')
@@ -39,13 +39,13 @@ describe('Test elements.ts', () => {
     const ptStr = new PrimitiveType({
       elemID: new ElemID('test', 'prim'),
       primitive: PrimitiveTypes.STRING,
-      annotations: {},
+      annotationsDescriptor: {},
       annotationValues: {},
     })
     const ptNum = new PrimitiveType({
       elemID: new ElemID('test', 'prim'),
       primitive: PrimitiveTypes.NUMBER,
-      annotations: {},
+      annotationsDescriptor: {},
       annotationValues: {},
     })
     const ot = new ObjectType({
@@ -56,7 +56,7 @@ describe('Test elements.ts', () => {
         /* eslint-disable-next-line @typescript-eslint/camelcase */
         str_field: new Field(new ElemID('test', 'obj'), 'str_field', ptStr),
       },
-      annotations: {},
+      annotationsDescriptor: {},
       annotationValues: {},
     })
     expect(ot.elemID.adapter).toEqual('test')
@@ -99,7 +99,7 @@ describe('Test elements.ts', () => {
       elemID: new ElemID('test', 'diff'),
       fields: {
       },
-      annotations: {},
+      annotationsDescriptor: {},
       annotationValues: {
       },
     }),
@@ -124,7 +124,7 @@ describe('Test elements.ts', () => {
       elemID: new ElemID('test', 'diff'),
       fields: {
       },
-      annotations: {},
+      annotationsDescriptor: {},
       annotationValues: {
       },
     }),
@@ -247,7 +247,7 @@ describe('Test elements.ts', () => {
     const ptStr = new PrimitiveType({
       elemID: new ElemID('test', 'out_reg'),
       primitive: PrimitiveTypes.STRING,
-      annotations: {},
+      annotationsDescriptor: {},
       annotationValues: {},
     })
     registery.registerElement(ptStr)
@@ -260,13 +260,13 @@ describe('Test elements.ts', () => {
     const ptStr = new PrimitiveType({
       elemID: new ElemID('test', 'out_reg'),
       primitive: PrimitiveTypes.STRING,
-      annotations: {},
+      annotationsDescriptor: {},
       annotationValues: {},
     })
     const ptStr2 = new PrimitiveType({
       elemID: new ElemID('test', 'out_reg'),
       primitive: PrimitiveTypes.STRING,
-      annotations: {},
+      annotationsDescriptor: {},
       annotationValues: {},
     })
     registery.registerElement(ptStr)
@@ -279,7 +279,7 @@ describe('Test elements.ts', () => {
   it('should allow clone without annotations.', () => {
     const registery = new ElementsRegistry()
     const saltoAddr = registery.getElement(new ElemID('salto', 'address'))
-    saltoAddr.annotations.label = registery.getElement(
+    saltoAddr.annotationsDescriptor.label = registery.getElement(
       new ElemID('', 'string'),
     )
     saltoAddr.fields.country = registery.getElement(
@@ -301,7 +301,7 @@ describe('Test elements.ts', () => {
     expect(prim).toEqual(prim2)
   })
 
-  it('should allow clone with annotations.', () => {
+  it('should allow clone with annotationsDescriptor.', () => {
     const registery = new ElementsRegistry()
     /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
     const annotations: { [key: string]: any } = {}
@@ -344,13 +344,13 @@ describe('Test elements.ts', () => {
     const pt = new PrimitiveType({
       elemID: new ElemID('test', 'prim'),
       primitive: PrimitiveTypes.STRING,
-      annotations: {},
+      annotationsDescriptor: {},
       annotationValues: {},
     })
     const pt2 = new PrimitiveType({
       elemID: new ElemID('test', 'prim2'),
       primitive: PrimitiveTypes.STRING,
-      annotations: {},
+      annotationsDescriptor: {},
       annotationValues: {},
     })
     const registery = new ElementsRegistry([pt, pt2])
@@ -366,13 +366,13 @@ describe('Test elements.ts', () => {
     const pt = new PrimitiveType({
       elemID: new ElemID('test', 'prim'),
       primitive: PrimitiveTypes.STRING,
-      annotations: {},
+      annotationsDescriptor: {},
       annotationValues: {},
     })
     const pt2 = new PrimitiveType({
       elemID: new ElemID('test', 'prim2'),
       primitive: PrimitiveTypes.STRING,
-      annotations: {},
+      annotationsDescriptor: {},
       annotationValues: {},
     })
     const registery = new ElementsRegistry([pt])
@@ -422,7 +422,7 @@ describe('Test elements.ts', () => {
     const pt = new PrimitiveType({
       elemID: new ElemID('test', 'prim'),
       primitive: PrimitiveTypes.STRING,
-      annotations: {},
+      annotationsDescriptor: {},
       annotationValues: {},
     })
     const ot = new ObjectType({
@@ -430,7 +430,7 @@ describe('Test elements.ts', () => {
       fields: {
         str: new Field(new ElemID('test', 'obj'), 'str_field', pt),
       },
-      annotations: {
+      annotationsDescriptor: {
         anno: pt,
       },
       annotationValues: {},

@@ -47,7 +47,7 @@ describe('Loader merging ability', () => {
   const updateAnno = new ObjectType({
     elemID: baseElemID,
     fields: {},
-    annotations: {
+    annotationsDescriptor: {
       anno1: BuiltinTypes.STRING,
     },
   })
@@ -55,7 +55,7 @@ describe('Loader merging ability', () => {
   const multipleUpdateAnno = new ObjectType({
     elemID: baseElemID,
     fields: {},
-    annotations: {
+    annotationsDescriptor: {
       anno1: BuiltinTypes.STRING,
     },
   })
@@ -113,7 +113,7 @@ describe('Loader merging ability', () => {
         field2: 'base2',
       },
     },
-    annotations: {
+    annotationsDescriptor: {
       anno1: BuiltinTypes.STRING,
     },
   })

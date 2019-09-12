@@ -91,7 +91,7 @@ describe('SalesforceAdapter CRUD', () => {
             token: new Field(mockElemID, 'token', BuiltinTypes.STRING),
             sandbox: new Field(mockElemID, 'sandbox', BuiltinTypes.BOOLEAN),
           },
-          annotations: {},
+          annotationsDescriptor: {},
           annotationValues: { [constants.METADATA_TYPE]: 'Flow' },
         }),
         {
@@ -145,7 +145,7 @@ describe('SalesforceAdapter CRUD', () => {
               new ObjectType({
                 elemID: mockElemID,
                 fields: {},
-                annotations: {},
+                annotationsDescriptor: {},
                 annotationValues: {},
               }),
               {},
@@ -574,7 +574,7 @@ describe('SalesforceAdapter CRUD', () => {
               token: new Field(mockElemID, 'token', BuiltinTypes.STRING),
               sandbox: new Field(mockElemID, 'sandbox', BuiltinTypes.BOOLEAN),
             },
-            annotations: {},
+            annotationsDescriptor: {},
             annotationValues: { [constants.METADATA_TYPE]: 'Flow' },
           }),
           {},
@@ -656,7 +656,7 @@ describe('SalesforceAdapter CRUD', () => {
         new ObjectType({
           elemID: mockElemID,
           fields: {},
-          annotations: {},
+          annotationsDescriptor: {},
           annotationValues: {
             [constants.METADATA_TYPE]: PROFILE_METADATA_TYPE,
           },
@@ -669,7 +669,7 @@ describe('SalesforceAdapter CRUD', () => {
         new ObjectType({
           elemID: mockElemID,
           fields: {},
-          annotations: {},
+          annotationsDescriptor: {},
           annotationValues: {
             [constants.METADATA_TYPE]: PROFILE_METADATA_TYPE,
           },
@@ -759,7 +759,7 @@ describe('SalesforceAdapter CRUD', () => {
             elemID: mockElemID,
             fields: {
             },
-            annotations: {},
+            annotationsDescriptor: {},
             annotationValues: {
               [constants.METADATA_TYPE]: PROFILE_METADATA_TYPE,
             },
@@ -794,7 +794,7 @@ describe('SalesforceAdapter CRUD', () => {
             elemID: mockElemID,
             fields: {
             },
-            annotations: {},
+            annotationsDescriptor: {},
             annotationValues: {
               [constants.METADATA_TYPE]: PROFILE_METADATA_TYPE,
             },

@@ -52,13 +52,13 @@ export const deserialize = (data: string): Element[] => {
     [ObjectType.name]: v => new ObjectType({
       elemID: new ElemID(v.elemID.adapter, ...v.elemID.nameParts),
       fields: v.fields,
-      annotations: v.annotations,
+      annotationsDescriptor: v.annotationsDescriptor,
       annotationValues: v.annotationValues,
     }),
     [PrimitiveType.name]: v => new PrimitiveType({
       elemID: new ElemID(v.elemID.adapter, ...v.elemID.nameParts),
       primitive: v.primitive,
-      annotations: v.annotations,
+      annotationsDescriptor: v.annotationsDescriptor,
       annotationValues: v.annotationValues,
     }),
     [Field.name]: v => new Field(

@@ -598,7 +598,7 @@ const configType = new ObjectType({
     token: new Field(configID, 'token', BuiltinTypes.STRING),
     sandbox: new Field(configID, 'sandbox', BuiltinTypes.BOOLEAN),
   },
-  annotations: {},
+  annotationsDescriptor: {},
   annotationValues: {},
 })
 

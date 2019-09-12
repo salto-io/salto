@@ -19,7 +19,7 @@ export const getAllElements = async (
       city: new Field(addrElemID, 'city', BuiltinTypes.STRING),
     },
   })
-  saltoAddr.annotations.label = BuiltinTypes.STRING
+  saltoAddr.annotationsDescriptor.label = BuiltinTypes.STRING
 
   const officeElemID = new ElemID('salto', 'office')
   const saltoOffice = new ObjectType({
@@ -37,7 +37,7 @@ export const getAllElements = async (
       ),
     },
   })
-  saltoOffice.annotations.label = BuiltinTypes.STRING
+  saltoOffice.annotationsDescriptor.label = BuiltinTypes.STRING
 
   const employeeElemID = new ElemID('salto', 'employee')
   const saltoEmployee = new ObjectType({

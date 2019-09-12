@@ -36,7 +36,8 @@
     "watch-ts": "tsc -w",
     "build-go": "./src/parser/hcl_plugin/build.sh ./dist",
     "lint": "eslint --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
-    "lint-fix": "yarn run lint -- --fix"
+    "lint-fix": "yarn run lint -- --fix",
+    "package": "yarn run pkg -t node10 ."
   },
   "dependencies": {
     "@salto/dag": "0.1.0",
@@ -83,6 +84,7 @@
     "jest": "^24.0.0",
     "jest-circus": "^24.9.0",
     "jest-junit": "^6.4.0",
+    "pkg": "^4.4.0",
     "ts-cleaner": "^1.0.2",
     "tsc-watch": "^2.2.1",
     "typescript": "^3.5.3"

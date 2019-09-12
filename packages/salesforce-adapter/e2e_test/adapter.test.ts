@@ -152,7 +152,7 @@ describe('Salesforce adapter E2E with real account', () => {
         elemID: mockElemID,
         fields: {
         },
-        annotationsDescriptor: {},
+        annotationTypes: {},
         annotations: {
           [constants.METADATA_TYPE]: PROFILE_METADATA_TYPE,
           [constants.API_NAME]: instanceElementName,
@@ -396,7 +396,7 @@ describe('Salesforce adapter E2E with real account', () => {
         elemID: mockElemID,
         fields: {
         },
-        annotationsDescriptor: {},
+        annotationTypes: {},
         annotations: {
           [constants.METADATA_TYPE]: PROFILE_METADATA_TYPE,
           [constants.API_NAME]: instanceElementName,
@@ -435,7 +435,7 @@ describe('Salesforce adapter E2E with real account', () => {
         elemID: mockElemID,
         fields: {
         },
-        annotationsDescriptor: {},
+        annotationTypes: {},
         annotations: {
           [constants.METADATA_TYPE]: PROFILE_METADATA_TYPE,
           [constants.API_NAME]: instanceElementName,

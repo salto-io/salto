@@ -25,7 +25,7 @@ const mockConfigType = new ObjectType({
     token: new Field(configID, 'token', BuiltinTypes.STRING),
     sandbox: new Field(configID, 'sandbox', BuiltinTypes.BOOLEAN),
   },
-  annotationsDescriptor: {},
+  annotationTypes: {},
   annotations: {},
 })
 

@@ -94,7 +94,7 @@ export default class Parser {
     )
   }
 
-  private static getAnnotationsDescriptor(block: HCLBlock): Record<string, Type> {
+  private static getAnnotationTypes(block: HCLBlock): Record<string, Type> {
     return block.blocks
       .filter(b => b.type === Keywords.ANNOTATIONS_DEFINITION)
       .map(b => _(b.blocks)
@@ -151,7 +151,7 @@ export default class Parser {
     const typeObj = new PrimitiveType({
       elemID: this.getElemID(typeName),
       primitive: getPrimitiveType(baseType),
-      annotationsDescriptor: this.getAnnotationsDescriptor(typeBlock),
+      annotationTypes: this.getAnnotationTypes(typeBlock),
       annotations: this.getAttrValues(typeBlock, sourceMap, this.getElemID(typeName)),
     })
     this.addToSourceMap(sourceMap, typeObj.elemID, typeBlock)
@@ -226,11 +226,11 @@ export default class Parser {
   }
 
   private static getAnnotationsBlock(element: Type): HCLBlock[] {
-    return _.isEmpty(element.annotationsDescriptor) ? [] : [{
+    return _.isEmpty(element.annotationTypes) ? [] : [{
       type: Keywords.ANNOTATIONS_DEFINITION,
       labels: [],
       attrs: {},
-      blocks: Object.entries(element.annotationsDescriptor).map(([key, type]) => ({
+      blocks: Object.entries(element.annotationTypes).map(([key, type]) => ({
         type: type.elemID.getFullName(),
         labels: [key],
         attrs: {},

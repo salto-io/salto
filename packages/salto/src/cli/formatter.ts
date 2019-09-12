@@ -120,8 +120,8 @@ const formatObjectTypePlanItem = (item: PlanItem): PlanItemDescription => {
         _.get(after, 'annotations', {}),
       ),
       ...createAnnotationsChanges(
-        _.get(before, 'annotationsDescriptor', {}),
-        _.get(after, 'annotationsDescriptor', {}),
+        _.get(before, 'annotationTypes', {}),
+        _.get(after, 'annotationTypes', {}),
       ),
     ]
   }

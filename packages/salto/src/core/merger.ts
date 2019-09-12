@@ -64,9 +64,9 @@ const mergeObjectDefinitions = (objects: ObjectType[]): ObjectType => {
   const fields = _.mapValues(fieldDefs, mergeFieldDefinitions)
   // There are no rules in the spec on merging annotations and
   // annotations values so we simply merge without allowing duplicates
-  const annotationsDescriptor = _.mergeWith(
+  const annotationTypes = _.mergeWith(
     {},
-    ...objects.map(o => o.annotationsDescriptor),
+    ...objects.map(o => o.annotationTypes),
     validateNoDuplicates
   )
   const annotations = _.mergeWith(
@@ -75,7 +75,7 @@ const mergeObjectDefinitions = (objects: ObjectType[]): ObjectType => {
     validateNoDuplicates
   )
   return new ObjectType({
-    elemID, fields, annotationsDescriptor, annotations,
+    elemID, fields, annotationTypes, annotations,
   })
 }
 
@@ -143,8 +143,8 @@ const updateMergedTypes = (
   mergedTypes: Record<string, Type>
 ): Element[] => elements.map(elem => {
   if (isType(elem)) {
-    elem.annotationsDescriptor = _.mapValues(
-      elem.annotationsDescriptor,
+    elem.annotationTypes = _.mapValues(
+      elem.annotationTypes,
       anno => mergedTypes[anno.elemID.getFullName()] || anno
     )
   }

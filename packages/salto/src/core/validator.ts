@@ -125,13 +125,13 @@ const validateFieldValue = (value: Value, field: Field): ValidationError[] => {
 
 const validateField = (field: Field): ValidationError[] =>
   _.flatten(Object.keys(field.annotations)
-    .filter(k => field.type.annotationsDescriptor[k])
-    .map(k => validateValue(field.annotations[k], field.type.annotationsDescriptor[k])))
+    .filter(k => field.type.annotationTypes[k])
+    .map(k => validateValue(field.annotations[k], field.type.annotationTypes[k])))
 
 const validateType = (element: Type): ValidationError[] => {
   const errors = _.flatten(Object.keys(element.annotations)
-    .filter(k => element.annotationsDescriptor[k]).map(
-      k => validateValue(element.annotations[k], element.annotationsDescriptor[k])
+    .filter(k => element.annotationTypes[k]).map(
+      k => validateValue(element.annotations[k], element.annotationTypes[k])
     ))
 
   if (isObjectType(element)) {

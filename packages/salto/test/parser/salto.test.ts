@@ -259,9 +259,9 @@ describe('Salto parser', () => {
       })
 
       it('should have the right annotations', () => {
-        expect(numberType.annotationsDescriptor.scale.elemID.getFullName()).toEqual('number')
-        expect(numberType.annotationsDescriptor.precision.elemID.getFullName()).toEqual('number')
-        expect(numberType.annotationsDescriptor.unique.elemID.getFullName()).toEqual('boolean')
+        expect(numberType.annotationTypes.scale.elemID.getFullName()).toEqual('number')
+        expect(numberType.annotationTypes.precision.elemID.getFullName()).toEqual('number')
+        expect(numberType.annotationTypes.unique.elemID.getFullName()).toEqual('boolean')
       })
     })
 
@@ -338,7 +338,7 @@ describe('Salto Dump', () => {
   const fieldType = new PrimitiveType({
     elemID: new ElemID('salesforce', 'field'),
     primitive: PrimitiveTypes.NUMBER,
-    annotationsDescriptor: {
+    annotationTypes: {
       alice: BuiltinTypes.NUMBER,
       bob: BuiltinTypes.NUMBER,
       tom: BuiltinTypes.BOOLEAN,

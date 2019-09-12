@@ -64,7 +64,7 @@ export class Types {
     text: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.TEXT),
       primitive: PrimitiveTypes.STRING,
-      annotationsDescriptor: {
+      annotationTypes: {
         [FIELD_ANNOTATIONS.UNIQUE]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.CASE_SENSITIVE]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.LENGTH]: BuiltinTypes.NUMBER,
@@ -73,7 +73,7 @@ export class Types {
     number: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.NUMBER),
       primitive: PrimitiveTypes.NUMBER,
-      annotationsDescriptor: {
+      annotationTypes: {
         [FIELD_ANNOTATIONS.SCALE]: BuiltinTypes.NUMBER,
         [FIELD_ANNOTATIONS.PRECISION]: BuiltinTypes.NUMBER,
         [FIELD_ANNOTATIONS.UNIQUE]: BuiltinTypes.BOOLEAN,
@@ -82,7 +82,7 @@ export class Types {
     autonumber: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.AUTONUMBER),
       primitive: PrimitiveTypes.STRING,
-      annotationsDescriptor: {
+      annotationTypes: {
         [FIELD_ANNOTATIONS.DISPLAY_FORMAT]: BuiltinTypes.STRING,
       },
     }),
@@ -105,7 +105,7 @@ export class Types {
     currency: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.CURRENCY),
       primitive: PrimitiveTypes.NUMBER,
-      annotationsDescriptor: {
+      annotationTypes: {
         [FIELD_ANNOTATIONS.SCALE]: BuiltinTypes.NUMBER,
         [FIELD_ANNOTATIONS.PRECISION]: BuiltinTypes.NUMBER,
       },
@@ -117,14 +117,14 @@ export class Types {
     multipicklist: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.MULTIPICKLIST),
       primitive: PrimitiveTypes.STRING,
-      annotationsDescriptor: {
+      annotationTypes: {
         [FIELD_ANNOTATIONS.VISIBLE_LINES]: BuiltinTypes.NUMBER,
       },
     }),
     email: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.EMAIL),
       primitive: PrimitiveTypes.STRING,
-      annotationsDescriptor: {
+      annotationTypes: {
         [FIELD_ANNOTATIONS.UNIQUE]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.CASE_SENSITIVE]: BuiltinTypes.BOOLEAN,
       },
@@ -132,7 +132,7 @@ export class Types {
     location: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.LOCATION),
       primitive: PrimitiveTypes.NUMBER,
-      annotationsDescriptor: {
+      annotationTypes: {
         [FIELD_ANNOTATIONS.DISPLAY_LOCATION_IN_DECIMAL]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.SCALE]: BuiltinTypes.NUMBER,
       },
@@ -140,7 +140,7 @@ export class Types {
     percent: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.PERCENT),
       primitive: PrimitiveTypes.NUMBER,
-      annotationsDescriptor: {
+      annotationTypes: {
         [FIELD_ANNOTATIONS.SCALE]: BuiltinTypes.NUMBER,
         [FIELD_ANNOTATIONS.PRECISION]: BuiltinTypes.NUMBER,
       },
@@ -152,7 +152,7 @@ export class Types {
     longtextarea: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.LONGTEXTAREA),
       primitive: PrimitiveTypes.STRING,
-      annotationsDescriptor: {
+      annotationTypes: {
         [FIELD_ANNOTATIONS.VISIBLE_LINES]: BuiltinTypes.NUMBER,
         [FIELD_ANNOTATIONS.LENGTH]: BuiltinTypes.NUMBER,
       },
@@ -160,7 +160,7 @@ export class Types {
     richtextarea: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.RICHTEXTAREA),
       primitive: PrimitiveTypes.STRING,
-      annotationsDescriptor: {
+      annotationTypes: {
         [FIELD_ANNOTATIONS.VISIBLE_LINES]: BuiltinTypes.NUMBER,
         [FIELD_ANNOTATIONS.LENGTH]: BuiltinTypes.NUMBER,
       },
@@ -172,7 +172,7 @@ export class Types {
     encryptedtext: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.ENCRYPTEDTEXT),
       primitive: PrimitiveTypes.STRING,
-      annotationsDescriptor: {
+      annotationTypes: {
         [FIELD_ANNOTATIONS.MASK_CHAR]: BuiltinTypes.STRING,
         [FIELD_ANNOTATIONS.MASK_TYPE]: BuiltinTypes.STRING,
         [FIELD_ANNOTATIONS.MASK]: BuiltinTypes.STRING,
@@ -220,7 +220,7 @@ export const fieldFullName = (object: ObjectType, field: TypeField): string =>
 
 const allowedAnnotations = (key: string): string[] => (
   Types.salesforceDataTypes[key]
-    ? Object.keys(Types.salesforceDataTypes[key].annotationsDescriptor)
+    ? Object.keys(Types.salesforceDataTypes[key].annotationTypes)
     : []
 )
 
@@ -369,7 +369,7 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
     bpFieldType = Types.get(formulaTypeName(bpFieldType.elemID.name))
     annotations[FORMULA] = field.calculatedFormula
   }
-  if (!_.isEmpty(bpFieldType.annotationsDescriptor)) {
+  if (!_.isEmpty(bpFieldType.annotationTypes)) {
     // Convert the annotations' names to bp case for those that are not already in that format
     // (annotations that consist of at least 2 words) and assign the additional annotations
     // (ones that were received from the api)

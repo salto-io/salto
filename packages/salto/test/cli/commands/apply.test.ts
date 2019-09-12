@@ -26,7 +26,7 @@ jest.mock('../../../src/core/commands', () => ({
   }),
 }))
 
-describe('cli/commands/apply.ts', () => {
+describe('apply command', () => {
   let cliOutput: { stdout: MockWriteStream; stderr: MockWriteStream }
   let command: ApplyCommand
 

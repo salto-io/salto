@@ -1,5 +1,5 @@
 import _ from 'lodash'
-// TODO: This import breaks the abstaraction of CliOutput as it communicate directly with console
+// TODO: This import breaks the abstraction of CliOutput as it communicate directly with console
 import * as inquirer from 'inquirer'
 import {
   Type, ObjectType, ElemID, InstanceElement,

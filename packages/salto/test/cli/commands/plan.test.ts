@@ -7,7 +7,7 @@ jest.mock('../../../src/core/commands', () => ({
   plan: jest.fn().mockImplementation(() => mockPlan([])),
 }))
 
-describe('cli/commands/plan.ts', () => {
+describe('plan command', () => {
   it('should run plan', async () => {
     const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
     await command([], cliOutput).execute()

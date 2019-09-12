@@ -14,6 +14,7 @@ describe('findElement', () => {
     const result = findElement(['ZZZZZZZ'], elements)
     expect(result).toBe(null)
   })
+
   it('should not find when describing a complete mismatch with multiple parts', async () => {
     const result = findElement(['XXX', 'ggg', 'A'], elements)
     expect(result).toBe(null)
@@ -32,6 +33,7 @@ describe('findElement', () => {
     expect(result.element).toEqual((find('salto_employee') as ObjectType).fields.nicknames.type)
     expect(result.isGuess).toBe(false)
   })
+
   it('suggest type on single word', async () => {
     const result = findElement(['salto_ofice'], elements) as FoundSearchResult
     expect(result.key).toBe('salto_office')

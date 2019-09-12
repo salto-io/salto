@@ -13,7 +13,6 @@ import { Blueprint, getAllElements } from './blueprint'
 import State from '../state/state'
 import { findElement, SearchResult } from './search'
 
-
 export const plan = async (
   blueprints: Blueprint[],
 ): Promise<Plan> => {
@@ -73,9 +72,9 @@ export const discover = async (
 
 export const describeElement = async (
   searchWords: string[],
-  blueprints?: Blueprint[],
+  blueprints: Blueprint[] = [],
 ): Promise<SearchResult> => {
-  const allElements = await getAllElements(blueprints || [])
+  const allElements = await getAllElements(blueprints)
   return findElement(searchWords, allElements)
 }
 

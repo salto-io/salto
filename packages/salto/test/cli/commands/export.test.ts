@@ -14,7 +14,7 @@ jest.mock('../../../src/core/commands', () => ({
   ) => mockExportToCsv(typeId, blueprints, fillConfig)),
 }))
 
-describe('cli/commands/export.ts', () => {
+describe('export command', () => {
   it('should run export', async () => {
     const outputPath = path.join(__dirname, '__test_export.csv')
     try {

@@ -26,7 +26,6 @@ describe('Test import-export commands e2e', () => {
   const exportOutputDir = `${homePath}/tmp/export`
   const exportFile = 'export_test.csv'
 
-
   beforeEach(async () => {
     await fs.delete(discoverOutputDir)
     await fs.delete(exportOutputDir)

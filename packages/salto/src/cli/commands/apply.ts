@@ -34,7 +34,7 @@ export class ApplyCommand implements CliCommand {
     this.currentAction = undefined
   }
 
-  pollCurentAction(): void {
+  pollCurrentAction(): void {
     if (this.currentActionStartTime && this.currentAction) {
       this.stdout.write(
         createActionInProgressOutput(this.currentAction, this.currentActionStartTime)
@@ -47,7 +47,7 @@ export class ApplyCommand implements CliCommand {
     this.currentAction = action
     this.currentActionStartTime = new Date()
     this.stdout.write(createActionStartOutput(action))
-    this.currentActionPollerID = setInterval(this.pollCurentAction, CURRENT_ACTION_POLL_INTERVAL)
+    this.currentActionPollerID = setInterval(this.pollCurrentAction, CURRENT_ACTION_POLL_INTERVAL)
   }
 
   async execute(): Promise<void> {

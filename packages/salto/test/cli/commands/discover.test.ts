@@ -13,7 +13,7 @@ jest.mock('../../../src/core/commands', () => ({
   ) => mockDiscover(blueprints, fillConfig)),
 }))
 
-describe('cli/commands/discover.ts', () => {
+describe('discover command', () => {
   it('should run discover', async () => {
     const outputDir = path.join(__dirname, '__test_discover')
     try {
@@ -22,7 +22,7 @@ describe('cli/commands/discover.ts', () => {
 
       await command([], outputDir).execute()
       const outputPath = path.join(outputDir, 'none.bp')
-      expect(await fs.exists(outputDir)).toBe(true)
+      expect(await fs.exists(outputDir)).toBeTruthy()
       expect((await fs.readFile(outputPath)).toString()).toMatch('asd')
     } finally {
       await fs.delete(outputDir)

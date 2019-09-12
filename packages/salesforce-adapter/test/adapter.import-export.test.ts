@@ -142,8 +142,8 @@ describe('SalesforceAdapter import-export operations', () => {
     const testType = new ObjectType({
       elemID: new ElemID(constants.SALESFORCE, 'test'),
       fields: {},
-      annotations: {},
-      annotationsValues: {
+      annotationTypes: {},
+      annotations: {
         [constants.API_NAME]: testObjectType,
       },
     })

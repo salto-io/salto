@@ -5,7 +5,7 @@ import * as path from 'path'
 import os from 'os'
 import { serialize, deserialize } from './serializer'
 
-const STATEPATH = path.join(os.homedir(), '.salto/latest_state.bp')
+export const STATEPATH = path.join(os.homedir(), '.salto/latest_state.bp')
 /**
  * Salto state - an interface for managing the state between runs
  */

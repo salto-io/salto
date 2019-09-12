@@ -1,6 +1,6 @@
 import { Element, ObjectType } from 'adapter-api'
 import { findElement, FoundSearchResult } from '../../src/core/search'
-import { getAllElements } from './mocks/core'
+import { getAllElements } from '../common/elements'
 
 describe('findElement', () => {
   let elements: Element[]

@@ -5,7 +5,7 @@ import {
   Change, getChangeElement,
 } from 'adapter-api'
 import State from '../../src/state/state'
-import * as coreMock from './mocks/core'
+import * as mock from '../common/elements'
 import {
   getPlan, Plan, PlanItem,
 } from '../../src/core/plan'
@@ -20,15 +20,14 @@ describe('getPlan', () => {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     wu(item.items.values()).find(change =>
       getChangeElement(change).elemID.getFullName() === elemID.getFullName())!
+  const allElements = mock.getAllElements([])
 
-  it('should create empty plan', async () => {
-    const allElements = await coreMock.getAllElements([])
+  it('should create empty plan', () => {
     const plan = getPlan(allElements, allElements)
     expect(plan.size).toBe(0)
   })
 
-  it('should create plan with add change', async () => {
-    const allElements = await coreMock.getAllElements([])
+  it('should create plan with add change', () => {
     const newElemID = new ElemID('salto', 'additional')
     const newElement = new ObjectType({
       elemID: newElemID,
@@ -65,8 +64,8 @@ describe('getPlan', () => {
     }
   })
 
-  it('should create plan with remove change', async () => {
-    const pre = await coreMock.getAllElements([])
+  it('should create plan with remove change', () => {
+    const pre = allElements
     const plan = getPlan(pre, pre.slice(0, pre.length - 1))
     expect(plan.size).toBe(1)
     const planItem = getFirstPlanItem(plan)
@@ -79,15 +78,14 @@ describe('getPlan', () => {
     }
   })
 
-  it('should create plan with modification changes due to field changes', async () => {
-    const pre = await coreMock.getAllElements([])
-    const post = _.cloneDeep(pre)
+  it('should create plan with modification changes due to field changes', () => {
+    const post = _.cloneDeep(allElements)
     const employee = post[post.length - 2] as ObjectType
     // Adding new field
     employee.fields.new = new Field(employee.elemID, 'new', BuiltinTypes.STRING)
     // Changing existng field
     employee.fields.name.annotations[Type.REQUIRED] = false
-    const plan = getPlan(pre, post)
+    const plan = getPlan(allElements, post)
     expect(plan.size).toBe(1)
     const planItem = getFirstPlanItem(plan)
     expect(planItem.groupKey).toBe(employee.elemID.getFullName())
@@ -96,12 +94,11 @@ describe('getPlan', () => {
     expect(getChange(planItem, employee.fields.name.elemID).action).toBe('modify')
   })
 
-  it('should create plan with modification changes due to value change', async () => {
-    const pre = await coreMock.getAllElements([])
-    const post = _.cloneDeep(pre)
+  it('should create plan with modification changes due to value change', () => {
+    const post = _.cloneDeep(allElements)
     const employee = post[post.length - 1] as InstanceElement
     employee.value.name = 'SecondEmployee'
-    const plan = getPlan(pre, post)
+    const plan = getPlan(allElements, post)
     expect(plan.size).toBe(1)
     const planItem = getFirstPlanItem(plan)
     expect(planItem.groupKey).toBe(employee.elemID.getFullName())
@@ -109,13 +106,12 @@ describe('getPlan', () => {
     expect(planItem.items.size).toBe(1)
   })
   it('should create plan with modification change in primary element (no inner changes)',
-    async () => {
-      const pre = await coreMock.getAllElements([])
-      const post = _.cloneDeep(pre)
+    () => {
+      const post = _.cloneDeep(allElements)
       const employee = post[post.length - 2] as ObjectType
       employee.annotationTypes.new = BuiltinTypes.STRING
       employee.annotate({ new: 'new' })
-      const plan = getPlan(pre, post)
+      const plan = getPlan(allElements, post)
 
       expect(plan.size).toBe(1)
       const planItem = getFirstPlanItem(plan)

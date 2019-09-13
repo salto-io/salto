@@ -70,6 +70,7 @@ jobs:
       - run:
           name: Run E2E tests
           command: yarn run jest --forceExit --detectOpenHandles --reporters=default --reporters=jest-junit
+          no_output_timeout: 20m
           environment:
             RUN_E2E_TESTS: '1'
             JEST_JUNIT_OUTPUT: "reports/e2e/test-results.xml"

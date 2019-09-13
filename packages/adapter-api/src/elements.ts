@@ -421,19 +421,5 @@ export function isField(element: any): element is Field {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function isEqualElements(first?: any, second?: any): boolean {
-  if (!(first && second)) {
-    return false
-  }
-  // first.isEqual line appears multiple times since the compiler is not smart
-  // enough to understand the 'they are the same type' concept when using or
-  if (isPrimitiveType(first) && isPrimitiveType(second)) {
-    return first.isEqual(second)
-  } if (isObjectType(first) && isObjectType(second)) {
-    return first.isEqual(second)
-  } if (isField(first) && isField(second)) {
-    return first.isEqual(second)
-  } if (isInstanceElement(first) && isInstanceElement(second)) {
-    return first.isEqual(second)
-  }
-  return false
+  return _.isEqual(first, second)
 }

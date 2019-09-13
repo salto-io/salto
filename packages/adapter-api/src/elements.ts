@@ -159,8 +159,8 @@ export abstract class Type implements Element {
   }
 
   annotate(annotations: Values): void {
-    // Should we overide? I'm adding right now as it seems more
-    // usefull. (Roi R)
+    // Should we override? I'm adding right now as it seems more
+    // useful. (Roi R)
     Object.keys(annotations).forEach(key => {
       this.annotations[key] = annotations[key]
     })
@@ -346,16 +346,13 @@ export class ElementsRegistry {
   getElement(
     elemID: ElemID,
     type?: PrimitiveTypes|ObjectType,
-    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-  ): any {
-    // Using any here is ugly, but I can't find a better comiling solution. TODO - fix this
+  ): Value {
     const key = elemID.getFullName()
     let res: Element = this.registeredElements[key]
     if (!res) {
       if (type === undefined) {
         res = new ObjectType({ elemID })
-      /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-      } else if (type as any in PrimitiveTypes) {
+      } else if (type as Value in PrimitiveTypes) {
         res = new PrimitiveType({ elemID, primitive: type as PrimitiveTypes })
       } else {
         res = new InstanceElement(elemID, type as ObjectType, {})

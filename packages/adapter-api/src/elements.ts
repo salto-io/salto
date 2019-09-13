@@ -383,41 +383,31 @@ export const BuiltinTypes: Record<string, PrimitiveType> = {
   }),
 }
 
-
-/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-export function isElement(value: any): value is Element {
+export function isElement(value: Value): value is Element {
   return value && value.elemID && value.elemID instanceof ElemID
 }
 
-/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-export function isType(element: any): element is Type {
+export function isType(element: Value): element is Type {
   return element instanceof Type
 }
 
-/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-export function isObjectType(element: any): element is ObjectType {
+export function isObjectType(element: Value): element is ObjectType {
   return element instanceof ObjectType
 }
 
-/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-export function isInstanceElement(element: any): element is InstanceElement {
+export function isInstanceElement(element: Value): element is InstanceElement {
   return element instanceof InstanceElement
 }
 
-export function isPrimitiveType(
-  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-  element: any,
-): element is PrimitiveType {
+export function isPrimitiveType(element: Value): element is PrimitiveType {
   return element instanceof PrimitiveType
 }
 
-/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-export function isField(element: any): element is Field {
+export function isField(element: Value): element is Field {
   return element instanceof Field
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function isEqualElements(first?: any, second?: any): boolean {
+export function isEqualElements(first?: Value, second?: Value): boolean {
   if (!(first && second)) {
     return false
   }

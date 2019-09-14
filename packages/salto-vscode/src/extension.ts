@@ -1,8 +1,13 @@
 import * as vscode from 'vscode'
 import _ from 'lodash'
 import { initWorkspace, updateFile, SaltoWorkspace } from './salto/workspace'
+<<<<<<< HEAD
 import { provideWorkspaceCompletionItems } from './salto/completions/provider'
 import { getPositionContext, EditorPosition } from './salto/context'
+=======
+import { provideWorkspaceCompletionItems, LINE_ENDERS } from './salto/completions/provider'
+import { getPositionContext } from './salto/context'
+>>>>>>> added basic auto complete
 import { debugFunctions } from './salto/debug'
 import { provideWorkspaceDefinition } from './salto/definitions'
 
@@ -64,13 +69,11 @@ const createCompletionsProvider = (
     position: vscode.Position
   ) => {
     const workspace = workspaces[workspaceName]
-    if (workspace.lastUpdate) {
-      await workspace.lastUpdate
+    const getFullLine = (d: vscode.TextDocument, p: vscode.Position): string => {
+      const lineEnderReg = new RegExp(`[${LINE_ENDERS.join('')}]`)
+      const lines = d.lineAt(p).text.substr(0, p.character).split(lineEnderReg)
+      return _.trimStart(lines[lines.length - 1])
     }
-    const context = getPositionContext(workspace, doc.fileName, {
-      line: position.line + 1,
-      col: position.character,
-    })
     const line = doc.lineAt(position).text.substr(0, position.character)
     return provideWorkspaceCompletionItems(workspace, context, line).map(
       ({ label, reInvoke, insertText }) => {
@@ -102,12 +105,8 @@ export const activate = async (context: vscode.ExtensionContext): Promise<void> 
 
     const completionProvider = vscode.languages.registerCompletionItemProvider(
       { scheme: 'file', pattern: { base: rootPath, pattern: '*.bp' } },
-      createCompletionsProvider(name)
-    )
-
-    const definitionProvider = vscode.languages.registerDefinitionProvider(
-      { scheme: 'file', pattern: { base: rootPath, pattern: '*.bp' } },
-      createDefinitionsProvider(name)
+      createProvider(workspaces[name]),
+      ' '
     )
     context.subscriptions.push(
       completionProvider,

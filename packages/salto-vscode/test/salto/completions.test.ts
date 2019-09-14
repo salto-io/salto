@@ -275,7 +275,7 @@ describe('Test auto complete', () => {
       const exclude = [...types, ...kw, ...instances]
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })
-
+    
     it('should return restriction values', () => {
       const pos = { line: 104, col: 11 }
       const line = getLine(workspace, bpFile, pos)

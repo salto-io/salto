@@ -53,7 +53,7 @@ const getLineType = (context: PositionContext, lineTokens: string[]): LineType =
   }
   // If we reached this point we are in global scope, which means that
   // either we are in one of the following:
-  // - a partial type def line
+\  // - a partial type def line
   if (lineTokens[0] === 'type') {
     return 'type'
   }

@@ -1,7 +1,9 @@
 import * as vscode from 'vscode'
 import _ from 'lodash'
 import { initWorkspace, updateFile, SaltoWorkspace } from './salto/workspace'
-import { debugFunctions, createProvider } from './salto/debug'
+import { provideWorkspaceCompletionItems, LINE_ENDERS } from './salto/completions/provider'
+import { getPositionContext } from './salto/context'
+import { debugFunctions } from './salto/debug'
 
 /**
  * This files act as a bridge between VSC and the salto specific functionality.
@@ -35,6 +37,37 @@ const onDidChangeConfiguration = async (
   )
 }
 
+const createProvider = (
+  workspace: SaltoWorkspace
+): vscode.CompletionItemProvider => ({
+  provideCompletionItems: (
+    doc: vscode.TextDocument,
+    position: vscode.Position
+  ) => {
+    const getFullLine = (d: vscode.TextDocument, p: vscode.Position): string => {
+      const lineEnderReg = new RegExp(`[${LINE_ENDERS.join('')}]`)
+      const lines = d.lineAt(p).text.substr(0, p.character).split(lineEnderReg)
+      return _.trimStart(lines[lines.length - 1])
+    }
+    const context = getPositionContext(workspace, doc.fileName, {
+      line: position.line + 1,
+      col: position.character,
+    })
+    const line = getFullLine(doc, position)
+    return provideWorkspaceCompletionItems(workspace, context, line).map(c => {
+      const { label, reInvoke, insertText } = c
+      const item = new vscode.CompletionItem(label)
+      if (reInvoke) {
+        item.insertText = insertText
+        item.command = {
+          command: 'editor.action.triggerSuggest',
+          title: 'Re-trigger completions...',
+        }
+      }
+      return item
+    })
+  },
+})
 
 
 export const activate = async (context: vscode.ExtensionContext): Promise<void> => {
@@ -50,9 +83,9 @@ export const activate = async (context: vscode.ExtensionContext): Promise<void> 
     )
 
     const completionProvider = vscode.languages.registerCompletionItemProvider(
-      { scheme: 'file', pattern: {base: rootPath, pattern: "*.bp"}},
+      { scheme: 'file', pattern: { base: rootPath, pattern: '*.bp' } },
       createProvider(workspaces[name]),
-      "_"
+      ' '
     )
     context.subscriptions.push(
       completionProvider,

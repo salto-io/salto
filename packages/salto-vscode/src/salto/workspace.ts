@@ -50,7 +50,19 @@ export const updateFile = async (
   content: string
 ): Promise<SaltoWorkspace> => {
   const bp = { filename, buffer: Buffer.from(content, 'utf8') }
-  const parseResult = (await parseBlueprints([bp]))[0]
-  workspace.parsedBlueprints[filename] = parseResult
-  return updateWorkspace(workspace)
+  let hasErrors = false
+  try {
+    const parseResult = (await parseBlueprints([bp]))[0]
+    const currentBlueprint = workspace.parsedBlueprints[filename]
+    hasErrors = parseResult.errors.length > 0
+    currentBlueprint.errors = parseResult.errors
+    if (!hasErrors) {
+      currentBlueprint.elements = parseResult.elements
+      currentBlueprint.sourceMap = parseResult.sourceMap
+    }
+    workspace.parsedBlueprints[filename] = parseResult
+  } catch (e) {
+    hasErrors = true
+  }
+  return hasErrors ? workspace : updateWorkspace(workspace)
 }

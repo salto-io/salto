@@ -1,0 +1,104 @@
+type vs_str is string {
+    annotations {
+        string label {
+
+        }
+
+        boolean _required {
+
+        }
+    }
+}
+
+type vs_num is number {
+    annotations {
+        string label {
+
+        }
+        number max_value {
+
+        }
+    }
+}
+
+type vs_bool is number {
+    annotations {
+        string label {
+
+        }
+    }
+}
+
+type vs_person {
+    vs_str first_name {
+        label = "First Name"
+        _required = true  
+    }
+    vs_str last_name {
+        label = "Last Name"
+    }
+    vs_num age {
+        label = "Age"
+        max_value = 99
+    }
+}
+
+type vs_car {
+    vs_person owner {
+
+    }
+    vs_str model {
+        label = "Car Model"
+        _required = false
+    }
+    vs_num year {
+        label = "Year"
+        max_value = 2020
+    }
+}
+
+type vs_loan {
+    vs_car propety {
+
+    }
+    vs_person loaner {
+    
+    }
+    vs_str reason {
+        label = "Why is the loan taking place"
+    }
+    vs_bool weekends_only {
+        label = "Is the car loaned only in weekends"
+    }
+}
+
+vs_person lavi {
+    first_name = "Lavi"
+    last_name = "Ronn Sharir"
+    age = 4
+}
+
+vs_person evyatar {
+    first_name = "Evyatar"
+    last_name = "Ronn Sharir"
+    age = 2
+}
+
+vs_loan weekend_car {
+    reason = "She likes me. I brought her her first grandson."
+    loaner = {
+        first_name = "Roi"
+        last_name = "Ronn"
+        age = 35
+    }
+    propety = {
+        owner = {
+            first_name = "Ruth"
+            last_name = "Ronn"
+            age = 61
+        }
+        model = "Honda Jazz"
+        year = 2016
+    }
+    weekends_only = true
+}

@@ -23,7 +23,7 @@ interface NamedRange {
   name: string
 }
 
-interface ContextReference {
+export interface ContextReference {
   element: Element
   path: string
 }

@@ -1,7 +1,7 @@
 import * as vscode from 'vscode'
 import _ from 'lodash'
 import { initWorkspace, updateFile, SaltoWorkspace } from './salto/workspace'
-import { provideWorkspaceCompletionItems } from './salto/completions/provider'
+import { provideWorkspaceCompletionItems, LINE_ENDERS } from './salto/completions/provider'
 import { getPositionContext } from './salto/context'
 import { debugFunctions } from './salto/debug'
 
@@ -48,10 +48,11 @@ const createProvider = (
     position: vscode.Position
   ) => {
     const workspace = workspaces[workspaceName]
-    const context = getPositionContext(workspace, doc.fileName, {
-      line: position.line + 1,
-      col: position.character,
-    })
+    const getFullLine = (d: vscode.TextDocument, p: vscode.Position): string => {
+      const lineEnderReg = new RegExp(`[${LINE_ENDERS.join('')}]`)
+      const lines = d.lineAt(p).text.substr(0, p.character).split(lineEnderReg)
+      return _.trimStart(lines[lines.length - 1])
+    }
     const line = doc.lineAt(position).text.substr(0, position.character)
     return provideWorkspaceCompletionItems(workspace, context, line).map(
       ({ label, reInvoke, insertText }) => {
@@ -83,7 +84,7 @@ export const activate = async (context: vscode.ExtensionContext): Promise<void> 
 
     const completionProvider = vscode.languages.registerCompletionItemProvider(
       { scheme: 'file', pattern: { base: rootPath, pattern: '*.bp' } },
-      createProvider(name),
+      createProvider(workspaces[name]),
       ' '
     )
     context.subscriptions.push(

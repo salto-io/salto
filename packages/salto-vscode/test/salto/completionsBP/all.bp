@@ -121,3 +121,22 @@ type vs_loan {
         }
     }
 }
+
+vs_loan not_a_loan {
+    nothing {
+        attr = "value"
+    }    
+}
+
+type vs_loan {
+    vs_str risk {
+        _restriction = {
+            values = [
+                "accident",
+                "ticket",
+                "to much fun"
+            ]
+        }
+    }
+}
+

@@ -18,7 +18,6 @@ export interface Values {
 export type FieldMap = Record<string, Field>
 type TypeMap = Record<string, Type>
 
-
 export class ElemID {
   static readonly NAMESPACE_SEPERATOR = '_'
   static readonly CONFIG_INSTANCE_NAME = '_config'
@@ -74,8 +73,8 @@ export class Field implements Element {
 
   isEqual(other: Field): boolean {
     return _.isEqual(this.type.elemID, other.type.elemID)
-           && _.isEqual(this.annotations, other.annotations)
-           && this.isList === other.isList
+      && _.isEqual(this.annotations, other.annotations)
+      && this.isList === other.isList
   }
 
   /**
@@ -104,7 +103,6 @@ export abstract class Type implements Element {
   public static DEFAULT = '_default'
   public static REQUIRED = '_required'
   public static RESTRICTION = '_restriction'
-
 
   readonly elemID: ElemID
   path?: string[]
@@ -147,7 +145,7 @@ export abstract class Type implements Element {
 
   isEqual(other: Type): boolean {
     return _.isEqual(this.elemID, other.elemID)
-          && this.isAnnotationsEqual(other)
+      && this.isAnnotationsEqual(other)
   }
 
   isAnnotationsEqual(other: Type): boolean {
@@ -155,12 +153,12 @@ export abstract class Type implements Element {
       _.mapValues(this.annotationTypes, a => a.elemID),
       _.mapValues(other.annotationTypes, a => a.elemID)
     )
-          && _.isEqual(this.annotations, other.annotations)
+      && _.isEqual(this.annotations, other.annotations)
   }
 
   annotate(annotations: Values): void {
-    // Should we overide? I'm adding right now as it seems more
-    // usefull. (Roi R)
+    // Should we override? I'm adding right now as it seems more
+    // useful. (Roi R)
     Object.keys(annotations).forEach(key => {
       this.annotations[key] = annotations[key]
     })
@@ -196,7 +194,7 @@ export class PrimitiveType extends Type {
 
   isEqual(other: PrimitiveType): boolean {
     return super.isEqual(other)
-           && this.primitive === other.primitive
+      && this.primitive === other.primitive
   }
 
   /**
@@ -220,20 +218,24 @@ export class PrimitiveType extends Type {
  */
 export class ObjectType extends Type {
   fields: FieldMap
+  isSettings: boolean
 
   constructor({
     elemID,
     fields = {},
     annotationTypes = {},
     annotations = {},
+    isSettings = false,
   }: {
     elemID: ElemID
     fields?: FieldMap
     annotationTypes?: TypeMap
-      annotations?: Values
+    annotations?: Values
+    isSettings?: boolean
   }) {
     super({ elemID, annotationTypes, annotations })
     this.fields = fields
+    this.isSettings = isSettings
   }
 
   private cloneFields(): FieldMap {
@@ -246,11 +248,12 @@ export class ObjectType extends Type {
 
   isEqual(other: ObjectType): boolean {
     return super.isEqual(other)
-          && _.isEqual(
-            _.mapValues(this.fields, f => f.elemID),
-            _.mapValues(other.fields, f => f.elemID)
-          )
-          && _.every(Object.keys(this.fields).map(n => this.fields[n].isEqual(other.fields[n])))
+      && _.isEqual(
+        _.mapValues(this.fields, f => f.elemID),
+        _.mapValues(other.fields, f => f.elemID)
+      )
+      && _.isEqual(this.isSettings, other.isSettings)
+      && _.every(Object.keys(this.fields).map(n => this.fields[n].isEqual(other.fields[n])))
   }
 
   /**
@@ -261,12 +264,14 @@ export class ObjectType extends Type {
     const clonedAnnotationTypes = this.cloneAnnotationTypes()
     const clonedAnnotations = this.cloneAnnotations()
     const clonedFields = this.cloneFields()
+    const { isSettings } = this
 
     const res: ObjectType = new ObjectType({
       elemID: new ElemID(this.elemID.adapter, ...this.elemID.nameParts),
       fields: clonedFields,
       annotationTypes: clonedAnnotationTypes,
       annotations: clonedAnnotations,
+      isSettings,
     })
 
     res.annotate(additionalAnnotations)
@@ -303,7 +308,7 @@ export class InstanceElement implements Element {
 
   isEqual(other: InstanceElement): boolean {
     return _.isEqual(this.type.elemID, other.type.elemID)
-           && _.isEqual(this.value, other.value)
+      && _.isEqual(this.value, other.value)
   }
 
   /**
@@ -354,7 +359,7 @@ export class ElementsRegistry {
     if (!res) {
       if (type === undefined) {
         res = new ObjectType({ elemID })
-      /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+        /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
       } else if (type as any in PrimitiveTypes) {
         res = new PrimitiveType({ elemID, primitive: type as PrimitiveTypes })
       } else {

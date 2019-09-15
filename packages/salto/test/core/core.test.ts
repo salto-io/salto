@@ -43,6 +43,7 @@ const mockDiscover = jest.fn(() => {
 })
 
 const mockGetInstancesOfType = jest.fn(() => Promise.resolve([]))
+const mockImportInstancesOfType = jest.fn()
 
 const mockAdapterCreator: AdapterCreator = {
   create: () => ({
@@ -51,6 +52,7 @@ const mockAdapterCreator: AdapterCreator = {
     remove: mockRemove,
     update: mockUpdate,
     getInstancesOfType: mockGetInstancesOfType,
+    importInstancesOfType: mockImportInstancesOfType,
   }),
   configType: mockConfigType,
 }

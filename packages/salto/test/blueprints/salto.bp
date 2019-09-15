@@ -29,3 +29,7 @@ type salesforce_test {
 	  ]
 	}
 }
+
+settings salesforce_settings {
+  metadata_type = "Settings"
+}

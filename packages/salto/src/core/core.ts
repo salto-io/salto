@@ -2,6 +2,7 @@ import _ from 'lodash'
 import {
   ObjectType, Element, getChangeElement, Adapter, InstanceElement,
 } from 'adapter-api'
+import { Stream } from 'stream'
 import State from '../state/state'
 import { mergeElements } from './merger'
 import validateElements from './validator'
@@ -73,4 +74,14 @@ AsyncIterable<InstanceElement[]> => {
     throw new Error(`Failed to find the adapter for the given type: ${type.elemID.getFullName()}`)
   }
   return adapter.getInstancesOfType(type)
+}
+
+export const importInstancesOfType = async (
+  type: ObjectType, csvFile: Stream, adapters: Record<string, Adapter>):
+Promise<void> => {
+  const adapter = adapters[type.elemID.adapter]
+  if (!adapter) {
+    throw new Error(`Failed to find the adapter for the given type: ${type.elemID.getFullName()}`)
+  }
+  await adapter.importInstancesOfType(type, csvFile)
 }

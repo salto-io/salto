@@ -131,7 +131,7 @@ describe('Test auto complete', () => {
       const ctx = getPositionContext(workspace, bpFile, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
       const include = ['update first_name', 'update last_name', 'update age']
-      const exclude = ['update owner', ...kw, ...instances]
+      const exclude = ['update car_owner', ...kw, ...instances]
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })
 
@@ -223,7 +223,7 @@ describe('Test auto complete', () => {
       const ctx = getPositionContext(workspace, bpFile, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
       const include = ['loaner', 'reason', 'propety', 'weekends_only']
-      const exclude = ['owner', 'model', 'year', ...types, ...kw, ...instances]
+      const exclude = ['car_owner', 'model', 'year', ...types, ...kw, ...instances]
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })
 
@@ -232,7 +232,7 @@ describe('Test auto complete', () => {
       const line = getLine(workspace, bpFile, pos)
       const ctx = getPositionContext(workspace, bpFile, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
-      const include = ['owner', 'model', 'year']
+      const include = ['car_owner', 'model', 'year']
       const exclude = ['loaner', 'reason', 'propety', 'weekends_only', ...types, ...instances]
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })
@@ -258,7 +258,7 @@ describe('Test auto complete', () => {
     })
 
     it('should give value as 3rd token - nested', () => {
-      const pos = { line: 95, col: 16 }
+      const pos = { line: 95, col: 20 }
       const line = getLine(workspace, bpFile, pos)
       const ctx = getPositionContext(workspace, bpFile, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
@@ -275,6 +275,16 @@ describe('Test auto complete', () => {
       const include = ['""']
       const exclude = [...types, ...kw, ...instances]
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
+    })
+
+    it ('should return restriction values', () => {
+      const pos = { line: 104, col: 11 }
+      const line = getLine(workspace, bpFile, pos)
+      const ctx = getPositionContext(workspace, bpFile, pos)
+      const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
+      const include = ['"ticket"', '"accident"', '"to much fun"']
+      const exclude = [...types, ...kw, ...instances]
+      expect(checkSuggestions(suggestions, include, exclude)).toBe(true)      
     })
   })
 })

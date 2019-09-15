@@ -1,4 +1,6 @@
 import _ from 'lodash'
+import * as fs from 'async-file'
+
 import { initWorkspace, updateFile } from '../../src/salto/workspace'
 
 describe('TEST', () => {
@@ -36,6 +38,18 @@ describe('TEST', () => {
     const updatedWorkspace = await updateFile(workspace, extraBP, '')
     expect(updatedWorkspace.mergedElements).toBeDefined()
     expect(updatedWorkspace.mergedElements && updatedWorkspace.mergedElements.length).toBe(3)
+    expect(_.keys(updatedWorkspace.parsedBlueprints).length).toBe(3)
+  })
+
+  it('should maintain status on error', async () => {
+    const workspace = await initWorkspace(baseBPDir, [], [extraBP])
+    const errorContent = await fs.readFile(errorBP)
+    expect(workspace.mergedElements).toBeDefined()
+    expect(workspace.mergedElements && workspace.mergedElements.length).toBe(4)
+    expect(_.keys(workspace.parsedBlueprints).length).toBe(3)
+    const updatedWorkspace = await updateFile(workspace, extraBP, errorContent)
+    expect(updatedWorkspace.mergedElements).toBeDefined()
+    expect(updatedWorkspace.mergedElements && updatedWorkspace.mergedElements.length).toBe(4)
     expect(_.keys(updatedWorkspace.parsedBlueprints).length).toBe(3)
   })
 })

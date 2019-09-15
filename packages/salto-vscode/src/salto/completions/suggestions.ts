@@ -54,8 +54,8 @@ export const attrSuggestions = (refType: ObjectType, path: string): Suggestions 
 }
 
 export const attrValueSuggestion = (refElem: Type|Field, valueType: Type): Suggestions => {
-  const restrictions = refElem.getAnnotationsValues()[Type.RESTRICTION]
-             || valueType.getAnnotationsValues()[Type.RESTRICTION]
+  const restrictions = refElem.annotations[Type.RESTRICTION]
+             || valueType.annotations[Type.RESTRICTION]
   if (restrictions && restrictions.values) {
     return restrictions.values.map(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -110,10 +110,10 @@ export const annoSuggestions = (params: SuggestionsParams): Suggestions => {
   if (!(params.ref && isField(params.ref.element))) return []
 
   if (!params.ref.path) {
-    return _.keys(params.ref.element.type.annotations)
+    return _.keys(params.ref.element.type.annotationTypes)
   }
   const { annoName, annoType } = getAnnotationKeyFromPath(
-    params.ref.element.type.annotations,
+    params.ref.element.type.annotationTypes,
     params.ref.path
   )
   if (annoName && isObjectType(annoType)) {
@@ -127,7 +127,7 @@ export const annoSuggestions = (params: SuggestionsParams): Suggestions => {
 export const annoValueSuggestions = (params: SuggestionsParams): Suggestions => {
   if (!(params.ref && isField(params.ref.element))) return []
   const annoName = params.tokens[0]
-  const annoType = params.ref.element.type.annotations[annoName]
+  const annoType = params.ref.element.type.annotationTypes[annoName]
   if (annoType && params.ref.path) {
     const annoPath = params.ref.path.slice(annoName.length)
     const attrField = getFieldFromPath(annoType, annoPath.split(' '))

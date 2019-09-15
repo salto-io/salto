@@ -44,7 +44,7 @@ type vs_person {
 }
 
 type vs_car {
-    vs_person owner {
+    vs_person car_owner {
 
     }
     vs_str model {
@@ -92,7 +92,7 @@ vs_loan weekend_car {
         age = 35
     }
     propety = {
-        owner = {
+        car_owner = {
             first_name = "Ruth"
             last_name = "Ronn"
             age = 61
@@ -101,4 +101,24 @@ vs_loan weekend_car {
         year = 2016
     }
     weekends_only = true
+    risk = "ticket"
 }
+
+vs_loan not_a_loan {
+    nothing {
+        attr = "value"
+    }    
+}
+
+type vs_loan {
+    vs_str risk {
+        _restriction = {
+            values = [
+                "accident",
+                "ticket",
+                "to much fun"
+            ]
+        }
+    }
+}
+

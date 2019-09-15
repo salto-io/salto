@@ -5,11 +5,13 @@ import { ParsedCliInput, CliCommand, CliOutput } from '../types'
 import { Blueprint } from '../../core/blueprint'
 import * as bf from '../filters/blueprints'
 import { getConfigFromUser } from '../callbacks'
+import Prompts from '../prompts'
 
-const command = (blueprints: Blueprint[], inputPath: string, typeName: string): CliCommand => ({
+export const command = (blueprints: Blueprint[], inputPath: string, typeName: string, { stdout }: CliOutput): CliCommand => ({
   async execute(): Promise<void> {
     if (!await asyncfile.exists(inputPath)) {
-      throw new Error('Could not find the input file. Make sure the path you provided is correct.')
+      stdout.write(Prompts.IMPORT_COULD_NOT_FIND_FILE)
+      return
     }
     const csvFileIn = asyncfile.createReadStream(inputPath)
     await importFromCsvFile(
@@ -18,6 +20,9 @@ const command = (blueprints: Blueprint[], inputPath: string, typeName: string): 
       blueprints,
       getConfigFromUser
     )
+    // TODO: Return here the full report that contains the numbers of successful and failed rows.
+    // Also: print the errors of the erronous rows to a log file and print the path of the log.
+    stdout.write(Prompts.IMPORT_FINISHED_SUCCESSFULLY)
   },
 })
 
@@ -45,8 +50,8 @@ const builder = createCommandBuilder({
 
   filters: [bf.optionalFilter],
 
-  async build(input: DiscoverParsedCliInput, _output: CliOutput) {
-    return command(input.blueprints, input.args.inputPath, input.args.typeName)
+  async build(input: DiscoverParsedCliInput, output: CliOutput) {
+    return command(input.blueprints, input.args.inputPath, input.args.typeName, output)
   },
 })
 

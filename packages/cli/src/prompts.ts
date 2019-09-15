@@ -57,4 +57,7 @@ output when invoking the apply command.
 
   public static readonly DID_YOU_MEAN = 'Did you mean'
   public static readonly DESCRIBE_NOT_FOUND = 'Unknown element type.'
+
+  public static readonly IMPORT_COULD_NOT_FIND_FILE = 'Could not find the input file. Make sure the path you provided is correct.'
+  public static readonly IMPORT_FINISHED_SUCCESSFULLY = 'Finished importing records from CSV file.'
 }

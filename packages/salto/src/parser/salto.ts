@@ -105,9 +105,14 @@ export default class Parser {
       .pop() || {}
   }
 
-  private static parseType(typeBlock: HCLBlock, sourceMap: SourceMap): Type {
+  private static parseType(typeBlock: HCLBlock, sourceMap: SourceMap, isSettings = false): Type {
     const [typeName] = typeBlock.labels
-    const typeObj = new ObjectType({ elemID: this.getElemID(typeName) })
+    const typeObj = new ObjectType(
+      {
+        elemID: this.getElemID(typeName),
+        isSettings,
+      }
+    )
     this.addToSourceMap(sourceMap, typeObj.elemID, typeBlock)
 
     typeObj.annotate(this.getAttrValues(typeBlock, sourceMap, typeObj.elemID))
@@ -125,7 +130,12 @@ export default class Parser {
         const field = new Field(
           typeObj.elemID,
           fieldName,
-          new ObjectType({ elemID: this.getElemID(fieldTypeName) }),
+          new ObjectType(
+            {
+              elemID: this.getElemID(fieldTypeName),
+              isSettings: block.type === Keywords.SETTINGS_DEFINITION,
+            }
+          ),
           this.getAttrValues(block, sourceMap, typeObj.elemID.createNestedID(fieldName)),
           isList,
         )
@@ -196,6 +206,9 @@ export default class Parser {
       }
       if (value.type === Keywords.TYPE_DEFINITION) {
         return this.parseType(value, sourceMap)
+      }
+      if (value.type === Keywords.SETTINGS_DEFINITION) {
+        return this.parseType(value, sourceMap, true)
       }
       if (value.labels.length === 0 || value.labels.length === 1) {
         return this.parseInstance(value, sourceMap)

@@ -1,12 +1,12 @@
-import * as coreMock from '../../core/mocks/core'
-import { command } from '../../../src/cli/commands/import'
-import { MockWriteStream } from '../mocks'
 import { InstanceElement, ObjectType } from 'adapter-api'
 import { Blueprint } from 'src/core/blueprint'
 import { Stream } from 'stream'
-import Prompts from '../../../src/cli/prompts'
 import * as asyncfile from 'async-file'
 import path from 'path'
+import * as coreMock from '../../core/mocks/core'
+import { command } from '../../../src/cli/commands/import'
+import { MockWriteStream } from '../mocks'
+import Prompts from '../../../src/cli/prompts'
 
 const mockImportFromCsv = coreMock.importFromCsvFile
 jest.mock('../../../src/core/commands', () => ({
@@ -32,7 +32,7 @@ describe('import command', () => {
     await command([], inputPath, '', cliOutput).execute()
     expect(cliOutput.stdout.content).toMatch(Prompts.IMPORT_FINISHED_SUCCESSFULLY)
   })
-  
+
   it('should fail if given a wring path for a CSV file', async () => {
     const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
     await command([], '', '', cliOutput).execute()

@@ -277,14 +277,14 @@ describe('Test auto complete', () => {
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })
 
-    it ('should return restriction values', () => {
+    it('should return restriction values', () => {
       const pos = { line: 104, col: 11 }
       const line = getLine(workspace, bpFile, pos)
       const ctx = getPositionContext(workspace, bpFile, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
       const include = ['"ticket"', '"accident"', '"to much fun"']
       const exclude = [...types, ...kw, ...instances]
-      expect(checkSuggestions(suggestions, include, exclude)).toBe(true)      
+      expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })
   })
 })

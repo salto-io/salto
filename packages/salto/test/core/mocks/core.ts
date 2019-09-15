@@ -5,10 +5,10 @@ import {
 import wu from 'wu'
 import _ from 'lodash'
 import { GroupedNodeMap } from '@salto/dag'
+import { Stream } from 'stream'
 import { Blueprint } from '../../../src/core/blueprint'
 import { Plan, PlanItem, PlanItemId } from '../../../src/core/plan'
 import { SearchResult } from '../../../src/core/search'
-import { Stream } from 'stream'
 
 export const getAllElements = async (
   _blueprints: Blueprint[] = []
@@ -250,6 +250,4 @@ export const importFromCsvFile = async (
   _csvFile: Stream,
   _blueprints: Blueprint[],
   _fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
-): Promise<void> => {
-  return
-}
+): Promise<void> => {}

@@ -60,7 +60,7 @@ describe('When running import from a CSV file', () => {
 
   beforeEach(async () => {
     await fs.delete(discoverOutputDir)
-    await fs.delete(statePath)    
+    await fs.delete(statePath)
   })
 
   jest.setTimeout(5 * 60 * 1000)
@@ -69,14 +69,14 @@ describe('When running import from a CSV file', () => {
     const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
     await discover(await loadBlueprints([]), discoverOutputDir).execute()
     await importCommand(await loadBlueprints([], discoverOutputDir), importFilePath,
-    sfLeadObjectName, cliOutput).execute()
+      sfLeadObjectName, cliOutput).execute()
     expect(cliOutput.stdout.content).toMatch(Prompts.IMPORT_FINISHED_SUCCESSFULLY)
   })
 
   it('should fail if discover was not run beforehand', async () => {
     const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
     const command = importCommand(await loadBlueprints([], discoverOutputDir), importFilePath,
-    sfLeadObjectName, cliOutput)
+      sfLeadObjectName, cliOutput)
     await expect(command.execute()).rejects
       .toThrow(`Couldn't find the type you are looking for: ${sfLeadObjectName}. Have you run salto discover yet?`)
   })

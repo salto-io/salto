@@ -7,7 +7,10 @@ import * as bf from '../filters/blueprints'
 import { getConfigFromUser } from '../callbacks'
 import Prompts from '../prompts'
 
-export const command = (blueprints: Blueprint[], inputPath: string, typeName: string, { stdout }: CliOutput): CliCommand => ({
+export const command = (blueprints: Blueprint[],
+  inputPath: string,
+  typeName: string,
+  { stdout }: CliOutput): CliCommand => ({
   async execute(): Promise<void> {
     if (!await asyncfile.exists(inputPath)) {
       stdout.write(Prompts.IMPORT_COULD_NOT_FIND_FILE)

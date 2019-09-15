@@ -1,12 +1,23 @@
-import * as commands from '../commands'
+import asyncfile from 'async-file'
+import { importFromCsvFile } from '../../core/commands'
 import { createCommandBuilder } from '../builder'
 import { ParsedCliInput, CliCommand, CliOutput } from '../types'
-import { Blueprint } from '../../blueprints/blueprint'
+import { Blueprint } from '../../core/blueprint'
 import * as bf from '../filters/blueprints'
+import { getConfigFromUser } from '../callbacks'
 
 const command = (blueprints: Blueprint[], inputPath: string, typeName: string): CliCommand => ({
   async execute(): Promise<void> {
-    return commands.importBase(typeName, inputPath, blueprints)
+    if (!await asyncfile.exists(inputPath)) {
+      throw new Error('Could not find the input file. Make sure the path you provided is correct.')
+    }
+    const csvFileIn = asyncfile.createReadStream(inputPath)
+    await importFromCsvFile(
+      typeName,
+      csvFileIn,
+      blueprints,
+      getConfigFromUser
+    )
   },
 })
 

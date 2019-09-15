@@ -332,6 +332,14 @@ describe('Test elements.ts', () => {
       expect(isEqualElements(ot, _.cloneDeep(ot))).toBeTruthy()
     })
 
+    it('should identify different object types', () => {
+      const otDiff = ot.clone()
+      expect(isEqualElements(ot, otDiff)).toBeTruthy()
+
+      otDiff.isSettings = true
+      expect(isEqualElements(ot, otDiff)).toBeFalsy()
+    })
+
     it('should identify equal fields', () => {
       expect(isEqualElements(strField, _.cloneDeep(strField))).toBeTruthy()
     })

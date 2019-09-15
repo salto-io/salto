@@ -2,14 +2,20 @@ import path from 'path'
 import * as fs from 'async-file'
 import { InstanceElement } from 'adapter-api'
 import { loadBlueprints } from '../src/core/blueprint'
+import { MockWriteStream } from '../test/cli/mocks'
 import { command as discover } from '../src/cli/commands/discover'
 import { command as exportCommand } from '../src/cli/commands/export'
+import { command as importCommand } from '../src/cli/commands/import'
 import State from '../src/state/state'
 import adapterConfigs from './adapter_configs'
+import Prompts from '../src/cli/prompts'
 
 const sfLeadObjectName = 'salesforce_lead'
 
 const mockGetConfigType = (): InstanceElement => adapterConfigs.salesforce()
+const homePath = process.env.HOME || process.env.HOMEPATH || process.env.USERPROFILE
+const { statePath } = new State()
+const discoverOutputDir = `${homePath}/BP/test_discover`
 
 // Attempting to access the functions on run time without the mock implementation, or
 // omitting the mock prefix in their names (YES I KNOW) will result in a runtime exception
@@ -18,11 +24,8 @@ jest.mock('../src/cli/callbacks', () => ({
   getConfigFromUser: jest.fn().mockImplementation(() => mockGetConfigType()),
 }))
 
-describe('Test import-export commands e2e', () => {
+describe('When running export', () => {
   const pathExists = async (p: string): Promise<boolean> => fs.exists(p)
-  const homePath = process.env.HOME || process.env.HOMEPATH || process.env.USERPROFILE
-  const { statePath } = new State()
-  const discoverOutputDir = `${homePath}/BP/test_discover`
   const exportOutputDir = `${homePath}/tmp/export`
   const exportFile = 'export_test.csv'
 
@@ -34,7 +37,7 @@ describe('Test import-export commands e2e', () => {
 
   jest.setTimeout(5 * 60 * 1000)
 
-  it('should run export and save the data in csv file after discover', async () => {
+  it('should save the data in csv file after discover', async () => {
     await discover(await loadBlueprints([]), discoverOutputDir).execute()
     const exportOutputFullPath = path.join(exportOutputDir, exportFile)
     await exportCommand(await loadBlueprints([], discoverOutputDir), sfLeadObjectName,
@@ -42,12 +45,39 @@ describe('Test import-export commands e2e', () => {
     expect(await pathExists(exportOutputFullPath)).toBe(true)
   })
 
-  it('should fail export if discover was not run beforehand', async () => {
+  it('should fail if discover was not run beforehand', async () => {
     const exportOutputFullPath = path.join(exportOutputDir, exportFile)
     const command = exportCommand(await loadBlueprints([], discoverOutputDir), sfLeadObjectName,
       exportOutputFullPath)
     await expect(command.execute()).rejects
       .toThrow(`Couldn't find the type you are looking for: ${sfLeadObjectName}. Have you run salto discover yet?`)
     expect(await pathExists(exportOutputFullPath)).toBe(false)
+  })
+})
+
+describe('When running import from a CSV file', () => {
+  const importFilePath = `${__dirname}/../../e2e_test/CSV/import.csv`
+
+  beforeEach(async () => {
+    await fs.delete(discoverOutputDir)
+    await fs.delete(statePath)    
+  })
+
+  jest.setTimeout(5 * 60 * 1000)
+
+  it('should succeed after discover', async () => {
+    const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
+    await discover(await loadBlueprints([]), discoverOutputDir).execute()
+    await importCommand(await loadBlueprints([], discoverOutputDir), importFilePath,
+    sfLeadObjectName, cliOutput).execute()
+    expect(cliOutput.stdout.content).toMatch(Prompts.IMPORT_FINISHED_SUCCESSFULLY)
+  })
+
+  it('should fail if discover was not run beforehand', async () => {
+    const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
+    const command = importCommand(await loadBlueprints([], discoverOutputDir), importFilePath,
+    sfLeadObjectName, cliOutput)
+    await expect(command.execute()).rejects
+      .toThrow(`Couldn't find the type you are looking for: ${sfLeadObjectName}. Have you run salto discover yet?`)
   })
 })

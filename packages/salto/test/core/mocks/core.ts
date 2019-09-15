@@ -8,6 +8,7 @@ import { GroupedNodeMap } from '@salto/dag'
 import { Blueprint } from '../../../src/core/blueprint'
 import { Plan, PlanItem, PlanItemId } from '../../../src/core/plan'
 import { SearchResult } from '../../../src/core/search'
+import { Stream } from 'stream'
 
 export const getAllElements = async (
   _blueprints: Blueprint[] = []
@@ -243,3 +244,12 @@ export const exportToCsv = async (
   _blueprints: Blueprint[],
   _fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
 ): Promise<AsyncIterable<InstanceElement[]>> => mockIterator()
+
+export const importFromCsvFile = async (
+  _typeId: string,
+  _csvFile: Stream,
+  _blueprints: Blueprint[],
+  _fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
+): Promise<void> => {
+  return
+}

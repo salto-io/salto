@@ -6,8 +6,9 @@ import JSZip from 'jszip'
 
 import {
   Type, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values, Value,
-  Field as TypeField, BuiltinTypes, Element, isInstanceElement, InstanceElement,
+  Field as TypeField, BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType,
 } from 'adapter-api'
+import { collections } from '@salto/lowerdash'
 import { CustomObject, CustomField } from './client/types'
 import { API_VERSION, METADATA_NAMESPACE } from './client/client'
 import {
@@ -16,6 +17,8 @@ import {
   METADATA_TYPE, FIELD_ANNOTATIONS, SALESFORCE_CUSTOM_SUFFIX,
   MAX_METADATA_RESTRICTION_VALUES, SETTINGS_METADATA_TYPE,
 } from './constants'
+
+const { makeArray } = collections.array
 
 const capitalize = (s: string): string => {
   if (typeof s !== 'string') return ''
@@ -260,9 +263,9 @@ export const toCustomObject = (element: ObjectType, includeFields = true): Custo
   )
 
 export const getValueTypeFieldElement = (parentID: ElemID, field: ValueTypeField,
-  knonwTypes: Map<string, Type>): TypeField => {
+  knownTypes: Map<string, Type>): TypeField => {
   const bpFieldName = bpCase(field.name)
-  const bpFieldType = knonwTypes.get(field.soapType) || Types.get(field.soapType, false)
+  const bpFieldType = knownTypes.get(field.soapType) || Types.get(field.soapType, false)
   // mark required as false until SALTO-45 will be resolved
   const annotations: Values = { [Type.REQUIRED]: false }
 
@@ -466,4 +469,54 @@ export const toInstanceElements = (type: ObjectType, queryResult: QueryResult<Va
     type,
     res
   ))
+}
+
+export const createMetadataTypeElements = (
+  objectName: string,
+  fields: ValueTypeField[],
+  knownTypes: Map<string, Type>,
+  isSubtype = false,
+): Type[] => {
+  if (knownTypes.has(objectName)) {
+    // Already created this type, no new types to return here
+    return []
+  }
+  const element = Types.get(objectName, false) as ObjectType
+  knownTypes.set(objectName, element)
+  element.annotate({ [METADATA_TYPE]: objectName })
+  element.path = ['types', ...(isSubtype ? ['subtypes'] : []), element.elemID.name]
+  if (!fields) {
+    return [element]
+  }
+
+  // We need to create embedded types BEFORE creating this element's fields
+  // in order to make sure all internal types we may need are updated in the
+  // knownTypes map
+  const embeddedTypes = _.flatten(fields.filter(field => !_.isEmpty(field.fields)).map(
+    field => createMetadataTypeElements(
+      field.soapType,
+      makeArray(field.fields),
+      knownTypes,
+      true,
+    )
+  ))
+
+  // Enum fields sometimes show up with a type name that is not primitive but also does not
+  // have fields (so we won't create an embedded type for it). it seems like these "empty" types
+  // are always supposed to be a string with some restriction so we map all non primitive "empty"
+  // types to string
+  fields
+    .filter(field => _.isEmpty(field.fields))
+    .filter(field => !isPrimitiveType(Types.get(field.soapType, false)))
+    .forEach(field => knownTypes.set(field.soapType, BuiltinTypes.STRING))
+
+  const fieldElements = fields.map(field =>
+    getValueTypeFieldElement(element.elemID, field, knownTypes))
+
+  // Set fields on elements
+  fieldElements.forEach(field => {
+    element.fields[field.name] = field
+  })
+
+  return _.flatten([element, embeddedTypes])
 }

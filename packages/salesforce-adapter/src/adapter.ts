@@ -1,18 +1,17 @@
 import {
   BuiltinTypes, Type, ObjectType, ElemID, InstanceElement, Values,
-  Field, Element, isObjectType, isInstanceElement, isPrimitiveType, AdapterCreator, Value,
+  Field, Element, isObjectType, isInstanceElement, AdapterCreator, Value,
 } from 'adapter-api'
 import {
-  SaveResult, ValueTypeField, MetadataInfo, Field as SObjField, DescribeSObjectResult, QueryResult,
+  SaveResult, MetadataInfo, Field as SObjField, DescribeSObjectResult, QueryResult,
 } from 'jsforce'
 import _ from 'lodash'
-import { collections } from '@salto/lowerdash'
 import SalesforceClient, { Credentials } from './client/client'
 import * as constants from './constants'
 import {
   toCustomField, toCustomObject, apiName, sfCase, fieldFullName, Types,
-  getValueTypeFieldElement, getSObjectFieldElement, fromMetadataInfo,
-  bpCase, toMetadataInfo, metadataType, toMetadataPackageZip, toInstanceElements,
+  getSObjectFieldElement, fromMetadataInfo, bpCase, toMetadataInfo,
+  metadataType, toMetadataPackageZip, toInstanceElements, createMetadataTypeElements,
 } from './transformer'
 import layoutFilter from './filters/layouts'
 import fieldPermissionsFilter from './filters/field_permissions'
@@ -24,8 +23,6 @@ import missingFieldsFilter from './filters/missing_fields'
 import {
   FilterCreator, Filter, FilterWith, filtersWith,
 } from './filter'
-
-const { makeArray } = collections.array
 
 // Add API name and label annotation if missing
 const annotateApiNameAndLabel = (element: ObjectType): void => {
@@ -361,57 +358,7 @@ export default class SalesforceAdapter {
   private async discoverMetadataType(objectName: string, knownTypes: Map<string, Type>):
     Promise<Type[]> {
     const fields = await this.client.describeMetadataType(objectName)
-    return SalesforceAdapter.createMetadataTypeElements(objectName, fields, knownTypes)
-  }
-
-  private static createMetadataTypeElements(
-    objectName: string,
-    fields: ValueTypeField[],
-    knownTypes: Map<string, Type>,
-    isSubtype = false,
-  ): Type[] {
-    if (knownTypes.has(objectName)) {
-      // Already created this type, no new types to return here
-      return []
-    }
-    const element = Types.get(objectName, false) as ObjectType
-    knownTypes.set(objectName, element)
-    element.annotate({ [constants.METADATA_TYPE]: objectName })
-    element.path = ['types', ...(isSubtype ? ['subtypes'] : []), element.elemID.name]
-    if (!fields) {
-      return [element]
-    }
-
-    // We need to create embedded types BEFORE creating this element's fields
-    // in order to make sure all internal types we may need are updated in the
-    // knownTypes map
-    const embeddedTypes = _.flatten(fields.filter(field => !_.isEmpty(field.fields)).map(
-      field => this.createMetadataTypeElements(
-        field.soapType,
-        makeArray(field.fields),
-        knownTypes,
-        true,
-      )
-    ))
-
-    // Enum fields sometimes show up with a type name that is not primitive but also does not
-    // have fields (so we won't create an embedded type for it). it seems like these "empty" types
-    // are always supposed to be a string with some restriction so we map all non primitive "empty"
-    // types to string
-    fields
-      .filter(field => _.isEmpty(field.fields))
-      .filter(field => !isPrimitiveType(Types.get(field.soapType, false)))
-      .forEach(field => knownTypes.set(field.soapType, BuiltinTypes.STRING))
-
-    const fieldElements = fields.map(field =>
-      getValueTypeFieldElement(element.elemID, field, knownTypes))
-
-    // Set fields on elements
-    fieldElements.forEach(field => {
-      element.fields[field.name] = field
-    })
-
-    return _.flatten([element, embeddedTypes])
+    return createMetadataTypeElements(objectName, fields, knownTypes)
   }
 
   private async discoverMetadataInstances(typeNames: Promise<string[]>, types: Promise<Type[]>):

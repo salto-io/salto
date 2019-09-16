@@ -2,7 +2,7 @@ import { Element, ObjectType } from 'adapter-api'
 import { formatSearchResults, createPlanOutput } from '../src/formatter'
 import { elements, plan } from './mocks'
 
-describe('formmatter', () => {
+describe('formatter', () => {
   describe('formatSearchResults', () => {
     const find = (name: string): Element =>
       elements().find(e => e.elemID.getFullName() === name) as Element

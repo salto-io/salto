@@ -11,7 +11,7 @@ jest.mock('salto', () => ({
     blueprints: Blueprint[],
     fillConfig: (configType: ObjectType) => Promise<InstanceElement>
   ) => mockDiscover(blueprints, fillConfig)),
-  dumpBlueprints: jest.fn().mockImplementation((_blueprints: Blueprint[]) => { }),
+  dumpBlueprints: jest.fn().mockImplementation(() => { }),
 }))
 
 describe('discover command', () => {

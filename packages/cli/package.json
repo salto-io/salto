@@ -7,12 +7,21 @@
     "url": "https://github.com/salto-io/salto"
   },
   "private": true,
+  "bin": {
+    "salto": "./bin/salto"
+  },
   "files": [
-    "dist/**/*",
-    "bin/*"
+    "dist/**/*"
   ],
-  "main": "bin/salto",
+  "main": "./bin/salto",
   "types": "dist/index.d.ts",
+  "pkg": {
+    "scripts": "./dist/src/**/*.js",
+    "assets": [
+      "../salto/dist/hcl.wasm",
+      "../../node_modules/figlet/fonts/Standard.*"
+    ]
+  },
   "scripts": {
     "prepare": "yarn run build",
     "prepublishOnly": "yarn test",
@@ -25,7 +34,7 @@
     "watch-ts": "tsc -w",
     "lint": "eslint --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
     "lint-fix": "yarn run lint -- --fix",
-    "package": "yarn run pkg -t node10 --out-path ./pkg ."
+    "package": "yarn run pkg -t node10 -o ./pkg/salto ."
   },
   "dependencies": {
     "salto": "0.1.0",

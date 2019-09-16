@@ -7,20 +7,10 @@
     "url": "https://github.com/salto-io/salto_monorepo"
   },
   "private": true,
-  "bin": {
-    "salto": "./bin/salto"
-  },
   "files": [
     "bin/**/*",
     "dist/**/*"
   ],
-  "pkg": {
-    "scripts": "./dist/src/**/*.js",
-    "assets": [
-      "./dist/hcl.wasm",
-      "../../node_modules/figlet/fonts/Standard.*"
-    ]
-  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {

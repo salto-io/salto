@@ -2,12 +2,13 @@ version: 2.1
 
 orbs:
   win: circleci/windows@1.0.0
+  aws-s3: circleci/aws-s3@1.0.11
 
 commands:
   package:
     description: Create a native executable
     parameters:
-      image_dir:
+      out_dir:
         type: string
 
     steps:
@@ -19,20 +20,20 @@ commands:
           command: rm -r node_modules packages/*/node_modules
 
       - run:
-          name: Install yarn
-          command: npm i --g yarn
-
-      - run:
           name: Rebuild node_modules
           command: yarn install --pure-lockfile --ignore-scripts
 
       - run:
           name: Build native executable
-          command: yarn workspace salto run package
+          command: yarn workspace @salto/cli run package
 
       - store_artifacts:
-          path: ./packages/salto/pkg/*
-          destination: pkg/<< parameters.image_dir >>
+          path: packages/cli/pkg
+          destination: pkg/<< parameters.out_dir >>
+
+      - aws-s3/copy:
+          from: packages/cli/pkg/*
+          to: s3://salto-cli-releases/${CIRCLE_BRANCH}/<< parameters.out_dir >>
 
 jobs:
   build:
@@ -124,8 +125,12 @@ jobs:
     working_directory: c:\workspace
 
     steps:
+      - run:
+          name: Install yarn
+          command: npm i --g yarn
+
       - package:
-          image_dir: "win"
+          out_dir: "win"
 
   package_linux:
     docker:
@@ -133,15 +138,19 @@ jobs:
 
     steps:
       - package:
-          image_dir: "linux"
+          out_dir: "linux"
 
   package_osx:
     macos:
       xcode: "11.0"
 
     steps:
+      - run:
+          name: Install yarn
+          command: npm i --g yarn
+
       - package:
-          image_dir: "osx"
+          out_dir: "osx"
 
 workflows:
   version: 2
@@ -158,7 +167,6 @@ workflows:
           requires:
             - build
 
-      # temporary hack to run on commit - once it's working will be moved to post-commit
       - package_windows:
           requires:
             - build

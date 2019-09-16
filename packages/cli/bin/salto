@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 require('source-map-support').install()
-const cli = require('../dist/src/cli/cli').default
+const cli = require('../dist/src/cli').default
 
 const {
   stdin, stdout, stderr, argv,

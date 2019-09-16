@@ -8,12 +8,12 @@ import { SaltoWorkspace } from './workspace'
 type PositionContextPart = 'body'|'definition'
 type PositionContextType = 'global'|'instance'|'type'|'field'
 
-interface EditorPosition {
+export interface EditorPosition {
   line: number
   col: number
 }
 
-interface EditorRange {
+export interface EditorRange {
   start: EditorPosition
   end: EditorPosition
 }

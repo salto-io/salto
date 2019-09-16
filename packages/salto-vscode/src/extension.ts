@@ -2,15 +2,26 @@ import * as vscode from 'vscode'
 import _ from 'lodash'
 import { initWorkspace, updateFile, SaltoWorkspace } from './salto/workspace'
 import { provideWorkspaceCompletionItems, LINE_ENDERS } from './salto/completions/provider'
-import { getPositionContext } from './salto/context'
+import { getPositionContext, EditorPosition } from './salto/context'
 import { debugFunctions } from './salto/debug'
-
+import { provideWorkspaceDefinition } from './salto/definitions'
 
 /**
  * This files act as a bridge between VSC and the salto specific functionality.
  */
 
 const workspaces: {[key: string]: SaltoWorkspace} = {}
+
+const SaltoPosToVsPos = (pos: EditorPosition): vscode.Position => {
+  return new vscode.Position(pos.line - 1,pos.col)
+}
+
+const VsPosToSaltoPos = (pos: vscode.Position): EditorPosition => {
+  return {
+    line: pos.line + 1, 
+    col: pos.character
+  }
+}
 
 // This function is called whenever a file content is changed. The function will
 // reparse the file that changed.
@@ -40,7 +51,7 @@ const onDidChangeConfiguration = async (
 
 // This function is called in order to create a completion provided - and
 // bind it to the current workspace
-const createProvider = (
+const createCompletionsProvider = (
   workspaceName: string
 ): vscode.CompletionItemProvider => ({
   provideCompletionItems: (
@@ -70,6 +81,27 @@ const createProvider = (
   },
 })
 
+const createDefinitionsProvider = (
+  workspace: SaltoWorkspace
+): vscode.DefinitionProvider => ({
+  provideDefinition : (
+    doc: vscode.TextDocument, 
+    position: vscode.Position, 
+  ): vscode.Definition => {
+    const currenToken = doc.getText(doc.getWordRangeAtPosition(position))
+    const context = getPositionContext(workspace, doc.fileName, {
+      line: position.line + 1,
+      col: position.character,
+    })
+    return provideWorkspaceDefinition(workspace, context, currenToken).map( 
+      def => new vscode.Location(
+        vscode.Uri.file(def.filename), 
+        SaltoPosToVsPos(def.range.start)
+      )
+    )
+  }
+})
+
 export const activate = async (context: vscode.ExtensionContext): Promise<void> => {
   // eslint-disable-next-line no-console
   console.log('Workspace init started', new Date())
@@ -84,11 +116,17 @@ export const activate = async (context: vscode.ExtensionContext): Promise<void> 
 
     const completionProvider = vscode.languages.registerCompletionItemProvider(
       { scheme: 'file', pattern: { base: rootPath, pattern: '*.bp' } },
-      createProvider(workspaces[name]),
+      createCompletionsProvider(workspaces[name]),
       ' '
+    )
+
+    const definitionProvider = vscode.languages.registerDefinitionProvider(
+      { scheme: 'file', pattern: { base: rootPath, pattern: '*.bp' } },
+      createDefinitionsProvider(workspaces[name])
     )
     context.subscriptions.push(
       completionProvider,
+      definitionProvider,
       vscode.workspace.onDidChangeTextDocument(e => onDidChangeTextDocument(e, name)),
       vscode.workspace.onDidChangeConfiguration(e => onDidChangeConfiguration(e, name, settings)),
       // A shortcut for registering all debug commands from debug.ts

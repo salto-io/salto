@@ -4,19 +4,19 @@
         "outDir": "dist",
         "baseUrl": ".",
         "declaration": true,
-        "declarationMap": true,
         "paths": {
             "jsforce": [
                 "../../node_modules/jsforce-types"
+            ],
+            "yargonaut": [
+                "src/types/yargonaut"
             ]
-        },
-        "lib": [
-            "esnext.asynciterable"
-          ]
+        }
     },
     "include": [
         "src/**/*",
         "test/**/*",
+        "e2e_test/**/*",
         "index.ts"
     ]
 }

@@ -37,7 +37,7 @@
     "build-go": "./src/parser/hcl_plugin/build.sh ./dist",
     "lint": "eslint --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
     "lint-fix": "yarn run lint -- --fix",
-    "package": "yarn run pkg -t node10 .",
+    "package": "yarn run pkg -t node10 --out-path ./pkg .",
     "e2e-test": "RUN_E2E_TESTS=1 jest --forceExit --detectOpenHandles"
   },
   "dependencies": {

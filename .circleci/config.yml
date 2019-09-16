@@ -1,4 +1,38 @@
-version: 2
+version: 2.1
+
+orbs:
+  win: circleci/windows@1.0.0
+
+commands:
+  package:
+    description: Create a native executable
+    parameters:
+      image_dir:
+        type: string
+
+    steps:
+      - attach_workspace:
+          at: .
+
+      - run:
+          name: Remove node_modules
+          command: rm -r node_modules packages/*/node_modules
+
+      - run:
+          name: Install yarn
+          command: npm i --g yarn
+
+      - run:
+          name: Rebuild node_modules
+          command: yarn install --pure-lockfile --ignore-scripts
+
+      - run:
+          name: Build native executable
+          command: yarn workspace salto run package
+
+      - store_artifacts:
+          path: ./packages/salto/pkg/*
+          destination: pkg/<< parameters.image_dir >>
 
 jobs:
   build:
@@ -82,6 +116,33 @@ jobs:
           name: Upload coverage to codecov.io
           command: npx codecov -F e2e_test -f coverage/*.json
 
+  package_windows:
+    executor:
+      name: win/vs2019
+      shell: bash.exe
+
+    working_directory: c:\workspace
+
+    steps:
+      - package:
+          image_dir: "win"
+
+  package_linux:
+    docker:
+      - image: circleci/node:12.10
+
+    steps:
+      - package:
+          image_dir: "linux"
+
+  package_osx:
+    macos:
+      xcode: "11.0"
+
+    steps:
+      - package:
+          image_dir: "osx"
+
 workflows:
   version: 2
 
@@ -92,7 +153,21 @@ workflows:
             branches:
               ignore:
                 - master
+
       - unittest:
+          requires:
+            - build
+
+      # temporary hack to run on commit - once it's working will be moved to post-commit
+      - package_windows:
+          requires:
+            - build
+
+      - package_linux:
+          requires:
+            - build
+
+      - package_osx:
           requires:
             - build
 
@@ -103,9 +178,12 @@ workflows:
             branches:
               only:
                 - master
+
       - unittest:
           requires:
             - build
+
       - e2e_test:
           requires:
             - build
+

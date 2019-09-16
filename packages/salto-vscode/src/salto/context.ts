@@ -71,12 +71,12 @@ const getContextReference = (
   return undefined
 }
 
-const getPositionContextPart = (
+const getPositionConextPart = (
   contextRange: NamedRange,
   position: EditorPosition,
   ref?: ContextReference
 ): PositionContextPart => {
-  if (ref && ref.path) {
+  if (ref && ref.path.length > 0) {
     return 'body'
   }
   return (position.line === contextRange.range.start.line) ? 'definition' : 'body'
@@ -116,7 +116,7 @@ const buildPositionContext = (
     parent,
     ref,
     range: range.range,
-    part: getPositionContextPart(range, position, ref),
+    part: getPositionConextPart(range, position, ref),
     type: getPositionConextType(ref),
   }
 
@@ -138,7 +138,7 @@ export const getPositionContext = (
   }
 
   // A sorter for position contexts. Sorts by containment.
-  const encapluatationComparator = (left: NamedRange, right: NamedRange): number => {
+  const encapsulationComparator = (left: NamedRange, right: NamedRange): number => {
     if (isContained(left.range, right.range) && isContained(right.range, left.range)) return 0
     if (isContained(left.range, right.range)) return 1
     return -1
@@ -154,8 +154,8 @@ export const getPositionContext = (
 
   // We created a list of sorted NamedRanges which contains the cursor in them
   // and are sorted so that each range contains all of the following ranges in the array
-  const encapsulationComparator = flatRanges.filter(
+  const encapsulatingRanges = flatRanges.filter(
     r => isContained(cursorRange, r.range)
-  ).sort(encapluatationComparator)
+  ).sort(encapsulationComparator)
   return buildPositionContext(workspace, encapsulatingRanges, position)
 }

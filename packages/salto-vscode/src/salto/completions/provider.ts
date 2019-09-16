@@ -68,7 +68,7 @@ const getLineType = (context: PositionContext, lineTokens: string[]): LineType =
 const removeLinePrefix = (line: string): string => {
   const LINE_ENDERS = ['\\{', '\\}', '\\[', '\\]', ',', ';']
   const lineTokenizer = new RegExp(`[${LINE_ENDERS.join('')}]`)
-  const parts = line.split(lineEnderReg)
+  const parts = line.split(lineTokenizer)
   return _.trimStart(parts[parts.length - 1])
 }
 
@@ -82,7 +82,7 @@ const createCompletionItems = (
 
 // Returns a list of suggestions for the current line.
 // Note - line includes all of the charecters in the line *before* the cursor
-// The line is stripped of its prefix (which is not a part of the line. this 
+// The line is stripped of its prefix (which is not a part of the line. this
 // allows in line attr def a = {<only this is the line>})
 // Once stripped and tokenized, we count the existing tokens and give
 // the suggestions to the last token which is the token which we want

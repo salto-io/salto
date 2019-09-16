@@ -1,3 +1,5 @@
+import _ from 'lodash'
+
 import {
   Suggestions, SuggestionsResolver, keywordSuggestions, typesSuggestions,
   isSuggestions, inheritanceSuggestions, annoSuggestions, eqSugestions,
@@ -63,6 +65,13 @@ const getLineType = (context: PositionContext, lineTokens: string[]): LineType =
   return 'empty'
 }
 
+const removeLinePrefix = (line: string): string => {
+  const LINE_ENDERS = ['\\{', '\\}', '\\[', '\\]', ',', ';']
+  const lineEnderReg = new RegExp(`[${LINE_ENDERS.join('')}]`)
+  const parts = line.split(lineEnderReg)
+  return _.trimStart(parts[parts.length - 1])
+}
+
 const createCompletionItems = (
   suggestions: Suggestions,
   reInvoke: boolean
@@ -76,7 +85,7 @@ export const provideWorkspaceCompletionItems = (
   context: PositionContext,
   line: string
 ): SaltoCompletion[] => {
-  const tokens = getLineTokens(line)
+  const tokens = getLineTokens(removeLinePrefix(line))
   const lineType = getLineType(context, tokens)
   const suggestionsParams = { workspace, tokens, ref: context.ref }
   const lineSuggestions = LINE_SUGGESTIONS[lineType]

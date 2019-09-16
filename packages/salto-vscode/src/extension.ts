@@ -40,23 +40,18 @@ const onDidChangeConfiguration = async (
 // This function is called in order to create a completion provided - and
 // bind it to the current workspace
 const createProvider = (
-  workspace: SaltoWorkspace
+  workspaceName: string
 ): vscode.CompletionItemProvider => ({
   provideCompletionItems: (
     doc: vscode.TextDocument,
     position: vscode.Position
   ) => {
-    const getFullLine = (d: vscode.TextDocument, p: vscode.Position): string => {
-      const LINE_ENDERS = ['\\{', '\\}', '\\[', '\\]', ',', ';']
-      const lineEnderReg = new RegExp(`[${LINE_ENDERS.join('')}]`)
-      const lines = d.lineAt(p).text.substr(0, p.character).split(lineEnderReg)
-      return _.trimStart(lines[lines.length - 1])
-    }
+    const workspace = workspaces[workspaceName]
     const context = getPositionContext(workspace, doc.fileName, {
       line: position.line + 1,
       col: position.character,
     })
-    const line = getFullLine(doc, position)
+    const line = doc.lineAt(position).text.substr(0, position.character)
     return provideWorkspaceCompletionItems(workspace, context, line).map(
       ({ label, reInvoke, insertText }) => {
         const item = new vscode.CompletionItem(label)
@@ -88,7 +83,7 @@ export const activate = async (context: vscode.ExtensionContext): Promise<void> 
 
     const completionProvider = vscode.languages.registerCompletionItemProvider(
       { scheme: 'file', pattern: { base: rootPath, pattern: '*.bp' } },
-      createProvider(workspaces[name]),
+      createProvider(name),
       ' '
     )
     context.subscriptions.push(

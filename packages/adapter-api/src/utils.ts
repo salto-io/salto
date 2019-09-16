@@ -50,7 +50,7 @@ export const getAnnotationKey = (annotations: {[key: string]: Type}, path: strin
   // Looking for the longest key in annotations that start with pathParts
   const annoName = _(annotations).keys().filter(k => path.startsWith(k))
     .sortBy(k => k.length)
-    .value()[0]
+    .last()
   const annoType = (annoName) ? annotations[annoName] : undefined
   return { annoName, annoType }
 }

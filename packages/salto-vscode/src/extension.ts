@@ -1,7 +1,7 @@
 import * as vscode from 'vscode'
 import _ from 'lodash'
 import { initWorkspace, updateFile, SaltoWorkspace } from './salto/workspace'
-import { provideWorkspaceCompletionItems, LINE_ENDERS } from './salto/completions/provider'
+import { provideWorkspaceCompletionItems } from './salto/completions/provider'
 import { getPositionContext } from './salto/context'
 import { debugFunctions } from './salto/debug'
 
@@ -37,6 +37,8 @@ const onDidChangeConfiguration = async (
   )
 }
 
+// This function is called in order to create a completion provided - and
+// bind it to the current workspace
 const createProvider = (
   workspace: SaltoWorkspace
 ): vscode.CompletionItemProvider => ({
@@ -45,6 +47,7 @@ const createProvider = (
     position: vscode.Position
   ) => {
     const getFullLine = (d: vscode.TextDocument, p: vscode.Position): string => {
+      const LINE_ENDERS = ['\\{', '\\}', '\\[', '\\]', ',', ';']
       const lineEnderReg = new RegExp(`[${LINE_ENDERS.join('')}]`)
       const lines = d.lineAt(p).text.substr(0, p.character).split(lineEnderReg)
       return _.trimStart(lines[lines.length - 1])
@@ -54,18 +57,19 @@ const createProvider = (
       col: position.character,
     })
     const line = getFullLine(doc, position)
-    return provideWorkspaceCompletionItems(workspace, context, line).map(c => {
-      const { label, reInvoke, insertText } = c
-      const item = new vscode.CompletionItem(label)
-      if (reInvoke) {
-        item.insertText = insertText
-        item.command = {
-          command: 'editor.action.triggerSuggest',
-          title: 'Re-trigger completions...',
+    return provideWorkspaceCompletionItems(workspace, context, line).map(
+      ({ label, reInvoke, insertText }) => {
+        const item = new vscode.CompletionItem(label)
+        if (reInvoke) {
+          item.insertText = insertText
+          item.command = {
+            command: 'editor.action.triggerSuggest',
+            title: 'Re-trigger completions...',
+          }
         }
+        return item
       }
-      return item
-    })
+    )
   },
 })
 

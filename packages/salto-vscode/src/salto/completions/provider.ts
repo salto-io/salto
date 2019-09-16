@@ -13,10 +13,7 @@ export interface SaltoCompletion {
   reInvoke: boolean
 }
 
-export const LINE_ENDERS = ['\\{', '\\}', '\\[', '\\]', ',', ';']
-const WHITESPACES = [' ', '\t']
-
-const LINE_SUGGESTIONS: {[key: string]: SuggestionsResolver[] } = {
+const LINE_SUGGESTIONS: {[key in LineType]: SuggestionsResolver[] } = {
   // <keyword/instance_type> ...
   empty: [keywordSuggestions],
   // <keyword> <type_name> (is <primitive_type> )
@@ -31,7 +28,7 @@ const LINE_SUGGESTIONS: {[key: string]: SuggestionsResolver[] } = {
   attr: [fieldSuggestions, eqSugestions, fieldValueSuggestions],
 }
 
-const getLineTokens = (line: string): string[] => line.replace(new RegExp(`([${WHITESPACES.join('')}])+`, 'g'), ' ').split(' ')
+const getLineTokens = (line: string): string[] => line.replace(/\s+/g, ' ').split(' ')
 
 const getLineType = (context: PositionContext, lineTokens: string[]): LineType => {
   if (context.type === 'type' && context.part === 'definition') {

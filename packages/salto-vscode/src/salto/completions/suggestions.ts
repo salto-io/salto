@@ -1,13 +1,15 @@
 import _ from 'lodash'
 import {
-  Type, Field, ObjectType, isObjectType, isInstanceElement, isPrimitiveType,
-  isField, PrimitiveTypes, BuiltinTypes, isType,
+  Type, Field, isObjectType, isInstanceElement, isPrimitiveType,
+  isField, PrimitiveTypes, BuiltinTypes, isType, Value, getField,
+  getFieldNames, getFieldType, getAnnotationKey,
 } from 'adapter-api'
 
 import { SaltoWorkspace } from '../workspace'
 import { ContextReference } from '../context'
 
 export type Suggestions = string[]
+
 interface SuggestionsParams {
   workspace: SaltoWorkspace
   ref?: ContextReference
@@ -15,52 +17,16 @@ interface SuggestionsParams {
 }
 export type SuggestionsResolver = (params: SuggestionsParams) => Suggestions
 
-const getFieldFromPath = (baseType: Type, pathParts: string[]): Field|undefined => {
-  // This is a little tricky. Since many fields can have _ in them,
-  // and we can't tell of the _ is path seperator or a part of the
-  // the path name. As long as path is not empty we will try to advance
-  // in the recursion in two ways - First we try only the first token.
-  // If it fails, we try to first to tokens (the recursion will take)
-  // care of the next "join"
-  const [curPart, ...restOfParts] = pathParts
-  if (_.isEmpty(curPart) || !isObjectType(baseType)) {
-    return undefined
-  }
-
-  if (baseType.fields[curPart]) {
-    return _.isEmpty(restOfParts) ? baseType.fields[curPart]
-      : getFieldFromPath(baseType.fields[curPart].type, restOfParts)
-  }
-  // Firdt token is no good, we check if it is a part of a longer name
-  const nextCur = [curPart, restOfParts[0]].join('_')
-  const nextRest = restOfParts.slice(1)
-  return getFieldFromPath(baseType, [nextCur, ...nextRest])
+const getRestrictionValues = (annotatingElem: Type|Field, valueType: Type): Value[]|undefined => {
+  const restrictions = annotatingElem.annotations[Type.RESTRICTION]
+                       || valueType.annotations[Type.RESTRICTION]
+  return (restrictions && restrictions.values)
 }
 
-const getFieldTypeFromPath = (baseType: Type, pathParts: string[]): Type|undefined => {
-  const field = getFieldFromPath(baseType, pathParts)
-  return (field) ? field.type : undefined
-}
-
-export const attrSuggestions = (refType: ObjectType, path: string): Suggestions => {
-  if (!path) {
-    return _.keys(refType.fields)
-  }
-  const pathField = getFieldFromPath(refType, path.split('_'))
-  if (pathField && isObjectType(pathField.type)) {
-    return _.keys(pathField.type.fields)
-  }
-  return []
-}
-
-export const attrValueSuggestion = (refElem: Type|Field, valueType: Type): Suggestions => {
-  const restrictions = refElem.annotations[Type.RESTRICTION]
-             || valueType.annotations[Type.RESTRICTION]
-  if (restrictions && restrictions.values) {
-    return restrictions.values.map(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (v: any) => JSON.stringify(v) // TODO HCL dump
-    )
+export const valueSuggestions = (annotatingElem: Type|Field, valueType: Type): Suggestions => {
+  const restrictionValues = getRestrictionValues(annotatingElem, valueType)
+  if (restrictionValues) {
+    return restrictionValues.map(v => JSON.stringify(v))
   }
   if (isObjectType(valueType)) {
     return ['{}']
@@ -76,49 +42,37 @@ export const attrValueSuggestion = (refElem: Type|Field, valueType: Type): Sugge
 
 export const fieldSuggestions = (params: SuggestionsParams): Suggestions => {
   if (!(params.ref && isInstanceElement(params.ref.element))) return []
-  return attrSuggestions(params.ref.element.type, params.ref.path)
+  return getFieldNames(params.ref.element.type, params.ref.path)
 }
 
 export const fieldValueSuggestions = (params: SuggestionsParams): Suggestions => {
   if (!(params.ref && isInstanceElement(params.ref.element))) return []
   const attrName = params.tokens[0]
   const refType = (params.ref.path)
-    ? getFieldTypeFromPath(params.ref.element.type, params.ref.path.split('_'))
+    ? getFieldType(params.ref.element.type, params.ref.path.split('_'))
     : params.ref.element.type
 
   if (isObjectType(refType)) {
     const valueField = refType.fields[attrName]
-    return (valueField) ? attrValueSuggestion(valueField, valueField.type) : []
+    return (valueField) ? valueSuggestions(valueField, valueField.type) : []
   }
   return []
 }
 
 export const annoSuggestions = (params: SuggestionsParams): Suggestions => {
   // Utility function that is only used in this function
-  const getAnnotationKeyFromPath = (
-    annotations: {[key: string]: Type},
-    path: string
-  ): {annoType?: Type; annoName?: string} => {
-    // Looking for the longest key in annotations that start with pathParts
-    const annoName = _(annotations).keys().filter(k => path.startsWith(k))
-      .sortBy(k => k.length)
-      .value()[0]
-    const annoType = (annoName) ? annotations[annoName] : undefined
-    return { annoName, annoType }
-  }
-
   if (!(params.ref && isField(params.ref.element))) return []
 
   if (!params.ref.path) {
     return _.keys(params.ref.element.type.annotationTypes)
   }
-  const { annoName, annoType } = getAnnotationKeyFromPath(
+  const { annoName, annoType } = getAnnotationKey(
     params.ref.element.type.annotationTypes,
     params.ref.path
   )
   if (annoName && isObjectType(annoType)) {
     const annoPath = params.ref.path.slice(annoName.length)
-    return attrSuggestions(annoType, annoPath)
+    return getFieldNames(annoType, annoPath)
   }
   return []
 }
@@ -130,11 +84,11 @@ export const annoValueSuggestions = (params: SuggestionsParams): Suggestions => 
   const annoType = params.ref.element.type.annotationTypes[annoName]
   if (annoType && params.ref.path) {
     const annoPath = params.ref.path.slice(annoName.length)
-    const attrField = getFieldFromPath(annoType, annoPath.split(' '))
-    return (attrField) ? attrValueSuggestion(attrField, attrField.type) : []
+    const attrField = getField(annoType, annoPath.split(' '))
+    return (attrField) ? valueSuggestions(attrField, attrField.type) : []
   }
   if (annoType) {
-    return attrValueSuggestion(annoType, annoType)
+    return valueSuggestions(annoType, annoType)
   }
   return []
 }

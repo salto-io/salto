@@ -13,7 +13,7 @@ const mockGetConfigType = (): InstanceElement => adapterConfigs.salesforce()
 // Attempting to access the functions on run time without the mock implementation, or
 // omitting the mock prefix in their names (YES I KNOW) will result in a runtime exception
 // to be thrown
-jest.mock('../src/cli/callbacks', () => ({
+jest.mock('../src/callbacks', () => ({
   getConfigFromUser: jest.fn().mockImplementation(() => mockGetConfigType()),
 }))
 

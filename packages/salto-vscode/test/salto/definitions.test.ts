@@ -1,10 +1,10 @@
 import * as path from 'path'
+
 import { initWorkspace, SaltoWorkspace } from '../../src/salto/workspace'
 import { provideWorkspaceDefinition } from '../../src/salto/definitions'
 import { getPositionContext } from '../../src/salto/context'
 
 describe('Test go to definitions', () => {
-
   let workspace: SaltoWorkspace
   const baseBPDir = path.resolve(`${__dirname}/../../../test/salto/completionsBP`)
   const bpFile = path.resolve(`${baseBPDir}/all.bp`)

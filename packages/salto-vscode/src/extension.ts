@@ -28,7 +28,12 @@ const onDidChangeTextDocument = async (
   workspaceName: string
 ): Promise<void> => {
   const workspace = workspaces[workspaceName]
-  await updateFile(workspace, event.document.fileName, event.document.getText())
+  workspace.lastUpdate = updateFile(
+    workspace,
+    event.document.fileName,
+    event.document.getText()
+  )
+  await workspace.lastUpdate
 }
 
 // This function is registered as callback function for configuration changes in the
@@ -40,7 +45,7 @@ const onDidChangeConfiguration = async (
   settings: vscode.WorkspaceConfiguration
 ): Promise<void> => {
   const workspace = workspaces[workspaceName]
-  workspaces[workspaceName] = await initWorkspace(
+  workspace.lastUpdate = await initWorkspace(
     workspace.baseDir,
     settings.additionalBlueprintDirs,
     settings.additionalBlueprints
@@ -52,18 +57,21 @@ const onDidChangeConfiguration = async (
 const createCompletionsProvider = (
   workspaceName: string
 ): vscode.CompletionItemProvider => ({
-  provideCompletionItems: (
+  provideCompletionItems: async (
     doc: vscode.TextDocument,
     position: vscode.Position
   ) => {
     const workspace = workspaces[workspaceName]
+    if (workspace.lastUpdate) {
+      await workspace.lastUpdate
+    }
     const context = getPositionContext(workspace, doc.fileName, VsPosToSaltoPos(position))
     const line = doc.lineAt(position).text.substr(0, position.character)
     return provideWorkspaceCompletionItems(workspace, context, line).map(
       ({ label, reInvoke, insertText }) => {
         const item = new vscode.CompletionItem(label)
+        item.insertText = new vscode.SnippetString(insertText) || label
         if (reInvoke) {
-          item.insertText = insertText
           item.command = {
             command: 'editor.action.triggerSuggest',
             title: 'Re-trigger completions...',
@@ -108,8 +116,7 @@ export const activate = async (context: vscode.ExtensionContext): Promise<void> 
 
     const completionProvider = vscode.languages.registerCompletionItemProvider(
       { scheme: 'file', pattern: { base: rootPath, pattern: '*.bp' } },
-      createCompletionsProvider(name),
-      ' '
+      createCompletionsProvider(name)
     )
 
     const definitionProvider = vscode.languages.registerDefinitionProvider(

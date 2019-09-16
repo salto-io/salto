@@ -53,7 +53,7 @@ const getLineType = (context: PositionContext, lineTokens: string[]): LineType =
   }
   // If we reached this point we are in global scope, which means that
   // either we are in one of the following:
-\  // - a partial type def line
+  // - a partial type def line
   if (lineTokens[0] === 'type') {
     return 'type'
   }
@@ -76,7 +76,10 @@ const createCompletionItems = (
   suggestions: Suggestions,
   reInvoke: boolean
 ): SaltoCompletion[] => suggestions.map(label => {
-  const insertText = (reInvoke) ? `${label} ` : label
+  let insertText = (reInvoke) ? `${label} ` : label
+  if (label === '{}') {
+    insertText = '{$0}'
+  }
   return { label, reInvoke, insertText }
 })
 

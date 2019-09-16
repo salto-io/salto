@@ -54,7 +54,7 @@ describe('formatter', () => {
 
   describe('createPlanOutput', () => {
     it('should pp suggest proper value when proper desc is provided start path', async () => {
-      const output = createPlanOutput(await plan([]))
+      const output = createPlanOutput(plan())
 
       // Validate we printed all fields changes
       expect(output.search('salesforce_account_status')).toBeGreaterThan(0)

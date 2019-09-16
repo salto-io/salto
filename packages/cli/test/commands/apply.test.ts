@@ -43,13 +43,13 @@ describe('apply command', () => {
 
     describe('should print progress', () => {
       it('should print progress upon update', async () => {
-        wu((await plan([])).itemsByEvalOrder()).forEach(item => command.updateCurrentAction(item))
+        wu((plan()).itemsByEvalOrder()).forEach(item => command.updateCurrentAction(item))
         expect(cliOutput.stdout.content).toMatch('salesforce_lead: changing...')
       })
 
       describe('end current action', () => {
         beforeEach(async () => {
-          const planItem = wu((await plan([])).itemsByEvalOrder()).next().value
+          const planItem = wu((plan()).itemsByEvalOrder()).next().value
           command.updateCurrentAction(planItem)
         })
 

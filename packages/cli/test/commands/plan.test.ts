@@ -3,7 +3,7 @@ import { plan, MockWriteStream } from '../mocks'
 
 const mockPlan = plan
 jest.mock('salto', () => ({
-  plan: jest.fn().mockImplementation(() => mockPlan([])),
+  plan: jest.fn().mockImplementation(() => mockPlan()),
 }))
 
 describe('plan command', () => {

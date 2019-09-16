@@ -148,7 +148,7 @@ export const elements = (): Element[] => {
   return [BuiltinTypes.STRING, saltoAddr, saltoOffice, saltoEmployee, saltoEmployeeInstance]
 }
 
-export const plan = async (_blueprints: Blueprint[]): Promise<Plan> => {
+export const plan = (): Plan => {
   const planItem = (before?: string, after?: string): Change => {
     const adapter = 'salesforce'
     if (before && after) {
@@ -233,13 +233,13 @@ export const plan = async (_blueprints: Blueprint[]): Promise<Plan> => {
 }
 
 export const apply = async (
-  blueprints: Blueprint[],
+  _blueprints: Blueprint[],
   _fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
   shouldApply: (plan: Plan) => Promise<boolean>,
   reportProgress: (action: PlanItem) => void,
   force = false
 ): Promise<Plan> => {
-  const changes = await plan(blueprints)
+  const changes = await plan()
   if (force || await shouldApply(changes)) {
     wu(changes.itemsByEvalOrder()).forEach(change => {
       reportProgress(change)

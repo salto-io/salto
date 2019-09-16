@@ -1,0 +1,63 @@
+{
+  "name": "@salto/cli",
+  "version": "0.1.0",
+  "description": "cli on top of salto core",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/salto-io/salto"
+  },
+  "private": true,
+  "files": [
+    "dist/**/*",
+    "bin/*"
+  ],
+  "main": "bin/salto",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "prepare": "yarn run build",
+    "prepublishOnly": "yarn test",
+    "build": "yarn run lint && yarn run build-ts",
+    "test": "jest --forceExit --detectOpenHandles",
+    "clean-ts": "node ./node_modules/.bin/ts-cleaner -d dist -s . -v",
+    "clean-ts-test": "yarn run clean-ts && yarn run test",
+    "watch-test": "yarn run tsc-watch --onSuccess 'yarn run clean-ts-test'",
+    "build-ts": "tsc",
+    "watch-ts": "tsc -w",
+    "lint": "eslint --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
+    "lint-fix": "yarn run lint -- --fix",
+    "package": "yarn run pkg -t node10 --out-path ./pkg ."
+  },
+  "dependencies": {
+    "salto": "0.1.0",
+    "@salto/lowerdash": "0.1.0",
+    "@salto/dag": "0.1.0",
+    "adapter-api": "0.1.0",
+    "lodash": "^4.17.15",
+    "wu": "^2.1.0",
+    "yargonaut": "^1.1.4",
+    "yargs": "^13.3.0",
+    "require-directory": "^2.1.1",
+    "chalk": "^2.3.0",
+    "inquirer": "^3.3.0",
+    "source-map-support": "^0.5.13",
+    "salesforce-adapter": "0.1.0",
+    "async-file": "^2.0.2"
+  },
+  "devDependencies": {
+    "eslint": "^6.2.2",
+    "eslint-config-airbnb": "18.0.1",
+    "eslint-plugin-import": "^2.18.2",
+    "eslint-plugin-jest": "^22.6.4",
+    "eslint-plugin-jsx-a11y": "^6.2.1",
+    "eslint-plugin-react": "^7.14.3",
+    "eslint-plugin-react-hooks": "^1.7.0",
+    "jest": "^24.0.0",
+    "jest-junit": "^6.4.0",
+    "pkg": "^4.4.0",
+    "typescript": "^3.5.3",
+    "@types/yargs": "^13.0.0",
+    "@types/require-directory": "^2.1.1",
+    "@types/inquirer": "0.0.35",
+    "@types/source-map-support": "^0.5.0"
+  }
+}

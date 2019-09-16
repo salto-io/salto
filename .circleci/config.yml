@@ -33,7 +33,7 @@ commands:
 
       - aws-s3/copy:
           from: packages/cli/pkg/*
-          to: s3://salto-cli-releases/${CIRCLE_BRANCH}/<< parameters.out_dir >>
+          to: s3://salto-cli-releases/${CIRCLE_BRANCH}/<< parameters.out_dir >>/
 
 jobs:
   build:

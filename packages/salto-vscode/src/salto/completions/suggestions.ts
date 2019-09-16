@@ -96,7 +96,7 @@ export const annoValueSuggestions = (params: SuggestionsParams): Suggestions => 
 
 /**
  * Returns a list of all of the types that were defined in the system
- * and whos adapter matches the context allowed adapters.
+ * and who's adapter matches the context allowed adapters.
  */
 export const typesSuggestions = (params: SuggestionsParams): Suggestions => {
   const contextAdapter = params.ref && params.ref.element.elemID.adapter

@@ -10,7 +10,7 @@ interface AnnoRef {
 
 export const getField = (baseType: Type, pathParts: string[]): Field|undefined => {
   // This is a little tricky. Since many fields can have _ in them,
-  // and we can't tell of the _ is path seperator or a part of the
+  // and we can't tell of the _ is path separator or a part of the
   // the path name. As long as path is not empty we will try to advance
   // in the recursion in two ways - First we try only the first token.
   // If it fails, we try to first to tokens (the recursion will take)
@@ -24,7 +24,7 @@ export const getField = (baseType: Type, pathParts: string[]): Field|undefined =
     return _.isEmpty(restOfParts) ? baseType.fields[curPart]
       : getField(baseType.fields[curPart].type, restOfParts)
   }
-  // Firdt token is no good, we check if it is a part of a longer name
+  // First token is no good, we check if it is a part of a longer name
   const nextCur = [curPart, restOfParts[0]].join('_')
   const nextRest = restOfParts.slice(1)
   return getField(baseType, [nextCur, ...nextRest])

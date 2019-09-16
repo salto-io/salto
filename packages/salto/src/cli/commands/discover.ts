@@ -1,12 +1,16 @@
-import * as commands from '../commands'
+import path from 'path'
+import { discover } from '../../core/commands'
 import { createCommandBuilder } from '../builder'
 import { ParsedCliInput, CliCommand, CliOutput } from '../types'
-import { Blueprint } from '../../blueprints/blueprint'
+import { Blueprint, dumpBlueprints } from '../../core/blueprint'
 import * as bf from '../filters/blueprints'
+import { getConfigFromUser } from '../callbacks'
 
-const command = (blueprints: Blueprint[], outputDir: string): CliCommand => ({
+export const command = (blueprints: Blueprint[], outputDir: string): CliCommand => ({
   async execute(): Promise<void> {
-    return commands.discoverBase(outputDir, blueprints)
+    const outputBPs = await discover(blueprints, getConfigFromUser)
+    outputBPs.forEach(bp => { bp.filename = path.join(outputDir, `${bp.filename}.bp`) })
+    await dumpBlueprints(outputBPs)
   },
 })
 

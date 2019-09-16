@@ -15,8 +15,9 @@ export type ParseError = ParseError
 
 enum Keywords {
   TYPE_DEFINITION = 'type',
+  SETTINGS_DEFINITION = 'settings',
   LIST_DEFINITION = 'list',
-  TYPE_INHERITENCE_SEPARATOR = 'is',
+  TYPE_INHERITANCE_SEPARATOR = 'is',
   ANNOTATIONS_DEFINITION = 'annotations',
 
   // Primitive types
@@ -104,9 +105,14 @@ export default class Parser {
       .pop() || {}
   }
 
-  private static parseType(typeBlock: HCLBlock, sourceMap: SourceMap): Type {
+  private static parseType(typeBlock: HCLBlock, sourceMap: SourceMap, isSettings = false): Type {
     const [typeName] = typeBlock.labels
-    const typeObj = new ObjectType({ elemID: this.getElemID(typeName) })
+    const typeObj = new ObjectType(
+      {
+        elemID: this.getElemID(typeName),
+        isSettings,
+      }
+    )
     this.addToSourceMap(sourceMap, typeObj.elemID, typeBlock)
 
     typeObj.annotate(this.getAttrValues(typeBlock, sourceMap, typeObj.elemID))
@@ -124,7 +130,12 @@ export default class Parser {
         const field = new Field(
           typeObj.elemID,
           fieldName,
-          new ObjectType({ elemID: this.getElemID(fieldTypeName) }),
+          new ObjectType(
+            {
+              elemID: this.getElemID(fieldTypeName),
+              isSettings: block.type === Keywords.SETTINGS_DEFINITION,
+            }
+          ),
           this.getAttrValues(block, sourceMap, typeObj.elemID.createNestedID(fieldName)),
           isList,
         )
@@ -139,8 +150,8 @@ export default class Parser {
 
   private static parsePrimitiveType(typeBlock: HCLBlock, sourceMap: SourceMap): Type {
     const [typeName, kw, baseType] = typeBlock.labels
-    if (kw !== Keywords.TYPE_INHERITENCE_SEPARATOR) {
-      throw new Error(`expected keyword ${Keywords.TYPE_INHERITENCE_SEPARATOR}. found ${kw}`)
+    if (kw !== Keywords.TYPE_INHERITANCE_SEPARATOR) {
+      throw new Error(`expected keyword ${Keywords.TYPE_INHERITANCE_SEPARATOR}. found ${kw}`)
     }
 
     if (baseType === Keywords.TYPE_OBJECT) {
@@ -196,6 +207,9 @@ export default class Parser {
       if (value.type === Keywords.TYPE_DEFINITION) {
         return this.parseType(value, sourceMap)
       }
+      if (value.type === Keywords.SETTINGS_DEFINITION) {
+        return this.parseType(value, sourceMap, true)
+      }
       if (value.labels.length === 0 || value.labels.length === 1) {
         return this.parseInstance(value, sourceMap)
       }
@@ -242,7 +256,7 @@ export default class Parser {
   private static getElementBlock(elem: Element): HCLBlock {
     if (isObjectType(elem)) {
       return {
-        type: Keywords.TYPE_DEFINITION,
+        type: elem.isSettings ? Keywords.SETTINGS_DEFINITION : Keywords.TYPE_DEFINITION,
         labels: [elem.elemID.getFullName()],
         attrs: elem.annotations,
         blocks: this.getAnnotationsBlock(elem).concat(
@@ -255,7 +269,7 @@ export default class Parser {
         type: Keywords.TYPE_DEFINITION,
         labels: [
           elem.elemID.getFullName(),
-          Keywords.TYPE_INHERITENCE_SEPARATOR,
+          Keywords.TYPE_INHERITANCE_SEPARATOR,
           getPrimitiveTypeName(elem.primitive),
         ],
         attrs: elem.annotations,

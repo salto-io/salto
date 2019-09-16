@@ -4,9 +4,10 @@ import {
 } from 'adapter-api'
 import wu from 'wu'
 import _ from 'lodash'
-import { Group, DataNodeMap } from '@salto/dag'
-import { Blueprint } from '../../../src/blueprints/blueprint'
+import { GroupedNodeMap } from '@salto/dag'
+import { Blueprint } from '../../../src/core/blueprint'
 import { Plan, PlanItem, PlanItemId } from '../../../src/core/plan'
+import { SearchResult } from '../../../src/core/search'
 
 export const getAllElements = async (
   _blueprints: Blueprint[] = []
@@ -97,13 +98,11 @@ export const getAllElements = async (
   return [BuiltinTypes.STRING, saltoAddr, saltoOffice, saltoEmployee, saltoEmployeeInstance]
 }
 
-const runChangeMock = async (
-  changes: Plan,
-  reportProgress: (action: PlanItem) => void
-): Promise<void> => wu(changes.itemsByEvalOrder()).reduce((result, action) =>
-  result.then(() => {
-    setTimeout(() => reportProgress(action), 0)
-  }), Promise.resolve())
+const runChangeMock = (changes: Plan, reportProgress: (action: PlanItem) => void): void => {
+  wu(changes.itemsByEvalOrder()).forEach(change => {
+    reportProgress(change)
+  })
+}
 
 const newAction = (before?: string, after?: string): Change => {
   const adapter = 'salesforce'
@@ -135,31 +134,45 @@ const add = (name: string): Change => newAction(undefined, name)
 const remove = (name: string): Change => newAction(name, undefined)
 const modify = (name: string): Change => newAction(name, name)
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const plan = async (
   _blueprints: Blueprint[],
 ): Promise<Plan> => {
-  const result = new DataNodeMap<Group<Change>>() as Plan
+  const result = new GroupedNodeMap<Change>()
 
-  const items = new Map<PlanItemId, Change>([
-    ['lead', modify('lead')],
-    ['lead_do_you_have_a_sales_team', add('lead_do_you_have_a_sales_team')],
-    ['lead_how_many_sales_people', modify('lead_do_you_have_a_sales_team')],
-    ['lead_status', remove('lead_status')],
-  ])
-  const planItem = {
-    items,
+  const leadPlanItem: PlanItem = {
+    items: new Map<PlanItemId, Change>([
+      ['lead', modify('lead')],
+      ['lead_do_you_have_a_sales_team', add('lead_do_you_have_a_sales_team')],
+      ['lead_how_many_sales_people', modify('lead_do_you_have_a_sales_team')],
+      ['lead_status', remove('lead_status')],
+    ]),
     groupKey: 'lead',
-    data: () => wu(items.values()).toArray(),
     parent: () => modify('lead'),
   }
-  result.addNode(_.uniqueId(), [], planItem)
+  result.addNode(_.uniqueId('lead'), [], leadPlanItem)
 
-  result.itemsByEvalOrder = (): Iterable<PlanItem> => [planItem]
-  return result
+  const accountPlanItem: PlanItem = {
+    items: new Map<PlanItemId, Change>([
+      ['account_status', add('account_status')],
+      ['account_name', modify('account_name')],
+    ]),
+    groupKey: 'account',
+    parent: () => modify('account'),
+  }
+  result.addNode(_.uniqueId('account'), [], accountPlanItem)
+
+  Object.assign(result, {
+    itemsByEvalOrder(): Iterable<PlanItem> {
+      return [leadPlanItem, accountPlanItem]
+    },
+    getItem(id: PlanItemId): PlanItem {
+      return id.toString().startsWith('lead') ? leadPlanItem : accountPlanItem
+    },
+  })
+
+  return result as Plan
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const apply = async (
   blueprints: Blueprint[],
   _fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
@@ -169,17 +182,28 @@ export const apply = async (
 ): Promise<Plan> => {
   const changes = await plan(blueprints)
   if (force || await shouldApply(changes)) {
-    await runChangeMock(changes, reportProgress)
+    runChangeMock(changes, reportProgress)
   }
 
   return changes
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const discover = async (
   _blueprints: Blueprint[],
   _fillConfig: (configType: ObjectType) => Promise<InstanceElement>
 ): Promise<Blueprint[]> => [({ buffer: Buffer.from('asd'), filename: 'none' })]
+
+export const describe = async (
+  _searchWords: string[],
+  _blueprints?: Blueprint[],
+): Promise<SearchResult> => {
+  const elements = await getAllElements()
+  return {
+    key: 'salto_employee',
+    element: elements[3],
+    isGuess: false,
+  }
+}
 
 const mockIterator = async function *mockIterator(): AsyncIterable<InstanceElement[]> {
   const testType = new ObjectType({

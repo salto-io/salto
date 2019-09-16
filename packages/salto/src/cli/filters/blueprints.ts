@@ -1,7 +1,6 @@
 import yargs from 'yargs'
-import { Blueprint } from '../../blueprints/blueprint'
+import { Blueprint, loadBlueprints } from '../../core/blueprint'
 import { ParsedCliInput } from '../types'
-import { loadBlueprints } from '../blueprint'
 import { ParserFilter, ParsedCliInputFilter } from '../filter'
 
 export interface Args {

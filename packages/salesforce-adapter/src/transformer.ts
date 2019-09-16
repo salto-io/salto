@@ -13,7 +13,8 @@ import { API_VERSION, METADATA_NAMESPACE } from './client/client'
 import {
   API_NAME, LABEL, PICKLIST_VALUES, SALESFORCE, RESTRICTED_PICKLIST, FORMULA,
   FORMULA_TYPE_PREFIX, FIELD_TYPE_NAMES, FIELD_TYPE_API_NAMES, METADATA_OBJECT_NAME_FIELD,
-  METADATA_TYPE, FIELD_ANNOTATIONS, SALESFORCE_CUSTOM_SUFFIX, MAX_METADATA_RESTRICTION_VALUES,
+  METADATA_TYPE, FIELD_ANNOTATIONS, SALESFORCE_CUSTOM_SUFFIX,
+  MAX_METADATA_RESTRICTION_VALUES, SETTINGS_METADATA_TYPE,
 } from './constants'
 
 const capitalize = (s: string): string => {
@@ -201,6 +202,7 @@ export class Types {
     if (type === undefined) {
       return new ObjectType({
         elemID: new ElemID(SALESFORCE, bpCase(name)),
+        isSettings: name === SETTINGS_METADATA_TYPE,
       })
     }
     return type
@@ -364,7 +366,7 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
       // be visible in the picklist in the UI. Why? Because.
       annotations[FIELD_ANNOTATIONS.VISIBLE_LINES] = field.precision
     }
-  // Formulas
+    // Formulas
   } else if (field.calculated && !_.isEmpty(field.calculatedFormula)) {
     bpFieldType = Types.get(formulaTypeName(bpFieldType.elemID.name))
     annotations[FORMULA] = field.calculatedFormula
@@ -387,7 +389,7 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
 }
 
 /**
- * Apply transoform function on all keys in a values map recursively
+ * Apply transform function on all keys in a values map recursively
  *
  * @param obj Input object to transform
  * @param func Transform function to apply to all keys
@@ -436,7 +438,7 @@ export const toMetadataPackageZip = (instance: InstanceElement): Promise<Buffer>
   const typeName = metadataType(instance)
 
   const zip = new JSZip()
-  // Add package "manifest" that sepcifies what is contained in the rest of the zip
+  // Add package "manifest" that specifies what is contained in the rest of the zip
   zip.file(
     'default/package.xml',
     toMetadataXml('Package', {
@@ -453,7 +455,7 @@ export const toMetadataPackageZip = (instance: InstanceElement): Promise<Buffer>
 }
 
 export const toInstanceElements = (type: ObjectType, queryResult: QueryResult<Value>):
-InstanceElement[] => {
+  InstanceElement[] => {
   // Omit the "attributes" field from the objects
   const results = queryResult.records.map(obj => _.pickBy(obj, (_value, key) =>
     key !== 'attributes'))

@@ -5,7 +5,7 @@ import {
 } from 'adapter-api'
 import * as commands from '../../src/core/commands'
 import State from '../../src/state/state'
-import { Blueprint, getAllElements } from '../../src/blueprints/blueprint'
+import { Blueprint, getAllElements } from '../../src/core/blueprint'
 import adapterCreators from '../../src/core/adapters/creators'
 import { Plan } from '../../src/core/plan'
 

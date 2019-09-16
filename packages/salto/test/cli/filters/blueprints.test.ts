@@ -1,6 +1,5 @@
-import { Blueprint } from '../../../src/blueprints/blueprint'
 import { createCommandBuilder, YargsCommandBuilder } from '../../../src/cli/builder'
-import * as blueprintsImpl from '../../../src/cli/blueprint'
+import * as blueprintsImpl from '../../../src/core/blueprint'
 import * as bf from '../../../src/cli/filters/blueprints'
 import * as mocks from '../mocks'
 
@@ -34,7 +33,7 @@ describe('blueprint filter', () => {
       args,
     })
 
-  const testBlueprintArray: Blueprint[] = []
+  const testBlueprintArray: blueprintsImpl.Blueprint[] = []
   let blueprintsLoader: jest.MockInstance<unknown>
 
   beforeEach(() => {

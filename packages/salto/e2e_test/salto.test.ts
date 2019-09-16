@@ -9,15 +9,20 @@ import {
   InstanceElement, ObjectType, getChangeElement, Change,
 } from 'adapter-api'
 import wu from 'wu'
-import {
-  discover, plan, apply,
-} from '../src/cli/commands'
+import { CliOutput } from '../src/cli/types'
+import { loadBlueprints } from '../src/core/blueprint'
+import { MockWriteStream } from '../test/cli/mocks'
+import { command as discover } from '../src/cli/commands/discover'
+import { command as plan } from '../src/cli/commands/plan'
+import { ApplyCommand } from '../src/cli/commands/apply'
 import { Plan } from '../src/core/plan'
 import State from '../src/state/state'
 import adapterConfigs from './adapter_configs'
 
 const credentials = salesforceTestHelpers.credentials()
 const mockGetConfigType = (): InstanceElement => adapterConfigs.salesforce()
+
+let cliOutput: CliOutput
 
 let lastPlan: Plan
 const mockShouldApply = (p: Plan): boolean => {
@@ -30,7 +35,7 @@ const mockShouldApply = (p: Plan): boolean => {
 // to be thrown
 jest.mock('../src/cli/callbacks', () => ({
   getConfigFromUser: jest.fn().mockImplementation(() => mockGetConfigType()),
-  shouldApply: jest.fn().mockImplementation((p: Plan) => mockShouldApply(p)),
+  shouldApply: jest.fn().mockImplementation(() => mockShouldApply),
 }))
 
 describe('commands e2e', () => {
@@ -67,6 +72,7 @@ describe('commands e2e', () => {
     if (lastPlan) {
       lastPlan.clear()
     }
+    cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
   })
 
   jest.setTimeout(5 * 60 * 1000)
@@ -80,18 +86,19 @@ describe('commands e2e', () => {
   afterAll(() => fs.delete(discoverOutputDir))
 
   it('should run discover and create the state bp file', async () => {
-    await discover(discoverOutputDir, [])
+    await discover(await loadBlueprints([]), discoverOutputDir).execute()
     expect(await pathExists(discoverOutputDir)).toBe(true)
     expect(await pathExists(statePath)).toBe(true)
   })
 
   it('should run plan on discover output and detect no changes', async () => {
-    await plan([], discoverOutputDir)
+    await plan(await loadBlueprints([], discoverOutputDir), cliOutput).execute()
     expect(lastPlan).toBeUndefined()
   })
 
   it('should apply the new change', async () => {
-    await apply([addModelBP], discoverOutputDir)
+    await new ApplyCommand(await loadBlueprints([addModelBP], discoverOutputDir), false, cliOutput)
+      .execute()
     expect(lastPlan.size).toBe(1)
     const step = wu(lastPlan.itemsByEvalOrder()).next().value
     const parent = step.parent() as Change
@@ -104,7 +111,8 @@ describe('commands e2e', () => {
   })
 
   it('should apply changes in the new model', async () => {
-    await apply([modifyModelBP], discoverOutputDir)
+    await new ApplyCommand(await loadBlueprints([modifyModelBP], discoverOutputDir), false,
+      cliOutput).execute()
     expect(lastPlan.size).toBe(1)
     const step = wu(lastPlan.itemsByEvalOrder()).next().value
     expect(step.parent().action).toBe('modify')
@@ -116,7 +124,7 @@ describe('commands e2e', () => {
   })
 
   it('should apply a delete for the model', async () => {
-    await apply([], discoverOutputDir)
+    await new ApplyCommand(await loadBlueprints([], discoverOutputDir), false, cliOutput).execute()
     expect(lastPlan.size).toBe(1)
     const step = wu(lastPlan.itemsByEvalOrder()).next().value
     expect(step.parent().action).toBe('remove')

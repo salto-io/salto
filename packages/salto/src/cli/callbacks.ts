@@ -1,4 +1,5 @@
 import _ from 'lodash'
+// TODO: This import breaks the abstraction of CliOutput as it communicate directly with console
 import * as inquirer from 'inquirer'
 import {
   Type, ObjectType, ElemID, InstanceElement,
@@ -6,9 +7,10 @@ import {
 } from 'adapter-api'
 import { Plan } from '../core/plan'
 import {
-  createPlanOutput, header, subHeader, print,
+  createPlanOutput, header, subHeader,
 } from './formatter'
 import Prompts from './prompts'
+import { CliOutput } from './types'
 
 const getUserBooleanInput = async (prompt: string): Promise<boolean> => {
   const question = {
@@ -20,21 +22,21 @@ const getUserBooleanInput = async (prompt: string): Promise<boolean> => {
   return answers.userInput
 }
 
-export const shouldApply = async (actions: Plan): Promise<boolean> => {
+export const shouldApply = ({ stdout }: CliOutput) => async (actions: Plan): Promise<boolean> => {
   const planOutput = [
     header(Prompts.STARTAPPLY),
     subHeader(Prompts.EXPLAINAPPLY),
     createPlanOutput(actions),
   ].join('\n')
-  print(planOutput)
+  stdout.write(planOutput)
   if (_.isEmpty(actions)) {
     return false
   }
   const shouldExecute = await getUserBooleanInput(Prompts.SHOULDEXECUTREPLAN)
   if (shouldExecute) {
-    print(header(Prompts.STARTAPPLYEXEC))
+    stdout.write(Prompts.STARTAPPLYEXEC)
   } else {
-    print(header(Prompts.CANCELAPPLY))
+    stdout.write(Prompts.CANCELAPPLY)
   }
   return shouldExecute
 }

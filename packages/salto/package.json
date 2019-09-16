@@ -7,9 +7,6 @@
     "url": "https://github.com/salto-io/salto_monorepo"
   },
   "private": true,
-  "bin": {
-    "salto": "./bin/salto"
-  },
   "files": [
     "bin/**/*",
     "dist/**/*"

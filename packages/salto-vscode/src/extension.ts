@@ -12,16 +12,14 @@ import { provideWorkspaceDefinition } from './salto/definitions'
 
 const workspaces: {[key: string]: SaltoWorkspace} = {}
 
-const SaltoPosToVsPos = (pos: EditorPosition): vscode.Position => {
-  return new vscode.Position(pos.line - 1,pos.col)
-}
+const SaltoPosToVsPos = (
+  pos: EditorPosition
+): vscode.Position => new vscode.Position(pos.line - 1, pos.col)
 
-const VsPosToSaltoPos = (pos: vscode.Position): EditorPosition => {
-  return {
-    line: pos.line + 1, 
-    col: pos.character
-  }
-}
+const VsPosToSaltoPos = (pos: vscode.Position): EditorPosition => ({
+  line: pos.line + 1,
+  col: pos.character,
+})
 
 // This function is called whenever a file content is changed. The function will
 // reparse the file that changed.
@@ -84,22 +82,22 @@ const createCompletionsProvider = (
 const createDefinitionsProvider = (
   workspace: SaltoWorkspace
 ): vscode.DefinitionProvider => ({
-  provideDefinition : (
-    doc: vscode.TextDocument, 
-    position: vscode.Position, 
+  provideDefinition: (
+    doc: vscode.TextDocument,
+    position: vscode.Position,
   ): vscode.Definition => {
     const currenToken = doc.getText(doc.getWordRangeAtPosition(position))
     const context = getPositionContext(workspace, doc.fileName, {
       line: position.line + 1,
       col: position.character,
     })
-    return provideWorkspaceDefinition(workspace, context, currenToken).map( 
+    return provideWorkspaceDefinition(workspace, context, currenToken).map(
       def => new vscode.Location(
-        vscode.Uri.file(def.filename), 
+        vscode.Uri.file(def.filename),
         SaltoPosToVsPos(def.range.start)
       )
     )
-  }
+  },
 })
 
 export const activate = async (context: vscode.ExtensionContext): Promise<void> => {

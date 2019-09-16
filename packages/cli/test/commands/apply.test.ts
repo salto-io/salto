@@ -53,6 +53,11 @@ describe('apply command', () => {
           command.updateCurrentAction(planItem)
         })
 
+        it('should poll current action', () => {
+          command.pollCurrentAction()
+          expect(cliOutput.stdout.content.search('Still changing...')).toBeGreaterThan(0)
+        })
+
         it('should print progress upon update', () => {
           command.endCurrentAction()
           expect(cliOutput.stdout.content.search('Change completed')).toBeGreaterThan(0)

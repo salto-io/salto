@@ -84,6 +84,9 @@ export const elements = (): Element[] => {
         },
       ),
     },
+    annotations: {
+      description: 'Office type in salto',
+    },
   })
   saltoOffice.annotationTypes.label = BuiltinTypes.STRING
 
@@ -199,12 +202,30 @@ export const plan = async (_blueprints: Blueprint[]): Promise<Plan> => {
   }
   result.addNode(_.uniqueId('account'), [], accountPlanItem)
 
+  const employeeInstance = elements()[4] as InstanceElement
+  const updatedEmployee = _.cloneDeep(employeeInstance)
+  updatedEmployee.value.name = 'PostChange'
+  const employeeChange: Change = {
+    action: 'modify',
+    data: {
+      before: employeeInstance,
+      after: updatedEmployee,
+    },
+  }
+  const instancePlanItem: PlanItem = {
+    items: new Map<string, Change>([['instance', employeeChange]]),
+    groupKey: 'instance',
+    parent: () => employeeChange,
+  }
+  result.addNode(_.uniqueId('instance'), [], instancePlanItem)
+
   Object.assign(result, {
     itemsByEvalOrder(): Iterable<PlanItem> {
-      return [leadPlanItem, accountPlanItem]
+      return [leadPlanItem, accountPlanItem, instancePlanItem]
     },
     getItem(id: string): PlanItem {
-      return id.toString().startsWith('lead') ? leadPlanItem : accountPlanItem
+      if (id.startsWith('lead')) return leadPlanItem
+      return id.startsWith('account') ? accountPlanItem : instancePlanItem
     },
   })
 
@@ -235,8 +256,8 @@ export const discover = async (_blueprints: Blueprint[],
 export const describe = async (_searchWords: string[], _blueprints?: Blueprint[]):
   Promise<SearchResult> =>
   ({
-    key: 'salto_employee',
-    element: elements()[3],
+    key: 'salto_office',
+    element: elements()[2],
     isGuess: false,
   })
 

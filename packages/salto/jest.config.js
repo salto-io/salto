@@ -9,7 +9,6 @@ module.exports = deepMerge(
     collectCoverageFrom: [
       '!**/wasm_exec.*', // External source file
       '!<rootDir>/dist/index.js',
-      '!<rootDir>/dist/src/cli/callbacks.js',
     ],
     coverageThreshold: {
       // Slowly start increasing here, never decrease!

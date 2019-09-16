@@ -7,9 +7,18 @@ jest.mock('salto', () => ({
 }))
 
 describe('describe command', () => {
-  it('should run describe', async () => {
-    const cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+  let cliOutput: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }
+
+  beforeEach(async () => {
+    cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
     await command([], [], cliOutput).execute()
-    expect(cliOutput.stdout.content).toMatch('salto_employee')
+  })
+
+  it('should find element name', () => {
+    expect(cliOutput.stdout.content).toMatch('salto_office')
+  })
+
+  it('should find element description', () => {
+    expect(cliOutput.stdout.content.search('Office type in salto')).toBeGreaterThan(0)
   })
 })

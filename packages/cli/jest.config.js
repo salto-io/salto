@@ -8,6 +8,7 @@ module.exports = deepMerge(
     rootDir: `${__dirname}`,
     collectCoverageFrom: [
       '!<rootDir>/dist/index.js',
+      '!<rootDir>/dist/src/callbacks.js',
     ],
     coverageThreshold: {
       // Slowly start increasing here, never decrease!

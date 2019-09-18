@@ -22,6 +22,10 @@ interface SuggestionsParams {
 }
 export type SuggestionsResolver = (params: SuggestionsParams) => Suggestions
 
+export const isInsertText = (value: any): value is InsertText => {
+  return value.label !== undefined && value.insertText !== undefined
+}
+
 const getRestrictionValues = (annotatingElem: Type|Field, valueType: Type): Value[]|undefined => {
   const restrictions = annotatingElem.annotations[Type.RESTRICTION]
                        || valueType.annotations[Type.RESTRICTION]

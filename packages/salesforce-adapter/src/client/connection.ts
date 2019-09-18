@@ -4,6 +4,7 @@ import {
   ListMetadataQuery, FileProperties, DescribeSObjectResult,
   DescribeGlobalSObjectResult, DeployOptions, DeployResultLocator,
   DeployResult, QueryResult, BulkLoadOperation, BulkOptions, Batch,
+  Record as SfRecord,
 } from 'jsforce'
 import { Value } from 'adapter-api'
 
@@ -31,7 +32,7 @@ export interface Soap {
 }
 
 export interface Bulk {
-  load(type: string, operation: BulkLoadOperation, options?: BulkOptions, input?: Stream): Batch
+  load(type: string, operation: BulkLoadOperation, options?: BulkOptions, input?: SfRecord[]): Batch
 }
 
 export interface Global {

@@ -6,6 +6,7 @@ import { Blueprint } from '../../core/blueprint'
 import * as bf from '../filters/blueprints'
 import { getConfigFromUser } from '../callbacks'
 import Prompts from '../prompts'
+import { readCsv } from '../../core/csv'
 
 export const command = (blueprints: Blueprint[],
   inputPath: string,
@@ -16,10 +17,10 @@ export const command = (blueprints: Blueprint[],
       stdout.write(Prompts.IMPORT_COULD_NOT_FIND_FILE)
       return
     }
-    const csvFileIn = asyncfile.createReadStream(inputPath)
+    const records = await readCsv(inputPath)
     await importFromCsvFile(
       typeName,
-      csvFileIn,
+      records,
       blueprints,
       getConfigFromUser
     )

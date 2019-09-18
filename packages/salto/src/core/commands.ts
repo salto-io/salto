@@ -1,9 +1,8 @@
 import _ from 'lodash'
 import path from 'path'
 import {
-  ObjectType, InstanceElement,
+  ObjectType, InstanceElement, Value,
 } from 'adapter-api'
-import { Stream } from 'stream'
 import {
   applyActions, discoverAll, mergeAndValidate, getInstancesOfType, importInstancesOfType,
 } from './core'
@@ -99,7 +98,7 @@ export const exportToCsv = async (
 
 export const importFromCsvFile = async (
   typeId: string,
-  csvFile: Stream,
+  records: Value[],
   blueprints: Blueprint[],
   fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
 ): Promise<void> => {
@@ -112,5 +111,5 @@ export const importFromCsvFile = async (
   }
   const elements = mergeAndValidate(await getAllElements(blueprints))
   const [adapters] = await initAdapters(elements, fillConfig)
-  await importInstancesOfType(type as ObjectType, csvFile, adapters)
+  await importInstancesOfType(type as ObjectType, records, adapters)
 }

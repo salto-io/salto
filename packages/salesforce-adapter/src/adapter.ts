@@ -6,12 +6,14 @@ import {
   SaveResult, MetadataInfo, Field as SObjField, DescribeSObjectResult, QueryResult,
 } from 'jsforce'
 import _ from 'lodash'
+import { collections } from '@salto/lowerdash'
 import SalesforceClient, { Credentials } from './client/client'
 import * as constants from './constants'
 import {
   toCustomField, toCustomObject, apiName, sfCase, fieldFullName, Types,
   getSObjectFieldElement, toMetadataInfo, createInstanceElement,
   metadataType, toMetadataPackageZip, toInstanceElements, createMetadataTypeElements,
+  toRecords,
 } from './transformer'
 import layoutFilter from './filters/layouts'
 import fieldPermissionsFilter from './filters/field_permissions'
@@ -24,6 +26,10 @@ import standardValueSetFilter from './filters/standard_value_sets'
 import {
   FilterCreator, Filter, FilterWith, filtersWith,
 } from './filter'
+
+const CSV_IMPORT_CHUNK_SIZE = 10000
+
+const { makeArray } = collections.array
 
 // Add API name and label annotation if missing
 const annotateApiNameAndLabel = (element: ObjectType): void => {
@@ -166,8 +172,21 @@ export default class SalesforceAdapter {
    * @param data the stream that contains the object instances to import
    * @returns a promise that represents action completion
    */
-  public async importInstancesOfType(type: ObjectType, data: Stream): Promise<void> {
-    await this.client.loadBulk(apiName(type), data)
+  public async importInstancesOfType(type: ObjectType,
+    instancesIterator: AsyncIterable<InstanceElement>): Promise<void> {
+    let instances: InstanceElement[] = []
+    // eslint-disable-next-line no-restricted-syntax
+    for await (const instance of instancesIterator) {
+      // Aggregate the instance elements for the proper bulk size
+      const length = instances.push(instance)
+      if (length === CSV_IMPORT_CHUNK_SIZE) {
+        // Convert the instances in the transformer to SfRecord[] and send to bulk API
+        await this.client.uploadBulk(apiName(type), toRecords(instances))
+        instances = []
+      }
+    }
+    // Send the remaining instances
+    await this.client.uploadBulk(apiName(type), toRecords(instances))
   }
 
   /**

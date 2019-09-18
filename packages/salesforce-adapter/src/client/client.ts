@@ -12,9 +12,9 @@ import {
   QueryResult,
   DeployResult,
   BatchResultInfo,
+  Record as SfRecord,
 } from 'jsforce'
 import { Value } from 'adapter-api'
-import { Stream } from 'stream'
 import {
   CompleteSaveResult, SfError,
 } from './types'
@@ -274,12 +274,13 @@ export default class SalesforceClient {
    * @param csvContents The stream with the CSV contents
    * @returns The BatchResultInfo which contains success/errors for each entry
    */
-  public async loadBulk(type: string, csvContents: Stream): Promise<BatchResultInfo[]> {
+  public async uploadBulk(type: string, csvContents: SfRecord[]): Promise<BatchResultInfo[]> {
     await this.ensureLoggedIn()
     // Initiate the batch job
     const batch = this.conn.bulk.load(type, 'upsert', { extIdField: 'Id', concurrencyMode: 'Parallel' }, csvContents)
     // We need to wait for the job to execute (this what the next line does),
     // otherwise the retrieve() will fail
+    // So the following line is a part of SFDC Bulk API, not promise API.
     await batch.then()
     return await batch.retrieve() as BatchResultInfo[]
   }

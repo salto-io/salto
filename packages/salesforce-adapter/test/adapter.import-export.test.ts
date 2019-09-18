@@ -1,7 +1,6 @@
 import {
   ObjectType, ElemID, InstanceElement,
 } from 'adapter-api'
-import { Stream } from 'stream'
 import SalesforceAdapter from '../src/adapter'
 import Connection from '../src/client/connection'
 import mockAdpater from './adapter'
@@ -148,8 +147,45 @@ describe('SalesforceAdapter import-export operations', () => {
       },
     })
 
+    const mockSingleInstanceIterator = async function *mockSingleInstanceIterator(): AsyncIterable<
+    InstanceElement> {
+      const elemID = new ElemID('salesforce')
+      const values = [
+        {
+          Id: 1,
+          FirstName: 'Daile',
+          LastName: 'Limeburn',
+          Email: 'dlimeburn0@blogs.com',
+          Gender: 'Female',
+        }, {
+          Id: 2,
+          FirstName: 'Murial',
+          LastName: 'Morson',
+          Email: 'mmorson1@google.nl',
+          Gender: 'Female',
+        }, {
+          Id: 3,
+          FirstName: 'Minna',
+          LastName: 'Noe',
+          Email: 'mnoe2@wikimedia.org',
+          Gender: 'Female',
+        },
+      ]
+
+      const elements = values.map(value => new InstanceElement(
+        elemID,
+        testType,
+        value
+      ))
+
+      // eslint-disable-next-line no-restricted-syntax
+      for (const element of elements) {
+        yield element
+      }
+    }
+
     it('should call the bulk API with the correct object type name', async () => {
-      await adapter.importInstancesOfType(testType, new Stream())
+      await adapter.importInstancesOfType(testType, mockSingleInstanceIterator())
       expect(mockLoad.mock.calls[0][0]).toEqual(testObjectType)
     })
   })

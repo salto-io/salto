@@ -1,26 +1,12 @@
 import path from 'path'
 import * as fs from 'async-file'
-import { collections } from '@salto/lowerdash'
 import './wasm_exec'
 import { queue, AsyncQueue, ErrorCallback } from 'async'
-
-interface SourcePos {
-  line: number
-  col: number
-  byte: number
-}
-
-export interface SourceRange {
-  filename: string
-  start: SourcePos
-  end: SourcePos
-}
-
-export type SourceMap = collections.map.DefaultMap<string, SourceRange[]>
+import { SourceRange } from './parser_internal_types'
 
 export type ExpressionType = 'list'|'map'|'template'|'literal'|'reference'
 
-export interface HCLExpression {
+export type HCLExpression = {
   type: ExpressionType
   expressions: HCLExpression[]
   source?: SourceRange
@@ -28,23 +14,31 @@ export interface HCLExpression {
   value?: any
 }
 
-export interface HCLAttribute {
+export type HCLAttribute = {
   source: SourceRange
   expressions: HCLExpression[]
 }
 
-export interface HCLBlock {
+// TODO: add "blocks" with recursive reference when it's allowed in TS3.7
+export type HCLBlock = {
   type: string
   labels: string[]
   attrs: Record<string, HCLAttribute>
-  blocks: HCLBlock[]
-  source?: SourceRange
+}
+
+export type ParsedHCLBlock = HCLBlock & {
+  blocks: ParsedHCLBlock[]
+  source: SourceRange
+}
+
+export type DumpedHCLBlock = HCLBlock & {
+  blocks: DumpedHCLBlock[]
 }
 
 // hcl.Diagnostic struct taken from
 // https://github.com/hashicorp/hcl2/blob/f45c1cd/hcl/diagnostic.go#L26
 // TODO: include expression and evalContext when it's needed
-export interface ParseError {
+export interface HclParseError {
   severity: number
   summary: string
   detail: string
@@ -58,12 +52,12 @@ interface HclParseArgs {
 }
 
 interface HclParseReturn {
-  body: HCLBlock
-  errors: ParseError[]
+  body: ParsedHCLBlock
+  errors: HclParseError[]
 }
 
 interface HclDumpArgs {
-  body: HCLBlock
+  body: DumpedHCLBlock
 }
 
 
@@ -183,7 +177,7 @@ class HCLParser {
    * @param body The HCL data to dump
    * @returns The serialized data
    */
-  public dump(body: HCLBlock): Promise<HclDumpReturn> {
+  public dump(body: DumpedHCLBlock): Promise<HclDumpReturn> {
     return this.callPlugin({ func: 'dump', args: { body } }) as Promise<HclDumpReturn>
   }
 }

@@ -1,15 +1,14 @@
 import _ from 'lodash'
 import { Value, ElemID } from 'adapter-api'
-import {
-  HCLExpression, ExpressionType, SourceMap, SourceRange,
-} from './hcl'
-import { ReferenceExpression, TemplateExpression } from '../core/expressions'
+import { TemplateExpression, ReferenceExpression } from '../core/expressions'
+import { HCLExpression, ExpressionType } from './hcl'
+import { SourceMap, SourceRange } from './parser_internal_types'
 
 type ExpEvaluator = (expression: HCLExpression) => Value
 
-const evaluate = (expression: HCLExpression, baseId?: ElemID, srcMap?: SourceMap): Value => {
+const evaluate = (expression: HCLExpression, baseId?: ElemID, sourceMap?: SourceMap): Value => {
   const evalSubExpression = (exp: HCLExpression, key: string): Value =>
-    evaluate(exp, baseId && baseId.createNestedID(key), srcMap)
+    evaluate(exp, baseId && baseId.createNestedID(key), sourceMap)
 
   const evaluators: Record<ExpressionType, ExpEvaluator> = {
     list: exp => exp.expressions.map((e, idx) => evalSubExpression(e, idx.toString())),
@@ -28,9 +27,10 @@ const evaluate = (expression: HCLExpression, baseId?: ElemID, srcMap?: SourceMap
     reference: exp => new ReferenceExpression(exp.value),
   }
 
-  if (srcMap !== undefined && baseId !== undefined) {
-    srcMap.get(baseId.getFullName()).push(expression.source as SourceRange)
+  if (sourceMap && baseId && expression.source) {
+    sourceMap.push(baseId, expression as { source: SourceRange })
   }
+
   return evaluators[expression.type](expression)
 }
 

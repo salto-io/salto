@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import HCLParser, {
-  HCLBlock, HCLAttribute, HCLExpression, ParseError,
+  ParsedHCLBlock, HCLAttribute, HCLExpression, HclParseError,
 } from '../../src/parser/hcl'
 import devaluate from '../utils'
 import evaluate from '../../src/parser/expressions'
@@ -162,7 +162,7 @@ describe('HCL Parser', () => {
 
   describe('parse error', () => {
     const blockDef = 'type some.thing {}'
-    let errors: ParseError[]
+    let errors: HclParseError[]
 
     beforeAll(async () => {
       ({ errors } = await HCLParser.parse(Buffer.from(blockDef), 'none'))
@@ -188,7 +188,7 @@ describe('HCL Parser', () => {
 
   describe('traversal error', () => {
     const blockDef = 'type sometype { a = { foo.bar = 5 } }'
-    let errors: ParseError[]
+    let errors: HclParseError[]
 
     beforeAll(async () => {
       ({ errors } = await HCLParser.parse(Buffer.from(blockDef), 'none'))
@@ -237,7 +237,7 @@ describe('HCL Parser', () => {
     let serialized: string
 
     beforeAll(async () => {
-      const buffer = await HCLParser.dump(body as HCLBlock)
+      const buffer = await HCLParser.dump(body as ParsedHCLBlock)
       serialized = buffer.toString()
     })
 
@@ -263,19 +263,19 @@ describe('HCL Parser', () => {
       const parsed = await HCLParser.parse(Buffer.from(serialized), 'none')
       expect(parsed.errors.length).toEqual(0)
       // Filter out source ranges since they are only generated during parsing
-      const removeSrcFromBlock = (block: HCLBlock): HCLBlock =>
+      const removeSrcFromBlock = (block: ParsedHCLBlock): ParsedHCLBlock =>
         _.mapValues(block, (val, key) => {
           if (key === 'attrs') {
             return _.mapValues(val as Record<string, HCLAttribute>, v => evaluate(v.expressions[0]))
           }
           if (key === 'blocks') {
-            return (val as HCLBlock[]).map(blk => removeSrcFromBlock(blk))
+            return (val as ParsedHCLBlock[]).map(blk => removeSrcFromBlock(blk))
           }
           if (key === 'source') {
             return undefined
           }
           return val
-        }) as HCLBlock
+        }) as ParsedHCLBlock
 
       const parsedBody = removeSrcFromBlock(parsed.body)
       expect(body).toEqual(parsedBody)

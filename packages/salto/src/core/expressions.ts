@@ -2,17 +2,12 @@ import _ from 'lodash'
 
 import {
   ElemID, Element, isObjectType, isInstanceElement, isType, Value,
+  Expression, isExpression,
 } from 'adapter-api'
 
-interface Expression {
-  resolve(contextElements: Element[], visited?: string[]): Value
-}
+type TemplatePart = string | Expression
 
-type TemplatePart = string|Expression
-
-const isExpression = (value: Value): value is Expression => _.isFunction(value.resolve)
-
-export class ReferenceExpression {
+export class ReferenceExpression implements Expression {
   static readonly TRAVERSAL_SEPERATOR = '.'
   traversal: string
   root: ElemID
@@ -61,7 +56,7 @@ export class ReferenceExpression {
   }
 }
 
-export class TemplateExpression {
+export class TemplateExpression implements Expression {
   parts: TemplatePart[]
 
   constructor(parts: TemplatePart[]) {

@@ -1,6 +1,8 @@
 import * as vscode from 'vscode'
 import _ from 'lodash'
 import { initWorkspace, updateFile, SaltoWorkspace } from './salto/workspace'
+import { provideWorkspaceCompletionItems } from './salto/completions/provider'
+import { getPositionContext } from './salto/context'
 import { debugFunctions } from './salto/debug'
 
 /**
@@ -35,6 +37,38 @@ const onDidChangeConfiguration = async (
   )
 }
 
+// This function is called in order to create a completion provided - and
+// bind it to the current workspace
+const createProvider = (
+  workspaceName: string
+): vscode.CompletionItemProvider => ({
+  provideCompletionItems: (
+    doc: vscode.TextDocument,
+    position: vscode.Position
+  ) => {
+    const workspace = workspaces[workspaceName]
+    const context = getPositionContext(workspace, doc.fileName, {
+      line: position.line + 1,
+      col: position.character,
+    })
+    const line = doc.lineAt(position).text.substr(0, position.character)
+    return provideWorkspaceCompletionItems(workspace, context, line).map(
+      ({ label, reInvoke, insertText }) => {
+        const item = new vscode.CompletionItem(label)
+        if (reInvoke) {
+          item.insertText = insertText
+          item.command = {
+            command: 'editor.action.triggerSuggest',
+            title: 'Re-trigger completions...',
+          }
+        }
+        return item
+      }
+    )
+  },
+})
+
+
 export const activate = async (context: vscode.ExtensionContext): Promise<void> => {
   // eslint-disable-next-line no-console
   console.log('Workspace init started', new Date())
@@ -46,7 +80,14 @@ export const activate = async (context: vscode.ExtensionContext): Promise<void> 
       settings.additionalBlueprintDirs,
       settings.additionalBlueprints
     )
+
+    const completionProvider = vscode.languages.registerCompletionItemProvider(
+      { scheme: 'file', pattern: { base: rootPath, pattern: '*.bp' } },
+      createProvider(name),
+      ' '
+    )
     context.subscriptions.push(
+      completionProvider,
       vscode.workspace.onDidChangeTextDocument(e => onDidChangeTextDocument(e, name)),
       vscode.workspace.onDidChangeConfiguration(e => onDidChangeConfiguration(e, name, settings)),
       // A shortcut for registering all debug commands from debug.ts

@@ -2,7 +2,7 @@
 import _ from 'lodash'
 import * as vscode from 'vscode'
 import { SaltoWorkspace } from './workspace'
-import getPositionContext from './context'
+import { getPositionContext } from './context'
 /**
  * This file is used in order to quickly create debug functions on the loaded
  * workspace. Just add them to the map below, and to package.json. 

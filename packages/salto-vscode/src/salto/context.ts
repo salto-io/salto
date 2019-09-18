@@ -23,12 +23,12 @@ interface NamedRange {
   name: string
 }
 
-interface ContextReference {
+export interface ContextReference {
   element: Element
   path: string
 }
 
-interface PositionContext {
+export interface PositionContext {
   range: EditorRange
   part: PositionContextPart
   type: PositionContextType
@@ -72,9 +72,15 @@ const getContextReference = (
 }
 
 const getPositionConextPart = (
-  refRange: NamedRange,
-  position: EditorPosition
-): PositionContextPart => ((position.line === refRange.range.start.line) ? 'definition' : 'body')
+  contextRange: NamedRange,
+  position: EditorPosition,
+  ref?: ContextReference
+): PositionContextPart => {
+  if (ref && ref.path.length > 0) {
+    return 'body'
+  }
+  return (position.line === contextRange.range.start.line) ? 'definition' : 'body'
+}
 
 const getPositionConextType = (ref?: ContextReference): PositionContextType => {
   if (!ref) {
@@ -110,7 +116,7 @@ const buildPositionContext = (
     parent,
     ref,
     range: range.range,
-    part: getPositionConextPart(range, position),
+    part: getPositionConextPart(range, position, ref),
     type: getPositionConextType(ref),
   }
 
@@ -118,7 +124,7 @@ const buildPositionContext = (
     ? buildPositionContext(workspace, encapsulatedRanges, position, context) : context
 }
 
-const getPositionContext = (
+export const getPositionContext = (
   workspace: SaltoWorkspace,
   filename: string,
   position: EditorPosition
@@ -132,7 +138,7 @@ const getPositionContext = (
   }
 
   // A sorter for position contexts. Sorts by containment.
-  const encapluatationComparator = (left: NamedRange, right: NamedRange): number => {
+  const encapsulationComparator = (left: NamedRange, right: NamedRange): number => {
     if (isContained(left.range, right.range) && isContained(right.range, left.range)) return 0
     if (isContained(left.range, right.range)) return 1
     return -1
@@ -150,8 +156,6 @@ const getPositionContext = (
   // and are sorted so that each range contains all of the following ranges in the array
   const encapsulatingRanges = flatRanges.filter(
     r => isContained(cursorRange, r.range)
-  ).sort(encapluatationComparator)
+  ).sort(encapsulationComparator)
   return buildPositionContext(workspace, encapsulatingRanges, position)
 }
-
-export default getPositionContext

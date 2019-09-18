@@ -1,6 +1,6 @@
 import * as path from 'path'
 import { initWorkspace, SaltoWorkspace } from '../../src/salto/workspace'
-import getPositionContext from '../../src/salto/context'
+import { getPositionContext } from '../../src/salto/context'
 
 describe('Cursor context resolver', () => {
   let workspace: SaltoWorkspace

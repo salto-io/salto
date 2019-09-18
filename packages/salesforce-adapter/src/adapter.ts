@@ -6,7 +6,6 @@ import {
   SaveResult, MetadataInfo, Field as SObjField, DescribeSObjectResult, QueryResult,
 } from 'jsforce'
 import _ from 'lodash'
-import { collections } from '@salto/lowerdash'
 import SalesforceClient, { Credentials } from './client/client'
 import * as constants from './constants'
 import {
@@ -28,8 +27,6 @@ import {
 } from './filter'
 
 const CSV_IMPORT_CHUNK_SIZE = 10000
-
-const { makeArray } = collections.array
 
 // Add API name and label annotation if missing
 const annotateApiNameAndLabel = (element: ObjectType): void => {

@@ -1,12 +1,10 @@
 import asyncfile from 'async-file'
-import { importFromCsvFile } from '../../core/commands'
+import { importFromCsvFile, Blueprint, readCsv } from 'salto'
 import { createCommandBuilder } from '../builder'
 import { ParsedCliInput, CliCommand, CliOutput } from '../types'
-import { Blueprint } from '../../core/blueprint'
 import * as bf from '../filters/blueprints'
 import { getConfigFromUser } from '../callbacks'
 import Prompts from '../prompts'
-import { readCsv } from '../../core/csv'
 
 export const command = (blueprints: Blueprint[],
   inputPath: string,

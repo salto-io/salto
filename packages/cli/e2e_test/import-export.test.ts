@@ -13,7 +13,6 @@ const sfLeadObjectName = 'salesforce_lead'
 
 const mockGetConfigType = (): InstanceElement => adapterConfigs.salesforce()
 const homePath = process.env.HOME || process.env.HOMEPATH || process.env.USERPROFILE
-const { statePath } = new State()
 const discoverOutputDir = `${homePath}/BP/test_discover`
 
 // Attempting to access the functions on run time without the mock implementation, or
@@ -25,8 +24,6 @@ jest.mock('../src/callbacks', () => ({
 
 describe('When running export', () => {
   const pathExists = async (p: string): Promise<boolean> => fs.exists(p)
-  const homePath = process.env.HOME || process.env.HOMEPATH || process.env.USERPROFILE
-  const discoverOutputDir = `${homePath}/BP/test_discover`
   const exportOutputDir = `${homePath}/tmp/export`
   const exportFile = 'export_test.csv'
 
@@ -61,7 +58,7 @@ describe('When running import from a CSV file', () => {
 
   beforeEach(async () => {
     await fs.delete(discoverOutputDir)
-    await fs.delete(statePath)
+    await fs.delete(STATEPATH)
   })
 
   jest.setTimeout(5 * 60 * 1000)

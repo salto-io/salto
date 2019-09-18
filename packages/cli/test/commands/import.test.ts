@@ -1,21 +1,20 @@
 import { InstanceElement, ObjectType } from 'adapter-api'
-import { Blueprint } from 'src/core/blueprint'
+import { Blueprint } from 'salto'
 import { Stream } from 'stream'
 import * as asyncfile from 'async-file'
 import path from 'path'
-import * as coreMock from '../../core/mocks/core'
-import { command } from '../../../src/cli/commands/import'
-import { MockWriteStream } from '../mocks'
-import Prompts from '../../../src/cli/prompts'
+import { MockWriteStream, importFromCsvFile as mockImportFromCsv } from '../mocks'
+import { command } from '../../src/commands/import'
+import Prompts from '../../src/prompts'
 
-const mockImportFromCsv = coreMock.importFromCsvFile
-jest.mock('../../../src/core/commands', () => ({
+jest.mock('salto', () => ({
   importFromCsvFile: jest.fn().mockImplementation((
     typeId: string,
     csvFile: Stream,
     blueprints: Blueprint[],
     fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
   ) => mockImportFromCsv(typeId, csvFile, blueprints, fillConfig)),
+  readCsv: jest.fn().mockImplementation(() => { }),
 }))
 
 const inputDir = path.join(__dirname, 'temp')

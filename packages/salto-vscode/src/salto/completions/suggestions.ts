@@ -2,7 +2,7 @@ import _ from 'lodash'
 import {
   Type, Field, isObjectType, isInstanceElement, isPrimitiveType,
   isField, PrimitiveTypes, BuiltinTypes, isType, Value, getField,
-  getFieldNames, getFieldType, getAnnotationKey,
+  getFieldNames, getFieldType, getAnnotationKey, ElemID
 } from 'adapter-api'
 
 import { SaltoWorkspace } from '../workspace'
@@ -59,7 +59,7 @@ export const fieldValueSuggestions = (params: SuggestionsParams): Suggestions =>
   if (!(params.ref && isInstanceElement(params.ref.element))) return []
   const attrName = params.tokens[0]
   const refType = (params.ref.path)
-    ? getFieldType(params.ref.element.type, params.ref.path.split('_'))
+    ? getFieldType(params.ref.element.type, params.ref.path.split(ElemID.NAMESPACE_SEPERATOR))
     : params.ref.element.type
 
   if (isObjectType(refType)) {

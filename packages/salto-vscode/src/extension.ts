@@ -5,7 +5,7 @@ import { provideWorkspaceCompletionItems } from './salto/completions/provider'
 import { getPositionContext, EditorPosition } from './salto/context'
 import { debugFunctions } from './salto/debug'
 import { provideWorkspaceDefinition } from './salto/definitions'
-
+import { provideWorkspaceReferences } from './salto/usage'
 /**
  * This files act as a bridge between VSC and the salto specific functionality.
  */
@@ -100,6 +100,24 @@ const createDefinitionsProvider = (
   },
 })
 
+const createReferenceProvider = (
+  workspaceName: string
+): vscode.ReferenceProvider => ({
+  provideReferences: (
+    doc: vscode.TextDocument,
+    position: vscode.Position,
+  ): vscode.Location[] => {
+    const workspace = workspaces[workspaceName]
+    const currenToken = doc.getText(doc.getWordRangeAtPosition(position))
+    return provideWorkspaceReferences(workspace, currenToken).map(
+      def => new vscode.Location(
+        vscode.Uri.file(def.filename),
+        SaltoPosToVsPos(def.range.start)
+      )
+    )
+  },
+})
+
 export const activate = async (context: vscode.ExtensionContext): Promise<void> => {
   // eslint-disable-next-line no-console
   console.log('Workspace init started', new Date())
@@ -122,9 +140,16 @@ export const activate = async (context: vscode.ExtensionContext): Promise<void> 
       { scheme: 'file', pattern: { base: rootPath, pattern: '*.bp' } },
       createDefinitionsProvider(name)
     )
+
+    const referenceProvider = vscode.languages.registerReferenceProvider(
+      { scheme: 'file', pattern: { base: rootPath, pattern: '*.bp' } },
+      createReferenceProvider(name)
+    )
+
     context.subscriptions.push(
       completionProvider,
       definitionProvider,
+      referenceProvider,
       vscode.workspace.onDidChangeTextDocument(e => onDidChangeTextDocument(e, name)),
       vscode.workspace.onDidChangeConfiguration(e => onDidChangeConfiguration(e, name, settings)),
       // A shortcut for registering all debug commands from debug.ts

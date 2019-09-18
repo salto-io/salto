@@ -15,15 +15,23 @@ export const getField = (baseType: Type, pathParts: string[]): Field|undefined =
   // in the recursion in two ways - First we try only the first token.
   // If it fails, we try to first to tokens (the recursion will take)
   // care of the next "join"
-  const [curPart, ...restOfParts] = pathParts
-  if (_.isEmpty(curPart) || !isObjectType(baseType)) {
+
+  // We start by filtering out numbers from the path as they are
+  // list indexes, which are irelevant for type extractions
+  const [curPart, ...restOfParts] = pathParts.filter(p => Number.isNaN(Number(p)))
+  if (!isObjectType(baseType)) {
     return undefined
   }
 
-  if (baseType.fields[curPart]) {
-    return _.isEmpty(restOfParts) ? baseType.fields[curPart]
-      : getField(baseType.fields[curPart].type, restOfParts)
+  if (_.isEmpty(restOfParts)) {
+    return baseType.fields[curPart]
   }
+
+
+  if (baseType.fields[curPart]) {
+    return getField(baseType.fields[curPart].type, restOfParts)
+  }
+
   // First token is no good, we check if it is a part of a longer name
   const nextCur = [curPart, restOfParts[0]].join(ElemID.NAMESPACE_SEPERATOR)
   const nextRest = restOfParts.slice(1)

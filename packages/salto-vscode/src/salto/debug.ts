@@ -41,7 +41,7 @@ export const debugFunctions: { [key: string] : (workspace: SaltoWorkspace) => vo
     const editor = vscode.window.activeTextEditor
     if (editor) {
       const position = editor.selection.active
-      const ctx = getPositionContext(workspace, editor.document.fileName, {line: position.line + 1, col: position.character})
+      const ctx = getPositionContext(workspace, editor.document.getText(), editor.document.fileName, {line: position.line + 1, col: position.character})
       console.log("------", ctx)
     }
     else {

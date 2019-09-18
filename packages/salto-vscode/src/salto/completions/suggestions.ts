@@ -33,7 +33,18 @@ const getRestrictionValues = (annotatingElem: Type|Field, valueType: Type): Valu
   return (restrictions && restrictions.values)
 }
 
-export const valueSuggestions = (annotatingElem: Type|Field, valueType: Type): Suggestions => {
+export const valueSuggestions = (
+  ref: ContextReference,
+  annotatingElem: Type|Field,
+  valueType: Type
+): Suggestions => {
+  // If the annotating element is a list and we are not in a list content
+  // we need to created one
+  if (isField(annotatingElem) && annotatingElem.isList && !ref.isList) {
+    return [{ label: '[]', insertText: '[$0]' }]
+  }
+
+  // Now that we know we are in the actual value - lets use it!
   const restrictionValues = getRestrictionValues(annotatingElem, valueType)
   if (restrictionValues) {
     return restrictionValues.map(v => JSON.stringify(v))
@@ -62,11 +73,10 @@ export const fieldValueSuggestions = (params: SuggestionsParams): Suggestions =>
     ? getFieldType(params.ref.element.type, params.ref.path.split(ElemID.NAMESPACE_SEPERATOR))
     : params.ref.element.type
 
-  if (isObjectType(refType)) {
-    const valueField = refType.fields[attrName]
-    return (valueField) ? valueSuggestions(valueField, valueField.type) : []
-  }
-  return []
+  const valueField = (attrName && isObjectType(refType)) ? refType.fields[attrName]
+    : getField(params.ref.element.type, params.ref.path.split('_'))
+
+  return (valueField) ? valueSuggestions(params.ref, valueField, valueField.type) : []
 }
 
 export const annoSuggestions = (params: SuggestionsParams): Suggestions => {
@@ -95,10 +105,10 @@ export const annoValueSuggestions = (params: SuggestionsParams): Suggestions => 
   if (annoType && params.ref.path) {
     const annoPath = params.ref.path.slice(annoName.length)
     const attrField = getField(annoType, annoPath.split(' '))
-    return (attrField) ? valueSuggestions(attrField, attrField.type) : []
+    return (attrField) ? valueSuggestions(params.ref, attrField, attrField.type) : []
   }
   if (annoType) {
-    return valueSuggestions(annoType, annoType)
+    return valueSuggestions(params.ref, annoType, annoType)
   }
   return []
 }

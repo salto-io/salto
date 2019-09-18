@@ -1,6 +1,7 @@
 import _ from 'lodash'
-import { Value, ElemID } from 'adapter-api'
-import { TemplateExpression, ReferenceExpression } from '../core/expressions'
+import {
+  Value, ElemID, TemplateExpression, ReferenceExpression,
+} from 'adapter-api'
 import { HCLExpression, ExpressionType } from './hcl'
 import { SourceMap, SourceRange } from './parser_internal_types'
 
@@ -14,7 +15,7 @@ const evaluate = (expression: HCLExpression, baseId?: ElemID, sourceMap?: Source
     list: exp => exp.expressions.map((e, idx) => evalSubExpression(e, idx.toString())),
     template: exp => (exp.expressions.filter(e => e.type !== 'literal').length === 0
       ? exp.expressions.map(e => evaluate(e)).join('')
-      : new TemplateExpression(exp.expressions.map(e => evaluate(e)))),
+      : { parts: exp.expressions.map(e => evaluate(e)) } as TemplateExpression),
     map: exp => _(exp.expressions)
       .chunk(2)
       .map(([keyExp, valExp]) => {
@@ -24,7 +25,7 @@ const evaluate = (expression: HCLExpression, baseId?: ElemID, sourceMap?: Source
       .fromPairs()
       .value(),
     literal: exp => exp.value,
-    reference: exp => new ReferenceExpression(exp.value),
+    reference: exp => ({ traversalParts: exp.value } as ReferenceExpression),
   }
 
   if (sourceMap && baseId && expression.source) {

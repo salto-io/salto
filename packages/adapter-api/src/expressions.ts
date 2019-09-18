@@ -1,9 +1,25 @@
 import _ from 'lodash'
+import { Value } from './elements'
 
-import { Element, Value } from './elements'
-
-export interface Expression {
-  resolve(contextElements: Element[], visited?: string[]): Value
+export type ReferenceExpression = {
+  traversalParts: Value[]
 }
 
-export const isExpression = (value: Value): value is Expression => _.isFunction(value.resolve)
+export const isReferenceExpression = (v: Value): v is ReferenceExpression =>
+  _.isArrayLike(v.traversalParts)
+
+export const EXPRESSION_TRAVERSAL_SEPERATOR = '.'
+
+export type TemplateExpression = {
+  parts: TemplatePart[]
+}
+
+export const isTemplateExpression = (v: Value): v is TemplateExpression =>
+  _.isArrayLike(v.parts)
+
+export type Expression = ReferenceExpression | TemplateExpression
+
+export const isExpression = (v: Value): v is Expression =>
+  isReferenceExpression(v) || isTemplateExpression(v)
+
+export type TemplatePart = string | Expression

@@ -1,6 +1,9 @@
 import _ from 'lodash'
+import {
+  ReferenceExpression, TemplateExpression, EXPRESSION_TRAVERSAL_SEPERATOR, isReferenceExpression,
+} from 'adapter-api'
 import { HCLExpression } from '../src/parser/hcl'
-import { ReferenceExpression, TemplateExpression } from '../src/core/expressions'
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const devaluate = (value: any): HCLExpression => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -31,14 +34,17 @@ const devaluate = (value: any): HCLExpression => {
 
   const devaluateReference = (ref: ReferenceExpression): HCLExpression => ({
     type: 'reference',
-    value: ref.traversal.split(ReferenceExpression.TRAVERSAL_SEPERATOR),
+    value: ref.traversalParts
+      .join(EXPRESSION_TRAVERSAL_SEPERATOR)
+      .split(EXPRESSION_TRAVERSAL_SEPERATOR),
     expressions: [],
   })
 
   const devaluateTemplateExpression = (templateExp: TemplateExpression): HCLExpression => ({
     type: 'template',
-    expressions: templateExp.parts.map(p => (p instanceof ReferenceExpression
-      ? devaluateReference(p as ReferenceExpression) : devaluateValue(p))),
+    expressions: templateExp.parts.map(p => (
+      isReferenceExpression(p) ? devaluateReference(p) : devaluateValue(p)
+    )),
   })
 
   if (_.isString(value)) {
@@ -52,10 +58,10 @@ const devaluate = (value: any): HCLExpression => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return devaluateObject(value as Record<string, any>)
   }
-  if (value instanceof ReferenceExpression) {
+  if (value.traversalParts) {
     return devaluateReference(value)
   }
-  if (value instanceof TemplateExpression) {
+  if (value.parts) {
     return devaluateTemplateExpression(value)
   }
 

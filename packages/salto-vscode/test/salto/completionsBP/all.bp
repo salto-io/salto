@@ -121,10 +121,3 @@ type vs_loan {
         }
     }
 }
-
-vs_loan test_load {
-    loaner = {
-        first_name = ""
-    }
-}
-

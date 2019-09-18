@@ -21,6 +21,7 @@ const VsPosToSaltoPos = (pos: vscode.Position): EditorPosition => ({
   col: pos.character,
 })
 
+const lastWorkspaceUpdate: {[key: string]: Promise<SaltoWorkspace>} = {}
 // This function is called whenever a file content is changed. The function will
 // reparse the file that changed.
 const onDidChangeTextDocument = async (
@@ -28,7 +29,7 @@ const onDidChangeTextDocument = async (
   workspaceName: string
 ): Promise<void> => {
   const workspace = workspaces[workspaceName]
-  workspace.lastUpdate = updateFile(
+  lastWorkspaceUpdate[workspaceName] = updateFile(
     workspace,
     event.document.fileName,
     event.document.getText()
@@ -61,16 +62,16 @@ const createCompletionsProvider = (
     doc: vscode.TextDocument,
     position: vscode.Position
   ) => {
-    const workspace = workspaces[workspaceName]
-    if (workspace.lastUpdate) {
-      await workspace.lastUpdate
+    if (lastWorkspaceUpdate[workspaceName]) {
+      await lastWorkspaceUpdate[workspaceName]
     }
+    const workspace = workspaces[workspaceName]
     const context = getPositionContext(workspace, doc.fileName, VsPosToSaltoPos(position))
     const line = doc.lineAt(position).text.substr(0, position.character)
     return provideWorkspaceCompletionItems(workspace, context, line).map(
       ({ label, reInvoke, insertText }) => {
         const item = new vscode.CompletionItem(label)
-        item.insertText = new vscode.SnippetString(insertText) || label
+        item.insertText = new vscode.SnippetString(insertText)
         if (reInvoke) {
           item.command = {
             command: 'editor.action.triggerSuggest',

@@ -75,11 +75,11 @@ const removeLinePrefix = (line: string): string => {
 const createCompletionItems = (
   suggestions: Suggestions,
   reInvoke: boolean
-): SaltoCompletion[] => suggestions.map(label => {
-  let insertText = (reInvoke) ? `${label} ` : label
-  if (label === '{}') {
-    insertText = '{$0}'
-  }
+): SaltoCompletion[] => suggestions.map(suggestions => {
+  const label = suggestions.label || suggestions
+  const insertBody = suggestions.insertText || suggestions
+  const insertSuffix = reInvoke ? ' ' : ''
+  const insertText = [insertBody, insertSuffix].join('')
   return { label, reInvoke, insertText }
 })
 

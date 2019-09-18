@@ -1,12 +1,12 @@
 import {
-  ObjectType, Element, Values, Field, isObjectType,
+  ObjectType, Element, Values, Field, isObjectType, isInstanceElement, InstanceElement,
 } from 'adapter-api'
 import _ from 'lodash'
 import { SaveResult } from 'jsforce'
+import { CUSTOM_OBJECT } from '../constants'
 import {
-  sfCase, fieldFullName, bpCase,
+  sfCase, fieldFullName, bpCase, apiName, metadataType,
 } from '../transformer'
-import SalesforceClient from '../client/client'
 import { FilterCreator } from '../filter'
 import { ProfileInfo } from '../client/types'
 
@@ -45,53 +45,58 @@ const toProfiles = (object: ObjectType): ProfileInfo[] => {
   return Array.from(profiles.values())
 }
 
-type FieldPermissions = Map<string, { editable: boolean; readable: boolean }>
+type FieldPermission = { field: string; editable: boolean; readable: boolean }
+type ProfileToPermission = Map<string, { editable: boolean; readable: boolean }>
+
 /**
- * Transform list of ProfileInfo to map fieldFullName -> profileName -> FieldPermission
+ * Reduce a list of Profile InstanceElement to map: fieldFullName -> profileName -> permission
  */
-const fromProfiles = (profiles: ProfileInfo[]): Map<string, FieldPermissions> => {
-  const permissions = new Map<string, FieldPermissions>()
-  profiles.forEach(profile => {
-    if (!profile.fieldPermissions) {
-      return
+const permissionsFromProfileInstances = (permissionsAccumulator: Map<string, ProfileToPermission>,
+  profileInstance: InstanceElement):
+    Map<string, ProfileToPermission> => {
+  const instanceFieldPermissions = (profileInstance.value.field_permissions as FieldPermission[])
+  if (!instanceFieldPermissions) {
+    return permissionsAccumulator
+  }
+  const profileInstanceName = apiName(profileInstance)
+
+  instanceFieldPermissions.forEach(fieldPermission => {
+    const fieldName = fieldPermission.field
+    if (!permissionsAccumulator.has(fieldName)) {
+      permissionsAccumulator.set(fieldName,
+        new Map<string, { editable: boolean; readable: boolean}>())
     }
-    profile.fieldPermissions.forEach(fieldPermission => {
-      const name = fieldPermission.field
-      if (!permissions.has(name)) {
-        permissions.set(name, new Map<string, { editable: boolean; readable: boolean }>())
-      }
-      (permissions.get(name) as Map<string, { editable: boolean; readable: boolean }>)
-        .set(profile.fullName, {
-          editable: fieldPermission.editable,
-          readable: fieldPermission.readable,
-        })
-    })
+    (permissionsAccumulator.get(fieldName) as
+      Map<string, { editable: boolean; readable: boolean }>)
+      .set(profileInstanceName, {
+        editable: fieldPermission.editable,
+        readable: fieldPermission.readable,
+      })
   })
-
-  return permissions
-}
-
-const readProfiles = async (client: SalesforceClient): Promise<ProfileInfo[]> => {
-  const profilesNames = (await client.listMetadataObjects(PROFILE_METADATA_TYPE))
-    .map(obj => obj.fullName)
-
-  return client.readMetadata(PROFILE_METADATA_TYPE, profilesNames) as Promise<ProfileInfo[]>
+  return permissionsAccumulator
 }
 // ---
 
 /**
  * Field permissions filter. Handle the mapping from sobject field FIELD_LEVEL_SECURITY_ANNOTATION
- * annotation and Profile.fieldsPermissions.
+ * annotation and remove Profile.fieldsPermissions.
  */
 const filterCreator: FilterCreator = ({ client }) => ({
   onDiscover: async (elements: Element[]): Promise<void> => {
-    const sobjects = elements.filter(isObjectType)
-    if (_.isEmpty(sobjects)) {
+    const customObjectTypes = elements.filter(isObjectType)
+      .filter(element => metadataType(element) === CUSTOM_OBJECT)
+    if (_.isEmpty(customObjectTypes)) {
       return
     }
-    const permissions = fromProfiles(await readProfiles(client))
-    // add field permissions to all discovered elements
-    sobjects.forEach(sobject => {
+    const profileInstances = elements.filter(isInstanceElement)
+      .filter(element => metadataType(element) === PROFILE_METADATA_TYPE)
+    if (_.isEmpty(profileInstances)) {
+      return
+    }
+    const permissions = profileInstances
+      .reduce(permissionsFromProfileInstances, new Map<string, ProfileToPermission>())
+    // Add field permissions to all discovered elements
+    customObjectTypes.forEach(sobject => {
       Object.values(sobject.fields).forEach(field => {
         const fieldPermission = permissions.get(fieldFullName(sobject, field))
         if (fieldPermission) {
@@ -102,6 +107,12 @@ const filterCreator: FilterCreator = ({ client }) => ({
         }
       })
     })
+
+    // Remove field permissions from Profile Instances & Type to avoid information duplication
+    profileInstances.forEach(profileInstance => delete profileInstance.value.field_permissions)
+    elements.filter(isObjectType)
+      .filter(element => metadataType(element) === PROFILE_METADATA_TYPE)
+      .forEach(profileType => delete profileType.fields.field_permissions)
   },
 
   onAdd: async (after: Element): Promise<SaveResult[]> => {

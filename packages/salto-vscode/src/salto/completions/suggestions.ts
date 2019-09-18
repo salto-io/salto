@@ -2,7 +2,7 @@ import _ from 'lodash'
 import {
   Type, Field, isObjectType, isInstanceElement, isPrimitiveType,
   isField, PrimitiveTypes, BuiltinTypes, isType, Value, getField,
-  getFieldNames, getFieldType, getAnnotationKey, ElemID
+  getFieldNames, getFieldType, getAnnotationKey, ElemID,
 } from 'adapter-api'
 
 import { SaltoWorkspace } from '../workspace'

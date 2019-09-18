@@ -1,5 +1,3 @@
-import _ from 'lodash'
-
 import { isObjectType, isInstanceElement, getField } from 'adapter-api'
 import { SaltoWorkspace } from './workspace'
 import { PositionContext } from './context'

@@ -1,9 +1,9 @@
 import _ from 'lodash'
 import wu from 'wu'
 
+import { ParsedBlueprint } from 'salto'
 import { SaltoWorkspace } from './workspace'
 import { EditorRange } from './context'
-import { ParsedBlueprint } from 'salto'
 
 export interface SaltoElemLocation {
   fullname: string

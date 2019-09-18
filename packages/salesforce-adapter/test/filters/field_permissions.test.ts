@@ -6,7 +6,6 @@ import { ProfileInfo } from '../../src/client/types'
 import filterCreator, {
   FIELD_LEVEL_SECURITY_ANNOTATION,
 } from '../../src/filters/field_permissions'
-import SalesforceClient from '../../src/client/client'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
@@ -52,13 +51,13 @@ describe('Field Permissions filter', () => {
 
   beforeEach(() => {
     mockUpdate = jest.fn().mockImplementationOnce(() => ([{ success: true }]))
-    SalesforceClient.prototype.update = mockUpdate
+    client.update = mockUpdate
   })
 
   it('should discover sobject permissions', async () => {
-    SalesforceClient.prototype.listMetadataObjects = jest.fn().mockImplementation(() => [
+    client.listMetadataObjects = jest.fn().mockImplementation(() => [
       { fullName: 'Admin' }])
-    SalesforceClient.prototype.readMetadata = jest.fn().mockImplementation(() => ([{
+    client.readMetadata = jest.fn().mockImplementation(() => ([{
       fullName: 'Admin',
       fieldPermissions: [
         {
@@ -98,7 +97,7 @@ describe('Field Permissions filter', () => {
   })
 
   it('should fail field permissions filter add due to sfdc error', async () => {
-    SalesforceClient.prototype.update = jest.fn().mockImplementationOnce(() => ([{
+    client.update = jest.fn().mockImplementation(() => ([{
       success: false,
       errors: [
         {

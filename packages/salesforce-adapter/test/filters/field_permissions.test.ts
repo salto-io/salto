@@ -39,19 +39,15 @@ describe('Field Permissions filter', () => {
     [FIELD_LEVEL_SECURITY_ANNOTATION]: { standard: { editable: false, readable: true } },
   }
   const mockProfileElemID = new ElemID(constants.SALESFORCE, 'profile')
-  const mockFieldPermissionsID = new ElemID(constants.SALESFORCE, 'profile', 'field_permissions')
+  const mockFieldPermissions = new ObjectType({
+    elemID: new ElemID(constants.SALESFORCE, 'profile_field_level_security'),
+    fields: {},
+    annotations: { [constants.METADATA_TYPE]: 'ProfileFieldLevelSecurity' },
+  })
   const mockProfile = new ObjectType({
     elemID: mockProfileElemID,
     fields: {
-      [constants.FIELD_PERMISSIONS]: new Field(mockProfileElemID, 'field_permissions', new ObjectType(
-        {
-          elemID: mockFieldPermissionsID,
-          fields: {},
-          annotations: {
-            [constants.METADATA_TYPE]: 'ProfileFieldLevelSecurity',
-          },
-        }
-      )),
+      [constants.FIELD_PERMISSIONS]: new Field(mockProfileElemID, 'field_permissions', mockFieldPermissions),
     },
     annotationTypes: {},
     annotations: {
@@ -126,12 +122,14 @@ describe('Field Permissions filter', () => {
     // Check profile instances' field_permissions were deleted
     elements.filter(isInstanceElement)
       .filter(elem => metadataType(elem) === PROFILE_METADATA_TYPE)
-      .forEach(profileInstance => expect(profileInstance.value.field_permissions).toBeUndefined())
+      .forEach(profileInstance => expect(profileInstance.value[constants.FIELD_PERMISSIONS])
+        .toBeUndefined())
 
     // Check Profile type's field_permissions field was deleted
     const profileType = elements.filter(isObjectType)
       .filter(elem => metadataType(elem) === PROFILE_METADATA_TYPE)[0]
-    expect(profileType.fields.field_permissions).toBeUndefined()
+    expect(profileType).toBeDefined()
+    expect(profileType.fields[constants.FIELD_PERMISSIONS]).toBeUndefined()
   })
   it('should update field permissions upon new salesforce type', async () => {
     const after = mockObject.clone()

@@ -3,7 +3,7 @@ import {
 } from 'adapter-api'
 import _ from 'lodash'
 import { SaveResult } from 'jsforce'
-import { CUSTOM_OBJECT } from '../constants'
+import { CUSTOM_OBJECT, FIELD_PERMISSIONS } from '../constants'
 import {
   sfCase, fieldFullName, bpCase, apiName, metadataType,
 } from '../transformer'
@@ -18,6 +18,10 @@ const fieldPermissions = (field: Field): Values =>
   (field.annotations[FIELD_LEVEL_SECURITY_ANNOTATION]
     ? field.annotations[FIELD_LEVEL_SECURITY_ANNOTATION]
     : {})
+
+const setFieldPermissions = (field: Field, fieldPermission: ProfileToPermission): void => {
+  field.annotations[FIELD_LEVEL_SECURITY_ANNOTATION] = fieldPermission
+}
 
 const setEmptyFieldPermissions = (field: Field): void => {
   field.annotations[FIELD_LEVEL_SECURITY_ANNOTATION] = {}
@@ -46,34 +50,25 @@ const toProfiles = (object: ObjectType): ProfileInfo[] => {
 }
 
 type FieldPermission = { field: string; editable: boolean; readable: boolean }
-type ProfileToPermission = Map<string, { editable: boolean; readable: boolean }>
+type ProfileToPermission = Record<string, { editable: boolean; readable: boolean }>
 
 /**
- * Reduce a list of Profile InstanceElement to map: fieldFullName -> profileName -> permission
+ * Create a list of { field_name: { profile_name: { editable: boolean, readable: boolean } } }
+ * from the profile's field permissions
  */
-const permissionsFromProfileInstances = (permissionsAccumulator: Map<string, ProfileToPermission>,
-  profileInstance: InstanceElement):
-    Map<string, ProfileToPermission> => {
-  const instanceFieldPermissions = (profileInstance.value.field_permissions as FieldPermission[])
+const profileToPermissionsMapping = (profileInstance: InstanceElement):
+  Record<string, ProfileToPermission>[] => {
+  const profileInstanceName = bpCase(apiName(profileInstance))
+  const instanceFieldPermissions = (profileInstance.value[FIELD_PERMISSIONS] as FieldPermission[])
   if (!instanceFieldPermissions) {
-    return permissionsAccumulator
+    return []
   }
-  const profileInstanceName = apiName(profileInstance)
-
-  instanceFieldPermissions.forEach(fieldPermission => {
-    const fieldName = fieldPermission.field
-    if (!permissionsAccumulator.has(fieldName)) {
-      permissionsAccumulator.set(fieldName,
-        new Map<string, { editable: boolean; readable: boolean}>())
-    }
-    (permissionsAccumulator.get(fieldName) as
-      Map<string, { editable: boolean; readable: boolean }>)
-      .set(profileInstanceName, {
-        editable: fieldPermission.editable,
-        readable: fieldPermission.readable,
-      })
-  })
-  return permissionsAccumulator
+  return instanceFieldPermissions.map(({ field, readable, editable }) => (
+    {
+      [field]: {
+        [profileInstanceName]: { readable, editable },
+      },
+    }))
 }
 // ---
 
@@ -93,26 +88,24 @@ const filterCreator: FilterCreator = ({ client }) => ({
     if (_.isEmpty(profileInstances)) {
       return
     }
-    const permissions = profileInstances
-      .reduce(permissionsFromProfileInstances, new Map<string, ProfileToPermission>())
+    const permissions = _.merge({}, ..._.flatten(profileInstances
+      .map(profileToPermissionsMapping))) as Record<string, ProfileToPermission>
+
     // Add field permissions to all discovered elements
     customObjectTypes.forEach(sobject => {
       Object.values(sobject.fields).forEach(field => {
-        const fieldPermission = permissions.get(fieldFullName(sobject, field))
+        const fieldPermission = permissions[fieldFullName(sobject, field)]
         if (fieldPermission) {
-          setEmptyFieldPermissions(field)
-          fieldPermission.forEach((profilePermission, profile) => {
-            fieldPermissions(field)[bpCase(profile)] = profilePermission
-          })
+          setFieldPermissions(field, fieldPermission)
         }
       })
     })
 
     // Remove field permissions from Profile Instances & Type to avoid information duplication
-    profileInstances.forEach(profileInstance => delete profileInstance.value.field_permissions)
+    profileInstances.forEach(profileInstance => delete profileInstance.value[FIELD_PERMISSIONS])
     elements.filter(isObjectType)
       .filter(element => metadataType(element) === PROFILE_METADATA_TYPE)
-      .forEach(profileType => delete profileType.fields.field_permissions)
+      .forEach(profileType => delete profileType.fields[FIELD_PERMISSIONS])
   },
 
   onAdd: async (after: Element): Promise<SaveResult[]> => {

@@ -13,6 +13,7 @@ export const PICKLIST_VALUES = 'values'
 export const API_NAME = 'api_name'
 export const FORMULA = 'formula'
 export const METADATA_TYPE = 'metadata_type'
+export const FIELD_PERMISSIONS = 'field_permissions'
 export const FIELD_TYPE_NAMES = {
   STRING: 'string',
   AUTONUMBER: 'autonumber',

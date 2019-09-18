@@ -76,8 +76,8 @@ const createCompletionItems = (
   suggestions: Suggestions,
   reInvoke: boolean
 ): SaltoCompletion[] => suggestions.map(suggestion => {
-  const label = isInsertText(suggestion) ?  suggestion.label : suggestion
-  const insertBody = isInsertText(suggestion) ?  suggestion.insertText : suggestion
+  const label = isInsertText(suggestion) ? suggestion.label : suggestion
+  const insertBody = isInsertText(suggestion) ? suggestion.insertText : suggestion
   const insertSuffix = reInvoke ? ' ' : ''
   const insertText = [insertBody, insertSuffix].join('')
   return { label, reInvoke, insertText }

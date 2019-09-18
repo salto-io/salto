@@ -2,10 +2,9 @@ import _ from 'lodash'
 import wu from 'wu'
 
 import { ParsedBlueprint } from 'salto'
-import { isObjectType, isInstanceElement } from 'adapter-api'
+import { isObjectType, isInstanceElement, getField } from 'adapter-api'
 import { SaltoWorkspace } from './workspace'
 import { EditorRange, PositionContext } from './context'
-import { getFieldTypeFromPath } from './completions/suggestions'
 
 interface SaltoDefinition {
   fullname: string
@@ -48,7 +47,7 @@ export const provideWorkspaceDefinition = (
 ): SaltoDefinition[] => {
   if (context.ref && isInstanceElement(context.ref.element)) {
     const refType = (context.ref.path)
-      ? getFieldTypeFromPath(context.ref.element.type, context.ref.path.split(' '))
+      ? getField(context.ref.element.type, context.ref.path.split(' '))
       : context.ref.element.type
     // If we are inside an instance obj, we look for the *field* definitions by
     // field name

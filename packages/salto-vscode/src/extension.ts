@@ -1,6 +1,7 @@
 import * as vscode from 'vscode'
 import _ from 'lodash'
 import { initWorkspace, updateFile, SaltoWorkspace } from './salto/workspace'
+import { provideWorkspaceCompletionItems } from './salto/completions/provider'
 import { getPositionContext, EditorPosition } from './salto/context'
 import { debugFunctions } from './salto/debug'
 import { provideWorkspaceDefinition } from './salto/definitions'
@@ -62,11 +63,7 @@ const createCompletionsProvider = (
     position: vscode.Position
   ) => {
     const workspace = workspaces[workspaceName]
-    const getFullLine = (d: vscode.TextDocument, p: vscode.Position): string => {
-      const lineEnderReg = new RegExp(`[${LINE_ENDERS.join('')}]`)
-      const lines = d.lineAt(p).text.substr(0, p.character).split(lineEnderReg)
-      return _.trimStart(lines[lines.length - 1])
-    }
+    const context = getPositionContext(workspace, doc.fileName, VsPosToSaltoPos(position))
     const line = doc.lineAt(position).text.substr(0, position.character)
     return provideWorkspaceCompletionItems(workspace, context, line).map(
       ({ label, reInvoke, insertText }) => {
@@ -85,17 +82,15 @@ const createCompletionsProvider = (
 })
 
 const createDefinitionsProvider = (
-  workspace: SaltoWorkspace
+  workspaceName: string
 ): vscode.DefinitionProvider => ({
   provideDefinition: (
     doc: vscode.TextDocument,
     position: vscode.Position,
   ): vscode.Definition => {
+    const workspace = workspaces[workspaceName]
+    const context = getPositionContext(workspace, doc.fileName, VsPosToSaltoPos(position))
     const currenToken = doc.getText(doc.getWordRangeAtPosition(position))
-    const context = getPositionContext(workspace, doc.fileName, {
-      line: position.line + 1,
-      col: position.character,
-    })
     return provideWorkspaceDefinition(workspace, context, currenToken).map(
       def => new vscode.Location(
         vscode.Uri.file(def.filename),
@@ -119,13 +114,13 @@ export const activate = async (context: vscode.ExtensionContext): Promise<void> 
 
     const completionProvider = vscode.languages.registerCompletionItemProvider(
       { scheme: 'file', pattern: { base: rootPath, pattern: '*.bp' } },
-      createCompletionsProvider(workspaces[name]),
+      createCompletionsProvider(name),
       ' '
     )
 
     const definitionProvider = vscode.languages.registerDefinitionProvider(
       { scheme: 'file', pattern: { base: rootPath, pattern: '*.bp' } },
-      createDefinitionsProvider(workspaces[name])
+      createDefinitionsProvider(name)
     )
     context.subscriptions.push(
       completionProvider,

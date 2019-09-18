@@ -55,6 +55,7 @@ describe('Test auto complete', () => {
   let workspace: SaltoWorkspace
   const baseBPDir = path.resolve(`${__dirname}/../../../test/salto/completionsBP`)
   const bpFile = path.resolve(`${baseBPDir}/all.bp`)
+
   beforeAll(async () => {
     workspace = await initWorkspace(baseBPDir)
   })
@@ -275,7 +276,7 @@ describe('Test auto complete', () => {
       const exclude = [...types, ...kw, ...instances]
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })
-    
+
     it('should return restriction values', () => {
       const pos = { line: 104, col: 11 }
       const line = getLine(workspace, bpFile, pos)

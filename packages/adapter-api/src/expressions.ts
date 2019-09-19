@@ -1,25 +1,16 @@
-import _ from 'lodash'
+import { types } from '@salto/lowerdash'
 import { Value } from './elements'
 
-export type ReferenceExpression = {
+export class ReferenceExpression extends types.Bean<{
   traversalParts: Value[]
-}
-
-export const isReferenceExpression = (v: Value): v is ReferenceExpression =>
-  _.isArrayLike(v.traversalParts)
+}> {}
 
 export const EXPRESSION_TRAVERSAL_SEPERATOR = '.'
 
-export type TemplateExpression = {
+export class TemplateExpression extends types.Bean<{
   parts: TemplatePart[]
-}
-
-export const isTemplateExpression = (v: Value): v is TemplateExpression =>
-  _.isArrayLike(v.parts)
+}> { }
 
 export type Expression = ReferenceExpression | TemplateExpression
-
-export const isExpression = (v: Value): v is Expression =>
-  isReferenceExpression(v) || isTemplateExpression(v)
 
 export type TemplatePart = string | Expression

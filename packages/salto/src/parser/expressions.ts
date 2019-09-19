@@ -13,9 +13,11 @@ const evaluate = (expression: HCLExpression, baseId?: ElemID, sourceMap?: Source
 
   const evaluators: Record<ExpressionType, ExpEvaluator> = {
     list: exp => exp.expressions.map((e, idx) => evalSubExpression(e, idx.toString())),
-    template: exp => (exp.expressions.filter(e => e.type !== 'literal').length === 0
-      ? exp.expressions.map(e => evaluate(e)).join('')
-      : { parts: exp.expressions.map(e => evaluate(e)) } as TemplateExpression),
+    template: exp => (
+      exp.expressions.filter(e => e.type !== 'literal').length === 0
+        ? exp.expressions.map(e => evaluate(e)).join('')
+        : new TemplateExpression({ parts: exp.expressions.map(e => evaluate(e)) })
+    ),
     map: exp => _(exp.expressions)
       .chunk(2)
       .map(([keyExp, valExp]) => {
@@ -25,7 +27,7 @@ const evaluate = (expression: HCLExpression, baseId?: ElemID, sourceMap?: Source
       .fromPairs()
       .value(),
     literal: exp => exp.value,
-    reference: exp => ({ traversalParts: exp.value } as ReferenceExpression),
+    reference: exp => new ReferenceExpression({ traversalParts: exp.value }),
   }
 
   if (sourceMap && baseId && expression.source) {

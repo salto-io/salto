@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import {
-  ReferenceExpression, TemplateExpression, EXPRESSION_TRAVERSAL_SEPERATOR, isReferenceExpression,
+  ReferenceExpression, TemplateExpression, EXPRESSION_TRAVERSAL_SEPERATOR,
 } from 'adapter-api'
 import { HCLExpression } from '../src/parser/hcl'
 
@@ -43,7 +43,7 @@ const devaluate = (value: any): HCLExpression => {
   const devaluateTemplateExpression = (templateExp: TemplateExpression): HCLExpression => ({
     type: 'template',
     expressions: templateExp.parts.map(p => (
-      isReferenceExpression(p) ? devaluateReference(p) : devaluateValue(p)
+      p instanceof ReferenceExpression ? devaluateReference(p) : devaluateValue(p)
     )),
   })
 
@@ -58,10 +58,10 @@ const devaluate = (value: any): HCLExpression => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return devaluateObject(value as Record<string, any>)
   }
-  if (value.traversalParts) {
+  if (value instanceof ReferenceExpression) {
     return devaluateReference(value)
   }
-  if (value.parts) {
+  if (value instanceof TemplateExpression) {
     return devaluateTemplateExpression(value)
   }
 

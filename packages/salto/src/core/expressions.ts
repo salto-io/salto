@@ -4,7 +4,6 @@ import {
   ElemID, Element, isObjectType, isInstanceElement, isType, Value,
   EXPRESSION_TRAVERSAL_SEPERATOR,
   ReferenceExpression, TemplateExpression,
-  isTemplateExpression, isReferenceExpression,
 } from 'adapter-api'
 
 type Resolver<T> = (v: T, contextElements: Element[], visited?: Set<string>) => Value
@@ -17,11 +16,11 @@ const resolveMaybeExpression: Resolver<Value> = (
   contextElements: Element[],
   visited: Set<string> = new Set<string>(),
 ): Value => {
-  if (isReferenceExpression(value)) {
+  if (value instanceof ReferenceExpression) {
     return resolveReferenceExpression(value, contextElements, visited)
   }
 
-  if (isTemplateExpression(value)) {
+  if (value instanceof TemplateExpression) {
     return resolveTemplateExpression(value, contextElements, visited)
   }
 

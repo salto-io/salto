@@ -1,6 +1,3 @@
-import { InstanceElement, ObjectType } from 'adapter-api'
-import { Blueprint } from 'salto'
-import { Stream } from 'stream'
 import * as asyncfile from 'async-file'
 import path from 'path'
 import { MockWriteStream, importFromCsvFile as mockImportFromCsv } from '../mocks'
@@ -9,11 +6,7 @@ import Prompts from '../../src/prompts'
 
 jest.mock('salto', () => ({
   importFromCsvFile: jest.fn().mockImplementation((
-    typeId: string,
-    csvFile: Stream,
-    blueprints: Blueprint[],
-    fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
-  ) => mockImportFromCsv(typeId, csvFile, blueprints, fillConfig)),
+  ) => mockImportFromCsv()),
   readCsv: jest.fn().mockImplementation(() => { }),
 }))
 

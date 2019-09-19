@@ -45,7 +45,6 @@ const builder = createCommandBuilder({
       typeName: {
         type: 'string',
         description: 'The type name of the instances to import as it appears in the blueprint',
-        default: undefined, // Prevent "default: []" in the help
       },
     },
   },

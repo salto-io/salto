@@ -7,6 +7,8 @@ describe('CSV reader/writer', () => {
   const csvDumpOutputDir = `${__dirname}/tmp/csv`
   const exportFile = 'dump_csv_test.csv'
   const outputPath = path.join(csvDumpOutputDir, exportFile)
+  const csvDirectory = path.join(__dirname, '../../../test', 'csv')
+  const importFileName = 'import.csv'
 
   describe('Write to CSV', () => {
     const values = [
@@ -79,8 +81,6 @@ describe('CSV reader/writer', () => {
     })
   })
   describe('Read from CSV', () => {
-    const importFilePath = `${__dirname}/../../../test/CSV/import.csv`
-
     it('should read contents of a CSV properly', async () => {
       const clarkKent = {
         Id: '',
@@ -102,7 +102,7 @@ describe('CSV reader/writer', () => {
         Street: 'Wayne mansion',
         City: 'Gotham',
       }
-      const results = await csv.readCsv(importFilePath)
+      const results = await csv.readCsv(path.join(csvDirectory, importFileName))
       expect(_.isEqual(results[0], clarkKent)).toBeTruthy()
       expect(_.isEqual(results[1], bruceWayne)).toBeTruthy()
     })

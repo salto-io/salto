@@ -7,7 +7,6 @@ import {
   Plan, PlanItem, SearchResult, Blueprint,
 } from 'salto'
 import { GroupedNodeMap } from '@salto/dag'
-import { Stream } from 'stream'
 import { YargsCommandBuilder, allBuilders } from '../src/builder'
 import realCli from '../src/cli'
 
@@ -298,9 +297,4 @@ export const exportToCsv = async (_typeId: string, _blueprints: Blueprint[],
     ))
   }())
 
-export const importFromCsvFile = async (
-  _typeId: string,
-  _csvFile: Stream,
-  _blueprints: Blueprint[],
-  _fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
-): Promise<void> => {}
+export const importFromCsvFile = async (): Promise<void> => {}

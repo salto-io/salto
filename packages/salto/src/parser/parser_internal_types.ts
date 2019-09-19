@@ -1,4 +1,3 @@
-import { collections } from '@salto/lowerdash'
 import { ElemID } from 'adapter-api'
 
 export interface SourcePos {
@@ -18,12 +17,15 @@ export function isSourceRange(v: any): v is SourceRange {
   return v && typeof v.filename === 'string' && v.start && v.end
 }
 
-export class SourceMap extends collections.map.DefaultMap<string, SourceRange[]> {
-  constructor() {
-    super(() => [])
-  }
-
+export class SourceMap extends Map<string, SourceRange[]> {
   push(id: ElemID, source: SourceRange | { source: SourceRange }): void {
-    this.get(id.getFullName()).push(isSourceRange(source) ? source : source.source)
+    const key = id.getFullName()
+    let sourceRangeList = this.get(key)
+    if (!sourceRangeList) {
+      sourceRangeList = []
+      this.set(key, sourceRangeList)
+    }
+    const sourceRange = isSourceRange(source) ? source : source.source
+    sourceRangeList.push(sourceRange)
   }
 }

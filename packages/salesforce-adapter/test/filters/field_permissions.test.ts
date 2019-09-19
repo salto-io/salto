@@ -66,7 +66,7 @@ describe('Field Permissions filter', () => {
           editable: false,
         },
       ],
-      description: 'admin profile',
+      description: 'Admin profile',
     })
   const mockStandardID = new ElemID(constants.SALESFORCE, 'standard')
   const mockStandard = new InstanceElement(mockStandardID,

@@ -12,11 +12,11 @@ import { provideWorkspaceReferences } from './salto/usage'
 
 const workspaces: {[key: string]: SaltoWorkspace} = {}
 
-const SaltoPosToVsPos = (
+const saltoPosToVsPos = (
   pos: EditorPosition
 ): vscode.Position => new vscode.Position(pos.line - 1, pos.col)
 
-const VsPosToSaltoPos = (pos: vscode.Position): EditorPosition => ({
+const vsPosToSaltoPos = (pos: vscode.Position): EditorPosition => ({
   line: pos.line + 1,
   col: pos.character,
 })
@@ -63,7 +63,7 @@ const createCompletionsProvider = (
     position: vscode.Position
   ) => {
     const workspace = workspaces[workspaceName]
-    const context = getPositionContext(workspace, doc.fileName, VsPosToSaltoPos(position))
+    const context = getPositionContext(workspace, doc.fileName, vsPosToSaltoPos(position))
     const line = doc.lineAt(position).text.substr(0, position.character)
     return provideWorkspaceCompletionItems(workspace, context, line).map(
       ({ label, reInvoke, insertText }) => {
@@ -89,12 +89,12 @@ const createDefinitionsProvider = (
     position: vscode.Position,
   ): vscode.Definition => {
     const workspace = workspaces[workspaceName]
-    const context = getPositionContext(workspace, doc.fileName, VsPosToSaltoPos(position))
+    const context = getPositionContext(workspace, doc.fileName, vsPosToSaltoPos(position))
     const currenToken = doc.getText(doc.getWordRangeAtPosition(position))
     return provideWorkspaceDefinition(workspace, context, currenToken).map(
       def => new vscode.Location(
         vscode.Uri.file(def.filename),
-        SaltoPosToVsPos(def.range.start)
+        saltoPosToVsPos(def.range.start)
       )
     )
   },
@@ -112,7 +112,7 @@ const createReferenceProvider = (
     return provideWorkspaceReferences(workspace, currenToken).map(
       def => new vscode.Location(
         vscode.Uri.file(def.filename),
-        SaltoPosToVsPos(def.range.start)
+        saltoPosToVsPos(def.range.start)
       )
     )
   },

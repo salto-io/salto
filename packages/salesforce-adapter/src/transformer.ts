@@ -471,6 +471,17 @@ export const toInstanceElements = (type: ObjectType, queryResult: QueryResult<Va
   ))
 }
 
+export const createInstanceElement = (mdInfo: MetadataInfo, type: ObjectType): InstanceElement => {
+  const typeName = type.elemID.name
+  const isSettings = sfCase(typeName) === SETTINGS_METADATA_TYPE
+  return new InstanceElement(
+    new ElemID(SALESFORCE, typeName, bpCase(mdInfo.fullName)),
+    type,
+    fromMetadataInfo(mdInfo),
+    isSettings ? ['settings'] : ['records', typeName, bpCase(mdInfo.fullName)],
+  )
+}
+
 export const createMetadataTypeElements = (
   objectName: string,
   fields: ValueTypeField[],

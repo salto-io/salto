@@ -10,7 +10,7 @@ import SalesforceClient, { Credentials } from './client/client'
 import * as constants from './constants'
 import {
   toCustomField, toCustomObject, apiName, sfCase, fieldFullName, Types,
-  getSObjectFieldElement, fromMetadataInfo, bpCase, toMetadataInfo,
+  getSObjectFieldElement, toMetadataInfo, createInstanceElement,
   metadataType, toMetadataPackageZip, toInstanceElements, createMetadataTypeElements,
 } from './transformer'
 import layoutFilter from './filters/layouts'
@@ -20,6 +20,7 @@ import assignmentRulesFilter from './filters/assignment_rules'
 import convertListsFilter from './filters/convert_lists'
 import convertTypeFilter from './filters/convert_types'
 import missingFieldsFilter from './filters/missing_fields'
+import standardValueSetFilter from './filters/standard_value_sets'
 import {
   FilterCreator, Filter, FilterWith, filtersWith,
 } from './filter'
@@ -94,6 +95,7 @@ export default class SalesforceAdapter {
       layoutFilter,
       validationRulesFilter,
       assignmentRulesFilter,
+      standardValueSetFilter,
       missingFieldsFilter,
       // The following filters should remain last in order to make sure they fix all elements
       convertListsFilter,
@@ -371,19 +373,15 @@ export default class SalesforceAdapter {
     return _.flatten(instances)
   }
 
+
   private async createInstanceElements(type: ObjectType): Promise<InstanceElement[]> {
     const typeName = sfCase(type.elemID.name)
-    const isSettings = typeName === constants.SETTINGS_METADATA_TYPE
     const instances = await this.listMetadataInstances(typeName)
     return instances
       .filter(i => i.fullName !== undefined)
-      .map(i => new InstanceElement(
-        new ElemID(constants.SALESFORCE, type.elemID.name, bpCase(i.fullName)),
-        type,
-        fromMetadataInfo(i),
-        isSettings ? ['settings'] : ['records', type.elemID.name, bpCase(i.fullName)],
-      ))
+      .map(i => createInstanceElement(i, type))
   }
+
 
   private async discoverSObjects(): Promise<Type[]> {
     const getSobjectDescriptions = async (): Promise<DescribeSObjectResult[]> => {
@@ -487,7 +485,6 @@ export default class SalesforceAdapter {
         names.map(name => this.client.readMetadata(name + type, name))
       ).then(_.flatten)
     }
-
     return this.client.readMetadata(type, names)
   }
 

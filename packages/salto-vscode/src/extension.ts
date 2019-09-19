@@ -45,11 +45,12 @@ const onDidChangeConfiguration = async (
   settings: vscode.WorkspaceConfiguration
 ): Promise<void> => {
   const workspace = workspaces[workspaceName]
-  workspace.lastUpdate = await initWorkspace(
+  workspace.lastUpdate = initWorkspace(
     workspace.baseDir,
     settings.additionalBlueprintDirs,
     settings.additionalBlueprints
   )
+  await workspace.lastUpdate
 }
 
 // This function is called in order to create a completion provided - and

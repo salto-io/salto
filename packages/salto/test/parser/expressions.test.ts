@@ -1,6 +1,6 @@
+import { ReferenceExpression, TemplateExpression } from 'adapter-api'
 import devaluate from '../utils'
 import evaluate from '../../src/parser/expressions'
-import { ReferenceExpression, TemplateExpression } from '../../src/core/expressions'
 
 describe('HCL Expression', () => {
   it('should evaluate strings', () => {
@@ -34,14 +34,15 @@ describe('HCL Expression', () => {
   })
 
   it('should evaluate reference', () => {
-    const ref = new ReferenceExpression(['a', 'b', 'c'])
+    const ref = new ReferenceExpression({ traversalParts: ['a', 'b', 'c'] })
     const exp = devaluate(ref)
     expect(evaluate(exp)).toEqual(ref)
   })
 
   it('should evaluate template reference', () => {
-    const ref = new TemplateExpression(['a', new ReferenceExpression(['a', 'b', 'c'])])
-    const exp = devaluate(ref)
-    expect(evaluate(exp)).toEqual(ref)
+    const ref = new ReferenceExpression({ traversalParts: ['a', 'b', 'c'] })
+    const templ = new TemplateExpression({ parts: [ref] })
+    const exp = devaluate(templ)
+    expect(evaluate(exp)).toEqual(templ)
   })
 })

@@ -8,7 +8,7 @@ import {
 } from './core'
 import initAdapters from './adapters/adapters'
 import { getPlan, Plan, PlanItem } from './plan'
-import Parser from '../parser/salto'
+import { dump } from '../parser/dump'
 import { Blueprint, getAllElements } from './blueprint'
 import State from '../state/state'
 import { findElement, SearchResult } from './search'
@@ -54,12 +54,12 @@ export const discover = async (
     // TODO: we should probably avoid writing credentials to the output BP folder
     // It would probably be better to store them in the salto env once we implement it
     const configBPs = _.isEmpty(newAdapterConfigs) ? [] : [
-      { buffer: Buffer.from(await Parser.dump(Object.values(newAdapterConfigs))), filename: 'config' },
+      { buffer: Buffer.from(await dump(Object.values(newAdapterConfigs))), filename: 'config' },
     ]
     const elemBPs = await Promise.all(_(discoverElements)
       .groupBy(elem => elem.path)
       .map(async grp => ({
-        buffer: Buffer.from(await Parser.dump(grp)),
+        buffer: Buffer.from(await dump(grp)),
         filename: grp[0].path ? path.join(...grp[0].path) : grp[0].elemID.adapter,
       }))
       .flatten()

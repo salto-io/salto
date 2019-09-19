@@ -1,50 +1,44 @@
 import path from 'path'
 import * as fs from 'async-file'
-import { collections } from '@salto/lowerdash'
 import './wasm_exec'
 import { queue, AsyncQueue, ErrorCallback } from 'async'
-
-interface SourcePos {
-  line: number
-  col: number
-  byte: number
-}
-
-export interface SourceRange {
-  filename: string
-  start: SourcePos
-  end: SourcePos
-}
-
-export type SourceMap = collections.map.DefaultMap<string, SourceRange[]>
+import { SourceRange } from './parser_internal_types'
 
 export type ExpressionType = 'list'|'map'|'template'|'literal'|'reference'
 
-export interface HCLExpression {
+export type HclExpression = {
   type: ExpressionType
-  expressions: HCLExpression[]
+  expressions: HclExpression[]
   source?: SourceRange
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   value?: any
 }
 
-export interface HCLAttribute {
+export type HclAttribute = {
   source: SourceRange
-  expressions: HCLExpression[]
+  expressions: HclExpression[]
 }
 
-export interface HCLBlock {
+// TODO: add "blocks" with recursive reference when it's allowed in TS3.7
+export type HclBlock = {
   type: string
   labels: string[]
-  attrs: Record<string, HCLAttribute>
-  blocks: HCLBlock[]
-  source?: SourceRange
+  attrs: Record<string, HclAttribute>
+}
+
+export type ParsedHclBlock = HclBlock & {
+  blocks: ParsedHclBlock[]
+  source: SourceRange
+}
+
+export type DumpedHclBlock = HclBlock & {
+  blocks: DumpedHclBlock[]
 }
 
 // hcl.Diagnostic struct taken from
 // https://github.com/hashicorp/hcl2/blob/f45c1cd/hcl/diagnostic.go#L26
 // TODO: include expression and evalContext when it's needed
-export interface ParseError {
+export interface HclParseError {
   severity: number
   summary: string
   detail: string
@@ -58,12 +52,12 @@ interface HclParseArgs {
 }
 
 interface HclParseReturn {
-  body: HCLBlock
-  errors: ParseError[]
+  body: ParsedHclBlock
+  errors: HclParseError[]
 }
 
 interface HclDumpArgs {
-  body: HCLBlock
+  body: DumpedHclBlock
 }
 
 
@@ -79,7 +73,7 @@ interface HclCallContext {
   return?: HclReturn
 }
 
-class HCLParser {
+class HclParser {
   // Limit max concurrency to avoid web assembly out of memory errors
   private static MAX_CONCURENCY = 10
   // Execution env vars for Go webassembly
@@ -97,7 +91,7 @@ class HCLParser {
 
   public constructor() {
     global.hclParserCall = {}
-    this.parseQueue = queue(this.pluginWorker.bind(this), HCLParser.MAX_CONCURENCY)
+    this.parseQueue = queue(this.pluginWorker.bind(this), HclParser.MAX_CONCURENCY)
   }
 
   /**
@@ -122,7 +116,7 @@ class HCLParser {
       // but this doesn't work without the following disable
       // eslint-disable-next-line no-undef
       const go = new Go()
-      go.env = HCLParser.GO_ENV
+      go.env = HclParser.GO_ENV
       // eslint-disable-next-line no-undef
       return { go, inst: await WebAssembly.instantiate(module, go.importObject) }
     })
@@ -183,9 +177,9 @@ class HCLParser {
    * @param body The HCL data to dump
    * @returns The serialized data
    */
-  public dump(body: HCLBlock): Promise<HclDumpReturn> {
+  public dump(body: DumpedHclBlock): Promise<HclDumpReturn> {
     return this.callPlugin({ func: 'dump', args: { body } }) as Promise<HclDumpReturn>
   }
 }
 
-export default new HCLParser()
+export default new HclParser()

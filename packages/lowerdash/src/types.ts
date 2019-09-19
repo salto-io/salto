@@ -1,3 +1,7 @@
+//
+// AtLeastOne, RequiredMember, HasMember
+//
+
 // https://stackoverflow.com/a/48244432
 export type AtLeastOne<T, U = { [K in keyof T]: Pick<T, K> }> = Partial<T> & U[keyof U]
 
@@ -16,3 +20,37 @@ export const hasMember = <T, M extends keyof T>(
 export const filterHasMember = <T, M extends keyof T>(
   m: M, objs: T[]
 ): HasMember<T, M>[] => objs.filter(f => hasMember(m, f)) as HasMember<T, M>[]
+
+/*
+
+--- Bean ---
+
+Allows defining a class with an object as constructor arg (aka keyword args)
+with less boilerplate.
+
+Example, boilerplate version:
+
+class MyBean {
+  prop1: string
+  prop2: number | undefined
+  constructor({ prop1, prop2 }: { prop1: string, prop2?: number }) {
+    this.prop1 = prop1
+    this.prop2 = prop2
+  }
+}
+
+Less boilerplate version with Bean:
+
+class MyBean extends Bean<{ prop1: string, prop2?: number }> {}
+
+*/
+
+// eslint-disable-next-line @typescript-eslint/class-name-casing
+export class _Bean<T> {
+  constructor(props: T) {
+    Object.assign(this, props)
+  }
+}
+
+export type Bean<T> = _Bean<T> & T
+export const Bean = _Bean as new <T>(props: T) => Bean<T>

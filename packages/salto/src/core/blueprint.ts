@@ -4,7 +4,7 @@ import { Element } from 'adapter-api'
 import * as fs from 'async-file'
 import path from 'path'
 import readdirp from 'readdirp'
-import Parser, { SourceMap, ParseError } from '../parser/salto'
+import { SourceMap, ParseError, parse } from '../parser/parse'
 
 export interface Blueprint {
   buffer: Buffer
@@ -75,7 +75,7 @@ export const dumpBlueprints = async (
 export const parseBlueprints = (blueprints: Blueprint[]): Promise<ParsedBlueprint[]> =>
   Promise.all(blueprints.map(async bp => ({
     ...bp,
-    ...(await Parser.parse(bp.buffer, bp.filename)),
+    ...(await parse(bp.buffer, bp.filename)),
   })))
 
 export const getAllElements = async (blueprints: Blueprint[]): Promise<Element[]> => {

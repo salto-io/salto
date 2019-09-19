@@ -149,7 +149,7 @@ export const getPositionContext = (
 
   const flatRanges = _.flatten(
     wu(parsedBlueprint.sourceMap.keys()).toArray().map(name =>
-      parsedBlueprint.sourceMap.get(name).map(range => ({ name, range })))
+      (parsedBlueprint.sourceMap.get(name) || []).map(range => ({ name, range })))
   )
 
   // We created a list of sorted NamedRanges which contains the cursor in them

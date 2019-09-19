@@ -2,92 +2,99 @@ import _ from 'lodash'
 
 import {
   ElemID, Element, isObjectType, isInstanceElement, isType, Value,
+  EXPRESSION_TRAVERSAL_SEPERATOR,
+  ReferenceExpression, TemplateExpression,
 } from 'adapter-api'
 
-interface Expression {
-  resolve(contextElements: Element[], visited?: string[]): Value
-}
+type Resolver<T> = (v: T, contextElements: Element[], visited?: Set<string>) => Value
 
-type TemplatePart = string|Expression
+let resolveReferenceExpression: Resolver<ReferenceExpression>
+let resolveTemplateExpression: Resolver<TemplateExpression>
 
-const isExpression = (value: Value): value is Expression => _.isFunction(value.resolve)
-
-export class ReferenceExpression {
-  static readonly TRAVERSAL_SEPERATOR = '.'
-  traversal: string
-  root: ElemID
-  path: string[]
-  constructor(traversalParts: Value[]) {
-    const nameParts = traversalParts[0].split(ElemID.NAMESPACE_SEPERATOR)
-    this.root = new ElemID(nameParts[0], ...nameParts.slice(1))
-    this.path = traversalParts.slice(1)
-    this.traversal = traversalParts.join(ReferenceExpression.TRAVERSAL_SEPERATOR)
+const resolveMaybeExpression: Resolver<Value> = (
+  value: Value,
+  contextElements: Element[],
+  visited: Set<string> = new Set<string>(),
+): Value => {
+  if (value instanceof ReferenceExpression) {
+    return resolveReferenceExpression(value, contextElements, visited)
   }
 
-  // This is only wrapped as function so that the error validation would be simpler
-  private resolvePath(rootElement: Element): Value {
+  if (value instanceof TemplateExpression) {
+    return resolveTemplateExpression(value, contextElements, visited)
+  }
+
+  return undefined
+}
+
+resolveReferenceExpression = (
+  expression: ReferenceExpression,
+  contextElements: Element[],
+  visited: Set<string> = new Set<string>(),
+): Value => {
+  const { traversalParts } = expression
+  const traversal = traversalParts.join(EXPRESSION_TRAVERSAL_SEPERATOR)
+
+  if (visited.has(traversal)) {
+    throw new Error(`can not resolve reference ${traversal} - circular dependency detected`)
+  }
+  visited.add(traversal)
+
+  const nameParts = traversalParts[0].split(ElemID.NAMESPACE_SEPERATOR)
+  const root = new ElemID(nameParts[0], ...nameParts.slice(1))
+  const path = traversalParts.slice(1)
+
+  const resolvePath = (rootElement: Element): Value => {
     if (isInstanceElement(rootElement)) {
-      return (!_.isEmpty(this.path)) ? _.get(rootElement.value, this.path) : rootElement.value
+      return (!_.isEmpty(path)) ? _.get(rootElement.value, path) : rootElement.value
     }
-    if (isObjectType(rootElement) && rootElement.fields[this.path[0]]) {
-      return _.get(rootElement.fields[this.path[0]].annotations, this.path.slice(1))
+
+    if (isObjectType(rootElement) && rootElement.fields[path[0]]) {
+      return _.get(rootElement.fields[path[0]].annotations, path.slice(1))
     }
+
     if (isType(rootElement)) {
-      return _.get(rootElement.annotations, this.path)
+      return _.get(rootElement.annotations, path)
     }
 
     return undefined
   }
 
-  resolve(contextElements: Element[], visited: string[] = []): Value {
-    if (visited.includes(this.traversal)) {
-      throw new Error(`can not resolve reference ${this.traversal} - circular dependency detected`)
-    }
-
-    // Validation should throw an error if there is not match, or more than one match
-    const rootElement = contextElements.filter(e => _.isEqual(this.root, e.elemID))[0]
-    if (rootElement === undefined) {
-      throw new Error(`Can not resolve reference ${this.traversal}`)
-    }
-
-    const value = this.resolvePath(rootElement)
-    if (value === undefined) {
-      throw new Error(`Can not resolve reference ${this.traversal}`)
-    }
-
-    return isExpression(value)
-      ? value.resolve(contextElements, [this.traversal, ...visited])
-      : value
+  // Validation should throw an error if there is not match, or more than one match
+  const rootElement = contextElements.filter(e => _.isEqual(root, e.elemID))[0]
+  if (!rootElement) {
+    throw new Error(`Can not resolve reference ${traversal}`)
   }
+
+  const value = resolvePath(rootElement)
+  if (value === undefined) {
+    throw new Error(`Can not resolve reference ${traversal}`)
+  }
+
+  return resolveMaybeExpression(value, contextElements, visited) || value
 }
 
-export class TemplateExpression {
-  parts: TemplatePart[]
-
-  constructor(parts: TemplatePart[]) {
-    this.parts = parts
-  }
-
-  resolve(contextElements: Element[], visited: string[] = []): Value {
-    return this.parts.map(p => (isExpression(p) ? p.resolve(contextElements, visited) : p)).join('')
-  }
-}
+resolveTemplateExpression = (
+  expression: TemplateExpression,
+  contextElements: Element[],
+  visited: Set<string> = new Set<string>(),
+): Value => expression.parts
+  .map(p => resolveMaybeExpression(p, contextElements, visited) || p)
+  .join('')
 
 export const resolve = (element: Element, contextElements: Element[]): Element => {
-  const referenceCloner = (v: Value): Value => (
-    isExpression(v) ? v.resolve(contextElements) : undefined
-  )
+  const referenceCloner = (v: Value): Value => resolveMaybeExpression(v, contextElements)
 
   if (isInstanceElement(element)) {
     element.value = _.cloneDeepWith(element.value, referenceCloner)
   }
+
   if (isObjectType(element)) {
     element.fields = _.cloneDeepWith(element.fields, referenceCloner)
   }
+
   if (isType(element)) {
-    element.annotate(_.cloneDeepWith(
-      element.annotations, referenceCloner
-    ))
+    element.annotate(_.cloneDeepWith(element.annotations, referenceCloner))
   }
 
   return element

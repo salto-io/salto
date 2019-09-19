@@ -4,7 +4,7 @@ import {
   Element, InstanceElement,
 } from 'adapter-api'
 import { SourceRange, SourceMap as SourceMapImpl } from './parser_internal_types'
-import HCLParser, { ParsedHCLBlock, HclParseError } from './hcl'
+import HclParser, { ParsedHclBlock, HclParseError } from './hcl'
 import evaluate from './expressions'
 import { Keywords } from './language'
 
@@ -13,7 +13,7 @@ export type SourceRange = SourceRange
 export type SourceMap = Map<string, SourceRange[]>
 export type ParseError = HclParseError
 
-const getElemID = (fullname: string): ElemID => {
+const elemID = (fullname: string): ElemID => {
   const separatorIdx = fullname.indexOf(ElemID.NAMESPACE_SEPERATOR)
   const adapter = (separatorIdx >= 0) ? fullname.slice(0, separatorIdx) : ''
   const name = fullname.slice(separatorIdx + ElemID.NAMESPACE_SEPERATOR.length)
@@ -24,7 +24,7 @@ const getElemID = (fullname: string): ElemID => {
  * @param typeName Type name in HCL syntax
  * @returns Primitive type identifier
  */
-const getPrimitiveType = (typeName: string): PrimitiveTypes => {
+const primitiveType = (typeName: string): PrimitiveTypes => {
   if (typeName === Keywords.TYPE_STRING) {
     return PrimitiveTypes.STRING
   }
@@ -34,10 +34,10 @@ const getPrimitiveType = (typeName: string): PrimitiveTypes => {
   return PrimitiveTypes.BOOLEAN
 }
 
-const getAnnotationTypes = (block: ParsedHCLBlock): Record <string, Type> => block.blocks
+const annotationTypes = (block: ParsedHclBlock): Record <string, Type> => block.blocks
   .filter(b => b.type === Keywords.ANNOTATIONS_DEFINITION)
   .map(b => _(b.blocks)
-    .map(blk => [blk.labels[0], new ObjectType({ elemID: getElemID(blk.type) })])
+    .map(blk => [blk.labels[0], new ObjectType({ elemID: elemID(blk.type) })])
     .fromPairs()
     .value())
   .pop() || {}
@@ -57,28 +57,27 @@ export type ParseResult = {
  *          errors: Errors encountered during parsing
  */
 export const parse = async (blueprint: Buffer, filename: string): Promise<ParseResult> => {
-  const { body, errors } = await HCLParser.parse(blueprint, filename)
+  const { body, errors } = await HclParser.parse(blueprint, filename)
   const sourceMap = new SourceMapImpl()
 
-  const getAttrValues = (block: ParsedHCLBlock, parentId: ElemID): Values => _.mapValues(
+  const attrValues = (block: ParsedHclBlock, parentId: ElemID): Values => _.mapValues(
     block.attrs,
-    /* eslint-disable-next-line @typescript-eslint/no-use-before-define */
     (val, key) => evaluate(val.expressions[0], parentId.createNestedID(key), sourceMap)
   )
 
-  const parseType = (typeBlock: ParsedHCLBlock, isSettings = false): Type => {
+  const parseType = (typeBlock: ParsedHclBlock, isSettings = false): Type => {
     const [typeName] = typeBlock.labels
     const typeObj = new ObjectType(
       {
-        elemID: getElemID(typeName),
+        elemID: elemID(typeName),
         isSettings,
       }
     )
     sourceMap.push(typeObj.elemID, typeBlock.source)
 
-    typeObj.annotate(getAttrValues(typeBlock, typeObj.elemID))
+    typeObj.annotate(attrValues(typeBlock, typeObj.elemID))
 
-    const isFieldBlock = (block: ParsedHCLBlock): boolean =>
+    const isFieldBlock = (block: ParsedHclBlock): boolean =>
       (block.type === Keywords.LIST_DEFINITION || block.labels.length === 1)
 
     // Parse type fields
@@ -93,11 +92,11 @@ export const parse = async (blueprint: Buffer, filename: string): Promise<ParseR
           fieldName,
           new ObjectType(
             {
-              elemID: getElemID(fieldTypeName),
+              elemID: elemID(fieldTypeName),
               isSettings: block.type === Keywords.SETTINGS_DEFINITION,
             }
           ),
-          getAttrValues(block, typeObj.elemID.createNestedID(fieldName)),
+          attrValues(block, typeObj.elemID.createNestedID(fieldName)),
           isList,
         )
         sourceMap.push(field.elemID, block)
@@ -109,7 +108,7 @@ export const parse = async (blueprint: Buffer, filename: string): Promise<ParseR
     return typeObj
   }
 
-  const parsePrimitiveType = (typeBlock: ParsedHCLBlock): Type => {
+  const parsePrimitiveType = (typeBlock: ParsedHclBlock): Type => {
     const [typeName, kw, baseType] = typeBlock.labels
     if (kw !== Keywords.TYPE_INHERITANCE_SEPARATOR) {
       throw new Error(`expected keyword ${Keywords.TYPE_INHERITANCE_SEPARATOR}. found ${kw}`)
@@ -121,17 +120,17 @@ export const parse = async (blueprint: Buffer, filename: string): Promise<ParseR
     }
 
     const typeObj = new PrimitiveType({
-      elemID: getElemID(typeName),
-      primitive: getPrimitiveType(baseType),
-      annotationTypes: getAnnotationTypes(typeBlock),
-      annotations: getAttrValues(typeBlock, getElemID(typeName)),
+      elemID: elemID(typeName),
+      primitive: primitiveType(baseType),
+      annotationTypes: annotationTypes(typeBlock),
+      annotations: attrValues(typeBlock, elemID(typeName)),
     })
     sourceMap.push(typeObj.elemID, typeBlock)
     return typeObj
   }
 
-  const parseInstance = (instanceBlock: ParsedHCLBlock): Element => {
-    let typeID = getElemID(instanceBlock.type)
+  const parseInstance = (instanceBlock: ParsedHclBlock): Element => {
+    let typeID = elemID(instanceBlock.type)
     if (_.isEmpty(typeID.adapter) && typeID.name.length > 0) {
       // In this case if there is just a single name we have to assume it is actually the adapter
       typeID = new ElemID(typeID.name)
@@ -143,13 +142,13 @@ export const parse = async (blueprint: Buffer, filename: string): Promise<ParseR
     const inst = new InstanceElement(
       new ElemID(typeID.adapter, name),
       new ObjectType({ elemID: typeID }),
-      getAttrValues(instanceBlock, new ElemID(typeID.adapter, name)),
+      attrValues(instanceBlock, new ElemID(typeID.adapter, name)),
     )
     sourceMap.push(inst.elemID, instanceBlock)
     return inst
   }
 
-  const elements = body.blocks.map((value: ParsedHCLBlock): Element => {
+  const elements = body.blocks.map((value: ParsedHclBlock): Element => {
     if (value.type === Keywords.TYPE_DEFINITION && value.labels.length > 1) {
       return parsePrimitiveType(value)
     }

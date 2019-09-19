@@ -2,13 +2,13 @@ import _ from 'lodash'
 import {
   Value, ElemID, TemplateExpression, ReferenceExpression,
 } from 'adapter-api'
-import { HCLExpression, ExpressionType } from './hcl'
+import { HclExpression, ExpressionType } from './hcl'
 import { SourceMap, SourceRange } from './parser_internal_types'
 
-type ExpEvaluator = (expression: HCLExpression) => Value
+type ExpEvaluator = (expression: HclExpression) => Value
 
-const evaluate = (expression: HCLExpression, baseId?: ElemID, sourceMap?: SourceMap): Value => {
-  const evalSubExpression = (exp: HCLExpression, key: string): Value =>
+const evaluate = (expression: HclExpression, baseId?: ElemID, sourceMap?: SourceMap): Value => {
+  const evalSubExpression = (exp: HclExpression, key: string): Value =>
     evaluate(exp, baseId && baseId.createNestedID(key), sourceMap)
 
   const evaluators: Record<ExpressionType, ExpEvaluator> = {

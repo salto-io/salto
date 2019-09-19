@@ -261,8 +261,8 @@ export const formatSearchResults = (result: SearchResult): string => {
   const title = header(`=== ${elementName} ===`)
   const description = subHeader(formatElementDescription(element))
   // TODO - Change to dump HCL
-  const elementHCL = body(JSON.stringify(element, null, 2))
-  return [title, description, elementHCL].join('\n')
+  const elementHcl = body(JSON.stringify(element, null, 2))
+  return [title, description, elementHcl].join('\n')
 }
 
 export const createItemDoneOutput = (item: PlanItem, startTime: Date): string => {

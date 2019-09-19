@@ -2,37 +2,37 @@ import _ from 'lodash'
 import {
   ReferenceExpression, TemplateExpression, EXPRESSION_TRAVERSAL_SEPERATOR,
 } from 'adapter-api'
-import { HCLExpression } from '../src/parser/hcl'
+import { HclExpression } from '../src/parser/hcl'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const devaluate = (value: any): HCLExpression => {
+const devaluate = (value: any): HclExpression => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const devaluateValue = (v: any): HCLExpression => ({
+  const devaluateValue = (v: any): HclExpression => ({
     type: 'literal',
     expressions: [],
     value: v,
   })
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const devaluateString = (str: string): HCLExpression => ({
+  const devaluateString = (str: string): HclExpression => ({
     type: 'template',
     expressions: [devaluateValue(str)],
   })
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const devaluateArray = (arr: any[]): HCLExpression => ({
+  const devaluateArray = (arr: any[]): HclExpression => ({
     type: 'list',
     expressions: arr.map(e => devaluate(e)),
   })
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const devaluateObject = (obj: Record<string, any>): HCLExpression => ({
+  const devaluateObject = (obj: Record<string, any>): HclExpression => ({
     type: 'map',
     expressions: _(obj).entries().flatten().map(e => devaluate(e))
       .value(),
   })
 
-  const devaluateReference = (ref: ReferenceExpression): HCLExpression => ({
+  const devaluateReference = (ref: ReferenceExpression): HclExpression => ({
     type: 'reference',
     value: ref.traversalParts
       .join(EXPRESSION_TRAVERSAL_SEPERATOR)
@@ -40,7 +40,7 @@ const devaluate = (value: any): HCLExpression => {
     expressions: [],
   })
 
-  const devaluateTemplateExpression = (templateExp: TemplateExpression): HCLExpression => ({
+  const devaluateTemplateExpression = (templateExp: TemplateExpression): HclExpression => ({
     type: 'template',
     expressions: templateExp.parts.map(p => (
       p instanceof ReferenceExpression ? devaluateReference(p) : devaluateValue(p)

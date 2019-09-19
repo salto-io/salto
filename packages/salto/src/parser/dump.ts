@@ -3,7 +3,7 @@ import {
   Type, Field, Values, isObjectType, PrimitiveTypes,
   isPrimitiveType, Element, isInstanceElement, isField, isElement,
 } from 'adapter-api'
-import HCLParser, { DumpedHCLBlock, HclDumpReturn } from './hcl'
+import HclParser, { DumpedHclBlock, HclDumpReturn } from './hcl'
 import { Keywords } from './language'
 
 /**
@@ -27,7 +27,7 @@ const QUOTE_MARKER = 'Q_MARKER'
 
 const markQuote = (value: string): string => `${QUOTE_MARKER}${value}${QUOTE_MARKER}`
 
-const markDumpedBlockQuotes = (block: DumpedHCLBlock): DumpedHCLBlock => {
+const markDumpedBlockQuotes = (block: DumpedHclBlock): DumpedHclBlock => {
   block.labels = block.labels.map(markQuote)
   block.blocks = block.blocks.map(markDumpedBlockQuotes)
   return block
@@ -37,21 +37,21 @@ const removeQuotes = (
   value: HclDumpReturn
 ): HclDumpReturn => value.replace(new RegExp(`"${QUOTE_MARKER}|${QUOTE_MARKER}"`, 'g'), '')
 
-const dumpFieldBlock = (field: Field): DumpedHCLBlock => ({
+const dumpFieldBlock = (field: Field): DumpedHclBlock => ({
   type: field.type.elemID.getFullName(),
   labels: [field.name],
   attrs: field.annotations,
   blocks: [],
 })
 
-const dumpListFieldBlock = (field: Field): DumpedHCLBlock => ({
+const dumpListFieldBlock = (field: Field): DumpedHclBlock => ({
   type: Keywords.LIST_DEFINITION,
   labels: [field.type.elemID.getFullName(), field.name],
   attrs: field.annotations,
   blocks: [],
 })
 
-const dumpAnnotationsBlock = (element: Type): DumpedHCLBlock[] =>
+const dumpAnnotationsBlock = (element: Type): DumpedHclBlock[] =>
   (_.isEmpty(element.annotationTypes) ? [] : [{
     type: Keywords.ANNOTATIONS_DEFINITION,
     labels: [],
@@ -64,14 +64,15 @@ const dumpAnnotationsBlock = (element: Type): DumpedHCLBlock[] =>
     })),
   }])
 
-const dumpElementBlock = (elem: Element): DumpedHCLBlock => {
+let dumpBlock: (value: Element | Values) => DumpedHclBlock
+
+const dumpElementBlock = (elem: Element): DumpedHclBlock => {
   if (isObjectType(elem)) {
     return {
       type: elem.isSettings ? Keywords.SETTINGS_DEFINITION : Keywords.TYPE_DEFINITION,
       labels: [elem.elemID.getFullName()],
       attrs: elem.annotations,
       blocks: dumpAnnotationsBlock(elem).concat(
-        /* eslint-disable-next-line @typescript-eslint/no-use-before-define */
         Object.values(elem.fields).map(dumpBlock)
       ),
     }
@@ -101,7 +102,7 @@ const dumpElementBlock = (elem: Element): DumpedHCLBlock => {
   throw new Error('Unsupported element type')
 }
 
-const dumpBlock = (value: Element | Values): DumpedHCLBlock => {
+dumpBlock = (value: Element | Values): DumpedHclBlock => {
   if (isField(value)) {
     return value.isList ? dumpListFieldBlock(value) : dumpFieldBlock(value)
   }
@@ -117,7 +118,7 @@ const dumpBlock = (value: Element | Values): DumpedHCLBlock => {
   }
 }
 
-const wrapBlocks = (blocks: DumpedHCLBlock[]): DumpedHCLBlock => ({
+const wrapBlocks = (blocks: DumpedHclBlock[]): DumpedHclBlock => ({
   type: '',
   labels: [],
   attrs: {},
@@ -133,5 +134,5 @@ export const dump = async (elementsOrValues: Element | Element[] | Values): Prom
     : dumpBlock(elemListOrValues)
 
   body.blocks = body.blocks.map(markDumpedBlockQuotes)
-  return removeQuotes(await HCLParser.dump(body))
+  return removeQuotes(await HclParser.dump(body))
 }

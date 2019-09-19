@@ -8,7 +8,12 @@ import {
 import { SaltoWorkspace } from '../workspace'
 import { ContextReference } from '../context'
 
-export type Suggestions = string[]
+interface InsertText {
+  label: string
+  insertText: string
+}
+type Suggestion = string|InsertText
+export type Suggestions = Suggestion[]
 
 interface SuggestionsParams {
   workspace: SaltoWorkspace
@@ -16,6 +21,11 @@ interface SuggestionsParams {
   tokens: string[]
 }
 export type SuggestionsResolver = (params: SuggestionsParams) => Suggestions
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const isInsertText = (value: any): value is InsertText => (
+  value.label !== undefined && value.insertText !== undefined
+)
 
 const getRestrictionValues = (annotatingElem: Type|Field, valueType: Type): Value[]|undefined => {
   const restrictions = annotatingElem.annotations[Type.RESTRICTION]
@@ -29,10 +39,10 @@ export const valueSuggestions = (annotatingElem: Type|Field, valueType: Type): S
     return restrictionValues.map(v => JSON.stringify(v))
   }
   if (isObjectType(valueType)) {
-    return ['{}']
+    return [{ label: '{}', insertText: '{$0}' }]
   }
   if (isPrimitiveType(valueType) && valueType.primitive === PrimitiveTypes.STRING) {
-    return ['""']
+    return [{ label: '""', insertText: '"$0"' }]
   }
   if (isPrimitiveType(valueType) && valueType.primitive === PrimitiveTypes.BOOLEAN) {
     return ['true', 'false']

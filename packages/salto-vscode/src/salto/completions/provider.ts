@@ -1,7 +1,7 @@
 import _ from 'lodash'
 
 import {
-  Suggestions, SuggestionsResolver, keywordSuggestions, typesSuggestions,
+  isInsertText, Suggestions, SuggestionsResolver, keywordSuggestions, typesSuggestions,
   isSuggestions, inheritanceSuggestions, annoSuggestions, eqSugestions,
   annoValueSuggestions, instanceSuggestions, fieldSuggestions, fieldValueSuggestions,
 } from './suggestions'
@@ -75,8 +75,11 @@ const removeLinePrefix = (line: string): string => {
 const createCompletionItems = (
   suggestions: Suggestions,
   reInvoke: boolean
-): SaltoCompletion[] => suggestions.map(label => {
-  const insertText = (reInvoke) ? `${label} ` : label
+): SaltoCompletion[] => suggestions.map(suggestion => {
+  const label = isInsertText(suggestion) ? suggestion.label : suggestion
+  const insertBody = isInsertText(suggestion) ? suggestion.insertText : suggestion
+  const insertSuffix = reInvoke ? ' ' : ''
+  const insertText = [insertBody, insertSuffix].join('')
   return { label, reInvoke, insertText }
 })
 

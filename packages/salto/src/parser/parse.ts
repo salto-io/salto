@@ -6,25 +6,12 @@ import {
 import { SourceRange, SourceMap as SourceMapImpl } from './parser_internal_types'
 import HCLParser, { ParsedHCLBlock, HclParseError } from './hcl'
 import evaluate from './expressions'
+import { Keywords } from './language'
 
 // Re-export these types because we do not want code outside the parser to import hcl
 export type SourceRange = SourceRange
 export type SourceMap = Map<string, SourceRange[]>
 export type ParseError = HclParseError
-
-enum Keywords {
-  TYPE_DEFINITION = 'type',
-  SETTINGS_DEFINITION = 'settings',
-  LIST_DEFINITION = 'list',
-  TYPE_INHERITANCE_SEPARATOR = 'is',
-  ANNOTATIONS_DEFINITION = 'annotations',
-
-  // Primitive types
-  TYPE_STRING = 'string',
-  TYPE_NUMBER = 'number',
-  TYPE_BOOL = 'boolean',
-  TYPE_OBJECT = 'object',
-}
 
 const getElemID = (fullname: string): ElemID => {
   const separatorIdx = fullname.indexOf(ElemID.NAMESPACE_SEPERATOR)

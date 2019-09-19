@@ -46,5 +46,4 @@ describe('Test go to definitions', () => {
     const defs = provideWorkspaceDefinition(workspace, ctx, token)
     expect(defs.length).toBe(0)
   })
-
 })

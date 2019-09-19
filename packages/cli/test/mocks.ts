@@ -1,10 +1,10 @@
 import _ from 'lodash'
 import wu from 'wu'
 import {
-  Type, BuiltinTypes, ElemID, Change, ObjectType, Field, InstanceElement, Element,
+  Type, BuiltinTypes, ElemID, Change, ObjectType, Field, InstanceElement, Element, getChangeElement,
 } from 'adapter-api'
 import {
-  Plan, PlanItem, SearchResult, Blueprint,
+  Plan, PlanItem, SearchResult, Blueprint, DetailedChange,
 } from 'salto'
 import { GroupedNodeMap } from '@salto/dag'
 import { YargsCommandBuilder, allBuilders } from '../src/builder'
@@ -142,64 +142,85 @@ export const elements = (): Element[] => {
     },
   })
 
-  const saltoEmployeeInstance = new InstanceElement(new ElemID('salto', 'employee_instance'),
-    saltoEmployee, { name: 'FirstEmployee' })
+  const saltoEmployeeInstance = new InstanceElement(
+    new ElemID('salto', 'employee_instance'), saltoEmployee,
+    { name: 'FirstEmployee', nicknames: ['you', 'hi'], office: { label: 'bla', name: 'foo' } }
+  )
 
   return [BuiltinTypes.STRING, saltoAddr, saltoOffice, saltoEmployee, saltoEmployeeInstance]
 }
 
+export const detailedChange = (
+  action: 'add'|'modify'|'remove', path: string[],
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+  before: any, after: any,
+): DetailedChange => {
+  const id = new ElemID('salesforce', ...path)
+  if (action === 'add') {
+    return { action, id, data: { after } }
+  }
+  if (action === 'remove') {
+    return { action, id, data: { before } }
+  }
+  return { action, id, data: { before, after } }
+}
+
 export const plan = (): Plan => {
-  const planItem = (before?: string, after?: string): Change => {
-    const adapter = 'salesforce'
-    if (before && after) {
-      return {
-        action: 'modify',
-        data: {
-          before: new ObjectType({ elemID: new ElemID(adapter, before) }),
-          after: new ObjectType({ elemID: new ElemID(adapter, after) }),
-        },
-      }
+  const change = (action: 'add'|'modify'|'remove', ...path: string[]): Change => {
+    const elemID = new ElemID('salesforce', ...path)
+    if (action === 'add') {
+      return { action, data: { after: new ObjectType({ elemID }) } }
     }
-    if (before) {
-      return {
-        action: 'remove',
-        data: { before: new ObjectType({ elemID: new ElemID(adapter, before) }) },
-      }
+    if (action === 'remove') {
+      return { action, data: { before: new ObjectType({ elemID }) } }
     }
     return {
-      action: 'add',
-      data: {
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        after: new ObjectType({ elemID: new ElemID(adapter, after!) }),
-      },
+      action,
+      data: { before: new ObjectType({ elemID }), after: new ObjectType({ elemID }) },
     }
   }
-  const add = (name: string): Change => planItem(undefined, name)
-  const remove = (name: string): Change => planItem(name, undefined)
-  const modify = (name: string): Change => planItem(name, name)
+  const toPlanItem = (
+    parent: Change,
+    subChanges: Change[],
+    detailed: DetailedChange[]
+  ): PlanItem => ({
+    groupKey: getChangeElement(parent).elemID.getFullName(),
+    items: new Map<string, Change>(
+      [parent, ...subChanges].map(c => [getChangeElement(c).elemID.getFullName(), c])
+    ),
+    parent: () => parent,
+    detailedChanges: () => detailed,
+  })
 
   const result = new GroupedNodeMap<Change>()
 
-  const leadPlanItem: PlanItem = {
-    items: new Map<string, Change>([
-      ['lead', modify('lead')],
-      ['lead_do_you_have_a_sales_team', add('lead_do_you_have_a_sales_team')],
-      ['lead_how_many_sales_people', modify('lead_do_you_have_a_sales_team')],
-      ['lead_status', remove('lead_status')],
-    ]),
-    groupKey: 'lead',
-    parent: () => modify('lead'),
-  }
+  const leadPlanItem = toPlanItem(
+    change('modify', 'lead'),
+    [
+      change('add', 'lead', 'do_you_have_a_sales_team'),
+      change('modify', 'lead', 'how_many_sales_people'),
+      change('remove', 'lead', 'status'),
+    ],
+    [
+      detailedChange('modify', ['lead', 'label'], 'old', 'new'),
+      detailedChange('add', ['lead', 'do_you_have_a_sales_team'], undefined, 'new field'),
+      detailedChange('modify', ['lead', 'how_many_sales_people', 'label'], 'old label', 'new label'),
+      detailedChange('remove', ['lead', 'status'], 'old field', undefined),
+    ]
+  )
   result.addNode(_.uniqueId('lead'), [], leadPlanItem)
 
-  const accountPlanItem: PlanItem = {
-    items: new Map<string, Change>([
-      ['account_status', add('account_status')],
-      ['account_name', modify('account_name')],
-    ]),
-    groupKey: 'account',
-    parent: () => modify('account'),
-  }
+  const accountPlanItem = toPlanItem(
+    change('modify', 'account'),
+    [
+      change('add', 'account', 'status'),
+      change('modify', 'account', 'name'),
+    ],
+    [
+      detailedChange('add', ['account', 'status'], undefined, { name: 'field', type: 'picklist' }),
+      detailedChange('modify', ['account', 'name', 'label'], 'old label', 'new label'),
+    ]
+  )
   result.addNode(_.uniqueId('account'), [], accountPlanItem)
 
   const employeeInstance = elements()[4] as InstanceElement
@@ -212,11 +233,17 @@ export const plan = (): Plan => {
       after: updatedEmployee,
     },
   }
-  const instancePlanItem: PlanItem = {
-    items: new Map<string, Change>([['instance', employeeChange]]),
-    groupKey: 'instance',
-    parent: () => employeeChange,
-  }
+  const instancePlanItem = toPlanItem(
+    employeeChange,
+    [],
+    [
+      {
+        id: employeeInstance.elemID.createNestedID('name'),
+        action: 'modify',
+        data: { before: employeeInstance.value.name, after: updatedEmployee.value.name },
+      },
+    ],
+  )
   result.addNode(_.uniqueId('instance'), [], instancePlanItem)
 
   Object.assign(result, {

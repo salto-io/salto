@@ -1,6 +1,8 @@
-import { Element, ObjectType } from 'adapter-api'
-import { formatSearchResults, createPlanOutput } from '../src/formatter'
-import { elements, plan } from './mocks'
+import {
+  Element, ObjectType, InstanceElement, PrimitiveType, ElemID, PrimitiveTypes, BuiltinTypes,
+} from 'adapter-api'
+import { formatSearchResults, createPlanOutput, formatChange } from '../src/formatter'
+import { elements, plan, detailedChange } from './mocks'
 
 describe('formatter', () => {
   describe('formatSearchResults', () => {
@@ -53,14 +55,74 @@ describe('formatter', () => {
   })
 
   describe('createPlanOutput', () => {
-    it('should pp suggest proper value when proper desc is provided start path', async () => {
-      const output = createPlanOutput(plan())
+    const output = createPlanOutput(plan())
+    it('should return type field addition', () => {
+      expect(output).toMatch(/M[^\n]+salesforce_lead.*\+[^\n]+do_you_have_a_sales_team/s)
+    })
+    it('should return type field removal', () => {
+      expect(output).toMatch(/M[^\n]+salesforce_lead.*-[^\n]+status/s)
+    })
+    it('should have titles for all level of nested modifications', () => {
+      expect(output).toMatch(/M[^\n]+salesforce_lead.*M[^\n]+how_many_sales_people.*M[^\n]+label/s)
+    })
+  })
 
-      // Validate we printed all fields changes
-      expect(output.search('salesforce_account_status')).toBeGreaterThan(0)
-      expect(output.search('salesforce_account_name')).toBeGreaterThan(0)
-      expect(output.search('salesforce_lead_do_you_have_a_sales_team')).toBeGreaterThan(0)
-      expect(output.search('salesforce_lead_status')).toBeGreaterThan(0)
+  describe('formatChange', () => {
+    const allElements = elements()
+    const instance = allElements[4] as InstanceElement
+    const objectType = allElements[2] as ObjectType
+
+    describe('with instance value', () => {
+      const instanceChange = detailedChange('add', instance.elemID.nameParts, undefined, instance)
+      const output = formatChange(instanceChange)
+      it('should have element id', () => {
+        expect(output).toMatch(/\+.*salesforce_employee_instance/)
+      })
+      it('should have nested values', () => {
+        expect(output).toMatch(/salesforce_employee_instance.*office.*label: "bla"/s)
+      })
+    })
+    describe('with primitive type', () => {
+      const dummyType = new PrimitiveType({
+        elemID: new ElemID('salesforce', 'text'),
+        primitive: PrimitiveTypes.STRING,
+        annotations: { bla: 'foo' },
+        annotationTypes: { bla: BuiltinTypes.STRING },
+      })
+      const typeChange = detailedChange('remove', dummyType.elemID.nameParts, dummyType, undefined)
+      const output = formatChange(typeChange)
+      it('should have element id', () => {
+        expect(output).toMatch(/-.*salesforce_text/)
+      })
+      it('should have type', () => {
+        expect(output).toMatch(/-.*salesforce_text.*TYPE: string/s)
+      })
+      it('should have annotations', () => {
+        expect(output).toMatch(/-.*salesforce_text.*bla:/s)
+      })
+      it('should have annotation types', () => {
+        expect(output).toMatch(/-.*salesforce_text.*annotations.*bla/s)
+      })
+    })
+    describe('with object type', () => {
+      const objTypeChange = detailedChange('add', objectType.elemID.nameParts, undefined, objectType)
+      const output = formatChange(objTypeChange)
+      it('should have element id', () => {
+        expect(output).toMatch(/\+.*salesforce_office/)
+      })
+      it('should have annotations', () => {
+        expect(output).toMatch(/\+.*salesforce_office.*description: "Office type in salto"/s)
+      })
+      it('should have fields', () => {
+        expect(output).toMatch(/\+.*salesforce_office.*fields.*name/s)
+        expect(output).toMatch(/\+.*salesforce_office.*fields.*name.*TYPE: string/s)
+        expect(output).toMatch(/\+.*salesforce_office.*fields.*location/s)
+        expect(output).toMatch(/\+.*salesforce_office.*fields.*location.*TYPE: salto_address/s)
+        expect(output).toMatch(/\+.*salesforce_office.*fields.*location.*label/s)
+      })
+      it('should have annotation types', () => {
+        expect(output).toMatch(/\+.*salesforce_office.*annotations.*label.*TYPE: string/s)
+      })
     })
   })
 })

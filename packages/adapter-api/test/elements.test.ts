@@ -403,5 +403,11 @@ describe('Test elements.ts', () => {
         expect(exampleId.createNestedID('test').nameParts).toEqual(['example', 'test'])
       })
     })
+
+    describe('createParentID', () => {
+      it('should create an ID with one less name part', () => {
+        expect(exampleId.createParentID().nameParts).toEqual([])
+      })
+    })
   })
 })

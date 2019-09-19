@@ -2,11 +2,11 @@ import _ from 'lodash'
 import chalk from 'chalk'
 import wu from 'wu'
 import {
-  isType, Element, Type, isInstanceElement, isEqualElements,
-  Values, Change, InstanceElement, Value, getChangeElement,
+  isType, Element, Type, isInstanceElement, Values, Change, Value, getChangeElement, ElemID,
+  isObjectType, isField, isPrimitiveType, Field, PrimitiveTypes,
 } from 'adapter-api'
 import {
-  Plan, PlanItem, FoundSearchResult, SearchResult,
+  Plan, PlanItem, FoundSearchResult, SearchResult, DetailedChange,
 } from 'salto'
 import Prompts from './prompts'
 
@@ -23,140 +23,80 @@ export const emptyLine = (): string => ''
 
 export const seperator = (): string => `\n${'-'.repeat(78)}\n`
 
-interface PlanItemDescription {
-  name: string
-  actionModifier: string
-  subLines: PlanItemDescription[]
-  value?: string
-}
-
-const exists = (value: Value): boolean =>
-  (_.isObject(value) ? !_.isEmpty(value) : !_.isUndefined(value))
-
 const fullName = (change: Change): string => getChangeElement(change).elemID.getFullName()
 
 const planItemName = (step: PlanItem): string => fullName(step.parent())
 
-const createStepValue = (before?: Value, after?: Value): string|undefined => {
-  const normalizeValuePrint = (value: Value): string => {
-    if (typeof value === 'string') {
-      return `"${value}"`
-    }
-    if (Array.isArray(value)) {
-      return `[${value.map(normalizeValuePrint)}]`
-    }
-    return JSON.stringify(value)
-  }
-
-  if (exists(before) && exists(after)) {
-    return `${normalizeValuePrint(before)} => ${normalizeValuePrint(after)}`
-  }
-  return normalizeValuePrint(before || after)
+const indent = (text: string, level: number): string => {
+  const indentText = _.repeat('  ', level)
+  return text.split('\n').map(line => `${indentText}${line}`).join('\n')
 }
 
-const getModifier = (before: Value, after: Value): string => {
-  if (isEqualElements(before, after) || _.isEqual(before, after)) {
-    return ' '
-  }
-  if (exists(before) && exists(after)) {
-    return Prompts.MODIFIERS.modify
-  }
-  if (!exists(before) && exists(after)) {
-    return Prompts.MODIFIERS.add
-  }
-  return Prompts.MODIFIERS.remove
-}
+const formatValue = (value: Element | Value): string => {
+  const formatAnnotations = (annotations: Values): string =>
+    (_.isEmpty(annotations) ? '' : formatValue(annotations))
+  const formatAnnotationTypes = (types: Record<string, Type>): string =>
+    (_.isEmpty(types) ? '' : indent(`\nannotations:${formatValue(types)}`, 2))
+  const formatFields = (fields: Record<string, Field>): string =>
+    (_.isEmpty(fields) ? '' : indent(`\nfields:${formatValue(fields)}`, 2))
 
-const filterEQ = (
-  actions: PlanItemDescription[]
-): PlanItemDescription[] => actions.filter(a => a.actionModifier !== ' ')
-
-const createValuesChanges = (before: Values, after: Values): PlanItemDescription[] =>
-  _.union(Object.keys(before), Object.keys(after)).map(name => {
-    const subLines = (_.isPlainObject(before[name]) || _.isPlainObject(after[name]))
-      ? createValuesChanges(before[name] || {}, after[name] || {}) : []
-    return {
-      name,
-      actionModifier: getModifier(before[name], after[name]),
-      subLines: filterEQ(subLines),
-      value: _.isEmpty(subLines) ? createStepValue(before[name], after[name]) : undefined,
+  if (isInstanceElement(value)) {
+    return formatValue(value.value)
+  }
+  if (isObjectType(value)) {
+    return [
+      formatAnnotations(value.annotations),
+      formatFields(value.fields),
+      formatAnnotationTypes(value.annotationTypes),
+    ].join('')
+  }
+  if (isPrimitiveType(value)) {
+    const primitiveTypenames = {
+      [PrimitiveTypes.STRING]: 'string',
+      [PrimitiveTypes.NUMBER]: 'number',
+      [PrimitiveTypes.BOOLEAN]: 'boolean',
     }
-  })
-
-const createAnnotationsChanges = (
-  before: Record<string, Type>,
-  after: Record<string, Type>
-): PlanItemDescription[] => _.union(Object.keys(before), Object.keys(after)).map(name => {
-  const subLines = createValuesChanges(
-    (before[name]) ? before[name].annotations : {},
-    (after[name]) ? after[name].annotations : {}
-  )
-  return {
-    name,
-    actionModifier: getModifier(before[name], after[name]),
-    subLines: filterEQ(subLines),
+    return [
+      indent(`\nTYPE: ${primitiveTypenames[value.primitive]}`, 2),
+      formatAnnotations(value.annotations),
+      formatAnnotationTypes(value.annotationTypes),
+    ].join('')
   }
-})
-
-const formatObjectTypePlanItem = (item: PlanItem): PlanItemDescription => {
-  const isRoot = (change: Change): boolean => (fullName(change) === item.groupKey)
-
-  const typeChange = wu(item.items.values()).find(isRoot)
-  let subLines: PlanItemDescription[] = []
-  if (typeChange && typeChange.action === 'modify') {
-    // Collect element level changes
-    const { before, after } = typeChange.data
-    subLines = [
-      ...createValuesChanges(
-        _.get(before, 'annotations', {}),
-        _.get(after, 'annotations', {}),
-      ),
-      ...createAnnotationsChanges(
-        _.get(before, 'annotationTypes', {}),
-        _.get(after, 'annotationTypes', {}),
-      ),
-    ]
+  if (isField(value)) {
+    return [
+      indent(`\nTYPE: ${value.type.elemID.getFullName()}`, 2),
+      formatAnnotations(value.annotations),
+    ].join('')
   }
+  if (_.isArray(value)) {
+    return `[${value.map(formatValue)}]`
+  }
+  if (_.isPlainObject(value)) {
+    const formattedKeys = _.entries(value)
+      .map(([k, v]) => `${k}: ${formatValue(v)}`)
+      .join('\n')
+    return `\n${indent(formattedKeys, 2)}`
+  }
+  return JSON.stringify(value)
+}
 
-  subLines = [...subLines, ...wu(item.items.values()).reject(isRoot).map(change => {
-    // Collect field level change
-    const beforeValues = change.action === 'add' ? {} : change.data.before.annotations
-    const afterValues = change.action === 'remove' ? {} : change.data.after.annotations
-    const sub = createValuesChanges(beforeValues, afterValues)
-    return {
-      name: fullName(change),
-      actionModifier: Prompts.MODIFIERS[change.action],
-      subLines: filterEQ(sub),
+const formatChangeData = (change: DetailedChange): string => {
+  if (change.action === 'modify') {
+    if (change.data.before === undefined || change.data.after === undefined) {
+      // This is a dummy change created just so we print a "title" for a group of changes
+      return ''
     }
-  }).toArray()]
-
-  return {
-    name: item.groupKey,
-    actionModifier: Prompts.MODIFIERS[item.parent().action],
-    subLines: filterEQ(subLines),
+    return `${formatValue(change.data.before)} => ${formatValue(change.data.after)}`
   }
+  return formatValue(_.get(change.data, 'before', _.get(change.data, 'after')))
 }
 
-const formatInstanceElementPlanItem = (item: PlanItem): PlanItemDescription => {
-  const parent = item.parent() as Change<InstanceElement>
-  const beforeValues = parent.action === 'add' ? {} : parent.data.before.value
-  const afterValues = parent.action === 'remove' ? {} : parent.data.after.value
-  const subLines = createValuesChanges(beforeValues, afterValues)
-  return {
-    name: planItemName(item),
-    actionModifier: getModifier(_.get(parent.data, 'before'), _.get(parent.data, 'after')),
-    subLines: filterEQ(subLines),
-  }
-}
-
-export const formatPlanItem = (item: PlanItem): PlanItemDescription => {
-  const parent = item.parent()
-  const before = parent.action === 'add' ? {} : parent.data.before
-  const after = parent.action === 'remove' ? {} : parent.data.after
-  if (isInstanceElement(before || after)) {
-    return formatInstanceElementPlanItem(item)
-  }
-  return formatObjectTypePlanItem(item)
+export const formatChange = (change: DetailedChange): string => {
+  const modifier = Prompts.MODIFIERS[change.action]
+  const id = change.id.nameParts.length === 1
+    ? change.id.getFullName()
+    : change.id.nameParts.slice(-1)[0]
+  return indent(`${modifier} ${id}: ${formatChangeData(change)}`, change.id.nameParts.length)
 }
 
 const createCountPlanItemTypesOutput = (plan: Plan): string => {
@@ -171,40 +111,42 @@ const createCountPlanItemTypesOutput = (plan: Plan): string => {
   )
 }
 
-const createPlanStepTitle = (
-  step: PlanItemDescription,
-  printModifiers?: boolean,
-): string => {
-  const modifier = printModifiers ? step.actionModifier : ' '
-  const stepDesc = `${modifier} ${step.name}`
-  return [stepDesc, step.value].filter(n => n).join(': ')
-}
-
 const createPlanStepsOutput = (plan: Plan): string => {
-  const createPlanStepOutput = (
-    formatedAction: PlanItemDescription,
-    printModifiers: boolean,
-    identLevel = 1,
-  ): string => {
-    const lineTitle = createPlanStepTitle(formatedAction, printModifiers)
-    const lineChildren = formatedAction.subLines
-      ? wu(formatedAction.subLines).map((subLine): string => {
-        const printChildModifiers = subLine.actionModifier !== formatedAction.actionModifier
-        return createPlanStepOutput(subLine, printChildModifiers, identLevel + 1)
-      }).toArray()
-      : []
+  const addMissingEmptyChanges = (changes: DetailedChange[]): DetailedChange[] => {
+    const emptyChange = (id: ElemID): DetailedChange => ({
+      action: 'modify',
+      data: { before: undefined, after: undefined },
+      id,
+    })
 
-    const allLines = [lineTitle].concat(lineChildren)
+    const createMissingChanges = (id: ElemID, existingIds: Set<string>): DetailedChange[] => {
+      const parentId = id.createParentID()
+      if (parentId.nameParts.length === 0 || existingIds.has(parentId.getFullName())) {
+        return []
+      }
+      existingIds.add(parentId.getFullName())
+      return [emptyChange(parentId), ...createMissingChanges(parentId, existingIds)]
+    }
 
-    const prefix = '  '.repeat(identLevel)
-    return allLines
-      .map(line => prefix + line)
-      .join('\n')
+    const existingIds = new Set(changes.map(c => c.id.getFullName()))
+    const missingChanges = _(changes)
+      .map(change => createMissingChanges(change.id, existingIds))
+      .flatten()
+      .value()
+    return [...changes, ...missingChanges]
   }
 
   return wu(plan.itemsByEvalOrder())
-    .map(step => createPlanStepOutput(formatPlanItem(step), true))
-    .toArray().join('\n\n')
+    .map(item => wu(item.detailedChanges()).toArray())
+    // Fill in all missing "levels" of each change
+    .map(addMissingEmptyChanges)
+    // Sort changes so they show up nested correctly
+    .map(changes => _.sortBy(changes, change => change.id.getFullName()))
+    // Format changes
+    .map(changes => changes.map(formatChange))
+    .flatten()
+    .toArray()
+    .join('\n\n')
 }
 
 const formatElementDescription = (element: Element): string => {

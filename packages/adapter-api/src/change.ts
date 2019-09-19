@@ -1,4 +1,3 @@
-
 import {
   AdditionDiff, ModificationDiff, RemovalDiff,
 } from '@salto/dag'

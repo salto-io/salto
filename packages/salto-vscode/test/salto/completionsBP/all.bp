@@ -122,3 +122,9 @@ type vs_loan {
     }
 }
 
+vs_loan not_a_loan {
+    nothing {
+        attr = "value"
+    }    
+}
+

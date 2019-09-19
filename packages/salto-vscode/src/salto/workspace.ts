@@ -15,6 +15,7 @@ export interface SaltoWorkspace {
   parsedBlueprints: ParsedBlueprintMap
   mergedElements?: Element[]
   generalErrors: SaltoError[]
+  lastUpdate?: Promise<SaltoWorkspace>
 }
 
 const updateWorkspace = (workspace: SaltoWorkspace): SaltoWorkspace => {

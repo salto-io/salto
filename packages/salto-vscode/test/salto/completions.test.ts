@@ -55,6 +55,7 @@ describe('Test auto complete', () => {
   let workspace: SaltoWorkspace
   const baseBPDir = path.resolve(`${__dirname}/../../../test/salto/completionsBP`)
   const bpFile = path.resolve(`${baseBPDir}/all.bp`)
+
   beforeAll(async () => {
     workspace = await initWorkspace(baseBPDir)
   })

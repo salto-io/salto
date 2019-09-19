@@ -5,18 +5,18 @@ import { provideWorkspaceCompletionItems } from './salto/completions/provider'
 import { getPositionContext, EditorPosition } from './salto/context'
 import { debugFunctions } from './salto/debug'
 import { provideWorkspaceDefinition } from './salto/definitions'
-
+import { provideWorkspaceReferences } from './salto/usage'
 /**
  * This files act as a bridge between VSC and the salto specific functionality.
  */
 
 const workspaces: {[key: string]: SaltoWorkspace} = {}
 
-const SaltoPosToVsPos = (
+const saltoPosToVsPos = (
   pos: EditorPosition
 ): vscode.Position => new vscode.Position(pos.line - 1, pos.col)
 
-const VsPosToSaltoPos = (pos: vscode.Position): EditorPosition => ({
+const vsPosToSaltoPos = (pos: vscode.Position): EditorPosition => ({
   line: pos.line + 1,
   col: pos.character,
 })
@@ -63,13 +63,7 @@ const createCompletionsProvider = (
     position: vscode.Position
   ) => {
     const workspace = workspaces[workspaceName]
-    if (workspace.lastUpdate) {
-      await workspace.lastUpdate
-    }
-    const context = getPositionContext(workspace, doc.fileName, {
-      line: position.line + 1,
-      col: position.character,
-    })
+    const context = getPositionContext(workspace, doc.fileName, vsPosToSaltoPos(position))
     const line = doc.lineAt(position).text.substr(0, position.character)
     return provideWorkspaceCompletionItems(workspace, context, line).map(
       ({ label, reInvoke, insertText }) => {
@@ -95,12 +89,30 @@ const createDefinitionsProvider = (
     position: vscode.Position,
   ): vscode.Definition => {
     const workspace = workspaces[workspaceName]
-    const context = getPositionContext(workspace, doc.fileName, VsPosToSaltoPos(position))
+    const context = getPositionContext(workspace, doc.fileName, vsPosToSaltoPos(position))
     const currenToken = doc.getText(doc.getWordRangeAtPosition(position))
     return provideWorkspaceDefinition(workspace, context, currenToken).map(
       def => new vscode.Location(
         vscode.Uri.file(def.filename),
-        SaltoPosToVsPos(def.range.start)
+        saltoPosToVsPos(def.range.start)
+      )
+    )
+  },
+})
+
+const createReferenceProvider = (
+  workspaceName: string
+): vscode.ReferenceProvider => ({
+  provideReferences: (
+    doc: vscode.TextDocument,
+    position: vscode.Position,
+  ): vscode.Location[] => {
+    const workspace = workspaces[workspaceName]
+    const currenToken = doc.getText(doc.getWordRangeAtPosition(position))
+    return provideWorkspaceReferences(workspace, currenToken).map(
+      def => new vscode.Location(
+        vscode.Uri.file(def.filename),
+        saltoPosToVsPos(def.range.start)
       )
     )
   },
@@ -120,16 +132,24 @@ export const activate = async (context: vscode.ExtensionContext): Promise<void> 
 
     const completionProvider = vscode.languages.registerCompletionItemProvider(
       { scheme: 'file', pattern: { base: rootPath, pattern: '*.bp' } },
-      createCompletionsProvider(name)
+      createCompletionsProvider(name),
+      ' '
     )
 
     const definitionProvider = vscode.languages.registerDefinitionProvider(
       { scheme: 'file', pattern: { base: rootPath, pattern: '*.bp' } },
       createDefinitionsProvider(name)
     )
+
+    const referenceProvider = vscode.languages.registerReferenceProvider(
+      { scheme: 'file', pattern: { base: rootPath, pattern: '*.bp' } },
+      createReferenceProvider(name)
+    )
+
     context.subscriptions.push(
       completionProvider,
       definitionProvider,
+      referenceProvider,
       vscode.workspace.onDidChangeTextDocument(e => onDidChangeTextDocument(e, name)),
       vscode.workspace.onDidChangeConfiguration(e => onDidChangeConfiguration(e, name, settings)),
       // A shortcut for registering all debug commands from debug.ts

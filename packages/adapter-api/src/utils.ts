@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import {
-  isObjectType, Type, Field, ObjectType,
+  isObjectType, Type, Field, ObjectType, ElemID,
 } from './elements'
 
 interface AnnoRef {
@@ -25,7 +25,7 @@ export const getField = (baseType: Type, pathParts: string[]): Field|undefined =
       : getField(baseType.fields[curPart].type, restOfParts)
   }
   // First token is no good, we check if it is a part of a longer name
-  const nextCur = [curPart, restOfParts[0]].join('_')
+  const nextCur = [curPart, restOfParts[0]].join(ElemID.NAMESPACE_SEPERATOR)
   const nextRest = restOfParts.slice(1)
   return getField(baseType, [nextCur, ...nextRest])
 }
@@ -39,7 +39,7 @@ export const getFieldNames = (refType: ObjectType, path: string): string[] => {
   if (!path) {
     return _.keys(refType.fields)
   }
-  const pathField = getField(refType, path.split('_'))
+  const pathField = getField(refType, path.split(ElemID.NAMESPACE_SEPERATOR))
   if (pathField && isObjectType(pathField.type)) {
     return _.keys(pathField.type.fields)
   }

@@ -1,10 +1,12 @@
 import {
   ObjectType, ElemID, PrimitiveType, Field, PrimitiveTypes,
+  InstanceElement, isObjectType, isInstanceElement,
 } from 'adapter-api'
 import _ from 'lodash'
+import { metadataType } from '../../src/transformer'
 import { ProfileInfo } from '../../src/client/types'
 import filterCreator, {
-  FIELD_LEVEL_SECURITY_ANNOTATION,
+  FIELD_LEVEL_SECURITY_ANNOTATION, PROFILE_METADATA_TYPE,
 } from '../../src/filters/field_permissions'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
@@ -27,6 +29,7 @@ describe('Field Permissions filter', () => {
     annotations: {
       label: 'test label',
       [constants.API_NAME]: 'Test__c',
+      [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
     },
   })
   const admin = {
@@ -35,6 +38,55 @@ describe('Field Permissions filter', () => {
   const standard = {
     [FIELD_LEVEL_SECURITY_ANNOTATION]: { standard: { editable: false, readable: true } },
   }
+  const mockProfileElemID = new ElemID(constants.SALESFORCE, 'profile')
+  const mockFieldPermissions = new ObjectType({
+    elemID: new ElemID(constants.SALESFORCE, 'profile_field_level_security'),
+    fields: {},
+    annotations: { [constants.METADATA_TYPE]: 'ProfileFieldLevelSecurity' },
+  })
+  const mockProfile = new ObjectType({
+    elemID: mockProfileElemID,
+    fields: {
+      [constants.FIELD_PERMISSIONS]: new Field(mockProfileElemID, 'field_permissions', mockFieldPermissions),
+    },
+    annotationTypes: {},
+    annotations: {
+      [constants.METADATA_TYPE]: PROFILE_METADATA_TYPE,
+      [constants.API_NAME]: 'Profile',
+    },
+  })
+  const mockAdminElemID = new ElemID(constants.SALESFORCE, 'admin')
+  const mockAdmin = new InstanceElement(mockAdminElemID,
+    mockProfile,
+    {
+      [constants.FIELD_PERMISSIONS]: [
+        {
+          field: 'Test__c.Description__c',
+          readable: true,
+          editable: false,
+        },
+      ],
+      description: 'Admin profile',
+    })
+  const mockStandardID = new ElemID(constants.SALESFORCE, 'standard')
+  const mockStandard = new InstanceElement(mockStandardID,
+    mockProfile,
+    {
+      [constants.FIELD_PERMISSIONS]: [
+        {
+          field: 'Test__c.Description__c',
+          readable: false,
+          editable: true,
+        },
+      ],
+      description: 'Standard profile',
+    })
+  const mockNoFieldPermissionsID = new ElemID(constants.SALESFORCE, 'fake_no_field_permissions')
+  const mockNoFieldPerm = new InstanceElement(mockNoFieldPermissionsID,
+    mockProfile,
+    {
+      description: 'Profile with no field_permissions',
+    })
   const address = new Field(mockElemID, 'address', stringType, _.merge({},
     { ...admin, [constants.API_NAME]: 'Address__c' }))
   const banana = new Field(mockElemID, 'banana', stringType, _.merge({},
@@ -53,27 +105,31 @@ describe('Field Permissions filter', () => {
     mockUpdate = jest.fn().mockImplementationOnce(() => ([{ success: true }]))
     client.update = mockUpdate
   })
-
-  it('should discover sobject permissions', async () => {
-    client.listMetadataObjects = jest.fn().mockImplementation(() => [
-      { fullName: 'Admin' }])
-    client.readMetadata = jest.fn().mockImplementation(() => ([{
-      fullName: 'Admin',
-      fieldPermissions: [
-        {
-          field: 'Test__c.Description__c',
-          readable: true,
-          editable: false,
-        },
-      ],
-    }]))
-    const elements = [mockObject.clone()]
-
+  it('should add field_level_security to object types and remove it from profile type & instances', async () => {
+    const elements = [mockObject.clone(), mockAdmin, mockStandard, mockNoFieldPerm, mockProfile]
     await filter().onDiscover(elements)
-    const security = elements[0].fields.description.annotations[
-      FIELD_LEVEL_SECURITY_ANNOTATION]
-    expect(security.admin.readable).toBe(true)
-    expect(security.admin.editable).toBe(false)
+    const objectTypes = elements.filter(isObjectType)
+
+    // Check mockObject has the right permissions
+    const fieldLevelSecurity = objectTypes[0].fields.description
+      .annotations[FIELD_LEVEL_SECURITY_ANNOTATION]
+    expect(fieldLevelSecurity.admin.readable).toBe(true)
+    expect(fieldLevelSecurity.admin.editable).toBe(false)
+    expect(fieldLevelSecurity.standard.readable).toBe(false)
+    expect(fieldLevelSecurity.standard.editable).toBe(true)
+    expect(fieldLevelSecurity.fake_no_field_permissions).toBeUndefined()
+
+    // Check profile instances' field_permissions were deleted
+    elements.filter(isInstanceElement)
+      .filter(elem => metadataType(elem) === PROFILE_METADATA_TYPE)
+      .forEach(profileInstance => expect(profileInstance.value[constants.FIELD_PERMISSIONS])
+        .toBeUndefined())
+
+    // Check Profile type's field_permissions field was deleted
+    const profileType = elements.filter(isObjectType)
+      .filter(elem => metadataType(elem) === PROFILE_METADATA_TYPE)[0]
+    expect(profileType).toBeDefined()
+    expect(profileType.fields[constants.FIELD_PERMISSIONS]).toBeUndefined()
   })
   it('should update field permissions upon new salesforce type', async () => {
     const after = mockObject.clone()

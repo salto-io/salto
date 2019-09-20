@@ -21,11 +21,11 @@ describe('import command', () => {
     await asyncfile.createDirectory(inputDir)
     await asyncfile.writeTextFile(inputPath, '\n')
     const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
-    await command([], inputPath, '', cliOutput).execute()
+    await command([], '', inputPath, cliOutput).execute()
     expect(cliOutput.stdout.content).toMatch(Prompts.IMPORT_FINISHED_SUCCESSFULLY)
   })
 
-  it('should fail if given a wring path for a CSV file', async () => {
+  it('should fail if given a wrong path for a CSV file', async () => {
     const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
     await command([], '', '', cliOutput).execute()
     expect(cliOutput.stdout.content).toMatch(Prompts.IMPORT_COULD_NOT_FIND_FILE)

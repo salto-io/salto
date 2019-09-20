@@ -1,10 +1,10 @@
 import _ from 'lodash'
 import path from 'path'
 import {
-  ObjectType, InstanceElement,
+  ObjectType, InstanceElement, Value,
 } from 'adapter-api'
 import {
-  applyActions, discoverAll, mergeAndValidate, getInstancesOfType,
+  applyActions, discoverAll, mergeAndValidate, getInstancesOfType, importInstancesOfType,
 } from './core'
 import initAdapters from './adapters/adapters'
 import { getPlan, Plan, PlanItem } from './plan'
@@ -94,4 +94,22 @@ export const exportToCsv = async (
   const [adapters] = await initAdapters(elements, fillConfig)
 
   return getInstancesOfType(type as ObjectType, adapters)
+}
+
+export const importFromCsvFile = async (
+  typeId: string,
+  records: Value[],
+  blueprints: Blueprint[],
+  fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
+): Promise<void> => {
+  // Find the corresponding element in the state
+  const state = new State()
+  const stateElements = await state.get()
+  const type = stateElements.find(elem => elem.elemID.getFullName() === typeId)
+  if (!type) {
+    throw new Error(`Couldn't find the type you are looking for: ${typeId}. Have you run salto discover yet?`)
+  }
+  const elements = mergeAndValidate(await getAllElements(blueprints))
+  const [adapters] = await initAdapters(elements, fillConfig)
+  await importInstancesOfType(type as ObjectType, records, adapters)
 }

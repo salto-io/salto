@@ -1,6 +1,8 @@
 import * as asyncfile from 'async-file'
 import path from 'path'
 import { parseAsync } from 'json2csv'
+import csvtojson from 'csvtojson'
+import { Value } from 'adapter-api'
 
 /**
  * Write objects to CSV file
@@ -30,4 +32,6 @@ export const dumpCsv = async (
   }
 }
 
-export default dumpCsv
+export const readCsv = async (inputPath: string): Promise<Value[]> => (
+  csvtojson().fromFile(inputPath)
+)

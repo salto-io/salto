@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import {
-  ValueTypeField, Field, MetadataInfo, DefaultValueWithType, QueryResult,
+  ValueTypeField, Field, MetadataInfo, DefaultValueWithType, QueryResult, Record as SfRecord,
 } from 'jsforce'
 import JSZip from 'jszip'
 
@@ -531,3 +531,6 @@ export const createMetadataTypeElements = (
 
   return _.flatten([element, embeddedTypes])
 }
+// Convert the InstanceElements to records
+export const toRecords = (instances: InstanceElement[]):
+SfRecord[] => instances.map(res => res.value)

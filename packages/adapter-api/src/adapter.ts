@@ -6,6 +6,7 @@ export interface Adapter {
   remove(element: Element): Promise<void>
   update(before: Element, after: Element): Promise<Element>
   getInstancesOfType(type: ObjectType): AsyncIterable<InstanceElement[]>
+  importInstancesOfType(type: ObjectType, records: AsyncIterable<InstanceElement>): Promise<void>
 }
 
 export type AdapterCreator = {

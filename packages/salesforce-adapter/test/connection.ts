@@ -15,10 +15,14 @@ const mockConnection: () => Connection = () => ({
   soap: {
     describeSObjects: jest.fn(),
   } as Soap,
+  bulk: {
+    load: jest.fn(),
+  },
 
   describeGlobal: jest.fn().mockImplementation(async () => ({ sobjects: [] })),
   query: jest.fn(),
   queryMore: jest.fn(),
+  destroy: jest.fn(),
 })
 
 export default mockConnection

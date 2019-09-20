@@ -1,8 +1,11 @@
 import { Stream } from 'stream'
 import {
-  MetadataObject, ValueTypeField, MetadataInfo, SaveResult, ListMetadataQuery, FileProperties,
-  DescribeSObjectResult, DescribeGlobalSObjectResult,
-  DeployOptions, DeployResultLocator, DeployResult, QueryResult,
+  MetadataObject, ValueTypeField, MetadataInfo, SaveResult,
+  ListMetadataQuery, FileProperties, DescribeSObjectResult,
+  DescribeGlobalSObjectResult, DeployOptions, DeployResultLocator,
+  DeployResult, QueryResult, BulkLoadOperation, BulkOptions, Batch,
+  Record as SfRecord,
+  RecordResult,
 } from 'jsforce'
 import { Value } from 'adapter-api'
 
@@ -29,6 +32,10 @@ export interface Soap {
   ): Promise<DescribeSObjectResult | DescribeSObjectResult[]>
 }
 
+export interface Bulk {
+  load(type: string, operation: BulkLoadOperation, options?: BulkOptions, input?: SfRecord[]): Batch
+}
+
 export interface Global {
   sobjects: DescribeGlobalSObjectResult[]
 }
@@ -37,7 +44,9 @@ export default interface Connection {
   login(user: string, password: string): Promise<unknown>
   metadata: Metadata
   soap: Soap
+  bulk: Bulk
   describeGlobal(): Promise<Global>
   query(soql: string): Promise<QueryResult<Value>>
   queryMore(locator: string): Promise<QueryResult<Value>>
+  destroy(type: string, ids: string | string[]): Promise<(RecordResult | RecordResult[])>
 }

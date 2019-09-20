@@ -12,6 +12,7 @@ import {
   toCustomField, toCustomObject, apiName, sfCase, fieldFullName, Types,
   getSObjectFieldElement, toMetadataInfo, createInstanceElement,
   metadataType, toMetadataPackageZip, toInstanceElements, createMetadataTypeElements,
+  toRecords,
 } from './transformer'
 import layoutFilter from './filters/layouts'
 import fieldPermissionsFilter from './filters/field_permissions'
@@ -24,6 +25,8 @@ import standardValueSetFilter from './filters/standard_value_sets'
 import {
   FilterCreator, Filter, FilterWith, filtersWith,
 } from './filter'
+
+const CSV_IMPORT_CHUNK_SIZE = 10000
 
 // Add API name and label annotation if missing
 const annotateApiNameAndLabel = (element: ObjectType): void => {
@@ -158,6 +161,29 @@ export default class SalesforceAdapter {
         results = await this.client.queryMore(results.nextRecordsUrl)
       } else break
     }
+  }
+
+  /**
+   * Imports instances of type from the data stream
+   * @param type the object type of which to import
+   * @param data the stream that contains the object instances to import
+   * @returns a promise that represents action completion
+   */
+  public async importInstancesOfType(type: ObjectType,
+    instancesIterator: AsyncIterable<InstanceElement>): Promise<void> {
+    let instances: InstanceElement[] = []
+    // eslint-disable-next-line no-restricted-syntax
+    for await (const instance of instancesIterator) {
+      // Aggregate the instance elements for the proper bulk size
+      const length = instances.push(instance)
+      if (length === CSV_IMPORT_CHUNK_SIZE) {
+        // Convert the instances in the transformer to SfRecord[] and send to bulk API
+        await this.client.uploadBulk(apiName(type), toRecords(instances))
+        instances = []
+      }
+    }
+    // Send the remaining instances
+    await this.client.uploadBulk(apiName(type), toRecords(instances))
   }
 
   /**

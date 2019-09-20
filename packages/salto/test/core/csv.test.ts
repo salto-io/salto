@@ -1,12 +1,15 @@
+import _ from 'lodash'
 import path from 'path'
 import * as asyncfile from 'async-file'
 import * as csv from '../../src/core/csv'
 
-const csvDumpOutputDir = `${__dirname}/tmp/csv`
-const exportFile = 'dump_csv_test.csv'
-const outputPath = path.join(csvDumpOutputDir, exportFile)
-
 describe('CSV reader/writer', () => {
+  const csvDumpOutputDir = `${__dirname}/tmp/csv`
+  const exportFile = 'dump_csv_test.csv'
+  const outputPath = path.join(csvDumpOutputDir, exportFile)
+  const csvDirectory = path.join(__dirname, '../../../test', 'csv')
+  const importFileName = 'import.csv'
+
   describe('Write to CSV', () => {
     const values = [
       {
@@ -75,6 +78,33 @@ describe('CSV reader/writer', () => {
       expect(fileStrings[2]).toMatch(/2,"Murial","Morson","mmorson1@google.nl","Female"/)
       expect(fileStrings[3]).toMatch(/3,"Minna","Noe","mnoe2@wikimedia.org","Female"/)
       expect(fileStrings[4]).toMatch(/4,"Dwayne","Johnson","dwayne@therock.com","Male"/)
+    })
+  })
+  describe('Read from CSV', () => {
+    it('should read contents of a CSV properly', async () => {
+      const clarkKent = {
+        Id: '',
+        LastName: 'Kent',
+        FirstName: 'Clark',
+        Salutation: 'Mr',
+        Title: 'Reporter',
+        Company: 'Daily Planet',
+        Street: 'Superman 13',
+        City: 'Metropolis',
+      }
+      const bruceWayne = {
+        Id: '',
+        LastName: 'Wayne',
+        FirstName: 'Bruce',
+        Salutation: 'Mr',
+        Title: 'CEO',
+        Company: 'Wayne Enterprises',
+        Street: 'Wayne mansion',
+        City: 'Gotham',
+      }
+      const results = await csv.readCsv(path.join(csvDirectory, importFileName))
+      expect(_.isEqual(results[0], clarkKent)).toBeTruthy()
+      expect(_.isEqual(results[1], bruceWayne)).toBeTruthy()
     })
   })
 })

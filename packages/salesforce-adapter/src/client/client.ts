@@ -13,6 +13,7 @@ import {
   DeployResult,
   BatchResultInfo,
   Record as SfRecord,
+  RecordResult,
 } from 'jsforce'
 import { Value } from 'adapter-api'
 import {
@@ -103,6 +104,13 @@ export default class SalesforceClient {
   public async queryMore(locator: string): Promise<QueryResult<Value>> {
     await this.ensureLoggedIn()
     return this.conn.queryMore(locator)
+  }
+
+  public async destroy(
+    type: string, ids: string | string[]
+  ): Promise<(RecordResult | RecordResult[])> {
+    await this.ensureLoggedIn()
+    return this.conn.destroy(type, ids)
   }
 
   private static validateSaveResult(result: SaveResult[]): SaveResult[] {

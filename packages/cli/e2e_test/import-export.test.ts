@@ -66,15 +66,15 @@ describe('When running import from a CSV file', () => {
   it('should succeed after discover', async () => {
     const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
     await discover(await loadBlueprints([]), discoverOutputDir).execute()
-    await importCommand(await loadBlueprints([], discoverOutputDir), importFilePath,
-      sfLeadObjectName, cliOutput).execute()
+    await importCommand(await loadBlueprints([], discoverOutputDir), sfLeadObjectName,
+      importFilePath, cliOutput).execute()
     expect(cliOutput.stdout.content).toMatch(Prompts.IMPORT_FINISHED_SUCCESSFULLY)
   })
 
   it('should fail if discover was not run beforehand', async () => {
     const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
-    const command = importCommand(await loadBlueprints([], discoverOutputDir), importFilePath,
-      sfLeadObjectName, cliOutput)
+    const command = importCommand(await loadBlueprints([], discoverOutputDir), sfLeadObjectName,
+      importFilePath, cliOutput)
     await expect(command.execute()).rejects
       .toThrow(`Couldn't find the type you are looking for: ${sfLeadObjectName}. Have you run salto discover yet?`)
   })

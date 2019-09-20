@@ -22,6 +22,7 @@ const mockConnection: () => Connection = () => ({
   describeGlobal: jest.fn().mockImplementation(async () => ({ sobjects: [] })),
   query: jest.fn(),
   queryMore: jest.fn(),
+  destroy: jest.fn(),
 })
 
 export default mockConnection

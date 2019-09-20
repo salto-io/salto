@@ -5,6 +5,7 @@ import {
   DescribeGlobalSObjectResult, DeployOptions, DeployResultLocator,
   DeployResult, QueryResult, BulkLoadOperation, BulkOptions, Batch,
   Record as SfRecord,
+  RecordResult,
 } from 'jsforce'
 import { Value } from 'adapter-api'
 
@@ -47,4 +48,5 @@ export default interface Connection {
   describeGlobal(): Promise<Global>
   query(soql: string): Promise<QueryResult<Value>>
   queryMore(locator: string): Promise<QueryResult<Value>>
+  destroy(type: string, ids: string | string[]): Promise<(RecordResult | RecordResult[])>
 }

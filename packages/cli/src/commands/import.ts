@@ -7,8 +7,8 @@ import { getConfigFromUser } from '../callbacks'
 import Prompts from '../prompts'
 
 export const command = (blueprints: Blueprint[],
-  inputPath: string,
   typeName: string,
+  inputPath: string,
   { stdout }: CliOutput): CliCommand => ({
   async execute(): Promise<void> {
     if (!await asyncfile.exists(inputPath)) {
@@ -28,23 +28,22 @@ export const command = (blueprints: Blueprint[],
   },
 })
 
-type DiscoverArgs = bf.Args & { 'inputPath': string; 'typeName': string }
+type DiscoverArgs = bf.Args & { 'typeName': string; 'inputPath': string }
 type DiscoverParsedCliInput = ParsedCliInput<DiscoverArgs> & bf.BlueprintsParsedCliInput
 
 const builder = createCommandBuilder({
   options: {
-    command: 'import <inputPath> <typeName>',
+    command: 'import <typeName> <inputPath>',
     aliases: ['i'],
     description: 'Imports all objects of a given type from a provided CSV',
     positional: {
-      inputPath: {
-        type: 'string',
-        description: 'A path to the input CSV file',
-        default: undefined, // Prevent "default: []" in the help
-      },
       typeName: {
         type: 'string',
         description: 'The type name of the instances to import as it appears in the blueprint',
+      },
+      inputPath: {
+        type: 'string',
+        description: 'A path to the input CSV file',
       },
     },
   },
@@ -52,7 +51,7 @@ const builder = createCommandBuilder({
   filters: [bf.optionalFilter],
 
   async build(input: DiscoverParsedCliInput, output: CliOutput) {
-    return command(input.blueprints, input.args.inputPath, input.args.typeName, output)
+    return command(input.blueprints, input.args.typeName, input.args.inputPath, output)
   },
 })
 

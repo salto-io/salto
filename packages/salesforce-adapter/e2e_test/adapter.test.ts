@@ -66,10 +66,25 @@ describe('Salesforce adapter E2E with real account', () => {
         lead.fields.clean_status.annotations.restricted_pick_list
       ).toBe(true)
 
+
+      // Test standard picklist values from a standard value set
+      expect(
+        lead.fields.salutation.annotations.values
+      ).toBe('salesforce_standard_value_set_salutation')
+
       // Test picklist values
       expect(
-        (lead.fields.salutation.annotations.values as string[]).join(';')
-      ).toBe('Mr.;Ms.;Mrs.;Dr.;Prof.')
+        lead.fields.clean_status.annotations.values
+      ).toEqual([
+        'Acknowledged',
+        'Different',
+        'Inactive',
+        'Matched',
+        'NotFound',
+        'Pending',
+        'SelectMatch',
+        'Skipped',
+      ])
 
       // Test _default
       // TODO: add test to primitive with _default and combobox _default (no real example for lead)

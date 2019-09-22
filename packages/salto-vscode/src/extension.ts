@@ -63,10 +63,12 @@ const createCompletionsProvider = (
     position: vscode.Position
   ) => {
     const workspace = workspaces[workspaceName]
-    const context = getPositionContext(workspace, doc.getText(), doc.fileName, {
-      line: position.line + 1,
-      col: position.character,
-    })
+    const context = getPositionContext(
+      workspace, 
+      doc.getText(), 
+      doc.fileName, 
+      vsPosToSaltoPos(position)
+    )
     const line = doc.lineAt(position).text.substr(0, position.character)
     return provideWorkspaceCompletionItems(workspace, context, line).map(
       ({ label, reInvoke, insertText }) => {

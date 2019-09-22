@@ -9,11 +9,10 @@ import {
 } from '../parser/parse'
 import { mergeElements } from '../core/merger'
 import validateElements from '../core/validator'
-import { ParsedBlueprint } from '../core/blueprint'
 import { DetailedChange } from '../core/plan'
 
 export interface Blueprint {
-  buffer: Buffer
+  buffer: string
   filename: string
 }
 
@@ -49,10 +48,10 @@ const loadBlueprints = async (
   }
 }
 
-const parseBlueprints = (blueprints: Blueprint[]): Promise<ParsedBlueprint[]> =>
+export const parseBlueprints = (blueprints: Blueprint[]): Promise<ParsedBlueprint[]> =>
   Promise.all(blueprints.map(async bp => ({
     ...bp,
-    ...(await parse(bp.buffer, bp.filename)),
+    ...(await parse(Buffer.from(bp.buffer), bp.filename)),
   })))
 
 const mergeSourceMaps = (bps: ParsedBlueprint[]): SourceMap => (

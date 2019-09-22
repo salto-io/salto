@@ -4,66 +4,54 @@ import path from 'path'
 import tmp from 'tmp-promise'
 
 import { Element, ObjectType } from 'adapter-api'
-import { Workspace, loadWorkspace } from '../../src/workspace/workspace'
+import {
+  Workspace, loadWorkspace, Blueprint, ParsedBlueprint, parseBlueprints,
+} from '../../src/workspace/workspace'
 
 describe('Workspace', () => {
-  let tmpDir: tmp.DirectoryResult
-  beforeEach(async () => {
-    const workspaceFiles = {
-      '/salto/file.bp': `type salesforce_lead {
-        salesforce_text base_field {
-          _default = "asd"
-        }
-      }`,
-      '/salto/subdir/file.bp': `type salesforce_lead {
-        salesforce_text ext_field {
-          _default = "foo"
-        }
-      }`,
-      '/salto/subdir/.hidden.bp': 'type hidden_type {}',
-      '/salto/non_bp.txt': 'type hidden_non_bp {}',
-      '/salto/.hidden/hidden.bp': 'type hidden_directory {}',
-      '/outside/file.bp': 'type external_file {}',
-      '/error.bp': 'invalid syntax }}',
-    }
+  const workspaceFiles = {
+    '/salto/file.bp': `type salesforce_lead {
+      salesforce_text base_field {
+        _default = "asd"
+      }
+    }`,
+    '/salto/subdir/file.bp': `type salesforce_lead {
+      salesforce_text ext_field {
+        _default = "foo"
+      }
+    }`,
+    '/salto/subdir/.hidden.bp': 'type hidden_type {}',
+    '/salto/non_bp.txt': 'type hidden_non_bp {}',
+    '/salto/.hidden/hidden.bp': 'type hidden_directory {}',
+    '/outside/file.bp': 'type external_file {}',
+    '/error.bp': 'invalid syntax }}',
+    '/dup.bp': `type salesforce_lead {
+      string base_field {}
+    }`,
+  }
 
-    tmpDir = await tmp.dir({ unsafeCleanup: true })
-    await Promise.all(_.entries(workspaceFiles)
-      .map(async ([name, data]) => {
-        const filePath = path.join(tmpDir.path, name)
-        await fs.mkdirp(path.dirname(filePath))
-        return fs.writeFile(filePath, data)
-      }))
-  })
+  const changedBP = {
+    filename: '/salto/file.bp',
+    buffer: `type salesforce_lead {
+      salesforce_text new_base {}
+    }`,
+  }
+  const newBP = {
+    filename: '/salto/new.bp',
+    buffer: 'type salesforce_new {}',
+  }
 
-  afterEach(() => {
-    tmpDir.cleanup()
-  })
-
-  const getPath = (filename: string): string => path.join(tmpDir.path, filename)
-
-  let workspace: Workspace
-
-  beforeEach(async () => {
-    workspace = await loadWorkspace(getPath('salto'), [getPath('/outside/file.bp')])
-  })
-
-  describe('loadWorkspace', () => {
-    describe('loading blueprints from directory', () => {
-      it('should find blueprint files', () => {
-        expect(_.keys(workspace.parsedBlueprints)).toContain(getPath('/salto/file.bp'))
-        expect(_.keys(workspace.parsedBlueprints)).toContain(getPath('/salto/subdir/file.bp'))
-      })
-      it('should find files that are added explicitly', () => {
-        expect(_.keys(workspace.parsedBlueprints)).toContain(getPath('/outside/file.bp'))
-      })
-      it('should not find hidden files and directories', () => {
-        expect(_.keys(workspace.parsedBlueprints)).not.toContain(getPath('/salto/subdir/.hidden.bp'))
-        expect(_.keys(workspace.parsedBlueprints)).not.toContain(getPath('/salto/.hidden/hidden.bp'))
-      })
-      it('should not find non bp files', () => {
-        expect(_.keys(workspace.parsedBlueprints)).not.toContain(getPath('/salto/non_bp.txt'))
-      })
+  describe('Workspace class', () => {
+    let workspace: Workspace
+    let parsedBPs: ParsedBlueprint[]
+    beforeAll(async () => {
+      const bps: Blueprint[] = _.entries(workspaceFiles)
+        .map(([filename, buffer]) => ({ filename, buffer }))
+      parsedBPs = await parseBlueprints(bps)
+      workspace = new Workspace(
+        '/salto',
+        parsedBPs.filter(bp => bp.filename.startsWith('/salto') || bp.filename === '/outside/file.bp'),
+      )
     })
 
     describe('loaded elements', () => {
@@ -96,107 +84,151 @@ describe('Workspace', () => {
         expect(workspace.errors).toHaveLength(0)
       })
       it('should contain parse errors', async () => {
-        const erroredWorkspace = await loadWorkspace(getPath('salto'), [getPath('error.bp')])
+        const erroredWorkspace = new Workspace(
+          '/salto',
+          parsedBPs.filter(bp => bp.filename.startsWith('/salto') || bp.filename === '/error.bp'),
+        )
+        expect(erroredWorkspace.errors).toHaveLength(1)
+      })
+      it('should contain validation errors', async () => {
+        const erroredWorkspace = new Workspace(
+          '/salto',
+          parsedBPs.filter(bp => bp.filename.startsWith('/salto') || bp.filename === '/dup.bp'),
+        )
         expect(erroredWorkspace.errors).toHaveLength(1)
       })
     })
-  })
 
-  describe('removeBlueprints', () => {
-    let newWorkspace: Workspace
-    let newElemMap: Record<string, Element>
-    let removedPaths: string[]
-    beforeEach(() => {
-      removedPaths = [getPath('/outside/file.bp'), getPath('salto/file.bp')]
-      newWorkspace = workspace.removeBlueprints(removedPaths)
-      newElemMap = _(newWorkspace.elements)
-        .map(elem => [elem.elemID.getFullName(), elem])
-        .fromPairs()
-        .value()
-    })
+    describe('removeBlueprints', () => {
+      let newWorkspace: Workspace
+      let newElemMap: Record<string, Element>
+      let removedPaths: string[]
+      beforeEach(() => {
+        removedPaths = ['/outside/file.bp', '/salto/file.bp']
+        newWorkspace = workspace.removeBlueprints(removedPaths)
+        newElemMap = _(newWorkspace.elements)
+          .map(elem => [elem.elemID.getFullName(), elem])
+          .fromPairs()
+          .value()
+      })
 
-    it('should not change the original workspace', () => {
-      removedPaths.forEach(
-        filename => expect(_.keys(workspace.parsedBlueprints)).toContain(filename)
-      )
-    })
-    describe('returned workspace', () => {
-      it('should not have the removed blueprints', () => {
+      it('should not change the original workspace', () => {
         removedPaths.forEach(
-          filename => expect(_.keys(newWorkspace.parsedBlueprints)).not.toContain(filename)
+          filename => expect(_.keys(workspace.parsedBlueprints)).toContain(filename)
         )
       })
-      it('should have updated elements', () => {
-        const lead = newElemMap.salesforce_lead as ObjectType
-        expect(_.keys(lead.fields)).toHaveLength(1)
+      describe('returned workspace', () => {
+        it('should not have the removed blueprints', () => {
+          removedPaths.forEach(
+            filename => expect(_.keys(newWorkspace.parsedBlueprints)).not.toContain(filename)
+          )
+        })
+        it('should have updated elements', () => {
+          const lead = newElemMap.salesforce_lead as ObjectType
+          expect(_.keys(lead.fields)).toHaveLength(1)
+        })
       })
     })
-    describe('flush', () => {
+
+    describe('updateBlueprints', () => {
+      let newWorkspace: Workspace
+      let newElemMap: Record<string, Element>
       beforeEach(async () => {
-        await newWorkspace.flush()
+        newWorkspace = await workspace.updateBlueprints([changedBP, newBP])
+        newElemMap = _(newWorkspace.elements)
+          .map(elem => [elem.elemID.getFullName(), elem])
+          .fromPairs()
+          .value()
       })
-      it('should delete the blueprint files', async () => {
-        await Promise.all(removedPaths.map(
-          async p => expect(await fs.exists(p)).toBeFalsy()
-        ))
+      it('should not change the original workspace', () => {
+        expect(_.keys(workspace.parsedBlueprints)).not.toContain('/salto/new.bp')
       })
-      it('should keep the rest of the files', async () => {
-        await Promise.all(_.keys(newWorkspace.parsedBlueprints).map(
-          async p => expect(await fs.exists(p)).toBeTruthy()
-        ))
+      describe('returned workspace', () => {
+        it('should have new blueprints', () => {
+          expect(_.keys(newWorkspace.parsedBlueprints)).toContain('/salto/new.bp')
+        })
+        it('should have new elements', () => {
+          expect(newElemMap).toHaveProperty('salesforce_new')
+        })
+        it('should have updated elements', () => {
+          const lead = newElemMap.salesforce_lead as ObjectType
+          expect(lead.fields.new_base).toBeDefined()
+          expect(lead.fields.base_field).not.toBeDefined()
+        })
       })
     })
   })
 
-  describe('updateBlueprints', () => {
-    let newWorkspace: Workspace
-    let newElemMap: Record<string, Element>
-    beforeEach(async () => {
-      const changedBP = {
-        filename: getPath('/salto/file.bp'),
-        buffer: Buffer.from(`type salesforce_lead {
-          salesforce_text new_base {}
-        }`),
+  describe('filesystem interaction', () => {
+    let tmpDir: tmp.DirectoryResult
+    let workspace: Workspace
+    let getPath: (filename: string) => string
+
+    const resetWorkspace = async (): Promise<void> => {
+      if (tmpDir !== undefined) {
+        tmpDir.cleanup()
       }
-      const newBP = {
-        filename: getPath('/salto/new.bp'),
-        buffer: Buffer.from('type salesforce_new {}'),
-      }
-      newWorkspace = await workspace.updateBlueprints([changedBP, newBP])
-      newElemMap = _(newWorkspace.elements)
-        .map(elem => [elem.elemID.getFullName(), elem])
-        .fromPairs()
-        .value()
+      tmpDir = await tmp.dir({ unsafeCleanup: true })
+      getPath = (filename: string): string => path.join(tmpDir.path, filename)
+      await Promise.all(_.entries(workspaceFiles)
+        .map(async ([name, data]) => {
+          const filePath = getPath(name)
+          await fs.mkdirp(path.dirname(filePath))
+          return fs.writeFile(filePath, data)
+        }))
+      workspace = await loadWorkspace(getPath('salto'), [getPath('/outside/file.bp')])
+    }
+
+    beforeAll(resetWorkspace)
+
+    afterAll(() => {
+      tmpDir.cleanup()
     })
-    it('should not change the original workspace', () => {
-      expect(_.keys(workspace.parsedBlueprints)).not.toContain(getPath('/salto/new.bp'))
-    })
-    describe('returned workspace', () => {
-      it('should have new blueprints', () => {
-        expect(_.keys(newWorkspace.parsedBlueprints)).toContain(getPath('/salto/new.bp'))
+
+    describe('loadWorkspace', () => {
+      it('should find blueprint files', () => {
+        expect(_.keys(workspace.parsedBlueprints)).toContain(getPath('/salto/file.bp'))
+        expect(_.keys(workspace.parsedBlueprints)).toContain(getPath('/salto/subdir/file.bp'))
       })
-      it('should have new elements', () => {
-        expect(newElemMap).toHaveProperty('salesforce_new')
+      it('should find files that are added explicitly', () => {
+        expect(_.keys(workspace.parsedBlueprints)).toContain(getPath('/outside/file.bp'))
       })
-      it('should have updated elements', () => {
-        const lead = newElemMap.salesforce_lead as ObjectType
-        expect(lead.fields.new_base).toBeDefined()
-        expect(lead.fields.base_field).not.toBeDefined()
+      it('should not find hidden files and directories', () => {
+        expect(_.keys(workspace.parsedBlueprints)).not.toContain(getPath('/salto/subdir/.hidden.bp'))
+        expect(_.keys(workspace.parsedBlueprints)).not.toContain(getPath('/salto/.hidden/hidden.bp'))
+      })
+      it('should not find non bp files', () => {
+        expect(_.keys(workspace.parsedBlueprints)).not.toContain(getPath('/salto/non_bp.txt'))
       })
     })
     describe('flush', () => {
-      beforeEach(async () => {
+      let newWorkspace: Workspace
+      beforeAll(async () => {
+        await resetWorkspace()
+        const updateBPs = [changedBP, newBP].map(
+          ({ filename, buffer }) => ({ filename: getPath(filename), buffer })
+        )
+        newWorkspace = await workspace
+          .removeBlueprints([getPath('/salto/subdir/file.bp')])
+          .updateBlueprints(updateBPs)
         await newWorkspace.flush()
       })
-      it('should create or keep all the files', async () => {
+      afterAll(resetWorkspace)
+
+      it('should remove blueprints that were removed', async () => {
+        expect(await fs.exists(getPath('/salto/subdir/file.bp'))).toBeFalsy()
+      })
+      it('should create blueprints that were added', async () => {
+        expect(await fs.exists(getPath('/salto/new.bp'))).toBeTruthy()
+      })
+      it('should change the content of blueprints that were updated', async () => {
+        const writtenData = await fs.readFile(getPath('/salto/file.bp'), 'utf8')
+        expect(writtenData).toEqual(changedBP.buffer)
+      })
+      it('should keep all unchanged files', async () => {
         await Promise.all(_.keys(newWorkspace.parsedBlueprints).map(
           async p => expect(await fs.exists(p)).toBeTruthy()
         ))
-      })
-      it('should update files content', async () => {
-        const writtenData = await fs.readFile(getPath('/salto/file.bp'))
-        const parsedBP = newWorkspace.parsedBlueprints[getPath('/salto/file.bp')]
-        expect(writtenData).toEqual(parsedBP.buffer)
       })
     })
   })

@@ -75,7 +75,9 @@ describe('SalesforceAdapter CRUD', () => {
     mockUpdate = jest.fn().mockImplementation(saveResultMock)
     connection.metadata.update = mockUpdate
 
-    mockDeploy = jest.fn().mockImplementation(() => ({ complete: () => getDeployResult(true) }))
+    mockDeploy = jest.fn().mockImplementation(() => ({
+      complete: () => Promise.resolve(getDeployResult(true)),
+    }))
     connection.metadata.deploy = mockDeploy
   })
 

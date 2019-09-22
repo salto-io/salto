@@ -7,7 +7,6 @@ import mockAdpater from './adapter'
 import * as constants from '../src/constants'
 
 describe('SalesforceAdapter import-export operations', () => {
-  let batch: { then: jest.Mock<unknown>; retrieve: jest.Mock<unknown> }
   let connection: Connection
   let adapter: SalesforceAdapter
 
@@ -128,11 +127,9 @@ describe('SalesforceAdapter import-export operations', () => {
     let mockRetrieve: jest.Mock<unknown>
 
     beforeEach(() => {
-      mockLoad = jest.fn()
-      mockThen = jest.fn()
-      mockRetrieve = jest.fn()
-      batch = { then: mockThen, retrieve: mockRetrieve }
-      mockLoad.mockReturnValue(batch)
+      mockThen = jest.fn(() => Promise.resolve())
+      mockRetrieve = jest.fn(() => Promise.resolve())
+      mockLoad = jest.fn(() => ({ then: mockThen, retrieve: mockRetrieve }))
       connection.bulk.load = mockLoad
     })
 

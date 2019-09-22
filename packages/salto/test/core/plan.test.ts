@@ -17,7 +17,7 @@ describe('getPlan', () => {
 
   const getChange = (item: PlanItem, elemID: ElemID): Change =>
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    wu(item.items.values()).find(change =>
+    wu(item.changes()).find(change =>
       getChangeElement(change).elemID.getFullName() === elemID.getFullName())!
   const allElements = mock.getAllElements([])
 

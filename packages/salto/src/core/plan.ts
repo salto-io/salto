@@ -15,6 +15,7 @@ export type DetailedChange<T = ObjectType | InstanceElement | Field | Values | V
 export type PlanItemId = NodeId
 export type PlanItem = Group<Change> & {
   parent: () => Change
+  changes: () => Iterable<Change>
   detailedChanges: () => Iterable<DetailedChange>
 }
 export type Plan = GroupedNodeMap<Change> & {
@@ -125,11 +126,14 @@ export const getPlan = (beforeElements: Element[], afterElements: Element[]): Pl
     )
 
   const addParentAccessor = (group: Group<Change>): PlanItem => Object.assign(group, {
-    parent(): Change {
+    parent() {
       return getGroupLevelChange(group) || {
         action: 'modify',
         data: { before: before.getData(group.groupKey), after: after.getData(group.groupKey) },
       }
+    },
+    changes() {
+      return group.items.values()
     },
     detailedChanges() {
       return wu(group.items.values())

@@ -189,6 +189,7 @@ export const plan = (): Plan => {
       [parent, ...subChanges].map(c => [getChangeElement(c).elemID.getFullName(), c])
     ),
     parent: () => parent,
+    changes: () => [parent, ...subChanges],
     detailedChanges: () => detailed,
   })
 

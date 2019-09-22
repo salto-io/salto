@@ -64,9 +64,9 @@ const createCompletionsProvider = (
   ) => {
     const workspace = workspaces[workspaceName]
     const context = getPositionContext(
-      workspace, 
-      doc.getText(), 
-      doc.fileName, 
+      workspace,
+      doc.getText(),
+      doc.fileName,
       vsPosToSaltoPos(position)
     )
     const line = doc.lineAt(position).text.substr(0, position.character)

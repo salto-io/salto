@@ -105,7 +105,7 @@ describe('Workspace', () => {
       let removedPaths: string[]
       beforeEach(() => {
         removedPaths = ['/outside/file.bp', '/salto/file.bp']
-        newWorkspace = workspace.removeBlueprints(removedPaths)
+        newWorkspace = workspace.removeBlueprints(...removedPaths)
         newElemMap = _(newWorkspace.elements)
           .map(elem => [elem.elemID.getFullName(), elem])
           .fromPairs()
@@ -134,7 +134,7 @@ describe('Workspace', () => {
       let newWorkspace: Workspace
       let newElemMap: Record<string, Element>
       beforeEach(async () => {
-        newWorkspace = await workspace.updateBlueprints([changedBP, newBP])
+        newWorkspace = await workspace.updateBlueprints(changedBP, newBP)
         newElemMap = _(newWorkspace.elements)
           .map(elem => [elem.elemID.getFullName(), elem])
           .fromPairs()
@@ -209,8 +209,8 @@ describe('Workspace', () => {
           ({ filename, buffer }) => ({ filename: getPath(filename), buffer })
         )
         newWorkspace = await workspace
-          .removeBlueprints([getPath('/salto/subdir/file.bp')])
-          .updateBlueprints(updateBPs)
+          .removeBlueprints(getPath('/salto/subdir/file.bp'))
+          .updateBlueprints(...updateBPs)
         await newWorkspace.flush()
       })
       afterAll(resetWorkspace)

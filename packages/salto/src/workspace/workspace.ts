@@ -87,7 +87,7 @@ export class Workspace {
   constructor(
     public baseDir: string,
     blueprints: ParsedBlueprint[],
-    private dirtyBPs: string[] = [],
+    private dirtyBlueprints: string[] = [],
   ) {
     this.parsedBlueprints = _.keyBy(blueprints, 'filename')
     this.errors = _.flatten(blueprints.map(bp => bp.errors)).map(e => e.detail)
@@ -114,18 +114,18 @@ export class Workspace {
   /**
    * Low level interface for updating/adding a specific blueprint to a workspace
    *
-   * @param newBP New blueprint or existing blueprint with new content
+   * @param newBlueprints New blueprint or existing blueprint with new content
    * @returns A new workspace with the new content
    */
-  async updateBlueprints(newBPs: Blueprint[]): Promise<Workspace> {
-    const parsedBPs = await parseBlueprints(newBPs)
-    const newParsedBPsMap = _.merge(
+  async updateBlueprints(...newBlueprints: Blueprint[]): Promise<Workspace> {
+    const parsed = await parseBlueprints(newBlueprints)
+    const newParsedMap = _.merge(
       {},
       this.parsedBlueprints,
-      ...parsedBPs.map(bp => ({ [bp.filename]: bp })),
+      ...parsed.map(bp => ({ [bp.filename]: bp })),
     )
-    const dirtyBPs = this.dirtyBPs.concat(parsedBPs.map(bp => bp.filename))
-    return new Workspace(this.baseDir, _.values(newParsedBPsMap), dirtyBPs)
+    const dirty = this.dirtyBlueprints.concat(parsed.map(bp => bp.filename))
+    return new Workspace(this.baseDir, _.values(newParsedMap), dirty)
   }
 
   /**
@@ -133,11 +133,11 @@ export class Workspace {
    * @param names Names of the blueprints to remove
    * @returns A new workspace without the blueprints that were removed
    */
-  removeBlueprints(names: string[]): Workspace {
+  removeBlueprints(...names: string[]): Workspace {
     return new Workspace(
       this.baseDir,
       _(this.parsedBlueprints).omit(names).values().value(),
-      this.dirtyBPs.concat(names)
+      this.dirtyBlueprints.concat(names)
     )
   }
 
@@ -146,7 +146,7 @@ export class Workspace {
    */
   async flush(): Promise<void> {
     // Write all dirty blueprints to filesystem
-    await Promise.all(this.dirtyBPs.map(filename => {
+    await Promise.all(this.dirtyBlueprints.map(filename => {
       const bp = this.parsedBlueprints[filename]
       if (bp === undefined) {
         // Blueprint was removed
@@ -155,7 +155,7 @@ export class Workspace {
       return fs.writeFile(filename, bp.buffer)
     }))
     // Clear dirty list
-    this.dirtyBPs = []
+    this.dirtyBlueprints = []
   }
 }
 

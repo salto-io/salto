@@ -52,10 +52,53 @@ export type SalesforceClientOpts = {
   connection?: Connection
 }
 
-// TODO: should be replaced with real log
-const log = (message: string): void => {
-  // eslint-disable-next-line no-console
-  console.error(message)
+const ensureSuccessfulRun = <T>(promise: Promise<T>, errorMessage: string): Promise<T> =>
+  promise.catch(e => {
+    // TODO: should be replaced with real log
+    // eslint-disable-next-line no-console
+    console.error(errorMessage)
+    throw e
+  })
+
+const sendChunked = async <TIn, TOut> (input: TIn | TIn[],
+  sendChunk: (chunk: TIn[]) => Promise<TOut | TOut[]>,
+  chunkSize = MAX_ITEMS_IN_WRITE_REQUEST):
+  Promise<TOut[]> => {
+  const chunks = _.chunk(makeArray(input), chunkSize)
+  const promises: Promise<TOut[]>[] = chunks.map(chunk => sendChunk(chunk).then(makeArray))
+  const results = await Promise.all(promises)
+  return _.flatten(results)
+}
+
+const validateSaveResult = (result: SaveResult[]): SaveResult[] => {
+  const errorMessage = (error: SfError | SfError[]): string =>
+    makeArray(error).map(e => e.message).join('\n')
+
+  const errors = makeArray(result)
+    .filter(r => r)
+    .map(r => r as CompleteSaveResult)
+    .filter(r => r.errors)
+
+  if (errors.length > 0) {
+    throw new Error(errors.map(r => errorMessage(r.errors)).join('\n'))
+  }
+
+  return result
+}
+
+const validateDeployResult = (result: DeployResult): DeployResult => {
+  if (result.success) {
+    return result
+  }
+
+  const errors = _(result.details)
+    .map(detail => detail.componentFailures || [])
+    .flatten()
+    .filter(component => !component.success)
+    .map(failure => `${failure.componentType}.${failure.fullName}: ${failure.problem}`)
+    .value()
+
+  throw new Error(errors.join('\n'))
 }
 
 export default class SalesforceClient {
@@ -91,75 +134,25 @@ export default class SalesforceClient {
     }
   }
 
-  private static async sendChunked<TIn, TOut>(
-    input: TIn | TIn[],
-    sendChunk: (chunk: TIn[]) => Promise<TOut | TOut[]>,
-    chunkSize = MAX_ITEMS_IN_WRITE_REQUEST,
-  ): Promise<TOut[]> {
-    const chunks = _.chunk(makeArray(input), chunkSize)
-    const promises: Promise<TOut[]>[] = chunks.map(chunk => sendChunk(chunk).then(makeArray))
-    const results = await Promise.all(promises)
-    return _.flatten(results)
-  }
-
-  private static validateSaveResult(result: SaveResult[]): SaveResult[] {
-    const errorMessage = (error: SfError | SfError[]): string =>
-      makeArray(error).map(e => e.message).join('\n')
-
-    const errors = makeArray(result)
-      .filter(r => r)
-      .map(r => r as CompleteSaveResult)
-      .filter(r => r.errors)
-
-    if (errors.length > 0) {
-      throw new Error(errors.map(r => errorMessage(r.errors)).join('\n'))
-    }
-
-    return result
-  }
-
-  private static validateDeployResult(result: DeployResult): DeployResult {
-    if (result.success) {
-      return result
-    }
-
-    const errors = _(result.details)
-      .map(detail => detail.componentFailures || [])
-      .flatten()
-      .filter(component => !component.success)
-      .map(failure => `${failure.componentType}.${failure.fullName}: ${failure.problem}`)
-      .value()
-
-    throw new Error(errors.join('\n'))
-  }
-
   public async runQuery(queryString: string): Promise<QueryResult<Value>> {
     await this.ensureLoggedIn()
-    return this.conn.query(queryString)
-      .catch(e => {
-        log(`failed to query ${queryString}`)
-        throw e
-      })
+    const queryResult = this.conn.query(queryString)
+    return ensureSuccessfulRun(queryResult, `failed to query ${queryString}`)
   }
 
   public async queryMore(locator: string): Promise<QueryResult<Value>> {
     await this.ensureLoggedIn()
-    return this.conn.queryMore(locator)
-      .catch(e => {
-        log(`failed to queryMore ${locator}`)
-        throw e
-      })
+    const queryResult = this.conn.queryMore(locator)
+    return ensureSuccessfulRun(queryResult, `failed to queryMore ${locator}`)
   }
 
   public async destroy(
     type: string, ids: string | string[]
   ): Promise<(RecordResult | RecordResult[])> {
     await this.ensureLoggedIn()
-    return this.conn.destroy(type, ids)
-      .catch(e => {
-        log(`failed to destroy type ${type} with ids ${JSON.stringify(ids)}`)
-        throw e
-      })
+    const destroyResult = this.conn.destroy(type, ids)
+    return ensureSuccessfulRun(destroyResult,
+      `failed to destroy type ${type} with ids ${JSON.stringify(ids)}`)
   }
 
   /**
@@ -167,12 +160,9 @@ export default class SalesforceClient {
    */
   public async listMetadataTypes(): Promise<MetadataObject[]> {
     await this.ensureLoggedIn()
-    const describeResult = await this.conn.metadata.describe()
-      .catch(e => {
-        log('Failed to list metadata types')
-        throw e
-      })
-    return describeResult.metadataObjects
+    const describeResult = this.conn.metadata.describe()
+    ensureSuccessfulRun(describeResult, 'Failed to list metadata types')
+    return (await describeResult).metadataObjects
   }
 
   /**
@@ -182,36 +172,27 @@ export default class SalesforceClient {
   public async describeMetadataType(type: string): Promise<ValueTypeField[]> {
     await this.ensureLoggedIn()
     const fullName = `{${METADATA_NAMESPACE}}${type}`
-    const describeResult = await this.conn.metadata.describeValueType(fullName)
-      .catch(e => {
-        log(`Failed to describe metadata type ${type}`)
-        throw e
-      })
-    return describeResult.valueTypeFields
+    const describeResult = this.conn.metadata.describeValueType(fullName)
+    ensureSuccessfulRun(describeResult, `Failed to describe metadata type ${type}`)
+    return (await describeResult).valueTypeFields
   }
 
   public async listMetadataObjects(type: string): Promise<FileProperties[]> {
     await this.ensureLoggedIn()
-    return makeArray(await this.conn.metadata.list({ type })
-      .catch(e => {
-        log(`failed to list metadata objects for type ${type}`)
-        throw e
-      }))
+    return makeArray(
+      await ensureSuccessfulRun(this.conn.metadata.list({ type }),
+        `failed to list metadata objects for type ${type}`)
+    )
   }
 
   /**
    * Read metadata for salesforce object of specific type and name
    */
-  public async readMetadata(
-    type: string, name: string | string[]
-  ): Promise<MetadataInfo[]> {
+  public async readMetadata(type: string, name: string | string[]): Promise<MetadataInfo[]> {
     await this.ensureLoggedIn()
-    return SalesforceClient.sendChunked(makeArray(name), chunk =>
-      this.conn.metadata.read(type, chunk)
-        .catch(e => {
-          log(`failed to read metadata for type ${type} with names ${chunk}`)
-          throw e
-        }),
+    return sendChunked(makeArray(name), chunk =>
+      ensureSuccessfulRun(this.conn.metadata.read(type, chunk),
+        `failed to read metadata for type ${type} with names ${chunk}`),
     MAX_ITEMS_IN_READ_METADATA_REQUEST)
   }
 
@@ -220,23 +201,17 @@ export default class SalesforceClient {
    */
   public async listSObjects(): Promise<DescribeGlobalSObjectResult[]> {
     await this.ensureLoggedIn()
-    const listResult = await this.conn.describeGlobal()
-      .catch(e => {
-        log('failed to list sobjects')
-        throw e
-      })
-    return listResult.sobjects
+    const listResult = this.conn.describeGlobal()
+    ensureSuccessfulRun(listResult, 'failed to list sobjects')
+    return (await listResult).sobjects
   }
 
   public async describeSObjects(objectNames: string[]):
     Promise<DescribeSObjectResult[]> {
     await this.ensureLoggedIn()
-    return SalesforceClient.sendChunked(objectNames, chunk =>
-      this.conn.soap.describeSObjects(chunk)
-        .catch(e => {
-          log(`failed to describe sobjects ${JSON.stringify(chunk)}`)
-          throw e
-        }),
+    return sendChunked(objectNames, chunk =>
+      ensureSuccessfulRun(this.conn.soap.describeSObjects(chunk),
+        `failed to describe sobjects ${JSON.stringify(chunk)}`),
     MAX_ITEMS_IN_DESCRIBE_REQUEST)
   }
 
@@ -250,13 +225,10 @@ export default class SalesforceClient {
   public async create(type: string, metadata: MetadataInfo | MetadataInfo[]):
     Promise<SaveResult[]> {
     await this.ensureLoggedIn()
-    return SalesforceClient.validateSaveResult(
-      await SalesforceClient.sendChunked(metadata, chunk =>
-        this.conn.metadata.create(type, chunk)
-          .catch(e => {
-            log(`failed to create metadata for type ${type} and metadata ${JSON.stringify(chunk)}`)
-            throw e
-          }))
+    return validateSaveResult(
+      await sendChunked(metadata, chunk =>
+        ensureSuccessfulRun(this.conn.metadata.create(type, chunk),
+          `failed to create metadata for type ${type} and metadata ${JSON.stringify(chunk)}`))
     )
   }
 
@@ -269,13 +241,10 @@ export default class SalesforceClient {
   // TODO: Extend the delete API to remove SObjects as well, not only metadata components
   public async delete(type: string, fullNames: string | string[]): Promise<SaveResult[]> {
     await this.ensureLoggedIn()
-    return SalesforceClient.validateSaveResult(
-      await SalesforceClient.sendChunked(fullNames, chunk =>
-        this.conn.metadata.delete(type, chunk)
-          .catch(e => {
-            log(`failed to delete metadata for type ${type} and full names ${fullNames}`)
-            throw e
-          }))
+    return validateSaveResult(
+      await sendChunked(fullNames, chunk =>
+        ensureSuccessfulRun(this.conn.metadata.delete(type, chunk),
+          `failed to delete metadata for type ${type} and full names ${fullNames}`))
     )
   }
 
@@ -288,12 +257,9 @@ export default class SalesforceClient {
   public async update(type: string, metadata: MetadataInfo | MetadataInfo[]):
     Promise<SaveResult[]> {
     await this.ensureLoggedIn()
-    return SalesforceClient.validateSaveResult(await SalesforceClient.sendChunked(metadata,
-      chunk => this.conn.metadata.update(type, chunk)
-        .catch(e => {
-          log(`failed to update metadata for type ${type} and matadata ${JSON.stringify(metadata)}`)
-          throw e
-        })))
+    return validateSaveResult(await sendChunked(metadata,
+      chunk => ensureSuccessfulRun(this.conn.metadata.update(type, chunk),
+        `failed to update metadata for type ${type} and matadata ${JSON.stringify(metadata)}`)))
   }
 
   /**
@@ -303,13 +269,9 @@ export default class SalesforceClient {
    */
   public async deploy(zip: Buffer): Promise<DeployResult> {
     await this.ensureLoggedIn()
-    return SalesforceClient.validateDeployResult(
-      await this.conn.metadata.deploy(zip, { rollbackOnError: true }).complete(true)
-        .catch(e => {
-          log('failed to deploy')
-          throw e
-        })
-    )
+    const deployResult = this.conn.metadata.deploy(zip, { rollbackOnError: true }).complete(true)
+    ensureSuccessfulRun(deployResult, 'failed to deploy')
+    return validateDeployResult(await deployResult)
   }
 
   /**
@@ -326,13 +288,9 @@ export default class SalesforceClient {
     // We need to wait for the job to execute (this what the next line does),
     // otherwise the retrieve() will fail
     // So the following line is a part of SFDC Bulk API, not promise API.
-    await batch.then().catch(e => {
-      log(`failed to load batch of #${records.length} records of type ${type}`)
-      throw e
-    })
-    return await batch.retrieve().catch(e => {
-      log(`failed to retrive batch of #${records.length} records of type ${type}`)
-      throw e
-    }) as BatchResultInfo[]
+    await batch.then()
+    const result = batch.retrieve() as Promise<BatchResultInfo[]>
+    return ensureSuccessfulRun(result,
+      `failed to retrive batch of #${records.length} records of type ${type}`)
   }
 }

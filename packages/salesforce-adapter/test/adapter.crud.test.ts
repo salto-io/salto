@@ -29,24 +29,25 @@ describe('SalesforceAdapter CRUD', () => {
   const mockElemID = new ElemID(constants.SALESFORCE, 'test')
   const mockInstanceID = new ElemID(constants.SALESFORCE, 'instance')
 
-  const getDeployResult = (success: boolean, details?: DeployDetails[]): DeployResult => ({
-    id: '',
-    checkOnly: false,
-    completedDate: '',
-    createdDate: '',
-    done: true,
-    details,
-    lastModifiedDate: '',
-    numberComponentErrors: 0,
-    numberComponentsDeployed: 0,
-    numberComponentsTotal: 0,
-    numberTestErrors: 0,
-    numberTestsCompleted: 0,
-    numberTestsTotal: 0,
-    startDate: '',
-    status: success ? 'Done' : 'Failed',
-    success,
-  })
+  const getDeployResult = (success: boolean, details?: DeployDetails[]): Promise<DeployResult> =>
+    Promise.resolve({
+      id: '',
+      checkOnly: false,
+      completedDate: '',
+      createdDate: '',
+      done: true,
+      details,
+      lastModifiedDate: '',
+      numberComponentErrors: 0,
+      numberComponentsDeployed: 0,
+      numberComponentsTotal: 0,
+      numberTestErrors: 0,
+      numberTestsCompleted: 0,
+      numberTestsTotal: 0,
+      startDate: '',
+      status: success ? 'Done' : 'Failed',
+      success,
+    })
 
   const deployTypeName = 'DeployType'
 

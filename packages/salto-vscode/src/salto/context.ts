@@ -166,7 +166,11 @@ const buildPositionContext = (
     const child = ranges[0]
     const rest = ranges.slice(1)
     const encapsulatedByChild =  rest.filter(r => isContained(r.range, child.range))
-    const childCtx = buildPositionContext(workspace, fileContent, child, encapsulatedByChild, parent)
+    const childCtx = buildPositionContext(workspace, fileContent, child, encapsulatedByChild)
+    childCtx.children = (childCtx.children || []).map(c => {
+      c.parent = childCtx
+      return c
+    })
     const notEncapsulated = _.without(rest, ...encapsulatedByChild)
     return _.isEmpty(notEncapsulated) ? [childCtx] : [childCtx, ... buildChildren(notEncapsulated)]
   }

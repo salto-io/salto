@@ -212,7 +212,7 @@ export const activate = async (context: vscode.ExtensionContext): Promise<void> 
     )
 
     const symbolsProvider = vscode.languages.registerDocumentSymbolProvider(
-      { scheme: 'file', pattern: { base: rootPath, pattern: '*.bp' } },
+      { scheme: 'file', pattern: { base: rootPath, pattern: '**/*.bp' } },
       createDocumentSymbolsProvider(name)
     )
 

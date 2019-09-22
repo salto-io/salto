@@ -5,13 +5,13 @@ import {
 } from 'adapter-api'
 import {
   applyActions, discoverAll, mergeAndValidate, getInstancesOfType, importInstancesOfType,
-} from './core'
-import initAdapters from './adapters/adapters'
-import { getPlan, Plan, PlanItem } from './plan'
-import { dump } from '../parser/dump'
-import { Blueprint, getAllElements } from './blueprint'
-import State from '../state/state'
-import { findElement, SearchResult } from './search'
+} from './core/core'
+import initAdapters from './core/adapters/adapters'
+import { getPlan, Plan, PlanItem } from './core/plan'
+import { dump } from './parser/dump'
+import { Blueprint, getAllElements } from './core/blueprint'
+import State from './state/state'
+import { findElement, SearchResult } from './core/search'
 
 export const plan = async (
   blueprints: Blueprint[],

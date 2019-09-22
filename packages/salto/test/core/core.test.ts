@@ -3,7 +3,7 @@ import path from 'path'
 import {
   ElemID, InstanceElement, ObjectType, AdapterCreator, Field, BuiltinTypes,
 } from 'adapter-api'
-import * as commands from '../../src/core/commands'
+import * as commands from '../../src/api'
 import State from '../../src/state/state'
 import { Blueprint, getAllElements } from '../../src/core/blueprint'
 import adapterCreators from '../../src/core/adapters/creators'

@@ -18,7 +18,7 @@ describe('Test go to definitions', () => {
 
   it('should give a single definition for a type that is defined once', () => {
     const pos = { line: 40, col: 8 }
-    const ctx = getPositionContext(workspace, bpContent, bpFile, pos)
+    const ctx = getPositionContext(workspace, bpFileContent, bpFile, pos)
     const token = 'vs_num'
     const defs = provideWorkspaceDefinition(workspace, ctx, token)
     expect(defs.length).toBe(1)

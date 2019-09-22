@@ -58,7 +58,6 @@ describe('Test auto complete', () => {
   let bpContent: string
   const baseBPDir = path.resolve(`${__dirname}/../../../test/salto/completionsBP`)
   const bpFileName = path.resolve(`${baseBPDir}/all.bp`)
-
   beforeAll(async () => {
     workspace = await initWorkspace(baseBPDir)
     bpContent = await fs.readFile(bpFileName, 'utf8')
@@ -69,7 +68,7 @@ describe('Test auto complete', () => {
       const pos = { line: 74, col: 0 }
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
-      const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
+      const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = [...kw, ...types]
       const exclude = [...instances]
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
@@ -81,7 +80,7 @@ describe('Test auto complete', () => {
       const pos = { line: 1, col: 0 }
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
-      const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
+      const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = [...kw, ...types]
       const exclude = [...instances]
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
@@ -91,7 +90,7 @@ describe('Test auto complete', () => {
       const pos = { line: 1, col: 6 }
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
-      const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
+      const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = [...types]
       const exclude = [...kw, ...instances]
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
@@ -101,7 +100,7 @@ describe('Test auto complete', () => {
       const pos = { line: 1, col: 13 }
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
-      const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
+      const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = ['is']
       const exclude = [...kw, ...types, ...instances]
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
@@ -111,7 +110,7 @@ describe('Test auto complete', () => {
       const pos = { line: 1, col: 16 }
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
-      const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
+      const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = ['string', 'boolean', 'number']
       const exclude = [...kw, ...types, ...instances]
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
@@ -123,7 +122,7 @@ describe('Test auto complete', () => {
       const pos = { line: 33, col: 5 }
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
-      const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
+      const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = [...types]
       const exclude = [...kw, ...instances]
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
@@ -133,7 +132,7 @@ describe('Test auto complete', () => {
       const pos = { line: 33, col: 4 }
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
-      const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
+      const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = ['update first_name', 'update last_name', 'update age']
       const exclude = ['update car_owner', ...kw, ...instances]
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
@@ -143,7 +142,7 @@ describe('Test auto complete', () => {
       const pos = { line: 33, col: 12 }
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
-      const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
+      const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       expect(suggestions.length).toBe(0)
     })
   })
@@ -153,7 +152,7 @@ describe('Test auto complete', () => {
       const pos = { line: 34, col: 9 }
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
-      const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
+      const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = ['label', '_required']
       const exclude = [...types, ...kw, ...instances]
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
@@ -163,7 +162,7 @@ describe('Test auto complete', () => {
       const pos = { line: 34, col: 15 }
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
-      const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
+      const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = ['=']
       const exclude = ['label', '_required', ...types, ...kw, ...instances]
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
@@ -173,7 +172,7 @@ describe('Test auto complete', () => {
       const pos = { line: 34, col: 16 }
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
-      const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
+      const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = ['""']
       const exclude = [...types, ...kw, ...instances]
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
@@ -183,7 +182,7 @@ describe('Test auto complete', () => {
       const pos = { line: 35, col: 20 }
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
-      const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
+      const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = ['true', 'false']
       const exclude = [...types, ...kw, ...instances]
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
@@ -193,7 +192,7 @@ describe('Test auto complete', () => {
       const pos = { line: 92, col: 14 }
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
-      const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
+      const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       expect(suggestions.length).toBe(0)
     })
   })
@@ -203,7 +202,7 @@ describe('Test auto complete', () => {
       const pos = { line: 87, col: 0 }
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
-      const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
+      const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = [...types, ...kw]
       const exclude = [...instances]
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
@@ -213,7 +212,7 @@ describe('Test auto complete', () => {
       const pos = { line: 87, col: 8 }
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
-      const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
+      const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = [...instances]
       const exclude = [...types, ...kw]
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
@@ -225,7 +224,7 @@ describe('Test auto complete', () => {
       const pos = { line: 88, col: 4 }
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
-      const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
+      const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = ['loaner', 'reason', 'propety', 'weekends_only']
       const exclude = ['car_owner', 'model', 'year', ...types, ...kw, ...instances]
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
@@ -235,9 +234,10 @@ describe('Test auto complete', () => {
       const pos = { line: 95, col: 9 }
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
-      const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
+      const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = ['car_owner', 'model', 'year']
       const exclude = ['loaner', 'reason', 'propety', 'weekends_only', ...types, ...instances]
+      console.log(suggestions, include, exclude)
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })
 
@@ -245,7 +245,7 @@ describe('Test auto complete', () => {
       const pos = { line: 88, col: 11 }
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
-      const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
+      const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = ['=']
       const exclude = [...types, ...kw, ...instances]
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
@@ -255,7 +255,7 @@ describe('Test auto complete', () => {
       const pos = { line: 89, col: 13 }
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
-      const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
+      const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = ['{}']
       const exclude = [...types, ...kw, ...instances]
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
@@ -265,7 +265,7 @@ describe('Test auto complete', () => {
       const pos = { line: 95, col: 20 }
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
-      const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
+      const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = ['{}']
       const exclude = [...types, ...kw, ...instances]
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
@@ -275,7 +275,7 @@ describe('Test auto complete', () => {
       const pos = { line: 96, col: 25 }
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
-      const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
+      const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = ['""']
       const exclude = [...types, ...kw, ...instances]
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
@@ -285,27 +285,29 @@ describe('Test auto complete', () => {
       const pos = { line: 104, col: 11 }
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
-      const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
+      const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = ['"ticket"', '"accident"', '"to much fun"']
       const exclude = [...types, ...kw, ...instances]
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })
 
     it('should return list brackets', () => {
-      const pos = { line: 134, col: 16 }
+      const pos = { line: 143, col: 16 }
       const line = getLine(workspace, bpFileName, pos)
+      console.log("LINE:", line)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
-      const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
+      const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = ['[]']
       const exclude = [...types, ...kw, ...instances]
+      console.log("SUG:", suggestions)
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })
 
     it('should return list inside value', () => {
-      const pos = { line: 134, col: 24 }
+      const pos = { line: 143, col: 24 }
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
-      const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
+      const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = ['""']
       const exclude = [...types, ...kw, ...instances]
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)

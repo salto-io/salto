@@ -1,11 +1,11 @@
 import _ from 'lodash'
 import wu from 'wu'
 import {
-  Element, isField, isType, isObjectType,
+  Element, isField, isType, isObjectType
 } from 'adapter-api'
+import { ParsedBlueprint } from 'salto'
 import { SaltoWorkspace } from './workspace'
 
-type PositionContextPart = 'body'|'definition'
 type PositionContextType = 'global'|'instance'|'type'|'field'
 
 export interface EditorPosition {
@@ -31,19 +31,18 @@ export interface ContextReference {
 
 export interface PositionContext {
   range: EditorRange
-  part: PositionContextPart
   type: PositionContextType
   ref?: ContextReference
   parent?: PositionContext
+  children?: PositionContext[]
 }
 
-const GLOBAL_CONTEXT: PositionContext = {
+const GLOBAL_RANGE: NamedRange = {
+  name: 'global',
   range: {
     start: { line: 0, col: 0 },
-    end: { line: Number.MAX_VALUE, col: Number.MAX_VALUE },
-  },
-  part: 'body',
-  type: 'global',
+    end: { line: Number.MAX_VALUE, col: Number.MAX_VALUE }
+  }
 }
 
 const getText = (content: string, range: EditorRange): string => {
@@ -83,16 +82,16 @@ const getContextReference = (
   return undefined
 }
 
-const getPositionConextPart = (
-  contextRange: NamedRange,
-  position: EditorPosition,
-  ref?: ContextReference
-): PositionContextPart => {
-  if (ref && ref.path.length > 0) {
-    return 'body'
-  }
-  return (position.line === contextRange.range.start.line) ? 'definition' : 'body'
-}
+// const getPositionConextPart = (
+//   contextRange: NamedRange,
+//   position: EditorPosition,
+//   ref?: ContextReference
+// ): PositionContextPart => {
+//   if (ref && ref.path.length > 0) {
+//     return 'body'
+//   }
+//   return (position.line === contextRange.range.start.line) ? 'definition' : 'body'
+// }
 
 const getPositionConextType = (
   ref?: ContextReference
@@ -113,15 +112,63 @@ const getPositionConextType = (
 // Note - we build from the out in since we need the outer contexts
 // to create the context, but return the inner most context (with links to
 // the outer contexts via the parent attr) since we mostly need it.
+
+// const buildPositionContext = (
+//   workspace: SaltoWorkspace,
+//   fileContent: string,
+//   ranges: NamedRange[],
+//   position: EditorPosition,
+//   parent: PositionContext = GLOBAL_CONTEXT,
+// ): PositionContext => {
+//   if (ranges.length === 0) {
+//     return parent
+//   }
+
+//   const range = ranges[0]
+//   const encapsulatedRanges = ranges.slice(1)
+//   const ref = getContextReference(fileContent, workspace.mergedElements || [], range)
+//   const context = {
+//     parent,
+//     ref,
+//     range: range.range,
+//     part: getPositionConextPart(range, position, ref),
+//     type: getPositionConextType(ref),
+//   }
+
+//   return (encapsulatedRanges.length > 0)
+//     ? buildPositionContext(workspace, fileContent, encapsulatedRanges, position, context) : context
+// }
+
+const flattenBlueprintRanges = (
+  parsedBlueprint: ParsedBlueprint
+): NamedRange[] => wu(parsedBlueprint.sourceMap.entries())
+  .map(([name, ranges]) => ranges.map(range => ({name, range})))
+  .flatten()
+  .toArray()
+
+const isContained = (inner: EditorRange, outter: EditorRange): boolean => {
+  const startsBefore = (outter.start.line !== inner.start.line)
+    ? outter.start.line < inner.start.line : outter.start.col <= inner.start.col
+  const endsAfter = (outter.end.line !== inner.end.line)
+    ? outter.end.line > inner.end.line : outter.end.col >= inner.end.col
+  return startsBefore && endsAfter
+}
+
 const buildPositionContext = (
   workspace: SaltoWorkspace,
   fileContent: string,
-  ranges: NamedRange[],
-  position: EditorPosition,
-  parent: PositionContext = GLOBAL_CONTEXT,
+  range: NamedRange,
+  encapsulatedRanges: NamedRange[],
+  parent?: PositionContext
 ): PositionContext => {
-  if (ranges.length === 0) {
-    return parent
+
+  const buildChildren = (ranges: NamedRange[]): PositionContext[] => {
+    const child = ranges[0]
+    const rest = ranges.slice(1)
+    const encapsulatedByChild =  rest.filter(r => isContained(r.range, child.range))
+    const childCtx = buildPositionContext(workspace, fileContent, child, encapsulatedByChild, parent)
+    const notEncapsulated = _.without(rest, ...encapsulatedByChild)
+    return _.isEmpty(notEncapsulated) ? [childCtx] : [childCtx, ... buildChildren(notEncapsulated)]
   }
 
   const range = ranges[0]
@@ -131,12 +178,41 @@ const buildPositionContext = (
     parent,
     ref,
     range: range.range,
-    part: getPositionConextPart(range, position, ref),
     type: getPositionConextType(ref),
   }
+  context.children = _.isEmpty(encapsulatedRanges) ? [] : buildChildren(encapsulatedRanges)
+  return context
+}
 
-  return (encapsulatedRanges.length > 0)
-    ? buildPositionContext(workspace, fileContent, encapsulatedRanges, position, context) : context
+
+
+export const buildDefinitionsTree = (
+  workspace: SaltoWorkspace,
+  fileContent: string,
+  parsedBlueprint: ParsedBlueprint
+): PositionContext => {
+
+  const startPosComparator = (left: NamedRange, right: NamedRange): number => (
+    (left.range.start.line === right.range.start.line) ?  
+      left.range.start.col - right.range.start.col :
+      left.range.start.line - right.range.start.line
+  )
+
+  return buildPositionContext(
+    workspace,
+    fileContent,
+    GLOBAL_RANGE,
+    flattenBlueprintRanges(parsedBlueprint).sort(startPosComparator)
+  )
+}
+
+const getPositionFromTree = (
+  treeBase: PositionContext, 
+  position: EditorPosition
+): PositionContext => {
+  const range = {start: position, end: position}
+  const [nextBase] = (treeBase.children || []).filter(child => isContained(child.range, range))
+  return (nextBase) ? getPositionFromTree(nextBase, position) : treeBase
 }
 
 export const getPositionContext = (
@@ -145,33 +221,7 @@ export const getPositionContext = (
   filename: string,
   position: EditorPosition
 ): PositionContext => {
-  const isContained = (inner: EditorRange, outter: EditorRange): boolean => {
-    const startsBefore = (outter.start.line !== inner.start.line)
-      ? outter.start.line < inner.start.line : outter.start.col <= inner.start.col
-    const endsAfter = (outter.end.line !== inner.end.line)
-      ? outter.end.line > inner.end.line : outter.end.col >= inner.end.col
-    return startsBefore && endsAfter
-  }
-
-  // A sorter for position contexts. Sorts by containment.
-  const encapsulationComparator = (left: NamedRange, right: NamedRange): number => {
-    if (isContained(left.range, right.range) && isContained(right.range, left.range)) return 0
-    if (isContained(left.range, right.range)) return 1
-    return -1
-  }
-
   const parsedBlueprint = workspace.parsedBlueprints[filename]
-  const cursorRange = { start: position, end: position }
-
-  const flatRanges = _.flatten(
-    wu(parsedBlueprint.sourceMap.keys()).toArray().map(name =>
-      (parsedBlueprint.sourceMap.get(name) || []).map(range => ({ name, range })))
-  )
-
-  // We created a list of sorted NamedRanges which contains the cursor in them
-  // and are sorted so that each range contains all of the following ranges in the array
-  const encapsulatingRanges = flatRanges.filter(
-    r => isContained(cursorRange, r.range)
-  ).sort(encapsulationComparator)
-  return buildPositionContext(workspace, fileContent, encapsulatingRanges, position)
+  const definitionsTree = buildDefinitionsTree(workspace, fileContent, parsedBlueprint)
+  return getPositionFromTree(definitionsTree, position)
 }

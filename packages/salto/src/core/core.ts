@@ -2,7 +2,6 @@ import _ from 'lodash'
 import {
   ObjectType, Element, getChangeElement, Adapter, InstanceElement, Value, Values, ElemID,
 } from 'adapter-api'
-import { adapterId as SALESFORCE } from 'salesforce-adapter'
 import State from '../state/state'
 import { mergeElements } from './merger'
 import validateElements from './validator'
@@ -80,7 +79,7 @@ const recordToInstanceElement = (type: ObjectType, record: Values):
 InstanceElement =>
   // Convert the result to Instance Elements
   new InstanceElement(
-    new ElemID(SALESFORCE, type.elemID.name, record.Id),
+    new ElemID(type.elemID.adapter, type.elemID.name, record.Id),
     type,
     record
   )

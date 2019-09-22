@@ -75,7 +75,7 @@ const createCompletionsProvider = (
         if (reInvoke) {
           item.command = {
             command: 'editor.action.triggerSuggest',
-            title: 'Re-trigger completions...',
+            title: 'Re-trigger completions',
           }
         }
         return item

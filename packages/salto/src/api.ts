@@ -1,17 +1,48 @@
 import _ from 'lodash'
 import path from 'path'
 import {
-  ObjectType, InstanceElement, Value,
+  ObjectType, InstanceElement, Element, Value,
 } from 'adapter-api'
 import {
-  applyActions, discoverAll, mergeAndValidate, getInstancesOfType, importInstancesOfType,
+  discoverAll, getInstancesOfType, importInstancesOfType, applyActions,
 } from './core/core'
 import initAdapters from './core/adapters/adapters'
-import { getPlan, Plan, PlanItem } from './core/plan'
+import {
+  getPlan, Plan, PlanItem,
+} from './core/plan'
 import { dump } from './parser/dump'
 import { Blueprint, getAllElements } from './core/blueprint'
 import State from './state/state'
 import { findElement, SearchResult } from './core/search'
+import { mergeElements } from './core/merger'
+import validateElements from './core/validator'
+
+export const mergeAndValidate = (elements: Element[]): Element[] => {
+  const mergedElements = mergeElements(elements)
+  const validationErrors = validateElements(mergedElements)
+
+  if (validationErrors.length > 0) {
+    throw new Error(`Failed to validate blueprints:
+    ${validationErrors.map(e => e.message).join('\n')}`)
+  }
+
+  return mergedElements
+}
+
+const applyActionOnState = async (
+  state: State,
+  action: string,
+  element: Promise<Element>
+): Promise<void> => {
+  switch (action) {
+    case 'add':
+    case 'modify':
+      return state.update([await element])
+    case 'remove':
+      return state.remove([await element])
+    default: throw new Error(`Unsupported action ${action}`)
+  }
+}
 
 export const plan = async (
   blueprints: Blueprint[],
@@ -34,7 +65,12 @@ export const apply = async (
     const actionPlan = getPlan(await state.get(), elements)
     if (force || await shouldApply(actionPlan)) {
       const [adapters] = await initAdapters(elements, fillConfig)
-      await applyActions(state, actionPlan, adapters, reportProgress)
+      await applyActions(
+        actionPlan,
+        adapters,
+        reportProgress,
+        (action, element) => applyActionOnState(state, action, element)
+      )
     }
     return actionPlan
   } finally {
@@ -50,7 +86,8 @@ export const discover = async (
   const [adapters, newAdapterConfigs] = await initAdapters(elements, fillConfig)
   const state = new State()
   try {
-    const discoverElements = await discoverAll(state, adapters)
+    const discoverElements = await discoverAll(adapters)
+    state.override(mergeAndValidate(discoverElements))
     // TODO: we should probably avoid writing credentials to the output BP folder
     // It would probably be better to store them in the salto env once we implement it
     const configBPs = _.isEmpty(newAdapterConfigs) ? [] : [

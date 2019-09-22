@@ -131,18 +131,18 @@ export const activate = async (context: vscode.ExtensionContext): Promise<void> 
     )
 
     const completionProvider = vscode.languages.registerCompletionItemProvider(
-      { scheme: 'file', pattern: { base: rootPath, pattern: '*.bp' } },
+      { scheme: 'file', pattern: { base: rootPath, pattern: '**/*.bp' } },
       createCompletionsProvider(name),
       ' '
     )
 
     const definitionProvider = vscode.languages.registerDefinitionProvider(
-      { scheme: 'file', pattern: { base: rootPath, pattern: '*.bp' } },
+      { scheme: 'file', pattern: { base: rootPath, pattern: '**/*.bp' } },
       createDefinitionsProvider(name)
     )
 
     const referenceProvider = vscode.languages.registerReferenceProvider(
-      { scheme: 'file', pattern: { base: rootPath, pattern: '*.bp' } },
+      { scheme: 'file', pattern: { base: rootPath, pattern: '**/*.bp' } },
       createReferenceProvider(name)
     )
 

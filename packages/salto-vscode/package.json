@@ -80,6 +80,13 @@
                 "command": "salto.getCursorContext",
                 "title": "Salto Debug: Cursor Context"
             }
+        ],
+        "iconThemes": [
+          {
+            "id": "salto_bp",
+            "label": "Salto BP",
+            "path": "./icons/salto-icon-theme.json"
+          }
         ]
     },
     "scripts": {

@@ -1,0 +1,10 @@
+{
+  "iconDefinitions": {
+    "_salto_bp": {
+      "iconPath": "./images/file_type_salto_blue.png"
+    }
+  },
+  "fileExtensions": {
+    "bp": "_salto_bp"
+  }
+}

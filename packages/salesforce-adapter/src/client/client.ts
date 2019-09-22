@@ -52,7 +52,8 @@ export type SalesforceClientOpts = {
   connection?: Connection
 }
 
-const ensureSuccessfulRun = <T>(promise: Promise<T>, errorMessage: string): Promise<T> =>
+// Exported for testing purposes
+export const ensureSuccessfulRun = <T>(promise: Promise<T>, errorMessage: string): Promise<T> =>
   promise.catch(e => {
     // TODO: should be replaced with real log
     // eslint-disable-next-line no-console

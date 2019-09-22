@@ -3,7 +3,7 @@ import {
   ObjectType, Type, InstanceElement,
 } from 'adapter-api'
 import SalesforceAdapter from '../src/adapter'
-import Connection from '../src/client/connection'
+import Connection from '../src/client/jsforce'
 import * as constants from '../src/constants'
 import { Types } from '../src/transformer'
 import mockAdpater from './adapter'

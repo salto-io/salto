@@ -15,7 +15,7 @@ import SalesforceAdapter from '../src/adapter'
 import * as constants from '../src/constants'
 import { Types, sfCase } from '../src/transformer'
 import { PROFILE_METADATA_TYPE } from '../src/filters/field_permissions'
-import Connection from '../src/client/connection'
+import Connection from '../src/client/jsforce'
 import mockAdpater from './adapter'
 
 const { makeArray } = collections.array

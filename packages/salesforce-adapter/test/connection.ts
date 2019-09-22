@@ -1,6 +1,6 @@
-import Connection, { Metadata, Soap } from '../src/client/connection'
+import Connection, { Metadata, Soap } from '../src/client/jsforce'
 
-const mockConnection: () => Connection = () => ({
+const mockJsforce: () => Connection = () => ({
   login: () => Promise.resolve(),
   metadata: {
     describe: jest.fn(),
@@ -25,4 +25,4 @@ const mockConnection: () => Connection = () => ({
   destroy: jest.fn(),
 })
 
-export default mockConnection
+export default mockJsforce

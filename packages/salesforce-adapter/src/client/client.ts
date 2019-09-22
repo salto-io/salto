@@ -19,7 +19,7 @@ import { Value } from 'adapter-api'
 import {
   CompleteSaveResult, SfError,
 } from './types'
-import Connection from './connection'
+import Connection from './jsforce'
 
 const { makeArray } = collections.array
 

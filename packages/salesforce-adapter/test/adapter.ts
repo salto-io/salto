@@ -1,4 +1,4 @@
-import Connection from '../src/client/connection'
+import Connection from '../src/client/jsforce'
 import SalesforceClient from '../src/client/client'
 import SalesforceAdapter, { SalesforceAdapterParams } from '../src/adapter'
 import createClient from './client'

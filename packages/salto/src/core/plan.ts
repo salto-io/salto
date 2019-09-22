@@ -1,18 +1,57 @@
 import _ from 'lodash'
 import wu from 'wu'
 import {
-  ObjectType, Element, ElemID, isObjectType, isInstanceElement,
-  Field, isField, InstanceElement, Change, getChangeElement,
+  ObjectType, Element, ElemID, isObjectType, isInstanceElement, Value, Values,
+  Field, isField, InstanceElement, Change, getChangeElement, isEqualElements,
 } from 'adapter-api'
 import {
   buildDiffGraph, buildGroupedGraph, Group, DataNodeMap, NodeId, GroupedNodeMap,
+  AdditionDiff, ModificationDiff, RemovalDiff,
 } from '@salto/dag'
 
+export type DetailedChange<T = ObjectType | InstanceElement | Field | Values | Value> =
+  (AdditionDiff<T> | ModificationDiff<T> | RemovalDiff<T>) & { id: ElemID }
+
 export type PlanItemId = NodeId
-export type PlanItem = Group<Change> & {parent: () => Change}
+export type PlanItem = Group<Change> & {
+  parent: () => Change
+  changes: () => Iterable<Change>
+  detailedChanges: () => Iterable<DetailedChange>
+}
 export type Plan = GroupedNodeMap<Change> & {
   itemsByEvalOrder: () => Iterable<PlanItem>
   getItem: (id: PlanItemId) => PlanItem
+}
+
+/**
+ * Create detailed changes from change data (before and after values)
+ */
+const getValuesChanges = (id: ElemID, before: Value, after: Value): DetailedChange[] => {
+  if (isEqualElements(before, after) || _.isEqual(before, after)) {
+    return []
+  }
+  if (before === undefined) {
+    return [{ id, action: 'add', data: { after } }]
+  }
+  if (after === undefined) {
+    return [{ id, action: 'remove', data: { before } }]
+  }
+  if (_.isPlainObject(before) && _.isPlainObject(after)) {
+    return _(before).keys()
+      .union(_.keys(after))
+      .map(key => getValuesChanges(id.createNestedID(key), before[key], after[key]))
+      .flatten()
+      .value()
+  }
+  if (_.isArray(before) && _.isArray(after)) {
+    const len = _.max([before.length, after.length]) as number
+    return _.flatten(
+      _.times(len).map(
+        i => getValuesChanges(id.createNestedID(i.toString()), before[i], after[i])
+      )
+    )
+  }
+  return [{ id, action: 'modify', data: { before, after } }]
 }
 
 /**
@@ -81,14 +120,38 @@ export const getPlan = (beforeElements: Element[], afterElements: Element[]): Pl
     return id(elemId)
   }
 
+  const getGroupLevelChange = (group: Group<Change>): Change|undefined =>
+    wu(group.items.values()).find(
+      change => getChangeElement(change).elemID.getFullName() === group.groupKey
+    )
+
   const addParentAccessor = (group: Group<Change>): PlanItem => Object.assign(group, {
-    parent(): Change {
-      return wu(group.items.values()).find(change =>
-        getChangeElement(change).elemID.getFullName() === group.groupKey)
-        || {
-          action: 'modify',
-          data: { before: before.getData(group.groupKey), after: after.getData(group.groupKey) },
-        }
+    parent() {
+      return getGroupLevelChange(group) || {
+        action: 'modify',
+        data: { before: before.getData(group.groupKey), after: after.getData(group.groupKey) },
+      }
+    },
+    changes() {
+      return group.items.values()
+    },
+    detailedChanges() {
+      return wu(group.items.values())
+        .map(change => {
+          const elem = getChangeElement(change)
+          if (change.action !== 'modify') {
+            return { ...change, id: elem.elemID }
+          }
+          if (isInstanceElement(change.data.before) && isInstanceElement(change.data.after)) {
+            return getValuesChanges(elem.elemID, change.data.before.value, change.data.after.value)
+          }
+          return getValuesChanges(
+            elem.elemID,
+            change.data.before.annotations,
+            change.data.after.annotations,
+          )
+        })
+        .flatten()
     },
   })
 
@@ -97,7 +160,15 @@ export const getPlan = (beforeElements: Element[], afterElements: Element[]): Pl
     {
       itemsByEvalOrder(): Iterable<PlanItem> {
         return wu(groupGraph.evaluationOrder())
-          .map(item => groupGraph.getData(item))
+          .map(group => groupGraph.getData(group))
+          .map(group => {
+            // If we add / remove a "group level" element it already contains all the information
+            // about its sub changes so we can keep only the group level change
+            const groupLevelChange = getGroupLevelChange(group)
+            return groupLevelChange !== undefined && groupLevelChange.action !== 'modify'
+              ? { ...group, items: new Map([[group.groupKey, groupLevelChange]]) }
+              : group
+          })
           .map(addParentAccessor)
       },
 

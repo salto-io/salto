@@ -45,6 +45,10 @@ export class ElemID {
   createNestedID(namePart: string): ElemID {
     return new ElemID(this.adapter, ...this.nameParts, namePart)
   }
+
+  createParentID(): ElemID {
+    return new ElemID(this.adapter, ...this.nameParts.slice(0, -1))
+  }
 }
 
 export interface Element {

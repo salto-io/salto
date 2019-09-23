@@ -5,22 +5,17 @@ import readdirp from 'readdirp'
 import { Element } from 'adapter-api'
 
 import {
-  SourceMap, ParseError, parse, SourceRange,
+  SourceMap, parse, SourceRange, ParseResult,
 } from '../parser/parse'
 import { mergeElements } from '../core/merger'
 import validateElements from '../core/validator'
 import { DetailedChange } from '../core/plan'
 
-export interface Blueprint {
+export type Blueprint = {
   buffer: string
   filename: string
 }
-
-export interface ParsedBlueprint extends Blueprint {
-  elements: Element[]
-  errors: ParseError[]
-  sourceMap: SourceMap
-}
+export type ParsedBlueprint = Blueprint & ParseResult
 
 const getBlueprintsFromDir = async (
   blueprintsDir: string,

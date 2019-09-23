@@ -1,5 +1,5 @@
 import _ from 'lodash'
-import { collections } from '@salto/lowerdash'
+import { collections, decorators } from '@salto/lowerdash'
 import {
   Connection as RealConnection,
   MetadataObject,
@@ -245,3 +245,14 @@ export default class SalesforceClient {
     return batch.retrieve() as Promise<BatchResultInfo[]>
   }
 }
+
+function loginDecorator(
+  this: SalesforceClient, f: decorators.Method<SalesforceClient>, ...args: unknown[]
+): unknown {
+  if (f.name !== 'login') {
+    this.login()
+  }
+  return f.apply(this, args)
+}
+
+decorators.applyDecorator(SalesforceClient, loginDecorator)

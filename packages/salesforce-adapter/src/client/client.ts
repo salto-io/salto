@@ -161,8 +161,8 @@ export default class SalesforceClient {
    */
   public async listMetadataTypes(): Promise<MetadataObject[]> {
     await this.ensureLoggedIn()
-    const describeResult = this.conn.metadata.describe()
-    ensureSuccessfulRun(describeResult, 'Failed to list metadata types')
+    const describeResult = ensureSuccessfulRun(this.conn.metadata.describe(),
+      'Failed to list metadata types')
     return (await describeResult).metadataObjects
   }
 
@@ -173,8 +173,8 @@ export default class SalesforceClient {
   public async describeMetadataType(type: string): Promise<ValueTypeField[]> {
     await this.ensureLoggedIn()
     const fullName = `{${METADATA_NAMESPACE}}${type}`
-    const describeResult = this.conn.metadata.describeValueType(fullName)
-    ensureSuccessfulRun(describeResult, `Failed to describe metadata type ${type}`)
+    const describeResult = ensureSuccessfulRun(this.conn.metadata.describeValueType(fullName),
+      `Failed to describe metadata type ${type}`)
     return (await describeResult).valueTypeFields
   }
 
@@ -202,8 +202,8 @@ export default class SalesforceClient {
    */
   public async listSObjects(): Promise<DescribeGlobalSObjectResult[]> {
     await this.ensureLoggedIn()
-    const listResult = this.conn.describeGlobal()
-    ensureSuccessfulRun(listResult, 'failed to list sobjects')
+    const listResult = ensureSuccessfulRun(this.conn.describeGlobal(),
+      'failed to list sobjects')
     return (await listResult).sobjects
   }
 
@@ -271,8 +271,7 @@ export default class SalesforceClient {
   public async deploy(zip: Buffer): Promise<DeployResult> {
     await this.ensureLoggedIn()
     const deployResult = this.conn.metadata.deploy(zip, { rollbackOnError: true }).complete(true)
-    ensureSuccessfulRun(deployResult, 'failed to deploy')
-    return validateDeployResult(await deployResult)
+    return validateDeployResult(await ensureSuccessfulRun(deployResult, 'failed to deploy'))
   }
 
   /**

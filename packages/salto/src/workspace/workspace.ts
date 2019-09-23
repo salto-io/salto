@@ -133,34 +133,36 @@ export class Workspace {
   get parsedBlueprints(): ParsedBlueprintMap { return this.state.parsedBlueprints }
   get sourceMap(): ReadOnlySourceMap { return this.state.sourceMap }
 
+  private markDirty(names: string[]): void {
+    names.forEach(name => this.dirtyBlueprints.add(name))
+  }
+
   /**
    * Low level interface for updating/adding a specific blueprint to a workspace
    *
-   * @param newBlueprints New blueprint or existing blueprint with new content
-   * @returns A new workspace with the new content
+   * @param blueprints New blueprint or existing blueprint with new content
    */
-  async setBlueprints(...newBlueprints: Blueprint[]): Promise<void> {
-    const parsed = await parseBlueprints(newBlueprints)
-    const newParsedMap = _.merge(
+  async setBlueprints(...blueprints: Blueprint[]): Promise<void> {
+    const parsed = await parseBlueprints(blueprints)
+    const newParsedMap = Object.assign(
       {},
       this.parsedBlueprints,
       ...parsed.map(bp => ({ [bp.filename]: bp })),
     )
     // Mark changed blueprints as dirty
-    parsed.forEach(bp => this.dirtyBlueprints.add(bp.filename))
+    this.markDirty(blueprints.map(bp => bp.filename))
     // Swap state
-    this.state = createWorkspaceState(_.values(newParsedMap))
+    this.state = createWorkspaceState(Object.values(newParsedMap))
   }
 
   /**
    * Remove specific blueprints from the workspace
    * @param names Names of the blueprints to remove
-   * @returns A new workspace without the blueprints that were removed
    */
   removeBlueprints(...names: string[]): void {
     const newParsedBlueprints = _(this.parsedBlueprints).omit(names).values().value()
     // Mark removed blueprints as dirty
-    names.forEach(name => this.dirtyBlueprints.add(name))
+    this.markDirty(names)
     // Swap state
     this.state = createWorkspaceState(newParsedBlueprints)
   }

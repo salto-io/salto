@@ -21,7 +21,7 @@ type vs_num is number {
     }
 }
 
-type vs_bool is number {
+type vs_bool is boolean {
     annotations {
         string label {
 

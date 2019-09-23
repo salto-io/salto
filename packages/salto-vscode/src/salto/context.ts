@@ -61,15 +61,14 @@ const getContextReference = (
   mergedElements: Element[],
   contextRange: NamedRange
 ): ContextReference | undefined => {
-  // The context can be a type, field, or instance. fields are not a part of the mergedElements
-  // array so we need to extract them out.
-  const elementAndFields = _.reduce(mergedElements,
-    (acc, e) => (isObjectType(e) ? [...acc, ..._.values(e.fields), e] : [...acc, e]),
-    [] as Element[])
+  // using map + flatten and not reduce for performance
+  const elementAndFields: Element[] = _(mergedElements).map( e => (
+    (isObjectType(e)) ? [..._.values(e.fields), e] : [e]
+  )).flatten().value()
   // If the range is contained in the element, then the elementID is a prefix of the refName
   const candidates = elementAndFields.filter(e =>
-    contextRange.name.startsWith(e.elemID.getFullName()))
-
+    // using index of and not startsWith for performance
+    contextRange.name.indexOf(e.elemID.getFullName()) === 0)
   // Now all we need is to find the element with the longest fullName
   const element = _.maxBy(candidates, e => e.elemID.getFullName().length)
   if (element) {
@@ -81,17 +80,6 @@ const getContextReference = (
   }
   return undefined
 }
-
-// const getPositionConextPart = (
-//   contextRange: NamedRange,
-//   position: EditorPosition,
-//   ref?: ContextReference
-// ): PositionContextPart => {
-//   if (ref && ref.path.length > 0) {
-//     return 'body'
-//   }
-//   return (position.line === contextRange.range.start.line) ? 'definition' : 'body'
-// }
 
 const getPositionConextType = (
   ref?: ContextReference

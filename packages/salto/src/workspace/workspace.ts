@@ -171,16 +171,14 @@ export class Workspace {
    * Dump the current workspace state to the underlying persistent storage
    */
   async flush(): Promise<void> {
-    // Write all dirty blueprints to filesystem
-    await Promise.all(wu(this.dirtyBlueprints.values()).map(filename => {
+    await Promise.all(wu(this.dirtyBlueprints).map(async filename => {
       const bp = this.parsedBlueprints[filename]
       if (bp === undefined) {
-        // Blueprint was removed
-        return fs.delete(filename)
+        await fs.delete(filename)
+      } else {
+        await fs.writeFile(filename, bp.buffer)
       }
-      return fs.writeFile(filename, bp.buffer)
+      this.dirtyBlueprints.delete(filename)
     }))
-    // Clear dirty list
-    this.dirtyBlueprints.clear()
   }
 }

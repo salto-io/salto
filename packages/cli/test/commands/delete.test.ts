@@ -29,6 +29,6 @@ describe('delete command', () => {
   it('should fail if given a wrong path for a CSV file', async () => {
     const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
     await command([], '', '', cliOutput).execute()
-    expect(cliOutput.stdout.content).toMatch(Prompts.COULD_NOT_FIND_FILE)
+    expect(cliOutput.stderr.content).toMatch(Prompts.COULD_NOT_FIND_FILE)
   })
 })

@@ -4,8 +4,11 @@ import {
   ObjectType, InstanceElement, Element, Value,
 } from 'adapter-api'
 import {
-  applyActions, discoverAll, getInstancesOfType, importInstancesOfType, deleteInstancesOfType,
+  applyActions, discoverAll,
 } from './core/core'
+import {
+  getInstancesOfType, importInstancesOfType, deleteInstancesOfType,
+} from './core/records'
 import initAdapters from './core/adapters/adapters'
 import {
   getPlan, Plan, PlanItem,

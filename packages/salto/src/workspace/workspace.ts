@@ -9,13 +9,18 @@ import {
 } from '../parser/parse'
 import { mergeElements } from '../core/merger'
 import validateElements from '../core/validator'
-import { DetailedChange } from '../core/plan'
 
 export type Blueprint = {
   buffer: string
   filename: string
 }
 export type ParsedBlueprint = Blueprint & ParseResult
+
+type SaltoError = string
+interface ParsedBlueprintMap {
+  [key: string]: ParsedBlueprint
+}
+type ReadOnlySourceMap = ReadonlyMap<string, SourceRange[]>
 
 const getBlueprintsFromDir = async (
   blueprintsDir: string,
@@ -49,7 +54,7 @@ export const parseBlueprints = (blueprints: Blueprint[]): Promise<ParsedBlueprin
     ...(await parse(Buffer.from(bp.buffer), bp.filename)),
   })))
 
-const mergeSourceMaps = (bps: ParsedBlueprint[]): SourceMap => (
+const mergeSourceMaps = (bps: ReadonlyArray<ParsedBlueprint>): SourceMap => (
   bps.map(bp => bp.sourceMap).reduce((prev, curr) => {
     wu(curr.entries()).forEach(([k, v]) => {
       prev.set(k, (prev.get(k) || []).concat(v))
@@ -58,9 +63,36 @@ const mergeSourceMaps = (bps: ParsedBlueprint[]): SourceMap => (
   }, new Map<string, SourceRange[]>())
 )
 
-type SaltoError = string
-interface ParsedBlueprintMap {
-  [key: string]: ParsedBlueprint
+type WorkspaceState = {
+  readonly parsedBlueprints: ParsedBlueprintMap
+  readonly sourceMap: ReadOnlySourceMap
+  readonly elements: ReadonlyArray<Element>
+  readonly errors: ReadonlyArray<SaltoError>
+}
+
+const createWorkspaceState = (blueprints: ReadonlyArray<ParsedBlueprint>): WorkspaceState => {
+  const partialWorkspace = {
+    parsedBlueprints: _.keyBy(blueprints, 'filename'),
+    sourceMap: mergeSourceMaps(blueprints),
+  }
+  const errors = _.flatten(blueprints.map(bp => bp.errors)).map(e => e.detail)
+  try {
+    const elements = mergeElements(_.flatten(blueprints.map(bp => bp.elements)))
+    return {
+      ...partialWorkspace,
+      elements,
+      errors: [
+        ...errors,
+        ...validateElements(elements).map(e => e.message),
+      ],
+    }
+  } catch (e) {
+    return {
+      ...partialWorkspace,
+      elements: [],
+      errors: [...errors, e.message],
+    }
+  }
 }
 
 /**
@@ -70,41 +102,36 @@ interface ParsedBlueprintMap {
  * Changes to elements represented in the workspace should be updated in the workspace through
  * one of the update methods and eventually flushed to persistent storage with "flush"
  *
- * Note that after a workspace is updated it is no longer valid, only the new workspace returned
- * from the update function should be used
+ * Note that the workspace assumes users wait for operations to finish before another operation
+ * is started, calling update / flush before another update / flush is finished will operate on
+ * an out of date workspace and will probably lead to undesired behavior
  */
 export class Workspace {
-  parsedBlueprints: ParsedBlueprintMap
-  sourceMap: SourceMap
-  elements: Element[]
-  errors: SaltoError[]
-
-  constructor(
-    public baseDir: string,
-    blueprints: ParsedBlueprint[],
-    private dirtyBlueprints: string[] = [],
-  ) {
-    this.parsedBlueprints = _.keyBy(blueprints, 'filename')
-    this.errors = _.flatten(blueprints.map(bp => bp.errors)).map(e => e.detail)
-    this.sourceMap = mergeSourceMaps(blueprints)
-    try {
-      this.elements = mergeElements(_.flatten(blueprints.map(bp => bp.elements)))
-      this.errors.push(...validateElements(this.elements).map(e => e.message))
-    } catch (e) {
-      this.elements = []
-      this.errors.push(e.message)
-    }
-  }
+  private state: WorkspaceState
+  private dirtyBlueprints: Set<string>
 
   /**
-   * Update elements stored in this workspace
-   * @param changes Change to apply to elements stored in this workspace
-   * @returns A new workspace with updated elements
+   * Load a collection of blueprint files as a workspace
+   * @param blueprintsDir Base directory to load blueprints from
+   * @param blueprintsFiles Paths to additional files (outside the blueprints dir) to include
+   *   in the workspace
    */
-  updateElements(_changes: DetailedChange[]): Workspace {
-    // TODO: implement this interface to update existing blueprints
-    return this
+  static async load(blueprintsDir: string, blueprintsFiles: string[]): Promise<Workspace> {
+    const bps = await loadBlueprints(blueprintsDir, blueprintsFiles)
+    const parsedBlueprints = await parseBlueprints(bps)
+    return new Workspace(blueprintsDir, parsedBlueprints)
   }
+
+  constructor(public readonly baseDir: string, blueprints: ReadonlyArray<ParsedBlueprint>) {
+    this.state = createWorkspaceState(blueprints)
+    this.dirtyBlueprints = new Set<string>()
+  }
+
+  // Accessors into state
+  get elements(): ReadonlyArray<Element> { return this.state.elements }
+  get errors(): ReadonlyArray<SaltoError> { return this.state.errors }
+  get parsedBlueprints(): ParsedBlueprintMap { return this.state.parsedBlueprints }
+  get sourceMap(): ReadOnlySourceMap { return this.state.sourceMap }
 
   /**
    * Low level interface for updating/adding a specific blueprint to a workspace
@@ -112,15 +139,17 @@ export class Workspace {
    * @param newBlueprints New blueprint or existing blueprint with new content
    * @returns A new workspace with the new content
    */
-  async updateBlueprints(...newBlueprints: Blueprint[]): Promise<Workspace> {
+  async updateBlueprints(...newBlueprints: Blueprint[]): Promise<void> {
     const parsed = await parseBlueprints(newBlueprints)
     const newParsedMap = _.merge(
       {},
       this.parsedBlueprints,
       ...parsed.map(bp => ({ [bp.filename]: bp })),
     )
-    const dirty = this.dirtyBlueprints.concat(parsed.map(bp => bp.filename))
-    return new Workspace(this.baseDir, _.values(newParsedMap), dirty)
+    // Mark changed blueprints as dirty
+    parsed.forEach(bp => this.dirtyBlueprints.add(bp.filename))
+    // Swap state
+    this.state = createWorkspaceState(_.values(newParsedMap))
   }
 
   /**
@@ -128,12 +157,12 @@ export class Workspace {
    * @param names Names of the blueprints to remove
    * @returns A new workspace without the blueprints that were removed
    */
-  removeBlueprints(...names: string[]): Workspace {
-    return new Workspace(
-      this.baseDir,
-      _(this.parsedBlueprints).omit(names).values().value(),
-      this.dirtyBlueprints.concat(names)
-    )
+  removeBlueprints(...names: string[]): void {
+    const newParsedBlueprints = _(this.parsedBlueprints).omit(names).values().value()
+    // Mark removed blueprints as dirty
+    names.forEach(name => this.dirtyBlueprints.add(name))
+    // Swap state
+    this.state = createWorkspaceState(newParsedBlueprints)
   }
 
   /**
@@ -141,7 +170,7 @@ export class Workspace {
    */
   async flush(): Promise<void> {
     // Write all dirty blueprints to filesystem
-    await Promise.all(this.dirtyBlueprints.map(filename => {
+    await Promise.all(wu(this.dirtyBlueprints.values()).map(filename => {
       const bp = this.parsedBlueprints[filename]
       if (bp === undefined) {
         // Blueprint was removed
@@ -150,21 +179,6 @@ export class Workspace {
       return fs.writeFile(filename, bp.buffer)
     }))
     // Clear dirty list
-    this.dirtyBlueprints = []
+    this.dirtyBlueprints.clear()
   }
-}
-
-/**
- * Load a collection of blueprint files as a workspace
- * @param blueprintsDir Base directory to load blueprints from
- * @param blueprintsFiles Paths to additional files (outside the blueprints dir) to include
- *   in the workspace
- */
-export const loadWorkspace = async (
-  blueprintsDir: string,
-  blueprintsFiles: string[],
-): Promise<Workspace> => {
-  const bps = await loadBlueprints(blueprintsDir, blueprintsFiles)
-  const parsedBlueprints = await parseBlueprints(bps)
-  return new Workspace(blueprintsDir, parsedBlueprints)
 }

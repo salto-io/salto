@@ -5,7 +5,7 @@ import tmp from 'tmp-promise'
 
 import { Element, ObjectType } from 'adapter-api'
 import {
-  Workspace, loadWorkspace, Blueprint, ParsedBlueprint, parseBlueprints,
+  Workspace, Blueprint, ParsedBlueprint, parseBlueprints,
 } from '../../src/workspace/workspace'
 
 describe('Workspace', () => {
@@ -42,12 +42,15 @@ describe('Workspace', () => {
   }
 
   describe('Workspace class', () => {
-    let workspace: Workspace
     let parsedBPs: ParsedBlueprint[]
     beforeAll(async () => {
       const bps: Blueprint[] = _.entries(workspaceFiles)
         .map(([filename, buffer]) => ({ filename, buffer }))
       parsedBPs = await parseBlueprints(bps)
+    })
+
+    let workspace: Workspace
+    beforeEach(() => {
       workspace = new Workspace(
         '/salto',
         parsedBPs.filter(bp => bp.filename.startsWith('/salto') || bp.filename === '/outside/file.bp'),
@@ -100,61 +103,48 @@ describe('Workspace', () => {
     })
 
     describe('removeBlueprints', () => {
-      let newWorkspace: Workspace
       let newElemMap: Record<string, Element>
       let removedPaths: string[]
       beforeEach(() => {
         removedPaths = ['/outside/file.bp', '/salto/file.bp']
-        newWorkspace = workspace.removeBlueprints(...removedPaths)
-        newElemMap = _(newWorkspace.elements)
+        workspace.removeBlueprints(...removedPaths)
+        newElemMap = _(workspace.elements)
           .map(elem => [elem.elemID.getFullName(), elem])
           .fromPairs()
           .value()
       })
 
-      it('should not change the original workspace', () => {
+      it('should remove blueprints from parsed blueprints', () => {
         removedPaths.forEach(
-          filename => expect(_.keys(workspace.parsedBlueprints)).toContain(filename)
+          filename => expect(_.keys(workspace.parsedBlueprints)).not.toContain(filename)
         )
       })
-      describe('returned workspace', () => {
-        it('should not have the removed blueprints', () => {
-          removedPaths.forEach(
-            filename => expect(_.keys(newWorkspace.parsedBlueprints)).not.toContain(filename)
-          )
-        })
-        it('should have updated elements', () => {
-          const lead = newElemMap.salesforce_lead as ObjectType
-          expect(_.keys(lead.fields)).toHaveLength(1)
-        })
+      it('should update elements to not include fields from removed blueprints', () => {
+        const lead = newElemMap.salesforce_lead as ObjectType
+        expect(_.keys(lead.fields)).toHaveLength(1)
       })
     })
 
     describe('updateBlueprints', () => {
-      let newWorkspace: Workspace
       let newElemMap: Record<string, Element>
       beforeEach(async () => {
-        newWorkspace = await workspace.updateBlueprints(changedBP, newBP)
-        newElemMap = _(newWorkspace.elements)
+        await workspace.updateBlueprints(changedBP, newBP)
+        newElemMap = _(workspace.elements)
           .map(elem => [elem.elemID.getFullName(), elem])
           .fromPairs()
           .value()
       })
-      it('should not change the original workspace', () => {
-        expect(_.keys(workspace.parsedBlueprints)).not.toContain('/salto/new.bp')
+
+      it('should add new blueprints', () => {
+        expect(_.keys(workspace.parsedBlueprints)).toContain('/salto/new.bp')
       })
-      describe('returned workspace', () => {
-        it('should have new blueprints', () => {
-          expect(_.keys(newWorkspace.parsedBlueprints)).toContain('/salto/new.bp')
-        })
-        it('should have new elements', () => {
-          expect(newElemMap).toHaveProperty('salesforce_new')
-        })
-        it('should have updated elements', () => {
-          const lead = newElemMap.salesforce_lead as ObjectType
-          expect(lead.fields.new_base).toBeDefined()
-          expect(lead.fields.base_field).not.toBeDefined()
-        })
+      it('should add new elements', () => {
+        expect(newElemMap).toHaveProperty('salesforce_new')
+      })
+      it('should update elements', () => {
+        const lead = newElemMap.salesforce_lead as ObjectType
+        expect(lead.fields.new_base).toBeDefined()
+        expect(lead.fields.base_field).not.toBeDefined()
       })
     })
   })
@@ -176,7 +166,7 @@ describe('Workspace', () => {
           await fs.mkdirp(path.dirname(filePath))
           return fs.writeFile(filePath, data)
         }))
-      workspace = await loadWorkspace(getPath('salto'), [getPath('/outside/file.bp')])
+      workspace = await Workspace.load(getPath('salto'), [getPath('/outside/file.bp')])
     }
 
     beforeAll(resetWorkspace)
@@ -185,7 +175,7 @@ describe('Workspace', () => {
       tmpDir.cleanup()
     })
 
-    describe('loadWorkspace', () => {
+    describe('Workspace load', () => {
       it('should find blueprint files', () => {
         expect(_.keys(workspace.parsedBlueprints)).toContain(getPath('/salto/file.bp'))
         expect(_.keys(workspace.parsedBlueprints)).toContain(getPath('/salto/subdir/file.bp'))
@@ -202,16 +192,14 @@ describe('Workspace', () => {
       })
     })
     describe('flush', () => {
-      let newWorkspace: Workspace
       beforeAll(async () => {
         await resetWorkspace()
         const updateBPs = [changedBP, newBP].map(
           ({ filename, buffer }) => ({ filename: getPath(filename), buffer })
         )
-        newWorkspace = await workspace
-          .removeBlueprints(getPath('/salto/subdir/file.bp'))
-          .updateBlueprints(...updateBPs)
-        await newWorkspace.flush()
+        workspace.removeBlueprints(getPath('/salto/subdir/file.bp'))
+        await workspace.updateBlueprints(...updateBPs)
+        await workspace.flush()
       })
       afterAll(resetWorkspace)
 
@@ -226,7 +214,7 @@ describe('Workspace', () => {
         expect(writtenData).toEqual(changedBP.buffer)
       })
       it('should keep all unchanged files', async () => {
-        await Promise.all(_.keys(newWorkspace.parsedBlueprints).map(
+        await Promise.all(_.keys(workspace.parsedBlueprints).map(
           async p => expect(await fs.exists(p)).toBeTruthy()
         ))
       })

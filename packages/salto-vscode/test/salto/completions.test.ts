@@ -1,5 +1,7 @@
 import * as path from 'path'
+import * as fs from 'async-file'
 import _ from 'lodash'
+
 import { initWorkspace, SaltoWorkspace } from '../../src/salto/workspace'
 import { getPositionContext } from '../../src/salto/context'
 import {
@@ -53,18 +55,20 @@ describe('Test auto complete', () => {
   ]
 
   let workspace: SaltoWorkspace
+  let bpContent: string
   const baseBPDir = path.resolve(`${__dirname}/../../../test/salto/completionsBP`)
-  const bpFile = path.resolve(`${baseBPDir}/all.bp`)
+  const bpFileName = path.resolve(`${baseBPDir}/all.bp`)
 
   beforeAll(async () => {
     workspace = await initWorkspace(baseBPDir)
+    bpContent = await fs.readFile(bpFileName, 'utf8')
   })
 
   describe('empty line', () => {
     it('should suggest type and instances as first word', () => {
       const pos = { line: 74, col: 0 }
-      const line = getLine(workspace, bpFile, pos)
-      const ctx = getPositionContext(workspace, bpFile, pos)
+      const line = getLine(workspace, bpFileName, pos)
+      const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
       const include = [...kw, ...types]
       const exclude = [...instances]
@@ -75,8 +79,8 @@ describe('Test auto complete', () => {
   describe('type def line', () => {
     it('should suggest type as 1st token', () => {
       const pos = { line: 1, col: 0 }
-      const line = getLine(workspace, bpFile, pos)
-      const ctx = getPositionContext(workspace, bpFile, pos)
+      const line = getLine(workspace, bpFileName, pos)
+      const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
       const include = [...kw, ...types]
       const exclude = [...instances]
@@ -85,8 +89,8 @@ describe('Test auto complete', () => {
 
     it('should suggest types as 2nd token', () => {
       const pos = { line: 1, col: 6 }
-      const line = getLine(workspace, bpFile, pos)
-      const ctx = getPositionContext(workspace, bpFile, pos)
+      const line = getLine(workspace, bpFileName, pos)
+      const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
       const include = [...types]
       const exclude = [...kw, ...instances]
@@ -95,8 +99,8 @@ describe('Test auto complete', () => {
 
     it('should suggest "is" as 3rd token', () => {
       const pos = { line: 1, col: 13 }
-      const line = getLine(workspace, bpFile, pos)
-      const ctx = getPositionContext(workspace, bpFile, pos)
+      const line = getLine(workspace, bpFileName, pos)
+      const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
       const include = ['is']
       const exclude = [...kw, ...types, ...instances]
@@ -105,8 +109,8 @@ describe('Test auto complete', () => {
 
     it('should suggest primitive type as 4th token', () => {
       const pos = { line: 1, col: 16 }
-      const line = getLine(workspace, bpFile, pos)
-      const ctx = getPositionContext(workspace, bpFile, pos)
+      const line = getLine(workspace, bpFileName, pos)
+      const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
       const include = ['string', 'boolean', 'number']
       const exclude = [...kw, ...types, ...instances]
@@ -117,8 +121,8 @@ describe('Test auto complete', () => {
   describe('field def inside type', () => {
     it('should suggest all fields for 1st token', () => {
       const pos = { line: 33, col: 5 }
-      const line = getLine(workspace, bpFile, pos)
-      const ctx = getPositionContext(workspace, bpFile, pos)
+      const line = getLine(workspace, bpFileName, pos)
+      const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
       const include = [...types]
       const exclude = [...kw, ...instances]
@@ -127,8 +131,8 @@ describe('Test auto complete', () => {
 
     it('should suggest updates', () => {
       const pos = { line: 33, col: 4 }
-      const line = getLine(workspace, bpFile, pos)
-      const ctx = getPositionContext(workspace, bpFile, pos)
+      const line = getLine(workspace, bpFileName, pos)
+      const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
       const include = ['update first_name', 'update last_name', 'update age']
       const exclude = ['update car_owner', ...kw, ...instances]
@@ -137,8 +141,8 @@ describe('Test auto complete', () => {
 
     it('should suggest nothing for field name ', () => {
       const pos = { line: 33, col: 12 }
-      const line = getLine(workspace, bpFile, pos)
-      const ctx = getPositionContext(workspace, bpFile, pos)
+      const line = getLine(workspace, bpFileName, pos)
+      const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
       expect(suggestions.length).toBe(0)
     })
@@ -147,8 +151,8 @@ describe('Test auto complete', () => {
   describe('annotation values definitions in field', () => {
     it('should give field annotaion as 1st token', () => {
       const pos = { line: 34, col: 9 }
-      const line = getLine(workspace, bpFile, pos)
-      const ctx = getPositionContext(workspace, bpFile, pos)
+      const line = getLine(workspace, bpFileName, pos)
+      const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
       const include = ['label', '_required']
       const exclude = [...types, ...kw, ...instances]
@@ -157,8 +161,8 @@ describe('Test auto complete', () => {
 
     it('should give eq as 2nd token', () => {
       const pos = { line: 34, col: 15 }
-      const line = getLine(workspace, bpFile, pos)
-      const ctx = getPositionContext(workspace, bpFile, pos)
+      const line = getLine(workspace, bpFileName, pos)
+      const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
       const include = ['=']
       const exclude = ['label', '_required', ...types, ...kw, ...instances]
@@ -167,8 +171,8 @@ describe('Test auto complete', () => {
 
     it('should give "" as 3rd token for string', () => {
       const pos = { line: 34, col: 16 }
-      const line = getLine(workspace, bpFile, pos)
-      const ctx = getPositionContext(workspace, bpFile, pos)
+      const line = getLine(workspace, bpFileName, pos)
+      const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
       const include = ['""']
       const exclude = [...types, ...kw, ...instances]
@@ -177,8 +181,8 @@ describe('Test auto complete', () => {
 
     it('should give true/false as 3rd token for boolean', () => {
       const pos = { line: 35, col: 20 }
-      const line = getLine(workspace, bpFile, pos)
-      const ctx = getPositionContext(workspace, bpFile, pos)
+      const line = getLine(workspace, bpFileName, pos)
+      const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
       const include = ['true', 'false']
       const exclude = [...types, ...kw, ...instances]
@@ -187,8 +191,8 @@ describe('Test auto complete', () => {
 
     it('should give  nothing as 3rd token for number', () => {
       const pos = { line: 92, col: 14 }
-      const line = getLine(workspace, bpFile, pos)
-      const ctx = getPositionContext(workspace, bpFile, pos)
+      const line = getLine(workspace, bpFileName, pos)
+      const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
       expect(suggestions.length).toBe(0)
     })
@@ -197,8 +201,8 @@ describe('Test auto complete', () => {
   describe('instance definition', () => {
     it('should types as 1st token', () => {
       const pos = { line: 87, col: 0 }
-      const line = getLine(workspace, bpFile, pos)
-      const ctx = getPositionContext(workspace, bpFile, pos)
+      const line = getLine(workspace, bpFileName, pos)
+      const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
       const include = [...types, ...kw]
       const exclude = [...instances]
@@ -207,8 +211,8 @@ describe('Test auto complete', () => {
 
     it('should instace names as 2nd token', () => {
       const pos = { line: 87, col: 8 }
-      const line = getLine(workspace, bpFile, pos)
-      const ctx = getPositionContext(workspace, bpFile, pos)
+      const line = getLine(workspace, bpFileName, pos)
+      const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
       const include = [...instances]
       const exclude = [...types, ...kw]
@@ -219,8 +223,8 @@ describe('Test auto complete', () => {
   describe('instance values', () => {
     it('should give fields in 1st token', () => {
       const pos = { line: 88, col: 4 }
-      const line = getLine(workspace, bpFile, pos)
-      const ctx = getPositionContext(workspace, bpFile, pos)
+      const line = getLine(workspace, bpFileName, pos)
+      const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
       const include = ['loaner', 'reason', 'propety', 'weekends_only']
       const exclude = ['car_owner', 'model', 'year', ...types, ...kw, ...instances]
@@ -229,8 +233,8 @@ describe('Test auto complete', () => {
 
     it('should give fields in 1st token - nested', () => {
       const pos = { line: 95, col: 9 }
-      const line = getLine(workspace, bpFile, pos)
-      const ctx = getPositionContext(workspace, bpFile, pos)
+      const line = getLine(workspace, bpFileName, pos)
+      const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
       const include = ['car_owner', 'model', 'year']
       const exclude = ['loaner', 'reason', 'propety', 'weekends_only', ...types, ...instances]
@@ -239,8 +243,8 @@ describe('Test auto complete', () => {
 
     it('should give eq as 2nd token', () => {
       const pos = { line: 88, col: 11 }
-      const line = getLine(workspace, bpFile, pos)
-      const ctx = getPositionContext(workspace, bpFile, pos)
+      const line = getLine(workspace, bpFileName, pos)
+      const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
       const include = ['=']
       const exclude = [...types, ...kw, ...instances]
@@ -249,8 +253,8 @@ describe('Test auto complete', () => {
 
     it('should give value as 3rd token', () => {
       const pos = { line: 89, col: 13 }
-      const line = getLine(workspace, bpFile, pos)
-      const ctx = getPositionContext(workspace, bpFile, pos)
+      const line = getLine(workspace, bpFileName, pos)
+      const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
       const include = ['{}']
       const exclude = [...types, ...kw, ...instances]
@@ -259,8 +263,8 @@ describe('Test auto complete', () => {
 
     it('should give value as 3rd token - nested', () => {
       const pos = { line: 95, col: 20 }
-      const line = getLine(workspace, bpFile, pos)
-      const ctx = getPositionContext(workspace, bpFile, pos)
+      const line = getLine(workspace, bpFileName, pos)
+      const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
       const include = ['{}']
       const exclude = [...types, ...kw, ...instances]
@@ -269,8 +273,8 @@ describe('Test auto complete', () => {
 
     it('should give value as 3rd token - nested more then once', () => {
       const pos = { line: 96, col: 25 }
-      const line = getLine(workspace, bpFile, pos)
-      const ctx = getPositionContext(workspace, bpFile, pos)
+      const line = getLine(workspace, bpFileName, pos)
+      const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
       const include = ['""']
       const exclude = [...types, ...kw, ...instances]
@@ -279,10 +283,30 @@ describe('Test auto complete', () => {
 
     it('should return restriction values', () => {
       const pos = { line: 104, col: 11 }
-      const line = getLine(workspace, bpFile, pos)
-      const ctx = getPositionContext(workspace, bpFile, pos)
+      const line = getLine(workspace, bpFileName, pos)
+      const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
       const include = ['"ticket"', '"accident"', '"to much fun"']
+      const exclude = [...types, ...kw, ...instances]
+      expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
+    })
+
+    it('should return list brackets', () => {
+      const pos = { line: 134, col: 16 }
+      const line = getLine(workspace, bpFileName, pos)
+      const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
+      const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
+      const include = ['[]']
+      const exclude = [...types, ...kw, ...instances]
+      expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
+    })
+
+    it('should return list inside value', () => {
+      const pos = { line: 134, col: 24 }
+      const line = getLine(workspace, bpFileName, pos)
+      const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
+      const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
+      const include = ['""']
       const exclude = [...types, ...kw, ...instances]
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })

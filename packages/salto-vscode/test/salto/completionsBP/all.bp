@@ -122,3 +122,14 @@ type vs_loan {
     }
 }
 
+type vs_person {
+    list vs_str nicknames {
+
+    }
+}
+
+vs_person hadar {
+    first_name = "hadar"
+    last_name = "sharir"
+    nicknames = ["You", "would", "have", "loved", "to", "know", "wouldn't", "you"]
+}

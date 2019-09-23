@@ -39,3 +39,16 @@ salto_complex inst {
 
 }
 
+type salto_complex {
+	list str arr {
+
+	}
+}
+
+salto_complex inst2 {
+	arr = [
+		"A", 
+		"B", 
+		"C"
+	]
+}

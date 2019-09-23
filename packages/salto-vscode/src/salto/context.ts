@@ -26,6 +26,7 @@ interface NamedRange {
 export interface ContextReference {
   element: Element
   path: string
+  isList: boolean
 }
 
 export interface PositionContext {
@@ -45,28 +46,39 @@ const GLOBAL_CONTEXT: PositionContext = {
   type: 'global',
 }
 
+const getText = (content: string, range: EditorRange): string => {
+  const rangeLines = content.split('\n').slice(range.start.line - 1, range.end.line)
+  return [
+    rangeLines[0].slice(range.start.col - 1),
+    ...rangeLines.slice(1, rangeLines.length - 1),
+    rangeLines[rangeLines.length - 1].slice(0, range.end.col),
+  ].join('\n')
+}
 
 // Creates the reference for the context by locating the element with the smallest
 // scope in which contains the ref, and its internal path
 const getContextReference = (
+  fileContent: string,
   mergedElements: Element[],
-  rangeName: string
+  contextRange: NamedRange
 ): ContextReference | undefined => {
   // The context can be a type, field, or instance. fields are not a part of the mergedElements
   // array so we need to extract them out.
   const elementAndFields = _.reduce(mergedElements,
     (acc, e) => (isObjectType(e) ? [...acc, ..._.values(e.fields), e] : [...acc, e]),
     [] as Element[])
-
   // If the range is contained in the element, then the elementID is a prefix of the refName
-  const candidates = elementAndFields.filter(e => rangeName.startsWith(e.elemID.getFullName()))
+  const candidates = elementAndFields.filter(e =>
+    contextRange.name.startsWith(e.elemID.getFullName()))
 
   // Now all we need is to find the element with the longest fullName
   const element = _.maxBy(candidates, e => e.elemID.getFullName().length)
   if (element) {
-    // The part of the range rangeName which is not in the element rangeName is the path
-    const path = rangeName.slice(element.elemID.getFullName().length + 1)
-    return { element, path }
+    const rangeContext = getText(fileContent, contextRange.range)
+    const isList = rangeContext[0] === '['
+    // The part of the range name which is not in the element name is the path
+    const path = contextRange.name.slice(element.elemID.getFullName().length + 1)
+    return { element, path, isList }
   }
   return undefined
 }
@@ -82,7 +94,9 @@ const getPositionConextPart = (
   return (position.line === contextRange.range.start.line) ? 'definition' : 'body'
 }
 
-const getPositionConextType = (ref?: ContextReference): PositionContextType => {
+const getPositionConextType = (
+  ref?: ContextReference
+): PositionContextType => {
   if (!ref) {
     return 'global'
   }
@@ -101,6 +115,7 @@ const getPositionConextType = (ref?: ContextReference): PositionContextType => {
 // the outer contexts via the parent attr) since we mostly need it.
 const buildPositionContext = (
   workspace: SaltoWorkspace,
+  fileContent: string,
   ranges: NamedRange[],
   position: EditorPosition,
   parent: PositionContext = GLOBAL_CONTEXT,
@@ -111,7 +126,7 @@ const buildPositionContext = (
 
   const range = ranges[0]
   const encapsulatedRanges = ranges.slice(1)
-  const ref = getContextReference(workspace.mergedElements || [], range.name)
+  const ref = getContextReference(fileContent, workspace.mergedElements || [], range)
   const context = {
     parent,
     ref,
@@ -121,11 +136,12 @@ const buildPositionContext = (
   }
 
   return (encapsulatedRanges.length > 0)
-    ? buildPositionContext(workspace, encapsulatedRanges, position, context) : context
+    ? buildPositionContext(workspace, fileContent, encapsulatedRanges, position, context) : context
 }
 
 export const getPositionContext = (
   workspace: SaltoWorkspace,
+  fileContent: string,
   filename: string,
   position: EditorPosition
 ): PositionContext => {
@@ -157,5 +173,5 @@ export const getPositionContext = (
   const encapsulatingRanges = flatRanges.filter(
     r => isContained(cursorRange, r.range)
   ).sort(encapsulationComparator)
-  return buildPositionContext(workspace, encapsulatingRanges, position)
+  return buildPositionContext(workspace, fileContent, encapsulatingRanges, position)
 }

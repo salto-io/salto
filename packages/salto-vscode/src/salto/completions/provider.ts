@@ -8,7 +8,7 @@ import {
 import { PositionContext } from '../context'
 import { SaltoWorkspace } from '../workspace'
 
-type LineType = 'empty'|'type'|'field'|'annotation'|'instance'|'attr'
+type LineType = 'empty'|'type'|'field'|'annotation'|'instance'|'attr'|'fieldList'|'annoList'
 export interface SaltoCompletion {
   label: string
   insertText: string
@@ -28,9 +28,18 @@ const LINE_SUGGESTIONS: {[key in LineType]: SuggestionsResolver[] } = {
   instance: [typesSuggestions, instanceSuggestions],
   // <fieldName> = <value>
   attr: [fieldSuggestions, eqSugestions, fieldValueSuggestions],
+  // <value>
+  fieldList: [fieldValueSuggestions],
+  // <value>
+  annoList: [annoValueSuggestions],
 }
 
-const getLineTokens = (line: string): string[] => line.replace(/\s+/g, ' ').split(' ')
+const getLineTokens = (line: string): string[] => (
+  line.replace(/\s+/g, ' ')
+    .split(' ')
+  // Ignoring the list token as it has no effect on the rest of the line
+    .filter(t => t !== 'list')
+)
 
 const getLineType = (context: PositionContext, lineTokens: string[]): LineType => {
   if (context.type === 'type' && context.part === 'definition') {
@@ -43,13 +52,13 @@ const getLineType = (context: PositionContext, lineTokens: string[]): LineType =
     return 'field'
   }
   if (context.type === 'field' && context.part === 'body') {
-    return 'annotation'
+    return (context.ref && context.ref.isList) ? 'annoList' : 'annotation'
   }
   if (context.type === 'instance' && context.part === 'definition') {
     return 'instance'
   }
   if (context.type === 'instance' && context.part === 'body') {
-    return 'attr'
+    return (context.ref && context.ref.isList) ? 'fieldList' : 'attr'
   }
   // If we reached this point we are in global scope, which means that
   // either we are in one of the following:

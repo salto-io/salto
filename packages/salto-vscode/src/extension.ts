@@ -63,7 +63,12 @@ const createCompletionsProvider = (
     position: vscode.Position
   ) => {
     const workspace = workspaces[workspaceName]
-    const context = getPositionContext(workspace, doc.fileName, vsPosToSaltoPos(position))
+    const context = getPositionContext(
+      workspace,
+      doc.getText(),
+      doc.fileName,
+      vsPosToSaltoPos(position)
+    )
     const line = doc.lineAt(position).text.substr(0, position.character)
     return provideWorkspaceCompletionItems(workspace, context, line).map(
       ({ label, reInvoke, insertText }) => {
@@ -72,7 +77,7 @@ const createCompletionsProvider = (
         if (reInvoke) {
           item.command = {
             command: 'editor.action.triggerSuggest',
-            title: 'Re-trigger completions...',
+            title: 'Re-trigger completions',
           }
         }
         return item
@@ -89,7 +94,12 @@ const createDefinitionsProvider = (
     position: vscode.Position,
   ): vscode.Definition => {
     const workspace = workspaces[workspaceName]
-    const context = getPositionContext(workspace, doc.fileName, vsPosToSaltoPos(position))
+    const context = getPositionContext(
+      workspace,
+      doc.getText(),
+      doc.fileName,
+      vsPosToSaltoPos(position)
+    )
     const currenToken = doc.getText(doc.getWordRangeAtPosition(position))
     return provideWorkspaceDefinition(workspace, context, currenToken).map(
       def => new vscode.Location(

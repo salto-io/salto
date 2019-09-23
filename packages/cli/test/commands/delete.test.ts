@@ -17,7 +17,7 @@ describe('delete command', () => {
   afterEach(async () => {
     await asyncfile.delete(inputDir)
   })
-  
+
   it('should run import successfully if given a correct path to a real CSV file', async () => {
     await asyncfile.createDirectory(inputDir)
     await asyncfile.writeTextFile(inputPath, '\n')

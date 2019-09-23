@@ -1,6 +1,8 @@
 import path from 'path'
 import * as asyncfile from 'async-file'
-import { loadBlueprints, STATEPATH } from 'salto'
+import {
+  loadBlueprints, STATEPATH, dumpCsv, readCsv,
+} from 'salto'
 import { InstanceElement } from 'adapter-api'
 import { MockWriteStream } from '../test/mocks'
 import { command as discover } from '../src/commands/discover'
@@ -9,7 +11,6 @@ import { command as exportCommand } from '../src/commands/export'
 import { command as deleteCommand } from '../src/commands/delete'
 import adapterConfigs from './adapter_configs'
 import Prompts from '../src/prompts'
-import { dumpCsv, readCsv } from 'salto'
 
 const sfLeadObjectName = 'salesforce_lead'
 
@@ -47,7 +48,6 @@ describe('When running export', () => {
   })
 
   it('should fail if discover was not run beforehand', async () => {
-    const exportOutputFullPath = path.join(exportOutputDir, exportFile)
     const command = exportCommand(await loadBlueprints([], discoverOutputDir), sfLeadObjectName,
       exportOutputFullPath)
     await expect(command.execute()).rejects
@@ -87,16 +87,16 @@ describe('When running data modifying commands', () => {
     jest.setTimeout(5 * 60 * 1000)
 
     it('should succeed after discover', async () => {
-      const dataWithIdFileName = `importWithIds.csv`
+      const dataWithIdFileName = 'importWithIds.csv'
       const updatedDataFilePath = path.join(exportOutputDir, dataWithIdFileName)
       const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
       await discover(await loadBlueprints([]), discoverOutputDir).execute()
       await importCommand(await loadBlueprints([], discoverOutputDir), dataFilePath,
         sfLeadObjectName, cliOutput).execute()
-      
+
       // Replicate the file with the Ids of the created items
       await exportCommand(await loadBlueprints([], discoverOutputDir), sfLeadObjectName,
-      exportOutputFullPath).execute()
+        exportOutputFullPath).execute()
       const exportObjects = await readCsv(exportOutputFullPath)
       const clark = exportObjects.find(object => object.FirstName === 'Clark' && object.LastName === 'Kent')
       const bruce = exportObjects.find(object => object.FirstName === 'Bruce' && object.LastName === 'Wayne')
@@ -121,4 +121,3 @@ describe('When running data modifying commands', () => {
     })
   })
 })
-

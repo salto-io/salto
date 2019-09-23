@@ -15,7 +15,7 @@ import SalesforceAdapter from '../src/adapter'
 import * as constants from '../src/constants'
 import { Types, sfCase } from '../src/transformer'
 import { PROFILE_METADATA_TYPE } from '../src/filters/field_permissions'
-import Connection from '../src/client/connection'
+import Connection from '../src/client/jsforce'
 import mockAdpater from './adapter'
 
 const { makeArray } = collections.array
@@ -29,24 +29,25 @@ describe('SalesforceAdapter CRUD', () => {
   const mockElemID = new ElemID(constants.SALESFORCE, 'test')
   const mockInstanceID = new ElemID(constants.SALESFORCE, 'instance')
 
-  const getDeployResult = (success: boolean, details?: DeployDetails[]): DeployResult => ({
-    id: '',
-    checkOnly: false,
-    completedDate: '',
-    createdDate: '',
-    done: true,
-    details,
-    lastModifiedDate: '',
-    numberComponentErrors: 0,
-    numberComponentsDeployed: 0,
-    numberComponentsTotal: 0,
-    numberTestErrors: 0,
-    numberTestsCompleted: 0,
-    numberTestsTotal: 0,
-    startDate: '',
-    status: success ? 'Done' : 'Failed',
-    success,
-  })
+  const getDeployResult = (success: boolean, details?: DeployDetails[]): Promise<DeployResult> =>
+    Promise.resolve({
+      id: '',
+      checkOnly: false,
+      completedDate: '',
+      createdDate: '',
+      done: true,
+      details,
+      lastModifiedDate: '',
+      numberComponentErrors: 0,
+      numberComponentsDeployed: 0,
+      numberComponentsTotal: 0,
+      numberTestErrors: 0,
+      numberTestsCompleted: 0,
+      numberTestsTotal: 0,
+      startDate: '',
+      status: success ? 'Done' : 'Failed',
+      success,
+    })
 
   const deployTypeName = 'DeployType'
 
@@ -75,7 +76,9 @@ describe('SalesforceAdapter CRUD', () => {
     mockUpdate = jest.fn().mockImplementation(saveResultMock)
     connection.metadata.update = mockUpdate
 
-    mockDeploy = jest.fn().mockImplementation(() => ({ complete: () => getDeployResult(true) }))
+    mockDeploy = jest.fn().mockImplementation(() => ({
+      complete: () => Promise.resolve(getDeployResult(true)),
+    }))
     connection.metadata.deploy = mockDeploy
   })
 

@@ -9,6 +9,9 @@ import {
 } from 'jsforce'
 import { Value } from 'adapter-api'
 
+// This class is the interfaces we use from jsforce library
+// It's here so we will be able to mock jsforce efficiently
+
 export interface Metadata {
   describe(): Promise<{ metadataObjects: MetadataObject[] }>
   describeValueType(type: string): Promise<{ valueTypeFields: ValueTypeField[] }>

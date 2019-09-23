@@ -52,7 +52,8 @@ export const mergeAndValidate = (elements: Element[]): Element[] => {
   const validationErrors = validateElements(mergedElements)
 
   if (validationErrors.length > 0) {
-    throw new Error(`Failed to validate blueprints:
+    // eslint-disable-next-line no-console
+    console.log(`Failed to validate blueprints:
     ${validationErrors.map(e => e.message).join('\n')}`)
   }
 

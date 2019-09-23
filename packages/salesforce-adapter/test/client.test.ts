@@ -1,13 +1,11 @@
-import { ensureSuccessfulRun } from '../src/client/client'
+import createClient from './client'
 
 describe('salesforce client', () => {
-  it('ensureSuccessfulRun', async () => {
+  it('print on failure', async () => {
+    const { connection, client } = createClient()
+    connection.query = jest.fn(() => Promise.reject(new Error('failure')))
     const error = jest.spyOn(console, 'error').mockImplementation(() => { })
-
-    const wrapedPromise = ensureSuccessfulRun(new Promise((_resolve, reject) =>
-      reject(new Error())), 'failed')
-
-    await expect(wrapedPromise).rejects.toBeDefined()
+    await expect(client.runQuery('blabla')).rejects.toThrow()
     expect(error.mock.calls).toHaveLength(1)
     expect(error.mock.calls[0][0]).toBe('failed')
   })

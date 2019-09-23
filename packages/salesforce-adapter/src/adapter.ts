@@ -86,7 +86,7 @@ export default class SalesforceAdapter {
       'ValidationRule', // This is a subtype of CustomObject
     ],
     metadataTypeBlacklist = [
-      'ApexClass', 'ApexTrigger', // For some reason we cannot access this from the metadata API
+      'ApexClass', // 'ApexTrigger', // For some reason we cannot access this from the metadata API
       // See also SALTO-168.
       'InstalledPackage', // Instances of this don't actually have an ID and they contain duplicates
       'CustomObject', // We have special treatment for this type
@@ -552,7 +552,7 @@ export default class SalesforceAdapter {
     return this.runFiltersInParallel('onRemove', filter => filter.onRemove(before))
   }
 
-  private async getFirstBatchOfInstances(type: ObjectType): Promise <QueryResult<Value>> {
+  private async getFirstBatchOfInstances(type: ObjectType): Promise<QueryResult<Value>> {
     // build the initial query and populate the fields names list in the query
     const queryString = `SELECT ${Object.values(type.fields).map(apiName)} FROM ${apiName(type)}`
     return this.client.runQuery(queryString)
@@ -580,9 +580,31 @@ const credentialsFromConfig = (config: InstanceElement): Credentials => ({
   isSandbox: config.value.sandbox,
 })
 
-const clientFromConfig = (config: InstanceElement): SalesforceClient => new SalesforceClient({
-  credentials: credentialsFromConfig(config),
-})
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ClientMethod = (...args: any[]) => Promise<any>
+const proxyClient = (client: SalesforceClient): SalesforceClient => {
+  const addAspects = (method: ClientMethod): ClientMethod =>
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (...args: any[]) => client.login().then(() => method(...args)).catch(e => {
+      // TODO: should be replaced with real log
+      // eslint-disable-next-line no-console
+      console.error(`failed to run ${method.name} with arguments: ${JSON.stringify(args)}`)
+      throw e
+    })
+
+  _.functions(client).filter(methodName => methodName !== 'login').forEach(methodName => {
+    Object.assign(client, { [methodName]: addAspects(_.get(client, methodName)) })
+  })
+
+  return client
+}
+
+
+const clientFromConfig = (config: InstanceElement): SalesforceClient =>
+  proxyClient(new SalesforceClient({
+    credentials: credentialsFromConfig(config),
+  }))
 
 export const creator: AdapterCreator = {
   create: ({ config }) => new SalesforceAdapter({

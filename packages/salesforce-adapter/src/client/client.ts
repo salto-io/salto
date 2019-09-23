@@ -52,15 +52,6 @@ export type SalesforceClientOpts = {
   connection?: Connection
 }
 
-// Exported for testing purposes
-export const ensureSuccessfulRun = <T>(promise: Promise<T>, errorMessage: string): Promise<T> =>
-  promise.catch(e => {
-    // TODO: should be replaced with real log
-    // eslint-disable-next-line no-console
-    console.error(errorMessage)
-    throw e
-  })
-
 const sendChunked = async <TIn, TOut> (input: TIn | TIn[],
   sendChunk: (chunk: TIn[]) => Promise<TOut | TOut[]>,
   chunkSize = MAX_ITEMS_IN_WRITE_REQUEST):
@@ -102,32 +93,32 @@ const validateDeployResult = (result: DeployResult): DeployResult => {
   throw new Error(errors.join('\n'))
 }
 
+const realConnection = (isSandbox: boolean): Connection => {
+  const connection = new RealConnection({
+    version: API_VERSION,
+    loginUrl: `https://${isSandbox ? 'test' : 'login'}.salesforce.com/`,
+  })
+  // Set poll interval and timeout for deploy
+  connection.metadata.pollInterval = 3000
+  connection.metadata.pollTimeout = 60000
+
+  return connection
+}
+
 export default class SalesforceClient {
   private readonly conn: Connection
   private isLoggedIn = false
   private readonly credentials: Credentials
 
-  constructor(
-    { credentials, connection }: SalesforceClientOpts
-  ) {
+  constructor({ credentials, connection }: SalesforceClientOpts) {
     this.credentials = credentials
-    this.conn = connection || SalesforceClient.realConnection(credentials.isSandbox)
-  }
-
-  private static realConnection(isSandbox: boolean): Connection {
-    const connection = new RealConnection({
-      version: API_VERSION,
-      loginUrl: `https://${isSandbox ? 'test' : 'login'}.salesforce.com/`,
-    })
-    // Set poll interval and timeout for deploy
-    connection.metadata.pollInterval = 3000
-    connection.metadata.pollTimeout = 60000
-
-    return connection
+    this.conn = connection || realConnection(credentials.isSandbox)
   }
 
   // In the future this can be replaced with decorators - currently experimental feature
-  private async ensureLoggedIn(): Promise<void> {
+  public async login(): Promise<void> {
+    // eslint-disable-next-line no-console
+    console.log('going to login')
     if (!this.isLoggedIn) {
       const { username, password, apiToken } = this.credentials
       await this.conn.login(username, password + (apiToken || ''))
@@ -136,34 +127,24 @@ export default class SalesforceClient {
   }
 
   public async runQuery(queryString: string): Promise<QueryResult<Value>> {
-    await this.ensureLoggedIn()
-    const queryResult = this.conn.query(queryString)
-    return ensureSuccessfulRun(queryResult, `failed to query ${queryString}`)
+    return this.conn.query(queryString)
   }
 
   public async queryMore(locator: string): Promise<QueryResult<Value>> {
-    await this.ensureLoggedIn()
-    const queryResult = this.conn.queryMore(locator)
-    return ensureSuccessfulRun(queryResult, `failed to queryMore ${locator}`)
+    return this.conn.queryMore(locator)
   }
 
   public async destroy(
     type: string, ids: string | string[]
   ): Promise<(RecordResult | RecordResult[])> {
-    await this.ensureLoggedIn()
-    const destroyResult = this.conn.destroy(type, ids)
-    return ensureSuccessfulRun(destroyResult,
-      `failed to destroy type ${type} with ids ${JSON.stringify(ids)}`)
+    return this.conn.destroy(type, ids)
   }
 
   /**
    * Extract metadata object names
    */
   public async listMetadataTypes(): Promise<MetadataObject[]> {
-    await this.ensureLoggedIn()
-    const describeResult = this.conn.metadata.describe()
-    ensureSuccessfulRun(describeResult, 'Failed to list metadata types')
-    return (await describeResult).metadataObjects
+    return (await this.conn.metadata.describe()).metadataObjects
   }
 
   /**
@@ -171,49 +152,32 @@ export default class SalesforceClient {
    * @param type The name of the metadata type for which you want metadata
    */
   public async describeMetadataType(type: string): Promise<ValueTypeField[]> {
-    await this.ensureLoggedIn()
     const fullName = `{${METADATA_NAMESPACE}}${type}`
-    const describeResult = this.conn.metadata.describeValueType(fullName)
-    ensureSuccessfulRun(describeResult, `Failed to describe metadata type ${type}`)
-    return (await describeResult).valueTypeFields
+    return (await this.conn.metadata.describeValueType(fullName)).valueTypeFields
   }
 
   public async listMetadataObjects(type: string): Promise<FileProperties[]> {
-    await this.ensureLoggedIn()
-    return makeArray(
-      await ensureSuccessfulRun(this.conn.metadata.list({ type }),
-        `failed to list metadata objects for type ${type}`)
-    )
+    return makeArray(await this.conn.metadata.list({ type }))
   }
 
   /**
    * Read metadata for salesforce object of specific type and name
    */
   public async readMetadata(type: string, name: string | string[]): Promise<MetadataInfo[]> {
-    await this.ensureLoggedIn()
-    return sendChunked(makeArray(name), chunk =>
-      ensureSuccessfulRun(this.conn.metadata.read(type, chunk),
-        `failed to read metadata for type ${type} with names ${chunk}`),
-    MAX_ITEMS_IN_READ_METADATA_REQUEST)
+    return sendChunked(makeArray(name), chunk => this.conn.metadata.read(type, chunk),
+      MAX_ITEMS_IN_READ_METADATA_REQUEST)
   }
 
   /**
    * Extract sobject names
    */
   public async listSObjects(): Promise<DescribeGlobalSObjectResult[]> {
-    await this.ensureLoggedIn()
-    const listResult = this.conn.describeGlobal()
-    ensureSuccessfulRun(listResult, 'failed to list sobjects')
-    return (await listResult).sobjects
+    return (await this.conn.describeGlobal()).sobjects
   }
 
-  public async describeSObjects(objectNames: string[]):
-    Promise<DescribeSObjectResult[]> {
-    await this.ensureLoggedIn()
-    return sendChunked(objectNames, chunk =>
-      ensureSuccessfulRun(this.conn.soap.describeSObjects(chunk),
-        `failed to describe sobjects ${JSON.stringify(chunk)}`),
-    MAX_ITEMS_IN_DESCRIBE_REQUEST)
+  public async describeSObjects(objectNames: string[]): Promise<DescribeSObjectResult[]> {
+    return sendChunked(objectNames, chunk => this.conn.soap.describeSObjects(chunk),
+      MAX_ITEMS_IN_DESCRIBE_REQUEST)
   }
 
   /**
@@ -225,11 +189,8 @@ export default class SalesforceClient {
   // TODO: Extend the create API to create SObjects as well, not only metadata
   public async create(type: string, metadata: MetadataInfo | MetadataInfo[]):
     Promise<SaveResult[]> {
-    await this.ensureLoggedIn()
     return validateSaveResult(
-      await sendChunked(metadata, chunk =>
-        ensureSuccessfulRun(this.conn.metadata.create(type, chunk),
-          `failed to create metadata for type ${type} and metadata ${JSON.stringify(chunk)}`))
+      await sendChunked(metadata, chunk => this.conn.metadata.create(type, chunk))
     )
   }
 
@@ -241,11 +202,8 @@ export default class SalesforceClient {
    */
   // TODO: Extend the delete API to remove SObjects as well, not only metadata components
   public async delete(type: string, fullNames: string | string[]): Promise<SaveResult[]> {
-    await this.ensureLoggedIn()
     return validateSaveResult(
-      await sendChunked(fullNames, chunk =>
-        ensureSuccessfulRun(this.conn.metadata.delete(type, chunk),
-          `failed to delete metadata for type ${type} and full names ${fullNames}`))
+      await sendChunked(fullNames, chunk => this.conn.metadata.delete(type, chunk))
     )
   }
 
@@ -257,10 +215,8 @@ export default class SalesforceClient {
    */
   public async update(type: string, metadata: MetadataInfo | MetadataInfo[]):
     Promise<SaveResult[]> {
-    await this.ensureLoggedIn()
     return validateSaveResult(await sendChunked(metadata,
-      chunk => ensureSuccessfulRun(this.conn.metadata.update(type, chunk),
-        `failed to update metadata for type ${type} and matadata ${JSON.stringify(metadata)}`)))
+      chunk => this.conn.metadata.update(type, chunk)))
   }
 
   /**
@@ -269,10 +225,8 @@ export default class SalesforceClient {
    * @returns The save result of the requested update
    */
   public async deploy(zip: Buffer): Promise<DeployResult> {
-    await this.ensureLoggedIn()
-    const deployResult = this.conn.metadata.deploy(zip, { rollbackOnError: true }).complete(true)
-    ensureSuccessfulRun(deployResult, 'failed to deploy')
-    return validateDeployResult(await deployResult)
+    return validateDeployResult(await
+    this.conn.metadata.deploy(zip, { rollbackOnError: true }).complete(true))
   }
 
   /**
@@ -282,16 +236,12 @@ export default class SalesforceClient {
    * @returns The BatchResultInfo which contains success/errors for each entry
    */
   public async uploadBulk(type: string, records: SfRecord[]): Promise<BatchResultInfo[]> {
-    await this.ensureLoggedIn()
-
     // Initiate the batch job
     const batch = this.conn.bulk.load(type, 'upsert', { extIdField: 'Id', concurrencyMode: 'Parallel' }, records)
     // We need to wait for the job to execute (this what the next line does),
     // otherwise the retrieve() will fail
     // So the following line is a part of SFDC Bulk API, not promise API.
     await batch.then()
-    const result = batch.retrieve() as Promise<BatchResultInfo[]>
-    return ensureSuccessfulRun(result,
-      `failed to retrive batch of #${records.length} records of type ${type}`)
+    return batch.retrieve() as Promise<BatchResultInfo[]>
   }
 }

@@ -256,6 +256,9 @@ describe('SalesforceAdapter CRUD', () => {
         expect(object.fields[0].valueSet.valueSetDefinition.value
           .map((v: {fullName: string}) => v.fullName).join(';'))
           .toBe('NEW;OLD')
+        const picklistValueNew = object.fields[0].valueSet.valueSetDefinition.value.filter((val: {fullName: string}) => val.fullName === 'NEW')[0]
+        expect(picklistValueNew).toBeDefined()
+        expect(picklistValueNew.default).toEqual(true)
       })
 
       it('should return the created element', () => {
@@ -341,6 +344,7 @@ describe('SalesforceAdapter CRUD', () => {
             {
               [constants.LABEL]: 'Multipicklist description label',
               values: ['DO', 'RE', 'MI', 'FA', 'SOL', 'LA', 'SI'],
+              [Type.DEFAULT]: 'RE',
               [constants.FIELD_ANNOTATIONS.VISIBLE_LINES]: 4,
             },
           ),
@@ -414,6 +418,7 @@ describe('SalesforceAdapter CRUD', () => {
             {
               [constants.LABEL]: 'Picklist description label',
               values: ['DO', 'RE', 'MI', 'FA', 'SOL', 'LA', 'SI'],
+              [Type.DEFAULT]: 'DO',
             },
           ),
           quebec: new Field(
@@ -497,6 +502,9 @@ describe('SalesforceAdapter CRUD', () => {
         expect(object.fields[7].valueSet.valueSetDefinition.value
           .map((v: {fullName: string}) => v.fullName).join(';'))
           .toBe('DO;RE;MI;FA;SOL;LA;SI')
+        const picklistValueRE = object.fields[7].valueSet.valueSetDefinition.value.filter((val: {fullName: string}) => val.fullName === 'RE')[0]
+        expect(picklistValueRE).toBeDefined()
+        expect(picklistValueRE.default).toEqual(true)
         // Percent
         expect(object.fields[8].fullName).toBe('Percent__c')
         expect(object.fields[8].type).toBe('Percent')
@@ -541,6 +549,9 @@ describe('SalesforceAdapter CRUD', () => {
         expect(object.fields[15].valueSet.valueSetDefinition.value
           .map((v: {fullName: string}) => v.fullName).join(';'))
           .toBe('DO;RE;MI;FA;SOL;LA;SI')
+        const picklistValueDO = object.fields[15].valueSet.valueSetDefinition.value.filter((val: {fullName: string}) => val.fullName === 'DO')[0]
+        expect(picklistValueDO).toBeDefined()
+        expect(picklistValueDO.default).toEqual(true)
         // Text
         expect(object.fields[16].fullName).toBe('Text__c')
         expect(object.fields[16].type).toBe('Text')

@@ -1,5 +1,7 @@
 import { MetadataInfo, SaveResult } from 'jsforce'
 import _ from 'lodash'
+import { FIELD_TYPE_NAMES, FIELD_TYPE_API_NAMES } from '../constants'
+
 
 export interface FieldPermissions {
   field: string
@@ -15,10 +17,12 @@ export class ProfileInfo implements MetadataInfo {
 }
 
 class CustomPicklistValue implements MetadataInfo {
-  constructor(public readonly fullName: string, readonly label?: string) {
+  readonly default?: boolean
+  constructor(public readonly fullName: string, readonly label?: string, isDefault?: boolean) {
     if (!this.label) {
       this.label = fullName
     }
+    this.default = isDefault
   }
 }
 
@@ -76,15 +80,16 @@ export class CustomField implements MetadataInfo {
       this.required = required
     }
 
-    if (values && !_.isEmpty(values)) {
-      this.valueSet = {
-        valueSetDefinition: {
-          value: values.map(val => new CustomPicklistValue(val)),
-        },
+    if (type === FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.PICKLIST]
+      || type === FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.MULTIPICKLIST]) {
+      if (values && !_.isEmpty(values)) {
+        this.valueSet = {
+          valueSetDefinition: {
+            value: values.map(val => new CustomPicklistValue(val, undefined, val === defaultVal)),
+          },
+        }
       }
-    }
-
-    if (defaultVal !== undefined) {
+    } else if (defaultVal !== undefined) {
       this.defaultValue = defaultVal
     }
   }

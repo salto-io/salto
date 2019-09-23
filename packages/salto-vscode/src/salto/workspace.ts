@@ -7,7 +7,7 @@ import {
 
 type SaltoError = string
 interface ParsedBlueprintMap {
-  [key: string]: ParsedBlueprint
+  [filename: string]: ParsedBlueprint
 }
 
 export interface SaltoWorkspace {

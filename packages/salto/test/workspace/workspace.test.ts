@@ -104,21 +104,30 @@ type salesforce_lead {
 
     describe('errors', () => {
       it('should be empty when there are no errors', () => {
-        expect(workspace.errors).toHaveLength(0)
+        expect(workspace.errors.hasErrors()).toBeFalsy()
+        expect(workspace.hasErrors()).toBeFalsy()
       })
       it('should contain parse errors', async () => {
         const erroredWorkspace = new Workspace(
           '/salto',
           parsedBPs.filter(bp => !bp.filename.startsWith('..') || bp.filename === '../error.bp'),
         )
-        expect(erroredWorkspace.errors).toHaveLength(1)
+        expect(erroredWorkspace.errors.hasErrors()).toBeTruthy()
+        expect(erroredWorkspace.hasErrors()).toBeTruthy()
+        const parseError = /Either a quoted string block label or an opening brace/
+        expect(erroredWorkspace.errors.strings()[0]).toMatch(parseError)
+        expect(erroredWorkspace.errors.parse[0].detail).toMatch(parseError)
       })
-      it('should contain validation errors', async () => {
+      it('should contain merge errors', async () => {
         const erroredWorkspace = new Workspace(
           '/salto',
           parsedBPs.filter(bp => !bp.filename.startsWith('..') || bp.filename === '../dup.bp'),
         )
-        expect(erroredWorkspace.errors).toHaveLength(1)
+        expect(erroredWorkspace.errors.hasErrors()).toBeTruthy()
+        expect(erroredWorkspace.hasErrors()).toBeTruthy()
+        const mergeError = /Cannot extend/
+        expect(erroredWorkspace.errors.strings()[0]).toMatch(mergeError)
+        expect(erroredWorkspace.errors.merge[0].error).toMatch(mergeError)
       })
     })
 
@@ -220,7 +229,8 @@ type salesforce_lead {
       afterAll(resetWorkspace)
 
       it('should not cause parse errors', () => {
-        expect(workspace.errors).toHaveLength(0)
+        expect(workspace.hasErrors()).toBeFalsy()
+        expect(workspace.errors.hasErrors()).toBeFalsy()
       })
       it('should modify existing element', () => {
         const lead = elemMap.salesforce_lead as ObjectType

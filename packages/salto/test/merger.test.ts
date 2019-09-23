@@ -2,11 +2,18 @@ import {
   ObjectType, ElemID, Field, BuiltinTypes, InstanceElement, PrimitiveType,
   PrimitiveTypes, Type,
 } from 'adapter-api'
-import { mergeElements, UPDATE_KEYWORD } from '../src/core/merger'
+import {
+  mergeElements,
+  MultipleBaseDefinitionsMergeError,
+  NoBaseDefinitionMergeError, DuplicateAnnotationTypeError,
+  DuplicateAnnotationError, DuplicateAnnotationFieldDefinitionError, DuplicateInstanceKeyError,
+  MultiplePrimitiveTypesUnsupportedError,
+} from '../src/core/merger'
+import { Keywords } from '../src/parser/language'
 
-describe('Loader merging ability', () => {
+describe('merger', () => {
   const updateType = new ObjectType(
-    { elemID: new ElemID('', UPDATE_KEYWORD) }
+    { elemID: new ElemID('', Keywords.UPDATE_DEFINITION) }
   )
   const baseElemID = new ElemID('salto', 'base')
   const base = new ObjectType({
@@ -118,11 +125,12 @@ describe('Loader merging ability', () => {
     },
   })
 
-  describe('merging updates', () => {
+  describe('updates', () => {
     it('does not modify an element list with no updates', () => {
       const elements = [base, unrelated]
-      const merged = mergeElements(elements)
-      expect(merged.length).toBe(2)
+      const { merged, errors } = mergeElements(elements)
+      expect(errors).toHaveLength(0)
+      expect(merged).toHaveLength(2)
     })
 
     it('merges multiple update fields blocks', () => {
@@ -134,12 +142,13 @@ describe('Loader merging ability', () => {
         updateAnno,
         updateAnnoValues,
       ]
-      const merged = mergeElements(elements)
-      expect(merged.length).toBe(2)
+      const { merged, errors } = mergeElements(elements)
+      expect(errors).toHaveLength(0)
+      expect(merged).toHaveLength(2)
       expect(merged[0]).toEqual(mergedObject)
     })
 
-    it('yeilds the same result regardless of the elements order', () => {
+    it('returns the same result regardless of the elements order', () => {
       const elements = [
         update1,
         updateAnno,
@@ -148,52 +157,66 @@ describe('Loader merging ability', () => {
         update2,
         updateAnnoValues,
       ]
-      const merged = mergeElements(elements)
-      expect(merged.length).toBe(2)
+      const { merged, errors } = mergeElements(elements)
+      expect(errors).toHaveLength(0)
+      expect(merged).toHaveLength(2)
       expect(merged[0]).toEqual(mergedObject)
     })
 
-    it('throws error when multiple updates exists for same field', () => {
+    it('returns an error when multiple updates exists for same field', () => {
       const elements = [
         base,
         update1,
         multipleUpdate1,
       ]
-      expect(() => mergeElements(elements)).toThrow()
+      const { errors } = mergeElements(elements)
+      expect(errors).toHaveLength(1)
+      expect(errors[0]).toBeInstanceOf(DuplicateAnnotationFieldDefinitionError)
     })
 
-    it('throws error when attempting to update a no existing field', () => {
+    it('returns an error when attempting to update a non existing field', () => {
       const elements = [
         base,
         missingUpdate,
       ]
-      expect(() => mergeElements(elements)).toThrow()
+      const { errors } = mergeElements(elements)
+      expect(errors).toHaveLength(1)
+      expect(errors[0]).toBeInstanceOf(NoBaseDefinitionMergeError)
     })
 
-    it('throws error when multiple updates exists for same annotation', () => {
+    it('returns an error when multiple updates exists for same annotation', () => {
       const elements = [
         base,
         updateAnno,
         multipleUpdateAnno,
       ]
-      expect(() => mergeElements(elements)).toThrow()
+      const { errors } = mergeElements(elements)
+      expect(errors).toHaveLength(1)
+      expect(errors[0]).toBeInstanceOf(DuplicateAnnotationTypeError)
     })
 
-    it('throws error when multiple updates exists for same annotation value', () => {
+    it('returns an error when multiple updates exists for same annotation value', () => {
       const elements = [
         base,
         updateAnnoValues,
         multipleUpdateAnnoValues,
       ]
-      expect(() => mergeElements(elements)).toThrow()
+      const { errors } = mergeElements(elements)
+      expect(errors).toHaveLength(1)
+      expect(errors[0]).toBeInstanceOf(DuplicateAnnotationError)
     })
 
-    it('throws error when multiple base field definitions', () => {
+    it('returns an error when multiple base field definitions', () => {
       const elements = [
         base,
         multipleBase,
       ]
-      expect(() => mergeElements(elements)).toThrow()
+      const { errors } = mergeElements(elements)
+      expect(errors).toHaveLength(1)
+      expect(errors[0]).toBeInstanceOf(MultipleBaseDefinitionsMergeError)
+      const expectedMessage = 'Error merging salto_base_field1: Cannot extend \'salto_base\': field: \'field1\' has multiple base definitions'
+      expect(errors[0].message).toBe(expectedMessage)
+      expect(String(errors[0])).toBe(expectedMessage)
     })
   })
 
@@ -209,8 +232,9 @@ describe('Loader merging ability', () => {
         instanceElement,
         instanceElement2,
       ]
-      const merged = mergeElements(elements)
-      expect(merged.length).toBe(4)
+      const { merged, errors } = mergeElements(elements)
+      expect(errors).toHaveLength(0)
+      expect(merged).toHaveLength(4)
     })
   })
 
@@ -248,8 +272,9 @@ describe('Loader merging ability', () => {
 
     it('should merge instances', () => {
       const elements = [ins1, ins2]
-      const merged = mergeElements(elements)
-      expect(merged.length).toBe(1)
+      const { merged, errors } = mergeElements(elements)
+      expect(errors).toHaveLength(0)
+      expect(merged).toHaveLength(1)
       const ins = merged[0] as InstanceElement
       expect(ins.value).toEqual({
         field1: 'ins1',
@@ -263,7 +288,8 @@ describe('Loader merging ability', () => {
 
     it('should use field defaults', () => {
       const elements = [shouldUseFieldDef, ins2]
-      const merged = mergeElements(elements)
+      const { merged, errors } = mergeElements(elements)
+      expect(errors).toHaveLength(0)
       const ins = merged[0] as InstanceElement
       expect(ins.value).toEqual({
         field1: 'field1',
@@ -277,7 +303,8 @@ describe('Loader merging ability', () => {
 
     it('should use type defaults', () => {
       const elements = [shouldUseTypeDef, ins2]
-      const merged = mergeElements(elements)
+      const { merged, errors } = mergeElements(elements)
+      expect(errors).toHaveLength(0)
       const ins = merged[0] as InstanceElement
       expect(ins.value).toEqual({
         field1: 'ins1',
@@ -291,7 +318,8 @@ describe('Loader merging ability', () => {
 
     it('should use object defaults', () => {
       const elements = [ins1]
-      const merged = mergeElements(elements)
+      const { merged, errors } = mergeElements(elements)
+      expect(errors).toHaveLength(0)
       const ins = merged[0] as InstanceElement
       expect(ins.value).toEqual({
         field1: 'ins1',
@@ -305,7 +333,9 @@ describe('Loader merging ability', () => {
 
     it('should fail on multiple values for same key', () => {
       const elements = [ins1, shouldUseFieldDef]
-      expect(() => mergeElements(elements)).toThrow()
+      const { errors } = mergeElements(elements)
+      expect(errors).toHaveLength(1)
+      expect(errors[0]).toBeInstanceOf(DuplicateInstanceKeyError)
     })
   })
 
@@ -323,7 +353,9 @@ describe('Loader merging ability', () => {
     })
     it('should fail when more then one primitive is defined with same elemID', () => {
       const elements = [strType, duplicateType]
-      expect(() => mergeElements(elements)).toThrow()
+      const { errors } = mergeElements(elements)
+      expect(errors).toHaveLength(1)
+      expect(errors[0]).toBeInstanceOf(MultiplePrimitiveTypesUnsupportedError)
     })
   })
 
@@ -347,12 +379,13 @@ describe('Loader merging ability', () => {
     })
 
     it('should replace type refs with full types', () => {
-      const elements = mergeElements([
+      const { merged, errors } = mergeElements([
         strType,
         base,
         nested,
       ])
-      const element = elements[2] as ObjectType
+      expect(errors).toHaveLength(0)
+      const element = merged[2] as ObjectType
       expect(element.fields.prim.type).toEqual(strType)
       expect(element.fields.base.type).toEqual(base)
     })

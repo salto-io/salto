@@ -20,7 +20,11 @@ import { Workspace } from './workspace/workspace'
 import { discoverChanges } from './core/discover'
 
 export const mergeAndValidate = (elements: Element[]): Element[] => {
-  const mergedElements = mergeElements(elements)
+  const { merged: mergedElements, errors: mergeErrors } = mergeElements(elements)
+  if (mergeErrors.length > 0) {
+    throw new Error(`Failed to merge blueprints: ${mergeErrors.map(e => e.message).join('\n')}`)
+  }
+
   const validationErrors = validateElements(mergedElements)
 
   if (validationErrors.length > 0) {

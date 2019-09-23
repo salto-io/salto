@@ -62,7 +62,7 @@ const getContextReference = (
   contextRange: NamedRange
 ): ContextReference | undefined => {
   // using map + flatten and not reduce for performance
-  const elementAndFields: Element[] = _(mergedElements).map( e => (
+  const elementAndFields: Element[] = _(mergedElements).map(e => (
     (isObjectType(e)) ? [..._.values(e.fields), e] : [e]
   )).flatten().value()
   // If the range is contained in the element, then the elementID is a prefix of the refName

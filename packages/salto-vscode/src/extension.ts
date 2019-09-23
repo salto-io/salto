@@ -72,7 +72,9 @@ const getDefType = (context: PositionContext): number => {
     return (context.ref && context.ref.path) ? vscode.SymbolKind.Variable : vscode.SymbolKind.Field
   }
   if (context.type === 'instance') {
-    return (context.ref && context.ref.path) ? vscode.SymbolKind.Variable : vscode.SymbolKind.Variable
+    return (context.ref && context.ref.path)
+      ? vscode.SymbolKind.Variable
+      : vscode.SymbolKind.Field
   }
   if (context.type === 'type') {
     return (context.ref && context.ref.path) ? vscode.SymbolKind.Variable : vscode.SymbolKind.Class

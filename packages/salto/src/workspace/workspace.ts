@@ -139,7 +139,7 @@ export class Workspace {
    * @param newBlueprints New blueprint or existing blueprint with new content
    * @returns A new workspace with the new content
    */
-  async updateBlueprints(...newBlueprints: Blueprint[]): Promise<void> {
+  async setBlueprints(...newBlueprints: Blueprint[]): Promise<void> {
     const parsed = await parseBlueprints(newBlueprints)
     const newParsedMap = _.merge(
       {},

@@ -125,10 +125,10 @@ describe('Workspace', () => {
       })
     })
 
-    describe('updateBlueprints', () => {
+    describe('setBlueprints', () => {
       let newElemMap: Record<string, Element>
       beforeEach(async () => {
-        await workspace.updateBlueprints(changedBP, newBP)
+        await workspace.setBlueprints(changedBP, newBP)
         newElemMap = _(workspace.elements)
           .map(elem => [elem.elemID.getFullName(), elem])
           .fromPairs()
@@ -198,7 +198,7 @@ describe('Workspace', () => {
           ({ filename, buffer }) => ({ filename: getPath(filename), buffer })
         )
         workspace.removeBlueprints(getPath('/salto/subdir/file.bp'))
-        await workspace.updateBlueprints(...updateBPs)
+        await workspace.setBlueprints(...updateBPs)
         await workspace.flush()
       })
       afterAll(resetWorkspace)

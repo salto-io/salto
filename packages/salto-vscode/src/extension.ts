@@ -2,7 +2,9 @@ import * as vscode from 'vscode'
 import _ from 'lodash'
 import { initWorkspace, updateFile, SaltoWorkspace } from './salto/workspace'
 import { provideWorkspaceCompletionItems } from './salto/completions/provider'
-import { getPositionContext, buildDefinitionsTree, EditorPosition, PositionContext } from './salto/context'
+import {
+  getPositionContext, buildDefinitionsTree, EditorPosition, PositionContext,
+} from './salto/context'
 import { debugFunctions } from './salto/debug'
 import { provideWorkspaceDefinition } from './salto/definitions'
 import { provideWorkspaceReferences } from './salto/usage'
@@ -65,21 +67,25 @@ const getDefName = (context: PositionContext, prefName?: string): string => {
 }
 
 const getDefType = (context: PositionContext): number => {
+  if (context.ref && context.ref.isList) return vscode.SymbolKind.Array
   if (context.type === 'field') {
-    return (context.ref && context.ref.path) ? 6 : 7
+    return (context.ref && context.ref.path) ? vscode.SymbolKind.Variable : vscode.SymbolKind.Field
   }
   if (context.type === 'instance') {
-    return (context.ref && context.ref.path) ? 6 : 12
+    return (context.ref && context.ref.path) ? vscode.SymbolKind.Variable : vscode.SymbolKind.Variable
   }
   if (context.type === 'type') {
-    return (context.ref && context.ref.path) ? 6 : 4
+    return (context.ref && context.ref.path) ? vscode.SymbolKind.Variable : vscode.SymbolKind.Class
   }
-  return 0
+  return vscode.SymbolKind.File
 }
 
 const buildVSDefinitions = (context: PositionContext, prefName?: string): vscode.DocumentSymbol => {
   const name = getDefName(context, prefName)
-  const range = new vscode.Range(SaltoPosToVsPos(context.range.start), SaltoPosToVsPos(context.range.end))
+  const range = new vscode.Range(
+    saltoPosToVsPos(context.range.start),
+    saltoPosToVsPos(context.range.end)
+  )
   const def = new vscode.DocumentSymbol(
     name,
     '',
@@ -101,7 +107,7 @@ const createDocumentSymbolsProvider = (
     const blueprint = workspace.parsedBlueprints[doc.fileName]
     const defTree = buildDefinitionsTree(workspace, doc.getText(), blueprint)
     return (defTree.children || []).map(c => buildVSDefinitions(c))
-  }
+  },
 })
 
 // This function is called in order to create a completion provided - and
@@ -114,10 +120,10 @@ const createCompletionsProvider = (
     position: vscode.Position
   ) => {
     const workspace = workspaces[workspaceName]
-    if (lastWorkspaceUpdate[workspaceName]) {
-      await lastWorkspaceUpdate[workspaceName]
+    if (workspace.lastUpdate) {
+      await workspace.lastUpdate
     }
-    const saltoPos = VsPosToSaltoPos(position)
+    const saltoPos = vsPosToSaltoPos(position)
     const context = getPositionContext(
       workspace,
       doc.getText(),
@@ -222,6 +228,7 @@ export const activate = async (context: vscode.ExtensionContext): Promise<void> 
       referenceProvider,
       symbolsProvider,
       vscode.workspace.onDidChangeConfiguration(e => onDidChangeConfiguration(e, name, settings)),
+      vscode.workspace.onDidChangeTextDocument(e => onDidChangeTextDocument(e, name)),
       // A shortcut for registering all debug commands from debug.ts
       ..._.keys(debugFunctions).map(k =>
         vscode.commands.registerCommand(k, () => debugFunctions[k](workspaces[name])))

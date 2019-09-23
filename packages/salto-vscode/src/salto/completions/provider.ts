@@ -52,8 +52,8 @@ const isDef = (
 }
 
 const getLineType = (
-  context: PositionContext, 
-  lineTokens: string[], 
+  context: PositionContext,
+  lineTokens: string[],
   position: EditorPosition
 ): LineType => {
   const isDefLine = isDef(context, position)

@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import wu from 'wu'
 import {
-  Element, isField, isType, isObjectType
+  Element, isField, isType, isObjectType,
 } from 'adapter-api'
 import { ParsedBlueprint } from 'salto'
 import { SaltoWorkspace } from './workspace'
@@ -41,8 +41,8 @@ const GLOBAL_RANGE: NamedRange = {
   name: 'global',
   range: {
     start: { line: 0, col: 0 },
-    end: { line: Number.MAX_VALUE, col: Number.MAX_VALUE }
-  }
+    end: { line: Number.MAX_VALUE, col: Number.MAX_VALUE },
+  },
 }
 
 const getText = (content: string, range: EditorRange): string => {
@@ -108,41 +108,10 @@ const getPositionConextType = (
   return 'instance'
 }
 
-// Recursivally builds a context from an array of ranges.
-// Note - we build from the out in since we need the outer contexts
-// to create the context, but return the inner most context (with links to
-// the outer contexts via the parent attr) since we mostly need it.
-
-// const buildPositionContext = (
-//   workspace: SaltoWorkspace,
-//   fileContent: string,
-//   ranges: NamedRange[],
-//   position: EditorPosition,
-//   parent: PositionContext = GLOBAL_CONTEXT,
-// ): PositionContext => {
-//   if (ranges.length === 0) {
-//     return parent
-//   }
-
-//   const range = ranges[0]
-//   const encapsulatedRanges = ranges.slice(1)
-//   const ref = getContextReference(fileContent, workspace.mergedElements || [], range)
-//   const context = {
-//     parent,
-//     ref,
-//     range: range.range,
-//     part: getPositionConextPart(range, position, ref),
-//     type: getPositionConextType(ref),
-//   }
-
-//   return (encapsulatedRanges.length > 0)
-//     ? buildPositionContext(workspace, fileContent, encapsulatedRanges, position, context) : context
-// }
-
 const flattenBlueprintRanges = (
   parsedBlueprint: ParsedBlueprint
 ): NamedRange[] => wu(parsedBlueprint.sourceMap.entries())
-  .map(([name, ranges]) => ranges.map(range => ({name, range})))
+  .map(([name, ranges]) => ranges.map(range => ({ name, range })))
   .flatten()
   .toArray()
 
@@ -161,24 +130,21 @@ const buildPositionContext = (
   encapsulatedRanges: NamedRange[],
   parent?: PositionContext
 ): PositionContext => {
-
   const buildChildren = (ranges: NamedRange[]): PositionContext[] => {
     const child = ranges[0]
     const rest = ranges.slice(1)
-    const encapsulatedByChild =  rest.filter(r => isContained(r.range, child.range))
+    const encapsulatedByChild = rest.filter(r => isContained(r.range, child.range))
     const childCtx = buildPositionContext(workspace, fileContent, child, encapsulatedByChild)
     childCtx.children = (childCtx.children || []).map(c => {
       c.parent = childCtx
       return c
     })
     const notEncapsulated = _.without(rest, ...encapsulatedByChild)
-    return _.isEmpty(notEncapsulated) ? [childCtx] : [childCtx, ... buildChildren(notEncapsulated)]
+    return _.isEmpty(notEncapsulated) ? [childCtx] : [childCtx, ...buildChildren(notEncapsulated)]
   }
 
-  const range = ranges[0]
-  const encapsulatedRanges = ranges.slice(1)
   const ref = getContextReference(fileContent, workspace.mergedElements || [], range)
-  const context = {
+  const context: PositionContext = {
     parent,
     ref,
     range: range.range,
@@ -189,17 +155,15 @@ const buildPositionContext = (
 }
 
 
-
 export const buildDefinitionsTree = (
   workspace: SaltoWorkspace,
   fileContent: string,
   parsedBlueprint: ParsedBlueprint
 ): PositionContext => {
-
   const startPosComparator = (left: NamedRange, right: NamedRange): number => (
-    (left.range.start.line === right.range.start.line) ?  
-      left.range.start.col - right.range.start.col :
-      left.range.start.line - right.range.start.line
+    (left.range.start.line === right.range.start.line)
+      ? left.range.start.col - right.range.start.col
+      : left.range.start.line - right.range.start.line
   )
 
   return buildPositionContext(
@@ -211,11 +175,11 @@ export const buildDefinitionsTree = (
 }
 
 const getPositionFromTree = (
-  treeBase: PositionContext, 
+  treeBase: PositionContext,
   position: EditorPosition
 ): PositionContext => {
-  const range = {start: position, end: position}
-  const [nextBase] = (treeBase.children || []).filter(child => isContained(child.range, range))
+  const range = { start: position, end: position }
+  const [nextBase] = (treeBase.children || []).filter(child => isContained(range, child.range))
   return (nextBase) ? getPositionFromTree(nextBase, position) : treeBase
 }
 

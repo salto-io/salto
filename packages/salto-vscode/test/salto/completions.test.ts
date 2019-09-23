@@ -237,7 +237,6 @@ describe('Test auto complete', () => {
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = ['car_owner', 'model', 'year']
       const exclude = ['loaner', 'reason', 'propety', 'weekends_only', ...types, ...instances]
-      console.log(suggestions, include, exclude)
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })
 
@@ -292,19 +291,17 @@ describe('Test auto complete', () => {
     })
 
     it('should return list brackets', () => {
-      const pos = { line: 143, col: 16 }
+      const pos = { line: 134, col: 16 }
       const line = getLine(workspace, bpFileName, pos)
-      console.log("LINE:", line)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = ['[]']
       const exclude = [...types, ...kw, ...instances]
-      console.log("SUG:", suggestions)
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })
 
     it('should return list inside value', () => {
-      const pos = { line: 143, col: 24 }
+      const pos = { line: 134, col: 24 }
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line, pos)

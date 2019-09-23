@@ -326,3 +326,4 @@ export const exportToCsv = async (_typeId: string, _blueprints: Blueprint[],
   }())
 
 export const importFromCsvFile = async (): Promise<void> => {}
+export const deleteFromCsvFile = async (): Promise<void> => {}

@@ -1,5 +1,5 @@
 import asyncfile from 'async-file'
-import { importFromCsvFile, Blueprint, readCsv } from 'salto'
+import { deleteFromCsvFile, Blueprint, readCsv } from 'salto'
 import { createCommandBuilder } from '../builder'
 import { ParsedCliInput, CliCommand, CliOutput } from '../types'
 import * as bf from '../filters/blueprints'
@@ -16,7 +16,7 @@ export const command = (blueprints: Blueprint[],
       return
     }
     const records = await readCsv(inputPath)
-    await importFromCsvFile(
+    await deleteFromCsvFile(
       typeName,
       records,
       blueprints,
@@ -24,7 +24,7 @@ export const command = (blueprints: Blueprint[],
     )
     // TODO: Return here the full report that contains the numbers of successful and failed rows.
     // Also: print the errors of the erronous rows to a log file and print the path of the log.
-    stdout.write(Prompts.IMPORT_FINISHED_SUCCESSFULLY)
+    stdout.write(Prompts.DELETE_FINISHED_SUCCESSFULLY)
   },
 })
 
@@ -33,9 +33,9 @@ type DiscoverParsedCliInput = ParsedCliInput<DiscoverArgs> & bf.BlueprintsParsed
 
 const builder = createCommandBuilder({
   options: {
-    command: 'import <inputPath> <typeName>',
+    command: 'delete <inputPath> <typeName>',
     aliases: ['i'],
-    description: 'Imports all objects of a given type from a provided CSV',
+    description: 'deletes all objects of a given type from a provided CSV',
     positional: {
       inputPath: {
         type: 'string',
@@ -43,7 +43,7 @@ const builder = createCommandBuilder({
       },
       typeName: {
         type: 'string',
-        description: 'The type name of the instances to import as it appears in the blueprint',
+        description: 'The type name of the instances to delete as it appears in the blueprint',
       },
     },
   },

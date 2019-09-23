@@ -89,3 +89,13 @@ Promise<void> => {
   }
   await adapter.importInstancesOfType(type, instancesIterator(type, records))
 }
+
+export const deleteInstancesOfType = async (
+  type: ObjectType, records: Value[], adapters: Record<string, Adapter>):
+Promise<void> => {
+  const adapter = adapters[type.elemID.adapter]
+  if (!adapter) {
+    throw new Error(`Failed to find the adapter for the given type: ${type.elemID.getFullName()}`)
+  }
+  await adapter.deleteInstancesOfType(type, instancesIterator(type, records))
+}

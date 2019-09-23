@@ -5,6 +5,7 @@ import {
   InstanceElement,
   Values,
 } from 'adapter-api'
+import _ from 'lodash'
 import * as constants from '../src/constants'
 import { Types, apiName } from '../src/transformer'
 import realAdapter from './adapter'
@@ -81,27 +82,28 @@ describe('Adapter E2E import-export related operations with real account', () =>
       const result = await client.runQuery(queryString)
       return result.records.map(record => record.Id)
     }
-    it('should write instances of specific type', async () => {
-      const testFirstName = 'Testy'
-      const testLastName = 'Testorovich'
-      const testCompany = 'Test inc.'
 
-      const elemID = new ElemID('salesforce')
-      const testInstance = new InstanceElement(
-        elemID,
-        leadType,
-        {
-          Id: '',
-          FirstName: testFirstName,
-          LastName: testLastName,
-          Company: testCompany,
-        }
-      )
+    const testFirstName = 'Testy'
+    const testLastName = 'Testorovich'
+    const testCompany = 'Test inc.'
 
-      const iter = async function *mockSingleInstanceIterator(): AsyncIterable<InstanceElement> {
-        yield testInstance
+    const elemID = new ElemID('salesforce')
+    const testInstance = new InstanceElement(
+      elemID,
+      leadType,
+      {
+        Id: '',
+        FirstName: testFirstName,
+        LastName: testLastName,
+        Company: testCompany,
       }
+    )
 
+    const iter = async function *mockSingleInstanceIterator(): AsyncIterable<InstanceElement> {
+      yield testInstance
+    }
+
+    it('should write instances of specific type', async () => {
       // Prepare
       const ids = await existingInstances(testInstance)
       if (ids.length > 0) {
@@ -125,6 +127,31 @@ describe('Adapter E2E import-export related operations with real account', () =>
 
       // Clean-up
       await client.destroy(testInstance.type.annotations[constants.API_NAME], newLead.Id)
+    })
+
+    it('should delete instances of specific type', async () => {
+      // Prepare
+      const ids = await existingInstances(testInstance)
+      if (ids.length < 1) {
+        await adapter.importInstancesOfType(leadType, iter())
+      }
+
+      const queryString = `SELECT Id,${Object.values(leadType.fields).map(apiName)} 
+      FROM ${apiName(leadType)} WHERE FirstName='${testFirstName}' AND LastName='${testLastName}'
+      AND Company='${testCompany}'`
+      const queryResult = await client.runQuery(queryString)
+      const leadForDeletion = queryResult.records[0] as Values
+      const instanceForDeletion = _.clone(testInstance)
+      instanceForDeletion.value.Id = leadForDeletion.Id
+      const deletionIter = async function *mockSingleInstanceIterator(): AsyncIterable<
+      InstanceElement> {
+        yield instanceForDeletion
+      }
+      await adapter.deleteInstancesOfType(leadType, deletionIter())
+
+      // Test
+      const result = await client.runQuery(queryString)
+      expect(result.totalSize).toBe(0)
     })
   })
 })

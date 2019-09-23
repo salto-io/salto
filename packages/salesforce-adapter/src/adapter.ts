@@ -4,6 +4,7 @@ import {
 } from 'adapter-api'
 import {
   SaveResult, MetadataInfo, Field as SObjField, DescribeSObjectResult, QueryResult,
+  BulkLoadOperation,
 } from 'jsforce'
 import _ from 'lodash'
 import SalesforceClient, { Credentials } from './client/client'
@@ -27,7 +28,7 @@ import {
   FilterCreator, Filter, FilterWith, filtersWith,
 } from './filter'
 
-const CSV_IMPORT_CHUNK_SIZE = 10000
+const RECORDS_CHUNK_SIZE = 10000
 
 // Add API name and label annotation if missing
 const annotateApiNameAndLabel = (element: ObjectType): void => {
@@ -169,24 +170,48 @@ export default class SalesforceAdapter {
   /**
    * Imports instances of type from the data stream
    * @param type the object type of which to import
-   * @param data the stream that contains the object instances to import
+   * @param instancesIterator the iterator that provides the instances to delete
    * @returns a promise that represents action completion
    */
   public async importInstancesOfType(type: ObjectType,
+    instancesIterator: AsyncIterable<InstanceElement>): Promise<void> {
+    await this.updateInstancesOfType(type, 'upsert', instancesIterator)
+  }
+
+  /**
+   * Deletes instances of type from the data stream
+   * @param type the object type of which to delete instances
+   * @param instancesIterator the iterator that provides the instances to delete
+   * @returns a promise that represents action completion
+   */
+  public async deleteInstancesOfType(type: ObjectType,
+    instancesIterator: AsyncIterable<InstanceElement>): Promise<void> {
+    await this.updateInstancesOfType(type, 'delete', instancesIterator)
+  }
+
+  /**
+   * Updates instances of type from the data stream
+   * @param type the object type of which to delete instances
+   * @param operation The type of operation to perform, such as upsert, delete, etc.
+   * @param instancesIterator the iterator that provides the instances to delete
+   * @returns a promise that represents action completion
+   */
+  private async updateInstancesOfType(type: ObjectType,
+    operation: BulkLoadOperation,
     instancesIterator: AsyncIterable<InstanceElement>): Promise<void> {
     let instances: InstanceElement[] = []
     // eslint-disable-next-line no-restricted-syntax
     for await (const instance of instancesIterator) {
       // Aggregate the instance elements for the proper bulk size
       const length = instances.push(instance)
-      if (length === CSV_IMPORT_CHUNK_SIZE) {
+      if (length === RECORDS_CHUNK_SIZE) {
         // Convert the instances in the transformer to SfRecord[] and send to bulk API
-        await this.client.uploadBulk(apiName(type), toRecords(instances))
+        await this.client.updateBulk(apiName(type), operation, toRecords(instances))
         instances = []
       }
     }
     // Send the remaining instances
-    await this.client.uploadBulk(apiName(type), toRecords(instances))
+    await this.client.updateBulk(apiName(type), operation, toRecords(instances))
   }
 
   /**

@@ -14,6 +14,7 @@ import {
   BatchResultInfo,
   Record as SfRecord,
   RecordResult,
+  BulkLoadOperation,
 } from 'jsforce'
 import { Value } from 'adapter-api'
 import {
@@ -274,15 +275,20 @@ export default class SalesforceClient {
 
   /**
    * Loads a stream of CSV data to the bulk API
-   * @param type The type of the objects to upsert
-   * @param records The stream with the CSV contents
+   * @param type The type of the objects to update
+   * @param operation The type of operation to perform, such as upsert, delete, etc.
+   * @param records The records from the CSV contents
    * @returns The BatchResultInfo which contains success/errors for each entry
    */
-  public async uploadBulk(type: string, records: SfRecord[]): Promise<BatchResultInfo[]> {
+  public async updateBulk(
+    type: string,
+    operation: BulkLoadOperation,
+    records: SfRecord[]
+  ): Promise<BatchResultInfo[]> {
     await this.ensureLoggedIn()
 
     // Initiate the batch job
-    const batch = this.conn.bulk.load(type, 'upsert', { extIdField: 'Id', concurrencyMode: 'Parallel' }, records)
+    const batch = this.conn.bulk.load(type, operation, { extIdField: 'Id', concurrencyMode: 'Parallel' }, records)
     // We need to wait for the job to execute (this what the next line does),
     // otherwise the retrieve() will fail
     // So the following line is a part of SFDC Bulk API, not promise API.

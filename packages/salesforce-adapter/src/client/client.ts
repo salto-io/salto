@@ -137,14 +137,12 @@ export default class SalesforceClient {
 
   public async runQuery(queryString: string): Promise<QueryResult<Value>> {
     await this.ensureLoggedIn()
-    const queryResult = this.conn.query(queryString)
-    return ensureSuccessfulRun(queryResult, `failed to query ${queryString}`)
+    return this.conn.query(queryString)
   }
 
   public async queryMore(locator: string): Promise<QueryResult<Value>> {
     await this.ensureLoggedIn()
-    const queryResult = this.conn.queryMore(locator)
-    return ensureSuccessfulRun(queryResult, `failed to queryMore ${locator}`)
+    return this.conn.queryMore(locator)
   }
 
   public async destroy(

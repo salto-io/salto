@@ -1,5 +1,6 @@
 import _ from 'lodash'
 import wu from 'wu'
+import path from 'path'
 import fs from 'async-file'
 import readdirp from 'readdirp'
 import { Element } from 'adapter-api'
@@ -40,7 +41,7 @@ const loadBlueprints = async (
   try {
     const filenames = blueprintsFiles.concat(await getBlueprintsFromDir(blueprintsDir))
     return Promise.all(filenames.map(async filename => ({
-      filename,
+      filename: path.relative(blueprintsDir, filename),
       buffer: await fs.readFile(filename, 'utf8'),
     })))
   } catch (e) {
@@ -173,10 +174,11 @@ export class Workspace {
   async flush(): Promise<void> {
     await Promise.all(wu(this.dirtyBlueprints).map(async filename => {
       const bp = this.parsedBlueprints[filename]
+      const filePath = path.join(this.baseDir, filename)
       if (bp === undefined) {
-        await fs.delete(filename)
+        await fs.delete(filePath)
       } else {
-        await fs.writeFile(filename, bp.buffer)
+        await fs.writeFile(filePath, bp.buffer)
       }
       this.dirtyBlueprints.delete(filename)
     }))

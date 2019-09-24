@@ -31,13 +31,13 @@ describe('Workspace', () => {
   }
 
   const changedBP = {
-    filename: '/salto/file.bp',
+    filename: 'file.bp',
     buffer: `type salesforce_lead {
       salesforce_text new_base {}
     }`,
   }
   const newBP = {
-    filename: '/salto/new.bp',
+    filename: 'new.bp',
     buffer: 'type salesforce_new {}',
   }
 
@@ -45,7 +45,7 @@ describe('Workspace', () => {
     let parsedBPs: ParsedBlueprint[]
     beforeAll(async () => {
       const bps: Blueprint[] = _.entries(workspaceFiles)
-        .map(([filename, buffer]) => ({ filename, buffer }))
+        .map(([filename, buffer]) => ({ filename: path.relative('/salto', filename), buffer }))
       parsedBPs = await parseBlueprints(bps)
     })
 
@@ -53,7 +53,7 @@ describe('Workspace', () => {
     beforeEach(() => {
       workspace = new Workspace(
         '/salto',
-        parsedBPs.filter(bp => bp.filename.startsWith('/salto') || bp.filename === '/outside/file.bp'),
+        parsedBPs.filter(bp => !bp.filename.startsWith('..') || bp.filename === '../outside/file.bp'),
       )
     })
 
@@ -89,14 +89,14 @@ describe('Workspace', () => {
       it('should contain parse errors', async () => {
         const erroredWorkspace = new Workspace(
           '/salto',
-          parsedBPs.filter(bp => bp.filename.startsWith('/salto') || bp.filename === '/error.bp'),
+          parsedBPs.filter(bp => !bp.filename.startsWith('..') || bp.filename === '../error.bp'),
         )
         expect(erroredWorkspace.errors).toHaveLength(1)
       })
       it('should contain validation errors', async () => {
         const erroredWorkspace = new Workspace(
           '/salto',
-          parsedBPs.filter(bp => bp.filename.startsWith('/salto') || bp.filename === '/dup.bp'),
+          parsedBPs.filter(bp => !bp.filename.startsWith('..') || bp.filename === '../dup.bp'),
         )
         expect(erroredWorkspace.errors).toHaveLength(1)
       })
@@ -106,7 +106,7 @@ describe('Workspace', () => {
       let newElemMap: Record<string, Element>
       let removedPaths: string[]
       beforeEach(() => {
-        removedPaths = ['/outside/file.bp', '/salto/file.bp']
+        removedPaths = ['../outside/file.bp', 'file.bp']
         workspace.removeBlueprints(...removedPaths)
         newElemMap = _(workspace.elements)
           .map(elem => [elem.elemID.getFullName(), elem])
@@ -136,7 +136,7 @@ describe('Workspace', () => {
       })
 
       it('should add new blueprints', () => {
-        expect(_.keys(workspace.parsedBlueprints)).toContain('/salto/new.bp')
+        expect(_.keys(workspace.parsedBlueprints)).toContain('new.bp')
       })
       it('should add new elements', () => {
         expect(newElemMap).toHaveProperty('salesforce_new')
@@ -152,14 +152,13 @@ describe('Workspace', () => {
   describe('filesystem interaction', () => {
     let tmpDir: tmp.DirectoryResult
     let workspace: Workspace
-    let getPath: (filename: string) => string
 
     const resetWorkspace = async (): Promise<void> => {
       if (tmpDir !== undefined) {
         tmpDir.cleanup()
       }
       tmpDir = await tmp.dir({ unsafeCleanup: true })
-      getPath = (filename: string): string => path.join(tmpDir.path, filename)
+      const getPath = (filename: string): string => path.join(tmpDir.path, filename)
       await Promise.all(_.entries(workspaceFiles)
         .map(async ([name, data]) => {
           const filePath = getPath(name)
@@ -177,45 +176,42 @@ describe('Workspace', () => {
 
     describe('Workspace load', () => {
       it('should find blueprint files', () => {
-        expect(_.keys(workspace.parsedBlueprints)).toContain(getPath('/salto/file.bp'))
-        expect(_.keys(workspace.parsedBlueprints)).toContain(getPath('/salto/subdir/file.bp'))
+        expect(_.keys(workspace.parsedBlueprints)).toContain('file.bp')
+        expect(_.keys(workspace.parsedBlueprints)).toContain('subdir/file.bp')
       })
       it('should find files that are added explicitly', () => {
-        expect(_.keys(workspace.parsedBlueprints)).toContain(getPath('/outside/file.bp'))
+        expect(_.keys(workspace.parsedBlueprints)).toContain('../outside/file.bp')
       })
       it('should not find hidden files and directories', () => {
-        expect(_.keys(workspace.parsedBlueprints)).not.toContain(getPath('/salto/subdir/.hidden.bp'))
-        expect(_.keys(workspace.parsedBlueprints)).not.toContain(getPath('/salto/.hidden/hidden.bp'))
+        expect(_.keys(workspace.parsedBlueprints)).not.toContain('subdir/.hidden.bp')
+        expect(_.keys(workspace.parsedBlueprints)).not.toContain('.hidden/hidden.bp')
       })
       it('should not find non bp files', () => {
-        expect(_.keys(workspace.parsedBlueprints)).not.toContain(getPath('/salto/non_bp.txt'))
+        expect(_.keys(workspace.parsedBlueprints)).not.toContain('non_bp.txt')
       })
     })
     describe('flush', () => {
       beforeAll(async () => {
         await resetWorkspace()
-        const updateBPs = [changedBP, newBP].map(
-          ({ filename, buffer }) => ({ filename: getPath(filename), buffer })
-        )
-        workspace.removeBlueprints(getPath('/salto/subdir/file.bp'))
-        await workspace.setBlueprints(...updateBPs)
+        workspace.removeBlueprints('subdir/file.bp')
+        await workspace.setBlueprints(changedBP, newBP)
         await workspace.flush()
       })
       afterAll(resetWorkspace)
 
       it('should remove blueprints that were removed', async () => {
-        expect(await fs.exists(getPath('/salto/subdir/file.bp'))).toBeFalsy()
+        expect(await fs.exists(path.join(workspace.baseDir, 'subdir/file.bp'))).toBeFalsy()
       })
       it('should create blueprints that were added', async () => {
-        expect(await fs.exists(getPath('/salto/new.bp'))).toBeTruthy()
+        expect(await fs.exists(path.join(workspace.baseDir, newBP.filename))).toBeTruthy()
       })
       it('should change the content of blueprints that were updated', async () => {
-        const writtenData = await fs.readFile(getPath('/salto/file.bp'), 'utf8')
+        const writtenData = await fs.readFile(path.join(workspace.baseDir, changedBP.filename), 'utf8')
         expect(writtenData).toEqual(changedBP.buffer)
       })
       it('should keep all unchanged files', async () => {
         await Promise.all(_.keys(workspace.parsedBlueprints).map(
-          async p => expect(await fs.exists(p)).toBeTruthy()
+          async p => expect(await fs.exists(path.join(workspace.baseDir, p))).toBeTruthy()
         ))
       })
     })

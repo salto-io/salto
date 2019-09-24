@@ -22,6 +22,7 @@ import convertListsFilter from './filters/convert_lists'
 import convertTypeFilter from './filters/convert_types'
 import missingFieldsFilter from './filters/missing_fields'
 import standardValueSetFilter from './filters/standard_value_sets'
+import flowFilter from './filters/flow'
 import {
   FilterCreator, Filter, FilterWith, filtersWith,
 } from './filter'
@@ -101,6 +102,7 @@ export default class SalesforceAdapter {
       assignmentRulesFilter,
       standardValueSetFilter,
       missingFieldsFilter,
+      flowFilter,
       // The following filters should remain last in order to make sure they fix all elements
       convertListsFilter,
       convertTypeFilter,

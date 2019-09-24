@@ -259,6 +259,9 @@ describe('SalesforceAdapter CRUD', () => {
         const picklistValueNew = object.fields[0].valueSet.valueSetDefinition.value.filter((val: {fullName: string}) => val.fullName === 'NEW')[0]
         expect(picklistValueNew).toBeDefined()
         expect(picklistValueNew.default).toEqual(true)
+        const picklistValueOld = object.fields[0].valueSet.valueSetDefinition.value.filter((val: {fullName: string}) => val.fullName === 'OLD')[0]
+        expect(picklistValueOld).toBeDefined()
+        expect(picklistValueOld.default).toEqual(false)
       })
 
       it('should return the created element', () => {

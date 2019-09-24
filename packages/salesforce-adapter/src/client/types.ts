@@ -16,9 +16,10 @@ export class ProfileInfo implements MetadataInfo {
   ) {}
 }
 
+
 class CustomPicklistValue implements MetadataInfo {
-  readonly default?: boolean
-  constructor(public readonly fullName: string, readonly label?: string, isDefault?: boolean) {
+  readonly default: boolean
+  constructor(public readonly fullName: string, isDefault: boolean, readonly label?: string) {
     if (!this.label) {
       this.label = fullName
     }
@@ -85,7 +86,7 @@ export class CustomField implements MetadataInfo {
       if (values && !_.isEmpty(values)) {
         this.valueSet = {
           valueSetDefinition: {
-            value: values.map(val => new CustomPicklistValue(val, undefined, val === defaultVal)),
+            value: values.map(val => new CustomPicklistValue(val, val === defaultVal)),
           },
         }
       }

@@ -61,8 +61,11 @@ export const parse = async (blueprint: Buffer, filename: string): Promise<ParseR
   const sourceMap = new SourceMapImpl()
 
   const attrValues = (block: ParsedHclBlock, parentId: ElemID): Values => _.mapValues(
-    block.attrs,
-    (val, key) => evaluate(val.expressions[0], parentId.createNestedID(key), sourceMap)
+    block.attrs, (val, key) => {
+      const exp = val.expressions[0]
+      // Use attribute source as expression source so it includes the key as well
+      return evaluate({ ...exp, source: val.source }, parentId.createNestedID(key), sourceMap)
+    }
   )
 
   const parseType = (typeBlock: ParsedHclBlock, isSettings = false): Type => {

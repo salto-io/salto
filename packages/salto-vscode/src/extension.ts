@@ -55,7 +55,7 @@ const onDidChangeConfiguration = async (
   await workspace.lastUpdate
 }
 
-const getDefName = (context: PositionContext, prefName?: string): string => {
+const getDefinitionName = (context: PositionContext, prefName?: string): string => {
   if (context.ref) {
     if (context.ref.path) {
       return context.ref.path
@@ -66,7 +66,7 @@ const getDefName = (context: PositionContext, prefName?: string): string => {
   return 'global'
 }
 
-const getDefType = (context: PositionContext): number => {
+const getDefinitionType = (context: PositionContext): number => {
   if (context.ref && context.ref.isList) return vscode.SymbolKind.Array
   if (context.type === 'field') {
     return (context.ref && context.ref.path) ? vscode.SymbolKind.Variable : vscode.SymbolKind.Field
@@ -83,7 +83,7 @@ const getDefType = (context: PositionContext): number => {
 }
 
 const buildVSDefinitions = (context: PositionContext, prefName?: string): vscode.DocumentSymbol => {
-  const name = getDefName(context, prefName)
+  const name = getDefinitionName(context, prefName)
   const range = new vscode.Range(
     saltoPosToVsPos(context.range.start),
     saltoPosToVsPos(context.range.end)
@@ -91,7 +91,7 @@ const buildVSDefinitions = (context: PositionContext, prefName?: string): vscode
   const def = new vscode.DocumentSymbol(
     name,
     '',
-    getDefType(context),
+    getDefinitionType(context),
     range,
     range
   )

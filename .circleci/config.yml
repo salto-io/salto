@@ -5,10 +5,28 @@ orbs:
   aws-s3: circleci/aws-s3@1.0.11
 
 commands:
-  package:
-    description: Create a native executable
+  upload_pkg:
     parameters:
-      out_dir:
+        workspace_dir:
+          type: string
+
+        out_filename:
+          type: string
+
+    steps:
+      - store_artifacts:
+          path: packages/<< parameters.workspace_dir >>/pkg
+          destination: pkg/<< parameters.out_filename >>
+
+      - aws-s3/copy:
+          from: packages/<< parameters.workspace_dir >>/pkg/*
+          to: s3://salto-cli-releases/${CIRCLE_BRANCH}/$(git log -1 --format=format:'%cd_%h' --date=format:'%Y%m%d-%H%M%S')/<< parameters.out_filename >>
+
+  package_cli:
+    description: Create a standalone CLI executable
+
+    parameters:
+      out_filename:
         type: string
 
     steps:
@@ -27,13 +45,9 @@ commands:
           name: Build native executable
           command: yarn workspace @salto/cli run package
 
-      - store_artifacts:
-          path: packages/cli/pkg
-          destination: pkg/<< parameters.out_dir >>
-
-      - aws-s3/copy:
-          from: packages/cli/pkg/*
-          to: s3://salto-cli-releases/${CIRCLE_BRANCH}/$(git log -1 --format=format:'%cd_%h' --date=format:'%Y%m%d-%H%M%S')/<< parameters.out_dir >>/
+      - upload_pkg:
+          workspace_dir: cli
+          out_filename: cli/<< parameters.out_filename >>
 
 jobs:
   build:
@@ -117,7 +131,7 @@ jobs:
           name: Upload coverage to codecov.io
           command: npx codecov -F e2e_test -f coverage/*.json
 
-  package_windows:
+  package_cli_windows:
     executor:
       name: win/vs2019
       shell: bash.exe
@@ -129,18 +143,18 @@ jobs:
           name: Install yarn
           command: npm i --g yarn
 
-      - package:
-          out_dir: "win"
+      - package_cli:
+          out_filename: "windows/salto.exe"
 
-  package_linux:
+  package_cli_linux:
     docker:
       - image: circleci/node:12.10
 
     steps:
-      - package:
-          out_dir: "linux"
+      - package_cli:
+          out_filename: "linux/salto"
 
-  package_osx:
+  package_cli_osx:
     macos:
       xcode: "11.0"
 
@@ -149,8 +163,24 @@ jobs:
           name: Install yarn
           command: npm i --g yarn
 
-      - package:
-          out_dir: "osx"
+      - package_cli:
+          out_filename: "osx/salto"
+
+  package_vscode_extension:
+    docker:
+      - image: circleci/node:12.10
+
+    steps:
+      - attach_workspace:
+          at: .
+
+      - run:
+          name: Create a VSIX file
+          command: yarn workspace salto-vscode package
+
+      - upload_pkg:
+          workspace_dir: salto-vscode
+          out_filename: vscode/salto.vsix
 
 workflows:
   version: 2
@@ -167,15 +197,19 @@ workflows:
           requires:
             - build
 
-      - package_windows:
+      - package_cli_windows:
           requires:
             - build
 
-      - package_linux:
+      - package_cli_linux:
           requires:
             - build
 
-      - package_osx:
+      - package_cli_osx:
+          requires:
+            - build
+
+      - package_vscode_extension:
           requires:
             - build
 
@@ -195,3 +229,18 @@ workflows:
           requires:
             - build
 
+      - package_cli_windows:
+          requires:
+            - build
+
+      - package_cli_linux:
+          requires:
+            - build
+
+      - package_cli_osx:
+          requires:
+            - build
+
+      - package_vscode_extension:
+          requires:
+            - build

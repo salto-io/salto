@@ -3,4 +3,4 @@ coverage
 dist
 .vscode-test
 /yarn.lock
-/*.vsix
+/pkg

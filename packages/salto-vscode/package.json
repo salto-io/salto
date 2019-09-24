@@ -8,8 +8,8 @@
     },
     "publisher": "salto",
     "repository": {
-      "type": "git",
-      "url": "https://github.com/salto-io/salto"
+        "type": "git",
+        "url": "https://github.com/salto-io/salto"
     },
     "categories": [
         "Other"
@@ -87,16 +87,14 @@
             }
         ],
         "iconThemes": [
-          {
-            "id": "salto_bp",
-            "label": "Salto BP",
-            "path": "./icons/salto-icon-theme.json"
-          }
+            {
+                "id": "salto_bp",
+                "label": "Salto BP",
+                "path": "./icons/salto-icon-theme.json"
+            }
         ]
     },
     "scripts": {
-        "vscode:prepublish": "yarn run build && yarn test",
-        "prepublishOnly": "yarn run create-yarn-lock && yarn test",
         "build": "yarn run lint && yarn run build-ts",
         "build-ts": "tsc",
         "watch": "tsc -w",
@@ -106,8 +104,7 @@
         "watch-test": "yarn run tsc-watch --onSuccess 'yarn run clean-ts-test'",
         "lint": "eslint --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
         "lint-fix": "yarn run lint -- --fix",
-        "create-yarn-lock": "cp ../../yarn.lock . && yarn workspaces run generate-lock-entry | sed '1,2d' | sed -n -e :a -e '1,1!{P;N;D;};N;ba' >> ./yarn.lock",
-        "package-vscode": "vsce package --yarn"
+        "package": "mkdir -p ./pkg && vsce package --yarn -o ./pkg/salto.vsix"
     },
     "dependencies": {
         "adapter-api": "0.1.0",
@@ -126,6 +123,7 @@
         "jest-core": "^0.0.0",
         "tslint": "^5.12.1",
         "typescript": "^3.3.1",
+        "vsce": "^1.66.0",
         "vscode-test": "^1.0.2"
     }
 }

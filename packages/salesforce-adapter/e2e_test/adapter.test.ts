@@ -771,9 +771,7 @@ describe('Salesforce adapter E2E with real account', () => {
             Types.salesforceDataTypes.picklist,
             {
               [Type.REQUIRED]: false,
-              // TODO: At this point we do not know how to pass a default value for a picklist
-              // (API fails for this field)
-              // [Type.DEFAULT]: 'NEW',
+              [Type.DEFAULT]: 'NEW',
               [constants.LABEL]: 'Picklist description label',
               values: ['NEW', 'OLD'],
               ...adminReadable,
@@ -862,6 +860,7 @@ describe('Salesforce adapter E2E with real account', () => {
             {
               [constants.LABEL]: 'Multipicklist description label',
               values: ['DO', 'RE', 'MI', 'FA', 'SOL', 'LA', 'SI'],
+              [Type.DEFAULT]: 'DO',
               [constants.FIELD_ANNOTATIONS.VISIBLE_LINES]: 4,
               ...adminReadable,
             },
@@ -967,6 +966,13 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(picklistField.label).toBe('Picklist description label')
       expect(picklistField.type).toBe('picklist')
       expect(_.isEqual((picklistField.picklistValues as PicklistEntry[]).map(value => value.label), ['NEW', 'OLD'])).toBeTruthy()
+      const picklistValueNew = (picklistField.picklistValues as PicklistEntry[]).filter(value => value.label === 'NEW')[0]
+      expect(picklistValueNew).toBeDefined()
+      expect(picklistValueNew.defaultValue).toEqual(true)
+      const picklistValueOld = (picklistField.picklistValues as PicklistEntry[]).filter(value => value.label === 'OLD')[0]
+      expect(picklistValueOld).toBeDefined()
+      expect(picklistValueOld.defaultValue).toEqual(false)
+
       // Verify currency
       const currencyField = allFields.filter(field => field.name === 'Alpha__c')[0]
       expect(currencyField).toBeDefined()
@@ -1021,6 +1027,12 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(multipicklist.type).toBe('multipicklist')
       expect(multipicklist.precision).toBe(4)
       expect(_.isEqual((multipicklist.picklistValues as PicklistEntry[]).map(value => value.label), ['DO', 'RE', 'MI', 'FA', 'SOL', 'LA', 'SI'])).toBeTruthy()
+      const multipicklistValueDo = (multipicklist.picklistValues as PicklistEntry[]).filter(value => value.label === 'DO')[0]
+      expect(multipicklistValueDo).toBeDefined()
+      expect(multipicklistValueDo.defaultValue).toEqual(true)
+      const multipicklistValueRe = (multipicklist.picklistValues as PicklistEntry[]).filter(value => value.label === 'RE')[0]
+      expect(multipicklistValueRe).toBeDefined()
+      expect(multipicklistValueRe.defaultValue).toEqual(false)
       // Verify percent
       const percentField = allFields.filter(field => field.name === 'India__c')[0]
       expect(percentField).toBeDefined()

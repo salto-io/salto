@@ -3,7 +3,7 @@ import {
   ObjectType, InstanceElement,
 } from 'adapter-api'
 
-import { serialize, deserialize } from '../../src/state/serializer'
+import { serialize, deserialize } from '../../src/serializer/elements'
 
 describe('State serialization', () => {
   const strType = new PrimitiveType({

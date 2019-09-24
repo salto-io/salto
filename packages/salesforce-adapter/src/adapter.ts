@@ -4,7 +4,6 @@ import {
 } from 'adapter-api'
 import {
   SaveResult, MetadataInfo, Field as SObjField, DescribeSObjectResult, QueryResult,
-  BulkLoadOperation,
 } from 'jsforce'
 import _ from 'lodash'
 import SalesforceClient, { Credentials } from './client/client'
@@ -13,7 +12,8 @@ import {
   toCustomField, toCustomObject, apiName, sfCase, fieldFullName, Types,
   getSObjectFieldElement, toMetadataInfo, createInstanceElement,
   metadataType, toMetadataPackageZip, toInstanceElements, createMetadataTypeElements,
-  toRecords,
+  InstanceElementstoRecords,
+  ElemIDstoRecords,
 } from './transformer'
 import layoutFilter from './filters/layouts'
 import fieldPermissionsFilter from './filters/field_permissions'
@@ -173,32 +173,9 @@ export default class SalesforceAdapter {
    * @param instancesIterator the iterator that provides the instances to delete
    * @returns a promise that represents action completion
    */
-  public async importInstancesOfType(type: ObjectType,
-    instancesIterator: AsyncIterable<InstanceElement>): Promise<void> {
-    await this.updateInstancesOfType(type, 'upsert', instancesIterator)
-  }
-
-  /**
-   * Deletes instances of type from the data stream
-   * @param type the object type of which to delete instances
-   * @param instancesIterator the iterator that provides the instances to delete
-   * @returns a promise that represents action completion
-   */
-  public async deleteInstancesOfType(type: ObjectType,
-    instancesIterator: AsyncIterable<InstanceElement>): Promise<void> {
-    await this.updateInstancesOfType(type, 'delete', instancesIterator)
-  }
-
-  /**
-   * Updates instances of type from the data stream
-   * @param type the object type of which to delete instances
-   * @param operation The type of operation to perform, such as upsert, delete, etc.
-   * @param instancesIterator the iterator that provides the instances to delete
-   * @returns a promise that represents action completion
-   */
-  private async updateInstancesOfType(type: ObjectType,
-    operation: BulkLoadOperation,
-    instancesIterator: AsyncIterable<InstanceElement>): Promise<void> {
+  public async importInstancesOfType(
+    instancesIterator: AsyncIterable<InstanceElement>
+  ): Promise<void> {
     let instances: InstanceElement[] = []
     // eslint-disable-next-line no-restricted-syntax
     for await (const instance of instancesIterator) {
@@ -206,12 +183,37 @@ export default class SalesforceAdapter {
       const length = instances.push(instance)
       if (length === RECORDS_CHUNK_SIZE) {
         // Convert the instances in the transformer to SfRecord[] and send to bulk API
-        await this.client.updateBulk(apiName(type), operation, toRecords(instances))
+        await this.client.updateBulk(apiName(instances[0].type), 'upsert', InstanceElementstoRecords(instances))
         instances = []
       }
     }
     // Send the remaining instances
-    await this.client.updateBulk(apiName(type), operation, toRecords(instances))
+    await this.client.updateBulk(apiName(instances[0].type), 'upsert', InstanceElementstoRecords(instances))
+  }
+
+  /**
+   * Deletes instances of type from the data stream
+   * @param type the object type of which to delete instances
+   * @param elemIdIterator the iterator that provides the instances to delete
+   * @returns a promise that represents action completion
+   */
+  public async deleteInstancesOfType(
+    type: ObjectType,
+    elemIdIterator: AsyncIterable<ElemID>
+  ): Promise<void> {
+    let elemIds: ElemID[] = []
+    // eslint-disable-next-line no-restricted-syntax
+    for await (const elemId of elemIdIterator) {
+      // Aggregate the instance elements for the proper bulk size
+      const length = elemIds.push(elemId)
+      if (length === RECORDS_CHUNK_SIZE) {
+        // Convert the instances in the transformer to SfRecord[] and send to bulk API
+        await this.client.updateBulk(apiName(type), 'delete', ElemIDstoRecords(elemIds))
+        elemIds = []
+      }
+    }
+    // Send the remaining instances
+    await this.client.updateBulk(apiName(type), 'delete', ElemIDstoRecords(elemIds))
   }
 
   /**

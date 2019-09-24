@@ -5,7 +5,6 @@ import {
   InstanceElement,
   Values,
 } from 'adapter-api'
-import _ from 'lodash'
 import * as constants from '../src/constants'
 import { Types, apiName } from '../src/transformer'
 import realAdapter from './adapter'
@@ -14,9 +13,10 @@ describe('Adapter E2E import-export related operations with real account', () =>
   const { adapter, client } = realAdapter()
 
   const sfLeadName = 'Lead'
+  const leadName = 'lead'
   const stringType = Types.salesforceDataTypes.text
 
-  const leadElemID = new ElemID(constants.SALESFORCE, 'lead')
+  const leadElemID = new ElemID(constants.SALESFORCE, leadName)
   const leadType = new ObjectType({
     elemID: leadElemID,
     fields: {
@@ -87,9 +87,8 @@ describe('Adapter E2E import-export related operations with real account', () =>
     const testLastName = 'Testorovich'
     const testCompany = 'Test inc.'
 
-    const elemID = new ElemID('salesforce')
     const testInstance = new InstanceElement(
-      elemID,
+      leadElemID,
       leadType,
       {
         Id: '',
@@ -110,7 +109,7 @@ describe('Adapter E2E import-export related operations with real account', () =>
         await client.destroy(testInstance.type.annotations[constants.API_NAME], ids)
       }
 
-      await adapter.importInstancesOfType(leadType, iter())
+      await adapter.importInstancesOfType(iter())
 
       // Test
       const queryString = `SELECT Id,${Object.values(leadType.fields).map(apiName)} 
@@ -133,7 +132,7 @@ describe('Adapter E2E import-export related operations with real account', () =>
       // Prepare
       const ids = await existingInstances(testInstance)
       if (ids.length < 1) {
-        await adapter.importInstancesOfType(leadType, iter())
+        await adapter.importInstancesOfType(iter())
       }
 
       const queryString = `SELECT Id,${Object.values(leadType.fields).map(apiName)} 
@@ -141,11 +140,13 @@ describe('Adapter E2E import-export related operations with real account', () =>
       AND Company='${testCompany}'`
       const queryResult = await client.runQuery(queryString)
       const leadForDeletion = queryResult.records[0] as Values
-      const instanceForDeletion = _.clone(testInstance)
-      instanceForDeletion.value.Id = leadForDeletion.Id
       const deletionIter = async function *mockSingleInstanceIterator(): AsyncIterable<
-      InstanceElement> {
-        yield instanceForDeletion
+      ElemID> {
+        yield new ElemID(
+          constants.SALESFORCE,
+          leadName,
+          leadForDeletion.Id
+        )
       }
       await adapter.deleteInstancesOfType(leadType, deletionIter())
 

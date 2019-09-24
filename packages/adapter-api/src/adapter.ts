@@ -1,4 +1,6 @@
-import { InstanceElement, ObjectType, Element } from './elements'
+import {
+  InstanceElement, ObjectType, Element, ElemID,
+} from './elements'
 
 export interface Adapter {
   discover(): Promise<Element[]>
@@ -6,8 +8,8 @@ export interface Adapter {
   remove(element: Element): Promise<void>
   update(before: Element, after: Element): Promise<Element>
   getInstancesOfType(type: ObjectType): AsyncIterable<InstanceElement[]>
-  importInstancesOfType(type: ObjectType, records: AsyncIterable<InstanceElement>): Promise<void>
-  deleteInstancesOfType(type: ObjectType, records: AsyncIterable<InstanceElement>): Promise<void>
+  importInstancesOfType(records: AsyncIterable<InstanceElement>): Promise<void>
+  deleteInstancesOfType(type: ObjectType, records: AsyncIterable<ElemID>): Promise<void>
 }
 
 export type AdapterCreator = {

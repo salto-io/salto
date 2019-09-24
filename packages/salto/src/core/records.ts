@@ -39,7 +39,22 @@ Promise<void> => {
   if (!adapter) {
     throw new Error(`Failed to find the adapter for the given type: ${type.elemID.getFullName()}`)
   }
-  await adapter.importInstancesOfType(type, instancesIterator(type, records))
+  await adapter.importInstancesOfType(instancesIterator(type, records))
+}
+
+// Convert the result to Instance Elements
+const recordToElementId = (type: ObjectType, record: Values):
+ElemID => new ElemID(SALESFORCE, type.elemID.name, record.Id)
+
+const elemIdsIterator = async function *elemIdsIterator(
+  type: ObjectType,
+  records: Values[]
+): AsyncIterable<ElemID> {
+  const instances = records.map(record => recordToElementId(type, record))
+  // eslint-disable-next-line no-restricted-syntax
+  for (const instance of instances) {
+    yield instance
+  }
 }
 
 export const deleteInstancesOfType = async (
@@ -49,5 +64,5 @@ Promise<void> => {
   if (!adapter) {
     throw new Error(`Failed to find the adapter for the given type: ${type.elemID.getFullName()}`)
   }
-  await adapter.deleteInstancesOfType(type, instancesIterator(type, records))
+  await adapter.deleteInstancesOfType(type, elemIdsIterator(type, records))
 }

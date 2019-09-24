@@ -183,9 +183,24 @@ describe('SalesforceAdapter import-export operations', () => {
       }
     }
 
+    const mockSingleElemIdIterator = async function *mockSingleElemIdIterator(): AsyncIterable<
+    ElemID> {
+      const values = ['aksdjghf', 'vrwcojgg', 'skldfgjh']
+      const elemIDs = values.map(value => new ElemID(
+        constants.SALESFORCE,
+        'test',
+        value
+      ))
+
+      // eslint-disable-next-line no-restricted-syntax
+      for (const elemID of elemIDs) {
+        yield elemID
+      }
+    }
+
     describe('Import (upsert) instances of type', () => {
       it('should call the bulk API with the correct object type name', async () => {
-        await adapter.importInstancesOfType(testType, mockSingleInstanceIterator())
+        await adapter.importInstancesOfType(mockSingleInstanceIterator())
         expect(mockLoad.mock.calls[0][0]).toEqual(testObjectType)
         expect(mockLoad.mock.calls[0][1]).toEqual('upsert')
       })
@@ -193,7 +208,7 @@ describe('SalesforceAdapter import-export operations', () => {
 
     describe('Delete instances of type', () => {
       it('should call the bulk API with the correct object type name', async () => {
-        await adapter.deleteInstancesOfType(testType, mockSingleInstanceIterator())
+        await adapter.deleteInstancesOfType(testType, mockSingleElemIdIterator())
         expect(mockLoad.mock.calls[0][0]).toEqual(testObjectType)
         expect(mockLoad.mock.calls[0][1]).toEqual('delete')
       })

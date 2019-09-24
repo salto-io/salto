@@ -3,7 +3,7 @@ import { Element } from 'adapter-api'
 import * as fs from 'async-file'
 import * as path from 'path'
 import os from 'os'
-import { serialize, deserialize } from './serializer'
+import { serialize, deserialize } from '../serializer/elements'
 
 export const STATEPATH = path.join(os.homedir(), '.salto/latest_state.bp')
 /**

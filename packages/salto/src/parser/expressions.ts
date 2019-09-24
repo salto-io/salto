@@ -22,7 +22,12 @@ const evaluate = (expression: HclExpression, baseId?: ElemID, sourceMap?: Source
       .chunk(2)
       .map(([keyExp, valExp]) => {
         const key = evaluate(keyExp)
-        return [key, evalSubExpression(valExp, key)]
+        // Change source start to include the key expression as well
+        const updatedValExp = {
+          ...valExp,
+          source: { ...valExp.source, start: keyExp.source.start },
+        }
+        return [key, evalSubExpression(updatedValExp, key)]
       })
       .fromPairs()
       .value(),

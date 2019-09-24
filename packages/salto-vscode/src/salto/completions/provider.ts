@@ -5,7 +5,7 @@ import {
   isSuggestions, inheritanceSuggestions, annoSuggestions, eqSugestions,
   annoValueSuggestions, instanceSuggestions, fieldSuggestions, fieldValueSuggestions,
 } from './suggestions'
-import { PositionContext } from '../context'
+import { PositionContext, EditorPosition } from '../context'
 import { SaltoWorkspace } from '../workspace'
 
 type LineType = 'empty'|'type'|'field'|'annotation'|'instance'|'attr'|'fieldList'|'annoList'
@@ -41,23 +41,38 @@ const getLineTokens = (line: string): string[] => (
     .filter(t => t !== 'list')
 )
 
-const getLineType = (context: PositionContext, lineTokens: string[]): LineType => {
-  if (context.type === 'type' && context.part === 'definition') {
+const isDef = (
+  context: PositionContext,
+  position: EditorPosition,
+): boolean => {
+  if (context.ref && context.ref.path.length > 0) {
+    return false
+  }
+  return (position.line === context.range.start.line)
+}
+
+const getLineType = (
+  context: PositionContext,
+  lineTokens: string[],
+  position: EditorPosition
+): LineType => {
+  const isDefLine = isDef(context, position)
+  if (context.type === 'type' && isDefLine) {
     return 'type'
   }
-  if (context.type === 'type' && context.part === 'body') {
+  if (context.type === 'type' && !isDefLine) {
     return 'field'
   }
-  if (context.type === 'field' && context.part === 'definition') {
+  if (context.type === 'field' && isDefLine) {
     return 'field'
   }
-  if (context.type === 'field' && context.part === 'body') {
+  if (context.type === 'field' && !isDefLine) {
     return (context.ref && context.ref.isList) ? 'annoList' : 'annotation'
   }
-  if (context.type === 'instance' && context.part === 'definition') {
+  if (context.type === 'instance' && isDefLine) {
     return 'instance'
   }
-  if (context.type === 'instance' && context.part === 'body') {
+  if (context.type === 'instance' && !isDefLine) {
     return (context.ref && context.ref.isList) ? 'fieldList' : 'attr'
   }
   // If we reached this point we are in global scope, which means that
@@ -103,10 +118,11 @@ const createCompletionItems = (
 export const provideWorkspaceCompletionItems = (
   workspace: SaltoWorkspace,
   context: PositionContext,
-  line: string
+  line: string,
+  position: EditorPosition
 ): SaltoCompletion[] => {
   const tokens = getLineTokens(removeLinePrefix(line))
-  const lineType = getLineType(context, tokens)
+  const lineType = getLineType(context, tokens, position)
   const suggestionsParams = { workspace, tokens, ref: context.ref }
   const lineSuggestions = LINE_SUGGESTIONS[lineType]
   const tokenSuggestions = lineSuggestions[tokens.length - 1]

@@ -1,5 +1,6 @@
 import * as path from 'path'
 import * as fs from 'async-file'
+
 import { initWorkspace, SaltoWorkspace } from '../../src/salto/workspace'
 import { getPositionContext } from '../../src/salto/context'
 
@@ -18,14 +19,12 @@ describe('Cursor context resolver', () => {
       const pos = { line: 1, col: 15 }
       const ctx = getPositionContext(workspace, bpContent, filename, pos)
       expect(ctx.type).toBe('type')
-      expect(ctx.part).toBe('definition')
     })
 
     it('should identify type body', () => {
       const pos = { line: 25, col: 1 }
       const ctx = getPositionContext(workspace, bpContent, filename, pos)
       expect(ctx.type).toBe('type')
-      expect(ctx.part).toBe('body')
     })
 
     // Mainly here so we will remember to change logic when elemID will reflect
@@ -33,14 +32,13 @@ describe('Cursor context resolver', () => {
       const pos = { line: 4, col: 1 }
       const ctx = getPositionContext(workspace, bpContent, filename, pos)
       expect(ctx.type).toBe('type')
-      expect(ctx.part).toBe('body')
     })
 
     it('should identify type element', () => {
       const pos = { line: 4, col: 1 }
       const ctx = getPositionContext(workspace, bpContent, filename, pos)
       expect(ctx.type).toBe('type')
-      expect(ctx.part).toBe('body')
+
       expect(ctx.ref && ctx.ref.element.elemID.getFullName()).toBe('salto_str')
     })
 
@@ -48,21 +46,19 @@ describe('Cursor context resolver', () => {
       const pos = { line: 22, col: 15 }
       const ctx = getPositionContext(workspace, bpContent, filename, pos)
       expect(ctx.type).toBe('field')
-      expect(ctx.part).toBe('definition')
     })
 
     it('should identify field body', () => {
       const pos = { line: 23, col: 19 }
       const ctx = getPositionContext(workspace, bpContent, filename, pos)
       expect(ctx.type).toBe('field')
-      expect(ctx.part).toBe('body')
     })
 
     it('should identify field element', () => {
       const pos = { line: 23, col: 19 }
       const ctx = getPositionContext(workspace, bpContent, filename, pos)
       expect(ctx.type).toBe('field')
-      expect(ctx.part).toBe('body')
+
       expect(ctx.ref && ctx.ref.element.elemID.getFullName()).toBe('salto_complex_object')
     })
   })
@@ -72,21 +68,19 @@ describe('Cursor context resolver', () => {
       const pos = { line: 32, col: 17 }
       const ctx = getPositionContext(workspace, bpContent, filename, pos)
       expect(ctx.type).toBe('instance')
-      expect(ctx.part).toBe('definition')
     })
 
     it('should identify instance body', () => {
       const pos = { line: 33, col: 1 }
       const ctx = getPositionContext(workspace, bpContent, filename, pos)
       expect(ctx.type).toBe('instance')
-      expect(ctx.part).toBe('body')
     })
 
     it('should identify intance element', () => {
       const pos = { line: 33, col: 1 }
       const ctx = getPositionContext(workspace, bpContent, filename, pos)
       expect(ctx.type).toBe('instance')
-      expect(ctx.part).toBe('body')
+
       expect(ctx.ref && ctx.ref.element.elemID.getFullName()).toBe('salto_inst')
     })
 
@@ -94,7 +88,7 @@ describe('Cursor context resolver', () => {
       const pos = { line: 35, col: 18 }
       const ctx = getPositionContext(workspace, bpContent, filename, pos)
       expect(ctx.type).toBe('instance')
-      expect(ctx.part).toBe('body')
+
       expect(ctx.ref && ctx.ref.path).toBe('obj')
     })
 
@@ -102,7 +96,7 @@ describe('Cursor context resolver', () => {
       const pos = { line: 51, col: 12 }
       const ctx = getPositionContext(workspace, bpContent, filename, pos)
       expect(ctx.type).toBe('instance')
-      expect(ctx.part).toBe('body')
+
       expect(ctx.ref && ctx.ref.isList).toBe(true)
       expect(ctx.ref && ctx.ref.path).toBe('arr')
     })
@@ -113,7 +107,6 @@ describe('Cursor context resolver', () => {
       const pos = { line: 19, col: 1 }
       const ctx = getPositionContext(workspace, bpContent, filename, pos)
       expect(ctx.type).toBe('global')
-      expect(ctx.part).toBe('body')
     })
   })
 })

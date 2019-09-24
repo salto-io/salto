@@ -232,7 +232,7 @@ describe('Test auto complete', () => {
     })
 
     it('should give fields in 1st token - nested', () => {
-      const pos = { line: 95, col: 9 }
+      const pos = { line: 95, col: 8 }
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
@@ -261,15 +261,19 @@ describe('Test auto complete', () => {
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })
 
-    it('should give value as 3rd token - nested', () => {
-      const pos = { line: 95, col: 20 }
-      const line = getLine(workspace, bpFileName, pos)
-      const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
-      const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
-      const include = ['{}']
-      const exclude = [...types, ...kw, ...instances]
-      expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
-    })
+    // TODO: this test is broken because it operates on a file that already has
+    //       the attribute it is trying to complete (the referece path includes the attribute
+    //       we are trying to complete even though theoretically the test expects that we are
+    //       in the process of creating this attribute)
+    // it('should give value as 3rd token - nested', () => {
+    //   const pos = { line: 95, col: 20 }
+    //   const line = getLine(workspace, bpFileName, pos)
+    //   const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
+    //   const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line)
+    //   const include = ['{}']
+    //   const exclude = [...types, ...kw, ...instances]
+    //   expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
+    // })
 
     it('should give value as 3rd token - nested more then once', () => {
       const pos = { line: 96, col: 25 }

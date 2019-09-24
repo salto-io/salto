@@ -9,7 +9,7 @@ export type ExpressionType = 'list'|'map'|'template'|'literal'|'reference'
 export type HclExpression = {
   type: ExpressionType
   expressions: HclExpression[]
-  source?: SourceRange
+  source: SourceRange
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   value?: any
 }

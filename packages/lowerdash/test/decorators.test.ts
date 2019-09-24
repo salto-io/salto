@@ -5,7 +5,6 @@ describe('decorators', () => {
     class MyClass {
       constructor(public value: number) { }
 
-      // eslint-disable-next-line @typescript-eslint/no-empty-function
       foo(): void {
         this.value += 1
       }
@@ -14,7 +13,6 @@ describe('decorators', () => {
         return Promise.resolve(`${p1}_${p2}_${this.value}`)
       }
 
-      // eslint-disable-next-line class-methods-use-this
       possiblyNotDecorated(p1: number): number {
         return p1 * this.value
       }
@@ -64,7 +62,6 @@ describe('decorators', () => {
     class MyClass {
       constructor(public value: number) { }
 
-      // eslint-disable-next-line @typescript-eslint/no-empty-function
       foo(): void {
         this.value += 1
       }
@@ -73,7 +70,6 @@ describe('decorators', () => {
         return Promise.resolve(`${p1}_${p2}_${this.value}`)
       }
 
-      // eslint-disable-next-line class-methods-use-this
       possiblyNotDecorated(p1: number): number {
         return p1 * this.value
       }

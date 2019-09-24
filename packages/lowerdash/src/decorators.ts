@@ -15,13 +15,12 @@ export const applyDecorator = <T extends { [K in keyof T]: T[K] }, TClass extend
   decorator: Decorator<T>,
   onlyMethodNames?: FunctionPropertyNames<T>[]
 ): void => {
-  const prototype = clazz.prototype
+  const { prototype } = clazz
 
   const methodNames = onlyMethodNames || (
     Object.getOwnPropertyNames(prototype) as FunctionPropertyNames<T>[]
   ).filter(f => f !== 'constructor')
 
-  console.dir({methodNames})
   const methods: Method<T>[] = methodNames.map(name => prototype[name]) as Method<T>[]
 
   Object.assign(

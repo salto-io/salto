@@ -1,13 +1,14 @@
 import * as vscode from 'vscode'
-import _ from 'lodash'
 import { provideWorkspaceCompletionItems } from './salto/completions/provider'
 import {
   getPositionContext, buildDefinitionsTree,
 } from './salto/context'
 import { provideWorkspaceDefinition } from './salto/definitions'
 import { provideWorkspaceReferences } from './salto/usage'
-import { saltoPosToVsPos, vsPosToSaltoPos, buildVSDefinitions, buildVSCompletionItems } from './adapters';
-import { SaltoWorkspace } from './salto/workspace';
+import {
+  saltoPosToVsPos, vsPosToSaltoPos, buildVSDefinitions, buildVSCompletionItems,
+} from './adapters'
+import { SaltoWorkspace } from './salto/workspace'
 
 export const createDocumentSymbolsProvider = (
   workspace: SaltoWorkspace

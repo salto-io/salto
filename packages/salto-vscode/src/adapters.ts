@@ -1,7 +1,6 @@
 import * as vscode from 'vscode'
-import _ from 'lodash'
 import { EditorPosition, PositionContext } from './salto/context'
-import { SaltoCompletion } from './salto/completions/provider';
+import { SaltoCompletion } from './salto/completions/provider'
 
 export const saltoPosToVsPos = (
   pos: EditorPosition
@@ -12,39 +11,41 @@ export const vsPosToSaltoPos = (pos: vscode.Position): EditorPosition => ({
   col: pos.character,
 })
 
-export const buildVSDefinitions = (context: PositionContext, prefName?: string): vscode.DocumentSymbol => {
-
-  const getDefinitionName = (context: PositionContext, prefName?: string): string => {
-    if (context.ref) {
-      if (context.ref.path) {
-        return context.ref.path
-      }
-      const fullName = context.ref.element.elemID.getFullName()
-      return (prefName) ? fullName.slice(prefName.length + 1) : fullName
+const getDefinitionName = (context: PositionContext, prefName?: string): string => {
+  if (context.ref) {
+    if (context.ref.path) {
+      return context.ref.path
     }
-    return 'global'
+    const fullName = context.ref.element.elemID.getFullName()
+    return (prefName) ? fullName.slice(prefName.length + 1) : fullName
   }
+  return 'global'
+}
 
-  const getDefinitionType = (context: PositionContext): number => {
-    if (context.ref && context.ref.isList) return vscode.SymbolKind.Array
-    if (context.type === 'field') {
-      return (context.ref && context.ref.path) 
-        ? vscode.SymbolKind.Variable 
-        : vscode.SymbolKind.Field
-    }
-    if (context.type === 'instance') {
-      return (context.ref && context.ref.path)
-        ? vscode.SymbolKind.Variable
-        : vscode.SymbolKind.Field
-    }
-    if (context.type === 'type') {
-      return (context.ref && context.ref.path) 
-        ? vscode.SymbolKind.Variable 
-        : vscode.SymbolKind.Class
-    }
-    return vscode.SymbolKind.File
+const getDefinitionType = (context: PositionContext): number => {
+  if (context.ref && context.ref.isList) return vscode.SymbolKind.Array
+  if (context.type === 'field') {
+    return (context.ref && context.ref.path)
+      ? vscode.SymbolKind.Variable
+      : vscode.SymbolKind.Field
   }
+  if (context.type === 'instance') {
+    return (context.ref && context.ref.path)
+      ? vscode.SymbolKind.Variable
+      : vscode.SymbolKind.Field
+  }
+  if (context.type === 'type') {
+    return (context.ref && context.ref.path)
+      ? vscode.SymbolKind.Variable
+      : vscode.SymbolKind.Class
+  }
+  return vscode.SymbolKind.File
+}
 
+export const buildVSDefinitions = (
+  context: PositionContext,
+  prefName?: string
+): vscode.DocumentSymbol => {
   const name = getDefinitionName(context, prefName)
   const range = new vscode.Range(
     saltoPosToVsPos(context.range.start),
@@ -57,13 +58,15 @@ export const buildVSDefinitions = (context: PositionContext, prefName?: string):
     range,
     range
   )
-  def.children = context.children 
-    ? context.children.map(c => buildVSDefinitions(c, name)) 
+  def.children = context.children
+    ? context.children.map(c => buildVSDefinitions(c, name))
     : []
   return def
 }
 
-export const buildVSCompletionItems = (completion: SaltoCompletion[]) => (
+export const buildVSCompletionItems = (
+  completion: SaltoCompletion[]
+): vscode.CompletionItem[] => (
   completion.map(({ label, reInvoke, insertText }) => {
     const item = new vscode.CompletionItem(label)
     item.insertText = new vscode.SnippetString(insertText)

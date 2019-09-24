@@ -1,11 +1,10 @@
 import * as vscode from 'vscode'
-import _ from 'lodash'
 import { initWorkspace } from './salto/workspace'
 import { onDidChangeConfiguration, onDidChangeTextDocument } from './events'
-import { 
-  createCompletionsProvider, createDefinitionsProvider, createReferenceProvider, 
-  createDocumentSymbolsProvider
-} from './providers';
+import {
+  createCompletionsProvider, createDefinitionsProvider, createReferenceProvider,
+  createDocumentSymbolsProvider,
+} from './providers'
 /**
  * This files act as a bridge between VSC and the salto specific functionality.
  */
@@ -37,7 +36,7 @@ export const activate = async (context: vscode.ExtensionContext): Promise<void> 
       { scheme: 'file', pattern: { base: rootPath, pattern: '**/*.bp' } },
       createReferenceProvider(workspace)
     )
-    
+
     const symbolsProvider = vscode.languages.registerDocumentSymbolProvider(
       { scheme: 'file', pattern: { base: rootPath, pattern: '**/*.bp' } },
       createDocumentSymbolsProvider(workspace)
@@ -48,8 +47,12 @@ export const activate = async (context: vscode.ExtensionContext): Promise<void> 
       definitionProvider,
       referenceProvider,
       symbolsProvider,
-      vscode.workspace.onDidChangeConfiguration(e => onDidChangeConfiguration(e, workspace, settings)),
-      vscode.workspace.onDidChangeTextDocument(e => onDidChangeTextDocument(e, workspace))
+      vscode.workspace.onDidChangeConfiguration(
+        e => onDidChangeConfiguration(e, workspace, settings)
+      ),
+      vscode.workspace.onDidChangeTextDocument(
+        e => onDidChangeTextDocument(e, workspace)
+      )
     )
   }
   // We need this log until the parse time will be shorter so we will know when to expect the plugin

@@ -1,5 +1,4 @@
 import * as vscode from 'vscode'
-import _ from 'lodash'
 import { initWorkspace, updateFile, SaltoWorkspace } from './salto/workspace'
 
 // This function is called whenever a file content is changed. The function will

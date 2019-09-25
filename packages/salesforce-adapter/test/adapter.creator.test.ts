@@ -4,7 +4,7 @@ import SalesforceClient from '../src/client/client'
 
 jest.mock('../src/client/client')
 
-describe('SalesforceAdapter creator', () => {
+describe('Salesforce AdapterCreator', () => {
   describe('when passed a config element', () => {
     const config = new InstanceElement(
       new ElemID('salesforce'),

@@ -1,9 +1,8 @@
 import _ from 'lodash'
 import wu from 'wu'
 
-import { Element, ObjectType, InstanceElement } from 'adapter-api'
+import { Element, Adapter } from 'adapter-api'
 import { getPlan, DetailedChange } from './plan'
-import initAdapters from './adapters/adapters'
 import { mergeElements } from './merger'
 import { validateElements } from './validator'
 
@@ -11,12 +10,6 @@ type DiscoverChangesResult = {
   changes: Iterable<DetailedChange>
   elements: Element[]
 }
-
-const configToChange = (config: InstanceElement): DetailedChange => ({
-  id: config.elemID,
-  action: 'add',
-  data: { after: config },
-})
 
 export const getUpstreamChanges = (
   stateElements: ReadonlyArray<Element>,
@@ -52,18 +45,11 @@ export const getUpstreamChanges = (
 }
 
 export const discoverChanges = async (
-  workspaceElements: ReadonlyArray<Element>,
   stateElements: ReadonlyArray<Element>,
-  fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
+  adapters: Record<string, Adapter>,
 ): Promise<DiscoverChangesResult> => {
-  const [adapters, newConfigs] = await initAdapters(workspaceElements, fillConfig)
   const upstreamElements = _.flatten(await Promise.all(
     Object.values(adapters).map(adapter => adapter.discover())
   ))
-
-  const result = getUpstreamChanges(stateElements, upstreamElements)
-  return {
-    ...result,
-    changes: wu.chain(result.changes, newConfigs.map(configToChange)),
-  }
+  return getUpstreamChanges(stateElements, upstreamElements)
 }

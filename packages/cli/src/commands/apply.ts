@@ -5,9 +5,10 @@ import {
   CliCommand, CliOutput, ParsedCliInput, WriteStream,
 } from '../types'
 import {
-  formatItemStart, formatItemInProgress, formatItemDone,
+  formatItemStart, formatItemInProgress, formatItemDone, formatMetrics,
 } from '../formatter'
 import { shouldApply, getConfigFromUser } from '../callbacks'
+import MetricsCollector from '../metrics-collector'
 
 
 const CURRENT_ACTION_POLL_INTERVAL = 5000
@@ -56,11 +57,16 @@ export class ApplyCommand implements CliCommand {
     const config = await loadConfig(this.workspaceDir)
     try {
       const workspace: Workspace = await Workspace.load(config)
-      await apply(workspace,
+      const metrics = new MetricsCollector()
+      const result = await apply(workspace,
         getConfigFromUser,
         shouldApply({ stdout: this.stdout, stderr: this.stderr }),
-        (action: PlanItem) => this.updateCurrentAction(action), this.force)
+        (action: PlanItem) => this.updateCurrentAction(action), this.force,
+        metrics)
       this.endCurrentAction()
+      if (result.sucesses) {
+        this.stdout.write(formatMetrics(metrics.getAll()))
+      }
     } catch (e) {
       this.endCurrentAction()
       const errorSource = sourceMapSupport.getErrorSource(e)

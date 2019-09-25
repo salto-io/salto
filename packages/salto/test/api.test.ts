@@ -3,13 +3,13 @@ import {
   ElemID, InstanceElement, ObjectType, AdapterCreator, Field, BuiltinTypes,
 } from 'adapter-api'
 import { Config } from 'src/workspace/config'
-import * as commands from '../../src/api'
-import State from '../../src/state/state'
-import adapterCreators from '../../src/core/adapters/creators'
+import * as api from '../src/api'
+import State from '../src/state/state'
+import adapterCreators from '../src/core/adapters/creators'
 
-import * as plan from '../../src/core/plan'
-import { Workspace } from '../../src/workspace/workspace'
-import { SearchResult, FoundSearchResult } from '../../src/core/search'
+import * as plan from '../src/core/plan'
+import { Workspace } from '../src/workspace/workspace'
+import { SearchResult, FoundSearchResult } from '../src/core/search'
 
 const mockAdd = jest.fn(async ap => {
   if (ap.elemID.name === 'fail') {
@@ -112,7 +112,7 @@ describe('api functions', () => {
   }
 
   describe('Test commands.ts and core.ts', () => {
-    const blueprintsDirectory = path.join(__dirname, '../../../test', 'blueprints')
+    const blueprintsDirectory = path.join(__dirname, '../../test', 'blueprints')
 
     const filePath = (filename: string): string => path.join(blueprintsDirectory, filename)
 
@@ -150,7 +150,7 @@ describe('api functions', () => {
         additionalBlueprints: [filePath('missing.bp')],
       }
       const ws: Workspace = await Workspace.load(config)
-      await expect(commands.apply(
+      await expect(api.apply(
         ws,
         mockGetConfigFromUser,
         mockShouldApplyYes,
@@ -165,7 +165,7 @@ describe('api functions', () => {
         additionalBlueprints: [filePath('fail.bp')],
       }
       const ws: Workspace = await Workspace.load(config)
-      await expect(commands.apply(
+      await expect(api.apply(
         ws,
         mockGetConfigFromUser,
         mockShouldApplyYes,
@@ -187,14 +187,14 @@ describe('api functions', () => {
 
       it('should create an apply plan using the plan method', async () => {
         const spy = jest.spyOn(plan, 'getPlan')
-        await commands.plan(
+        await api.plan(
           ws
         )
         expect(spy).toHaveBeenCalled()
       })
 
       it('should apply an apply plan', async () => {
-        await commands.apply(
+        await api.apply(
           ws,
           mockGetConfigFromUser,
           mockShouldApplyYes,
@@ -206,7 +206,7 @@ describe('api functions', () => {
       it('should apply plan with remove based on state', async () => {
         State.prototype.get = jest.fn().mockImplementation(() =>
           Promise.resolve([new ObjectType({ elemID: new ElemID('salesforce', 'employee') })]))
-        await commands.apply(
+        await api.apply(
           ws,
           mockGetConfigFromUser,
           mockShouldApplyYes,
@@ -222,7 +222,7 @@ describe('api functions', () => {
         State.prototype.get = mockStateGet
         const mockStateUpdate = jest.fn().mockImplementation(() => Promise.resolve())
         State.prototype.update = mockStateUpdate
-        await commands.apply(
+        await api.apply(
           ws,
           mockGetConfigFromUser,
           mockShouldApplyYes,
@@ -234,7 +234,7 @@ describe('api functions', () => {
       })
 
       it('should describe an element', async () => {
-        const res: SearchResult = await commands.describeElement(ws, ['salesforce_settings'])
+        const res: SearchResult = await api.describeElement(ws, ['salesforce_settings'])
         expect(res).not.toBe(null)
         expect((res as FoundSearchResult).element.elemID.name).toBe('settings')
       })
@@ -263,7 +263,7 @@ describe('api functions', () => {
 
       describe('export', () => {
         it('should complete successfully', async () => {
-          const returnedIterator = await commands.exportToCsv(
+          const returnedIterator = await api.exportToCsv(
             testType.elemID.getFullName(),
             ws,
             mockGetConfigFromUser
@@ -289,7 +289,7 @@ describe('api functions', () => {
 
       describe('import', () => {
         it('should complete import successfully', async () => {
-          await commands.importFromCsvFile(
+          await api.importFromCsvFile(
             testType.elemID.getFullName(),
             [],
             ws,
@@ -301,7 +301,7 @@ describe('api functions', () => {
 
       describe('delete', () => {
         it('should complete delete successfully', async () => {
-          await commands.deleteFromCsvFile(
+          await api.deleteFromCsvFile(
             testType.elemID.getFullName(),
             [],
             ws,
@@ -329,7 +329,7 @@ describe('api functions', () => {
 
     describe('from empty state', () => {
       beforeEach(async () => {
-        await commands.discover(mockWorkspace, mockGetConfigFromUser)
+        await api.discover(mockWorkspace, mockGetConfigFromUser)
       })
       it('should add newly discovered elements and configs to workspace', () => {
         const mockBlueprintUpdate = mockWorkspace.updateBlueprints as jest.Mock
@@ -351,7 +351,7 @@ describe('api functions', () => {
         State.prototype.get = jest.fn().mockImplementationOnce(
           () => Promise.resolve(discoveredElements)
         )
-        await commands.discover(mockWorkspace, mockGetConfigFromUser)
+        await api.discover(mockWorkspace, mockGetConfigFromUser)
       })
       it('should not update anything in the workspace except for the new config', () => {
         const mockBlueprintUpdate = mockWorkspace.updateBlueprints as jest.Mock

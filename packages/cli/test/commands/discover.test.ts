@@ -1,11 +1,20 @@
 import {
   discover as mockDiscover,
   Workspace as mockWorksapce,
+  Workspace,
 } from 'salto'
+import { InstanceElement, ObjectType, Metrics } from 'adapter-api'
 import { command } from '../../src/commands/discover'
+import Prompts from '../../src/prompts'
+import { MockWriteStream, discover } from '../mocks'
 
 jest.mock('salto', () => ({
-  discover: jest.fn().mockImplementation(() => Promise.resolve()),
+  discover: jest.fn().mockImplementation(
+    (_workspace: Workspace,
+      _fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
+      metrics?: Metrics) =>
+      (discover(_workspace, _fillConfig, metrics))
+  ),
   Workspace: {
     load: jest.fn().mockImplementation(
       config => ({ config, hasErrors: () => false }),
@@ -18,15 +27,21 @@ jest.mock('salto', () => ({
 
 describe('discover command', () => {
   const workspaceDir = 'dummy_dir'
-  // const additaionFiles = ['dummy_filename.bp']
+  let cliOutput: { stdout: MockWriteStream; stderr: MockWriteStream }
+
   describe('with a valid workspace', () => {
     beforeEach(async () => {
-      await command(workspaceDir).execute()
+      cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
+      await command(workspaceDir, cliOutput).execute()
     })
     it('should run discover with workspace loaded from provided directory', () => {
       const discoverCalls = (mockDiscover as jest.Mock).mock.calls
       expect(discoverCalls).toHaveLength(1)
       expect(discoverCalls[0][0].config.baseDir).toEqual(workspaceDir)
+    })
+
+    it('should print statistics', async () => {
+      expect(cliOutput.stdout.content.search(Prompts.STATISTICS)).toBeGreaterThan(0)
     })
   })
   describe('with errored workspace', () => {
@@ -43,7 +58,7 @@ describe('discover command', () => {
     })
     it('should fail', async () => {
       await expect(
-        command(workspaceDir).execute()
+        command(workspaceDir, cliOutput).execute()
       ).rejects.toThrow(/Failed to load/)
     })
   })

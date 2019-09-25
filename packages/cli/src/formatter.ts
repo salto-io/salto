@@ -1,3 +1,4 @@
+import Table from 'cli-table'
 import _ from 'lodash'
 import chalk from 'chalk'
 import wu from 'wu'
@@ -9,7 +10,6 @@ import {
   Plan, PlanItem, FoundSearchResult, SearchResult, DetailedChange,
 } from 'salto'
 import Prompts from './prompts'
-
 
 const header = (txt: string): string => chalk.bold(txt)
 const subHeader = (txt: string): string => chalk.grey(txt)
@@ -223,4 +223,22 @@ export const formatItemInProgress = (action: PlanItem, start: Date): string => {
   return body(`${planItemName(action)}: Still ${
     Prompts.STARTACTION[action.parent().action]
   }... (${elapsedRound}s elapsed)`)
+}
+
+export const formatMetrics = (metrics: Map<string, number>): string => {
+  const values = wu(metrics.entries())
+    .filter(([key, _val]) => key.startsWith('API-'))
+    .reject(([_key, val]) => val < 10)
+    .map(([key, val]) => ([key.substring(4), val]))
+    .toArray()
+  if (values.length === 0) {
+    return ''
+  }
+  const table = new Table({ head: ['API Calls', 'Counter'] })
+  table.push(...values)
+  return [
+    emptyLine(),
+    header(Prompts.STATISTICS),
+    table.toString(),
+  ].join('\n')
 }

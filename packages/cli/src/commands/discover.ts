@@ -2,8 +2,10 @@ import { discover, Workspace, loadConfig } from 'salto'
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput } from '../types'
 import { getConfigFromUser } from '../callbacks'
+import { formatMetrics } from '../formatter'
+import MetricsCollector from '../metrics-collector'
 
-export const command = (workspaceDir: string): CliCommand => ({
+export const command = (workspaceDir: string, { stdout }: CliOutput): CliCommand => ({
   async execute(): Promise<void> {
     const config = await loadConfig(workspaceDir)
     const workspace = await Workspace.load(config)
@@ -12,7 +14,11 @@ export const command = (workspaceDir: string): CliCommand => ({
         `Failed to load workspace, errors:\n${workspace.errors.strings().join('\n')}`
       )
     }
-    await discover(workspace, getConfigFromUser)
+    const metrics = new MetricsCollector()
+    const result = await discover(workspace, getConfigFromUser, metrics)
+    if (result.sucesses) {
+      stdout.write(formatMetrics(metrics.getAll()))
+    }
   },
 })
 
@@ -37,8 +43,8 @@ const discoverBuilder = createCommandBuilder({
     },
   },
 
-  async build(input: DiscoverParsedCliInput, _output: CliOutput) {
-    return command(input.args['workspace-dir'])
+  async build(input: DiscoverParsedCliInput, output: CliOutput) {
+    return command(input.args['workspace-dir'], output)
   },
 })
 

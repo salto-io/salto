@@ -1,6 +1,7 @@
 import {
   InstanceElement, ObjectType, Element, ElemID,
 } from './elements'
+import { Metrics } from './metrics'
 
 export interface Adapter {
   discover(): Promise<Element[]>
@@ -13,6 +14,6 @@ export interface Adapter {
 }
 
 export type AdapterCreator = {
-  create: (opts: { config: InstanceElement }) => Adapter
+  create: (opts: { config: InstanceElement; metrics?: Metrics }) => Adapter
   configType: ObjectType
 }

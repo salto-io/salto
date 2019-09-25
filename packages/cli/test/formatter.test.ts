@@ -1,7 +1,9 @@
 import {
   Element, ObjectType, InstanceElement, PrimitiveType, ElemID, PrimitiveTypes, BuiltinTypes,
 } from 'adapter-api'
-import { formatSearchResults, formatPlan, formatChange } from '../src/formatter'
+import {
+  formatSearchResults, formatPlan, formatChange, formatMetrics,
+} from '../src/formatter'
 import { elements, plan, detailedChange } from './mocks'
 
 describe('formatter', () => {
@@ -123,6 +125,19 @@ describe('formatter', () => {
       it('should have annotation types', () => {
         expect(output).toMatch(/\+.*salesforce_office.*annotations.*label.*TYPE: string/s)
       })
+    })
+  })
+
+  describe('formatMetrics', () => {
+    const table = formatMetrics(new Map<string, number>([
+      ['API-metric1', 5],
+      ['API-metric2', 10],
+      ['metric3', 10]]))
+
+    it('should format metrics', () => {
+      expect(table).toMatch(/.*metric2.*/)
+      expect(table).not.toMatch(/.*metric1.*/)
+      expect(table).not.toMatch(/.*metric3.*/)
     })
   })
 })

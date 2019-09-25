@@ -1,5 +1,6 @@
+import wu from 'wu'
 import {
-  ObjectType, InstanceElement, Element, Value,
+  ObjectType, InstanceElement, Element, Value, Metrics,
 } from 'adapter-api'
 import {
   applyActions,
@@ -9,13 +10,17 @@ import {
 } from './core/records'
 import initAdapters from './core/adapters/adapters'
 import {
-  getPlan, Plan, PlanItem,
+  getPlan, Plan, PlanItem, DetailedChange,
 } from './core/plan'
 import State from './state/state'
 import { findElement, SearchResult } from './core/search'
 
 import { Workspace } from './workspace/workspace'
 import { discoverChanges } from './core/discover'
+
+export interface Result {
+  sucesses: boolean
+}
 
 const applyActionOnState = async (
   state: State,
@@ -40,13 +45,14 @@ export const apply = async (
   fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
   shouldApply: (plan: Plan) => Promise<boolean>,
   reportProgress: (action: PlanItem) => void,
-  force = false
-): Promise<Plan> => {
+  force = false,
+  metrics?: Metrics,
+): Promise<Result> => {
   const state = new State(workspace.config.stateLocation)
   try {
     const actionPlan = getPlan(await state.get(), workspace.elements)
     if (force || await shouldApply(actionPlan)) {
-      const [adapters] = await initAdapters(workspace.elements, fillConfig)
+      const [adapters] = await initAdapters(workspace.elements, fillConfig, metrics)
       await applyActions(
         actionPlan,
         adapters,
@@ -54,7 +60,7 @@ export const apply = async (
         (action, element) => applyActionOnState(state, action, element)
       )
     }
-    return actionPlan
+    return { sucesses: true }
   } finally {
     await state.flush()
   }
@@ -63,14 +69,23 @@ export const apply = async (
 export const discover = async (
   workspace: Workspace,
   fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
-): Promise<void> => {
+  metrics?: Metrics,
+): Promise<Result> => {
+  const configToChange = (config: InstanceElement): DetailedChange => ({
+    id: config.elemID,
+    action: 'add',
+    data: { after: config },
+  })
   const state = new State(workspace.config.stateLocation)
-  const { changes, elements } = await discoverChanges(
-    workspace.elements, await state.get(), fillConfig
-  )
+  const [adapters, newConfigs] = await initAdapters(workspace.elements, fillConfig, metrics)
+
+  const { changes, elements } = await discoverChanges(await state.get(), adapters)
+
   state.override(elements)
-  await workspace.updateBlueprints(...changes)
+  await workspace.updateBlueprints(...wu.chain(changes, newConfigs.map(configToChange)))
   await Promise.all([workspace.flush(), state.flush()])
+
+  return { sucesses: true }
 }
 
 export const describeElement = async (

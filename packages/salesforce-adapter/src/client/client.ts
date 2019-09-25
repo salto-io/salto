@@ -1,4 +1,4 @@
-import { inspect } from 'util'
+import { inspect, isObject } from 'util'
 import _ from 'lodash'
 import { collections, decorators } from '@salto/lowerdash'
 import {
@@ -17,7 +17,7 @@ import {
   RecordResult,
   BulkLoadOperation,
 } from 'jsforce'
-import { Value } from 'adapter-api'
+import { Value, Metrics } from 'adapter-api'
 import { CompleteSaveResult } from './types'
 import Connection from './jsforce'
 
@@ -93,6 +93,7 @@ export type SalesforceClientOpts = {
   credentials: Credentials
   connection?: Connection
   logger?: Logger
+  metrics?: Metrics
 }
 
 const realConnection = (isSandbox: boolean): Connection => {
@@ -100,6 +101,7 @@ const realConnection = (isSandbox: boolean): Connection => {
     version: API_VERSION,
     loginUrl: `https://${isSandbox ? 'test' : 'login'}.salesforce.com/`,
   })
+
   // Set poll interval and timeout for deploy
   connection.metadata.pollInterval = 3000
   connection.metadata.pollTimeout = 60000
@@ -117,6 +119,24 @@ const sendChunked = async <TIn, TOut>(input: TIn | TIn[],
   return _.flatten(results)
 }
 
+// eslint-disable-next-line @typescript-eslint/ban-types
+const withMetricsReport = <T extends Object>(origin: T, metrics: Metrics,
+  prefix = 'API.SFDC'): T =>
+    new Proxy(origin, {
+      get(obj: T, key: string | number | symbol) {
+        const prop = Object.getOwnPropertyDescriptor(obj, key)
+        if (prop === undefined) {
+          return prop
+        }
+        const metric = `${prefix}.${key.toString()}`
+        if (isObject(prop.value)) {
+          return withMetricsReport(prop.value, metrics, metric)
+        }
+        metrics.report(metric, 1)
+        return prop.value
+      },
+    })
+
 export default class SalesforceClient {
   private readonly conn: Connection
   private isLoggedIn = false
@@ -124,10 +144,14 @@ export default class SalesforceClient {
   private readonly logger: Logger
 
   constructor(
-    { credentials, connection, logger }: SalesforceClientOpts
+    {
+      credentials, connection, logger, metrics,
+    }: SalesforceClientOpts
   ) {
     this.credentials = credentials
-    this.conn = connection || realConnection(credentials.isSandbox)
+    const conn = connection || realConnection(credentials.isSandbox)
+    this.conn = metrics ? withMetricsReport(conn, metrics) : conn
+
     this.logger = logger || console
   }
 
@@ -142,10 +166,10 @@ export default class SalesforceClient {
   protected static requiresLogin = decorators.wrapMethodWith(
     async function withLogin(
       this: SalesforceClient,
-      originalMethod: decorators.OriginalCall
+      { call }: decorators.OriginalCall
     ): Promise<unknown> {
       await this.ensureLoggedIn()
-      return originalMethod.call()
+      return call()
     }
   )
 

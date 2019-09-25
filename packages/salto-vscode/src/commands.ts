@@ -1,6 +1,6 @@
 import * as vscode from 'vscode'
 import { InstanceElement, ElemID, ObjectType, Values, isPrimitiveType, PrimitiveTypes, Value } from 'adapter-api'
-import { plan, Plan, apply, PlanItem } from 'salto'
+import { plan, Plan, apply, PlanItem, Result } from 'salto'
 import { EditorWorkspace } from './salto/workspace'
 import { displayError, getBooleanInput, displayHTML, getStringInput, getNumberInput, hrefToUri } from './output'
 import { getActionName, renderDiffView, createPlanDiff } from './format'
@@ -72,7 +72,7 @@ export const applyCommand = async (
   extensionPath: string
 ): Promise<void> => {
   const initApplyProgress = async (
-    processPromise: Promise<Plan>,
+    processPromise: Promise<Result>,
   ): Promise<vscode.Progress<{message: string}>> => (
     new Promise<vscode.Progress<{message: string}>>(resolve => {
       vscode.window.withProgress({
@@ -87,7 +87,7 @@ export const applyCommand = async (
     }))
 
   let progress: vscode.Progress<{message: string}>
-  let applyProcess: Promise<Plan>
+  let applyProcess: Promise<Result>
   const shouldApplyCB = async (p: Plan): Promise<boolean> => shouldApply(p, extensionPath)
   // A delayed initiation for the apply progress bar. We don't want to show it until
   // the actions start taking place (just running the apply in progress would cause

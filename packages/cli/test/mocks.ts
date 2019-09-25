@@ -1,10 +1,11 @@
 import _ from 'lodash'
 import wu from 'wu'
 import {
-  Type, BuiltinTypes, ElemID, Change, ObjectType, Field, InstanceElement, Element, getChangeElement,
+  Type, BuiltinTypes, ElemID, Change, ObjectType, Field, InstanceElement, Element,
+  getChangeElement, Metrics,
 } from 'adapter-api'
 import {
-  Plan, PlanItem, SearchResult, DetailedChange, Workspace,
+  Plan, PlanItem, SearchResult, DetailedChange, Workspace, Result,
 } from 'salto'
 import { GroupedNodeMap } from '@salto/dag'
 import { YargsCommandBuilder } from '../src/command_builder'
@@ -152,7 +153,7 @@ export const elements = (): Element[] => {
 }
 
 export const detailedChange = (
-  action: 'add'|'modify'|'remove', path: string[],
+  action: 'add' | 'modify' | 'remove', path: string[],
   /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
   before: any, after: any,
 ): DetailedChange => {
@@ -167,7 +168,7 @@ export const detailedChange = (
 }
 
 export const plan = (): Plan => {
-  const change = (action: 'add'|'modify'|'remove', ...path: string[]): Change => {
+  const change = (action: 'add' | 'modify' | 'remove', ...path: string[]): Change => {
     const elemID = new ElemID('salesforce', ...path)
     if (action === 'add') {
       return { action, data: { after: new ObjectType({ elemID }) } }
@@ -266,16 +267,32 @@ export const apply = async (
   _fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
   shouldApply: (plan: Plan) => Promise<boolean>,
   reportProgress: (action: PlanItem) => void,
-  force = false
-): Promise<Plan> => {
-  const changes = await plan()
+  force: boolean,
+  metrics?: Metrics,
+): Promise<Result> => {
+  const changes = plan()
   if (force || await shouldApply(changes)) {
     wu(changes.itemsByEvalOrder()).forEach(change => {
+      if (metrics) {
+        metrics.report(`API-${change.parent}`, 10)
+      }
       reportProgress(change)
     })
   }
 
-  return changes
+  return { sucesses: true }
+}
+
+export const discover = (
+  _workspace: Workspace,
+  _fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
+  metrics?: Metrics,
+): Result => {
+  if (metrics) {
+    metrics.report('API-discover', 10)
+  }
+
+  return { sucesses: true }
 }
 
 export const describe = async (_searchWords: string[]):
@@ -322,5 +339,5 @@ export const exportToCsv = async (_typeId: string, _workspace: Workspace,
     ))
   }())
 
-export const importFromCsvFile = async (): Promise<void> => {}
-export const deleteFromCsvFile = async (): Promise<void> => {}
+export const importFromCsvFile = async (): Promise<void> => { }
+export const deleteFromCsvFile = async (): Promise<void> => { }

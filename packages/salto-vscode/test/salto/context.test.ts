@@ -96,7 +96,7 @@ describe('Cursor context resolver', () => {
     //       since the file being analyzed has the attribute in question defined the context
     //       gets the wrong ref.path value
     // eslint-disable-next-line jest/no-disabled-tests
-    it.skip('should identify instance list', () => {
+    it('should identify instance list', () => {
       const pos = { line: 51, col: 12 }
       const ctx = getPositionContext(workspace, bpContent, filename, pos)
       expect(ctx.type).toBe('instance')

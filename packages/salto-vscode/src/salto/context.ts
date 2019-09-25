@@ -72,8 +72,8 @@ const getContextReference = (
   // Now all we need is to find the element with the longest fullName
   const element = _.maxBy(candidates, e => e.elemID.getFullName().length)
   if (element) {
-    const rangeContext = getText(fileContent, contextRange.range)
-    const isList = rangeContext[0] === '['
+    const rangeContent = getText(fileContent, contextRange.range)
+    const isList = _.last(rangeContent) === ']'
     // The part of the range name which is not in the element name is the path
     const path = contextRange.name.slice(element.elemID.getFullName().length + 1)
     return { element, path, isList }

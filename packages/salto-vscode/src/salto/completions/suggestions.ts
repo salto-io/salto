@@ -34,13 +34,13 @@ const getRestrictionValues = (annotatingElem: Type|Field, valueType: Type): Valu
 }
 
 export const valueSuggestions = (
-  ref: ContextReference,
+  attrName: string,
   annotatingElem: Type|Field,
   valueType: Type
 ): Suggestions => {
   // If the annotating element is a list and we are not in a list content
   // we need to created one
-  if (isField(annotatingElem) && annotatingElem.isList && !ref.isList) {
+  if (isField(annotatingElem) && annotatingElem.isList && attrName) {
     return [{ label: '[]', insertText: '[$0]' }]
   }
 
@@ -69,14 +69,17 @@ export const fieldSuggestions = (params: SuggestionsParams): Suggestions => {
 export const fieldValueSuggestions = (params: SuggestionsParams): Suggestions => {
   if (!(params.ref && isInstanceElement(params.ref.element))) return []
   const attrName = params.tokens[0]
-  const refType = (params.ref.path)
-    ? getFieldType(params.ref.element.type, params.ref.path.split(ElemID.NAMESPACE_SEPERATOR))
+  const refPath = (attrName)
+    ? params.ref.path.replace(new RegExp(`${attrName}$`), '')
+    : params.ref.path
+  const refType = (refPath)
+    ? getFieldType(params.ref.element.type, refPath.split(ElemID.NAMESPACE_SEPERATOR))
     : params.ref.element.type
 
   const valueField = (attrName && isObjectType(refType)) ? refType.fields[attrName]
-    : getField(params.ref.element.type, params.ref.path.split('_'))
+    : getField(params.ref.element.type, refPath.split(ElemID.NAMESPACE_SEPERATOR))
 
-  return (valueField) ? valueSuggestions(params.ref, valueField, valueField.type) : []
+  return (valueField) ? valueSuggestions(attrName, valueField, valueField.type) : []
 }
 
 export const annoSuggestions = (params: SuggestionsParams): Suggestions => {
@@ -102,13 +105,15 @@ export const annoValueSuggestions = (params: SuggestionsParams): Suggestions => 
   if (!(params.ref && isField(params.ref.element))) return []
   const annoName = params.tokens[0]
   const annoType = params.ref.element.type.annotationTypes[annoName]
-  if (annoType && params.ref.path) {
-    const annoPath = params.ref.path.slice(annoName.length)
-    const attrField = getField(annoType, annoPath.split(' '))
-    return (attrField) ? valueSuggestions(params.ref, attrField, attrField.type) : []
+  const refPath = (annoName)
+    ? params.ref.path.replace(new RegExp(`${annoName}$`), '')
+    : params.ref.path
+  if (annoType && refPath) {
+    const attrField = getField(annoType, refPath.split('_'))
+    return (attrField) ? valueSuggestions(annoName, attrField, attrField.type) : []
   }
   if (annoType) {
-    return valueSuggestions(params.ref, annoType, annoType)
+    return valueSuggestions(annoName, annoType, annoType)
   }
   return []
 }

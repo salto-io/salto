@@ -58,15 +58,11 @@ const getText = (content: string, range: EditorRange): string => {
 // scope in which contains the ref, and its internal path
 const getContextReference = (
   fileContent: string,
-  mergedElements: Element[],
+  refElements: Element[],
   contextRange: NamedRange
 ): ContextReference | undefined => {
-  // using map + flatten and not reduce for performance
-  const elementAndFields: Element[] = _(mergedElements).map(e => (
-    (isObjectType(e)) ? [..._.values(e.fields), e] : [e]
-  )).flatten().value()
   // If the range is contained in the element, then the elementID is a prefix of the refName
-  const candidates = elementAndFields.filter(e =>
+  const candidates = refElements.filter(e =>
     // using index of and not startsWith for performance
     contextRange.name.indexOf(e.elemID.getFullName()) === 0)
   // Now all we need is to find the element with the longest fullName
@@ -112,7 +108,7 @@ const isContained = (inner: EditorRange, outter: EditorRange): boolean => {
 }
 
 const buildPositionContext = (
-  workspace: SaltoWorkspace,
+  refElements: Element[],
   fileContent: string,
   range: NamedRange,
   encapsulatedRanges: NamedRange[],
@@ -122,7 +118,7 @@ const buildPositionContext = (
     const child = ranges[0]
     const rest = ranges.slice(1)
     const encapsulatedByChild = rest.filter(r => isContained(r.range, child.range))
-    const childCtx = buildPositionContext(workspace, fileContent, child, encapsulatedByChild)
+    const childCtx = buildPositionContext(refElements, fileContent, child, encapsulatedByChild)
     childCtx.children = (childCtx.children || []).map(c => {
       c.parent = childCtx
       return c
@@ -131,7 +127,7 @@ const buildPositionContext = (
     return _.isEmpty(notEncapsulated) ? [childCtx] : [childCtx, ...buildChildren(notEncapsulated)]
   }
 
-  const ref = getContextReference(fileContent, workspace.mergedElements || [], range)
+  const ref = getContextReference(fileContent, refElements || [], range)
   const context: PositionContext = {
     parent,
     ref,
@@ -144,7 +140,7 @@ const buildPositionContext = (
 
 
 export const buildDefinitionsTree = (
-  workspace: SaltoWorkspace,
+  _workspace: SaltoWorkspace,
   fileContent: string,
   parsedBlueprint: ParsedBlueprint
 ): PositionContext => {
@@ -154,8 +150,13 @@ export const buildDefinitionsTree = (
       : left.range.start.line - right.range.start.line
   )
 
+  // using map + flatten and not reduce for performance
+  const refElements: Element[] = _(parsedBlueprint.elements).map(e => (
+    (isObjectType(e)) ? [..._.values(e.fields), e] : [e]
+  )).flatten().value()
+
   return buildPositionContext(
-    workspace,
+    refElements,
     fileContent,
     GLOBAL_RANGE,
     flattenBlueprintRanges(parsedBlueprint).sort(startPosComparator)

@@ -18,13 +18,16 @@ type salesforce_lead {
   salesforce_text base_field {
     ${Type.DEFAULT} = "asd"
   }
-}`,
+}
+type multi_loc { a = 1 }
+type one_liner { a = 1 }`,
     '/salto/subdir/file.bp': `
 type salesforce_lead {
   salesforce_text ext_field {
     ${Type.DEFAULT} = "foo"
   }
-}`,
+}
+type multi_loc { b = 1 }`,
     '/salto/subdir/.hidden.bp': 'type hidden_type {}',
     '/salto/non_bp.txt': 'type hidden_non_bp {}',
     '/salto/.hidden/hidden.bp': 'type hidden_directory {}',
@@ -152,7 +155,7 @@ type salesforce_lead {
       })
     })
 
-    describe('applyChanges', () => {
+    describe('updateBlueprints', () => {
       const newElemID = new ElemID('salesforce', 'new_elem')
       const newElem = new ObjectType({ elemID: newElemID })
       newElem.path = ['test', 'new']
@@ -182,11 +185,22 @@ type salesforce_lead {
           action: 'add',
           data: { after: 'some value' },
         },
+        // TODO: this is currently not supported
+        // { // Add value to one liner scope
+        //   id: new ElemID('one', 'liner', 'label'),
+        //   action: 'add',
+        //   data: { after: 'label' },
+        // },
+        { // Remove element from multiple locations
+          id: new ElemID('multi', 'loc'),
+          action: 'remove',
+          data: { before: new ObjectType({ elemID: new ElemID('multi', 'loc') }) },
+        },
       ]
 
       beforeAll(async () => {
         resetWorkspace()
-        await workspace.applyChanges(...changes)
+        await workspace.updateBlueprints(...changes)
         updateElemMap()
       })
       afterAll(resetWorkspace)
@@ -213,6 +227,9 @@ type salesforce_lead {
         const lead = elemMap.salesforce_lead as ObjectType
         expect(lead.fields.base_field.annotations).toHaveProperty('complex')
         expect(lead.fields.base_field.annotations.complex).toEqual({ key: 'value' })
+      })
+      it('should remove all definitions in remove', () => {
+        expect(Object.keys(elemMap)).not.toContain('multi_loc')
       })
     })
   })

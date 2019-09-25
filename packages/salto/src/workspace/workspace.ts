@@ -11,7 +11,7 @@ import {
 import { mergeElements } from '../core/merger'
 import validateElements from '../core/validator'
 import { DetailedChange } from '../core/plan'
-import { addChangeLocation, updateBlueprintData } from './blueprint_update'
+import { getChangeLocations, updateBlueprintData } from './blueprint_update'
 
 export type Blueprint = {
   buffer: string
@@ -141,11 +141,11 @@ export class Workspace {
   }
 
   /**
-   * Apply changes to elements in the workspace
+   * Update workspace with changes to elements in the workspace
    *
    * @param changes The changes to apply
    */
-  async applyChanges(...changes: DetailedChange[]): Promise<void> {
+  async updateBlueprints(...changes: DetailedChange[]): Promise<void> {
     const getBlueprintData = (filename: string): string => {
       const currentBlueprint = this.parsedBlueprints[filename]
       return currentBlueprint ? currentBlueprint.buffer : ''
@@ -153,7 +153,8 @@ export class Workspace {
 
     const updatedBlueprints: Blueprint[] = await Promise.all(
       _(changes)
-        .map(change => addChangeLocation(change, this.sourceMap))
+        .map(change => getChangeLocations(change, this.sourceMap))
+        .flatten()
         .groupBy(change => change.location.filename)
         .entries()
         .map(async ([filename, fileChanges]) => ({

@@ -8,13 +8,16 @@ import { dump } from '../parser/dump'
 
 type DetailedChangeWithSource = DetailedChange & { location: SourceRange }
 
-export const addChangeLocation = (
+export const getChangeLocations = (
   change: DetailedChange,
   sourceMap: ReadonlyMap<string, SourceRange[]>,
-): DetailedChangeWithSource => {
+): DetailedChangeWithSource[] => {
   const lastNestedLocation = (parentScope: SourceRange): SourceRange => {
+    // We want to insert just before the scope's closing bracket, so we place the change
+    // one byte before the closing bracket.
+    // We also want one indentation level into the scope so we take the starting column + 2
     const nestedPosition = {
-      line: parentScope.end.line - 1,
+      line: parentScope.end.line,
       col: parentScope.start.col + 2,
       byte: parentScope.end.byte - 1,
     }
@@ -24,36 +27,43 @@ export const addChangeLocation = (
       end: nestedPosition,
     }
   }
-  const getChangeLocation = (): SourceRange => {
+  const findLocations = (): SourceRange[] => {
     if (change.action !== 'add') {
       // We want to get the location of the existing element
       const possibleLocations = sourceMap.get(change.id.getFullName()) || []
+      if (change.action === 'remove') {
+        return possibleLocations
+      }
       if (possibleLocations.length > 0) {
         // TODO: figure out how to choose the correct location if there is more than one option
-        return possibleLocations[0]
+        return [possibleLocations[0]]
       }
     } else {
       // We add new values / elements as the last part of a parent scope
       const possibleLocations = sourceMap.get(change.id.createParentID().getFullName()) || []
       if (possibleLocations.length > 0) {
         // TODO: figure out how to choose the correct location if there is more than one option
-        return lastNestedLocation(possibleLocations[0])
+        return [lastNestedLocation(possibleLocations[0])]
       }
     }
     // Fallback to using the path from the element itself
     const elemPath = path.join(...(getChangeElement(change).path || ['unsorted']))
-    return {
+    return [{
       filename: `${elemPath}.bp`,
       start: { col: 1, line: 1, byte: 0 },
       end: { col: 1, line: 1, byte: 0 },
-    }
+    }]
   }
 
-  return { ...change, location: getChangeLocation() }
+  return findLocations().map(location => ({ ...change, location }))
 }
 
 const indent = (data: string, indentLevel: number, newValue: boolean): string => {
+  const indentLines = (lines: string[], level: number): string[] => (
+    lines.map(line => _.repeat(' ', level) + line)
+  )
   const lines = data.split('\n')
+
   if (indentLevel > 0 && newValue && lines.length > 1) {
     // New values start one character before the closing bracket of the scope.
     // That means the first line needs only one level of indentation.
@@ -61,16 +71,16 @@ const indent = (data: string, indentLevel: number, newValue: boolean): string =>
     // (so that the closing bracket doesn't move), so the last line should be indented
     // one level less
     return [
-      ...lines.slice(0, 1).map(l => `  ${l}`),
-      ...lines.slice(1, -1).map(l => _.repeat(' ', indentLevel) + l),
-      ...lines.slice(-1).map(l => _.repeat(' ', indentLevel - 2) + l),
+      ...indentLines(lines.slice(0, 1), 2),
+      ...indentLines(lines.slice(1, -1), indentLevel),
+      ...indentLines(lines.slice(-1), indentLevel - 2),
     ].join('\n')
   }
   // If this is not a new value we are at the original value's start position so we don't have
   // to indent the first line
   return [
     ...lines.slice(0, 1),
-    ...lines.slice(1).map(l => _.repeat(' ', indentLevel) + l),
+    ...indentLines(lines.slice(1), indentLevel),
   ].join('\n')
 }
 
@@ -99,7 +109,7 @@ export const updateBlueprintData = async (
         newData = `\n${newData}`
       }
       if (change.action === 'modify') {
-        // Trim trainling newline (the original value already has one)
+        // Trim trailing newline (the original value already has one)
         newData = newData.slice(0, -1)
       }
       newData = indent(newData, change.location.start.col - 1, change.action === 'add')

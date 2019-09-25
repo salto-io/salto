@@ -69,7 +69,7 @@ export const fieldSuggestions = (params: SuggestionsParams): Suggestions => {
 export const fieldValueSuggestions = (params: SuggestionsParams): Suggestions => {
   if (!(params.ref && isInstanceElement(params.ref.element))) return []
   const attrName = params.tokens[0]
-  const refPath = (attrName && params.ref.path)
+  const refPath = (attrName)
     ? params.ref.path.replace(new RegExp(`${attrName}$`), '')
     : params.ref.path
   const refType = (refPath)
@@ -105,7 +105,7 @@ export const annoValueSuggestions = (params: SuggestionsParams): Suggestions => 
   if (!(params.ref && isField(params.ref.element))) return []
   const annoName = params.tokens[0]
   const annoType = params.ref.element.type.annotationTypes[annoName]
-  const refPath = (annoName && params.ref.path)
+  const refPath = (annoName)
     ? params.ref.path.replace(new RegExp(`${annoName}$`), '')
     : params.ref.path
   if (annoType && refPath) {

@@ -9,9 +9,7 @@ export const provideWorkspaceDefinition = (
   token: string
 ): SaltoElemLocation[] => {
   if (context.ref && isInstanceElement(context.ref.element)) {
-    const refPath = (context.ref.path)
-      ? context.ref.path.replace(new RegExp(`${token}$`), '')
-      : context.ref.path
+    const refPath = context.ref.path.replace(new RegExp(`${token}$`), '')
     const refType = (refPath)
       ? getField(context.ref.element.type, refPath.split(' '))
       : context.ref.element.type

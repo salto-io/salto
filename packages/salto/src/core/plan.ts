@@ -86,7 +86,7 @@ const isEqualsNode = (node1: Node, node2: Node): boolean => {
  * Get list of elements and create DAG based on it
  */
 const toNodeMap = (
-  elements: ReadonlyArray<Element>,
+  elements: readonly Element[],
   withDependencies = true
 ): DataNodeMap<Node> => {
   const nodeMap = new DataNodeMap<Node>()
@@ -118,8 +118,8 @@ const toNodeMap = (
 }
 
 export const getPlan = (
-  beforeElements: ReadonlyArray<Element>,
-  afterElements: ReadonlyArray<Element>,
+  beforeElements: readonly Element[],
+  afterElements: readonly Element [],
   withDependencies = true
 ): Plan => {
   // getPlan

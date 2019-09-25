@@ -4,13 +4,16 @@ import { plan, MockWriteStream } from '../mocks'
 const mockPlan = plan
 jest.mock('salto', () => ({
   plan: jest.fn().mockImplementation(() => mockPlan()),
+  Workspace: {
+    load: jest.fn(),
+  },
 }))
 
 describe('plan command', () => {
   let output: string
   beforeAll(async () => {
     const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
-    await command([], cliOutput).execute()
+    await command('', [], cliOutput).execute()
     output = cliOutput.stdout.content
   })
 

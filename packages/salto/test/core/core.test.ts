@@ -166,7 +166,7 @@ describe('api functions', () => {
 
       it('should create an apply plan using the plan method', async () => {
         await commands.plan(
-          blueprints,
+        new Workspace('', []),
         )
       })
 

@@ -47,11 +47,10 @@ const applyActionOnState = async (
 }
 
 export const plan = async (
-  blueprints: Blueprint[],
+  workspace: Workspace,
 ): Promise<Plan> => {
-  const elements = mergeAndValidate(await getAllElements(blueprints))
   const state = new State()
-  return getPlan(await state.get(), elements)
+  return getPlan(await state.get(), workspace.elements)
 }
 
 export const apply = async (

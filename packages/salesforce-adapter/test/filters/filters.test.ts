@@ -2,10 +2,7 @@ import { ObjectType, ElemID } from 'adapter-api'
 import SalesforceAdapter from '../../src/adapter'
 import { FilterWith, FilterCreator } from '../../src/filter'
 import { API_NAME } from '../../src/constants'
-import SalesforceClient from '../../src/client/client'
 import mockAdapter from '../adapter'
-
-jest.mock('../../src/client/client')
 
 describe('SalesforceAdapter filters', () => {
   const object = new ObjectType({
@@ -15,7 +12,7 @@ describe('SalesforceAdapter filters', () => {
 
   let adapter: SalesforceAdapter
 
-  const makeAdapter = (
+  const createAdapter = (
     filterCreators: FilterCreator[]
   ): SalesforceAdapter => mockAdapter({ adapterParams: { filterCreators } }).adapter
 
@@ -23,18 +20,6 @@ describe('SalesforceAdapter filters', () => {
     let filter: FilterWith<'onDiscover' | 'onAdd' | 'onUpdate' | 'onRemove'>
 
     beforeEach(() => {
-      SalesforceClient.prototype.listMetadataTypes = jest.fn()
-        .mockImplementationOnce(async () => [])
-
-      SalesforceClient.prototype.listMetadataObjects = jest.fn()
-        .mockImplementationOnce(async () => [])
-
-      SalesforceClient.prototype.listSObjects = jest.fn()
-        .mockImplementationOnce(async () => [])
-
-      SalesforceClient.prototype.describeSObjects = jest.fn()
-        .mockImplementationOnce(async () => [])
-
       filter = {
         onDiscover: jest.fn().mockImplementationOnce(elements => elements),
         onAdd: jest.fn().mockImplementationOnce(() => ([{ success: true }])),
@@ -42,7 +27,7 @@ describe('SalesforceAdapter filters', () => {
         onRemove: jest.fn().mockImplementationOnce(() => ([{ success: true }])),
       }
 
-      adapter = makeAdapter([() => filter])
+      adapter = createAdapter([() => filter])
     })
 
     it('should call inner aspects upon discover', async () => {

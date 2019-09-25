@@ -138,6 +138,11 @@ const buildPositionContext = (
   return context
 }
 
+const flattenElements = (elements: Element[]): Element[] => (
+  _(elements).map(e => (
+    (isObjectType(e)) ? [..._.values(e.fields), e] : [e]
+  )).flatten().value()
+)
 
 export const buildDefinitionsTree = (
   _workspace: SaltoWorkspace,
@@ -150,17 +155,18 @@ export const buildDefinitionsTree = (
       : left.range.start.line - right.range.start.line
   )
 
-  // using map + flatten and not reduce for performance
-  const refElements: Element[] = _(parsedBlueprint.elements).map(e => (
-    (isObjectType(e)) ? [..._.values(e.fields), e] : [e]
-  )).flatten().value()
-
   return buildPositionContext(
-    refElements,
+    flattenElements(parsedBlueprint.elements),
     fileContent,
     GLOBAL_RANGE,
     flattenBlueprintRanges(parsedBlueprint).sort(startPosComparator)
   )
+}
+
+const getFullElement = (workspace: SaltoWorkspace, partial: Element): Element => {
+  const fullElement = flattenElements(workspace.mergedElements || [])
+    .filter(e => e.elemID.getFullName() === partial.elemID.getFullName())[0]
+  return fullElement || partial
 }
 
 const getPositionFromTree = (
@@ -180,5 +186,9 @@ export const getPositionContext = (
 ): PositionContext => {
   const parsedBlueprint = workspace.parsedBlueprints[filename]
   const definitionsTree = buildDefinitionsTree(workspace, fileContent, parsedBlueprint)
-  return getPositionFromTree(definitionsTree, position)
+  const partialContext = getPositionFromTree(definitionsTree, position)
+  const fullRef = (partialContext.ref)
+    ? { ...partialContext.ref, element: getFullElement(workspace, partialContext.ref.element) }
+    : undefined
+  return { ...partialContext, ref: fullRef }
 }

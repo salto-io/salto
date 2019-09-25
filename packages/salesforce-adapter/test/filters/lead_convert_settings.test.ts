@@ -11,7 +11,7 @@ import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
 
-describe('Test layout filter', () => {
+describe('lead convert settings filter', () => {
   const { client } = mockClient()
   const filter = filterCreator({ client }) as FilterWith<'onDiscover'> & FilterWith<'onUpdate'>
 
@@ -28,6 +28,9 @@ describe('Test layout filter', () => {
         [fullName]: new Field(elemID, fullName, BuiltinTypes.STRING),
         fake: new Field(elemID, 'fake', BuiltinTypes.BOOLEAN),
       },
+      annotations: {
+        [constants.METADATA_TYPE]: 'LeadConvertSettings',
+      },
     }
   )
 
@@ -43,18 +46,14 @@ describe('Test layout filter', () => {
     }
   )
 
-  let testElements: Element[]
-
-  beforeEach(() => {
-    testElements = [_.cloneDeep(mockLead),
-      _.cloneDeep(mockConvertSettingsType),
-      _.cloneDeep(mockConvertSettingsInstance)]
-  })
-
   describe('on discover', () => {
     let leadPostFilter: ObjectType
+    let testElements: Element[]
 
     beforeEach(async () => {
+      testElements = [_.cloneDeep(mockLead),
+        _.cloneDeep(mockConvertSettingsType),
+        _.cloneDeep(mockConvertSettingsInstance)]
       await filter.onDiscover(testElements)
       leadPostFilter = testElements.find(e => e.elemID.name === LEAD_TYPE) as ObjectType
     })
@@ -81,6 +80,26 @@ describe('Test layout filter', () => {
       expect(value[fullName]).toBeUndefined()
       const type = leadPostFilter.annotationTypes[CONVERT_SETTINGS_ANNOTATION] as ObjectType
       expect(type.fields[fullName]).toBeUndefined()
+    })
+  })
+
+  describe('on update', () => {
+    const clientUpdate = jest.spyOn(client, 'update').mockImplementation(() => Promise.resolve([]))
+
+    beforeEach(async () => {
+      const before = _.cloneDeep(mockLead)
+      before.annotations[constants.METADATA_TYPE] = 'Lead'
+      before.annotationTypes[CONVERT_SETTINGS_ANNOTATION] = mockConvertSettingsType
+      before.annotations[CONVERT_SETTINGS_ANNOTATION] = {}
+      before.annotations[CONVERT_SETTINGS_ANNOTATION].change = true
+      const after = _.cloneDeep(before)
+      after.annotations[CONVERT_SETTINGS_ANNOTATION].change = false
+      await filter.onUpdate(before, after)
+    })
+
+    it('should call client update', async () => {
+      // validate client calls
+      expect(clientUpdate.mock.calls).toHaveLength(1)
     })
   })
 })

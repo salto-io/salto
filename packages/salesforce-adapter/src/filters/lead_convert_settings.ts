@@ -18,8 +18,8 @@ export const OBJECT_MAPPING_FIELD = 'object_mapping'
 export const MAPPING_FIELDS_FIELD = 'mapping_fields'
 export const INSTANCE_FULL_NAME = 'LeadConvertSettings'
 
-const isTypeName = (elememt: Element, name: string): boolean =>
-  (isInstanceElement(elememt) ? elememt.type.elemID.name === name : elememt.elemID.name === name)
+const isTypeName = (element: Element, name: string): boolean =>
+  (isInstanceElement(element) ? element.type.elemID.name === name : element.elemID.name === name)
 
 /**
 * Declare the lead convert settings filter, this filter add lead_convert_setting annotation
@@ -67,13 +67,13 @@ const filterCreator: FilterCreator = ({ client }) => ({
 
   onUpdate: async (before: Element, after: Element): Promise<SaveResult[]> => {
     if (isTypeName(before, LEAD_TYPE) && isObjectType(before)) {
-      const beforeConvertSettings = before.annotations[CONVERT_SETTINGS_ANNOTATION]
-      const afterConvertSettings = after.annotations[CONVERT_SETTINGS_ANNOTATION]
+      const beforeSettings = before.annotations[CONVERT_SETTINGS_ANNOTATION]
+      const afterSettings = after.annotations[CONVERT_SETTINGS_ANNOTATION]
 
-      if (!_.isEqual(beforeConvertSettings, afterConvertSettings)) {
+      if (!_.isEqual(beforeSettings, afterSettings)) {
         const metadataName = metadataType(before.annotationTypes[CONVERT_SETTINGS_ANNOTATION])
         return client.update(metadataName,
-          toMetadataInfo(INSTANCE_FULL_NAME, afterConvertSettings))
+          toMetadataInfo(INSTANCE_FULL_NAME, afterSettings))
       }
     }
     return Promise.resolve([])

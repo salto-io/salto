@@ -138,7 +138,7 @@ const buildPositionContext = (
   return context
 }
 
-const flattenElements = (elements: Element[]): Element[] => (
+const extractFields = (elements: Element[]): Element[] => (
   _(elements).map(e => (
     (isObjectType(e)) ? [..._.values(e.fields), e] : [e]
   )).flatten().value()
@@ -156,7 +156,7 @@ export const buildDefinitionsTree = (
   )
 
   return buildPositionContext(
-    flattenElements(parsedBlueprint.elements),
+    extractFields(parsedBlueprint.elements),
     fileContent,
     GLOBAL_RANGE,
     flattenBlueprintRanges(parsedBlueprint).sort(startPosComparator)
@@ -164,8 +164,8 @@ export const buildDefinitionsTree = (
 }
 
 const getFullElement = (workspace: SaltoWorkspace, partial: Element): Element => {
-  const fullElement = flattenElements(workspace.mergedElements || [])
-    .filter(e => e.elemID.getFullName() === partial.elemID.getFullName())[0]
+  const fullElement = extractFields(workspace.mergedElements || [])
+    .find(e => e.elemID.getFullName() === partial.elemID.getFullName())
   return fullElement || partial
 }
 

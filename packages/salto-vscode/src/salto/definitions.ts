@@ -9,8 +9,11 @@ export const provideWorkspaceDefinition = (
   token: string
 ): SaltoElemLocation[] => {
   if (context.ref && isInstanceElement(context.ref.element)) {
-    const refType = (context.ref.path)
-      ? getField(context.ref.element.type, context.ref.path.split(' '))
+    const refPath = (context.ref.path)
+      ? context.ref.path.replace(new RegExp(`${token}$`), '')
+      : context.ref.path
+    const refType = (refPath)
+      ? getField(context.ref.element.type, refPath.split(' '))
       : context.ref.element.type
     // If we are inside an instance obj, we look for the *field* definitions by
     // field name

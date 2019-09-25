@@ -67,13 +67,13 @@ const getLineType = (
     return 'field'
   }
   if (context.type === 'field' && !isDefLine) {
-    return (context.ref && context.ref.isList) ? 'annoList' : 'annotation'
+    return (context.ref && context.ref.isList && !lineTokens[0]) ? 'annoList' : 'annotation'
   }
   if (context.type === 'instance' && isDefLine) {
     return 'instance'
   }
   if (context.type === 'instance' && !isDefLine) {
-    return (context.ref && context.ref.isList) ? 'fieldList' : 'attr'
+    return (context.ref && context.ref.isList && !lineTokens[0]) ? 'fieldList' : 'attr'
   }
   // If we reached this point we are in global scope, which means that
   // either we are in one of the following:

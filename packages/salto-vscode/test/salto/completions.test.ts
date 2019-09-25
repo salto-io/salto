@@ -1,3 +1,4 @@
+/* eslint-disable jest/no-disabled-tests */
 import * as path from 'path'
 import * as fs from 'async-file'
 import _ from 'lodash'
@@ -172,7 +173,7 @@ describe('Test auto complete', () => {
     //       since the file being analyzed has the attribute in question defined the context
     //       gets the wrong ref.path value
     // eslint-disable-next-line jest/no-disabled-tests
-    it.skip('should give "" as 3rd token for string', () => {
+    it('should give "" as 3rd token for string', () => {
       const pos = { line: 34, col: 16 }
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
@@ -186,7 +187,7 @@ describe('Test auto complete', () => {
     //       since the file being analyzed has the attribute in question defined the context
     //       gets the wrong ref.path value
     // eslint-disable-next-line jest/no-disabled-tests
-    it.skip('should give true/false as 3rd token for boolean', () => {
+    it('should give true/false as 3rd token for boolean', () => {
       const pos = { line: 35, col: 20 }
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
@@ -262,7 +263,7 @@ describe('Test auto complete', () => {
     //       since the file being analyzed has the attribute in question defined the context
     //       gets the wrong ref.path value
     // eslint-disable-next-line jest/no-disabled-tests
-    it.skip('should give value as 3rd token', () => {
+    it('should give value as 3rd token', () => {
       const pos = { line: 89, col: 13 }
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
@@ -276,7 +277,7 @@ describe('Test auto complete', () => {
     //       since the file being analyzed has the attribute in question defined the context
     //       gets the wrong ref.path value
     // eslint-disable-next-line jest/no-disabled-tests
-    it.skip('should give value as 3rd token - nested', () => {
+    it('should give value as 3rd token - nested', () => {
       const pos = { line: 95, col: 20 }
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
@@ -320,7 +321,7 @@ describe('Test auto complete', () => {
     //       since the file being analyzed has the attribute in question defined the context
     //       gets the wrong ref.path value
     // eslint-disable-next-line jest/no-disabled-tests
-    it.skip('should return list inside value', () => {
+    it('should return list inside value', () => {
       const pos = { line: 134, col: 24 }
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)

@@ -61,7 +61,7 @@ export const updateFile = async (
       currentBlueprint.elements = parseResult.elements
       currentBlueprint.sourceMap = parseResult.sourceMap
     }
-    workspace.parsedBlueprints[filename] = parseResult
+    workspace.parsedBlueprints[filename] = currentBlueprint
   } catch (e) {
     hasErrors = true
   }

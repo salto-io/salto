@@ -93,7 +93,7 @@ describe('commands e2e', () => {
   })
 
   it('should run plan on discover output and detect no changes', async () => {
-    await plan(await loadBlueprints([], discoverOutputDir), cliOutput).execute()
+    await plan(discoverOutputDir, [], cliOutput).execute()
     expect(lastPlan).toBeUndefined()
   })
 

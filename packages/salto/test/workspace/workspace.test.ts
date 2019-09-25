@@ -3,31 +3,40 @@ import fs from 'async-file'
 import path from 'path'
 import tmp from 'tmp-promise'
 
-import { Element, ObjectType } from 'adapter-api'
+import {
+  Element, ObjectType, ElemID, Type,
+} from 'adapter-api'
 import {
   Workspace, Blueprint, ParsedBlueprint, parseBlueprints,
 } from '../../src/workspace/workspace'
+import { DetailedChange } from '../../src/core/plan'
 
 describe('Workspace', () => {
   const workspaceFiles = {
-    '/salto/file.bp': `type salesforce_lead {
-      salesforce_text base_field {
-        _default = "asd"
-      }
-    }`,
-    '/salto/subdir/file.bp': `type salesforce_lead {
-      salesforce_text ext_field {
-        _default = "foo"
-      }
-    }`,
+    '/salto/file.bp': `
+type salesforce_lead {
+  salesforce_text base_field {
+    ${Type.DEFAULT} = "asd"
+  }
+}
+type multi_loc { a = 1 }
+type one_liner { a = 1 }`,
+    '/salto/subdir/file.bp': `
+type salesforce_lead {
+  salesforce_text ext_field {
+    ${Type.DEFAULT} = "foo"
+  }
+}
+type multi_loc { b = 1 }`,
     '/salto/subdir/.hidden.bp': 'type hidden_type {}',
     '/salto/non_bp.txt': 'type hidden_non_bp {}',
     '/salto/.hidden/hidden.bp': 'type hidden_directory {}',
     '/outside/file.bp': 'type external_file {}',
     '/error.bp': 'invalid syntax }}',
-    '/dup.bp': `type salesforce_lead {
-      string base_field {}
-    }`,
+    '/dup.bp': `
+type salesforce_lead {
+  string base_field {}
+}`,
   }
 
   const changedBP = {
@@ -50,22 +59,24 @@ describe('Workspace', () => {
     })
 
     let workspace: Workspace
-    beforeEach(() => {
+    let elemMap: Record<string, Element>
+    const updateElemMap = (): void => {
+      elemMap = _(workspace.elements)
+        .map(elem => [elem.elemID.getFullName(), elem])
+        .fromPairs()
+        .value()
+    }
+    const resetWorkspace = (): void => {
       workspace = new Workspace(
         '/salto',
         parsedBPs.filter(bp => !bp.filename.startsWith('..') || bp.filename === '../outside/file.bp'),
       )
-    })
+      updateElemMap()
+    }
+
+    beforeAll(resetWorkspace)
 
     describe('loaded elements', () => {
-      let elemMap: Record<string, Element>
-      beforeEach(() => {
-        elemMap = _(workspace.elements)
-          .map(elem => [elem.elemID.getFullName(), elem])
-          .fromPairs()
-          .value()
-      })
-
       it('should contain types from all files', () => {
         expect(elemMap).toHaveProperty('salesforce_lead')
         expect(elemMap).toHaveProperty('external_file')
@@ -103,16 +114,14 @@ describe('Workspace', () => {
     })
 
     describe('removeBlueprints', () => {
-      let newElemMap: Record<string, Element>
       let removedPaths: string[]
-      beforeEach(() => {
+      beforeAll(() => {
+        resetWorkspace()
         removedPaths = ['../outside/file.bp', 'file.bp']
         workspace.removeBlueprints(...removedPaths)
-        newElemMap = _(workspace.elements)
-          .map(elem => [elem.elemID.getFullName(), elem])
-          .fromPairs()
-          .value()
+        updateElemMap()
       })
+      afterAll(resetWorkspace)
 
       it('should remove blueprints from parsed blueprints', () => {
         removedPaths.forEach(
@@ -120,31 +129,107 @@ describe('Workspace', () => {
         )
       })
       it('should update elements to not include fields from removed blueprints', () => {
-        const lead = newElemMap.salesforce_lead as ObjectType
+        const lead = elemMap.salesforce_lead as ObjectType
         expect(_.keys(lead.fields)).toHaveLength(1)
       })
     })
 
     describe('setBlueprints', () => {
-      let newElemMap: Record<string, Element>
-      beforeEach(async () => {
+      beforeAll(async () => {
+        resetWorkspace()
         await workspace.setBlueprints(changedBP, newBP)
-        newElemMap = _(workspace.elements)
-          .map(elem => [elem.elemID.getFullName(), elem])
-          .fromPairs()
-          .value()
+        updateElemMap()
       })
+      afterAll(resetWorkspace)
 
       it('should add new blueprints', () => {
         expect(_.keys(workspace.parsedBlueprints)).toContain('new.bp')
       })
       it('should add new elements', () => {
-        expect(newElemMap).toHaveProperty('salesforce_new')
+        expect(elemMap).toHaveProperty('salesforce_new')
       })
       it('should update elements', () => {
-        const lead = newElemMap.salesforce_lead as ObjectType
+        const lead = elemMap.salesforce_lead as ObjectType
         expect(lead.fields.new_base).toBeDefined()
         expect(lead.fields.base_field).not.toBeDefined()
+      })
+    })
+
+    describe('updateBlueprints', () => {
+      const newElemID = new ElemID('salesforce', 'new_elem')
+      const newElem = new ObjectType({ elemID: newElemID })
+      newElem.path = ['test', 'new']
+      const changes: DetailedChange[] = [
+        { // modify value
+          id: new ElemID('salesforce', 'lead', 'base_field', Type.DEFAULT),
+          action: 'modify',
+          data: { before: 'asd', after: 'foo' },
+        },
+        { // add element (top level)
+          id: newElemID,
+          action: 'add',
+          data: { after: newElem },
+        },
+        { // add complex value (nested in parent scope)
+          id: new ElemID('salesforce', 'lead', 'base_field', 'complex'),
+          action: 'add',
+          data: { after: { key: 'value' } },
+        },
+        { // remove value
+          id: new ElemID('salesforce', 'lead', 'ext_field', Type.DEFAULT),
+          action: 'remove',
+          data: { before: 'foo' },
+        },
+        { // Add value to empty scope
+          id: new ElemID('external', 'file', Type.DEFAULT),
+          action: 'add',
+          data: { after: 'some value' },
+        },
+        // TODO: this is currently not supported
+        // { // Add value to one liner scope
+        //   id: new ElemID('one', 'liner', 'label'),
+        //   action: 'add',
+        //   data: { after: 'label' },
+        // },
+        { // Remove element from multiple locations
+          id: new ElemID('multi', 'loc'),
+          action: 'remove',
+          data: { before: new ObjectType({ elemID: new ElemID('multi', 'loc') }) },
+        },
+      ]
+
+      beforeAll(async () => {
+        resetWorkspace()
+        await workspace.updateBlueprints(...changes)
+        updateElemMap()
+      })
+      afterAll(resetWorkspace)
+
+      it('should not cause parse errors', () => {
+        expect(workspace.errors).toHaveLength(0)
+      })
+      it('should modify existing element', () => {
+        const lead = elemMap.salesforce_lead as ObjectType
+        expect(lead).toBeDefined()
+        expect(lead.fields.base_field.annotations[Type.DEFAULT]).toEqual('foo')
+      })
+      it('should update existing parsed blueprints content', () => {
+        const updatedBlueprint = workspace.parsedBlueprints['file.bp']
+        expect(updatedBlueprint.buffer).toMatch(/base_field\s+{\s+_default = "foo"/s)
+      })
+      it('should add new element', () => {
+        expect(elemMap[newElemID.getFullName()]).toBeDefined()
+      })
+      it('should add new blueprint', () => {
+        expect(Object.keys(workspace.parsedBlueprints)).toContain('test/new.bp')
+      })
+      it('should add annotations under correct field', () => {
+        const lead = elemMap.salesforce_lead as ObjectType
+        expect(lead.fields.base_field.annotations).toHaveProperty('complex')
+        expect(lead.fields.base_field.annotations.complex).toEqual({ key: 'value' })
+      })
+      it('should remove all definitions in remove', () => {
+        expect(Object.keys(elemMap)).not.toContain('multi_loc')
       })
     })
   })

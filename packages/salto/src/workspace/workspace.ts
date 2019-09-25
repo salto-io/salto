@@ -10,6 +10,8 @@ import {
 } from '../parser/parse'
 import { mergeElements } from '../core/merger'
 import validateElements from '../core/validator'
+import { DetailedChange } from '../core/plan'
+import { getChangeLocations, updateBlueprintData } from './blueprint_update'
 
 export type Blueprint = {
   buffer: string
@@ -136,6 +138,32 @@ export class Workspace {
 
   private markDirty(names: string[]): void {
     names.forEach(name => this.dirtyBlueprints.add(name))
+  }
+
+  /**
+   * Update workspace with changes to elements in the workspace
+   *
+   * @param changes The changes to apply
+   */
+  async updateBlueprints(...changes: DetailedChange[]): Promise<void> {
+    const getBlueprintData = (filename: string): string => {
+      const currentBlueprint = this.parsedBlueprints[filename]
+      return currentBlueprint ? currentBlueprint.buffer : ''
+    }
+
+    const updatedBlueprints: Blueprint[] = await Promise.all(
+      _(changes)
+        .map(change => getChangeLocations(change, this.sourceMap))
+        .flatten()
+        .groupBy(change => change.location.filename)
+        .entries()
+        .map(async ([filename, fileChanges]) => ({
+          filename,
+          buffer: await updateBlueprintData(getBlueprintData(filename), fileChanges),
+        }))
+        .value()
+    )
+    return this.setBlueprints(...updatedBlueprints)
   }
 
   /**

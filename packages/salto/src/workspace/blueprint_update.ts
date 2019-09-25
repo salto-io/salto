@@ -4,7 +4,7 @@ import { getChangeElement, isElement } from 'adapter-api'
 
 import { DetailedChange } from '../core/plan'
 import { SourceRange } from '../parser/parse'
-import { dump } from '../parser/dump'
+import { dump as saltoDump } from '../parser/dump'
 
 type DetailedChangeWithSource = DetailedChange & { location: SourceRange }
 
@@ -39,9 +39,11 @@ export const getChangeLocations = (
         return [possibleLocations[0]]
       }
     } else {
-      // We add new values / elements as the last part of a parent scope
-      const possibleLocations = sourceMap.get(change.id.createParentID().getFullName()) || []
-      if (possibleLocations.length > 0) {
+      // We add new values / elements as the last part of a parent scope unless the parent scope
+      // is a config element
+      const parentID = change.id.createParentID()
+      const possibleLocations = sourceMap.get(parentID.getFullName()) || []
+      if (possibleLocations.length > 0 && !parentID.isConfig()) {
         // TODO: figure out how to choose the correct location if there is more than one option
         return [lastNestedLocation(possibleLocations[0])]
       }
@@ -97,18 +99,21 @@ export const updateBlueprintData = async (
     const elem = change.action === 'remove' ? undefined : change.data.after
     let newData: string
     if (elem !== undefined) {
-      if (isElement(elem)) {
-        newData = await dump(elem)
+      const changeKey = change.id.nameParts.slice(-1)[0]
+      const isListElement = changeKey.match(/^\d+$/) !== null
+      if (isElement(elem) || isListElement) {
+        // elements and list values do not need to be serialized with their key
+        newData = await saltoDump(elem)
       } else {
         // When dumping values (attributes) we need to dump the key as well
-        newData = await dump({ [change.id.nameParts.slice(-1)[0]]: elem })
+        newData = await saltoDump({ [changeKey]: elem })
         // We need a leading line break if we are in an empty scope (otherwise we get values
         // in the same line as the opening bracket), since finding out whether we are in an empty
         // scope isn't easy and adding a line break where we don't need it doesn't actually do
         // harm, we add the leading line break anyway
         newData = `\n${newData}`
       }
-      if (change.action === 'modify') {
+      if (change.action === 'modify' && newData.slice(-1)[0] === '\n') {
         // Trim trailing newline (the original value already has one)
         newData = newData.slice(0, -1)
       }

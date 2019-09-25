@@ -18,6 +18,15 @@ type salesforce_lead {
   salesforce_text base_field {
     ${Type.DEFAULT} = "asd"
   }
+  list number list_field {
+    ${Type.DEFAULT} = [
+      1,
+      2,
+      3,
+      4,
+      5
+    ]
+  }
 }
 type multi_loc { a = 1 }
 type one_liner { a = 1 }`,
@@ -83,7 +92,7 @@ type salesforce_lead {
       })
       it('should be merged', () => {
         const lead = elemMap.salesforce_lead as ObjectType
-        expect(_.keys(lead.fields)).toHaveLength(2)
+        expect(_.keys(lead.fields)).toHaveLength(3)
       })
     })
 
@@ -196,6 +205,11 @@ type salesforce_lead {
           action: 'remove',
           data: { before: new ObjectType({ elemID: new ElemID('multi', 'loc') }) },
         },
+        { // Modify value in list
+          id: new ElemID('salesforce', 'lead', 'list_field', Type.DEFAULT, '3'),
+          action: 'modify',
+          data: { before: 4, after: 5 },
+        },
       ]
 
       beforeAll(async () => {
@@ -230,6 +244,10 @@ type salesforce_lead {
       })
       it('should remove all definitions in remove', () => {
         expect(Object.keys(elemMap)).not.toContain('multi_loc')
+      })
+      it('should update value in list', () => {
+        const lead = elemMap.salesforce_lead as ObjectType
+        expect(lead.fields.list_field.annotations[Type.DEFAULT]).toEqual([1, 2, 3, 5, 5])
       })
     })
   })

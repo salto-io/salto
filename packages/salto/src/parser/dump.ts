@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import {
   Type, Field, Values, isObjectType, PrimitiveTypes,
-  isPrimitiveType, Element, isInstanceElement, isField, isElement,
+  isPrimitiveType, Element, isInstanceElement, isField, isElement, Value,
 } from 'adapter-api'
 import HclParser, { DumpedHclBlock, HclDumpReturn } from './hcl'
 import { Keywords } from './language'
@@ -125,10 +125,39 @@ const wrapBlocks = (blocks: DumpedHclBlock[]): DumpedHclBlock => ({
   blocks,
 })
 
-export const dump = async (elementsOrValues: Element | Element[] | Values): Promise<string> => {
+type PrimitiveSerializer = (val: Value) => string
+const primitiveSerializers: Record<string, PrimitiveSerializer> = {
+  string: val => `"${val}"`,
+  number: val => `${val}`,
+  boolean: val => (val ? 'true' : 'false'),
+}
+
+export const dump = async (
+  elementsOrValues: Element | Element[] | Values | Value | Value[]
+): Promise<string> => {
   // If we got a single element, put it in an array because we need to wrap it with an empty block
   const elemListOrValues = isElement(elementsOrValues) ? [elementsOrValues] : elementsOrValues
 
+  if (_.isArray(elemListOrValues) && !isElement(elemListOrValues[0])) {
+    // We got a Value array, we need to serialize this "manually" because our HCL implementation
+    // only accepts blocks
+    const nestedValues = await Promise.all(elemListOrValues.map(async elem => {
+      const serializedElem = await dump(elem)
+      if ((_.isElement(elem) || _.isPlainObject(elem)) && !(serializedElem[0] === '{')) {
+        // We need to make sure nested complex elements are wrapped in {}
+        return `{\n${serializedElem}\n}`
+      }
+      return serializedElem
+    }))
+    return `[\n${nestedValues.join(',\n  ')}\n]`
+  }
+  if (!_.isArray(elemListOrValues) && !_.isPlainObject(elemListOrValues)) {
+    // We got a single primitive value, again we need to serialize "manually"
+    const serializer = primitiveSerializers[typeof elemListOrValues]
+    return serializer(elementsOrValues)
+  }
+
+  // We got a list of elements or a values object, in both cases we can use the HCL serializer
   const body = _.isArray(elemListOrValues)
     ? wrapBlocks(elemListOrValues.map(dumpBlock))
     : dumpBlock(elemListOrValues)

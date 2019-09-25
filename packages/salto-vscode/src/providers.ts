@@ -17,7 +17,7 @@ export const createDocumentSymbolsProvider = (
     doc: vscode.TextDocument
   ) => {
     const blueprint = workspace.parsedBlueprints[doc.fileName]
-    const defTree = buildDefinitionsTree(workspace, doc.getText(), blueprint)
+    const defTree = buildDefinitionsTree(doc.getText(), blueprint)
     return (defTree.children || []).map(c => buildVSDefinitions(c))
   },
 })

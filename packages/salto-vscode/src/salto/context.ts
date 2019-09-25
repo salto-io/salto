@@ -145,7 +145,6 @@ const extractFields = (elements: Element[]): Element[] => (
 )
 
 export const buildDefinitionsTree = (
-  _workspace: SaltoWorkspace,
   fileContent: string,
   parsedBlueprint: ParsedBlueprint
 ): PositionContext => {
@@ -185,7 +184,7 @@ export const getPositionContext = (
   position: EditorPosition
 ): PositionContext => {
   const parsedBlueprint = workspace.parsedBlueprints[filename]
-  const definitionsTree = buildDefinitionsTree(workspace, fileContent, parsedBlueprint)
+  const definitionsTree = buildDefinitionsTree(fileContent, parsedBlueprint)
   const partialContext = getPositionFromTree(definitionsTree, position)
   const fullRef = (partialContext.ref)
     ? { ...partialContext.ref, element: getFullElement(workspace, partialContext.ref.element) }

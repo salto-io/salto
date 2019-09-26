@@ -1,15 +1,15 @@
 import _ from 'lodash'
 import wu from 'wu'
 import {
-  ObjectType, Element, ElemID, isObjectType, isInstanceElement, Value, Values,
-  Field, isField, InstanceElement, Change, getChangeElement, isEqualElements,
+  Element, ElemID, isObjectType, isInstanceElement, Value, Values, ChangeDataType,
+  isField, Change, getChangeElement, isEqualElements, isPrimitiveType,
 } from 'adapter-api'
 import {
   buildDiffGraph, buildGroupedGraph, Group, DataNodeMap, NodeId, GroupedNodeMap,
   AdditionDiff, ModificationDiff, RemovalDiff,
 } from '@salto/dag'
 
-export type DetailedChange<T = ObjectType | InstanceElement | Field | Values | Value> =
+export type DetailedChange<T = ChangeDataType | Values | Value> =
   (AdditionDiff<T> | ModificationDiff<T> | RemovalDiff<T>) & { id: ElemID }
 
 export type PlanItemId = NodeId
@@ -63,7 +63,7 @@ const getValuesChanges = (id: ElemID, before: Value, after: Value): DetailedChan
 const id = (elemId: ElemID): string => elemId.getFullName()
 
 // Node in the elements graph (elements graph -> diff graph -> group graph)
-type Node = ObjectType | InstanceElement | Field
+type Node = ChangeDataType
 /**
  * Check if 2 nodes in the DAG are equals or not
  */
@@ -103,6 +103,10 @@ const toNodeMap = (elements: Element[]): DataNodeMap<Node> => {
     nodeMap.addNode(id(inst.elemID), [id(inst.type.elemID)], inst)
     // We are not adding the fields values because unlike types, values are objects with hirerchy
     // and we cannot just cut them on the first level. For types, subtypes declared outside.
+  })
+
+  elements.filter(isPrimitiveType).forEach(type => {
+    nodeMap.addNode(id(type.elemID), [], type)
   })
   return nodeMap
 }

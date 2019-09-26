@@ -2,7 +2,7 @@ import _ from 'lodash'
 import wu from 'wu'
 import {
   ElemID, ObjectType, Field, BuiltinTypes, InstanceElement,
-  Change, getChangeElement,
+  Change, getChangeElement, PrimitiveType, PrimitiveTypes,
 } from 'adapter-api'
 import * as mock from '../common/elements'
 import {
@@ -42,14 +42,10 @@ describe('getPlan', () => {
     return [plan, saltoOffice]
   }
 
-  const planWithNewType = (): [Plan, ObjectType] => {
-    const newElemID = new ElemID('salto', 'additional')
-    const newElement = new ObjectType({
-      elemID: newElemID,
-      fields: {
-        country: new Field(newElemID, 'country', BuiltinTypes.STRING),
-        city: new Field(newElemID, 'city', BuiltinTypes.STRING),
-      },
+  const planWithNewType = (): [Plan, PrimitiveType] => {
+    const newElement = new PrimitiveType({
+      elemID: new ElemID('salto', 'additional'),
+      primitive: PrimitiveTypes.STRING,
     })
     const plan = getPlan(allElements, [...allElements, newElement])
     return [plan, newElement]
@@ -115,7 +111,7 @@ describe('getPlan', () => {
 
   it('should create plan with modification changes due to value change', () => {
     const post = mock.getAllElements()
-    const employee = post[post.length - 1] as InstanceElement
+    const employee = post[4] as InstanceElement
     employee.value.name = 'SecondEmployee'
     const plan = getPlan(allElements, post)
     expect(plan.size).toBe(1)

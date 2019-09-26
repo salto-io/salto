@@ -12,8 +12,8 @@ import {
   toCustomField, toCustomObject, apiName, sfCase, fieldFullName, Types,
   getSObjectFieldElement, toMetadataInfo, createInstanceElement,
   metadataType, toMetadataPackageZip, toInstanceElements, createMetadataTypeElements,
-  InstanceElementstoRecords,
-  ElemIDstoRecords,
+  instanceElementstoRecords,
+  elemIDstoRecords,
 } from './transformer'
 import layoutFilter from './filters/layouts'
 import fieldPermissionsFilter from './filters/field_permissions'
@@ -183,12 +183,12 @@ export default class SalesforceAdapter {
       const length = instances.push(instance)
       if (length === RECORDS_CHUNK_SIZE) {
         // Convert the instances in the transformer to SfRecord[] and send to bulk API
-        await this.client.updateBulk(apiName(instances[0].type), 'upsert', InstanceElementstoRecords(instances))
+        await this.client.updateBulk(apiName(instances[0].type), 'upsert', instanceElementstoRecords(instances))
         instances = []
       }
     }
     // Send the remaining instances
-    await this.client.updateBulk(apiName(instances[0].type), 'upsert', InstanceElementstoRecords(instances))
+    await this.client.updateBulk(apiName(instances[0].type), 'upsert', instanceElementstoRecords(instances))
   }
 
   /**
@@ -208,12 +208,12 @@ export default class SalesforceAdapter {
       const length = elemIds.push(elemId)
       if (length === RECORDS_CHUNK_SIZE) {
         // Convert the instances in the transformer to SfRecord[] and send to bulk API
-        await this.client.updateBulk(apiName(type), 'delete', ElemIDstoRecords(elemIds))
+        await this.client.updateBulk(apiName(type), 'delete', elemIDstoRecords(elemIds))
         elemIds = []
       }
     }
     // Send the remaining instances
-    await this.client.updateBulk(apiName(type), 'delete', ElemIDstoRecords(elemIds))
+    await this.client.updateBulk(apiName(type), 'delete', elemIDstoRecords(elemIds))
   }
 
   /**

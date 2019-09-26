@@ -1,33 +1,35 @@
-import path from 'path'
+import * as saltoImp from 'salto'
+import { Value } from 'adapter-api'
+import { getConfigFromUser } from '../../src/callbacks'
 import { MockWriteStream, importFromCsvFile as mockImportFromCsv } from '../mocks'
 import { command } from '../../src/commands/import'
 import Prompts from '../../src/prompts'
 
-jest.mock('salto', () => ({
-  importFromCsvFile: jest.fn().mockImplementation((
-  ) => mockImportFromCsv()),
-  readCsv: jest.fn().mockImplementation(() => { }),
+let mockExistsReturn = Promise.resolve(true)
+jest.mock('async-file', () => ({
+  exists: jest.fn().mockImplementation(() => mockExistsReturn),
 }))
 
-const inputDir = path.join(__dirname, 'temp')
-const inputPath = path.join(inputDir, 'import_test.csv')
+let importFromCsvSpy: jest.Mock<unknown>
+const testCsvMockReturnValues: Value[] = []
+let readCsvSpy: jest.Mock<unknown>
 
 describe('import command', () => {
   it('should run import successfully if given a correct path to a real CSV file', async () => {
-    jest.mock('async-file', () => ({
-      exists: jest.fn().mockImplementation(() => true),
-    }))
+    mockExistsReturn = Promise.resolve(true)
+    readCsvSpy = jest.spyOn(saltoImp, 'readCsv').mockImplementation(() => Promise.resolve(testCsvMockReturnValues))
+    importFromCsvSpy = jest.spyOn(saltoImp, 'importFromCsvFile').mockImplementation(() => mockImportFromCsv())
     const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
-    await command([], inputPath, '', cliOutput).execute()
+    await command([], 'mockPath', 'mockName', cliOutput).execute()
+    expect(readCsvSpy.mock.calls[0][0]).toBe('mockPath')
+    expect(importFromCsvSpy).toHaveBeenCalledWith('mockName', [], [], getConfigFromUser)
     expect(cliOutput.stdout.content).toMatch(Prompts.IMPORT_FINISHED_SUCCESSFULLY)
   })
 
   it('should fail if given a wrong path for a CSV file', async () => {
-    jest.mock('async-file', () => ({
-      exists: jest.fn().mockImplementation(() => false),
-    }))
+    mockExistsReturn = Promise.resolve(false)
     const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
     await command([], '', '', cliOutput).execute()
-    expect(cliOutput.stdout.content).toMatch(Prompts.COULD_NOT_FIND_FILE)
+    expect(cliOutput.stderr.content).toMatch(Prompts.COULD_NOT_FIND_FILE)
   })
 })

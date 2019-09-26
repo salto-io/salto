@@ -28,8 +28,8 @@ export const command = (blueprints: Blueprint[],
   },
 })
 
-type DiscoverArgs = bf.Args & { 'inputPath': string; 'typeName': string }
-type DiscoverParsedCliInput = ParsedCliInput<DiscoverArgs> & bf.BlueprintsParsedCliInput
+type DeleteArgs = bf.Args & { 'inputPath': string; 'typeName': string }
+type DeleteParsedCliInput = ParsedCliInput<DeleteArgs> & bf.BlueprintsParsedCliInput
 
 const builder = createCommandBuilder({
   options: {
@@ -50,7 +50,7 @@ const builder = createCommandBuilder({
 
   filters: [bf.optionalFilter],
 
-  async build(input: DiscoverParsedCliInput, output: CliOutput) {
+  async build(input: DeleteParsedCliInput, output: CliOutput) {
     return command(input.blueprints, input.args.inputPath, input.args.typeName, output)
   },
 })

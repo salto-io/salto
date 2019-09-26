@@ -533,9 +533,9 @@ export const createMetadataTypeElements = (
 }
 
 // Convert the InstanceElements to records
-export const InstanceElementstoRecords = (instances: InstanceElement[]):
+export const instanceElementstoRecords = (instances: InstanceElement[]):
 SfRecord[] => instances.map(res => res.value)
 
 // Convert the ElemIDs to records
-export const ElemIDstoRecords = (ElemIDs: ElemID[]):
+export const elemIDstoRecords = (ElemIDs: ElemID[]):
 SfRecord[] => ElemIDs.map(elem => ({ Id: elem.nameParts[1] }))

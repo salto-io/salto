@@ -9,10 +9,10 @@ import Prompts from '../prompts'
 export const command = (blueprints: Blueprint[],
   inputPath: string,
   typeName: string,
-  { stdout }: CliOutput): CliCommand => ({
+  { stdout, stderr }: CliOutput): CliCommand => ({
   async execute(): Promise<void> {
     if (!await asyncfile.exists(inputPath)) {
-      stdout.write(Prompts.COULD_NOT_FIND_FILE)
+      stderr.write(Prompts.COULD_NOT_FIND_FILE)
       return
     }
     const records = await readCsv(inputPath)

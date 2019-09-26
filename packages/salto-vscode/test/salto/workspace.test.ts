@@ -59,7 +59,7 @@ describe('TEST', () => {
     expect(workspace.mergedElements && workspace.mergedElements.length).toBe(4)
     const updatedWorkspace = await removeFile(workspace, extraBP)
     expect(updatedWorkspace.mergedElements).toBeDefined()
-    expect(updatedWorkspace.mergedElements && updatedWorkspace.mergedElements.length).toBe(3)    
+    expect(updatedWorkspace.mergedElements && updatedWorkspace.mergedElements.length).toBe(3)
   })
 
   it('should support file addition', async () => {
@@ -69,6 +69,6 @@ describe('TEST', () => {
     expect(workspace.mergedElements && workspace.mergedElements.length).toBe(3)
     const updatedWorkspace = await updateFile(workspace, extraBP, extraContent)
     expect(updatedWorkspace.mergedElements).toBeDefined()
-    expect(updatedWorkspace.mergedElements && updatedWorkspace.mergedElements.length).toBe(4) 
+    expect(updatedWorkspace.mergedElements && updatedWorkspace.mergedElements.length).toBe(4)
   })
 })

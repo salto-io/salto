@@ -31,13 +31,6 @@ const updateWorkspace = (workspace: SaltoWorkspace): SaltoWorkspace => {
   return workspace
 }
 
-export const removeBPFromWorkspace = (
-  workspace: SaltoWorkspace, filename: string
-): SaltoWorkspace => {
-  workspace.parsedBlueprints = _.omit(workspace.parsedBlueprints, filename)
-  return updateWorkspace(workspace)
-}
-
 export const initWorkspace = async (
   baseDir: string,
   _additionalBPDirs: string[] = [], // Ignored until loadBPs will support multiple dirs
@@ -78,4 +71,11 @@ export const updateFile = async (
     hasErrors = true
   }
   return hasErrors ? workspace : updateWorkspace(workspace)
+}
+
+export const removeFile = (
+  workspace: SaltoWorkspace, filename: string
+): SaltoWorkspace => {
+  workspace.parsedBlueprints = _.omit(workspace.parsedBlueprints, filename)
+  return updateWorkspace(workspace)
 }

@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import * as fs from 'async-file'
 
-import { initWorkspace, updateFile } from '../../src/salto/workspace'
+import { initWorkspace, updateFile, removeFile } from '../../src/salto/workspace'
 
 describe('TEST', () => {
   const baseBPDir = `${__dirname}/../../../test/salto/BP`
@@ -51,5 +51,24 @@ describe('TEST', () => {
     expect(updatedWorkspace.mergedElements).toBeDefined()
     expect(updatedWorkspace.mergedElements && updatedWorkspace.mergedElements.length).toBe(4)
     expect(_.keys(updatedWorkspace.parsedBlueprints).length).toBe(3)
+  })
+
+  it('should support file removal', async () => {
+    const workspace = await initWorkspace(baseBPDir, [], [extraBP])
+    expect(workspace.mergedElements).toBeDefined()
+    expect(workspace.mergedElements && workspace.mergedElements.length).toBe(4)
+    const updatedWorkspace = await removeFile(workspace, extraBP)
+    expect(updatedWorkspace.mergedElements).toBeDefined()
+    expect(updatedWorkspace.mergedElements && updatedWorkspace.mergedElements.length).toBe(3)    
+  })
+
+  it('should support file addition', async () => {
+    const workspace = await initWorkspace(baseBPDir)
+    const extraContent = await fs.readFile(extraBP)
+    expect(workspace.mergedElements).toBeDefined()
+    expect(workspace.mergedElements && workspace.mergedElements.length).toBe(3)
+    const updatedWorkspace = await updateFile(workspace, extraBP, extraContent)
+    expect(updatedWorkspace.mergedElements).toBeDefined()
+    expect(updatedWorkspace.mergedElements && updatedWorkspace.mergedElements.length).toBe(4) 
   })
 })

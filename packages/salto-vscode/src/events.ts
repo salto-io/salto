@@ -1,7 +1,7 @@
 import * as vscode from 'vscode'
 import * as fs from 'async-file'
 import {
-  initWorkspace, updateFile, SaltoWorkspace, removeBPFromWorkspace,
+  initWorkspace, updateFile, SaltoWorkspace, removeFile,
 } from './salto/workspace'
 
 // This function is called whenever a file content is changed. The function will
@@ -38,7 +38,7 @@ export const onFileDelete = async (
   workspace: SaltoWorkspace,
   filename: string
 ): Promise<void> => {
-  await removeBPFromWorkspace(workspace, filename)
+  await removeFile(workspace, filename)
 }
 
 export const onFileCreate = async (

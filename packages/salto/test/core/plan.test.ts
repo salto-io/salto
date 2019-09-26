@@ -64,6 +64,14 @@ describe('getPlan', () => {
     return [plan, updatedEmployee]
   }
 
+  const planWithListChange = (): [Plan, InstanceElement] => {
+    const afterElements = mock.getAllElements([])
+    const updatedEmployee = afterElements[4] as InstanceElement
+    updatedEmployee.value.nicknames.push('new')
+    const plan = getPlan(allElements, afterElements)
+    return [plan, updatedEmployee]
+  }
+
   it('should create empty plan', () => {
     const plan = getPlan(allElements, allElements)
     expect(plan.size).toBe(0)
@@ -175,6 +183,15 @@ describe('getPlan', () => {
         expect(listChange.id.nameParts).toEqual([updatedInst.elemID.name, 'nicknames', '1'])
         expect(nameRemove.action).toEqual('remove')
         expect(nameRemove.id.nameParts).toEqual([updatedInst.elemID.name, 'office', 'name'])
+      })
+      it('should return list modification when a value is added', () => {
+        const [plan, updatedInst] = planWithListChange()
+        const planItem = getFirstPlanItem(plan)
+        const changes = wu(planItem.detailedChanges()).toArray()
+        expect(changes).toHaveLength(1)
+        const [listChange] = changes
+        expect(listChange.action).toEqual('modify')
+        expect(listChange.id.nameParts).toEqual([updatedInst.elemID.name, 'nicknames'])
       })
     })
   })

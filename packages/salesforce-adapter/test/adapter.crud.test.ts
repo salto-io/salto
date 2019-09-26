@@ -299,7 +299,7 @@ describe('SalesforceAdapter CRUD', () => {
             Types.salesforceDataTypes.date,
             {
               [constants.LABEL]: 'Date description label',
-              [Type.DEFAULT]: 'Today() + 7',
+              [constants.DEFAULT_VALUE_FORMULA]: 'Today() + 7',
             },
           ),
           delta: new Field(
@@ -308,7 +308,7 @@ describe('SalesforceAdapter CRUD', () => {
             Types.salesforceDataTypes.time,
             {
               [constants.LABEL]: 'Time description label',
-              [Type.DEFAULT]: 'TIMENOW() + 5',
+              [constants.DEFAULT_VALUE_FORMULA]: 'TIMENOW() + 5',
             },
           ),
           echo: new Field(
@@ -317,7 +317,7 @@ describe('SalesforceAdapter CRUD', () => {
             Types.salesforceDataTypes.datetime,
             {
               [constants.LABEL]: 'DateTime description label',
-              [Type.DEFAULT]: 'Now() + 7',
+              [constants.DEFAULT_VALUE_FORMULA]: 'Now() + 7',
             },
           ),
           foxtrot: new Field(

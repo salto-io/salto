@@ -14,7 +14,7 @@ import { API_VERSION, METADATA_NAMESPACE } from './client/client'
 import {
   API_NAME, LABEL, PICKLIST_VALUES, SALESFORCE, RESTRICTED_PICKLIST, FORMULA,
   FORMULA_TYPE_PREFIX, FIELD_TYPE_NAMES, FIELD_TYPE_API_NAMES, METADATA_OBJECT_NAME_FIELD,
-  METADATA_TYPE, FIELD_ANNOTATIONS, SALESFORCE_CUSTOM_SUFFIX,
+  METADATA_TYPE, FIELD_ANNOTATIONS, SALESFORCE_CUSTOM_SUFFIX, DEFAULT_VALUE_FORMULA,
   MAX_METADATA_RESTRICTION_VALUES, SETTINGS_METADATA_TYPE,
 } from './constants'
 
@@ -238,6 +238,7 @@ export const toCustomField = (
     field.annotations[LABEL],
     field.annotations[Type.REQUIRED],
     field.annotations[Type.DEFAULT],
+    field.annotations[DEFAULT_VALUE_FORMULA],
     field.annotations[PICKLIST_VALUES],
     field.annotations[FORMULA],
   )
@@ -329,6 +330,10 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
   const defaultValue = getDefaultValue(field)
   if (defaultValue !== undefined) {
     annotations[Type.DEFAULT] = defaultValue
+  }
+
+  if (field.defaultValueFormula) {
+    annotations[DEFAULT_VALUE_FORMULA] = field.defaultValueFormula
   }
 
   // Handle specific field types that need to be converted from their primitive type to their

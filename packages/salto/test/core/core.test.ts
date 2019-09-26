@@ -7,8 +7,10 @@ import * as commands from '../../src/api'
 import State from '../../src/state/state'
 import { Blueprint, getAllElements } from '../../src/core/blueprint'
 import adapterCreators from '../../src/core/adapters/creators'
-import { Plan } from '../../src/core/plan'
+
+import * as plan from '../../src/core/plan'
 import { Workspace } from '../../src/workspace/workspace'
+
 
 const mockAdd = jest.fn(async ap => {
   if (ap.elemID.name === 'fail') {
@@ -120,7 +122,7 @@ describe('api functions', () => {
       }))
     )
 
-    const mockShouldApplyYes = async (_plan: Plan): Promise<boolean> => true
+    const mockShouldApplyYes = async (): Promise<boolean> => Promise.resolve(true)
 
     const mockReportCurrentAction = jest.fn()
 
@@ -160,14 +162,17 @@ describe('api functions', () => {
 
     describe('given a valid blueprint', () => {
       let blueprints: Blueprint[]
+
       beforeEach(async () => {
         blueprints = await readBlueprints('salto.bp')
       })
 
       it('should create an apply plan using the plan method', async () => {
+        const spy = jest.spyOn(plan, 'getPlan')
         await commands.plan(
-        new Workspace('', []),
+          new Workspace('', []),
         )
+        expect(spy).toHaveBeenCalled()
       })
 
       it('should apply an apply plan', async () => {

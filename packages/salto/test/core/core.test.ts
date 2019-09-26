@@ -63,9 +63,7 @@ const instancesIterator = async function *instancesIterator(): AsyncIterable<Ins
   ))
 }
 
-const mockGetInstancesOfType = jest.fn(() => {
-  return instancesIterator()
-})
+const mockGetInstancesOfType = jest.fn(() => instancesIterator())
 const mockImportInstancesOfType = jest.fn()
 const mockUpdateInstancesOfType = jest.fn()
 
@@ -227,22 +225,27 @@ describe('Test commands.ts and core.ts', () => {
   describe('data migration', () => {
     let blueprints: Blueprint[]
     let mockStateGet: jest.Mock<unknown>
-    beforeEach(async () => {
-      blueprints = await readBlueprints('salto.bp')
-      mockStateGet = jest.fn().mockImplementation(() =>
-      Promise.resolve([instanceElement]))
-      State.prototype.get = mockStateGet
-    })
     const elemID = new ElemID('salesforce', 'test')
-    const testType = new ObjectType({ elemID: elemID })
+    const testType = new ObjectType({ elemID })
     const instanceElement = new InstanceElement(
       elemID,
       testType,
       {}
     )
+    beforeEach(async () => {
+      blueprints = await readBlueprints('salto.bp')
+      mockStateGet = jest.fn().mockImplementation(() =>
+        Promise.resolve([instanceElement]))
+      State.prototype.get = mockStateGet
+    })
+
     describe('export', () => {
-      it('should complete successfully', async () => {        
-        const returnedIterator = await commands.exportToCsv(testType.elemID.getFullName(), blueprints, mockGetConfigFromUser)
+      it('should complete successfully', async () => {
+        const returnedIterator = await commands.exportToCsv(
+          testType.elemID.getFullName(),
+          blueprints,
+          mockGetConfigFromUser
+        )
         expect(mockStateGet).toHaveBeenCalled()
         const iterator = returnedIterator[Symbol.asyncIterator]()
         const firstBatch = async (): Promise<InstanceElement[]> => {
@@ -261,17 +264,27 @@ describe('Test commands.ts and core.ts', () => {
         expect(results[0].value.Gender).toBe('Female')
       })
     })
-    
+
     describe('import', () => {
       it('should complete import successfully', async () => {
-        await commands.importFromCsvFile(testType.elemID.getFullName(), [], blueprints, mockGetConfigFromUser)
+        await commands.importFromCsvFile(
+          testType.elemID.getFullName(),
+          [],
+          blueprints,
+          mockGetConfigFromUser
+        )
         expect(mockStateGet).toHaveBeenCalled()
       })
     })
-    
+
     describe('delete', () => {
       it('should complete delete successfully', async () => {
-        await commands.deleteFromCsvFile(testType.elemID.getFullName(), [], blueprints, mockGetConfigFromUser)
+        await commands.deleteFromCsvFile(
+          testType.elemID.getFullName(),
+          [],
+          blueprints,
+          mockGetConfigFromUser
+        )
         expect(mockStateGet).toHaveBeenCalled()
       })
     })

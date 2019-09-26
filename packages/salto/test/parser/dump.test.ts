@@ -161,4 +161,20 @@ describe('Salto Dump', () => {
       expect(body).toMatch(/^attr\s+=\s+"value"$/m)
     })
   })
+  describe('dump primitive', () => {
+    it('should serialize numbers', async () => {
+      expect(await dump(123)).toEqual('123')
+    })
+    it('should serialize strings', async () => {
+      expect(await dump('aaa')).toEqual('"aaa"')
+    })
+    it('should serialize booleans', async () => {
+      expect(await dump(false)).toEqual('false')
+    })
+    it('should dump list', async () => {
+      expect(await dump([1, 'asd', true, { complex: 'value' }])).toMatch(
+        /\[\s+1,\s+"asd",\s+true,\s+\{\s+complex = "value"\s+\}\s+]/s
+      )
+    })
+  })
 })

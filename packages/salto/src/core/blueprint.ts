@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 import _ from 'lodash'
 import { Element } from 'adapter-api'
 

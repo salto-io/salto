@@ -2,7 +2,7 @@ import { discover as mockDiscover, Workspace as mockWorksapce } from 'salto'
 import { command } from '../../src/commands/discover'
 
 jest.mock('salto', () => ({
-  discover: jest.fn().mockImplementation((_workspace, _fillConfig) => Promise.resolve()),
+  discover: jest.fn().mockImplementation(() => Promise.resolve()),
   Workspace: {
     load: jest.fn().mockImplementation(
       baseDir => ({ baseDir, errors: [] }),

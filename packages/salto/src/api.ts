@@ -151,6 +151,6 @@ export const deleteFromCsvFile = async (
     throw new Error(`Couldn't find the type you are looking for: ${typeId}. Have you run salto discover yet?`)
   }
   const elements = mergeAndValidate(await getAllElements(blueprints))
-  const adapters = await initAdapters(elements, fillConfig)
+  const [adapters] = await initAdapters(elements, fillConfig)
   await deleteInstancesOfType(type as ObjectType, records, adapters)
 }

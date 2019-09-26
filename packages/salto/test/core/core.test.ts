@@ -292,11 +292,12 @@ describe('api functions', () => {
       beforeEach(async () => {
         await commands.discover(mockWorkspace, mockGetConfigFromUser)
       })
-      it('should add newly discovered elements to workspace', () => {
+      it('should add newly discovered elements and configs to workspace', () => {
         const mockBlueprintUpdate = mockWorkspace.updateBlueprints as jest.Mock
         expect(mockBlueprintUpdate).toHaveBeenCalled()
         const [callArgs] = mockBlueprintUpdate.mock.calls
-        expect(callArgs.map(change => change.action)).toEqual(['add', 'add', 'add'])
+        // Expect 3 new elements + one config element
+        expect(callArgs.map(change => change.action)).toEqual(['add', 'add', 'add', 'add'])
       })
       it('should add newly discovered elements to state', () => {
         const mockStateOverride = State.prototype.override as jest.Mock
@@ -313,11 +314,11 @@ describe('api functions', () => {
         )
         await commands.discover(mockWorkspace, mockGetConfigFromUser)
       })
-      it('should not update anything in the workspace', () => {
+      it('should not update anything in the workspace except for the new config', () => {
         const mockBlueprintUpdate = mockWorkspace.updateBlueprints as jest.Mock
         expect(mockBlueprintUpdate).toHaveBeenCalled()
         const [callArgs] = mockBlueprintUpdate.mock.calls
-        expect(callArgs).toHaveLength(0)
+        expect(callArgs).toHaveLength(1)
       })
     })
   })

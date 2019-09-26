@@ -66,7 +66,7 @@ export const apply = async (
   try {
     const actionPlan = getPlan(await state.get(), elements)
     if (force || await shouldApply(actionPlan)) {
-      const adapters = await initAdapters(elements, fillConfig)
+      const [adapters] = await initAdapters(elements, fillConfig)
       await applyActions(
         actionPlan,
         adapters,
@@ -114,7 +114,7 @@ export const exportToCsv = async (
     throw new Error(`Couldn't find the type you are looking for: ${typeId}. Have you run salto discover yet?`)
   }
   const elements = mergeAndValidate(await getAllElements(blueprints))
-  const adapters = await initAdapters(elements, fillConfig)
+  const [adapters] = await initAdapters(elements, fillConfig)
 
   return getInstancesOfType(type as ObjectType, adapters)
 }
@@ -133,7 +133,7 @@ export const importFromCsvFile = async (
     throw new Error(`Couldn't find the type you are looking for: ${typeId}. Have you run salto discover yet?`)
   }
   const elements = mergeAndValidate(await getAllElements(blueprints))
-  const adapters = await initAdapters(elements, fillConfig)
+  const [adapters] = await initAdapters(elements, fillConfig)
   await importInstancesOfType(type as ObjectType, records, adapters)
 }
 

@@ -8,6 +8,7 @@ import State from '../../src/state/state'
 import { Blueprint, getAllElements } from '../../src/core/blueprint'
 import adapterCreators from '../../src/core/adapters/creators'
 import { Plan } from '../../src/core/plan'
+import { Workspace } from '../../src/workspace/workspace'
 
 const mockAdd = jest.fn(async ap => {
   if (ap.elemID.name === 'fail') {
@@ -33,14 +34,14 @@ const mockRemove = jest.fn(_a => true)
 
 const mockUpdate = jest.fn((_b, _a) => true)
 
-const mockDiscover = jest.fn(() => {
-  const objType = new ObjectType({ elemID: new ElemID('salesforce', 'dummy') })
-  return [
-    objType,
-    new InstanceElement(new ElemID('salesforce', 'instance_1'), objType, {}, ['records', 'dummy']),
-    new InstanceElement(new ElemID('salesforce', 'instance_2'), objType, {}, ['records', 'dummy']),
-  ]
-})
+
+const objType = new ObjectType({ elemID: new ElemID('salesforce', 'dummy') })
+const discoveredElements = [
+  objType,
+  new InstanceElement(new ElemID('salesforce', 'instance_1'), objType, {}, ['records', 'dummy']),
+  new InstanceElement(new ElemID('salesforce', 'instance_2'), objType, {}, ['records', 'dummy']),
+]
+const mockDiscover = jest.fn(() => discoveredElements)
 
 const instancesIterator = async function *instancesIterator(): AsyncIterable<InstanceElement[]> {
   const testType = new ObjectType({
@@ -85,7 +86,7 @@ jest.mock('../../src/state/state')
 
 adapterCreators.salesforce = mockAdapterCreator
 
-describe('Test commands.ts and core.ts', () => {
+describe('api functions', () => {
   beforeEach(() => {
     // Mock empty state
     State.prototype.get = jest.fn().mockImplementation(() => Promise.resolve([]))
@@ -94,19 +95,6 @@ describe('Test commands.ts and core.ts', () => {
     State.prototype.remove = jest.fn().mockImplementation(() => Promise.resolve())
     State.prototype.update = jest.fn().mockImplementation(() => Promise.resolve())
   })
-
-  const blueprintsDirectory = path.join(__dirname, '../../../test', 'blueprints')
-
-  const readBlueprints = (...filenames: string[]): Promise<Blueprint[]> => Promise.all(
-    filenames.map(async (filename: string) => ({
-      buffer: await fs.readFile(path.join(blueprintsDirectory, filename), 'utf8'),
-      filename,
-    }))
-  )
-
-  const mockShouldApplyYes = async (_plan: Plan): Promise<boolean> => true
-
-  const mockReportCurrentAction = jest.fn()
 
   const mockGetConfigFromUser = async (
     configType: ObjectType
@@ -122,90 +110,148 @@ describe('Test commands.ts and core.ts', () => {
     return new InstanceElement(elemID, configType, value)
   }
 
-  it('Should return all elements in the blueprint', async () => {
-    const blueprints = await readBlueprints('salto.bp', 'salto2.bp')
-    const elements = await getAllElements(blueprints)
-    const fullNames = elements.map(e => e.elemID.getFullName())
-    expect(fullNames).toEqual(
-      expect.arrayContaining(['salesforce', 'salesforce_test', 'salesforce_test2']),
+  describe('Test commands.ts and core.ts', () => {
+    const blueprintsDirectory = path.join(__dirname, '../../../test', 'blueprints')
+
+    const readBlueprints = (...filenames: string[]): Promise<Blueprint[]> => Promise.all(
+      filenames.map(async (filename: string) => ({
+        buffer: await fs.readFile(path.join(blueprintsDirectory, filename), 'utf8'),
+        filename,
+      }))
     )
-  })
 
-  it('should throw an error if the bp is not valid2', async () => {
-    const blueprints = await readBlueprints('error.bp')
-    await expect(getAllElements(blueprints)).rejects.toThrow()
-  })
+    const mockShouldApplyYes = async (_plan: Plan): Promise<boolean> => true
 
-  it('should throw error on missing adapter', async () => {
-    const blueprints = await readBlueprints('missing.bp')
-    await expect(commands.apply(
-      blueprints,
-      mockGetConfigFromUser,
-      mockShouldApplyYes,
-      mockReportCurrentAction
-    )).rejects.toThrow()
-  })
+    const mockReportCurrentAction = jest.fn()
 
-  it('should throw error on adapter fail', async () => {
-    const blueprints = await readBlueprints('fail.bp')
-    await expect(commands.apply(
-      blueprints,
-      mockGetConfigFromUser,
-      mockShouldApplyYes,
-      mockReportCurrentAction
-    )).rejects.toThrow()
-  })
-
-  describe('given a valid blueprint', () => {
-    let blueprints: Blueprint[]
-    beforeEach(async () => {
-      blueprints = await readBlueprints('salto.bp')
-    })
-
-    it('should create an apply plan using the plan method', async () => {
-      await commands.plan(
-        blueprints,
+    it('Should return all elements in the blueprint', async () => {
+      const blueprints = await readBlueprints('salto.bp', 'salto2.bp')
+      const elements = await getAllElements(blueprints)
+      const fullNames = elements.map(e => e.elemID.getFullName())
+      expect(fullNames).toEqual(
+        expect.arrayContaining(['salesforce', 'salesforce_test', 'salesforce_test2']),
       )
     })
 
-    it('should apply an apply plan', async () => {
-      await commands.apply(
+    it('should throw an error if the bp is not valid2', async () => {
+      const blueprints = await readBlueprints('error.bp')
+      await expect(getAllElements(blueprints)).rejects.toThrow()
+    })
+
+    it('should throw error on missing adapter', async () => {
+      const blueprints = await readBlueprints('missing.bp')
+      await expect(commands.apply(
         blueprints,
         mockGetConfigFromUser,
         mockShouldApplyYes,
         mockReportCurrentAction
-      )
-      expect(mockAdd).toHaveBeenCalled()
+      )).rejects.toThrow()
     })
 
-    it('should apply plan with remove based on state', async () => {
-      State.prototype.get = jest.fn().mockImplementation(() =>
-        Promise.resolve([new ObjectType({ elemID: new ElemID('salesforce', 'employee') })]))
-      await commands.apply(
+    it('should throw error on adapter fail', async () => {
+      const blueprints = await readBlueprints('fail.bp')
+      await expect(commands.apply(
         blueprints,
         mockGetConfigFromUser,
         mockShouldApplyYes,
         mockReportCurrentAction
-      )
-      expect(mockAdd).toHaveBeenCalled()
-      expect(mockRemove).toHaveBeenCalled()
+      )).rejects.toThrow()
     })
 
-    it('should apply plan with modification based on state', async () => {
-      const mockStateGet = jest.fn().mockImplementation(() =>
-        Promise.resolve([new ObjectType({ elemID: new ElemID('salesforce', 'test') })]))
-      State.prototype.get = mockStateGet
-      const mockStateUpdate = jest.fn().mockImplementation(() => Promise.resolve())
-      State.prototype.update = mockStateUpdate
-      await commands.apply(
-        blueprints,
-        mockGetConfigFromUser,
-        mockShouldApplyYes,
-        mockReportCurrentAction
-      )
-      expect(mockUpdate).toHaveBeenCalled()
-      expect(mockStateGet).toHaveBeenCalled()
-      expect(mockStateUpdate).toHaveBeenCalled()
+    describe('given a valid blueprint', () => {
+      let blueprints: Blueprint[]
+      beforeEach(async () => {
+        blueprints = await readBlueprints('salto.bp')
+      })
+
+      it('should create an apply plan using the plan method', async () => {
+        await commands.plan(
+          blueprints,
+        )
+      })
+
+      it('should apply an apply plan', async () => {
+        await commands.apply(
+          blueprints,
+          mockGetConfigFromUser,
+          mockShouldApplyYes,
+          mockReportCurrentAction
+        )
+        expect(mockAdd).toHaveBeenCalled()
+      })
+
+      it('should apply plan with remove based on state', async () => {
+        State.prototype.get = jest.fn().mockImplementation(() =>
+          Promise.resolve([new ObjectType({ elemID: new ElemID('salesforce', 'employee') })]))
+        await commands.apply(
+          blueprints,
+          mockGetConfigFromUser,
+          mockShouldApplyYes,
+          mockReportCurrentAction
+        )
+        expect(mockAdd).toHaveBeenCalled()
+        expect(mockRemove).toHaveBeenCalled()
+      })
+
+      it('should apply plan with modification based on state', async () => {
+        const mockStateGet = jest.fn().mockImplementation(() =>
+          Promise.resolve([new ObjectType({ elemID: new ElemID('salesforce', 'test') })]))
+        State.prototype.get = mockStateGet
+        const mockStateUpdate = jest.fn().mockImplementation(() => Promise.resolve())
+        State.prototype.update = mockStateUpdate
+        await commands.apply(
+          blueprints,
+          mockGetConfigFromUser,
+          mockShouldApplyYes,
+          mockReportCurrentAction
+        )
+        expect(mockUpdate).toHaveBeenCalled()
+        expect(mockStateGet).toHaveBeenCalled()
+        expect(mockStateUpdate).toHaveBeenCalled()
+      })
+    })
+  })
+  describe('discover', () => {
+    let mockWorkspace: Workspace
+    beforeEach(() => {
+      mockWorkspace = {
+        elements: [],
+        updateBlueprints: jest.fn().mockImplementationOnce(() => Promise.resolve()),
+        flush: () => Promise.resolve(),
+      } as unknown as Workspace
+    })
+
+    describe('from empty state', () => {
+      beforeEach(async () => {
+        await commands.discover(mockWorkspace, mockGetConfigFromUser)
+      })
+      it('should add newly discovered elements to workspace', () => {
+        const mockBlueprintUpdate = mockWorkspace.updateBlueprints as jest.Mock
+        expect(mockBlueprintUpdate).toHaveBeenCalled()
+        const [callArgs] = mockBlueprintUpdate.mock.calls
+        expect(callArgs.map(change => change.action)).toEqual(['add', 'add', 'add'])
+      })
+      it('should add newly discovered elements to state', () => {
+        const mockStateOverride = State.prototype.override as jest.Mock
+        expect(mockStateOverride).toHaveBeenCalled()
+        const [callArgs] = mockStateOverride.mock.calls
+        expect(callArgs[0]).toEqual(discoveredElements)
+      })
+    })
+
+    describe('without changes', () => {
+      beforeEach(async () => {
+        State.prototype.get = jest.fn().mockImplementationOnce(
+          () => Promise.resolve(discoveredElements)
+        )
+        await commands.discover(mockWorkspace, mockGetConfigFromUser)
+      })
+      it('should not update anything in the workspace', () => {
+        const mockBlueprintUpdate = mockWorkspace.updateBlueprints as jest.Mock
+        expect(mockBlueprintUpdate).toHaveBeenCalled()
+        const [callArgs] = mockBlueprintUpdate.mock.calls
+        expect(callArgs).toHaveLength(0)
+      })
     })
   })
 

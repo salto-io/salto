@@ -36,14 +36,10 @@ const applyActionOnState = async (
   action: string,
   element: Promise<Element>
 ): Promise<void> => {
-  switch (action) {
-    case 'add':
-    case 'modify':
-      return state.update([await element])
-    case 'remove':
-      return state.remove([await element])
-    default: throw new Error(`Unsupported action ${action}`)
+  if (action === 'remove') {
+    return state.remove([await element])
   }
+  return state.update([await element])
 }
 
 export const plan = async (

@@ -277,10 +277,6 @@ export const apply = async (
   return changes
 }
 
-export const discover = async (_blueprints: Blueprint[],
-  _fillConfig: (configType: ObjectType) => Promise<InstanceElement>): Promise<Blueprint[]> =>
-  [({ buffer: Buffer.from('asd'), filename: 'none' })]
-
 export const describe = async (_searchWords: string[], _blueprints?: Blueprint[]):
   Promise<SearchResult> =>
   ({

@@ -67,9 +67,8 @@ describe('Test adapters.ts', () => {
       RedHeringWrongAdapter,
       bpConfig,
     ]
-    const [adapters, newConfigs] = await initAdapters(elements, fillConfig)
+    const adapters = await initAdapters(elements, fillConfig)
     expect(adapters.salesforce).toBeDefined()
-    expect(newConfigs.length).toBe(0)
   })
 
   it('should prompt for config when no proper config exists', async () => {
@@ -78,9 +77,7 @@ describe('Test adapters.ts', () => {
       RedHeringNotConfig,
       RedHeringWrongAdapter,
     ]
-    const [adapters, newConfigs] = await initAdapters(elements, fillConfig)
+    const adapters = await initAdapters(elements, fillConfig)
     expect(adapters.salesforce).toBeDefined()
-    expect(newConfigs.length).toEqual(1)
-    expect(newConfigs[0]).toBe(userConfig)
   })
 })

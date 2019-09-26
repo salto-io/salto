@@ -5,19 +5,17 @@ import {
 import { promises } from '@salto/lowerdash'
 import adapterCreators from './creators'
 
-const initAdapters = async (
-  elements: Element[],
-  fillConfig: (t: ObjectType) => Promise<InstanceElement>
-): Promise<[Record<string, Adapter>, InstanceElement[]]> => {
+const initAdapters = (
+  elements: ReadonlyArray<Element>,
+  fillConfig: (t: ObjectType) => Promise<InstanceElement>,
+): Promise<Record<string, Adapter>> => {
   const configs = elements.filter(isInstanceElement)
     .filter(e => e.elemID.isConfig())
-  const newConfigs: InstanceElement[] = []
 
   const findConfig = async (configType: ObjectType): Promise<InstanceElement> => {
     let config = configs.find(e => e.elemID.adapter === configType.elemID.adapter)
     if (!config) {
       config = await fillConfig(configType)
-      newConfigs.push(config)
     }
     return config
   }
@@ -29,9 +27,7 @@ const initAdapters = async (
     }
   )
 
-  const adapters = await promises.object.resolveValues(adapterPromises)
-
-  return [adapters, newConfigs]
+  return promises.object.resolveValues(adapterPromises)
 }
 
 export default initAdapters

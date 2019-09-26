@@ -209,19 +209,6 @@ describe('Test commands.ts and core.ts', () => {
     })
   })
 
-  describe('discover', () => {
-    it('should return blueprint', async () => {
-      const bps = await commands.discover([], mockGetConfigFromUser)
-      expect(bps).toHaveLength(3)
-      expect(bps[0].filename).toBe('config')
-      expect(bps[1].buffer.toString()).toMatch(/type "?salesforce_dummy"? {/)
-      // Both instances should be dumped to the same path
-      expect(bps[2].buffer.toString()).toMatch(/instance_1/)
-      expect(bps[2].buffer.toString()).toMatch(/instance_2/)
-      expect(bps[2].filename).toEqual(path.join('records', 'dummy'))
-    })
-  })
-
   describe('data migration', () => {
     let blueprints: Blueprint[]
     let mockStateGet: jest.Mock<unknown>

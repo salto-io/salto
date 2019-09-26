@@ -85,7 +85,10 @@ const isEqualsNode = (node1: Node, node2: Node): boolean => {
 /**
  * Get list of elements and create DAG based on it
  */
-const toNodeMap = (elements: Element[]): DataNodeMap<Node> => {
+const toNodeMap = (
+  elements: ReadonlyArray<Element>,
+  withDependencies = true
+): DataNodeMap<Node> => {
   const nodeMap = new DataNodeMap<Node>()
 
   elements.filter(e => !e.elemID.isConfig()).filter(isObjectType).forEach(obj => {
@@ -94,13 +97,16 @@ const toNodeMap = (elements: Element[]): DataNodeMap<Node> => {
     // Add object type fields
     // TODO: once we move to '.' seprator we can remove FIELD perfix, see:
     // https://github.com/salto-io/salto/pull/118
-    Object.values(obj.fields).forEach(field => nodeMap.addNode(`FIELD_${id(field.elemID)}`,
-      [id(obj.elemID)], field))
+    const fieldDependencies = withDependencies ? [id(obj.elemID)] : []
+    Object.values(obj.fields).forEach(
+      field => nodeMap.addNode(`FIELD_${id(field.elemID)}`, fieldDependencies, field)
+    )
   })
 
   elements.filter(e => !e.elemID.isConfig()).filter(isInstanceElement).forEach(inst => {
     // Add instance elements
-    nodeMap.addNode(id(inst.elemID), [id(inst.type.elemID)], inst)
+    const instanceDependencies = withDependencies ? [id(inst.type.elemID)] : []
+    nodeMap.addNode(id(inst.elemID), instanceDependencies, inst)
     // We are not adding the fields values because unlike types, values are objects with hirerchy
     // and we cannot just cut them on the first level. For types, subtypes declared outside.
   })
@@ -111,10 +117,14 @@ const toNodeMap = (elements: Element[]): DataNodeMap<Node> => {
   return nodeMap
 }
 
-export const getPlan = (beforeElements: Element[], afterElements: Element[]): Plan => {
+export const getPlan = (
+  beforeElements: ReadonlyArray<Element>,
+  afterElements: ReadonlyArray<Element>,
+  withDependencies = true
+): Plan => {
   // getPlan
-  const before = toNodeMap(beforeElements)
-  const after = toNodeMap(afterElements)
+  const before = toNodeMap(beforeElements, withDependencies)
+  const after = toNodeMap(afterElements, withDependencies)
   // Calculate the diff
   const diffGraph = buildDiffGraph(before, after,
     nodeId => isEqualsNode(before.getData(nodeId), after.getData(nodeId)))

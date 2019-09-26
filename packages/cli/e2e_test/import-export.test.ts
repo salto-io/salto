@@ -41,7 +41,7 @@ describe('When running export', () => {
   jest.setTimeout(5 * 60 * 1000)
 
   it('should save the data in csv file after discover', async () => {
-    await discover(await loadBlueprints([]), discoverOutputDir).execute()
+    await discover(discoverOutputDir, []).execute()
     await exportCommand(await loadBlueprints([], discoverOutputDir), sfLeadObjectName,
       exportOutputFullPath).execute()
     expect(await pathExists(exportOutputFullPath)).toBe(true)
@@ -68,7 +68,7 @@ describe('When running data modifying commands', () => {
 
     it('should succeed after discover', async () => {
       const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
-      await discover(await loadBlueprints([]), discoverOutputDir).execute()
+      await discover(discoverOutputDir, []).execute()
       await importCommand(await loadBlueprints([], discoverOutputDir), dataFilePath,
         sfLeadObjectName, cliOutput).execute()
       expect(cliOutput.stdout.content).toMatch(Prompts.IMPORT_FINISHED_SUCCESSFULLY)
@@ -90,7 +90,7 @@ describe('When running data modifying commands', () => {
       const dataWithIdFileName = 'importWithIds.csv'
       const updatedDataFilePath = path.join(exportOutputDir, dataWithIdFileName)
       const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
-      await discover(await loadBlueprints([]), discoverOutputDir).execute()
+      await discover(discoverOutputDir, []).execute()
       await importCommand(await loadBlueprints([], discoverOutputDir), dataFilePath,
         sfLeadObjectName, cliOutput).execute()
 

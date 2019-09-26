@@ -1,27 +1,23 @@
-import { ObjectType, InstanceElement } from 'adapter-api'
-import { Blueprint, dumpBlueprints as dumpBlueprintsMock } from 'salto'
-import path from 'path'
-import { discover } from '../mocks'
+import { discover as mockDiscover } from 'salto'
 import { command } from '../../src/commands/discover'
 
-
-const mockDiscover = discover
 jest.mock('salto', () => ({
-  discover: jest.fn().mockImplementation((
-    blueprints: Blueprint[],
-    fillConfig: (configType: ObjectType) => Promise<InstanceElement>
-  ) => mockDiscover(blueprints, fillConfig)),
-  dumpBlueprints: jest.fn().mockImplementation(() => { }),
+  discover: jest.fn().mockImplementation((_workspace, _fillConfig) => Promise.resolve()),
+  Workspace: {
+    load: jest.fn().mockImplementation(
+      workspaceDir => ({ baseDir: workspaceDir, errors: [] }),
+    ),
+  },
 }))
 
 describe('discover command', () => {
-  it('should run discover', async () => {
-    const outputDir = path.join(__dirname, '__test_discover')
-    await command([], outputDir).execute()
+  it('should run discover with workspace loaded from provided directory and files', async () => {
+    const workspaceDir = 'dummy_dir'
+    const additaionFiles = ['dummy_filename.bp']
+    await command(workspaceDir, additaionFiles).execute()
 
-    const dump = (dumpBlueprintsMock as jest.Mock).mock.calls[0][0]
-    expect(dump).toHaveLength(1)
-    expect(dump[0].filename).toBe(`${outputDir}/none.bp`)
-    expect(dump[0].buffer.toString()).toMatch('asd')
+    const discoverCalls = (mockDiscover as jest.Mock).mock.calls
+    expect(discoverCalls).toHaveLength(1)
+    expect(discoverCalls[0][0].baseDir).toEqual(workspaceDir)
   })
 })

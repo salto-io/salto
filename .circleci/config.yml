@@ -5,6 +5,17 @@ orbs:
   aws-s3: circleci/aws-s3@1.0.11
 
 commands:
+  set_s3_pkg_urls:
+    steps:
+      - run:
+          name: Set S3 URLs according to date and git hash
+          command: |
+            echo "export S3_PKG_BUCKET=salto-cli-releases" >> $BASH_ENV
+            echo "export PKG_PREFIX=$(git log -1 --format=format:'%cd_%h' --date=format:'%Y%m%d-%H%M%S')" >> $BASH_ENV
+            source $BASH_ENV
+            echo "export S3_PKG_HASH_PREFIX=s3://${S3_PKG_BUCKET}/${CIRCLE_BRANCH}/${PKG_PREFIX}" >> $BASH_ENV
+            source $BASH_ENV
+
   upload_pkg:
     parameters:
         workspace_dir:
@@ -14,13 +25,15 @@ commands:
           type: string
 
     steps:
+      - set_s3_pkg_urls
+
       - store_artifacts:
           path: packages/<< parameters.workspace_dir >>/pkg
           destination: pkg/<< parameters.out_filename >>
 
       - aws-s3/copy:
           from: packages/<< parameters.workspace_dir >>/pkg/*
-          to: s3://salto-cli-releases/${CIRCLE_BRANCH}/$(git log -1 --format=format:'%cd_%h' --date=format:'%Y%m%d-%H%M%S')/<< parameters.out_filename >>
+          to: ${S3_PKG_HASH_PREFIX}/<< parameters.out_filename >>
 
   package_cli:
     description: Create a standalone CLI executable
@@ -182,6 +195,30 @@ jobs:
           workspace_dir: salto-vscode
           out_filename: vscode/salto.vsix
 
+  sync_s3_pkg_latest:
+    docker:
+      - image: circleci/python
+
+    steps:
+      - attach_workspace:
+          at: .
+
+      - set_s3_pkg_urls
+
+      - aws-s3/sync:
+          from: ${S3_PKG_HASH_PREFIX}/
+          to: s3://${S3_PKG_BUCKET}/${CIRCLE_BRANCH}/latest/
+          arguments: '--delete'
+
+      - run:
+          name: Create a marker file with the git hash
+          command: touch ./PACKAGED_FROM.${PKG_PREFIX}
+
+      - aws-s3/copy:
+          from: ./PACKAGED_FROM.${PKG_PREFIX}
+          to: s3://${S3_PKG_BUCKET}/${CIRCLE_BRANCH}/latest/
+
+
 workflows:
   version: 2
 
@@ -199,19 +236,26 @@ workflows:
 
       - package_cli_windows:
           requires:
-            - build
+            - unittest
 
       - package_cli_linux:
           requires:
-            - build
+            - unittest
 
       - package_cli_osx:
           requires:
-            - build
+            - unittest
 
       - package_vscode_extension:
           requires:
-            - build
+            - unittest
+
+      - sync_s3_pkg_latest:
+          requires:
+            - package_cli_windows
+            - package_cli_linux
+            - package_cli_osx
+            - package_vscode_extension
 
   post-commit:
     jobs:
@@ -227,20 +271,27 @@ workflows:
 
       - e2e_test:
           requires:
-            - build
+            - unittest
 
       - package_cli_windows:
           requires:
-            - build
+            - e2e_test
 
       - package_cli_linux:
           requires:
-            - build
+            - e2e_test
 
       - package_cli_osx:
           requires:
-            - build
+            - e2e_test
 
       - package_vscode_extension:
           requires:
-            - build
+            - unittest
+
+      - sync_s3_pkg_latest:
+          requires:
+            - package_cli_windows
+            - package_cli_linux
+            - package_cli_osx
+            - package_vscode_extension

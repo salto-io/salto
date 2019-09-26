@@ -84,7 +84,7 @@ describe('When running data modifying commands', () => {
   })
 
   describe('When running delete instances read from a CSV file', () => {
-    jest.setTimeout(5 * 60 * 1000)
+    jest.setTimeout(10 * 60 * 1000)
 
     it('should succeed after discover', async () => {
       const dataWithIdFileName = 'importWithIds.csv'

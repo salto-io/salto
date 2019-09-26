@@ -13,11 +13,14 @@ export const vsPosToSaltoPos = (pos: vscode.Position): EditorPosition => ({
 
 const getDefinitionName = (context: PositionContext, prefName?: string): string => {
   if (context.ref) {
-    if (context.ref.path) {
-      return context.ref.path
+    const fullName = context.ref.path
+      ? context.ref.path
+      : context.ref.element.elemID.getFullName()
+    if (prefName && fullName.indexOf(prefName) >= 0) {
+      const partName = fullName.slice(fullName.indexOf(prefName) + prefName.length + 1)
+      return Number.isNaN(Number(partName)) ? partName : `[${partName}]`
     }
-    const fullName = context.ref.element.elemID.getFullName()
-    return (prefName) ? fullName.slice(prefName.length + 1) : fullName
+    return fullName
   }
   return 'global'
 }

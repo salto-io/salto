@@ -22,106 +22,108 @@ describe('SalesforceAdapter import-export operations', () => {
     jest.resetAllMocks()
   })
 
-  describe('Pagination over type instances retrieval', () => {
-    const testType = new ObjectType({
-      elemID: new ElemID(constants.SALESFORCE, 'test'),
-      fields: {},
-      annotationTypes: {},
-      annotations: {
-        [constants.API_NAME]: 'Test__c',
-      },
-    })
-
-    const firstRecords = [{
-      attributes: {
-        type: 'Test',
-      },
-      FirstName: 'Adon',
-      LastName: 'Shoko',
-    }, {
-      attributes: {
-        type: 'Test',
-      },
-      FirstName: 'Ringo',
-      LastName: 'Star',
-    }]
-
-    const secondRecords = [{
-      attributes: {
-        type: 'Test',
-      },
-      FirstName: 'Johnny',
-      LastName: 'Walker',
-    }, {
-      attributes: {
-        type: 'Test',
-      },
-      FirstName: 'Lady',
-      LastName: 'Gaga',
-    }]
-
-    describe('When there is no next record URL', () => {
-      beforeEach(() => {
-        connection.query = jest.fn()
-          .mockImplementation(async () => (
-            {
-              totalSize: 2,
-              done: true,
-              records: firstRecords,
-            }))
+  describe('Export (read) operations', () => {
+    describe('Pagination over type instances retrieval', () => {
+      const testType = new ObjectType({
+        elemID: new ElemID(constants.SALESFORCE, 'test'),
+        fields: {},
+        annotationTypes: {},
+        annotations: {
+          [constants.API_NAME]: 'Test__c',
+        },
       })
-      it('should not call queryMore ', async () => {
-        const iterator = adapter.getInstancesOfType(testType)
-        const results: InstanceElement[] = []
-        // Verify we received the right number of instances
-        // eslint-disable-next-line no-restricted-syntax
-        for await (const objects of iterator) {
-          results.push(...objects)
-        }
-        expect(results).toHaveLength(2)
 
-        // Verify the query more was not called
-        const queryMoreMock = connection.queryMore as jest.Mock<unknown>
-        expect(queryMoreMock).not.toHaveBeenCalled()
+      const firstRecords = [{
+        attributes: {
+          type: 'Test',
+        },
+        FirstName: 'Adon',
+        LastName: 'Shoko',
+      }, {
+        attributes: {
+          type: 'Test',
+        },
+        FirstName: 'Ringo',
+        LastName: 'Star',
+      }]
+
+      const secondRecords = [{
+        attributes: {
+          type: 'Test',
+        },
+        FirstName: 'Johnny',
+        LastName: 'Walker',
+      }, {
+        attributes: {
+          type: 'Test',
+        },
+        FirstName: 'Lady',
+        LastName: 'Gaga',
+      }]
+
+      describe('When there is no next record URL', () => {
+        beforeEach(() => {
+          connection.query = jest.fn()
+            .mockImplementation(async () => (
+              {
+                totalSize: 2,
+                done: true,
+                records: firstRecords,
+              }))
+        })
+        it('should not call queryMore ', async () => {
+          const iterator = adapter.getInstancesOfType(testType)
+          const results: InstanceElement[] = []
+          // Verify we received the right number of instances
+          // eslint-disable-next-line no-restricted-syntax
+          for await (const objects of iterator) {
+            results.push(...objects)
+          }
+          expect(results).toHaveLength(2)
+
+          // Verify the query more was not called
+          const queryMoreMock = connection.queryMore as jest.Mock<unknown>
+          expect(queryMoreMock).not.toHaveBeenCalled()
+        })
       })
-    })
 
-    describe('When there is a next record URL', () => {
-      beforeEach(() => {
-        connection.query = jest.fn()
-          .mockImplementation(async () => (
-            {
-              totalSize: 2,
-              done: false,
-              nextRecordsUrl: 'www.salto.io',
-              records: firstRecords,
-            }))
-        connection.queryMore = jest.fn()
-          .mockImplementation(async () => (
-            {
-              totalSize: 2,
-              done: true,
-              records: secondRecords,
-            }))
-      })
-      it('should return more than one page', async () => {
-        const iterator = adapter.getInstancesOfType(testType)
-        const results: InstanceElement[] = []
-        // Verify we received the right number of instances
-        // eslint-disable-next-line no-restricted-syntax
-        for await (const objects of iterator) {
-          results.push(...objects)
-        }
-        expect(results).toHaveLength(4)
+      describe('When there is a next record URL', () => {
+        beforeEach(() => {
+          connection.query = jest.fn()
+            .mockImplementation(async () => (
+              {
+                totalSize: 2,
+                done: false,
+                nextRecordsUrl: 'www.salto.io',
+                records: firstRecords,
+              }))
+          connection.queryMore = jest.fn()
+            .mockImplementation(async () => (
+              {
+                totalSize: 2,
+                done: true,
+                records: secondRecords,
+              }))
+        })
+        it('should return more than one page', async () => {
+          const iterator = adapter.getInstancesOfType(testType)
+          const results: InstanceElement[] = []
+          // Verify we received the right number of instances
+          // eslint-disable-next-line no-restricted-syntax
+          for await (const objects of iterator) {
+            results.push(...objects)
+          }
+          expect(results).toHaveLength(4)
 
-        // Verify the query more was not called
-        const queryMoreMock = connection.queryMore as jest.Mock<unknown>
-        expect(queryMoreMock).toHaveBeenCalled()
+          // Verify the query more was not called
+          const queryMoreMock = connection.queryMore as jest.Mock<unknown>
+          expect(queryMoreMock).toHaveBeenCalled()
+        })
       })
     })
   })
 
-  describe('Import instances of type', () => {
+  describe('Update (create/modify/delete) operations', () => {
     let mockLoad: jest.Mock<unknown>
     let mockThen: jest.Mock<unknown>
     let mockRetrieve: jest.Mock<unknown>
@@ -181,9 +183,35 @@ describe('SalesforceAdapter import-export operations', () => {
       }
     }
 
-    it('should call the bulk API with the correct object type name', async () => {
-      await adapter.importInstancesOfType(testType, mockSingleInstanceIterator())
-      expect(mockLoad.mock.calls[0][0]).toEqual(testObjectType)
+    const mockSingleElemIdIterator = async function *mockSingleElemIdIterator(): AsyncIterable<
+    ElemID> {
+      const values = ['aksdjghf', 'vrwcojgg', 'skldfgjh']
+      const elemIDs = values.map(value => new ElemID(
+        constants.SALESFORCE,
+        'test',
+        value
+      ))
+
+      // eslint-disable-next-line no-restricted-syntax
+      for (const elemID of elemIDs) {
+        yield elemID
+      }
+    }
+
+    describe('Import (upsert) instances of type', () => {
+      it('should call the bulk API with the correct object type name', async () => {
+        await adapter.importInstancesOfType(mockSingleInstanceIterator())
+        expect(mockLoad.mock.calls[0][0]).toEqual(testObjectType)
+        expect(mockLoad.mock.calls[0][1]).toEqual('upsert')
+      })
+    })
+
+    describe('Delete instances of type', () => {
+      it('should call the bulk API with the correct object type name', async () => {
+        await adapter.deleteInstancesOfType(testType, mockSingleElemIdIterator())
+        expect(mockLoad.mock.calls[0][0]).toEqual(testObjectType)
+        expect(mockLoad.mock.calls[0][1]).toEqual('delete')
+      })
     })
   })
 })

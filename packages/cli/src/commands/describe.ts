@@ -18,7 +18,7 @@ type DescribeParsedCliInput = ParsedCliInput<DescribeArgs> & bf.BlueprintsParsed
 const builder = createCommandBuilder({
   options: {
     command: 'describe <words...>',
-    aliases: ['d'],
+    aliases: ['desc'],
     description: 'Shows all available types and attributes for the adapters of the related services',
     positional: {
       words: {

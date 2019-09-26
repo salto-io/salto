@@ -19,7 +19,7 @@ type DiscoverParsedCliInput = ParsedCliInput<DiscoverArgs> & bf.BlueprintsParsed
 const builder = createCommandBuilder({
   options: {
     command: 'discover',
-    aliases: ['d'],
+    aliases: ['dis'],
     description: 'Generates blueprints and state files',
     keyed: {
       'output-dir': {

@@ -4,8 +4,11 @@ import {
   ObjectType, InstanceElement, Element, Value,
 } from 'adapter-api'
 import {
-  discoverAll, getInstancesOfType, importInstancesOfType, applyActions,
+  applyActions, discoverAll,
 } from './core/core'
+import {
+  getInstancesOfType, importInstancesOfType, deleteInstancesOfType,
+} from './core/records'
 import initAdapters from './core/adapters/adapters'
 import {
   getPlan, Plan, PlanItem,
@@ -149,4 +152,22 @@ export const importFromCsvFile = async (
   const elements = mergeAndValidate(await getAllElements(blueprints))
   const [adapters] = await initAdapters(elements, fillConfig)
   await importInstancesOfType(type as ObjectType, records, adapters)
+}
+
+export const deleteFromCsvFile = async (
+  typeId: string,
+  records: Value[],
+  blueprints: Blueprint[],
+  fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
+): Promise<void> => {
+  // Find the corresponding element in the state
+  const state = new State()
+  const stateElements = await state.get()
+  const type = stateElements.find(elem => elem.elemID.getFullName() === typeId)
+  if (!type) {
+    throw new Error(`Couldn't find the type you are looking for: ${typeId}. Have you run salto discover yet?`)
+  }
+  const elements = mergeAndValidate(await getAllElements(blueprints))
+  const [adapters] = await initAdapters(elements, fillConfig)
+  await deleteInstancesOfType(type as ObjectType, records, adapters)
 }

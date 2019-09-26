@@ -12,7 +12,8 @@ import {
   toCustomField, toCustomObject, apiName, sfCase, fieldFullName, Types,
   getSObjectFieldElement, toMetadataInfo, createInstanceElement,
   metadataType, toMetadataPackageZip, toInstanceElements, createMetadataTypeElements,
-  toRecords,
+  instanceElementstoRecords,
+  elemIDstoRecords,
 } from './transformer'
 import layoutFilter from './filters/layouts'
 import fieldPermissionsFilter from './filters/field_permissions'
@@ -28,7 +29,7 @@ import {
   FilterCreator, Filter, FilterWith, filtersWith,
 } from './filter'
 
-const CSV_IMPORT_CHUNK_SIZE = 10000
+const RECORDS_CHUNK_SIZE = 10000
 
 // Add API name and label annotation if missing
 const annotateApiNameAndLabel = (element: ObjectType): void => {
@@ -171,24 +172,54 @@ export default class SalesforceAdapter {
   /**
    * Imports instances of type from the data stream
    * @param type the object type of which to import
-   * @param data the stream that contains the object instances to import
+   * @param instancesIterator the iterator that provides the instances to delete
    * @returns a promise that represents action completion
    */
-  public async importInstancesOfType(type: ObjectType,
-    instancesIterator: AsyncIterable<InstanceElement>): Promise<void> {
+  public async importInstancesOfType(
+    instancesIterator: AsyncIterable<InstanceElement>
+  ): Promise<void> {
     let instances: InstanceElement[] = []
     // eslint-disable-next-line no-restricted-syntax
     for await (const instance of instancesIterator) {
       // Aggregate the instance elements for the proper bulk size
       const length = instances.push(instance)
-      if (length === CSV_IMPORT_CHUNK_SIZE) {
+      if (length === RECORDS_CHUNK_SIZE) {
         // Convert the instances in the transformer to SfRecord[] and send to bulk API
-        await this.client.uploadBulk(apiName(type), toRecords(instances))
+        await this.client.updateBulk(apiName(instances[0].type), 'upsert', instanceElementstoRecords(instances))
         instances = []
       }
     }
     // Send the remaining instances
-    await this.client.uploadBulk(apiName(type), toRecords(instances))
+    if (instances.length > 0) {
+      await this.client.updateBulk(apiName(instances[0].type), 'upsert', instanceElementstoRecords(instances))
+    }
+  }
+
+  /**
+   * Deletes instances of type from the data stream
+   * @param type the object type of which to delete instances
+   * @param elemIdIterator the iterator that provides the instances to delete
+   * @returns a promise that represents action completion
+   */
+  public async deleteInstancesOfType(
+    type: ObjectType,
+    elemIdIterator: AsyncIterable<ElemID>
+  ): Promise<void> {
+    let elemIds: ElemID[] = []
+    // eslint-disable-next-line no-restricted-syntax
+    for await (const elemId of elemIdIterator) {
+      // Aggregate the instance elements for the proper bulk size
+      const length = elemIds.push(elemId)
+      if (length === RECORDS_CHUNK_SIZE) {
+        // Convert the instances in the transformer to SfRecord[] and send to bulk API
+        await this.client.updateBulk(apiName(type), 'delete', elemIDstoRecords(elemIds))
+        elemIds = []
+      }
+    }
+    // Send the remaining instances
+    if (elemIds.length > 0) {
+      await this.client.updateBulk(apiName(type), 'delete', elemIDstoRecords(elemIds))
+    }
   }
 
   /**

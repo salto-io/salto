@@ -1,4 +1,3 @@
-import _ from 'lodash'
 import {
   ObjectType, Element, Adapter, getChangeElement,
 } from 'adapter-api'
@@ -43,10 +42,3 @@ export const applyActions = async (
     const applyActionResult = applyAction(item, adapters)
     return postApplyAction(item.parent().action, applyActionResult)
   })
-
-export const discoverAll = async (adapters: Record<string, Adapter>):
-Promise<Element[]> => {
-  const result = _.flatten(await Promise.all(Object.values(adapters)
-    .map(adapter => adapter.discover())))
-  return result
-}

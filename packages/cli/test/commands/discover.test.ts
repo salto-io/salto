@@ -5,7 +5,7 @@ jest.mock('salto', () => ({
   discover: jest.fn().mockImplementation((_workspace, _fillConfig) => Promise.resolve()),
   Workspace: {
     load: jest.fn().mockImplementation(
-      workspaceDir => ({ baseDir: workspaceDir, errors: [] }),
+      baseDir => ({ baseDir, errors: [] }),
     ),
   },
 }))
@@ -26,7 +26,7 @@ describe('discover command', () => {
   describe('with errored workspace', () => {
     beforeEach(() => {
       mockWorksapce.load = jest.fn().mockImplementationOnce(
-        workspaceDir => ({ baseDir: workspaceDir, errors: ['failed to load'] }),
+        baseDir => ({ baseDir, errors: ['failed to load'] }),
       )
     })
     it('should fail', async () => {

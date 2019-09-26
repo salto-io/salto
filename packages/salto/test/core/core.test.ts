@@ -210,6 +210,73 @@ describe('api functions', () => {
         expect(mockStateUpdate).toHaveBeenCalled()
       })
     })
+    describe('data migration', () => {
+      let blueprints: Blueprint[]
+      let mockStateGet: jest.Mock<unknown>
+      const elemID = new ElemID('salesforce', 'test')
+      const testType = new ObjectType({ elemID })
+      const instanceElement = new InstanceElement(
+        elemID,
+        testType,
+        {}
+      )
+      beforeEach(async () => {
+        blueprints = await readBlueprints('salto.bp')
+        mockStateGet = jest.fn().mockImplementation(() =>
+          Promise.resolve([instanceElement]))
+        State.prototype.get = mockStateGet
+      })
+
+      describe('export', () => {
+        it('should complete successfully', async () => {
+          const returnedIterator = await commands.exportToCsv(
+            testType.elemID.getFullName(),
+            blueprints,
+            mockGetConfigFromUser
+          )
+          expect(mockStateGet).toHaveBeenCalled()
+          const iterator = returnedIterator[Symbol.asyncIterator]()
+          const firstBatch = async (): Promise<InstanceElement[]> => {
+            const { done, value } = await iterator.next()
+            if (done) {
+              return []
+            }
+            return value
+          }
+          const results = await firstBatch()
+          expect(results).toHaveLength(1)
+          expect(results[0].value.Id).toBe(1)
+          expect(results[0].value.FirstName).toBe('Daile')
+          expect(results[0].value.LastName).toBe('Limeburn')
+          expect(results[0].value.Email).toBe('dlimeburn0@blogs.com')
+          expect(results[0].value.Gender).toBe('Female')
+        })
+      })
+
+      describe('import', () => {
+        it('should complete import successfully', async () => {
+          await commands.importFromCsvFile(
+            testType.elemID.getFullName(),
+            [],
+            blueprints,
+            mockGetConfigFromUser
+          )
+          expect(mockStateGet).toHaveBeenCalled()
+        })
+      })
+
+      describe('delete', () => {
+        it('should complete delete successfully', async () => {
+          await commands.deleteFromCsvFile(
+            testType.elemID.getFullName(),
+            [],
+            blueprints,
+            mockGetConfigFromUser
+          )
+          expect(mockStateGet).toHaveBeenCalled()
+        })
+      })
+    })
   })
   describe('discover', () => {
     let mockWorkspace: Workspace
@@ -251,74 +318,6 @@ describe('api functions', () => {
         expect(mockBlueprintUpdate).toHaveBeenCalled()
         const [callArgs] = mockBlueprintUpdate.mock.calls
         expect(callArgs).toHaveLength(0)
-      })
-    })
-  })
-
-  describe('data migration', () => {
-    let blueprints: Blueprint[]
-    let mockStateGet: jest.Mock<unknown>
-    const elemID = new ElemID('salesforce', 'test')
-    const testType = new ObjectType({ elemID })
-    const instanceElement = new InstanceElement(
-      elemID,
-      testType,
-      {}
-    )
-    beforeEach(async () => {
-      blueprints = await readBlueprints('salto.bp')
-      mockStateGet = jest.fn().mockImplementation(() =>
-        Promise.resolve([instanceElement]))
-      State.prototype.get = mockStateGet
-    })
-
-    describe('export', () => {
-      it('should complete successfully', async () => {
-        const returnedIterator = await commands.exportToCsv(
-          testType.elemID.getFullName(),
-          blueprints,
-          mockGetConfigFromUser
-        )
-        expect(mockStateGet).toHaveBeenCalled()
-        const iterator = returnedIterator[Symbol.asyncIterator]()
-        const firstBatch = async (): Promise<InstanceElement[]> => {
-          const { done, value } = await iterator.next()
-          if (done) {
-            return []
-          }
-          return value
-        }
-        const results = await firstBatch()
-        expect(results).toHaveLength(1)
-        expect(results[0].value.Id).toBe(1)
-        expect(results[0].value.FirstName).toBe('Daile')
-        expect(results[0].value.LastName).toBe('Limeburn')
-        expect(results[0].value.Email).toBe('dlimeburn0@blogs.com')
-        expect(results[0].value.Gender).toBe('Female')
-      })
-    })
-
-    describe('import', () => {
-      it('should complete import successfully', async () => {
-        await commands.importFromCsvFile(
-          testType.elemID.getFullName(),
-          [],
-          blueprints,
-          mockGetConfigFromUser
-        )
-        expect(mockStateGet).toHaveBeenCalled()
-      })
-    })
-
-    describe('delete', () => {
-      it('should complete delete successfully', async () => {
-        await commands.deleteFromCsvFile(
-          testType.elemID.getFullName(),
-          [],
-          blueprints,
-          mockGetConfigFromUser
-        )
-        expect(mockStateGet).toHaveBeenCalled()
       })
     })
   })

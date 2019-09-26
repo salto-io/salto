@@ -2,7 +2,7 @@ import {
   ObjectType, InstanceElement, Element, Value,
 } from 'adapter-api'
 import {
-  applyActions
+  applyActions,
 } from './core/core'
 import {
   getInstancesOfType, importInstancesOfType, deleteInstancesOfType,

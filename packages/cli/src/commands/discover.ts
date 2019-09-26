@@ -1,40 +1,50 @@
-import path from 'path'
-import { Blueprint, dumpBlueprints, discover } from 'salto'
+import { discover, Workspace } from 'salto'
 import { createCommandBuilder } from '../builder'
 import { ParsedCliInput, CliCommand, CliOutput } from '../types'
-import * as bf from '../filters/blueprints'
 import { getConfigFromUser } from '../callbacks'
 
-export const command = (blueprints: Blueprint[], outputDir: string): CliCommand => ({
+export const command = (workspaceDir: string, additionalBlueprints: string[]): CliCommand => ({
   async execute(): Promise<void> {
-    const outputBPs = await discover(blueprints, getConfigFromUser)
-    outputBPs.forEach(bp => { bp.filename = path.join(outputDir, `${bp.filename}.bp`) })
-    await dumpBlueprints(outputBPs)
+    const workspace = await Workspace.load(workspaceDir, additionalBlueprints)
+    if (workspace.errors.length > 0) {
+      throw new Error(`Failed to load workspace, errors:\n${workspace.errors.join('\n')}`)
+    }
+    await discover(workspace, getConfigFromUser)
   },
 })
 
-type DiscoverArgs = bf.Args & { 'output-dir': string }
-type DiscoverParsedCliInput = ParsedCliInput<DiscoverArgs> & bf.BlueprintsParsedCliInput
+type DiscoverArgs = {
+  'workspace-dir': string
+  'blueprint': string[]
+}
+type DiscoverParsedCliInput = ParsedCliInput<DiscoverArgs>
 
 const builder = createCommandBuilder({
   options: {
     command: 'discover',
     aliases: ['dis'],
-    description: 'Generates blueprints and state files',
+    description: 'Update blueprints and state in workspace directory',
     keyed: {
-      'output-dir': {
-        alias: ['o'],
-        describe: 'A path to the output blueprints directory',
+      'workspace-dir': {
+        alias: ['d'],
+        describe: 'Path to the workspace directory',
         string: true,
         demandOption: true,
+        requiresArg: true,
+      },
+      blueprint: {
+        alias: ['b'],
+        describe: 'Additional blueprint files to load into the workspace',
+        demandOption: false,
+        array: true,
+        string: true,
+        requiresArg: true,
       },
     },
   },
 
-  filters: [bf.optionalFilter],
-
   async build(input: DiscoverParsedCliInput, _output: CliOutput) {
-    return command(input.blueprints, input.args['output-dir'])
+    return command(input.args['workspace-dir'], input.args.blueprint || [])
   },
 })
 

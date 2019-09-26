@@ -6,7 +6,7 @@ import { promises } from '@salto/lowerdash'
 import adapterCreators from './creators'
 
 const initAdapters = async (
-  elements: Element[],
+  elements: ReadonlyArray<Element>,
   fillConfig: (t: ObjectType) => Promise<InstanceElement>
 ): Promise<[Record<string, Adapter>, InstanceElement[]]> => {
   const configs = elements.filter(isInstanceElement)
@@ -17,6 +17,7 @@ const initAdapters = async (
     let config = configs.find(e => e.elemID.adapter === configType.elemID.adapter)
     if (!config) {
       config = await fillConfig(configType)
+      config.path = ['config']
       newConfigs.push(config)
     }
     return config

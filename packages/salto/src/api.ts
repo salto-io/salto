@@ -1,10 +1,8 @@
-import _ from 'lodash'
-import path from 'path'
 import {
   ObjectType, InstanceElement, Element, Value,
 } from 'adapter-api'
 import {
-  applyActions, discoverAll,
+  applyActions,
 } from './core/core'
 import {
   getInstancesOfType, importInstancesOfType, deleteInstancesOfType,
@@ -13,12 +11,13 @@ import initAdapters from './core/adapters/adapters'
 import {
   getPlan, Plan, PlanItem,
 } from './core/plan'
-import { dump } from './parser/dump'
 import { Blueprint, getAllElements } from './core/blueprint'
 import State from './state/state'
 import { findElement, SearchResult } from './core/search'
 import { mergeElements } from './core/merger'
 import validateElements from './core/validator'
+import { Workspace } from './workspace/workspace'
+import { discoverChanges } from './core/discover'
 
 export const mergeAndValidate = (elements: Element[]): Element[] => {
   const mergedElements = mergeElements(elements)
@@ -82,32 +81,16 @@ export const apply = async (
 }
 
 export const discover = async (
-  blueprints: Blueprint[],
+  workspace: Workspace,
   fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
-): Promise<Blueprint[]> => {
-  const elements = mergeAndValidate(await getAllElements(blueprints))
-  const [adapters, newAdapterConfigs] = await initAdapters(elements, fillConfig)
+): Promise<void> => {
   const state = new State()
-  try {
-    const discoverElements = await discoverAll(adapters)
-    state.override(mergeAndValidate(discoverElements))
-    // TODO: we should probably avoid writing credentials to the output BP folder
-    // It would probably be better to store them in the salto env once we implement it
-    const configBPs = _.isEmpty(newAdapterConfigs) ? [] : [
-      { buffer: Buffer.from(await dump(Object.values(newAdapterConfigs))), filename: 'config' },
-    ]
-    const elemBPs = await Promise.all(_(discoverElements)
-      .groupBy(elem => elem.path)
-      .map(async grp => ({
-        buffer: Buffer.from(await dump(grp)),
-        filename: grp[0].path ? path.join(...grp[0].path) : grp[0].elemID.adapter,
-      }))
-      .flatten()
-      .value())
-    return _.flatten([configBPs, elemBPs])
-  } finally {
-    await state.flush()
-  }
+  const { changes, elements } = await discoverChanges(
+    workspace.elements, await state.get(), fillConfig
+  )
+  state.override(elements)
+  await workspace.updateBlueprints(...changes)
+  await Promise.all([workspace.flush(), state.flush()])
 }
 
 export const describeElement = async (

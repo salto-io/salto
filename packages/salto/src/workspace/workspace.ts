@@ -206,6 +206,7 @@ export class Workspace {
       if (bp === undefined) {
         await fs.delete(filePath)
       } else {
+        await fs.mkdirp(path.dirname(filePath))
         await fs.writeFile(filePath, bp.buffer)
       }
       this.dirtyBlueprints.delete(filename)

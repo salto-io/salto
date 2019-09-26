@@ -87,7 +87,7 @@ describe('commands e2e', () => {
   afterAll(() => fs.delete(discoverOutputDir))
 
   it('should run discover and create the state bp file', async () => {
-    await discover(await loadBlueprints([]), discoverOutputDir).execute()
+    await discover(discoverOutputDir, []).execute()
     expect(await pathExists(discoverOutputDir)).toBe(true)
     expect(await pathExists(STATEPATH)).toBe(true)
   })

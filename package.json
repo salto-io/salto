@@ -10,6 +10,7 @@
   },
   "scripts": {
     "install": "for WS in @salto/lowerdash @salto/dag adapter-api salesforce-adapter salto salto-vscode @salto/cli; do yarn workspace $WS run build || exit; done",
-    "lint-fix": "yarn workspaces run lint-fix"
+    "lint-fix": "yarn workspaces run lint-fix",
+    "test": "yarn run jest --forceExit --detectOpenHandles"
   }
 }

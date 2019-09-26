@@ -44,12 +44,15 @@ const getValuesChanges = (id: ElemID, before: Value, after: Value): DetailedChan
       .value()
   }
   if (_.isArray(before) && _.isArray(after)) {
-    const len = _.max([before.length, after.length]) as number
-    return _.flatten(
-      _.times(len).map(
-        i => getValuesChanges(id.createNestedID(i.toString()), before[i], after[i])
+    // If there is an addition or deletion in the list we treat the whole list as changed
+    // This is because we cannot serialize addtion / deletion from a list properly
+    if (before.length === after.length) {
+      return _.flatten(
+        _.times(before.length).map(
+          i => getValuesChanges(id.createNestedID(i.toString()), before[i], after[i])
+        )
       )
-    )
+    }
   }
   return [{ id, action: 'modify', data: { before, after } }]
 }

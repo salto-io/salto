@@ -188,7 +188,9 @@ export default class SalesforceAdapter {
       }
     }
     // Send the remaining instances
-    await this.client.updateBulk(apiName(instances[0].type), 'upsert', instanceElementstoRecords(instances))
+    if (instances.length > 0) {
+      await this.client.updateBulk(apiName(instances[0].type), 'upsert', instanceElementstoRecords(instances))
+    }
   }
 
   /**
@@ -213,7 +215,9 @@ export default class SalesforceAdapter {
       }
     }
     // Send the remaining instances
-    await this.client.updateBulk(apiName(type), 'delete', elemIDstoRecords(elemIds))
+    if (elemIds.length > 0) {
+      await this.client.updateBulk(apiName(type), 'delete', elemIDstoRecords(elemIds))
+    }
   }
 
   /**

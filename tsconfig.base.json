@@ -11,6 +11,7 @@
         "noUnusedParameters": true,
         "strictNullChecks": true,
         "strict": true,
-        "sourceMap": true
+        "sourceMap": true,
+        "experimentalDecorators": true
     }
 }

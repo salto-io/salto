@@ -623,9 +623,10 @@ const credentialsFromConfig = (config: InstanceElement): Credentials => ({
   isSandbox: config.value.sandbox,
 })
 
-const clientFromConfig = (config: InstanceElement): SalesforceClient => new SalesforceClient({
-  credentials: credentialsFromConfig(config),
-})
+const clientFromConfig = (config: InstanceElement): SalesforceClient =>
+  new SalesforceClient({
+    credentials: credentialsFromConfig(config),
+  })
 
 export const creator: AdapterCreator = {
   create: ({ config }) => new SalesforceAdapter({

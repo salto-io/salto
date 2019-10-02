@@ -17,12 +17,14 @@ import { Types, sfCase } from '../src/transformer'
 import { PROFILE_METADATA_TYPE } from '../src/filters/field_permissions'
 import Connection from '../src/client/jsforce'
 import mockAdpater from './adapter'
+import { MockLogger } from './logger'
 
 const { makeArray } = collections.array
 
 describe('SalesforceAdapter CRUD', () => {
   let connection: Connection
   let adapter: SalesforceAdapter
+  let logger: MockLogger
 
   const stringType = Types.salesforceDataTypes.text
 
@@ -57,7 +59,7 @@ describe('SalesforceAdapter CRUD', () => {
   let mockDeploy: jest.Mock<unknown>
 
   beforeEach(() => {
-    ({ connection, adapter } = mockAdpater({
+    ({ connection, adapter, logger } = mockAdpater({
       adapterParams: {
         filterCreators: [],
         metadataToUpdateWithDeploy: [deployTypeName],
@@ -131,7 +133,7 @@ describe('SalesforceAdapter CRUD', () => {
       describe('when the request fails', () => {
         let result: Promise<Element>
 
-        beforeEach(() => {
+        beforeEach(async () => {
           connection.metadata.create = jest.fn()
             .mockImplementationOnce(async () => ([{
               success: false,
@@ -160,6 +162,39 @@ describe('SalesforceAdapter CRUD', () => {
           'should reject the promise',
           () => expect(result).rejects.toEqual(new Error('Failed to add Test__c\nAdditional message'))
         )
+
+        it('should log the failure', async () => {
+          expect.assertions(1)
+          try {
+            await result
+          } catch (_e) {
+            expect(logger.error.mock.calls).toHaveLength(1)
+          }
+        })
+
+        describe('the logged message', () => {
+          let loggedMessage: string
+          beforeEach(() => result.catch(() => {
+            [[loggedMessage]] = logger.error.mock.calls
+          }))
+
+          it('should contain a fixed message', () => {
+            expect(loggedMessage).toMatch(/Failed to run SFDC client call/)
+          })
+
+          it('should contain the throwing connection method', () => {
+            expect(loggedMessage).toMatch(/\bcreate\(/)
+          })
+
+          it('should contain the method args', () => {
+            expect(loggedMessage).toMatch(/\{ fullName: 'Instance' \}/)
+          })
+
+          it('should contain the error message', () => {
+            expect(loggedMessage).toMatch(/\bFailed to add Test__c\b/)
+            expect(loggedMessage).toMatch(/\bAdditional message\b/)
+          })
+        })
       })
     })
 

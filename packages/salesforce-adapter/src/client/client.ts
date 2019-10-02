@@ -1,5 +1,6 @@
+import { inspect } from 'util'
 import _ from 'lodash'
-import { collections } from '@salto/lowerdash'
+import { collections, decorators } from '@salto/lowerdash'
 import {
   Connection as RealConnection,
   MetadataObject,
@@ -39,78 +40,51 @@ const MAX_ITEMS_IN_DESCRIBE_REQUEST = 100
 //  https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_readMetadata.htm
 const MAX_ITEMS_IN_READ_METADATA_REQUEST = 10
 
-function login(client: SalesforceClient, _name: string, descriptor: PropertyDescriptor):
-  PropertyDescriptor {
-  const original = descriptor.value
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  descriptor.value = async function withLogin(...args: any[]) {
-    await client.login.apply(this)
-    return original.apply(this, args)
+const ensureLoggedIn = decorators.wrapMethodWith(
+  async function withLogin(
+    this: SalesforceClient,
+    originalMethod: decorators.OriginalCall
+  ): Promise<unknown> {
+    await this.login()
+    return originalMethod.call()
   }
+)
 
-  return descriptor
-}
+const validateSaveResult = decorators.wrapMethodWith(
+  async (original: decorators.OriginalCall): Promise<unknown> => {
+    const result = await original.call()
 
-function logFailures(_client: SalesforceClient, name: string, descriptor: PropertyDescriptor):
-  void {
-  const original = descriptor.value
+    const errors = makeArray(result)
+      .filter(r => r)
+      .map(r => r as CompleteSaveResult)
+      .filter(r => r.errors)
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  descriptor.value = function withLog(...args: any[]) {
-    return Promise.resolve(original.apply(this, args)).catch(e => {
-      // TODO: should be replaced with real log
-      // eslint-disable-next-line no-console
-      console.error(`Failed to run SFDC client call: ${name}(${args
-        .map(a => JSON.stringify(a)).filter(a => a).join()}): ${JSON.stringify(e)}`)
-      throw e
-    })
+    if (errors.length > 0) {
+      const strErrors = errors.map(r => makeArray(r.errors).map(e => e.message).join('\n'))
+      throw new Error(strErrors.join('\n'))
+    }
+
+    return result
   }
-}
+)
 
-function validateSaveResult(_client: SalesforceClient, _name: string,
-  descriptor: PropertyDescriptor): void {
-  const original = descriptor.value
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  descriptor.value = function withValidation(...args: any[]) {
-    return Promise.resolve(original.apply(this, args)).then(result => {
-      const errors = makeArray(result)
-        .filter(r => r)
-        .map(r => r as CompleteSaveResult)
-        .filter(r => r.errors)
-      if (errors.length > 0) {
-        const strErrors = errors.map(r => makeArray(r.errors).map(e => e.message).join('\n'))
-        throw new Error(strErrors.join('\n'))
-      }
+const validateDeployResult = decorators.wrapMethodWith(
+  async (original: decorators.OriginalCall): Promise<unknown> => {
+    const result = await original.call() as DeployResult
+    if (result.success) {
       return result
-    })
+    }
+
+    const errors = _(result.details)
+      .map(detail => detail.componentFailures || [])
+      .flatten()
+      .filter(component => !component.success)
+      .map(failure => `${failure.componentType}.${failure.fullName}: ${failure.problem}`)
+      .value()
+
+    throw new Error(errors.join('\n'))
   }
-}
-
-function validateDeployResult(_client: SalesforceClient, _name: string,
-  descriptor: PropertyDescriptor): void {
-  const original = descriptor.value
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  descriptor.value = function withValidation(...args: any[]) {
-    return Promise.resolve(original.apply(this, args)).then(res => {
-      const result = res as DeployResult
-      if (result.success) {
-        return result
-      }
-
-      const errors = _(result.details)
-        .map(detail => detail.componentFailures || [])
-        .flatten()
-        .filter(component => !component.success)
-        .map(failure => `${failure.componentType}.${failure.fullName}: ${failure.problem}`)
-        .value()
-
-      throw new Error(errors.join('\n'))
-    })
-  }
-}
+)
 
 export type Credentials = {
   username: string
@@ -119,9 +93,16 @@ export type Credentials = {
   isSandbox: boolean
 }
 
+export type LogLevel = 'info' | 'warn' | 'error'
+
+export type Logger = {
+  [level in LogLevel]: (message: string) => void
+}
+
 export type SalesforceClientOpts = {
   credentials: Credentials
   connection?: Connection
+  logger?: Logger
 }
 
 const realConnection = (isSandbox: boolean): Connection => {
@@ -150,12 +131,14 @@ export default class SalesforceClient {
   private readonly conn: Connection
   private isLoggedIn = false
   private readonly credentials: Credentials
+  private readonly logger: Logger
 
   constructor(
-    { credentials, connection }: SalesforceClientOpts
+    { credentials, connection, logger }: SalesforceClientOpts
   ) {
     this.credentials = credentials
     this.conn = connection || realConnection(credentials.isSandbox)
+    this.logger = logger || console
   }
 
   public async login(): Promise<void> {
@@ -166,20 +149,40 @@ export default class SalesforceClient {
     }
   }
 
-  @logFailures
-  @login
+  private static logFailures = decorators.wrapMethodWith(
+    async function logFailure(
+      this: SalesforceClient,
+      { call, name, args }: decorators.OriginalCall,
+    ): Promise<unknown> {
+      try {
+        return await call()
+      } catch (e) {
+        const message = [
+          'Failed to run SFDC client call',
+          `${name}(${args.map(arg => inspect(arg)).join(', ')}):`,
+          e.message,
+        ].join(' ')
+
+        this.logger.error(message)
+        throw e
+      }
+    }
+  )
+
+  @SalesforceClient.logFailures
+  @ensureLoggedIn
   public async runQuery(queryString: string): Promise<QueryResult<Value>> {
     return this.conn.query(queryString)
   }
 
-  @logFailures
-  @login
+  @SalesforceClient.logFailures
+  @ensureLoggedIn
   public async queryMore(locator: string): Promise<QueryResult<Value>> {
     return this.conn.queryMore(locator)
   }
 
-  @logFailures
-  @login
+  @SalesforceClient.logFailures
+  @ensureLoggedIn
   public async destroy(
     type: string, ids: string | string[]
   ): Promise<(RecordResult | RecordResult[])> {
@@ -189,8 +192,8 @@ export default class SalesforceClient {
   /**
    * Extract metadata object names
    */
-  @logFailures
-  @login
+  @SalesforceClient.logFailures
+  @ensureLoggedIn
   public async listMetadataTypes(): Promise<MetadataObject[]> {
     const describeResult = this.conn.metadata.describe()
     return (await describeResult).metadataObjects
@@ -200,16 +203,16 @@ export default class SalesforceClient {
    * Read information about a value type
    * @param type The name of the metadata type for which you want metadata
    */
-  @logFailures
-  @login
+  @SalesforceClient.logFailures
+  @ensureLoggedIn
   public async describeMetadataType(type: string): Promise<ValueTypeField[]> {
     const fullName = `{${METADATA_NAMESPACE}}${type}`
     const describeResult = this.conn.metadata.describeValueType(fullName)
     return (await describeResult).valueTypeFields
   }
 
-  @logFailures
-  @login
+  @SalesforceClient.logFailures
+  @ensureLoggedIn
   public async listMetadataObjects(type: string): Promise<FileProperties[]> {
     return makeArray(await this.conn.metadata.list({ type }))
   }
@@ -217,8 +220,8 @@ export default class SalesforceClient {
   /**
    * Read metadata for salesforce object of specific type and name
    */
-  @logFailures
-  @login
+  @SalesforceClient.logFailures
+  @ensureLoggedIn
   public async readMetadata(type: string, name: string | string[]): Promise<MetadataInfo[]> {
     return sendChunked(makeArray(name), chunk =>
       this.conn.metadata.read(type, chunk), MAX_ITEMS_IN_READ_METADATA_REQUEST)
@@ -227,14 +230,14 @@ export default class SalesforceClient {
   /**
    * Extract sobject names
    */
-  @logFailures
-  @login
+  @SalesforceClient.logFailures
+  @ensureLoggedIn
   public async listSObjects(): Promise<DescribeGlobalSObjectResult[]> {
     return (await this.conn.describeGlobal()).sobjects
   }
 
-  @logFailures
-  @login
+  @SalesforceClient.logFailures
+  @ensureLoggedIn
   public async describeSObjects(objectNames: string[]):
     Promise<DescribeSObjectResult[]> {
     return sendChunked(objectNames, chunk => this.conn.soap.describeSObjects(chunk),
@@ -247,9 +250,9 @@ export default class SalesforceClient {
    * @param metadata The metadata of the object
    * @returns The save result of the requested creation
    */
-  @logFailures
+  @SalesforceClient.logFailures
   @validateSaveResult
-  @login
+  @ensureLoggedIn
   public async create(type: string, metadata: MetadataInfo | MetadataInfo[]):
     Promise<SaveResult[]> {
     return sendChunked(metadata, chunk => this.conn.metadata.create(type, chunk))
@@ -261,9 +264,9 @@ export default class SalesforceClient {
    * @param fullNames The full names of the metadata components
    * @returns The save result of the requested deletion
    */
-  @logFailures
+  @SalesforceClient.logFailures
   @validateSaveResult
-  @login
+  @ensureLoggedIn
   public async delete(type: string, fullNames: string | string[]): Promise<SaveResult[]> {
     return sendChunked(fullNames, chunk => this.conn.metadata.delete(type, chunk))
   }
@@ -274,9 +277,9 @@ export default class SalesforceClient {
    * @param metadata The metadata of the object
    * @returns The save result of the requested update
    */
-  @logFailures
+  @SalesforceClient.logFailures
   @validateSaveResult
-  @login
+  @ensureLoggedIn
   public async update(type: string, metadata: MetadataInfo | MetadataInfo[]):
     Promise<SaveResult[]> {
     return sendChunked(metadata, chunk => this.conn.metadata.update(type, chunk))
@@ -287,9 +290,9 @@ export default class SalesforceClient {
    * @param zip The package zip
    * @returns The save result of the requested update
    */
-  @logFailures
+  @SalesforceClient.logFailures
   @validateDeployResult
-  @login
+  @ensureLoggedIn
   public async deploy(zip: Buffer): Promise<DeployResult> {
     return this.conn.metadata.deploy(zip, { rollbackOnError: true }).complete(true)
   }
@@ -301,8 +304,8 @@ export default class SalesforceClient {
    * @param records The records from the CSV contents
    * @returns The BatchResultInfo which contains success/errors for each entry
    */
-  @logFailures
-  @login
+  @SalesforceClient.logFailures
+  @ensureLoggedIn
   public async updateBulk(type: string, operation: BulkLoadOperation, records: SfRecord[]):
     Promise<BatchResultInfo[]> {
     // Initiate the batch job

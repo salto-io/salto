@@ -243,7 +243,7 @@ describe('Salesforce adapter E2E with real account', () => {
             stringType,
             {
               [Type.REQUIRED]: false,
-              [Type.DEFAULT]: '"test"',
+              [constants.DEFAULT_VALUE_FORMULA]: '"test"',
               [constants.LABEL]: 'description label',
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 admin: { editable: true, readable: true },
@@ -344,7 +344,7 @@ describe('Salesforce adapter E2E with real account', () => {
         },
         annotations: {
           [Type.REQUIRED]: false,
-          [Type.DEFAULT]: 'test',
+          [constants.DEFAULT_VALUE_FORMULA]: 'test',
           [constants.LABEL]: 'test label',
           [constants.API_NAME]: customObjectName,
           [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
@@ -385,7 +385,7 @@ describe('Salesforce adapter E2E with real account', () => {
         },
         annotations: {
           [Type.REQUIRED]: false,
-          [Type.DEFAULT]: 'test2',
+          [constants.DEFAULT_VALUE_FORMULA]: 'test2',
           [constants.LABEL]: 'test2 label',
           [constants.API_NAME]: customObjectName,
         },
@@ -558,7 +558,7 @@ describe('Salesforce adapter E2E with real account', () => {
         },
         annotations: {
           [Type.REQUIRED]: false,
-          [Type.DEFAULT]: 'test',
+          [constants.DEFAULT_VALUE_FORMULA]: 'test',
           [constants.LABEL]: 'test label',
           [constants.API_NAME]: customObjectName,
           [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
@@ -594,7 +594,7 @@ describe('Salesforce adapter E2E with real account', () => {
         },
         annotations: {
           [Type.REQUIRED]: false,
-          [Type.DEFAULT]: 'test2',
+          [constants.DEFAULT_VALUE_FORMULA]: 'test2',
           [constants.LABEL]: 'test label 2',
           [constants.API_NAME]: customObjectName,
         },
@@ -661,7 +661,7 @@ describe('Salesforce adapter E2E with real account', () => {
         },
         annotations: {
           [Type.REQUIRED]: false,
-          [Type.DEFAULT]: 'test',
+          [constants.DEFAULT_VALUE_FORMULA]: 'test',
           [constants.LABEL]: 'test label',
           [constants.API_NAME]: customObjectName,
           [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
@@ -715,7 +715,7 @@ describe('Salesforce adapter E2E with real account', () => {
         },
         annotations: {
           [Type.REQUIRED]: false,
-          [Type.DEFAULT]: 'test',
+          [constants.DEFAULT_VALUE_FORMULA]: 'test',
           [constants.LABEL]: 'test label',
           [constants.API_NAME]: customObjectName,
         },
@@ -783,7 +783,7 @@ describe('Salesforce adapter E2E with real account', () => {
             Types.salesforceDataTypes.currency,
             {
               [Type.REQUIRED]: false,
-              [Type.DEFAULT]: 25,
+              [constants.DEFAULT_VALUE_FORMULA]: 25,
               [constants.LABEL]: 'Currency description label',
               [constants.FIELD_ANNOTATIONS.SCALE]: 3,
               [constants.FIELD_ANNOTATIONS.PRECISION]: 18,
@@ -807,7 +807,7 @@ describe('Salesforce adapter E2E with real account', () => {
             Types.salesforceDataTypes.date,
             {
               [constants.LABEL]: 'Date description label',
-              [Type.DEFAULT]: 'Today() + 7',
+              [constants.DEFAULT_VALUE_FORMULA]: 'Today() + 7',
               ...adminReadable,
             },
           ),
@@ -817,7 +817,7 @@ describe('Salesforce adapter E2E with real account', () => {
             Types.salesforceDataTypes.time,
             {
               [constants.LABEL]: 'Time description label',
-              [Type.DEFAULT]: 'TIMENOW() + 5',
+              [constants.DEFAULT_VALUE_FORMULA]: 'TIMENOW() + 5',
               ...adminReadable,
             },
           ),
@@ -827,7 +827,7 @@ describe('Salesforce adapter E2E with real account', () => {
             Types.salesforceDataTypes.datetime,
             {
               [constants.LABEL]: 'DateTime description label',
-              [Type.DEFAULT]: 'Now() + 7',
+              [constants.DEFAULT_VALUE_FORMULA]: 'Now() + 7',
               ...adminReadable,
             },
           ),
@@ -943,7 +943,7 @@ describe('Salesforce adapter E2E with real account', () => {
               [constants.FIELD_ANNOTATIONS.SCALE]: 3,
               [constants.FIELD_ANNOTATIONS.PRECISION]: 15,
               [constants.FIELD_ANNOTATIONS.UNIQUE]: true,
-              [Type.DEFAULT]: 42,
+              [constants.DEFAULT_VALUE_FORMULA]: 42,
               [constants.LABEL]: 'Number description label',
               ...adminReadable,
             },

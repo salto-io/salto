@@ -57,6 +57,7 @@ export class CustomField implements MetadataInfo {
     readonly label?: string,
     required = false,
     defaultVal?: string,
+    defaultValFormula?: string,
     values?: string[],
     formula?: string,
   ) {
@@ -81,6 +82,11 @@ export class CustomField implements MetadataInfo {
       this.required = required
     }
 
+    if (defaultValFormula) {
+      this.defaultValue = defaultValFormula
+    }
+
+    // For Picklist we save the default value in defaultVal but Metadata requires it at Value level
     if (type === FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.PICKLIST]
       || type === FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.MULTIPICKLIST]) {
       if (values && !_.isEmpty(values)) {
@@ -90,7 +96,10 @@ export class CustomField implements MetadataInfo {
           },
         }
       }
-    } else if (defaultVal !== undefined) {
+    }
+
+    // For Checkbox the default value comes from defaultVal and not defaultValFormula
+    if (type === FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.CHECKBOX]) {
       this.defaultValue = defaultVal
     }
   }

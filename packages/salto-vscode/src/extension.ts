@@ -1,6 +1,8 @@
 import * as vscode from 'vscode'
 import { initWorkspace } from './salto/workspace'
-import { onDidChangeConfiguration, onDidChangeTextDocument } from './events'
+import {
+  onDidChangeConfiguration, onDidChangeTextDocument, onFileCreate, onFileDelete,
+} from './events'
 import {
   createCompletionsProvider, createDefinitionsProvider, createReferenceProvider,
   createDocumentSymbolsProvider,
@@ -54,6 +56,10 @@ export const activate = async (context: vscode.ExtensionContext): Promise<void> 
         e => onDidChangeTextDocument(e, workspace)
       )
     )
+
+    const fileWatcher = vscode.workspace.createFileSystemWatcher('**/*.bp')
+    fileWatcher.onDidCreate((uri: vscode.Uri) => onFileCreate(workspace, uri.path))
+    fileWatcher.onDidDelete((uri: vscode.Uri) => onFileDelete(workspace, uri.path))
   }
   // We need this log until the parse time will be shorter so we will know when to expect the plugin
   // to start working.

@@ -54,7 +54,12 @@ export const updateFile = async (
   let hasErrors = false
   try {
     const parseResult = (await parseBlueprints([bp]))[0]
-    const currentBlueprint = workspace.parsedBlueprints[filename]
+    const currentBlueprint: ParsedBlueprint = workspace.parsedBlueprints[filename] || {
+      filename,
+      buffer: content,
+      elements: [],
+      errors: [],
+    }
     hasErrors = parseResult.errors.length > 0
     currentBlueprint.errors = parseResult.errors
     if (!hasErrors) {
@@ -66,4 +71,11 @@ export const updateFile = async (
     hasErrors = true
   }
   return hasErrors ? workspace : updateWorkspace(workspace)
+}
+
+export const removeFile = (
+  workspace: SaltoWorkspace, filename: string
+): SaltoWorkspace => {
+  workspace.parsedBlueprints = _.omit(workspace.parsedBlueprints, filename)
+  return updateWorkspace(workspace)
 }

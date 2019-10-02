@@ -53,7 +53,7 @@ function login(client: SalesforceClient, _name: string, descriptor: PropertyDesc
 }
 
 function logFailures(_client: SalesforceClient, name: string, descriptor: PropertyDescriptor):
-  PropertyDescriptor {
+  void {
   const original = descriptor.value
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -66,11 +66,10 @@ function logFailures(_client: SalesforceClient, name: string, descriptor: Proper
       throw e
     })
   }
-  return descriptor
 }
 
 function validateSaveResult(_client: SalesforceClient, _name: string,
-  descriptor: PropertyDescriptor): PropertyDescriptor {
+  descriptor: PropertyDescriptor): void {
   const original = descriptor.value
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -87,11 +86,10 @@ function validateSaveResult(_client: SalesforceClient, _name: string,
       return result
     })
   }
-  return descriptor
 }
 
 function validateDeployResult(_client: SalesforceClient, _name: string,
-  descriptor: PropertyDescriptor): PropertyDescriptor {
+  descriptor: PropertyDescriptor): void {
   const original = descriptor.value
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -112,7 +110,6 @@ function validateDeployResult(_client: SalesforceClient, _name: string,
       throw new Error(errors.join('\n'))
     })
   }
-  return descriptor
 }
 
 export type Credentials = {
@@ -307,7 +304,7 @@ export default class SalesforceClient {
   @logFailures
   @login
   public async updateBulk(type: string, operation: BulkLoadOperation, records: SfRecord[]):
-  Promise<BatchResultInfo[]> {
+    Promise<BatchResultInfo[]> {
     // Initiate the batch job
     const batch = this.conn.bulk.load(type, operation, { extIdField: 'Id', concurrencyMode: 'Parallel' }, records)
     // We need to wait for the job to execute (this what the next line does),

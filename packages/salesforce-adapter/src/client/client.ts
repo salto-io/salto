@@ -40,16 +40,6 @@ const MAX_ITEMS_IN_DESCRIBE_REQUEST = 100
 //  https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_readMetadata.htm
 const MAX_ITEMS_IN_READ_METADATA_REQUEST = 10
 
-const ensureLoggedIn = decorators.wrapMethodWith(
-  async function withLogin(
-    this: SalesforceClient,
-    originalMethod: decorators.OriginalCall
-  ): Promise<unknown> {
-    await this.login()
-    return originalMethod.call()
-  }
-)
-
 const validateSaveResult = decorators.wrapMethodWith(
   async (original: decorators.OriginalCall): Promise<unknown> => {
     const result = await original.call()
@@ -141,13 +131,23 @@ export default class SalesforceClient {
     this.logger = logger || console
   }
 
-  public async login(): Promise<void> {
+  private async ensureLoggedIn(): Promise<void> {
     if (!this.isLoggedIn) {
       const { username, password, apiToken } = this.credentials
       await this.conn.login(username, password + (apiToken || ''))
       this.isLoggedIn = true
     }
   }
+
+  protected static requiresLogin = decorators.wrapMethodWith(
+    async function withLogin(
+      this: SalesforceClient,
+      originalMethod: decorators.OriginalCall
+    ): Promise<unknown> {
+      await this.ensureLoggedIn()
+      return originalMethod.call()
+    }
+  )
 
   private static logFailures = decorators.wrapMethodWith(
     async function logFailure(
@@ -170,19 +170,19 @@ export default class SalesforceClient {
   )
 
   @SalesforceClient.logFailures
-  @ensureLoggedIn
+  @SalesforceClient.requiresLogin
   public async runQuery(queryString: string): Promise<QueryResult<Value>> {
     return this.conn.query(queryString)
   }
 
   @SalesforceClient.logFailures
-  @ensureLoggedIn
+  @SalesforceClient.requiresLogin
   public async queryMore(locator: string): Promise<QueryResult<Value>> {
     return this.conn.queryMore(locator)
   }
 
   @SalesforceClient.logFailures
-  @ensureLoggedIn
+  @SalesforceClient.requiresLogin
   public async destroy(
     type: string, ids: string | string[]
   ): Promise<(RecordResult | RecordResult[])> {
@@ -193,7 +193,7 @@ export default class SalesforceClient {
    * Extract metadata object names
    */
   @SalesforceClient.logFailures
-  @ensureLoggedIn
+  @SalesforceClient.requiresLogin
   public async listMetadataTypes(): Promise<MetadataObject[]> {
     const describeResult = this.conn.metadata.describe()
     return (await describeResult).metadataObjects
@@ -204,7 +204,7 @@ export default class SalesforceClient {
    * @param type The name of the metadata type for which you want metadata
    */
   @SalesforceClient.logFailures
-  @ensureLoggedIn
+  @SalesforceClient.requiresLogin
   public async describeMetadataType(type: string): Promise<ValueTypeField[]> {
     const fullName = `{${METADATA_NAMESPACE}}${type}`
     const describeResult = this.conn.metadata.describeValueType(fullName)
@@ -212,7 +212,7 @@ export default class SalesforceClient {
   }
 
   @SalesforceClient.logFailures
-  @ensureLoggedIn
+  @SalesforceClient.requiresLogin
   public async listMetadataObjects(type: string): Promise<FileProperties[]> {
     return makeArray(await this.conn.metadata.list({ type }))
   }
@@ -221,7 +221,7 @@ export default class SalesforceClient {
    * Read metadata for salesforce object of specific type and name
    */
   @SalesforceClient.logFailures
-  @ensureLoggedIn
+  @SalesforceClient.requiresLogin
   public async readMetadata(type: string, name: string | string[]): Promise<MetadataInfo[]> {
     return sendChunked(makeArray(name), chunk =>
       this.conn.metadata.read(type, chunk), MAX_ITEMS_IN_READ_METADATA_REQUEST)
@@ -231,13 +231,13 @@ export default class SalesforceClient {
    * Extract sobject names
    */
   @SalesforceClient.logFailures
-  @ensureLoggedIn
+  @SalesforceClient.requiresLogin
   public async listSObjects(): Promise<DescribeGlobalSObjectResult[]> {
     return (await this.conn.describeGlobal()).sobjects
   }
 
   @SalesforceClient.logFailures
-  @ensureLoggedIn
+  @SalesforceClient.requiresLogin
   public async describeSObjects(objectNames: string[]):
     Promise<DescribeSObjectResult[]> {
     return sendChunked(objectNames, chunk => this.conn.soap.describeSObjects(chunk),
@@ -252,7 +252,7 @@ export default class SalesforceClient {
    */
   @SalesforceClient.logFailures
   @validateSaveResult
-  @ensureLoggedIn
+  @SalesforceClient.requiresLogin
   public async create(type: string, metadata: MetadataInfo | MetadataInfo[]):
     Promise<SaveResult[]> {
     return sendChunked(metadata, chunk => this.conn.metadata.create(type, chunk))
@@ -266,7 +266,7 @@ export default class SalesforceClient {
    */
   @SalesforceClient.logFailures
   @validateSaveResult
-  @ensureLoggedIn
+  @SalesforceClient.requiresLogin
   public async delete(type: string, fullNames: string | string[]): Promise<SaveResult[]> {
     return sendChunked(fullNames, chunk => this.conn.metadata.delete(type, chunk))
   }
@@ -279,7 +279,7 @@ export default class SalesforceClient {
    */
   @SalesforceClient.logFailures
   @validateSaveResult
-  @ensureLoggedIn
+  @SalesforceClient.requiresLogin
   public async update(type: string, metadata: MetadataInfo | MetadataInfo[]):
     Promise<SaveResult[]> {
     return sendChunked(metadata, chunk => this.conn.metadata.update(type, chunk))
@@ -292,7 +292,7 @@ export default class SalesforceClient {
    */
   @SalesforceClient.logFailures
   @validateDeployResult
-  @ensureLoggedIn
+  @SalesforceClient.requiresLogin
   public async deploy(zip: Buffer): Promise<DeployResult> {
     return this.conn.metadata.deploy(zip, { rollbackOnError: true }).complete(true)
   }
@@ -305,7 +305,7 @@ export default class SalesforceClient {
    * @returns The BatchResultInfo which contains success/errors for each entry
    */
   @SalesforceClient.logFailures
-  @ensureLoggedIn
+  @SalesforceClient.requiresLogin
   public async updateBulk(type: string, operation: BulkLoadOperation, records: SfRecord[]):
     Promise<BatchResultInfo[]> {
     // Initiate the batch job

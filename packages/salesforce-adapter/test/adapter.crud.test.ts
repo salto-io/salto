@@ -447,6 +447,15 @@ describe('SalesforceAdapter CRUD', () => {
               [constants.FIELD_ANNOTATIONS.UNIQUE]: true,
             },
           ),
+          quest: new Field(
+            mockElemID,
+            'checkbox',
+            Types.salesforceDataTypes.boolean,
+            {
+              [constants.LABEL]: 'Checkbox description label',
+              [Type.DEFAULT]: true,
+            },
+          ),
         },
       })
 
@@ -458,7 +467,7 @@ describe('SalesforceAdapter CRUD', () => {
         expect(mockCreate.mock.calls.length).toBe(1)
         expect(mockCreate.mock.calls[0][1]).toHaveLength(1)
         const object = mockCreate.mock.calls[0][1][0]
-        expect(object.fields.length).toBe(18)
+        expect(object.fields.length).toBe(19)
         // Currency
         expect(object.fields[0].fullName).toBe('Currency__c')
         expect(object.fields[0].type).toBe('Currency')
@@ -569,6 +578,11 @@ describe('SalesforceAdapter CRUD', () => {
         expect(object.fields[17].unique).toBe(true)
         expect(object.fields[17].scale).toBe(12)
         expect(object.fields[17].precision).toBe(8)
+        // Checkbox
+        expect(object.fields[18].fullName).toBe('Checkbox__c')
+        expect(object.fields[18].type).toBe('Checkbox')
+        expect(object.fields[18].label).toBe('Checkbox description label')
+        expect(object.fields[18].defaultValue).toBe(true)
       })
     })
   })

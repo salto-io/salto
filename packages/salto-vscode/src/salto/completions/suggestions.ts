@@ -39,14 +39,16 @@ const getAllInstances = (
   mergeElements: Element[],
   adapter?: string
 ): string[] => mergeElements
-  .filter(e => isInstanceElement(e) && (!adapter || e.elemID.adapter === adapter))
+  .filter(isInstanceElement)
+  .filter(e => !adapter || e.elemID.adapter === adapter)
   .map(e => e.elemID.getFullName())
 
 const getAllTypes = (
   mergeElements: Element[],
   adapter?: string
 ): string[] => mergeElements
-  .filter(e => isType(e) && (!adapter || e.elemID.adapter === adapter))
+  .filter(isType)
+  .filter(e => !adapter || e.elemID.adapter === adapter)
   .map(e => e.elemID.getFullName())
 
 const getTypeReferenceSuggestions = (
@@ -89,11 +91,9 @@ const getTypeReferenceSuggestions = (
   ]
 }
 
-const adapterSuggestions = (
+const getAdapterNames = (
   mergedElements: Element[]
-): Suggestions => Array.from(
-  new Set(mergedElements.map(e => e.elemID.adapter))
-).map(adapter => adapter)
+): string[] => _(mergedElements).map(e => e.elemID.adapter).uniq().value()
 
 const referenceSuggestions = (
   workspace: SaltoWorkspace,
@@ -101,7 +101,7 @@ const referenceSuggestions = (
 ): Suggestions => {
   // This means we are not defining a reference
   const unquotedMatch = valueToken.match(/".*\$\{\s*([^}]*$)/)
-  if (!unquotedMatch && valueToken.includes('"')) return []
+  if (!unquotedMatch && (valueToken.includes('"') || valueToken.includes("'"))) return []
   const match = unquotedMatch ? unquotedMatch[1] : valueToken
   const [base, ...path] = match.split('.')
   const sepIndex = base.indexOf(ElemID.NAMESPACE_SEPERATOR)
@@ -109,7 +109,7 @@ const referenceSuggestions = (
   const baseElementName = (sepIndex >= 0) ? base.substring(sepIndex) : ''
   // We are defining the base element
   if (!baseElementName) {
-    return adapterSuggestions(workspace.mergedElements || [])
+    return getAdapterNames(workspace.mergedElements || [])
   }
   if (path.length === 0) {
     return [

@@ -1,7 +1,7 @@
 import wu from 'wu'
 import { collections } from '@salto/lowerdash'
 
-const { update: updateSet, intersection } = collections.set
+const { update: updateSet, intersection, difference } = collections.set
 
 export type NodeId = collections.set.SetId
 
@@ -68,6 +68,19 @@ export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<Node
       .map(([affectedNode]) => affectedNode)
       // evaluate the iterator, so deps will be deleted even if the return value is disregarded
       .toArray()
+  }
+
+  protected entriesWithout(ids: Set<NodeId>): Iterable<[NodeId, Set<NodeId>]> {
+    return wu(this)
+      .filter(([k]) => !ids.has(k))
+      .map(([k, v]) => [k, difference(v, ids)])
+  }
+
+  // faster bulk alternative to deleteNode which returns a new NodeMap without the specified nodes
+  cloneWithout(ids: Set<NodeId>): this {
+    return new (this.constructor as new (entries: Iterable<[NodeId, Set<NodeId>]>) => this)(
+      this.entriesWithout(ids)
+    )
   }
 
   // used after walking the graph had finished - any undeleted nodes represent a cycle
@@ -204,7 +217,15 @@ export class NodeMap extends AbstractNodeMap {
 
 // This class adds storage of node data to NodeMap
 export class DataNodeMap<T> extends AbstractNodeMap {
-  protected readonly nodeData = new Map<NodeId, T>()
+  protected readonly nodeData: Map<NodeId, T>
+
+  constructor(
+    entries?: Iterable<[NodeId, Set<NodeId>]>,
+    nodeData?: Map<NodeId, T>,
+  ) {
+    super(entries)
+    this.nodeData = nodeData || new Map<NodeId, T>()
+  }
 
   addNode(id: NodeId, dependsOn: Iterable<NodeId> = [], data: T): void {
     super.addNodeBase(id, dependsOn)
@@ -214,6 +235,16 @@ export class DataNodeMap<T> extends AbstractNodeMap {
   deleteNode(id: NodeId): NodeId[] {
     this.nodeData.delete(id)
     return super.deleteNode(id)
+  }
+
+  cloneWithout(ids: Set<NodeId>): this {
+    return new (this.constructor as new (
+      entries: Iterable<[NodeId, Set<NodeId>]>,
+      nodeData: Map<NodeId, T>,
+    ) => this)(
+      this.entriesWithout(ids),
+      new Map<NodeId, T>(wu(this.nodeData).filter(([k]) => !ids.has(k))),
+    )
   }
 
   getData(id: NodeId): T {

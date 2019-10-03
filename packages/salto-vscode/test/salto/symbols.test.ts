@@ -3,7 +3,7 @@ import * as fs from 'async-file'
 
 import { initWorkspace, SaltoWorkspace } from '../../src/salto/workspace'
 import { getPositionContext } from '../../src/salto/context'
-import { SymbolKind, createSymbol } from '../../src/salto/symbols'
+import { SaltoSymbolKind, createSaltoSymbol } from '../../src/salto/symbols'
 
 describe('Cursor context resolver', () => {
   let workspace: SaltoWorkspace
@@ -18,64 +18,64 @@ describe('Cursor context resolver', () => {
   it('should create type symbol', () => {
     const pos = { line: 1, col: 4 }
     const ctx = getPositionContext(workspace, bpContent, filename, pos)
-    const symbol = createSymbol(ctx)
+    const symbol = createSaltoSymbol(ctx)
     expect(symbol.name).toBe('vs_str')
-    expect(symbol.type).toBe(SymbolKind.Type)
+    expect(symbol.type).toBe(SaltoSymbolKind.Type)
   })
 
   it('should create annotation symbol', () => {
     const pos = { line: 51, col: 10 }
     const ctx = getPositionContext(workspace, bpContent, filename, pos)
-    const symbol = createSymbol(ctx)
+    const symbol = createSaltoSymbol(ctx)
     expect(symbol.name).toBe('label')
-    expect(symbol.type).toBe(SymbolKind.Annotation)
+    expect(symbol.type).toBe(SaltoSymbolKind.Annotation)
   })
 
   it('should create field symbol', () => {
     const pos = { line: 50, col: 10 }
     const ctx = getPositionContext(workspace, bpContent, filename, pos)
-    const symbol = createSymbol(ctx)
+    const symbol = createSaltoSymbol(ctx)
     expect(symbol.name).toBe('model')
-    expect(symbol.type).toBe(SymbolKind.Field)
+    expect(symbol.type).toBe(SaltoSymbolKind.Field)
   })
 
   it('should create instance symbol', () => {
     const pos = { line: 87, col: 10 }
     const ctx = getPositionContext(workspace, bpContent, filename, pos)
-    const symbol = createSymbol(ctx)
+    const symbol = createSaltoSymbol(ctx)
     expect(symbol.name).toBe('vs_weekend_car')
-    expect(symbol.type).toBe(SymbolKind.Instance)
+    expect(symbol.type).toBe(SaltoSymbolKind.Instance)
   })
 
   it('should create attribute symbol', () => {
     const pos = { line: 88, col: 10 }
     const ctx = getPositionContext(workspace, bpContent, filename, pos)
-    const symbol = createSymbol(ctx)
+    const symbol = createSaltoSymbol(ctx)
     expect(symbol.name).toBe('reason')
-    expect(symbol.type).toBe(SymbolKind.Attribute)
+    expect(symbol.type).toBe(SaltoSymbolKind.Attribute)
   })
 
   it('should create array symbol', () => {
     const pos = { line: 134, col: 6 }
     const ctx = getPositionContext(workspace, bpContent, filename, pos)
-    const symbol = createSymbol(ctx)
+    const symbol = createSaltoSymbol(ctx)
     expect(symbol.name).toBe('nicknames')
-    expect(symbol.type).toBe(SymbolKind.Array)
+    expect(symbol.type).toBe(SaltoSymbolKind.Array)
   })
 
   it('should create array item symbol', () => {
     const pos = { line: 134, col: 19 }
     const ctx = getPositionContext(workspace, bpContent, filename, pos)
-    const symbol = createSymbol(ctx)
+    const symbol = createSaltoSymbol(ctx)
     expect(symbol.name).toBe('[0]')
-    expect(symbol.type).toBe(SymbolKind.Attribute)
+    expect(symbol.type).toBe(SaltoSymbolKind.Attribute)
   })
 
   it('should create file symbol', () => {
     const pos = { line: 130, col: 0 }
     const ctx = getPositionContext(workspace, bpContent, filename, pos)
-    const symbol = createSymbol(ctx)
+    const symbol = createSaltoSymbol(ctx)
     expect(symbol.name).toBe('global')
-    expect(symbol.type).toBe(SymbolKind.File)
+    expect(symbol.type).toBe(SaltoSymbolKind.File)
   })
 })

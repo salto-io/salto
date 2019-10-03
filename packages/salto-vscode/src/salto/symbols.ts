@@ -1,6 +1,6 @@
 import { EditorRange, PositionContext } from './context'
 
-export enum SaltoSymbolKind {
+export enum SymbolKind {
   File,
   Type,
   Field,
@@ -10,9 +10,9 @@ export enum SaltoSymbolKind {
   Attribute
 }
 
-interface SaltoSymbol {
+interface Symbol {
   name: string
-  type: SaltoSymbolKind
+  type: SymbolKind
   range: EditorRange
 }
 
@@ -30,32 +30,32 @@ const getSymbolName = (context: PositionContext, prefName?: string): string => {
   return 'global'
 }
 
-const getSaltoSymbolKind = (context: PositionContext): SaltoSymbolKind => {
-  if (context.ref && context.ref.isList) return SaltoSymbolKind.Array
+const getSymbolKind = (context: PositionContext): SymbolKind => {
+  if (context.ref && context.ref.isList) return SymbolKind.Array
   if (context.type === 'field') {
     return (context.ref && context.ref.path)
-      ? SaltoSymbolKind.Annotation
-      : SaltoSymbolKind.Field
+      ? SymbolKind.Annotation
+      : SymbolKind.Field
   }
   if (context.type === 'instance') {
     return (context.ref && context.ref.path)
-      ? SaltoSymbolKind.Attribute
-      : SaltoSymbolKind.Instance
+      ? SymbolKind.Attribute
+      : SymbolKind.Instance
   }
   if (context.type === 'type') {
     return (context.ref && context.ref.path)
-      ? SaltoSymbolKind.Annotation
-      : SaltoSymbolKind.Type
+      ? SymbolKind.Annotation
+      : SymbolKind.Type
   }
-  return SaltoSymbolKind.File
+  return SymbolKind.File
 }
 
 export const createSymbol = (
   context: PositionContext,
-): SaltoSymbol => {
+): Symbol => {
   const name = context.parent
     ? getSymbolName(context, getSymbolName(context.parent))
     : getSymbolName(context)
-  const type = getSaltoSymbolKind(context)
+  const type = getSymbolKind(context)
   return { name, type, range: context.range }
 }

@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import {
-  isObjectType, Type, Field, ObjectType, ElemID,
+  isObjectType, Type, Field, ObjectType, ElemID, isField,
 } from './elements'
 
 interface AnnoRef {
@@ -8,7 +8,7 @@ interface AnnoRef {
   annoName?: string
 }
 
-export const getField = (baseType: Type, pathParts: string[]): Field|undefined => {
+export const getPathElement = (baseType: Type, pathParts: string[]): Field| Type | undefined => {
   // This is a little tricky. Since many fields can have _ in them,
   // and we can't tell of the _ is path separator or a part of the
   // the path name. As long as path is not empty we will try to advance
@@ -18,29 +18,39 @@ export const getField = (baseType: Type, pathParts: string[]): Field|undefined =
 
   // We start by filtering out numbers from the path as they are
   // list indexes, which are irelevant for type extractions
-  const [curPart, ...restOfParts] = pathParts.filter(p => Number.isNaN(Number(p)))
-  if (!isObjectType(baseType)) {
+  const getChildElement = (source: Type, key: string): Field | Type | undefined => {
+    if (source.annotationTypes[key]) return source.annotationTypes[key]
+    if (isObjectType(source)) return source.fields[key]
     return undefined
   }
 
+  const [curPart, ...restOfParts] = pathParts.filter(p => Number.isNaN(Number(p)))
+  const nextBase = getChildElement(baseType, curPart)
+
   if (_.isEmpty(restOfParts)) {
-    return baseType.fields[curPart]
+    return nextBase
   }
 
-
-  if (baseType.fields[curPart]) {
-    return getField(baseType.fields[curPart].type, restOfParts)
+  if (nextBase) {
+    return isField(nextBase)
+      ? getPathElement(nextBase.type, restOfParts)
+      : getPathElement(nextBase, restOfParts)
   }
 
   // First token is no good, we check if it is a part of a longer name
   const nextCur = [curPart, restOfParts[0]].join(ElemID.NAMESPACE_SEPERATOR)
   const nextRest = restOfParts.slice(1)
-  return getField(baseType, [nextCur, ...nextRest])
+  return getPathElement(baseType, [nextCur, ...nextRest])
+}
+
+export const getField = (baseType: Type, pathParts: string[]): Field | undefined => {
+  const element = getPathElement(baseType, pathParts)
+  return isField(element) ? element : undefined
 }
 
 export const getFieldType = (baseType: Type, pathParts: string[]): Type|undefined => {
   const field = getField(baseType, pathParts)
-  return (field) ? field.type : undefined
+  return (isField(field)) ? field.type : undefined
 }
 
 export const getFieldNames = (refType: ObjectType, path: string): string[] => {
@@ -48,7 +58,7 @@ export const getFieldNames = (refType: ObjectType, path: string): string[] => {
     return _.keys(refType.fields)
   }
   const pathField = getField(refType, path.split(ElemID.NAMESPACE_SEPERATOR))
-  if (pathField && isObjectType(pathField.type)) {
+  if (pathField && isField(pathField) && isObjectType(pathField.type)) {
     return _.keys(pathField.type.fields)
   }
   return []

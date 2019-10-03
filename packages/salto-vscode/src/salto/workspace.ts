@@ -25,7 +25,6 @@ const updateWorkspace = (workspace: SaltoWorkspace): SaltoWorkspace => {
     workspace.mergedElements = mergeElements(allElements)
     workspace.generalErrors = validateElements(workspace.mergedElements).map(e => e.message)
   } catch (e) {
-    workspace.mergedElements = []
     workspace.generalErrors = [e.message]
   }
   return workspace

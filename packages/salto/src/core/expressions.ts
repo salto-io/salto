@@ -40,8 +40,11 @@ resolveReferenceExpression = (
   }
   visited.add(traversal)
 
-  const nameParts = traversalParts[0].split(ElemID.NAMESPACE_SEPERATOR)
-  const root = new ElemID(nameParts[0], ...nameParts.slice(1))
+  const sepIndex = traversalParts[0].indexOf(ElemID.NAMESPACE_SEPERATOR)
+  const root = new ElemID(
+    traversalParts[0].substring(0, sepIndex),
+    traversalParts[0].substring(sepIndex + 1)
+  )
   const path = traversalParts.slice(1)
 
   const resolvePath = (rootElement: Element): Value => {

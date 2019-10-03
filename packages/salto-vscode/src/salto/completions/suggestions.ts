@@ -85,7 +85,7 @@ const getTypeReferenceSuggestions = (
   // But the rest can only return fields (since we treat complex annotation like instances)
   return [
     ...annoType ? getPathElementFields(annoType, restOfPath) : [],
-    ...fieldType ? getPathElementFields(fieldType, restOfPath) : []
+    ...fieldType ? getPathElementFields(fieldType, restOfPath) : [],
   ]
 }
 

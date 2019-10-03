@@ -41,14 +41,24 @@ export const shouldApply = ({ stdout }: CliOutput) => async (actions: Plan): Pro
   return shouldExecute
 }
 
-export const getFieldInputType = (field: Type): string => {
-  if (!isPrimitiveType(field)) {
+const inputTypePasswordFields = ['token', 'password']
+
+const isPasswordInputType = (fieldName: string): boolean =>
+  inputTypePasswordFields.includes(fieldName)
+
+export const getFieldInputType = (fieldType: Type, fieldName: string): string => {
+  if (!isPrimitiveType(fieldType)) {
     throw new Error('Only primitive configuration values are supported')
   }
-  if (field.primitive === PrimitiveTypes.STRING) {
+
+  if (fieldType.primitive === PrimitiveTypes.STRING) {
+    if (isPasswordInputType(fieldName)) {
+      return 'password'
+    }
+
     return 'input'
   }
-  if (field.primitive === PrimitiveTypes.NUMBER) {
+  if (fieldType.primitive === PrimitiveTypes.NUMBER) {
     return 'number'
   }
   return 'confirm'
@@ -57,9 +67,9 @@ export const getFieldInputType = (field: Type): string => {
 export const getConfigFromUser = async (configType: ObjectType): Promise<InstanceElement> => {
   const questions = Object.keys(configType.fields).map(fieldName =>
     ({
-      type: getFieldInputType(configType.fields[fieldName].type),
+      type: getFieldInputType(configType.fields[fieldName].type, fieldName),
       name: fieldName,
-      message: `Enter ${fieldName} value:`,
+      message: `Enter ${fieldName}:`,
     }))
   const values = await inquirer.prompt(questions)
   const elemID = new ElemID(configType.elemID.adapter, ElemID.CONFIG_INSTANCE_NAME)

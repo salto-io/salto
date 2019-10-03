@@ -1,6 +1,7 @@
 import * as vscode from 'vscode'
 import { EditorPosition, PositionContext } from './salto/context'
 import { SaltoCompletion } from './salto/completions/provider'
+import { createSaltoSymbol, SaltoSymbolKind } from './salto/symbols'
 
 export const saltoPosToVsPos = (
   pos: EditorPosition
@@ -11,57 +12,34 @@ export const vsPosToSaltoPos = (pos: vscode.Position): EditorPosition => ({
   col: pos.character,
 })
 
-const getDefinitionName = (context: PositionContext, prefName?: string): string => {
-  if (context.ref) {
-    if (context.ref.path) {
-      return context.ref.path
-    }
-    const fullName = context.ref.element.elemID.getFullName()
-    return (prefName) ? fullName.slice(prefName.length + 1) : fullName
-  }
-  return 'global'
-}
-
-const getDefinitionType = (context: PositionContext): number => {
-  if (context.ref && context.ref.isList) return vscode.SymbolKind.Array
-  if (context.type === 'field') {
-    return (context.ref && context.ref.path)
-      ? vscode.SymbolKind.Variable
-      : vscode.SymbolKind.Field
-  }
-  if (context.type === 'instance') {
-    return (context.ref && context.ref.path)
-      ? vscode.SymbolKind.Variable
-      : vscode.SymbolKind.Field
-  }
-  if (context.type === 'type') {
-    return (context.ref && context.ref.path)
-      ? vscode.SymbolKind.Variable
-      : vscode.SymbolKind.Class
-  }
-  return vscode.SymbolKind.File
-}
-
 export const buildVSDefinitions = (
   context: PositionContext,
-  prefName?: string
 ): vscode.DocumentSymbol => {
-  const name = getDefinitionName(context, prefName)
+  const kindMap: {[key in SaltoSymbolKind]: vscode.SymbolKind} = {
+    [SaltoSymbolKind.Field]: vscode.SymbolKind.Field,
+    [SaltoSymbolKind.Array]: vscode.SymbolKind.Array,
+    [SaltoSymbolKind.Type]: vscode.SymbolKind.Class,
+    [SaltoSymbolKind.Instance]: vscode.SymbolKind.Variable,
+    [SaltoSymbolKind.Annotation]: vscode.SymbolKind.Variable,
+    [SaltoSymbolKind.File]: vscode.SymbolKind.File,
+    [SaltoSymbolKind.Attribute]: vscode.SymbolKind.Variable,
+  }
+  const saltoSymbol = createSaltoSymbol(context)
   const range = new vscode.Range(
-    saltoPosToVsPos(context.range.start),
-    saltoPosToVsPos(context.range.end)
+    saltoPosToVsPos(saltoSymbol.range.start),
+    saltoPosToVsPos(saltoSymbol.range.end)
   )
-  const def = new vscode.DocumentSymbol(
-    name,
+  const vsSymbol = new vscode.DocumentSymbol(
+    saltoSymbol.name,
     '',
-    getDefinitionType(context),
+    kindMap[saltoSymbol.type],
     range,
     range
   )
-  def.children = context.children
-    ? context.children.map(c => buildVSDefinitions(c, name))
+  vsSymbol.children = context.children
+    ? context.children.map(buildVSDefinitions)
     : []
-  return def
+  return vsSymbol
 }
 
 export const buildVSCompletionItems = (

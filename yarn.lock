@@ -5997,6 +5997,14 @@ ts-cleaner@^1.0.2:
     args "^5.0.1"
     chokidar "^3.0.0"
 
+ts-cleaner@^1.0.3:
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/ts-cleaner/-/ts-cleaner-1.0.3.tgz#890f7b5001b862e8439710680ac8af29b73ce94a"
+  integrity sha512-I338BlrrHdd+rnMhpm6qDs/EI4Ayi6y2BH7vnRR3OK7NbhGMrmxg4BgavoIbgthWZYvvggB4TSLepirhUfuWyA==
+  dependencies:
+    args "^5.0.1"
+    chokidar "^3.0.0"
+
 tsc-watch@^2.2.1:
   version "2.2.1"
   resolved "https://registry.yarnpkg.com/tsc-watch/-/tsc-watch-2.2.1.tgz#6e41a091e07d26dbcf5c815bfb514435ded33286"

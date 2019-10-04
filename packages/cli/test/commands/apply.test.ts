@@ -3,29 +3,34 @@ import {
   ObjectType, InstanceElement,
 } from 'adapter-api'
 import {
-  Blueprint, Plan, PlanItem,
+  Workspace, Plan, PlanItem,
 } from 'salto'
 import { apply, plan, MockWriteStream } from '../mocks'
 import { ApplyCommand } from '../../src/commands/apply'
 
 const mockApply = apply
 jest.mock('salto', () => ({
+  Workspace: {
+    load: jest.fn().mockImplementation((
+      _blueprintsDir: string,
+      blueprintsFiles: string[]
+    ) => {
+      if (blueprintsFiles && blueprintsFiles.length > 0) { throw new Error('blablabla') }
+    }),
+  },
   apply: jest.fn().mockImplementation((
-    blueprints: Blueprint[],
+    workspace: Workspace,
     fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
     shouldApply: (plan: Plan) => Promise<boolean>,
     reportProgress: (action: PlanItem) => void,
     force = false
-  ) => {
-    // Apply with blueprints will fail, doing this trick as we cannot reference vars, we get error:
-    // "The module factory of `jest.mock()` is not allowed to reference any
-    // out-of-scope variables."
-    // Notice that blueprints are ignored in mockApply.
-    if (blueprints.length > 0) {
-      throw new Error('FAIL')
-    }
-    return mockApply(blueprints, fillConfig, shouldApply, reportProgress, force)
-  }),
+  ) =>
+  // Apply with blueprints will fail, doing this trick as we cannot reference vars, we get error:
+  // "The module factory of `jest.mock()` is not allowed to reference any
+  // out-of-scope variables."
+  // Notice that blueprints are ignored in mockApply.
+
+    mockApply(workspace, fillConfig, shouldApply, reportProgress, force)),
 }))
 
 describe('apply command', () => {
@@ -38,7 +43,7 @@ describe('apply command', () => {
 
   describe('valid apply', () => {
     beforeEach(() => {
-      command = new ApplyCommand([], true, cliOutput)
+      command = new ApplyCommand('', [], true, cliOutput)
     })
 
     describe('should print progress', () => {
@@ -76,7 +81,7 @@ describe('apply command', () => {
   describe('invalid apply', () => {
     beforeEach(() => {
       // Creating here apply with BP to fail the apply - see mock impl.
-      command = new ApplyCommand([{ buffer: Buffer.from(''), filename: 'bla' }], true, cliOutput)
+      command = new ApplyCommand('', ['bla'], true, cliOutput)
     })
     it('should fail gracefully', async () => {
       await command.execute()

@@ -50,18 +50,17 @@ export const plan = async (
 }
 
 export const apply = async (
-  blueprints: Blueprint[],
+  workspace: Workspace,
   fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
   shouldApply: (plan: Plan) => Promise<boolean>,
   reportProgress: (action: PlanItem) => void,
   force = false
 ): Promise<Plan> => {
-  const elements = mergeAndValidate(await getAllElements(blueprints))
   const state = new State()
   try {
-    const actionPlan = getPlan(await state.get(), elements)
+    const actionPlan = getPlan(await state.get(), workspace.elements)
     if (force || await shouldApply(actionPlan)) {
-      const [adapters] = await initAdapters(elements, fillConfig)
+      const [adapters] = await initAdapters(workspace.elements, fillConfig)
       await applyActions(
         actionPlan,
         adapters,

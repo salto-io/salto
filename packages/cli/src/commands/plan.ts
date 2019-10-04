@@ -2,7 +2,6 @@ import { plan, Workspace } from 'salto'
 import { createCommandBuilder } from '../builder'
 import { ParsedCliInput, CliCommand, CliOutput } from '../types'
 import { createPlanOutput } from '../formatter'
-import * as bf from '../filters/blueprints'
 
 export const command = (
   workingDir: string,
@@ -16,7 +15,10 @@ export const command = (
   },
 })
 
-type PlanArgs = bf.Args
+type PlanArgs = {
+  'blueprint': string[]
+  'blueprints-dir': string
+}
 type PlanParsedCliInput = ParsedCliInput<PlanArgs>
 
 const builder = createCommandBuilder({

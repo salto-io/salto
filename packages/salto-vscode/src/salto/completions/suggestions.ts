@@ -3,7 +3,7 @@ import {
   Type, Field, isObjectType, isInstanceElement, isPrimitiveType,
   isField, PrimitiveTypes, BuiltinTypes, isType, Value, getField,
   getFieldNames, getFieldType, getAnnotationKey, ElemID, Element,
-  getPathElement,
+  getSubElement,
 } from 'adapter-api'
 
 import { SaltoWorkspace } from '../workspace'
@@ -55,8 +55,8 @@ const getTypeReferenceSuggestions = (
   baseElement: Type,
   path: string[]
 ): Suggestions => {
-  const getPathElementFields = (elementPathBase: Type, elementPath: string[]): Suggestions => {
-    const element = getPathElement(elementPathBase, elementPath)
+  const getSubElementFields = (elementPathBase: Type, elementPath: string[]): Suggestions => {
+    const element = getSubElement(elementPathBase, elementPath)
     const elementType = isField(element) ? element.type : element
     return (isObjectType(elementType))
       ? _.keys(elementType.fields)
@@ -86,8 +86,8 @@ const getTypeReferenceSuggestions = (
 
   // But the rest can only return fields (since we treat complex annotation like instances)
   return [
-    ...annoType ? getPathElementFields(annoType, restOfPath) : [],
-    ...fieldType ? getPathElementFields(fieldType, restOfPath) : [],
+    ...annoType ? getSubElementFields(annoType, restOfPath) : [],
+    ...fieldType ? getSubElementFields(fieldType, restOfPath) : [],
   ]
 }
 

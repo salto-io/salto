@@ -8,7 +8,7 @@ interface AnnoRef {
   annoName?: string
 }
 
-export const getPathElement = (baseType: Type, pathParts: string[]): Field| Type | undefined => {
+export const getSubElement = (baseType: Type, pathParts: string[]): Field| Type | undefined => {
   // This is a little tricky. Since many fields can have _ in them,
   // and we can't tell of the _ is path separator or a part of the
   // the path name. As long as path is not empty we will try to advance
@@ -33,18 +33,18 @@ export const getPathElement = (baseType: Type, pathParts: string[]): Field| Type
 
   if (nextBase) {
     return isField(nextBase)
-      ? getPathElement(nextBase.type, restOfParts)
-      : getPathElement(nextBase, restOfParts)
+      ? getSubElement(nextBase.type, restOfParts)
+      : getSubElement(nextBase, restOfParts)
   }
 
   // First token is no good, we check if it is a part of a longer name
   const nextCur = [curPart, restOfParts[0]].join(ElemID.NAMESPACE_SEPERATOR)
   const nextRest = restOfParts.slice(1)
-  return getPathElement(baseType, [nextCur, ...nextRest])
+  return getSubElement(baseType, [nextCur, ...nextRest])
 }
 
 export const getField = (baseType: Type, pathParts: string[]): Field | undefined => {
-  const element = getPathElement(baseType, pathParts)
+  const element = getSubElement(baseType, pathParts)
   return isField(element) ? element : undefined
 }
 

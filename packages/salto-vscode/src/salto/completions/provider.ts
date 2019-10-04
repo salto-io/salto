@@ -36,8 +36,8 @@ const LINE_SUGGESTIONS: {[key in LineType]: SuggestionsResolver[] } = {
 }
 
 const getLineTokens = (line: string): string[] => {
-  const quoteIndex = line.replace("'", '"').indexOf('"')
-  const parts = (quoteIndex >= 0)
+  const quoteIndex = _([line.indexOf('"'), line.indexOf("'")]).filter(i => i >= 0).min()
+  const parts = (quoteIndex)
     ? [
       ...line.substring(0, quoteIndex).split(' ').filter(p => p),
       line.substring(quoteIndex - 1),

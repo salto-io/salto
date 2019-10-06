@@ -3,7 +3,7 @@ import {
   Type, Field, Values, isObjectType, PrimitiveTypes,
   isPrimitiveType, Element, isInstanceElement, isField, isElement, Value,
 } from 'adapter-api'
-import HclParser, { DumpedHclBlock, HclDumpReturn } from './hcl'
+import HclParser, { DumpedHclBlock, HclDumpReturn } from './internal/hcl'
 import { Keywords } from './language'
 
 /**

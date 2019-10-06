@@ -1,5 +1,5 @@
 import { ReferenceExpression, TemplateExpression } from 'adapter-api'
-import devaluate from '../utils'
+import devaluate from './internal/devaluate'
 import evaluate from '../../src/parser/expressions'
 
 describe('HCL Expression', () => {

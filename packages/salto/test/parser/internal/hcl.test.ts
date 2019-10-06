@@ -1,10 +1,10 @@
 import _ from 'lodash'
 import HclParser, {
   ParsedHclBlock, HclAttribute, HclExpression, HclParseError,
-} from '../../src/parser/internal/hcl'
-import devaluate from '../utils'
-import evaluate from '../../src/parser/expressions'
-import { SourceRange } from '../../src/parser/parse'
+} from '../../../src/parser/internal/hcl'
+import devaluate from './devaluate'
+import evaluate from '../../../src/parser/expressions'
+import { SourceRange } from '../../../src/parser/parse'
 
 const expectSourceLocation = (
   { source }: { source: SourceRange},

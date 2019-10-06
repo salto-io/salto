@@ -2,7 +2,7 @@ import path from 'path'
 import * as fs from 'async-file'
 import './wasm_exec'
 import { queue, AsyncQueue, ErrorCallback } from 'async'
-import { SourceRange } from './parser_internal_types'
+import { SourceRange } from './types'
 
 export type ExpressionType = 'list'|'map'|'template'|'literal'|'reference'
 
@@ -102,7 +102,7 @@ class HclParser {
       // Load web assembly module data once in the life of a parser
       this.wasmModule = (async () => {
         // Relative path from source location
-        const modulePath = path.join(__dirname, '..', '..', 'hcl.wasm')
+        const modulePath = path.join(__dirname, '..', '..', '..', 'hcl.wasm')
         const data = await fs.readFile(modulePath)
         // Not sure why eslint ignores this definition from webassembly.d.ts,
         // but this doesn't work without the following disable

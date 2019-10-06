@@ -24,7 +24,7 @@
     "watch-test": "yarn run tsc-watch --onSuccess 'yarn run clean-ts-test'",
     "build-ts": "tsc",
     "watch-ts": "tsc -w",
-    "build-go": "./src/parser/hcl_plugin/build.sh ./dist",
+    "build-go": "./src/parser/internal/hcl_plugin/build.sh ./dist",
     "lint": "eslint --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
     "lint-fix": "yarn run lint -- --fix"
   },

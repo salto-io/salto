@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import HclParser, {
   ParsedHclBlock, HclAttribute, HclExpression, HclParseError,
-} from '../../src/parser/hcl'
+} from '../../src/parser/internal/hcl'
 import devaluate from '../utils'
 import evaluate from '../../src/parser/expressions'
 import { SourceRange } from '../../src/parser/parse'

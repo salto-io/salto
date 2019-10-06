@@ -1,7 +1,7 @@
 import { ObjectType, ElemID } from 'adapter-api'
 import * as fs from 'async-file'
 import { ParseResultFSCache } from '../../src/workspace/cache'
-import { SourceMap } from '../../src/parser/parser_internal_types'
+import { SourceMap } from '../../src/parser/internal/types'
 
 const mockSerializedBPC = `[{"annotationTypes":{},"annotations":{},"elemID":{"adapter":"salesforce","nameParts":["dummy"]},"fields":{},"isSettings":false,"className":"ObjectType"}]
 []

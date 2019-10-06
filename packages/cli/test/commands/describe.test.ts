@@ -1,9 +1,15 @@
+import { Workspace } from 'salto'
 import * as mocks from '../mocks'
 import { command } from '../../src/commands/describe'
 
 const mockDescribe = mocks.describe
 jest.mock('salto', () => ({
   describeElement: jest.fn().mockImplementation(() => mockDescribe([])),
+  Workspace: {
+    load: jest.fn(),
+  },
+
+
 }))
 
 describe('describe command', () => {
@@ -11,7 +17,11 @@ describe('describe command', () => {
 
   beforeEach(async () => {
     cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
-    await command([], [], cliOutput).execute()
+    await command('', [], [], cliOutput).execute()
+  })
+
+  it('should load the workspace', () => {
+    expect(Workspace.load).toHaveBeenCalled()
   })
 
   it('should find element name', () => {

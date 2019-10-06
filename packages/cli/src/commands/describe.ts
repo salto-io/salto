@@ -1,19 +1,28 @@
-import { Blueprint, describeElement } from 'salto'
+import { Workspace, describeElement } from 'salto'
 import { createCommandBuilder } from '../builder'
 import { ParsedCliInput, CliCommand, CliOutput } from '../types'
-import * as bf from '../filters/blueprints'
 import { formatSearchResults } from '../formatter'
 
-export const command = (blueprints: Blueprint[], words: string[], { stdout }: CliOutput):
-CliCommand => ({
+export const command = (
+  blueprintsDir: string,
+  blueprints: string[] = [],
+  words: string[],
+  { stdout }: CliOutput
+): CliCommand => ({
   async execute(): Promise<void> {
-    const searchResult = await describeElement(words, blueprints)
+    const workspace: Workspace = await Workspace.load(blueprintsDir, blueprints)
+    const searchResult = await describeElement(workspace, words)
     stdout.write(formatSearchResults(searchResult))
   },
 })
 
-type DescribeArgs = bf.Args & { 'words': string[] }
-type DescribeParsedCliInput = ParsedCliInput<DescribeArgs> & bf.BlueprintsParsedCliInput
+type DescribeArgs = {
+  blueprint: string[]
+  'blueprints-dir': string
+  'words': string[]
+}
+
+type DescribeParsedCliInput = ParsedCliInput<DescribeArgs>
 
 const builder = createCommandBuilder({
   options: {
@@ -27,12 +36,26 @@ const builder = createCommandBuilder({
         default: undefined, // Prevent "default: []" in the help
       },
     },
+    keyed: {
+      'blueprints-dir': {
+        alias: 'd',
+        describe: 'Path to directory containing blueprint (.bp) files',
+        demandOption: false,
+        string: true,
+        requiresArg: true,
+      },
+      blueprint: {
+        alias: 'b',
+        describe: 'Path to input blueprint file. This option can be specified multiple times',
+        demandOption: false,
+        array: true,
+        requiresArg: true,
+      },
+    },
   },
 
-  filters: [bf.requiredFilter],
-
   async build(input: DescribeParsedCliInput, output: CliOutput) {
-    return command(input.blueprints, input.args.words, output)
+    return command(input.args['blueprints-dir'], input.args.blueprint, input.args.words, output)
   },
 })
 

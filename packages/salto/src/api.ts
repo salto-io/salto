@@ -19,6 +19,7 @@ import validateElements from './core/validator'
 import { Workspace } from './workspace/workspace'
 import { discoverChanges } from './core/discover'
 
+// TODO: Replace untyped exception with something that may be properly caught and handled by the CLI
 export const mergeAndValidate = (elements: Element[]): Element[] => {
   const { merged: mergedElements, errors: mergeErrors } = mergeElements(elements)
   if (mergeErrors.length > 0) {
@@ -40,31 +41,37 @@ const applyActionOnState = async (
   action: string,
   element: Promise<Element>
 ): Promise<void> => {
-  if (action === 'remove') {
-    return state.remove([await element])
+  switch (action) {
+    case 'add':
+    case 'modify':
+      return state.update([await element])
+    case 'remove':
+      return state.remove([await element])
+    default: throw new Error(`Unsupported action ${action}`)
   }
-  return state.update([await element])
 }
 
 export const plan = async (
-  workspace: Workspace,
+  blueprints: Blueprint[],
 ): Promise<Plan> => {
+  const elements = mergeAndValidate(await getAllElements(blueprints))
   const state = new State()
-  return getPlan(await state.get(), workspace.elements)
+  return getPlan(await state.get(), elements)
 }
 
 export const apply = async (
-  workspace: Workspace,
+  blueprints: Blueprint[],
   fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
   shouldApply: (plan: Plan) => Promise<boolean>,
   reportProgress: (action: PlanItem) => void,
   force = false
 ): Promise<Plan> => {
+  const elements = mergeAndValidate(await getAllElements(blueprints))
   const state = new State()
   try {
-    const actionPlan = getPlan(await state.get(), workspace.elements)
+    const actionPlan = getPlan(await state.get(), elements)
     if (force || await shouldApply(actionPlan)) {
-      const [adapters] = await initAdapters(workspace.elements, fillConfig)
+      const [adapters] = await initAdapters(elements, fillConfig)
       await applyActions(
         actionPlan,
         adapters,

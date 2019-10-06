@@ -21,19 +21,20 @@ import { discoverChanges } from './core/discover'
 
 // TODO: Replace untyped exception with something that may be properly caught and handled by the CLI
 export const mergeAndValidate = (elements: Element[]): Element[] => {
-  const { merged: mergedElements, errors: mergeErrors } = mergeElements(elements)
-  if (mergeErrors.length > 0) {
-    throw new Error(`Failed to merge blueprints: ${mergeErrors.map(e => e.message).join('\n')}`)
+  const mergeResult = mergeElements(elements)
+
+  if (mergeResult.errors.length > 0) {
+    throw new Error(`Failed to merge blueprints: ${mergeResult.errors.map(e => e.message).join('\n')}`)
   }
 
-  const validationErrors = validateElements(mergedElements)
+  const validationErrors = validateElements(mergeResult.merged)
 
   if (validationErrors.length > 0) {
     throw new Error(`Failed to validate blueprints:
     ${validationErrors.map(e => e.message).join('\n')}`)
   }
 
-  return mergedElements
+  return mergeResult.merged
 }
 
 const applyActionOnState = async (
@@ -41,37 +42,31 @@ const applyActionOnState = async (
   action: string,
   element: Promise<Element>
 ): Promise<void> => {
-  switch (action) {
-    case 'add':
-    case 'modify':
-      return state.update([await element])
-    case 'remove':
-      return state.remove([await element])
-    default: throw new Error(`Unsupported action ${action}`)
+  if (action === 'remove') {
+    return state.remove([await element])
   }
+  return state.update([await element])
 }
 
 export const plan = async (
-  blueprints: Blueprint[],
+  workspace: Workspace,
 ): Promise<Plan> => {
-  const elements = mergeAndValidate(await getAllElements(blueprints))
   const state = new State()
-  return getPlan(await state.get(), elements)
+  return getPlan(await state.get(), workspace.elements)
 }
 
 export const apply = async (
-  blueprints: Blueprint[],
+  workspace: Workspace,
   fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
   shouldApply: (plan: Plan) => Promise<boolean>,
   reportProgress: (action: PlanItem) => void,
   force = false
 ): Promise<Plan> => {
-  const elements = mergeAndValidate(await getAllElements(blueprints))
   const state = new State()
   try {
-    const actionPlan = getPlan(await state.get(), elements)
+    const actionPlan = getPlan(await state.get(), workspace.elements)
     if (force || await shouldApply(actionPlan)) {
-      const [adapters] = await initAdapters(elements, fillConfig)
+      const [adapters] = await initAdapters(workspace.elements, fillConfig)
       await applyActions(
         actionPlan,
         adapters,

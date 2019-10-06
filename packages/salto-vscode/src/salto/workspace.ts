@@ -21,12 +21,12 @@ export interface SaltoWorkspace {
 const updateWorkspace = (workspace: SaltoWorkspace): SaltoWorkspace => {
   const allElements = _(workspace.parsedBlueprints).values().map('elements').flatten()
     .value()
-  try {
-    workspace.mergedElements = mergeElements(allElements)
-    workspace.generalErrors = validateElements(workspace.mergedElements).map(e => e.message)
-  } catch (e) {
-    workspace.generalErrors = [e.message]
-  }
+  const mergeResult = mergeElements(allElements)
+  workspace.generalErrors = [
+    ...mergeResult.errors.map(e => e.message),
+    ...validateElements(mergeResult.merged).map(e => e.message),
+  ]
+  workspace.mergedElements = mergeResult.merged
   return workspace
 }
 

@@ -19,7 +19,9 @@ describe('Test go to definitions', () => {
   it('should give all fields usages of a type', () => {
     const token = 'vs_str'
     const defs = provideWorkspaceReferences(workspace, token)
-    expect(getRefLines(defs)).toEqual([33, 37, 50, 67, 114, 126])
+    expect(getRefLines(defs)).toEqual(
+      [33, 37, 50, 67, 114, 126, 138, 141, 144, 147, 150, 153, 156, 159]
+    )
   })
 
   it('should give all instance usages of a type', () => {

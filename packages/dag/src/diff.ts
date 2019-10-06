@@ -149,7 +149,7 @@ export const buildDiffGraph = (() => {
     after: DataNodeMap<T>,
     equals: (id: NodeId) => boolean,
   ): DiffGraph<T> => {
-    const result = new DataNodeMap<DiffNode<T>>()
+    let result = new DataNodeMap<DiffNode<T>>()
 
     const removals = addBeforeNodesAsRemovals(result, before)
     const additions = addAfterNodesAsAdditions(result, after, removals)
@@ -162,8 +162,10 @@ export const buildDiffGraph = (() => {
         .map(s => s.get(originalId) as DiffNodeId) as [DiffNodeId, DiffNodeId]
 
     // remove equal nodes
-    wu(equalNodes).map(removalAndAdditionIds).flatten(true)
-      .forEach(diffNodeId => result.deleteNode(diffNodeId))
+    const equalDiffNodeIds = new Set<DiffNodeId>(
+      wu(equalNodes).map(removalAndAdditionIds).flatten(true)
+    )
+    result = result.cloneWithout(equalDiffNodeIds)
 
     const modifyCandidates = difference(removedAndAdded, equalNodes)
 

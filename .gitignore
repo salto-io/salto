@@ -24,3 +24,6 @@ yarn-error.log
 
 # vs code history
 .history/
+
+# parsed blueprint cache
+.cache

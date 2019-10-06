@@ -12,12 +12,17 @@ import {
 import { mergeElements, MergeError } from '../core/merger'
 import validateElements from '../core/validator'
 import { DetailedChange } from '../core/plan'
+import { ParseResultFSCache } from './cache'
 import { getChangeLocations, updateBlueprintData } from './blueprint_update'
 
+const CACHE_FOLDER = '.cache'
 export type Blueprint = {
   buffer: string
   filename: string
+  timestamp?: number
 }
+
+
 export type ParsedBlueprint = Blueprint & ParseResult
 
 export type SaltoError = {
@@ -50,17 +55,42 @@ const loadBlueprints = async (
     return Promise.all(filenames.map(async filename => ({
       filename: path.relative(blueprintsDir, filename),
       buffer: await fs.readFile(filename, 'utf8'),
+      timestamp: (await fs.stat(filename)).mtimeMs,
     })))
   } catch (e) {
     throw Error(`Failed to load blueprint files: ${e.message}`)
   }
 }
 
-export const parseBlueprints = (blueprints: Blueprint[]): Promise<ParsedBlueprint[]> =>
-  Promise.all(blueprints.map(async bp => ({
-    ...bp,
-    ...(await parse(Buffer.from(bp.buffer), bp.filename)),
-  })))
+const parseBlueprint = async (bp: Blueprint): Promise<ParsedBlueprint> => ({
+  ...bp,
+  ...await parse(Buffer.from(bp.buffer), bp.filename),
+})
+
+export const parseBlueprints = async (blueprints: Blueprint[]): Promise<ParsedBlueprint[]> =>
+  Promise.all(blueprints.map(parseBlueprint))
+
+
+const parseBlueprintsWithCache = (
+  blueprints: Blueprint[],
+  blueprintsDir: string,
+): Promise<ParsedBlueprint[]> => {
+  const cache = new ParseResultFSCache(path.join(blueprintsDir, CACHE_FOLDER))
+  return Promise.all(blueprints.map(async bp => {
+    if (bp.timestamp === undefined) return parseBlueprint(bp)
+    const key = {
+      filename: bp.filename,
+      lastModified: bp.timestamp,
+    }
+    const cachedParseResult = await cache.get(key)
+    if (cachedParseResult === undefined) {
+      const parsedBP = await parseBlueprint(bp)
+      await cache.put(key, parsedBP)
+      return parsedBP
+    }
+    return { ...bp, ...cachedParseResult }
+  }))
+}
 
 const mergeSourceMaps = (bps: ReadonlyArray<ParsedBlueprint>): SourceMap => (
   bps.map(bp => bp.sourceMap).reduce((prev, curr) => {
@@ -137,10 +167,16 @@ export class Workspace {
    * @param blueprintsFiles Paths to additional files (outside the blueprints dir) to include
    *   in the workspace
    */
-  static async load(blueprintsDir: string, blueprintsFiles: string[]): Promise<Workspace> {
+  static async load(
+    blueprintsDir: string,
+    blueprintsFiles: string[],
+    useCache = true
+  ): Promise<Workspace> {
     const bps = await loadBlueprints(blueprintsDir, blueprintsFiles)
-    const parsedBlueprints = await parseBlueprints(bps)
-    return new Workspace(blueprintsDir, parsedBlueprints)
+    const parsedBlueprints = useCache
+      ? parseBlueprintsWithCache(bps, blueprintsDir)
+      : parseBlueprints(bps)
+    return new Workspace(blueprintsDir, await parsedBlueprints)
   }
 
   constructor(public readonly baseDir: string, blueprints: ReadonlyArray<ParsedBlueprint>) {

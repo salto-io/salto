@@ -12,6 +12,7 @@ type LineType = 'empty'|'type'|'field'|'annotation'|'instance'|'attr'|'fieldList
 export interface SaltoCompletion {
   label: string
   insertText: string
+  filterText: string
   reInvoke: boolean
 }
 
@@ -34,12 +35,16 @@ const LINE_SUGGESTIONS: {[key in LineType]: SuggestionsResolver[] } = {
   annoList: [annoValueSuggestions],
 }
 
-const getLineTokens = (line: string): string[] => (
-  line.replace(/\s+/g, ' ')
-    .split(' ')
-  // Ignoring the list token as it has no effect on the rest of the line
-    .filter(t => t !== 'list')
-)
+const getLineTokens = (line: string): string[] => {
+  const quoteIndex = _([line.indexOf('"'), line.indexOf("'")]).filter(i => i >= 0).min()
+  const parts = (quoteIndex)
+    ? [
+      ...line.substring(0, quoteIndex).split(' ').filter(p => p),
+      line.substring(quoteIndex - 1),
+    ]
+    : line.split(' ')
+  return parts.filter(t => t !== 'list')
+}
 
 const isDef = (
   context: PositionContext,
@@ -90,9 +95,7 @@ const getLineType = (
 }
 
 const removeLinePrefix = (line: string): string => {
-  const LINE_ENDERS = ['\\{', '\\}', '\\[', '\\]', ',', ';']
-  const lineTokenizer = new RegExp(`[${LINE_ENDERS.join('')}]`)
-  const parts = line.split(lineTokenizer)
+  const parts = line.split(/[}[\],;]|[^$]{/g)
   return _.trimStart(parts[parts.length - 1])
 }
 
@@ -102,9 +105,14 @@ const createCompletionItems = (
 ): SaltoCompletion[] => suggestions.map(suggestion => {
   const label = isInsertText(suggestion) ? suggestion.label : suggestion
   const insertBody = isInsertText(suggestion) ? suggestion.insertText : suggestion
+  const filterText = isInsertText(suggestion) && suggestion.filterText
+    ? suggestion.filterText
+    : label
   const insertSuffix = reInvoke ? ' ' : ''
   const insertText = [insertBody, insertSuffix].join('')
-  return { label, reInvoke, insertText }
+  return {
+    label, reInvoke, insertText, filterText,
+  }
 })
 
 // Returns a list of suggestions for the current line.

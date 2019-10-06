@@ -26,7 +26,7 @@ export const activate = async (context: vscode.ExtensionContext): Promise<void> 
     const completionProvider = vscode.languages.registerCompletionItemProvider(
       { scheme: 'file', pattern: { base: rootPath, pattern: '**/*.bp' } },
       createCompletionsProvider(workspace),
-      ' '
+      ' ', '.'
     )
 
     const definitionProvider = vscode.languages.registerDefinitionProvider(

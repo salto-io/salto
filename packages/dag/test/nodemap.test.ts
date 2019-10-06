@@ -329,6 +329,47 @@ describe('NodeMap', () => {
     })
   })
 
+  describe('cloneWithout', () => {
+    let result: NodeMap
+
+    beforeEach(() => {
+      subject = new NodeMap([
+        [1, new Set<NodeId>([2, 3])],
+        [2, new Set<NodeId>([2, 3, 4])],
+        [3, new Set<NodeId>([1])],
+        [4, new Set<NodeId>([5, 2])],
+        [6, new Set<NodeId>([7])],
+      ])
+      result = subject.cloneWithout(new Set([3, 2]))
+    })
+
+    it('does not modify the original', () => {
+      expect(result).not.toBe(subject)
+      expect([...subject.get(3)]).toEqual([1])
+      expect([...subject.get(2)]).toEqual([2, 3, 4])
+      expect([...subject.get(4)]).toEqual([5, 2])
+    })
+
+    describe('the result', () => {
+      it('should not contain the specified no IDs in the keys', () => {
+        expect(result.has(3)).toBeFalsy()
+        expect([...result.get(3)]).toEqual([])
+
+        expect(result.has(2)).toBeFalsy()
+        expect([...result.get(2)]).toEqual([])
+      })
+
+      it('should not contain the specified node IDs in the deps', () => {
+        expect([...result.get(1)]).toEqual([])
+        expect([...result.get(4)]).toEqual([5])
+      })
+
+      it('should contain all the other IDs', () => {
+        expect([...result.get(6)]).toEqual([7])
+      })
+    })
+  })
+
   describe('evaluationOrderGroups', () => {
     let res: NodeId[][]
     const getResult = (): void => {
@@ -609,20 +650,23 @@ describe('NodeMap', () => {
 
 describe('DataNodeMap', () => {
   let subject: DataNodeMap<object>
+  let n1d: object
+  let n2d: object
+  let n3d: object
+  let n4d: object
+
   beforeEach(() => {
     subject = new DataNodeMap<object>()
+    n1d = {}
+    n2d = {}
+    n3d = {}
+    n4d = {}
   })
 
   describe('addNode', () => {
     describe('when adding new nodes with data', () => {
-      let n1d: object
-      let n4d: object
-
       beforeEach(() => {
-        n1d = {}
         subject.addNode(1, [2, 3], n1d)
-
-        n4d = {}
         subject.addNode(4, [], n4d)
       })
 
@@ -637,6 +681,38 @@ describe('DataNodeMap', () => {
 
       it('should throw for nonexistent nodes', () => {
         expect(() => subject.getData(14)).toThrow(/\b14\b.*\bNode does not exist/)
+      })
+    })
+  })
+
+  describe('cloneWithout', () => {
+    let result: DataNodeMap<object>
+
+    beforeEach(() => {
+      subject.addNode(1, [2, 3], n1d)
+      subject.addNode(2, [2, 3, 4], n2d)
+      subject.addNode(3, [1], n3d)
+      subject.addNode(4, [5, 2], n4d)
+      result = subject.cloneWithout(new Set([3, 2]))
+    })
+
+    it('does not modify the original', () => {
+      expect(result).not.toBe(subject)
+      expect([...subject.get(3)]).toEqual([1])
+      expect(subject.getData(3)).toBe(n3d)
+    })
+
+    describe('the result', () => {
+      it('should not contain the specified no IDs in the keys', () => {
+        expect(result.has(3)).toBeFalsy()
+        expect(() => result.getData(3)).toThrow(/Node does not exist/)
+        expect(result.has(2)).toBeFalsy()
+        expect(() => result.getData(2)).toThrow(/Node does not exist/)
+      })
+
+      it('should not contain the specified node IDs in the deps', () => {
+        expect([...result.get(1)]).toEqual([])
+        expect([...result.get(4)]).toEqual([5])
       })
     })
   })

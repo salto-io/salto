@@ -7,8 +7,10 @@ import * as commands from '../../src/api'
 import State from '../../src/state/state'
 import { Blueprint, getAllElements } from '../../src/core/blueprint'
 import adapterCreators from '../../src/core/adapters/creators'
-import { Plan } from '../../src/core/plan'
+
+import * as plan from '../../src/core/plan'
 import { Workspace } from '../../src/workspace/workspace'
+
 
 const mockAdd = jest.fn(async ap => {
   if (ap.elemID.name === 'fail') {
@@ -113,14 +115,15 @@ describe('api functions', () => {
   describe('Test commands.ts and core.ts', () => {
     const blueprintsDirectory = path.join(__dirname, '../../../test', 'blueprints')
 
+    const filePath = (filename: string): string => path.join(blueprintsDirectory, filename)
     const readBlueprints = (...filenames: string[]): Promise<Blueprint[]> => Promise.all(
       filenames.map(async (filename: string) => ({
-        buffer: await fs.readFile(path.join(blueprintsDirectory, filename), 'utf8'),
+        buffer: await fs.readFile(filePath(filename), 'utf8'),
         filename,
       }))
     )
 
-    const mockShouldApplyYes = async (_plan: Plan): Promise<boolean> => true
+    const mockShouldApplyYes = async (): Promise<boolean> => Promise.resolve(true)
 
     const mockReportCurrentAction = jest.fn()
 
@@ -139,9 +142,9 @@ describe('api functions', () => {
     })
 
     it('should throw error on missing adapter', async () => {
-      const blueprints = await readBlueprints('missing.bp')
+      const ws: Workspace = await Workspace.load('', [filePath('missing.bp')])
       await expect(commands.apply(
-        blueprints,
+        ws,
         mockGetConfigFromUser,
         mockShouldApplyYes,
         mockReportCurrentAction
@@ -149,9 +152,9 @@ describe('api functions', () => {
     })
 
     it('should throw error on adapter fail', async () => {
-      const blueprints = await readBlueprints('fail.bp')
+      const ws: Workspace = await Workspace.load('', [filePath('fail.bp')])
       await expect(commands.apply(
-        blueprints,
+        ws,
         mockGetConfigFromUser,
         mockShouldApplyYes,
         mockReportCurrentAction
@@ -159,20 +162,23 @@ describe('api functions', () => {
     })
 
     describe('given a valid blueprint', () => {
-      let blueprints: Blueprint[]
+      let ws: Workspace
+
       beforeEach(async () => {
-        blueprints = await readBlueprints('salto.bp')
+        ws = await Workspace.load('', [filePath('salto.bp')])
       })
 
       it('should create an apply plan using the plan method', async () => {
+        const spy = jest.spyOn(plan, 'getPlan')
         await commands.plan(
-          blueprints,
+          new Workspace('', []),
         )
+        expect(spy).toHaveBeenCalled()
       })
 
       it('should apply an apply plan', async () => {
         await commands.apply(
-          blueprints,
+          ws,
           mockGetConfigFromUser,
           mockShouldApplyYes,
           mockReportCurrentAction
@@ -184,7 +190,7 @@ describe('api functions', () => {
         State.prototype.get = jest.fn().mockImplementation(() =>
           Promise.resolve([new ObjectType({ elemID: new ElemID('salesforce', 'employee') })]))
         await commands.apply(
-          blueprints,
+          ws,
           mockGetConfigFromUser,
           mockShouldApplyYes,
           mockReportCurrentAction
@@ -200,7 +206,7 @@ describe('api functions', () => {
         const mockStateUpdate = jest.fn().mockImplementation(() => Promise.resolve())
         State.prototype.update = mockStateUpdate
         await commands.apply(
-          blueprints,
+          ws,
           mockGetConfigFromUser,
           mockShouldApplyYes,
           mockReportCurrentAction

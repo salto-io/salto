@@ -4,7 +4,7 @@ import {
   Type, BuiltinTypes, ElemID, Change, ObjectType, Field, InstanceElement, Element, getChangeElement,
 } from 'adapter-api'
 import {
-  Plan, PlanItem, SearchResult, Blueprint, DetailedChange,
+  Plan, PlanItem, SearchResult, Blueprint, DetailedChange, Workspace,
 } from 'salto'
 import { GroupedNodeMap } from '@salto/dag'
 import { YargsCommandBuilder, allBuilders } from '../src/builder'
@@ -261,7 +261,7 @@ export const plan = (): Plan => {
 }
 
 export const apply = async (
-  _blueprints: Blueprint[],
+  _workspace: Workspace,
   _fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
   shouldApply: (plan: Plan) => Promise<boolean>,
   reportProgress: (action: PlanItem) => void,

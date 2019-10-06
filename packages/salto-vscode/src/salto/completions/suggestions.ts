@@ -2,7 +2,8 @@ import _ from 'lodash'
 import {
   Type, Field, isObjectType, isInstanceElement, isPrimitiveType,
   isField, PrimitiveTypes, BuiltinTypes, isType, Value, getField,
-  getFieldNames, getFieldType, getAnnotationKey, ElemID,
+  getFieldNames, getFieldType, getAnnotationKey, ElemID, Element,
+  getSubElement,
 } from 'adapter-api'
 
 import { SaltoWorkspace } from '../workspace'
@@ -11,6 +12,7 @@ import { ContextReference } from '../context'
 interface InsertText {
   label: string
   insertText: string
+  filterText?: string
 }
 type Suggestion = string|InsertText
 export type Suggestions = Suggestion[]
@@ -31,6 +33,112 @@ const getRestrictionValues = (annotatingElem: Type|Field, valueType: Type): Valu
   const restrictions = annotatingElem.annotations[Type.RESTRICTION]
                        || valueType.annotations[Type.RESTRICTION]
   return (restrictions && restrictions.values)
+}
+
+const getAllInstances = (
+  mergeElements: Element[],
+  adapter?: string
+): string[] => mergeElements
+  .filter(isInstanceElement)
+  .filter(e => !adapter || e.elemID.adapter === adapter)
+  .map(e => e.elemID.getFullName())
+
+const getAllTypes = (
+  mergeElements: Element[],
+  adapter?: string
+): string[] => mergeElements
+  .filter(isType)
+  .filter(e => !adapter || e.elemID.adapter === adapter)
+  .map(e => e.elemID.getFullName())
+
+const getTypeReferenceSuggestions = (
+  baseElement: Type,
+  path: string[]
+): Suggestions => {
+  const getSubElementFields = (elementPathBase: Type, elementPath: string[]): Suggestions => {
+    const element = getSubElement(elementPathBase, elementPath)
+    const elementType = isField(element) ? element.type : element
+    return (isObjectType(elementType))
+      ? _.keys(elementType.fields)
+      : []
+  }
+
+  const [firstPathPart, ...restOfPath] = path
+  if (!firstPathPart) {
+    return [
+      ..._.keys(baseElement.annotationTypes),
+      ...isObjectType(baseElement) ? _.keys(baseElement.fields) : [],
+    ]
+  }
+
+  // Here is where it gets tricky - the first token can be an annotation value OR a field
+  const annoType = baseElement.annotationTypes[firstPathPart]
+  const field = isObjectType(baseElement) ? baseElement.fields[firstPathPart] : undefined
+  const fieldType = field && field.type
+  if (!restOfPath[0]) {
+    return [
+      ...annoType ? _.keys(annoType.annotationTypes) : [],
+      ...isObjectType(annoType) ? _.keys(annoType.fields) : [],
+      ...fieldType ? _.keys(fieldType.annotationTypes) : [],
+      ...isObjectType(fieldType) ? _.keys(fieldType.fields) : [],
+    ]
+  }
+
+  // But the rest can only return fields (since we treat complex annotation like instances)
+  return [
+    ...annoType ? getSubElementFields(annoType, restOfPath) : [],
+    ...fieldType ? getSubElementFields(fieldType, restOfPath) : [],
+  ]
+}
+
+const getAdapterNames = (
+  mergedElements: Element[]
+): string[] => _(mergedElements).map(e => e.elemID.adapter).uniq().value()
+
+const referenceSuggestions = (
+  workspace: SaltoWorkspace,
+  valueToken: string
+): Suggestions => {
+  // This means we are not defining a reference
+  const unquotedMatch = valueToken.match(/".*\$\{\s*([^}]*$)/)
+  if (!unquotedMatch && (valueToken.includes('"') || valueToken.includes("'"))) return []
+  const match = unquotedMatch ? unquotedMatch[1] : valueToken
+  const [base, ...path] = match.split('.')
+  const sepIndex = base.indexOf(ElemID.NAMESPACE_SEPERATOR)
+  const adapter = (sepIndex >= 0) ? base.substring(0, sepIndex) : base
+  const baseElementName = (sepIndex >= 0) ? base.substring(sepIndex) : ''
+  // We are defining the base element
+  if (!baseElementName) {
+    return getAdapterNames(workspace.mergedElements || [])
+  }
+  if (path.length === 0) {
+    return [
+      ...getAllInstances(workspace.mergedElements || [], adapter),
+      ...getAllTypes(workspace.mergedElements || [], adapter),
+    ].map(name => ({
+      label: name.substring(name.indexOf(ElemID.NAMESPACE_SEPERATOR) + 1),
+      insertText: name,
+      filterText: name,
+    }))
+  }
+
+  const baseElement = (workspace.mergedElements || [])
+    .filter(e => e.elemID.getFullName() === base)[0]
+
+  // If we didn't find the base element we can't continue
+  if (!baseElement) return []
+
+  // If base is instance, we just need to get the field by the path and return its
+  // fields
+  if (isInstanceElement(baseElement)) {
+    return getFieldNames(baseElement.type, path.join(ElemID.NAMESPACE_SEPERATOR))
+  }
+
+  if (isType(baseElement)) {
+    return getTypeReferenceSuggestions(baseElement, path)
+  }
+
+  return []
 }
 
 export const valueSuggestions = (
@@ -76,10 +184,17 @@ export const fieldValueSuggestions = (params: SuggestionsParams): Suggestions =>
     ? getFieldType(params.ref.element.type, refPath.split(ElemID.NAMESPACE_SEPERATOR))
     : params.ref.element.type
 
-  const valueField = (attrName && isObjectType(refType)) ? refType.fields[attrName]
+  const valueField = (attrName && isObjectType(refType))
+    ? refType.fields[attrName]
     : getField(params.ref.element.type, refPath.split(ElemID.NAMESPACE_SEPERATOR))
 
-  return (valueField) ? valueSuggestions(attrName, valueField, valueField.type) : []
+  const valueToken = _.last(params.tokens) || ''
+  return (valueField)
+    ? [
+      ...valueSuggestions(attrName, valueField, valueField.type),
+      ...referenceSuggestions(params.workspace, valueToken),
+    ]
+    : referenceSuggestions(params.workspace, valueToken)
 }
 
 export const annoSuggestions = (params: SuggestionsParams): Suggestions => {
@@ -108,14 +223,22 @@ export const annoValueSuggestions = (params: SuggestionsParams): Suggestions => 
   const refPath = (annoName)
     ? params.ref.path.replace(new RegExp(`${annoName}$`), '')
     : params.ref.path
+  const valueToken = _.last(params.tokens) || ''
   if (annoType && refPath) {
     const attrField = getField(annoType, refPath.split('_'))
-    return (attrField) ? valueSuggestions(annoName, attrField, attrField.type) : []
+    return (attrField)
+      ? [
+        ...valueSuggestions(annoName, attrField, attrField.type),
+        ...referenceSuggestions(params.workspace, valueToken),
+      ]
+      : referenceSuggestions(params.workspace, valueToken)
   }
-  if (annoType) {
-    return valueSuggestions(annoName, annoType, annoType)
-  }
-  return []
+  return (annoType)
+    ? [
+      ...valueSuggestions(annoName, annoType, annoType),
+      ...referenceSuggestions(params.workspace, valueToken),
+    ]
+    : referenceSuggestions(params.workspace, valueToken)
 }
 
 
@@ -126,16 +249,10 @@ export const annoValueSuggestions = (params: SuggestionsParams): Suggestions => 
 export const typesSuggestions = (params: SuggestionsParams): Suggestions => {
   const contextAdapter = params.ref && params.ref.element.elemID.adapter
   const mergedElements = params.workspace.mergedElements || [] // may be undefined
-  const types = mergedElements.filter(e => isType(e))
-  const relevantTypes = (contextAdapter) ? types.filter(
-    // We return the builtin types in any context
-    e => [contextAdapter, ''].includes(e.elemID.adapter)
-  ) : types
-
   const typeNames = [
-    ..._.values(BuiltinTypes),
-    ...relevantTypes,
-  ].map(e => e.elemID.getFullName())
+    ..._.values(BuiltinTypes).map(e => e.elemID.getFullName()),
+    ...getAllTypes(mergedElements, contextAdapter),
+  ]
 
   const updates = (params.ref && isObjectType(params.ref.element))
     ? _.keys(params.ref.element.fields).map(k => `update ${k}`) : []
@@ -166,6 +283,4 @@ export const isSuggestions = (): Suggestions => ['is']
 
 export const instanceSuggestions = (
   params: SuggestionsParams
-): Suggestions => (
-  params.workspace.mergedElements || []
-).filter(e => isInstanceElement(e)).map(e => e.elemID.getFullName())
+): Suggestions => getAllInstances(params.workspace.mergedElements || [])

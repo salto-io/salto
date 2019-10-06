@@ -73,12 +73,12 @@ export const parse = async (blueprint: Buffer, filename: string): Promise<ParseR
     const typeObj = new ObjectType(
       {
         elemID: elemID(typeName),
+        annotationTypes: annotationTypes(typeBlock),
+        annotations: attrValues(typeBlock, elemID(typeName)),
         isSettings,
       }
     )
     sourceMap.push(typeObj.elemID, typeBlock.source)
-
-    typeObj.annotate(attrValues(typeBlock, typeObj.elemID))
 
     const isFieldBlock = (block: ParsedHclBlock): boolean =>
       (block.type === Keywords.LIST_DEFINITION || block.labels.length === 1)

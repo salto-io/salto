@@ -32,7 +32,7 @@ export const provideWorkspaceReferences = (
   token: string
 ): SaltoElemLocation[] => (
   _.reduce(
-    workspace.mergedElements,
+    workspace.elements,
     (acc, e) => ([...acc, ...getUsages(workspace, e, token)]),
     [] as SaltoElemLocation[]
   )

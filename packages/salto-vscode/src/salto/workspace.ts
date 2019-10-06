@@ -1,80 +1,120 @@
-import _ from 'lodash'
+import _ from 'lodash';
+import path from 'path';
 
+import { 
+  Workspace, Blueprint, SaltoError, ParsedBlueprintMap, 
+  ReadOnlySourceMap 
+} from 'salto';
 import { Element } from 'adapter-api'
-import {
-  loadBlueprints, parseBlueprints, mergeElements, validateElements, ParsedBlueprint,
-} from 'salto'
 
-type SaltoError = string
-interface ParsedBlueprintMap {
-  [key: string]: ParsedBlueprint
-}
+export class SaltoWorkspace {
+  private workspace : Workspace
+  private active : boolean
+  private runningSetOperation?: Promise<void>
+  private pendingSets: {[key: string] : Blueprint} = {}
+  private pendingDeletes : Set<string> = new Set<string>()
+  private lastValidState? : Workspace
 
-export interface SaltoWorkspace {
-  baseDir: string
-  parsedBlueprints: ParsedBlueprintMap
-  mergedElements?: Element[]
-  generalErrors: SaltoError[]
-  lastUpdate?: Promise<SaltoWorkspace>
-}
-
-const updateWorkspace = (workspace: SaltoWorkspace): SaltoWorkspace => {
-  const allElements = _(workspace.parsedBlueprints).values().map('elements').flatten()
-    .value()
-  try {
-    workspace.mergedElements = mergeElements(allElements)
-    workspace.generalErrors = validateElements(workspace.mergedElements).map(e => e.message)
-  } catch (e) {
-    workspace.generalErrors = [e.message]
+  static async load(
+    blueprintsDir: string,
+    blueprintsFiles: string[],
+    useCache = true
+  ): Promise<SaltoWorkspace> {
+    const workspace = await Workspace.load(blueprintsDir, blueprintsFiles, useCache)
+    return new SaltoWorkspace(workspace)
   }
-  return workspace
-}
 
-export const initWorkspace = async (
-  baseDir: string,
-  _additionalBPDirs: string[] = [], // Ignored until loadBPs will support multiple dirs
-  additionalBPs: string[] = []
-): Promise<SaltoWorkspace> => {
-  const blueprints = await loadBlueprints(additionalBPs, baseDir)
-  const parsedBlueprints = _.keyBy(await parseBlueprints(blueprints), 'filename')
-  return updateWorkspace({
-    baseDir,
-    parsedBlueprints,
-    generalErrors: [],
-  })
-}
 
-export const updateFile = async (
-  workspace: SaltoWorkspace,
-  filename: string,
-  content: string
-): Promise<SaltoWorkspace> => {
-  const bp = { filename, buffer: Buffer.from(content, 'utf8') }
-  let hasErrors = false
-  try {
-    const parseResult = (await parseBlueprints([bp]))[0]
-    const currentBlueprint: ParsedBlueprint = workspace.parsedBlueprints[filename] || {
-      filename,
-      buffer: content,
-      elements: [],
-      errors: [],
-    }
-    hasErrors = parseResult.errors.length > 0
-    currentBlueprint.errors = parseResult.errors
-    if (!hasErrors) {
-      currentBlueprint.elements = parseResult.elements
-      currentBlueprint.sourceMap = parseResult.sourceMap
-    }
-    workspace.parsedBlueprints[filename] = currentBlueprint
-  } catch (e) {
-    hasErrors = true
+  constructor(workspace: Workspace, active = true) {
+    this.workspace = workspace
+    this.active = active
   }
-  return hasErrors ? workspace : updateWorkspace(workspace)
-}
 
-export const removeFile = (
-  workspace: SaltoWorkspace, filename: string
-): SaltoWorkspace => {
-  workspace.parsedBlueprints = _.omit(workspace.parsedBlueprints, filename)
-  return updateWorkspace(workspace)
+  // Accessors into workspace
+  get elements(): ReadonlyArray<Element> { return this.workspace.elements }
+  get errors(): ReadonlyArray<SaltoError> { return this.workspace.errors }
+  get parsedBlueprints(): ParsedBlueprintMap { return this.workspace.parsedBlueprints }
+  get sourceMap(): ReadOnlySourceMap { return this.workspace.sourceMap }
+
+  private hasPendingUpdates() {
+    return !(_.isEmpty(this.pendingSets) && _.isEmpty(this.pendingDeletes))
+  }
+
+  private addPendingBlueprints(blueprints: Blueprint[]): void {
+    _.assignWith(this.pendingSets, _.keyBy(blueprints, 'filename'))
+  }
+
+  private addPendingDeletes(names: string[]): void {
+    names.forEach(n => this.pendingDeletes.add(n))
+  }
+
+  private async runAggregatedSetOperation(): Promise<void> {
+    // We throw an error if someone attempted to trigger this
+    // on an inactive state
+    if (!this.active) throw new Error('Attempted to change inactive workspace')
+    
+    // If there is an op running we'll just wait for it to exit
+    // it will only exit after the nothing is pending. 
+    if (this.runningSetOperation) {
+      return this.runningSetOperation
+    }
+
+    // No async ops here so the switch is atomic. Thanks JS!
+    if (this.hasPendingUpdates()) {
+      const opDeletes = this.pendingDeletes
+      this.pendingDeletes = new Set<string>()
+      const opBlueprints = this.pendingSets
+      this.pendingSets = {}
+      // We start by running all deleted
+      if (!_.isEmpty(opDeletes) && this.workspace) {
+        this.workspace.removeBlueprints(...opDeletes)
+      }
+      // Now add the waiting changes
+      if (!_.isEmpty(opBlueprints) && this.workspace) {
+        this.runningSetOperation = this.workspace.setBlueprints(..._.values(opBlueprints))
+        await this.runningSetOperation
+        this.runningSetOperation = undefined
+      }
+      // After we ran the update we check if the operation resulted with no 
+      // errors. If so - we update the last valid state.
+      if (_.isEmpty(this.errors)) {
+        this.lastValidState = this.workspace
+      }
+      // We recall this method to make sure no pending were added since
+      // we started. Returning the promise will make sure the caller
+      // keeps on waiting until the queue is clear.
+      return this.runAggregatedSetOperation()
+    }
+    // We had nothing to do - so we clear the running flag and exit 
+    
+  }
+
+  getWorkspaceName(filename: string): string {
+    return path.relative(this.workspace.baseDir, filename)
+  }
+
+  setBlueprints(...blueprints: Blueprint[]): void {
+    this.addPendingBlueprints(
+      blueprints.map(bp => ({
+        ...bp, 
+        filename: this.getWorkspaceName(bp.filename)
+    })))
+    this.runAggregatedSetOperation()
+  }
+
+  removeBlueprints(...names: string[]): void {
+    this.addPendingDeletes(names.map(n => this.getWorkspaceName(n)))
+    this.runAggregatedSetOperation()
+  }
+
+  getValidState(): SaltoWorkspace | undefined {
+    if (_.isEmpty(this.errors)){
+      return this
+    }
+    return this.lastValidState ? new SaltoWorkspace(this.lastValidState, false) : undefined
+  }
+
+  async awaitAllUpdates(): Promise<void> {
+    await this.runningSetOperation
+  }
 }

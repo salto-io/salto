@@ -1,7 +1,7 @@
 import * as path from 'path'
 import * as fs from 'async-file'
 
-import { initWorkspace, SaltoWorkspace } from '../../src/salto/workspace'
+import { SaltoWorkspace } from '../../src/salto/workspace'
 import { provideWorkspaceDefinition } from '../../src/salto/definitions'
 import { getPositionContext } from '../../src/salto/context'
 
@@ -12,7 +12,7 @@ describe('Test go to definitions', () => {
   const bpFile = path.resolve(`${baseBPDir}/all.bp`)
 
   beforeAll(async () => {
-    workspace = await initWorkspace(baseBPDir)
+    workspace = await SaltoWorkspace.load(baseBPDir, [], false)
     bpContent = await fs.readFile(bpFile, 'utf8')
   })
 
@@ -20,6 +20,7 @@ describe('Test go to definitions', () => {
     const pos = { line: 40, col: 8 }
     const ctx = getPositionContext(workspace, bpContent, bpFile, pos)
     const token = 'vs_num'
+
     const defs = provideWorkspaceDefinition(workspace, ctx, token)
     expect(defs.length).toBe(1)
     expect(defs[0].range.start.line).toBe(13)

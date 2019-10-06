@@ -3,7 +3,7 @@ import * as path from 'path'
 import * as fs from 'async-file'
 import _ from 'lodash'
 
-import { initWorkspace, SaltoWorkspace } from '../../src/salto/workspace'
+import { SaltoWorkspace } from '../../src/salto/workspace'
 import { getPositionContext } from '../../src/salto/context'
 import {
   provideWorkspaceCompletionItems, SaltoCompletion,
@@ -20,7 +20,7 @@ describe('Test auto complete', () => {
     filename: string,
     pos: Pos
   ): string => {
-    const bp = workspace.parsedBlueprints[filename]
+    const bp = workspace.parsedBlueprints[workspace.getWorkspaceName(filename)]
     const fullLine = (bp) ? bp.buffer.toString().split('\n')[pos.line - 1] : ''
     return _.trimStart(fullLine.slice(0, pos.col))
   }
@@ -62,7 +62,7 @@ describe('Test auto complete', () => {
   const baseBPDir = path.resolve(`${__dirname}/../../../test/salto/completionsBP`)
   const bpFileName = path.resolve(`${baseBPDir}/all.bp`)
   beforeAll(async () => {
-    workspace = await initWorkspace(baseBPDir)
+    workspace = await SaltoWorkspace.load(baseBPDir, [], false)
     bpContent = await fs.readFile(bpFileName, 'utf8')
   })
 
@@ -94,6 +94,7 @@ describe('Test auto complete', () => {
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line, pos)
+      console.log(line)
       const include = [...types]
       const exclude = [...kw, ...instances]
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)

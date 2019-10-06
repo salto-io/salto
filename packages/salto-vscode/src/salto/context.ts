@@ -138,7 +138,7 @@ const buildPositionContext = (
   return context
 }
 
-const extractFields = (elements: Element[]): Element[] => (
+const extractFields = (elements: readonly Element[]): Element[] => (
   _(elements).map(e => (
     (isObjectType(e)) ? [..._.values(e.fields), e] : [e]
   )).flatten().value()
@@ -163,7 +163,7 @@ export const buildDefinitionsTree = (
 }
 
 const getFullElement = (workspace: SaltoWorkspace, partial: Element): Element => {
-  const fullElement = extractFields(workspace.mergedElements || [])
+  const fullElement = extractFields(workspace.elements || [])
     .find(e => e.elemID.getFullName() === partial.elemID.getFullName())
   return fullElement || partial
 }
@@ -183,7 +183,7 @@ export const getPositionContext = (
   filename: string,
   position: EditorPosition
 ): PositionContext => {
-  const parsedBlueprint = workspace.parsedBlueprints[filename]
+  const parsedBlueprint = workspace.parsedBlueprints[workspace.getWorkspaceName(filename)]
   const definitionsTree = buildDefinitionsTree(fileContent, parsedBlueprint)
   const partialContext = getPositionFromTree(definitionsTree, position)
   const fullRef = (partialContext.ref)

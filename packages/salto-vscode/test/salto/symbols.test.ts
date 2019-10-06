@@ -1,7 +1,7 @@
 import * as path from 'path'
 import * as fs from 'async-file'
 
-import { initWorkspace, SaltoWorkspace } from '../../src/salto/workspace'
+import { SaltoWorkspace } from '../../src/salto/workspace'
 import { getPositionContext } from '../../src/salto/context'
 import { SaltoSymbolKind, createSaltoSymbol } from '../../src/salto/symbols'
 
@@ -11,7 +11,7 @@ describe('Cursor context resolver', () => {
   const baseBPDir = path.resolve(`${__dirname}/../../../test/salto/completionsBP`)
   const filename = path.resolve(`${baseBPDir}/all.bp`)
   beforeAll(async () => {
-    workspace = await initWorkspace(baseBPDir)
+    workspace = await SaltoWorkspace.load(baseBPDir, [], false)
     bpContent = await fs.readFile(filename, 'utf8')
   })
 

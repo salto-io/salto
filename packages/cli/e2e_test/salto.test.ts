@@ -9,7 +9,7 @@ import {
   InstanceElement, ObjectType, getChangeElement, Change,
 } from 'adapter-api'
 import {
-  loadBlueprints, Plan, STATEPATH,
+  Plan, STATEPATH,
 } from 'salto'
 import wu from 'wu'
 
@@ -98,7 +98,7 @@ describe('commands e2e', () => {
   })
 
   it('should apply the new change', async () => {
-    await new ApplyCommand(await loadBlueprints([addModelBP], discoverOutputDir), false, cliOutput)
+    await new ApplyCommand(discoverOutputDir, [addModelBP], false, cliOutput)
       .execute()
     expect(lastPlan.size).toBe(1)
     const step = wu(lastPlan.itemsByEvalOrder()).next().value
@@ -112,7 +112,7 @@ describe('commands e2e', () => {
   })
 
   it('should apply changes in the new model', async () => {
-    await new ApplyCommand(await loadBlueprints([modifyModelBP], discoverOutputDir), false,
+    await new ApplyCommand(discoverOutputDir, [modifyModelBP], false,
       cliOutput).execute()
     expect(lastPlan.size).toBe(1)
     const step = wu(lastPlan.itemsByEvalOrder()).next().value
@@ -125,7 +125,7 @@ describe('commands e2e', () => {
   })
 
   it('should apply a delete for the model', async () => {
-    await new ApplyCommand(await loadBlueprints([], discoverOutputDir), false, cliOutput).execute()
+    await new ApplyCommand(discoverOutputDir, [], false, cliOutput).execute()
     expect(lastPlan.size).toBe(1)
     const step = wu(lastPlan.itemsByEvalOrder()).next().value
     expect(step.parent().action).toBe('remove')

@@ -16,3 +16,7 @@ export class DefaultMap<K, V> extends Map<K, V> {
     return res
   }
 }
+
+export interface DefaultMap<K, V> extends Map<K, V> {
+  get(key: K): V
+}

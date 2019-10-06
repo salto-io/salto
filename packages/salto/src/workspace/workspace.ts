@@ -3,7 +3,8 @@ import wu from 'wu'
 import path from 'path'
 import fs from 'async-file'
 import readdirp from 'readdirp'
-import { Element, ElemID } from 'adapter-api'
+import { collections } from '@salto/lowerdash'
+import { Element } from 'adapter-api'
 import { types } from '@salto/lowerdash'
 
 import {
@@ -15,6 +16,9 @@ import { DetailedChange } from '../core/plan'
 import { ParseResultFSCache } from './cache'
 import { getChangeLocations, updateBlueprintData } from './blueprint_update'
 
+const DefaultMap = collections.map.DefaultMap
+type DefaultMap<K, V> = collections.map.DefaultMap<K, V>
+
 const CACHE_FOLDER = '.cache'
 export type Blueprint = {
   buffer: string
@@ -25,15 +29,9 @@ export type Blueprint = {
 
 export type ParsedBlueprint = Blueprint & ParseResult
 
-export type SaltoError = {
-  elemID: ElemID
-  error: string
-}
-
 interface ParsedBlueprintMap {
   [key: string]: ParsedBlueprint
 }
-type ReadonlySourceMap = ReadonlyMap<string, SourceRange[]>
 
 const getBlueprintsFromDir = async (
   blueprintsDir: string,
@@ -92,14 +90,16 @@ const parseBlueprintsWithCache = (
   }))
 }
 
-const mergeSourceMaps = (bps: ReadonlyArray<ParsedBlueprint>): SourceMap => (
-  bps.map(bp => bp.sourceMap).reduce((prev, curr) => {
-    wu(curr.entries()).forEach(([k, v]) => {
-      prev.set(k, (prev.get(k) || []).concat(v))
+const mergeSourceMaps = (bps: ReadonlyArray<ParsedBlueprint>): SourceMap => {
+  const result = new DefaultMap<string, SourceRange[]>(() => [])
+  bps.forEach(bp => {
+    const { sourceMap } = bp
+    sourceMap.forEach((ranges, key) => {
+      result.get(key).push(...ranges)
     })
-    return prev
-  }, new Map<string, SourceRange[]>())
-)
+  })
+  return result
+}
 
 export class Errors extends types.Bean<Readonly<{
   parse: ReadonlyArray<ParseError>
@@ -121,7 +121,7 @@ export class Errors extends types.Bean<Readonly<{
 
 type WorkspaceState = {
   readonly parsedBlueprints: ParsedBlueprintMap
-  readonly sourceMap: ReadonlySourceMap
+  readonly sourceMap: SourceMap
   readonly elements: ReadonlyArray<Element>
   readonly errors: Errors
 }
@@ -189,7 +189,7 @@ export class Workspace {
   get errors(): Errors { return this.state.errors }
   hasErrors(): boolean { return this.state.errors.hasErrors() }
   get parsedBlueprints(): ParsedBlueprintMap { return this.state.parsedBlueprints }
-  get sourceMap(): ReadonlySourceMap { return this.state.sourceMap }
+  get sourceMap(): SourceMap { return this.state.sourceMap }
 
   private markDirty(names: string[]): void {
     names.forEach(name => this.dirtyBlueprints.add(name))

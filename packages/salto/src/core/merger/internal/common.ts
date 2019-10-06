@@ -18,15 +18,15 @@ export abstract class MergeError extends types.Bean<Readonly<{
   }
 }
 
-export type MergeResult<T, TError extends MergeError = MergeError> = Readonly<{
+export type MergeResult<T> = Readonly<{
   merged: T
-  errors: TError[]
+  errors: MergeError[]
 }>
 
-export const mergeNoDuplicates = <T, TError extends MergeError>(
-  sources: T[], errorCreator: (key: string) => TError
-): MergeResult<T, TError> => {
-  const errors: TError[] = []
+export const mergeNoDuplicates = <T>(
+  sources: T[], errorCreator: (key: string) => MergeError
+): MergeResult<T> => {
+  const errors: MergeError[] = []
   const merged: unknown = _.mergeWith(
     {},
     ...sources,

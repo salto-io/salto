@@ -4,7 +4,6 @@ import { createCommandBuilder } from '../builder'
 import {
   CliCommand, CliOutput, ParsedCliInput, WriteStream,
 } from '../types'
-// import * as bf from '../filters/blueprints'
 import {
   createActionStartOutput, createActionInProgressOutput, createItemDoneOutput,
 } from '../formatter'
@@ -107,8 +106,6 @@ const builder = createCommandBuilder({
       },
     },
   },
-
-  filters: [],
 
   async build(input: ApplyParsedCliInput, output: CliOutput): Promise<CliCommand> {
     return new ApplyCommand(input.args['blueprints-dir'], input.args.blueprint, input.args.yes, output)

@@ -43,8 +43,6 @@ const builder = createCommandBuilder({
     },
   },
 
-  filters: [],
-
   async build(input: PlanParsedCliInput, output: CliOutput) {
     return command(input.args['blueprints-dir'], input.args.blueprint, output)
   },

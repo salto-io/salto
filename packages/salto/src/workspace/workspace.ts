@@ -3,9 +3,8 @@ import wu from 'wu'
 import path from 'path'
 import fs from 'async-file'
 import readdirp from 'readdirp'
-import { collections } from '@salto/lowerdash'
+import { collections, types } from '@salto/lowerdash'
 import { Element } from 'adapter-api'
-import { types } from '@salto/lowerdash'
 
 import {
   SourceMap, parse, SourceRange, ParseResult, ParseError,
@@ -16,8 +15,7 @@ import { DetailedChange } from '../core/plan'
 import { ParseResultFSCache } from './cache'
 import { getChangeLocations, updateBlueprintData } from './blueprint_update'
 
-const DefaultMap = collections.map.DefaultMap
-type DefaultMap<K, V> = collections.map.DefaultMap<K, V>
+const { DefaultMap } = collections.map
 
 const CACHE_FOLDER = '.cache'
 export type Blueprint = {
@@ -25,7 +23,6 @@ export type Blueprint = {
   filename: string
   timestamp?: number
 }
-
 
 export type ParsedBlueprint = Blueprint & ParseResult
 

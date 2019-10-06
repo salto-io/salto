@@ -1,11 +1,14 @@
-import { discover as mockDiscover, Workspace as mockWorksapce } from 'salto'
+import {
+  discover as mockDiscover,
+  Workspace as mockWorksapce,
+} from 'salto'
 import { command } from '../../src/commands/discover'
 
 jest.mock('salto', () => ({
   discover: jest.fn().mockImplementation(() => Promise.resolve()),
   Workspace: {
     load: jest.fn().mockImplementation(
-      baseDir => ({ baseDir, errors: [] }),
+      baseDir => ({ baseDir, hasErrors: () => false }),
     ),
   },
 }))
@@ -26,13 +29,19 @@ describe('discover command', () => {
   describe('with errored workspace', () => {
     beforeEach(() => {
       mockWorksapce.load = jest.fn().mockImplementationOnce(
-        baseDir => ({ baseDir, errors: ['failed to load'] }),
+        baseDir => ({
+          hasErrors: () => true,
+          baseDir,
+          errors: {
+            strings: () => ['some error'],
+          },
+        })
       )
     })
     it('should fail', async () => {
       await expect(
         command(workspaceDir, additaionFiles).execute()
-      ).rejects.toThrow(/failed to load/)
+      ).rejects.toThrow(/Failed to load/)
     })
   })
 })

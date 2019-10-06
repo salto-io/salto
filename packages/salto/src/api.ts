@@ -99,12 +99,11 @@ export const discover = async (
 }
 
 export const describeElement = async (
+  workspace: Workspace,
   searchWords: string[],
-  blueprints: Blueprint[] = [],
-): Promise<SearchResult> => {
-  const allElements = await getAllElements(blueprints)
-  return findElement(searchWords, allElements)
-}
+): Promise<SearchResult> =>
+  findElement(searchWords, workspace.elements)
+
 
 export const exportToCsv = async (
   typeId: string,

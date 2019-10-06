@@ -1,3 +1,4 @@
+import { Workspace } from 'salto'
 import { command } from '../../src/commands/plan'
 import { plan, MockWriteStream } from '../mocks'
 
@@ -15,6 +16,10 @@ describe('plan command', () => {
     const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
     await command('', [], cliOutput).execute()
     output = cliOutput.stdout.content
+  })
+
+  it('should load the workspace', () => {
+    expect(Workspace.load).toHaveBeenCalled()
   })
 
   it('should print refresh', () => {

@@ -47,6 +47,9 @@ describe('apply command', () => {
     })
 
     describe('should print progress', () => {
+      it('should load worksapce', () => {
+        expect(Workspace.load).toHaveBeenCalled()
+      })
       it('should print progress upon update', async () => {
         wu((plan()).itemsByEvalOrder()).forEach(item => command.updateCurrentAction(item))
         expect(cliOutput.stdout.content).toMatch('salesforce_lead: changing...')

@@ -75,7 +75,7 @@ const findInnerElement = (
 }
 
 const createElementsMap = (
-  elements: Element[]
+  elements: readonly Element[]
 ): ElementMap => elements.reduce(
   (accumulator: ElementMap, element: Element) => {
     accumulator[element.elemID.getFullName()] = element
@@ -83,7 +83,10 @@ const createElementsMap = (
   }, {}
 )
 
-export const findElement = (searchWords: string[], allElements: Element[]): SearchResult => {
+export const findElement = (
+  searchWords: string[],
+  allElements: readonly Element[]
+): SearchResult => {
   const elementsMap = createElementsMap(allElements)
   // First we try with exact match only
   return findInnerElement(searchWords, elementsMap, elementsMap)

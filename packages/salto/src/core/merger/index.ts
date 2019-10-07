@@ -7,10 +7,10 @@ import { resolve } from '../expressions'
 import { mergeObjectTypes } from './internal/object_types'
 import { mergeInstances } from './internal/instances'
 import { mergePrimitives } from './internal/primitives'
-import { MergeResult } from './internal/common'
+import { MergeResult as InternalMergeResult } from './internal/common'
 
 export { MergeError } from './internal/common'
-export type MergeResult = MergeResult<Element>
+export type MergeResult = InternalMergeResult<Element[]>
 
 export {
   FieldDefinitionMergeError, NoBaseDefinitionMergeError, MultipleBaseDefinitionsMergeError,
@@ -52,7 +52,7 @@ const updateMergedTypes = (
  * Merge a list of elements by applying all updates, and replacing the pointers
  * to the updated elements.
  */
-export const mergeElements = (elements: Element[]): MergeResult<Element[]> => {
+export const mergeElements = (elements: Element[]): MergeResult => {
   const objects = mergeObjectTypes(elements.filter(isObjectType))
   const instances = mergeInstances(elements.filter(isInstanceElement))
   const primitiveElements = [...elements.filter(isPrimitiveType), ...Object.values(BuiltinTypes)]

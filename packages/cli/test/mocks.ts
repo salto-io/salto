@@ -285,7 +285,7 @@ export const describe = async (_searchWords: string[], _blueprints?: Blueprint[]
     isGuess: false,
   })
 
-export const exportToCsv = async (_typeId: string, _blueprints: Blueprint[],
+export const exportToCsv = async (_typeId: string, _workspace: Workspace,
   _fillConfig: (configType: ObjectType) => Promise<InstanceElement>):
   Promise<AsyncIterable<InstanceElement[]>> => (
   async function *mockIterator(): AsyncIterable<InstanceElement[]> {

@@ -70,14 +70,14 @@ describe('When running data modifying commands', () => {
     it('should succeed after discover', async () => {
       const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
       await discover(discoverOutputDir, []).execute()
-      await importCommand(await loadBlueprints([], discoverOutputDir), dataFilePath,
+      await importCommand(discoverOutputDir, [], dataFilePath,
         sfLeadObjectName, cliOutput).execute()
       expect(cliOutput.stdout.content).toMatch(Prompts.IMPORT_FINISHED_SUCCESSFULLY)
     })
 
     it('should fail if discover was not run beforehand', async () => {
       const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
-      const command = importCommand(await loadBlueprints([], discoverOutputDir), dataFilePath,
+      const command = importCommand(discoverOutputDir, [], dataFilePath,
         sfLeadObjectName, cliOutput)
       await expect(command.execute()).rejects
         .toThrow(`Couldn't find the type you are looking for: ${sfLeadObjectName}. Have you run salto discover yet?`)
@@ -92,7 +92,7 @@ describe('When running data modifying commands', () => {
       const updatedDataFilePath = path.join(exportOutputDir, dataWithIdFileName)
       const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
       await discover(discoverOutputDir, []).execute()
-      await importCommand(await loadBlueprints([], discoverOutputDir), dataFilePath,
+      await importCommand(discoverOutputDir, [], dataFilePath,
         sfLeadObjectName, cliOutput).execute()
 
       // Replicate the file with the Ids of the created items

@@ -1,25 +1,29 @@
 import asyncfile from 'async-file'
-import { importFromCsvFile, Blueprint, readCsv } from 'salto'
+import { importFromCsvFile, Workspace, readCsv } from 'salto'
 import { createCommandBuilder } from '../builder'
 import { ParsedCliInput, CliCommand, CliOutput } from '../types'
-import * as bf from '../filters/blueprints'
 import { getConfigFromUser } from '../callbacks'
 import Prompts from '../prompts'
 
-export const command = (blueprints: Blueprint[],
+export const command = (
+  workingDir: string,
+  blueprintFiles: string[] = [],
   inputPath: string,
   typeName: string,
-  { stdout, stderr }: CliOutput): CliCommand => ({
+  { stdout, stderr }: CliOutput
+): CliCommand => ({
   async execute(): Promise<void> {
     if (!await asyncfile.exists(inputPath)) {
       stderr.write(Prompts.COULD_NOT_FIND_FILE)
       return
     }
     const records = await readCsv(inputPath)
+    const workspace: Workspace = await Workspace.load(workingDir, blueprintFiles)
+
     await importFromCsvFile(
       typeName,
       records,
-      blueprints,
+      workspace,
       getConfigFromUser
     )
     // TODO: Return here the full report that contains the numbers of successful and failed rows.
@@ -28,8 +32,13 @@ export const command = (blueprints: Blueprint[],
   },
 })
 
-type DiscoverArgs = bf.Args & { 'inputPath': string; 'typeName': string }
-type DiscoverParsedCliInput = ParsedCliInput<DiscoverArgs> & bf.BlueprintsParsedCliInput
+type ImportArgs = {
+    'blueprint': string[]
+    'blueprints-dir': string
+    inputPath: string
+    typeName: string
+  }
+type ImportParsedCliInput = ParsedCliInput<ImportArgs>
 
 const builder = createCommandBuilder({
   options: {
@@ -46,12 +55,26 @@ const builder = createCommandBuilder({
         description: 'The type name of the instances to import as it appears in the blueprint',
       },
     },
+    keyed: {
+      'blueprints-dir': {
+        alias: 'd',
+        describe: 'A path to the blueprints directory',
+        string: true,
+        demandOption: true,
+      },
+      blueprint: {
+        alias: 'b',
+        describe: 'Path to input blueprint file. This option can be specified multiple times',
+        demandOption: false,
+        array: true,
+        requiresArg: true,
+      },
+    },
   },
 
-  filters: [bf.optionalFilter],
 
-  async build(input: DiscoverParsedCliInput, output: CliOutput) {
-    return command(input.blueprints, input.args.inputPath, input.args.typeName, output)
+  async build(input: ImportParsedCliInput, output: CliOutput) {
+    return command(input.args['blueprints-dir'], input.args.blueprint, input.args.inputPath, input.args.typeName, output)
   },
 })
 

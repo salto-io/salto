@@ -266,7 +266,7 @@ describe('api functions', () => {
           await commands.importFromCsvFile(
             testType.elemID.getFullName(),
             [],
-            blueprints,
+            ws,
             mockGetConfigFromUser
           )
           expect(mockStateGet).toHaveBeenCalled()

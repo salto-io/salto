@@ -120,7 +120,7 @@ export const exportToCsv = async (
 export const importFromCsvFile = async (
   typeId: string,
   records: Value[],
-  blueprints: Blueprint[],
+  workspace: Workspace,
   fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
 ): Promise<void> => {
   // Find the corresponding element in the state
@@ -130,8 +130,7 @@ export const importFromCsvFile = async (
   if (!type) {
     throw new Error(`Couldn't find the type you are looking for: ${typeId}. Have you run salto discover yet?`)
   }
-  const elements = mergeAndValidate(await getAllElements(blueprints))
-  const [adapters] = await initAdapters(elements, fillConfig)
+  const [adapters] = await initAdapters(workspace.elements, fillConfig)
   await importInstancesOfType(type as ObjectType, records, adapters)
 }
 

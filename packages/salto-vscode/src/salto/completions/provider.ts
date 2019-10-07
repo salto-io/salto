@@ -129,7 +129,6 @@ export const provideWorkspaceCompletionItems = (
   line: string,
   position: EditorPosition
 ): SaltoCompletion[] => {
-  console.log(line)
   const tokens = getLineTokens(removeLinePrefix(line))
   const lineType = getLineType(context, tokens, position)
   const suggestionsParams = { workspace, tokens, ref: context.ref }

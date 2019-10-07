@@ -18,7 +18,7 @@ export const activate = async (context: vscode.ExtensionContext): Promise<void> 
     const workspace = await SaltoWorkspace.load(
       rootPath,
       settings.additionalBlueprints,
-      true
+      false
     )
 
     const completionProvider = vscode.languages.registerCompletionItemProvider(

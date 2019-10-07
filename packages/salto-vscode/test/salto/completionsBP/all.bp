@@ -135,11 +135,6 @@ vs_person hadar {
 }
 
 type vs_ref_tester {
-
-    vs_str cvb {
-        
-    }
-
     vs_str field_ref_simple {
         label = vs_weekend_car.reason
     }

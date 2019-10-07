@@ -16,7 +16,7 @@ export const createDocumentSymbolsProvider = (
   provideDocumentSymbols: (
     doc: vscode.TextDocument
   ) => {
-    const blueprint = workspace.parsedBlueprints[workspace.getWorkspaceName(doc.fileName) ]
+    const blueprint = workspace.parsedBlueprints[workspace.getWorkspaceName(doc.fileName)]
     const defTree = buildDefinitionsTree(doc.getText(), blueprint)
     return (defTree.children || []).map(c => buildVSDefinitions(c))
   },
@@ -31,20 +31,20 @@ export const createCompletionsProvider = (
     doc: vscode.TextDocument,
     position: vscode.Position
   ) => {
-    workspace.awaitAllUpdates()
+    await workspace.awaitAllUpdates()
     const validWorkspace = workspace.getValidState()
     if (validWorkspace) {
       const saltoPos = vsPosToSaltoPos(position)
       const context = getPositionContext(
-        workspace,
+        validWorkspace,
         doc.getText(),
         doc.fileName,
         saltoPos
       )
       const line = doc.lineAt(position).text.substr(0, position.character)
       return buildVSCompletionItems(
-          provideWorkspaceCompletionItems(workspace, context, line, saltoPos)
-        )
+        provideWorkspaceCompletionItems(validWorkspace, context, line, saltoPos)
+      )
     }
     return []
   },
@@ -66,7 +66,7 @@ export const createDefinitionsProvider = (
         doc.fileName,
         vsPosToSaltoPos(position)
       )
-      return  provideWorkspaceDefinition(workspace, context, currenToken).map(
+      return provideWorkspaceDefinition(validWorkspace, context, currenToken).map(
         def => new vscode.Location(
           vscode.Uri.file(def.filename),
           saltoPosToVsPos(def.range.start)

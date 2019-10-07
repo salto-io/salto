@@ -1,18 +1,18 @@
-import _ from 'lodash';
-import path from 'path';
+import _ from 'lodash'
+import path from 'path'
 
-import { 
-  Workspace, Blueprint, SaltoError, ParsedBlueprintMap, 
-  ReadOnlySourceMap 
-} from 'salto';
+import {
+  Workspace, WorkspaceBlueprint as Blueprint, SaltoError, ParsedBlueprintMap,
+  ReadOnlySourceMap,
+} from 'salto'
 import { Element } from 'adapter-api'
 
 export class SaltoWorkspace {
-  private workspace : Workspace
-  private active : boolean
+  private workspace: Workspace
+  private active: boolean
   private runningSetOperation?: Promise<void>
-  private pendingSets: {[key: string] : Blueprint} = {}
-  private pendingDeletes : Set<string> = new Set<string>()
+  private pendingSets: {[key: string]: Blueprint} = {}
+  private pendingDeletes: Set<string> = new Set<string>()
   private lastValidState? : Workspace
 
   static async load(
@@ -28,6 +28,9 @@ export class SaltoWorkspace {
   constructor(workspace: Workspace, active = true) {
     this.workspace = workspace
     this.active = active
+    if (_.isEmpty(workspace.errors)) {
+      this.lastValidState = _.cloneDeep(workspace)
+    }
   }
 
   // Accessors into workspace
@@ -36,7 +39,7 @@ export class SaltoWorkspace {
   get parsedBlueprints(): ParsedBlueprintMap { return this.workspace.parsedBlueprints }
   get sourceMap(): ReadOnlySourceMap { return this.workspace.sourceMap }
 
-  private hasPendingUpdates() {
+  private hasPendingUpdates(): boolean {
     return !(_.isEmpty(this.pendingSets) && _.isEmpty(this.pendingDeletes))
   }
 
@@ -52,9 +55,9 @@ export class SaltoWorkspace {
     // We throw an error if someone attempted to trigger this
     // on an inactive state
     if (!this.active) throw new Error('Attempted to change inactive workspace')
-    
+
     // If there is an op running we'll just wait for it to exit
-    // it will only exit after the nothing is pending. 
+    // it will only exit after the nothing is pending.
     if (this.runningSetOperation) {
       return this.runningSetOperation
     }
@@ -62,8 +65,8 @@ export class SaltoWorkspace {
     // No async ops here so the switch is atomic. Thanks JS!
     if (this.hasPendingUpdates()) {
       const opDeletes = this.pendingDeletes
-      this.pendingDeletes = new Set<string>()
       const opBlueprints = this.pendingSets
+      this.pendingDeletes = new Set<string>()
       this.pendingSets = {}
       // We start by running all deleted
       if (!_.isEmpty(opDeletes) && this.workspace) {
@@ -73,20 +76,20 @@ export class SaltoWorkspace {
       if (!_.isEmpty(opBlueprints) && this.workspace) {
         this.runningSetOperation = this.workspace.setBlueprints(..._.values(opBlueprints))
         await this.runningSetOperation
-        this.runningSetOperation = undefined
       }
-      // After we ran the update we check if the operation resulted with no 
+      // After we ran the update we check if the operation resulted with no
       // errors. If so - we update the last valid state.
       if (_.isEmpty(this.errors)) {
-        this.lastValidState = this.workspace
+        this.lastValidState = _.cloneDeep(this.workspace)
       }
       // We recall this method to make sure no pending were added since
       // we started. Returning the promise will make sure the caller
       // keeps on waiting until the queue is clear.
       return this.runAggregatedSetOperation()
     }
-    // We had nothing to do - so we clear the running flag and exit 
-    
+    // We had nothing to do - so we clear the running flag and exit
+    this.runningSetOperation = undefined
+    return undefined
   }
 
   getWorkspaceName(filename: string): string {
@@ -96,9 +99,10 @@ export class SaltoWorkspace {
   setBlueprints(...blueprints: Blueprint[]): void {
     this.addPendingBlueprints(
       blueprints.map(bp => ({
-        ...bp, 
-        filename: this.getWorkspaceName(bp.filename)
-    })))
+        ...bp,
+        filename: this.getWorkspaceName(bp.filename),
+      }))
+    )
     this.runAggregatedSetOperation()
   }
 
@@ -108,13 +112,13 @@ export class SaltoWorkspace {
   }
 
   getValidState(): SaltoWorkspace | undefined {
-    if (_.isEmpty(this.errors)){
+    if (_.isEmpty(this.errors)) {
       return this
     }
     return this.lastValidState ? new SaltoWorkspace(this.lastValidState, false) : undefined
   }
 
   async awaitAllUpdates(): Promise<void> {
-    await this.runningSetOperation
+    if (this.runningSetOperation) await this.runningSetOperation
   }
 }

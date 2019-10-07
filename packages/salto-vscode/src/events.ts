@@ -8,7 +8,7 @@ export const onDidChangeTextDocument = (
   event: vscode.TextDocumentChangeEvent,
   workspace: SaltoWorkspace
 ): Promise<void> => {
-  const bp = {filename: event.document.fileName, buffer: event.document.getText()}
+  const bp = { filename: event.document.fileName, buffer: event.document.getText() }
   workspace.setBlueprints(bp)
   return workspace.awaitAllUpdates()
 }
@@ -26,6 +26,6 @@ export const onFileCreate = async (
   filename: string
 ): Promise<void> => {
   const buffer = await fs.readFile(filename, 'utf8')
-  workspace.setBlueprints({filename, buffer})
+  workspace.setBlueprints({ filename, buffer })
   return workspace.awaitAllUpdates()
 }

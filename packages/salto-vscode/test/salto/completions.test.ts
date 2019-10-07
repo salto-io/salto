@@ -94,7 +94,6 @@ describe('Test auto complete', () => {
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line, pos)
-      console.log(line)
       const include = [...types]
       const exclude = [...kw, ...instances]
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)

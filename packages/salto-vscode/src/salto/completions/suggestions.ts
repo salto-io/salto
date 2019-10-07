@@ -112,7 +112,7 @@ const referenceSuggestions = (
     return getAdapterNames(workspace.elements || [])
   }
   if (path.length === 0) {
-    return [
+    const res = [
       ...getAllInstances(workspace.elements || [], adapter),
       ...getAllTypes(workspace.elements || [], adapter),
     ].map(name => ({
@@ -120,8 +120,8 @@ const referenceSuggestions = (
       insertText: name,
       filterText: name,
     }))
+    return res
   }
-
   const baseElement = (workspace.elements || [])
     .filter(e => e.elemID.getFullName() === base)[0]
 

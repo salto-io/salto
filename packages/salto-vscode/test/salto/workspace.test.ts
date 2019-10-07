@@ -24,7 +24,6 @@ describe('TEST', () => {
 
   it('should collect validation errors', async () => {
     const workspace = await EditorWorkspace.load(baseBPDir, [errorBP], false)
-    console.dir(workspace.errors)
     expect(workspace.elements).toBeDefined()
     expect(workspace.elements && workspace.elements.length).toBe(4)
     expect(_.keys(workspace.parsedBlueprints).length).toBe(3)

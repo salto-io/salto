@@ -131,8 +131,7 @@ const createWorkspaceState = (blueprints: ReadonlyArray<ParsedBlueprint>): Works
   const parseErrors = _.flatten(blueprints.map(bp => bp.errors))
   const elements = _.flatten(blueprints.map(bp => bp.elements))
   const { merged: mergedElements, errors: mergeErrors } = mergeElements(elements)
-  const validationErrors = validateElements(elements).map(e => e.message)
-  console.dir({validationErrors})
+  const validationErrors = validateElements(mergedElements).map(e => e.message)
   return {
     ...partialWorkspace,
     elements: mergedElements,

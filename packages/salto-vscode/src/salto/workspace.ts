@@ -79,6 +79,7 @@ export class EditorWorkspace {
       if (!_.isEmpty(opBlueprints) && this.workspace) {
         this.runningSetOperation = this.workspace.setBlueprints(..._.values(opBlueprints))
         await this.runningSetOperation
+        this.runningSetOperation = undefined
       }
       // After we ran the update we check if the operation resulted with no
       // errors. If so - we update the last valid state.
@@ -90,8 +91,6 @@ export class EditorWorkspace {
       // keeps on waiting until the queue is clear.
       return this.runAggregatedSetOperation()
     }
-    // We had nothing to do - so we clear the running flag and exit
-    this.runningSetOperation = undefined
     return undefined
   }
 

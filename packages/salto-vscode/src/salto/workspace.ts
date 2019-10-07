@@ -83,7 +83,8 @@ export class EditorWorkspace {
       }
       // After we ran the update we check if the operation resulted with no
       // errors. If so - we update the last valid state.
-      if (!this.errors.hasErrors()) {
+      const bpErrors = _(this.parsedBlueprints).values().map(bp => bp.errors).flatten().value()
+      if (_.isEmpty(bpErrors) && !_.isEmpty(this.elements)) {
         this.lastValidCopy = _.cloneDeep(this.workspace)
       }
       // We recall this method to make sure no pending were added since
@@ -118,9 +119,6 @@ export class EditorWorkspace {
   }
 
   getValidCopy(): EditorWorkspace | undefined {
-    if (!this.errors.hasErrors()) {
-      return this
-    }
     return this.lastValidCopy ? new EditorWorkspace(this.lastValidCopy, true) : undefined
   }
 

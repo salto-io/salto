@@ -6,7 +6,7 @@ import {
   getSubElement,
 } from 'adapter-api'
 
-import { SaltoWorkspace } from '../workspace'
+import { EditorWorkspace } from '../workspace'
 import { ContextReference } from '../context'
 
 interface InsertText {
@@ -18,7 +18,7 @@ type Suggestion = string|InsertText
 export type Suggestions = Suggestion[]
 
 interface SuggestionsParams {
-  workspace: SaltoWorkspace
+  workspace: EditorWorkspace
   ref?: ContextReference
   tokens: string[]
 }
@@ -96,7 +96,7 @@ const getAdapterNames = (
 ): string[] => _(elements).map(e => e.elemID.adapter).uniq().value()
 
 const referenceSuggestions = (
-  workspace: SaltoWorkspace,
+  workspace: EditorWorkspace,
   valueToken: string
 ): Suggestions => {
   // This means we are not defining a reference

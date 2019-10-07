@@ -4,7 +4,7 @@ import {
   Element, isField, isType, isObjectType,
 } from 'adapter-api'
 import { WorkspaceParsedBlueprint as ParsedBlueprint } from 'salto'
-import { SaltoWorkspace } from './workspace'
+import { EditorWorkspace } from './workspace'
 
 type PositionContextType = 'global'|'instance'|'type'|'field'
 
@@ -162,7 +162,7 @@ export const buildDefinitionsTree = (
   )
 }
 
-const getFullElement = (workspace: SaltoWorkspace, partial: Element): Element => {
+const getFullElement = (workspace: EditorWorkspace, partial: Element): Element => {
   const fullElement = extractFields(workspace.elements || [])
     .find(e => e.elemID.getFullName() === partial.elemID.getFullName())
   return fullElement || partial
@@ -178,7 +178,7 @@ const getPositionFromTree = (
 }
 
 export const getPositionContext = (
-  workspace: SaltoWorkspace,
+  workspace: EditorWorkspace,
   fileContent: string,
   filename: string,
   position: EditorPosition

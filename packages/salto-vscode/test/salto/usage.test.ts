@@ -1,11 +1,11 @@
 import * as path from 'path'
 
-import { SaltoWorkspace } from '../../src/salto/workspace'
+import { EditorWorkspace } from '../../src/salto/workspace'
 import { provideWorkspaceReferences } from '../../src/salto/usage'
 import { SaltoElemLocation } from '../../src/salto/location'
 
 describe('Test go to definitions', () => {
-  let workspace: SaltoWorkspace
+  let workspace: EditorWorkspace
   const baseBPDir = path.resolve(`${__dirname}/../../../test/salto/completionsBP`)
 
   const getRefLines = (
@@ -13,7 +13,7 @@ describe('Test go to definitions', () => {
   ): number[] => defs.map(d => d.range.start.line).sort((a, b) => a - b)
 
   beforeAll(async () => {
-    workspace = await SaltoWorkspace.load(baseBPDir, [], false)
+    workspace = await EditorWorkspace.load(baseBPDir, [], false)
   })
 
   it('should give all fields usages of a type', () => {

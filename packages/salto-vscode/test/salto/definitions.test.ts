@@ -1,18 +1,18 @@
 import * as path from 'path'
 import * as fs from 'async-file'
 
-import { SaltoWorkspace } from '../../src/salto/workspace'
+import { EditorWorkspace } from '../../src/salto/workspace'
 import { provideWorkspaceDefinition } from '../../src/salto/definitions'
 import { getPositionContext } from '../../src/salto/context'
 
 describe('Test go to definitions', () => {
-  let workspace: SaltoWorkspace
+  let workspace: EditorWorkspace
   let bpContent: string
   const baseBPDir = path.resolve(`${__dirname}/../../../test/salto/completionsBP`)
   const bpFile = path.resolve(`${baseBPDir}/all.bp`)
 
   beforeAll(async () => {
-    workspace = await SaltoWorkspace.load(baseBPDir, [], false)
+    workspace = await EditorWorkspace.load(baseBPDir, [], false)
     bpContent = await fs.readFile(bpFile, 'utf8')
   })
 

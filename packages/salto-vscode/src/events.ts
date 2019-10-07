@@ -1,12 +1,12 @@
 import * as vscode from 'vscode'
 import * as fs from 'async-file'
-import { SaltoWorkspace } from './salto/workspace'
+import { EditorWorkspace } from './salto/workspace'
 
 // This function is called whenever a file content is changed. The function will
 // reparse the file that changed.
 export const onDidChangeTextDocument = (
   event: vscode.TextDocumentChangeEvent,
-  workspace: SaltoWorkspace
+  workspace: EditorWorkspace
 ): Promise<void> => {
   const bp = { filename: event.document.fileName, buffer: event.document.getText() }
   workspace.setBlueprints(bp)
@@ -14,7 +14,7 @@ export const onDidChangeTextDocument = (
 }
 
 export const onFileDelete = (
-  workspace: SaltoWorkspace,
+  workspace: EditorWorkspace,
   filename: string
 ): Promise<void> => {
   workspace.removeBlueprints(filename)
@@ -22,7 +22,7 @@ export const onFileDelete = (
 }
 
 export const onFileCreate = async (
-  workspace: SaltoWorkspace,
+  workspace: EditorWorkspace,
   filename: string
 ): Promise<void> => {
   const buffer = await fs.readFile(filename, 'utf8')

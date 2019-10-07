@@ -3,7 +3,7 @@ import * as path from 'path'
 import * as fs from 'async-file'
 import _ from 'lodash'
 
-import { SaltoWorkspace } from '../../src/salto/workspace'
+import { EditorWorkspace } from '../../src/salto/workspace'
 import { getPositionContext } from '../../src/salto/context'
 import {
   provideWorkspaceCompletionItems, SaltoCompletion,
@@ -16,7 +16,7 @@ interface Pos {
 
 describe('Test auto complete', () => {
   const getLine = (
-    workspace: SaltoWorkspace,
+    workspace: EditorWorkspace,
     filename: string,
     pos: Pos
   ): string => {
@@ -57,12 +57,12 @@ describe('Test auto complete', () => {
     'vs_evyatar',
   ]
 
-  let workspace: SaltoWorkspace
+  let workspace: EditorWorkspace
   let bpContent: string
   const baseBPDir = path.resolve(`${__dirname}/../../../test/salto/completionsBP`)
   const bpFileName = path.resolve(`${baseBPDir}/all.bp`)
   beforeAll(async () => {
-    workspace = await SaltoWorkspace.load(baseBPDir, [], false)
+    workspace = await EditorWorkspace.load(baseBPDir, [], false)
     bpContent = await fs.readFile(bpFileName, 'utf8')
   })
 

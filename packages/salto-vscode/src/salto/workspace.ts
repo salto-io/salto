@@ -7,21 +7,21 @@ import {
 } from 'salto'
 import { Element } from 'adapter-api'
 
-export class SaltoWorkspace {
+export class EditorWorkspace {
   private workspace: Workspace
   private active: boolean
   private runningSetOperation?: Promise<void>
   private pendingSets: {[key: string]: Blueprint} = {}
   private pendingDeletes: Set<string> = new Set<string>()
-  private lastValidState? : Workspace
+  private lastValidCopy? : Workspace
 
   static async load(
     blueprintsDir: string,
     blueprintsFiles: string[],
     useCache = true
-  ): Promise<SaltoWorkspace> {
+  ): Promise<EditorWorkspace> {
     const workspace = await Workspace.load(blueprintsDir, blueprintsFiles, useCache)
-    return new SaltoWorkspace(workspace)
+    return new EditorWorkspace(workspace)
   }
 
 
@@ -29,7 +29,7 @@ export class SaltoWorkspace {
     this.workspace = workspace
     this.active = active
     if (_.isEmpty(workspace.errors)) {
-      this.lastValidState = _.cloneDeep(workspace)
+      this.lastValidCopy = _.cloneDeep(workspace)
     }
   }
 
@@ -80,7 +80,7 @@ export class SaltoWorkspace {
       // After we ran the update we check if the operation resulted with no
       // errors. If so - we update the last valid state.
       if (_.isEmpty(this.errors)) {
-        this.lastValidState = _.cloneDeep(this.workspace)
+        this.lastValidCopy = _.cloneDeep(this.workspace)
       }
       // We recall this method to make sure no pending were added since
       // we started. Returning the promise will make sure the caller
@@ -111,11 +111,11 @@ export class SaltoWorkspace {
     this.runAggregatedSetOperation()
   }
 
-  getValidState(): SaltoWorkspace | undefined {
+  getValidCopy(): EditorWorkspace | undefined {
     if (_.isEmpty(this.errors)) {
       return this
     }
-    return this.lastValidState ? new SaltoWorkspace(this.lastValidState, false) : undefined
+    return this.lastValidCopy ? new EditorWorkspace(this.lastValidCopy, false) : undefined
   }
 
   async awaitAllUpdates(): Promise<void> {

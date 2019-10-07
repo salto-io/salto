@@ -1,5 +1,5 @@
 import * as vscode from 'vscode'
-import { SaltoWorkspace } from './salto/workspace'
+import { EditorWorkspace } from './salto/workspace'
 import { onDidChangeTextDocument, onFileCreate, onFileDelete } from './events'
 import {
   createCompletionsProvider, createDefinitionsProvider, createReferenceProvider,
@@ -15,7 +15,7 @@ export const activate = async (context: vscode.ExtensionContext): Promise<void> 
   const { name, rootPath } = vscode.workspace
   if (name && rootPath) {
     const settings = vscode.workspace.getConfiguration('salto')
-    const workspace = await SaltoWorkspace.load(
+    const workspace = await EditorWorkspace.load(
       rootPath,
       settings.additionalBlueprints,
       false

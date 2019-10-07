@@ -8,10 +8,10 @@ import { provideWorkspaceReferences } from './salto/usage'
 import {
   saltoPosToVsPos, vsPosToSaltoPos, buildVSDefinitions, buildVSCompletionItems,
 } from './adapters'
-import { SaltoWorkspace } from './salto/workspace'
+import { EditorWorkspace } from './salto/workspace'
 
 export const createDocumentSymbolsProvider = (
-  workspace: SaltoWorkspace
+  workspace: EditorWorkspace
 ): vscode.DocumentSymbolProvider => ({
   provideDocumentSymbols: (
     doc: vscode.TextDocument
@@ -25,14 +25,14 @@ export const createDocumentSymbolsProvider = (
 // This function is called in order to create a completion provided - and
 // bind it to the current workspace
 export const createCompletionsProvider = (
-  workspace: SaltoWorkspace
+  workspace: EditorWorkspace
 ): vscode.CompletionItemProvider => ({
   provideCompletionItems: async (
     doc: vscode.TextDocument,
     position: vscode.Position
   ) => {
     await workspace.awaitAllUpdates()
-    const validWorkspace = workspace.getValidState()
+    const validWorkspace = workspace.getValidCopy()
     if (validWorkspace) {
       const saltoPos = vsPosToSaltoPos(position)
       const context = getPositionContext(
@@ -51,13 +51,13 @@ export const createCompletionsProvider = (
 })
 
 export const createDefinitionsProvider = (
-  workspace: SaltoWorkspace
+  workspace: EditorWorkspace
 ): vscode.DefinitionProvider => ({
   provideDefinition: (
     doc: vscode.TextDocument,
     position: vscode.Position,
   ): vscode.Definition => {
-    const validWorkspace = workspace.getValidState()
+    const validWorkspace = workspace.getValidCopy()
     if (validWorkspace) {
       const currenToken = doc.getText(doc.getWordRangeAtPosition(position))
       const context = getPositionContext(
@@ -78,7 +78,7 @@ export const createDefinitionsProvider = (
 })
 
 export const createReferenceProvider = (
-  workspace: SaltoWorkspace
+  workspace: EditorWorkspace
 ): vscode.ReferenceProvider => ({
   provideReferences: (
     doc: vscode.TextDocument,

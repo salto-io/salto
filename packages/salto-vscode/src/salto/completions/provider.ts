@@ -6,7 +6,7 @@ import {
   annoValueSuggestions, instanceSuggestions, fieldSuggestions, fieldValueSuggestions,
 } from './suggestions'
 import { PositionContext, EditorPosition } from '../context'
-import { SaltoWorkspace } from '../workspace'
+import { EditorWorkspace } from '../workspace'
 
 type LineType = 'empty'|'type'|'field'|'annotation'|'instance'|'attr'|'fieldList'|'annoList'
 export interface SaltoCompletion {
@@ -124,7 +124,7 @@ const createCompletionItems = (
 // to complete. (We reurn all values, VS filter by token prefix)
 // The token to needed types mapping is in LINE_SUGGESTIONS.
 export const provideWorkspaceCompletionItems = (
-  workspace: SaltoWorkspace,
+  workspace: EditorWorkspace,
   context: PositionContext,
   line: string,
   position: EditorPosition

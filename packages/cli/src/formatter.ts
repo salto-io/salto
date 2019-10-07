@@ -11,26 +11,19 @@ import {
 import Prompts from './prompts'
 
 
-export const header = (txt: string): string => chalk.bold(txt)
-
-export const subHeader = (txt: string): string => chalk.grey(txt)
-
-export const body = (txt: string): string => chalk.reset(txt)
-
-export const warn = (txt: string): string => chalk.red(txt)
-
-export const emptyLine = (): string => ''
-
-export const seperator = (): string => `\n${'-'.repeat(78)}\n`
-
-const fullName = (change: Change): string => getChangeElement(change).elemID.getFullName()
-
-const planItemName = (step: PlanItem): string => fullName(step.parent())
-
+const header = (txt: string): string => chalk.bold(txt)
+const subHeader = (txt: string): string => chalk.grey(txt)
+const body = (txt: string): string => chalk.reset(txt)
+const warn = (txt: string): string => chalk.red(txt)
+const emptyLine = (): string => ''
+const seperator = (): string => `\n${'-'.repeat(78)}\n`
 const indent = (text: string, level: number): string => {
   const indentText = _.repeat('  ', level)
   return text.split('\n').map(line => `${indentText}${line}`).join('\n')
 }
+
+const fullName = (change: Change): string => getChangeElement(change).elemID.getFullName()
+const planItemName = (step: PlanItem): string => fullName(step.parent())
 
 const formatValue = (value: Element | Value): string => {
   const formatAnnotations = (annotations: Values): string =>
@@ -99,7 +92,7 @@ export const formatChange = (change: DetailedChange): string => {
   return indent(`${modifier} ${id}: ${formatChangeData(change)}`, change.id.nameParts.length)
 }
 
-const createCountPlanItemTypesOutput = (plan: Plan): string => {
+const formatCountPlanItemTypes = (plan: Plan): string => {
   const items = wu(plan.itemsByEvalOrder())
     .map(item => ({ action: item.parent().action, name: planItemName(item) }))
     .unique().toArray()
@@ -111,7 +104,7 @@ const createCountPlanItemTypesOutput = (plan: Plan): string => {
   )
 }
 
-const createPlanStepsOutput = (plan: Plan): string => {
+const formatPlanStepsOutput = (plan: Plan): string => {
   const addMissingEmptyChanges = (changes: DetailedChange[]): DetailedChange[] => {
     const emptyChange = (id: ElemID): DetailedChange => ({
       action: 'modify',
@@ -160,7 +153,7 @@ const getElapsedTime = (start: Date): number => Math.ceil(
   (new Date().getTime() - start.getTime()) / 1000,
 )
 
-export const createPlanOutput = (plan: Plan): string => {
+export const formatPlan = (plan: Plan): string => {
   if (_.isEmpty(plan)) {
     return [
       emptyLine(),
@@ -168,8 +161,8 @@ export const createPlanOutput = (plan: Plan): string => {
       emptyLine(),
     ].join('\n')
   }
-  const actionCount = createCountPlanItemTypesOutput(plan)
-  const planSteps = createPlanStepsOutput(plan)
+  const actionCount = formatCountPlanItemTypes(plan)
+  const planSteps = formatPlanStepsOutput(plan)
   return [
     header(Prompts.STARTPLAN),
     subHeader(Prompts.EXPLAINPLAN),
@@ -207,14 +200,14 @@ export const formatSearchResults = (result: SearchResult): string => {
   return [title, description, elementHcl].join('\n')
 }
 
-export const createItemDoneOutput = (item: PlanItem, startTime: Date): string => {
+export const formatItemDone = (item: PlanItem, startTime: Date): string => {
   const elapsed = getElapsedTime(startTime)
   return `${planItemName(item)}: `
         + `${Prompts.ENDACTION[item.parent().action]} `
         + `completed after ${elapsed}s`
 }
 
-export const createActionStartOutput = (action: PlanItem): string => {
+export const formatItemStart = (action: PlanItem): string => {
   const output = [
     emptyLine(),
     body(
@@ -224,7 +217,7 @@ export const createActionStartOutput = (action: PlanItem): string => {
   return output.join('\n')
 }
 
-export const createActionInProgressOutput = (action: PlanItem, start: Date): string => {
+export const formatItemInProgress = (action: PlanItem, start: Date): string => {
   const elapsed = getElapsedTime(start)
   const elapsedRound = Math.ceil((elapsed - elapsed) % 5)
   return body(`${planItemName(action)}: Still ${

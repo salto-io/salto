@@ -5,7 +5,7 @@ import {
   CliCommand, CliOutput, ParsedCliInput, WriteStream,
 } from '../types'
 import {
-  createActionStartOutput, createActionInProgressOutput, createItemDoneOutput,
+  formatItemStart, formatItemInProgress, formatItemDone,
 } from '../formatter'
 import { shouldApply, getConfigFromUser } from '../callbacks'
 
@@ -31,7 +31,7 @@ export class ApplyCommand implements CliCommand {
   endCurrentAction(): void {
     if (this.currentActionPollerID && this.currentAction && this.currentActionStartTime) {
       clearInterval(this.currentActionPollerID)
-      this.stdout.write(createItemDoneOutput(this.currentAction, this.currentActionStartTime))
+      this.stdout.write(formatItemDone(this.currentAction, this.currentActionStartTime))
     }
     this.currentAction = undefined
   }
@@ -39,7 +39,7 @@ export class ApplyCommand implements CliCommand {
   pollCurrentAction(): void {
     if (this.currentActionStartTime && this.currentAction) {
       this.stdout.write(
-        createActionInProgressOutput(this.currentAction, this.currentActionStartTime)
+        formatItemInProgress(this.currentAction, this.currentActionStartTime)
       )
     }
   }
@@ -48,7 +48,7 @@ export class ApplyCommand implements CliCommand {
     this.endCurrentAction()
     this.currentAction = action
     this.currentActionStartTime = new Date()
-    this.stdout.write(createActionStartOutput(action))
+    this.stdout.write(formatItemStart(action))
     this.currentActionPollerID = setInterval(this.pollCurrentAction, CURRENT_ACTION_POLL_INTERVAL)
   }
 

@@ -1,7 +1,7 @@
 import {
   Element, ObjectType, InstanceElement, PrimitiveType, ElemID, PrimitiveTypes, BuiltinTypes,
 } from 'adapter-api'
-import { formatSearchResults, createPlanOutput, formatChange } from '../src/formatter'
+import { formatSearchResults, formatPlan, formatChange } from '../src/formatter'
 import { elements, plan, detailedChange } from './mocks'
 
 describe('formatter', () => {
@@ -55,7 +55,7 @@ describe('formatter', () => {
   })
 
   describe('createPlanOutput', () => {
-    const output = createPlanOutput(plan())
+    const output = formatPlan(plan())
     it('should return type field addition', () => {
       expect(output).toMatch(/M[^\n]+salesforce_lead.*\+[^\n]+do_you_have_a_sales_team/s)
     })

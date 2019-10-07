@@ -1,7 +1,7 @@
 import { plan, Workspace, loadConfig } from 'salto'
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput } from '../types'
-import { createPlanOutput } from '../formatter'
+import { formatPlan } from '../formatter'
 
 export const command = (
   workspaceDir: string,
@@ -11,7 +11,7 @@ export const command = (
     const config = await loadConfig(workspaceDir)
     const workspace: Workspace = await Workspace.load(config)
     // TODO: inline commands.plan here
-    stdout.write(createPlanOutput(await plan(workspace)))
+    stdout.write(formatPlan(await plan(workspace)))
   },
 })
 

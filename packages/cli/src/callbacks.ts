@@ -6,9 +6,7 @@ import {
   isPrimitiveType, PrimitiveTypes,
 } from 'adapter-api'
 import { Plan } from 'salto'
-import {
-  createPlanOutput, header, subHeader,
-} from './formatter'
+import { formatPlan } from './formatter'
 import Prompts from './prompts'
 import { CliOutput } from './types'
 
@@ -23,12 +21,7 @@ const getUserBooleanInput = async (prompt: string): Promise<boolean> => {
 }
 
 export const shouldApply = ({ stdout }: CliOutput) => async (actions: Plan): Promise<boolean> => {
-  const planOutput = [
-    header(Prompts.STARTAPPLY),
-    subHeader(Prompts.EXPLAINAPPLY),
-    createPlanOutput(actions),
-  ].join('\n')
-  stdout.write(planOutput)
+  stdout.write(formatPlan(actions))
   if (_.isEmpty(actions)) {
     return false
   }

@@ -2,7 +2,7 @@ import _ from 'lodash'
 import wu from 'wu'
 import {
   Element, ElemID, isObjectType, isInstanceElement, Value, Values, ChangeDataType,
-  isField, Change, getChangeElement, isEqualElements, isPrimitiveType,
+  isField, Change, getChangeElement, isEqualElements, isPrimitiveType, ObjectType, PrimitiveType,
 } from 'adapter-api'
 import {
   buildDiffGraph, buildGroupedGraph, Group, DataNodeMap, NodeId, GroupedNodeMap,
@@ -153,6 +153,9 @@ export const getPlan = (
       return group.items.values()
     },
     detailedChanges() {
+      const hasAnnotationTypes = (element: ChangeDataType): element is ObjectType | PrimitiveType =>
+        isObjectType(element) || isPrimitiveType(element)
+
       return wu(group.items.values())
         .map(change => {
           const elem = getChangeElement(change)
@@ -162,11 +165,17 @@ export const getPlan = (
           if (isInstanceElement(change.data.before) && isInstanceElement(change.data.after)) {
             return getValuesChanges(elem.elemID, change.data.before.value, change.data.after.value)
           }
-          return getValuesChanges(
+          const annotationsValueChanges: DetailedChange[] = getValuesChanges(
             elem.elemID,
             change.data.before.annotations,
             change.data.after.annotations,
           )
+          return hasAnnotationTypes(change.data.before) && hasAnnotationTypes(change.data.after)
+            ? annotationsValueChanges.concat(getValuesChanges(
+              elem.elemID,
+              change.data.before.annotationTypes,
+              change.data.after.annotationTypes
+            )) : annotationsValueChanges
         })
         .flatten()
     },

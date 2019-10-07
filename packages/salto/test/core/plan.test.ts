@@ -152,7 +152,7 @@ describe('getPlan', () => {
         const [plan, newElement] = planWithTypeChanges()
         const planItem = getFirstPlanItem(plan)
         const changes = wu(planItem.detailedChanges()).toArray()
-        expect(changes).toHaveLength(2)
+        expect(changes).toHaveLength(3)
 
         expect(changes[0].id.nameParts).toEqual(['office', 'label'])
         expect(changes[0].action).toEqual('add')
@@ -161,6 +161,10 @@ describe('getPlan', () => {
         expect(changes[1].id.nameParts).toEqual(['office', 'new'])
         expect(changes[1].action).toEqual('add')
         expect(_.get(changes[1].data, 'after')).toEqual(newElement.annotations.new)
+
+        expect(changes[2].id.nameParts).toEqual(['office', 'new'])
+        expect(changes[2].action).toEqual('add')
+        expect(_.get(changes[2].data, 'after')).toEqual(newElement.annotationTypes.new)
       })
       it('should return add / remove changes at the appropriate level', () => {
         const [plan, newElement] = planWithNewType()

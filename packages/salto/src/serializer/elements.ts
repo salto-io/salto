@@ -1,7 +1,8 @@
 import _ from 'lodash'
 import {
   PrimitiveType, ElemID, Field, Element, BuiltinTypes,
-  ObjectType, InstanceElement, isType, isElement,
+  ObjectType, InstanceElement, isType, isElement, isExpression,
+  ReferenceExpression, TemplateExpression, Expression,
 } from 'adapter-api'
 
 // There are two issues with naive json stringification:
@@ -25,7 +26,7 @@ interface ClassName {className: string}
 export const serialize = (elements: Element[]): string => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const elementReplacer = (_k: string, e: any): any => {
-    if (isElement(e)) {
+    if (isElement(e) || isExpression(e)) {
       const o = e as Element & ClassName
       o.className = e.constructor.name
       return o
@@ -43,7 +44,7 @@ export const serialize = (elements: Element[]): string => {
 
 export const deserialize = (data: string): Element[] => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const revivers: {[key: string]: (v: {[key: string]: any}) => Element} = {
+  const revivers: {[key: string]: (v: {[key: string]: any}) => Element|Expression} = {
     [InstanceElement.name]: v => new InstanceElement(
       new ElemID(v.elemID.adapter, ...v.elemID.nameParts),
       v.type,
@@ -68,6 +69,8 @@ export const deserialize = (data: string): Element[] => {
       v.annotations,
       v.isList,
     ),
+    [TemplateExpression.name]: v => new TemplateExpression({ parts: v.parts }),
+    [ReferenceExpression.name]: v => new ReferenceExpression({ traversalParts: v.traversalParts }),
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

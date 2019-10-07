@@ -25,11 +25,11 @@ export type Blueprint = {
 
 export type ParsedBlueprint = Blueprint & ParseResult
 
-type SaltoError = string
-interface ParsedBlueprintMap {
+export type SaltoError = string
+export interface ParsedBlueprintMap {
   [key: string]: ParsedBlueprint
 }
-type ReadOnlySourceMap = ReadonlyMap<string, SourceRange[]>
+export type ReadOnlySourceMap = ReadonlyMap<string, SourceRange[]>
 
 const getBlueprintsFromDir = async (
   blueprintsDir: string,

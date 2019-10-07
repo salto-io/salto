@@ -1,10 +1,10 @@
 import { isObjectType, isInstanceElement, getField } from 'adapter-api'
-import { SaltoWorkspace } from './workspace'
+import { EditorWorkspace } from './workspace'
 import { PositionContext } from './context'
 import { getLocations, SaltoElemLocation } from './location'
 
 export const provideWorkspaceDefinition = (
-  workspace: SaltoWorkspace,
+  workspace: EditorWorkspace,
   context: PositionContext,
   token: string
 ): SaltoElemLocation[] => {

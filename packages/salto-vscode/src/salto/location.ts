@@ -1,8 +1,8 @@
 import _ from 'lodash'
 import wu from 'wu'
 
-import { ParsedBlueprint } from 'salto'
-import { SaltoWorkspace } from './workspace'
+import { WorkspaceParsedBlueprint as ParsedBlueprint } from 'salto'
+import { EditorWorkspace } from './workspace'
 import { EditorRange } from './context'
 
 export interface SaltoElemLocation {
@@ -29,7 +29,7 @@ const getBlueprintLocations = (blueprint: ParsedBlueprint): SaltoElemLocation[] 
   }).flatten().value()
 }
 
-export const getLocations = (workspace: SaltoWorkspace, fullname: string): SaltoElemLocation[] => {
+export const getLocations = (workspace: EditorWorkspace, fullname: string): SaltoElemLocation[] => {
   const allDef = _(workspace.parsedBlueprints).values().map(
     bp => getBlueprintLocations(bp)
   ).flatten()

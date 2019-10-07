@@ -1,16 +1,16 @@
 import * as path from 'path'
 import * as fs from 'async-file'
 
-import { initWorkspace, SaltoWorkspace } from '../../src/salto/workspace'
+import { EditorWorkspace } from '../../src/salto/workspace'
 import { getPositionContext } from '../../src/salto/context'
 
 describe('Cursor context resolver', () => {
-  let workspace: SaltoWorkspace
-  let bpContent: string
+  let workspace: EditorWorkspace
   const baseBPDir = path.resolve(`${__dirname}/../../../test/salto/contextBP`)
   const filename = path.resolve(`${baseBPDir}/all.bp`)
+  let bpContent: string
   beforeAll(async () => {
-    workspace = await initWorkspace(baseBPDir)
+    workspace = await EditorWorkspace.load(baseBPDir, [], false)
     bpContent = await fs.readFile(filename, 'utf8')
   })
 

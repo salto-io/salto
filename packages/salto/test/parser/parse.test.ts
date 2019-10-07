@@ -48,6 +48,10 @@ describe('Salto parser', () => {
             }
           ]
         }
+        
+        annotations {
+          salesforce_lead_convert_settings convert_settings {}
+        }
       }
 
       salesforce_test inst {
@@ -197,6 +201,16 @@ describe('Salto parser', () => {
           })
         })
       })
+
+      describe('annotation types', () => {
+        it('should exist', () => {
+          expect(model.annotationTypes).toHaveProperty('convert_settings')
+        })
+        it('should have the correct type', () => {
+          expect(model.annotationTypes.convert_settings.elemID.adapter).toEqual('salesforce')
+          expect(model.annotationTypes.convert_settings.elemID.name).toEqual('lead_convert_settings')
+        })
+      })
     })
 
     describe('instance', () => {
@@ -278,7 +292,7 @@ describe('Salto parser', () => {
         expect(modelSource).toBeDefined()
         expect(modelSource).toHaveLength(1)
         expect(modelSource[0].start.line).toBe(15)
-        expect(modelSource[0].end.line).toBe(41)
+        expect(modelSource[0].end.line).toBe(45)
       })
       it('should contain fields', () => {
         Object.values(model.fields).forEach(

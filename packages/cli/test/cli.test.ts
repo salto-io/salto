@@ -1,7 +1,9 @@
 import * as mocks from './mocks'
-import applyBuilder from '../src/commands/apply'
+import { allBuilders } from '../src/builder'
 
 describe('cli', () => {
+  const applyBuilder = allBuilders.apply
+
   let o: mocks.MockCliOutput
 
   jest.setTimeout(200)

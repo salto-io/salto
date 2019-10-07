@@ -1,3 +1,4 @@
+import _ from 'lodash'
 import { EOL } from 'os'
 import { CliInput, CliOutput, CliExitCode } from './types'
 import { YargsCommandBuilder, allBuilders } from './builder'
@@ -6,7 +7,7 @@ import parse from './argparser'
 export default async (
   input: CliInput,
   output: CliOutput,
-  commandBuilders: YargsCommandBuilder[] = allBuilders,
+  commandBuilders: YargsCommandBuilder[] = _.values(allBuilders),
 ): Promise<CliExitCode> => {
   try {
     const parseResult = await parse(commandBuilders, input, output)

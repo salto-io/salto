@@ -33,7 +33,7 @@ export interface MockCliOutput {
 }
 
 export const cli = async ({
-  builders = allBuilders,
+  builders = _.values(allBuilders),
   args = [],
   out = {},
   err = {},

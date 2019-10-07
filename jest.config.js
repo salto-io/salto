@@ -24,7 +24,7 @@ const collectCoverageFrom = _(packageConfigs)
 
 module.exports = Object.assign(
   {},
-  require('./jest.base.config.js'),
+  require('./jest.base.config.js')('<rootDir>'),
   {
     projects: ['packages/*'],
     coverageDirectory: '<rootDir>/coverage/',

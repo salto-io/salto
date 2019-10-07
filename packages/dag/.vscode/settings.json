@@ -5,7 +5,7 @@
         "**/bower_components": true,
         "**/dist": true,
         "**/coverge": true,
-        ".history": true
+        ".history/**": true
     },
     "typescript.tsdk": "./node_modules/typescript/lib",
     "eslint.validate": [

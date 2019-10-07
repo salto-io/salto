@@ -18,6 +18,8 @@ export const activate = async (context: vscode.ExtensionContext): Promise<void> 
     const workspace = await EditorWorkspace.load(
       rootPath,
       settings.additionalBlueprints,
+      // Cache is turned off until SALTO-216 will be merged
+      // to avoid reference parsing errors
       false
     )
 

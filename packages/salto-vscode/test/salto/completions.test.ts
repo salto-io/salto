@@ -20,7 +20,7 @@ describe('Test auto complete', () => {
     filename: string,
     pos: Pos
   ): string => {
-    const bp = workspace.parsedBlueprints[workspace.getWorkspaceName(filename)]
+    const bp = workspace.getParsedBlueprint(filename)
     const fullLine = (bp) ? bp.buffer.toString().split('\n')[pos.line - 1] : ''
     return _.trimStart(fullLine.slice(0, pos.col))
   }

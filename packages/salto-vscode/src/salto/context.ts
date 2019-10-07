@@ -183,7 +183,7 @@ export const getPositionContext = (
   filename: string,
   position: EditorPosition
 ): PositionContext => {
-  const parsedBlueprint = workspace.parsedBlueprints[workspace.getWorkspaceName(filename)]
+  const parsedBlueprint = workspace.getParsedBlueprint(filename)
   const definitionsTree = buildDefinitionsTree(fileContent, parsedBlueprint)
   const partialContext = getPositionFromTree(definitionsTree, position)
   const fullRef = (partialContext.ref)

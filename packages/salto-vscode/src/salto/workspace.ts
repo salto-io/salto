@@ -3,13 +3,16 @@ import path from 'path'
 
 import {
   Workspace, WorkspaceBlueprint as Blueprint, SaltoError, ParsedBlueprintMap,
-  ReadOnlySourceMap,
+  ReadOnlySourceMap, WorkspaceParsedBlueprint as ParsedBlueprint,
 } from 'salto'
 import { Element } from 'adapter-api'
 
 export class EditorWorkspace {
   private workspace: Workspace
-  private active: boolean
+  // Indicates that the workspace is not the active workspace
+  // (which means that the active workspace contains errors)
+  // attempting to modify a copy of a workspace will result in an error
+  private isCopy: boolean
   private runningSetOperation?: Promise<void>
   private pendingSets: {[key: string]: Blueprint} = {}
   private pendingDeletes: Set<string> = new Set<string>()
@@ -25,9 +28,9 @@ export class EditorWorkspace {
   }
 
 
-  constructor(workspace: Workspace, active = true) {
+  constructor(workspace: Workspace, isCopy = false) {
     this.workspace = workspace
-    this.active = active
+    this.isCopy = isCopy
     if (_.isEmpty(workspace.errors)) {
       this.lastValidCopy = _.cloneDeep(workspace)
     }
@@ -54,7 +57,7 @@ export class EditorWorkspace {
   private async runAggregatedSetOperation(): Promise<void> {
     // We throw an error if someone attempted to trigger this
     // on an inactive state
-    if (!this.active) throw new Error('Attempted to change inactive workspace')
+    if (this.isCopy) throw new Error('Attempted to change inactive workspace')
 
     // If there is an op running we'll just wait for it to exit
     // it will only exit after the nothing is pending.
@@ -92,8 +95,12 @@ export class EditorWorkspace {
     return undefined
   }
 
-  getWorkspaceName(filename: string): string {
+  private getWorkspaceName(filename: string): string {
     return path.relative(this.workspace.baseDir, filename)
+  }
+
+  getParsedBlueprint(filename: string): ParsedBlueprint {
+    return this.parsedBlueprints[this.getWorkspaceName(filename)]
   }
 
   setBlueprints(...blueprints: Blueprint[]): void {
@@ -115,7 +122,7 @@ export class EditorWorkspace {
     if (_.isEmpty(this.errors)) {
       return this
     }
-    return this.lastValidCopy ? new EditorWorkspace(this.lastValidCopy, false) : undefined
+    return this.lastValidCopy ? new EditorWorkspace(this.lastValidCopy, true) : undefined
   }
 
   async awaitAllUpdates(): Promise<void> {

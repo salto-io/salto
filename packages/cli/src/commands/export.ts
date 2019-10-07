@@ -1,14 +1,19 @@
 import path from 'path'
-import { exportToCsv, Blueprint, dumpCsv } from 'salto'
+import { exportToCsv, Workspace, dumpCsv } from 'salto'
 import { createCommandBuilder } from '../builder'
 import { ParsedCliInput, CliCommand, CliOutput } from '../types'
-import * as bf from '../filters/blueprints'
 import { getConfigFromUser } from '../callbacks'
 
-export const command = (blueprints: Blueprint[], typeName: string, outputPath: string):
+export const command = (
+  workingDir: string,
+  blueprintFiles: string[],
+  typeName: string,
+  outputPath: string
+):
 CliCommand => ({
   async execute(): Promise<void> {
-    const outputObjectsIterator = await exportToCsv(typeName, blueprints, getConfigFromUser)
+    const workspace: Workspace = await Workspace.load(workingDir, blueprintFiles)
+    const outputObjectsIterator = await exportToCsv(typeName, workspace, getConfigFromUser)
 
     // Check if output path is provided, otherwise use the template
     // <working dir>/<typeName>_<current timestamp>.csv
@@ -23,8 +28,13 @@ CliCommand => ({
   },
 })
 
-type DiscoverArgs = bf.Args & { 'typeName': string; 'output-path': string }
-type DiscoverParsedCliInput = ParsedCliInput<DiscoverArgs> & bf.BlueprintsParsedCliInput
+type ExportArgs = {
+  'typeName': string
+  'output-path': string
+  'blueprint': string[]
+  'blueprints-dir': string
+ }
+type ExportParsedCliInput = ParsedCliInput<ExportArgs>
 
 const builder = createCommandBuilder({
   options: {
@@ -39,6 +49,19 @@ const builder = createCommandBuilder({
       },
     },
     keyed: {
+      'blueprints-dir': {
+        alias: 'd',
+        describe: 'A path to the blueprints directory',
+        string: true,
+        demandOption: true,
+      },
+      blueprint: {
+        alias: 'b',
+        describe: 'Path to input blueprint file. This option can be specified multiple times',
+        demandOption: false,
+        array: true,
+        requiresArg: true,
+      },
       'output-path': {
         alias: ['o'],
         describe: 'A path to the output CSV file',
@@ -48,10 +71,8 @@ const builder = createCommandBuilder({
     },
   },
 
-  filters: [bf.optionalFilter],
-
-  async build(input: DiscoverParsedCliInput, _output: CliOutput) {
-    return command(input.blueprints, input.args.typeName, input.args['output-path'])
+  async build(input: ExportParsedCliInput, _output: CliOutput) {
+    return command(input.args['blueprints-dir'], input.args.blueprint, input.args.typeName, input.args['output-path'])
   },
 })
 

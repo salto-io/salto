@@ -42,13 +42,14 @@ describe('When running export', () => {
 
   it('should save the data in csv file after discover', async () => {
     await discover(discoverOutputDir, []).execute()
-    await exportCommand(await loadBlueprints([], discoverOutputDir), sfLeadObjectName,
+
+    await exportCommand(discoverOutputDir, [], sfLeadObjectName,
       exportOutputFullPath).execute()
     expect(await pathExists(exportOutputFullPath)).toBe(true)
   })
 
   it('should fail if discover was not run beforehand', async () => {
-    const command = exportCommand(await loadBlueprints([], discoverOutputDir), sfLeadObjectName,
+    const command = exportCommand(discoverOutputDir, [], sfLeadObjectName,
       exportOutputFullPath)
     await expect(command.execute()).rejects
       .toThrow(`Couldn't find the type you are looking for: ${sfLeadObjectName}. Have you run salto discover yet?`)
@@ -95,7 +96,7 @@ describe('When running data modifying commands', () => {
         sfLeadObjectName, cliOutput).execute()
 
       // Replicate the file with the Ids of the created items
-      await exportCommand(await loadBlueprints([], discoverOutputDir), sfLeadObjectName,
+      await exportCommand(discoverOutputDir, [], sfLeadObjectName,
         exportOutputFullPath).execute()
       const exportObjects = await readCsv(exportOutputFullPath)
       const clark = exportObjects.find(object => object.FirstName === 'Clark' && object.LastName === 'Kent')

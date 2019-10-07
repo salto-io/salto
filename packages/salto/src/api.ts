@@ -102,7 +102,7 @@ export const describeElement = async (
 
 export const exportToCsv = async (
   typeId: string,
-  blueprints: Blueprint[],
+  workspace: Workspace,
   fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
 ): Promise<AsyncIterable<InstanceElement[]>> => {
   // Find the corresponding element in the state
@@ -112,8 +112,7 @@ export const exportToCsv = async (
   if (!type) {
     throw new Error(`Couldn't find the type you are looking for: ${typeId}. Have you run salto discover yet?`)
   }
-  const elements = mergeAndValidate(await getAllElements(blueprints))
-  const [adapters] = await initAdapters(elements, fillConfig)
+  const [adapters] = await initAdapters(workspace.elements, fillConfig)
 
   return getInstancesOfType(type as ObjectType, adapters)
 }

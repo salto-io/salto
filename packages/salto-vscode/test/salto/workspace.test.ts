@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import * as fs from 'async-file'
 
-import { initWorkspace, updateFile, removeFile } from '../../src/salto/workspace'
+import { EditorWorkspace } from '../../src/salto/workspace'
 
 describe('TEST', () => {
   const baseBPDir = `${__dirname}/../../../test/salto/BP`
@@ -9,66 +9,92 @@ describe('TEST', () => {
   const errorBP = `${__dirname}/../../../test/salto/BP2/error.bp`
 
   it('should initiate a workspace', async () => {
-    const workspace = await initWorkspace(baseBPDir)
-    expect(workspace.mergedElements).toBeDefined()
-    expect(workspace.mergedElements && workspace.mergedElements.length).toBe(3)
+    const workspace = await EditorWorkspace.load(baseBPDir, [], false)
+    expect(workspace.elements).toBeDefined()
+    expect(workspace.elements && workspace.elements.length).toBe(3)
     expect(_.keys(workspace.parsedBlueprints).length).toBe(2)
   })
 
   it('should initiate a workspace with additional BPs', async () => {
-    const workspace = await initWorkspace(baseBPDir, [], [extraBP])
-    expect(workspace.mergedElements).toBeDefined()
-    expect(workspace.mergedElements && workspace.mergedElements.length).toBe(4)
+    const workspace = await EditorWorkspace.load(baseBPDir, [extraBP], false)
+    expect(workspace.elements).toBeDefined()
+    expect(workspace.elements && workspace.elements.length).toBe(4)
     expect(_.keys(workspace.parsedBlueprints).length).toBe(3)
   })
 
   it('should collect validation errors', async () => {
-    const workspace = await initWorkspace(baseBPDir, [], [errorBP])
-    expect(workspace.mergedElements).toBeDefined()
-    expect(workspace.mergedElements && workspace.mergedElements.length).toBe(4)
+    const workspace = await EditorWorkspace.load(baseBPDir, [errorBP], false)
+    console.dir(workspace.errors)
+    expect(workspace.elements).toBeDefined()
+    expect(workspace.elements && workspace.elements.length).toBe(4)
     expect(_.keys(workspace.parsedBlueprints).length).toBe(3)
-    expect(workspace.generalErrors.length).toBe(1)
+    expect(workspace.errors.hasErrors()).toBeTruthy()
   })
 
   it('should update a single file', async () => {
-    const workspace = await initWorkspace(baseBPDir, [], [extraBP])
-    expect(workspace.mergedElements).toBeDefined()
-    expect(workspace.mergedElements && workspace.mergedElements.length).toBe(4)
+    const workspace = await EditorWorkspace.load(baseBPDir, [extraBP], false)
+    expect(workspace.elements).toBeDefined()
+    expect(workspace.elements && workspace.elements.length).toBe(4)
     expect(_.keys(workspace.parsedBlueprints).length).toBe(3)
-    const updatedWorkspace = await updateFile(workspace, extraBP, '')
-    expect(updatedWorkspace.mergedElements).toBeDefined()
-    expect(updatedWorkspace.mergedElements && updatedWorkspace.mergedElements.length).toBe(3)
-    expect(_.keys(updatedWorkspace.parsedBlueprints).length).toBe(3)
+    workspace.setBlueprints({ filename: extraBP, buffer: '' })
+    await workspace.awaitAllUpdates()
+    expect(workspace.elements).toBeDefined()
+    expect(workspace.elements && workspace.elements.length).toBe(3)
+    expect(_.keys(workspace.parsedBlueprints).length).toBe(3)
   })
 
   it('should maintain status on error', async () => {
-    const workspace = await initWorkspace(baseBPDir, [], [extraBP])
+    const workspace = await EditorWorkspace.load(baseBPDir, [extraBP], false)
     const errorContent = await fs.readFile(errorBP)
-    expect(workspace.mergedElements).toBeDefined()
-    expect(workspace.mergedElements && workspace.mergedElements.length).toBe(4)
+    expect(workspace.elements).toBeDefined()
+    expect(workspace.elements && workspace.elements.length).toBe(4)
     expect(_.keys(workspace.parsedBlueprints).length).toBe(3)
-    const updatedWorkspace = await updateFile(workspace, extraBP, errorContent)
-    expect(updatedWorkspace.mergedElements).toBeDefined()
-    expect(updatedWorkspace.mergedElements && updatedWorkspace.mergedElements.length).toBe(4)
-    expect(_.keys(updatedWorkspace.parsedBlueprints).length).toBe(3)
+    workspace.setBlueprints({ filename: extraBP, buffer: errorContent })
+    await workspace.awaitAllUpdates()
+    expect(workspace.elements).toBeDefined()
+    expect(workspace.errors.hasErrors()).toBeTruthy()
+    expect(workspace.elements && workspace.elements.length).toBe(4)
+    expect(_.keys(workspace.parsedBlueprints).length).toBe(3)
   })
 
   it('should support file removal', async () => {
-    const workspace = await initWorkspace(baseBPDir, [], [extraBP])
-    expect(workspace.mergedElements).toBeDefined()
-    expect(workspace.mergedElements && workspace.mergedElements.length).toBe(4)
-    const updatedWorkspace = await removeFile(workspace, extraBP)
-    expect(updatedWorkspace.mergedElements).toBeDefined()
-    expect(updatedWorkspace.mergedElements && updatedWorkspace.mergedElements.length).toBe(3)
+    const workspace = await EditorWorkspace.load(baseBPDir, [extraBP], false)
+    expect(workspace.elements).toBeDefined()
+    expect(workspace.elements && workspace.elements.length).toBe(4)
+    workspace.removeBlueprints(extraBP)
+    await workspace.awaitAllUpdates()
+    expect(workspace.elements).toBeDefined()
+    expect(workspace.elements && workspace.elements.length).toBe(3)
   })
 
   it('should support file addition', async () => {
-    const workspace = await initWorkspace(baseBPDir)
+    const workspace = await EditorWorkspace.load(baseBPDir, [], false)
     const extraContent = await fs.readFile(extraBP)
-    expect(workspace.mergedElements).toBeDefined()
-    expect(workspace.mergedElements && workspace.mergedElements.length).toBe(3)
-    const updatedWorkspace = await updateFile(workspace, extraBP, extraContent)
-    expect(updatedWorkspace.mergedElements).toBeDefined()
-    expect(updatedWorkspace.mergedElements && updatedWorkspace.mergedElements.length).toBe(4)
+    expect(workspace.elements).toBeDefined()
+    expect(workspace.elements && workspace.elements.length).toBe(3)
+    workspace.setBlueprints({ filename: extraBP, buffer: extraContent })
+    await workspace.awaitAllUpdates()
+    expect(workspace.elements).toBeDefined()
+    expect(workspace.elements && workspace.elements.length).toBe(4)
+  })
+
+  it('should return last valid state if there are errors', async () => {
+    const workspace = await EditorWorkspace.load(baseBPDir, [extraBP], false)
+    const errorContent = await fs.readFile(errorBP)
+    expect(workspace.elements).toBeDefined()
+    expect(workspace.elements && workspace.elements.length).toBe(4)
+    expect(_.keys(workspace.parsedBlueprints).length).toBe(3)
+    const shouldBeCurrent = workspace.getValidCopy()
+    expect(shouldBeCurrent).toEqual(workspace)
+    workspace.setBlueprints({ filename: extraBP, buffer: errorContent })
+    await workspace.awaitAllUpdates()
+    expect(workspace.elements).toBeDefined()
+    expect(workspace.errors.hasErrors()).toBeTruthy()
+    expect(workspace.elements && workspace.elements.length).toBe(4)
+    expect(_.keys(workspace.parsedBlueprints).length).toBe(3)
+    const lastValid = workspace.getValidCopy()
+    if (!lastValid) throw new Error('lastValid not defined')
+    expect(lastValid.errors.hasErrors()).toBeFalsy()
+    expect(lastValid).not.toEqual(workspace)
   })
 })

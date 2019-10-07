@@ -6,7 +6,7 @@ import {
   getSubElement,
 } from 'adapter-api'
 
-import { SaltoWorkspace } from '../workspace'
+import { EditorWorkspace } from '../workspace'
 import { ContextReference } from '../context'
 
 interface InsertText {
@@ -18,7 +18,7 @@ type Suggestion = string|InsertText
 export type Suggestions = Suggestion[]
 
 interface SuggestionsParams {
-  workspace: SaltoWorkspace
+  workspace: EditorWorkspace
   ref?: ContextReference
   tokens: string[]
 }
@@ -36,17 +36,17 @@ const getRestrictionValues = (annotatingElem: Type|Field, valueType: Type): Valu
 }
 
 const getAllInstances = (
-  mergeElements: Element[],
+  elements: ReadonlyArray<Element>,
   adapter?: string
-): string[] => mergeElements
+): string[] => elements
   .filter(isInstanceElement)
   .filter(e => !adapter || e.elemID.adapter === adapter)
   .map(e => e.elemID.getFullName())
 
 const getAllTypes = (
-  mergeElements: Element[],
+  elements: ReadonlyArray<Element>,
   adapter?: string
-): string[] => mergeElements
+): string[] => elements
   .filter(isType)
   .filter(e => !adapter || e.elemID.adapter === adapter)
   .map(e => e.elemID.getFullName())
@@ -92,11 +92,11 @@ const getTypeReferenceSuggestions = (
 }
 
 const getAdapterNames = (
-  mergedElements: Element[]
-): string[] => _(mergedElements).map(e => e.elemID.adapter).uniq().value()
+  elements: ReadonlyArray<Element>
+): string[] => _(elements).map(e => e.elemID.adapter).uniq().value()
 
 const referenceSuggestions = (
-  workspace: SaltoWorkspace,
+  workspace: EditorWorkspace,
   valueToken: string
 ): Suggestions => {
   // This means we are not defining a reference
@@ -109,20 +109,20 @@ const referenceSuggestions = (
   const baseElementName = (sepIndex >= 0) ? base.substring(sepIndex) : ''
   // We are defining the base element
   if (!baseElementName) {
-    return getAdapterNames(workspace.mergedElements || [])
+    return getAdapterNames(workspace.elements || [])
   }
   if (path.length === 0) {
-    return [
-      ...getAllInstances(workspace.mergedElements || [], adapter),
-      ...getAllTypes(workspace.mergedElements || [], adapter),
+    const res = [
+      ...getAllInstances(workspace.elements || [], adapter),
+      ...getAllTypes(workspace.elements || [], adapter),
     ].map(name => ({
       label: name.substring(name.indexOf(ElemID.NAMESPACE_SEPERATOR) + 1),
       insertText: name,
       filterText: name,
     }))
+    return res
   }
-
-  const baseElement = (workspace.mergedElements || [])
+  const baseElement = (workspace.elements || [])
     .filter(e => e.elemID.getFullName() === base)[0]
 
   // If we didn't find the base element we can't continue
@@ -248,10 +248,10 @@ export const annoValueSuggestions = (params: SuggestionsParams): Suggestions => 
  */
 export const typesSuggestions = (params: SuggestionsParams): Suggestions => {
   const contextAdapter = params.ref && params.ref.element.elemID.adapter
-  const mergedElements = params.workspace.mergedElements || [] // may be undefined
+  const elements = params.workspace.elements || [] // may be undefined
   const typeNames = [
     ..._.values(BuiltinTypes).map(e => e.elemID.getFullName()),
-    ...getAllTypes(mergedElements, contextAdapter),
+    ...getAllTypes(elements, contextAdapter),
   ]
 
   const updates = (params.ref && isObjectType(params.ref.element))
@@ -283,4 +283,4 @@ export const isSuggestions = (): Suggestions => ['is']
 
 export const instanceSuggestions = (
   params: SuggestionsParams
-): Suggestions => getAllInstances(params.workspace.mergedElements || [])
+): Suggestions => getAllInstances(params.workspace.elements || [])

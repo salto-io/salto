@@ -1,6 +1,6 @@
 import {
   PrimitiveType, PrimitiveTypes, ElemID, Field,
-  ObjectType, InstanceElement,
+  ObjectType, InstanceElement, TemplateExpression, ReferenceExpression,
 } from 'adapter-api'
 
 import { serialize, deserialize } from '../../src/serializer/elements'
@@ -49,6 +49,24 @@ describe('State serialization', () => {
     }
   )
 
+  const refInstance = new InstanceElement(
+    new ElemID('salesforce', 'also_me'),
+    model,
+    {
+      name: new TemplateExpression({
+        parts: [
+          'I am not',
+          new ReferenceExpression({
+            traversalParts: ['salesforce_me', 'name'],
+          }),
+        ],
+      }),
+      num: new ReferenceExpression({
+        traversalParts: ['salesforce_me', 'num'],
+      }),
+    }
+  )
+
   const config = new InstanceElement(
     new ElemID('salesforce', ElemID.CONFIG_INSTANCE_NAME),
     model,
@@ -58,7 +76,7 @@ describe('State serialization', () => {
     }
   )
 
-  const elements = [strType, numType, boolType, model, instance, config]
+  const elements = [strType, numType, boolType, model, instance, refInstance, config]
 
   it('should serialize and deserialize all element types', () => {
     const serialized = serialize(elements)

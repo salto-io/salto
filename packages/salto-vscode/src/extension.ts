@@ -1,8 +1,6 @@
 import * as vscode from 'vscode'
-import { initWorkspace } from './salto/workspace'
-import {
-  onDidChangeConfiguration, onDidChangeTextDocument, onFileCreate, onFileDelete,
-} from './events'
+import { EditorWorkspace } from './salto/workspace'
+import { onDidChangeTextDocument, onFileCreate, onFileDelete } from './events'
 import {
   createCompletionsProvider, createDefinitionsProvider, createReferenceProvider,
   createDocumentSymbolsProvider,
@@ -17,10 +15,12 @@ export const activate = async (context: vscode.ExtensionContext): Promise<void> 
   const { name, rootPath } = vscode.workspace
   if (name && rootPath) {
     const settings = vscode.workspace.getConfiguration('salto')
-    const workspace = await initWorkspace(
+    const workspace = await EditorWorkspace.load(
       rootPath,
-      settings.additionalBlueprintDirs,
-      settings.additionalBlueprints
+      settings.additionalBlueprints,
+      // Cache is turned off until SALTO-216 will be merged
+      // to avoid reference parsing errors
+      false
     )
 
     const completionProvider = vscode.languages.registerCompletionItemProvider(
@@ -49,9 +49,6 @@ export const activate = async (context: vscode.ExtensionContext): Promise<void> 
       definitionProvider,
       referenceProvider,
       symbolsProvider,
-      vscode.workspace.onDidChangeConfiguration(
-        e => onDidChangeConfiguration(e, workspace, settings)
-      ),
       vscode.workspace.onDidChangeTextDocument(
         e => onDidChangeTextDocument(e, workspace)
       )

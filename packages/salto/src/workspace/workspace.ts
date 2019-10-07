@@ -26,7 +26,7 @@ export type Blueprint = {
 
 export type ParsedBlueprint = Blueprint & ParseResult
 
-interface ParsedBlueprintMap {
+export interface ParsedBlueprintMap {
   [key: string]: ParsedBlueprint
 }
 
@@ -132,6 +132,7 @@ const createWorkspaceState = (blueprints: ReadonlyArray<ParsedBlueprint>): Works
   const elements = _.flatten(blueprints.map(bp => bp.elements))
   const { merged: mergedElements, errors: mergeErrors } = mergeElements(elements)
   const validationErrors = validateElements(elements).map(e => e.message)
+  console.dir({validationErrors})
   return {
     ...partialWorkspace,
     elements: mergedElements,
@@ -176,7 +177,11 @@ export class Workspace {
     return new Workspace(blueprintsDir, await parsedBlueprints)
   }
 
-  constructor(public readonly baseDir: string, blueprints: ReadonlyArray<ParsedBlueprint>) {
+  constructor(
+    public readonly baseDir: string,
+    blueprints: ReadonlyArray<ParsedBlueprint>,
+    readonly useCache: boolean = true
+  ) {
     this.state = createWorkspaceState(blueprints)
     this.dirtyBlueprints = new Set<string>()
   }
@@ -252,6 +257,7 @@ export class Workspace {
    * Dump the current workspace state to the underlying persistent storage
    */
   async flush(): Promise<void> {
+    const cache = new ParseResultFSCache(path.join(this.baseDir, CACHE_FOLDER))
     await Promise.all(wu(this.dirtyBlueprints).map(async filename => {
       const bp = this.parsedBlueprints[filename]
       const filePath = path.join(this.baseDir, filename)
@@ -260,6 +266,12 @@ export class Workspace {
       } else {
         await fs.mkdirp(path.dirname(filePath))
         await fs.writeFile(filePath, bp.buffer)
+        if (this.useCache) {
+          await cache.put({
+            filename,
+            lastModified: Date.now(),
+          }, bp)
+        }
       }
       this.dirtyBlueprints.delete(filename)
     }))

@@ -3,8 +3,8 @@ import wu from 'wu'
 import {
   Element, isField, isType, isObjectType,
 } from 'adapter-api'
-import { ParsedBlueprint } from 'salto'
-import { SaltoWorkspace } from './workspace'
+import { WorkspaceParsedBlueprint as ParsedBlueprint } from 'salto'
+import { EditorWorkspace } from './workspace'
 
 type PositionContextType = 'global'|'instance'|'type'|'field'
 
@@ -138,7 +138,7 @@ const buildPositionContext = (
   return context
 }
 
-const extractFields = (elements: Element[]): Element[] => (
+const extractFields = (elements: readonly Element[]): Element[] => (
   _(elements).map(e => (
     (isObjectType(e)) ? [..._.values(e.fields), e] : [e]
   )).flatten().value()
@@ -162,8 +162,8 @@ export const buildDefinitionsTree = (
   )
 }
 
-const getFullElement = (workspace: SaltoWorkspace, partial: Element): Element => {
-  const fullElement = extractFields(workspace.mergedElements || [])
+const getFullElement = (workspace: EditorWorkspace, partial: Element): Element => {
+  const fullElement = extractFields(workspace.elements || [])
     .find(e => e.elemID.getFullName() === partial.elemID.getFullName())
   return fullElement || partial
 }
@@ -178,12 +178,12 @@ const getPositionFromTree = (
 }
 
 export const getPositionContext = (
-  workspace: SaltoWorkspace,
+  workspace: EditorWorkspace,
   fileContent: string,
   filename: string,
   position: EditorPosition
 ): PositionContext => {
-  const parsedBlueprint = workspace.parsedBlueprints[filename]
+  const parsedBlueprint = workspace.getParsedBlueprint(filename)
   const definitionsTree = buildDefinitionsTree(fileContent, parsedBlueprint)
   const partialContext = getPositionFromTree(definitionsTree, position)
   const fullRef = (partialContext.ref)

@@ -8,4 +8,11 @@ export { dumpCsv, readCsv } from './src/core/csv'
 export * from './src/api'
 export { STATEPATH } from './src/state/state'
 export { FoundSearchResult, SearchResult } from './src/core/search'
-export { Workspace, Errors } from './src/workspace/workspace'
+// ParsedBlueprint and Blueprint are exported with an alias to avoid
+// conflict with the Blueprint and ParsedBlueprint from ./src/core/blueprint
+// which are still used. See: SALTO-205
+export {
+  Workspace, Blueprint as WorkspaceBlueprint, Errors,
+  ParsedBlueprint as WorkspaceParsedBlueprint, ParsedBlueprintMap,
+} from './src/workspace/workspace'
+export { SourceMap } from './src/parser/parse'

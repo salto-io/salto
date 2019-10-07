@@ -2,12 +2,12 @@ import _ from 'lodash'
 
 import { Element, isObjectType, isInstanceElement } from 'adapter-api'
 import { getLocations, SaltoElemLocation } from './location'
-import { SaltoWorkspace } from './workspace'
+import { EditorWorkspace } from './workspace'
 
 // TODO - Note that this will have no great performances untill we will get the
 // reverse SM from salto's core. This is acceptable as this is not called so often
 const getUsages = (
-  workspace: SaltoWorkspace,
+  workspace: EditorWorkspace,
   element: Element,
   fullName: string
 ): SaltoElemLocation[] => {
@@ -28,11 +28,11 @@ const getUsages = (
 }
 
 export const provideWorkspaceReferences = (
-  workspace: SaltoWorkspace,
+  workspace: EditorWorkspace,
   token: string
 ): SaltoElemLocation[] => (
   _.reduce(
-    workspace.mergedElements,
+    workspace.elements,
     (acc, e) => ([...acc, ...getUsages(workspace, e, token)]),
     [] as SaltoElemLocation[]
   )

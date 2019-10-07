@@ -1,50 +1,31 @@
 import * as vscode from 'vscode'
 import * as fs from 'async-file'
-import {
-  initWorkspace, updateFile, SaltoWorkspace, removeFile,
-} from './salto/workspace'
+import { EditorWorkspace } from './salto/workspace'
 
 // This function is called whenever a file content is changed. The function will
 // reparse the file that changed.
-export const onDidChangeTextDocument = async (
+export const onDidChangeTextDocument = (
   event: vscode.TextDocumentChangeEvent,
-  workspace: SaltoWorkspace
+  workspace: EditorWorkspace
 ): Promise<void> => {
-  workspace.lastUpdate = updateFile(
-    workspace,
-    event.document.fileName,
-    event.document.getText()
-  )
-  await workspace.lastUpdate
+  const bp = { filename: event.document.fileName, buffer: event.document.getText() }
+  workspace.setBlueprints(bp)
+  return workspace.awaitAllUpdates()
 }
 
-// This function is registered as callback function for configuration changes in the
-// salto settings - which means we need to recompile all of the files since we may
-// have new files to consider.
-export const onDidChangeConfiguration = async (
-  _event: vscode.ConfigurationChangeEvent,
-  workspace: SaltoWorkspace,
-  settings: vscode.WorkspaceConfiguration
-): Promise<void> => {
-  workspace.lastUpdate = initWorkspace(
-    workspace.baseDir,
-    settings.additionalBlueprintDirs,
-    settings.additionalBlueprints
-  )
-  await workspace.lastUpdate
-}
-
-export const onFileDelete = async (
-  workspace: SaltoWorkspace,
+export const onFileDelete = (
+  workspace: EditorWorkspace,
   filename: string
 ): Promise<void> => {
-  await removeFile(workspace, filename)
+  workspace.removeBlueprints(filename)
+  return workspace.awaitAllUpdates()
 }
 
 export const onFileCreate = async (
-  workspace: SaltoWorkspace,
+  workspace: EditorWorkspace,
   filename: string
 ): Promise<void> => {
-  const content = await fs.readFile(filename, 'utf8')
-  await updateFile(workspace, filename, content)
+  const buffer = await fs.readFile(filename, 'utf8')
+  workspace.setBlueprints({ filename, buffer })
+  return workspace.awaitAllUpdates()
 }

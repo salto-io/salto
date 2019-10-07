@@ -12,7 +12,7 @@ fi
 
 
 dest=$(abspath $1)
-js_dest=$dest/src/parser
+js_dest=$dest/src/parser/internal
 
 pushd $(dirname $0) > /dev/null
 echo -n 'Building go HCL plugin... '

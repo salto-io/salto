@@ -1,14 +1,14 @@
 const deepMerge = require('../../build_utils/deep_merge')
 
 module.exports = deepMerge(
-  require('../../jest.base.config.js'),
+  require('../../jest.base.config.js')(),
   {
     name: 'cli',
     displayName: 'cli',
     rootDir: `${__dirname}`,
     collectCoverageFrom: [
-      '!<rootDir>/dist/index.js',
-      '!<rootDir>/dist/src/callbacks.js',
+      '!<rootDir>/index.ts',
+      '!<rootDir>/src/callbacks.ts',
     ],
     coverageThreshold: {
       // Slowly start increasing here, never decrease!

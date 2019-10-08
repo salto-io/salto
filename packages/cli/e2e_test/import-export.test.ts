@@ -1,7 +1,7 @@
 import path from 'path'
 import * as asyncfile from 'async-file'
 import {
-  loadBlueprints, STATEPATH, dumpCsv, readCsv,
+  STATEPATH, dumpCsv, readCsv,
 } from 'salto'
 import { InstanceElement } from 'adapter-api'
 import { MockWriteStream } from '../test/mocks'
@@ -108,14 +108,14 @@ describe('When running data modifying commands', () => {
 
       await dumpCsv(deletionObjects, updatedDataFilePath, false)
 
-      await deleteCommand(await loadBlueprints([], discoverOutputDir), updatedDataFilePath,
+      await deleteCommand(discoverOutputDir, [], updatedDataFilePath,
         sfLeadObjectName, cliOutput).execute()
       expect(cliOutput.stdout.content).toMatch(Prompts.DELETE_FINISHED_SUCCESSFULLY)
     })
 
     it('should fail if discover was not run beforehand', async () => {
       const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
-      const command = deleteCommand(await loadBlueprints([], discoverOutputDir), dataFilePath,
+      const command = deleteCommand(discoverOutputDir, [], dataFilePath,
         sfLeadObjectName, cliOutput)
       await expect(command.execute()).rejects
         .toThrow(`Couldn't find the type you are looking for: ${sfLeadObjectName}. Have you run salto discover yet?`)

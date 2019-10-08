@@ -19,17 +19,19 @@ describe('delete command', () => {
     mockExistsReturn = Promise.resolve(true)
     readCsvSpy = jest.spyOn(saltoImp, 'readCsv').mockImplementation(() => Promise.resolve(testCsvMockReturnValues))
     deleteFromCsvSpy = jest.spyOn(saltoImp, 'deleteFromCsvFile').mockImplementation(() => mockDeleteFromCsv())
+    const loadSpy = jest.spyOn(saltoImp.Workspace, 'load').mockImplementation(() => ({}))
     const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
-    await command([], 'mockPath', 'mockName', cliOutput).execute()
+    await command('', [], 'mockPath', 'mockName', cliOutput).execute()
     expect(readCsvSpy.mock.calls[0][0]).toBe('mockPath')
-    expect(deleteFromCsvSpy).toHaveBeenCalledWith('mockName', [], [], getConfigFromUser)
+    expect(deleteFromCsvSpy).toHaveBeenCalledWith('mockName', [], {}, getConfigFromUser)
     expect(cliOutput.stdout.content).toMatch(Prompts.DELETE_FINISHED_SUCCESSFULLY)
+    expect(loadSpy).toHaveBeenCalled()
   })
 
   it('should fail if CSV file is not found', async () => {
     mockExistsReturn = Promise.resolve(false)
     const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
-    await command([], '', '', cliOutput).execute()
+    await command('', [], '', '', cliOutput).execute()
     expect(cliOutput.stderr.content).toMatch(Prompts.COULD_NOT_FIND_FILE)
   })
 })

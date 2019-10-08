@@ -11,7 +11,6 @@ import initAdapters from './core/adapters/adapters'
 import {
   getPlan, Plan, PlanItem,
 } from './core/plan'
-import { Blueprint, getAllElements } from './core/blueprint'
 import State from './state/state'
 import { findElement, SearchResult } from './core/search'
 import { mergeElements } from './core/merger'
@@ -137,7 +136,7 @@ export const importFromCsvFile = async (
 export const deleteFromCsvFile = async (
   typeId: string,
   records: Value[],
-  blueprints: Blueprint[],
+  workspace: Workspace,
   fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
 ): Promise<void> => {
   // Find the corresponding element in the state
@@ -147,7 +146,6 @@ export const deleteFromCsvFile = async (
   if (!type) {
     throw new Error(`Couldn't find the type you are looking for: ${typeId}. Have you run salto discover yet?`)
   }
-  const elements = mergeAndValidate(await getAllElements(blueprints))
-  const [adapters] = await initAdapters(elements, fillConfig)
+  const [adapters] = await initAdapters(workspace.elements, fillConfig)
   await deleteInstancesOfType(type as ObjectType, records, adapters)
 }

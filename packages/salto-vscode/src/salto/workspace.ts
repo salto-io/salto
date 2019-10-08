@@ -41,6 +41,7 @@ export class EditorWorkspace {
   get errors(): Errors { return this.workspace.errors }
   get parsedBlueprints(): ParsedBlueprintMap { return this.workspace.parsedBlueprints }
   get sourceMap(): SourceMap { return this.workspace.sourceMap }
+  get baseDir(): string { return this.workspace.baseDir }
 
   private hasPendingUpdates(): boolean {
     return !(_.isEmpty(this.pendingSets) && _.isEmpty(this.pendingDeletes))

@@ -217,7 +217,6 @@ describe('api functions', () => {
       })
     })
     describe('data migration', () => {
-      let blueprints: Blueprint[]
       let ws: Workspace
       let mockStateGet: jest.Mock<unknown>
       const elemID = new ElemID('salesforce', 'test')
@@ -228,7 +227,6 @@ describe('api functions', () => {
         {}
       )
       beforeEach(async () => {
-        blueprints = await readBlueprints('salto.bp')
         ws = await Workspace.load('', [filePath('salto.bp')])
         mockStateGet = jest.fn().mockImplementation(() =>
           Promise.resolve([instanceElement]))
@@ -278,7 +276,7 @@ describe('api functions', () => {
           await commands.deleteFromCsvFile(
             testType.elemID.getFullName(),
             [],
-            blueprints,
+            ws,
             mockGetConfigFromUser
           )
           expect(mockStateGet).toHaveBeenCalled()

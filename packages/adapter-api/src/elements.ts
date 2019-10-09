@@ -42,8 +42,8 @@ export class ElemID {
     return _.isEmpty(this.name) || this.name === ElemID.CONFIG_INSTANCE_NAME
   }
 
-  createNestedID(namePart: string): ElemID {
-    return new ElemID(this.adapter, ...this.nameParts, namePart)
+  createNestedID(...nameParts: string[]): ElemID {
+    return new ElemID(this.adapter, ...[...this.nameParts, ...nameParts])
   }
 
   createParentID(): ElemID {

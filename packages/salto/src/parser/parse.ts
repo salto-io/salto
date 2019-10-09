@@ -10,8 +10,9 @@ import { Keywords } from './language'
 
 // Re-export these types because we do not want code outside the parser to import hcl
 export type SourceRange = SourceRange
-export type SourceMap = Map<string, SourceRange[]>
 export type ParseError = HclParseError
+
+export type SourceMap = ReadonlyMap<string, SourceRange[]>
 
 const elemID = (fullname: string): ElemID => {
   const separatorIdx = fullname.indexOf(ElemID.NAMESPACE_SEPERATOR)

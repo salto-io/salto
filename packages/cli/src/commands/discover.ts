@@ -6,8 +6,10 @@ import { getConfigFromUser } from '../callbacks'
 export const command = (workspaceDir: string, additionalBlueprints: string[]): CliCommand => ({
   async execute(): Promise<void> {
     const workspace = await Workspace.load(workspaceDir, additionalBlueprints)
-    if (workspace.errors.length > 0) {
-      throw new Error(`Failed to load workspace, errors:\n${workspace.errors.join('\n')}`)
+    if (workspace.hasErrors()) {
+      throw new Error(
+        `Failed to load workspace, errors:\n${workspace.errors.strings().join('\n')}`
+      )
     }
     await discover(workspace, getConfigFromUser)
   },

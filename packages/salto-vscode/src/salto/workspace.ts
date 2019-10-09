@@ -2,8 +2,9 @@ import _ from 'lodash'
 import path from 'path'
 
 import {
-  Workspace, WorkspaceBlueprint as Blueprint, SaltoError, ParsedBlueprintMap,
-  ReadOnlySourceMap, WorkspaceParsedBlueprint as ParsedBlueprint,
+  Workspace, WorkspaceBlueprint as Blueprint,
+  WorkspaceParsedBlueprint as ParsedBlueprint, ParsedBlueprintMap,
+  SourceMap, Errors,
 } from 'salto'
 import { Element } from 'adapter-api'
 
@@ -27,20 +28,19 @@ export class EditorWorkspace {
     return new EditorWorkspace(workspace)
   }
 
-
   constructor(workspace: Workspace, isCopy = false) {
     this.workspace = workspace
     this.isCopy = isCopy
-    if (_.isEmpty(workspace.errors)) {
+    if (!workspace.errors.hasErrors()) {
       this.lastValidCopy = _.cloneDeep(workspace)
     }
   }
 
   // Accessors into workspace
   get elements(): ReadonlyArray<Element> { return this.workspace.elements }
-  get errors(): ReadonlyArray<SaltoError> { return this.workspace.errors }
+  get errors(): Errors { return this.workspace.errors }
   get parsedBlueprints(): ParsedBlueprintMap { return this.workspace.parsedBlueprints }
-  get sourceMap(): ReadOnlySourceMap { return this.workspace.sourceMap }
+  get sourceMap(): SourceMap { return this.workspace.sourceMap }
 
   private hasPendingUpdates(): boolean {
     return !(_.isEmpty(this.pendingSets) && _.isEmpty(this.pendingDeletes))
@@ -82,7 +82,7 @@ export class EditorWorkspace {
       }
       // After we ran the update we check if the operation resulted with no
       // errors. If so - we update the last valid state.
-      if (_.isEmpty(this.errors)) {
+      if (!this.errors.hasErrors()) {
         this.lastValidCopy = _.cloneDeep(this.workspace)
       }
       // We recall this method to make sure no pending were added since
@@ -119,7 +119,7 @@ export class EditorWorkspace {
   }
 
   getValidCopy(): EditorWorkspace | undefined {
-    if (_.isEmpty(this.errors)) {
+    if (!this.errors.hasErrors()) {
       return this
     }
     return this.lastValidCopy ? new EditorWorkspace(this.lastValidCopy, true) : undefined

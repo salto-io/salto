@@ -3,17 +3,19 @@ import wu from 'wu'
 import path from 'path'
 import fs from 'async-file'
 import readdirp from 'readdirp'
+import { collections, types } from '@salto/lowerdash'
 import { Element } from 'adapter-api'
 
 import {
-  SourceMap, parse, SourceRange, ParseResult,
+  SourceMap, parse, SourceRange, ParseResult, ParseError,
 } from '../parser/parse'
-
-import { mergeElements } from '../core/merger'
+import { mergeElements, MergeError } from '../core/merger'
 import validateElements from '../core/validator'
 import { DetailedChange } from '../core/plan'
 import { ParseResultFSCache } from './cache'
 import { getChangeLocations, updateBlueprintData } from './blueprint_update'
+
+const { DefaultMap } = collections.map
 
 const CACHE_FOLDER = '.cache'
 export type Blueprint = {
@@ -22,14 +24,11 @@ export type Blueprint = {
   timestamp?: number
 }
 
-
 export type ParsedBlueprint = Blueprint & ParseResult
 
-export type SaltoError = string
 export interface ParsedBlueprintMap {
   [key: string]: ParsedBlueprint
 }
-export type ReadOnlySourceMap = ReadonlyMap<string, SourceRange[]>
 
 const getBlueprintsFromDir = async (
   blueprintsDir: string,
@@ -88,20 +87,40 @@ const parseBlueprintsWithCache = (
   }))
 }
 
-const mergeSourceMaps = (bps: ReadonlyArray<ParsedBlueprint>): SourceMap => (
-  bps.map(bp => bp.sourceMap).reduce((prev, curr) => {
-    wu(curr.entries()).forEach(([k, v]) => {
-      prev.set(k, (prev.get(k) || []).concat(v))
+const mergeSourceMaps = (bps: ReadonlyArray<ParsedBlueprint>): SourceMap => {
+  const result = new DefaultMap<string, SourceRange[]>(() => [])
+  bps.forEach(bp => {
+    const { sourceMap } = bp
+    sourceMap.forEach((ranges, key) => {
+      result.get(key).push(...ranges)
     })
-    return prev
-  }, new Map<string, SourceRange[]>())
-)
+  })
+  return result
+}
+
+export class Errors extends types.Bean<Readonly<{
+  parse: ReadonlyArray<ParseError>
+  merge: ReadonlyArray<MergeError>
+  validation: ReadonlyArray<string>
+}>> {
+  hasErrors(): boolean {
+    return [this.parse, this.merge, this.validation].some(errors => errors.length > 0)
+  }
+
+  strings(): ReadonlyArray<string> {
+    return [
+      ...this.parse.map(error => error.detail),
+      ...this.merge.map(error => error.error),
+      ...this.validation,
+    ]
+  }
+}
 
 type WorkspaceState = {
   readonly parsedBlueprints: ParsedBlueprintMap
-  readonly sourceMap: ReadOnlySourceMap
+  readonly sourceMap: SourceMap
   readonly elements: ReadonlyArray<Element>
-  readonly errors: ReadonlyArray<SaltoError>
+  readonly errors: Errors
 }
 
 const createWorkspaceState = (blueprints: ReadonlyArray<ParsedBlueprint>): WorkspaceState => {
@@ -109,23 +128,18 @@ const createWorkspaceState = (blueprints: ReadonlyArray<ParsedBlueprint>): Works
     parsedBlueprints: _.keyBy(blueprints, 'filename'),
     sourceMap: mergeSourceMaps(blueprints),
   }
-  const errors = _.flatten(blueprints.map(bp => bp.errors)).map(e => e.detail)
-  try {
-    const elements = mergeElements(_.flatten(blueprints.map(bp => bp.elements)))
-    return {
-      ...partialWorkspace,
-      elements,
-      errors: [
-        ...errors,
-        ...validateElements(elements).map(e => e.message),
-      ],
-    }
-  } catch (e) {
-    return {
-      ...partialWorkspace,
-      elements: [],
-      errors: [...errors, e.message],
-    }
+  const parseErrors = _.flatten(blueprints.map(bp => bp.errors))
+  const elements = _.flatten(blueprints.map(bp => bp.elements))
+  const { merged: mergedElements, errors: mergeErrors } = mergeElements(elements)
+  const validationErrors = validateElements(mergedElements).map(e => e.message)
+  return {
+    ...partialWorkspace,
+    elements: mergedElements,
+    errors: new Errors({
+      parse: Object.freeze(parseErrors),
+      merge: mergeErrors,
+      validation: validationErrors,
+    }),
   }
 }
 
@@ -173,9 +187,10 @@ export class Workspace {
 
   // Accessors into state
   get elements(): ReadonlyArray<Element> { return this.state.elements }
-  get errors(): ReadonlyArray<SaltoError> { return this.state.errors }
+  get errors(): Errors { return this.state.errors }
+  hasErrors(): boolean { return this.state.errors.hasErrors() }
   get parsedBlueprints(): ParsedBlueprintMap { return this.state.parsedBlueprints }
-  get sourceMap(): ReadOnlySourceMap { return this.state.sourceMap }
+  get sourceMap(): SourceMap { return this.state.sourceMap }
 
   private markDirty(names: string[]): void {
     names.forEach(name => this.dirtyBlueprints.add(name))

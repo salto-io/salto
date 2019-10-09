@@ -19,16 +19,22 @@ import validateElements from './core/validator'
 import { Workspace } from './workspace/workspace'
 import { discoverChanges } from './core/discover'
 
+// TODO: Replace untyped exception with something that may be properly caught and handled by the CLI
 export const mergeAndValidate = (elements: Element[]): Element[] => {
-  const mergedElements = mergeElements(elements)
-  const validationErrors = validateElements(mergedElements)
+  const mergeResult = mergeElements(elements)
+
+  if (mergeResult.errors.length > 0) {
+    throw new Error(`Failed to merge blueprints: ${mergeResult.errors.map(e => e.message).join('\n')}`)
+  }
+
+  const validationErrors = validateElements(mergeResult.merged)
 
   if (validationErrors.length > 0) {
     throw new Error(`Failed to validate blueprints:
     ${validationErrors.map(e => e.message).join('\n')}`)
   }
 
-  return mergedElements
+  return mergeResult.merged
 }
 
 const applyActionOnState = async (

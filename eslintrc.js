@@ -66,6 +66,11 @@ module.exports = {
         }],
         'implicit-arrow-linebreak': ['off'],
         'import/prefer-default-export': ['off'],
+        'object-curly-newline': ['error', { consistent: true }],
+        '@typescript-eslint/member-delimiter-style': ['error', {
+            multiline: { delimiter: 'none', requireLast: undefined },
+            singleline: { delimiter: 'semi', requireLast: undefined },
+        }],
     },
     overrides: [
         {
@@ -74,7 +79,6 @@ module.exports = {
                 'no-useless-constructor': [0],
                 'no-empty-function': [0],
                 '@typescript-eslint/array-type': [0],
-                '@typescript-eslint/member-delimiter-style': ['error', {multiline: {delimiter: 'none'}}],
                 '@typescript-eslint/ban-ts-ignore': [0],
                 'max-classes-per-file': [0],
                 'import/no-unresolved': [0], // unable to read paths from tsconfig.json

@@ -27,23 +27,23 @@ const validateDefinitions = (bases: Field[], updates: Field[]): void => {
     throw new Error(`can't extend ${parentID}: field ${fieldName} has multiple base definition.`)
   }
   // Ensure each annotation value is updated at most once.
-  try {
-    _.mergeWith({}, ...updates.map(u => u.annotations), validateNoDuplicates)
-  } catch (e) {
-    throw new Error(`can't extend ${parentID}: ${e.message}`)
+  if (updates.length > 0) {
+    try {
+      _.mergeWith({}, ...updates.map(u => u.annotations), validateNoDuplicates)
+    } catch (e) {
+      throw new Error(`can't extend ${parentID}: ${e.message}`)
+    }
   }
 }
 
 const mergeFieldDefinitions = (
   definitions: Field[]
 ): Field => {
-  // TODO validate no update fields (the only possible fail, which won't effect
-  // usage, btw )
-  if (definitions.length === 1) return definitions[0]
   const bases = definitions.filter(d => !isUpdate(d))
   const updates = definitions.filter(d => isUpdate(d))
   validateDefinitions(bases, updates)
   // If there is more then one base validation would have failed
+  if (definitions.length === 1) return definitions[0]
   const base = bases[0]
   const annotations = _.merge(
     {},
@@ -54,9 +54,6 @@ const mergeFieldDefinitions = (
 }
 
 const mergeObjectDefinitions = (objects: ObjectType[]): ObjectType => {
-  if (objects.length === 1 && _.values(objects[0].fields).filter(isUpdate).length === 0) {
-    return objects[0]
-  }
   const { elemID } = objects[0]
 
   const fieldDefs: Record<string, Field[]> = {}
@@ -66,8 +63,10 @@ const mergeObjectDefinitions = (objects: ObjectType[]): ObjectType => {
       fieldDefs[name] = fieldDefs[name] ? [...fieldDefs[name], field] : [field]
     })
   })
-
   const fields = _.mapValues(fieldDefs, mergeFieldDefinitions)
+  if (objects.length === 1) {
+    return objects[0]
+  }
   // There are no rules in the spec on merging annotations and
   // annotations values so we simply merge without allowing duplicates
   const annotationTypes = _.mergeWith(
@@ -186,9 +185,9 @@ export const mergeElements = (elements: Element[]): Element[] => {
     ...Object.values(BuiltinTypes),
   ])
   const mergedElements = [
+    ...elements.filter(e => !isObjectType(e) && !isInstanceElement(e)),
     ...Object.values(mergedObjects),
     ...mergedInstances,
-    ...Object.values(mergePrimitives),
   ]
   const updated = updateMergedTypes(mergedElements, _.merge({}, mergedObjects, mergedPrimitives))
   return updated.map(e => resolve(e, updated))

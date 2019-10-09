@@ -8,6 +8,7 @@ import adapterCreators from '../../src/core/adapters/creators'
 
 import * as plan from '../../src/core/plan'
 import { Workspace } from '../../src/workspace/workspace'
+import { SearchResult, FoundSearchResult } from '../../src/core/search'
 
 
 const mockAdd = jest.fn(async ap => {
@@ -205,6 +206,12 @@ describe('api functions', () => {
         expect(mockUpdate).toHaveBeenCalled()
         expect(mockStateGet).toHaveBeenCalled()
         expect(mockStateUpdate).toHaveBeenCalled()
+      })
+
+      it('should describe an element', async () => {
+        const res: SearchResult = await commands.describeElement(ws, ['salesforce_settings'])
+        expect(res).not.toBe(null)
+        expect((res as FoundSearchResult).element.elemID.name).toBe('settings')
       })
     })
     describe('data migration', () => {

@@ -3,7 +3,7 @@ import wu from 'wu'
 import {
   Element, isField, isType, isObjectType,
 } from 'adapter-api'
-import { WorkspaceParsedBlueprint as ParsedBlueprint } from 'salto'
+import { ParsedBlueprint } from 'salto'
 import { EditorWorkspace } from './workspace'
 
 type PositionContextType = 'global'|'instance'|'type'|'field'

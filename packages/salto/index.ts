@@ -1,7 +1,4 @@
 export { default as validateElements, ValidationError } from './src/core/validator'
-export {
-  loadBlueprints, parseBlueprints, ParsedBlueprint, Blueprint, dumpBlueprints,
-} from './src/core/blueprint'
 export { mergeElements } from './src/core/merger'
 export { Plan, PlanItem, DetailedChange } from './src/core/plan'
 export { dumpCsv, readCsv } from './src/core/csv'
@@ -12,8 +9,8 @@ export { FoundSearchResult, SearchResult } from './src/core/search'
 // conflict with the Blueprint and ParsedBlueprint from ./src/core/blueprint
 // which are still used. See: SALTO-205
 export {
-  Workspace, Blueprint as WorkspaceBlueprint, Errors,
-  ParsedBlueprint as WorkspaceParsedBlueprint, ParsedBlueprintMap,
+  Workspace, Blueprint, Errors,
+  ParsedBlueprint, ParsedBlueprintMap,
 } from './src/workspace/workspace'
 export { SourceMap } from './src/parser/parse'
 export { dump } from './src/parser/dump'

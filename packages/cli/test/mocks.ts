@@ -4,7 +4,7 @@ import {
   Type, BuiltinTypes, ElemID, Change, ObjectType, Field, InstanceElement, Element, getChangeElement,
 } from 'adapter-api'
 import {
-  Plan, PlanItem, SearchResult, Blueprint, DetailedChange, Workspace,
+  Plan, PlanItem, SearchResult, DetailedChange, Workspace,
 } from 'salto'
 import { GroupedNodeMap } from '@salto/dag'
 import { YargsCommandBuilder, allBuilders } from '../src/builder'
@@ -277,7 +277,7 @@ export const apply = async (
   return changes
 }
 
-export const describe = async (_searchWords: string[], _blueprints?: Blueprint[]):
+export const describe = async (_searchWords: string[]):
   Promise<SearchResult> =>
   ({
     key: 'salto_office',

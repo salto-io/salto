@@ -1,11 +1,9 @@
-import * as fs from 'async-file'
 import path from 'path'
 import {
   ElemID, InstanceElement, ObjectType, AdapterCreator, Field, BuiltinTypes,
 } from 'adapter-api'
 import * as commands from '../../src/api'
 import State from '../../src/state/state'
-import { Blueprint, getAllElements } from '../../src/core/blueprint'
 import adapterCreators from '../../src/core/adapters/creators'
 
 import * as plan from '../../src/core/plan'
@@ -116,29 +114,22 @@ describe('api functions', () => {
     const blueprintsDirectory = path.join(__dirname, '../../../test', 'blueprints')
 
     const filePath = (filename: string): string => path.join(blueprintsDirectory, filename)
-    const readBlueprints = (...filenames: string[]): Promise<Blueprint[]> => Promise.all(
-      filenames.map(async (filename: string) => ({
-        buffer: await fs.readFile(filePath(filename), 'utf8'),
-        filename,
-      }))
-    )
 
     const mockShouldApplyYes = async (): Promise<boolean> => Promise.resolve(true)
 
     const mockReportCurrentAction = jest.fn()
 
     it('Should return all elements in the blueprint', async () => {
-      const blueprints = await readBlueprints('salto.bp', 'salto2.bp')
-      const elements = await getAllElements(blueprints)
-      const fullNames = elements.map(e => e.elemID.getFullName())
+      const workspace = await Workspace.load('', [filePath('salto.bp'), filePath('salto2.bp')])
+      const fullNames = workspace.elements.map(e => e.elemID.getFullName())
       expect(fullNames).toEqual(
         expect.arrayContaining(['salesforce', 'salesforce_test', 'salesforce_test2']),
       )
     })
 
-    it('should throw an error if the bp is not valid2', async () => {
-      const blueprints = await readBlueprints('error.bp')
-      await expect(getAllElements(blueprints)).rejects.toThrow()
+    it('should add errors to workspace an error if the bp is not valid', async () => {
+      const workspace = await Workspace.load('', [filePath('error.bp')])
+      await expect(workspace.errors.hasErrors()).toBe(true)
     })
 
     it('should throw error on missing adapter', async () => {

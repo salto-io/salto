@@ -32,7 +32,7 @@ export class EditorWorkspace {
     this.workspace = workspace
     this.isCopy = isCopy
     if (!workspace.errors.hasErrors()) {
-      this.lastValidCopy = _.cloneDeep(workspace)
+      this.lastValidCopy = _.clone(workspace)
     }
   }
 
@@ -86,7 +86,7 @@ export class EditorWorkspace {
       // errors. If so - we update the last valid state.
       const bpErrors = _(this.parsedBlueprints).values().map(bp => bp.errors).flatten().value()
       if (_.isEmpty(bpErrors) && !_.isEmpty(this.elements)) {
-        this.lastValidCopy = _.cloneDeep(this.workspace)
+        this.lastValidCopy = _.clone(this.workspace)
       }
       // We recall this method to make sure no pending were added since
       // we started. Returning the promise will make sure the caller

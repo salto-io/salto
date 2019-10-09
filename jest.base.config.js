@@ -17,5 +17,6 @@ module.exports = {
     '!coverage/**',
     '!dist/test/**',
     '!dist/e2e_test/**',
+    
   ],
 }

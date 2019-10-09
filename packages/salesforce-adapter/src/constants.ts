@@ -8,7 +8,6 @@ export const SALESFORCE_CUSTOM_SUFFIX = '__c'
 
 // Annotations
 export const LABEL = 'label'
-export const RESTRICTED_PICKLIST = 'restricted_pick_list'
 export const PICKLIST_VALUES = 'values'
 export const API_NAME = 'api_name'
 export const FORMULA = 'formula'
@@ -68,6 +67,7 @@ export const FIELD_ANNOTATIONS = {
   PRECISION: 'precision',
   DISPLAY_FORMAT: 'display_format',
   VISIBLE_LINES: 'visible_lines',
+  RESTRICTED_PICKLIST: 'restricted_pick_list',
   MASK_CHAR: 'mask_char',
   MASK_TYPE: 'mask_type',
   MASK: 'mask',

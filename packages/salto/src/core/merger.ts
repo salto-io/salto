@@ -122,7 +122,6 @@ const mergeInstances = (
   instances: InstanceElement[]
 ): InstanceElement[] => {
   const mergeInstanceDefinitions = (instanceDefs: InstanceElement[]): InstanceElement => {
-    if (instanceDefs.length > 1) console.log("OH BOY", instanceDefs[0].elemID.getFullName(), instanceDefs[1].elemID.getFullName())
     const refInst = instanceDefs[0]
     const value = (instanceDefs.length > 1) ? _.mergeWith(
       {},
@@ -130,7 +129,9 @@ const mergeInstances = (
       validateNoDuplicates
     ) : refInst.value
     const defaults = buildDefaults(refInst.type)
-    const valueWithDefault = _.isEmpty(defaults)? value : _.merge({}, buildDefaults(refInst.type) || {}, value)
+    const valueWithDefault = _.isEmpty(defaults)
+      ? value
+      : _.merge({}, buildDefaults(refInst.type) || {}, value)
     return new InstanceElement(refInst.elemID, refInst.type as ObjectType, valueWithDefault)
   }
 
@@ -187,7 +188,7 @@ export const mergeElements = (elements: Element[]): Element[] => {
   const mergedElements = [
     ...Object.values(mergedObjects),
     ...mergedInstances,
-    ...Object.values(mergePrimitives)
+    ...Object.values(mergePrimitives),
   ]
   const updated = updateMergedTypes(mergedElements, _.merge({}, mergedObjects, mergedPrimitives))
   return updated.map(e => resolve(e, updated))

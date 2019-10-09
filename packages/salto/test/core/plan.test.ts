@@ -19,10 +19,10 @@ describe('getPlan', () => {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     wu(item.changes()).find(change =>
       getChangeElement(change).elemID.getFullName() === elemID.getFullName())!
-  const allElements = mock.getAllElements([])
+  const allElements = mock.getAllElements()
 
   const planWithTypeChanges = (): [Plan, ObjectType] => {
-    const afterElements = mock.getAllElements([])
+    const afterElements = mock.getAllElements()
     const saltoOffice = afterElements[2] as ObjectType
     saltoOffice.annotations.label = 'new label'
     saltoOffice.annotationTypes.new = BuiltinTypes.STRING
@@ -34,7 +34,7 @@ describe('getPlan', () => {
   }
 
   const planWithFieldChanges = (): [Plan, ObjectType] => {
-    const afterElements = mock.getAllElements([])
+    const afterElements = mock.getAllElements()
     const saltoOffice = afterElements[2] as ObjectType
     // Adding new field
     saltoOffice.fields.new = new Field(saltoOffice.elemID, 'new', BuiltinTypes.STRING)
@@ -54,7 +54,7 @@ describe('getPlan', () => {
   }
 
   const planWithInstanceChange = (): [Plan, InstanceElement] => {
-    const afterElements = mock.getAllElements([])
+    const afterElements = mock.getAllElements()
     const updatedEmployee = afterElements[4] as InstanceElement
     updatedEmployee.value.nicknames[1] = 'new'
     delete updatedEmployee.value.office.name
@@ -63,7 +63,7 @@ describe('getPlan', () => {
   }
 
   const planWithListChange = (): [Plan, InstanceElement] => {
-    const afterElements = mock.getAllElements([])
+    const afterElements = mock.getAllElements()
     const updatedEmployee = afterElements[4] as InstanceElement
     updatedEmployee.value.nicknames.push('new')
     const plan = getPlan(allElements, afterElements)

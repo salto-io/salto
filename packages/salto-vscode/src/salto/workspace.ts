@@ -2,8 +2,8 @@ import _ from 'lodash'
 import path from 'path'
 
 import {
-  Workspace, WorkspaceBlueprint as Blueprint,
-  WorkspaceParsedBlueprint as ParsedBlueprint, ParsedBlueprintMap,
+  Workspace, Blueprint,
+  ParsedBlueprint, ParsedBlueprintMap,
   SourceMap, Errors,
 } from 'salto'
 import { Element } from 'adapter-api'

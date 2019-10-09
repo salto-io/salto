@@ -2,9 +2,8 @@ import {
   Type, BuiltinTypes, ElemID, ObjectType,
   Field, InstanceElement, Element,
 } from 'adapter-api'
-import { Blueprint } from '../../src/core/blueprint'
 
-export const getAllElements = (_blueprints: Blueprint[] = []): Element[] => {
+export const getAllElements = (): Element[] => {
   const addrElemID = new ElemID('salto', 'address')
   const saltoAddr = new ObjectType({
     elemID: addrElemID,

@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import wu from 'wu'
 
-import { WorkspaceParsedBlueprint as ParsedBlueprint } from 'salto'
+import { ParsedBlueprint } from 'salto'
 import { EditorWorkspace } from './workspace'
 import { EditorRange } from './context'
 

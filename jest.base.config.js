@@ -1,24 +1,21 @@
-const test_dir = process.env['RUN_E2E_TESTS'] ? 'e2e_test' : 'test'
-
-module.exports = (workspaceRoot = '<rootDir>/../..') => ({
+module.exports = {
   verbose: true,
   testEnvironment: 'node',
   testMatch: [
-    `<rootDir>/${test_dir}/**/*.test.ts`,
+    process.env['RUN_E2E_TESTS']
+      ? '<rootDir>/dist/e2e_test/**/*.test.js'
+      : '<rootDir>/dist/test/**/*.test.js'
   ],
-  transform: {
-    '\\.[jt]s$': `${workspaceRoot}/build_utils/jest_ts_transformer.js`,
-  },
   testRunner: "jest-circus/runner",
   collectCoverage: true,
   coverageReporters: ['json', 'lcov', 'text', 'clover', 'json-summary'],
   collectCoverageFrom: [
-    '**/*.ts',
-    '**/*.tsx',
-    '!**/*.d.ts',
+    '**/*.js',
+    '**/*.jsx',
     '!**/node_modules/**',
     '!*.config.js',
     '!coverage/**',
-    '!e2e_test/**'
+    '!dist/test/**',
+    '!dist/e2e_test/**',
   ],
-})
+}

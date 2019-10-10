@@ -1,4 +1,3 @@
-import path from 'path'
 import _ from 'lodash'
 import yargs from 'yargs'
 import requireDirectory from 'require-directory'
@@ -95,13 +94,13 @@ const extractBuilderFromNodeModule = (
   module: { default: YargsCommandBuilder }
 ): YargsCommandBuilder => module.default
 
-export const allBuilders = requireDirectory(
+export const allBuilders = _.values(requireDirectory(
   module,
-  path.join(__dirname, 'commands'),
-  { visit: extractBuilderFromNodeModule },
-) as Record<string, YargsCommandBuilder>
+  './commands',
+  { visit: extractBuilderFromNodeModule }
+)) as YargsCommandBuilder[]
 
 export const registerBuilders = (
-  parser: yargs.Argv, builders: YargsCommandBuilder[] = _.values(allBuilders),
+  parser: yargs.Argv, builders: YargsCommandBuilder[] = allBuilders
 ): promises.state.PromiseWithState<CommandBuilder> =>
   promiseWithState(Promise.race(builders.map(builder => registerBuilder(parser, builder))))

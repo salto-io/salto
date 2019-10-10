@@ -1,15 +1,15 @@
 const deepMerge = require('../../build_utils/deep_merge')
 
 module.exports = deepMerge(
-  require('../../jest.base.config.js')(),
+  require('../../jest.base.config.js'),
   {
     name: 'salesforce-adapter',
     displayName: 'salesforce-adapter',
     rootDir: `${__dirname}`,
     collectCoverageFrom: [
-      '!<rootDir>/src/client/client.ts',
-      '!<rootDir>/src/tools/**', // At the moment we do not cover the tools
-      '!<rootDir>/index.ts',
+      '!<rootDir>/dist/src/client/client.js',
+      '!<rootDir>/dist/src/tools/**', // At the moment we do not cover the tools
+      '!<rootDir>/dist/index.js',
     ],
     coverageThreshold: {
       './src/client/types.ts': {

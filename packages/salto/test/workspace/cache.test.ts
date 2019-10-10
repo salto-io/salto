@@ -1,5 +1,5 @@
 import { ObjectType, ElemID } from 'adapter-api'
-import * as asyncFile from 'async-file'
+import * as fs from 'async-file'
 import { ParseResultFSCache } from '../../src/workspace/cache'
 import { SourceMap } from '../../src/parser/internal/types'
 
@@ -49,8 +49,8 @@ describe('Parse Result FS Cache', () => {
         filename: 'blabla/blurprint.bp',
         lastModified: 0,
       }, parseResult)
-      expect(asyncFile.createDirectory).toHaveBeenCalledWith(`${mockBaseDirPath}/blabla`)
-      expect(asyncFile.writeFile).toHaveBeenLastCalledWith(`${mockBaseDirPath}/blabla/blurprint.bpc`, mockSerializedBPC)
+      expect(fs.createDirectory).toHaveBeenCalledWith(`${mockBaseDirPath}/blabla`)
+      expect(fs.writeFile).toHaveBeenLastCalledWith(`${mockBaseDirPath}/blabla/blurprint.bpc`, mockSerializedBPC)
     })
   })
   describe('get', () => {
@@ -58,9 +58,9 @@ describe('Parse Result FS Cache', () => {
       await cache.get({ filename: 'blabla/blurprint.bp', lastModified: 0 })
       const parseResultFromCache = await cache.get({ filename: 'blabla/blurprint.bp', lastModified: 0 })
       const expectedCacheFileName = `${mockBaseDirPath}/blabla/blurprint.bpc`
-      expect(asyncFile.exists).toHaveBeenLastCalledWith(expectedCacheFileName)
-      expect(asyncFile.stat).toHaveBeenCalledWith(expectedCacheFileName)
-      expect(asyncFile.readFile).toHaveBeenCalledWith(expectedCacheFileName, 'utf8')
+      expect(fs.exists).toHaveBeenLastCalledWith(expectedCacheFileName)
+      expect(fs.stat).toHaveBeenCalledWith(expectedCacheFileName)
+      expect(fs.readFile).toHaveBeenCalledWith(expectedCacheFileName, 'utf8')
       expect(parseResultFromCache).toBeDefined()
       // hack to make compiler happy :(
       if (parseResultFromCache !== undefined) {
@@ -75,16 +75,16 @@ describe('Parse Result FS Cache', () => {
     it('doesnt to read the file if it does not exist', async () => {
       const parseResultFromCache = await cache.get({ filename: 'blabla/notexist.bp', lastModified: 0 })
       const expectedCacheFileName = `${mockBaseDirPath}/blabla/notexist.bpc`
-      expect(asyncFile.exists).toHaveBeenLastCalledWith(expectedCacheFileName)
-      expect(asyncFile.readFile).toHaveBeenCalledTimes(0)
+      expect(fs.exists).toHaveBeenLastCalledWith(expectedCacheFileName)
+      expect(fs.readFile).toHaveBeenCalledTimes(0)
       expect(parseResultFromCache).toBeUndefined()
     })
 
     it('doesnt to read the file if it bp timestamp is later', async () => {
       const parseResultFromCache = await cache.get({ filename: 'blabla/blurprint2.bp', lastModified: 4000 })
       const expectedCacheFileName = `${mockBaseDirPath}/blabla/blurprint2.bpc`
-      expect(asyncFile.exists).toHaveBeenLastCalledWith(expectedCacheFileName)
-      expect(asyncFile.readFile).toHaveBeenCalledTimes(0)
+      expect(fs.exists).toHaveBeenLastCalledWith(expectedCacheFileName)
+      expect(fs.readFile).toHaveBeenCalledTimes(0)
       expect(parseResultFromCache).toBeUndefined()
     })
   })

@@ -1,7 +1,7 @@
 const deepMerge = require('../../build_utils/deep_merge')
 
 module.exports = deepMerge(
-  require('../../jest.base.config.js')(),
+  require('../../jest.base.config.js'),
   {
     name: 'adapter-api',
     displayName: 'adapter-api',

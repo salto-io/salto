@@ -84,9 +84,7 @@ export class EditorWorkspace {
       }
       // After we ran the update we check if the operation resulted with no
       // errors. If so - we update the last valid state.
-      const bpErrors = _(this.parsedBlueprints).values().map(bp => bp.errors).flatten()
-        .value()
-      if (_.isEmpty(bpErrors) && !_.isEmpty(this.elements)) {
+      if (_.isEmpty(this.errors.parse) && !_.isEmpty(this.elements)) {
         this.lastValidCopy = _.clone(this.workspace)
       }
       // We recall this method to make sure no pending were added since

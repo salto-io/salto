@@ -1,4 +1,5 @@
 import * as vscode from 'vscode'
+import path from 'path'
 import { provideWorkspaceCompletionItems } from './salto/completions/provider'
 import {
   buildDefinitionsTree, getPositionContext,
@@ -68,7 +69,7 @@ export const createDefinitionsProvider = (
       )
       return provideWorkspaceDefinition(validWorkspace, context, currenToken).map(
         def => new vscode.Location(
-          vscode.Uri.file(def.filename),
+          vscode.Uri.file(path.resolve(workspace.baseDir, def.filename)),
           saltoPosToVsPos(def.range.start)
         )
       )
@@ -87,7 +88,7 @@ export const createReferenceProvider = (
     const currenToken = doc.getText(doc.getWordRangeAtPosition(position))
     return provideWorkspaceReferences(workspace, currenToken).map(
       def => new vscode.Location(
-        vscode.Uri.file(def.filename),
+        vscode.Uri.file(path.resolve(workspace.baseDir, def.filename)),
         saltoPosToVsPos(def.range.start)
       )
     )

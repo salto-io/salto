@@ -1,0 +1,4 @@
+salto_complex inst1 {
+	str = "str"
+	num = 
+}

@@ -7,6 +7,7 @@ describe('TEST', () => {
   const baseBPDir = `${__dirname}/../../../test/salto/BP`
   const extraBP = `${__dirname}/../../../test/salto/BP2/extra.bp`
   const errorBP = `${__dirname}/../../../test/salto/BP2/error.bp`
+  const parseErrorBp = `${__dirname}/../../../test/salto/BP2/parse_error.bp`
 
   it('should initiate a workspace', async () => {
     const workspace = await EditorWorkspace.load(baseBPDir, [], false)
@@ -79,12 +80,14 @@ describe('TEST', () => {
 
   it('should return last valid state if there are errors', async () => {
     const workspace = await EditorWorkspace.load(baseBPDir, [extraBP], false)
-    const errorContent = await fs.readFile(errorBP)
+    const errorContent = await fs.readFile(parseErrorBp)
     expect(workspace.elements).toBeDefined()
     expect(workspace.elements && workspace.elements.length).toBe(4)
     expect(_.keys(workspace.parsedBlueprints).length).toBe(3)
     const shouldBeCurrent = workspace.getValidCopy()
-    expect(shouldBeCurrent).toEqual(workspace)
+    if (!shouldBeCurrent) throw new Error('lastValid not defined')
+    expect(shouldBeCurrent.elements).toEqual(workspace.elements)
+    expect(shouldBeCurrent.errors).toEqual(workspace.errors)
     workspace.setBlueprints({ filename: extraBP, buffer: errorContent })
     await workspace.awaitAllUpdates()
     expect(workspace.elements).toBeDefined()

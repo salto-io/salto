@@ -32,7 +32,7 @@ export class EditorWorkspace {
     this.workspace = workspace
     this.isCopy = isCopy
     if (!workspace.errors.hasErrors()) {
-      this.lastValidCopy = _.cloneDeep(workspace)
+      this.lastValidCopy = _.clone(workspace)
     }
   }
 
@@ -41,6 +41,7 @@ export class EditorWorkspace {
   get errors(): Errors { return this.workspace.errors }
   get parsedBlueprints(): ParsedBlueprintMap { return this.workspace.parsedBlueprints }
   get sourceMap(): SourceMap { return this.workspace.sourceMap }
+  get baseDir(): string { return this.workspace.baseDir }
 
   private hasPendingUpdates(): boolean {
     return !(_.isEmpty(this.pendingSets) && _.isEmpty(this.pendingDeletes))
@@ -79,19 +80,18 @@ export class EditorWorkspace {
       if (!_.isEmpty(opBlueprints) && this.workspace) {
         this.runningSetOperation = this.workspace.setBlueprints(..._.values(opBlueprints))
         await this.runningSetOperation
+        this.runningSetOperation = undefined
       }
       // After we ran the update we check if the operation resulted with no
       // errors. If so - we update the last valid state.
-      if (!this.errors.hasErrors()) {
-        this.lastValidCopy = _.cloneDeep(this.workspace)
+      if (_.isEmpty(this.errors.parse) && !_.isEmpty(this.elements)) {
+        this.lastValidCopy = _.clone(this.workspace)
       }
       // We recall this method to make sure no pending were added since
       // we started. Returning the promise will make sure the caller
       // keeps on waiting until the queue is clear.
       return this.runAggregatedSetOperation()
     }
-    // We had nothing to do - so we clear the running flag and exit
-    this.runningSetOperation = undefined
     return undefined
   }
 
@@ -119,9 +119,6 @@ export class EditorWorkspace {
   }
 
   getValidCopy(): EditorWorkspace | undefined {
-    if (!this.errors.hasErrors()) {
-      return this
-    }
     return this.lastValidCopy ? new EditorWorkspace(this.lastValidCopy, true) : undefined
   }
 

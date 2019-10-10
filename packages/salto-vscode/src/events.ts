@@ -7,10 +7,9 @@ import { EditorWorkspace } from './salto/workspace'
 export const onDidChangeTextDocument = (
   event: vscode.TextDocumentChangeEvent,
   workspace: EditorWorkspace
-): Promise<void> => {
+): void => {
   const bp = { filename: event.document.fileName, buffer: event.document.getText() }
   workspace.setBlueprints(bp)
-  return workspace.awaitAllUpdates()
 }
 
 export const onFileDelete = (

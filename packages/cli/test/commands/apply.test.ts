@@ -1,36 +1,36 @@
 import wu from 'wu'
-import {
-  ObjectType, InstanceElement,
-} from 'adapter-api'
-import {
-  Workspace, Plan, PlanItem,
-} from 'salto'
-import { apply, plan, MockWriteStream } from '../mocks'
+import { workspace as ws, plan as pl } from 'salto'
+import { ObjectType, InstanceElement } from 'adapter-api'
+import { apply as mockApply, plan, MockWriteStream } from '../mocks'
 import { ApplyCommand } from '../../src/commands/apply'
 
-const mockApply = apply
 jest.mock('salto', () => ({
-  Workspace: {
-    load: jest.fn().mockImplementation((
-      _blueprintsDir: string,
-      blueprintsFiles: string[]
-    ) => {
-      if (blueprintsFiles && blueprintsFiles.length > 0) { throw new Error('blablabla') }
-    }),
+  workspace: {
+    Workspace: {
+      load: jest.fn().mockImplementation((
+        _blueprintsDir: string,
+        blueprintsFiles: string[]
+      ) => {
+        if (blueprintsFiles && blueprintsFiles.length > 0) { throw new Error('blablabla') }
+      }),
+    },
   },
-  apply: jest.fn().mockImplementation((
-    workspace: Workspace,
-    fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
-    shouldApply: (plan: Plan) => Promise<boolean>,
-    reportProgress: (action: PlanItem) => void,
-    force = false
-  ) =>
-  // Apply with blueprints will fail, doing this trick as we cannot reference vars, we get error:
-  // "The module factory of `jest.mock()` is not allowed to reference any
-  // out-of-scope variables."
-  // Notice that blueprints are ignored in mockApply.
-
-    mockApply(workspace, fillConfig, shouldApply, reportProgress, force)),
+  api: {
+    apply: jest.fn().mockImplementation(
+      // Apply with blueprints will fail, doing this trick as we cannot reference vars,
+      // we get error:
+      // "The module factory of `jest.mock()` is not allowed to reference any
+      // out-of-scope variables."
+      // Notice that blueprints are ignored in mockApply.
+      (
+        workspace: ws.Workspace,
+        fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
+        shouldApply: (plan: pl.Plan) => Promise<boolean>,
+        reportProgress: (action: pl.PlanItem) => void,
+        force = false
+      ) => mockApply(workspace, fillConfig, shouldApply, reportProgress, force),
+    ),
+  },
 }))
 
 describe('apply command', () => {
@@ -48,7 +48,7 @@ describe('apply command', () => {
 
     describe('should print progress', () => {
       it('should load worksapce', () => {
-        expect(Workspace.load).toHaveBeenCalled()
+        expect(ws.Workspace.load).toHaveBeenCalled()
       })
       it('should print progress upon update', async () => {
         wu((plan()).itemsByEvalOrder()).forEach(item => command.updateCurrentAction(item))

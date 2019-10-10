@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import wu from 'wu'
 
-import { WorkspaceParsedBlueprint as ParsedBlueprint } from 'salto'
+import { workspace as ws } from 'salto'
 import { EditorWorkspace } from './workspace'
 import { EditorRange } from './context'
 
@@ -12,7 +12,7 @@ export interface SaltoElemLocation {
 }
 
 // Get an array of all of the "definitions" that are stored in a sepecifi
-const getBlueprintLocations = (blueprint: ParsedBlueprint): SaltoElemLocation[] => {
+const getBlueprintLocations = (blueprint: ws.ParsedBlueprint): SaltoElemLocation[] => {
   // We want to transform the blueprint structure to a flattened def array
   // We start with [elementFullName ... elementFullName]
   const elementNames = wu(blueprint.sourceMap.keys()).toArray()

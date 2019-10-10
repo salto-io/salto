@@ -1,12 +1,20 @@
 import _ from 'lodash'
+import { types } from '@salto/lowerdash'
 import {
   Element, isObjectType, isInstanceElement, Type, InstanceElement, Field, PrimitiveTypes,
-  isPrimitiveType, Value,
+  isPrimitiveType, Value, ElemID,
 } from 'adapter-api'
 
-export class ValidationError extends Error {
-  constructor(msg: string) {
-    super(msg)
+export abstract class ValidationError extends types.Bean<Readonly<{
+  elemID: ElemID
+  error: string
+}>> {
+  get message(): string {
+    return `Error validating "${this.elemID.getFullName()}": ${this.error}`
+  }
+
+  toString(): string {
+    return this.message
   }
 }
 
@@ -21,15 +29,53 @@ const primitiveValidators = {
  * @param value
  * @param type
  */
-const validateAnnotations = (value: Value, type: Type): ValidationError[] => {
+const validateAnnotations = (elemID: ElemID, value: Value, type: Type): ValidationError[] => {
   if (isObjectType(type)) {
     return _.flatten(Object.keys(type.fields).map(
       // eslint-disable-next-line @typescript-eslint/no-use-before-define
-      k => validateAnnotationsValues(value[k], type.fields[k])
+      k => validateAnnotationsValues(elemID, value[k], type.fields[k])
     ))
   }
 
   return []
+}
+
+export class InvalidValueValidationError extends ValidationError {
+  readonly value: Value
+  readonly field: Field
+  readonly expectedValue: unknown
+
+  static formatExpectedValue(expectedValue: unknown): string {
+    return _.isArray(expectedValue)
+      ? `one of: ${(expectedValue as []).map(v => `"${v}"`).join(', ')}`
+      : `"${expectedValue}"`
+  }
+
+  constructor(
+    { elemID, value, field, expectedValue }:
+      { elemID: ElemID; value: Value; field: Field; expectedValue: unknown }
+  ) {
+    super({
+      elemID,
+      error: `Value "${value}" is not valid for field "${field.elemID.getFullName()}"; `
+        + `expected: ${InvalidValueValidationError.formatExpectedValue(expectedValue)}`,
+    })
+    this.value = value
+    this.field = field
+    this.expectedValue = expectedValue
+  }
+}
+
+export class MissingRequiredFieldValidationError extends ValidationError {
+  readonly field: Field
+
+  constructor({ elemID, field }: { elemID: ElemID; field: Field }) {
+    super({
+      elemID,
+      error: `Field ${field.name} is required but has no value`,
+    })
+    this.field = field
+  }
 }
 
 /**
@@ -37,7 +83,9 @@ const validateAnnotations = (value: Value, type: Type): ValidationError[] => {
  * @param value- the field value
  * @param field
  */
-const validateAnnotationsValues = (value: Value, field: Field): ValidationError[] => {
+const validateAnnotationsValues = (
+  elemID: ElemID, value: Value, field: Field,
+): ValidationError[] => {
   const validateRestrictionsValue = (val: Value):
     ValidationError[] => {
     const restrictionValues = field.annotations[Type.RESTRICTION]
@@ -60,10 +108,9 @@ const validateAnnotationsValues = (value: Value, field: Field): ValidationError[
 
     // The 'real' validation: is value is one of possibleValues
     if (!possibleValues.some(i => _.isEqual(i, val))) {
-      return [new ValidationError(
-        `Value ${val} doesn't valid for field ${field.elemID.getFullName()},
-            can accept only ${possibleValues}`
-      )]
+      return [
+        new InvalidValueValidationError({ elemID, value, field, expectedValue: possibleValues }),
+      ]
     }
 
     return []
@@ -71,7 +118,7 @@ const validateAnnotationsValues = (value: Value, field: Field): ValidationError[
 
   const validateRequiredValue = (): ValidationError[] =>
     (field.annotations[Type.REQUIRED] === true
-      ? [new ValidationError(`Field ${field.name} is required but has no value`)] : [])
+      ? [new MissingRequiredFieldValidationError({ elemID, field })] : [])
 
   // Checking _required annotation
   if (value === undefined) {
@@ -86,52 +133,61 @@ const validateAnnotationsValues = (value: Value, field: Field): ValidationError[
   // Apply validateAnnotations for each element in our values list
   if (field.isList) {
     return _.isArray(value)
-      ? _.flatten(value.map(v => validateAnnotations(v, field.type))) : []
+      ? _.flatten(value.map(v => validateAnnotations(elemID, v, field.type))) : []
   }
 
-  return validateAnnotations(value, field.type)
+  return validateAnnotations(elemID, value, field.type)
 }
 
-const validateValue = (value: Value, type: Type): ValidationError[] => {
+export class InvalidValueTypeValidationError extends ValidationError {
+  readonly value: Value
+  readonly type: Type
+
+  constructor({ elemID, value, type }: { elemID: ElemID; value: Value; type: Type }) {
+    super({
+      elemID,
+      error: `Invalid value type for ${type.elemID.getFullName()} : ${JSON.stringify(value)}`,
+    })
+    this.value = value
+    this.type = type
+  }
+}
+
+const validateValue = (elemID: ElemID, value: Value, type: Type): ValidationError[] => {
   if ((isPrimitiveType(type) && !primitiveValidators[type.primitive](value))
     || (isObjectType(type) && !_.isPlainObject(value))) {
-    return [new ValidationError(
-      `Invalid value type for ${type.elemID.getFullName()} : ${JSON.stringify(value)}`
-    )]
+    return [new InvalidValueTypeValidationError({ elemID, value, type })]
   }
 
   if (isObjectType(type)) {
     return _.flatten(Object.keys(value).filter(k => type.fields[k]).map(
       // eslint-disable-next-line @typescript-eslint/no-use-before-define
-      k => validateFieldValue(value[k], type.fields[k])
+      k => validateFieldValue(elemID, value[k], type.fields[k])
     ))
   }
 
   return []
 }
 
-const validateFieldValue = (value: Value, field: Field): ValidationError[] => {
+const validateFieldValue = (elemID: ElemID, value: Value, field: Field): ValidationError[] => {
   if (field.isList) {
     if (!_.isArray(value)) {
-      return [new ValidationError(
-        `Invalid value type for ${field.elemID.getFullName()}: expected list and got
-      ${JSON.stringify(value)} for field ${field.name}`
-      )]
+      return [new InvalidValueValidationError({ elemID, value, field, expectedValue: 'a list' })]
     }
-    return _.flatten(value.map(v => validateValue(v, field.type)))
+    return _.flatten(value.map(v => validateValue(elemID, v, field.type)))
   }
-  return validateValue(value, field.type)
+  return validateValue(elemID, value, field.type)
 }
 
 const validateField = (field: Field): ValidationError[] =>
   _.flatten(Object.keys(field.annotations)
     .filter(k => field.type.annotationTypes[k])
-    .map(k => validateValue(field.annotations[k], field.type.annotationTypes[k])))
+    .map(k => validateValue(field.elemID, field.annotations[k], field.type.annotationTypes[k])))
 
 const validateType = (element: Type): ValidationError[] => {
   const errors = _.flatten(Object.keys(element.annotations)
     .filter(k => element.annotationTypes[k]).map(
-      k => validateValue(element.annotations[k], element.annotationTypes[k])
+      k => validateValue(element.elemID, element.annotations[k], element.annotationTypes[k])
     ))
 
   if (isObjectType(element)) {
@@ -146,14 +202,12 @@ const instanceElementValidators = [
 ]
 
 const validateInstanceElements = (element: InstanceElement): ValidationError[] =>
-  _.flatten(instanceElementValidators.map(v => v(element.value, element.type)))
+  _.flatten(instanceElementValidators.map(v => v(element.elemID, element.value, element.type)))
 
-const validateElements = (elements: Element[]): ValidationError[] =>
+export const validateElements = (elements: Element[]): ValidationError[] =>
   _.flatten(elements.map(element => {
     if (isInstanceElement(element)) {
       return validateInstanceElements(element)
     }
     return validateType(element as Type)
   }))
-
-export default validateElements

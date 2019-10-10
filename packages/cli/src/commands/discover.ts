@@ -1,17 +1,17 @@
-import { discover, Workspace } from 'salto'
+import { api, workspace as ws } from 'salto'
 import { createCommandBuilder } from '../builder'
 import { ParsedCliInput, CliCommand, CliOutput } from '../types'
 import { getConfigFromUser } from '../callbacks'
 
 export const command = (workspaceDir: string, additionalBlueprints: string[]): CliCommand => ({
   async execute(): Promise<void> {
-    const workspace = await Workspace.load(workspaceDir, additionalBlueprints)
+    const workspace = await ws.Workspace.load(workspaceDir, additionalBlueprints)
     if (workspace.hasErrors()) {
       throw new Error(
         `Failed to load workspace, errors:\n${workspace.errors.strings().join('\n')}`
       )
     }
-    await discover(workspace, getConfigFromUser)
+    await api.discover(workspace, getConfigFromUser)
   },
 })
 

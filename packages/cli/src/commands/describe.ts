@@ -1,4 +1,4 @@
-import { Workspace, describeElement } from 'salto'
+import { workspace as ws, api } from 'salto'
 import { createCommandBuilder } from '../builder'
 import { ParsedCliInput, CliCommand, CliOutput } from '../types'
 import { formatSearchResults } from '../formatter'
@@ -10,8 +10,8 @@ export const command = (
   { stdout }: CliOutput
 ): CliCommand => ({
   async execute(): Promise<void> {
-    const workspace: Workspace = await Workspace.load(blueprintsDir, blueprints)
-    const searchResult = await describeElement(workspace, words)
+    const workspace: ws.Workspace = await ws.Workspace.load(blueprintsDir, blueprints)
+    const searchResult = await api.describeElement(workspace, words)
     stdout.write(formatSearchResults(searchResult))
   },
 })

@@ -8,9 +8,7 @@ import {
 import {
   InstanceElement, ObjectType, getChangeElement, Change,
 } from 'adapter-api'
-import {
-  Plan, STATEPATH,
-} from 'salto'
+import { plan as pl, state } from 'salto'
 import wu from 'wu'
 
 import { CliOutput } from '../src/types'
@@ -26,8 +24,8 @@ const mockGetConfigType = (): InstanceElement => adapterConfigs.salesforce()
 
 let cliOutput: CliOutput
 
-let lastPlan: Plan
-const mockShouldApply = (p: Plan): boolean => {
+let lastPlan: pl.Plan
+const mockShouldApply = (p: pl.Plan): boolean => {
   lastPlan = p
   return true
 }
@@ -89,7 +87,7 @@ describe('commands e2e', () => {
   it('should run discover and create the state bp file', async () => {
     await discover(discoverOutputDir, []).execute()
     expect(await pathExists(discoverOutputDir)).toBe(true)
-    expect(await pathExists(STATEPATH)).toBe(true)
+    expect(await pathExists(state.STATEPATH)).toBe(true)
   })
 
   it('should run plan on discover output and detect no changes', async () => {

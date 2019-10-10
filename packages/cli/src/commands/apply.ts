@@ -1,5 +1,5 @@
 import * as sourceMapSupport from 'source-map-support'
-import { apply, PlanItem, Workspace } from 'salto'
+import { api, plan as pl, workspace as ws } from 'salto'
 import { createCommandBuilder } from '../builder'
 import {
   CliCommand, CliOutput, ParsedCliInput, WriteStream,
@@ -15,7 +15,7 @@ const CURRENT_ACTION_POLL_INTERVAL = 5000
 export class ApplyCommand implements CliCommand {
   readonly stdout: WriteStream
   readonly stderr: WriteStream
-  private currentAction: PlanItem | undefined
+  private currentAction: pl.PlanItem | undefined
   private currentActionStartTime: Date | undefined
   private currentActionPollerID: ReturnType<typeof setTimeout> | undefined
 
@@ -46,7 +46,7 @@ export class ApplyCommand implements CliCommand {
     }
   }
 
-  updateCurrentAction(action: PlanItem): void {
+  updateCurrentAction(action: pl.PlanItem): void {
     this.endCurrentAction()
     this.currentAction = action
     this.currentActionStartTime = new Date()
@@ -56,11 +56,13 @@ export class ApplyCommand implements CliCommand {
 
   async execute(): Promise<void> {
     try {
-      const workspace: Workspace = await Workspace.load(this.blueprintsDir, this.blueprintFiles)
-      await apply(workspace,
+      const workspace: ws.Workspace = await ws.Workspace.load(
+        this.blueprintsDir, this.blueprintFiles,
+      )
+      await api.apply(workspace,
         getConfigFromUser,
         shouldApply({ stdout: this.stdout, stderr: this.stderr }),
-        (action: PlanItem) => this.updateCurrentAction(action), this.force)
+        (action: pl.PlanItem) => this.updateCurrentAction(action), this.force)
       this.endCurrentAction()
     } catch (e) {
       this.endCurrentAction()

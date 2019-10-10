@@ -1,12 +1,12 @@
 import asyncfile from 'async-file'
-import { deleteFromCsvFile, Blueprint, readCsv } from 'salto'
+import { api, blueprints as sbp, csv } from 'salto'
 import { createCommandBuilder } from '../builder'
 import { ParsedCliInput, CliCommand, CliOutput } from '../types'
 import * as bf from '../filters/blueprints'
 import { getConfigFromUser } from '../callbacks'
 import Prompts from '../prompts'
 
-export const command = (blueprints: Blueprint[],
+export const command = (blueprints: sbp.Blueprint[],
   inputPath: string,
   typeName: string,
   { stdout, stderr }: CliOutput): CliCommand => ({
@@ -15,8 +15,8 @@ export const command = (blueprints: Blueprint[],
       stderr.write(Prompts.COULD_NOT_FIND_FILE)
       return
     }
-    const records = await readCsv(inputPath)
-    await deleteFromCsvFile(
+    const records = await csv.readCsv(inputPath)
+    await api.deleteFromCsvFile(
       typeName,
       records,
       blueprints,

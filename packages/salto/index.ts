@@ -1,18 +1,76 @@
-export { default as validateElements, ValidationError } from './src/core/validator'
-export {
-  loadBlueprints, parseBlueprints, ParsedBlueprint, Blueprint, dumpBlueprints,
-} from './src/core/blueprint'
-export { mergeElements } from './src/core/merger'
-export { Plan, PlanItem, DetailedChange } from './src/core/plan'
-export { dumpCsv, readCsv } from './src/core/csv'
-export * from './src/api'
-export { STATEPATH } from './src/state/state'
-export { FoundSearchResult, SearchResult } from './src/core/search'
-// ParsedBlueprint and Blueprint are exported with an alias to avoid
-// conflict with the Blueprint and ParsedBlueprint from ./src/core/blueprint
-// which are still used. See: SALTO-205
-export {
-  Workspace, Blueprint as WorkspaceBlueprint, Errors,
-  ParsedBlueprint as WorkspaceParsedBlueprint, ParsedBlueprintMap,
-} from './src/workspace/workspace'
-export { SourceMap } from './src/parser/parse'
+// TODO: namespaces will not be needed when the imported modules will
+// only export the required members and keep the rest at an "internals" subdirectory
+/* eslint-disable @typescript-eslint/no-namespace */
+
+import * as v from './src/core/validator'
+import * as bp from './src/core/blueprint'
+import * as ws from './src/workspace/workspace'
+import * as p from './src/core/plan'
+import * as m from './src/core/merger'
+import * as ap from './src/api'
+import * as cs from './src/core/csv'
+import * as s from './src/state/state'
+import * as srch from './src/core/search'
+import * as pa from './src/parser/parse'
+
+export namespace validator {
+  export type ValidationError = v.ValidationError
+  export type InvalidValueTypeValidationError = v.InvalidValueTypeValidationError
+  export type InvalidValueValidationError = v.InvalidValueValidationError
+  export type MissingRequiredFieldValidationError = v.MissingRequiredFieldValidationError
+  export const {
+    validateElements,
+    ValidationError,
+    InvalidValueTypeValidationError, InvalidValueValidationError,
+    MissingRequiredFieldValidationError,
+  } = v
+}
+
+export namespace merger {
+  export const { mergeElements } = m
+}
+
+// TODO: api is incosistent with the rest of the namespaces.
+// Either move stuff like api.plan to plan or vice versa.
+export const api = ap
+
+export namespace csv {
+  export const { dumpCsv, readCsv } = cs
+}
+
+export namespace state {
+  export const { STATEPATH } = s
+}
+
+export namespace parser {
+  export type SourceMap = pa.SourceMap
+  export const { parse } = pa
+}
+
+export namespace blueprints {
+  export type ParsedBlueprint = bp.ParsedBlueprint
+  export type Blueprint = bp.Blueprint
+
+  export const { loadBlueprints, parseBlueprints, dumpBlueprints } = bp
+}
+
+export namespace workspace {
+  export type Blueprint = ws.Blueprint
+  export type ParsedBlueprint = ws.ParsedBlueprint
+  export type Workspace = ws.Workspace
+  export type Errors = ws.Errors
+  export type ParsedBlueprintMap = ws.ParsedBlueprintMap
+
+  export const { Workspace, Errors } = ws
+}
+
+export namespace plan {
+  export type PlanItem = p.PlanItem
+  export type Plan = p.Plan
+  export type DetailedChange = p.DetailedChange
+}
+
+export namespace search {
+  export type FoundSearchResult = srch.FoundSearchResult
+  export type SearchResult = srch.SearchResult
+}

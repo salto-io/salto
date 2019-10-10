@@ -5,9 +5,7 @@ import {
   isType, Element, Type, isInstanceElement, Values, Change, Value, getChangeElement, ElemID,
   isObjectType, isField, isPrimitiveType, Field, PrimitiveTypes,
 } from 'adapter-api'
-import {
-  Plan, PlanItem, FoundSearchResult, SearchResult, DetailedChange,
-} from 'salto'
+import { plan as pl, search as sr } from 'salto'
 import Prompts from './prompts'
 
 
@@ -25,7 +23,7 @@ export const seperator = (): string => `\n${'-'.repeat(78)}\n`
 
 const fullName = (change: Change): string => getChangeElement(change).elemID.getFullName()
 
-const planItemName = (step: PlanItem): string => fullName(step.parent())
+const planItemName = (step: pl.PlanItem): string => fullName(step.parent())
 
 const indent = (text: string, level: number): string => {
   const indentText = _.repeat('  ', level)
@@ -80,7 +78,7 @@ const formatValue = (value: Element | Value): string => {
   return JSON.stringify(value)
 }
 
-const formatChangeData = (change: DetailedChange): string => {
+const formatChangeData = (change: pl.DetailedChange): string => {
   if (change.action === 'modify') {
     if (change.data.before === undefined || change.data.after === undefined) {
       // This is a dummy change created just so we print a "title" for a group of changes
@@ -91,7 +89,7 @@ const formatChangeData = (change: DetailedChange): string => {
   return formatValue(_.get(change.data, 'before', _.get(change.data, 'after')))
 }
 
-export const formatChange = (change: DetailedChange): string => {
+export const formatChange = (change: pl.DetailedChange): string => {
   const modifier = Prompts.MODIFIERS[change.action]
   const id = change.id.nameParts.length === 1
     ? change.id.getFullName()
@@ -99,7 +97,7 @@ export const formatChange = (change: DetailedChange): string => {
   return indent(`${modifier} ${id}: ${formatChangeData(change)}`, change.id.nameParts.length)
 }
 
-const createCountPlanItemTypesOutput = (plan: Plan): string => {
+const createCountPlanItemTypesOutput = (plan: pl.Plan): string => {
   const items = wu(plan.itemsByEvalOrder())
     .map(item => ({ action: item.parent().action, name: planItemName(item) }))
     .unique().toArray()
@@ -111,15 +109,15 @@ const createCountPlanItemTypesOutput = (plan: Plan): string => {
   )
 }
 
-const createPlanStepsOutput = (plan: Plan): string => {
-  const addMissingEmptyChanges = (changes: DetailedChange[]): DetailedChange[] => {
-    const emptyChange = (id: ElemID): DetailedChange => ({
+const createPlanStepsOutput = (plan: pl.Plan): string => {
+  const addMissingEmptyChanges = (changes: pl.DetailedChange[]): pl.DetailedChange[] => {
+    const emptyChange = (id: ElemID): pl.DetailedChange => ({
       action: 'modify',
       data: { before: undefined, after: undefined },
       id,
     })
 
-    const createMissingChanges = (id: ElemID, existingIds: Set<string>): DetailedChange[] => {
+    const createMissingChanges = (id: ElemID, existingIds: Set<string>): pl.DetailedChange[] => {
       const parentId = id.createParentID()
       if (parentId.nameParts.length === 0 || existingIds.has(parentId.getFullName())) {
         return []
@@ -160,7 +158,7 @@ const getElapsedTime = (start: Date): number => Math.ceil(
   (new Date().getTime() - start.getTime()) / 1000,
 )
 
-export const createPlanOutput = (plan: Plan): string => {
+export const createPlanOutput = (plan: pl.Plan): string => {
   if (_.isEmpty(plan)) {
     return [
       emptyLine(),
@@ -183,9 +181,9 @@ export const createPlanOutput = (plan: Plan): string => {
   ].join('\n')
 }
 
-export const formatSearchResults = (result: SearchResult): string => {
+export const formatSearchResults = (result: sr.SearchResult): string => {
   const notifyDescribeNoMatch = (): string => warn(Prompts.DESCRIBE_NOT_FOUND)
-  const notifyDescribeNearMatch = (searchResult: FoundSearchResult): string => [
+  const notifyDescribeNearMatch = (searchResult: sr.FoundSearchResult): string => [
     header(Prompts.DESCRIBE_NEAR_MATCH),
     emptyLine(),
     subHeader(`\t${Prompts.DID_YOU_MEAN} ${chalk.bold(searchResult.key)}?`),
@@ -207,14 +205,14 @@ export const formatSearchResults = (result: SearchResult): string => {
   return [title, description, elementHcl].join('\n')
 }
 
-export const createItemDoneOutput = (item: PlanItem, startTime: Date): string => {
+export const createItemDoneOutput = (item: pl.PlanItem, startTime: Date): string => {
   const elapsed = getElapsedTime(startTime)
   return `${planItemName(item)}: `
         + `${Prompts.ENDACTION[item.parent().action]} `
         + `completed after ${elapsed}s`
 }
 
-export const createActionStartOutput = (action: PlanItem): string => {
+export const createActionStartOutput = (action: pl.PlanItem): string => {
   const output = [
     emptyLine(),
     body(
@@ -224,7 +222,7 @@ export const createActionStartOutput = (action: PlanItem): string => {
   return output.join('\n')
 }
 
-export const createActionInProgressOutput = (action: PlanItem, start: Date): string => {
+export const createActionInProgressOutput = (action: pl.PlanItem, start: Date): string => {
   const elapsed = getElapsedTime(start)
   const elapsedRound = Math.ceil((elapsed - elapsed) % 5)
   return body(`${planItemName(action)}: Still ${

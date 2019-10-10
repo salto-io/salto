@@ -1,15 +1,18 @@
 import {
-  discover as mockDiscover,
-  Workspace as mockWorksapce,
+  api, workspace as ws,
 } from 'salto'
 import { command } from '../../src/commands/discover'
 
 jest.mock('salto', () => ({
-  discover: jest.fn().mockImplementation(() => Promise.resolve()),
-  Workspace: {
-    load: jest.fn().mockImplementation(
-      baseDir => ({ baseDir, hasErrors: () => false }),
-    ),
+  api: {
+    discover: jest.fn().mockImplementation(() => Promise.resolve()),
+  },
+  workspace: {
+    Workspace: {
+      load: jest.fn().mockImplementation(
+        baseDir => ({ baseDir, hasErrors: () => false }),
+      ),
+    },
   },
 }))
 
@@ -21,14 +24,14 @@ describe('discover command', () => {
       await command(workspaceDir, additaionFiles).execute()
     })
     it('should run discover with workspace loaded from provided directory', () => {
-      const discoverCalls = (mockDiscover as jest.Mock).mock.calls
+      const discoverCalls = (api.discover as jest.Mock).mock.calls
       expect(discoverCalls).toHaveLength(1)
       expect(discoverCalls[0][0].baseDir).toEqual(workspaceDir)
     })
   })
   describe('with errored workspace', () => {
     beforeEach(() => {
-      mockWorksapce.load = jest.fn().mockImplementationOnce(
+      ws.Workspace.load = jest.fn().mockImplementationOnce(
         baseDir => ({
           hasErrors: () => true,
           baseDir,

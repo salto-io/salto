@@ -1,34 +1,29 @@
 import _ from 'lodash'
 import path from 'path'
-
-import {
-  Workspace, WorkspaceBlueprint as Blueprint,
-  WorkspaceParsedBlueprint as ParsedBlueprint, ParsedBlueprintMap,
-  SourceMap, Errors,
-} from 'salto'
+import { workspace as ws, parser } from 'salto'
 import { Element } from 'adapter-api'
 
 export class EditorWorkspace {
-  private workspace: Workspace
+  private workspace: ws.Workspace
   // Indicates that the workspace is not the active workspace
   // (which means that the active workspace contains errors)
   // attempting to modify a copy of a workspace will result in an error
   private isCopy: boolean
   private runningSetOperation?: Promise<void>
-  private pendingSets: {[key: string]: Blueprint} = {}
+  private pendingSets: {[key: string]: ws.Blueprint} = {}
   private pendingDeletes: Set<string> = new Set<string>()
-  private lastValidCopy? : Workspace
+  private lastValidCopy? : ws.Workspace
 
   static async load(
     blueprintsDir: string,
     blueprintsFiles: string[],
     useCache = true
   ): Promise<EditorWorkspace> {
-    const workspace = await Workspace.load(blueprintsDir, blueprintsFiles, useCache)
+    const workspace = await ws.Workspace.load(blueprintsDir, blueprintsFiles, useCache)
     return new EditorWorkspace(workspace)
   }
 
-  constructor(workspace: Workspace, isCopy = false) {
+  constructor(workspace: ws.Workspace, isCopy = false) {
     this.workspace = workspace
     this.isCopy = isCopy
     if (!workspace.errors.hasErrors()) {
@@ -38,16 +33,16 @@ export class EditorWorkspace {
 
   // Accessors into workspace
   get elements(): ReadonlyArray<Element> { return this.workspace.elements }
-  get errors(): Errors { return this.workspace.errors }
-  get parsedBlueprints(): ParsedBlueprintMap { return this.workspace.parsedBlueprints }
-  get sourceMap(): SourceMap { return this.workspace.sourceMap }
+  get errors(): ws.Errors { return this.workspace.errors }
+  get parsedBlueprints(): ws.ParsedBlueprintMap { return this.workspace.parsedBlueprints }
+  get sourceMap(): parser.SourceMap { return this.workspace.sourceMap }
   get baseDir(): string { return this.workspace.baseDir }
 
   private hasPendingUpdates(): boolean {
     return !(_.isEmpty(this.pendingSets) && _.isEmpty(this.pendingDeletes))
   }
 
-  private addPendingBlueprints(blueprints: Blueprint[]): void {
+  private addPendingBlueprints(blueprints: ws.Blueprint[]): void {
     _.assignWith(this.pendingSets, _.keyBy(blueprints, 'filename'))
   }
 
@@ -99,11 +94,11 @@ export class EditorWorkspace {
     return path.relative(this.workspace.baseDir, filename)
   }
 
-  getParsedBlueprint(filename: string): ParsedBlueprint {
+  getParsedBlueprint(filename: string): ws.ParsedBlueprint {
     return this.parsedBlueprints[this.getWorkspaceName(filename)]
   }
 
-  setBlueprints(...blueprints: Blueprint[]): void {
+  setBlueprints(...blueprints: ws.Blueprint[]): void {
     this.addPendingBlueprints(
       blueprints.map(bp => ({
         ...bp,

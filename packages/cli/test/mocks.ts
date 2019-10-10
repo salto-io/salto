@@ -3,9 +3,7 @@ import wu from 'wu'
 import {
   Type, BuiltinTypes, ElemID, Change, ObjectType, Field, InstanceElement, Element, getChangeElement,
 } from 'adapter-api'
-import {
-  Plan, PlanItem, SearchResult, Blueprint, DetailedChange, Workspace,
-} from 'salto'
+import { plan as pl, search as sr, workspace as ws } from 'salto'
 import { GroupedNodeMap } from '@salto/dag'
 import { YargsCommandBuilder, allBuilders } from '../src/builder'
 import realCli from '../src/cli'
@@ -154,7 +152,7 @@ export const detailedChange = (
   action: 'add'|'modify'|'remove', path: string[],
   /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
   before: any, after: any,
-): DetailedChange => {
+): pl.DetailedChange => {
   const id = new ElemID('salesforce', ...path)
   if (action === 'add') {
     return { action, id, data: { after } }
@@ -165,7 +163,7 @@ export const detailedChange = (
   return { action, id, data: { before, after } }
 }
 
-export const plan = (): Plan => {
+export const plan = (): pl.Plan => {
   const change = (action: 'add'|'modify'|'remove', ...path: string[]): Change => {
     const elemID = new ElemID('salesforce', ...path)
     if (action === 'add') {
@@ -182,8 +180,8 @@ export const plan = (): Plan => {
   const toPlanItem = (
     parent: Change,
     subChanges: Change[],
-    detailed: DetailedChange[]
-  ): PlanItem => ({
+    detailed: pl.DetailedChange[]
+  ): pl.PlanItem => ({
     groupKey: getChangeElement(parent).elemID.getFullName(),
     items: new Map<string, Change>(
       [parent, ...subChanges].map(c => [getChangeElement(c).elemID.getFullName(), c])
@@ -248,25 +246,25 @@ export const plan = (): Plan => {
   result.addNode(_.uniqueId('instance'), [], instancePlanItem)
 
   Object.assign(result, {
-    itemsByEvalOrder(): Iterable<PlanItem> {
+    itemsByEvalOrder(): Iterable<pl.PlanItem> {
       return [leadPlanItem, accountPlanItem, instancePlanItem]
     },
-    getItem(id: string): PlanItem {
+    getItem(id: string): pl.PlanItem {
       if (id.startsWith('lead')) return leadPlanItem
       return id.startsWith('account') ? accountPlanItem : instancePlanItem
     },
   })
 
-  return result as Plan
+  return result as pl.Plan
 }
 
 export const apply = async (
-  _workspace: Workspace,
+  _workspace: ws.Workspace,
   _fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
-  shouldApply: (plan: Plan) => Promise<boolean>,
-  reportProgress: (action: PlanItem) => void,
+  shouldApply: (plan: pl.Plan) => Promise<boolean>,
+  reportProgress: (action: pl.PlanItem) => void,
   force = false
-): Promise<Plan> => {
+): Promise<pl.Plan> => {
   const changes = await plan()
   if (force || await shouldApply(changes)) {
     wu(changes.itemsByEvalOrder()).forEach(change => {
@@ -277,15 +275,15 @@ export const apply = async (
   return changes
 }
 
-export const describe = async (_searchWords: string[], _blueprints?: Blueprint[]):
-  Promise<SearchResult> =>
+export const describe = async (_searchWords: string[], _blueprints?: ws.Blueprint[]):
+  Promise<sr.SearchResult> =>
   ({
     key: 'salto_office',
     element: elements()[2],
     isGuess: false,
   })
 
-export const exportToCsv = async (_typeId: string, _blueprints: Blueprint[],
+export const exportToCsv = async (_typeId: string, _blueprints: ws.Blueprint[],
   _fillConfig: (configType: ObjectType) => Promise<InstanceElement>):
   Promise<AsyncIterable<InstanceElement[]>> => (
   async function *mockIterator(): AsyncIterable<InstanceElement[]> {

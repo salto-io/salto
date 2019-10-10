@@ -1,5 +1,5 @@
 import yargs from 'yargs'
-import { Blueprint, loadBlueprints } from 'salto'
+import { blueprints as sbp } from 'salto'
 import { ParsedCliInput } from '../types'
 import { ParserFilter, ParsedCliInputFilter } from '../filter'
 
@@ -8,7 +8,7 @@ export interface Args {
   'blueprints-dir': string
 }
 
-export type BlueprintsParsedCliInput = ParsedCliInput<Args> & { blueprints: Blueprint[] }
+export type BlueprintsParsedCliInput = ParsedCliInput<Args> & { blueprints: sbp.Blueprint[] }
 
 type BlueprintsFilter = ParserFilter<Args> & ParsedCliInputFilter<Args, BlueprintsParsedCliInput>
 
@@ -36,7 +36,7 @@ export const optionalFilter: BlueprintsFilter = {
 
   async transformParsedCliInput(input: ParsedCliInput<Args>): Promise<BlueprintsParsedCliInput> {
     const args = input.args as yargs.Arguments<Args>
-    const blueprints = await loadBlueprints(args.blueprint || [], args['blueprints-dir'])
+    const blueprints = await sbp.loadBlueprints(args.blueprint || [], args['blueprints-dir'])
     return Object.assign(input, { blueprints })
   },
 }

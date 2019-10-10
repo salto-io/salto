@@ -1,4 +1,4 @@
-import * as saltoImp from 'salto'
+import { csv, api } from 'salto'
 import { Value } from 'adapter-api'
 import { getConfigFromUser } from '../../src/callbacks'
 import { MockWriteStream, importFromCsvFile as mockImportFromCsv } from '../mocks'
@@ -17,8 +17,8 @@ let readCsvSpy: jest.Mock<unknown>
 describe('import command', () => {
   it('should run import successfully if given a correct path to a real CSV file', async () => {
     mockExistsReturn = Promise.resolve(true)
-    readCsvSpy = jest.spyOn(saltoImp, 'readCsv').mockImplementation(() => Promise.resolve(testCsvMockReturnValues))
-    importFromCsvSpy = jest.spyOn(saltoImp, 'importFromCsvFile').mockImplementation(() => mockImportFromCsv())
+    readCsvSpy = jest.spyOn(csv, 'readCsv').mockImplementation(() => Promise.resolve(testCsvMockReturnValues))
+    importFromCsvSpy = jest.spyOn(api, 'importFromCsvFile').mockImplementation(() => mockImportFromCsv())
     const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
     await command([], 'mockPath', 'mockName', cliOutput).execute()
     expect(readCsvSpy.mock.calls[0][0]).toBe('mockPath')

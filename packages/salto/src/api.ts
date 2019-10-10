@@ -15,7 +15,7 @@ import { Blueprint, getAllElements } from './core/blueprint'
 import State from './state/state'
 import { findElement, SearchResult } from './core/search'
 import { mergeElements } from './core/merger'
-import validateElements from './core/validator'
+import { validateElements } from './core/validator'
 import { Workspace } from './workspace/workspace'
 import { discoverChanges } from './core/discover'
 

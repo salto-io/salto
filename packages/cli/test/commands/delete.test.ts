@@ -17,8 +17,8 @@ let readCsvSpy: jest.Mock<unknown>
 describe('delete command', () => {
   it('should run delete successfully if CSV file is found', async () => {
     mockExistsReturn = Promise.resolve(true)
-    readCsvSpy = jest.spyOn(saltoImp, 'readCsv').mockImplementation(() => Promise.resolve(testCsvMockReturnValues))
-    deleteFromCsvSpy = jest.spyOn(saltoImp, 'deleteFromCsvFile').mockImplementation(() => mockDeleteFromCsv())
+    readCsvSpy = jest.spyOn(saltoImp.csv, 'readCsv').mockImplementation(() => Promise.resolve(testCsvMockReturnValues))
+    deleteFromCsvSpy = jest.spyOn(saltoImp.api, 'deleteFromCsvFile').mockImplementation(() => mockDeleteFromCsv())
     const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
     await command([], 'mockPath', 'mockName', cliOutput).execute()
     expect(readCsvSpy.mock.calls[0][0]).toBe('mockPath')

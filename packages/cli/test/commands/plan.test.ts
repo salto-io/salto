@@ -1,13 +1,11 @@
-import { Workspace } from 'salto'
+import { workspace as ws } from 'salto'
 import { command } from '../../src/commands/plan'
 import { plan, MockWriteStream } from '../mocks'
 
 const mockPlan = plan
 jest.mock('salto', () => ({
-  plan: jest.fn().mockImplementation(() => mockPlan()),
-  Workspace: {
-    load: jest.fn(),
-  },
+  api: { plan: jest.fn().mockImplementation(() => mockPlan()) },
+  workspace: { Workspace: { load: jest.fn() } },
 }))
 
 describe('plan command', () => {
@@ -19,7 +17,7 @@ describe('plan command', () => {
   })
 
   it('should load the workspace', () => {
-    expect(Workspace.load).toHaveBeenCalled()
+    expect(ws.Workspace.load).toHaveBeenCalled()
   })
 
   it('should print refresh', () => {

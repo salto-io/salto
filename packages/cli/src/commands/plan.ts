@@ -1,4 +1,4 @@
-import { plan, Workspace } from 'salto'
+import { api, workspace as ws } from 'salto'
 import { createCommandBuilder } from '../builder'
 import { ParsedCliInput, CliCommand, CliOutput } from '../types'
 import { createPlanOutput } from '../formatter'
@@ -9,9 +9,9 @@ export const command = (
   { stdout }: CliOutput
 ): CliCommand => ({
   async execute(): Promise<void> {
-    const workspace: Workspace = await Workspace.load(workingDir, blueprintFiles)
+    const workspace: ws.Workspace = await ws.Workspace.load(workingDir, blueprintFiles)
     // TODO: inline commands.plan here
-    stdout.write(createPlanOutput(await plan(workspace)))
+    stdout.write(createPlanOutput(await api.plan(workspace)))
   },
 })
 

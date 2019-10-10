@@ -1,4 +1,4 @@
-import * as saltoImp from 'salto'
+import { blueprints as sbp } from 'salto'
 import { createCommandBuilder, YargsCommandBuilder } from '../../src/builder'
 import * as bf from '../../src/filters/blueprints'
 import * as mocks from '../mocks'
@@ -33,11 +33,11 @@ describe('blueprint filter', () => {
       args,
     })
 
-  const testBlueprintArray: saltoImp.Blueprint[] = []
+  const testBlueprintArray: sbp.Blueprint[] = []
   let blueprintsLoader: jest.MockInstance<unknown>
 
   beforeEach(() => {
-    blueprintsLoader = jest.spyOn(saltoImp, 'loadBlueprints').mockImplementation(() => Promise.resolve(testBlueprintArray))
+    blueprintsLoader = jest.spyOn(sbp, 'loadBlueprints').mockImplementation(() => Promise.resolve(testBlueprintArray))
   })
 
   describe('yargs configuration', () => {

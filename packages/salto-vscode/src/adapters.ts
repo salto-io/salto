@@ -2,6 +2,7 @@ import * as vscode from 'vscode'
 import { EditorPosition, PositionContext } from './salto/context'
 import { SaltoCompletion } from './salto/completions/provider'
 import { createSaltoSymbol, SaltoSymbolKind } from './salto/symbols'
+import { SaltoDiagnostic } from './salto/diagnostics'
 
 export const saltoPosToVsPos = (
   pos: EditorPosition
@@ -60,3 +61,15 @@ export const buildVSCompletionItems = (
     return item
   })
 )
+
+export const buildVSDiagnostics = (
+  diag: SaltoDiagnostic[]
+): vscode.Diagnostic[] => diag.map(d => ({
+    message: d.msg,
+    severity: vscode.DiagnosticSeverity.Error,
+    range: new vscode.Range(
+      saltoPosToVsPos(d.range.start),
+      saltoPosToVsPos(d.range.end)
+    ),
+  }
+))

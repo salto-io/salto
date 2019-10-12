@@ -1,6 +1,6 @@
 import * as vscode from 'vscode'
 import { EditorWorkspace } from './salto/workspace'
-import { onDidChangeTextDocument, onFileCreate, onFileDelete } from './events'
+import { onDidChangeTextDocument, onFileCreate, onFileDelete, reportErrorsEvent } from './events'
 import {
   createCompletionsProvider, createDefinitionsProvider, createReferenceProvider,
   createDocumentSymbolsProvider,
@@ -48,6 +48,9 @@ export const activate = async (context: vscode.ExtensionContext): Promise<void> 
       symbolsProvider,
       vscode.workspace.onDidChangeTextDocument(
         e => onDidChangeTextDocument(e, workspace)
+      ),
+      vscode.workspace.onDidChangeTextDocument(
+        async(e) => await reportErrorsEvent(e, workspace)
       )
     )
 

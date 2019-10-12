@@ -42,11 +42,11 @@ const mergeInstanceDefinitions = (
     key => new DuplicateInstanceKeyError({ elemID, key })
   ) : {
     merged: instanceDefs[0].value,
-    errors: []
+    errors: [],
   }
 
   const defaults = buildDefaults(type)
-  const valueWithDefault = !_.isEmpty(defaults) 
+  const valueWithDefault = !_.isEmpty(defaults)
     ? _.merge({}, defaults || {}, valueMergeResult.merged)
     : valueMergeResult.merged
   return {

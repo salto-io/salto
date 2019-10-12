@@ -117,7 +117,7 @@ const mergeFieldDefinitions = (
   if (updates.length === 0) {
     return {
       merged: base,
-      errors: validationErrors
+      errors: validationErrors,
     }
   }
   // Ensure each annotation value is updated at most once.
@@ -159,7 +159,7 @@ const mergeObjectDefinitions = (
   if (objects.length === 1) {
     return {
       merged: objects[0],
-      errors: _.flatten(Object.values(fieldsMergeResults).map(r => r.errors))
+      errors: _.flatten(Object.values(fieldsMergeResults).map(r => r.errors)),
     }
   }
   // There are no rules in the spec on merging annotations and

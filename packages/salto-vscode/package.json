@@ -50,10 +50,10 @@
         },
         "languages": [
             {
-                "id": "blueprint",
+                "id": "salto",
                 "aliases": [
-                    "Blueprint",
-                    "blueprint"
+                    "Salto",
+                    "salto"
                 ],
                 "extensions": [
                     ".bp"
@@ -63,9 +63,9 @@
         ],
         "grammars": [
             {
-                "language": "blueprint",
-                "scopeName": "source.blueprint",
-                "path": "./syntaxes/blueprint.json"
+                "language": "salto",
+                "scopeName": "source.salto",
+                "path": "./syntaxes/salto.json"
             }
         ],
         "commands": [

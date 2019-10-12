@@ -37,11 +37,18 @@ const mergeInstanceDefinitions = (
   { elemID, type }: { elemID: ElemID; type: ObjectType },
   instanceDefs: InstanceElement[]
 ): MergeResult<InstanceElement> => {
-  const valueMergeResult = mergeNoDuplicates(
+  const valueMergeResult = instanceDefs.length > 1 ? mergeNoDuplicates(
     instanceDefs.map(i => i.value),
     key => new DuplicateInstanceKeyError({ elemID, key })
-  )
-  const valueWithDefault = _.merge({}, buildDefaults(type) || {}, valueMergeResult.merged)
+  ) : {
+    merged: instanceDefs[0].value,
+    errors: []
+  }
+
+  const defaults = buildDefaults(type)
+  const valueWithDefault = !_.isEmpty(defaults) 
+    ? _.merge({}, defaults || {}, valueMergeResult.merged)
+    : valueMergeResult.merged
   return {
     merged: new InstanceElement(elemID, type, valueWithDefault),
     errors: valueMergeResult.errors,

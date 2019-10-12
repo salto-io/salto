@@ -114,6 +114,12 @@ const mergeFieldDefinitions = (
     errors: validationErrors, fieldName, parentID, base, updates,
   } = validateFieldBasesAndUpdates(elemID, definitions)
 
+  if (updates.length === 0) {
+    return {
+      merged: base,
+      errors: validationErrors
+    }
+  }
   // Ensure each annotation value is updated at most once.
   const mergedUpdates = mergeNoDuplicates(
     updates.map(u => u.annotations),
@@ -150,6 +156,12 @@ const mergeObjectDefinitions = (
     (defs, key) => mergeFieldDefinitions(elemID.createNestedID(key), defs)
   )
 
+  if (objects.length === 1) {
+    return {
+      merged: objects[0],
+      errors: _.flatten(Object.values(fieldsMergeResults).map(r => r.errors))
+    }
+  }
   // There are no rules in the spec on merging annotations and
   // annotations values so we simply merge without allowing duplicates
   const annotationTypesMergeResults = mergeNoDuplicates(

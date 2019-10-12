@@ -122,7 +122,7 @@ export class EditorWorkspace {
     return this.lastValidCopy ? new EditorWorkspace(this.lastValidCopy, true) : undefined
   }
 
-  hasErrors() : boolean {
+  hasErrors(): boolean {
     return this.workspace.hasErrors()
   }
 

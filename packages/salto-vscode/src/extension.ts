@@ -51,13 +51,13 @@ export const activate = async (context: vscode.ExtensionContext): Promise<void> 
       applyCommand(workspace, context.extensionPath)
     })
 
-    const planStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
-    planStatusBar.text = "Salto: Plan"
+    const planStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100)
+    planStatusBar.text = 'Salto: Plan'
     planStatusBar.command = 'salto.plan'
     planStatusBar.show()
 
-    const applyStatus = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
-    applyStatus.text = "Salto: Apply"
+    const applyStatus = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100)
+    applyStatus.text = 'Salto: Apply'
     applyStatus.command = 'salto.apply'
     applyStatus.show()
 

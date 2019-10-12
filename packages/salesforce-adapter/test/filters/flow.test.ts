@@ -12,14 +12,14 @@ describe('flow filter', () => {
     fields: {
       name: new Field(elemID, 'name', BuiltinTypes.STRING,
         {
-          [Type.RESTRICTION]: ['ObjectType', 'TriggerType', 'ObjectVariable', 'OldObjectVariable',
+          [Type.VALUES]: ['ObjectType', 'TriggerType', 'ObjectVariable', 'OldObjectVariable',
             'RecursiveCountVariable', 'EventType'],
         }),
     },
   })
 
-  it('remove restrictions from flow_metadata_value.name', () => {
+  it('remove restriction values from flow_metadata_value.name', () => {
     filter.onDiscover([mockFlow])
-    expect(mockFlow.fields.name.annotations[Type.RESTRICTION]).toBeUndefined()
+    expect(mockFlow.fields.name.annotations[Type.VALUES]).toBeUndefined()
   })
 })

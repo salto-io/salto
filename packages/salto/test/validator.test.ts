@@ -9,7 +9,7 @@ describe('Elements validation', () => {
   const simpleType = new ObjectType({
     elemID: baseElemID,
     fields: {
-      str: new Field(baseElemID, 'str', BuiltinTypes.STRING, { _restriction: { values: ['str'] } }),
+      str: new Field(baseElemID, 'str', BuiltinTypes.STRING, { _values: ['str'] }),
       num: new Field(baseElemID, 'num', BuiltinTypes.NUMBER),
       bool: new Field(baseElemID, 'bool', BuiltinTypes.BOOLEAN, { _required: true }),
     },
@@ -37,11 +37,9 @@ describe('Elements validation', () => {
       list: new Field(nestedElemID, 'list', BuiltinTypes.STRING, {}, true),
       reqStr: new Field(nestedElemID, 'reqStr', BuiltinTypes.STRING),
       restrictStr: new Field(nestedElemID, 'restrictStr', BuiltinTypes.STRING, {
-        _restriction: {
-          values: [
-            'restriction1', 'restriction2',
-          ],
-        },
+        _values: [
+          'restriction1', 'restriction2',
+        ],
       }),
       reqNested: new Field(nestedElemID, 'reqNested', simpleType, {
       }),
@@ -192,19 +190,19 @@ describe('Elements validation', () => {
         })
       })
 
-      describe('restriction annotation', () => {
-        it('should succeed when all values corresponds to restrictions', () => {
+      describe('values annotation', () => {
+        it('should succeed when all values corresponds to values annotation', () => {
           expect(validateElements([extInst])).toHaveLength(0)
         })
 
-        it('should succeed when restrictions values doesnt a list', () => {
+        it('should succeed when restriction values doesnt a list', () => {
           const extType = _.cloneDeep(nestedType)
-          extType.fields.restrictStr.annotations[Type.RESTRICTION] = { values: 'str' }
+          extType.fields.restrictStr.annotations[Type.VALUES] = 'str'
           extInst.type = extType
           expect(validateElements([extInst])).toHaveLength(0)
         })
 
-        it('should return an error when fields values doesnt match restrictions', () => {
+        it('should return an error when fields values doesnt match restriction values', () => {
           extInst.value.restrictStr = 'wrongValue'
           extInst.value.nested.str = 'wrongValue2'
 
@@ -225,9 +223,9 @@ describe('Elements validation', () => {
         })
 
 
-        it('should return an error when list fields values doesnt match restrictions', () => {
+        it('should return an error when list fields values doesnt match restriction values', () => {
           const extType = _.cloneDeep(nestedType)
-          extType.fields.list.annotations[Type.RESTRICTION] = { values: ['restriction'] }
+          extType.fields.list.annotations[Type.VALUES] = ['restriction']
           extInst.type = extType
 
           expect(validateElements([extInst])).toHaveLength(2)

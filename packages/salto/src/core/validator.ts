@@ -25,7 +25,7 @@ const primitiveValidators = {
 }
 
 /**
- * Validate that all type fields values corresponding with core annotations (required, restriction)
+ * Validate that all type fields values corresponding with core annotations (required, values)
  * @param value
  * @param type
  */
@@ -79,7 +79,7 @@ export class MissingRequiredFieldValidationError extends ValidationError {
 }
 
 /**
- * Validate that field values corresponding with core annotations (_required, _restriction)
+ * Validate that field values corresponding with core annotations (_required, _values)
  * @param value- the field value
  * @param field
  */
@@ -88,16 +88,10 @@ const validateAnnotationsValues = (
 ): ValidationError[] => {
   const validateRestrictionsValue = (val: Value):
     ValidationError[] => {
-    const restrictionValues = field.annotations[Type.RESTRICTION]
-
-    // Restrictions is empty
-    if (restrictionValues === undefined) {
-      return []
-    }
+    const restrictionValues = field.annotations[Type.VALUES]
 
     // Values should be array
-    const possibleValues = restrictionValues.values
-    if (!_.isArray(possibleValues)) {
+    if (!_.isArray(restrictionValues)) {
       return []
     }
 
@@ -106,10 +100,10 @@ const validateAnnotationsValues = (
       return _.flatten(val.map(v => validateRestrictionsValue(v)))
     }
 
-    // The 'real' validation: is value is one of possibleValues
-    if (!possibleValues.some(i => _.isEqual(i, val))) {
+    // The 'real' validation: is value is one of restrictionValues
+    if (!restrictionValues.some(i => _.isEqual(i, val))) {
       return [
-        new InvalidValueValidationError({ elemID, value, field, expectedValue: possibleValues }),
+        new InvalidValueValidationError({ elemID, value, field, expectedValue: restrictionValues }),
       ]
     }
 
@@ -125,7 +119,7 @@ const validateAnnotationsValues = (
     return validateRequiredValue()
   }
 
-  // Checking _restriction annotation
+  // Checking _values annotation
   if (isPrimitiveType(field.type)) {
     return validateRestrictionsValue(value)
   }

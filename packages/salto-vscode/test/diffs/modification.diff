@@ -1,0 +1,10 @@
+Index: Step 0 - Modify salto_base
+===================================================================
+--- Step 0 - Modify salto_base
++++ Step 0 - Modify salto_base
+@@ -1,4 +1,4 @@
+ type salto_base {
+-  string before {
++  string after {
+   }
+ }

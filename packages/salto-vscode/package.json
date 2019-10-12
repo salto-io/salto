@@ -75,22 +75,36 @@
         ],
         "commands": [
             {
-                "command": "salto.printMergedElementsNames",
-                "title": "Salto Debug: Print Merged Elements Names"
+                "command": "salto.plan",
+                "title": "Salto: Plan"
             },
             {
-                "command": "salto.printMergedElementsCount",
-                "title": "Salto Debug: Print Merged Elements Count"
-            },
-            {
-                "command": "salto.printErrors",
-                "title": "Salto Debug: Print Errors"
-            },
-            {
-                "command": "salto.getCursorContext",
-                "title": "Salto Debug: Cursor Context"
+                "command": "salto.apply",
+                "title": "Salto: Apply"
             }
         ],
+        "menus": {
+            "editor/title": [
+                {
+                    "command": "salto.plan",
+                    "when": "resourceExtname == .bp"
+                },
+                {
+                    "command": "salto.apply",
+                    "when": "resourceExtname == .bp"
+                }
+            ],
+            "touchBar" : [
+                {
+                    "command": "salto.plan",
+                    "when": "resourceExtname == .bp"
+                },
+                {
+                    "command": "salto.apply",
+                    "when": "resourceExtname == .bp"
+                }
+            ]
+        },
         "iconThemes": [
             {
                 "id": "salto_bp",
@@ -114,8 +128,11 @@
         "generate-yarn-lock": "yarn workspaces run generate-lock-entry | sed '1,2d' | sed -n -e :a -e '1,1!{P;N;D;};N;ba' >> yarn.lock"
     },
     "dependencies": {
+        "@types/diff": "^4.0.2",
         "adapter-api": "0.1.0",
         "async-file": "^2.0.2",
+        "diff": "^4.0.1",
+        "diff2html": "^2.12.1",
         "lodash": "^4.17.11",
         "salto": "0.1.0",
         "wu": "^2.1.0"

@@ -1,0 +1,10 @@
+Index: Step 0 - Delete salto_base
+===================================================================
+--- Step 0 - Delete salto_base
++++ Step 0 - Delete salto_base
+@@ -1,4 +1,0 @@
+-type salto_base {
+-  string before {
+-  }
+-}
+\ No newline at end of file

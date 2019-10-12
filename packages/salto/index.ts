@@ -16,3 +16,4 @@ export {
   ParsedBlueprint as WorkspaceParsedBlueprint, ParsedBlueprintMap,
 } from './src/workspace/workspace'
 export { SourceMap } from './src/parser/parse'
+export { dump } from './src/parser/dump'

@@ -3,7 +3,7 @@
     "displayName": "Salto",
     "description": "Configure, plan and apply Salto patches in vscode.",
     "version": "0.0.1",
-    "icon": "./icons/images/file_type_salto_blue.png",
+    "icon": "icons/images/file_type_salto_white.png",
     "galleryBanner": {
       "color": "#C80000",
       "theme": "dark"

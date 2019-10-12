@@ -1,6 +1,6 @@
 import * as vscode from 'vscode'
 import { EditorWorkspace } from './salto/workspace'
-import { onDidChangeTextDocument, onFileCreate, onFileDelete, reportErrorsEvent } from './events'
+import { onTextChangeEvent, onFileCreate, onFileDelete, onReportErrorsEvent } from './events'
 import {
   createCompletionsProvider, createDefinitionsProvider, createReferenceProvider,
   createDocumentSymbolsProvider,
@@ -15,6 +15,7 @@ export const activate = async (context: vscode.ExtensionContext): Promise<void> 
   const { name, rootPath } = vscode.workspace
   if (name && rootPath) {
     const settings = vscode.workspace.getConfiguration('salto')
+    const diagCollection = vscode.languages.createDiagnosticCollection('salto')
     const workspace = await EditorWorkspace.load(
       rootPath,
       settings.additionalBlueprints
@@ -47,10 +48,10 @@ export const activate = async (context: vscode.ExtensionContext): Promise<void> 
       referenceProvider,
       symbolsProvider,
       vscode.workspace.onDidChangeTextDocument(
-        e => onDidChangeTextDocument(e, workspace)
+        e => onTextChangeEvent(e, workspace)
       ),
       vscode.workspace.onDidChangeTextDocument(
-        async(e) => await reportErrorsEvent(e, workspace)
+        e => onReportErrorsEvent(e, workspace, diagCollection)
       )
     )
 

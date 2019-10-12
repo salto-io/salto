@@ -8,16 +8,16 @@ export interface SaltoDiagnostic {
 }
 
 export const getDiagnostics = (
-  workspace: EditorWorkspace, 
+  workspace: EditorWorkspace,
   filename: string
 ): SaltoDiagnostic[] => {
-  const bp = workspace.parsedBlueprints[filename]
+  const bp = workspace.getParsedBlueprint(filename)
   return bp ? bp.errors.map(e => ({
     filename,
     msg: `${e.summary}: ${e.detail}`,
     range: {
-      start: { line: e.subject.start.line, col: e.subject.start.col },
-      end: { line: e.subject.end.line, col: e.subject.end.col },
+      start: { line: e.subject.start.line, col: e.subject.start.col - 1 },
+      end: { line: e.subject.end.line, col: e.subject.end.col - 1 },
     },
   })) : []
 }

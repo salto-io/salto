@@ -1,18 +1,18 @@
 import * as vscode from 'vscode'
 import * as fs from 'async-file'
+import _ from 'lodash'
 import { EditorWorkspace } from './salto/workspace'
 import { buildVSDiagnostics } from './adapters'
 import { getDiagnostics } from './salto/diagnostics'
-import _ from 'lodash'
 
 // This function is called whenever a file content is changed. The function will
 // reparse the file that changed.
-export const reportErrorsEvent = async (
+export const onReportErrorsEvent = async (
   event: vscode.TextDocumentChangeEvent,
   workspace: EditorWorkspace,
   diagCollection: vscode.DiagnosticCollection
 ): Promise<void> => {
-  const uri = event.document.uri
+  const { uri } = event.document
   const oldDiag = diagCollection.get(uri)
   await workspace.awaitAllUpdates()
   const newDiag = buildVSDiagnostics(getDiagnostics(workspace, event.document.fileName))
@@ -23,7 +23,7 @@ export const reportErrorsEvent = async (
 
 // This function is called whenever a file content is changed. The function will
 // reparse the file that changed.
-export const textChangeEvent = (
+export const onTextChangeEvent = (
   event: vscode.TextDocumentChangeEvent,
   workspace: EditorWorkspace
 ): void => {

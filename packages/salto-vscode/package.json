@@ -110,7 +110,10 @@
         "watch-test": "yarn run tsc-watch --onSuccess 'yarn run clean-ts-test'",
         "lint": "eslint --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
         "lint-fix": "yarn run lint -- --fix",
-        "package": "mkdir -p ./pkg && vsce package --yarn -o ./pkg/salto.vsix",
+        "package" : "yarn run package-code && yarn run package-module && yarn run package-cleanup",
+        "package-code": "mkdir -p ./tmp_pkg && vsce package --yarn -o ./tmp_pkg/salto.vsix",
+        "package-module" : "cd ./tmp_pkg && unzip salto.vsix && cp -r ../node_modules extension/node_modules && zip -ur salto.vsix extension && cd ..",
+        "package-cleanup" : "mkdir -p ./pkg && cp ./tmp_pkg/salto.vsix ./pkg/salto.vsix && rm -rf ./tmp_pkg",
         "generate-yarn-lock": "yarn workspaces run generate-lock-entry | sed '1,2d' | sed -n -e :a -e '1,1!{P;N;D;};N;ba' >> yarn.lock"
     },
     "dependencies": {

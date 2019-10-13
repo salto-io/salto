@@ -24,13 +24,24 @@
 - Find references
 - Show types definition values on hover
 
+## Instalation
+Salto is still not registered in the marketplace. To install:
+- Download the latest vsix file.
+- Open the extension menu.
+- Select install from .vsix
+- Choose the downloaded file
+- Note: On version updates it you might need to manualy delete the extension directory in `$home/.vscode/extensions`
+
+<img src="demo/install.gif" alt="Installation" width="720"/>
+
 ## Auto-completion support
 
-![Auto completion](https://raw.githubusercontent.com/mauve/vscode-terraform/master/images/terraform-auto-completion.gif)
+<img src="demo/autocomplete.gif" alt="Auto completion" width="720"/>
 
 ## Syntax Highlighting
 
-![Syntax Highlighting](https://raw.githubusercontent.com/mauve/vscode-terraform/master/images/screenshot.png)
+
+<img src="demo/syntax.png" alt="Syntax" width="720"/>
 
 ## Plan and Apply command execution
 
@@ -39,42 +50,18 @@ You can invoke the command via:
 - The status bar
 - Mac's touch pad
 
+<img src="demo/apply.gif" alt="Commands" width="720"/>
+
 ## Error highlighting
 
+<img src="demo/errors.gif" alt="errors" width="720"/>
 
 ### Indexing support
+- Press `Ctrl+Shift+O` or `⇧⌘O` to browse symbols in the current file.
+- Press `Ctrl+T` or `⌘T` to jump to symbol.
+- Press `Alt+F12` or `⌥F12` to peek definition.
+- Show type definition on hover
+- Outline view support
 
-
-### Browse Document Symbols
-
-Press `Ctrl+Shift+O` or `⇧⌘O` to browse symbols in the current file.
-
-![Browse Document Symbols](https://raw.githubusercontent.com/mauve/vscode-terraform/master/images/terraform-browse-document-symbols.png)
-
-### Browse Workspace Symbols
-
-Press `Ctrl+T` or `⌘T` to jump to symbol.
-
-![Browse Workspace Symbols](https://raw.githubusercontent.com/mauve/vscode-terraform/master/images/terraform-browse-workspace-symbols.png)
-
-### Peek and Go To definition
-
-Press `Alt+F12` or `⌥F12` to peek definition.
-
-![Peek definition](https://raw.githubusercontent.com/mauve/vscode-terraform/master/images/terraform-peek-definition.png)
-
-### Find All References
-
-Press `Shift+F12` or `⇧F12` to find all references (currently only variables).
-
-![Find all references](https://raw.githubusercontent.com/mauve/vscode-terraform/master/images/terraform-find-references.png)
-
-### Show type definition on hover
-
-![Hover over variable](https://raw.githubusercontent.com/mauve/vscode-terraform/master/images/terraform-hover-variable.png)
-
-### Outline View support
-
-![An outline of the currently open document is automatically showed](https://raw.githubusercontent.com/mauve/vscode-terraform/master/images/terraform-outline-view.png)
-
+<img src="demo/indexing.gif" alt="indexing" width="720"/>
 

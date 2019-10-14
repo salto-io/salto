@@ -124,9 +124,6 @@ export class Types {
     picklist: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.PICKLIST),
       primitive: PrimitiveTypes.STRING,
-      annotationTypes: {
-        [FIELD_ANNOTATIONS.RESTRICTED_PICKLIST]: BuiltinTypes.BOOLEAN,
-      },
     }),
     multipicklist: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.MULTIPICKLIST),
@@ -390,7 +387,8 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
   // Picklists
   if (field.picklistValues && field.picklistValues.length > 0) {
     annotations[Type.VALUES] = field.picklistValues.map(val => val.value)
-    annotations[FIELD_ANNOTATIONS.RESTRICTED_PICKLIST] = Boolean(field.restrictedPicklist)
+    // eslint-disable-next-line @typescript-eslint/camelcase
+    annotations[Type.RESTRICTION] = { enforce_value: Boolean(field.restrictedPicklist) }
 
     const defaults = field.picklistValues
       .filter(val => val.defaultValue)

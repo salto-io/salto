@@ -144,7 +144,8 @@ describe('SalesforceAdapter discover', () => {
       // eslint-disable-next-line no-underscore-dangle
       expect(lead.fields.primary_c.annotations._default).toBe('Yes')
       expect(
-        lead.fields.primary_c.annotations[constants.FIELD_ANNOTATIONS.RESTRICTED_PICKLIST]
+        // eslint-disable-next-line no-underscore-dangle
+        lead.fields.primary_c.annotations._restriction.enforce_value
       ).toBe(true)
     })
 

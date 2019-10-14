@@ -71,7 +71,6 @@ export const FIELD_ANNOTATIONS = {
   PRECISION: 'precision',
   DISPLAY_FORMAT: 'display_format',
   VISIBLE_LINES: 'visible_lines',
-  RESTRICTED_PICKLIST: 'restricted_pick_list',
   MASK_CHAR: 'mask_char',
   MASK_TYPE: 'mask_type',
   MASK: 'mask',

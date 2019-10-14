@@ -119,8 +119,15 @@ const validateAnnotationsValues = (
     return validateRequiredValue()
   }
 
+  const shouldEnforceValue = (): boolean => {
+    const restriction = field.annotations[Type.RESTRICTION]
+    // enforce_value is true by default
+    return restriction === undefined || restriction.enforce_value === undefined
+      || restriction.enforce_value === true
+  }
+
   // Checking _values annotation
-  if (isPrimitiveType(field.type)) {
+  if (isPrimitiveType(field.type) && shouldEnforceValue()) {
     return validateRestrictionsValue(value)
   }
 

@@ -195,14 +195,24 @@ describe('Elements validation', () => {
           expect(validateElements([extInst])).toHaveLength(0)
         })
 
-        it('should succeed when restriction values doesnt a list', () => {
+        it('should succeed when restriction values are not enforced even if the value not in _values', () => {
+          const extType = _.cloneDeep(nestedType)
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          extType.fields.restrictStr.annotations[Type.RESTRICTION] = { enforce_value: false }
+          extType.fields.restrictStr.annotations[Type.VALUES] = ['val1', 'val2']
+          extInst.value.restrictStr = 'wrongValue'
+          extInst.type = extType
+          expect(validateElements([extInst])).toHaveLength(0)
+        })
+
+        it('should succeed when restriction values is not a list', () => {
           const extType = _.cloneDeep(nestedType)
           extType.fields.restrictStr.annotations[Type.VALUES] = 'str'
           extInst.type = extType
           expect(validateElements([extInst])).toHaveLength(0)
         })
 
-        it('should return an error when fields values doesnt match restriction values', () => {
+        const testValuesAreNotListedButEnforced = (): void => {
           extInst.value.restrictStr = 'wrongValue'
           extInst.value.nested.str = 'wrongValue2'
 
@@ -222,6 +232,13 @@ describe('Elements validation', () => {
           )
         })
 
+        it('should return an error when fields values doesnt match restriction values with explicit _restriction.enforce_value', () => {
+          const extType = _.cloneDeep(nestedType)
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          extType.fields.restrictStr.annotations[Type.RESTRICTION] = { enforce_value: true }
+          extInst.type = extType
+          testValuesAreNotListedButEnforced()
+        })
 
         it('should return an error when list fields values doesnt match restriction values', () => {
           const extType = _.cloneDeep(nestedType)

@@ -270,7 +270,7 @@ describe('SalesforceAdapter CRUD', () => {
               [Type.REQUIRED]: false,
               [Type.DEFAULT]: 'NEW',
               label: 'test label',
-              values: ['NEW', 'OLD'],
+              [Type.VALUES]: ['NEW', 'OLD'],
             },
           ),
         },
@@ -381,7 +381,7 @@ describe('SalesforceAdapter CRUD', () => {
             Types.salesforceDataTypes.multipicklist,
             {
               [constants.LABEL]: 'Multipicklist description label',
-              values: ['DO', 'RE', 'MI', 'FA', 'SOL', 'LA', 'SI'],
+              [Type.VALUES]: ['DO', 'RE', 'MI', 'FA', 'SOL', 'LA', 'SI'],
               [Type.DEFAULT]: 'RE',
               [constants.FIELD_ANNOTATIONS.VISIBLE_LINES]: 4,
             },
@@ -455,7 +455,7 @@ describe('SalesforceAdapter CRUD', () => {
             Types.salesforceDataTypes.picklist,
             {
               [constants.LABEL]: 'Picklist description label',
-              values: ['DO', 'RE', 'MI', 'FA', 'SOL', 'LA', 'SI'],
+              [Type.VALUES]: ['DO', 'RE', 'MI', 'FA', 'SOL', 'LA', 'SI'],
               [Type.DEFAULT]: 'DO',
             },
           ),
@@ -465,7 +465,7 @@ describe('SalesforceAdapter CRUD', () => {
             Types.salesforceDataTypes.text,
             {
               [constants.LABEL]: 'Text description label',
-              values: ['DO', 'RE', 'MI', 'FA', 'SOL', 'LA', 'SI'],
+              [Type.VALUES]: ['DO', 'RE', 'MI', 'FA', 'SOL', 'LA', 'SI'],
               [constants.FIELD_ANNOTATIONS.UNIQUE]: true,
               [constants.FIELD_ANNOTATIONS.CASE_SENSITIVE]: true,
               [constants.FIELD_ANNOTATIONS.LENGTH]: 90,

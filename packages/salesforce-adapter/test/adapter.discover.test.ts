@@ -138,7 +138,8 @@ describe('SalesforceAdapter discover', () => {
       const lead = result.filter(o => o.elemID.name === 'lead').pop() as ObjectType
       expect(lead.fields.primary_c.type.elemID.name).toBe('picklist')
       expect(
-        (lead.fields.primary_c.annotations.values as string[]).join(';')
+        // eslint-disable-next-line no-underscore-dangle
+        (lead.fields.primary_c.annotations._values as string[]).join(';')
       ).toBe('No;Yes')
       // eslint-disable-next-line no-underscore-dangle
       expect(lead.fields.primary_c.annotations._default).toBe('Yes')
@@ -165,7 +166,8 @@ describe('SalesforceAdapter discover', () => {
       const lead = result.filter(o => o.elemID.name === 'lead').pop() as ObjectType
       expect(lead.fields.primary_c.type.elemID.name).toBe('combobox')
       expect(
-        (lead.fields.primary_c.annotations.values as string[]).join(';')
+        // eslint-disable-next-line no-underscore-dangle
+        (lead.fields.primary_c.annotations._values as string[]).join(';')
       ).toBe('No;Yes')
       // eslint-disable-next-line no-underscore-dangle
       expect(lead.fields.primary_c.annotations._default.length).toBe(1)

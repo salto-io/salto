@@ -12,7 +12,7 @@ import { collections } from '@salto/lowerdash'
 import { CustomObject, CustomField } from './client/types'
 import { API_VERSION, METADATA_NAMESPACE } from './client/client'
 import {
-  API_NAME, CUSTOM_OBJECT, LABEL, PICKLIST_VALUES, SALESFORCE, FORMULA,
+  API_NAME, CUSTOM_OBJECT, LABEL, SALESFORCE, FORMULA,
   FORMULA_TYPE_PREFIX, FIELD_TYPE_NAMES, FIELD_TYPE_API_NAMES, METADATA_OBJECT_NAME_FIELD,
   METADATA_TYPE, FIELD_ANNOTATIONS, SALESFORCE_CUSTOM_SUFFIX, DEFAULT_VALUE_FORMULA,
   MAX_METADATA_RESTRICTION_VALUES, SETTINGS_METADATA_TYPE, SALESFORCE_CUSTOM_RELATIONSHIP_SUFFIX,
@@ -266,7 +266,7 @@ export const toCustomField = (
     field.annotations[Type.REQUIRED],
     field.annotations[Type.DEFAULT],
     field.annotations[DEFAULT_VALUE_FORMULA],
-    field.annotations[PICKLIST_VALUES],
+    field.annotations[Type.VALUES],
     field.annotations[FORMULA],
     field.annotations[FIELD_ANNOTATIONS.RELATED_TO],
     sfCase(field.name),
@@ -389,7 +389,7 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
   }
   // Picklists
   if (field.picklistValues && field.picklistValues.length > 0) {
-    annotations[PICKLIST_VALUES] = field.picklistValues.map(val => val.value)
+    annotations[Type.VALUES] = field.picklistValues.map(val => val.value)
     annotations[FIELD_ANNOTATIONS.RESTRICTED_PICKLIST] = Boolean(field.restrictedPicklist)
 
     const defaults = field.picklistValues

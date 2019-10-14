@@ -9,7 +9,6 @@ export const SALESFORCE_CUSTOM_RELATIONSHIP_SUFFIX = '__r'
 
 // Annotations
 export const LABEL = 'label'
-export const PICKLIST_VALUES = 'values'
 export const API_NAME = 'api_name'
 export const FORMULA = 'formula'
 export const DEFAULT_VALUE_FORMULA = 'default_value_formula'

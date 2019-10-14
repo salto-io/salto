@@ -70,12 +70,12 @@ describe('Salesforce adapter E2E with real account', () => {
 
       // Test standard picklist values from a standard value set
       expect(
-        lead.fields.salutation.annotations.values
+        lead.fields.salutation.annotations[Type.VALUES]
       ).toBe('salesforce_standard_value_set_salutation')
 
       // Test picklist values
       expect(
-        lead.fields.clean_status.annotations.values
+        lead.fields.clean_status.annotations[Type.VALUES]
       ).toEqual([
         'Acknowledged',
         'Different',
@@ -783,7 +783,7 @@ describe('Salesforce adapter E2E with real account', () => {
               [Type.REQUIRED]: false,
               [Type.DEFAULT]: 'NEW',
               [constants.LABEL]: 'Picklist description label',
-              values: ['NEW', 'OLD'],
+              [Type.VALUES]: ['NEW', 'OLD'],
               ...adminReadable,
             },
           ),
@@ -869,7 +869,7 @@ describe('Salesforce adapter E2E with real account', () => {
             Types.salesforceDataTypes.multipicklist,
             {
               [constants.LABEL]: 'Multipicklist description label',
-              values: ['DO', 'RE', 'MI', 'FA', 'SOL', 'LA', 'SI'],
+              [Type.VALUES]: ['DO', 'RE', 'MI', 'FA', 'SOL', 'LA', 'SI'],
               [Type.DEFAULT]: 'DO',
               [constants.FIELD_ANNOTATIONS.VISIBLE_LINES]: 4,
               ...adminReadable,

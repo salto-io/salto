@@ -30,7 +30,8 @@ export const getAllElements = (_blueprints: Blueprint[] = []): Element[] => {
         },
       ),
     },
-    annotationTypes: { label: BuiltinTypes.STRING },
+    // eslint-disable-next-line @typescript-eslint/camelcase,max-len
+    annotationTypes: { label: BuiltinTypes.STRING, old: BuiltinTypes.STRING, case_sensitive: BuiltinTypes.BOOLEAN },
   })
 
   const employeeElemID = new ElemID('salto', 'employee')

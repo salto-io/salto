@@ -32,16 +32,16 @@ Salto is still not registered in the marketplace. To install:
 - Choose the downloaded file
 - Note: On version updates it you might need to manualy delete the extension directory in `$home/.vscode/extensions`
 
-<img src="demo/install.gif" alt="Installation" width="720"/>
+<img src="https://raw.githubusercontent.com/salto-io/extension_resources/master/install.gif" alt="Installation" width="720"/>
 
 ## Auto-completion support
 
-<img src="demo/autocomplete.gif" alt="Auto completion" width="720"/>
+<img src="https://raw.githubusercontent.com/salto-io/extension_resources/master/autocomplete.gif" alt="Auto completion" width="720"/>
 
 ## Syntax Highlighting
 
 
-<img src="demo/syntax.png" alt="Syntax" width="720"/>
+<img src="https://raw.githubusercontent.com/salto-io/extension_resources/master/syntax.png" alt="Syntax" width="720"/>
 
 ## Plan and Apply command execution
 
@@ -50,11 +50,11 @@ You can invoke the command via:
 - The status bar
 - Mac's touch pad
 
-<img src="demo/apply.gif" alt="Commands" width="720"/>
+<img src="https://raw.githubusercontent.com/salto-io/extension_resources/master/apply.gif" alt="Commands" width="720"/>
 
 ## Error highlighting
 
-<img src="demo/errors.gif" alt="errors" width="720"/>
+<img src="https://raw.githubusercontent.com/salto-io/extension_resources/master/errors.gif" alt="errors" width="720"/>
 
 ### Indexing support
 - Press `Ctrl+Shift+O` or `⇧⌘O` to browse symbols in the current file.
@@ -63,5 +63,5 @@ You can invoke the command via:
 - Show type definition on hover
 - Outline view support
 
-<img src="demo/indexing.gif" alt="indexing" width="720"/>
+<img src="https://raw.githubusercontent.com/salto-io/extension_resources/master/indexing.gif" alt="indexing" width="720"/>
 

@@ -66,6 +66,11 @@ const createYargsParser = (): AugmentedYargsParser => {
 
   Object.defineProperty(parser, 'errors', { get: () => errors })
 
+  yargonaut
+    .errorsStyle('red.bold')
+    .helpStyle('bold')
+    .style('yellow', 'required')
+
   return parser as AugmentedYargsParser
 }
 

@@ -1,4 +1,5 @@
 import { EOL } from 'os'
+import chalk from 'chalk'
 import { CliInput, CliOutput, CliExitCode } from './types'
 import { YargsCommandBuilder, allBuilders } from './builder'
 import parse from './argparser'
@@ -24,7 +25,7 @@ export default async (
 
     return 0
   } catch (err) {
-    output.stderr.write(`Caught exception: ${[err, err.stack].filter(n => n).join(EOL)}`)
+    output.stderr.write(chalk.bold.red(`${[err].filter(n => n).join(EOL)}`))
     output.stderr.write(EOL)
     return 2
   }

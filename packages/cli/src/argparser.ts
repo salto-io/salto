@@ -2,6 +2,7 @@ import { EOL } from 'os'
 import yargonaut from 'yargonaut' // this must appear before the import from yargs
 import yargs from 'yargs/yargs'
 import { Argv, Arguments } from 'yargs'
+import chalk from 'chalk'
 import { WriteStream } from './types'
 import { registerBuilders, YargsCommandBuilder, CommandBuilder } from './builder'
 
@@ -9,7 +10,7 @@ const LOGO_TEXT = '\u00B0 salto' // \u00B0 is for the salto 'dot'
 const LOGO_FONT = 'Standard'
 const MAX_WIDTH = 100
 const DO_NOT_SHOW = '***<><><>DO NOT SHOW THIS ERROR<><><>***'
-const USAGE_PREFIX = 'Usage: '
+const USAGE_PREFIX = chalk.bold('Usage: ')
 
 const writeLogo = (outStream: WriteStream): void => {
   outStream.write(yargonaut.asFont(LOGO_TEXT, LOGO_FONT))

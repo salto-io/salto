@@ -1,8 +1,6 @@
 import { EOL } from 'os'
-import _ from 'lodash'
 import yargonaut from 'yargonaut' // this must appear before the import from yargs
 import yargs from 'yargs/yargs'
-import { streams } from '@salto/lowerdash'
 import { Argv, Arguments } from 'yargs'
 import { WriteStream } from './types'
 import { registerBuilders, YargsCommandBuilder, CommandBuilder } from './builder'
@@ -10,6 +8,8 @@ import { registerBuilders, YargsCommandBuilder, CommandBuilder } from './builder
 const LOGO_TEXT = '\u00B0 salto' // \u00B0 is for the salto 'dot'
 const LOGO_FONT = 'Standard'
 const MAX_WIDTH = 100
+const DO_NOT_SHOW = '***<><><>DO NOT SHOW THIS ERROR<><><>***'
+const USAGE_PREFIX = 'Usage: '
 
 const writeLogo = (outStream: WriteStream): void => {
   outStream.write(yargonaut.asFont(LOGO_TEXT, LOGO_FONT))
@@ -20,74 +20,69 @@ const onNoArgs = (parser: Argv, outStream: WriteStream): void => {
   if (outStream.isTTY) {
     writeLogo(outStream)
   }
-
   // Pending PR: https://github.com/yargs/yargs/pull/1386
   // @ts-ignore TS2345
-  parser.showHelp((s: string) => outStream.write(s))
-
-  outStream.write(EOL)
-}
-
-const showUsageComment = (parser: Argv, outStream: WriteStream): void => {
-  // TODO: argv.$0 is undefined for some reason, need to open an issue/PR at yargs.
-  // This is a workaround for now.
-  // @ts-ignore TS2345
-  const scriptName = parser.$0
-
-  outStream.write(`See '${scriptName} --help' for usage information`)
-  outStream.write(EOL)
-}
-
-const parserFailureHandler = (
-  outStream: WriteStream, msg: string, err?: Error,
-): void => {
-  if (err && !msg) {
-    throw err
-  }
-
-  outStream.write(msg)
-  outStream.write(EOL)
-}
-
-const monkeyPatchShowHelpForColors = (parser: Argv, outStream: WriteStream): void => {
-  // wrapping a function without changing its args
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  parser.showHelp = _.wrap(parser.showHelp, (savedShowHelp, ...args: any[]) => {
-    if (streams.hasColors(outStream)) {
-      yargonaut.style('green')
-    }
-
-    return savedShowHelp.call(parser, ...args)
+  parser.showHelp((s: string) => {
+    outStream.write(USAGE_PREFIX)
+    outStream.write(s)
   })
+
+  outStream.write(EOL)
 }
 
 type AugmentedYargsParser = Argv & {
-  hadError: boolean
+  errors: string[]
 }
 
-const createYargsParser = (
-  stderr: WriteStream,
-): AugmentedYargsParser => {
-  let hadError = false
+const createYargsParser = (): AugmentedYargsParser => {
+  const errors: string[] = []
 
   const parser = yargs()
     .strict()
     .completion('completion', false as unknown as string)
     .exitProcess(false)
-    .help('h')
-    .alias('h', 'help')
+    .help(false)
     .fail((msg, err) => {
-      parserFailureHandler(stderr, msg, err)
-      hadError = true
+      if (err) throw err
+      errors.push(msg)
     })
+
+  parser.option('help', {
+    alias: 'h',
+    type: 'boolean',
+    describe: 'Show help',
+  })
+
+  parser.updateLocale({
+    'Not enough non-option arguments: got %s, need at least %s': DO_NOT_SHOW,
+    'Too many non-option arguments: got %s, maximum of %s': DO_NOT_SHOW,
+    'Positionals:': 'Arguments:',
+  })
 
   parser.wrap(Math.min(MAX_WIDTH, parser.terminalWidth()))
 
-  monkeyPatchShowHelpForColors(parser, stderr)
-
-  Object.defineProperty(parser, 'hadError', { get: () => hadError })
+  Object.defineProperty(parser, 'errors', { get: () => errors })
 
   return parser as AugmentedYargsParser
+}
+
+const handleErrors = (parser: Argv, outStream: WriteStream, errors: string[]): void => {
+  let printedErrors = false
+  errors.forEach((value: string) => {
+    // Workaround to not show error messages we do not want
+    if (value && value.length > 0 && !value.includes(DO_NOT_SHOW)) {
+      outStream.write(value)
+      outStream.write(EOL)
+      if (!printedErrors) printedErrors = true
+    }
+  })
+
+  // @ts-ignore TS2345
+  parser.showHelp((s: string) => {
+    if (printedErrors) outStream.write(EOL)
+    outStream.write(USAGE_PREFIX)
+    outStream.write(s)
+  })
 }
 
 export type ParseResult =
@@ -100,7 +95,7 @@ const parse = (
   { args }: { args: string[] },
   { stdout, stderr }: { stdout: WriteStream; stderr: WriteStream },
 ): Promise<ParseResult> => new Promise<ParseResult>((resolve, reject) => {
-  const parser = createYargsParser(stderr)
+  const parser = createYargsParser()
   const commandSelected = registerBuilders(parser, commandBuilders)
 
   if (args.length === 0) {
@@ -115,13 +110,21 @@ const parse = (
       return
     }
 
+    if (parsedArgs.help) {
+      // @ts-ignore TS2345
+      parser.showHelp((s: string) => {
+        stdout.write(USAGE_PREFIX)
+        stdout.write(s)
+      })
+      return
+    }
+
     stdout.write(outText)
 
     // let the event loop process the commandSelected promise
     setTimeout(() => {
-      if (parser.hadError) {
-        stdout.write(EOL)
-        showUsageComment(parser, stderr)
+      if (parser.errors.length > 0) {
+        handleErrors(parser, stderr, parser.errors)
         resolve({ status: 'error' })
       } else if (commandSelected.done) {
         commandSelected.then(builder => resolve({ status: 'command', parsedArgs, builder }))

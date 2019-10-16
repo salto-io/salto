@@ -1,0 +1,5 @@
+{
+    "baseDir" : "~/workspace",
+    "stateLocation" : "~/states/test.bpc",
+    "additionalBlueprints" : ["~/moreBP/test.bp"]
+}

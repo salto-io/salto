@@ -3,6 +3,7 @@ import path from 'path'
 import {
   ElemID, InstanceElement, ObjectType, AdapterCreator, Field, BuiltinTypes,
 } from 'adapter-api'
+import { Config } from 'src/workspace/config'
 import * as commands from '../../src/api'
 import State from '../../src/state/state'
 import { Blueprint, getAllElements } from '../../src/core/blueprint'
@@ -10,7 +11,6 @@ import adapterCreators from '../../src/core/adapters/creators'
 
 import * as plan from '../../src/core/plan'
 import { Workspace } from '../../src/workspace/workspace'
-
 
 const mockAdd = jest.fn(async ap => {
   if (ap.elemID.name === 'fail') {
@@ -142,7 +142,12 @@ describe('api functions', () => {
     })
 
     it('should throw error on missing adapter', async () => {
-      const ws: Workspace = await Workspace.load('', [filePath('missing.bp')])
+      const config: Config = {
+        baseDir: '',
+        stateLocation: './latest_state.bpc',
+        additionalBlueprints: [filePath('missing.bp')],
+      }
+      const ws: Workspace = await Workspace.load(config)
       await expect(commands.apply(
         ws,
         mockGetConfigFromUser,
@@ -152,7 +157,12 @@ describe('api functions', () => {
     })
 
     it('should throw error on adapter fail', async () => {
-      const ws: Workspace = await Workspace.load('', [filePath('fail.bp')])
+      const config: Config = {
+        baseDir: '',
+        stateLocation: './latest_state.bpc',
+        additionalBlueprints: [filePath('fail.bp')],
+      }
+      const ws: Workspace = await Workspace.load(config)
       await expect(commands.apply(
         ws,
         mockGetConfigFromUser,
@@ -165,13 +175,18 @@ describe('api functions', () => {
       let ws: Workspace
 
       beforeEach(async () => {
-        ws = await Workspace.load('', [filePath('salto.bp')])
+        const config: Config = {
+          baseDir: '',
+          stateLocation: './latest_state.bpc',
+          additionalBlueprints: [filePath('salto.bp')],
+        }
+        ws = await Workspace.load(config)
       })
 
       it('should create an apply plan using the plan method', async () => {
         const spy = jest.spyOn(plan, 'getPlan')
         await commands.plan(
-          new Workspace('', []),
+          ws
         )
         expect(spy).toHaveBeenCalled()
       })
@@ -290,6 +305,11 @@ describe('api functions', () => {
       mockWorkspace = {
         elements: [],
         updateBlueprints: jest.fn().mockImplementationOnce(() => Promise.resolve()),
+        config: {
+          baseDir: '.',
+          stateLocation: '.',
+          additionalBlueprints: [],
+        },
         flush: () => Promise.resolve(),
       } as unknown as Workspace
     })

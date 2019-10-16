@@ -3,8 +3,12 @@ import * as path from 'path'
 import { EditorWorkspace } from '../../src/salto/workspace'
 import { provideWorkspaceReferences } from '../../src/salto/usage'
 import { SaltoElemLocation } from '../../src/salto/location'
+import { Config } from 'salto'
 
 describe('Test go to definitions', () => {
+  const getConfig = (baseDir: string, additionalBlueprints: string[]): Config => ({
+    baseDir, additionalBlueprints,stateLocation: path.join(baseBPDir, 'salto.config', 'state.bpc')
+  })
   let workspace: EditorWorkspace
   const baseBPDir = path.resolve(`${__dirname}/../../../test/salto/completionsBP`)
 
@@ -13,7 +17,7 @@ describe('Test go to definitions', () => {
   ): number[] => defs.map(d => d.range.start.line).sort((a, b) => a - b)
 
   beforeAll(async () => {
-    workspace = await EditorWorkspace.load(baseBPDir, [], false)
+    workspace = await EditorWorkspace.load(getConfig(baseBPDir, []), false)
   })
 
   it('should give all fields usages of a type', () => {

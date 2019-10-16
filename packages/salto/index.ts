@@ -15,4 +15,5 @@ export {
   Workspace, Blueprint as WorkspaceBlueprint, Errors,
   ParsedBlueprint as WorkspaceParsedBlueprint, ParsedBlueprintMap,
 } from './src/workspace/workspace'
+export { Config, loadConfig } from './src/workspace/config'
 export { SourceMap } from './src/parser/parse'

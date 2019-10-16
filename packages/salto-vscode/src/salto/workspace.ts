@@ -4,7 +4,7 @@ import path from 'path'
 import {
   Workspace, WorkspaceBlueprint as Blueprint,
   WorkspaceParsedBlueprint as ParsedBlueprint, ParsedBlueprintMap,
-  SourceMap, Errors,
+  SourceMap, Errors, Config,
 } from 'salto'
 import { Element } from 'adapter-api'
 
@@ -20,11 +20,10 @@ export class EditorWorkspace {
   private lastValidCopy? : Workspace
 
   static async load(
-    blueprintsDir: string,
-    blueprintsFiles: string[],
+    config: Config,
     useCache = true
   ): Promise<EditorWorkspace> {
-    const workspace = await Workspace.load(blueprintsDir, blueprintsFiles, useCache)
+    const workspace = await Workspace.load(config, useCache)
     return new EditorWorkspace(workspace)
   }
 
@@ -41,7 +40,7 @@ export class EditorWorkspace {
   get errors(): Errors { return this.workspace.errors }
   get parsedBlueprints(): ParsedBlueprintMap { return this.workspace.parsedBlueprints }
   get sourceMap(): SourceMap { return this.workspace.sourceMap }
-  get baseDir(): string { return this.workspace.baseDir }
+  get baseDir(): string { return this.workspace.config.baseDir }
 
   private hasPendingUpdates(): boolean {
     return !(_.isEmpty(this.pendingSets) && _.isEmpty(this.pendingDeletes))
@@ -96,7 +95,7 @@ export class EditorWorkspace {
   }
 
   private getWorkspaceName(filename: string): string {
-    return path.relative(this.workspace.baseDir, filename)
+    return path.relative(this.workspace.config.baseDir, filename)
   }
 
   getParsedBlueprint(filename: string): ParsedBlueprint {

@@ -51,7 +51,7 @@ const applyActionOnState = async (
 export const plan = async (
   workspace: Workspace,
 ): Promise<Plan> => {
-  const state = new State()
+  const state = new State(workspace.config.stateLocation)
   return getPlan(await state.get(), workspace.elements)
 }
 
@@ -62,7 +62,7 @@ export const apply = async (
   reportProgress: (action: PlanItem) => void,
   force = false
 ): Promise<Plan> => {
-  const state = new State()
+  const state = new State(workspace.config.stateLocation)
   try {
     const actionPlan = getPlan(await state.get(), workspace.elements)
     if (force || await shouldApply(actionPlan)) {
@@ -84,7 +84,7 @@ export const discover = async (
   workspace: Workspace,
   fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
 ): Promise<void> => {
-  const state = new State()
+  const state = new State(workspace.config.stateLocation)
   const { changes, elements } = await discoverChanges(
     workspace.elements, await state.get(), fillConfig
   )

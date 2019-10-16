@@ -5,6 +5,7 @@ import {
   createCompletionsProvider, createDefinitionsProvider, createReferenceProvider,
   createDocumentSymbolsProvider,
 } from './providers'
+import { loadConfig } from 'salto'
 /**
  * This files act as a bridge between VSC and the salto specific functionality.
  */
@@ -15,8 +16,9 @@ export const activate = async (context: vscode.ExtensionContext): Promise<void> 
   const { name, rootPath } = vscode.workspace
   if (name && rootPath) {
     const settings = vscode.workspace.getConfiguration('salto')
+    const config = await loadConfig(rootPath)
     const workspace = await EditorWorkspace.load(
-      rootPath,
+      config,
       settings.additionalBlueprints
     )
 

@@ -4,15 +4,19 @@ import * as fs from 'async-file'
 import { EditorWorkspace } from '../../src/salto/workspace'
 import { provideWorkspaceDefinition } from '../../src/salto/definitions'
 import { getPositionContext } from '../../src/salto/context'
+import { Config } from 'salto'
 
 describe('Test go to definitions', () => {
+  const getConfig = (baseDir: string, additionalBlueprints: string[]): Config => ({
+    baseDir, additionalBlueprints,stateLocation: path.join(baseBPDir, 'salto.config', 'state.bpc')
+  })
   let workspace: EditorWorkspace
   let bpContent: string
   const baseBPDir = path.resolve(`${__dirname}/../../../test/salto/completionsBP`)
   const bpFile = path.resolve(`${baseBPDir}/all.bp`)
 
   beforeAll(async () => {
-    workspace = await EditorWorkspace.load(baseBPDir, [], false)
+    workspace = await EditorWorkspace.load(getConfig(baseBPDir, []), false)
     bpContent = await fs.readFile(bpFile, 'utf8')
   })
 

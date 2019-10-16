@@ -52,7 +52,7 @@ const updateMergedTypes = (
  * Merge a list of elements by applying all updates, and replacing the pointers
  * to the updated elements.
  */
-export const mergeElements = (elements: Element[]): MergeResult => {
+export const mergeElements = (elements: ReadonlyArray<Element>): MergeResult => {
   const objects = mergeObjectTypes(elements.filter(isObjectType))
   const instances = mergeInstances(elements.filter(isInstanceElement))
   const primitiveElements = [...elements.filter(isPrimitiveType), ...Object.values(BuiltinTypes)]

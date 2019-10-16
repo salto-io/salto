@@ -520,21 +520,13 @@ export default class SalesforceAdapter {
       return [element]
     }
 
-    // TODO: return this code once discover is able to handle split elements
-    // // Custom fields go in a separate element
-    // const customPart = Types.get(objectName) as ObjectType
-    // customFields.forEach(field => {
-    //   customPart.fields[field.name] = field
-    // })
-    // customPart.path = ['objects', 'custom', customPart.elemID.name]
-    // return [element, customPart]
-
-    // Because core's discover code does not handle split elements currently we return
-    // custom and standard fields on the same element
+    // Custom fields go in a separate element
+    const customPart = Types.get(objectName) as ObjectType
     customFields.forEach(field => {
-      element.fields[field.name] = field
+      customPart.fields[field.name] = field
     })
-    return [element]
+    customPart.path = ['objects', 'custom', customPart.elemID.name]
+    return [element, customPart]
   }
 
   /**

@@ -8,6 +8,7 @@ import { getPositionContext } from '../../src/salto/context'
 import {
   provideWorkspaceCompletionItems, SaltoCompletion,
 } from '../../src/salto/completions/provider'
+import { Config } from 'salto'
 
 interface Pos {
   line: number
@@ -15,6 +16,9 @@ interface Pos {
 }
 
 describe('Test auto complete', () => {
+  const getConfig = (baseDir: string, additionalBlueprints: string[]): Config => ({
+    baseDir, additionalBlueprints,stateLocation: path.join(baseBPDir, 'salto.config', 'state.bpc')
+  })
   const getLine = (
     workspace: EditorWorkspace,
     filename: string,
@@ -62,7 +66,7 @@ describe('Test auto complete', () => {
   const baseBPDir = path.resolve(`${__dirname}/../../../test/salto/completionsBP`)
   const bpFileName = path.resolve(`${baseBPDir}/all.bp`)
   beforeAll(async () => {
-    workspace = await EditorWorkspace.load(baseBPDir, [], false)
+    workspace = await EditorWorkspace.load(getConfig(baseBPDir, []), false)
     bpContent = await fs.readFile(bpFileName, 'utf8')
   })
 

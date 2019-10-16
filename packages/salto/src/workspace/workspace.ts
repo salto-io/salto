@@ -13,6 +13,7 @@ import { validateElements, ValidationError } from '../core/validator'
 import { DetailedChange } from '../core/plan'
 import { ParseResultFSCache } from './cache'
 import { getChangeLocations, updateBlueprintData } from './blueprint_update'
+import { Config } from './config'
 
 const { DefaultMap } = collections.map
 
@@ -164,19 +165,18 @@ export class Workspace {
    *   in the workspace
    */
   static async load(
-    blueprintsDir: string,
-    blueprintsFiles: string[],
+    config: Config,
     useCache = true
   ): Promise<Workspace> {
-    const bps = await loadBlueprints(blueprintsDir, blueprintsFiles)
+    const bps = await loadBlueprints(config.baseDir, config.additionalBlueprints)
     const parsedBlueprints = useCache
-      ? parseBlueprintsWithCache(bps, blueprintsDir)
+      ? parseBlueprintsWithCache(bps, config.baseDir)
       : parseBlueprints(bps)
-    return new Workspace(blueprintsDir, await parsedBlueprints)
+    return new Workspace(config, await parsedBlueprints)
   }
 
   constructor(
-    public readonly baseDir: string,
+    public config: Config,
     blueprints: ReadonlyArray<ParsedBlueprint>,
     readonly useCache: boolean = true
   ) {
@@ -255,10 +255,10 @@ export class Workspace {
    * Dump the current workspace state to the underlying persistent storage
    */
   async flush(): Promise<void> {
-    const cache = new ParseResultFSCache(path.join(this.baseDir, CACHE_FOLDER))
+    const cache = new ParseResultFSCache(path.join(this.config.baseDir, CACHE_FOLDER))
     await Promise.all(wu(this.dirtyBlueprints).map(async filename => {
       const bp = this.parsedBlueprints[filename]
-      const filePath = path.join(this.baseDir, filename)
+      const filePath = path.join(this.config.baseDir, filename)
       if (bp === undefined) {
         await fs.delete(filePath)
       } else {

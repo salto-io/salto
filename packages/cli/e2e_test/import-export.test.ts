@@ -17,11 +17,15 @@ const sfLeadObjectName = 'salesforce_lead'
 const mockGetConfigType = (): InstanceElement => adapterConfigs.salesforce()
 const homePath = process.env.HOME || process.env.HOMEPATH || process.env.USERPROFILE
 const discoverOutputDir = `${homePath}/BP/test_discover`
+const configFile = `${__dirname}/../../e2e_test/BP/salto.config/config.json`
 
 const exportOutputDir = `${homePath}/tmp/export`
 const exportFile = 'export_test.csv'
 const exportOutputFullPath = path.join(exportOutputDir, exportFile)
 
+const copyFile = async (src: string, dest: string): Promise<void> => (
+  asyncfile.writeFile(dest, await asyncfile.readFile(src))
+)
 // Attempting to access the functions on run time without the mock implementation, or
 // omitting the mock prefix in their names (YES I KNOW) will result in a runtime exception
 // to be thrown
@@ -36,12 +40,14 @@ describe('When running export', () => {
     await asyncfile.delete(discoverOutputDir)
     await asyncfile.delete(exportOutputDir)
     await asyncfile.delete(STATEPATH)
+    await asyncfile.mkdirp(`${discoverOutputDir}/salto.config`)
+    await copyFile(configFile, `${discoverOutputDir}/salto.config/config.json`)
   })
 
   jest.setTimeout(5 * 60 * 1000)
 
   it('should save the data in csv file after discover', async () => {
-    await discover(discoverOutputDir, []).execute()
+    await discover(discoverOutputDir).execute()
 
     await exportCommand(discoverOutputDir, [], sfLeadObjectName,
       exportOutputFullPath).execute()
@@ -61,7 +67,8 @@ describe('When running data modifying commands', () => {
   const dataFilePath = `${__dirname}/../../e2e_test/CSV/import.csv`
   beforeEach(async () => {
     await asyncfile.delete(discoverOutputDir)
-    await asyncfile.delete(STATEPATH)
+    await asyncfile.mkdirp(`${discoverOutputDir}/salto.config`)
+    await copyFile(configFile, `${discoverOutputDir}/salto.config/config.json`)
   })
 
   describe('When running import from a CSV file', () => {
@@ -69,7 +76,7 @@ describe('When running data modifying commands', () => {
 
     it('should succeed after discover', async () => {
       const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
-      await discover(discoverOutputDir, []).execute()
+      await discover(discoverOutputDir).execute()
       await importCommand(discoverOutputDir, [], dataFilePath,
         sfLeadObjectName, cliOutput).execute()
       expect(cliOutput.stdout.content).toMatch(Prompts.IMPORT_FINISHED_SUCCESSFULLY)
@@ -91,7 +98,7 @@ describe('When running data modifying commands', () => {
       const dataWithIdFileName = 'importWithIds.csv'
       const updatedDataFilePath = path.join(exportOutputDir, dataWithIdFileName)
       const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
-      await discover(discoverOutputDir, []).execute()
+      await discover(discoverOutputDir).execute()
       await importCommand(discoverOutputDir, [], dataFilePath,
         sfLeadObjectName, cliOutput).execute()
 

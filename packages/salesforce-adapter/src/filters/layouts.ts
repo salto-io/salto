@@ -31,7 +31,7 @@ const filterCreator: FilterCreator = () => ({
       .forEach(obj => {
         const objLayouts = layouts[apiName(obj)]
         if (objLayouts) {
-          obj.annotate({ [LAYOUT_ANNOTATION]: objLayouts.map(l => l.elemID.getFullName()) })
+          obj.annotate({ [LAYOUT_ANNOTATION]: objLayouts.map(l => l.elemID.getFullName()).sort() })
         }
       })
   },

@@ -2,6 +2,7 @@ import { EOL } from 'os'
 import _ from 'lodash'
 import yargonaut from 'yargonaut' // this must appear before the import from yargs
 import yargs from 'yargs/yargs'
+import { streams } from '@salto/lowerdash'
 import { Argv, Arguments } from 'yargs'
 import { WriteStream } from './types'
 import { registerBuilders, YargsCommandBuilder, CommandBuilder } from './builder'
@@ -52,11 +53,7 @@ const monkeyPatchShowHelpForColors = (parser: Argv, outStream: WriteStream): voi
   // wrapping a function without changing its args
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   parser.showHelp = _.wrap(parser.showHelp, (savedShowHelp, ...args: any[]) => {
-    if (
-      outStream.isTTY
-      && typeof outStream.getColorDepth === 'function'
-      && outStream.getColorDepth() > 1
-    ) {
+    if (streams.hasColors(outStream)) {
       yargonaut.style('green')
     }
 

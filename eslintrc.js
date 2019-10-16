@@ -71,6 +71,9 @@ module.exports = {
             multiline: { delimiter: 'none', requireLast: undefined },
             singleline: { delimiter: 'semi', requireLast: undefined },
         }],
+        'import/no-extraneous-dependencies': ['error', {
+            devDependencies: ['!test/**/*'],
+        }]
     },
     overrides: [
         {

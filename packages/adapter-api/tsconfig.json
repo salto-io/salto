@@ -6,7 +6,8 @@
         "declaration": true,
         "lib": [
             "esnext.asynciterable"
-          ]
+        ],
+        "resolveJsonModule": true
     },
     "include": [
         "src/**/*",

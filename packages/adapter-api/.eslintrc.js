@@ -1,3 +1,5 @@
+const path = require('path')
+
 const deepMerge = require('../../build_utils/deep_merge')
 
 module.exports = deepMerge(
@@ -5,6 +7,7 @@ module.exports = deepMerge(
   {
     parserOptions: {
       tsconfigRootDir: __dirname,
+      project: path.resolve(__dirname, './tsconfig.json'),
     },
   },
 )

@@ -29,7 +29,7 @@ CliCommand => ({
 })
 
 type ExportArgs = {
-  'typeName': string
+  'type-name': string
   'output-path': string
   'blueprint': string[]
   'blueprints-dir': string
@@ -38,11 +38,11 @@ type ExportParsedCliInput = ParsedCliInput<ExportArgs>
 
 const builder = createCommandBuilder({
   options: {
-    command: 'export <typeName>',
+    command: 'export <type-name>',
     aliases: ['e'],
     description: 'Exports all objects of a given type to CSV',
     positional: {
-      typeName: {
+      'type-name': {
         type: 'string',
         description: 'The type name of the instances for export as it appears in the blueprint',
         default: undefined, // Prevent "default: []" in the help
@@ -72,7 +72,7 @@ const builder = createCommandBuilder({
   },
 
   async build(input: ExportParsedCliInput, _output: CliOutput) {
-    return command(input.args['blueprints-dir'], input.args.blueprint, input.args.typeName, input.args['output-path'])
+    return command(input.args['blueprints-dir'], input.args.blueprint, input.args['type-name'], input.args['output-path'])
   },
 })
 

@@ -8,8 +8,8 @@ import Prompts from '../prompts'
 export const command = (
   workingDir: string,
   blueprintFiles: string[] = [],
-  inputPath: string,
   typeName: string,
+  inputPath: string,
   { stdout, stderr }: CliOutput
 ): CliCommand => ({
   async execute(): Promise<void> {
@@ -35,24 +35,24 @@ export const command = (
 type ImportArgs = {
     'blueprint': string[]
     'blueprints-dir': string
-    inputPath: string
-    typeName: string
+    'type-name': string
+    'input-path': string
   }
 type ImportParsedCliInput = ParsedCliInput<ImportArgs>
 
 const builder = createCommandBuilder({
   options: {
-    command: 'import <inputPath> <typeName>',
+    command: 'import <type-name> <input-path>',
     aliases: ['i'],
-    description: 'Imports all objects of a given type from a provided CSV',
+    description: 'Imports all object instances of a specific type from a CSV',
     positional: {
-      inputPath: {
+      'type-name': {
         type: 'string',
-        description: 'A path to the input CSV file',
+        description: 'Type name as it appears in the blueprint',
       },
-      typeName: {
+      'input-path': {
         type: 'string',
-        description: 'The type name of the instances to import as it appears in the blueprint',
+        description: 'A path to an input CSV file',
       },
     },
     keyed: {
@@ -72,9 +72,8 @@ const builder = createCommandBuilder({
     },
   },
 
-
   async build(input: ImportParsedCliInput, output: CliOutput) {
-    return command(input.args['blueprints-dir'], input.args.blueprint, input.args.inputPath, input.args.typeName, output)
+    return command(input.args['blueprints-dir'], input.args.blueprint, input.args['type-name'], input.args['input-path'], output)
   },
 })
 

@@ -16,17 +16,20 @@ const writeLogo = (outStream: WriteStream): void => {
   outStream.write(EOL)
 }
 
-const onNoArgs = (parser: Argv, outStream: WriteStream): void => {
-  if (outStream.isTTY) {
-    writeLogo(outStream)
-  }
+const showHelpWrapper = (parser: Argv, outStream: WriteStream): void => {
   // Pending PR: https://github.com/yargs/yargs/pull/1386
   // @ts-ignore TS2345
   parser.showHelp((s: string) => {
     outStream.write(USAGE_PREFIX)
     outStream.write(s)
   })
+}
 
+const onNoArgs = (parser: Argv, outStream: WriteStream): void => {
+  if (outStream.isTTY) {
+    writeLogo(outStream)
+  }
+  showHelpWrapper(parser, outStream)
   outStream.write(EOL)
 }
 
@@ -77,12 +80,8 @@ const handleErrors = (parser: Argv, outStream: WriteStream, errors: string[]): v
     }
   })
 
-  // @ts-ignore TS2345
-  parser.showHelp((s: string) => {
-    if (printedErrors) outStream.write(EOL)
-    outStream.write(USAGE_PREFIX)
-    outStream.write(s)
-  })
+  if (printedErrors) outStream.write(EOL)
+  showHelpWrapper(parser, outStream)
 }
 
 export type ParseResult =
@@ -111,11 +110,7 @@ const parse = (
     }
 
     if (parsedArgs.help) {
-      // @ts-ignore TS2345
-      parser.showHelp((s: string) => {
-        stdout.write(USAGE_PREFIX)
-        stdout.write(s)
-      })
+      showHelpWrapper(parser, stdout)
       return
     }
 

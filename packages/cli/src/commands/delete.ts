@@ -34,8 +34,8 @@ export const command = (
 })
 
 type DeleteArgs = {
-  'inputPath': string
-  'typeName': string
+  'input-path': string
+  'type-name': string
   'blueprint': string[]
   'blueprints-dir': string
 }
@@ -43,15 +43,15 @@ type DeleteParsedCliInput = ParsedCliInput<DeleteArgs>
 
 const builder = createCommandBuilder({
   options: {
-    command: 'delete <inputPath> <typeName>',
+    command: 'delete <input-path> <type-name>',
     aliases: ['del'],
     description: 'deletes all objects of a given type from a provided CSV',
     positional: {
-      inputPath: {
+      'input-path': {
         type: 'string',
         description: 'A path to the input CSV file',
       },
-      typeName: {
+      'type-name': {
         type: 'string',
         description: 'The type name of the instances to delete as it appears in the blueprint',
       },
@@ -78,8 +78,8 @@ const builder = createCommandBuilder({
     return command(
       input.args['blueprints-dir'],
       input.args.blueprint,
-      input.args.inputPath,
-      input.args.typeName,
+      input.args['input-path'],
+      input.args['type-name'],
       output
     )
   },

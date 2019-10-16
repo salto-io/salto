@@ -1,13 +1,13 @@
 import * as path from 'path'
 import * as fs from 'async-file'
 
+import { Config } from 'salto'
 import { EditorWorkspace } from '../../src/salto/workspace'
 import { getPositionContext } from '../../src/salto/context'
-import { Config } from 'salto'
 
 describe('Cursor context resolver', () => {
   const getConfig = (baseDir: string, additionalBlueprints: string[]): Config => ({
-    baseDir, additionalBlueprints,stateLocation: path.join(baseBPDir, 'salto.config', 'state.bpc')
+    baseDir, additionalBlueprints, stateLocation: path.join(baseDir, 'salto.config', 'state.bpc'),
   })
   let workspace: EditorWorkspace
   const baseBPDir = path.resolve(`${__dirname}/../../../test/salto/contextBP`)

@@ -1,11 +1,11 @@
 import * as vscode from 'vscode'
+import { loadConfig } from 'salto'
 import { EditorWorkspace } from './salto/workspace'
 import { onDidChangeTextDocument, onFileCreate, onFileDelete } from './events'
 import {
   createCompletionsProvider, createDefinitionsProvider, createReferenceProvider,
   createDocumentSymbolsProvider,
 } from './providers'
-import { loadConfig } from 'salto'
 /**
  * This files act as a bridge between VSC and the salto specific functionality.
  */

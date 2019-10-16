@@ -2,12 +2,12 @@ import _ from 'lodash'
 import * as fs from 'async-file'
 import * as path from 'path'
 
-import { EditorWorkspace } from '../../src/salto/workspace'
 import { Config } from 'salto'
+import { EditorWorkspace } from '../../src/salto/workspace'
 
 describe('TEST', () => {
   const getConfig = (baseDir: string, additionalBlueprints: string[]): Config => ({
-    baseDir, additionalBlueprints,stateLocation: path.join(baseBPDir, 'salto.config', 'state.bpc')
+    baseDir, additionalBlueprints, stateLocation: path.join(baseDir, 'salto.config', 'state.bpc'),
   })
   const baseBPDir = `${__dirname}/../../../test/salto/BP`
   const extraBP = `${__dirname}/../../../test/salto/BP2/extra.bp`

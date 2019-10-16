@@ -3,12 +3,12 @@ import * as path from 'path'
 import * as fs from 'async-file'
 import _ from 'lodash'
 
+import { Config } from 'salto'
 import { EditorWorkspace } from '../../src/salto/workspace'
 import { getPositionContext } from '../../src/salto/context'
 import {
   provideWorkspaceCompletionItems, SaltoCompletion,
 } from '../../src/salto/completions/provider'
-import { Config } from 'salto'
 
 interface Pos {
   line: number
@@ -17,7 +17,7 @@ interface Pos {
 
 describe('Test auto complete', () => {
   const getConfig = (baseDir: string, additionalBlueprints: string[]): Config => ({
-    baseDir, additionalBlueprints,stateLocation: path.join(baseBPDir, 'salto.config', 'state.bpc')
+    baseDir, additionalBlueprints, stateLocation: path.join(baseDir, 'salto.config', 'state.bpc'),
   })
   const getLine = (
     workspace: EditorWorkspace,

@@ -1,13 +1,13 @@
 import * as path from 'path'
 
+import { Config } from 'salto'
 import { EditorWorkspace } from '../../src/salto/workspace'
 import { provideWorkspaceReferences } from '../../src/salto/usage'
 import { SaltoElemLocation } from '../../src/salto/location'
-import { Config } from 'salto'
 
 describe('Test go to definitions', () => {
   const getConfig = (baseDir: string, additionalBlueprints: string[]): Config => ({
-    baseDir, additionalBlueprints,stateLocation: path.join(baseBPDir, 'salto.config', 'state.bpc')
+    baseDir, additionalBlueprints, stateLocation: path.join(baseDir, 'salto.config', 'state.bpc'),
   })
   let workspace: EditorWorkspace
   const baseBPDir = path.resolve(`${__dirname}/../../../test/salto/completionsBP`)

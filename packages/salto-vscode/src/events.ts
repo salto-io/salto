@@ -2,7 +2,7 @@ import * as vscode from 'vscode'
 import * as fs from 'async-file'
 import _ from 'lodash'
 import { EditorWorkspace } from './salto/workspace'
-import { buildVSDiagnostics } from './adapters'
+import { toVSDiagnostics } from './adapters'
 import { getDiagnostics } from './salto/diagnostics'
 
 // This function is called whenever a file content is changed. The function will
@@ -15,7 +15,7 @@ export const onReportErrorsEvent = async (
   const { uri } = event.document
   const oldDiag = diagCollection.get(uri)
   await workspace.awaitAllUpdates()
-  const newDiag = buildVSDiagnostics(getDiagnostics(workspace, event.document.fileName))
+  const newDiag = getDiagnostics(workspace, event.document.fileName).map(toVSDiagnostics)
   if (!_.isEqual(oldDiag, newDiag)) {
     diagCollection.set(uri, newDiag)
   }

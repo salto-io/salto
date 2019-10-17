@@ -62,14 +62,13 @@ export const buildVSCompletionItems = (
   })
 )
 
-export const buildVSDiagnostics = (
-  diag: SaltoDiagnostic[]
-): vscode.Diagnostic[] => diag.map(d => ({
-  message: d.msg,
+export const toVSDiagnostics = (
+  diag: SaltoDiagnostic
+): vscode.Diagnostic => ({
+  message: diag.msg,
   severity: vscode.DiagnosticSeverity.Error,
   range: new vscode.Range(
-    saltoPosToVsPos(d.range.start),
-    saltoPosToVsPos(d.range.end)
+    saltoPosToVsPos(diag.range.start),
+    saltoPosToVsPos(diag.range.end)
   ),
-}
-))
+})

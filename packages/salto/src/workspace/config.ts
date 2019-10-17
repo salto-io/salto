@@ -29,11 +29,11 @@ const createDefaults = (
   const defaultWorkspaceName = path.basename(baseDir)
   const saltoHome = process.env[SALTO_HOME_VAR] || DEFAULT_SALTO_HOME
   return {
-    baseDir: baseDir,
+    baseDir,
     stateLocation: path.join(configDirPath, 'state.bpc'),
     additionalBlueprints: [],
     localStorage: path.join(saltoHome, workspaceName || defaultWorkspaceName),
-    name: workspaceName || defaultWorkspaceName
+    name: workspaceName || defaultWorkspaceName,
   }
 }
 

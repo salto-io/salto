@@ -145,6 +145,8 @@ describe('api functions', () => {
 
     it('should throw error on missing adapter', async () => {
       const config: Config = {
+        name: 'test',
+        localStorage: '~/.salto/test',
         baseDir: '',
         stateLocation: './latest_state.bpc',
         additionalBlueprints: [filePath('missing.bp')],
@@ -160,6 +162,8 @@ describe('api functions', () => {
 
     it('should throw error on adapter fail', async () => {
       const config: Config = {
+        name: 'test',
+        localStorage: '~/.salto/test',
         baseDir: '',
         stateLocation: './latest_state.bpc',
         additionalBlueprints: [filePath('fail.bp')],
@@ -178,6 +182,8 @@ describe('api functions', () => {
 
       beforeEach(async () => {
         const config: Config = {
+          name: 'test',
+          localStorage: '~/.salto/test',
           baseDir: '',
           stateLocation: './latest_state.bpc',
           additionalBlueprints: [filePath('salto.bp')],

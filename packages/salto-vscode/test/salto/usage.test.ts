@@ -7,7 +7,11 @@ import { SaltoElemLocation } from '../../src/salto/location'
 
 describe('Test go to definitions', () => {
   const getConfig = (baseDir: string, additionalBlueprints: string[]): Config => ({
-    baseDir, additionalBlueprints, stateLocation: path.join(baseDir, 'salto.config', 'state.bpc'),
+    baseDir, 
+    additionalBlueprints, 
+    stateLocation: path.join(baseDir, 'salto.config', 'state.bpc'),
+    localStorage: '.',
+    name: 'test'
   })
   let workspace: EditorWorkspace
   const baseBPDir = path.resolve(`${__dirname}/../../../test/salto/completionsBP`)

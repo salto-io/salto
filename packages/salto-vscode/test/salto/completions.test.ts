@@ -17,7 +17,11 @@ interface Pos {
 
 describe('Test auto complete', () => {
   const getConfig = (baseDir: string, additionalBlueprints: string[]): Config => ({
-    baseDir, additionalBlueprints, stateLocation: path.join(baseDir, 'salto.config', 'state.bpc'),
+    baseDir, 
+    additionalBlueprints, 
+    stateLocation: path.join(baseDir, 'salto.config', 'state.bpc'),
+    localStorage: '.',
+    name: 'test'
   })
   const getLine = (
     workspace: EditorWorkspace,

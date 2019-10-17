@@ -1,49 +1,76 @@
 import * as fs from 'async-file'
 import * as path from 'path'
+import { Diff2Html } from 'diff2html'
 
 import { ObjectType, Field, BuiltinTypes, ElemID } from 'adapter-api'
 
-import { createChangeDiff } from '../src/format'
+import { getPlan } from 'salto/dist/src/core/plan'
+import { createPlanDiff, UnifiedDiff, renderDiffView } from '../src/format'
 
 describe('Test extension format', () => {
-  const baseID = new ElemID('salto', 'base')
-  const before = new ObjectType(
-    {
-      elemID: baseID,
-      fields: {
-        before: new Field(baseID, 'before', BuiltinTypes.STRING),
-      },
-    }
-  )
-  const after = new ObjectType(
-    {
-      elemID: baseID,
-      fields: {
-        after: new Field(baseID, 'after', BuiltinTypes.STRING),
-      },
-    }
-  )
-  const baseDiffDir = path.resolve(`${__dirname}/../../test/diffs`)
-  let addDiff: string
-  let removalDiff: string
-  let modDiff: string
+  const addBaseID = new ElemID('salto', 'add')
+  const removeBaseID = new ElemID('salto', 'remove')
+  const modifyBaseID = new ElemID('salto', 'modify')
+  const before = [
+    new ObjectType(
+      {
+        elemID: removeBaseID,
+        fields: {
+          before: new Field(removeBaseID, 'before', BuiltinTypes.STRING),
+        },
+      }
+    ),
+    new ObjectType(
+      {
+        elemID: modifyBaseID,
+        fields: {
+          before: new Field(modifyBaseID, 'before', BuiltinTypes.STRING),
+        },
+      }
+    ),
+  ]
+  const after = [
+    new ObjectType(
+      {
+        elemID: addBaseID,
+        fields: {
+          before: new Field(addBaseID, 'before', BuiltinTypes.STRING),
+        },
+      }
+    ),
+    new ObjectType(
+      {
+        elemID: modifyBaseID,
+        fields: {
+          before: new Field(modifyBaseID, 'after', BuiltinTypes.STRING),
+        },
+      }
+    ),
+  ]
 
+  const diffFile = path.resolve(`${__dirname}/../../test/diffs/all.diff`)
+  const cssHref = '~/.vscode/extensions/salto/test.css'
+  let expectedDif: UnifiedDiff
+  let diff: UnifiedDiff
+  let html: string
   beforeAll(async () => {
-    addDiff = await fs.readFile(path.resolve(`${baseDiffDir}/addition.diff`), 'utf8')
-    removalDiff = await fs.readFile(path.resolve(`${baseDiffDir}/removal.diff`), 'utf8')
-    modDiff = await fs.readFile(path.resolve(`${baseDiffDir}/modification.diff`), 'utf8')
+    expectedDif = await fs.readFile(diffFile, 'utf8')
+    diff = await createPlanDiff(getPlan(before, after).itemsByEvalOrder())
+    html = renderDiffView(diff, [cssHref])
+  })
+  describe('create diff', () => {
+    it('should create plan diff', () => {
+      expect(diff).toEqual(expectedDif)
+    })
   })
 
-  it('should create unified diff for an addition of an element', async () => {
-    const diff = await createChangeDiff(0, undefined, after)
-    expect(diff).toEqual(addDiff)
-  })
-  it('should create unified diff for a removal of an element', async () => {
-    const diff = await createChangeDiff(0, before, undefined)
-    expect(diff).toEqual(removalDiff)
-  })
-  it('should create unified diff for a modification of an element', async () => {
-    const diff = await createChangeDiff(0, before, after)
-    expect(diff).toEqual(modDiff)
+  describe('render html', () => {
+    it('should render the diff as pretty html', () => {
+      const htmlDiff = Diff2Html.getPrettyHtml(diff, { inputFormat: 'diff' })
+      expect(html).toMatch(htmlDiff)
+    })
+    it('should convert the hrefs', () => {
+      expect(html).toMatch(cssHref)
+    })
   })
 })

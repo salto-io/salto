@@ -1,8 +1,13 @@
 import * as vscode from 'vscode'
+import * as path from 'path'
 
 let currentPanel: vscode.WebviewPanel | undefined
 
 export type HTML = string
+
+export const hrefToUri = (href: string, extensionPath: string): vscode.Uri => (
+  vscode.Uri.file(path.join(extensionPath, 'css', href)).with({ scheme: 'vscode-resource' })
+)
 
 export const displayHTML = (html: string): void => {
   if (!currentPanel) {

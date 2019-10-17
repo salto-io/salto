@@ -257,9 +257,7 @@ describe('SalesforceAdapter discover', () => {
         .annotations[constants.FIELD_ANNOTATIONS.VISIBLE_LINES]).toBe(5)
     })
 
-    // This functionality is disabled until core's discover is able to handle split elements
-    // eslint-disable-next-line jest/no-disabled-tests
-    it.skip('should split customizations to different elements', async () => {
+    it('should split customizations to different elements', async () => {
       mockSingleSObject('Test', [
         {
           name: 'dummy', label: 'dummy', type: 'string',

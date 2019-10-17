@@ -1,4 +1,6 @@
 {
+    "name": "workspace",
+    "localStorage": "~/.salto/workspace",
     "baseDir" : "~/workspace",
     "stateLocation" : "~/states/test.bpc",
     "additionalBlueprints" : ["~/moreBP/test.bp"]

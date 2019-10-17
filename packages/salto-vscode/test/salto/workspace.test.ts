@@ -7,7 +7,11 @@ import { EditorWorkspace } from '../../src/salto/workspace'
 
 describe('TEST', () => {
   const getConfig = (baseDir: string, additionalBlueprints: string[]): Config => ({
-    baseDir, additionalBlueprints, stateLocation: path.join(baseDir, 'salto.config', 'state.bpc'),
+    baseDir, 
+    additionalBlueprints, 
+    stateLocation: path.join(baseDir, 'salto.config', 'state.bpc'),
+    localStorage: '.',
+    name: 'test'
   })
   const baseBPDir = `${__dirname}/../../../test/salto/BP`
   const extraBP = `${__dirname}/../../../test/salto/BP2/extra.bp`

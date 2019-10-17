@@ -78,6 +78,8 @@ type salesforce_lead {
     }
     const resetWorkspace = (): void => {
       const config = {
+        name: 'test',
+        localStorage: '~/.salto/test',
         baseDir: '/salto',
         additionalBlueprints: ['../outside/file.bp'],
         stateLocation: '/salto/latest_state.bp',
@@ -110,6 +112,8 @@ type salesforce_lead {
 
     describe('errors', () => {
       const config = {
+        name: 'test',
+        localStorage: '~/.salto/test',
         baseDir: '/salto',
         additionalBlueprints: [],
         stateLocation: '/salto/latest_state.bp',
@@ -292,6 +296,8 @@ type salesforce_lead {
           return fs.writeFile(filePath, data)
         }))
       config = {
+        name: 'test',
+        localStorage: '~/.salto/test',
         baseDir: getPath('salto'),
         additionalBlueprints: [getPath('/outside/file.bp')],
         stateLocation: '/salto/latest_state.bp',

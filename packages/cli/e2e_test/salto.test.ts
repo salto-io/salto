@@ -43,6 +43,7 @@ describe('commands e2e', () => {
   const pathExists = async (p: string): Promise<boolean> => fs.exists(p)
   const homePath = process.env.HOME || process.env.HOMEPATH || process.env.USERPROFILE
   const discoverOutputDir = `${homePath}/BP/test_discover`
+  const localStorageDir = `${homePath}/.salto/test_discover`
   const addModelBP = `${__dirname}/../../e2e_test/BP/add.bp`
   const modifyModelBP = `${__dirname}/../../e2e_test/BP/modify.bp`
   const configFile = `${__dirname}/../../e2e_test/BP/salto.config/config.json`
@@ -84,6 +85,7 @@ describe('commands e2e', () => {
   jest.setTimeout(5 * 60 * 1000)
   beforeAll(async () => {
     await fs.mkdirp(`${discoverOutputDir}/salto.config`)
+    await fs.mkdirp(localStorageDir)
     await copyFile(configFile, `${discoverOutputDir}/salto.config/config.json`)
     if (await fs.exists(tmpBP)) {
       await fs.delete(tmpBP)
@@ -94,7 +96,10 @@ describe('commands e2e', () => {
     }
   })
 
-  afterAll(() => fs.delete(discoverOutputDir))
+  afterAll(async () => {
+    await fs.delete(discoverOutputDir)
+    await fs.delete(localStorageDir)
+  })
 
   it('should run discover and create the state bp file', async () => {
     await discover(discoverOutputDir).execute()

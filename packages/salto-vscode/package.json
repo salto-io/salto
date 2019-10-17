@@ -1,8 +1,13 @@
 {
     "name": "salto-vscode",
-    "displayName": "salto-vscode",
-    "description": "",
+    "displayName": "Salto",
+    "description": "Configure, plan and apply Salto patches in vscode.",
     "version": "0.0.1",
+    "icon": "icons/images/file_type_salto_white.png",
+    "galleryBanner": {
+      "color": "#C80000",
+      "theme": "dark"
+    },
     "engines": {
         "vscode": "^1.37.0"
     },
@@ -50,10 +55,10 @@
         },
         "languages": [
             {
-                "id": "blueprint",
+                "id": "salto",
                 "aliases": [
-                    "Blueprint",
-                    "blueprint"
+                    "Salto",
+                    "salto"
                 ],
                 "extensions": [
                     ".bp"
@@ -63,9 +68,9 @@
         ],
         "grammars": [
             {
-                "language": "blueprint",
-                "scopeName": "source.blueprint",
-                "path": "./syntaxes/blueprint.json"
+                "language": "salto",
+                "scopeName": "source.salto",
+                "path": "./syntaxes/salto.json"
             }
         ],
         "commands": [

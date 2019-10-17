@@ -6,7 +6,7 @@ import tmp from 'tmp-promise'
 import {
   Element, ObjectType, ElemID, Type,
 } from 'adapter-api'
-import { Config } from 'src/workspace/config'
+import { Config } from '../../src/workspace/config'
 import {
   Workspace, Blueprint, ParsedBlueprint, parseBlueprints,
 } from '../../src/workspace/workspace'

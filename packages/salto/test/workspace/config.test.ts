@@ -23,11 +23,11 @@ describe('load proper configuration', () => {
     const config = await loadConfig(fullWorkspaceDir)
     expect(config).toEqual(
       {
-        "name": "workspace",
-        "localStorage": "~/.salto/workspace",
-        "baseDir" : "~/workspace",
-        "stateLocation" : "~/states/test.bpc",
-        "additionalBlueprints" : ["~/moreBP/test.bp"]
+        name: 'workspace',
+        localStorage: '~/.salto/workspace',
+        baseDir: '~/workspace',
+        stateLocation: '~/states/test.bpc',
+        additionalBlueprints: ['~/moreBP/test.bp'],
       }
     )
   })

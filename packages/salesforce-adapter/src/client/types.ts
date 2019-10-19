@@ -36,6 +36,10 @@ export class CustomField implements MetadataInfo {
   readonly formula?: string
   // To be used for picklist and combobox types
   readonly valueSet?: { valueSetDefinition: { value: CustomPicklistValue[] } }
+  // To be used for lookup and masterdetail types
+  readonly referenceTo?: string[]
+  readonly relationshipName?: string
+  readonly deleteConstraint?: string
 
   // To be used for Text types fields
   readonly length?: number
@@ -60,6 +64,9 @@ export class CustomField implements MetadataInfo {
     defaultValFormula?: string,
     values?: string[],
     formula?: string,
+    relatedTo?: string[],
+    relationshipName?: string,
+    allowLookupRecordDeletion?: boolean,
   ) {
     this.type = type
     if (formula) {
@@ -96,11 +103,16 @@ export class CustomField implements MetadataInfo {
           },
         }
       }
-    }
-
-    // For Checkbox the default value comes from defaultVal and not defaultValFormula
-    if (type === FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.CHECKBOX]) {
+    } else if (type === FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.CHECKBOX]) {
+      // For Checkbox the default value comes from defaultVal and not defaultValFormula
       this.defaultValue = defaultVal
+    } else if (type === FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.LOOKUP]) {
+      this.relationshipName = relationshipName
+      this.deleteConstraint = allowLookupRecordDeletion ? 'SetNull' : 'Restrict'
+      this.referenceTo = relatedTo
+    } else if (type === FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.MASTER_DETAIL]) {
+      this.relationshipName = relationshipName
+      this.referenceTo = relatedTo
     }
   }
 }

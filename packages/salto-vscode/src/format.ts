@@ -24,15 +24,15 @@ export const createChangeDiff = async (
   stepIndex: number,
   change: PlanItem
 ): Promise<UnifiedDiff> => {
-  const changeData = change.parent().data as {before?: Element; after: Element}
-  const beforeHCL = changeData.before ? await dump([changeData.before]) : ''
-  const afterHCL = changeData.after ? await dump([changeData.after]) : ''
+  const changeData = change.parent().data as {before?: Element; after?: Element}
+  const beforeHCL = changeData.before ? dump([changeData.before]) : ''
+  const afterHCL = changeData.after ? dump([changeData.after]) : ''
   const step = `Step ${stepIndex} - `
   const patchName = `${step}${getActionName(change)}`
   return Diff.createPatch(
     patchName,
-    beforeHCL,
-    afterHCL,
+    await beforeHCL,
+    await afterHCL,
   )
 }
 

@@ -56,21 +56,6 @@ const updateProgress = async (
   progress.report({ message })
 }
 
-const initProgress = async (
-  processPromise: Promise<Plan>,
-): Promise<vscode.Progress<{message: string}>> => (
-  new Promise<vscode.Progress<{message: string}>>(resolve => {
-    vscode.window.withProgress({
-      location: vscode.ProgressLocation.Notification,
-      title: 'Applying plan',
-      cancellable: true,
-    },
-    progress => {
-      resolve(progress)
-      return processPromise
-    })
-  }))
-
 export const planCommand = async (
   workspace: EditorWorkspace,
   extensionPath: string
@@ -86,12 +71,30 @@ export const applyCommand = async (
   workspace: EditorWorkspace,
   extensionPath: string
 ): Promise<void> => {
+  const initApplyProgress = async (
+    processPromise: Promise<Plan>,
+  ): Promise<vscode.Progress<{message: string}>> => (
+    new Promise<vscode.Progress<{message: string}>>(resolve => {
+      vscode.window.withProgress({
+        location: vscode.ProgressLocation.Notification,
+        title: 'Applying plan',
+        cancellable: true,
+      },
+      progress => {
+        resolve(progress)
+        return processPromise
+      })
+    }))
+
   let progress: vscode.Progress<{message: string}>
   let applyProcess: Promise<Plan>
   const shouldApplyCB = async (p: Plan): Promise<boolean> => shouldApply(p, extensionPath)
+  // A delayed initiation for the apply progress bar. We don't want to show it until
+  // the actions start taking place (just running the apply in progress would cause
+  // the progress to show before the user approved
   const updateActionCB = async (action: PlanItem): Promise<void> => {
     if (!progress) {
-      progress = await initProgress(applyProcess)
+      progress = await initApplyProgress(applyProcess)
     }
     return updateProgress(progress, action)
   }

@@ -60,7 +60,6 @@ export const createPlanDiff = async (planActions: Iterable<PlanItem>): Promise<U
   const diffCreators = wu(planActions)
     .enumerate()
     .map(([change, i]) => createChangeDiff(i, change))
-    .toArray()
   const diff = (await Promise.all(diffCreators)).join('\n')
   return diff
 }

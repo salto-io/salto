@@ -9,10 +9,11 @@ module.exports = deepMerge(
     collectCoverageFrom: [
       // This file is only used as a bridge with vsc. The overhead of mocking vsc has bad ROI.
       '!**/extension.*',
-      '!**/adapters.*', 
+      '!**/adapters.*',
       '!**/providers.*',
-      '!**/events.*',  
-      '!**/salto/debug.*'
+      '!**/events.*',
+      '!**/commands.*',
+      '!**/output.*',
     ],
     coverageThreshold: {
       // Slowly start increasing here, never decrease!

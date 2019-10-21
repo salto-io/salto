@@ -5,6 +5,7 @@ import {
   createCompletionsProvider, createDefinitionsProvider, createReferenceProvider,
   createDocumentSymbolsProvider,
 } from './providers'
+import { planCommand, applyCommand } from './commands'
 /**
  * This files act as a bridge between VSC and the salto specific functionality.
  */
@@ -42,11 +43,33 @@ export const activate = async (context: vscode.ExtensionContext): Promise<void> 
       createDocumentSymbolsProvider(workspace)
     )
 
+    const plan = vscode.commands.registerCommand('salto.plan', () => {
+      planCommand(workspace, context.extensionPath)
+    })
+
+    const apply = vscode.commands.registerCommand('salto.apply', () => {
+      applyCommand(workspace, context.extensionPath)
+    })
+
+    const planStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100)
+    planStatusBar.text = 'Salto: Plan'
+    planStatusBar.command = 'salto.plan'
+    planStatusBar.show()
+
+    const applyStatus = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100)
+    applyStatus.text = 'Salto: Apply'
+    applyStatus.command = 'salto.apply'
+    applyStatus.show()
+
     context.subscriptions.push(
       completionProvider,
       definitionProvider,
       referenceProvider,
       symbolsProvider,
+      plan,
+      apply,
+      planStatusBar,
+      applyStatus,
       vscode.workspace.onDidChangeTextDocument(
         e => onTextChangeEvent(e, workspace)
       ),

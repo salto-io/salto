@@ -118,7 +118,7 @@ const parse = (
       return
     }
 
-    // When the help option is on show the help message and resolve (whether it's alone or with other args/options)
+    // When the help option is on show message and resolve (alone or with other args/options)
     if (parsedArgs.help) {
       showHelpMessage(parser, stdout)
       resolve({ status: 'help' })

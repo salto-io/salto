@@ -9,7 +9,7 @@ import {
 } from './core/records'
 import initAdapters from './core/adapters/adapters'
 import {
-  getPlan, Plan, PlanItem,
+  getPlan, Plan, PlanItem, DetailedChange,
 } from './core/plan'
 import State from './state/state'
 import { findElement, SearchResult } from './core/search'
@@ -60,17 +60,20 @@ export const apply = async (
   }
 }
 
-export const discover = async (
+export type fillConfigFunc = (configType: ObjectType) => Promise<InstanceElement>
+export type discoverFunc = (
   workspace: Workspace,
-  fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
-): Promise<void> => {
+  fillConfig: fillConfigFunc,
+) => Promise<Iterable<DetailedChange>>
+
+export const discover: discoverFunc = async (workspace, fillConfig) => {
   const state = new State(workspace.config.stateLocation)
   const { changes, elements } = await discoverChanges(
-    workspace.elements, await state.get(), fillConfig
+    workspace.elements, await state.get(), fillConfig,
   )
   state.override(elements)
-  await workspace.updateBlueprints(...changes)
-  await Promise.all([workspace.flush(), state.flush()])
+  await state.flush()
+  return changes
 }
 
 export const describeElement = async (

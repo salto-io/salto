@@ -1,16 +1,16 @@
+import _ from 'lodash'
+import { ElemID, ObjectType } from 'adapter-api'
 import {
-  discover as mockDiscover,
-  Workspace as mockWorksapce,
+  Workspace, discover, loadConfig, DetailedChange,
 } from 'salto'
-import { command } from '../../src/commands/discover'
+import { command, discoverCommand } from '../../src/commands/discover'
 import { MockWriteStream } from '../mocks'
 
-
 jest.mock('salto', () => ({
-  discover: jest.fn().mockImplementation(() => Promise.resolve()),
+  discover: jest.fn().mockImplementation(() => Promise.resolve([])),
   Workspace: {
     load: jest.fn().mockImplementation(
-      config => ({ config, hasErrors: () => false }),
+      config => ({ config, elements: [], hasErrors: () => false }),
     ),
   },
   loadConfig: jest.fn().mockImplementation(
@@ -20,33 +20,124 @@ jest.mock('salto', () => ({
 
 describe('discover command', () => {
   const workspaceDir = 'dummy_dir'
-  describe('with a valid workspace', () => {
-    const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
+
+  let cliOutput: { stdout: MockWriteStream; stderr: MockWriteStream }
+  beforeEach(() => {
+    cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
+  })
+
+  describe('execute', () => {
     beforeEach(async () => {
-      await command(workspaceDir, cliOutput).execute()
+      await command(workspaceDir, true, cliOutput).execute()
     })
-    it('should run discover with workspace loaded from provided directory', () => {
-      const discoverCalls = (mockDiscover as jest.Mock).mock.calls
-      expect(discoverCalls).toHaveLength(1)
-      expect(discoverCalls[0][0].config.baseDir).toEqual(workspaceDir)
+    it('should load the workspace from the provided directory', () => {
+      expect(Workspace.load).toHaveBeenCalledWith(loadConfig(workspaceDir))
+    })
+    it('should call discover', () => {
+      expect(discover).toHaveBeenCalled()
     })
   })
-  describe('with errored workspace', () => {
-    const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
-    beforeEach(() => {
-      mockWorksapce.load = jest.fn().mockImplementationOnce(
-        baseDir => ({
-          hasErrors: () => true,
-          baseDir,
-          errors: {
-            strings: () => ['some Error'],
-          },
+
+  describe('discoverCommand', () => {
+    const mockDiscover = jest.fn().mockResolvedValue(Promise.resolve([]))
+    const mockApprove = jest.fn().mockResolvedValue(Promise.resolve([]))
+    describe('with valid workspace', () => {
+      let mockWorkspace: Workspace
+      beforeEach(() => {
+        mockWorkspace = {
+          hasErrors: () => false,
+          elements: [],
+          updateBlueprints: jest.fn(),
+          flush: jest.fn(),
+        } as unknown as Workspace
+      })
+
+      describe('with no upstream changes', () => {
+        beforeEach(async () => {
+          await discoverCommand(mockWorkspace, true, cliOutput, mockDiscover, mockApprove)
         })
-      )
+        it('should not update workspace', () => {
+          expect(mockWorkspace.updateBlueprints).not.toHaveBeenCalled()
+          expect(mockWorkspace.flush).not.toHaveBeenCalled()
+        })
+      })
+      describe('with upstream changes', () => {
+        const dummyChanges: DetailedChange[] = [
+          {
+            id: new ElemID('adapter', 'dummy'),
+            action: 'add',
+            data: { after: 'asd' },
+          },
+          {
+            id: new ElemID('adapter', 'other'),
+            action: 'remove',
+            data: { before: 'asd' },
+          },
+        ]
+        beforeEach(() => {
+          mockDiscover.mockResolvedValueOnce(Promise.resolve(dummyChanges))
+        })
+        describe('when called with force', () => {
+          beforeEach(async () => {
+            await discoverCommand(mockWorkspace, true, cliOutput, mockDiscover, mockApprove)
+          })
+          it('should apply all changes', () => {
+            expect(mockWorkspace.updateBlueprints).toHaveBeenCalledWith(...dummyChanges)
+          })
+        })
+        describe('when initial workspace is empty', () => {
+          beforeEach(async () => {
+            await discoverCommand(mockWorkspace, false, cliOutput, mockDiscover, mockApprove)
+          })
+          it('should apply all changes', () => {
+            expect(mockWorkspace.updateBlueprints).toHaveBeenCalledWith(...dummyChanges)
+          })
+        })
+        describe('when initial workspace has only config', () => {
+          beforeEach(async () => {
+            _.set(mockWorkspace, 'elements', [new ObjectType({ elemID: new ElemID('adapter') })])
+            await discoverCommand(mockWorkspace, false, cliOutput, mockDiscover, mockApprove)
+          })
+          it('should apply all changes', () => {
+            expect(mockWorkspace.updateBlueprints).toHaveBeenCalledWith(...dummyChanges)
+          })
+        })
+        describe('when initial workspace is not empty', () => {
+          beforeEach(() => {
+            _.set(mockWorkspace, 'elements', [new ObjectType({ elemID: new ElemID('adapter', 'type') })])
+          })
+          describe('if no change is approved', () => {
+            beforeEach(async () => {
+              await discoverCommand(mockWorkspace, false, cliOutput, mockDiscover, mockApprove)
+            })
+            it('should not update workspace', () => {
+              expect(mockWorkspace.updateBlueprints).not.toHaveBeenCalled()
+              expect(mockWorkspace.flush).not.toHaveBeenCalled()
+            })
+          })
+          describe('if some changes are approved', () => {
+            beforeEach(async () => {
+              mockApprove.mockImplementationOnce(changes => [changes[0]])
+              await discoverCommand(mockWorkspace, false, cliOutput, mockDiscover, mockApprove)
+            })
+            it('should update workspace only with approved changes', () => {
+              expect(mockWorkspace.updateBlueprints).toHaveBeenCalledWith(dummyChanges[0])
+              expect(mockWorkspace.flush).toHaveBeenCalledTimes(1)
+            })
+          })
+        })
+      })
     })
-    it('should fail', async () => {
-      await command(workspaceDir, cliOutput).execute()
-      expect(cliOutput.stderr.content.search('Error')).toBeGreaterThan(0)
+    describe('with errored workspace', () => {
+      const erroredWorkspace = {
+        hasErrors: () => true,
+        errors: { strings: () => ['some error'] },
+      } as unknown as Workspace
+
+      it('should fail', async () => {
+        await discoverCommand(erroredWorkspace, true, cliOutput, mockDiscover, mockApprove)
+        expect(cliOutput.stderr.content).toContain('some error')
+      })
     })
   })
 })

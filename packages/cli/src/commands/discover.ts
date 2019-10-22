@@ -23,6 +23,7 @@ type DiscoverParsedCliInput = ParsedCliInput<DiscoverArgs>
 
 const builder = createCommandBuilder({
   options: {
+    orderRank: 1,
     command: 'discover',
     aliases: ['dis'],
     description: 'Update blueprints and state in workspace directory',

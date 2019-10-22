@@ -34,6 +34,9 @@ export interface YargsModuleOpts {
 
   // Keyed arguments
   keyed?: KeyedOptions
+
+  // Command order rank for help appearance
+  orderRank: number
 }
 
 export interface YargsCommandBuilder<
@@ -46,6 +49,9 @@ export interface YargsCommandBuilder<
 
   // Creates the actual command
   build: CommandBuilder<TArgs, TParsedCliInput>
+
+  // Command order rank for help appearance
+  orderRank: number
 }
 
 export const createCommandBuilder = <
@@ -58,6 +64,8 @@ export const createCommandBuilder = <
       filters?: Filter[]
       build: CommandBuilder<TArgs, TParsedCliInput>
     }): YargsCommandBuilder<TArgs, TParsedCliInput> => ({
+
+    orderRank: options.orderRank,
 
     yargsModule: {
       command: options.command,
@@ -94,11 +102,14 @@ const extractBuilderFromNodeModule = (
   module: { default: YargsCommandBuilder }
 ): YargsCommandBuilder => module.default
 
-export const allBuilders = _.values(requireDirectory(
-  module,
-  './commands',
-  { visit: extractBuilderFromNodeModule }
-)) as YargsCommandBuilder[]
+export const allBuilders = _.sortBy(
+  _.values(requireDirectory(
+    module,
+    './commands',
+    { visit: extractBuilderFromNodeModule }
+  )) as YargsCommandBuilder[],
+  [(val): number => val.orderRank]
+)
 
 export const registerBuilders = (
   parser: yargs.Argv, builders: YargsCommandBuilder[] = allBuilders

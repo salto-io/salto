@@ -38,6 +38,7 @@ type ExportParsedCliInput = ParsedCliInput<ExportArgs>
 
 const builder = createCommandBuilder({
   options: {
+    orderRank: 5,
     command: 'export <type-name>',
     aliases: ['e'],
     description: 'Exports all objects of a given type to CSV',

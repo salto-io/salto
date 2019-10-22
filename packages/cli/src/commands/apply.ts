@@ -82,6 +82,7 @@ type ApplyParsedCliInput = ParsedCliInput<ApplyArgs>
 
 const builder = createCommandBuilder({
   options: {
+    orderRank: 4,
     command: 'apply',
     aliases: ['a'],
     description: 'Applies changes to the target services',

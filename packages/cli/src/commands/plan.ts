@@ -23,6 +23,7 @@ type PlanParsedCliInput = ParsedCliInput<PlanArgs>
 
 const builder = createCommandBuilder({
   options: {
+    orderRank: 3,
     command: 'plan',
     aliases: ['p'],
     description: 'Shows changes to be applied to the target services at the next run of the *apply* command',

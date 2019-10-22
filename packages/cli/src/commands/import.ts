@@ -42,6 +42,7 @@ type ImportParsedCliInput = ParsedCliInput<ImportArgs>
 
 const builder = createCommandBuilder({
   options: {
+    orderRank: 6,
     command: 'import <type-name> <input-path>',
     aliases: ['i'],
     description: 'Imports all object instances of a specific type from a CSV',

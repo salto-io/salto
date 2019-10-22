@@ -26,6 +26,7 @@ type DescribeParsedCliInput = ParsedCliInput<DescribeArgs>
 
 const builder = createCommandBuilder({
   options: {
+    orderRank: 2,
     command: 'describe <words...>',
     aliases: ['desc'],
     description: 'Shows all available types and attributes for the adapters of the related services',

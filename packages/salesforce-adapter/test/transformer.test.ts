@@ -137,19 +137,19 @@ describe('transformer', () => {
     it('should discover lookup relationships with restricted deletion', async () => {
       _.set(salesforceReferenceField, 'restrictedDelete', true)
       const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField)
-      assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.salesforceDataTypes.lookup, 'Owner', false)
+      assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.salesforceDataTypes.lookup, 'owner', false)
     })
 
     it('should discover lookup relationships with allowed related record deletion when restrictedDelete set to false', async () => {
       _.set(salesforceReferenceField, 'restrictedDelete', false)
       const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField)
-      assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.salesforceDataTypes.lookup, 'Owner', true)
+      assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.salesforceDataTypes.lookup, 'owner', true)
     })
 
     it('should discover lookup relationships with allowed related record deletion when restrictedDelete is undefined', async () => {
       _.set(salesforceReferenceField, 'restrictedDelete', undefined)
       const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField)
-      assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.salesforceDataTypes.lookup, 'Owner', true)
+      assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.salesforceDataTypes.lookup, 'owner', true)
     })
 
     it('should use field name as name in case relationshipName is not specified', async () => {
@@ -161,13 +161,13 @@ describe('transformer', () => {
     it('should slice field name in case relationshipName is a custom relationship', async () => {
       salesforceReferenceField.relationshipName = 'CustomRelationshipName__r'
       const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField)
-      assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.salesforceDataTypes.lookup, 'CustomRelationshipName', true)
+      assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.salesforceDataTypes.lookup, 'custom_relationship_name', true)
     })
 
     it('should discover masterdetail relationships', async () => {
       salesforceReferenceField.cascadeDelete = true
       const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField)
-      assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.salesforceDataTypes.masterdetail, 'Owner', undefined)
+      assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.salesforceDataTypes.masterdetail, 'owner', undefined)
     })
   })
 
@@ -180,7 +180,7 @@ describe('transformer', () => {
       [Type.REQUIRED]: false,
       [FIELD_ANNOTATIONS.RELATED_TO]: relatedTo,
     }
-    const fieldName = 'FieldName'
+    const fieldName = 'field_name'
     const origObjectType = new ObjectType({ elemID,
       fields: { [fieldName]: new TypeField(elemID, fieldName, Types.get(FIELD_TYPE_NAMES.LOOKUP),
         annotations) } })
@@ -204,7 +204,7 @@ describe('transformer', () => {
       objectType.fields[fieldName].annotations[FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION] = false
       const customLookupField = toCustomField(objectType, objectType.fields[fieldName])
       assertCustomFieldTransformation(customLookupField,
-        FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.LOOKUP], fieldName, 'Restrict', relatedTo)
+        FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.LOOKUP], 'FieldName', 'Restrict', relatedTo)
     })
 
     it('should transform lookup field with no deletion constraint', async () => {
@@ -212,14 +212,14 @@ describe('transformer', () => {
       objectType.fields[fieldName].annotations[FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION] = true
       const customLookupField = toCustomField(objectType, objectType.fields[fieldName])
       assertCustomFieldTransformation(customLookupField,
-        FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.LOOKUP], fieldName, 'SetNull', relatedTo)
+        FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.LOOKUP], 'FieldName', 'SetNull', relatedTo)
     })
 
     it('should transform masterdetail field', async () => {
       objectType.fields[fieldName].type = Types.get(FIELD_TYPE_NAMES.MASTER_DETAIL)
       const customLookupField = toCustomField(objectType, objectType.fields[fieldName])
       assertCustomFieldTransformation(customLookupField,
-        FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.MASTER_DETAIL], fieldName, undefined, relatedTo)
+        FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.MASTER_DETAIL], 'FieldName', undefined, relatedTo)
     })
 
     it('should have ControlledByParent sharing model when having masterdetail field', async () => {

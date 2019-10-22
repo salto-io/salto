@@ -31,15 +31,13 @@ export const sfCase = (name: string, custom = false, capital = true): string => 
 }
 
 export const bpCase = (name: string): string => {
-  const bpName = (name.endsWith(SALESFORCE_CUSTOM_SUFFIX) ? name.slice(0, -2) : name)
+  const bpName = (name.endsWith(SALESFORCE_CUSTOM_SUFFIX)
+  || name.endsWith(SALESFORCE_CUSTOM_RELATIONSHIP_SUFFIX)
+    ? name.slice(0, -2) : name)
   // Using specific replace for chars then _.unescape is not replacing well
   // and we see in our responses for sfdc
   return _.snakeCase(_.unescape(bpName.replace(/%26|%28|%29/g, ' ')))
 }
-
-const sliceCustomRelationSuffix = (relationshipName: string): string =>
-  (relationshipName.endsWith(SALESFORCE_CUSTOM_RELATIONSHIP_SUFFIX)
-    ? relationshipName.slice(0, -3) : relationshipName)
 
 export const sfInstnaceName = (instance: Element): string =>
   instance.elemID.nameParts.slice(1).map(p => sfCase(p, false)).join('')
@@ -271,7 +269,7 @@ export const toCustomField = (
     field.annotations[PICKLIST_VALUES],
     field.annotations[FORMULA],
     field.annotations[FIELD_ANNOTATIONS.RELATED_TO],
-    field.name,
+    sfCase(field.name),
     field.annotations[FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION]
   )
 
@@ -357,7 +355,7 @@ const getDefaultValue = (field: Field): DefaultValueType | undefined => {
 // The following method is used during the discovery process and is used in building the objects
 // and their fields described in the blueprint
 export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeField => {
-  let bpFieldName = bpCase(field.name)
+  const bpFieldName = bpCase(field.relationshipName ? field.relationshipName : field.name)
   let bpFieldType = Types.get(field.type)
   const annotations: Values = {
     [API_NAME]: field.name,
@@ -428,9 +426,6 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
       // there are some SF reference fields without related fields
       // e.g. salesforce_user_app_menu_item.ApplicationId, salesforce_login_event.LoginHistoryId
       annotations[FIELD_ANNOTATIONS.RELATED_TO] = field.referenceTo
-    }
-    if (_.isString(field.relationshipName)) {
-      bpFieldName = sliceCustomRelationSuffix(field.relationshipName)
     }
   }
   if (!_.isEmpty(bpFieldType.annotationTypes)) {

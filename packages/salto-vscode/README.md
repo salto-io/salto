@@ -24,7 +24,7 @@
 - Find references
 - Show types definition values on hover
 
-## Instalation
+## Installation
 Salto is still not registered in the marketplace. To install:
 - Download the latest vsix file.
 - Open the extension menu.

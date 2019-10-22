@@ -1,11 +1,6 @@
-import _ from 'lodash'
 import yargs from 'yargs'
-import requireDirectory from 'require-directory'
-import { promises } from '@salto/lowerdash'
 import { ParsedCliInput, CliOutput, CliCommand } from './types'
 import { Filter } from './filter'
-
-const { promiseWithState } = promises.state
 
 export type CommandBuilder<
   TArgs = {},
@@ -89,29 +84,3 @@ export const createCommandBuilder = <
       return build(transformedInput, output)
     },
   })
-
-const registerBuilder = (
-  yargsParser: yargs.Argv, { yargsModule, build }: YargsCommandBuilder
-): Promise<CommandBuilder> =>
-  new Promise<CommandBuilder>(resolved => yargsParser.command({
-    ...yargsModule,
-    handler: () => resolved(build),
-  }))
-
-const extractBuilderFromNodeModule = (
-  module: { default: YargsCommandBuilder }
-): YargsCommandBuilder => module.default
-
-export const allBuilders = _.sortBy(
-  _.values(requireDirectory(
-    module,
-    './commands',
-    { visit: extractBuilderFromNodeModule }
-  )) as YargsCommandBuilder[],
-  [(val): number => val.orderRank]
-)
-
-export const registerBuilders = (
-  parser: yargs.Argv, builders: YargsCommandBuilder[] = allBuilders
-): promises.state.PromiseWithState<CommandBuilder> =>
-  promiseWithState(Promise.race(builders.map(builder => registerBuilder(parser, builder))))

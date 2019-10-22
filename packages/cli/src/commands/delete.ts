@@ -1,6 +1,6 @@
 import asyncfile from 'async-file'
 import { deleteFromCsvFile, Workspace, readCsv } from 'salto'
-import { createCommandBuilder } from '../builder'
+import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput } from '../types'
 
 import { getConfigFromUser } from '../callbacks'
@@ -41,7 +41,7 @@ type DeleteArgs = {
 }
 type DeleteParsedCliInput = ParsedCliInput<DeleteArgs>
 
-const builder = createCommandBuilder({
+const deleteBuilder = createCommandBuilder({
   options: {
     orderRank: 7,
     command: 'delete <type-name> <input-path>',
@@ -86,4 +86,4 @@ const builder = createCommandBuilder({
   },
 })
 
-export default builder
+export default deleteBuilder

@@ -1,6 +1,6 @@
 import path from 'path'
 import { exportToCsv, Workspace, dumpCsv } from 'salto'
-import { createCommandBuilder } from '../builder'
+import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput } from '../types'
 import { getConfigFromUser } from '../callbacks'
 
@@ -36,7 +36,7 @@ type ExportArgs = {
  }
 type ExportParsedCliInput = ParsedCliInput<ExportArgs>
 
-const builder = createCommandBuilder({
+const exportBuilder = createCommandBuilder({
   options: {
     orderRank: 5,
     command: 'export <type-name>',
@@ -77,4 +77,4 @@ const builder = createCommandBuilder({
   },
 })
 
-export default builder
+export default exportBuilder

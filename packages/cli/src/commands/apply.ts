@@ -1,6 +1,6 @@
 import * as sourceMapSupport from 'source-map-support'
 import { apply, PlanItem, Workspace } from 'salto'
-import { createCommandBuilder } from '../builder'
+import { createCommandBuilder } from '../command_builder'
 import {
   CliCommand, CliOutput, ParsedCliInput, WriteStream,
 } from '../types'
@@ -80,7 +80,7 @@ type ApplyArgs = {
 }
 type ApplyParsedCliInput = ParsedCliInput<ApplyArgs>
 
-const builder = createCommandBuilder({
+const applyBuilder = createCommandBuilder({
   options: {
     orderRank: 4,
     command: 'apply',
@@ -113,4 +113,4 @@ const builder = createCommandBuilder({
   },
 })
 
-export default builder
+export default applyBuilder

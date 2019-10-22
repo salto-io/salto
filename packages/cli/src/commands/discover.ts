@@ -1,5 +1,5 @@
 import { discover, Workspace } from 'salto'
-import { createCommandBuilder } from '../builder'
+import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput } from '../types'
 import { getConfigFromUser } from '../callbacks'
 
@@ -21,7 +21,7 @@ type DiscoverArgs = {
 }
 type DiscoverParsedCliInput = ParsedCliInput<DiscoverArgs>
 
-const builder = createCommandBuilder({
+const discoverBuilder = createCommandBuilder({
   options: {
     orderRank: 1,
     command: 'discover',
@@ -51,4 +51,4 @@ const builder = createCommandBuilder({
   },
 })
 
-export default builder
+export default discoverBuilder

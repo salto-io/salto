@@ -1,5 +1,5 @@
 import { plan, Workspace } from 'salto'
-import { createCommandBuilder } from '../builder'
+import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput } from '../types'
 import { createPlanOutput } from '../formatter'
 
@@ -21,7 +21,7 @@ type PlanArgs = {
 }
 type PlanParsedCliInput = ParsedCliInput<PlanArgs>
 
-const builder = createCommandBuilder({
+const planBuilder = createCommandBuilder({
   options: {
     orderRank: 3,
     command: 'plan',
@@ -49,4 +49,4 @@ const builder = createCommandBuilder({
   },
 })
 
-export default builder
+export default planBuilder

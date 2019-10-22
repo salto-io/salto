@@ -1,6 +1,6 @@
 import asyncfile from 'async-file'
 import { importFromCsvFile, Workspace, readCsv } from 'salto'
-import { createCommandBuilder } from '../builder'
+import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput } from '../types'
 import { getConfigFromUser } from '../callbacks'
 import Prompts from '../prompts'
@@ -40,7 +40,7 @@ type ImportArgs = {
   }
 type ImportParsedCliInput = ParsedCliInput<ImportArgs>
 
-const builder = createCommandBuilder({
+const importBuilder = createCommandBuilder({
   options: {
     orderRank: 6,
     command: 'import <type-name> <input-path>',
@@ -78,4 +78,4 @@ const builder = createCommandBuilder({
   },
 })
 
-export default builder
+export default importBuilder

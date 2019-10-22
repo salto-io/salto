@@ -2,7 +2,7 @@ import _ from 'lodash'
 import {
   ObjectType, ElemID, Field, BuiltinTypes, InstanceElement, Type,
 } from 'adapter-api'
-import validateElements from '../src/core/validator'
+import { validateElements, InvalidValueValidationError } from '../src/core/validator'
 
 describe('Elements validation', () => {
   const baseElemID = new ElemID('salto', 'simple')
@@ -154,7 +154,7 @@ describe('Elements validation', () => {
           extInst.type = extType
           const errors = validateElements([extInst])
           expect(errors).toHaveLength(1)
-          expect(errors[0].message).toEqual(`Field ${extType.fields.reqStr.name} is required but has no value`)
+          expect(errors[0].message).toMatch('Field reqStr is required but has no value')
         })
 
         it('should return error when required object field is missing', () => {
@@ -165,7 +165,7 @@ describe('Elements validation', () => {
           const errors = validateElements([extInst])
           expect(errors).toHaveLength(1)
           expect(errors[0].message)
-            .toEqual(`Field ${extType.fields.reqNested.name} is required but has no value`)
+            .toMatch(`Field ${extType.fields.reqNested.name} is required but has no value`)
         })
 
         it('should return error when lists elements missing required fields', () => {
@@ -188,7 +188,7 @@ describe('Elements validation', () => {
           const errors = validateElements([extInst])
           expect(errors).toHaveLength(1)
           expect(errors[0].message)
-            .toEqual(`Field ${simpleType.fields.bool.name} is required but has no value`)
+            .toMatch(`Field ${simpleType.fields.bool.name} is required but has no value`)
         })
       })
 
@@ -210,14 +210,18 @@ describe('Elements validation', () => {
 
           const errors = validateElements([extInst])
           expect(errors).toHaveLength(2)
-          expect(errors.some(err => _.isEqual(err.message, `Value ${extInst.value.restrictStr} doesn't valid for field ${nestedType.fields
-            .restrictStr.elemID.getFullName()},
-            can accept only ${nestedType.fields.restrictStr.annotations[Type.RESTRICTION]
-    .values}`))).toBeTruthy()
-          expect(errors.some(err => _.isEqual(err.message, `Value ${extInst.value.nested.str} doesn't valid for field ${simpleType.fields
-            .str.elemID.getFullName()},
-            can accept only ${simpleType.fields.str.annotations[Type.RESTRICTION]
-    .values}`))).toBeTruthy()
+
+          expect(errors[0]).toBeInstanceOf(InvalidValueValidationError)
+          expect(errors[0].message).toMatch(
+            'Value "wrongValue2" is not valid for field '
+            + '"salto_simple_str"; expected: one of: "str"'
+          )
+
+          expect(errors[1]).toBeInstanceOf(InvalidValueValidationError)
+          expect(errors[1].message).toMatch(
+            'Value "wrongValue" is not valid for field '
+            + '"salto_nested_restrictStr"; expected: one of: "restriction1", "restriction2"'
+          )
         })
 
 

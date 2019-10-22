@@ -2,6 +2,7 @@ import { EOL } from 'os'
 import yargonaut from 'yargonaut' // this must appear before the import from yargs
 import yargs from 'yargs/yargs'
 import { Argv, Arguments } from 'yargs'
+import { streams } from '@salto/lowerdash'
 import chalk from 'chalk'
 import { WriteStream } from './types'
 import { registerBuilders, YargsCommandBuilder, CommandBuilder } from './builder'
@@ -10,18 +11,21 @@ const LOGO_TEXT = '\u00B0 salto' // \u00B0 is for the salto 'dot'
 const LOGO_FONT = 'Standard'
 const MAX_WIDTH = 100
 const DO_NOT_SHOW = '***<><><>DO NOT SHOW THIS ERROR<><><>***'
-const USAGE_PREFIX = chalk.bold('Usage: ')
+const USAGE_PREFIX = 'Usage: '
 
 const writeLogo = (outStream: WriteStream): void => {
   outStream.write(yargonaut.asFont(LOGO_TEXT, LOGO_FONT))
   outStream.write(EOL)
 }
 
+const getUsagePrefix = (outStream: WriteStream): string =>
+  (streams.hasColors(outStream) ? chalk.bold(USAGE_PREFIX) : USAGE_PREFIX)
+
 const showHelpMessage = (parser: Argv, outStream: WriteStream): void => {
   // Pending PR: https://github.com/yargs/yargs/pull/1386
   // @ts-ignore TS2345
   parser.showHelp((s: string) => {
-    outStream.write(USAGE_PREFIX)
+    outStream.write(getUsagePrefix(outStream))
     outStream.write(s)
   })
 }
@@ -38,7 +42,8 @@ type AugmentedYargsParser = Argv & {
   errors: string[]
 }
 
-const createYargsParser = (): AugmentedYargsParser => {
+const createYargsParser = (outStream: WriteStream, errStream: WriteStream):
+  AugmentedYargsParser => {
   const errors: string[] = []
 
   const parser = yargs()
@@ -65,10 +70,15 @@ const createYargsParser = (): AugmentedYargsParser => {
     'Positionals:': 'Arguments:',
   })
 
-  yargonaut
-    .errorsStyle('red.bold')
-    .helpStyle('bold')
-    .style('yellow', 'required')
+
+  if (streams.hasColors(outStream)) {
+    yargonaut.helpStyle('bold')
+      .style('yellow', 'required')
+  }
+
+  if (streams.hasColors(errStream)) {
+    yargonaut.errorsStyle('red.bold')
+  }
 
   parser.wrap(Math.min(MAX_WIDTH, parser.terminalWidth()))
 
@@ -103,7 +113,7 @@ const parse = (
   { args }: { args: string[] },
   { stdout, stderr }: { stdout: WriteStream; stderr: WriteStream },
 ): Promise<ParseResult> => new Promise<ParseResult>((resolve, reject) => {
-  const parser = createYargsParser()
+  const parser = createYargsParser(stdout, stderr)
   const commandSelected = registerBuilders(parser, commandBuilders)
 
   if (args.length === 0) {

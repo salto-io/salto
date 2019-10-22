@@ -38,22 +38,26 @@
     "package": "yarn run pkg -t node10 -o ./pkg/salto ."
   },
   "dependencies": {
-    "salto": "0.1.0",
-    "@salto/lowerdash": "0.1.0",
     "@salto/dag": "0.1.0",
+    "@salto/lowerdash": "0.1.0",
     "adapter-api": "0.1.0",
+    "async-file": "^2.0.2",
+    "chalk": "^2.4.2",
+    "inquirer": "^3.3.0",
     "lodash": "^4.17.15",
+    "require-directory": "^2.1.1",
+    "salesforce-adapter": "0.1.0",
+    "salto": "0.1.0",
+    "source-map-support": "^0.5.13",
     "wu": "^2.1.0",
     "yargonaut": "^1.1.4",
-    "yargs": "^13.3.0",
-    "require-directory": "^2.1.1",
-    "chalk": "^2.3.0",
-    "inquirer": "^3.3.0",
-    "source-map-support": "^0.5.13",
-    "salesforce-adapter": "0.1.0",
-    "async-file": "^2.0.2"
+    "yargs": "^13.3.0"
   },
   "devDependencies": {
+    "@types/inquirer": "0.0.35",
+    "@types/require-directory": "^2.1.1",
+    "@types/source-map-support": "^0.5.0",
+    "@types/yargs": "^13.0.0",
     "eslint": "^6.2.2",
     "eslint-config-airbnb": "18.0.1",
     "eslint-plugin-import": "^2.18.2",
@@ -64,10 +68,6 @@
     "jest": "^24.0.0",
     "jest-junit": "^6.4.0",
     "pkg": "^4.4.0",
-    "typescript": "^3.5.3",
-    "@types/yargs": "^13.0.0",
-    "@types/require-directory": "^2.1.1",
-    "@types/inquirer": "0.0.35",
-    "@types/source-map-support": "^0.5.0"
+    "typescript": "^3.5.3"
   }
 }

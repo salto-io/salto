@@ -1,9 +1,8 @@
+import { streams } from '@salto/lowerdash'
 import yargs from 'yargs'
 
-export interface WriteStream {
+export type WriteStream = streams.MaybeTty & {
   write(s: string): void
-  getColorDepth(): number
-  isTTY: boolean
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface

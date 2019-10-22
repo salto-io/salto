@@ -12,10 +12,10 @@ import { collections } from '@salto/lowerdash'
 import { CustomObject, CustomField } from './client/types'
 import { API_VERSION, METADATA_NAMESPACE } from './client/client'
 import {
-  API_NAME, LABEL, PICKLIST_VALUES, SALESFORCE, FORMULA,
+  API_NAME, CUSTOM_OBJECT, LABEL, PICKLIST_VALUES, SALESFORCE, FORMULA,
   FORMULA_TYPE_PREFIX, FIELD_TYPE_NAMES, FIELD_TYPE_API_NAMES, METADATA_OBJECT_NAME_FIELD,
   METADATA_TYPE, FIELD_ANNOTATIONS, SALESFORCE_CUSTOM_SUFFIX, DEFAULT_VALUE_FORMULA,
-  MAX_METADATA_RESTRICTION_VALUES, SETTINGS_METADATA_TYPE,
+  MAX_METADATA_RESTRICTION_VALUES, SETTINGS_METADATA_TYPE, SALESFORCE_CUSTOM_RELATIONSHIP_SUFFIX,
 } from './constants'
 
 const { makeArray } = collections.array
@@ -31,26 +31,33 @@ export const sfCase = (name: string, custom = false, capital = true): string => 
 }
 
 export const bpCase = (name: string): string => {
-  const bpName = (name.endsWith(SALESFORCE_CUSTOM_SUFFIX) ? name.slice(0, -2) : name)
+  const bpName = (name.endsWith(SALESFORCE_CUSTOM_SUFFIX)
+  || name.endsWith(SALESFORCE_CUSTOM_RELATIONSHIP_SUFFIX)
+    ? name.slice(0, -2) : name)
   // Using specific replace for chars then _.unescape is not replacing well
   // and we see in our responses for sfdc
   return _.snakeCase(_.unescape(bpName.replace(/%26|%28|%29/g, ' ')))
 }
+
 export const sfInstnaceName = (instance: Element): string =>
   instance.elemID.nameParts.slice(1).map(p => sfCase(p, false)).join('')
 
-export const apiName = (elem: Element): string => (
-  isInstanceElement(elem)
-    // Instance API name comes from the full name value, fallback to the elem ID
-    ? elem.value[bpCase(METADATA_OBJECT_NAME_FIELD)] || sfCase(elem.elemID.name)
-    // Object/Field name comes from the annotation, Fallback to the element ID. we assume
-    // it is custom because all standard objects and fields get the annotation in discover
-    : elem.annotations[API_NAME] || sfCase(elem.elemID.nameParts.slice(-1)[0], true)
+export const metadataType = (element: Element): string => (
+  element.annotations[METADATA_TYPE] || CUSTOM_OBJECT
 )
 
-export const metadataType = (element: Element): string => (
-  element.annotations[METADATA_TYPE]
-)
+export const apiName = (elem: Element): string => {
+  if (isInstanceElement(elem)) {
+    // Instance API name comes from the full name value, fallback to the elem ID
+    return elem.value[bpCase(METADATA_OBJECT_NAME_FIELD)] || sfCase(elem.elemID.name)
+  }
+  const elemMetadataType = metadataType(elem)
+  return elemMetadataType === CUSTOM_OBJECT
+    // Object/Field name comes from the annotation, Fallback to the element ID. we assume
+    // it is custom because all standard objects and fields get the annotation in discover
+    ? elem.annotations[API_NAME] || sfCase(elem.elemID.nameParts.slice(-1)[0], true)
+    : elemMetadataType
+}
 
 const formulaTypeName = (baseTypeName: string): string =>
   `${FORMULA_TYPE_PREFIX}${baseTypeName}`
@@ -190,6 +197,23 @@ export class Types {
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.URL),
       primitive: PrimitiveTypes.STRING,
     }),
+    lookup: new PrimitiveType({
+      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.LOOKUP),
+      primitive: PrimitiveTypes.STRING,
+      annotationTypes: {
+        [FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION]: BuiltinTypes.BOOLEAN,
+        // Todo SALTO-228 The FIELD_ANNOTATIONS.RELATED_TO annotation is missing since
+        // currently there is no way to declare on a list annotation
+      },
+    }),
+    masterdetail: new PrimitiveType({
+      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.MASTER_DETAIL),
+      primitive: PrimitiveTypes.STRING,
+      annotationTypes: {
+        // Todo SALTO-228 The FIELD_ANNOTATIONS.RELATED_TO annotation is missing since
+        // currently there is no way to declare on a list annotation
+      },
+    }),
   }
 
   // Type mapping for metadata types
@@ -244,15 +268,23 @@ export const toCustomField = (
     field.annotations[DEFAULT_VALUE_FORMULA],
     field.annotations[PICKLIST_VALUES],
     field.annotations[FORMULA],
+    field.annotations[FIELD_ANNOTATIONS.RELATED_TO],
+    sfCase(field.name),
+    field.annotations[FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION]
   )
+
+  // Skip the assignment of the following annotations that are defined as annotationType
+  const blacklistedAnnotations: string[] = [FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION]
+  const isBlacklisted = (annotationValue: string): boolean =>
+    blacklistedAnnotations.includes(annotationValue)
 
   // Convert the annotations' names to the required API name
   _.assign(newField,
     _.mapKeys(
       _.pickBy(field.annotations,
-        (_val, annotationValue) => allowedAnnotations(
-          field.type.elemID.name
-        ).includes(annotationValue)),
+        (_val, annotationValue) =>
+          allowedAnnotations(field.type.elemID.name).includes(annotationValue)
+          && !isBlacklisted(annotationValue)),
       (_val, key) => sfCase(key, false, false)
     ))
   return newField
@@ -323,7 +355,7 @@ const getDefaultValue = (field: Field): DefaultValueType | undefined => {
 // The following method is used during the discovery process and is used in building the objects
 // and their fields described in the blueprint
 export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeField => {
-  const bpFieldName = bpCase(field.name)
+  const bpFieldName = bpCase(field.relationshipName ? field.relationshipName : field.name)
   let bpFieldType = Types.get(field.type)
   const annotations: Values = {
     [API_NAME]: field.name,
@@ -381,6 +413,20 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
   } else if (field.calculated && !_.isEmpty(field.calculatedFormula)) {
     bpFieldType = Types.get(formulaTypeName(bpFieldType.elemID.name))
     annotations[FORMULA] = field.calculatedFormula
+
+    // Lookup & MasterDetail
+  } else if (field.type === 'reference') {
+    if (field.cascadeDelete) {
+      bpFieldType = Types.get(FIELD_TYPE_NAMES.MASTER_DETAIL)
+    } else {
+      bpFieldType = Types.get(FIELD_TYPE_NAMES.LOOKUP)
+      annotations[FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION] = !(_.get(field, 'restrictedDelete'))
+    }
+    if (!_.isEmpty(field.referenceTo)) {
+      // there are some SF reference fields without related fields
+      // e.g. salesforce_user_app_menu_item.ApplicationId, salesforce_login_event.LoginHistoryId
+      annotations[FIELD_ANNOTATIONS.RELATED_TO] = field.referenceTo
+    }
   }
   if (!_.isEmpty(bpFieldType.annotationTypes)) {
     // Convert the annotations' names to bp case for those that are not already in that format

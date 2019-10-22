@@ -17,7 +17,7 @@ const writeLogo = (outStream: WriteStream): void => {
   outStream.write(EOL)
 }
 
-const showHelpWrapper = (parser: Argv, outStream: WriteStream): void => {
+const showHelpMessage = (parser: Argv, outStream: WriteStream): void => {
   // Pending PR: https://github.com/yargs/yargs/pull/1386
   // @ts-ignore TS2345
   parser.showHelp((s: string) => {
@@ -30,7 +30,7 @@ const onNoArgs = (parser: Argv, outStream: WriteStream): void => {
   if (outStream.isTTY) {
     writeLogo(outStream)
   }
-  showHelpWrapper(parser, outStream)
+  showHelpMessage(parser, outStream)
   outStream.write(EOL)
 }
 
@@ -51,26 +51,28 @@ const createYargsParser = (): AugmentedYargsParser => {
       errors.push(msg)
     })
 
+  // Define the help option explicitly to have better control of when the help message is printed
   parser.option('help', {
     alias: 'h',
     boolean: true,
     describe: 'Show help',
   })
 
+  // Update texts and define un-wanted yargs messages
   parser.updateLocale({
     'Not enough non-option arguments: got %s, need at least %s': DO_NOT_SHOW,
     'Too many non-option arguments: got %s, maximum of %s': DO_NOT_SHOW,
     'Positionals:': 'Arguments:',
   })
 
-  parser.wrap(Math.min(MAX_WIDTH, parser.terminalWidth()))
-
-  Object.defineProperty(parser, 'errors', { get: () => errors })
-
   yargonaut
     .errorsStyle('red.bold')
     .helpStyle('bold')
     .style('yellow', 'required')
+
+  parser.wrap(Math.min(MAX_WIDTH, parser.terminalWidth()))
+
+  Object.defineProperty(parser, 'errors', { get: () => errors })
 
   return parser as AugmentedYargsParser
 }
@@ -87,7 +89,7 @@ const handleErrors = (parser: Argv, outStream: WriteStream, errors: string[]): v
   })
 
   if (printedErrors) outStream.write(EOL)
-  showHelpWrapper(parser, outStream)
+  showHelpMessage(parser, outStream)
 }
 
 export type ParseResult =
@@ -116,8 +118,9 @@ const parse = (
       return
     }
 
+    // When the help option is on show the help message and resolve (whether it's alone or with other args/options)
     if (parsedArgs.help) {
-      showHelpWrapper(parser, stdout)
+      showHelpMessage(parser, stdout)
       resolve({ status: 'help' })
       return
     }

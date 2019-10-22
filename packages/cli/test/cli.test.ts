@@ -5,11 +5,6 @@ describe('cli', () => {
   let o: mocks.MockCliOutput
 
   jest.setTimeout(200)
-
-  it('should pass', () => {
-    expect(true).toBeTruthy()
-  })
-
   describe('when called with no arguments', () => {
     describe('when stderr is TTY with colors', () => {
       beforeEach(async () => {
@@ -27,21 +22,6 @@ describe('cli', () => {
 
       it('exits with code 1', () => {
         expect(o.exitCode).toEqual(1)
-      })
-
-      // TODO: find out why this fails
-      // it('uses colors', () => {
-      //   expect(o.err).toMatch('\u001B')
-      // })
-    })
-
-    describe('when stderr is TTY without colors', () => {
-      beforeEach(async () => {
-        o = await mocks.cli({ err: { hasColors: false } })
-      })
-
-      it('does not use colors', () => {
-        expect(o.err).not.toMatch('\u001B')
       })
     })
 

@@ -53,7 +53,7 @@ const createYargsParser = (): AugmentedYargsParser => {
 
   parser.option('help', {
     alias: 'h',
-    type: 'boolean',
+    boolean: true,
     describe: 'Show help',
   })
 
@@ -93,6 +93,7 @@ const handleErrors = (parser: Argv, outStream: WriteStream, errors: string[]): v
 export type ParseResult =
   { status: 'command'; parsedArgs: Arguments; builder: CommandBuilder } |
   { status: 'error' } |
+  { status: 'help' } |
   { status: 'empty' }
 
 const parse = (
@@ -117,6 +118,7 @@ const parse = (
 
     if (parsedArgs.help) {
       showHelpWrapper(parser, stdout)
+      resolve({ status: 'help' })
       return
     }
 
@@ -129,7 +131,7 @@ const parse = (
         resolve({ status: 'error' })
       } else if (commandSelected.done) {
         commandSelected.then(builder => resolve({ status: 'command', parsedArgs, builder }))
-      } else { // "--help" or "--version"
+      } else { // "--version"
         resolve({ status: 'empty' })
       }
     }, 0)

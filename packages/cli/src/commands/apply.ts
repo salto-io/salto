@@ -20,13 +20,12 @@ export class ApplyCommand implements CliCommand {
   private currentActionPollerID: ReturnType<typeof setTimeout> | undefined
 
   constructor(
-    readonly workspaceDir: string,
+    private readonly workspaceDir: string,
     readonly force: boolean,
     { stdout, stderr }: CliOutput
   ) {
     this.stdout = stdout
     this.stderr = stderr
-    this.workspaceDir = workspaceDir
   }
 
   endCurrentAction(): void {

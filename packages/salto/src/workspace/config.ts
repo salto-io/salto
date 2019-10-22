@@ -5,6 +5,12 @@ import _ from 'lodash'
 const CONFIG_FILENAME = 'config.json'
 const CONFIG_DIR_NAME = 'salto.config'
 
+class NotAWorkspaceError extends Error {
+  constructor() {
+    super('not a salto workspace (or any of the parent directories)')
+  }
+}
+
 export interface Config {
   additionalBlueprints: string[]
   baseDir: string
@@ -23,7 +29,7 @@ const locateConfigDir = async (lookupDir: string): Promise<string> => {
     return possibleConfigDir
   }
   const parentDir = lookupDir.substr(0, lookupDir.lastIndexOf(path.sep))
-  if (!parentDir) throw new Error('not a salto workspace (or any of the parent directories)')
+  if (!parentDir) throw new NotAWorkspaceError()
   return locateConfigDir(parentDir)
 }
 

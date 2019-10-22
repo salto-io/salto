@@ -5,7 +5,7 @@ import { Element, ObjectType, InstanceElement } from 'adapter-api'
 import { getPlan, DetailedChange } from './plan'
 import initAdapters from './adapters/adapters'
 import { mergeElements } from './merger'
-import validateElements from './validator'
+import { validateElements } from './validator'
 
 type DiscoverChangesResult = {
   changes: Iterable<DetailedChange>

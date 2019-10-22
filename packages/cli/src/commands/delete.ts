@@ -9,8 +9,8 @@ import Prompts from '../prompts'
 export const command = (
   workingDir: string,
   blueprintFiles: string[],
-  inputPath: string,
   typeName: string,
+  inputPath: string,
   { stdout, stderr }: CliOutput
 ): CliCommand => ({
   async execute(): Promise<void> {
@@ -34,8 +34,8 @@ export const command = (
 })
 
 type DeleteArgs = {
-  'input-path': string
   'type-name': string
+  'input-path': string
   'blueprint': string[]
   'blueprints-dir': string
 }
@@ -44,17 +44,17 @@ type DeleteParsedCliInput = ParsedCliInput<DeleteArgs>
 const builder = createCommandBuilder({
   options: {
     orderRank: 7,
-    command: 'delete <input-path> <type-name>',
+    command: 'delete <type-name> <input-path>',
     aliases: ['del'],
     description: 'deletes all objects of a given type from a provided CSV',
     positional: {
-      'input-path': {
-        type: 'string',
-        description: 'A path to the input CSV file',
-      },
       'type-name': {
         type: 'string',
         description: 'The type name of the instances to delete as it appears in the blueprint',
+      },
+      'input-path': {
+        type: 'string',
+        description: 'A path to the input CSV file',
       },
     },
     keyed: {
@@ -79,8 +79,8 @@ const builder = createCommandBuilder({
     return command(
       input.args['blueprints-dir'],
       input.args.blueprint,
-      input.args['input-path'],
       input.args['type-name'],
+      input.args['input-path'],
       output
     )
   },

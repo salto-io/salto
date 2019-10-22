@@ -50,7 +50,7 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(lead.fields.last_name.type.elemID.name).toBe('string')
       expect(lead.fields.description.type.elemID.name).toBe('longtextarea')
       expect(lead.fields.salutation.type.elemID.name).toBe('picklist')
-      expect(lead.fields.Owner.type.elemID.name).toBe('lookup')
+      expect(lead.fields.owner.type.elemID.name).toBe('lookup')
 
       // Test label
       expect(lead.fields.last_name.annotations[constants.LABEL]).toBe('Last Name')
@@ -88,10 +88,10 @@ describe('Salesforce adapter E2E with real account', () => {
       ])
 
       // Test lookup related_to annotation
-      expect(lead.fields.Owner.annotations.related_to).toEqual(['Group', 'User'])
+      expect(lead.fields.owner.annotations.related_to).toEqual(['Group', 'User'])
 
       // Test lookup allow_lookup_record_deletion annotation
-      expect(lead.fields.Owner.annotations.allow_lookup_record_deletion).toBe(true)
+      expect(lead.fields.owner.annotations.allow_lookup_record_deletion).toBe(true)
 
       // Test _default
       // TODO: add test to primitive with _default and combobox _default (no real example for lead)

@@ -29,9 +29,6 @@ export interface YargsModuleOpts {
 
   // Keyed arguments
   keyed?: KeyedOptions
-
-  // Command order rank for help appearance
-  orderRank: number
 }
 
 export interface YargsCommandBuilder<
@@ -44,9 +41,6 @@ export interface YargsCommandBuilder<
 
   // Creates the actual command
   build: CommandBuilder<TArgs, TParsedCliInput>
-
-  // Command order rank for help appearance
-  orderRank: number
 }
 
 export const createCommandBuilder = <
@@ -59,8 +53,6 @@ export const createCommandBuilder = <
       filters?: Filter[]
       build: CommandBuilder<TArgs, TParsedCliInput>
     }): YargsCommandBuilder<TArgs, TParsedCliInput> => ({
-
-    orderRank: options.orderRank,
 
     yargsModule: {
       command: options.command,

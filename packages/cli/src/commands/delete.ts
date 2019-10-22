@@ -43,7 +43,6 @@ type DeleteParsedCliInput = ParsedCliInput<DeleteArgs>
 
 const deleteBuilder = createCommandBuilder({
   options: {
-    orderRank: 7,
     command: 'delete <type-name> <input-path>',
     aliases: ['del'],
     description: 'deletes all objects of a given type from a provided CSV',

@@ -45,6 +45,35 @@ describe('cli', () => {
     })
   })
 
+  describe('when stderr is TTY without colors', () => {
+    beforeEach(async () => {
+      o = await mocks.cli({ err: { hasColors: false } })
+    })
+
+    it('does not use colors', () => {
+      expect(o.err).not.toMatch('\u001B')
+    })
+  })
+
+  describe('when stderr is not TTY', () => {
+    beforeEach(async () => {
+      o = await mocks.cli({ err: { isTTY: false } })
+    })
+
+    it('does not output the salto logo', () => {
+      expect(o.err).not.toContain('|\\   ____\\|\\')
+    })
+
+    it('outputs help to stderr', () => {
+      expect(o.err).toMatch(/\bCommands\b/)
+      expect(o.err).toMatch(/\bapply\b/)
+    })
+
+    it('exits with code 1', () => {
+      expect(o.exitCode).toEqual(1)
+    })
+  })
+
   describe('when called with --help', () => {
     beforeEach(async () => {
       o = await mocks.cli({ args: '--help' })

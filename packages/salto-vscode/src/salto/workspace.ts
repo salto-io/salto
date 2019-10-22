@@ -4,7 +4,7 @@ import { workspace as ws, parser } from 'salto'
 import { Element } from 'adapter-api'
 
 export class EditorWorkspace {
-  private workspace: ws.Workspace
+  workspace: ws.Workspace
   // Indicates that the workspace is not the active workspace
   // (which means that the active workspace contains errors)
   // attempting to modify a copy of a workspace will result in an error
@@ -115,6 +115,10 @@ export class EditorWorkspace {
 
   getValidCopy(): EditorWorkspace | undefined {
     return this.lastValidCopy ? new EditorWorkspace(this.lastValidCopy, true) : undefined
+  }
+
+  hasErrors(): boolean {
+    return this.workspace.hasErrors()
   }
 
   async awaitAllUpdates(): Promise<void> {

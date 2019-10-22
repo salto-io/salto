@@ -12,6 +12,7 @@ import * as cs from './src/core/csv'
 import * as s from './src/state/state'
 import * as srch from './src/core/search'
 import * as pa from './src/parser/parse'
+import * as du from './src/parser/dump'
 
 export namespace validator {
   export type ValidationError = v.ValidationError
@@ -45,6 +46,7 @@ export namespace state {
 export namespace parser {
   export type SourceMap = pa.SourceMap
   export const { parse } = pa
+  export const { dump } = du
 }
 
 export namespace blueprints {

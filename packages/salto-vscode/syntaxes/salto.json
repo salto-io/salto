@@ -2,112 +2,112 @@
   "fileTypes": [
     "bp"
   ],
-  "name": "Blueprint",
+  "name": "Salto",
   "patterns": [
     {
       "match": "^\\s*(})",
-      "name": "punctuation.definition.tag.blueprint"
+      "name": "punctuation.definition.tag.salto"
     },
     {
       "begin": "#|//",
       "captures": {
         "0": {
-          "name": "punctuation.definition.comment.blueprint"
+          "name": "punctuation.definition.comment.salto"
         }
       },
       "comment": "Comments",
       "end": "$\\n?",
-      "name": "comment.line.number-sign.blueprint"
+      "name": "comment.line.number-sign.salto"
     },
     {
       "begin": "/\\*",
       "captures": {
         "0": {
-          "name": "punctuation.definition.comment.blueprint"
+          "name": "punctuation.definition.comment.salto"
         }
       },
       "comment": "Block comments",
       "end": "\\*/",
-      "name": "comment.block.blueprint"
+      "name": "comment.block.salto"
     },
     {
       "comment": "Language constants (true, false, yes, no, on, off)",
       "match": "\\b(true|false|yes|no|on|off)\\b",
-      "name": "constant.language.blueprint"
+      "name": "constant.language.salto"
     },
     {
       "comment": "Primitive types",
       "match": "\\b(string|number|boolean|object)\\b",
-      "name": "support.type.primitive.blueprint"
+      "name": "support.type.primitive.salto"
     },
     {
       "comment": "Numbers",
       "match": "\\b([0-9]+)([kKmMgG]b?)?\\b",
-      "name": "constant.numeric.blueprint"
+      "name": "constant.numeric.salto"
     },
     {
       "comment": "Hex numbers",
       "match": "\\b(0x[0-9A-Fa-f]+)([kKmMgG]b?)?\\b",
-      "name": "constant.numeric.blueprint"
+      "name": "constant.numeric.salto"
     },
     {
       "captures": {
         "1": {
-          "name": "storage.type.function.blueprint"
+          "name": "storage.type.function.salto"
         },
         "2": {
-          "name": "string.blueprint punctuation.definition.string.begin.blueprint"
+          "name": "string.salto punctuation.definition.string.begin.salto"
         },
         "3": {
-          "name": "entity.name.section.blueprint"
+          "name": "entity.name.section.salto"
         },
         "4": {
-          "name": "punctuation.definition.tag.blueprint"
+          "name": "punctuation.definition.tag.salto"
         },
         "5": {
-          "name": "string.value.blueprint"
+          "name": "string.value.salto"
         },
         "6": {
-          "name": "string.blueprint punctuation.definition.string.end.blueprint"
+          "name": "string.salto punctuation.definition.string.end.salto"
         },
         "7": {
-          "name": "constant.language.blueprint"
+          "name": "constant.language.salto"
         },
         "8": {
-          "name": "support.type.primitive.blueprint"
+          "name": "support.type.primitive.salto"
         },
         "9": {
-          "name": "string.blueprint punctuation.definition.string.begin.blueprint"
+          "name": "string.salto punctuation.definition.string.begin.salto"
         },
         "10": {
-          "name": "string.value.blueprint"
+          "name": "string.value.salto"
         },
         "11": {
-          "name": "string.blueprint punctuation.definition.string.end.blueprint"
+          "name": "string.salto punctuation.definition.string.end.salto"
         },
         "12": {
-          "name": "punctuation.definition.tag.blueprint"
+          "name": "punctuation.definition.tag.salto"
         }
       },
       "match": "(resource|data|type|extension)\\s+(\")?([\\w]+)(?:(\\.)(\\w+))?(\")?(?:\\s+(is)\\s+(string|object|boolean|number))?(?:\\s+(\")?([\\w\\-]+)(\")?)?\\s+({)",
-      "name": "meta.resource.blueprint"
+      "name": "meta.resource.salto"
     },
     {
       "captures": {
         "1": {
-          "name": "storage.type.function.blueprint"
+          "name": "storage.type.function.salto"
         },
         "2": {
-          "name": "string.blueprint punctuation.definition.string.begin.blueprint"
+          "name": "string.salto punctuation.definition.string.begin.salto"
         },
         "3": {
-          "name": "string.value.blueprint"
+          "name": "string.value.salto"
         },
         "4": {
-          "name": "string.blueprint punctuation.definition.string.end.blueprint"
+          "name": "string.salto punctuation.definition.string.end.salto"
         },
         "5": {
-          "name": "punctuation.definition.tag.blueprint"
+          "name": "punctuation.definition.tag.salto"
         }
       },
       "match": "(provider|provisioner|variable|output|module|atlas)\\s+(\")?([\\w\\-]+)(\")?\\s+({)"
@@ -115,27 +115,27 @@
     {
       "captures": {
         "1": {
-          "name": "storage.type.function.blueprint"
+          "name": "storage.type.function.salto"
         },
         "2": {
-          "name": "punctuation.definition.tag.blueprint"
+          "name": "punctuation.definition.tag.salto"
         }
       },
-      "match": "(locals|blueprint)\\s+({)"
+      "match": "(locals|salto)\\s+({)"
     },
     {
       "captures": {
         "1": {
-          "name": "entity.name.section.blueprint"
+          "name": "entity.name.section.salto"
         },
         "2": {
-          "name": "punctuation.definition.tag.blueprint"
+          "name": "punctuation.definition.tag.salto"
         },
         "3": {
-          "name": "variable.assignment.blueprint"
+          "name": "variable.assignment.salto"
         },
         "4": {
-          "name": "string.value.blueprint"
+          "name": "string.value.salto"
         }
       },
       "match": "(salesforce)(\\.)([\\w.]+)(?:\\s+(\\w+)\\s+{)?"
@@ -143,7 +143,7 @@
     {
       "captures": {
         "0": {
-          "name": "storage.type.function.blueprint"
+          "name": "storage.type.function.salto"
         }
       },
       "match": "(annotations)\\s+{"
@@ -151,10 +151,10 @@
     {
       "captures": {
         "1": {
-          "name": "variable.other.assignment.blueprint"
+          "name": "variable.other.assignment.salto"
         },
         "2": {
-          "name": "keyword.operator.blueprint"
+          "name": "keyword.operator.salto"
         }
       },
       "comment": "Value assignments (left hand side not in double quotes)",
@@ -163,16 +163,16 @@
     {
       "captures": {
         "1": {
-          "name": "punctuation.quote.double.blueprint"
+          "name": "punctuation.quote.double.salto"
         },
         "2": {
-          "name": "variable.assignment.blueprint"
+          "name": "variable.assignment.salto"
         },
         "3": {
-          "name": "punctuation.quote.double.blueprint"
+          "name": "punctuation.quote.double.salto"
         },
         "4": {
-          "name": "keyword.operator.blueprint"
+          "name": "keyword.operator.salto"
         }
       },
       "comment": "Value assignments (left hand side in double quotes)",
@@ -181,7 +181,7 @@
     {
       "captures": {
         "0": {
-          "name": "entity.name.function.blueprint"
+          "name": "entity.name.function.salto"
         }
       },
       "comment": "Function Calls",
@@ -190,7 +190,7 @@
     {
       "captures": {
         "0": {
-          "name": "variable.other.blueprint"
+          "name": "variable.other.salto"
         }
       },
       "comment": "Variables",
@@ -199,10 +199,10 @@
     {
       "captures": {
         "1": {
-          "name": "entity.name.section.blueprint"
+          "name": "entity.name.section.salto"
         },
         "2": {
-          "name": "punctuation.definition.tag.blueprint"
+          "name": "punctuation.definition.tag.salto"
         }
       },
       "comment": "Maps",
@@ -222,16 +222,16 @@
           "begin": "\\$\\{",
           "beginCaptures": {
             "0": {
-              "name": "entity.tag.embedded.start.blueprint"
+              "name": "entity.tag.embedded.start.salto"
             }
           },
           "end": "\\s*\\}",
           "endCaptures": {
             "0": {
-              "name": "entity.tag.embedded.end.blueprint"
+              "name": "entity.tag.embedded.end.salto"
             }
           },
-          "name": "source.blueprint.embedded.source",
+          "name": "source.salto.embedded.source",
           "patterns": [
             {
               "include": "$self"
@@ -245,7 +245,7 @@
             {
               "captures": {
                 "0": {
-                  "name": "keyword.control.period.blueprint"
+                  "name": "keyword.control.period.salto"
                 }
               },
               "match": "(\\.)"
@@ -261,17 +261,17 @@
       "begin": "(base64decode|base64encode|base64sha256|ceil|cidrnetmask|compact|distinct|file|floor|keys|length|lower|md5|pathexpand|replace|sha1|sha256|signum|sort|timestamp|title|trimspace|upper|uuid|values|cidrhost|cidrsubnet|coalesce|concat|element|format|formatlist|from|index|join|jsonencode|length|list|lookup|map|max|merge|min|slice|split|substr|zipmap)(\\()",
       "beginCaptures": {
         "1": {
-          "name": "keyword.other.function.inline.blueprint"
+          "name": "keyword.other.function.inline.salto"
         },
         "2": {
-          "name": "keyword.other.section.begin.blueprint"
+          "name": "keyword.other.section.begin.salto"
         }
       },
       "comment": "Builtin functions",
       "end": "(\\))",
       "endCaptures": {
         "1": {
-          "name": "keyword.other.section.end.blueprint"
+          "name": "keyword.other.section.end.salto"
         }
       },
       "patterns": [
@@ -286,23 +286,23 @@
     "string_interpolation_keywords": {
       "captures": {
         "0": {
-          "name": "entity.other.attribute-name.blueprint"
+          "name": "entity.other.attribute-name.salto"
         }
       },
-      "match": "(local|blueprint|var|self|count|module|path|data)(\\.[\\w\\-\\*]+)+"
+      "match": "(local|salto|var|self|count|module|path|data)(\\.[\\w\\-\\*]+)+"
     },
     "strings": {
       "begin": "\\\"",
       "beginCaptures": {
         "0": {
-          "name": "string.blueprint punctuation.definition.string.begin.blueprint"
+          "name": "string.salto punctuation.definition.string.begin.salto"
         }
       },
       "comment": "Strings",
       "end": "\\\"",
       "endCaptures": {
         "0": {
-          "name": "string.blueprint punctuation.definition.string.end.blueprint"
+          "name": "string.salto punctuation.definition.string.end.salto"
         }
       },
       "patterns": [
@@ -311,7 +311,7 @@
         },
         {
           "match": "([\\w\\-\\/\\._\\\\%]+)",
-          "name": "string.quoted.double.blueprint"
+          "name": "string.quoted.double.salto"
         }
       ]
     },
@@ -319,17 +319,17 @@
       "begin": "(?>\\s*<<\\s?(\\w+))",
       "beginCaptures": {
         "0": {
-          "name": "string.blueprint punctuation.definition.string.begin.blueprint"
+          "name": "string.salto punctuation.definition.string.begin.salto"
         },
         "1": {
-          "name": "keyword.operator.heredoc.blueprint"
+          "name": "keyword.operator.heredoc.salto"
         }
       },
       "comment": "Heredoc",
       "end": "\\1$",
       "endCaptures": {
         "0": {
-          "name": "string.blueprint punctuation.definition.string.end.blueprint keyword.operator.heredoc.blueprint"
+          "name": "string.salto punctuation.definition.string.end.salto keyword.operator.heredoc.salto"
         }
       },
       "patterns": [
@@ -338,11 +338,11 @@
         },
         {
           "match": "([\\w\\-\\/\\._\\\\%]+)",
-          "name": "string.quoted.double.blueprint"
+          "name": "string.quoted.double.salto"
         }
       ]
     }
   },
-  "scopeName": "source.blueprint",
+  "scopeName": "source.salto",
   "uuid": "9060ca81-906d-4f19-a91a-159f4eb119d6"
 }

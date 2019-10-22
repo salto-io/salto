@@ -1,4 +1,18 @@
-export { default as validateElements, ValidationError } from './src/core/validator'
+import * as v from './src/core/validator'
+// eslint-disable-next-line @typescript-eslint/no-namespace
+export namespace validator {
+  export type ValidationError = v.ValidationError
+  export type InvalidValueTypeValidationError = v.InvalidValueTypeValidationError
+  export type InvalidValueValidationError = v.InvalidValueValidationError
+  export type MissingRequiredFieldValidationError = v.MissingRequiredFieldValidationError
+  export const {
+    validateElements,
+    ValidationError,
+    InvalidValueTypeValidationError, InvalidValueValidationError,
+    MissingRequiredFieldValidationError,
+  } = v
+}
+
 export { mergeElements } from './src/core/merger'
 export { Plan, PlanItem, DetailedChange } from './src/core/plan'
 export { dumpCsv, readCsv } from './src/core/csv'

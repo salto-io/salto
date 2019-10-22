@@ -5,12 +5,11 @@ import fs from 'async-file'
 import readdirp from 'readdirp'
 import { collections, types } from '@salto/lowerdash'
 import { Element } from 'adapter-api'
-
 import {
   SourceMap, parse, SourceRange, ParseResult, ParseError,
 } from '../parser/parse'
 import { mergeElements, MergeError } from '../core/merger'
-import validateElements from '../core/validator'
+import { validateElements, ValidationError } from '../core/validator'
 import { DetailedChange } from '../core/plan'
 import { ParseResultFSCache } from './cache'
 import { getChangeLocations, updateBlueprintData } from './blueprint_update'
@@ -101,7 +100,7 @@ const mergeSourceMaps = (bps: ReadonlyArray<ParsedBlueprint>): SourceMap => {
 export class Errors extends types.Bean<Readonly<{
   parse: ReadonlyArray<ParseError>
   merge: ReadonlyArray<MergeError>
-  validation: ReadonlyArray<string>
+  validation: ReadonlyArray<ValidationError>
 }>> {
   hasErrors(): boolean {
     return [this.parse, this.merge, this.validation].some(errors => errors.length > 0)
@@ -111,7 +110,7 @@ export class Errors extends types.Bean<Readonly<{
     return [
       ...this.parse.map(error => error.detail),
       ...this.merge.map(error => error.error),
-      ...this.validation,
+      ...this.validation.map(error => error.error),
     ]
   }
 }
@@ -131,7 +130,7 @@ const createWorkspaceState = (blueprints: ReadonlyArray<ParsedBlueprint>): Works
   const parseErrors = _.flatten(blueprints.map(bp => bp.errors))
   const elements = _.flatten(blueprints.map(bp => bp.elements))
   const { merged: mergedElements, errors: mergeErrors } = mergeElements(elements)
-  const validationErrors = validateElements(mergedElements).map(e => e.message)
+  const validationErrors = validateElements(mergedElements)
   return {
     ...partialWorkspace,
     elements: mergedElements,

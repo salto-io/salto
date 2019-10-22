@@ -39,8 +39,8 @@ const mockUpdate = jest.fn((_b, _a) => true)
 const objType = new ObjectType({ elemID: new ElemID('salesforce', 'dummy') })
 const discoveredElements = [
   objType,
-  new InstanceElement(new ElemID('salesforce', 'instance_1'), objType, {}, ['records', 'dummy']),
-  new InstanceElement(new ElemID('salesforce', 'instance_2'), objType, {}, ['records', 'dummy']),
+  new InstanceElement(new ElemID('salesforce', 'instance_1'), objType, {}),
+  new InstanceElement(new ElemID('salesforce', 'instance_2'), objType, {}),
 ]
 const mockDiscover = jest.fn(() => discoveredElements)
 

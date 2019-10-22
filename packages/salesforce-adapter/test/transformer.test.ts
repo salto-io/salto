@@ -5,7 +5,7 @@ import {
 } from 'adapter-api'
 import { Field as SalesforceField } from 'jsforce'
 import {
-  toMetadataPackageZip, bpCase, getSObjectFieldElement, Types, toCustomField,
+  toMetadataPackageZip, bpCase, getSObjectFieldElement, Types, toCustomField, toCustomObject,
 } from '../src/transformer'
 import {
   METADATA_TYPE, METADATA_OBJECT_NAME_FIELD, FIELD_ANNOTATIONS, FIELD_TYPE_NAMES, API_NAME,
@@ -171,9 +171,8 @@ describe('transformer', () => {
     })
   })
 
-  describe('toCustomField', () => {
+  describe('toCustomObject', () => {
     const elemID = new ElemID('salesforce', 'test')
-    const dummyObjectType = new ObjectType({ elemID })
     const relatedTo = ['User', 'Property__c']
     const annotations: Values = {
       [API_NAME]: 'field_name',
@@ -182,11 +181,12 @@ describe('transformer', () => {
       [FIELD_ANNOTATIONS.RELATED_TO]: relatedTo,
     }
     const fieldName = 'FieldName'
-    const origField = new TypeField(elemID, fieldName, Types.get(FIELD_TYPE_NAMES.LOOKUP),
-      annotations)
-    let field: TypeField
+    const origObjectType = new ObjectType({ elemID,
+      fields: { [fieldName]: new TypeField(elemID, fieldName, Types.get(FIELD_TYPE_NAMES.LOOKUP),
+        annotations) } })
+    let objectType: ObjectType
     beforeEach(() => {
-      field = _.cloneDeep(origField)
+      objectType = _.cloneDeep(origObjectType)
     })
 
     const assertCustomFieldTransformation = (customField: CustomField, expectedType: string,
@@ -200,24 +200,42 @@ describe('transformer', () => {
     }
 
     it('should transform lookup field with deletion constraint', async () => {
-      field.annotations[FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION] = false
-      const customLookupField = toCustomField(dummyObjectType, field)
+      // eslint-disable-next-line max-len
+      objectType.fields[fieldName].annotations[FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION] = false
+      const customLookupField = toCustomField(objectType, objectType.fields[fieldName])
       assertCustomFieldTransformation(customLookupField,
         FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.LOOKUP], fieldName, 'Restrict', relatedTo)
     })
 
     it('should transform lookup field with no deletion constraint', async () => {
-      field.annotations[FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION] = true
-      const customLookupField = toCustomField(dummyObjectType, field)
+      // eslint-disable-next-line max-len
+      objectType.fields[fieldName].annotations[FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION] = true
+      const customLookupField = toCustomField(objectType, objectType.fields[fieldName])
       assertCustomFieldTransformation(customLookupField,
         FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.LOOKUP], fieldName, 'SetNull', relatedTo)
     })
 
     it('should transform masterdetail field', async () => {
-      field.type = Types.get(FIELD_TYPE_NAMES.MASTER_DETAIL)
-      const customLookupField = toCustomField(dummyObjectType, field)
+      objectType.fields[fieldName].type = Types.get(FIELD_TYPE_NAMES.MASTER_DETAIL)
+      const customLookupField = toCustomField(objectType, objectType.fields[fieldName])
       assertCustomFieldTransformation(customLookupField,
         FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.MASTER_DETAIL], fieldName, undefined, relatedTo)
+    })
+
+    it('should have ControlledByParent sharing model when having masterdetail field', async () => {
+      objectType.fields[fieldName].type = Types.get(FIELD_TYPE_NAMES.MASTER_DETAIL)
+      const customObjectWithMasterDetailField = toCustomObject(objectType, true)
+      expect(customObjectWithMasterDetailField.sharingModel).toEqual('ControlledByParent')
+    })
+
+    it('should have ReadWrite sharing model when not having masterdetail field', async () => {
+      const customObjectWithMasterDetailField = toCustomObject(objectType, true)
+      expect(customObjectWithMasterDetailField.sharingModel).toEqual('ReadWrite')
+    })
+
+    it('should have ReadWrite sharing model when not including fields', async () => {
+      const customObjectWithMasterDetailField = toCustomObject(objectType, false)
+      expect(customObjectWithMasterDetailField.sharingModel).toEqual('ReadWrite')
     })
   })
 })

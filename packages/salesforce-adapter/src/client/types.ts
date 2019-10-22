@@ -122,7 +122,7 @@ export class CustomObject implements MetadataInfo {
   readonly fields?: CustomField[] | CustomField
 
   readonly deploymentStatus = 'Deployed'
-  readonly sharingModel = 'ReadWrite'
+  readonly sharingModel: string
   readonly nameField = {
     type: 'Text',
     label: 'Test Object Name',
@@ -136,6 +136,15 @@ export class CustomObject implements MetadataInfo {
     this.pluralLabel = `${this.label}s`
     if (fields) {
       this.fields = fields
+    }
+
+    const hasMasterDetailField = (): boolean|undefined => fields
+      && fields.some(field => field.type === FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.MASTER_DETAIL])
+
+    if (hasMasterDetailField()) {
+      this.sharingModel = 'ControlledByParent'
+    } else {
+      this.sharingModel = 'ReadWrite'
     }
   }
 }

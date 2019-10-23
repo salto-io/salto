@@ -122,6 +122,8 @@ describe('api functions', () => {
 
     it('Should return all elements in the blueprint', async () => {
       const config: Config = {
+        name: 'test',
+        localStorage: '~/.salto/test',
         baseDir: '',
         stateLocation: './latest_state.bpc',
         additionalBlueprints: [filePath('salto.bp'), filePath('salto2.bp')],
@@ -135,6 +137,8 @@ describe('api functions', () => {
 
     it('should add errors to workspace an error if the bp is not valid', async () => {
       const config: Config = {
+        name: 'test',
+        localStorage: '~/.salto/test',
         baseDir: '',
         stateLocation: './latest_state.bpc',
         additionalBlueprints: [filePath('error.bp')],
@@ -145,6 +149,8 @@ describe('api functions', () => {
 
     it('should throw error on missing adapter', async () => {
       const config: Config = {
+        name: 'test',
+        localStorage: '~/.salto/test',
         baseDir: '',
         stateLocation: './latest_state.bpc',
         additionalBlueprints: [filePath('missing.bp')],
@@ -160,6 +166,8 @@ describe('api functions', () => {
 
     it('should throw error on adapter fail', async () => {
       const config: Config = {
+        name: 'test',
+        localStorage: '~/.salto/test',
         baseDir: '',
         stateLocation: './latest_state.bpc',
         additionalBlueprints: [filePath('fail.bp')],
@@ -178,6 +186,8 @@ describe('api functions', () => {
 
       beforeEach(async () => {
         const config: Config = {
+          name: 'test',
+          localStorage: '~/.salto/test',
           baseDir: '',
           stateLocation: './latest_state.bpc',
           additionalBlueprints: [filePath('salto.bp')],
@@ -251,6 +261,8 @@ describe('api functions', () => {
       )
       beforeEach(async () => {
         const config: Config = {
+          name: 'test',
+          localStorage: '~/.salto/test',
           baseDir: '',
           stateLocation: './latest_state.bpc',
           additionalBlueprints: [filePath('salto.bp')],

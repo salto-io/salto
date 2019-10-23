@@ -1,5 +1,5 @@
 import * as path from 'path'
-import { loadConfig } from '../../src/workspace/config'
+import { loadConfig, SALTO_HOME_VAR } from '../../src/workspace/config'
 
 const workspacesDir = path.join(__dirname, '../../../test/workspaces')
 const fullWorkspaceDir = path.resolve(workspacesDir, 'full')
@@ -23,6 +23,8 @@ describe('load proper configuration', () => {
     const config = await loadConfig(fullWorkspaceDir)
     expect(config).toEqual(
       {
+        name: 'workspace',
+        localStorage: '~/.salto/workspace',
         baseDir: '~/workspace',
         stateLocation: '~/states/test.bpc',
         additionalBlueprints: ['~/moreBP/test.bp'],
@@ -33,6 +35,21 @@ describe('load proper configuration', () => {
     const config = await loadConfig(defaultsWorkspaceDir)
     expect(config).toEqual(
       {
+        name: path.basename(defaultsWorkspaceDir),
+        localStorage: path.join('~/.salto', path.basename(defaultsWorkspaceDir)),
+        baseDir: defaultsWorkspaceDir,
+        stateLocation: path.join(defaultsWorkspaceDir, 'salto.config', 'state.bpc'),
+        additionalBlueprints: [],
+      }
+    )
+  })
+  it('should use salto home env var for default values', async () => {
+    process.env[SALTO_HOME_VAR] = '~/.salto_home'
+    const config = await loadConfig(defaultsWorkspaceDir)
+    expect(config).toEqual(
+      {
+        name: path.basename(defaultsWorkspaceDir),
+        localStorage: path.join('~/.salto_home', path.basename(defaultsWorkspaceDir)),
         baseDir: defaultsWorkspaceDir,
         stateLocation: path.join(defaultsWorkspaceDir, 'salto.config', 'state.bpc'),
         additionalBlueprints: [],

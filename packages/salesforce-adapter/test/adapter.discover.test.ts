@@ -399,8 +399,9 @@ describe('SalesforceAdapter discover', () => {
       expect(flow.fields.is_template.annotations[Type.REQUIRED]).toBe(false)
       expect(flow.fields.enum.type.elemID.name).toBe('string')
       expect(flow.fields.enum.annotations[Type.DEFAULT]).toBe('yes')
+      // Note the order here is important because we expect restriction values to be sorted
       expect(flow.fields.enum.annotations[Type.RESTRICTION]).toEqual({
-        values: ['yes', 'no'],
+        values: ['no', 'yes'],
       })
       expect(flow.path).toEqual(['types', 'flow'])
     })

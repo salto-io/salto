@@ -3,9 +3,10 @@ import jszip from 'jszip'
 import {
   ObjectType, ElemID, InstanceElement, Field, BuiltinTypes, Type, Field as TypeField, Values,
 } from 'adapter-api'
-import { Field as SalesforceField } from 'jsforce'
+import { Field as SalesforceField, ValueTypeField } from 'jsforce'
 import {
   toMetadataPackageZip, bpCase, getSObjectFieldElement, Types, toCustomField, toCustomObject,
+  getValueTypeFieldElement,
 } from '../src/transformer'
 import {
   METADATA_TYPE, METADATA_OBJECT_NAME_FIELD, FIELD_ANNOTATIONS, FIELD_TYPE_NAMES, API_NAME,
@@ -63,6 +64,41 @@ describe('transformer', () => {
            <bool>true</bool>
          </Dummy>`.replace(/>\s+</gs, '><')
       )
+    })
+  })
+
+  describe('getValueTypeFieldElement', () => {
+    const salesforceValueTypeFieldBase: ValueTypeField = {
+      fields: [],
+      foreignKeyDomain: '',
+      isForeignKey: false,
+      isNameField: false,
+      minOccurs: 0,
+      name: 'Field',
+      picklistValues: [],
+      soapType: 'String',
+      valueRequired: false,
+    }
+    const salesforceEnumField: ValueTypeField = _.merge({}, salesforceValueTypeFieldBase, {
+      picklistValues: [
+        { active: true, defaultValue: false, value: 'b' },
+        { active: true, defaultValue: false, value: 'a' },
+        { active: true, defaultValue: false, value: 'a' },
+      ],
+    })
+    describe('enum field', () => {
+      let enumField: TypeField
+      beforeEach(() => {
+        enumField = getValueTypeFieldElement(dummyTypeId, salesforceEnumField, new Map())
+      })
+      describe('restriction values', () => {
+        it('should not have duplicate values', () => {
+          expect(enumField.annotations[Type.RESTRICTION].values).toHaveLength(2)
+        })
+        it('should be sorted alphabetically', () => {
+          expect(enumField.annotations[Type.RESTRICTION].values).toEqual(['a', 'b'])
+        })
+      })
     })
   })
 

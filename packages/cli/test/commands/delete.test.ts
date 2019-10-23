@@ -22,7 +22,7 @@ describe('delete command', () => {
     deleteFromCsvSpy = jest.spyOn(saltoImp, 'deleteFromCsvFile').mockImplementation(() => mockDeleteFromCsv())
     const loadSpy = jest.spyOn(saltoImp.Workspace, 'load').mockImplementation(() => ({}))
     const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
-    await command(workspaceDir, 'mockPath', 'mockName', cliOutput).execute()
+    await command(workspaceDir, 'mockName', 'mockPath', cliOutput).execute()
     expect(readCsvSpy.mock.calls[0][0]).toBe('mockPath')
     expect(deleteFromCsvSpy).toHaveBeenCalledWith('mockName', [], {}, getConfigFromUser)
     expect(cliOutput.stdout.content).toMatch(Prompts.DELETE_FINISHED_SUCCESSFULLY)

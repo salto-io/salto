@@ -25,7 +25,7 @@ describe('import command', () => {
     importFromCsvSpy = jest.spyOn(saltoImp, 'importFromCsvFile').mockImplementation(() => mockImportFromCsv())
     const loadSpy = jest.spyOn(saltoImp.Workspace, 'load').mockImplementation(() => ({}))
     const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
-    await command(workspaceDir, 'mockPath', 'mockName', cliOutput).execute()
+    await command(workspaceDir, 'mockName', 'mockPath', cliOutput).execute()
     expect(readCsvSpy.mock.calls[0][0]).toBe('mockPath')
     expect(importFromCsvSpy).toHaveBeenCalledWith('mockName', [], {}, getConfigFromUser)
     expect(cliOutput.stdout.content).toMatch(Prompts.IMPORT_FINISHED_SUCCESSFULLY)

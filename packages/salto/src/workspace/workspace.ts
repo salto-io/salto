@@ -168,7 +168,7 @@ export class Workspace {
     config: Config,
     useCache = true
   ): Promise<Workspace> {
-    const bps = await loadBlueprints(config.baseDir, config.additionalBlueprints)
+    const bps = await loadBlueprints(config.baseDir, config.additionalBlueprints || [])
     const parsedBlueprints = useCache
       ? parseBlueprintsWithCache(bps, config.baseDir, config.localStorage)
       : parseBlueprints(bps)

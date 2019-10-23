@@ -14,11 +14,11 @@ class NotAWorkspaceError extends Error {
 }
 
 export interface Config {
-  additionalBlueprints: string[]
   baseDir: string
   stateLocation: string
   localStorage: string
   name: string
+  additionalBlueprints?: string[]
 }
 
 const createDefaults = (
@@ -26,14 +26,14 @@ const createDefaults = (
   workspaceName? : string
 ): Config => {
   const baseDir = path.dirname(configDirPath)
-  const defaultWorkspaceName = path.basename(baseDir)
+  const name = workspaceName || path.basename(baseDir)
   const saltoHome = process.env[SALTO_HOME_VAR] || DEFAULT_SALTO_HOME
   return {
     baseDir,
     stateLocation: path.join(configDirPath, 'state.bpc'),
     additionalBlueprints: [],
-    localStorage: path.join(saltoHome, workspaceName || defaultWorkspaceName),
-    name: workspaceName || defaultWorkspaceName,
+    localStorage: path.join(saltoHome, name),
+    name,
   }
 }
 

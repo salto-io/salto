@@ -137,16 +137,9 @@ describe('SalesforceAdapter discover', () => {
 
       const lead = result.filter(o => o.elemID.name === 'lead').pop() as ObjectType
       expect(lead.fields.primary_c.type.elemID.name).toBe('picklist')
-      expect(
-        // eslint-disable-next-line no-underscore-dangle
-        (lead.fields.primary_c.annotations._values as string[]).join(';')
-      ).toBe('No;Yes')
-      // eslint-disable-next-line no-underscore-dangle
-      expect(lead.fields.primary_c.annotations._default).toBe('Yes')
-      expect(
-        // eslint-disable-next-line no-underscore-dangle
-        lead.fields.primary_c.annotations._restriction.enforce_value
-      ).toBe(true)
+      expect((lead.fields.primary_c.annotations[Type.VALUES] as string[]).join(';')).toBe('No;Yes')
+      expect(lead.fields.primary_c.annotations[Type.DEFAULT]).toBe('Yes')
+      expect(lead.fields.primary_c.annotations[Type.RESTRICTION][Type.ENFORCE_VALUE]).toBe(true)
     })
 
     it('should discover sobject with combobox field', async () => {

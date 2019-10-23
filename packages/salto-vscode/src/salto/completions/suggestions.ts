@@ -29,8 +29,8 @@ export const isInsertText = (value: any): value is InsertText => (
   value.label !== undefined && value.insertText !== undefined
 )
 
-// eslint-disable-next-line max-len
-const getRestrictionValues = (annotatingElem: Type|Field, valueType: Type): Value[]|undefined => annotatingElem.annotations[Type.VALUES] || valueType.annotations[Type.VALUES]
+const getRestrictionValues = (annotatingElem: Type|Field, valueType: Type): Value[]|undefined =>
+  annotatingElem.annotations[Type.VALUES] || valueType.annotations[Type.VALUES]
 
 const getAllInstances = (
   elements: ReadonlyArray<Element>,

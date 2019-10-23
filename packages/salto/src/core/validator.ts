@@ -4,6 +4,7 @@ import {
   Element, isObjectType, isInstanceElement, Type, InstanceElement, Field, PrimitiveTypes,
   isPrimitiveType, Value, ElemID,
 } from 'adapter-api'
+import { makeArray } from '@salto/lowerdash/dist/src/collections/array'
 
 export abstract class ValidationError extends types.Bean<Readonly<{
   elemID: ElemID
@@ -79,7 +80,7 @@ export class MissingRequiredFieldValidationError extends ValidationError {
 }
 
 /**
- * Validate that field values corresponding with core annotations (_required, _values)
+ * Validate that field values corresponding with core annotations (_required, _values, _restriction)
  * @param value- the field value
  * @param field
  */
@@ -88,12 +89,7 @@ const validateAnnotationsValues = (
 ): ValidationError[] => {
   const validateRestrictionsValue = (val: Value):
     ValidationError[] => {
-    const restrictionValues = field.annotations[Type.VALUES]
-
-    // Values should be array
-    if (!_.isArray(restrictionValues)) {
-      return []
-    }
+    const restrictionValues = makeArray(field.annotations[Type.VALUES])
 
     // When value is array we iterate (validate) each element
     if (_.isArray(val)) {
@@ -122,8 +118,8 @@ const validateAnnotationsValues = (
   const shouldEnforceValue = (): boolean => {
     const restriction = field.annotations[Type.RESTRICTION]
     // enforce_value is true by default
-    return restriction === undefined || restriction.enforce_value === undefined
-      || restriction.enforce_value === true
+    return (restriction === undefined || restriction[Type.ENFORCE_VALUE] === undefined
+      || restriction[Type.ENFORCE_VALUE] === true) && field.annotations[Type.VALUES]
   }
 
   // Checking _values annotation

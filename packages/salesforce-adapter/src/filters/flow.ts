@@ -17,11 +17,11 @@ const filterCreator = (): FilterWith<'onDiscover'> => ({
    * @param elements the already discovered elements
    */
   onDiscover: async (elements: Element[]): Promise<void> => {
-    // fix flow_metadata_value - remove resriction values from name, see: SALTO-93
+    // fix flow_metadata_value - mark restriction values as not enforced, see: SALTO-93
     const flowMetadataValue = _(elements).filter(isObjectType)
       .find(e => e.elemID.name === FLOW_METADATA_VALUE_TYPE_NAME)
     if (flowMetadataValue && flowMetadataValue.fields.name) {
-      delete flowMetadataValue.fields.name.annotations[Type.VALUES]
+      flowMetadataValue.fields.name.annotations[Type.RESTRICTION] = { [Type.ENFORCE_VALUE]: false }
     }
   },
 })

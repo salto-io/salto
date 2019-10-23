@@ -4,9 +4,10 @@ import { Workspace, dumpCsv as dumpCsvMock } from 'salto'
 import { exportToCsv } from '../mocks'
 import { command } from '../../src/commands/export'
 
-
+const workspaceDir = `${__dirname}/../../../test/BP`
 const mockExportToCsv = exportToCsv
 jest.mock('salto', () => ({
+  ...(require.requireActual('salto')),
   exportToCsv: jest.fn().mockImplementation((
     workspace: Workspace,
     typeId: string,
@@ -15,14 +16,13 @@ jest.mock('salto', () => ({
   Workspace: {
     load: jest.fn(),
   },
-
   dumpCsv: jest.fn().mockImplementation(() => { }),
 }))
 
 describe('export command', () => {
   it('should run export', async () => {
     const outputPath = path.join(__dirname, '__test_export.csv')
-    await command('', [], 'Test', outputPath).execute()
+    await command(workspaceDir, 'Test', outputPath).execute()
 
     const [objects, output] = (dumpCsvMock as jest.Mock).mock.calls[0]
     expect(objects).toHaveLength(3)

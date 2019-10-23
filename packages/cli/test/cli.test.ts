@@ -118,33 +118,13 @@ describe('cli', () => {
     })
   })
 
-  describe('when called with a missing command argument', () => {
-    beforeEach(async () => {
-      jest.spyOn(applyBuilder, 'build')
-      o = await mocks.cli({ args: 'discover' })
-    })
-
-    it('outputs an error message to stderr', () => {
-      expect(o.err).toMatch(/Missing required argument/)
-      expect(o.err).toMatch(/--help/)
-    })
-
-    it('exits with code 1', () => {
-      expect(o.exitCode).toEqual(1)
-    })
-
-    it('does not call the command handler', () => {
-      expect(applyBuilder.build).not.toHaveBeenCalled()
-    })
-  })
-
   describe('when called with a valid command argument', () => {
     let applyCommand: jest.Mock<Promise<void>>
 
     beforeEach(async () => {
       applyCommand = jest.fn<Promise<void>>()
       jest.spyOn(applyBuilder, 'build').mockResolvedValue({ execute: applyCommand })
-      o = await mocks.cli({ args: 'apply -d .' })
+      o = await mocks.cli({ args: 'apply -w .' })
     })
 
     it('calls the command handler', () => {

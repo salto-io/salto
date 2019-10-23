@@ -8,22 +8,25 @@ jest.mock('salto', () => ({
   discover: jest.fn().mockImplementation(() => Promise.resolve()),
   Workspace: {
     load: jest.fn().mockImplementation(
-      baseDir => ({ baseDir, hasErrors: () => false }),
+      config => ({ config, hasErrors: () => false }),
     ),
   },
+  loadConfig: jest.fn().mockImplementation(
+    workspaceDir => ({ baseDir: workspaceDir, additionalBlueprints: [], cacheLocation: '' })
+  ),
 }))
 
 describe('discover command', () => {
   const workspaceDir = 'dummy_dir'
-  const additaionFiles = ['dummy_filename.bp']
+  // const additaionFiles = ['dummy_filename.bp']
   describe('with a valid workspace', () => {
     beforeEach(async () => {
-      await command(workspaceDir, additaionFiles).execute()
+      await command(workspaceDir).execute()
     })
     it('should run discover with workspace loaded from provided directory', () => {
       const discoverCalls = (mockDiscover as jest.Mock).mock.calls
       expect(discoverCalls).toHaveLength(1)
-      expect(discoverCalls[0][0].baseDir).toEqual(workspaceDir)
+      expect(discoverCalls[0][0].config.baseDir).toEqual(workspaceDir)
     })
   })
   describe('with errored workspace', () => {
@@ -40,7 +43,7 @@ describe('discover command', () => {
     })
     it('should fail', async () => {
       await expect(
-        command(workspaceDir, additaionFiles).execute()
+        command(workspaceDir).execute()
       ).rejects.toThrow(/Failed to load/)
     })
   })

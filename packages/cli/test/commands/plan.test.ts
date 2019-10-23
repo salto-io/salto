@@ -8,13 +8,16 @@ jest.mock('salto', () => ({
   Workspace: {
     load: jest.fn(),
   },
+  loadConfig: jest.fn().mockImplementation(
+    workspaceDir => ({ baseDir: workspaceDir, additionalBlueprints: [], cacheLocation: '' })
+  ),
 }))
 
 describe('plan command', () => {
   let output: string
   beforeAll(async () => {
     const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
-    await command('', [], cliOutput).execute()
+    await command('', cliOutput).execute()
     output = cliOutput.stdout.content
   })
 

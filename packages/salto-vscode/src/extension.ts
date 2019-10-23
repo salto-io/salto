@@ -1,4 +1,5 @@
 import * as vscode from 'vscode'
+import { loadConfig } from 'salto'
 import { EditorWorkspace } from './salto/workspace'
 import { onTextChangeEvent, onFileCreate, onFileDelete, onReportErrorsEvent } from './events'
 import {
@@ -6,6 +7,7 @@ import {
   createDocumentSymbolsProvider,
 } from './providers'
 import { planCommand, applyCommand } from './commands'
+
 /**
  * This files act as a bridge between VSC and the salto specific functionality.
  */
@@ -17,8 +19,9 @@ export const activate = async (context: vscode.ExtensionContext): Promise<void> 
   if (name && rootPath) {
     const settings = vscode.workspace.getConfiguration('salto')
     const diagCollection = vscode.languages.createDiagnosticCollection('salto')
+    const config = await loadConfig(rootPath)
     const workspace = await EditorWorkspace.load(
-      rootPath,
+      config,
       settings.additionalBlueprints
     )
 

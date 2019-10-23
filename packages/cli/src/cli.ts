@@ -4,7 +4,7 @@ import { streams } from '@salto/lowerdash'
 import { CliInput, CliOutput, CliExitCode } from './types'
 import { YargsCommandBuilder } from './command_builder'
 import builders from './commands/index'
-import parse from './argparser'
+import parse, { ERROR_STYLE } from './argparser'
 
 export default async (
   input: CliInput,
@@ -30,7 +30,7 @@ export default async (
     const errorStream = output.stderr
     const unstyledErrorString = `${[err].filter(n => n).join(EOL)}`
     const errorString = streams.hasColors(errorStream)
-      ? chalk.bold.red(unstyledErrorString) : unstyledErrorString
+      ? chalk`{${ERROR_STYLE} ${unstyledErrorString}}` : unstyledErrorString
     errorStream.write(errorString)
     errorStream.write(EOL)
     return 2

@@ -13,6 +13,7 @@ const LOGO_FONT = 'Standard'
 const MAX_WIDTH = 100
 const DO_NOT_SHOW = '***<><><>DO NOT SHOW THIS ERROR<><><>***'
 const USAGE_PREFIX = 'Usage: '
+export const ERROR_STYLE = 'red.bold'
 
 const writeLogo = (outStream: WriteStream): void => {
   outStream.write(yargonaut.asFont(LOGO_TEXT, LOGO_FONT))
@@ -78,7 +79,7 @@ const createYargsParser = (outStream: WriteStream, errStream: WriteStream):
   }
 
   if (streams.hasColors(errStream)) {
-    yargonaut.errorsStyle('red.bold')
+    yargonaut.errorsStyle(ERROR_STYLE)
   }
 
   parser.wrap(Math.min(MAX_WIDTH, parser.terminalWidth()))

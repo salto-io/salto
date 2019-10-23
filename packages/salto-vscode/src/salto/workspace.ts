@@ -4,7 +4,7 @@ import path from 'path'
 import {
   Workspace, Blueprint,
   ParsedBlueprint, ParsedBlueprintMap,
-  SourceMap, Errors, Config
+  SourceMap, Errors, Config,
 } from 'salto'
 import { Element } from 'adapter-api'
 

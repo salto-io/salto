@@ -1,18 +1,18 @@
 import path from 'path'
-import { exportToCsv, Workspace, dumpCsv } from 'salto'
+import { exportToCsv, Workspace, dumpCsv, loadConfig } from 'salto'
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput } from '../types'
 import { getConfigFromUser } from '../callbacks'
 
 export const command = (
   workingDir: string,
-  blueprintFiles: string[],
   typeName: string,
   outputPath: string
 ):
 CliCommand => ({
   async execute(): Promise<void> {
-    const workspace: Workspace = await Workspace.load(workingDir, blueprintFiles)
+    const config = await loadConfig(workingDir)
+    const workspace: Workspace = await Workspace.load(config)
     const outputObjectsIterator = await exportToCsv(typeName, workspace, getConfigFromUser)
 
     // Check if output path is provided, otherwise use the template
@@ -72,7 +72,7 @@ const exportBuilder = createCommandBuilder({
   },
 
   async build(input: ExportParsedCliInput, _output: CliOutput) {
-    return command(input.args['blueprints-dir'], input.args.blueprint, input.args['type-name'], input.args['output-path'])
+    return command(input.args['blueprints-dir'], input.args['type-name'], input.args['output-path'])
   },
 })
 

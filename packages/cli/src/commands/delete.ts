@@ -1,5 +1,5 @@
 import asyncfile from 'async-file'
-import { deleteFromCsvFile, Workspace, readCsv } from 'salto'
+import { deleteFromCsvFile, Workspace, readCsv, loadConfig } from 'salto'
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput } from '../types'
 
@@ -8,7 +8,6 @@ import Prompts from '../prompts'
 
 export const command = (
   workingDir: string,
-  blueprintFiles: string[],
   typeName: string,
   inputPath: string,
   { stdout, stderr }: CliOutput
@@ -20,7 +19,8 @@ export const command = (
     }
 
     const records = await readCsv(inputPath)
-    const workspace: Workspace = await Workspace.load(workingDir, blueprintFiles)
+    const config = await loadConfig(workingDir)
+    const workspace: Workspace = await Workspace.load(config)
     await deleteFromCsvFile(
       typeName,
       records,
@@ -77,7 +77,6 @@ const deleteBuilder = createCommandBuilder({
   async build(input: DeleteParsedCliInput, output: CliOutput) {
     return command(
       input.args['blueprints-dir'],
-      input.args.blueprint,
       input.args['type-name'],
       input.args['input-path'],
       output

@@ -1,5 +1,5 @@
 import asyncfile from 'async-file'
-import { importFromCsvFile, Workspace, readCsv } from 'salto'
+import { importFromCsvFile, Workspace, readCsv, loadConfig } from 'salto'
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput } from '../types'
 import { getConfigFromUser } from '../callbacks'
@@ -7,7 +7,6 @@ import Prompts from '../prompts'
 
 export const command = (
   workingDir: string,
-  blueprintFiles: string[] = [],
   typeName: string,
   inputPath: string,
   { stdout, stderr }: CliOutput
@@ -18,7 +17,8 @@ export const command = (
       return
     }
     const records = await readCsv(inputPath)
-    const workspace: Workspace = await Workspace.load(workingDir, blueprintFiles)
+    const config = await loadConfig(workingDir)
+    const workspace: Workspace = await Workspace.load(config)
 
     await importFromCsvFile(
       typeName,
@@ -73,7 +73,7 @@ const importBuilder = createCommandBuilder({
   },
 
   async build(input: ImportParsedCliInput, output: CliOutput) {
-    return command(input.args['blueprints-dir'], input.args.blueprint, input.args['type-name'], input.args['input-path'], output)
+    return command(input.args['blueprints-dir'], input.args['type-name'], input.args['input-path'], output)
   },
 })
 

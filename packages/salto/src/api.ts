@@ -86,7 +86,7 @@ export const exportToCsv = async (
   fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
 ): Promise<AsyncIterable<InstanceElement[]>> => {
   // Find the corresponding element in the state
-  const state = new State()
+  const state = new State(workspace.config.stateLocation)
   const stateElements = await state.get()
   const type = stateElements.find(elem => elem.elemID.getFullName() === typeId)
   if (!type) {
@@ -104,7 +104,7 @@ export const importFromCsvFile = async (
   fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
 ): Promise<void> => {
   // Find the corresponding element in the state
-  const state = new State()
+  const state = new State(workspace.config.stateLocation)
   const stateElements = await state.get()
   const type = stateElements.find(elem => elem.elemID.getFullName() === typeId)
   if (!type) {
@@ -121,7 +121,7 @@ export const deleteFromCsvFile = async (
   fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
 ): Promise<void> => {
   // Find the corresponding element in the state
-  const state = new State()
+  const state = new State(workspace.config.stateLocation)
   const stateElements = await state.get()
   const type = stateElements.find(elem => elem.elemID.getFullName() === typeId)
   if (!type) {

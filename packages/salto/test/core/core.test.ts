@@ -124,7 +124,7 @@ describe('api functions', () => {
       const config: Config = {
         baseDir: '',
         stateLocation: './latest_state.bpc',
-        additionalBlueprints: [filePath('salto.bp'),filePath('salto2.bp')],
+        additionalBlueprints: [filePath('salto.bp'), filePath('salto2.bp')],
       }
       const workspace = await Workspace.load(config)
       const fullNames = workspace.elements.map(e => e.elemID.getFullName())

@@ -5,8 +5,10 @@ import { MockWriteStream, importFromCsvFile as mockImportFromCsv } from '../mock
 import { command } from '../../src/commands/import'
 import Prompts from '../../src/prompts'
 
+const workspaceDir = `${__dirname}/../../../test/BP`
 let mockExistsReturn = Promise.resolve(true)
 jest.mock('async-file', () => ({
+  ...(require.requireActual('async-file')),
   exists: jest.fn().mockImplementation(() => mockExistsReturn),
 }))
 
@@ -23,7 +25,7 @@ describe('import command', () => {
     importFromCsvSpy = jest.spyOn(saltoImp, 'importFromCsvFile').mockImplementation(() => mockImportFromCsv())
     const loadSpy = jest.spyOn(saltoImp.Workspace, 'load').mockImplementation(() => ({}))
     const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
-    await command('', [], 'mockName', 'mockPath', cliOutput).execute()
+    await command(workspaceDir, 'mockPath', 'mockName', cliOutput).execute()
     expect(readCsvSpy.mock.calls[0][0]).toBe('mockPath')
     expect(importFromCsvSpy).toHaveBeenCalledWith('mockName', [], {}, getConfigFromUser)
     expect(cliOutput.stdout.content).toMatch(Prompts.IMPORT_FINISHED_SUCCESSFULLY)
@@ -33,7 +35,7 @@ describe('import command', () => {
   it('should fail if given a wrong path for a CSV file', async () => {
     mockExistsReturn = Promise.resolve(false)
     const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
-    await command('', [], '', '', cliOutput).execute()
+    await command(workspaceDir, '', '', cliOutput).execute()
     expect(cliOutput.stderr.content).toMatch(Prompts.COULD_NOT_FIND_FILE)
   })
 })

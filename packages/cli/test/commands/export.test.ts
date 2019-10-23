@@ -1,10 +1,9 @@
 import path from 'path'
 import { ObjectType, InstanceElement } from 'adapter-api'
 import { Workspace, dumpCsv as dumpCsvMock } from 'salto'
-import { exportToCsv } from '../mocks'
+import { exportToCsv, MockWriteStream } from '../mocks'
 import { command } from '../../src/commands/export'
 
-const workspaceDir = `${__dirname}/../../../test/BP`
 const mockExportToCsv = exportToCsv
 jest.mock('salto', () => ({
   ...(require.requireActual('salto')),
@@ -14,15 +13,18 @@ jest.mock('salto', () => ({
     fillConfig: (configType: ObjectType) => Promise<InstanceElement>
   ) => mockExportToCsv(typeId, workspace, fillConfig)),
   Workspace: {
-    load: jest.fn(),
+    load: jest.fn().mockImplementation(() => ({ hasErrors: () => false })),
   },
+  loadConfig: jest.fn(),
   dumpCsv: jest.fn().mockImplementation(() => { }),
 }))
 
 describe('export command', () => {
+  const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
+
   it('should run export', async () => {
     const outputPath = path.join(__dirname, '__test_export.csv')
-    await command(workspaceDir, 'Test', outputPath).execute()
+    await command('', 'Test', outputPath, cliOutput).execute()
 
     const [objects, output] = (dumpCsvMock as jest.Mock).mock.calls[0]
     expect(objects).toHaveLength(3)

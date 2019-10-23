@@ -35,6 +35,8 @@ jest.mock('../src/callbacks', () => ({
 
 describe('When running export', () => {
   const pathExists = async (p: string): Promise<boolean> => asyncfile.exists(p)
+  const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
+
 
   beforeEach(async () => {
     await asyncfile.delete(discoverOutputDir)
@@ -47,16 +49,16 @@ describe('When running export', () => {
   jest.setTimeout(5 * 60 * 1000)
 
   it('should save the data in csv file after discover', async () => {
-    await discover(discoverOutputDir).execute()
+    await discover(discoverOutputDir, cliOutput).execute()
 
     await exportCommand(discoverOutputDir, sfLeadObjectName,
-      exportOutputFullPath).execute()
+      exportOutputFullPath, cliOutput).execute()
     expect(await pathExists(exportOutputFullPath)).toBe(true)
   })
 
   it('should fail if discover was not run beforehand', async () => {
     const command = exportCommand(discoverOutputDir, sfLeadObjectName,
-      exportOutputFullPath)
+      exportOutputFullPath, cliOutput)
     await expect(command.execute()).rejects
       .toThrow(`Couldn't find the type you are looking for: ${sfLeadObjectName}. Have you run salto discover yet?`)
     expect(await pathExists(exportOutputFullPath)).toBe(false)
@@ -65,6 +67,7 @@ describe('When running export', () => {
 
 describe('When running data modifying commands', () => {
   const dataFilePath = `${__dirname}/../../e2e_test/CSV/import.csv`
+
   beforeEach(async () => {
     await asyncfile.delete(discoverOutputDir)
     await asyncfile.mkdirp(`${discoverOutputDir}/salto.config`)
@@ -76,7 +79,7 @@ describe('When running data modifying commands', () => {
 
     it('should succeed after discover', async () => {
       const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
-      await discover(discoverOutputDir).execute()
+      await discover(discoverOutputDir, cliOutput).execute()
       await importCommand(discoverOutputDir, dataFilePath,
         sfLeadObjectName, cliOutput).execute()
       expect(cliOutput.stdout.content).toMatch(Prompts.IMPORT_FINISHED_SUCCESSFULLY)
@@ -98,13 +101,13 @@ describe('When running data modifying commands', () => {
       const dataWithIdFileName = 'importWithIds.csv'
       const updatedDataFilePath = path.join(exportOutputDir, dataWithIdFileName)
       const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
-      await discover(discoverOutputDir).execute()
+      await discover(discoverOutputDir, cliOutput).execute()
       await importCommand(discoverOutputDir, dataFilePath,
         sfLeadObjectName, cliOutput).execute()
 
       // Replicate the file with the Ids of the created items
       await exportCommand(discoverOutputDir, sfLeadObjectName,
-        exportOutputFullPath).execute()
+        exportOutputFullPath, cliOutput).execute()
       const exportObjects = await readCsv(exportOutputFullPath)
       const clark = exportObjects.find(object => object.FirstName === 'Clark' && object.LastName === 'Kent')
       const bruce = exportObjects.find(object => object.FirstName === 'Bruce' && object.LastName === 'Wayne')

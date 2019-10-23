@@ -6,7 +6,7 @@ const mockPlan = plan
 jest.mock('salto', () => ({
   plan: jest.fn().mockImplementation(() => mockPlan()),
   Workspace: {
-    load: jest.fn(),
+    load: jest.fn().mockImplementation(() => ({ hasErrors: () => false })),
   },
   loadConfig: jest.fn().mockImplementation(
     workspaceDir => ({ baseDir: workspaceDir, additionalBlueprints: [], cacheLocation: '' })

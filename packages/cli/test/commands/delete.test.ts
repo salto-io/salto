@@ -16,15 +16,17 @@ const testCsvMockReturnValues: Value[] = []
 let readCsvSpy: jest.Mock<unknown>
 const workspaceDir = `${__dirname}/../../../test/BP`
 describe('delete command', () => {
+  const mockWS = { hasErrors: () => false }
   it('should run delete successfully if CSV file is found', async () => {
     mockExistsReturn = Promise.resolve(true)
+
     readCsvSpy = jest.spyOn(saltoImp, 'readCsv').mockImplementation(() => Promise.resolve(testCsvMockReturnValues))
     deleteFromCsvSpy = jest.spyOn(saltoImp, 'deleteFromCsvFile').mockImplementation(() => mockDeleteFromCsv())
-    const loadSpy = jest.spyOn(saltoImp.Workspace, 'load').mockImplementation(() => ({}))
+    const loadSpy = jest.spyOn(saltoImp.Workspace, 'load').mockImplementation(() => mockWS)
     const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
     await command(workspaceDir, 'mockName', 'mockPath', cliOutput).execute()
     expect(readCsvSpy.mock.calls[0][0]).toBe('mockPath')
-    expect(deleteFromCsvSpy).toHaveBeenCalledWith('mockName', [], {}, getConfigFromUser)
+    expect(deleteFromCsvSpy).toHaveBeenCalledWith('mockName', [], mockWS, getConfigFromUser)
     expect(cliOutput.stdout.content).toMatch(Prompts.DELETE_FINISHED_SUCCESSFULLY)
     expect(loadSpy).toHaveBeenCalled()
   })

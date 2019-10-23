@@ -6,7 +6,7 @@ const mockDescribe = mocks.describe
 jest.mock('salto', () => ({
   describeElement: jest.fn().mockImplementation(() => mockDescribe([])),
   Workspace: {
-    load: jest.fn(),
+    load: jest.fn().mockImplementation(() => ({ hasErrors: () => false })),
   },
   loadConfig: jest.fn().mockImplementation(
     workspaceDir => ({ baseDir: workspaceDir, additionalBlueprints: [], cacheLocation: '' })

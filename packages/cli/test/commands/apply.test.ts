@@ -18,8 +18,14 @@ jest.mock('salto', () => ({
       config: Config
     ) => {
       if (config.baseDir === 'errorDir') {
-        throw new Error('Test Error')
+        return {
+          hasErrors: () => true,
+          errors: {
+            strings: () => ['Error', 'Error'],
+          },
+        }
       }
+      return { hasErrors: () => false }
     }),
   },
   apply: jest.fn().mockImplementation((

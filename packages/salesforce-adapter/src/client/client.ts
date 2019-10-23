@@ -124,16 +124,13 @@ const withMetricsReport = <T extends Object>(origin: T, metrics: Metrics,
   prefix = 'API.SFDC'): T =>
     new Proxy(origin, {
       get(obj: T, key: string | number | symbol) {
-        const prop = Object.getOwnPropertyDescriptor(obj, key)
-        if (prop === undefined) {
-          return prop
-        }
+        const prop = _.get(obj, key)
         const metric = `${prefix}.${key.toString()}`
-        if (isObject(prop.value)) {
-          return withMetricsReport(prop.value, metrics, metric)
+        if (isObject(prop)) {
+          return withMetricsReport(prop, metrics, metric)
         }
         metrics.report(metric, 1)
-        return prop.value
+        return prop
       },
     })
 

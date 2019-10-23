@@ -1,98 +1,113 @@
 import { EOL } from 'os'
-import _ from 'lodash'
 import yargonaut from 'yargonaut' // this must appear before the import from yargs
 import yargs from 'yargs/yargs'
-import { streams } from '@salto/lowerdash'
 import { Argv, Arguments } from 'yargs'
+import { streams } from '@salto/lowerdash'
+import chalk from 'chalk'
 import { WriteStream } from './types'
-import { registerBuilders, YargsCommandBuilder, CommandBuilder } from './builder'
+import { YargsCommandBuilder, CommandBuilder } from './command_builder'
+import { registerBuilders } from './command_register'
 
 const LOGO_TEXT = '\u00B0 salto' // \u00B0 is for the salto 'dot'
 const LOGO_FONT = 'Standard'
 const MAX_WIDTH = 100
+const DO_NOT_SHOW = '***<><><>DO NOT SHOW THIS ERROR<><><>***'
+const USAGE_PREFIX = 'Usage: '
+export const ERROR_STYLE = 'red.bold'
 
 const writeLogo = (outStream: WriteStream): void => {
   outStream.write(yargonaut.asFont(LOGO_TEXT, LOGO_FONT))
   outStream.write(EOL)
 }
 
+const getUsagePrefix = (outStream: WriteStream): string =>
+  (streams.hasColors(outStream) ? chalk.bold(USAGE_PREFIX) : USAGE_PREFIX)
+
+const showHelpMessage = (parser: Argv, outStream: WriteStream): void => {
+  // Pending PR: https://github.com/yargs/yargs/pull/1386
+  // @ts-ignore TS2345
+  parser.showHelp((s: string) => {
+    outStream.write(getUsagePrefix(outStream))
+    outStream.write(s)
+  })
+}
+
 const onNoArgs = (parser: Argv, outStream: WriteStream): void => {
   if (outStream.isTTY) {
     writeLogo(outStream)
   }
-
-  // Pending PR: https://github.com/yargs/yargs/pull/1386
-  // @ts-ignore TS2345
-  parser.showHelp((s: string) => outStream.write(s))
-
+  showHelpMessage(parser, outStream)
   outStream.write(EOL)
-}
-
-const showUsageComment = (parser: Argv, outStream: WriteStream): void => {
-  // TODO: argv.$0 is undefined for some reason, need to open an issue/PR at yargs.
-  // This is a workaround for now.
-  // @ts-ignore TS2345
-  const scriptName = parser.$0
-
-  outStream.write(`See '${scriptName} --help' for usage information`)
-  outStream.write(EOL)
-}
-
-const parserFailureHandler = (
-  outStream: WriteStream, msg: string, err?: Error,
-): void => {
-  if (err && !msg) {
-    throw err
-  }
-
-  outStream.write(msg)
-  outStream.write(EOL)
-}
-
-const monkeyPatchShowHelpForColors = (parser: Argv, outStream: WriteStream): void => {
-  // wrapping a function without changing its args
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  parser.showHelp = _.wrap(parser.showHelp, (savedShowHelp, ...args: any[]) => {
-    if (streams.hasColors(outStream)) {
-      yargonaut.style('green')
-    }
-
-    return savedShowHelp.call(parser, ...args)
-  })
 }
 
 type AugmentedYargsParser = Argv & {
-  hadError: boolean
+  errors: string[]
 }
 
-const createYargsParser = (
-  stderr: WriteStream,
-): AugmentedYargsParser => {
-  let hadError = false
+const createYargsParser = (outStream: WriteStream, errStream: WriteStream):
+  AugmentedYargsParser => {
+  const errors: string[] = []
 
   const parser = yargs()
     .strict()
     .completion('completion', false as unknown as string)
     .exitProcess(false)
-    .help('h')
-    .alias('h', 'help')
+    .help(false)
     .fail((msg, err) => {
-      parserFailureHandler(stderr, msg, err)
-      hadError = true
+      if (err) throw err
+      errors.push(msg)
     })
+
+  // Define the help option explicitly to have better control of when the help message is printed
+  parser.option('help', {
+    alias: 'h',
+    boolean: true,
+    describe: 'Show help',
+  })
+
+  // Update texts and define un-wanted yargs messages
+  parser.updateLocale({
+    'Not enough non-option arguments: got %s, need at least %s': DO_NOT_SHOW,
+    'Too many non-option arguments: got %s, maximum of %s': DO_NOT_SHOW,
+    'Positionals:': 'Arguments:',
+  })
+
+
+  if (streams.hasColors(outStream)) {
+    yargonaut.helpStyle('bold')
+      .style('yellow', 'required')
+  }
+
+  if (streams.hasColors(errStream)) {
+    yargonaut.errorsStyle(ERROR_STYLE)
+  }
 
   parser.wrap(Math.min(MAX_WIDTH, parser.terminalWidth()))
 
-  monkeyPatchShowHelpForColors(parser, stderr)
-
-  Object.defineProperty(parser, 'hadError', { get: () => hadError })
+  Object.defineProperty(parser, 'errors', { get: () => errors })
 
   return parser as AugmentedYargsParser
+}
+
+const handleErrors = (parser: Argv, outStream: WriteStream, errors: string[]): void => {
+  let printedErrors = false
+  errors.forEach((value: string) => {
+    // Workaround to not show error messages we do not want
+    if (value && value.length > 0 && !value.includes(DO_NOT_SHOW)) {
+      outStream.write(value)
+      outStream.write(EOL)
+      if (!printedErrors) printedErrors = true
+    }
+  })
+
+  if (printedErrors) outStream.write(EOL)
+  showHelpMessage(parser, outStream)
 }
 
 export type ParseResult =
   { status: 'command'; parsedArgs: Arguments; builder: CommandBuilder } |
   { status: 'error' } |
+  { status: 'help' } |
   { status: 'empty' }
 
 const parse = (
@@ -100,7 +115,7 @@ const parse = (
   { args }: { args: string[] },
   { stdout, stderr }: { stdout: WriteStream; stderr: WriteStream },
 ): Promise<ParseResult> => new Promise<ParseResult>((resolve, reject) => {
-  const parser = createYargsParser(stderr)
+  const parser = createYargsParser(stdout, stderr)
   const commandSelected = registerBuilders(parser, commandBuilders)
 
   if (args.length === 0) {
@@ -115,17 +130,23 @@ const parse = (
       return
     }
 
+    // When the help option is on show message and resolve (alone or with other args/options)
+    if (parsedArgs.help) {
+      showHelpMessage(parser, stdout)
+      resolve({ status: 'help' })
+      return
+    }
+
     stdout.write(outText)
 
     // let the event loop process the commandSelected promise
     setTimeout(() => {
-      if (parser.hadError) {
-        stdout.write(EOL)
-        showUsageComment(parser, stderr)
+      if (parser.errors.length > 0) {
+        handleErrors(parser, stderr, parser.errors)
         resolve({ status: 'error' })
       } else if (commandSelected.done) {
         commandSelected.then(builder => resolve({ status: 'command', parsedArgs, builder }))
-      } else { // "--help" or "--version"
+      } else { // "--version"
         resolve({ status: 'empty' })
       }
     }, 0)

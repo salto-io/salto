@@ -1,5 +1,5 @@
 import { Workspace, describeElement } from 'salto'
-import { createCommandBuilder } from '../builder'
+import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput } from '../types'
 import { formatSearchResults } from '../formatter'
 
@@ -24,7 +24,7 @@ type DescribeArgs = {
 
 type DescribeParsedCliInput = ParsedCliInput<DescribeArgs>
 
-const builder = createCommandBuilder({
+const describeBuilder = createCommandBuilder({
   options: {
     command: 'describe <words...>',
     aliases: ['desc'],
@@ -59,4 +59,4 @@ const builder = createCommandBuilder({
   },
 })
 
-export default builder
+export default describeBuilder

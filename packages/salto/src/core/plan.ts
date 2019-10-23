@@ -72,6 +72,9 @@ const isEqualsNode = (node1: Node, node2: Node): boolean => {
     // We would like to check equality only on type level prop (annotations) and not fields
     return node1.isAnnotationsEqual(node2)
   }
+  if (isPrimitiveType(node1) && isPrimitiveType(node2)) {
+    return node1.isEqual(node2)
+  }
   if (isInstanceElement(node1) && isInstanceElement(node2)) {
     return node1.isEqual(node2)
   }

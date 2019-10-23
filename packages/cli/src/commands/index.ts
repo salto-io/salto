@@ -8,8 +8,8 @@ import importBuilder from './import'
 import deleteBuilder from './delete'
 
 
-// The order of the commands determines order of appearance in help text
-const builders = [
+// The order of the builders determines order of appearance in help text
+export default [
   discoverBuilder,
   describeBuilder,
   planBuilder,
@@ -18,5 +18,3 @@ const builders = [
   importBuilder,
   deleteBuilder,
 ] as YargsCommandBuilder[]
-
-export default builders

@@ -20,7 +20,6 @@ export const command = (
 })
 
 type PlanArgs = {
-  'workspace-dir': string
 }
 type PlanParsedCliInput = ParsedCliInput<PlanArgs>
 
@@ -39,8 +38,8 @@ const planBuilder = createCommandBuilder({
     },
   },
 
-  async build(input: PlanParsedCliInput, output: CliOutput) {
-    return command(input.args['workspace-dir'], output)
+  async build(_input: PlanParsedCliInput, output: CliOutput) {
+    return command('.', output)
   },
 })
 

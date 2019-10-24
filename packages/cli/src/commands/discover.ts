@@ -20,7 +20,6 @@ export const command = (
 })
 
 type DiscoverArgs = {
-  'workspace-dir': string
 }
 type DiscoverParsedCliInput = ParsedCliInput<DiscoverArgs>
 
@@ -29,19 +28,10 @@ const discoverBuilder = createCommandBuilder({
     command: 'discover',
     aliases: ['dis'],
     description: 'Update blueprints and state in workspace directory',
-    keyed: {
-      'workspace-dir': {
-        alias: ['d'],
-        describe: 'Path to the workspace directory',
-        string: true,
-        default: '.',
-        requiresArg: true,
-      },
-    },
   },
 
-  async build(input: DiscoverParsedCliInput, output: CliOutput) {
-    return command(input.args['workspace-dir'], output)
+  async build(_input: DiscoverParsedCliInput, output: CliOutput) {
+    return command('.', output)
   },
 })
 

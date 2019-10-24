@@ -78,7 +78,6 @@ export class ApplyCommand implements CliCommand {
 }
 
 type ApplyArgs = {
-  'workspace-dir': string
    yes: boolean
 }
 type ApplyParsedCliInput = ParsedCliInput<ApplyArgs>
@@ -93,18 +92,11 @@ const applyBuilder = createCommandBuilder({
         describe: 'Do not ask for approval before applying',
         boolean: true,
       },
-      'workspace-dir': {
-        alias: 'w',
-        describe: 'Path to the workspace directory',
-        default: '.',
-        string: true,
-        requiresArg: true,
-      },
     },
   },
 
   async build(input: ApplyParsedCliInput, output: CliOutput): Promise<CliCommand> {
-    return new ApplyCommand(input.args['workspace-dir'], input.args.yes, output)
+    return new ApplyCommand('.', input.args.yes, output)
   },
 })
 

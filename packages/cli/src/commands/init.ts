@@ -1,5 +1,6 @@
 import * as path from 'path'
 import { init } from 'salto'
+import Prompts from '../prompts'
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput } from '../types'
 
@@ -10,9 +11,11 @@ export const command = (
   async execute(): Promise<void> {
     try {
       const workspace = await init(workspaceName)
-      stdout.write(`Initiated workspace ${workspace.config.name} at ${path.resolve(workspace.config.baseDir)}\n`)
+      stdout.write(
+        Prompts.initCompleted(workspace.config.name, path.resolve(workspace.config.baseDir))
+      )
     } catch (e) {
-      stderr.write(`Could not initiate workspace: ${e.message}\n`)
+      stderr.write(Prompts.initFailed(e.message))
     }
   },
 })

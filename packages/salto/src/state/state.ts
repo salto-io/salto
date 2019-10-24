@@ -49,7 +49,7 @@ export default class State {
       // If state is not loaded we don't have anything to save
       if (!this.state) return
       const buffer = serialize(this.state)
-      await fs.createDirectory(path.dirname(this.statePath))
+      // await fs.createDirectory(path.dirname(this.statePath))
       await fs.writeFile(this.statePath, buffer)
     }
 

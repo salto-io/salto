@@ -6,9 +6,7 @@ import readdirp from 'readdirp'
 import uuidv4 from 'uuid/v4'
 import { collections, types } from '@salto/lowerdash'
 import { Element } from 'adapter-api'
-import {
-  SourceMap, parse, SourceRange, ParseResult, ParseError,
-} from '../parser/parse'
+import { SourceMap, parse, SourceRange, ParseResult, ParseError } from '../parser/parse'
 import { mergeElements, MergeError } from '../core/merger'
 import { validateElements, ValidationError } from '../core/validator'
 import { DetailedChange } from '../core/plan'
@@ -34,6 +32,12 @@ export type Blueprint = {
   buffer: string
   filename: string
   timestamp?: number
+}
+
+export interface WorkspaceError {
+  sourceRanges: SourceRange[]
+  cause: ParseError | ValidationError | MergeError
+  error: string
 }
 
 export type ParsedBlueprint = Blueprint & ParseResult
@@ -111,6 +115,7 @@ const mergeSourceMaps = (bps: ReadonlyArray<ParsedBlueprint>): SourceMap => {
   return result
 }
 
+
 export class Errors extends types.Bean<Readonly<{
   parse: ReadonlyArray<ParseError>
   merge: ReadonlyArray<MergeError>
@@ -128,6 +133,7 @@ export class Errors extends types.Bean<Readonly<{
     ]
   }
 }
+
 
 type WorkspaceState = {
   readonly parsedBlueprints: ParsedBlueprintMap
@@ -231,6 +237,27 @@ export class Workspace {
   hasErrors(): boolean { return this.state.errors.hasErrors() }
   get parsedBlueprints(): ParsedBlueprintMap { return this.state.parsedBlueprints }
   get sourceMap(): SourceMap { return this.state.sourceMap }
+
+  getWorkspaceErrors(): ReadonlyArray<WorkspaceError> {
+    const wsErrors = this.state.errors
+    return [
+      ...wsErrors.parse.map(pe => ({
+        sourceRanges: [pe.subject],
+        error: pe.detail,
+        cause: pe,
+      })),
+      ...wsErrors.merge.map(me => ({
+        sourceRanges: this.sourceMap.get(me.elemID.getFullName()) || [],
+        error: me.error,
+        cause: me,
+      })),
+      ...wsErrors.merge.map(ve => ({
+        sourceRanges: this.sourceMap.get(ve.elemID.getFullName()) || [],
+        error: ve.error,
+        cause: ve,
+      })),
+    ]
+  }
 
   private markDirty(names: string[]): void {
     names.forEach(name => this.dirtyBlueprints.add(name))

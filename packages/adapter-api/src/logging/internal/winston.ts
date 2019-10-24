@@ -41,7 +41,9 @@ const jsonFormat = winston.format.combine(
   winston.format.json(),
 )
 
-const textFormat = (colorize: boolean): logform.Format => winston.format.printf(info => {
+const textFormat = (
+  { colorize }: { colorize: boolean }
+): logform.Format => winston.format.printf(info => {
   const { timestamp, namespace, level, message, stack } = info
   return [
     timestamp,
@@ -55,7 +57,7 @@ const format = (
   { colorize, format: formatType }: { colorize: boolean; format: Format }
 ): logform.Format => winston.format.combine(
   ...baseFormat,
-  formatType === 'json' ? jsonFormat : textFormat(colorize)
+  formatType === 'json' ? jsonFormat : textFormat({ colorize })
 )
 
 const fileTransport = (
@@ -66,11 +68,15 @@ const fileTransport = (
 })
 
 const consoleTransport = (
-  { stream, format: formatType }: { stream: NodeJS.WritableStream; format: Format },
+  { stream, format: formatType, colorize }: {
+    stream: NodeJS.WritableStream
+    format: Format
+    colorize: boolean
+  },
 ): Transport => new winston.transports.Stream({
   stream,
   format: format({
-    colorize: streams.hasColors(stream as streams.MaybeTty),
+    colorize: colorize && streams.hasColors(stream as streams.MaybeTty),
     format: formatType,
   }),
 })
@@ -81,12 +87,12 @@ export type Dependencies = {
 
 const createWinstonLoggerOptions = (
   { consoleStream }: Dependencies,
-  { filename, minLevel, format: formatType }: Config,
+  { filename, minLevel, format: formatType, colorize }: Config,
 ): winston.LoggerOptions => ({
   levels: winstonLogLevels,
   transports: filename
     ? fileTransport({ filename, format: formatType })
-    : consoleTransport({ stream: consoleStream, format: formatType }),
+    : consoleTransport({ stream: consoleStream, format: formatType, colorize }),
   exitOnError: false,
   level: minLevel,
 })

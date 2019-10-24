@@ -1,40 +1,50 @@
 import {
-  Config, LogLevel, EnabledForNamespaceChecker, Format, validateFormat,
+  Config, LogLevel, EnabledForNamespaceChecker, Format, validateFormat, validateLogLevel,
 } from './common'
 
 export type Env = { [key: string]: string | undefined }
 
 export const ENV_KEY_PREFIX = 'SALTO_LOG_'
 
-const envKey = (env: Env, k: string): string | undefined => env[ENV_KEY_PREFIX + k]
+const BOOLEAN_TRUE_VALUES = Object.freeze(['true', '1', 'yes'])
 
-const enabledForNamespace = (env: Env): EnabledForNamespaceChecker | undefined => {
-  const ns = envKey(env, 'NS')
+export const config = (env: Env): Partial<Config> => {
+  const envKey = (k: string): string | undefined => env[ENV_KEY_PREFIX + k]
 
-  if (ns === undefined) {
-    return undefined // leave default as is
+  const minLevel = (): LogLevel | undefined => {
+    const val = envKey('LEVEL')
+    if (val === undefined) return undefined
+    return validateLogLevel(val)
   }
 
-  if (ns === '*') {
-    return () => true
+  const enabledForNamespace = (): EnabledForNamespaceChecker | undefined => {
+    const val = envKey('NS')
+    if (val === undefined) return undefined
+
+    return val === '*'
+      ? () => true
+      : namespace => namespace === val
   }
 
-  return namespace => namespace === ns
+  const format = (): Format | undefined => {
+    const val = envKey('FORMAT')
+    if (val === undefined) return undefined
+    return validateFormat(val)
+  }
+
+  const toBoolean = (key: string): boolean | undefined => {
+    const val = envKey(key)
+    if (val === undefined) return undefined
+    return BOOLEAN_TRUE_VALUES.includes(val)
+  }
+
+  const colorize = (): boolean | undefined => toBoolean('COLOR')
+
+  return {
+    minLevel: minLevel(),
+    filename: envKey('FILE'),
+    enabledForNamespace: enabledForNamespace(),
+    format: format(),
+    colorize: colorize(),
+  }
 }
-
-const format = (env: Env): Format | undefined => {
-  const f = envKey(env, 'FORMAT')
-
-  if (f === undefined) {
-    return undefined
-  }
-
-  return validateFormat(f)
-}
-
-export const config = (env: Env): Partial<Config> => ({
-  minLevel: envKey(env, 'LEVEL') as LogLevel | undefined,
-  filename: envKey(env, 'FILE'),
-  enabledForNamespace: enabledForNamespace(env),
-  format: format(env),
-})

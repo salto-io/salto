@@ -3,7 +3,7 @@ import tmp from 'tmp'
 import { pollPromise } from '../../poll'
 import { mockConsoleStream, MockWritableStream } from '../../console'
 import {
-  LogLevel, Config, mergeConfigs,
+  LogLevel, Config, mergeConfigs, LOG_LEVELS,
 } from '../../../src/logging/internal/common'
 import { createLogger as createWinstonLogger } from '../../../src/logging/internal/winston'
 import { loggerFromBasicLogger, Logger } from '../../../src/logging/internal/logger'
@@ -12,16 +12,16 @@ const TIMESTAMP_REGEX = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/
 
 describe('winston logger', () => {
   let consoleStream: MockWritableStream
-  let initalConfig: Config
+  let initialConfig: Config
   const NAMESPACE = 'my-namespace'
 
   const createLogger = (): Logger => {
-    const basicLogger = createWinstonLogger({ consoleStream }, initalConfig, NAMESPACE)
-    return loggerFromBasicLogger(basicLogger, initalConfig, NAMESPACE)
+    const basicLogger = createWinstonLogger({ consoleStream }, initialConfig, NAMESPACE)
+    return loggerFromBasicLogger(basicLogger, initialConfig, NAMESPACE)
   }
 
   beforeEach(() => {
-    initalConfig = mergeConfigs() // get a copy of the default config
+    initialConfig = mergeConfigs() // get a copy of the default config
     consoleStream = mockConsoleStream(true)
   })
 
@@ -45,7 +45,7 @@ describe('winston logger', () => {
 
         beforeEach(async () => {
           filename = tmp.tmpNameSync({ postfix: '.log' })
-          initalConfig.filename = filename
+          initialConfig.filename = filename
           logger = createLogger()
           logLine()
 
@@ -92,13 +92,13 @@ describe('winston logger', () => {
 
     describe('minLevel', () => {
       beforeEach(() => {
-        initalConfig.minLevel = 'info'
+        initialConfig.minLevel = 'info'
         logger = createLogger()
       })
 
       describe('when logging at the configured level', () => {
         beforeEach(() => {
-          logLine(initalConfig.minLevel)
+          logLine(initialConfig.minLevel)
         })
 
         it('should write the message to the console stream', () => {
@@ -141,13 +141,93 @@ describe('winston logger', () => {
 
       describe('when it returns false', () => {
         beforeEach(() => {
-          initalConfig.enabledForNamespace = () => false
+          initialConfig.enabledForNamespace = () => false
           logger = createLogger()
           logLine()
         })
 
         it('should not write the message to the console stream', () => {
           expect(line).toHaveLength(0)
+        })
+      })
+    })
+
+    describe('colorize', () => {
+      describe('when it is set to true', () => {
+        beforeEach(() => {
+          initialConfig.colorize = true
+        })
+
+        describe('when the console supports color', () => {
+          beforeEach(() => {
+            logger = createLogger()
+            logLine()
+          })
+
+          it('should colorize the line', () => {
+            expect(line).toContain('\u001b[38')
+          })
+        })
+
+        describe('when the console does not support color', () => {
+          beforeEach(() => {
+            consoleStream.supportsColor = false
+            logger = createLogger()
+            logLine()
+          })
+
+          it('should not colorize the line', () => {
+            expect(line).not.toContain('\u001b[38')
+          })
+        })
+      })
+
+      describe('when it is set to false', () => {
+        beforeEach(() => {
+          initialConfig.colorize = false
+        })
+
+        describe('when the console supports color', () => {
+          beforeEach(() => {
+            logger = createLogger()
+            logLine()
+          })
+
+          it('should not colorize the line', () => {
+            expect(line).not.toContain('\u001b[38')
+          })
+        })
+
+        describe('when the console does not support color', () => {
+          beforeEach(() => {
+            consoleStream.supportsColor = false
+            logger = createLogger()
+            logLine()
+          })
+
+          it('should not colorize the line', () => {
+            expect(line).not.toContain('\u001b[38')
+          })
+        })
+      })
+    })
+  })
+
+  describe('log level methods', () => {
+    beforeEach(() => {
+      [initialConfig.minLevel] = LOG_LEVELS
+      initialConfig.colorize = false
+      logger = createLogger()
+    })
+
+    LOG_LEVELS.forEach(level => {
+      describe(`when calling method ${level}`, () => {
+        beforeEach(() => {
+          logLine(level)
+        })
+
+        it('should log the message correctly', () => {
+          expect(line).toContain(`${level} ${NAMESPACE} hello { world: true }`)
         })
       })
     })

@@ -21,7 +21,7 @@ describe('winston logger', () => {
   }
 
   beforeEach(() => {
-    initalConfig = mergeConfigs()
+    initalConfig = mergeConfigs() // get a copy of the default config
     consoleStream = mockConsoleStream(true)
   })
 
@@ -29,7 +29,7 @@ describe('winston logger', () => {
   let line: string
 
   const logLine = (level: LogLevel = 'error'): void => {
-    logger.log(level, 'hello %o', { world: true }, { extra: 'stuff' })
+    logger[level]('hello %o', { world: true }, { extra: 'stuff' })
     logger.end();
     [line] = consoleStream.contents().split('\n')
   }
@@ -184,13 +184,30 @@ describe('winston logger', () => {
     describe('when a partial config is specified', () => {
       beforeEach(() => {
         logger.configure({ minLevel: 'debug' })
-        logger.log('debug', 'hello %o', { world: true }, { extra: 'stuff' });
-        [line] = consoleStream.contents().split('\n')
+        logLine('debug')
       })
 
       it('updates the logger in place', () => {
         expect(line).not.toHaveLength(0)
       })
+    })
+  })
+
+  describe('logging errors', () => {
+    let error: Error
+    let line1: string
+    let line2: string
+
+    beforeEach(() => {
+      error = new Error('testing 123')
+      logger = createLogger()
+      logger.log('warn', error);
+      [line1, line2] = consoleStream.contents().split('\n')
+    })
+
+    it('should log the error message', () => {
+      expect(line1).toContain('Error: testing 123')
+      expect(line2).toContain(' at ')
     })
   })
 })

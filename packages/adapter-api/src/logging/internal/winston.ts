@@ -19,15 +19,16 @@ const winstonLogLevels: winston.config.AbstractConfigSetLevels = Object.assign(
 )
 
 const format = (colorize: boolean): Format => winston.format.combine(
+  winston.format.errors({ stack: true }),
   winston.format.timestamp(),
   winston.format.splat(),
   winston.format.printf(info => {
-    const { timestamp, namespace, level, message } = info
+    const { timestamp, namespace, level, message, stack } = info
     return [
       timestamp,
       colorize ? chalk.hex(levelToHexColor(level as LogLevel))(level) : level,
       colorize ? chalk.hex(namespaceToHexColor(namespace))(namespace) : namespace,
-      message,
+      stack || message,
     ].join(' ')
   }),
 )

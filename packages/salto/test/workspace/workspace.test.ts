@@ -382,6 +382,7 @@ type salesforce_lead {
     })
 
     describe('init config', () => {
+      const getCredsLoc = (localStorage: string): string => path.join(localStorage, 'creds')
       beforeEach(async () => {
         await fs.delete(emptyTmpDir.path)
         await fs.mkdirp(emptyTmpDir.path)
@@ -390,11 +391,13 @@ type salesforce_lead {
       it('should init a basedir with no workspace name provided', async () => {
         workspace = await Workspace.init(path.join(emptyTmpDir.path, 'empty'))
         expect(await fs.exists(workspace.config.localStorage)).toBeTruthy()
+        expect(await fs.exists(getCredsLoc(config.localStorage))).toBeTruthy()
         expect(workspace.config.name).toBe('empty')
       })
       it('should init a basedir with workspace name provided', async () => {
         workspace = await Workspace.init(emptyTmpDir.path, 'test')
         expect(await fs.exists(workspace.config.localStorage)).toBeTruthy()
+        expect(await fs.exists(getCredsLoc(config.localStorage))).toBeTruthy()
         expect(workspace.config.name).toBe('test')
       })
       it('should fail when run inside an existing workspace', async () => {

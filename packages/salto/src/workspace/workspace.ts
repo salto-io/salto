@@ -46,6 +46,8 @@ export interface ParsedBlueprintMap {
   [key: string]: ParsedBlueprint
 }
 
+export const CREDENTIALS_DIR = 'creds'
+
 const getBlueprintsFromDir = async (
   blueprintsDir: string,
 ): Promise<string[]> => {
@@ -179,6 +181,9 @@ const ensureEmptyWorkspace = async (config: Config): Promise<void> => {
   }
 }
 
+const getCredentialsLocation = (config: Config): string => (
+  path.join(config.localStorage, CREDENTIALS_DIR)
+)
 /**
  * The Workspace class exposes the content of a collection (usually a directory) of blueprints
  * in the form of Elements.
@@ -204,7 +209,11 @@ export class Workspace {
     config: Config,
     useCache = true
   ): Promise<Workspace> {
-    const bps = await loadBlueprints(config.baseDir, config.additionalBlueprints || [])
+    const additionalBlueprints = [
+      ...(config.additionalBlueprints || []),
+      ...await getBlueprintsFromDir(getCredentialsLocation(config)),
+    ]
+    const bps = await loadBlueprints(config.baseDir, additionalBlueprints)
     const parsedBlueprints = useCache
       ? parseBlueprintsWithCache(bps, config.baseDir, config.localStorage)
       : parseBlueprints(bps)
@@ -219,6 +228,7 @@ export class Workspace {
     await ensureEmptyWorkspace(config)
     await dumpConfig(config)
     await fs.createDirectory(config.localStorage)
+    await fs.createDirectory(getCredentialsLocation(config))
     return Workspace.load(config)
   }
 
@@ -326,7 +336,12 @@ export class Workspace {
     const cache = new ParseResultFSCache(path.join(this.config.baseDir, this.config.localStorage))
     await Promise.all(wu(this.dirtyBlueprints).map(async filename => {
       const bp = this.parsedBlueprints[filename]
-      const filePath = path.join(this.config.baseDir, filename)
+      // We need the exitance check for deletions. In case of deletions the
+      // the filename will already be relative to basedir and not cred loc so
+      // we are still good.
+      const filePath = bp && _.every(bp.elements, e => e.elemID.isConfig())
+        ? path.join(getCredentialsLocation(this.config), filename)
+        : path.join(this.config.baseDir, filename)
       if (bp === undefined) {
         await fs.delete(filePath)
       } else {

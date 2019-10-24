@@ -1,18 +1,15 @@
 import _ from 'lodash'
 import { Element } from 'adapter-api'
 import * as fs from 'async-file'
-import * as path from 'path'
-import os from 'os'
 import { serialize, deserialize } from '../serializer/elements'
 
-export const STATEPATH = path.join(os.homedir(), '.salto/latest_state.bp')
 /**
  * Salto state - an interface for managing the state between runs
  */
 export default class State {
     public statePath: string
     private state?: Element[]
-    constructor(statePath: string = STATEPATH) {
+    constructor(statePath: string) {
       this.statePath = statePath
     }
 
@@ -49,7 +46,6 @@ export default class State {
       // If state is not loaded we don't have anything to save
       if (!this.state) return
       const buffer = serialize(this.state)
-      // await fs.createDirectory(path.dirname(this.statePath))
       await fs.writeFile(this.statePath, buffer)
     }
 

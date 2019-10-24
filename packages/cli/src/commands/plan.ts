@@ -1,51 +1,47 @@
-import { plan, Workspace } from 'salto'
-import { createCommandBuilder } from '../builder'
+import { plan, Workspace, loadConfig } from 'salto'
+import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput } from '../types'
-import { createPlanOutput } from '../formatter'
+import { createPlanOutput, formatWorkspaceErrors } from '../formatter'
 
 export const command = (
-  workingDir: string,
-  blueprintFiles: string[] = [],
-  { stdout }: CliOutput
+  workspaceDir: string,
+  { stdout, stderr }: CliOutput
 ): CliCommand => ({
   async execute(): Promise<void> {
-    const workspace: Workspace = await Workspace.load(workingDir, blueprintFiles)
+    const config = await loadConfig(workspaceDir)
+    const workspace: Workspace = await Workspace.load(config)
+    if (workspace.hasErrors()) {
+      stderr.write(formatWorkspaceErrors(workspace.errors))
+    } else {
     // TODO: inline commands.plan here
-    stdout.write(createPlanOutput(await plan(workspace)))
+      stdout.write(createPlanOutput(await plan(workspace)))
+    }
   },
 })
 
 type PlanArgs = {
-  'blueprint': string[]
-  'blueprints-dir': string
+  'workspace-dir': string
 }
 type PlanParsedCliInput = ParsedCliInput<PlanArgs>
 
-const builder = createCommandBuilder({
+const planBuilder = createCommandBuilder({
   options: {
     command: 'plan',
     aliases: ['p'],
     description: 'Shows changes to be applied to the target services at the next run of the *apply* command',
     keyed: {
-      'blueprints-dir': {
-        alias: 'd',
-        describe: 'A path to the blueprints directory',
+      'workspace-dir': {
+        alias: 'w',
+        describe: 'Path to the workspace directory',
         string: true,
-        demandOption: true,
-      },
-      blueprint: {
-        alias: 'b',
-        describe: 'Path to input blueprint file. This option can be specified multiple times',
-        demandOption: false,
-        array: true,
-        requiresArg: true,
+        default: '.',
       },
     },
   },
 
   async build(input: PlanParsedCliInput, output: CliOutput) {
-    return command(input.args['blueprints-dir'], input.args.blueprint, output)
+    return command(input.args['workspace-dir'], output)
   },
 })
 
-export default builder
+export default planBuilder

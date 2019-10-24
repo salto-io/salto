@@ -1,30 +1,33 @@
-import { Workspace, describeElement } from 'salto'
-import { createCommandBuilder } from '../builder'
+import { Workspace, describeElement, loadConfig } from 'salto'
+import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput } from '../types'
-import { formatSearchResults } from '../formatter'
+import { formatSearchResults, formatWorkspaceErrors } from '../formatter'
 
 export const command = (
-  blueprintsDir: string,
-  blueprints: string[] = [],
+  workspaceDir: string,
   words: string[],
-  { stdout }: CliOutput
+  { stdout, stderr }: CliOutput
 ): CliCommand => ({
   async execute(): Promise<void> {
-    const workspace: Workspace = await Workspace.load(blueprintsDir, blueprints)
-    const searchResult = await describeElement(workspace, words)
-    stdout.write(formatSearchResults(searchResult))
+    const config = await loadConfig(workspaceDir)
+    const workspace: Workspace = await Workspace.load(config)
+    if (workspace.hasErrors()) {
+      stderr.write(formatWorkspaceErrors(workspace.errors))
+    } else {
+      const searchResult = await describeElement(workspace, words)
+      stdout.write(formatSearchResults(searchResult))
+    }
   },
 })
 
 type DescribeArgs = {
-  blueprint: string[]
-  'blueprints-dir': string
+  'workspace-dir': string
   'words': string[]
 }
 
 type DescribeParsedCliInput = ParsedCliInput<DescribeArgs>
 
-const builder = createCommandBuilder({
+const describeBuilder = createCommandBuilder({
   options: {
     command: 'describe <words...>',
     aliases: ['desc'],
@@ -37,26 +40,20 @@ const builder = createCommandBuilder({
       },
     },
     keyed: {
-      'blueprints-dir': {
-        alias: 'd',
-        describe: 'Path to directory containing blueprint (.bp) files',
+      'workspace-dir': {
+        alias: 'w',
+        describe: 'Path to the workspace directory',
         demandOption: false,
+        default: '.',
         string: true,
-        requiresArg: true,
-      },
-      blueprint: {
-        alias: 'b',
-        describe: 'Path to input blueprint file. This option can be specified multiple times',
-        demandOption: false,
-        array: true,
         requiresArg: true,
       },
     },
   },
 
   async build(input: DescribeParsedCliInput, output: CliOutput) {
-    return command(input.args['blueprints-dir'], input.args.blueprint, input.args.words, output)
+    return command(input.args['workspace-dir'], input.args.words, output)
   },
 })
 
-export default builder
+export default describeBuilder

@@ -3,19 +3,29 @@ import {
   ObjectType, InstanceElement,
 } from 'adapter-api'
 import {
-  Workspace, Plan, PlanItem,
+  Workspace, Plan, PlanItem, Config,
 } from 'salto'
 import { apply, plan, MockWriteStream } from '../mocks'
 import { ApplyCommand } from '../../src/commands/apply'
 
 const mockApply = apply
 jest.mock('salto', () => ({
+  loadConfig: jest.fn().mockImplementation(
+    workspaceDir => Promise.resolve({ baseDir: workspaceDir, additionalBlueprints: [], cacheLocation: '' })
+  ),
   Workspace: {
     load: jest.fn().mockImplementation((
-      _blueprintsDir: string,
-      blueprintsFiles: string[]
+      config: Config
     ) => {
-      if (blueprintsFiles && blueprintsFiles.length > 0) { throw new Error('blablabla') }
+      if (config.baseDir === 'errorDir') {
+        return {
+          hasErrors: () => true,
+          errors: {
+            strings: () => ['Error', 'Error'],
+          },
+        }
+      }
+      return { hasErrors: () => false }
     }),
   },
   apply: jest.fn().mockImplementation((
@@ -43,7 +53,7 @@ describe('apply command', () => {
 
   describe('valid apply', () => {
     beforeEach(() => {
-      command = new ApplyCommand('', [], true, cliOutput)
+      command = new ApplyCommand('', true, cliOutput)
     })
 
     describe('should print progress', () => {
@@ -83,8 +93,8 @@ describe('apply command', () => {
 
   describe('invalid apply', () => {
     beforeEach(() => {
-      // Creating here apply with BP to fail the apply - see mock impl.
-      command = new ApplyCommand('', ['bla'], true, cliOutput)
+      // Creating here with base dir 'errorDir' will cause the mock to throw an error
+      command = new ApplyCommand('errorDir', true, cliOutput)
     })
     it('should fail gracefully', async () => {
       await command.execute()

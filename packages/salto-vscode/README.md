@@ -15,8 +15,8 @@
 
 - Auto-completion support.
 - Syntax highlighting for `.bp` files.
-- Sytax, Merge, and validation error highlighting. 
-- Adds a commands for running `salto plan` and `salto apply`
+- Syntax, Merge, and validation error highlighting. 
+- Adds commands for running `salto plan` and `salto apply`
 - Browse document symbols
 - Browse workspace symbols
 - Peek definition
@@ -26,11 +26,11 @@
 
 ## Installation
 Salto is still not registered in the marketplace. To install:
-- Download the latest vsix file.
-- Open the extension menu.
+- Download the latest vsix file
+- Open the extension menu
 - Select install from .vsix
 - Choose the downloaded file
-- Note: On version updates it you might need to manualy delete the extension directory in `$home/.vscode/extensions`
+- Note: On version updates you might need to manualy delete the extension directory in `$home/.vscode/extensions`
 
 <img src="https://raw.githubusercontent.com/salto-io/extension_resources/master/install.gif" alt="Installation" width="720"/>
 
@@ -46,9 +46,9 @@ Salto is still not registered in the marketplace. To install:
 ## Plan and Apply command execution
 
 You can invoke the command via:
-- The commands menu (Press `Cntl+Shift+P` or `⇧⌘P` to open the menu).
+- The commands menu (Press `Ctrl+Shift+P` or `⇧⌘P` to open the menu)
 - The status bar
-- Mac's touch pad
+- Mac's touch bar
 
 <img src="https://raw.githubusercontent.com/salto-io/extension_resources/master/apply.gif" alt="Commands" width="720"/>
 
@@ -57,9 +57,9 @@ You can invoke the command via:
 <img src="https://raw.githubusercontent.com/salto-io/extension_resources/master/errors.gif" alt="errors" width="720"/>
 
 ### Indexing support
-- Press `Ctrl+Shift+O` or `⇧⌘O` to browse symbols in the current file.
-- Press `Ctrl+T` or `⌘T` to jump to symbol.
-- Press `Alt+F12` or `⌥F12` to peek definition.
+- Press `Ctrl+Shift+O` or `⇧⌘O` to browse symbols in the current file
+- Press `Ctrl+T` or `⌘T` to jump to symbol
+- Press `Alt+F12` or `⌥F12` to peek definition
 - Show type definition on hover
 - Outline view support
 

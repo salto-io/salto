@@ -1,27 +1,30 @@
-import { discover, Workspace } from 'salto'
-import { createCommandBuilder } from '../builder'
+import { discover, Workspace, loadConfig } from 'salto'
+import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput } from '../types'
 import { getConfigFromUser } from '../callbacks'
+import { formatWorkspaceErrors } from '../formatter'
 
-export const command = (workspaceDir: string, additionalBlueprints: string[]): CliCommand => ({
+export const command = (
+  workspaceDir: string,
+  { stderr }: CliOutput
+): CliCommand => ({
   async execute(): Promise<void> {
-    const workspace = await Workspace.load(workspaceDir, additionalBlueprints)
+    const config = await loadConfig(workspaceDir)
+    const workspace = await Workspace.load(config)
     if (workspace.hasErrors()) {
-      throw new Error(
-        `Failed to load workspace, errors:\n${workspace.errors.strings().join('\n')}`
-      )
+      stderr.write(formatWorkspaceErrors(workspace.errors))
+    } else {
+      await discover(workspace, getConfigFromUser)
     }
-    await discover(workspace, getConfigFromUser)
   },
 })
 
 type DiscoverArgs = {
   'workspace-dir': string
-  'blueprint': string[]
 }
 type DiscoverParsedCliInput = ParsedCliInput<DiscoverArgs>
 
-const builder = createCommandBuilder({
+const discoverBuilder = createCommandBuilder({
   options: {
     command: 'discover',
     aliases: ['dis'],
@@ -31,23 +34,15 @@ const builder = createCommandBuilder({
         alias: ['d'],
         describe: 'Path to the workspace directory',
         string: true,
-        demandOption: true,
-        requiresArg: true,
-      },
-      blueprint: {
-        alias: ['b'],
-        describe: 'Additional blueprint files to load into the workspace',
-        demandOption: false,
-        array: true,
-        string: true,
+        default: '.',
         requiresArg: true,
       },
     },
   },
 
-  async build(input: DiscoverParsedCliInput, _output: CliOutput) {
-    return command(input.args['workspace-dir'], input.args.blueprint || [])
+  async build(input: DiscoverParsedCliInput, output: CliOutput) {
+    return command(input.args['workspace-dir'], output)
   },
 })
 
-export default builder
+export default discoverBuilder

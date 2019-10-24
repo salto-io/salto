@@ -1,12 +1,15 @@
 import { EOL } from 'os'
+import chalk from 'chalk'
+import { streams } from '@salto/lowerdash'
 import { CliInput, CliOutput, CliExitCode } from './types'
-import { YargsCommandBuilder, allBuilders } from './builder'
-import parse from './argparser'
+import { YargsCommandBuilder } from './command_builder'
+import builders from './commands/index'
+import parse, { ERROR_STYLE } from './argparser'
 
 export default async (
   input: CliInput,
   output: CliOutput,
-  commandBuilders: YargsCommandBuilder[] = allBuilders,
+  commandBuilders: YargsCommandBuilder[] = builders,
 ): Promise<CliExitCode> => {
   try {
     const parseResult = await parse(commandBuilders, input, output)
@@ -24,8 +27,12 @@ export default async (
 
     return 0
   } catch (err) {
-    output.stderr.write(`Caught exception: ${[err, err.stack].filter(n => n).join(EOL)}`)
-    output.stderr.write(EOL)
+    const errorStream = output.stderr
+    const unstyledErrorString = `${[err].filter(n => n).join(EOL)}`
+    const errorString = streams.hasColors(errorStream)
+      ? chalk`{${ERROR_STYLE} ${unstyledErrorString}}` : unstyledErrorString
+    errorStream.write(errorString)
+    errorStream.write(EOL)
     return 2
   }
 }

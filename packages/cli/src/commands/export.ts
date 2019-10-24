@@ -1,48 +1,54 @@
 import path from 'path'
-import { exportToCsv, Workspace, dumpCsv } from 'salto'
-import { createCommandBuilder } from '../builder'
+import { exportToCsv, Workspace, dumpCsv, loadConfig } from 'salto'
+import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput } from '../types'
 import { getConfigFromUser } from '../callbacks'
+import { formatWorkspaceErrors } from '../formatter'
 
 export const command = (
   workingDir: string,
-  blueprintFiles: string[],
   typeName: string,
-  outputPath: string
+  outputPath: string,
+  { stderr }: CliOutput
 ):
 CliCommand => ({
   async execute(): Promise<void> {
-    const workspace: Workspace = await Workspace.load(workingDir, blueprintFiles)
-    const outputObjectsIterator = await exportToCsv(typeName, workspace, getConfigFromUser)
+    const config = await loadConfig(workingDir)
+    const workspace: Workspace = await Workspace.load(config)
+    if (workspace.hasErrors()) {
+      stderr.write(formatWorkspaceErrors(workspace.errors))
+    } else {
+      const outputObjectsIterator = await exportToCsv(typeName, workspace, getConfigFromUser)
 
-    // Check if output path is provided, otherwise use the template
-    // <working dir>/<typeName>_<current timestamp>.csv
-    const outPath = outputPath || path.join(path.resolve('./'), `${typeName}_${Date.now()}.csv`)
+      // Check if output path is provided, otherwise use the template
+      // <working dir>/<typeName>_<current timestamp>.csv
+      const outPath = outputPath || path.join(path.resolve('./'), `${typeName}_${Date.now()}.csv`)
 
-    let toAppend = false
-    // eslint-disable-next-line no-restricted-syntax
-    for await (const objects of outputObjectsIterator) {
-      await dumpCsv(objects.map(instance => instance.value), outPath, toAppend)
-      toAppend = true
+      let toAppend = false
+      // eslint-disable-next-line no-restricted-syntax
+      for await (const objects of outputObjectsIterator) {
+        await dumpCsv(objects.map(instance => instance.value), outPath, toAppend)
+        toAppend = true
+      }
     }
   },
 })
 
 type ExportArgs = {
-  'typeName': string
+  'type-name': string
   'output-path': string
   'blueprint': string[]
   'blueprints-dir': string
  }
 type ExportParsedCliInput = ParsedCliInput<ExportArgs>
 
-const builder = createCommandBuilder({
+const exportBuilder = createCommandBuilder({
   options: {
-    command: 'export <typeName>',
+    command: 'export <type-name>',
     aliases: ['e'],
     description: 'Exports all objects of a given type to CSV',
     positional: {
-      typeName: {
+      'type-name': {
         type: 'string',
         description: 'The type name of the instances for export as it appears in the blueprint',
         default: undefined, // Prevent "default: []" in the help
@@ -71,9 +77,9 @@ const builder = createCommandBuilder({
     },
   },
 
-  async build(input: ExportParsedCliInput, _output: CliOutput) {
-    return command(input.args['blueprints-dir'], input.args.blueprint, input.args.typeName, input.args['output-path'])
+  async build(input: ExportParsedCliInput, output: CliOutput) {
+    return command(input.args['blueprints-dir'], input.args['type-name'], input.args['output-path'], output)
   },
 })
 
-export default builder
+export default exportBuilder

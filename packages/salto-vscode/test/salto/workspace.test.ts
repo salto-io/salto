@@ -1,30 +1,39 @@
 import _ from 'lodash'
 import * as fs from 'async-file'
+import * as path from 'path'
 
+import { Config } from 'salto'
 import { EditorWorkspace } from '../../src/salto/workspace'
 
 describe('TEST', () => {
+  const getConfig = (baseDir: string, additionalBlueprints: string[]): Config => ({
+    baseDir,
+    additionalBlueprints,
+    stateLocation: path.join(baseDir, 'salto.config', 'state.bpc'),
+    localStorage: '.',
+    name: 'test',
+  })
   const baseBPDir = `${__dirname}/../../../test/salto/BP`
   const extraBP = `${__dirname}/../../../test/salto/BP2/extra.bp`
   const errorBP = `${__dirname}/../../../test/salto/BP2/error.bp`
   const parseErrorBp = `${__dirname}/../../../test/salto/BP2/parse_error.bp`
 
   it('should initiate a workspace', async () => {
-    const workspace = await EditorWorkspace.load(baseBPDir, [], false)
+    const workspace = await EditorWorkspace.load(getConfig(baseBPDir, []), false)
     expect(workspace.elements).toBeDefined()
     expect(workspace.elements && workspace.elements.length).toBe(3)
     expect(_.keys(workspace.parsedBlueprints).length).toBe(2)
   })
 
   it('should initiate a workspace with additional BPs', async () => {
-    const workspace = await EditorWorkspace.load(baseBPDir, [extraBP], false)
+    const workspace = await EditorWorkspace.load(getConfig(baseBPDir, [extraBP]), false)
     expect(workspace.elements).toBeDefined()
     expect(workspace.elements && workspace.elements.length).toBe(4)
     expect(_.keys(workspace.parsedBlueprints).length).toBe(3)
   })
 
   it('should collect validation errors', async () => {
-    const workspace = await EditorWorkspace.load(baseBPDir, [errorBP], false)
+    const workspace = await EditorWorkspace.load(getConfig(baseBPDir, [errorBP]), false)
     expect(workspace.elements).toBeDefined()
     expect(workspace.elements && workspace.elements.length).toBe(4)
     expect(_.keys(workspace.parsedBlueprints).length).toBe(3)
@@ -32,7 +41,7 @@ describe('TEST', () => {
   })
 
   it('should update a single file', async () => {
-    const workspace = await EditorWorkspace.load(baseBPDir, [extraBP], false)
+    const workspace = await EditorWorkspace.load(getConfig(baseBPDir, [extraBP]), false)
     expect(workspace.elements).toBeDefined()
     expect(workspace.elements && workspace.elements.length).toBe(4)
     expect(_.keys(workspace.parsedBlueprints).length).toBe(3)
@@ -44,7 +53,7 @@ describe('TEST', () => {
   })
 
   it('should maintain status on error', async () => {
-    const workspace = await EditorWorkspace.load(baseBPDir, [extraBP], false)
+    const workspace = await EditorWorkspace.load(getConfig(baseBPDir, [extraBP]), false)
     const errorContent = await fs.readFile(errorBP)
     expect(workspace.elements).toBeDefined()
     expect(workspace.elements && workspace.elements.length).toBe(4)
@@ -58,7 +67,7 @@ describe('TEST', () => {
   })
 
   it('should support file removal', async () => {
-    const workspace = await EditorWorkspace.load(baseBPDir, [extraBP], false)
+    const workspace = await EditorWorkspace.load(getConfig(baseBPDir, [extraBP]), false)
     expect(workspace.elements).toBeDefined()
     expect(workspace.elements && workspace.elements.length).toBe(4)
     workspace.removeBlueprints(extraBP)
@@ -68,7 +77,7 @@ describe('TEST', () => {
   })
 
   it('should support file addition', async () => {
-    const workspace = await EditorWorkspace.load(baseBPDir, [], false)
+    const workspace = await EditorWorkspace.load(getConfig(baseBPDir, []), false)
     const extraContent = await fs.readFile(extraBP)
     expect(workspace.elements).toBeDefined()
     expect(workspace.elements && workspace.elements.length).toBe(3)
@@ -79,7 +88,7 @@ describe('TEST', () => {
   })
 
   it('should return last valid state if there are errors', async () => {
-    const workspace = await EditorWorkspace.load(baseBPDir, [extraBP], false)
+    const workspace = await EditorWorkspace.load(getConfig(baseBPDir, [extraBP]), false)
     const errorContent = await fs.readFile(parseErrorBp)
     expect(workspace.elements).toBeDefined()
     expect(workspace.elements && workspace.elements.length).toBe(4)

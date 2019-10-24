@@ -1,11 +1,12 @@
 import * as sourceMapSupport from 'source-map-support'
-import { apply, PlanItem, Workspace } from 'salto'
-import { createCommandBuilder } from '../builder'
+import { apply, PlanItem, Workspace, loadConfig } from 'salto'
+import { createCommandBuilder } from '../command_builder'
 import {
   CliCommand, CliOutput, ParsedCliInput, WriteStream,
 } from '../types'
 import {
   createActionStartOutput, createActionInProgressOutput, createItemDoneOutput,
+  formatWorkspaceErrors,
 } from '../formatter'
 import { shouldApply, getConfigFromUser } from '../callbacks'
 
@@ -20,14 +21,12 @@ export class ApplyCommand implements CliCommand {
   private currentActionPollerID: ReturnType<typeof setTimeout> | undefined
 
   constructor(
-    readonly blueprintsDir: string,
-    readonly blueprintFiles: string[] = [],
+    private readonly workspaceDir: string,
     readonly force: boolean,
     { stdout, stderr }: CliOutput
   ) {
     this.stdout = stdout
     this.stderr = stderr
-    this.blueprintsDir = blueprintsDir
   }
 
   endCurrentAction(): void {
@@ -55,32 +54,36 @@ export class ApplyCommand implements CliCommand {
   }
 
   async execute(): Promise<void> {
-    try {
-      const workspace: Workspace = await Workspace.load(this.blueprintsDir, this.blueprintFiles)
-      await apply(workspace,
-        getConfigFromUser,
-        shouldApply({ stdout: this.stdout, stderr: this.stderr }),
-        (action: PlanItem) => this.updateCurrentAction(action), this.force)
-      this.endCurrentAction()
-    } catch (e) {
-      this.endCurrentAction()
-      const errorSource = sourceMapSupport.getErrorSource(e)
-      if (errorSource) {
-        this.stderr.write(errorSource)
+    const config = await loadConfig(this.workspaceDir)
+    const workspace: Workspace = await Workspace.load(config)
+    if (workspace.hasErrors()) {
+      this.stderr.write(formatWorkspaceErrors(workspace.errors))
+    } else {
+      try {
+        await apply(workspace,
+          getConfigFromUser,
+          shouldApply({ stdout: this.stdout, stderr: this.stderr }),
+          (action: PlanItem) => this.updateCurrentAction(action), this.force)
+        this.endCurrentAction()
+      } catch (e) {
+        this.endCurrentAction()
+        const errorSource = sourceMapSupport.getErrorSource(e)
+        if (errorSource) {
+          this.stderr.write(errorSource)
+        }
+        this.stderr.write(e.stack || e)
       }
-      this.stderr.write(e.stack || e)
     }
   }
 }
 
 type ApplyArgs = {
-  blueprint: string[]
-  'blueprints-dir': string
+  'workspace-dir': string
    yes: boolean
 }
 type ApplyParsedCliInput = ParsedCliInput<ApplyArgs>
 
-const builder = createCommandBuilder({
+const applyBuilder = createCommandBuilder({
   options: {
     command: 'apply',
     aliases: ['a'],
@@ -90,26 +93,19 @@ const builder = createCommandBuilder({
         describe: 'Do not ask for approval before applying',
         boolean: true,
       },
-      'blueprints-dir': {
-        alias: 'd',
-        describe: 'Path to directory containing blueprint (.bp) files',
-        demandOption: false,
+      'workspace-dir': {
+        alias: 'w',
+        describe: 'Path to the workspace directory',
+        default: '.',
         string: true,
-        requiresArg: true,
-      },
-      blueprint: {
-        alias: 'b',
-        describe: 'Path to input blueprint file. This option can be specified multiple times',
-        demandOption: false,
-        array: true,
         requiresArg: true,
       },
     },
   },
 
   async build(input: ApplyParsedCliInput, output: CliOutput): Promise<CliCommand> {
-    return new ApplyCommand(input.args['blueprints-dir'], input.args.blueprint, input.args.yes, output)
+    return new ApplyCommand(input.args['workspace-dir'], input.args.yes, output)
   },
 })
 
-export default builder
+export default applyBuilder

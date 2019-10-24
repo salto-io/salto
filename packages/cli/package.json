@@ -42,6 +42,7 @@
     "@salto/lowerdash": "0.1.0",
     "adapter-api": "0.1.0",
     "async-file": "^2.0.2",
+    "chalk": "^2.4.2",
     "inquirer": "^3.3.0",
     "lodash": "^4.17.15",
     "require-directory": "^2.1.1",

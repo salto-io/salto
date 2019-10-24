@@ -3,6 +3,7 @@ import * as path from 'path'
 import * as fs from 'async-file'
 import _ from 'lodash'
 
+import { Config } from 'salto'
 import { EditorWorkspace } from '../../src/salto/workspace'
 import { getPositionContext } from '../../src/salto/context'
 import {
@@ -15,6 +16,13 @@ interface Pos {
 }
 
 describe('Test auto complete', () => {
+  const getConfig = (baseDir: string, additionalBlueprints: string[]): Config => ({
+    baseDir,
+    additionalBlueprints,
+    stateLocation: path.join(baseDir, 'salto.config', 'state.bpc'),
+    localStorage: '.',
+    name: 'test',
+  })
   const getLine = (
     workspace: EditorWorkspace,
     filename: string,
@@ -62,7 +70,7 @@ describe('Test auto complete', () => {
   const baseBPDir = path.resolve(`${__dirname}/../../../test/salto/completionsBP`)
   const bpFileName = path.resolve(`${baseBPDir}/all.bp`)
   beforeAll(async () => {
-    workspace = await EditorWorkspace.load(baseBPDir, [], false)
+    workspace = await EditorWorkspace.load(getConfig(baseBPDir, []), false)
     bpContent = await fs.readFile(bpFileName, 'utf8')
   })
 

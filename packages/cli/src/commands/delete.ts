@@ -1,16 +1,16 @@
 import asyncfile from 'async-file'
-import { deleteFromCsvFile, Workspace, readCsv } from 'salto'
-import { createCommandBuilder } from '../builder'
+import { deleteFromCsvFile, Workspace, readCsv, loadConfig } from 'salto'
+import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput } from '../types'
 
 import { getConfigFromUser } from '../callbacks'
 import Prompts from '../prompts'
+import { formatWorkspaceErrors } from '../formatter'
 
 export const command = (
   workingDir: string,
-  blueprintFiles: string[],
-  inputPath: string,
   typeName: string,
+  inputPath: string,
   { stdout, stderr }: CliOutput
 ): CliCommand => ({
   async execute(): Promise<void> {
@@ -20,40 +20,45 @@ export const command = (
     }
 
     const records = await readCsv(inputPath)
-    const workspace: Workspace = await Workspace.load(workingDir, blueprintFiles)
-    await deleteFromCsvFile(
-      typeName,
-      records,
-      workspace,
-      getConfigFromUser
-    )
-    // TODO: Return here the full report that contains the numbers of successful and failed rows.
-    // Also: print the errors of the erronous rows to a log file and print the path of the log.
-    stdout.write(Prompts.DELETE_FINISHED_SUCCESSFULLY)
+    const config = await loadConfig(workingDir)
+    const workspace: Workspace = await Workspace.load(config)
+    if (workspace.hasErrors()) {
+      stderr.write(formatWorkspaceErrors(workspace.errors))
+    } else {
+      await deleteFromCsvFile(
+        typeName,
+        records,
+        workspace,
+        getConfigFromUser
+      )
+      // TODO: Return here the full report that contains the numbers of successful and failed rows.
+      // Also: print the errors of the erronous rows to a log file and print the path of the log.
+      stdout.write(Prompts.DELETE_FINISHED_SUCCESSFULLY)
+    }
   },
 })
 
 type DeleteArgs = {
-  'inputPath': string
-  'typeName': string
+  'type-name': string
+  'input-path': string
   'blueprint': string[]
   'blueprints-dir': string
 }
 type DeleteParsedCliInput = ParsedCliInput<DeleteArgs>
 
-const builder = createCommandBuilder({
+const deleteBuilder = createCommandBuilder({
   options: {
-    command: 'delete <inputPath> <typeName>',
+    command: 'delete <type-name> <input-path>',
     aliases: ['del'],
     description: 'deletes all objects of a given type from a provided CSV',
     positional: {
-      inputPath: {
-        type: 'string',
-        description: 'A path to the input CSV file',
-      },
-      typeName: {
+      'type-name': {
         type: 'string',
         description: 'The type name of the instances to delete as it appears in the blueprint',
+      },
+      'input-path': {
+        type: 'string',
+        description: 'A path to the input CSV file',
       },
     },
     keyed: {
@@ -77,12 +82,11 @@ const builder = createCommandBuilder({
   async build(input: DeleteParsedCliInput, output: CliOutput) {
     return command(
       input.args['blueprints-dir'],
-      input.args.blueprint,
-      input.args.inputPath,
-      input.args.typeName,
+      input.args['type-name'],
+      input.args['input-path'],
       output
     )
   },
 })
 
-export default builder
+export default deleteBuilder

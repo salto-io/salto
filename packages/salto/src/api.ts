@@ -31,7 +31,7 @@ const applyActionOnState = async (
 export const plan = async (
   workspace: Workspace,
 ): Promise<Plan> => {
-  const state = new State()
+  const state = new State(workspace.config.stateLocation)
   return getPlan(await state.get(), workspace.elements)
 }
 
@@ -42,7 +42,7 @@ export const apply = async (
   reportProgress: (action: PlanItem) => void,
   force = false
 ): Promise<Plan> => {
-  const state = new State()
+  const state = new State(workspace.config.stateLocation)
   try {
     const actionPlan = getPlan(await state.get(), workspace.elements)
     if (force || await shouldApply(actionPlan)) {
@@ -64,7 +64,7 @@ export const discover = async (
   workspace: Workspace,
   fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
 ): Promise<void> => {
-  const state = new State()
+  const state = new State(workspace.config.stateLocation)
   const { changes, elements } = await discoverChanges(
     workspace.elements, await state.get(), fillConfig
   )
@@ -86,7 +86,7 @@ export const exportToCsv = async (
   fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
 ): Promise<AsyncIterable<InstanceElement[]>> => {
   // Find the corresponding element in the state
-  const state = new State()
+  const state = new State(workspace.config.stateLocation)
   const stateElements = await state.get()
   const type = stateElements.find(elem => elem.elemID.getFullName() === typeId)
   if (!type) {
@@ -104,7 +104,7 @@ export const importFromCsvFile = async (
   fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
 ): Promise<void> => {
   // Find the corresponding element in the state
-  const state = new State()
+  const state = new State(workspace.config.stateLocation)
   const stateElements = await state.get()
   const type = stateElements.find(elem => elem.elemID.getFullName() === typeId)
   if (!type) {
@@ -121,7 +121,7 @@ export const deleteFromCsvFile = async (
   fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
 ): Promise<void> => {
   // Find the corresponding element in the state
-  const state = new State()
+  const state = new State(workspace.config.stateLocation)
   const stateElements = await state.get()
   const type = stateElements.find(elem => elem.elemID.getFullName() === typeId)
   if (!type) {

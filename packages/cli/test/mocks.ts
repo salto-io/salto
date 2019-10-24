@@ -7,7 +7,8 @@ import {
   Plan, PlanItem, SearchResult, DetailedChange, Workspace,
 } from 'salto'
 import { GroupedNodeMap } from '@salto/dag'
-import { YargsCommandBuilder, allBuilders } from '../src/builder'
+import { YargsCommandBuilder } from '../src/command_builder'
+import builders from '../src/commands/index'
 import realCli from '../src/cli'
 
 export interface MockWriteStreamOpts { isTTY?: boolean; hasColors?: boolean }
@@ -33,12 +34,12 @@ export interface MockCliOutput {
 }
 
 export const cli = async ({
-  builders = allBuilders,
+  commandBuilders = builders,
   args = [],
   out = {},
   err = {},
 }: {
-  builders?: YargsCommandBuilder[]
+  commandBuilders?: YargsCommandBuilder[]
   args?: string[] | string
   out?: MockWriteStreamOpts
   err?: MockWriteStreamOpts
@@ -53,7 +54,7 @@ export const cli = async ({
     stdout: new MockWriteStream(out),
   }
 
-  const exitCode = await realCli(input, output, builders)
+  const exitCode = await realCli(input, output, commandBuilders)
 
   return { err: output.stderr.content, out: output.stdout.content, exitCode }
 }

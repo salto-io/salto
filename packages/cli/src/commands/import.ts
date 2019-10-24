@@ -1,15 +1,16 @@
 import asyncfile from 'async-file'
-import { importFromCsvFile, Workspace, readCsv } from 'salto'
-import { createCommandBuilder } from '../builder'
+import { importFromCsvFile, Workspace, readCsv, loadConfig } from 'salto'
+import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput } from '../types'
 import { getConfigFromUser } from '../callbacks'
 import Prompts from '../prompts'
+import { formatWorkspaceErrors } from '../formatter'
+
 
 export const command = (
   workingDir: string,
-  blueprintFiles: string[] = [],
-  inputPath: string,
   typeName: string,
+  inputPath: string,
   { stdout, stderr }: CliOutput
 ): CliCommand => ({
   async execute(): Promise<void> {
@@ -18,41 +19,45 @@ export const command = (
       return
     }
     const records = await readCsv(inputPath)
-    const workspace: Workspace = await Workspace.load(workingDir, blueprintFiles)
-
-    await importFromCsvFile(
-      typeName,
-      records,
-      workspace,
-      getConfigFromUser
-    )
-    // TODO: Return here the full report that contains the numbers of successful and failed rows.
-    // Also: print the errors of the erronous rows to a log file and print the path of the log.
-    stdout.write(Prompts.IMPORT_FINISHED_SUCCESSFULLY)
+    const config = await loadConfig(workingDir)
+    const workspace: Workspace = await Workspace.load(config)
+    if (workspace.hasErrors()) {
+      stderr.write(formatWorkspaceErrors(workspace.errors))
+    } else {
+      await importFromCsvFile(
+        typeName,
+        records,
+        workspace,
+        getConfigFromUser
+      )
+      // TODO: Return here the full report that contains the numbers of successful and failed rows.
+      // Also: print the errors of the erronous rows to a log file and print the path of the log.
+      stdout.write(Prompts.IMPORT_FINISHED_SUCCESSFULLY)
+    }
   },
 })
 
 type ImportArgs = {
     'blueprint': string[]
     'blueprints-dir': string
-    inputPath: string
-    typeName: string
+    'type-name': string
+    'input-path': string
   }
 type ImportParsedCliInput = ParsedCliInput<ImportArgs>
 
-const builder = createCommandBuilder({
+const importBuilder = createCommandBuilder({
   options: {
-    command: 'import <inputPath> <typeName>',
+    command: 'import <type-name> <input-path>',
     aliases: ['i'],
-    description: 'Imports all objects of a given type from a provided CSV',
+    description: 'Imports all object instances of a specific type from a CSV',
     positional: {
-      inputPath: {
+      'type-name': {
         type: 'string',
-        description: 'A path to the input CSV file',
+        description: 'Type name as it appears in the blueprint',
       },
-      typeName: {
+      'input-path': {
         type: 'string',
-        description: 'The type name of the instances to import as it appears in the blueprint',
+        description: 'A path to an input CSV file',
       },
     },
     keyed: {
@@ -72,10 +77,9 @@ const builder = createCommandBuilder({
     },
   },
 
-
   async build(input: ImportParsedCliInput, output: CliOutput) {
-    return command(input.args['blueprints-dir'], input.args.blueprint, input.args.inputPath, input.args.typeName, output)
+    return command(input.args['blueprints-dir'], input.args['type-name'], input.args['input-path'], output)
   },
 })
 
-export default builder
+export default importBuilder

@@ -257,9 +257,7 @@ describe('SalesforceAdapter discover', () => {
         .annotations[constants.FIELD_ANNOTATIONS.VISIBLE_LINES]).toBe(5)
     })
 
-    // This functionality is disabled until core's discover is able to handle split elements
-    // eslint-disable-next-line jest/no-disabled-tests
-    it.skip('should split customizations to different elements', async () => {
+    it('should split customizations to different elements', async () => {
       mockSingleSObject('Test', [
         {
           name: 'dummy', label: 'dummy', type: 'string',
@@ -401,8 +399,9 @@ describe('SalesforceAdapter discover', () => {
       expect(flow.fields.is_template.annotations[Type.REQUIRED]).toBe(false)
       expect(flow.fields.enum.type.elemID.name).toBe('string')
       expect(flow.fields.enum.annotations[Type.DEFAULT]).toBe('yes')
+      // Note the order here is important because we expect restriction values to be sorted
       expect(flow.fields.enum.annotations[Type.RESTRICTION]).toEqual({
-        values: ['yes', 'no'],
+        values: ['no', 'yes'],
       })
       expect(flow.path).toEqual(['types', 'flow'])
     })

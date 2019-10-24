@@ -50,6 +50,7 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(lead.fields.last_name.type.elemID.name).toBe('string')
       expect(lead.fields.description.type.elemID.name).toBe('longtextarea')
       expect(lead.fields.salutation.type.elemID.name).toBe('picklist')
+      expect(lead.fields.owner.type.elemID.name).toBe('lookup')
 
       // Test label
       expect(lead.fields.last_name.annotations[constants.LABEL]).toBe('Last Name')
@@ -85,6 +86,12 @@ describe('Salesforce adapter E2E with real account', () => {
         'SelectMatch',
         'Skipped',
       ])
+
+      // Test lookup related_to annotation
+      expect(lead.fields.owner.annotations.related_to).toEqual(['Group', 'User'])
+
+      // Test lookup allow_lookup_record_deletion annotation
+      expect(lead.fields.owner.annotations.allow_lookup_record_deletion).toBe(true)
 
       // Test _default
       // TODO: add test to primitive with _default and combobox _default (no real example for lead)
@@ -758,6 +765,9 @@ describe('Salesforce adapter E2E with real account', () => {
           admin: { editable: false, readable: true },
         },
       }
+      // we use random suffix for the reference field names since they cannot be created
+      // more than once until they are permanently deleted (after 15 days)
+      const randomString = String(Date.now()).substring(6)
       const element = new ObjectType({
         elemID: mockElemID,
         annotations: {
@@ -948,6 +958,28 @@ describe('Salesforce adapter E2E with real account', () => {
               ...adminReadable,
             },
           ),
+          queen: new Field(
+            mockElemID,
+            `queen${randomString}`,
+            Types.salesforceDataTypes.lookup,
+            {
+              [Type.REQUIRED]: false,
+              [constants.FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION]: false,
+              [constants.FIELD_ANNOTATIONS.RELATED_TO]: ['Case'],
+              [constants.LABEL]: 'Lookup description label',
+              ...adminReadable,
+            }
+          ),
+          rocket: new Field(
+            mockElemID,
+            `rocket${randomString}`,
+            Types.salesforceDataTypes.masterdetail,
+            {
+              [Type.REQUIRED]: false,
+              [constants.FIELD_ANNOTATIONS.RELATED_TO]: ['Case'],
+              [constants.LABEL]: 'MasterDetail description label',
+            }
+          ),
         },
       })
 
@@ -1088,6 +1120,22 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(numberField.scale).toBe(3)
       expect(numberField.precision).toBe(15)
       expect(numberField.unique).toBe(true)
+      // Verify lookup
+      const lookupField = allFields.filter(field => field.name === `Queen${randomString}__c`)[0]
+      expect(lookupField).toBeDefined()
+      expect(lookupField.label).toBe('Lookup description label')
+      expect(lookupField.type).toBe('reference')
+      expect(lookupField.relationshipName).toBe(`Queen${randomString}__r`)
+      expect(lookupField.referenceTo).toEqual(['Case'])
+      expect(_.get(lookupField, 'restrictedDelete')).toBe(true)
+      // Verify masterdetail
+      const masterDetailField = allFields.filter(field => field.name === `Rocket${randomString}__c`)[0]
+      expect(masterDetailField).toBeDefined()
+      expect(masterDetailField.label).toBe('MasterDetail description label')
+      expect(masterDetailField.type).toBe('reference')
+      expect(masterDetailField.relationshipName).toBe(`Rocket${randomString}__r`)
+      expect(masterDetailField.referenceTo).toEqual(['Case'])
+      expect(masterDetailField.cascadeDelete).toBe(true)
 
       // Clean-up
       await adapter.remove(post as ObjectType)

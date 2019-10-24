@@ -5,6 +5,7 @@ export const METADATA_OBJECT_NAME_FIELD = 'fullName'
 export const FORMULA_TYPE_PREFIX = 'formula_'
 export const SETTINGS_METADATA_TYPE = 'Settings'
 export const SALESFORCE_CUSTOM_SUFFIX = '__c'
+export const SALESFORCE_CUSTOM_RELATIONSHIP_SUFFIX = '__r'
 
 // Annotations
 export const LABEL = 'label'
@@ -35,6 +36,8 @@ export const FIELD_TYPE_NAMES = {
   TEXTAREA: 'textarea',
   ENCRYPTEDTEXT: 'encryptedtext',
   URL: 'url',
+  LOOKUP: 'lookup',
+  MASTER_DETAIL: 'masterdetail',
 }
 
 export const FIELD_TYPE_API_NAMES = {
@@ -57,6 +60,8 @@ export const FIELD_TYPE_API_NAMES = {
   [FIELD_TYPE_NAMES.TEXTAREA]: 'TextArea',
   [FIELD_TYPE_NAMES.ENCRYPTEDTEXT]: 'EncryptedText',
   [FIELD_TYPE_NAMES.URL]: 'Url',
+  [FIELD_TYPE_NAMES.LOOKUP]: 'Lookup',
+  [FIELD_TYPE_NAMES.MASTER_DETAIL]: 'MasterDetail',
 }
 
 export const FIELD_ANNOTATIONS = {
@@ -72,6 +77,8 @@ export const FIELD_ANNOTATIONS = {
   MASK_TYPE: 'mask_type',
   MASK: 'mask',
   DISPLAY_LOCATION_IN_DECIMAL: 'display_location_in_decimal',
+  RELATED_TO: 'related_to',
+  ALLOW_LOOKUP_RECORD_DELETION: 'allow_lookup_record_deletion',
 }
 
 // Limits

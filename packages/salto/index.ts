@@ -26,5 +26,6 @@ export {
   Workspace, Blueprint, Errors,
   ParsedBlueprint, ParsedBlueprintMap,
 } from './src/workspace/workspace'
+export { Config, loadConfig } from './src/workspace/config'
 export { SourceMap } from './src/parser/parse'
 export { dump } from './src/parser/dump'

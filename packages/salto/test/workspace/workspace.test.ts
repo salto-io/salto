@@ -6,6 +6,7 @@ import tmp from 'tmp-promise'
 import {
   Element, ObjectType, ElemID, Type,
 } from 'adapter-api'
+import { Config } from '../../src/workspace/config'
 import {
   Workspace, Blueprint, ParsedBlueprint, parseBlueprints,
 } from '../../src/workspace/workspace'
@@ -76,8 +77,15 @@ type salesforce_lead {
         .value()
     }
     const resetWorkspace = (): void => {
+      const config = {
+        name: 'test',
+        localStorage: '~/.salto/test',
+        baseDir: '/salto',
+        additionalBlueprints: ['../outside/file.bp'],
+        stateLocation: '/salto/latest_state.bp',
+      }
       workspace = new Workspace(
-        '/salto',
+        config,
         parsedBPs.filter(bp => !bp.filename.startsWith('..') || bp.filename === '../outside/file.bp'),
       )
       updateElemMap()
@@ -103,13 +111,21 @@ type salesforce_lead {
     })
 
     describe('errors', () => {
+      const config = {
+        name: 'test',
+        localStorage: '~/.salto/test',
+        baseDir: '/salto',
+        additionalBlueprints: [],
+        stateLocation: '/salto/latest_state.bp',
+      }
+
       it('should be empty when there are no errors', () => {
         expect(workspace.errors.hasErrors()).toBeFalsy()
         expect(workspace.hasErrors()).toBeFalsy()
       })
       it('should contain parse errors', async () => {
         const erroredWorkspace = new Workspace(
-          '/salto',
+          config,
           parsedBPs.filter(bp => !bp.filename.startsWith('..') || bp.filename === '../error.bp'),
         )
         expect(erroredWorkspace.errors.hasErrors()).toBeTruthy()
@@ -120,7 +136,7 @@ type salesforce_lead {
       })
       it('should contain merge errors', async () => {
         const erroredWorkspace = new Workspace(
-          '/salto',
+          config,
           parsedBPs.filter(bp => !bp.filename.startsWith('..') || bp.filename === '../dup.bp'),
         )
         expect(erroredWorkspace.errors.hasErrors()).toBeTruthy()
@@ -265,20 +281,28 @@ type salesforce_lead {
   describe('filesystem interaction', () => {
     let tmpDir: tmp.DirectoryResult
     let workspace: Workspace
+    let config: Config
 
     const resetWorkspace = async (): Promise<void> => {
+      const getPath = (filename: string): string => path.join(tmpDir.path, filename)
       if (tmpDir !== undefined) {
         tmpDir.cleanup()
       }
       tmpDir = await tmp.dir({ unsafeCleanup: true })
-      const getPath = (filename: string): string => path.join(tmpDir.path, filename)
       await Promise.all(_.entries(workspaceFiles)
         .map(async ([name, data]) => {
           const filePath = getPath(name)
           await fs.mkdirp(path.dirname(filePath))
           return fs.writeFile(filePath, data)
         }))
-      workspace = await Workspace.load(getPath('salto'), [getPath('/outside/file.bp')])
+      config = {
+        name: 'test',
+        localStorage: '~/.salto/test',
+        baseDir: getPath('salto'),
+        additionalBlueprints: [getPath('/outside/file.bp')],
+        stateLocation: '/salto/latest_state.bp',
+      }
+      workspace = await Workspace.load(config)
     }
 
     beforeAll(resetWorkspace)
@@ -313,18 +337,18 @@ type salesforce_lead {
       afterAll(resetWorkspace)
 
       it('should remove blueprints that were removed', async () => {
-        expect(await fs.exists(path.join(workspace.baseDir, 'subdir/file.bp'))).toBeFalsy()
+        expect(await fs.exists(path.join(workspace.config.baseDir, 'subdir/file.bp'))).toBeFalsy()
       })
       it('should create blueprints that were added', async () => {
-        expect(await fs.exists(path.join(workspace.baseDir, newBP.filename))).toBeTruthy()
+        expect(await fs.exists(path.join(workspace.config.baseDir, newBP.filename))).toBeTruthy()
       })
       it('should change the content of blueprints that were updated', async () => {
-        const writtenData = await fs.readFile(path.join(workspace.baseDir, changedBP.filename), 'utf8')
+        const writtenData = await fs.readFile(path.join(workspace.config.baseDir, changedBP.filename), 'utf8')
         expect(writtenData).toEqual(changedBP.buffer)
       })
       it('should keep all unchanged files', async () => {
         await Promise.all(_.keys(workspace.parsedBlueprints).map(
-          async p => expect(await fs.exists(path.join(workspace.baseDir, p))).toBeTruthy()
+          async p => expect(await fs.exists(path.join(workspace.config.baseDir, p))).toBeTruthy()
         ))
       })
     })

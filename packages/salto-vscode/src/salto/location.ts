@@ -29,12 +29,26 @@ const getBlueprintLocations = (blueprint: ParsedBlueprint): SaltoElemLocation[] 
   }).flatten().value()
 }
 
-export const getLocations = (workspace: EditorWorkspace, fullname: string): SaltoElemLocation[] => {
-  const allDef = _(workspace.parsedBlueprints).values().map(
-    bp => getBlueprintLocations(bp)
-  ).flatten()
+const getLocationsByFullname = (workspace: EditorWorkspace): {[key: string] : SaltoElemLocation[]} => (
+  _(workspace.parsedBlueprints)
+    .values()
+    .map(bp => getBlueprintLocations(bp))
+    .flatten()
     .groupBy('fullname')
     .value()
-
+)
+export const getLocations = (workspace: EditorWorkspace, fullname: string): SaltoElemLocation[] => {
+  const allDef = getLocationsByFullname(workspace)
   return allDef[fullname] || []
+}
+
+export const getQueryLocations = (workspace: EditorWorkspace, query: string): SaltoElemLocation[] => {
+  const queryRegex = new RegExp(query.split('').join('.*'))
+  const allDef = getLocationsByFullname(workspace)
+  const matchingNames = _.keys(allDef).filter(name => queryRegex.test(name))
+  return _(allDef)
+    .pick(matchingNames)
+    .values()
+    .flatten()
+    .value()
 }

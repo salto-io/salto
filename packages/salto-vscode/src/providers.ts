@@ -94,3 +94,11 @@ export const createReferenceProvider = (
     )
   },
 })
+
+export const createWorkspaceSymbolProvider = (
+  workspace: EditorWorkspace
+): vscode.WorkspaceSymbolProvider => ({
+  provideWorkspaceSymbols: (query: string): vscode.SymbolInformation[] => {
+    return []
+  }
+})

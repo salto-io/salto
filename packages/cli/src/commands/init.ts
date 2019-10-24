@@ -4,7 +4,7 @@ import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput } from '../types'
 
 export const command = (
-  workspaceName: string,
+  workspaceName: string | undefined,
   { stdout, stderr }: CliOutput
 ): CliCommand => ({
   async execute(): Promise<void> {

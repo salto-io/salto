@@ -9,8 +9,8 @@ export const command = (
 ): CliCommand => ({
   async execute(): Promise<void> {
     try {
-      const config = await init(workspaceName)
-      stdout.write(`Initiated workspace ${config.name} at ${path.resolve(config.baseDir)}\n`)
+      const workspace = await init(workspaceName)
+      stdout.write(`Initiated workspace ${workspace.config.name} at ${path.resolve(workspace.config.baseDir)}\n`)
     } catch (e) {
       stderr.write(`Could not initiate workspace: ${e.message}\n`)
     }

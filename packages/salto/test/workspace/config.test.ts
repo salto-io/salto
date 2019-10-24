@@ -1,11 +1,9 @@
 import * as path from 'path'
 import os from 'os'
-import * as fs from 'async-file'
-import { loadConfig, SALTO_HOME_VAR, initConfig } from '../../src/workspace/config'
+import { loadConfig, SALTO_HOME_VAR } from '../../src/workspace/config'
 
 const workspacesDir = path.join(__dirname, '../../../test/workspaces')
 const fullWorkspaceDir = path.resolve(workspacesDir, 'full')
-const emptyWorkspaceDir = path.resolve(workspacesDir, 'empty')
 const defaultsWorkspaceDir = path.resolve(workspacesDir, 'defaults')
 describe('configuration dir location', () => {
   it('should load config from workspace root', async () => {
@@ -64,28 +62,5 @@ describe('load proper configuration', () => {
         uid: defaultUUID,
       }
     )
-  })
-})
-
-describe('init config', () => {
-  beforeEach(async () => {
-    await fs.delete(emptyWorkspaceDir)
-    await fs.createDirectory(emptyWorkspaceDir)
-  })
-
-  it('should init a basedir with no workspace name provided', async () => {
-    const config = await initConfig(emptyWorkspaceDir)
-    expect(await fs.exists(config.localStorage)).toBeTruthy()
-    expect(config.name).toBe('empty')
-  })
-  it('should init a basedir with workspace name provided', async () => {
-    const config = await initConfig(emptyWorkspaceDir, 'test')
-    expect(await fs.exists(config.localStorage)).toBeTruthy()
-    expect(config.name).toBe('test')
-  })
-  it('should fail when run inside an existing workspace', () => {
-    expect(initConfig(fullWorkspaceDir)).rejects.toThrow()
-  })
-  it('should fail on a non empty workspace', () => {
   })
 })

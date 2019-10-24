@@ -3,16 +3,16 @@ import * as mocks from '../mocks'
 import { command } from '../../src/commands/init'
 
 jest.mock('salto', () => ({
-  init: jest.fn().mockImplementation((workspaceName: string): Config => {
+  init: jest.fn().mockImplementation((workspaceName: string): {config: Config} => {
     if (workspaceName === 'error') throw new Error('failed')
-    return {
+    return { config: {
       name: workspaceName,
       localStorage: '',
       baseDir: '',
       stateLocation: '',
       additionalBlueprints: [],
       uid: '',
-    }
+    } }
   }),
 }))
 

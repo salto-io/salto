@@ -3,6 +3,7 @@ import wu from 'wu'
 import path from 'path'
 import fs from 'async-file'
 import readdirp from 'readdirp'
+import uuidv4 from 'uuid/v4'
 import { collections, types } from '@salto/lowerdash'
 import { Element } from 'adapter-api'
 import {
@@ -13,9 +14,21 @@ import { validateElements, ValidationError } from '../core/validator'
 import { DetailedChange } from '../core/plan'
 import { ParseResultFSCache } from './cache'
 import { getChangeLocations, updateBlueprintData } from './blueprint_update'
-import { Config } from './config'
+import { Config, dumpConfig, locateConfigDir, getConfigPath, createDefaultConfig } from './config'
 
 const { DefaultMap } = collections.map
+
+class ExsitingWorkspaceError extends Error {
+  constructor() {
+    super('existing salto workspace')
+  }
+}
+
+class NotAnEmptyWorkspaceError extends Error {
+  constructor(exsitingPathes: string[]) {
+    super(`not an empty workspace. ${exsitingPathes.join('')} already exists.`)
+  }
+}
 
 export type Blueprint = {
   buffer: string
@@ -143,6 +156,23 @@ const createWorkspaceState = (blueprints: ReadonlyArray<ParsedBlueprint>): Works
   }
 }
 
+const ensureEmptyWorkspace = async (config: Config): Promise<void> => {
+  if (await locateConfigDir(path.resolve(config.baseDir))) {
+    throw new ExsitingWorkspaceError()
+  }
+  const configPath = getConfigPath(config.baseDir)
+  const shouldNotExist = [
+    configPath,
+    config.localStorage,
+    config.stateLocation,
+  ]
+  const existanceMask = await Promise.all(shouldNotExist.map(fs.exists))
+  const existing = shouldNotExist.filter((_p, i) => existanceMask[i])
+  if (existing.length > 0) {
+    throw new NotAnEmptyWorkspaceError(existing)
+  }
+}
+
 /**
  * The Workspace class exposes the content of a collection (usually a directory) of blueprints
  * in the form of Elements.
@@ -173,6 +203,17 @@ export class Workspace {
       ? parseBlueprintsWithCache(bps, config.baseDir, config.localStorage)
       : parseBlueprints(bps)
     return new Workspace(config, await parsedBlueprints)
+  }
+
+  static async init(baseDir: string, workspaceName?: string): Promise<Workspace> {
+    const uid = uuidv4() // random uuid
+    const config = createDefaultConfig(path.dirname(getConfigPath(baseDir)), workspaceName, uid)
+    // We want to make sure that *ALL* of the pathes we are going to create
+    // do not exist right now before writing anything to disk.
+    await ensureEmptyWorkspace(config)
+    await dumpConfig(config)
+    await fs.createDirectory(config.localStorage)
+    return Workspace.load(config)
   }
 
   constructor(

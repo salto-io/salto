@@ -11,6 +11,7 @@ import {
   Workspace, Blueprint, ParsedBlueprint, parseBlueprints,
 } from '../../src/workspace/workspace'
 import { DetailedChange } from '../../src/core/plan'
+import { MergeError } from '../../src/core/merger/internal/common'
 
 describe('Workspace', () => {
   const workspaceFiles = {
@@ -124,17 +125,21 @@ type salesforce_lead {
       it('should be empty when there are no errors', () => {
         expect(workspace.errors.hasErrors()).toBeFalsy()
         expect(workspace.hasErrors()).toBeFalsy()
+        expect(workspace.getWorkspaceErrors()).toHaveLength(0)
       })
       it('should contain parse errors', async () => {
         const erroredWorkspace = new Workspace(
           config,
           parsedBPs.filter(bp => !bp.filename.startsWith('..') || bp.filename === '../error.bp'),
         )
+        const workspaceErrors = erroredWorkspace.getWorkspaceErrors()
         expect(erroredWorkspace.errors.hasErrors()).toBeTruthy()
         expect(erroredWorkspace.hasErrors()).toBeTruthy()
         const parseError = /Either a quoted string block label or an opening brace/
         expect(erroredWorkspace.errors.strings()[0]).toMatch(parseError)
         expect(erroredWorkspace.errors.parse[0].detail).toMatch(parseError)
+
+        expect(workspaceErrors).toHaveLength(1)
       })
       it('should contain merge errors', async () => {
         const erroredWorkspace = new Workspace(
@@ -144,8 +149,26 @@ type salesforce_lead {
         expect(erroredWorkspace.errors.hasErrors()).toBeTruthy()
         expect(erroredWorkspace.hasErrors()).toBeTruthy()
         const mergeError = /Cannot extend/
+        const workspaceErrors = erroredWorkspace.getWorkspaceErrors()
         expect(erroredWorkspace.errors.strings()[0]).toMatch(mergeError)
         expect(erroredWorkspace.errors.merge[0].error).toMatch(mergeError)
+        expect(workspaceErrors).toHaveLength(2)
+        expect(workspaceErrors[0].cause).toBeInstanceOf(MergeError)
+        expect(workspaceErrors[0].sourceRanges).toHaveLength(2)
+        expect(workspaceErrors[0].error).toMatch(mergeError)
+        const firstSourceRange = workspaceErrors[0].sourceRanges[0]
+        expect(firstSourceRange.filename).toBe('file.bp')
+
+        expect(firstSourceRange.start).toEqual({
+          byte: 26,
+          col: 3,
+          line: 3,
+        })
+        expect(firstSourceRange.end).toEqual({
+          byte: 79,
+          col: 4,
+          line: 5,
+        })
       })
     })
 

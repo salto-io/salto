@@ -2,7 +2,7 @@ import _ from 'lodash'
 import fs from 'async-file'
 import path from 'path'
 import tmp from 'tmp-promise'
-
+import os from 'os'
 import {
   Element, ObjectType, ElemID, Type,
 } from 'adapter-api'
@@ -78,8 +78,9 @@ type salesforce_lead {
     }
     const resetWorkspace = (): void => {
       const config = {
+        uid: '',
         name: 'test',
-        localStorage: '~/.salto/test',
+        localStorage: path.join(os.homedir(), '.salto', 'test'),
         baseDir: '/salto',
         additionalBlueprints: ['../outside/file.bp'],
         stateLocation: '/salto/latest_state.bp',
@@ -112,8 +113,9 @@ type salesforce_lead {
 
     describe('errors', () => {
       const config = {
+        uid: '',
         name: 'test',
-        localStorage: '~/.salto/test',
+        localStorage: path.join(os.homedir(), '.salto', 'test'),
         baseDir: '/salto',
         additionalBlueprints: [],
         stateLocation: '/salto/latest_state.bp',
@@ -280,6 +282,7 @@ type salesforce_lead {
 
   describe('filesystem interaction', () => {
     let tmpDir: tmp.DirectoryResult
+    let emptyTmpDir: tmp.DirectoryResult
     let workspace: Workspace
     let config: Config
 
@@ -289,6 +292,7 @@ type salesforce_lead {
         tmpDir.cleanup()
       }
       tmpDir = await tmp.dir({ unsafeCleanup: true })
+      emptyTmpDir = await tmp.dir({ unsafeCleanup: true })
       await Promise.all(_.entries(workspaceFiles)
         .map(async ([name, data]) => {
           const filePath = getPath(name)
@@ -296,8 +300,9 @@ type salesforce_lead {
           return fs.writeFile(filePath, data)
         }))
       config = {
+        uid: '',
         name: 'test',
-        localStorage: '~/.salto/test',
+        localStorage: path.join(os.homedir(), '.salto', 'test'),
         baseDir: getPath('salto'),
         additionalBlueprints: [getPath('/outside/file.bp')],
         stateLocation: '/salto/latest_state.bp',
@@ -350,6 +355,32 @@ type salesforce_lead {
         await Promise.all(_.keys(workspace.parsedBlueprints).map(
           async p => expect(await fs.exists(path.join(workspace.config.baseDir, p))).toBeTruthy()
         ))
+      })
+    })
+
+    describe('init config', () => {
+      beforeEach(async () => {
+        await fs.delete(emptyTmpDir.path)
+        await fs.mkdirp(emptyTmpDir.path)
+      })
+
+      it('should init a basedir with no workspace name provided', async () => {
+        workspace = await Workspace.init(path.join(emptyTmpDir.path, 'empty'))
+        expect(await fs.exists(workspace.config.localStorage)).toBeTruthy()
+        expect(workspace.config.name).toBe('empty')
+      })
+      it('should init a basedir with workspace name provided', async () => {
+        workspace = await Workspace.init(emptyTmpDir.path, 'test')
+        expect(await fs.exists(workspace.config.localStorage)).toBeTruthy()
+        expect(workspace.config.name).toBe('test')
+      })
+      it('should fail when run inside an existing workspace', async () => {
+        await Workspace.init(emptyTmpDir.path)
+        expect(Workspace.init(emptyTmpDir.path)).rejects.toThrow()
+      })
+      it('should parse existing bps', async () => {
+        workspace = await Workspace.init(path.join(tmpDir.path))
+        expect(workspace.elements.length).toBeGreaterThan(0)
       })
     })
   })

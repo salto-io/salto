@@ -12,6 +12,7 @@ describe('Cursor context resolver', () => {
     stateLocation: path.join(baseDir, 'salto.config', 'state.bpc'),
     localStorage: '.',
     name: 'test',
+    uid: '',
   })
   let workspace: EditorWorkspace
   const baseBPDir = path.resolve(`${__dirname}/../../../test/salto/contextBP`)

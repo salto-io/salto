@@ -12,6 +12,7 @@ describe('TEST', () => {
     stateLocation: path.join(baseDir, 'salto.config', 'state.bpc'),
     localStorage: '.',
     name: 'test',
+    uid: '',
   })
   const baseBPDir = `${__dirname}/../../../test/salto/BP`
   const extraBP = `${__dirname}/../../../test/salto/BP2/extra.bp`

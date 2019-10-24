@@ -3,5 +3,6 @@
     "localStorage": "~/.salto/workspace",
     "baseDir" : "~/workspace",
     "stateLocation" : "~/states/test.bpc",
-    "additionalBlueprints" : ["~/moreBP/test.bp"]
+    "additionalBlueprints" : ["~/moreBP/test.bp"],
+    "uid" : "uid"
 }

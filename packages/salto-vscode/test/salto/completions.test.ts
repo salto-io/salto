@@ -22,6 +22,7 @@ describe('Test auto complete', () => {
     stateLocation: path.join(baseDir, 'salto.config', 'state.bpc'),
     localStorage: '.',
     name: 'test',
+    uid: '',
   })
   const getLine = (
     workspace: EditorWorkspace,

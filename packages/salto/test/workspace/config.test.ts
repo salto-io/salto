@@ -1,4 +1,5 @@
 import * as path from 'path'
+import os from 'os'
 import { loadConfig, SALTO_HOME_VAR } from '../../src/workspace/config'
 
 const workspacesDir = path.join(__dirname, '../../../test/workspaces')
@@ -19,6 +20,8 @@ describe('configuration dir location', () => {
 })
 
 describe('load proper configuration', () => {
+  const defaultUUID = '56816ffc-1457-55da-bd68-6e02c87f908f'
+  const defaultLocalStorageName = `${path.basename(defaultsWorkspaceDir)}-${defaultUUID}`
   it('should load a full config', async () => {
     const config = await loadConfig(fullWorkspaceDir)
     expect(config).toEqual(
@@ -28,6 +31,7 @@ describe('load proper configuration', () => {
         baseDir: '~/workspace',
         stateLocation: '~/states/test.bpc',
         additionalBlueprints: ['~/moreBP/test.bp'],
+        uid: 'uid',
       }
     )
   })
@@ -36,23 +40,26 @@ describe('load proper configuration', () => {
     expect(config).toEqual(
       {
         name: path.basename(defaultsWorkspaceDir),
-        localStorage: path.join('~/.salto', path.basename(defaultsWorkspaceDir)),
+        localStorage: path.join(os.homedir(), '.salto', defaultLocalStorageName),
         baseDir: defaultsWorkspaceDir,
         stateLocation: path.join(defaultsWorkspaceDir, 'salto.config', 'state.bpc'),
         additionalBlueprints: [],
+        uid: defaultUUID,
       }
     )
   })
   it('should use salto home env var for default values', async () => {
-    process.env[SALTO_HOME_VAR] = '~/.salto_home'
+    const homeVar = path.join(os.homedir(), '.salto_home')
+    process.env[SALTO_HOME_VAR] = homeVar
     const config = await loadConfig(defaultsWorkspaceDir)
     expect(config).toEqual(
       {
         name: path.basename(defaultsWorkspaceDir),
-        localStorage: path.join('~/.salto_home', path.basename(defaultsWorkspaceDir)),
+        localStorage: path.join(homeVar, defaultLocalStorageName),
         baseDir: defaultsWorkspaceDir,
         stateLocation: path.join(defaultsWorkspaceDir, 'salto.config', 'state.bpc'),
         additionalBlueprints: [],
+        uid: defaultUUID,
       }
     )
   })

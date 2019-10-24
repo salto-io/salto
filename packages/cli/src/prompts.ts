@@ -61,4 +61,12 @@ output when invoking the apply command.
   public static readonly COULD_NOT_FIND_FILE = 'Could not find the input file. Make sure the path you provided is correct.'
   public static readonly IMPORT_FINISHED_SUCCESSFULLY = 'Finished importing records from CSV file.'
   public static readonly DELETE_FINISHED_SUCCESSFULLY = 'Finished deleting records read from CSV file.'
+
+  public static initFailed(msg: string): string {
+    return `Could not initiate workspace: ${msg}\n`
+  }
+
+  public static initCompleted(name: string, baseDir: string): string {
+    return `Initiated workspace ${name} at ${baseDir}\n`
+  }
 }

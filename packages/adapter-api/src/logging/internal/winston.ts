@@ -1,10 +1,10 @@
 import winston from 'winston'
 import * as Transport from 'winston-transport'
 import chalk from 'chalk'
-import { Format } from 'logform'
+import * as logform from 'logform'
 import { streams } from '@salto/lowerdash'
 import {
-  LOG_LEVELS, LogLevel, Namespace, Config, BasicLogger,
+  LOG_LEVELS, LogLevel, Namespace, Config, BasicLogger, Format,
 } from './common'
 import {
   toHexColor as namespaceToHexColor,
@@ -18,31 +18,61 @@ const winstonLogLevels: winston.config.AbstractConfigSetLevels = Object.assign(
   ...LOG_LEVELS.map((l, i) => ({ [l]: LOG_LEVELS.length - i }))
 )
 
-const format = (colorize: boolean): Format => winston.format.combine(
+const baseFormat = [
   winston.format.errors({ stack: true }),
   winston.format.timestamp(),
   winston.format.splat(),
-  winston.format.printf(info => {
-    const { timestamp, namespace, level, message, stack } = info
-    return [
-      timestamp,
-      colorize ? chalk.hex(levelToHexColor(level as LogLevel))(level) : level,
-      colorize ? chalk.hex(namespaceToHexColor(namespace))(namespace) : namespace,
-      stack || message,
-    ].join(' ')
+]
+
+const transformFunc = (transform: logform.TransformFunction): logform.Format => ({ transform })
+
+const jsonFormat = winston.format.combine(
+  transformFunc(info => {
+    if (info.stack) {
+      // the first line of the stack e.g, "Error: my error"
+      const [message] = info.stack.split('\n', 1)
+      info.message = message
+    }
+
+    delete info.splat
+
+    return info
   }),
+  winston.format.json(),
 )
 
-const fileTransport = (filename: string): Transport => new winston.transports.File({
+const textFormat = (colorize: boolean): logform.Format => winston.format.printf(info => {
+  const { timestamp, namespace, level, message, stack } = info
+  return [
+    timestamp,
+    colorize ? chalk.hex(levelToHexColor(level as LogLevel))(level) : level,
+    colorize ? chalk.hex(namespaceToHexColor(namespace))(namespace) : namespace,
+    stack || message,
+  ].join(' ')
+})
+
+const format = (
+  { colorize, format: formatType }: { colorize: boolean; format: Format }
+): logform.Format => winston.format.combine(
+  ...baseFormat,
+  formatType === 'json' ? jsonFormat : textFormat(colorize)
+)
+
+const fileTransport = (
+  { filename, format: formatType }: { filename: string; format: Format }
+): Transport => new winston.transports.File({
   filename,
-  format: format(false),
+  format: format({ colorize: false, format: formatType }),
 })
 
 const consoleTransport = (
-  stream: NodeJS.WritableStream
+  { stream, format: formatType }: { stream: NodeJS.WritableStream; format: Format },
 ): Transport => new winston.transports.Stream({
   stream,
-  format: format(streams.hasColors(stream as streams.MaybeTty)),
+  format: format({
+    colorize: streams.hasColors(stream as streams.MaybeTty),
+    format: formatType,
+  }),
 })
 
 export type Dependencies = {
@@ -51,12 +81,12 @@ export type Dependencies = {
 
 const createWinstonLoggerOptions = (
   { consoleStream }: Dependencies,
-  { filename, minLevel }: Config,
+  { filename, minLevel, format: formatType }: Config,
 ): winston.LoggerOptions => ({
   levels: winstonLogLevels,
   transports: filename
-    ? fileTransport(filename)
-    : consoleTransport(consoleStream),
+    ? fileTransport({ filename, format: formatType })
+    : consoleTransport({ stream: consoleStream, format: formatType }),
   exitOnError: false,
   level: minLevel,
 })

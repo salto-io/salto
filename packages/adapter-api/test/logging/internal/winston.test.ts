@@ -79,10 +79,13 @@ describe('winston logger', () => {
 
         it('should write the message to the console stream', () => {
           expect(line).toMatch(TIMESTAMP_REGEX)
-          expect(line).toContain('\u001b[38') // color
           expect(line).toContain('error')
           expect(line).toContain(NAMESPACE)
           expect(line).toContain('hello { world: true }')
+        })
+
+        it('should colorize the line', () => {
+          expect(line).toContain('\u001b[38')
         })
       })
     })
@@ -125,7 +128,7 @@ describe('winston logger', () => {
     })
 
     describe('enabledForNamespace', () => {
-      describe('when set to "all"', () => {
+      describe('when it returns true', () => {
         beforeEach(() => {
           logger = createLogger()
           logLine()
@@ -136,7 +139,7 @@ describe('winston logger', () => {
         })
       })
 
-      describe('when set to "none"', () => {
+      describe('when it returns false', () => {
         beforeEach(() => {
           initalConfig.enabledForNamespace = () => false
           logger = createLogger()
@@ -193,21 +196,78 @@ describe('winston logger', () => {
     })
   })
 
+  let jsonLine: { [key: string]: unknown }
+
   describe('logging errors', () => {
     let error: Error
-    let line1: string
-    let line2: string
 
     beforeEach(() => {
       error = new Error('testing 123')
-      logger = createLogger()
-      logger.log('warn', error);
-      [line1, line2] = consoleStream.contents().split('\n')
     })
 
-    it('should log the error message', () => {
-      expect(line1).toContain('Error: testing 123')
-      expect(line2).toContain(' at ')
+    describe('when format is "text"', () => {
+      let line1: string
+      let line2: string
+
+      beforeEach(() => {
+        logger = createLogger()
+        logger.log('warn', error);
+        [line1, line2] = consoleStream.contents().split('\n')
+      })
+
+      it('should log the error message and stack in multiple lines', () => {
+        expect(line1).toContain('Error: testing 123') // message
+        expect(line2).toContain(' at ') // stack
+      })
+    })
+
+    describe('when format is "json"', () => {
+      beforeEach(() => {
+        logger = createLogger()
+        logger.configure({ format: 'json' })
+        logger.log('warn', error)
+        const [line1] = consoleStream.contents().split('\n')
+        jsonLine = JSON.parse(line1)
+      })
+
+      it('should log the error message and stack as JSON on a single line', () => {
+        expect(jsonLine.timestamp).toMatch(TIMESTAMP_REGEX)
+        expect(jsonLine.level).toEqual('warn')
+        expect(jsonLine.message).toEqual('Error: testing 123')
+        expect(jsonLine.stack).toEqual(error.stack)
+      })
+
+      it('should log only the expected properties', () => {
+        expect(Object.keys(jsonLine).sort()).toEqual([
+          'level', 'message', 'namespace', 'stack', 'timestamp',
+        ])
+      })
+    })
+  })
+
+  describe('JSON format', () => {
+    beforeEach(() => {
+      logger = createLogger()
+      logger.configure({ format: 'json' })
+      logLine('warn')
+      jsonLine = JSON.parse(line)
+    })
+
+    it('should log the error message and stack as JSON on a single line', () => {
+      expect(jsonLine.timestamp).toMatch(TIMESTAMP_REGEX)
+      expect(jsonLine.level).toEqual('warn')
+      expect(jsonLine.message).toEqual('hello { world: true }')
+      expect(jsonLine.extra).toEqual('stuff')
+    })
+
+    it('should log only the expected properties', () => {
+      expect(Object.keys(jsonLine).sort()).toEqual([
+        'extra', 'level', 'message', 'namespace', 'timestamp',
+      ])
+    })
+
+    it('should not colorize the line', () => {
+      expect(line).not.toContain('\u001b[38')
     })
   })
 })

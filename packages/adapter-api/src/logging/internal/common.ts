@@ -24,15 +24,26 @@ export const ROOT_NAMESPACE: Namespace = 'root'
 
 export type EnabledForNamespaceChecker = (namespace: Namespace) => boolean
 
+export type Format = 'json' | 'text'
+export const VALID_FORMATS = Object.freeze(['json', 'text'])
+export const validateFormat = (f: string): Format => {
+  if (!VALID_FORMATS.includes(f)) {
+    throw new Error(`Invalid log format "${f}", expected one of: ${VALID_FORMATS}`)
+  }
+  return f as Format
+}
+
 export type Config = {
   minLevel: LogLevel
   filename: string | null
+  format: Format
   enabledForNamespace: EnabledForNamespaceChecker
 }
 
 export const DEFAULT_CONFIG: Config = Object.freeze({
   minLevel: 'warn',
   filename: null,
+  format: 'text',
   enabledForNamespace: () => true,
 })
 

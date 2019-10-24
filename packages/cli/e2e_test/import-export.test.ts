@@ -1,7 +1,7 @@
 import path from 'path'
 import * as asyncfile from 'async-file'
 import {
-  STATEPATH, dumpCsv, readCsv,
+  dumpCsv, readCsv,
 } from 'salto'
 import { InstanceElement } from 'adapter-api'
 import { MockWriteStream } from '../test/mocks'
@@ -39,7 +39,6 @@ describe('When running export', () => {
   beforeEach(async () => {
     await asyncfile.delete(discoverOutputDir)
     await asyncfile.delete(exportOutputDir)
-    await asyncfile.delete(STATEPATH)
     await asyncfile.mkdirp(`${discoverOutputDir}/salto.config`)
     await copyFile(configFile, `${discoverOutputDir}/salto.config/config.json`)
   })

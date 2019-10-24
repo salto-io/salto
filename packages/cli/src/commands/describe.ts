@@ -1,18 +1,22 @@
 import { Workspace, describeElement, loadConfig } from 'salto'
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput } from '../types'
-import { formatSearchResults } from '../formatter'
+import { formatSearchResults, formatWorkspaceErrors } from '../formatter'
 
 export const command = (
   workspaceDir: string,
   words: string[],
-  { stdout }: CliOutput
+  { stdout, stderr }: CliOutput
 ): CliCommand => ({
   async execute(): Promise<void> {
     const config = await loadConfig(workspaceDir)
     const workspace: Workspace = await Workspace.load(config)
-    const searchResult = await describeElement(workspace, words)
-    stdout.write(formatSearchResults(searchResult))
+    if (workspace.hasErrors()) {
+      stderr.write(formatWorkspaceErrors(workspace.errors))
+    } else {
+      const searchResult = await describeElement(workspace, words)
+      stdout.write(formatSearchResults(searchResult))
+    }
   },
 })
 

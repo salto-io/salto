@@ -6,6 +6,7 @@ import {
 } from '../types'
 import {
   createActionStartOutput, createActionInProgressOutput, createItemDoneOutput,
+  formatWorkspaceErrors,
 } from '../formatter'
 import { shouldApply, getConfigFromUser } from '../callbacks'
 
@@ -54,20 +55,24 @@ export class ApplyCommand implements CliCommand {
 
   async execute(): Promise<void> {
     const config = await loadConfig(this.workspaceDir)
-    try {
-      const workspace: Workspace = await Workspace.load(config)
-      await apply(workspace,
-        getConfigFromUser,
-        shouldApply({ stdout: this.stdout, stderr: this.stderr }),
-        (action: PlanItem) => this.updateCurrentAction(action), this.force)
-      this.endCurrentAction()
-    } catch (e) {
-      this.endCurrentAction()
-      const errorSource = sourceMapSupport.getErrorSource(e)
-      if (errorSource) {
-        this.stderr.write(errorSource)
+    const workspace: Workspace = await Workspace.load(config)
+    if (workspace.hasErrors()) {
+      this.stderr.write(formatWorkspaceErrors(workspace.errors))
+    } else {
+      try {
+        await apply(workspace,
+          getConfigFromUser,
+          shouldApply({ stdout: this.stdout, stderr: this.stderr }),
+          (action: PlanItem) => this.updateCurrentAction(action), this.force)
+        this.endCurrentAction()
+      } catch (e) {
+        this.endCurrentAction()
+        const errorSource = sourceMapSupport.getErrorSource(e)
+        if (errorSource) {
+          this.stderr.write(errorSource)
+        }
+        this.stderr.write(e.stack || e)
       }
-      this.stderr.write(e.stack || e)
     }
   }
 }

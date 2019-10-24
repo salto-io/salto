@@ -3,6 +3,8 @@ import {
   Workspace as mockWorksapce,
 } from 'salto'
 import { command } from '../../src/commands/discover'
+import { MockWriteStream } from '../mocks'
+
 
 jest.mock('salto', () => ({
   discover: jest.fn().mockImplementation(() => Promise.resolve()),
@@ -18,10 +20,10 @@ jest.mock('salto', () => ({
 
 describe('discover command', () => {
   const workspaceDir = 'dummy_dir'
-  // const additaionFiles = ['dummy_filename.bp']
   describe('with a valid workspace', () => {
+    const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
     beforeEach(async () => {
-      await command(workspaceDir).execute()
+      await command(workspaceDir, cliOutput).execute()
     })
     it('should run discover with workspace loaded from provided directory', () => {
       const discoverCalls = (mockDiscover as jest.Mock).mock.calls
@@ -30,21 +32,21 @@ describe('discover command', () => {
     })
   })
   describe('with errored workspace', () => {
+    const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
     beforeEach(() => {
       mockWorksapce.load = jest.fn().mockImplementationOnce(
         baseDir => ({
           hasErrors: () => true,
           baseDir,
           errors: {
-            strings: () => ['some error'],
+            strings: () => ['some Error'],
           },
         })
       )
     })
     it('should fail', async () => {
-      await expect(
-        command(workspaceDir).execute()
-      ).rejects.toThrow(/Failed to load/)
+      await command(workspaceDir, cliOutput).execute()
+      expect(cliOutput.stderr.content.search('Error')).toBeGreaterThan(0)
     })
   })
 })

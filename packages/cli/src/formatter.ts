@@ -6,7 +6,7 @@ import {
   isObjectType, isField, isPrimitiveType, Field, PrimitiveTypes,
 } from 'adapter-api'
 import {
-  Plan, PlanItem, FoundSearchResult, SearchResult, DetailedChange,
+  Plan, PlanItem, FoundSearchResult, SearchResult, DetailedChange, Errors,
 } from 'salto'
 import Prompts from './prompts'
 
@@ -206,6 +206,10 @@ export const formatSearchResults = (result: SearchResult): string => {
   const elementHcl = body(JSON.stringify(element, null, 2))
   return [title, description, elementHcl].join('\n')
 }
+
+export const formatWorkspaceErrors = (workspaceErrors: Errors): string =>
+  `Failed to load workspace, errors:\n ${workspaceErrors.strings().join('\n')}\n`
+
 
 export const createItemDoneOutput = (item: PlanItem, startTime: Date): string => {
   const elapsed = getElapsedTime(startTime)

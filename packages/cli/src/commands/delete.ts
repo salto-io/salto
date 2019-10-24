@@ -5,6 +5,7 @@ import { ParsedCliInput, CliCommand, CliOutput } from '../types'
 
 import { getConfigFromUser } from '../callbacks'
 import Prompts from '../prompts'
+import { formatWorkspaceErrors } from '../formatter'
 
 export const command = (
   workingDir: string,
@@ -21,15 +22,19 @@ export const command = (
     const records = await readCsv(inputPath)
     const config = await loadConfig(workingDir)
     const workspace: Workspace = await Workspace.load(config)
-    await deleteFromCsvFile(
-      typeName,
-      records,
-      workspace,
-      getConfigFromUser
-    )
-    // TODO: Return here the full report that contains the numbers of successful and failed rows.
-    // Also: print the errors of the erronous rows to a log file and print the path of the log.
-    stdout.write(Prompts.DELETE_FINISHED_SUCCESSFULLY)
+    if (workspace.hasErrors()) {
+      stderr.write(formatWorkspaceErrors(workspace.errors))
+    } else {
+      await deleteFromCsvFile(
+        typeName,
+        records,
+        workspace,
+        getConfigFromUser
+      )
+      // TODO: Return here the full report that contains the numbers of successful and failed rows.
+      // Also: print the errors of the erronous rows to a log file and print the path of the log.
+      stdout.write(Prompts.DELETE_FINISHED_SUCCESSFULLY)
+    }
   },
 })
 

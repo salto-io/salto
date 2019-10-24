@@ -197,7 +197,6 @@ describe('Elements validation', () => {
 
         it('should succeed when restriction values are not enforced even if the value not in _values', () => {
           const extType = _.cloneDeep(nestedType)
-          // eslint-disable-next-line @typescript-eslint/camelcase
           extType.fields.restrictStr.annotations[Type.RESTRICTION] = { [Type.ENFORCE_VALUE]: false }
           extType.fields.restrictStr.annotations[Type.VALUES] = ['val1', 'val2']
           extInst.value.restrictStr = 'wrongValue'
@@ -208,6 +207,33 @@ describe('Elements validation', () => {
         it('should succeed when restriction values is not a list', () => {
           const extType = _.cloneDeep(nestedType)
           extType.fields.restrictStr.annotations[Type.VALUES] = 'str'
+          extInst.type = extType
+          extInst.value.restrictStr = 'str'
+          expect(validateElements([extInst])).toHaveLength(0)
+        })
+
+        it('should fail when restriction values are not defined and values are enforced', () => {
+          const extType = _.cloneDeep(nestedType)
+          delete extType.fields.restrictStr.annotations[Type.VALUES]
+          extType.fields.restrictStr.annotations[Type.RESTRICTION] = { [Type.ENFORCE_VALUE]: true }
+          extInst.type = extType
+          extInst.value.restrictStr = 'str'
+          expect(validateElements([extInst])).toHaveLength(1)
+        })
+
+        it('should succeed when restriction values are not defined and enforce_values is undefined', () => {
+          const extType = _.cloneDeep(nestedType)
+          delete extType.fields.restrictStr.annotations[Type.VALUES]
+          extType.fields.restrictStr.annotations[Type.RESTRICTION] = {}
+          extInst.type = extType
+          extInst.value.restrictStr = 'str'
+          expect(validateElements([extInst])).toHaveLength(0)
+        })
+
+        it('should succeed when restriction values are not defined and _restriction is undefined', () => {
+          const extType = _.cloneDeep(nestedType)
+          delete extType.fields.restrictStr.annotations[Type.VALUES]
+          delete extType.fields.restrictStr.annotations[Type.RESTRICTION]
           extInst.type = extType
           extInst.value.restrictStr = 'str'
           expect(validateElements([extInst])).toHaveLength(0)

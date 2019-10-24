@@ -387,7 +387,6 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
   // Picklists
   if (field.picklistValues && field.picklistValues.length > 0) {
     annotations[Type.VALUES] = field.picklistValues.map(val => val.value)
-    // eslint-disable-next-line @typescript-eslint/camelcase
     annotations[Type.RESTRICTION] = { [Type.ENFORCE_VALUE]: Boolean(field.restrictedPicklist) }
 
     const defaults = field.picklistValues

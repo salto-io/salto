@@ -118,8 +118,9 @@ const validateAnnotationsValues = (
   const shouldEnforceValue = (): boolean => {
     const restriction = field.annotations[Type.RESTRICTION]
     // enforce_value is true by default
-    return (restriction === undefined || restriction[Type.ENFORCE_VALUE] === undefined
-      || restriction[Type.ENFORCE_VALUE] === true) && field.annotations[Type.VALUES]
+    return (restriction && restriction[Type.ENFORCE_VALUE] === true)
+      || (field.annotations[Type.VALUES]
+        && !(restriction && restriction[Type.ENFORCE_VALUE] === false))
   }
 
   // Checking _values annotation

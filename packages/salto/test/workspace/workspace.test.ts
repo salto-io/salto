@@ -2,7 +2,7 @@ import _ from 'lodash'
 import fs from 'async-file'
 import path from 'path'
 import tmp from 'tmp-promise'
-
+import os from 'os'
 import {
   Element, ObjectType, ElemID, Type,
 } from 'adapter-api'
@@ -80,7 +80,7 @@ type salesforce_lead {
       const config = {
         uid: '',
         name: 'test',
-        localStorage: '~/.salto/test',
+        localStorage: path.join(os.homedir(),'.salto', 'test'),
         baseDir: '/salto',
         additionalBlueprints: ['../outside/file.bp'],
         stateLocation: '/salto/latest_state.bp',
@@ -115,7 +115,7 @@ type salesforce_lead {
       const config = {
         uid: '',
         name: 'test',
-        localStorage: '~/.salto/test',
+        localStorage: path.join(os.homedir(),'.salto', 'test'),
         baseDir: '/salto',
         additionalBlueprints: [],
         stateLocation: '/salto/latest_state.bp',
@@ -302,7 +302,7 @@ type salesforce_lead {
       config = {
         uid: '',
         name: 'test',
-        localStorage: '~/.salto/test',
+        localStorage: path.join(os.homedir(),'.salto', 'test'),
         baseDir: getPath('salto'),
         additionalBlueprints: [getPath('/outside/file.bp')],
         stateLocation: '/salto/latest_state.bp',
@@ -371,8 +371,8 @@ type salesforce_lead {
       })
       it('should init a basedir with workspace name provided', async () => {
         workspace = await Workspace.init(emptyTmpDir.path, 'test')
-        expect(await fs.exists(config.localStorage)).toBeTruthy()
-        expect(config.name).toBe('test')
+        expect(await fs.exists(workspace.config.localStorage)).toBeTruthy()
+        expect(workspace.config.name).toBe('test')
       })
       it('should fail when run inside an existing workspace', async () => {
         await Workspace.init(emptyTmpDir.path)

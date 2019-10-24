@@ -5,6 +5,7 @@ import { exportToCsv, MockWriteStream } from '../mocks'
 import { command } from '../../src/commands/export'
 
 const mockExportToCsv = exportToCsv
+const mockWS = { hasErrors: () => false, errors: {} }
 jest.mock('salto', () => ({
   ...(require.requireActual('salto')),
   exportToCsv: jest.fn().mockImplementation((
@@ -13,7 +14,7 @@ jest.mock('salto', () => ({
     fillConfig: (configType: ObjectType) => Promise<InstanceElement>
   ) => mockExportToCsv(typeId, workspace, fillConfig)),
   Workspace: {
-    load: jest.fn().mockImplementation(() => ({ hasErrors: () => false })),
+    load: jest.fn().mockImplementation(() => mockWS),
   },
   loadConfig: jest.fn(),
   dumpCsv: jest.fn().mockImplementation(() => { }),
@@ -35,5 +36,13 @@ describe('export command', () => {
     expect(objects[0].Gender).toBe('Female')
     expect(output).toBe(outputPath)
     expect(Workspace.load).toHaveBeenCalled()
+  })
+
+  it('should fail on workspace errors', async () => {
+    mockWS.hasErrors = () => true
+    mockWS.errors = { strings: () => ['Error'] }
+    const outputPath = path.join(__dirname, '__test_export.csv')
+    await command('', 'Test', outputPath, cliOutput).execute()
+    expect(cliOutput.stderr.content).toContain('Error')
   })
 })

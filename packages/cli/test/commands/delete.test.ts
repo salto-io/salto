@@ -16,7 +16,7 @@ const testCsvMockReturnValues: Value[] = []
 let readCsvSpy: jest.Mock<unknown>
 const workspaceDir = `${__dirname}/../../../test/BP`
 describe('delete command', () => {
-  const mockWS = { hasErrors: () => false }
+  const mockWS = { hasErrors: () => false, errors: {} }
   it('should run delete successfully if CSV file is found', async () => {
     mockExistsReturn = Promise.resolve(true)
 
@@ -36,5 +36,17 @@ describe('delete command', () => {
     const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
     await command(workspaceDir, '', '', cliOutput).execute()
     expect(cliOutput.stderr.content).toMatch(Prompts.COULD_NOT_FIND_FILE)
+  })
+  it('should fail of workspace load failed', async () => {
+    mockWS.hasErrors = () => true
+    mockWS.errors = { strings: () => ['Error'] }
+    mockExistsReturn = Promise.resolve(true)
+    readCsvSpy = jest.spyOn(saltoImp, 'readCsv').mockImplementation(() => Promise.resolve(testCsvMockReturnValues))
+    deleteFromCsvSpy = jest.spyOn(saltoImp, 'deleteFromCsvFile').mockImplementation(() => mockDeleteFromCsv())
+    const loadSpy = jest.spyOn(saltoImp.Workspace, 'load').mockImplementation(() => mockWS)
+    const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
+    await command(workspaceDir, 'mockName', 'mockPath', cliOutput).execute()
+    expect(loadSpy).toHaveBeenCalled()
+    expect(cliOutput.stderr.content).toContain('Error')
   })
 })

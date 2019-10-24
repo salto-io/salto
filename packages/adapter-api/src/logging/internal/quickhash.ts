@@ -1,6 +1,7 @@
 /* eslint-disable no-bitwise */
 
 export const MAX_HASH = 2 ** 31
+export const MIN_HASH = -MAX_HASH
 
 // taken from: https://stackoverflow.com/a/8831937
 export default (s: string): number => {

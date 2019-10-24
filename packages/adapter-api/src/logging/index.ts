@@ -1,18 +1,17 @@
 import {
   Config, mergeConfigs, ROOT_NAMESPACE,
 } from './internal/common'
-import { config as envConfig } from './internal/env'
+import * as env from './internal/env'
 import { loggerFromBasicLogger } from './internal/logger'
-import { createLogger, Dependencies } from './internal/winston'
+import * as winston from './internal/winston'
 
-const deps: Dependencies = {
+const deps: winston.Dependencies = {
   consoleStream: process.stdout,
 }
 
-const mergedConfig: Config = mergeConfigs(envConfig(process.env))
-
-const rootBasicLogger = createLogger(deps, mergedConfig, ROOT_NAMESPACE)
-
+const mergedConfig: Config = mergeConfigs(env.config(process.env))
+const rootBasicLogger = winston.createLogger(deps, mergedConfig, ROOT_NAMESPACE)
 const rootLogger = loggerFromBasicLogger(rootBasicLogger, mergedConfig, ROOT_NAMESPACE)
 
-export const logger = rootLogger.child
+export const logger = rootLogger.child.bind(rootLogger)
+export const configure = rootLogger.configure.bind(rootLogger)

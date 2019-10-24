@@ -36,12 +36,13 @@ export const DEFAULT_CONFIG: Config = Object.freeze({
   enabledForNamespace: () => true,
 })
 
-export const mergeConfigs = (
-  ...configs: Partial<Config>[]
-): Config => _.defaults({}, ...[DEFAULT_CONFIG, ...configs])
+export const mergeConfigs = (...configs: Partial<Config>[]): Config => _.defaults(
+  {}, ...[DEFAULT_CONFIG, ...configs].reverse()
+)
 
 export type BasicLogger = {
   log(level: LogLevel, message: string | Error, ...args: unknown[]): void
   end(): void // Note: there is currently no way to wait for a logger to end; see tests
   child: (namespace: Namespace) => BasicLogger
+  configure(config: Partial<Config>): void
 }

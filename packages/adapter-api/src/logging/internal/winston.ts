@@ -48,17 +48,15 @@ export type Dependencies = {
   consoleStream: NodeJS.WritableStream
 }
 
-const createWinstonLogger = (
+const createWinstonLoggerOptions = (
   { consoleStream }: Dependencies,
   { filename, minLevel }: Config,
-  namespace: Namespace,
-): winston.Logger => winston.createLogger({
+): winston.LoggerOptions => ({
   levels: winstonLogLevels,
   transports: filename
     ? fileTransport(filename)
     : consoleTransport(consoleStream),
   exitOnError: false,
-  defaultMeta: { namespace },
   level: minLevel,
 })
 
@@ -67,17 +65,35 @@ export const createLogger = (
   config: Config,
   rootNamespace: Namespace,
 ): BasicLogger => {
-  const rootWinstonLogger = createWinstonLogger(deps, config, rootNamespace)
+  const rootWinstonLogger = winston.createLogger(createWinstonLoggerOptions(deps, config))
 
-  const createBasicLogger = (winstonLogger: winston.Logger): BasicLogger => ({
-    child: (namespace: Namespace): BasicLogger => createBasicLogger(
-      winstonLogger.child({ namespace }),
-    ),
+  const createBasicLogger = (
+    winstonLogger: winston.Logger,
+    namespace: Namespace,
+  ): BasicLogger => ({
+    child: (childNamespace: Namespace): BasicLogger => {
+      // Note: The options arg of the child method call was the obvious place to put the
+      // namespace. However it doesn't work since winston overrides the value with the parent's
+      // defaultMeta. The workaround is to not use defaultMeta - instead our log call pushes
+      // the namespace into the "info" object.
+      // The .child call is not practically needed but I hesistate having
+      // all child loggers use the same winston logger instance.
+      const childLogger = winstonLogger.child({})
+      return createBasicLogger(childLogger, childNamespace)
+    },
     end: () => winstonLogger.end.bind(winstonLogger),
     log: (level: LogLevel, message: string | Error, ...args: unknown[]): void => {
-      winstonLogger.log({ level, message: message as unknown as string, splat: args })
+      winstonLogger.log({
+        level,
+        namespace,
+        message: message as unknown as string, // yuck
+        splat: args,
+      })
+    },
+    configure: (newConfig: Config): void => {
+      winstonLogger.configure(createWinstonLoggerOptions(deps, newConfig))
     },
   })
 
-  return createBasicLogger(rootWinstonLogger)
+  return createBasicLogger(rootWinstonLogger, rootNamespace)
 }

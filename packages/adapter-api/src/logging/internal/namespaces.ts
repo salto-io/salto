@@ -1,6 +1,6 @@
 import path from 'path'
 import { safe as safeColors } from './colors'
-import quickHash, { MAX_HASH } from './quickhash'
+import quickHash, { MIN_HASH, MAX_HASH } from './quickhash'
 import { Namespace, NamespaceOrModule, isLoggingModule } from './common.js'
 
 const parentDir = (numLevels: number): string => path.normalize(
@@ -20,7 +20,7 @@ const mapToRange = (
 ): number => ((n - sourceMin) / (sourceMax - sourceMin)) * (targetMax - targetMin) + targetMin
 
 const mapHashRangeToNamespaceColorIndexRange = mapToRange(
-  [0, MAX_HASH], [0, usableNamespaceColors.length - 1]
+  [MIN_HASH, MAX_HASH], [0, usableNamespaceColors.length - 1]
 )
 
 const hashToNamespaceColorIndex = (

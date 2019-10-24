@@ -55,14 +55,6 @@ describe('Test elements.ts', () => {
     annotations: {},
   })
 
-  const ot2 = new ObjectType({
-    elemID: new ElemID('test', 'obj'),
-    fields: {
-      /* eslint-disable-next-line @typescript-eslint/camelcase */
-      num_field: new Field(new ElemID('test', 'obj'), 'num_field', primNum),
-    },
-  })
-
   let registry: ElementsRegistry
 
   beforeEach(async () => {
@@ -84,10 +76,6 @@ describe('Test elements.ts', () => {
     expect(ot.elemID.name).toEqual('obj')
     expect(ot.fields.num_field.type).toBeInstanceOf(PrimitiveType)
     expect(ot.fields.str_field.type).toBeInstanceOf(PrimitiveType)
-  })
-
-  it('should get fields not in other', () => {
-    expect(ot.getFieldsThatAreNotInOther(ot2)).toEqual([ot.fields.str_field])
   })
 
   it('Should test getValuesThatNotInPrevOrDifferent func', () => {
@@ -173,10 +161,6 @@ describe('Test elements.ts', () => {
       ],
       description: 'new unit test instance profile',
     },)
-  })
-
-  it('should get intersection of fields', () => {
-    expect(ot.getMutualFieldsWithOther(ot2)).toEqual([ot.fields.num_field])
   })
 
   it('should allow to create types from the correct type them using registry.getElement method', () => {

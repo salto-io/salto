@@ -1,7 +1,7 @@
-import {
-  BuiltinTypes, Type, ObjectType, ElemID, InstanceElement, Values,
-  Field, Element, isObjectType, isInstanceElement, AdapterCreator, Value,
-} from 'adapter-api'
+import { BuiltinTypes, Type, ObjectType, ElemID, InstanceElement, Values, isModificationDiff,
+  isRemovalDiff, isAdditionDiff, Field, Element, isObjectType, isInstanceElement, AdapterCreator,
+  Value, Change, getChangeElement, isField } from 'adapter-api'
+import wu from 'wu'
 import {
   SaveResult, MetadataInfo, Field as SObjField, DescribeSObjectResult, QueryResult,
 } from 'jsforce'
@@ -29,6 +29,7 @@ import lookupFiltersFilter from './filters/lookup_filters'
 import {
   FilterCreator, Filter, FilterWith, filtersWith,
 } from './filter'
+
 
 const RECORDS_CHUNK_SIZE = 10000
 
@@ -289,16 +290,17 @@ export default class SalesforceAdapter {
    * @param newElement The new metadata of the element to replace
    * @returns the updated element
    */
-  public async update(prevElement: Element, newElement: Element): Promise<Element> {
-    if (isObjectType(prevElement) && isObjectType(newElement)) {
-      return this.updateObject(prevElement, newElement)
+  public async update(before: Element, after: Element,
+    changes: Iterable<Change>): Promise<Element> {
+    if (isObjectType(before) && isObjectType(after)) {
+      return this.updateObject(before, after, changes as Iterable<Change<Field | ObjectType>>)
     }
 
-    if (isInstanceElement(prevElement) && isInstanceElement(newElement)) {
-      return this.updateInstance(prevElement, newElement)
+    if (isInstanceElement(before) && isInstanceElement(after)) {
+      return this.updateInstance(before, after)
     }
 
-    return newElement
+    return after
   }
 
   /**
@@ -307,30 +309,35 @@ export default class SalesforceAdapter {
    * @param newObject The new metadata of the object to replace
    * @returns the updated object
    */
-  private async updateObject(prevObject: ObjectType, newObject: ObjectType): Promise<ObjectType> {
-    const clonedObject = newObject.clone()
+  private async updateObject(before: ObjectType, after: ObjectType,
+    changes: Iterable<Change<Field | ObjectType>>): Promise<ObjectType> {
+    const clonedObject = after.clone()
     annotateApiNameAndLabel(clonedObject)
-
-    validateApiName(prevObject, clonedObject)
-
-    const pre = prevObject.clone()
-    annotateApiNameAndLabel(pre)
+    validateApiName(before, clonedObject)
 
     // There are fields that are not equal but their transformation
     // to CustomField is (e.g. lookup field with LookupFilter).
-    const shouldUpdateField = (afterField: Field): boolean =>
-      !_.isEqual(afterField.annotations, pre.fields[afterField.name].annotations)
-        && !_.isEqual(toCustomField(prevObject, pre.fields[afterField.name], true),
-          toCustomField(clonedObject, afterField, true))
+    const shouldUpdateField = (beforeField: Field, afterField: Field): boolean =>
+      !_.isEqual(toCustomField(before, beforeField, true),
+        toCustomField(clonedObject, afterField, true))
 
+    const fieldChanges = wu(changes)
+      .filter(c => isField(getChangeElement(c)))
+      .toArray() as Change<Field>[]
     await Promise.all([
       // Retrieve the custom fields for deletion and delete them
-      this.deleteCustomFields(prevObject, prevObject.getFieldsThatAreNotInOther(clonedObject)),
+      this.deleteCustomFields(clonedObject, fieldChanges
+        .filter(isRemovalDiff)
+        .map(c => c.data.before)),
       // Retrieve the custom fields for addition and than create them
-      this.createFields(clonedObject, clonedObject.getFieldsThatAreNotInOther(prevObject)),
+      this.createFields(clonedObject, fieldChanges
+        .filter(isAdditionDiff)
+        .map(c => c.data.after)),
       // Update the remaining fields that were changed
-      this.updateFields(clonedObject, clonedObject.getMutualFieldsWithOther(pre)
-        .filter(afterField => shouldUpdateField(afterField))),
+      this.updateFields(clonedObject, fieldChanges
+        .filter(isModificationDiff)
+        .filter(c => shouldUpdateField(c.data.before, c.data.after))
+        .map(c => c.data.after)),
     ])
 
     // Update the annotation values - this can't be done asynchronously with the previous
@@ -341,8 +348,8 @@ export default class SalesforceAdapter {
     // The update API currently allows us to add/remove custom fields to such objects, but not
     // to update them.
     if (apiName(clonedObject).endsWith(constants.SALESFORCE_CUSTOM_SUFFIX)
-      // Don't update the object unless its annotations values have changed
-      && !_.isEqual(pre.annotations, clonedObject.annotations)) {
+      // Don't update the object unless its changed
+      && wu(changes).find(c => isObjectType(getChangeElement(c)))) {
       await this.client.update(
         metadataType(clonedObject),
         toCustomObject(clonedObject, false)
@@ -350,7 +357,7 @@ export default class SalesforceAdapter {
     }
 
     // Aspects should be updated once all object related properties updates are over
-    await this.runFiltersOnUpdate(prevObject, clonedObject)
+    await this.runFiltersOnUpdate(before, clonedObject, changes)
 
     return clonedObject
   }
@@ -586,9 +593,9 @@ export default class SalesforceAdapter {
     return this.runFiltersInParallel('onAdd', filter => filter.onAdd(after))
   }
 
-
-  private async runFiltersOnUpdate(before: Element, after: Element): Promise<SaveResult[]> {
-    return this.runFiltersInParallel('onUpdate', filter => filter.onUpdate(before, after))
+  private async runFiltersOnUpdate(before: Element, after: Element,
+    changes: Iterable<Change>): Promise<SaveResult[]> {
+    return this.runFiltersInParallel('onUpdate', filter => filter.onUpdate(before, after, changes))
   }
 
   private async runFiltersOnRemove(before: Element): Promise<SaveResult[]> {

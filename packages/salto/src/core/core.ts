@@ -1,5 +1,5 @@
 import {
-  ObjectType, Element, Adapter, getChangeElement,
+  Element, Adapter, getChangeElement,
 } from 'adapter-api'
 
 import { Plan, PlanItem, PlanItemId } from './plan'
@@ -19,12 +19,12 @@ const applyAction = async (
   }
   switch (parent.action) {
     case 'add':
-      return adapter.add(parent.data.after as ObjectType)
+      return adapter.add(parent.data.after)
     case 'remove':
-      await adapter.remove(parent.data.before as ObjectType)
+      await adapter.remove(parent.data.before)
       return Promise.resolve(parent.data.before)
     case 'modify':
-      return adapter.update(parent.data.before as ObjectType, parent.data.after as ObjectType)
+      return adapter.update(parent.data.before, parent.data.after, planItem.changes())
     default:
       throw new Error('Unkown action type')
   }

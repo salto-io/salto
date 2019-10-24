@@ -1,4 +1,4 @@
-import { Element } from 'adapter-api'
+import { Element, Change } from 'adapter-api'
 import { SaveResult } from 'jsforce-types'
 import { types } from '@salto/lowerdash'
 import SalesforceClient from './client/client'
@@ -10,7 +10,7 @@ import SalesforceClient from './client/client'
 export type Filter = Partial<{
   onDiscover(elements: Element[]): Promise<void>
   onAdd(after: Element): Promise<SaveResult[]>
-  onUpdate(before: Element, after: Element): Promise<SaveResult[]>
+  onUpdate(before: Element, after: Element, changes: Iterable<Change>): Promise<SaveResult[]>
   onRemove(before: Element): Promise<SaveResult[]>
 }>
 

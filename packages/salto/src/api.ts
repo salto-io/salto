@@ -16,6 +16,7 @@ import { findElement, SearchResult } from './core/search'
 
 import { Workspace } from './workspace/workspace'
 import { discoverChanges } from './core/discover'
+import { Config, initConfig } from './workspace/config'
 
 const applyActionOnState = async (
   state: State,
@@ -129,4 +130,11 @@ export const deleteFromCsvFile = async (
   }
   const [adapters] = await initAdapters(workspace.elements, fillConfig)
   await deleteInstancesOfType(type as ObjectType, records, adapters)
+}
+
+export const init = async (workspaceName?: string): Promise<Config> => {
+  const config = await initConfig('.', workspaceName)
+  const state = new State(config.stateLocation)
+  state.flush()
+  return config
 }

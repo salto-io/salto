@@ -6,10 +6,12 @@ import applyBuilder from './apply'
 import exportBuilder from './export'
 import importBuilder from './import'
 import deleteBuilder from './delete'
+import initBuilder from './init'
 
 
 // The order of the builders determines order of appearance in help text
 export default [
+  initBuilder,
   discoverBuilder,
   describeBuilder,
   planBuilder,

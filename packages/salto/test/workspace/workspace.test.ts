@@ -78,6 +78,7 @@ type salesforce_lead {
     }
     const resetWorkspace = (): void => {
       const config = {
+        uid: '',
         name: 'test',
         localStorage: '~/.salto/test',
         baseDir: '/salto',
@@ -112,6 +113,7 @@ type salesforce_lead {
 
     describe('errors', () => {
       const config = {
+        uid: '',
         name: 'test',
         localStorage: '~/.salto/test',
         baseDir: '/salto',
@@ -296,6 +298,7 @@ type salesforce_lead {
           return fs.writeFile(filePath, data)
         }))
       config = {
+        uid: '',
         name: 'test',
         localStorage: '~/.salto/test',
         baseDir: getPath('salto'),

@@ -1,14 +1,13 @@
 import _ from 'lodash'
 import { MetadataInfo } from 'jsforce'
 import {
-  Element, ObjectType, InstanceElement, isObjectType, Field,
+  Element, ObjectType, InstanceElement, isObjectType, Field, Type,
 } from 'adapter-api'
 import { collections } from '@salto/lowerdash'
 import SalesforceClient from '../client/client'
 import { FilterCreator } from '../filter'
 import {
-  CUSTOM_OBJECT, FIELD_TYPE_NAMES,
-  PICKLIST_VALUES, SALESFORCE_CUSTOM_SUFFIX,
+  CUSTOM_OBJECT, FIELD_TYPE_NAMES, SALESFORCE_CUSTOM_SUFFIX,
 } from '../constants'
 import {
   metadataType, apiName, createInstanceElement,
@@ -115,18 +114,18 @@ const calculatePicklistFieldsToUpdate = (
   custObjectFields: Record<string, Field>,
   svsValuesToName: Record<string, string>
 ): Record<string, Field> => _.mapValues(custObjectFields, (f: Field) => {
-  if (!isStandardPickList(f) || _.isEmpty(f.annotations[PICKLIST_VALUES])) {
+  if (!isStandardPickList(f) || _.isEmpty(f.annotations[Type.VALUES])) {
     return f
   }
 
-  const encodedPlVals = encodeValues(f.annotations[PICKLIST_VALUES])
+  const encodedPlVals = encodeValues(f.annotations[Type.VALUES])
   const foundStandardValueSet = svsValuesToName[encodedPlVals]
 
   if (!foundStandardValueSet) {
     return f
   }
   const newField = f.clone()
-  newField.annotations[PICKLIST_VALUES] = foundStandardValueSet
+  newField.annotations[Type.VALUES] = foundStandardValueSet
   return newField
 })
 

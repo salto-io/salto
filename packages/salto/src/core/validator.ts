@@ -4,6 +4,7 @@ import {
   Element, isObjectType, isInstanceElement, Type, InstanceElement, Field, PrimitiveTypes,
   isPrimitiveType, Value, ElemID,
 } from 'adapter-api'
+import { makeArray } from '@salto/lowerdash/dist/src/collections/array'
 
 export abstract class ValidationError extends types.Bean<Readonly<{
   elemID: ElemID
@@ -25,7 +26,7 @@ const primitiveValidators = {
 }
 
 /**
- * Validate that all type fields values corresponding with core annotations (required, restriction)
+ * Validate that all type fields values corresponding with core annotations (required, values)
  * @param value
  * @param type
  */
@@ -79,7 +80,7 @@ export class MissingRequiredFieldValidationError extends ValidationError {
 }
 
 /**
- * Validate that field values corresponding with core annotations (_required, _restriction)
+ * Validate that field values corresponding with core annotations (_required, _values, _restriction)
  * @param value- the field value
  * @param field
  */
@@ -88,28 +89,17 @@ const validateAnnotationsValues = (
 ): ValidationError[] => {
   const validateRestrictionsValue = (val: Value):
     ValidationError[] => {
-    const restrictionValues = field.annotations[Type.RESTRICTION]
-
-    // Restrictions is empty
-    if (restrictionValues === undefined) {
-      return []
-    }
-
-    // Values should be array
-    const possibleValues = restrictionValues.values
-    if (!_.isArray(possibleValues)) {
-      return []
-    }
+    const restrictionValues = makeArray(field.annotations[Type.VALUES])
 
     // When value is array we iterate (validate) each element
     if (_.isArray(val)) {
       return _.flatten(val.map(v => validateRestrictionsValue(v)))
     }
 
-    // The 'real' validation: is value is one of possibleValues
-    if (!possibleValues.some(i => _.isEqual(i, val))) {
+    // The 'real' validation: is value is one of restrictionValues
+    if (!restrictionValues.some(i => _.isEqual(i, val))) {
       return [
-        new InvalidValueValidationError({ elemID, value, field, expectedValue: possibleValues }),
+        new InvalidValueValidationError({ elemID, value, field, expectedValue: restrictionValues }),
       ]
     }
 
@@ -125,8 +115,16 @@ const validateAnnotationsValues = (
     return validateRequiredValue()
   }
 
-  // Checking _restriction annotation
-  if (isPrimitiveType(field.type)) {
+  const shouldEnforceValue = (): boolean => {
+    const restriction = field.annotations[Type.RESTRICTION]
+    // enforce_value is true by default
+    return (restriction && restriction[Type.ENFORCE_VALUE] === true)
+      || (field.annotations[Type.VALUES]
+        && !(restriction && restriction[Type.ENFORCE_VALUE] === false))
+  }
+
+  // Checking _values annotation
+  if (isPrimitiveType(field.type) && shouldEnforceValue()) {
     return validateRestrictionsValue(value)
   }
 

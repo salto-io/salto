@@ -137,14 +137,9 @@ describe('SalesforceAdapter discover', () => {
 
       const lead = result.filter(o => o.elemID.name === 'lead').pop() as ObjectType
       expect(lead.fields.primary_c.type.elemID.name).toBe('picklist')
-      expect(
-        (lead.fields.primary_c.annotations.values as string[]).join(';')
-      ).toBe('No;Yes')
-      // eslint-disable-next-line no-underscore-dangle
-      expect(lead.fields.primary_c.annotations._default).toBe('Yes')
-      expect(
-        lead.fields.primary_c.annotations[constants.FIELD_ANNOTATIONS.RESTRICTED_PICKLIST]
-      ).toBe(true)
+      expect((lead.fields.primary_c.annotations[Type.VALUES] as string[]).join(';')).toBe('No;Yes')
+      expect(lead.fields.primary_c.annotations[Type.DEFAULT]).toBe('Yes')
+      expect(lead.fields.primary_c.annotations[Type.RESTRICTION][Type.ENFORCE_VALUE]).toBe(true)
     })
 
     it('should discover sobject with combobox field', async () => {
@@ -164,13 +159,10 @@ describe('SalesforceAdapter discover', () => {
 
       const lead = result.filter(o => o.elemID.name === 'lead').pop() as ObjectType
       expect(lead.fields.primary_c.type.elemID.name).toBe('combobox')
-      expect(
-        (lead.fields.primary_c.annotations.values as string[]).join(';')
-      ).toBe('No;Yes')
-      // eslint-disable-next-line no-underscore-dangle
-      expect(lead.fields.primary_c.annotations._default.length).toBe(1)
-      // eslint-disable-next-line no-underscore-dangle
-      expect(lead.fields.primary_c.annotations._default.pop()).toBe('Yes')
+      expect((lead.fields.primary_c.annotations[Type.VALUES] as string[]).join(';'))
+        .toBe('No;Yes')
+      expect(lead.fields.primary_c.annotations[Type.DEFAULT].length).toBe(1)
+      expect(lead.fields.primary_c.annotations[Type.DEFAULT].pop()).toBe('Yes')
     })
 
     it('should discover sobject with number field', async () => {
@@ -400,9 +392,7 @@ describe('SalesforceAdapter discover', () => {
       expect(flow.fields.enum.type.elemID.name).toBe('string')
       expect(flow.fields.enum.annotations[Type.DEFAULT]).toBe('yes')
       // Note the order here is important because we expect restriction values to be sorted
-      expect(flow.fields.enum.annotations[Type.RESTRICTION]).toEqual({
-        values: ['no', 'yes'],
-      })
+      expect(flow.fields.enum.annotations[Type.VALUES]).toEqual(['no', 'yes'])
       expect(flow.path).toEqual(['types', 'flow'])
     })
     it('should discover nested metadata types', async () => {

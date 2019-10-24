@@ -9,7 +9,7 @@ describe('Elements validation', () => {
   const simpleType = new ObjectType({
     elemID: baseElemID,
     fields: {
-      str: new Field(baseElemID, 'str', BuiltinTypes.STRING, { _restriction: { values: ['str'] } }),
+      str: new Field(baseElemID, 'str', BuiltinTypes.STRING, { _values: ['str'] }),
       num: new Field(baseElemID, 'num', BuiltinTypes.NUMBER),
       bool: new Field(baseElemID, 'bool', BuiltinTypes.BOOLEAN, { _required: true }),
     },
@@ -37,11 +37,9 @@ describe('Elements validation', () => {
       list: new Field(nestedElemID, 'list', BuiltinTypes.STRING, {}, true),
       reqStr: new Field(nestedElemID, 'reqStr', BuiltinTypes.STRING),
       restrictStr: new Field(nestedElemID, 'restrictStr', BuiltinTypes.STRING, {
-        _restriction: {
-          values: [
-            'restriction1', 'restriction2',
-          ],
-        },
+        _values: [
+          'restriction1', 'restriction2',
+        ],
       }),
       reqNested: new Field(nestedElemID, 'reqNested', simpleType, {
       }),
@@ -192,19 +190,56 @@ describe('Elements validation', () => {
         })
       })
 
-      describe('restriction annotation', () => {
-        it('should succeed when all values corresponds to restrictions', () => {
+      describe('values annotation', () => {
+        it('should succeed when all values corresponds to values annotation', () => {
           expect(validateElements([extInst])).toHaveLength(0)
         })
 
-        it('should succeed when restrictions values doesnt a list', () => {
+        it('should succeed when restriction values are not enforced even if the value not in _values', () => {
           const extType = _.cloneDeep(nestedType)
-          extType.fields.restrictStr.annotations[Type.RESTRICTION] = { values: 'str' }
+          extType.fields.restrictStr.annotations[Type.RESTRICTION] = { [Type.ENFORCE_VALUE]: false }
+          extType.fields.restrictStr.annotations[Type.VALUES] = ['val1', 'val2']
+          extInst.value.restrictStr = 'wrongValue'
           extInst.type = extType
           expect(validateElements([extInst])).toHaveLength(0)
         })
 
-        it('should return an error when fields values doesnt match restrictions', () => {
+        it('should succeed when restriction values is not a list', () => {
+          const extType = _.cloneDeep(nestedType)
+          extType.fields.restrictStr.annotations[Type.VALUES] = 'str'
+          extInst.type = extType
+          extInst.value.restrictStr = 'str'
+          expect(validateElements([extInst])).toHaveLength(0)
+        })
+
+        it('should fail when restriction values are not defined and values are enforced', () => {
+          const extType = _.cloneDeep(nestedType)
+          delete extType.fields.restrictStr.annotations[Type.VALUES]
+          extType.fields.restrictStr.annotations[Type.RESTRICTION] = { [Type.ENFORCE_VALUE]: true }
+          extInst.type = extType
+          extInst.value.restrictStr = 'str'
+          expect(validateElements([extInst])).toHaveLength(1)
+        })
+
+        it('should succeed when restriction values are not defined and enforce_values is undefined', () => {
+          const extType = _.cloneDeep(nestedType)
+          delete extType.fields.restrictStr.annotations[Type.VALUES]
+          extType.fields.restrictStr.annotations[Type.RESTRICTION] = {}
+          extInst.type = extType
+          extInst.value.restrictStr = 'str'
+          expect(validateElements([extInst])).toHaveLength(0)
+        })
+
+        it('should succeed when restriction values are not defined and _restriction is undefined', () => {
+          const extType = _.cloneDeep(nestedType)
+          delete extType.fields.restrictStr.annotations[Type.VALUES]
+          delete extType.fields.restrictStr.annotations[Type.RESTRICTION]
+          extInst.type = extType
+          extInst.value.restrictStr = 'str'
+          expect(validateElements([extInst])).toHaveLength(0)
+        })
+
+        const testValuesAreNotListedButEnforced = (): void => {
           extInst.value.restrictStr = 'wrongValue'
           extInst.value.nested.str = 'wrongValue2'
 
@@ -222,12 +257,19 @@ describe('Elements validation', () => {
             'Value "wrongValue" is not valid for field '
             + '"salto_nested_restrictStr"; expected: one of: "restriction1", "restriction2"'
           )
+        }
+
+        it('should return an error when fields values doesnt match restriction values with explicit _restriction.enforce_value', () => {
+          const extType = _.cloneDeep(nestedType)
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          extType.fields.restrictStr.annotations[Type.RESTRICTION] = { [Type.ENFORCE_VALUE]: true }
+          extInst.type = extType
+          testValuesAreNotListedButEnforced()
         })
 
-
-        it('should return an error when list fields values doesnt match restrictions', () => {
+        it('should return an error when list fields values doesnt match restriction values', () => {
           const extType = _.cloneDeep(nestedType)
-          extType.fields.list.annotations[Type.RESTRICTION] = { values: ['restriction'] }
+          extType.fields.list.annotations[Type.VALUES] = ['restriction']
           extInst.type = extType
 
           expect(validateElements([extInst])).toHaveLength(2)

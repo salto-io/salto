@@ -315,7 +315,7 @@ describe('Test auto complete', () => {
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line, pos)
-      const include = ['"ticket"', '"accident"', '"to much fun"']
+      const include = ['"ticket"', '"accident"', '"to much fun"', '"car"', '"plane"']
       const exclude = [...types, ...kw, ...instances]
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })

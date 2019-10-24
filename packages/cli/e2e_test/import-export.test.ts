@@ -22,6 +22,7 @@ const configFile = `${__dirname}/../../e2e_test/BP/salto.config/config.json`
 const exportOutputDir = `${homePath}/tmp/export`
 const exportFile = 'export_test.csv'
 const exportOutputFullPath = path.join(exportOutputDir, exportFile)
+const dataFilePath = `${__dirname}/../../e2e_test/CSV/import.csv`
 
 const copyFile = async (src: string, dest: string): Promise<void> => (
   asyncfile.writeFile(dest, await asyncfile.readFile(src))
@@ -32,74 +33,35 @@ const copyFile = async (src: string, dest: string): Promise<void> => (
 jest.mock('../src/callbacks', () => ({
   getConfigFromUser: jest.fn().mockImplementation(() => mockGetConfigType()),
 }))
-
-describe('When running export', () => {
+describe('Data migration operations E2E', () => {
+  jest.setTimeout(15 * 60 * 1000)
   const pathExists = async (p: string): Promise<boolean> => asyncfile.exists(p)
   const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
-
-
-  beforeEach(async () => {
-    await asyncfile.delete(discoverOutputDir)
-    await asyncfile.delete(exportOutputDir)
-    await asyncfile.mkdirp(`${discoverOutputDir}/salto.config`)
-    await copyFile(configFile, `${discoverOutputDir}/salto.config/config.json`)
-  })
-
-  jest.setTimeout(5 * 60 * 1000)
-
-  it('should save the data in csv file after discover', async () => {
-    await discover(discoverOutputDir, cliOutput).execute()
-
-    await exportCommand(discoverOutputDir, sfLeadObjectName,
-      exportOutputFullPath, cliOutput).execute()
-    expect(await pathExists(exportOutputFullPath)).toBe(true)
-  })
-
-  it('should fail if discover was not run beforehand', async () => {
-    const command = exportCommand(discoverOutputDir, sfLeadObjectName,
-      exportOutputFullPath, cliOutput)
-    await expect(command.execute()).rejects
-      .toThrow(`Couldn't find the type you are looking for: ${sfLeadObjectName}. Have you run salto discover yet?`)
-    expect(await pathExists(exportOutputFullPath)).toBe(false)
-  })
-})
-
-describe('When running data modifying commands', () => {
-  const dataFilePath = `${__dirname}/../../e2e_test/CSV/import.csv`
-
-  beforeEach(async () => {
-    await asyncfile.delete(discoverOutputDir)
-    await asyncfile.mkdirp(`${discoverOutputDir}/salto.config`)
-    await copyFile(configFile, `${discoverOutputDir}/salto.config/config.json`)
-  })
-
-  describe('When running import from a CSV file', () => {
-    jest.setTimeout(5 * 60 * 1000)
-
-    it('should succeed after discover', async () => {
-      const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
+  describe('When running discover beforehand', () => {
+    jest.setTimeout(15 * 60 * 1000)
+    beforeAll(async () => {
+      await asyncfile.delete(discoverOutputDir)
+      await asyncfile.mkdirp(`${discoverOutputDir}/salto.config`)
+      await copyFile(configFile, `${discoverOutputDir}/salto.config/config.json`)
       await discover(discoverOutputDir, cliOutput).execute()
+    })
+
+    it('should save the data in csv file when running export', async () => {
+      await asyncfile.delete(exportOutputDir)
+      await exportCommand(discoverOutputDir, sfLeadObjectName,
+        exportOutputFullPath, cliOutput).execute()
+      expect(await pathExists(exportOutputFullPath)).toBe(true)
+    })
+
+    it('should succeed when running import from a CSV file', async () => {
       await importCommand(discoverOutputDir, dataFilePath,
         sfLeadObjectName, cliOutput).execute()
       expect(cliOutput.stdout.content).toMatch(Prompts.IMPORT_FINISHED_SUCCESSFULLY)
     })
 
-    it('should fail if discover was not run beforehand', async () => {
-      const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
-      const command = importCommand(discoverOutputDir, dataFilePath,
-        sfLeadObjectName, cliOutput)
-      await expect(command.execute()).rejects
-        .toThrow(`Couldn't find the type you are looking for: ${sfLeadObjectName}. Have you run salto discover yet?`)
-    })
-  })
-
-  describe('When running delete instances read from a CSV file', () => {
-    jest.setTimeout(10 * 60 * 1000)
-
-    it('should succeed after discover', async () => {
+    it('should succeed When running delete instances read from a CSV file', async () => {
       const dataWithIdFileName = 'importWithIds.csv'
       const updatedDataFilePath = path.join(exportOutputDir, dataWithIdFileName)
-      const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
       await discover(discoverOutputDir, cliOutput).execute()
       await importCommand(discoverOutputDir, dataFilePath,
         sfLeadObjectName, cliOutput).execute()
@@ -121,9 +83,32 @@ describe('When running data modifying commands', () => {
         sfLeadObjectName, cliOutput).execute()
       expect(cliOutput.stdout.content).toMatch(Prompts.DELETE_FINISHED_SUCCESSFULLY)
     })
+  })
 
-    it('should fail if discover was not run beforehand', async () => {
-      const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
+  describe('When discover is not run beforehand', () => {
+    jest.setTimeout(1 * 60 * 1000)
+    beforeAll(async () => {
+      await asyncfile.delete(discoverOutputDir)
+      await asyncfile.mkdirp(`${discoverOutputDir}/salto.config`)
+      await copyFile(configFile, `${discoverOutputDir}/salto.config/config.json`)
+    })
+
+    it('should fail when running export', async () => {
+      const command = exportCommand(discoverOutputDir, sfLeadObjectName,
+        exportOutputFullPath, cliOutput)
+      await expect(command.execute()).rejects
+        .toThrow(`Couldn't find the type you are looking for: ${sfLeadObjectName}. Have you run salto discover yet?`)
+      expect(await pathExists(exportOutputFullPath)).toBe(false)
+    })
+
+    it('should fail when running import from a CSV file', async () => {
+      const command = importCommand(discoverOutputDir, dataFilePath,
+        sfLeadObjectName, cliOutput)
+      await expect(command.execute()).rejects
+        .toThrow(`Couldn't find the type you are looking for: ${sfLeadObjectName}. Have you run salto discover yet?`)
+    })
+
+    it('should fail when running delete instances read from a CSV file', async () => {
       const command = deleteCommand(discoverOutputDir, dataFilePath,
         sfLeadObjectName, cliOutput)
       await expect(command.execute()).rejects

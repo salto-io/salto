@@ -80,7 +80,7 @@ type salesforce_lead {
       const config = {
         uid: '',
         name: 'test',
-        localStorage: path.join(os.homedir(),'.salto', 'test'),
+        localStorage: path.join(os.homedir(), '.salto', 'test'),
         baseDir: '/salto',
         additionalBlueprints: ['../outside/file.bp'],
         stateLocation: '/salto/latest_state.bp',
@@ -115,7 +115,7 @@ type salesforce_lead {
       const config = {
         uid: '',
         name: 'test',
-        localStorage: path.join(os.homedir(),'.salto', 'test'),
+        localStorage: path.join(os.homedir(), '.salto', 'test'),
         baseDir: '/salto',
         additionalBlueprints: [],
         stateLocation: '/salto/latest_state.bp',
@@ -302,7 +302,7 @@ type salesforce_lead {
       config = {
         uid: '',
         name: 'test',
-        localStorage: path.join(os.homedir(),'.salto', 'test'),
+        localStorage: path.join(os.homedir(), '.salto', 'test'),
         baseDir: getPath('salto'),
         additionalBlueprints: [getPath('/outside/file.bp')],
         stateLocation: '/salto/latest_state.bp',

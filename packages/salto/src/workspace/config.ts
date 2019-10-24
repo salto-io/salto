@@ -30,14 +30,15 @@ export const createDefaultConfig = (
   workspaceName? : string,
   existingUid? : string
 ): Config => {
-  const baseDir = path.resolve(path.dirname(configDirPath))
+  const absConfigDirPath = path.resolve(configDirPath)
+  const baseDir = path.dirname(absConfigDirPath)
   const name = workspaceName || path.basename(baseDir)
   const saltoHome = process.env[SALTO_HOME_VAR] || DEFAULT_SALTO_HOME
   const uid = existingUid || uuidv5(name, SALTO_NAMESPACE) // string based uuid
   return {
     uid,
     baseDir,
-    stateLocation: path.join(configDirPath, 'state.bpc'),
+    stateLocation: path.join(absConfigDirPath, 'state.bpc'),
     additionalBlueprints: [],
     localStorage: path.join(saltoHome, `${name}-${uid}`),
     name,

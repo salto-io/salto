@@ -4,7 +4,7 @@ import {
   Workspace, discover, loadConfig, DetailedChange,
 } from 'salto'
 import { command, discoverCommand } from '../../src/commands/discover'
-import { MockWriteStream } from '../mocks'
+import { MockWriteStream, getWorkspaceErrors } from '../mocks'
 
 jest.mock('salto', () => ({
   discover: jest.fn().mockImplementation(() => Promise.resolve([])),

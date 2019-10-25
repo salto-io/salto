@@ -6,7 +6,8 @@ import {
   isObjectType, isField, isPrimitiveType, Field, PrimitiveTypes,
 } from 'adapter-api'
 import {
-  Plan, PlanItem, FoundSearchResult, SearchResult, DetailedChange, Errors,
+  Plan, PlanItem, FoundSearchResult, SearchResult, DetailedChange,
+  WorkspaceError, SourceRange,
 } from 'salto'
 import Prompts from './prompts'
 
@@ -209,8 +210,18 @@ export const formatSearchResults = (result: SearchResult): string => {
   return [title, description, elementHcl].join('\n')
 }
 
-export const formatWorkspaceErrors = (workspaceErrors: Errors): string =>
-  `Failed to load workspace, errors:\n ${workspaceErrors.strings().join('\n')}\n`
+const fomratSourceRange = (sr: Readonly<SourceRange>): string =>
+  `${sr.filename} ${sr.start.line}:${sr.start.col}`
+const fomratSourceRanges = (sourceRanges: ReadonlyArray<SourceRange>): string =>
+  (sourceRanges.length > 0
+    ? `on ${sourceRanges.map(fomratSourceRange).join(', ')}`
+    : '')
+
+const formatWorkspaceError = (we: Readonly<WorkspaceError>): string =>
+  `${chalk.red(chalk.bold('Error:'))} ${chalk.bold(we.error)}\n${fomratSourceRanges(we.sourceRanges)}`
+
+export const formatWorkspaceErrors = (workspaceErrors: ReadonlyArray<WorkspaceError>): string =>
+  `Failed to load workspace\n${workspaceErrors.map(formatWorkspaceError).join('\n\n')}\n`
 
 
 export const createItemDoneOutput = (item: PlanItem, startTime: Date): string => {

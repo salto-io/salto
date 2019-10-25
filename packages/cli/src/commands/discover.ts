@@ -23,7 +23,7 @@ export const discoverCommand = async (
 ): Promise<void> => {
   const outputLine = (text: string): void => output.stdout.write(`${text}\n`)
   if (workspace.hasErrors()) {
-    output.stderr.write(formatWorkspaceErrors(workspace.errors))
+    output.stderr.write(formatWorkspaceErrors(workspace.getWorkspaceErrors()))
     return
   }
   outputLine(Prompts.DISCOVER_BEGIN)

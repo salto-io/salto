@@ -22,7 +22,7 @@ export const command = (
     const config = await loadConfig(workingDir)
     const workspace: Workspace = await Workspace.load(config)
     if (workspace.hasErrors()) {
-      stderr.write(formatWorkspaceErrors(workspace.errors))
+      stderr.write(formatWorkspaceErrors(workspace.getWorkspaceErrors()))
     } else {
       await importFromCsvFile(
         typeName,

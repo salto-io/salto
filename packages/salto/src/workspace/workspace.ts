@@ -36,8 +36,9 @@ export type Blueprint = {
 
 export interface WorkspaceError {
   sourceRanges: SourceRange[]
-  cause: ParseError | ValidationError | MergeError
   error: string
+  cause?: ParseError | ValidationError | MergeError
+
 }
 
 export type ParsedBlueprint = Blueprint & ParseResult

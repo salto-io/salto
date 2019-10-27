@@ -1,5 +1,5 @@
 import {
-  toHexColor, concat, normalizeNamespaceOrModule,
+  toHexColor, normalizeNamespaceOrModule,
 } from '../../../src/logging/internal/namespaces'
 
 describe('namespaces', () => {
@@ -15,23 +15,17 @@ describe('namespaces', () => {
     })
   })
 
-  describe('concat', () => {
-    it('should use "." to append namespaces, so that glob matching will work', () => {
-      expect(concat('abc', 'def')).toEqual('abc.def')
-    })
-  })
-
   describe('normalizeNamespaceOrModule', () => {
     describe('when a module is specified', () => {
-      it('should return its name as a string, without the parent', () => {
-        expect(normalizeNamespaceOrModule('parent', module))
-          .toEqual('adapter-api/logging/internal/namespaces.test')
+      it('should return its name as a string', () => {
+        expect(normalizeNamespaceOrModule(module))
+          .toEqual('adapter-api/test/logging/internal/namespaces.test')
       })
     })
 
     describe('when a string is specified', () => {
-      it('should return its name as a string, prefixed by the parent', () => {
-        expect(normalizeNamespaceOrModule('parent', 'my-namespace')).toEqual('parent.my-namespace')
+      it('should return its name as a string', () => {
+        expect(normalizeNamespaceOrModule('my-namespace')).toEqual('my-namespace')
       })
     })
   })

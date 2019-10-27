@@ -17,11 +17,13 @@ import {
   RecordResult,
   BulkLoadOperation,
 } from 'jsforce'
-import { Value } from 'adapter-api'
+import { Value, logger } from 'adapter-api'
 import { CompleteSaveResult } from './types'
 import Connection from './jsforce'
 
 const { makeArray } = collections.array
+
+const log = logger(module)
 
 export const API_VERSION = '46.0'
 export const METADATA_NAMESPACE = 'http://soap.sforce.com/2006/04/metadata'
@@ -124,11 +126,11 @@ export default class SalesforceClient {
   private readonly logger: Logger
 
   constructor(
-    { credentials, connection, logger }: SalesforceClientOpts
+    { credentials, connection, logger: clientLogger }: SalesforceClientOpts
   ) {
     this.credentials = credentials
     this.conn = connection || realConnection(credentials.isSandbox)
-    this.logger = logger || console
+    this.logger = clientLogger || log
   }
 
   private async ensureLoggedIn(): Promise<void> {

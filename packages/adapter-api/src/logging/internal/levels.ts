@@ -12,3 +12,9 @@ const levelColors: Record<LogLevel, string> = Object.freeze({
 })
 
 export const toHexColor = (l: LogLevel): string => levelColors[l]
+
+const logLevelIndexes = Object.assign({}, ...LOG_LEVELS.map((l, i) => ({ [l]: i })))
+
+export const compare = (
+  l1: LogLevel, l2: LogLevel
+): number => logLevelIndexes[l2] - logLevelIndexes[l1]

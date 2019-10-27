@@ -3,10 +3,10 @@ import tmp from 'tmp'
 import { pollPromise } from '../../poll'
 import { mockConsoleStream, MockWritableStream } from '../../console'
 import {
-  LogLevel, Config, mergeConfigs, LOG_LEVELS,
+  LogLevel, Config, mergeConfigs, LOG_LEVELS, Logger, LoggerRepo,
 } from '../../../src/logging/internal/common'
-import { createLogger as createWinstonLogger } from '../../../src/logging/internal/winston'
-import { loggerFromBasicLogger, Logger } from '../../../src/logging/internal/logger'
+import { loggerRepo } from '../../../src/logging/internal/repo'
+import { loggerRepo as winstonLoggerRepo } from '../../../src/logging/internal/winston'
 import './matchers'
 
 const TIMESTAMP_REGEX = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/
@@ -15,10 +15,15 @@ describe('winston logger', () => {
   let consoleStream: MockWritableStream
   let initialConfig: Config
   const NAMESPACE = 'my-namespace'
+  let repo: LoggerRepo
+
+  const createRepo = (): LoggerRepo => loggerRepo(
+    winstonLoggerRepo({ consoleStream }, initialConfig), initialConfig,
+  )
 
   const createLogger = (): Logger => {
-    const basicLogger = createWinstonLogger({ consoleStream }, initialConfig, NAMESPACE)
-    return loggerFromBasicLogger(basicLogger, initialConfig, NAMESPACE)
+    repo = createRepo()
+    return repo(NAMESPACE)
   }
 
   beforeEach(() => {
@@ -29,9 +34,11 @@ describe('winston logger', () => {
   let logger: Logger
   let line: string
 
-  const logLine = (level: LogLevel = 'error'): void => {
-    logger[level]('hello %o', { world: true }, { extra: 'stuff' })
-    logger.end();
+  const logLine = (
+    { level = 'error', logger: l = logger }: { level?: LogLevel; logger?: Logger } = {},
+  ): void => {
+    l[level]('hello %o', { world: true }, { extra: 'stuff' })
+    repo.end();
     [line] = consoleStream.contents().split('\n')
   }
 
@@ -99,7 +106,7 @@ describe('winston logger', () => {
 
       describe('when logging at the configured level', () => {
         beforeEach(() => {
-          logLine(initialConfig.minLevel)
+          logLine({ level: initialConfig.minLevel })
         })
 
         it('should write the message to the console stream', () => {
@@ -109,7 +116,7 @@ describe('winston logger', () => {
 
       describe('when logging above the configured level', () => {
         beforeEach(() => {
-          logLine('error')
+          logLine({ level: 'error' })
         })
 
         it('should write the message to the console stream', () => {
@@ -119,7 +126,7 @@ describe('winston logger', () => {
 
       describe('when logging below the configured level', () => {
         beforeEach(() => {
-          logLine('debug')
+          logLine({ level: 'debug' })
         })
 
         it('should not write the message to the console stream', () => {
@@ -224,7 +231,7 @@ describe('winston logger', () => {
     LOG_LEVELS.forEach(level => {
       describe(`when calling method ${level}`, () => {
         beforeEach(() => {
-          logLine(level)
+          logLine({ level })
         })
 
         it('should log the message correctly', () => {
@@ -234,44 +241,67 @@ describe('winston logger', () => {
     })
   })
 
-  describe('child', () => {
-    const CHILD_NAMESPACE = 'child-namespace'
+  describe('logger creation', () => {
+    beforeEach(() => {
+      logger = createLogger()
+    })
 
-    describe('when created with a string namespace arg', () => {
+    describe('when created with a string namespace', () => {
       beforeEach(() => {
-        logger = createLogger().child(CHILD_NAMESPACE)
+        logger = repo(NAMESPACE)
         logLine()
       })
 
-      it('writes the message with the concatenated namespace', () => {
-        expect(line).toContain(`${NAMESPACE}.${CHILD_NAMESPACE}`)
+      it('should write the message with the namespace', () => {
+        expect(line).toContain(`${NAMESPACE}`)
+      })
+
+      describe('when getting the same logger again', () => {
+        let logger2: Logger
+
+        beforeEach(() => {
+          logger2 = repo(NAMESPACE)
+        })
+
+        it('should return the same instance', () => {
+          expect(logger).toBe(logger2)
+        })
       })
     })
 
     describe('when created with a module namespace arg', () => {
       beforeEach(() => {
-        logger = createLogger().child(module)
+        logger = repo(module)
         logLine()
       })
 
-      it('writes the message with the child namespace as string', () => {
-        expect(line).toContain('adapter-api/logging/internal/winston.test')
+      it('should write the message with the child namespace as string', () => {
+        expect(line).toContain('adapter-api/test/logging/internal/winston.test')
+      })
+
+      describe('when getting the same logger again', () => {
+        let logger2: Logger
+
+        beforeEach(() => {
+          logger2 = repo(module)
+        })
+
+        it('should return the same instance', () => {
+          expect(logger).toBe(logger2)
+        })
       })
     })
   })
 
   describe('configure', () => {
-    beforeEach(() => {
-      logger = createLogger()
-    })
-
     describe('when a partial config is specified', () => {
       beforeEach(() => {
-        logger.configure({ minLevel: 'debug' })
-        logLine('debug')
+        logger = createLogger()
+        repo.configure({ minLevel: 'debug' })
+        logLine({ level: 'debug' })
       })
 
-      it('updates the logger in place', () => {
+      it('should update the existing logger', () => {
         expect(line).not.toHaveLength(0)
       })
     })
@@ -279,11 +309,13 @@ describe('winston logger', () => {
 
   let jsonLine: { [key: string]: unknown }
 
-  describe('logging errors', () => {
+  describe('logging Error instances', () => {
     let error: Error
 
+    class MyError extends Error {}
+
     beforeEach(() => {
-      error = new Error('testing 123')
+      error = new MyError('testing 123')
     })
 
     describe('when format is "text"', () => {
@@ -305,7 +337,7 @@ describe('winston logger', () => {
     describe('when format is "json"', () => {
       beforeEach(() => {
         logger = createLogger()
-        logger.configure({ format: 'json' })
+        repo.configure({ format: 'json' })
         logger.log('warn', error)
         const [line1] = consoleStream.contents().split('\n')
         jsonLine = JSON.parse(line1)
@@ -329,8 +361,8 @@ describe('winston logger', () => {
   describe('JSON format', () => {
     beforeEach(() => {
       logger = createLogger()
-      logger.configure({ format: 'json' })
-      logLine('warn')
+      repo.configure({ format: 'json' })
+      logLine({ level: 'warn' })
       jsonLine = JSON.parse(line)
     })
 
@@ -349,6 +381,29 @@ describe('winston logger', () => {
 
     it('should not colorize the line', () => {
       expect(line).not.toContainColors()
+    })
+  })
+
+  describe('retrieving the logger config', () => {
+    beforeEach(() => {
+      logger = createLogger()
+      repo.configure({ format: 'json' })
+    })
+
+    it('should return a Config instance', () => {
+      const expectedProperties = 'minLevel filename format enabledForNamespace colorize'
+        .split(' ')
+        .sort()
+
+      expect(Object.keys(repo.config).sort()).toEqual(expectedProperties)
+    })
+
+    it('should return the configured values', () => {
+      expect(repo.config.format).toEqual('json')
+    })
+
+    it('should return a frozen object', () => {
+      expect(() => { (repo.config as Config).minLevel = 'info' }).toThrow()
     })
   })
 })

@@ -1,7 +1,7 @@
 import { config } from '../../../src/logging/internal/env'
-import { ConfigValidationError } from '../../../src/logging'
-import { concat as concatNamespaces } from '../../../src/logging/internal/namespaces'
-import { EnabledForNamespaceChecker } from '../../../src/logging/internal/common'
+import {
+  EnabledForNamespaceChecker, ConfigValidationError,
+} from '../../../src/logging/internal/common'
 
 describe('env', () => {
   describe('config', () => {
@@ -134,9 +134,7 @@ describe('env', () => {
       })
 
       it('should work well with namespaces.concat', () => {
-        expect(enabledForNamespace(
-          concatNamespaces('other-namespace', 'some-namespace'),
-        )).toBeTruthy()
+        expect(enabledForNamespace('other-namespace.some-namespace')).toBeTruthy()
       })
 
       it('should return false for a namespace starting with the specified value', () => {
@@ -165,9 +163,7 @@ describe('env', () => {
       })
 
       it('should work well with namespaces.concat', () => {
-        expect(enabledForNamespace(
-          concatNamespaces('some-namespace', 'other-namespace'),
-        )).toBeTruthy()
+        expect(enabledForNamespace('some-namespace.other-namespace')).toBeTruthy()
       })
 
       it('should return false for a namespace ending with the specified value', () => {

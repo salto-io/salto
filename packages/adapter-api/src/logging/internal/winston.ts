@@ -4,7 +4,8 @@ import chalk from 'chalk'
 import * as logform from 'logform'
 import { streams } from '@salto/lowerdash'
 import {
-  LOG_LEVELS, LogLevel, Namespace, Config, BasicLogger, Format,
+  LOG_LEVELS, LogLevel, Config, Format,
+  BaseLoggerMaker, BaseLoggerRepo,
 } from './common'
 import {
   toHexColor as namespaceToHexColor,
@@ -85,7 +86,7 @@ export type Dependencies = {
   consoleStream: NodeJS.WritableStream
 }
 
-const createWinstonLoggerOptions = (
+const winstonLoggerOptions = (
   { consoleStream }: Dependencies,
   { filename, minLevel, format: formatType, colorize }: Config,
 ): winston.LoggerOptions => ({
@@ -97,29 +98,14 @@ const createWinstonLoggerOptions = (
   level: minLevel,
 })
 
-export const createLogger = (
+export const loggerRepo = (
   deps: Dependencies,
-  config: Config,
-  rootNamespace: Namespace,
-): BasicLogger => {
-  const rootWinstonLogger = winston.createLogger(createWinstonLoggerOptions(deps, config))
+  initialConfig: Config,
+): BaseLoggerRepo => {
+  const winstonLogger = winston.createLogger(winstonLoggerOptions(deps, initialConfig))
 
-  const createBasicLogger = (
-    winstonLogger: winston.Logger,
-    namespace: Namespace,
-  ): BasicLogger => ({
-    child: (childNamespace: Namespace): BasicLogger => {
-      // Note: The options arg of the child method call was the obvious place to put the
-      // namespace. However it doesn't work since winston overrides the value with the parent's
-      // defaultMeta. The workaround is to not use defaultMeta - instead our log call pushes
-      // the namespace into the "info" object.
-      // The .child call is not practically needed but I hesistate having
-      // all child loggers use the same winston logger instance.
-      const childLogger = winstonLogger.child({})
-      return createBasicLogger(childLogger, childNamespace)
-    },
-    end: () => winstonLogger.end.bind(winstonLogger),
-    log: (level: LogLevel, message: string | Error, ...args: unknown[]): void => {
+  const loggerMaker: BaseLoggerMaker = namespace => ({
+    log(level: LogLevel, message: string | Error, ...args: unknown[]): void {
       winstonLogger.log({
         level,
         namespace,
@@ -127,10 +113,12 @@ export const createLogger = (
         splat: args,
       })
     },
-    configure: (newConfig: Config): void => {
-      winstonLogger.configure(createWinstonLoggerOptions(deps, newConfig))
-    },
   })
 
-  return createBasicLogger(rootWinstonLogger, rootNamespace)
+  return Object.assign(loggerMaker, {
+    end(): void { winstonLogger.end() },
+    configure(config: Config): void {
+      winstonLogger.configure(winstonLoggerOptions(deps, config))
+    },
+  })
 }

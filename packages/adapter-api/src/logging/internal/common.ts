@@ -35,7 +35,7 @@ export type Namespace = string
 
 export type NamespaceOrModule = Namespace | LoggingModule
 
-export const ROOT_NAMESPACE: Namespace = 'root'
+export const ROOT_NAMESPACE: Namespace = ''
 
 export type EnabledForNamespaceChecker = (namespace: Namespace) => boolean
 
@@ -63,9 +63,32 @@ export const mergeConfigs = (...configs: Partial<Config>[]): Config => _.default
   {}, ...[DEFAULT_CONFIG, ...configs].reverse()
 )
 
-export type BasicLogger = {
-  log(level: LogLevel, message: string | Error, ...args: unknown[]): void
+export const cloneConfig = (c: Readonly<Config>): Readonly<Config> => ({ ...c })
+
+export type LogMethod = (message: string | Error, ...args: unknown[]) => void
+
+export type BaseLogger = {
+  log(level: LogLevel, ...rest: Parameters<LogMethod>): ReturnType<LogMethod>
+}
+
+export type BaseLoggerMaker = (namespace: Namespace) => BaseLogger
+
+export type BaseLoggerRepo = BaseLoggerMaker & {
+  configure(config: Readonly<Config>): void
   end(): void // Note: there is currently no way to wait for a logger to end; see tests
-  child: (namespace: Namespace) => BasicLogger
-  configure(config: Partial<Config>): void
+}
+
+// indexed type - needs a separate definition
+type HasLoggerFuncs = {
+  [level in LogLevel]: LogMethod
+}
+
+export type Logger = BaseLogger & HasLoggerFuncs & {
+  readonly namespace: Namespace
+}
+
+export type LoggerRepo = ((namespace: NamespaceOrModule) => Logger) & {
+  configure(config: Readonly<Partial<Config>>): void
+  readonly config: Readonly<Config>
+  end(): void
 }

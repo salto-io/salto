@@ -1,4 +1,4 @@
-import { mergeConfigs, DEFAULT_CONFIG, LogLevel, Config } from '../../../src/logging/internal/common'
+import { mergeConfigs, DEFAULT_CONFIG, LogLevel, Config, cloneConfig } from '../../../src/logging/internal/common'
 
 describe('common', () => {
   describe('mergeConfigs', () => {
@@ -71,6 +71,25 @@ describe('common', () => {
           })
         })
       })
+    })
+  })
+
+  describe('cloneConfig', () => {
+    let config: Config
+    let clone: Config
+
+    beforeEach(() => {
+      config = mergeConfigs()
+      clone = cloneConfig(config)
+    })
+
+    it('should create a shallow copy', () => {
+      expect(clone).toEqual(config)
+      expect(clone.enabledForNamespace).toBe(config.enabledForNamespace)
+    })
+
+    it('should not return the original', () => {
+      expect(clone).not.toBe(config)
     })
   })
 })

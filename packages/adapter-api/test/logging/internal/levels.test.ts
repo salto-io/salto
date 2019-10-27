@@ -1,5 +1,5 @@
-import { LOG_LEVELS } from '../../../src/logging/internal/common'
-import { pad, toHexColor } from '../../../src/logging/internal/levels'
+import { LOG_LEVELS, LogLevel } from '../../../src/logging/internal/common'
+import { pad, toHexColor, compare } from '../../../src/logging/internal/levels'
 
 describe('levels', () => {
   describe('pad', () => {
@@ -17,6 +17,30 @@ describe('levels', () => {
 
       it('should return a hex color format', () => {
         expect(toHexColor(l)).toMatch(/#[0-9a-fA-F]{6}/)
+      })
+    })
+  })
+
+  describe('compare', () => {
+    LOG_LEVELS.forEach((l: LogLevel, i: number) => {
+      describe('when comparing equal levels', () => {
+        it('should return zero', () => {
+          expect(compare(l, l)).toEqual(0)
+        })
+      })
+      LOG_LEVELS.slice(i + 1).forEach((l2: LogLevel) => {
+        describe(`when comparing ${l} and ${l2}`, () => {
+          it('should return greater than zero', () => {
+            expect(compare(l, l2)).toBeGreaterThan(0)
+          })
+        })
+      })
+      LOG_LEVELS.slice(0, i).forEach((l2: LogLevel) => {
+        describe(`when comparing ${l} and ${l2}`, () => {
+          it('should return less than zero', () => {
+            expect(compare(l, l2)).toBeLessThan(0)
+          })
+        })
       })
     })
   })

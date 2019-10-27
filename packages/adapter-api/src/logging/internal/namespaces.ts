@@ -33,21 +33,17 @@ export const toHexColor = (
   hashToNamespaceColorIndex(quickHash(namespace))
 ]
 
-export const concat = (
-  ...namespaces: Namespace[]
-): string => namespaces.filter(s => s).join('.')
-
 const fromFilename = (
   filename: string
 ): Namespace => path.relative(MONOREPO_PACKAGES_DIRNAME, filename)
-  .replace(/dist\/((src)|(test)\/)?/, '')
+  .replace(/dist\/((src)\/)?/, '')
   .replace(/\.[^.]+$/, '') // remove extension
+  .replace(/\/{2}/g, '/') // normalize double slashes to single
 
 export const normalizeNamespaceOrModule = (
-  parentNamespace: Namespace,
-  childNamespace: NamespaceOrModule,
+  namespace: NamespaceOrModule,
 ): Namespace => (
-  isLoggingModule(childNamespace)
-    ? fromFilename(childNamespace.filename)
-    : concat(parentNamespace, childNamespace as string)
+  isLoggingModule(namespace)
+    ? fromFilename(namespace.filename)
+    : namespace
 )

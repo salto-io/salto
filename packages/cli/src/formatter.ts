@@ -7,7 +7,7 @@ import {
 } from 'adapter-api'
 import {
   Plan, PlanItem, FoundSearchResult, SearchResult, DetailedChange,
-  WorkspaceError, SourceRange,
+  WorkspaceError, SourceFragment,
 } from 'salto'
 import Prompts from './prompts'
 
@@ -210,19 +210,6 @@ export const formatSearchResults = (result: SearchResult): string => {
   return [title, description, elementHcl].join('\n')
 }
 
-const fomratSourceRange = (sr: Readonly<SourceRange>): string =>
-  `${sr.filename} ${sr.start.line}:${sr.start.col}`
-const fomratSourceRanges = (sourceRanges: ReadonlyArray<SourceRange>): string =>
-  (sourceRanges.length > 0
-    ? `on ${sourceRanges.map(fomratSourceRange).join(', ')}`
-    : '')
-
-const formatWorkspaceError = (we: Readonly<WorkspaceError>): string =>
-  `${chalk.red(chalk.bold('Error:'))} ${chalk.bold(we.error)}\n${fomratSourceRanges(we.sourceRanges)}`
-
-export const formatWorkspaceErrors = (workspaceErrors: ReadonlyArray<WorkspaceError>): string =>
-  `Failed to load workspace\n${workspaceErrors.map(formatWorkspaceError).join('\n\n')}\n`
-
 
 export const createItemDoneOutput = (item: PlanItem, startTime: Date): string => {
   const elapsed = getElapsedTime(startTime)
@@ -270,3 +257,22 @@ export const formatChangesSummary = (changes: number, approved: number): string 
   }
   return Prompts.DISCOVER_CHANGES_TO_APPLY(approved)
 }
+
+/**
+  * Format workspace errors
+  */
+
+const TAB = '  '
+const fomratSourceFragment = (sf: Readonly<SourceFragment>): string =>
+  `${chalk.underline(sf.sourceRange.filename)}(${chalk.cyan(`${sf.sourceRange.start.line}`)}`
+  + `:${chalk.cyan(`${sf.sourceRange.start.col}`)})\n${TAB}${chalk.blueBright(sf.fragment.split('\n').join(`\n${TAB}`))}\n`
+const fomratSourceFragments = (sourceFragments: ReadonlyArray<SourceFragment>): string =>
+  (sourceFragments.length > 0
+    ? ` on ${sourceFragments.map(fomratSourceFragment).join('\n and ')}`
+    : '')
+
+const formatWorkspaceError = (we: Readonly<WorkspaceError>): string =>
+  `${chalk.red(chalk.bold('Error:'))} ${chalk.bold(we.error)}\n${fomratSourceFragments(we.sourceFragments)}`
+
+export const formatWorkspaceErrors = (workspaceErrors: ReadonlyArray<WorkspaceError>): string =>
+  `Failed to load workspace\n${workspaceErrors.map(formatWorkspaceError).join('\n\n')}\n`

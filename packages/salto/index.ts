@@ -23,7 +23,7 @@ export { FoundSearchResult, SearchResult } from './src/core/search'
 // which are still used. See: SALTO-205
 export {
   Workspace, Blueprint, Errors,
-  ParsedBlueprint, ParsedBlueprintMap, WorkspaceError,
+  ParsedBlueprint, ParsedBlueprintMap, WorkspaceError, SourceFragment,
 } from './src/workspace/workspace'
 export { Config, loadConfig } from './src/workspace/config'
 export { SourceMap, SourceRange } from './src/parser/parse'

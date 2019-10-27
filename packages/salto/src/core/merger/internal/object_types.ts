@@ -67,7 +67,7 @@ export class DuplicateAnnotationError extends MergeError {
   readonly key: string
 
   constructor({ elemID, key }: { elemID: ElemID; key: string }) {
-    super({ elemID, error: `duplicate annotation '${key}'` })
+    super({ elemID: elemID.createNestedID(key), error: `duplicate annotation '${key}'` })
     this.key = key
   }
 }

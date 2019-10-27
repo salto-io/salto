@@ -154,21 +154,22 @@ type salesforce_lead {
         expect(erroredWorkspace.errors.merge[0].error).toMatch(mergeError)
         expect(workspaceErrors).toHaveLength(2)
         expect(workspaceErrors[0].cause).toBeInstanceOf(MergeError)
-        expect(workspaceErrors[0].sourceRanges).toHaveLength(2)
+        expect(workspaceErrors[0].sourceFragments).toHaveLength(2)
         expect(workspaceErrors[0].error).toMatch(mergeError)
-        const firstSourceRange = workspaceErrors[0].sourceRanges[0]
-        expect(firstSourceRange.filename).toBe('file.bp')
+        const firstSourceFragment = workspaceErrors[0].sourceFragments[0]
+        expect(firstSourceFragment.sourceRange.filename).toBe('file.bp')
 
-        expect(firstSourceRange.start).toEqual({
+        expect(firstSourceFragment.sourceRange.start).toEqual({
           byte: 26,
           col: 3,
           line: 3,
         })
-        expect(firstSourceRange.end).toEqual({
+        expect(firstSourceFragment.sourceRange.end).toEqual({
           byte: 79,
           col: 4,
           line: 5,
         })
+        expect(firstSourceFragment.fragment).toContain('salesforce_text base_field')
       })
     })
 

@@ -326,6 +326,6 @@ export const importFromCsvFile = async (): Promise<void> => {}
 export const deleteFromCsvFile = async (): Promise<void> => {}
 
 export const getWorkspaceErrors = (): ReadonlyArray<WorkspaceError> => [{
-  sourceRanges: [],
+  sourceFragments: [],
   error: 'Error',
 }]

@@ -132,11 +132,12 @@ describe('discover command', () => {
       const erroredWorkspace = {
         hasErrors: () => true,
         errors: { strings: () => ['some error'] },
+        getWorkspaceErrors,
       } as unknown as Workspace
 
       it('should fail', async () => {
         await discoverCommand(erroredWorkspace, true, cliOutput, mockDiscover, mockApprove)
-        expect(cliOutput.stderr.content).toContain('some error')
+        expect(cliOutput.stderr.content).toContain('Error')
       })
     })
   })

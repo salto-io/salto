@@ -3,13 +3,14 @@ import chalk from 'chalk'
 import { streams } from '@salto/lowerdash'
 import { CliInput, CliOutput, CliExitCode } from './types'
 import { YargsCommandBuilder } from './command_builder'
-import builders from './commands/index'
 import parse, { ERROR_STYLE } from './argparser'
 
 export default async (
-  input: CliInput,
-  output: CliOutput,
-  commandBuilders: YargsCommandBuilder[] = builders,
+  { input, output, commandBuilders }: {
+    input: CliInput
+    output: CliOutput
+    commandBuilders: YargsCommandBuilder[]
+  }
 ): Promise<CliExitCode> => {
   try {
     const parseResult = await parse(commandBuilders, input, output)

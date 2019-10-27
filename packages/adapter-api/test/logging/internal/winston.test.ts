@@ -7,6 +7,7 @@ import {
 } from '../../../src/logging/internal/common'
 import { createLogger as createWinstonLogger } from '../../../src/logging/internal/winston'
 import { loggerFromBasicLogger, Logger } from '../../../src/logging/internal/logger'
+import './matchers'
 
 const TIMESTAMP_REGEX = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/
 
@@ -85,7 +86,7 @@ describe('winston logger', () => {
         })
 
         it('should colorize the line', () => {
-          expect(line).toContain('\u001b[38')
+          expect(line).toContainColors('\u001b[')
         })
       })
     })
@@ -165,7 +166,7 @@ describe('winston logger', () => {
           })
 
           it('should colorize the line', () => {
-            expect(line).toContain('\u001b[38')
+            expect(line).toContainColors()
           })
         })
 
@@ -177,7 +178,7 @@ describe('winston logger', () => {
           })
 
           it('should not colorize the line', () => {
-            expect(line).not.toContain('\u001b[38')
+            expect(line).not.toContainColors()
           })
         })
       })
@@ -194,7 +195,7 @@ describe('winston logger', () => {
           })
 
           it('should not colorize the line', () => {
-            expect(line).not.toContain('\u001b[38')
+            expect(line).not.toContainColors()
           })
         })
 
@@ -206,7 +207,7 @@ describe('winston logger', () => {
           })
 
           it('should not colorize the line', () => {
-            expect(line).not.toContain('\u001b[38')
+            expect(line).not.toContainColors()
           })
         })
       })
@@ -347,7 +348,7 @@ describe('winston logger', () => {
     })
 
     it('should not colorize the line', () => {
-      expect(line).not.toContain('\u001b[38')
+      expect(line).not.toContainColors()
     })
   })
 })

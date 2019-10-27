@@ -54,7 +54,7 @@ export const cli = async ({
     stdout: new MockWriteStream(out),
   }
 
-  const exitCode = await realCli(input, output, commandBuilders)
+  const exitCode = await realCli({ input, output, commandBuilders })
 
   return { err: output.stderr.content, out: output.stdout.content, exitCode }
 }

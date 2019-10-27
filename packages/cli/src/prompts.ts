@@ -77,6 +77,7 @@ output when invoking the apply command.
   public static readonly DISCOVER_NO_CHANGES = 'No changes found, Workspace is up to date'
   public static readonly DISCOVER_NOTHING_TO_UPDATE = 'No changes chosen, Leaving workspace unchanged'
   public static readonly DISCOVER_CHANGES_TO_APPLY = (numChanges: number): string => `Updating workspace with ${numChanges} changes from the service`
+  public static readonly DISCOVER_CONFLICTING_CHANGE = 'This change conflicts with the following change in your local copy:'
 
   public static readonly WORKSPACE_LOAD_FAILED = 'Failed to load workspace'
 }

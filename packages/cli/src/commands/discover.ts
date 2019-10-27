@@ -3,7 +3,7 @@ import {
   Workspace,
   loadConfig,
   discoverFunc,
-  DetailedChange,
+  ChangeWithConflict,
 } from 'salto'
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'
@@ -13,7 +13,7 @@ import Prompts from '../prompts'
 import { validateWorkspace } from '../workspace'
 
 type approveChangesFunc =
-  (changes: ReadonlyArray<DetailedChange>) => Promise<ReadonlyArray<DetailedChange>>
+  (changes: ReadonlyArray<ChangeWithConflict>) => Promise<ReadonlyArray<ChangeWithConflict>>
 
 export const discoverCommand = async (
   workspace: Workspace,
@@ -36,7 +36,7 @@ export const discoverCommand = async (
     : await getApprovedChanges(changes)
   outputLine(formatChangesSummary(changes.length, changesToApply.length))
   if (changesToApply.length > 0) {
-    await workspace.updateBlueprints(...changesToApply)
+    await workspace.updateBlueprints(...changesToApply.map(change => change.change))
     await workspace.flush()
   }
   return CliExitCode.Success

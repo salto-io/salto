@@ -5,7 +5,7 @@ import {
   Type, ObjectType, ElemID, InstanceElement,
   isPrimitiveType, PrimitiveTypes,
 } from 'adapter-api'
-import { Plan, DetailedChange } from 'salto'
+import { Plan, ChangeWithConflict } from 'salto'
 import {
   createPlanOutput, header, subHeader, formatDiscoverChangeForApproval,
 } from './formatter'
@@ -42,11 +42,12 @@ export const shouldApply = ({ stdout }: CliOutput) => async (actions: Plan): Pro
 }
 
 export const getApprovedChanges = async (
-  changes: ReadonlyArray<DetailedChange>,
-): Promise<ReadonlyArray<DetailedChange>> => {
+  changes: ReadonlyArray<ChangeWithConflict>,
+): Promise<ReadonlyArray<ChangeWithConflict>> => {
   const shouldApplyAll = (answers: inquirer.Answers): boolean => (
     _.values(answers).some(answer => answer === 'all')
   )
+  const isConflict = (change: ChangeWithConflict): boolean => change.localChange !== undefined
 
   const questions = changes.map((change, idx): inquirer.Question => ({
     type: 'expand',
@@ -58,7 +59,8 @@ export const getApprovedChanges = async (
     default: 0,
     name: idx.toString(),
     message: formatDiscoverChangeForApproval(change, idx, changes.length),
-    when: answers => !shouldApplyAll(answers),
+    // TODO: allow skipping conflicts as well?
+    when: answers => isConflict(change) || !shouldApplyAll(answers),
   }))
 
   const answers = await inquirer.prompt(questions)

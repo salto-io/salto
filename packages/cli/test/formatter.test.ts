@@ -127,13 +127,36 @@ describe('formatter', () => {
     })
   })
   describe('formatDiscoverChangeForApproval', () => {
-    const change = detailedChange('add', ['adapter', 'object', 'field', 'value'], undefined, 'asd')
-    const output = formatDiscoverChangeForApproval(change, 0, 3)
-    it('should contain change path', () => {
-      expect(output).toMatch(/adapter.*object.*field.*value/s)
+    const change = detailedChange('modify', ['adapter', 'object', 'field', 'value'], 'old', 'new')
+    describe('without conflict', () => {
+      const changeWithoutConflict = { change, serviceChange: change }
+      const output = formatDiscoverChangeForApproval(changeWithoutConflict, 0, 3)
+      it('should contain change path', () => {
+        expect(output).toMatch(/adapter.*object.*field.*value/s)
+      })
+      it('should contain change index and total changes, with index 1 based', () => {
+        expect(output).toContain('Change 1 of 3')
+      })
     })
-    it('should contain change index and total changes, with index 1 based', () => {
-      expect(output).toContain('Change 1 of 3')
+    describe('with conflict', () => {
+      const changeWithConflict = {
+        change: detailedChange('modify', ['adapter', 'object', 'field', 'value'], 'local', 'new'),
+        serviceChange: change,
+        localChange: detailedChange('modify', ['adapter', 'object', 'field', 'value'], 'old', 'local'),
+      }
+      const output = formatDiscoverChangeForApproval(changeWithConflict, 2, 3)
+      it('should contain change path', () => {
+        expect(output).toMatch(/adapter.*object.*field.*value/s)
+      })
+      it('should contain change index and total changes, with index 1 based', () => {
+        expect(output).toContain('Change 3 of 3')
+      })
+      it('should contain the local change', () => {
+        expect(output).toMatch(/.*old.*=>.*local/)
+      })
+      it('should contain the service change', () => {
+        expect(output).toMatch(/.*old.*=>.*new/)
+      })
     })
   })
 

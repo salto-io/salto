@@ -354,6 +354,7 @@ describe('api functions', () => {
         resolvePath: _.identity,
       } as unknown as Workspace
       changes = [...await commands.discover(mockWorkspace, mockGetConfigFromUser)]
+        .map(change => change.change)
     })
 
     it('should return newly discovered elements and configs', () => {

@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import { ElemID, ObjectType } from 'adapter-api'
 import {
-  Workspace, discover, loadConfig, DetailedChange,
+  Workspace, discover, loadConfig, ChangeWithConflict, DetailedChange,
 } from 'salto'
 import { command, discoverCommand } from '../../src/commands/discover'
 import { MockWriteStream, getWorkspaceErrors } from '../mocks'
@@ -76,7 +76,9 @@ describe('discover command', () => {
           },
         ]
         beforeEach(() => {
-          mockDiscover.mockResolvedValueOnce(Promise.resolve(dummyChanges))
+          mockDiscover.mockResolvedValueOnce(Promise.resolve(dummyChanges.map(
+            (change: DetailedChange): ChangeWithConflict => ({ change, serviceChange: change })
+          )))
         })
         describe('when called with force', () => {
           beforeEach(async () => {

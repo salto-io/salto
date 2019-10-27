@@ -1,23 +1,32 @@
 import _ from 'lodash'
 import wu from 'wu'
+import { Element, ElemID, Adapter } from 'adapter-api'
 
-import { Element, ObjectType, InstanceElement } from 'adapter-api'
-import { getPlan, DetailedChange } from './plan'
-import initAdapters from './adapters/adapters'
+import { getPlan, DetailedChange, Plan } from './plan'
 import { mergeElements } from './merger'
 import { validateElements } from './validator'
 import { CREDS_DIR } from '../workspace/workspace'
 
+export type ChangeWithConflict = {
+  change: DetailedChange
+  serviceChange: DetailedChange
+  localChange?: DetailedChange
+}
+
 type DiscoverChangesResult = {
-  changes: Iterable<DetailedChange>
+  changes: Iterable<ChangeWithConflict>
   elements: Element[]
 }
 
-const configToChange = (config: InstanceElement): DetailedChange => ({
-  id: config.elemID,
-  action: 'add',
-  data: { after: config },
-})
+const mergeAndValidate = (elements: ReadonlyArray<Element>): Element[] => {
+  const { merged: mergedElements, errors: mergeErrors } = mergeElements(elements)
+  const validationErrors = validateElements(mergedElements)
+  const errors = [...mergeErrors, ...validationErrors].map(e => e.message)
+  if (errors.length > 0) {
+    throw new Error(`Errors validating discovered elements:\n\t${errors.join('\n\t')}`)
+  }
+  return mergedElements
+}
 
 const addPathToConfig = (config: InstanceElement): InstanceElement => (
   new InstanceElement(config.elemID, config.type, config.value, [CREDS_DIR, config.elemID.adapter])
@@ -26,7 +35,8 @@ const addPathToConfig = (config: InstanceElement): InstanceElement => (
 export const getUpstreamChanges = (
   stateElements: ReadonlyArray<Element>,
   upstreamElements: ReadonlyArray<Element>,
-): DiscoverChangesResult => {
+  mergedUpstreamElements: ReadonlyArray<Element>,
+): wu.WuIterable<DetailedChange> => {
   const changesWithPath = (change: DetailedChange): DetailedChange[] => {
     const originalElements = upstreamElements.filter(
       elem => elem.elemID.getFullName() === change.id.getFullName()
@@ -40,35 +50,65 @@ export const getUpstreamChanges = (
     return originalElements.map(elem => _.merge({}, change, { data: { after: elem } }))
   }
 
-  const { merged: mergedElements, errors: mergeErrors } = mergeElements(upstreamElements)
-  const validationErrors = validateElements(mergedElements)
-  const errors = [...mergeErrors, ...validationErrors].map(e => e.message)
-  if (errors.length > 0) {
-    throw new Error(`Errors validating discovered elements:\n\t${errors.join('\n\t')}`)
-  }
-  const upstreamChanges = getPlan(stateElements, mergedElements, false)
-
-  const changes = wu(upstreamChanges.itemsByEvalOrder())
+  const upstreamChangesPlan = getPlan(stateElements, mergedUpstreamElements, false)
+  return wu(upstreamChangesPlan.itemsByEvalOrder())
     .map(item => item.detailedChanges())
     .flatten()
     .map(changesWithPath)
     .flatten()
-  return { changes, elements: mergedElements }
+}
+
+type ChangeWithConflictConvertor = (serviceChange: DetailedChange) => ChangeWithConflict[]
+
+const toChangeWithConflict = (
+  workspaceElements: ReadonlyArray<Element>,
+  stateElements: ReadonlyArray<Element>,
+  upstreamElements: ReadonlyArray<Element>,
+): ChangeWithConflictConvertor => {
+  const toChangeMap = (plan: Plan): Record<string, DetailedChange> => (
+    _.fromPairs(
+      wu(plan.itemsByEvalOrder())
+        .map(item => item.detailedChanges())
+        .flatten()
+        .map(change => [change.id.getFullName(), change])
+        .toArray(),
+    )
+  )
+
+  const getMatchingChange = (
+    id: ElemID,
+    from: Record<string, DetailedChange>,
+  ): DetailedChange | undefined => (
+    id.isConfig()
+      ? undefined
+      : from[id.getFullName()] || getMatchingChange(id.createParentID(), from)
+  )
+
+  const pendingChanges = toChangeMap(getPlan(stateElements, workspaceElements, false))
+  const localToService = toChangeMap(getPlan(workspaceElements, upstreamElements, false))
+
+  return serviceChange => {
+    const localChange = getMatchingChange(serviceChange.id, pendingChanges)
+    const change = getMatchingChange(serviceChange.id, localToService)
+    return change === undefined
+      ? []
+      : [{ change, localChange, serviceChange }]
+  }
 }
 
 export const discoverChanges = async (
+  adapters: Record<string, Adapter>,
   workspaceElements: ReadonlyArray<Element>,
   stateElements: ReadonlyArray<Element>,
-  fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
 ): Promise<DiscoverChangesResult> => {
-  const [adapters, newConfigs] = await initAdapters(workspaceElements, fillConfig)
-  const upstreamElements = _.flatten(await Promise.all(
+  const rawUpstreamElements = _.flatten(await Promise.all(
     Object.values(adapters).map(adapter => adapter.discover())
   ))
 
-  const result = getUpstreamChanges(stateElements, upstreamElements)
-  return {
-    ...result,
-    changes: wu.chain(result.changes, newConfigs.map(addPathToConfig).map(configToChange)),
-  }
+  const upstreamElements = mergeAndValidate(rawUpstreamElements)
+  const changes = getUpstreamChanges(stateElements, upstreamElements, upstreamElements)
+    .map(toChangeWithConflict(workspaceElements, stateElements, upstreamElements))
+    .flatten()
+
+  return { changes, elements: upstreamElements }
 }

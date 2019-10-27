@@ -32,6 +32,7 @@
     "chalk": "^2.4.2",
     "lodash": "^4.17.11",
     "logform": "^2.1.2",
+    "minimatch": "^3.0.4",
     "winston": "^3.2.1",
     "winston-transport": "^4.3.0"
   },

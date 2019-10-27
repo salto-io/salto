@@ -1,7 +1,7 @@
 import {
   Element, ObjectType, InstanceElement, PrimitiveType, ElemID, PrimitiveTypes, BuiltinTypes,
 } from 'adapter-api'
-import { formatSearchResults, createPlanOutput, formatChange } from '../src/formatter'
+import { formatSearchResults, createPlanOutput, formatChange, formatDiscoverChangeForApproval } from '../src/formatter'
 import { elements, plan, detailedChange } from './mocks'
 
 describe('formatter', () => {
@@ -123,6 +123,17 @@ describe('formatter', () => {
       it('should have annotation types', () => {
         expect(output).toMatch(/\+.*salesforce_office.*annotations.*label.*TYPE: string/s)
       })
+    })
+  })
+
+  describe('formatDiscoverChangeForApproval', () => {
+    const change = detailedChange('add', ['adapter', 'object', 'field', 'value'], undefined, 'asd')
+    const output = formatDiscoverChangeForApproval(change, 0, 3)
+    it('should contain change path', () => {
+      expect(output).toMatch(/adapter.*object.*field.*value/s)
+    })
+    it('should contain change index and total changes, with index 1 based', () => {
+      expect(output).toContain('Change 1 of 3')
     })
   })
 })

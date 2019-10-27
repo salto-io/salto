@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 require('source-map-support').install()
 const cli = require('../dist/src/cli').default
+const commandBuilders = require('../dist/src/commands').default
 
 const {
   stdin, stdout, stderr, argv,
@@ -8,7 +9,8 @@ const {
 
 const args = argv.slice(2)
 
-cli(
-  { args, stdin },
-  { stdout, stderr },
-).then(exitCode => process.exit(exitCode))
+cli({
+  input: { args, stdin },
+  output: { stdout, stderr },
+  commandBuilders,
+}).then(exitCode => process.exit(exitCode))

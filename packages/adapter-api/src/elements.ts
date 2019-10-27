@@ -106,7 +106,9 @@ export class Field implements Element {
 export abstract class Type implements Element {
   public static DEFAULT = '_default'
   public static REQUIRED = '_required'
+  public static VALUES = '_values'
   public static RESTRICTION = '_restriction'
+  public static ENFORCE_VALUE = 'enforce_value'
 
   readonly elemID: ElemID
   path?: string[]

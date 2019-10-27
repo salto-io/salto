@@ -130,3 +130,11 @@ export const deleteFromCsvFile = async (
   const [adapters] = await initAdapters(workspace.elements, fillConfig)
   await deleteInstancesOfType(type as ObjectType, records, adapters)
 }
+
+export const init = async (workspaceName?: string): Promise<Workspace> => {
+  const workspace = await Workspace.init('.', workspaceName)
+  const state = new State(workspace.config.stateLocation)
+  await state.flush()
+  await workspace.flush()
+  return workspace
+}

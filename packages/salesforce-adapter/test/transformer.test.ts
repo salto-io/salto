@@ -93,10 +93,10 @@ describe('transformer', () => {
       })
       describe('restriction values', () => {
         it('should not have duplicate values', () => {
-          expect(enumField.annotations[Type.RESTRICTION].values).toHaveLength(2)
+          expect(enumField.annotations[Type.VALUES]).toHaveLength(2)
         })
         it('should be sorted alphabetically', () => {
-          expect(enumField.annotations[Type.RESTRICTION].values).toEqual(['a', 'b'])
+          expect(enumField.annotations[Type.VALUES]).toEqual(['a', 'b'])
         })
       })
     })

@@ -53,22 +53,22 @@ type FieldPermission = { field: string; editable: boolean; readable: boolean }
 type ProfileToPermission = Record<string, { editable: boolean; readable: boolean }>
 
 /**
- * Create a list of { field_name: { profile_name: { editable: boolean, readable: boolean } } }
+ * Create a record of { field_name: { profile_name: { editable: boolean, readable: boolean } } }
  * from the profile's field permissions
  */
-const profileToPermissionsMapping = (profileInstance: InstanceElement):
-  Record<string, ProfileToPermission>[] => {
+const profile2Permissions = (profileInstance: InstanceElement):
+  Record<string, ProfileToPermission> => {
   const profileInstanceName = bpCase(apiName(profileInstance))
   const instanceFieldPermissions = (profileInstance.value[FIELD_PERMISSIONS] as FieldPermission[])
   if (!instanceFieldPermissions) {
-    return []
+    return {}
   }
-  return instanceFieldPermissions.map(({ field, readable, editable }) => (
+  return _.merge({}, ...instanceFieldPermissions.map(({ field, readable, editable }) => (
     {
       [field]: {
         [profileInstanceName]: { readable, editable },
       },
-    }))
+    })))
 }
 // ---
 
@@ -88,8 +88,9 @@ const filterCreator: FilterCreator = ({ client }) => ({
     if (_.isEmpty(profileInstances)) {
       return
     }
-    const permissions = _.merge({}, ..._.flatten(profileInstances
-      .map(profileToPermissionsMapping))) as Record<string, ProfileToPermission>
+
+    const permissionsPerProfile = profileInstances.map(profile2Permissions)
+    const permissions = _.merge({}, ...permissionsPerProfile)
 
     // Add field permissions to all discovered elements
     customObjectTypes.forEach(sobject => {

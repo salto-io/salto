@@ -22,6 +22,7 @@ describe('Test auto complete', () => {
     stateLocation: path.join(baseDir, 'salto.config', 'state.bpc'),
     localStorage: '.',
     name: 'test',
+    uid: '',
   })
   const getLine = (
     workspace: EditorWorkspace,
@@ -314,7 +315,7 @@ describe('Test auto complete', () => {
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line, pos)
-      const include = ['"ticket"', '"accident"', '"to much fun"']
+      const include = ['"ticket"', '"accident"', '"to much fun"', '"car"', '"plane"']
       const exclude = [...types, ...kw, ...instances]
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })

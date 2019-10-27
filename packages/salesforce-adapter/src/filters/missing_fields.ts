@@ -18,12 +18,10 @@ const allMissingFields: Record<string, MissingField[]> = {
       name: 'operation',
       type: BuiltinTypes.STRING,
       annotations: {
-        [Type.RESTRICTION]: {
-          values: [
-            'equals', 'notEqual', 'lessThan', 'greaterThan', 'lessOrEqual', 'greaterOrEqual',
-            'contains', 'notContain', 'startsWith', 'includes', 'excludes', 'within',
-          ],
-        },
+        [Type.VALUES]: [
+          'equals', 'notEqual', 'lessThan', 'greaterThan', 'lessOrEqual', 'greaterOrEqual',
+          'contains', 'notContain', 'startsWith', 'includes', 'excludes', 'within',
+        ],
       },
     },
   ],
@@ -41,7 +39,7 @@ const allMissingFields: Record<string, MissingField[]> = {
       name: 'assigned_to_type',
       type: BuiltinTypes.STRING,
       annotations: {
-        [Type.RESTRICTION]: { values: ['User', 'Queue'] },
+        [Type.VALUES]: ['User', 'Queue'],
       },
     },
   ],

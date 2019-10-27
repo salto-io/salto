@@ -21,7 +21,6 @@ export const command = (
 })
 
 type DescribeArgs = {
-  'workspace-dir': string
   'words': string[]
 }
 
@@ -39,20 +38,10 @@ const describeBuilder = createCommandBuilder({
         default: undefined, // Prevent "default: []" in the help
       },
     },
-    keyed: {
-      'workspace-dir': {
-        alias: 'w',
-        describe: 'Path to the workspace directory',
-        demandOption: false,
-        default: '.',
-        string: true,
-        requiresArg: true,
-      },
-    },
   },
 
   async build(input: DescribeParsedCliInput, output: CliOutput) {
-    return command(input.args['workspace-dir'], input.args.words, output)
+    return command('.', input.args.words, output)
   },
 })
 

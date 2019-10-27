@@ -124,7 +124,7 @@ describe('cli', () => {
     beforeEach(async () => {
       applyCommand = jest.fn<Promise<void>>()
       jest.spyOn(applyBuilder, 'build').mockResolvedValue({ execute: applyCommand })
-      o = await mocks.cli({ args: 'apply -w .' })
+      o = await mocks.cli({ args: 'apply --yes' })
     })
 
     it('calls the command handler', () => {

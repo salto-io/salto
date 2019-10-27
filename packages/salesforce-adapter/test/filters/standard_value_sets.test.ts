@@ -42,7 +42,7 @@ const createPicklistObjectType = (
         [Type.DEFAULT]: 'Bart',
         [constants.API_NAME]: apiName,
         label: 'test label',
-        values: pickListValues,
+        [Type.VALUES]: pickListValues,
       }
     ),
   },
@@ -104,7 +104,7 @@ describe('Standard Value Sets filter', () => {
     const elements: Element[] = [mockSVSType.clone(), typeElement]
     await filter.onDiscover(elements)
     expect(elements.length).toBe(4)
-    expect(typeElement.fields.state.annotations[constants.PICKLIST_VALUES]).toBe('salesforce_standard_value_set_simpsons')
+    expect(typeElement.fields.state.annotations[Type.VALUES]).toBe('salesforce_standard_value_set_simpsons')
   })
 
   it('should replace value list with references for standard multipicklist fields', async () => {
@@ -115,7 +115,7 @@ describe('Standard Value Sets filter', () => {
     const elements: Element[] = [mockSVSType.clone(), typeElement]
     await filter.onDiscover(elements)
     expect(elements.length).toBe(4)
-    expect(typeElement.fields.state.annotations[constants.PICKLIST_VALUES]).toBe('salesforce_standard_value_set_simpsons')
+    expect(typeElement.fields.state.annotations[Type.VALUES]).toBe('salesforce_standard_value_set_simpsons')
   })
 
   it('should not replace value list with references for custom picklist fields', async () => {
@@ -126,7 +126,7 @@ describe('Standard Value Sets filter', () => {
     const elements: Element[] = [mockSVSType.clone(), typeElement]
     await filter.onDiscover(elements)
     expect(elements.length).toBe(4)
-    expect(typeElement.fields.state.annotations[constants.PICKLIST_VALUES]).toEqual(pickListValues)
+    expect(typeElement.fields.state.annotations[Type.VALUES]).toEqual(pickListValues)
   })
 
   it('should not replace value list with references for standard picklist fields if svs with values not found', async () => {
@@ -137,6 +137,6 @@ describe('Standard Value Sets filter', () => {
     const elements: Element[] = [mockSVSType.clone(), typeElement]
     await filter.onDiscover(elements)
     expect(elements.length).toBe(4)
-    expect(typeElement.fields.state.annotations[constants.PICKLIST_VALUES]).toEqual(pickListValues)
+    expect(typeElement.fields.state.annotations[Type.VALUES]).toEqual(pickListValues)
   })
 })

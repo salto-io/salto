@@ -3,24 +3,41 @@ import wu from 'wu'
 import path from 'path'
 import fs from 'async-file'
 import readdirp from 'readdirp'
+import uuidv4 from 'uuid/v4'
 import { collections, types } from '@salto/lowerdash'
 import { Element } from 'adapter-api'
-import {
-  SourceMap, parse, SourceRange, ParseResult, ParseError,
-} from '../parser/parse'
+import { SourceMap, parse, SourceRange, ParseResult, ParseError } from '../parser/parse'
 import { mergeElements, MergeError } from '../core/merger'
 import { validateElements, ValidationError } from '../core/validator'
 import { DetailedChange } from '../core/plan'
 import { ParseResultFSCache } from './cache'
 import { getChangeLocations, updateBlueprintData } from './blueprint_update'
-import { Config } from './config'
+import { Config, dumpConfig, locateConfigDir, getConfigPath, createDefaultConfig } from './config'
 
 const { DefaultMap } = collections.map
+
+class ExsitingWorkspaceError extends Error {
+  constructor() {
+    super('existing salto workspace')
+  }
+}
+
+class NotAnEmptyWorkspaceError extends Error {
+  constructor(exsitingPathes: string[]) {
+    super(`not an empty workspace. ${exsitingPathes.join('')} already exists.`)
+  }
+}
 
 export type Blueprint = {
   buffer: string
   filename: string
   timestamp?: number
+}
+
+export interface WorkspaceError {
+  sourceRanges: SourceRange[]
+  cause: ParseError | ValidationError | MergeError
+  error: string
 }
 
 export type ParsedBlueprint = Blueprint & ParseResult
@@ -98,6 +115,7 @@ const mergeSourceMaps = (bps: ReadonlyArray<ParsedBlueprint>): SourceMap => {
   return result
 }
 
+
 export class Errors extends types.Bean<Readonly<{
   parse: ReadonlyArray<ParseError>
   merge: ReadonlyArray<MergeError>
@@ -115,6 +133,7 @@ export class Errors extends types.Bean<Readonly<{
     ]
   }
 }
+
 
 type WorkspaceState = {
   readonly parsedBlueprints: ParsedBlueprintMap
@@ -140,6 +159,23 @@ const createWorkspaceState = (blueprints: ReadonlyArray<ParsedBlueprint>): Works
       merge: mergeErrors,
       validation: validationErrors,
     }),
+  }
+}
+
+const ensureEmptyWorkspace = async (config: Config): Promise<void> => {
+  if (await locateConfigDir(path.resolve(config.baseDir))) {
+    throw new ExsitingWorkspaceError()
+  }
+  const configPath = getConfigPath(config.baseDir)
+  const shouldNotExist = [
+    configPath,
+    config.localStorage,
+    config.stateLocation,
+  ]
+  const existanceMask = await Promise.all(shouldNotExist.map(fs.exists))
+  const existing = shouldNotExist.filter((_p, i) => existanceMask[i])
+  if (existing.length > 0) {
+    throw new NotAnEmptyWorkspaceError(existing)
   }
 }
 
@@ -175,6 +211,17 @@ export class Workspace {
     return new Workspace(config, await parsedBlueprints)
   }
 
+  static async init(baseDir: string, workspaceName?: string): Promise<Workspace> {
+    const uid = uuidv4() // random uuid
+    const config = createDefaultConfig(path.dirname(getConfigPath(baseDir)), workspaceName, uid)
+    // We want to make sure that *ALL* of the pathes we are going to create
+    // do not exist right now before writing anything to disk.
+    await ensureEmptyWorkspace(config)
+    await dumpConfig(config)
+    await fs.createDirectory(config.localStorage)
+    return Workspace.load(config)
+  }
+
   constructor(
     public config: Config,
     blueprints: ReadonlyArray<ParsedBlueprint>,
@@ -190,6 +237,27 @@ export class Workspace {
   hasErrors(): boolean { return this.state.errors.hasErrors() }
   get parsedBlueprints(): ParsedBlueprintMap { return this.state.parsedBlueprints }
   get sourceMap(): SourceMap { return this.state.sourceMap }
+
+  getWorkspaceErrors(): ReadonlyArray<WorkspaceError> {
+    const wsErrors = this.state.errors
+    return [
+      ...wsErrors.parse.map(pe => ({
+        sourceRanges: [pe.subject],
+        error: pe.detail,
+        cause: pe,
+      })),
+      ...wsErrors.merge.map(me => ({
+        sourceRanges: this.sourceMap.get(me.elemID.getFullName()) || [],
+        error: me.error,
+        cause: me,
+      })),
+      ...wsErrors.merge.map(ve => ({
+        sourceRanges: this.sourceMap.get(ve.elemID.getFullName()) || [],
+        error: ve.error,
+        cause: ve,
+      })),
+    ]
+  }
 
   private markDirty(names: string[]): void {
     names.forEach(name => this.dirtyBlueprints.add(name))

@@ -38,8 +38,8 @@
     "@types/shelljs": "^0.7.8",
     "@types/supertest": "^2.0.4",
     "@types/wu": "^2.1.39",
-    "@typescript-eslint/eslint-plugin": "^2.3.2",
-    "@typescript-eslint/parser": "^2.3.2",
+    "@typescript-eslint/eslint-plugin": "^2.5.1-alpha.6",
+    "@typescript-eslint/parser": "^2.5.1-alpha.6",
     "dts-gen": "^0.5.8",
     "eslint": "^6.2.2",
     "eslint-config-airbnb": "18.0.1",
@@ -53,6 +53,6 @@
     "jest-junit": "^6.4.0",
     "ts-cleaner": "^1.0.2",
     "tsc-watch": "^2.2.1",
-    "typescript": "^3.5.3"
+    "typescript": "3.7.1-rc"
   }
 }

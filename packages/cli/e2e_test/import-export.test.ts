@@ -43,6 +43,7 @@ describe('Data migration operations E2E', () => {
       await asyncfile.delete(discoverOutputDir)
       await asyncfile.mkdirp(`${discoverOutputDir}/salto.config`)
       await copyFile(configFile, `${discoverOutputDir}/salto.config/config.json`)
+      await discover(discoverOutputDir, true, cliOutput).execute()
     })
 
     it('should save the data in csv file when running export', async () => {

@@ -16,6 +16,7 @@ import {
   FORMULA_TYPE_PREFIX, FIELD_TYPE_NAMES, FIELD_TYPE_API_NAMES, METADATA_OBJECT_NAME_FIELD,
   METADATA_TYPE, FIELD_ANNOTATIONS, SALESFORCE_CUSTOM_SUFFIX, DEFAULT_VALUE_FORMULA,
   MAX_METADATA_RESTRICTION_VALUES, SETTINGS_METADATA_TYPE, SALESFORCE_CUSTOM_RELATIONSHIP_SUFFIX,
+  LOOKUP_FILTER_FIELDS,
 } from './constants'
 
 const { makeArray } = collections.array
@@ -69,6 +70,47 @@ const fieldTypeName = (typeName: string): string => (
 // Ref: https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/field_types.htm
 // Ref: https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/primitive_data_types.htm
 // Ref: https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_field_types.htm#meta_type_fieldtype
+
+const lookupFilterElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.LOOKUP_FILTER)
+const filterItemElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.FILTER_ITEM)
+const lookupFilterObjectType = new ObjectType({
+  elemID: lookupFilterElemID,
+  fields: {
+    [LOOKUP_FILTER_FIELDS.ACTIVE]: new TypeField(
+      lookupFilterElemID, LOOKUP_FILTER_FIELDS.ACTIVE, BuiltinTypes.BOOLEAN
+    ),
+    [LOOKUP_FILTER_FIELDS.BOOLEAN_FILTER]: new TypeField(
+      lookupFilterElemID, LOOKUP_FILTER_FIELDS.BOOLEAN_FILTER, BuiltinTypes.STRING
+    ),
+    [LOOKUP_FILTER_FIELDS.ERROR_MESSAGE]: new TypeField(
+      lookupFilterElemID, LOOKUP_FILTER_FIELDS.ERROR_MESSAGE, BuiltinTypes.STRING
+    ),
+    [LOOKUP_FILTER_FIELDS.INFO_MESSAGE]: new TypeField(
+      lookupFilterElemID, LOOKUP_FILTER_FIELDS.INFO_MESSAGE, BuiltinTypes.STRING
+    ),
+    [LOOKUP_FILTER_FIELDS.IS_OPTIONAL]: new TypeField(
+      lookupFilterElemID, LOOKUP_FILTER_FIELDS.IS_OPTIONAL, BuiltinTypes.BOOLEAN
+    ),
+    [LOOKUP_FILTER_FIELDS.FILTER_ITEMS]: new TypeField(
+      lookupFilterElemID, LOOKUP_FILTER_FIELDS.FILTER_ITEMS,
+      new ObjectType({
+        elemID: filterItemElemID,
+        fields: {
+          [LOOKUP_FILTER_FIELDS.FIELD]: new TypeField(
+            filterItemElemID, LOOKUP_FILTER_FIELDS.FIELD, BuiltinTypes.STRING
+          ),
+          [LOOKUP_FILTER_FIELDS.OPERATION]: new TypeField(
+            filterItemElemID, LOOKUP_FILTER_FIELDS.OPERATION, BuiltinTypes.STRING
+          ),
+          [LOOKUP_FILTER_FIELDS.VALUE_FIELD]: new TypeField(
+            filterItemElemID, LOOKUP_FILTER_FIELDS.VALUE_FIELD, BuiltinTypes.STRING
+          ),
+        },
+      }), {}, true
+    ),
+  },
+})
+
 export class Types {
   // Type mapping for custom objects
   public static salesforceDataTypes: Record<string, Type> = {
@@ -201,6 +243,7 @@ export class Types {
         [FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION]: BuiltinTypes.BOOLEAN,
         // Todo SALTO-228 The FIELD_ANNOTATIONS.RELATED_TO annotation is missing since
         // currently there is no way to declare on a list annotation
+        [FIELD_ANNOTATIONS.LOOKUP_FILTER]: lookupFilterObjectType,
       },
     }),
     masterdetail: new PrimitiveType({
@@ -209,6 +252,7 @@ export class Types {
       annotationTypes: {
         [FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ]: BuiltinTypes.BOOLEAN,
+        [FIELD_ANNOTATIONS.LOOKUP_FILTER]: lookupFilterObjectType,
         // Todo SALTO-228 The FIELD_ANNOTATIONS.RELATED_TO annotation is missing since
         // currently there is no way to declare on a list annotation
       },
@@ -273,7 +317,9 @@ export const toCustomField = (
   )
 
   // Skip the assignment of the following annotations that are defined as annotationType
-  const blacklistedAnnotations: string[] = [FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION]
+  const blacklistedAnnotations: string[] = [
+    FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION, // handled in the CustomField constructor
+    FIELD_ANNOTATIONS.LOOKUP_FILTER] // handled in lookup_filters filter
   const isBlacklisted = (annotationValue: string): boolean =>
     blacklistedAnnotations.includes(annotationValue)
 
@@ -430,6 +476,10 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
       // e.g. salesforce_user_app_menu_item.ApplicationId, salesforce_login_event.LoginHistoryId
       annotations[FIELD_ANNOTATIONS.RELATED_TO] = field.referenceTo
     }
+    if (field.filteredLookupInfo) {
+      // will be populated in the lookup_filter filter
+      annotations[FIELD_ANNOTATIONS.LOOKUP_FILTER] = {}
+    }
   }
   if (!_.isEmpty(bpFieldType.annotationTypes)) {
     // Convert the annotations' names to bp case for those that are not already in that format
@@ -454,7 +504,7 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
  * @param obj Input object to transform
  * @param func Transform function to apply to all keys
  */
-const mapKeysRecursive = (obj: Values, func: (key: string) => string): Values => {
+export const mapKeysRecursive = (obj: Values, func: (key: string) => string): Values => {
   if (_.isArray(obj)) {
     return obj.map(val => mapKeysRecursive(val, func))
   }

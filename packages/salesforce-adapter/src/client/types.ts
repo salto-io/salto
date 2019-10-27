@@ -27,6 +27,21 @@ class CustomPicklistValue implements MetadataInfo {
   }
 }
 
+export interface FilterItem {
+  field: string
+  operation: string
+  valueField: string
+}
+
+export interface LookupFilter {
+  active: boolean
+  booleanFilter: string
+  errorMessage: string
+  filterItems: FilterItem[]
+  infoMessage: string
+  isOptional: boolean
+}
+
 export class CustomField implements MetadataInfo {
   // Common field annotations
   readonly type: string
@@ -42,6 +57,7 @@ export class CustomField implements MetadataInfo {
   readonly deleteConstraint?: string
   readonly reparentableMasterDetail?: boolean
   readonly writeRequiresMasterRead?: boolean
+  lookupFilter?: LookupFilter
 
   // To be used for Text types fields
   readonly length?: number

@@ -37,6 +37,8 @@ export const FIELD_TYPE_NAMES = {
   URL: 'url',
   LOOKUP: 'lookup',
   MASTER_DETAIL: 'masterdetail',
+  LOOKUP_FILTER: 'lookup_filter',
+  FILTER_ITEM: 'filter_item',
 }
 
 export const FIELD_TYPE_API_NAMES = {
@@ -79,6 +81,19 @@ export const FIELD_ANNOTATIONS = {
   ALLOW_LOOKUP_RECORD_DELETION: 'allow_lookup_record_deletion',
   REPARENTABLE_MASTER_DETAIL: 'reparentable_master_detail',
   WRITE_REQUIRES_MASTER_READ: 'write_requires_master_read',
+  LOOKUP_FILTER: 'lookup_filter',
+}
+
+export const LOOKUP_FILTER_FIELDS = {
+  ACTIVE: 'active',
+  BOOLEAN_FILTER: 'boolean_filter',
+  ERROR_MESSAGE: 'error_message',
+  INFO_MESSAGE: 'info_message',
+  IS_OPTIONAL: 'is_optional',
+  FILTER_ITEMS: 'filter_items',
+  FIELD: 'field',
+  OPERATION: 'operation',
+  VALUE_FIELD: 'value_field',
 }
 
 // Limits

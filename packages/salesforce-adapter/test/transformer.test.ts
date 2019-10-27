@@ -157,7 +157,8 @@ describe('transformer', () => {
 
     const assertReferenceFieldTransformation = (fieldElement: Field, expectedRelatedTo: string[],
       expectedType: Type, expectedName: string,
-      expectedAllowLookupRecordDeletion: boolean | undefined):
+      expectedAllowLookupRecordDeletion: boolean | undefined,
+      expectedLookupFilter: object | undefined):
         void => {
       expect(fieldElement.type).toEqual(expectedType)
       expect(fieldElement.name).toEqual(expectedName)
@@ -168,36 +169,38 @@ describe('transformer', () => {
           .toContain(expectedRelatedToValue))
       expect(fieldElement.annotations[FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION])
         .toEqual(expectedAllowLookupRecordDeletion)
+      expect(fieldElement.annotations[FIELD_ANNOTATIONS.LOOKUP_FILTER])
+        .toEqual(expectedLookupFilter)
     }
 
     it('should discover lookup relationships with restricted deletion', async () => {
       _.set(salesforceReferenceField, 'restrictedDelete', true)
       const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField)
-      assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.salesforceDataTypes.lookup, 'owner', false)
+      assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.salesforceDataTypes.lookup, 'owner', false, undefined)
     })
 
     it('should discover lookup relationships with allowed related record deletion when restrictedDelete set to false', async () => {
       _.set(salesforceReferenceField, 'restrictedDelete', false)
       const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField)
-      assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.salesforceDataTypes.lookup, 'owner', true)
+      assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.salesforceDataTypes.lookup, 'owner', true, undefined)
     })
 
     it('should discover lookup relationships with allowed related record deletion when restrictedDelete is undefined', async () => {
       _.set(salesforceReferenceField, 'restrictedDelete', undefined)
       const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField)
-      assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.salesforceDataTypes.lookup, 'owner', true)
+      assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.salesforceDataTypes.lookup, 'owner', true, undefined)
     })
 
     it('should use field name as name in case relationshipName is not specified', async () => {
       salesforceReferenceField.relationshipName = undefined
       const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField)
-      assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.salesforceDataTypes.lookup, 'owner_id', true)
+      assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.salesforceDataTypes.lookup, 'owner_id', true, undefined)
     })
 
     it('should slice field name in case relationshipName is a custom relationship', async () => {
       salesforceReferenceField.relationshipName = 'CustomRelationshipName__r'
       const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField)
-      assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.salesforceDataTypes.lookup, 'custom_relationship_name', true)
+      assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.salesforceDataTypes.lookup, 'custom_relationship_name', true, undefined)
     })
 
     it('should discover masterdetail relationships', async () => {
@@ -219,6 +222,12 @@ describe('transformer', () => {
       expect(fieldElement.annotations[Type.REQUIRED]).toBe(false)
       expect(fieldElement.annotations[FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL]).toBe(false)
       expect(fieldElement.annotations[FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ]).toBe(false)
+    })
+
+    it('should discover lookup filters and init its annotation', async () => {
+      _.set(salesforceReferenceField, 'filteredLookupInfo', {})
+      const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField)
+      assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.salesforceDataTypes.lookup, 'owner', true, {})
     })
   })
 

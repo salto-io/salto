@@ -5,6 +5,8 @@ import * as env from './internal/env'
 import { loggerFromBasicLogger } from './internal/logger'
 import * as winston from './internal/winston'
 
+export { ConfigValidationError } from './internal/common'
+
 const deps: winston.Dependencies = {
   consoleStream: process.stdout,
 }

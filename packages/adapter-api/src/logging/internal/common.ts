@@ -1,10 +1,12 @@
 import _ from 'lodash'
 
+export class ConfigValidationError extends Error {}
+
 const validateOneOf = <V, T extends V>(
   list: ReadonlyArray<T>, typeName: string, v: V
 ): T => {
   if (!list.includes(v as T)) {
-    throw new Error(`Invalid ${typeName} "${v}", expected one of: ${list}`)
+    throw new ConfigValidationError(`Invalid ${typeName} "${v}", expected one of: ${list}`)
   }
   return v as T
 }

@@ -1,3 +1,4 @@
+import minimatch from 'minimatch'
 import {
   Config, LogLevel, EnabledForNamespaceChecker, Format, validateFormat, validateLogLevel,
 } from './common'
@@ -21,9 +22,15 @@ export const config = (env: Env): Partial<Config> => {
     const val = envKey('NS')
     if (val === undefined) return undefined
 
-    return val === '*'
-      ? () => true
-      : namespace => namespace === val
+    if (val === '*') {
+      return () => true
+    }
+
+    if (val.indexOf('*') !== -1) {
+      return namespace => minimatch(namespace, val)
+    }
+
+    return namespace => namespace === val
   }
 
   const format = (): Format | undefined => {

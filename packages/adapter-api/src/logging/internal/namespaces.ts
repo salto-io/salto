@@ -28,13 +28,13 @@ const hashToNamespaceColorIndex = (
 ): number => Math.floor(mapHashRangeToNamespaceColorIndexRange(hash))
 
 export const toHexColor = (
-  namespace: string
+  namespace: Namespace
 ): string => usableNamespaceColors[
   hashToNamespaceColorIndex(quickHash(namespace))
 ]
 
 export const concat = (
-  ...namespaces: string[]
+  ...namespaces: Namespace[]
 ): string => namespaces.filter(s => s).join('.')
 
 const fromFilename = (
@@ -44,7 +44,7 @@ const fromFilename = (
   .replace(/\.[^.]+$/, '') // remove extension
 
 export const normalizeNamespaceOrModule = (
-  parentNamespace: string,
+  parentNamespace: Namespace,
   childNamespace: NamespaceOrModule,
 ): Namespace => (
   isLoggingModule(childNamespace)

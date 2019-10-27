@@ -38,8 +38,8 @@ describe('Data migration operations E2E', () => {
   const pathExists = async (p: string): Promise<boolean> => asyncfile.exists(p)
   const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
   describe('When running discover beforehand', () => {
-    jest.setTimeout(15 * 60 * 1000)
     beforeAll(async () => {
+      await asyncfile.delete(exportOutputDir)
       await asyncfile.delete(discoverOutputDir)
       await asyncfile.mkdirp(`${discoverOutputDir}/salto.config`)
       await copyFile(configFile, `${discoverOutputDir}/salto.config/config.json`)
@@ -47,15 +47,13 @@ describe('Data migration operations E2E', () => {
     })
 
     it('should save the data in csv file when running export', async () => {
-      await asyncfile.delete(exportOutputDir)
       await exportCommand(discoverOutputDir, sfLeadObjectName,
         exportOutputFullPath, cliOutput).execute()
       expect(await pathExists(exportOutputFullPath)).toBe(true)
     })
 
     it('should succeed when running import from a CSV file', async () => {
-      await importCommand(discoverOutputDir, dataFilePath,
-        sfLeadObjectName, cliOutput).execute()
+      await importCommand(discoverOutputDir, sfLeadObjectName, dataFilePath, cliOutput).execute()
       expect(cliOutput.stdout.content).toMatch(Prompts.IMPORT_FINISHED_SUCCESSFULLY)
     })
 
@@ -63,8 +61,7 @@ describe('Data migration operations E2E', () => {
       const dataWithIdFileName = 'importWithIds.csv'
       const updatedDataFilePath = path.join(exportOutputDir, dataWithIdFileName)
       await discover(discoverOutputDir, cliOutput).execute()
-      await importCommand(discoverOutputDir, dataFilePath,
-        sfLeadObjectName, cliOutput).execute()
+      await importCommand(discoverOutputDir, sfLeadObjectName, dataFilePath, cliOutput).execute()
 
       // Replicate the file with the Ids of the created items
       await exportCommand(discoverOutputDir, sfLeadObjectName,
@@ -79,15 +76,15 @@ describe('Data migration operations E2E', () => {
 
       await dumpCsv(deletionObjects, updatedDataFilePath, false)
 
-      await deleteCommand(discoverOutputDir, updatedDataFilePath,
-        sfLeadObjectName, cliOutput).execute()
+      await deleteCommand(discoverOutputDir, sfLeadObjectName,
+        updatedDataFilePath, cliOutput).execute()
       expect(cliOutput.stdout.content).toMatch(Prompts.DELETE_FINISHED_SUCCESSFULLY)
     })
   })
 
   describe('When discover is not run beforehand', () => {
-    jest.setTimeout(1 * 60 * 1000)
     beforeAll(async () => {
+      await asyncfile.delete(exportOutputDir)
       await asyncfile.delete(discoverOutputDir)
       await asyncfile.mkdirp(`${discoverOutputDir}/salto.config`)
       await copyFile(configFile, `${discoverOutputDir}/salto.config/config.json`)
@@ -102,15 +99,15 @@ describe('Data migration operations E2E', () => {
     })
 
     it('should fail when running import from a CSV file', async () => {
-      const command = importCommand(discoverOutputDir, dataFilePath,
-        sfLeadObjectName, cliOutput)
+      const command = importCommand(discoverOutputDir, sfLeadObjectName,
+        dataFilePath, cliOutput)
       await expect(command.execute()).rejects
         .toThrow(`Couldn't find the type you are looking for: ${sfLeadObjectName}. Have you run salto discover yet?`)
     })
 
     it('should fail when running delete instances read from a CSV file', async () => {
-      const command = deleteCommand(discoverOutputDir, dataFilePath,
-        sfLeadObjectName, cliOutput)
+      const command = deleteCommand(discoverOutputDir, sfLeadObjectName,
+        dataFilePath, cliOutput)
       await expect(command.execute()).rejects
         .toThrow(`Couldn't find the type you are looking for: ${sfLeadObjectName}. Have you run salto discover yet?`)
     })

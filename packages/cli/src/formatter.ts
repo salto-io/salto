@@ -111,7 +111,7 @@ const createCountPlanItemTypesOutput = (plan: Plan): string => {
   )
 }
 
-const createPlanStepsOutput = (plan: Plan): string => {
+const formatDetailedChanges = (changeGroups: Iterable<Iterable<DetailedChange>>): string => {
   const addMissingEmptyChanges = (changes: DetailedChange[]): DetailedChange[] => {
     const emptyChange = (id: ElemID): DetailedChange => ({
       action: 'modify',
@@ -136,9 +136,9 @@ const createPlanStepsOutput = (plan: Plan): string => {
     return [...changes, ...missingChanges]
   }
 
-  return wu(plan.itemsByEvalOrder())
-    .map(item => wu(item.detailedChanges()).toArray())
-    // Fill in all missing "levels" of each change
+  return wu(changeGroups)
+    .map(changes => [...changes])
+    // Fill in all missing "levels" of each change group
     .map(addMissingEmptyChanges)
     // Sort changes so they show up nested correctly
     .map(changes => _.sortBy(changes, change => change.id.getFullName()))
@@ -169,7 +169,9 @@ export const createPlanOutput = (plan: Plan): string => {
     ].join('\n')
   }
   const actionCount = createCountPlanItemTypesOutput(plan)
-  const planSteps = createPlanStepsOutput(plan)
+  const planSteps = formatDetailedChanges(
+    wu(plan.itemsByEvalOrder()).map(item => item.detailedChanges())
+  )
   return [
     header(Prompts.STARTPLAN),
     subHeader(Prompts.EXPLAINPLAN),
@@ -234,4 +236,26 @@ export const createActionInProgressOutput = (action: PlanItem, start: Date): str
   return body(`${planItemName(action)}: Still ${
     Prompts.STARTACTION[action.parent().action]
   }... (${elapsedRound}s elapsed)`)
+}
+
+export const formatDiscoverChangeForApproval = (
+  change: DetailedChange,
+  idx: number,
+  totalChanges: number
+): string => (
+  [
+    header(Prompts.DISCOVER_CHANGE_HEADER(idx + 1, totalChanges)),
+    formatDetailedChanges([[change]]),
+    Prompts.DISCOVER_SHOULD_APPROVE_CHANGE,
+  ].join('\n')
+)
+
+export const formatChangesSummary = (changes: number, approved: number): string => {
+  if (changes === 0) {
+    return Prompts.DISCOVER_NO_CHANGES
+  }
+  if (approved === 0) {
+    return Prompts.DISCOVER_NOTHING_TO_UPDATE
+  }
+  return Prompts.DISCOVER_CHANGES_TO_APPLY(approved)
 }

@@ -69,4 +69,12 @@ output when invoking the apply command.
   public static initCompleted(name: string, baseDir: string): string {
     return `Initiated workspace ${name} at ${baseDir}\n`
   }
+
+  public static readonly DISCOVER_BEGIN = 'Refreshing workspace from service(s)...'
+  public static readonly DISCOVER_CHANGE_HEADER = (changeIdx: number, totalChanges: number): string => `Change ${changeIdx} of ${totalChanges}:`
+  public static readonly DISCOVER_SHOULD_APPROVE_CHANGE = 'Would you like to update your workspace with this change?'
+  public static readonly DISCOVER_CHANGE_REJECTED = 'The change will not be applied to your workspace'
+  public static readonly DISCOVER_NO_CHANGES = 'No changes found, Workspace is up to date'
+  public static readonly DISCOVER_NOTHING_TO_UPDATE = 'No changes chosen, Leaving workspace unchanged'
+  public static readonly DISCOVER_CHANGES_TO_APPLY = (numChanges: number): string => `Updating workspace with ${numChanges} changes from the service`
 }

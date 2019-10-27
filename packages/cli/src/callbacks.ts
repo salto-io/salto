@@ -5,9 +5,9 @@ import {
   Type, ObjectType, ElemID, InstanceElement,
   isPrimitiveType, PrimitiveTypes,
 } from 'adapter-api'
-import { Plan } from 'salto'
+import { Plan, DetailedChange } from 'salto'
 import {
-  createPlanOutput, header, subHeader,
+  createPlanOutput, header, subHeader, formatDiscoverChangeForApproval,
 } from './formatter'
 import Prompts from './prompts'
 import { CliOutput } from './types'
@@ -39,6 +39,33 @@ export const shouldApply = ({ stdout }: CliOutput) => async (actions: Plan): Pro
     stdout.write(Prompts.CANCELAPPLY)
   }
   return shouldExecute
+}
+
+export const getApprovedChanges = async (
+  changes: ReadonlyArray<DetailedChange>,
+): Promise<ReadonlyArray<DetailedChange>> => {
+  const shouldApplyAll = (answers: inquirer.Answers): boolean => (
+    _.values(answers).some(answer => answer === 'all')
+  )
+
+  const questions = changes.map((change, idx): inquirer.Question => ({
+    type: 'expand',
+    choices: [
+      { key: 'y', value: 'yes' },
+      { key: 'n', value: 'no' },
+      { key: 'a', value: 'all' },
+    ],
+    default: 0,
+    name: idx.toString(),
+    message: formatDiscoverChangeForApproval(change, idx, changes.length),
+    when: answers => !shouldApplyAll(answers),
+  }))
+
+  const answers = await inquirer.prompt(questions)
+  if (shouldApplyAll(answers)) {
+    return changes
+  }
+  return changes.filter((_change, idx) => answers[idx.toString()] === 'yes')
 }
 
 const inputTypePasswordFields = ['token', 'password']

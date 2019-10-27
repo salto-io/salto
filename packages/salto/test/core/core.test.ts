@@ -332,51 +332,17 @@ describe('api functions', () => {
   })
   describe('discover', () => {
     let mockWorkspace: Workspace
-    beforeEach(() => {
-      mockWorkspace = {
-        elements: [],
-        updateBlueprints: jest.fn().mockImplementationOnce(() => Promise.resolve()),
-        config: {
-          baseDir: '.',
-          stateLocation: '.',
-          additionalBlueprints: [],
-        },
-        flush: () => Promise.resolve(),
-      } as unknown as Workspace
+    let changes: plan.DetailedChange[]
+    beforeEach(async () => {
+      mockWorkspace = { elements: [], config: { stateLocation: '.' } } as unknown as Workspace
+      changes = [...await commands.discover(mockWorkspace, mockGetConfigFromUser)]
     })
 
-    describe('from empty state', () => {
-      beforeEach(async () => {
-        await commands.discover(mockWorkspace, mockGetConfigFromUser)
-      })
-      it('should add newly discovered elements and configs to workspace', () => {
-        const mockBlueprintUpdate = mockWorkspace.updateBlueprints as jest.Mock
-        expect(mockBlueprintUpdate).toHaveBeenCalled()
-        const [callArgs] = mockBlueprintUpdate.mock.calls
-        // Expect 3 new elements + one config element
-        expect(callArgs.map(change => change.action)).toEqual(['add', 'add', 'add', 'add'])
-      })
-      it('should add newly discovered elements to state', () => {
-        const mockStateOverride = State.prototype.override as jest.Mock
-        expect(mockStateOverride).toHaveBeenCalled()
-        const [callArgs] = mockStateOverride.mock.calls
-        expect(callArgs[0]).toEqual(discoveredElements)
-      })
+    it('should return newly discovered elements and configs', () => {
+      expect(changes.map(change => change.action)).toEqual(['add', 'add', 'add', 'add'])
     })
-
-    describe('without changes', () => {
-      beforeEach(async () => {
-        State.prototype.get = jest.fn().mockImplementationOnce(
-          () => Promise.resolve(discoveredElements)
-        )
-        await commands.discover(mockWorkspace, mockGetConfigFromUser)
-      })
-      it('should not update anything in the workspace except for the new config', () => {
-        const mockBlueprintUpdate = mockWorkspace.updateBlueprints as jest.Mock
-        expect(mockBlueprintUpdate).toHaveBeenCalled()
-        const [callArgs] = mockBlueprintUpdate.mock.calls
-        expect(callArgs).toHaveLength(1)
-      })
+    it('should add newly discovered elements to state', () => {
+      expect(State.prototype.override).toHaveBeenCalledWith(discoveredElements)
     })
   })
 })

@@ -20,7 +20,7 @@ describe('TEST', () => {
     const workspace = await EditorWorkspace.load(getConfig(baseBPDir, [parseErrorBp]), false)
     expect(workspace.elements).toBeDefined()
     expect(workspace.errors.hasErrors()).toBeTruthy()
-    expect(getDiagnostics(workspace, parseErrorBp)).toEqual([
+    expect(getDiagnostics(workspace)).toEqual([
       {
         filename: parseErrorBp,
         msg: 'Invalid expression: Expected the start of an expression,'
@@ -42,6 +42,6 @@ describe('TEST', () => {
     const workspace = await EditorWorkspace.load(getConfig(baseBPDir, []), false)
     expect(workspace.elements).toBeDefined()
     expect(workspace.errors.hasErrors()).toBeFalsy()
-    expect(getDiagnostics(workspace, parseErrorBp)).toEqual([])
+    expect(getDiagnostics(workspace)).toEqual([])
   })
 })

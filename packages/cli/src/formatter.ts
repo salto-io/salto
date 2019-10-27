@@ -275,4 +275,4 @@ const formatWorkspaceError = (we: Readonly<WorkspaceError>): string =>
   `${chalk.red(chalk.bold('Error:'))} ${chalk.bold(we.error)}\n${fomratSourceFragments(we.sourceFragments)}`
 
 export const formatWorkspaceErrors = (workspaceErrors: ReadonlyArray<WorkspaceError>): string =>
-  `Failed to load workspace\n${workspaceErrors.map(formatWorkspaceError).join('\n\n')}\n`
+  `${Prompts.WORKSPACE_LOAD_FAILED}\n${workspaceErrors.map(formatWorkspaceError).join('\n\n')}\n`

@@ -50,6 +50,8 @@ describe('Data migration operations E2E', () => {
       await exportCommand(discoverOutputDir, sfLeadObjectName,
         exportOutputFullPath, cliOutput).execute()
       expect(await pathExists(exportOutputFullPath)).toBe(true)
+      const exportObjects = await readCsv(exportOutputFullPath)
+      expect(exportObjects.length).toBeGreaterThan(0)
     })
 
     it('should succeed when running import from a CSV file', async () => {

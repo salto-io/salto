@@ -62,7 +62,6 @@ describe('Data migration operations E2E', () => {
     it('should succeed When running delete instances read from a CSV file', async () => {
       const dataWithIdFileName = 'importWithIds.csv'
       const updatedDataFilePath = path.join(exportOutputDir, dataWithIdFileName)
-      await discover(discoverOutputDir, true, cliOutput).execute()
       await importCommand(discoverOutputDir, sfLeadObjectName, dataFilePath, cliOutput).execute()
 
       // Replicate the file with the Ids of the created items

@@ -646,3 +646,85 @@ SfRecord[] => instances.map(res => res.value)
 // Convert the ElemIDs to records
 export const elemIDstoRecords = (ElemIDs: ElemID[]):
 SfRecord[] => ElemIDs.map(elem => ({ Id: elem.nameParts[1] }))
+
+const ADDRESS_CHILD_FIELDS = ['city', 'country', 'geocode_accuracy', 'latitude', 'longitude',
+  'postal_code', 'state', 'street', 'country_code', 'state_code']
+
+const NAME_CHILD_FIELDS = ['first_name', 'last_name', 'salutation']
+
+const GEOLOCATION_CHILD_FIELDS = ['latitude_s', 'longitude_s']
+
+// The purpose of the following method is to modify the list of field names, so that compound
+// fields names do not appear, and only their nested fields appear in the list of fields.
+// The reason for this is to later show during export, fields that can be sent back to SFDC
+// during import
+export const handleCompoundFields = (objectType: ObjectType): TypeField[] => {
+  // Internal functions
+  const handleAddressFields = (object: ObjectType): void => {
+    // Find the address fields
+    const addressFields = _.pickBy(object.fields,
+      value => value.type.elemID.name === 'address')
+
+    // For each address field, get its prefix, then find its corresponding child fields by
+    // this prefix.
+    Object.entries(addressFields).forEach(([key, field]) => {
+      const addressPrefix = key.slice(0, -7)
+      ADDRESS_CHILD_FIELDS.forEach(childField => {
+        // Add the child fields to the object type
+        const subField = addressPrefix + childField
+        object.fields[subField] = new TypeField()
+      })
+      // Remove the compound field from the element
+      object.fields = _.omit(object.fields, key)
+    })
+  }
+
+  const handleNameField = (object: ObjectType): void => {
+    // Find the name field
+    const nameFields = _.pickBy(object.fields,
+      (value, key) => key === 'name' && value.annotations.label === 'Full Name')
+
+    if (_.size(nameFields) === 0) {
+      return
+    }
+    // Find the name field's corresponding child fields
+    const [, nameField] = Object.entries(nameFields)[0]
+    nameField.fields = {}
+    NAME_CHILD_FIELDS.forEach(childField => {
+      // Set as the field as child field of the father compund field
+      if (nameField.fields && object.fields[childField]) {
+        nameField.fields[childField] = object.fields[childField]
+      }
+      // Remove from the main fields of the element
+      object.fields = _.omit(object.fields, childField)
+    })
+  }
+
+  const handleGeolocationFields = (object: ObjectType): void => {
+    // Find the  geolocation fields
+    const locationFields = _.pickBy(object.fields,
+      value => value.type.elemID.name === 'location')
+
+    // For each geolocation field, get its name, then find its corresponding child fields by
+    // this name.
+    Object.entries(locationFields).forEach(([key, field]) => {
+      field.fields = {}
+      GEOLOCATION_CHILD_FIELDS.forEach(childField => {
+        // Set as the field as child field of the father compund field
+        const subField = `${key}_${childField}`
+        if (field.fields && object.fields[subField]) {
+          field.fields[subField] = object.fields[subField]
+        }
+        // Remove from the main fields of the element
+        object.fields = _.omit(object.fields, subField)
+      })
+    })
+  }
+  // 1) Handle the address fields
+  handleAddressFields(objectType)
+  // 2) Handle the name field
+  handleNameField(objectType)
+  // 3) Handle geolocation fields
+  handleGeolocationFields(objectType)
+  return Object.values(objectType.fields)
+}

@@ -29,7 +29,7 @@ export default async (
     const parseResult = await parse(commandBuilders, input, output)
 
     if (parseResult.status === 'error') {
-      return 1
+      return CliExitCode.UserInputError
     }
 
     if (parseResult.status === 'command') {
@@ -43,10 +43,10 @@ export default async (
 
       const parsedInput = { ...input, args: parsedArgs }
       const command = await commandBuilder(parsedInput, output)
-      await command.execute()
+      return await command.execute()
     }
 
-    return 0
+    return CliExitCode.Success
   } catch (err) {
     const errorStream = output.stderr
     const unstyledErrorString = `${[err].filter(n => n).join(EOL)}`
@@ -54,6 +54,6 @@ export default async (
       ? chalk`{${ERROR_STYLE} ${unstyledErrorString}}` : unstyledErrorString
     errorStream.write(errorString)
     errorStream.write(EOL)
-    return 2
+    return CliExitCode.AppError
   }
 }

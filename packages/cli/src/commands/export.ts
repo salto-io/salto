@@ -1,7 +1,7 @@
 import path from 'path'
 import { exportToCsv, Workspace, dumpCsv, loadConfig } from 'salto'
 import { createCommandBuilder } from '../command_builder'
-import { ParsedCliInput, CliCommand, CliOutput } from '../types'
+import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'
 import { getConfigFromUser } from '../callbacks'
 import { formatWorkspaceErrors } from '../formatter'
 
@@ -12,25 +12,27 @@ export const command = (
   { stderr }: CliOutput
 ):
 CliCommand => ({
-  async execute(): Promise<void> {
+  async execute(): Promise<CliExitCode> {
     const config = await loadConfig(workingDir)
     const workspace: Workspace = await Workspace.load(config)
     if (workspace.hasErrors()) {
       stderr.write(formatWorkspaceErrors(workspace.getWorkspaceErrors()))
-    } else {
-      const outputObjectsIterator = await exportToCsv(typeName, workspace, getConfigFromUser)
-
-      // Check if output path is provided, otherwise use the template
-      // <working dir>/<typeName>_<current timestamp>.csv
-      const outPath = outputPath || path.join(path.resolve('./'), `${typeName}_${Date.now()}.csv`)
-
-      let toAppend = false
-      // eslint-disable-next-line no-restricted-syntax
-      for await (const objects of outputObjectsIterator) {
-        await dumpCsv(objects.map(instance => instance.value), outPath, toAppend)
-        toAppend = true
-      }
+      return CliExitCode.AppError
     }
+    const outputObjectsIterator = await exportToCsv(typeName, workspace, getConfigFromUser)
+
+    // Check if output path is provided, otherwise use the template
+    // <working dir>/<typeName>_<current timestamp>.csv
+    const outPath = outputPath || path.join(path.resolve('./'), `${typeName}_${Date.now()}.csv`)
+
+    let toAppend = false
+    // eslint-disable-next-line no-restricted-syntax
+    for await (const objects of outputObjectsIterator) {
+      await dumpCsv(objects.map(instance => instance.value), outPath, toAppend)
+      toAppend = true
+    }
+
+    return CliExitCode.Success
   },
 })
 

@@ -1,5 +1,5 @@
 import {
-  Config, mergeConfigs, LoggerRepo,
+  Config, mergeConfigs,
 } from './internal/common'
 import { loggerRepo } from './internal/repo'
 import * as env from './internal/env'
@@ -9,14 +9,16 @@ export {
   ConfigValidationError as LogConfigValidationError,
   Config as LogConfig, LogLevel, Logger, LOG_LEVELS,
 } from './internal/common'
+
 export { compare as compareLogLevels } from './internal/levels'
 
-const deps: winston.Dependencies = {
+const deps = {
   consoleStream: process.stdout,
+  env: process.env,
 }
 
-const config: Config = mergeConfigs(env.config(process.env))
+const config: Config = mergeConfigs(env.config(deps.env))
 
 const winstonRepo = winston.loggerRepo(deps, config)
 
-export const logger: LoggerRepo = loggerRepo(winstonRepo, config)
+export const logger = loggerRepo(winstonRepo, config)

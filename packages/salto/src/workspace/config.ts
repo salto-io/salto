@@ -25,51 +25,53 @@ export interface Config {
   additionalBlueprints?: string[]
 }
 
-export const createDefaultConfig = (
-  configDirPath: string,
+const createDefaultConfig = (
+  baseDir: string,
   workspaceName? : string,
   existingUid? : string
 ): Config => {
-  const absConfigDirPath = path.resolve(configDirPath)
-  const baseDir = path.dirname(absConfigDirPath)
   const name = workspaceName || path.basename(baseDir)
   const saltoHome = process.env[SALTO_HOME_VAR] || DEFAULT_SALTO_HOME
   const uid = existingUid || uuidv5(name, SALTO_NAMESPACE) // string based uuid
   return {
     uid,
     baseDir,
-    stateLocation: path.join(absConfigDirPath, 'state.bpc'),
+    stateLocation: path.join(baseDir, CONFIG_DIR_NAME, 'state.bpc'),
     additionalBlueprints: [],
     localStorage: path.join(saltoHome, `${name}-${uid}`),
     name,
   }
 }
 
-export const locateConfigDir = async (lookupDir: string): Promise<string|undefined> => {
-  const possibleConfigDir = path.join(lookupDir, CONFIG_DIR_NAME)
-  if (await fs.exists(possibleConfigDir)) {
-    return possibleConfigDir
-  }
-  const parentDir = lookupDir.substr(0, lookupDir.lastIndexOf(path.sep))
-  return parentDir ? locateConfigDir(parentDir) : undefined
+export const completeConfig = (baseDir: string, config: Partial<Config>): Config => {
+  const defaultConfig = createDefaultConfig(baseDir, config.name, config.uid)
+  return _.merge({}, defaultConfig, config)
 }
 
-export const loadConfig = async (lookupDir: string): Promise<Config> => {
-  const absLookupDir = path.resolve(lookupDir)
-  const configDirPath = await locateConfigDir(absLookupDir)
-  if (!configDirPath) {
-    throw new NotAWorkspaceError()
+export const locateWorkspaceRoot = async (lookupDir: string): Promise<string|undefined> => {
+  if (await fs.exists(path.join(lookupDir, CONFIG_DIR_NAME))) {
+    return lookupDir
   }
-  const configData = JSON.parse(await fs.readFile(path.join(configDirPath, CONFIG_FILENAME), 'utf8'))
-  return _.merge({}, createDefaultConfig(configDirPath, configData.name), configData)
+  const parentDir = lookupDir.substr(0, lookupDir.lastIndexOf(path.sep))
+  return parentDir ? locateWorkspaceRoot(parentDir) : undefined
 }
 
 export const getConfigPath = (baseDir: string): string => (
   path.join(baseDir, CONFIG_DIR_NAME, CONFIG_FILENAME)
 )
 
-export const dumpConfig = async (config: Config): Promise<void> => {
-  const configPath = getConfigPath(config.baseDir)
+export const loadConfig = async (lookupDir: string): Promise<Config> => {
+  const absLookupDir = path.resolve(lookupDir)
+  const baseDir = await locateWorkspaceRoot(absLookupDir)
+  if (!baseDir) {
+    throw new NotAWorkspaceError()
+  }
+  const configData = JSON.parse(await fs.readFile(getConfigPath(baseDir), 'utf8'))
+  return completeConfig(baseDir, configData)
+}
+
+export const dumpConfig = async (baseDir: string, config: Partial<Config>): Promise<void> => {
+  const configPath = getConfigPath(baseDir)
   await fs.createDirectory(path.dirname(configPath))
   return fs.writeFile(configPath, JSON.stringify(config, null, 2))
 }

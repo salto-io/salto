@@ -12,7 +12,7 @@ import { validateElements, ValidationError } from '../core/validator'
 import { DetailedChange } from '../core/plan'
 import { ParseResultFSCache } from './cache'
 import { getChangeLocations, updateBlueprintData } from './blueprint_update'
-import { Config, dumpConfig, locateConfigDir, getConfigPath, createDefaultConfig } from './config'
+import { Config, dumpConfig, locateWorkspaceRoot, getConfigPath, completeConfig } from './config'
 
 const { DefaultMap } = collections.map
 
@@ -85,10 +85,10 @@ export const parseBlueprints = async (blueprints: Blueprint[]): Promise<ParsedBl
 
 const parseBlueprintsWithCache = (
   blueprints: Blueprint[],
-  blueprintsDir: string,
+  _blueprintsDir: string,
   cacheFolder: string
 ): Promise<ParsedBlueprint[]> => {
-  const cache = new ParseResultFSCache(path.join(blueprintsDir, cacheFolder))
+  const cache = new ParseResultFSCache(cacheFolder)
   return Promise.all(blueprints.map(async bp => {
     if (bp.timestamp === undefined) return parseBlueprint(bp)
     const key = {
@@ -169,7 +169,7 @@ const createWorkspaceState = (blueprints: ReadonlyArray<ParsedBlueprint>): Works
 }
 
 const ensureEmptyWorkspace = async (config: Config): Promise<void> => {
-  if (await locateConfigDir(path.resolve(config.baseDir))) {
+  if (await locateWorkspaceRoot(path.resolve(config.baseDir))) {
     throw new ExsitingWorkspaceError()
   }
   const configPath = getConfigPath(config.baseDir)
@@ -218,12 +218,15 @@ export class Workspace {
   }
 
   static async init(baseDir: string, workspaceName?: string): Promise<Workspace> {
-    const uid = uuidv4() // random uuid
-    const config = createDefaultConfig(path.dirname(getConfigPath(baseDir)), workspaceName, uid)
+    const minimalConfig = {
+      uid: uuidv4(),
+      name: workspaceName || path.basename(path.resolve(baseDir)),
+    }
+    const config = completeConfig(baseDir, minimalConfig)
     // We want to make sure that *ALL* of the pathes we are going to create
     // do not exist right now before writing anything to disk.
     await ensureEmptyWorkspace(config)
-    await dumpConfig(config)
+    await dumpConfig(baseDir, minimalConfig)
     await fs.createDirectory(config.localStorage)
     return Workspace.load(config)
   }
@@ -347,7 +350,7 @@ export class Workspace {
    * Dump the current workspace state to the underlying persistent storage
    */
   async flush(): Promise<void> {
-    const cache = new ParseResultFSCache(path.join(this.config.baseDir, this.config.localStorage))
+    const cache = new ParseResultFSCache(this.config.localStorage)
     await Promise.all(wu(this.dirtyBlueprints).map(async filename => {
       const bp = this.parsedBlueprints[filename]
       const filePath = path.join(this.config.baseDir, filename)

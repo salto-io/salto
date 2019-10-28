@@ -22,7 +22,7 @@ export { FoundSearchResult, SearchResult } from './src/core/search'
 // conflict with the Blueprint and ParsedBlueprint from ./src/core/blueprint
 // which are still used. See: SALTO-205
 export {
-  Workspace, Blueprint, Errors,
+  Workspace, Blueprint, Errors, WorkspaceErrorSeverity,
   ParsedBlueprint, ParsedBlueprintMap, WorkspaceError, SourceFragment,
 } from './src/workspace/workspace'
 export { Config, loadConfig } from './src/workspace/config'

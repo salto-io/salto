@@ -38,10 +38,15 @@ export type Blueprint = {
   timestamp?: number
 }
 
+export enum WorkspaceErrorSeverity {
+  Error,
+  Warning
+}
 export interface WorkspaceError {
-  sourceFragments: SourceFragment[]
-  error: string
-  cause?: ParseError | ValidationError | MergeError
+  readonly sourceFragments: SourceFragment[]
+  readonly error: string
+  readonly cause?: ParseError | ValidationError | MergeError
+  readonly severity: WorkspaceErrorSeverity
 }
 
 export type ParsedBlueprint = Blueprint & ParseResult
@@ -278,6 +283,7 @@ export class Workspace {
         sourceFragments: [this.resolveSourceFragment(pe.subject)],
         error: pe.detail,
         cause: pe,
+        severity: WorkspaceErrorSeverity.Error,
 
       })),
       ...wsErrors.merge.map(me => {
@@ -287,6 +293,7 @@ export class Workspace {
           sourceFragments,
           error: me.error,
           cause: me,
+          severity: WorkspaceErrorSeverity.Error,
         }
       }),
       ...wsErrors.validation.map(ve => {
@@ -296,6 +303,7 @@ export class Workspace {
           sourceFragments,
           error: ve.error,
           cause: ve,
+          severity: WorkspaceErrorSeverity.Warning,
         }
       }),
     ]

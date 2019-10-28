@@ -1,6 +1,7 @@
 import {
   Element, ObjectType, InstanceElement, PrimitiveType, ElemID, PrimitiveTypes, BuiltinTypes,
 } from 'adapter-api'
+import { WorkspaceErrorSeverity } from 'salto'
 import { formatSearchResults, createPlanOutput, formatChange, formatDiscoverChangeForApproval, formatWorkspaceErrors } from '../src/formatter'
 import { elements, plan, detailedChange } from './mocks'
 
@@ -157,6 +158,7 @@ describe('formatter', () => {
 
         }],
         error: 'This is my error',
+        severity: WorkspaceErrorSeverity.Error,
       }]
     let formattedErrors: string
     beforeEach(() => {

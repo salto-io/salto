@@ -8,7 +8,7 @@ import {
 } from 'adapter-api'
 import { Config } from '../../src/workspace/config'
 import {
-  Workspace, Blueprint, ParsedBlueprint, parseBlueprints,
+  Workspace, Blueprint, ParsedBlueprint, parseBlueprints, WorkspaceErrorSeverity,
 } from '../../src/workspace/workspace'
 import { DetailedChange } from '../../src/core/plan'
 import { MergeError } from '../../src/core/merger/internal/common'
@@ -164,6 +164,8 @@ type salesforce_lead {
         expect(workspaceErrors[0].cause).toBeInstanceOf(MergeError)
         expect(workspaceErrors[0].sourceFragments).toHaveLength(2)
         expect(workspaceErrors[0].error).toMatch(mergeError)
+        expect(workspaceErrors[0].severity).toBe(WorkspaceErrorSeverity.Error)
+
         const firstSourceFragment = workspaceErrors[0].sourceFragments[0]
         expect(firstSourceFragment.sourceRange.filename).toBe('file.bp')
 

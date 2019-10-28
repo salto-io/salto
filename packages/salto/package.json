@@ -70,5 +70,9 @@
     "ts-cleaner": "^1.0.2",
     "tsc-watch": "^2.2.1",
     "typescript": "3.7.1-rc"
+  },
+  "git": {
+    "commit": "8ce0dd6",
+    "branch": "preinstall_and_version"
   }
 }

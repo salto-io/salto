@@ -1,0 +1,9 @@
+{
+  "name": "build_utils",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "git-rev-sync": "^1.12.0",
+    "glob": "^7.1.5"
+  }
+}

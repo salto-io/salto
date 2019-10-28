@@ -1,16 +1,23 @@
 {
   "private": true,
   "workspaces": {
-    "packages": ["packages/*"],
-    "nohoist": ["salto-vscode/**"]
+    "packages": [
+      "packages/*"
+    ],
+    "nohoist": [
+      "salto-vscode/**"
+    ]
   },
   "name": "salto_monorepo",
   "devDependencies": {
     "codecov": "^3.5.0"
   },
   "scripts": {
-    "install": "for WS in @salto/lowerdash @salto/logging @salto/dag adapter-api salesforce-adapter salto salto-vscode @salto/cli; do yarn workspace $WS run build || exit; done",
+    "preinstall": "cd ./build_utils && yarn && ./preinstall.js && cd ..",
+    "install": "for WS in ${npm_package_topoOrder}; do echo Building $WS && yarn workspace $WS run build || exit; done",
     "lint-fix": "yarn workspaces run lint-fix",
     "test": "yarn run jest --forceExit --detectOpenHandles"
-  }
+  },
+  "topoOrder": "@salto/lowerdash @salto/dag @salto/logging adapter-api salesforce-adapter salto @salto/cli salto-vscode",
+  "version": "0.1.0"
 }

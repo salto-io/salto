@@ -70,5 +70,9 @@
     "jest-junit": "^6.4.0",
     "pkg": "^4.4.0",
     "typescript": "3.7.1-rc"
+  },
+  "git": {
+    "commit": "8ce0dd6",
+    "branch": "preinstall_and_version"
   }
 }

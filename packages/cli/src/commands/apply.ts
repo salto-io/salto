@@ -57,15 +57,15 @@ export class ApplyCommand implements CliCommand {
     const config = await loadConfig(this.workspaceDir)
     try {
       const workspace: Workspace = await Workspace.load(config)
-      const metrics = new MetricsCollector()
       const result = await apply(workspace,
         getConfigFromUser,
         shouldApply({ stdout: this.stdout, stderr: this.stderr }),
-        (action: PlanItem) => this.updateCurrentAction(action), this.force,
-        metrics)
+        (action: PlanItem) => this.updateCurrentAction(action), this.force)
       this.endCurrentAction()
       if (result.sucesses) {
-        this.stdout.write(formatMetrics(metrics.getAll()))
+        this.stdout.write(formatMetrics(EventGate.consume('API')
+        .reduce((metrics, e) => metrics.set(e.apiCall, (metrics.get(e.apiCall) || 0) + e.counter),
+        new Map<string, number>())))
       }
     } catch (e) {
       this.endCurrentAction()

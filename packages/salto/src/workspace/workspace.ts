@@ -42,7 +42,6 @@ export interface WorkspaceError {
   sourceFragments: SourceFragment[]
   error: string
   cause?: ParseError | ValidationError | MergeError
-  bpFragment?: string
 }
 
 export type ParsedBlueprint = Blueprint & ParseResult

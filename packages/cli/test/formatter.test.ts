@@ -57,13 +57,13 @@ describe('formatter', () => {
   describe('createPlanOutput', () => {
     const output = createPlanOutput(plan())
     it('should return type field addition', () => {
-      expect(output).toMatch(/M[^\n]+salesforce_lead.*\+[^\n]+do_you_have_a_sales_team/s)
+      expect(output).toMatch(/|[^\n]+salesforce_lead.*\+[^\n]+do_you_have_a_sales_team/s)
     })
     it('should return type field removal', () => {
-      expect(output).toMatch(/M[^\n]+salesforce_lead.*-[^\n]+status/s)
+      expect(output).toMatch(/|[^\n]+salesforce_lead.*-[^\n]+status/s)
     })
     it('should have titles for all level of nested modifications', () => {
-      expect(output).toMatch(/M[^\n]+salesforce_lead.*M[^\n]+how_many_sales_people.*M[^\n]+label/s)
+      expect(output).toMatch(/|[^\n]+salesforce_lead.*|[^\n]+how_many_sales_people.*M[^\n]+label/s)
     })
   })
 

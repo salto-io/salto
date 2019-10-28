@@ -40,6 +40,8 @@ export class CustomField implements MetadataInfo {
   readonly referenceTo?: string[]
   readonly relationshipName?: string
   readonly deleteConstraint?: string
+  readonly reparentableMasterDetail?: boolean
+  readonly writeRequiresMasterRead?: boolean
 
   // To be used for Text types fields
   readonly length?: number

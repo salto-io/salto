@@ -207,6 +207,8 @@ export class Types {
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.MASTER_DETAIL),
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
+        [FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL]: BuiltinTypes.BOOLEAN,
+        [FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ]: BuiltinTypes.BOOLEAN,
         // Todo SALTO-228 The FIELD_ANNOTATIONS.RELATED_TO annotation is missing since
         // currently there is no way to declare on a list annotation
       },
@@ -413,6 +415,10 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
   } else if (field.type === 'reference') {
     if (field.cascadeDelete) {
       bpFieldType = Types.get(FIELD_TYPE_NAMES.MASTER_DETAIL)
+      annotations[FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ] = Boolean(
+        field.writeRequiresMasterRead
+      )
+      annotations[FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL] = Boolean(field.updateable)
     } else {
       bpFieldType = Types.get(FIELD_TYPE_NAMES.LOOKUP)
       annotations[FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION] = !(_.get(field, 'restrictedDelete'))

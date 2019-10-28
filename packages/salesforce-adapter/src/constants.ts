@@ -77,6 +77,8 @@ export const FIELD_ANNOTATIONS = {
   DISPLAY_LOCATION_IN_DECIMAL: 'display_location_in_decimal',
   RELATED_TO: 'related_to',
   ALLOW_LOOKUP_RECORD_DELETION: 'allow_lookup_record_deletion',
+  REPARENTABLE_MASTER_DETAIL: 'reparentable_master_detail',
+  WRITE_REQUIRES_MASTER_READ: 'write_requires_master_read',
 }
 
 // Limits

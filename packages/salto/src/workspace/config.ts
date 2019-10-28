@@ -32,11 +32,17 @@ export const saltoConfigType = new ObjectType({
   elemID: saltoConfigElemID,
   fields: {
     uid: new Field(saltoConfigElemID, 'uid', BuiltinTypes.STRING, requireAnno),
-    baseDir: new Field(saltoConfigElemID, 'uid', BuiltinTypes.STRING),
-    stateLocation: new Field(saltoConfigElemID, 'uid', BuiltinTypes.STRING),
-    localStorage: new Field(saltoConfigElemID, 'uid', BuiltinTypes.STRING),
-    name: new Field(saltoConfigElemID, 'uid', BuiltinTypes.STRING, requireAnno),
-    additionalBlueprints: new Field(saltoConfigElemID, 'uid', BuiltinTypes.STRING, {}, true),
+    baseDir: new Field(saltoConfigElemID, 'base_dir', BuiltinTypes.STRING),
+    stateLocation: new Field(saltoConfigElemID, 'state_location', BuiltinTypes.STRING),
+    localStorage: new Field(saltoConfigElemID, 'local_storage', BuiltinTypes.STRING),
+    name: new Field(saltoConfigElemID, 'name', BuiltinTypes.STRING, requireAnno),
+    additionalBlueprints: new Field(
+      saltoConfigElemID,
+      'additional_blueprints',
+      BuiltinTypes.STRING,
+      {},
+      true
+    ),
   },
   annotationTypes: {},
   annotations: {},
@@ -105,13 +111,17 @@ export const parseConfig = async (buffer: Buffer): Promise<Partial<Config>> => {
     .filter(e => _.isEqual(e.elemID, saltoConfigInstanceID))
     .filter(isInstanceElement)
   if (!configInstance) throw new ConfigParseError()
-  return configInstance.value as unknown as Partial<Config>
+  return _.mapKeys(configInstance.value, (_v, k) => _.camelCase(k)) as unknown as Partial<Config>
 }
 
 export const dumpConfig = async (baseDir: string, config: Partial<Config>): Promise<void> => {
   const configPath = getConfigPath(baseDir)
   await fs.createDirectory(path.dirname(configPath))
-  const configInstance = new InstanceElement(saltoConfigInstanceID, saltoConfigType, config)
+  const configInstance = new InstanceElement(
+    saltoConfigInstanceID,
+    saltoConfigType,
+    _.mapKeys(config as object, (_v, k) => _.snakeCase(k))
+  )
   return fs.writeFile(configPath, await dump([configInstance]))
 }
 

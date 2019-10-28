@@ -10,7 +10,7 @@ export const onReportErrorsEvent = async (
   diagCollection: vscode.DiagnosticCollection
 ): Promise<void> => {
   await workspace.awaitAllUpdates()
-  const newDiag = toVSDiagnostics(getDiagnostics(workspace))
+  const newDiag = toVSDiagnostics(workspace.workspace.config.baseDir, getDiagnostics(workspace))
   diagCollection.set(newDiag)
 }
 

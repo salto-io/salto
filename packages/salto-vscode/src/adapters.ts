@@ -1,4 +1,5 @@
 import * as vscode from 'vscode'
+import * as path from 'path'
 import _ from 'lodash'
 import { EditorPosition, PositionContext } from './salto/context'
 import { SaltoCompletion } from './salto/completions/provider'
@@ -78,9 +79,10 @@ const toVSDiagnostic = (
 })
 
 export const toVSDiagnostics = (
+  workspaceBaseDir: string,
   workspaceDiag: WorkspaceSaltoDiagnostics
 ): ReadonlyDiags => _(workspaceDiag)
   .mapValues(diags => diags.map(toVSDiagnostic))
   .entries()
-  .map(([k, v]) => [vscode.Uri.file(k), v] as ReadonlyDiagsItem)
+  .map(([k, v]) => [vscode.Uri.file(path.resolve(workspaceBaseDir, k)), v] as ReadonlyDiagsItem)
   .value()

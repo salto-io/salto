@@ -27,7 +27,7 @@ class ConfigParseError extends Error {
 
 const saltoConfigInstanceID = new ElemID('salto', ElemID.CONFIG_INSTANCE_NAME)
 const saltoConfigElemID = new ElemID('salto')
-const requireAnno = {[Type.REQUIRED] : true}
+const requireAnno = { [Type.REQUIRED]: true }
 export const saltoConfigType = new ObjectType({
   elemID: saltoConfigElemID,
   fields: {
@@ -81,9 +81,9 @@ export const completeConfig = (baseDir: string, config: Partial<Config>): Config
   return {
     stateLocation: resolvePath(baseDir, fullConfig.stateLocation),
     localStorage: resolvePath(baseDir, fullConfig.localStorage),
-    additionalBlueprints : (fullConfig.additionalBlueprints || [])
+    additionalBlueprints: (fullConfig.additionalBlueprints || [])
       .map(bp => resolvePath(baseDir, bp)),
-    ... fullConfig
+    ...fullConfig,
   }
 }
 

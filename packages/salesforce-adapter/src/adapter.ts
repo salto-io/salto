@@ -89,6 +89,7 @@ export default class SalesforceAdapter {
       'ValidationRule', // This is a subtype of CustomObject
     ],
     metadataTypeBlacklist = [
+      'ReportType', // See SALTO-76
       'ApexClass', 'ApexTrigger', // For some reason we cannot access this from the metadata API
       // See also SALTO-168.
       'InstalledPackage', // Instances of this don't actually have an ID and they contain duplicates

@@ -152,7 +152,7 @@ type salesforce_lead {
         const workspaceErrors = erroredWorkspace.getWorkspaceErrors()
         expect(erroredWorkspace.errors.strings()[0]).toMatch(mergeError)
         expect(erroredWorkspace.errors.merge[0].error).toMatch(mergeError)
-        expect(workspaceErrors).toHaveLength(2)
+        expect(workspaceErrors).toHaveLength(1)
         expect(workspaceErrors[0].cause).toBeInstanceOf(MergeError)
         expect(workspaceErrors[0].sourceFragments).toHaveLength(2)
         expect(workspaceErrors[0].error).toMatch(mergeError)

@@ -281,7 +281,7 @@ export class Workspace {
           cause: me,
         }
       }),
-      ...wsErrors.merge.map(ve => {
+      ...wsErrors.validation.map(ve => {
         const sourceRanges = this.sourceMap.get(ve.elemID.getFullName()) || []
         const sourceFragments = sourceRanges.map(sr => this.resolveSourceFragment(sr))
         return {

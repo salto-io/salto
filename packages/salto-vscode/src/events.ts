@@ -1,6 +1,5 @@
 import * as vscode from 'vscode'
 import * as fs from 'async-file'
-import _ from 'lodash'
 import { EditorWorkspace } from './salto/workspace'
 import { toVSDiagnostics } from './adapters'
 import { getDiagnostics } from './salto/diagnostics'

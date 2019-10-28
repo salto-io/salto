@@ -1,6 +1,6 @@
+import _ from 'lodash'
 import { EditorRange } from './context'
 import { EditorWorkspace } from './workspace'
-import _ from 'lodash'
 
 export interface SaltoDiagnostic {
   filename: string
@@ -17,16 +17,20 @@ export type WorkspaceSaltoDiagnostics = Record<string, SaltoDiagnostic[]>
 export const getDiagnostics = (
   workspace: EditorWorkspace,
 ): WorkspaceSaltoDiagnostics => {
-  return _(workspace.workspace.getWorkspaceErrors())
-    .map(err => err.sourceRanges.map( r => ({
-      filename: r.filename,
-      msg: err.error,
-      range: {
-        start: r.start,
-        end: r.end
-      }
-    })))
-    .flatten()
-    .groupBy('filename')
-    .value()
-  }
+  console.log(workspace.workspace.getWorkspaceErrors())
+  const res = _(workspace.workspace.getWorkspaceErrors())
+  .map(err => err.sourceFragments.map(f => ({
+    filename: f.sourceRange.filename,
+    msg: err.error,
+    range: {
+      start: f.sourceRange.start,
+      end: f.sourceRange.end,
+    },
+  })))
+  .flatten()
+  .groupBy('filename')
+  .value()
+  console.log(res)
+  return res
+}
+

@@ -79,10 +79,8 @@ const toVSDiagnostic = (
 
 export const toVSDiagnostics = (
   workspaceDiag: WorkspaceSaltoDiagnostics
-): ReadonlyDiags => {
-  return _(workspaceDiag)
-    .mapValues(diags => diags.map(toVSDiagnostic))
-    .entries()
-    .map(([k, v]) => [vscode.Uri.file(k), v] as ReadonlyDiagsItem)
-    .value()
-}
+): ReadonlyDiags => _(workspaceDiag)
+  .mapValues(diags => diags.map(toVSDiagnostic))
+  .entries()
+  .map(([k, v]) => [vscode.Uri.file(k), v] as ReadonlyDiagsItem)
+  .value()

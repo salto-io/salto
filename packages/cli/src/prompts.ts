@@ -20,7 +20,7 @@ but will not be persisted to local or remote state storage`
     modify: chalk.yellow('M'),
     add: chalk.green('+'),
     remove: chalk.red('-'),
-    eq: ' ',
+    eq: '|',
   }
 
   public static readonly STARTACTION = {

@@ -40,9 +40,9 @@ describe('plan command', () => {
 
   it('should find all elements', async () => {
     await command('', cliOutput).execute()
-    expect(cliOutput.stdout.content.search(/M.*lead/)).toBeGreaterThan(0)
-    expect(cliOutput.stdout.content.search(/M.*account/)).toBeGreaterThan(0)
-    expect(cliOutput.stdout.content.search(/M.*salto_employee_instance/)).toBeGreaterThan(0)
+    expect(cliOutput.stdout.content).toContain('lead')
+    expect(cliOutput.stdout.content).toContain('account')
+    expect(cliOutput.stdout.content).toContain('salto_employee_instance')
   })
 
   it('should find instance change', async () => {

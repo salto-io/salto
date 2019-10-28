@@ -18,3 +18,4 @@ RUN go get -v \
   github.com/agext/levenshtein@v1.2.1 \
   github.com/google/go-cmp@v0.2.0 \
   golang.org/x/text@v0.3.2
+

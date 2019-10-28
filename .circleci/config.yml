@@ -65,7 +65,7 @@ commands:
 jobs:
   build:
     docker:
-      - image: saltolabs/salto:0.0.7
+      - image: saltolabs/salto:0.0.8
 
     steps:
       - restore_cache:

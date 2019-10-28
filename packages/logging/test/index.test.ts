@@ -19,6 +19,7 @@ describe('index', () => {
     jest.spyOn(env, 'config').mockImplementation(() => mockConfig)
 
     delete require.cache[require.resolve(INDEX_PATH)]
+    // eslint-disable-next-line import/no-dynamic-require, global-require
     require(INDEX_PATH)
   })
 

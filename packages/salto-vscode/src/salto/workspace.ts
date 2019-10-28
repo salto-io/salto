@@ -72,7 +72,6 @@ export class EditorWorkspace {
       this.pendingDeletes = new Set<string>()
       this.pendingSets = {}
       // We start by running all deleted
-      try {
       if (!_.isEmpty(opDeletes) && this.workspace) {
         this.workspace.removeBlueprints(...opDeletes)
       }
@@ -81,9 +80,6 @@ export class EditorWorkspace {
         this.runningSetOperation = this.workspace.setBlueprints(..._.values(opBlueprints))
         await this.runningSetOperation
         this.runningSetOperation = undefined
-      }
-      } catch (e) {
-        console.log("Ay!!!")
       }
       // After we ran the update we check if the operation resulted with no
       // errors. If so - we update the last valid state.

@@ -17,20 +17,17 @@ export type WorkspaceSaltoDiagnostics = Record<string, SaltoDiagnostic[]>
 export const getDiagnostics = (
   workspace: EditorWorkspace,
 ): WorkspaceSaltoDiagnostics => {
-  console.log(workspace.workspace.getWorkspaceErrors())
   const res = _(workspace.workspace.getWorkspaceErrors())
-  .map(err => err.sourceFragments.map(f => ({
-    filename: f.sourceRange.filename,
-    msg: err.error,
-    range: {
-      start: f.sourceRange.start,
-      end: f.sourceRange.end,
-    },
-  })))
-  .flatten()
-  .groupBy('filename')
-  .value()
-  console.log(res)
+    .map(err => err.sourceFragments.map(f => ({
+      filename: f.sourceRange.filename,
+      msg: err.error,
+      range: {
+        start: f.sourceRange.start,
+        end: f.sourceRange.end,
+      },
+    })))
+    .flatten()
+    .groupBy('filename')
+    .value()
   return res
 }
-

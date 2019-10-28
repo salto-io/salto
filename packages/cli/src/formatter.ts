@@ -81,19 +81,25 @@ const formatValue = (value: Element | Value): string => {
   return JSON.stringify(value)
 }
 
+const isDummyChange = (change: DetailedChange): boolean => (
+  change.action === 'modify' && change.data.before === undefined && change.data.after === undefined
+)
+
 const formatChangeData = (change: DetailedChange): string => {
+  if (isDummyChange(change)) {
+    // This is a dummy change created just so we print a "title" for a group of changes
+    return ''
+  }
   if (change.action === 'modify') {
-    if (change.data.before === undefined || change.data.after === undefined) {
-      // This is a dummy change created just so we print a "title" for a group of changes
-      return ''
-    }
-    return `${formatValue(change.data.before)} => ${formatValue(change.data.after)}`
+    const { before, after } = change.data
+    return `${formatValue(before)} => ${formatValue(after)}`
   }
   return formatValue(_.get(change.data, 'before', _.get(change.data, 'after')))
 }
 
 export const formatChange = (change: DetailedChange): string => {
-  const modifier = Prompts.MODIFIERS[change.action]
+  const modifierType = isDummyChange(change) ? 'eq' : change.action
+  const modifier = Prompts.MODIFIERS[modifierType]
   const id = change.id.nameParts.length === 1
     ? change.id.getFullName()
     : change.id.nameParts.slice(-1)[0]

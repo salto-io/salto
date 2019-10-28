@@ -7,7 +7,7 @@ import * as winston from './internal/winston'
 
 export {
   ConfigValidationError as LogConfigValidationError,
-  Config as LogConfig, LogLevel, Logger,
+  Config as LogConfig, LogLevel, Logger, LOG_LEVELS,
 } from './internal/common'
 export { compare as compareLogLevels } from './internal/levels'
 

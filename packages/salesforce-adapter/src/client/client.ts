@@ -23,8 +23,6 @@ import Connection from './jsforce'
 
 const { makeArray } = collections.array
 
-const log = logger(module)
-
 export const API_VERSION = '46.0'
 export const METADATA_NAMESPACE = 'http://soap.sforce.com/2006/04/metadata'
 
@@ -130,7 +128,7 @@ export default class SalesforceClient {
   ) {
     this.credentials = credentials
     this.conn = connection || realConnection(credentials.isSandbox)
-    this.logger = clientLogger || log
+    this.logger = clientLogger || logger(this.constructor.name)
   }
 
   private async ensureLoggedIn(): Promise<void> {

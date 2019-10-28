@@ -11,7 +11,9 @@ const transformPrimitive = (val: string, primitive: PrimitiveTypes):
   // Salesforce returns nulls as objects like { $: { 'xsi:nil': 'true' } }
   // our key name transform replaces the '$' with an empty string and ':' with '_'
   if (_.isObject(val) && _.get(val, ['', 'xsi_nil']) === 'true') {
-    return null
+    // We transform null to undefined as currently we don't support null in Salto language
+    // and the undefined values are omitted later in the code
+    return undefined
   }
   switch (primitive) {
     case PrimitiveTypes.NUMBER:

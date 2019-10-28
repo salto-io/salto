@@ -1,6 +1,7 @@
 import { logger } from '@salto/logging'
 import * as mocks from './mocks'
 import applyBuilder from '../src/commands/apply'
+import { CliExitCode } from '../src/types'
 
 describe('cli', () => {
   let o: mocks.MockCliOutput
@@ -21,8 +22,8 @@ describe('cli', () => {
         expect(o.err).toMatch(/\bapply\b/)
       })
 
-      it('exits with code 1', () => {
-        expect(o.exitCode).toEqual(1)
+      it('exits with code 1 (user input error)', () => {
+        expect(o.exitCode).toEqual(CliExitCode.UserInputError)
       })
     })
 
@@ -109,10 +110,10 @@ describe('cli', () => {
   })
 
   describe('when called with a valid command argument', () => {
-    let applyCommand: jest.Mock<Promise<void>>
+    let applyCommand: jest.Mock<Promise<CliExitCode>>
 
     beforeEach(async () => {
-      applyCommand = jest.fn<Promise<void>>()
+      applyCommand = jest.fn<Promise<CliExitCode>>().mockImplementation(() => CliExitCode.Success)
       jest.spyOn(applyBuilder, 'build').mockResolvedValue({ execute: applyCommand })
       o = await mocks.cli({ args: 'apply --yes' })
     })
@@ -121,24 +122,60 @@ describe('cli', () => {
       expect(applyCommand).toHaveBeenCalled()
     })
 
-    it('exits with code 0', () => {
-      expect(o.exitCode).toEqual(0)
-    })
-
-    describe('when called with --verbose', () => {
-      let configure: jest.SpyInstance
-
-      beforeEach(async () => {
-        configure = jest.spyOn(logger, 'configure')
-        await mocks.cli({ args: 'apply --yes --verbose' })
-      })
-
-      it('configures the logging to level info', () => {
-        expect(configure).toHaveBeenCalledWith({ minLevel: 'info' })
-      })
+    it('exits with code 0 (success)', () => {
+      expect(o.exitCode).toEqual(CliExitCode.Success)
     })
   })
 
+  describe('when command execution fails ', () => {
+    let applyCommand: jest.Mock<Promise<CliExitCode>>
+
+    beforeEach(async () => {
+      applyCommand = jest.fn<Promise<CliExitCode>>().mockImplementation(() => CliExitCode.AppError)
+      jest.spyOn(applyBuilder, 'build').mockResolvedValue({ execute: applyCommand })
+      o = await mocks.cli({ args: 'apply --yes' })
+    })
+
+    it('calls the command handler', () => {
+      expect(applyCommand).toHaveBeenCalled()
+    })
+
+    it('exits with code 2 (app error)', () => {
+      expect(o.exitCode).toEqual(CliExitCode.AppError)
+    })
+  })
+
+  describe('when command execution throws error ', () => {
+    let applyCommand: jest.Mock<Promise<CliExitCode>>
+
+    beforeEach(async () => {
+      applyCommand = jest.fn<Promise<CliExitCode>>().mockImplementation(() => { throw new Error('blabla') })
+      jest.spyOn(applyBuilder, 'build').mockResolvedValue({ execute: applyCommand })
+      o = await mocks.cli({ args: 'apply --yes' })
+    })
+
+    it('calls the command handler', () => {
+      expect(applyCommand).toHaveBeenCalled()
+    })
+
+    it('exits with code 2 (app error)', () => {
+      expect(o.exitCode).toEqual(CliExitCode.AppError)
+    })
+  })
+
+
+  describe('when called with --verbose', () => {
+    let configure: jest.SpyInstance
+
+    beforeEach(async () => {
+      configure = jest.spyOn(logger, 'configure')
+      await mocks.cli({ args: 'apply --yes --verbose' })
+    })
+
+    it('configures the logging to level info', () => {
+      expect(configure).toHaveBeenCalledWith({ minLevel: 'info' })
+    })
+  })
 
   describe('when called with "completion"', () => {
     beforeEach(async () => {
@@ -149,8 +186,8 @@ describe('cli', () => {
       expect(o.out).toMatch(/begin-[^-]+-completions/)
     })
 
-    it('exits with code 0', () => {
-      expect(o.exitCode).toEqual(0)
+    it('exits with code 0 (success)', () => {
+      expect(o.exitCode).toEqual(CliExitCode.Success)
     })
   })
 })

@@ -6,7 +6,7 @@ import {
   DetailedChange,
 } from 'salto'
 import { createCommandBuilder } from '../command_builder'
-import { ParsedCliInput, CliCommand, CliOutput } from '../types'
+import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'
 import { getConfigFromUser, getApprovedChanges as cliGetApprovedChanges } from '../callbacks'
 import { formatWorkspaceErrors, formatChangesSummary } from '../formatter'
 import Prompts from '../prompts'
@@ -20,11 +20,11 @@ export const discoverCommand = async (
   output: CliOutput,
   discover: discoverFunc,
   getApprovedChanges: approveChangesFunc,
-): Promise<void> => {
+): Promise<CliExitCode> => {
   const outputLine = (text: string): void => output.stdout.write(`${text}\n`)
   if (workspace.hasErrors()) {
     output.stderr.write(formatWorkspaceErrors(workspace.getWorkspaceErrors()))
-    return
+    return CliExitCode.AppError
   }
   outputLine(Prompts.DISCOVER_BEGIN)
   // Unpack changes to array so we can iterate on them more than once
@@ -39,6 +39,7 @@ export const discoverCommand = async (
     await workspace.updateBlueprints(...changesToApply)
     await workspace.flush()
   }
+  return CliExitCode.Success
 }
 
 export const command = (
@@ -46,7 +47,7 @@ export const command = (
   force: boolean,
   output: CliOutput
 ): CliCommand => ({
-  async execute(): Promise<void> {
+  async execute(): Promise<CliExitCode> {
     const config = await loadConfig(workspaceDir)
     const workspace = await Workspace.load(config)
     return discoverCommand(workspace, force, output, apiDiscover, cliGetApprovedChanges)

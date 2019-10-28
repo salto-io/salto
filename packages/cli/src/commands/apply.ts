@@ -1,9 +1,7 @@
 import * as sourceMapSupport from 'source-map-support'
 import { apply, PlanItem, Workspace, loadConfig } from 'salto'
 import { createCommandBuilder } from '../command_builder'
-import {
-  CliCommand, CliOutput, ParsedCliInput, WriteStream,
-} from '../types'
+import { CliCommand, CliOutput, ParsedCliInput, WriteStream, CliExitCode } from '../types'
 import {
   createActionStartOutput, createActionInProgressOutput, createItemDoneOutput,
   formatWorkspaceErrors,
@@ -53,27 +51,30 @@ export class ApplyCommand implements CliCommand {
     this.currentActionPollerID = setInterval(this.pollCurrentAction, CURRENT_ACTION_POLL_INTERVAL)
   }
 
-  async execute(): Promise<void> {
+  async execute(): Promise<CliExitCode> {
     const config = await loadConfig(this.workspaceDir)
     const workspace: Workspace = await Workspace.load(config)
     if (workspace.hasErrors()) {
       this.stderr.write(formatWorkspaceErrors(workspace.getWorkspaceErrors()))
-    } else {
-      try {
-        await apply(workspace,
-          getConfigFromUser,
-          shouldApply({ stdout: this.stdout, stderr: this.stderr }),
-          (action: PlanItem) => this.updateCurrentAction(action), this.force)
-        this.endCurrentAction()
-      } catch (e) {
-        this.endCurrentAction()
-        const errorSource = sourceMapSupport.getErrorSource(e)
-        if (errorSource) {
-          this.stderr.write(errorSource)
-        }
-        this.stderr.write(e.stack || e)
-      }
+      return CliExitCode.AppError
     }
+    try {
+      await apply(workspace,
+        getConfigFromUser,
+        shouldApply({ stdout: this.stdout, stderr: this.stderr }),
+        (action: PlanItem) => this.updateCurrentAction(action), this.force)
+      this.endCurrentAction()
+    } catch (e) {
+      this.endCurrentAction()
+      const errorSource = sourceMapSupport.getErrorSource(e)
+      if (errorSource) {
+        this.stderr.write(errorSource)
+      }
+      this.stderr.write(e.stack || e)
+      return CliExitCode.AppError
+    }
+
+    return CliExitCode.Success
   }
 }
 

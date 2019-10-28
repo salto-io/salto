@@ -10,7 +10,11 @@ export interface ReadStream {
   // TODO
 }
 
-export type CliExitCode = 0 | 1 | 2
+export enum CliExitCode {
+  Success = 0,
+  UserInputError = 1,
+  AppError = 2,
+}
 
 export interface CliOutput {
   stdout: WriteStream
@@ -35,5 +39,5 @@ export interface ParsedCliInput<TParsedArgs = {}> extends Omit<CliInput, 'args'>
 }
 
 export interface CliCommand {
-  execute(): Promise<void>
+  execute(): Promise<CliExitCode>
 }

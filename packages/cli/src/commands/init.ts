@@ -2,13 +2,13 @@ import * as path from 'path'
 import { init } from 'salto'
 import Prompts from '../prompts'
 import { createCommandBuilder } from '../command_builder'
-import { ParsedCliInput, CliCommand, CliOutput } from '../types'
+import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'
 
 export const command = (
   workspaceName: string | undefined,
   { stdout, stderr }: CliOutput
 ): CliCommand => ({
-  async execute(): Promise<void> {
+  async execute(): Promise<CliExitCode> {
     try {
       const workspace = await init(workspaceName)
       stdout.write(
@@ -16,7 +16,9 @@ export const command = (
       )
     } catch (e) {
       stderr.write(Prompts.initFailed(e.message))
+      return CliExitCode.AppError
     }
+    return CliExitCode.Success
   },
 })
 

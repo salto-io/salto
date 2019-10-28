@@ -1,7 +1,7 @@
 import asyncfile from 'async-file'
 import { importFromCsvFile, Workspace, readCsv, loadConfig } from 'salto'
 import { createCommandBuilder } from '../command_builder'
-import { ParsedCliInput, CliCommand, CliOutput } from '../types'
+import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'
 import { getConfigFromUser } from '../callbacks'
 import Prompts from '../prompts'
 import { formatWorkspaceErrors } from '../formatter'
@@ -13,27 +13,29 @@ export const command = (
   inputPath: string,
   { stdout, stderr }: CliOutput
 ): CliCommand => ({
-  async execute(): Promise<void> {
+  async execute(): Promise<CliExitCode> {
     if (!await asyncfile.exists(inputPath)) {
       stderr.write(Prompts.COULD_NOT_FIND_FILE)
-      return
+      return CliExitCode.AppError
     }
     const records = await readCsv(inputPath)
     const config = await loadConfig(workingDir)
     const workspace: Workspace = await Workspace.load(config)
     if (workspace.hasErrors()) {
       stderr.write(formatWorkspaceErrors(workspace.getWorkspaceErrors()))
-    } else {
-      await importFromCsvFile(
-        typeName,
-        records,
-        workspace,
-        getConfigFromUser
-      )
-      // TODO: Return here the full report that contains the numbers of successful and failed rows.
-      // Also: print the errors of the erronous rows to a log file and print the path of the log.
-      stdout.write(Prompts.IMPORT_FINISHED_SUCCESSFULLY)
+      return CliExitCode.AppError
     }
+    await importFromCsvFile(
+      typeName,
+      records,
+      workspace,
+      getConfigFromUser
+    )
+    // TODO: Return here the full report that contains the numbers of successful and failed rows.
+    // Also: print the errors of the erronous rows to a log file and print the path of the log.
+    stdout.write(Prompts.IMPORT_FINISHED_SUCCESSFULLY)
+
+    return CliExitCode.Success
   },
 })
 

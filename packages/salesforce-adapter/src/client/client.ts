@@ -18,6 +18,7 @@ import {
   BulkLoadOperation,
 } from 'jsforce'
 import { Value } from 'adapter-api'
+import { logger } from '@salto/logging'
 import { CompleteSaveResult } from './types'
 import Connection from './jsforce'
 
@@ -124,11 +125,11 @@ export default class SalesforceClient {
   private readonly logger: Logger
 
   constructor(
-    { credentials, connection, logger }: SalesforceClientOpts
+    { credentials, connection, logger: clientLogger }: SalesforceClientOpts
   ) {
     this.credentials = credentials
     this.conn = connection || realConnection(credentials.isSandbox)
-    this.logger = logger || console
+    this.logger = clientLogger || logger(this.constructor.name)
   }
 
   private async ensureLoggedIn(): Promise<void> {

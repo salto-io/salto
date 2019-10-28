@@ -1,64 +1,47 @@
 {
-  "name": "@salto/cli",
+  "name": "@salto/logging",
   "version": "0.1.0",
-  "description": "cli on top of salto core",
+  "description": "Salto Logging library",
   "repository": {
     "type": "git",
-    "url": "https://github.com/salto-io/salto"
+    "url": "https://github.com/salto-io/salto_monorepo"
   },
   "private": true,
-  "bin": {
-    "salto": "./bin/salto"
-  },
   "files": [
+    "bin/**/*",
     "dist/**/*"
   ],
-  "main": "./bin/salto",
+  "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "pkg": {
-    "scripts": "./dist/src/**/*.js",
-    "assets": [
-      "../salto/dist/hcl.wasm",
-      "../../node_modules/figlet/fonts/Standard.*"
-    ]
-  },
   "scripts": {
     "prepare": "yarn run build",
     "prepublishOnly": "yarn test",
     "build": "yarn run lint && yarn run build-ts",
     "test": "jest --forceExit --detectOpenHandles",
-    "e2e-test": "RUN_E2E_TESTS=1 jest --forceExit --detectOpenHandles",
     "clean-ts": "node ./node_modules/.bin/ts-cleaner -d dist -s . -v",
     "clean-ts-test": "yarn run clean-ts && yarn run test",
     "watch-test": "yarn run tsc-watch --onSuccess 'yarn run clean-ts-test'",
     "build-ts": "tsc",
     "watch-ts": "tsc -w",
     "lint": "eslint --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
-    "lint-fix": "yarn run lint -- --fix",
-    "package": "yarn run pkg -t node10 -o ./pkg/salto ."
+    "lint-fix": "yarn run lint -- --fix"
   },
   "dependencies": {
-    "@salto/dag": "0.1.0",
     "@salto/lowerdash": "0.1.0",
-    "@salto/logging": "0.1.0",
-    "adapter-api": "0.1.0",
-    "async-file": "^2.0.2",
     "chalk": "^2.4.2",
-    "inquirer": "^3.3.0",
-    "lodash": "^4.17.15",
-    "require-directory": "^2.1.1",
-    "salesforce-adapter": "0.1.0",
-    "salto": "0.1.0",
-    "source-map-support": "^0.5.13",
-    "wu": "^2.1.0",
-    "yargonaut": "^1.1.4",
-    "yargs": "^13.3.0"
+    "lodash": "^4.17.11",
+    "logform": "^2.1.2",
+    "minimatch": "^3.0.4",
+    "winston": "^3.2.1",
+    "winston-transport": "^4.3.0"
   },
   "devDependencies": {
-    "@types/inquirer": "0.0.35",
-    "@types/require-directory": "^2.1.1",
-    "@types/source-map-support": "^0.5.0",
-    "@types/yargs": "^13.0.0",
+    "@types/jest": "^22.1.3",
+    "@types/lodash": "^4.14.133",
+    "@types/minimatch": "^3.0.3",
+    "@types/node": "^9.4.6",
+    "@typescript-eslint/eslint-plugin": "^2.3.2",
+    "@typescript-eslint/parser": "^2.3.2",
     "eslint": "^6.2.2",
     "eslint-config-airbnb": "18.0.1",
     "eslint-plugin-import": "^2.18.2",
@@ -67,8 +50,11 @@
     "eslint-plugin-react": "^7.14.3",
     "eslint-plugin-react-hooks": "^1.7.0",
     "jest": "^24.0.0",
+    "jest-circus": "^24.9.0",
     "jest-junit": "^6.4.0",
-    "pkg": "^4.4.0",
+    "tmp": "^0.1.0",
+    "ts-cleaner": "^1.0.2",
+    "tsc-watch": "^2.2.1",
     "typescript": "^3.5.3"
   }
 }

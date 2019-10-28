@@ -1,9 +1,22 @@
 import { EOL } from 'os'
 import chalk from 'chalk'
+import { compareLogLevels, LogLevel, logger } from '@salto/logging'
 import { streams } from '@salto/lowerdash'
 import { CliInput, CliOutput, CliExitCode } from './types'
 import { YargsCommandBuilder } from './command_builder'
 import parse, { ERROR_STYLE } from './argparser'
+
+export const VERBOSE_LOG_LEVEL: LogLevel = 'info'
+
+const log = logger(module)
+
+const handleVerbose = (): void => {
+  const currentLogLevel = logger.config.minLevel
+  const isCurrentLogLevelLower = compareLogLevels(currentLogLevel, VERBOSE_LOG_LEVEL) < 0
+  if (isCurrentLogLevelLower) {
+    logger.configure({ minLevel: VERBOSE_LOG_LEVEL })
+  }
+}
 
 export default async (
   { input, output, commandBuilders }: {
@@ -21,6 +34,13 @@ export default async (
 
     if (parseResult.status === 'command') {
       const { parsedArgs, builder: commandBuilder } = parseResult
+
+      if (parsedArgs.verbose) {
+        handleVerbose()
+      }
+
+      log.info('CLI started')
+
       const parsedInput = { ...input, args: parsedArgs }
       const command = await commandBuilder(parsedInput, output)
       await command.execute()

@@ -65,6 +65,12 @@ const createYargsParser = (outStream: WriteStream, errStream: WriteStream):
     describe: 'Show help',
   })
 
+  parser.option('verbose', {
+    alias: 'v',
+    boolean: true,
+    describe: 'output extra logs',
+  })
+
   // Update texts and define un-wanted yargs messages
   parser.updateLocale({
     'Not enough non-option arguments: got %s, need at least %s': DO_NOT_SHOW,
@@ -104,8 +110,12 @@ const handleErrors = (parser: Argv, outStream: WriteStream, errors: string[]): v
   showHelpMessage(parser, outStream)
 }
 
+export type GlobalArgs = Arguments<{
+  verbose: boolean
+}>
+
 export type ParseResult =
-  { status: 'command'; parsedArgs: Arguments; builder: CommandBuilder } |
+  { status: 'command'; parsedArgs: GlobalArgs; builder: CommandBuilder } |
   { status: 'error' } |
   { status: 'help' } |
   { status: 'empty' }
@@ -117,12 +127,6 @@ const parse = (
 ): Promise<ParseResult> => new Promise<ParseResult>((resolve, reject) => {
   const parser = createYargsParser(stdout, stderr)
   const commandSelected = registerBuilders(parser, commandBuilders)
-
-  if (args.length === 0) {
-    onNoArgs(parser, stderr)
-    resolve({ status: 'error' })
-    return
-  }
 
   parser.parse(args, {}, (err, parsedArgs, outText) => {
     if (err) {
@@ -139,14 +143,29 @@ const parse = (
 
     stdout.write(outText)
 
+    if (parsedArgs.version) {
+      resolve({ status: 'empty' })
+      return
+    }
+
+    if (parsedArgs._.filter(a => a).length === 0) {
+      onNoArgs(parser, stderr)
+      resolve({ status: 'error' })
+      return
+    }
+
     // let the event loop process the commandSelected promise
     setTimeout(() => {
       if (parser.errors.length > 0) {
         handleErrors(parser, stderr, parser.errors)
         resolve({ status: 'error' })
       } else if (commandSelected.done) {
-        commandSelected.then(builder => resolve({ status: 'command', parsedArgs, builder }))
-      } else { // "--version"
+        commandSelected.then(builder => resolve({
+          status: 'command',
+          parsedArgs: parsedArgs as GlobalArgs,
+          builder,
+        }))
+      } else { // "completion"
         resolve({ status: 'empty' })
       }
     }, 0)

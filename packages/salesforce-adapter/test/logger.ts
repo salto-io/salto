@@ -1,13 +1,25 @@
-import { Logger } from '../src/client/client'
+import { Logger, LogLevel, LOG_LEVELS, logger as createLogger } from '@salto/logging'
 
-export type MockLogger = Logger & {
-  [logLevel in keyof Logger]: jest.Mock
+type HasMockLogMethods = {
+  [logLevel in LogLevel]: jest.Mock
 }
 
-const mockLogger: () => MockLogger = () => ({
-  info: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn(),
-})
+export type MockLogger = Logger & HasMockLogMethods & {
+  log: jest.Mock
+}
+
+const mockLogger = (): MockLogger => {
+  const logger = createLogger(module)
+  const mockedMethods: (LogLevel | 'log')[] = [...LOG_LEVELS, 'log']
+  const mocks = mockedMethods.map(m => {
+    const mock = jest.fn()
+    logger[m] = mock
+    return mock
+  })
+  beforeEach(() => {
+    mocks.forEach(m => m.mockClear())
+  })
+  return logger as MockLogger
+}
 
 export default mockLogger

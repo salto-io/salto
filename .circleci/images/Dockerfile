@@ -1,5 +1,7 @@
 FROM circleci/node:12.10
 
+RUN sudo npm i --global yarn@1.19.1
+
 # Install go (needed for HCL parser WebAssembly build)
 RUN wget https://dl.google.com/go/go1.13.linux-amd64.tar.gz -O /tmp/go.tar.gz && \
     sudo tar -C /usr/local -xzf /tmp/go.tar.gz && \
@@ -16,3 +18,4 @@ RUN go get -v \
   github.com/agext/levenshtein@v1.2.1 \
   github.com/google/go-cmp@v0.2.0 \
   golang.org/x/text@v0.3.2
+

@@ -1,3 +1,4 @@
+import { logger } from '@salto/logging'
 import * as mocks from './mocks'
 import applyBuilder from '../src/commands/apply'
 
@@ -5,10 +6,10 @@ describe('cli', () => {
   let o: mocks.MockCliOutput
 
   jest.setTimeout(200)
-  describe('when called with no arguments', () => {
+  const noArgsTests = (args: string | string[]): void => {
     describe('when stderr is TTY with colors', () => {
       beforeEach(async () => {
-        o = await mocks.cli()
+        o = await mocks.cli({ args })
       })
 
       it('outputs the salto logo', () => {
@@ -27,7 +28,7 @@ describe('cli', () => {
 
     describe('when stderr is not TTY', () => {
       beforeEach(async () => {
-        o = await mocks.cli({ err: { isTTY: false } })
+        o = await mocks.cli({ args, err: { isTTY: false } })
       })
 
       it('does not output the salto logo', () => {
@@ -43,35 +44,24 @@ describe('cli', () => {
         expect(o.exitCode).toEqual(1)
       })
     })
+
+    describe('when stderr is TTY without colors', () => {
+      beforeEach(async () => {
+        o = await mocks.cli({ args, err: { hasColors: false } })
+      })
+
+      it('does not use colors', () => {
+        expect(o.err).not.toMatch('\u001B')
+      })
+    })
+  }
+
+  describe('when called with no arguments', () => {
+    noArgsTests('')
   })
 
-  describe('when stderr is TTY without colors', () => {
-    beforeEach(async () => {
-      o = await mocks.cli({ err: { hasColors: false } })
-    })
-
-    it('does not use colors', () => {
-      expect(o.err).not.toMatch('\u001B')
-    })
-  })
-
-  describe('when stderr is not TTY', () => {
-    beforeEach(async () => {
-      o = await mocks.cli({ err: { isTTY: false } })
-    })
-
-    it('does not output the salto logo', () => {
-      expect(o.err).not.toContain('|\\   ____\\|\\')
-    })
-
-    it('outputs help to stderr', () => {
-      expect(o.err).toMatch(/\bCommands\b/)
-      expect(o.err).toMatch(/\bapply\b/)
-    })
-
-    it('exits with code 1', () => {
-      expect(o.exitCode).toEqual(1)
-    })
+  describe('when called with only --verbose', () => {
+    noArgsTests('--verbose')
   })
 
   describe('when called with --help', () => {
@@ -134,7 +124,21 @@ describe('cli', () => {
     it('exits with code 0', () => {
       expect(o.exitCode).toEqual(0)
     })
+
+    describe('when called with --verbose', () => {
+      let configure: jest.SpyInstance
+
+      beforeEach(async () => {
+        configure = jest.spyOn(logger, 'configure')
+        await mocks.cli({ args: 'apply --yes --verbose' })
+      })
+
+      it('configures the logging to level info', () => {
+        expect(configure).toHaveBeenCalledWith({ minLevel: 'info' })
+      })
+    })
   })
+
 
   describe('when called with "completion"', () => {
     beforeEach(async () => {

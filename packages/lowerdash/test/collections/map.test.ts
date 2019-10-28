@@ -64,7 +64,7 @@ describe('DefaultMap', () => {
       })
 
       it('should call the initDefault function', () => {
-        expect(initDefault).toHaveBeenCalled()
+        expect(initDefault).toHaveBeenCalledWith('x')
       })
 
       it('should return the initDefault result', () => {

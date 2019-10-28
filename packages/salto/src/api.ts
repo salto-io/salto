@@ -31,7 +31,7 @@ const applyActionOnState = async (
 export const plan = async (
   workspace: Workspace,
 ): Promise<Plan> => {
-  const state = new State(workspace.resolvePath(workspace.config.stateLocation))
+  const state = new State(workspace.config.stateLocation)
   return getPlan(await state.get(), workspace.elements)
 }
 
@@ -42,7 +42,7 @@ export const apply = async (
   reportProgress: (action: PlanItem) => void,
   force = false
 ): Promise<Plan> => {
-  const state = new State(workspace.resolvePath(workspace.config.stateLocation))
+  const state = new State(workspace.config.stateLocation)
   try {
     const actionPlan = getPlan(await state.get(), workspace.elements)
     if (force || await shouldApply(actionPlan)) {
@@ -67,7 +67,7 @@ export type discoverFunc = (
 ) => Promise<Iterable<DetailedChange>>
 
 export const discover: discoverFunc = async (workspace, fillConfig) => {
-  const state = new State(workspace.resolvePath(workspace.config.stateLocation))
+  const state = new State(workspace.config.stateLocation)
   const { changes, elements } = await discoverChanges(
     workspace.elements, await state.get(), fillConfig,
   )
@@ -89,7 +89,7 @@ export const exportToCsv = async (
   fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
 ): Promise<AsyncIterable<InstanceElement[]>> => {
   // Find the corresponding element in the state
-  const state = new State(workspace.resolvePath(workspace.config.stateLocation))
+  const state = new State(workspace.config.stateLocation)
   const stateElements = await state.get()
   const type = stateElements.find(elem => elem.elemID.getFullName() === typeId)
   if (!type) {
@@ -107,7 +107,7 @@ export const importFromCsvFile = async (
   fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
 ): Promise<void> => {
   // Find the corresponding element in the state
-  const state = new State(workspace.resolvePath(workspace.config.stateLocation))
+  const state = new State(workspace.config.stateLocation)
   const stateElements = await state.get()
   const type = stateElements.find(elem => elem.elemID.getFullName() === typeId)
   if (!type) {
@@ -124,7 +124,7 @@ export const deleteFromCsvFile = async (
   fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
 ): Promise<void> => {
   // Find the corresponding element in the state
-  const state = new State(workspace.resolvePath(workspace.config.stateLocation))
+  const state = new State(workspace.config.stateLocation)
   const stateElements = await state.get()
   const type = stateElements.find(elem => elem.elemID.getFullName() === typeId)
   if (!type) {
@@ -136,7 +136,7 @@ export const deleteFromCsvFile = async (
 
 export const init = async (workspaceName?: string): Promise<Workspace> => {
   const workspace = await Workspace.init('.', workspaceName)
-  const state = new State(workspace.resolvePath(workspace.config.stateLocation))
+  const state = new State(workspace.config.stateLocation)
   await state.flush()
   await workspace.flush()
   return workspace

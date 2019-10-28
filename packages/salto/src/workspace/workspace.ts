@@ -49,12 +49,6 @@ export interface ParsedBlueprintMap {
   [key: string]: ParsedBlueprint
 }
 
-const resolvePath = (config: Config, pathToResolve: string): string => (
-  path.isAbsolute(pathToResolve)
-    ? pathToResolve
-    : path.resolve(config.baseDir, pathToResolve)
-)
-
 const getBlueprintsFromDir = async (
   blueprintsDir: string,
 ): Promise<string[]> => {
@@ -93,7 +87,6 @@ export const parseBlueprints = async (blueprints: Blueprint[]): Promise<ParsedBl
 
 const parseBlueprintsWithCache = (
   blueprints: Blueprint[],
-  _blueprintsDir: string,
   cacheFolder: string
 ): Promise<ParsedBlueprint[]> => {
   const cache = new ParseResultFSCache(cacheFolder)
@@ -223,12 +216,10 @@ export class Workspace {
   ): Promise<Workspace> {
     const bps = await loadBlueprints(
       config.baseDir,
-      config.additionalBlueprints
-        ? config.additionalBlueprints.map(abp => resolvePath(config, abp))
-        : []
+      config.additionalBlueprints || []
     )
     const parsedBlueprints = useCache
-      ? parseBlueprintsWithCache(bps, config.baseDir, resolvePath(config, config.localStorage))
+      ? parseBlueprintsWithCache(bps, config.localStorage)
       : parseBlueprints(bps)
     return new Workspace(config, await parsedBlueprints)
   }
@@ -243,7 +234,7 @@ export class Workspace {
     // do not exist right now before writing anything to disk.
     await ensureEmptyWorkspace(config)
     await dumpConfig(baseDir, minimalConfig)
-    await fs.createDirectory(resolvePath(config, config.localStorage))
+    await fs.createDirectory(config.localStorage)
     return Workspace.load(config)
   }
 
@@ -366,10 +357,10 @@ export class Workspace {
    * Dump the current workspace state to the underlying persistent storage
    */
   async flush(): Promise<void> {
-    const cache = new ParseResultFSCache(this.resolvePath(this.config.localStorage))
+    const cache = new ParseResultFSCache(this.config.localStorage)
     await Promise.all(wu(this.dirtyBlueprints).map(async filename => {
       const bp = this.parsedBlueprints[filename]
-      const filePath = path.join(this.resolvePath(this.config.baseDir), filename)
+      const filePath = path.join(this.config.baseDir, filename)
       if (bp === undefined) {
         await fs.delete(filePath)
       } else {
@@ -384,9 +375,5 @@ export class Workspace {
       }
       this.dirtyBlueprints.delete(filename)
     }))
-  }
-
-  resolvePath(pathToResolve: string): string {
-    return resolvePath(this.config, pathToResolve)
   }
 }

@@ -3,7 +3,7 @@ import * as fs from 'async-file'
 import os from 'os'
 import uuidv5 from 'uuid/v5'
 import _ from 'lodash'
-import { ObjectType, ElemID, BuiltinTypes, Field, InstanceElement, isInstanceElement } from 'adapter-api'
+import { ObjectType, ElemID, BuiltinTypes, Field, InstanceElement, isInstanceElement, Type } from 'adapter-api'
 import { dump } from '../parser/dump'
 import { parse } from '../parser/parse'
 
@@ -18,16 +18,24 @@ class NotAWorkspaceError extends Error {
     super('not a salto workspace (or any of the parent directories)')
   }
 }
+
+class ConfigParseError extends Error {
+  constructor() {
+    super('failed to parsed config file')
+  }
+}
+
 const saltoConfigInstanceID = new ElemID('salto', ElemID.CONFIG_INSTANCE_NAME)
 const saltoConfigElemID = new ElemID('salto')
+const requireAnno = {[Type.REQUIRED] : true}
 export const saltoConfigType = new ObjectType({
   elemID: saltoConfigElemID,
   fields: {
-    uid: new Field(saltoConfigElemID, 'uid', BuiltinTypes.STRING),
+    uid: new Field(saltoConfigElemID, 'uid', BuiltinTypes.STRING, requireAnno),
     baseDir: new Field(saltoConfigElemID, 'uid', BuiltinTypes.STRING),
     stateLocation: new Field(saltoConfigElemID, 'uid', BuiltinTypes.STRING),
     localStorage: new Field(saltoConfigElemID, 'uid', BuiltinTypes.STRING),
-    name: new Field(saltoConfigElemID, 'uid', BuiltinTypes.STRING),
+    name: new Field(saltoConfigElemID, 'uid', BuiltinTypes.STRING, requireAnno),
     additionalBlueprints: new Field(saltoConfigElemID, 'uid', BuiltinTypes.STRING, {}, true),
   },
   annotationTypes: {},
@@ -61,9 +69,22 @@ const createDefaultConfig = (
   }
 }
 
+const resolvePath = (baseDir: string, pathToResolve: string): string => (
+  path.isAbsolute(pathToResolve)
+    ? pathToResolve
+    : path.resolve(baseDir, pathToResolve)
+)
+
 export const completeConfig = (baseDir: string, config: Partial<Config>): Config => {
   const defaultConfig = createDefaultConfig(baseDir, config.name, config.uid)
-  return _.merge({}, defaultConfig, config)
+  const fullConfig = _.merge({}, defaultConfig, config)
+  return {
+    stateLocation: resolvePath(baseDir, fullConfig.stateLocation),
+    localStorage: resolvePath(baseDir, fullConfig.localStorage),
+    additionalBlueprints : (fullConfig.additionalBlueprints || [])
+      .map(bp => resolvePath(baseDir, bp)),
+    ... fullConfig
+  }
 }
 
 export const locateWorkspaceRoot = async (lookupDir: string): Promise<string|undefined> => {
@@ -83,6 +104,7 @@ export const parseConfig = async (buffer: Buffer): Promise<Partial<Config>> => {
   const [configInstance] = parsedConfig.elements
     .filter(e => _.isEqual(e.elemID, saltoConfigInstanceID))
     .filter(isInstanceElement)
+  if (!configInstance) throw new ConfigParseError()
   return configInstance.value as unknown as Partial<Config>
 }
 

@@ -1,7 +1,7 @@
 import * as saltoImp from 'salto'
 import { Value } from 'adapter-api'
 import { getConfigFromUser } from '../../src/callbacks'
-import { MockWriteStream, importFromCsvFile as mockImportFromCsv } from '../mocks'
+import { MockWriteStream, importFromCsvFile as mockImportFromCsv, getWorkspaceErrors } from '../mocks'
 import { command } from '../../src/commands/import'
 import Prompts from '../../src/prompts'
 
@@ -18,7 +18,7 @@ const testCsvMockReturnValues: Value[] = []
 let readCsvSpy: jest.Mock<unknown>
 
 describe('import command', () => {
-  const mockWS = { hasErrors: () => false, errors: {} }
+  const mockWS = { hasErrors: () => false, errors: {}, getWorkspaceErrors }
   it('should run import successfully if given a correct path to a real CSV file', async () => {
     mockExistsReturn = Promise.resolve(true)
 

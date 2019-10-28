@@ -1,11 +1,11 @@
 import path from 'path'
 import { ObjectType, InstanceElement } from 'adapter-api'
 import { Workspace, dumpCsv as dumpCsvMock } from 'salto'
-import { exportToCsv, MockWriteStream } from '../mocks'
+import { exportToCsv, MockWriteStream, getWorkspaceErrors } from '../mocks'
 import { command } from '../../src/commands/export'
 
 const mockExportToCsv = exportToCsv
-const mockWS = { hasErrors: () => false, errors: {} }
+const mockWS = { hasErrors: () => false, errors: {}, getWorkspaceErrors }
 jest.mock('salto', () => ({
   ...(require.requireActual('salto')),
   exportToCsv: jest.fn().mockImplementation((

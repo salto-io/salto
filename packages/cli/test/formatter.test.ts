@@ -1,7 +1,7 @@
 import {
   Element, ObjectType, InstanceElement, PrimitiveType, ElemID, PrimitiveTypes, BuiltinTypes,
 } from 'adapter-api'
-import { formatSearchResults, createPlanOutput, formatChange, formatDiscoverChangeForApproval } from '../src/formatter'
+import { formatSearchResults, createPlanOutput, formatChange, formatDiscoverChangeForApproval, formatWorkspaceErrors } from '../src/formatter'
 import { elements, plan, detailedChange } from './mocks'
 
 describe('formatter', () => {
@@ -125,7 +125,6 @@ describe('formatter', () => {
       })
     })
   })
-
   describe('formatDiscoverChangeForApproval', () => {
     const change = detailedChange('add', ['adapter', 'object', 'field', 'value'], undefined, 'asd')
     const output = formatDiscoverChangeForApproval(change, 0, 3)
@@ -134,6 +133,46 @@ describe('formatter', () => {
     })
     it('should contain change index and total changes, with index 1 based', () => {
       expect(output).toContain('Change 1 of 3')
+    })
+  })
+
+  describe('workspace error format', () => {
+    const workspaceErrorsWithSourceFragments = [
+      {
+        sourceFragments: [{
+          sourceRange: {
+            start: {
+              byte: 20,
+              col: 10,
+              line: 2,
+            },
+            end: {
+              byte: 30,
+              col: 10,
+              line: 3,
+            },
+            filename: 'test.bp',
+          },
+          fragment: '{ This is my code fragment }',
+
+        }],
+        error: 'This is my error',
+      }]
+    let formattedErrors: string
+    beforeEach(() => {
+      formattedErrors = formatWorkspaceErrors(workspaceErrorsWithSourceFragments)
+    })
+    it('should print the start line', () => {
+      expect(formattedErrors).toContain('2')
+    })
+    it('should print the start col', () => {
+      expect(formattedErrors).toContain('10')
+    })
+    it('should print the error', () => {
+      expect(formattedErrors).toContain('This is my error')
+    })
+    it('should print the code fragment', () => {
+      expect(formattedErrors).toContain('{ This is my code fragment }')
     })
   })
 })

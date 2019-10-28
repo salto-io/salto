@@ -5,7 +5,7 @@ import {
 import {
   Workspace, Plan, PlanItem, Config,
 } from 'salto'
-import { apply, plan, MockWriteStream } from '../mocks'
+import { apply, plan, MockWriteStream, getWorkspaceErrors } from '../mocks'
 import { ApplyCommand } from '../../src/commands/apply'
 
 const mockApply = apply
@@ -23,6 +23,7 @@ jest.mock('salto', () => ({
           errors: {
             strings: () => ['Error', 'Error'],
           },
+          getWorkspaceErrors,
         }
       }
       return { hasErrors: () => false }

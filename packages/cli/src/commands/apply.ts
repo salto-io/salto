@@ -57,7 +57,7 @@ export class ApplyCommand implements CliCommand {
     const config = await loadConfig(this.workspaceDir)
     const workspace: Workspace = await Workspace.load(config)
     if (workspace.hasErrors()) {
-      this.stderr.write(formatWorkspaceErrors(workspace.errors))
+      this.stderr.write(formatWorkspaceErrors(workspace.getWorkspaceErrors()))
     } else {
       try {
         await apply(workspace,

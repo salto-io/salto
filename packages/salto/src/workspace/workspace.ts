@@ -35,9 +35,10 @@ export type Blueprint = {
 }
 
 export interface WorkspaceError {
-  sourceRanges: SourceRange[]
-  cause: ParseError | ValidationError | MergeError
+  sourceFragments: SourceFragment[]
   error: string
+  cause?: ParseError | ValidationError | MergeError
+  bpFragment?: string
 }
 
 export type ParsedBlueprint = Blueprint & ParseResult
@@ -132,6 +133,11 @@ export class Errors extends types.Bean<Readonly<{
       ...this.validation.map(error => error.error),
     ]
   }
+}
+
+export type SourceFragment = {
+  sourceRange: SourceRange
+  fragment: string
 }
 
 
@@ -238,24 +244,42 @@ export class Workspace {
   get parsedBlueprints(): ParsedBlueprintMap { return this.state.parsedBlueprints }
   get sourceMap(): SourceMap { return this.state.sourceMap }
 
+  private resolveSourceFragment(sourceRange: SourceRange): SourceFragment {
+    const bpString = this.state.parsedBlueprints[sourceRange.filename].buffer
+    const fragment = bpString.substring(sourceRange.start.byte, sourceRange.end.byte)
+    return {
+      sourceRange,
+      fragment,
+    }
+  }
+
   getWorkspaceErrors(): ReadonlyArray<WorkspaceError> {
     const wsErrors = this.state.errors
     return [
       ...wsErrors.parse.map(pe => ({
-        sourceRanges: [pe.subject],
+        sourceFragments: [this.resolveSourceFragment(pe.subject)],
         error: pe.detail,
         cause: pe,
+
       })),
-      ...wsErrors.merge.map(me => ({
-        sourceRanges: this.sourceMap.get(me.elemID.getFullName()) || [],
-        error: me.error,
-        cause: me,
-      })),
-      ...wsErrors.merge.map(ve => ({
-        sourceRanges: this.sourceMap.get(ve.elemID.getFullName()) || [],
-        error: ve.error,
-        cause: ve,
-      })),
+      ...wsErrors.merge.map(me => {
+        const sourceRanges = this.sourceMap.get(me.elemID.getFullName()) || []
+        const sourceFragments = sourceRanges.map(sr => this.resolveSourceFragment(sr))
+        return {
+          sourceFragments,
+          error: me.error,
+          cause: me,
+        }
+      }),
+      ...wsErrors.merge.map(ve => {
+        const sourceRanges = this.sourceMap.get(ve.elemID.getFullName()) || []
+        const sourceFragments = sourceRanges.map(sr => this.resolveSourceFragment(sr))
+        return {
+          sourceFragments,
+          error: ve.error,
+          cause: ve,
+        }
+      }),
     ]
   }
 

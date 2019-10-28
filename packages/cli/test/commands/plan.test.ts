@@ -1,10 +1,14 @@
 import { Workspace } from 'salto'
 import { command } from '../../src/commands/plan'
-import { plan, MockWriteStream } from '../mocks'
+import { plan, MockWriteStream, getWorkspaceErrors } from '../mocks'
 
 const mockPlan = plan
 const mockWs = { hasErrors: () => false }
-const mockErrWs = { hasErrors: () => true, errors: { strings: () => ['Error'] } }
+const mockErrWs = {
+  hasErrors: () => true,
+  errors: { strings: () => ['Error'] },
+  getWorkspaceErrors,
+}
 jest.mock('salto', () => ({
   plan: jest.fn().mockImplementation(() => mockPlan()),
   Workspace: {

@@ -6,7 +6,8 @@ import {
   isObjectType, isField, isPrimitiveType, Field, PrimitiveTypes,
 } from 'adapter-api'
 import {
-  Plan, PlanItem, FoundSearchResult, SearchResult, DetailedChange, Errors,
+  Plan, PlanItem, FoundSearchResult, SearchResult, DetailedChange,
+  WorkspaceError, SourceFragment,
 } from 'salto'
 import Prompts from './prompts'
 
@@ -209,9 +210,6 @@ export const formatSearchResults = (result: SearchResult): string => {
   return [title, description, elementHcl].join('\n')
 }
 
-export const formatWorkspaceErrors = (workspaceErrors: Errors): string =>
-  `Failed to load workspace, errors:\n ${workspaceErrors.strings().join('\n')}\n`
-
 
 export const createItemDoneOutput = (item: PlanItem, startTime: Date): string => {
   const elapsed = getElapsedTime(startTime)
@@ -259,3 +257,22 @@ export const formatChangesSummary = (changes: number, approved: number): string 
   }
   return Prompts.DISCOVER_CHANGES_TO_APPLY(approved)
 }
+
+/**
+  * Format workspace errors
+  */
+
+const TAB = '  '
+const fomratSourceFragment = (sf: Readonly<SourceFragment>): string =>
+  `${chalk.underline(sf.sourceRange.filename)}(${chalk.cyan(`${sf.sourceRange.start.line}`)}`
+  + `:${chalk.cyan(`${sf.sourceRange.start.col}`)})\n${TAB}${chalk.blueBright(sf.fragment.split('\n').join(`\n${TAB}`))}\n`
+const fomratSourceFragments = (sourceFragments: ReadonlyArray<SourceFragment>): string =>
+  (sourceFragments.length > 0
+    ? ` on ${sourceFragments.map(fomratSourceFragment).join('\n and ')}`
+    : '')
+
+const formatWorkspaceError = (we: Readonly<WorkspaceError>): string =>
+  `${chalk.red(chalk.bold('Error:'))} ${chalk.bold(we.error)}\n${fomratSourceFragments(we.sourceFragments)}`
+
+export const formatWorkspaceErrors = (workspaceErrors: ReadonlyArray<WorkspaceError>): string =>
+  `${Prompts.WORKSPACE_LOAD_FAILED}\n${workspaceErrors.map(formatWorkspaceError).join('\n\n')}\n`

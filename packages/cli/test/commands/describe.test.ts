@@ -4,7 +4,11 @@ import { command } from '../../src/commands/describe'
 
 const mockDescribe = mocks.describe
 const mockWs = { hasErrors: () => false }
-const mockErrWs = { hasErrors: () => true, errors: { strings: () => ['Error'] } }
+const mockErrWs = {
+  hasErrors: () => true,
+  errors: { strings: () => ['Error'] },
+  getWorkspaceErrors: mocks.getWorkspaceErrors,
+}
 jest.mock('salto', () => ({
   describeElement: jest.fn().mockImplementation(() => mockDescribe([])),
   Workspace: {

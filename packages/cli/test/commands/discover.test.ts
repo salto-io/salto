@@ -4,7 +4,7 @@ import {
   Workspace, discover, loadConfig, DetailedChange,
 } from 'salto'
 import { command, discoverCommand } from '../../src/commands/discover'
-import { MockWriteStream } from '../mocks'
+import { MockWriteStream, getWorkspaceErrors } from '../mocks'
 
 jest.mock('salto', () => ({
   discover: jest.fn().mockImplementation(() => Promise.resolve([])),
@@ -132,11 +132,12 @@ describe('discover command', () => {
       const erroredWorkspace = {
         hasErrors: () => true,
         errors: { strings: () => ['some error'] },
+        getWorkspaceErrors,
       } as unknown as Workspace
 
       it('should fail', async () => {
         await discoverCommand(erroredWorkspace, true, cliOutput, mockDiscover, mockApprove)
-        expect(cliOutput.stderr.content).toContain('some error')
+        expect(cliOutput.stderr.content).toContain('Error')
       })
     })
   })

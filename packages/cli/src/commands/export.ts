@@ -16,7 +16,7 @@ CliCommand => ({
     const config = await loadConfig(workingDir)
     const workspace: Workspace = await Workspace.load(config)
     if (workspace.hasErrors()) {
-      stderr.write(formatWorkspaceErrors(workspace.errors))
+      stderr.write(formatWorkspaceErrors(workspace.getWorkspaceErrors()))
     } else {
       const outputObjectsIterator = await exportToCsv(typeName, workspace, getConfigFromUser)
 

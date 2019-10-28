@@ -1,7 +1,7 @@
 import * as saltoImp from 'salto'
 import { Value } from 'adapter-api'
 import { getConfigFromUser } from '../../src/callbacks'
-import { MockWriteStream, deleteFromCsvFile as mockDeleteFromCsv } from '../mocks'
+import { MockWriteStream, deleteFromCsvFile as mockDeleteFromCsv, getWorkspaceErrors } from '../mocks'
 import { command } from '../../src/commands/delete'
 import Prompts from '../../src/prompts'
 
@@ -16,7 +16,7 @@ const testCsvMockReturnValues: Value[] = []
 let readCsvSpy: jest.Mock<unknown>
 const workspaceDir = `${__dirname}/../../../test/BP`
 describe('delete command', () => {
-  const mockWS = { hasErrors: () => false, errors: {} }
+  const mockWS = { hasErrors: () => false, errors: {}, getWorkspaceErrors }
   it('should run delete successfully if CSV file is found', async () => {
     mockExistsReturn = Promise.resolve(true)
 
@@ -40,6 +40,7 @@ describe('delete command', () => {
   it('should fail of workspace load failed', async () => {
     mockWS.hasErrors = () => true
     mockWS.errors = { strings: () => ['Error'] }
+    mockWS.getWorkspaceErrors = getWorkspaceErrors
     mockExistsReturn = Promise.resolve(true)
     readCsvSpy = jest.spyOn(saltoImp, 'readCsv').mockImplementation(() => Promise.resolve(testCsvMockReturnValues))
     deleteFromCsvSpy = jest.spyOn(saltoImp, 'deleteFromCsvFile').mockImplementation(() => mockDeleteFromCsv())

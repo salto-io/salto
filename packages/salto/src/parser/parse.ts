@@ -3,13 +3,13 @@ import {
   Type, ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field, Values,
   Element, InstanceElement,
 } from 'adapter-api'
-import { SourceRange, SourceMap as SourceMapImpl } from './internal/types'
+import { SourceRange as InternalSourceRange, SourceMap as SourceMapImpl } from './internal/types'
 import HclParser, { ParsedHclBlock, HclParseError } from './internal/hcl'
 import evaluate from './expressions'
 import { Keywords } from './language'
 
 // Re-export these types because we do not want code outside the parser to import hcl
-export type SourceRange = SourceRange
+export type SourceRange = InternalSourceRange
 export type ParseError = HclParseError
 
 export type SourceMap = ReadonlyMap<string, SourceRange[]>

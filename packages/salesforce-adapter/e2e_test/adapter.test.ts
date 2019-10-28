@@ -978,6 +978,8 @@ describe('Salesforce adapter E2E with real account', () => {
               [Type.REQUIRED]: false,
               [constants.FIELD_ANNOTATIONS.RELATED_TO]: ['Case'],
               [constants.LABEL]: 'MasterDetail description label',
+              [constants.FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ]: true,
+              [constants.FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL]: true,
             }
           ),
         },
@@ -1136,6 +1138,8 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(masterDetailField.relationshipName).toBe(`Rocket${randomString}__r`)
       expect(masterDetailField.referenceTo).toEqual(['Case'])
       expect(masterDetailField.cascadeDelete).toBe(true)
+      expect(masterDetailField.writeRequiresMasterRead).toBe(true)
+      expect(masterDetailField.updateable).toBe(true)
 
       // Clean-up
       await adapter.remove(post as ObjectType)

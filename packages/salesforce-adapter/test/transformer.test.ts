@@ -202,8 +202,22 @@ describe('transformer', () => {
 
     it('should discover masterdetail relationships', async () => {
       salesforceReferenceField.cascadeDelete = true
+      salesforceReferenceField.updateable = true
+      salesforceReferenceField.writeRequiresMasterRead = true
       const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField)
       assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.salesforceDataTypes.masterdetail, 'owner', undefined)
+      expect(fieldElement.annotations[FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL]).toBe(true)
+      expect(fieldElement.annotations[FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ]).toBe(true)
+    })
+
+    it('should discover masterdetail relationships which are not reparentable and requires read/write access', async () => {
+      salesforceReferenceField.cascadeDelete = true
+      salesforceReferenceField.updateable = false
+      delete salesforceReferenceField.writeRequiresMasterRead
+      const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField)
+      assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.salesforceDataTypes.masterdetail, 'owner', undefined)
+      expect(fieldElement.annotations[FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL]).toBe(false)
+      expect(fieldElement.annotations[FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ]).toBe(false)
     })
   })
 
@@ -252,10 +266,15 @@ describe('transformer', () => {
     })
 
     it('should transform masterdetail field', async () => {
-      objectType.fields[fieldName].type = Types.get(FIELD_TYPE_NAMES.MASTER_DETAIL)
-      const customLookupField = toCustomField(objectType, objectType.fields[fieldName])
-      assertCustomFieldTransformation(customLookupField,
+      const masterDetailField = objectType.fields[fieldName]
+      masterDetailField.type = Types.get(FIELD_TYPE_NAMES.MASTER_DETAIL)
+      masterDetailField.annotations[FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ] = true
+      masterDetailField.annotations[FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL] = true
+      const customMasterDetailField = toCustomField(objectType, masterDetailField)
+      assertCustomFieldTransformation(customMasterDetailField,
         FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.MASTER_DETAIL], 'FieldName', undefined, relatedTo)
+      expect(customMasterDetailField.reparentableMasterDetail).toBe(true)
+      expect(customMasterDetailField.writeRequiresMasterRead).toBe(true)
     })
 
     it('should have ControlledByParent sharing model when having masterdetail field', async () => {

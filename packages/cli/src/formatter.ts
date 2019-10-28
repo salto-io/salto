@@ -144,8 +144,7 @@ const formatDetailedChanges = (changeGroups: Iterable<Iterable<DetailedChange>>)
     // Sort changes so they show up nested correctly
     .map(changes => _.sortBy(changes, change => change.id.getFullName()))
     // Format changes
-    .map(changes => changes.map(formatChange))
-    .flatten()
+    .map(changes => changes.map(formatChange).join('\n'))
     .toArray()
     .join('\n\n')
 }

@@ -7,7 +7,7 @@ import {
 } from 'adapter-api'
 import { Plan, DetailedChange } from 'salto'
 import {
-  createPlanOutput, header, subHeader, formatDiscoverChangeForApproval,
+  createApplyPlanOutput, header, subHeader, formatDiscoverChangeForApproval,
 } from './formatter'
 import Prompts from './prompts'
 import { CliOutput } from './types'
@@ -26,7 +26,7 @@ export const shouldApply = ({ stdout }: CliOutput) => async (actions: Plan): Pro
   const planOutput = [
     header(Prompts.STARTAPPLY),
     subHeader(Prompts.EXPLAINAPPLY),
-    createPlanOutput(actions),
+    createApplyPlanOutput(actions),
   ].join('\n')
   stdout.write(planOutput)
   if (_.isEmpty(actions)) {

@@ -7,6 +7,8 @@ import {
   Plan, PlanItem, SearchResult, DetailedChange, Workspace, WorkspaceError,
 } from 'salto'
 import { GroupedNodeMap } from '@salto/dag'
+import stream from 'stream'
+import { Spinner, SpinnerOptions, SpinnerCreator } from '../src/types'
 import { YargsCommandBuilder } from '../src/command_builder'
 import builders from '../src/commands/index'
 import realCli from '../src/cli'
@@ -25,6 +27,51 @@ export class MockWriteStream {
 
   write(s: string): void { this.content += s }
   getColorDepth(): number { return this.colors ? 8 : 1 }
+}
+
+export type MockWritableStream = NodeJS.WritableStream & {
+  contents(): string
+}
+
+export const mockWritableStream = (): MockWritableStream => {
+  let content = ''
+
+  const writable = new stream.Writable({
+    write: s => { content += s },
+  })
+
+  return Object.assign(writable, {
+    contents(): string { return content },
+  })
+}
+
+export type MockSpinner = Spinner & {
+  started(): boolean
+  succeedded(): boolean
+  failed(): boolean
+}
+
+export const mockSpinnerCreator = (): SpinnerCreator => (_options: SpinnerOptions): MockSpinner => {
+  let started = false
+  let succeedded = false
+  let failed = false
+  return {
+    started(): boolean { return started },
+    succeedded(): boolean { return succeedded },
+    failed(): boolean { return failed },
+    start(): Spinner {
+      started = true
+      return this
+    },
+    succeed(): Spinner {
+      succeedded = true
+      return this
+    },
+    fail(): Spinner {
+      failed = true
+      return this
+    },
+  }
 }
 
 export interface MockCliOutput {
@@ -54,7 +101,9 @@ export const cli = async ({
     stdout: new MockWriteStream(out),
   }
 
-  const exitCode = await realCli({ input, output, commandBuilders })
+  const spinnerCreator = mockSpinnerCreator()
+
+  const exitCode = await realCli({ input, output, commandBuilders, spinnerCreator })
 
   return { err: output.stderr.content, out: output.stdout.content, exitCode }
 }

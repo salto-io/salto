@@ -14,7 +14,7 @@ import {
 import wu from 'wu'
 import { CliOutput } from '../src/types'
 
-import { MockWriteStream } from '../test/mocks'
+import { MockWriteStream, MockSpinner, mockSpinnerCreator } from '../test/mocks'
 import { command as discover } from '../src/commands/discover'
 import { command as plan } from '../src/commands/plan'
 import { ApplyCommand } from '../src/commands/apply'
@@ -24,6 +24,7 @@ const credentials = salesforceTestHelpers.credentials()
 const mockGetConfigType = (): InstanceElement => adapterConfigs.salesforce()
 
 let cliOutput: CliOutput
+let spinner: MockSpinner
 
 let lastPlan: Plan
 const mockShouldApply = (p: Plan): boolean => {
@@ -80,6 +81,7 @@ describe('commands e2e', () => {
       lastPlan.clear()
     }
     cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
+    spinner = mockSpinnerCreator()({}) as MockSpinner
   })
 
   jest.setTimeout(5 * 60 * 1000)
@@ -108,7 +110,7 @@ describe('commands e2e', () => {
   })
 
   it('should run plan on discover output and detect no changes', async () => {
-    await plan(discoverOutputDir, cliOutput).execute()
+    await plan(discoverOutputDir, cliOutput, spinner).execute()
     expect(lastPlan).toBeUndefined()
   })
 

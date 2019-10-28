@@ -16,6 +16,21 @@ export enum CliExitCode {
   AppError = 2,
 }
 
+export interface Spinner {
+  start(text: string): Spinner
+  succeed(text: string): Spinner
+  fail(text: string): Spinner
+}
+
+export interface SpinnerOptions {
+  indent?: number
+  hideCursor?: boolean
+  color?: 'black' | 'red' | 'green' | 'yellow' | 'blue' | 'magenta' | 'cyan' | 'white' | 'gray'
+  prefixText?: string
+}
+
+export type SpinnerCreator = (options: SpinnerOptions) => Spinner
+
 export interface CliOutput {
   stdout: WriteStream
   stderr: WriteStream

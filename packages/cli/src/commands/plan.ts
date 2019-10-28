@@ -1,12 +1,15 @@
 import { plan } from 'salto'
 import { createCommandBuilder } from '../command_builder'
-import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'
+import {
+  ParsedCliInput, CliCommand, CliOutput, Spinner, SpinnerCreator, CliExitCode,
+} from '../types'
 import { createPlanOutput } from '../formatter'
 import { loadWorkspace } from '../workspace'
 
 export const command = (
   workspaceDir: string,
-  { stdout, stderr }: CliOutput
+  { stdout, stderr }: CliOutput,
+  spinner: Spinner
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
     const { workspace, errored } = await loadWorkspace(workspaceDir, stderr)
@@ -14,8 +17,10 @@ export const command = (
       return CliExitCode.AppError
     }
     // TODO: inline commands.plan here
-    stdout.write(createPlanOutput(await plan(workspace)))
-
+    spinner.start('Calculating execution plan')
+    const workspacePlan = await plan(workspace)
+    spinner.succeed('Calculated execution plan!')
+    stdout.write(createPlanOutput(workspacePlan))
     return CliExitCode.Success
   },
 })
@@ -39,8 +44,9 @@ const planBuilder = createCommandBuilder({
     },
   },
 
-  async build(_input: PlanParsedCliInput, output: CliOutput) {
-    return command('.', output)
+  async build(_input: PlanParsedCliInput, output: CliOutput, spinnerCreator: SpinnerCreator) {
+    const spinner = spinnerCreator({})
+    return command('.', output, spinner)
   },
 })
 

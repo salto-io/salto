@@ -1,6 +1,6 @@
 import {
   toHexColor, normalizeNamespaceOrModule,
-} from '../../../src/logging/internal/namespaces'
+} from '../../src/internal/namespaces'
 
 describe('namespaces', () => {
   describe('toHexColor', () => {
@@ -19,7 +19,7 @@ describe('namespaces', () => {
     describe('when a module is specified', () => {
       it('should return its name as a string', () => {
         expect(normalizeNamespaceOrModule(module))
-          .toEqual('adapter-api/test/logging/internal/namespaces.test')
+          .toEqual('logging/test/internal/namespaces.test')
       })
     })
 

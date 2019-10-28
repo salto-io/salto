@@ -17,7 +17,8 @@ import {
   RecordResult,
   BulkLoadOperation,
 } from 'jsforce'
-import { Value, logger } from 'adapter-api'
+import { Value } from 'adapter-api'
+import { logger } from '@salto/logging'
 import { CompleteSaveResult } from './types'
 import Connection from './jsforce'
 

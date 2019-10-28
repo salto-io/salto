@@ -1,4 +1,4 @@
-import { Logger, LogLevel, LOG_LEVELS, logger as createLogger } from 'adapter-api'
+import { Logger, LogLevel, LOG_LEVELS, logger as createLogger } from '@salto/logging'
 
 type HasMockLogMethods = {
   [logLevel in LogLevel]: jest.Mock

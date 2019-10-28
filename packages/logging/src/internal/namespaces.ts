@@ -7,7 +7,7 @@ const parentDir = (numLevels: number): string => path.normalize(
   path.join(__dirname, ...Array(numLevels).fill('..'))
 )
 
-const MONOREPO_PACKAGES_DIRNAME = parentDir(5)
+const MONOREPO_PACKAGES_DIRNAME = parentDir(4)
 
 const usableNamespaceColors = safeColors.map(c => c.hexString)
 

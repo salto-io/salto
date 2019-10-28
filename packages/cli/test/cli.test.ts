@@ -1,4 +1,4 @@
-import { logger } from 'adapter-api'
+import { logger } from '@salto/logging'
 import * as mocks from './mocks'
 import applyBuilder from '../src/commands/apply'
 

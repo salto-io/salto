@@ -1,4 +1,4 @@
-import { mergeConfigs, DEFAULT_CONFIG, LogLevel, Config, cloneConfig } from '../../../src/logging/internal/common'
+import { mergeConfigs, DEFAULT_CONFIG, LogLevel, Config, cloneConfig } from '../../src/internal/common'
 
 describe('common', () => {
   describe('mergeConfigs', () => {

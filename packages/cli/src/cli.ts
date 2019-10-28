@@ -1,6 +1,6 @@
 import { EOL } from 'os'
 import chalk from 'chalk'
-import { compareLogLevels, LogLevel, logger } from 'adapter-api'
+import { compareLogLevels, LogLevel, logger } from '@salto/logging'
 import { streams } from '@salto/lowerdash'
 import { CliInput, CliOutput, CliExitCode } from './types'
 import { YargsCommandBuilder } from './command_builder'

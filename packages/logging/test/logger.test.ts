@@ -1,17 +1,17 @@
 import fs from 'fs'
 import tmp from 'tmp'
-import { pollPromise } from '../../poll'
-import { mockConsoleStream, MockWritableStream } from '../../console'
+import { pollPromise } from './poll'
+import { mockConsoleStream, MockWritableStream } from './console'
 import {
   LogLevel, Config, mergeConfigs, LOG_LEVELS, Logger, LoggerRepo,
-} from '../../../src/logging/internal/common'
-import { loggerRepo } from '../../../src/logging/internal/repo'
-import { loggerRepo as winstonLoggerRepo } from '../../../src/logging/internal/winston'
+} from '../src/internal/common'
+import { loggerRepo } from '../src/internal/repo'
+import { loggerRepo as winstonLoggerRepo } from '../src/internal/winston'
 import './matchers'
 
 const TIMESTAMP_REGEX = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/
 
-describe('winston logger', () => {
+describe('logger', () => {
   let consoleStream: MockWritableStream
   let initialConfig: Config
   const NAMESPACE = 'my-namespace'
@@ -276,7 +276,7 @@ describe('winston logger', () => {
       })
 
       it('should write the message with the child namespace as string', () => {
-        expect(line).toContain('adapter-api/test/logging/internal/winston.test')
+        expect(line).toContain('logging/test/logger.test')
       })
 
       describe('when getting the same logger again', () => {

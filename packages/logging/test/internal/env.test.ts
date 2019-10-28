@@ -1,7 +1,7 @@
-import { config } from '../../../src/logging/internal/env'
+import { config } from '../../src/internal/env'
 import {
   EnabledForNamespaceChecker, ConfigValidationError,
-} from '../../../src/logging/internal/common'
+} from '../../src/internal/common'
 
 describe('env', () => {
   describe('config', () => {

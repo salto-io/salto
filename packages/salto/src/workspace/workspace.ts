@@ -12,7 +12,9 @@ import { validateElements, ValidationError } from '../core/validator'
 import { DetailedChange } from '../core/plan'
 import { ParseResultFSCache } from './cache'
 import { getChangeLocations, updateBlueprintData } from './blueprint_update'
-import { Config, dumpConfig, locateWorkspaceRoot, getConfigPath, completeConfig } from './config'
+import {
+  Config, dumpConfig, locateWorkspaceRoot, getConfigPath, completeConfig, saltoConfigType,
+} from './config'
 
 const { DefaultMap } = collections.map
 
@@ -46,6 +48,12 @@ export type ParsedBlueprint = Blueprint & ParseResult
 export interface ParsedBlueprintMap {
   [key: string]: ParsedBlueprint
 }
+
+const resolvePath = (config: Config, pathToResolve: string): string => (
+  path.isAbsolute(pathToResolve)
+    ? pathToResolve
+    : path.resolve(config.baseDir, pathToResolve)
+)
 
 const getBlueprintsFromDir = async (
   blueprintsDir: string,
@@ -154,7 +162,10 @@ const createWorkspaceState = (blueprints: ReadonlyArray<ParsedBlueprint>): Works
     sourceMap: mergeSourceMaps(blueprints),
   }
   const parseErrors = _.flatten(blueprints.map(bp => bp.errors))
-  const elements = _.flatten(blueprints.map(bp => bp.elements))
+  const elements = [
+    ..._.flatten(blueprints.map(bp => bp.elements)),
+    saltoConfigType,
+  ]
   const { merged: mergedElements, errors: mergeErrors } = mergeElements(elements)
   const validationErrors = validateElements(mergedElements)
   return {
@@ -210,9 +221,14 @@ export class Workspace {
     config: Config,
     useCache = true
   ): Promise<Workspace> {
-    const bps = await loadBlueprints(config.baseDir, config.additionalBlueprints || [])
+    const bps = await loadBlueprints(
+      config.baseDir,
+      config.additionalBlueprints
+        ? config.additionalBlueprints.map(abp => resolvePath(config, abp))
+        : []
+    )
     const parsedBlueprints = useCache
-      ? parseBlueprintsWithCache(bps, config.baseDir, config.localStorage)
+      ? parseBlueprintsWithCache(bps, config.baseDir, resolvePath(config, config.localStorage))
       : parseBlueprints(bps)
     return new Workspace(config, await parsedBlueprints)
   }
@@ -227,7 +243,7 @@ export class Workspace {
     // do not exist right now before writing anything to disk.
     await ensureEmptyWorkspace(config)
     await dumpConfig(baseDir, minimalConfig)
-    await fs.createDirectory(config.localStorage)
+    await fs.createDirectory(resolvePath(config, config.localStorage))
     return Workspace.load(config)
   }
 
@@ -350,10 +366,10 @@ export class Workspace {
    * Dump the current workspace state to the underlying persistent storage
    */
   async flush(): Promise<void> {
-    const cache = new ParseResultFSCache(this.config.localStorage)
+    const cache = new ParseResultFSCache(this.resolvePath(this.config.localStorage))
     await Promise.all(wu(this.dirtyBlueprints).map(async filename => {
       const bp = this.parsedBlueprints[filename]
-      const filePath = path.join(this.config.baseDir, filename)
+      const filePath = path.join(this.resolvePath(this.config.baseDir), filename)
       if (bp === undefined) {
         await fs.delete(filePath)
       } else {
@@ -368,5 +384,9 @@ export class Workspace {
       }
       this.dirtyBlueprints.delete(filename)
     }))
+  }
+
+  resolvePath(pathToResolve: string): string {
+    return resolvePath(this.config, pathToResolve)
   }
 }

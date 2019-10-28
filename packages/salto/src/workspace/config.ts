@@ -3,8 +3,11 @@ import * as fs from 'async-file'
 import os from 'os'
 import uuidv5 from 'uuid/v5'
 import _ from 'lodash'
+import { ObjectType, ElemID, BuiltinTypes, Field, InstanceElement, isInstanceElement } from 'adapter-api'
+import { dump } from '../parser/dump'
+import { parse } from '../parser/parse'
 
-const CONFIG_FILENAME = 'config.json'
+const CONFIG_FILENAME = 'config.bp'
 const CONFIG_DIR_NAME = 'salto.config'
 const DEFAULT_SALTO_HOME = path.join(os.homedir(), '.salto')
 const SALTO_NAMESPACE = '1b671a64-40d5-491e-99b0-da01ff1f3341'
@@ -15,6 +18,21 @@ class NotAWorkspaceError extends Error {
     super('not a salto workspace (or any of the parent directories)')
   }
 }
+const saltoConfigInstanceID = new ElemID('salto', ElemID.CONFIG_INSTANCE_NAME)
+const saltoConfigElemID = new ElemID('salto')
+export const saltoConfigType = new ObjectType({
+  elemID: saltoConfigElemID,
+  fields: {
+    uid: new Field(saltoConfigElemID, 'uid', BuiltinTypes.STRING),
+    baseDir: new Field(saltoConfigElemID, 'uid', BuiltinTypes.STRING),
+    stateLocation: new Field(saltoConfigElemID, 'uid', BuiltinTypes.STRING),
+    localStorage: new Field(saltoConfigElemID, 'uid', BuiltinTypes.STRING),
+    name: new Field(saltoConfigElemID, 'uid', BuiltinTypes.STRING),
+    additionalBlueprints: new Field(saltoConfigElemID, 'uid', BuiltinTypes.STRING, {}, true),
+  },
+  annotationTypes: {},
+  annotations: {},
+})
 
 export interface Config {
   uid: string
@@ -60,18 +78,27 @@ export const getConfigPath = (baseDir: string): string => (
   path.join(baseDir, CONFIG_DIR_NAME, CONFIG_FILENAME)
 )
 
+export const parseConfig = async (buffer: Buffer): Promise<Partial<Config>> => {
+  const parsedConfig = await parse(buffer, '')
+  const [configInstance] = parsedConfig.elements
+    .filter(e => _.isEqual(e.elemID, saltoConfigInstanceID))
+    .filter(isInstanceElement)
+  return configInstance.value as unknown as Partial<Config>
+}
+
+export const dumpConfig = async (baseDir: string, config: Partial<Config>): Promise<void> => {
+  const configPath = getConfigPath(baseDir)
+  await fs.createDirectory(path.dirname(configPath))
+  const configInstance = new InstanceElement(saltoConfigInstanceID, saltoConfigType, config)
+  return fs.writeFile(configPath, await dump([configInstance]))
+}
+
 export const loadConfig = async (lookupDir: string): Promise<Config> => {
   const absLookupDir = path.resolve(lookupDir)
   const baseDir = await locateWorkspaceRoot(absLookupDir)
   if (!baseDir) {
     throw new NotAWorkspaceError()
   }
-  const configData = JSON.parse(await fs.readFile(getConfigPath(baseDir), 'utf8'))
+  const configData = await parseConfig(await fs.readFile(getConfigPath(baseDir), 'utf8'))
   return completeConfig(baseDir, configData)
-}
-
-export const dumpConfig = async (baseDir: string, config: Partial<Config>): Promise<void> => {
-  const configPath = getConfigPath(baseDir)
-  await fs.createDirectory(path.dirname(configPath))
-  return fs.writeFile(configPath, JSON.stringify(config, null, 2))
 }

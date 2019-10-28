@@ -27,10 +27,10 @@ describe('load proper configuration', () => {
     expect(config).toEqual(
       {
         name: 'workspace',
-        localStorage: '~/.salto/workspace',
-        baseDir: '~/workspace',
-        stateLocation: '~/states/test.bpc',
-        additionalBlueprints: ['~/moreBP/test.bp'],
+        localStorage: '/.salto/workspace',
+        baseDir: '/workspace',
+        stateLocation: '/states/test.bpc',
+        additionalBlueprints: ['/moreBP/test.bp'],
         uid: 'uid',
       }
     )

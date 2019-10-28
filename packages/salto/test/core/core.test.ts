@@ -3,6 +3,7 @@ import {
   ElemID, InstanceElement, ObjectType, AdapterCreator, Field, BuiltinTypes,
 } from 'adapter-api'
 import { Config } from 'src/workspace/config'
+import _ from 'lodash'
 import * as commands from '../../src/api'
 import State from '../../src/state/state'
 import adapterCreators from '../../src/core/adapters/creators'
@@ -334,7 +335,11 @@ describe('api functions', () => {
     let mockWorkspace: Workspace
     let changes: plan.DetailedChange[]
     beforeEach(async () => {
-      mockWorkspace = { elements: [], config: { stateLocation: '.' } } as unknown as Workspace
+      mockWorkspace = {
+        elements: [],
+        config: { stateLocation: '.' },
+        resolvePath: _.identity,
+      } as unknown as Workspace
       changes = [...await commands.discover(mockWorkspace, mockGetConfigFromUser)]
     })
 

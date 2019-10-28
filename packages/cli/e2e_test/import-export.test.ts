@@ -17,7 +17,7 @@ const sfLeadObjectName = 'salesforce_lead'
 const mockGetConfigType = (): InstanceElement => adapterConfigs.salesforce()
 const homePath = process.env.HOME || process.env.HOMEPATH || process.env.USERPROFILE
 const discoverOutputDir = `${homePath}/BP/test_import`
-const configFile = `${__dirname}/../../e2e_test/BP/salto.config/config.json`
+const configFile = `${__dirname}/../../e2e_test/BP/salto.config/config.bp`
 
 const exportOutputDir = `${homePath}/tmp/export`
 const exportFile = 'export_test.csv'
@@ -42,7 +42,7 @@ describe('Data migration operations E2E', () => {
       await asyncfile.delete(exportOutputDir)
       await asyncfile.delete(discoverOutputDir)
       await asyncfile.mkdirp(`${discoverOutputDir}/salto.config`)
-      await copyFile(configFile, `${discoverOutputDir}/salto.config/config.json`)
+      await copyFile(configFile, `${discoverOutputDir}/salto.config/config.bp`)
       await discover(discoverOutputDir, true, cliOutput).execute()
     })
 
@@ -88,7 +88,7 @@ describe('Data migration operations E2E', () => {
       await asyncfile.delete(exportOutputDir)
       await asyncfile.delete(discoverOutputDir)
       await asyncfile.mkdirp(`${discoverOutputDir}/salto.config`)
-      await copyFile(configFile, `${discoverOutputDir}/salto.config/config.json`)
+      await copyFile(configFile, `${discoverOutputDir}/salto.config/config.bp`)
     })
 
     it('should fail when running export', async () => {

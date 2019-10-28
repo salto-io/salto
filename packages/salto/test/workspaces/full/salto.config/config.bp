@@ -1,0 +1,8 @@
+salto {
+    name =  "workspace"
+    local_storage = "/.salto/workspace"
+    base_dir = "/workspace"
+    state_location = "/states/test.bpc"
+    additional_blueprints = ["/moreBP/test.bp"]
+    uid = "uid"
+}

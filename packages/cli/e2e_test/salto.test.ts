@@ -46,7 +46,7 @@ describe('commands e2e', () => {
   const localStorageDir = `${homePath}/.salto/test_discover`
   const addModelBP = `${__dirname}/../../e2e_test/BP/add.bp`
   const modifyModelBP = `${__dirname}/../../e2e_test/BP/modify.bp`
-  const configFile = `${__dirname}/../../e2e_test/BP/salto.config/config.json`
+  const configFile = `${__dirname}/../../e2e_test/BP/salto.config/config.bp`
   const statePath = `${discoverOutputDir}/salto.config/state.bpc`
   const tmpBP = `${discoverOutputDir}/tmp.bp`
   const client = new SalesforceClient({ credentials })
@@ -86,7 +86,7 @@ describe('commands e2e', () => {
   beforeAll(async () => {
     await fs.mkdirp(`${discoverOutputDir}/salto.config`)
     await fs.mkdirp(localStorageDir)
-    await copyFile(configFile, `${discoverOutputDir}/salto.config/config.json`)
+    await copyFile(configFile, `${discoverOutputDir}/salto.config/config.bp`)
     if (await fs.exists(tmpBP)) {
       await fs.delete(tmpBP)
     }

@@ -10,9 +10,11 @@ export const VERBOSE_LOG_LEVEL: LogLevel = 'info'
 
 const log = logger(module)
 
-const handleVerbose = (): void => {
+const increaseLoggingLogLevel = (): void => {
   const currentLogLevel = logger.config.minLevel
-  const isCurrentLogLevelLower = compareLogLevels(currentLogLevel, VERBOSE_LOG_LEVEL) < 0
+  const isCurrentLogLevelLower = currentLogLevel === 'none'
+    || compareLogLevels(currentLogLevel, VERBOSE_LOG_LEVEL) < 0
+
   if (isCurrentLogLevelLower) {
     logger.configure({ minLevel: VERBOSE_LOG_LEVEL })
   }
@@ -36,7 +38,7 @@ export default async (
       const { parsedArgs, builder: commandBuilder } = parseResult
 
       if (parsedArgs.verbose) {
-        handleVerbose()
+        increaseLoggingLogLevel()
       }
 
       log.info('CLI started')

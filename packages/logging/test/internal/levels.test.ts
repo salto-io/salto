@@ -1,5 +1,6 @@
-import { LOG_LEVELS, LogLevel } from '../../src/internal/common'
-import { pad, toHexColor, compare } from '../../src/internal/levels'
+import {
+  pad, toHexColor, compare, LOG_LEVELS, LogLevel,
+} from '../../src/internal/level'
 
 describe('levels', () => {
   describe('pad', () => {

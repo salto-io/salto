@@ -1,16 +1,17 @@
-import {
-  Config, mergeConfigs,
-} from './internal/common'
-import { loggerRepo } from './internal/repo'
+import { Config, mergeConfigs } from './internal/config'
+import { loggerRepo } from './internal/logger'
 import * as env from './internal/env'
 import * as winston from './internal/winston'
 
+export { LogLevel, LOG_LEVELS } from './internal/level'
+export { Logger } from './internal/logger'
+export { Config as LogConfig } from './internal/config'
 export {
-  ConfigValidationError as LogConfigValidationError,
-  Config as LogConfig, LogLevel, Logger, LOG_LEVELS,
+  ValidationError as LogConfigValidationError,
+
 } from './internal/common'
 
-export { compare as compareLogLevels } from './internal/levels'
+export { compare as compareLogLevels } from './internal/level'
 
 const deps = {
   consoleStream: process.stdout,

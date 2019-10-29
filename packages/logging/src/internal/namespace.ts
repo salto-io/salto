@@ -1,7 +1,19 @@
 import path from 'path'
 import { safe as safeColors } from './colors'
 import quickHash, { MIN_HASH, MAX_HASH } from './quickhash'
-import { Namespace, NamespaceOrModule, isLoggingModule } from './common.js'
+// import {  } from './common.js'
+
+// Partial of ES6 Module
+export type LoggingModule = {
+  filename: string
+}
+
+export const isLoggingModule = (o: unknown): o is LoggingModule => typeof o === 'object'
+  && Object.prototype.hasOwnProperty.call(o, 'filename')
+
+export type Namespace = string
+
+export type NamespaceOrModule = Namespace | LoggingModule
 
 const parentDir = (numLevels: number): string => path.normalize(
   path.join(__dirname, ...Array(numLevels).fill('..'))

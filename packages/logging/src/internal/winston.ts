@@ -3,16 +3,12 @@ import * as Transport from 'winston-transport'
 import chalk from 'chalk'
 import * as logform from 'logform'
 import { streams } from '@salto/lowerdash'
-import {
-  LOG_LEVELS, LogLevel, Config, Format,
-  BaseLoggerMaker, BaseLoggerRepo,
-} from './common'
+import { LOG_LEVELS, LogLevel, toHexColor as levelToHexColor } from './level'
+import { Config, Format } from './config'
+import { BaseLoggerMaker, BaseLoggerRepo } from './logger'
 import {
   toHexColor as namespaceToHexColor,
-} from './namespaces'
-import {
-  toHexColor as levelToHexColor,
-} from './levels'
+} from './namespace'
 
 const winstonLogLevels: winston.config.AbstractConfigSetLevels = Object.assign(
   {},
@@ -62,22 +58,28 @@ const format = (
 )
 
 const fileTransport = (
-  { filename, format: formatType }: { filename: string; format: Format }
+  { filename, format: formatType, colorize }: {
+    filename: string
+    format: Format
+    colorize: boolean | null
+  }
 ): Transport => new winston.transports.File({
   filename,
-  format: format({ colorize: false, format: formatType }),
+  format: format({ colorize: !!colorize, format: formatType }),
 })
 
 const consoleTransport = (
   { stream, format: formatType, colorize }: {
     stream: NodeJS.WritableStream
     format: Format
-    colorize: boolean
+    colorize: boolean | null
   },
 ): Transport => new winston.transports.Stream({
   stream,
   format: format({
-    colorize: colorize && streams.hasColors(stream as streams.MaybeTty),
+    colorize: colorize === null
+      ? streams.hasColors(stream as streams.MaybeTty)
+      : colorize,
     format: formatType,
   }),
 })
@@ -92,7 +94,7 @@ const winstonLoggerOptions = (
 ): winston.LoggerOptions => ({
   levels: winstonLogLevels,
   transports: filename
-    ? fileTransport({ filename, format: formatType })
+    ? fileTransport({ filename, format: formatType, colorize })
     : consoleTransport({ stream: consoleStream, format: formatType, colorize }),
   exitOnError: false,
   level: minLevel,

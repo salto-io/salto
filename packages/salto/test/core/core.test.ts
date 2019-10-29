@@ -1,4 +1,5 @@
 import path from 'path'
+import tmp from 'tmp-promise'
 import {
   ElemID, InstanceElement, ObjectType, AdapterCreator, Field, BuiltinTypes,
 } from 'adapter-api'
@@ -89,6 +90,18 @@ jest.mock('../../src/state/state')
 adapterCreators.salesforce = mockAdapterCreator
 
 describe('api functions', () => {
+  let baseDir: tmp.DirectoryResult
+  let localDir: tmp.DirectoryResult
+
+  beforeAll(async () => {
+    baseDir = await tmp.dir({ unsafeCleanup: true })
+    localDir = await tmp.dir({ unsafeCleanup: true })
+  })
+
+  afterAll(async () => {
+    await baseDir.cleanup()
+    await localDir.cleanup()
+  })
   beforeEach(() => {
     // Mock empty state
     State.prototype.get = jest.fn().mockImplementation(() => Promise.resolve([]))
@@ -125,8 +138,8 @@ describe('api functions', () => {
       const config: Config = {
         uid: '',
         name: 'test',
-        localStorage: '~/.salto/test',
-        baseDir: '',
+        localStorage: localDir.path,
+        baseDir: baseDir.path,
         stateLocation: './latest_state.bpc',
         additionalBlueprints: [filePath('salto.bp'), filePath('salto2.bp')],
       }
@@ -141,8 +154,8 @@ describe('api functions', () => {
       const config: Config = {
         uid: '',
         name: 'test',
-        localStorage: '~/.salto/test',
-        baseDir: '',
+        localStorage: localDir.path,
+        baseDir: baseDir.path,
         stateLocation: './latest_state.bpc',
         additionalBlueprints: [filePath('error.bp')],
       }
@@ -154,8 +167,8 @@ describe('api functions', () => {
       const config: Config = {
         uid: '',
         name: 'test',
-        localStorage: '~/.salto/test',
-        baseDir: '',
+        localStorage: localDir.path,
+        baseDir: baseDir.path,
         stateLocation: './latest_state.bpc',
         additionalBlueprints: [filePath('missing.bp')],
       }
@@ -172,8 +185,8 @@ describe('api functions', () => {
       const config: Config = {
         uid: '',
         name: 'test',
-        localStorage: '~/.salto/test',
-        baseDir: '',
+        localStorage: localDir.path,
+        baseDir: baseDir.path,
         stateLocation: './latest_state.bpc',
         additionalBlueprints: [filePath('fail.bp')],
       }
@@ -193,8 +206,8 @@ describe('api functions', () => {
         const config: Config = {
           uid: '',
           name: 'test',
-          localStorage: '~/.salto/test',
-          baseDir: '',
+          localStorage: localDir.path,
+          baseDir: baseDir.path,
           stateLocation: './latest_state.bpc',
           additionalBlueprints: [filePath('salto.bp')],
         }
@@ -269,8 +282,8 @@ describe('api functions', () => {
         const config: Config = {
           uid: '',
           name: 'test',
-          localStorage: '~/.salto/test',
-          baseDir: '',
+          localStorage: localDir.path,
+          baseDir: baseDir.path,
           stateLocation: './latest_state.bpc',
           additionalBlueprints: [filePath('salto.bp')],
         }

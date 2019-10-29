@@ -313,6 +313,7 @@ type salesforce_lead {
   })
 
   describe('filesystem interaction', () => {
+    let tmpHome: tmp.DirectoryResult
     let tmpDir: tmp.DirectoryResult
     let emptyTmpDir: tmp.DirectoryResult
     let workspace: Workspace
@@ -323,6 +324,10 @@ type salesforce_lead {
       if (tmpDir !== undefined) {
         tmpDir.cleanup()
       }
+      if (tmpHome !== undefined) {
+        tmpHome.cleanup()
+      }
+      tmpHome = await tmp.dir({ unsafeCleanup: true })
       tmpDir = await tmp.dir({ unsafeCleanup: true })
       emptyTmpDir = await tmp.dir({ unsafeCleanup: true })
       await Promise.all(_.entries(workspaceFiles)
@@ -334,7 +339,7 @@ type salesforce_lead {
       config = {
         uid: '',
         name: 'test',
-        localStorage: path.join(os.homedir(), '.salto', 'test'),
+        localStorage: path.join(tmpHome.path, '.salto', 'test'),
         baseDir: getPath('salto'),
         additionalBlueprints: [getPath('/outside/file.bp')],
         stateLocation: '/salto/latest_state.bp',
@@ -346,6 +351,7 @@ type salesforce_lead {
 
     afterAll(() => {
       tmpDir.cleanup()
+      tmpHome.cleanup()
     })
 
     describe('Workspace load', () => {
@@ -400,6 +406,13 @@ type salesforce_lead {
       beforeEach(async () => {
         await fs.delete(emptyTmpDir.path)
         await fs.mkdirp(emptyTmpDir.path)
+        process.env.SALTO_HOME = tmpHome.path
+      })
+
+      afterEach(async () => {
+        await fs.delete(emptyTmpDir.path)
+        await fs.mkdirp(emptyTmpDir.path)
+        delete process.env.SALTO_HOME
       })
 
       it('should init a basedir with no workspace name provided', async () => {

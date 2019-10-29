@@ -86,7 +86,7 @@ describe('cli', () => {
     })
 
     it('outputs the version to stdout', () => {
-      expect(o.out.trim()).toMatch(/\d+\.\d+\.\d+$/)
+      expect(o.out).toMatch(/version \d+\.\d+\.\d+/)
     })
 
     it('exits with code 0', () => {

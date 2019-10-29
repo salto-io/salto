@@ -23,9 +23,10 @@
     ]
   },
   "scripts": {
-    "prepare": "yarn run build",
+    "prepare": "yarn build",
     "prepublishOnly": "yarn test",
-    "build": "yarn run lint && yarn run build-ts",
+    "generate": ". ./generate.sh",
+    "build": "yarn generate && yarn lint && yarn build-ts",
     "test": "jest --forceExit --detectOpenHandles",
     "e2e-test": "RUN_E2E_TESTS=1 jest --forceExit --detectOpenHandles",
     "clean-ts": "node ./node_modules/.bin/ts-cleaner -d dist -s . -v",

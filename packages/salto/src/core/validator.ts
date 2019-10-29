@@ -5,6 +5,7 @@ import {
   isPrimitiveType, Value, ElemID,
 } from 'adapter-api'
 import { makeArray } from '@salto/lowerdash/dist/src/collections/array'
+import { UnresolvedReference } from './expressions'
 
 export abstract class ValidationError extends types.Bean<Readonly<{
   elemID: ElemID
@@ -76,6 +77,15 @@ export class MissingRequiredFieldValidationError extends ValidationError {
       error: `Field ${field.name} is required but has no value`,
     })
     this.field = field
+  }
+}
+
+export class UnresolvedReferenceValidationError extends ValidationError {
+  constructor(
+    { elemID, ref }:
+    { elemID: ElemID; ref: string }
+  ) {
+    super({ elemID, error: `unresolved reference ${ref}` })
   }
 }
 
@@ -152,6 +162,9 @@ export class InvalidValueTypeValidationError extends ValidationError {
 }
 
 const validateValue = (elemID: ElemID, value: Value, type: Type): ValidationError[] => {
+  if (value instanceof UnresolvedReference) {
+    return [new UnresolvedReferenceValidationError({ elemID, ref: value.ref })]
+  }
   if ((isPrimitiveType(type) && !primitiveValidators[type.primitive](value))
     || (isObjectType(type) && !_.isPlainObject(value))) {
     return [new InvalidValueTypeValidationError({ elemID, value, type })]

@@ -3,10 +3,10 @@ import {
   ObjectType, isType, isObjectType, isInstanceElement, Element,
   Type, isPrimitiveType, BuiltinTypes,
 } from 'adapter-api'
-import { resolve } from '../expressions'
 import { mergeObjectTypes } from './internal/object_types'
 import { mergeInstances } from './internal/instances'
 import { mergePrimitives } from './internal/primitives'
+import { resolveElements } from './internal/expresions'
 import { MergeResult as InternalMergeResult } from './internal/common'
 
 export { MergeError } from './internal/common'
@@ -69,12 +69,14 @@ export const mergeElements = (elements: ReadonlyArray<Element>): MergeResult => 
     _.merge({}, objects.merged, primitives.merged)
   )
 
+  const resolveResult = resolveElements(updated)
   return {
-    merged: updated.map(e => resolve(e, updated)),
+    merged: resolveResult.merged,
     errors: [
       ...objects.errors,
       ...instances.errors,
       ...primitives.errors,
+      ...resolveResult.errors,
     ],
   }
 }

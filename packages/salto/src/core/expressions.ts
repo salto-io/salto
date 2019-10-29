@@ -8,6 +8,16 @@ import {
 
 type Resolver<T> = (v: T, contextElements: Element[], visited?: Set<string>) => Value
 
+class CircularReferenceError extends Error {
+  constructor(ref: string, public elemID?: ElemID) {
+    super(`failed to resolve reference ${ref} - circular dependcy detected`)
+  }
+}
+
+export class UnresolvedReference {
+  constructor(public ref: string) {}
+}
+
 let resolveReferenceExpression: Resolver<ReferenceExpression>
 let resolveTemplateExpression: Resolver<TemplateExpression>
 
@@ -36,7 +46,7 @@ resolveReferenceExpression = (
   const traversal = traversalParts.join(EXPRESSION_TRAVERSAL_SEPERATOR)
 
   if (visited.has(traversal)) {
-    throw new Error(`can not resolve reference ${traversal} - circular dependency detected`)
+    throw new CircularReferenceError(traversal)
   }
   visited.add(traversal)
 
@@ -66,12 +76,12 @@ resolveReferenceExpression = (
   // Validation should throw an error if there is not match, or more than one match
   const rootElement = contextElements.filter(e => _.isEqual(root, e.elemID))[0]
   if (!rootElement) {
-    throw new Error(`Can not resolve reference ${traversal}`)
+    return new UnresolvedReference(traversal)
   }
 
   const value = resolvePath(rootElement)
   if (value === undefined) {
-    throw new Error(`Can not resolve reference ${traversal}`)
+    return new UnresolvedReference(traversal)
   }
 
   return resolveMaybeExpression(value, contextElements, visited) || value

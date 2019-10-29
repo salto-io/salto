@@ -3,7 +3,7 @@ import {
   ElemID, ObjectType, Field, BuiltinTypes, InstanceElement, Element,
   ReferenceExpression, TemplateExpression,
 } from 'adapter-api'
-import { resolve } from '../../src/core/expressions'
+import { resolve, UnresolvedReference } from '../../src/core/expressions'
 
 describe('Test Salto Expressions', () => {
   describe('Reference Expression', () => {
@@ -180,7 +180,8 @@ describe('Test Salto Expressions', () => {
         { test: new ReferenceExpression({ traversalParts: [firstRefID.getFullName(), 'test'] }) },
       )
       const bad = [firstRef, secondRef]
-      expect(() => bad.map(e => resolve(e, bad))).toThrow()
+      const res = resolve(secondRef, bad) as InstanceElement
+      expect(res.value.test).toBeInstanceOf(UnresolvedReference)
     })
 
     it('should fail on unresolvable roots', () => {
@@ -191,7 +192,9 @@ describe('Test Salto Expressions', () => {
         { test: new ReferenceExpression({ traversalParts: ['noop', 'test'] }) },
       )
       const bad = [firstRef]
-      expect(() => bad.map(e => resolve(e, bad))).toThrow()
+      const res = resolve(firstRef, bad) as InstanceElement
+      expect(res.value.test).toBeInstanceOf(UnresolvedReference)
+      expect(res.value.test.ref).toEqual('noop.test')
     })
   })
 

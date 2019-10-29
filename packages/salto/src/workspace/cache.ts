@@ -5,7 +5,8 @@ import path from 'path'
 import { ParseResult } from '../parser/parse'
 import * as parseResultSerializer from '../serializer/parse_result'
 
-
+const EXTERNAL_BP_CACHE_DIR = 'external_bp'
+const CACHE_FOLDER = '.cache'
 export interface AsyncCache<K, V> {
     get(key: K): Promise<V | undefined>
     put(key: K, value: V): Promise<void>
@@ -18,14 +19,25 @@ export type ParseResultKey = {
 
 export type ParseResultCache = AsyncCache<ParseResultKey, ParseResult>
 export class ParseResultFSCache implements ParseResultCache {
-      private baseDir: string
+      private baseCacheDir: string
+      private baseWorkspaceDir: string
 
-      constructor(baseDir: string) {
-        this.baseDir = baseDir
+      constructor(baseCacheDir: string, baseWorkspaceDir: string) {
+        this.baseCacheDir = path.join(baseCacheDir, CACHE_FOLDER)
+        this.baseWorkspaceDir = baseWorkspaceDir
       }
 
-      private resolveCacheFilePath = (key: ParseResultKey): string =>
-        path.join(this.baseDir, _.replace(key.filename, /.bp$/, '.bpc'))
+      private resolveCacheFilePath = (key: ParseResultKey): string => {
+        // First, we normalize the filename to be relative to the workspace
+        // We need to do this to support external BP in both abs and rel notation
+        const normFilename = path.isAbsolute(key.filename)
+          ? path.relative(this.baseWorkspaceDir, key.filename)
+          : key.filename
+        const cacheFileName = normFilename.startsWith('..') // Indicates that the file is external
+          ? path.join(EXTERNAL_BP_CACHE_DIR, path.resolve(this.baseWorkspaceDir, normFilename))
+          : normFilename
+        return path.join(this.baseCacheDir, _.replace(cacheFileName, /.bp$/, '.bpc'))
+      }
 
       async put(key: ParseResultKey, value: ParseResult): Promise<void> {
         const filePath = this.resolveCacheFilePath(key)

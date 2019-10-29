@@ -87,9 +87,10 @@ export const parseBlueprints = async (blueprints: Blueprint[]): Promise<ParsedBl
 
 const parseBlueprintsWithCache = (
   blueprints: Blueprint[],
-  cacheFolder: string
+  cacheFolder: string,
+  workspaceFolder: string
 ): Promise<ParsedBlueprint[]> => {
-  const cache = new ParseResultFSCache(cacheFolder)
+  const cache = new ParseResultFSCache(cacheFolder, workspaceFolder)
   return Promise.all(blueprints.map(async bp => {
     if (bp.timestamp === undefined) return parseBlueprint(bp)
     const key = {
@@ -219,7 +220,7 @@ export class Workspace {
       config.additionalBlueprints || []
     )
     const parsedBlueprints = useCache
-      ? parseBlueprintsWithCache(bps, config.localStorage)
+      ? parseBlueprintsWithCache(bps, config.localStorage, config.baseDir)
       : parseBlueprints(bps)
     return new Workspace(config, await parsedBlueprints)
   }
@@ -357,7 +358,7 @@ export class Workspace {
    * Dump the current workspace state to the underlying persistent storage
    */
   async flush(): Promise<void> {
-    const cache = new ParseResultFSCache(this.config.localStorage)
+    const cache = new ParseResultFSCache(this.config.localStorage, this.config.baseDir)
     await Promise.all(wu(this.dirtyBlueprints).map(async filename => {
       const bp = this.parsedBlueprints[filename]
       const filePath = path.join(this.config.baseDir, filename)

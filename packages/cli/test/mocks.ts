@@ -45,32 +45,28 @@ export const mockWritableStream = (): MockWritableStream => {
   })
 }
 
-export type MockSpinner = Spinner & {
+export type MockSpinnerCreator = SpinnerCreator & {
   started(): boolean
-  succeedded(): boolean
   failed(): boolean
+  succeeded(): boolean
 }
 
-export const mockSpinnerCreator = (): SpinnerCreator => (_options: SpinnerOptions): MockSpinner => {
+export const mockSpinnerCreator = (): MockSpinnerCreator => {
   let started = false
-  let succeedded = false
   let failed = false
+  let succeeded = false
+
   return {
-    started(): boolean { return started },
-    succeedded(): boolean { return succeedded },
-    failed(): boolean { return failed },
-    start(): Spinner {
+    start(_startText: string, _option: SpinnerOptions): Spinner {
       started = true
-      return this
+      return {
+        succeed(_text: string): void { succeeded = true },
+        fail(_text: string): void { failed = true },
+      }
     },
-    succeed(): Spinner {
-      succeedded = true
-      return this
-    },
-    fail(): Spinner {
-      failed = true
-      return this
-    },
+    started(): boolean { return started },
+    failed(): boolean { return failed },
+    succeeded(): boolean { return succeeded },
   }
 }
 

@@ -1,6 +1,6 @@
 import { Workspace } from 'salto'
 import { command } from '../../src/commands/plan'
-import { plan, MockWriteStream, getWorkspaceErrors, mockSpinnerCreator, MockSpinner } from '../mocks'
+import { plan, MockWriteStream, getWorkspaceErrors, mockSpinnerCreator } from '../mocks'
 
 const mockPlan = plan
 const mockWs = { hasErrors: () => false }
@@ -22,7 +22,7 @@ jest.mock('salto', () => ({
 
 describe('plan command', () => {
   const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
-  const spinner = mockSpinnerCreator()({}) as MockSpinner
+  const spinner = mockSpinnerCreator()
   it('should load the workspace', async () => {
     await command('', cliOutput, spinner).execute()
     expect(Workspace.load).toHaveBeenCalled()
@@ -44,15 +44,16 @@ describe('plan command', () => {
     expect(cliOutput.stdout.content.search('name: "FirstEmployee" => "PostChange"')).toBeGreaterThan(0)
   })
 
-  it('should have started spinner and suceeded', async () => {
+  it('should have started spinner and it should succeed (and not fail)', async () => {
     await command('', cliOutput, spinner).execute()
     expect(spinner.started()).toBeTruthy()
-    expect(spinner.succeedded()).toBeTruthy()
+    expect(spinner.succeeded()).toBeTruthy()
     expect(spinner.failed()).toBeFalsy()
   })
 
   it('should fail on workspace errors  ', async () => {
     await command('errdir', cliOutput, spinner).execute()
     expect(cliOutput.stderr.content).toContain('Error')
+    expect(spinner.failed()).toBeTruthy()
   })
 })

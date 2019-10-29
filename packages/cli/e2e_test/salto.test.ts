@@ -12,9 +12,9 @@ import {
   Plan,
 } from 'salto'
 import wu from 'wu'
-import { CliOutput } from '../src/types'
+import { CliOutput, SpinnerCreator } from '../src/types'
 
-import { MockWriteStream, MockSpinner, mockSpinnerCreator } from '../test/mocks'
+import { MockWriteStream, mockSpinnerCreator } from '../test/mocks'
 import { command as discover } from '../src/commands/discover'
 import { command as plan } from '../src/commands/plan'
 import { ApplyCommand } from '../src/commands/apply'
@@ -24,7 +24,7 @@ const credentials = salesforceTestHelpers.credentials()
 const mockGetConfigType = (): InstanceElement => adapterConfigs.salesforce()
 
 let cliOutput: CliOutput
-let spinner: MockSpinner
+let spinner: SpinnerCreator
 
 let lastPlan: Plan
 const mockShouldApply = (p: Plan): boolean => {
@@ -81,7 +81,7 @@ describe('commands e2e', () => {
       lastPlan.clear()
     }
     cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
-    spinner = mockSpinnerCreator()({}) as MockSpinner
+    spinner = mockSpinnerCreator()
   })
 
   jest.setTimeout(5 * 60 * 1000)

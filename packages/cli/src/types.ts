@@ -17,9 +17,8 @@ export enum CliExitCode {
 }
 
 export interface Spinner {
-  start(text: string): Spinner
-  succeed(text: string): Spinner
-  fail(text: string): Spinner
+  succeed(text: string): void
+  fail(text: string): void
 }
 
 export interface SpinnerOptions {
@@ -29,7 +28,9 @@ export interface SpinnerOptions {
   prefixText?: string
 }
 
-export type SpinnerCreator = (options: SpinnerOptions) => Spinner
+export type SpinnerCreator = {
+  start(startText: string, options: SpinnerOptions): Spinner
+}
 
 export interface CliOutput {
   stdout: WriteStream

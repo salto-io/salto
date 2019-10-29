@@ -208,7 +208,7 @@ describe('transformer', () => {
       salesforceReferenceField.updateable = true
       salesforceReferenceField.writeRequiresMasterRead = true
       const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField)
-      assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.salesforceDataTypes.masterdetail, 'owner', undefined)
+      assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.salesforceDataTypes.masterdetail, 'owner', undefined, undefined)
       expect(fieldElement.annotations[FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL]).toBe(true)
       expect(fieldElement.annotations[FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ]).toBe(true)
     })
@@ -218,7 +218,7 @@ describe('transformer', () => {
       salesforceReferenceField.updateable = false
       delete salesforceReferenceField.writeRequiresMasterRead
       const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField)
-      assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.salesforceDataTypes.masterdetail, 'owner', undefined)
+      assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.salesforceDataTypes.masterdetail, 'owner', undefined, undefined)
       expect(fieldElement.annotations[Type.REQUIRED]).toBe(false)
       expect(fieldElement.annotations[FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL]).toBe(false)
       expect(fieldElement.annotations[FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ]).toBe(false)

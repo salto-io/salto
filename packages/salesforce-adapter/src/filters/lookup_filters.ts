@@ -1,12 +1,15 @@
 import _ from 'lodash'
-import { Element, Field, isField, isObjectType, ObjectType } from 'adapter-api'
-import { MetadataInfo, SaveResult } from 'jsforce'
+import wu from 'wu'
+import { Element, Field, isObjectType, ObjectType } from 'adapter-api'
+import { SaveResult } from 'jsforce'
 import { FilterCreator } from '../filter'
 import {
-  CUSTOM_FIELD, FIELD_ANNOTATIONS, LOOKUP_FILTER_FIELDS, METADATA_TYPE,
+  CUSTOM_FIELD, CUSTOM_OBJECT, FIELD_ANNOTATIONS, LOOKUP_FILTER_FIELDS, METADATA_TYPE,
 } from '../constants'
 import { CustomField } from '../client/types'
-import { fieldFullName, mapKeysRecursive, sfCase, toCustomField, Types } from '../transformer'
+import {
+  bpCase, fieldFullName, mapKeysRecursive, metadataType, sfCase, toCustomField, Types,
+} from '../transformer'
 
 const getFieldsWithLookupFilter = (obj: ObjectType): Field[] =>
   Object.values(obj.fields).filter(field => (field.annotations[FIELD_ANNOTATIONS.LOOKUP_FILTER]))
@@ -32,48 +35,44 @@ const filterCreator: FilterCreator = ({ client }) => ({
    * @param elements the already discovered elements
    */
   onDiscover: async (elements: Element[]): Promise<void> => {
-    const getCustomFieldNameToCustomFieldMap = async (fieldNames: string[]):
-      Promise<Map<string, MetadataInfo>> =>
-      new Map((await client.readMetadata(CUSTOM_FIELD, fieldNames)).map(customField =>
-        [customField.fullName, customField]))
+    const readCustomFields = async (fieldNames: string[]): Promise<Record<string, CustomField>> => (
+      _(await client.readMetadata(CUSTOM_FIELD, fieldNames))
+        .map(field => [field.fullName, field])
+        .fromPairs()
+        .value()
+    )
 
-    const objectFullNameToObjectMap: Map<string, ObjectType> = new Map(elements.filter(isObjectType)
-      .map(obj => [obj.elemID.getFullName(), obj]))
+    const customObjectElements = wu(elements)
+      .filter(isObjectType)
+      .filter(element => metadataType(element) === CUSTOM_OBJECT)
+      .toArray()
 
-    const fieldsWithLookupFilter = _(elements.filter(isObjectType)
-      .map(objectType => Object.values(objectType.fields))).flatten()
-      .concat(elements.filter(isField))
-      .filter(field => field.annotations[FIELD_ANNOTATIONS.LOOKUP_FILTER])
+    const objectFullNameToObjectMap: Record<string, ObjectType> = _(customObjectElements)
+      .map(obj => [obj.elemID.getFullName(), obj])
+      .fromPairs()
+      .value()
+
+    const fieldsWithLookupFilter = _(customObjectElements)
+      .map(obj => getFieldsWithLookupFilter(obj as ObjectType))
+      .flatten()
+      .value()
 
     const getCustomFieldName = (field: Field): string =>
-      fieldFullName(objectFullNameToObjectMap.get(field.parentID.getFullName()) as ObjectType,
-        field)
+      fieldFullName(objectFullNameToObjectMap[field.parentID.getFullName()], field)
 
-    const customFieldNames = fieldsWithLookupFilter.map(getCustomFieldName).valueOf()
+    const customFieldNames = fieldsWithLookupFilter.map(getCustomFieldName)
 
-    const customFieldNameToCustomFieldMap = await
-    getCustomFieldNameToCustomFieldMap(customFieldNames)
+    const customFieldNameToCustomFieldMap = await readCustomFields(customFieldNames)
 
     const addLookupFilterData = (fieldWithLookupFilter: Field): void => {
-      const customFieldLookupFilter = (customFieldNameToCustomFieldMap
-        .get(getCustomFieldName(fieldWithLookupFilter)) as CustomField).lookupFilter
+      const customFieldLookupFilter = customFieldNameToCustomFieldMap[
+        getCustomFieldName(fieldWithLookupFilter)].lookupFilter
       if (customFieldLookupFilter) {
-        const isOptional = Boolean(customFieldLookupFilter.isOptional)
-        fieldWithLookupFilter.annotations[FIELD_ANNOTATIONS.LOOKUP_FILTER] = {
-          [LOOKUP_FILTER_FIELDS.ACTIVE]: Boolean(customFieldLookupFilter.active),
-          [LOOKUP_FILTER_FIELDS.BOOLEAN_FILTER]: customFieldLookupFilter.booleanFilter,
-          [LOOKUP_FILTER_FIELDS.INFO_MESSAGE]: customFieldLookupFilter.infoMessage,
-          [LOOKUP_FILTER_FIELDS.IS_OPTIONAL]: isOptional,
-          [LOOKUP_FILTER_FIELDS.FILTER_ITEMS]: customFieldLookupFilter.filterItems
-            .map(filterItem => ({
-              [LOOKUP_FILTER_FIELDS.FIELD]: filterItem.field,
-              [LOOKUP_FILTER_FIELDS.OPERATION]: filterItem.operation,
-              [LOOKUP_FILTER_FIELDS.VALUE_FIELD]: filterItem.valueField,
-            })),
-        }
-        if (!isOptional) {
+        _.assign(fieldWithLookupFilter.annotations[FIELD_ANNOTATIONS.LOOKUP_FILTER],
+          mapKeysRecursive(customFieldLookupFilter, bpCase))
+        if (customFieldLookupFilter.isOptional) {
           // eslint-disable-next-line max-len
-          fieldWithLookupFilter.annotations[FIELD_ANNOTATIONS.LOOKUP_FILTER][LOOKUP_FILTER_FIELDS.ERROR_MESSAGE] = customFieldLookupFilter.errorMessage
+          delete fieldWithLookupFilter.annotations[FIELD_ANNOTATIONS.LOOKUP_FILTER][LOOKUP_FILTER_FIELDS.ERROR_MESSAGE]
         }
       }
     }
@@ -118,12 +117,14 @@ const filterCreator: FilterCreator = ({ client }) => ({
     if (!(isObjectType(before) && isObjectType(after))) {
       return []
     }
-    const beforeFieldNameToFieldWithLookupFilterMap = new Map(getFieldsWithLookupFilter(before)
-      .map(field => [field.name, field]))
+    const beforeFieldNameToFieldWithLookupFilterMap = _(getFieldsWithLookupFilter(before))
+      .map(field => [field.name, field])
+      .fromPairs()
+      .value()
 
     const getFieldsToUpdate = (): Field[] =>
       getFieldsWithLookupFilter(after).filter(afterField => {
-        const beforeField = beforeFieldNameToFieldWithLookupFilterMap.get(afterField.name)
+        const beforeField = beforeFieldNameToFieldWithLookupFilterMap[afterField.name]
         return beforeField === undefined
           || !_.isEqual(beforeField.annotations[FIELD_ANNOTATIONS.LOOKUP_FILTER],
             afterField.annotations[FIELD_ANNOTATIONS.LOOKUP_FILTER])

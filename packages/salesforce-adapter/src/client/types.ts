@@ -57,7 +57,7 @@ export class CustomField implements MetadataInfo {
   readonly deleteConstraint?: string
   readonly reparentableMasterDetail?: boolean
   readonly writeRequiresMasterRead?: boolean
-  lookupFilter?: LookupFilter
+  readonly lookupFilter?: LookupFilter
 
   // To be used for Text types fields
   readonly length?: number

@@ -84,8 +84,8 @@ export class UnresolvedReferenceValidationError extends ValidationError {
   constructor(
     { elemID, ref }:
     { elemID: ElemID; ref: string }
-  ){
-    super({elemID, error: `unresolved reference ${ref}`})
+  ) {
+    super({ elemID, error: `unresolved reference ${ref}` })
   }
 }
 
@@ -163,7 +163,7 @@ export class InvalidValueTypeValidationError extends ValidationError {
 
 const validateValue = (elemID: ElemID, value: Value, type: Type): ValidationError[] => {
   if (value instanceof UnresolvedReference) {
-    return [new UnresolvedReferenceValidationError({ elemID, ref: value.ref})]
+    return [new UnresolvedReferenceValidationError({ elemID, ref: value.ref })]
   }
   if ((isPrimitiveType(type) && !primitiveValidators[type.primitive](value))
     || (isObjectType(type) && !_.isPlainObject(value))) {

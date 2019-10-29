@@ -15,7 +15,7 @@ class CircularReferenceError extends Error {
 }
 
 export class UnresolvedReference {
-  constructor(public ref: string){}
+  constructor(public ref: string) {}
 }
 
 let resolveReferenceExpression: Resolver<ReferenceExpression>

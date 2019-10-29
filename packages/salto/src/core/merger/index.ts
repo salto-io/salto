@@ -76,7 +76,7 @@ export const mergeElements = (elements: ReadonlyArray<Element>): MergeResult => 
       ...objects.errors,
       ...instances.errors,
       ...primitives.errors,
-      ...resolveResult.errors
+      ...resolveResult.errors,
     ],
   }
 }

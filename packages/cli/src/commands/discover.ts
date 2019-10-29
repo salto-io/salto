@@ -8,7 +8,7 @@ import {
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'
 import { getConfigFromUser, getApprovedChanges as cliGetApprovedChanges } from '../callbacks'
-import { formatWorkspaceErrors, formatChangesSummary } from '../formatter'
+import { formatChangesSummary } from '../formatter'
 import Prompts from '../prompts'
 import { validateWorkspace } from '../workspace'
 
@@ -23,7 +23,7 @@ export const discoverCommand = async (
   getApprovedChanges: approveChangesFunc,
 ): Promise<CliExitCode> => {
   const outputLine = (text: string): void => output.stdout.write(`${text}\n`)
-  if (validateWorkspace(workspace, output.stderr)) {
+  if (!validateWorkspace(workspace, output.stderr)) {
     return CliExitCode.AppError
   }
   outputLine(Prompts.DISCOVER_BEGIN)

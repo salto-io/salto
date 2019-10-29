@@ -51,11 +51,13 @@ describe('SalesforceAdapter filters', () => {
     })
 
     it('should call inner aspects upon update', async () => {
-      await adapter.update(object, object, [])
+      await adapter.update(object, object, [{ action: 'modify', data: { before: object, after: object } }])
       const { mock } = filter.onUpdate as jest.Mock<undefined>
       expect(mock.calls.length).toBe(1)
       expect(mock.calls[0][0]).toEqual(object)
       expect(mock.calls[0][1].elemID.getFullName()).toEqual(object.elemID.getFullName())
+      expect(mock.calls[0][2]).toHaveLength(1)
+      expect(mock.calls[0][2][0].action).toBe('modify')
     })
   })
 })

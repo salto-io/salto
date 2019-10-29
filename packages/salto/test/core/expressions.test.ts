@@ -194,6 +194,7 @@ describe('Test Salto Expressions', () => {
       const bad = [firstRef]
       const res = resolve(firstRef, bad) as InstanceElement
       expect(res.value.test).toBeInstanceOf(UnresolvedReference)
+      expect(res.value.test.ref).toEqual('noop.test')
     })
   })
 

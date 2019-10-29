@@ -229,6 +229,7 @@ export const createActionStartOutput = (action: PlanItem): string => {
     body(
       `${planItemName(action)}: ${Prompts.STARTACTION[action.parent().action]}...`
     ),
+    emptyLine(),
   ]
   return output.join('\n')
 }

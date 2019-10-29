@@ -415,6 +415,8 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
   } else if (field.type === 'reference') {
     if (field.cascadeDelete) {
       bpFieldType = Types.get(FIELD_TYPE_NAMES.MASTER_DETAIL)
+      // masterdetail fields are always not required in SF although returned as nillable=false
+      annotations[Type.REQUIRED] = false
       annotations[FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ] = Boolean(
         field.writeRequiresMasterRead
       )

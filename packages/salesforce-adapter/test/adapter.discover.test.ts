@@ -431,7 +431,8 @@ describe('SalesforceAdapter discover', () => {
 
       const result = await adapter.discover()
 
-      expect(result).toHaveLength(Object.keys(Types.salesforceDataTypes).length + 3)
+      expect(result).toHaveLength(Object.keys(Types.salesforceDataTypes).length
+        + 1 /* LookupFilter */ + 3)
       const types = _.assign({}, ...result.map(t => ({ [t.elemID.getFullName()]: t })))
       const nestingType = types.salesforce_nesting_type
       const nestedType = types.salesforce_nested_type

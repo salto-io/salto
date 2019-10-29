@@ -967,6 +967,23 @@ describe('Salesforce adapter E2E with real account', () => {
               [constants.FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION]: false,
               [constants.FIELD_ANNOTATIONS.RELATED_TO]: ['Case'],
               [constants.LABEL]: 'Lookup description label',
+              [constants.FIELD_ANNOTATIONS.LOOKUP_FILTER]: {
+                [constants.LOOKUP_FILTER_FIELDS.ACTIVE]: true,
+                [constants.LOOKUP_FILTER_FIELDS.BOOLEAN_FILTER]: '1 OR 2',
+                [constants.LOOKUP_FILTER_FIELDS.ERROR_MESSAGE]: 'This is the Error message',
+                [constants.LOOKUP_FILTER_FIELDS.INFO_MESSAGE]: 'This is the Info message',
+                [constants.LOOKUP_FILTER_FIELDS.IS_OPTIONAL]: false,
+                [constants.LOOKUP_FILTER_FIELDS.FILTER_ITEMS]: [{
+                  [constants.LOOKUP_FILTER_FIELDS.FIELD]: 'Case.OwnerId',
+                  [constants.LOOKUP_FILTER_FIELDS.OPERATION]: 'equals',
+                  [constants.LOOKUP_FILTER_FIELDS.VALUE_FIELD]: '$User.Id',
+                },
+                {
+                  [constants.LOOKUP_FILTER_FIELDS.FIELD]: 'Case.ParentId',
+                  [constants.LOOKUP_FILTER_FIELDS.OPERATION]: 'equals',
+                  [constants.LOOKUP_FILTER_FIELDS.VALUE_FIELD]: '$User.Id',
+                }],
+              },
               ...adminReadable,
             }
           ),
@@ -1130,6 +1147,7 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(lookupField.relationshipName).toBe(`Queen${randomString}__r`)
       expect(lookupField.referenceTo).toEqual(['Case'])
       expect(_.get(lookupField, 'restrictedDelete')).toBe(true)
+      expect(lookupField.filteredLookupInfo).toBeDefined()
       // Verify masterdetail
       const masterDetailField = allFields.filter(field => field.name === `Rocket${randomString}__c`)[0]
       expect(masterDetailField).toBeDefined()
@@ -1145,6 +1163,92 @@ describe('Salesforce adapter E2E with real account', () => {
       await adapter.remove(post as ObjectType)
     })
 
+    it('should add lookupFilter to an existing lookup field', async () => {
+      const customObjectName = 'TestAddLookupFilter__c'
+      const mockElemID = new ElemID(constants.SALESFORCE, 'test add lookupFilter')
+      const randomString = String(Date.now()).substring(6)
+      const lookupFieldName = `lookup${randomString}`
+      const lookupFieldApiName = `${_.camelCase(lookupFieldName)}__c`
+      const oldElement = new ObjectType({
+        elemID: mockElemID,
+        fields: {},
+        annotations: {
+          [Type.REQUIRED]: false,
+          [constants.LABEL]: 'test label',
+          [constants.API_NAME]: customObjectName,
+          [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
+        },
+      })
+
+      oldElement.fields[lookupFieldName] = new Field(
+        mockElemID,
+        lookupFieldName,
+        Types.get(constants.FIELD_TYPE_NAMES.LOOKUP),
+        {
+          [constants.API_NAME]: lookupFieldApiName,
+          [constants.FIELD_ANNOTATIONS.RELATED_TO]: ['Case'],
+          [FIELD_LEVEL_SECURITY_ANNOTATION]: {
+            admin: { editable: true, readable: true },
+          },
+        },
+      )
+      if (await objectExists(constants.CUSTOM_OBJECT, customObjectName)) {
+        await adapter.remove(oldElement)
+      }
+      const addResult = await adapter.add(oldElement)
+      // Verify setup was performed properly
+      expect(addResult).toBeInstanceOf(ObjectType)
+      expect(await objectExists(constants.CUSTOM_OBJECT, customObjectName, [lookupFieldApiName]))
+        .toBe(true)
+
+      const newElement = new ObjectType({
+        elemID: mockElemID,
+        annotations: {
+          [Type.REQUIRED]: false,
+          [constants.LABEL]: 'test label',
+          [constants.API_NAME]: customObjectName,
+          [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
+        },
+      })
+
+      newElement.fields[lookupFieldName] = new Field(
+        mockElemID,
+        lookupFieldName,
+        Types.get(constants.FIELD_TYPE_NAMES.LOOKUP),
+        {
+          [constants.API_NAME]: lookupFieldApiName,
+          [constants.FIELD_ANNOTATIONS.RELATED_TO]: ['Case'],
+          [constants.FIELD_ANNOTATIONS.LOOKUP_FILTER]: {
+            [constants.LOOKUP_FILTER_FIELDS.ACTIVE]: true,
+            [constants.LOOKUP_FILTER_FIELDS.INFO_MESSAGE]: 'Info message',
+            [constants.LOOKUP_FILTER_FIELDS.IS_OPTIONAL]: true,
+            [constants.LOOKUP_FILTER_FIELDS.FILTER_ITEMS]: [
+              { [constants.LOOKUP_FILTER_FIELDS.FIELD]: 'Case.OwnerId',
+                [constants.LOOKUP_FILTER_FIELDS.OPERATION]: 'equals',
+                [constants.LOOKUP_FILTER_FIELDS.VALUE_FIELD]: '$User.Id' },
+            ],
+          },
+          [FIELD_LEVEL_SECURITY_ANNOTATION]: {
+            admin: { editable: true, readable: true },
+          },
+        },
+      )
+
+      // Test
+      const modificationResult = await adapter.update(oldElement, newElement)
+      expect(modificationResult).toBeInstanceOf(ObjectType)
+
+      // Verify the lookup filter was created
+      const customObject = await client.describeSObjects([customObjectName])
+      expect(customObject[0]).toBeDefined()
+      const lookupField = customObject[0].fields
+        .filter(field => field.name === lookupFieldApiName)[0]
+      expect(lookupField).toBeDefined()
+      expect(lookupField.filteredLookupInfo).toBeDefined()
+
+      // Clean-up
+      await adapter.remove(oldElement)
+    })
     // Assignment rules are special because they use the Deploy API so they get their own test
     describe('assignment rules manipulation', () => {
       const getRulesFromClient = async (): Promise<Values> => fromMetadataInfo(

@@ -25,6 +25,7 @@ import missingFieldsFilter from './filters/missing_fields'
 import standardValueSetFilter from './filters/standard_value_sets'
 import flowFilter from './filters/flow'
 import leadConvertSettingsFilter from './filters/lead_convert_settings'
+import lookupFiltersFilter from './filters/lookup_filters'
 import {
   FilterCreator, Filter, FilterWith, filtersWith,
 } from './filter'
@@ -107,6 +108,7 @@ export default class SalesforceAdapter {
       missingFieldsFilter,
       flowFilter,
       leadConvertSettingsFilter,
+      lookupFiltersFilter,
       // The following filters should remain last in order to make sure they fix all elements
       convertListsFilter,
       convertTypeFilter,
@@ -314,16 +316,21 @@ export default class SalesforceAdapter {
     const pre = prevObject.clone()
     annotateApiNameAndLabel(pre)
 
+    // There are fields that are not equal but their transformation
+    // to CustomField is (e.g. lookup field with LookupFilter).
+    const shouldUpdateField = (afterField: Field): boolean =>
+      !_.isEqual(afterField.annotations, pre.fields[afterField.name].annotations)
+        && !_.isEqual(toCustomField(prevObject, pre.fields[afterField.name], true),
+          toCustomField(clonedObject, afterField, true))
+
     await Promise.all([
       // Retrieve the custom fields for deletion and delete them
       this.deleteCustomFields(prevObject, prevObject.getFieldsThatAreNotInOther(clonedObject)),
       // Retrieve the custom fields for addition and than create them
       this.createFields(clonedObject, clonedObject.getFieldsThatAreNotInOther(prevObject)),
       // Update the remaining fields that were changed
-      this.updateFields(clonedObject,
-        clonedObject.getMutualFieldsWithOther(pre).filter(afterField =>
-          !_.isEqual(afterField.annotations,
-            pre.fields[afterField.name].annotations))),
+      this.updateFields(clonedObject, clonedObject.getMutualFieldsWithOther(pre)
+        .filter(afterField => shouldUpdateField(afterField))),
     ])
 
     // Update the annotation values - this can't be done asynchronously with the previous

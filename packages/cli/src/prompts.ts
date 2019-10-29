@@ -32,6 +32,10 @@ export default class Prompts {
     eq: '',
   }
 
+  public static readonly PLAN_STARTED = 'Calculating the execution plan - changes to be applied at the next *apply*'
+  public static readonly PLAN_FINISHED = 'Calculated execution plan!'
+  public static readonly PLAN_FAILED = 'Plan calculation failed'
+
   public static readonly EXPLAINPLANRESULT = `Resources and actions are indicated with the following symbols:
 
   ${Prompts.MODIFIERS.add} create

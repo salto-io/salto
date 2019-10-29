@@ -190,7 +190,13 @@ const createExecutionOutput = (plan: Plan): string[] => {
   ]
 }
 
-export const createApplyPlanOutput = (plan: Plan): string => createExecutionOutput(plan).join('\n')
+export const createApplyPlanOutput = (plan: Plan): string => {
+  const executionOutput = createExecutionOutput(plan)
+  return [
+    header(Prompts.STARTAPPLY),
+    subHeader(Prompts.EXPLAINAPPLY),
+  ].concat(executionOutput).join('\n')
+}
 
 export const createPlanOutput = (plan: Plan): string => {
   const executionOutput = createExecutionOutput(plan)

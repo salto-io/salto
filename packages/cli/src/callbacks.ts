@@ -7,7 +7,7 @@ import {
 } from 'adapter-api'
 import { Plan, DetailedChange } from 'salto'
 import {
-  createApplyPlanOutput, header, subHeader, formatDiscoverChangeForApproval,
+  createApplyPlanOutput, formatDiscoverChangeForApproval,
 } from './formatter'
 import Prompts from './prompts'
 import { CliOutput } from './types'
@@ -23,11 +23,7 @@ const getUserBooleanInput = async (prompt: string): Promise<boolean> => {
 }
 
 export const shouldApply = ({ stdout }: CliOutput) => async (actions: Plan): Promise<boolean> => {
-  const planOutput = [
-    header(Prompts.STARTAPPLY),
-    subHeader(Prompts.EXPLAINAPPLY),
-    createApplyPlanOutput(actions),
-  ].join('\n')
+  const planOutput = createApplyPlanOutput(actions)
   stdout.write(planOutput)
   if (_.isEmpty(actions)) {
     return false

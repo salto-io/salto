@@ -3,8 +3,9 @@ import { createCommandBuilder } from '../command_builder'
 import {
   ParsedCliInput, CliCommand, CliOutput, Spinner, SpinnerCreator, CliExitCode,
 } from '../types'
-import { createPlanOutput } from '../formatter'
+import { createPlanOutput, formatWorkspaceErrors } from '../formatter'
 import { loadWorkspace } from '../workspace'
+import Prompts from '../prompts'
 
 export const command = (
   workspaceDir: string,
@@ -12,14 +13,16 @@ export const command = (
   spinner: Spinner
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
+    spinner.start(Prompts.PLAN_STARTED)
     const { workspace, errored } = await loadWorkspace(workspaceDir, stderr)
     if (errored) {
+      stderr.write(formatWorkspaceErrors(workspace.getWorkspaceErrors()))
+      spinner.fail(Prompts.PLAN_FAILED)
       return CliExitCode.AppError
     }
     // TODO: inline commands.plan here
-    spinner.start('Calculating execution plan')
     const workspacePlan = await plan(workspace)
-    spinner.succeed('Calculated execution plan!')
+    spinner.succeed(Prompts.PLAN_FINISHED)
     stdout.write(createPlanOutput(workspacePlan))
     return CliExitCode.Success
   },

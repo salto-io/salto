@@ -77,7 +77,7 @@ describe('convert types filter', () => {
     })
 
     it('should convert nulls', () => {
-      expect(inst.value.nullStr).toBe(null)
+      expect(inst.value.nullStr).toBe(undefined)
     })
 
     it('should not change settings', () => {

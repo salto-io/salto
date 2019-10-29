@@ -585,7 +585,7 @@ describe('SalesforceAdapter discover', () => {
       expect(layout.value.process_metadata_values[2].name).toBe('leftHandSideReferenceTo2')
       expect(layout.value.process_metadata_values[2].value).toBeUndefined()
       expect(layout.value.process_metadata_values[3].name).toBe('leftHandSideReferenceTo3')
-      expect(layout.value.process_metadata_values[3].value.string_value).toBeNull()
+      expect(layout.value.process_metadata_values[3].value).toBeUndefined()
     })
 
     it('should discover metadata types lists', async () => {

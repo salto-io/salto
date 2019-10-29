@@ -17,7 +17,8 @@ export type WorkspaceSaltoDiagnostics = Record<string, SaltoDiagnostic[]>
 export const getDiagnostics = (
   workspace: EditorWorkspace,
 ): WorkspaceSaltoDiagnostics => {
-  const res = _(workspace.workspace.getWorkspaceErrors())
+  const emptyDiagFiles = _.mapValues(workspace.parsedBlueprints, _k => [])
+  const diag = _(workspace.workspace.getWorkspaceErrors())
     .map(err => err.sourceFragments.map(f => ({
       filename: f.sourceRange.filename,
       msg: err.error,
@@ -29,5 +30,5 @@ export const getDiagnostics = (
     .flatten()
     .groupBy('filename')
     .value()
-  return res
+  return { ...emptyDiagFiles, ...diag }
 }

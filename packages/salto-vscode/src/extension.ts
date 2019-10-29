@@ -7,6 +7,8 @@ import {
   createDocumentSymbolsProvider,
 } from './providers'
 import { planCommand, applyCommand } from './commands'
+import { toVSDiagnostics } from './adapters'
+import { getDiagnostics } from './salto/diagnostics'
 
 /**
  * This files act as a bridge between VSC and the salto specific functionality.
@@ -84,6 +86,9 @@ export const activate = async (context: vscode.ExtensionContext): Promise<void> 
     const fileWatcher = vscode.workspace.createFileSystemWatcher('**/*.bp')
     fileWatcher.onDidCreate((uri: vscode.Uri) => onFileCreate(workspace, uri.path))
     fileWatcher.onDidDelete((uri: vscode.Uri) => onFileDelete(workspace, uri.path))
+
+    const newDiag = toVSDiagnostics(workspace.workspace.config.baseDir, getDiagnostics(workspace))
+    diagCollection.set(newDiag)
   }
   // We need this log until the parse time will be shorter so we will know when to expect the plugin
   // to start working.

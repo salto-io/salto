@@ -61,6 +61,14 @@ type salesforce_lead {
     buffer: 'type salesforce_new {}',
   }
 
+  const configBP = {
+    filename: 'credentials/salto.bp',
+    buffer: `salto {
+      user: "user"
+      password: "password"
+    }`,
+  }
+
   describe('Workspace class', () => {
     let parsedBPs: ParsedBlueprint[]
     beforeAll(async () => {
@@ -360,7 +368,7 @@ type salesforce_lead {
       beforeAll(async () => {
         await resetWorkspace()
         workspace.removeBlueprints('subdir/file.bp')
-        await workspace.setBlueprints(changedBP, newBP)
+        await workspace.setBlueprints(changedBP, newBP, configBP)
         await workspace.flush()
       })
       afterAll(resetWorkspace)
@@ -376,9 +384,15 @@ type salesforce_lead {
         expect(writtenData).toEqual(changedBP.buffer)
       })
       it('should keep all unchanged files', async () => {
-        await Promise.all(_.keys(workspace.parsedBlueprints).map(
-          async p => expect(await fs.exists(path.join(workspace.config.baseDir, p))).toBeTruthy()
-        ))
+        await Promise.all(_.keys(workspace.parsedBlueprints)
+          .filter(p => p !== configBP.filename)
+          .map(
+            async p => expect(await fs.exists(path.join(workspace.config.baseDir, p))).toBeTruthy()
+          ))
+      })
+      it('should save credentials in localstorage', async () => {
+        expect(await fs.exists(path.join(workspace.config.localStorage, configBP.filename)))
+          .toBeTruthy()
       })
     })
 

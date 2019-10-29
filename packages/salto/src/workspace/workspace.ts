@@ -18,6 +18,8 @@ import {
 
 const { DefaultMap } = collections.map
 
+const CREDS_DIR = 'credentials'
+
 class ExsitingWorkspaceError extends Error {
   constructor() {
     super('existing salto workspace')
@@ -61,10 +63,15 @@ const getBlueprintsFromDir = async (
 
 const loadBlueprints = async (
   blueprintsDir: string,
+  credsDir: string,
   blueprintsFiles: string[],
 ): Promise<Blueprint[]> => {
   try {
-    const filenames = blueprintsFiles.concat(await getBlueprintsFromDir(blueprintsDir))
+    const filenames = [
+      ...blueprintsFiles,
+      ...await getBlueprintsFromDir(blueprintsDir),
+      ...await getBlueprintsFromDir(credsDir),
+    ]
     return Promise.all(filenames.map(async filename => ({
       filename: path.relative(blueprintsDir, filename),
       buffer: await fs.readFile(filename, 'utf8'),
@@ -216,6 +223,7 @@ export class Workspace {
   ): Promise<Workspace> {
     const bps = await loadBlueprints(
       config.baseDir,
+      path.join(config.localStorage, CREDS_DIR),
       config.additionalBlueprints || []
     )
     const parsedBlueprints = useCache
@@ -358,10 +366,19 @@ export class Workspace {
    * Dump the current workspace state to the underlying persistent storage
    */
   async flush(): Promise<void> {
+    const isNewConfig = (bp: ParsedBlueprint): boolean => (
+      bp
+      && bp.elements.length === 1
+      && bp.elements[0].elemID.isConfig
+      && bp.filename === path.join(CREDS_DIR, `${bp.elements[0].elemID.adapter}.bp`)
+    )
+
     const cache = new ParseResultFSCache(this.config.localStorage, this.config.baseDir)
     await Promise.all(wu(this.dirtyBlueprints).map(async filename => {
       const bp = this.parsedBlueprints[filename]
-      const filePath = path.join(this.config.baseDir, filename)
+      const filePath = isNewConfig(bp)
+        ? path.join(this.config.localStorage, filename)
+        : path.join(this.config.baseDir, filename)
       if (bp === undefined) {
         await fs.delete(filePath)
       } else {
@@ -369,7 +386,7 @@ export class Workspace {
         await fs.writeFile(filePath, bp.buffer)
         if (this.useCache) {
           await cache.put({
-            filename,
+            filename: filePath,
             lastModified: Date.now(),
           }, bp)
         }

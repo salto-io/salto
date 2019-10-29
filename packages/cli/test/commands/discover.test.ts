@@ -7,6 +7,7 @@ import { command, discoverCommand } from '../../src/commands/discover'
 import { MockWriteStream, getWorkspaceErrors } from '../mocks'
 
 jest.mock('salto', () => ({
+  ...require.requireActual('salto'),
   discover: jest.fn().mockImplementation(() => Promise.resolve([])),
   Workspace: {
     load: jest.fn().mockImplementation(

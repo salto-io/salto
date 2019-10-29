@@ -5,7 +5,7 @@ import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'
 
 import { getConfigFromUser } from '../callbacks'
 import Prompts from '../prompts'
-import { formatWorkspaceErrors } from '../formatter'
+import { validateWorkspace } from '../workspace'
 
 export const command = (
   workingDir: string,
@@ -22,8 +22,7 @@ export const command = (
     const records = await readCsv(inputPath)
     const config = await loadConfig(workingDir)
     const workspace: Workspace = await Workspace.load(config)
-    if (workspace.hasErrors()) {
-      stderr.write(formatWorkspaceErrors(workspace.getWorkspaceErrors()))
+    if (!validateWorkspace(workspace, stderr)) {
       return CliExitCode.AppError
     }
     await deleteFromCsvFile(

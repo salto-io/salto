@@ -10,6 +10,7 @@ import { ApplyCommand } from '../../src/commands/apply'
 
 const mockApply = apply
 jest.mock('salto', () => ({
+  ...require.requireActual('salto'),
   loadConfig: jest.fn().mockImplementation(
     workspaceDir => Promise.resolve({ baseDir: workspaceDir, additionalBlueprints: [], cacheLocation: '' })
   ),

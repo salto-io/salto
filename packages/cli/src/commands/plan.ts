@@ -1,7 +1,8 @@
 import { plan, Workspace, loadConfig } from 'salto'
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'
-import { createPlanOutput, formatWorkspaceErrors } from '../formatter'
+import { createPlanOutput } from '../formatter'
+import { validateWorkspace } from '../workspace'
 
 export const command = (
   workspaceDir: string,
@@ -10,8 +11,7 @@ export const command = (
   async execute(): Promise<CliExitCode> {
     const config = await loadConfig(workspaceDir)
     const workspace: Workspace = await Workspace.load(config)
-    if (workspace.hasErrors()) {
-      stderr.write(formatWorkspaceErrors(workspace.getWorkspaceErrors()))
+    if (!validateWorkspace(workspace, stderr)) {
       return CliExitCode.AppError
     }
     // TODO: inline commands.plan here

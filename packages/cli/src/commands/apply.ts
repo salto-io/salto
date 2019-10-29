@@ -3,9 +3,9 @@ import { createCommandBuilder } from '../command_builder'
 import { CliCommand, CliOutput, ParsedCliInput, WriteStream, CliExitCode } from '../types'
 import {
   createActionStartOutput, createActionInProgressOutput, createItemDoneOutput,
-  formatWorkspaceErrors,
 } from '../formatter'
 import { shouldApply, getConfigFromUser } from '../callbacks'
+import { validateWorkspace } from '../workspace'
 
 
 const CURRENT_ACTION_POLL_INTERVAL = 5000
@@ -53,8 +53,7 @@ export class ApplyCommand implements CliCommand {
   async execute(): Promise<CliExitCode> {
     const config = await loadConfig(this.workspaceDir)
     const workspace: Workspace = await Workspace.load(config)
-    if (workspace.hasErrors()) {
-      this.stderr.write(formatWorkspaceErrors(workspace.getWorkspaceErrors()))
+    if (!validateWorkspace(workspace, this.stderr)) {
       return CliExitCode.AppError
     }
     await apply(workspace,

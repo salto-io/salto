@@ -7,6 +7,7 @@ import chalk from 'chalk'
 import { WriteStream } from './types'
 import { YargsCommandBuilder, CommandBuilder } from './command_builder'
 import { registerBuilders } from './command_register'
+import { versionString } from './version'
 
 const LOGO_TEXT = '\u00B0 salto' // \u00B0 is for the salto 'dot'
 const LOGO_FONT = 'Standard'
@@ -50,6 +51,7 @@ const createYargsParser = (outStream: WriteStream, errStream: WriteStream):
 
   const parser = yargs()
     .strict()
+    .version(`${versionString}\n`)
     .completion('completion', false as unknown as string)
     .exitProcess(false)
     .help(false)

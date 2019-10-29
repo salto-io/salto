@@ -106,7 +106,7 @@ export const discoverChanges = async (
   ))
 
   const upstreamElements = mergeAndValidate(rawUpstreamElements)
-  const changes = getUpstreamChanges(stateElements, upstreamElements, upstreamElements)
+  const changes = getUpstreamChanges(stateElements, rawUpstreamElements, upstreamElements)
     .map(toChangeWithConflict(workspaceElements, stateElements, upstreamElements))
     .flatten()
 

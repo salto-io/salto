@@ -1126,8 +1126,8 @@ describe('SalesforceAdapter CRUD', () => {
 
           it('should only delete fields', () => {
             expect(mockCreate.mock.calls.length).toBe(0)
+            expect(mockUpdate.mock.calls.length).toBe(0)
             expect(mockDelete.mock.calls.length).toBe(1)
-            expect(mockUpdate.mock.calls.length).toBe(1)
 
             const fields = mockDelete.mock.calls[0][1]
             expect(fields.length).toBe(2)
@@ -1506,6 +1506,9 @@ describe('SalesforceAdapter CRUD', () => {
             result = await adapter.update(oldElement, newElement,
               [
                 { action: 'modify', data: { before: oldElement, after: newElement } },
+                { action: 'modify',
+                  data: { before: oldElement.fields.banana,
+                    after: newElement.fields.banana } },
               ])
           })
 

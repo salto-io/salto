@@ -20,28 +20,16 @@ describe('TEST', () => {
     const workspace = await EditorWorkspace.load(getConfig(baseBPDir, [parseErrorBp]), false)
     expect(workspace.elements).toBeDefined()
     expect(workspace.errors.hasErrors()).toBeTruthy()
-    expect(getDiagnostics(workspace)).toEqual([
-      {
-        filename: parseErrorBp,
-        msg: 'Invalid expression: Expected the start of an expression,'
-             + ' but found an invalid expression token.',
-        range: {
-          end: {
-            col: 0,
-            line: 4,
-          },
-          start: {
-            col: 7,
-            line: 3,
-          },
-        },
-      },
-    ])
+    const diag = getDiagnostics(workspace)['../BP2/parse_error.bp'][0]
+    expect(diag).toBeDefined()
+    expect(diag.msg).toBe(
+      'Expected the start of an expression, but found an invalid expression token.'
+    )
   })
   it('should no errors on non-existing file', async () => {
     const workspace = await EditorWorkspace.load(getConfig(baseBPDir, []), false)
     expect(workspace.elements).toBeDefined()
     expect(workspace.errors.hasErrors()).toBeFalsy()
-    expect(getDiagnostics(workspace)).toEqual([])
+    expect(getDiagnostics(workspace)).toEqual({ 'complex_type.bp': [], 'simple_types.bp': [] })
   })
 })

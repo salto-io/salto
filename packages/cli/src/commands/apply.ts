@@ -1,4 +1,3 @@
-import * as sourceMapSupport from 'source-map-support'
 import { apply, PlanItem, Workspace, loadConfig } from 'salto'
 import { createCommandBuilder } from '../command_builder'
 import { CliCommand, CliOutput, ParsedCliInput, WriteStream, CliExitCode } from '../types'
@@ -58,22 +57,11 @@ export class ApplyCommand implements CliCommand {
       this.stderr.write(formatWorkspaceErrors(workspace.getWorkspaceErrors()))
       return CliExitCode.AppError
     }
-    try {
-      await apply(workspace,
-        getConfigFromUser,
-        shouldApply({ stdout: this.stdout, stderr: this.stderr }),
-        (action: PlanItem) => this.updateCurrentAction(action), this.force)
-      this.endCurrentAction()
-    } catch (e) {
-      this.endCurrentAction()
-      const errorSource = sourceMapSupport.getErrorSource(e)
-      if (errorSource) {
-        this.stderr.write(errorSource)
-      }
-      this.stderr.write(e.stack || e)
-      return CliExitCode.AppError
-    }
-
+    await apply(workspace,
+      getConfigFromUser,
+      shouldApply({ stdout: this.stdout, stderr: this.stderr }),
+      (action: PlanItem) => this.updateCurrentAction(action), this.force)
+    this.endCurrentAction()
     return CliExitCode.Success
   }
 }

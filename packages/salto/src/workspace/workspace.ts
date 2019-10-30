@@ -227,7 +227,7 @@ export class Workspace {
     const absBaseDir = path.resolve(baseDir)
     const minimalConfig = {
       uid: uuidv4(),
-      name: workspaceName || path.basename(path.resolve(absBaseDir)),
+      name: workspaceName || path.basename(absBaseDir),
     }
     const config = completeConfig(absBaseDir, minimalConfig)
     // We want to make sure that *ALL* of the pathes we are going to create

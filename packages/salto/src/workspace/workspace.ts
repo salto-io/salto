@@ -18,9 +18,9 @@ import {
 
 const { DefaultMap } = collections.map
 
-const CREDS_DIR = 'credentials'
+export const CREDS_DIR = 'credentials'
 
-class ExsitingWorkspaceError extends Error {
+class ExistingWorkspaceError extends Error {
   constructor() {
     super('existing salto workspace')
   }
@@ -181,7 +181,7 @@ const createWorkspaceState = (blueprints: ReadonlyArray<ParsedBlueprint>): Works
 
 const ensureEmptyWorkspace = async (config: Config): Promise<void> => {
   if (await locateWorkspaceRoot(path.resolve(config.baseDir))) {
-    throw new ExsitingWorkspaceError()
+    throw new ExistingWorkspaceError()
   }
   const configPath = getConfigPath(config.baseDir)
   const shouldNotExist = [

@@ -6,6 +6,7 @@ import { getPlan, DetailedChange } from './plan'
 import initAdapters from './adapters/adapters'
 import { mergeElements } from './merger'
 import { validateElements } from './validator'
+import { CREDS_DIR } from '../workspace/workspace'
 
 type DiscoverChangesResult = {
   changes: Iterable<DetailedChange>
@@ -17,6 +18,10 @@ const configToChange = (config: InstanceElement): DetailedChange => ({
   action: 'add',
   data: { after: config },
 })
+
+const addPathToConfig = (config: InstanceElement): InstanceElement => (
+  new InstanceElement(config.elemID, config.type, config.value, [CREDS_DIR, config.elemID.adapter])
+)
 
 export const getUpstreamChanges = (
   stateElements: ReadonlyArray<Element>,
@@ -64,6 +69,6 @@ export const discoverChanges = async (
   const result = getUpstreamChanges(stateElements, upstreamElements)
   return {
     ...result,
-    changes: wu.chain(result.changes, newConfigs.map(configToChange)),
+    changes: wu.chain(result.changes, newConfigs.map(addPathToConfig).map(configToChange)),
   }
 }

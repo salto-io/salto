@@ -1,6 +1,7 @@
 import _ from 'lodash'
 import wu from 'wu'
-import { Element, Field, isObjectType, ObjectType } from 'adapter-api'
+import { Element, Field, isObjectType, ObjectType, Change, getChangeElement,
+  isField, Values } from 'adapter-api'
 import { SaveResult } from 'jsforce'
 import { FilterCreator } from '../filter'
 import {
@@ -11,8 +12,14 @@ import {
   bpCase, fieldFullName, mapKeysRecursive, metadataType, sfCase, toCustomField, Types,
 } from '../transformer'
 
+const getLookupFilter = (field: Field): Values =>
+  field.annotations[FIELD_ANNOTATIONS.LOOKUP_FILTER]
+
+const hasLookupFilter = (field: Field): boolean =>
+  getLookupFilter(field) !== undefined
+
 const getFieldsWithLookupFilter = (obj: ObjectType): Field[] =>
-  Object.values(obj.fields).filter(field => (field.annotations[FIELD_ANNOTATIONS.LOOKUP_FILTER]))
+  Object.values(obj.fields).filter(hasLookupFilter)
 
 const createCustomFieldWithLookupFilter = (obj: ObjectType, fieldWithLookupFilter: Field):
   CustomField => {
@@ -45,7 +52,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
     const customObjectElements = wu(elements)
       .filter(isObjectType)
       .filter(element => metadataType(element) === CUSTOM_OBJECT)
-      .toArray()
+      .toArray() as ObjectType[]
 
     const objectFullNameToObjectMap: Record<string, ObjectType> = _(customObjectElements)
       .map(obj => [obj.elemID.getFullName(), obj])
@@ -53,7 +60,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
       .value()
 
     const fieldsWithLookupFilter = _(customObjectElements)
-      .map(obj => getFieldsWithLookupFilter(obj as ObjectType))
+      .map(obj => getFieldsWithLookupFilter(obj))
       .flatten()
       .value()
 
@@ -103,7 +110,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
       .map(fieldWithLookupFilter =>
         createCustomFieldWithLookupFilter(after, fieldWithLookupFilter))
     if (customFieldsWithLookupFilter && customFieldsWithLookupFilter.length > 0) {
-      return client.update(CUSTOM_FIELD, Array.from(customFieldsWithLookupFilter.values()))
+      return client.update(CUSTOM_FIELD, customFieldsWithLookupFilter)
     }
     return []
   },
@@ -112,28 +119,26 @@ const filterCreator: FilterCreator = ({ client }) => ({
    * In Salesforce you can't add a lookup/masterdetail relationship with a lookupFilter upon
    * the field's creation. Thus, we need to first create the field and then update it using filter
    */
-  onUpdate: async (before: Element, after: Element):
+  onUpdate: async (before: Element, after: Element, changes: Iterable<Change>):
     Promise<SaveResult[]> => {
     if (!(isObjectType(before) && isObjectType(after))) {
       return []
     }
-    const beforeFieldNameToFieldWithLookupFilterMap = _(getFieldsWithLookupFilter(before))
-      .map(field => [field.name, field])
-      .fromPairs()
-      .value()
 
-    const getFieldsToUpdate = (): Field[] =>
-      getFieldsWithLookupFilter(after).filter(afterField => {
-        const beforeField = beforeFieldNameToFieldWithLookupFilterMap[afterField.name]
-        return beforeField === undefined
-          || !_.isEqual(beforeField.annotations[FIELD_ANNOTATIONS.LOOKUP_FILTER],
-            afterField.annotations[FIELD_ANNOTATIONS.LOOKUP_FILTER])
-      })
-    const customFieldsWithLookupFilter = getFieldsToUpdate().map(fieldWithLookupFilter =>
-      createCustomFieldWithLookupFilter(after, fieldWithLookupFilter))
-    if (customFieldsWithLookupFilter && customFieldsWithLookupFilter.length > 0) {
-      return client.update(CUSTOM_FIELD, Array.from(customFieldsWithLookupFilter.values()))
+    const fieldsToUpdate = wu(changes)
+      .filter(c => isField(getChangeElement(c)))
+      .map(c => [_.get(c.data, 'before'), _.get(c.data, 'after')])
+      .filter(([b, a]) => !_.isEqual(b ? getLookupFilter(b) : undefined,
+        a ? getLookupFilter(a) : undefined))
+      .map(([_b, a]) => a)
+      .reject(_.isUndefined)
+      .toArray() as Field[]
+
+    if (fieldsToUpdate.length > 0) {
+      return client.update(CUSTOM_FIELD, fieldsToUpdate
+        .map(field => createCustomFieldWithLookupFilter(after, field)))
     }
+
     return []
   },
 })

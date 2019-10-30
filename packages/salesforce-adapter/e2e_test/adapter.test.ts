@@ -1256,7 +1256,10 @@ describe('Salesforce adapter E2E with real account', () => {
       )
 
       // Test
-      const modificationResult = await adapter.update(oldElement, newElement)
+      const modificationResult = await adapter.update(oldElement, newElement,
+        [{ action: 'modify',
+          data: { before: oldElement.fields[lookupFieldName],
+            after: oldElement.fields[lookupFieldName] } }])
       expect(modificationResult).toBeInstanceOf(ObjectType)
 
       // Verify the lookup filter was created

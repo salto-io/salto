@@ -3,19 +3,18 @@ const deepMerge = require('../../build_utils/deep_merge')
 module.exports = deepMerge(
   require('../../jest.base.config.js'),
   {
-    name: 'adapter-api',
-    displayName: 'adapter-api',
+    name: '@salto/logging',
+    displayName: '@salto/logging',
     rootDir: `${__dirname}`,
     collectCoverageFrom: [
       '!<rootDir>/dist/index.js',
     ],
     coverageThreshold: {
-      // Slowly start increasing here, never decrease!
       global: {
-        branches: 90,
-        functions: 90,
-        lines: 85,
-        statements: 90,
+        branches: 98,
+        functions: 98,
+        lines: 98,
+        statements: 98,
       },
     },
   }

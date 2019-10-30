@@ -1,20 +1,20 @@
-import * as common from '../src/internal/common'
 import * as winston from '../src/internal/winston'
 import * as env from '../src/internal/env'
-import * as repo from '../src/internal/repo'
+import * as logger from '../src/internal/logger'
+import * as config from '../src/internal/config'
 
 const INDEX_PATH = '../src/index'
 
 describe('index', () => {
-  const mockConfig = { ...common.DEFAULT_CONFIG }
+  const mockConfig = { ...config.DEFAULT_CONFIG }
   let mergeConfigs: jest.SpyInstance
   let winstonLoggerRepo: jest.SpyInstance
   let loggerRepo: jest.SpyInstance
 
   beforeEach(() => {
-    mergeConfigs = jest.spyOn(common, 'mergeConfigs')
+    mergeConfigs = jest.spyOn(config, 'mergeConfigs')
     winstonLoggerRepo = jest.spyOn(winston, 'loggerRepo')
-    loggerRepo = jest.spyOn(repo, 'loggerRepo')
+    loggerRepo = jest.spyOn(logger, 'loggerRepo')
 
     jest.spyOn(env, 'config').mockImplementation(() => mockConfig)
 

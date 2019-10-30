@@ -1,8 +1,8 @@
 import {
   toHexColor, normalizeNamespaceOrModule,
-} from '../../src/internal/namespaces'
+} from '../../src/internal/namespace'
 
-describe('namespaces', () => {
+describe('namespace', () => {
   describe('toHexColor', () => {
     'my.namespace MY.namespace MYOTHERNAMESPACE'.split(' ').forEach(namespace => {
       it('should return the same color to each namespace on multiple invocations', () => {
@@ -19,7 +19,7 @@ describe('namespaces', () => {
     describe('when a module is specified', () => {
       it('should return its name as a string', () => {
         expect(normalizeNamespaceOrModule(module))
-          .toEqual('logging/test/internal/namespaces.test')
+          .toEqual('logging/test/internal/namespace.test')
       })
     })
 

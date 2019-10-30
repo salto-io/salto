@@ -2,10 +2,9 @@ import fs from 'fs'
 import tmp from 'tmp'
 import { pollPromise } from '../poll'
 import { mockConsoleStream, MockWritableStream } from '../console'
-import {
-  LogLevel, Config, mergeConfigs, LOG_LEVELS, Logger, LoggerRepo,
-} from '../../src/internal/common'
-import { loggerRepo } from '../../src/internal/repo'
+import { LogLevel, LOG_LEVELS } from '../../src/internal/level'
+import { Config, mergeConfigs } from '../../src/internal/config'
+import { loggerRepo, Logger, LoggerRepo } from '../../src/internal/logger'
 import { loggerRepo as winstonLoggerRepo } from '../../src/internal/winston'
 import '../matchers'
 
@@ -27,7 +26,7 @@ describe('winston based logger', () => {
   }
 
   beforeEach(() => {
-    initialConfig = mergeConfigs() // get a copy of the default config
+    initialConfig = mergeConfigs({ minLevel: 'warn' })
     consoleStream = mockConsoleStream(true)
   })
 
@@ -99,63 +98,125 @@ describe('winston based logger', () => {
     })
 
     describe('minLevel', () => {
-      beforeEach(() => {
-        initialConfig.minLevel = 'info'
-        logger = createLogger()
+      describe('logging levels', () => {
+        beforeEach(() => {
+          initialConfig.minLevel = 'info'
+          logger = createLogger()
+        })
+
+        describe('when logging at the configured level', () => {
+          beforeEach(() => {
+            logLine({ level: initialConfig.minLevel as LogLevel })
+          })
+
+          it('should write the message to the console stream', () => {
+            expect(line).not.toHaveLength(0)
+          })
+        })
+
+        describe('when logging above the configured level', () => {
+          beforeEach(() => {
+            logLine({ level: 'error' })
+          })
+
+          it('should write the message to the console stream', () => {
+            expect(line).not.toHaveLength(0)
+          })
+        })
+
+        describe('when logging below the configured level', () => {
+          beforeEach(() => {
+            logLine({ level: 'debug' })
+          })
+
+          it('should not write the message to the console stream', () => {
+            expect(line).toHaveLength(0)
+          })
+        })
       })
 
-      describe('when logging at the configured level', () => {
+      describe('"none"', () => {
         beforeEach(() => {
-          logLine({ level: initialConfig.minLevel })
+          initialConfig.minLevel = 'none'
+          logger = createLogger()
         })
 
-        it('should write the message to the console stream', () => {
-          expect(line).not.toHaveLength(0)
-        })
-      })
+        LOG_LEVELS.forEach(level => {
+          describe(`when logging at level ${level}`, () => {
+            beforeEach(() => {
+              logLine({ level })
+            })
 
-      describe('when logging above the configured level', () => {
-        beforeEach(() => {
-          logLine({ level: 'error' })
-        })
-
-        it('should write the message to the console stream', () => {
-          expect(line).not.toHaveLength(0)
-        })
-      })
-
-      describe('when logging below the configured level', () => {
-        beforeEach(() => {
-          logLine({ level: 'debug' })
-        })
-
-        it('should not write the message to the console stream', () => {
-          expect(line).toHaveLength(0)
+            it('should not write the message to the console stream', () => {
+              expect(line).toHaveLength(0)
+            })
+          })
         })
       })
     })
 
-    describe('enabledForNamespace', () => {
-      describe('when it returns true', () => {
-        beforeEach(() => {
-          logger = createLogger()
-          logLine()
+    describe('namespaceFilter', () => {
+      describe('as a function', () => {
+        describe('when it returns true', () => {
+          beforeEach(() => {
+            initialConfig.namespaceFilter = () => true
+            logger = createLogger()
+            logLine()
+          })
+
+          it('should write the message to the console stream', () => {
+            expect(line).not.toHaveLength(0)
+          })
         })
 
-        it('should write the message to the console stream', () => {
-          expect(line).not.toHaveLength(0)
+        describe('when it returns false', () => {
+          beforeEach(() => {
+            initialConfig.namespaceFilter = () => false
+            logger = createLogger()
+            logLine()
+          })
+
+          it('should not write the message to the console stream', () => {
+            expect(line).toHaveLength(0)
+          })
         })
       })
 
-      describe('when it returns false', () => {
-        beforeEach(() => {
-          initialConfig.enabledForNamespace = () => false
-          logger = createLogger()
-          logLine()
+      describe('as a string', () => {
+        describe('when it is "*"', () => {
+          beforeEach(() => {
+            initialConfig.namespaceFilter = '*'
+            logger = createLogger()
+            logLine()
+          })
+
+          it('should write the message to the console stream', () => {
+            expect(line).not.toHaveLength(0)
+          })
         })
 
-        it('should not write the message to the console stream', () => {
-          expect(line).toHaveLength(0)
+        describe('when it is another namespace', () => {
+          beforeEach(() => {
+            initialConfig.namespaceFilter = 'other-namespace'
+            logger = createLogger()
+            logLine()
+          })
+
+          it('should not write the message to the console stream', () => {
+            expect(line).toHaveLength(0)
+          })
+        })
+
+        describe('when it is a glob matching the namespace', () => {
+          beforeEach(() => {
+            initialConfig.namespaceFilter = `${NAMESPACE}**`
+            logger = createLogger()
+            logLine()
+          })
+
+          it('should write the message to the console stream', () => {
+            expect(line).not.toHaveLength(0)
+          })
         })
       })
     })
@@ -184,8 +245,8 @@ describe('winston based logger', () => {
             logLine()
           })
 
-          it('should not colorize the line', () => {
-            expect(line).not.toContainColors()
+          it('should still colorize the line', () => {
+            expect(line).toContainColors()
           })
         })
       })
@@ -391,7 +452,7 @@ describe('winston based logger', () => {
     })
 
     it('should return a Config instance', () => {
-      const expectedProperties = 'minLevel filename format enabledForNamespace colorize'
+      const expectedProperties = 'minLevel filename format namespaceFilter colorize'
         .split(' ')
         .sort()
 

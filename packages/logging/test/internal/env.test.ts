@@ -1,7 +1,5 @@
 import { config } from '../../src/internal/env'
-import {
-  EnabledForNamespaceChecker, ConfigValidationError,
-} from '../../src/internal/common'
+import { ValidationError } from '../../src/internal/common'
 
 describe('env', () => {
   describe('config', () => {
@@ -12,12 +10,18 @@ describe('env', () => {
         })
       })
 
+      describe('when the env variable is an empty string', () => {
+        it('should return undefined', () => {
+          expect(config({ SALTO_LOG_LEVEL: '' }).minLevel).toBeUndefined()
+        })
+      })
+
       describe('when the env variable is an illegal level', () => {
         const attempt = (): unknown => config({ SALTO_LOG_LEVEL: 'nosuchlevel' })
 
         it('should throw a validation error', () => {
           expect(attempt).toThrow(/Invalid log level "nosuchlevel"/)
-          expect(attempt).toThrow(ConfigValidationError)
+          expect(attempt).toThrow(ValidationError)
         })
       })
 
@@ -30,6 +34,12 @@ describe('env', () => {
 
     describe('filename', () => {
       describe('when the env variable is not defined', () => {
+        it('should return undefined', () => {
+          expect(config({ SALTO_LOG_FILE: '' }).filename).toBeUndefined()
+        })
+      })
+
+      describe('when the env variable is an empty string', () => {
         it('should return undefined', () => {
           expect(config({}).filename).toBeUndefined()
         })
@@ -49,11 +59,17 @@ describe('env', () => {
         })
       })
 
+      describe('when the env variable is an empty string', () => {
+        it('should return undefined', () => {
+          expect(config({ SALTO_LOG_FORMAT: '' }).format).toBeUndefined()
+        })
+      })
+
       describe('when the env variable is an illegal format', () => {
         const attempt = (): unknown => config({ SALTO_LOG_FORMAT: 'nosuchformat' })
         it('should throw a validation error', () => {
           expect(attempt).toThrow(/Invalid log format "nosuchformat"/)
-          expect(attempt).toThrow(ConfigValidationError)
+          expect(attempt).toThrow(ValidationError)
         })
       })
 
@@ -68,6 +84,12 @@ describe('env', () => {
       describe('when the env variable is not defined', () => {
         it('should return undefined', () => {
           expect(config({}).colorize).toBeUndefined()
+        })
+      })
+
+      describe('when the env variable is an empty string', () => {
+        it('should return undefined', () => {
+          expect(config({ SALTO_LOG_COLOR: '' }).colorize).toBeUndefined()
         })
       })
 
@@ -89,95 +111,22 @@ describe('env', () => {
     })
   })
 
-  describe('enabledForNamespace', () => {
+  describe('namespaceFilter', () => {
     describe('when the env variable is not defined', () => {
       it('should return undefined', () => {
-        expect(config({}).enabledForNamespace).toBeUndefined()
+        expect(config({}).namespaceFilter).toBeUndefined()
       })
     })
 
-    describe('when the env variable is "*"', () => {
-      const enabledForNamespace = config({
-        SALTO_LOG_NS: '*',
-      }).enabledForNamespace as EnabledForNamespaceChecker
-
-      it('should return true always', () => {
-        expect(enabledForNamespace('bla')).toBeTruthy()
-        expect(enabledForNamespace('bla.bla')).toBeTruthy()
+    describe('when the env variable is an empty string', () => {
+      it('should return undefined', () => {
+        expect(config({ SALTO_LOG_NS: '' }).namespaceFilter).toBeUndefined()
       })
     })
 
-    describe('when the env variable is a string with no "*"', () => {
-      const enabledForNamespace = config({
-        SALTO_LOG_NS: 'some-namespace',
-      }).enabledForNamespace as EnabledForNamespaceChecker
-
-      it('should return true for this specific namespace', () => {
-        expect(enabledForNamespace('some-namespace')).toBeTruthy()
-      })
-
-      it('should return false for every other namespace', () => {
-        expect(enabledForNamespace('SOME-NAMESPACE')).toBeFalsy()
-        expect(enabledForNamespace('bla')).toBeFalsy()
-        expect(enabledForNamespace('bla.bla')).toBeFalsy()
-      })
-    })
-
-    describe('when the env variable is a string containing a prefix "*"', () => {
-      const enabledForNamespace = config({
-        SALTO_LOG_NS: '*.some-namespace',
-      }).enabledForNamespace as EnabledForNamespaceChecker
-
-      it('should return true for a namespace ending with the specified value', () => {
-        expect(enabledForNamespace('other-namespace.some-namespace')).toBeTruthy()
-        expect(enabledForNamespace('other-namespace.other-namespace.some-namespace')).toBeTruthy()
-      })
-
-      it('should work well with namespaces.concat', () => {
-        expect(enabledForNamespace('other-namespace.some-namespace')).toBeTruthy()
-      })
-
-      it('should return false for a namespace starting with the specified value', () => {
-        expect(enabledForNamespace('some-namespace.other-namespace')).toBeFalsy()
-      })
-
-      it('should return false for this specific namespace alone', () => {
-        expect(enabledForNamespace('some-namespace')).toBeFalsy()
-      })
-
-      it('should return false for every other namespace', () => {
-        expect(enabledForNamespace('SOME-NAMESPACE')).toBeFalsy()
-        expect(enabledForNamespace('bla')).toBeFalsy()
-        expect(enabledForNamespace('bla.bla')).toBeFalsy()
-      })
-    })
-
-    describe('when the env variable is a string containing a trailing "*"', () => {
-      const enabledForNamespace = config({
-        SALTO_LOG_NS: 'some-namespace.*',
-      }).enabledForNamespace as EnabledForNamespaceChecker
-
-      it('should return true for a namespace starting with the specified value', () => {
-        expect(enabledForNamespace('some-namespace.other-namespace')).toBeTruthy()
-        expect(enabledForNamespace('some-namespace.other-namespace.other-namespace')).toBeTruthy()
-      })
-
-      it('should work well with namespaces.concat', () => {
-        expect(enabledForNamespace('some-namespace.other-namespace')).toBeTruthy()
-      })
-
-      it('should return false for a namespace ending with the specified value', () => {
-        expect(enabledForNamespace('other-namespace.some-namespace')).toBeFalsy()
-      })
-
-      it('should return false for this specific namespace alone', () => {
-        expect(enabledForNamespace('some-namespace')).toBeFalsy()
-      })
-
-      it('should return false for every other namespace', () => {
-        expect(enabledForNamespace('SOME-NAMESPACE')).toBeFalsy()
-        expect(enabledForNamespace('bla')).toBeFalsy()
-        expect(enabledForNamespace('bla.bla')).toBeFalsy()
+    describe('when the env variable is defined and non-empty', () => {
+      it('should return the definition', () => {
+        expect(config({ SALTO_LOG_NS: 'BLA' }).namespaceFilter).toBe('BLA')
       })
     })
   })

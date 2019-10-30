@@ -284,16 +284,6 @@ export class ObjectType extends Type {
 
     return res
   }
-
-  getFieldsThatAreNotInOther(other: this): Field[] {
-    const otherSet = new Set<string>(Object.keys(other.fields))
-    return Object.values(this.fields).filter(f => !otherSet.has(f.name))
-  }
-
-  getMutualFieldsWithOther(other: this): Field[] {
-    const otherSet = new Set<string>(Object.keys(other.fields))
-    return Object.values(this.fields).filter(f => otherSet.has(f.name))
-  }
 }
 
 export class InstanceElement implements Element {

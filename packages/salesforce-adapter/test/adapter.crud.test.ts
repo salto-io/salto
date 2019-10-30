@@ -747,7 +747,7 @@ describe('SalesforceAdapter CRUD', () => {
         let result: Promise<Element>
 
         beforeEach(() => {
-          result = adapter.update(oldElement, newElement)
+          result = adapter.update(oldElement, newElement, [])
           result.catch(_err => undefined) // prevent Unhandled promise rejection message
         })
 
@@ -800,7 +800,7 @@ describe('SalesforceAdapter CRUD', () => {
         let result: Promise<Element>
 
         beforeEach(() => {
-          result = adapter.update(oldElement, newElement)
+          result = adapter.update(oldElement, newElement, [])
           result.catch(_err => undefined) // prevent Unhandled promise rejection message
         })
 
@@ -902,7 +902,7 @@ describe('SalesforceAdapter CRUD', () => {
         )
 
         beforeEach(async () => {
-          result = await adapter.update(oldElement, newElement)
+          result = await adapter.update(oldElement, newElement, [])
         })
 
         it('should return an InstanceElement', () => {
@@ -959,7 +959,11 @@ describe('SalesforceAdapter CRUD', () => {
           })
 
           beforeEach(async () => {
-            result = await adapter.update(oldElement, newElement)
+            result = await adapter.update(oldElement, newElement, [
+              { action: 'modify', data: { before: oldElement, after: newElement } },
+              { action: 'remove', data: { before: oldElement.fields.description } },
+              { action: 'add', data: { after: newElement.fields.address } },
+            ])
           })
 
           it('should return an instance of ObjectType', () => {
@@ -1028,7 +1032,10 @@ describe('SalesforceAdapter CRUD', () => {
           })
 
           beforeEach(async () => {
-            result = await adapter.update(oldElement, newElement)
+            result = await adapter.update(oldElement, newElement, [
+              { action: 'add', data: { after: newElement.fields.description } },
+              { action: 'add', data: { after: newElement.fields.apple } },
+            ])
           })
 
           it('should return an instance of ObjectType', () => {
@@ -1107,7 +1114,10 @@ describe('SalesforceAdapter CRUD', () => {
           })
 
           beforeEach(async () => {
-            result = await adapter.update(oldElement, newElement)
+            result = await adapter.update(oldElement, newElement, [
+              { action: 'remove', data: { before: oldElement.fields.address } },
+              { action: 'remove', data: { before: oldElement.fields.banana } },
+            ])
           })
 
           it('should return an instance of ObjectType', () => {
@@ -1116,8 +1126,8 @@ describe('SalesforceAdapter CRUD', () => {
 
           it('should only delete fields', () => {
             expect(mockCreate.mock.calls.length).toBe(0)
+            expect(mockUpdate.mock.calls.length).toBe(0)
             expect(mockDelete.mock.calls.length).toBe(1)
-            expect(mockUpdate.mock.calls.length).toBe(1)
 
             const fields = mockDelete.mock.calls[0][1]
             expect(fields.length).toBe(2)
@@ -1177,7 +1187,10 @@ describe('SalesforceAdapter CRUD', () => {
           })
 
           beforeEach(async () => {
-            result = await adapter.update(oldElement, newElement)
+            result = await adapter.update(oldElement, newElement, [
+              { action: 'remove', data: { before: oldElement.fields.address } },
+              { action: 'add', data: { after: newElement.fields.description } },
+            ])
           })
 
           it('should return an instance of ObjectType', () => {
@@ -1241,7 +1254,9 @@ describe('SalesforceAdapter CRUD', () => {
           })
 
           beforeEach(async () => {
-            result = await adapter.update(oldElement, newElement)
+            result = await adapter.update(oldElement, newElement, [
+              { action: 'modify', data: { before: oldElement, after: newElement } },
+            ])
           })
 
           it('should return an instance of ObjectType', () => {
@@ -1341,7 +1356,16 @@ describe('SalesforceAdapter CRUD', () => {
           })
 
           beforeEach(async () => {
-            result = await adapter.update(oldElement, newElement)
+            result = await adapter.update(oldElement, newElement,
+              [
+                { action: 'remove', data: { before: oldElement.fields.address } },
+                { action: 'modify',
+                  data: {
+                    before: oldElement.fields.banana,
+                    after: newElement.fields.banana,
+                  } },
+                { action: 'add', data: { after: newElement.fields.description } },
+              ])
           })
 
           it('should return an instance of ObjectType', () => {
@@ -1424,7 +1448,7 @@ describe('SalesforceAdapter CRUD', () => {
           })
 
           beforeEach(async () => {
-            result = await adapter.update(oldElement, newElement)
+            result = await adapter.update(oldElement, newElement, [])
           })
 
           it('should return an instance of ObjectType', () => {
@@ -1479,7 +1503,13 @@ describe('SalesforceAdapter CRUD', () => {
           })
 
           beforeEach(async () => {
-            result = await adapter.update(oldElement, newElement)
+            result = await adapter.update(oldElement, newElement,
+              [
+                { action: 'modify', data: { before: oldElement, after: newElement } },
+                { action: 'modify',
+                  data: { before: oldElement.fields.banana,
+                    after: newElement.fields.banana } },
+              ])
           })
 
           it('should return an instance of ObjectType', () => {
@@ -1539,7 +1569,7 @@ describe('SalesforceAdapter CRUD', () => {
 
       describe('when the deploy call succeeds', () => {
         it('should update with deploy for specific types', async () => {
-          await adapter.update(before, after)
+          await adapter.update(before, after, [])
           expect(mockDeploy).toHaveBeenCalled()
           expect(mockUpdate).not.toHaveBeenCalled()
         })
@@ -1576,7 +1606,7 @@ describe('SalesforceAdapter CRUD', () => {
         })
 
         it('should reject the promise', async () => {
-          await expect(adapter.update(before, after)).rejects.toThrow(
+          await expect(adapter.update(before, after, [])).rejects.toThrow(
             /Component.*InstName.*my error.*Component.*OtherInst.*some error/s
           )
         })

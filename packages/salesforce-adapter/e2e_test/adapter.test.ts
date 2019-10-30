@@ -399,7 +399,11 @@ describe('Salesforce adapter E2E with real account', () => {
       })
 
       // Test
-      const modificationResult = await adapter.update(oldElement, newElement)
+      const modificationResult = await adapter.update(oldElement, newElement,
+        [
+          { action: 'add', data: { after: newElement.fields.description } },
+          { action: 'remove', data: { before: oldElement.fields.address } },
+        ])
 
       expect(modificationResult).toBeInstanceOf(ObjectType)
       expect(await objectExists(constants.CUSTOM_OBJECT, customObjectName, ['Banana__c', 'Description__c'],
@@ -503,7 +507,7 @@ describe('Salesforce adapter E2E with real account', () => {
       }
 
       const post = await adapter.add(oldInstance) as InstanceElement
-      const updateResult = await adapter.update(oldInstance, newInstance)
+      const updateResult = await adapter.update(oldInstance, newInstance, [])
 
       // Test
       expect(updateResult).toBe(newInstance)
@@ -608,7 +612,17 @@ describe('Salesforce adapter E2E with real account', () => {
       })
 
       // Test
-      const modificationResult = await adapter.update(oldElement, newElement)
+      const modificationResult = await adapter.update(oldElement, newElement,
+        [
+          {
+            action: 'modify',
+            data: {
+              before: oldElement.fields.banana,
+              after: newElement.fields.banana,
+            },
+          },
+          { action: 'modify', data: { before: oldElement, after: newElement } },
+        ])
       expect(modificationResult).toBeInstanceOf(ObjectType)
       expect(await objectExists(constants.CUSTOM_OBJECT, customObjectName, undefined, undefined, 'test label 2')).toBe(true)
 
@@ -729,7 +743,14 @@ describe('Salesforce adapter E2E with real account', () => {
       })
 
       // Test
-      const modificationResult = await adapter.update(oldElement, newElement)
+      const modificationResult = await adapter.update(oldElement, newElement, [
+        { action: 'modify',
+          data: { before: oldElement.fields.address, after: newElement.fields.address } },
+        { action: 'modify',
+          data: { before: oldElement.fields.banana, after: newElement.fields.banana } },
+        { action: 'modify',
+          data: { before: oldElement.fields.delta, after: newElement.fields.delta } },
+      ])
       expect(modificationResult).toBeInstanceOf(ObjectType)
 
       expect(await objectExists(constants.CUSTOM_OBJECT, customObjectName)).toBe(true)
@@ -1235,7 +1256,10 @@ describe('Salesforce adapter E2E with real account', () => {
       )
 
       // Test
-      const modificationResult = await adapter.update(oldElement, newElement)
+      const modificationResult = await adapter.update(oldElement, newElement,
+        [{ action: 'modify',
+          data: { before: oldElement.fields[lookupFieldName],
+            after: oldElement.fields[lookupFieldName] } }])
       expect(modificationResult).toBeInstanceOf(ObjectType)
 
       // Verify the lookup filter was created
@@ -1290,7 +1314,7 @@ describe('Salesforce adapter E2E with real account', () => {
       })
 
       afterEach(async () => {
-        await adapter.update(after, before)
+        await adapter.update(after, before, [])
       })
 
       it('should create rule', async () => {
@@ -1313,7 +1337,7 @@ describe('Salesforce adapter E2E with real account', () => {
           },
         ])
 
-        await adapter.update(before, after)
+        await adapter.update(before, after, [])
 
         const updatedRules = await getRulesFromClient()
         // Since assignment rules order is not relevant so we have to compare sets
@@ -1353,7 +1377,7 @@ describe('Salesforce adapter E2E with real account', () => {
         }))
         _.flatten([rule.rule_entry[0].criteria_items])[0].value = 'bla'
 
-        await adapter.update(before, after)
+        await adapter.update(before, after, [])
 
         const updatedRules = await getRulesFromClient()
         expect(updatedRules).toEqual(after.value)

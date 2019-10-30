@@ -273,7 +273,8 @@ describe('Test lookup filters filter', () => {
 
     it('should add lookupFilter data to a customField with lookupFilter upon the lookup customField creation', () => {
       delete beforeObject.fields.lookup
-      filter.onUpdate(beforeObject, afterObject)
+      filter.onUpdate(beforeObject, afterObject,
+        [{ action: 'add', data: { after: afterObject.fields.lookup } }])
       expect(updateSpy).toHaveBeenCalledWith(constants.CUSTOM_FIELD, [expect.objectContaining(
         {
           lookupFilter: {
@@ -300,7 +301,8 @@ describe('Test lookup filters filter', () => {
     })
 
     it('should add lookupFilter data to a customField with lookupFilter upon the lookup customField update', () => {
-      filter.onUpdate(beforeObject, afterObject)
+      filter.onUpdate(beforeObject, afterObject, [{ action: 'modify',
+        data: { before: beforeObject.fields.lookup, after: afterObject.fields.lookup } }])
       expect(updateSpy).toHaveBeenCalledWith(constants.CUSTOM_FIELD, [expect.objectContaining(
         {
           lookupFilter: {
@@ -329,13 +331,14 @@ describe('Test lookup filters filter', () => {
     it('should ignore lookupFilter for fields with no lookupFilter upon the customField update', () => {
       delete beforeObject.fields.lookup.annotations[constants.FIELD_ANNOTATIONS.LOOKUP_FILTER]
       delete afterObject.fields.lookup.annotations[constants.FIELD_ANNOTATIONS.LOOKUP_FILTER]
-      filter.onUpdate(beforeObject, afterObject)
+      filter.onUpdate(beforeObject, afterObject, [{ action: 'modify',
+        data: { before: beforeObject.fields.lookup, after: afterObject.fields.lookup } }])
       expect(updateSpy).not.toHaveBeenCalled()
     })
 
     it('should ignore lookupFilter for non objectType', () => {
       filter.onUpdate(new InstanceElement(objectTypeElemId, beforeObject, {}),
-        new InstanceElement(objectTypeElemId, afterObject, {}))
+        new InstanceElement(objectTypeElemId, afterObject, {}), [])
       expect(updateSpy).not.toHaveBeenCalled()
     })
   })

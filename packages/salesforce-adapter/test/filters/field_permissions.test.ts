@@ -177,7 +177,12 @@ describe('Field Permissions filter', () => {
     after.fields = { ...after.fields, apple }
     // Add permissions to existing field
     _.merge(after.fields.description.annotations, admin)
-    await filter().onUpdate(before, after)
+    await filter().onUpdate(before, after,
+      [
+        { action: 'add', data: { after: apple } },
+        { action: 'modify',
+          data: { before: before.fields.description, after: after.fields.description } },
+      ])
 
     expect(mockUpdate.mock.calls.length).toBe(1)
     // Verify the field permissions update
@@ -199,7 +204,10 @@ describe('Field Permissions filter', () => {
       const after = mockObject.clone()
       after.fields = { address, apple }
 
-      await filter().onUpdate(before, after)
+      await filter().onUpdate(before, after, [
+        { action: 'add', data: { after: apple } },
+        { action: 'remove', data: { before: banana } },
+      ])
 
       expect(mockUpdate.mock.calls.length).toBe(1)
       // Verify the field permissions update
@@ -221,7 +229,14 @@ describe('Field Permissions filter', () => {
     // Add standard profile field permissions to address
     _.merge(after.fields.address.annotations, standard)
 
-    await filter().onUpdate(before, after)
+    await filter().onUpdate(before, after, [
+      { action: 'modify',
+        data: { before: before.fields.description,
+          after: after.fields.description } },
+      { action: 'modify',
+        data: { before: before.fields.address,
+          after: after.fields.address } },
+    ])
 
     // Verify the field permissions creation
     const newProfileInfo = mockUpdate.mock.calls[0][1][0]
@@ -261,7 +276,12 @@ describe('Field Permissions filter', () => {
     after.fields.apple.annotations = {
       [constants.API_NAME]: after.fields.apple.annotations[constants.API_NAME],
     }
-    await filter().onUpdate(before, after)
+    await filter().onUpdate(before, after, [
+      { action: 'modify', data: { before: before.fields.address, after: after.fields.address } },
+      { action: 'remove', data: { before: before.fields.banana } },
+      { action: 'modify', data: { before: before.fields.apple, after: after.fields.apple } },
+      { action: 'add', data: { after: after.fields.delta } },
+    ])
 
     expect(mockUpdate.mock.calls.length).toBe(1)
     // Verify the field permissions change

@@ -1,8 +1,10 @@
 import {
-  ObjectType, Element, Values, Field, isObjectType, isInstanceElement, InstanceElement,
+  ObjectType, Element, Values, Field, isObjectType, isInstanceElement, InstanceElement, isField,
+  Change,
 } from 'adapter-api'
 import _ from 'lodash'
 import { SaveResult } from 'jsforce'
+import wu from 'wu'
 import { CUSTOM_OBJECT, FIELD_PERMISSIONS } from '../constants'
 import {
   sfCase, fieldFullName, bpCase, apiName, metadataType,
@@ -117,7 +119,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
     return []
   },
 
-  onUpdate: async (before: Element, after: Element):
+  onUpdate: async (before: Element, after: Element, changes: Iterable<Change>):
     Promise<SaveResult[]> => {
     if (!(isObjectType(before) && isObjectType(after))) {
       return []
@@ -125,23 +127,27 @@ const filterCreator: FilterCreator = ({ client }) => ({
 
     // Look for fields that used to have permissions and permission was deleted from BP
     // For those fields we will mark then as { editable: false, readable: false } explcit
-    before.getMutualFieldsWithOther(after).forEach(beforeField => {
-      // If the delta is only new field permissions, then skip
-      if (_.isEmpty(fieldPermissions(beforeField))) {
-        return
-      }
-      if (_.isEmpty(fieldPermissions(after.fields[beforeField.name]))) {
-        setEmptyFieldPermissions(after.fields[beforeField.name])
-      }
-      const afterFieldPermissions = fieldPermissions(after.fields[beforeField.name])
-      // If some permissions were removed, we will need to remove the permissions from the
-      // field explicitly (update them to be not editable and not readable)
-      Object.keys(fieldPermissions(beforeField)).forEach((p: string) => {
-        if (afterFieldPermissions[p] === undefined) {
-          afterFieldPermissions[p] = { editable: false, readable: false }
+    wu(changes)
+      .map(c => (c.action === 'modify' ? c.data.before : undefined))
+      .filter(isField)
+      .forEach(elem => {
+        const beforeField = elem as Field
+        // If the delta is only new field permissions, then skip
+        if (_.isEmpty(fieldPermissions(beforeField))) {
+          return
         }
+        if (_.isEmpty(fieldPermissions(after.fields[beforeField.name]))) {
+          setEmptyFieldPermissions(after.fields[beforeField.name])
+        }
+        const afterFieldPermissions = fieldPermissions(after.fields[beforeField.name])
+        // If some permissions were removed, we will need to remove the permissions from the
+        // field explicitly (update them to be not editable and not readable)
+        Object.keys(fieldPermissions(beforeField)).forEach((p: string) => {
+          if (afterFieldPermissions[p] === undefined) {
+            afterFieldPermissions[p] = { editable: false, readable: false }
+          }
+        })
       })
-    })
 
     // Filter out permissions that were already updated
     const preProfiles = toProfiles(before)

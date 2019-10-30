@@ -94,7 +94,7 @@ describe('lead convert settings filter', () => {
       before.annotations[CONVERT_SETTINGS_ANNOTATION].change = true
       const after = _.cloneDeep(before)
       after.annotations[CONVERT_SETTINGS_ANNOTATION].change = false
-      await filter.onUpdate(before, after)
+      await filter.onUpdate(before, after, [{ action: 'modify', data: { before, after } }])
     })
 
     it('should call client update', async () => {

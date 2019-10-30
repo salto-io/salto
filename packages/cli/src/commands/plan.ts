@@ -13,10 +13,9 @@ export const command = (
   spinnerCreator: SpinnerCreator
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
-    const spinner = spinnerCreator.start(Prompts.PLAN_STARTED, {})
+    const spinner = spinnerCreator(Prompts.PLAN_STARTED, {})
     const { workspace, errored } = await loadWorkspace(workspaceDir, stderr)
     if (errored) {
-      stderr.write(formatWorkspaceErrors(workspace.getWorkspaceErrors()))
       spinner.fail(Prompts.PLAN_FAILED)
       return CliExitCode.AppError
     }

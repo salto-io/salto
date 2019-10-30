@@ -12,7 +12,7 @@ import {
   Plan,
 } from 'salto'
 import wu from 'wu'
-import { CliOutput, SpinnerCreator } from '../src/types'
+import { CliOutput, SpinnerCreator, Spinner } from '../src/types'
 
 import { MockWriteStream, mockSpinnerCreator } from '../test/mocks'
 import { command as discover } from '../src/commands/discover'
@@ -24,7 +24,7 @@ const credentials = salesforceTestHelpers.credentials()
 const mockGetConfigType = (): InstanceElement => adapterConfigs.salesforce()
 
 let cliOutput: CliOutput
-let spinner: SpinnerCreator
+let spinnerCreator: SpinnerCreator
 
 let lastPlan: Plan
 const mockShouldApply = (p: Plan): boolean => {
@@ -51,6 +51,7 @@ describe('commands e2e', () => {
   const statePath = `${discoverOutputDir}/salto.config/state.bpc`
   const tmpBP = `${discoverOutputDir}/tmp.bp`
   const client = new SalesforceClient({ credentials })
+  const spinners: Spinner[] = []
 
   const copyFile = async (src: string, dest: string): Promise<void> => (
     fs.writeFile(dest, await fs.readFile(src))
@@ -81,7 +82,7 @@ describe('commands e2e', () => {
       lastPlan.clear()
     }
     cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
-    spinner = mockSpinnerCreator()
+    spinnerCreator = mockSpinnerCreator(spinners)
   })
 
   jest.setTimeout(5 * 60 * 1000)
@@ -110,7 +111,7 @@ describe('commands e2e', () => {
   })
 
   it('should run plan on discover output and detect no changes', async () => {
-    await plan(discoverOutputDir, cliOutput, spinner).execute()
+    await plan(discoverOutputDir, cliOutput, spinnerCreator).execute()
     expect(lastPlan).toBeUndefined()
   })
 

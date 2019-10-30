@@ -28,9 +28,7 @@ export interface SpinnerOptions {
   prefixText?: string
 }
 
-export type SpinnerCreator = {
-  start(startText: string, options: SpinnerOptions): Spinner
-}
+export type SpinnerCreator = (startText: string, options: SpinnerOptions) => Spinner
 
 export interface CliOutput {
   stdout: WriteStream

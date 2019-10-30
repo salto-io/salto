@@ -1,17 +1,13 @@
-import _ from 'lodash'
-import wu from 'wu'
-import {
-  Type, BuiltinTypes, ElemID, Change, ObjectType, Field, InstanceElement, Element, getChangeElement,
-} from 'adapter-api'
-import {
-  Plan, PlanItem, SearchResult, DetailedChange, Workspace, WorkspaceError,
-} from 'salto'
 import { GroupedNodeMap } from '@salto/dag'
+import { BuiltinTypes, Change, Element, ElemID, Field, getChangeElement, InstanceElement, ObjectType, Type } from 'adapter-api'
+import _ from 'lodash'
+import { DetailedChange, Plan, PlanItem, SearchResult, Workspace, WorkspaceError } from 'salto'
 import stream from 'stream'
-import { Spinner, SpinnerOptions, SpinnerCreator } from '../src/types'
-import { YargsCommandBuilder } from '../src/command_builder'
-import builders from '../src/commands/index'
+import wu from 'wu'
 import realCli from '../src/cli'
+import builders from '../src/commands/index'
+import { YargsCommandBuilder } from '../src/command_builder'
+import { Spinner, SpinnerCreator } from '../src/types'
 
 export interface MockWriteStreamOpts { isTTY?: boolean; hasColors?: boolean }
 
@@ -45,30 +41,15 @@ export const mockWritableStream = (): MockWritableStream => {
   })
 }
 
-export type MockSpinnerCreator = SpinnerCreator & {
-  started(): boolean
-  failed(): boolean
-  succeeded(): boolean
-}
 
-export const mockSpinnerCreator = (): MockSpinnerCreator => {
-  let started = false
-  let failed = false
-  let succeeded = false
-
-  return {
-    start(_startText: string, _option: SpinnerOptions): Spinner {
-      started = true
-      return {
-        succeed(_text: string): void { succeeded = true },
-        fail(_text: string): void { failed = true },
-      }
-    },
-    started(): boolean { return started },
-    failed(): boolean { return failed },
-    succeeded(): boolean { return succeeded },
+export const mockSpinnerCreator = (spinners: Spinner[]): SpinnerCreator => jest.fn(() => {
+  const result = {
+    succeed: jest.fn(),
+    fail: jest.fn(),
   }
-}
+  spinners.push(result)
+  return result
+})
 
 export interface MockCliOutput {
   err: string
@@ -96,8 +77,8 @@ export const cli = async ({
     stderr: new MockWriteStream(err),
     stdout: new MockWriteStream(out),
   }
-
-  const spinnerCreator = mockSpinnerCreator()
+  const spinners: Spinner[] = []
+  const spinnerCreator = mockSpinnerCreator(spinners)
 
   const exitCode = await realCli({ input, output, commandBuilders, spinnerCreator })
 

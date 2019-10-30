@@ -8,10 +8,6 @@ export interface SaltoDiagnostic {
   range: EditorRange
 }
 
-// export interface WorkspaceSaltoDiagnostics {
-//   [key: string] : SaltoDiagnostic[]
-// }
-
 export type WorkspaceSaltoDiagnostics = Record<string, SaltoDiagnostic[]>
 
 export const getDiagnostics = (

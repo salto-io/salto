@@ -17,7 +17,6 @@ const initAdapters = async (
     let config = configs.find(e => e.elemID.adapter === configType.elemID.adapter)
     if (!config) {
       config = await fillConfig(configType)
-      config.path = ['config']
       newConfigs.push(config)
     }
     return config

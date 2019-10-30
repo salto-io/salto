@@ -22,8 +22,8 @@ export class ParseResultFSCache implements ParseResultCache {
       private baseCacheDir: string
       private baseWorkspaceDir: string
 
-      constructor(baseCacheDir: string, baseWorkspaceDir: string) {
-        this.baseCacheDir = path.join(baseCacheDir, CACHE_FOLDER)
+      constructor(localStorageDir: string, baseWorkspaceDir: string) {
+        this.baseCacheDir = path.join(localStorageDir, CACHE_FOLDER)
         this.baseWorkspaceDir = baseWorkspaceDir
       }
 

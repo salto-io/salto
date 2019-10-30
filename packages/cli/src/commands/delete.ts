@@ -1,11 +1,11 @@
 import asyncfile from 'async-file'
-import { deleteFromCsvFile, Workspace, readCsv, loadConfig } from 'salto'
+import { deleteFromCsvFile, readCsv } from 'salto'
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'
 
 import { getConfigFromUser } from '../callbacks'
 import Prompts from '../prompts'
-import { validateWorkspace } from '../workspace'
+import { loadWorkspace } from '../workspace'
 
 export const command = (
   workingDir: string,
@@ -20,9 +20,8 @@ export const command = (
     }
 
     const records = await readCsv(inputPath)
-    const config = await loadConfig(workingDir)
-    const workspace: Workspace = await Workspace.load(config)
-    if (!validateWorkspace(workspace, stderr)) {
+    const { workspace, errored } = await loadWorkspace(workingDir, stderr)
+    if (errored) {
       return CliExitCode.AppError
     }
     await deleteFromCsvFile(

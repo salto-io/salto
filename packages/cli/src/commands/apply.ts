@@ -1,11 +1,11 @@
-import { apply, PlanItem, Workspace, loadConfig } from 'salto'
+import { apply, PlanItem } from 'salto'
 import { createCommandBuilder } from '../command_builder'
 import { CliCommand, CliOutput, ParsedCliInput, WriteStream, CliExitCode } from '../types'
 import {
   createActionStartOutput, createActionInProgressOutput, createItemDoneOutput,
 } from '../formatter'
 import { shouldApply, getConfigFromUser } from '../callbacks'
-import { validateWorkspace } from '../workspace'
+import { loadWorkspace } from '../workspace'
 
 
 const CURRENT_ACTION_POLL_INTERVAL = 5000
@@ -51,9 +51,8 @@ export class ApplyCommand implements CliCommand {
   }
 
   async execute(): Promise<CliExitCode> {
-    const config = await loadConfig(this.workspaceDir)
-    const workspace: Workspace = await Workspace.load(config)
-    if (!validateWorkspace(workspace, this.stderr)) {
+    const { workspace, errored } = await loadWorkspace(this.workspaceDir, this.stderr)
+    if (errored) {
       return CliExitCode.AppError
     }
     await apply(workspace,

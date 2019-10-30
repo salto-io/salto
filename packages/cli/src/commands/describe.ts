@@ -1,8 +1,8 @@
-import { Workspace, describeElement, loadConfig } from 'salto'
+import { describeElement } from 'salto'
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'
 import { formatSearchResults } from '../formatter'
-import { validateWorkspace } from '../workspace'
+import { loadWorkspace } from '../workspace'
 
 export const command = (
   workspaceDir: string,
@@ -10,9 +10,8 @@ export const command = (
   { stdout, stderr }: CliOutput
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
-    const config = await loadConfig(workspaceDir)
-    const workspace = await Workspace.load(config)
-    if (!validateWorkspace(workspace, stderr)) {
+    const { workspace, errored } = await loadWorkspace(workspaceDir, stderr)
+    if (errored) {
       return CliExitCode.AppError
     }
     const searchResult = await describeElement(workspace, words)

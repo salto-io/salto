@@ -115,8 +115,8 @@ export const NAME_FIELDS = {
 }
 
 export const GEOLOCATION_FIELDS = {
-  LATITUDE: 'latitude_s',
-  LONGITUDE: 'longitude_s',
+  LATITUDE: 'latitude',
+  LONGITUDE: 'longitude',
 }
 
 // Limits

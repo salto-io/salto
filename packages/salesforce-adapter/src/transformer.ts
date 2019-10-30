@@ -111,6 +111,10 @@ const lookupFilterObjectType = new ObjectType({
   },
 })
 
+const addressElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.ADDRESS)
+const nameElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.NAME)
+const geoLocationElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.LOCATION)
+
 export class Types {
   // Type mapping for custom objects
   public static salesforceDataTypes: Record<string, Type> = {
@@ -182,14 +186,6 @@ export class Types {
         [FIELD_ANNOTATIONS.CASE_SENSITIVE]: BuiltinTypes.BOOLEAN,
       },
     }),
-    location: new PrimitiveType({
-      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.LOCATION),
-      primitive: PrimitiveTypes.NUMBER,
-      annotationTypes: {
-        [FIELD_ANNOTATIONS.DISPLAY_LOCATION_IN_DECIMAL]: BuiltinTypes.BOOLEAN,
-        [FIELD_ANNOTATIONS.SCALE]: BuiltinTypes.NUMBER,
-      },
-    }),
     percent: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.PERCENT),
       primitive: PrimitiveTypes.NUMBER,
@@ -259,6 +255,68 @@ export class Types {
     }),
   }
 
+  // Type mapping for compound fields
+  public static salesforceCompoundDataTypes: Record<string, ObjectType> = {
+    address: new ObjectType({
+      elemID: addressElemID,
+      fields: {
+        [ADDRESS_FIELDS.CITY]: new TypeField(
+          addressElemID, ADDRESS_FIELDS.CITY, BuiltinTypes.STRING
+        ),
+        [ADDRESS_FIELDS.COUNTRY]: new TypeField(
+          addressElemID, ADDRESS_FIELDS.COUNTRY, BuiltinTypes.STRING
+        ),
+        [ADDRESS_FIELDS.GEOCODE_ACCURACY]: new TypeField(
+          addressElemID, ADDRESS_FIELDS.GEOCODE_ACCURACY, Types.salesforceDataTypes.picklist
+        ),
+        [ADDRESS_FIELDS.LATITUDE]: new TypeField(
+          addressElemID, ADDRESS_FIELDS.LATITUDE, BuiltinTypes.NUMBER
+        ),
+        [ADDRESS_FIELDS.LONGITUDE]: new TypeField(
+          addressElemID, ADDRESS_FIELDS.LONGITUDE, BuiltinTypes.NUMBER
+        ),
+        [ADDRESS_FIELDS.POSTAL_CODE]: new TypeField(
+          addressElemID, ADDRESS_FIELDS.POSTAL_CODE, BuiltinTypes.STRING
+        ),
+        [ADDRESS_FIELDS.STATE]: new TypeField(
+          addressElemID, ADDRESS_FIELDS.STATE, BuiltinTypes.STRING
+        ),
+        [ADDRESS_FIELDS.STREET]: new TypeField(
+          addressElemID, ADDRESS_FIELDS.STREET, Types.salesforceDataTypes.textarea
+        ),
+      },
+    }),
+    name: new ObjectType({
+      elemID: nameElemID,
+      fields: {
+        [NAME_FIELDS.FIRST_NAME]: new TypeField(
+          nameElemID, NAME_FIELDS.FIRST_NAME, BuiltinTypes.STRING
+        ),
+        [NAME_FIELDS.LAST_NAME]: new TypeField(
+          nameElemID, NAME_FIELDS.LAST_NAME, BuiltinTypes.STRING
+        ),
+        [NAME_FIELDS.SALUTATION]: new TypeField(
+          nameElemID, NAME_FIELDS.SALUTATION, Types.salesforceDataTypes.picklist
+        ),
+      },
+    }),
+    location: new ObjectType({
+      elemID: geoLocationElemID,
+      fields: {
+        [GEOLOCATION_FIELDS.LATITUDE]: new TypeField(
+          geoLocationElemID, GEOLOCATION_FIELDS.LATITUDE, BuiltinTypes.NUMBER
+        ),
+        [GEOLOCATION_FIELDS.LONGITUDE]: new TypeField(
+          geoLocationElemID, GEOLOCATION_FIELDS.LONGITUDE, BuiltinTypes.NUMBER
+        ),
+      },
+      annotationTypes: {
+        [FIELD_ANNOTATIONS.DISPLAY_LOCATION_IN_DECIMAL]: BuiltinTypes.BOOLEAN,
+        [FIELD_ANNOTATIONS.SCALE]: BuiltinTypes.NUMBER,
+      },
+    }),
+  }
+
   // Type mapping for metadata types
   private static metadataPrimitiveTypes: Record<string, Type> = {
     string: BuiltinTypes.STRING,
@@ -281,8 +339,15 @@ export class Types {
     return type
   }
 
+  static getCompound(name: string): Type {
+    return this.salesforceCompoundDataTypes[name.toLowerCase()]
+  }
+
   static getAllFieldTypes(): Type[] {
-    return Object.values(Types.salesforceDataTypes).map(type => {
+    return _.concat(
+      Object.values(Types.salesforceDataTypes),
+      Object.values(Types.salesforceCompoundDataTypes),
+    ).map(type => {
       const fieldType = type.clone()
       fieldType.path = ['types', 'field_types']
       return fieldType
@@ -334,69 +399,6 @@ export const toCustomField = (
     ))
   return newField
 }
-
-const addressElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.ADDRESS)
-const addressObjectType = new ObjectType({
-  elemID: addressElemID,
-  fields: {
-    [ADDRESS_FIELDS.CITY]: new TypeField(
-      addressElemID, ADDRESS_FIELDS.CITY, BuiltinTypes.STRING
-    ),
-    [ADDRESS_FIELDS.COUNTRY]: new TypeField(
-      addressElemID, ADDRESS_FIELDS.COUNTRY, BuiltinTypes.STRING
-    ),
-    [ADDRESS_FIELDS.GEOCODE_ACCURACY]: new TypeField(
-      addressElemID, ADDRESS_FIELDS.GEOCODE_ACCURACY, Types.salesforceDataTypes.picklist
-    ),
-    [ADDRESS_FIELDS.LATITUDE]: new TypeField(
-      addressElemID, ADDRESS_FIELDS.LATITUDE, BuiltinTypes.NUMBER
-    ),
-    [ADDRESS_FIELDS.LONGITUDE]: new TypeField(
-      addressElemID, ADDRESS_FIELDS.LONGITUDE, BuiltinTypes.NUMBER
-    ),
-    [ADDRESS_FIELDS.POSTAL_CODE]: new TypeField(
-      addressElemID, ADDRESS_FIELDS.POSTAL_CODE, BuiltinTypes.STRING
-    ),
-    [ADDRESS_FIELDS.STATE]: new TypeField(
-      addressElemID, ADDRESS_FIELDS.STATE, BuiltinTypes.STRING
-    ),
-    [ADDRESS_FIELDS.STREET]: new TypeField(
-      addressElemID, ADDRESS_FIELDS.STREET, Types.salesforceDataTypes.textarea
-    ),
-  },
-  isCompound: true,
-})
-
-const nameElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.NAME)
-const nameObjectType = new ObjectType({
-  elemID: nameElemID,
-  fields: {
-    [NAME_FIELDS.FIRST_NAME]: new TypeField(
-      nameElemID, NAME_FIELDS.FIRST_NAME, BuiltinTypes.STRING
-    ),
-    [NAME_FIELDS.LAST_NAME]: new TypeField(
-      nameElemID, NAME_FIELDS.LAST_NAME, BuiltinTypes.STRING
-    ),
-    [NAME_FIELDS.SALUTATION]: new TypeField(
-      nameElemID, NAME_FIELDS.SALUTATION, Types.salesforceDataTypes.picklist
-    ),
-  },
-  isCompound: true,
-})
-
-const geoLocationElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.NAME)
-const geoLocationObjectType = new ObjectType({
-  elemID: geoLocationElemID,
-  fields: {
-    [GEOLOCATION_FIELDS.LATITUDE]: new TypeField(
-      geoLocationElemID, GEOLOCATION_FIELDS.LATITUDE, BuiltinTypes.NUMBER
-    ),
-    [GEOLOCATION_FIELDS.LONGITUDE]: new TypeField(
-      geoLocationElemID, GEOLOCATION_FIELDS.LONGITUDE, BuiltinTypes.NUMBER
-    ),
-  },
-  isCompound: true,
-})
 
 export const toCustomObject = (element: ObjectType, includeFields = true): CustomObject =>
   new CustomObject(
@@ -545,11 +547,11 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
     }
     // Compound fields
   } else if (field.type === 'address') {
-    bpFieldType = addressObjectType
+    bpFieldType = Types.getCompound(field.type)
   } else if (field.type === 'location') {
-    bpFieldType = geoLocationObjectType
+    bpFieldType = Types.getCompound(field.type)
   } else if (field.name === 'Name' && field.label === 'Full Name') {
-    bpFieldType = nameObjectType
+    bpFieldType = Types.getCompound(field.name)
   }
   if (!_.isEmpty(bpFieldType.annotationTypes)) {
     // Convert the annotations' names to bp case for those that are not already in that format
@@ -729,84 +731,77 @@ export const filterOutNestedCompoundFields = (fields: Field[]): Field[] => field
 // fields names do not appear, and only their nested fields appear in the list of fields.
 // The reason for this is to later show during export, fields that can be sent back to SFDC
 // during import
-// export const handleCompoundFields = (objectType: ObjectType): TypeField[] => {
-//   // Internal functions
-//   const handleAddressFields = (object: ObjectType): void => {
-//     // Find the address fields
-//     const addressFields = _.pickBy(object.fields,
-//       value => value.type.elemID.name === 'address')
+export const handleCompoundFields = (objectType: ObjectType): TypeField[] => {
+  // Internal functions
+  const handleAddressFields = (object: ObjectType): void => {
+    // Find the address fields
+    const addressFields = _.pickBy(object.fields,
+      value => value.type.elemID.name === 'address')
 
-//     // For each address field, get its prefix, then find its corresponding child fields by
-//     // this prefix.
-//     Object.keys(addressFields).forEach(key => {
-//       const addressPrefix = key.slice(0, -7)
-//       ADDRESS_CHILD_FIELDS.forEach(childField => {
-//         // Add the child fields (create them with the right api_name) to the object type
-//         const subField = addressPrefix + childField
-//         object.fields[subField] = new TypeField(
-//           object.elemID,
-//           subField,
-//           Types.get(FIELD_TYPE_NAMES.TEXT),
-//           { API_NAME: sfCase(subField) }
-//         )
-//       })
-//       // Remove the compound field from the element
-//       object.fields = _.omit(object.fields, key)
-//     })
-//   }
+    // For each address field, get its prefix, then find its corresponding child fields by
+    // this prefix.
+    Object.keys(addressFields).forEach(key => {
+      const addressPrefix = key.slice(0, -7)
+      Object.values(Types.salesforceCompoundDataTypes.address.fields).forEach(childField => {
+        const clonedField = childField.clone()
+        // Add the child fields to the object type
+        const childFieldName = addressPrefix + clonedField.name
+        clonedField.name = childFieldName
+        clonedField.annotations = { [API_NAME]: sfCase(childFieldName) }
+        object.fields[childFieldName] = clonedField
+      })
+      // Remove the compound field from the element
+      object.fields = _.omit(object.fields, key)
+    })
+  }
 
-//   const handleNameField = (object: ObjectType): void => {
-//     const compiundNameFieldName = 'name'
-//     const compoundNameFieldFullName = 'Full Name'
-//     // Find the name field
-//     const nameFields = _.pickBy(object.fields,
-//       (value, key) => key === compiundNameFieldName
-//         && value.annotations.label === compoundNameFieldFullName)
+  const handleNameField = (object: ObjectType): void => {
+    const compoundNameFieldName = 'name'
+    const compoundNameFieldFullName = 'Full Name'
+    // Find the name field
+    const nameFields = _.pickBy(object.fields,
+      (value, key) => key === compoundNameFieldName
+        && value.annotations.label === compoundNameFieldFullName)
 
-//     if (_.size(nameFields) === 0) {
-//       return
-//     }
-//     // Find the name field's corresponding child fields
-//     NAME_CHILD_FIELDS.forEach(childField => {
-//       // Add the child fields (create them with the right api_name) to the object type
-//       object.fields[childField] = new TypeField(
-//         object.elemID,
-//         childField,
-//         Types.get(FIELD_TYPE_NAMES.TEXT),
-//         { API_NAME: sfCase(childField) }
-//       )
-//     })
-//     // Remove the compound field from the element
-//     object.fields = _.omit(object.fields, compiundNameFieldName)
-//   }
+    if (_.size(nameFields) === 0) {
+      return
+    }
+    // Add the child fields to the object type
+    Object.values(Types.salesforceCompoundDataTypes.name.fields).forEach(childField => {
+      const clonedField = childField.clone()
+      clonedField.annotations = { [API_NAME]: sfCase(childField.name) }
+      object.fields[childField.name] = clonedField
+    })
+    // Remove the compound field from the element
+    object.fields = _.omit(object.fields, compoundNameFieldName)
+  }
 
-//   const handleGeolocationFields = (object: ObjectType): void => {
-//     // Find the  geolocation fields
-//     const locationFields = _.pickBy(object.fields,
-//       value => value.type.elemID.name === 'location')
+  const handleGeolocationFields = (object: ObjectType): void => {
+    // Find the  geolocation fields
+    const locationFields = _.pickBy(object.fields,
+      value => value.type.elemID.name === 'location')
 
-//     // For each geolocation field, get its name, then find its corresponding child fields by
-//     // this name.
-//     Object.keys(locationFields).forEach(key => {
-//       GEOLOCATION_CHILD_FIELDS.forEach(childField => {
-//         // Set as the field as child field of the father compund field
-//         const subField = `${key}_${childField}`
-//         object.fields[subField] = new TypeField(
-//           object.elemID,
-//           childField,
-//           Types.get(FIELD_TYPE_NAMES.TEXT),
-//           { API_NAME: sfCase(childField) }
-//         )
-//       })
-//       // Remove from the main fields of the element
-//       object.fields = _.omit(object.fields, key)
-//     })
-//   }
-//   // 1) Handle the address fields
-//   handleAddressFields(objectType)
-//   // 2) Handle the name field
-//   handleNameField(objectType)
-//   // 3) Handle geolocation fields
-//   handleGeolocationFields(objectType)
-//   return Object.values(objectType.fields)
-// }
+    // For each geolocation field, get its name, then find its corresponding child fields by
+    // this name.
+    Object.keys(locationFields).forEach(key => {
+      Object.values(Types.salesforceCompoundDataTypes.location.fields).forEach(childField => {
+        const clonedField = childField.clone()
+        // Add the child fields to the object type
+        const childFieldName = `${key}_${clonedField.name}`
+        clonedField.name = childFieldName
+        clonedField.annotations = { [API_NAME]: `${sfCase(childFieldName)}_s` }
+        object.fields[childFieldName] = clonedField
+      })
+      // Remove the compound field from the element
+      object.fields = _.omit(object.fields, key)
+    })
+  }
+  const clonedObject = objectType.clone()
+  // 1) Handle the address fields
+  handleAddressFields(clonedObject)
+  // 2) Handle the name field
+  handleNameField(clonedObject)
+  // 3) Handle geolocation fields
+  handleGeolocationFields(clonedObject)
+  return Object.values(clonedObject.fields)
+}

@@ -12,7 +12,7 @@ import {
   toCustomField, toCustomObject, apiName, sfCase, fieldFullName, Types,
   getSObjectFieldElement, toMetadataInfo, createInstanceElement,
   metadataType, toMetadataPackageZip, toInstanceElements, createMetadataTypeElements,
-  instanceElementstoRecords, elemIDstoRecords, filterOutNestedCompoundFields,
+  instanceElementstoRecords, elemIDstoRecords, filterOutNestedCompoundFields, handleCompoundFields,
 } from './transformer'
 import layoutFilter from './filters/layouts'
 import fieldPermissionsFilter from './filters/field_permissions'
@@ -606,8 +606,7 @@ export default class SalesforceAdapter {
 
   private async getFirstBatchOfInstances(type: ObjectType): Promise <QueryResult<Value>> {
     // build the initial query and populate the fields names list in the query
-    // const queryString = `SELECT ${handleCompoundFields(type).map(apiName)} FROM ${apiName(type)}`
-    const queryString = `SELECT ${Object.values(type.fields).map(apiName)} FROM ${apiName(type)}`
+    const queryString = `SELECT ${handleCompoundFields(type).map(apiName)} FROM ${apiName(type)}`
     return this.client.runQuery(queryString)
   }
 }

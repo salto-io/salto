@@ -225,7 +225,6 @@ export class PrimitiveType extends Type {
 export class ObjectType extends Type {
   fields: FieldMap
   isSettings: boolean
-  isCompound: boolean
 
   constructor({
     elemID,
@@ -233,19 +232,16 @@ export class ObjectType extends Type {
     annotationTypes = {},
     annotations = {},
     isSettings = false,
-    isCompound = false,
   }: {
     elemID: ElemID
     fields?: FieldMap
     annotationTypes?: TypeMap
     annotations?: Values
     isSettings?: boolean
-    isCompound?: boolean
   }) {
     super({ elemID, annotationTypes, annotations })
     this.fields = fields
     this.isSettings = isSettings
-    this.isCompound = isCompound
   }
 
   private cloneFields(): FieldMap {

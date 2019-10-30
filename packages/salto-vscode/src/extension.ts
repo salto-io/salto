@@ -14,7 +14,7 @@ import { getDiagnostics } from './salto/diagnostics'
  * This files act as a bridge between VSC and the salto specific functionality.
  */
 
-export const activate = async (context: vscode.ExtensionContext): Promise<void> => {
+const onActivate = async (context: vscode.ExtensionContext): Promise<void> => {
   // eslint-disable-next-line no-console
   console.log('Workspace init started', new Date())
   const { name, rootPath } = vscode.workspace
@@ -95,3 +95,11 @@ export const activate = async (context: vscode.ExtensionContext): Promise<void> 
   // eslint-disable-next-line no-console
   console.log('Workspace init done', new Date())
 }
+
+export const activate = async (context: vscode.ExtensionContext): Promise<void> => (
+  vscode.window.withProgress({
+    location: vscode.ProgressLocation.Window,
+    title: 'Initiating salto extention',
+  },
+  async () => onActivate(context))
+)

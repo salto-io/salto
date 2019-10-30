@@ -38,16 +38,14 @@ export type Blueprint = {
   timestamp?: number
 }
 
-export enum WorkspaceErrorSeverity {
-  Error,
-  Warning
-}
-export interface WorkspaceError {
-  readonly sourceFragments: SourceFragment[]
-  readonly error: string
-  readonly cause?: ParseError | ValidationError | MergeError
-  readonly severity: WorkspaceErrorSeverity
-}
+type Severity = 'Error' | 'Warning'
+
+export type WorkspaceError = Readonly<{
+   sourceFragments: SourceFragment[]
+   error: string
+   severity: Severity
+   cause?: ParseError | ValidationError | MergeError
+}>
 
 export type ParsedBlueprint = Blueprint & ParseResult
 
@@ -279,35 +277,36 @@ export class Workspace {
   getWorkspaceErrors(): ReadonlyArray<WorkspaceError> {
     const wsErrors = this.state.errors
     return [
-      ...wsErrors.parse.map(pe => ({
-        sourceFragments: [this.resolveSourceFragment(pe.subject)],
-        error: pe.detail,
-        cause: pe,
-        severity: WorkspaceErrorSeverity.Error,
-
-      })),
-      ...wsErrors.merge.map(me => {
+      ...wsErrors.parse.map((pe: ParseError): WorkspaceError =>
+        ({
+          sourceFragments: [this.resolveSourceFragment(pe.subject)],
+          error: pe.detail,
+          severity: 'Error',
+          cause: pe,
+        })),
+      ...wsErrors.merge.map((me: MergeError): WorkspaceError => {
         const sourceRanges = this.sourceMap.get(me.elemID.getFullName()) || []
         const sourceFragments = sourceRanges.map(sr => this.resolveSourceFragment(sr))
         return {
           sourceFragments,
           error: me.error,
+          severity: 'Error',
           cause: me,
-          severity: WorkspaceErrorSeverity.Error,
         }
       }),
-      ...wsErrors.validation.map(ve => {
+      ...wsErrors.validation.map((ve: ValidationError): WorkspaceError => {
         const sourceRanges = this.sourceMap.get(ve.elemID.getFullName()) || []
         const sourceFragments = sourceRanges.map(sr => this.resolveSourceFragment(sr))
         return {
           sourceFragments,
           error: ve.error,
+          severity: 'Error',
           cause: ve,
-          severity: WorkspaceErrorSeverity.Warning,
         }
       }),
     ]
   }
+
 
   private markDirty(names: string[]): void {
     names.forEach(name => this.dirtyBlueprints.add(name))

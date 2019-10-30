@@ -4,7 +4,7 @@ import {
   Type, BuiltinTypes, ElemID, Change, ObjectType, Field, InstanceElement, Element, getChangeElement,
 } from 'adapter-api'
 import {
-  Plan, PlanItem, SearchResult, DetailedChange, Workspace, WorkspaceError, WorkspaceErrorSeverity,
+  Plan, PlanItem, SearchResult, DetailedChange, Workspace, WorkspaceError,
 } from 'salto'
 import { GroupedNodeMap } from '@salto/dag'
 import { YargsCommandBuilder } from '../src/command_builder'
@@ -328,5 +328,5 @@ export const deleteFromCsvFile = async (): Promise<void> => {}
 export const getWorkspaceErrors = (): ReadonlyArray<WorkspaceError> => [{
   sourceFragments: [],
   error: 'Error',
-  severity: WorkspaceErrorSeverity.Warning,
+  severity: 'Error',
 }]

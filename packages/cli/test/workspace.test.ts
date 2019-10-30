@@ -1,4 +1,4 @@
-import { Workspace, WorkspaceErrorSeverity } from 'salto'
+import { Workspace } from 'salto'
 import { validateWorkspace } from '../src/workspace'
 import { MockWriteStream } from './mocks'
 
@@ -25,12 +25,12 @@ describe('workspace', () => {
           [{
             sourceFragments: [],
             error: 'Error',
-            severity: WorkspaceErrorSeverity.Warning,
+            severity: 'Warning',
           },
           {
             sourceFragments: [],
             error: 'Error2',
-            severity: WorkspaceErrorSeverity.Warning,
+            severity: 'Warning',
           }]
         ))
 
@@ -46,12 +46,12 @@ describe('workspace', () => {
           [{
             sourceFragments: [],
             error: 'Error',
-            severity: WorkspaceErrorSeverity.Warning,
+            severity: 'Warning',
           },
           {
             sourceFragments: [],
             error: 'Error2',
-            severity: WorkspaceErrorSeverity.Error,
+            severity: 'Error',
           }]
         ))
 

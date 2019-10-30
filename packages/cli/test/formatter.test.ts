@@ -1,7 +1,7 @@
 import {
   Element, ObjectType, InstanceElement, PrimitiveType, ElemID, PrimitiveTypes, BuiltinTypes,
 } from 'adapter-api'
-import { WorkspaceErrorSeverity } from 'salto'
+import { WorkspaceError } from 'salto'
 import { formatSearchResults, createPlanOutput, formatChange, formatDiscoverChangeForApproval, formatWorkspaceErrors } from '../src/formatter'
 import { elements, plan, detailedChange } from './mocks'
 
@@ -138,31 +138,30 @@ describe('formatter', () => {
   })
 
   describe('workspace error format', () => {
-    const workspaceErrorsWithSourceFragments = [
-      {
-        sourceFragments: [{
-          sourceRange: {
-            start: {
-              byte: 20,
-              col: 10,
-              line: 2,
-            },
-            end: {
-              byte: 30,
-              col: 10,
-              line: 3,
-            },
-            filename: 'test.bp',
+    const workspaceErrorWithSourceFragments: WorkspaceError = {
+      sourceFragments: [{
+        sourceRange: {
+          start: {
+            byte: 20,
+            col: 10,
+            line: 2,
           },
-          fragment: '{ This is my code fragment }',
+          end: {
+            byte: 30,
+            col: 10,
+            line: 3,
+          },
+          filename: 'test.bp',
+        },
+        fragment: '{ This is my code fragment }',
 
-        }],
-        error: 'This is my error',
-        severity: WorkspaceErrorSeverity.Error,
-      }]
+      }],
+      error: 'This is my error',
+      severity: 'Error',
+    }
     let formattedErrors: string
     beforeEach(() => {
-      formattedErrors = formatWorkspaceErrors(workspaceErrorsWithSourceFragments)
+      formattedErrors = formatWorkspaceErrors([workspaceErrorWithSourceFragments])
     })
     it('should print the start line', () => {
       expect(formattedErrors).toContain('2')

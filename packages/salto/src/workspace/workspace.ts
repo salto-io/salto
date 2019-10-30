@@ -56,7 +56,6 @@ const getBlueprintsFromDir = async (
     fileFilter: '*.bp',
     directoryFilter: e => e.basename[0] !== '.',
   })
-
   return entries.map(e => e.fullPath)
 }
 
@@ -225,15 +224,16 @@ export class Workspace {
   }
 
   static async init(baseDir: string, workspaceName?: string): Promise<Workspace> {
+    const absBaseDir = path.resolve(baseDir)
     const minimalConfig = {
       uid: uuidv4(),
-      name: workspaceName || path.basename(path.resolve(baseDir)),
+      name: workspaceName || path.basename(absBaseDir),
     }
-    const config = completeConfig(baseDir, minimalConfig)
+    const config = completeConfig(absBaseDir, minimalConfig)
     // We want to make sure that *ALL* of the pathes we are going to create
     // do not exist right now before writing anything to disk.
     await ensureEmptyWorkspace(config)
-    await dumpConfig(baseDir, minimalConfig)
+    await dumpConfig(absBaseDir, minimalConfig)
     await fs.createDirectory(config.localStorage)
     return Workspace.load(config)
   }

@@ -73,7 +73,7 @@ const toVSDiagnostic = (
   message: diag.msg,
   severity: vscode.DiagnosticSeverity.Error,
   range: new vscode.Range(
-    saltoPosToVsPos(diag.range.start),
+    saltoPosToVsPos({ col: diag.range.start.col - 1, line: diag.range.start.line }),
     saltoPosToVsPos(diag.range.end)
   ),
 })

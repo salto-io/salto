@@ -9,8 +9,7 @@
     "codecov": "^3.5.0"
   },
   "scripts": {
-    "install": "for WS in @salto/lowerdash @salto/logging @salto/dag adapter-api salesforce-adapter salto salto-vscode @salto/cli; do yarn workspace $WS run build || exit; done",
-    "lint-fix": "yarn workspaces run lint-fix",
+    "install": "./build_utils/wstopo/wstopo run-parallel",
     "test": "yarn run jest --forceExit --detectOpenHandles"
   }
 }

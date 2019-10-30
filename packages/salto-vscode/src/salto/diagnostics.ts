@@ -1,3 +1,4 @@
+import _ from 'lodash'
 import { EditorRange } from './context'
 import { EditorWorkspace } from './workspace'
 
@@ -7,17 +8,23 @@ export interface SaltoDiagnostic {
   range: EditorRange
 }
 
+export type WorkspaceSaltoDiagnostics = Record<string, SaltoDiagnostic[]>
+
 export const getDiagnostics = (
   workspace: EditorWorkspace,
-  filename: string
-): SaltoDiagnostic[] => {
-  const bp = workspace.getParsedBlueprint(filename)
-  return bp ? bp.errors.map(e => ({
-    filename,
-    msg: `${e.summary}: ${e.detail}`,
-    range: {
-      start: { line: e.subject.start.line, col: e.subject.start.col - 1 },
-      end: { line: e.subject.end.line, col: e.subject.end.col - 1 },
-    },
-  })) : []
+): WorkspaceSaltoDiagnostics => {
+  const emptyDiagFiles = _.mapValues(workspace.parsedBlueprints, _k => [])
+  const diag = _(workspace.workspace.getWorkspaceErrors())
+    .map(err => err.sourceFragments.map(f => ({
+      filename: f.sourceRange.filename,
+      msg: err.error,
+      range: {
+        start: f.sourceRange.start,
+        end: f.sourceRange.end,
+      },
+    })))
+    .flatten()
+    .groupBy('filename')
+    .value()
+  return { ...emptyDiagFiles, ...diag }
 }

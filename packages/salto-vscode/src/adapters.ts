@@ -1,8 +1,13 @@
 import * as vscode from 'vscode'
+import * as path from 'path'
+import _ from 'lodash'
 import { EditorPosition, PositionContext } from './salto/context'
 import { SaltoCompletion } from './salto/completions/provider'
 import { createSaltoSymbol, SaltoSymbolKind } from './salto/symbols'
-import { SaltoDiagnostic } from './salto/diagnostics'
+import { SaltoDiagnostic, WorkspaceSaltoDiagnostics } from './salto/diagnostics'
+
+type ReadonlyDiagsItem = [vscode.Uri, ReadonlyArray<vscode.Diagnostic>]
+type ReadonlyDiags = ReadonlyArray<ReadonlyDiagsItem>
 
 export const saltoPosToVsPos = (
   pos: EditorPosition
@@ -62,7 +67,7 @@ export const buildVSCompletionItems = (
   })
 )
 
-export const toVSDiagnostics = (
+const toVSDiagnostic = (
   diag: SaltoDiagnostic
 ): vscode.Diagnostic => ({
   message: diag.msg,
@@ -72,3 +77,12 @@ export const toVSDiagnostics = (
     saltoPosToVsPos(diag.range.end)
   ),
 })
+
+export const toVSDiagnostics = (
+  workspaceBaseDir: string,
+  workspaceDiag: WorkspaceSaltoDiagnostics
+): ReadonlyDiags => _(workspaceDiag)
+  .mapValues(diags => diags.map(toVSDiagnostic))
+  .entries()
+  .map(([k, v]) => [vscode.Uri.file(path.resolve(workspaceBaseDir, k)), v] as ReadonlyDiagsItem)
+  .value()

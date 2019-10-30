@@ -368,7 +368,7 @@ describe('SalesforceAdapter CRUD', () => {
           golf: new Field(
             mockElemID,
             'location',
-            Types.salesforceDataTypes.location,
+            Types.salesforceCompoundDataTypes.location,
             {
               [constants.LABEL]: 'Location description label',
               [constants.FIELD_ANNOTATIONS.SCALE]: 2,

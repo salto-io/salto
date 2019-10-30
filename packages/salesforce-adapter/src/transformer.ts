@@ -358,11 +358,15 @@ export class Types {
 export const fieldFullName = (object: ObjectType, field: TypeField): string =>
   `${apiName(object)}.${apiName(field)}`
 
-const allowedAnnotations = (key: string): string[] => (
-  Types.salesforceDataTypes[key]
-    ? Object.keys(Types.salesforceDataTypes[key].annotationTypes)
-    : []
-)
+const allowedAnnotations = (key: string): string[] => {
+  if (Types.salesforceDataTypes[key]) {
+    return Object.keys(Types.salesforceDataTypes[key].annotationTypes)
+  }
+  if (Types.salesforceCompoundDataTypes[key]) {
+    return Object.keys(Types.salesforceCompoundDataTypes[key].annotationTypes)
+  }
+  return []
+}
 
 export const toCustomField = (
   object: ObjectType, field: TypeField, fullname = false
@@ -783,13 +787,17 @@ export const handleCompoundFields = (objectType: ObjectType): TypeField[] => {
 
     // For each geolocation field, get its name, then find its corresponding child fields by
     // this name.
-    Object.keys(locationFields).forEach(key => {
+    Object.entries(locationFields).forEach(([key, locationField]) => {
+      const isCustomField = (locationField.annotations?.[API_NAME] as string)
+        .endsWith(SALESFORCE_CUSTOM_SUFFIX)
       Object.values(Types.salesforceCompoundDataTypes.location.fields).forEach(childField => {
         const clonedField = childField.clone()
         // Add the child fields to the object type
         const childFieldName = `${key}_${clonedField.name}`
         clonedField.name = childFieldName
-        clonedField.annotations = { [API_NAME]: `${sfCase(childFieldName)}_s` }
+        clonedField.annotations = {
+          [API_NAME]: `${capitalize(key)}__${capitalize(childField.name)}${isCustomField ? '__s' : ''}`,
+        }
         object.fields[childFieldName] = clonedField
       })
       // Remove the compound field from the element

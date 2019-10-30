@@ -37,19 +37,24 @@ export const createChangeDiff = async (
 }
 
 export const renderDiffView = (diff: UnifiedDiff, cssHrefs: string[]): string => {
-  const htmlDiff = Diff2Html.getPrettyHtml(diff, { inputFormat: 'diff' })
+  const htmlDiff = diff.length > 0
+    ? Diff2Html.getPrettyHtml(diff, { inputFormat: 'diff' })
+    : ''
+  const prompt = diff.length > 0
+    ? 'Salto will perform the following changes'
+    : 'Nothing to do'
   return `<!DOCTYPE html>
     <html lang="en">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        ${cssHrefs.map(href => `<link rel="stylesheet" type="text/css" href="${href}">`)}
+        ${cssHrefs.map(href => `<link rel="stylesheet" type="text/css" href="${href}">`).join('')}
         <title>Salto</title>
     </head>
     <body>
       <div id=container>
         <h1 class="text">Salto Plan</h1>
-        <p class="text">Salto will perform the following changes</p>
+        <p class="text">${prompt}</p>
         ${htmlDiff}
       </div>
     </body>

@@ -38,12 +38,14 @@ export type Blueprint = {
   timestamp?: number
 }
 
-export interface WorkspaceError {
-  sourceFragments: SourceFragment[]
-  error: string
-  cause?: ParseError | ValidationError | MergeError
-  bpFragment?: string
-}
+type Severity = 'Error' | 'Warning'
+
+export type WorkspaceError = Readonly<{
+   sourceFragments: SourceFragment[]
+   error: string
+   severity: Severity
+   cause?: ParseError | ValidationError | MergeError
+}>
 
 export type ParsedBlueprint = Blueprint & ParseResult
 
@@ -275,32 +277,36 @@ export class Workspace {
   getWorkspaceErrors(): ReadonlyArray<WorkspaceError> {
     const wsErrors = this.state.errors
     return [
-      ...wsErrors.parse.map(pe => ({
-        sourceFragments: [this.resolveSourceFragment(pe.subject)],
-        error: pe.detail,
-        cause: pe,
-
-      })),
-      ...wsErrors.merge.map(me => {
+      ...wsErrors.parse.map((pe: ParseError): WorkspaceError =>
+        ({
+          sourceFragments: [this.resolveSourceFragment(pe.subject)],
+          error: pe.detail,
+          severity: 'Error',
+          cause: pe,
+        })),
+      ...wsErrors.merge.map((me: MergeError): WorkspaceError => {
         const sourceRanges = this.sourceMap.get(me.elemID.getFullName()) || []
         const sourceFragments = sourceRanges.map(sr => this.resolveSourceFragment(sr))
         return {
           sourceFragments,
           error: me.error,
+          severity: 'Error',
           cause: me,
         }
       }),
-      ...wsErrors.validation.map(ve => {
+      ...wsErrors.validation.map((ve: ValidationError): WorkspaceError => {
         const sourceRanges = this.sourceMap.get(ve.elemID.getFullName()) || []
         const sourceFragments = sourceRanges.map(sr => this.resolveSourceFragment(sr))
         return {
           sourceFragments,
           error: ve.error,
+          severity: 'Error',
           cause: ve,
         }
       }),
     ]
   }
+
 
   private markDirty(names: string[]): void {
     names.forEach(name => this.dirtyBlueprints.add(name))

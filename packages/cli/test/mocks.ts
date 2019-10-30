@@ -328,4 +328,5 @@ export const deleteFromCsvFile = async (): Promise<void> => {}
 export const getWorkspaceErrors = (): ReadonlyArray<WorkspaceError> => [{
   sourceFragments: [],
   error: 'Error',
+  severity: 'Error',
 }]

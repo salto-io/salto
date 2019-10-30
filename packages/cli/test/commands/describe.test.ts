@@ -10,6 +10,7 @@ const mockErrWs = {
   getWorkspaceErrors: mocks.getWorkspaceErrors,
 }
 jest.mock('salto', () => ({
+  ...require.requireActual('salto'),
   describeElement: jest.fn().mockImplementation(() => mockDescribe([])),
   Workspace: {
     load: jest.fn().mockImplementation(config => (config.baseDir === 'errdir' ? mockErrWs : mockWs)),

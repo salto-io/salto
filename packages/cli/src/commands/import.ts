@@ -1,10 +1,10 @@
 import asyncfile from 'async-file'
-import { importFromCsvFile, Workspace, readCsv, loadConfig } from 'salto'
+import { importFromCsvFile, readCsv } from 'salto'
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'
 import { getConfigFromUser } from '../callbacks'
 import Prompts from '../prompts'
-import { formatWorkspaceErrors } from '../formatter'
+import { loadWorkspace } from '../workspace'
 
 
 export const command = (
@@ -19,10 +19,8 @@ export const command = (
       return CliExitCode.AppError
     }
     const records = await readCsv(inputPath)
-    const config = await loadConfig(workingDir)
-    const workspace: Workspace = await Workspace.load(config)
-    if (workspace.hasErrors()) {
-      stderr.write(formatWorkspaceErrors(workspace.getWorkspaceErrors()))
+    const { workspace, errored } = await loadWorkspace(workingDir, stderr)
+    if (errored) {
       return CliExitCode.AppError
     }
     await importFromCsvFile(

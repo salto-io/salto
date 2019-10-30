@@ -1,9 +1,9 @@
 import path from 'path'
-import { exportToCsv, Workspace, dumpCsv, loadConfig } from 'salto'
+import { exportToCsv, dumpCsv } from 'salto'
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'
 import { getConfigFromUser } from '../callbacks'
-import { formatWorkspaceErrors } from '../formatter'
+import { loadWorkspace } from '../workspace'
 
 export const command = (
   workingDir: string,
@@ -13,10 +13,8 @@ export const command = (
 ):
 CliCommand => ({
   async execute(): Promise<CliExitCode> {
-    const config = await loadConfig(workingDir)
-    const workspace: Workspace = await Workspace.load(config)
-    if (workspace.hasErrors()) {
-      stderr.write(formatWorkspaceErrors(workspace.getWorkspaceErrors()))
+    const { workspace, errored } = await loadWorkspace(workingDir, stderr)
+    if (errored) {
       return CliExitCode.AppError
     }
     const outputObjectsIterator = await exportToCsv(typeName, workspace, getConfigFromUser)

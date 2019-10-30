@@ -164,6 +164,8 @@ type salesforce_lead {
         expect(workspaceErrors[0].cause).toBeInstanceOf(MergeError)
         expect(workspaceErrors[0].sourceFragments).toHaveLength(2)
         expect(workspaceErrors[0].error).toMatch(mergeError)
+        expect(workspaceErrors[0].severity).toBe('Error')
+
         const firstSourceFragment = workspaceErrors[0].sourceFragments[0]
         expect(firstSourceFragment.sourceRange.filename).toBe('file.bp')
 

@@ -13,20 +13,20 @@ export const command = (
   spinnerCreator: SpinnerCreator
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
-    const spinner = spinnerCreator(Prompts.PLAN_STARTED, {})
+    const spinner = spinnerCreator(Prompts.PREVIEW_STARTED, {})
     try {
       const { workspace, errored } = await loadWorkspace(workspaceDir, stderr)
       if (errored) {
-        spinner.fail(Prompts.PLAN_FAILED)
+        spinner.fail(Prompts.PREVIEW_FAILED)
         return CliExitCode.AppError
       }
       // TODO: inline commands.plan here
       const workspacePlan = await preview(workspace)
-      spinner.succeed(Prompts.PLAN_FINISHED)
+      spinner.succeed(Prompts.PREVIEW_FINISHED)
       stdout.write(createPlanOutput(workspacePlan))
       return CliExitCode.Success
     } catch (error) {
-      spinner.fail(Prompts.PLAN_FAILED)
+      spinner.fail(Prompts.PREVIEW_FAILED)
       throw error
     }
   },

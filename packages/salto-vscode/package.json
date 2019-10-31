@@ -118,7 +118,7 @@
         "build": "yarn run lint && yarn run build-ts",
         "build-ts": "tsc",
         "watch": "tsc -w",
-        "test": "jest --forceExit --detectOpenHandles",
+        "test": "jest --forceExit --detectOpenHandles --testTimeout=30000",
         "clean-ts": "node ./node_modules/.bin/ts-cleaner -d dist -s . -v",
         "clean-ts-test": "yarn run clean-ts && yarn run test",
         "watch-test": "yarn run tsc-watch --onSuccess 'yarn run clean-ts-test'",

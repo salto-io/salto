@@ -179,15 +179,11 @@ const createExecutionOutput = (plan: Plan): string[] => {
     wu(plan.itemsByEvalOrder()).map(item => item.detailedChanges())
   )
   return [
-    header(Prompts.STARTPREVIEW),
-    subHeader(Prompts.EXPLAINPREVIEW),
-    seperator(),
-    subHeader(Prompts.EXPLAINPREVIEWRESULT),
     emptyLine(),
     header(Prompts.PLANSTEPSHEADER),
     planSteps,
     emptyLine(),
-    subHeader(Prompts.EXPLAINPLANRESULT),
+    subHeader(Prompts.EXPLAINPREVIEWRESULT),
     emptyLine(),
     actionCount,
     emptyLine(),

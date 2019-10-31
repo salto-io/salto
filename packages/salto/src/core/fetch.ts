@@ -23,7 +23,6 @@ const mergeAndValidate = (elements: ReadonlyArray<Element>): Element[] => {
     throw new Error(`Errors validating fetched elements:\n\t${errors.join('\n\t')}`)
   }
   return mergedElements
-
 }
 
 const getDetailedChanges = (

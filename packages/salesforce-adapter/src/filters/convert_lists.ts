@@ -13,14 +13,14 @@ import { FilterCreator } from '../filter'
  */
 const filter: FilterCreator = () => ({
   /**
-   * Upon discover, mark all list fields as list fields in all discoverd types
+   * Upon fetch, mark all list fields as list fields in all fetchd types
    *
-   * @param elements the already discoverd elements
+   * @param elements the already fetchd elements
    */
-  onDiscover: async (elements: Element[]) => {
+  onFetch: async (elements: Element[]) => {
     // This method iterate on types and corresponding values and run innerChange
     // on every "node".
-    const applyRecursive = (type: ObjectType, value: Values,
+    const deployRecursive = (type: ObjectType, value: Values,
       innerChange: (field: Field, value: Value) => Value): Value => {
       Object.keys(type.fields).forEach(key => {
         if (!value || !value[key]) return
@@ -28,9 +28,9 @@ const filter: FilterCreator = () => ({
         const fieldType = type.fields[key].type
         if (isObjectType(fieldType)) {
           if (_.isArray(value[key])) {
-            value[key].forEach((val: Values) => applyRecursive(fieldType, val, innerChange))
+            value[key].forEach((val: Values) => deployRecursive(fieldType, val, innerChange))
           } else {
-            applyRecursive(fieldType, value[key], innerChange)
+            deployRecursive(fieldType, value[key], innerChange)
           }
         }
       })
@@ -44,7 +44,7 @@ const filter: FilterCreator = () => ({
       return value
     }
     elements.filter(isInstanceElement).forEach(instnace =>
-      applyRecursive(instnace.type as ObjectType, instnace.value, markList))
+      deployRecursive(instnace.type as ObjectType, instnace.value, markList))
 
     // Cast all lists to list
     const castLists = (field: Field, value: Value): Value => {
@@ -58,7 +58,7 @@ const filter: FilterCreator = () => ({
       return value
     }
     elements.filter(isInstanceElement).forEach(instnace =>
-      applyRecursive(instnace.type as ObjectType, instnace.value, castLists))
+      deployRecursive(instnace.type as ObjectType, instnace.value, castLists))
   },
 })
 

@@ -3,7 +3,7 @@ import {
   ObjectType, InstanceElement, Element, Value,
 } from 'adapter-api'
 import {
-  applyActions,
+  deployActions,
 } from './core/core'
 import {
   getInstancesOfType, importInstancesOfType, deleteInstancesOfType,
@@ -16,9 +16,9 @@ import State from './state/state'
 import { findElement, SearchResult } from './core/search'
 
 import { Workspace, CREDS_DIR } from './workspace/workspace'
-import { discoverChanges, DiscoverChange } from './core/discover'
+import { fetchChanges, FetchChange } from './core/fetch'
 
-const applyActionOnState = async (
+const deployActionOnState = async (
   state: State,
   action: string,
   element: Promise<Element>
@@ -29,30 +29,30 @@ const applyActionOnState = async (
   return state.update([await element])
 }
 
-export const plan = async (
+export const preview = async (
   workspace: Workspace,
 ): Promise<Plan> => {
   const state = new State(workspace.config.stateLocation)
   return getPlan(await state.get(), workspace.elements)
 }
 
-export const apply = async (
+export const deploy = async (
   workspace: Workspace,
   fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
-  shouldApply: (plan: Plan) => Promise<boolean>,
+  shouldDeploy: (plan: Plan) => Promise<boolean>,
   reportProgress: (action: PlanItem) => void,
   force = false
 ): Promise<Plan> => {
   const state = new State(workspace.config.stateLocation)
   try {
     const actionPlan = getPlan(await state.get(), workspace.elements)
-    if (force || await shouldApply(actionPlan)) {
+    if (force || await shouldDeploy(actionPlan)) {
       const [adapters] = await initAdapters(workspace.elements, fillConfig)
-      await applyActions(
+      await deployActions(
         actionPlan,
         adapters,
         reportProgress,
-        (action, element) => applyActionOnState(state, action, element)
+        (action, element) => deployActionOnState(state, action, element)
       )
     }
     return actionPlan
@@ -62,13 +62,13 @@ export const apply = async (
 }
 
 export type fillConfigFunc = (configType: ObjectType) => Promise<InstanceElement>
-export type discoverFunc = (
+export type fetchFunc = (
   workspace: Workspace,
   fillConfig: fillConfigFunc,
-) => Promise<Iterable<DiscoverChange>>
+) => Promise<Iterable<FetchChange>>
 
-export const discover: discoverFunc = async (workspace, fillConfig) => {
-  const configToChange = (config: InstanceElement): DiscoverChange => {
+export const fetch: fetchFunc = async (workspace, fillConfig) => {
+  const configToChange = (config: InstanceElement): FetchChange => {
     config.path = [CREDS_DIR, config.elemID.adapter]
     const change: DetailedChange = {
       id: config.elemID,
@@ -81,7 +81,7 @@ export const discover: discoverFunc = async (workspace, fillConfig) => {
   const state = new State(workspace.config.stateLocation)
   const [adapters, newConfigs] = await initAdapters(workspace.elements, fillConfig)
 
-  const { changes, elements } = await discoverChanges(
+  const { changes, elements } = await fetchChanges(
     adapters, workspace.elements, await state.get(),
   )
 
@@ -107,7 +107,7 @@ export const exportToCsv = async (
   const stateElements = await state.get()
   const type = stateElements.find(elem => elem.elemID.getFullName() === typeId)
   if (!type) {
-    throw new Error(`Couldn't find the type you are looking for: ${typeId}. Have you run salto discover yet?`)
+    throw new Error(`Couldn't find the type you are looking for: ${typeId}. Have you run salto fetch yet?`)
   }
   const [adapters] = await initAdapters(workspace.elements, fillConfig)
 
@@ -125,7 +125,7 @@ export const importFromCsvFile = async (
   const stateElements = await state.get()
   const type = stateElements.find(elem => elem.elemID.getFullName() === typeId)
   if (!type) {
-    throw new Error(`Couldn't find the type you are looking for: ${typeId}. Have you run salto discover yet?`)
+    throw new Error(`Couldn't find the type you are looking for: ${typeId}. Have you run salto fetch yet?`)
   }
   const [adapters] = await initAdapters(workspace.elements, fillConfig)
   await importInstancesOfType(type as ObjectType, records, adapters)
@@ -142,7 +142,7 @@ export const deleteFromCsvFile = async (
   const stateElements = await state.get()
   const type = stateElements.find(elem => elem.elemID.getFullName() === typeId)
   if (!type) {
-    throw new Error(`Couldn't find the type you are looking for: ${typeId}. Have you run salto discover yet?`)
+    throw new Error(`Couldn't find the type you are looking for: ${typeId}. Have you run salto fetch yet?`)
   }
   const [adapters] = await initAdapters(workspace.elements, fillConfig)
   await deleteInstancesOfType(type as ObjectType, records, adapters)

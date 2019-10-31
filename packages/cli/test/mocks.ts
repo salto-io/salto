@@ -192,7 +192,7 @@ export const detailedChange = (
   return { action, id, data: { before, after } }
 }
 
-export const plan = (): Plan => {
+export const preview = (): Plan => {
   const change = (action: 'add'|'modify'|'remove', ...path: string[]): Change => {
     const elemID = new ElemID('salesforce', ...path)
     if (action === 'add') {
@@ -287,15 +287,15 @@ export const plan = (): Plan => {
   return result as Plan
 }
 
-export const apply = async (
+export const deploy = async (
   _workspace: Workspace,
   _fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
-  shouldApply: (plan: Plan) => Promise<boolean>,
+  shouldDeploy: (plan: Plan) => Promise<boolean>,
   reportProgress: (action: PlanItem) => void,
   force = false
 ): Promise<Plan> => {
-  const changes = await plan()
-  if (force || await shouldApply(changes)) {
+  const changes = await preview()
+  if (force || await shouldDeploy(changes)) {
     wu(changes.itemsByEvalOrder()).forEach(change => {
       reportProgress(change)
     })

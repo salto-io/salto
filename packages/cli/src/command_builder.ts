@@ -13,7 +13,7 @@ export interface KeyedOptions { [key: string]: yargs.Options }
 export interface PositionalOptions { [key: string]: yargs.PositionalOptions }
 
 export interface YargsModuleOpts {
-  // Name of this command in the CLI, e.g., 'apply'
+  // Name of this command in the CLI, e.g., 'deploy'
   // If positional arguments are included, they also need to be specified here
   // See: https://github.com/yargs/yargs/blob/master/docs/advanced.md#positional-arguments
   command: string
@@ -59,18 +59,17 @@ export const createCommandBuilder = <
       aliases: options.aliases,
       describe: options.description,
       builder: (parser: yargs.Argv) => {
-        // apply positional arguments
+        // deploy positional arguments
         Object.entries(options.positional || {})
           .reduce((res, [key, opt]) => res.positional(key, opt), parser)
 
-        // apply keyed arguments
+        // deploy keyed arguments
         parser.options(options.keyed || {})
 
-        // apply filters
-        return Filter.applyParser(filters, parser)
+        // deploy filters
+        return Filter.deployParser(filters, parser)
       },
     },
-
     async build(
       input: TParsedCliInput,
       output: CliOutput,

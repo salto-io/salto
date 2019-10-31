@@ -7,7 +7,7 @@ import {
 } from 'adapter-api'
 import {
   Plan, PlanItem, FoundSearchResult, SearchResult, DetailedChange,
-  WorkspaceError, SourceFragment, DiscoverChange,
+  WorkspaceError, SourceFragment, FetchChange,
 } from 'salto'
 import Prompts from './prompts'
 
@@ -256,8 +256,8 @@ export const createActionInProgressOutput = (action: PlanItem, start: Date): str
   }... (${elapsedRound}s elapsed)`)
 }
 
-export const formatDiscoverChangeForApproval = (
-  change: DiscoverChange,
+export const formatFetchChangeForApproval = (
+  change: FetchChange,
   idx: number,
   totalChanges: number
 ): string => {

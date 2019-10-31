@@ -61,7 +61,9 @@ export const renderDiffView = (diff: UnifiedDiff, cssHrefs: string[]): string =>
     </html>`
 }
 
-export const createPlanDiff = async (planActions: Iterable<PlanItem>): Promise<UnifiedDiff> => {
+export const createPlanDiff = async (
+  planActions: Iterable<PlanItem>
+): Promise<UnifiedDiff> => {
   const diffCreators = wu(planActions)
     .enumerate()
     .map(([change, i]) => createChangeDiff(i, change))

@@ -48,7 +48,7 @@ const allMissingFields: Record<string, MissingField[]> = {
 export const makeFilter = (
   missingFields: Record<string, MissingField[]>
 ): FilterCreator => () => ({
-  onDiscover: async function onDiscover(elements) {
+  onFetch: async function onFetch(elements) {
     // We need a mapping of all the types so we can replace type names with the correct types
     const typeMap = _(elements)
       .filter(isType)

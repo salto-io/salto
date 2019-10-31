@@ -25,15 +25,15 @@ const isTypeName = (element: Element, name: string): boolean =>
 * Declare the lead convert settings filter, this filter add lead_convert_setting annotation
 * to Lead.
 * Annotation value will be the single lead convert settings instance and instance will be removed
-* from the discovered elements list.
+* from the fetched elements list.
 */
 const filterCreator: FilterCreator = ({ client }) => ({
   /**
-   * Upon discover, add lead_convert_setting annotation.
+   * Upon fetch, add lead_convert_setting annotation.
    *
-   * @param elements the already discoverd elements
+   * @param elements the already fetchd elements
    */
-  onDiscover: async (elements: Element[]) => {
+  onFetch: async (elements: Element[]) => {
     const lead = _(elements).filter(isObjectType).find(e => isTypeName(e, LEAD_TYPE))
     const convertType = _(elements).filter(isObjectType)
       .find(e => isTypeName(e, LEAD_CONVERT_SETTINGS_TYPE))

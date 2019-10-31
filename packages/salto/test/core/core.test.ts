@@ -39,12 +39,12 @@ const mockUpdate = jest.fn((_b, _a) => true)
 
 
 const objType = new ObjectType({ elemID: new ElemID('salesforce', 'dummy') })
-const discoveredElements = [
+const fetchedElements = [
   objType,
   new InstanceElement(new ElemID('salesforce', 'instance_1'), objType, {}),
   new InstanceElement(new ElemID('salesforce', 'instance_2'), objType, {}),
 ]
-const mockDiscover = jest.fn(() => discoveredElements)
+const mockFetch = jest.fn(() => fetchedElements)
 
 const instancesIterator = async function *instancesIterator(): AsyncIterable<InstanceElement[]> {
   const testType = new ObjectType({
@@ -73,7 +73,7 @@ const mockUpdateInstancesOfType = jest.fn()
 
 const mockAdapterCreator: AdapterCreator = {
   create: () => ({
-    discover: mockDiscover,
+    fetch: mockFetch,
     add: mockAdd,
     remove: mockRemove,
     update: mockUpdate,
@@ -130,7 +130,7 @@ describe('api functions', () => {
 
     const filePath = (filename: string): string => path.join(blueprintsDirectory, filename)
 
-    const mockShouldApplyYes = async (): Promise<boolean> => Promise.resolve(true)
+    const mockShouldDeployYes = async (): Promise<boolean> => Promise.resolve(true)
 
     const mockReportCurrentAction = jest.fn()
 
@@ -173,10 +173,10 @@ describe('api functions', () => {
         additionalBlueprints: [filePath('missing.bp')],
       }
       const ws: Workspace = await Workspace.load(config)
-      await expect(commands.apply(
+      await expect(commands.deploy(
         ws,
         mockGetConfigFromUser,
-        mockShouldApplyYes,
+        mockShouldDeployYes,
         mockReportCurrentAction
       )).rejects.toThrow()
     })
@@ -191,10 +191,10 @@ describe('api functions', () => {
         additionalBlueprints: [filePath('fail.bp')],
       }
       const ws: Workspace = await Workspace.load(config)
-      await expect(commands.apply(
+      await expect(commands.deploy(
         ws,
         mockGetConfigFromUser,
-        mockShouldApplyYes,
+        mockShouldDeployYes,
         mockReportCurrentAction
       )).rejects.toThrow()
     })
@@ -214,47 +214,47 @@ describe('api functions', () => {
         ws = await Workspace.load(config)
       })
 
-      it('should create an apply plan using the plan method', async () => {
+      it('should create an deploy plan using the plan method', async () => {
         const spy = jest.spyOn(plan, 'getPlan')
-        await commands.plan(
+        await commands.preview(
           ws
         )
         expect(spy).toHaveBeenCalled()
       })
 
-      it('should apply an apply plan', async () => {
-        await commands.apply(
+      it('should deploy an deploy plan', async () => {
+        await commands.deploy(
           ws,
           mockGetConfigFromUser,
-          mockShouldApplyYes,
+          mockShouldDeployYes,
           mockReportCurrentAction
         )
         expect(mockAdd).toHaveBeenCalled()
       })
 
-      it('should apply plan with remove based on state', async () => {
+      it('should deploy plan with remove based on state', async () => {
         State.prototype.get = jest.fn().mockImplementation(() =>
           Promise.resolve([new ObjectType({ elemID: new ElemID('salesforce', 'employee') })]))
-        await commands.apply(
+        await commands.deploy(
           ws,
           mockGetConfigFromUser,
-          mockShouldApplyYes,
+          mockShouldDeployYes,
           mockReportCurrentAction
         )
         expect(mockAdd).toHaveBeenCalled()
         expect(mockRemove).toHaveBeenCalled()
       })
 
-      it('should apply plan with modification based on state', async () => {
+      it('should deploy plan with modification based on state', async () => {
         const mockStateGet = jest.fn().mockImplementation(() =>
           Promise.resolve([new ObjectType({ elemID: new ElemID('salesforce', 'test') })]))
         State.prototype.get = mockStateGet
         const mockStateUpdate = jest.fn().mockImplementation(() => Promise.resolve())
         State.prototype.update = mockStateUpdate
-        await commands.apply(
+        await commands.deploy(
           ws,
           mockGetConfigFromUser,
-          mockShouldApplyYes,
+          mockShouldDeployYes,
           mockReportCurrentAction
         )
         expect(mockUpdate).toHaveBeenCalled()
@@ -344,7 +344,7 @@ describe('api functions', () => {
       })
     })
   })
-  describe('discover', () => {
+  describe('fetch', () => {
     let mockWorkspace: Workspace
     let changes: plan.DetailedChange[]
     beforeEach(async () => {
@@ -353,15 +353,15 @@ describe('api functions', () => {
         config: { stateLocation: '.' },
         resolvePath: _.identity,
       } as unknown as Workspace
-      changes = [...await commands.discover(mockWorkspace, mockGetConfigFromUser)]
+      changes = [...await commands.fetch(mockWorkspace, mockGetConfigFromUser)]
         .map(change => change.change)
     })
 
-    it('should return newly discovered elements and configs', () => {
+    it('should return newly fetched elements and configs', () => {
       expect(changes.map(change => change.action)).toEqual(['add', 'add', 'add', 'add'])
     })
-    it('should add newly discovered elements to state', () => {
-      expect(State.prototype.override).toHaveBeenCalledWith(discoveredElements)
+    it('should add newly fetched elements to state', () => {
+      expect(State.prototype.override).toHaveBeenCalledWith(fetchedElements)
     })
   })
 })

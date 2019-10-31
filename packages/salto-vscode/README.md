@@ -5,7 +5,7 @@
 
 ---
 
-<h4 align="center"Configure, plan and apply .<a href="https://www.salto.io/">Salto</a> patches in vscode.</h4>
+<h4 align="center"Configure, preview and deploy .<a href="https://www.salto.io/">Salto</a> patches in vscode.</h4>
 
 ---
 
@@ -16,7 +16,7 @@
 - Auto-completion support.
 - Syntax highlighting for `.bp` files.
 - Syntax, Merge, and validation error highlighting. 
-- Adds commands for running `salto plan` and `salto apply`
+- Adds commands for running `salto preview` and `salto deploy`
 - Browse document symbols
 - Browse workspace symbols
 - Peek definition

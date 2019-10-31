@@ -10,13 +10,13 @@ export const FLOW_METADATA_VALUE_TYPE_NAME = 'flow_metadata_value'
 /**
  * Create filter that handles flow type/instances corner case.
  */
-const filterCreator = (): FilterWith<'onDiscover'> => ({
+const filterCreator = (): FilterWith<'onFetch'> => ({
   /**
-   * Upon discover remove restriction values from flow_metadata_value.name.
+   * Upon fetch remove restriction values from flow_metadata_value.name.
    *
-   * @param elements the already discovered elements
+   * @param elements the already fetched elements
    */
-  onDiscover: async (elements: Element[]): Promise<void> => {
+  onFetch: async (elements: Element[]): Promise<void> => {
     // fix flow_metadata_value - mark restriction values as not enforced, see: SALTO-93
     const flowMetadataValue = _(elements).filter(isObjectType)
       .find(e => e.elemID.name === FLOW_METADATA_VALUE_TYPE_NAME)

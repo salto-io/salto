@@ -1,9 +1,9 @@
 import {
-  discover as apiDiscover,
+  fetch as apiFetch,
   Workspace,
   loadConfig,
-  discoverFunc,
-  DiscoverChange,
+  fetchFunc,
+  FetchChange,
 } from 'salto'
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'
@@ -13,13 +13,13 @@ import Prompts from '../prompts'
 import { validateWorkspace } from '../workspace'
 
 type approveChangesFunc =
-  (changes: ReadonlyArray<DiscoverChange>) => Promise<ReadonlyArray<DiscoverChange>>
+  (changes: ReadonlyArray<FetchChange>) => Promise<ReadonlyArray<FetchChange>>
 
-export const discoverCommand = async (
+export const fetchCommand = async (
   workspace: Workspace,
   force: boolean,
   output: CliOutput,
-  discover: discoverFunc,
+  fetch: fetchFunc,
   getApprovedChanges: approveChangesFunc,
 ): Promise<CliExitCode> => {
   const outputLine = (text: string): void => output.stdout.write(`${text}\n`)
@@ -28,7 +28,7 @@ export const discoverCommand = async (
   }
   outputLine(Prompts.DISCOVER_BEGIN)
   // Unpack changes to array so we can iterate on them more than once
-  const changes = [...await discover(workspace, getConfigFromUser)]
+  const changes = [...await fetch(workspace, getConfigFromUser)]
   // If the workspace starts empty there is no point in showing a huge amount of changes
   const isEmptyWorkspace = workspace.elements.filter(elem => !elem.elemID.isConfig()).length === 0
   const changesToApply = force || isEmptyWorkspace
@@ -50,18 +50,18 @@ export const command = (
   async execute(): Promise<CliExitCode> {
     const config = await loadConfig(workspaceDir)
     const workspace = await Workspace.load(config)
-    return discoverCommand(workspace, force, output, apiDiscover, cliGetApprovedChanges)
+    return fetchCommand(workspace, force, output, apiFetch, cliGetApprovedChanges)
   },
 })
 
-type DiscoverArgs = {
+type FetchArgs = {
   force: boolean
 }
-type DiscoverParsedCliInput = ParsedCliInput<DiscoverArgs>
+type FetchParsedCliInput = ParsedCliInput<FetchArgs>
 
-const discoverBuilder = createCommandBuilder({
+const fetchBuilder = createCommandBuilder({
   options: {
-    command: 'discover',
+    command: 'fetch',
     aliases: ['dis'],
     description: 'Update blueprints and state in workspace directory',
     keyed: {
@@ -75,9 +75,9 @@ const discoverBuilder = createCommandBuilder({
     },
   },
 
-  async build(input: DiscoverParsedCliInput, output: CliOutput) {
+  async build(input: FetchParsedCliInput, output: CliOutput) {
     return command('.', input.args.force, output)
   },
 })
 
-export default discoverBuilder
+export default fetchBuilder

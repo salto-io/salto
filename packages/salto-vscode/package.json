@@ -1,7 +1,7 @@
 {
     "name": "salto-vscode",
     "displayName": "Salto",
-    "description": "Configure, plan and apply Salto patches in vscode.",
+    "description": "Configure, preview and deploy Salto patches in vscode.",
     "version": "0.0.1",
     "icon": "icons/images/file_type_salto_opaque.png",
     "galleryBanner": {
@@ -75,32 +75,32 @@
         ],
         "commands": [
             {
-                "command": "salto.plan",
-                "title": "Salto: Plan"
+                "command": "salto.preview",
+                "title": "Salto: Preview"
             },
             {
-                "command": "salto.apply",
+                "command": "salto.deploy",
                 "title": "Salto: Apply"
             }
         ],
         "menus": {
             "editor/title": [
                 {
-                    "command": "salto.plan",
+                    "command": "salto.preview",
                     "when": "resourceExtname == .bp"
                 },
                 {
-                    "command": "salto.apply",
+                    "command": "salto.deploy",
                     "when": "resourceExtname == .bp"
                 }
             ],
             "touchBar" : [
                 {
-                    "command": "salto.plan",
+                    "command": "salto.preview",
                     "when": "resourceExtname == .bp"
                 },
                 {
-                    "command": "salto.apply",
+                    "command": "salto.deploy",
                     "when": "resourceExtname == .bp"
                 }
             ]

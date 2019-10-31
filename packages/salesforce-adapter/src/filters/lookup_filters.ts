@@ -37,11 +37,11 @@ const createCustomFieldWithLookupFilter = (obj: ObjectType, fieldWithLookupFilte
 const filterCreator: FilterCreator = ({ client }) => ({
 
   /**
-   * In order to discover the lookupFilter we should use a different API than in the general flow
+   * In order to fetch the lookupFilter we should use a different API than in the general flow
    * (i.e. readMetadata())
-   * @param elements the already discovered elements
+   * @param elements the already fetched elements
    */
-  onDiscover: async (elements: Element[]): Promise<void> => {
+  onFetch: async (elements: Element[]): Promise<void> => {
     const readCustomFields = async (fieldNames: string[]): Promise<Record<string, CustomField>> => (
       _(await client.readMetadata(CUSTOM_FIELD, fieldNames))
         .map(field => [field.fullName, field])

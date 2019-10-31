@@ -4,7 +4,7 @@ import {
 import { Change } from './change'
 
 export interface Adapter {
-  discover(): Promise<Element[]>
+  fetch(): Promise<Element[]>
   add(element: Element): Promise<Element>
   remove(element: Element): Promise<void>
   update(before: Element, after: Element, changes: Iterable<Change>): Promise<Element>

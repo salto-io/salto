@@ -20,7 +20,7 @@ describe('flow filter', () => {
   })
 
   it('remove restriction values from flow_metadata_value.name', () => {
-    filter.onDiscover([mockFlow])
+    filter.onFetch([mockFlow])
     expect(mockFlow.fields.name.annotations[Type.VALUES]).toEqual(values)
     expect(mockFlow.fields.name.annotations[Type.RESTRICTION][Type.ENFORCE_VALUE]).toBe(false)
   })

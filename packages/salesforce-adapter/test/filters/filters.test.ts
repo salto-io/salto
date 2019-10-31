@@ -16,11 +16,11 @@ describe('SalesforceAdapter filters', () => {
   ): SalesforceAdapter => mockAdapter({ adapterParams: { filterCreators } }).adapter
 
   describe('when filter methods are implemented', () => {
-    let filter: FilterWith<'onDiscover' | 'onAdd' | 'onUpdate' | 'onRemove'>
+    let filter: FilterWith<'onFetch' | 'onAdd' | 'onUpdate' | 'onRemove'>
 
     beforeEach(() => {
       filter = {
-        onDiscover: jest.fn().mockImplementationOnce(elements => elements),
+        onFetch: jest.fn().mockImplementationOnce(elements => elements),
         onAdd: jest.fn().mockImplementationOnce(() => ([{ success: true }])),
         onUpdate: jest.fn().mockImplementationOnce(() => ([{ success: true }])),
         onRemove: jest.fn().mockImplementationOnce(() => ([{ success: true }])),
@@ -29,9 +29,9 @@ describe('SalesforceAdapter filters', () => {
       adapter = createAdapter([() => filter])
     })
 
-    it('should call inner aspects upon discover', async () => {
-      await adapter.discover()
-      const { mock } = filter.onDiscover as jest.Mock<undefined>
+    it('should call inner aspects upon fetch', async () => {
+      await adapter.fetch()
+      const { mock } = filter.onFetch as jest.Mock<undefined>
       expect(mock.calls.length).toBe(1)
     })
 

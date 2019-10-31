@@ -98,7 +98,7 @@ describe('Field Permissions filter', () => {
 
   let mockUpdate: jest.Mock<unknown>
 
-  type FilterType = FilterWith<'onDiscover' | 'onAdd' | 'onUpdate'>
+  type FilterType = FilterWith<'onFetch' | 'onAdd' | 'onUpdate'>
   const filter = (): FilterType => filterCreator({ client }) as FilterType
 
   beforeEach(() => {
@@ -107,7 +107,7 @@ describe('Field Permissions filter', () => {
   })
   it('should add field_level_security to object types and remove it from profile type & instances', async () => {
     const elements = [mockObject.clone(), mockAdmin, mockStandard, mockNoFieldPerm, mockProfile]
-    await filter().onDiscover(elements)
+    await filter().onFetch(elements)
     const objectTypes = elements.filter(isObjectType)
 
     // Check mockObject has the right permissions

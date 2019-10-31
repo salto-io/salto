@@ -31,18 +31,18 @@ describe('Salesforce adapter E2E with real account', () => {
   // Set long timeout as we communicate with salesforce API
   jest.setTimeout(1000000)
 
-  describe('should discover account settings', () => {
+  describe('should fetch account settings', () => {
     let result: Element[]
 
     beforeAll(async () => {
-      result = await adapter.discover()
+      result = await adapter.fetch()
     })
 
     beforeEach(() => {
       expect(result).toBeDefined()
     })
 
-    it('should discover sobject', async () => {
+    it('should fetch sobject', async () => {
       // Check few field types on lead object
       const lead = result.filter(element => element.elemID.name === 'lead')[0] as ObjectType
 
@@ -100,7 +100,7 @@ describe('Salesforce adapter E2E with real account', () => {
       )
     })
 
-    it('should discover metadata type', () => {
+    it('should fetch metadata type', () => {
       const flow = result
         .filter(element => element.elemID.name === 'flow')
         .pop() as ObjectType
@@ -109,8 +109,8 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(flow.fields.action_calls.type.elemID.name).toBe('flow_action_call')
     })
 
-    it('should discover settings instance', () => {
-      // As we discover now only instances from the STANDALONE list,
+    it('should fetch settings instance', () => {
+      // As we fetch now only instances from the STANDALONE list,
       // settings is the only one with instance by default.
       // once we support adding instances test can be improved
       const quoteSettings = result
@@ -1118,7 +1118,7 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(phoneField.label).toBe('Phone description label')
       expect(phoneField.type).toBe('phone')
       // Verify longtextarea
-      // TODO: We do not know how to retrieve the visible lines info when discovering
+      // TODO: We do not know how to retrieve the visible lines info when fetching
       // long text area
       const longTextAreaField = allFields.filter(field => field.name === 'Kilo__c')[0]
       expect(longTextAreaField).toBeDefined()
@@ -1126,7 +1126,7 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(longTextAreaField.type).toBe('textarea')
       expect(longTextAreaField.length).toBe(32768)
       // Verify richtextarea
-      // TODO: We do not know how to retrieve the visible lines info when discovering
+      // TODO: We do not know how to retrieve the visible lines info when fetching
       // rich text area
       const richTextAreaField = allFields.filter(field => field.name === 'Lima__c')[0]
       expect(richTextAreaField).toBeDefined()

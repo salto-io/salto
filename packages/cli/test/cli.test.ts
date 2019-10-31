@@ -1,6 +1,6 @@
 import { logger } from '@salto/logging'
 import * as mocks from './mocks'
-import applyBuilder from '../src/commands/apply'
+import deployBuilder from '../src/commands/deploy'
 import { CliExitCode } from '../src/types'
 
 describe('cli', () => {
@@ -19,7 +19,7 @@ describe('cli', () => {
 
       it('outputs help to stderr', () => {
         expect(o.err).toMatch(/\bCommands\b/)
-        expect(o.err).toMatch(/\bapply\b/)
+        expect(o.err).toMatch(/\bdeploy\b/)
       })
 
       it('exits with code 1 (user input error)', () => {
@@ -38,7 +38,7 @@ describe('cli', () => {
 
       it('outputs help to stderr', () => {
         expect(o.err).toMatch(/\bCommands\b/)
-        expect(o.err).toMatch(/\bapply\b/)
+        expect(o.err).toMatch(/\bdeploy\b/)
       })
 
       it('exits with code 1', () => {
@@ -71,7 +71,7 @@ describe('cli', () => {
     })
 
     it('outputs help to stdout', () => {
-      expect(o.out).toMatch(/apply/)
+      expect(o.out).toMatch(/deploy/)
       expect(o.out).toMatch('help')
     })
 
@@ -110,16 +110,16 @@ describe('cli', () => {
   })
 
   describe('when called with a valid command argument', () => {
-    let applyCommand: jest.Mock<Promise<CliExitCode>>
+    let deployCommand: jest.Mock<Promise<CliExitCode>>
 
     beforeEach(async () => {
-      applyCommand = jest.fn<Promise<CliExitCode>>().mockImplementation(() => CliExitCode.Success)
-      jest.spyOn(applyBuilder, 'build').mockResolvedValue({ execute: applyCommand })
-      o = await mocks.cli({ args: 'apply --yes' })
+      deployCommand = jest.fn<Promise<CliExitCode>>().mockImplementation(() => CliExitCode.Success)
+      jest.spyOn(deployBuilder, 'build').mockResolvedValue({ execute: deployCommand })
+      o = await mocks.cli({ args: 'deploy --yes' })
     })
 
     it('calls the command handler', () => {
-      expect(applyCommand).toHaveBeenCalled()
+      expect(deployCommand).toHaveBeenCalled()
     })
 
     it('exits with code 0 (success)', () => {
@@ -128,16 +128,16 @@ describe('cli', () => {
   })
 
   describe('when command execution fails ', () => {
-    let applyCommand: jest.Mock<Promise<CliExitCode>>
+    let deployCommand: jest.Mock<Promise<CliExitCode>>
 
     beforeEach(async () => {
-      applyCommand = jest.fn<Promise<CliExitCode>>().mockImplementation(() => CliExitCode.AppError)
-      jest.spyOn(applyBuilder, 'build').mockResolvedValue({ execute: applyCommand })
-      o = await mocks.cli({ args: 'apply --yes' })
+      deployCommand = jest.fn<Promise<CliExitCode>>().mockImplementation(() => CliExitCode.AppError)
+      jest.spyOn(deployBuilder, 'build').mockResolvedValue({ execute: deployCommand })
+      o = await mocks.cli({ args: 'deploy --yes' })
     })
 
     it('calls the command handler', () => {
-      expect(applyCommand).toHaveBeenCalled()
+      expect(deployCommand).toHaveBeenCalled()
     })
 
     it('exits with code 2 (app error)', () => {
@@ -146,16 +146,16 @@ describe('cli', () => {
   })
 
   describe('when command execution throws error ', () => {
-    let applyCommand: jest.Mock<Promise<CliExitCode>>
+    let deployCommand: jest.Mock<Promise<CliExitCode>>
 
     beforeEach(async () => {
-      applyCommand = jest.fn<Promise<CliExitCode>>().mockImplementation(() => { throw new Error('blabla') })
-      jest.spyOn(applyBuilder, 'build').mockResolvedValue({ execute: applyCommand })
-      o = await mocks.cli({ args: 'apply --yes' })
+      deployCommand = jest.fn<Promise<CliExitCode>>().mockImplementation(() => { throw new Error('blabla') })
+      jest.spyOn(deployBuilder, 'build').mockResolvedValue({ execute: deployCommand })
+      o = await mocks.cli({ args: 'deploy --yes' })
     })
 
     it('calls the command handler', () => {
-      expect(applyCommand).toHaveBeenCalled()
+      expect(deployCommand).toHaveBeenCalled()
     })
 
     it('exits with code 2 (app error)', () => {
@@ -169,7 +169,7 @@ describe('cli', () => {
 
     beforeEach(async () => {
       configure = jest.spyOn(logger, 'configure')
-      await mocks.cli({ args: 'apply --yes --verbose' })
+      await mocks.cli({ args: 'deploy --yes --verbose' })
     })
 
     it('configures the logging to level info', () => {

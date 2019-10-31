@@ -2,14 +2,14 @@ import chalk from 'chalk'
 
 export default class Prompts {
   public static readonly PLANNEDFORAPPLY = ''
-  public static readonly STARTAPPLY = 'Salto-cli will start the apply step'
+  public static readonly STARTAPPLY = 'Salto-cli will start the deploy step'
   public static readonly EXPLAINAPPLY =
     "You know what this is all about don't you?!"
 
   public static readonly SHOULDEXECUTREPLAN = 'Do you want to perform these actions?'
 
-  public static readonly STARTAPPLYEXEC = 'Starting the apply phase'
-  public static readonly CANCELAPPLY = 'Canceling apply'
+  public static readonly STARTDEPLOYEXEC = 'Starting the deploy phase'
+  public static readonly CANCELDEPLOY = 'Canceling deploy'
   public static readonly PLANNEDFORPLAN = ''
   public static readonly MODIFIERS = {
     modify: chalk.yellow('M'),

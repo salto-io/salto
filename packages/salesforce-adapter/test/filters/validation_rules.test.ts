@@ -12,7 +12,7 @@ import mockClient from '../client'
 
 describe('validation rules filter', () => {
   const { client } = mockClient()
-  const filter = filterCreator({ client }) as FilterWith<'onDiscover'>
+  const filter = filterCreator({ client }) as FilterWith<'onFetch'>
 
   const mockSObject = new ObjectType({
     elemID: new ElemID(constants.SALESFORCE, 'test__c'),
@@ -40,9 +40,9 @@ describe('validation rules filter', () => {
     ]
   })
 
-  describe('validation rule discover', () => {
+  describe('validation rule fetch', () => {
     it('should add relation between validation rule to related sobject', async () => {
-      await filter.onDiscover(testElements)
+      await filter.onFetch(testElements)
       const [sobject] = testElements
       expect(sobject.annotations[VALIDATION_RULE_ANNOTATION]).toEqual(
         [mockValidationRule.elemID.getFullName()]

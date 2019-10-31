@@ -79,7 +79,7 @@ const profile2Permissions = (profileInstance: InstanceElement):
  * annotation and remove Profile.fieldsPermissions.
  */
 const filterCreator: FilterCreator = ({ client }) => ({
-  onDiscover: async (elements: Element[]): Promise<void> => {
+  onFetch: async (elements: Element[]): Promise<void> => {
     const customObjectTypes = elements.filter(isObjectType)
       .filter(element => metadataType(element) === CUSTOM_OBJECT)
     if (_.isEmpty(customObjectTypes)) {
@@ -94,7 +94,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
     const permissionsPerProfile = profileInstances.map(profile2Permissions)
     const permissions = _.merge({}, ...permissionsPerProfile)
 
-    // Add field permissions to all discovered elements
+    // Add field permissions to all fetched elements
     customObjectTypes.forEach(sobject => {
       Object.values(sobject.fields).forEach(field => {
         const fieldPermission = permissions[fieldFullName(sobject, field)]

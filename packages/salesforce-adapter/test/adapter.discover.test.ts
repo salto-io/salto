@@ -8,7 +8,7 @@ import * as constants from '../src/constants'
 import { Types } from '../src/transformer'
 import mockAdpater from './adapter'
 
-describe('SalesforceAdapter discover', () => {
+describe('SalesforceAdapter fetch', () => {
   let connection: Connection
   let adapter: SalesforceAdapter
 
@@ -24,7 +24,7 @@ describe('SalesforceAdapter discover', () => {
     jest.resetAllMocks()
   })
 
-  describe('should discover SObjects', () => {
+  describe('should fetch SObjects', () => {
     const mockSingleSObject = (
       name: string,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -55,7 +55,7 @@ describe('SalesforceAdapter discover', () => {
         ))
     }
 
-    it('should discover sobject with primitive types, validate type, label, required and default annotations', async () => {
+    it('should fetch sobject with primitive types, validate type, label, required and default annotations', async () => {
       mockSingleSObject('Lead', [
         {
           name: 'LastName',
@@ -98,7 +98,7 @@ describe('SalesforceAdapter discover', () => {
           calculatedFormula: 'my formula',
         },
       ])
-      const result = await adapter.discover()
+      const result = await adapter.fetch()
 
       const lead = result.filter(o => o.elemID.name === 'lead').pop() as ObjectType
       expect(lead.fields.last_name.type.elemID.name).toBe('text')
@@ -119,7 +119,7 @@ describe('SalesforceAdapter discover', () => {
       expect(lead.fields.formula__c.annotations[constants.FORMULA]).toBe('my formula')
     })
 
-    it('should discover sobject with picklist field', async () => {
+    it('should fetch sobject with picklist field', async () => {
       mockSingleSObject('Lead', [
         {
           name: 'PrimaryC',
@@ -133,7 +133,7 @@ describe('SalesforceAdapter discover', () => {
           restrictedPicklist: true,
         },
       ])
-      const result = await adapter.discover()
+      const result = await adapter.fetch()
 
       const lead = result.filter(o => o.elemID.name === 'lead').pop() as ObjectType
       expect(lead.fields.primary_c.type.elemID.name).toBe('picklist')
@@ -142,7 +142,7 @@ describe('SalesforceAdapter discover', () => {
       expect(lead.fields.primary_c.annotations[Type.RESTRICTION][Type.ENFORCE_VALUE]).toBe(true)
     })
 
-    it('should discover sobject with combobox field', async () => {
+    it('should fetch sobject with combobox field', async () => {
       mockSingleSObject('Lead', [
         {
           name: 'PrimaryC',
@@ -155,7 +155,7 @@ describe('SalesforceAdapter discover', () => {
           ],
         },
       ])
-      const result = await adapter.discover()
+      const result = await adapter.fetch()
 
       const lead = result.filter(o => o.elemID.name === 'lead').pop() as ObjectType
       expect(lead.fields.primary_c.type.elemID.name).toBe('combobox')
@@ -165,7 +165,7 @@ describe('SalesforceAdapter discover', () => {
       expect(lead.fields.primary_c.annotations[Type.DEFAULT].pop()).toBe('Yes')
     })
 
-    it('should discover sobject with number field', async () => {
+    it('should fetch sobject with number field', async () => {
       mockSingleSObject('Lead', [
         {
           name: 'NumberField',
@@ -174,13 +174,13 @@ describe('SalesforceAdapter discover', () => {
           nillable: true,
         },
       ])
-      const result = await adapter.discover()
+      const result = await adapter.fetch()
 
       const lead = result.filter(o => o.elemID.name === 'lead').pop() as ObjectType
       expect(lead.fields.number_field.type.elemID.name).toBe('number')
     })
 
-    it('should discover sobject with various field types', async () => {
+    it('should fetch sobject with various field types', async () => {
       mockSingleSObject('Lead', [
         {
           name: 'AutoNumber',
@@ -234,7 +234,7 @@ describe('SalesforceAdapter discover', () => {
           ],
         },
       ])
-      const result = await adapter.discover()
+      const result = await adapter.fetch()
 
       const lead = result.filter(o => o.elemID.name === 'lead').pop() as ObjectType
       expect(lead.fields.auto_number.type.elemID.name).toBe('autonumber')
@@ -259,7 +259,7 @@ describe('SalesforceAdapter discover', () => {
         },
       ])
 
-      const result = await adapter.discover()
+      const result = await adapter.fetch()
 
       const testElements = result.filter(o => o.elemID.name === 'test') as ObjectType[]
       expect(testElements).toHaveLength(2)
@@ -282,7 +282,7 @@ describe('SalesforceAdapter discover', () => {
         },
       ], false, false)
 
-      const result = await adapter.discover()
+      const result = await adapter.fetch()
 
       const testElements = result.filter(o => o.elemID.name === 'test') as ObjectType[]
       expect(testElements).toHaveLength(1)
@@ -302,7 +302,7 @@ describe('SalesforceAdapter discover', () => {
         },
       ], false, true, true)
 
-      const result = await adapter.discover()
+      const result = await adapter.fetch()
 
       const testElements = result.filter(o => o.elemID.name === 'test__c') as ObjectType[]
       // custom objects should not be split
@@ -313,12 +313,12 @@ describe('SalesforceAdapter discover', () => {
       expect(test.fields.custom_field__c).toBeDefined()
     })
 
-    it('should not discover SObjects that conflict with metadata types', async () => {
+    it('should not fetch SObjects that conflict with metadata types', async () => {
       mockSingleSObject('Flow', [
         { name: 'dummy', label: 'dummy', type: 'string' },
       ], true)
 
-      const result = await adapter.discover()
+      const result = await adapter.fetch()
 
       const flow = result.filter(o => o.elemID.name === 'flow').pop() as ObjectType
       expect(flow).toBeDefined() // We do expect to get the metadata type here
@@ -327,7 +327,7 @@ describe('SalesforceAdapter discover', () => {
     })
   })
 
-  describe('should discover metadata types', () => {
+  describe('should fetch metadata types', () => {
     const mockSingleMetadataType = (
       xmlName: string,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -357,7 +357,7 @@ describe('SalesforceAdapter discover', () => {
         .mockImplementation(async () => data)
     }
 
-    it('should discover basic metadata type', async () => {
+    it('should fetch basic metadata type', async () => {
       mockSingleMetadataType('Flow', [
         {
           name: 'Description',
@@ -378,7 +378,7 @@ describe('SalesforceAdapter discover', () => {
           ],
         },
       ])
-      const result = await adapter.discover()
+      const result = await adapter.fetch()
 
       const describeMock = connection.metadata.describeValueType as jest.Mock<unknown>
       expect(describeMock).toHaveBeenCalled()
@@ -395,7 +395,7 @@ describe('SalesforceAdapter discover', () => {
       expect(flow.fields.enum.annotations[Type.VALUES]).toEqual(['no', 'yes'])
       expect(flow.path).toEqual(['types', 'flow'])
     })
-    it('should discover nested metadata types', async () => {
+    it('should fetch nested metadata types', async () => {
       mockSingleMetadataType('NestingType', [
         { // Nested field with multiple subfields returns fields as array
           name: 'field',
@@ -429,7 +429,7 @@ describe('SalesforceAdapter discover', () => {
         },
       ])
 
-      const result = await adapter.discover()
+      const result = await adapter.fetch()
 
       expect(result).toHaveLength(Object.keys(Types.salesforceDataTypes).length
         + 1 /* LookupFilter */ + 3)
@@ -448,7 +448,7 @@ describe('SalesforceAdapter discover', () => {
       expect(singleField.fields.str.type.elemID.name).toEqual('string')
     })
 
-    it('should discover metadata instance', async () => {
+    it('should fetch metadata instance', async () => {
       mockSingleMetadataType('Flow', [
         {
           name: 'bla',
@@ -479,7 +479,7 @@ describe('SalesforceAdapter discover', () => {
         bla: { bla: '55', bla2: 'false', bla3: 'true' },
       })
 
-      const result = await adapter.discover()
+      const result = await adapter.fetch()
       const flow = result.filter(o => o.elemID.name === 'flow_flow_instance').pop() as InstanceElement
       expect(flow.type.elemID.getFullName()).toBe('salesforce_flow')
       expect(flow.elemID.getFullName()).toBe('salesforce_flow_flow_instance')
@@ -488,7 +488,7 @@ describe('SalesforceAdapter discover', () => {
       expect(flow.value.bla.bla_3).toBe(true)
     })
 
-    it('should discover complicated metadata instance', async () => {
+    it('should fetch complicated metadata instance', async () => {
       mockSingleMetadataType('Layout', [
         {
           name: 'fullName', soapType: 'string', valueRequired: true,
@@ -568,7 +568,7 @@ describe('SalesforceAdapter discover', () => {
           }],
       })
 
-      const result = await adapter.discover()
+      const result = await adapter.fetch()
       const layout = result.filter(o => o.elemID.name === 'layout_order__order__layout').pop() as InstanceElement
       expect(layout.type.elemID.getFullName()).toBe('salesforce_layout')
       expect(layout.value.full_name).toBe('Order-Order Layout')
@@ -589,7 +589,7 @@ describe('SalesforceAdapter discover', () => {
       expect(layout.value.process_metadata_values[3].value).toBeUndefined()
     })
 
-    it('should discover metadata types lists', async () => {
+    it('should fetch metadata types lists', async () => {
       mockSingleMetadataType('Flow', [
         {
           name: 'fullName',
@@ -627,7 +627,7 @@ describe('SalesforceAdapter discover', () => {
           },
         ]))
 
-      const result = await adapter.discover()
+      const result = await adapter.fetch()
       const flow = result.filter(o => o.elemID.name === 'flow_flow_instance').pop() as InstanceElement
       expect(flow.type.elemID.getFullName()).toBe('salesforce_flow')
       expect((flow.type as ObjectType).fields.list_test.isList).toBe(true)
@@ -643,11 +643,11 @@ describe('SalesforceAdapter discover', () => {
       expect(flow2.value.list_test[0].editable).toBe(true)
     })
 
-    it('should discover settings instance', async () => {
+    it('should fetch settings instance', async () => {
       mockSingleMetadataType('Settings', [])
       mockSingleMetadataInstance('Quote', { fullName: 'QuoteSettings' })
 
-      await adapter.discover()
+      await adapter.fetch()
 
       expect(connection.metadata.read).toHaveBeenCalledWith('QuoteSettings', ['Quote'])
     })

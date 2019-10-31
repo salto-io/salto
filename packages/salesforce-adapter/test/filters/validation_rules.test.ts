@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import {
-  ObjectType, ElemID, InstanceElement, Element,
+  ObjectType, ElemID, InstanceElement, Element, Type,
 } from 'adapter-api'
 import { FilterWith } from '../../src/filter'
 import filterCreator, {
@@ -17,7 +17,7 @@ describe('validation rules filter', () => {
   const mockSObject = new ObjectType({
     elemID: new ElemID(constants.SALESFORCE, 'test__c'),
     annotations: {
-      [constants.API_NAME]: 'Test__c',
+      [Type.SERVICE_ID]: 'Test__c',
     },
   })
 

@@ -36,8 +36,8 @@ const RECORDS_CHUNK_SIZE = 10000
 // Add API name and label annotation if missing
 const annotateApiNameAndLabel = (element: ObjectType): void => {
   const innerAnnotate = (annotations: Values, name: string): void => {
-    if (!annotations[constants.API_NAME]) {
-      annotations[constants.API_NAME] = sfCase(name, true)
+    if (!annotations[Type.SERVICE_ID]) {
+      annotations[Type.SERVICE_ID] = sfCase(name, true)
     }
     if (!annotations[constants.LABEL]) {
       annotations[constants.LABEL] = sfCase(name)
@@ -493,7 +493,7 @@ export default class SalesforceAdapter {
     customObjectNames: Set<string>,
   ): Type[] {
     const element = Types.get(objectName) as ObjectType
-    element.annotate({ [constants.API_NAME]: objectName })
+    element.annotate({ [Type.SERVICE_ID]: objectName })
     element.annotate({ [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT })
 
     // Set standard fields on element

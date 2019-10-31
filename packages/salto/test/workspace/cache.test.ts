@@ -10,22 +10,30 @@ const mockSerializedBPC = `[{"annotationTypes":{},"annotations":{},"elemID":{"ad
 const mockSerializedExternalBPC = `[{"annotationTypes":{},"annotations":{},"elemID":{"adapter":"salesforce","nameParts":["external"]},"fields":{},"isSettings":false,"className":"ObjectType"}]
 []
 [["salesforce_external",[{"filename":"external.bp","start":{"line":1,"col":1,"byte":2},"end":{"line":12,"col":3,"byte":4}}]]]`
+const mockMaliformedBPC = '[]]'
 const mockLocalStorage = '/.salto/local'
 const mockBaseDirPath = path.join(mockLocalStorage, '.cache')
 const mockWorkspaceDirPath = '/workspace/base'
 const mockExternalCacheLoc = `${mockBaseDirPath}/external_bp/workspace/external/ext.bpc`
+const mockMalformedCacheLoc = `${mockBaseDirPath}/external_bp/workspace/external/malformed.bpc`
 
 jest.mock('async-file', () => ({
   exists: jest.fn((filename: string) => Promise.resolve(filename !== `${mockBaseDirPath}/blabla/notexist.bpc`)),
   createDirectory: jest.fn(() => Promise.resolve(true)),
   writeFile: jest.fn(() => Promise.resolve(true)),
   stat: jest.fn(() => Promise.resolve({ mtimeMs: 1000 })),
-  readFile: jest.fn((filename: string) => Promise.resolve(
-    filename !== mockExternalCacheLoc
-      ? mockSerializedBPC
-      : mockSerializedExternalBPC
-  )),
+  readFile: jest.fn((filename: string) => {
+    switch (filename) {
+      case mockMalformedCacheLoc:
+        return Promise.resolve(mockMaliformedBPC)
+      case mockExternalCacheLoc:
+        return Promise.resolve(mockSerializedExternalBPC)
+      default:
+        return Promise.resolve(mockSerializedBPC)
+    }
+  }),
 }))
+
 
 describe('Parse Result FS Cache', () => {
   const cache = new ParseResultFSCache(mockLocalStorage, mockWorkspaceDirPath)
@@ -143,6 +151,13 @@ describe('Parse Result FS Cache', () => {
         expect(parseResultFromCache.sourceMap.entries())
           .toEqual(externalParseResult.sourceMap.entries())
       }
+    })
+    it('gracefully handles an invalid cache file content', async () => {
+      const parseResultFromCache = await cache.get({ filename: '/workspace/external/malformed.bp', lastModified: 0 })
+      expect(fs.exists).toHaveBeenLastCalledWith(mockMalformedCacheLoc)
+      expect(fs.stat).toHaveBeenCalledWith(mockMalformedCacheLoc)
+      expect(fs.readFile).toHaveBeenCalledWith(mockMalformedCacheLoc, 'utf8')
+      expect(parseResultFromCache).toBeUndefined()
     })
   })
 })

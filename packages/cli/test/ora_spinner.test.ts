@@ -1,23 +1,34 @@
-import { SpinnerCreator } from 'src/types'
-import { mockWritableStream, MockWritableStream } from './mocks'
+import streams from 'memory-streams'
+import { SpinnerCreator, Spinner } from 'src/types'
 import oraSpinner from '../src/ora_spinner'
 
 
 describe('use ora spinner', () => {
-  let writableStream: MockWritableStream
+  let writableStream: NodeJS.WritableStream
   let oraSpinnerCreator: SpinnerCreator
   beforeEach(() => {
-    writableStream = mockWritableStream()
+    writableStream = new streams.WritableStream()
     oraSpinnerCreator = oraSpinner({ outputStream: writableStream })
   })
 
   describe('created the spinner', () => {
+    let spinner: Spinner
     beforeEach(() => {
-      oraSpinnerCreator('start text', {})
+      spinner = oraSpinnerCreator('start text', {})
     })
 
     it('should write on start', () => {
-      expect(writableStream.contents()).toContain('start text')
+      expect(writableStream.toString()).toContain('start text')
+    })
+
+    it('it should write succeed message on succeed', () => {
+      spinner.succeed('great success')
+      expect(writableStream.toString()).toContain('great success')
+    })
+
+    it('should write fail message on failure', () => {
+      spinner.fail('great failure')
+      expect(writableStream.toString()).toContain('great failure')
     })
   })
 })

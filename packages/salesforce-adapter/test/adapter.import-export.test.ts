@@ -1,5 +1,5 @@
 import {
-  ObjectType, ElemID, InstanceElement,
+  ObjectType, ElemID, InstanceElement, Type,
 } from 'adapter-api'
 import SalesforceAdapter from '../src/adapter'
 import Connection from '../src/client/jsforce'
@@ -29,7 +29,7 @@ describe('SalesforceAdapter import-export operations', () => {
         fields: {},
         annotationTypes: {},
         annotations: {
-          [constants.API_NAME]: 'Test__c',
+          [Type.SERVICE_ID]: 'Test__c',
         },
       })
 
@@ -142,7 +142,7 @@ describe('SalesforceAdapter import-export operations', () => {
       fields: {},
       annotationTypes: {},
       annotations: {
-        [constants.API_NAME]: testObjectType,
+        [Type.SERVICE_ID]: testObjectType,
       },
     })
 

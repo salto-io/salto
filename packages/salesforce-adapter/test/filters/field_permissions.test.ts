@@ -1,6 +1,6 @@
 import {
   ObjectType, ElemID, PrimitiveType, Field, PrimitiveTypes,
-  InstanceElement, isObjectType, isInstanceElement,
+  InstanceElement, isObjectType, isInstanceElement, Type,
 } from 'adapter-api'
 import _ from 'lodash'
 import { metadataType } from '../../src/transformer'
@@ -24,11 +24,11 @@ describe('Field Permissions filter', () => {
     fields: {
       description:
         new Field(mockElemID, 'description', stringType,
-          { [constants.API_NAME]: 'Description__c' }),
+          { [Type.SERVICE_ID]: 'Description__c' }),
     },
     annotations: {
       label: 'test label',
-      [constants.API_NAME]: 'Test__c',
+      [Type.SERVICE_ID]: 'Test__c',
       [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
     },
   })
@@ -52,7 +52,7 @@ describe('Field Permissions filter', () => {
     annotationTypes: {},
     annotations: {
       [constants.METADATA_TYPE]: PROFILE_METADATA_TYPE,
-      [constants.API_NAME]: 'Profile',
+      [Type.SERVICE_ID]: 'Profile',
     },
   })
   const mockAdminElemID = new ElemID(constants.SALESFORCE, 'admin')
@@ -88,13 +88,13 @@ describe('Field Permissions filter', () => {
       description: 'Profile with no field_permissions',
     })
   const address = new Field(mockElemID, 'address', stringType, _.merge({},
-    { ...admin, [constants.API_NAME]: 'Address__c' }))
+    { ...admin, [Type.SERVICE_ID]: 'Address__c' }))
   const banana = new Field(mockElemID, 'banana', stringType, _.merge({},
-    { ...admin, [constants.API_NAME]: 'Banana__c' }))
+    { ...admin, [Type.SERVICE_ID]: 'Banana__c' }))
   const apple = new Field(mockElemID, 'apple', stringType, _.merge({},
-    { ...admin, [constants.API_NAME]: 'Apple__c' }))
+    { ...admin, [Type.SERVICE_ID]: 'Apple__c' }))
   const delta = new Field(mockElemID, 'delta', stringType, _.merge(_.merge({},
-    { ...admin, [constants.API_NAME]: 'Delta__c' }), standard))
+    { ...admin, [Type.SERVICE_ID]: 'Delta__c' }), standard))
 
   let mockUpdate: jest.Mock<unknown>
 
@@ -260,7 +260,7 @@ describe('Field Permissions filter', () => {
     _.merge(before.fields.address.annotations, standard)
     // Banana field will have only standard permissions
     before.fields.banana.annotations = {
-      [constants.API_NAME]: before.fields.banana.annotations[constants.API_NAME],
+      [Type.SERVICE_ID]: before.fields.banana.annotations[Type.SERVICE_ID],
       ...standard,
     }
 
@@ -269,12 +269,12 @@ describe('Field Permissions filter', () => {
     after.fields = { address, delta, apple: apple.clone() }
     // Remove admin permissions from address field
     after.fields.address.annotations = {
-      [constants.API_NAME]: before.fields.address.annotations[constants.API_NAME],
+      [Type.SERVICE_ID]: before.fields.address.annotations[Type.SERVICE_ID],
       ...standard,
     }
     // Apple has no field permissions as all
     after.fields.apple.annotations = {
-      [constants.API_NAME]: after.fields.apple.annotations[constants.API_NAME],
+      [Type.SERVICE_ID]: after.fields.apple.annotations[Type.SERVICE_ID],
     }
     await filter().onUpdate(before, after, [
       { action: 'modify', data: { before: before.fields.address, after: after.fields.address } },

@@ -16,17 +16,25 @@ export const FIELD_LEVEL_SECURITY_ANNOTATION = 'field_level_security'
 export const PROFILE_METADATA_TYPE = 'Profile'
 
 // --- Utils functions
-const fieldPermissions = (field: Field): Values =>
+export const fieldPermissions = (field: Field): Values =>
   (field.annotations[FIELD_LEVEL_SECURITY_ANNOTATION]
     ? field.annotations[FIELD_LEVEL_SECURITY_ANNOTATION]
     : {})
 
-const setFieldPermissions = (field: Field, fieldPermission: ProfileToPermission): void => {
-  field.annotations[FIELD_LEVEL_SECURITY_ANNOTATION] = fieldPermission
-}
-
 const setEmptyFieldPermissions = (field: Field): void => {
   field.annotations[FIELD_LEVEL_SECURITY_ANNOTATION] = {}
+}
+
+export const setProfileFieldPermissions = (field: Field, profile: string, editable: boolean,
+  readable: boolean): void => {
+  if (_.isEmpty(fieldPermissions(field))) {
+    setEmptyFieldPermissions(field)
+  }
+  field.annotations[FIELD_LEVEL_SECURITY_ANNOTATION][profile] = { editable, readable }
+}
+
+const setFieldPermissions = (field: Field, fieldPermission: ProfileToPermission): void => {
+  field.annotations[FIELD_LEVEL_SECURITY_ANNOTATION] = fieldPermission
 }
 
 const toProfiles = (object: ObjectType): ProfileInfo[] => {
@@ -132,19 +140,20 @@ const filterCreator: FilterCreator = ({ client }) => ({
       .filter(isField)
       .forEach(elem => {
         const beforeField = elem as Field
+        const afterField = after.fields[beforeField.name]
         // If the delta is only new field permissions, then skip
         if (_.isEmpty(fieldPermissions(beforeField))) {
           return
         }
-        if (_.isEmpty(fieldPermissions(after.fields[beforeField.name]))) {
-          setEmptyFieldPermissions(after.fields[beforeField.name])
+        if (_.isEmpty(fieldPermissions(afterField))) {
+          setEmptyFieldPermissions(afterField)
         }
-        const afterFieldPermissions = fieldPermissions(after.fields[beforeField.name])
+        const afterFieldPermissions = fieldPermissions(afterField)
         // If some permissions were removed, we will need to remove the permissions from the
         // field explicitly (update them to be not editable and not readable)
         Object.keys(fieldPermissions(beforeField)).forEach((p: string) => {
           if (afterFieldPermissions[p] === undefined) {
-            afterFieldPermissions[p] = { editable: false, readable: false }
+            setProfileFieldPermissions(afterField, p, false, false)
           }
         })
       })

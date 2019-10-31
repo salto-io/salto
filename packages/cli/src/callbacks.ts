@@ -5,9 +5,9 @@ import {
   Type, ObjectType, ElemID, InstanceElement,
   isPrimitiveType, PrimitiveTypes,
 } from 'adapter-api'
-import { Plan, DiscoverChange } from 'salto'
+import { Plan, FetchChange } from 'salto'
 import {
-  createApplyPlanOutput, formatDiscoverChangeForApproval,
+  createDeployPlanOutput, formatFetchChangeForApproval,
 } from './formatter'
 import Prompts from './prompts'
 import { CliOutput } from './types'
@@ -22,28 +22,28 @@ const getUserBooleanInput = async (prompt: string): Promise<boolean> => {
   return answers.userInput
 }
 
-export const shouldApply = ({ stdout }: CliOutput) => async (actions: Plan): Promise<boolean> => {
-  const planOutput = createApplyPlanOutput(actions)
+export const shouldDeploy = ({ stdout }: CliOutput) => async (actions: Plan): Promise<boolean> => {
+  const planOutput = createDeployPlanOutput(actions)
   stdout.write(planOutput)
   if (_.isEmpty(actions)) {
     return false
   }
   const shouldExecute = await getUserBooleanInput(Prompts.SHOULDEXECUTREPLAN)
   if (shouldExecute) {
-    stdout.write(Prompts.STARTAPPLYEXEC)
+    stdout.write(Prompts.STARTDEPLOYEXEC)
   } else {
-    stdout.write(Prompts.CANCELAPPLY)
+    stdout.write(Prompts.CANCELDEPLOY)
   }
   return shouldExecute
 }
 
 export const getApprovedChanges = async (
-  changes: ReadonlyArray<DiscoverChange>,
-): Promise<ReadonlyArray<DiscoverChange>> => {
-  const shouldApplyAll = (answers: inquirer.Answers): boolean => (
+  changes: ReadonlyArray<FetchChange>,
+): Promise<ReadonlyArray<FetchChange>> => {
+  const shouldDeployAll = (answers: inquirer.Answers): boolean => (
     _.values(answers).some(answer => answer === 'all')
   )
-  const isConflict = (change: DiscoverChange): boolean => change.pendingChange !== undefined
+  const isConflict = (change: FetchChange): boolean => change.pendingChange !== undefined
 
   const questions = changes.map((change, idx): inquirer.Question => ({
     type: 'expand',
@@ -54,12 +54,12 @@ export const getApprovedChanges = async (
     ],
     default: 0,
     name: idx.toString(),
-    message: formatDiscoverChangeForApproval(change, idx, changes.length),
-    when: answers => isConflict(change) || !shouldApplyAll(answers),
+    message: formatFetchChangeForApproval(change, idx, changes.length),
+    when: answers => isConflict(change) || !shouldDeployAll(answers),
   }))
 
   const answers = await inquirer.prompt(questions)
-  if (shouldApplyAll(answers)) {
+  if (shouldDeployAll(answers)) {
     return changes
   }
   return changes.filter((_change, idx) => answers[idx.toString()] === 'yes')

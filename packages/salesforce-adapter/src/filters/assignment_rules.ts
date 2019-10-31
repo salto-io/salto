@@ -13,11 +13,11 @@ export const ASSIGNMENT_RULES_TYPE_NAME = 'assignment_rules'
 */
 const filterCreator: FilterCreator = () => ({
   /**
-   * Upon discover, rename assignment rules instances
+   * Upon fetch, rename assignment rules instances
    *
-   * @param elements the already discoverd elements
+   * @param elements the already fetched elements
    */
-  onDiscover: async (elements: Element[]) => {
+  onFetch: async (elements: Element[]) => {
     _(elements)
       .filter(isInstanceElement)
       .filter(e => e.type.elemID.name === ASSIGNMENT_RULES_TYPE_NAME)

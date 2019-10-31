@@ -1,4 +1,4 @@
-import { plan } from 'salto'
+import { preview } from 'salto'
 import { createCommandBuilder } from '../command_builder'
 import {
   ParsedCliInput, CliCommand, CliOutput, SpinnerCreator, CliExitCode,
@@ -13,34 +13,34 @@ export const command = (
   spinnerCreator: SpinnerCreator
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
-    const spinner = spinnerCreator(Prompts.PLAN_STARTED, {})
+    const spinner = spinnerCreator(Prompts.PREVIEW_STARTED, {})
     try {
       const { workspace, errored } = await loadWorkspace(workspaceDir, stderr)
       if (errored) {
-        spinner.fail(Prompts.PLAN_FAILED)
+        spinner.fail(Prompts.PREVIEW_FAILED)
         return CliExitCode.AppError
       }
       // TODO: inline commands.plan here
-      const workspacePlan = await plan(workspace)
-      spinner.succeed(Prompts.PLAN_FINISHED)
+      const workspacePlan = await preview(workspace)
+      spinner.succeed(Prompts.PREVIEW_FINISHED)
       stdout.write(createPlanOutput(workspacePlan))
       return CliExitCode.Success
     } catch (error) {
-      spinner.fail(Prompts.PLAN_FAILED)
+      spinner.fail(Prompts.PREVIEW_FAILED)
       throw error
     }
   },
 })
 
-type PlanArgs = {
+type PreviewArgs = {
 }
-type PlanParsedCliInput = ParsedCliInput<PlanArgs>
+type PreviewParsedCliInput = ParsedCliInput<PreviewArgs>
 
-const planBuilder = createCommandBuilder({
+const previewBuilder = createCommandBuilder({
   options: {
-    command: 'plan',
+    command: 'preview',
     aliases: ['p'],
-    description: 'Shows changes to be applied to the target services at the next run of the *apply* command',
+    description: 'Shows changes to be applied to the target services at the next run of the *deploy* command',
     keyed: {
       'workspace-dir': {
         alias: 'w',
@@ -51,9 +51,9 @@ const planBuilder = createCommandBuilder({
     },
   },
 
-  async build(_input: PlanParsedCliInput, output: CliOutput, spinnerCreator: SpinnerCreator) {
+  async build(_input: PreviewParsedCliInput, output: CliOutput, spinnerCreator: SpinnerCreator) {
     return command('.', output, spinnerCreator)
   },
 })
 
-export default planBuilder
+export default previewBuilder

@@ -1,16 +1,16 @@
-import { apply, PlanItem } from 'salto'
+import { deploy, PlanItem } from 'salto'
 import { createCommandBuilder } from '../command_builder'
 import { CliCommand, CliOutput, ParsedCliInput, WriteStream, CliExitCode } from '../types'
 import {
   createActionStartOutput, createActionInProgressOutput, createItemDoneOutput,
 } from '../formatter'
-import { shouldApply, getConfigFromUser } from '../callbacks'
+import { shouldDeploy, getConfigFromUser } from '../callbacks'
 import { loadWorkspace } from '../workspace'
 
 
 const CURRENT_ACTION_POLL_INTERVAL = 5000
 
-export class ApplyCommand implements CliCommand {
+export class DeployCommand implements CliCommand {
   readonly stdout: WriteStream
   readonly stderr: WriteStream
   private currentAction: PlanItem | undefined
@@ -55,36 +55,36 @@ export class ApplyCommand implements CliCommand {
     if (errored) {
       return CliExitCode.AppError
     }
-    await apply(workspace,
+    await deploy(workspace,
       getConfigFromUser,
-      shouldApply({ stdout: this.stdout, stderr: this.stderr }),
+      shouldDeploy({ stdout: this.stdout, stderr: this.stderr }),
       (action: PlanItem) => this.updateCurrentAction(action), this.force)
     this.endCurrentAction()
     return CliExitCode.Success
   }
 }
 
-type ApplyArgs = {
+type DeployArgs = {
    yes: boolean
 }
-type ApplyParsedCliInput = ParsedCliInput<ApplyArgs>
+type DeployParsedCliInput = ParsedCliInput<DeployArgs>
 
-const applyBuilder = createCommandBuilder({
+const deployBuilder = createCommandBuilder({
   options: {
-    command: 'apply',
-    aliases: ['a'],
-    description: 'Applies changes to the target services',
+    command: 'deploy',
+    aliases: ['dep'],
+    description: 'Deploys changes to the target services',
     keyed: {
       yes: {
-        describe: 'Do not ask for approval before applying',
+        describe: 'Do not ask for approval before deploying',
         boolean: true,
       },
     },
   },
 
-  async build(input: ApplyParsedCliInput, output: CliOutput): Promise<CliCommand> {
-    return new ApplyCommand('.', input.args.yes, output)
+  async build(input: DeployParsedCliInput, output: CliOutput): Promise<CliCommand> {
+    return new DeployCommand('.', input.args.yes, output)
   },
 })
 
-export default applyBuilder
+export default deployBuilder

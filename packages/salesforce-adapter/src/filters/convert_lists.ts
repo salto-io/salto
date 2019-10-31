@@ -13,11 +13,11 @@ import { FilterCreator } from '../filter'
  */
 const filter: FilterCreator = () => ({
   /**
-   * Upon discover, mark all list fields as list fields in all discoverd types
+   * Upon fetch, mark all list fields as list fields in all fetched types
    *
-   * @param elements the already discoverd elements
+   * @param elements the already fetched elements
    */
-  onDiscover: async (elements: Element[]) => {
+  onFetch: async (elements: Element[]) => {
     // This method iterate on types and corresponding values and run innerChange
     // on every "node".
     const applyRecursive = (type: ObjectType, value: Values,

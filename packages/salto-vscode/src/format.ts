@@ -49,11 +49,11 @@ export const renderDiffView = (diff: UnifiedDiff, cssHrefs: string[]): string =>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         ${cssHrefs.map(href => `<link rel="stylesheet" type="text/css" href="${href}">`).join('')}
-        <title>Salto</title>
+        <title>Salto Preview</title>
     </head>
     <body>
       <div id=container>
-        <h1 class="text">Salto Plan</h1>
+        <h1 class="text">Salto Preview</h1>
         <p class="text">${prompt}</p>
         ${htmlDiff}
       </div>
@@ -61,7 +61,9 @@ export const renderDiffView = (diff: UnifiedDiff, cssHrefs: string[]): string =>
     </html>`
 }
 
-export const createPlanDiff = async (planActions: Iterable<PlanItem>): Promise<UnifiedDiff> => {
+export const createPlanDiff = async (
+  planActions: Iterable<PlanItem>
+): Promise<UnifiedDiff> => {
   const diffCreators = wu(planActions)
     .enumerate()
     .map(([change, i]) => createChangeDiff(i, change))

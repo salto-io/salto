@@ -14,11 +14,11 @@ export const LAYOUT_ANNOTATION = 'layouts'
 */
 const filterCreator: FilterCreator = () => ({
   /**
-   * Upon discover, add layout annotations to relevant sobjects.
+   * Upon fetch, add layout annotations to relevant sobjects.
    *
-   * @param elements the already discovered elements
+   * @param elements the already fetched elements
    */
-  onDiscover: async (elements: Element[]): Promise<void> => {
+  onFetch: async (elements: Element[]): Promise<void> => {
     const layouts = _(elements)
       .filter(isInstanceElement)
       .filter(e => e.type.elemID.name === LAYOUT_TYPE_NAME)

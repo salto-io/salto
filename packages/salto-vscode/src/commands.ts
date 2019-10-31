@@ -1,6 +1,6 @@
 import * as vscode from 'vscode'
 import { InstanceElement, ElemID, ObjectType, Values, isPrimitiveType, PrimitiveTypes, Value } from 'adapter-api'
-import { plan, Plan, apply, PlanItem } from 'salto'
+import { preview, Plan, deploy, PlanItem } from 'salto'
 import { EditorWorkspace } from './salto/workspace'
 import { displayError, getBooleanInput, displayHTML, getStringInput, getNumberInput, hrefToUri } from './output'
 import { getActionName, renderDiffView, createPlanDiff } from './format'
@@ -10,7 +10,7 @@ const displayPlan = async (
   extensionPath: string
 ): Promise<void> => vscode.window.withProgress({
   location: vscode.ProgressLocation.Notification,
-  title: 'Creating apply plan',
+  title: 'Creating deploy plan',
 },
 async () => {
   const diff = await createPlanDiff(planActions.itemsByEvalOrder())
@@ -21,9 +21,9 @@ async () => {
   return displayHTML(renderDiffView(diff, cssHrefs), extensionPath)
 })
 
-const shouldApply = async (planActions: Plan, extensionPath: string): Promise<boolean> => {
+const shouldDeploy = async (planActions: Plan, extensionPath: string): Promise<boolean> => {
   await displayPlan(planActions, extensionPath)
-  return getBooleanInput('Salto will apply the displayed changes', 'Approve', 'Cancel')
+  return getBooleanInput('Salto will deploy the displayed changes', 'Approve', 'Cancel')
 }
 
 const getUserConfig = async (
@@ -56,28 +56,28 @@ const updateProgress = async (
   progress.report({ message })
 }
 
-export const planCommand = async (
+export const previewCommand = async (
   workspace: EditorWorkspace,
   extensionPath: string
 ): Promise<void> => {
   if (!workspace.hasErrors()) {
-    displayPlan(await plan(workspace.workspace), extensionPath)
+    displayPlan(await preview(workspace.workspace), extensionPath)
   } else {
-    displayError('Failed to run plan. Please fix the detected problems and try again.')
+    displayError('Failed to create a preview. Please fix the detected problems and try again.')
   }
 }
 
-export const applyCommand = async (
+export const deployCommand = async (
   workspace: EditorWorkspace,
   extensionPath: string
 ): Promise<void> => {
-  const initApplyProgress = async (
+  const initDeployProgress = async (
     processPromise: Promise<Plan>,
   ): Promise<vscode.Progress<{message: string}>> => (
     new Promise<vscode.Progress<{message: string}>>(resolve => {
       vscode.window.withProgress({
         location: vscode.ProgressLocation.Notification,
-        title: 'Applying plan',
+        title: 'Deploying changes',
         cancellable: true,
       },
       progress => {
@@ -87,14 +87,14 @@ export const applyCommand = async (
     }))
 
   let progress: vscode.Progress<{message: string}>
-  let applyProcess: Promise<Plan>
-  const shouldApplyCB = async (p: Plan): Promise<boolean> => shouldApply(p, extensionPath)
-  // A delayed initiation for the apply progress bar. We don't want to show it until
-  // the actions start taking place (just running the apply in progress would cause
+  let deployProcess: Promise<Plan>
+  const shouldDeployCB = async (p: Plan): Promise<boolean> => shouldDeploy(p, extensionPath)
+  // A delayed initiation for the deploy progress bar. We don't want to show it until
+  // the actions start taking place (just running the deploy in progress would cause
   // the progress to show before the user approved
   const updateActionCB = async (action: PlanItem): Promise<void> => {
     if (!progress) {
-      progress = await initApplyProgress(applyProcess)
+      progress = await initDeployProgress(deployProcess)
     }
     return updateProgress(progress, action)
   }
@@ -105,13 +105,13 @@ export const applyCommand = async (
   }
 
   try {
-    applyProcess = apply(
+    deployProcess = deploy(
       workspace.workspace,
       getUserConfig,
-      shouldApplyCB,
+      shouldDeployCB,
       updateActionCB
     )
-    await applyProcess
+    await deployProcess
   } catch (e) {
     displayError(e.message)
   }

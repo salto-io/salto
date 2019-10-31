@@ -39,7 +39,7 @@ describe('convert lists filter', () => {
 
   let testElements: Element[]
 
-  const filter = makeFilter({ client }) as FilterWith<'onDiscover'>
+  const filter = makeFilter({ client }) as FilterWith<'onFetch'>
 
   beforeEach(() => {
     const typeClone = mockType.clone()
@@ -50,13 +50,13 @@ describe('convert lists filter', () => {
     ]
   })
 
-  describe('on discover', () => {
+  describe('on fetch', () => {
     let type: ObjectType
     let nonLstInst: InstanceElement
     let lstInst: InstanceElement
 
     beforeEach(async () => {
-      await filter.onDiscover(testElements)
+      await filter.onFetch(testElements)
       type = testElements[0] as ObjectType
       lstInst = testElements[1] as InstanceElement
       nonLstInst = testElements[2] as InstanceElement

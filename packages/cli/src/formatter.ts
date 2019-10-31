@@ -7,7 +7,7 @@ import {
 } from 'adapter-api'
 import {
   Plan, PlanItem, FoundSearchResult, SearchResult, DetailedChange,
-  WorkspaceError, SourceFragment, DiscoverChange,
+  WorkspaceError, SourceFragment, FetchChange,
 } from 'salto'
 import Prompts from './prompts'
 
@@ -183,25 +183,25 @@ const createExecutionOutput = (plan: Plan): string[] => {
     header(Prompts.PLANSTEPSHEADER),
     planSteps,
     emptyLine(),
-    subHeader(Prompts.EXPLAINPLANRESULT),
+    subHeader(Prompts.EXPLAINPREVIEWRESULT),
     emptyLine(),
     actionCount,
     emptyLine(),
   ]
 }
 
-export const createApplyPlanOutput = (plan: Plan): string => {
+export const createDeployPlanOutput = (plan: Plan): string => {
   const executionOutput = createExecutionOutput(plan)
   return [
-    header(Prompts.STARTAPPLY),
-    subHeader(Prompts.EXPLAINAPPLY),
+    header(Prompts.STARTDEPLOY),
+    subHeader(Prompts.EXPLAINDEPLOY),
   ].concat(executionOutput).join('\n')
 }
 
 export const createPlanOutput = (plan: Plan): string => {
   const executionOutput = createExecutionOutput(plan)
   return executionOutput.concat([
-    subHeader(Prompts.PLANDISCLAIMER),
+    subHeader(Prompts.PREVIEWDISCLAIMER),
   ]).join('\n')
 }
 
@@ -256,32 +256,32 @@ export const createActionInProgressOutput = (action: PlanItem, start: Date): str
   }... (${elapsedRound}s elapsed)`)
 }
 
-export const formatDiscoverChangeForApproval = (
-  change: DiscoverChange,
+export const formatFetchChangeForApproval = (
+  change: FetchChange,
   idx: number,
   totalChanges: number
 ): string => {
   const formattedChange = formatDetailedChanges([[change.serviceChange]])
   const formattedConflict = change.pendingChange === undefined ? [] : [
-    header(Prompts.DISCOVER_CONFLICTING_CHANGE),
+    header(Prompts.FETCH_CONFLICTING_CHANGE),
     body(formatDetailedChanges([[change.pendingChange]])),
   ]
   return [
-    header(Prompts.DISCOVER_CHANGE_HEADER(idx + 1, totalChanges)),
+    header(Prompts.FETCH_CHANGE_HEADER(idx + 1, totalChanges)),
     body(formattedChange),
     ...formattedConflict,
-    header(Prompts.DISCOVER_SHOULD_APPROVE_CHANGE),
+    header(Prompts.FETCH_SHOULD_APPROVE_CHANGE),
   ].join('\n')
 }
 
 export const formatChangesSummary = (changes: number, approved: number): string => {
   if (changes === 0) {
-    return Prompts.DISCOVER_NO_CHANGES
+    return Prompts.FETCH_NO_CHANGES
   }
   if (approved === 0) {
-    return Prompts.DISCOVER_NOTHING_TO_UPDATE
+    return Prompts.FETCH_NOTHING_TO_UPDATE
   }
-  return Prompts.DISCOVER_CHANGES_TO_APPLY(approved)
+  return Prompts.FETCH_CHANGES_TO_APPLY(approved)
 }
 
 /**

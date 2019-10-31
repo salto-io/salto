@@ -41,7 +41,7 @@ describe('Test lookup filters filter', () => {
     } as MetadataInfo,
     ])
 
-  describe('on discover', () => {
+  describe('on fetch', () => {
     const mockObject = new ObjectType({
       elemID: objectTypeElemId,
       fields: {
@@ -61,7 +61,7 @@ describe('Test lookup filters filter', () => {
     })
     let testElements: Element[]
     const { client } = mockClient()
-    let filter: FilterWith<'onDiscover'>
+    let filter: FilterWith<'onFetch'>
 
     beforeEach(() => {
       testElements = [mockObject]
@@ -73,8 +73,8 @@ describe('Test lookup filters filter', () => {
     }
 
     const initFilter = async (): Promise<void> => {
-      filter = filterCreator({ client }) as FilterWith<'onDiscover'>
-      await filter.onDiscover(testElements)
+      filter = filterCreator({ client }) as FilterWith<'onFetch'>
+      await filter.onFetch(testElements)
     }
 
     it('should add lookupFilter data to a field with lookupFilter when lookupFilter is optional', async () => {
@@ -124,7 +124,7 @@ describe('Test lookup filters filter', () => {
       await initFilter()
       delete mockObject.fields.lookup_field
         .annotations[constants.FIELD_ANNOTATIONS.LOOKUP_FILTER]
-      await filter.onDiscover(testElements)
+      await filter.onFetch(testElements)
       expect(mockObject.fields.lookup_field
         .annotations[constants.FIELD_ANNOTATIONS.LOOKUP_FILTER]).toBeUndefined()
     })

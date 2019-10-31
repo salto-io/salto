@@ -6,7 +6,7 @@ import {
   createCompletionsProvider, createDefinitionsProvider, createReferenceProvider,
   createDocumentSymbolsProvider,
 } from './providers'
-import { planCommand, applyCommand } from './commands'
+import { previewCommand, deployCommand } from './commands'
 import { toVSDiagnostics } from './adapters'
 import { getDiagnostics } from './salto/diagnostics'
 
@@ -48,33 +48,33 @@ const onActivate = async (context: vscode.ExtensionContext): Promise<void> => {
       createDocumentSymbolsProvider(workspace)
     )
 
-    const plan = vscode.commands.registerCommand('salto.plan', () => {
-      planCommand(workspace, context.extensionPath)
+    const preview = vscode.commands.registerCommand('salto.preview', () => {
+      previewCommand(workspace, context.extensionPath)
     })
 
-    const apply = vscode.commands.registerCommand('salto.apply', () => {
-      applyCommand(workspace, context.extensionPath)
+    const deploy = vscode.commands.registerCommand('salto.deploy', () => {
+      deployCommand(workspace, context.extensionPath)
     })
 
-    const planStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100)
-    planStatusBar.text = 'Salto: Plan'
-    planStatusBar.command = 'salto.plan'
-    planStatusBar.show()
+    const previewStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100)
+    previewStatusBar.text = 'Salto: Preview'
+    previewStatusBar.command = 'salto.preview'
+    previewStatusBar.show()
 
-    const applyStatus = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100)
-    applyStatus.text = 'Salto: Apply'
-    applyStatus.command = 'salto.apply'
-    applyStatus.show()
+    const deployStatus = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100)
+    deployStatus.text = 'Salto: Deploy'
+    deployStatus.command = 'salto.deploy'
+    deployStatus.show()
 
     context.subscriptions.push(
       completionProvider,
       definitionProvider,
       referenceProvider,
       symbolsProvider,
-      plan,
-      apply,
-      planStatusBar,
-      applyStatus,
+      preview,
+      deploy,
+      previewStatusBar,
+      deployStatus,
       vscode.workspace.onDidChangeTextDocument(
         e => onTextChangeEvent(e, workspace)
       ),

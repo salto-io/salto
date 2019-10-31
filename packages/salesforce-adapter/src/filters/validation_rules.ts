@@ -7,7 +7,7 @@ export const VALIDATION_RULE_TYPE = 'validation_rule'
 export const VALIDATION_RULE_ANNOTATION = 'validation_rules'
 
 const filterCreator: FilterCreator = () => ({
-  onDiscover: async (elements: Element[]) => {
+  onFetch: async (elements: Element[]) => {
     const rulesByObject = _(elements)
       .filter(isInstanceElement)
       .filter(e => e.type.elemID.name === VALIDATION_RULE_TYPE)

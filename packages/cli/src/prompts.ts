@@ -1,16 +1,16 @@
 import chalk from 'chalk'
 
 export default class Prompts {
-  public static readonly PLANNEDFORAPPLY = ''
-  public static readonly STARTAPPLY = 'Salto-cli will start the apply step'
-  public static readonly EXPLAINAPPLY =
+  public static readonly PLANNEDFORDEPLOY = ''
+  public static readonly STARTDEPLOY = 'Salto-cli will start the deploy step'
+  public static readonly EXPLAINDEPLOY =
     "You know what this is all about don't you?!"
 
   public static readonly SHOULDEXECUTREPLAN = 'Do you want to perform these actions?'
 
-  public static readonly STARTAPPLYEXEC = 'Starting the apply phase'
-  public static readonly CANCELAPPLY = 'Canceling apply'
-  public static readonly PLANNEDFORPLAN = ''
+  public static readonly STARTDEPLOYEXEC = 'Starting the deploy phase'
+  public static readonly CANCELDEPLOY = 'Canceling deploy'
+  public static readonly PLANNEDFORPREVIEW = ''
   public static readonly MODIFIERS = {
     modify: chalk.yellow('M'),
     add: chalk.green('+'),
@@ -32,11 +32,11 @@ export default class Prompts {
     eq: '',
   }
 
-  public static readonly PLAN_STARTED = 'Calculating the execution plan - changes to be applied at the next *apply*'
-  public static readonly PLAN_FINISHED = 'Calculated execution plan!'
-  public static readonly PLAN_FAILED = 'Plan calculation failed'
+  public static readonly PREVIEW_STARTED = 'Calculating the execution plan - changes to be applied at the next *deploy*'
+  public static readonly PREVIEW_FINISHED = 'Calculated deployment plan!'
+  public static readonly PREVIEW_FAILED = 'Plan calculation failed'
 
-  public static readonly EXPLAINPLANRESULT = `Resources and actions are indicated with the following symbols:
+  public static readonly EXPLAINPREVIEWRESULT = `Resources and actions are indicated with the following symbols:
 
   ${Prompts.MODIFIERS.add} create
   ${Prompts.MODIFIERS.modify} change
@@ -44,8 +44,9 @@ export default class Prompts {
 
   public static readonly PLANSTEPSHEADER = 'Salto will perform the following actions:'
 
-  public static readonly PLANDISCLAIMER = `Note: Salto cannot guarantee that exactly these actions will be performed if "salto apply" is run.
-Be sure to go over the plan output when invoking the apply command.`
+  public static readonly PREVIEWDISCLAIMER = `Note: Salto cannot guarantee that exactly these actions will be performed if "salto deploy" is run.
+Be sure to go over the preview output when invoking the deploy command.`
+
   public static readonly EMPTY_PLAN = 'Nothing to do.'
 
   public static readonly DESCRIBE_NEAR_MATCH =
@@ -66,14 +67,14 @@ Be sure to go over the plan output when invoking the apply command.`
     return `Initiated workspace ${name} at ${baseDir}\n`
   }
 
-  public static readonly DISCOVER_BEGIN = 'Refreshing workspace from service(s)...'
-  public static readonly DISCOVER_CHANGE_HEADER = (changeIdx: number, totalChanges: number): string => `Change ${changeIdx} of ${totalChanges}:`
-  public static readonly DISCOVER_SHOULD_APPROVE_CHANGE = 'Would you like to update your workspace with this change?'
-  public static readonly DISCOVER_CHANGE_REJECTED = 'The change will not be applied to your workspace'
-  public static readonly DISCOVER_NO_CHANGES = 'No changes found, Workspace is up to date'
-  public static readonly DISCOVER_NOTHING_TO_UPDATE = 'No changes chosen, Leaving workspace unchanged'
-  public static readonly DISCOVER_CHANGES_TO_APPLY = (numChanges: number): string => `Updating workspace with ${numChanges} changes from the service`
-  public static readonly DISCOVER_CONFLICTING_CHANGE = 'This change conflicts with the following pending change from your workspace:'
+  public static readonly FETCH_BEGIN = 'Refreshing workspace from service(s)...'
+  public static readonly FETCH_CHANGE_HEADER = (changeIdx: number, totalChanges: number): string => `Change ${changeIdx} of ${totalChanges}:`
+  public static readonly FETCH_SHOULD_APPROVE_CHANGE = 'Would you like to update your workspace with this change?'
+  public static readonly FETCH_CHANGE_REJECTED = 'The change will not be applied to your workspace'
+  public static readonly FETCH_NO_CHANGES = 'No changes found, Workspace is up to date'
+  public static readonly FETCH_NOTHING_TO_UPDATE = 'No changes chosen, Leaving workspace unchanged'
+  public static readonly FETCH_CHANGES_TO_APPLY = (numChanges: number): string => `Updating workspace with ${numChanges} changes from the service`
+  public static readonly FETCH_CONFLICTING_CHANGE = 'This change conflicts with the following pending change from your workspace:'
 
   public static readonly WORKSPACE_LOAD_FAILED = 'Failed to load workspace'
 }

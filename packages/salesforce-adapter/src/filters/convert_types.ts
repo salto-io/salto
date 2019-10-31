@@ -109,12 +109,12 @@ export const transform = (obj: Values, type: ObjectType, strict = true): Values 
  */
 const filterCreator: FilterCreator = () => ({
   /**
-   * Upon discover, convert all instance values to their correct type according to the
+   * Upon fetch, convert all instance values to their correct type according to the
    * type definitions
    *
-   * @param elements the already discoverd elements
+   * @param elements the already fetched elements
    */
-  onDiscover: async (elements: Element[]) => {
+  onFetch: async (elements: Element[]) => {
     elements
       .filter(isInstanceElement)
       .filter(instance => isObjectType(instance.type))

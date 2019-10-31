@@ -396,7 +396,7 @@ const getDefaultValue = (field: Field): DefaultValueType | undefined => {
     ? valueFromXsdType(field.defaultValue) : field.defaultValue
 }
 
-// The following method is used during the discovery process and is used in building the objects
+// The following method is used during the fetchy process and is used in building the objects
 // and their fields described in the blueprint
 export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeField => {
   const bpFieldName = bpCase(field.relationshipName ? field.relationshipName : field.name)
@@ -500,10 +500,10 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
 }
 
 /**
- * Apply transform function on all keys in a values map recursively
+ * Deploy transform function on all keys in a values map recursively
  *
  * @param obj Input object to transform
- * @param func Transform function to apply to all keys
+ * @param func Transform function to deploy to all keys
  */
 export const mapKeysRecursive = (obj: Values, func: (key: string) => string): Values => {
   if (_.isArray(obj)) {

@@ -190,19 +190,19 @@ describe('transformer', () => {
         .toEqual(expectedLookupFilter)
     }
 
-    it('should discover lookup relationships with restricted deletion', async () => {
+    it('should fetch lookup relationships with restricted deletion', async () => {
       _.set(salesforceReferenceField, 'restrictedDelete', true)
       const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField)
       assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.salesforceDataTypes.lookup, 'owner', false, undefined)
     })
 
-    it('should discover lookup relationships with allowed related record deletion when restrictedDelete set to false', async () => {
+    it('should fetch lookup relationships with allowed related record deletion when restrictedDelete set to false', async () => {
       _.set(salesforceReferenceField, 'restrictedDelete', false)
       const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField)
       assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.salesforceDataTypes.lookup, 'owner', true, undefined)
     })
 
-    it('should discover lookup relationships with allowed related record deletion when restrictedDelete is undefined', async () => {
+    it('should fetch lookup relationships with allowed related record deletion when restrictedDelete is undefined', async () => {
       _.set(salesforceReferenceField, 'restrictedDelete', undefined)
       const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField)
       assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.salesforceDataTypes.lookup, 'owner', true, undefined)
@@ -220,7 +220,7 @@ describe('transformer', () => {
       assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.salesforceDataTypes.lookup, 'custom_relationship_name__r', true, undefined)
     })
 
-    it('should discover masterdetail relationships', async () => {
+    it('should fetch masterdetail relationships', async () => {
       salesforceReferenceField.cascadeDelete = true
       salesforceReferenceField.updateable = true
       salesforceReferenceField.writeRequiresMasterRead = true
@@ -230,7 +230,7 @@ describe('transformer', () => {
       expect(fieldElement.annotations[FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ]).toBe(true)
     })
 
-    it('should discover masterdetail relationships which are not reparentable and requires read/write access', async () => {
+    it('should fetch masterdetail relationships which are not reparentable and requires read/write access', async () => {
       salesforceReferenceField.cascadeDelete = true
       salesforceReferenceField.updateable = false
       delete salesforceReferenceField.writeRequiresMasterRead
@@ -241,7 +241,7 @@ describe('transformer', () => {
       expect(fieldElement.annotations[FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ]).toBe(false)
     })
 
-    it('should discover lookup filters and init its annotation', async () => {
+    it('should fetch lookup filters and init its annotation', async () => {
       _.set(salesforceReferenceField, 'filteredLookupInfo', {})
       const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField)
       assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.salesforceDataTypes.lookup, 'owner', true, {})

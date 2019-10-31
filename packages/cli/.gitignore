@@ -9,3 +9,6 @@ coverage
 
 /dist
 /pkg
+
+/src/generated
+

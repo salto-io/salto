@@ -1,3 +1,4 @@
+import wu from 'wu'
 import {
   ObjectType, InstanceElement, Element, Value,
 } from 'adapter-api'
@@ -14,8 +15,8 @@ import {
 import State from './state/state'
 import { findElement, SearchResult } from './core/search'
 
-import { Workspace } from './workspace/workspace'
-import { discoverChanges } from './core/discover'
+import { Workspace, CREDS_DIR } from './workspace/workspace'
+import { discoverChanges, DiscoverChange } from './core/discover'
 
 const applyActionOnState = async (
   state: State,
@@ -64,16 +65,29 @@ export type fillConfigFunc = (configType: ObjectType) => Promise<InstanceElement
 export type discoverFunc = (
   workspace: Workspace,
   fillConfig: fillConfigFunc,
-) => Promise<Iterable<DetailedChange>>
+) => Promise<Iterable<DiscoverChange>>
 
 export const discover: discoverFunc = async (workspace, fillConfig) => {
+  const configToChange = (config: InstanceElement): DiscoverChange => {
+    config.path = [CREDS_DIR, config.elemID.adapter]
+    const change: DetailedChange = {
+      id: config.elemID,
+      action: 'add',
+      data: { after: config },
+    }
+    return { change, serviceChange: change }
+  }
+
   const state = new State(workspace.config.stateLocation)
+  const [adapters, newConfigs] = await initAdapters(workspace.elements, fillConfig)
+
   const { changes, elements } = await discoverChanges(
-    workspace.elements, await state.get(), fillConfig,
+    adapters, workspace.elements, await state.get(),
   )
+
   state.override(elements)
   await state.flush()
-  return changes
+  return wu.chain(changes, newConfigs.map(configToChange))
 }
 
 export const describeElement = async (

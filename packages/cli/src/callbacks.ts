@@ -59,7 +59,6 @@ export const getApprovedChanges = async (
     default: 0,
     name: idx.toString(),
     message: formatDiscoverChangeForApproval(change, idx, changes.length),
-    // TODO: allow skipping conflicts as well?
     when: answers => isConflict(change) || !shouldApplyAll(answers),
   }))
 

@@ -35,7 +35,7 @@ const validateAnnotations = (elemID: ElemID, value: Value, type: Type): Validati
   if (isObjectType(type)) {
     return _.flatten(Object.keys(type.fields).map(
       // eslint-disable-next-line @typescript-eslint/no-use-before-define
-      k => validateAnnotationsValues(elemID, value[k], type.fields[k])
+      k => validateAnnotationsValues(elemID.createNestedID(k), value[k], type.fields[k])
     ))
   }
 
@@ -141,7 +141,12 @@ const validateAnnotationsValues = (
   // Apply validateAnnotations for each element in our values list
   if (field.isList) {
     return _.isArray(value)
-      ? _.flatten(value.map(v => validateAnnotations(elemID, v, field.type))) : []
+      ? _.flatten(value.map((v, i) => validateAnnotations(
+        elemID.createNestedID(String(i)),
+        v,
+        field.type
+      )))
+      : []
   }
 
   return validateAnnotations(elemID, value, field.type)
@@ -173,7 +178,7 @@ const validateValue = (elemID: ElemID, value: Value, type: Type): ValidationErro
   if (isObjectType(type)) {
     return _.flatten(Object.keys(value).filter(k => type.fields[k]).map(
       // eslint-disable-next-line @typescript-eslint/no-use-before-define
-      k => validateFieldValue(elemID, value[k], type.fields[k])
+      k => validateFieldValue(elemID.createNestedID(k), value[k], type.fields[k])
     ))
   }
 
@@ -185,7 +190,9 @@ const validateFieldValue = (elemID: ElemID, value: Value, field: Field): Validat
     if (!_.isArray(value)) {
       return [new InvalidValueValidationError({ elemID, value, field, expectedValue: 'a list' })]
     }
-    return _.flatten(value.map(v => validateValue(elemID, v, field.type)))
+    return _.flatten(
+      value.map((v, i) => validateValue(elemID.createNestedID(String(i)), v, field.type))
+    )
   }
   return validateValue(elemID, value, field.type)
 }
@@ -198,7 +205,11 @@ const validateField = (field: Field): ValidationError[] =>
 const validateType = (element: Type): ValidationError[] => {
   const errors = _.flatten(Object.keys(element.annotations)
     .filter(k => element.annotationTypes[k]).map(
-      k => validateValue(element.elemID, element.annotations[k], element.annotationTypes[k])
+      k => validateValue(
+        element.elemID.createNestedID(k),
+        element.annotations[k],
+        element.annotationTypes[k]
+      )
     ))
 
   if (isObjectType(element)) {
@@ -215,10 +226,11 @@ const instanceElementValidators = [
 const validateInstanceElements = (element: InstanceElement): ValidationError[] =>
   _.flatten(instanceElementValidators.map(v => v(element.elemID, element.value, element.type)))
 
-export const validateElements = (elements: Element[]): ValidationError[] =>
+export const validateElements = (elements: Element[]): ValidationError[] => (
   _.flatten(elements.map(element => {
     if (isInstanceElement(element)) {
       return validateInstanceElements(element)
     }
     return validateType(element as Type)
   }))
+)

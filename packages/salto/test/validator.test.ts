@@ -73,24 +73,28 @@ describe('Elements validation', () => {
       clonedType.fields.nested.annotations.annostr = 1
       const errors = validateElements([clonedType])
       expect(errors).toHaveLength(1)
+      expect(errors[0].elemID.getFullName()).toBe('salto_nested_nested')
     })
 
     it('should return error on bad num primitive type', () => {
       clonedType.fields.nested.annotations.annonum = 'str'
       const errors = validateElements([clonedType])
       expect(errors).toHaveLength(1)
+      expect(errors[0].elemID.getFullName()).toBe('salto_nested_nested')
     })
 
     it('should return error on bad bool primitive type', () => {
       clonedType.fields.nested.annotations.annoboolean = 1
       const errors = validateElements([clonedType])
       expect(errors).toHaveLength(1)
+      expect(errors[0].elemID.getFullName()).toBe('salto_nested_nested')
     })
 
     it('should return error on nested annotation mismatch', () => {
       clonedType.annotations.nested = { str: 1 }
       const errors = validateElements([clonedType])
       expect(errors).toHaveLength(1)
+      expect(errors[0].elemID.getFullName()).toBe('salto_nested_nested_str')
     })
 
     it('should return error object/primitive mismatch', () => {
@@ -153,6 +157,7 @@ describe('Elements validation', () => {
           const errors = validateElements([extInst])
           expect(errors).toHaveLength(1)
           expect(errors[0].message).toMatch('Field reqStr is required but has no value')
+          expect(errors[0].elemID.getFullName()).toBe('salto_nestedinst_reqStr')
         })
 
         it('should return error when required object field is missing', () => {
@@ -164,6 +169,7 @@ describe('Elements validation', () => {
           expect(errors).toHaveLength(1)
           expect(errors[0].message)
             .toMatch(`Field ${extType.fields.reqNested.name} is required but has no value`)
+          expect(errors[0].elemID.getFullName()).toBe('salto_nestedinst_reqNested')
         })
 
         it('should return error when lists elements missing required fields', () => {
@@ -187,6 +193,7 @@ describe('Elements validation', () => {
           expect(errors).toHaveLength(1)
           expect(errors[0].message)
             .toMatch(`Field ${simpleType.fields.bool.name} is required but has no value`)
+          expect(errors[0].elemID.getFullName()).toBe('salto_nestedinst_reqNested_1_bool')
         })
       })
 
@@ -218,7 +225,9 @@ describe('Elements validation', () => {
           extType.fields.restrictStr.annotations[Type.RESTRICTION] = { [Type.ENFORCE_VALUE]: true }
           extInst.type = extType
           extInst.value.restrictStr = 'str'
-          expect(validateElements([extInst])).toHaveLength(1)
+          const errors = validateElements([extInst])
+          expect(errors).toHaveLength(1)
+          expect(errors[0].elemID.getFullName()).toBe('salto_nestedinst_restrictStr')
         })
 
         it('should succeed when restriction values are not defined and enforce_values is undefined', () => {
@@ -251,12 +260,14 @@ describe('Elements validation', () => {
             'Value "wrongValue2" is not valid for field '
             + '"salto_simple_str"; expected: one of: "str"'
           )
+          expect(errors[0].elemID.getFullName()).toBe('salto_nestedinst_nested_str')
 
           expect(errors[1]).toBeInstanceOf(InvalidValueValidationError)
           expect(errors[1].message).toMatch(
             'Value "wrongValue" is not valid for field '
             + '"salto_nested_restrictStr"; expected: one of: "restriction1", "restriction2"'
           )
+          expect(errors[1].elemID.getFullName()).toBe('salto_nestedinst_restrictStr')
         }
 
         it('should return an error when fields values doesnt match restriction values with explicit _restriction.enforce_value', () => {
@@ -295,60 +306,73 @@ describe('Elements validation', () => {
         extInst.value.flatstr = 1
         const errors = validateElements([extInst])
         expect(errors).toHaveLength(1)
+        expect(errors[0].elemID.getFullName()).toBe('salto_nestedinst_flatstr')
       })
 
       it('should return error on bad num primitive type', () => {
         extInst.value.flatnum = 'str'
         const errors = validateElements([extInst])
         expect(errors).toHaveLength(1)
+        expect(errors[0].elemID.getFullName()).toBe('salto_nestedinst_flatnum')
       })
 
       it('should return error on bad bool primitive type', () => {
         extInst.value.flatbool = 'str'
         const errors = validateElements([extInst])
         expect(errors).toHaveLength(1)
+        expect(errors[0].elemID.getFullName()).toBe('salto_nestedinst_flatbool')
       })
 
       it('should return error on nested string value mismatch', () => {
         extInst.value.nested.str = 1
         const errors = validateElements([extInst])
         expect(errors).toHaveLength(2)
+        expect(errors[0].elemID.getFullName()).toBe('salto_nestedinst_nested_str')
+        expect(errors[1].elemID.getFullName()).toBe('salto_nestedinst_nested_str')
       })
 
       it('should return error on nested num value mismatch', () => {
         extInst.value.nested.num = 'str'
         const errors = validateElements([extInst])
         expect(errors).toHaveLength(1)
+        expect(errors[0].elemID.getFullName()).toBe('salto_nestedinst_nested_num')
       })
 
       it('should return error on nested bool value mismatch', () => {
         extInst.value.nested.bool = 'str'
         const errors = validateElements([extInst])
         expect(errors).toHaveLength(1)
+        expect(errors[0].elemID.getFullName()).toBe('salto_nestedinst_nested_bool')
       })
 
       it('should return error object/primitive mismatch', () => {
         extInst.value.nested = 'str'
         const errors = validateElements([extInst])
         expect(errors).toHaveLength(2)
+        expect(errors[0].elemID.getFullName()).toBe('salto_nestedinst_nested')
+        expect(errors[1].elemID.getFullName()).toBe('salto_nestedinst_nested_bool')
       })
 
       it('should return error list/primitive mismatch', () => {
         extInst.value.list = 'not a list'
         const errors = validateElements([extInst])
         expect(errors).toHaveLength(1)
+        expect(errors[0].elemID.getFullName()).toBe('salto_nestedinst_list')
       })
 
       it('should return error list/object mismatch', () => {
         extInst.value = { nested: [] }
         const errors = validateElements([extInst])
         expect(errors).toHaveLength(2)
+        expect(errors[0].elemID.getFullName()).toBe('salto_nestedinst_nested')
+        expect(errors[1].elemID.getFullName()).toBe('salto_nestedinst_nested_bool')
       })
 
       it('should return error list item mismatch', () => {
         extInst.value.list.push(1)
         const errors = validateElements([extInst])
         expect(errors).toHaveLength(1)
+        expect(errors[0].elemID.getFullName()).toBe('salto_nestedinst_list_2')
       })
     })
   })

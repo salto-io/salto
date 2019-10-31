@@ -18,7 +18,7 @@ async () => {
     'diff2html.min.css',
     'main.css',
   ].map(href => hrefToUri(href, extensionPath).toString())
-  return displayHTML(renderDiffView(diff, cssHrefs))
+  return displayHTML(renderDiffView(diff, cssHrefs), extensionPath)
 })
 
 const shouldApply = async (planActions: Plan, extensionPath: string): Promise<boolean> => {

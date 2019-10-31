@@ -2,8 +2,11 @@ import _ from 'lodash'
 import * as fs from 'async-file'
 import path from 'path'
 
+import { logger } from '@salto/logging'
 import { ParseResult } from '../parser/parse'
 import * as parseResultSerializer from '../serializer/parse_result'
+
+const log = logger(module)
 
 const EXTERNAL_BP_CACHE_DIR = 'external_bp'
 const CACHE_FOLDER = '.cache'
@@ -49,7 +52,12 @@ export class ParseResultFSCache implements ParseResultCache {
         const cacheFilePath = this.resolveCacheFilePath(key)
         if (await fs.exists(cacheFilePath)
           && (await fs.stat(cacheFilePath)).mtimeMs > key.lastModified) {
-          return parseResultSerializer.deserialize((await fs.readFile(cacheFilePath, 'utf8')) as string)
+          const fileContent = await fs.readFile(cacheFilePath, 'utf8')
+          try {
+            return parseResultSerializer.deserialize(fileContent)
+          } catch (err) {
+            log.debug(`Failed to handle cache file ${cacheFilePath}, Error:${err}`)
+          }
         }
         return Promise.resolve(undefined)
       }

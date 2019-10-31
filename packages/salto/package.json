@@ -31,6 +31,7 @@
   "dependencies": {
     "@salto/dag": "0.1.0",
     "@salto/lowerdash": "0.1.0",
+    "@salto/logging": "0.1.0",
     "@types/uuid": "^3.4.5",
     "adapter-api": "0.1.0",
     "async": "^3.1.0",

@@ -15,8 +15,10 @@ describe('validation rules filter', () => {
   const filter = filterCreator({ client }) as FilterWith<'onDiscover'>
 
   const mockSObject = new ObjectType({
-    elemID: new ElemID(constants.SALESFORCE, 'test'),
-    annotations: {},
+    elemID: new ElemID(constants.SALESFORCE, 'test__c'),
+    annotations: {
+      [constants.API_NAME]: 'Test__c',
+    },
   })
 
   const mockValidationRule = new InstanceElement(

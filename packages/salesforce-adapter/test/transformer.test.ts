@@ -6,7 +6,7 @@ import {
 import { Field as SalesforceField, ValueTypeField } from 'jsforce'
 import {
   toMetadataPackageZip, bpCase, getSObjectFieldElement, Types, toCustomField, toCustomObject,
-  getValueTypeFieldElement,
+  getValueTypeFieldElement, sfCase,
 } from '../src/transformer'
 import {
   METADATA_TYPE, METADATA_OBJECT_NAME_FIELD, FIELD_ANNOTATIONS, FIELD_TYPE_NAMES, API_NAME,
@@ -37,6 +37,23 @@ describe('transformer', () => {
       bool: true,
     },
   )
+
+  describe('bpCase & sfCase transformation', () => {
+    const assertNamingTransformation = (bpName: string, sfName: string): void => {
+      expect(bpCase(sfName)).toEqual(bpName)
+      expect(sfCase(bpName)).toEqual(sfName)
+    }
+
+    it('should transform name correctly to bpCase', () => {
+      assertNamingTransformation('offer__c', 'Offer__c')
+      assertNamingTransformation('offer__r', 'Offer__r')
+      assertNamingTransformation('case_change_event', 'CaseChangeEvent')
+      assertNamingTransformation('offer___change_event', 'Offer__ChangeEvent')
+      assertNamingTransformation('column_preferences___change_event', 'ColumnPreferences__ChangeEvent')
+      assertNamingTransformation('column__preferences___change_event', 'Column_Preferences__ChangeEvent')
+      assertNamingTransformation('name_with_number_2', 'NameWithNumber2')
+    })
+  })
 
   describe('toMetadataPackageZip', () => {
     const zip = toMetadataPackageZip(dummyInstance)
@@ -200,7 +217,7 @@ describe('transformer', () => {
     it('should slice field name in case relationshipName is a custom relationship', async () => {
       salesforceReferenceField.relationshipName = 'CustomRelationshipName__r'
       const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField)
-      assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.salesforceDataTypes.lookup, 'custom_relationship_name', true, undefined)
+      assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.salesforceDataTypes.lookup, 'custom_relationship_name__r', true, undefined)
     })
 
     it('should discover masterdetail relationships', async () => {

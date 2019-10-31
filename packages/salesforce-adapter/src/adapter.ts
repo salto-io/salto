@@ -328,16 +328,17 @@ export default class SalesforceAdapter {
       // Retrieve the custom fields for deletion and delete them
       this.deleteCustomFields(clonedObject, fieldChanges
         .filter(isRemovalDiff)
-        .map(c => c.data.before)),
+        .map(c => before.fields[c.data.before.name])),
       // Retrieve the custom fields for addition and than create them
       this.createFields(clonedObject, fieldChanges
         .filter(isAdditionDiff)
-        .map(c => c.data.after)),
+        .map(c => clonedObject.fields[c.data.after.name])),
       // Update the remaining fields that were changed
       this.updateFields(clonedObject, fieldChanges
         .filter(isModificationDiff)
-        .filter(c => shouldUpdateField(c.data.before, c.data.after))
-        .map(c => c.data.after)),
+        .filter(c => shouldUpdateField(before.fields[c.data.before.name],
+          clonedObject.fields[c.data.after.name]))
+        .map(c => clonedObject.fields[c.data.after.name])),
     ])
 
     // Update the annotation values - this can't be done asynchronously with the previous

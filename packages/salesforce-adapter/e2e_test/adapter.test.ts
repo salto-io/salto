@@ -780,7 +780,7 @@ describe('Salesforce adapter E2E with real account', () => {
 
     it('should add a custom object with various field types', async () => {
       const customObjectName = 'TestAddFieldTypes__c'
-      const mockElemID = new ElemID(constants.SALESFORCE, 'test add custom object with various field types')
+      const mockElemID = new ElemID(constants.SALESFORCE, 'test add object with various field types')
       const adminReadable = {
         [FIELD_LEVEL_SECURITY_ANNOTATION]: {
           admin: { editable: false, readable: true },

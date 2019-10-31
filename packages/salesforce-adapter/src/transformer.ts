@@ -26,22 +26,27 @@ const capitalize = (s: string): string => {
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
+const toSfCamelCase = (name: string): string => _.replace(name, /_[a-z]|_[0-9]/g,
+  (match: string) => match.charAt(1).toUpperCase())
+
 export const sfCase = (name: string, custom = false, capital = true): string => {
-  const sf = _.camelCase(name) + (custom ? SALESFORCE_CUSTOM_SUFFIX : '')
+  const sf = name.endsWith(SALESFORCE_CUSTOM_SUFFIX)
+    || name.endsWith(SALESFORCE_CUSTOM_RELATIONSHIP_SUFFIX)
+    ? toSfCamelCase(name.slice(0, -3)) + name.slice(-3)
+    : toSfCamelCase(name) + (custom ? SALESFORCE_CUSTOM_SUFFIX : '')
   return capital ? capitalize(sf) : sf
 }
 
 export const bpCase = (name: string): string => {
-  const bpName = (name.endsWith(SALESFORCE_CUSTOM_SUFFIX)
-  || name.endsWith(SALESFORCE_CUSTOM_RELATIONSHIP_SUFFIX)
-    ? name.slice(0, -2) : name)
   // Using specific replace for chars then _.unescape is not replacing well
   // and we see in our responses for sfdc
-  return _.snakeCase(_.unescape(bpName.replace(/%26|%28|%29/g, ' ')))
+  const unescaped = _.unescape(name).replace(/%26|%28|%29|[^A-Za-z0-9_]/g, '_')
+  return unescaped.charAt(0).toLowerCase()
+    + _.replace(unescaped.slice(1), /[A-Z]|[0-9]/g, (char: string) => `_${char.toLowerCase()}`)
 }
 
 export const sfInstnaceName = (instance: Element): string =>
-  instance.elemID.nameParts.slice(1).map(p => sfCase(p, false)).join('')
+  instance.elemID.nameParts.slice(1).map(p => sfCase(p)).join('')
 
 export const metadataType = (element: Element): string => (
   element.annotations[METADATA_TYPE] || CUSTOM_OBJECT
@@ -53,11 +58,7 @@ export const apiName = (elem: Element): string => {
     return elem.value[bpCase(METADATA_OBJECT_NAME_FIELD)] || sfCase(elem.elemID.name)
   }
   const elemMetadataType = metadataType(elem)
-  return elemMetadataType === CUSTOM_OBJECT
-    // Object/Field name comes from the annotation, Fallback to the element ID. we assume
-    // it is custom because all standard objects and fields get the annotation in discover
-    ? elem.annotations[API_NAME] || sfCase(elem.elemID.nameParts.slice(-1)[0], true)
-    : elemMetadataType
+  return elemMetadataType === CUSTOM_OBJECT ? elem.annotations[API_NAME] : elemMetadataType
 }
 
 const formulaTypeName = (baseTypeName: string): string =>

@@ -736,7 +736,7 @@ export const getCompoundChildFields = (objectType: ObjectType): TypeField[] => {
         // Add the child fields to the object type
         const childFieldName = addressPrefix + clonedField.name
         clonedField.name = childFieldName
-        clonedField.annotations = { [API_NAME]: sfCase(childFieldName) }
+        clonedField.annotations = { [Type.SERVICE_ID]: sfCase(childFieldName) }
         object.fields[childFieldName] = clonedField
       })
       // Remove the compound field from the element
@@ -758,7 +758,7 @@ export const getCompoundChildFields = (objectType: ObjectType): TypeField[] => {
     // Add the child fields to the object type
     Object.values(Types.compoundDataTypes.name.fields).forEach(childField => {
       const clonedField = childField.clone()
-      clonedField.annotations = { [API_NAME]: sfCase(childField.name) }
+      clonedField.annotations = { [Type.SERVICE_ID]: sfCase(childField.name) }
       object.fields[childField.name] = clonedField
     })
     // Remove the compound field from the element
@@ -773,7 +773,7 @@ export const getCompoundChildFields = (objectType: ObjectType): TypeField[] => {
     // For each geolocation field, get its name, then find its corresponding child fields by
     // this name.
     Object.entries(locationFields).forEach(([key, locationField]) => {
-      const isCustomField = (locationField.annotations?.[API_NAME] as string)
+      const isCustomField = (locationField.annotations?.[Type.SERVICE_ID] as string)
         .endsWith(SALESFORCE_CUSTOM_SUFFIX)
       Object.values(Types.compoundDataTypes.location.fields).forEach(childField => {
         const clonedField = childField.clone()
@@ -781,7 +781,7 @@ export const getCompoundChildFields = (objectType: ObjectType): TypeField[] => {
         const childFieldName = `${key}_${clonedField.name}`
         clonedField.name = childFieldName
         clonedField.annotations = {
-          [API_NAME]: `${capitalize(key)}__${capitalize(childField.name)}${isCustomField ? '__s' : ''}`,
+          [Type.SERVICE_ID]: `${capitalize(key)}__${capitalize(childField.name)}${isCustomField ? '__s' : ''}`,
         }
         object.fields[childFieldName] = clonedField
       })

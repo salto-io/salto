@@ -6,10 +6,10 @@ import {
 import { Field as SalesforceField, ValueTypeField } from 'jsforce'
 import {
   toMetadataPackageZip, bpCase, getSObjectFieldElement, Types, toCustomField, toCustomObject,
-  getValueTypeFieldElement, getCompoundChildFields, sfCase
+  getValueTypeFieldElement, getCompoundChildFields, sfCase,
 } from '../src/transformer'
 import {
-  METADATA_TYPE, METADATA_OBJECT_NAME_FIELD, FIELD_ANNOTATIONS, FIELD_TYPE_NAMES, API_NAME,
+  METADATA_TYPE, METADATA_OBJECT_NAME_FIELD, FIELD_ANNOTATIONS, FIELD_TYPE_NAMES,
   LABEL, FIELD_TYPE_API_NAMES, ADDRESS_FIELDS, SALESFORCE, GEOLOCATION_FIELDS, NAME_FIELDS,
 } from '../src/constants'
 import { CustomField } from '../src/client/types'
@@ -307,7 +307,7 @@ describe('transformer', () => {
     })
   })
 
-  describe('getCompoundChildFields', () => {    
+  describe('getCompoundChildFields', () => {
     const nameElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.NAME)
     const geoLocationElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.LOCATION)
     const elemID = new ElemID('salesforce', 'test')
@@ -335,7 +335,7 @@ describe('transformer', () => {
     it('should return sub fields of a compound custom geolocation field', async () => {
       const fieldName = 'test'
       const annotations: Values = {
-        [API_NAME]: 'test__c',
+        [Type.SERVICE_ID]: 'test__c',
       }
       const testedObjectType = new ObjectType({
         elemID,
@@ -353,7 +353,7 @@ describe('transformer', () => {
         expect(fieldNamesSet).toContain(expectedFieldName)
         const apiName = fields.find(
           f => f.name === expectedFieldName
-        )?.annotations[API_NAME] as string
+        )?.annotations[Type.SERVICE_ID] as string
         expect(apiName.endsWith('__s')).toBeTruthy()
       })
     })
@@ -361,7 +361,7 @@ describe('transformer', () => {
     it('should return sub fields of a compound non-custom geolocation field', async () => {
       const fieldName = 'test'
       const annotations: Values = {
-        [API_NAME]: 'test',
+        [Type.SERVICE_ID]: 'test',
       }
       const testedObjectType = new ObjectType({
         elemID,
@@ -379,7 +379,7 @@ describe('transformer', () => {
         expect(fieldNamesSet).toContain(expectedFieldName)
         const apiName = fields.find(
           f => f.name === expectedFieldName
-        )?.annotations[API_NAME] as string
+        )?.annotations[Type.SERVICE_ID] as string
         expect(apiName.endsWith('__s')).toBeFalsy()
       })
     })

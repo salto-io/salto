@@ -1,7 +1,7 @@
 import {
   Element, ObjectType, InstanceElement, PrimitiveType, ElemID, PrimitiveTypes, BuiltinTypes,
 } from 'adapter-api'
-import { WorkspaceError } from 'salto'
+import { WorkspaceError, DiscoverChange } from 'salto'
 import { formatSearchResults, createPlanOutput, formatChange, formatDiscoverChangeForApproval, formatWorkspaceErrors } from '../src/formatter'
 import { elements, plan, detailedChange } from './mocks'
 
@@ -139,12 +139,12 @@ describe('formatter', () => {
       })
     })
     describe('with conflict', () => {
-      const changeWithConflict = {
+      const discoverChange: DiscoverChange = {
         change: detailedChange('modify', ['adapter', 'object', 'field', 'value'], 'local', 'new'),
         serviceChange: change,
-        localChange: detailedChange('modify', ['adapter', 'object', 'field', 'value'], 'old', 'local'),
+        pendingChange: detailedChange('modify', ['adapter', 'object', 'field', 'value'], 'old', 'local'),
       }
-      const output = formatDiscoverChangeForApproval(changeWithConflict, 2, 3)
+      const output = formatDiscoverChangeForApproval(discoverChange, 2, 3)
       it('should contain change path', () => {
         expect(output).toMatch(/adapter.*object.*field.*value/s)
       })

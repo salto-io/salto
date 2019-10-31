@@ -15,8 +15,8 @@ import {
 import State from './state/state'
 import { findElement, SearchResult } from './core/search'
 
-import { Workspace } from './workspace/workspace'
-import { discoverChanges, ChangeWithConflict } from './core/discover'
+import { Workspace, CREDS_DIR } from './workspace/workspace'
+import { discoverChanges, DiscoverChange } from './core/discover'
 
 const applyActionOnState = async (
   state: State,
@@ -65,10 +65,11 @@ export type fillConfigFunc = (configType: ObjectType) => Promise<InstanceElement
 export type discoverFunc = (
   workspace: Workspace,
   fillConfig: fillConfigFunc,
-) => Promise<Iterable<ChangeWithConflict>>
+) => Promise<Iterable<DiscoverChange>>
 
 export const discover: discoverFunc = async (workspace, fillConfig) => {
-  const configToChange = (config: InstanceElement): ChangeWithConflict => {
+  const configToChange = (config: InstanceElement): DiscoverChange => {
+    config.path = [CREDS_DIR, config.elemID.adapter]
     const change: DetailedChange = {
       id: config.elemID,
       action: 'add',

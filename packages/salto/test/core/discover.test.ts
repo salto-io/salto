@@ -1,16 +1,14 @@
 import {
   ElemID, Field, BuiltinTypes, ObjectType, getChangeElement, Adapter, Element,
 } from 'adapter-api'
-import { getUpstreamChanges, discoverChanges, ChangeWithConflict } from '../../src/core/discover'
-import { DetailedChange } from '../../src/core/plan'
+import {
+  discoverChanges,
+  DiscoverChange,
+} from '../../src/core/discover'
 
 describe('discover', () => {
   const testID = new ElemID('dummy', 'elem')
   const testField = new Field(testID, 'test', BuiltinTypes.STRING, { annotation: 'value' })
-  const typeWithoutField = new ObjectType({
-    elemID: testID,
-    fields: {},
-  })
   const typeWithField = new ObjectType({
     elemID: testID,
     fields: { test: testField },
@@ -38,50 +36,13 @@ describe('discover', () => {
     },
   })
 
-  describe('getUpstreamChanges', () => {
-    let changes: DetailedChange[]
-    beforeEach(() => {
-      changes = [
-        ...getUpstreamChanges(
-          [typeWithoutField],
-          [typeWithField, newTypeBase, newTypeExt],
-          [typeWithField, newTypeMerged],
-        ),
-      ]
-    })
-
-    it('should return field addition change', () => {
-      expect(
-        changes.map(change => change.id.getFullName())
-      ).toContain(testField.elemID.getFullName())
-    })
-
-    describe('type addition changes', () => {
-      let typeAdditions: DetailedChange[]
-      beforeEach(() => {
-        typeAdditions = changes.filter(
-          change => change.id.getFullName() === newTypeID.getFullName()
-        )
-      })
-      it('should return separate changes according to the input elements', () => {
-        expect(typeAdditions).toHaveLength(2)
-      })
-      it('should have path hint', () => {
-        expect(typeAdditions.map(change => getChangeElement(change).path).sort()).toEqual([
-          ['path', 'base'],
-          ['path', 'ext'],
-        ])
-      })
-    })
-  })
-
   describe('discoverChanges', () => {
     const mockAdapters = {
       dummy: {
         discover: jest.fn().mockResolvedValue(Promise.resolve([])),
       },
     }
-    let changes: ChangeWithConflict[]
+    let changes: DiscoverChange[]
     describe('when the adapter returns elements with merge errors', () => {
       beforeEach(() => {
         mockAdapters.dummy.discover.mockResolvedValueOnce(
@@ -131,7 +92,29 @@ describe('discover', () => {
       })
       it('should return the change with no conflict', () => {
         expect(changes).toHaveLength(1)
-        expect(changes[0].localChange).toBeUndefined()
+        expect(changes[0].pendingChange).toBeUndefined()
+      })
+    })
+    describe('when the adapter returns elements that should be split', () => {
+      beforeEach(async () => {
+        mockAdapters.dummy.discover.mockResolvedValueOnce(
+          Promise.resolve([newTypeBase, newTypeExt])
+        )
+        const result = await discoverChanges(
+          mockAdapters as unknown as Record<string, Adapter>,
+          [],
+          [],
+        )
+        changes = [...result.changes]
+      })
+      it('should return separate changes according to the input elements', () => {
+        expect(changes).toHaveLength(2)
+      })
+      it('should have path hint for new elements', () => {
+        expect(changes.map(change => getChangeElement(change.change).path).sort()).toEqual([
+          ['path', 'base'],
+          ['path', 'ext'],
+        ])
       })
     })
     describe('when the working copy is already the same as the service', () => {
@@ -164,7 +147,7 @@ describe('discover', () => {
       })
       it('should return the change with the conflict', () => {
         expect(changes).toHaveLength(1)
-        expect(changes[0].localChange).toBeDefined()
+        expect(changes[0].pendingChange).toBeDefined()
       })
     })
     describe('when the changed element is removed in the working copy', () => {
@@ -183,7 +166,7 @@ describe('discover', () => {
         expect(changes).toHaveLength(1)
       })
       describe('returned change', () => {
-        let change: ChangeWithConflict
+        let change: DiscoverChange
         beforeEach(() => {
           [change] = changes
         })
@@ -191,9 +174,9 @@ describe('discover', () => {
           expect(change.serviceChange.action).toEqual('modify')
         })
         it('should contain the local change', () => {
-          expect(change.localChange).toBeDefined()
-          if (change.localChange) { // If only here to help typescript compiler
-            expect(change.localChange.action).toEqual('remove')
+          expect(change.pendingChange).toBeDefined()
+          if (change.pendingChange) { // If only here to help typescript compiler
+            expect(change.pendingChange.action).toEqual('remove')
           }
         })
         it('should have the change that syncs the working copy to the service', () => {

@@ -7,7 +7,7 @@ import {
 } from 'adapter-api'
 import {
   Plan, PlanItem, FoundSearchResult, SearchResult, DetailedChange,
-  WorkspaceError, SourceFragment, ChangeWithConflict,
+  WorkspaceError, SourceFragment, DiscoverChange,
 } from 'salto'
 import Prompts from './prompts'
 
@@ -243,14 +243,14 @@ export const createActionInProgressOutput = (action: PlanItem, start: Date): str
 }
 
 export const formatDiscoverChangeForApproval = (
-  change: ChangeWithConflict,
+  change: DiscoverChange,
   idx: number,
   totalChanges: number
 ): string => {
   const formattedChange = formatDetailedChanges([[change.serviceChange]])
-  const formattedConflict = change.localChange === undefined ? [] : [
+  const formattedConflict = change.pendingChange === undefined ? [] : [
     header(Prompts.DISCOVER_CONFLICTING_CHANGE),
-    body(formatDetailedChanges([[change.localChange]])),
+    body(formatDetailedChanges([[change.pendingChange]])),
   ]
   return [
     header(Prompts.DISCOVER_CHANGE_HEADER(idx + 1, totalChanges)),

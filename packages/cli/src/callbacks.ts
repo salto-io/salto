@@ -5,7 +5,7 @@ import {
   Type, ObjectType, ElemID, InstanceElement,
   isPrimitiveType, PrimitiveTypes,
 } from 'adapter-api'
-import { Plan, ChangeWithConflict } from 'salto'
+import { Plan, DiscoverChange } from 'salto'
 import {
   createPlanOutput, header, subHeader, formatDiscoverChangeForApproval,
 } from './formatter'
@@ -42,12 +42,12 @@ export const shouldApply = ({ stdout }: CliOutput) => async (actions: Plan): Pro
 }
 
 export const getApprovedChanges = async (
-  changes: ReadonlyArray<ChangeWithConflict>,
-): Promise<ReadonlyArray<ChangeWithConflict>> => {
+  changes: ReadonlyArray<DiscoverChange>,
+): Promise<ReadonlyArray<DiscoverChange>> => {
   const shouldApplyAll = (answers: inquirer.Answers): boolean => (
     _.values(answers).some(answer => answer === 'all')
   )
-  const isConflict = (change: ChangeWithConflict): boolean => change.localChange !== undefined
+  const isConflict = (change: DiscoverChange): boolean => change.pendingChange !== undefined
 
   const questions = changes.map((change, idx): inquirer.Question => ({
     type: 'expand',

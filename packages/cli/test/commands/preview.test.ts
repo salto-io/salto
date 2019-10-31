@@ -12,7 +12,7 @@ const mockErrWs = {
 }
 jest.mock('salto', () => ({
   ...require.requireActual('salto'),
-  plan: jest.fn().mockImplementation(() => mockPreview()),
+  preview: jest.fn().mockImplementation(() => mockPreview()),
   Workspace: {
     load: jest.fn().mockImplementation(config => (config.baseDir === 'errdir' ? mockErrWs : mockWs)),
   },

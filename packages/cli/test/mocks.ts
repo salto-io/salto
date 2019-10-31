@@ -1,15 +1,13 @@
-import _ from 'lodash'
-import wu from 'wu'
-import {
-  Type, BuiltinTypes, ElemID, Change, ObjectType, Field, InstanceElement, Element, getChangeElement,
-} from 'adapter-api'
-import {
-  Plan, PlanItem, SearchResult, DetailedChange, Workspace, WorkspaceError,
-} from 'salto'
 import { GroupedNodeMap } from '@salto/dag'
-import { YargsCommandBuilder } from '../src/command_builder'
-import builders from '../src/commands/index'
+import { BuiltinTypes, Change, Element, ElemID, Field, getChangeElement, InstanceElement, ObjectType, Type } from 'adapter-api'
+import _ from 'lodash'
+import { DetailedChange, Plan, PlanItem, SearchResult, Workspace, WorkspaceError } from 'salto'
+import stream from 'stream'
+import wu from 'wu'
 import realCli from '../src/cli'
+import builders from '../src/commands/index'
+import { YargsCommandBuilder } from '../src/command_builder'
+import { Spinner, SpinnerCreator } from '../src/types'
 
 export interface MockWriteStreamOpts { isTTY?: boolean; hasColors?: boolean }
 
@@ -26,6 +24,32 @@ export class MockWriteStream {
   write(s: string): void { this.content += s }
   getColorDepth(): number { return this.colors ? 8 : 1 }
 }
+
+export type MockWritableStream = NodeJS.WritableStream & {
+  contents(): string
+}
+
+export const mockWritableStream = (): MockWritableStream => {
+  let content = ''
+
+  const writable = new stream.Writable({
+    write: s => { content += s },
+  })
+
+  return Object.assign(writable, {
+    contents(): string { return content },
+  })
+}
+
+
+export const mockSpinnerCreator = (spinners: Spinner[]): SpinnerCreator => jest.fn(() => {
+  const result = {
+    succeed: jest.fn(),
+    fail: jest.fn(),
+  }
+  spinners.push(result)
+  return result
+})
 
 export interface MockCliOutput {
   err: string
@@ -53,8 +77,10 @@ export const cli = async ({
     stderr: new MockWriteStream(err),
     stdout: new MockWriteStream(out),
   }
+  const spinners: Spinner[] = []
+  const spinnerCreator = mockSpinnerCreator(spinners)
 
-  const exitCode = await realCli({ input, output, commandBuilders })
+  const exitCode = await realCli({ input, output, commandBuilders, spinnerCreator })
 
   return { err: output.stderr.content, out: output.stdout.content, exitCode }
 }

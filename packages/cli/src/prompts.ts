@@ -10,11 +10,6 @@ export default class Prompts {
 
   public static readonly STARTAPPLYEXEC = 'Starting the apply phase'
   public static readonly CANCELAPPLY = 'Canceling apply'
-  public static readonly STARTPLAN =
-    'Refreshing Salto state in-memory prior to plan...'
-
-  public static readonly EXPLAINPLAN = `The refreshed state will be used to calculate this plan,
-but will not be persisted to local or remote state storage`
   public static readonly PLANNEDFORPLAN = ''
   public static readonly MODIFIERS = {
     modify: chalk.yellow('M'),
@@ -37,19 +32,20 @@ but will not be persisted to local or remote state storage`
     eq: '',
   }
 
-  public static readonly EXPLAINPLANRESULT = `An execution plan has been generated and is shown below.
-Resources and actions are indicated with the following symbols:
+  public static readonly PLAN_STARTED = 'Calculating the execution plan - changes to be applied at the next *apply*'
+  public static readonly PLAN_FINISHED = 'Calculated execution plan!'
+  public static readonly PLAN_FAILED = 'Plan calculation failed'
+
+  public static readonly EXPLAINPLANRESULT = `Resources and actions are indicated with the following symbols:
 
   ${Prompts.MODIFIERS.add} create
   ${Prompts.MODIFIERS.modify} change
-  ${Prompts.MODIFIERS.remove} remove
+  ${Prompts.MODIFIERS.remove} remove`
 
-Salto will perform the following actions:`
+  public static readonly PLANSTEPSHEADER = 'Salto will perform the following actions:'
 
-  public static readonly PLANDISCLAIMER = `Note: You did not choose the apply option to execute the plan, so Salto cannot guarantee that 
-exactly these actions will be performed if "Salto apply" is run. Be sure to go over the plan 
-output when invoking the apply command.
-`
+  public static readonly PLANDISCLAIMER = `Note: Salto cannot guarantee that exactly these actions will be performed if "salto apply" is run.
+Be sure to go over the plan output when invoking the apply command.`
   public static readonly EMPTY_PLAN = 'Nothing to do.'
 
   public static readonly DESCRIBE_NEAR_MATCH =

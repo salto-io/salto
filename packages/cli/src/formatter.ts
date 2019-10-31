@@ -166,29 +166,43 @@ const getElapsedTime = (start: Date): number => Math.ceil(
   (new Date().getTime() - start.getTime()) / 1000,
 )
 
-export const createPlanOutput = (plan: Plan): string => {
+const createExecutionOutput = (plan: Plan): string[] => {
   if (_.isEmpty(plan)) {
     return [
       emptyLine(),
       Prompts.EMPTY_PLAN,
       emptyLine(),
-    ].join('\n')
+    ]
   }
   const actionCount = createCountPlanItemTypesOutput(plan)
   const planSteps = formatDetailedChanges(
     wu(plan.itemsByEvalOrder()).map(item => item.detailedChanges())
   )
   return [
-    header(Prompts.STARTPLAN),
-    subHeader(Prompts.EXPLAINPLAN),
-    seperator(),
-    subHeader(Prompts.EXPLAINPLANRESULT),
     emptyLine(),
+    header(Prompts.PLANSTEPSHEADER),
     planSteps,
     emptyLine(),
+    subHeader(Prompts.EXPLAINPLANRESULT),
+    emptyLine(),
     actionCount,
+    emptyLine(),
+  ]
+}
+
+export const createApplyPlanOutput = (plan: Plan): string => {
+  const executionOutput = createExecutionOutput(plan)
+  return [
+    header(Prompts.STARTAPPLY),
+    subHeader(Prompts.EXPLAINAPPLY),
+  ].concat(executionOutput).join('\n')
+}
+
+export const createPlanOutput = (plan: Plan): string => {
+  const executionOutput = createExecutionOutput(plan)
+  return executionOutput.concat([
     subHeader(Prompts.PLANDISCLAIMER),
-  ].join('\n')
+  ]).join('\n')
 }
 
 export const formatSearchResults = (result: SearchResult): string => {

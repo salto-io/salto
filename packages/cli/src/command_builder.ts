@@ -1,5 +1,5 @@
 import yargs from 'yargs'
-import { ParsedCliInput, CliOutput, CliCommand } from './types'
+import { ParsedCliInput, CliOutput, CliCommand, SpinnerCreator } from './types'
 import { Filter } from './filter'
 
 export type CommandBuilder<
@@ -7,7 +7,7 @@ export type CommandBuilder<
   TParsedCliInput extends ParsedCliInput<TArgs> = ParsedCliInput<TArgs>,
   > =
   // Create a CliCommand given a parsed CLI input (output of yargs parser) and output interface
-  (input: TParsedCliInput, output: CliOutput) => Promise<CliCommand>
+  (input: TParsedCliInput, output: CliOutput, spinner: SpinnerCreator) => Promise<CliCommand>
 
 export interface KeyedOptions { [key: string]: yargs.Options }
 export interface PositionalOptions { [key: string]: yargs.PositionalOptions }
@@ -71,8 +71,12 @@ export const createCommandBuilder = <
       },
     },
 
-    async build(input: TParsedCliInput, output: CliOutput): Promise<CliCommand> {
+    async build(
+      input: TParsedCliInput,
+      output: CliOutput,
+      spinnerCreator: SpinnerCreator
+    ): Promise<CliCommand> {
       const transformedInput = await Filter.applyParsedCliInput(filters, input) as TParsedCliInput
-      return build(transformedInput, output)
+      return build(transformedInput, output, spinnerCreator)
     },
   })

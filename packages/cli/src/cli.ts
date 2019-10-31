@@ -2,7 +2,7 @@ import { EOL } from 'os'
 import chalk from 'chalk'
 import { compareLogLevels, LogLevel, logger } from '@salto/logging'
 import { streams } from '@salto/lowerdash'
-import { CliInput, CliOutput, CliExitCode } from './types'
+import { CliInput, CliOutput, CliExitCode, SpinnerCreator } from './types'
 import { YargsCommandBuilder } from './command_builder'
 import parse, { ERROR_STYLE } from './argparser'
 
@@ -21,10 +21,11 @@ const increaseLoggingLogLevel = (): void => {
 }
 
 export default async (
-  { input, output, commandBuilders }: {
+  { input, output, commandBuilders, spinnerCreator }: {
     input: CliInput
     output: CliOutput
     commandBuilders: YargsCommandBuilder[]
+    spinnerCreator: SpinnerCreator
   }
 ): Promise<CliExitCode> => {
   try {
@@ -44,7 +45,7 @@ export default async (
       log.info('CLI started')
 
       const parsedInput = { ...input, args: parsedArgs }
-      const command = await commandBuilder(parsedInput, output)
+      const command = await commandBuilder(parsedInput, output, spinnerCreator)
       return await command.execute()
     }
 

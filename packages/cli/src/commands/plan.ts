@@ -1,22 +1,34 @@
 import { plan } from 'salto'
 import { createCommandBuilder } from '../command_builder'
-import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'
+import {
+  ParsedCliInput, CliCommand, CliOutput, SpinnerCreator, CliExitCode,
+} from '../types'
 import { createPlanOutput } from '../formatter'
 import { loadWorkspace } from '../workspace'
+import Prompts from '../prompts'
 
 export const command = (
   workspaceDir: string,
-  { stdout, stderr }: CliOutput
+  { stdout, stderr }: CliOutput,
+  spinnerCreator: SpinnerCreator
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
-    const { workspace, errored } = await loadWorkspace(workspaceDir, stderr)
-    if (errored) {
-      return CliExitCode.AppError
+    const spinner = spinnerCreator(Prompts.PLAN_STARTED, {})
+    try {
+      const { workspace, errored } = await loadWorkspace(workspaceDir, stderr)
+      if (errored) {
+        spinner.fail(Prompts.PLAN_FAILED)
+        return CliExitCode.AppError
+      }
+      // TODO: inline commands.plan here
+      const workspacePlan = await plan(workspace)
+      spinner.succeed(Prompts.PLAN_FINISHED)
+      stdout.write(createPlanOutput(workspacePlan))
+      return CliExitCode.Success
+    } catch (error) {
+      spinner.fail(Prompts.PLAN_FAILED)
+      throw error
     }
-    // TODO: inline commands.plan here
-    stdout.write(createPlanOutput(await plan(workspace)))
-
-    return CliExitCode.Success
   },
 })
 
@@ -39,8 +51,8 @@ const planBuilder = createCommandBuilder({
     },
   },
 
-  async build(_input: PlanParsedCliInput, output: CliOutput) {
-    return command('.', output)
+  async build(_input: PlanParsedCliInput, output: CliOutput, spinnerCreator: SpinnerCreator) {
+    return command('.', output, spinnerCreator)
   },
 })
 

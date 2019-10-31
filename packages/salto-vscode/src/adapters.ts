@@ -18,18 +18,31 @@ export const vsPosToSaltoPos = (pos: vscode.Position): EditorPosition => ({
   col: pos.character,
 })
 
+const kindMap: {[key in SaltoSymbolKind]: vscode.SymbolKind} = {
+  [SaltoSymbolKind.Field]: vscode.SymbolKind.Field,
+  [SaltoSymbolKind.Array]: vscode.SymbolKind.Array,
+  [SaltoSymbolKind.Type]: vscode.SymbolKind.Class,
+  [SaltoSymbolKind.Instance]: vscode.SymbolKind.Variable,
+  [SaltoSymbolKind.Annotation]: vscode.SymbolKind.Variable,
+  [SaltoSymbolKind.File]: vscode.SymbolKind.File,
+  [SaltoSymbolKind.Attribute]: vscode.SymbolKind.Variable,
+}
+
+export const buildVSSymbol = (
+  context: PositionContext
+): vscode.SymbolInformation => {
+  const saltoSymbol = createSaltoSymbol(context)
+  return {
+    kind : kindMap[saltoSymbol.type],
+    location : saltoPosToVsPos(saltoSymbol.range.start),
+    
+  }
+}
+
 export const buildVSDefinitions = (
   context: PositionContext,
 ): vscode.DocumentSymbol => {
-  const kindMap: {[key in SaltoSymbolKind]: vscode.SymbolKind} = {
-    [SaltoSymbolKind.Field]: vscode.SymbolKind.Field,
-    [SaltoSymbolKind.Array]: vscode.SymbolKind.Array,
-    [SaltoSymbolKind.Type]: vscode.SymbolKind.Class,
-    [SaltoSymbolKind.Instance]: vscode.SymbolKind.Variable,
-    [SaltoSymbolKind.Annotation]: vscode.SymbolKind.Variable,
-    [SaltoSymbolKind.File]: vscode.SymbolKind.File,
-    [SaltoSymbolKind.Attribute]: vscode.SymbolKind.Variable,
-  }
+
   const saltoSymbol = createSaltoSymbol(context)
   const range = new vscode.Range(
     saltoPosToVsPos(saltoSymbol.range.start),

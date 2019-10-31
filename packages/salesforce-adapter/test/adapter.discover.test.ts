@@ -110,13 +110,13 @@ describe('SalesforceAdapter discover', () => {
       expect(lead.fields.last_name.annotations[Type.DEFAULT]).toBe('BLABLA')
       expect(lead.fields.is_deleted.annotations[Type.DEFAULT]).toBe(false)
       // Custom type
-      expect(lead.fields.custom).not.toBeUndefined()
-      expect(lead.fields.custom.annotations[constants.API_NAME]).toBe('Custom__c')
-      expect(lead.fields.custom.annotations[Type.DEFAULT]).toBe(false)
+      expect(lead.fields.custom__c).not.toBeUndefined()
+      expect(lead.fields.custom__c.annotations[constants.API_NAME]).toBe('Custom__c')
+      expect(lead.fields.custom__c.annotations[Type.DEFAULT]).toBe(false)
       // Formula field
-      expect(lead.fields.formula).toBeDefined()
-      expect(lead.fields.formula.type.elemID.name).toBe('formula_text')
-      expect(lead.fields.formula.annotations[constants.FORMULA]).toBe('my formula')
+      expect(lead.fields.formula__c).toBeDefined()
+      expect(lead.fields.formula__c.type.elemID.name).toBe('formula_text')
+      expect(lead.fields.formula__c.annotations[constants.FORMULA]).toBe('my formula')
     })
 
     it('should discover sobject with picklist field', async () => {
@@ -266,10 +266,10 @@ describe('SalesforceAdapter discover', () => {
       const [test, testCustomizations] = testElements
       expect(test.path).toEqual(['objects', 'standard', 'test'])
       expect(test.fields.dummy).toBeDefined()
-      expect(test.fields.custom_field).toBeUndefined()
+      expect(test.fields.custom_field__c).toBeUndefined()
       expect(testCustomizations.path).toEqual(['objects', 'custom', 'test'])
       expect(testCustomizations.fields.dummy).toBeUndefined()
-      expect(testCustomizations.fields.custom_field).toBeDefined()
+      expect(testCustomizations.fields.custom_field__c).toBeDefined()
     })
 
     it('should place SObjects that are not custom objects in the types directory', async () => {
@@ -289,7 +289,7 @@ describe('SalesforceAdapter discover', () => {
       const [test] = testElements
       expect(test.path).toEqual(['types', 'object', 'test'])
       expect(test.fields.dummy).toBeDefined()
-      expect(test.fields.custom_field).toBeDefined()
+      expect(test.fields.custom_field__c).toBeDefined()
     })
 
     it('should not split custom SObjects', async () => {
@@ -304,13 +304,13 @@ describe('SalesforceAdapter discover', () => {
 
       const result = await adapter.discover()
 
-      const testElements = result.filter(o => o.elemID.name === 'test') as ObjectType[]
+      const testElements = result.filter(o => o.elemID.name === 'test__c') as ObjectType[]
       // custom objects should not be split
       expect(testElements).toHaveLength(1)
       const [test] = testElements
-      expect(test.path).toEqual(['objects', 'custom', 'test'])
+      expect(test.path).toEqual(['objects', 'custom', 'test__c'])
       expect(test.fields.dummy).toBeDefined()
-      expect(test.fields.custom_field).toBeDefined()
+      expect(test.fields.custom_field__c).toBeDefined()
     })
 
     it('should not discover SObjects that conflict with metadata types', async () => {
@@ -569,7 +569,7 @@ describe('SalesforceAdapter discover', () => {
       })
 
       const result = await adapter.discover()
-      const layout = result.filter(o => o.elemID.name === 'layout_order_order_layout').pop() as InstanceElement
+      const layout = result.filter(o => o.elemID.name === 'layout_order__order__layout').pop() as InstanceElement
       expect(layout.type.elemID.getFullName()).toBe('salesforce_layout')
       expect(layout.value.full_name).toBe('Order-Order Layout')
       expect(layout.value.layout_sections.length).toBe(3)

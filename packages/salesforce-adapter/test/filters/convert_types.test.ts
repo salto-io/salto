@@ -33,7 +33,7 @@ describe('convert types filter', () => {
       bool: 'false',
       num: '12',
       // eslint-disable-next-line @typescript-eslint/camelcase
-      nullStr: { '': { xsi_nil: 'true' } },
+      nullStr: { _: { xsi_nil: 'true' } },
       numArray: ['12', '13', '14'],
       picklist: '0',
     },

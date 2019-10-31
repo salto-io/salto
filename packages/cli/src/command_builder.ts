@@ -74,9 +74,9 @@ export const createCommandBuilder = <
     async build(
       input: TParsedCliInput,
       output: CliOutput,
-      spinner: SpinnerCreator
+      spinnerCreator: SpinnerCreator
     ): Promise<CliCommand> {
       const transformedInput = await Filter.applyParsedCliInput(filters, input) as TParsedCliInput
-      return build(transformedInput, output, spinner)
+      return build(transformedInput, output, spinnerCreator)
     },
   })

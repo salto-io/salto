@@ -3,7 +3,7 @@ import { createCommandBuilder } from '../command_builder'
 import {
   ParsedCliInput, CliCommand, CliOutput, SpinnerCreator, CliExitCode,
 } from '../types'
-import { createPlanOutput, formatWorkspaceErrors } from '../formatter'
+import { createPlanOutput } from '../formatter'
 import { loadWorkspace } from '../workspace'
 import Prompts from '../prompts'
 
@@ -14,16 +14,21 @@ export const command = (
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
     const spinner = spinnerCreator(Prompts.PLAN_STARTED, {})
-    const { workspace, errored } = await loadWorkspace(workspaceDir, stderr)
-    if (errored) {
+    try {
+      const { workspace, errored } = await loadWorkspace(workspaceDir, stderr)
+      if (errored) {
+        spinner.fail(Prompts.PLAN_FAILED)
+        return CliExitCode.AppError
+      }
+      // TODO: inline commands.plan here
+      const workspacePlan = await plan(workspace)
+      spinner.succeed(Prompts.PLAN_FINISHED)
+      stdout.write(createPlanOutput(workspacePlan))
+      return CliExitCode.Success
+    } catch (error) {
       spinner.fail(Prompts.PLAN_FAILED)
-      return CliExitCode.AppError
+      throw error
     }
-    // TODO: inline commands.plan here
-    const workspacePlan = await plan(workspace)
-    spinner.succeed(Prompts.PLAN_FINISHED)
-    stdout.write(createPlanOutput(workspacePlan))
-    return CliExitCode.Success
   },
 })
 

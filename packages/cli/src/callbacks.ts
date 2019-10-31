@@ -30,20 +30,20 @@ export const shouldDeploy = ({ stdout }: CliOutput) => async (actions: Plan): Pr
   }
   const shouldExecute = await getUserBooleanInput(Prompts.SHOULDEXECUTREPLAN)
   if (shouldExecute) {
-    stdout.write(Prompts.STARTAPPLYEXEC)
+    stdout.write(Prompts.STARTDEPLOYEXEC)
   } else {
-    stdout.write(Prompts.CANCELAPPLY)
+    stdout.write(Prompts.CANCELDEPLOY)
   }
   return shouldExecute
 }
 
 export const getApprovedChanges = async (
-  changes: ReadonlyArray<DiscoverChange>,
-): Promise<ReadonlyArray<DiscoverChange>> => {
+  changes: ReadonlyArray<FetchChange>,
+): Promise<ReadonlyArray<FetchChange>> => {
   const shouldDeployAll = (answers: inquirer.Answers): boolean => (
     _.values(answers).some(answer => answer === 'all')
   )
-  const isConflict = (change: DiscoverChange): boolean => change.pendingChange !== undefined
+  const isConflict = (change: FetchChange): boolean => change.pendingChange !== undefined
 
   const questions = changes.map((change, idx): inquirer.Question => ({
     type: 'expand',

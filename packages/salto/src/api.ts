@@ -3,7 +3,7 @@ import {
   ObjectType, InstanceElement, Element, Value,
 } from 'adapter-api'
 import {
-  deployActions,
+  applyActions,
 } from './core/core'
 import {
   getInstancesOfType, importInstancesOfType, deleteInstancesOfType,
@@ -48,7 +48,7 @@ export const deploy = async (
     const actionPlan = getPlan(await state.get(), workspace.elements)
     if (force || await shouldDeploy(actionPlan)) {
       const [adapters] = await initAdapters(workspace.elements, fillConfig)
-      await deployActions(
+      await applyActions(
         actionPlan,
         adapters,
         reportProgress,

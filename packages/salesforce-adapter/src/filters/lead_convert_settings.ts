@@ -31,7 +31,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
   /**
    * Upon fetch, add lead_convert_setting annotation.
    *
-   * @param elements the already fetchd elements
+   * @param elements the already fetched elements
    */
   onFetch: async (elements: Element[]) => {
     const lead = _(elements).filter(isObjectType).find(e => isTypeName(e, LEAD_TYPE))

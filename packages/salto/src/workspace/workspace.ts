@@ -315,7 +315,7 @@ export class Workspace {
   /**
    * Update workspace with changes to elements in the workspace
    *
-   * @param changes The changes to deploy
+   * @param changes The changes to apply
    */
   async updateBlueprints(...changes: DetailedChange[]): Promise<void> {
     const getBlueprintData = (filename: string): string => {

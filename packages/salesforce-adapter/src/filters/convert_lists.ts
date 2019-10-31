@@ -13,14 +13,14 @@ import { FilterCreator } from '../filter'
  */
 const filter: FilterCreator = () => ({
   /**
-   * Upon fetch, mark all list fields as list fields in all fetchd types
+   * Upon fetch, mark all list fields as list fields in all fetched types
    *
-   * @param elements the already fetchd elements
+   * @param elements the already fetched elements
    */
   onFetch: async (elements: Element[]) => {
     // This method iterate on types and corresponding values and run innerChange
     // on every "node".
-    const deployRecursive = (type: ObjectType, value: Values,
+    const applyRecursive = (type: ObjectType, value: Values,
       innerChange: (field: Field, value: Value) => Value): Value => {
       Object.keys(type.fields).forEach(key => {
         if (!value || !value[key]) return
@@ -28,9 +28,9 @@ const filter: FilterCreator = () => ({
         const fieldType = type.fields[key].type
         if (isObjectType(fieldType)) {
           if (_.isArray(value[key])) {
-            value[key].forEach((val: Values) => deployRecursive(fieldType, val, innerChange))
+            value[key].forEach((val: Values) => applyRecursive(fieldType, val, innerChange))
           } else {
-            deployRecursive(fieldType, value[key], innerChange)
+            applyRecursive(fieldType, value[key], innerChange)
           }
         }
       })
@@ -44,7 +44,7 @@ const filter: FilterCreator = () => ({
       return value
     }
     elements.filter(isInstanceElement).forEach(instnace =>
-      deployRecursive(instnace.type as ObjectType, instnace.value, markList))
+      applyRecursive(instnace.type as ObjectType, instnace.value, markList))
 
     // Cast all lists to list
     const castLists = (field: Field, value: Value): Value => {
@@ -58,7 +58,7 @@ const filter: FilterCreator = () => ({
       return value
     }
     elements.filter(isInstanceElement).forEach(instnace =>
-      deployRecursive(instnace.type as ObjectType, instnace.value, castLists))
+      applyRecursive(instnace.type as ObjectType, instnace.value, castLists))
   },
 })
 

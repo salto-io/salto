@@ -30,15 +30,15 @@ const deployAction = async (
   }
 }
 
-export const deployActions = async (
+export const applyActions = async (
   deployPlan: Plan,
   adapters: Record<string, Adapter>,
   reportProgress: (action: PlanItem) => void,
-  postDeployAction: (action: string, element: Promise<Element>) => Promise<void>
+  postApplyAction: (action: string, element: Promise<Element>) => Promise<void>
 ): Promise<void> =>
   deployPlan.walk((itemId: PlanItemId): Promise<void> => {
     const item = deployPlan.getItem(itemId) as PlanItem
     reportProgress(item)
     const deployActionResult = deployAction(item, adapters)
-    return postDeployAction(item.parent().action, deployActionResult)
+    return postApplyAction(item.parent().action, deployActionResult)
   })

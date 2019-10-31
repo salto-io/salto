@@ -63,7 +63,7 @@ export const previewCommand = async (
   if (!workspace.hasErrors()) {
     displayPlan(await preview(workspace.workspace), extensionPath)
   } else {
-    displayError('Failed to run plan. Please fix the detected problems and try again.')
+    displayError('Failed to create a preview. Please fix the detected problems and try again.')
   }
 }
 
@@ -77,7 +77,7 @@ export const deployCommand = async (
     new Promise<vscode.Progress<{message: string}>>(resolve => {
       vscode.window.withProgress({
         location: vscode.ProgressLocation.Notification,
-        title: 'Deploying plan',
+        title: 'Deploying changes',
         cancellable: true,
       },
       progress => {

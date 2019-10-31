@@ -15,7 +15,7 @@ const filterCreator: FilterCreator = () => ({
   /**
    * Upon fetch, rename assignment rules instances
    *
-   * @param elements the already fetchd elements
+   * @param elements the already fetched elements
    */
   onFetch: async (elements: Element[]) => {
     _(elements)

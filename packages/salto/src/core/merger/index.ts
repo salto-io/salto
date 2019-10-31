@@ -49,7 +49,7 @@ const updateMergedTypes = (
 })
 
 /**
- * Merge a list of elements by deploying all updates, and replacing the pointers
+ * Merge a list of elements by applying all updates, and replacing the pointers
  * to the updated elements.
  */
 export const mergeElements = (elements: ReadonlyArray<Element>): MergeResult => {

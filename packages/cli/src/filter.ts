@@ -4,14 +4,14 @@ import { ParsedCliInput } from './types'
 type Transformer<T1, T2 extends T1> = (v: T1) => T2
 type AsyncTransformer<T1, T2 extends T1> = (v: T1) => Promise<T2>
 
-const deploy = <T1, T2 extends T1>(input: T1, ...transformers: Transformer<T1, T2>[]): T2 =>
+const apply = <T1, T2 extends T1>(input: T1, ...transformers: Transformer<T1, T2>[]): T2 =>
   transformers.reduce((res, transformer) => transformer(res), input) as T2
 
-const deployAsync = <T1, T2 extends T1>(
+const applyAsync = <T1, T2 extends T1>(
   input: T1, ...transformers: AsyncTransformer<T1, T2>[]
 ): Promise<T2> => (
     transformers.length
-      ? transformers[0](input).then(v => deployAsync(v, ...transformers.slice(1)))
+      ? transformers[0](input).then(v => applyAsync(v, ...transformers.slice(1)))
       : Promise.resolve(input as T2)
   )
 
@@ -38,13 +38,13 @@ export namespace Filter {
 
   const isParsedCliInput = (f: Filter): f is ParsedCliInputFilter => 'transformParsedCliInput' in f
 
-  export const deployParser = (middlewares: Filter[], parser: yargs.Argv): yargs.Argv =>
-    deploy(parser, ...middlewares.filter(isParser).map(m => m.transformParser))
+  export const applyParser = (middlewares: Filter[], parser: yargs.Argv): yargs.Argv =>
+    apply(parser, ...middlewares.filter(isParser).map(m => m.transformParser))
 
-  export const deployParsedCliInput = (
+  export const applyParsedCliInput = (
     middlewares: Filter[], input: ParsedCliInput
   ): Promise<ParsedCliInput> =>
-    deployAsync(
+    applyAsync(
       input,
       ...middlewares.filter(isParsedCliInput).map(m => m.transformParsedCliInput),
     )

@@ -138,7 +138,7 @@ const validateAnnotationsValues = (
     return validateRestrictionsValue(value)
   }
 
-  // Deploy validateAnnotations for each element in our values list
+  // Apply validateAnnotations for each element in our values list
   if (field.isList) {
     return _.isArray(value)
       ? _.flatten(value.map((v, i) => validateAnnotations(

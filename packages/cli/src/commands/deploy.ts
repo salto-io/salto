@@ -72,8 +72,8 @@ type DeployParsedCliInput = ParsedCliInput<DeployArgs>
 const deployBuilder = createCommandBuilder({
   options: {
     command: 'deploy',
-    aliases: ['a'],
-    description: 'Applies changes to the target services',
+    aliases: ['dep'],
+    description: 'Deploys changes to the target services',
     keyed: {
       yes: {
         describe: 'Do not ask for approval before deploying',

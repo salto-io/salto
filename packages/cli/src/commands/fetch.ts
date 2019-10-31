@@ -26,7 +26,7 @@ export const fetchCommand = async (
   if (!validateWorkspace(workspace, output.stderr)) {
     return CliExitCode.AppError
   }
-  outputLine(Prompts.DISCOVER_BEGIN)
+  outputLine(Prompts.FETCH_BEGIN)
   // Unpack changes to array so we can iterate on them more than once
   const changes = [...await fetch(workspace, getConfigFromUser)]
   // If the workspace starts empty there is no point in showing a huge amount of changes
@@ -62,7 +62,7 @@ type FetchParsedCliInput = ParsedCliInput<FetchArgs>
 const fetchBuilder = createCommandBuilder({
   options: {
     command: 'fetch',
-    aliases: ['dis'],
+    aliases: ['f'],
     description: 'Update blueprints and state in workspace directory',
     keyed: {
       force: {

@@ -63,11 +63,11 @@ export const createCommandBuilder = <
         Object.entries(options.positional || {})
           .reduce((res, [key, opt]) => res.positional(key, opt), parser)
 
-        // deploy keyed arguments
+        // apply keyed arguments
         parser.options(options.keyed || {})
 
-        // deploy filters
-        return Filter.deployParser(filters, parser)
+        // apply filters
+        return Filter.applyParser(filters, parser)
       },
     },
     async build(

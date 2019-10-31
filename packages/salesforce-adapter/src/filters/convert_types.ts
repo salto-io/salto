@@ -112,7 +112,7 @@ const filterCreator: FilterCreator = () => ({
    * Upon fetch, convert all instance values to their correct type according to the
    * type definitions
    *
-   * @param elements the already fetchd elements
+   * @param elements the already fetched elements
    */
   onFetch: async (elements: Element[]) => {
     elements

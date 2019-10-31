@@ -47,13 +47,13 @@ describe('Salesforce adapter E2E with real account', () => {
       const lead = result.filter(element => element.elemID.name === 'lead')[0] as ObjectType
 
       // Test few possible types
-      expect(lead.fields.last_name.type.elemID.name).toBe('string')
+      expect(lead.fields.address.type.elemID.name).toBe('address')
       expect(lead.fields.description.type.elemID.name).toBe('longtextarea')
-      expect(lead.fields.salutation.type.elemID.name).toBe('picklist')
+      expect(lead.fields.name.type.elemID.name).toBe('name')
       expect(lead.fields.owner.type.elemID.name).toBe('lookup')
 
       // Test label
-      expect(lead.fields.last_name.annotations[constants.LABEL]).toBe('Last Name')
+      expect(lead.fields.name.annotations[constants.LABEL]).toBe('Full Name')
 
       // Test true and false required
       expect(lead.fields.description.annotations[Type.REQUIRED]).toBe(false)
@@ -70,8 +70,8 @@ describe('Salesforce adapter E2E with real account', () => {
 
       // Test standard picklist values from a standard value set
       expect(
-        lead.fields.salutation.annotations[Type.VALUES]
-      ).toBe('salesforce_standard_value_set_salutation')
+        lead.fields.lead_source.annotations[Type.VALUES]
+      ).toBe('salesforce_standard_value_set_lead_source')
 
       // Test picklist values
       expect(
@@ -163,7 +163,7 @@ describe('Salesforce adapter E2E with real account', () => {
       })
     }
 
-    const stringType = Types.salesforceDataTypes.text
+    const stringType = Types.primitiveDataTypes.text
 
     it('should add new profile instance', async () => {
       const instanceElementName = 'TestAddProfileInstance__c'
@@ -799,7 +799,7 @@ describe('Salesforce adapter E2E with real account', () => {
           pickle: new Field(
             mockElemID,
             'pickle',
-            Types.salesforceDataTypes.picklist,
+            Types.primitiveDataTypes.picklist,
             {
               [Type.REQUIRED]: false,
               [Type.DEFAULT]: 'NEW',
@@ -811,7 +811,7 @@ describe('Salesforce adapter E2E with real account', () => {
           alpha: new Field(
             mockElemID,
             'alpha',
-            Types.salesforceDataTypes.currency,
+            Types.primitiveDataTypes.currency,
             {
               [Type.REQUIRED]: false,
               [constants.DEFAULT_VALUE_FORMULA]: 25,
@@ -824,7 +824,7 @@ describe('Salesforce adapter E2E with real account', () => {
           bravo: new Field(
             mockElemID,
             'bravo',
-            Types.salesforceDataTypes.autonumber,
+            Types.primitiveDataTypes.autonumber,
             {
               [Type.REQUIRED]: false,
               [constants.LABEL]: 'Autonumber description label',
@@ -835,7 +835,7 @@ describe('Salesforce adapter E2E with real account', () => {
           charlie: new Field(
             mockElemID,
             'charlie',
-            Types.salesforceDataTypes.date,
+            Types.primitiveDataTypes.date,
             {
               [constants.LABEL]: 'Date description label',
               [constants.DEFAULT_VALUE_FORMULA]: 'Today() + 7',
@@ -845,7 +845,7 @@ describe('Salesforce adapter E2E with real account', () => {
           delta: new Field(
             mockElemID,
             'delta',
-            Types.salesforceDataTypes.time,
+            Types.primitiveDataTypes.time,
             {
               [constants.LABEL]: 'Time description label',
               [constants.DEFAULT_VALUE_FORMULA]: 'TIMENOW() + 5',
@@ -855,7 +855,7 @@ describe('Salesforce adapter E2E with real account', () => {
           echo: new Field(
             mockElemID,
             'echo',
-            Types.salesforceDataTypes.datetime,
+            Types.primitiveDataTypes.datetime,
             {
               [constants.LABEL]: 'DateTime description label',
               [constants.DEFAULT_VALUE_FORMULA]: 'Now() + 7',
@@ -865,7 +865,7 @@ describe('Salesforce adapter E2E with real account', () => {
           foxtrot: new Field(
             mockElemID,
             'foxtrot',
-            Types.salesforceDataTypes.email,
+            Types.primitiveDataTypes.email,
             {
               [constants.LABEL]: 'Email description label',
               [constants.FIELD_ANNOTATIONS.UNIQUE]: true,
@@ -876,7 +876,7 @@ describe('Salesforce adapter E2E with real account', () => {
           golf: new Field(
             mockElemID,
             'golf',
-            Types.salesforceDataTypes.location,
+            Types.compoundDataTypes.location,
             {
               [constants.LABEL]: 'Location description label',
               [constants.FIELD_ANNOTATIONS.SCALE]: 2,
@@ -887,7 +887,7 @@ describe('Salesforce adapter E2E with real account', () => {
           hotel: new Field(
             mockElemID,
             'hotel',
-            Types.salesforceDataTypes.multipicklist,
+            Types.primitiveDataTypes.multipicklist,
             {
               [constants.LABEL]: 'Multipicklist description label',
               [Type.VALUES]: ['DO', 'RE', 'MI', 'FA', 'SOL', 'LA', 'SI'],
@@ -899,7 +899,7 @@ describe('Salesforce adapter E2E with real account', () => {
           india: new Field(
             mockElemID,
             'india',
-            Types.salesforceDataTypes.percent,
+            Types.primitiveDataTypes.percent,
             {
               [constants.LABEL]: 'Percent description label',
               [constants.FIELD_ANNOTATIONS.SCALE]: 3,
@@ -910,7 +910,7 @@ describe('Salesforce adapter E2E with real account', () => {
           juliett: new Field(
             mockElemID,
             'juliett',
-            Types.salesforceDataTypes.phone,
+            Types.primitiveDataTypes.phone,
             {
               [constants.LABEL]: 'Phone description label',
               ...adminReadable,
@@ -919,7 +919,7 @@ describe('Salesforce adapter E2E with real account', () => {
           kilo: new Field(
             mockElemID,
             'kilo',
-            Types.salesforceDataTypes.longtextarea,
+            Types.primitiveDataTypes.longtextarea,
             {
               [constants.LABEL]: 'LongTextArea description label',
               [constants.FIELD_ANNOTATIONS.VISIBLE_LINES]: 5,
@@ -929,7 +929,7 @@ describe('Salesforce adapter E2E with real account', () => {
           lima: new Field(
             mockElemID,
             'lima',
-            Types.salesforceDataTypes.richtextarea,
+            Types.primitiveDataTypes.richtextarea,
             {
               [constants.LABEL]: 'RichTextArea description label',
               [constants.FIELD_ANNOTATIONS.VISIBLE_LINES]: 27,
@@ -939,7 +939,7 @@ describe('Salesforce adapter E2E with real account', () => {
           mike: new Field(
             mockElemID,
             'mike',
-            Types.salesforceDataTypes.textarea,
+            Types.primitiveDataTypes.textarea,
             {
               [constants.LABEL]: 'TextArea description label',
               ...adminReadable,
@@ -948,7 +948,7 @@ describe('Salesforce adapter E2E with real account', () => {
           november: new Field(
             mockElemID,
             'november',
-            Types.salesforceDataTypes.encryptedtext,
+            Types.primitiveDataTypes.encryptedtext,
             {
               [constants.LABEL]: 'EncryptedText description label',
               [constants.FIELD_ANNOTATIONS.MASK_TYPE]: 'creditCard',
@@ -960,7 +960,7 @@ describe('Salesforce adapter E2E with real account', () => {
           oscar: new Field(
             mockElemID,
             'oscar',
-            Types.salesforceDataTypes.url,
+            Types.primitiveDataTypes.url,
             {
               [constants.LABEL]: 'Url description label',
               ...adminReadable,
@@ -969,7 +969,7 @@ describe('Salesforce adapter E2E with real account', () => {
           papa: new Field(
             mockElemID,
             'papa',
-            Types.salesforceDataTypes.number,
+            Types.primitiveDataTypes.number,
             {
               [constants.FIELD_ANNOTATIONS.SCALE]: 3,
               [constants.FIELD_ANNOTATIONS.PRECISION]: 15,
@@ -982,7 +982,7 @@ describe('Salesforce adapter E2E with real account', () => {
           queen: new Field(
             mockElemID,
             `queen${randomString}`,
-            Types.salesforceDataTypes.lookup,
+            Types.primitiveDataTypes.lookup,
             {
               [Type.REQUIRED]: false,
               [constants.FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION]: false,
@@ -1011,7 +1011,7 @@ describe('Salesforce adapter E2E with real account', () => {
           rocket: new Field(
             mockElemID,
             `rocket${randomString}`,
-            Types.salesforceDataTypes.masterdetail,
+            Types.primitiveDataTypes.masterdetail,
             {
               [Type.REQUIRED]: false,
               [constants.FIELD_ANNOTATIONS.RELATED_TO]: ['Case'],

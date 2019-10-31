@@ -14,7 +14,7 @@ describe('Adapter E2E import-export related operations with real account', () =>
 
   const sfLeadName = 'Lead'
   const leadName = 'lead'
-  const stringType = Types.salesforceDataTypes.text
+  const stringType = Types.primitiveDataTypes.text
 
   const leadElemID = new ElemID(constants.SALESFORCE, leadName)
   const leadType = new ObjectType({

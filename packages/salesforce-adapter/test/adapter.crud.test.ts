@@ -26,7 +26,7 @@ describe('SalesforceAdapter CRUD', () => {
   let adapter: SalesforceAdapter
   let logger: MockLogger
 
-  const stringType = Types.salesforceDataTypes.text
+  const stringType = Types.primitiveDataTypes.text
 
   const mockElemID = new ElemID(constants.SALESFORCE, 'test')
   const mockInstanceID = new ElemID(constants.SALESFORCE, 'instance')
@@ -265,7 +265,7 @@ describe('SalesforceAdapter CRUD', () => {
           state: new Field(
             mockElemID,
             'state',
-            Types.salesforceDataTypes.picklist,
+            Types.primitiveDataTypes.picklist,
             {
               [Type.REQUIRED]: false,
               [Type.DEFAULT]: 'NEW',
@@ -312,7 +312,7 @@ describe('SalesforceAdapter CRUD', () => {
           alpha: new Field(
             mockElemID,
             'currency',
-            Types.salesforceDataTypes.currency,
+            Types.primitiveDataTypes.currency,
             {
               [constants.LABEL]: 'Currency description label',
               [constants.FIELD_ANNOTATIONS.SCALE]: 3,
@@ -322,7 +322,7 @@ describe('SalesforceAdapter CRUD', () => {
           bravo: new Field(
             mockElemID,
             'auto',
-            Types.salesforceDataTypes.autonumber,
+            Types.primitiveDataTypes.autonumber,
             {
               [constants.LABEL]: 'Autonumber description label',
               [constants.FIELD_ANNOTATIONS.DISPLAY_FORMAT]: 'ZZZ-{0000}',
@@ -331,7 +331,7 @@ describe('SalesforceAdapter CRUD', () => {
           charlie: new Field(
             mockElemID,
             'date',
-            Types.salesforceDataTypes.date,
+            Types.primitiveDataTypes.date,
             {
               [constants.LABEL]: 'Date description label',
               [constants.DEFAULT_VALUE_FORMULA]: 'Today() + 7',
@@ -340,7 +340,7 @@ describe('SalesforceAdapter CRUD', () => {
           delta: new Field(
             mockElemID,
             'time',
-            Types.salesforceDataTypes.time,
+            Types.primitiveDataTypes.time,
             {
               [constants.LABEL]: 'Time description label',
               [constants.DEFAULT_VALUE_FORMULA]: 'TIMENOW() + 5',
@@ -349,7 +349,7 @@ describe('SalesforceAdapter CRUD', () => {
           echo: new Field(
             mockElemID,
             'datetime',
-            Types.salesforceDataTypes.datetime,
+            Types.primitiveDataTypes.datetime,
             {
               [constants.LABEL]: 'DateTime description label',
               [constants.DEFAULT_VALUE_FORMULA]: 'Now() + 7',
@@ -358,7 +358,7 @@ describe('SalesforceAdapter CRUD', () => {
           foxtrot: new Field(
             mockElemID,
             'email',
-            Types.salesforceDataTypes.email,
+            Types.primitiveDataTypes.email,
             {
               [constants.LABEL]: 'Email description label',
               [constants.FIELD_ANNOTATIONS.UNIQUE]: true,
@@ -368,7 +368,7 @@ describe('SalesforceAdapter CRUD', () => {
           golf: new Field(
             mockElemID,
             'location',
-            Types.salesforceCompoundDataTypes.location,
+            Types.compoundDataTypes.location,
             {
               [constants.LABEL]: 'Location description label',
               [constants.FIELD_ANNOTATIONS.SCALE]: 2,
@@ -378,7 +378,7 @@ describe('SalesforceAdapter CRUD', () => {
           hotel: new Field(
             mockElemID,
             'multipicklist',
-            Types.salesforceDataTypes.multipicklist,
+            Types.primitiveDataTypes.multipicklist,
             {
               [constants.LABEL]: 'Multipicklist description label',
               [Type.VALUES]: ['DO', 'RE', 'MI', 'FA', 'SOL', 'LA', 'SI'],
@@ -389,7 +389,7 @@ describe('SalesforceAdapter CRUD', () => {
           india: new Field(
             mockElemID,
             'percent',
-            Types.salesforceDataTypes.percent,
+            Types.primitiveDataTypes.percent,
             {
               [constants.LABEL]: 'Percent description label',
               [constants.FIELD_ANNOTATIONS.SCALE]: 3,
@@ -399,7 +399,7 @@ describe('SalesforceAdapter CRUD', () => {
           juliett: new Field(
             mockElemID,
             'phone',
-            Types.salesforceDataTypes.phone,
+            Types.primitiveDataTypes.phone,
             {
               [constants.LABEL]: 'Phone description label',
             },
@@ -407,7 +407,7 @@ describe('SalesforceAdapter CRUD', () => {
           kilo: new Field(
             mockElemID,
             'longtextarea',
-            Types.salesforceDataTypes.longtextarea,
+            Types.primitiveDataTypes.longtextarea,
             {
               [constants.LABEL]: 'LongTextArea description label',
               [constants.FIELD_ANNOTATIONS.VISIBLE_LINES]: 5,
@@ -416,7 +416,7 @@ describe('SalesforceAdapter CRUD', () => {
           lima: new Field(
             mockElemID,
             'richtextarea',
-            Types.salesforceDataTypes.richtextarea,
+            Types.primitiveDataTypes.richtextarea,
             {
               [constants.LABEL]: 'RichTextArea description label',
               [constants.FIELD_ANNOTATIONS.VISIBLE_LINES]: 27,
@@ -425,7 +425,7 @@ describe('SalesforceAdapter CRUD', () => {
           mike: new Field(
             mockElemID,
             'textarea',
-            Types.salesforceDataTypes.textarea,
+            Types.primitiveDataTypes.textarea,
             {
               [constants.LABEL]: 'TextArea description label',
             },
@@ -433,7 +433,7 @@ describe('SalesforceAdapter CRUD', () => {
           november: new Field(
             mockElemID,
             'encryptedtext',
-            Types.salesforceDataTypes.encryptedtext,
+            Types.primitiveDataTypes.encryptedtext,
             {
               [constants.LABEL]: 'EncryptedText description label',
               [constants.FIELD_ANNOTATIONS.MASK_TYPE]: 'creditCard',
@@ -444,7 +444,7 @@ describe('SalesforceAdapter CRUD', () => {
           oscar: new Field(
             mockElemID,
             'url',
-            Types.salesforceDataTypes.url,
+            Types.primitiveDataTypes.url,
             {
               [constants.LABEL]: 'Url description label',
             },
@@ -452,7 +452,7 @@ describe('SalesforceAdapter CRUD', () => {
           papa: new Field(
             mockElemID,
             'picklist',
-            Types.salesforceDataTypes.picklist,
+            Types.primitiveDataTypes.picklist,
             {
               [constants.LABEL]: 'Picklist description label',
               [Type.VALUES]: ['DO', 'RE', 'MI', 'FA', 'SOL', 'LA', 'SI'],
@@ -462,7 +462,7 @@ describe('SalesforceAdapter CRUD', () => {
           quebec: new Field(
             mockElemID,
             'text',
-            Types.salesforceDataTypes.text,
+            Types.primitiveDataTypes.text,
             {
               [constants.LABEL]: 'Text description label',
               [Type.VALUES]: ['DO', 'RE', 'MI', 'FA', 'SOL', 'LA', 'SI'],
@@ -474,7 +474,7 @@ describe('SalesforceAdapter CRUD', () => {
           Romeo: new Field(
             mockElemID,
             'number',
-            Types.salesforceDataTypes.number,
+            Types.primitiveDataTypes.number,
             {
               [constants.LABEL]: 'Number description label',
               [constants.FIELD_ANNOTATIONS.SCALE]: 12,
@@ -485,7 +485,7 @@ describe('SalesforceAdapter CRUD', () => {
           quest: new Field(
             mockElemID,
             'checkbox',
-            Types.salesforceDataTypes.boolean,
+            Types.primitiveDataTypes.boolean,
             {
               [constants.LABEL]: 'Checkbox description label',
               [Type.DEFAULT]: true,

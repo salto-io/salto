@@ -12,7 +12,7 @@ import {
   toCustomField, toCustomObject, apiName, sfCase, fieldFullName, Types,
   getSObjectFieldElement, toMetadataInfo, createInstanceElement,
   metadataType, toMetadataPackageZip, toInstanceElements, createMetadataTypeElements,
-  instanceElementstoRecords, elemIDstoRecords, filterOutNestedCompoundFields, handleCompoundFields,
+  instanceElementstoRecords, elemIDstoRecords, getCompoundChildFields,
 } from './transformer'
 import layoutFilter from './filters/layouts'
 import fieldPermissionsFilter from './filters/field_permissions'
@@ -491,6 +491,13 @@ export default class SalesforceAdapter {
     fields: SObjField[],
     customObjectNames: Set<string>,
   ): Type[] {
+    // Filter out nested fields of compound fields
+    const filterOutNestedCompoundFields = (
+      fieldsToFiler: SObjField[]
+    ): SObjField[] => fieldsToFiler.filter(
+      field => !field.compoundFieldName
+    )
+
     const element = Types.get(objectName) as ObjectType
     element.annotate({ [constants.API_NAME]: objectName })
     element.annotate({ [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT })
@@ -606,7 +613,7 @@ export default class SalesforceAdapter {
 
   private async getFirstBatchOfInstances(type: ObjectType): Promise <QueryResult<Value>> {
     // build the initial query and populate the fields names list in the query
-    const queryString = `SELECT ${handleCompoundFields(type).map(apiName)} FROM ${apiName(type)}`
+    const queryString = `SELECT ${getCompoundChildFields(type).map(apiName)} FROM ${apiName(type)}`
     return this.client.runQuery(queryString)
   }
 }

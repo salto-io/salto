@@ -432,8 +432,8 @@ describe('SalesforceAdapter fetch', () => {
       const result = await adapter.fetch()
 
       expect(result).toHaveLength(_.concat(
-        Object.keys(Types.salesforceDataTypes),
-        Object.keys(Types.salesforceCompoundDataTypes)
+        Object.keys(Types.primitiveDataTypes),
+        Object.keys(Types.compoundDataTypes)
       ).length
         + 1 /* LookupFilter */ + 3)
       const types = _.assign({}, ...result.map(t => ({ [t.elemID.getFullName()]: t })))

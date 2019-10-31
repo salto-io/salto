@@ -36,8 +36,8 @@ const createPicklistObjectType = (
       mockElemID,
       'simps',
       isMultiPicklist
-        ? Types.salesforceDataTypes[constants.FIELD_TYPE_NAMES.MULTIPICKLIST]
-        : Types.salesforceDataTypes[constants.FIELD_TYPE_NAMES.PICKLIST], {
+        ? Types.primitiveDataTypes[constants.FIELD_TYPE_NAMES.MULTIPICKLIST]
+        : Types.primitiveDataTypes[constants.FIELD_TYPE_NAMES.PICKLIST], {
         [Type.REQUIRED]: false,
         [Type.DEFAULT]: 'Bart',
         [constants.API_NAME]: apiName,

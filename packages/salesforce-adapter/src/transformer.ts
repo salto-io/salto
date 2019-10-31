@@ -117,7 +117,7 @@ const geoLocationElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.LOCATION)
 
 export class Types {
   // Type mapping for custom objects
-  public static salesforceDataTypes: Record<string, Type> = {
+  public static primitiveDataTypes: Record<string, Type> = {
     text: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.TEXT),
       primitive: PrimitiveTypes.STRING,
@@ -256,7 +256,7 @@ export class Types {
   }
 
   // Type mapping for compound fields
-  public static salesforceCompoundDataTypes: Record<string, ObjectType> = {
+  public static compoundDataTypes: Record<string, ObjectType> = {
     address: new ObjectType({
       elemID: addressElemID,
       fields: {
@@ -267,7 +267,7 @@ export class Types {
           addressElemID, ADDRESS_FIELDS.COUNTRY, BuiltinTypes.STRING
         ),
         [ADDRESS_FIELDS.GEOCODE_ACCURACY]: new TypeField(
-          addressElemID, ADDRESS_FIELDS.GEOCODE_ACCURACY, Types.salesforceDataTypes.picklist
+          addressElemID, ADDRESS_FIELDS.GEOCODE_ACCURACY, Types.primitiveDataTypes.picklist
         ),
         [ADDRESS_FIELDS.LATITUDE]: new TypeField(
           addressElemID, ADDRESS_FIELDS.LATITUDE, BuiltinTypes.NUMBER
@@ -282,7 +282,7 @@ export class Types {
           addressElemID, ADDRESS_FIELDS.STATE, BuiltinTypes.STRING
         ),
         [ADDRESS_FIELDS.STREET]: new TypeField(
-          addressElemID, ADDRESS_FIELDS.STREET, Types.salesforceDataTypes.textarea
+          addressElemID, ADDRESS_FIELDS.STREET, Types.primitiveDataTypes.textarea
         ),
       },
     }),
@@ -296,7 +296,7 @@ export class Types {
           nameElemID, NAME_FIELDS.LAST_NAME, BuiltinTypes.STRING
         ),
         [NAME_FIELDS.SALUTATION]: new TypeField(
-          nameElemID, NAME_FIELDS.SALUTATION, Types.salesforceDataTypes.picklist
+          nameElemID, NAME_FIELDS.SALUTATION, Types.primitiveDataTypes.picklist
         ),
       },
     }),
@@ -327,7 +327,7 @@ export class Types {
 
   static get(name: string, customObject = true): Type {
     const type = customObject
-      ? this.salesforceDataTypes[name.toLowerCase()]
+      ? this.primitiveDataTypes[name.toLowerCase()]
       : this.metadataPrimitiveTypes[name.toLowerCase()]
 
     if (type === undefined) {
@@ -340,13 +340,13 @@ export class Types {
   }
 
   static getCompound(name: string): Type {
-    return this.salesforceCompoundDataTypes[name.toLowerCase()]
+    return this.compoundDataTypes[name.toLowerCase()]
   }
 
   static getAllFieldTypes(): Type[] {
     return _.concat(
-      Object.values(Types.salesforceDataTypes),
-      Object.values(Types.salesforceCompoundDataTypes),
+      Object.values(Types.primitiveDataTypes),
+      Object.values(Types.compoundDataTypes),
     ).map(type => {
       const fieldType = type.clone()
       fieldType.path = ['types', 'field_types']
@@ -359,13 +359,8 @@ export const fieldFullName = (object: ObjectType, field: TypeField): string =>
   `${apiName(object)}.${apiName(field)}`
 
 const allowedAnnotations = (key: string): string[] => {
-  if (Types.salesforceDataTypes[key]) {
-    return Object.keys(Types.salesforceDataTypes[key].annotationTypes)
-  }
-  if (Types.salesforceCompoundDataTypes[key]) {
-    return Object.keys(Types.salesforceCompoundDataTypes[key].annotationTypes)
-  }
-  return []
+  const returnedType = Types.primitiveDataTypes[key] ?? Types.compoundDataTypes[key]
+  return returnedType ? Object.keys(returnedType.annotationTypes) : []
 }
 
 export const toCustomField = (
@@ -550,9 +545,7 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
       annotations[FIELD_ANNOTATIONS.LOOKUP_FILTER] = {}
     }
     // Compound fields
-  } else if (field.type === 'address') {
-    bpFieldType = Types.getCompound(field.type)
-  } else if (field.type === 'location') {
+  } else if (['address', 'location'].includes(field.type)) {
     bpFieldType = Types.getCompound(field.type)
   } else if (field.name === 'Name' && field.label === 'Full Name') {
     bpFieldType = Types.getCompound(field.name)
@@ -723,19 +716,11 @@ SfRecord[] => instances.map(res => res.value)
 export const elemIDstoRecords = (ElemIDs: ElemID[]):
 SfRecord[] => ElemIDs.map(elem => ({ Id: elem.nameParts[1] }))
 
-// The purpose of the following method is to modify the list of fields so that fields that belong
-// to compound fields are filtered out.
-// The reason for this is to later re-add those fields as nested fields in the compund field
-// represented as ObjectType.
-export const filterOutNestedCompoundFields = (fields: Field[]): Field[] => fields.filter(
-  field => !field.compoundFieldName
-)
-
 // The purpose of the following method is to modify the list of field names, so that compound
 // fields names do not appear, and only their nested fields appear in the list of fields.
 // The reason for this is to later show during export, fields that can be sent back to SFDC
 // during import
-export const handleCompoundFields = (objectType: ObjectType): TypeField[] => {
+export const getCompoundChildFields = (objectType: ObjectType): TypeField[] => {
   // Internal functions
   const handleAddressFields = (object: ObjectType): void => {
     // Find the address fields
@@ -745,8 +730,8 @@ export const handleCompoundFields = (objectType: ObjectType): TypeField[] => {
     // For each address field, get its prefix, then find its corresponding child fields by
     // this prefix.
     Object.keys(addressFields).forEach(key => {
-      const addressPrefix = key.slice(0, -7)
-      Object.values(Types.salesforceCompoundDataTypes.address.fields).forEach(childField => {
+      const addressPrefix = key.replace(/address/, '')
+      Object.values(Types.compoundDataTypes.address.fields).forEach(childField => {
         const clonedField = childField.clone()
         // Add the child fields to the object type
         const childFieldName = addressPrefix + clonedField.name
@@ -771,7 +756,7 @@ export const handleCompoundFields = (objectType: ObjectType): TypeField[] => {
       return
     }
     // Add the child fields to the object type
-    Object.values(Types.salesforceCompoundDataTypes.name.fields).forEach(childField => {
+    Object.values(Types.compoundDataTypes.name.fields).forEach(childField => {
       const clonedField = childField.clone()
       clonedField.annotations = { [API_NAME]: sfCase(childField.name) }
       object.fields[childField.name] = clonedField
@@ -790,7 +775,7 @@ export const handleCompoundFields = (objectType: ObjectType): TypeField[] => {
     Object.entries(locationFields).forEach(([key, locationField]) => {
       const isCustomField = (locationField.annotations?.[API_NAME] as string)
         .endsWith(SALESFORCE_CUSTOM_SUFFIX)
-      Object.values(Types.salesforceCompoundDataTypes.location.fields).forEach(childField => {
+      Object.values(Types.compoundDataTypes.location.fields).forEach(childField => {
         const clonedField = childField.clone()
         // Add the child fields to the object type
         const childFieldName = `${key}_${clonedField.name}`

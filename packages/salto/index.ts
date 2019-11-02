@@ -13,7 +13,7 @@ export namespace validator {
   } = v
 }
 
-export { mergeElements } from './src/core/merger'
+export { mergeElements, MergeError } from './src/core/merger'
 export { Plan, PlanItem, DetailedChange } from './src/core/plan'
 export { dumpCsv, readCsv } from './src/core/csv'
 export * from './src/api'

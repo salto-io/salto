@@ -17,6 +17,8 @@ import { findElement, SearchResult } from './core/search'
 
 import { Workspace, CREDS_DIR } from './workspace/workspace'
 import { fetchChanges, FetchChange } from './core/fetch'
+import { MergeError } from './core/merger/internal/common'
+
 
 const deployActionOnState = async (
   state: State,
@@ -62,10 +64,15 @@ export const deploy = async (
 }
 
 export type fillConfigFunc = (configType: ObjectType) => Promise<InstanceElement>
+
+export type FetchResult = {
+  changes: Iterable<FetchChange>
+  mergeErrors: MergeError[]
+}
 export type fetchFunc = (
   workspace: Workspace,
   fillConfig: fillConfigFunc,
-) => Promise<Iterable<FetchChange>>
+) => Promise<FetchResult>
 
 export const fetch: fetchFunc = async (workspace, fillConfig) => {
   const configToChange = (config: InstanceElement): FetchChange => {
@@ -81,13 +88,16 @@ export const fetch: fetchFunc = async (workspace, fillConfig) => {
   const state = new State(workspace.config.stateLocation)
   const [adapters, newConfigs] = await initAdapters(workspace.elements, fillConfig)
 
-  const { changes, elements } = await fetchChanges(
+  const { changes, elements, mergeErrors } = await fetchChanges(
     adapters, workspace.elements, await state.get(),
   )
 
   state.override(elements)
   await state.flush()
-  return wu.chain(changes, newConfigs.map(configToChange))
+  return {
+    changes: wu.chain(changes, newConfigs.map(configToChange)),
+    mergeErrors,
+  }
 }
 
 export const describeElement = async (

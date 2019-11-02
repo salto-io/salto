@@ -7,7 +7,7 @@ import {
 } from 'adapter-api'
 import {
   Plan, PlanItem, FoundSearchResult, SearchResult, DetailedChange,
-  WorkspaceError, SourceFragment, FetchChange,
+  WorkspaceError, SourceFragment, FetchChange, MergeError,
 } from 'salto'
 import Prompts from './prompts'
 
@@ -287,18 +287,22 @@ export const formatChangesSummary = (changes: number, approved: number): string 
 /**
   * Format workspace errors
   */
-
 const TAB = '  '
 const fomratSourceFragment = (sf: Readonly<SourceFragment>): string =>
   `${chalk.underline(sf.sourceRange.filename)}(${chalk.cyan(`${sf.sourceRange.start.line}`)}`
-  + `:${chalk.cyan(`${sf.sourceRange.start.col}`)})\n${TAB}${chalk.blueBright(sf.fragment.split('\n').join(`\n${TAB}`))}\n`
+   + `:${chalk.cyan(`${sf.sourceRange.start.col}`)})\n${TAB}${chalk.blueBright(sf.fragment.split('\n').join(`\n${TAB}`))}\n`
 const fomratSourceFragments = (sourceFragments: ReadonlyArray<SourceFragment>): string =>
   (sourceFragments.length > 0
     ? ` on ${sourceFragments.map(fomratSourceFragment).join('\n and ')}`
     : '')
 
+const formatError = (err: {error: string}): string =>
+  `${chalk.red(chalk.bold('Error:'))} ${chalk.bold(err.error)}`
 const formatWorkspaceError = (we: Readonly<WorkspaceError>): string =>
-  `${chalk.red(chalk.bold('Error:'))} ${chalk.bold(we.error)}\n${fomratSourceFragments(we.sourceFragments)}`
+  `${formatError(we)}\n${fomratSourceFragments(we.sourceFragments)}`
 
 export const formatWorkspaceErrors = (workspaceErrors: ReadonlyArray<WorkspaceError>): string =>
   `${Prompts.WORKSPACE_LOAD_FAILED}\n${workspaceErrors.map(formatWorkspaceError).join('\n\n')}\n`
+
+export const formatMergeErrors = (mergeErrors: ReadonlyArray<MergeError>): string =>
+  `${Prompts.FETCH_MERGE_ERRORS}${mergeErrors.map(formatError).join('\n')}`

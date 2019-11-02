@@ -8,7 +8,7 @@ import { MockWriteStream, getWorkspaceErrors } from '../mocks'
 
 jest.mock('salto', () => ({
   ...require.requireActual('salto'),
-  fetch: jest.fn().mockImplementation(() => Promise.resolve([])),
+  fetch: jest.fn().mockImplementation(() => Promise.resolve({ changes: [], mergeErrors: [] })),
   Workspace: {
     load: jest.fn().mockImplementation(
       config => ({ config, elements: [], hasErrors: () => false }),
@@ -39,8 +39,10 @@ describe('fetch command', () => {
     })
   })
 
-  describe('fetchCommand', () => {
-    const mockFetch = jest.fn().mockResolvedValue(Promise.resolve([]))
+  describe('fetch command', () => {
+    const mockFetch = jest.fn().mockResolvedValue(
+      Promise.resolve({ changes: [], mergeErrors: [] })
+    )
     const mockApprove = jest.fn().mockResolvedValue(Promise.resolve([]))
     describe('with valid workspace', () => {
       let mockWorkspace: Workspace
@@ -76,9 +78,10 @@ describe('fetch command', () => {
           },
         ]
         beforeEach(() => {
-          mockFetch.mockResolvedValueOnce(Promise.resolve(dummyChanges.map(
+          mockFetch.mockResolvedValueOnce(Promise.resolve({ changes: dummyChanges.map(
             (change: DetailedChange): FetchChange => ({ change, serviceChange: change })
-          )))
+          ),
+          mergeErrors: [] }))
         })
         describe('when called with force', () => {
           beforeEach(async () => {
@@ -121,11 +124,52 @@ describe('fetch command', () => {
           describe('if some changes are approved', () => {
             beforeEach(async () => {
               mockApprove.mockImplementationOnce(changes => [changes[0]])
-              await fetchCommand(mockWorkspace, false, cliOutput, mockFetch, mockApprove)
             })
-            it('should update workspace only with approved changes', () => {
+            it('should update workspace only with approved changes', async () => {
+              await fetchCommand(mockWorkspace, false, cliOutput, mockFetch, mockApprove)
               expect(mockWorkspace.updateBlueprints).toHaveBeenCalledWith(dummyChanges[0])
               expect(mockWorkspace.flush).toHaveBeenCalledTimes(1)
+            })
+
+            it('should exit if errors identified in workspace after update', async () => {
+              let getWscalls = 0
+              mockWorkspace.getWorkspaceErrors = () => {
+                if (getWscalls > 0) {
+                  return [{
+                    sourceFragments: [],
+                    error: 'Error',
+                    severity: 'Error',
+                  }]
+                }
+                getWscalls += 1
+                return []
+              }
+              mockWorkspace.hasErrors = () => true
+
+              await fetchCommand(mockWorkspace, false, cliOutput, mockFetch, mockApprove)
+              expect(mockWorkspace.updateBlueprints).toHaveBeenCalledWith(dummyChanges[0])
+              expect(cliOutput.stderr.content).toContain('Error')
+              expect(mockWorkspace.flush).not.toHaveBeenCalled()
+            })
+            it('should not exit if warning identified in workspace after update', async () => {
+              let getWscalls = 0
+              mockWorkspace.getWorkspaceErrors = () => {
+                if (getWscalls > 0) {
+                  return [{
+                    sourceFragments: [],
+                    error: 'Warning',
+                    severity: 'Warning',
+                  }]
+                }
+                getWscalls += 1
+                return []
+              }
+              mockWorkspace.hasErrors = () => true
+
+              await fetchCommand(mockWorkspace, false, cliOutput, mockFetch, mockApprove)
+              expect(mockWorkspace.updateBlueprints).toHaveBeenCalledWith(dummyChanges[0])
+              expect(cliOutput.stderr.content).toContain('Warning')
+              expect(mockWorkspace.flush).toHaveBeenCalled()
             })
           })
         })

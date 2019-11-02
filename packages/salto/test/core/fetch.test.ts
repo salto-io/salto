@@ -50,11 +50,12 @@ describe('fetch', () => {
         )
       })
       it('should fail', async () => {
-        await expect(fetchChanges(
+        const fetchChangesResult = await fetchChanges(
           mockAdapters as unknown as Record<string, Adapter>,
           [],
           [],
-        )).rejects.toThrow()
+        )
+        expect(fetchChangesResult.mergeErrors).toHaveLength(1)
       })
     })
     describe('when there are no changes', () => {

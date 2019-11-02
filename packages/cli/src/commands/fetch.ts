@@ -1,3 +1,4 @@
+import _ from 'lodash'
 import {
   fetch as apiFetch,
   Workspace,
@@ -8,7 +9,7 @@ import {
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'
 import { getConfigFromUser, getApprovedChanges as cliGetApprovedChanges } from '../callbacks'
-import { formatChangesSummary } from '../formatter'
+import { formatChangesSummary, formatMergeErrors } from '../formatter'
 import Prompts from '../prompts'
 import { validateWorkspace } from '../workspace'
 
@@ -27,8 +28,16 @@ export const fetchCommand = async (
     return CliExitCode.AppError
   }
   outputLine(Prompts.FETCH_BEGIN)
+  const fetchResult = await fetch(workspace, getConfigFromUser)
+  // A few merge errors might have occured,
+  // but since it's fetch flow, we omitted the elements
+  // and only print the merge errors
+  if (!_.isEmpty(fetchResult.mergeErrors)) {
+    output.stderr.write(formatMergeErrors(fetchResult.mergeErrors))
+  }
+
   // Unpack changes to array so we can iterate on them more than once
-  const changes = [...await fetch(workspace, getConfigFromUser)]
+  const changes = [...fetchResult.changes]
   // If the workspace starts empty there is no point in showing a huge amount of changes
   const isEmptyWorkspace = workspace.elements.filter(elem => !elem.elemID.isConfig()).length === 0
   const changesToApply = force || isEmptyWorkspace
@@ -37,6 +46,9 @@ export const fetchCommand = async (
   outputLine(formatChangesSummary(changes.length, changesToApply.length))
   if (changesToApply.length > 0) {
     await workspace.updateBlueprints(...changesToApply.map(change => change.change))
+    if (!validateWorkspace(workspace, output.stderr)) {
+      return CliExitCode.AppError
+    }
     await workspace.flush()
   }
   return CliExitCode.Success

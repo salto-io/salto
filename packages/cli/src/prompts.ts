@@ -75,6 +75,7 @@ Be sure to go over the preview output when invoking the deploy command.`
   public static readonly FETCH_NOTHING_TO_UPDATE = 'No changes chosen, Leaving workspace unchanged'
   public static readonly FETCH_CHANGES_TO_APPLY = (numChanges: number): string => `Updating workspace with ${numChanges} changes from the service`
   public static readonly FETCH_CONFLICTING_CHANGE = 'This change conflicts with the following pending change from your workspace:'
+  public static readonly FETCH_MERGE_ERRORS = 'These errors occured as part of the fetch:'
 
   public static readonly WORKSPACE_LOAD_FAILED = 'Failed to load workspace'
 }

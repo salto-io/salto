@@ -353,7 +353,7 @@ describe('api functions', () => {
         config: { stateLocation: '.' },
         resolvePath: _.identity,
       } as unknown as Workspace
-      changes = [...await commands.fetch(mockWorkspace, mockGetConfigFromUser)]
+      changes = [...(await commands.fetch(mockWorkspace, mockGetConfigFromUser)).changes]
         .map(change => change.change)
     })
 

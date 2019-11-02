@@ -3,8 +3,7 @@ import wu from 'wu'
 import { Element, ElemID, Adapter } from 'adapter-api'
 
 import { getPlan, DetailedChange } from './plan'
-import { mergeElements } from './merger'
-import { validateElements } from './validator'
+import { mergeElements, MergeError } from './merger'
 
 export type FetchChange = {
   // The actual change to apply to the workspace
@@ -15,15 +14,6 @@ export type FetchChange = {
   pendingChange?: DetailedChange
 }
 
-const mergeAndValidate = (elements: ReadonlyArray<Element>): Element[] => {
-  const { merged: mergedElements, errors: mergeErrors } = mergeElements(elements)
-  const validationErrors = validateElements(mergedElements)
-  const errors = [...mergeErrors, ...validationErrors].map(e => e.message)
-  if (errors.length > 0) {
-    throw new Error(`Errors validating fetched elements:\n\t${errors.join('\n\t')}`)
-  }
-  return mergedElements
-}
 
 const getDetailedChanges = (
   before: ReadonlyArray<Element>,
@@ -87,6 +77,7 @@ const toFetchChanges = (
 type FetchChangesResult = {
   changes: Iterable<FetchChange>
   elements: Element[]
+  mergeErrors: MergeError[]
 }
 
 export const fetchChanges = async (
@@ -98,7 +89,7 @@ export const fetchChanges = async (
     Object.values(adapters).map(adapter => adapter.fetch())
   ))
 
-  const mergedServiceElements = mergeAndValidate(serviceElements)
+  const { errors: mergeErrors, merged: mergedServiceElements } = mergeElements(serviceElements)
 
   const serviceChanges = getDetailedChanges(stateElements, mergedServiceElements)
   const pendingChanges = getChangeMap(stateElements, workspaceElements)
@@ -110,5 +101,5 @@ export const fetchChanges = async (
     .map(toChangesWithPath(serviceElements))
     .flatten()
 
-  return { changes, elements: mergedServiceElements }
+  return { changes, elements: mergedServiceElements, mergeErrors }
 }

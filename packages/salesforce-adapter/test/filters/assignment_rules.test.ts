@@ -23,7 +23,7 @@ describe('Test layout filter', () => {
 
   let testElements: Element[]
 
-  const filter = filterCreator({ client }) as FilterWith<'onDiscover'>
+  const filter = filterCreator({ client }) as FilterWith<'onFetch'>
 
   beforeEach(() => {
     testElements = [
@@ -31,9 +31,9 @@ describe('Test layout filter', () => {
     ]
   })
 
-  describe('on discover', () => {
+  describe('on fetch', () => {
     it('should rename instances', async () => {
-      await filter.onDiscover(testElements)
+      await filter.onFetch(testElements)
       const [rulesInstance] = testElements
       expect(rulesInstance.elemID.name).toEqual('lead_assignment_rules')
     })

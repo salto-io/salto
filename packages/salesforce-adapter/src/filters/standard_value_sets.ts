@@ -144,7 +144,7 @@ const findStandardValueSetType = (elements: Element[]): ObjectType | undefined =
     (element: Element) => metadataType(element) === STANDARD_VALUE_SET
   ) as ObjectType | undefined
 
-const discoverStandardValueSets = async (
+const fetchStandardValueSets = async (
   standardValueSets: Set<string>,
   client: SalesforceClient): Promise<MetadataInfo[]> =>
   _.flatten(await Promise.all(
@@ -157,7 +157,7 @@ const createSVSInstances = async (
   standardValueSetNames: Set<string>,
   client: SalesforceClient,
   svsMetadataType: ObjectType): Promise<InstanceElement[]> => {
-  const valueSets = await discoverStandardValueSets(standardValueSetNames, client)
+  const valueSets = await fetchStandardValueSets(standardValueSetNames, client)
   const svsInstances = createStandardValueSetInstances(valueSets, svsMetadataType)
   return svsInstances
 }
@@ -178,18 +178,18 @@ const updateSVSReferences = (elements: Element[], svsInstances: InstanceElement[
 /**
 * Declare the StandardValueSets filter that
 * adds the fixed collection of standard value sets in SFDC
-* and modify reference in discovered elements that uses them.
+* and modify reference in fetched elements that uses them.
 */
 export const makeFilter = (
   standardValueSetNames: StandardValuesSets
 ): FilterCreator => ({ client }) => ({
   /**
-   * Upon discover, retrieve standard value sets and
-   * modify references to them in discovered elements
+   * Upon fetch, retrieve standard value sets and
+   * modify references to them in fetched elements
    *
-   * @param elements the already discovered elements
+   * @param elements the already fetched elements
    */
-  onDiscover: async (elements: Element[]): Promise<void> => {
+  onFetch: async (elements: Element[]): Promise<void> => {
     const svsMetadataType: ObjectType | undefined = findStandardValueSetType(elements)
     if (svsMetadataType !== undefined) {
       const svsInstances = await createSVSInstances(standardValueSetNames, client, svsMetadataType)

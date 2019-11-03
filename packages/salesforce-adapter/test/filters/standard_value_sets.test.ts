@@ -40,7 +40,7 @@ const createPicklistObjectType = (
         : Types.salesforceDataTypes[constants.FIELD_TYPE_NAMES.PICKLIST], {
         [Type.REQUIRED]: false,
         [Type.DEFAULT]: 'Bart',
-        [constants.API_NAME]: apiName,
+        [Type.SERVICE_ID]: apiName,
         label: 'test label',
         [Type.VALUES]: pickListValues,
       }
@@ -53,7 +53,7 @@ const createPicklistObjectType = (
 
 /* eslint-disable jest/no-focused-tests */
 describe('Standard Value Sets filter', () => {
-  type FilterType = FilterWith<'onDiscover'>
+  type FilterType = FilterWith<'onFetch'>
   const { client } = mockClient()
   const mockSVSType = new ObjectType({
     annotationTypes: {},
@@ -77,14 +77,14 @@ describe('Standard Value Sets filter', () => {
 
   it('should do nothing if no standard value set element was found', async () => {
     const elements: Element[] = []
-    await filter.onDiscover(elements)
+    await filter.onFetch(elements)
     expect(client.readMetadata).toHaveBeenCalledTimes(0)
     expect(elements.length).toBe(0)
   })
 
   it('should add standard value set instances', async () => {
     const elements: Element[] = [mockSVSType.clone()]
-    await filter.onDiscover(elements)
+    await filter.onFetch(elements)
     expect(client.readMetadata).toHaveBeenCalledTimes(2)
     expect(elements.length).toBe(3)
     const simpsonsSvs = elements[1]
@@ -102,7 +102,7 @@ describe('Standard Value Sets filter', () => {
     const mockElemID = new ElemID(constants.SALESFORCE, 'test')
     const typeElement = createPicklistObjectType(mockElemID, apiName, pickListValues)
     const elements: Element[] = [mockSVSType.clone(), typeElement]
-    await filter.onDiscover(elements)
+    await filter.onFetch(elements)
     expect(elements.length).toBe(4)
     expect(typeElement.fields.state.annotations[Type.VALUES]).toBe('salesforce_standard_value_set_simpsons')
   })
@@ -113,7 +113,7 @@ describe('Standard Value Sets filter', () => {
     const mockElemID = new ElemID(constants.SALESFORCE, 'test')
     const typeElement = createPicklistObjectType(mockElemID, apiName, pickListValues, true)
     const elements: Element[] = [mockSVSType.clone(), typeElement]
-    await filter.onDiscover(elements)
+    await filter.onFetch(elements)
     expect(elements.length).toBe(4)
     expect(typeElement.fields.state.annotations[Type.VALUES]).toBe('salesforce_standard_value_set_simpsons')
   })
@@ -124,7 +124,7 @@ describe('Standard Value Sets filter', () => {
     const mockElemID = new ElemID(constants.SALESFORCE, 'test')
     const typeElement = createPicklistObjectType(mockElemID, apiName, pickListValues)
     const elements: Element[] = [mockSVSType.clone(), typeElement]
-    await filter.onDiscover(elements)
+    await filter.onFetch(elements)
     expect(elements.length).toBe(4)
     expect(typeElement.fields.state.annotations[Type.VALUES]).toEqual(pickListValues)
   })
@@ -135,7 +135,7 @@ describe('Standard Value Sets filter', () => {
     const mockElemID = new ElemID(constants.SALESFORCE, 'test')
     const typeElement = createPicklistObjectType(mockElemID, apiName, pickListValues)
     const elements: Element[] = [mockSVSType.clone(), typeElement]
-    await filter.onDiscover(elements)
+    await filter.onFetch(elements)
     expect(elements.length).toBe(4)
     expect(typeElement.fields.state.annotations[Type.VALUES]).toEqual(pickListValues)
   })

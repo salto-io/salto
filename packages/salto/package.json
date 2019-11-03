@@ -26,7 +26,7 @@
     "watch-ts": "tsc -w",
     "build-go": "./src/parser/internal/hcl_plugin/build.sh ./dist",
     "lint": "eslint --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
-    "lint-fix": "yarn run lint -- --fix"
+    "lint-fix": "yarn run lint --fix"
   },
   "dependencies": {
     "@salto/dag": "0.1.0",

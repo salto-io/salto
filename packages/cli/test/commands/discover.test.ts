@@ -1,14 +1,14 @@
 import _ from 'lodash'
 import { ElemID, ObjectType } from 'adapter-api'
 import {
-  Workspace, discover, loadConfig, DiscoverChange, DetailedChange,
+  Workspace, fetch, loadConfig, FetchChange, DetailedChange,
 } from 'salto'
-import { command, discoverCommand } from '../../src/commands/discover'
+import { command, fetchCommand } from '../../src/commands/fetch'
 import { MockWriteStream, getWorkspaceErrors } from '../mocks'
 
 jest.mock('salto', () => ({
   ...require.requireActual('salto'),
-  discover: jest.fn().mockImplementation(() => Promise.resolve([])),
+  fetch: jest.fn().mockImplementation(() => Promise.resolve([])),
   Workspace: {
     load: jest.fn().mockImplementation(
       config => ({ config, elements: [], hasErrors: () => false }),
@@ -19,7 +19,7 @@ jest.mock('salto', () => ({
   ),
 }))
 
-describe('discover command', () => {
+describe('fetch command', () => {
   const workspaceDir = 'dummy_dir'
 
   let cliOutput: { stdout: MockWriteStream; stderr: MockWriteStream }
@@ -34,13 +34,13 @@ describe('discover command', () => {
     it('should load the workspace from the provided directory', () => {
       expect(Workspace.load).toHaveBeenCalledWith(loadConfig(workspaceDir))
     })
-    it('should call discover', () => {
-      expect(discover).toHaveBeenCalled()
+    it('should call fetch', () => {
+      expect(fetch).toHaveBeenCalled()
     })
   })
 
-  describe('discoverCommand', () => {
-    const mockDiscover = jest.fn().mockResolvedValue(Promise.resolve([]))
+  describe('fetchCommand', () => {
+    const mockFetch = jest.fn().mockResolvedValue(Promise.resolve([]))
     const mockApprove = jest.fn().mockResolvedValue(Promise.resolve([]))
     describe('with valid workspace', () => {
       let mockWorkspace: Workspace
@@ -55,7 +55,7 @@ describe('discover command', () => {
 
       describe('with no upstream changes', () => {
         beforeEach(async () => {
-          await discoverCommand(mockWorkspace, true, cliOutput, mockDiscover, mockApprove)
+          await fetchCommand(mockWorkspace, true, cliOutput, mockFetch, mockApprove)
         })
         it('should not update workspace', () => {
           expect(mockWorkspace.updateBlueprints).not.toHaveBeenCalled()
@@ -76,32 +76,32 @@ describe('discover command', () => {
           },
         ]
         beforeEach(() => {
-          mockDiscover.mockResolvedValueOnce(Promise.resolve(dummyChanges.map(
-            (change: DetailedChange): DiscoverChange => ({ change, serviceChange: change })
+          mockFetch.mockResolvedValueOnce(Promise.resolve(dummyChanges.map(
+            (change: DetailedChange): FetchChange => ({ change, serviceChange: change })
           )))
         })
         describe('when called with force', () => {
           beforeEach(async () => {
-            await discoverCommand(mockWorkspace, true, cliOutput, mockDiscover, mockApprove)
+            await fetchCommand(mockWorkspace, true, cliOutput, mockFetch, mockApprove)
           })
-          it('should apply all changes', () => {
+          it('should deploy all changes', () => {
             expect(mockWorkspace.updateBlueprints).toHaveBeenCalledWith(...dummyChanges)
           })
         })
         describe('when initial workspace is empty', () => {
           beforeEach(async () => {
-            await discoverCommand(mockWorkspace, false, cliOutput, mockDiscover, mockApprove)
+            await fetchCommand(mockWorkspace, false, cliOutput, mockFetch, mockApprove)
           })
-          it('should apply all changes', () => {
+          it('should deploy all changes', () => {
             expect(mockWorkspace.updateBlueprints).toHaveBeenCalledWith(...dummyChanges)
           })
         })
         describe('when initial workspace has only config', () => {
           beforeEach(async () => {
             _.set(mockWorkspace, 'elements', [new ObjectType({ elemID: new ElemID('adapter') })])
-            await discoverCommand(mockWorkspace, false, cliOutput, mockDiscover, mockApprove)
+            await fetchCommand(mockWorkspace, false, cliOutput, mockFetch, mockApprove)
           })
-          it('should apply all changes', () => {
+          it('should deploy all changes', () => {
             expect(mockWorkspace.updateBlueprints).toHaveBeenCalledWith(...dummyChanges)
           })
         })
@@ -111,7 +111,7 @@ describe('discover command', () => {
           })
           describe('if no change is approved', () => {
             beforeEach(async () => {
-              await discoverCommand(mockWorkspace, false, cliOutput, mockDiscover, mockApprove)
+              await fetchCommand(mockWorkspace, false, cliOutput, mockFetch, mockApprove)
             })
             it('should not update workspace', () => {
               expect(mockWorkspace.updateBlueprints).not.toHaveBeenCalled()
@@ -121,7 +121,7 @@ describe('discover command', () => {
           describe('if some changes are approved', () => {
             beforeEach(async () => {
               mockApprove.mockImplementationOnce(changes => [changes[0]])
-              await discoverCommand(mockWorkspace, false, cliOutput, mockDiscover, mockApprove)
+              await fetchCommand(mockWorkspace, false, cliOutput, mockFetch, mockApprove)
             })
             it('should update workspace only with approved changes', () => {
               expect(mockWorkspace.updateBlueprints).toHaveBeenCalledWith(dummyChanges[0])
@@ -139,7 +139,7 @@ describe('discover command', () => {
       } as unknown as Workspace
 
       it('should fail', async () => {
-        await discoverCommand(erroredWorkspace, true, cliOutput, mockDiscover, mockApprove)
+        await fetchCommand(erroredWorkspace, true, cliOutput, mockFetch, mockApprove)
         expect(cliOutput.stderr.content).toContain('Error')
       })
     })

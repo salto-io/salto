@@ -21,7 +21,7 @@ describe('Test layout filter', () => {
         type: 'complex_type',
       },
     ],
-  })({ client }) as FilterWith<'onDiscover'>
+  })({ client }) as FilterWith<'onFetch'>
 
   const mockObjId = new ElemID(constants.SALESFORCE, 'test')
   const mockType = new ObjectType({
@@ -44,8 +44,8 @@ describe('Test layout filter', () => {
     ]
   })
 
-  describe('on discover', () => {
-    beforeEach(() => filter.onDiscover(testElements))
+  describe('on fetch', () => {
+    beforeEach(() => filter.onFetch(testElements))
 
     it('should add primitive list fields', async () => {
       const [testType] = testElements

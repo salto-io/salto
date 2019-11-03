@@ -12,7 +12,7 @@ import { collections } from '@salto/lowerdash'
 import { CustomObject, CustomField } from './client/types'
 import { API_VERSION, METADATA_NAMESPACE } from './client/client'
 import {
-  API_NAME, CUSTOM_OBJECT, LABEL, SALESFORCE, FORMULA,
+  CUSTOM_OBJECT, LABEL, SALESFORCE, FORMULA,
   FORMULA_TYPE_PREFIX, FIELD_TYPE_NAMES, FIELD_TYPE_API_NAMES, METADATA_OBJECT_NAME_FIELD,
   METADATA_TYPE, FIELD_ANNOTATIONS, SALESFORCE_CUSTOM_SUFFIX, DEFAULT_VALUE_FORMULA,
   MAX_METADATA_RESTRICTION_VALUES, SETTINGS_METADATA_TYPE, SALESFORCE_CUSTOM_RELATIONSHIP_SUFFIX,
@@ -26,22 +26,27 @@ const capitalize = (s: string): string => {
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
+const toSfCamelCase = (name: string): string => _.replace(name, /_[a-z]|_[0-9]/g,
+  (match: string) => match.charAt(1).toUpperCase())
+
 export const sfCase = (name: string, custom = false, capital = true): string => {
-  const sf = _.camelCase(name) + (custom ? SALESFORCE_CUSTOM_SUFFIX : '')
+  const sf = name.endsWith(SALESFORCE_CUSTOM_SUFFIX)
+    || name.endsWith(SALESFORCE_CUSTOM_RELATIONSHIP_SUFFIX)
+    ? toSfCamelCase(name.slice(0, -3)) + name.slice(-3)
+    : toSfCamelCase(name) + (custom ? SALESFORCE_CUSTOM_SUFFIX : '')
   return capital ? capitalize(sf) : sf
 }
 
 export const bpCase = (name: string): string => {
-  const bpName = (name.endsWith(SALESFORCE_CUSTOM_SUFFIX)
-  || name.endsWith(SALESFORCE_CUSTOM_RELATIONSHIP_SUFFIX)
-    ? name.slice(0, -2) : name)
   // Using specific replace for chars then _.unescape is not replacing well
   // and we see in our responses for sfdc
-  return _.snakeCase(_.unescape(bpName.replace(/%26|%28|%29/g, ' ')))
+  const unescaped = _.unescape(name).replace(/%26|%28|%29|[^A-Za-z0-9_]/g, '_')
+  return unescaped.charAt(0).toLowerCase()
+    + _.replace(unescaped.slice(1), /[A-Z]|[0-9]/g, (char: string) => `_${char.toLowerCase()}`)
 }
 
 export const sfInstnaceName = (instance: Element): string =>
-  instance.elemID.nameParts.slice(1).map(p => sfCase(p, false)).join('')
+  instance.elemID.nameParts.slice(1).map(p => sfCase(p)).join('')
 
 export const metadataType = (element: Element): string => (
   element.annotations[METADATA_TYPE] || CUSTOM_OBJECT
@@ -53,11 +58,7 @@ export const apiName = (elem: Element): string => {
     return elem.value[bpCase(METADATA_OBJECT_NAME_FIELD)] || sfCase(elem.elemID.name)
   }
   const elemMetadataType = metadataType(elem)
-  return elemMetadataType === CUSTOM_OBJECT
-    // Object/Field name comes from the annotation, Fallback to the element ID. we assume
-    // it is custom because all standard objects and fields get the annotation in discover
-    ? elem.annotations[API_NAME] || sfCase(elem.elemID.nameParts.slice(-1)[0], true)
-    : elemMetadataType
+  return elemMetadataType === CUSTOM_OBJECT ? elem.annotations[Type.SERVICE_ID] : elemMetadataType
 }
 
 const formulaTypeName = (baseTypeName: string): string =>
@@ -395,13 +396,13 @@ const getDefaultValue = (field: Field): DefaultValueType | undefined => {
     ? valueFromXsdType(field.defaultValue) : field.defaultValue
 }
 
-// The following method is used during the discovery process and is used in building the objects
+// The following method is used during the fetchy process and is used in building the objects
 // and their fields described in the blueprint
 export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeField => {
   const bpFieldName = bpCase(field.relationshipName ? field.relationshipName : field.name)
   let bpFieldType = Types.get(field.type)
   const annotations: Values = {
-    [API_NAME]: field.name,
+    [Type.SERVICE_ID]: field.name,
     [LABEL]: field.label,
     [Type.REQUIRED]: !field.nillable,
   }
@@ -499,10 +500,10 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
 }
 
 /**
- * Apply transform function on all keys in a values map recursively
+ * Deploy transform function on all keys in a values map recursively
  *
  * @param obj Input object to transform
- * @param func Transform function to apply to all keys
+ * @param func Transform function to deploy to all keys
  */
 export const mapKeysRecursive = (obj: Values, func: (key: string) => string): Values => {
   if (_.isArray(obj)) {

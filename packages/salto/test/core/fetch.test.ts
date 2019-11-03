@@ -2,11 +2,11 @@ import {
   ElemID, Field, BuiltinTypes, ObjectType, getChangeElement, Adapter, Element,
 } from 'adapter-api'
 import {
-  discoverChanges,
-  DiscoverChange,
-} from '../../src/core/discover'
+  fetchChanges,
+  FetchChange,
+} from '../../src/core/fetch'
 
-describe('discover', () => {
+describe('fetch', () => {
   const testID = new ElemID('dummy', 'elem')
   const testField = new Field(testID, 'test', BuiltinTypes.STRING, { annotation: 'value' })
   const typeWithField = new ObjectType({
@@ -36,21 +36,21 @@ describe('discover', () => {
     },
   })
 
-  describe('discoverChanges', () => {
+  describe('fetchChanges', () => {
     const mockAdapters = {
       dummy: {
-        discover: jest.fn().mockResolvedValue(Promise.resolve([])),
+        fetch: jest.fn().mockResolvedValue(Promise.resolve([])),
       },
     }
-    let changes: DiscoverChange[]
+    let changes: FetchChange[]
     describe('when the adapter returns elements with merge errors', () => {
       beforeEach(() => {
-        mockAdapters.dummy.discover.mockResolvedValueOnce(
+        mockAdapters.dummy.fetch.mockResolvedValueOnce(
           Promise.resolve([newTypeBase, newTypeBase]),
         )
       })
       it('should fail', async () => {
-        await expect(discoverChanges(
+        await expect(fetchChanges(
           mockAdapters as unknown as Record<string, Adapter>,
           [],
           [],
@@ -60,10 +60,10 @@ describe('discover', () => {
     describe('when there are no changes', () => {
       let elements: Element[]
       beforeEach(async () => {
-        mockAdapters.dummy.discover.mockResolvedValueOnce(
+        mockAdapters.dummy.fetch.mockResolvedValueOnce(
           Promise.resolve([newTypeBase, newTypeExt]),
         )
-        const result = await discoverChanges(
+        const result = await fetchChanges(
           mockAdapters as unknown as Record<string, Adapter>,
           [newTypeMerged],
           [newTypeMerged],
@@ -80,10 +80,10 @@ describe('discover', () => {
     })
     describe('when the change is only in the service', () => {
       beforeEach(async () => {
-        mockAdapters.dummy.discover.mockResolvedValueOnce(
+        mockAdapters.dummy.fetch.mockResolvedValueOnce(
           Promise.resolve([typeWithFieldChange])
         )
-        const result = await discoverChanges(
+        const result = await fetchChanges(
           mockAdapters as unknown as Record<string, Adapter>,
           [typeWithField],
           [typeWithField],
@@ -97,10 +97,10 @@ describe('discover', () => {
     })
     describe('when the adapter returns elements that should be split', () => {
       beforeEach(async () => {
-        mockAdapters.dummy.discover.mockResolvedValueOnce(
+        mockAdapters.dummy.fetch.mockResolvedValueOnce(
           Promise.resolve([newTypeBase, newTypeExt])
         )
-        const result = await discoverChanges(
+        const result = await fetchChanges(
           mockAdapters as unknown as Record<string, Adapter>,
           [],
           [],
@@ -119,10 +119,10 @@ describe('discover', () => {
     })
     describe('when the working copy is already the same as the service', () => {
       beforeEach(async () => {
-        mockAdapters.dummy.discover.mockResolvedValueOnce(
+        mockAdapters.dummy.fetch.mockResolvedValueOnce(
           Promise.resolve([typeWithFieldChange])
         )
-        const result = await discoverChanges(
+        const result = await fetchChanges(
           mockAdapters as unknown as Record<string, Adapter>,
           [typeWithFieldChange],
           [typeWithField],
@@ -135,10 +135,10 @@ describe('discover', () => {
     })
     describe('when the working copy has a conflicting change', () => {
       beforeEach(async () => {
-        mockAdapters.dummy.discover.mockResolvedValueOnce(
+        mockAdapters.dummy.fetch.mockResolvedValueOnce(
           Promise.resolve([typeWithFieldChange])
         )
-        const result = await discoverChanges(
+        const result = await fetchChanges(
           mockAdapters as unknown as Record<string, Adapter>,
           [typeWithFieldConflict],
           [typeWithField],
@@ -152,10 +152,10 @@ describe('discover', () => {
     })
     describe('when the changed element is removed in the working copy', () => {
       beforeEach(async () => {
-        mockAdapters.dummy.discover.mockResolvedValueOnce(
+        mockAdapters.dummy.fetch.mockResolvedValueOnce(
           Promise.resolve([typeWithFieldChange])
         )
-        const result = await discoverChanges(
+        const result = await fetchChanges(
           mockAdapters as unknown as Record<string, Adapter>,
           [],
           [typeWithField],
@@ -166,7 +166,7 @@ describe('discover', () => {
         expect(changes).toHaveLength(1)
       })
       describe('returned change', () => {
-        let change: DiscoverChange
+        let change: FetchChange
         beforeEach(() => {
           [change] = changes
         })

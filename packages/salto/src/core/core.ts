@@ -5,7 +5,7 @@ import {
 import { Plan, PlanItem, PlanItemId } from './plan'
 
 
-const applyAction = async (
+const deployAction = async (
   planItem: PlanItem,
   adapters: Record<string, Adapter>
 ): Promise<Element> => {
@@ -31,14 +31,14 @@ const applyAction = async (
 }
 
 export const applyActions = async (
-  applyPlan: Plan,
+  deployPlan: Plan,
   adapters: Record<string, Adapter>,
   reportProgress: (action: PlanItem) => void,
   postApplyAction: (action: string, element: Promise<Element>) => Promise<void>
 ): Promise<void> =>
-  applyPlan.walk((itemId: PlanItemId): Promise<void> => {
-    const item = applyPlan.getItem(itemId) as PlanItem
+  deployPlan.walk((itemId: PlanItemId): Promise<void> => {
+    const item = deployPlan.getItem(itemId) as PlanItem
     reportProgress(item)
-    const applyActionResult = applyAction(item, adapters)
-    return postApplyAction(item.parent().action, applyActionResult)
+    const deployActionResult = deployAction(item, adapters)
+    return postApplyAction(item.parent().action, deployActionResult)
   })

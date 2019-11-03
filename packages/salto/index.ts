@@ -17,7 +17,7 @@ export { mergeElements } from './src/core/merger'
 export { Plan, PlanItem, DetailedChange } from './src/core/plan'
 export { dumpCsv, readCsv } from './src/core/csv'
 export * from './src/api'
-export { DiscoverChange } from './src/core/discover'
+export { FetchChange } from './src/core/fetch'
 export { FoundSearchResult, SearchResult } from './src/core/search'
 // ParsedBlueprint and Blueprint are exported with an alias to avoid
 // conflict with the Blueprint and ParsedBlueprint from ./src/core/blueprint

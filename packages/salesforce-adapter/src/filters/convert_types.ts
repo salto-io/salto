@@ -11,8 +11,8 @@ import { bpCase } from '../transformer'
 type Value = string | boolean | number | null | undefined
 const transformPrimitive = (val: string, primitive: PrimitiveTypes): Value => {
   // Salesforce returns nulls as objects like { $: { 'xsi:nil': 'true' } }
-  // our key name transform replaces the '$' with an empty string and ':' with '_'
-  if (_.isObject(val) && _.get(val, ['', 'xsi_nil']) === 'true') {
+  // our key name transform replaces '$' and ':' with '_'
+  if (_.isObject(val) && _.get(val, ['_', 'xsi_nil']) === 'true') {
     // We transform null to undefined as currently we don't support null in Salto language
     // and the undefined values are omitted later in the code
     return undefined
@@ -109,12 +109,12 @@ export const transform = (obj: Values, type: ObjectType, strict = true): Values 
  */
 const filterCreator: FilterCreator = () => ({
   /**
-   * Upon discover, convert all instance values to their correct type according to the
+   * Upon fetch, convert all instance values to their correct type according to the
    * type definitions
    *
-   * @param elements the already discoverd elements
+   * @param elements the already fetched elements
    */
-  onDiscover: async (elements: Element[]) => {
+  onFetch: async (elements: Element[]) => {
     elements
       .filter(isInstanceElement)
       .filter(instance => isObjectType(instance.type))

@@ -1,5 +1,5 @@
 import {
-  Element, ElemID, Field, InstanceElement, ObjectType, PrimitiveType, PrimitiveTypes,
+  Element, ElemID, Field, InstanceElement, ObjectType, PrimitiveType, PrimitiveTypes, Type,
 } from 'adapter-api'
 import { MetadataInfo } from 'jsforce'
 import mockClient from '../client'
@@ -41,7 +41,7 @@ describe('Test lookup filters filter', () => {
     } as MetadataInfo,
     ])
 
-  describe('on discover', () => {
+  describe('on fetch', () => {
     const mockObject = new ObjectType({
       elemID: objectTypeElemId,
       fields: {
@@ -49,19 +49,19 @@ describe('Test lookup filters filter', () => {
         lookup_field:
           new Field(objectTypeElemId, 'lookup_field', lookupType,
             {
-              [constants.API_NAME]: lookupFieldApiName,
+              [Type.SERVICE_ID]: lookupFieldApiName,
               [constants.FIELD_ANNOTATIONS.LOOKUP_FILTER]: {},
             }),
       },
       annotations: {
         label: 'test label',
-        [constants.API_NAME]: mockObjectApiName,
+        [Type.SERVICE_ID]: mockObjectApiName,
         [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
       },
     })
     let testElements: Element[]
     const { client } = mockClient()
-    let filter: FilterWith<'onDiscover'>
+    let filter: FilterWith<'onFetch'>
 
     beforeEach(() => {
       testElements = [mockObject]
@@ -73,8 +73,8 @@ describe('Test lookup filters filter', () => {
     }
 
     const initFilter = async (): Promise<void> => {
-      filter = filterCreator({ client }) as FilterWith<'onDiscover'>
-      await filter.onDiscover(testElements)
+      filter = filterCreator({ client }) as FilterWith<'onFetch'>
+      await filter.onFetch(testElements)
     }
 
     it('should add lookupFilter data to a field with lookupFilter when lookupFilter is optional', async () => {
@@ -124,7 +124,7 @@ describe('Test lookup filters filter', () => {
       await initFilter()
       delete mockObject.fields.lookup_field
         .annotations[constants.FIELD_ANNOTATIONS.LOOKUP_FILTER]
-      await filter.onDiscover(testElements)
+      await filter.onFetch(testElements)
       expect(mockObject.fields.lookup_field
         .annotations[constants.FIELD_ANNOTATIONS.LOOKUP_FILTER]).toBeUndefined()
     })
@@ -141,7 +141,7 @@ describe('Test lookup filters filter', () => {
     let mockObject: ObjectType
     const lookupField = new Field(objectTypeElemId, 'lookup_field', lookupType,
       {
-        [constants.API_NAME]: lookupFieldApiName,
+        [Type.SERVICE_ID]: lookupFieldApiName,
         [constants.FIELD_ANNOTATIONS.LOOKUP_FILTER]: {
           [constants.LOOKUP_FILTER_FIELDS.ACTIVE]: true,
           [constants.LOOKUP_FILTER_FIELDS.BOOLEAN_FILTER]: '1 OR 2',
@@ -168,7 +168,7 @@ describe('Test lookup filters filter', () => {
       },
       annotations: {
         label: 'test label',
-        [constants.API_NAME]: mockObjectApiName,
+        [Type.SERVICE_ID]: mockObjectApiName,
         [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
       },
     })
@@ -244,7 +244,7 @@ describe('Test lookup filters filter', () => {
 
     const lookupField = new Field(objectTypeElemId, 'lookup_field', lookupType,
       {
-        [constants.API_NAME]: lookupFieldApiName,
+        [Type.SERVICE_ID]: lookupFieldApiName,
       })
 
     const origBeforeObject = new ObjectType({
@@ -254,7 +254,7 @@ describe('Test lookup filters filter', () => {
       },
       annotations: {
         label: 'test label',
-        [constants.API_NAME]: mockObjectApiName,
+        [Type.SERVICE_ID]: mockObjectApiName,
         [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
       },
     })

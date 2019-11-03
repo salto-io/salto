@@ -5,10 +5,10 @@ import {
 import {
   Workspace, Plan, PlanItem, Config,
 } from 'salto'
-import { apply, plan, MockWriteStream, getWorkspaceErrors } from '../mocks'
-import { ApplyCommand } from '../../src/commands/apply'
+import { deploy, preview, MockWriteStream, getWorkspaceErrors } from '../mocks'
+import { DeployCommand } from '../../src/commands/deploy'
 
-const mockApply = apply
+const mockDeploy = deploy
 jest.mock('salto', () => ({
   ...require.requireActual('salto'),
   loadConfig: jest.fn().mockImplementation(
@@ -30,32 +30,32 @@ jest.mock('salto', () => ({
       return { hasErrors: () => false }
     }),
   },
-  apply: jest.fn().mockImplementation((
+  deploy: jest.fn().mockImplementation((
     workspace: Workspace,
     fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
-    shouldApply: (plan: Plan) => Promise<boolean>,
+    shouldDeploy: (plan: Plan) => Promise<boolean>,
     reportProgress: (action: PlanItem) => void,
     force = false
   ) =>
-  // Apply with blueprints will fail, doing this trick as we cannot reference vars, we get error:
+  // Deploy with blueprints will fail, doing this trick as we cannot reference vars, we get error:
   // "The module factory of `jest.mock()` is not allowed to reference any
   // out-of-scope variables."
-  // Notice that blueprints are ignored in mockApply.
+  // Notice that blueprints are ignored in mockDeploy.
 
-    mockApply(workspace, fillConfig, shouldApply, reportProgress, force)),
+    mockDeploy(workspace, fillConfig, shouldDeploy, reportProgress, force)),
 }))
 
-describe('apply command', () => {
+describe('deploy command', () => {
   let cliOutput: { stdout: MockWriteStream; stderr: MockWriteStream }
-  let command: ApplyCommand
+  let command: DeployCommand
 
   beforeEach(() => {
     cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
   })
 
-  describe('valid apply', () => {
+  describe('valid deploy', () => {
     beforeEach(() => {
-      command = new ApplyCommand('', true, cliOutput)
+      command = new DeployCommand('', true, cliOutput)
     })
 
     describe('should print progress', () => {
@@ -63,13 +63,13 @@ describe('apply command', () => {
         expect(Workspace.load).toHaveBeenCalled()
       })
       it('should print progress upon update', async () => {
-        wu((plan()).itemsByEvalOrder()).forEach(item => command.updateCurrentAction(item))
+        wu((preview()).itemsByEvalOrder()).forEach(item => command.updateCurrentAction(item))
         expect(cliOutput.stdout.content).toMatch('salesforce_lead: changing...')
       })
 
       describe('end current action', () => {
         beforeEach(async () => {
-          const planItem = wu((plan()).itemsByEvalOrder()).next().value
+          const planItem = wu((preview()).itemsByEvalOrder()).next().value
           command.updateCurrentAction(planItem)
         })
 
@@ -85,7 +85,7 @@ describe('apply command', () => {
       })
     })
 
-    it('should run apply', async () => {
+    it('should run deploy', async () => {
       await command.execute()
       const { content } = cliOutput.stdout
       expect(content.search('salesforce_lead: Change completed')).toBeGreaterThan(0)
@@ -93,10 +93,10 @@ describe('apply command', () => {
     })
   })
 
-  describe('invalid apply', () => {
+  describe('invalid deploy', () => {
     beforeEach(() => {
       // Creating here with base dir 'errorDir' will cause the mock to throw an error
-      command = new ApplyCommand('errorDir', true, cliOutput)
+      command = new DeployCommand('errorDir', true, cliOutput)
     })
     it('should fail gracefully', async () => {
       await command.execute()

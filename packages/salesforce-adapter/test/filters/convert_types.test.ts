@@ -33,7 +33,7 @@ describe('convert types filter', () => {
       bool: 'false',
       num: '12',
       // eslint-disable-next-line @typescript-eslint/camelcase
-      nullStr: { '': { xsi_nil: 'true' } },
+      nullStr: { _: { xsi_nil: 'true' } },
       numArray: ['12', '13', '14'],
       picklist: '0',
     },
@@ -51,9 +51,9 @@ describe('convert types filter', () => {
 
   let testElements: Element[]
 
-  const filter = makeFilter({ client }) as FilterWith<'onDiscover'>
+  const filter = makeFilter({ client }) as FilterWith<'onFetch'>
 
-  describe('on discover', () => {
+  describe('on fetch', () => {
     describe('convert', () => {
       let inst: InstanceElement
 
@@ -63,7 +63,7 @@ describe('convert types filter', () => {
           _.clone(mockInstance),
           _.clone(mockSettings),
         ]
-        await filter.onDiscover(testElements)
+        await filter.onFetch(testElements)
         inst = testElements[1] as InstanceElement
       })
 
@@ -100,19 +100,19 @@ describe('convert types filter', () => {
 
       it('should not convert not strict enums', async () => {
         delete (testElements[0] as ObjectType).fields.picklist.annotations[Type.RESTRICTION]
-        await filter.onDiscover(testElements)
+        await filter.onFetch(testElements)
         expect((testElements[1] as InstanceElement).value.picklist).toBe('0')
       })
 
       it('should not convert if not an index', async () => {
         (testElements[1] as InstanceElement).value.picklist = 'd'
-        await filter.onDiscover(testElements)
+        await filter.onFetch(testElements)
         expect((testElements[1] as InstanceElement).value.picklist).toBe('d')
       })
 
       it('should not convert if not a valid index', async () => {
         (testElements[1] as InstanceElement).value.picklist = '6'
-        await filter.onDiscover(testElements)
+        await filter.onFetch(testElements)
         expect((testElements[1] as InstanceElement).value.picklist).toBe('6')
       })
     })

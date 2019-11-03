@@ -1,5 +1,5 @@
 import {
-  ObjectType, ElemID, InstanceElement,
+  ObjectType, ElemID, InstanceElement, Type,
 } from 'adapter-api'
 import _ from 'lodash'
 import makeFilter, { LAYOUT_ANNOTATION, LAYOUT_TYPE_NAME } from '../../src/filters/layouts'
@@ -24,27 +24,27 @@ describe('Test layout filter', () => {
     {},
   )
 
-  const filter = makeFilter({ client }) as FilterWith<'onDiscover'>
+  const filter = makeFilter({ client }) as FilterWith<'onFetch'>
 
-  describe('Test layout discover', () => {
-    const discover = async (apiName: string): Promise<void> => {
+  describe('Test layout fetch', () => {
+    const fetch = async (apiName: string): Promise<void> => {
       const testSObj = mockSObject.clone()
-      testSObj.annotate({ [constants.API_NAME]: apiName })
+      testSObj.annotate({ [Type.SERVICE_ID]: apiName })
       const testLayout = _.clone(mockLayout)
       testLayout.value[bpCase(constants.METADATA_OBJECT_NAME_FIELD)] = `${apiName}-Test layout`
       const elements = [testSObj, testLayout]
 
-      await filter.onDiscover(elements)
+      await filter.onFetch(elements)
       const sobject = elements[0] as ObjectType
       expect(sobject.annotations[LAYOUT_ANNOTATION][0])
         .toBe(mockLayout.elemID.getFullName())
     }
 
     it('should add relation between layout to related sobject', async () => {
-      await discover('Test')
+      await fetch('Test')
     })
     it('should add relation between layout to related custom sobject', async () => {
-      await discover('Test__c')
+      await fetch('Test__c')
     })
   })
 })

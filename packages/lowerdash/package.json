@@ -22,7 +22,7 @@
     "watch-test": "yarn run tsc-watch --onSuccess 'yarn run clean-ts-test'",
     "watch-ts": "tsc -w",
     "lint": "eslint --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
-    "lint-fix": "yarn run lint -- --fix"
+    "lint-fix": "yarn run lint --fix"
   },
   "dependencies": {
     "lodash": "^4.17.11",

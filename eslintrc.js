@@ -73,7 +73,8 @@ module.exports = {
         }],
         'import/no-extraneous-dependencies': ['error', {
             devDependencies: ['!test/**/*'],
-        }]
+        }],
+        'jest/valid-describe': ['off'],
     },
     overrides: [
         {

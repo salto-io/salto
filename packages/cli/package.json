@@ -35,7 +35,7 @@
     "build-ts": "tsc",
     "watch-ts": "tsc -w",
     "lint": "eslint --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
-    "lint-fix": "yarn run lint -- --fix",
+    "lint-fix": "yarn run lint --fix",
     "package": "yarn run pkg -t node10 -o ./pkg/salto ."
   },
   "dependencies": {

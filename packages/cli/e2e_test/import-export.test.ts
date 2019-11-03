@@ -5,7 +5,7 @@ import {
 } from 'salto'
 import { InstanceElement } from 'adapter-api'
 import { MockWriteStream } from '../test/mocks'
-import { command as discover } from '../src/commands/discover'
+import { command as fetch } from '../src/commands/fetch'
 import { command as importCommand } from '../src/commands/import'
 import { command as exportCommand } from '../src/commands/export'
 import { command as deleteCommand } from '../src/commands/delete'
@@ -16,7 +16,7 @@ const sfLeadObjectName = 'salesforce_lead'
 
 const mockGetConfigType = (): InstanceElement => adapterConfigs.salesforce()
 const homePath = process.env.HOME || process.env.HOMEPATH || process.env.USERPROFILE
-const discoverOutputDir = `${homePath}/BP/test_import`
+const fetchOutputDir = `${homePath}/BP/test_import`
 const configFile = `${__dirname}/../../e2e_test/BP/salto.config/config.bp`
 
 const exportOutputDir = `${homePath}/tmp/export`
@@ -37,17 +37,17 @@ describe('Data migration operations E2E', () => {
   jest.setTimeout(15 * 60 * 1000)
   const pathExists = async (p: string): Promise<boolean> => asyncfile.exists(p)
   const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
-  describe('When running discover beforehand', () => {
+  describe('When running fetch beforehand', () => {
     beforeAll(async () => {
       await asyncfile.delete(exportOutputDir)
-      await asyncfile.delete(discoverOutputDir)
-      await asyncfile.mkdirp(`${discoverOutputDir}/salto.config`)
-      await copyFile(configFile, `${discoverOutputDir}/salto.config/config.bp`)
-      await discover(discoverOutputDir, true, cliOutput).execute()
+      await asyncfile.delete(fetchOutputDir)
+      await asyncfile.mkdirp(`${fetchOutputDir}/salto.config`)
+      await copyFile(configFile, `${fetchOutputDir}/salto.config/config.bp`)
+      await fetch(fetchOutputDir, true, cliOutput).execute()
     })
 
     it('should save the data in csv file when running export', async () => {
-      await exportCommand(discoverOutputDir, sfLeadObjectName,
+      await exportCommand(fetchOutputDir, sfLeadObjectName,
         exportOutputFullPath, cliOutput).execute()
       expect(await pathExists(exportOutputFullPath)).toBe(true)
       const exportObjects = await readCsv(exportOutputFullPath)
@@ -55,17 +55,17 @@ describe('Data migration operations E2E', () => {
     })
 
     it('should succeed when running import from a CSV file', async () => {
-      await importCommand(discoverOutputDir, sfLeadObjectName, dataFilePath, cliOutput).execute()
+      await importCommand(fetchOutputDir, sfLeadObjectName, dataFilePath, cliOutput).execute()
       expect(cliOutput.stdout.content).toMatch(Prompts.IMPORT_FINISHED_SUCCESSFULLY)
     })
 
     it('should succeed When running delete instances read from a CSV file', async () => {
       const dataWithIdFileName = 'importWithIds.csv'
       const updatedDataFilePath = path.join(exportOutputDir, dataWithIdFileName)
-      await importCommand(discoverOutputDir, sfLeadObjectName, dataFilePath, cliOutput).execute()
+      await importCommand(fetchOutputDir, sfLeadObjectName, dataFilePath, cliOutput).execute()
 
       // Replicate the file with the Ids of the created items
-      await exportCommand(discoverOutputDir, sfLeadObjectName,
+      await exportCommand(fetchOutputDir, sfLeadObjectName,
         exportOutputFullPath, cliOutput).execute()
       const exportObjects = await readCsv(exportOutputFullPath)
       const clark = exportObjects.find(object => object.FirstName === 'Clark' && object.LastName === 'Kent')
@@ -77,40 +77,40 @@ describe('Data migration operations E2E', () => {
 
       await dumpCsv(deletionObjects, updatedDataFilePath, false)
 
-      await deleteCommand(discoverOutputDir, sfLeadObjectName,
+      await deleteCommand(fetchOutputDir, sfLeadObjectName,
         updatedDataFilePath, cliOutput).execute()
       expect(cliOutput.stdout.content).toMatch(Prompts.DELETE_FINISHED_SUCCESSFULLY)
     })
   })
 
-  describe('When discover is not run beforehand', () => {
+  describe('When fetch is not run beforehand', () => {
     beforeAll(async () => {
       await asyncfile.delete(exportOutputDir)
-      await asyncfile.delete(discoverOutputDir)
-      await asyncfile.mkdirp(`${discoverOutputDir}/salto.config`)
-      await copyFile(configFile, `${discoverOutputDir}/salto.config/config.bp`)
+      await asyncfile.delete(fetchOutputDir)
+      await asyncfile.mkdirp(`${fetchOutputDir}/salto.config`)
+      await copyFile(configFile, `${fetchOutputDir}/salto.config/config.bp`)
     })
 
     it('should fail when running export', async () => {
-      const command = exportCommand(discoverOutputDir, sfLeadObjectName,
+      const command = exportCommand(fetchOutputDir, sfLeadObjectName,
         exportOutputFullPath, cliOutput)
       await expect(command.execute()).rejects
-        .toThrow(`Couldn't find the type you are looking for: ${sfLeadObjectName}. Have you run salto discover yet?`)
+        .toThrow(`Couldn't find the type you are looking for: ${sfLeadObjectName}. Have you run salto fetch yet?`)
       expect(await pathExists(exportOutputFullPath)).toBe(false)
     })
 
     it('should fail when running import from a CSV file', async () => {
-      const command = importCommand(discoverOutputDir, sfLeadObjectName,
+      const command = importCommand(fetchOutputDir, sfLeadObjectName,
         dataFilePath, cliOutput)
       await expect(command.execute()).rejects
-        .toThrow(`Couldn't find the type you are looking for: ${sfLeadObjectName}. Have you run salto discover yet?`)
+        .toThrow(`Couldn't find the type you are looking for: ${sfLeadObjectName}. Have you run salto fetch yet?`)
     })
 
     it('should fail when running delete instances read from a CSV file', async () => {
-      const command = deleteCommand(discoverOutputDir, sfLeadObjectName,
+      const command = deleteCommand(fetchOutputDir, sfLeadObjectName,
         dataFilePath, cliOutput)
       await expect(command.execute()).rejects
-        .toThrow(`Couldn't find the type you are looking for: ${sfLeadObjectName}. Have you run salto discover yet?`)
+        .toThrow(`Couldn't find the type you are looking for: ${sfLeadObjectName}. Have you run salto fetch yet?`)
     })
   })
 })

@@ -429,7 +429,7 @@ type salesforce_lead {
       })
       it('should fail when run inside an existing workspace', async () => {
         await Workspace.init(emptyTmpDir.path)
-        expect(Workspace.init(emptyTmpDir.path)).rejects.toThrow()
+        return expect(Workspace.init(emptyTmpDir.path)).rejects.toThrow()
       })
       it('should parse existing bps', async () => {
         workspace = await Workspace.init(path.join(tmpDir.path))

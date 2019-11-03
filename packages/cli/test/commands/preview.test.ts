@@ -1,9 +1,9 @@
 import { Workspace } from 'salto'
-import { command } from '../../src/commands/plan'
-import { plan, MockWriteStream, getWorkspaceErrors, mockSpinnerCreator } from '../mocks'
+import { command } from '../../src/commands/preview'
+import { preview, MockWriteStream, getWorkspaceErrors, mockSpinnerCreator } from '../mocks'
 import { SpinnerCreator, Spinner } from '../../src/types'
 
-const mockPlan = plan
+const mockPreview = preview
 const mockWs = { hasErrors: () => false }
 const mockErrWs = {
   hasErrors: () => true,
@@ -12,7 +12,7 @@ const mockErrWs = {
 }
 jest.mock('salto', () => ({
   ...require.requireActual('salto'),
-  plan: jest.fn().mockImplementation(() => mockPlan()),
+  preview: jest.fn().mockImplementation(() => mockPreview()),
   Workspace: {
     load: jest.fn().mockImplementation(config => (config.baseDir === 'errdir' ? mockErrWs : mockWs)),
   },
@@ -21,7 +21,7 @@ jest.mock('salto', () => ({
   ),
 }))
 
-describe('plan command', () => {
+describe('preview command', () => {
   let cliOutput: { stdout: MockWriteStream; stderr: MockWriteStream }
   let spinners: Spinner[]
   let spinnerCreator: SpinnerCreator

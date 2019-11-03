@@ -13,7 +13,7 @@ import mockClient from '../client'
 
 describe('lead convert settings filter', () => {
   const { client } = mockClient()
-  const filter = filterCreator({ client }) as FilterWith<'onDiscover'> & FilterWith<'onUpdate'>
+  const filter = filterCreator({ client }) as FilterWith<'onFetch'> & FilterWith<'onUpdate'>
 
   const mockLead = new ObjectType(
     { elemID: new ElemID(constants.SALESFORCE, LEAD_TYPE) }
@@ -46,7 +46,7 @@ describe('lead convert settings filter', () => {
     }
   )
 
-  describe('on discover', () => {
+  describe('on fetch', () => {
     let leadPostFilter: ObjectType
     let testElements: Element[]
 
@@ -54,7 +54,7 @@ describe('lead convert settings filter', () => {
       testElements = [_.cloneDeep(mockLead),
         _.cloneDeep(mockConvertSettingsType),
         _.cloneDeep(mockConvertSettingsInstance)]
-      await filter.onDiscover(testElements)
+      await filter.onFetch(testElements)
       leadPostFilter = testElements.find(e => e.elemID.name === LEAD_TYPE) as ObjectType
     })
 

@@ -31,18 +31,18 @@ describe('Salesforce adapter E2E with real account', () => {
   // Set long timeout as we communicate with salesforce API
   jest.setTimeout(1000000)
 
-  describe('should discover account settings', () => {
+  describe('should fetch account settings', () => {
     let result: Element[]
 
     beforeAll(async () => {
-      result = await adapter.discover()
+      result = await adapter.fetch()
     })
 
     beforeEach(() => {
       expect(result).toBeDefined()
     })
 
-    it('should discover sobject', async () => {
+    it('should fetch sobject', async () => {
       // Check few field types on lead object
       const lead = result.filter(element => element.elemID.name === 'lead')[0] as ObjectType
 
@@ -100,7 +100,7 @@ describe('Salesforce adapter E2E with real account', () => {
       )
     })
 
-    it('should discover metadata type', () => {
+    it('should fetch metadata type', () => {
       const flow = result
         .filter(element => element.elemID.name === 'flow')
         .pop() as ObjectType
@@ -109,8 +109,8 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(flow.fields.action_calls.type.elemID.name).toBe('flow_action_call')
     })
 
-    it('should discover settings instance', () => {
-      // As we discover now only instances from the STANDALONE list,
+    it('should fetch settings instance', () => {
+      // As we fetch now only instances from the STANDALONE list,
       // settings is the only one with instance by default.
       // once we support adding instances test can be improved
       const quoteSettings = result
@@ -177,7 +177,7 @@ describe('Salesforce adapter E2E with real account', () => {
         annotationTypes: {},
         annotations: {
           [constants.METADATA_TYPE]: PROFILE_METADATA_TYPE,
-          [constants.API_NAME]: instanceElementName,
+          [Type.SERVICE_ID]: instanceElementName,
         },
       }),
       {
@@ -240,7 +240,7 @@ describe('Salesforce adapter E2E with real account', () => {
       const element = new ObjectType({
         elemID: mockElemID,
         annotations: {
-          [constants.API_NAME]: customObjectName,
+          [Type.SERVICE_ID]: customObjectName,
           [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
         },
         fields: {
@@ -278,10 +278,10 @@ describe('Salesforce adapter E2E with real account', () => {
       // Test
       expect(post).toBeInstanceOf(ObjectType)
       expect(
-        post.fields.description.annotations[constants.API_NAME]
+        post.fields.description.annotations[Type.SERVICE_ID]
       ).toBe('Description__c')
       expect(
-        post.fields.formula.annotations[constants.API_NAME]
+        post.fields.formula.annotations[Type.SERVICE_ID]
       ).toBe('Formula__c')
 
       expect(await objectExists(constants.CUSTOM_OBJECT, customObjectName, ['Description__c', 'Formula__c'])).toBe(true)
@@ -298,7 +298,7 @@ describe('Salesforce adapter E2E with real account', () => {
       const element = new ObjectType({
         elemID: mockElemID,
         annotations: {
-          [constants.API_NAME]: customObjectName,
+          [Type.SERVICE_ID]: customObjectName,
           [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
         },
         fields: {
@@ -337,7 +337,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'address',
             stringType,
             {
-              [constants.API_NAME]: 'Address__c',
+              [Type.SERVICE_ID]: 'Address__c',
             },
           ),
           banana: new Field(
@@ -345,7 +345,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'banana',
             stringType,
             {
-              [constants.API_NAME]: 'Banana__c',
+              [Type.SERVICE_ID]: 'Banana__c',
             },
           ),
         },
@@ -353,7 +353,7 @@ describe('Salesforce adapter E2E with real account', () => {
           [Type.REQUIRED]: false,
           [constants.DEFAULT_VALUE_FORMULA]: 'test',
           [constants.LABEL]: 'test label',
-          [constants.API_NAME]: customObjectName,
+          [Type.SERVICE_ID]: customObjectName,
           [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
         },
       })
@@ -375,7 +375,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'banana',
             stringType,
             {
-              [constants.API_NAME]: 'Banana__c',
+              [Type.SERVICE_ID]: 'Banana__c',
             },
           ),
           description: new Field(
@@ -394,7 +394,7 @@ describe('Salesforce adapter E2E with real account', () => {
           [Type.REQUIRED]: false,
           [constants.DEFAULT_VALUE_FORMULA]: 'test2',
           [constants.LABEL]: 'test2 label',
-          [constants.API_NAME]: customObjectName,
+          [Type.SERVICE_ID]: customObjectName,
         },
       })
 
@@ -425,7 +425,7 @@ describe('Salesforce adapter E2E with real account', () => {
         annotationTypes: {},
         annotations: {
           [constants.METADATA_TYPE]: PROFILE_METADATA_TYPE,
-          [constants.API_NAME]: instanceElementName,
+          [Type.SERVICE_ID]: instanceElementName,
         },
       }),
       {
@@ -464,7 +464,7 @@ describe('Salesforce adapter E2E with real account', () => {
         annotationTypes: {},
         annotations: {
           [constants.METADATA_TYPE]: PROFILE_METADATA_TYPE,
-          [constants.API_NAME]: instanceElementName,
+          [Type.SERVICE_ID]: instanceElementName,
         },
       }),
       {
@@ -553,7 +553,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'address',
             stringType,
             {
-              [constants.API_NAME]: 'Address__c',
+              [Type.SERVICE_ID]: 'Address__c',
               [constants.LABEL]: 'Address',
             },
           ),
@@ -562,7 +562,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'banana',
             stringType,
             {
-              [constants.API_NAME]: 'Banana__c',
+              [Type.SERVICE_ID]: 'Banana__c',
               [constants.LABEL]: 'Banana',
             },
           ),
@@ -571,7 +571,7 @@ describe('Salesforce adapter E2E with real account', () => {
           [Type.REQUIRED]: false,
           [constants.DEFAULT_VALUE_FORMULA]: 'test',
           [constants.LABEL]: 'test label',
-          [constants.API_NAME]: customObjectName,
+          [Type.SERVICE_ID]: customObjectName,
           [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
         },
       })
@@ -589,7 +589,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'address',
             stringType,
             {
-              [constants.API_NAME]: 'Address__c',
+              [Type.SERVICE_ID]: 'Address__c',
               [constants.LABEL]: 'Address',
             },
           ),
@@ -598,7 +598,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'banana',
             stringType,
             {
-              [constants.API_NAME]: 'Banana__c',
+              [Type.SERVICE_ID]: 'Banana__c',
               [constants.LABEL]: 'Banana Split',
             },
           ),
@@ -607,7 +607,7 @@ describe('Salesforce adapter E2E with real account', () => {
           [Type.REQUIRED]: false,
           [constants.DEFAULT_VALUE_FORMULA]: 'test2',
           [constants.LABEL]: 'test label 2',
-          [constants.API_NAME]: customObjectName,
+          [Type.SERVICE_ID]: customObjectName,
         },
       })
 
@@ -650,7 +650,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'address',
             stringType,
             {
-              [constants.API_NAME]: 'Address__c',
+              [Type.SERVICE_ID]: 'Address__c',
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 admin: { editable: true, readable: true },
               },
@@ -661,7 +661,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'banana',
             stringType,
             {
-              [constants.API_NAME]: 'Banana__c',
+              [Type.SERVICE_ID]: 'Banana__c',
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 standard: { editable: true, readable: true },
               },
@@ -672,7 +672,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'delta',
             stringType,
             {
-              [constants.API_NAME]: 'Delta__c',
+              [Type.SERVICE_ID]: 'Delta__c',
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 standard: { editable: false, readable: true },
                 admin: { editable: true, readable: true },
@@ -684,7 +684,7 @@ describe('Salesforce adapter E2E with real account', () => {
           [Type.REQUIRED]: false,
           [constants.DEFAULT_VALUE_FORMULA]: 'test',
           [constants.LABEL]: 'test label',
-          [constants.API_NAME]: customObjectName,
+          [Type.SERVICE_ID]: customObjectName,
           [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
         },
       })
@@ -704,7 +704,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'address',
             stringType,
             {
-              [constants.API_NAME]: 'Address__c',
+              [Type.SERVICE_ID]: 'Address__c',
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 standard: { editable: true, readable: true },
               },
@@ -715,7 +715,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'banana',
             stringType,
             {
-              [constants.API_NAME]: 'Banana__c',
+              [Type.SERVICE_ID]: 'Banana__c',
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 admin: { editable: true, readable: true },
                 standard: { editable: true, readable: true },
@@ -727,7 +727,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'delta',
             stringType,
             {
-              [constants.API_NAME]: 'Delta__c',
+              [Type.SERVICE_ID]: 'Delta__c',
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 standard: { editable: false, readable: true },
               },
@@ -738,7 +738,7 @@ describe('Salesforce adapter E2E with real account', () => {
           [Type.REQUIRED]: false,
           [constants.DEFAULT_VALUE_FORMULA]: 'test',
           [constants.LABEL]: 'test label',
-          [constants.API_NAME]: customObjectName,
+          [Type.SERVICE_ID]: customObjectName,
         },
       })
 
@@ -780,7 +780,7 @@ describe('Salesforce adapter E2E with real account', () => {
 
     it('should add a custom object with various field types', async () => {
       const customObjectName = 'TestAddFieldTypes__c'
-      const mockElemID = new ElemID(constants.SALESFORCE, 'test add custom object with various field types')
+      const mockElemID = new ElemID(constants.SALESFORCE, 'test add object with various field types')
       const adminReadable = {
         [FIELD_LEVEL_SECURITY_ANNOTATION]: {
           admin: { editable: false, readable: true },
@@ -792,7 +792,7 @@ describe('Salesforce adapter E2E with real account', () => {
       const element = new ObjectType({
         elemID: mockElemID,
         annotations: {
-          [constants.API_NAME]: customObjectName,
+          [Type.SERVICE_ID]: customObjectName,
           [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
         },
         fields: {
@@ -1118,7 +1118,7 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(phoneField.label).toBe('Phone description label')
       expect(phoneField.type).toBe('phone')
       // Verify longtextarea
-      // TODO: We do not know how to retrieve the visible lines info when discovering
+      // TODO: We do not know how to retrieve the visible lines info when fetching
       // long text area
       const longTextAreaField = allFields.filter(field => field.name === 'Kilo__c')[0]
       expect(longTextAreaField).toBeDefined()
@@ -1126,7 +1126,7 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(longTextAreaField.type).toBe('textarea')
       expect(longTextAreaField.length).toBe(32768)
       // Verify richtextarea
-      // TODO: We do not know how to retrieve the visible lines info when discovering
+      // TODO: We do not know how to retrieve the visible lines info when fetching
       // rich text area
       const richTextAreaField = allFields.filter(field => field.name === 'Lima__c')[0]
       expect(richTextAreaField).toBeDefined()
@@ -1196,7 +1196,7 @@ describe('Salesforce adapter E2E with real account', () => {
         annotations: {
           [Type.REQUIRED]: false,
           [constants.LABEL]: 'test label',
-          [constants.API_NAME]: customObjectName,
+          [Type.SERVICE_ID]: customObjectName,
           [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
         },
       })
@@ -1206,7 +1206,7 @@ describe('Salesforce adapter E2E with real account', () => {
         lookupFieldName,
         Types.get(constants.FIELD_TYPE_NAMES.LOOKUP),
         {
-          [constants.API_NAME]: lookupFieldApiName,
+          [Type.SERVICE_ID]: lookupFieldApiName,
           [constants.FIELD_ANNOTATIONS.RELATED_TO]: ['Case'],
           [FIELD_LEVEL_SECURITY_ANNOTATION]: {
             admin: { editable: true, readable: true },
@@ -1227,7 +1227,7 @@ describe('Salesforce adapter E2E with real account', () => {
         annotations: {
           [Type.REQUIRED]: false,
           [constants.LABEL]: 'test label',
-          [constants.API_NAME]: customObjectName,
+          [Type.SERVICE_ID]: customObjectName,
           [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
         },
       })
@@ -1237,7 +1237,7 @@ describe('Salesforce adapter E2E with real account', () => {
         lookupFieldName,
         Types.get(constants.FIELD_TYPE_NAMES.LOOKUP),
         {
-          [constants.API_NAME]: lookupFieldApiName,
+          [Type.SERVICE_ID]: lookupFieldApiName,
           [constants.FIELD_ANNOTATIONS.RELATED_TO]: ['Case'],
           [constants.FIELD_ANNOTATIONS.LOOKUP_FILTER]: {
             [constants.LOOKUP_FILTER_FIELDS.ACTIVE]: true,

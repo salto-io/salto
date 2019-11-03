@@ -1,9 +1,9 @@
 import {
   Element, ObjectType, InstanceElement, PrimitiveType, ElemID, PrimitiveTypes, BuiltinTypes,
 } from 'adapter-api'
-import { WorkspaceError, DiscoverChange } from 'salto'
-import { formatSearchResults, createPlanOutput, formatChange, formatDiscoverChangeForApproval, formatWorkspaceErrors } from '../src/formatter'
-import { elements, plan, detailedChange } from './mocks'
+import { WorkspaceError, FetchChange } from 'salto'
+import { formatSearchResults, createPlanOutput, formatChange, formatFetchChangeForApproval, formatWorkspaceErrors } from '../src/formatter'
+import { elements, preview, detailedChange } from './mocks'
 
 describe('formatter', () => {
   describe('formatSearchResults', () => {
@@ -56,7 +56,7 @@ describe('formatter', () => {
   })
 
   describe('createPlanOutput', () => {
-    const output = createPlanOutput(plan())
+    const output = createPlanOutput(preview())
     it('should return type field addition', () => {
       expect(output).toMatch(/|[^\n]+salesforce_lead.*\+[^\n]+do_you_have_a_sales_team/s)
     })
@@ -126,11 +126,11 @@ describe('formatter', () => {
       })
     })
   })
-  describe('formatDiscoverChangeForApproval', () => {
+  describe('formatFetchChangeForApproval', () => {
     const change = detailedChange('modify', ['adapter', 'object', 'field', 'value'], 'old', 'new')
     describe('without conflict', () => {
       const changeWithoutConflict = { change, serviceChange: change }
-      const output = formatDiscoverChangeForApproval(changeWithoutConflict, 0, 3)
+      const output = formatFetchChangeForApproval(changeWithoutConflict, 0, 3)
       it('should contain change path', () => {
         expect(output).toMatch(/adapter.*object.*field.*value/s)
       })
@@ -139,12 +139,12 @@ describe('formatter', () => {
       })
     })
     describe('with conflict', () => {
-      const discoverChange: DiscoverChange = {
+      const fetchChange: FetchChange = {
         change: detailedChange('modify', ['adapter', 'object', 'field', 'value'], 'local', 'new'),
         serviceChange: change,
         pendingChange: detailedChange('modify', ['adapter', 'object', 'field', 'value'], 'old', 'local'),
       }
-      const output = formatDiscoverChangeForApproval(discoverChange, 2, 3)
+      const output = formatFetchChangeForApproval(fetchChange, 2, 3)
       it('should contain change path', () => {
         expect(output).toMatch(/adapter.*object.*field.*value/s)
       })

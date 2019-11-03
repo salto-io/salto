@@ -36,8 +36,8 @@ const RECORDS_CHUNK_SIZE = 10000
 // Add API name and label annotation if missing
 const annotateApiNameAndLabel = (element: ObjectType): void => {
   const innerAnnotate = (annotations: Values, name: string): void => {
-    if (!annotations[constants.API_NAME]) {
-      annotations[constants.API_NAME] = sfCase(name, true)
+    if (!annotations[Type.SERVICE_ID]) {
+      annotations[Type.SERVICE_ID] = sfCase(name, true)
     }
     if (!annotations[constants.LABEL]) {
       annotations[constants.LABEL] = sfCase(name)
@@ -62,18 +62,18 @@ const validateApiName = (prevElement: Element, newElement: Element): void => {
 }
 
 export interface SalesforceAdapterParams {
-  // Metadata types that we want to treat as top level types (discover instances of them)
+  // Metadata types that we want to treat as top level types (fetch instances of them)
   // even though they are not returned as top level metadata types from the API
   metadataAdditionalTypes?: string[]
 
-  // Metadata types that we do not want to discover even though they are returned as top level
+  // Metadata types that we do not want to fetch even though they are returned as top level
   // types from the API
   metadataTypeBlacklist?: string[]
 
   // Metadata types that we have to update using the deploy API endpoint
   metadataToUpdateWithDeploy?: string[]
 
-  // Filters to apply to all adapter operations
+  // Filters to deploy to all adapter operations
   filterCreators?: FilterCreator[]
 
   // client to use
@@ -100,7 +100,7 @@ export default class SalesforceAdapter {
     metadataToUpdateWithDeploy = [
       'AssignmentRules',
     ],
-    filterCreators: filterCreators = [
+    filterCreators = [
       fieldPermissionsFilter,
       layoutFilter,
       validationRulesFilter,
@@ -126,21 +126,21 @@ export default class SalesforceAdapter {
   private client: SalesforceClient
 
   /**
-   * Discover configuration elements (types and instances in the given salesforce account)
+   * Fetch configuration elements (types and instances in the given salesforce account)
    * Account credentials were given in the constructor.
    */
-  public async discover(): Promise<Element[]> {
+  public async fetch(): Promise<Element[]> {
     const fieldTypes = Types.getAllFieldTypes()
     const metadataTypeNames = this.client.listMetadataTypes().then(
       types => types
         .map(x => x.xmlName)
         .concat(this.metadataAdditionalTypes)
     )
-    const metadataTypes = this.discoverMetadataTypes(metadataTypeNames)
-    const metadataInstances = this.discoverMetadataInstances(metadataTypeNames, metadataTypes)
+    const metadataTypes = this.fetchMetadataTypes(metadataTypeNames)
+    const metadataInstances = this.fetchMetadataInstances(metadataTypeNames, metadataTypes)
 
     // Filter out types returned as both metadata types and SObjects
-    const sObjects = this.discoverSObjects().then(
+    const sObjects = this.fetchSObjects().then(
       async types => {
         // All metadata type names include subtypes as well as the "top level" type names
         const allMetadataTypeNames = new Set((await metadataTypes).map(elem => elem.elemID.name))
@@ -152,7 +152,7 @@ export default class SalesforceAdapter {
       await Promise.all([fieldTypes, metadataTypes, sObjects, metadataInstances]) as Element[][]
     )
 
-    await this.runFiltersOnDiscover(elements)
+    await this.runFiltersOnFetch(elements)
     return elements
   }
 
@@ -328,16 +328,17 @@ export default class SalesforceAdapter {
       // Retrieve the custom fields for deletion and delete them
       this.deleteCustomFields(clonedObject, fieldChanges
         .filter(isRemovalDiff)
-        .map(c => c.data.before)),
+        .map(c => before.fields[c.data.before.name])),
       // Retrieve the custom fields for addition and than create them
       this.createFields(clonedObject, fieldChanges
         .filter(isAdditionDiff)
-        .map(c => c.data.after)),
+        .map(c => clonedObject.fields[c.data.after.name])),
       // Update the remaining fields that were changed
       this.updateFields(clonedObject, fieldChanges
         .filter(isModificationDiff)
-        .filter(c => shouldUpdateField(c.data.before, c.data.after))
-        .map(c => c.data.after)),
+        .filter(c => shouldUpdateField(before.fields[c.data.before.name],
+          clonedObject.fields[c.data.after.name]))
+        .map(c => clonedObject.fields[c.data.after.name])),
     ])
 
     // Update the annotation values - this can't be done asynchronously with the previous
@@ -427,20 +428,20 @@ export default class SalesforceAdapter {
     )
   }
 
-  private async discoverMetadataTypes(typeNames: Promise<string[]>): Promise<Type[]> {
+  private async fetchMetadataTypes(typeNames: Promise<string[]>): Promise<Type[]> {
     const knownTypes = new Map<string, Type>()
     return _.flatten(await Promise.all((await typeNames)
       .filter(name => !this.metadataTypeBlacklist.includes(name))
-      .map(obj => this.discoverMetadataType(obj, knownTypes))))
+      .map(obj => this.fetchMetadataType(obj, knownTypes))))
   }
 
-  private async discoverMetadataType(objectName: string, knownTypes: Map<string, Type>):
+  private async fetchMetadataType(objectName: string, knownTypes: Map<string, Type>):
     Promise<Type[]> {
     const fields = await this.client.describeMetadataType(objectName)
     return createMetadataTypeElements(objectName, fields, knownTypes)
   }
 
-  private async discoverMetadataInstances(typeNames: Promise<string[]>, types: Promise<Type[]>):
+  private async fetchMetadataInstances(typeNames: Promise<string[]>, types: Promise<Type[]>):
     Promise<InstanceElement[]> {
     const topLevelTypeNames = await typeNames
     const instances = await Promise.all((await types)
@@ -460,7 +461,7 @@ export default class SalesforceAdapter {
   }
 
 
-  private async discoverSObjects(): Promise<Type[]> {
+  private async fetchSObjects(): Promise<Type[]> {
     const getSobjectDescriptions = async (): Promise<DescribeSObjectResult[]> => {
       const sobjectsList = await this.client.listSObjects()
       const sobjectNames = sobjectsList.map(sobj => sobj.name)
@@ -492,7 +493,7 @@ export default class SalesforceAdapter {
     customObjectNames: Set<string>,
   ): Type[] {
     const element = Types.get(objectName) as ObjectType
-    element.annotate({ [constants.API_NAME]: objectName })
+    element.annotate({ [Type.SERVICE_ID]: objectName })
     element.annotate({ [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT })
 
     // Set standard fields on element
@@ -572,10 +573,10 @@ export default class SalesforceAdapter {
 
   // Filter related functions
 
-  private async runFiltersOnDiscover(elements: Element[]): Promise<void> {
-    // Discover filters order is important so they should run one after the other
-    return this.filtersWith('onDiscover').reduce(
-      (prevRes, filter) => prevRes.then(() => filter.onDiscover(elements)),
+  private async runFiltersOnFetch(elements: Element[]): Promise<void> {
+    // Fetch filters order is important so they should run one after the other
+    return this.filtersWith('onFetch').reduce(
+      (prevRes, filter) => prevRes.then(() => filter.onFetch(elements)),
       Promise.resolve(),
     )
   }

@@ -15,9 +15,9 @@ import wu from 'wu'
 import { CliOutput, SpinnerCreator, Spinner } from '../src/types'
 
 import { MockWriteStream, mockSpinnerCreator } from '../test/mocks'
-import { command as discover } from '../src/commands/discover'
-import { command as plan } from '../src/commands/plan'
-import { ApplyCommand } from '../src/commands/apply'
+import { command as fetch } from '../src/commands/fetch'
+import { command as preview } from '../src/commands/preview'
+import { DeployCommand } from '../src/commands/deploy'
 import adapterConfigs from './adapter_configs'
 
 const credentials = salesforceTestHelpers.credentials()
@@ -27,7 +27,7 @@ let cliOutput: CliOutput
 let spinnerCreator: SpinnerCreator
 
 let lastPlan: Plan
-const mockShouldApply = (p: Plan): boolean => {
+const mockShouldDeploy = (p: Plan): boolean => {
   lastPlan = p
   return wu(p.itemsByEvalOrder()).toArray().length < 100 // Safty to avoid breaking the SF instance
 }
@@ -37,19 +37,19 @@ const mockShouldApply = (p: Plan): boolean => {
 // to be thrown
 jest.mock('../src/callbacks', () => ({
   getConfigFromUser: jest.fn().mockImplementation(() => mockGetConfigType()),
-  shouldApply: jest.fn().mockImplementation(() => mockShouldApply),
+  shouldDeploy: jest.fn().mockImplementation(() => mockShouldDeploy),
 }))
 
 describe('commands e2e', () => {
   const pathExists = async (p: string): Promise<boolean> => fs.exists(p)
   const homePath = process.env.HOME || process.env.HOMEPATH || process.env.USERPROFILE
-  const discoverOutputDir = `${homePath}/BP/test_discover`
-  const localStorageDir = `${homePath}/.salto/test_discover`
+  const fetchOutputDir = `${homePath}/BP/test_fetch`
+  const localStorageDir = `${homePath}/.salto/test_fetch`
   const addModelBP = `${__dirname}/../../e2e_test/BP/add.bp`
   const modifyModelBP = `${__dirname}/../../e2e_test/BP/modify.bp`
   const configFile = `${__dirname}/../../e2e_test/BP/salto.config/config.bp`
-  const statePath = `${discoverOutputDir}/salto.config/state.bpc`
-  const tmpBP = `${discoverOutputDir}/tmp.bp`
+  const statePath = `${fetchOutputDir}/salto.config/state.bpc`
+  const tmpBP = `${fetchOutputDir}/tmp.bp`
   const client = new SalesforceClient({ credentials })
   const spinners: Spinner[] = []
 
@@ -87,9 +87,9 @@ describe('commands e2e', () => {
 
   jest.setTimeout(5 * 60 * 1000)
   beforeAll(async () => {
-    await fs.mkdirp(`${discoverOutputDir}/salto.config`)
+    await fs.mkdirp(`${fetchOutputDir}/salto.config`)
     await fs.mkdirp(localStorageDir)
-    await copyFile(configFile, `${discoverOutputDir}/salto.config/config.bp`)
+    await copyFile(configFile, `${fetchOutputDir}/salto.config/config.bp`)
     if (await fs.exists(tmpBP)) {
       await fs.delete(tmpBP)
     }
@@ -100,24 +100,24 @@ describe('commands e2e', () => {
   })
 
   afterAll(async () => {
-    await fs.delete(discoverOutputDir)
+    await fs.delete(fetchOutputDir)
     await fs.delete(localStorageDir)
   })
 
-  it('should run discover and create the state bp file', async () => {
-    await discover(discoverOutputDir, true, cliOutput).execute()
-    expect(await pathExists(discoverOutputDir)).toBe(true)
+  it('should run fetch and create the state bp file', async () => {
+    await fetch(fetchOutputDir, true, cliOutput).execute()
+    expect(await pathExists(fetchOutputDir)).toBe(true)
     expect(await pathExists(statePath)).toBe(true)
   })
 
   it('should run plan on discover output and detect no changes', async () => {
-    await plan(discoverOutputDir, cliOutput, spinnerCreator).execute()
+    await preview(fetchOutputDir, cliOutput, spinnerCreator).execute()
     expect(lastPlan).toBeUndefined()
   })
 
-  it('should apply the new change', async () => {
+  it('should deploy the new change', async () => {
     await copyFile(addModelBP, tmpBP)
-    await new ApplyCommand(discoverOutputDir, false, cliOutput)
+    await new DeployCommand(fetchOutputDir, false, cliOutput)
       .execute()
     expect(lastPlan.size).toBe(1)
     const step = wu(lastPlan.itemsByEvalOrder()).next().value
@@ -130,9 +130,9 @@ describe('commands e2e', () => {
     )).toBe(true)
   })
 
-  it('should apply changes in the new model', async () => {
+  it('should deploy changes in the new model', async () => {
     await copyFile(modifyModelBP, tmpBP)
-    await new ApplyCommand(discoverOutputDir, false,
+    await new DeployCommand(fetchOutputDir, false,
       cliOutput).execute()
     expect(lastPlan.size).toBe(1)
     const step = wu(lastPlan.itemsByEvalOrder()).next().value
@@ -144,9 +144,9 @@ describe('commands e2e', () => {
     )).toBe(true)
   })
 
-  it('should apply a delete for the model', async () => {
+  it('should deploy a delete for the model', async () => {
     await fs.delete(tmpBP)
-    await new ApplyCommand(discoverOutputDir, false, cliOutput).execute()
+    await new DeployCommand(fetchOutputDir, false, cliOutput).execute()
     expect(lastPlan.size).toBe(1)
     const step = wu(lastPlan.itemsByEvalOrder()).next().value
     expect(step.parent().action).toBe('remove')

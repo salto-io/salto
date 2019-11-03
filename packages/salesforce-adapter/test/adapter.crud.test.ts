@@ -233,9 +233,9 @@ describe('SalesforceAdapter CRUD', () => {
       it('should add the new element', () => {
         // Verify object creation
         expect(result).toBeInstanceOf(ObjectType)
-        expect(result.annotations[constants.API_NAME]).toBe('Test__c')
+        expect(result.annotations[Type.SERVICE_ID]).toBe('Test__c')
         expect(
-          result.fields.description.annotations[constants.API_NAME]
+          result.fields.description.annotations[Type.SERVICE_ID]
         ).toBe('Description__c')
         expect(result.annotations[constants.METADATA_TYPE]).toBe(constants.CUSTOM_OBJECT)
 
@@ -668,7 +668,7 @@ describe('SalesforceAdapter CRUD', () => {
             ),
           },
           annotations: {
-            [constants.API_NAME]: 'Test__c',
+            [Type.SERVICE_ID]: 'Test__c',
           },
         })
 
@@ -688,7 +688,7 @@ describe('SalesforceAdapter CRUD', () => {
       const element = new ObjectType({
         elemID: mockElemID,
         annotations: {
-          [constants.API_NAME]: 'Test__c',
+          [Type.SERVICE_ID]: 'Test__c',
         },
       })
 
@@ -776,7 +776,7 @@ describe('SalesforceAdapter CRUD', () => {
           [Type.REQUIRED]: false,
           [Type.DEFAULT]: 'test',
           label: 'test label',
-          [constants.API_NAME]: 'Test2__c',
+          [Type.SERVICE_ID]: 'Test2__c',
         },
       })
 
@@ -937,7 +937,7 @@ describe('SalesforceAdapter CRUD', () => {
               [Type.REQUIRED]: false,
               [Type.DEFAULT]: 'test',
               label: 'test label',
-              [constants.API_NAME]: 'Test__c',
+              [Type.SERVICE_ID]: 'Test__c',
             },
           })
 
@@ -996,7 +996,7 @@ describe('SalesforceAdapter CRUD', () => {
               [Type.REQUIRED]: false,
               [Type.DEFAULT]: 'test',
               label: 'test label',
-              [constants.API_NAME]: 'Test__c',
+              [Type.SERVICE_ID]: 'Test__c',
             },
           })
 
@@ -1066,7 +1066,7 @@ describe('SalesforceAdapter CRUD', () => {
                 'address',
                 stringType,
                 {
-                  [constants.API_NAME]: 'Address__c',
+                  [Type.SERVICE_ID]: 'Address__c',
                 },
               ),
               banana: new Field(
@@ -1074,7 +1074,7 @@ describe('SalesforceAdapter CRUD', () => {
                 'banana',
                 stringType,
                 {
-                  [constants.API_NAME]: 'Banana__c',
+                  [Type.SERVICE_ID]: 'Banana__c',
                 },
               ),
               description: new Field(
@@ -1082,7 +1082,7 @@ describe('SalesforceAdapter CRUD', () => {
                 'description',
                 stringType,
                 {
-                  [constants.API_NAME]: 'Description__c',
+                  [Type.SERVICE_ID]: 'Description__c',
                 },
               ),
             },
@@ -1090,7 +1090,7 @@ describe('SalesforceAdapter CRUD', () => {
               [Type.REQUIRED]: false,
               [Type.DEFAULT]: 'test',
               label: 'test label',
-              [constants.API_NAME]: 'Test__c',
+              [Type.SERVICE_ID]: 'Test__c',
             },
           })
 
@@ -1102,7 +1102,7 @@ describe('SalesforceAdapter CRUD', () => {
                 'description',
                 stringType,
                 {
-                  [constants.API_NAME]: 'Description__c',
+                  [Type.SERVICE_ID]: 'Description__c',
                 },
               ),
             },
@@ -1145,7 +1145,7 @@ describe('SalesforceAdapter CRUD', () => {
                 'address',
                 stringType,
                 {
-                  [constants.API_NAME]: 'Address__c',
+                  [Type.SERVICE_ID]: 'Address__c',
                 },
               ),
               banana: new Field(
@@ -1153,7 +1153,7 @@ describe('SalesforceAdapter CRUD', () => {
                 'banana',
                 stringType,
                 {
-                  [constants.API_NAME]: 'Banana__c',
+                  [Type.SERVICE_ID]: 'Banana__c',
                 },
               ),
             },
@@ -1161,7 +1161,7 @@ describe('SalesforceAdapter CRUD', () => {
               [Type.REQUIRED]: false,
               [Type.DEFAULT]: 'test',
               label: 'test label',
-              [constants.API_NAME]: 'Test__c',
+              [Type.SERVICE_ID]: 'Test__c',
             },
           })
 
@@ -1234,7 +1234,7 @@ describe('SalesforceAdapter CRUD', () => {
             },
             annotations: {
               label: 'test label',
-              [constants.API_NAME]: 'Test__c',
+              [Type.SERVICE_ID]: 'Test__c',
             },
           })
 
@@ -1249,7 +1249,7 @@ describe('SalesforceAdapter CRUD', () => {
             },
             annotations: {
               label: 'test2 label',
-              [constants.API_NAME]: 'Test__c',
+              [Type.SERVICE_ID]: 'Test__c',
             },
           })
 
@@ -1285,7 +1285,7 @@ describe('SalesforceAdapter CRUD', () => {
                 'address',
                 stringType,
                 {
-                  [constants.API_NAME]: 'Address__c',
+                  [Type.SERVICE_ID]: 'Address__c',
                   [constants.LABEL]: 'Address',
                 },
               ),
@@ -1294,7 +1294,7 @@ describe('SalesforceAdapter CRUD', () => {
                 'banana',
                 stringType,
                 {
-                  [constants.API_NAME]: 'Banana__c',
+                  [Type.SERVICE_ID]: 'Banana__c',
                   [constants.LABEL]: 'Banana',
                 },
               ),
@@ -1303,7 +1303,7 @@ describe('SalesforceAdapter CRUD', () => {
                 'cat',
                 stringType,
                 {
-                  [constants.API_NAME]: 'Cat__c',
+                  [Type.SERVICE_ID]: 'Cat__c',
                   [constants.LABEL]: 'Cat',
                 },
               ),
@@ -1312,7 +1312,7 @@ describe('SalesforceAdapter CRUD', () => {
               [Type.REQUIRED]: false,
               [Type.DEFAULT]: 'test',
               label: 'test label',
-              [constants.API_NAME]: 'Test__c',
+              [Type.SERVICE_ID]: 'Test__c',
             },
           })
 
@@ -1324,7 +1324,7 @@ describe('SalesforceAdapter CRUD', () => {
                 'banana',
                 stringType,
                 {
-                  [constants.API_NAME]: 'Banana__c',
+                  [Type.SERVICE_ID]: 'Banana__c',
                   [constants.LABEL]: 'Banana Split',
                 },
               ),
@@ -1333,7 +1333,7 @@ describe('SalesforceAdapter CRUD', () => {
                 'cat',
                 stringType,
                 {
-                  [constants.API_NAME]: 'Cat__c',
+                  [Type.SERVICE_ID]: 'Cat__c',
                   [constants.LABEL]: 'Cat',
                 },
               ),
@@ -1342,7 +1342,7 @@ describe('SalesforceAdapter CRUD', () => {
                 'description',
                 stringType,
                 {
-                  [constants.API_NAME]: 'Description__c',
+                  [Type.SERVICE_ID]: 'Description__c',
                   [constants.LABEL]: 'Description',
                 },
               ),
@@ -1351,7 +1351,7 @@ describe('SalesforceAdapter CRUD', () => {
               [Type.REQUIRED]: false,
               [Type.DEFAULT]: 'test',
               label: 'test label',
-              [constants.API_NAME]: 'Test__c',
+              [Type.SERVICE_ID]: 'Test__c',
             },
           })
 
@@ -1415,7 +1415,7 @@ describe('SalesforceAdapter CRUD', () => {
               [Type.REQUIRED]: false,
               [Type.DEFAULT]: 'test',
               label: 'test label',
-              [constants.API_NAME]: 'Test__c',
+              [Type.SERVICE_ID]: 'Test__c',
             },
           })
 
@@ -1427,7 +1427,7 @@ describe('SalesforceAdapter CRUD', () => {
                 'address',
                 stringType,
                 {
-                  [constants.API_NAME]: 'Address__c',
+                  [Type.SERVICE_ID]: 'Address__c',
                 },
               ),
               banana: new Field(
@@ -1435,7 +1435,7 @@ describe('SalesforceAdapter CRUD', () => {
                 'banana',
                 stringType,
                 {
-                  [constants.API_NAME]: 'Banana__c',
+                  [Type.SERVICE_ID]: 'Banana__c',
                 },
               ),
             },
@@ -1443,7 +1443,7 @@ describe('SalesforceAdapter CRUD', () => {
               [Type.REQUIRED]: false,
               [Type.DEFAULT]: 'test',
               label: 'test label',
-              [constants.API_NAME]: 'Test__c',
+              [Type.SERVICE_ID]: 'Test__c',
             },
           })
 
@@ -1471,7 +1471,7 @@ describe('SalesforceAdapter CRUD', () => {
                 'banana',
                 stringType,
                 {
-                  [constants.API_NAME]: 'Banana__c',
+                  [Type.SERVICE_ID]: 'Banana__c',
                 },
               ),
             },
@@ -1479,7 +1479,7 @@ describe('SalesforceAdapter CRUD', () => {
               [Type.REQUIRED]: false,
               [Type.DEFAULT]: 'test',
               label: 'test label',
-              [constants.API_NAME]: 'Test__c',
+              [Type.SERVICE_ID]: 'Test__c',
             },
           })
 

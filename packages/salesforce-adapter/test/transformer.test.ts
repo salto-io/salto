@@ -6,10 +6,10 @@ import {
 import { Field as SalesforceField, ValueTypeField } from 'jsforce'
 import {
   toMetadataPackageZip, bpCase, getSObjectFieldElement, Types, toCustomField, toCustomObject,
-  getValueTypeFieldElement,
+  getValueTypeFieldElement, sfCase,
 } from '../src/transformer'
 import {
-  METADATA_TYPE, METADATA_OBJECT_NAME_FIELD, FIELD_ANNOTATIONS, FIELD_TYPE_NAMES, API_NAME,
+  METADATA_TYPE, METADATA_OBJECT_NAME_FIELD, FIELD_ANNOTATIONS, FIELD_TYPE_NAMES,
   LABEL, FIELD_TYPE_API_NAMES,
 } from '../src/constants'
 import { CustomField } from '../src/client/types'
@@ -37,6 +37,23 @@ describe('transformer', () => {
       bool: true,
     },
   )
+
+  describe('bpCase & sfCase transformation', () => {
+    const assertNamingTransformation = (bpName: string, sfName: string): void => {
+      expect(bpCase(sfName)).toEqual(bpName)
+      expect(sfCase(bpName)).toEqual(sfName)
+    }
+
+    it('should transform name correctly to bpCase', () => {
+      assertNamingTransformation('offer__c', 'Offer__c')
+      assertNamingTransformation('offer__r', 'Offer__r')
+      assertNamingTransformation('case_change_event', 'CaseChangeEvent')
+      assertNamingTransformation('offer___change_event', 'Offer__ChangeEvent')
+      assertNamingTransformation('column_preferences___change_event', 'ColumnPreferences__ChangeEvent')
+      assertNamingTransformation('column__preferences___change_event', 'Column_Preferences__ChangeEvent')
+      assertNamingTransformation('name_with_number_2', 'NameWithNumber2')
+    })
+  })
 
   describe('toMetadataPackageZip', () => {
     const zip = toMetadataPackageZip(dummyInstance)
@@ -173,19 +190,19 @@ describe('transformer', () => {
         .toEqual(expectedLookupFilter)
     }
 
-    it('should discover lookup relationships with restricted deletion', async () => {
+    it('should fetch lookup relationships with restricted deletion', async () => {
       _.set(salesforceReferenceField, 'restrictedDelete', true)
       const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField)
       assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.salesforceDataTypes.lookup, 'owner', false, undefined)
     })
 
-    it('should discover lookup relationships with allowed related record deletion when restrictedDelete set to false', async () => {
+    it('should fetch lookup relationships with allowed related record deletion when restrictedDelete set to false', async () => {
       _.set(salesforceReferenceField, 'restrictedDelete', false)
       const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField)
       assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.salesforceDataTypes.lookup, 'owner', true, undefined)
     })
 
-    it('should discover lookup relationships with allowed related record deletion when restrictedDelete is undefined', async () => {
+    it('should fetch lookup relationships with allowed related record deletion when restrictedDelete is undefined', async () => {
       _.set(salesforceReferenceField, 'restrictedDelete', undefined)
       const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField)
       assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.salesforceDataTypes.lookup, 'owner', true, undefined)
@@ -200,10 +217,10 @@ describe('transformer', () => {
     it('should slice field name in case relationshipName is a custom relationship', async () => {
       salesforceReferenceField.relationshipName = 'CustomRelationshipName__r'
       const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField)
-      assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.salesforceDataTypes.lookup, 'custom_relationship_name', true, undefined)
+      assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.salesforceDataTypes.lookup, 'custom_relationship_name__r', true, undefined)
     })
 
-    it('should discover masterdetail relationships', async () => {
+    it('should fetch masterdetail relationships', async () => {
       salesforceReferenceField.cascadeDelete = true
       salesforceReferenceField.updateable = true
       salesforceReferenceField.writeRequiresMasterRead = true
@@ -213,7 +230,7 @@ describe('transformer', () => {
       expect(fieldElement.annotations[FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ]).toBe(true)
     })
 
-    it('should discover masterdetail relationships which are not reparentable and requires read/write access', async () => {
+    it('should fetch masterdetail relationships which are not reparentable and requires read/write access', async () => {
       salesforceReferenceField.cascadeDelete = true
       salesforceReferenceField.updateable = false
       delete salesforceReferenceField.writeRequiresMasterRead
@@ -224,7 +241,7 @@ describe('transformer', () => {
       expect(fieldElement.annotations[FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ]).toBe(false)
     })
 
-    it('should discover lookup filters and init its annotation', async () => {
+    it('should fetch lookup filters and init its annotation', async () => {
       _.set(salesforceReferenceField, 'filteredLookupInfo', {})
       const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField)
       assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.salesforceDataTypes.lookup, 'owner', true, {})
@@ -235,7 +252,7 @@ describe('transformer', () => {
     const elemID = new ElemID('salesforce', 'test')
     const relatedTo = ['User', 'Property__c']
     const annotations: Values = {
-      [API_NAME]: 'field_name',
+      [Type.SERVICE_ID]: 'field_name',
       [LABEL]: 'field_label',
       [Type.REQUIRED]: false,
       [FIELD_ANNOTATIONS.RELATED_TO]: relatedTo,

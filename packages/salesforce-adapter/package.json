@@ -24,11 +24,11 @@
     "build-ts": "tsc",
     "watch-ts": "tsc -w",
     "lint": "eslint --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
-    "lint-fix": "yarn run lint -- --fix"
+    "lint-fix": "yarn run lint --fix"
   },
   "dependencies": {
-    "@salto/lowerdash": "0.1.0",
     "@salto/logging": "0.1.0",
+    "@salto/lowerdash": "0.1.0",
     "adapter-api": "0.1.0",
     "buffer": "^5.2.1",
     "events": "^3.0.0",

@@ -6,7 +6,7 @@ import { getPlan, DetailedChange } from './plan'
 import { mergeElements } from './merger'
 import { validateElements } from './validator'
 
-export type DiscoverChange = {
+export type FetchChange = {
   // The actual change to apply to the workspace
   change: DetailedChange
   // The change that happened in the service
@@ -20,7 +20,7 @@ const mergeAndValidate = (elements: ReadonlyArray<Element>): Element[] => {
   const validationErrors = validateElements(mergedElements)
   const errors = [...mergeErrors, ...validationErrors].map(e => e.message)
   if (errors.length > 0) {
-    throw new Error(`Errors validating discovered elements:\n\t${errors.join('\n\t')}`)
+    throw new Error(`Errors validating fetched elements:\n\t${errors.join('\n\t')}`)
   }
   return mergedElements
 }
@@ -45,7 +45,7 @@ const getChangeMap = (
   )
 )
 
-type ChangeTransformFunction = (sourceChange: DiscoverChange) => DiscoverChange[]
+type ChangeTransformFunction = (sourceChange: FetchChange) => FetchChange[]
 const toChangesWithPath = (serviceElements: ReadonlyArray<Element>): ChangeTransformFunction => (
   change => {
     const originalElements = serviceElements.filter(
@@ -61,11 +61,11 @@ const toChangesWithPath = (serviceElements: ReadonlyArray<Element>): ChangeTrans
   }
 )
 
-type DiscoverChangeConvertor = (change: DetailedChange) => DiscoverChange[]
-const toDiscoverChanges = (
+type FetchChangeConvertor = (change: DetailedChange) => FetchChange[]
+const toFetchChanges = (
   pendingChanges: Record<string, DetailedChange>,
   workspaceToServiceChanges: Record<string, DetailedChange>
-): DiscoverChangeConvertor => {
+): FetchChangeConvertor => {
   const getMatchingChange = (
     id: ElemID,
     from: Record<string, DetailedChange>,
@@ -84,18 +84,18 @@ const toDiscoverChanges = (
   }
 }
 
-type DiscoverChangesResult = {
-  changes: Iterable<DiscoverChange>
+type FetchChangesResult = {
+  changes: Iterable<FetchChange>
   elements: Element[]
 }
 
-export const discoverChanges = async (
+export const fetchChanges = async (
   adapters: Record<string, Adapter>,
   workspaceElements: ReadonlyArray<Element>,
   stateElements: ReadonlyArray<Element>,
-): Promise<DiscoverChangesResult> => {
+): Promise<FetchChangesResult> => {
   const serviceElements = _.flatten(await Promise.all(
-    Object.values(adapters).map(adapter => adapter.discover())
+    Object.values(adapters).map(adapter => adapter.fetch())
   ))
 
   const mergedServiceElements = mergeAndValidate(serviceElements)
@@ -105,7 +105,7 @@ export const discoverChanges = async (
   const workspaceToServiceChanges = getChangeMap(workspaceElements, mergedServiceElements)
 
   const changes = serviceChanges
-    .map(toDiscoverChanges(pendingChanges, workspaceToServiceChanges))
+    .map(toFetchChanges(pendingChanges, workspaceToServiceChanges))
     .flatten()
     .map(toChangesWithPath(serviceElements))
     .flatten()

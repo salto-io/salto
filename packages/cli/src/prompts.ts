@@ -8,7 +8,9 @@ export default class Prompts {
 
   public static readonly SHOULDEXECUTREPLAN = 'Do you want to perform these actions?'
 
-  public static readonly STARTDEPLOYEXEC = 'Starting the deploy phase'
+  public static readonly CANCELDEPLOYACTION = 'Cancelled: Due to an erroneous dependency -'
+  public static readonly STARTDEPLOYEXEC = 'Starting the deployment plan'
+  public static readonly FINISHEDDEPLOYEXEC = 'Deployment is complete'
   public static readonly CANCELDEPLOY = 'Canceling deploy'
   public static readonly PLANNEDFORPREVIEW = ''
   public static readonly MODIFIERS = {
@@ -19,9 +21,9 @@ export default class Prompts {
   }
 
   public static readonly STARTACTION = {
-    modify: 'changing',
-    add: 'creating',
-    remove: 'removing',
+    modify: 'Changing',
+    add: 'Creating',
+    remove: 'Removing',
     eq: '',
   }
 
@@ -32,9 +34,9 @@ export default class Prompts {
     eq: '',
   }
 
-  public static readonly PREVIEW_STARTED = 'Calculating the execution plan - changes to be applied at the next *deploy*'
+  public static readonly PREVIEW_STARTED = 'Calculating deployment plan'
   public static readonly PREVIEW_FINISHED = 'Calculated deployment plan!'
-  public static readonly PREVIEW_FAILED = 'Plan calculation failed'
+  public static readonly PREVIEW_FAILED = 'Deployment plan calculation failed'
 
   public static readonly EXPLAINPREVIEWRESULT = `Resources and actions are indicated with the following symbols:
 

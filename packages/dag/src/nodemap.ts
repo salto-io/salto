@@ -12,7 +12,7 @@ export class CircularDependencyError extends Error {
 }
 
 export class NodeSkippedError extends Error {
-  readonly causingNode: NodeId
+  public readonly causingNode: NodeId
 
   constructor(causingNode: NodeId) {
     super(`Skipped due to an error in parent node ${causingNode}`)

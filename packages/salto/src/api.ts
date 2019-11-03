@@ -4,7 +4,7 @@ import {
 } from 'adapter-api'
 import { logger } from '@salto/logging'
 import {
-  applyActions,
+  applyActions, actionStep,
 } from './core/core'
 import {
   getInstancesOfType, importInstancesOfType, deleteInstancesOfType,
@@ -18,6 +18,8 @@ import { findElement, SearchResult } from './core/search'
 import { Workspace, CREDS_DIR } from './workspace/workspace'
 import { fetchChanges, FetchChange, getDetailedChanges } from './core/fetch'
 import { MergeError } from './core/merger/internal/common'
+
+export { actionStep }
 
 const log = logger(module)
 
@@ -36,15 +38,15 @@ export const deploy = async (
   workspace: Workspace,
   fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
   shouldDeploy: (plan: Plan) => Promise<boolean>,
-  reportProgress: (action: PlanItem) => void,
+  reportProgress: (item: PlanItem, step: actionStep, details?: string) => void,
   force = false
 ): Promise<DeployResult> => {
-  const deployActionOnState = async (state: State, action: string, element: Promise<Element>
+  const deployActionOnState = async (state: State, action: string, element: Element
   ): Promise<void> => {
     if (action === 'remove') {
-      return state.remove([await element])
+      return state.remove([element])
     }
-    return state.update([await element])
+    return state.update([element])
   }
 
   const state = new State(workspace.config.stateLocation)

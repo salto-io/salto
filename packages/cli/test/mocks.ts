@@ -296,13 +296,14 @@ export const deploy = async (
   _workspace: Workspace,
   _fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
   shouldDeploy: (plan: Plan) => Promise<boolean>,
-  reportProgress: (action: PlanItem) => void,
+  reportProgress: (action: PlanItem, step: string, details?: string) => void,
   force = false
 ): Promise<DeployResult> => {
   const changes = preview()
   if (force || await shouldDeploy(changes)) {
     wu(changes.itemsByEvalOrder()).forEach(change => {
-      reportProgress(change)
+      reportProgress(change, 'started')
+      reportProgress(change, 'finished')
     })
   }
 

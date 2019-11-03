@@ -20,6 +20,10 @@ export const body = (txt: string): string => chalk.reset(txt)
 
 export const warn = (txt: string): string => chalk.red(txt)
 
+export const success = (txt: string): string => chalk.green(txt)
+
+export const error = (txt: string): string => chalk.red.bold(txt)
+
 export const emptyLine = (): string => ''
 
 export const seperator = (): string => `\n${'-'.repeat(78)}\n`
@@ -230,31 +234,66 @@ export const formatSearchResults = (result: SearchResult): string => {
   return [title, description, elementHcl].join('\n')
 }
 
+const deployPhaseIndent = 2
+const styleItemName = (itemName: string): string => indent(header(`${itemName}:`), deployPhaseIndent)
+
+export const deployPhaseHeader = header(Prompts.STARTDEPLOYEXEC)
+export const deployPhaseEpilogue = header([
+  emptyLine(),
+  Prompts.FINISHEDDEPLOYEXEC,
+].join('\n'))
+
+export const createCancelActionOutput = (itemName: string, parentItemName: string): string => {
+  const styledItemName = styleItemName(itemName)
+  const styledErrorMessage = error(`${Prompts.CANCELDEPLOYACTION} ${parentItemName}`)
+  const elements = [
+    `${styledItemName} ${styledErrorMessage}`,
+    emptyLine(),
+  ]
+  return elements.join('\n')
+}
+
+export const createItemErrorOutput = (itemName: string, errorReason: string): string => {
+  const styledItemName = `${styleItemName(itemName)}`
+  const styledErrorText = error(`Failed: ${errorReason}`)
+  return [
+    `${styledItemName} ${styledErrorText}`,
+    emptyLine(),
+  ].join('\n')
+}
 
 export const createItemDoneOutput = (item: PlanItem, startTime: Date): string => {
   const elapsed = getElapsedTime(startTime)
-  return `${planItemName(item)}: `
-        + `${Prompts.ENDACTION[item.parent().action]} `
-        + `completed after ${elapsed}s`
+  const itemName = styleItemName(planItemName(item))
+  const completedText = success(`${Prompts.ENDACTION[item.parent().action]}`
+  + ` completed after ${elapsed}s`)
+  const itemDone = [
+    `${itemName} ${completedText}`,
+    emptyLine(),
+  ]
+  return itemDone.join('\n')
 }
 
 export const createActionStartOutput = (action: PlanItem): string => {
-  const output = [
-    emptyLine(),
-    body(
-      `${planItemName(action)}: ${Prompts.STARTACTION[action.parent().action]}...`
-    ),
+  action.parent()
+  const itemName = `${styleItemName(planItemName(action))}`
+  const elements = [
+    body(`${itemName} ${Prompts.STARTACTION[action.parent().action]}`),
     emptyLine(),
   ]
-  return output.join('\n')
+  return elements.join('\n')
 }
 
-export const createActionInProgressOutput = (action: PlanItem, start: Date): string => {
+export const createActionInProgressOutput = (
+  itemName: string,
+  action: string,
+  start: Date
+): string => {
   const elapsed = getElapsedTime(start)
-  const elapsedRound = Math.ceil((elapsed - elapsed) % 5)
-  return body(`${planItemName(action)}: Still ${
-    Prompts.STARTACTION[action.parent().action]
-  }... (${elapsedRound}s elapsed)`)
+  const styledItemName = styleItemName(itemName)
+  return body(`${styledItemName} Still ${
+    Prompts.STARTACTION[action as 'add' | 'modify' | 'remove']
+  } (${elapsed}s elapsed)\n`)
 }
 
 export const formatFetchChangeForApproval = (

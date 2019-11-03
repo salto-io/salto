@@ -5,7 +5,6 @@ export const METADATA_OBJECT_NAME_FIELD = 'fullName'
 export const FORMULA_TYPE_PREFIX = 'formula_'
 export const SETTINGS_METADATA_TYPE = 'Settings'
 export const SALESFORCE_CUSTOM_SUFFIX = '__c'
-export const SALESFORCE_CUSTOM_RELATIONSHIP_SUFFIX = '__r'
 
 // Annotations
 export const LABEL = 'label'

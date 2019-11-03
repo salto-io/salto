@@ -15,7 +15,7 @@ import {
   CUSTOM_OBJECT, LABEL, SALESFORCE, FORMULA,
   FORMULA_TYPE_PREFIX, FIELD_TYPE_NAMES, FIELD_TYPE_API_NAMES, METADATA_OBJECT_NAME_FIELD,
   METADATA_TYPE, FIELD_ANNOTATIONS, SALESFORCE_CUSTOM_SUFFIX, DEFAULT_VALUE_FORMULA,
-  MAX_METADATA_RESTRICTION_VALUES, SETTINGS_METADATA_TYPE, SALESFORCE_CUSTOM_RELATIONSHIP_SUFFIX,
+  MAX_METADATA_RESTRICTION_VALUES, SETTINGS_METADATA_TYPE,
   LOOKUP_FILTER_FIELDS,
 } from './constants'
 
@@ -31,7 +31,6 @@ const toSfCamelCase = (name: string): string => _.replace(name, /_[a-z]|_[0-9]/g
 
 export const sfCase = (name: string, custom = false, capital = true): string => {
   const sf = name.endsWith(SALESFORCE_CUSTOM_SUFFIX)
-    || name.endsWith(SALESFORCE_CUSTOM_RELATIONSHIP_SUFFIX)
     ? toSfCamelCase(name.slice(0, -3)) + name.slice(-3)
     : toSfCamelCase(name) + (custom ? SALESFORCE_CUSTOM_SUFFIX : '')
   return capital ? capitalize(sf) : sf
@@ -399,7 +398,7 @@ const getDefaultValue = (field: Field): DefaultValueType | undefined => {
 // The following method is used during the fetchy process and is used in building the objects
 // and their fields described in the blueprint
 export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeField => {
-  const bpFieldName = bpCase(field.relationshipName ? field.relationshipName : field.name)
+  const bpFieldName = bpCase(field.name)
   let bpFieldType = Types.get(field.type)
   const annotations: Values = {
     [Type.SERVICE_ID]: field.name,

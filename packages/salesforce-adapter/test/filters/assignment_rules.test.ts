@@ -8,7 +8,7 @@ import { bpCase } from '../../src/transformer'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
 
-describe('Test layout filter', () => {
+describe('assignment rules filter', () => {
   const { client } = mockClient()
 
   const mockRuleInstance = new InstanceElement(

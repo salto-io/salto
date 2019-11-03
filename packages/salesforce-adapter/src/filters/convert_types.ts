@@ -1,9 +1,7 @@
 import _ from 'lodash'
 import {
   Element, isObjectType, PrimitiveTypes, Values, ObjectType, isPrimitiveType, isInstanceElement,
-  Type,
 } from 'adapter-api'
-import { isArray } from 'util'
 import { FilterCreator } from '../filter'
 import { SETTINGS_METADATA_TYPE } from '../constants'
 import { bpCase } from '../transformer'
@@ -32,32 +30,6 @@ const transformPrimitive = (val: string, primitive: PrimitiveTypes): Value => {
   }
 }
 
-// In case we have restricted values list and current value is not in the list
-// we check if the value can be index of the values list.
-// Notice that this function is called on the discovery output of the adapter and
-// will not change user input.
-// This tries to solve a real validation error we saw.
-const transformEnum = (val: string, annotations: Values, primitive: PrimitiveTypes): Value => {
-  const values = annotations[Type.VALUES]
-  const index = Number(val)
-
-  const isString = (): boolean => (primitive === PrimitiveTypes.STRING)
-  const isRestrictedValues = (): boolean =>
-    (annotations[Type.RESTRICTION] && annotations[Type.RESTRICTION][Type.ENFORCE_VALUE])
-  const isInValueList = (): boolean =>
-    (values === undefined || !isArray(values) || values.includes(val))
-
-  // eslint-disable-next-line no-restricted-globals
-  return (isString() && isRestrictedValues() && !isInValueList() && !isNaN(index))
-    ? values[Number(val)]
-    : undefined
-}
-
-const transformPrimitiveType = (v: string, annotations: Values,
-  primitive: PrimitiveTypes): Value =>
-  transformEnum(v, annotations, primitive) || transformPrimitive(v, primitive)
-
-
 export const transform = (obj: Values, type: ObjectType, strict = true): Values | undefined => {
   const result = _(obj).mapValues((value, key) => {
     // we get lists of empty strings that we would like to filter out
@@ -80,9 +52,9 @@ export const transform = (obj: Values, type: ObjectType, strict = true): Values 
       }
       if (isPrimitiveType(fieldType)) {
         return _.isArray(value)
-          ? value.map(v => transformPrimitiveType(v, field.annotations, fieldType.primitive))
+          ? value.map(v => transformPrimitive(v, fieldType.primitive))
             .filter(v => !_.isArrayLike(v) || !_.isEmpty(v))
-          : transformPrimitiveType(value, field.annotations, fieldType.primitive)
+          : transformPrimitive(value, fieldType.primitive)
       }
     }
     // We are not returning the value if it's not fit the type definition.

@@ -26,6 +26,7 @@ import standardValueSetFilter from './filters/standard_value_sets'
 import flowFilter from './filters/flow'
 import leadConvertSettingsFilter from './filters/lead_convert_settings'
 import lookupFiltersFilter from './filters/lookup_filters'
+import samlInitMethodFilter from './filters/saml_initiation_method'
 import {
   FilterCreator, Filter, FilterWith, filtersWith,
 } from './filter'
@@ -110,6 +111,7 @@ export default class SalesforceAdapter {
       flowFilter,
       leadConvertSettingsFilter,
       lookupFiltersFilter,
+      samlInitMethodFilter,
       // The following filters should remain last in order to make sure they fix all elements
       convertListsFilter,
       convertTypeFilter,

@@ -38,6 +38,8 @@ export const FIELD_TYPE_NAMES = {
   MASTER_DETAIL: 'masterdetail',
   LOOKUP_FILTER: 'lookup_filter',
   FILTER_ITEM: 'filter_item',
+  ADDRESS: 'address',
+  NAME: 'name',
 }
 
 export const FIELD_TYPE_API_NAMES = {
@@ -93,6 +95,28 @@ export const LOOKUP_FILTER_FIELDS = {
   FIELD: 'field',
   OPERATION: 'operation',
   VALUE_FIELD: 'value_field',
+}
+
+export const ADDRESS_FIELDS = {
+  CITY: 'city',
+  COUNTRY: 'country',
+  GEOCODE_ACCURACY: 'geocode_accuracy',
+  LATITUDE: 'latitude',
+  LONGITUDE: 'longitude',
+  POSTAL_CODE: 'postal_code',
+  STATE: 'state',
+  STREET: 'street',
+}
+
+export const NAME_FIELDS = {
+  FIRST_NAME: 'first_name',
+  LAST_NAME: 'last_name',
+  SALUTATION: 'salutation',
+}
+
+export const GEOLOCATION_FIELDS = {
+  LATITUDE: 'latitude',
+  LONGITUDE: 'longitude',
 }
 
 // Limits

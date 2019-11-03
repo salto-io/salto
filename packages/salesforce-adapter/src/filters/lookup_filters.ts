@@ -85,7 +85,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
     }
 
     const addLookupFilterElement = (): void => {
-      const lookupFilterElement = Types.salesforceDataTypes.lookup
+      const lookupFilterElement = Types.primitiveDataTypes.lookup
         .annotationTypes[FIELD_ANNOTATIONS.LOOKUP_FILTER]
       lookupFilterElement.annotate({ [METADATA_TYPE]: 'LookupFilter' })
       lookupFilterElement.path = ['types', 'subtypes', lookupFilterElement.elemID.name]

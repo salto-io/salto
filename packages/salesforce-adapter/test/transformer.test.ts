@@ -6,11 +6,12 @@ import {
 import { Field as SalesforceField, ValueTypeField } from 'jsforce'
 import {
   toMetadataPackageZip, bpCase, getSObjectFieldElement, Types, toCustomField, toCustomObject,
-  getValueTypeFieldElement, sfCase,
+  getValueTypeFieldElement, getCompoundChildFields, sfCase,
 } from '../src/transformer'
 import {
-  METADATA_TYPE, METADATA_OBJECT_NAME_FIELD, FIELD_ANNOTATIONS, FIELD_TYPE_NAMES, API_NAME,
-  LABEL, FIELD_TYPE_API_NAMES,
+  METADATA_TYPE, METADATA_OBJECT_NAME_FIELD, FIELD_ANNOTATIONS, FIELD_TYPE_NAMES,
+  LABEL, FIELD_TYPE_API_NAMES, ADDRESS_FIELDS, SALESFORCE, GEOLOCATION_FIELDS, NAME_FIELDS,
+  API_NAME,
 } from '../src/constants'
 import { CustomField } from '../src/client/types'
 
@@ -191,19 +192,19 @@ describe('transformer', () => {
     it('should fetch lookup relationships with restricted deletion', async () => {
       _.set(salesforceReferenceField, 'restrictedDelete', true)
       const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField)
-      assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.salesforceDataTypes.lookup, false, undefined)
+      assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.lookup, false, undefined)
     })
 
     it('should fetch lookup relationships with allowed related record deletion when restrictedDelete set to false', async () => {
       _.set(salesforceReferenceField, 'restrictedDelete', false)
       const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField)
-      assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.salesforceDataTypes.lookup, true, undefined)
+      assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.lookup, true, undefined)
     })
 
     it('should fetch lookup relationships with allowed related record deletion when restrictedDelete is undefined', async () => {
       _.set(salesforceReferenceField, 'restrictedDelete', undefined)
       const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField)
-      assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.salesforceDataTypes.lookup, true, undefined)
+      assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.lookup, true, undefined)
     })
 
     it('should fetch masterdetail relationships', async () => {
@@ -211,7 +212,7 @@ describe('transformer', () => {
       salesforceReferenceField.updateable = true
       salesforceReferenceField.writeRequiresMasterRead = true
       const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField)
-      assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.salesforceDataTypes.masterdetail, undefined, undefined)
+      assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.masterdetail, undefined, undefined)
       expect(fieldElement.annotations[FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL]).toBe(true)
       expect(fieldElement.annotations[FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ]).toBe(true)
     })
@@ -221,7 +222,7 @@ describe('transformer', () => {
       salesforceReferenceField.updateable = false
       delete salesforceReferenceField.writeRequiresMasterRead
       const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField)
-      assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.salesforceDataTypes.masterdetail, undefined, undefined)
+      assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.masterdetail, undefined, undefined)
       expect(fieldElement.annotations[Type.REQUIRED]).toBe(false)
       expect(fieldElement.annotations[FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL]).toBe(false)
       expect(fieldElement.annotations[FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ]).toBe(false)
@@ -230,7 +231,7 @@ describe('transformer', () => {
     it('should fetch lookup filters and init its annotation', async () => {
       _.set(salesforceReferenceField, 'filteredLookupInfo', {})
       const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField)
-      assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.salesforceDataTypes.lookup, true, {})
+      assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.lookup, true, {})
     })
   })
 
@@ -304,6 +305,122 @@ describe('transformer', () => {
     it('should have ReadWrite sharing model when not including fields', async () => {
       const customObjectWithMasterDetailField = toCustomObject(objectType, false)
       expect(customObjectWithMasterDetailField.sharingModel).toEqual('ReadWrite')
+    })
+  })
+
+  describe('getCompoundChildFields', () => {
+    const nameElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.NAME)
+    const geoLocationElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.LOCATION)
+    const elemID = new ElemID('salesforce', 'test')
+    const testName = 'test'
+
+    it('should return sub fields of a compound address field', async () => {
+      const fieldName = 'test_address'
+      const addressElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.ADDRESS)
+      const testedObjectType = new ObjectType({
+        elemID,
+        fields: {
+          [fieldName]: new TypeField(
+            addressElemID, fieldName, Types.compoundDataTypes.address
+          ),
+        },
+      })
+      const fields = getCompoundChildFields(testedObjectType)
+      expect(fields).toHaveLength(Object.values(Types.compoundDataTypes.address.fields).length)
+      const fieldNamesSet = new Set<string>(fields.map(f => f.name))
+      Object.values(ADDRESS_FIELDS).forEach(field => {
+        expect(fieldNamesSet).toContain(`${testName}_${field}`)
+      })
+    })
+
+    it('should return sub fields of a compound custom geolocation field', async () => {
+      const fieldName = 'test__c'
+      const annotations: Values = {
+        [API_NAME]: fieldName,
+      }
+      const testedObjectType = new ObjectType({
+        elemID,
+        fields: {
+          [fieldName]: new TypeField(
+            geoLocationElemID, fieldName, Types.compoundDataTypes.location, annotations
+          ),
+        },
+      })
+      const fields = getCompoundChildFields(testedObjectType)
+      expect(fields).toHaveLength(Object.values(Types.compoundDataTypes.location.fields).length)
+      const fieldNamesSet = new Set<string>(fields.map(f => f.name))
+      Object.values(GEOLOCATION_FIELDS).forEach(field => {
+        const expectedFieldName = `${testName}_${field}`
+        expect(fieldNamesSet).toContain(expectedFieldName)
+        const apiName = fields.find(
+          f => f.name === expectedFieldName
+        )?.annotations[API_NAME] as string
+        expect(apiName.endsWith('__s')).toBeTruthy()
+      })
+    })
+
+    it('should return sub fields of a compound non-custom geolocation field', async () => {
+      const fieldName = 'test'
+      const annotations: Values = {
+        [API_NAME]: fieldName,
+      }
+      const testedObjectType = new ObjectType({
+        elemID,
+        fields: {
+          [fieldName]: new TypeField(
+            geoLocationElemID, fieldName, Types.compoundDataTypes.location, annotations
+          ),
+        },
+      })
+      const fields = getCompoundChildFields(testedObjectType)
+      expect(fields).toHaveLength(Object.values(Types.compoundDataTypes.location.fields).length)
+      const fieldNamesSet = new Set<string>(fields.map(f => f.name))
+      Object.values(GEOLOCATION_FIELDS).forEach(field => {
+        const expectedFieldName = `${testName}_${field}`
+        expect(fieldNamesSet).toContain(expectedFieldName)
+        const apiName = fields.find(
+          f => f.name === expectedFieldName
+        )?.annotations[API_NAME] as string
+        expect(apiName.endsWith('__s')).toBeFalsy()
+      })
+    })
+
+    it('should return sub fields of a compound name field', async () => {
+      const fieldName = 'name'
+      const annotations: Values = {
+        [LABEL]: 'Full Name',
+      }
+      const testedObjectType = new ObjectType({
+        elemID,
+        fields: {
+          [fieldName]: new TypeField(
+            nameElemID, fieldName, Types.compoundDataTypes.name, annotations
+          ),
+        },
+      })
+      const fields = getCompoundChildFields(testedObjectType)
+      expect(fields).toHaveLength(Object.values(Types.compoundDataTypes.name.fields).length)
+      const fieldNamesSet = new Set<string>(fields.map(f => f.name))
+      Object.values(NAME_FIELDS).forEach(field => {
+        expect(fieldNamesSet).toContain(field)
+      })
+    })
+
+    it('should not return sub fields of a compound name field if it is not a real name field', async () => {
+      const fieldName = 'name'
+      const annotations: Values = {
+        [LABEL]: 'Name',
+      }
+      const testedObjectType = new ObjectType({
+        elemID,
+        fields: {
+          [fieldName]: new TypeField(
+            nameElemID, fieldName, Types.compoundDataTypes.name, annotations
+          ),
+        },
+      })
+      const fields = getCompoundChildFields(testedObjectType)
+      expect(fields).toHaveLength(1)
     })
   })
 })

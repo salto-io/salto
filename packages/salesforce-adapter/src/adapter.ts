@@ -12,8 +12,7 @@ import {
   toCustomField, toCustomObject, apiName, sfCase, fieldFullName, Types,
   getSObjectFieldElement, toMetadataInfo, createInstanceElement,
   metadataType, toMetadataPackageZip, toInstanceElements, createMetadataTypeElements,
-  instanceElementstoRecords,
-  elemIDstoRecords,
+  instanceElementstoRecords, elemIDstoRecords, getCompoundChildFields,
 } from './transformer'
 import layoutFilter from './filters/layouts'
 import fieldPermissionsFilter from './filters/field_permissions'
@@ -496,8 +495,11 @@ export default class SalesforceAdapter {
     element.annotate({ [constants.API_NAME]: objectName })
     element.annotate({ [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT })
 
+    // Filter out nested fields of compound fields
+    const filteredFields = fields.filter(field => !field.compoundFieldName)
+
     // Set standard fields on element
-    fields
+    filteredFields
       .filter(f => !f.custom)
       .map(f => getSObjectFieldElement(element.elemID, f))
       .forEach(field => {
@@ -505,7 +507,7 @@ export default class SalesforceAdapter {
       })
 
     // Create custom fields (if any)
-    const customFields = fields
+    const customFields = filteredFields
       .filter(f => f.custom)
       .map(f => getSObjectFieldElement(element.elemID, f))
 
@@ -605,7 +607,7 @@ export default class SalesforceAdapter {
 
   private async getFirstBatchOfInstances(type: ObjectType): Promise <QueryResult<Value>> {
     // build the initial query and populate the fields names list in the query
-    const queryString = `SELECT ${Object.values(type.fields).map(apiName)} FROM ${apiName(type)}`
+    const queryString = `SELECT ${getCompoundChildFields(type).map(apiName)} FROM ${apiName(type)}`
     return this.client.runQuery(queryString)
   }
 }

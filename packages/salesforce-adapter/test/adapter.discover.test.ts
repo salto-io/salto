@@ -431,7 +431,10 @@ describe('SalesforceAdapter fetch', () => {
 
       const result = await adapter.fetch()
 
-      expect(result).toHaveLength(Object.keys(Types.salesforceDataTypes).length
+      expect(result).toHaveLength(_.concat(
+        Object.keys(Types.primitiveDataTypes),
+        Object.keys(Types.compoundDataTypes)
+      ).length
         + 1 /* LookupFilter */ + 3)
       const types = _.assign({}, ...result.map(t => ({ [t.elemID.getFullName()]: t })))
       const nestingType = types.salesforce_nesting_type

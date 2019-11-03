@@ -7,7 +7,7 @@ import {
 } from 'adapter-api'
 import {
   Plan, PlanItem, FoundSearchResult, SearchResult, DetailedChange,
-  WorkspaceError, SourceFragment, FetchChange, MergeError,
+  WorkspaceError, SourceFragment, FetchChange, MergeError, WorkspaceErrorSeverity,
 } from 'salto'
 import Prompts from './prompts'
 
@@ -296,13 +296,15 @@ const fomratSourceFragments = (sourceFragments: ReadonlyArray<SourceFragment>): 
     ? ` on ${sourceFragments.map(fomratSourceFragment).join('\n and ')}`
     : '')
 
-const formatError = (err: {error: string}): string =>
-  `${chalk.red(chalk.bold('Error:'))} ${chalk.bold(err.error)}`
+const formatError = (err: {error: string}, severity: WorkspaceErrorSeverity): string => {
+  const severityPainter = severity === 'Error' ? chalk.red : chalk.yellow
+  return `${severityPainter(chalk.bold(`${severity}:`))} ${chalk.bold(err.error)}`
+}
 const formatWorkspaceError = (we: Readonly<WorkspaceError>): string =>
-  `${formatError(we)}\n${fomratSourceFragments(we.sourceFragments)}`
+  `${formatError(we, we.severity)}\n${fomratSourceFragments(we.sourceFragments)}`
 
 export const formatWorkspaceErrors = (workspaceErrors: ReadonlyArray<WorkspaceError>): string =>
   `${Prompts.WORKSPACE_LOAD_FAILED}\n${workspaceErrors.map(formatWorkspaceError).join('\n\n')}\n`
 
 export const formatMergeErrors = (mergeErrors: ReadonlyArray<MergeError>): string =>
-  `${Prompts.FETCH_MERGE_ERRORS}${mergeErrors.map(formatError).join('\n')}`
+  `${Prompts.FETCH_MERGE_ERRORS}${mergeErrors.map(me => formatError(me, 'Error')).join('\n')}`

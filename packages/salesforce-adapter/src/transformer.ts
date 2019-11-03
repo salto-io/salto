@@ -772,16 +772,15 @@ export const getCompoundChildFields = (objectType: ObjectType): TypeField[] => {
 
     // For each geolocation field, get its name, then find its corresponding child fields by
     // this name.
-    Object.entries(locationFields).forEach(([key, locationField]) => {
-      const isCustomField = (locationField.annotations?.[API_NAME] as string)
-        .endsWith(SALESFORCE_CUSTOM_SUFFIX)
+    Object.keys(locationFields).forEach(key => {
+      const isCustomField = key.endsWith(SALESFORCE_CUSTOM_SUFFIX)
       Object.values(Types.compoundDataTypes.location.fields).forEach(childField => {
         const clonedField = childField.clone()
         // Add the child fields to the object type
-        const childFieldName = `${key}_${clonedField.name}`
+        const childFieldName = `${isCustomField ? key.slice(0, -SALESFORCE_CUSTOM_SUFFIX.length) : key}_${clonedField.name}`
         clonedField.name = childFieldName
         clonedField.annotations = {
-          [API_NAME]: `${capitalize(key)}__${capitalize(childField.name)}${isCustomField ? '__s' : ''}`,
+          [API_NAME]: `${key.slice(0, -SALESFORCE_CUSTOM_SUFFIX.length)}__${capitalize(childField.name)}${isCustomField ? '__s' : ''}`,
         }
         object.fields[childFieldName] = clonedField
       })

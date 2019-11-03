@@ -491,18 +491,12 @@ export default class SalesforceAdapter {
     fields: SObjField[],
     customObjectNames: Set<string>,
   ): Type[] {
-    // Filter out nested fields of compound fields
-    const filterOutNestedCompoundFields = (
-      fieldsToFiler: SObjField[]
-    ): SObjField[] => fieldsToFiler.filter(
-      field => !field.compoundFieldName
-    )
-
     const element = Types.get(objectName) as ObjectType
     element.annotate({ [constants.API_NAME]: objectName })
     element.annotate({ [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT })
 
-    const filteredFields = filterOutNestedCompoundFields(fields)
+    // Filter out nested fields of compound fields
+    const filteredFields = fields.filter(field => !field.compoundFieldName)
 
     // Set standard fields on element
     filteredFields

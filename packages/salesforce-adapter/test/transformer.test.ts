@@ -334,9 +334,9 @@ describe('transformer', () => {
     })
 
     it('should return sub fields of a compound custom geolocation field', async () => {
-      const fieldName = 'test'
+      const fieldName = 'test__c'
       const annotations: Values = {
-        [API_NAME]: 'test__c',
+        [API_NAME]: fieldName,
       }
       const testedObjectType = new ObjectType({
         elemID,
@@ -362,7 +362,7 @@ describe('transformer', () => {
     it('should return sub fields of a compound non-custom geolocation field', async () => {
       const fieldName = 'test'
       const annotations: Values = {
-        [API_NAME]: 'test',
+        [API_NAME]: fieldName,
       }
       const testedObjectType = new ObjectType({
         elemID,

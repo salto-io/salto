@@ -7,10 +7,10 @@ import { collections } from '@salto/lowerdash'
 import SalesforceClient from '../client/client'
 import { FilterCreator } from '../filter'
 import {
-  CUSTOM_OBJECT, FIELD_TYPE_NAMES, SALESFORCE_CUSTOM_SUFFIX,
+  FIELD_TYPE_NAMES, SALESFORCE_CUSTOM_SUFFIX,
 } from '../constants'
 import {
-  metadataType, apiName, createInstanceElement,
+  metadataType, apiName, createInstanceElement, isCustomObject,
 } from '../transformer'
 
 const { makeArray } = collections.array
@@ -166,7 +166,7 @@ const updateSVSReferences = (elements: Element[], svsInstances: InstanceElement[
   const svsValuesToName = svsValuesToRef(svsInstances)
   const customObjectTypeElements = elements
     .filter(isObjectType)
-    .filter(o => metadataType(o) === CUSTOM_OBJECT)
+    .filter(isCustomObject)
 
   customObjectTypeElements.forEach((custObjType: ObjectType) => {
     const fieldsToUpdate = calculatePicklistFieldsToUpdate(custObjType.fields, svsValuesToName)

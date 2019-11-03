@@ -5,11 +5,12 @@ import { Element, Field, isObjectType, ObjectType, Change, getChangeElement,
 import { SaveResult } from 'jsforce'
 import { FilterCreator } from '../filter'
 import {
-  CUSTOM_FIELD, CUSTOM_OBJECT, FIELD_ANNOTATIONS, LOOKUP_FILTER_FIELDS, METADATA_TYPE,
+  CUSTOM_FIELD, FIELD_ANNOTATIONS, LOOKUP_FILTER_FIELDS, METADATA_TYPE,
 } from '../constants'
 import { CustomField } from '../client/types'
 import {
-  bpCase, fieldFullName, mapKeysRecursive, metadataType, sfCase, toCustomField, Types,
+  bpCase, fieldFullName, mapKeysRecursive, sfCase, toCustomField, Types,
+  isCustomObject,
 } from '../transformer'
 
 const getLookupFilter = (field: Field): Values =>
@@ -50,8 +51,8 @@ const filterCreator: FilterCreator = ({ client }) => ({
     )
 
     const customObjectElements = wu(elements)
-      .filter(isObjectType)
-      .filter(element => metadataType(element) === CUSTOM_OBJECT)
+      // using single filter as wu is not preserving type information
+      .filter(e => isObjectType(e) && isCustomObject(e))
       .toArray() as ObjectType[]
 
     const objectFullNameToObjectMap: Record<string, ObjectType> = _(customObjectElements)

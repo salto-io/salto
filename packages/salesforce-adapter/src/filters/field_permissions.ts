@@ -5,9 +5,9 @@ import {
 import _ from 'lodash'
 import { SaveResult } from 'jsforce'
 import wu from 'wu'
-import { CUSTOM_OBJECT, FIELD_PERMISSIONS } from '../constants'
+import { FIELD_PERMISSIONS } from '../constants'
 import {
-  sfCase, fieldFullName, bpCase, apiName, metadataType,
+  sfCase, fieldFullName, bpCase, apiName, metadataType, isCustomObject,
 } from '../transformer'
 import { FilterCreator } from '../filter'
 import { ProfileInfo } from '../client/types'
@@ -17,8 +17,6 @@ export const PROFILE_METADATA_TYPE = 'Profile'
 export const ADMIN_PROFILE = 'admin'
 
 // --- Utils functions
-const isCustomObject = (element: ObjectType): boolean => (metadataType(element) === CUSTOM_OBJECT)
-
 export const fieldPermissions = (field: Field): Values =>
   (field.annotations[FIELD_LEVEL_SECURITY_ANNOTATION]
     ? field.annotations[FIELD_LEVEL_SECURITY_ANNOTATION]

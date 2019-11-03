@@ -5,6 +5,7 @@ import { onTextChangeEvent, onFileCreate, onFileDelete, onReportErrorsEvent } fr
 import {
   createCompletionsProvider, createDefinitionsProvider, createReferenceProvider,
   createDocumentSymbolsProvider,
+  createWorkspaceSymbolProvider,
 } from './providers'
 import { previewCommand, deployCommand } from './commands'
 import { toVSDiagnostics } from './adapters'
@@ -48,6 +49,10 @@ const onActivate = async (context: vscode.ExtensionContext): Promise<void> => {
       createDocumentSymbolsProvider(workspace)
     )
 
+    const searchProvier = vscode.languages.registerWorkspaceSymbolProvider(
+      createWorkspaceSymbolProvider(workspace)
+    )
+
     const preview = vscode.commands.registerCommand('salto.preview', () => {
       previewCommand(workspace, context.extensionPath)
     })
@@ -71,6 +76,7 @@ const onActivate = async (context: vscode.ExtensionContext): Promise<void> => {
       definitionProvider,
       referenceProvider,
       symbolsProvider,
+      searchProvier,
       preview,
       deploy,
       previewStatusBar,

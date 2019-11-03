@@ -95,7 +95,9 @@ export class EditorWorkspace {
   }
 
   private getWorkspaceName(filename: string): string {
-    return path.relative(this.workspace.config.baseDir, filename)
+    return path.isAbsolute(filename)
+      ? path.relative(this.workspace.config.baseDir, filename)
+      : filename
   }
 
   getParsedBlueprint(filename: string): ParsedBlueprint {

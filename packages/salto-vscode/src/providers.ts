@@ -2,15 +2,16 @@ import * as vscode from 'vscode'
 import path from 'path'
 import { provideWorkspaceCompletionItems } from './salto/completions/provider'
 import {
-  buildDefinitionsTree, getPositionContext,
+  buildDefinitionsTree, getPositionContext, PositionContext,
 } from './salto/context'
 import { provideWorkspaceDefinition } from './salto/definitions'
 import { provideWorkspaceReferences } from './salto/usage'
 import {
   saltoPosToVsPos, vsPosToSaltoPos, buildVSDefinitions, buildVSCompletionItems,
+  buildVSSymbol, toVSFileName,
 } from './adapters'
 import { EditorWorkspace } from './salto/workspace'
-import { getQueryLocations } from './salto/location'
+import { getQueryLocations, SaltoElemLocation } from './salto/location'
 
 export const createDocumentSymbolsProvider = (
   workspace: EditorWorkspace
@@ -100,6 +101,15 @@ export const createWorkspaceSymbolProvider = (
   workspace: EditorWorkspace
 ): vscode.WorkspaceSymbolProvider => ({
   provideWorkspaceSymbols: (query: string): vscode.SymbolInformation[] => {
-    const locations = getQueryLocations(workspace, query)
-  }
+    const locToContext = (loc: SaltoElemLocation): PositionContext => (
+      getPositionContext(
+        workspace,
+        workspace.getParsedBlueprint(loc.filename).buffer,
+        loc.filename,
+        loc.range.start
+      )
+    )
+    return getQueryLocations(workspace, query)
+      .map(l => buildVSSymbol(locToContext(l), toVSFileName(workspace.baseDir, l.filename)))
+  },
 })

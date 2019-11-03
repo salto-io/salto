@@ -56,7 +56,7 @@ export class ParseResultFSCache implements ParseResultCache {
           try {
             return parseResultSerializer.deserialize(fileContent)
           } catch (err) {
-            log.debug(`Failed to handle cache file ${cacheFilePath}, Error:${err}`)
+            log.debug('Failed to handle cache file "%o": %o', cacheFilePath, err)
           }
         }
         return Promise.resolve(undefined)

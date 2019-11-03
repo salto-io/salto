@@ -24,7 +24,3 @@ export const provideWorkspaceDefinition = (
   // We are not in instance, so we can just look the current token
   return getLocations(workspace, token)
 }
-
-export const provideSeachResult = (query: string): SaltoSymbol[] => {
-
-}

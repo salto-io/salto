@@ -14,8 +14,11 @@ import { ProfileInfo } from '../client/types'
 
 export const FIELD_LEVEL_SECURITY_ANNOTATION = 'field_level_security'
 export const PROFILE_METADATA_TYPE = 'Profile'
+export const ADMIN_PROFILE = 'admin'
 
 // --- Utils functions
+const isCustomObject = (element: ObjectType): boolean => (metadataType(element) === CUSTOM_OBJECT)
+
 export const fieldPermissions = (field: Field): Values =>
   (field.annotations[FIELD_LEVEL_SECURITY_ANNOTATION]
     ? field.annotations[FIELD_LEVEL_SECURITY_ANNOTATION]
@@ -25,7 +28,7 @@ const setEmptyFieldPermissions = (field: Field): void => {
   field.annotations[FIELD_LEVEL_SECURITY_ANNOTATION] = {}
 }
 
-export const setProfileFieldPermissions = (field: Field, profile: string, editable: boolean,
+const setProfileFieldPermissions = (field: Field, profile: string, editable: boolean,
   readable: boolean): void => {
   if (_.isEmpty(fieldPermissions(field))) {
     setEmptyFieldPermissions(field)
@@ -35,6 +38,12 @@ export const setProfileFieldPermissions = (field: Field, profile: string, editab
 
 const setFieldPermissions = (field: Field, fieldPermission: ProfileToPermission): void => {
   field.annotations[FIELD_LEVEL_SECURITY_ANNOTATION] = fieldPermission
+}
+
+const setDefaultFieldPermissions = (field: Field): void => {
+  if (_.isEmpty(fieldPermissions(field))) {
+    setProfileFieldPermissions(field, ADMIN_PROFILE, true, true)
+  }
 }
 
 const toProfiles = (object: ObjectType): ProfileInfo[] => {
@@ -89,7 +98,7 @@ const profile2Permissions = (profileInstance: InstanceElement):
 const filterCreator: FilterCreator = ({ client }) => ({
   onFetch: async (elements: Element[]): Promise<void> => {
     const customObjectTypes = elements.filter(isObjectType)
-      .filter(element => metadataType(element) === CUSTOM_OBJECT)
+      .filter(isCustomObject)
     if (_.isEmpty(customObjectTypes)) {
       return
     }
@@ -120,7 +129,12 @@ const filterCreator: FilterCreator = ({ client }) => ({
   },
 
   onAdd: async (after: Element): Promise<SaveResult[]> => {
-    if (isObjectType(after)) {
+    if (isObjectType(after) && isCustomObject(after)) {
+      // Set default persmissions for all fields of new object
+      Object.values(after.fields).forEach(field => {
+        setDefaultFieldPermissions(field)
+      })
+
       const profiles = toProfiles(after)
       return client.update(PROFILE_METADATA_TYPE, profiles)
     }
@@ -129,9 +143,18 @@ const filterCreator: FilterCreator = ({ client }) => ({
 
   onUpdate: async (before: Element, after: Element, changes: Iterable<Change>):
     Promise<SaveResult[]> => {
-    if (!(isObjectType(before) && isObjectType(after))) {
+    if (!(isObjectType(before) && isObjectType(after) && isCustomObject(before))) {
       return []
     }
+
+    // Set default permissions for new fields
+    wu(changes)
+      // done in single line as we loose type info with wu
+      .map(c => (c.action === 'add' && isField(c.data.after) ? c.data.after : undefined))
+      .reject(_.isUndefined)
+      .forEach(field => {
+        setDefaultFieldPermissions(field as Field)
+      })
 
     // Look for fields that used to have permissions and permission was deleted from BP
     // For those fields we will mark then as { editable: false, readable: false } explcit

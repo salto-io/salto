@@ -14,7 +14,7 @@ import {
 import SalesforceAdapter from '../src/adapter'
 import * as constants from '../src/constants'
 import { Types, sfCase } from '../src/transformer'
-import { PROFILE_METADATA_TYPE, FIELD_LEVEL_SECURITY_ANNOTATION } from '../src/filters/field_permissions'
+import { PROFILE_METADATA_TYPE } from '../src/filters/field_permissions'
 import Connection from '../src/client/jsforce'
 import mockAdpater from './adapter'
 import { MockLogger } from './logger'
@@ -255,11 +255,6 @@ describe('SalesforceAdapter CRUD', () => {
         expect(formulaField).not.toHaveProperty('required')
         expect(formulaField.label).toBe('formula field')
         expect(formulaField.formula).toBe('my formula')
-      })
-
-      it('should set default field permissions', () => {
-        expect(result.fields.description.annotations[FIELD_LEVEL_SECURITY_ANNOTATION])
-          .toEqual({ [constants.ADMIN_PROFILE]: { editable: true, readable: true } })
       })
     })
 
@@ -1059,12 +1054,6 @@ describe('SalesforceAdapter CRUD', () => {
             expect(fields[0].length).toBe(80)
             expect(fields[0].required).toBe(false)
             expect(fields[1].fullName).toBe('Test__c.Apple__c')
-          })
-
-          it('should set default field permissions', () => {
-            expect((result as ObjectType).fields.description
-              .annotations[FIELD_LEVEL_SECURITY_ANNOTATION])
-              .toEqual({ [constants.ADMIN_PROFILE]: { editable: true, readable: true } })
           })
         })
 

@@ -4,9 +4,9 @@ import {
 } from 'adapter-api'
 import _ from 'lodash'
 import { metadataType } from '../../src/transformer'
-import { ProfileInfo } from '../../src/client/types'
+import { ProfileInfo, FieldPermissions } from '../../src/client/types'
 import filterCreator, {
-  FIELD_LEVEL_SECURITY_ANNOTATION, PROFILE_METADATA_TYPE,
+  FIELD_LEVEL_SECURITY_ANNOTATION, PROFILE_METADATA_TYPE, ADMIN_PROFILE,
 } from '../../src/filters/field_permissions'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
@@ -101,6 +101,17 @@ describe('Field Permissions filter', () => {
   type FilterType = FilterWith<'onFetch' | 'onAdd' | 'onUpdate'>
   const filter = (): FilterType => filterCreator({ client }) as FilterType
 
+  const verifyUpdateCall = (profileName: string, fieldName: string, editable = true,
+    readable = true): void => {
+    expect(mockUpdate.mock.calls.length).toBe(1)
+    const profiles = mockUpdate.mock.calls[0][1] as ProfileInfo[]
+    const profile = profiles.find(p => p.fullName === profileName) as ProfileInfo
+    const fieldPermissions = profile.fieldPermissions
+      .find(f => f.field === fieldName) as FieldPermissions
+    expect(fieldPermissions.editable).toBe(editable)
+    expect(fieldPermissions.readable).toBe(readable)
+  }
+
   beforeEach(() => {
     mockUpdate = jest.fn().mockImplementationOnce(() => ([{ success: true }]))
     client.update = mockUpdate
@@ -138,18 +149,8 @@ describe('Field Permissions filter', () => {
     await filter().onAdd(after)
 
     // Verify permissions creation
-    expect(mockUpdate.mock.calls.length).toBe(1)
-    const profiles = mockUpdate.mock.calls[0][1] as ProfileInfo[]
-    const adminProfile = profiles.filter(p => p.fullName === 'Admin').pop() as ProfileInfo
-    expect(adminProfile.fieldPermissions.length).toBe(1)
-    expect(adminProfile.fieldPermissions[0].field).toBe('Test__c.Description__c')
-    expect(adminProfile.fieldPermissions[0].editable).toBe(true)
-    expect(adminProfile.fieldPermissions[0].readable).toBe(true)
-    const standardProfile = profiles.filter(p => p.fullName === 'Standard').pop() as ProfileInfo
-    expect(standardProfile.fieldPermissions.length).toBe(1)
-    expect(standardProfile.fieldPermissions[0].field).toBe('Test__c.Description__c')
-    expect(standardProfile.fieldPermissions[0].editable).toBe(false)
-    expect(standardProfile.fieldPermissions[0].readable).toBe(true)
+    verifyUpdateCall('Admin', 'Test__c.Description__c')
+    verifyUpdateCall('Standard', 'Test__c.Description__c', false, true)
   })
 
   it('should fail field permissions filter add due to sfdc error', async () => {
@@ -184,15 +185,9 @@ describe('Field Permissions filter', () => {
           data: { before: before.fields.description, after: after.fields.description } },
       ])
 
-    expect(mockUpdate.mock.calls.length).toBe(1)
     // Verify the field permissions update
-    const profileInfo = mockUpdate.mock.calls[0][1][0]
-    expect(profileInfo.fullName).toBe('Admin')
-    expect(profileInfo.fieldPermissions.length).toBe(2)
-    expect(profileInfo.fieldPermissions[0].field).toBe('Test__c.Description__c')
-    expect(profileInfo.fieldPermissions[0].editable).toBe(true)
-    expect(profileInfo.fieldPermissions[0].readable).toBe(true)
-    expect(profileInfo.fieldPermissions[1].field).toBe('Test__c.Apple__c')
+    verifyUpdateCall('Admin', 'Test__c.Description__c')
+    verifyUpdateCall('Admin', 'Test__c.Apple__c')
   })
 
   it('should update field permissions upon update that include add and remove of fields',
@@ -209,15 +204,10 @@ describe('Field Permissions filter', () => {
         { action: 'remove', data: { before: banana } },
       ])
 
-      expect(mockUpdate.mock.calls.length).toBe(1)
       // Verify the field permissions update
-      const profileInfo = mockUpdate.mock.calls[0][1][0]
-      expect(profileInfo.fullName).toBe('Admin')
-      expect(profileInfo.fieldPermissions.length).toBe(1)
-      expect(profileInfo.fieldPermissions[0].field).toBe('Test__c.Apple__c')
-      expect(profileInfo.fieldPermissions[0].editable).toBe(true)
-      expect(profileInfo.fieldPermissions[0].readable).toBe(true)
+      verifyUpdateCall('Admin', 'Test__c.Apple__c')
     })
+
   it('should update the new profile on existing field', async () => {
     const before = mockObject.clone()
     before.fields = { ...before.fields, address }
@@ -239,21 +229,11 @@ describe('Field Permissions filter', () => {
     ])
 
     // Verify the field permissions creation
-    const newProfileInfo = mockUpdate.mock.calls[0][1][0]
-    expect(newProfileInfo.fullName).toBe('Admin')
-    expect(newProfileInfo.fieldPermissions.length).toBe(1)
-    expect(newProfileInfo.fieldPermissions[0].field).toBe('Test__c.Description__c')
-    expect(newProfileInfo.fieldPermissions[0].editable).toBe(false)
-    expect(newProfileInfo.fieldPermissions[0].readable).toBe(true)
-    // Verify the field permissions change
-    const changedProfileInfo = mockUpdate.mock.calls[0][1][1]
-    expect(changedProfileInfo.fullName).toBe('Standard')
-    expect(changedProfileInfo.fieldPermissions.length).toBe(1)
-    expect(changedProfileInfo.fieldPermissions[0].field).toBe('Test__c.Address__c')
-    expect(changedProfileInfo.fieldPermissions[0].editable).toBe(false)
-    expect(changedProfileInfo.fieldPermissions[0].readable).toBe(true)
+    verifyUpdateCall('Admin', 'Test__c.Description__c', false, true)
+    verifyUpdateCall('Standard', 'Test__c.Address__c', false, true)
   })
-  it("should properly update the remaining fields' permissions of the object", async () => {
+
+  it('should properly update the remaining fields permissions of the object', async () => {
     const before = mockObject.clone()
     before.fields = { address: address.clone(), banana, apple }
     // Add standard to address field (on top of admin)
@@ -283,25 +263,43 @@ describe('Field Permissions filter', () => {
       { action: 'add', data: { after: after.fields.delta } },
     ])
 
-    expect(mockUpdate.mock.calls.length).toBe(1)
     // Verify the field permissions change
-    const updatedProfileInfo = mockUpdate.mock.calls[0][1]
-    expect(updatedProfileInfo[0].fullName).toBe('Standard')
-    expect(updatedProfileInfo[0].fieldPermissions.length).toBe(1)
-    expect(updatedProfileInfo[0].fieldPermissions[0].field).toBe('Test__c.Delta__c')
-    expect(updatedProfileInfo[0].fieldPermissions[0].editable).toBe(false)
-    expect(updatedProfileInfo[0].fieldPermissions[0].readable).toBe(true)
+    verifyUpdateCall('Standard', 'Test__c.Delta__c', false, true)
+
     // Banana field was removed so no need to explicitly remove from profile
-    expect(updatedProfileInfo[1].fullName).toBe('Admin')
-    expect(updatedProfileInfo[1].fieldPermissions.length).toBe(3)
-    expect(updatedProfileInfo[1].fieldPermissions[0].field).toBe('Test__c.Address__c')
-    expect(updatedProfileInfo[1].fieldPermissions[0].editable).toBe(false)
-    expect(updatedProfileInfo[1].fieldPermissions[0].readable).toBe(false)
-    expect(updatedProfileInfo[1].fieldPermissions[1].field).toBe('Test__c.Delta__c')
-    expect(updatedProfileInfo[1].fieldPermissions[1].editable).toBe(true)
-    expect(updatedProfileInfo[1].fieldPermissions[1].readable).toBe(true)
-    expect(updatedProfileInfo[1].fieldPermissions[2].field).toBe('Test__c.Apple__c')
-    expect(updatedProfileInfo[1].fieldPermissions[2].editable).toBe(false)
-    expect(updatedProfileInfo[1].fieldPermissions[2].readable).toBe(false)
+    const adminProfile = mockUpdate.mock.calls[0][1][1]
+    expect(adminProfile.fullName).toBe('Admin')
+    expect(adminProfile.fieldPermissions.length).toBe(3)
+    expect(adminProfile.fieldPermissions[0].field).toBe('Test__c.Address__c')
+    expect(adminProfile.fieldPermissions[0].editable).toBe(false)
+    expect(adminProfile.fieldPermissions[0].readable).toBe(false)
+    expect(adminProfile.fieldPermissions[1].field).toBe('Test__c.Delta__c')
+    expect(adminProfile.fieldPermissions[1].editable).toBe(true)
+    expect(adminProfile.fieldPermissions[1].readable).toBe(true)
+    expect(adminProfile.fieldPermissions[2].field).toBe('Test__c.Apple__c')
+    expect(adminProfile.fieldPermissions[2].editable).toBe(false)
+    expect(adminProfile.fieldPermissions[2].readable).toBe(false)
+  })
+
+  it('should set default field permissions upon add', async () => {
+    const after = mockObject.clone()
+    await filter().onAdd(after)
+
+    expect(after.fields.description.annotations[FIELD_LEVEL_SECURITY_ANNOTATION])
+      .toEqual({ [ADMIN_PROFILE]: { editable: true, readable: true } })
+    verifyUpdateCall('Admin', 'Test__c.Description__c')
+  })
+
+  it('should set default field permissions upon update', async () => {
+    const before = mockObject.clone()
+    const after = before.clone()
+    after.fields = { ...after.fields, apple: apple.clone() }
+
+    await filter().onUpdate(before, after,
+      [{ action: 'add', data: { after: after.fields.apple } }])
+
+    expect(after.fields.apple.annotations[FIELD_LEVEL_SECURITY_ANNOTATION])
+      .toEqual({ [ADMIN_PROFILE]: { editable: true, readable: true } })
+    verifyUpdateCall('Admin', 'Test__c.Apple__c')
   })
 })

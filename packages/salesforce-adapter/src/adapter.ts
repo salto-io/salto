@@ -16,8 +16,7 @@ import {
   elemIDstoRecords,
 } from './transformer'
 import layoutFilter from './filters/layouts'
-import fieldPermissionsFilter, { setProfileFieldPermissions, fieldPermissions }
-  from './filters/field_permissions'
+import fieldPermissionsFilter from './filters/field_permissions'
 import validationRulesFilter from './filters/validation_rules'
 import assignmentRulesFilter from './filters/assignment_rules'
 import convertListsFilter from './filters/convert_lists'
@@ -54,17 +53,10 @@ const addDefaults = (element: ObjectType): void => {
     }
   }
 
-  const addDefaultFieldPermissions = (field: Field): void => {
-    if (_.isEmpty(fieldPermissions(field))) {
-      setProfileFieldPermissions(field, constants.ADMIN_PROFILE, true, true)
-    }
-  }
-
   addMetadataType(element)
   addApiNameAndLabel(element)
   Object.values(element.fields).forEach(field => {
     addApiNameAndLabel(field)
-    addDefaultFieldPermissions(field)
   })
 }
 

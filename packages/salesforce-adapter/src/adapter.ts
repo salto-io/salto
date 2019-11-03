@@ -1,4 +1,4 @@
-import { BuiltinTypes, Type, ObjectType, ElemID, InstanceElement, Values, isModificationDiff,
+import { BuiltinTypes, Type, ObjectType, ElemID, InstanceElement, isModificationDiff,
   isRemovalDiff, isAdditionDiff, Field, Element, isObjectType, isInstanceElement, AdapterCreator,
   Value, Change, getChangeElement, isField } from 'adapter-api'
 import wu from 'wu'
@@ -32,9 +32,11 @@ import {
 
 const RECORDS_CHUNK_SIZE = 10000
 
-// Add API name and label annotation if missing
-const annotateApiNameAndLabel = (element: ObjectType): void => {
-  const innerAnnotate = (annotations: Values, name: string): void => {
+// Add elements defaults
+const addDefaults = (element: ObjectType): void => {
+  const addApiNameAndLabel = (elem: Type | Field): void => {
+    const name = isField(elem) ? elem.name : element.elemID.name
+    const { annotations } = elem
     if (!annotations[constants.API_NAME]) {
       annotations[constants.API_NAME] = sfCase(name, true)
     }
@@ -43,10 +45,17 @@ const annotateApiNameAndLabel = (element: ObjectType): void => {
     }
   }
 
-  element.annotate({ [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT })
-  innerAnnotate(element.annotations, element.elemID.name)
+  const addMetadataType = (elem: ObjectType): void => {
+    const { annotations } = elem
+    if (!annotations[constants.METADATA_TYPE]) {
+      annotations[constants.METADATA_TYPE] = constants.CUSTOM_OBJECT
+    }
+  }
+
+  addMetadataType(element)
+  addApiNameAndLabel(element)
   Object.values(element.fields).forEach(field => {
-    innerAnnotate(field.annotations, field.name)
+    addApiNameAndLabel(field)
   })
 }
 
@@ -252,7 +261,7 @@ export default class SalesforceAdapter {
    */
   private async addObject(element: ObjectType): Promise<ObjectType> {
     const post = element.clone()
-    annotateApiNameAndLabel(post)
+    addDefaults(post)
 
     await this.client.create(constants.CUSTOM_OBJECT, toCustomObject(post))
 
@@ -311,7 +320,7 @@ export default class SalesforceAdapter {
   private async updateObject(before: ObjectType, after: ObjectType,
     changes: Iterable<Change<Field | ObjectType>>): Promise<ObjectType> {
     const clonedObject = after.clone()
-    annotateApiNameAndLabel(clonedObject)
+    addDefaults(clonedObject)
     validateApiName(before, clonedObject)
 
     // There are fields that are not equal but their transformation

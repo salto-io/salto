@@ -51,6 +51,9 @@ export const metadataType = (element: Element): string => (
   element.annotations[METADATA_TYPE] || CUSTOM_OBJECT
 )
 
+export const isCustomObject = (element: ObjectType): boolean =>
+  (metadataType(element) === CUSTOM_OBJECT)
+
 export const apiName = (elem: Element): string => {
   if (isInstanceElement(elem)) {
     // Instance API name comes from the full name value, fallback to the elem ID

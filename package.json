@@ -15,6 +15,7 @@
   },
   "scripts": {
     "install": "lerna bootstrap && lerna run build",
+    "lint-fix": "yarn workspaces run lint-fix",
     "test": "yarn run jest --forceExit --detectOpenHandles"
   }
 }

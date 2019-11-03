@@ -38,12 +38,12 @@ export type Blueprint = {
   timestamp?: number
 }
 
-type Severity = 'Error' | 'Warning'
+export type WorkspaceErrorSeverity = 'Error' | 'Warning'
 
 export type WorkspaceError = Readonly<{
    sourceFragments: SourceFragment[]
    error: string
-   severity: Severity
+   severity: WorkspaceErrorSeverity
    cause?: ParseError | ValidationError | MergeError
 }>
 
@@ -300,7 +300,7 @@ export class Workspace {
         return {
           sourceFragments,
           error: ve.error,
-          severity: 'Error',
+          severity: 'Warning',
           cause: ve,
         }
       }),

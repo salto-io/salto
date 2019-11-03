@@ -11,6 +11,7 @@ import {
 import {
   METADATA_TYPE, METADATA_OBJECT_NAME_FIELD, FIELD_ANNOTATIONS, FIELD_TYPE_NAMES,
   LABEL, FIELD_TYPE_API_NAMES, ADDRESS_FIELDS, SALESFORCE, GEOLOCATION_FIELDS, NAME_FIELDS,
+  API_NAME,
 } from '../src/constants'
 import { CustomField } from '../src/client/types'
 
@@ -335,7 +336,7 @@ describe('transformer', () => {
     it('should return sub fields of a compound custom geolocation field', async () => {
       const fieldName = 'test'
       const annotations: Values = {
-        [Type.SERVICE_ID]: 'test__c',
+        [API_NAME]: 'test__c',
       }
       const testedObjectType = new ObjectType({
         elemID,
@@ -353,7 +354,7 @@ describe('transformer', () => {
         expect(fieldNamesSet).toContain(expectedFieldName)
         const apiName = fields.find(
           f => f.name === expectedFieldName
-        )?.annotations[Type.SERVICE_ID] as string
+        )?.annotations[API_NAME] as string
         expect(apiName.endsWith('__s')).toBeTruthy()
       })
     })
@@ -361,7 +362,7 @@ describe('transformer', () => {
     it('should return sub fields of a compound non-custom geolocation field', async () => {
       const fieldName = 'test'
       const annotations: Values = {
-        [Type.SERVICE_ID]: 'test',
+        [API_NAME]: 'test',
       }
       const testedObjectType = new ObjectType({
         elemID,
@@ -379,7 +380,7 @@ describe('transformer', () => {
         expect(fieldNamesSet).toContain(expectedFieldName)
         const apiName = fields.find(
           f => f.name === expectedFieldName
-        )?.annotations[Type.SERVICE_ID] as string
+        )?.annotations[API_NAME] as string
         expect(apiName.endsWith('__s')).toBeFalsy()
       })
     })

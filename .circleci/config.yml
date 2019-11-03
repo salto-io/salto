@@ -95,6 +95,8 @@ jobs:
 
           key: v1-yarn-deps-{{ arch }}-{{ checksum "yarn.lock" }}
 
+      - run: yarn build
+
       - persist_to_workspace:
           root: .
           paths: '*'
@@ -274,20 +276,27 @@ workflows:
             - unittest
 
       - package_cli_windows:
+          # Note: Temporarily removed requirement for e2e due to flaky e2e tests.
           requires:
-            - e2e_test
+            - build
+          #   - e2e_test
 
       - package_cli_linux:
+          # Note: Temporarily removed requirement for e2e due to flaky e2e tests.
           requires:
-            - e2e_test
+            - build
+          #   - e2e_test
 
       - package_cli_osx:
+          # Note: Temporarily removed requirement for e2e due to flaky e2e tests.
           requires:
-            - e2e_test
+            - build
+          #   - e2e_test
 
       - package_vscode_extension:
           requires:
-            - e2e_test
+            - build
+          #   - e2e_test
 
       - sync_s3_pkg_latest:
           requires:

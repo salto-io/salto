@@ -100,7 +100,7 @@ export default class SalesforceAdapter {
     metadataToUpdateWithDeploy = [
       'AssignmentRules',
     ],
-    filterCreators: filterCreators = [
+    filterCreators = [
       fieldPermissionsFilter,
       layoutFilter,
       validationRulesFilter,

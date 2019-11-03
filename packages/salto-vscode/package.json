@@ -118,12 +118,13 @@
         "build": "yarn run lint && yarn run build-ts",
         "build-ts": "tsc",
         "watch": "tsc -w",
+        "clean": "rm -rf ./dist",
         "test": "jest --forceExit --detectOpenHandles",
         "clean-ts": "node ./node_modules/.bin/ts-cleaner -d dist -s . -v",
         "clean-ts-test": "yarn run clean-ts && yarn run test",
         "watch-test": "yarn run tsc-watch --onSuccess 'yarn run clean-ts-test'",
         "lint": "eslint --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
-        "lint-fix": "yarn run lint -- --fix",
+        "lint-fix": "yarn run lint --fix",
         "package" : "bash ./scripts/package.sh",
         "generate-yarn-lock": "yarn workspaces run generate-lock-entry | sed '1,2d' | sed -n -e :a -e '1,1!{P;N;D;};N;ba' >> yarn.lock"
     },
@@ -140,7 +141,7 @@
     "devDependencies": {
         "@types/glob": "^7.1.1",
         "@types/jest-cli": "^23.6.0",
-        "@types/node": "^10.12.21",
+        "@types/node": "^12.7.1",
         "@types/vscode": "1.37",
         "jest-circus": "^24.9.0",
         "jest-cli": "^24.8.0",

@@ -1,16 +1,22 @@
 {
   "private": true,
   "workspaces": {
-    "packages": ["packages/*"],
-    "nohoist": ["salto-vscode/**"]
+    "packages": [
+      "packages/*"
+    ],
+    "nohoist": [
+      "salto-vscode/**"
+    ]
   },
   "name": "salto_monorepo",
   "devDependencies": {
-    "codecov": "^3.5.0"
+    "codecov": "^3.5.0",
+    "lerna": "^3.18.3"
   },
   "scripts": {
-    "install": "for WS in @salto/lowerdash @salto/logging @salto/dag adapter-api salesforce-adapter salto salto-vscode @salto/cli; do yarn workspace $WS run build || exit; done",
-    "lint-fix": "yarn workspaces run lint-fix",
+    "build": "lerna run build",
+    "lint-fix": "lerna run lint-fix",
+    "clean": "lerna run clean",
     "test": "yarn run jest --forceExit --detectOpenHandles"
   }
 }

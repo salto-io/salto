@@ -1,0 +1,8 @@
+**/node_modules
+/packages/*/dist
+**/coverage
+/packages/*/coverage
+**/.cache
+**/.idea
+**/.history
+

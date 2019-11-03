@@ -14,9 +14,10 @@ describe('configuration dir location', () => {
     const config = await loadConfig(path.join(defaultsWorkspaceDir, 'test'))
     expect(config).toBeDefined()
   })
-  it('should throw error when path is not a workspace', async () => {
-    expect(loadConfig(workspacesDir)).rejects.toThrow()
-  })
+  it(
+    'should throw error when path is not a workspace',
+    () => expect(loadConfig(workspacesDir)).rejects.toThrow(),
+  )
 })
 
 describe('load proper configuration', () => {

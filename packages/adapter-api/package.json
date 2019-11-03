@@ -18,13 +18,14 @@
     "prepublishOnly": "yarn test",
     "build": "yarn run lint && yarn run build-ts",
     "test": "jest --forceExit --detectOpenHandles",
+    "clean": "rm -rf ./dist",
     "clean-ts": "node ./node_modules/.bin/ts-cleaner -d dist -s . -v",
     "clean-ts-test": "yarn run clean-ts && yarn run test",
     "watch-test": "yarn run tsc-watch --onSuccess 'yarn run clean-ts-test'",
     "build-ts": "tsc",
     "watch-ts": "tsc -w",
     "lint": "eslint --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
-    "lint-fix": "yarn run lint -- --fix"
+    "lint-fix": "yarn run lint --fix"
   },
   "dependencies": {
     "@salto/lowerdash": "0.1.0",
@@ -34,12 +35,12 @@
   "devDependencies": {
     "@types/jest": "^22.1.3",
     "@types/lodash": "^4.14.133",
-    "@types/node": "^9.4.6",
+    "@types/node": "^12.7.1",
     "@types/shelljs": "^0.7.8",
     "@types/supertest": "^2.0.4",
     "@types/wu": "^2.1.39",
-    "@typescript-eslint/eslint-plugin": "^2.5.1-alpha.6",
-    "@typescript-eslint/parser": "^2.5.1-alpha.6",
+    "@typescript-eslint/eslint-plugin": "^2.6.0",
+    "@typescript-eslint/parser": "^2.6.0",
     "eslint": "^6.2.2",
     "eslint-config-airbnb": "18.0.1",
     "eslint-plugin-import": "^2.18.2",

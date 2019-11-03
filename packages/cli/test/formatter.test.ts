@@ -90,19 +90,19 @@ describe('formatter', () => {
         annotations: { bla: 'foo' },
         annotationTypes: { bla: BuiltinTypes.STRING },
       })
-      const typeChange = detailedChange('remove', dummyType.elemID.nameParts, dummyType, undefined)
+      const typeChange = detailedChange('add', dummyType.elemID.nameParts, undefined, dummyType)
       const output = formatChange(typeChange)
       it('should have element id', () => {
-        expect(output).toMatch(/-.*salesforce_text/)
+        expect(output).toMatch(/\+.*salesforce_text/)
       })
       it('should have type', () => {
-        expect(output).toMatch(/-.*salesforce_text.*TYPE: string/s)
+        expect(output).toMatch(/\+.*salesforce_text.*TYPE: string/s)
       })
       it('should have annotations', () => {
-        expect(output).toMatch(/-.*salesforce_text.*bla:/s)
+        expect(output).toMatch(/\+.*salesforce_text.*bla:/s)
       })
       it('should have annotation types', () => {
-        expect(output).toMatch(/-.*salesforce_text.*annotations.*bla/s)
+        expect(output).toMatch(/\+.*salesforce_text.*annotations.*bla/s)
       })
     })
     describe('with object type', () => {
@@ -123,6 +123,16 @@ describe('formatter', () => {
       })
       it('should have annotation types', () => {
         expect(output).toMatch(/\+.*salesforce_office.*annotations.*label.*TYPE: string/s)
+      })
+    })
+    describe('removal change', () => {
+      const instanceChange = detailedChange('remove', instance.elemID.nameParts, instance, undefined)
+      const output = formatChange(instanceChange)
+      it('should have element id', () => {
+        expect(output).toMatch(/-.*salesforce_employee_instance/)
+      })
+      it('should not have nested values', () => {
+        expect(output).not.toContain('bla')
       })
     })
   })

@@ -86,8 +86,8 @@ const isDummyChange = (change: DetailedChange): boolean => (
 )
 
 const formatChangeData = (change: DetailedChange): string => {
-  if (isDummyChange(change)) {
-    // This is a dummy change created just so we print a "title" for a group of changes
+  if (isDummyChange(change) || change.action === 'remove') {
+    // No need to format details about dummy changes and removals
     return ''
   }
   if (change.action === 'modify') {

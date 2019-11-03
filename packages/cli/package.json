@@ -29,6 +29,7 @@
     "build": "yarn generate && yarn lint && yarn build-ts",
     "test": "jest --forceExit --detectOpenHandles",
     "e2e-test": "RUN_E2E_TESTS=1 jest --forceExit --detectOpenHandles",
+    "clean": "rm -rf ./dist",
     "clean-ts": "node ./node_modules/.bin/ts-cleaner -d dist -s . -v",
     "clean-ts-test": "yarn run clean-ts && yarn run test",
     "watch-test": "yarn run tsc-watch --onSuccess 'yarn run clean-ts-test'",

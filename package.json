@@ -14,9 +14,9 @@
     "lerna": "^3.18.3"
   },
   "scripts": {
-    "install": "lerna bootstrap && lerna run build",
+    "build": "lerna run build",
     "lint-fix": "lerna run lint-fix",
-    "clean": "rm -r packages/*/dist",
+    "clean": "lerna run clean",
     "test": "yarn run jest --forceExit --detectOpenHandles"
   }
 }

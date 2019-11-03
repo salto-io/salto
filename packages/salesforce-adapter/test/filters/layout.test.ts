@@ -1,5 +1,5 @@
 import {
-  ObjectType, ElemID, InstanceElement, Type,
+  ObjectType, ElemID, InstanceElement,
 } from 'adapter-api'
 import _ from 'lodash'
 import makeFilter, { LAYOUT_ANNOTATION, LAYOUT_TYPE_NAME } from '../../src/filters/layouts'
@@ -29,7 +29,7 @@ describe('Test layout filter', () => {
   describe('Test layout fetch', () => {
     const fetch = async (apiName: string): Promise<void> => {
       const testSObj = mockSObject.clone()
-      testSObj.annotate({ [Type.SERVICE_ID]: apiName })
+      testSObj.annotate({ [constants.API_NAME]: apiName })
       const testLayout = _.clone(mockLayout)
       testLayout.value[bpCase(constants.METADATA_OBJECT_NAME_FIELD)] = `${apiName}-Test layout`
       const elements = [testSObj, testLayout]

@@ -111,7 +111,7 @@ describe('SalesforceAdapter fetch', () => {
       expect(lead.fields.is_deleted.annotations[Type.DEFAULT]).toBe(false)
       // Custom type
       expect(lead.fields.custom__c).not.toBeUndefined()
-      expect(lead.fields.custom__c.annotations[Type.SERVICE_ID]).toBe('Custom__c')
+      expect(lead.fields.custom__c.annotations[constants.API_NAME]).toBe('Custom__c')
       expect(lead.fields.custom__c.annotations[Type.DEFAULT]).toBe(false)
       // Formula field
       expect(lead.fields.formula__c).toBeDefined()

@@ -1,12 +1,13 @@
-import { ObjectType, ElemID, Type } from 'adapter-api'
+import { ObjectType, ElemID } from 'adapter-api'
 import SalesforceAdapter from '../../src/adapter'
 import { FilterWith, FilterCreator } from '../../src/filter'
+import { API_NAME } from '../../src/constants'
 import mockAdapter from '../adapter'
 
 describe('SalesforceAdapter filters', () => {
   const object = new ObjectType({
     elemID: new ElemID('bla', 'test'),
-    annotations: { [Type.SERVICE_ID]: 'Bla__c' },
+    annotations: { [API_NAME]: 'Bla__c' },
   })
 
   let adapter: SalesforceAdapter

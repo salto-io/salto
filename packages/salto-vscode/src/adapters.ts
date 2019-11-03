@@ -18,18 +18,40 @@ export const vsPosToSaltoPos = (pos: vscode.Position): EditorPosition => ({
   col: pos.character,
 })
 
+const kindMap: {[key in SaltoSymbolKind]: vscode.SymbolKind} = {
+  [SaltoSymbolKind.Field]: vscode.SymbolKind.Field,
+  [SaltoSymbolKind.Array]: vscode.SymbolKind.Array,
+  [SaltoSymbolKind.Type]: vscode.SymbolKind.Class,
+  [SaltoSymbolKind.Instance]: vscode.SymbolKind.Variable,
+  [SaltoSymbolKind.Annotation]: vscode.SymbolKind.Variable,
+  [SaltoSymbolKind.File]: vscode.SymbolKind.File,
+  [SaltoSymbolKind.Attribute]: vscode.SymbolKind.Variable,
+}
+
+export const buildVSSymbol = (
+  context: PositionContext,
+  filename: string
+): vscode.SymbolInformation => {
+  const saltoSymbol = createSaltoSymbol(context)
+  return {
+    kind: kindMap[saltoSymbol.type],
+    location: {
+      range: new vscode.Range(
+        saltoPosToVsPos(saltoSymbol.range.start),
+        saltoPosToVsPos(saltoSymbol.range.end)
+      ),
+      uri: vscode.Uri.file(filename),
+    },
+    name: saltoSymbol.name,
+    containerName: context.parent
+      ? createSaltoSymbol(context.parent).name
+      : '',
+  }
+}
+
 export const buildVSDefinitions = (
   context: PositionContext,
 ): vscode.DocumentSymbol => {
-  const kindMap: {[key in SaltoSymbolKind]: vscode.SymbolKind} = {
-    [SaltoSymbolKind.Field]: vscode.SymbolKind.Field,
-    [SaltoSymbolKind.Array]: vscode.SymbolKind.Array,
-    [SaltoSymbolKind.Type]: vscode.SymbolKind.Class,
-    [SaltoSymbolKind.Instance]: vscode.SymbolKind.Variable,
-    [SaltoSymbolKind.Annotation]: vscode.SymbolKind.Variable,
-    [SaltoSymbolKind.File]: vscode.SymbolKind.File,
-    [SaltoSymbolKind.Attribute]: vscode.SymbolKind.Variable,
-  }
   const saltoSymbol = createSaltoSymbol(context)
   const range = new vscode.Range(
     saltoPosToVsPos(saltoSymbol.range.start),
@@ -67,6 +89,11 @@ export const buildVSCompletionItems = (
   })
 )
 
+export const toVSFileName = (
+  workspaceBaseDir: string,
+  filename: string
+): string => path.resolve(workspaceBaseDir, filename)
+
 const toVSDiagnostic = (
   diag: SaltoDiagnostic
 ): vscode.Diagnostic => ({
@@ -84,5 +111,5 @@ export const toVSDiagnostics = (
 ): ReadonlyDiags => _(workspaceDiag)
   .mapValues(diags => diags.map(toVSDiagnostic))
   .entries()
-  .map(([k, v]) => [vscode.Uri.file(path.resolve(workspaceBaseDir, k)), v] as ReadonlyDiagsItem)
+  .map(([k, v]) => [vscode.Uri.file(toVSFileName(workspaceBaseDir, k)), v] as ReadonlyDiagsItem)
   .value()

@@ -10,7 +10,7 @@ export enum SaltoSymbolKind {
   Attribute
 }
 
-interface SaltoSymbol {
+export interface SaltoSymbol {
   name: string
   type: SaltoSymbolKind
   range: EditorRange

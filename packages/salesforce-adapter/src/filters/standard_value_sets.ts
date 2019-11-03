@@ -105,10 +105,13 @@ const svsValuesToRef = (svsInstances: InstanceElement[]): Record<string, string>
     })
 )
 
-const isStandardPickList = (f: Field): boolean =>
-  (f.type.elemID.name === FIELD_TYPE_NAMES.PICKLIST
+const isStandardPickList = (f: Field): boolean => {
+  const apiNameResult = apiName(f)
+  return apiNameResult ? (
+    f.type.elemID.name === FIELD_TYPE_NAMES.PICKLIST
     || f.type.elemID.name === FIELD_TYPE_NAMES.MULTIPICKLIST)
-  && !apiName(f).endsWith(SALESFORCE_CUSTOM_SUFFIX)
+    && !apiName(f).endsWith(SALESFORCE_CUSTOM_SUFFIX) : false
+}
 
 const calculatePicklistFieldsToUpdate = (
   custObjectFields: Record<string, Field>,

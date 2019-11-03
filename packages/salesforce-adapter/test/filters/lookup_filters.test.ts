@@ -1,5 +1,5 @@
 import {
-  Element, ElemID, Field, InstanceElement, ObjectType, PrimitiveType, PrimitiveTypes, Type,
+  Element, ElemID, Field, InstanceElement, ObjectType, PrimitiveType, PrimitiveTypes,
 } from 'adapter-api'
 import { MetadataInfo } from 'jsforce'
 import mockClient from '../client'
@@ -49,13 +49,13 @@ describe('Test lookup filters filter', () => {
         lookup_field:
           new Field(objectTypeElemId, 'lookup_field', lookupType,
             {
-              [Type.SERVICE_ID]: lookupFieldApiName,
+              [constants.API_NAME]: lookupFieldApiName,
               [constants.FIELD_ANNOTATIONS.LOOKUP_FILTER]: {},
             }),
       },
       annotations: {
         label: 'test label',
-        [Type.SERVICE_ID]: mockObjectApiName,
+        [constants.API_NAME]: mockObjectApiName,
         [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
       },
     })
@@ -141,7 +141,7 @@ describe('Test lookup filters filter', () => {
     let mockObject: ObjectType
     const lookupField = new Field(objectTypeElemId, 'lookup_field', lookupType,
       {
-        [Type.SERVICE_ID]: lookupFieldApiName,
+        [constants.API_NAME]: lookupFieldApiName,
         [constants.FIELD_ANNOTATIONS.LOOKUP_FILTER]: {
           [constants.LOOKUP_FILTER_FIELDS.ACTIVE]: true,
           [constants.LOOKUP_FILTER_FIELDS.BOOLEAN_FILTER]: '1 OR 2',
@@ -168,7 +168,7 @@ describe('Test lookup filters filter', () => {
       },
       annotations: {
         label: 'test label',
-        [Type.SERVICE_ID]: mockObjectApiName,
+        [constants.API_NAME]: mockObjectApiName,
         [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
       },
     })
@@ -244,7 +244,7 @@ describe('Test lookup filters filter', () => {
 
     const lookupField = new Field(objectTypeElemId, 'lookup_field', lookupType,
       {
-        [Type.SERVICE_ID]: lookupFieldApiName,
+        [constants.API_NAME]: lookupFieldApiName,
       })
 
     const origBeforeObject = new ObjectType({
@@ -254,7 +254,7 @@ describe('Test lookup filters filter', () => {
       },
       annotations: {
         label: 'test label',
-        [Type.SERVICE_ID]: mockObjectApiName,
+        [constants.API_NAME]: mockObjectApiName,
         [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
       },
     })

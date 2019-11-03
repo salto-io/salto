@@ -8,6 +8,7 @@ export const SALESFORCE_CUSTOM_SUFFIX = '__c'
 
 // Annotations
 export const LABEL = 'label'
+export const API_NAME = 'api_name'
 export const FORMULA = 'formula'
 export const DEFAULT_VALUE_FORMULA = 'default_value_formula'
 export const METADATA_TYPE = 'metadata_type'

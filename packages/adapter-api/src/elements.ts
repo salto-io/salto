@@ -104,7 +104,6 @@ export class Field implements Element {
  * dependent.
  */
 export abstract class Type implements Element {
-  public static SERVICE_ID = '_service_id'
   public static DEFAULT = '_default'
   public static REQUIRED = '_required'
   public static VALUES = '_values'

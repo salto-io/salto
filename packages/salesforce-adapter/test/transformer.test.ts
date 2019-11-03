@@ -9,7 +9,7 @@ import {
   getValueTypeFieldElement, sfCase,
 } from '../src/transformer'
 import {
-  METADATA_TYPE, METADATA_OBJECT_NAME_FIELD, FIELD_ANNOTATIONS, FIELD_TYPE_NAMES,
+  METADATA_TYPE, METADATA_OBJECT_NAME_FIELD, FIELD_ANNOTATIONS, FIELD_TYPE_NAMES, API_NAME,
   LABEL, FIELD_TYPE_API_NAMES,
 } from '../src/constants'
 import { CustomField } from '../src/client/types'
@@ -238,7 +238,7 @@ describe('transformer', () => {
     const elemID = new ElemID('salesforce', 'test')
     const relatedTo = ['User', 'Property__c']
     const annotations: Values = {
-      [Type.SERVICE_ID]: 'field_name',
+      [API_NAME]: 'field_name',
       [LABEL]: 'field_label',
       [Type.REQUIRED]: false,
       [FIELD_ANNOTATIONS.RELATED_TO]: relatedTo,

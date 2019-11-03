@@ -12,7 +12,7 @@ import { collections } from '@salto/lowerdash'
 import { CustomObject, CustomField } from './client/types'
 import { API_VERSION, METADATA_NAMESPACE } from './client/client'
 import {
-  CUSTOM_OBJECT, LABEL, SALESFORCE, FORMULA,
+  API_NAME, CUSTOM_OBJECT, LABEL, SALESFORCE, FORMULA,
   FORMULA_TYPE_PREFIX, FIELD_TYPE_NAMES, FIELD_TYPE_API_NAMES, METADATA_OBJECT_NAME_FIELD,
   METADATA_TYPE, FIELD_ANNOTATIONS, SALESFORCE_CUSTOM_SUFFIX, DEFAULT_VALUE_FORMULA,
   MAX_METADATA_RESTRICTION_VALUES, SETTINGS_METADATA_TYPE,
@@ -57,7 +57,7 @@ export const apiName = (elem: Element): string => {
     return elem.value[bpCase(METADATA_OBJECT_NAME_FIELD)] || sfCase(elem.elemID.name)
   }
   const elemMetadataType = metadataType(elem)
-  return elemMetadataType === CUSTOM_OBJECT ? elem.annotations[Type.SERVICE_ID] : elemMetadataType
+  return elemMetadataType === CUSTOM_OBJECT ? elem.annotations[API_NAME] : elemMetadataType
 }
 
 const formulaTypeName = (baseTypeName: string): string =>
@@ -401,7 +401,7 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
   const bpFieldName = bpCase(field.name)
   let bpFieldType = Types.get(field.type)
   const annotations: Values = {
-    [Type.SERVICE_ID]: field.name,
+    [API_NAME]: field.name,
     [LABEL]: field.label,
     [Type.REQUIRED]: !field.nillable,
   }

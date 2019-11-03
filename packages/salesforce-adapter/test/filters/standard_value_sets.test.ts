@@ -40,7 +40,7 @@ const createPicklistObjectType = (
         : Types.salesforceDataTypes[constants.FIELD_TYPE_NAMES.PICKLIST], {
         [Type.REQUIRED]: false,
         [Type.DEFAULT]: 'Bart',
-        [Type.SERVICE_ID]: apiName,
+        [constants.API_NAME]: apiName,
         label: 'test label',
         [Type.VALUES]: pickListValues,
       }

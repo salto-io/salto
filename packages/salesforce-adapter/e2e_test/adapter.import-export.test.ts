@@ -3,7 +3,7 @@ import {
   ElemID,
   Field,
   InstanceElement,
-  Values, Type,
+  Values,
 } from 'adapter-api'
 import * as constants from '../src/constants'
 import { Types, apiName } from '../src/transformer'
@@ -25,7 +25,7 @@ describe('Adapter E2E import-export related operations with real account', () =>
         'First Name',
         stringType,
         {
-          [Type.SERVICE_ID]: 'FirstName',
+          [constants.API_NAME]: 'FirstName',
         },
       ),
       lastName: new Field(
@@ -33,7 +33,7 @@ describe('Adapter E2E import-export related operations with real account', () =>
         'Last Name',
         stringType,
         {
-          [Type.SERVICE_ID]: 'LastName',
+          [constants.API_NAME]: 'LastName',
         },
       ),
       company: new Field(
@@ -41,13 +41,13 @@ describe('Adapter E2E import-export related operations with real account', () =>
         'Company',
         stringType,
         {
-          [Type.SERVICE_ID]: 'Company',
+          [constants.API_NAME]: 'Company',
         },
       ),
     },
     annotationTypes: {},
     annotations: {
-      [Type.SERVICE_ID]: sfLeadName,
+      [constants.API_NAME]: sfLeadName,
     },
   })
 
@@ -75,7 +75,7 @@ describe('Adapter E2E import-export related operations with real account', () =>
   describe('Write data', () => {
     const existingInstances = async (instance: InstanceElement): Promise<string[]> => {
       const queryString = `SELECT Id 
-      FROM ${instance.type.annotations[Type.SERVICE_ID]} 
+      FROM ${instance.type.annotations[constants.API_NAME]} 
       WHERE 
       ${Object.keys(instance.value).filter(key => key !== 'Id')
     .map(key => `${key}='${instance.value[key]}'`).join(' AND ')}`
@@ -106,7 +106,7 @@ describe('Adapter E2E import-export related operations with real account', () =>
       // Prepare
       const ids = await existingInstances(testInstance)
       if (ids.length > 0) {
-        await client.destroy(testInstance.type.annotations[Type.SERVICE_ID], ids)
+        await client.destroy(testInstance.type.annotations[constants.API_NAME], ids)
       }
 
       await adapter.importInstancesOfType(iter())
@@ -125,7 +125,7 @@ describe('Adapter E2E import-export related operations with real account', () =>
       expect(newLead.Company).toBe('Test inc.')
 
       // Clean-up
-      await client.destroy(testInstance.type.annotations[Type.SERVICE_ID], newLead.Id)
+      await client.destroy(testInstance.type.annotations[constants.API_NAME], newLead.Id)
     })
 
     it('should delete instances of specific type', async () => {

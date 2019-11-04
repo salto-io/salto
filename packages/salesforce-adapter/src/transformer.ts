@@ -15,8 +15,8 @@ import {
   API_NAME, CUSTOM_OBJECT, LABEL, SALESFORCE, FORMULA,
   FORMULA_TYPE_PREFIX, FIELD_TYPE_NAMES, FIELD_TYPE_API_NAMES, METADATA_OBJECT_NAME_FIELD,
   METADATA_TYPE, FIELD_ANNOTATIONS, SALESFORCE_CUSTOM_SUFFIX, DEFAULT_VALUE_FORMULA,
-  MAX_METADATA_RESTRICTION_VALUES, SETTINGS_METADATA_TYPE,
-  LOOKUP_FILTER_FIELDS, ADDRESS_FIELDS, NAME_FIELDS, GEOLOCATION_FIELDS,
+  MAX_METADATA_RESTRICTION_VALUES, LOOKUP_FILTER_FIELDS,
+  ADDRESS_FIELDS, NAME_FIELDS, GEOLOCATION_FIELDS,
 } from './constants'
 
 const { makeArray } = collections.array
@@ -328,7 +328,7 @@ export class Types {
     boolean: BuiltinTypes.BOOLEAN,
   }
 
-  static get(name: string, customObject = true): Type {
+  static get(name: string, customObject = true, isSettings = false): Type {
     const type = customObject
       ? this.primitiveDataTypes[name.toLowerCase()]
       : this.metadataPrimitiveTypes[name.toLowerCase()]
@@ -336,7 +336,7 @@ export class Types {
     if (type === undefined) {
       return new ObjectType({
         elemID: new ElemID(SALESFORCE, bpCase(name)),
-        isSettings: name === SETTINGS_METADATA_TYPE,
+        isSettings,
       })
     }
     return type
@@ -528,7 +528,7 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
   } else if (field.type === 'reference') {
     if (field.cascadeDelete) {
       bpFieldType = Types.get(FIELD_TYPE_NAMES.MASTER_DETAIL)
-      // masterdetail fields are always not required in SF although returned as nillable=false
+      // master detail fields are always not required in SF although returned as nillable=false
       annotations[Type.REQUIRED] = false
       annotations[FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ] = Boolean(
         field.writeRequiresMasterRead
@@ -650,14 +650,17 @@ export const toInstanceElements = (type: ObjectType, queryResult: QueryResult<Va
   ))
 }
 
-export const createInstanceElement = (mdInfo: MetadataInfo, type: ObjectType): InstanceElement => {
+export const createInstanceElement = (
+  mdInfo: MetadataInfo,
+  type: ObjectType
+): InstanceElement => {
   const typeName = type.elemID.name
-  const isSettings = sfCase(typeName) === SETTINGS_METADATA_TYPE
   return new InstanceElement(
-    new ElemID(SALESFORCE, typeName, bpCase(mdInfo.fullName)),
+    type.isSettings ? new ElemID(SALESFORCE, typeName)
+      : new ElemID(SALESFORCE, typeName, bpCase(mdInfo.fullName)),
     type,
     fromMetadataInfo(mdInfo),
-    isSettings ? ['settings'] : ['records', typeName, bpCase(mdInfo.fullName)],
+    ['records', typeName, bpCase(mdInfo.fullName)],
   )
 }
 
@@ -666,12 +669,13 @@ export const createMetadataTypeElements = (
   fields: ValueTypeField[],
   knownTypes: Map<string, Type>,
   isSubtype = false,
-): Type[] => {
+  isSettings = false,
+): ObjectType[] => {
   if (knownTypes.has(objectName)) {
     // Already created this type, no new types to return here
     return []
   }
-  const element = Types.get(objectName, false) as ObjectType
+  const element = Types.get(objectName, false, isSettings) as ObjectType
   knownTypes.set(objectName, element)
   element.annotate({ [METADATA_TYPE]: objectName })
   element.path = ['types', ...(isSubtype ? ['subtypes'] : []), element.elemID.name]
@@ -688,6 +692,7 @@ export const createMetadataTypeElements = (
       makeArray(field.fields),
       knownTypes,
       true,
+      isSettings,
     )
   ))
 
@@ -697,7 +702,11 @@ export const createMetadataTypeElements = (
   // types to string
   fields
     .filter(field => _.isEmpty(field.fields))
-    .filter(field => !isPrimitiveType(Types.get(field.soapType, false)))
+    .filter(field => !isPrimitiveType(Types.get(
+      field.soapType,
+      false,
+      isSettings
+    )))
     .forEach(field => knownTypes.set(field.soapType, BuiltinTypes.STRING))
 
   const fieldElements = fields.map(field =>

@@ -26,6 +26,7 @@ import flowFilter from './filters/flow'
 import leadConvertSettingsFilter from './filters/lead_convert_settings'
 import lookupFiltersFilter from './filters/lookup_filters'
 import samlInitMethodFilter from './filters/saml_initiation_method'
+import settingsFilter from './filters/settings_type'
 import listOrderFilter from './filters/list_order'
 import {
   FilterCreator, Filter, FilterWith, filtersWith,
@@ -106,6 +107,7 @@ export default class SalesforceAdapter {
       // See also SALTO-168.
       'InstalledPackage', // Instances of this don't actually have an ID and they contain duplicates
       'CustomObject', // We have special treatment for this type
+      'Settings',
       'StaticResource',
     ],
     metadataToUpdateWithDeploy = [
@@ -122,6 +124,7 @@ export default class SalesforceAdapter {
       leadConvertSettingsFilter,
       lookupFiltersFilter,
       samlInitMethodFilter,
+      settingsFilter,
       listOrderFilter,
       // The following filters should remain last in order to make sure they fix all elements
       convertListsFilter,
@@ -575,16 +578,8 @@ export default class SalesforceAdapter {
     if (!objs) {
       return []
     }
-    const names = objs.map(obj => obj.fullName)
 
-    // For some unknown reason, for metadata type = 'Settings', when calling readMetadata we
-    // should use type = OBJNAME+'Settings'
-    if (type === constants.SETTINGS_METADATA_TYPE) {
-      return Promise.all(
-        names.map(name => this.client.readMetadata(name + type, name))
-      ).then(_.flatten)
-    }
-    return this.client.readMetadata(type, names)
+    return this.client.readMetadata(type, objs.map(obj => obj.fullName))
   }
 
   private filtersWith<M extends keyof Filter>(m: M): FilterWith<M>[] {

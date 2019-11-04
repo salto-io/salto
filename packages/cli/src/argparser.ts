@@ -30,6 +30,7 @@ const showHelpMessage = (parser: Argv, outStream: WriteStream): void => {
   parser.showHelp((s: string) => {
     outStream.write(getUsagePrefix(outStream))
     outStream.write(s)
+    outStream.write(EOL)
   })
 }
 

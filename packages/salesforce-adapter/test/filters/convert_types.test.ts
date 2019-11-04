@@ -85,36 +85,6 @@ describe('convert types filter', () => {
         const settingsInst = testElements[2] as InstanceElement
         expect(settingsInst).toEqual(mockSettings)
       })
-      it('should convert enums', () => {
-        expect(inst.value.picklist).toBe('a')
-      })
-    })
-
-    describe('fail to convert enmus', () => {
-      beforeEach(() => {
-        testElements = [
-          _.clone(mockType),
-          _.clone(mockInstance),
-        ]
-      })
-
-      it('should not convert not strict enums', async () => {
-        delete (testElements[0] as ObjectType).fields.picklist.annotations[Type.RESTRICTION]
-        await filter.onFetch(testElements)
-        expect((testElements[1] as InstanceElement).value.picklist).toBe('0')
-      })
-
-      it('should not convert if not an index', async () => {
-        (testElements[1] as InstanceElement).value.picklist = 'd'
-        await filter.onFetch(testElements)
-        expect((testElements[1] as InstanceElement).value.picklist).toBe('d')
-      })
-
-      it('should not convert if not a valid index', async () => {
-        (testElements[1] as InstanceElement).value.picklist = '6'
-        await filter.onFetch(testElements)
-        expect((testElements[1] as InstanceElement).value.picklist).toBe('6')
-      })
     })
   })
 })

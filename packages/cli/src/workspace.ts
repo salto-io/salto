@@ -27,7 +27,7 @@ export const loadWorkspace = async (
   return { workspace, errored }
 }
 
-export const updateWorkspace = async (ws: Workspace, stderr: WriteStream, 
+export const updateWorkspace = async (ws: Workspace, stderr: WriteStream,
   ...changes: DetailedChange[]): Promise<boolean> => {
   if (changes.length > 0) {
     await ws.updateBlueprints(...changes)

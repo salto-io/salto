@@ -16,7 +16,6 @@ import State from './state/state'
 import { findElement, SearchResult } from './core/search'
 
 import { Workspace, CREDS_DIR } from './workspace/workspace'
-import { fetchChanges, FetchChange } from './core/fetch'
 import { fetchChanges, FetchChange, getDetailedChanges } from './core/fetch'
 import { MergeError } from './core/merger/internal/common'
 

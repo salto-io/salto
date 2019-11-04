@@ -32,7 +32,7 @@ export const onFileDelete = (
   return workspace.awaitAllUpdates()
 }
 
-export const onFileCreate = async (
+export const onFileChange = async (
   workspace: EditorWorkspace,
   filename: string
 ): Promise<void> => {

@@ -1,7 +1,7 @@
 import * as vscode from 'vscode'
 import { loadConfig } from 'salto'
 import { EditorWorkspace } from './salto/workspace'
-import { onTextChangeEvent, onFileCreate, onFileDelete, onReportErrorsEvent } from './events'
+import { onTextChangeEvent, onFileChange, onFileDelete, onReportErrorsEvent } from './events'
 import {
   createCompletionsProvider, createDefinitionsProvider, createReferenceProvider,
   createDocumentSymbolsProvider,
@@ -90,9 +90,9 @@ const onActivate = async (context: vscode.ExtensionContext): Promise<void> => {
     )
 
     const fileWatcher = vscode.workspace.createFileSystemWatcher('**/*.bp')
-    fileWatcher.onDidCreate((uri: vscode.Uri) => onFileCreate(workspace, uri.path))
+    fileWatcher.onDidCreate((uri: vscode.Uri) => onFileChange(workspace, uri.path))
+    fileWatcher.onDidChange((uri: vscode.Uri) => onFileChange(workspace, uri.path))
     fileWatcher.onDidDelete((uri: vscode.Uri) => onFileDelete(workspace, uri.path))
-
     const newDiag = toVSDiagnostics(workspace.workspace.config.baseDir, getDiagnostics(workspace))
     diagCollection.set(newDiag)
   }

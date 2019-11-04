@@ -70,15 +70,15 @@ const filterCreator: FilterCreator = ({ client }) => ({
 
     const customFieldNames = fieldsWithLookupFilter.map(getCustomFieldName)
 
-    const customFieldNameToCustomFieldMap = await readCustomFields(customFieldNames)
+    const name2Field = await readCustomFields(customFieldNames)
 
     const addLookupFilterData = (fieldWithLookupFilter: Field): void => {
-      const customFieldLookupFilter = customFieldNameToCustomFieldMap[
-        getCustomFieldName(fieldWithLookupFilter)].lookupFilter
-      if (customFieldLookupFilter) {
+      const fieldFromMap = name2Field[getCustomFieldName(fieldWithLookupFilter)]
+      const lookupfilter = fieldFromMap ? fieldFromMap.lookupFilter : undefined
+      if (lookupfilter) {
         _.assign(fieldWithLookupFilter.annotations[FIELD_ANNOTATIONS.LOOKUP_FILTER],
-          mapKeysRecursive(customFieldLookupFilter, bpCase))
-        if (customFieldLookupFilter.isOptional) {
+          mapKeysRecursive(lookupfilter, bpCase))
+        if (lookupfilter.isOptional) {
           // eslint-disable-next-line max-len
           delete fieldWithLookupFilter.annotations[FIELD_ANNOTATIONS.LOOKUP_FILTER][LOOKUP_FILTER_FIELDS.ERROR_MESSAGE]
         }

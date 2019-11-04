@@ -133,15 +133,21 @@ export const parse = async (blueprint: Buffer, filename: string): Promise<ParseR
     return typeObj
   }
 
+  const extractInstanceName = (instanceBlock: ParsedHclBlock, typeID: ElemID): string => {
+    if (instanceBlock.labels.length > 0) {
+      return instanceBlock.labels[0]
+    }
+
+    return typeID.isConfig() ? ElemID.CONFIG_INSTANCE_NAME : typeID.name
+  }
+
   const parseInstance = (instanceBlock: ParsedHclBlock): Element => {
     let typeID = elemID(instanceBlock.type)
     if (_.isEmpty(typeID.adapter) && typeID.name.length > 0) {
       // In this case if there is just a single name we have to assume it is actually the adapter
       typeID = new ElemID(typeID.name)
     }
-    const name = instanceBlock.labels.length === 0
-      ? ElemID.CONFIG_INSTANCE_NAME
-      : instanceBlock.labels[0]
+    const name = extractInstanceName(instanceBlock, typeID)
 
     const inst = new InstanceElement(
       new ElemID(typeID.adapter, name),

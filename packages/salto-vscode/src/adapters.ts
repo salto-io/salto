@@ -98,7 +98,9 @@ const toVSDiagnostic = (
   diag: SaltoDiagnostic
 ): vscode.Diagnostic => ({
   message: diag.msg,
-  severity: vscode.DiagnosticSeverity.Error,
+  severity: diag.severity === 'Error'
+    ? vscode.DiagnosticSeverity.Error
+    : vscode.DiagnosticSeverity.Warning,
   range: new vscode.Range(
     saltoPosToVsPos({ col: diag.range.start.col - 1, line: diag.range.start.line }),
     saltoPosToVsPos(diag.range.end)

@@ -56,11 +56,15 @@ const updateProgress = async (
   progress.report({ message })
 }
 
+const hasCriticalErrors = (workspace: EditorWorkspace): boolean => (
+  workspace.workspace.getWorkspaceErrors().filter(e => e.severity === 'Error').length > 0
+)
+
 export const previewCommand = async (
   workspace: EditorWorkspace,
   extensionPath: string
 ): Promise<void> => {
-  if (!workspace.hasErrors()) {
+  if (!hasCriticalErrors(workspace)) {
     displayPlan(await preview(workspace.workspace), extensionPath)
   } else {
     displayError('Failed to create a preview. Please fix the detected problems and try again.')
@@ -99,7 +103,7 @@ export const deployCommand = async (
     return updateProgress(progress, action)
   }
 
-  if (workspace.hasErrors()) {
+  if (hasCriticalErrors(workspace)) {
     displayError('Failed to run plan. Please fix the detected problems and try again.')
     return
   }

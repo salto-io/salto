@@ -1,12 +1,12 @@
 import _ from 'lodash'
-import { Workspace, loadConfig } from 'salto'
+import { Workspace, loadConfig, DetailedChange } from 'salto'
 import { formatWorkspaceErrors } from './formatter'
 import { WriteStream } from './types'
 
 
 export type LoadWorkspaceResult = {
-    workspace: Workspace
-    errored: boolean
+  workspace: Workspace
+  errored: boolean
 }
 
 export const validateWorkspace = (ws: Workspace, stderr: WriteStream): boolean => {
@@ -18,7 +18,6 @@ export const validateWorkspace = (ws: Workspace, stderr: WriteStream): boolean =
   return true
 }
 
-
 export const loadWorkspace = async (
   workingDir: string,
   stderr: WriteStream): Promise<LoadWorkspaceResult> => {
@@ -26,4 +25,16 @@ export const loadWorkspace = async (
   const workspace = await Workspace.load(config)
   const errored = !validateWorkspace(workspace, stderr)
   return { workspace, errored }
+}
+
+export const updateWorkspace = async (ws: Workspace, stderr: WriteStream, 
+  ...changes: DetailedChange[]): Promise<boolean> => {
+  if (changes.length > 0) {
+    await ws.updateBlueprints(...changes)
+    if (!validateWorkspace(ws, stderr)) {
+      return false
+    }
+    await ws.flush()
+  }
+  return true
 }

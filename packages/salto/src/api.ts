@@ -17,19 +17,9 @@ import { findElement, SearchResult } from './core/search'
 
 import { Workspace, CREDS_DIR } from './workspace/workspace'
 import { fetchChanges, FetchChange } from './core/fetch'
+import { fetchChanges, FetchChange, getDetailedChanges } from './core/fetch'
 import { MergeError } from './core/merger/internal/common'
 
-
-const deployActionOnState = async (
-  state: State,
-  action: string,
-  element: Promise<Element>
-): Promise<void> => {
-  if (action === 'remove') {
-    return state.remove([await element])
-  }
-  return state.update([await element])
-}
 
 export const preview = async (
   workspace: Workspace,
@@ -38,13 +28,25 @@ export const preview = async (
   return getPlan(await state.get(), workspace.elements)
 }
 
+export interface DeployResult {
+  sucesses: boolean
+  changes?: Iterable<DetailedChange>
+}
 export const deploy = async (
   workspace: Workspace,
   fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
   shouldDeploy: (plan: Plan) => Promise<boolean>,
   reportProgress: (action: PlanItem) => void,
   force = false
-): Promise<Plan> => {
+): Promise<DeployResult> => {
+  const deployActionOnState = async (state: State, action: string, element: Promise<Element>
+  ): Promise<void> => {
+    if (action === 'remove') {
+      return state.remove([await element])
+    }
+    return state.update([await element])
+  }
+
   const state = new State(workspace.config.stateLocation)
   try {
     const actionPlan = getPlan(await state.get(), workspace.elements)
@@ -56,8 +58,12 @@ export const deploy = async (
         reportProgress,
         (action, element) => deployActionOnState(state, action, element)
       )
+      return {
+        sucesses: true,
+        changes: getDetailedChanges(workspace.elements, await state.get()) || undefined,
+      }
     }
-    return actionPlan
+    return { sucesses: true }
   } finally {
     await state.flush()
   }

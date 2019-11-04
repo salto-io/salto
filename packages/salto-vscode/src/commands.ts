@@ -105,13 +105,12 @@ export const deployCommand = async (
   }
 
   try {
-    deployProcess = deploy(
+    await deploy(
       workspace.workspace,
       getUserConfig,
       shouldDeployCB,
       updateActionCB
     )
-    await deployProcess
   } catch (e) {
     displayError(e.message)
   }

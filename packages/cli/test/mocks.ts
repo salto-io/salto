@@ -1,7 +1,7 @@
 import { GroupedNodeMap } from '@salto/dag'
 import { BuiltinTypes, Change, Element, ElemID, Field, getChangeElement, InstanceElement, ObjectType, Type } from 'adapter-api'
 import _ from 'lodash'
-import { DetailedChange, Plan, PlanItem, SearchResult, Workspace, WorkspaceError } from 'salto'
+import { DetailedChange, Plan, PlanItem, SearchResult, Workspace, WorkspaceError, DeployResult } from 'salto'
 import stream from 'stream'
 import wu from 'wu'
 import realCli from '../src/cli'
@@ -178,7 +178,7 @@ export const elements = (): Element[] => {
 }
 
 export const detailedChange = (
-  action: 'add'|'modify'|'remove', path: string[],
+  action: 'add' | 'modify' | 'remove', path: string[],
   /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
   before: any, after: any,
 ): DetailedChange => {
@@ -193,7 +193,7 @@ export const detailedChange = (
 }
 
 export const preview = (): Plan => {
-  const change = (action: 'add'|'modify'|'remove', ...path: string[]): Change => {
+  const change = (action: 'add' | 'modify' | 'remove', ...path: string[]): Change => {
     const elemID = new ElemID('salesforce', ...path)
     if (action === 'add') {
       return { action, data: { after: new ObjectType({ elemID }) } }
@@ -293,15 +293,23 @@ export const deploy = async (
   shouldDeploy: (plan: Plan) => Promise<boolean>,
   reportProgress: (action: PlanItem) => void,
   force = false
-): Promise<Plan> => {
-  const changes = await preview()
+): Promise<DeployResult> => {
+  const changes = preview()
   if (force || await shouldDeploy(changes)) {
     wu(changes.itemsByEvalOrder()).forEach(change => {
       reportProgress(change)
     })
   }
 
-  return changes
+  return {
+    sucesses: true,
+    changes: [
+      {
+        id: new ElemID('adapter', 'dummy'),
+        action: 'add',
+        data: { after: 'asd' },
+      }],
+  }
 }
 
 export const describe = async (_searchWords: string[]):
@@ -348,8 +356,8 @@ export const exportToCsv = async (_typeId: string, _workspace: Workspace,
     ))
   }())
 
-export const importFromCsvFile = async (): Promise<void> => {}
-export const deleteFromCsvFile = async (): Promise<void> => {}
+export const importFromCsvFile = async (): Promise<void> => { }
+export const deleteFromCsvFile = async (): Promise<void> => { }
 
 export const getWorkspaceErrors = (): ReadonlyArray<WorkspaceError> => [{
   sourceFragments: [],

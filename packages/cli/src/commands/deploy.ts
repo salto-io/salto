@@ -1,12 +1,12 @@
+import wu from 'wu'
 import { deploy, PlanItem } from 'salto'
 import { createCommandBuilder } from '../command_builder'
 import { CliCommand, CliOutput, ParsedCliInput, WriteStream, CliExitCode } from '../types'
 import {
-  createActionStartOutput, createActionInProgressOutput, createItemDoneOutput,
+  createActionStartOutput, createActionInProgressOutput, createItemDoneOutput, formatChangesSummary,
 } from '../formatter'
-import { shouldDeploy, getConfigFromUser } from '../callbacks'
-import { loadWorkspace } from '../workspace'
-
+import { shouldDeploy, getConfigFromUser, getApprovedDetailedChanges } from '../callbacks'
+import { loadWorkspace, updateWorkspace } from '../workspace'
 
 const CURRENT_ACTION_POLL_INTERVAL = 5000
 
@@ -55,17 +55,25 @@ export class DeployCommand implements CliCommand {
     if (errored) {
       return CliExitCode.AppError
     }
-    await deploy(workspace,
+    const result = await deploy(workspace,
       getConfigFromUser,
       shouldDeploy({ stdout: this.stdout, stderr: this.stderr }),
       (action: PlanItem) => this.updateCurrentAction(action), this.force)
     this.endCurrentAction()
-    return CliExitCode.Success
+    if (result.changes) {
+      const changes = wu(result.changes).toArray()
+      const changesToApply = this.force ? changes : await getApprovedDetailedChanges(changes)
+      this.stdout.write(formatChangesSummary(changes.length, changesToApply.length))
+      return updateWorkspace(workspace, this.stderr, ...changesToApply)
+        ? CliExitCode.Success
+        : CliExitCode.AppError
+    }
+    return result.sucesses ? CliExitCode.Success : CliExitCode.AppError
   }
 }
 
 type DeployArgs = {
-   yes: boolean
+  force: boolean
 }
 type DeployParsedCliInput = ParsedCliInput<DeployArgs>
 
@@ -75,15 +83,18 @@ const deployBuilder = createCommandBuilder({
     aliases: ['dep'],
     description: 'Deploys changes to the target services',
     keyed: {
-      yes: {
-        describe: 'Do not ask for approval before deploying',
+      force: {
+        alias: ['f'],
+        describe: 'Do not ask for approval before deploying and applying workspace changes',
         boolean: true,
+        default: false,
+        demandOption: false,
       },
     },
   },
 
   async build(input: DeployParsedCliInput, output: CliOutput): Promise<CliCommand> {
-    return new DeployCommand('.', input.args.yes, output)
+    return new DeployCommand('.', input.args.force, output)
   },
 })
 

@@ -57,7 +57,7 @@ const updateProgress = async (
 }
 
 const hasCriticalErrors = (workspace: EditorWorkspace): boolean => (
-  workspace.workspace.getWorkspaceErrors().filter(e => e.severity === 'Error').length > 0
+  workspace.workspace.getWorkspaceErrors().find(e => e.severity === 'Error') !== undefined
 )
 
 export const previewCommand = async (

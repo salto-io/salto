@@ -80,7 +80,7 @@
             },
             {
                 "command": "salto.deploy",
-                "title": "Salto: Apply"
+                "title": "Salto: Deploy"
             }
         ],
         "menus": {

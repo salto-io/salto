@@ -3,8 +3,9 @@ import {
   Element, isObjectType, PrimitiveTypes, Values, ObjectType, isPrimitiveType, isInstanceElement,
 } from 'adapter-api'
 import { FilterCreator } from '../filter'
-import { SETTINGS_METADATA_TYPE } from '../constants'
 import { bpCase } from '../transformer'
+import { SETTINGS_METADATA_TYPE } from './settings_type'
+
 
 type Value = string | boolean | number | null | undefined
 const transformPrimitive = (val: string, primitive: PrimitiveTypes): Value => {

@@ -83,6 +83,15 @@ describe('Salto parser', () => {
           }
         }
       }
+      settings salesforce_path_assistant_settings {
+         metadata_type = "PathAssistantSettings"
+         string full_name {
+           _required = false
+         }
+         boolean path_assistant_enabled {
+           _required = false
+         }
+      }
       `
 
     beforeAll(async () => {
@@ -91,7 +100,7 @@ describe('Salto parser', () => {
 
     describe('parse result', () => {
       it('should have all types', () => {
-        expect(elements.length).toBe(10)
+        expect(elements.length).toBe(11)
       })
     })
 
@@ -273,6 +282,20 @@ describe('Salto parser', () => {
         expect(numberType.annotationTypes.scale.elemID.getFullName()).toEqual('number')
         expect(numberType.annotationTypes.precision.elemID.getFullName()).toEqual('number')
         expect(numberType.annotationTypes.unique.elemID.getFullName()).toEqual('boolean')
+      })
+    })
+
+    describe('settings type', () => {
+      let settingsType: ObjectType
+
+      beforeAll(() => {
+        settingsType = elements[10] as ObjectType
+      })
+
+      it('should have the correct type', () => {
+        expect(settingsType.elemID.getFullName()).toEqual('salesforce_path_assistant_settings')
+        expect(settingsType.elemID.name).toEqual('path_assistant_settings')
+        expect(settingsType.isSettings).toBeTruthy()
       })
     })
 

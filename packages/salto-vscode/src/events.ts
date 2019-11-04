@@ -1,5 +1,5 @@
+import { promises as fsp } from 'fs'
 import * as vscode from 'vscode'
-import * as fs from 'async-file'
 import * as path from 'path'
 import { EditorWorkspace } from './salto/workspace'
 import { toVSDiagnostics } from './adapters'
@@ -39,7 +39,7 @@ export const onFileChange = async (
   workspace: EditorWorkspace,
   filename: string
 ): Promise<void> => {
-  const buffer = await fs.readFile(filename, 'utf8')
+  const buffer = await fsp.readFile(filename, { encoding: 'utf8' })
   workspace.setBlueprints({ filename, buffer })
   return workspace.awaitAllUpdates()
 }

@@ -1,6 +1,7 @@
-import * as fs from 'async-file'
+import { promises as fsp } from 'fs'
 import path from 'path'
 import os from 'os'
+import { promisify } from 'util'
 import {
   PrimitiveType,
   Field,
@@ -9,8 +10,13 @@ import {
   ElemID,
 } from 'adapter-api'
 import _ from 'lodash'
+import rimRafLib from 'rimraf'
+import mkdirpLib from 'mkdirp'
 import * as TestHelpers from '../common/helpers'
 import State from '../../src/state/state'
+
+const rimRaf = promisify(rimRafLib)
+const mkdirp = promisify(mkdirpLib)
 
 describe('Test state mechanism', () => {
   const stateErrorFile = 'stateerror.bp'
@@ -52,21 +58,13 @@ describe('Test state mechanism', () => {
     },
   })
   beforeAll(async () => {
-    try {
-      await fs.unlink(statePath)
-      // This remark is to prevent from failing if the state doesn't exist yet
-      /* eslint-disable no-empty */
-    } catch { }
+    await rimRaf(statePath)
   })
 
   beforeEach(() => { state = new State(statePath) })
 
   afterEach(async () => {
-    try {
-      await fs.unlink(statePath)
-      // This remark is to prevent from failing if the state doesn't exist yet
-      /* eslint-disable no-empty */
-    } catch { }
+    await rimRaf(statePath)
   })
 
   it('should override state successfully, retrieve it, override it again and get the same result', async () => {
@@ -91,9 +89,12 @@ describe('Test state mechanism', () => {
 
   it('should throw an error if the state bp is not valid', async () => {
     // Setup
-    const buffer = await fs.readFile(path.join(blueprintsDirectory, stateErrorFile), 'utf8')
-    await fs.createDirectory(path.dirname(statePath))
-    await fs.writeFile(statePath, buffer)
+    const buffer = await fsp.readFile(
+      path.join(blueprintsDirectory, stateErrorFile),
+      { encoding: 'utf8' },
+    )
+    await mkdirp(path.dirname(statePath))
+    await fsp.writeFile(statePath, buffer)
 
     // Test
     await expect(state.get()).rejects.toThrow()

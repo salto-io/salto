@@ -1,15 +1,20 @@
-import _ from 'lodash'
-import * as fs from 'async-file'
+import { promises as fsp } from 'fs'
+import { promisify } from 'util'
 import path from 'path'
-
+import mkdirpLib from 'mkdirp'
+import _ from 'lodash'
 import { logger } from '@salto/logging'
+import { stat } from '../file'
 import { ParseResult } from '../parser/parse'
 import * as parseResultSerializer from '../serializer/parse_result'
+
+const mkdirp = promisify(mkdirpLib)
 
 const log = logger(module)
 
 const EXTERNAL_BP_CACHE_DIR = 'external_bp'
 const CACHE_FOLDER = '.cache'
+
 export interface AsyncCache<K, V> {
     get(key: K): Promise<V | undefined>
     put(key: K, value: V): Promise<void>
@@ -21,6 +26,7 @@ export type ParseResultKey = {
 }
 
 export type ParseResultCache = AsyncCache<ParseResultKey, ParseResult>
+
 export class ParseResultFSCache implements ParseResultCache {
       private baseCacheDir: string
       private baseWorkspaceDir: string
@@ -44,15 +50,16 @@ export class ParseResultFSCache implements ParseResultCache {
 
       async put(key: ParseResultKey, value: ParseResult): Promise<void> {
         const filePath = this.resolveCacheFilePath(key)
-        await fs.createDirectory(path.parse(filePath).dir)
-        return fs.writeFile(filePath, parseResultSerializer.serialize(value))
+        await mkdirp(path.parse(filePath).dir)
+        return fsp.writeFile(filePath, parseResultSerializer.serialize(value))
       }
 
       async get(key: ParseResultKey): Promise<ParseResult | undefined> {
         const cacheFilePath = this.resolveCacheFilePath(key)
-        if (await fs.exists(cacheFilePath)
-          && (await fs.stat(cacheFilePath)).mtimeMs > key.lastModified) {
-          const fileContent = await fs.readFile(cacheFilePath, 'utf8')
+
+        const s = await stat(cacheFilePath)
+        if (s && s.mtimeMs > key.lastModified) {
+          const fileContent = await fsp.readFile(cacheFilePath, { encoding: 'utf8' })
           try {
             return parseResultSerializer.deserialize(fileContent)
           } catch (err) {

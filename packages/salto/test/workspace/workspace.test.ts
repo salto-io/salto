@@ -1,8 +1,11 @@
-import _ from 'lodash'
-import fs from 'async-file'
-import path from 'path'
-import tmp from 'tmp-promise'
+import fs, { promises as fsp } from 'fs'
+import { promisify } from 'util'
 import os from 'os'
+import path from 'path'
+import _ from 'lodash'
+import rimRafLib from 'rimraf'
+import mkdirpLib from 'mkdirp'
+import tmp from 'tmp-promise'
 import {
   Element, ObjectType, ElemID, Type,
 } from 'adapter-api'
@@ -12,6 +15,9 @@ import {
 } from '../../src/workspace/workspace'
 import { DetailedChange } from '../../src/core/plan'
 import { MergeError } from '../../src/core/merger/internal/common'
+
+const mkdirp = promisify(mkdirpLib)
+const rimRaf = promisify(rimRafLib)
 
 describe('Workspace', () => {
   const workspaceFiles = {
@@ -335,8 +341,8 @@ type salesforce_lead {
       await Promise.all(_.entries(workspaceFiles)
         .map(async ([name, data]) => {
           const filePath = getPath(name)
-          await fs.mkdirp(path.dirname(filePath))
-          return fs.writeFile(filePath, data)
+          await mkdirp(path.dirname(filePath))
+          return fsp.writeFile(filePath, data)
         }))
       config = {
         uid: '',
@@ -382,49 +388,52 @@ type salesforce_lead {
       afterAll(resetWorkspace)
 
       it('should remove blueprints that were removed', async () => {
-        expect(await fs.exists(path.join(workspace.config.baseDir, 'subdir/file.bp'))).toBeFalsy()
+        expect(fs.existsSync(path.join(workspace.config.baseDir, 'subdir/file.bp'))).toBeFalsy()
       })
       it('should create blueprints that were added', async () => {
-        expect(await fs.exists(path.join(workspace.config.baseDir, newBP.filename))).toBeTruthy()
+        expect(fs.existsSync(path.join(workspace.config.baseDir, newBP.filename))).toBeTruthy()
       })
       it('should change the content of blueprints that were updated', async () => {
-        const writtenData = await fs.readFile(path.join(workspace.config.baseDir, changedBP.filename), 'utf8')
+        const writtenData = await fsp.readFile(
+          path.join(workspace.config.baseDir, changedBP.filename),
+          { encoding: 'utf8' },
+        )
         expect(writtenData).toEqual(changedBP.buffer)
       })
       it('should keep all unchanged files', async () => {
         await Promise.all(_.keys(workspace.parsedBlueprints)
           .filter(p => p !== configBP.filename)
           .map(
-            async p => expect(await fs.exists(path.join(workspace.config.baseDir, p))).toBeTruthy()
+            async p => expect(fs.existsSync(path.join(workspace.config.baseDir, p))).toBeTruthy()
           ))
       })
       it('should save credentials in localstorage', async () => {
-        expect(await fs.exists(path.join(workspace.config.localStorage, configBP.filename)))
+        expect(fs.existsSync(path.join(workspace.config.localStorage, configBP.filename)))
           .toBeTruthy()
       })
     })
 
     describe('init config', () => {
       beforeEach(async () => {
-        await fs.delete(emptyTmpDir.path)
-        await fs.mkdirp(emptyTmpDir.path)
+        await rimRaf(emptyTmpDir.path)
+        await mkdirp(emptyTmpDir.path)
         process.env.SALTO_HOME = tmpHome.path
       })
 
       afterEach(async () => {
-        await fs.delete(emptyTmpDir.path)
-        await fs.mkdirp(emptyTmpDir.path)
+        await rimRaf(emptyTmpDir.path)
+        await mkdirp(emptyTmpDir.path)
         delete process.env.SALTO_HOME
       })
 
       it('should init a basedir with no workspace name provided', async () => {
         workspace = await Workspace.init(path.join(emptyTmpDir.path, 'empty'))
-        expect(await fs.exists(workspace.config.localStorage)).toBeTruthy()
+        expect(fs.existsSync(workspace.config.localStorage)).toBeTruthy()
         expect(workspace.config.name).toBe('empty')
       })
       it('should init a basedir with workspace name provided', async () => {
         workspace = await Workspace.init(emptyTmpDir.path, 'test')
-        expect(await fs.exists(workspace.config.localStorage)).toBeTruthy()
+        expect(fs.existsSync(workspace.config.localStorage)).toBeTruthy()
         expect(workspace.config.name).toBe('test')
       })
       it('should fail when run inside an existing workspace', async () => {

@@ -1,6 +1,5 @@
-/* eslint-disable jest/no-disabled-tests */
+import { promises as fsp } from 'fs'
 import * as path from 'path'
-import * as fs from 'async-file'
 import _ from 'lodash'
 
 import { Config } from 'salto'
@@ -72,7 +71,7 @@ describe('Test auto complete', () => {
   const bpFileName = path.resolve(`${baseBPDir}/all.bp`)
   beforeAll(async () => {
     workspace = await EditorWorkspace.load(getConfig(baseBPDir, []), false)
-    bpContent = await fs.readFile(bpFileName, 'utf8')
+    bpContent = await fsp.readFile(bpFileName, { encoding: 'utf8' })
   })
 
   describe('empty line', () => {

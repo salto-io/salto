@@ -1,8 +1,12 @@
-import * as asyncfile from 'async-file'
+import { promises as fsp } from 'fs'
+import { promisify } from 'util'
 import path from 'path'
+import mkdirpLib from 'mkdirp'
 import { parseAsync } from 'json2csv'
 import csvtojson from 'csvtojson'
 import { Value } from 'adapter-api'
+
+const mkdirp = promisify(mkdirpLib)
 
 /**
  * Write objects to CSV file
@@ -21,14 +25,14 @@ export const dumpCsv = async (
     return rows.join('\n')
   }
 
-  await asyncfile.mkdirp(path.dirname(outputPath))
+  await mkdirp(path.dirname(outputPath))
   let csvString: string
   if (!append) { // If this is the first chunk, create the headers
     csvString = `${await parseAsync(objects)}\n`
-    await asyncfile.writeFile(outputPath, formatHeader(csvString))
+    await fsp.writeFile(outputPath, formatHeader(csvString))
   } else { // Otherwise do not create the headers as we only append data
     csvString = `${await parseAsync(objects, { header: false })}\n`
-    await asyncfile.writeFile(outputPath, csvString, { flag: 'a' })
+    await fsp.writeFile(outputPath, csvString, { flag: 'a' })
   }
 }
 

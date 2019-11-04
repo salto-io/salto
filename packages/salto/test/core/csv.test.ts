@@ -1,7 +1,11 @@
-import _ from 'lodash'
+import fs, { promises as fsp } from 'fs'
+import { promisify } from 'util'
 import path from 'path'
-import * as asyncfile from 'async-file'
+import _ from 'lodash'
+import rimRafLib from 'rimraf'
 import * as csv from '../../src/core/csv'
+
+const rimRaf = promisify(rimRafLib)
 
 describe('CSV reader/writer', () => {
   const csvDumpOutputDir = `${__dirname}/tmp/csv`
@@ -44,13 +48,13 @@ describe('CSV reader/writer', () => {
     ]
 
     beforeEach(async () => {
-      await asyncfile.delete(csvDumpOutputDir)
+      await rimRaf(csvDumpOutputDir)
     })
 
     it('should write an array of objects properly to CSV without appending', async () => {
       await csv.dumpCsv(values, outputPath, false)
-      expect(await asyncfile.exists(outputPath)).toBe(true)
-      const fileStrings = (await asyncfile.readFile(outputPath)).toString().split('\n')
+      expect(fs.existsSync(outputPath)).toBe(true)
+      const fileStrings = (await fsp.readFile(outputPath)).toString().split('\n')
       expect(fileStrings[0]).toMatch(/Id,FirstName,LastName,Email,Gender/)
       expect(fileStrings[1]).toMatch(/1,"Daile","Limeburn","dlimeburn0@blogs.com","Female"/)
       expect(fileStrings[2]).toMatch(/2,"Murial","Morson","mmorson1@google.nl","Female"/)
@@ -60,8 +64,8 @@ describe('CSV reader/writer', () => {
     it('should append arrays of objects properly to CSV without header', async () => {
       await csv.dumpCsv(values, outputPath, true)
       await csv.dumpCsv(additionalValues, outputPath, true)
-      expect(await asyncfile.exists(outputPath)).toBe(true)
-      const fileStrings = (await asyncfile.readFile(outputPath)).toString().split('\n')
+      expect(fs.existsSync(outputPath)).toBe(true)
+      const fileStrings = (await fsp.readFile(outputPath)).toString().split('\n')
       expect(fileStrings[0]).toMatch(/1,"Daile","Limeburn","dlimeburn0@blogs.com","Female"/)
       expect(fileStrings[1]).toMatch(/2,"Murial","Morson","mmorson1@google.nl","Female"/)
       expect(fileStrings[2]).toMatch(/3,"Minna","Noe","mnoe2@wikimedia.org","Female"/)
@@ -71,8 +75,8 @@ describe('CSV reader/writer', () => {
     it('should append arrays of objects properly to CSV with header', async () => {
       await csv.dumpCsv(values, outputPath, false)
       await csv.dumpCsv(additionalValues, outputPath, true)
-      expect(await asyncfile.exists(outputPath)).toBe(true)
-      const fileStrings = (await asyncfile.readFile(outputPath)).toString().split('\n')
+      expect(fs.existsSync(outputPath)).toBe(true)
+      const fileStrings = (await fsp.readFile(outputPath)).toString().split('\n')
       expect(fileStrings[0]).toMatch(/Id,FirstName,LastName,Email,Gender/)
       expect(fileStrings[1]).toMatch(/1,"Daile","Limeburn","dlimeburn0@blogs.com","Female"/)
       expect(fileStrings[2]).toMatch(/2,"Murial","Morson","mmorson1@google.nl","Female"/)

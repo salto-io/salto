@@ -1,5 +1,5 @@
+import { promises as fsp } from 'fs'
 import * as path from 'path'
-import * as fs from 'async-file'
 
 import { Config } from 'salto'
 import { EditorWorkspace } from '../../src/salto/workspace'
@@ -22,7 +22,7 @@ describe('Test go to definitions', () => {
 
   beforeAll(async () => {
     workspace = await EditorWorkspace.load(getConfig(baseBPDir, []), false)
-    bpContent = await fs.readFile(bpFile, 'utf8')
+    bpContent = await fsp.readFile(bpFile, { encoding: 'utf8' })
   })
 
   it('should give a single definition for a type that is defined once', () => {

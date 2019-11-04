@@ -1,4 +1,4 @@
-import * as fs from 'async-file'
+import { promises as fsp } from 'fs'
 import * as path from 'path'
 import { Diff2Html } from 'diff2html'
 
@@ -54,7 +54,7 @@ describe('Test extension format', () => {
   let diff: UnifiedDiff
   let html: string
   beforeAll(async () => {
-    expectedDif = await fs.readFile(diffFile, 'utf8')
+    expectedDif = await fsp.readFile(diffFile, { encoding: 'utf8' })
     diff = await createPlanDiff(getPlan(before, after).itemsByEvalOrder())
     html = renderDiffView(diff, [cssHref])
   })

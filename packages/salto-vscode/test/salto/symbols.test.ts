@@ -1,5 +1,5 @@
+import { promises as fsp } from 'fs'
 import * as path from 'path'
-import * as fs from 'async-file'
 
 import { Config } from 'salto'
 import { EditorWorkspace } from '../../src/salto/workspace'
@@ -21,7 +21,7 @@ describe('Cursor context resolver', () => {
   const filename = path.resolve(`${baseBPDir}/all.bp`)
   beforeAll(async () => {
     workspace = await EditorWorkspace.load(getConfig(baseBPDir, []), false)
-    bpContent = await fs.readFile(filename, 'utf8')
+    bpContent = await fsp.readFile(filename, { encoding: 'utf8' })
   })
 
   it('should create type symbol', () => {

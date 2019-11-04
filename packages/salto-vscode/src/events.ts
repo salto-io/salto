@@ -1,5 +1,6 @@
 import * as vscode from 'vscode'
 import * as fs from 'async-file'
+import * as path from 'path'
 import { EditorWorkspace } from './salto/workspace'
 import { toVSDiagnostics } from './adapters'
 import { getDiagnostics } from './salto/diagnostics'
@@ -20,8 +21,10 @@ export const onTextChangeEvent = (
   event: vscode.TextDocumentChangeEvent,
   workspace: EditorWorkspace
 ): void => {
-  const bp = { filename: event.document.fileName, buffer: event.document.getText() }
-  workspace.setBlueprints(bp)
+  if (path.extname(event.document.fileName) === '.bp') {
+    const bp = { filename: event.document.fileName, buffer: event.document.getText() }
+    workspace.setBlueprints(bp)
+  }
 }
 
 export const onFileDelete = (

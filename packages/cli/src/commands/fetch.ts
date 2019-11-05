@@ -13,12 +13,15 @@ import { getConfigFromUser, getApprovedChanges as cliGetApprovedChanges } from '
 import Prompts from '../prompts'
 import { validateWorkspace, updateWorkspace } from '../workspace'
 
-type approveChangesFunc =
-  (changes: ReadonlyArray<FetchChange>) => Promise<ReadonlyArray<FetchChange>>
+type approveChangesFunc = (
+  changes: ReadonlyArray<FetchChange>,
+  interactive: boolean
+) => Promise<ReadonlyArray<FetchChange>>
 
 export const fetchCommand = async (
   workspace: Workspace,
   force: boolean,
+  interactive: boolean,
   output: CliOutput,
   fetch: fetchFunc,
   getApprovedChanges: approveChangesFunc,
@@ -42,7 +45,7 @@ export const fetchCommand = async (
   const isEmptyWorkspace = workspace.elements.filter(elem => !elem.elemID.isConfig()).length === 0
   const changesToApply = force || isEmptyWorkspace
     ? changes
-    : await getApprovedChanges(changes)
+    : await getApprovedChanges(changes, interactive)
   outputLine(formatChangesSummary(changes.length, changesToApply.length))
   return updateWorkspace(workspace, output.stderr, ...changesToApply)
     ? CliExitCode.Success
@@ -52,17 +55,19 @@ export const fetchCommand = async (
 export const command = (
   workspaceDir: string,
   force: boolean,
+  interactive: boolean,
   output: CliOutput
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
     const config = await loadConfig(workspaceDir)
     const workspace = await Workspace.load(config)
-    return fetchCommand(workspace, force, output, apiFetch, cliGetApprovedChanges)
+    return fetchCommand(workspace, force, interactive, output, apiFetch, cliGetApprovedChanges)
   },
 })
 
 type FetchArgs = {
   force: boolean
+  interactive: boolean
 }
 type FetchParsedCliInput = ParsedCliInput<FetchArgs>
 
@@ -79,11 +84,18 @@ const fetchBuilder = createCommandBuilder({
         default: false,
         demandOption: false,
       },
+      interactive: {
+        alias: ['i'],
+        describe: 'Show all incoming changes for interactive approval',
+        boolean: true,
+        default: false,
+        demandOption: false,
+      },
     },
   },
 
   async build(input: FetchParsedCliInput, output: CliOutput) {
-    return command('.', input.args.force, output)
+    return command('.', input.args.force, input.args.interactive, output)
   },
 })
 

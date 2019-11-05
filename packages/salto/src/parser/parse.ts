@@ -151,7 +151,10 @@ export const parse = async (blueprint: Buffer, filename: string): Promise<ParseR
 
     const inst = new InstanceElement(
       new ElemID(typeID.adapter, name),
-      new ObjectType({ elemID: typeID }),
+      new ObjectType({
+        elemID: typeID,
+        isSettings: instanceBlock.labels.length === 0 && !typeID.isConfig(),
+      }),
       attrValues(instanceBlock, new ElemID(typeID.adapter, name)),
     )
     sourceMap.push(inst.elemID, instanceBlock)

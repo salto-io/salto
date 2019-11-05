@@ -3,8 +3,6 @@ import {
   Element, isObjectType, PrimitiveTypes, Values, ObjectType, isPrimitiveType, isInstanceElement,
 } from 'adapter-api'
 import { FilterCreator } from '../filter'
-import { bpCase } from '../transformer'
-import { SETTINGS_METADATA_TYPE } from './settings_type'
 
 
 type Value = string | boolean | number | null | undefined
@@ -64,8 +62,6 @@ export const transform = (obj: Values, type: ObjectType, strict = true): Values 
     // "layoutColumns":["","",""] where layoutColumns suppose to be list of object
     // with LayoutItem and reserve fields.
     // return undefined
-    // We are not strict for salesforce Settings type as type definition is empty
-    // and each Setting looks different
     if (strict) {
       return undefined
     }
@@ -74,7 +70,6 @@ export const transform = (obj: Values, type: ObjectType, strict = true): Values 
     .value()
   return _.isEmpty(result) ? undefined : result
 }
-
 
 /**
  * Convert types of values in instance elements to match the expected types according to the
@@ -92,9 +87,7 @@ const filterCreator: FilterCreator = () => ({
       .filter(isInstanceElement)
       .filter(instance => isObjectType(instance.type))
       .forEach(instance => {
-        // Settings have no type fields so their conversion is non-strict
-        const strict = instance.type.elemID.name !== bpCase(SETTINGS_METADATA_TYPE)
-        instance.value = transform(instance.value, instance.type as ObjectType, strict) || {}
+        instance.value = transform(instance.value, instance.type as ObjectType) || {}
       })
   },
 })

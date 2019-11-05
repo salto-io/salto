@@ -45,9 +45,7 @@ describe('convert types filter', () => {
     new ObjectType({
       elemID: new ElemID(constants.SALESFORCE, bpCase(SETTINGS_METADATA_TYPE)),
     }),
-    {
-      setting: 'true',
-    },
+    {},
   )
 
   let testElements: Element[]

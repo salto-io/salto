@@ -51,6 +51,8 @@ export default async (
 
     return CliExitCode.Success
   } catch (err) {
+    log.error(`Caught exception: ${[err, err.stack].filter(n => n).join(EOL)}`)
+
     const errorStream = output.stderr
     const unstyledErrorString = `${[err].filter(n => n).join(EOL)}`
     const errorString = streams.hasColors(errorStream)

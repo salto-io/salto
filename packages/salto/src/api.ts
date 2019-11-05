@@ -2,6 +2,7 @@ import wu from 'wu'
 import {
   ObjectType, InstanceElement, Element, Value,
 } from 'adapter-api'
+import { logger } from '@salto/logging'
 import {
   applyActions,
 } from './core/core'
@@ -14,11 +15,11 @@ import {
 } from './core/plan'
 import State from './state/state'
 import { findElement, SearchResult } from './core/search'
-
 import { Workspace, CREDS_DIR } from './workspace/workspace'
 import { fetchChanges, FetchChange, getDetailedChanges } from './core/fetch'
 import { MergeError } from './core/merger/internal/common'
 
+const log = logger(module)
 
 export const preview = async (
   workspace: Workspace,
@@ -93,16 +94,23 @@ export const fetch: fetchFunc = async (workspace, fillConfig) => {
     }
     return { change, serviceChange: change }
   }
+  log.debug('fetch starting..')
 
   const state = new State(workspace.config.stateLocation)
+  const stateElements = await state.get()
+  log.debug(`finish to load ${stateElements.length} state elements`)
+
   const [adapters, newConfigs] = await initAdapters(workspace.elements, fillConfig)
+  log.debug(`${adapters.length} were initated [newConfigs=${newConfigs.length}]`)
 
   const { changes, elements, mergeErrors } = await fetchChanges(
-    adapters, workspace.elements, await state.get(),
+    adapters, workspace.elements, stateElements,
   )
+  log.debug(`${elements.length} elements were fetched [mergedErrors=${mergeErrors.length}]`)
 
   state.override(elements)
   await state.flush()
+  log.debug(`finish to override state with ${elements.length} elements`)
   return {
     changes: wu.chain(changes, newConfigs.map(configToChange)),
     mergeErrors,

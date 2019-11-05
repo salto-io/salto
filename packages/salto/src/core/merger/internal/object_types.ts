@@ -2,10 +2,13 @@ import _ from 'lodash'
 import {
   ObjectType, ElemID, Field,
 } from 'adapter-api'
+import { logger } from '@salto/logging'
 import { Keywords } from '../../../parser/language'
 import {
   MergeResult, MergeError, mergeNoDuplicates,
 } from './common'
+
+const log = logger(module)
 
 export abstract class FieldDefinitionMergeError extends MergeError {
   readonly parentID: string
@@ -202,9 +205,10 @@ export const mergeObjectTypes = (
     .groupBy(o => o.elemID.getFullName())
     .mapValues(group => mergeObjectDefinitions(group[0], group))
     .value()
+  const merged = _.mapValues(mergeResults, r => r.merged)
+  const errors = _.flatten(Object.values(mergeResults).map(r => r.errors))
 
-  return {
-    merged: _.mapValues(mergeResults, r => r.merged),
-    errors: _.flatten(Object.values(mergeResults).map(r => r.errors)),
-  }
+  log.debug(`merged ${objectTypes.length} objects to ${merged.length} elements [errors=${
+    errors.length}]`)
+  return { merged, errors }
 }

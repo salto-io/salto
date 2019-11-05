@@ -1,9 +1,11 @@
 import _ from 'lodash'
 import wu from 'wu'
 import { Element, ElemID, Adapter } from 'adapter-api'
-
+import { logger } from '@salto/logging'
 import { getPlan, DetailedChange } from './plan'
 import { mergeElements, MergeError } from './merger'
+
+const log = logger(module)
 
 export type FetchChange = {
   // The actual change to apply to the workspace
@@ -88,18 +90,24 @@ export const fetchChanges = async (
   const serviceElements = _.flatten(await Promise.all(
     Object.values(adapters).map(adapter => adapter.fetch())
   ))
+  log.debug(`fetched ${serviceElements.length} elements from adapters`)
 
   const { errors: mergeErrors, merged: mergedServiceElements } = mergeElements(serviceElements)
+  log.debug(`merged elements to ${mergedServiceElements.length} elements [errors=${
+    mergeErrors.length}]`)
 
   const serviceChanges = getDetailedChanges(stateElements, mergedServiceElements)
+  log.debug('finished to calculate service-state changes')
   const pendingChanges = getChangeMap(stateElements, workspaceElements)
+  log.debug('finished to calculate pending changes')
   const workspaceToServiceChanges = getChangeMap(workspaceElements, mergedServiceElements)
+  log.debug('finished to calculate service-workspace changes')
 
   const changes = wu(serviceChanges)
     .map(toFetchChanges(pendingChanges, workspaceToServiceChanges))
     .flatten()
     .map(toChangesWithPath(serviceElements))
     .flatten()
-
+  log.debug('finished to calculate fetch changes')
   return { changes, elements: mergedServiceElements, mergeErrors }
 }

@@ -2,9 +2,12 @@ import _ from 'lodash'
 import path from 'path'
 import { getChangeElement, isElement } from 'adapter-api'
 
+import { logger } from '@salto/logging'
 import { DetailedChange } from '../core/plan'
 import { SourceRange } from '../parser/parse'
 import { dump as saltoDump } from '../parser/dump'
+
+const log = logger(module)
 
 type DetailedChangeWithSource = DetailedChange & { location: SourceRange }
 
@@ -129,9 +132,13 @@ export const updateBlueprintData = async (
     data.slice(0, change.start) + change.newData + data.slice(change.end)
   )
 
+  log.debug(`going to calcaulate buffer changes for ${changes.length} changes`)
   const bufferChanges = await Promise.all(changes.map(toBufferChange))
+  log.debug(`got ${bufferChanges.length} buffer changes`)
   // We want to replace buffers from last to first, that way we won't have to re-calculate
   // the source locations after every change
   const sortedChanges = _.sortBy(bufferChanges, change => change.start).reverse()
-  return sortedChanges.reduce(replaceBufferPart, currentData)
+  const ret = sortedChanges.reduce(replaceBufferPart, currentData)
+  log.debug(`updated string length is ${ret.length}`)
+  return ret
 }

@@ -1,12 +1,9 @@
 import _ from 'lodash'
+import { PrimitiveType, ElemID } from 'adapter-api'
+import { logger } from '@salto/logging'
+import { MergeResult, MergeError } from './common'
 
-import {
-  PrimitiveType, ElemID,
-} from 'adapter-api'
-
-import {
-  MergeResult, MergeError,
-} from './common'
+const log = logger(module)
 
 export class MultiplePrimitiveTypesUnsupportedError extends MergeError {
   readonly duplicates: PrimitiveType[]
@@ -42,8 +39,9 @@ export const mergePrimitives = (
     .mapValues(primitiveGroup => mergePrimitiveDefinitions(primitiveGroup[0], primitiveGroup))
     .value()
 
-  return {
-    merged: _.mapValues(mergeResults, r => r.merged),
-    errors: _.flatten(_.values(mergeResults).map(r => r.errors)),
-  }
+  const merged = _.mapValues(mergeResults, r => r.merged)
+  const errors = _.flatten(_.values(mergeResults).map(r => r.errors))
+  log.debug(`merged ${primitives.length} primitives to ${merged.length} elements [errors=${
+    errors.length}]`)
+  return { merged, errors }
 }

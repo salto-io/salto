@@ -28,7 +28,7 @@ const CLEAN_DATA_SERVICE_SORT = {
 */
 const filterCreator = (): FilterWith<'onFetch'> => ({
   /**
-   * Upon discover, rename assignment rules instances
+   * Upon fetch, order elements is specific lists
    *
    * @param elements the already discoverd elements
    */
@@ -38,45 +38,37 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
       instances: InstanceElement[],
       sortFieldInfo: SortField
     ): void => {
-      // Filter the instances we wish to sortt their sub properties
-      const instancesToChange = instances.find(e => e.type.elemID.name === sortFieldInfo.typeName)
-      if (!instancesToChange) {
+      // Filter the instances we wish to sort their sub properties
+      const instancesToChange = instances.filter(e => e.type.elemID.name === sortFieldInfo.typeName)
+      if (instancesToChange.length === 0) {
         return
       }
-
-      const instancesToChangeArray = _.isArray(
-        instancesToChange
-      ) ? instancesToChange : [instancesToChange]
-
-      const getFieldsRecursively = (currentLevel: Value[], fieldHierarchy: string[]): Value[] => {
-        if (fieldHierarchy.length === 1) {
-          return currentLevel
+      // const sortInfo = _.clone(sortFieldInfo)
+      instancesToChange.forEach(elem => {
+        // Get the sub fields we want to sort
+        const fieldToStart = sortFieldInfo.fieldsToSortHierarchy.shift() as string
+        const arrayPropertyToSort = sortFieldInfo.fieldsToSortHierarchy.pop()
+        let fieldsToSort: Value[]
+        if (arrayPropertyToSort) {
+          fieldsToSort = sortFieldInfo.fieldsToSortHierarchy.length > 0 ? _.get(
+            elem.value[fieldToStart],
+            sortFieldInfo.fieldsToSortHierarchy
+          ) as Value[] : elem.value[fieldToStart]
+          fieldsToSort.forEach(field => {
+            field[arrayPropertyToSort] = _.orderBy(
+              field[arrayPropertyToSort],
+              sortFieldInfo.fieldToSortBy
+            )
+          })
+        } else {
+          elem.value[fieldToStart] = _.orderBy(
+            elem.value[fieldToStart],
+            sortFieldInfo.fieldToSortBy
+          )
         }
-        const currentField = fieldHierarchy[0]
-        const subFields = currentLevel.map(obj => {
-          if (obj instanceof InstanceElement) {
-            return obj.value[currentField]
-          }
-          return obj[currentField]
-        })
-
-        return getFieldsRecursively(_.flatten(subFields), _.drop(fieldHierarchy))
-      }
-      // Get the sub fields we want to sort
-      const fieldsToSort = getFieldsRecursively(
-        instancesToChangeArray,
-        sortFieldInfo.fieldsToSortHierarchy
-      )
-      const arrayPropertyToSort = sortFieldInfo.fieldsToSortHierarchy.pop() as string
-      fieldsToSort.forEach(field => {
-        field[arrayPropertyToSort] = _.orderBy(
-          field[arrayPropertyToSort],
-          sortFieldInfo.fieldToSortBy
-        )
       })
     }
     const instanceElements = elements.filter(isInstanceElement)
-
     orderListFields(instanceElements, CLEAN_DATA_SERVICE_SORT)
   },
 })

@@ -16,20 +16,9 @@ import State from './state/state'
 import { findElement, SearchResult } from './core/search'
 
 import { Workspace, CREDS_DIR } from './workspace/workspace'
-import { fetchChanges, FetchChange } from './core/fetch'
+import { fetchChanges, FetchChange, getDetailedChanges } from './core/fetch'
 import { MergeError } from './core/merger/internal/common'
 
-
-const deployActionOnState = async (
-  state: State,
-  action: string,
-  element: Promise<Element>
-): Promise<void> => {
-  if (action === 'remove') {
-    return state.remove([await element])
-  }
-  return state.update([await element])
-}
 
 export const preview = async (
   workspace: Workspace,
@@ -38,16 +27,29 @@ export const preview = async (
   return getPlan(await state.get(), workspace.elements)
 }
 
+export interface DeployResult {
+  sucesses: boolean
+  changes?: Iterable<FetchChange>
+}
 export const deploy = async (
   workspace: Workspace,
   fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
   shouldDeploy: (plan: Plan) => Promise<boolean>,
   reportProgress: (action: PlanItem) => void,
   force = false
-): Promise<Plan> => {
+): Promise<DeployResult> => {
+  const deployActionOnState = async (state: State, action: string, element: Promise<Element>
+  ): Promise<void> => {
+    if (action === 'remove') {
+      return state.remove([await element])
+    }
+    return state.update([await element])
+  }
+
   const state = new State(workspace.config.stateLocation)
+  const stateElements = await state.get()
   try {
-    const actionPlan = getPlan(await state.get(), workspace.elements)
+    const actionPlan = getPlan(stateElements, workspace.elements)
     if (force || await shouldDeploy(actionPlan)) {
       const [adapters] = await initAdapters(workspace.elements, fillConfig)
       await applyActions(
@@ -56,8 +58,15 @@ export const deploy = async (
         reportProgress,
         (action, element) => deployActionOnState(state, action, element)
       )
+
+      const changes = wu(getDetailedChanges(workspace.elements, stateElements))
+        .map(change => ({ change, serviceChange: change }))
+      return {
+        sucesses: true,
+        changes,
+      }
     }
-    return actionPlan
+    return { sucesses: true }
   } finally {
     await state.flush()
   }

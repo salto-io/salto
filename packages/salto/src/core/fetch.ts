@@ -15,10 +15,10 @@ export type FetchChange = {
 }
 
 
-const getDetailedChanges = (
+export const getDetailedChanges = (
   before: ReadonlyArray<Element>,
   after: ReadonlyArray<Element>,
-): wu.WuIterable<DetailedChange> => (
+): Iterable<DetailedChange> => (
   wu(getPlan(before, after, false).itemsByEvalOrder())
     .map(item => item.detailedChanges())
     .flatten()
@@ -29,7 +29,7 @@ const getChangeMap = (
   after: ReadonlyArray<Element>,
 ): Record<string, DetailedChange> => (
   _.fromPairs(
-    getDetailedChanges(before, after)
+    wu(getDetailedChanges(before, after))
       .map(change => [change.id.getFullName(), change])
       .toArray(),
   )
@@ -95,7 +95,7 @@ export const fetchChanges = async (
   const pendingChanges = getChangeMap(stateElements, workspaceElements)
   const workspaceToServiceChanges = getChangeMap(workspaceElements, mergedServiceElements)
 
-  const changes = serviceChanges
+  const changes = wu(serviceChanges)
     .map(toFetchChanges(pendingChanges, workspaceToServiceChanges))
     .flatten()
     .map(toChangesWithPath(serviceElements))

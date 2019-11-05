@@ -43,6 +43,7 @@ export const getApprovedChanges = async (
   const shouldDeployAll = (answers: inquirer.Answers): boolean => (
     _.values(answers).some(answer => answer === 'all')
   )
+
   const isConflict = (change: FetchChange): boolean => change.pendingChange !== undefined
 
   const questions = changes.map((change, idx): inquirer.Question => ({

@@ -1,6 +1,6 @@
 import * as vscode from 'vscode'
 import { InstanceElement, ElemID, ObjectType, Values, isPrimitiveType, PrimitiveTypes, Value } from 'adapter-api'
-import { preview, Plan, deploy, PlanItem } from 'salto'
+import { preview, Plan, deploy, PlanItem, DeployResult } from 'salto'
 import { EditorWorkspace } from './salto/workspace'
 import { displayError, getBooleanInput, displayHTML, getStringInput, getNumberInput, hrefToUri } from './output'
 import { getActionName, renderDiffView, createPlanDiff } from './format'
@@ -76,7 +76,7 @@ export const deployCommand = async (
   extensionPath: string
 ): Promise<void> => {
   const initDeployProgress = async (
-    processPromise: Promise<Plan>,
+    processPromise: Promise<DeployResult>,
   ): Promise<vscode.Progress<{message: string}>> => (
     new Promise<vscode.Progress<{message: string}>>(resolve => {
       vscode.window.withProgress({
@@ -91,7 +91,7 @@ export const deployCommand = async (
     }))
 
   let progress: vscode.Progress<{message: string}>
-  let deployProcess: Promise<Plan>
+  let deployProcess: Promise<DeployResult>
   const shouldDeployCB = async (p: Plan): Promise<boolean> => shouldDeploy(p, extensionPath)
   // A delayed initiation for the deploy progress bar. We don't want to show it until
   // the actions start taking place (just running the deploy in progress would cause

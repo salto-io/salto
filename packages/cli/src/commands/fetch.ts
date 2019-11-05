@@ -8,10 +8,10 @@ import {
 } from 'salto'
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'
-import { getConfigFromUser, getApprovedChanges as cliGetApprovedChanges } from '../callbacks'
 import { formatChangesSummary, formatMergeErrors } from '../formatter'
+import { getConfigFromUser, getApprovedChanges as cliGetApprovedChanges } from '../callbacks'
 import Prompts from '../prompts'
-import { validateWorkspace } from '../workspace'
+import { validateWorkspace, updateWorkspace } from '../workspace'
 
 type approveChangesFunc =
   (changes: ReadonlyArray<FetchChange>) => Promise<ReadonlyArray<FetchChange>>
@@ -44,14 +44,9 @@ export const fetchCommand = async (
     ? changes
     : await getApprovedChanges(changes)
   outputLine(formatChangesSummary(changes.length, changesToApply.length))
-  if (changesToApply.length > 0) {
-    await workspace.updateBlueprints(...changesToApply.map(change => change.change))
-    if (!validateWorkspace(workspace, output.stderr)) {
-      return CliExitCode.AppError
-    }
-    await workspace.flush()
-  }
-  return CliExitCode.Success
+  return updateWorkspace(workspace, output.stderr, ...changesToApply)
+    ? CliExitCode.Success
+    : CliExitCode.AppError
 }
 
 export const command = (

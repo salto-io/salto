@@ -9,6 +9,8 @@ import { deploy, preview, MockWriteStream, getWorkspaceErrors } from '../mocks'
 import { DeployCommand } from '../../src/commands/deploy'
 
 const mockDeploy = deploy
+const mockUpdateBlueprints = jest.fn().mockImplementation(() => Promise.resolve())
+const mockFlush = jest.fn().mockImplementation(() => Promise.resolve())
 jest.mock('salto', () => ({
   ...require.requireActual('salto'),
   loadConfig: jest.fn().mockImplementation(
@@ -27,7 +29,11 @@ jest.mock('salto', () => ({
           getWorkspaceErrors,
         }
       }
-      return { hasErrors: () => false }
+      return {
+        hasErrors: () => false,
+        updateBlueprints: mockUpdateBlueprints,
+        flush: mockFlush,
+      }
     }),
   },
   deploy: jest.fn().mockImplementation((
@@ -59,9 +65,6 @@ describe('deploy command', () => {
     })
 
     describe('should print progress', () => {
-      it('should load worksapce', () => {
-        expect(Workspace.load).toHaveBeenCalled()
-      })
       it('should print progress upon update', async () => {
         wu((preview()).itemsByEvalOrder()).forEach(item => command.updateCurrentAction(item))
         expect(cliOutput.stdout.content).toMatch('salesforce_lead: changing...')
@@ -85,11 +88,30 @@ describe('deploy command', () => {
       })
     })
 
-    it('should run deploy', async () => {
-      await command.execute()
-      const { content } = cliOutput.stdout
-      expect(content.search('salesforce_lead: Change completed')).toBeGreaterThan(0)
-      expect(content.search('salesforce_account: Change completed')).toBeGreaterThan(0)
+    describe('should run deploy', async () => {
+      let content: string
+      beforeAll(async () => {
+        await command.execute()
+        content = cliOutput.stdout.content
+      })
+
+      it('should load worksapce', () => {
+        expect(Workspace.load).toHaveBeenCalled()
+      })
+
+      it('should print Change completed', () => {
+        expect(content.search('salesforce_lead: Change completed')).toBeGreaterThan(0)
+        expect(content.search('salesforce_account: Change completed')).toBeGreaterThan(0)
+      })
+
+      it('should print Update workspace', () => {
+        expect(content.search('Updating workspace with')).toBeGreaterThan(0)
+      })
+
+      it('should Update workspace', () => {
+        expect(mockUpdateBlueprints).toHaveBeenCalledTimes(1)
+        expect(mockFlush).toHaveBeenCalledTimes(1)
+      })
     })
   })
 

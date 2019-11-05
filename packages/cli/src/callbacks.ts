@@ -73,7 +73,7 @@ export const getApprovedFetchChanges = async (
   return getApprovedChanges(changes, formatFetchChangeForApproval, isConflict)
 }
 
-export const getApprovedDetailedChanges = async (
+export const getApprovedDeployChanges = async (
   changes: ReadonlyArray<DetailedChange>,
 ): Promise<ReadonlyArray<DetailedChange>> =>
   getApprovedChanges(changes, formatDetailedChangeForApproval)

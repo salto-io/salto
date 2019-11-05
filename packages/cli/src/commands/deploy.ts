@@ -5,7 +5,7 @@ import { CliCommand, CliOutput, ParsedCliInput, WriteStream, CliExitCode } from 
 import {
   createActionStartOutput, createActionInProgressOutput, createItemDoneOutput, formatChangesSummary,
 } from '../formatter'
-import { shouldDeploy, getConfigFromUser, getApprovedDetailedChanges } from '../callbacks'
+import { shouldDeploy, getConfigFromUser, getApprovedDeployChanges } from '../callbacks'
 import { loadWorkspace, updateWorkspace } from '../workspace'
 
 const CURRENT_ACTION_POLL_INTERVAL = 5000
@@ -62,7 +62,7 @@ export class DeployCommand implements CliCommand {
     this.endCurrentAction()
     if (result.changes) {
       const changes = wu(result.changes).toArray()
-      const changesToApply = this.force ? changes : await getApprovedDetailedChanges(changes)
+      const changesToApply = this.force ? changes : await getApprovedDeployChanges(changes)
       this.stdout.write(formatChangesSummary(changes.length, changesToApply.length))
       return updateWorkspace(workspace, this.stderr, ...changesToApply)
         ? CliExitCode.Success

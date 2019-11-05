@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import {
-  Element, isInstanceElement, InstanceElement, Value,
+  Element, isInstanceElement, InstanceElement, Value, isObjectType, ObjectType,
 } from 'adapter-api'
 import { FilterWith } from '../filter'
 
@@ -20,6 +20,27 @@ const CLEAN_DATA_SERVICE_SORT = {
   fieldToSortBy: FIELD_MAPPINGS_FIELD_TO_SORT_BY,
 }
 
+const ANIMATION_RULE_TYPE_NAME = 'animation_rule'
+const TARGET_FIELD_NAME = 'target_field'
+const ANIMATION_RULE_SORT = {
+  typeName: ANIMATION_RULE_TYPE_NAME,
+  fieldsToSortHierarchy: [TARGET_FIELD_NAME],
+  fieldToSortBy: '',
+}
+const FIELD_PERMISSIONS_TYPE_NAME = 'field_permissions'
+const LEAD_HISTORY_TYPE_NAME = 'lead_history'
+const FIELD_FIELD_NAME = 'field'
+const FIELD_PERMISSIONS_SORT = {
+  typeName: FIELD_PERMISSIONS_TYPE_NAME,
+  fieldsToSortHierarchy: [FIELD_FIELD_NAME],
+  fieldToSortBy: '',
+}
+const LEAD_HISTORY_SORT = {
+  typeName: LEAD_HISTORY_TYPE_NAME,
+  fieldsToSortHierarchy: [FIELD_FIELD_NAME],
+  fieldToSortBy: '',
+}
+
 /**
 * Declare the list order filter: This filter sorts lists (which we will later on describe as sets),
 * whose order of elements is non-important. The reason for the sorting is that the order of
@@ -33,13 +54,15 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
    * @param elements the already discoverd elements
    */
   onFetch: async (elements: Element[]) => {
-    // An internal method that receives the sort info and does the sorting
-    const orderListFields = (
+    // An internal method that receives the sort info and the records and does the sorting
+    const orderListFieldsInInstances = (
       instances: InstanceElement[],
       sortFieldInfo: SortField
     ): void => {
       // Filter the instances we wish to sort their sub properties
-      const instancesToChange = instances.filter(e => e.type.elemID.name === sortFieldInfo.typeName)
+      const instancesToChange = instances.filter(
+        inst => inst.type.elemID.name === sortFieldInfo.typeName
+      )
       if (instancesToChange.length === 0) {
         return
       }
@@ -68,8 +91,33 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
         }
       })
     }
+
+    // An internal method that receives the sort info and the ObjectTypes and does the sorting
+    const orderListFieldsInTypes = (
+      types: ObjectType[],
+      sortFieldInfo: SortField
+    ): void => {
+      // Filter the types we wish to sort their sub properties
+      const typesToChange = types.filter(t => t.elemID.name === sortFieldInfo.typeName)
+      if (typesToChange.length === 0) {
+        return
+      }
+      // const sortInfo = _.clone(sortFieldInfo)
+      typesToChange.forEach(typeElem => {
+        // eslint-disable-next-line no-underscore-dangle
+        typeElem.fields[sortFieldInfo.fieldsToSortHierarchy[0]].annotations._values = _.orderBy(
+          // eslint-disable-next-line no-underscore-dangle
+          typeElem.fields[sortFieldInfo.fieldsToSortHierarchy[0]].annotations._values,
+          undefined
+        )
+      })
+    }
     const instanceElements = elements.filter(isInstanceElement)
-    orderListFields(instanceElements, CLEAN_DATA_SERVICE_SORT)
+    orderListFieldsInInstances(instanceElements, CLEAN_DATA_SERVICE_SORT)
+    const typeElements = elements.filter(isObjectType)
+    orderListFieldsInTypes(typeElements, ANIMATION_RULE_SORT)
+    orderListFieldsInTypes(typeElements, FIELD_PERMISSIONS_SORT)
+    orderListFieldsInTypes(typeElements, LEAD_HISTORY_SORT)
   },
 })
 

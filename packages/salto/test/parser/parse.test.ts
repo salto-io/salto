@@ -1,5 +1,6 @@
 import {
-  ObjectType, PrimitiveType, PrimitiveTypes, Element, ElemID, isObjectType, InstanceElement,
+  ObjectType, PrimitiveType, PrimitiveTypes, Element, ElemID,
+  isObjectType, InstanceElement,
 } from 'adapter-api'
 import { SourceRange, SourceMap, parse } from '../../src/parser/parse'
 
@@ -92,6 +93,10 @@ describe('Salto parser', () => {
            _required = false
          }
       }
+      salesforce_path_assistant_settings {
+        full_name              = "PathAssistant"
+        path_assistant_enabled = false
+      }
       `
 
     beforeAll(async () => {
@@ -100,7 +105,7 @@ describe('Salto parser', () => {
 
     describe('parse result', () => {
       it('should have all types', () => {
-        expect(elements.length).toBe(11)
+        expect(elements.length).toBe(12)
       })
     })
 
@@ -239,6 +244,9 @@ describe('Salto parser', () => {
         expect(inst.value).toHaveProperty('name')
         expect(inst.value.name).toEqual('me')
       })
+      it('should not be setting', () => {
+        expect(inst.type.isSettings).toBeFalsy()
+      })
     })
 
     describe('config', () => {
@@ -257,6 +265,9 @@ describe('Salto parser', () => {
       it('should have values', () => {
         expect(config.value).toHaveProperty('username')
         expect(config.value.username).toEqual('foo')
+      })
+      it('should not be setting', () => {
+        expect(config.type.isSettings).toBeFalsy()
       })
     })
 
@@ -296,6 +307,20 @@ describe('Salto parser', () => {
         expect(settingsType.elemID.getFullName()).toEqual('salesforce_path_assistant_settings')
         expect(settingsType.elemID.name).toEqual('path_assistant_settings')
         expect(settingsType.isSettings).toBeTruthy()
+      })
+    })
+
+    describe('settings instance', () => {
+      let settingsInstance: InstanceElement
+
+      beforeAll(() => {
+        settingsInstance = elements[11] as InstanceElement
+      })
+
+      it('should have the correct instance', () => {
+        expect(settingsInstance.elemID.getFullName()).toEqual('salesforce_path_assistant_settings')
+        expect(settingsInstance.elemID.name).toEqual('path_assistant_settings')
+        expect(settingsInstance.type.isSettings).toBeTruthy()
       })
     })
 

@@ -692,7 +692,7 @@ export const createMetadataTypeElements = (
       makeArray(field.fields),
       knownTypes,
       true,
-      isSettings,
+      false,
     )
   ))
 
@@ -705,7 +705,7 @@ export const createMetadataTypeElements = (
     .filter(field => !isPrimitiveType(Types.get(
       field.soapType,
       false,
-      isSettings
+      false
     )))
     .forEach(field => knownTypes.set(field.soapType, BuiltinTypes.STRING))
 

@@ -7,7 +7,6 @@ import { FilterWith } from '../../src/filter'
 import * as constants from '../../src/constants'
 import { bpCase } from '../../src/transformer'
 import SalesforceClient from '../../src/client/client'
-import { ASSIGNMENT_RULES_TYPE_NAME } from '../../src/filters/assignment_rules'
 
 
 describe('Test Settings Type', () => {
@@ -38,10 +37,10 @@ describe('Test Settings Type', () => {
     },
   )
 
-  const assignmentInstance = new InstanceElement(
-    new ElemID(constants.SALESFORCE, ASSIGNMENT_RULES_TYPE_NAME, 'lead'),
+  const anotherMockInstance = new InstanceElement(
+    new ElemID(constants.SALESFORCE, 'testInst', 'lead'),
     new ObjectType({
-      elemID: new ElemID(constants.SALESFORCE, ASSIGNMENT_RULES_TYPE_NAME),
+      elemID: new ElemID(constants.SALESFORCE, 'testInst'),
       isSettings: false,
     }),
     {
@@ -49,7 +48,7 @@ describe('Test Settings Type', () => {
     },
   )
 
-  const testElements = [mockInstance, mockObject, assignmentInstance]
+  const testElements = [mockInstance, mockObject, anotherMockInstance]
 
   describe('on discover', () => {
     let mockDescribeMetadata: jest.Mock<unknown>

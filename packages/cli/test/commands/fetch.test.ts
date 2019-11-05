@@ -4,7 +4,7 @@ import {
   Workspace, fetch, loadConfig, FetchChange, DetailedChange,
 } from 'salto'
 import { command, fetchCommand } from '../../src/commands/fetch'
-import { MockWriteStream, getWorkspaceErrors } from '../mocks'
+import { MockWriteStream, getWorkspaceErrors, dummyChanges } from '../mocks'
 
 jest.mock('salto', () => ({
   ...require.requireActual('salto'),
@@ -65,18 +65,6 @@ describe('fetch command', () => {
         })
       })
       describe('with upstream changes', () => {
-        const dummyChanges: DetailedChange[] = [
-          {
-            id: new ElemID('adapter', 'dummy'),
-            action: 'add',
-            data: { after: 'asd' },
-          },
-          {
-            id: new ElemID('adapter', 'other'),
-            action: 'remove',
-            data: { before: 'asd' },
-          },
-        ]
         beforeEach(() => {
           mockFetch.mockResolvedValueOnce(Promise.resolve({ changes: dummyChanges.map(
             (change: DetailedChange): FetchChange => ({ change, serviceChange: change })

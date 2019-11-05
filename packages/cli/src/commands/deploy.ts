@@ -1,11 +1,10 @@
-import wu from 'wu'
 import { deploy, PlanItem } from 'salto'
 import { createCommandBuilder } from '../command_builder'
 import { CliCommand, CliOutput, ParsedCliInput, WriteStream, CliExitCode } from '../types'
 import {
   createActionStartOutput, createActionInProgressOutput, createItemDoneOutput, formatChangesSummary,
 } from '../formatter'
-import { shouldDeploy, getConfigFromUser, getApprovedDeployChanges } from '../callbacks'
+import { shouldDeploy, getConfigFromUser, getApprovedFetchChanges } from '../callbacks'
 import { loadWorkspace, updateWorkspace } from '../workspace'
 
 const CURRENT_ACTION_POLL_INTERVAL = 5000
@@ -61,8 +60,8 @@ export class DeployCommand implements CliCommand {
       (action: PlanItem) => this.updateCurrentAction(action), this.force)
     this.endCurrentAction()
     if (result.changes) {
-      const changes = wu(result.changes).toArray()
-      const changesToApply = this.force ? changes : await getApprovedDeployChanges(changes)
+      const changes = [...result.changes]
+      const changesToApply = this.force ? changes : await getApprovedFetchChanges(changes)
       this.stdout.write(formatChangesSummary(changes.length, changesToApply.length))
       return updateWorkspace(workspace, this.stderr, ...changesToApply)
         ? CliExitCode.Success

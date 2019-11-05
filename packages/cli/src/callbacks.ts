@@ -5,9 +5,9 @@ import {
   Type, ObjectType, ElemID, InstanceElement,
   isPrimitiveType, PrimitiveTypes,
 } from 'adapter-api'
-import { Plan, FetchChange, DetailedChange } from 'salto'
+import { Plan, FetchChange } from 'salto'
 import {
-  createDeployPlanOutput, formatFetchChangeForApproval, formatDetailedChangeForApproval,
+  createDeployPlanOutput, formatFetchChangeForApproval,
 } from './formatter'
 import Prompts from './prompts'
 import { CliOutput } from './types'
@@ -37,11 +37,11 @@ export const shouldDeploy = ({ stdout }: CliOutput) => async (actions: Plan): Pr
   return shouldExecute
 }
 
-const getApprovedChanges = async <T = FetchChange | DetailedChange>(
-  changes: ReadonlyArray<T>,
-  message: (change: T, idx: number, total: number) => string,
-  when?: (change: T) => boolean,
-): Promise<ReadonlyArray<T>> => {
+export const getApprovedFetchChanges = async (
+  changes: ReadonlyArray<FetchChange>,
+): Promise<ReadonlyArray<FetchChange>> => {
+  const isConflict = (change: FetchChange): boolean => change.pendingChange !== undefined
+
   const shouldDeployAll = (answers: inquirer.Answers): boolean => (
     _.values(answers).some(answer => answer === 'all')
   )
@@ -55,8 +55,8 @@ const getApprovedChanges = async <T = FetchChange | DetailedChange>(
     ],
     default: 0,
     name: idx.toString(),
-    message: message(change, idx, changes.length),
-    when: answers => (when ? when(change) : false) || !shouldDeployAll(answers),
+    message: formatFetchChangeForApproval(change, idx, changes.length),
+    when: answers => isConflict(change) || !shouldDeployAll(answers),
   }))
 
   const answers = await inquirer.prompt(questions)
@@ -65,18 +65,6 @@ const getApprovedChanges = async <T = FetchChange | DetailedChange>(
   }
   return changes.filter((_change, idx) => answers[idx.toString()] === 'yes')
 }
-
-export const getApprovedFetchChanges = async (
-  changes: ReadonlyArray<FetchChange>,
-): Promise<ReadonlyArray<FetchChange>> => {
-  const isConflict = (change: FetchChange): boolean => change.pendingChange !== undefined
-  return getApprovedChanges(changes, formatFetchChangeForApproval, isConflict)
-}
-
-export const getApprovedDeployChanges = async (
-  changes: ReadonlyArray<DetailedChange>,
-): Promise<ReadonlyArray<DetailedChange>> =>
-  getApprovedChanges(changes, formatDetailedChangeForApproval)
 
 const inputTypePasswordFields = ['token', 'password']
 

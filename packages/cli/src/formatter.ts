@@ -274,18 +274,6 @@ export const formatFetchChangeForApproval = (
   ].join('\n')
 }
 
-export const formatDetailedChangeForApproval = (
-  change: DetailedChange,
-  idx: number,
-  totalChanges: number
-): string =>
-  ([
-    header(Prompts.FETCH_CHANGE_HEADER(idx + 1, totalChanges)),
-    body(formatDetailedChanges([[change]])),
-    header(Prompts.FETCH_SHOULD_APPROVE_CHANGE),
-  ].join('\n'))
-
-
 export const formatChangesSummary = (changes: number, approved: number): string => {
   if (changes === 0) {
     return Prompts.FETCH_NO_CHANGES

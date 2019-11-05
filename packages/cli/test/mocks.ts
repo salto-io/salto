@@ -177,6 +177,19 @@ export const elements = (): Element[] => {
   return [BuiltinTypes.STRING, saltoAddr, saltoOffice, saltoEmployee, saltoEmployeeInstance]
 }
 
+export const dummyChanges: DetailedChange[] = [
+  {
+    id: new ElemID('adapter', 'dummy'),
+    action: 'add',
+    data: { after: 'asd' },
+  },
+  {
+    id: new ElemID('adapter', 'other'),
+    action: 'remove',
+    data: { before: 'asd' },
+  },
+]
+
 export const detailedChange = (
   action: 'add' | 'modify' | 'remove', path: string[],
   /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
@@ -303,12 +316,7 @@ export const deploy = async (
 
   return {
     sucesses: true,
-    changes: [
-      {
-        id: new ElemID('adapter', 'dummy'),
-        action: 'add',
-        data: { after: 'asd' },
-      }],
+    changes: dummyChanges.map(c => ({ change: c, serviceChange: c })),
   }
 }
 

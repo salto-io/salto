@@ -1,5 +1,5 @@
 import _ from 'lodash'
-import { Workspace, loadConfig, DetailedChange } from 'salto'
+import { Workspace, loadConfig, FetchChange } from 'salto'
 import { formatWorkspaceErrors } from './formatter'
 import { WriteStream } from './types'
 
@@ -28,9 +28,9 @@ export const loadWorkspace = async (
 }
 
 export const updateWorkspace = async (ws: Workspace, stderr: WriteStream,
-  ...changes: DetailedChange[]): Promise<boolean> => {
+  ...changes: FetchChange[]): Promise<boolean> => {
   if (changes.length > 0) {
-    await ws.updateBlueprints(...changes)
+    await ws.updateBlueprints(...changes.map(c => c.change))
     if (!validateWorkspace(ws, stderr)) {
       return false
     }

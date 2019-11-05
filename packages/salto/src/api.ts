@@ -29,7 +29,7 @@ export const preview = async (
 
 export interface DeployResult {
   sucesses: boolean
-  changes?: Iterable<DetailedChange>
+  changes?: Iterable<FetchChange>
 }
 export const deploy = async (
   workspace: Workspace,
@@ -57,9 +57,12 @@ export const deploy = async (
         reportProgress,
         (action, element) => deployActionOnState(state, action, element)
       )
+
+      const changes = wu(getDetailedChanges(workspace.elements, await state.get()))
+        .map(change => ({ change, serviceChange: change }))
       return {
         sucesses: true,
-        changes: getDetailedChanges(workspace.elements, await state.get()) || undefined,
+        changes,
       }
     }
     return { sucesses: true }

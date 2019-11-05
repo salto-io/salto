@@ -41,7 +41,7 @@ describe('Data migration operations E2E', () => {
       await rm(fetchOutputDir)
       await mkdirp(`${fetchOutputDir}/salto.config`)
       await copyFile(configFile, `${fetchOutputDir}/salto.config/config.bp`)
-      await fetch(fetchOutputDir, true, cliOutput).execute()
+      await fetch(fetchOutputDir, true, false, cliOutput).execute()
     })
 
     it('should save the data in csv file when running export', async () => {

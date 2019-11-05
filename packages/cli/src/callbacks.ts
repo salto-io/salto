@@ -39,8 +39,9 @@ export const shouldDeploy = ({ stdout }: CliOutput) => async (actions: Plan): Pr
 
 export const getApprovedChanges = async (
   changes: ReadonlyArray<FetchChange>,
+  interactive: boolean,
 ): Promise<ReadonlyArray<FetchChange>> => {
-  const shouldDeployAll = (answers: inquirer.Answers): boolean => (
+  const shouldApproveAll = (answers: inquirer.Answers): boolean => (
     _.values(answers).some(answer => answer === 'all')
   )
 
@@ -56,11 +57,11 @@ export const getApprovedChanges = async (
     default: 0,
     name: idx.toString(),
     message: formatFetchChangeForApproval(change, idx, changes.length),
-    when: answers => isConflict(change) || !shouldDeployAll(answers),
+    when: answers => isConflict(change) || (interactive && !shouldApproveAll(answers)),
   }))
 
   const answers = await inquirer.prompt(questions)
-  if (shouldDeployAll(answers)) {
+  if (shouldApproveAll(answers)) {
     return changes
   }
   return changes.filter((_change, idx) => answers[idx.toString()] === 'yes')

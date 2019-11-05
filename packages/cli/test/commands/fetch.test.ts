@@ -29,7 +29,7 @@ describe('fetch command', () => {
 
   describe('execute', () => {
     beforeEach(async () => {
-      await command(workspaceDir, true, cliOutput).execute()
+      await command(workspaceDir, true, false, cliOutput).execute()
     })
     it('should load the workspace from the provided directory', () => {
       expect(Workspace.load).toHaveBeenCalledWith(loadConfig(workspaceDir))
@@ -57,7 +57,7 @@ describe('fetch command', () => {
 
       describe('with no upstream changes', () => {
         beforeEach(async () => {
-          await fetchCommand(mockWorkspace, true, cliOutput, mockFetch, mockApprove)
+          await fetchCommand(mockWorkspace, true, false, cliOutput, mockFetch, mockApprove)
         })
         it('should not update workspace', () => {
           expect(mockWorkspace.updateBlueprints).not.toHaveBeenCalled()
@@ -73,7 +73,7 @@ describe('fetch command', () => {
         })
         describe('when called with force', () => {
           beforeEach(async () => {
-            await fetchCommand(mockWorkspace, true, cliOutput, mockFetch, mockApprove)
+            await fetchCommand(mockWorkspace, true, false, cliOutput, mockFetch, mockApprove)
           })
           it('should deploy all changes', () => {
             expect(mockWorkspace.updateBlueprints).toHaveBeenCalledWith(...dummyChanges)
@@ -81,7 +81,7 @@ describe('fetch command', () => {
         })
         describe('when initial workspace is empty', () => {
           beforeEach(async () => {
-            await fetchCommand(mockWorkspace, false, cliOutput, mockFetch, mockApprove)
+            await fetchCommand(mockWorkspace, false, false, cliOutput, mockFetch, mockApprove)
           })
           it('should deploy all changes', () => {
             expect(mockWorkspace.updateBlueprints).toHaveBeenCalledWith(...dummyChanges)
@@ -90,7 +90,7 @@ describe('fetch command', () => {
         describe('when initial workspace has only config', () => {
           beforeEach(async () => {
             _.set(mockWorkspace, 'elements', [new ObjectType({ elemID: new ElemID('adapter') })])
-            await fetchCommand(mockWorkspace, false, cliOutput, mockFetch, mockApprove)
+            await fetchCommand(mockWorkspace, false, false, cliOutput, mockFetch, mockApprove)
           })
           it('should deploy all changes', () => {
             expect(mockWorkspace.updateBlueprints).toHaveBeenCalledWith(...dummyChanges)
@@ -102,7 +102,7 @@ describe('fetch command', () => {
           })
           describe('if no change is approved', () => {
             beforeEach(async () => {
-              await fetchCommand(mockWorkspace, false, cliOutput, mockFetch, mockApprove)
+              await fetchCommand(mockWorkspace, false, false, cliOutput, mockFetch, mockApprove)
             })
             it('should not update workspace', () => {
               expect(mockWorkspace.updateBlueprints).not.toHaveBeenCalled()
@@ -114,7 +114,7 @@ describe('fetch command', () => {
               mockApprove.mockImplementationOnce(changes => [changes[0]])
             })
             it('should update workspace only with approved changes', async () => {
-              await fetchCommand(mockWorkspace, false, cliOutput, mockFetch, mockApprove)
+              await fetchCommand(mockWorkspace, false, false, cliOutput, mockFetch, mockApprove)
               expect(mockWorkspace.updateBlueprints).toHaveBeenCalledWith(dummyChanges[0])
               expect(mockWorkspace.flush).toHaveBeenCalledTimes(1)
             })
@@ -134,7 +134,7 @@ describe('fetch command', () => {
               }
               mockWorkspace.hasErrors = () => true
 
-              await fetchCommand(mockWorkspace, false, cliOutput, mockFetch, mockApprove)
+              await fetchCommand(mockWorkspace, false, false, cliOutput, mockFetch, mockApprove)
               expect(mockWorkspace.updateBlueprints).toHaveBeenCalledWith(dummyChanges[0])
               expect(cliOutput.stderr.content).toContain('Error')
               expect(mockWorkspace.flush).not.toHaveBeenCalled()
@@ -154,7 +154,7 @@ describe('fetch command', () => {
               }
               mockWorkspace.hasErrors = () => true
 
-              await fetchCommand(mockWorkspace, false, cliOutput, mockFetch, mockApprove)
+              await fetchCommand(mockWorkspace, false, false, cliOutput, mockFetch, mockApprove)
               expect(mockWorkspace.updateBlueprints).toHaveBeenCalledWith(dummyChanges[0])
               expect(cliOutput.stderr.content).toContain('Warning')
               expect(mockWorkspace.flush).toHaveBeenCalled()
@@ -171,7 +171,7 @@ describe('fetch command', () => {
       } as unknown as Workspace
 
       it('should fail', async () => {
-        await fetchCommand(erroredWorkspace, true, cliOutput, mockFetch, mockApprove)
+        await fetchCommand(erroredWorkspace, true, false, cliOutput, mockFetch, mockApprove)
         expect(cliOutput.stderr.content).toContain('Error')
       })
     })

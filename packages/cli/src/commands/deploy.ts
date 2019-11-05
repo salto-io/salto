@@ -61,7 +61,7 @@ export class DeployCommand implements CliCommand {
     this.endCurrentAction()
     if (result.changes) {
       const changes = [...result.changes]
-      const changesToApply = this.force ? changes : await getApprovedChanges(changes)
+      const changesToApply = this.force ? changes : await getApprovedChanges(changes, true)
       this.stdout.write(formatChangesSummary(changes.length, changesToApply.length))
       return updateWorkspace(workspace, this.stderr, ...changesToApply)
         ? CliExitCode.Success

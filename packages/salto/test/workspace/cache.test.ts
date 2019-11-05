@@ -147,7 +147,7 @@ describe('Parse Result FS Cache', () => {
       const parseResultFromCache = await cache.get({ filename: '/workspace/external/ext.bp',
         lastModified: 0 })
       expect(fs.stat).toHaveBeenCalledWith(mockExternalCacheLoc, expect.anything())
-      expect(fs.promises.readFile).toHaveBeenCalledWith(mockExternalCacheLoc, { encoding: 'utf8'})
+      expect(fs.promises.readFile).toHaveBeenCalledWith(mockExternalCacheLoc, { encoding: 'utf8' })
       expect(parseResultFromCache).toBeDefined()
       if (parseResultFromCache !== undefined) {
         expect(parseResultFromCache.elements[0].elemID.name).toBe(

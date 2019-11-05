@@ -1,5 +1,5 @@
 import fs from 'fs'
-import tmp from 'tmp'
+import tmp from 'tmp-promise'
 import { pollPromise } from '../poll'
 import { mockConsoleStream, MockWritableStream } from '../console'
 import { LogLevel, LOG_LEVELS } from '../../src/internal/level'

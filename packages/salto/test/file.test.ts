@@ -1,15 +1,12 @@
 import fs from 'fs'
 import path from 'path'
 import { promisify } from 'util'
-import tmpLib from 'tmp'
+import tmp from 'tmp-promise'
 import rimRafLib from 'rimraf'
-
 import {
   stat, readTextFile, readFile, exists, copyFile, rm, mkdirp, writeTextFile, appendTextFile,
 } from '../src/file'
 
-const tmpFile = promisify(tmpLib.file)
-const tmpDir = promisify(tmpLib.dir)
 const rimRaf = promisify(rimRafLib)
 
 describe('file', () => {
@@ -136,11 +133,17 @@ describe('file', () => {
 
   describe('writeTextFile', () => {
     const source = __filename
+    let destTmp: tmp.FileResult
     let dest: string
 
     beforeEach(async () => {
-      dest = await tmpFile()
+      destTmp = await tmp.file()
+      dest = destTmp.path
       await copyFile(source, dest)
+    })
+
+    afterEach(async () => {
+      await destTmp.cleanup()
     })
 
     describe('when the file exists', () => {
@@ -173,11 +176,17 @@ describe('file', () => {
 
   describe('appendTextFile', () => {
     const source = __filename
+    let destTmp: tmp.FileResult
     let dest: string
 
     beforeEach(async () => {
-      dest = await tmpFile()
+      destTmp = await tmp.file()
+      dest = destTmp.path
       await copyFile(source, dest)
+    })
+
+    afterEach(async () => {
+      await destTmp.cleanup()
     })
 
     describe('when the file exists', () => {
@@ -210,15 +219,17 @@ describe('file', () => {
 
   describe('copyFile', () => {
     const source = __filename
+    let destTmp: tmp.FileResult
     let dest: string
 
     beforeEach(async () => {
-      dest = await tmpFile()
+      destTmp = await tmp.file()
+      dest = destTmp.path
       copyFile(source, dest)
     })
 
-    afterEach(() => {
-      rimRaf(dest)
+    afterEach(async () => {
+      await destTmp.cleanup()
     })
 
     it('copies the file', async () => {
@@ -236,9 +247,11 @@ describe('file', () => {
 
       describe('when the directory exists and is not empty', () => {
         let dir: string
+        let dirTmp: tmp.DirectoryResult
 
         beforeEach(async () => {
-          dir = await tmpDir()
+          dirTmp = await tmp.dir()
+          dir = dirTmp.path
           await fs.promises.copyFile(__filename, path.join(dir, 'a_file'))
           await rm(dir)
         })
@@ -257,12 +270,18 @@ describe('file', () => {
       })
 
       describe('when the file exists', () => {
+        let fileTmp: tmp.FileResult
         let filename: string
 
         beforeEach(async () => {
-          filename = await tmpFile()
+          fileTmp = await tmp.file()
+          filename = fileTmp.path
           expect(await exists(filename)).toBeTruthy()
           await rm(filename)
+        })
+
+        afterEach(async () => {
+          await fileTmp.cleanup()
         })
 
         it('removes the file', async () => {
@@ -273,14 +292,23 @@ describe('file', () => {
   })
 
   describe('mkdirp', () => {
-    describe('when the parent directory exists', () => {
-      let parentDir: string
-      let dir: string
-      const dirBaseName = 'my_dir'
+    let parentDir: string
+    let dirTmp: tmp.DirectoryResult
+    let dir: string
+    const dirBaseName = 'my_dir'
 
+    beforeEach(async () => {
+      dirTmp = await tmp.dir()
+      parentDir = dirTmp.path
+      dir = path.join(parentDir, dirBaseName)
+    })
+
+    afterEach(async () => {
+      await rimRaf(parentDir)
+    })
+
+    describe('when the parent directory exists', () => {
       beforeEach(async () => {
-        parentDir = await tmpDir()
-        dir = path.join(parentDir, dirBaseName)
         await mkdirp(dir)
       })
 
@@ -291,15 +319,9 @@ describe('file', () => {
     })
 
     describe('when the parent directory does not exist', () => {
-      let parentDir: string
-      let dir: string
-      const dirBaseName = 'my_dir'
-
       beforeEach(async () => {
-        parentDir = await tmpDir()
         await rm(parentDir)
         expect(await exists(parentDir)).toBeFalsy()
-        dir = path.join(parentDir, dirBaseName)
         await mkdirp(dir)
       })
 

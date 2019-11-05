@@ -58,13 +58,6 @@ export class EditorWorkspace {
     // We throw an error if someone attempted to trigger this
     // on an inactive state
     if (this.isCopy) throw new Error('Attempted to change inactive workspace')
-
-    // If there is an op running we'll just wait for it to exit
-    // it will only exit after the nothing is pending.
-    if (this.runningSetOperation) {
-      return this.runningSetOperation
-    }
-
     // No async ops here so the switch is atomic. Thanks JS!
     if (this.hasPendingUpdates()) {
       const opDeletes = this.pendingDeletes
@@ -73,13 +66,11 @@ export class EditorWorkspace {
       this.pendingSets = {}
       // We start by running all deleted
       if (!_.isEmpty(opDeletes) && this.workspace) {
-        this.workspace.removeBlueprints(...opDeletes)
+        await this.workspace.removeBlueprints(...opDeletes)
       }
       // Now add the waiting changes
       if (!_.isEmpty(opBlueprints) && this.workspace) {
-        this.runningSetOperation = this.workspace.setBlueprints(..._.values(opBlueprints))
-        await this.runningSetOperation
-        this.runningSetOperation = undefined
+        await this.workspace.setBlueprints(..._.values(opBlueprints))
       }
       // After we ran the update we check if the operation resulted with no
       // errors. If so - we update the last valid state.
@@ -91,7 +82,15 @@ export class EditorWorkspace {
       // keeps on waiting until the queue is clear.
       return this.runAggregatedSetOperation()
     }
+    this.runningSetOperation = undefined
     return undefined
+  }
+
+  private async triggerAggregatedSetOperation(): Promise<void> {
+    if (this.runningSetOperation === undefined) {
+      this.runningSetOperation = this.runAggregatedSetOperation()
+    }
+    return this.runningSetOperation
   }
 
   private getWorkspaceName(filename: string): string {
@@ -111,12 +110,12 @@ export class EditorWorkspace {
         filename: this.getWorkspaceName(bp.filename),
       }))
     )
-    this.runAggregatedSetOperation()
+    this.triggerAggregatedSetOperation()
   }
 
   removeBlueprints(...names: string[]): void {
     this.addPendingDeletes(names.map(n => this.getWorkspaceName(n)))
-    this.runAggregatedSetOperation()
+    this.triggerAggregatedSetOperation()
   }
 
   getValidCopy(): EditorWorkspace | undefined {

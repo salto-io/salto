@@ -177,19 +177,6 @@ export const elements = (): Element[] => {
   return [BuiltinTypes.STRING, saltoAddr, saltoOffice, saltoEmployee, saltoEmployeeInstance]
 }
 
-export const dummyChanges: DetailedChange[] = [
-  {
-    id: new ElemID('adapter', 'dummy'),
-    action: 'add',
-    data: { after: 'asd' },
-  },
-  {
-    id: new ElemID('adapter', 'other'),
-    action: 'remove',
-    data: { before: 'asd' },
-  },
-]
-
 export const detailedChange = (
   action: 'add' | 'modify' | 'remove', path: string[],
   /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
@@ -204,6 +191,11 @@ export const detailedChange = (
   }
   return { action, id, data: { before, after } }
 }
+
+export const dummyChanges: DetailedChange[] = [
+  detailedChange('add', ['adapter', 'dummy'], undefined, 'asd'),
+  detailedChange('remove', ['adapter', 'other'], 'asd', undefined),
+]
 
 export const preview = (): Plan => {
   const change = (action: 'add' | 'modify' | 'remove', ...path: string[]): Change => {

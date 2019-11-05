@@ -9,7 +9,7 @@ import {
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'
 import { formatChangesSummary, formatMergeErrors } from '../formatter'
-import { getConfigFromUser, getApprovedFetchChanges as cliGetApprovedChanges } from '../callbacks'
+import { getConfigFromUser, getApprovedChanges as cliGetApprovedChanges } from '../callbacks'
 import Prompts from '../prompts'
 import { validateWorkspace, updateWorkspace } from '../workspace'
 

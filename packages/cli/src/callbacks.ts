@@ -37,14 +37,14 @@ export const shouldDeploy = ({ stdout }: CliOutput) => async (actions: Plan): Pr
   return shouldExecute
 }
 
-export const getApprovedFetchChanges = async (
+export const getApprovedChanges = async (
   changes: ReadonlyArray<FetchChange>,
 ): Promise<ReadonlyArray<FetchChange>> => {
-  const isConflict = (change: FetchChange): boolean => change.pendingChange !== undefined
-
   const shouldDeployAll = (answers: inquirer.Answers): boolean => (
     _.values(answers).some(answer => answer === 'all')
   )
+
+  const isConflict = (change: FetchChange): boolean => change.pendingChange !== undefined
 
   const questions = changes.map((change, idx): inquirer.Question => ({
     type: 'expand',

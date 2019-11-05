@@ -1,9 +1,8 @@
 import { ObjectType, ElemID } from 'adapter-api'
-import fs from 'fs'
-import mkdirp from 'mkdirp'
 import * as path from 'path'
 import { ParseResultFSCache } from '../../src/workspace/cache'
 import { SourceMap } from '../../src/parser/internal/types'
+import { stat, mkdirp, writeTextFile, readTextFile } from '../../src/file'
 
 const mockSerializedBPC = `[{"annotationTypes":{},"annotations":{},"elemID":{"adapter":"salesforce","nameParts":["dummy"]},"fields":{},"isSettings":false,"className":"ObjectType"}]
 []
@@ -18,26 +17,28 @@ const mockWorkspaceDirPath = '/workspace/base'
 const mockExternalCacheLoc = `${mockBaseDirPath}/external_bp/workspace/external/ext.bpc`
 const mockMalformedCacheLoc = `${mockBaseDirPath}/external_bp/workspace/external/malformed.bpc`
 
-jest.mock('mkdirp', () => jest.fn((_path: string, cb: () => void) => cb()))
-jest.mock('fs', () => ({
-  promises: {
-    writeFile: jest.fn(() => Promise.resolve(true)),
-    readFile: jest.fn((filename: string) => {
-      switch (filename) {
-        case mockMalformedCacheLoc:
-          return Promise.resolve(mockMaliformedBPC)
-        case mockExternalCacheLoc:
-          return Promise.resolve(mockSerializedExternalBPC)
-        default:
-          return Promise.resolve(mockSerializedBPC)
-      }
-    }),
+jest.mock('../../src/file', () => ({
+  mkdirp: jest.fn(() => Promise.resolve()),
+  stat: {
+    notFoundAsUndefined: jest.fn((
+      filename: string
+    ): Promise<{ mtimeMs: number } | undefined> => Promise.resolve(
+      filename !== `${mockBaseDirPath}/blabla/notexist.bpc`
+        ? { mtimeMs: 1000 }
+        : undefined
+    )),
   },
-  stat: jest.fn((filename: string, cb) => (
-    filename !== `${mockBaseDirPath}/blabla/notexist.bpc`
-      ? cb(null, { mtimeMs: 1000 })
-      : cb(Object.assign(new Error('mock ENOENT'), { code: 'ENOENT' }))
-  )),
+  writeTextFile: jest.fn(() => Promise.resolve()),
+  readTextFile: jest.fn((filename: string) => {
+    switch (filename) {
+      case mockMalformedCacheLoc:
+        return Promise.resolve(mockMaliformedBPC)
+      case mockExternalCacheLoc:
+        return Promise.resolve(mockSerializedExternalBPC)
+      default:
+        return Promise.resolve(mockSerializedBPC)
+    }
+  }),
 }))
 
 describe('Parse Result FS Cache', () => {
@@ -94,8 +95,8 @@ describe('Parse Result FS Cache', () => {
         filename: 'blabla/blurprint.bp',
         lastModified: 0,
       }, parseResult)
-      expect(mkdirp).toHaveBeenCalledWith(`${mockBaseDirPath}/blabla`, expect.anything())
-      expect(fs.promises.writeFile).toHaveBeenLastCalledWith(`${mockBaseDirPath}/blabla/blurprint.bpc`, mockSerializedBPC)
+      expect(mkdirp).toHaveBeenCalledWith(`${mockBaseDirPath}/blabla`)
+      expect(writeTextFile).toHaveBeenLastCalledWith(`${mockBaseDirPath}/blabla/blurprint.bpc`, mockSerializedBPC)
     })
 
     it('writes a external content with the right filename', async () => {
@@ -103,9 +104,9 @@ describe('Parse Result FS Cache', () => {
         filename: '/workspace/external/ext.bp',
         lastModified: 0,
       }, externalParseResult)
-      expect(mkdirp).toHaveBeenCalledWith(path.dirname(mockExternalCacheLoc), expect.anything())
-      expect(fs.promises.writeFile).toHaveBeenLastCalledWith(
-        mockExternalCacheLoc, mockSerializedExternalBPC
+      expect(mkdirp).toHaveBeenCalledWith(path.dirname(mockExternalCacheLoc))
+      expect(writeTextFile).toHaveBeenLastCalledWith(
+        mockExternalCacheLoc, mockSerializedExternalBPC,
       )
     })
   })
@@ -114,8 +115,8 @@ describe('Parse Result FS Cache', () => {
       await cache.get({ filename: 'blabla/blurprint.bp', lastModified: 0 })
       const parseResultFromCache = await cache.get({ filename: 'blabla/blurprint.bp', lastModified: 0 })
       const expectedCacheFileName = `${mockBaseDirPath}/blabla/blurprint.bpc`
-      expect(fs.stat).toHaveBeenCalledWith(expectedCacheFileName, expect.anything())
-      expect(fs.promises.readFile).toHaveBeenCalledWith(expectedCacheFileName, { encoding: 'utf8' })
+      expect(stat.notFoundAsUndefined).toHaveBeenCalledWith(expectedCacheFileName)
+      expect(readTextFile).toHaveBeenCalledWith(expectedCacheFileName)
       expect(parseResultFromCache).toBeDefined()
       // hack to make compiler happy :(
       if (parseResultFromCache !== undefined) {
@@ -130,24 +131,24 @@ describe('Parse Result FS Cache', () => {
     it('does not return the file if it does not exist', async () => {
       const parseResultFromCache = await cache.get({ filename: 'blabla/notexist.bp', lastModified: 0 })
       const expectedCacheFileName = `${mockBaseDirPath}/blabla/notexist.bpc`
-      expect(fs.stat).toHaveBeenLastCalledWith(expectedCacheFileName, expect.anything())
-      expect(fs.promises.readFile).not.toHaveBeenCalled()
+      expect(stat.notFoundAsUndefined).toHaveBeenLastCalledWith(expectedCacheFileName)
+      expect(readTextFile).not.toHaveBeenCalled()
       expect(parseResultFromCache).toBeUndefined()
     })
 
     it('does not return the file if it bp timestamp is later', async () => {
       const parseResultFromCache = await cache.get({ filename: 'blabla/blurprint2.bp', lastModified: 4000 })
       const expectedCacheFileName = `${mockBaseDirPath}/blabla/blurprint2.bpc`
-      expect(fs.stat).toHaveBeenLastCalledWith(expectedCacheFileName, expect.anything())
-      expect(fs.promises.readFile).not.toHaveBeenCalled()
+      expect(stat.notFoundAsUndefined).toHaveBeenLastCalledWith(expectedCacheFileName)
+      expect(readTextFile).not.toHaveBeenCalled()
       expect(parseResultFromCache).toBeUndefined()
     })
 
     it('reads external bps', async () => {
       const parseResultFromCache = await cache.get({ filename: '/workspace/external/ext.bp',
         lastModified: 0 })
-      expect(fs.stat).toHaveBeenCalledWith(mockExternalCacheLoc, expect.anything())
-      expect(fs.promises.readFile).toHaveBeenCalledWith(mockExternalCacheLoc, { encoding: 'utf8' })
+      expect(stat.notFoundAsUndefined).toHaveBeenCalledWith(mockExternalCacheLoc)
+      expect(readTextFile).toHaveBeenCalledWith(mockExternalCacheLoc)
       expect(parseResultFromCache).toBeDefined()
       if (parseResultFromCache !== undefined) {
         expect(parseResultFromCache.elements[0].elemID.name).toBe(
@@ -160,8 +161,8 @@ describe('Parse Result FS Cache', () => {
     })
     it('gracefully handles an invalid cache file content', async () => {
       const parseResultFromCache = await cache.get({ filename: '/workspace/external/malformed.bp', lastModified: 0 })
-      expect(fs.stat).toHaveBeenCalledWith(mockMalformedCacheLoc, expect.anything())
-      expect(fs.promises.readFile).toHaveBeenCalledWith(mockMalformedCacheLoc, { encoding: 'utf8' })
+      expect(stat.notFoundAsUndefined).toHaveBeenCalledWith(mockMalformedCacheLoc)
+      expect(readTextFile).toHaveBeenCalledWith(mockMalformedCacheLoc)
       expect(parseResultFromCache).toBeUndefined()
     })
   })

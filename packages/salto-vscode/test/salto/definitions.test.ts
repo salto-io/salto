@@ -1,7 +1,6 @@
-import { promises as fsp } from 'fs'
 import * as path from 'path'
 
-import { Config } from 'salto'
+import { Config, file } from 'salto'
 import { EditorWorkspace } from '../../src/salto/workspace'
 import { provideWorkspaceDefinition } from '../../src/salto/definitions'
 import { getPositionContext } from '../../src/salto/context'
@@ -22,7 +21,7 @@ describe('Test go to definitions', () => {
 
   beforeAll(async () => {
     workspace = await EditorWorkspace.load(getConfig(baseBPDir, []), false)
-    bpContent = await fsp.readFile(bpFile, { encoding: 'utf8' })
+    bpContent = await file.readTextFile(bpFile)
   })
 
   it('should give a single definition for a type that is defined once', () => {

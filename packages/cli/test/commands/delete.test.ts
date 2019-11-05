@@ -1,4 +1,3 @@
-import fs from 'fs'
 import * as saltoImp from 'salto'
 import { Value } from 'adapter-api'
 import { getConfigFromUser } from '../../src/callbacks'
@@ -6,6 +5,7 @@ import { MockWriteStream, deleteFromCsvFile as mockDeleteFromCsv, getWorkspaceEr
 import { command } from '../../src/commands/delete'
 import Prompts from '../../src/prompts'
 
+const { file } = saltoImp
 let deleteFromCsvSpy: jest.Mock<unknown>
 const testCsvMockReturnValues: Value[] = []
 let readCsvSpy: jest.Mock<unknown>
@@ -14,7 +14,7 @@ describe('delete command', () => {
   let existsReturn = true
 
   beforeEach(() => {
-    jest.spyOn(fs, 'existsSync').mockImplementation((): boolean => existsReturn)
+    jest.spyOn(file, 'exists').mockImplementation(() => Promise.resolve(existsReturn))
   })
 
   const mockWS = { hasErrors: () => false, errors: {}, getWorkspaceErrors }

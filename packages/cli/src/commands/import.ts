@@ -1,5 +1,4 @@
-import fs from 'fs'
-import { importFromCsvFile, readCsv } from 'salto'
+import { importFromCsvFile, readCsv, file } from 'salto'
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'
 import { getConfigFromUser } from '../callbacks'
@@ -14,7 +13,7 @@ export const command = (
   { stdout, stderr }: CliOutput
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
-    if (!fs.existsSync(inputPath)) {
+    if (!(await file.exists(inputPath))) {
       stderr.write(Prompts.COULD_NOT_FIND_FILE)
       return CliExitCode.AppError
     }

@@ -1,7 +1,6 @@
-import { promises as fsp } from 'fs'
 import * as path from 'path'
 
-import { Config } from 'salto'
+import { Config, file } from 'salto'
 import { EditorWorkspace } from '../../src/salto/workspace'
 import { getPositionContext } from '../../src/salto/context'
 import { SaltoSymbolKind, createSaltoSymbol } from '../../src/salto/symbols'
@@ -21,7 +20,7 @@ describe('Cursor context resolver', () => {
   const filename = path.resolve(`${baseBPDir}/all.bp`)
   beforeAll(async () => {
     workspace = await EditorWorkspace.load(getConfig(baseBPDir, []), false)
-    bpContent = await fsp.readFile(filename, { encoding: 'utf8' })
+    bpContent = await file.readTextFile(filename)
   })
 
   it('should create type symbol', () => {

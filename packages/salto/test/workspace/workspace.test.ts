@@ -1,10 +1,6 @@
-import fs, { promises as fsp } from 'fs'
-import { promisify } from 'util'
 import os from 'os'
 import path from 'path'
 import _ from 'lodash'
-import rimRafLib from 'rimraf'
-import mkdirpLib from 'mkdirp'
 import tmp from 'tmp-promise'
 import {
   Element, ObjectType, ElemID, Type,
@@ -15,9 +11,7 @@ import {
 } from '../../src/workspace/workspace'
 import { DetailedChange } from '../../src/core/plan'
 import { MergeError } from '../../src/core/merger/internal/common'
-
-const mkdirp = promisify(mkdirpLib)
-const rimRaf = promisify(rimRafLib)
+import { rm, mkdirp, writeTextFile, exists, readTextFile } from '../../src/file'
 
 describe('Workspace', () => {
   const workspaceFiles = {
@@ -342,7 +336,7 @@ type salesforce_lead {
         .map(async ([name, data]) => {
           const filePath = getPath(name)
           await mkdirp(path.dirname(filePath))
-          return fsp.writeFile(filePath, data)
+          return writeTextFile(filePath, data)
         }))
       config = {
         uid: '',
@@ -388,15 +382,14 @@ type salesforce_lead {
       afterAll(resetWorkspace)
 
       it('should remove blueprints that were removed', async () => {
-        expect(fs.existsSync(path.join(workspace.config.baseDir, 'subdir/file.bp'))).toBeFalsy()
+        expect(await exists(path.join(workspace.config.baseDir, 'subdir/file.bp'))).toBeFalsy()
       })
       it('should create blueprints that were added', async () => {
-        expect(fs.existsSync(path.join(workspace.config.baseDir, newBP.filename))).toBeTruthy()
+        expect(await exists(path.join(workspace.config.baseDir, newBP.filename))).toBeTruthy()
       })
       it('should change the content of blueprints that were updated', async () => {
-        const writtenData = await fsp.readFile(
+        const writtenData = await readTextFile(
           path.join(workspace.config.baseDir, changedBP.filename),
-          { encoding: 'utf8' },
         )
         expect(writtenData).toEqual(changedBP.buffer)
       })
@@ -404,36 +397,36 @@ type salesforce_lead {
         await Promise.all(_.keys(workspace.parsedBlueprints)
           .filter(p => p !== configBP.filename)
           .map(
-            async p => expect(fs.existsSync(path.join(workspace.config.baseDir, p))).toBeTruthy()
+            async p => expect(await exists(path.join(workspace.config.baseDir, p))).toBeTruthy()
           ))
       })
       it('should save credentials in localstorage', async () => {
-        expect(fs.existsSync(path.join(workspace.config.localStorage, configBP.filename)))
-          .toBeTruthy()
+        const filename = path.join(workspace.config.localStorage, configBP.filename)
+        expect(await exists(filename)).toBeTruthy()
       })
     })
 
     describe('init config', () => {
       beforeEach(async () => {
-        await rimRaf(emptyTmpDir.path)
+        await rm(emptyTmpDir.path)
         await mkdirp(emptyTmpDir.path)
         process.env.SALTO_HOME = tmpHome.path
       })
 
       afterEach(async () => {
-        await rimRaf(emptyTmpDir.path)
+        await rm(emptyTmpDir.path)
         await mkdirp(emptyTmpDir.path)
         delete process.env.SALTO_HOME
       })
 
       it('should init a basedir with no workspace name provided', async () => {
         workspace = await Workspace.init(path.join(emptyTmpDir.path, 'empty'))
-        expect(fs.existsSync(workspace.config.localStorage)).toBeTruthy()
+        expect(await exists(workspace.config.localStorage)).toBeTruthy()
         expect(workspace.config.name).toBe('empty')
       })
       it('should init a basedir with workspace name provided', async () => {
         workspace = await Workspace.init(emptyTmpDir.path, 'test')
-        expect(fs.existsSync(workspace.config.localStorage)).toBeTruthy()
+        expect(await exists(workspace.config.localStorage)).toBeTruthy()
         expect(workspace.config.name).toBe('test')
       })
       it('should fail when run inside an existing workspace', async () => {

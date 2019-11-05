@@ -1,15 +1,11 @@
-import fs, { promises as fsp } from 'fs'
-import { promisify } from 'util'
 import _ from 'lodash'
 import wu from 'wu'
 import path from 'path'
 import readdirp from 'readdirp'
 import uuidv4 from 'uuid/v4'
-import rimRafLib from 'rimraf'
-import mkdirpLib from 'mkdirp'
 import { collections, types } from '@salto/lowerdash'
 import { Element } from 'adapter-api'
-import { stat } from '../file'
+import { stat, mkdirp, readTextFile, rm, writeTextFile, exists, Stats } from '../file'
 import { SourceMap, parse, SourceRange, ParseResult, ParseError } from '../parser/parse'
 import { mergeElements, MergeError } from '../core/merger'
 import { validateElements, ValidationError } from '../core/validator'
@@ -19,9 +15,6 @@ import { getChangeLocations, updateBlueprintData } from './blueprint_update'
 import {
   Config, dumpConfig, locateWorkspaceRoot, getConfigPath, completeConfig, saltoConfigType,
 } from './config'
-
-const mkdirp = promisify(mkdirpLib)
-const rimRaf = promisify(rimRafLib)
 
 const { DefaultMap } = collections.map
 
@@ -83,8 +76,8 @@ const loadBlueprints = async (
     ]
     return Promise.all(filenames.map(async filename => ({
       filename: path.relative(blueprintsDir, filename),
-      buffer: await fsp.readFile(filename, { encoding: 'utf8' }),
-      timestamp: (await stat(filename) as fs.Stats).mtimeMs,
+      buffer: await readTextFile(filename),
+      timestamp: (await stat(filename) as Stats).mtimeMs,
     })))
   } catch (e) {
     throw Error(`Failed to load blueprint files: ${e.message}`)
@@ -198,7 +191,7 @@ const ensureEmptyWorkspace = async (config: Config): Promise<void> => {
     config.localStorage,
     config.stateLocation,
   ]
-  const existanceMask = await Promise.all(shouldNotExist.map(stat))
+  const existanceMask = await Promise.all(shouldNotExist.map(exists))
   const existing = shouldNotExist.filter((_p, i) => existanceMask[i])
   if (existing.length > 0) {
     throw new NotAnEmptyWorkspaceError(existing)
@@ -393,10 +386,10 @@ export class Workspace {
         ? path.join(this.config.localStorage, filename)
         : path.join(this.config.baseDir, filename)
       if (bp === undefined) {
-        await rimRaf(filePath)
+        await rm(filePath)
       } else {
         await mkdirp(path.dirname(filePath))
-        await fsp.writeFile(filePath, bp.buffer)
+        await writeTextFile(filePath, bp.buffer.toString())
         if (this.useCache) {
           await cache.put({
             filename: filePath,

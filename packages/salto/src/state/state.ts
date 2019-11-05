@@ -1,7 +1,6 @@
-import { promises as fsp } from 'fs'
 import _ from 'lodash'
 import { Element } from 'adapter-api'
-import { readFile } from '../file'
+import { readTextFile, writeTextFile } from '../file'
 import { serialize, deserialize } from '../serializer/elements'
 
 /**
@@ -47,7 +46,7 @@ export default class State {
       // If state is not loaded we don't have anything to save
       if (!this.state) return
       const buffer = serialize(this.state)
-      await fsp.writeFile(this.statePath, buffer)
+      await writeTextFile(this.statePath, buffer)
     }
 
     /**
@@ -63,12 +62,12 @@ export default class State {
      * @returns the elements that represent the last saved state
      */
     private async read(): Promise<Element[]> {
-      const data = await readFile(this.statePath)
-      if (data === undefined) {
+      const text = await readTextFile.notFoundAsUndefined(this.statePath)
+      if (text === undefined) {
         return []
       }
       try {
-        return deserialize(data)
+        return deserialize(text)
       } catch (err) {
         throw new Error(`Failed to load state: ${err}`)
       }

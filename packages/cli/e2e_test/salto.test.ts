@@ -1,7 +1,3 @@
-import fs, { promises as fsp } from 'fs'
-import rimRafLib from 'rimraf'
-import mkdirpLib from 'mkdirp'
-import { promisify } from 'util'
 import _ from 'lodash'
 import {
   testHelpers as salesforceTestHelpers,
@@ -12,7 +8,7 @@ import {
   InstanceElement, ObjectType, getChangeElement, Change,
 } from 'adapter-api'
 import {
-  Plan,
+  Plan, file,
 } from 'salto'
 import wu from 'wu'
 import { CliOutput, SpinnerCreator, Spinner } from '../src/types'
@@ -23,8 +19,7 @@ import { command as preview } from '../src/commands/preview'
 import { DeployCommand } from '../src/commands/deploy'
 import adapterConfigs from './adapter_configs'
 
-const rimRaf = promisify(rimRafLib)
-const mkdirp = promisify(mkdirpLib)
+const { copyFile, rm, mkdirp, exists } = file
 
 const credentials = salesforceTestHelpers.credentials()
 const mockGetConfigType = (): InstanceElement => adapterConfigs.salesforce()
@@ -57,10 +52,6 @@ describe('commands e2e', () => {
   const tmpBP = `${fetchOutputDir}/tmp.bp`
   const client = new SalesforceClient({ credentials })
   const spinners: Spinner[] = []
-
-  const copyFile = async (src: string, dest: string): Promise<void> => (
-    fsp.writeFile(dest, await fsp.readFile(src))
-  )
 
   const objectExists = async (
     name: string, fields: string[] = [], missingFields: string[] = []
@@ -95,7 +86,7 @@ describe('commands e2e', () => {
     await mkdirp(`${fetchOutputDir}/salto.config`)
     await mkdirp(localStorageDir)
     await copyFile(configFile, `${fetchOutputDir}/salto.config/config.bp`)
-    await rimRaf(tmpBP)
+    await rm(tmpBP)
     if (await objectExists('e2etest__c')) {
       // TODO 'CustomObject' is a magic string
       await client.delete('CustomObject', 'e2etest__c')
@@ -103,14 +94,14 @@ describe('commands e2e', () => {
   })
 
   afterAll(async () => {
-    await rimRaf(fetchOutputDir)
-    await rimRaf(localStorageDir)
+    await rm(fetchOutputDir)
+    await rm(localStorageDir)
   })
 
   it('should run fetch and create the state bp file', async () => {
     await fetch(fetchOutputDir, true, cliOutput).execute()
-    expect(fs.existsSync(fetchOutputDir)).toBe(true)
-    expect(fs.existsSync(statePath)).toBe(true)
+    expect(await exists(fetchOutputDir)).toBe(true)
+    expect(await exists(statePath)).toBe(true)
   })
 
   it('should run plan on discover output and detect no changes', async () => {
@@ -148,7 +139,7 @@ describe('commands e2e', () => {
   })
 
   it('should deploy a delete for the model', async () => {
-    await rimRaf(tmpBP)
+    await rm(tmpBP)
     await new DeployCommand(fetchOutputDir, false, cliOutput).execute()
     expect(lastPlan.size).toBe(1)
     const step = wu(lastPlan.itemsByEvalOrder()).next().value

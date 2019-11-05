@@ -1,8 +1,8 @@
-import { promises as fsp } from 'fs'
 import * as path from 'path'
 import { Diff2Html } from 'diff2html'
 
 import { ObjectType, Field, BuiltinTypes, ElemID } from 'adapter-api'
+import { file } from 'salto'
 
 import { getPlan } from 'salto/dist/src/core/plan'
 import { createPlanDiff, UnifiedDiff, renderDiffView } from '../src/format'
@@ -54,7 +54,7 @@ describe('Test extension format', () => {
   let diff: UnifiedDiff
   let html: string
   beforeAll(async () => {
-    expectedDif = await fsp.readFile(diffFile, { encoding: 'utf8' })
+    expectedDif = await file.readTextFile(diffFile)
     diff = await createPlanDiff(getPlan(before, after).itemsByEvalOrder())
     html = renderDiffView(diff, [cssHref])
   })

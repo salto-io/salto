@@ -1,11 +1,11 @@
 import * as saltoImp from 'salto'
-import fs from 'fs'
 import { Value } from 'adapter-api'
 import { getConfigFromUser } from '../../src/callbacks'
 import { MockWriteStream, importFromCsvFile as mockImportFromCsv, getWorkspaceErrors } from '../mocks'
 import { command } from '../../src/commands/import'
 import Prompts from '../../src/prompts'
 
+const { file } = saltoImp
 const workspaceDir = `${__dirname}/../../../test/BP`
 let importFromCsvSpy: jest.Mock<unknown>
 const testCsvMockReturnValues: Value[] = []
@@ -15,7 +15,7 @@ describe('import command', () => {
   let existsReturn = true
 
   beforeEach(() => {
-    jest.spyOn(fs, 'existsSync').mockImplementation((): boolean => existsReturn)
+    jest.spyOn(file, 'exists').mockImplementation(() => Promise.resolve(existsReturn))
   })
 
   const mockWS = { hasErrors: () => false, errors: {}, getWorkspaceErrors }

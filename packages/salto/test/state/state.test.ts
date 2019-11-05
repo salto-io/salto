@@ -1,7 +1,5 @@
-import { promises as fsp } from 'fs'
 import path from 'path'
 import os from 'os'
-import { promisify } from 'util'
 import {
   PrimitiveType,
   Field,
@@ -10,13 +8,9 @@ import {
   ElemID,
 } from 'adapter-api'
 import _ from 'lodash'
-import rimRafLib from 'rimraf'
-import mkdirpLib from 'mkdirp'
 import * as TestHelpers from '../common/helpers'
 import State from '../../src/state/state'
-
-const rimRaf = promisify(rimRafLib)
-const mkdirp = promisify(mkdirpLib)
+import { rm, readTextFile, mkdirp, writeTextFile } from '../../src/file'
 
 describe('Test state mechanism', () => {
   const stateErrorFile = 'stateerror.bp'
@@ -58,13 +52,13 @@ describe('Test state mechanism', () => {
     },
   })
   beforeAll(async () => {
-    await rimRaf(statePath)
+    await rm(statePath)
   })
 
   beforeEach(() => { state = new State(statePath) })
 
   afterEach(async () => {
-    await rimRaf(statePath)
+    await rm(statePath)
   })
 
   it('should override state successfully, retrieve it, override it again and get the same result', async () => {
@@ -89,12 +83,11 @@ describe('Test state mechanism', () => {
 
   it('should throw an error if the state bp is not valid', async () => {
     // Setup
-    const buffer = await fsp.readFile(
+    const text = await readTextFile(
       path.join(blueprintsDirectory, stateErrorFile),
-      { encoding: 'utf8' },
     )
     await mkdirp(path.dirname(statePath))
-    await fsp.writeFile(statePath, buffer)
+    await writeTextFile(statePath, text)
 
     // Test
     await expect(state.get()).rejects.toThrow()

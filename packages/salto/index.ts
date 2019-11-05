@@ -1,4 +1,5 @@
 import * as v from './src/core/validator'
+import * as f from './src/file'
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace validator {
   export type ValidationError = v.ValidationError
@@ -29,3 +30,5 @@ export {
 export { Config, loadConfig } from './src/workspace/config'
 export { SourceMap, SourceRange } from './src/parser/parse'
 export { dump } from './src/parser/dump'
+
+export const file = f

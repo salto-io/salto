@@ -1,14 +1,9 @@
-import { promises as fsp } from 'fs'
-import { promisify } from 'util'
 import path from 'path'
-import mkdirpLib from 'mkdirp'
 import _ from 'lodash'
 import { logger } from '@salto/logging'
-import { stat } from '../file'
+import { stat, mkdirp, writeTextFile, readTextFile } from '../file'
 import { ParseResult } from '../parser/parse'
 import * as parseResultSerializer from '../serializer/parse_result'
-
-const mkdirp = promisify(mkdirpLib)
 
 const log = logger(module)
 
@@ -51,15 +46,15 @@ export class ParseResultFSCache implements ParseResultCache {
       async put(key: ParseResultKey, value: ParseResult): Promise<void> {
         const filePath = this.resolveCacheFilePath(key)
         await mkdirp(path.parse(filePath).dir)
-        return fsp.writeFile(filePath, parseResultSerializer.serialize(value))
+        return writeTextFile(filePath, parseResultSerializer.serialize(value))
       }
 
       async get(key: ParseResultKey): Promise<ParseResult | undefined> {
         const cacheFilePath = this.resolveCacheFilePath(key)
 
-        const s = await stat(cacheFilePath)
+        const s = await stat.notFoundAsUndefined(cacheFilePath)
         if (s && s.mtimeMs > key.lastModified) {
-          const fileContent = await fsp.readFile(cacheFilePath, { encoding: 'utf8' })
+          const fileContent = await readTextFile(cacheFilePath)
           try {
             return parseResultSerializer.deserialize(fileContent)
           } catch (err) {

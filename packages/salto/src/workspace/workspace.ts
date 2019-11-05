@@ -1,11 +1,11 @@
 import _ from 'lodash'
 import wu from 'wu'
 import path from 'path'
-import fs from 'async-file'
 import readdirp from 'readdirp'
 import uuidv4 from 'uuid/v4'
 import { collections, types } from '@salto/lowerdash'
 import { Element } from 'adapter-api'
+import { stat, mkdirp, readTextFile, rm, writeTextFile, exists, Stats } from '../file'
 import { SourceMap, parse, SourceRange, ParseResult, ParseError } from '../parser/parse'
 import { mergeElements, MergeError } from '../core/merger'
 import { validateElements, ValidationError } from '../core/validator'
@@ -76,8 +76,8 @@ const loadBlueprints = async (
     ]
     return Promise.all(filenames.map(async filename => ({
       filename: path.relative(blueprintsDir, filename),
-      buffer: await fs.readFile(filename, 'utf8'),
-      timestamp: (await fs.stat(filename)).mtimeMs,
+      buffer: await readTextFile(filename),
+      timestamp: (await stat(filename) as Stats).mtimeMs,
     })))
   } catch (e) {
     throw Error(`Failed to load blueprint files: ${e.message}`)
@@ -191,7 +191,7 @@ const ensureEmptyWorkspace = async (config: Config): Promise<void> => {
     config.localStorage,
     config.stateLocation,
   ]
-  const existanceMask = await Promise.all(shouldNotExist.map(fs.exists))
+  const existanceMask = await Promise.all(shouldNotExist.map(exists))
   const existing = shouldNotExist.filter((_p, i) => existanceMask[i])
   if (existing.length > 0) {
     throw new NotAnEmptyWorkspaceError(existing)
@@ -245,7 +245,7 @@ export class Workspace {
     // do not exist right now before writing anything to disk.
     await ensureEmptyWorkspace(config)
     await dumpConfig(absBaseDir, minimalConfig)
-    await fs.createDirectory(config.localStorage)
+    await mkdirp(config.localStorage)
     return Workspace.load(config)
   }
 
@@ -386,10 +386,10 @@ export class Workspace {
         ? path.join(this.config.localStorage, filename)
         : path.join(this.config.baseDir, filename)
       if (bp === undefined) {
-        await fs.delete(filePath)
+        await rm(filePath)
       } else {
-        await fs.mkdirp(path.dirname(filePath))
-        await fs.writeFile(filePath, bp.buffer)
+        await mkdirp(path.dirname(filePath))
+        await writeTextFile(filePath, bp.buffer.toString())
         if (this.useCache) {
           await cache.put({
             filename: filePath,

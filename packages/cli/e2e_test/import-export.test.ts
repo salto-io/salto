@@ -1,7 +1,6 @@
 import path from 'path'
-import * as asyncfile from 'async-file'
 import {
-  dumpCsv, readCsv,
+  dumpCsv, readCsv, file,
 } from 'salto'
 import { InstanceElement } from 'adapter-api'
 import { MockWriteStream } from '../test/mocks'
@@ -11,6 +10,8 @@ import { command as exportCommand } from '../src/commands/export'
 import { command as deleteCommand } from '../src/commands/delete'
 import adapterConfigs from './adapter_configs'
 import Prompts from '../src/prompts'
+
+const { copyFile, rm, mkdirp, exists } = file
 
 const sfLeadObjectName = 'salesforce_lead'
 
@@ -24,9 +25,6 @@ const exportFile = 'export_test.csv'
 const exportOutputFullPath = path.join(exportOutputDir, exportFile)
 const dataFilePath = `${__dirname}/../../e2e_test/CSV/import.csv`
 
-const copyFile = async (src: string, dest: string): Promise<void> => (
-  asyncfile.writeFile(dest, await asyncfile.readFile(src))
-)
 // Attempting to access the functions on run time without the mock implementation, or
 // omitting the mock prefix in their names (YES I KNOW) will result in a runtime exception
 // to be thrown
@@ -35,13 +33,13 @@ jest.mock('../src/callbacks', () => ({
 }))
 describe('Data migration operations E2E', () => {
   jest.setTimeout(15 * 60 * 1000)
-  const pathExists = async (p: string): Promise<boolean> => asyncfile.exists(p)
   const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
   describe('When running fetch beforehand', () => {
     beforeAll(async () => {
-      await asyncfile.delete(exportOutputDir)
-      await asyncfile.delete(fetchOutputDir)
-      await asyncfile.mkdirp(`${fetchOutputDir}/salto.config`)
+      await rm(exportOutputDir)
+      await rm(exportOutputDir)
+      await rm(fetchOutputDir)
+      await mkdirp(`${fetchOutputDir}/salto.config`)
       await copyFile(configFile, `${fetchOutputDir}/salto.config/config.bp`)
       await fetch(fetchOutputDir, true, cliOutput).execute()
     })
@@ -49,7 +47,7 @@ describe('Data migration operations E2E', () => {
     it('should save the data in csv file when running export', async () => {
       await exportCommand(fetchOutputDir, sfLeadObjectName,
         exportOutputFullPath, cliOutput).execute()
-      expect(await pathExists(exportOutputFullPath)).toBe(true)
+      expect(await exists(exportOutputFullPath)).toBe(true)
       const exportObjects = await readCsv(exportOutputFullPath)
       expect(exportObjects.length).toBeGreaterThan(0)
     })
@@ -85,9 +83,9 @@ describe('Data migration operations E2E', () => {
 
   describe('When fetch is not run beforehand', () => {
     beforeAll(async () => {
-      await asyncfile.delete(exportOutputDir)
-      await asyncfile.delete(fetchOutputDir)
-      await asyncfile.mkdirp(`${fetchOutputDir}/salto.config`)
+      await rm(exportOutputDir)
+      await rm(fetchOutputDir)
+      await mkdirp(`${fetchOutputDir}/salto.config`)
       await copyFile(configFile, `${fetchOutputDir}/salto.config/config.bp`)
     })
 
@@ -96,7 +94,7 @@ describe('Data migration operations E2E', () => {
         exportOutputFullPath, cliOutput)
       await expect(command.execute()).rejects
         .toThrow(`Couldn't find the type you are looking for: ${sfLeadObjectName}. Have you run salto fetch yet?`)
-      expect(await pathExists(exportOutputFullPath)).toBe(false)
+      expect(await exists(exportOutputFullPath)).toBe(false)
     })
 
     it('should fail when running import from a CSV file', async () => {

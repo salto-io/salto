@@ -1,3 +1,5 @@
+const isWindows = process.platform === 'win32'
+
 module.exports = {
     env: {
         es6: true,
@@ -32,7 +34,7 @@ module.exports = {
     },
     plugins: ['react', 'import', 'jest', '@typescript-eslint'],
     rules: {
-        'linebreak-style': ['error', 'unix'],
+        'linebreak-style': ['error', isWindows ? 'windows' : 'unix'],
         quotes: [
             'error',
             'single',

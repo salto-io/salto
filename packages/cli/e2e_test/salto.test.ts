@@ -1,4 +1,3 @@
-import * as fs from 'async-file'
 import _ from 'lodash'
 import {
   testHelpers as salesforceTestHelpers,
@@ -9,7 +8,7 @@ import {
   InstanceElement, ObjectType, getChangeElement, Change,
 } from 'adapter-api'
 import {
-  Plan,
+  Plan, file,
 } from 'salto'
 import wu from 'wu'
 import { CliOutput, SpinnerCreator, Spinner } from '../src/types'
@@ -19,6 +18,8 @@ import { command as fetch } from '../src/commands/fetch'
 import { command as preview } from '../src/commands/preview'
 import { DeployCommand } from '../src/commands/deploy'
 import adapterConfigs from './adapter_configs'
+
+const { copyFile, rm, mkdirp, exists } = file
 
 const credentials = salesforceTestHelpers.credentials()
 const mockGetConfigType = (): InstanceElement => adapterConfigs.salesforce()
@@ -41,7 +42,6 @@ jest.mock('../src/callbacks', () => ({
 }))
 
 describe('commands e2e', () => {
-  const pathExists = async (p: string): Promise<boolean> => fs.exists(p)
   const homePath = process.env.HOME || process.env.HOMEPATH || process.env.USERPROFILE
   const fetchOutputDir = `${homePath}/BP/test_fetch`
   const localStorageDir = `${homePath}/.salto/test_fetch`
@@ -52,10 +52,6 @@ describe('commands e2e', () => {
   const tmpBP = `${fetchOutputDir}/tmp.bp`
   const client = new SalesforceClient({ credentials })
   const spinners: Spinner[] = []
-
-  const copyFile = async (src: string, dest: string): Promise<void> => (
-    fs.writeFile(dest, await fs.readFile(src))
-  )
 
   const objectExists = async (
     name: string, fields: string[] = [], missingFields: string[] = []
@@ -87,12 +83,10 @@ describe('commands e2e', () => {
 
   jest.setTimeout(5 * 60 * 1000)
   beforeAll(async () => {
-    await fs.mkdirp(`${fetchOutputDir}/salto.config`)
-    await fs.mkdirp(localStorageDir)
+    await mkdirp(`${fetchOutputDir}/salto.config`)
+    await mkdirp(localStorageDir)
     await copyFile(configFile, `${fetchOutputDir}/salto.config/config.bp`)
-    if (await fs.exists(tmpBP)) {
-      await fs.delete(tmpBP)
-    }
+    await rm(tmpBP)
     if (await objectExists('e2etest__c')) {
       // TODO 'CustomObject' is a magic string
       await client.delete('CustomObject', 'e2etest__c')
@@ -100,14 +94,14 @@ describe('commands e2e', () => {
   })
 
   afterAll(async () => {
-    await fs.delete(fetchOutputDir)
-    await fs.delete(localStorageDir)
+    await rm(fetchOutputDir)
+    await rm(localStorageDir)
   })
 
   it('should run fetch and create the state bp file', async () => {
     await fetch(fetchOutputDir, true, cliOutput).execute()
-    expect(await pathExists(fetchOutputDir)).toBe(true)
-    expect(await pathExists(statePath)).toBe(true)
+    expect(await exists(fetchOutputDir)).toBe(true)
+    expect(await exists(statePath)).toBe(true)
   })
 
   it('should run plan on discover output and detect no changes', async () => {
@@ -145,7 +139,7 @@ describe('commands e2e', () => {
   })
 
   it('should deploy a delete for the model', async () => {
-    await fs.delete(tmpBP)
+    await rm(tmpBP)
     await new DeployCommand(fetchOutputDir, false, cliOutput).execute()
     expect(lastPlan.size).toBe(1)
     const step = wu(lastPlan.itemsByEvalOrder()).next().value

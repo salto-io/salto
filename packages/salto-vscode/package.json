@@ -131,7 +131,6 @@
     "dependencies": {
         "@types/diff": "^4.0.2",
         "adapter-api": "0.1.0",
-        "async-file": "^2.0.2",
         "diff": "^4.0.1",
         "diff2html": "^2.12.1",
         "lodash": "^4.17.11",

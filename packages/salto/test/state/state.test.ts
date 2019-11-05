@@ -1,4 +1,3 @@
-import * as fs from 'async-file'
 import path from 'path'
 import os from 'os'
 import {
@@ -11,6 +10,7 @@ import {
 import _ from 'lodash'
 import * as TestHelpers from '../common/helpers'
 import State from '../../src/state/state'
+import { rm, readTextFile, mkdirp, writeTextFile } from '../../src/file'
 
 describe('Test state mechanism', () => {
   const stateErrorFile = 'stateerror.bp'
@@ -52,21 +52,13 @@ describe('Test state mechanism', () => {
     },
   })
   beforeAll(async () => {
-    try {
-      await fs.unlink(statePath)
-      // This remark is to prevent from failing if the state doesn't exist yet
-      /* eslint-disable no-empty */
-    } catch { }
+    await rm(statePath)
   })
 
   beforeEach(() => { state = new State(statePath) })
 
   afterEach(async () => {
-    try {
-      await fs.unlink(statePath)
-      // This remark is to prevent from failing if the state doesn't exist yet
-      /* eslint-disable no-empty */
-    } catch { }
+    await rm(statePath)
   })
 
   it('should override state successfully, retrieve it, override it again and get the same result', async () => {
@@ -91,9 +83,11 @@ describe('Test state mechanism', () => {
 
   it('should throw an error if the state bp is not valid', async () => {
     // Setup
-    const buffer = await fs.readFile(path.join(blueprintsDirectory, stateErrorFile), 'utf8')
-    await fs.createDirectory(path.dirname(statePath))
-    await fs.writeFile(statePath, buffer)
+    const text = await readTextFile(
+      path.join(blueprintsDirectory, stateErrorFile),
+    )
+    await mkdirp(path.dirname(statePath))
+    await writeTextFile(statePath, text)
 
     // Test
     await expect(state.get()).rejects.toThrow()

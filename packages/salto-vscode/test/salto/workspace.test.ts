@@ -1,8 +1,7 @@
-import _ from 'lodash'
-import * as fs from 'async-file'
 import * as path from 'path'
+import _ from 'lodash'
 
-import { Config } from 'salto'
+import { Config, file } from 'salto'
 import { EditorWorkspace } from '../../src/salto/workspace'
 
 describe('TEST', () => {
@@ -55,7 +54,7 @@ describe('TEST', () => {
 
   it('should maintain status on error', async () => {
     const workspace = await EditorWorkspace.load(getConfig(baseBPDir, [extraBP]), false)
-    const errorContent = await fs.readFile(errorBP)
+    const errorContent = await file.readTextFile(errorBP)
     expect(workspace.elements).toBeDefined()
     expect(workspace.elements && workspace.elements.length).toBe(5)
     expect(_.keys(workspace.parsedBlueprints).length).toBe(3)
@@ -79,7 +78,7 @@ describe('TEST', () => {
 
   it('should support file addition', async () => {
     const workspace = await EditorWorkspace.load(getConfig(baseBPDir, []), false)
-    const extraContent = await fs.readFile(extraBP)
+    const extraContent = await file.readTextFile(extraBP)
     expect(workspace.elements).toBeDefined()
     expect(workspace.elements && workspace.elements.length).toBe(4)
     workspace.setBlueprints({ filename: extraBP, buffer: extraContent })
@@ -90,7 +89,7 @@ describe('TEST', () => {
 
   it('should return last valid state if there are errors', async () => {
     const workspace = await EditorWorkspace.load(getConfig(baseBPDir, [extraBP]), false)
-    const errorContent = await fs.readFile(parseErrorBp)
+    const errorContent = await file.readTextFile(parseErrorBp)
     expect(workspace.elements).toBeDefined()
     expect(workspace.elements && workspace.elements.length).toBe(5)
     expect(_.keys(workspace.parsedBlueprints).length).toBe(3)

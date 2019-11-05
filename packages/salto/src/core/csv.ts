@@ -1,8 +1,8 @@
-import * as asyncfile from 'async-file'
 import path from 'path'
 import { parseAsync } from 'json2csv'
 import csvtojson from 'csvtojson'
 import { Value } from 'adapter-api'
+import { mkdirp, writeTextFile, appendTextFile } from '../file'
 
 /**
  * Write objects to CSV file
@@ -15,20 +15,20 @@ export const dumpCsv = async (
   outputPath: string,
   append: boolean): Promise<void> => {
   // This method removes the commas from the header
-  const formatHeader = (csvContent: string): string | undefined => {
+  const formatHeader = (csvContent: string): string => {
     const rows = csvContent.split('\n')
     rows[0] = rows[0] && rows[0].replace(/"/g, '')
     return rows.join('\n')
   }
 
-  await asyncfile.mkdirp(path.dirname(outputPath))
+  await mkdirp(path.dirname(outputPath))
   let csvString: string
   if (!append) { // If this is the first chunk, create the headers
     csvString = `${await parseAsync(objects)}\n`
-    await asyncfile.writeFile(outputPath, formatHeader(csvString))
+    await writeTextFile(outputPath, formatHeader(csvString))
   } else { // Otherwise do not create the headers as we only append data
     csvString = `${await parseAsync(objects, { header: false })}\n`
-    await asyncfile.writeFile(outputPath, csvString, { flag: 'a' })
+    await appendTextFile(outputPath, csvString)
   }
 }
 

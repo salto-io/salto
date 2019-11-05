@@ -1,11 +1,11 @@
 import * as path from 'path'
-import * as fs from 'async-file'
 import os from 'os'
 import uuidv5 from 'uuid/v5'
 import _ from 'lodash'
 import { ObjectType, ElemID, BuiltinTypes, Field, InstanceElement, isInstanceElement, Type } from 'adapter-api'
 import { dump } from '../parser/dump'
 import { parse } from '../parser/parse'
+import { mkdirp, exists, writeTextFile, readFile } from '../file'
 
 const CONFIG_FILENAME = 'config.bp'
 const CONFIG_DIR_NAME = 'salto.config'
@@ -94,7 +94,7 @@ export const completeConfig = (baseDir: string, config: Partial<Config>): Config
 }
 
 export const locateWorkspaceRoot = async (lookupDir: string): Promise<string|undefined> => {
-  if (await fs.exists(path.join(lookupDir, CONFIG_DIR_NAME))) {
+  if (await exists(path.join(lookupDir, CONFIG_DIR_NAME))) {
     return lookupDir
   }
   const parentDir = lookupDir.substr(0, lookupDir.lastIndexOf(path.sep))
@@ -116,13 +116,13 @@ export const parseConfig = async (buffer: Buffer): Promise<Partial<Config>> => {
 
 export const dumpConfig = async (baseDir: string, config: Partial<Config>): Promise<void> => {
   const configPath = getConfigPath(baseDir)
-  await fs.createDirectory(path.dirname(configPath))
+  await mkdirp(path.dirname(configPath))
   const configInstance = new InstanceElement(
     saltoConfigInstanceID,
     saltoConfigType,
     _.mapKeys(config as object, (_v, k) => _.snakeCase(k))
   )
-  return fs.writeFile(configPath, await dump([configInstance]))
+  return writeTextFile(configPath, await dump([configInstance]))
 }
 
 export const loadConfig = async (lookupDir: string): Promise<Config> => {
@@ -131,6 +131,6 @@ export const loadConfig = async (lookupDir: string): Promise<Config> => {
   if (!baseDir) {
     throw new NotAWorkspaceError()
   }
-  const configData = await parseConfig(await fs.readFile(getConfigPath(baseDir), 'utf8'))
+  const configData = await parseConfig(await readFile(getConfigPath(baseDir)))
   return completeConfig(baseDir, configData)
 }

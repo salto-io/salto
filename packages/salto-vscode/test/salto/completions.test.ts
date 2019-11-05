@@ -1,9 +1,7 @@
-/* eslint-disable jest/no-disabled-tests */
 import * as path from 'path'
-import * as fs from 'async-file'
 import _ from 'lodash'
 
-import { Config } from 'salto'
+import { Config, file } from 'salto'
 import { EditorWorkspace } from '../../src/salto/workspace'
 import { getPositionContext } from '../../src/salto/context'
 import {
@@ -72,7 +70,7 @@ describe('Test auto complete', () => {
   const bpFileName = path.resolve(`${baseBPDir}/all.bp`)
   beforeAll(async () => {
     workspace = await EditorWorkspace.load(getConfig(baseBPDir, []), false)
-    bpContent = await fs.readFile(bpFileName, 'utf8')
+    bpContent = await file.readTextFile(bpFileName)
   })
 
   describe('empty line', () => {

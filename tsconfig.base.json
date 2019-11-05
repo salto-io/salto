@@ -12,6 +12,7 @@
         "strictNullChecks": true,
         "strict": true,
         "sourceMap": true,
+        "incremental": true,
         "experimentalDecorators": true
     }
 }

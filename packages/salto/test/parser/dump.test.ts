@@ -70,7 +70,9 @@ describe('Salto Dump', () => {
 
   const config = new InstanceElement(
     new ElemID('salesforce', ElemID.CONFIG_INSTANCE_NAME),
-    model,
+    new ObjectType({
+      elemID: new ElemID('salesforce'),
+    }),
     {
       name: 'other',
       num: 5,

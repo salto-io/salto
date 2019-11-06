@@ -6,6 +6,7 @@ import makeFilter from '../../src/filters/convert_types'
 import * as constants from '../../src/constants'
 import { bpCase } from '../../src/transformer'
 import { FilterWith } from '../../src/filter'
+import { SETTINGS_METADATA_TYPE } from '../../src/filters/settings_type'
 import mockClient from '../client'
 
 describe('convert types filter', () => {
@@ -42,11 +43,9 @@ describe('convert types filter', () => {
   const mockSettings = new InstanceElement(
     new ElemID(constants.SALESFORCE, 'settings', 'test_settings'),
     new ObjectType({
-      elemID: new ElemID(constants.SALESFORCE, bpCase(constants.SETTINGS_METADATA_TYPE)),
+      elemID: new ElemID(constants.SALESFORCE, bpCase(SETTINGS_METADATA_TYPE)),
     }),
-    {
-      setting: 'true',
-    },
+    {},
   )
 
   let testElements: Element[]

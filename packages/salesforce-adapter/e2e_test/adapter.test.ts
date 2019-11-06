@@ -50,7 +50,7 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(lead.fields.address.type.elemID.name).toBe('address')
       expect(lead.fields.description.type.elemID.name).toBe('longtextarea')
       expect(lead.fields.name.type.elemID.name).toBe('name')
-      expect(lead.fields.owner.type.elemID.name).toBe('lookup')
+      expect(lead.fields.owner_id.type.elemID.name).toBe('lookup')
 
       // Test label
       expect(lead.fields.name.annotations[constants.LABEL]).toBe('Full Name')
@@ -88,10 +88,10 @@ describe('Salesforce adapter E2E with real account', () => {
       ])
 
       // Test lookup related_to annotation
-      expect(lead.fields.owner.annotations.related_to).toEqual(['Group', 'User'])
+      expect(lead.fields.owner_id.annotations.related_to).toEqual(['Group', 'User'])
 
       // Test lookup allow_lookup_record_deletion annotation
-      expect(lead.fields.owner.annotations.allow_lookup_record_deletion).toBe(true)
+      expect(lead.fields.owner_id.annotations.allow_lookup_record_deletion).toBe(true)
 
       // Test _default
       // TODO: add test to primitive with _default and combobox _default (no real example for lead)
@@ -118,7 +118,7 @@ describe('Salesforce adapter E2E with real account', () => {
           && element.elemID.name === 'settings_quote')
         .pop() as InstanceElement
 
-      expect(quoteSettings.value.enable_quote).toBeDefined()
+      expect(quoteSettings).toBeUndefined()
     })
   })
 

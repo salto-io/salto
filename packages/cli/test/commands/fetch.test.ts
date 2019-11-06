@@ -28,23 +28,40 @@ describe('fetch command', () => {
   })
 
   describe('execute', () => {
-    beforeEach(async () => {
-      await command(workspaceDir, true, false, cliOutput).execute()
-    })
-    it('should load the workspace from the provided directory', () => {
-      expect(Workspace.load).toHaveBeenCalledWith(loadConfig(workspaceDir))
-    })
-    it('should call fetch', () => {
-      expect(fetch).toHaveBeenCalled()
-    })
-  })
+    describe('with errored workspace', () => {
+      beforeEach(async () => {
+        const erroredWorkspace = {
+          hasErrors: () => true,
+          errors: { strings: () => ['some error'] },
+          getWorkspaceErrors,
+        } as unknown as Workspace
+        (Workspace.load as jest.Mock).mockResolvedValueOnce(Promise.resolve(erroredWorkspace))
+        await command(workspaceDir, true, false, cliOutput).execute()
+      })
 
-  describe('fetch command', () => {
-    const mockFetch = jest.fn().mockResolvedValue(
-      Promise.resolve({ changes: [], mergeErrors: [] })
-    )
-    const mockApprove = jest.fn().mockResolvedValue(Promise.resolve([]))
+      it('should fail', async () => {
+        expect(cliOutput.stderr.content).toContain('Failed to load workspace')
+      })
+    })
+
     describe('with valid workspace', () => {
+      beforeEach(async () => {
+        await command(workspaceDir, true, false, cliOutput).execute()
+      })
+
+      it('should load the workspace from the provided directory', () => {
+        expect(Workspace.load).toHaveBeenCalledWith(loadConfig(workspaceDir))
+      })
+      it('should call fetch', () => {
+        expect(fetch).toHaveBeenCalled()
+      })
+    })
+
+    describe('fetch command', () => {
+      const mockFetch = jest.fn().mockResolvedValue(
+        Promise.resolve({ changes: [], mergeErrors: [] })
+      )
+      const mockApprove = jest.fn().mockResolvedValue(Promise.resolve([]))
       let mockWorkspace: Workspace
       beforeEach(() => {
         mockWorkspace = {
@@ -66,10 +83,12 @@ describe('fetch command', () => {
       })
       describe('with upstream changes', () => {
         beforeEach(() => {
-          mockFetch.mockResolvedValueOnce(Promise.resolve({ changes: dummyChanges.map(
-            (change: DetailedChange): FetchChange => ({ change, serviceChange: change })
-          ),
-          mergeErrors: [] }))
+          mockFetch.mockResolvedValueOnce(Promise.resolve({
+            changes: dummyChanges.map(
+              (change: DetailedChange): FetchChange => ({ change, serviceChange: change })
+            ),
+            mergeErrors: [],
+          }))
         })
         describe('when called with force', () => {
           beforeEach(async () => {
@@ -120,59 +139,35 @@ describe('fetch command', () => {
             })
 
             it('should exit if errors identified in workspace after update', async () => {
-              let getWscalls = 0
-              mockWorkspace.getWorkspaceErrors = () => {
-                if (getWscalls > 0) {
-                  return [{
-                    sourceFragments: [],
-                    error: 'Error',
-                    severity: 'Error',
-                  }]
-                }
-                getWscalls += 1
-                return []
-              }
-              mockWorkspace.hasErrors = () => true
+              mockWorkspace.getWorkspaceErrors = () => [{
+                sourceFragments: [],
+                error: 'Error',
+                severity: 'Error',
+              }]
+              mockWorkspace.hasErrors = () => (true)
 
               await fetchCommand(mockWorkspace, false, false, cliOutput, mockFetch, mockApprove)
               expect(mockWorkspace.updateBlueprints).toHaveBeenCalledWith(dummyChanges[0])
+              expect(cliOutput.stderr.content).toContain('Failed to load workspace')
               expect(cliOutput.stderr.content).toContain('Error')
               expect(mockWorkspace.flush).not.toHaveBeenCalled()
             })
             it('should not exit if warning identified in workspace after update', async () => {
-              let getWscalls = 0
-              mockWorkspace.getWorkspaceErrors = () => {
-                if (getWscalls > 0) {
-                  return [{
-                    sourceFragments: [],
-                    error: 'Warning',
-                    severity: 'Warning',
-                  }]
-                }
-                getWscalls += 1
-                return []
-              }
+              mockWorkspace.getWorkspaceErrors = () => [{
+                sourceFragments: [],
+                error: 'Warning',
+                severity: 'Warning',
+              }]
               mockWorkspace.hasErrors = () => true
 
               await fetchCommand(mockWorkspace, false, false, cliOutput, mockFetch, mockApprove)
               expect(mockWorkspace.updateBlueprints).toHaveBeenCalledWith(dummyChanges[0])
+              expect(cliOutput.stderr.content).toContain('Failed to load workspace')
               expect(cliOutput.stderr.content).toContain('Warning')
               expect(mockWorkspace.flush).toHaveBeenCalled()
             })
           })
         })
-      })
-    })
-    describe('with errored workspace', () => {
-      const erroredWorkspace = {
-        hasErrors: () => true,
-        errors: { strings: () => ['some error'] },
-        getWorkspaceErrors,
-      } as unknown as Workspace
-
-      it('should fail', async () => {
-        await fetchCommand(erroredWorkspace, true, false, cliOutput, mockFetch, mockApprove)
-        expect(cliOutput.stderr.content).toContain('Error')
       })
     })
   })

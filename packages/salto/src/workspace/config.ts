@@ -3,9 +3,12 @@ import os from 'os'
 import uuidv5 from 'uuid/v5'
 import _ from 'lodash'
 import { ObjectType, ElemID, BuiltinTypes, Field, InstanceElement, isInstanceElement, Type } from 'adapter-api'
+import { logger } from '@salto/logging'
 import { dump } from '../parser/dump'
 import { parse } from '../parser/parse'
 import { mkdirp, exists, writeTextFile, readFile } from '../file'
+
+const log = logger(module)
 
 const CONFIG_FILENAME = 'config.bp'
 const CONFIG_DIR_NAME = 'salto.config'
@@ -132,5 +135,7 @@ export const loadConfig = async (lookupDir: string): Promise<Config> => {
     throw new NotAWorkspaceError()
   }
   const configData = await parseConfig(await readFile(getConfigPath(baseDir)))
-  return completeConfig(baseDir, configData)
+  const config = completeConfig(baseDir, configData)
+  log.debug(`loaded config ${JSON.stringify(config)}`)
+  return config
 }

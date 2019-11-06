@@ -1,12 +1,13 @@
 import _ from 'lodash'
-
 import {
   InstanceElement, ElemID, ObjectType, Type, Values, isObjectType,
 } from 'adapter-api'
-
+import { logger } from '@salto/logging'
 import {
   MergeResult, MergeError, mergeNoDuplicates,
 } from './common'
+
+const log = logger(module)
 
 export class DuplicateInstanceKeyError extends MergeError {
   readonly key: string
@@ -63,8 +64,9 @@ export const mergeInstances = (
     .map(elementGroup => mergeInstanceDefinitions(elementGroup[0], elementGroup))
     .value()
 
-  return {
-    merged: mergeResults.map(r => r.merged),
-    errors: _.flatten(mergeResults.map(r => r.errors)),
-  }
+  const merged = mergeResults.map(r => r.merged)
+  const errors = _.flatten(mergeResults.map(r => r.errors))
+  log.debug(`merged ${instances.length} instances to ${merged.length} elements [errors=${
+    errors.length}]`)
+  return { merged, errors }
 }

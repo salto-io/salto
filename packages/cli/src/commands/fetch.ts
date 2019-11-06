@@ -2,16 +2,18 @@ import _ from 'lodash'
 import {
   fetch as apiFetch,
   Workspace,
-  loadConfig,
   fetchFunc,
   FetchChange,
 } from 'salto'
+import { logger } from '@salto/logging'
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'
 import { formatChangesSummary, formatMergeErrors } from '../formatter'
 import { getConfigFromUser, getApprovedChanges as cliGetApprovedChanges } from '../callbacks'
 import Prompts from '../prompts'
-import { validateWorkspace, updateWorkspace } from '../workspace'
+import { updateWorkspace, loadWorkspace } from '../workspace'
+
+const log = logger(module)
 
 type approveChangesFunc = (
   changes: ReadonlyArray<FetchChange>,
@@ -27,25 +29,26 @@ export const fetchCommand = async (
   getApprovedChanges: approveChangesFunc,
 ): Promise<CliExitCode> => {
   const outputLine = (text: string): void => output.stdout.write(`${text}\n`)
-  if (!validateWorkspace(workspace, output.stderr)) {
-    return CliExitCode.AppError
-  }
+
   outputLine(Prompts.FETCH_BEGIN)
   const fetchResult = await fetch(workspace, getConfigFromUser)
   // A few merge errors might have occured,
   // but since it's fetch flow, we omitted the elements
   // and only print the merge errors
   if (!_.isEmpty(fetchResult.mergeErrors)) {
+    log.debug(`fetch had ${fetchResult.mergeErrors} merge errors`)
     output.stderr.write(formatMergeErrors(fetchResult.mergeErrors))
   }
 
   // Unpack changes to array so we can iterate on them more than once
   const changes = [...fetchResult.changes]
+  log.debug(`fetch result contains ${changes.length} changes`)
   // If the workspace starts empty there is no point in showing a huge amount of changes
   const isEmptyWorkspace = workspace.elements.filter(elem => !elem.elemID.isConfig()).length === 0
   const changesToApply = force || isEmptyWorkspace
     ? changes
     : await getApprovedChanges(changes, interactive)
+  log.debug(`going to update workspace with ${changesToApply.length} changes`)
   outputLine(formatChangesSummary(changes.length, changesToApply.length))
   return await updateWorkspace(workspace, output.stderr, ...changesToApply)
     ? CliExitCode.Success
@@ -59,8 +62,11 @@ export const command = (
   output: CliOutput
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
-    const config = await loadConfig(workspaceDir)
-    const workspace = await Workspace.load(config)
+    log.debug(`running fetch command on ${workspaceDir} [force=${force}].. `)
+    const { workspace, errored } = await loadWorkspace(workspaceDir, output.stderr)
+    if (errored) {
+      return CliExitCode.AppError
+    }
     return fetchCommand(workspace, force, interactive, output, apiFetch, cliGetApprovedChanges)
   },
 })

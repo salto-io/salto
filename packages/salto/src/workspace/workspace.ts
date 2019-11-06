@@ -5,6 +5,7 @@ import readdirp from 'readdirp'
 import uuidv4 from 'uuid/v4'
 import { collections, types } from '@salto/lowerdash'
 import { Element } from 'adapter-api'
+import { logger } from '@salto/logging'
 import { stat, mkdirp, readTextFile, rm, writeTextFile, exists, Stats } from '../file'
 import { SourceMap, parse, SourceRange, ParseResult, ParseError } from '../parser/parse'
 import { mergeElements, MergeError } from '../core/merger'
@@ -17,6 +18,8 @@ import {
 } from './config'
 
 const { DefaultMap } = collections.map
+
+const log = logger(module)
 
 export const CREDS_DIR = 'credentials'
 
@@ -150,7 +153,6 @@ export type SourceFragment = {
   fragment: string
 }
 
-
 type WorkspaceState = {
   readonly parsedBlueprints: ParsedBlueprintMap
   readonly sourceMap: SourceMap
@@ -159,6 +161,7 @@ type WorkspaceState = {
 }
 
 const createWorkspaceState = (blueprints: ReadonlyArray<ParsedBlueprint>): WorkspaceState => {
+  log.info(`going to create new workspace state with ${blueprints.length} blueprints`)
   const partialWorkspace = {
     parsedBlueprints: _.keyBy(blueprints, 'filename'),
     sourceMap: mergeSourceMaps(blueprints),
@@ -170,6 +173,7 @@ const createWorkspaceState = (blueprints: ReadonlyArray<ParsedBlueprint>): Works
   ]
   const { merged: mergedElements, errors: mergeErrors } = mergeElements(elements)
   const validationErrors = validateElements(mergedElements)
+  log.info(`found ${mergeErrors.length} merge errors and ${validationErrors.length} validation errors`)
   return {
     ...partialWorkspace,
     elements: mergedElements,
@@ -231,7 +235,18 @@ export class Workspace {
     const parsedBlueprints = useCache
       ? parseBlueprintsWithCache(bps, config.localStorage, config.baseDir)
       : parseBlueprints(bps)
-    return new Workspace(config, await parsedBlueprints)
+    const ws = new Workspace(config, await parsedBlueprints)
+
+    log.debug(`finished loading workspace with ${ws.elements.length}`)
+    if (ws.hasErrors()) {
+      const errors = ws.getWorkspaceErrors()
+      log.warn(`workspace ${ws.config.name} has ${errors.filter(e => e.severity === 'Error').length
+      } workspace errors and ${errors.filter(e => e.severity === 'Warning').length} warnings`)
+      ws.getWorkspaceErrors().forEach(e => {
+        log.warn(`\t${e.severity}: ${e.error}`)
+      })
+    }
+    return ws
   }
 
   static async init(baseDir: string, workspaceName?: string): Promise<Workspace> {

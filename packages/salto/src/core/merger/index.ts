@@ -3,6 +3,7 @@ import {
   ObjectType, isType, isObjectType, isInstanceElement, Element,
   Type, isPrimitiveType, BuiltinTypes,
 } from 'adapter-api'
+import { logger } from '@salto/logging'
 import { mergeObjectTypes } from './internal/object_types'
 import { mergeInstances } from './internal/instances'
 import { mergePrimitives } from './internal/primitives'
@@ -19,6 +20,8 @@ export {
 
 export { DuplicateInstanceKeyError } from './internal/instances'
 export { MultiplePrimitiveTypesUnsupportedError } from './internal/primitives'
+
+const log = logger(module)
 
 /**
  * Replace the pointers to all the merged elements to the merged version.
@@ -70,13 +73,17 @@ export const mergeElements = (elements: ReadonlyArray<Element>): MergeResult => 
   )
 
   const resolveResult = resolveElements(updated)
+  const errors = [
+    ...objects.errors,
+    ...instances.errors,
+    ...primitives.errors,
+    ...resolveResult.errors,
+  ]
+
+  log.debug(`merged ${elements.length} elements to ${resolveResult.merged} elements [errors=${
+    errors.length}]`)
   return {
     merged: resolveResult.merged,
-    errors: [
-      ...objects.errors,
-      ...instances.errors,
-      ...primitives.errors,
-      ...resolveResult.errors,
-    ],
+    errors,
   }
 }

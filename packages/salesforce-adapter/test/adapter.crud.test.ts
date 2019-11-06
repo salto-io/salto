@@ -955,6 +955,7 @@ describe('SalesforceAdapter CRUD', () => {
             },
             annotations: {
               label: 'test2 label',
+              [constants.API_NAME]: 'Test__c',
             },
           })
 
@@ -974,6 +975,10 @@ describe('SalesforceAdapter CRUD', () => {
             expect(mockCreate.mock.calls.length).toBe(1)
             expect(mockDelete.mock.calls.length).toBe(1)
             expect(mockUpdate.mock.calls.length).toBe(1)
+          })
+
+          it('should not add annotations to the object type', () => {
+            expect(result.annotations).toEqual(newElement.annotations)
           })
         })
 
@@ -1028,6 +1033,7 @@ describe('SalesforceAdapter CRUD', () => {
               [Type.REQUIRED]: false,
               [Type.DEFAULT]: 'test',
               label: 'test label',
+              [constants.API_NAME]: 'Test__c',
             },
           })
 
@@ -1110,6 +1116,7 @@ describe('SalesforceAdapter CRUD', () => {
               [Type.REQUIRED]: false,
               [Type.DEFAULT]: 'test2',
               label: 'test2 label',
+              [constants.API_NAME]: 'Test__c',
             },
           })
 
@@ -1172,6 +1179,9 @@ describe('SalesforceAdapter CRUD', () => {
                 mockElemID,
                 'banana',
                 stringType,
+                {
+                  [constants.API_NAME]: 'Banana__c',
+                }
               ),
               description: new Field(
                 mockElemID,
@@ -1183,6 +1193,7 @@ describe('SalesforceAdapter CRUD', () => {
               [Type.REQUIRED]: false,
               [Type.DEFAULT]: 'test',
               label: 'test label',
+              [constants.API_NAME]: 'Test__c',
             },
           })
 
@@ -1492,6 +1503,7 @@ describe('SalesforceAdapter CRUD', () => {
                 stringType,
                 {
                   [constants.LABEL]: 'Banana Split',
+                  [constants.API_NAME]: 'Banana__c',
                 },
               ),
             },
@@ -1499,6 +1511,7 @@ describe('SalesforceAdapter CRUD', () => {
               [Type.REQUIRED]: false,
               [Type.DEFAULT]: 'test2',
               label: 'test2 label',
+              [constants.API_NAME]: 'Test__c',
             },
           })
 

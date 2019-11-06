@@ -1,6 +1,7 @@
 import {
   ObjectType, Element, Values, Field, isObjectType, isInstanceElement, InstanceElement, isField,
   Change,
+  getChangeElement,
 } from 'adapter-api'
 import _ from 'lodash'
 import { SaveResult } from 'jsforce'
@@ -147,9 +148,9 @@ const filterCreator: FilterCreator = ({ client }) => ({
 
     // Set default permissions for new fields
     wu(changes)
-      // done in single line as we loose type info with wu
-      .map(c => (c.action === 'add' && isField(c.data.after) ? c.data.after : undefined))
-      .reject(_.isUndefined)
+      .filter(c => c.action === 'add')
+      .map(getChangeElement)
+      .filter(isField)
       .forEach(field => {
         setDefaultFieldPermissions(field as Field)
       })

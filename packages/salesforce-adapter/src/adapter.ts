@@ -35,18 +35,18 @@ import {
 const RECORDS_CHUNK_SIZE = 10000
 
 // Add elements defaults
-const addDefaults = (element: ObjectType): void => {
-  const addApiNameAndLabel = (elem: Type | Field): void => {
-    const name = isField(elem) ? elem.name : element.elemID.name
-    const { annotations } = elem
-    if (!annotations[constants.API_NAME]) {
-      annotations[constants.API_NAME] = sfCase(name, true)
-    }
-    if (!annotations[constants.LABEL]) {
-      annotations[constants.LABEL] = sfCase(name)
-    }
+const addApiNameAndLabel = (elem: Type | Field): void => {
+  const name = isField(elem) ? elem.name : elem.elemID.name
+  const { annotations } = elem
+  if (!annotations[constants.API_NAME]) {
+    annotations[constants.API_NAME] = sfCase(name, true)
   }
+  if (!annotations[constants.LABEL]) {
+    annotations[constants.LABEL] = sfCase(name)
+  }
+}
 
+const addDefaults = (element: ObjectType): void => {
   const addMetadataType = (elem: ObjectType): void => {
     const { annotations } = elem
     if (!annotations[constants.METADATA_TYPE]) {
@@ -324,9 +324,14 @@ export default class SalesforceAdapter {
    */
   private async updateObject(before: ObjectType, after: ObjectType,
     changes: Iterable<Change<Field | ObjectType>>): Promise<ObjectType> {
+    validateApiName(before, after)
+
     const clonedObject = after.clone()
-    addDefaults(clonedObject)
-    validateApiName(before, clonedObject)
+    wu(changes)
+      .filter(c => c.action === 'add')
+      .map(getChangeElement)
+      .filter(isField)
+      .forEach(addApiNameAndLabel)
 
     // There are fields that are not equal but their transformation
     // to CustomField is (e.g. lookup field with LookupFilter).

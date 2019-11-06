@@ -53,12 +53,9 @@ export const deploy = async (
     const actionPlan = getPlan(stateElements, workspace.elements)
     if (force || await shouldDeploy(actionPlan)) {
       const [adapters] = await initAdapters(workspace.elements, fillConfig)
-      await applyActions(
-        actionPlan,
-        adapters,
-        reportProgress,
-        (action, element) => deployActionOnState(state, action, element)
-      )
+
+      await applyActions(actionPlan, adapters, reportProgress,
+        (action, element) => deployActionOnState(state, action, element))
 
       const changes = wu(getDetailedChanges(workspace.elements, stateElements))
         .map(change => ({ change, serviceChange: change }))

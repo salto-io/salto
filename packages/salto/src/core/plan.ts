@@ -145,7 +145,7 @@ export const getPlan = (
       change => getChangeElement(change).elemID.getFullName() === group.groupKey
     )
 
-  const addParentAccessor = (group: Group<Change>): PlanItem => Object.assign(group, {
+  const addPlanItemAccessors = (group: Group<Change>): PlanItem => Object.assign(group, {
     parent() {
       return getGroupLevelChange(group) || {
         action: 'modify',
@@ -198,11 +198,11 @@ export const getPlan = (
               ? { ...group, items: new Map([[group.groupKey, groupLevelChange]]) }
               : group
           })
-          .map(addParentAccessor)
+          .map(addPlanItemAccessors)
       },
 
       getItem(planItemId: PlanItemId): PlanItem {
-        return addParentAccessor(groupGraph.getData(planItemId))
+        return addPlanItemAccessors(groupGraph.getData(planItemId))
       },
     },
   )

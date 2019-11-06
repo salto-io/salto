@@ -41,7 +41,7 @@ export const mergePrimitives = (
 
   const merged = _.mapValues(mergeResults, r => r.merged)
   const errors = _.flatten(_.values(mergeResults).map(r => r.errors))
-  log.debug(`merged ${primitives.length} primitives to ${merged.length} elements [errors=${
+  log.debug(`merged ${primitives.length} primitives to ${_.size(merged)} elements [errors=${
     errors.length}]`)
   return { merged, errors }
 }

@@ -2,10 +2,7 @@ import { promises as fsp } from 'fs'
 import path from 'path'
 import './wasm_exec'
 import { queue, AsyncQueue, ErrorCallback } from 'async'
-import { logger } from '@salto/logging'
 import { SourceRange } from './types'
-
-const log = logger(module)
 
 export type ExpressionType = 'list'|'map'|'template'|'literal'|'reference'
 
@@ -181,10 +178,7 @@ class HclParser {
    * @returns The serialized data
    */
   public dump(body: DumpedHclBlock): Promise<HclDumpReturn> {
-    log.debug(`going to dump ${body.blocks.length} blocks [labels=${JSON.stringify(body.labels)}]`)
-    const ret = this.callPlugin({ func: 'dump', args: { body } }) as Promise<HclDumpReturn>
-    log.debug(`finished to dump ${body.blocks.length} blocks [labels=${JSON.stringify(body.labels)}]`)
-    return ret
+    return this.callPlugin({ func: 'dump', args: { body } }) as Promise<HclDumpReturn>
   }
 }
 

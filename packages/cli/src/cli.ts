@@ -6,7 +6,7 @@ import { CliInput, CliOutput, CliExitCode, SpinnerCreator } from './types'
 import { YargsCommandBuilder } from './command_builder'
 import parse, { ERROR_STYLE } from './argparser'
 
-export const VERBOSE_LOG_LEVEL: LogLevel = 'info'
+export const VERBOSE_LOG_LEVEL: LogLevel = 'debug'
 
 const log = logger(module)
 

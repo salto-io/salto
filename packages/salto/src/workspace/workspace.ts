@@ -237,7 +237,7 @@ export class Workspace {
       : parseBlueprints(bps)
     const ws = new Workspace(config, await parsedBlueprints)
 
-    log.debug(`finished loading workspace with ${ws.elements.length}`)
+    log.debug(`finished loading workspace with ${ws.elements.length} elements`)
     if (ws.hasErrors()) {
       const errors = ws.getWorkspaceErrors()
       log.warn(`workspace ${ws.config.name} has ${errors.filter(e => e.severity === 'Error').length
@@ -359,6 +359,7 @@ export class Workspace {
    * @param blueprints New blueprint or existing blueprint with new content
    */
   async setBlueprints(...blueprints: Blueprint[]): Promise<void> {
+    log.debug(`going to parse ${blueprints.length} blueprints`)
     const parsed = await parseBlueprints(blueprints)
     const newParsedMap = Object.assign(
       {},

@@ -24,6 +24,8 @@ import Connection from './jsforce'
 
 const { makeArray } = collections.array
 
+const log = logger(module)
+
 export const API_VERSION = '46.0'
 export const METADATA_NAMESPACE = 'http://soap.sforce.com/2006/04/metadata'
 
@@ -84,16 +86,9 @@ export type Credentials = {
   isSandbox: boolean
 }
 
-export type LogLevel = 'info' | 'warn' | 'error'
-
-export type Logger = {
-  [level in LogLevel]: (message: string) => void
-}
-
 export type SalesforceClientOpts = {
   credentials: Credentials
   connection?: Connection
-  logger?: Logger
 }
 
 const realConnection = (isSandbox: boolean): Connection => {
@@ -122,14 +117,12 @@ export default class SalesforceClient {
   private readonly conn: Connection
   private isLoggedIn = false
   private readonly credentials: Credentials
-  private readonly logger: Logger
 
   constructor(
-    { credentials, connection, logger: clientLogger }: SalesforceClientOpts
+    { credentials, connection }: SalesforceClientOpts
   ) {
     this.credentials = credentials
     this.conn = connection || realConnection(credentials.isSandbox)
-    this.logger = clientLogger || logger(this.constructor.name)
   }
 
   private async ensureLoggedIn(): Promise<void> {
@@ -150,13 +143,17 @@ export default class SalesforceClient {
     }
   )
 
-  private static logFailures = decorators.wrapMethodWith(
+  private static logDecorator = decorators.wrapMethodWith(
+    // eslint-disable-next-line prefer-arrow-callback
     async function logFailure(
       this: SalesforceClient,
       { call, name, args }: decorators.OriginalCall,
     ): Promise<unknown> {
       try {
-        return await call()
+        const before = Date.now()
+        const ret = await call()
+        log.debug(`client.${name} took ${Date.now() - before} ms`)
+        return ret
       } catch (e) {
         const message = [
           'Failed to run SFDC client call',
@@ -164,25 +161,25 @@ export default class SalesforceClient {
           e.message,
         ].join(' ')
 
-        this.logger.error(message)
+        log.error(message)
         throw e
       }
     }
   )
 
-  @SalesforceClient.logFailures
+  @SalesforceClient.logDecorator
   @SalesforceClient.requiresLogin
   public async runQuery(queryString: string): Promise<QueryResult<Value>> {
     return this.conn.query(queryString)
   }
 
-  @SalesforceClient.logFailures
+  @SalesforceClient.logDecorator
   @SalesforceClient.requiresLogin
   public async queryMore(locator: string): Promise<QueryResult<Value>> {
     return this.conn.queryMore(locator)
   }
 
-  @SalesforceClient.logFailures
+  @SalesforceClient.logDecorator
   @SalesforceClient.requiresLogin
   public async destroy(
     type: string, ids: string | string[]
@@ -193,7 +190,7 @@ export default class SalesforceClient {
   /**
    * Extract metadata object names
    */
-  @SalesforceClient.logFailures
+  @SalesforceClient.logDecorator
   @SalesforceClient.requiresLogin
   public async listMetadataTypes(): Promise<MetadataObject[]> {
     const describeResult = this.conn.metadata.describe()
@@ -204,7 +201,7 @@ export default class SalesforceClient {
    * Read information about a value type
    * @param type The name of the metadata type for which you want metadata
    */
-  @SalesforceClient.logFailures
+  @SalesforceClient.logDecorator
   @SalesforceClient.requiresLogin
   public async describeMetadataType(type: string): Promise<ValueTypeField[]> {
     const fullName = `{${METADATA_NAMESPACE}}${type}`
@@ -212,7 +209,7 @@ export default class SalesforceClient {
     return (await describeResult).valueTypeFields
   }
 
-  @SalesforceClient.logFailures
+  @SalesforceClient.logDecorator
   @SalesforceClient.requiresLogin
   public async listMetadataObjects(type: string): Promise<FileProperties[]> {
     return makeArray(await this.conn.metadata.list({ type }))
@@ -221,7 +218,7 @@ export default class SalesforceClient {
   /**
    * Read metadata for salesforce object of specific type and name
    */
-  @SalesforceClient.logFailures
+  @SalesforceClient.logDecorator
   @SalesforceClient.requiresLogin
   public async readMetadata(type: string, name: string | string[]): Promise<MetadataInfo[]> {
     return sendChunked(makeArray(name), chunk =>
@@ -231,13 +228,13 @@ export default class SalesforceClient {
   /**
    * Extract sobject names
    */
-  @SalesforceClient.logFailures
+  @SalesforceClient.logDecorator
   @SalesforceClient.requiresLogin
   public async listSObjects(): Promise<DescribeGlobalSObjectResult[]> {
     return (await this.conn.describeGlobal()).sobjects
   }
 
-  @SalesforceClient.logFailures
+  @SalesforceClient.logDecorator
   @SalesforceClient.requiresLogin
   public async describeSObjects(objectNames: string[]):
     Promise<DescribeSObjectResult[]> {
@@ -251,7 +248,7 @@ export default class SalesforceClient {
    * @param metadata The metadata of the object
    * @returns The save result of the requested creation
    */
-  @SalesforceClient.logFailures
+  @SalesforceClient.logDecorator
   @validateSaveResult
   @SalesforceClient.requiresLogin
   public async create(type: string, metadata: MetadataInfo | MetadataInfo[]):
@@ -265,7 +262,7 @@ export default class SalesforceClient {
    * @param fullNames The full names of the metadata components
    * @returns The save result of the requested deletion
    */
-  @SalesforceClient.logFailures
+  @SalesforceClient.logDecorator
   @validateSaveResult
   @SalesforceClient.requiresLogin
   public async delete(type: string, fullNames: string | string[]): Promise<SaveResult[]> {
@@ -278,7 +275,7 @@ export default class SalesforceClient {
    * @param metadata The metadata of the object
    * @returns The save result of the requested update
    */
-  @SalesforceClient.logFailures
+  @SalesforceClient.logDecorator
   @validateSaveResult
   @SalesforceClient.requiresLogin
   public async update(type: string, metadata: MetadataInfo | MetadataInfo[]):
@@ -291,7 +288,7 @@ export default class SalesforceClient {
    * @param zip The package zip
    * @returns The save result of the requested update
    */
-  @SalesforceClient.logFailures
+  @SalesforceClient.logDecorator
   @validateDeployResult
   @SalesforceClient.requiresLogin
   public async deploy(zip: Buffer): Promise<DeployResult> {
@@ -305,7 +302,7 @@ export default class SalesforceClient {
    * @param records The records from the CSV contents
    * @returns The BatchResultInfo which contains success/errors for each entry
    */
-  @SalesforceClient.logFailures
+  @SalesforceClient.logDecorator
   @SalesforceClient.requiresLogin
   public async updateBulk(type: string, operation: BulkLoadOperation, records: SfRecord[]):
     Promise<BatchResultInfo[]> {

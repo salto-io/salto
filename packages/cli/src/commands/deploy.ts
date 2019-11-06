@@ -1,11 +1,14 @@
 import { deploy, PlanItem } from 'salto'
+import { logger } from '@salto/logging'
 import { createCommandBuilder } from '../command_builder'
 import { CliCommand, CliOutput, ParsedCliInput, WriteStream, CliExitCode } from '../types'
 import {
-  createActionStartOutput, createActionInProgressOutput, createItemDoneOutput, formatChangesSummary,
+  createActionStartOutput, createActionInProgressOutput, createItemDoneOutput, formatChange,
 } from '../formatter'
-import { shouldDeploy, getConfigFromUser, getApprovedChanges } from '../callbacks'
+import { shouldDeploy, getConfigFromUser } from '../callbacks'
 import { loadWorkspace, updateWorkspace } from '../workspace'
+
+const log = logger(module)
 
 const CURRENT_ACTION_POLL_INTERVAL = 5000
 
@@ -61,9 +64,11 @@ export class DeployCommand implements CliCommand {
     this.endCurrentAction()
     if (result.changes) {
       const changes = [...result.changes]
-      const changesToApply = this.force ? changes : await getApprovedChanges(changes, true)
-      this.stdout.write(formatChangesSummary(changes.length, changesToApply.length))
-      return await updateWorkspace(workspace, this.stderr, ...changesToApply)
+      log.info(`going to update workspace with ${changes.length} post deply`)
+      changes.forEach(c => {
+        log.info(`\t${formatChange(c.change)}`)
+      })
+      return await updateWorkspace(workspace, this.stderr, ...changes)
         ? CliExitCode.Success
         : CliExitCode.AppError
     }

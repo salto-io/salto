@@ -3,10 +3,13 @@ import {
   Type, ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field, Values,
   Element, InstanceElement,
 } from 'adapter-api'
+import { logger } from '@salto/logging'
 import { SourceRange as InternalSourceRange, SourceMap as SourceMapImpl } from './internal/types'
 import HclParser, { ParsedHclBlock, HclParseError } from './internal/hcl'
 import evaluate from './expressions'
 import { Keywords } from './language'
+
+const log = logger(module)
 
 // Re-export these types because we do not want code outside the parser to import hcl
 export type SourceRange = InternalSourceRange
@@ -58,7 +61,9 @@ export type ParseResult = {
  *          errors: Errors encountered during parsing
  */
 export const parse = async (blueprint: Buffer, filename: string): Promise<ParseResult> => {
+  const before = Date.now()
   const { body, errors } = await HclParser.parse(blueprint, filename)
+  log.debug(`parsed ${filename} [buffer size=${blueprint.length}; took=${Date.now() - before} ms]`)
   const sourceMap = new SourceMapImpl()
 
   const attrValues = (block: ParsedHclBlock, parentId: ElemID): Values => _.mapValues(

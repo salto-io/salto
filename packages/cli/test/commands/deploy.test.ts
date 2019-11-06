@@ -104,10 +104,6 @@ describe('deploy command', () => {
         expect(content.search('salesforce_account: Change completed')).toBeGreaterThan(0)
       })
 
-      it('should print Update workspace', () => {
-        expect(content.search('Updating workspace with')).toBeGreaterThan(0)
-      })
-
       it('should Update workspace', () => {
         expect(mockUpdateBlueprints).toHaveBeenCalledTimes(1)
         expect(mockFlush).toHaveBeenCalledTimes(1)

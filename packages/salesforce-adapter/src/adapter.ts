@@ -1,11 +1,14 @@
-import { BuiltinTypes, Type, ObjectType, ElemID, InstanceElement, isModificationDiff,
+import {
+  BuiltinTypes, Type, ObjectType, ElemID, InstanceElement, isModificationDiff,
   isRemovalDiff, isAdditionDiff, Field, Element, isObjectType, isInstanceElement, AdapterCreator,
-  Value, Change, getChangeElement, isField } from 'adapter-api'
-import wu from 'wu'
+  Value, Change, getChangeElement, isField,
+} from 'adapter-api'
 import {
   SaveResult, MetadataInfo, Field as SObjField, DescribeSObjectResult, QueryResult,
 } from 'jsforce'
 import _ from 'lodash'
+import { logger } from '@salto/logging'
+import wu from 'wu'
 import SalesforceClient, { Credentials } from './client/client'
 import * as constants from './constants'
 import {
@@ -32,6 +35,7 @@ import {
   FilterCreator, Filter, FilterWith, filtersWith,
 } from './filter'
 
+const log = logger(module)
 
 const RECORDS_CHUNK_SIZE = 10000
 
@@ -41,9 +45,11 @@ const addApiNameAndLabel = (elem: Type | Field): void => {
   const { annotations } = elem
   if (!annotations[constants.API_NAME]) {
     annotations[constants.API_NAME] = sfCase(name, true)
+    log.debug(`added API_NAME=${sfCase(name, true)} to ${name}`)
   }
   if (!annotations[constants.LABEL]) {
     annotations[constants.LABEL] = sfCase(name)
+    log.debug(`added LABEL=${sfCase(name)} to ${name}`)
   }
 }
 
@@ -52,6 +58,8 @@ const addDefaults = (element: ObjectType): void => {
     const { annotations } = elem
     if (!annotations[constants.METADATA_TYPE]) {
       annotations[constants.METADATA_TYPE] = constants.CUSTOM_OBJECT
+      log.debug(`added METADATA_TYPE=${sfCase(constants.CUSTOM_OBJECT)} to ${
+        elem.elemID.getFullName()}`)
     }
   }
 
@@ -146,12 +154,14 @@ export default class SalesforceAdapter {
    * Account credentials were given in the constructor.
    */
   public async fetch(): Promise<Element[]> {
+    log.debug('going to fetch salesforce account configuration..')
     const fieldTypes = Types.getAllFieldTypes()
     const metadataTypeNames = this.client.listMetadataTypes().then(
       types => types
         .map(x => x.xmlName)
         .concat(this.metadataAdditionalTypes)
     )
+    log.debug('going to fetch salesforce account configuration..')
     const metadataTypes = this.fetchMetadataTypes(metadataTypeNames)
     const metadataInstances = this.fetchMetadataInstances(metadataTypeNames, metadataTypes)
 
@@ -160,7 +170,9 @@ export default class SalesforceAdapter {
       async types => {
         // All metadata type names include subtypes as well as the "top level" type names
         const allMetadataTypeNames = new Set((await metadataTypes).map(elem => elem.elemID.name))
-        return types.filter(t => !allMetadataTypeNames.has(t.elemID.name))
+        const ret = types.filter(t => !allMetadataTypeNames.has(t.elemID.name))
+        log.info(`fetched ${ret.length} objects types`)
+        return ret
       }
     )
 
@@ -169,6 +181,7 @@ export default class SalesforceAdapter {
     )
 
     await this.runFiltersOnFetch(elements)
+    log.debug('finished to fetch account configuration')
     return elements
   }
 
@@ -249,6 +262,7 @@ export default class SalesforceAdapter {
    * @throws error in case of failure
    */
   public async add(element: Element): Promise<Element> {
+    const start = Date.now()
     let post: Element
     if (isObjectType(element)) {
       post = await this.addObject(element)
@@ -257,7 +271,7 @@ export default class SalesforceAdapter {
     }
 
     await this.runFiltersOnAdd(post)
-
+    log.debug(`added ${element.elemID.getFullName()} [took=${Date.now() - start} ms]`)
     return post
   }
 
@@ -296,8 +310,10 @@ export default class SalesforceAdapter {
    * @param element to remove
    */
   public async remove(element: Element): Promise<void> {
+    const start = Date.now()
     await this.client.delete(metadataType(element), apiName(element))
     await this.runFiltersOnRemove(element)
+    log.debug(`removed ${element.elemID.getFullName()} [took=${Date.now() - start} ms]`)
   }
 
   /**
@@ -308,15 +324,20 @@ export default class SalesforceAdapter {
    */
   public async update(before: Element, after: Element,
     changes: Iterable<Change>): Promise<Element> {
+    const start = Date.now()
+    let result = Promise.resolve(after)
+
     if (isObjectType(before) && isObjectType(after)) {
-      return this.updateObject(before, after, changes as Iterable<Change<Field | ObjectType>>)
+      result = this.updateObject(before, after,
+        wu(changes).toArray() as Change<ObjectType | Field>[])
     }
 
     if (isInstanceElement(before) && isInstanceElement(after)) {
-      return this.updateInstance(before, after)
+      result = this.updateInstance(before, after)
     }
 
-    return after
+    log.debug(`finish updating ${after.elemID.getFullName()} [took=${Date.now() - start} ms]`)
+    return result
   }
 
   /**
@@ -326,15 +347,16 @@ export default class SalesforceAdapter {
    * @returns the updated object
    */
   private async updateObject(before: ObjectType, after: ObjectType,
-    changes: Iterable<Change<Field | ObjectType>>): Promise<ObjectType> {
+    changes: Change<Field | ObjectType>[]): Promise<ObjectType> {
     validateApiName(before, after)
-
     const clonedObject = after.clone()
-    wu(changes)
-      .filter(c => c.action === 'add')
+
+    changes.filter(c => c.action === 'add')
       .map(getChangeElement)
       .filter(isField)
       .forEach(addApiNameAndLabel)
+
+    const fieldChanges = changes.filter(c => isField(getChangeElement(c))) as Change<Field>[]
 
     // There are fields that are not equal but their transformation
     // to CustomField is (e.g. lookup field with LookupFilter).
@@ -342,24 +364,20 @@ export default class SalesforceAdapter {
       !_.isEqual(toCustomField(before, beforeField, true),
         toCustomField(clonedObject, afterField, true))
 
-    const fieldChanges = wu(changes)
-      .filter(c => isField(getChangeElement(c)))
-      .toArray() as Change<Field>[]
     await Promise.all([
       // Retrieve the custom fields for deletion and delete them
       this.deleteCustomFields(clonedObject, fieldChanges
         .filter(isRemovalDiff)
-        .map(c => before.fields[c.data.before.name])),
+        .map(getChangeElement)),
       // Retrieve the custom fields for addition and than create them
       this.createFields(clonedObject, fieldChanges
         .filter(isAdditionDiff)
-        .map(c => clonedObject.fields[c.data.after.name])),
+        .map(getChangeElement)),
       // Update the remaining fields that were changed
       this.updateFields(clonedObject, fieldChanges
         .filter(isModificationDiff)
-        .filter(c => shouldUpdateField(before.fields[c.data.before.name],
-          clonedObject.fields[c.data.after.name]))
-        .map(c => clonedObject.fields[c.data.after.name])),
+        .filter(c => shouldUpdateField(c.data.before, c.data.after))
+        .map(getChangeElement)),
     ])
 
     // Update the annotation values - this can't be done asynchronously with the previous
@@ -371,7 +389,7 @@ export default class SalesforceAdapter {
     // to update them.
     if (apiName(clonedObject).endsWith(constants.SALESFORCE_CUSTOM_SUFFIX)
       // Don't update the object unless its changed
-      && wu(changes).find(c => isObjectType(getChangeElement(c)))) {
+      && changes.find(c => isObjectType(getChangeElement(c)))) {
       await this.client.update(
         metadataType(clonedObject),
         toCustomObject(clonedObject, false)
@@ -417,10 +435,16 @@ export default class SalesforceAdapter {
    * @returns successfully managed to update all fields
    */
   private async updateFields(object: ObjectType, fieldsToUpdate: Field[]): Promise<SaveResult[]> {
-    return this.client.update(
+    if (_.isEmpty(fieldsToUpdate)) {
+      return Promise.resolve([])
+    }
+    const result = await this.client.update(
       constants.CUSTOM_FIELD,
       fieldsToUpdate.map(f => toCustomField(object, f, true)),
     )
+    log.debug(`updated custom fields: ${JSON.stringify(fieldsToUpdate.map(f => f.name))
+    } from ${apiName(object)} [result=${JSON.stringify(result)}]`)
+    return result
   }
 
   /**
@@ -431,10 +455,16 @@ export default class SalesforceAdapter {
    */
   private async createFields(object: ObjectType, fieldsToAdd: Field[]): Promise<SaveResult[]> {
     // Create the custom fields
-    return this.client.create(
+    if (_.isEmpty(fieldsToAdd)) {
+      return Promise.resolve([])
+    }
+    const result = await this.client.create(
       constants.CUSTOM_FIELD,
       fieldsToAdd.map(f => toCustomField(object, f, true)),
     )
+    log.debug(`updated custom fields: ${JSON.stringify(fieldsToAdd.map(f => f.name))
+    } from ${apiName(object)} [result=${JSON.stringify(result)}]`)
+    return result
   }
 
   /**
@@ -443,17 +473,23 @@ export default class SalesforceAdapter {
    * @param fields the custom fields we wish to delete
    */
   private async deleteCustomFields(element: ObjectType, fields: Field[]): Promise<SaveResult[]> {
-    return this.client.delete(
-      constants.CUSTOM_FIELD,
-      fields.map(field => fieldFullName(element, field)),
-    )
+    const fullNames = fields.map(field => fieldFullName(element, field))
+    if (_.isEmpty(fullNames)) {
+      return Promise.resolve([])
+    }
+    const result = await this.client.delete(constants.CUSTOM_FIELD, fullNames)
+    log.debug(`deleted custom fields: ${JSON.stringify(fullNames)} [result=${
+      JSON.stringify(result)}]`)
+    return result
   }
 
   private async fetchMetadataTypes(typeNames: Promise<string[]>): Promise<Type[]> {
     const knownTypes = new Map<string, Type>()
-    return _.flatten(await Promise.all((await typeNames)
+    const ret = _.flatten(await Promise.all((await typeNames)
       .filter(name => !this.metadataTypeBlacklist.includes(name))
       .map(obj => this.fetchMetadataType(obj, knownTypes))))
+    log.info(`fetched ${ret.length} metadata types`)
+    return ret
   }
 
   private async fetchMetadataType(objectName: string, knownTypes: Map<string, Type>):
@@ -469,7 +505,9 @@ export default class SalesforceAdapter {
       .filter(isObjectType)
       .filter(t => topLevelTypeNames.includes(sfCase(t.elemID.name)))
       .map(t => this.createInstanceElements(t)))
-    return _.flatten(instances)
+    const ret = _.flatten(instances)
+    log.info(`fetched ${ret.length} instances`)
+    return ret
   }
 
 
@@ -619,7 +657,7 @@ export default class SalesforceAdapter {
     return this.runFiltersInParallel('onRemove', filter => filter.onRemove(before))
   }
 
-  private async getFirstBatchOfInstances(type: ObjectType): Promise <QueryResult<Value>> {
+  private async getFirstBatchOfInstances(type: ObjectType): Promise<QueryResult<Value>> {
     // build the initial query and populate the fields names list in the query
     const queryString = `SELECT ${getCompoundChildFields(type).map(apiName)} FROM ${apiName(type)}`
     return this.client.runQuery(queryString)

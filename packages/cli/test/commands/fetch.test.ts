@@ -28,7 +28,6 @@ describe('fetch command', () => {
   })
 
   describe('execute', () => {
-
     describe('with errored workspace', () => {
       const erroredWorkspace = {
         hasErrors: () => true,
@@ -87,7 +86,7 @@ describe('fetch command', () => {
               changes: dummyChanges.map(
                 (change: DetailedChange): FetchChange => ({ change, serviceChange: change })
               ),
-              mergeErrors: []
+              mergeErrors: [],
             }))
           })
           describe('when called with force', () => {
@@ -139,13 +138,11 @@ describe('fetch command', () => {
               })
 
               it('should exit if errors identified in workspace after update', async () => {
-                mockWorkspace.getWorkspaceErrors = () => {
-                  return [{
-                    sourceFragments: [],
-                    error: 'Error',
-                    severity: 'Error',
-                  }]
-                }
+                mockWorkspace.getWorkspaceErrors = () => [{
+                  sourceFragments: [],
+                  error: 'Error',
+                  severity: 'Error',
+                }]
                 mockWorkspace.hasErrors = () => (true)
 
                 await fetchCommand(mockWorkspace, false, false, cliOutput, mockFetch, mockApprove)
@@ -155,13 +152,11 @@ describe('fetch command', () => {
                 expect(mockWorkspace.flush).not.toHaveBeenCalled()
               })
               it('should not exit if warning identified in workspace after update', async () => {
-                mockWorkspace.getWorkspaceErrors = () => {
-                  return [{
-                    sourceFragments: [],
-                    error: 'Warning',
-                    severity: 'Warning',
-                  }]
-                }
+                mockWorkspace.getWorkspaceErrors = () => [{
+                  sourceFragments: [],
+                  error: 'Warning',
+                  severity: 'Warning',
+                }]
                 mockWorkspace.hasErrors = () => true
 
                 await fetchCommand(mockWorkspace, false, false, cliOutput, mockFetch, mockApprove)
@@ -170,10 +165,10 @@ describe('fetch command', () => {
                 expect(cliOutput.stderr.content).toContain('Warning')
                 expect(mockWorkspace.flush).toHaveBeenCalled()
               })
+            })
           })
         })
       })
     })
   })
-})
 })

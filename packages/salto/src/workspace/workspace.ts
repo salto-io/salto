@@ -153,7 +153,6 @@ export type SourceFragment = {
   fragment: string
 }
 
-
 type WorkspaceState = {
   readonly parsedBlueprints: ParsedBlueprintMap
   readonly sourceMap: SourceMap
@@ -238,11 +237,14 @@ export class Workspace {
       : parseBlueprints(bps)
     const ws = new Workspace(config, await parsedBlueprints)
 
-    log.debug(`finish to load workspace with ${ws.elements.length}`)
+    log.debug(`finished loading workspace with ${ws.elements.length}`)
     if (ws.hasErrors()) {
       const errors = ws.getWorkspaceErrors()
       log.warn(`workspace ${ws.config.name} has ${errors.filter(e => e.severity === 'Error').length
       } workspace errors and ${errors.filter(e => e.severity === 'Warning').length} warnings`)
+      ws.getWorkspaceErrors().forEach(e => {
+        log.warn(`\t${e.severity}: ${e.error}`)
+      })
     }
     return ws
   }

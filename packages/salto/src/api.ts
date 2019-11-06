@@ -98,10 +98,10 @@ export const fetch: fetchFunc = async (workspace, fillConfig) => {
 
   const state = new State(workspace.config.stateLocation)
   const stateElements = await state.get()
-  log.debug(`finish to load ${stateElements.length} state elements`)
+  log.debug(`finished loading ${stateElements.length} state elements`)
 
   const [adapters, newConfigs] = await initAdapters(workspace.elements, fillConfig)
-  log.debug(`${adapters.length} were initated [newConfigs=${newConfigs.length}]`)
+  log.debug(`${adapters.length} were initialized [newConfigs=${newConfigs.length}]`)
 
   const { changes, elements, mergeErrors } = await fetchChanges(
     adapters, workspace.elements, stateElements,

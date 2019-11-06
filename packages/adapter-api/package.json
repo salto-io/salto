@@ -39,8 +39,8 @@
     "@types/shelljs": "^0.7.8",
     "@types/supertest": "^2.0.4",
     "@types/wu": "^2.1.39",
-    "@typescript-eslint/eslint-plugin": "^2.6.0",
-    "@typescript-eslint/parser": "^2.6.0",
+    "@typescript-eslint/eslint-plugin": "^2.6.1",
+    "@typescript-eslint/parser": "^2.6.1",
     "eslint": "^6.2.2",
     "eslint-config-airbnb": "18.0.1",
     "eslint-plugin-import": "^2.18.2",
@@ -53,6 +53,6 @@
     "jest-junit": "^6.4.0",
     "ts-cleaner": "^1.0.2",
     "tsc-watch": "^2.2.1",
-    "typescript": "3.7.1-rc"
+    "typescript": "^3.7.2"
   }
 }

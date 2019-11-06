@@ -8,16 +8,17 @@ import { WriteStream } from './types'
 import { YargsCommandBuilder, CommandBuilder } from './command_builder'
 import { registerBuilders } from './command_register'
 import { versionString } from './version'
+import * as fonts from './fonts'
 
 const LOGO_TEXT = '\u00B0 salto' // \u00B0 is for the salto 'dot'
-const LOGO_FONT = 'Standard'
+const LOGO_FONT = fonts.Font.Standard
 const MAX_WIDTH = 100
 const DO_NOT_SHOW = '***<><><>DO NOT SHOW THIS ERROR<><><>***'
 const USAGE_PREFIX = 'Usage: '
 export const ERROR_STYLE = 'red.bold'
 
 const writeLogo = (outStream: WriteStream): void => {
-  outStream.write(yargonaut.asFont(LOGO_TEXT, LOGO_FONT))
+  outStream.write(fonts.renderSync(LOGO_FONT, LOGO_TEXT))
   outStream.write(EOL)
 }
 

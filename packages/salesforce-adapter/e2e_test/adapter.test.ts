@@ -49,7 +49,7 @@ describe('Salesforce adapter E2E with real account', () => {
       // Test few possible types
       expect(lead.fields.address.type.elemID.name).toBe('address')
       expect(lead.fields.description.type.elemID.name).toBe('longtextarea')
-      expect(lead.fields.name.type.elemID.name).toBe('name')
+      expect(lead.fields.name.type.elemID.name).toBe('field_name')
       expect(lead.fields.owner_id.type.elemID.name).toBe('lookup')
 
       // Test label
@@ -57,7 +57,7 @@ describe('Salesforce adapter E2E with real account', () => {
 
       // Test true and false required
       expect(lead.fields.description.annotations[Type.REQUIRED]).toBe(false)
-      expect(lead.fields.created_date.annotations[Type.REQUIRED]).toBe(true)
+      expect(lead.fields.created_date.annotations[Type.REQUIRED]).toBe(false)
 
       // Test picklist restriction.enforce_value prop
       expect(lead.fields.industry.annotations[Type.RESTRICTION][Type.ENFORCE_VALUE]).toBe(

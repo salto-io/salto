@@ -104,7 +104,7 @@ describe('SalesforceAdapter fetch', () => {
       expect(lead.fields.last_name.type.elemID.name).toBe('text')
       expect(lead.fields.last_name.annotations.label).toBe('Last Name')
       // Test Rquired true and false
-      expect(lead.fields.last_name.annotations[Type.REQUIRED]).toBe(true)
+      expect(lead.fields.last_name.annotations[Type.REQUIRED]).toBe(false)
       expect(lead.fields.first_name.annotations[Type.REQUIRED]).toBe(false)
       // Default string and boolean
       expect(lead.fields.last_name.annotations[Type.DEFAULT]).toBe('BLABLA')

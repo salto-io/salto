@@ -470,7 +470,7 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field): TypeFiel
   const annotations: Values = {
     [API_NAME]: field.name,
     [LABEL]: field.label,
-    [Type.REQUIRED]: !field.nillable,
+    [Type.REQUIRED]: false,
   }
   const defaultValue = getDefaultValue(field)
   if (defaultValue !== undefined) {

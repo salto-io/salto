@@ -105,6 +105,7 @@ export default class SalesforceAdapter {
       // See also SALTO-168.
       'InstalledPackage', // Instances of this don't actually have an ID and they contain duplicates
       'CustomObject', // We have special treatment for this type
+      'StaticResource',
     ],
     metadataToUpdateWithDeploy = [
       'AssignmentRules',

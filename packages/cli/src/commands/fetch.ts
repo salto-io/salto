@@ -47,7 +47,7 @@ export const fetchCommand = async (
     ? changes
     : await getApprovedChanges(changes, interactive)
   outputLine(formatChangesSummary(changes.length, changesToApply.length))
-  return updateWorkspace(workspace, output.stderr, ...changesToApply)
+  return await updateWorkspace(workspace, output.stderr, ...changesToApply)
     ? CliExitCode.Success
     : CliExitCode.AppError
 }

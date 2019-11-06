@@ -327,10 +327,10 @@ export default class SalesforceAdapter {
 
     const clonedObject = after.clone()
     wu(changes)
-      // using single map instead of filter+map as wu is loosing type info
-      .map(c => (c.action === 'add' ? c.data.after : undefined))
-      .reject(_.isUndefined)
-      .forEach(field => addApiNameAndLabel(field as Field))
+      .filter(c => c.action === 'add')
+      .map(getChangeElement)
+      .filter(isField)
+      .forEach(addApiNameAndLabel)
 
     // There are fields that are not equal but their transformation
     // to CustomField is (e.g. lookup field with LookupFilter).

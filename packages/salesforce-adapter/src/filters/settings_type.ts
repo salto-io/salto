@@ -76,14 +76,16 @@ const filterCreator: FilterCreator = ({ client }) => ({
 
     // Add all settings types to elements
     const knownTypesNames = new Set<string>(
-      elements.filter(e => isObjectType(e)).map(a => a.elemID.name)
+      elements.filter(e => isObjectType(e)).map(a => a.elemID.getFullName())
     )
-    settingsTypes.filter(st => !knownTypesNames.has(st.elemID.name)).map(e => elements.push(e))
+    settingsTypes
+      .filter(st => !knownTypesNames.has(st.elemID.getFullName()))
+      .forEach(e => elements.push(e))
 
     // Create all settings instances
     const settingsInstances = await createSettingsInstances(client, settingsTypes)
 
-    settingsInstances.map(e => elements.push(e))
+    settingsInstances.forEach(e => elements.push(e))
   },
 })
 

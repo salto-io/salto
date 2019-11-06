@@ -309,7 +309,7 @@ describe('transformer', () => {
   })
 
   describe('getCompoundChildFields', () => {
-    const nameElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.NAME)
+    const nameElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.FIELD_NAME)
     const geoLocationElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.LOCATION)
     const elemID = new ElemID('salesforce', 'test')
     const testName = 'test'

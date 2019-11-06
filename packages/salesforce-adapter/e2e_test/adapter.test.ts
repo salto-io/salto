@@ -118,7 +118,7 @@ describe('Salesforce adapter E2E with real account', () => {
           && element.elemID.name === 'settings_quote')
         .pop() as InstanceElement
 
-      expect(quoteSettings.value.enable_quote).toBeDefined()
+      expect(quoteSettings).toBeUndefined()
     })
   })
 

@@ -39,7 +39,7 @@ export const FIELD_TYPE_NAMES = {
   LOOKUP_FILTER: 'lookup_filter',
   FILTER_ITEM: 'filter_item',
   ADDRESS: 'address',
-  NAME: 'name',
+  FIELD_NAME: 'field_name',
 }
 
 export const FIELD_TYPE_API_NAMES = {

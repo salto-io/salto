@@ -115,7 +115,7 @@ const lookupFilterObjectType = new ObjectType({
 })
 
 const addressElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.ADDRESS)
-const nameElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.NAME)
+const nameElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.FIELD_NAME)
 const geoLocationElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.LOCATION)
 
 export class Types {

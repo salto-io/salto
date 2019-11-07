@@ -50,9 +50,10 @@ const instancesIterator = async function *instancesIterator(): AsyncIterable<Ins
   const testType = new ObjectType({
     elemID: new ElemID('salesforce', 'test'),
   })
+  const elemID = new ElemID('salesforce')
   const values = [
     {
-      Id: '1',
+      Id: 1,
       FirstName: 'Daile',
       LastName: 'Limeburn',
       Email: 'dlimeburn0@blogs.com',
@@ -60,7 +61,7 @@ const instancesIterator = async function *instancesIterator(): AsyncIterable<Ins
     },
   ]
   yield values.map(value => new InstanceElement(
-    new ElemID('salesforce', value.Id),
+    elemID,
     testType,
     value
   ))
@@ -120,7 +121,7 @@ describe('api functions', () => {
       sandbox: false,
     }
 
-    const elemID = new ElemID('salesforce', ElemID.CONFIG_INSTANCE_NAME)
+    const elemID = new ElemID('salesforce')
     return new InstanceElement(elemID, configType, value)
   }
 
@@ -310,7 +311,7 @@ describe('api functions', () => {
           }
           const results = await firstBatch()
           expect(results).toHaveLength(1)
-          expect(results[0].value.Id).toBe('1')
+          expect(results[0].value.Id).toBe(1)
           expect(results[0].value.FirstName).toBe('Daile')
           expect(results[0].value.LastName).toBe('Limeburn')
           expect(results[0].value.Email).toBe('dlimeburn0@blogs.com')

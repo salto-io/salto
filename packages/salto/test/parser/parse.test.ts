@@ -233,7 +233,8 @@ describe('Salto parser', () => {
         inst = elements[5] as InstanceElement
       })
       it('should have the right id', () => {
-        expect(inst.elemID).toEqual(new ElemID('salesforce', 'inst'))
+        expect(inst.elemID.adapter).toEqual('salesforce')
+        expect(inst.elemID.name).toEqual('inst')
       })
       it('should have the right type', () => {
         expect(inst.type.elemID.adapter).toEqual('salesforce')

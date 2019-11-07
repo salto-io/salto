@@ -44,6 +44,9 @@ export const bpCase = (name: string): string => {
     + _.replace(unescaped.slice(1), /[A-Z]|[0-9]/g, (char: string) => `_${char.toLowerCase()}`)
 }
 
+export const sfInstnaceName = (instance: Element): string =>
+  instance.elemID.nameParts.slice(1).map(p => sfCase(p)).join('')
+
 export const metadataType = (element: Element): string => (
   element.annotations[METADATA_TYPE] || CUSTOM_OBJECT
 )
@@ -723,7 +726,7 @@ SfRecord[] => instances.map(res => res.value)
 
 // Convert the ElemIDs to records
 export const elemIDstoRecords = (ElemIDs: ElemID[]):
-SfRecord[] => ElemIDs.map(elem => ({ Id: elem.shortName }))
+SfRecord[] => ElemIDs.map(elem => ({ Id: elem.nameParts[1] }))
 
 // The purpose of the following method is to modify the list of field names, so that compound
 // fields names do not appear, and only their nested fields appear in the list of fields.

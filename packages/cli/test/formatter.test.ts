@@ -74,13 +74,13 @@ describe('formatter', () => {
     const objectType = allElements[2] as ObjectType
 
     describe('with instance value', () => {
-      const instanceChange = detailedChange('add', instance.elemID, undefined, instance)
+      const instanceChange = detailedChange('add', instance.elemID.nameParts, undefined, instance)
       const output = formatChange(instanceChange)
       it('should have element id', () => {
-        expect(output).toContain(instance.elemID.name)
+        expect(output).toMatch(/\+.*salesforce_employee_instance/)
       })
       it('should have nested values', () => {
-        expect(output).toMatch(new RegExp(`${instance.elemID.name}.*office.*label: "bla"`, 's'))
+        expect(output).toMatch(/salesforce_employee_instance.*office.*label: "bla"/s)
       })
     })
     describe('with primitive type', () => {
@@ -90,46 +90,46 @@ describe('formatter', () => {
         annotations: { bla: 'foo' },
         annotationTypes: { bla: BuiltinTypes.STRING },
       })
-      const typeChange = detailedChange('add', dummyType.elemID, undefined, dummyType)
+      const typeChange = detailedChange('add', dummyType.elemID.nameParts, undefined, dummyType)
       const output = formatChange(typeChange)
       it('should have element id', () => {
-        expect(output).toContain(dummyType.elemID.name)
+        expect(output).toMatch(/\+.*salesforce_text/)
       })
       it('should have type', () => {
-        expect(output).toMatch(new RegExp(`${dummyType.elemID.name}.*TYPE: string`, 's'))
+        expect(output).toMatch(/\+.*salesforce_text.*TYPE: string/s)
       })
       it('should have annotations', () => {
-        expect(output).toMatch(new RegExp(`${dummyType.elemID.name}.*bla`, 's'))
+        expect(output).toMatch(/\+.*salesforce_text.*bla:/s)
       })
       it('should have annotation types', () => {
-        expect(output).toMatch(new RegExp(`${dummyType.elemID.name}.*annotations.*bla`, 's'))
+        expect(output).toMatch(/\+.*salesforce_text.*annotations.*bla/s)
       })
     })
     describe('with object type', () => {
-      const objTypeChange = detailedChange('add', objectType.elemID, undefined, objectType)
+      const objTypeChange = detailedChange('add', objectType.elemID.nameParts, undefined, objectType)
       const output = formatChange(objTypeChange)
       it('should have element id', () => {
-        expect(output).toContain(objectType.elemID.name)
+        expect(output).toMatch(/\+.*salesforce_office/)
       })
       it('should have annotations', () => {
-        expect(output).toMatch(new RegExp(`${objectType.elemID.name}.*description: "Office type in salto"`, 's'))
+        expect(output).toMatch(/\+.*salesforce_office.*description: "Office type in salto"/s)
       })
       it('should have fields', () => {
-        expect(output).toMatch(new RegExp(`${objectType.elemID.name}.*fields.*name`, 's'))
-        expect(output).toMatch(new RegExp(`${objectType.elemID.name}.*fields.*name.*TYPE: string`, 's'))
-        expect(output).toMatch(new RegExp(`${objectType.elemID.name}.*fields.*location`, 's'))
-        expect(output).toMatch(new RegExp(`${objectType.elemID.name}.*fields.*location.*TYPE: salto_address`, 's'))
-        expect(output).toMatch(new RegExp(`${objectType.elemID.name}.*fields.*location.*label`, 's'))
+        expect(output).toMatch(/\+.*salesforce_office.*fields.*name/s)
+        expect(output).toMatch(/\+.*salesforce_office.*fields.*name.*TYPE: string/s)
+        expect(output).toMatch(/\+.*salesforce_office.*fields.*location/s)
+        expect(output).toMatch(/\+.*salesforce_office.*fields.*location.*TYPE: salto_address/s)
+        expect(output).toMatch(/\+.*salesforce_office.*fields.*location.*label/s)
       })
       it('should have annotation types', () => {
-        expect(output).toMatch(new RegExp(`${objectType.elemID.name}.*annotations.*label.*TYPE: string`, 's'))
+        expect(output).toMatch(/\+.*salesforce_office.*annotations.*label.*TYPE: string/s)
       })
     })
     describe('removal change', () => {
-      const instanceChange = detailedChange('remove', instance.elemID, instance, undefined)
+      const instanceChange = detailedChange('remove', instance.elemID.nameParts, instance, undefined)
       const output = formatChange(instanceChange)
       it('should have element id', () => {
-        expect(output).toContain(instance.elemID.name)
+        expect(output).toMatch(/-.*salesforce_employee_instance/)
       })
       it('should not have nested values', () => {
         expect(output).not.toContain('bla')

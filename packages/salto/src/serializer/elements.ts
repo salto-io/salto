@@ -44,31 +44,26 @@ export const serialize = (elements: Element[]): string => {
 
 export const deserialize = (data: string): Element[] => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const reviveElemID = (v: {[key: string]: any}): ElemID => (
-    new ElemID(v.adapter, ...v.nameParts)
-  )
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const revivers: {[key: string]: (v: {[key: string]: any}) => Element|Expression} = {
     [InstanceElement.name]: v => new InstanceElement(
-      reviveElemID(v.elemID),
+      new ElemID(v.elemID.adapter, ...v.elemID.nameParts),
       v.type,
       v.value,
     ),
     [ObjectType.name]: v => new ObjectType({
-      elemID: reviveElemID(v.elemID),
+      elemID: new ElemID(v.elemID.adapter, ...v.elemID.nameParts),
       fields: v.fields,
       annotationTypes: v.annotationTypes,
       annotations: v.annotations,
     }),
     [PrimitiveType.name]: v => new PrimitiveType({
-      elemID: reviveElemID(v.elemID),
+      elemID: new ElemID(v.elemID.adapter, ...v.elemID.nameParts),
       primitive: v.primitive,
       annotationTypes: v.annotationTypes,
       annotations: v.annotations,
     }),
     [Field.name]: v => new Field(
-      reviveElemID(v.parentID),
+      new ElemID(v.parentID.adapter, ...v.parentID.nameParts),
       v.name,
       v.type,
       v.annotations,

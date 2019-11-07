@@ -100,10 +100,10 @@ const formatChangeData = (change: DetailedChange): string => {
 export const formatChange = (change: DetailedChange): string => {
   const modifierType = isDummyChange(change) ? 'eq' : change.action
   const modifier = Prompts.MODIFIERS[modifierType]
-  const id = change.id.nestingLevel === 1
+  const id = change.id.nameParts.length === 1
     ? change.id.getFullName()
-    : change.id.shortName
-  return indent(`${modifier} ${id}: ${formatChangeData(change)}`, change.id.nestingLevel)
+    : change.id.nameParts.slice(-1)[0]
+  return indent(`${modifier} ${id}: ${formatChangeData(change)}`, change.id.nameParts.length)
 }
 
 const createCountPlanItemTypesOutput = (plan: Plan): string => {
@@ -128,7 +128,7 @@ const formatDetailedChanges = (changeGroups: Iterable<Iterable<DetailedChange>>)
 
     const createMissingChanges = (id: ElemID, existingIds: Set<string>): DetailedChange[] => {
       const parentId = id.createParentID()
-      if (parentId.isConfig() || existingIds.has(parentId.getFullName())) {
+      if (parentId.nameParts.length === 0 || existingIds.has(parentId.getFullName())) {
         return []
       }
       existingIds.add(parentId.getFullName())

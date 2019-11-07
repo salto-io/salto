@@ -22,9 +22,9 @@ export class ElemID {
   static readonly NAMESPACE_SEPERATOR = '_'
   static readonly CONFIG_INSTANCE_NAME = '_config'
 
-  nameParts: string[]
-  adapter: string
-  constructor(adapter: string, ...name: string[]) {
+  readonly adapter: string
+  private readonly nameParts: ReadonlyArray<string>
+  constructor(adapter: string, ...name: ReadonlyArray<string>) {
     this.adapter = adapter
     this.nameParts = name
   }
@@ -33,9 +33,20 @@ export class ElemID {
     return this.nameParts.join(ElemID.NAMESPACE_SEPERATOR)
   }
 
+  get shortName(): string {
+    return this.fullNameParts().slice(-1)[0]
+  }
+
+  get nestingLevel(): number {
+    return this.isConfig() ? 0 : this.nameParts.length
+  }
+
+  private fullNameParts(): string[] {
+    return [this.adapter, ...this.nameParts].filter(part => !_.isEmpty(part)) as string[]
+  }
+
   getFullName(): string {
-    return this.isConfig() ? this.adapter
-      : [this.adapter, this.name].filter(p => !_.isEmpty(p)).join(ElemID.NAMESPACE_SEPERATOR)
+    return this.isConfig() ? this.adapter : this.fullNameParts().join(ElemID.NAMESPACE_SEPERATOR)
   }
 
   isConfig(): boolean {
@@ -273,7 +284,7 @@ export class ObjectType extends Type {
     const { isSettings } = this
 
     const res: ObjectType = new ObjectType({
-      elemID: new ElemID(this.elemID.adapter, ...this.elemID.nameParts),
+      elemID: this.elemID,
       fields: clonedFields,
       annotationTypes: clonedAnnotationTypes,
       annotations: clonedAnnotations,

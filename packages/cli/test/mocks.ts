@@ -178,11 +178,11 @@ export const elements = (): Element[] => {
 }
 
 export const detailedChange = (
-  action: 'add' | 'modify' | 'remove', path: string[],
+  action: 'add' | 'modify' | 'remove', path: ReadonlyArray<string> | ElemID,
   /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
   before: any, after: any,
 ): DetailedChange => {
-  const id = new ElemID('salesforce', ...path)
+  const id = path instanceof ElemID ? path : new ElemID('salesforce', ...path)
   if (action === 'add') {
     return { action, id, data: { after } }
   }

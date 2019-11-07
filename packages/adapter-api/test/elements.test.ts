@@ -364,11 +364,27 @@ describe('Test elements.ts', () => {
 
   describe('ElemID', () => {
     const exampleId = new ElemID('adapter', 'example')
+    const configTypeId = new ElemID('adapter')
+    const configInstId = new ElemID('adapter', ElemID.CONFIG_INSTANCE_NAME)
+
+    describe('shortName', () => {
+      it('should return the last part of the ID', () => {
+        expect(exampleId.shortName).toEqual('example')
+      })
+    })
+
+    describe('nestingLevel', () => {
+      it('should return the number of nested namespaces', () => {
+        expect(exampleId.nestingLevel).toEqual(1)
+      })
+      describe('for config instance', () => {
+        it('should be zero', () => {
+          expect(configInstId.nestingLevel).toEqual(0)
+        })
+      })
+    })
 
     describe('isConfig', () => {
-      const configTypeId = new ElemID('adapter')
-      const configInstId = new ElemID('adapter', ElemID.CONFIG_INSTANCE_NAME)
-
       it('should return true for config type ID', () => {
         expect(configTypeId.isConfig()).toBeTruthy()
       })
@@ -384,13 +400,13 @@ describe('Test elements.ts', () => {
 
     describe('createNestedID', () => {
       it('should create an ID with one additional name part', () => {
-        expect(exampleId.createNestedID('test').nameParts).toEqual(['example', 'test'])
+        expect(exampleId.createNestedID('test')).toEqual(new ElemID('adapter', 'example', 'test'))
       })
     })
 
     describe('createParentID', () => {
       it('should create an ID with one less name part', () => {
-        expect(exampleId.createParentID().nameParts).toEqual([])
+        expect(exampleId.createParentID()).toEqual(new ElemID('adapter'))
       })
     })
   })

@@ -104,7 +104,10 @@ describe('Standard Value Sets filter', () => {
     const elements: Element[] = [mockSVSType.clone(), typeElement]
     await filter.onFetch(elements)
     expect(elements.length).toBe(4)
-    expect(typeElement.fields.state.annotations[Type.VALUES]).toBe('salesforce_standard_value_set_simpsons')
+    const simpsonsSvs = elements[2]
+    expect(typeElement.fields.state.annotations[Type.VALUES]).toEqual(
+      simpsonsSvs.elemID.getFullName(),
+    )
   })
 
   it('should replace value list with references for standard multipicklist fields', async () => {
@@ -115,7 +118,10 @@ describe('Standard Value Sets filter', () => {
     const elements: Element[] = [mockSVSType.clone(), typeElement]
     await filter.onFetch(elements)
     expect(elements.length).toBe(4)
-    expect(typeElement.fields.state.annotations[Type.VALUES]).toBe('salesforce_standard_value_set_simpsons')
+    const simpsonsSvs = elements[2]
+    expect(typeElement.fields.state.annotations[Type.VALUES]).toEqual(
+      simpsonsSvs.elemID.getFullName(),
+    )
   })
 
   it('should not replace value list with references for custom picklist fields', async () => {

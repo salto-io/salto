@@ -42,13 +42,11 @@ export const fetchCommand = async (
 
   // Unpack changes to array so we can iterate on them more than once
   const changes = [...fetchResult.changes]
-  log.debug(`fetch result contains ${changes.length} changes`)
   // If the workspace starts empty there is no point in showing a huge amount of changes
   const isEmptyWorkspace = workspace.elements.filter(elem => !elem.elemID.isConfig()).length === 0
   const changesToApply = force || isEmptyWorkspace
     ? changes
     : await getApprovedChanges(changes, interactive)
-  log.debug(`going to update workspace with ${changesToApply.length} changes`)
   outputLine(formatChangesSummary(changes.length, changesToApply.length))
   return await updateWorkspace(workspace, output.stderr, ...changesToApply)
     ? CliExitCode.Success
@@ -62,7 +60,8 @@ export const command = (
   output: CliOutput
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
-    log.debug(`running fetch command on ${workspaceDir} [force=${force}].. `)
+    log.debug(`running fetch command on '${workspaceDir}' [force=${force}, interactive=${
+      interactive}]`)
     const { workspace, errored } = await loadWorkspace(workspaceDir, output.stderr)
     if (errored) {
       return CliExitCode.AppError

@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import { Workspace, loadConfig, FetchChange, WorkspaceError } from 'salto'
 import { logger } from '@salto/logging'
-import { formatWorkspaceErrors } from './formatter'
+import { formatWorkspaceErrors, formatChange } from './formatter'
 import { WriteStream } from './types'
 
 const log = logger(module)
@@ -34,13 +34,18 @@ export const loadWorkspace = async (
 export const updateWorkspace = async (ws: Workspace, stderr: WriteStream,
   ...changes: FetchChange[]): Promise<boolean> => {
   if (changes.length > 0) {
+    log.info(`going to update workspace with ${changes.length} changes out of ${
+      changes.length} changes`)
+    const isEmpty = ws.elements && ws.elements.filter(elem => !elem.elemID.isConfig()).length === 0
+    if (!isEmpty) {
+      _(changes.map(c => formatChange(c.change).split('\n'))).flatten().forEach(s => log.info(s))
+    }
+
     await ws.updateBlueprints(...changes.map(c => c.change))
-    log.debug(`updated workspace with ${changes.length} changes`)
     if (!validateWorkspace(ws, stderr)) {
       log.warn(`workspace has ${ws.getWorkspaceErrors().filter(isError).length} errors - ABORT`)
       return false
     }
-    log.debug('going to flush workspace state')
     await ws.flush()
     log.debug('finished to flush workspace state')
   }

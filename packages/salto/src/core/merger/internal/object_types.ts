@@ -208,7 +208,7 @@ export const mergeObjectTypes = (
   const merged = _.mapValues(mergeResults, r => r.merged)
   const errors = _.flatten(Object.values(mergeResults).map(r => r.errors))
 
-  log.debug(`merged ${objectTypes.length} objects to ${merged.length} elements [errors=${
+  log.debug(`merged ${objectTypes.length} objects to ${_.size(merged)} elements [errors=${
     errors.length}]`)
   return { merged, errors }
 }

@@ -3,8 +3,11 @@ import {
   Type, Field, Values, isObjectType, PrimitiveTypes, ElemID,
   isPrimitiveType, Element, isInstanceElement, isField, isElement, Value,
 } from 'adapter-api'
+import { logger } from '@salto/logging'
 import HclParser, { DumpedHclBlock, HclDumpReturn } from './internal/hcl'
 import { Keywords } from './language'
+
+const log = logger(module)
 
 /**
  * @param primitiveType Primitive type identifier
@@ -174,5 +177,9 @@ export const dump = async (
     : dumpBlock(elemListOrValues)
 
   body.blocks = body.blocks.map(markDumpedBlockQuotes)
-  return removeQuotes(await HclParser.dump(body))
+  const before = Date.now()
+  const hcl = await HclParser.dump(body)
+  log.debug(`dumped ${body.blocks ? `${body.blocks.length} blocks` : `block type=${body.type}`
+  } [buffer size=${hcl.length}; took=${Date.now() - before} ms]`)
+  return removeQuotes(hcl)
 }

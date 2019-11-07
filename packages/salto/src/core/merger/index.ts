@@ -80,7 +80,7 @@ export const mergeElements = (elements: ReadonlyArray<Element>): MergeResult => 
     ...resolveResult.errors,
   ]
 
-  log.debug(`merged ${elements.length} elements to ${resolveResult.merged} elements [errors=${
+  log.debug(`merged ${elements.length} elements to ${resolveResult.merged.length} elements [errors=${
     errors.length}]`)
   return {
     merged: resolveResult.merged,

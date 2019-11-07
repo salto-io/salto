@@ -85,6 +85,7 @@ export class Field implements Element {
 
   isEqual(other: Field): boolean {
     return _.isEqual(this.type.elemID, other.type.elemID)
+      && _.isEqual(this.elemID, other.elemID)
       && _.isEqual(this.annotations, other.annotations)
       && this.isList === other.isList
   }

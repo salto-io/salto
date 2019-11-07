@@ -9,19 +9,25 @@ export type DiffNodeId = string
 
 interface BaseDiffNode {originalId: NodeId}
 
-export interface AdditionDiff<T> {
+export type ActionName = 'add' | 'remove' | 'modify'
+
+interface Diff {
+  action: ActionName
+}
+
+export interface AdditionDiff<T> extends Diff {
   action: 'add'
   data: { after: T }
 }
 type AdditionDiffNode<T> = BaseDiffNode & AdditionDiff<T>
 
-export interface RemovalDiff<T> {
+export interface RemovalDiff<T> extends Diff {
   action: 'remove'
   data: { before: T }
 }
 type RemovalDiffNode<T> = BaseDiffNode & RemovalDiff<T>
 
-export interface ModificationDiff<T> {
+export interface ModificationDiff<T> extends Diff {
   action: 'modify'
   data: { before: T; after: T }
 }

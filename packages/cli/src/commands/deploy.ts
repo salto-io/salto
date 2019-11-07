@@ -1,5 +1,5 @@
 import { deploy, PlanItem, actionStep } from 'salto'
-import { getChangeElement } from 'adapter-api'
+import { getChangeElement, ActionName } from 'adapter-api'
 import { setInterval } from 'timers'
 import { logger } from '@salto/logging'
 import { EOL } from 'os'
@@ -29,18 +29,16 @@ type Action = {
 export class DeployCommand implements CliCommand {
   readonly stdout: WriteStream
   readonly stderr: WriteStream
-  readonly spinnerCreator: SpinnerCreator
   private actions: Map<string, Action>
 
   constructor(
     private readonly workspaceDir: string,
     readonly force: boolean,
     { stdout, stderr }: CliOutput,
-    spinnerCreator: SpinnerCreator,
+    private readonly spinnerCreator: SpinnerCreator,
   ) {
     this.stdout = stdout
     this.stderr = stderr
-    this.spinnerCreator = spinnerCreator
     this.actions = new Map<string, Action>()
   }
 
@@ -56,8 +54,8 @@ export class DeployCommand implements CliCommand {
     }
   }
 
-  pollAction(itemId: string, action: string, startTime: Date): void {
-    this.stdout.write(createActionInProgressOutput(itemId, action, startTime))
+  pollAction(itemId: string, actionName: ActionName, startTime: Date): void {
+    this.stdout.write(createActionInProgressOutput(itemId, actionName, startTime))
   }
 
   errorAction(itemId: string, details: string): void {

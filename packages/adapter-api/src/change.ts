@@ -1,9 +1,11 @@
 import {
-  AdditionDiff, ModificationDiff, RemovalDiff,
+  AdditionDiff, ModificationDiff, RemovalDiff, ActionName,
 } from '@salto/dag'
 import {
   ObjectType, InstanceElement, Field, PrimitiveType,
 } from './elements'
+
+export { ActionName }
 
 export type ChangeDataType = ObjectType | InstanceElement | Field | PrimitiveType
 export type Change<T = ChangeDataType> =

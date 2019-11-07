@@ -1,10 +1,10 @@
 import wu from 'wu'
 import {
-  ObjectType, InstanceElement, Element, Value,
+  ObjectType, InstanceElement, Element, Value, ActionName,
 } from 'adapter-api'
 import { logger } from '@salto/logging'
 import {
-  applyActions, actionStep, DeployError,
+  deployActions, actionStep, DeployError,
 } from './core/core'
 import {
   getInstancesOfType, importInstancesOfType, deleteInstancesOfType,
@@ -42,7 +42,7 @@ export const deploy = async (
   reportProgress: (item: PlanItem, step: actionStep, details?: string) => void,
   force = false
 ): Promise<DeployResult> => {
-  const deployActionOnState = async (state: State, action: string, element: Element
+  const deployActionOnState = async (state: State, action: ActionName, element: Element
   ): Promise<void> => {
     if (action === 'remove') {
       return state.remove([element])
@@ -56,7 +56,7 @@ export const deploy = async (
     const actionPlan = getPlan(stateElements, workspace.elements)
     if (force || await shouldDeploy(actionPlan)) {
       const [adapters] = await initAdapters(workspace.elements, fillConfig)
-      const errors = await applyActions(
+      const errors = await deployActions(
         actionPlan,
         adapters,
         reportProgress,

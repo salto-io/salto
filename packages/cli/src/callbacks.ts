@@ -1,5 +1,4 @@
 import _ from 'lodash'
-import { EOL } from 'os'
 // TODO: This import breaks the abstraction of CliOutput as it communicate directly with console
 import * as inquirer from 'inquirer'
 import {
@@ -8,7 +7,8 @@ import {
 } from 'adapter-api'
 import { Plan, FetchChange } from 'salto'
 import {
-  createDeployPlanOutput, formatFetchChangeForApproval, deployPhaseHeader,
+  createDeployPlanOutput, formatFetchChangeForApproval,
+  deployPhaseHeader, cancelDeployOutput,
 } from './formatter'
 import Prompts from './prompts'
 import { CliOutput } from './types'
@@ -31,13 +31,9 @@ export const shouldDeploy = ({ stdout }: CliOutput) => async (actions: Plan): Pr
   }
   const shouldExecute = await getUserBooleanInput(Prompts.SHOULDEXECUTREPLAN)
   if (shouldExecute) {
-    stdout.write(EOL)
     stdout.write(deployPhaseHeader)
-    stdout.write(EOL)
-    stdout.write(EOL)
   } else {
-    stdout.write(Prompts.CANCELDEPLOY)
-    stdout.write(EOL)
+    stdout.write(cancelDeployOutput)
   }
   return shouldExecute
 }

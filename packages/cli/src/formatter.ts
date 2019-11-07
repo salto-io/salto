@@ -3,7 +3,7 @@ import chalk from 'chalk'
 import wu from 'wu'
 import {
   isType, Element, Type, isInstanceElement, Values, Change, Value, getChangeElement, ElemID,
-  isObjectType, isField, isPrimitiveType, Field, PrimitiveTypes,
+  isObjectType, isField, isPrimitiveType, Field, PrimitiveTypes, ActionName,
 } from 'adapter-api'
 import {
   Plan, PlanItem, FoundSearchResult, SearchResult, DetailedChange,
@@ -237,7 +237,17 @@ export const formatSearchResults = (result: SearchResult): string => {
 const deployPhaseIndent = 2
 const styleItemName = (itemName: string): string => indent(header(`${itemName}:`), deployPhaseIndent)
 
-export const deployPhaseHeader = header(Prompts.STARTDEPLOYEXEC)
+export const deployPhaseHeader = header([
+  emptyLine(),
+  Prompts.STARTDEPLOYEXEC,
+  emptyLine(),
+].join('\n'))
+
+export const cancelDeployOutput = header([
+  Prompts.CANCELDEPLOY,
+  emptyLine(),
+].join('\n'))
+
 export const deployPhaseEpilogue = header([
   emptyLine(),
   Prompts.FINISHEDDEPLOYEXEC,
@@ -286,13 +296,13 @@ export const createActionStartOutput = (action: PlanItem): string => {
 
 export const createActionInProgressOutput = (
   itemName: string,
-  action: string,
+  actionName: ActionName,
   start: Date
 ): string => {
   const elapsed = getElapsedTime(start)
   const styledItemName = styleItemName(itemName)
   return body(`${styledItemName} Still ${
-    Prompts.STARTACTION[action as 'add' | 'modify' | 'remove']
+    Prompts.STARTACTION[actionName]
   } (${elapsed}s elapsed)\n`)
 }
 

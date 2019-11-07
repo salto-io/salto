@@ -1,6 +1,6 @@
 import wu from 'wu'
 import {
-  Element, Adapter, getChangeElement,
+  Element, Adapter, getChangeElement, ActionName,
 } from 'adapter-api'
 import { WalkError, NodeSkippedError } from '@salto/dag'
 import { Plan, PlanItem, PlanItemId } from './plan'
@@ -41,11 +41,11 @@ export class DeployError extends Error {
 
 export type actionStep = 'started' | 'finished' | 'error' | 'cancelled'
 
-export const applyActions = async (
+export const deployActions = async (
   deployPlan: Plan,
   adapters: Record<string, Adapter>,
   reportProgress: (item: PlanItem, step: actionStep, details?: string) => void,
-  postApplyAction: (action: string, element: Element) => Promise<void>
+  postApplyAction: (action: ActionName, element: Element) => Promise<void>
 ): Promise<DeployError[]> => {
   const deployErrors: DeployError[] = []
   try {

@@ -1,8 +1,15 @@
 import _ from 'lodash'
 import { Element } from 'adapter-api'
+import { logger } from '@salto/logging'
 import { readTextFile, writeTextFile } from '../file'
 import { serialize, deserialize } from '../serializer/elements'
 
+const log = logger(module)
+
+const formatElements = (elements: Element[]): string =>
+  elements.map(e => e.elemID.getFullName()).join()
+const countElements = (elements: Element[]): number =>
+  _.size(elements)
 /**
  * Salto state - an interface for managing the state between runs
  */
@@ -16,6 +23,7 @@ export default class State {
     public async get(): Promise<Element[]> {
       if (!this.state) {
         this.state = await this.read()
+        log.debug(`loaded state [#elements=${countElements(this.state)}]`)
       }
       return this.state as Element[]
     }
@@ -30,6 +38,7 @@ export default class State {
           current.splice(index, 1, element)
         }
       })
+      log.debug(`updated elements=${formatElements(elements)}]`)
     }
 
     public async remove(elements: Element[]): Promise<void> {
@@ -37,6 +46,7 @@ export default class State {
       elements.forEach(element => {
         _.remove(current, _.matches(element))
       })
+      log.debug(`removed elements=${formatElements(elements)}]`)
     }
 
     /**
@@ -47,6 +57,7 @@ export default class State {
       if (!this.state) return
       const buffer = serialize(this.state)
       await writeTextFile(this.statePath, buffer)
+      log.debug(`finish flushing state [#elements=${countElements(this.state)}]`)
     }
 
     /**
@@ -55,6 +66,7 @@ export default class State {
      */
     public override(elements: Element[]): void {
       this.state = elements
+      log.debug(`overrided state [#elements=${countElements(this.state)}]`)
     }
 
     /**

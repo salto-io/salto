@@ -3,7 +3,7 @@ import { logger } from '@salto/logging'
 import { createCommandBuilder } from '../command_builder'
 import { CliCommand, CliOutput, ParsedCliInput, WriteStream, CliExitCode } from '../types'
 import {
-  createActionStartOutput, createActionInProgressOutput, createItemDoneOutput, formatChange,
+  createActionStartOutput, createActionInProgressOutput, createItemDoneOutput,
 } from '../formatter'
 import { shouldDeploy, getConfigFromUser } from '../callbacks'
 import { loadWorkspace, updateWorkspace } from '../workspace'
@@ -53,6 +53,7 @@ export class DeployCommand implements CliCommand {
   }
 
   async execute(): Promise<CliExitCode> {
+    log.debug(`running deploy command on '${this.workspaceDir}' [force=${this.force}]`)
     const { workspace, errored } = await loadWorkspace(this.workspaceDir, this.stderr)
     if (errored) {
       return CliExitCode.AppError

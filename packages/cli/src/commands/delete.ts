@@ -49,11 +49,11 @@ const deleteBuilder = createCommandBuilder({
   options: {
     command: 'delete <type-name> <input-path>',
     aliases: ['del'],
-    description: 'deletes all objects of a given type from a provided CSV',
+    description: 'Deletes records in the provided CSV file from the target service',
     positional: {
       'type-name': {
         type: 'string',
-        description: 'The type name of the instances to delete as it appears in the blueprint',
+        description: 'The type name of the records to delete (as it appears in the blueprints)',
       },
       'input-path': {
         type: 'string',

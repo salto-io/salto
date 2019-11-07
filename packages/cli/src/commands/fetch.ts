@@ -81,18 +81,18 @@ const fetchBuilder = createCommandBuilder({
   options: {
     command: 'fetch',
     aliases: ['f'],
-    description: 'Update blueprints and state in workspace directory',
+    description: 'Syncs this workspace\'s blueprints with the services\' current state',
     keyed: {
       force: {
         alias: ['f'],
-        describe: 'Accept all incoming changes to the workspace',
+        describe: 'Accept all incoming changes',
         boolean: true,
         default: false,
         demandOption: false,
       },
       interactive: {
         alias: ['i'],
-        describe: 'Show all incoming changes for interactive approval',
+        describe: 'Interactively approve every incoming change',
         boolean: true,
         default: false,
         demandOption: false,

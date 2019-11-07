@@ -80,11 +80,11 @@ const deployBuilder = createCommandBuilder({
   options: {
     command: 'deploy',
     aliases: ['dep'],
-    description: 'Deploys changes to the target services',
+    description: 'Deploys the current blueprints config to the target services',
     keyed: {
       force: {
         alias: ['f'],
-        describe: 'Do not ask for approval before deploying and applying workspace changes',
+        describe: 'Do not ask for approval before deploying the changes',
         boolean: true,
         default: false,
         demandOption: false,

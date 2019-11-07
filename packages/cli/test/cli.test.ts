@@ -172,8 +172,8 @@ describe('cli', () => {
       await mocks.cli({ args: 'deploy --force --verbose' })
     })
 
-    it('configures the logging to level info', () => {
-      expect(configure).toHaveBeenCalledWith({ minLevel: 'info' })
+    it('configures the logging to level debug', () => {
+      expect(configure).toHaveBeenCalledWith({ minLevel: 'debug' })
     })
   })
 

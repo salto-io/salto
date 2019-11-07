@@ -202,6 +202,7 @@ export const createPlanOutput = (plan: Plan): string => {
   const executionOutput = createExecutionOutput(plan)
   return executionOutput.concat([
     subHeader(Prompts.PREVIEWDISCLAIMER),
+    emptyLine(),
   ]).join('\n')
 }
 

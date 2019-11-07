@@ -102,7 +102,7 @@ export const updateBlueprintData = async (
     const elem = change.action === 'remove' ? undefined : change.data.after
     let newData: string
     if (elem !== undefined) {
-      const changeKey = change.id.nameParts.slice(-1)[0]
+      const changeKey = change.id.shortName
       const isListElement = changeKey.match(/^\d+$/) !== null
       if (isElement(elem) || isListElement) {
         // elements and list values do not need to be serialized with their key

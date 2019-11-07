@@ -57,12 +57,12 @@ describe('State serialization', () => {
         parts: [
           'I am not',
           new ReferenceExpression({
-            traversalParts: ['salesforce_me', 'name'],
+            traversalParts: [instance.elemID.getFullName(), 'name'],
           }),
         ],
       }),
       num: new ReferenceExpression({
-        traversalParts: ['salesforce_me', 'num'],
+        traversalParts: [instance.elemID.getFullName(), 'num'],
       }),
     }
   )

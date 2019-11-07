@@ -30,10 +30,6 @@ export class ElemID {
   }
 
   get name(): string {
-    return this.nameParts.join(ElemID.NAMESPACE_SEPERATOR)
-  }
-
-  get shortName(): string {
     return this.fullNameParts().slice(-1)[0]
   }
 
@@ -50,7 +46,8 @@ export class ElemID {
   }
 
   isConfig(): boolean {
-    return _.isEmpty(this.name) || this.name === ElemID.CONFIG_INSTANCE_NAME
+    return this.nameParts.length === 0
+      || (this.nameParts.length === 1 && this.nameParts[0] === ElemID.CONFIG_INSTANCE_NAME)
   }
 
   createNestedID(...nameParts: string[]): ElemID {

@@ -39,14 +39,14 @@ const removeQuotes = (
 
 const dumpFieldBlock = (field: Field): DumpedHclBlock => ({
   type: field.type.elemID.getFullName(),
-  labels: [field.elemID.shortName],
+  labels: [field.elemID.name],
   attrs: field.annotations,
   blocks: [],
 })
 
 const dumpListFieldBlock = (field: Field): DumpedHclBlock => ({
   type: Keywords.LIST_DEFINITION,
-  labels: [field.type.elemID.getFullName(), field.elemID.shortName],
+  labels: [field.type.elemID.getFullName(), field.elemID.name],
   attrs: field.annotations,
   blocks: [],
 })
@@ -92,7 +92,7 @@ const dumpElementBlock = (elem: Element): DumpedHclBlock => {
   if (isInstanceElement(elem)) {
     return {
       type: elem.type.elemID.getFullName(),
-      labels: elem.elemID.isConfig() || elem.type.isSettings ? [] : [elem.elemID.shortName],
+      labels: elem.elemID.isConfig() || elem.type.isSettings ? [] : [elem.elemID.name],
       attrs: elem.value,
       blocks: [],
     }

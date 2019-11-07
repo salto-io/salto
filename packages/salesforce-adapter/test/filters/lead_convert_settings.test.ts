@@ -50,12 +50,19 @@ describe('lead convert settings filter', () => {
     let leadPostFilter: ObjectType
     let testElements: Element[]
 
+    const findElements = (
+      elements: ReadonlyArray<Element>,
+      ...name: ReadonlyArray<string>
+    ): Element[] => elements.filter(
+      e => e.elemID.getFullName() === new ElemID(constants.SALESFORCE, ...name).getFullName(),
+    )
+
     beforeEach(async () => {
       testElements = [_.cloneDeep(mockLead),
         _.cloneDeep(mockConvertSettingsType),
         _.cloneDeep(mockConvertSettingsInstance)]
       await filter.onFetch(testElements)
-      leadPostFilter = testElements.find(e => e.elemID.name === LEAD_TYPE) as ObjectType
+      leadPostFilter = findElements(testElements, LEAD_TYPE).pop() as ObjectType
     })
 
     it('should add annotations to lead', async () => {

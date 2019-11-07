@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import {
-  ObjectType, Type, InstanceElement,
+  ObjectType, Type, InstanceElement, ElemID, Element,
 } from 'adapter-api'
 import SalesforceAdapter from '../src/adapter'
 import Connection from '../src/client/jsforce'
@@ -11,6 +11,13 @@ import mockAdpater from './adapter'
 describe('SalesforceAdapter fetch', () => {
   let connection: Connection
   let adapter: SalesforceAdapter
+
+  const findElements = (
+    elements: ReadonlyArray<Element>,
+    ...name: ReadonlyArray<string>
+  ): Element[] => elements.filter(
+    e => e.elemID.getFullName() === new ElemID(constants.SALESFORCE, ...name).getFullName(),
+  )
 
   beforeEach(() => {
     ({ connection, adapter } = mockAdpater({
@@ -100,7 +107,7 @@ describe('SalesforceAdapter fetch', () => {
       ])
       const result = await adapter.fetch()
 
-      const lead = result.filter(o => o.elemID.name === 'lead').pop() as ObjectType
+      const lead = findElements(result, 'lead').pop() as ObjectType
       expect(lead.fields.last_name.type.elemID.name).toBe('text')
       expect(lead.fields.last_name.annotations.label).toBe('Last Name')
       // Test Rquired true and false
@@ -135,7 +142,7 @@ describe('SalesforceAdapter fetch', () => {
       ])
       const result = await adapter.fetch()
 
-      const lead = result.filter(o => o.elemID.name === 'lead').pop() as ObjectType
+      const lead = findElements(result, 'lead').pop() as ObjectType
       expect(lead.fields.primary_c.type.elemID.name).toBe('picklist')
       expect((lead.fields.primary_c.annotations[Type.VALUES] as string[]).join(';')).toBe('No;Yes')
       expect(lead.fields.primary_c.annotations[Type.DEFAULT]).toBe('Yes')
@@ -157,7 +164,7 @@ describe('SalesforceAdapter fetch', () => {
       ])
       const result = await adapter.fetch()
 
-      const lead = result.filter(o => o.elemID.name === 'lead').pop() as ObjectType
+      const lead = findElements(result, 'lead').pop() as ObjectType
       expect(lead.fields.primary_c.type.elemID.name).toBe('combobox')
       expect((lead.fields.primary_c.annotations[Type.VALUES] as string[]).join(';'))
         .toBe('No;Yes')
@@ -176,7 +183,7 @@ describe('SalesforceAdapter fetch', () => {
       ])
       const result = await adapter.fetch()
 
-      const lead = result.filter(o => o.elemID.name === 'lead').pop() as ObjectType
+      const lead = findElements(result, 'lead').pop() as ObjectType
       expect(lead.fields.number_field.type.elemID.name).toBe('number')
     })
 
@@ -236,7 +243,7 @@ describe('SalesforceAdapter fetch', () => {
       ])
       const result = await adapter.fetch()
 
-      const lead = result.filter(o => o.elemID.name === 'lead').pop() as ObjectType
+      const lead = findElements(result, 'lead').pop() as ObjectType
       expect(lead.fields.auto_number.type.elemID.name).toBe('autonumber')
       expect(lead.fields.string.type.elemID.name).toBe('text')
       expect(lead.fields.number.type.elemID.name).toBe('number')
@@ -261,7 +268,7 @@ describe('SalesforceAdapter fetch', () => {
 
       const result = await adapter.fetch()
 
-      const testElements = result.filter(o => o.elemID.name === 'test') as ObjectType[]
+      const testElements = findElements(result, 'test') as ObjectType[]
       expect(testElements).toHaveLength(2)
       const [test, testCustomizations] = testElements
       expect(test.path).toEqual(['objects', 'standard', 'test'])
@@ -284,7 +291,7 @@ describe('SalesforceAdapter fetch', () => {
 
       const result = await adapter.fetch()
 
-      const testElements = result.filter(o => o.elemID.name === 'test') as ObjectType[]
+      const testElements = findElements(result, 'test') as ObjectType[]
       expect(testElements).toHaveLength(1)
       const [test] = testElements
       expect(test.path).toEqual(['types', 'object', 'test'])
@@ -304,7 +311,7 @@ describe('SalesforceAdapter fetch', () => {
 
       const result = await adapter.fetch()
 
-      const testElements = result.filter(o => o.elemID.name === 'test__c') as ObjectType[]
+      const testElements = findElements(result, 'test__c') as ObjectType[]
       // custom objects should not be split
       expect(testElements).toHaveLength(1)
       const [test] = testElements
@@ -320,7 +327,7 @@ describe('SalesforceAdapter fetch', () => {
 
       const result = await adapter.fetch()
 
-      const flow = result.filter(o => o.elemID.name === 'flow').pop() as ObjectType
+      const flow = findElements(result, 'flow').pop() as ObjectType
       expect(flow).toBeDefined() // We do expect to get the metadata type here
       expect(Object.keys(flow.fields)).toHaveLength(0)
       expect(flow.path).toEqual(['types', 'flow'])
@@ -383,7 +390,7 @@ describe('SalesforceAdapter fetch', () => {
       const describeMock = connection.metadata.describeValueType as jest.Mock<unknown>
       expect(describeMock).toHaveBeenCalled()
       expect(describeMock.mock.calls[0][0]).toBe('{http://soap.sforce.com/2006/04/metadata}Flow')
-      const flow = result.filter(o => o.elemID.name === 'flow').pop() as ObjectType
+      const flow = findElements(result, 'flow').pop() as ObjectType
       expect(flow.fields.description.type.elemID.name).toBe('string')
       // TODO: remove comment when SALTO-45 will be resolved
       // expect(flow.fields.description.annotations[Type.REQUIRED]).toBe(true)
@@ -483,9 +490,8 @@ describe('SalesforceAdapter fetch', () => {
       })
 
       const result = await adapter.fetch()
-      const flow = result.filter(o => o.elemID.name === 'flow_flow_instance').pop() as InstanceElement
-      expect(flow.type.elemID.getFullName()).toBe('salesforce_flow')
-      expect(flow.elemID.getFullName()).toBe('salesforce_flow_flow_instance')
+      const flow = findElements(result, 'flow', 'flow_instance').pop() as InstanceElement
+      expect(flow.type.elemID).toEqual(new ElemID(constants.SALESFORCE, 'flow'))
       expect(flow.value.bla.bla).toBe(55)
       expect(flow.value.bla.bla_2).toBe(false)
       expect(flow.value.bla.bla_3).toBe(true)
@@ -572,8 +578,8 @@ describe('SalesforceAdapter fetch', () => {
       })
 
       const result = await adapter.fetch()
-      const layout = result.filter(o => o.elemID.name === 'layout_order__order__layout').pop() as InstanceElement
-      expect(layout.type.elemID.getFullName()).toBe('salesforce_layout')
+      const layout = findElements(result, 'layout', 'order__order__layout').pop() as InstanceElement
+      expect(layout.type.elemID).toEqual(new ElemID(constants.SALESFORCE, 'layout'))
       expect(layout.value.full_name).toBe('Order-Order Layout')
       expect(layout.value.layout_sections.length).toBe(3)
       expect(layout.value.layout_sections[0].label).toBe('Description Information')
@@ -631,7 +637,7 @@ describe('SalesforceAdapter fetch', () => {
         ]))
 
       const result = await adapter.fetch()
-      const flow = result.filter(o => o.elemID.name === 'flow_flow_instance').pop() as InstanceElement
+      const flow = findElements(result, 'flow', 'flow_instance').pop() as InstanceElement
       expect(flow.type.elemID.getFullName()).toBe('salesforce_flow')
       expect((flow.type as ObjectType).fields.list_test.isList).toBe(true)
 
@@ -641,7 +647,7 @@ describe('SalesforceAdapter fetch', () => {
       expect(flow.value.list_test[1].field).toEqual('Field2')
       expect(flow.value.list_test[1].editable).toBe(false)
 
-      const flow2 = result.filter(o => o.elemID.name === 'flow_flow_instance_2').pop() as InstanceElement
+      const flow2 = findElements(result, 'flow', 'flow_instance_2').pop() as InstanceElement
       expect(flow2.value.list_test[0].field).toEqual('Field11')
       expect(flow2.value.list_test[0].editable).toBe(true)
     })

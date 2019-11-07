@@ -723,7 +723,7 @@ SfRecord[] => instances.map(res => res.value)
 
 // Convert the ElemIDs to records
 export const elemIDstoRecords = (ElemIDs: ElemID[]):
-SfRecord[] => ElemIDs.map(elem => ({ Id: elem.shortName }))
+SfRecord[] => ElemIDs.map(elem => ({ Id: elem.name }))
 
 // The purpose of the following method is to modify the list of field names, so that compound
 // fields names do not appear, and only their nested fields appear in the list of fields.
@@ -731,10 +731,12 @@ SfRecord[] => ElemIDs.map(elem => ({ Id: elem.shortName }))
 // during import
 export const getCompoundChildFields = (objectType: ObjectType): TypeField[] => {
   // Internal functions
+  const isFieldType = (fieldType: Type) => (field: TypeField): boolean => (
+    field.type.elemID.getFullName() === fieldType.elemID.getFullName()
+  )
   const handleAddressFields = (object: ObjectType): void => {
     // Find the address fields
-    const addressFields = _.pickBy(object.fields,
-      value => value.type.elemID.name === 'address')
+    const addressFields = _.pickBy(object.fields, isFieldType(Types.compoundDataTypes.address))
 
     // For each address field, get its prefix, then find its corresponding child fields by
     // this prefix.
@@ -776,8 +778,7 @@ export const getCompoundChildFields = (objectType: ObjectType): TypeField[] => {
 
   const handleGeolocationFields = (object: ObjectType): void => {
     // Find the  geolocation fields
-    const locationFields = _.pickBy(object.fields,
-      value => value.type.elemID.name === 'location')
+    const locationFields = _.pickBy(object.fields, isFieldType(Types.compoundDataTypes.location))
 
     // For each geolocation field, get its name, then find its corresponding child fields by
     // this name.

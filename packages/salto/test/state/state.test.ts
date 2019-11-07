@@ -117,9 +117,8 @@ describe('Test state mechanism', () => {
 
   it('should add to state', async () => {
     state.override([mockElement])
-    const clone = mockElement.clone()
-    clone.elemID.nameParts = ['new']
-    state.update([clone])
+    const newElem = new ObjectType({ elemID: new ElemID(mockServiceName, 'new') })
+    state.update([newElem])
 
     const fromState = await state.get()
     expect(fromState.length).toBe(2)

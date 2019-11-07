@@ -26,32 +26,30 @@ describe('Test Salto Expressions', () => {
       },
     })
 
-    const baseInstID = new ElemID('salto', 'inst')
-    const baseInst = new InstanceElement(baseInstID, base, {
+    const baseInst = new InstanceElement(new ElemID('salto', 'inst'), base, {
       simple: 'simple',
       obj: { value: 'nested' },
       arr: ['A', 'B'],
     })
 
-    const simpleRefTypeID = new ElemID('salto', 'simple_ref_type')
     const simpleRefType = new ObjectType({
-      elemID: simpleRefTypeID,
+      elemID: new ElemID('salto', 'simple_ref_type'),
     })
     const noRefInst = new InstanceElement(new ElemID('salto', 'noref'), simpleRefType, {
-      test: `${baseInstID.getFullName()}.simple`,
+      test: `${baseInst.elemID.getFullName()}.simple`,
     })
 
     const simpleRefInst = new InstanceElement(new ElemID('salto', 'simpleref'), simpleRefType, {
-      test: new ReferenceExpression({ traversalParts: [baseInstID.getFullName(), 'simple'] }),
+      test: new ReferenceExpression({ traversalParts: [baseInst.elemID.getFullName(), 'simple'] }),
     })
 
     const nestedRefInst = new InstanceElement(new ElemID('salto', 'nesetedref'), simpleRefType, {
-      test: new ReferenceExpression({ traversalParts: [baseInstID.getFullName(), 'obj', 'value'] }),
+      test: new ReferenceExpression({ traversalParts: [baseInst.elemID.getFullName(), 'obj', 'value'] }),
     })
 
     const arrayRefInst = new InstanceElement(new ElemID('salto', 'arrayref'), simpleRefType, {
-      test0: new ReferenceExpression({ traversalParts: [baseInstID.getFullName(), 'arr', 0] }),
-      test1: new ReferenceExpression({ traversalParts: [baseInstID.getFullName(), 'arr', 1] }),
+      test0: new ReferenceExpression({ traversalParts: [baseInst.elemID.getFullName(), 'arr', 0] }),
+      test1: new ReferenceExpression({ traversalParts: [baseInst.elemID.getFullName(), 'arr', 1] }),
     })
 
     const annoRefInst = new InstanceElement(new ElemID('salto', 'annoref'), simpleRefType, {
@@ -110,7 +108,7 @@ describe('Test Salto Expressions', () => {
 
     it('should not modify simple values', () => {
       const element = findResolved<InstanceElement>(noRefInst)
-      expect(element.value.test).toEqual(`${baseInstID.getFullName()}.simple`)
+      expect(element.value.test).toEqual(`${baseInst.elemID.getFullName()}.simple`)
     })
 
     it('should resolve simple references', () => {
@@ -150,34 +148,24 @@ describe('Test Salto Expressions', () => {
     })
 
     it('should detect reference cycles', () => {
-      const firstRefID = new ElemID('salto', 'first')
-      const secondRefID = new ElemID('salto', 'second')
-      const firstRef = new InstanceElement(
-        firstRefID,
-        simpleRefType,
-        { test: new ReferenceExpression({ traversalParts: [secondRefID.getFullName(), 'test'] }) },
-      )
-      const secondRef = new InstanceElement(
-        secondRefID,
-        simpleRefType,
-        { test: new ReferenceExpression({ traversalParts: [firstRefID.getFullName(), 'test'] }) },
-      )
+      const firstRef = new InstanceElement(new ElemID('salto', 'first'), simpleRefType, {})
+      const secondRef = new InstanceElement(new ElemID('salto', 'second'), simpleRefType, {})
+      firstRef.value.test = new ReferenceExpression({ traversalParts: [secondRef.elemID.getFullName(), 'test'] })
+      secondRef.value.test = new ReferenceExpression({ traversalParts: [firstRef.elemID.getFullName(), 'test'] })
       const chained = [firstRef, secondRef]
       expect(() => chained.map(e => resolve(e, chained))).toThrow()
     })
 
     it('should fail on unresolvable', () => {
-      const firstRefID = new ElemID('salto', 'first')
-      const secondRefID = new ElemID('salto', 'second')
       const firstRef = new InstanceElement(
-        firstRefID,
+        new ElemID('salto', 'first'),
         simpleRefType,
         {}
       )
       const secondRef = new InstanceElement(
-        secondRefID,
+        new ElemID('salto', 'second'),
         simpleRefType,
-        { test: new ReferenceExpression({ traversalParts: [firstRefID.getFullName(), 'test'] }) },
+        { test: new ReferenceExpression({ traversalParts: [firstRef.elemID.getFullName(), 'test'] }) },
       )
       const bad = [firstRef, secondRef]
       const res = resolve(secondRef, bad) as InstanceElement
@@ -185,9 +173,8 @@ describe('Test Salto Expressions', () => {
     })
 
     it('should fail on unresolvable roots', () => {
-      const firstRefID = new ElemID('salto', 'first')
       const firstRef = new InstanceElement(
-        firstRefID,
+        new ElemID('salto', 'first'),
         simpleRefType,
         { test: new ReferenceExpression({ traversalParts: ['noop', 'test'] }) },
       )
@@ -203,9 +190,8 @@ describe('Test Salto Expressions', () => {
       const refType = new ObjectType({
         elemID: new ElemID('salto', 'simple'),
       })
-      const firstRefID = new ElemID('salto', 'first')
       const firstRef = new InstanceElement(
-        firstRefID,
+        new ElemID('salto', 'first'),
         refType,
         { from: 'Milano', to: 'Minsk' }
       )
@@ -216,9 +202,9 @@ describe('Test Salto Expressions', () => {
           into: new TemplateExpression({
             parts: [
               'Well, you made a long journey from ',
-              new ReferenceExpression({ traversalParts: [firstRefID.getFullName(), 'from'] }),
+              new ReferenceExpression({ traversalParts: [firstRef.elemID.getFullName(), 'from'] }),
               ' to ',
-              new ReferenceExpression({ traversalParts: [firstRefID.getFullName(), 'to'] }),
+              new ReferenceExpression({ traversalParts: [firstRef.elemID.getFullName(), 'to'] }),
               ', Rochelle Rochelle',
             ],
           }),

@@ -200,7 +200,11 @@ const validateFieldValue = (elemID: ElemID, value: Value, field: Field): Validat
 const validateField = (field: Field): ValidationError[] =>
   _.flatten(Object.keys(field.annotations)
     .filter(k => field.type.annotationTypes[k])
-    .map(k => validateValue(field.elemID, field.annotations[k], field.type.annotationTypes[k])))
+    .map(k => validateValue(
+      field.elemID.createNestedID(k),
+      field.annotations[k],
+      field.type.annotationTypes[k]
+    )))
 
 const validateType = (element: Type): ValidationError[] => {
   const errors = _.flatten(Object.keys(element.annotations)

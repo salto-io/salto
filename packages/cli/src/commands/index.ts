@@ -1,6 +1,5 @@
 import { YargsCommandBuilder } from '../command_builder'
 import fetchBuilder from './fetch'
-import describeBuilder from './describe'
 import previewBuilder from './preview'
 import deployBuilder from './deploy'
 import exportBuilder from './export'
@@ -13,7 +12,6 @@ import initBuilder from './init'
 export default [
   initBuilder,
   fetchBuilder,
-  describeBuilder,
   previewBuilder,
   deployBuilder,
   exportBuilder,

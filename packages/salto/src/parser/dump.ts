@@ -92,7 +92,7 @@ const dumpElementBlock = (elem: Element): DumpedHclBlock => {
   if (isInstanceElement(elem)) {
     return {
       type: elem.type.elemID.getFullName(),
-      labels: elem.elemID.isConfig() || elem.type.isSettings ? [] : [elem.elemID.shortName],
+      labels: elem.elemID.isConfig() || elem.type.isSettings ? [] : [elem.elemID.name],
       attrs: elem.value,
       blocks: [],
     }

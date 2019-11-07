@@ -359,15 +359,17 @@ export default class SalesforceAdapter {
    * @returns the updated object
    */
   private async updateObject(before: ObjectType, after: ObjectType,
-    changes: Iterable<Change<Field | ObjectType>>): Promise<ObjectType> {
+    changes: ReadonlyArray<Change<Field | ObjectType>>): Promise<ObjectType> {
     validateApiName(before, after)
-
     const clonedObject = after.clone()
-    wu(changes)
-      .filter(c => c.action === 'add')
+
+    changes
+      .filter(isAdditionDiff)
       .map(getChangeElement)
       .filter(isField)
-      .forEach(addApiNameAndLabel)
+      .forEach(f => addApiNameAndLabel(clonedObject.fields[f.name]))
+
+    const fieldChanges = changes.filter(c => isField(getChangeElement(c))) as Change<Field>[]
 
     // There are fields that are not equal but their transformation
     // to CustomField is (e.g. lookup field with LookupFilter).
@@ -375,14 +377,11 @@ export default class SalesforceAdapter {
       !_.isEqual(toCustomField(before, beforeField, true),
         toCustomField(clonedObject, afterField, true))
 
-    const fieldChanges = wu(changes)
-      .filter(c => isField(getChangeElement(c)))
-      .toArray() as Change<Field>[]
     await Promise.all([
       // Retrieve the custom fields for deletion and delete them
       this.deleteCustomFields(clonedObject, fieldChanges
         .filter(isRemovalDiff)
-        .map(c => before.fields[c.data.before.name])),
+        .map(getChangeElement)),
       // Retrieve the custom fields for addition and than create them
       this.createFields(clonedObject, fieldChanges
         .filter(isAdditionDiff)
@@ -390,8 +389,7 @@ export default class SalesforceAdapter {
       // Update the remaining fields that were changed
       this.updateFields(clonedObject, fieldChanges
         .filter(isModificationDiff)
-        .filter(c => shouldUpdateField(before.fields[c.data.before.name],
-          clonedObject.fields[c.data.after.name]))
+        .filter(c => shouldUpdateField(c.data.before, c.data.after))
         .map(c => clonedObject.fields[c.data.after.name])),
     ])
 
@@ -404,7 +402,7 @@ export default class SalesforceAdapter {
     // to update them.
     if (apiName(clonedObject).endsWith(constants.SALESFORCE_CUSTOM_SUFFIX)
       // Don't update the object unless its changed
-      && wu(changes).find(c => isObjectType(getChangeElement(c)))) {
+      && changes.find(c => isObjectType(getChangeElement(c)))) {
       await this.client.update(
         metadataType(clonedObject),
         toCustomObject(clonedObject, false)

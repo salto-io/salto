@@ -1,12 +1,7 @@
 import {
   Element, Adapter, getChangeElement,
 } from 'adapter-api'
-
-import { logger } from '@salto/logging'
-import wu from 'wu'
 import { Plan, PlanItem, PlanItemId } from './plan'
-
-const log = logger(module)
 
 const deployAction = async (
   planItem: PlanItem,

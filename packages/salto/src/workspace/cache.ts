@@ -34,11 +34,16 @@ export class ParseResultFSCache implements ParseResultCache {
       private resolveCacheFilePath = (key: ParseResultKey): string => {
         // First, we normalize the filename to be relative to the workspace
         // We need to do this to support external BP in both abs and rel notation
+        const getExternalFileCachePath = (extFileNormName: string): string => {
+          const absPathParts = path.parse(path.resolve(this.baseWorkspaceDir, extFileNormName))
+          return path.join(absPathParts.dir.replace(absPathParts.root, ''), absPathParts.base)
+        }
+
         const normFilename = path.isAbsolute(key.filename)
           ? path.relative(this.baseWorkspaceDir, key.filename)
           : key.filename
         const cacheFileName = normFilename.startsWith('..') // Indicates that the file is external
-          ? path.join(EXTERNAL_BP_CACHE_DIR, path.resolve(this.baseWorkspaceDir, normFilename))
+          ? path.join(EXTERNAL_BP_CACHE_DIR, getExternalFileCachePath(normFilename))
           : normFilename
         return path.join(this.baseCacheDir, _.replace(cacheFileName, /.bp$/, '.bpc'))
       }

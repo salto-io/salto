@@ -1,9 +1,9 @@
+import wu from 'wu'
 import {
   Element, Adapter, getChangeElement,
 } from 'adapter-api'
 import { WalkError, NodeSkippedError } from '@salto/dag'
 import { Plan, PlanItem, PlanItemId } from './plan'
-
 
 const deployAction = async (
   planItem: PlanItem,
@@ -30,6 +30,15 @@ const deployAction = async (
   }
 }
 
+export class DeployError extends Error {
+  public readonly elementId: string
+
+  constructor(elementId: string, message: string) {
+    super(message)
+    this.elementId = elementId
+  }
+}
+
 export type actionStep = 'started' | 'finished' | 'error' | 'cancelled'
 
 export const applyActions = async (
@@ -37,7 +46,8 @@ export const applyActions = async (
   adapters: Record<string, Adapter>,
   reportProgress: (item: PlanItem, step: actionStep, details?: string) => void,
   postApplyAction: (action: string, element: Element) => Promise<void>
-): Promise<void> => {
+): Promise<DeployError[]> => {
+  const deployErrors: DeployError[] = []
   try {
     await deployPlan.walk(async (itemId: PlanItemId): Promise<void> => {
       const item = deployPlan.getItem(itemId) as PlanItem
@@ -51,21 +61,27 @@ export const applyActions = async (
         throw error
       }
     })
+    return deployErrors
   } catch (error) {
     if (error instanceof WalkError) {
       error.handlerErrors.forEach((nodeError: Error, key: PlanItemId) => {
+        const item = deployPlan.getItem(key) as PlanItem
+        const itemName = getChangeElement(item.parent()).elemID.getFullName()
         if (nodeError instanceof NodeSkippedError) {
-          const item = deployPlan.getItem(key) as PlanItem
           const parnetItem = deployPlan.getItem(nodeError.causingNode) as PlanItem
           const parnetItemName = getChangeElement(parnetItem.parent()).elemID.getFullName()
           reportProgress(item, 'cancelled', parnetItemName)
         }
+        deployErrors.push(new DeployError(itemName, nodeError.message))
       })
       if (error.circularDependencyError) {
-        throw error.circularDependencyError
+        // Take the first nodeId as the elementId - just cause we need one
+        const nodePlanItemId = wu(error.circularDependencyError.nodes.keys()).toArray()[0]
+        const node = deployPlan.getItem(nodePlanItemId) as PlanItem
+        const nodeElementId = getChangeElement(node.parent()).elemID.getFullName()
+        deployErrors.push(new DeployError(nodeElementId, error.circularDependencyError.message))
       }
-    } else {
-      throw error
     }
+    return deployErrors
   }
 }

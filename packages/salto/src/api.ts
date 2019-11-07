@@ -4,7 +4,7 @@ import {
 } from 'adapter-api'
 import { logger } from '@salto/logging'
 import {
-  applyActions, actionStep,
+  applyActions, actionStep, DeployError,
 } from './core/core'
 import {
   getInstancesOfType, importInstancesOfType, deleteInstancesOfType,
@@ -32,6 +32,7 @@ export const preview = async (
 
 export interface DeployResult {
   sucesses: boolean
+  errors: DeployError[]
   changes?: Iterable<FetchChange>
 }
 export const deploy = async (
@@ -55,7 +56,7 @@ export const deploy = async (
     const actionPlan = getPlan(stateElements, workspace.elements)
     if (force || await shouldDeploy(actionPlan)) {
       const [adapters] = await initAdapters(workspace.elements, fillConfig)
-      await applyActions(
+      const errors = await applyActions(
         actionPlan,
         adapters,
         reportProgress,
@@ -64,12 +65,15 @@ export const deploy = async (
 
       const changes = wu(getDetailedChanges(workspace.elements, stateElements))
         .map(change => ({ change, serviceChange: change }))
+
+      const errored = errors.length > 0
       return {
-        sucesses: true,
+        sucesses: errored,
         changes,
+        errors: errored ? errors : [],
       }
     }
-    return { sucesses: true }
+    return { sucesses: true, errors: [] }
   } finally {
     await state.flush()
   }

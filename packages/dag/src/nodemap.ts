@@ -6,8 +6,11 @@ const { update: updateSet, intersection, difference } = collections.set
 export type NodeId = collections.set.SetId
 
 export class CircularDependencyError extends Error {
+  public readonly nodes: AbstractNodeMap
+
   constructor(nodes: AbstractNodeMap) {
     super(`Circular dependencies exist among these items: ${nodes}`)
+    this.nodes = nodes
   }
 }
 

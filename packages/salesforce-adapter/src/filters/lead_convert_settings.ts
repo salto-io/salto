@@ -59,7 +59,9 @@ const filterCreator: FilterCreator = ({ client }) => ({
 
         lead.annotate({ [CONVERT_SETTINGS_ANNOTATION]: transform(value, convertType, false) || {} })
 
-        const index = elements.findIndex(e => e.elemID.name === convertInstance.elemID.name)
+        const index = elements.findIndex(
+          e => e.elemID.getFullName() === convertInstance.elemID.getFullName(),
+        )
         elements.splice(index, 1)
       }
     }

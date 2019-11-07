@@ -8,11 +8,14 @@ import {
   Value,
   Element,
   Values,
+  BuiltinTypes,
+  isInstanceElement,
 } from 'adapter-api'
 import { PicklistEntry } from 'jsforce'
 import { collections } from '@salto/lowerdash'
 import * as constants from '../src/constants'
 import { FIELD_LEVEL_SECURITY_ANNOTATION, PROFILE_METADATA_TYPE } from '../src/filters/field_permissions'
+import { STANDARD_VALUE_SET } from '../src/filters/standard_value_sets'
 import {
   CustomObject,
   ProfileInfo,
@@ -31,6 +34,13 @@ describe('Salesforce adapter E2E with real account', () => {
   // Set long timeout as we communicate with salesforce API
   jest.setTimeout(1000000)
 
+  const findElements = (
+    elements: ReadonlyArray<Element>,
+    ...name: ReadonlyArray<string>
+  ): Element[] => elements.filter(
+    e => e.elemID.getFullName() === new ElemID(constants.SALESFORCE, ...name).getFullName(),
+  )
+
   describe('should fetch account settings', () => {
     let result: Element[]
 
@@ -44,13 +54,15 @@ describe('Salesforce adapter E2E with real account', () => {
 
     it('should fetch sobject', async () => {
       // Check few field types on lead object
-      const lead = result.filter(element => element.elemID.name === 'lead')[0] as ObjectType
+      const lead = findElements(result, 'lead')[0] as ObjectType
 
       // Test few possible types
-      expect(lead.fields.address.type.elemID.name).toBe('address')
-      expect(lead.fields.description.type.elemID.name).toBe('longtextarea')
-      expect(lead.fields.name.type.elemID.name).toBe('name')
-      expect(lead.fields.owner_id.type.elemID.name).toBe('lookup')
+      expect(lead.fields.address.type.elemID).toEqual(Types.compoundDataTypes.address.elemID)
+      expect(lead.fields.description.type.elemID).toEqual(
+        Types.primitiveDataTypes.longtextarea.elemID,
+      )
+      expect(lead.fields.name.type.elemID).toEqual(Types.compoundDataTypes.name.elemID)
+      expect(lead.fields.owner_id.type.elemID).toEqual(Types.primitiveDataTypes.lookup.elemID)
 
       // Test label
       expect(lead.fields.name.annotations[constants.LABEL]).toBe('Full Name')
@@ -71,7 +83,7 @@ describe('Salesforce adapter E2E with real account', () => {
       // Test standard picklist values from a standard value set
       expect(
         lead.fields.lead_source.annotations[Type.VALUES]
-      ).toBe('salesforce_standard_value_set_lead_source')
+      ).toEqual(new ElemID(constants.SALESFORCE, STANDARD_VALUE_SET, 'lead_source').getFullName())
 
       // Test picklist values
       expect(
@@ -101,21 +113,18 @@ describe('Salesforce adapter E2E with real account', () => {
     })
 
     it('should fetch metadata type', () => {
-      const flow = result
-        .filter(element => element.elemID.name === 'flow')
-        .pop() as ObjectType
-      expect(flow.fields.description.type.elemID.name).toBe('string')
-      expect(flow.fields.is_template.type.elemID.name).toBe('boolean')
-      expect(flow.fields.action_calls.type.elemID.name).toBe('flow_action_call')
+      const flow = findElements(result, 'flow')[0] as ObjectType
+      expect(flow.fields.description.type).toEqual(BuiltinTypes.STRING)
+      expect(flow.fields.is_template.type).toEqual(BuiltinTypes.BOOLEAN)
+      expect(flow.fields.action_calls.type).toEqual(findElements(result, 'flow_action_call')[0])
     })
 
     it('should fetch settings instance', () => {
       // As we fetch now only instances from the STANDALONE list,
       // settings is the only one with instance by default.
       // once we support adding instances test can be improved
-      const quoteSettings = result
-        .filter(element => element instanceof InstanceElement
-          && element.elemID.name === 'settings_quote')
+      const quoteSettings = findElements(result, 'settings_quote')
+        .filter(isInstanceElement)
         .pop() as InstanceElement
 
       expect(quoteSettings).toBeUndefined()

@@ -43,13 +43,14 @@ describe('Test elements.ts', () => {
   })
 
   /**   object types   * */
+  const otID = new ElemID('test', 'obj')
   const ot = new ObjectType({
-    elemID: new ElemID('test', 'obj'),
+    elemID: otID,
     fields: {
       /* eslint-disable-next-line @typescript-eslint/camelcase */
-      num_field: new Field(new ElemID('test', 'obj'), 'num_field', primNum),
+      num_field: new Field(otID, 'num_field', primNum),
       /* eslint-disable-next-line @typescript-eslint/camelcase */
-      str_field: new Field(new ElemID('test', 'obj'), 'str_field', primStr),
+      str_field: new Field(otID, 'str_field', primStr),
     },
     annotationTypes: {},
     annotations: {},
@@ -62,18 +63,15 @@ describe('Test elements.ts', () => {
   })
 
   it('should create a basic primitive type with all params passed to the constructor', () => {
-    expect(primStr.elemID.adapter).toEqual('test')
-    expect(primStr.elemID.name).toEqual('prim')
+    expect(primStr.elemID).toEqual(primID)
     expect(primStr.primitive).toBe(PrimitiveTypes.STRING)
 
-    expect(primNum.elemID.adapter).toEqual('test')
-    expect(primNum.elemID.name).toEqual('prim')
+    expect(primNum.elemID).toEqual(primID)
     expect(primNum.primitive).toBe(PrimitiveTypes.NUMBER)
   })
 
   it('should create a basic object type with all params passed to the constructor', () => {
-    expect(ot.elemID.adapter).toEqual('test')
-    expect(ot.elemID.name).toEqual('obj')
+    expect(ot.elemID).toEqual(otID)
     expect(ot.fields.num_field.type).toBeInstanceOf(PrimitiveType)
     expect(ot.fields.str_field.type).toBeInstanceOf(PrimitiveType)
   })
@@ -366,12 +364,6 @@ describe('Test elements.ts', () => {
     const exampleId = new ElemID('adapter', 'example')
     const configTypeId = new ElemID('adapter')
     const configInstId = new ElemID('adapter', ElemID.CONFIG_INSTANCE_NAME)
-
-    describe('shortName', () => {
-      it('should return the last part of the ID', () => {
-        expect(exampleId.shortName).toEqual('example')
-      })
-    })
 
     describe('nestingLevel', () => {
       it('should return the number of nested namespaces', () => {

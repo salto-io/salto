@@ -159,8 +159,10 @@ export default class SalesforceAdapter {
     const sObjects = this.fetchSObjects().then(
       async types => {
         // All metadata type names include subtypes as well as the "top level" type names
-        const allMetadataTypeNames = new Set((await metadataTypes).map(elem => elem.elemID.name))
-        return types.filter(t => !allMetadataTypeNames.has(t.elemID.name))
+        const allMetadataTypeNames = new Set(
+          (await metadataTypes).map(elem => elem.elemID.getFullName()),
+        )
+        return types.filter(t => !allMetadataTypeNames.has(t.elemID.getFullName()))
       }
     )
 

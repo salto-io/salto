@@ -38,7 +38,7 @@ export const getSubElement = (baseType: Type, pathParts: string[]): Field| Type 
   }
 
   // First token is no good, we check if it is a part of a longer name
-  const nextCur = [curPart, restOfParts[0]].join(ElemID.NAMESPACE_SEPERATOR)
+  const nextCur = [curPart, restOfParts[0]].join(ElemID.NAMESPACE_SEPARATOR)
   const nextRest = restOfParts.slice(1)
   return getSubElement(baseType, [nextCur, ...nextRest])
 }
@@ -57,7 +57,7 @@ export const getFieldNames = (refType: ObjectType, path: string): string[] => {
   if (!path) {
     return _.keys(refType.fields)
   }
-  const pathField = getField(refType, path.split(ElemID.NAMESPACE_SEPERATOR))
+  const pathField = getField(refType, path.split(ElemID.NAMESPACE_SEPARATOR))
   if (pathField && isField(pathField) && isObjectType(pathField.type)) {
     return _.keys(pathField.type.fields)
   }

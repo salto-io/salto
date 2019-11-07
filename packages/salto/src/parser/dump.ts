@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import {
-  Type, Field, Values, isObjectType, PrimitiveTypes,
+  Type, Field, Values, isObjectType, PrimitiveTypes, ElemID,
   isPrimitiveType, Element, isInstanceElement, isField, isElement, Value,
 } from 'adapter-api'
 import HclParser, { DumpedHclBlock, HclDumpReturn } from './internal/hcl'
@@ -39,14 +39,14 @@ const removeQuotes = (
 
 const dumpFieldBlock = (field: Field): DumpedHclBlock => ({
   type: field.type.elemID.getFullName(),
-  labels: [field.elemID.shortName],
+  labels: [field.elemID.name],
   attrs: field.annotations,
   blocks: [],
 })
 
 const dumpListFieldBlock = (field: Field): DumpedHclBlock => ({
   type: Keywords.LIST_DEFINITION,
-  labels: [field.type.elemID.getFullName(), field.elemID.shortName],
+  labels: [field.type.elemID.getFullName(), field.elemID.name],
   attrs: field.annotations,
   blocks: [],
 })
@@ -90,9 +90,20 @@ const dumpElementBlock = (elem: Element): DumpedHclBlock => {
     }
   }
   if (isInstanceElement(elem)) {
+    // Workaround for ambigous IDs - we have to prefix instance names with the type name
+    // This part should be removed once we make the element ID schema consistent so we can
+    // infer the prefix from the instance type instead of writing it twice
+    const getInstanceName = (id: ElemID): string => {
+      if (id.nestingLevel > 1) {
+        return [getInstanceName(id.createParentID()), id.name].join(ElemID.NAMESPACE_SEPARATOR)
+      }
+      return id.name
+    }
     return {
       type: elem.type.elemID.getFullName(),
-      labels: elem.elemID.isConfig() || elem.type.isSettings ? [] : [elem.elemID.name],
+      labels: elem.elemID.isConfig() || elem.type.isSettings
+        ? []
+        : [getInstanceName(elem.elemID)],
       attrs: elem.value,
       blocks: [],
     }

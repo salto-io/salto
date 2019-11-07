@@ -325,15 +325,15 @@ export default class SalesforceAdapter {
   public async update(before: Element, after: Element,
     changes: Iterable<Change>): Promise<Element> {
     const start = Date.now()
-    let result = Promise.resolve(after)
+    let result = after
 
     if (isObjectType(before) && isObjectType(after)) {
-      result = this.updateObject(before, after,
+      result = await this.updateObject(before, after,
         wu(changes).toArray() as Change<ObjectType | Field>[])
     }
 
     if (isInstanceElement(before) && isInstanceElement(after)) {
-      result = this.updateInstance(before, after)
+      result = await this.updateInstance(before, after)
     }
 
     log.debug(`finish updating ${after.elemID.getFullName()} [took=${Date.now() - start} ms]`)

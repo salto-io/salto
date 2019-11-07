@@ -64,7 +64,7 @@ export class DeployCommand implements CliCommand {
     this.endCurrentAction()
     if (result.changes) {
       const changes = [...result.changes]
-      log.info(`going to update workspace with ${changes.length} post deply`)
+      log.info(`going to update workspace with ${changes.length} changes post deply`)
       changes.forEach(c => {
         log.info(`\t${formatChange(c.change)}`)
       })

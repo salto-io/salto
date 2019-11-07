@@ -20,19 +20,13 @@ const deployAction = async (
     throw new Error(`Missing adapter for ${adapterName}`)
   }
 
-  let result = Promise.resolve(element)
   if (parent.action === 'add') {
-    result = adapter.add(element)
-  } else if (parent.action === 'remove') {
+    return adapter.add(element)
+  } if (parent.action === 'remove') {
     await adapter.remove(element)
-  } else {
-    result = adapter.update(parent.data.before, parent.data.after, planItem.changes())
+    return element
   }
-
-  log.info(`deployed changes on ${element.elemID.getFullName()} [changes=${
-    JSON.stringify(wu(planItem.changes()).toArray())} detailedChanges=${
-    JSON.stringify(wu(planItem.detailedChanges()).toArray())}]`)
-  return result
+  return adapter.update(parent.data.before, parent.data.after, planItem.changes())
 }
 
 export const applyActions = async (

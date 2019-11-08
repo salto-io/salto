@@ -6,6 +6,7 @@ import {
 import _ from 'lodash'
 import { SaveResult } from 'jsforce'
 import wu from 'wu'
+import { logger } from '@salto/logging'
 import { FIELD_PERMISSIONS } from '../constants'
 import {
   sfCase, fieldFullName, bpCase, apiName, metadataType, isCustomObject,
@@ -16,6 +17,8 @@ import { ProfileInfo } from '../client/types'
 export const FIELD_LEVEL_SECURITY_ANNOTATION = 'field_level_security'
 export const PROFILE_METADATA_TYPE = 'Profile'
 export const ADMIN_PROFILE = 'admin'
+
+const log = logger(module)
 
 // --- Utils functions
 export const fieldPermissions = (field: Field): Values =>
@@ -42,6 +45,7 @@ const setFieldPermissions = (field: Field, fieldPermission: ProfileToPermission)
 const setDefaultFieldPermissions = (field: Field): void => {
   if (_.isEmpty(fieldPermissions(field))) {
     setProfileFieldPermissions(field, ADMIN_PROFILE, true, true)
+    log.debug(`set ${ADMIN_PROFILE} field permissions for ${field.type}.${field.name}`)
   }
 }
 
@@ -146,52 +150,54 @@ const filterCreator: FilterCreator = ({ client }) => ({
       return []
     }
 
-    // Set default permissions for new fields
-    wu(changes)
-      .filter(c => c.action === 'add')
-      .map(getChangeElement)
-      .filter(isField)
-      .forEach(field => {
-        setDefaultFieldPermissions(field as Field)
-      })
-
     // Look for fields that used to have permissions and permission was deleted from BP
     // For those fields we will mark then as { editable: false, readable: false } explcit
     wu(changes)
-      .map(c => (c.action === 'modify' ? c.data.before : undefined))
-      .filter(isField)
-      .forEach(elem => {
-        const beforeField = elem as Field
-        const afterField = after.fields[beforeField.name]
-        // If the delta is only new field permissions, then skip
-        if (_.isEmpty(fieldPermissions(beforeField))) {
+      .forEach(c => {
+        if (!isField(getChangeElement(c))) {
           return
         }
-        if (_.isEmpty(fieldPermissions(afterField))) {
-          setEmptyFieldPermissions(afterField)
+        const fieldName = (getChangeElement(c) as Field).name
+        // Set default permissions for new fields
+        if (c.action === 'add') {
+          setDefaultFieldPermissions(after.fields[fieldName])
         }
-        const afterFieldPermissions = fieldPermissions(afterField)
-        // If some permissions were removed, we will need to remove the permissions from the
-        // field explicitly (update them to be not editable and not readable)
-        Object.keys(fieldPermissions(beforeField)).forEach((p: string) => {
-          if (afterFieldPermissions[p] === undefined) {
-            setProfileFieldPermissions(afterField, p, false, false)
+        if (c.action === 'modify') {
+          const beforeField = c.data.before as Field
+          const afterField = after.fields[fieldName]
+          // If the delta is only new field permissions, then skip
+          if (_.isEmpty(fieldPermissions(beforeField))) {
+            return
           }
-        })
+          if (_.isEmpty(fieldPermissions(afterField))) {
+            setEmptyFieldPermissions(afterField)
+          }
+          const afterFieldPermissions = fieldPermissions(afterField)
+          // If some permissions were removed, we will need to remove the permissions from the
+          // field explicitly (update them to be not editable and not readable)
+          Object.keys(fieldPermissions(beforeField)).forEach((p: string) => {
+            if (afterFieldPermissions[p] === undefined) {
+              setProfileFieldPermissions(afterField, p, false, false)
+            }
+          })
+        }
       })
 
-    // Filter out permissions that were already updated
     const preProfiles = toProfiles(before)
-    const profiles = toProfiles(after).map(p => {
-      const preProfile = preProfiles.find(pre => pre.fullName === p.fullName)
-      let fields = p.fieldPermissions
-      if (preProfile) {
-        // for some reason .include is not working so we use find + _.isEqual
-        fields = fields.filter(f => preProfile.fieldPermissions
-          .find(pf => _.isEqual(pf, f)) === undefined)
-      }
-      return { fullName: p.fullName, fieldPermissions: fields }
-    }).filter(p => p.fieldPermissions.length > 0)
+    // Filter out permissions that were already updated
+    const profiles = toProfiles(after)
+      .map(p => {
+        const preProfile = preProfiles.find(pre => pre.fullName === p.fullName)
+        if (preProfile) {
+          const prePermissions = (fieldName: string): FieldPermission | undefined =>
+            preProfile.fieldPermissions.find(fp => fp.field === fieldName)
+          return { fullName: p.fullName,
+            fieldPermissions: p.fieldPermissions
+              .filter(f => !_.isEqual(prePermissions(f.field), f)) }
+        }
+        return { fullName: p.fullName, fieldPermissions: p.fieldPermissions }
+      })
+      .filter(p => p.fieldPermissions.length > 0)
 
     return client.update(PROFILE_METADATA_TYPE, profiles)
   },

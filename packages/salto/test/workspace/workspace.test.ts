@@ -3,15 +3,14 @@ import path from 'path'
 import _ from 'lodash'
 import tmp from 'tmp-promise'
 import {
-  Element, ObjectType, ElemID, Type,
+  Element, ObjectType, ElemID, Type, Field, PrimitiveType, PrimitiveTypes,
 } from 'adapter-api'
 import { Config } from '../../src/workspace/config'
-import {
-  Workspace, Blueprint, ParsedBlueprint, parseBlueprints,
-} from '../../src/workspace/workspace'
+import { Workspace, Blueprint, ParsedBlueprint, parseBlueprints, calculateValidationSeverity } from '../../src/workspace/workspace'
 import { DetailedChange } from '../../src/core/plan'
 import { MergeError } from '../../src/core/merger/internal/common'
 import { rm, mkdirp, writeTextFile, exists, readTextFile } from '../../src/file'
+import { UnresolvedReferenceValidationError, InvalidValueValidationError } from '../../src/core/validator'
 
 describe('Workspace', () => {
   const workspaceFiles = {
@@ -437,6 +436,24 @@ type salesforce_lead {
         workspace = await Workspace.init(path.join(tmpDir.path))
         expect(workspace.elements.length).toBeGreaterThan(0)
       })
+    })
+  })
+  describe('validation errors serverity', () => {
+    const elemID = new ElemID('salesforce', 'new_elem')
+    it('should be Error for reference error', () => {
+      expect(calculateValidationSeverity(new UnresolvedReferenceValidationError({
+        elemID,
+        ref: '',
+      }))).toBe('Error')
+    })
+    it('should be Warning for other errors', () => {
+      expect(calculateValidationSeverity(new InvalidValueValidationError({
+        elemID,
+        value: '',
+        field: new Field(elemID, '', new PrimitiveType({ elemID,
+          primitive: PrimitiveTypes.STRING })),
+        expectedValue: 'baba',
+      }))).toBe('Warning')
     })
   })
 })

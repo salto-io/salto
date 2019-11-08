@@ -1,5 +1,6 @@
 import { inspect } from 'util'
 import _ from 'lodash'
+import requestretry, { RequestRetryOptions, RetryStrategies } from 'requestretry'
 import { collections, decorators } from '@salto/lowerdash'
 import {
   Connection as RealConnection,
@@ -19,6 +20,7 @@ import {
 } from 'jsforce'
 import { Value } from 'adapter-api'
 import { logger } from '@salto/logging'
+import { Options, RequestCallback } from 'request'
 import { CompleteSaveResult } from './types'
 import Connection from './jsforce'
 
@@ -40,6 +42,12 @@ const MAX_ITEMS_IN_DESCRIBE_REQUEST = 100
 // Salesforce limitation of maximum number of items per readMetadata call
 //  https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_readMetadata.htm
 const MAX_ITEMS_IN_READ_METADATA_REQUEST = 10
+
+const DEFAULT_RETRY_OPTS: RequestRetryOptions = {
+  maxAttempts: 5, // try 5 times
+  retryDelay: 5000, // wait for 5s before trying again
+  retryStrategy: RetryStrategies.NetworkError, // retry on network errors
+}
 
 const validateSaveResult = decorators.wrapMethodWith(
   async (original: decorators.OriginalCall): Promise<unknown> => {
@@ -94,12 +102,15 @@ export type SalesforceClientOpts = {
   credentials: Credentials
   connection?: Connection
   logger?: Logger
+  retryOptions?: RequestRetryOptions
 }
 
-const realConnection = (isSandbox: boolean): Connection => {
+const realConnection = (isSandbox: boolean, retryOptions: RequestRetryOptions): Connection => {
   const connection = new RealConnection({
     version: API_VERSION,
     loginUrl: `https://${isSandbox ? 'test' : 'login'}.salesforce.com/`,
+    requestModule: (opts: Options, callback: RequestCallback) =>
+      requestretry({ ...retryOptions, ...opts }, callback),
   })
   // Set poll interval and timeout for deploy
   connection.metadata.pollInterval = 3000
@@ -125,10 +136,11 @@ export default class SalesforceClient {
   private readonly logger: Logger
 
   constructor(
-    { credentials, connection, logger: clientLogger }: SalesforceClientOpts
+    { credentials, connection, logger: clientLogger, retryOptions }: SalesforceClientOpts
   ) {
     this.credentials = credentials
-    this.conn = connection || realConnection(credentials.isSandbox)
+    this.conn = connection
+      || realConnection(credentials.isSandbox, retryOptions || DEFAULT_RETRY_OPTS)
     this.logger = clientLogger || logger(this.constructor.name)
   }
 

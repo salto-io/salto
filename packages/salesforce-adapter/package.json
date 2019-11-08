@@ -30,6 +30,7 @@
   "dependencies": {
     "@salto/logging": "0.1.0",
     "@salto/lowerdash": "0.1.0",
+    "@types/requestretry": "^1.12.5",
     "adapter-api": "0.1.0",
     "buffer": "^5.2.1",
     "events": "^3.0.0",
@@ -37,6 +38,7 @@
     "jsforce-types": "https://github.com/salto-io/jsforce-types.git",
     "jszip": "^3.2.2",
     "lodash": "^4.17.11",
+    "requestretry": "^4.0.2",
     "stream": "0.0.2",
     "winston": "^3.2.1",
     "wu": "^2.1.0"
@@ -58,6 +60,8 @@
     "jest": "^24.0.0",
     "jest-circus": "^24.9.0",
     "jest-junit": "^6.4.0",
+    "nock": "^11.7.0",
+    "request": "^2.88.0",
     "ts-cleaner": "^1.0.3",
     "tsc-watch": "^2.2.1",
     "typescript": "3.7.1-rc"

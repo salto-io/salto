@@ -7,6 +7,7 @@ import JSZip from 'jszip'
 import {
   Type, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values, Value,
   Field as TypeField, BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType,
+  isObjectType,
 } from 'adapter-api'
 import { collections } from '@salto/lowerdash'
 import { CustomObject, CustomField } from './client/types'
@@ -355,8 +356,8 @@ export class Types {
   }
 }
 
-export const fieldFullName = (object: ObjectType, field: TypeField): string =>
-  `${apiName(object)}.${apiName(field)}`
+export const fieldFullName = (object: ObjectType | string, field: TypeField): string =>
+  `${isObjectType(object) ? apiName(object) : object}.${apiName(field)}`
 
 const allowedAnnotations = (key: string): string[] => {
   const returnedType = Types.primitiveDataTypes[key] ?? Types.compoundDataTypes[key]

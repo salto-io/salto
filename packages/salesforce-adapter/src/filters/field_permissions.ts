@@ -7,7 +7,7 @@ import _ from 'lodash'
 import { SaveResult } from 'jsforce'
 import wu from 'wu'
 import { logger } from '@salto/logging'
-import { FIELD_PERMISSIONS } from '../constants'
+import { FIELD_PERMISSIONS, API_NAME } from '../constants'
 import {
   sfCase, fieldFullName, bpCase, apiName, metadataType, isCustomObject,
 } from '../transformer'
@@ -113,11 +113,19 @@ const filterCreator: FilterCreator = ({ client }) => ({
 
     const permissionsPerProfile = profileInstances.map(profile2Permissions)
     const permissions = _.merge({}, ...permissionsPerProfile)
+    // collect element ID to api name as we have elements that are splitted and
+    // we need to know the api name to build full field name
+    const elemID2ApiName = _(customObjectTypes)
+      .filter(obj => obj.annotations[API_NAME] !== undefined)
+      .map(obj => [obj.elemID.getFullName(), obj.annotations[API_NAME]])
+      .fromPairs()
+      .value()
 
     // Add field permissions to all fetched elements
-    customObjectTypes.forEach(sobject => {
-      Object.values(sobject.fields).forEach(field => {
-        const fieldPermission = permissions[fieldFullName(sobject, field)]
+    customObjectTypes.forEach(obj => {
+      Object.values(obj.fields).forEach(field => {
+        const fieldPermission = permissions[
+          fieldFullName(elemID2ApiName[obj.elemID.getFullName()] || obj, field)]
         if (fieldPermission) {
           setFieldPermissions(field, fieldPermission)
         }

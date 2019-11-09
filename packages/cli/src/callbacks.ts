@@ -44,10 +44,15 @@ export const getApprovedChanges = async (
   const shouldApproveAll = (answers: inquirer.Answers): boolean => (
     _.values(answers).some(answer => answer === 'all')
   )
-
   const isConflict = (change: FetchChange): boolean => change.pendingChange !== undefined
+  const shouldAskForApproval = (change: FetchChange): boolean => isConflict(change) || interactive
 
-  const questions = changes.map((change, idx): inquirer.Question => ({
+  const [askForApproval, autoApproved] = _.partition(changes, shouldAskForApproval)
+  if (_.isEmpty(askForApproval)) {
+    return autoApproved
+  }
+
+  const questions = askForApproval.map((change, idx): inquirer.Question => ({
     type: 'expand',
     choices: [
       { key: 'y', value: 'yes' },
@@ -56,21 +61,20 @@ export const getApprovedChanges = async (
     ],
     default: 0,
     name: idx.toString(),
-    message: formatFetchChangeForApproval(change, idx, changes.length),
-    when: answers => isConflict(change) || (interactive && !shouldApproveAll(answers)),
+    message: formatFetchChangeForApproval(change, idx, askForApproval.length),
+    when: answers => !shouldApproveAll(answers),
   }))
 
   const answers = await inquirer.prompt(questions)
   if (shouldApproveAll(answers)) {
     return changes
   }
-  return changes.filter((_change, idx) => answers[idx.toString()] !== 'no')
+  return autoApproved.concat(askForApproval
+    .filter((_c, idx) => (answers[idx.toString()] !== 'no')))
 }
 
-const inputTypePasswordFields = ['token', 'password']
-
 const isPasswordInputType = (fieldName: string): boolean =>
-  inputTypePasswordFields.includes(fieldName)
+  ['token', 'password'].includes(fieldName)
 
 export const getFieldInputType = (fieldType: Type, fieldName: string): string => {
   if (!isPrimitiveType(fieldType)) {

@@ -31,41 +31,14 @@ commands:
           path: packages/<< parameters.workspace_dir >>/pkg
           destination: pkg/<< parameters.out_filename >>
 
-      - aws-s3/copy:
-          from: packages/<< parameters.workspace_dir >>/pkg/*
+      - aws-s3/sync:
+          from: packages/<< parameters.workspace_dir >>/pkg
           to: ${S3_PKG_HASH_PREFIX}/<< parameters.out_filename >>
-
-  package_cli:
-    description: Create a standalone CLI executable
-
-    parameters:
-      out_filename:
-        type: string
-
-    steps:
-      - attach_workspace:
-          at: .
-
-      - run:
-          name: Remove node_modules
-          command: rm -r node_modules packages/*/node_modules
-
-      - run:
-          name: Rebuild node_modules
-          command: yarn install --pure-lockfile --ignore-scripts
-
-      - run:
-          name: Build native executable
-          command: yarn workspace @salto/cli run package
-
-      - upload_pkg:
-          workspace_dir: cli
-          out_filename: cli/<< parameters.out_filename >>
 
 jobs:
   build:
     docker:
-      - image: saltolabs/salto:0.0.8
+      - image: saltolabs/salto:0.0.9
 
     steps:
       - restore_cache:
@@ -103,7 +76,7 @@ jobs:
 
   unittest:
     docker:
-      - image: circleci/node:12.10
+      - image: circleci/node:12.12
 
     steps:
       - attach_workspace:
@@ -125,7 +98,7 @@ jobs:
 
   e2e_test:
     docker:
-      - image: circleci/node:12.10
+      - image: circleci/node:12.12
 
     steps:
       - attach_workspace:
@@ -146,44 +119,25 @@ jobs:
           name: Upload coverage to codecov.io
           command: npx codecov -F e2e_test -f coverage/*.json
 
-  package_cli_windows:
-    executor:
-      name: win/vs2019
-      shell: bash.exe
-
-    working_directory: c:\workspace
-
-    steps:
-      - run:
-          name: Install yarn
-          command: npm i --g yarn
-
-      - package_cli:
-          out_filename: "windows/salto.exe"
-
-  package_cli_linux:
+  package_cli:
     docker:
-      - image: circleci/node:12.10
+      - image: circleci/node:12.12
 
     steps:
-      - package_cli:
-          out_filename: "linux/salto"
+      - attach_workspace:
+          at: .
 
-  package_cli_osx:
-    macos:
-      xcode: "11.0"
-
-    steps:
       - run:
-          name: Install yarn
-          command: npm i --g yarn
+          name: Build native executables
+          command: yarn workspace @salto/cli run package
 
-      - package_cli:
-          out_filename: "osx/salto"
+      - upload_pkg:
+          workspace_dir: cli
+          out_filename: cli
 
   package_vscode_extension:
     docker:
-      - image: circleci/node:12.10
+      - image: circleci/node:12.12
 
     steps:
       - attach_workspace:
@@ -220,7 +174,6 @@ jobs:
           from: ./PACKAGED_FROM.${PKG_PREFIX}
           to: s3://${S3_PKG_BUCKET}/${CIRCLE_BRANCH}/latest/
 
-
 workflows:
   version: 2
 
@@ -236,15 +189,7 @@ workflows:
           requires:
             - build
 
-      - package_cli_windows:
-          requires:
-            - unittest
-
-      - package_cli_linux:
-          requires:
-            - unittest
-
-      - package_cli_osx:
+      - package_cli:
           requires:
             - unittest
 
@@ -254,9 +199,7 @@ workflows:
 
       - sync_s3_pkg_latest:
           requires:
-            - package_cli_windows
-            - package_cli_linux
-            - package_cli_osx
+            - package_cli
             - package_vscode_extension
 
   post-commit:
@@ -275,32 +218,19 @@ workflows:
           requires:
             - unittest
 
-      - package_cli_windows:
-          # Note: Temporarily removed requirement for e2e due to flaky e2e tests.
+      - package_cli:
           requires:
             - build
-          #   - e2e_test
-
-      - package_cli_linux:
-          # Note: Temporarily removed requirement for e2e due to flaky e2e tests.
-          requires:
-            - build
-          #   - e2e_test
-
-      - package_cli_osx:
-          # Note: Temporarily removed requirement for e2e due to flaky e2e tests.
-          requires:
-            - build
-          #   - e2e_test
+            # Note: Temporarily removed requirement for e2e due to flaky e2e tests.
+            # - e2e_test
 
       - package_vscode_extension:
           requires:
             - build
-          #   - e2e_test
+            # Note: Temporarily removed requirement for e2e due to flaky e2e tests.
+            # - e2e_test
 
       - sync_s3_pkg_latest:
           requires:
-            - package_cli_windows
-            - package_cli_linux
-            - package_cli_osx
+            - package_cli
             - package_vscode_extension

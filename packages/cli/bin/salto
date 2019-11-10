@@ -1,20 +1,2 @@
 #!/usr/bin/env node
-require('source-map-support').install()
-const cli = require('../dist/src/cli').default
-const commandBuilders = require('../dist/src/commands').default
-const oraSpinner = require('../dist/src/ora_spinner').default
-
-const {
-  stdin, stdout, stderr, argv,
-} = process
-
-const oraSpinnerCreator = oraSpinner({ outputStream: stdout })
-
-const args = argv.slice(2)
-
-cli({
-  input: { args, stdin },
-  output: { stdout, stderr },
-  commandBuilders,
-  spinnerCreator: oraSpinnerCreator,
-}).then(exitCode => process.exit(exitCode))
+require('../dist/src')

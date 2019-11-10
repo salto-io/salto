@@ -1,4 +1,4 @@
-import { promises as fsp } from 'fs'
+import fs from 'fs'
 import path from 'path'
 import './wasm_exec'
 import { queue, AsyncQueue, ErrorCallback } from 'async'
@@ -106,7 +106,7 @@ class HclParser {
       this.wasmModule = (async () => {
         // Relative path from source location
         const modulePath = path.join(__dirname, '..', '..', '..', 'hcl.wasm')
-        const data = await fsp.readFile(modulePath)
+        const data = fs.readFileSync(modulePath)
         // Not sure why eslint ignores this definition from webassembly.d.ts,
         // but this doesn't work without the following disable
         // eslint-disable-next-line no-undef

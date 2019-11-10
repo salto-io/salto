@@ -1,11 +1,9 @@
-FROM circleci/node:12.10
+FROM circleci/node:12.12
 
 RUN sudo npm i --global yarn@1.19.1
 
 # Install go (needed for HCL parser WebAssembly build)
-RUN wget https://dl.google.com/go/go1.13.linux-amd64.tar.gz -O /tmp/go.tar.gz && \
-    sudo tar -C /usr/local -xzf /tmp/go.tar.gz && \
-    rm -f /tmp/go.tar.gz
+RUN wget -q https://dl.google.com/go/go1.13.linux-amd64.tar.gz -O - | sudo tar -C /usr/local -xz
 ENV PATH $PATH:/usr/local/go/bin
 
 # Download HCL parser dependecies to speed up test builds

@@ -14,8 +14,7 @@ import {
 import State from './state/state'
 import { findElement, SearchResult } from './core/search'
 import { Workspace, CREDS_DIR } from './workspace/workspace'
-import { fetchChanges, FetchChange, getDetailedChanges, createElemIdGetter } from './core/fetch'
-import { MergeError } from './core/merger/internal/common'
+import { fetchChanges, FetchChange, getDetailedChanges, createElemIdGetter, MergeErrorWithElements } from './core/fetch'
 
 export { ItemStatus }
 
@@ -86,7 +85,7 @@ export type fillConfigFunc = (configType: ObjectType) => Promise<InstanceElement
 
 export type FetchResult = {
   changes: Iterable<FetchChange>
-  mergeErrors: MergeError[]
+  mergeErrors: MergeErrorWithElements[]
 }
 export type fetchFunc = (
   workspace: Workspace,

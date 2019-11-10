@@ -3,10 +3,15 @@ import {
   PrimitiveType, PrimitiveTypes, ADAPTER, OBJECT_SERVICE_ID, InstanceElement,
 } from 'adapter-api'
 import {
-  fetchChanges, FetchChange, generateServiceIdToStateElemId,
+  fetchChanges, FetchChange, generateServiceIdToStateElemId, FetchChangesResult,
 } from '../../src/core/fetch'
 
+import * as merger from '../../src/core/merger'
+import { DuplicateAnnotationError } from '../../src/core/merger/internal/object_types'
+
 describe('fetch', () => {
+  const mockMergeResult = (mockResult: merger.MergeResult): jest.Mock<unknown> =>
+    jest.spyOn(merger, 'mergeElements').mockImplementation(() => mockResult)
   const testID = new ElemID('dummy', 'elem')
   const testField = new Field(testID, 'test', BuiltinTypes.STRING, { annotation: 'value' })
   const typeWithField = new ObjectType({
@@ -35,6 +40,7 @@ describe('fetch', () => {
       ext: new Field(newTypeID, 'ext', BuiltinTypes.STRING),
     },
   })
+  beforeEach(() => jest.spyOn(merger, 'mergeElements').mockRestore())
 
   describe('fetchChanges', () => {
     const mockAdapters = {
@@ -46,7 +52,7 @@ describe('fetch', () => {
     describe('when the adapter returns elements with merge errors', () => {
       beforeEach(() => {
         mockAdapters.dummy.fetch.mockResolvedValueOnce(
-          Promise.resolve([newTypeBase, newTypeBase]),
+          Promise.resolve([newTypeBase, newTypeBase, typeWithField]),
         )
       })
       it('should fail', async () => {
@@ -56,6 +62,70 @@ describe('fetch', () => {
           [],
         )
         expect(fetchChangesResult.mergeErrors).toHaveLength(1)
+      })
+    })
+    describe('when merge elements returns errors', () => {
+      describe('when state', () => {
+        describe('contains elements with errored elem ids', () => {
+          it('should throw an exception', async () => {
+            mockMergeResult({
+              merged: [newTypeBase],
+              errors: [
+                new DuplicateAnnotationError({ elemID: newTypeBase.elemID, key: 'bla' }),
+              ],
+            })
+
+            try {
+              await fetchChanges({}, [], [newTypeBase])
+              expect(false).toBeTruthy()
+            } catch (e) {
+              expect(e.message).toMatch(/.*duplicate annotation.*/)
+              expect(e.message).toMatch(/.*bla.*/)
+            }
+          })
+        })
+        describe('contains no element elements with errors ', () => {
+          let fetchChangesResult: FetchChangesResult
+          beforeEach(async () => {
+            mockMergeResult({
+              merged: [newTypeBase, typeWithField],
+              errors: [
+                new DuplicateAnnotationError({ elemID: newTypeBase.elemID, key: 'blu' }),
+              ],
+            })
+
+            fetchChangesResult = await fetchChanges({}, [], [])
+          })
+          it('should return errors', async () => {
+            expect(fetchChangesResult.mergeErrors).toHaveLength(1)
+          })
+          it('should drop elements', async () => {
+            expect(fetchChangesResult.elements).toHaveLength(1)
+          })
+        })
+      })
+      describe('when instance parent type elements have merge errors', () => {
+        let fetchChangesResult: FetchChangesResult
+        beforeEach(async () => {
+          const instance = new InstanceElement('instance_elem_id_name', newTypeBase, { fname: 'fvalue' })
+          const instance2 = new InstanceElement('instance_elem_id_name2', typeWithField, { fname: 'fvalue2' })
+
+          mockMergeResult({
+            merged: [newTypeBase, typeWithField, instance, instance2],
+            errors: [
+              new DuplicateAnnotationError({ elemID: newTypeBase.elemID, key: 'bla' }),
+            ],
+          })
+          fetchChangesResult = await fetchChanges({}, [], [])
+        })
+        it('should return errors', async () => {
+          expect(fetchChangesResult.mergeErrors).toHaveLength(1)
+        })
+        it('should drop instance elements', () => {
+          expect(fetchChangesResult.elements).toHaveLength(2)
+          expect(fetchChangesResult.elements.map(e => e.elemID.getFullName())).not.toContain(['dummy.elem.instance.instance_elem_id_name'])
+          expect(fetchChangesResult.elements.map(e => e.elemID.getFullName())).toContain('dummy.elem.instance.instance_elem_id_name2')
+        })
       })
     })
     describe('when there are no changes', () => {

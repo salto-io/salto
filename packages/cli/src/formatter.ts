@@ -7,7 +7,7 @@ import {
 } from 'adapter-api'
 import {
   Plan, PlanItem, FoundSearchResult, SearchResult, DetailedChange,
-  WorkspaceError, SourceFragment, FetchChange, MergeError, WorkspaceErrorSeverity,
+  WorkspaceError, SourceFragment, FetchChange, MergeErrorWithElements, WorkspaceErrorSeverity,
 } from 'salto'
 import Prompts from './prompts'
 
@@ -364,5 +364,9 @@ const formatWorkspaceError = (we: Readonly<WorkspaceError>): string =>
 export const formatWorkspaceErrors = (workspaceErrors: ReadonlyArray<WorkspaceError>): string =>
   `${Prompts.WORKSPACE_LOAD_FAILED}\n${workspaceErrors.map(formatWorkspaceError).join('\n\n')}\n`
 
-export const formatMergeErrors = (mergeErrors: ReadonlyArray<MergeError>): string =>
-  `${Prompts.FETCH_MERGE_ERRORS}${mergeErrors.map(me => formatError(me, 'Error')).join('\n')}`
+export const formatMergeErrors = (mergeErrors: ReadonlyArray<MergeErrorWithElements>): string =>
+  `${Prompts.FETCH_MERGE_ERRORS}${mergeErrors.map(
+    me => `${formatError(me.error, 'Error')}, dropped elements: ${
+      me.elements.map(e => e.elemID.getFullName()).join(', ')
+    }`
+  ).join('\n')}`

@@ -225,7 +225,7 @@ describe('file', () => {
     beforeEach(async () => {
       destTmp = await tmp.file()
       dest = destTmp.path
-      copyFile(source, dest)
+      await copyFile(source, dest)
     })
 
     afterEach(async () => {

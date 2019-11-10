@@ -1,6 +1,6 @@
 import wu from 'wu'
 import {
-  ObjectType, InstanceElement, Element, Value, ActionName,
+  ObjectType, InstanceElement, Element, Value, ActionName, ElemID, ServiceIds, toServiceIdsString,
 } from 'adapter-api'
 import { logger } from '@salto/logging'
 import {
@@ -16,7 +16,9 @@ import {
 import State from './state/state'
 import { findElement, SearchResult } from './core/search'
 import { Workspace, CREDS_DIR } from './workspace/workspace'
-import { fetchChanges, FetchChange, getDetailedChanges } from './core/fetch'
+import {
+  fetchChanges, FetchChange, getDetailedChanges, generateServiceIdToStateElemId,
+} from './core/fetch'
 import { MergeError } from './core/merger/internal/common'
 
 export { ItemStatus }
@@ -111,7 +113,13 @@ export const fetch: fetchFunc = async (workspace, fillConfig) => {
   const stateElements = await state.get()
   log.debug(`finished loading ${stateElements.length} state elements`)
 
-  const [adapters, newConfigs] = await initAdapters(workspace.elements, fillConfig)
+  const serviceIdToStateElemId = generateServiceIdToStateElemId(stateElements)
+  const getElemIdFunc = (adapterName: string, serviceIds: ServiceIds, name: string): ElemID => {
+    const stateElemId = serviceIdToStateElemId[toServiceIdsString(serviceIds)]
+    return stateElemId || new ElemID(adapterName, name)
+  }
+
+  const [adapters, newConfigs] = await initAdapters(workspace.elements, fillConfig, getElemIdFunc)
   log.debug(`${adapters.length} were initialized [newConfigs=${newConfigs.length}]`)
 
   const { changes, elements, mergeErrors } = await fetchChanges(

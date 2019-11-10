@@ -13,7 +13,14 @@ export interface Adapter {
   deleteInstancesOfType(type: ObjectType, records: AsyncIterable<ElemID>): Promise<void>
 }
 
+export const OBJECT_SERVICE_ID = 'object_service_id'
+export const ADAPTER = 'adapter'
+export type ServiceIds = Record<string, string>
+export const toServiceIdsString = (serviceIds: ServiceIds): string =>
+  Object.entries(serviceIds).sort().toString()
+export type GetElemIdFunc = (adapterName: string, serviceIds: ServiceIds, name: string) => ElemID
+
 export type AdapterCreator = {
-  create: (opts: { config: InstanceElement }) => Adapter
+  create: (opts: { config: InstanceElement; getElemIdFunc?: GetElemIdFunc }) => Adapter
   configType: ObjectType
 }

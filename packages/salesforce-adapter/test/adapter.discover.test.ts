@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import {
-  ObjectType, Type, InstanceElement, ElemID, BuiltinTypes,
+  ObjectType, Type, InstanceElement, ServiceIds, ElemID, BuiltinTypes,
 } from 'adapter-api'
 import SalesforceAdapter from '../src/adapter'
 import Connection from '../src/client/jsforce'
@@ -13,10 +13,14 @@ describe('SalesforceAdapter fetch', () => {
   let connection: Connection
   let adapter: SalesforceAdapter
 
+  const mockGetElemIdFunc = (adapterName: string, _serviceIds: ServiceIds, name: string):
+    ElemID => new ElemID(adapterName, name)
+
   beforeEach(() => {
     ({ connection, adapter } = mockAdpater({
       adapterParams: {
         metadataAdditionalTypes: [],
+        getElemIdFunc: mockGetElemIdFunc,
       },
     }))
   })
@@ -179,6 +183,40 @@ describe('SalesforceAdapter fetch', () => {
 
       const lead = findElements(result, 'lead').pop() as ObjectType
       expect(lead.fields.number_field.type.elemID.name).toBe('number')
+    })
+
+    it('should fetch sobject with api_name and metadata_type service ids', async () => {
+      mockSingleSObject('Lead', [])
+      const result = await adapter.fetch()
+
+      const lead = result.filter(o => o.elemID.name === 'lead').pop() as ObjectType
+      expect(lead.annotationTypes[constants.API_NAME]).toEqual(BuiltinTypes.SERVICE_ID)
+      expect(lead.annotationTypes[constants.METADATA_TYPE]).toEqual(BuiltinTypes.SERVICE_ID)
+      expect(lead.annotations[constants.API_NAME]).toEqual('Lead')
+      expect(lead.annotations[constants.METADATA_TYPE]).toEqual(constants.CUSTOM_OBJECT)
+    })
+
+    it('should use existing elemID when fetching custom object', async () => {
+      ({ connection, adapter } = mockAdpater({
+        adapterParams: {
+          metadataAdditionalTypes: [],
+          getElemIdFunc: (adapterName: string, _serviceIds: ServiceIds, name: string):
+            ElemID => new ElemID(adapterName, name.endsWith(constants.SALESFORCE_CUSTOM_SUFFIX)
+            ? name.slice(0, -3) : name),
+        },
+      }))
+      mockSingleSObject('Custom__c', [
+        {
+          name: 'StringField__c',
+          type: 'string',
+          label: 'Stringo',
+        },
+      ])
+
+      const result = await adapter.fetch()
+
+      const custom = result.filter(o => o.elemID.name === 'custom').pop() as ObjectType
+      expect(custom.fields.string_field.annotations[constants.API_NAME]).toEqual('StringField__c')
     })
 
     it('should fetch sobject with various field types', async () => {
@@ -362,6 +400,11 @@ describe('SalesforceAdapter fetch', () => {
     it('should fetch basic metadata type', async () => {
       mockSingleMetadataType('Flow', [
         {
+          name: 'fullName',
+          soapType: 'string',
+          valueRequired: true,
+        },
+        {
           name: 'Description',
           soapType: 'string',
           valueRequired: true,
@@ -396,6 +439,9 @@ describe('SalesforceAdapter fetch', () => {
       // Note the order here is important because we expect restriction values to be sorted
       expect(flow.fields.enum.annotations[Type.VALUES]).toEqual(['no', 'yes'])
       expect(flow.path).toEqual(['types', 'flow'])
+      expect(flow.fields.full_name.type).toEqual(BuiltinTypes.SERVICE_ID)
+      expect(flow.annotationTypes[constants.METADATA_TYPE]).toEqual(BuiltinTypes.SERVICE_ID)
+      expect(flow.annotations[constants.METADATA_TYPE]).toEqual('Flow')
     })
     it('should fetch nested metadata types', async () => {
       mockSingleMetadataType('NestingType', [

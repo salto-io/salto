@@ -1,7 +1,7 @@
 import {
   BuiltinTypes, Type, ObjectType, ElemID, InstanceElement, isModificationDiff,
   isRemovalDiff, isAdditionDiff, Field, Element, isObjectType, isInstanceElement, AdapterCreator,
-  Value, Change, getChangeElement, isField, isElement,
+  Value, Change, getChangeElement, isField, isElement, GetElemIdFunc,
 } from 'adapter-api'
 import {
   SaveResult, MetadataInfo, Field as SObjField, DescribeSObjectResult, QueryResult,
@@ -56,6 +56,16 @@ const addApiNameAndLabel = (elem: Type | Field): void => {
   }
 }
 
+const addServiceIdAnnotationTypes = (elem: ObjectType): void => {
+  const { annotationTypes } = elem
+  if (!annotationTypes[constants.METADATA_TYPE]) {
+    annotationTypes[constants.METADATA_TYPE] = BuiltinTypes.SERVICE_ID
+  }
+  if (!annotationTypes[constants.API_NAME]) {
+    annotationTypes[constants.API_NAME] = BuiltinTypes.SERVICE_ID
+  }
+}
+
 const addDefaults = (element: ObjectType): void => {
   const addMetadataType = (elem: ObjectType): void => {
     const { annotations } = elem
@@ -68,6 +78,7 @@ const addDefaults = (element: ObjectType): void => {
 
   addMetadataType(element)
   addApiNameAndLabel(element)
+  addServiceIdAnnotationTypes(element)
   Object.values(element.fields).forEach(field => {
     addApiNameAndLabel(field)
   })
@@ -100,7 +111,9 @@ export interface SalesforceAdapterParams {
 
   // client to use
   client: SalesforceClient
-}
+
+  // callback function to get an existing elemId or create a new one by the ServiceIds values
+  getElemIdFunc?: GetElemIdFunc}
 
 const logDuration = (message?: string): decorators.InstanceMethodDecorator =>
   decorators.wrapMethodWith(
@@ -119,6 +132,7 @@ export default class SalesforceAdapter {
   private metadataTypeBlacklist: string[]
   private metadataToUpdateWithDeploy: string[]
   private filterCreators: FilterCreator[]
+  private readonly getElemIdFunc?: GetElemIdFunc
 
   public constructor({
     metadataTypeBlacklist = [
@@ -153,11 +167,13 @@ export default class SalesforceAdapter {
       convertTypeFilter,
     ],
     client,
+    getElemIdFunc,
   }: SalesforceAdapterParams) {
     this.metadataTypeBlacklist = metadataTypeBlacklist
     this.metadataToUpdateWithDeploy = metadataToUpdateWithDeploy
     this.filterCreators = filterCreators
     this.client = client
+    this.getElemIdFunc = getElemIdFunc
   }
 
   private client: SalesforceClient
@@ -530,7 +546,7 @@ export default class SalesforceAdapter {
 
     const sobjects = sobjectsDescriptions.map(
       ({ name, custom, fields }) => SalesforceAdapter.createSObjectTypes(
-        name, custom, fields, customObjectNames
+        name, custom, fields, customObjectNames, this.getElemIdFunc as GetElemIdFunc
       )
     )
 
@@ -542,8 +558,20 @@ export default class SalesforceAdapter {
     isCustom: boolean,
     fields: SObjField[],
     customObjectNames: Set<string>,
+    getElemIdFunc: GetElemIdFunc
   ): Type[] {
-    const element = Types.get(objectName) as ObjectType
+    const serviceIds = {
+      adapter: constants.SALESFORCE,
+      [constants.API_NAME]: objectName,
+      [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
+    }
+
+    const element = Types.createObjectType({ name: objectName,
+      customObject: true,
+      isSettings: false,
+      getElemIdFunc,
+      serviceIds })
+    addServiceIdAnnotationTypes(element)
     element.annotate({ [constants.API_NAME]: objectName })
     element.annotate({ [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT })
 
@@ -553,7 +581,7 @@ export default class SalesforceAdapter {
     // Set standard fields on element
     filteredFields
       .filter(f => !f.custom)
-      .map(f => getSObjectFieldElement(element.elemID, f))
+      .map(f => getSObjectFieldElement(element.elemID, f, getElemIdFunc, serviceIds))
       .forEach(field => {
         element.fields[field.name] = field
       })
@@ -561,7 +589,7 @@ export default class SalesforceAdapter {
     // Create custom fields (if any)
     const customFields = filteredFields
       .filter(f => f.custom)
-      .map(f => getSObjectFieldElement(element.elemID, f))
+      .map(f => getSObjectFieldElement(element.elemID, f, getElemIdFunc, serviceIds))
 
     if (!customObjectNames.has(objectName)) {
       // This is not a custom object type, no need to separate standard part from custom part
@@ -591,7 +619,11 @@ export default class SalesforceAdapter {
     }
 
     // Custom fields go in a separate element
-    const customPart = Types.get(objectName) as ObjectType
+    const customPart = Types.get({ name: objectName,
+      customObject: true,
+      isSettings: false,
+      getElemIdFunc,
+      serviceIds }) as ObjectType
     customFields.forEach(field => {
       customPart.fields[field.name] = field
     })
@@ -683,8 +715,9 @@ const clientFromConfig = (config: InstanceElement): SalesforceClient =>
   })
 
 export const creator: AdapterCreator = {
-  create: ({ config }) => new SalesforceAdapter({
+  create: ({ config, getElemIdFunc }) => new SalesforceAdapter({
     client: clientFromConfig(config),
+    getElemIdFunc,
   }),
   configType,
 }

@@ -16,7 +16,7 @@ export interface Values {
 }
 
 export type FieldMap = Record<string, Field>
-type TypeMap = Record<string, Type>
+export type TypeMap = Record<string, Type>
 
 export type ElemIDType = 'type' | 'field' | 'instance' | 'attr' | 'annotation'
 export const ElemIDTypes = ['type', 'field', 'instance', 'attr', 'annotation'] as ReadonlyArray<string>
@@ -473,6 +473,10 @@ export const BuiltinTypes: Record<string, PrimitiveType> = {
   BOOLEAN: new PrimitiveType({
     elemID: new ElemID('', 'boolean'),
     primitive: PrimitiveTypes.BOOLEAN,
+  }),
+  SERVICE_ID: new PrimitiveType({
+    elemID: new ElemID('', 'service_id'),
+    primitive: PrimitiveTypes.STRING,
   }),
 }
 

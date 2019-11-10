@@ -1211,7 +1211,7 @@ describe('Salesforce adapter E2E with real account', () => {
       oldElement.fields[lookupFieldName] = new Field(
         mockElemID,
         lookupFieldName,
-        Types.get(constants.FIELD_TYPE_NAMES.LOOKUP),
+        Types.primitiveDataTypes.lookup,
         {
           [constants.API_NAME]: lookupFieldApiName,
           [constants.FIELD_ANNOTATIONS.RELATED_TO]: ['Case'],
@@ -1242,7 +1242,7 @@ describe('Salesforce adapter E2E with real account', () => {
       newElement.fields[lookupFieldName] = new Field(
         mockElemID,
         lookupFieldName,
-        Types.get(constants.FIELD_TYPE_NAMES.LOOKUP),
+        Types.primitiveDataTypes.lookup,
         {
           [constants.API_NAME]: lookupFieldApiName,
           [constants.FIELD_ANNOTATIONS.RELATED_TO]: ['Case'],

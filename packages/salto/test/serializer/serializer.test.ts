@@ -41,16 +41,13 @@ describe('State serialization', () => {
   })
 
   const instance = new InstanceElement(
-    new ElemID('salesforce', 'me'),
+    'me',
     model,
-    {
-      name: 'me',
-      num: 7,
-    }
+    { name: 'me', num: 7 },
   )
 
   const refInstance = new InstanceElement(
-    new ElemID('salesforce', 'also_me'),
+    'also_me',
     model,
     {
       name: new TemplateExpression({
@@ -68,12 +65,9 @@ describe('State serialization', () => {
   )
 
   const config = new InstanceElement(
-    new ElemID('salesforce', ElemID.CONFIG_INSTANCE_NAME),
+    ElemID.CONFIG_INSTANCE_NAME,
     model,
-    {
-      name: 'other',
-      num: 5,
-    }
+    { name: 'other', num: 5 },
   )
 
   const elements = [strType, numType, boolType, model, instance, refInstance, config]

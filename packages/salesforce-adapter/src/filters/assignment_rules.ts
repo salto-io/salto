@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import {
-  Element, isInstanceElement, ElemID,
+  Element, isInstanceElement,
 } from 'adapter-api'
 import { FilterCreator } from '../filter'
 import { apiName, bpCase } from '../transformer'
@@ -27,7 +27,7 @@ const filterCreator: FilterCreator = () => ({
         // assignment_rules to get the desired name
         const newName = `${bpCase(apiName(rule))}_${ASSIGNMENT_RULES_TYPE_NAME}`
         // Replace the element ID
-        rule.elemID = new ElemID(rule.elemID.adapter, newName)
+        rule.elemID = rule.type.elemID.createNestedID('instance', newName)
       })
   },
 })

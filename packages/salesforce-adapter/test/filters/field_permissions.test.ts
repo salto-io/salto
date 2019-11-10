@@ -63,8 +63,7 @@ describe('Field Permissions filter', () => {
       [constants.API_NAME]: 'Profile',
     },
   })
-  const mockAdminElemID = new ElemID(constants.SALESFORCE, 'admin')
-  const mockAdmin = new InstanceElement(mockAdminElemID,
+  const mockAdmin = new InstanceElement('admin',
     mockProfile,
     {
       [constants.FIELD_PERMISSIONS]: [
@@ -81,8 +80,7 @@ describe('Field Permissions filter', () => {
       ],
       description: 'Admin profile',
     })
-  const mockStandardID = new ElemID(constants.SALESFORCE, 'standard')
-  const mockStandard = new InstanceElement(mockStandardID,
+  const mockStandard = new InstanceElement('standard',
     mockProfile,
     {
       [constants.FIELD_PERMISSIONS]: [
@@ -94,8 +92,7 @@ describe('Field Permissions filter', () => {
       ],
       description: 'Standard profile',
     })
-  const mockNoFieldPermissionsID = new ElemID(constants.SALESFORCE, 'fake_no_field_permissions')
-  const mockNoFieldPerm = new InstanceElement(mockNoFieldPermissionsID,
+  const mockNoFieldPerm = new InstanceElement('fake_no_field_permissions',
     mockProfile,
     {
       description: 'Profile with no field_permissions',

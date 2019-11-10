@@ -1,5 +1,5 @@
 import * as vscode from 'vscode'
-import { InstanceElement, ElemID, ObjectType, Values, isPrimitiveType, PrimitiveTypes, Value } from 'adapter-api'
+import { InstanceElement, ObjectType, Values, isPrimitiveType, PrimitiveTypes, Value } from 'adapter-api'
 import { preview, Plan, deploy, ItemStatus, PlanItem, DeployResult } from 'salto'
 import { EditorWorkspace } from './salto/workspace'
 import { displayError, getBooleanInput, displayHTML, getStringInput, getNumberInput, hrefToUri } from './output'
@@ -45,7 +45,7 @@ const getUserConfig = async (
       values[field.name] = input
     }
   }
-  return new InstanceElement(new ElemID('stam'), configType, values)
+  return new InstanceElement('stam', configType, values)
 }
 
 const updateProgress = async (

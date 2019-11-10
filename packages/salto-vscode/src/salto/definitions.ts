@@ -1,4 +1,5 @@
 import { isObjectType, isInstanceElement, getField } from 'adapter-api'
+import { parseElemID } from 'salto'
 import { EditorWorkspace } from './workspace'
 import { PositionContext } from './context'
 import { getLocations, SaltoElemLocation } from './location'
@@ -17,10 +18,10 @@ export const provideWorkspaceDefinition = (
     // field name
     if (isObjectType(refType)) {
       const refField = refType.fields[token]
-      const fullName = (refField) ? refField.elemID.getFullName() : token
+      const fullName = (refField) ? refField.elemID.getFullName() : refType.elemID.getFullName()
       return getLocations(workspace, fullName)
     }
   }
   // We are not in instance, so we can just look the current token
-  return getLocations(workspace, token)
+  return getLocations(workspace, parseElemID(token).getFullName())
 }

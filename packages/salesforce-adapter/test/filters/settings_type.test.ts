@@ -28,7 +28,7 @@ describe('Test Settings Type', () => {
   })
 
   const mockInstance = new InstanceElement(
-    new ElemID(constants.SALESFORCE, 'ass', 'lead'),
+    'lead',
     new ObjectType({
       elemID: new ElemID(constants.SALESFORCE, 'ass'),
     }),
@@ -38,7 +38,7 @@ describe('Test Settings Type', () => {
   )
 
   const anotherMockInstance = new InstanceElement(
-    new ElemID(constants.SALESFORCE, 'testInst', 'lead'),
+    'lead',
     new ObjectType({
       elemID: new ElemID(constants.SALESFORCE, 'testInst'),
       isSettings: false,

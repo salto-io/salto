@@ -42,8 +42,8 @@ const mockUpdate = jest.fn((b, _a) => new ObjectType({ elemID: new ElemID('sales
 const objType = new ObjectType({ elemID: new ElemID('salesforce', 'dummy') })
 const fetchedElements = [
   objType,
-  new InstanceElement(new ElemID('salesforce', 'instance_1'), objType, {}),
-  new InstanceElement(new ElemID('salesforce', 'instance_2'), objType, {}),
+  new InstanceElement('instance_1', objType, {}),
+  new InstanceElement('instance_2', objType, {}),
 ]
 const mockFetch = jest.fn(() => fetchedElements)
 
@@ -60,11 +60,7 @@ const instancesIterator = async function *instancesIterator(): AsyncIterable<Ins
       Gender: 'Female',
     },
   ]
-  yield values.map(value => new InstanceElement(
-    new ElemID('salesforce', value.Id),
-    testType,
-    value
-  ))
+  yield values.map(value => new InstanceElement(value.Id, testType, value))
 }
 
 const mockGetInstancesOfType = jest.fn(() => instancesIterator())
@@ -121,8 +117,7 @@ describe('api functions', () => {
       sandbox: false,
     }
 
-    const elemID = new ElemID('salesforce', ElemID.CONFIG_INSTANCE_NAME)
-    return new InstanceElement(elemID, configType, value)
+    return new InstanceElement(ElemID.CONFIG_INSTANCE_NAME, configType, value)
   }
 
   describe('Test commands.ts and core.ts', () => {
@@ -146,7 +141,12 @@ describe('api functions', () => {
       const workspace = await Workspace.load(config)
       const fullNames = workspace.elements.map(e => e.elemID.getFullName())
       expect(fullNames).toEqual(
-        expect.arrayContaining(['salesforce', 'salesforce.test', 'salesforce.test2']),
+        expect.arrayContaining([
+          'salesforce._empty.instance',
+          'salesforce.test',
+          'salesforce.test2',
+          'salesforce.settings',
+        ]),
       )
     })
 
@@ -278,7 +278,7 @@ describe('api functions', () => {
       const elemID = new ElemID('salesforce', 'test')
       const testType = new ObjectType({ elemID })
       const instanceElement = new InstanceElement(
-        elemID,
+        'test',
         testType,
         {}
       )
@@ -293,7 +293,7 @@ describe('api functions', () => {
         }
         ws = await Workspace.load(config)
         mockStateGet = jest.fn().mockImplementation(() =>
-          Promise.resolve([instanceElement]))
+          Promise.resolve([testType, instanceElement]))
         State.prototype.get = mockStateGet
       })
 

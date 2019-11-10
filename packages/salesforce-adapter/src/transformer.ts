@@ -641,11 +641,7 @@ export const toInstanceElements = (type: ObjectType, queryResult: QueryResult<Va
     key !== 'attributes'))
 
   // Convert the result to Instance Elements
-  return results.map(res => new InstanceElement(
-    new ElemID(SALESFORCE, type.elemID.name, res.Id),
-    type,
-    res
-  ))
+  return results.map(res => new InstanceElement(res.Id, type, res))
 }
 
 export const createInstanceElement = (
@@ -654,8 +650,7 @@ export const createInstanceElement = (
 ): InstanceElement => {
   const typeName = type.elemID.name
   return new InstanceElement(
-    type.isSettings ? new ElemID(SALESFORCE, typeName)
-      : new ElemID(SALESFORCE, typeName, bpCase(mdInfo.fullName)),
+    type.isSettings ? ElemID.CONFIG_INSTANCE_NAME : bpCase(mdInfo.fullName),
     type,
     fromMetadataInfo(mdInfo),
     ['records', type.isSettings ? 'settings'

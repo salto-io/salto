@@ -230,7 +230,7 @@ type salesforce_lead {
       newElem.path = ['test', 'new']
       const changes: DetailedChange[] = [
         { // modify value
-          id: new ElemID('salesforce', 'lead', 'base_field', Type.DEFAULT),
+          id: new ElemID('salesforce', 'lead', 'field', 'base_field', Type.DEFAULT),
           action: 'modify',
           data: { before: 'asd', after: 'foo' },
         },
@@ -240,17 +240,17 @@ type salesforce_lead {
           data: { after: newElem },
         },
         { // add complex value (nested in parent scope)
-          id: new ElemID('salesforce', 'lead', 'base_field', 'complex'),
+          id: new ElemID('salesforce', 'lead', 'field', 'base_field', 'complex'),
           action: 'add',
           data: { after: { key: 'value' } },
         },
         { // remove value
-          id: new ElemID('salesforce', 'lead', 'ext_field', Type.DEFAULT),
+          id: new ElemID('salesforce', 'lead', 'field', 'ext_field', Type.DEFAULT),
           action: 'remove',
           data: { before: 'foo' },
         },
         { // Add value to empty scope
-          id: new ElemID('external', 'file', Type.DEFAULT),
+          id: new ElemID('external', 'file', 'attr', Type.DEFAULT),
           action: 'add',
           data: { after: 'some value' },
         },
@@ -266,7 +266,7 @@ type salesforce_lead {
           data: { before: new ObjectType({ elemID: new ElemID('multi', 'loc') }) },
         },
         { // Modify value in list
-          id: new ElemID('salesforce', 'lead', 'list_field', Type.DEFAULT, '3'),
+          id: new ElemID('salesforce', 'lead', 'field', 'list_field', Type.DEFAULT, '3'),
           action: 'modify',
           data: { before: 4, after: 5 },
         },

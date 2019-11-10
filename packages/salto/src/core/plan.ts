@@ -170,13 +170,13 @@ export const getPlan = (
             return getValuesChanges(elem.elemID, change.data.before.value, change.data.after.value)
           }
           const annotationsValueChanges: DetailedChange[] = getValuesChanges(
-            elem.elemID,
+            elem.elemID.isTopLevel() ? elem.elemID.createNestedID('attr') : elem.elemID,
             change.data.before.annotations,
             change.data.after.annotations,
           )
           return hasAnnotationTypes(change.data.before) && hasAnnotationTypes(change.data.after)
             ? annotationsValueChanges.concat(getValuesChanges(
-              elem.elemID,
+              elem.elemID.isTopLevel() ? elem.elemID.createNestedID('annotation') : elem.elemID,
               change.data.before.annotationTypes,
               change.data.after.annotationTypes
             )) : annotationsValueChanges

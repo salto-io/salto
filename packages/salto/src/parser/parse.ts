@@ -14,7 +14,7 @@ export type ParseError = HclParseError
 
 export type SourceMap = ReadonlyMap<string, SourceRange[]>
 
-const elemID = (fullname: string): ElemID => {
+export const elemID = (fullname: string): ElemID => {
   const separatorIdx = fullname.indexOf(Keywords.NAMESPACE_SEPARATOR)
   const adapter = (separatorIdx >= 0) ? fullname.slice(0, separatorIdx) : ''
   const name = fullname.slice(separatorIdx + Keywords.NAMESPACE_SEPARATOR.length)
@@ -75,7 +75,7 @@ export const parse = async (blueprint: Buffer, filename: string): Promise<ParseR
       {
         elemID: elemID(typeName),
         annotationTypes: annotationTypes(typeBlock),
-        annotations: attrValues(typeBlock, elemID(typeName)),
+        annotations: attrValues(typeBlock, elemID(typeName).createNestedID('attr')),
         isSettings,
       }
     )
@@ -100,7 +100,7 @@ export const parse = async (blueprint: Buffer, filename: string): Promise<ParseR
               isSettings: block.type === Keywords.SETTINGS_DEFINITION,
             }
           ),
-          attrValues(block, typeObj.elemID.createNestedID(fieldName)),
+          attrValues(block, typeObj.elemID.createNestedID('field', fieldName)),
           isList,
         )
         sourceMap.push(field.elemID, block)
@@ -127,18 +127,10 @@ export const parse = async (blueprint: Buffer, filename: string): Promise<ParseR
       elemID: elemID(typeName),
       primitive: primitiveType(baseType),
       annotationTypes: annotationTypes(typeBlock),
-      annotations: attrValues(typeBlock, elemID(typeName)),
+      annotations: attrValues(typeBlock, elemID(typeName).createNestedID('attr')),
     })
     sourceMap.push(typeObj.elemID, typeBlock)
     return typeObj
-  }
-
-  const extractInstanceName = (instanceBlock: ParsedHclBlock, typeID: ElemID): string => {
-    if (instanceBlock.labels.length > 0) {
-      return instanceBlock.labels[0]
-    }
-
-    return typeID.isConfig() ? ElemID.CONFIG_INSTANCE_NAME : typeID.name
   }
 
   const parseInstance = (instanceBlock: ParsedHclBlock): Element => {
@@ -147,15 +139,15 @@ export const parse = async (blueprint: Buffer, filename: string): Promise<ParseR
       // In this case if there is just a single name we have to assume it is actually the adapter
       typeID = new ElemID(typeID.name)
     }
-    const name = extractInstanceName(instanceBlock, typeID)
+    const name = instanceBlock.labels[0] || ElemID.CONFIG_INSTANCE_NAME
 
     const inst = new InstanceElement(
-      new ElemID(typeID.adapter, name),
+      name,
       new ObjectType({
         elemID: typeID,
         isSettings: instanceBlock.labels.length === 0 && !typeID.isConfig(),
       }),
-      attrValues(instanceBlock, new ElemID(typeID.adapter, name)),
+      attrValues(instanceBlock, typeID.createNestedID('instance', name)),
     )
     sourceMap.push(inst.elemID, instanceBlock)
     return inst

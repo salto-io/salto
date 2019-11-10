@@ -18,14 +18,26 @@ export interface Values {
 export type FieldMap = Record<string, Field>
 type TypeMap = Record<string, Type>
 
+export type ElemIDType = 'type' | 'field' | 'instance' | 'attr' | 'annotation'
 export class ElemID {
   static readonly NAMESPACE_SEPARATOR = '.'
-  static readonly CONFIG_INSTANCE_NAME = '_config'
+  static readonly CONFIG_INSTANCE_NAME = '_empty'
 
   readonly adapter: string
+  readonly typeName: string
+  readonly idType: ElemIDType
   private readonly nameParts: ReadonlyArray<string>
-  constructor(adapter: string, ...name: ReadonlyArray<string>) {
+  // TODO:ORI - Change constructor arguments to be an object
+  // TODO:ORI - accept only one name part in constructor
+  constructor(
+    adapter: string,
+    typeName?: string,
+    idType?: ElemIDType,
+    ...name: ReadonlyArray<string>
+  ) {
     this.adapter = adapter
+    this.typeName = _.isEmpty(typeName) ? ElemID.CONFIG_INSTANCE_NAME : typeName as string
+    this.idType = idType || 'type'
     this.nameParts = name
   }
 
@@ -34,28 +46,62 @@ export class ElemID {
   }
 
   get nestingLevel(): number {
-    return this.isConfig() ? 0 : this.nameParts.length
+    if (this.isTopLevel()) {
+      return 0
+    }
+    if (this.idType === 'instance') {
+      // First name part is the instance name which is top level
+      return this.nameParts.length - 1
+    }
+    return this.nameParts.length
   }
 
   private fullNameParts(): string[] {
-    return [this.adapter, ...this.nameParts].filter(part => !_.isEmpty(part)) as string[]
+    const parts = this.idType === 'type'
+      ? [this.adapter, this.typeName]
+      : [this.adapter, this.typeName, this.idType, ...this.nameParts]
+    return parts.filter(part => !_.isEmpty(part)) as string[]
   }
 
   getFullName(): string {
-    return this.isConfig() ? this.adapter : this.fullNameParts().join(ElemID.NAMESPACE_SEPARATOR)
+    const nameParts = this.fullNameParts()
+    return this.fullNameParts()
+      // If the last part of the name is empty we can omit it
+      .filter((part, idx) => idx !== nameParts.length - 1 || part !== ElemID.CONFIG_INSTANCE_NAME)
+      .join(ElemID.NAMESPACE_SEPARATOR)
   }
 
   isConfig(): boolean {
-    return this.nameParts.length === 0
-      || (this.nameParts.length === 1 && this.nameParts[0] === ElemID.CONFIG_INSTANCE_NAME)
+    return this.typeName === ElemID.CONFIG_INSTANCE_NAME
   }
 
+  isTopLevel(): boolean {
+    return this.idType === 'type'
+      || (this.idType === 'instance' && this.nameParts.length === 1)
+  }
+
+  // TODO Comment - This will create TONS of errors, we should get the type as a different argument
   createNestedID(...nameParts: string[]): ElemID {
-    return new ElemID(this.adapter, ...[...this.nameParts, ...nameParts])
+    if (this.idType === 'type') {
+      // We expect the new ID to have a different type so the first name part should be the ID type
+      const [nestedIDType, ...nestedNameParts] = nameParts
+      return new ElemID(this.adapter, this.typeName, nestedIDType as ElemIDType, ...nestedNameParts)
+    }
+    return new ElemID(this.adapter, this.typeName, this.idType, ...this.nameParts, ...nameParts)
   }
 
   createParentID(): ElemID {
-    return new ElemID(this.adapter, ...this.nameParts.slice(0, -1))
+    const newNameParts = this.nameParts.slice(0, -1)
+    if (!_.isEmpty(newNameParts)) {
+      // Parent should have the same type as this ID
+      return new ElemID(this.adapter, this.typeName, this.idType, ...newNameParts)
+    }
+    if (this.isTopLevel()) {
+      // The parent of top level elements is the adapter
+      return new ElemID(this.adapter)
+    }
+    // The parent of all other id types is the type
+    return new ElemID(this.adapter, this.typeName)
   }
 }
 
@@ -80,7 +126,7 @@ export class Field implements Element {
     public annotations: Values = {},
     public isList: boolean = false,
   ) {
-    this.elemID = parentID.createNestedID(name)
+    this.elemID = parentID.createNestedID('field', name)
   }
 
   isEqual(other: Field): boolean {
@@ -300,8 +346,8 @@ export class InstanceElement implements Element {
   path?: string[]
   type: ObjectType
   value: Values
-  constructor(elemID: ElemID, type: ObjectType, value: Values, path?: string[]) {
-    this.elemID = elemID
+  constructor(name: string, type: ObjectType, value: Values, path?: string[]) {
+    this.elemID = type.elemID.createNestedID('instance', name)
     this.type = type
     this.value = value
     this.path = path
@@ -368,7 +414,7 @@ export class ElementsRegistry {
       } else if (type as any in PrimitiveTypes) {
         res = new PrimitiveType({ elemID, primitive: type as PrimitiveTypes })
       } else {
-        res = new InstanceElement(elemID, type as ObjectType, {})
+        res = new InstanceElement(elemID.name, type as ObjectType, {})
       }
       this.registerElement(res)
     }

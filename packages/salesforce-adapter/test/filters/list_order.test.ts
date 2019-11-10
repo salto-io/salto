@@ -13,10 +13,9 @@ describe('list order filter', () => {
 
   describe('on fetch', () => {
     it('should properly sort an object instance field by its sort property', async () => {
-      const instanceElemID = new ElemID(SALESFORCE, ...[CLEAN_DATA_SERVICE_TYPE_NAME, 'test'])
       const typeElemID = new ElemID(SALESFORCE, CLEAN_DATA_SERVICE_TYPE_NAME)
 
-      const testInstance = new InstanceElement(instanceElemID, new ObjectType({
+      const testInstance = new InstanceElement('test', new ObjectType({
         elemID: typeElemID,
       }),
       {

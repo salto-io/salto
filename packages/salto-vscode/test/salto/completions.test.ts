@@ -59,9 +59,9 @@ describe('Test auto complete', () => {
     'vs_ref_tester',
   ]
   const instances = [
-    'vs_weekend_car',
-    'vs_lavi',
-    'vs_evyatar',
+    'weekend_car',
+    'lavi',
+    'evyatar',
   ]
 
   let workspace: EditorWorkspace

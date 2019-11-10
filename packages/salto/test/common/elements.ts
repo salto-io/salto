@@ -86,7 +86,7 @@ export const getAllElements = (): Element[] => {
   })
 
   const saltoEmployeeInstance = new InstanceElement(
-    new ElemID('salto', 'employee_instance'),
+    'instance',
     saltoEmployee,
     { name: 'FirstEmployee', nicknames: ['you', 'hi'], office: { label: 'bla', name: 'foo' } }
   )

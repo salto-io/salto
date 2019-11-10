@@ -29,7 +29,7 @@ describe('export command', () => {
 
     const [objects, output] = (dumpCsvMock as jest.Mock).mock.calls[0]
     expect(objects).toHaveLength(3)
-    expect(objects[0].Id).toBe(1)
+    expect(objects[0].Id).toBe('1')
     expect(objects[0].FirstName).toBe('Daile')
     expect(objects[0].LastName).toBe('Limeburn')
     expect(objects[0].Email).toBe('dlimeburn0@blogs.com')

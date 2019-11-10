@@ -88,7 +88,7 @@ describe('Adapter E2E import-export related operations with real account', () =>
     const testCompany = 'Test inc.'
 
     const testInstance = new InstanceElement(
-      leadElemID,
+      'test',
       leadType,
       {
         Id: '',

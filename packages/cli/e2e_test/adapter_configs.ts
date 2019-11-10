@@ -19,7 +19,7 @@ export default {
     const { configType } = salesforceAdapterCreator
 
     return new InstanceElement(
-      new ElemID(configType.elemID.adapter, ElemID.CONFIG_INSTANCE_NAME),
+      ElemID.CONFIG_INSTANCE_NAME,
       configType,
       configValues,
     )

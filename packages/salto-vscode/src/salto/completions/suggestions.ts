@@ -6,6 +6,7 @@ import {
   getSubElement,
 } from 'adapter-api'
 
+import { formatTypeID } from 'salto'
 import { EditorWorkspace } from '../workspace'
 import { ContextReference } from '../context'
 
@@ -38,7 +39,7 @@ const getAllInstances = (
 ): string[] => elements
   .filter(isInstanceElement)
   .filter(e => !adapter || e.elemID.adapter === adapter)
-  .map(e => e.elemID.getFullName())
+  .map(e => e.elemID.name)
 
 const getAllTypes = (
   elements: ReadonlyArray<Element>,
@@ -46,7 +47,7 @@ const getAllTypes = (
 ): string[] => elements
   .filter(isType)
   .filter(e => !adapter || e.elemID.adapter === adapter)
-  .map(e => e.elemID.getFullName())
+  .map(e => formatTypeID(e))
 
 const getTypeReferenceSuggestions = (
   baseElement: Type,

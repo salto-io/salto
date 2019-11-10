@@ -104,8 +104,8 @@ describe('merger', () => {
     },
   })
 
-  const instanceElement = new InstanceElement(new ElemID('salto', 'inst'), base, {})
-  const instanceElement2 = new InstanceElement(new ElemID('salto', 'inst2'), unrelated, {})
+  const instanceElement = new InstanceElement('inst', base, {})
+  const instanceElement2 = new InstanceElement('inst2', unrelated, {})
 
   const mergedObject = new ObjectType({
     elemID: baseElemID,
@@ -253,20 +253,20 @@ describe('merger', () => {
         base: new Field(nestedElemID, 'field2', base),
       },
     })
-    const ins1 = new InstanceElement(new ElemID('salto', 'ins'), nested, {
+    const ins1 = new InstanceElement('ins', nested, {
       field1: 'ins1',
       field2: 'ins1',
     })
-    const ins2 = new InstanceElement(new ElemID('salto', 'ins'), nested, {
+    const ins2 = new InstanceElement('ins', nested, {
       base: {
         field1: 'ins2',
         field2: 'ins2',
       },
     })
-    const shouldUseFieldDef = new InstanceElement(new ElemID('salto', 'ins'), nested, {
+    const shouldUseFieldDef = new InstanceElement('ins', nested, {
       field2: 'ins1',
     })
-    const shouldUseTypeDef = new InstanceElement(new ElemID('salto', 'ins'), nested, {
+    const shouldUseTypeDef = new InstanceElement('ins', nested, {
       field1: 'ins1',
     })
 

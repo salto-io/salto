@@ -27,7 +27,7 @@ describe('SalesforceAdapter CRUD', () => {
   const stringType = Types.primitiveDataTypes.text
 
   const mockElemID = new ElemID(constants.SALESFORCE, 'test')
-  const mockInstanceID = new ElemID(constants.SALESFORCE, 'instance')
+  const mockInstanceName = 'instance'
 
   const getDeployResult = (success: boolean, details?: DeployDetails[]): Promise<DeployResult> =>
     Promise.resolve({
@@ -85,7 +85,7 @@ describe('SalesforceAdapter CRUD', () => {
   describe('Add operation', () => {
     describe('for an instance element', () => {
       const instance = new InstanceElement(
-        mockInstanceID,
+        mockInstanceName,
         new ObjectType({
           elemID: mockElemID,
           fields: {
@@ -122,7 +122,7 @@ describe('SalesforceAdapter CRUD', () => {
           expect(mockCreate.mock.calls[0][0]).toBe('Flow')
           expect(mockCreate.mock.calls[0][1]).toHaveLength(1)
           expect(mockCreate.mock.calls[0][1][0]).toMatchObject({
-            fullName: sfCase(mockInstanceID.name),
+            fullName: sfCase(mockInstanceName),
             token: 'instanceTest',
           })
         })
@@ -144,7 +144,7 @@ describe('SalesforceAdapter CRUD', () => {
 
           result = adapter.add(
             new InstanceElement(
-              mockInstanceID,
+              mockInstanceName,
               new ObjectType({
                 elemID: mockElemID,
                 fields: {},
@@ -596,7 +596,7 @@ describe('SalesforceAdapter CRUD', () => {
 
       describe('for an instance element', () => {
         const element = new InstanceElement(
-          mockInstanceID,
+          mockInstanceName,
           new ObjectType({
             elemID: mockElemID,
             fields: {
@@ -683,7 +683,7 @@ describe('SalesforceAdapter CRUD', () => {
   describe('Update operation', () => {
     describe('for an instance element', () => {
       const oldElement = new InstanceElement(
-        mockInstanceID,
+        mockInstanceName,
         new ObjectType({
           elemID: mockElemID,
           fields: {},
@@ -696,7 +696,7 @@ describe('SalesforceAdapter CRUD', () => {
       )
 
       const newElement = new InstanceElement(
-        new ElemID(constants.SALESFORCE, 'wrong'),
+        'wrong',
         new ObjectType({
           elemID: mockElemID,
           fields: {},
@@ -785,7 +785,7 @@ describe('SalesforceAdapter CRUD', () => {
 
       describe('for an instance element', () => {
         const oldElement = new InstanceElement(
-          mockInstanceID,
+          mockInstanceName,
           new ObjectType({
             elemID: mockElemID,
             fields: {
@@ -820,7 +820,7 @@ describe('SalesforceAdapter CRUD', () => {
         )
 
         const newElement = new InstanceElement(
-          mockInstanceID,
+          mockInstanceName,
           new ObjectType({
             elemID: mockElemID,
             fields: {
@@ -878,7 +878,7 @@ describe('SalesforceAdapter CRUD', () => {
           expect(mockUpdate.mock.calls.length).toBe(1)
           expect(mockUpdate.mock.calls[0][0]).toEqual(PROFILE_METADATA_TYPE)
           const obj = mockUpdate.mock.calls[0][1][0]
-          expect(obj.fullName).toEqual(sfCase(mockInstanceID.name))
+          expect(obj.fullName).toEqual(sfCase(mockInstanceName))
           expect(obj.description).toEqual(newElement.value.description)
           expect(obj.userPermissions).toEqual(newElement.value.userPermissions)
           expect(obj.fieldPermissions).toEqual(newElement.value.fieldPermissions)
@@ -1534,12 +1534,12 @@ describe('SalesforceAdapter CRUD', () => {
         },
       })
       const before = new InstanceElement(
-        new ElemID(constants.SALESFORCE, 'deploy_inst'),
+        'deploy_inst',
         deployType,
         { dummy: 'before' },
       )
       const after = new InstanceElement(
-        before.elemID,
+        before.elemID.name,
         before.type,
         _.cloneDeep(before.value),
       )

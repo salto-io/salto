@@ -36,8 +36,8 @@ describe('lead convert settings filter', () => {
   )
 
   const mockConvertSettingsInstance = new InstanceElement(
-    new ElemID(constants.SALESFORCE, LEAD_CONVERT_SETTINGS_TYPE,
-      'lead_convert_settings'), mockConvertSettingsType,
+    'lead_convert_settings',
+    mockConvertSettingsType,
     {
       [fullName]: 'full',
       [OBJECT_MAPPING_FIELD]: {

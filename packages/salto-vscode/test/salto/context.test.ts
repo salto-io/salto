@@ -47,7 +47,6 @@ describe('Cursor context resolver', () => {
       const pos = { line: 4, col: 1 }
       const ctx = getPositionContext(workspace, bpContent, filename, pos)
       expect(ctx.type).toBe('type')
-
       expect(ctx.ref && ctx.ref.element.elemID).toEqual(new ElemID('salto', 'str'))
     })
 
@@ -68,7 +67,7 @@ describe('Cursor context resolver', () => {
       const ctx = getPositionContext(workspace, bpContent, filename, pos)
       expect(ctx.type).toBe('field')
 
-      expect(ctx.ref && ctx.ref.element.elemID).toEqual(new ElemID('salto', 'complex_object'))
+      expect(ctx.ref && ctx.ref.element.elemID).toEqual(new ElemID('salto', 'complex', 'field', 'object'))
     })
   })
 
@@ -89,8 +88,8 @@ describe('Cursor context resolver', () => {
       const pos = { line: 33, col: 1 }
       const ctx = getPositionContext(workspace, bpContent, filename, pos)
       expect(ctx.type).toBe('instance')
-
-      expect(ctx.ref && ctx.ref.element.elemID).toEqual(new ElemID('salto', 'inst'))
+      // TODO Comment is this the intendet behave?
+      expect(ctx.ref && ctx.ref.element.elemID).toEqual(new ElemID('salto', 'complex', 'instance', 'inst'))
     })
 
     it('should identify instance path', () => {

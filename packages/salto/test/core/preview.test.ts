@@ -156,23 +156,36 @@ describe('getPlan', () => {
         const changes = [...planItem.detailedChanges()]
         expect(changes).toHaveLength(5)
 
-        expect(changes[0].id).toEqual(newElement.elemID.createNestedID('label'))
+        expect(changes[0].id).toEqual(newElement.elemID.createNestedID('attr', 'label'))
         expect(changes[0].action).toEqual('add')
         expect(_.get(changes[0].data, 'after')).toEqual(newElement.annotations.label)
 
-        expect(changes[1].id).toEqual(newElement.elemID.createNestedID('new'))
+        expect(changes[1].id).toEqual(newElement.elemID.createNestedID('attr', 'new'))
         expect(changes[1].action).toEqual('add')
         expect(_.get(changes[1].data, 'after')).toEqual(newElement.annotations.new)
 
-        expect(changes[2].id).toEqual(newElement.elemID.createNestedID('old'))
+        expect(changes[2].id).toEqual(newElement.elemID.createNestedID('annotation', 'old'))
         expect(changes[2].action).toEqual('remove')
 
-        expect(changes[3].id).toEqual(newElement.elemID.createNestedID('case_sensitive'))
+        expect(changes[3].id).toEqual(newElement.elemID.createNestedID('annotation', 'case_sensitive'))
         expect(changes[3].action).toEqual('modify')
 
-        expect(changes[4].id).toEqual(newElement.elemID.createNestedID('new'))
+        expect(changes[4].id).toEqual(newElement.elemID.createNestedID('annotation', 'new'))
         expect(changes[4].action).toEqual('add')
         expect(_.get(changes[4].data, 'after')).toEqual(newElement.annotationTypes.new)
+      })
+      it('should return field changes with the correct id', () => {
+        const [plan, newElement] = planWithFieldChanges()
+        const planItem = getFirstPlanItem(plan)
+        const changes = [...planItem.detailedChanges()]
+        expect(changes).toHaveLength(2)
+
+        expect(changes[0].id).toEqual(newElement.fields.new.elemID)
+        expect(changes[0].action).toEqual('add')
+
+        expect(changes[1].id).toEqual(newElement.fields.location.elemID.createNestedID('label'))
+        expect(changes[1].action).toEqual('modify')
+        expect(_.get(changes[1].data, 'after')).toEqual(newElement.fields.location.annotations.label)
       })
       it('should return add / remove changes at the appropriate level', () => {
         const [plan, newElement] = planWithNewType()

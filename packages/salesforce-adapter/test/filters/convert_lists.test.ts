@@ -20,7 +20,7 @@ describe('convert lists filter', () => {
   })
 
   const mockInstanceLst = new InstanceElement(
-    new ElemID(constants.SALESFORCE, 'test', 'test_inst_with_list'),
+    'test_inst_with_list',
     mockType,
     {
       lst: ['val1', 'val2'],
@@ -29,7 +29,7 @@ describe('convert lists filter', () => {
   )
 
   const mockInstanceNonLst = new InstanceElement(
-    new ElemID(constants.SALESFORCE, 'test', 'test_inst_no_list'),
+    'test_inst_no_list',
     mockType,
     {
       lst: 'val1',

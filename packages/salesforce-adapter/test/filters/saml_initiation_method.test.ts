@@ -22,7 +22,7 @@ describe('saml initiation method filter', () => {
   )
 
   const mockInstance = new InstanceElement(
-    typeElemID.createNestedID('fake'),
+    'fake',
     mockType,
     {
       [bpCase(SAML_INIT_METHOD_FIELD_NAME)]: '0',

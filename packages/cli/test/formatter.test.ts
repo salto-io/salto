@@ -58,13 +58,13 @@ describe('formatter', () => {
   describe('createPlanOutput', () => {
     const output = formatPlan(preview())
     it('should return type field addition', () => {
-      expect(output).toMatch(/|[^\n]+salesforce_lead.*\+[^\n]+do_you_have_a_sales_team/s)
+      expect(output).toMatch(/|[^\n]+salesforce.lead.*\+[^\n]+do_you_have_a_sales_team/s)
     })
     it('should return type field removal', () => {
-      expect(output).toMatch(/|[^\n]+salesforce_lead.*-[^\n]+status/s)
+      expect(output).toMatch(/|[^\n]+salesforce.lead.*-[^\n]+status/s)
     })
     it('should have titles for all level of nested modifications', () => {
-      expect(output).toMatch(/|[^\n]+salesforce_lead.*|[^\n]+how_many_sales_people.*M[^\n]+label/s)
+      expect(output).toMatch(/|[^\n]+salesforce.lead.*|[^\n]+how_many_sales_people.*M[^\n]+label/s)
     })
   })
 
@@ -137,12 +137,12 @@ describe('formatter', () => {
     })
   })
   describe('formatFetchChangeForApproval', () => {
-    const change = detailedChange('modify', ['adapter', 'object', 'field', 'value'], 'old', 'new')
+    const change = detailedChange('modify', ['object', 'field', 'value'], 'old', 'new')
     describe('without conflict', () => {
       const changeWithoutConflict = { change, serviceChange: change }
       const output = formatFetchChangeForApproval(changeWithoutConflict, 0, 3)
       it('should contain change path', () => {
-        expect(output).toMatch(/adapter.*object.*field.*value/s)
+        expect(output).toMatch(/salesforce.*object.*value/s)
       })
       it('should contain change index and total changes, with index 1 based', () => {
         expect(output).toContain('Change 1 of 3')
@@ -150,13 +150,13 @@ describe('formatter', () => {
     })
     describe('with conflict', () => {
       const fetchChange: FetchChange = {
-        change: detailedChange('modify', ['adapter', 'object', 'field', 'value'], 'local', 'new'),
+        change: detailedChange('modify', ['object', 'field', 'value'], 'local', 'new'),
         serviceChange: change,
-        pendingChange: detailedChange('modify', ['adapter', 'object', 'field', 'value'], 'old', 'local'),
+        pendingChange: detailedChange('modify', ['object', 'field', 'value'], 'old', 'local'),
       }
       const output = formatFetchChangeForApproval(fetchChange, 2, 3)
       it('should contain change path', () => {
-        expect(output).toMatch(/adapter.*object.*field.*value/s)
+        expect(output).toMatch(/salesforce.*object.*value/s)
       })
       it('should contain change index and total changes, with index 1 based', () => {
         expect(output).toContain('Change 3 of 3')

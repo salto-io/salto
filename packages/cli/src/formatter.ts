@@ -104,9 +104,7 @@ const formatChangeData = (change: DetailedChange): string => {
 export const formatChange = (change: DetailedChange): string => {
   const modifierType = isDummyChange(change) ? 'eq' : change.action
   const modifier = Prompts.MODIFIERS[modifierType]
-  const id = change.id.nestingLevel === 1
-    ? change.id.getFullName()
-    : change.id.name
+  const id = change.id.isTopLevel() ? change.id.getFullName() : change.id.name
   return indent(`${modifier} ${id}: ${formatChangeData(change)}`, change.id.nestingLevel)
 }
 

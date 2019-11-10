@@ -148,22 +148,21 @@ describe('SalesforceAdapter import-export operations', () => {
 
     const mockSingleInstanceIterator = async function *mockSingleInstanceIterator(): AsyncIterable<
     InstanceElement> {
-      const elemID = new ElemID('salesforce')
       const values = [
         {
-          Id: 1,
+          Id: '1',
           FirstName: 'Daile',
           LastName: 'Limeburn',
           Email: 'dlimeburn0@blogs.com',
           Gender: 'Female',
         }, {
-          Id: 2,
+          Id: '2',
           FirstName: 'Murial',
           LastName: 'Morson',
           Email: 'mmorson1@google.nl',
           Gender: 'Female',
         }, {
-          Id: 3,
+          Id: '3',
           FirstName: 'Minna',
           LastName: 'Noe',
           Email: 'mnoe2@wikimedia.org',
@@ -172,7 +171,7 @@ describe('SalesforceAdapter import-export operations', () => {
       ]
 
       const elements = values.map(value => new InstanceElement(
-        elemID,
+        value.Id,
         testType,
         value
       ))
@@ -189,6 +188,7 @@ describe('SalesforceAdapter import-export operations', () => {
       const elemIDs = values.map(value => new ElemID(
         constants.SALESFORCE,
         'test',
+        'instance',
         value
       ))
 

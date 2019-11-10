@@ -27,7 +27,7 @@ describe('convert types filter', () => {
   })
 
   const mockInstance = new InstanceElement(
-    new ElemID(constants.SALESFORCE, 'test', 'test_inst_with_list'),
+    'test_inst_with_list',
     mockType,
     {
       str: 'val',
@@ -41,7 +41,7 @@ describe('convert types filter', () => {
   )
 
   const mockSettings = new InstanceElement(
-    new ElemID(constants.SALESFORCE, 'settings', 'test_settings'),
+    'test_settings',
     new ObjectType({
       elemID: new ElemID(constants.SALESFORCE, bpCase(SETTINGS_METADATA_TYPE)),
     }),

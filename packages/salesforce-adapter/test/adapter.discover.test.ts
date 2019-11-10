@@ -636,7 +636,7 @@ describe('SalesforceAdapter fetch', () => {
       expect(flow.type.elemID).toEqual(new ElemID(constants.SALESFORCE, 'flow'))
       expect((flow.type as ObjectType).fields.list_test.isList).toBe(true)
 
-      expect(flow.elemID).toEqual(new ElemID(constants.SALESFORCE, 'flow', 'flow_instance'))
+      expect(flow.elemID).toEqual(new ElemID(constants.SALESFORCE, 'flow', 'instance', 'flow_instance'))
       expect(flow.value.list_test[0].field).toEqual('Field1')
       expect(flow.value.list_test[0].editable).toBe(true)
       expect(flow.value.list_test[1].field).toEqual('Field2')

@@ -26,7 +26,7 @@ describe('Test Salto Expressions', () => {
       },
     })
 
-    const baseInst = new InstanceElement(new ElemID('salto', 'inst'), base, {
+    const baseInst = new InstanceElement('inst', base, {
       simple: 'simple',
       obj: { value: 'nested' },
       arr: ['A', 'B'],
@@ -35,39 +35,39 @@ describe('Test Salto Expressions', () => {
     const simpleRefType = new ObjectType({
       elemID: new ElemID('salto', 'simple_ref_type'),
     })
-    const noRefInst = new InstanceElement(new ElemID('salto', 'noref'), simpleRefType, {
+    const noRefInst = new InstanceElement('noref', simpleRefType, {
       test: `${baseInst.elemID.getFullName()}.simple`,
     })
 
-    const simpleRefInst = new InstanceElement(new ElemID('salto', 'simpleref'), simpleRefType, {
+    const simpleRefInst = new InstanceElement('simpleref', simpleRefType, {
       test: new ReferenceExpression({ traversalParts: [baseInst.elemID.getFullName(), 'simple'] }),
     })
 
-    const nestedRefInst = new InstanceElement(new ElemID('salto', 'nesetedref'), simpleRefType, {
+    const nestedRefInst = new InstanceElement('nesetedref', simpleRefType, {
       test: new ReferenceExpression({ traversalParts: [baseInst.elemID.getFullName(), 'obj', 'value'] }),
     })
 
-    const arrayRefInst = new InstanceElement(new ElemID('salto', 'arrayref'), simpleRefType, {
+    const arrayRefInst = new InstanceElement('arrayref', simpleRefType, {
       test0: new ReferenceExpression({ traversalParts: [baseInst.elemID.getFullName(), 'arr', 0] }),
       test1: new ReferenceExpression({ traversalParts: [baseInst.elemID.getFullName(), 'arr', 1] }),
     })
 
-    const annoRefInst = new InstanceElement(new ElemID('salto', 'annoref'), simpleRefType, {
+    const annoRefInst = new InstanceElement('annoref', simpleRefType, {
       test: new ReferenceExpression({ traversalParts: [baseElemID.getFullName(), 'anno'] }),
     })
 
-    const fieldAnnoRefInst = new InstanceElement(new ElemID('salto', 'fieldref'), simpleRefType, {
+    const fieldAnnoRefInst = new InstanceElement('fieldref', simpleRefType, {
       test: new ReferenceExpression({ traversalParts: [baseElemID.getFullName(), 'simple', 'anno'] }),
     })
 
     const chainedRefInst = new InstanceElement(
-      new ElemID('salto', 'chainedref'), simpleRefType, {
+      'chainedref', simpleRefType, {
         test: new ReferenceExpression({ traversalParts: [simpleRefInst.elemID.getFullName(), 'test'] }),
       }
     )
 
     const noPathInst = new InstanceElement(
-      new ElemID('salto', 'nopath'), simpleRefType, {
+      'nopath', simpleRefType, {
         test: new ReferenceExpression({ traversalParts: [baseInst.elemID.getFullName()] }),
       }
     )
@@ -148,8 +148,8 @@ describe('Test Salto Expressions', () => {
     })
 
     it('should detect reference cycles', () => {
-      const firstRef = new InstanceElement(new ElemID('salto', 'first'), simpleRefType, {})
-      const secondRef = new InstanceElement(new ElemID('salto', 'second'), simpleRefType, {})
+      const firstRef = new InstanceElement('first', simpleRefType, {})
+      const secondRef = new InstanceElement('second', simpleRefType, {})
       firstRef.value.test = new ReferenceExpression({ traversalParts: [secondRef.elemID.getFullName(), 'test'] })
       secondRef.value.test = new ReferenceExpression({ traversalParts: [firstRef.elemID.getFullName(), 'test'] })
       const chained = [firstRef, secondRef]
@@ -158,12 +158,12 @@ describe('Test Salto Expressions', () => {
 
     it('should fail on unresolvable', () => {
       const firstRef = new InstanceElement(
-        new ElemID('salto', 'first'),
+        'first',
         simpleRefType,
         {}
       )
       const secondRef = new InstanceElement(
-        new ElemID('salto', 'second'),
+        'second',
         simpleRefType,
         { test: new ReferenceExpression({ traversalParts: [firstRef.elemID.getFullName(), 'test'] }) },
       )
@@ -174,7 +174,7 @@ describe('Test Salto Expressions', () => {
 
     it('should fail on unresolvable roots', () => {
       const firstRef = new InstanceElement(
-        new ElemID('salto', 'first'),
+        'first',
         simpleRefType,
         { test: new ReferenceExpression({ traversalParts: ['noop', 'test'] }) },
       )
@@ -191,12 +191,12 @@ describe('Test Salto Expressions', () => {
         elemID: new ElemID('salto', 'simple'),
       })
       const firstRef = new InstanceElement(
-        new ElemID('salto', 'first'),
+        'first',
         refType,
         { from: 'Milano', to: 'Minsk' }
       )
       const secondRef = new InstanceElement(
-        new ElemID('salto', 'second'),
+        'second',
         refType,
         {
           into: new TemplateExpression({

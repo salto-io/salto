@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import {
-  Type, Field, Values, isObjectType, PrimitiveTypes, ElemID,
+  Type, Field, Values, isObjectType, PrimitiveTypes,
   isPrimitiveType, Element, isInstanceElement, isField, isElement, Value,
 } from 'adapter-api'
 import HclParser, { DumpedHclBlock, HclDumpReturn } from './internal/hcl'
@@ -27,7 +27,7 @@ const QUOTE_MARKER = 'Q_MARKER'
 
 const markQuote = (value: string): string => `${QUOTE_MARKER}${value}${QUOTE_MARKER}`
 
-const formatTypeID = ({ elemID }: Type): string => {
+export const formatTypeID = ({ elemID }: Type): string => {
   if (elemID.isConfig()) {
     return elemID.adapter
   }
@@ -99,20 +99,11 @@ const dumpElementBlock = (elem: Element): DumpedHclBlock => {
     }
   }
   if (isInstanceElement(elem)) {
-    // Workaround for ambigous IDs - we have to prefix instance names with the type name
-    // This part should be removed once we make the element ID schema consistent so we can
-    // infer the prefix from the instance type instead of writing it twice
-    const getInstanceName = (id: ElemID): string => {
-      if (id.nestingLevel > 1) {
-        return [getInstanceName(id.createParentID()), id.name].join(Keywords.NAMESPACE_SEPARATOR)
-      }
-      return id.name
-    }
     return {
       type: formatTypeID(elem.type),
       labels: elem.elemID.isConfig() || elem.type.isSettings
         ? []
-        : [getInstanceName(elem.elemID)],
+        : [elem.elemID.name],
       attrs: elem.value,
       blocks: [],
     }

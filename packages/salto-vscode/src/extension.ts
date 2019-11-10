@@ -1,11 +1,12 @@
 import * as vscode from 'vscode'
 import { loadConfig } from 'salto'
 import { EditorWorkspace } from './salto/workspace'
-import { onTextChangeEvent, onFileChange, onFileDelete, onReportErrorsEvent } from './events'
+import { onTextChangeEvent, onFileChange, onFileDelete, onReportErrorsEvent, onFileOpen } from './events'
 import {
   createCompletionsProvider, createDefinitionsProvider, createReferenceProvider,
   createDocumentSymbolsProvider,
   createWorkspaceSymbolProvider,
+  createFoldingProvider,
 } from './providers'
 import { previewCommand, deployCommand } from './commands'
 import { toVSDiagnostics } from './adapters'
@@ -14,6 +15,7 @@ import { getDiagnostics } from './salto/diagnostics'
 /**
  * This files act as a bridge between VSC and the salto specific functionality.
  */
+
 
 const onActivate = async (context: vscode.ExtensionContext): Promise<void> => {
   // eslint-disable-next-line no-console
@@ -53,6 +55,11 @@ const onActivate = async (context: vscode.ExtensionContext): Promise<void> => {
       createWorkspaceSymbolProvider(workspace)
     )
 
+    const foldProvider = vscode.languages.registerFoldingRangeProvider(
+      { scheme: 'file', pattern: { base: rootPath, pattern: '**/*.bp' } },
+      createFoldingProvider(workspace)
+    )
+
     const preview = vscode.commands.registerCommand('salto.preview', () => {
       previewCommand(workspace, context.extensionPath)
     })
@@ -77,6 +84,7 @@ const onActivate = async (context: vscode.ExtensionContext): Promise<void> => {
       referenceProvider,
       symbolsProvider,
       searchProvier,
+      foldProvider,
       preview,
       deploy,
       previewStatusBar,
@@ -86,7 +94,8 @@ const onActivate = async (context: vscode.ExtensionContext): Promise<void> => {
       ),
       vscode.workspace.onDidChangeTextDocument(
         e => onReportErrorsEvent(e, workspace, diagCollection)
-      )
+      ),
+      vscode.workspace.onDidOpenTextDocument(onFileOpen)
     )
 
     const fileWatcher = vscode.workspace.createFileSystemWatcher('**/*.bp')

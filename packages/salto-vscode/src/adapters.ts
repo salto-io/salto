@@ -1,6 +1,7 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
 import _ from 'lodash'
+import { SourceRange } from 'salto'
 import { EditorPosition, PositionContext } from './salto/context'
 import { SaltoCompletion } from './salto/completions/provider'
 import { createSaltoSymbol, SaltoSymbolKind } from './salto/symbols'
@@ -17,6 +18,8 @@ export const vsPosToSaltoPos = (pos: vscode.Position): EditorPosition => ({
   line: pos.line + 1,
   col: pos.character,
 })
+
+const AUTO_FOLD_ELEMENT_NAMES = ['field_level_security']
 
 const kindMap: {[key in SaltoSymbolKind]: vscode.SymbolKind} = {
   [SaltoSymbolKind.Field]: vscode.SymbolKind.Field,
@@ -115,3 +118,14 @@ export const toVSDiagnostics = (
   .entries()
   .map(([k, v]) => [vscode.Uri.file(toVSFileName(workspaceBaseDir, k)), v] as ReadonlyDiagsItem)
   .value()
+
+export const sourceRangeToFoldRange = (
+  range: SourceRange,
+  name: string
+): vscode.FoldingRange => new vscode.FoldingRange(
+  range.start.line - 1,
+  range.end.line - 1,
+  _.some(AUTO_FOLD_ELEMENT_NAMES.map(autoFoldName => name.indexOf(autoFoldName) >= 0))
+    ? vscode.FoldingRangeKind.Region
+    : undefined
+)

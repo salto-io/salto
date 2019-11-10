@@ -27,6 +27,10 @@ export const onTextChangeEvent = (
   }
 }
 
+export const onFileOpen = (): void => {
+  vscode.commands.executeCommand('editor.foldAllMarkerRegions')
+}
+
 export const onFileDelete = (
   workspace: EditorWorkspace,
   filename: string

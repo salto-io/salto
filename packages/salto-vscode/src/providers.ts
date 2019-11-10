@@ -1,5 +1,6 @@
 import * as vscode from 'vscode'
 import path from 'path'
+import wu from 'wu'
 import { provideWorkspaceCompletionItems } from './salto/completions/provider'
 import {
   buildDefinitionsTree, getPositionContext, PositionContext,
@@ -8,7 +9,7 @@ import { provideWorkspaceDefinition } from './salto/definitions'
 import { provideWorkspaceReferences } from './salto/usage'
 import {
   saltoPosToVsPos, vsPosToSaltoPos, buildVSDefinitions, buildVSCompletionItems,
-  buildVSSymbol, toVSFileName,
+  buildVSSymbol, toVSFileName, sourceRangeToFoldRange,
 } from './adapters'
 import { EditorWorkspace } from './salto/workspace'
 import { getQueryLocations, SaltoElemLocation } from './salto/location'
@@ -111,5 +112,19 @@ export const createWorkspaceSymbolProvider = (
     )
     return getQueryLocations(workspace, query)
       .map(l => buildVSSymbol(locToContext(l), toVSFileName(workspace.baseDir, l.filename)))
+  },
+})
+
+export const createFoldingProvider = (
+  workspace: EditorWorkspace
+): vscode.FoldingRangeProvider => ({
+  provideFoldingRanges: (
+    document: vscode.TextDocument,
+  ): vscode.ProviderResult<vscode.FoldingRange[]> => {
+    const parsedBlueprint = workspace.getParsedBlueprint(document.fileName)
+    return wu(parsedBlueprint.sourceMap.entries())
+      .map(([name, ranges]) => ranges.map(r => sourceRangeToFoldRange(r, name)))
+      .flatten()
+      .toArray()
   },
 })

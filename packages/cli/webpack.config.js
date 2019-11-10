@@ -3,7 +3,6 @@ const path = require('path');
 module.exports = {
   mode: 'development', // production minifaction results in bad error stacks
   target: 'node',
-  // context: path.resolve(__dirname, 'dist'),
   entry: './dist/src/index.js',
   output: {
     filename: 'bundle.js',

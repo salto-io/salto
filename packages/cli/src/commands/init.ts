@@ -31,7 +31,7 @@ type InitParsedCliInput = ParsedCliInput<InitArgs>
 const initBuilder = createCommandBuilder({
   options: {
     command: 'init [workspace-name]',
-    description: 'Initiate a Salto workspace in the current directory',
+    description: 'Creates a new Salto workspace in the current directory',
     positional: {
       'workspace-name': {
         type: 'string',

@@ -48,7 +48,7 @@ const importBuilder = createCommandBuilder({
   options: {
     command: 'import <type-name> <input-path>',
     aliases: ['i'],
-    description: 'Imports all object instances of a specific type from a CSV',
+    description: 'Uploads all records of the input type from a CSV file to the target service',
     positional: {
       'type-name': {
         type: 'string',

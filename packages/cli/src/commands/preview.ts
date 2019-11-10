@@ -40,7 +40,7 @@ const previewBuilder = createCommandBuilder({
   options: {
     command: 'preview',
     aliases: ['p'],
-    description: 'Shows changes to be applied to the target services at the next run of the *deploy* command',
+    description: 'Shows Salto\'s execution plan next time deploy is run',
     keyed: {
       'workspace-dir': {
         alias: 'w',

@@ -72,7 +72,7 @@ const createYargsParser = (outStream: WriteStream, errStream: WriteStream):
   parser.option('verbose', {
     alias: 'v',
     boolean: true,
-    describe: 'output extra logs',
+    describe: 'Output extra logs',
   })
 
   // Update texts and define un-wanted yargs messages

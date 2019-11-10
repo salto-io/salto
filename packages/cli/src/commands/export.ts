@@ -46,7 +46,7 @@ const exportBuilder = createCommandBuilder({
   options: {
     command: 'export <type-name>',
     aliases: ['e'],
-    description: 'Exports all objects of a given type to CSV',
+    description: 'Downloads all records of the input type from the target service to a CSV file',
     positional: {
       'type-name': {
         type: 'string',

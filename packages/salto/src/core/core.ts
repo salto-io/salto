@@ -1,4 +1,3 @@
-import wu from 'wu'
 import {
   Element, Adapter, getChangeElement, ActionName,
 } from 'adapter-api'
@@ -31,15 +30,15 @@ const deployAction = async (
 }
 
 export class DeployError extends Error {
-  public readonly elementId: string
-
-  constructor(elementId: string, message: string) {
+  constructor(readonly elementId: string | string[], message: string) {
     super(message)
-    this.elementId = elementId
   }
 }
 
 export type ItemStatus = 'started' | 'finished' | 'error' | 'cancelled'
+
+const getElementNameFromPlanItem = (item: PlanItem): string =>
+  getChangeElement(item.parent()).elemID.getFullName()
 
 export const deployActions = async (
   deployPlan: Plan,
@@ -66,20 +65,21 @@ export const deployActions = async (
     if (error instanceof WalkError) {
       error.handlerErrors.forEach((nodeError: Error, key: PlanItemId) => {
         const item = deployPlan.getItem(key) as PlanItem
-        const itemName = getChangeElement(item.parent()).elemID.getFullName()
+        const itemName = getElementNameFromPlanItem(item)
         if (nodeError instanceof NodeSkippedError) {
           const parnetItem = deployPlan.getItem(nodeError.causingNode) as PlanItem
-          const parnetItemName = getChangeElement(parnetItem.parent()).elemID.getFullName()
+          const parnetItemName = getElementNameFromPlanItem(parnetItem)
           reportProgress(item, 'cancelled', parnetItemName)
         }
         deployErrors.push(new DeployError(itemName, nodeError.message))
       })
       if (error.circularDependencyError) {
-        // Take the first nodeId as the elementId - just cause we need one
-        const nodePlanItemId = wu(error.circularDependencyError.nodes.keys()).toArray()[0]
-        const node = deployPlan.getItem(nodePlanItemId) as PlanItem
-        const nodeElementId = getChangeElement(node.parent()).elemID.getFullName()
-        deployErrors.push(new DeployError(nodeElementId, error.circularDependencyError.message))
+        error.circularDependencyError.causingNodeIds.forEach((id: PlanItemId) => {
+          const item = deployPlan.getItem(id) as PlanItem
+          const itemName = getElementNameFromPlanItem(item)
+          reportProgress(item, 'error', error.circularDependencyError.message)
+          deployErrors.push(new DeployError(itemName, error.circularDependencyError.message))
+        })
       }
     }
     return deployErrors

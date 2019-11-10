@@ -62,6 +62,9 @@ const getValuesChanges = (id: ElemID, before: Value, after: Value): DetailedChan
  */
 const id = (elemId: ElemID): string => elemId.getFullName()
 
+export const getPlanItemStringId = (planItem: PlanItem): string =>
+  id(getChangeElement(planItem.parent()).elemID)
+
 // Node in the elements graph (elements graph -> diff graph -> group graph)
 type Node = ChangeDataType
 /**

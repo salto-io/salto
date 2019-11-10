@@ -9,7 +9,7 @@ import { logger } from '@salto/logging'
 import { stat, mkdirp, readTextFile, rm, writeTextFile, exists, Stats } from '../file'
 import { SourceMap, parse, SourceRange, ParseResult, ParseError } from '../parser/parse'
 import { mergeElements, MergeError } from '../core/merger'
-import { validateElements, ValidationError } from '../core/validator'
+import { validateElements, ValidationError, UnresolvedReferenceValidationError } from '../core/validator'
 import { DetailedChange } from '../core/plan'
 import { ParseResultFSCache } from './cache'
 import { getChangeLocations, updateBlueprintData } from './blueprint_update'
@@ -28,6 +28,8 @@ class ExistingWorkspaceError extends Error {
     super('existing salto workspace')
   }
 }
+
+const SeverValiationErrors = [UnresolvedReferenceValidationError]
 
 class NotAnEmptyWorkspaceError extends Error {
   constructor(exsitingPathes: string[]) {
@@ -202,6 +204,8 @@ const ensureEmptyWorkspace = async (config: Config): Promise<void> => {
   }
 }
 
+export const calculateValidationSeverity = (ve: ValidationError): WorkspaceErrorSeverity =>
+  (_.some(SeverValiationErrors, e => ve instanceof e) ? 'Error' : 'Warning')
 /**
  * The Workspace class exposes the content of a collection (usually a directory) of blueprints
  * in the form of Elements.
@@ -315,13 +319,12 @@ export class Workspace {
         return {
           sourceFragments,
           error: ve.error,
-          severity: 'Warning',
+          severity: calculateValidationSeverity(ve),
           cause: ve,
         }
       }),
     ]
   }
-
 
   private markDirty(names: string[]): void {
     names.forEach(name => this.dirtyBlueprints.add(name))

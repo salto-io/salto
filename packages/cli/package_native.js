@@ -5,7 +5,6 @@ const webpack = require('webpack')
 // const nexe = require('/Users/roy/nexe')
 const nexe = require('nexe')
 const webpackConfig = require('./webpack.config')
-const globs = require('globby')
 const fontFiles = require('./dist/src/fonts').fontFiles
 
 const TARGET_FILE_BASENAME = 'salto'
@@ -18,35 +17,15 @@ const TARGET_PLATFORMS = {
   mac: {},
 } // alpine not included for now
 
-// const resources = [
-//     ...Object.values(fontFiles),
-//     path.resolve('../salto/dist/hcl.wasm'),
-// ]
-
 const resources = [
-  path.join(__dirname, 'dist', 'assets', '**'),
+  ...fontFiles.values(),
   path.join(__dirname, '..', 'salto', 'dist', 'hcl.wasm')
 ]
-// const CWD = './dist'
 
 const BASE_NEXE_CONFIG = {
   loglevel: 'verbose',
   resources,
-  // cwd: CWD,
-  // plugins: [
-  //   async (compiler, next) => {
-  //     // resourceFiles = (await Promise.all(resources.map(r => globs(path.join(CWD, r))))).flat(1)
-  //     // console.dir(resourceFiles)
-  //     // resourceFiles.forEach(resource => compiler.addResource(resource, fs.readFileSync(resource)))
-  //     await compiler.addResource('./assets/Standard.flf', fs.readFileSync('./dist/assets/Standard.flf'))
-  //     console.log('added resource')
-  //     return next()
-  //     // await next()
-  //   }
-  // ]
 }
-
-console.dir(BASE_NEXE_CONFIG)
 
 const nexeConfigs = () => Object.entries(TARGET_PLATFORMS)
   .map(([platform, platformOpts = {}]) => ({
@@ -119,8 +98,6 @@ const doNexe = (input) => new Promise((resolve, reject) => {
 ;(async () => {
   await doWebpack(webpackConfig)
   const bundle = path.join(webpackConfig.output.path, webpackConfig.output.filename)
-  // process.chdir('./dist')
-  // console.log(process.cwd())
   await doNexe(bundle)
   console.log('Done!')
 })().catch(err => console.error(err))

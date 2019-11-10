@@ -6,18 +6,15 @@ export enum Font {
   'Standard'
 }
 
-console.log('dirname: %o', __dirname)
-const fontsDir = path.join(__dirname, '..', 'assets')
-console.log('fontsDir: %o', fontsDir)
+const fontsDir = path.join(__dirname, '..', '..', '..', '..', 'node_modules', 'figlet', 'fonts')
 
-const fontNames = Object.keys(Font)
+const fontValues = Object.keys(Font)
   // @ts-ignore
   .map(k => Font[k])
-  .filter(k => typeof k === 'string')
+  .filter(k => typeof k === 'number')
 
-export const fontFiles = Object.assign(
-  {},
-  ...fontNames.map(f => ({ [f]: path.join(fontsDir, `${f}.flf`) }))
+export const fontFiles = new Map<Font, string>(
+  fontValues.map(f => [f, path.join(fontsDir, `${Font[f]}.flf`)])
 )
 
 const parsedFonts = new Set<Font>()
@@ -28,7 +25,7 @@ const parseFont = (font: Font): void => {
   }
 
   const fontName = Font[font]
-  const fontPath = `${path.join(fontsDir, fontName)}.flf`
+  const fontPath = fontFiles.get(font) as string
   const fontData = fs.readFileSync(fontPath, { encoding: 'utf8' })
   // @ts-ignore
   figlet.parseFont(fontName, fontData)

@@ -19,7 +19,7 @@ export type FieldMap = Record<string, Field>
 type TypeMap = Record<string, Type>
 
 export class ElemID {
-  static readonly NAMESPACE_SEPERATOR = '_'
+  static readonly NAMESPACE_SEPARATOR = '_'
   static readonly CONFIG_INSTANCE_NAME = '_config'
 
   readonly adapter: string
@@ -30,10 +30,6 @@ export class ElemID {
   }
 
   get name(): string {
-    return this.nameParts.join(ElemID.NAMESPACE_SEPERATOR)
-  }
-
-  get shortName(): string {
     return this.fullNameParts().slice(-1)[0]
   }
 
@@ -46,11 +42,12 @@ export class ElemID {
   }
 
   getFullName(): string {
-    return this.isConfig() ? this.adapter : this.fullNameParts().join(ElemID.NAMESPACE_SEPERATOR)
+    return this.isConfig() ? this.adapter : this.fullNameParts().join(ElemID.NAMESPACE_SEPARATOR)
   }
 
   isConfig(): boolean {
-    return _.isEmpty(this.name) || this.name === ElemID.CONFIG_INSTANCE_NAME
+    return this.nameParts.length === 0
+      || (this.nameParts.length === 1 && this.nameParts[0] === ElemID.CONFIG_INSTANCE_NAME)
   }
 
   createNestedID(...nameParts: string[]): ElemID {

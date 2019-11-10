@@ -10,6 +10,7 @@ import filterCreator, {
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
+import { findElements } from '../utils'
 
 describe('lead convert settings filter', () => {
   const { client } = mockClient()
@@ -55,7 +56,7 @@ describe('lead convert settings filter', () => {
         _.cloneDeep(mockConvertSettingsType),
         _.cloneDeep(mockConvertSettingsInstance)]
       await filter.onFetch(testElements)
-      leadPostFilter = testElements.find(e => e.elemID.name === LEAD_TYPE) as ObjectType
+      leadPostFilter = findElements(testElements, LEAD_TYPE).pop() as ObjectType
     })
 
     it('should add annotations to lead', async () => {

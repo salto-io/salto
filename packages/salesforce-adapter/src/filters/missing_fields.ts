@@ -1,49 +1,57 @@
 import _ from 'lodash'
 import {
-  isObjectType, Field, Values, Type, isType, BuiltinTypes,
+  isObjectType, Field, Values, Type, isType, BuiltinTypes, ElemID,
 } from 'adapter-api'
 import { FilterCreator } from '../filter'
+import { SALESFORCE } from '../constants'
+import { LEAD_CONVERT_SETTINGS_TYPE } from './lead_convert_settings'
 
 interface MissingField {
   name: string
-  type: Type | string
+  type: Type | ElemID
   annotations?: Values
   isList?: boolean
 }
 
-const allMissingFields: Record<string, MissingField[]> = {
-  // eslint-disable-next-line @typescript-eslint/camelcase
-  filter_item: [
-    {
-      name: 'operation',
-      type: BuiltinTypes.STRING,
-      annotations: {
-        [Type.VALUES]: [
-          'equals', 'notEqual', 'lessThan', 'greaterThan', 'lessOrEqual', 'greaterOrEqual',
-          'contains', 'notContain', 'startsWith', 'includes', 'excludes', 'within',
-        ],
+const allMissingFields: {id: ElemID; fields: MissingField[]}[] = [
+  {
+    id: new ElemID(SALESFORCE, 'filter_item'),
+    fields: [
+      {
+        name: 'operation',
+        type: BuiltinTypes.STRING,
+        annotations: {
+          [Type.VALUES]: [
+            'equals', 'notEqual', 'lessThan', 'greaterThan', 'lessOrEqual', 'greaterOrEqual',
+            'contains', 'notContain', 'startsWith', 'includes', 'excludes', 'within',
+          ],
+        },
       },
-    },
-  ],
-  // eslint-disable-next-line @typescript-eslint/camelcase
-  lead_convert_settings: [
-    {
-      name: 'object_mapping',
-      type: 'object_mapping',
-      isList: true,
-    },
-  ],
-  // eslint-disable-next-line @typescript-eslint/camelcase
-  rule_entry: [
-    {
-      name: 'assigned_to_type',
-      type: BuiltinTypes.STRING,
-      annotations: {
-        [Type.VALUES]: ['User', 'Queue'],
+    ],
+  },
+  {
+    id: new ElemID(SALESFORCE, LEAD_CONVERT_SETTINGS_TYPE),
+    fields: [
+      {
+        name: 'object_mapping',
+        type: new ElemID(SALESFORCE, 'object_mapping'),
+        isList: true,
       },
-    },
-  ],
-}
+    ],
+  },
+  {
+    id: new ElemID(SALESFORCE, 'rule_entry'),
+    fields: [
+      {
+        name: 'assigned_to_type',
+        type: BuiltinTypes.STRING,
+        annotations: {
+          [Type.VALUES]: ['User', 'Queue'],
+        },
+      },
+    ],
+  },
+]
 
 export const makeFilter = (
   missingFields: Record<string, MissingField[]>
@@ -52,19 +60,19 @@ export const makeFilter = (
     // We need a mapping of all the types so we can replace type names with the correct types
     const typeMap = _(elements)
       .filter(isType)
-      .map(t => [t.elemID.name, t])
+      .map(t => [t.elemID.getFullName(), t])
       .fromPairs()
       .value()
 
     // Add missing fields to types
     elements.filter(isObjectType).forEach(elem => {
-      const fieldsToAdd = missingFields[elem.elemID.name]
+      const fieldsToAdd = missingFields[elem.elemID.getFullName()]
       if (fieldsToAdd !== undefined) {
         _.assign(elem.fields, _(fieldsToAdd)
           .map(f => [f.name, new Field(
             elem.elemID,
             f.name,
-            isType(f.type) ? f.type : typeMap[f.type],
+            isType(f.type) ? f.type : typeMap[f.type.getFullName()],
             f.annotations || {},
             f.isList === true,
           )])
@@ -75,4 +83,9 @@ export const makeFilter = (
   },
 })
 
-export default makeFilter(allMissingFields)
+export default makeFilter(
+  _(allMissingFields)
+    .map(({ id, fields }) => [id.getFullName(), fields])
+    .fromPairs()
+    .value(),
+)

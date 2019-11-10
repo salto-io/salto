@@ -101,7 +101,7 @@ const referenceSuggestions = (
   if (!unquotedMatch && (valueToken.includes('"') || valueToken.includes("'"))) return []
   const match = unquotedMatch ? unquotedMatch[1] : valueToken
   const [base, ...path] = match.split('.')
-  const sepIndex = base.indexOf(ElemID.NAMESPACE_SEPERATOR)
+  const sepIndex = base.indexOf(ElemID.NAMESPACE_SEPARATOR)
   const adapter = (sepIndex >= 0) ? base.substring(0, sepIndex) : base
   const baseElementName = (sepIndex >= 0) ? base.substring(sepIndex) : ''
   // We are defining the base element
@@ -113,7 +113,7 @@ const referenceSuggestions = (
       ...getAllInstances(workspace.elements || [], adapter),
       ...getAllTypes(workspace.elements || [], adapter),
     ].map(name => ({
-      label: name.substring(name.indexOf(ElemID.NAMESPACE_SEPERATOR) + 1),
+      label: name.substring(name.indexOf(ElemID.NAMESPACE_SEPARATOR) + 1),
       insertText: name,
       filterText: name,
     }))
@@ -128,7 +128,7 @@ const referenceSuggestions = (
   // If base is instance, we just need to get the field by the path and return its
   // fields
   if (isInstanceElement(baseElement)) {
-    return getFieldNames(baseElement.type, path.join(ElemID.NAMESPACE_SEPERATOR))
+    return getFieldNames(baseElement.type, path.join(ElemID.NAMESPACE_SEPARATOR))
   }
 
   if (isType(baseElement)) {
@@ -178,12 +178,12 @@ export const fieldValueSuggestions = (params: SuggestionsParams): Suggestions =>
     ? params.ref.path.replace(new RegExp(`${attrName}$`), '')
     : params.ref.path
   const refType = (refPath)
-    ? getFieldType(params.ref.element.type, refPath.split(ElemID.NAMESPACE_SEPERATOR))
+    ? getFieldType(params.ref.element.type, refPath.split(ElemID.NAMESPACE_SEPARATOR))
     : params.ref.element.type
 
   const valueField = (attrName && isObjectType(refType))
     ? refType.fields[attrName]
-    : getField(params.ref.element.type, refPath.split(ElemID.NAMESPACE_SEPERATOR))
+    : getField(params.ref.element.type, refPath.split(ElemID.NAMESPACE_SEPARATOR))
 
   const valueToken = _.last(params.tokens) || ''
   return (valueField)

@@ -6,23 +6,7 @@ import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
 
-describe('Test layout filter', () => {
-  const { client } = mockClient()
-  const filter = makeFilter({
-    test: [
-      {
-        name: 'lst',
-        type: BuiltinTypes.STRING,
-        annotations: { dummy: true },
-        isList: true,
-      },
-      {
-        name: 'complex',
-        type: 'complex_type',
-      },
-    ],
-  })({ client }) as FilterWith<'onFetch'>
-
+describe('missing fields filter', () => {
   const mockObjId = new ElemID(constants.SALESFORCE, 'test')
   const mockType = new ObjectType({
     elemID: mockObjId,
@@ -34,6 +18,22 @@ describe('Test layout filter', () => {
     elemID: new ElemID(constants.SALESFORCE, 'complex_type'),
     annotations: { marker: 'here' },
   })
+
+  const { client } = mockClient()
+  const filter = makeFilter({
+    [mockObjId.getFullName()]: [
+      {
+        name: 'lst',
+        type: BuiltinTypes.STRING,
+        annotations: { dummy: true },
+        isList: true,
+      },
+      {
+        name: 'complex',
+        type: complexType.elemID,
+      },
+    ],
+  })({ client }) as FilterWith<'onFetch'>
 
   let testElements: ObjectType[]
 

@@ -1,23 +1,17 @@
 import _ from 'lodash'
 import {
-  ObjectType, Type, InstanceElement, ElemID, Element,
+  ObjectType, Type, InstanceElement, ElemID,
 } from 'adapter-api'
 import SalesforceAdapter from '../src/adapter'
 import Connection from '../src/client/jsforce'
 import * as constants from '../src/constants'
 import { Types } from '../src/transformer'
 import mockAdpater from './adapter'
+import { findElements } from './utils'
 
 describe('SalesforceAdapter fetch', () => {
   let connection: Connection
   let adapter: SalesforceAdapter
-
-  const findElements = (
-    elements: ReadonlyArray<Element>,
-    ...name: ReadonlyArray<string>
-  ): Element[] => elements.filter(
-    e => e.elemID.getFullName() === new ElemID(constants.SALESFORCE, ...name).getFullName(),
-  )
 
   beforeEach(() => {
     ({ connection, adapter } = mockAdpater({

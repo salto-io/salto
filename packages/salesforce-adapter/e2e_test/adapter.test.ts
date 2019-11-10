@@ -25,6 +25,7 @@ import {
   Types, sfCase, fromMetadataInfo,
 } from '../src/transformer'
 import realAdapter from './adapter'
+import { findElements } from '../test/utils'
 
 const { makeArray } = collections.array
 
@@ -33,13 +34,6 @@ describe('Salesforce adapter E2E with real account', () => {
 
   // Set long timeout as we communicate with salesforce API
   jest.setTimeout(1000000)
-
-  const findElements = (
-    elements: ReadonlyArray<Element>,
-    ...name: ReadonlyArray<string>
-  ): Element[] => elements.filter(
-    e => e.elemID.getFullName() === new ElemID(constants.SALESFORCE, ...name).getFullName(),
-  )
 
   describe('should fetch account settings', () => {
     let result: Element[]

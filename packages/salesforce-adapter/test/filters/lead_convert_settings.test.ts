@@ -10,6 +10,7 @@ import filterCreator, {
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
+import { findElements } from '../utils'
 
 describe('lead convert settings filter', () => {
   const { client } = mockClient()
@@ -49,13 +50,6 @@ describe('lead convert settings filter', () => {
   describe('on fetch', () => {
     let leadPostFilter: ObjectType
     let testElements: Element[]
-
-    const findElements = (
-      elements: ReadonlyArray<Element>,
-      ...name: ReadonlyArray<string>
-    ): Element[] => elements.filter(
-      e => e.elemID.getFullName() === new ElemID(constants.SALESFORCE, ...name).getFullName(),
-    )
 
     beforeEach(async () => {
       testElements = [_.cloneDeep(mockLead),

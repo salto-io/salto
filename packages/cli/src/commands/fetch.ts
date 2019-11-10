@@ -85,7 +85,7 @@ const fetchBuilder = createCommandBuilder({
     keyed: {
       force: {
         alias: ['f'],
-        describe: 'Accept all incoming changes',
+        describe: 'Accept all incoming changes, even if there\'s a conflict with local changes',
         boolean: true,
         default: false,
         demandOption: false,

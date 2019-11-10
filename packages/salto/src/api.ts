@@ -4,7 +4,7 @@ import {
 } from 'adapter-api'
 import { logger } from '@salto/logging'
 import {
-  deployActions, actionStep, DeployError,
+  deployActions, ItemStatus, DeployError,
 } from './core/core'
 import {
   getInstancesOfType, importInstancesOfType, deleteInstancesOfType,
@@ -19,7 +19,7 @@ import { Workspace, CREDS_DIR } from './workspace/workspace'
 import { fetchChanges, FetchChange, getDetailedChanges } from './core/fetch'
 import { MergeError } from './core/merger/internal/common'
 
-export { actionStep }
+export { ItemStatus }
 
 const log = logger(module)
 
@@ -39,7 +39,7 @@ export const deploy = async (
   workspace: Workspace,
   fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
   shouldDeploy: (plan: Plan) => Promise<boolean>,
-  reportProgress: (item: PlanItem, step: actionStep, details?: string) => void,
+  reportProgress: (item: PlanItem, status: ItemStatus, details?: string) => void,
   force = false
 ): Promise<DeployResult> => {
   const deployActionOnState = async (state: State, action: ActionName, element: Element

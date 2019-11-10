@@ -71,22 +71,22 @@ describe('deploy command', () => {
     describe('report progress upon updates', () => {
       describe('items updated as started', () => {
         beforeEach(() => {
-          wu((preview()).itemsByEvalOrder()).forEach(item => command.updateActionStep(item, 'started'))
+          wu((preview()).itemsByEvalOrder()).forEach(item => command.updateAction(item, 'started'))
         })
         it('should print action upon started step', async () => {
           expect(cliOutput.stdout.content.search('salesforce_lead')).toBeGreaterThan(0)
           expect(cliOutput.stdout.content.search('Changing')).toBeGreaterThan(0)
         })
         it('should print completion upon finish', async () => {
-          wu((preview()).itemsByEvalOrder()).forEach(item => command.updateActionStep(item, 'finished'))
+          wu((preview()).itemsByEvalOrder()).forEach(item => command.updateAction(item, 'finished'))
           expect(cliOutput.stdout.content.search('Change completed')).toBeGreaterThan(0)
         })
         it('should print failure upon error', async () => {
-          wu((preview()).itemsByEvalOrder()).forEach(item => command.updateActionStep(item, 'error', 'error reason'))
+          wu((preview()).itemsByEvalOrder()).forEach(item => command.updateAction(item, 'error', 'error reason'))
           expect(cliOutput.stderr.content.search('Failed')).toBeGreaterThan(0)
         })
         it('it should cancel upon cancelling', async () => {
-          wu((preview()).itemsByEvalOrder()).forEach(item => command.updateActionStep(item, 'cancelled', 'parent-node-name'))
+          wu((preview()).itemsByEvalOrder()).forEach(item => command.updateAction(item, 'cancelled', 'parent-node-name'))
           expect(cliOutput.stderr.content.search('Cancelled')).toBeGreaterThan(0)
         })
       })

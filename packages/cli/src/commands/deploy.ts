@@ -1,4 +1,4 @@
-import { deploy, PlanItem, actionStep } from 'salto'
+import { deploy, PlanItem, ItemStatus } from 'salto'
 import { getChangeElement, ActionName } from 'adapter-api'
 import { setInterval } from 'timers'
 import { logger } from '@salto/logging'
@@ -9,9 +9,9 @@ import {
   CliCommand, CliOutput, ParsedCliInput, WriteStream, CliExitCode, SpinnerCreator,
 } from '../types'
 import {
-  createActionStartOutput, createItemDoneOutput,
-  createCancelActionOutput, createActionInProgressOutput,
-  createItemErrorOutput, deployPhaseEpilogue,
+  formatActionStart, formatItemDone,
+  formatCancelAction, formatActionInProgress,
+  formatItemError, deployPhaseEpilogue,
 } from '../formatter'
 import { shouldDeploy, getConfigFromUser } from '../callbacks'
 import { loadWorkspace, updateWorkspace } from '../workspace'
@@ -46,7 +46,7 @@ export class DeployCommand implements CliCommand {
     const action = this.actions.get(itemId)
     if (action) {
       if (action.startTime && action.item) {
-        this.stdout.write(createItemDoneOutput(action.item, action.startTime))
+        this.stdout.write(formatItemDone(action.item, action.startTime))
       }
       if (action.pollerId) {
         clearInterval(action.pollerId)
@@ -55,13 +55,13 @@ export class DeployCommand implements CliCommand {
   }
 
   pollAction(itemId: string, actionName: ActionName, startTime: Date): void {
-    this.stdout.write(createActionInProgressOutput(itemId, actionName, startTime))
+    this.stdout.write(formatActionInProgress(itemId, actionName, startTime))
   }
 
   errorAction(itemId: string, details: string): void {
     const action = this.actions.get(itemId)
     if (action) {
-      this.stderr.write(createItemErrorOutput(itemId, details))
+      this.stderr.write(formatItemError(itemId, details))
       if (action.pollerId) {
         clearInterval(action.pollerId)
       }
@@ -69,7 +69,7 @@ export class DeployCommand implements CliCommand {
   }
 
   cancelAction(itemId: string, parentItemName: string): void {
-    this.stderr.write(createCancelActionOutput(itemId, parentItemName))
+    this.stderr.write(formatCancelAction(itemId, parentItemName))
   }
 
   startAction(itemId: string, item: PlanItem): void {
@@ -83,19 +83,19 @@ export class DeployCommand implements CliCommand {
       pollerId,
     }
     this.actions.set(itemId, action)
-    this.stdout.write(createActionStartOutput(item))
+    this.stdout.write(formatActionStart(item))
   }
 
-  updateActionStep(item: PlanItem, step: actionStep, details?: string): void {
+  updateAction(item: PlanItem, status: ItemStatus, details?: string): void {
     const itemId = getChangeElement(item.parent()).elemID.getFullName()
     if (itemId) {
-      if (step === 'started') {
+      if (status === 'started') {
         this.startAction(itemId, item)
-      } else if (this.actions.has(itemId) && step === 'finished') {
+      } else if (this.actions.has(itemId) && status === 'finished') {
         this.endAction(itemId)
-      } else if (this.actions.has(itemId) && step === 'error' && details) {
+      } else if (this.actions.has(itemId) && status === 'error' && details) {
         this.errorAction(itemId, details)
-      } else if (step === 'cancelled' && details) {
+      } else if (status === 'cancelled' && details) {
         this.cancelAction(itemId, details)
       }
     }
@@ -113,8 +113,8 @@ export class DeployCommand implements CliCommand {
     const result = await deploy(workspace,
       getConfigFromUser,
       shouldDeploy({ stdout: this.stdout, stderr: this.stderr }),
-      (item: PlanItem, step: actionStep, details?: string) =>
-        this.updateActionStep(item, step, details),
+      (item: PlanItem, step: ItemStatus, details?: string) =>
+        this.updateAction(item, step, details),
       this.force)
     this.stdout.write(deployPhaseEpilogue)
     this.stdout.write(EOL)

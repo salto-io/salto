@@ -39,12 +39,12 @@ export class DeployError extends Error {
   }
 }
 
-export type actionStep = 'started' | 'finished' | 'error' | 'cancelled'
+export type ItemStatus = 'started' | 'finished' | 'error' | 'cancelled'
 
 export const deployActions = async (
   deployPlan: Plan,
   adapters: Record<string, Adapter>,
-  reportProgress: (item: PlanItem, step: actionStep, details?: string) => void,
+  reportProgress: (item: PlanItem, status: ItemStatus, details?: string) => void,
   postApplyAction: (action: ActionName, element: Element) => Promise<void>
 ): Promise<DeployError[]> => {
   const deployErrors: DeployError[] = []

@@ -110,7 +110,7 @@ export const formatChange = (change: DetailedChange): string => {
   return indent(`${modifier} ${id}: ${formatChangeData(change)}`, change.id.nestingLevel)
 }
 
-const createCountPlanItemTypesOutput = (plan: Plan): string => {
+const formatCountPlanItemTypes = (plan: Plan): string => {
   const items = wu(plan.itemsByEvalOrder())
     .map(item => ({ action: item.parent().action, name: planItemName(item) }))
     .unique().toArray()
@@ -130,18 +130,18 @@ const formatDetailedChanges = (changeGroups: Iterable<Iterable<DetailedChange>>)
       id,
     })
 
-    const createMissingChanges = (id: ElemID, existingIds: Set<string>): DetailedChange[] => {
+    const formatMissingChanges = (id: ElemID, existingIds: Set<string>): DetailedChange[] => {
       const parentId = id.createParentID()
       if (parentId.isConfig() || existingIds.has(parentId.getFullName())) {
         return []
       }
       existingIds.add(parentId.getFullName())
-      return [emptyChange(parentId), ...createMissingChanges(parentId, existingIds)]
+      return [emptyChange(parentId), ...formatMissingChanges(parentId, existingIds)]
     }
 
     const existingIds = new Set(changes.map(c => c.id.getFullName()))
     const missingChanges = _(changes)
-      .map(change => createMissingChanges(change.id, existingIds))
+      .map(change => formatMissingChanges(change.id, existingIds))
       .flatten()
       .value()
     return [...changes, ...missingChanges]
@@ -170,7 +170,7 @@ const getElapsedTime = (start: Date): number => Math.ceil(
   (new Date().getTime() - start.getTime()) / 1000,
 )
 
-const createExecutionOutput = (plan: Plan): string[] => {
+const formatExecution = (plan: Plan): string[] => {
   if (_.isEmpty(plan)) {
     return [
       emptyLine(),
@@ -178,7 +178,7 @@ const createExecutionOutput = (plan: Plan): string[] => {
       emptyLine(),
     ]
   }
-  const actionCount = createCountPlanItemTypesOutput(plan)
+  const actionCount = formatCountPlanItemTypes(plan)
   const planSteps = formatDetailedChanges(
     wu(plan.itemsByEvalOrder()).map(item => item.detailedChanges())
   )
@@ -194,16 +194,16 @@ const createExecutionOutput = (plan: Plan): string[] => {
   ]
 }
 
-export const createDeployPlanOutput = (plan: Plan): string => {
-  const executionOutput = createExecutionOutput(plan)
+export const formatDeployPlan = (plan: Plan): string => {
+  const executionOutput = formatExecution(plan)
   return [
     header(Prompts.STARTDEPLOY),
     subHeader(Prompts.EXPLAINDEPLOY),
   ].concat(executionOutput).join('\n')
 }
 
-export const createPlanOutput = (plan: Plan): string => {
-  const executionOutput = createExecutionOutput(plan)
+export const formatPlan = (plan: Plan): string => {
+  const executionOutput = formatExecution(plan)
   return executionOutput.concat([
     subHeader(Prompts.PREVIEWDISCLAIMER),
     emptyLine(),
@@ -235,7 +235,7 @@ export const formatSearchResults = (result: SearchResult): string => {
 }
 
 const deployPhaseIndent = 2
-const styleItemName = (itemName: string): string => indent(header(`${itemName}:`), deployPhaseIndent)
+const formatItemName = (itemName: string): string => indent(header(`${itemName}:`), deployPhaseIndent)
 
 export const deployPhaseHeader = header([
   emptyLine(),
@@ -253,28 +253,28 @@ export const deployPhaseEpilogue = header([
   Prompts.FINISHEDDEPLOYEXEC,
 ].join('\n'))
 
-export const createCancelActionOutput = (itemName: string, parentItemName: string): string => {
-  const styledItemName = styleItemName(itemName)
-  const styledErrorMessage = error(`${Prompts.CANCELDEPLOYACTION} ${parentItemName}`)
+export const formatCancelAction = (itemName: string, parentItemName: string): string => {
+  const formattedItemName = formatItemName(itemName)
+  const formattedErrorMessage = error(`${Prompts.CANCELDEPLOYACTION} ${parentItemName}`)
   const elements = [
-    `${styledItemName} ${styledErrorMessage}`,
+    `${formattedItemName} ${formattedErrorMessage}`,
     emptyLine(),
   ]
   return elements.join('\n')
 }
 
-export const createItemErrorOutput = (itemName: string, errorReason: string): string => {
-  const styledItemName = `${styleItemName(itemName)}`
-  const styledErrorText = error(`Failed: ${errorReason}`)
+export const formatItemError = (itemName: string, errorReason: string): string => {
+  const formattedItemName = `${formatItemName(itemName)}`
+  const formattedErrorMessage = error(`Failed: ${errorReason}`)
   return [
-    `${styledItemName} ${styledErrorText}`,
+    `${formattedItemName} ${formattedErrorMessage}`,
     emptyLine(),
   ].join('\n')
 }
 
-export const createItemDoneOutput = (item: PlanItem, startTime: Date): string => {
+export const formatItemDone = (item: PlanItem, startTime: Date): string => {
   const elapsed = getElapsedTime(startTime)
-  const itemName = styleItemName(planItemName(item))
+  const itemName = formatItemName(planItemName(item))
   const completedText = success(`${Prompts.ENDACTION[item.parent().action]}`
   + ` completed after ${elapsed}s`)
   const itemDone = [
@@ -284,9 +284,9 @@ export const createItemDoneOutput = (item: PlanItem, startTime: Date): string =>
   return itemDone.join('\n')
 }
 
-export const createActionStartOutput = (action: PlanItem): string => {
+export const formatActionStart = (action: PlanItem): string => {
   action.parent()
-  const itemName = `${styleItemName(planItemName(action))}`
+  const itemName = `${formatItemName(planItemName(action))}`
   const elements = [
     body(`${itemName} ${Prompts.STARTACTION[action.parent().action]}`),
     emptyLine(),
@@ -294,13 +294,13 @@ export const createActionStartOutput = (action: PlanItem): string => {
   return elements.join('\n')
 }
 
-export const createActionInProgressOutput = (
+export const formatActionInProgress = (
   itemName: string,
   actionName: ActionName,
   start: Date
 ): string => {
   const elapsed = getElapsedTime(start)
-  const styledItemName = styleItemName(itemName)
+  const styledItemName = formatItemName(itemName)
   return body(`${styledItemName} Still ${
     Prompts.STARTACTION[actionName]
   } (${elapsed}s elapsed)\n`)

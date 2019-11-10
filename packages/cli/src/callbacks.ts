@@ -64,7 +64,7 @@ export const getApprovedChanges = async (
   if (shouldApproveAll(answers)) {
     return changes
   }
-  return changes.filter((_change, idx) => answers[idx.toString()] === 'yes')
+  return changes.filter((_change, idx) => answers[idx.toString()] !== 'no')
 }
 
 const inputTypePasswordFields = ['token', 'password']

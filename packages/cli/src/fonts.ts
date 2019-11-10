@@ -3,16 +3,39 @@ import fs from 'fs'
 import figlet from 'figlet'
 
 export enum Font {
-  Standard = 'Standard'
+  'Standard'
 }
 
-const fontsDir = path.resolve(__dirname, '..', '..', '..', '..', 'node_modules', 'figlet', 'fonts')
+console.log('dirname: %o', __dirname)
+const fontsDir = path.join(__dirname, '..', 'assets')
+console.log('fontsDir: %o', fontsDir)
 
-Object.entries(Font).forEach(([name, fileName]) => {
-  const fontPath = `${path.join(fontsDir, fileName)}.flf`
-  const font = fs.readFileSync(fontPath, { encoding: 'utf8' })
+const fontNames = Object.keys(Font)
   // @ts-ignore
-  figlet.parseFont(name, font)
-})
+  .map(k => Font[k])
+  .filter(k => typeof k === 'string')
 
-export const renderSync = (font: Font, text: string): string => figlet.textSync(text, font)
+export const fontFiles = Object.assign(
+  {},
+  ...fontNames.map(f => ({ [f]: path.join(fontsDir, `${f}.flf`) }))
+)
+
+const parsedFonts = new Set<Font>()
+
+const parseFont = (font: Font): void => {
+  if (parsedFonts.has(font)) {
+    return
+  }
+
+  const fontName = Font[font]
+  const fontPath = `${path.join(fontsDir, fontName)}.flf`
+  const fontData = fs.readFileSync(fontPath, { encoding: 'utf8' })
+  // @ts-ignore
+  figlet.parseFont(fontName, fontData)
+  parsedFonts.add(font)
+}
+
+export const renderSync = (font: Font, text: string): string => {
+  parseFont(font)
+  return figlet.textSync(text, Font[font] as figlet.Fonts)
+}

@@ -105,7 +105,9 @@ class HclParser {
       // Load web assembly module data once in the life of a parser
       this.wasmModule = (async () => {
         // Relative path from source location
-        const modulePath = path.resolve(__dirname, '..', '..', '..', 'hcl.wasm')
+        console.log('hcl dirname: %o', __dirname)
+        const modulePath = path.join(__dirname, '..', '..', '..', 'hcl.wasm')
+        console.log('hcl modulePath: %o', modulePath)
         const data = fs.readFileSync(modulePath)
         // Not sure why eslint ignores this definition from webassembly.d.ts,
         // but this doesn't work without the following disable

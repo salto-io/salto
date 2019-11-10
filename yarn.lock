@@ -7015,10 +7015,9 @@ neo-async@^2.5.0, neo-async@^2.6.0, neo-async@^2.6.1:
   resolved "https://registry.yarnpkg.com/neo-async/-/neo-async-2.6.1.tgz#ac27ada66167fa8849a6addd837f6b189ad2081c"
   integrity sha512-iyam8fBuCUpWeKPGpaNMetEocMt364qkCsfL9JuhjXX6dRnguRVOfk2GZaDpPjcOKiiXCPINZC1GczQ7iTq3Zw==
 
-nexe@^4.0.0-beta.3:
+"nexe@https://github.com/salto-io/nexe#fix_windows_fs_patch_normalization":
   version "4.0.0-beta.3"
-  resolved "https://registry.yarnpkg.com/nexe/-/nexe-4.0.0-beta.3.tgz#c354754fa1de45a7ec85840be926a186bf5a7c36"
-  integrity sha512-E9u2yxSKdwRJ4tEH2gV8EXHVz3Rr44ypIiQNouL38XJWpGMDUIPppBd4C5u/Oz617Ym3HXsnTUEIjUuKzO0K8A==
+  resolved "https://github.com/salto-io/nexe#fe002fe7b2e988b44d4627edf822713cfc979ab9"
   dependencies:
     "@calebboyd/semaphore" "^1.3.1"
     app-builder "^5.2.0"

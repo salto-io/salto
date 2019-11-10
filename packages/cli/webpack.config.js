@@ -30,6 +30,10 @@ module.exports = {
       /parser\/internal\/wasm_exec.js/,
     ],
   },
+  externals: {
+    vertx: 'commonjs vertx',    // workaround for: https://github.com/stefanpenner/es6-promise/issues/305
+                                // caused by requestretry which depends on an old version of es6-promise
+  },
   plugins: [
     // // This plugin fixes __dirname and __filename references from sibling
     // // projects in the monorepo. However it conflicts with nexe packaging so

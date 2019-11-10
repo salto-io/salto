@@ -1,5 +1,5 @@
-import _ from 'lodash'
 import wu from 'wu'
+import _ from 'lodash'
 import {
   Element, ElemID, Adapter, TypeMap, Values, ServiceIds, BuiltinTypes, ObjectType, ADAPTER,
   toServiceIdsString, Field, OBJECT_SERVICE_ID, InstanceElement, isInstanceElement, isObjectType,
@@ -21,6 +21,10 @@ export type FetchChange = {
   pendingChange?: DetailedChange
 }
 
+export type MergeErrorWithElements = {
+  error: MergeError
+  elements: Element[]
+}
 
 export const getDetailedChanges = (
   before: ReadonlyArray<Element>,
@@ -79,10 +83,69 @@ const toFetchChanges = (
   }
 }
 
-type FetchChangesResult = {
+export type FetchChangesResult = {
   changes: Iterable<FetchChange>
   elements: Element[]
-  mergeErrors: MergeError[]
+  mergeErrors: MergeErrorWithElements[]
+}
+
+
+export class FatalFetchMergeError extends Error {
+  constructor(public causes: MergeErrorWithElements[]) {
+    super(`Error occured during fetch, cause:\n${
+      causes.map(c => `Error: ${c.error.message}, Elements: ${c.elements.map(e => e.elemID.getFullName()).join(', ')}\n`)
+    }`)
+  }
+}
+
+type ProcessMergeErrorsResult = {
+  keptElements: Element[]
+  errorsWithDroppedElements: MergeErrorWithElements[]
+}
+
+const processMergeErrors = (
+  elements: Element[],
+  errors: MergeError[],
+  stateElementIDs: string[]
+): ProcessMergeErrorsResult => {
+  const mergeErrsByElemID = _(errors)
+    .map(me => ([
+      me.elemID.createTopLevelParentID().parent.getFullName(),
+      { error: me, elements: [] }]))
+    .fromPairs()
+    .value() as Record<string, MergeErrorWithElements>
+
+  const errorsWithDroppedElements: MergeErrorWithElements[] = []
+  const errorsWithStateElements: MergeErrorWithElements[] = []
+  const keptElements = elements.filter(e => {
+    const foundMergeErr = mergeErrsByElemID[e.elemID.getFullName()]
+    if (foundMergeErr) {
+      foundMergeErr.elements.push(e)
+      if (stateElementIDs.includes(e.elemID.getFullName())) {
+        errorsWithStateElements.push(foundMergeErr)
+      }
+      errorsWithDroppedElements.push(foundMergeErr)
+    }
+
+    // if element is an instance element add it to the type element merge error if exists
+    const foundMergeErrForInstanceType = isInstanceElement(e)
+      ? mergeErrsByElemID[e.type.elemID.getFullName()]
+      : undefined
+    if (foundMergeErrForInstanceType) {
+      foundMergeErrForInstanceType.elements.push(e)
+    }
+
+    return !foundMergeErr && !foundMergeErrForInstanceType
+  })
+  if (!_.isEmpty(errorsWithStateElements)) {
+    throw new FatalFetchMergeError(
+      errorsWithStateElements
+    )
+  }
+  return {
+    keptElements,
+    errorsWithDroppedElements,
+  }
 }
 
 export const fetchChanges = async (
@@ -95,8 +158,16 @@ export const fetchChanges = async (
   ))
   log.debug(`fetched ${serviceElements.length} elements from adapters`)
 
-  const { errors: mergeErrors, merged: mergedServiceElements } = mergeElements(serviceElements)
-  log.debug(`merged elements to ${mergedServiceElements.length} elements [errors=${
+  const { errors: mergeErrors, merged: elements } = mergeElements(serviceElements)
+  log.debug(`got ${serviceElements.length} from merge results and elements and to ${elements.length} elements [errors=${
+    mergeErrors.length}]`)
+  const processErrorsResult: ProcessMergeErrorsResult = processMergeErrors(
+    elements,
+    mergeErrors,
+    stateElements.map(e => e.elemID.getFullName())
+  )
+  const mergedServiceElements = processErrorsResult.keptElements
+  log.debug(`after merge there are ${mergedServiceElements.length} elements [errors=${
     mergeErrors.length}]`)
 
   const serviceChanges = getDetailedChanges(stateElements, mergedServiceElements)
@@ -112,7 +183,11 @@ export const fetchChanges = async (
     .map(toChangesWithPath(serviceElements))
     .flatten()
   log.debug('finished to calculate fetch changes')
-  return { changes, elements: mergedServiceElements, mergeErrors }
+  return {
+    changes,
+    elements: mergedServiceElements,
+    mergeErrors: processErrorsResult.errorsWithDroppedElements,
+  }
 }
 
 const id = (elemID: ElemID): string => elemID.getFullName()

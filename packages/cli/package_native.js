@@ -2,7 +2,6 @@
 const fs = require('fs')
 const path = require('path')
 const webpack = require('webpack')
-// const nexe = require('/Users/roy/nexe')
 const nexe = require('nexe')
 const webpackConfig = require('./webpack.config')
 const fontFiles = require('./dist/src/fonts').fontFiles
@@ -33,7 +32,7 @@ const nexeConfigs = () => Object.entries(TARGET_PLATFORMS)
     target: { platform, arch: TARGET_ARCH, version: TARGET_NODE_VERSION },
   }))
 
-const printError = err => {
+const handleError = err => {
   console.error(err.stack || err);
   if (err.details) {
     console.error(err.details);
@@ -45,7 +44,7 @@ const doWebpack = (config) => new Promise((resolve, reject) => {
   console.log('Running webpack')
   webpack(config, (err, stats) => {
     if (err) {
-      printError(err)
+      handleError(err)
       reject()
     }
 
@@ -84,7 +83,7 @@ const doNexe = (input) => new Promise((resolve, reject) => {
       input,
     }, err => {
       if (err) {
-        printError(err)
+        handleError(err)
         reject()
       }
 
@@ -100,4 +99,4 @@ const doNexe = (input) => new Promise((resolve, reject) => {
   const bundle = path.join(webpackConfig.output.path, webpackConfig.output.filename)
   await doNexe(bundle)
   console.log('Done!')
-})().catch(err => console.error(err))
+})().catch(handleError)

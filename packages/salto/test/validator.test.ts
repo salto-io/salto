@@ -73,21 +73,21 @@ describe('Elements validation', () => {
       clonedType.fields.nested.annotations.annostr = 1
       const errors = validateElements([clonedType])
       expect(errors).toHaveLength(1)
-      expect(errors[0].elemID.getFullName()).toBe('salto_nested_nested_annostr')
+      expect(errors[0].elemID).toEqual(clonedType.elemID.createNestedID('nested', 'annostr'))
     })
 
     it('should return error on bad num primitive type', () => {
       clonedType.fields.nested.annotations.annonum = 'str'
       const errors = validateElements([clonedType])
       expect(errors).toHaveLength(1)
-      expect(errors[0].elemID.getFullName()).toBe('salto_nested_nested_annonum')
+      expect(errors[0].elemID).toEqual(clonedType.elemID.createNestedID('nested', 'annonum'))
     })
 
     it('should return error on bad bool primitive type', () => {
       clonedType.fields.nested.annotations.annoboolean = 1
       const errors = validateElements([clonedType])
       expect(errors).toHaveLength(1)
-      expect(errors[0].elemID.getFullName()).toBe('salto_nested_nested_annoboolean')
+      expect(errors[0].elemID).toEqual(clonedType.elemID.createNestedID('nested', 'annoboolean'))
     })
 
     it('should return error on nested annotation mismatch', () => {

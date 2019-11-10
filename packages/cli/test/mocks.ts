@@ -318,7 +318,7 @@ export const deploy = async (
 export const describe = async (_searchWords: string[]):
   Promise<SearchResult> =>
   ({
-    key: 'salto_office',
+    key: 'salto.office',
     element: elements()[2],
     isGuess: false,
   })

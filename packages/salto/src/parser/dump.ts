@@ -27,6 +27,15 @@ const QUOTE_MARKER = 'Q_MARKER'
 
 const markQuote = (value: string): string => `${QUOTE_MARKER}${value}${QUOTE_MARKER}`
 
+const formatTypeID = ({ elemID }: Type): string => {
+  if (elemID.isConfig()) {
+    return elemID.adapter
+  }
+  return [elemID.adapter, elemID.name]
+    .filter(part => !_.isEmpty(part))
+    .join(Keywords.NAMESPACE_SEPARATOR)
+}
+
 const markDumpedBlockQuotes = (block: DumpedHclBlock): DumpedHclBlock => {
   block.labels = block.labels.map(markQuote)
   block.blocks = block.blocks.map(markDumpedBlockQuotes)
@@ -38,7 +47,7 @@ const removeQuotes = (
 ): HclDumpReturn => value.replace(new RegExp(`"${QUOTE_MARKER}|${QUOTE_MARKER}"`, 'g'), '')
 
 const dumpFieldBlock = (field: Field): DumpedHclBlock => ({
-  type: field.type.elemID.getFullName(),
+  type: formatTypeID(field.type),
   labels: [field.elemID.name],
   attrs: field.annotations,
   blocks: [],
@@ -46,7 +55,7 @@ const dumpFieldBlock = (field: Field): DumpedHclBlock => ({
 
 const dumpListFieldBlock = (field: Field): DumpedHclBlock => ({
   type: Keywords.LIST_DEFINITION,
-  labels: [field.type.elemID.getFullName(), field.elemID.name],
+  labels: [formatTypeID(field.type), field.elemID.name],
   attrs: field.annotations,
   blocks: [],
 })
@@ -57,7 +66,7 @@ const dumpAnnotationsBlock = (element: Type): DumpedHclBlock[] =>
     labels: [],
     attrs: {},
     blocks: Object.entries(element.annotationTypes).map(([key, type]) => ({
-      type: type.elemID.getFullName(),
+      type: formatTypeID(type),
       labels: [key],
       attrs: {},
       blocks: [],
@@ -70,7 +79,7 @@ const dumpElementBlock = (elem: Element): DumpedHclBlock => {
   if (isObjectType(elem)) {
     return {
       type: elem.isSettings ? Keywords.SETTINGS_DEFINITION : Keywords.TYPE_DEFINITION,
-      labels: [elem.elemID.getFullName()],
+      labels: [formatTypeID(elem)],
       attrs: elem.annotations,
       blocks: dumpAnnotationsBlock(elem).concat(
         Object.values(elem.fields).map(dumpBlock)
@@ -81,7 +90,7 @@ const dumpElementBlock = (elem: Element): DumpedHclBlock => {
     return {
       type: Keywords.TYPE_DEFINITION,
       labels: [
-        elem.elemID.getFullName(),
+        formatTypeID(elem),
         Keywords.TYPE_INHERITANCE_SEPARATOR,
         getPrimitiveTypeName(elem.primitive),
       ],
@@ -95,12 +104,12 @@ const dumpElementBlock = (elem: Element): DumpedHclBlock => {
     // infer the prefix from the instance type instead of writing it twice
     const getInstanceName = (id: ElemID): string => {
       if (id.nestingLevel > 1) {
-        return [getInstanceName(id.createParentID()), id.name].join(ElemID.NAMESPACE_SEPARATOR)
+        return [getInstanceName(id.createParentID()), id.name].join(Keywords.NAMESPACE_SEPARATOR)
       }
       return id.name
     }
     return {
-      type: elem.type.elemID.getFullName(),
+      type: formatTypeID(elem.type),
       labels: elem.elemID.isConfig() || elem.type.isSettings
         ? []
         : [getInstanceName(elem.elemID)],

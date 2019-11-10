@@ -15,9 +15,9 @@ export type ParseError = HclParseError
 export type SourceMap = ReadonlyMap<string, SourceRange[]>
 
 const elemID = (fullname: string): ElemID => {
-  const separatorIdx = fullname.indexOf(ElemID.NAMESPACE_SEPARATOR)
+  const separatorIdx = fullname.indexOf(Keywords.NAMESPACE_SEPARATOR)
   const adapter = (separatorIdx >= 0) ? fullname.slice(0, separatorIdx) : ''
-  const name = fullname.slice(separatorIdx + ElemID.NAMESPACE_SEPARATOR.length)
+  const name = fullname.slice(separatorIdx + Keywords.NAMESPACE_SEPARATOR.length)
   return new ElemID(adapter, name)
 }
 

@@ -21,32 +21,32 @@ describe('findElement', () => {
   })
 
   it('should find proper top level element', async () => {
-    const result = findElement(['salto_office'], elements) as FoundSearchResult
-    expect(result.key).toBe('salto_office')
-    expect(result.element).toEqual(find('salto_office'))
+    const result = findElement(['salto.office'], elements) as FoundSearchResult
+    expect(result.key).toBe('salto.office')
+    expect(result.element).toEqual(find('salto.office'))
     expect(result.isGuess).toBe(false)
   })
 
   it('should find field', async () => {
-    const result = findElement(['salto_employee', 'nicknames'], elements) as FoundSearchResult
-    expect(result.key).toBe('salto_employee.nicknames')
-    expect(result.element).toEqual((find('salto_employee') as ObjectType).fields.nicknames.type)
+    const result = findElement(['salto.employee', 'nicknames'], elements) as FoundSearchResult
+    expect(result.key).toBe('salto.employee.nicknames')
+    expect(result.element).toEqual((find('salto.employee') as ObjectType).fields.nicknames.type)
     expect(result.isGuess).toBe(false)
   })
 
   it('suggest type on single word', async () => {
-    const result = findElement(['salto_ofice'], elements) as FoundSearchResult
-    expect(result.key).toBe('salto_office')
+    const result = findElement(['salto.ofice'], elements) as FoundSearchResult
+    expect(result.key).toBe('salto.office')
     expect(result.isGuess).toBe(true)
-    expect(result.element).toEqual(find('salto_office'))
+    expect(result.element).toEqual(find('salto.office'))
   })
 
   it('should suggest on complex path', async () => {
-    const result = findElement(['salto_offic', 'locatin', 'city'], elements) as FoundSearchResult
-    expect(result.key).toBe('salto_office.location.city')
+    const result = findElement(['salto.offic', 'locatin', 'city'], elements) as FoundSearchResult
+    expect(result.key).toBe('salto.office.location.city')
     expect(result.isGuess).toBe(true)
 
-    const office = find('salto_office') as ObjectType
+    const office = find('salto.office') as ObjectType
     const location = office.fields.location.type as ObjectType
     expect(result.element).toEqual(location.fields.city.type)
   })

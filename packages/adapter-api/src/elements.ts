@@ -19,7 +19,7 @@ export type FieldMap = Record<string, Field>
 type TypeMap = Record<string, Type>
 
 export class ElemID {
-  static readonly NAMESPACE_SEPARATOR = '_'
+  static readonly NAMESPACE_SEPARATOR = '.'
   static readonly CONFIG_INSTANCE_NAME = '_config'
 
   readonly adapter: string

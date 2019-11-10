@@ -146,7 +146,7 @@ describe('api functions', () => {
       const workspace = await Workspace.load(config)
       const fullNames = workspace.elements.map(e => e.elemID.getFullName())
       expect(fullNames).toEqual(
-        expect.arrayContaining(['salesforce', 'salesforce_test', 'salesforce_test2']),
+        expect.arrayContaining(['salesforce', 'salesforce.test', 'salesforce.test2']),
       )
     })
 

@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import {
-  ObjectType, Type, InstanceElement, ElemID,
+  ObjectType, Type, InstanceElement, ElemID, BuiltinTypes,
 } from 'adapter-api'
 import SalesforceAdapter from '../src/adapter'
 import Connection from '../src/client/jsforce'
@@ -439,18 +439,18 @@ describe('SalesforceAdapter fetch', () => {
       ).length
         + 1 /* LookupFilter */ + 3)
       const types = _.assign({}, ...result.map(t => ({ [t.elemID.getFullName()]: t })))
-      const nestingType = types.salesforce_nesting_type
-      const nestedType = types.salesforce_nested_type
-      const singleField = types.salesforce_single_field_type
-      expect(nestingType).not.toBeUndefined()
-      expect(nestingType.fields.field.type.elemID.name).toEqual('nested_type')
-      expect(nestingType.fields.other_field.type.elemID.name).toEqual('single_field_type')
-      expect(nestedType).not.toBeUndefined()
-      expect(nestedType.fields.nested_str.type.elemID.name).toEqual('string')
-      expect(nestedType.fields.nested_num.type.elemID.name).toEqual('number')
-      expect(nestedType.fields.double_nested.type.elemID.name).toEqual('single_field_type')
-      expect(singleField).not.toBeUndefined()
-      expect(singleField.fields.str.type.elemID.name).toEqual('string')
+      const nestingType = types['salesforce.nesting_type']
+      const nestedType = types['salesforce.nested_type']
+      const singleField = types['salesforce.single_field_type']
+      expect(nestingType).toBeDefined()
+      expect(nestingType.fields.field.type.elemID).toEqual(nestedType.elemID)
+      expect(nestingType.fields.other_field.type.elemID).toEqual(singleField.elemID)
+      expect(nestedType).toBeDefined()
+      expect(nestedType.fields.nested_str.type.elemID).toEqual(BuiltinTypes.STRING.elemID)
+      expect(nestedType.fields.nested_num.type.elemID).toEqual(BuiltinTypes.NUMBER.elemID)
+      expect(nestedType.fields.double_nested.type.elemID).toEqual(singleField.elemID)
+      expect(singleField).toBeDefined()
+      expect(singleField.fields.str.type.elemID).toEqual(BuiltinTypes.STRING.elemID)
     })
 
     it('should fetch metadata instance', async () => {
@@ -633,10 +633,10 @@ describe('SalesforceAdapter fetch', () => {
 
       const result = await adapter.fetch()
       const flow = findElements(result, 'flow', 'flow_instance').pop() as InstanceElement
-      expect(flow.type.elemID.getFullName()).toBe('salesforce_flow')
+      expect(flow.type.elemID).toEqual(new ElemID(constants.SALESFORCE, 'flow'))
       expect((flow.type as ObjectType).fields.list_test.isList).toBe(true)
 
-      expect(flow.elemID.getFullName()).toBe('salesforce_flow_flow_instance')
+      expect(flow.elemID).toEqual(new ElemID(constants.SALESFORCE, 'flow', 'flow_instance'))
       expect(flow.value.list_test[0].field).toEqual('Field1')
       expect(flow.value.list_test[0].editable).toBe(true)
       expect(flow.value.list_test[1].field).toEqual('Field2')

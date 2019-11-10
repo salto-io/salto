@@ -285,7 +285,7 @@ describe('Test elements.ts', () => {
     const adapterMissing = new ElemID('', 'name').getFullName()
     const config = new ElemID('adapter', ElemID.CONFIG_INSTANCE_NAME).getFullName()
 
-    expect(regName).toBe('adapter_name')
+    expect(regName).toBe('adapter.name')
     expect(nameMissing).toBe('adapter')
     expect(adapterMissing).toBe('name')
     expect(config).toBe('adapter')

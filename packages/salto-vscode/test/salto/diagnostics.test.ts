@@ -35,7 +35,7 @@ describe('TEST', () => {
     const diag = getDiagnostics(workspace)['../BP2/error.bp'][0]
     expect(diag).toBeDefined()
     expect(diag.msg).toBe(
-      'Invalid value type for salto_number : "ooppps"'
+      'Invalid value type for salto.number : "ooppps"'
     )
     expect(diag.severity).toBe('Warning')
   })

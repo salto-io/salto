@@ -16,19 +16,19 @@ describe('formatter', () => {
 
     it('should formatSearchResults when proper desc is provided', async () => {
       const output = formatSearchResults({
-        key: 'salto_office',
-        element: find('salto_office'),
+        key: 'salto.office',
+        element: find('salto.office'),
         isGuess: false,
       })
-      expect(output).toMatch('=== salto_office ===')
+      expect(output).toMatch('=== salto.office ===')
       expect(output).toMatch('Office Location')
       expect(output).toMatch('address')
     })
 
     it('should output proper value when proper desc is provided for list', async () => {
       const output = formatSearchResults({
-        key: 'salto_employee.nicknames',
-        element: (find('salto_employee') as ObjectType).fields.nicknames.type,
+        key: 'salto.employee.nicknames',
+        element: (find('salto.employee') as ObjectType).fields.nicknames.type,
         isGuess: false,
       })
       expect(output).toMatch('=== string ===')
@@ -36,22 +36,22 @@ describe('formatter', () => {
 
     it('should output proper value when proper desc is provided for inner fields', async () => {
       const output = formatSearchResults({
-        key: 'salto_office.location',
-        element: (find('salto_office') as ObjectType).fields.location.type,
+        key: 'salto.office.location',
+        element: (find('salto.office') as ObjectType).fields.location.type,
         isGuess: false,
       })
-      expect(output).toMatch('=== salto_address ===')
+      expect(output).toMatch('=== salto.address ===')
     })
 
     it('should suggest proper value when proper desc is provided start path', async () => {
       const output = formatSearchResults({
-        key: 'salto_office.location.city',
-        element: ((find('salto_office') as ObjectType).fields.location.type as ObjectType)
+        key: 'salto.office.location.city',
+        element: ((find('salto.office') as ObjectType).fields.location.type as ObjectType)
           .fields.city.type,
         isGuess: true,
       })
       expect(output).toMatch('Could not find what you were looking for.')
-      expect(output).toMatch('salto_office.location.city')
+      expect(output).toMatch('salto.office.location.city')
     })
   })
 
@@ -118,7 +118,7 @@ describe('formatter', () => {
         expect(output).toMatch(new RegExp(`${objectType.elemID.name}.*fields.*name`, 's'))
         expect(output).toMatch(new RegExp(`${objectType.elemID.name}.*fields.*name.*TYPE: string`, 's'))
         expect(output).toMatch(new RegExp(`${objectType.elemID.name}.*fields.*location`, 's'))
-        expect(output).toMatch(new RegExp(`${objectType.elemID.name}.*fields.*location.*TYPE: salto_address`, 's'))
+        expect(output).toMatch(new RegExp(`${objectType.elemID.name}.*fields.*location.*TYPE: salto.address`, 's'))
         expect(output).toMatch(new RegExp(`${objectType.elemID.name}.*fields.*location.*label`, 's'))
       })
       it('should have annotation types', () => {

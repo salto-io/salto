@@ -214,7 +214,7 @@ describe('merger', () => {
       const { errors } = mergeElements(elements)
       expect(errors).toHaveLength(1)
       expect(errors[0]).toBeInstanceOf(MultipleBaseDefinitionsMergeError)
-      const expectedMessage = 'Error merging salto_base_field1: Cannot extend \'salto_base\': field: \'field1\' has multiple base definitions'
+      const expectedMessage = `Error merging ${errors[0].elemID.getFullName()}: Cannot extend '${errors[0].elemID.createParentID().getFullName()}': field: '${errors[0].elemID.name}' has multiple base definitions`
       expect(errors[0].message).toBe(expectedMessage)
       expect(String(errors[0])).toBe(expectedMessage)
     })

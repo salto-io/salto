@@ -1,5 +1,6 @@
 import * as path from 'path'
 
+import { ElemID } from 'adapter-api'
 import { Config, file } from 'salto'
 import { EditorWorkspace } from '../../src/salto/workspace'
 import { getPositionContext } from '../../src/salto/context'
@@ -47,7 +48,7 @@ describe('Cursor context resolver', () => {
       const ctx = getPositionContext(workspace, bpContent, filename, pos)
       expect(ctx.type).toBe('type')
 
-      expect(ctx.ref && ctx.ref.element.elemID.getFullName()).toBe('salto_str')
+      expect(ctx.ref && ctx.ref.element.elemID).toEqual(new ElemID('salto', 'str'))
     })
 
     it('should identify field definition', () => {
@@ -67,7 +68,7 @@ describe('Cursor context resolver', () => {
       const ctx = getPositionContext(workspace, bpContent, filename, pos)
       expect(ctx.type).toBe('field')
 
-      expect(ctx.ref && ctx.ref.element.elemID.getFullName()).toBe('salto_complex_object')
+      expect(ctx.ref && ctx.ref.element.elemID).toEqual(new ElemID('salto', 'complex_object'))
     })
   })
 
@@ -89,7 +90,7 @@ describe('Cursor context resolver', () => {
       const ctx = getPositionContext(workspace, bpContent, filename, pos)
       expect(ctx.type).toBe('instance')
 
-      expect(ctx.ref && ctx.ref.element.elemID.getFullName()).toBe('salto_inst')
+      expect(ctx.ref && ctx.ref.element.elemID).toEqual(new ElemID('salto', 'inst'))
     })
 
     it('should identify instance path', () => {

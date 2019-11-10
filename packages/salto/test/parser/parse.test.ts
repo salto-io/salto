@@ -1,6 +1,6 @@
 import {
   ObjectType, PrimitiveType, PrimitiveTypes, Element, ElemID,
-  isObjectType, InstanceElement,
+  isObjectType, InstanceElement, BuiltinTypes,
 } from 'adapter-api'
 import { SourceRange, SourceMap, parse } from '../../src/parser/parse'
 
@@ -236,8 +236,7 @@ describe('Salto parser', () => {
         expect(inst.elemID).toEqual(new ElemID('salesforce', 'inst'))
       })
       it('should have the right type', () => {
-        expect(inst.type.elemID.adapter).toEqual('salesforce')
-        expect(inst.type.elemID.name).toEqual('test')
+        expect(inst.type.elemID).toEqual(new ElemID('salesforce', 'test'))
       })
       it('should have values', () => {
         expect(inst.value).toHaveProperty('name')
@@ -254,12 +253,10 @@ describe('Salto parser', () => {
         config = elements[6] as InstanceElement
       })
       it('should have the right id', () => {
-        expect(config.elemID.adapter).toEqual('salesforce')
-        expect(config.elemID.name).toEqual(ElemID.CONFIG_INSTANCE_NAME)
+        expect(config.elemID).toEqual(new ElemID('salesforce', ElemID.CONFIG_INSTANCE_NAME))
       })
       it('should have the right type', () => {
-        expect(config.type.elemID.adapter).toEqual('salesforce')
-        expect(config.type.elemID.name).toEqual(config.type.elemID.adapter)
+        expect(config.type.elemID).toEqual(new ElemID('salesforce'))
       })
       it('should have values', () => {
         expect(config.value).toHaveProperty('username')
@@ -288,10 +285,10 @@ describe('Salto parser', () => {
         expect(numberType.primitive).toBe(PrimitiveTypes.NUMBER)
       })
 
-      it('should have the right annotations', () => {
-        expect(numberType.annotationTypes.scale.elemID.getFullName()).toEqual('number')
-        expect(numberType.annotationTypes.precision.elemID.getFullName()).toEqual('number')
-        expect(numberType.annotationTypes.unique.elemID.getFullName()).toEqual('boolean')
+      it('should have the correct annotations', () => {
+        expect(numberType.annotationTypes.scale.elemID).toEqual(BuiltinTypes.NUMBER.elemID)
+        expect(numberType.annotationTypes.precision.elemID).toEqual(BuiltinTypes.NUMBER.elemID)
+        expect(numberType.annotationTypes.unique.elemID).toEqual(BuiltinTypes.BOOLEAN.elemID)
       })
     })
 
@@ -302,9 +299,8 @@ describe('Salto parser', () => {
         settingsType = elements[10] as ObjectType
       })
 
-      it('should have the correct type', () => {
-        expect(settingsType.elemID.getFullName()).toEqual('salesforce_path_assistant_settings')
-        expect(settingsType.elemID.name).toEqual('path_assistant_settings')
+      it('should have the correct id', () => {
+        expect(settingsType.elemID).toEqual(new ElemID('salesforce', 'path_assistant_settings'))
         expect(settingsType.isSettings).toBeTruthy()
       })
     })
@@ -317,8 +313,8 @@ describe('Salto parser', () => {
       })
 
       it('should have the correct instance', () => {
-        expect(settingsInstance.elemID.getFullName()).toEqual('salesforce_path_assistant_settings')
-        expect(settingsInstance.elemID.name).toEqual('path_assistant_settings')
+        // TODO: fix the ID collision between the settings instance and the settings type
+        expect(settingsInstance.elemID).toEqual(new ElemID('salesforce', 'path_assistant_settings'))
         expect(settingsInstance.type.isSettings).toBeTruthy()
       })
     })

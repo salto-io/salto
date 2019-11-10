@@ -88,7 +88,7 @@ describe('deploy command', () => {
       })
     })
 
-    describe('should run deploy', async () => {
+    describe('should run deploy', () => {
       let content: string
       beforeAll(async () => {
         await command.execute()

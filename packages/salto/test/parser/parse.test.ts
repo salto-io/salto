@@ -259,7 +259,7 @@ describe('Salto parser', () => {
       })
       it('should have the right type', () => {
         expect(config.type.elemID.adapter).toEqual('salesforce')
-        expect(config.type.elemID.name).toEqual('')
+        expect(config.type.elemID.name).toEqual(config.type.elemID.adapter)
       })
       it('should have values', () => {
         expect(config.value).toHaveProperty('username')

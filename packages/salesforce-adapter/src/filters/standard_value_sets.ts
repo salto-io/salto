@@ -7,10 +7,10 @@ import { collections } from '@salto/lowerdash'
 import SalesforceClient from '../client/client'
 import { FilterCreator } from '../filter'
 import {
-  FIELD_TYPE_NAMES, SALESFORCE_CUSTOM_SUFFIX,
+  SALESFORCE_CUSTOM_SUFFIX,
 } from '../constants'
 import {
-  metadataType, apiName, createInstanceElement, isCustomObject,
+  metadataType, apiName, createInstanceElement, isCustomObject, Types,
 } from '../transformer'
 
 const { makeArray } = collections.array
@@ -108,8 +108,8 @@ const svsValuesToRef = (svsInstances: InstanceElement[]): Record<string, string>
 const isStandardPickList = (f: Field): boolean => {
   const apiNameResult = apiName(f)
   return apiNameResult ? (
-    f.type.elemID.name === FIELD_TYPE_NAMES.PICKLIST
-    || f.type.elemID.name === FIELD_TYPE_NAMES.MULTIPICKLIST)
+    f.type.elemID.getFullName() === Types.primitiveDataTypes.picklist.elemID.getFullName()
+    || f.type.elemID.getFullName() === Types.primitiveDataTypes.multipicklist.elemID.getFullName())
     && !apiName(f).endsWith(SALESFORCE_CUSTOM_SUFFIX) : false
 }
 

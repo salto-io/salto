@@ -56,7 +56,7 @@ export const getQueryLocations = (
     const firstIndex = fullname.indexOf(query)
     if (firstIndex < 0) return false // If the query is nowhere to be found - this is not a match
     // and we will return here to save the calculation.
-    const isPartOfLastNamePart = element.elemID.shortName.indexOf(query) >= 0
+    const isPartOfLastNamePart = element.elemID.name.indexOf(query) >= 0
     const isPrefix = fullname.indexOf(query) === 0
     const isSuffix = fullname.lastIndexOf(query) + query.length === fullname.length
     return isPartOfLastNamePart || isPrefix || isSuffix

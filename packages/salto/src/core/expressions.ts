@@ -50,7 +50,7 @@ resolveReferenceExpression = (
   }
   visited.add(traversal)
 
-  const sepIndex = traversalParts[0].indexOf(ElemID.NAMESPACE_SEPERATOR)
+  const sepIndex = traversalParts[0].indexOf(ElemID.NAMESPACE_SEPARATOR)
   const root = new ElemID(
     traversalParts[0].substring(0, sepIndex),
     traversalParts[0].substring(sepIndex + 1)

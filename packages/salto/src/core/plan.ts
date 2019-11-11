@@ -17,6 +17,7 @@ export type PlanItem = Group<Change> & {
   parent: () => Change
   changes: () => Iterable<Change>
   detailedChanges: () => Iterable<DetailedChange>
+  getElementName: () => string
 }
 export type Plan = GroupedNodeMap<Change> & {
   itemsByEvalOrder: () => Iterable<PlanItem>
@@ -61,9 +62,6 @@ const getValuesChanges = (id: ElemID, before: Value, after: Value): DetailedChan
  * Util function that returns string id based on elemId
  */
 const id = (elemId: ElemID): string => elemId.getFullName()
-
-export const getPlanItemStringId = (planItem: PlanItem): string =>
-  id(getChangeElement(planItem.parent()).elemID)
 
 // Node in the elements graph (elements graph -> diff graph -> group graph)
 type Node = ChangeDataType
@@ -184,6 +182,9 @@ export const getPlan = (
             )) : annotationsValueChanges
         })
         .flatten()
+    },
+    getElementName() {
+      return id(getChangeElement(this.parent()).elemID)
     },
   })
 

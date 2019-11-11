@@ -223,6 +223,7 @@ export const preview = (): Plan => {
     parent: () => parent,
     changes: () => [parent, ...subChanges],
     detailedChanges: () => detailed,
+    getElementName: () => getChangeElement(parent).elemID.getFullName(),
   })
 
   const result = new GroupedNodeMap<Change>()

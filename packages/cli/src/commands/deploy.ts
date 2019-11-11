@@ -1,5 +1,4 @@
 import { deploy, PlanItem, ItemStatus } from 'salto'
-import { getChangeElement, ActionName } from 'adapter-api'
 import { setInterval } from 'timers'
 import { logger } from '@salto/logging'
 import { EOL } from 'os'
@@ -18,12 +17,12 @@ import { loadWorkspace, updateWorkspace } from '../workspace'
 
 const log = logger(module)
 
-const CURRENT_ACTION_POLL_INTERVAL = 5000
+const ACTION_INPROGRESS_INTERVAL = 5000
 
 type Action = {
   item: PlanItem
   startTime: Date
-  pollerId: ReturnType<typeof setTimeout>
+  intervalId: ReturnType<typeof setTimeout>
 }
 
 export class DeployCommand implements CliCommand {
@@ -42,61 +41,57 @@ export class DeployCommand implements CliCommand {
     this.actions = new Map<string, Action>()
   }
 
-  endAction(itemId: string): void {
-    const action = this.actions.get(itemId)
+  private endAction(itemName: string): void {
+    const action = this.actions.get(itemName)
     if (action) {
       if (action.startTime && action.item) {
         this.stdout.write(formatItemDone(action.item, action.startTime))
       }
-      if (action.pollerId) {
-        clearInterval(action.pollerId)
+      if (action.intervalId) {
+        clearInterval(action.intervalId)
       }
     }
   }
 
-  pollAction(itemId: string, actionName: ActionName, startTime: Date): void {
-    this.stdout.write(formatActionInProgress(itemId, actionName, startTime))
-  }
-
-  errorAction(itemId: string, details: string): void {
-    const action = this.actions.get(itemId)
+  private errorAction(itemName: string, details: string): void {
+    const action = this.actions.get(itemName)
     if (action) {
-      this.stderr.write(formatItemError(itemId, details))
-      if (action.pollerId) {
-        clearInterval(action.pollerId)
+      this.stderr.write(formatItemError(itemName, details))
+      if (action.intervalId) {
+        clearInterval(action.intervalId)
       }
     }
   }
 
-  cancelAction(itemId: string, parentItemName: string): void {
-    this.stderr.write(formatCancelAction(itemId, parentItemName))
+  private cancelAction(itemName: string, parentItemName: string): void {
+    this.stderr.write(formatCancelAction(itemName, parentItemName))
   }
 
-  startAction(itemId: string, item: PlanItem): void {
+  private startAction(itemName: string, item: PlanItem): void {
     const startTime = new Date()
-    const pollerId = setInterval(() => {
-      this.pollAction(itemId, item.parent().action, startTime)
-    }, CURRENT_ACTION_POLL_INTERVAL)
+    const intervalId = setInterval(() => {
+      this.stdout.write(formatActionInProgress(itemName, item.parent().action, startTime))
+    }, ACTION_INPROGRESS_INTERVAL)
     const action = {
       item,
       startTime,
-      pollerId,
+      intervalId,
     }
-    this.actions.set(itemId, action)
+    this.actions.set(itemName, action)
     this.stdout.write(formatActionStart(item))
   }
 
   updateAction(item: PlanItem, status: ItemStatus, details?: string): void {
-    const itemId = getChangeElement(item.parent()).elemID.getFullName()
-    if (itemId) {
+    const itemName = item.getElementName()
+    if (itemName) {
       if (status === 'started') {
-        this.startAction(itemId, item)
-      } else if (this.actions.has(itemId) && status === 'finished') {
-        this.endAction(itemId)
-      } else if (this.actions.has(itemId) && status === 'error' && details) {
-        this.errorAction(itemId, details)
+        this.startAction(itemName, item)
+      } else if (this.actions.has(itemName) && status === 'finished') {
+        this.endAction(itemName)
+      } else if (this.actions.has(itemName) && status === 'error' && details) {
+        this.errorAction(itemName, details)
       } else if (status === 'cancelled' && details) {
-        this.cancelAction(itemId, details)
+        this.cancelAction(itemName, details)
       }
     }
   }

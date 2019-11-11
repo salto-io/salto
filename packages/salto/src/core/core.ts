@@ -37,16 +37,12 @@ export class DeployError extends Error {
 
 export type ItemStatus = 'started' | 'finished' | 'error' | 'cancelled'
 
-const getElementNameFromPlanItem = (item: PlanItem): string =>
-  getChangeElement(item.parent()).elemID.getFullName()
-
 export const deployActions = async (
   deployPlan: Plan,
   adapters: Record<string, Adapter>,
   reportProgress: (item: PlanItem, status: ItemStatus, details?: string) => void,
   postApplyAction: (action: ActionName, element: Element) => Promise<void>
 ): Promise<DeployError[]> => {
-  const deployErrors: DeployError[] = []
   try {
     await deployPlan.walk(async (itemId: PlanItemId): Promise<void> => {
       const item = deployPlan.getItem(itemId) as PlanItem
@@ -60,25 +56,24 @@ export const deployActions = async (
         throw error
       }
     })
-    return deployErrors
+    return []
   } catch (error) {
+    const deployErrors: DeployError[] = []
     if (error instanceof WalkError) {
       error.handlerErrors.forEach((nodeError: Error, key: PlanItemId) => {
         const item = deployPlan.getItem(key) as PlanItem
-        const itemName = getElementNameFromPlanItem(item)
         if (nodeError instanceof NodeSkippedError) {
-          const parnetItem = deployPlan.getItem(nodeError.causingNode) as PlanItem
-          const parnetItemName = getElementNameFromPlanItem(parnetItem)
-          reportProgress(item, 'cancelled', parnetItemName)
+          reportProgress(item, 'cancelled',
+            (deployPlan.getItem(nodeError.causingNode) as PlanItem).getElementName())
         }
-        deployErrors.push(new DeployError(itemName, nodeError.message))
+        deployErrors.push(new DeployError(item.getElementName(), nodeError.message))
       })
       if (error.circularDependencyError) {
         error.circularDependencyError.causingNodeIds.forEach((id: PlanItemId) => {
           const item = deployPlan.getItem(id) as PlanItem
-          const itemName = getElementNameFromPlanItem(item)
           reportProgress(item, 'error', error.circularDependencyError.message)
-          deployErrors.push(new DeployError(itemName, error.circularDependencyError.message))
+          deployErrors.push(new DeployError(item.getElementName(),
+            error.circularDependencyError.message))
         })
       }
     }

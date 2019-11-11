@@ -1,10 +1,10 @@
 import wu from 'wu'
 import {
-  ObjectType, InstanceElement, Element, Value,
+  ObjectType, InstanceElement, Element, Value, ActionName,
 } from 'adapter-api'
 import { logger } from '@salto/logging'
 import {
-  applyActions,
+  deployActions, ItemStatus, DeployError,
 } from './core/core'
 import {
   getInstancesOfType, importInstancesOfType, deleteInstancesOfType,
@@ -19,6 +19,8 @@ import { Workspace, CREDS_DIR } from './workspace/workspace'
 import { fetchChanges, FetchChange, getDetailedChanges } from './core/fetch'
 import { MergeError } from './core/merger/internal/common'
 
+export { ItemStatus }
+
 const log = logger(module)
 
 export const preview = async (
@@ -30,21 +32,24 @@ export const preview = async (
 
 export interface DeployResult {
   sucesses: boolean
+  errors: DeployError[]
   changes?: Iterable<FetchChange>
 }
 export const deploy = async (
   workspace: Workspace,
   fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
   shouldDeploy: (plan: Plan) => Promise<boolean>,
-  reportProgress: (action: PlanItem) => void,
+  reportProgress: (item: PlanItem, status: ItemStatus, details?: string) => void,
   force = false
 ): Promise<DeployResult> => {
-  const deployActionOnState = async (state: State, action: string, element: Promise<Element>
+  const changedElements = [] as Element[]
+  const deployActionOnState = async (state: State, action: ActionName, element: Element
   ): Promise<void> => {
     if (action === 'remove') {
-      return state.remove([await element])
+      return state.remove([element])
     }
-    return state.update([await element])
+    changedElements.push(element)
+    return state.update([element])
   }
 
   const state = new State(workspace.config.stateLocation)
@@ -53,21 +58,27 @@ export const deploy = async (
     const actionPlan = getPlan(stateElements, workspace.elements)
     if (force || await shouldDeploy(actionPlan)) {
       const [adapters] = await initAdapters(workspace.elements, fillConfig)
-      await applyActions(
+      const errors = await deployActions(
         actionPlan,
         adapters,
         reportProgress,
         (action, element) => deployActionOnState(state, action, element)
       )
 
-      const changes = wu(getDetailedChanges(workspace.elements, stateElements))
+      const changedElementsIds = changedElements.map(e => e.elemID.getFullName())
+
+      const changes = wu(getDetailedChanges(workspace.elements
+        .filter(e => changedElementsIds.includes(e.elemID.getFullName())), changedElements))
         .map(change => ({ change, serviceChange: change }))
+
+      const errored = errors.length > 0
       return {
-        sucesses: true,
+        sucesses: errored,
         changes,
+        errors: errored ? errors : [],
       }
     }
-    return { sucesses: true }
+    return { sucesses: true, errors: [] }
   } finally {
     await state.flush()
   }

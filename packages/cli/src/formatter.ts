@@ -3,7 +3,7 @@ import chalk from 'chalk'
 import wu from 'wu'
 import {
   isType, Element, Type, isInstanceElement, Values, Change, Value, getChangeElement, ElemID,
-  isObjectType, isField, isPrimitiveType, Field, PrimitiveTypes,
+  isObjectType, isField, isPrimitiveType, Field, PrimitiveTypes, ActionName,
 } from 'adapter-api'
 import {
   Plan, PlanItem, FoundSearchResult, SearchResult, DetailedChange,
@@ -19,6 +19,10 @@ export const subHeader = (txt: string): string => chalk.grey(txt)
 export const body = (txt: string): string => chalk.reset(txt)
 
 export const warn = (txt: string): string => chalk.red(txt)
+
+export const success = (txt: string): string => chalk.green(txt)
+
+export const error = (txt: string): string => chalk.red.bold(txt)
 
 export const emptyLine = (): string => ''
 
@@ -106,7 +110,7 @@ export const formatChange = (change: DetailedChange): string => {
   return indent(`${modifier} ${id}: ${formatChangeData(change)}`, change.id.nestingLevel)
 }
 
-const createCountPlanItemTypesOutput = (plan: Plan): string => {
+const formatCountPlanItemTypes = (plan: Plan): string => {
   const items = wu(plan.itemsByEvalOrder())
     .map(item => ({ action: item.parent().action, name: planItemName(item) }))
     .unique().toArray()
@@ -126,18 +130,18 @@ const formatDetailedChanges = (changeGroups: Iterable<Iterable<DetailedChange>>)
       id,
     })
 
-    const createMissingChanges = (id: ElemID, existingIds: Set<string>): DetailedChange[] => {
+    const formatMissingChanges = (id: ElemID, existingIds: Set<string>): DetailedChange[] => {
       const parentId = id.createParentID()
       if (parentId.isConfig() || existingIds.has(parentId.getFullName())) {
         return []
       }
       existingIds.add(parentId.getFullName())
-      return [emptyChange(parentId), ...createMissingChanges(parentId, existingIds)]
+      return [emptyChange(parentId), ...formatMissingChanges(parentId, existingIds)]
     }
 
     const existingIds = new Set(changes.map(c => c.id.getFullName()))
     const missingChanges = _(changes)
-      .map(change => createMissingChanges(change.id, existingIds))
+      .map(change => formatMissingChanges(change.id, existingIds))
       .flatten()
       .value()
     return [...changes, ...missingChanges]
@@ -166,7 +170,7 @@ const getElapsedTime = (start: Date): number => Math.ceil(
   (new Date().getTime() - start.getTime()) / 1000,
 )
 
-const createExecutionOutput = (plan: Plan): string[] => {
+const formatExecution = (plan: Plan): string[] => {
   if (_.isEmpty(plan)) {
     return [
       emptyLine(),
@@ -174,7 +178,7 @@ const createExecutionOutput = (plan: Plan): string[] => {
       emptyLine(),
     ]
   }
-  const actionCount = createCountPlanItemTypesOutput(plan)
+  const actionCount = formatCountPlanItemTypes(plan)
   const planSteps = formatDetailedChanges(
     wu(plan.itemsByEvalOrder()).map(item => item.detailedChanges())
   )
@@ -187,19 +191,14 @@ const createExecutionOutput = (plan: Plan): string[] => {
     emptyLine(),
     actionCount,
     emptyLine(),
+    emptyLine(),
   ]
 }
 
-export const createDeployPlanOutput = (plan: Plan): string => {
-  const executionOutput = createExecutionOutput(plan)
-  return [
-    header(Prompts.STARTDEPLOY),
-    subHeader(Prompts.EXPLAINDEPLOY),
-  ].concat(executionOutput).join('\n')
-}
+export const formatDeployPlan = (plan: Plan): string => formatExecution(plan).join('\n')
 
-export const createPlanOutput = (plan: Plan): string => {
-  const executionOutput = createExecutionOutput(plan)
+export const formatPlan = (plan: Plan): string => {
+  const executionOutput = formatExecution(plan)
   return executionOutput.concat([
     subHeader(Prompts.PREVIEWDISCLAIMER),
     emptyLine(),
@@ -230,31 +229,77 @@ export const formatSearchResults = (result: SearchResult): string => {
   return [title, description, elementHcl].join('\n')
 }
 
+const deployPhaseIndent = 2
+const formatItemName = (itemName: string): string => indent(header(`${itemName}:`), deployPhaseIndent)
 
-export const createItemDoneOutput = (item: PlanItem, startTime: Date): string => {
-  const elapsed = getElapsedTime(startTime)
-  return `${planItemName(item)}: `
-        + `${Prompts.ENDACTION[item.parent().action]} `
-        + `completed after ${elapsed}s`
-}
+export const deployPhaseHeader = header([
+  emptyLine(),
+  Prompts.STARTDEPLOYEXEC,
+  emptyLine(),
+].join('\n'))
 
-export const createActionStartOutput = (action: PlanItem): string => {
-  const output = [
-    emptyLine(),
-    body(
-      `${planItemName(action)}: ${Prompts.STARTACTION[action.parent().action]}...`
-    ),
+export const cancelDeployOutput = [
+  emptyLine(),
+  Prompts.CANCELDEPLOY,
+  emptyLine(),
+].join('\n')
+
+export const deployPhaseEpilogue = header([
+  emptyLine(),
+  Prompts.FINISHEDDEPLOYEXEC,
+].join('\n'))
+
+export const formatCancelAction = (itemName: string, parentItemName: string): string => {
+  const formattedItemName = formatItemName(itemName)
+  const formattedErrorMessage = error(`${Prompts.CANCELDEPLOYACTION} ${parentItemName}`)
+  const elements = [
+    `${formattedItemName} ${formattedErrorMessage}`,
     emptyLine(),
   ]
-  return output.join('\n')
+  return elements.join('\n')
 }
 
-export const createActionInProgressOutput = (action: PlanItem, start: Date): string => {
+export const formatItemError = (itemName: string, errorReason: string): string => {
+  const formattedItemName = `${formatItemName(itemName)}`
+  const formattedErrorMessage = error(`Failed: ${errorReason}`)
+  return [
+    `${formattedItemName} ${formattedErrorMessage}`,
+    emptyLine(),
+  ].join('\n')
+}
+
+export const formatItemDone = (item: PlanItem, startTime: Date): string => {
+  const elapsed = getElapsedTime(startTime)
+  const itemName = formatItemName(planItemName(item))
+  const completedText = success(`${Prompts.ENDACTION[item.parent().action]}`
+  + ` completed after ${elapsed}s`)
+  const itemDone = [
+    `${itemName} ${completedText}`,
+    emptyLine(),
+  ]
+  return itemDone.join('\n')
+}
+
+export const formatActionStart = (action: PlanItem): string => {
+  action.parent()
+  const itemName = `${formatItemName(planItemName(action))}`
+  const elements = [
+    body(`${itemName} ${Prompts.STARTACTION[action.parent().action]}`),
+    emptyLine(),
+  ]
+  return elements.join('\n')
+}
+
+export const formatActionInProgress = (
+  itemName: string,
+  actionName: ActionName,
+  start: Date
+): string => {
   const elapsed = getElapsedTime(start)
-  const elapsedRound = Math.ceil((elapsed - elapsed) % 5)
-  return body(`${planItemName(action)}: Still ${
-    Prompts.STARTACTION[action.parent().action]
-  }... (${elapsedRound}s elapsed)`)
+  const styledItemName = formatItemName(itemName)
+  return body(`${styledItemName} Still ${
+    Prompts.STARTACTION[actionName]
+  } (${elapsed}s elapsed)\n`)
 }
 
 export const formatFetchChangeForApproval = (

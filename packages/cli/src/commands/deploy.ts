@@ -1,74 +1,127 @@
-import { deploy, PlanItem } from 'salto'
+import { deploy, PlanItem, ItemStatus } from 'salto'
+import { setInterval } from 'timers'
 import { logger } from '@salto/logging'
+import { EOL } from 'os'
+import Prompts from '../prompts'
 import { createCommandBuilder } from '../command_builder'
-import { CliCommand, CliOutput, ParsedCliInput, WriteStream, CliExitCode } from '../types'
 import {
-  createActionStartOutput, createActionInProgressOutput, createItemDoneOutput,
+  CliCommand, CliOutput, ParsedCliInput, WriteStream, CliExitCode, SpinnerCreator,
+} from '../types'
+import {
+  formatActionStart, formatItemDone,
+  formatCancelAction, formatActionInProgress,
+  formatItemError, deployPhaseEpilogue,
 } from '../formatter'
 import { shouldDeploy, getConfigFromUser } from '../callbacks'
 import { loadWorkspace, updateWorkspace } from '../workspace'
 
 const log = logger(module)
 
-const CURRENT_ACTION_POLL_INTERVAL = 5000
+const ACTION_INPROGRESS_INTERVAL = 5000
+
+type Action = {
+  item: PlanItem
+  startTime: Date
+  intervalId: ReturnType<typeof setTimeout>
+}
 
 export class DeployCommand implements CliCommand {
   readonly stdout: WriteStream
   readonly stderr: WriteStream
-  private currentAction: PlanItem | undefined
-  private currentActionStartTime: Date | undefined
-  private currentActionPollerID: ReturnType<typeof setTimeout> | undefined
+  private actions: Map<string, Action>
 
   constructor(
     private readonly workspaceDir: string,
     readonly force: boolean,
-    { stdout, stderr }: CliOutput
+    { stdout, stderr }: CliOutput,
+    private readonly spinnerCreator: SpinnerCreator,
   ) {
     this.stdout = stdout
     this.stderr = stderr
+    this.actions = new Map<string, Action>()
   }
 
-  endCurrentAction(): void {
-    if (this.currentActionPollerID && this.currentAction && this.currentActionStartTime) {
-      clearInterval(this.currentActionPollerID)
-      this.stdout.write(createItemDoneOutput(this.currentAction, this.currentActionStartTime))
-    }
-    this.currentAction = undefined
-  }
-
-  pollCurrentAction(): void {
-    if (this.currentActionStartTime && this.currentAction) {
-      this.stdout.write(
-        createActionInProgressOutput(this.currentAction, this.currentActionStartTime)
-      )
+  private endAction(itemName: string): void {
+    const action = this.actions.get(itemName)
+    if (action) {
+      if (action.startTime && action.item) {
+        this.stdout.write(formatItemDone(action.item, action.startTime))
+      }
+      if (action.intervalId) {
+        clearInterval(action.intervalId)
+      }
     }
   }
 
-  updateCurrentAction(action: PlanItem): void {
-    this.endCurrentAction()
-    this.currentAction = action
-    this.currentActionStartTime = new Date()
-    this.stdout.write(createActionStartOutput(action))
-    this.currentActionPollerID = setInterval(this.pollCurrentAction, CURRENT_ACTION_POLL_INTERVAL)
+  private errorAction(itemName: string, details: string): void {
+    const action = this.actions.get(itemName)
+    if (action) {
+      this.stderr.write(formatItemError(itemName, details))
+      if (action.intervalId) {
+        clearInterval(action.intervalId)
+      }
+    }
+  }
+
+  private cancelAction(itemName: string, parentItemName: string): void {
+    this.stderr.write(formatCancelAction(itemName, parentItemName))
+  }
+
+  private startAction(itemName: string, item: PlanItem): void {
+    const startTime = new Date()
+    const intervalId = setInterval(() => {
+      this.stdout.write(formatActionInProgress(itemName, item.parent().action, startTime))
+    }, ACTION_INPROGRESS_INTERVAL)
+    const action = {
+      item,
+      startTime,
+      intervalId,
+    }
+    this.actions.set(itemName, action)
+    this.stdout.write(formatActionStart(item))
+  }
+
+  updateAction(item: PlanItem, status: ItemStatus, details?: string): void {
+    const itemName = item.getElementName()
+    if (itemName) {
+      if (status === 'started') {
+        this.startAction(itemName, item)
+      } else if (this.actions.has(itemName) && status === 'finished') {
+        this.endAction(itemName)
+      } else if (this.actions.has(itemName) && status === 'error' && details) {
+        this.errorAction(itemName, details)
+      } else if (status === 'cancelled' && details) {
+        this.cancelAction(itemName, details)
+      }
+    }
   }
 
   async execute(): Promise<CliExitCode> {
     log.debug(`running deploy command on '${this.workspaceDir}' [force=${this.force}]`)
+    const planSpinner = this.spinnerCreator(Prompts.PREVIEW_STARTED, {})
     const { workspace, errored } = await loadWorkspace(this.workspaceDir, this.stderr)
     if (errored) {
+      planSpinner.fail(Prompts.PREVIEW_FAILED)
       return CliExitCode.AppError
     }
+    planSpinner.succeed(Prompts.PREVIEW_FINISHED)
     const result = await deploy(workspace,
       getConfigFromUser,
       shouldDeploy({ stdout: this.stdout, stderr: this.stderr }),
-      (action: PlanItem) => this.updateCurrentAction(action), this.force)
-    this.endCurrentAction()
+      (item: PlanItem, step: ItemStatus, details?: string) =>
+        this.updateAction(item, step, details),
+      this.force)
     if (result.changes) {
       const changes = [...result.changes]
+      if (changes.length > 0 || result.errors.length > 0) {
+        this.stdout.write(deployPhaseEpilogue)
+      }
+      this.stdout.write(EOL)
       return await updateWorkspace(workspace, this.stderr, ...changes)
         ? CliExitCode.Success
         : CliExitCode.AppError
     }
+    this.stdout.write(EOL)
     return result.sucesses ? CliExitCode.Success : CliExitCode.AppError
   }
 }
@@ -94,8 +147,12 @@ const deployBuilder = createCommandBuilder({
     },
   },
 
-  async build(input: DeployParsedCliInput, output: CliOutput): Promise<CliCommand> {
-    return new DeployCommand('.', input.args.force, output)
+  async build(
+    input: DeployParsedCliInput,
+    output: CliOutput,
+    spinnerCreator: SpinnerCreator
+  ): Promise<CliCommand> {
+    return new DeployCommand('.', input.args.force, output, spinnerCreator)
   },
 })
 

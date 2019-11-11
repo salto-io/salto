@@ -5,7 +5,8 @@ import {
 import {
   Workspace, Plan, PlanItem, Config,
 } from 'salto'
-import { deploy, preview, MockWriteStream, getWorkspaceErrors } from '../mocks'
+import { Spinner, SpinnerCreator } from 'src/types'
+import { deploy, preview, mockSpinnerCreator, MockWriteStream, getWorkspaceErrors } from '../mocks'
 import { DeployCommand } from '../../src/commands/deploy'
 
 const mockDeploy = deploy
@@ -40,7 +41,7 @@ jest.mock('salto', () => ({
     workspace: Workspace,
     fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
     shouldDeploy: (plan: Plan) => Promise<boolean>,
-    reportProgress: (action: PlanItem) => void,
+    reportProgress: (action: PlanItem, step: string, details?: string) => void,
     force = false
   ) =>
   // Deploy with blueprints will fail, doing this trick as we cannot reference vars, we get error:
@@ -54,56 +55,55 @@ jest.mock('salto', () => ({
 describe('deploy command', () => {
   let cliOutput: { stdout: MockWriteStream; stderr: MockWriteStream }
   let command: DeployCommand
+  const spinners: Spinner[] = []
+  let spinnerCreator: SpinnerCreator
 
   beforeEach(() => {
     cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
+    spinnerCreator = mockSpinnerCreator(spinners)
   })
 
   describe('valid deploy', () => {
     beforeEach(() => {
-      command = new DeployCommand('', true, cliOutput)
+      command = new DeployCommand('', true, cliOutput, spinnerCreator)
     })
 
-    describe('should print progress', () => {
-      it('should print progress upon update', async () => {
-        wu((preview()).itemsByEvalOrder()).forEach(item => command.updateCurrentAction(item))
-        expect(cliOutput.stdout.content).toMatch('salesforce_lead: changing...')
-      })
-
-      describe('end current action', () => {
-        beforeEach(async () => {
-          const planItem = wu((preview()).itemsByEvalOrder()).next().value
-          command.updateCurrentAction(planItem)
+    describe('report progress upon updates', () => {
+      describe('items updated as started', () => {
+        beforeEach(() => {
+          wu((preview()).itemsByEvalOrder()).forEach(item => command.updateAction(item, 'started'))
         })
-
-        it('should poll current action', () => {
-          command.pollCurrentAction()
-          expect(cliOutput.stdout.content.search('Still changing...')).toBeGreaterThan(0)
+        it('should print action upon started step', async () => {
+          expect(cliOutput.stdout.content.search('salesforce_lead')).toBeGreaterThan(0)
+          expect(cliOutput.stdout.content.search('Changing')).toBeGreaterThan(0)
         })
-
-        it('should print progress upon update', () => {
-          command.endCurrentAction()
+        it('should print completion upon finish', async () => {
+          wu((preview()).itemsByEvalOrder()).forEach(item => command.updateAction(item, 'finished'))
           expect(cliOutput.stdout.content.search('Change completed')).toBeGreaterThan(0)
         })
+        it('should print failure upon error', async () => {
+          wu((preview()).itemsByEvalOrder()).forEach(item => command.updateAction(item, 'error', 'error reason'))
+          expect(cliOutput.stderr.content.search('Failed')).toBeGreaterThan(0)
+        })
+        it('it should cancel upon cancelling', async () => {
+          wu((preview()).itemsByEvalOrder()).forEach(item => command.updateAction(item, 'cancelled', 'parent-node-name'))
+          expect(cliOutput.stderr.content.search('Cancelled')).toBeGreaterThan(0)
+        })
       })
     })
 
-    describe('should run deploy', () => {
+    describe('execute deploy', () => {
       let content: string
       beforeAll(async () => {
         await command.execute()
         content = cliOutput.stdout.content
       })
-
       it('should load worksapce', () => {
         expect(Workspace.load).toHaveBeenCalled()
       })
-
-      it('should print Change completed', () => {
-        expect(content.search('salesforce_lead: Change completed')).toBeGreaterThan(0)
-        expect(content.search('salesforce_account: Change completed')).toBeGreaterThan(0)
+      it('should print completness', () => {
+        expect(content).toContain('Deployment is complete')
       })
-
       it('should Update workspace', () => {
         expect(mockUpdateBlueprints).toHaveBeenCalledTimes(1)
         expect(mockFlush).toHaveBeenCalledTimes(1)
@@ -114,7 +114,7 @@ describe('deploy command', () => {
   describe('invalid deploy', () => {
     beforeEach(() => {
       // Creating here with base dir 'errorDir' will cause the mock to throw an error
-      command = new DeployCommand('errorDir', true, cliOutput)
+      command = new DeployCommand('errorDir', true, cliOutput, spinnerCreator)
     })
     it('should fail gracefully', async () => {
       await command.execute()

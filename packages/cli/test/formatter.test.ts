@@ -2,7 +2,7 @@ import {
   Element, ObjectType, InstanceElement, PrimitiveType, ElemID, PrimitiveTypes, BuiltinTypes,
 } from 'adapter-api'
 import { WorkspaceError, FetchChange } from 'salto'
-import { formatSearchResults, createPlanOutput, formatChange, formatFetchChangeForApproval, formatWorkspaceErrors } from '../src/formatter'
+import { formatSearchResults, formatPlan, formatChange, formatFetchChangeForApproval, formatWorkspaceErrors } from '../src/formatter'
 import { elements, preview, detailedChange } from './mocks'
 
 describe('formatter', () => {
@@ -56,7 +56,7 @@ describe('formatter', () => {
   })
 
   describe('createPlanOutput', () => {
-    const output = createPlanOutput(preview())
+    const output = formatPlan(preview())
     it('should return type field addition', () => {
       expect(output).toMatch(/|[^\n]+salesforce_lead.*\+[^\n]+do_you_have_a_sales_team/s)
     })

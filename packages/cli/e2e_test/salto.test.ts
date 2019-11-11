@@ -111,7 +111,7 @@ describe('commands e2e', () => {
 
   it('should deploy the new change', async () => {
     await copyFile(addModelBP, tmpBP)
-    await new DeployCommand(fetchOutputDir, false, cliOutput)
+    await new DeployCommand(fetchOutputDir, false, cliOutput, spinnerCreator)
       .execute()
     expect(lastPlan.size).toBe(1)
     const step = wu(lastPlan.itemsByEvalOrder()).next().value
@@ -127,7 +127,7 @@ describe('commands e2e', () => {
   it('should deploy changes in the new model', async () => {
     await copyFile(modifyModelBP, tmpBP)
     await new DeployCommand(fetchOutputDir, false,
-      cliOutput).execute()
+      cliOutput, spinnerCreator).execute()
     expect(lastPlan.size).toBe(1)
     const step = wu(lastPlan.itemsByEvalOrder()).next().value
     expect(step.parent().action).toBe('modify')
@@ -140,7 +140,7 @@ describe('commands e2e', () => {
 
   it('should deploy a delete for the model', async () => {
     await rm(tmpBP)
-    await new DeployCommand(fetchOutputDir, false, cliOutput).execute()
+    await new DeployCommand(fetchOutputDir, false, cliOutput, spinnerCreator).execute()
     expect(lastPlan.size).toBe(1)
     const step = wu(lastPlan.itemsByEvalOrder()).next().value
     expect(step.parent().action).toBe('remove')

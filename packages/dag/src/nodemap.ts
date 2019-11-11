@@ -6,13 +6,16 @@ const { update: updateSet, intersection, difference } = collections.set
 export type NodeId = collections.set.SetId
 
 export class CircularDependencyError extends Error {
+  public readonly causingNodeIds: NodeId[]
+
   constructor(nodes: AbstractNodeMap) {
     super(`Circular dependencies exist among these items: ${nodes}`)
+    this.causingNodeIds = wu(nodes.nodes().keys()).toArray()
   }
 }
 
 export class NodeSkippedError extends Error {
-  readonly causingNode: NodeId
+  public readonly causingNode: NodeId
 
   constructor(causingNode: NodeId) {
     super(`Skipped due to an error in parent node ${causingNode}`)

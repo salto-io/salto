@@ -5,6 +5,7 @@ import {
 } from 'adapter-api'
 import { Config } from 'src/workspace/config'
 import _ from 'lodash'
+import { DeployError } from 'src/core/core'
 import * as commands from '../../src/api'
 import State from '../../src/state/state'
 import adapterCreators from '../../src/core/adapters/creators'
@@ -17,7 +18,7 @@ const mockAdd = jest.fn(async ap => {
   if (ap.elemID.name === 'fail') {
     throw new Error('failed')
   }
-  return true
+  return new ObjectType({ elemID: new ElemID('salesforce', ap.elemID.name) })
 })
 
 const configID = new ElemID('salesforce')
@@ -33,9 +34,9 @@ const mockConfigType = new ObjectType({
   annotations: {},
 })
 
-const mockRemove = jest.fn(_a => true)
+const mockRemove = jest.fn(a => new ObjectType({ elemID: new ElemID('salesforce', a.elemID.name) }))
 
-const mockUpdate = jest.fn((_b, _a) => true)
+const mockUpdate = jest.fn((b, _a) => new ObjectType({ elemID: new ElemID('salesforce', b.elemID.name) }))
 
 
 const objType = new ObjectType({ elemID: new ElemID('salesforce', 'dummy') })
@@ -172,15 +173,18 @@ describe('api functions', () => {
         additionalBlueprints: [filePath('missing.bp')],
       }
       const ws: Workspace = await Workspace.load(config)
-      await expect(commands.deploy(
+      const deployResult = await commands.deploy(
         ws,
         mockGetConfigFromUser,
         mockShouldDeployYes,
         mockReportCurrentAction
-      )).rejects.toThrow()
+      )
+      expect(deployResult.errors.length).toBeGreaterThan(0)
+      const missingAdapterErrors = deployResult.errors.filter((error: DeployError) => error.message.includes('Missing adapter for'))
+      expect(missingAdapterErrors.length).toBeGreaterThan(0)
     })
 
-    it('should throw error on adapter fail', async () => {
+    it('should error on failure', async () => {
       const config: Config = {
         uid: '',
         name: 'test',
@@ -190,12 +194,13 @@ describe('api functions', () => {
         additionalBlueprints: [filePath('fail.bp')],
       }
       const ws: Workspace = await Workspace.load(config)
-      await expect(commands.deploy(
+      const deployResult = await commands.deploy(
         ws,
         mockGetConfigFromUser,
         mockShouldDeployYes,
         mockReportCurrentAction
-      )).rejects.toThrow()
+      )
+      expect(deployResult.errors.length).toBeGreaterThan(0)
     })
 
     describe('given a valid blueprint', () => {

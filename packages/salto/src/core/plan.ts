@@ -17,6 +17,7 @@ export type PlanItem = Group<Change> & {
   parent: () => Change
   changes: () => Iterable<Change>
   detailedChanges: () => Iterable<DetailedChange>
+  getElementName: () => string
 }
 export type Plan = GroupedNodeMap<Change> & {
   itemsByEvalOrder: () => Iterable<PlanItem>
@@ -181,6 +182,9 @@ export const getPlan = (
             )) : annotationsValueChanges
         })
         .flatten()
+    },
+    getElementName() {
+      return id(getChangeElement(this.parent()).elemID)
     },
   })
 

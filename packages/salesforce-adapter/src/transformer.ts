@@ -6,9 +6,8 @@ import JSZip from 'jszip'
 
 import {
   Type, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values, Value, Field as TypeField,
-  BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, GetElemIdFunc,
-  ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID,
-  isObjectType,
+  BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter,
+  ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, isObjectType,
 } from 'adapter-api'
 import { collections } from '@salto/lowerdash'
 import { CustomObject, CustomField } from './client/types'
@@ -117,15 +116,9 @@ const addressElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.ADDRESS)
 const nameElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.FIELD_NAME)
 const geoLocationElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.LOCATION)
 
-export interface GetTypeParams {
-  name: string
-  customObject: boolean
-  isSettings: boolean
-  getElemIdFunc?: GetElemIdFunc
-  serviceIds?: ServiceIds
-}
-
 export class Types {
+  private static getElemIdFunc: ElemIdGetter
+
   // Type mapping for custom objects
   public static primitiveDataTypes: Record<string, Type> = {
     text: new PrimitiveType({
@@ -378,21 +371,25 @@ export class Types {
     boolean: BuiltinTypes.BOOLEAN,
   }
 
-  static get({ name, customObject, isSettings, getElemIdFunc, serviceIds }: GetTypeParams): Type {
+  static setElemIdGetter(getElemIdFunc: ElemIdGetter): void {
+    this.getElemIdFunc = getElemIdFunc
+  }
+
+  static get(name: string, customObject = true, isSettings = false, serviceIds?: ServiceIds): Type {
     const type = customObject
       ? this.primitiveDataTypes[name.toLowerCase()]
       : this.metadataPrimitiveTypes[name.toLowerCase()]
 
     if (type === undefined) {
-      return this.createObjectType({ customObject, getElemIdFunc, serviceIds, name, isSettings })
+      return this.createObjectType(name, customObject, isSettings, serviceIds)
     }
     return type
   }
 
-  static createObjectType({ name, customObject, isSettings, getElemIdFunc, serviceIds }:
-    GetTypeParams): ObjectType {
-    const elemId = customObject
-      ? (getElemIdFunc as GetElemIdFunc)(SALESFORCE,
+  private static createObjectType(name: string, customObject = true, isSettings = false,
+    serviceIds?: ServiceIds): ObjectType {
+    const elemId = (customObject && this.getElemIdFunc && serviceIds)
+      ? (this.getElemIdFunc as ElemIdGetter)(SALESFORCE,
         serviceIds as ServiceIds, bpCase(name))
       : new ElemID(SALESFORCE, bpCase(name))
     return new ObjectType({
@@ -473,16 +470,8 @@ export const toCustomObject = (element: ObjectType, includeFields = true): Custo
 export const getValueTypeFieldElement = (parentID: ElemID, field: ValueTypeField,
   knownTypes: Map<string, Type>): TypeField => {
   const bpFieldName = bpCase(field.name)
-
-  const getBpFieldType = (): Type => {
-    if (field.name === METADATA_OBJECT_NAME_FIELD) {
-      return BuiltinTypes.SERVICE_ID
-    }
-    return knownTypes.get(field.soapType)
-      || Types.get({ name: field.soapType, customObject: false, isSettings: false })
-  }
-
-  const bpFieldType = getBpFieldType()
+  const bpFieldType = (field.name === METADATA_OBJECT_NAME_FIELD) ? BuiltinTypes.SERVICE_ID
+    : knownTypes.get(field.soapType) || Types.get(field.soapType, false)
   // mark required as false until SALTO-45 will be resolved
   const annotations: Values = { [Type.REQUIRED]: false }
 
@@ -534,18 +523,14 @@ const getDefaultValue = (field: Field): DefaultValueType | undefined => {
 // The following method is used during the fetchy process and is used in building the objects
 // and their fields described in the blueprint
 export const getSObjectFieldElement = (parentID: ElemID, field: Field,
-  getElemIdFunc: GetElemIdFunc, parentServiceIds: ServiceIds): TypeField => {
-  const createGetTypeParams = (typeName: string): GetTypeParams => ({ name: typeName,
-    customObject: true,
-    isSettings: false,
-    getElemIdFunc,
-    serviceIds: {
-      adapter: SALESFORCE,
-      [API_NAME]: field.name,
-      [OBJECT_SERVICE_ID]: toServiceIdsString(parentServiceIds),
-    } })
+  parentServiceIds: ServiceIds): TypeField => {
+  const serviceIds = {
+    [ADAPTER]: SALESFORCE,
+    [API_NAME]: field.name,
+    [OBJECT_SERVICE_ID]: toServiceIdsString(parentServiceIds),
+  }
 
-  const getFieldType = (typeName: string): Type => Types.get(createGetTypeParams(typeName))
+  const getFieldType = (typeName: string): Type => Types.get(typeName, true, false, serviceIds)
 
   let bpFieldType = getFieldType(field.type)
   const annotations: Values = {
@@ -648,7 +633,7 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field,
       ))
   }
 
-  const fieldName = Types.createObjectType(createGetTypeParams(field.name)).elemID.name
+  const fieldName = getFieldType(field.name).elemID.name
   return new TypeField(parentID, fieldName, bpFieldType, annotations)
 }
 
@@ -753,7 +738,7 @@ export const createMetadataTypeElements = (
     // Already created this type, no new types to return here
     return []
   }
-  const element = Types.get({ name: objectName, customObject: false, isSettings }) as ObjectType
+  const element = Types.get(objectName, false, isSettings) as ObjectType
   knownTypes.set(objectName, element)
   element.annotationTypes[METADATA_TYPE] = BuiltinTypes.SERVICE_ID
   element.annotate({ [METADATA_TYPE]: objectName })
@@ -781,8 +766,7 @@ export const createMetadataTypeElements = (
   // types to string
   fields
     .filter(field => _.isEmpty(field.fields))
-    .filter(field =>
-      !isPrimitiveType(Types.get({ name: field.soapType, customObject: false, isSettings: false })))
+    .filter(field => !isPrimitiveType(Types.get(field.soapType, false)))
     .forEach(field => knownTypes.set(field.soapType, BuiltinTypes.STRING))
 
   const fieldElements = fields.map(field =>

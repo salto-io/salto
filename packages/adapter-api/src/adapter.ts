@@ -18,9 +18,9 @@ export const ADAPTER = 'adapter'
 export type ServiceIds = Record<string, string>
 export const toServiceIdsString = (serviceIds: ServiceIds): string =>
   Object.entries(serviceIds).sort().toString()
-export type GetElemIdFunc = (adapterName: string, serviceIds: ServiceIds, name: string) => ElemID
+export type ElemIdGetter = (adapterName: string, serviceIds: ServiceIds, name: string) => ElemID
 
 export type AdapterCreator = {
-  create: (opts: { config: InstanceElement; getElemIdFunc?: GetElemIdFunc }) => Adapter
+  create: (opts: { config: InstanceElement; getElemIdFunc?: ElemIdGetter }) => Adapter
   configType: ObjectType
 }

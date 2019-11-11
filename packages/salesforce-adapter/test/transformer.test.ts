@@ -2,7 +2,6 @@ import _ from 'lodash'
 import jszip from 'jszip'
 import {
   ObjectType, ElemID, InstanceElement, Field, BuiltinTypes, Type, Field as TypeField, Values,
-  ServiceIds,
 } from 'adapter-api'
 import { Field as SalesforceField, ValueTypeField } from 'jsforce'
 import {
@@ -39,9 +38,6 @@ describe('transformer', () => {
       bool: true,
     },
   )
-
-  const mockGetElemIdFunc = (adapterName: string, _serviceIds: ServiceIds, name: string):
-    ElemID => new ElemID(adapterName, name)
 
   describe('bpCase & sfCase transformation', () => {
     const assertNamingTransformation = (bpName: string, sfName: string): void => {
@@ -195,22 +191,19 @@ describe('transformer', () => {
 
     it('should fetch lookup relationships with restricted deletion', async () => {
       _.set(salesforceReferenceField, 'restrictedDelete', true)
-      const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField,
-        mockGetElemIdFunc, {})
+      const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField, {})
       assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.lookup, false, undefined)
     })
 
     it('should fetch lookup relationships with allowed related record deletion when restrictedDelete set to false', async () => {
       _.set(salesforceReferenceField, 'restrictedDelete', false)
-      const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField,
-        mockGetElemIdFunc, {})
+      const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField, {})
       assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.lookup, true, undefined)
     })
 
     it('should fetch lookup relationships with allowed related record deletion when restrictedDelete is undefined', async () => {
       _.set(salesforceReferenceField, 'restrictedDelete', undefined)
-      const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField,
-        mockGetElemIdFunc, {})
+      const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField, {})
       assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.lookup, true, undefined)
     })
 
@@ -218,8 +211,7 @@ describe('transformer', () => {
       salesforceReferenceField.cascadeDelete = true
       salesforceReferenceField.updateable = true
       salesforceReferenceField.writeRequiresMasterRead = true
-      const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField,
-        mockGetElemIdFunc, {})
+      const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField, {})
       assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.masterdetail, undefined, undefined)
       expect(fieldElement.annotations[FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL]).toBe(true)
       expect(fieldElement.annotations[FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ]).toBe(true)
@@ -229,8 +221,7 @@ describe('transformer', () => {
       salesforceReferenceField.cascadeDelete = true
       salesforceReferenceField.updateable = false
       delete salesforceReferenceField.writeRequiresMasterRead
-      const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField,
-        mockGetElemIdFunc, {})
+      const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField, {})
       assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.masterdetail, undefined, undefined)
       expect(fieldElement.annotations[Type.REQUIRED]).toBe(false)
       expect(fieldElement.annotations[FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL]).toBe(false)
@@ -239,8 +230,7 @@ describe('transformer', () => {
 
     it('should fetch lookup filters and init its annotation', async () => {
       _.set(salesforceReferenceField, 'filteredLookupInfo', {})
-      const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField,
-        mockGetElemIdFunc, {})
+      const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField, {})
       assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.lookup, true, {})
     })
   })

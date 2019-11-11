@@ -1,7 +1,7 @@
 import {
   BuiltinTypes, Type, ObjectType, ElemID, InstanceElement, isModificationDiff,
   isRemovalDiff, isAdditionDiff, Field, Element, isObjectType, isInstanceElement, AdapterCreator,
-  Value, Change, getChangeElement, isField, isElement, GetElemIdFunc,
+  Value, Change, getChangeElement, isField, isElement, ElemIdGetter, ADAPTER,
 } from 'adapter-api'
 import {
   SaveResult, MetadataInfo, Field as SObjField, DescribeSObjectResult, QueryResult,
@@ -43,44 +43,45 @@ const log = logger(module)
 const RECORDS_CHUNK_SIZE = 10000
 
 // Add elements defaults
-const addApiNameAndLabel = (elem: Type | Field): void => {
+const addLabel = (elem: Type | Field): void => {
   const name = isField(elem) ? elem.name : elem.elemID.name
   const { annotations } = elem
-  if (!annotations[constants.API_NAME]) {
-    annotations[constants.API_NAME] = sfCase(name, true)
-    log.debug(`added API_NAME=${sfCase(name, true)} to ${name}`)
-  }
   if (!annotations[constants.LABEL]) {
     annotations[constants.LABEL] = sfCase(name)
     log.debug(`added LABEL=${sfCase(name)} to ${name}`)
   }
 }
 
-const addServiceIdAnnotationTypes = (elem: ObjectType): void => {
-  const { annotationTypes } = elem
+const addApiName = (elem: Type | Field, custom = true): void => {
+  const name = isField(elem) ? elem.name : elem.elemID.name
+  if (!elem.annotations[constants.API_NAME]) {
+    elem.annotations[constants.API_NAME] = sfCase(name, custom)
+    log.debug(`added API_NAME=${sfCase(name, custom)} to ${name}`)
+  }
+  if (!isField(elem) && !elem.annotationTypes[constants.API_NAME]) {
+    elem.annotationTypes[constants.API_NAME] = BuiltinTypes.SERVICE_ID
+  }
+}
+
+const addMetadataType = (elem: ObjectType, metadataTypeValue = constants.CUSTOM_OBJECT): void => {
+  const { annotations, annotationTypes } = elem
   if (!annotationTypes[constants.METADATA_TYPE]) {
     annotationTypes[constants.METADATA_TYPE] = BuiltinTypes.SERVICE_ID
   }
-  if (!annotationTypes[constants.API_NAME]) {
-    annotationTypes[constants.API_NAME] = BuiltinTypes.SERVICE_ID
+  if (!annotations[constants.METADATA_TYPE]) {
+    annotations[constants.METADATA_TYPE] = metadataTypeValue
+    log.debug(`added METADATA_TYPE=${sfCase(metadataTypeValue)} to ${
+      elem.elemID.getFullName()}`)
   }
 }
 
 const addDefaults = (element: ObjectType): void => {
-  const addMetadataType = (elem: ObjectType): void => {
-    const { annotations } = elem
-    if (!annotations[constants.METADATA_TYPE]) {
-      annotations[constants.METADATA_TYPE] = constants.CUSTOM_OBJECT
-      log.debug(`added METADATA_TYPE=${sfCase(constants.CUSTOM_OBJECT)} to ${
-        elem.elemID.getFullName()}`)
-    }
-  }
-
+  addApiName(element)
   addMetadataType(element)
-  addApiNameAndLabel(element)
-  addServiceIdAnnotationTypes(element)
+  addLabel(element)
   Object.values(element.fields).forEach(field => {
-    addApiNameAndLabel(field)
+    addApiName(field)
+    addLabel(field)
   })
 }
 
@@ -113,7 +114,7 @@ export interface SalesforceAdapterParams {
   client: SalesforceClient
 
   // callback function to get an existing elemId or create a new one by the ServiceIds values
-  getElemIdFunc?: GetElemIdFunc}
+  getElemIdFunc?: ElemIdGetter}
 
 const logDuration = (message?: string): decorators.InstanceMethodDecorator =>
   decorators.wrapMethodWith(
@@ -132,7 +133,6 @@ export default class SalesforceAdapter {
   private metadataTypeBlacklist: string[]
   private metadataToUpdateWithDeploy: string[]
   private filterCreators: FilterCreator[]
-  private readonly getElemIdFunc?: GetElemIdFunc
 
   public constructor({
     metadataTypeBlacklist = [
@@ -173,7 +173,9 @@ export default class SalesforceAdapter {
     this.metadataToUpdateWithDeploy = metadataToUpdateWithDeploy
     this.filterCreators = filterCreators
     this.client = client
-    this.getElemIdFunc = getElemIdFunc
+    if (getElemIdFunc) {
+      Types.setElemIdGetter(getElemIdFunc)
+    }
   }
 
   private client: SalesforceClient
@@ -378,7 +380,10 @@ export default class SalesforceAdapter {
       .filter(isAdditionDiff)
       .map(getChangeElement)
       .filter(isField)
-      .forEach(f => addApiNameAndLabel(clonedObject.fields[f.name]))
+      .forEach(f => {
+        addLabel(clonedObject.fields[f.name])
+        addApiName(clonedObject.fields[f.name])
+      })
 
     const fieldChanges = changes.filter(c => isField(getChangeElement(c))) as Change<Field>[]
 
@@ -546,7 +551,7 @@ export default class SalesforceAdapter {
 
     const sobjects = sobjectsDescriptions.map(
       ({ name, custom, fields }) => SalesforceAdapter.createSObjectTypes(
-        name, custom, fields, customObjectNames, this.getElemIdFunc as GetElemIdFunc
+        name, custom, fields, customObjectNames
       )
     )
 
@@ -558,22 +563,16 @@ export default class SalesforceAdapter {
     isCustom: boolean,
     fields: SObjField[],
     customObjectNames: Set<string>,
-    getElemIdFunc: GetElemIdFunc
   ): Type[] {
     const serviceIds = {
-      adapter: constants.SALESFORCE,
+      [ADAPTER]: constants.SALESFORCE,
       [constants.API_NAME]: objectName,
       [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
     }
 
-    const element = Types.createObjectType({ name: objectName,
-      customObject: true,
-      isSettings: false,
-      getElemIdFunc,
-      serviceIds })
-    addServiceIdAnnotationTypes(element)
-    element.annotate({ [constants.API_NAME]: objectName })
-    element.annotate({ [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT })
+    const element = Types.get(objectName, true, false, serviceIds) as ObjectType
+    addApiName(element, isCustom)
+    addMetadataType(element)
 
     // Filter out nested fields of compound fields
     const filteredFields = fields.filter(field => !field.compoundFieldName)
@@ -581,7 +580,7 @@ export default class SalesforceAdapter {
     // Set standard fields on element
     filteredFields
       .filter(f => !f.custom)
-      .map(f => getSObjectFieldElement(element.elemID, f, getElemIdFunc, serviceIds))
+      .map(f => getSObjectFieldElement(element.elemID, f, serviceIds))
       .forEach(field => {
         element.fields[field.name] = field
       })
@@ -589,7 +588,7 @@ export default class SalesforceAdapter {
     // Create custom fields (if any)
     const customFields = filteredFields
       .filter(f => f.custom)
-      .map(f => getSObjectFieldElement(element.elemID, f, getElemIdFunc, serviceIds))
+      .map(f => getSObjectFieldElement(element.elemID, f, serviceIds))
 
     if (!customObjectNames.has(objectName)) {
       // This is not a custom object type, no need to separate standard part from custom part
@@ -619,11 +618,7 @@ export default class SalesforceAdapter {
     }
 
     // Custom fields go in a separate element
-    const customPart = Types.get({ name: objectName,
-      customObject: true,
-      isSettings: false,
-      getElemIdFunc,
-      serviceIds }) as ObjectType
+    const customPart = Types.get(objectName, true, false, serviceIds) as ObjectType
     customFields.forEach(field => {
       customPart.fields[field.name] = field
     })

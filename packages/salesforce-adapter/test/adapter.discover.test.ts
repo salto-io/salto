@@ -222,7 +222,7 @@ describe('SalesforceAdapter fetch', () => {
     it('should fetch sobject with various field types', async () => {
       mockSingleSObject('Lead', [
         {
-          name: 'AutoNumber',
+          name: 'MyAutoNumber',
           type: 'string',
           label: 'AutoNumero',
           autoNumber: true,
@@ -238,32 +238,32 @@ describe('SalesforceAdapter fetch', () => {
           label: 'Numero',
         },
         {
-          name: 'TextArea',
+          name: 'MyTextArea',
           type: 'textarea',
           label: 'Texto Areato',
           length: 255,
         },
         {
-          name: 'LongTextArea',
+          name: 'MyLongTextArea',
           type: 'textarea',
           label: 'Longo Texto Areato',
           length: 280,
           extraTypeInfo: 'plaintextarea',
         },
         {
-          name: 'RichTextArea',
+          name: 'MyRichTextArea',
           type: 'textarea',
           label: 'Richo Texto Areato',
           length: 280,
           extraTypeInfo: 'richtextarea',
         },
         {
-          name: 'EncryptedString',
+          name: 'MyEncryptedString',
           type: 'encryptedstring',
           label: 'Encrypto Stringo',
         },
         {
-          name: 'MultiPickList',
+          name: 'MyMultiPickList',
           type: 'multipicklist',
           label: 'Multo Picklisto',
           precision: 5,
@@ -276,15 +276,15 @@ describe('SalesforceAdapter fetch', () => {
       const result = await adapter.fetch()
 
       const lead = findElements(result, 'lead').pop() as ObjectType
-      expect(lead.fields.auto_number.type.elemID.name).toBe('autonumber')
+      expect(lead.fields.my_auto_number.type.elemID.name).toBe('autonumber')
       expect(lead.fields.string.type.elemID.name).toBe('text')
       expect(lead.fields.number.type.elemID.name).toBe('number')
-      expect(lead.fields.text_area.type.elemID.name).toBe('textarea')
-      expect(lead.fields.long_text_area.type.elemID.name).toBe('longtextarea')
-      expect(lead.fields.rich_text_area.type.elemID.name).toBe('richtextarea')
-      expect(lead.fields.encrypted_string.type.elemID.name).toBe('encryptedtext')
-      expect(lead.fields.multi_pick_list.type.elemID.name).toBe('multipicklist')
-      expect(lead.fields.multi_pick_list
+      expect(lead.fields.my_text_area.type.elemID.name).toBe('textarea')
+      expect(lead.fields.my_long_text_area.type.elemID.name).toBe('longtextarea')
+      expect(lead.fields.my_rich_text_area.type.elemID.name).toBe('richtextarea')
+      expect(lead.fields.my_encrypted_string.type.elemID.name).toBe('encryptedtext')
+      expect(lead.fields.my_multi_pick_list.type.elemID.name).toBe('multipicklist')
+      expect(lead.fields.my_multi_pick_list
         .annotations[constants.FIELD_ANNOTATIONS.VISIBLE_LINES]).toBe(5)
     })
 

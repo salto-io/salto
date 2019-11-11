@@ -3,6 +3,7 @@ import wu from 'wu'
 import {
   Element, ElemID, Adapter, TypeMap, Values, ServiceIds, BuiltinTypes, ObjectType, ADAPTER,
   toServiceIdsString, Field, OBJECT_SERVICE_ID, InstanceElement, isInstanceElement, isObjectType,
+  ElemIdGetter,
 } from 'adapter-api'
 import { logger } from '@salto/logging'
 import { getPlan, DetailedChange } from './plan'
@@ -182,3 +183,11 @@ export const generateServiceIdToStateElemId = (stateElements: Element[]): Record
     .flatten()
     .fromPairs()
     .value()
+
+export const createElemIdGetter = (stateElements: Element[]): ElemIdGetter => {
+  const serviceIdToStateElemId = generateServiceIdToStateElemId(stateElements)
+  return (adapterName: string, serviceIds: ServiceIds, name: string): ElemID => {
+    const stateElemId = serviceIdToStateElemId[toServiceIdsString(serviceIds)]
+    return stateElemId || new ElemID(adapterName, name)
+  }
+}

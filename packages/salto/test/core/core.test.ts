@@ -18,7 +18,7 @@ const mockAdd = jest.fn(async ap => {
   if (ap.elemID.name === 'fail') {
     throw new Error('failed')
   }
-  return true
+  return new ObjectType({ elemID: new ElemID('salesforce', ap.elemID.name) })
 })
 
 const configID = new ElemID('salesforce')
@@ -34,9 +34,9 @@ const mockConfigType = new ObjectType({
   annotations: {},
 })
 
-const mockRemove = jest.fn(_a => true)
+const mockRemove = jest.fn(a => new ObjectType({ elemID: new ElemID('salesforce', a.elemID.name) }))
 
-const mockUpdate = jest.fn((_b, _a) => true)
+const mockUpdate = jest.fn((b, _a) => new ObjectType({ elemID: new ElemID('salesforce', b.elemID.name) }))
 
 
 const objType = new ObjectType({ elemID: new ElemID('salesforce', 'dummy') })

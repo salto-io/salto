@@ -9,7 +9,7 @@ import wu from 'wu'
 import { logger } from '@salto/logging'
 import { FIELD_PERMISSIONS, API_NAME } from '../constants'
 import {
-  sfCase, fieldFullName, bpCase, apiName, metadataType, isCustomObject,
+  sfCase, fieldFullName, bpCase, apiName, metadataType, isCustomObject, Types,
 } from '../transformer'
 import { FilterCreator } from '../filter'
 import { ProfileInfo } from '../client/types'
@@ -43,6 +43,10 @@ const setFieldPermissions = (field: Field, fieldPermission: ProfileToPermission)
 }
 
 const setDefaultFieldPermissions = (field: Field): void => {
+  // We can't set permissions for master detail
+  if (field.type.isEqual(Types.primitiveDataTypes.masterdetail)) {
+    return
+  }
   if (_.isEmpty(fieldPermissions(field))) {
     setProfileFieldPermissions(field, ADMIN_PROFILE, true, true)
     log.debug(`set ${ADMIN_PROFILE} field permissions for ${field.type}.${field.name}`)
@@ -141,7 +145,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
 
   onAdd: async (after: Element): Promise<SaveResult[]> => {
     if (isObjectType(after) && isCustomObject(after)) {
-      // Set default persmissions for all fields of new object
+      // Set default permissions for all fields of new object
       Object.values(after.fields).forEach(field => {
         setDefaultFieldPermissions(field)
       })

@@ -22,7 +22,7 @@ import {
   FieldPermissions,
 } from '../src/client/types'
 import {
-  Types, sfCase, fromMetadataInfo,
+  Types, sfCase, fromMetadataInfo, bpCase,
 } from '../src/transformer'
 import realAdapter from './adapter'
 import { findElements } from '../test/utils'
@@ -63,7 +63,7 @@ describe('Salesforce adapter E2E with real account', () => {
 
       // Test true and false required
       expect(lead.fields.description.annotations[Type.REQUIRED]).toBe(false)
-      expect(lead.fields.created_date.annotations[Type.REQUIRED]).toBe(true)
+      expect(lead.fields.created_date.annotations[Type.REQUIRED]).toBe(false)
 
       // Test picklist restriction.enforce_value prop
       expect(lead.fields.industry.annotations[Type.RESTRICTION][Type.ENFORCE_VALUE]).toBe(
@@ -77,7 +77,10 @@ describe('Salesforce adapter E2E with real account', () => {
       // Test standard picklist values from a standard value set
       expect(
         lead.fields.lead_source.annotations[Type.VALUES]
-      ).toEqual(new ElemID(constants.SALESFORCE, STANDARD_VALUE_SET, 'lead_source').getFullName())
+      ).toEqual(new ElemID(
+        constants.SALESFORCE,
+        bpCase(STANDARD_VALUE_SET), 'lead_source'
+      ).getFullName())
 
       // Test picklist values
       expect(

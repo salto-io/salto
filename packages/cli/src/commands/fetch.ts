@@ -48,7 +48,7 @@ export const fetchCommand = async (
     ? changes
     : await getApprovedChanges(changes, interactive)
   outputLine(formatChangesSummary(changes.length, changesToApply.length))
-  return await updateWorkspace(workspace, output.stderr, ...changesToApply)
+  return await updateWorkspace(workspace, output, ...changesToApply)
     ? CliExitCode.Success
     : CliExitCode.AppError
 }
@@ -62,7 +62,7 @@ export const command = (
   async execute(): Promise<CliExitCode> {
     log.debug(`running fetch command on '${workspaceDir}' [force=${force}, interactive=${
       interactive}]`)
-    const { workspace, errored } = await loadWorkspace(workspaceDir, output.stderr)
+    const { workspace, errored } = await loadWorkspace(workspaceDir, output)
     if (errored) {
       return CliExitCode.AppError
     }

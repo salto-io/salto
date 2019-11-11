@@ -7,8 +7,8 @@ import {
 } from 'adapter-api'
 import { Plan, FetchChange } from 'salto'
 import {
-  formatExecutionPlan, formatFetchChangeForApproval,
-  deployPhaseHeader, cancelDeployOutput,
+  formatExecutionPlan, formatFetchChangeForApproval, deployPhaseHeader, cancelDeployOutput,
+  formatShouldContinueWithWarning, formatCancelCommand,
 } from './formatter'
 import Prompts from './prompts'
 import { CliOutput } from './types'
@@ -36,6 +36,15 @@ export const shouldDeploy = ({ stdout }: CliOutput) => async (actions: Plan): Pr
     stdout.write(cancelDeployOutput)
   }
   return shouldExecute
+}
+
+export const shouldContinueInCaseOfWarnings = async (numWarnings: number,
+  { stdout }: CliOutput): Promise<boolean> => {
+  const shouldContinue = await getUserBooleanInput(formatShouldContinueWithWarning(numWarnings))
+  if (!shouldContinue) {
+    stdout.write(formatCancelCommand)
+  }
+  return shouldContinue
 }
 
 export const getApprovedChanges = async (

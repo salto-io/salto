@@ -9,11 +9,11 @@ export const command = (
   workingDir: string,
   typeName: string,
   outputPath: string,
-  { stderr }: CliOutput
+  cliCommand: CliOutput
 ):
 CliCommand => ({
   async execute(): Promise<CliExitCode> {
-    const { workspace, errored } = await loadWorkspace(workingDir, stderr)
+    const { workspace, errored } = await loadWorkspace(workingDir, cliCommand)
     if (errored) {
       return CliExitCode.AppError
     }

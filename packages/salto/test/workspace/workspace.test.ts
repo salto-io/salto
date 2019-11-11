@@ -158,7 +158,7 @@ type salesforce_lead {
         )
         expect(erroredWorkspace.errors.hasErrors()).toBeTruthy()
         expect(erroredWorkspace.hasErrors()).toBeTruthy()
-        const mergeError = /Cannot extend/
+        const mergeError = /Cannot merge/
         const workspaceErrors = erroredWorkspace.getWorkspaceErrors()
         expect(erroredWorkspace.errors.strings()[0]).toMatch(mergeError)
         expect(erroredWorkspace.errors.merge[0].error).toMatch(mergeError)

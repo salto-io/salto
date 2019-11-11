@@ -5,6 +5,7 @@ import {
 } from 'salto'
 import { command, fetchCommand } from '../../src/commands/fetch'
 import { MockWriteStream, getWorkspaceErrors, dummyChanges } from '../mocks'
+import Prompts from '../../src/prompts'
 
 jest.mock('salto', () => ({
   ...require.requireActual('salto'),
@@ -40,7 +41,7 @@ describe('fetch command', () => {
       })
 
       it('should fail', async () => {
-        expect(cliOutput.stderr.content).toContain('Failed to load workspace')
+        expect(cliOutput.stderr.content).toContain(Prompts.WORKSPACE_LOAD_FAILED(1))
       })
     })
 
@@ -141,29 +142,32 @@ describe('fetch command', () => {
             it('should exit if errors identified in workspace after update', async () => {
               mockWorkspace.getWorkspaceErrors = () => [{
                 sourceFragments: [],
-                error: 'Error',
+                error: 'BLA Error',
                 severity: 'Error',
               }]
               mockWorkspace.hasErrors = () => (true)
 
               await fetchCommand(mockWorkspace, false, false, cliOutput, mockFetch, mockApprove)
               expect(mockWorkspace.updateBlueprints).toHaveBeenCalledWith(dummyChanges[0])
-              expect(cliOutput.stderr.content).toContain('Failed to load workspace')
+              expect(cliOutput.stderr.content).toContain(Prompts.WORKSPACE_LOAD_FAILED(1))
               expect(cliOutput.stderr.content).toContain('Error')
+              expect(cliOutput.stderr.content).toContain('BLA Error')
               expect(mockWorkspace.flush).not.toHaveBeenCalled()
             })
             it('should not exit if warning identified in workspace after update', async () => {
               mockWorkspace.getWorkspaceErrors = () => [{
                 sourceFragments: [],
-                error: 'Warning',
+                error: 'BLA Warning',
                 severity: 'Warning',
               }]
               mockWorkspace.hasErrors = () => true
 
               await fetchCommand(mockWorkspace, false, false, cliOutput, mockFetch, mockApprove)
               expect(mockWorkspace.updateBlueprints).toHaveBeenCalledWith(dummyChanges[0])
-              expect(cliOutput.stderr.content).toContain('Failed to load workspace')
-              expect(cliOutput.stderr.content).toContain('Warning')
+              expect(cliOutput.stderr.content).not.toContain(Prompts.SHOULDCONTINUE(1))
+              expect(cliOutput.stdout.content).not.toContain(Prompts.SHOULDCONTINUE(1))
+              expect(cliOutput.stdout.content).toContain('Warning')
+              expect(cliOutput.stdout.content).toContain('BLA Warning')
               expect(mockWorkspace.flush).toHaveBeenCalled()
             })
           })

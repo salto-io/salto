@@ -59,8 +59,8 @@ export class InvalidValueValidationError extends ValidationError {
   ) {
     super({
       elemID,
-      error: `Value "${value}" is not valid for field "${field.elemID.getFullName()}"; `
-        + `expected: ${InvalidValueValidationError.formatExpectedValue(expectedValue)}`,
+      error: `Value "${value}" is not valid for field ${field.name}`
+        + ` expected ${InvalidValueValidationError.formatExpectedValue(expectedValue)}`,
     })
     this.value = value
     this.field = field

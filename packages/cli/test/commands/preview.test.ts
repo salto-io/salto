@@ -73,10 +73,8 @@ describe('preview command', () => {
       expect(cliOutput.stderr.content).toContain('Error')
     })
 
-    it('should fail the spinner', () => {
-      expect(spinners[0].succeed).not.toHaveBeenCalled()
-      expect(spinners[0].fail).toHaveBeenCalled()
-      expect((spinners[0].fail as jest.Mock).mock.calls[0][0]).toContain('failed')
+    it('should not start the spinner', () => {
+      expect(spinners[0]).toBeUndefined()
     })
   })
 })

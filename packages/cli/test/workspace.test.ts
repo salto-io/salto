@@ -1,4 +1,5 @@
 import { Workspace } from 'salto'
+import { CliOutput } from 'src/types'
 import { validateWorkspace } from '../src/workspace'
 import { MockWriteStream } from './mocks'
 
@@ -9,11 +10,16 @@ const mockWs = {
 } as unknown as Workspace
 
 describe('workspace', () => {
+  let cliOutput: CliOutput
+  beforeEach(() => {
+    cliOutput = { stderr: new MockWriteStream(), stdout: new MockWriteStream() }
+  })
+
   describe('error validation', () => {
     describe('when there are no errors', () => {
       it('returns true', () => {
         mockWs.hasErrors = jest.fn().mockImplementation(() => false)
-        const wsValid = validateWorkspace(mockWs, new MockWriteStream())
+        const wsValid = validateWorkspace(mockWs, cliOutput)
         expect(mockWs.hasErrors).toHaveBeenCalled()
         expect(wsValid).toBeTruthy()
       })
@@ -34,7 +40,7 @@ describe('workspace', () => {
           }]
         ))
 
-        const wsValid = validateWorkspace(mockWs, new MockWriteStream())
+        const wsValid = validateWorkspace(mockWs, cliOutput)
         expect(mockWs.hasErrors).toHaveBeenCalled()
         expect(mockWs.getWorkspaceErrors).toHaveBeenCalled()
         expect(wsValid).toBeTruthy()
@@ -55,10 +61,10 @@ describe('workspace', () => {
           }]
         ))
 
-        const wsValid = validateWorkspace(mockWs, new MockWriteStream())
+        const wsValid = validateWorkspace(mockWs, cliOutput)
         expect(mockWs.hasErrors).toHaveBeenCalled()
         expect(mockWs.getWorkspaceErrors).toHaveBeenCalled()
-        expect(wsValid).toBeFalsy()
+        expect(wsValid).toBe('Error')
       })
     })
   })

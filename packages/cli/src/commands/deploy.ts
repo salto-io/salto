@@ -104,7 +104,7 @@ export class DeployCommand implements CliCommand {
       planSpinner.fail(Prompts.PREVIEW_FAILED)
       return CliExitCode.AppError
     }
-    planSpinner.succeed(Prompts.PREVIEW_FAILED)
+    planSpinner.succeed(Prompts.PREVIEW_FINISHED)
     const result = await deploy(workspace,
       getConfigFromUser,
       shouldDeploy({ stdout: this.stdout, stderr: this.stderr }),

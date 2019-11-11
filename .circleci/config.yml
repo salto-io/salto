@@ -91,7 +91,7 @@ jobs:
             - packages/logging/.eslintcache
             - packages/lowerdash/.eslintcache
             - packages/salesforce-adapter/.eslintcache
-            - packages/salto/node_mo.eslintcachedules
+            - packages/salto/.eslintcache
             - packages/salto-vscode/.eslintcache
 
           key: v1-eslint-{{ checksum "yarn.lock" }}

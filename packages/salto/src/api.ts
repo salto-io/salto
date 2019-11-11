@@ -42,11 +42,13 @@ export const deploy = async (
   reportProgress: (item: PlanItem, status: ItemStatus, details?: string) => void,
   force = false
 ): Promise<DeployResult> => {
+  const changedElements = [] as Element[]
   const deployActionOnState = async (state: State, action: ActionName, element: Element
   ): Promise<void> => {
     if (action === 'remove') {
       return state.remove([element])
     }
+    changedElements.push(element)
     return state.update([element])
   }
 
@@ -63,7 +65,10 @@ export const deploy = async (
         (action, element) => deployActionOnState(state, action, element)
       )
 
-      const changes = wu(getDetailedChanges(workspace.elements, stateElements))
+      const changedElementsIds = changedElements.map(e => e.elemID.getFullName())
+
+      const changes = wu(getDetailedChanges(workspace.elements
+        .filter(e => changedElementsIds.includes(e.elemID.getFullName())), changedElements))
         .map(change => ({ change, serviceChange: change }))
 
       const errored = errors.length > 0

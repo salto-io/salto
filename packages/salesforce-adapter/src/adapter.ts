@@ -9,7 +9,7 @@ import {
 import _ from 'lodash'
 import { logger } from '@salto/logging'
 import wu from 'wu'
-import { decorators } from '@salto/lowerdash'
+import { decorators, collections } from '@salto/lowerdash'
 import SalesforceClient, { Credentials } from './client/client'
 import * as constants from './constants'
 import {
@@ -35,6 +35,8 @@ import listOrderFilter from './filters/list_order'
 import {
   FilterCreator, Filter, FilterWith, filtersWith,
 } from './filter'
+
+const { makeArray } = collections.array
 
 const log = logger(module)
 
@@ -114,23 +116,21 @@ const logDuration = (message?: string): decorators.InstanceMethodDecorator =>
   )
 
 export default class SalesforceAdapter {
-  private metadataAdditionalTypes: string[]
   private metadataTypeBlacklist: string[]
   private metadataToUpdateWithDeploy: string[]
   private filterCreators: FilterCreator[]
 
   public constructor({
-    metadataAdditionalTypes = [
-      'ValidationRule', // This is a subtype of CustomObject
-    ],
     metadataTypeBlacklist = [
       'ReportType', // See SALTO-76
       'ApexClass', 'ApexTrigger', // For some reason we cannot access this from the metadata API
       // See also SALTO-168.
       'InstalledPackage', // Instances of this don't actually have an ID and they contain duplicates
-      'CustomObject', // We have special treatment for this type
+      'CustomObject', 'CustomField', // We have special treatment for those type
       'Settings',
       'StaticResource',
+      // readMetadata fails on those and pass on the parents (AssignmentRules and EscalationRules)
+      'AssignmentRule', 'EscalationRule',
     ],
     metadataToUpdateWithDeploy = [
       'AssignmentRules',
@@ -154,7 +154,6 @@ export default class SalesforceAdapter {
     ],
     client,
   }: SalesforceAdapterParams) {
-    this.metadataAdditionalTypes = metadataAdditionalTypes
     this.metadataTypeBlacklist = metadataTypeBlacklist
     this.metadataToUpdateWithDeploy = metadataToUpdateWithDeploy
     this.filterCreators = filterCreators
@@ -171,11 +170,7 @@ export default class SalesforceAdapter {
   public async fetch(): Promise<Element[]> {
     log.debug('going to fetch salesforce account configuration..')
     const fieldTypes = Types.getAllFieldTypes()
-    const metadataTypeNames = this.client.listMetadataTypes().then(
-      types => types
-        .map(x => x.xmlName)
-        .concat(this.metadataAdditionalTypes)
-    )
+    const metadataTypeNames = this.listMetadataTypes()
     const metadataTypes = this.fetchMetadataTypes(metadataTypeNames)
     const metadataInstances = this.fetchMetadataInstances(metadataTypeNames, metadataTypes)
 
@@ -474,11 +469,19 @@ export default class SalesforceAdapter {
       .map(field => fieldFullName(element, field)))
   }
 
+  private async listMetadataTypes(): Promise<string[]> {
+    return this.client.listMetadataTypes().then(
+      types => _.flatten(types
+        .map(x => [x.xmlName, ...makeArray(x.childXmlNames)]))
+        .filter(name => !this.metadataTypeBlacklist.includes(name))
+    )
+  }
+
+
   @logDuration('finish fetching metadata types')
   private async fetchMetadataTypes(typeNames: Promise<string[]>): Promise<Type[]> {
     const knownTypes = new Map<string, Type>()
     return _.flatten(await Promise.all((await typeNames)
-      .filter(name => !this.metadataTypeBlacklist.includes(name))
       .map(obj => this.fetchMetadataType(obj, knownTypes))))
   }
 

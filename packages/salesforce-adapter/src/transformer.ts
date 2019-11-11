@@ -658,7 +658,8 @@ export const createInstanceElement = (
       : new ElemID(SALESFORCE, typeName, bpCase(mdInfo.fullName)),
     type,
     fromMetadataInfo(mdInfo),
-    ['records', typeName, bpCase(mdInfo.fullName)],
+    ['records', type.isSettings ? 'settings'
+      : typeName, bpCase(mdInfo.fullName)],
   )
 }
 

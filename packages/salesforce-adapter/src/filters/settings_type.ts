@@ -11,6 +11,8 @@ import SalesforceClient from '../client/client'
 
 export const SETTINGS_METADATA_TYPE = 'Settings'
 
+// This method receiving settings type name and call to describeMetadataType
+// And creating the new (settings) type
 const createSettingsType = async (
   client: SalesforceClient,
   settingsTypesName: string,
@@ -31,6 +33,8 @@ const createSettingsTypes = async (
 const extractSettingName = (settingType: string): string =>
   (settingType.endsWith(SETTINGS_METADATA_TYPE) ? settingType.slice(0, -8) : settingType)
 
+// This method receiving settings type and call to readMetadata
+// And creating the new instance
 const createSettingsInstance = async (
   client: SalesforceClient,
   settingsType: ObjectType
@@ -60,7 +64,7 @@ const createSettingsInstances = async (
  */
 const filterCreator: FilterCreator = ({ client }) => ({
   /**
-   * Add settings type
+   * Add all settings types and instances as filter.
    *
    * @param elements
    */

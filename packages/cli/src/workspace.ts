@@ -36,7 +36,7 @@ export const updateWorkspace = async (ws: Workspace, stderr: WriteStream,
   if (changes.length > 0) {
     log.info(`going to update workspace with ${changes.length} changes out of ${
       changes.length} changes`)
-    const isEmpty = ws.elements && ws.elements.filter(elem => !elem.elemID.isConfig()).length === 0
+    const isEmpty = ws.elements ? !ws.elements.some(elem => !elem.elemID.isConfig()) : false
     if (!isEmpty) {
       _(changes.map(c => formatChange(c.change).split('\n'))).flatten().forEach(s => log.info(s))
     }

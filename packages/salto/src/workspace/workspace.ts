@@ -341,6 +341,7 @@ export class Workspace {
       return currentBlueprint ? currentBlueprint.buffer : ''
     }
 
+    log.debug('going to calculate new blueprints data')
     const updatedBlueprints: Blueprint[] = await Promise.all(
       _(changes)
         .map(change => getChangeLocations(change, this.sourceMap))
@@ -353,6 +354,7 @@ export class Workspace {
         }))
         .value()
     )
+    log.debug('going to set the new blueprints')
     return this.setBlueprints(...updatedBlueprints)
   }
 

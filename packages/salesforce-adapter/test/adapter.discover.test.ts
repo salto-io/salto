@@ -333,13 +333,14 @@ describe('SalesforceAdapter fetch', () => {
       xmlName: string,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       fields: Record<string, any>[],
+      asChild = false,
     ): void => {
       connection.describeGlobal = jest.fn()
         .mockImplementation(async () => ({ sobjects: [] }))
 
       connection.metadata.describe = jest.fn()
         .mockImplementation(async () => ({
-          metadataObjects: [{ xmlName }],
+          metadataObjects: [asChild ? { xmlName: 'Base', childXmlNames: [xmlName] } : { xmlName }],
         }))
 
       connection.metadata.describeValueType = jest.fn()
@@ -653,6 +654,23 @@ describe('SalesforceAdapter fetch', () => {
       await adapter.fetch()
 
       expect(connection.metadata.read).toHaveBeenCalledWith('QuoteSettings', ['Quote'])
+    })
+
+    it('should fetch child metadata type', async () => {
+      mockSingleMetadataType('Child', [
+        {
+          name: 'Description',
+          soapType: 'string',
+          valueRequired: true,
+        },
+      ], true)
+      const result = await adapter.fetch()
+
+      const describeMock = connection.metadata.describeValueType as jest.Mock<unknown>
+      expect(describeMock).toHaveBeenCalled()
+      expect(describeMock.mock.calls[1][0]).toBe('{http://soap.sforce.com/2006/04/metadata}Child')
+      const child = findElements(result, 'child').pop() as ObjectType
+      expect(child.fields.description.type.elemID.name).toBe('string')
     })
   })
 })

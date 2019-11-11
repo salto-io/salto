@@ -123,7 +123,7 @@
         "clean-ts": "node ./node_modules/.bin/ts-cleaner -d dist -s . -v",
         "clean-ts-test": "yarn run clean-ts && yarn run test",
         "watch-test": "yarn run tsc-watch --onSuccess 'yarn run clean-ts-test'",
-        "lint": "eslint --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
+        "lint": "eslint --cache --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
         "lint-fix": "yarn run lint --fix",
         "package" : "bash ./scripts/package.sh",
         "generate-yarn-lock": "yarn workspaces run generate-lock-entry | sed '1,2d' | sed -n -e :a -e '1,1!{P;N;D;};N;ba' >> yarn.lock"

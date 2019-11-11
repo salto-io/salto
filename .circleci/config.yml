@@ -63,12 +63,38 @@ jobs:
 
       - save_cache:
           paths:
-            - node_modules
             - ~/.cache/yarn
+            - node_modules
+            - packages/adapter-api/node_modules
+            - packages/cli/node_modules
+            - packages/dag/node_modules
+            - packages/logging/node_modules
+            - packages/lowerdash/node_modules
+            - packages/salesforce-adapter/node_modules
+            - packages/salto/node_modules
+            - packages/salto-vscode/node_modules
 
           key: v1-yarn-deps-{{ arch }}-{{ checksum "yarn.lock" }}
 
+      - restore_cache:
+          keys:
+            - v1-eslint-{{ checksum "yarn.lock" }}
+            - v1-eslint-
+
       - run: yarn build
+
+      - save_cache:
+          paths:
+            - packages/adapter-api/.eslintcache
+            - packages/cli/.eslintcache
+            - packages/dag/.eslintcache
+            - packages/logging/.eslintcache
+            - packages/lowerdash/.eslintcache
+            - packages/salesforce-adapter/.eslintcache
+            - packages/salto/node_mo.eslintcachedules
+            - packages/salto-vscode/.eslintcache
+
+          key: v1-eslint-{{ checksum "yarn.lock" }}
 
       - persist_to_workspace:
           root: .

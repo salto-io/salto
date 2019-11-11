@@ -3,7 +3,7 @@ import {
   InstanceElement, isObjectType, isInstanceElement,
 } from 'adapter-api'
 import _ from 'lodash'
-import { metadataType } from '../../src/transformer'
+import { metadataType, Types } from '../../src/transformer'
 import { ProfileInfo, FieldPermissions } from '../../src/client/types'
 import filterCreator, {
   FIELD_LEVEL_SECURITY_ANNOTATION, PROFILE_METADATA_TYPE, ADMIN_PROFILE,
@@ -25,6 +25,9 @@ describe('Field Permissions filter', () => {
       description:
         new Field(mockElemID, 'description', stringType,
           { [constants.API_NAME]: 'Description__c' }),
+      master:
+        new Field(mockElemID, 'master', Types.primitiveDataTypes.masterdetail,
+          { [constants.API_NAME]: 'Master__c' }),
     },
     annotations: {
       label: 'test label',
@@ -307,6 +310,8 @@ describe('Field Permissions filter', () => {
 
     expect(after.fields.description.annotations[FIELD_LEVEL_SECURITY_ANNOTATION])
       .toEqual({ [ADMIN_PROFILE]: { editable: true, readable: true } })
+    expect(after.fields.master.annotations[FIELD_LEVEL_SECURITY_ANNOTATION])
+      .toBeUndefined()
     verifyUpdateCall('Admin', 'Test__c.Description__c')
   })
 

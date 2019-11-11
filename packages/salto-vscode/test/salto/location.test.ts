@@ -21,7 +21,7 @@ describe('workspace query', () => {
 
   it('should find prefixes', () => {
     const res = getQueryLocations(workspace, 'vs.per')
-    expect(res).toHaveLength(2)
+    expect(res).toHaveLength(5)
     expect(res[0].fullname).toBe('vs.person')
   })
   it('should find suffixes', () => {

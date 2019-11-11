@@ -2,7 +2,6 @@ import _ from 'lodash'
 
 import {
   ElemID, Element, isObjectType, isInstanceElement, isType, Value,
-  EXPRESSION_TRAVERSAL_SEPERATOR,
   ReferenceExpression, TemplateExpression,
 } from 'adapter-api'
 
@@ -43,19 +42,14 @@ resolveReferenceExpression = (
   visited: Set<string> = new Set<string>(),
 ): Value => {
   const { traversalParts } = expression
-  const traversal = traversalParts.join(EXPRESSION_TRAVERSAL_SEPERATOR)
+  const traversal = traversalParts.join(ElemID.NAMESPACE_SEPARATOR)
 
   if (visited.has(traversal)) {
     throw new CircularReferenceError(traversal)
   }
   visited.add(traversal)
 
-  const sepIndex = traversalParts[0].indexOf(ElemID.NAMESPACE_SEPARATOR)
-  const root = new ElemID(
-    traversalParts[0].substring(0, sepIndex),
-    traversalParts[0].substring(sepIndex + 1)
-  )
-  const path = traversalParts.slice(1)
+  const { id: root, path } = ElemID.fromFullName(traversal).createTopLevelParentID()
 
   const resolvePath = (rootElement: Element): Value => {
     if (isInstanceElement(rootElement)) {
@@ -74,7 +68,7 @@ resolveReferenceExpression = (
   }
 
   // Validation should throw an error if there is not match, or more than one match
-  const rootElement = contextElements.filter(e => _.isEqual(root, e.elemID))[0]
+  const rootElement = contextElements.filter(e => e.elemID.getFullName() === root.getFullName())[0]
   if (!rootElement) {
     return new UnresolvedReference(traversal)
   }

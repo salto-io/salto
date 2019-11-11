@@ -88,7 +88,6 @@ describe('Cursor context resolver', () => {
       const pos = { line: 33, col: 1 }
       const ctx = getPositionContext(workspace, bpContent, filename, pos)
       expect(ctx.type).toBe('instance')
-      // TODO Comment is this the intendet behave?
       expect(ctx.ref && ctx.ref.element.elemID).toEqual(new ElemID('salto', 'complex', 'instance', 'inst'))
     })
 
@@ -100,10 +99,6 @@ describe('Cursor context resolver', () => {
       expect(ctx.ref && ctx.ref.path).toBe('obj')
     })
 
-    // TODO: this test is broken because attribute key is now included in the source range
-    //       since the file being analyzed has the attribute in question defined the context
-    //       gets the wrong ref.path value
-    // eslint-disable-next-line jest/no-disabled-tests
     it('should identify instance list', () => {
       const pos = { line: 51, col: 12 }
       const ctx = getPositionContext(workspace, bpContent, filename, pos)

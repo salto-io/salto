@@ -3,10 +3,10 @@ import {
   Type, Field, isObjectType, isInstanceElement, isPrimitiveType,
   isField, PrimitiveTypes, BuiltinTypes, isType, Value, getField,
   getFieldNames, getFieldType, getAnnotationKey, ElemID, Element,
-  getSubElement,
+  Values,
 } from 'adapter-api'
 
-import { formatTypeID } from 'salto'
+import { formatTypeID, parseElemID } from 'salto'
 import { EditorWorkspace } from '../workspace'
 import { ContextReference } from '../context'
 
@@ -35,10 +35,12 @@ const getRestrictionValues = (annotatingElem: Type|Field, valueType: Type): Valu
 
 const getAllInstances = (
   elements: ReadonlyArray<Element>,
-  adapter?: string
+  adapter?: string,
+  typeName? : string
 ): string[] => elements
   .filter(isInstanceElement)
   .filter(e => !adapter || e.elemID.adapter === adapter)
+  .filter(e => !typeName || e.type.elemID.getFullName() === typeName)
   .map(e => e.elemID.name)
 
 const getAllTypes = (
@@ -49,49 +51,49 @@ const getAllTypes = (
   .filter(e => !adapter || e.elemID.adapter === adapter)
   .map(e => formatTypeID(e))
 
-const getTypeReferenceSuggestions = (
-  baseElement: Type,
-  path: string[]
-): Suggestions => {
-  const getSubElementFields = (elementPathBase: Type, elementPath: string[]): Suggestions => {
-    const element = getSubElement(elementPathBase, elementPath)
-    const elementType = isField(element) ? element.type : element
-    return (isObjectType(elementType))
-      ? _.keys(elementType.fields)
-      : []
-  }
-
-  const [firstPathPart, ...restOfPath] = path
-  if (!firstPathPart) {
-    return [
-      ..._.keys(baseElement.annotationTypes),
-      ...isObjectType(baseElement) ? _.keys(baseElement.fields) : [],
-    ]
-  }
-
-  // Here is where it gets tricky - the first token can be an annotation value OR a field
-  const annoType = baseElement.annotationTypes[firstPathPart]
-  const field = isObjectType(baseElement) ? baseElement.fields[firstPathPart] : undefined
-  const fieldType = field && field.type
-  if (!restOfPath[0]) {
-    return [
-      ...annoType ? _.keys(annoType.annotationTypes) : [],
-      ...isObjectType(annoType) ? _.keys(annoType.fields) : [],
-      ...fieldType ? _.keys(fieldType.annotationTypes) : [],
-      ...isObjectType(fieldType) ? _.keys(fieldType.fields) : [],
-    ]
-  }
-
-  // But the rest can only return fields (since we treat complex annotation like instances)
-  return [
-    ...annoType ? getSubElementFields(annoType, restOfPath) : [],
-    ...fieldType ? getSubElementFields(fieldType, restOfPath) : [],
-  ]
-}
-
 const getAdapterNames = (
   elements: ReadonlyArray<Element>
 ): string[] => _(elements).map(e => e.elemID.adapter).uniq().value()
+
+const getValuesSuggestions = (values: Values, path: string[]): string[] => {
+  const relevantPath = path.slice(0, path.length - 1)
+  const target = _.isEmpty(relevantPath) ? values : _.get(values, relevantPath)
+  return _.isPlainObject(target) ? _.keys(target) : []
+}
+
+const getElementReferenceSuggestions = (
+  elements: readonly Element[],
+  matchElement: Element,
+  path: string[]
+): string[] => {
+  if (isInstanceElement(matchElement)) {
+    return getValuesSuggestions(matchElement.value, path)
+  }
+  if (isField(matchElement)) {
+    return getValuesSuggestions(matchElement.annotations, path)
+  }
+  if (isObjectType(matchElement) && path.length > 0) {
+    const [pathType, ...restOfPath] = path
+    if (pathType === 'instance' && _.isEmpty(restOfPath)) {
+      return getAllInstances(
+        elements,
+        matchElement.elemID.adapter,
+        matchElement.elemID.getFullName()
+      )
+    }
+    if (pathType === 'field' && restOfPath.length === 1) {
+      return _.keys(matchElement.fields)
+    }
+    if (pathType === 'field') {
+      const field = matchElement.fields[restOfPath[0]]
+      return field ? getValuesSuggestions(field.annotations, restOfPath.slice(1)) : []
+    }
+    if (pathType === 'attr') {
+      return getValuesSuggestions(matchElement.annotations, restOfPath)
+    }
+  }
+  return ['instance', 'attr', 'field']
+}
 
 const referenceSuggestions = (
   workspace: EditorWorkspace,
@@ -101,39 +103,27 @@ const referenceSuggestions = (
   const unquotedMatch = valueToken.match(/".*\$\{\s*([^}]*$)/)
   if (!unquotedMatch && (valueToken.includes('"') || valueToken.includes("'"))) return []
   const match = unquotedMatch ? unquotedMatch[1] : valueToken
-  const [base, ...path] = match.split('.')
-  const sepIndex = base.indexOf(ElemID.NAMESPACE_SEPARATOR)
-  const adapter = (sepIndex >= 0) ? base.substring(0, sepIndex) : base
-  const baseElementName = (sepIndex >= 0) ? base.substring(sepIndex) : ''
-  // We are defining the base element
-  if (!baseElementName) {
+  const [adapter, ...elemIDParts] = match.split(ElemID.NAMESPACE_SEPARATOR)
+  // We still didn't define the type -> we are still defining the adapter
+  if (_.isEmpty(elemIDParts)) {
     return getAdapterNames(workspace.elements || [])
   }
-  if (path.length === 0) {
-    const res = [
-      ...getAllInstances(workspace.elements || [], adapter),
-      ...getAllTypes(workspace.elements || [], adapter),
-    ].map(name => ({
-      label: name.substring(name.indexOf(ElemID.NAMESPACE_SEPARATOR) + 1),
-      insertText: name,
-      filterText: name,
-    }))
-    return res
-  }
-  const baseElement = (workspace.elements || [])
-    .filter(e => e.elemID.getFullName() === base)[0]
 
-  // If we didn't find the base element we can't continue
-  if (!baseElement) return []
-
-  // If base is instance, we just need to get the field by the path and return its
-  // fields
-  if (isInstanceElement(baseElement)) {
-    return getFieldNames(baseElement.type, path.join(ElemID.NAMESPACE_SEPARATOR))
+  if (elemIDParts.length === 1) {
+    return getAllTypes(workspace.elements || [], adapter)
+      .map(n => n.substring(adapter.length + 1))
   }
 
-  if (isType(baseElement)) {
-    return getTypeReferenceSuggestions(baseElement, path)
+  const elemID = new ElemID(adapter, ...elemIDParts)
+  const matchElement = _(workspace.elements)
+    .filter(e => elemID.getFullName().indexOf(e.elemID.getFullName()) === 0)
+    .sortBy(e => e.elemID.getFullName().length)
+    .last()
+  if (matchElement) {
+    const path = elemID.getFullName()
+      .slice(matchElement.elemID.getFullName().length + 1)
+      .split(ElemID.NAMESPACE_SEPARATOR)
+    return getElementReferenceSuggestions(workspace.elements, matchElement, path)
   }
 
   return []
@@ -223,7 +213,7 @@ export const annoValueSuggestions = (params: SuggestionsParams): Suggestions => 
     : params.ref.path
   const valueToken = _.last(params.tokens) || ''
   if (annoType && refPath) {
-    const attrField = getField(annoType, refPath.split('_'))
+    const attrField = getField(annoType, refPath.split(ElemID.NAMESPACE_SEPARATOR))
     return (attrField)
       ? [
         ...valueSuggestions(annoName, attrField, attrField.type),
@@ -281,4 +271,11 @@ export const isSuggestions = (): Suggestions => ['is']
 
 export const instanceSuggestions = (
   params: SuggestionsParams
-): Suggestions => getAllInstances(params.workspace.elements || [])
+): Suggestions => {
+  const elemID = parseElemID(params.tokens[0])
+  return getAllInstances(
+    params.workspace.elements,
+    elemID.adapter,
+    elemID.getFullName()
+  )
+}

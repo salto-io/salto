@@ -19,16 +19,22 @@ export type FieldMap = Record<string, Field>
 type TypeMap = Record<string, Type>
 
 export type ElemIDType = 'type' | 'field' | 'instance' | 'attr' | 'annotation'
+export const ElemIDTypes = ['type', 'field', 'instance', 'attr', 'annotation'] as ReadonlyArray<string>
+export const isElemIDType = (v: string): v is ElemIDType => ElemIDTypes.includes(v)
+
 export class ElemID {
   static readonly NAMESPACE_SEPARATOR = '.'
-  static readonly CONFIG_INSTANCE_NAME = '_empty'
+  static readonly CONFIG_INSTANCE_NAME = '_config'
+
+  static fromFullName(fullName: string): ElemID {
+    const [adapter, typeName, idType, ...name] = fullName.split(ElemID.NAMESPACE_SEPARATOR)
+    return new ElemID(adapter, typeName, idType as ElemIDType, ...name)
+  }
 
   readonly adapter: string
   readonly typeName: string
   readonly idType: ElemIDType
   private readonly nameParts: ReadonlyArray<string>
-  // TODO:ORI - Change constructor arguments to be an object
-  // TODO:ORI - accept only one name part in constructor
   constructor(
     adapter: string,
     typeName?: string,
@@ -80,12 +86,14 @@ export class ElemID {
       || (this.idType === 'instance' && this.nameParts.length === 1)
   }
 
-  // TODO Comment - This will create TONS of errors, we should get the type as a different argument
   createNestedID(...nameParts: string[]): ElemID {
     if (this.idType === 'type') {
-      // We expect the new ID to have a different type so the first name part should be the ID type
+      // IDs nested under type IDs should have a different type
       const [nestedIDType, ...nestedNameParts] = nameParts
-      return new ElemID(this.adapter, this.typeName, nestedIDType as ElemIDType, ...nestedNameParts)
+      if (!isElemIDType(nestedIDType)) {
+        throw new Error(`Invalid ID type ${nestedIDType}`)
+      }
+      return new ElemID(this.adapter, this.typeName, nestedIDType, ...nestedNameParts)
     }
     return new ElemID(this.adapter, this.typeName, this.idType, ...this.nameParts, ...nameParts)
   }
@@ -102,6 +110,22 @@ export class ElemID {
     }
     // The parent of all other id types is the type
     return new ElemID(this.adapter, this.typeName)
+  }
+
+  createTopLevelParentID(): { id: ElemID; path: ReadonlyArray<string> } {
+    if (this.isTopLevel()) {
+      // This is already the top level ID
+      return { id: this, path: [] }
+    }
+    if (this.idType === 'instance') {
+      // Instance is a top level ID, the name of the instance is always the first name part
+      return {
+        id: new ElemID(this.adapter, this.typeName, this.idType, this.nameParts[0]),
+        path: this.nameParts.slice(1),
+      }
+    }
+    // Everything other than instance is nested under type
+    return { id: new ElemID(this.adapter, this.typeName), path: this.nameParts }
   }
 }
 

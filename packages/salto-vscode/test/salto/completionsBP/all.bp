@@ -136,10 +136,10 @@ vs_person hadar {
 
 type vs_ref_tester {
     vs_str field_ref_simple {
-        label = vs.load.instance.weekend_car.reason
+        label = vs.loan.instance.weekend_car.reason
     }
     vs_str field_ref_nested {
-        label = vs.load.instance.weekend_car.propety.car_owner.first_name
+        label = vs.loan.instance.weekend_car.propety.car_owner.first_name
     }
     vs_str anno_ref_simple {
         label = vs.loan.field.reason.label
@@ -179,6 +179,7 @@ type vs_foo {
     vs_name fname {
         owner = {
             first_name = "OK"
+            last_name = "OKOK"
         }
     }
 }

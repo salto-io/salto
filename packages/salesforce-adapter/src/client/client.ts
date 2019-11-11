@@ -1,4 +1,3 @@
-import { inspect } from 'util'
 import _ from 'lodash'
 import requestretry, { RequestRetryOptions, RetryStrategies } from 'requestretry'
 import { collections, decorators } from '@salto/lowerdash'
@@ -163,19 +162,17 @@ export default class SalesforceClient {
       this: SalesforceClient,
       { call, name, args }: decorators.OriginalCall,
     ): Promise<unknown> {
+      const desc = `client.${name}(${args
+        .map(arg => _.get(arg, 'fullName', arg))
+        .filter(arg => typeof arg === 'string')
+        .join(', ')})`
       try {
         const before = Date.now()
         const ret = await call()
-        log.debug(`client.${name} took ${Date.now() - before} ms`)
+        log.debug('%s took %o ms', desc, Date.now() - before)
         return ret
       } catch (e) {
-        const message = [
-          'Failed to run SFDC client call',
-          `${name}(${args.map(arg => inspect(arg)).join(', ')}):`,
-          e.message,
-        ].join(' ')
-
-        log.error(message)
+        log.error('Failed to run SFDC client call %s: %s', desc, e.message)
         throw e
       }
     }
@@ -267,8 +264,8 @@ export default class SalesforceClient {
   public async create(type: string, metadata: MetadataInfo | MetadataInfo[]):
     Promise<SaveResult[]> {
     const result = await sendChunked(metadata, chunk => this.conn.metadata.create(type, chunk))
-    log.debug(`created ${JSON.stringify(makeArray(metadata).map(f => f.fullName))} of type ${
-      type} [result=${JSON.stringify(result)}]`)
+    log.debug('created %o of type %s [result=%o]', makeArray(metadata).map(f => f.fullName),
+      type, result)
     return result
   }
 
@@ -283,8 +280,7 @@ export default class SalesforceClient {
   @SalesforceClient.requiresLogin
   public async delete(type: string, fullNames: string | string[]): Promise<SaveResult[]> {
     const result = sendChunked(fullNames, chunk => this.conn.metadata.delete(type, chunk))
-    log.debug(`deleted ${JSON.stringify(fullNames)} of type ${type} [result=${
-      JSON.stringify(result)}]`)
+    log.debug('deleted %o of type %s [result=%o]', fullNames, type, result)
     return result
   }
 
@@ -300,8 +296,8 @@ export default class SalesforceClient {
   public async update(type: string, metadata: MetadataInfo | MetadataInfo[]):
     Promise<SaveResult[]> {
     const result = sendChunked(metadata, chunk => this.conn.metadata.update(type, chunk))
-    log.debug(`updated ${JSON.stringify(makeArray(metadata).map(f => f.fullName))} of type ${
-      type} [result=${JSON.stringify(result)}]`)
+    log.debug('updated %o of type %s [result=%o]', makeArray(metadata).map(f => f.fullName),
+      type, result)
     return result
   }
 

@@ -54,6 +54,7 @@ const createYargsParser = (outStream: WriteStream, errStream: WriteStream):
   const parser = yargs()
     .strict()
     .version(`${versionString}\n`)
+    .scriptName('salto')
     .completion('completion', false as unknown as string)
     .exitProcess(false)
     .help(false)

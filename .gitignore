@@ -27,3 +27,6 @@ yarn-error.log
 
 # parsed blueprint cache
 .cache
+
+.eslintcache
+

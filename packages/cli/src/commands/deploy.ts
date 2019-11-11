@@ -111,14 +111,17 @@ export class DeployCommand implements CliCommand {
       (item: PlanItem, step: ItemStatus, details?: string) =>
         this.updateAction(item, step, details),
       this.force)
-    this.stdout.write(deployPhaseEpilogue)
-    this.stdout.write(EOL)
     if (result.changes) {
       const changes = [...result.changes]
+      if (changes.length > 0 || result.errors.length > 0) {
+        this.stdout.write(deployPhaseEpilogue)
+      }
+      this.stdout.write(EOL)
       return await updateWorkspace(workspace, this.stderr, ...changes)
         ? CliExitCode.Success
         : CliExitCode.AppError
     }
+    this.stdout.write(EOL)
     return result.sucesses ? CliExitCode.Success : CliExitCode.AppError
   }
 }

@@ -1,11 +1,6 @@
 import chalk from 'chalk'
 
 export default class Prompts {
-  public static readonly PLANNEDFORDEPLOY = ''
-  public static readonly STARTDEPLOY = 'Salto-cli will start the deploy step'
-  public static readonly EXPLAINDEPLOY =
-    "You know what this is all about don't you?!"
-
   public static readonly SHOULDEXECUTREPLAN = 'Do you want to perform these actions?'
 
   public static readonly CANCELDEPLOYACTION = 'Cancelled: Due to an erroneous dependency -'

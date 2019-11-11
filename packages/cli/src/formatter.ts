@@ -191,16 +191,11 @@ const formatExecution = (plan: Plan): string[] => {
     emptyLine(),
     actionCount,
     emptyLine(),
+    emptyLine(),
   ]
 }
 
-export const formatDeployPlan = (plan: Plan): string => {
-  const executionOutput = formatExecution(plan)
-  return [
-    header(Prompts.STARTDEPLOY),
-    subHeader(Prompts.EXPLAINDEPLOY),
-  ].concat(executionOutput).join('\n')
-}
+export const formatDeployPlan = (plan: Plan): string => formatExecution(plan).join('\n')
 
 export const formatPlan = (plan: Plan): string => {
   const executionOutput = formatExecution(plan)
@@ -243,10 +238,11 @@ export const deployPhaseHeader = header([
   emptyLine(),
 ].join('\n'))
 
-export const cancelDeployOutput = header([
+export const cancelDeployOutput = [
+  emptyLine(),
   Prompts.CANCELDEPLOY,
   emptyLine(),
-].join('\n'))
+].join('\n')
 
 export const deployPhaseEpilogue = header([
   emptyLine(),

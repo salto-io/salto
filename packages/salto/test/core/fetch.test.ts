@@ -1,9 +1,9 @@
 import {
   ElemID, Field, BuiltinTypes, ObjectType, getChangeElement, Adapter, Element,
+  PrimitiveType, PrimitiveTypes, ADAPTER, OBJECT_SERVICE_ID, InstanceElement,
 } from 'adapter-api'
 import {
-  fetchChanges,
-  FetchChange,
+  fetchChanges, FetchChange, generateServiceIdToStateElemId,
 } from '../../src/core/fetch'
 
 describe('fetch', () => {
@@ -184,6 +184,129 @@ describe('fetch', () => {
           expect(change.change.action).toEqual('add')
         })
       })
+    })
+  })
+
+  describe('generateServiceIdToStateElemId', () => {
+    const SERVICE_ID_ANNOTATION = 'service_id_annotation_type_name'
+    const SERVICE_ID_FIELD_NAME = 'service_id_field_name'
+    const REGULAR_FIELD_NAME = 'regular_field_name'
+
+    const typeElemID = new ElemID('adapter', 'elem_id_name')
+    const serviceIdField = new Field(typeElemID, SERVICE_ID_FIELD_NAME, BuiltinTypes.SERVICE_ID)
+    const origRegularFieldType = new PrimitiveType({
+      elemID: new ElemID('adapter', 'regular'),
+      primitive: PrimitiveTypes.STRING,
+      annotationTypes: {
+        [SERVICE_ID_ANNOTATION]: BuiltinTypes.SERVICE_ID,
+      },
+    })
+    const origObj = new ObjectType({
+      elemID: typeElemID,
+      annotationTypes: {
+        [SERVICE_ID_ANNOTATION]: BuiltinTypes.SERVICE_ID,
+      },
+      annotations: {
+        [SERVICE_ID_ANNOTATION]: 'ObjectServiceId',
+      },
+    })
+    let obj: ObjectType
+    let regularField: Field
+    let regularFieldType: PrimitiveType
+    let instance: InstanceElement
+    beforeEach(() => {
+      obj = origObj.clone()
+      regularFieldType = origRegularFieldType.clone()
+      regularField = new Field(typeElemID, REGULAR_FIELD_NAME, regularFieldType, { [SERVICE_ID_ANNOTATION]: 'FieldServiceId' })
+      instance = new InstanceElement('instance_elem_id_name', obj, { [SERVICE_ID_FIELD_NAME]: 'serviceIdValue' })
+    })
+
+    it('should generate for ObjectType and its fields', () => {
+      obj.fields = { [REGULAR_FIELD_NAME]: regularField }
+
+      const serviceIdToStateElemId = generateServiceIdToStateElemId([obj])
+
+      expect(Object.entries(serviceIdToStateElemId)).toHaveLength(2)
+      const objectServiceId = Object.entries(serviceIdToStateElemId)[1][0]
+      expect(objectServiceId)
+        .toEqual(`${ADAPTER},${obj.elemID.adapter},${SERVICE_ID_ANNOTATION},${obj.annotations[SERVICE_ID_ANNOTATION]}`)
+      expect(Object.entries(serviceIdToStateElemId)[1][1]).toEqual(obj.elemID)
+
+      expect(Object.entries(serviceIdToStateElemId)[0][0])
+        .toEqual(`${ADAPTER},${regularField.elemID.adapter},${OBJECT_SERVICE_ID},${objectServiceId},${SERVICE_ID_ANNOTATION},${regularField.annotations[SERVICE_ID_ANNOTATION]}`)
+      expect(Object.entries(serviceIdToStateElemId)[0][1]).toEqual(regularField.elemID)
+    })
+    it('should generate for ObjectType and its fields with no SERVICE_ID annotations', () => {
+      delete obj.annotations[SERVICE_ID_ANNOTATION]
+      delete regularField.annotations[SERVICE_ID_ANNOTATION]
+      obj.fields = { [REGULAR_FIELD_NAME]: regularField }
+
+      const serviceIdToStateElemId = generateServiceIdToStateElemId([obj])
+
+      expect(Object.entries(serviceIdToStateElemId)).toHaveLength(2)
+      const objectServiceId = Object.entries(serviceIdToStateElemId)[1][0]
+      expect(objectServiceId)
+        .toEqual(`${ADAPTER},${obj.elemID.adapter},${SERVICE_ID_ANNOTATION},${obj.elemID.getFullName()}`)
+      expect(Object.entries(serviceIdToStateElemId)[1][1]).toEqual(obj.elemID)
+
+      expect(Object.entries(serviceIdToStateElemId)[0][0])
+        .toEqual(`${ADAPTER},${regularField.elemID.adapter},${OBJECT_SERVICE_ID},${objectServiceId},${SERVICE_ID_ANNOTATION},${regularField.elemID.getFullName()}`)
+      expect(Object.entries(serviceIdToStateElemId)[0][1]).toEqual(regularField.elemID)
+    })
+    it('should generate for ObjectType and its fields with no SERVICE_ID annotations & annotationType', () => {
+      delete obj.annotations[SERVICE_ID_ANNOTATION]
+      delete obj.annotationTypes[SERVICE_ID_ANNOTATION]
+      delete regularField.annotations[SERVICE_ID_ANNOTATION]
+      delete regularFieldType.annotationTypes[SERVICE_ID_ANNOTATION]
+      obj.fields = { [REGULAR_FIELD_NAME]: regularField }
+
+      const serviceIdToStateElemId = generateServiceIdToStateElemId([obj])
+
+      expect(Object.entries(serviceIdToStateElemId)).toHaveLength(2)
+      const objectServiceId = Object.entries(serviceIdToStateElemId)[1][0]
+      expect(objectServiceId)
+        .toEqual(`${ADAPTER},${obj.elemID.adapter},object_name,${obj.elemID.getFullName()}`)
+      expect(Object.entries(serviceIdToStateElemId)[1][1]).toEqual(obj.elemID)
+
+      expect(Object.entries(serviceIdToStateElemId)[0][0])
+        .toEqual(`${ADAPTER},${regularField.elemID.adapter},field_name,${regularField.elemID.getFullName()},${OBJECT_SERVICE_ID},${objectServiceId}`)
+      expect(Object.entries(serviceIdToStateElemId)[0][1]).toEqual(regularField.elemID)
+    })
+    it('should generate for InstanceElement with no SERVICE_ID value', () => {
+      obj.fields = { [SERVICE_ID_FIELD_NAME]: serviceIdField }
+      delete instance.value[SERVICE_ID_FIELD_NAME]
+
+      const serviceIdToStateElemId = generateServiceIdToStateElemId([instance])
+
+      expect(Object.entries(serviceIdToStateElemId)).toHaveLength(1)
+      const expectedObjectServiceId = `${ADAPTER},${obj.elemID.adapter},${SERVICE_ID_ANNOTATION},${obj.annotations[SERVICE_ID_ANNOTATION]}`
+      expect(Object.entries(serviceIdToStateElemId)[0][0])
+        .toEqual(`${ADAPTER},${instance.elemID.adapter},${OBJECT_SERVICE_ID},${expectedObjectServiceId},${SERVICE_ID_FIELD_NAME},${instance.elemID.getFullName()}`)
+      expect(Object.entries(serviceIdToStateElemId)[0][1]).toEqual(instance.elemID)
+    })
+    it('should generate for InstanceElement', () => {
+      obj.fields = { [SERVICE_ID_FIELD_NAME]: serviceIdField }
+
+      const serviceIdToStateElemId = generateServiceIdToStateElemId([instance])
+
+      expect(Object.entries(serviceIdToStateElemId)).toHaveLength(1)
+      const expectedObjectServiceId = `${ADAPTER},${obj.elemID.adapter},${SERVICE_ID_ANNOTATION},${obj.annotations[SERVICE_ID_ANNOTATION]}`
+      expect(Object.entries(serviceIdToStateElemId)[0][0])
+        .toEqual(`${ADAPTER},${instance.elemID.adapter},${OBJECT_SERVICE_ID},${expectedObjectServiceId},${SERVICE_ID_FIELD_NAME},${instance.value[SERVICE_ID_FIELD_NAME]}`)
+      expect(Object.entries(serviceIdToStateElemId)[0][1]).toEqual(instance.elemID)
+    })
+    it('should generate for InstanceElement with no SERVICE_ID value & field', () => {
+      obj.fields = { [SERVICE_ID_FIELD_NAME]: serviceIdField }
+      serviceIdField.type = BuiltinTypes.STRING
+      delete instance.value[SERVICE_ID_FIELD_NAME]
+
+      const serviceIdToStateElemId = generateServiceIdToStateElemId([instance])
+
+      expect(Object.entries(serviceIdToStateElemId)).toHaveLength(1)
+      const expectedObjectServiceId = `${ADAPTER},${obj.elemID.adapter},${SERVICE_ID_ANNOTATION},${obj.annotations[SERVICE_ID_ANNOTATION]}`
+      expect(Object.entries(serviceIdToStateElemId)[0][0])
+        .toEqual(`${ADAPTER},${instance.elemID.adapter},instance_name,${instance.elemID.getFullName()},${OBJECT_SERVICE_ID},${expectedObjectServiceId}`)
+      expect(Object.entries(serviceIdToStateElemId)[0][1]).toEqual(instance.elemID)
     })
   })
 })

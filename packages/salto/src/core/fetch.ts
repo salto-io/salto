@@ -1,6 +1,10 @@
 import _ from 'lodash'
 import wu from 'wu'
-import { Element, ElemID, Adapter } from 'adapter-api'
+import {
+  Element, ElemID, Adapter, TypeMap, Values, ServiceIds, BuiltinTypes, ObjectType, ADAPTER,
+  toServiceIdsString, Field, OBJECT_SERVICE_ID, InstanceElement, isInstanceElement, isObjectType,
+  ElemIdGetter,
+} from 'adapter-api'
 import { logger } from '@salto/logging'
 import { getPlan, DetailedChange } from './plan'
 import { mergeElements, MergeError } from './merger'
@@ -110,4 +114,80 @@ export const fetchChanges = async (
     .flatten()
   log.debug('finished to calculate fetch changes')
   return { changes, elements: mergedServiceElements, mergeErrors }
+}
+
+const id = (elemID: ElemID): string => elemID.getFullName()
+
+const OBJECT_NAME = 'object_name'
+const FIELD_NAME = 'field_name'
+const INSTANCE_NAME = 'instance_name'
+
+const getServiceIdsFromAnnotations = (annotationTypes: TypeMap, annotations: Values,
+  elemID: ElemID): ServiceIds =>
+  _(Object.entries(annotationTypes))
+    .filter(([_annotationName, annotationType]) =>
+      _.isEqual(annotationType, BuiltinTypes.SERVICE_ID))
+    .map(([annotationName, _annotationType]) =>
+      [annotationName, annotations[annotationName] || id(elemID)])
+    .fromPairs()
+    .value()
+
+const getObjectServiceId = (objectType: ObjectType): string => {
+  const serviceIds = getServiceIdsFromAnnotations(objectType.annotationTypes,
+    objectType.annotations, objectType.elemID)
+  if (_.isEmpty(serviceIds)) {
+    serviceIds[OBJECT_NAME] = id(objectType.elemID)
+  }
+  serviceIds[ADAPTER] = objectType.elemID.adapter
+  return toServiceIdsString(serviceIds)
+}
+
+const getFieldServiceId = (objectServiceId: string, field: Field): string => {
+  const serviceIds = getServiceIdsFromAnnotations(field.type.annotationTypes, field.annotations,
+    field.elemID)
+  if (_.isEmpty(serviceIds)) {
+    serviceIds[FIELD_NAME] = id(field.elemID)
+  }
+  serviceIds[ADAPTER] = field.elemID.adapter
+  serviceIds[OBJECT_SERVICE_ID] = objectServiceId
+  return toServiceIdsString(serviceIds)
+}
+
+const getInstanceServiceId = (instanceElement: InstanceElement): string => {
+  const serviceIds = _(Object.entries(instanceElement.type.fields))
+    .filter(([_fieldName, field]) => _.isEqual(field.type, BuiltinTypes.SERVICE_ID))
+    .map(([fieldName, _field]) =>
+      [fieldName, instanceElement.value[fieldName] || id(instanceElement.elemID)])
+    .fromPairs()
+    .value()
+  if (_.isEmpty(serviceIds)) {
+    serviceIds[INSTANCE_NAME] = id(instanceElement.elemID)
+  }
+  serviceIds[ADAPTER] = instanceElement.elemID.adapter
+  serviceIds[OBJECT_SERVICE_ID] = getObjectServiceId(instanceElement.type)
+  return toServiceIdsString(serviceIds)
+}
+
+export const generateServiceIdToStateElemId = (stateElements: Element[]): Record<string, ElemID> =>
+  _(stateElements)
+    .filter(elem => isInstanceElement(elem) || isObjectType(elem))
+    .map(elem => {
+      if (isObjectType(elem)) {
+        const objectServiceId = getObjectServiceId(elem)
+        const fieldPairs = Object.values(elem.fields)
+          .map(field => [getFieldServiceId(objectServiceId, field), field.elemID])
+        return [...fieldPairs, [objectServiceId, elem.elemID]]
+      }
+      return [[getInstanceServiceId(elem as InstanceElement), elem.elemID]]
+    })
+    .flatten()
+    .fromPairs()
+    .value()
+
+export const createElemIdGetter = (stateElements: Element[]): ElemIdGetter => {
+  const serviceIdToStateElemId = generateServiceIdToStateElemId(stateElements)
+  return (adapterName: string, serviceIds: ServiceIds, name: string): ElemID => {
+    const stateElemId = serviceIdToStateElemId[toServiceIdsString(serviceIds)]
+    return stateElemId || new ElemID(adapterName, name)
+  }
 }

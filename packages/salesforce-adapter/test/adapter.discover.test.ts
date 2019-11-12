@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import {
-  ObjectType, Type, InstanceElement, ElemID, BuiltinTypes,
+  ObjectType, Type, InstanceElement, ServiceIds, ElemID, BuiltinTypes,
 } from 'adapter-api'
 import SalesforceAdapter from '../src/adapter'
 import Connection from '../src/client/jsforce'
@@ -13,10 +13,14 @@ describe('SalesforceAdapter fetch', () => {
   let connection: Connection
   let adapter: SalesforceAdapter
 
+  const mockGetElemIdFunc = (adapterName: string, _serviceIds: ServiceIds, name: string):
+    ElemID => new ElemID(adapterName, name)
+
   beforeEach(() => {
     ({ connection, adapter } = mockAdpater({
       adapterParams: {
         metadataAdditionalTypes: [],
+        getElemIdFunc: mockGetElemIdFunc,
       },
     }))
   })
@@ -181,10 +185,44 @@ describe('SalesforceAdapter fetch', () => {
       expect(lead.fields.number_field.type.elemID.name).toBe('number')
     })
 
+    it('should fetch sobject with api_name and metadata_type service ids', async () => {
+      mockSingleSObject('Lead', [])
+      const result = await adapter.fetch()
+
+      const lead = result.filter(o => o.elemID.name === 'lead').pop() as ObjectType
+      expect(lead.annotationTypes[constants.API_NAME]).toEqual(BuiltinTypes.SERVICE_ID)
+      expect(lead.annotationTypes[constants.METADATA_TYPE]).toEqual(BuiltinTypes.SERVICE_ID)
+      expect(lead.annotations[constants.API_NAME]).toEqual('Lead')
+      expect(lead.annotations[constants.METADATA_TYPE]).toEqual(constants.CUSTOM_OBJECT)
+    })
+
+    it('should use existing elemID when fetching custom object', async () => {
+      ({ connection, adapter } = mockAdpater({
+        adapterParams: {
+          metadataAdditionalTypes: [],
+          getElemIdFunc: (adapterName: string, _serviceIds: ServiceIds, name: string):
+            ElemID => new ElemID(adapterName, name.endsWith(constants.SALESFORCE_CUSTOM_SUFFIX)
+            ? name.slice(0, -3) : name),
+        },
+      }))
+      mockSingleSObject('Custom__c', [
+        {
+          name: 'StringField__c',
+          type: 'string',
+          label: 'Stringo',
+        },
+      ])
+
+      const result = await adapter.fetch()
+
+      const custom = result.filter(o => o.elemID.name === 'custom').pop() as ObjectType
+      expect(custom.fields.string_field.annotations[constants.API_NAME]).toEqual('StringField__c')
+    })
+
     it('should fetch sobject with various field types', async () => {
       mockSingleSObject('Lead', [
         {
-          name: 'AutoNumber',
+          name: 'MyAutoNumber',
           type: 'string',
           label: 'AutoNumero',
           autoNumber: true,
@@ -200,32 +238,32 @@ describe('SalesforceAdapter fetch', () => {
           label: 'Numero',
         },
         {
-          name: 'TextArea',
+          name: 'MyTextArea',
           type: 'textarea',
           label: 'Texto Areato',
           length: 255,
         },
         {
-          name: 'LongTextArea',
+          name: 'MyLongTextArea',
           type: 'textarea',
           label: 'Longo Texto Areato',
           length: 280,
           extraTypeInfo: 'plaintextarea',
         },
         {
-          name: 'RichTextArea',
+          name: 'MyRichTextArea',
           type: 'textarea',
           label: 'Richo Texto Areato',
           length: 280,
           extraTypeInfo: 'richtextarea',
         },
         {
-          name: 'EncryptedString',
+          name: 'MyEncryptedString',
           type: 'encryptedstring',
           label: 'Encrypto Stringo',
         },
         {
-          name: 'MultiPickList',
+          name: 'MyMultiPickList',
           type: 'multipicklist',
           label: 'Multo Picklisto',
           precision: 5,
@@ -238,15 +276,15 @@ describe('SalesforceAdapter fetch', () => {
       const result = await adapter.fetch()
 
       const lead = findElements(result, 'lead').pop() as ObjectType
-      expect(lead.fields.auto_number.type.elemID.name).toBe('autonumber')
+      expect(lead.fields.my_auto_number.type.elemID.name).toBe('autonumber')
       expect(lead.fields.string.type.elemID.name).toBe('text')
       expect(lead.fields.number.type.elemID.name).toBe('number')
-      expect(lead.fields.text_area.type.elemID.name).toBe('textarea')
-      expect(lead.fields.long_text_area.type.elemID.name).toBe('longtextarea')
-      expect(lead.fields.rich_text_area.type.elemID.name).toBe('richtextarea')
-      expect(lead.fields.encrypted_string.type.elemID.name).toBe('encryptedtext')
-      expect(lead.fields.multi_pick_list.type.elemID.name).toBe('multipicklist')
-      expect(lead.fields.multi_pick_list
+      expect(lead.fields.my_text_area.type.elemID.name).toBe('textarea')
+      expect(lead.fields.my_long_text_area.type.elemID.name).toBe('longtextarea')
+      expect(lead.fields.my_rich_text_area.type.elemID.name).toBe('richtextarea')
+      expect(lead.fields.my_encrypted_string.type.elemID.name).toBe('encryptedtext')
+      expect(lead.fields.my_multi_pick_list.type.elemID.name).toBe('multipicklist')
+      expect(lead.fields.my_multi_pick_list
         .annotations[constants.FIELD_ANNOTATIONS.VISIBLE_LINES]).toBe(5)
     })
 
@@ -362,6 +400,11 @@ describe('SalesforceAdapter fetch', () => {
     it('should fetch basic metadata type', async () => {
       mockSingleMetadataType('Flow', [
         {
+          name: 'fullName',
+          soapType: 'string',
+          valueRequired: true,
+        },
+        {
           name: 'Description',
           soapType: 'string',
           valueRequired: true,
@@ -396,6 +439,9 @@ describe('SalesforceAdapter fetch', () => {
       // Note the order here is important because we expect restriction values to be sorted
       expect(flow.fields.enum.annotations[Type.VALUES]).toEqual(['no', 'yes'])
       expect(flow.path).toEqual(['types', 'flow'])
+      expect(flow.fields.full_name.type).toEqual(BuiltinTypes.SERVICE_ID)
+      expect(flow.annotationTypes[constants.METADATA_TYPE]).toEqual(BuiltinTypes.SERVICE_ID)
+      expect(flow.annotations[constants.METADATA_TYPE]).toEqual('Flow')
     })
     it('should fetch nested metadata types', async () => {
       mockSingleMetadataType('NestingType', [

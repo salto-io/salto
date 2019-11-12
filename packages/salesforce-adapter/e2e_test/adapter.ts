@@ -1,3 +1,4 @@
+import { ElemID, ServiceIds } from 'adapter-api'
 import SalesforceClient from '../src/client/client'
 import SalesforceAdapter, { SalesforceAdapterParams } from '../src/adapter'
 import realClient from './client'
@@ -10,10 +11,13 @@ export type Reals = {
 export type Opts = {
   adapterParams?: Partial<SalesforceAdapterParams>
 }
+const mockGetElemIdFunc = (adapterName: string, _serviceIds: ServiceIds, name: string):
+  ElemID => new ElemID(adapterName, name)
 
 const realAdapter = ({ adapterParams }: Opts = {}): Reals => {
   const client = (adapterParams && adapterParams.client) || realClient()
-  const adapter = new SalesforceAdapter({ client, ...adapterParams || {} })
+  const adapter = new SalesforceAdapter({ client,
+    ...adapterParams || { getElemIdFunc: mockGetElemIdFunc } })
   return { client, adapter }
 }
 

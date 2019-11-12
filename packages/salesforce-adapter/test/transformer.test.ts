@@ -191,19 +191,19 @@ describe('transformer', () => {
 
     it('should fetch lookup relationships with restricted deletion', async () => {
       _.set(salesforceReferenceField, 'restrictedDelete', true)
-      const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField)
+      const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField, {})
       assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.lookup, false, undefined)
     })
 
     it('should fetch lookup relationships with allowed related record deletion when restrictedDelete set to false', async () => {
       _.set(salesforceReferenceField, 'restrictedDelete', false)
-      const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField)
+      const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField, {})
       assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.lookup, true, undefined)
     })
 
     it('should fetch lookup relationships with allowed related record deletion when restrictedDelete is undefined', async () => {
       _.set(salesforceReferenceField, 'restrictedDelete', undefined)
-      const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField)
+      const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField, {})
       assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.lookup, true, undefined)
     })
 
@@ -211,7 +211,7 @@ describe('transformer', () => {
       salesforceReferenceField.cascadeDelete = true
       salesforceReferenceField.updateable = true
       salesforceReferenceField.writeRequiresMasterRead = true
-      const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField)
+      const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField, {})
       assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.masterdetail, undefined, undefined)
       expect(fieldElement.annotations[FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL]).toBe(true)
       expect(fieldElement.annotations[FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ]).toBe(true)
@@ -221,7 +221,7 @@ describe('transformer', () => {
       salesforceReferenceField.cascadeDelete = true
       salesforceReferenceField.updateable = false
       delete salesforceReferenceField.writeRequiresMasterRead
-      const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField)
+      const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField, {})
       assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.masterdetail, undefined, undefined)
       expect(fieldElement.annotations[Type.REQUIRED]).toBe(false)
       expect(fieldElement.annotations[FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL]).toBe(false)
@@ -230,7 +230,7 @@ describe('transformer', () => {
 
     it('should fetch lookup filters and init its annotation', async () => {
       _.set(salesforceReferenceField, 'filteredLookupInfo', {})
-      const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField)
+      const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField, {})
       assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.lookup, true, {})
     })
   })
@@ -246,7 +246,7 @@ describe('transformer', () => {
     }
     const fieldName = 'field_name'
     const origObjectType = new ObjectType({ elemID,
-      fields: { [fieldName]: new TypeField(elemID, fieldName, Types.get(FIELD_TYPE_NAMES.LOOKUP),
+      fields: { [fieldName]: new TypeField(elemID, fieldName, Types.primitiveDataTypes.lookup,
         annotations) } })
     let objectType: ObjectType
     beforeEach(() => {
@@ -281,7 +281,7 @@ describe('transformer', () => {
 
     it('should transform masterdetail field', async () => {
       const masterDetailField = objectType.fields[fieldName]
-      masterDetailField.type = Types.get(FIELD_TYPE_NAMES.MASTER_DETAIL)
+      masterDetailField.type = Types.primitiveDataTypes.masterdetail
       masterDetailField.annotations[FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ] = true
       masterDetailField.annotations[FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL] = true
       const customMasterDetailField = toCustomField(objectType, masterDetailField)
@@ -292,7 +292,7 @@ describe('transformer', () => {
     })
 
     it('should have ControlledByParent sharing model when having masterdetail field', async () => {
-      objectType.fields[fieldName].type = Types.get(FIELD_TYPE_NAMES.MASTER_DETAIL)
+      objectType.fields[fieldName].type = Types.primitiveDataTypes.masterdetail
       const customObjectWithMasterDetailField = toCustomObject(objectType, true)
       expect(customObjectWithMasterDetailField.sharingModel).toEqual('ControlledByParent')
     })
@@ -421,6 +421,14 @@ describe('transformer', () => {
       })
       const fields = getCompoundChildFields(testedObjectType)
       expect(fields).toHaveLength(1)
+    })
+  })
+
+  describe('type definitions', () => {
+    it('should include api_name annotation with service_id type', async () => {
+      Object.values(Types.getAllFieldTypes()).forEach(type => {
+        expect(type.annotationTypes[API_NAME]).toEqual(BuiltinTypes.SERVICE_ID)
+      })
     })
   })
 })

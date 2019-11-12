@@ -13,7 +13,7 @@ import Prompts from '../src/prompts'
 
 const { copyFile, rm, mkdirp, exists } = file
 
-const sfLeadObjectName = 'salesforce_lead'
+const sfLeadObjectName = 'salesforce.lead'
 
 const mockGetConfigType = (): InstanceElement => adapterConfigs.salesforce()
 const homePath = process.env.HOME || process.env.HOMEPATH || process.env.USERPROFILE

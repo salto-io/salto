@@ -123,7 +123,7 @@ const toNodeMap = (
 
 export const getPlan = (
   beforeElements: readonly Element[],
-  afterElements: readonly Element [],
+  afterElements: readonly Element[],
   withDependencies = true
 ): Plan => {
   // getPlan
@@ -141,7 +141,7 @@ export const getPlan = (
     return id(elemId)
   }
 
-  const getGroupLevelChange = (group: Group<Change>): Change|undefined =>
+  const getGroupLevelChange = (group: Group<Change>): Change | undefined =>
     wu(group.items.values()).find(
       change => getChangeElement(change).elemID.getFullName() === group.groupKey
     )
@@ -157,8 +157,22 @@ export const getPlan = (
       return group.items.values()
     },
     detailedChanges() {
-      const hasAnnotationTypes = (element: ChangeDataType): element is ObjectType | PrimitiveType =>
-        isObjectType(element) || isPrimitiveType(element)
+      const hasAnnotationTypeChange = (change: ModificationDiff<ChangeDataType>): boolean => {
+        const hasAnnotationTypes = (elem: ChangeDataType): elem is ObjectType | PrimitiveType =>
+          isObjectType(elem) || isPrimitiveType(elem)
+        if (hasAnnotationTypes(change.data.before) && hasAnnotationTypes(change.data.after)) {
+          return !change.data.before.isAnnotationsTypesEqual(change.data.after)
+        }
+        return false
+      }
+
+      // If we have change in the annotation type we will mark the entir element as changes
+      // due to: SALTO-333
+      const topLevelChange = getGroupLevelChange(group)
+      if (topLevelChange && topLevelChange.action === 'modify'
+        && hasAnnotationTypeChange(topLevelChange)) {
+        return [{ ...topLevelChange, id: topLevelChange.data.after.elemID }]
+      }
 
       return wu(group.items.values())
         .map(change => {
@@ -166,20 +180,15 @@ export const getPlan = (
           if (change.action !== 'modify') {
             return { ...change, id: elem.elemID }
           }
+
           if (isInstanceElement(change.data.before) && isInstanceElement(change.data.after)) {
             return getValuesChanges(elem.elemID, change.data.before.value, change.data.after.value)
           }
-          const annotationsValueChanges: DetailedChange[] = getValuesChanges(
+
+          return getValuesChanges(
             elem.elemID.isTopLevel() ? elem.elemID.createNestedID('attr') : elem.elemID,
-            change.data.before.annotations,
-            change.data.after.annotations,
+            change.data.before.annotations, change.data.after.annotations
           )
-          return hasAnnotationTypes(change.data.before) && hasAnnotationTypes(change.data.after)
-            ? annotationsValueChanges.concat(getValuesChanges(
-              elem.elemID.isTopLevel() ? elem.elemID.createNestedID('annotation') : elem.elemID,
-              change.data.before.annotationTypes,
-              change.data.after.annotationTypes
-            )) : annotationsValueChanges
         })
         .flatten()
     },

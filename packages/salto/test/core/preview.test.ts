@@ -25,10 +25,7 @@ describe('getPlan', () => {
     const afterElements = mock.getAllElements()
     const saltoOffice = afterElements[2] as ObjectType
     saltoOffice.annotations.label = 'new label'
-    saltoOffice.annotationTypes.new = BuiltinTypes.STRING
     saltoOffice.annotations.new = 'new annotation'
-    // eslint-disable-next-line @typescript-eslint/camelcase,max-len
-    saltoOffice.annotationTypes = { label: BuiltinTypes.STRING, new: BuiltinTypes.STRING, case_sensitive: BuiltinTypes.STRING }
     const plan = getPlan(allElements, afterElements)
     return [plan, saltoOffice]
   }
@@ -68,6 +65,17 @@ describe('getPlan', () => {
     updatedEmployee.value.nicknames.push('new')
     const plan = getPlan(allElements, afterElements)
     return [plan, updatedEmployee]
+  }
+
+  const planWithAnnotationTypesChanges = (): [Plan, ObjectType] => {
+    const afterElements = mock.getAllElements()
+    const saltoOffice = afterElements[2] as ObjectType
+    // update existing field
+    saltoOffice.fields.name.annotations.new = 'new'
+    // update anntation types
+    saltoOffice.annotationTypes.new = BuiltinTypes.STRING
+    const plan = getPlan(allElements, afterElements)
+    return [plan, saltoOffice]
   }
 
   it('should create empty plan', () => {
@@ -154,7 +162,7 @@ describe('getPlan', () => {
         const [plan, newElement] = planWithTypeChanges()
         const planItem = getFirstPlanItem(plan)
         const changes = [...planItem.detailedChanges()]
-        expect(changes).toHaveLength(5)
+        expect(changes).toHaveLength(2)
 
         expect(changes[0].id).toEqual(newElement.elemID.createNestedID('attr', 'label'))
         expect(changes[0].action).toEqual('add')
@@ -163,16 +171,6 @@ describe('getPlan', () => {
         expect(changes[1].id).toEqual(newElement.elemID.createNestedID('attr', 'new'))
         expect(changes[1].action).toEqual('add')
         expect(_.get(changes[1].data, 'after')).toEqual(newElement.annotations.new)
-
-        expect(changes[2].id).toEqual(newElement.elemID.createNestedID('annotation', 'old'))
-        expect(changes[2].action).toEqual('remove')
-
-        expect(changes[3].id).toEqual(newElement.elemID.createNestedID('annotation', 'case_sensitive'))
-        expect(changes[3].action).toEqual('modify')
-
-        expect(changes[4].id).toEqual(newElement.elemID.createNestedID('annotation', 'new'))
-        expect(changes[4].action).toEqual('add')
-        expect(_.get(changes[4].data, 'after')).toEqual(newElement.annotationTypes.new)
       })
       it('should return field changes with the correct id', () => {
         const [plan, newElement] = planWithFieldChanges()
@@ -190,14 +188,14 @@ describe('getPlan', () => {
       it('should return add / remove changes at the appropriate level', () => {
         const [plan, newElement] = planWithNewType()
         const planItem = getFirstPlanItem(plan)
-        const changes = wu(planItem.detailedChanges()).toArray()
+        const changes = [...planItem.detailedChanges()]
         expect(changes).toHaveLength(1)
         expect(changes[0].id).toEqual(newElement.elemID)
       })
       it('should return deep nested changes', () => {
         const [plan, updatedInst] = planWithInstanceChange()
         const planItem = getFirstPlanItem(plan)
-        const changes = wu(planItem.detailedChanges()).toArray()
+        const changes = [...planItem.detailedChanges()]
         expect(changes).toHaveLength(2)
         const [listChange, nameRemove] = changes
         expect(listChange.action).toEqual('modify')
@@ -208,11 +206,21 @@ describe('getPlan', () => {
       it('should return list modification when a value is added', () => {
         const [plan, updatedInst] = planWithListChange()
         const planItem = getFirstPlanItem(plan)
-        const changes = wu(planItem.detailedChanges()).toArray()
+        const changes = [...planItem.detailedChanges()]
         expect(changes).toHaveLength(1)
         const [listChange] = changes
         expect(listChange.action).toEqual('modify')
         expect(listChange.id).toEqual(updatedInst.elemID.createNestedID('nicknames'))
+      })
+
+      it('should return only top level change in case of annotationType change', () => {
+        const [plan, obj] = planWithAnnotationTypesChanges()
+        const planItem = getFirstPlanItem(plan)
+        const changes = [...planItem.detailedChanges()]
+        expect(changes).toHaveLength(1)
+        const [annoChange] = changes
+        expect(annoChange.action).toEqual('modify')
+        expect(annoChange.id).toEqual(obj.elemID)
       })
     })
   })

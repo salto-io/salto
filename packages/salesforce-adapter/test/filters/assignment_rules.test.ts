@@ -1,8 +1,8 @@
 import _ from 'lodash'
 import {
-  ObjectType, ElemID, InstanceElement, Element,
+  ObjectType, InstanceElement, Element,
 } from 'adapter-api'
-import filterCreator, { ASSIGNMENT_RULES_TYPE_NAME } from '../../src/filters/assignment_rules'
+import filterCreator, { ASSIGNMENT_RULES_TYPE_ID } from '../../src/filters/assignment_rules'
 import * as constants from '../../src/constants'
 import { bpCase } from '../../src/transformer'
 import { FilterWith } from '../../src/filter'
@@ -14,7 +14,7 @@ describe('assignment rules filter', () => {
   const mockRuleInstance = new InstanceElement(
     'lead',
     new ObjectType({
-      elemID: new ElemID(constants.SALESFORCE, ASSIGNMENT_RULES_TYPE_NAME),
+      elemID: ASSIGNMENT_RULES_TYPE_ID,
     }),
     {
       [bpCase(constants.METADATA_OBJECT_NAME_FIELD)]: 'Lead',

@@ -2,7 +2,7 @@ import {
   ObjectType, ElemID, InstanceElement,
 } from 'adapter-api'
 import _ from 'lodash'
-import makeFilter, { LAYOUT_ANNOTATION, LAYOUT_TYPE_NAME } from '../../src/filters/layouts'
+import makeFilter, { LAYOUT_ANNOTATION, LAYOUT_TYPE_ID } from '../../src/filters/layouts'
 import * as constants from '../../src/constants'
 import { bpCase } from '../../src/transformer'
 import { FilterWith } from '../../src/filter'
@@ -19,7 +19,7 @@ describe('Test layout filter', () => {
   const mockLayout = new InstanceElement(
     'test_test_layout',
     new ObjectType({
-      elemID: new ElemID(constants.SALESFORCE, LAYOUT_TYPE_NAME),
+      elemID: LAYOUT_TYPE_ID,
     }),
     {},
   )

@@ -4,7 +4,7 @@ import {
 } from 'adapter-api'
 import { FilterWith } from '../../src/filter'
 import filterCreator, {
-  VALIDATION_RULE_TYPE, VALIDATION_RULE_ANNOTATION,
+  VALIDATION_RULE_TYPE_ID, VALIDATION_RULE_ANNOTATION,
 } from '../../src/filters/validation_rules'
 import * as constants from '../../src/constants'
 import { bpCase } from '../../src/transformer'
@@ -24,7 +24,7 @@ describe('validation rules filter', () => {
   const mockValidationRule = new InstanceElement(
     'test__c_validate_stuff',
     new ObjectType({
-      elemID: new ElemID(constants.SALESFORCE, VALIDATION_RULE_TYPE),
+      elemID: VALIDATION_RULE_TYPE_ID,
     }),
     {
       [bpCase(constants.METADATA_OBJECT_NAME_FIELD)]: 'Test__c.validate_stuff',

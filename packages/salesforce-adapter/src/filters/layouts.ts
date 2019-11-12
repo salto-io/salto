@@ -1,12 +1,13 @@
 
 import _ from 'lodash'
 import {
-  Element, isInstanceElement, isObjectType,
+  Element, isInstanceElement, isObjectType, ElemID,
 } from 'adapter-api'
 import { apiName } from '../transformer'
 import { FilterCreator } from '../filter'
+import { SALESFORCE } from '../constants'
 
-export const LAYOUT_TYPE_NAME = 'layout'
+export const LAYOUT_TYPE_ID = new ElemID(SALESFORCE, 'layout')
 export const LAYOUT_ANNOTATION = 'layouts'
 
 /**
@@ -21,7 +22,7 @@ const filterCreator: FilterCreator = () => ({
   onFetch: async (elements: Element[]): Promise<void> => {
     const layouts = _(elements)
       .filter(isInstanceElement)
-      .filter(e => e.type.elemID.name === LAYOUT_TYPE_NAME)
+      .filter(e => e.type.elemID.getFullName() === LAYOUT_TYPE_ID.getFullName())
       // Layout full name starts with related sobject and then '-'
       .groupBy(e => apiName(e).split('-')[0])
       .value()

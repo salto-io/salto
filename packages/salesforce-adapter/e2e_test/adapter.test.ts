@@ -76,7 +76,6 @@ describe('Salesforce adapter E2E with real account', () => {
 
       // Test standard picklist values from a standard value set
       expect(lead.fields.lead_source.annotations[Type.VALUES]).toEqual(
-        // TODO:ORI - export standard value set type ID and use it here to create the instance ID
         new ElemID(
           constants.SALESFORCE,
           bpCase(STANDARD_VALUE_SET),

@@ -1,16 +1,17 @@
 import _ from 'lodash'
-import { Element, isInstanceElement, isObjectType } from 'adapter-api'
+import { Element, isInstanceElement, isObjectType, ElemID } from 'adapter-api'
 import { FilterCreator } from '../filter'
 import { apiName } from '../transformer'
+import { SALESFORCE } from '../constants'
 
-export const VALIDATION_RULE_TYPE = 'validation_rule'
+export const VALIDATION_RULE_TYPE_ID = new ElemID(SALESFORCE, 'validation_rule')
 export const VALIDATION_RULE_ANNOTATION = 'validation_rules'
 
 const filterCreator: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
     const rulesByObject = _(elements)
       .filter(isInstanceElement)
-      .filter(e => e.type.elemID.name === VALIDATION_RULE_TYPE)
+      .filter(e => e.type.elemID.getFullName() === VALIDATION_RULE_TYPE_ID.getFullName())
       // validation rules fullName's format is related_object_name.rule_name
       .groupBy(e => apiName(e).split('.')[0])
       .value()

@@ -384,6 +384,9 @@ describe('Test elements.ts', () => {
         [typeId, fieldId, typeInstId, valueId, configTypeId, configInstId]
           .forEach(id => expect(ElemID.fromFullName(id.getFullName())).toEqual(id))
       })
+      it('should fail on invalid id type', () => {
+        expect(() => ElemID.fromFullName('adapter.type.bla.foo')).toThrow()
+      })
     })
 
     describe('nestingLevel', () => {
@@ -427,6 +430,9 @@ describe('Test elements.ts', () => {
           expect(fieldID).toEqual(new ElemID('adapter', 'example', 'field', 'name'))
           expect(fieldID.idType).toEqual('field')
         })
+        it('should fail if given an invalid id type', () => {
+          expect(() => typeId.createNestedID('bla')).toThrow()
+        })
       })
       describe('from field ID', () => {
         let nestedId: ElemID
@@ -468,6 +474,46 @@ describe('Test elements.ts', () => {
           [fieldId, typeInstId, configInstId].forEach(
             parent => expect(parent.createNestedID('test').createParentID()).toEqual(parent)
           )
+        })
+      })
+    })
+
+    describe('createTopLevelParentID', () => {
+      describe('from top level element', () => {
+        it('should return the same ID and empty path', () => {
+          [typeId, typeInstId, configTypeId, configInstId].forEach(id => {
+            const { parent, path } = id.createTopLevelParentID()
+            expect(parent).toEqual(id)
+            expect(path).toHaveLength(0)
+          })
+        })
+      })
+      describe('from field id', () => {
+        let parent: ElemID
+        let path: ReadonlyArray<string>
+        beforeAll(() => {
+          ({ parent, path } = fieldId.createTopLevelParentID())
+        })
+
+        it('should return the type', () => {
+          expect(parent).toEqual(new ElemID(fieldId.adapter, fieldId.typeName))
+        })
+        it('should return the field name as the path', () => {
+          expect(path).toEqual([fieldId.name])
+        })
+      })
+      describe('from value id', () => {
+        let parent: ElemID
+        let path: ReadonlyArray<string>
+        beforeAll(() => {
+          ({ parent, path } = valueId.createTopLevelParentID())
+        })
+
+        it('should return the instance', () => {
+          expect(parent).toEqual(typeInstId)
+        })
+        it('should return the nesting path in the instance', () => {
+          expect(path).toEqual(['nested', 'value'])
         })
       })
     })

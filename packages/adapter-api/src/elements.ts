@@ -122,20 +122,20 @@ export class ElemID {
     return new ElemID(this.adapter, this.typeName)
   }
 
-  createTopLevelParentID(): { id: ElemID; path: ReadonlyArray<string> } {
+  createTopLevelParentID(): { parent: ElemID; path: ReadonlyArray<string> } {
     if (this.isTopLevel()) {
       // This is already the top level ID
-      return { id: this, path: [] }
+      return { parent: this, path: [] }
     }
     if (this.idType === 'instance') {
       // Instance is a top level ID, the name of the instance is always the first name part
       return {
-        id: new ElemID(this.adapter, this.typeName, this.idType, this.nameParts[0]),
+        parent: new ElemID(this.adapter, this.typeName, this.idType, this.nameParts[0]),
         path: this.nameParts.slice(1),
       }
     }
     // Everything other than instance is nested under type
-    return { id: new ElemID(this.adapter, this.typeName), path: this.nameParts }
+    return { parent: new ElemID(this.adapter, this.typeName), path: this.nameParts }
   }
 }
 

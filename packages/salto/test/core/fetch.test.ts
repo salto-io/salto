@@ -210,7 +210,6 @@ describe('fetch', () => {
         [SERVICE_ID_ANNOTATION]: 'ObjectServiceId',
       },
     })
-    const instanceElemID = new ElemID('adapter', 'instance_elem_id_name')
     let obj: ObjectType
     let regularField: Field
     let regularFieldType: PrimitiveType
@@ -219,7 +218,7 @@ describe('fetch', () => {
       obj = origObj.clone()
       regularFieldType = origRegularFieldType.clone()
       regularField = new Field(typeElemID, REGULAR_FIELD_NAME, regularFieldType, { [SERVICE_ID_ANNOTATION]: 'FieldServiceId' })
-      instance = new InstanceElement(instanceElemID, obj, { [SERVICE_ID_FIELD_NAME]: 'serviceIdValue' })
+      instance = new InstanceElement('instance_elem_id_name', obj, { [SERVICE_ID_FIELD_NAME]: 'serviceIdValue' })
     })
 
     it('should generate for ObjectType and its fields', () => {

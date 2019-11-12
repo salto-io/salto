@@ -475,7 +475,7 @@ export const BuiltinTypes: Record<string, PrimitiveType> = {
     primitive: PrimitiveTypes.BOOLEAN,
   }),
   SERVICE_ID: new PrimitiveType({
-    elemID: new ElemID('', 'service_id'),
+    elemID: new ElemID('', 'serviceid'),
     primitive: PrimitiveTypes.STRING,
   }),
 }

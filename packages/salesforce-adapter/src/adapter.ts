@@ -52,11 +52,10 @@ const addLabel = (elem: Type | Field): void => {
   }
 }
 
-const addApiName = (elem: Type | Field, custom = true): void => {
-  const name = isField(elem) ? elem.name : elem.elemID.name
+const addApiName = (elem: Type | Field, name: string): void => {
   if (!elem.annotations[constants.API_NAME]) {
-    elem.annotations[constants.API_NAME] = sfCase(name, custom)
-    log.debug(`added API_NAME=${sfCase(name, custom)} to ${name}`)
+    elem.annotations[constants.API_NAME] = name
+    log.debug(`added API_NAME=${name} to ${isField(elem) ? elem.name : elem.elemID.name}`)
   }
   if (!isField(elem) && !elem.annotationTypes[constants.API_NAME]) {
     elem.annotationTypes[constants.API_NAME] = BuiltinTypes.SERVICE_ID
@@ -76,11 +75,11 @@ const addMetadataType = (elem: ObjectType, metadataTypeValue = constants.CUSTOM_
 }
 
 const addDefaults = (element: ObjectType): void => {
-  addApiName(element)
+  addApiName(element, sfCase(element.elemID.name, true))
   addMetadataType(element)
   addLabel(element)
   Object.values(element.fields).forEach(field => {
-    addApiName(field)
+    addApiName(field, sfCase(field.name, true))
     addLabel(field)
   })
 }
@@ -382,7 +381,7 @@ export default class SalesforceAdapter {
       .filter(isField)
       .forEach(f => {
         addLabel(clonedObject.fields[f.name])
-        addApiName(clonedObject.fields[f.name])
+        addApiName(clonedObject.fields[f.name], sfCase(f.name, true))
       })
 
     const fieldChanges = changes.filter(c => isField(getChangeElement(c))) as Change<Field>[]
@@ -571,7 +570,7 @@ export default class SalesforceAdapter {
     }
 
     const element = Types.get(objectName, true, false, serviceIds) as ObjectType
-    addApiName(element, isCustom)
+    addApiName(element, objectName)
     addMetadataType(element)
 
     // Filter out nested fields of compound fields

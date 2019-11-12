@@ -29,7 +29,7 @@ describe('transformer', () => {
     },
   })
   const dummyInstance = new InstanceElement(
-    new ElemID('adapter', 'instance'),
+    'instance',
     dummyType,
     {
       [bpCase(METADATA_OBJECT_NAME_FIELD)]: 'Instance',

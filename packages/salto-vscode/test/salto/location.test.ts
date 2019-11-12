@@ -20,19 +20,19 @@ describe('workspace query', () => {
   })
 
   it('should find prefixes', () => {
-    const res = getQueryLocations(workspace, 'vs_per')
-    expect(res).toHaveLength(2)
-    expect(res[0].fullname).toBe('vs_person')
+    const res = getQueryLocations(workspace, 'vs.per')
+    expect(res).toHaveLength(5)
+    expect(res[0].fullname).toBe('vs.person')
   })
   it('should find suffixes', () => {
-    const res = getQueryLocations(workspace, 's_person')
+    const res = getQueryLocations(workspace, 's.person')
     expect(res).toHaveLength(2)
-    expect(res[0].fullname).toBe('vs_person')
+    expect(res[0].fullname).toBe('vs.person')
   })
   it('should find fragments in last name part', () => {
     const res = getQueryLocations(workspace, 'erso')
     expect(res).toHaveLength(2)
-    expect(res[0].fullname).toBe('vs_person')
+    expect(res[0].fullname).toBe('vs.person')
   })
   it('should  return empty results on not found', () => {
     const res = getQueryLocations(workspace, 'nope')

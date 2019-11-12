@@ -15,11 +15,7 @@ AsyncIterable<InstanceElement[]> => {
 const recordToInstanceElement = (type: ObjectType, record: Values):
 InstanceElement =>
   // Convert the result to Instance Elements
-  new InstanceElement(
-    new ElemID(SALESFORCE, type.elemID.name, record.Id),
-    type,
-    record
-  )
+  new InstanceElement(record.Id, type, record)
 
 const instancesIterator = async function *instancesIterator(
   type: ObjectType,

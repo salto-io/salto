@@ -12,7 +12,7 @@ describe('assignment rules filter', () => {
   const { client } = mockClient()
 
   const mockRuleInstance = new InstanceElement(
-    new ElemID(constants.SALESFORCE, ASSIGNMENT_RULES_TYPE_NAME, 'lead'),
+    'lead',
     new ObjectType({
       elemID: new ElemID(constants.SALESFORCE, ASSIGNMENT_RULES_TYPE_NAME),
     }),

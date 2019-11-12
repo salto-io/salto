@@ -104,18 +104,18 @@ type salesforce_lead {
 
     describe('loaded elements', () => {
       it('should contain types from all files', () => {
-        expect(elemMap).toHaveProperty('salesforce_lead')
-        expect(elemMap).toHaveProperty('external_file')
+        expect(elemMap).toHaveProperty(['salesforce.lead'])
+        expect(elemMap).toHaveProperty(['external.file'])
       })
       it('should be merged', () => {
-        const lead = elemMap.salesforce_lead as ObjectType
+        const lead = elemMap['salesforce.lead'] as ObjectType
         expect(_.keys(lead.fields)).toHaveLength(3)
       })
     })
 
     describe('sourceMap', () => {
       it('should have definitions from all files', () => {
-        expect(workspace.sourceMap.get('salesforce_lead')).toHaveLength(2)
+        expect(workspace.sourceMap.get('salesforce.lead')).toHaveLength(2)
       })
     })
 
@@ -198,7 +198,7 @@ type salesforce_lead {
         )
       })
       it('should update elements to not include fields from removed blueprints', () => {
-        const lead = elemMap.salesforce_lead as ObjectType
+        const lead = elemMap['salesforce.lead'] as ObjectType
         expect(_.keys(lead.fields)).toHaveLength(1)
       })
     })
@@ -215,10 +215,10 @@ type salesforce_lead {
         expect(_.keys(workspace.parsedBlueprints)).toContain('new.bp')
       })
       it('should add new elements', () => {
-        expect(elemMap).toHaveProperty('salesforce_new')
+        expect(elemMap).toHaveProperty(['salesforce.new'])
       })
       it('should update elements', () => {
-        const lead = elemMap.salesforce_lead as ObjectType
+        const lead = elemMap['salesforce.lead'] as ObjectType
         expect(lead.fields.new_base).toBeDefined()
         expect(lead.fields.base_field).not.toBeDefined()
       })
@@ -230,7 +230,7 @@ type salesforce_lead {
       newElem.path = ['test', 'new']
       const changes: DetailedChange[] = [
         { // modify value
-          id: new ElemID('salesforce', 'lead', 'base_field', Type.DEFAULT),
+          id: new ElemID('salesforce', 'lead', 'field', 'base_field', Type.DEFAULT),
           action: 'modify',
           data: { before: 'asd', after: 'foo' },
         },
@@ -240,17 +240,17 @@ type salesforce_lead {
           data: { after: newElem },
         },
         { // add complex value (nested in parent scope)
-          id: new ElemID('salesforce', 'lead', 'base_field', 'complex'),
+          id: new ElemID('salesforce', 'lead', 'field', 'base_field', 'complex'),
           action: 'add',
           data: { after: { key: 'value' } },
         },
         { // remove value
-          id: new ElemID('salesforce', 'lead', 'ext_field', Type.DEFAULT),
+          id: new ElemID('salesforce', 'lead', 'field', 'ext_field', Type.DEFAULT),
           action: 'remove',
           data: { before: 'foo' },
         },
         { // Add value to empty scope
-          id: new ElemID('external', 'file', Type.DEFAULT),
+          id: new ElemID('external', 'file', 'attr', Type.DEFAULT),
           action: 'add',
           data: { after: 'some value' },
         },
@@ -266,16 +266,18 @@ type salesforce_lead {
           data: { before: new ObjectType({ elemID: new ElemID('multi', 'loc') }) },
         },
         { // Modify value in list
-          id: new ElemID('salesforce', 'lead', 'list_field', Type.DEFAULT, '3'),
+          id: new ElemID('salesforce', 'lead', 'field', 'list_field', Type.DEFAULT, '3'),
           action: 'modify',
           data: { before: 4, after: 5 },
         },
       ]
 
+      let lead: ObjectType
       beforeAll(async () => {
         resetWorkspace()
         await workspace.updateBlueprints(...changes)
         updateElemMap()
+        lead = elemMap['salesforce.lead'] as ObjectType
       })
       afterAll(resetWorkspace)
 
@@ -284,7 +286,6 @@ type salesforce_lead {
         expect(workspace.errors.hasErrors()).toBeFalsy()
       })
       it('should modify existing element', () => {
-        const lead = elemMap.salesforce_lead as ObjectType
         expect(lead).toBeDefined()
         expect(lead.fields.base_field.annotations[Type.DEFAULT]).toEqual('foo')
       })
@@ -299,7 +300,6 @@ type salesforce_lead {
         expect(Object.keys(workspace.parsedBlueprints)).toContain('test/new.bp')
       })
       it('should add annotations under correct field', () => {
-        const lead = elemMap.salesforce_lead as ObjectType
         expect(lead.fields.base_field.annotations).toHaveProperty('complex')
         expect(lead.fields.base_field.annotations.complex).toEqual({ key: 'value' })
       })
@@ -307,7 +307,6 @@ type salesforce_lead {
         expect(Object.keys(elemMap)).not.toContain('multi_loc')
       })
       it('should update value in list', () => {
-        const lead = elemMap.salesforce_lead as ObjectType
         expect(lead.fields.list_field.annotations[Type.DEFAULT]).toEqual([1, 2, 3, 5, 5])
       })
     })

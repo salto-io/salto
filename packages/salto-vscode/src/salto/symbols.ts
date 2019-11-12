@@ -20,7 +20,7 @@ const getSaltoSymbolName = (context: PositionContext, prefName?: string): string
   if (context.ref) {
     const fullName = context.ref.path
       ? context.ref.path
-      : context.ref.element.elemID.getFullName()
+      : context.ref.element.elemID.name
     if (prefName && fullName.indexOf(prefName) >= 0) {
       const partName = fullName.slice(fullName.indexOf(prefName) + prefName.length + 1)
       return Number.isNaN(Number(partName)) ? partName : `[${partName}]`

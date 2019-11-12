@@ -70,7 +70,7 @@ export class DuplicateAnnotationError extends MergeError {
   readonly key: string
 
   constructor({ elemID, key }: { elemID: ElemID; key: string }) {
-    super({ elemID: elemID.createNestedID(key), error: `duplicate annotation '${key}'` })
+    super({ elemID, error: `duplicate annotation '${key}'` })
     this.key = key
   }
 }
@@ -156,7 +156,7 @@ const mergeObjectDefinitions = (
 
   const fieldsMergeResults = _.mapValues(
     fieldDefs,
-    (defs, key) => mergeFieldDefinitions(elemID.createNestedID(key), defs)
+    (defs, key) => mergeFieldDefinitions(elemID.createNestedID('field', key), defs)
   )
 
   if (objects.length === 1) {

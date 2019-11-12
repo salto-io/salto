@@ -27,7 +27,7 @@ describe('Cursor context resolver', () => {
     const pos = { line: 1, col: 4 }
     const ctx = getPositionContext(workspace, bpContent, filename, pos)
     const symbol = createSaltoSymbol(ctx)
-    expect(symbol.name).toBe('vs_str')
+    expect(symbol.name).toBe('str')
     expect(symbol.type).toBe(SaltoSymbolKind.Type)
   })
 
@@ -51,7 +51,7 @@ describe('Cursor context resolver', () => {
     const pos = { line: 87, col: 10 }
     const ctx = getPositionContext(workspace, bpContent, filename, pos)
     const symbol = createSaltoSymbol(ctx)
-    expect(symbol.name).toBe('vs_weekend_car')
+    expect(symbol.name).toBe('weekend_car')
     expect(symbol.type).toBe(SaltoSymbolKind.Instance)
   })
 

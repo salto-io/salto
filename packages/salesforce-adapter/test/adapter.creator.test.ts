@@ -7,7 +7,7 @@ jest.mock('../src/client/client')
 describe('SalesforceAdapter creator', () => {
   describe('when passed a config element', () => {
     const config = new InstanceElement(
-      new ElemID('salesforce', ElemID.CONFIG_INSTANCE_NAME),
+      ElemID.CONFIG_NAME,
       creator.configType,
       {
         username: 'myUser',

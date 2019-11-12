@@ -11,8 +11,7 @@ describe('change.ts', () => {
       field: new Field(objElemID, 'field', BuiltinTypes.STRING),
     },
   })
-  const inst = new InstanceElement(new ElemID('adapter', 'inst'),
-    obj, { field: 'val' })
+  const inst = new InstanceElement('inst', obj, { field: 'val' })
 
   it('should getChangeElement for removal change', () => {
     const elem = getChangeElement({

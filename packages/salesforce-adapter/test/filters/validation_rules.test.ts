@@ -22,7 +22,7 @@ describe('validation rules filter', () => {
   })
 
   const mockValidationRule = new InstanceElement(
-    new ElemID(constants.SALESFORCE, VALIDATION_RULE_TYPE, 'test__c_validate_stuff'),
+    'test__c_validate_stuff',
     new ObjectType({
       elemID: new ElemID(constants.SALESFORCE, VALIDATION_RULE_TYPE),
     }),

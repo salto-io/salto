@@ -5,6 +5,7 @@ export enum Keywords {
   TYPE_INHERITANCE_SEPARATOR = 'is',
   ANNOTATIONS_DEFINITION = 'annotations',
   UPDATE_DEFINITION = 'update',
+  NAMESPACE_SEPARATOR = '_',
 
   // Primitive types
   TYPE_STRING = 'string',

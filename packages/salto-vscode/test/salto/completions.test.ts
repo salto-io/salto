@@ -59,9 +59,10 @@ describe('Test auto complete', () => {
     'vs_ref_tester',
   ]
   const instances = [
-    'vs_weekend_car',
-    'vs_lavi',
-    'vs_evyatar',
+    'weekend_car',
+    // 'lavi',
+    // 'evyatar',
+    'not_a_loan',
   ]
 
   let workspace: EditorWorkspace
@@ -178,10 +179,6 @@ describe('Test auto complete', () => {
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })
 
-    // TODO: this test is broken because attribute key is now included in the source range
-    //       since the file being analyzed has the attribute in question defined the context
-    //       gets the wrong ref.path value
-    // eslint-disable-next-line jest/no-disabled-tests
     it('should give "" as 3rd token for string', () => {
       const pos = { line: 34, col: 16 }
       const line = getLine(workspace, bpFileName, pos)
@@ -192,10 +189,6 @@ describe('Test auto complete', () => {
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })
 
-    // TODO: this test is broken because attribute key is now included in the source range
-    //       since the file being analyzed has the attribute in question defined the context
-    //       gets the wrong ref.path value
-    // eslint-disable-next-line jest/no-disabled-tests
     it('should give true/false as 3rd token for boolean', () => {
       const pos = { line: 35, col: 20 }
       const line = getLine(workspace, bpFileName, pos)
@@ -270,10 +263,6 @@ describe('Test auto complete', () => {
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })
 
-    // TODO: this test is broken because attribute key is now included in the source range
-    //       since the file being analyzed has the attribute in question defined the context
-    //       gets the wrong ref.path value
-    // eslint-disable-next-line jest/no-disabled-tests
     it('should give value as 3rd token', () => {
       const pos = { line: 89, col: 13 }
       const line = getLine(workspace, bpFileName, pos)
@@ -284,10 +273,6 @@ describe('Test auto complete', () => {
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })
 
-    // TODO: this test is broken because attribute key is now included in the source range
-    //       since the file being analyzed has the attribute in question defined the context
-    //       gets the wrong ref.path value
-    // eslint-disable-next-line jest/no-disabled-tests
     it('should give value as 3rd token - nested', () => {
       const pos = { line: 95, col: 20 }
       const line = getLine(workspace, bpFileName, pos)
@@ -328,10 +313,6 @@ describe('Test auto complete', () => {
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })
 
-    // TODO: this test is broken because attribute key is now included in the source range
-    //       since the file being analyzed has the attribute in question defined the context
-    //       gets the wrong ref.path value
-    // eslint-disable-next-line jest/no-disabled-tests
     it('should return list inside value', () => {
       const pos = { line: 134, col: 24 }
       const line = getLine(workspace, bpFileName, pos)
@@ -353,18 +334,18 @@ describe('Test auto complete', () => {
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })
 
-    it('should suggest all types and instances on first token with adapter', () => {
+    it('should suggest all types on first token with adapter', () => {
       const pos = { line: 139, col: 20 }
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line, pos)
-      const include = [...types, ...instances].map(n => n.replace('vs_', ''))
+      const include = [...types].map(n => n.replace('vs_', ''))
       const exclude = [...kw, ...adapterRef]
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })
 
     it('should suggest all instance fields', () => {
-      const pos = { line: 139, col: 31 }
+      const pos = { line: 139, col: 45 }
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line, pos)
@@ -374,7 +355,7 @@ describe('Test auto complete', () => {
     })
 
     it('should suggest all instance fields with 1 level nesting', () => {
-      const pos = { line: 142, col: 39 }
+      const pos = { line: 142, col: 54 }
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line, pos)
@@ -384,7 +365,7 @@ describe('Test auto complete', () => {
     })
 
     it('should suggest all instance fields with 2 level nesting', () => {
-      const pos = { line: 142, col: 49 }
+      const pos = { line: 142, col: 64 }
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line, pos)
@@ -394,7 +375,7 @@ describe('Test auto complete', () => {
     })
 
     it('should suggest fields when base is an object type', () => {
-      const pos = { line: 145, col: 24 }
+      const pos = { line: 145, col: 31 }
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line, pos)
@@ -404,11 +385,11 @@ describe('Test auto complete', () => {
     })
 
     it('should suggest annotations when base is an object type with 1 level nesting', () => {
-      const pos = { line: 145, col: 31 }
+      const pos = { line: 145, col: 38 }
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line, pos)
-      const include = ['label', '_required']
+      const include = ['label']
       const exclude = ['loaner', 'reason', 'propety', 'weekends_only', ...types, ...instances]
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })
@@ -433,18 +414,18 @@ describe('Test auto complete', () => {
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })
 
-    it('should suggest all types and instances on first token with adapter in template', () => {
+    it('should suggest all types on first token with adapter in template', () => {
       const pos = { line: 148, col: 22 }
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line, pos)
-      const include = [...types, ...instances].map(n => n.replace('vs_', ''))
+      const include = [...types].map(n => n.replace('vs_', ''))
       const exclude = [...kw, ...adapterRef]
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })
 
     it('should suggest all fields inside string template', () => {
-      const pos = { line: 148, col: 27 }
+      const pos = { line: 148, col: 34 }
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line, pos)
@@ -454,11 +435,11 @@ describe('Test auto complete', () => {
     })
 
     it('should suggest all field\'s annotations inside string template', () => {
-      const pos = { line: 148, col: 34 }
+      const pos = { line: 148, col: 41 }
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line, pos)
-      const include = ['label', '_required']
+      const include = ['label']
       const exclude = ['loaner', 'reason', 'propety', 'weekends_only', ...types, ...instances]
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })
@@ -483,18 +464,18 @@ describe('Test auto complete', () => {
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })
 
-    it('should suggest all types and instances on first token with adapter in template with prefix', () => {
+    it('should suggest all types on first token with adapter in template with prefix', () => {
       const pos = { line: 151, col: 26 }
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line, pos)
-      const include = [...types, ...instances].map(n => n.replace('vs_', ''))
+      const include = [...types].map(n => n.replace('vs_', ''))
       const exclude = [...kw, ...adapterRef]
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })
 
     it('should suggest all fields inside string template with prefix', () => {
-      const pos = { line: 151, col: 31 }
+      const pos = { line: 151, col: 38 }
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line, pos)
@@ -504,11 +485,11 @@ describe('Test auto complete', () => {
     })
 
     it('should suggest all field\'s annotations inside string template with prefix', () => {
-      const pos = { line: 151, col: 38 }
+      const pos = { line: 151, col: 45 }
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line, pos)
-      const include = ['label', '_required']
+      const include = ['label']
       const exclude = ['loaner', 'reason', 'propety', 'weekends_only', ...types, ...instances]
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })
@@ -533,18 +514,18 @@ describe('Test auto complete', () => {
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })
 
-    it('should suggest all types and instances on first token with adapter in template with empty prefix', () => {
+    it('should suggest all types on first token with adapter in template with empty prefix', () => {
       const pos = { line: 154, col: 26 }
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line, pos)
-      const include = [...types, ...instances].map(n => n.replace('vs_', ''))
+      const include = [...types].map(n => n.replace('vs_', ''))
       const exclude = [...kw, ...adapterRef]
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })
 
     it('should suggest all fields inside string template with empty prefix', () => {
-      const pos = { line: 154, col: 31 }
+      const pos = { line: 154, col: 38 }
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line, pos)
@@ -554,11 +535,11 @@ describe('Test auto complete', () => {
     })
 
     it('should suggest all field\'s annotations inside string template with empty prefix', () => {
-      const pos = { line: 154, col: 38 }
+      const pos = { line: 154, col: 45 }
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line, pos)
-      const include = ['label', '_required']
+      const include = ['label']
       const exclude = ['loaner', 'reason', 'propety', 'weekends_only', ...types, ...instances]
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })
@@ -586,18 +567,18 @@ describe('Test auto complete', () => {
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })
 
-    it('should suggest all types and instances on first token with adapter in template with complex prefix', () => {
+    it('should suggest all types on first token with adapter in template with complex prefix', () => {
       const pos = { line: 157, col: 26 }
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line, pos)
-      const include = [...types, ...instances].map(n => n.replace('vs_', ''))
+      const include = [...types].map(n => n.replace('vs_', ''))
       const exclude = [...kw, ...adapterRef]
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })
 
     it('should suggest all fields inside string template with complex prefix', () => {
-      const pos = { line: 157, col: 31 }
+      const pos = { line: 157, col: 38 }
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line, pos)
@@ -607,21 +588,21 @@ describe('Test auto complete', () => {
     })
 
     it('should suggest all field\'s annotations inside string template with complex prefix', () => {
-      const pos = { line: 157, col: 38 }
+      const pos = { line: 157, col: 45 }
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line, pos)
-      const include = ['label', '_required']
+      const include = ['label']
       const exclude = ['loaner', 'reason', 'propety', 'weekends_only', ...types, ...instances]
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })
 
     it('should suggest a complex annotation fields', () => {
-      const pos = { line: 160, col: 35 }
+      const pos = { line: 160, col: 42 }
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
       const suggestions = provideWorkspaceCompletionItems(workspace, ctx, line, pos)
-      const include = ['first_name', 'last_name', 'age']
+      const include = ['first_name', 'last_name']
       const exclude = ['loaner', 'reason', 'propety', 'weekends_only', ...types, ...instances]
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })

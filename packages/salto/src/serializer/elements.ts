@@ -45,13 +45,13 @@ export const serialize = (elements: Element[]): string => {
 export const deserialize = (data: string): Element[] => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const reviveElemID = (v: {[key: string]: any}): ElemID => (
-    new ElemID(v.adapter, ...v.nameParts)
+    new ElemID(v.adapter, v.typeName, v.idType, ...v.nameParts)
   )
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const revivers: {[key: string]: (v: {[key: string]: any}) => Element|Expression} = {
     [InstanceElement.name]: v => new InstanceElement(
-      reviveElemID(v.elemID),
+      reviveElemID(v.elemID).name,
       v.type,
       v.value,
     ),

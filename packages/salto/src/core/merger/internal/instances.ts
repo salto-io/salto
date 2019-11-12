@@ -51,7 +51,7 @@ const mergeInstanceDefinitions = (
     ? _.merge({}, defaults || {}, valueMergeResult.merged)
     : valueMergeResult.merged
   return {
-    merged: new InstanceElement(elemID, type, valueWithDefault),
+    merged: new InstanceElement(elemID.name, type, valueWithDefault),
     errors: valueMergeResult.errors,
   }
 }

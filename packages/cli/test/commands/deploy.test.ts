@@ -74,7 +74,7 @@ describe('deploy command', () => {
           wu((preview()).itemsByEvalOrder()).forEach(item => command.updateAction(item, 'started'))
         })
         it('should print action upon started step', async () => {
-          expect(cliOutput.stdout.content.search('salesforce_lead')).toBeGreaterThan(0)
+          expect(cliOutput.stdout.content.search('salesforce.lead')).toBeGreaterThan(0)
           expect(cliOutput.stdout.content.search('Changing')).toBeGreaterThan(0)
         })
         it('should print completion upon finish', async () => {

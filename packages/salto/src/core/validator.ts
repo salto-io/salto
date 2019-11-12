@@ -210,7 +210,7 @@ const validateType = (element: Type): ValidationError[] => {
   const errors = _.flatten(Object.keys(element.annotations)
     .filter(k => element.annotationTypes[k]).map(
       k => validateValue(
-        element.elemID.createNestedID(k),
+        element.elemID.createNestedID('attr', k),
         element.annotations[k],
         element.annotationTypes[k]
       )

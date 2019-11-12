@@ -28,7 +28,7 @@ export {
   WorkspaceError, SourceFragment, WorkspaceErrorSeverity,
 } from './src/workspace/workspace'
 export { Config, loadConfig } from './src/workspace/config'
-export { SourceMap, SourceRange } from './src/parser/parse'
-export { dump } from './src/parser/dump'
+export { SourceMap, SourceRange, parseElemID } from './src/parser/parse'
+export { dump, dumpElemID } from './src/parser/dump'
 
 export const file = f

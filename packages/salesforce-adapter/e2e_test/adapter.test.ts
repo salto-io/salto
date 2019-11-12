@@ -75,12 +75,15 @@ describe('Salesforce adapter E2E with real account', () => {
 
 
       // Test standard picklist values from a standard value set
-      expect(
-        lead.fields.lead_source.annotations[Type.VALUES]
-      ).toEqual(new ElemID(
-        constants.SALESFORCE,
-        bpCase(STANDARD_VALUE_SET), 'lead_source'
-      ).getFullName())
+      expect(lead.fields.lead_source.annotations[Type.VALUES]).toEqual(
+        // TODO:ORI - export standard value set type ID and use it here to create the instance ID
+        new ElemID(
+          constants.SALESFORCE,
+          bpCase(STANDARD_VALUE_SET),
+          'instance',
+          'lead_source',
+        ).getFullName()
+      )
 
       // Test picklist values
       expect(
@@ -174,9 +177,8 @@ describe('Salesforce adapter E2E with real account', () => {
     it('should add new profile instance', async () => {
       const instanceElementName = 'TestAddProfileInstance__c'
       const mockElemID = new ElemID(constants.SALESFORCE, 'test')
-      const mockInstanceID = new ElemID(constants.SALESFORCE, instanceElementName)
 
-      const instance = new InstanceElement(mockInstanceID, new ObjectType({
+      const instance = new InstanceElement(instanceElementName, new ObjectType({
         elemID: mockElemID,
         fields: {
         },
@@ -423,8 +425,7 @@ describe('Salesforce adapter E2E with real account', () => {
     it('should modify an instance', async () => {
       const instanceElementName = 'TestProfileInstanceUpdate__c'
       const mockElemID = new ElemID(constants.SALESFORCE, 'test')
-      const mockInstanceID = new ElemID(constants.SALESFORCE, instanceElementName)
-      const oldInstance = new InstanceElement(mockInstanceID, new ObjectType({
+      const oldInstance = new InstanceElement(instanceElementName, new ObjectType({
         elemID: mockElemID,
         fields: {
         },
@@ -463,7 +464,7 @@ describe('Salesforce adapter E2E with real account', () => {
         description: 'new e2e profile',
       })
 
-      const newInstance = new InstanceElement(mockInstanceID, new ObjectType({
+      const newInstance = new InstanceElement(instanceElementName, new ObjectType({
         elemID: mockElemID,
         fields: {
         },
@@ -1301,7 +1302,7 @@ describe('Salesforce adapter E2E with real account', () => {
         await client.delete('AssignmentRule', 'Lead.NonStandard').catch(() => undefined)
 
         before = new InstanceElement(
-          new ElemID(constants.SALESFORCE, 'lead_assignment_rules'),
+          'lead_assignment_rules',
           dummyAssignmentRulesType,
           await getRulesFromClient(),
         )
@@ -1313,7 +1314,7 @@ describe('Salesforce adapter E2E with real account', () => {
 
       beforeEach(async () => {
         after = new InstanceElement(
-          before.elemID,
+          before.elemID.name,
           before.type,
           _.cloneDeep(before.value),
         )

@@ -18,14 +18,42 @@ export interface Values {
 export type FieldMap = Record<string, Field>
 type TypeMap = Record<string, Type>
 
+export type ElemIDType = 'type' | 'field' | 'instance' | 'attr' | 'annotation'
+export const ElemIDTypes = ['type', 'field', 'instance', 'attr', 'annotation'] as ReadonlyArray<string>
+export const isElemIDType = (v: string): v is ElemIDType => ElemIDTypes.includes(v)
+
 export class ElemID {
-  static readonly NAMESPACE_SEPARATOR = '_'
-  static readonly CONFIG_INSTANCE_NAME = '_config'
+  static readonly NAMESPACE_SEPARATOR = '.'
+  static readonly CONFIG_NAME = '_config'
+
+  static fromFullName(fullName: string): ElemID {
+    const [adapter, typeName, idType, ...name] = fullName.split(ElemID.NAMESPACE_SEPARATOR)
+    if (idType === undefined) {
+      return new ElemID(adapter, typeName)
+    }
+    if (!isElemIDType(idType)) {
+      throw new Error(`Invalid ID type ${idType}`)
+    }
+    if (idType === 'instance' && _.isEmpty(name)) {
+      // This is a config instance (the last name part is omitted)
+      return new ElemID(adapter, typeName, idType, ElemID.CONFIG_NAME)
+    }
+    return new ElemID(adapter, typeName, idType, ...name)
+  }
 
   readonly adapter: string
+  readonly typeName: string
+  readonly idType: ElemIDType
   private readonly nameParts: ReadonlyArray<string>
-  constructor(adapter: string, ...name: ReadonlyArray<string>) {
+  constructor(
+    adapter: string,
+    typeName?: string,
+    idType?: ElemIDType,
+    ...name: ReadonlyArray<string>
+  ) {
     this.adapter = adapter
+    this.typeName = _.isEmpty(typeName) ? ElemID.CONFIG_NAME : typeName as string
+    this.idType = idType || 'type'
     this.nameParts = name
   }
 
@@ -34,28 +62,80 @@ export class ElemID {
   }
 
   get nestingLevel(): number {
-    return this.isConfig() ? 0 : this.nameParts.length
+    if (this.isTopLevel()) {
+      return 0
+    }
+    if (this.idType === 'instance') {
+      // First name part is the instance name which is top level
+      return this.nameParts.length - 1
+    }
+    return this.nameParts.length
   }
 
   private fullNameParts(): string[] {
-    return [this.adapter, ...this.nameParts].filter(part => !_.isEmpty(part)) as string[]
+    const parts = this.idType === 'type'
+      ? [this.adapter, this.typeName]
+      : [this.adapter, this.typeName, this.idType, ...this.nameParts]
+    return parts.filter(part => !_.isEmpty(part)) as string[]
   }
 
   getFullName(): string {
-    return this.isConfig() ? this.adapter : this.fullNameParts().join(ElemID.NAMESPACE_SEPARATOR)
+    const nameParts = this.fullNameParts()
+    return this.fullNameParts()
+      // If the last part of the name is empty we can omit it
+      .filter((part, idx) => idx !== nameParts.length - 1 || part !== ElemID.CONFIG_NAME)
+      .join(ElemID.NAMESPACE_SEPARATOR)
   }
 
   isConfig(): boolean {
-    return this.nameParts.length === 0
-      || (this.nameParts.length === 1 && this.nameParts[0] === ElemID.CONFIG_INSTANCE_NAME)
+    return this.typeName === ElemID.CONFIG_NAME
+  }
+
+  isTopLevel(): boolean {
+    return this.idType === 'type'
+      || (this.idType === 'instance' && this.nameParts.length === 1)
   }
 
   createNestedID(...nameParts: string[]): ElemID {
-    return new ElemID(this.adapter, ...[...this.nameParts, ...nameParts])
+    if (this.idType === 'type') {
+      // IDs nested under type IDs should have a different type
+      const [nestedIDType, ...nestedNameParts] = nameParts
+      if (!isElemIDType(nestedIDType)) {
+        throw new Error(`Invalid ID type ${nestedIDType}`)
+      }
+      return new ElemID(this.adapter, this.typeName, nestedIDType, ...nestedNameParts)
+    }
+    return new ElemID(this.adapter, this.typeName, this.idType, ...this.nameParts, ...nameParts)
   }
 
   createParentID(): ElemID {
-    return new ElemID(this.adapter, ...this.nameParts.slice(0, -1))
+    const newNameParts = this.nameParts.slice(0, -1)
+    if (!_.isEmpty(newNameParts)) {
+      // Parent should have the same type as this ID
+      return new ElemID(this.adapter, this.typeName, this.idType, ...newNameParts)
+    }
+    if (this.isTopLevel()) {
+      // The parent of top level elements is the adapter
+      return new ElemID(this.adapter)
+    }
+    // The parent of all other id types is the type
+    return new ElemID(this.adapter, this.typeName)
+  }
+
+  createTopLevelParentID(): { id: ElemID; path: ReadonlyArray<string> } {
+    if (this.isTopLevel()) {
+      // This is already the top level ID
+      return { id: this, path: [] }
+    }
+    if (this.idType === 'instance') {
+      // Instance is a top level ID, the name of the instance is always the first name part
+      return {
+        id: new ElemID(this.adapter, this.typeName, this.idType, this.nameParts[0]),
+        path: this.nameParts.slice(1),
+      }
+    }
+    // Everything other than instance is nested under type
+    return { id: new ElemID(this.adapter, this.typeName), path: this.nameParts }
   }
 }
 
@@ -80,7 +160,7 @@ export class Field implements Element {
     public annotations: Values = {},
     public isList: boolean = false,
   ) {
-    this.elemID = parentID.createNestedID(name)
+    this.elemID = parentID.createNestedID('field', name)
   }
 
   isEqual(other: Field): boolean {
@@ -300,8 +380,8 @@ export class InstanceElement implements Element {
   path?: string[]
   type: ObjectType
   value: Values
-  constructor(elemID: ElemID, type: ObjectType, value: Values, path?: string[]) {
-    this.elemID = elemID
+  constructor(name: string, type: ObjectType, value: Values, path?: string[]) {
+    this.elemID = type.elemID.createNestedID('instance', name)
     this.type = type
     this.value = value
     this.path = path
@@ -368,7 +448,7 @@ export class ElementsRegistry {
       } else if (type as any in PrimitiveTypes) {
         res = new PrimitiveType({ elemID, primitive: type as PrimitiveTypes })
       } else {
-        res = new InstanceElement(elemID, type as ObjectType, {})
+        res = new InstanceElement(elemID.name, type as ObjectType, {})
       }
       this.registerElement(res)
     }

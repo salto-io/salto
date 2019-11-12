@@ -9,13 +9,8 @@ describe('Test adapters.ts', () => {
 
   const notConfigType = new ObjectType({ elemID: new ElemID('salesforce', 'not_config') })
 
-  const configElemID = new ElemID(
-    configType.elemID.adapter,
-    ElemID.CONFIG_INSTANCE_NAME
-  )
-
   const bpConfig = new InstanceElement(
-    configElemID,
+    ElemID.CONFIG_NAME,
     configType,
     {
       username: 'bpuser',
@@ -26,7 +21,7 @@ describe('Test adapters.ts', () => {
   )
 
   const userConfig = new InstanceElement(
-    configElemID,
+    ElemID.CONFIG_NAME,
     configType,
     {
       username: 'useruser',
@@ -37,8 +32,8 @@ describe('Test adapters.ts', () => {
   )
 
   const RedHeringWrongAdapter = new InstanceElement(
-    new ElemID('err', ElemID.CONFIG_INSTANCE_NAME),
-    notConfigType,
+    ElemID.CONFIG_NAME,
+    new ObjectType({ elemID: new ElemID('err') }),
     {
       username: 'err',
       password: 'err',
@@ -48,7 +43,7 @@ describe('Test adapters.ts', () => {
   )
 
   const RedHeringNotConfig = new InstanceElement(
-    new ElemID(configType.elemID.adapter, 'reg'),
+    'reg',
     notConfigType,
     {
       username: 'err',

@@ -1,5 +1,5 @@
 import _ from 'lodash'
-
+import { dumpElemID } from 'salto'
 import { Element, isObjectType, isInstanceElement } from 'adapter-api'
 import { getLocations, SaltoElemLocation } from './location'
 import { EditorWorkspace } from './workspace'
@@ -14,14 +14,14 @@ const getUsages = (
   if (isObjectType(element)) {
     return _(element.fields)
       .values()
-      .filter(f => fullName === f.type.elemID.getFullName())
+      .filter(f => fullName === dumpElemID(f.type))
       .map(f => getLocations(workspace, f.elemID.getFullName()))
       .flatten()
       .value()
   }
   if (isInstanceElement(element)) {
-    const typeFullName = element.type.elemID.getFullName()
-    return (typeFullName === fullName) ? getLocations(workspace, element.elemID.getFullName())
+    const typeDumpName = dumpElemID(element.type)
+    return (typeDumpName === fullName) ? getLocations(workspace, element.elemID.getFullName())
       : []
   }
   return []

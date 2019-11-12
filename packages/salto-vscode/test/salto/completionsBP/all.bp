@@ -136,28 +136,28 @@ vs_person hadar {
 
 type vs_ref_tester {
     vs_str field_ref_simple {
-        label = vs_weekend_car.reason
+        label = vs.loan.instance.weekend_car.reason
     }
     vs_str field_ref_nested {
-        label = vs_weekend_car.propety.car_owner.first_name
+        label = vs.loan.instance.weekend_car.propety.car_owner.first_name
     }
     vs_str anno_ref_simple {
-        label = vs_loan.reason.label
+        label = vs.loan.field.reason.label
     }
     vs_str in_string {
-        label = "${vs_loan.reason.label}"
+        label = "${vs.loan.field.reason.label}"
     }
     vs_str in_string_pre {
-        label = "pre_${vs_loan.reason.label}"
+        label = "pre_${vs.loan.field.reason.label}"
     }
     vs_str in_string_space {
-        label = "    ${vs_loan.reason.label}"
+        label = "    ${vs.loan.field.reason.label}"
     }
     vs_str in_string_complex {
-        label = "X X ${vs_loan.reason.label}"
+        label = "X X ${vs.loan.field.reason.label}"
     }
     vs_str anno_complex {
-        label = vs_foo.fname.owner.first_name
+        label = vs.foo.field.fname.owner.first_name
     }
 }
 
@@ -179,6 +179,7 @@ type vs_foo {
     vs_name fname {
         owner = {
             first_name = "OK"
+            last_name = "OKOK"
         }
     }
 }

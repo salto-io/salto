@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import {
-  ReferenceExpression, TemplateExpression, EXPRESSION_TRAVERSAL_SEPERATOR,
+  ReferenceExpression, TemplateExpression,
 } from 'adapter-api'
 import { HclExpression } from '../../../src/parser/internal/hcl'
 import { SourceRange } from '../../../src/parser/internal/types'
@@ -45,9 +45,7 @@ const devaluate = (value: any): HclExpression => {
 
   const devaluateReference = (ref: ReferenceExpression): HclExpression => ({
     type: 'reference',
-    value: ref.traversalParts
-      .join(EXPRESSION_TRAVERSAL_SEPERATOR)
-      .split(EXPRESSION_TRAVERSAL_SEPERATOR),
+    value: ref.traversalParts,
     expressions: [],
     source,
   })

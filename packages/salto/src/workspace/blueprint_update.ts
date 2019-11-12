@@ -38,12 +38,12 @@ export const getChangeLocations = (
         // TODO: figure out how to choose the correct location if there is more than one option
         return [possibleLocations[0]]
       }
-    } else {
+    } else if (!change.id.isTopLevel()) {
       // We add new values / elements as the last part of a parent scope unless the parent scope
       // is a config element
       const parentID = change.id.createParentID()
       const possibleLocations = sourceMap.get(parentID.getFullName()) || []
-      if (possibleLocations.length > 0 && !parentID.isConfig()) {
+      if (possibleLocations.length > 0) {
         // TODO: figure out how to choose the correct location if there is more than one option
         return [lastNestedLocation(possibleLocations[0])]
       }

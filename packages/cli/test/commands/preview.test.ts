@@ -48,7 +48,7 @@ describe('preview command', () => {
     it('should find all elements', async () => {
       expect(cliOutput.stdout.content).toContain('lead')
       expect(cliOutput.stdout.content).toContain('account')
-      expect(cliOutput.stdout.content).toContain('salto_employee_instance')
+      expect(cliOutput.stdout.content).toContain('salto.employee.instance.test')
     })
 
     it('should find instance change', async () => {

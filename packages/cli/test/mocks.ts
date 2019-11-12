@@ -170,7 +170,7 @@ export const elements = (): Element[] => {
   })
 
   const saltoEmployeeInstance = new InstanceElement(
-    new ElemID('salto', 'employee_instance'), saltoEmployee,
+    'test', saltoEmployee,
     { name: 'FirstEmployee', nicknames: ['you', 'hi'], office: { label: 'bla', name: 'foo' } }
   )
 
@@ -236,10 +236,10 @@ export const preview = (): Plan => {
       change('remove', 'lead', 'status'),
     ],
     [
-      detailedChange('modify', ['lead', 'label'], 'old', 'new'),
-      detailedChange('add', ['lead', 'do_you_have_a_sales_team'], undefined, 'new field'),
-      detailedChange('modify', ['lead', 'how_many_sales_people', 'label'], 'old label', 'new label'),
-      detailedChange('remove', ['lead', 'status'], 'old field', undefined),
+      detailedChange('modify', ['lead', 'field', 'label'], 'old', 'new'),
+      detailedChange('add', ['lead', 'field', 'do_you_have_a_sales_team'], undefined, 'new field'),
+      detailedChange('modify', ['lead', 'field', 'how_many_sales_people', 'label'], 'old label', 'new label'),
+      detailedChange('remove', ['lead', 'field', 'status'], 'old field', undefined),
     ]
   )
   result.addNode(_.uniqueId('lead'), [], leadPlanItem)
@@ -251,8 +251,8 @@ export const preview = (): Plan => {
       change('modify', 'account', 'name'),
     ],
     [
-      detailedChange('add', ['account', 'status'], undefined, { name: 'field', type: 'picklist' }),
-      detailedChange('modify', ['account', 'name', 'label'], 'old label', 'new label'),
+      detailedChange('add', ['account', 'field', 'status'], undefined, { name: 'field', type: 'picklist' }),
+      detailedChange('modify', ['account', 'field', 'name', 'label'], 'old label', 'new label'),
     ]
   )
   result.addNode(_.uniqueId('account'), [], accountPlanItem)
@@ -318,7 +318,7 @@ export const deploy = async (
 export const describe = async (_searchWords: string[]):
   Promise<SearchResult> =>
   ({
-    key: 'salto_office',
+    key: 'salto.office',
     element: elements()[2],
     isGuess: false,
   })
@@ -330,22 +330,21 @@ export const exportToCsv = async (_typeId: string, _workspace: Workspace,
     const testType = new ObjectType({
       elemID: new ElemID('salesforce', 'test'),
     })
-    const elemID = new ElemID('salesforce')
     const values = [
       {
-        Id: 1,
+        Id: '1',
         FirstName: 'Daile',
         LastName: 'Limeburn',
         Email: 'dlimeburn0@blogs.com',
         Gender: 'Female',
       }, {
-        Id: 2,
+        Id: '2',
         FirstName: 'Murial',
         LastName: 'Morson',
         Email: 'mmorson1@google.nl',
         Gender: 'Female',
       }, {
-        Id: 3,
+        Id: '3',
         FirstName: 'Minna',
         LastName: 'Noe',
         Email: 'mnoe2@wikimedia.org',
@@ -353,7 +352,7 @@ export const exportToCsv = async (_typeId: string, _workspace: Workspace,
       },
     ]
     yield values.map(value => new InstanceElement(
-      elemID,
+      value.Id,
       testType,
       value
     ))

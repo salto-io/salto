@@ -216,7 +216,7 @@ describe('Test lookup filters filter', () => {
     })
 
     it('should ignore lookupFilter for non objectType', () => {
-      filter.onAdd(new InstanceElement(objectTypeElemId, mockObject, {}))
+      filter.onAdd(new InstanceElement('test', mockObject, {}))
       expect(updateSpy).not.toHaveBeenCalled()
     })
   })
@@ -337,8 +337,8 @@ describe('Test lookup filters filter', () => {
     })
 
     it('should ignore lookupFilter for non objectType', () => {
-      filter.onUpdate(new InstanceElement(objectTypeElemId, beforeObject, {}),
-        new InstanceElement(objectTypeElemId, afterObject, {}), [])
+      filter.onUpdate(new InstanceElement('test', beforeObject, {}),
+        new InstanceElement('test', afterObject, {}), [])
       expect(updateSpy).not.toHaveBeenCalled()
     })
   })

@@ -73,28 +73,28 @@ describe('Elements validation', () => {
       clonedType.fields.nested.annotations.annostr = 1
       const errors = validateElements([clonedType])
       expect(errors).toHaveLength(1)
-      expect(errors[0].elemID.getFullName()).toBe('salto_nested_nested_annostr')
+      expect(errors[0].elemID).toEqual(clonedType.fields.nested.elemID.createNestedID('annostr'))
     })
 
     it('should return error on bad num primitive type', () => {
       clonedType.fields.nested.annotations.annonum = 'str'
       const errors = validateElements([clonedType])
       expect(errors).toHaveLength(1)
-      expect(errors[0].elemID.getFullName()).toBe('salto_nested_nested_annonum')
+      expect(errors[0].elemID).toEqual(clonedType.fields.nested.elemID.createNestedID('annonum'))
     })
 
     it('should return error on bad bool primitive type', () => {
       clonedType.fields.nested.annotations.annoboolean = 1
       const errors = validateElements([clonedType])
       expect(errors).toHaveLength(1)
-      expect(errors[0].elemID.getFullName()).toBe('salto_nested_nested_annoboolean')
+      expect(errors[0].elemID).toEqual(clonedType.fields.nested.elemID.createNestedID('annoboolean'))
     })
 
     it('should return error on nested annotation mismatch', () => {
       clonedType.annotations.nested = { str: 1 }
       const errors = validateElements([clonedType])
       expect(errors).toHaveLength(1)
-      expect(errors[0].elemID).toEqual(clonedType.elemID.createNestedID('nested', 'str'))
+      expect(errors[0].elemID).toEqual(clonedType.elemID.createNestedID('attr', 'nested', 'str'))
     })
 
     it('should return error object/primitive mismatch', () => {
@@ -109,7 +109,7 @@ describe('Elements validation', () => {
 
   describe('validate instances', () => {
     const nestedInstance = new InstanceElement(
-      new ElemID('salto', 'nestedinst'),
+      'nestedinst',
       nestedType,
       {
         nested: {

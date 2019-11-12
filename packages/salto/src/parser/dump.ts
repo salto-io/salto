@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import {
-  Type, Field, Values, isObjectType, PrimitiveTypes, ElemID,
+  Type, Field, Values, isObjectType, PrimitiveTypes,
   isPrimitiveType, Element, isInstanceElement, isField, isElement, Value,
 } from 'adapter-api'
 import HclParser, { DumpedHclBlock, HclDumpReturn } from './internal/hcl'
@@ -27,6 +27,15 @@ const QUOTE_MARKER = 'Q_MARKER'
 
 const markQuote = (value: string): string => `${QUOTE_MARKER}${value}${QUOTE_MARKER}`
 
+export const dumpElemID = ({ elemID }: Type): string => {
+  if (elemID.isConfig()) {
+    return elemID.adapter
+  }
+  return [elemID.adapter, elemID.name]
+    .filter(part => !_.isEmpty(part))
+    .join(Keywords.NAMESPACE_SEPARATOR)
+}
+
 const markDumpedBlockQuotes = (block: DumpedHclBlock): DumpedHclBlock => {
   block.labels = block.labels.map(markQuote)
   block.blocks = block.blocks.map(markDumpedBlockQuotes)
@@ -38,7 +47,7 @@ const removeQuotes = (
 ): HclDumpReturn => value.replace(new RegExp(`"${QUOTE_MARKER}|${QUOTE_MARKER}"`, 'g'), '')
 
 const dumpFieldBlock = (field: Field): DumpedHclBlock => ({
-  type: field.type.elemID.getFullName(),
+  type: dumpElemID(field.type),
   labels: [field.elemID.name],
   attrs: field.annotations,
   blocks: [],
@@ -46,7 +55,7 @@ const dumpFieldBlock = (field: Field): DumpedHclBlock => ({
 
 const dumpListFieldBlock = (field: Field): DumpedHclBlock => ({
   type: Keywords.LIST_DEFINITION,
-  labels: [field.type.elemID.getFullName(), field.elemID.name],
+  labels: [dumpElemID(field.type), field.elemID.name],
   attrs: field.annotations,
   blocks: [],
 })
@@ -57,7 +66,7 @@ const dumpAnnotationsBlock = (element: Type): DumpedHclBlock[] =>
     labels: [],
     attrs: {},
     blocks: Object.entries(element.annotationTypes).map(([key, type]) => ({
-      type: type.elemID.getFullName(),
+      type: dumpElemID(type),
       labels: [key],
       attrs: {},
       blocks: [],
@@ -70,7 +79,7 @@ const dumpElementBlock = (elem: Element): DumpedHclBlock => {
   if (isObjectType(elem)) {
     return {
       type: elem.isSettings ? Keywords.SETTINGS_DEFINITION : Keywords.TYPE_DEFINITION,
-      labels: [elem.elemID.getFullName()],
+      labels: [dumpElemID(elem)],
       attrs: elem.annotations,
       blocks: dumpAnnotationsBlock(elem).concat(
         Object.values(elem.fields).map(dumpBlock)
@@ -81,7 +90,7 @@ const dumpElementBlock = (elem: Element): DumpedHclBlock => {
     return {
       type: Keywords.TYPE_DEFINITION,
       labels: [
-        elem.elemID.getFullName(),
+        dumpElemID(elem),
         Keywords.TYPE_INHERITANCE_SEPARATOR,
         getPrimitiveTypeName(elem.primitive),
       ],
@@ -90,20 +99,11 @@ const dumpElementBlock = (elem: Element): DumpedHclBlock => {
     }
   }
   if (isInstanceElement(elem)) {
-    // Workaround for ambigous IDs - we have to prefix instance names with the type name
-    // This part should be removed once we make the element ID schema consistent so we can
-    // infer the prefix from the instance type instead of writing it twice
-    const getInstanceName = (id: ElemID): string => {
-      if (id.nestingLevel > 1) {
-        return [getInstanceName(id.createParentID()), id.name].join(ElemID.NAMESPACE_SEPARATOR)
-      }
-      return id.name
-    }
     return {
-      type: elem.type.elemID.getFullName(),
+      type: dumpElemID(elem.type),
       labels: elem.elemID.isConfig() || elem.type.isSettings
         ? []
-        : [getInstanceName(elem.elemID)],
+        : [elem.elemID.name],
       attrs: elem.value,
       blocks: [],
     }

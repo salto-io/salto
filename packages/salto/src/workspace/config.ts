@@ -28,7 +28,6 @@ class ConfigParseError extends Error {
   }
 }
 
-const saltoConfigInstanceID = new ElemID('salto', ElemID.CONFIG_INSTANCE_NAME)
 const saltoConfigElemID = new ElemID('salto')
 const requireAnno = { [Type.REQUIRED]: true }
 export const saltoConfigType = new ObjectType({
@@ -111,8 +110,8 @@ export const getConfigPath = (baseDir: string): string => (
 export const parseConfig = async (buffer: Buffer): Promise<Partial<Config>> => {
   const parsedConfig = await parse(buffer, '')
   const [configInstance] = parsedConfig.elements
-    .filter(e => _.isEqual(e.elemID, saltoConfigInstanceID))
     .filter(isInstanceElement)
+    .filter(e => e.type.elemID.getFullName() === saltoConfigType.elemID.getFullName())
   if (!configInstance) throw new ConfigParseError()
   return _.mapKeys(configInstance.value, (_v, k) => _.camelCase(k)) as unknown as Partial<Config>
 }
@@ -121,7 +120,7 @@ export const dumpConfig = async (baseDir: string, config: Partial<Config>): Prom
   const configPath = getConfigPath(baseDir)
   await mkdirp(path.dirname(configPath))
   const configInstance = new InstanceElement(
-    saltoConfigInstanceID,
+    ElemID.CONFIG_NAME,
     saltoConfigType,
     _.mapKeys(config as object, (_v, k) => _.snakeCase(k))
   )

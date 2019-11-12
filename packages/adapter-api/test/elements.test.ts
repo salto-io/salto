@@ -77,7 +77,7 @@ describe('Test elements.ts', () => {
   })
 
   it('Should test getValuesThatNotInPrevOrDifferent func', () => {
-    const prevInstance = new InstanceElement(new ElemID('test', 'diff'), new ObjectType({
+    const prevInstance = new InstanceElement('diff', new ObjectType({
       elemID: new ElemID('test', 'diff'),
       fields: {
       },
@@ -101,7 +101,7 @@ describe('Test elements.ts', () => {
       description: 'old unit test instance profile',
     },)
 
-    const newInstance = new InstanceElement(new ElemID('test', 'diff'), new ObjectType({
+    const newInstance = new InstanceElement('diff', new ObjectType({
       elemID: new ElemID('test', 'diff'),
       fields: {
       },
@@ -266,8 +266,8 @@ describe('Test elements.ts', () => {
     const ot1 = registry.getElement(
       new ElemID('test', 'ot1')
     )
-    const inst = new InstanceElement(new ElemID('test', 'test'), ot1, { test: 'test' })
-    expect(inst.elemID).toEqual(new ElemID('test', 'test'))
+    const inst = new InstanceElement('test', ot1, { test: 'test' })
+    expect(inst.elemID).toEqual(new ElemID('test', 'ot1', 'instance', 'test'))
     expect(inst.type).toBe(ot1)
     expect(inst.value.test).toBe('test')
   })
@@ -277,18 +277,6 @@ describe('Test elements.ts', () => {
     const inst = registry.getElement(primID, ot1)
 
     expect(inst.type).toBe(ot1)
-  })
-
-  it('should create fullname', () => {
-    const regName = new ElemID('adapter', 'name').getFullName()
-    const nameMissing = new ElemID('adapter', '').getFullName()
-    const adapterMissing = new ElemID('', 'name').getFullName()
-    const config = new ElemID('adapter', ElemID.CONFIG_INSTANCE_NAME).getFullName()
-
-    expect(regName).toBe('adapter_name')
-    expect(nameMissing).toBe('adapter')
-    expect(adapterMissing).toBe('name')
-    expect(config).toBe('adapter')
   })
 
   describe('isEqualElements and type guards', () => {
@@ -304,7 +292,7 @@ describe('Test elements.ts', () => {
     })
 
     const strField = new Field(new ElemID('test', 'obj'), 'str_field', primStr)
-    const inst = new InstanceElement(new ElemID('test', 'inst'), objT, { str: 'test' })
+    const inst = new InstanceElement('inst', objT, { str: 'test' })
 
     it('should identify equal primitive types', () => {
       expect(isEqualElements(primStr, _.cloneDeep(primStr))).toBeTruthy()
@@ -361,17 +349,59 @@ describe('Test elements.ts', () => {
   })
 
   describe('ElemID', () => {
-    const exampleId = new ElemID('adapter', 'example')
+    const typeId = new ElemID('adapter', 'example')
+    const fieldId = typeId.createNestedID('field', 'test')
+    const typeInstId = typeId.createNestedID('instance', 'test')
+    const valueId = typeInstId.createNestedID('nested', 'value')
     const configTypeId = new ElemID('adapter')
-    const configInstId = new ElemID('adapter', ElemID.CONFIG_INSTANCE_NAME)
+    const configInstId = configTypeId.createNestedID('instance', ElemID.CONFIG_NAME)
+
+    describe('getFullName', () => {
+      it('should contain adapter and type name for type ID', () => {
+        expect(typeId.getFullName()).toEqual('adapter.example')
+      })
+      it('should contain type id and field name for field ID', () => {
+        expect(fieldId.getFullName()).toEqual(`${typeId.getFullName()}.field.test`)
+      })
+      it('should contain type id and instance name for instance ID', () => {
+        expect(typeInstId.getFullName()).toEqual(`${typeId.getFullName()}.instance.test`)
+      })
+      it('should contain inst id and value path for value in instance', () => {
+        expect(valueId.getFullName()).toEqual(`${typeInstId.getFullName()}.nested.value`)
+      })
+      it('should contain only adapter for config type', () => {
+        expect(configTypeId.getFullName()).toEqual(configTypeId.adapter)
+      })
+      it('should contain full type and the word instance for config instance', () => {
+        expect(configInstId.getFullName()).toEqual(
+          `${configTypeId.adapter}.${configTypeId.typeName}.instance`,
+        )
+      })
+    })
+
+    describe('fromFullName', () => {
+      it('should create elem ID from its full name', () => {
+        [typeId, fieldId, typeInstId, valueId, configTypeId, configInstId]
+          .forEach(id => expect(ElemID.fromFullName(id.getFullName())).toEqual(id))
+      })
+    })
 
     describe('nestingLevel', () => {
-      it('should return the number of nested namespaces', () => {
-        expect(exampleId.nestingLevel).toEqual(1)
-      })
-      describe('for config instance', () => {
+      describe('for config, types and instances', () => {
         it('should be zero', () => {
+          expect(typeId.nestingLevel).toEqual(0)
+          expect(typeInstId.nestingLevel).toEqual(0)
+          expect(configTypeId.nestingLevel).toEqual(0)
           expect(configInstId.nestingLevel).toEqual(0)
+        })
+      })
+      describe('for nested ids', () => {
+        it('should match the number of name parts', () => {
+          expect(fieldId.nestingLevel).toEqual(1)
+          expect(fieldId.createNestedID('a', 'b').nestingLevel).toEqual(3)
+        })
+        it('should match path length in instance values', () => {
+          expect(valueId.nestingLevel).toEqual(2)
         })
       })
     })
@@ -386,19 +416,59 @@ describe('Test elements.ts', () => {
       })
 
       it('should return false for other IDs', () => {
-        expect(exampleId.isConfig()).toBeFalsy()
+        expect(typeId.isConfig()).toBeFalsy()
       })
     })
 
     describe('createNestedID', () => {
-      it('should create an ID with one additional name part', () => {
-        expect(exampleId.createNestedID('test')).toEqual(new ElemID('adapter', 'example', 'test'))
+      describe('from type ID', () => {
+        it('should create nested ID with the correct id type', () => {
+          const fieldID = typeId.createNestedID('field', 'name')
+          expect(fieldID).toEqual(new ElemID('adapter', 'example', 'field', 'name'))
+          expect(fieldID.idType).toEqual('field')
+        })
+      })
+      describe('from field ID', () => {
+        let nestedId: ElemID
+        beforeEach(() => {
+          nestedId = fieldId.createNestedID('nested')
+        })
+        it('should keep the original id type', () => {
+          expect(nestedId.idType).toEqual(fieldId.idType)
+        })
+        it('should have the new name', () => {
+          expect(nestedId.name).toEqual('nested')
+        })
       })
     })
 
     describe('createParentID', () => {
-      it('should create an ID with one less name part', () => {
-        expect(exampleId.createParentID()).toEqual(new ElemID('adapter'))
+      describe('from type ID', () => {
+        it('should return the adapter ID', () => {
+          expect(typeId.createParentID()).toEqual(new ElemID(typeId.adapter))
+        })
+      })
+      describe('from instance ID', () => {
+        it('should return the adapter ID', () => {
+          expect(typeInstId.createParentID()).toEqual(new ElemID(typeInstId.adapter))
+        })
+      })
+      describe('from config instance ID', () => {
+        it('should return the adapter ID', () => {
+          expect(configInstId.createParentID()).toEqual(new ElemID(typeInstId.adapter))
+        })
+      })
+      describe('from field ID', () => {
+        it('should return the type ID', () => {
+          expect(fieldId.createParentID()).toEqual(new ElemID(fieldId.adapter, fieldId.typeName))
+        })
+      })
+      describe('from nested ID', () => {
+        it('should return one nesting level less deep', () => {
+          [fieldId, typeInstId, configInstId].forEach(
+            parent => expect(parent.createNestedID('test').createParentID()).toEqual(parent)
+          )
+        })
       })
     })
   })

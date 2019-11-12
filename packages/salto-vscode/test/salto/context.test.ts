@@ -1,5 +1,6 @@
 import * as path from 'path'
 
+import { ElemID } from 'adapter-api'
 import { Config, file } from 'salto'
 import { EditorWorkspace } from '../../src/salto/workspace'
 import { getPositionContext } from '../../src/salto/context'
@@ -46,8 +47,7 @@ describe('Cursor context resolver', () => {
       const pos = { line: 4, col: 1 }
       const ctx = getPositionContext(workspace, bpContent, filename, pos)
       expect(ctx.type).toBe('type')
-
-      expect(ctx.ref && ctx.ref.element.elemID.getFullName()).toBe('salto_str')
+      expect(ctx.ref && ctx.ref.element.elemID).toEqual(new ElemID('salto', 'str'))
     })
 
     it('should identify field definition', () => {
@@ -67,7 +67,7 @@ describe('Cursor context resolver', () => {
       const ctx = getPositionContext(workspace, bpContent, filename, pos)
       expect(ctx.type).toBe('field')
 
-      expect(ctx.ref && ctx.ref.element.elemID.getFullName()).toBe('salto_complex_object')
+      expect(ctx.ref && ctx.ref.element.elemID).toEqual(new ElemID('salto', 'complex', 'field', 'object'))
     })
   })
 
@@ -88,8 +88,7 @@ describe('Cursor context resolver', () => {
       const pos = { line: 33, col: 1 }
       const ctx = getPositionContext(workspace, bpContent, filename, pos)
       expect(ctx.type).toBe('instance')
-
-      expect(ctx.ref && ctx.ref.element.elemID.getFullName()).toBe('salto_inst')
+      expect(ctx.ref && ctx.ref.element.elemID).toEqual(new ElemID('salto', 'complex', 'instance', 'inst'))
     })
 
     it('should identify instance path', () => {
@@ -100,10 +99,6 @@ describe('Cursor context resolver', () => {
       expect(ctx.ref && ctx.ref.path).toBe('obj')
     })
 
-    // TODO: this test is broken because attribute key is now included in the source range
-    //       since the file being analyzed has the attribute in question defined the context
-    //       gets the wrong ref.path value
-    // eslint-disable-next-line jest/no-disabled-tests
     it('should identify instance list', () => {
       const pos = { line: 51, col: 12 }
       const ctx = getPositionContext(workspace, bpContent, filename, pos)

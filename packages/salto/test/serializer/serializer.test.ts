@@ -65,7 +65,7 @@ describe('State serialization', () => {
   )
 
   const config = new InstanceElement(
-    ElemID.CONFIG_INSTANCE_NAME,
+    ElemID.CONFIG_NAME,
     model,
     { name: 'other', num: 5 },
   )

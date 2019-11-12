@@ -255,7 +255,7 @@ describe('Salto parser', () => {
       })
       it('should have the right id', () => {
         expect(config.elemID).toEqual(
-          configTypeId.createNestedID('instance', ElemID.CONFIG_INSTANCE_NAME),
+          configTypeId.createNestedID('instance', ElemID.CONFIG_NAME),
         )
       })
       it('should have the right type', () => {
@@ -321,7 +321,7 @@ describe('Salto parser', () => {
 
       it('should have the correct id', () => {
         expect(settingsInstance.elemID).toEqual(
-          settingsType.elemID.createNestedID('instance', ElemID.CONFIG_INSTANCE_NAME),
+          settingsType.elemID.createNestedID('instance', ElemID.CONFIG_NAME),
         )
       })
       it('should have to correct type ID', () => {

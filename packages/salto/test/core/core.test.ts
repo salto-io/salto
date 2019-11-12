@@ -117,7 +117,7 @@ describe('api functions', () => {
       sandbox: false,
     }
 
-    return new InstanceElement(ElemID.CONFIG_INSTANCE_NAME, configType, value)
+    return new InstanceElement(ElemID.CONFIG_NAME, configType, value)
   }
 
   describe('Test commands.ts and core.ts', () => {

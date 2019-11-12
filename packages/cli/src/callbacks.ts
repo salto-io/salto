@@ -103,5 +103,5 @@ export const getConfigFromUser = async (configType: ObjectType): Promise<Instanc
       message: `Enter ${fieldName}:`,
     }))
   const values = await inquirer.prompt(questions)
-  return new InstanceElement(ElemID.CONFIG_INSTANCE_NAME, configType, values)
+  return new InstanceElement(ElemID.CONFIG_NAME, configType, values)
 }

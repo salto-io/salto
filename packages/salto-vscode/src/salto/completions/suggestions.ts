@@ -6,7 +6,7 @@ import {
   Values,
 } from 'adapter-api'
 
-import { formatTypeID, parseElemID } from 'salto'
+import { dumpElemID, parseElemID } from 'salto'
 import { EditorWorkspace } from '../workspace'
 import { ContextReference } from '../context'
 
@@ -49,7 +49,7 @@ const getAllTypes = (
 ): string[] => elements
   .filter(isType)
   .filter(e => !adapter || e.elemID.adapter === adapter)
-  .map(e => formatTypeID(e))
+  .map(e => dumpElemID(e))
 
 const getAdapterNames = (
   elements: ReadonlyArray<Element>

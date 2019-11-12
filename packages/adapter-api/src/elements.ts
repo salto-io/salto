@@ -24,11 +24,21 @@ export const isElemIDType = (v: string): v is ElemIDType => ElemIDTypes.includes
 
 export class ElemID {
   static readonly NAMESPACE_SEPARATOR = '.'
-  static readonly CONFIG_INSTANCE_NAME = '_config'
+  static readonly CONFIG_NAME = '_config'
 
   static fromFullName(fullName: string): ElemID {
     const [adapter, typeName, idType, ...name] = fullName.split(ElemID.NAMESPACE_SEPARATOR)
-    return new ElemID(adapter, typeName, idType as ElemIDType, ...name)
+    if (idType === undefined) {
+      return new ElemID(adapter, typeName)
+    }
+    if (!isElemIDType(idType)) {
+      throw new Error(`Invalid ID type ${idType}`)
+    }
+    if (idType === 'instance' && _.isEmpty(name)) {
+      // This is a config instance (the last name part is omitted)
+      return new ElemID(adapter, typeName, idType, ElemID.CONFIG_NAME)
+    }
+    return new ElemID(adapter, typeName, idType, ...name)
   }
 
   readonly adapter: string
@@ -42,7 +52,7 @@ export class ElemID {
     ...name: ReadonlyArray<string>
   ) {
     this.adapter = adapter
-    this.typeName = _.isEmpty(typeName) ? ElemID.CONFIG_INSTANCE_NAME : typeName as string
+    this.typeName = _.isEmpty(typeName) ? ElemID.CONFIG_NAME : typeName as string
     this.idType = idType || 'type'
     this.nameParts = name
   }
@@ -73,12 +83,12 @@ export class ElemID {
     const nameParts = this.fullNameParts()
     return this.fullNameParts()
       // If the last part of the name is empty we can omit it
-      .filter((part, idx) => idx !== nameParts.length - 1 || part !== ElemID.CONFIG_INSTANCE_NAME)
+      .filter((part, idx) => idx !== nameParts.length - 1 || part !== ElemID.CONFIG_NAME)
       .join(ElemID.NAMESPACE_SEPARATOR)
   }
 
   isConfig(): boolean {
-    return this.typeName === ElemID.CONFIG_INSTANCE_NAME
+    return this.typeName === ElemID.CONFIG_NAME
   }
 
   isTopLevel(): boolean {

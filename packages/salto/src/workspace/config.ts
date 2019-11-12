@@ -120,7 +120,7 @@ export const dumpConfig = async (baseDir: string, config: Partial<Config>): Prom
   const configPath = getConfigPath(baseDir)
   await mkdirp(path.dirname(configPath))
   const configInstance = new InstanceElement(
-    ElemID.CONFIG_INSTANCE_NAME,
+    ElemID.CONFIG_NAME,
     saltoConfigType,
     _.mapKeys(config as object, (_v, k) => _.snakeCase(k))
   )

@@ -650,7 +650,7 @@ export const createInstanceElement = (
 ): InstanceElement => {
   const typeName = type.elemID.name
   return new InstanceElement(
-    type.isSettings ? ElemID.CONFIG_INSTANCE_NAME : bpCase(mdInfo.fullName),
+    type.isSettings ? ElemID.CONFIG_NAME : bpCase(mdInfo.fullName),
     type,
     fromMetadataInfo(mdInfo),
     ['records', type.isSettings ? 'settings'

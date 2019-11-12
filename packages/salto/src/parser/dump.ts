@@ -27,7 +27,7 @@ const QUOTE_MARKER = 'Q_MARKER'
 
 const markQuote = (value: string): string => `${QUOTE_MARKER}${value}${QUOTE_MARKER}`
 
-export const formatTypeID = ({ elemID }: Type): string => {
+export const dumpElemID = ({ elemID }: Type): string => {
   if (elemID.isConfig()) {
     return elemID.adapter
   }
@@ -47,7 +47,7 @@ const removeQuotes = (
 ): HclDumpReturn => value.replace(new RegExp(`"${QUOTE_MARKER}|${QUOTE_MARKER}"`, 'g'), '')
 
 const dumpFieldBlock = (field: Field): DumpedHclBlock => ({
-  type: formatTypeID(field.type),
+  type: dumpElemID(field.type),
   labels: [field.elemID.name],
   attrs: field.annotations,
   blocks: [],
@@ -55,7 +55,7 @@ const dumpFieldBlock = (field: Field): DumpedHclBlock => ({
 
 const dumpListFieldBlock = (field: Field): DumpedHclBlock => ({
   type: Keywords.LIST_DEFINITION,
-  labels: [formatTypeID(field.type), field.elemID.name],
+  labels: [dumpElemID(field.type), field.elemID.name],
   attrs: field.annotations,
   blocks: [],
 })
@@ -66,7 +66,7 @@ const dumpAnnotationsBlock = (element: Type): DumpedHclBlock[] =>
     labels: [],
     attrs: {},
     blocks: Object.entries(element.annotationTypes).map(([key, type]) => ({
-      type: formatTypeID(type),
+      type: dumpElemID(type),
       labels: [key],
       attrs: {},
       blocks: [],
@@ -79,7 +79,7 @@ const dumpElementBlock = (elem: Element): DumpedHclBlock => {
   if (isObjectType(elem)) {
     return {
       type: elem.isSettings ? Keywords.SETTINGS_DEFINITION : Keywords.TYPE_DEFINITION,
-      labels: [formatTypeID(elem)],
+      labels: [dumpElemID(elem)],
       attrs: elem.annotations,
       blocks: dumpAnnotationsBlock(elem).concat(
         Object.values(elem.fields).map(dumpBlock)
@@ -90,7 +90,7 @@ const dumpElementBlock = (elem: Element): DumpedHclBlock => {
     return {
       type: Keywords.TYPE_DEFINITION,
       labels: [
-        formatTypeID(elem),
+        dumpElemID(elem),
         Keywords.TYPE_INHERITANCE_SEPARATOR,
         getPrimitiveTypeName(elem.primitive),
       ],
@@ -100,7 +100,7 @@ const dumpElementBlock = (elem: Element): DumpedHclBlock => {
   }
   if (isInstanceElement(elem)) {
     return {
-      type: formatTypeID(elem.type),
+      type: dumpElemID(elem.type),
       labels: elem.elemID.isConfig() || elem.type.isSettings
         ? []
         : [elem.elemID.name],

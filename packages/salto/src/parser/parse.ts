@@ -14,7 +14,7 @@ export type ParseError = HclParseError
 
 export type SourceMap = ReadonlyMap<string, SourceRange[]>
 
-export const elemID = (fullname: string): ElemID => {
+export const parseElemID = (fullname: string): ElemID => {
   const separatorIdx = fullname.indexOf(Keywords.NAMESPACE_SEPARATOR)
   const adapter = (separatorIdx >= 0) ? fullname.slice(0, separatorIdx) : ''
   const name = fullname.slice(separatorIdx + Keywords.NAMESPACE_SEPARATOR.length)
@@ -38,7 +38,7 @@ const primitiveType = (typeName: string): PrimitiveTypes => {
 const annotationTypes = (block: ParsedHclBlock): Record <string, Type> => block.blocks
   .filter(b => b.type === Keywords.ANNOTATIONS_DEFINITION)
   .map(b => _(b.blocks)
-    .map(blk => [blk.labels[0], new ObjectType({ elemID: elemID(blk.type) })])
+    .map(blk => [blk.labels[0], new ObjectType({ elemID: parseElemID(blk.type) })])
     .fromPairs()
     .value())
   .pop() || {}
@@ -73,9 +73,9 @@ export const parse = async (blueprint: Buffer, filename: string): Promise<ParseR
     const [typeName] = typeBlock.labels
     const typeObj = new ObjectType(
       {
-        elemID: elemID(typeName),
+        elemID: parseElemID(typeName),
         annotationTypes: annotationTypes(typeBlock),
-        annotations: attrValues(typeBlock, elemID(typeName).createNestedID('attr')),
+        annotations: attrValues(typeBlock, parseElemID(typeName).createNestedID('attr')),
         isSettings,
       }
     )
@@ -96,7 +96,7 @@ export const parse = async (blueprint: Buffer, filename: string): Promise<ParseR
           fieldName,
           new ObjectType(
             {
-              elemID: elemID(fieldTypeName),
+              elemID: parseElemID(fieldTypeName),
               isSettings: block.type === Keywords.SETTINGS_DEFINITION,
             }
           ),
@@ -124,22 +124,22 @@ export const parse = async (blueprint: Buffer, filename: string): Promise<ParseR
     }
 
     const typeObj = new PrimitiveType({
-      elemID: elemID(typeName),
+      elemID: parseElemID(typeName),
       primitive: primitiveType(baseType),
       annotationTypes: annotationTypes(typeBlock),
-      annotations: attrValues(typeBlock, elemID(typeName).createNestedID('attr')),
+      annotations: attrValues(typeBlock, parseElemID(typeName).createNestedID('attr')),
     })
     sourceMap.push(typeObj.elemID, typeBlock)
     return typeObj
   }
 
   const parseInstance = (instanceBlock: ParsedHclBlock): Element => {
-    let typeID = elemID(instanceBlock.type)
+    let typeID = parseElemID(instanceBlock.type)
     if (_.isEmpty(typeID.adapter) && typeID.name.length > 0) {
       // In this case if there is just a single name we have to assume it is actually the adapter
       typeID = new ElemID(typeID.name)
     }
-    const name = instanceBlock.labels[0] || ElemID.CONFIG_INSTANCE_NAME
+    const name = instanceBlock.labels[0] || ElemID.CONFIG_NAME
 
     const inst = new InstanceElement(
       name,

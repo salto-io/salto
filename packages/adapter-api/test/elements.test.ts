@@ -352,8 +352,9 @@ describe('Test elements.ts', () => {
     const typeId = new ElemID('adapter', 'example')
     const fieldId = typeId.createNestedID('field', 'test')
     const typeInstId = typeId.createNestedID('instance', 'test')
+    const valueId = typeInstId.createNestedID('nested', 'value')
     const configTypeId = new ElemID('adapter')
-    const configInstId = configTypeId.createNestedID('instance', ElemID.CONFIG_INSTANCE_NAME)
+    const configInstId = configTypeId.createNestedID('instance', ElemID.CONFIG_NAME)
 
     describe('getFullName', () => {
       it('should contain adapter and type name for type ID', () => {
@@ -365,6 +366,9 @@ describe('Test elements.ts', () => {
       it('should contain type id and instance name for instance ID', () => {
         expect(typeInstId.getFullName()).toEqual(`${typeId.getFullName()}.instance.test`)
       })
+      it('should contain inst id and value path for value in instance', () => {
+        expect(valueId.getFullName()).toEqual(`${typeInstId.getFullName()}.nested.value`)
+      })
       it('should contain only adapter for config type', () => {
         expect(configTypeId.getFullName()).toEqual(configTypeId.adapter)
       })
@@ -372,6 +376,13 @@ describe('Test elements.ts', () => {
         expect(configInstId.getFullName()).toEqual(
           `${configTypeId.adapter}.${configTypeId.typeName}.instance`,
         )
+      })
+    })
+
+    describe('fromFullName', () => {
+      it('should create elem ID from its full name', () => {
+        [typeId, fieldId, typeInstId, valueId, configTypeId, configInstId]
+          .forEach(id => expect(ElemID.fromFullName(id.getFullName())).toEqual(id))
       })
     })
 
@@ -388,6 +399,9 @@ describe('Test elements.ts', () => {
         it('should match the number of name parts', () => {
           expect(fieldId.nestingLevel).toEqual(1)
           expect(fieldId.createNestedID('a', 'b').nestingLevel).toEqual(3)
+        })
+        it('should match path length in instance values', () => {
+          expect(valueId.nestingLevel).toEqual(2)
         })
       })
     })

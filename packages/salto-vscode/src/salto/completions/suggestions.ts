@@ -69,9 +69,6 @@ const getElementReferenceSuggestions = (
   if (isInstanceElement(matchElement)) {
     return getValuesSuggestions(matchElement.value, path)
   }
-  if (isField(matchElement)) {
-    return getValuesSuggestions(matchElement.annotations, path)
-  }
   if (isObjectType(matchElement) && path.length > 0) {
     const [pathType, ...restOfPath] = path
     if (pathType === 'instance' && _.isEmpty(restOfPath)) {

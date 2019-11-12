@@ -1,5 +1,5 @@
 import _ from 'lodash'
-import { Element, isInstanceElement, isObjectType, ElemID } from 'adapter-api'
+import { Element, isObjectType, ElemID, findInstances } from 'adapter-api'
 import { FilterCreator } from '../filter'
 import { apiName } from '../transformer'
 import { SALESFORCE } from '../constants'
@@ -9,9 +9,7 @@ export const VALIDATION_RULE_ANNOTATION = 'validation_rules'
 
 const filterCreator: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
-    const rulesByObject = _(elements)
-      .filter(isInstanceElement)
-      .filter(e => e.type.elemID.getFullName() === VALIDATION_RULE_TYPE_ID.getFullName())
+    const rulesByObject = _([...findInstances(elements, VALIDATION_RULE_TYPE_ID)])
       // validation rules fullName's format is related_object_name.rule_name
       .groupBy(e => apiName(e).split('.')[0])
       .value()

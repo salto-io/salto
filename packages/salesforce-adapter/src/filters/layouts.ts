@@ -1,7 +1,6 @@
-
 import _ from 'lodash'
 import {
-  Element, isInstanceElement, isObjectType, ElemID,
+  Element, isObjectType, ElemID, findInstances,
 } from 'adapter-api'
 import { apiName } from '../transformer'
 import { FilterCreator } from '../filter'
@@ -20,9 +19,7 @@ const filterCreator: FilterCreator = () => ({
    * @param elements the already fetched elements
    */
   onFetch: async (elements: Element[]): Promise<void> => {
-    const layouts = _(elements)
-      .filter(isInstanceElement)
-      .filter(e => e.type.elemID.getFullName() === LAYOUT_TYPE_ID.getFullName())
+    const layouts = _([...findInstances(elements, LAYOUT_TYPE_ID)])
       // Layout full name starts with related sobject and then '-'
       .groupBy(e => apiName(e).split('-')[0])
       .value()

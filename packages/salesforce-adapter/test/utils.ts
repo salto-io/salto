@@ -1,4 +1,4 @@
-import { Element, ElemID } from 'adapter-api'
+import { Element, ElemID, findElements as findElementsByID } from 'adapter-api'
 import * as constants from '../src/constants'
 
 export const findElements = (
@@ -8,5 +8,5 @@ export const findElements = (
   const expectedElemId = name.length === 1
     ? new ElemID(constants.SALESFORCE, name[0])
     : new ElemID(constants.SALESFORCE, name[0], 'instance', ...name.slice(1))
-  return elements.filter(e => e.elemID.getFullName() === expectedElemId.getFullName())
+  return [...findElementsByID(elements, expectedElemId)]
 }

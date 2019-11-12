@@ -795,7 +795,7 @@ SfRecord[] => ElemIDs.map(elem => ({ Id: elem.name }))
 export const getCompoundChildFields = (objectType: ObjectType): TypeField[] => {
   // Internal functions
   const isFieldType = (fieldType: Type) => (field: TypeField): boolean => (
-    field.type.elemID.getFullName() === fieldType.elemID.getFullName()
+    field.type.elemID.isEqual(fieldType.elemID)
   )
   const handleAddressFields = (object: ObjectType): void => {
     // Find the address fields

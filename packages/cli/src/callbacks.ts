@@ -110,6 +110,7 @@ export const getConfigFromUser = async (configType: ObjectType): Promise<Instanc
   const questions = Object.keys(configType.fields).map(fieldName =>
     ({
       type: getFieldInputType(configType.fields[fieldName].type, fieldName),
+      mask: '*',
       name: fieldName,
       message: formatConfigFieldInput(fieldName),
     }))

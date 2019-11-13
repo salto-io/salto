@@ -220,6 +220,8 @@ describe('Salesforce adapter E2E with real account', () => {
           },
         ],
         description: 'new e2e profile',
+        // eslint-disable-next-line @typescript-eslint/camelcase
+        full_name: instanceElementName,
       })
 
       if (await objectExists(PROFILE_METADATA_TYPE, sfCase(instance.elemID.name))) {

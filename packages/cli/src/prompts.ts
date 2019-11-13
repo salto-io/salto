@@ -77,7 +77,7 @@ Be sure to go over the preview output when invoking the deploy command.`
   public static readonly FETCH_MERGE_ERRORS = 'These errors occured as part of the fetch:'
 
   public static readonly LOADING_WORKSPACE = 'Loading workspce...'
-  public static readonly FINISHED_LOADING = 'Finished loading workspce.'
+  public static readonly FINISHED_LOADING = 'Finished loading workspce'
 
   public static readonly WORKSPACE_LOAD_FAILED = (numErrors: number): string =>
     `Workspace has ${numErrors === 1 ? 'an error' : `${numErrors} errors`} - aborting!`

@@ -20,12 +20,12 @@ export const validateWorkspace = (ws: Workspace,
   { stdout, stderr }: CliOutput): WorkspaceErrorSeverity | true => {
   if (ws.hasErrors()) {
     const workspaceErrors = ws.getWorkspaceErrors()
-    const errorSeverity = workspaceErrors.filter(isError)
-    if (!_.isEmpty(errorSeverity)) {
-      stderr.write(formatWorkspaceErrors(errorSeverity))
+    const severeErrors = workspaceErrors.filter(isError)
+    if (!_.isEmpty(severeErrors)) {
+      stderr.write(`\n${formatWorkspaceErrors(severeErrors)}`)
       return 'Error'
     }
-    stdout.write(formatWorkspaceErrors(workspaceErrors))
+    stdout.write(`\n${formatWorkspaceErrors(workspaceErrors)}`)
     return 'Warning'
   }
   return true
@@ -41,7 +41,7 @@ export const loadWorkspace = async (workingDir: string, cliOutput: CliOutput,
   const wsStatus = validateWorkspace(workspace, cliOutput)
 
   if (wsStatus === 'Warning') {
-    spinner.succeed(Prompts.LOADING_WORKSPACE)
+    spinner.succeed(Prompts.FINISHED_LOADING)
     const numWarnings = workspace.getWorkspaceErrors().filter(e => !isError(e)).length
     const shouldContinue = await shouldContinueInCaseOfWarnings(numWarnings, cliOutput)
     return { workspace, errored: !shouldContinue }
@@ -50,8 +50,10 @@ export const loadWorkspace = async (workingDir: string, cliOutput: CliOutput,
   if (wsStatus === 'Error') {
     const numErrors = workspace.getWorkspaceErrors().filter(isError).length
     spinner.fail(formatWorkspaceAbort(numErrors))
+  } else {
+    spinner.succeed(Prompts.LOADING_WORKSPACE)
   }
-  spinner.succeed(Prompts.LOADING_WORKSPACE)
+
   return { workspace, errored: wsStatus === 'Error' }
 }
 

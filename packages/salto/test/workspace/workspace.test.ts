@@ -3,7 +3,7 @@ import path from 'path'
 import _ from 'lodash'
 import tmp from 'tmp-promise'
 import {
-  Element, ObjectType, ElemID, Type, Field, PrimitiveType, PrimitiveTypes,
+  Element, ObjectType, ElemID, Type, Field, PrimitiveType, PrimitiveTypes, BuiltinTypes,
 } from 'adapter-api'
 import { Config } from '../../src/workspace/config'
 import { Workspace, Blueprint, ParsedBlueprint, parseBlueprints, calculateValidationSeverity } from '../../src/workspace/workspace'
@@ -27,6 +27,9 @@ type salesforce_lead {
       4,
       5
     ]
+  }
+  number not_a_list_yet_field {
+
   }
 }
 type multi_loc { a = 1 }
@@ -109,7 +112,7 @@ type salesforce_lead {
       })
       it('should be merged', () => {
         const lead = elemMap['salesforce.lead'] as ObjectType
-        expect(_.keys(lead.fields)).toHaveLength(3)
+        expect(_.keys(lead.fields)).toHaveLength(4)
       })
     })
 
@@ -228,6 +231,20 @@ type salesforce_lead {
       const newElemID = new ElemID('salesforce', 'new_elem')
       const newElem = new ObjectType({ elemID: newElemID })
       newElem.path = ['test', 'new']
+      const oldField = new Field(
+        new ElemID('salesforce', 'lead'),
+        'not_a_list_yet_field',
+        BuiltinTypes.NUMBER,
+        {},
+        false
+      )
+      const newField = new Field(
+        new ElemID('salesforce', 'lead'),
+        'not_a_list_yet_field',
+        BuiltinTypes.NUMBER,
+        {},
+        true
+      )
       const changes: DetailedChange[] = [
         { // modify value
           id: new ElemID('salesforce', 'lead', 'field', 'base_field', Type.DEFAULT),
@@ -270,6 +287,11 @@ type salesforce_lead {
           action: 'modify',
           data: { before: 4, after: 5 },
         },
+        { // Modify field isListValue
+          id: newField.elemID,
+          action: 'modify',
+          data: { before: oldField, after: newField },
+        },
       ]
 
       let lead: ObjectType
@@ -308,6 +330,9 @@ type salesforce_lead {
       })
       it('should update value in list', () => {
         expect(lead.fields.list_field.annotations[Type.DEFAULT]).toEqual([1, 2, 3, 5, 5])
+      })
+      it('should change isList value in fields', () => {
+        expect(lead.fields.not_a_list_yet_field.isList).toBe(true)
       })
     })
   })

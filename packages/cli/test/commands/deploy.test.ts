@@ -102,7 +102,7 @@ describe('deploy command', () => {
         expect(Workspace.load).toHaveBeenCalled()
       })
       it('should print completness', () => {
-        expect(content).toContain('Deployment is complete')
+        expect(content).toContain('Deployment succeeded')
       })
       it('should Update workspace', () => {
         expect(mockUpdateBlueprints).toHaveBeenCalledTimes(1)

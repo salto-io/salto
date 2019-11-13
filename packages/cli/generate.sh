@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 GENERATED_DIR=./src/generated
 
 rm -rf ${GENERATED_DIR}

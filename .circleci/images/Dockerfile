@@ -17,3 +17,6 @@ RUN go get -v \
   github.com/google/go-cmp@v0.2.0 \
   golang.org/x/text@v0.3.2
 
+RUN sudo apt-get update && sudo apt-get install -y apt-utils 
+RUN sudo apt-get install -y jq
+

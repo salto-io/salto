@@ -18,7 +18,7 @@
   "scripts": {
     "prepare": "yarn build",
     "prepublishOnly": "yarn test",
-    "generate": ". ./generate.sh",
+    "generate": "./generate.sh",
     "build": "yarn generate && yarn lint && yarn build-ts",
     "test": "jest --forceExit --detectOpenHandles",
     "e2e-test": "RUN_E2E_TESTS=1 jest --forceExit --detectOpenHandles",

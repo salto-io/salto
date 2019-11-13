@@ -146,7 +146,7 @@ export class ElemID {
 
 export interface Element {
   elemID: ElemID
-  path?: string[]
+  path?: ReadonlyArray<string>
   annotations: Values
 }
 
@@ -205,7 +205,7 @@ export abstract class Type implements Element {
   public static ENFORCE_VALUE = 'enforce_value'
 
   readonly elemID: ElemID
-  path?: string[]
+  path?: ReadonlyArray<string>
   annotationTypes: TypeMap
   public readonly annotations: Values
   constructor({
@@ -386,7 +386,7 @@ export class ObjectType extends Type {
 
 export class InstanceElement implements Element {
   elemID: ElemID
-  path?: string[]
+  path?: ReadonlyArray<string>
   type: ObjectType
   value: Values
   constructor(name: string, type: ObjectType, value: Values, path?: string[]) {

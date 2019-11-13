@@ -249,11 +249,15 @@ export abstract class Type implements Element {
   }
 
   isAnnotationsEqual(other: Type): boolean {
+    return this.isAnnotationsTypesEqual(other)
+      && _.isEqual(this.annotations, other.annotations)
+  }
+
+  isAnnotationsTypesEqual(other: Type): boolean {
     return _.isEqual(
       _.mapValues(this.annotationTypes, a => a.elemID),
       _.mapValues(other.annotationTypes, a => a.elemID)
     )
-      && _.isEqual(this.annotations, other.annotations)
   }
 
   annotate(annotations: Values): void {

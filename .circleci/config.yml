@@ -38,12 +38,13 @@ commands:
 jobs:
   build:
     docker:
-      - image: saltolabs/salto:0.0.9
+      - image: saltolabs/salto:0.0.10
 
     steps:
       - restore_cache:
           keys:
             - v1-source-{{ .Branch }}
+            - v1-source-master
             - v1-source-
 
       - checkout
@@ -55,46 +56,56 @@ jobs:
       # Download and cache dependencies
       - restore_cache:
           keys:
-            - v1-yarn-deps-{{ arch }}-{{ checksum "yarn.lock" }}
-            - v1-yarn-deps-{{ arch }}-
-            - v1-yarn-deps-
+            - v2-yarn-deps-{{ arch }}-{{ checksum "yarn.lock" }}
+            - v2-yarn-deps-{{ arch }}-
+            - v2-yarn-deps-
+
+      - run:
+          name: extract packages_node_modules_cache.tar.gz
+          command: if [ -f packages_node_modules_cache.tar.gz ]; then tar xf packages_node_modules_cache.tar.gz; fi
 
       - run: yarn --frozen-lockfile
+
+      - run:
+          name: create packages_node_modules_cache.tar.gz
+          command: tar cfz packages_node_modules_cache.tar.gz packages/*/node_modules
 
       - save_cache:
           paths:
             - ~/.cache/yarn
             - node_modules
-            - packages/adapter-api/node_modules
-            - packages/cli/node_modules
-            - packages/dag/node_modules
-            - packages/logging/node_modules
-            - packages/lowerdash/node_modules
-            - packages/salesforce-adapter/node_modules
-            - packages/salto/node_modules
-            - packages/salto-vscode/node_modules
+            - packages_node_modules_cache.tar.gz
 
-          key: v1-yarn-deps-{{ arch }}-{{ checksum "yarn.lock" }}
+          key: v2-yarn-deps-{{ arch }}-{{ checksum "yarn.lock" }}
 
       - restore_cache:
           keys:
-            - v1-eslint-{{ checksum "yarn.lock" }}
-            - v1-eslint-
+            - v1-build-{{ .Branch }}
+            - v1-build-master
+            - v1-build-
+
+      - run:
+          name: extract packages_build_cache.tar.gz
+          command: if [ -f packages_build_cache.tar.gz ]; then tar xf packages_build_cache.tar.gz; fi
+
+      - run:
+          name: fix eslint cache
+          command: yarn lerna exec ../../build_utils/fix_eslint_cache.sh
 
       - run: yarn build
 
+      - run:
+          name: create packages_build_cache.tar.gz
+          command: tar cfz packages_build_cache.tar.gz packages/*/dist packages/*/.eslintcache
+
       - save_cache:
           paths:
-            - packages/adapter-api/.eslintcache
-            - packages/cli/.eslintcache
-            - packages/dag/.eslintcache
-            - packages/logging/.eslintcache
-            - packages/lowerdash/.eslintcache
-            - packages/salesforce-adapter/.eslintcache
-            - packages/salto/.eslintcache
-            - packages/salto-vscode/.eslintcache
+            - packages_build_cache.tar.gz
+          key: v1-build-{{ .Branch }}
 
-          key: v1-eslint-{{ checksum "yarn.lock" }}
+      - run:
+          name: Remove unneeded files before saving workspace
+          command: rm -f *.tar.gz
 
       - persist_to_workspace:
           root: .

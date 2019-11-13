@@ -179,6 +179,15 @@ export const getPlan = (
             return { ...change, id: elem.elemID }
           }
 
+          // A special case to handle isList changes in fields.
+          // should only happen if we misidentified the type
+          // in fetch. See SALTO-322
+          if (isField(change.data.before)
+              && isField(change.data.after)
+              && change.data.after.isList !== change.data.before.isList) {
+            return { ...change, id: elem.elemID }
+          }
+
           if (isInstanceElement(change.data.before) && isInstanceElement(change.data.after)) {
             return getValuesChanges(elem.elemID, change.data.before.value, change.data.after.value)
           }

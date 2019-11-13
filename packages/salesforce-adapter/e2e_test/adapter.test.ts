@@ -231,7 +231,7 @@ describe('Salesforce adapter E2E with real account', () => {
       const post = await adapter.add(instance) as InstanceElement
 
       // Test
-      expect(post).toBe(instance)
+      expect(post).toMatchObject(instance)
 
       expect(
         await objectExists(

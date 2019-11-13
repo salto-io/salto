@@ -1,10 +1,13 @@
 import _ from 'lodash'
 import {
-  isObjectType, Field, Values, Type, isType, BuiltinTypes, ElemID,
+  isObjectType, Field, Values, Type, isType, BuiltinTypes, ElemID, Element,
 } from 'adapter-api'
+import { logger } from '@salto/logging'
 import { FilterCreator } from '../filter'
 import { SALESFORCE } from '../constants'
 import { LEAD_CONVERT_SETTINGS_TYPE_ID } from './lead_convert_settings'
+
+const log = logger(module)
 
 interface MissingField {
   name: string
@@ -87,24 +90,29 @@ export const makeFilter = (
 ): FilterCreator => () => ({
   onFetch: async function onFetch(elements) {
     // We need a mapping of all the types so we can replace type names with the correct types
-    const typeMap = _(elements)
+    const typeMap: Record<string, Type> = _(elements)
       .filter(isType)
       .map(t => [t.elemID.getFullName(), t])
       .fromPairs()
       .value()
+
+    const addMissingField = (elem: Element) => (f: MissingField): Field | undefined => {
+      const type = isType(f.type) ? f.type : typeMap[f.type.getFullName()]
+      if (type === undefined) {
+        log.warn(`Failed to find type ${(f.type as ElemID).getFullName()}, omitting field ${f.name}`)
+        return undefined
+      }
+      return new Field(elem.elemID, f.name, type, f.annotations, f.isList)
+    }
 
     // Add missing fields to types
     elements.filter(isObjectType).forEach(elem => {
       const fieldsToAdd = missingFields[elem.elemID.getFullName()]
       if (fieldsToAdd !== undefined) {
         _.assign(elem.fields, _(fieldsToAdd)
-          .map(f => [f.name, new Field(
-            elem.elemID,
-            f.name,
-            isType(f.type) ? f.type : typeMap[f.type.getFullName()],
-            f.annotations || {},
-            f.isList === true,
-          )])
+          .map(addMissingField(elem))
+          .reject(_.isUndefined)
+          .map((f: Field) => [f.name, f])
           .fromPairs()
           .value())
       }

@@ -388,14 +388,17 @@ export class Types {
 
   private static createObjectType(name: string, customObject = true, isSettings = false,
     serviceIds?: ServiceIds): ObjectType {
-    const elemId = (customObject && this.getElemIdFunc && serviceIds)
-      ? (this.getElemIdFunc as ElemIdGetter)(SALESFORCE,
-        serviceIds as ServiceIds, bpCase(name))
-      : new ElemID(SALESFORCE, bpCase(name))
+    const elemId = this.getElemId(name, customObject, serviceIds)
     return new ObjectType({
       elemID: elemId,
       isSettings,
     })
+  }
+
+  public static getElemId(name: string, customObject: boolean, serviceIds?: ServiceIds): ElemID {
+    return (customObject && this.getElemIdFunc && serviceIds)
+      ? (this.getElemIdFunc as ElemIdGetter)(SALESFORCE, serviceIds as ServiceIds, bpCase(name))
+      : new ElemID(SALESFORCE, bpCase(name))
   }
 
   static getCompound(name: string): Type {
@@ -633,7 +636,7 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field,
       ))
   }
 
-  const fieldName = getFieldType(field.name).elemID.name
+  const fieldName = Types.getElemId(field.name, true, serviceIds).name
   return new TypeField(parentID, fieldName, bpFieldType, annotations)
 }
 
@@ -717,13 +720,32 @@ export const createInstanceElement = (
   mdInfo: MetadataInfo,
   type: ObjectType
 ): InstanceElement => {
+  const instanceServiceIds = (): ServiceIds => {
+    const typeServiceIds = (): ServiceIds => {
+      const serviceIds: ServiceIds = {
+        [ADAPTER]: SALESFORCE,
+        [METADATA_TYPE]: type.annotations[METADATA_TYPE],
+      }
+      if (type.annotations[API_NAME]) {
+        serviceIds[API_NAME] = type.annotations[API_NAME]
+      }
+      return serviceIds
+    }
+
+    return {
+      [bpCase(METADATA_OBJECT_NAME_FIELD)]: mdInfo.fullName,
+      [ADAPTER]: SALESFORCE,
+      [OBJECT_SERVICE_ID]: toServiceIdsString(typeServiceIds()),
+    }
+  }
+
   const typeName = type.elemID.name
+  const name = (): string => Types.getElemId(mdInfo.fullName, true, instanceServiceIds()).name
   return new InstanceElement(
-    type.isSettings ? ElemID.CONFIG_NAME : bpCase(mdInfo.fullName),
+    type.isSettings ? ElemID.CONFIG_NAME : name(),
     type,
     fromMetadataInfo(mdInfo),
-    ['records', type.isSettings ? 'settings'
-      : typeName, bpCase(mdInfo.fullName)],
+    ['records', type.isSettings ? 'settings' : typeName, bpCase(mdInfo.fullName)],
   )
 }
 

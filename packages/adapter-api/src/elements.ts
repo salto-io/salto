@@ -415,6 +415,14 @@ export class InstanceElement implements Element {
   getValuesThatNotInPrevOrDifferent(prevValues: Values): Values {
     return _.pickBy(this.value, (val, key) => !_.isEqual(val, prevValues[key]))
   }
+
+  /**
+   * Return an independent copy of this instance.
+   * @return {InstanceElement} the cloned instance
+   */
+  clone(): InstanceElement {
+    return new InstanceElement(this.elemID.name, this.type, _.cloneDeep(this.value), this.path)
+  }
 }
 
 export class ElementsRegistry {

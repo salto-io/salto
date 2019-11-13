@@ -98,17 +98,16 @@ export class DeployCommand implements CliCommand {
 
   async execute(): Promise<CliExitCode> {
     log.debug(`running deploy command on '${this.workspaceDir}' [force=${this.force}]`)
-    const planSpinner = this.spinnerCreator(Prompts.PREVIEW_STARTED, {})
     const { workspace, errored } = await loadWorkspace(this.workspaceDir,
-      { stderr: this.stderr, stdout: this.stdout })
+      { stderr: this.stderr, stdout: this.stdout }, this.spinnerCreator)
     if (errored) {
-      planSpinner.fail(Prompts.PREVIEW_FAILED)
       return CliExitCode.AppError
     }
-    planSpinner.succeed(Prompts.PREVIEW_FINISHED)
+
+    const planSpinner = this.spinnerCreator(Prompts.PREVIEW_STARTED, {})
     const result = await deploy(workspace,
       getConfigFromUser,
-      shouldDeploy({ stdout: this.stdout, stderr: this.stderr }),
+      shouldDeploy(this.stdout, planSpinner),
       (item: PlanItem, step: ItemStatus, details?: string) =>
         this.updateAction(item, step, details),
       this.force)

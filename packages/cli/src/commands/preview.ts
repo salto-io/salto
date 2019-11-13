@@ -1,7 +1,7 @@
 import { preview } from 'salto'
 import { createCommandBuilder } from '../command_builder'
 import {
-  ParsedCliInput, CliCommand, CliOutput, SpinnerCreator, CliExitCode, Spinner,
+  ParsedCliInput, CliCommand, CliOutput, SpinnerCreator, CliExitCode,
 } from '../types'
 import { formatExecutionPlan } from '../formatter'
 import { loadWorkspace } from '../workspace'
@@ -13,22 +13,19 @@ export const command = (
   spinnerCreator: SpinnerCreator
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
-    let spinner: Spinner | undefined
+    const { workspace, errored } = await loadWorkspace(workspaceDir,
+      { stdout, stderr }, spinnerCreator)
+    if (errored) {
+      return CliExitCode.AppError
+    }
+    const spinner = spinnerCreator(Prompts.PREVIEW_STARTED, {})
     try {
-      const { workspace, errored } = await loadWorkspace(workspaceDir, { stdout, stderr })
-      if (errored) {
-        return CliExitCode.AppError
-      }
-      // TODO: inline commands.plan here
-      spinner = spinnerCreator(Prompts.PREVIEW_STARTED, {})
       const workspacePlan = await preview(workspace)
       spinner.succeed(Prompts.PREVIEW_FINISHED)
       stdout.write(formatExecutionPlan(workspacePlan))
       return CliExitCode.Success
     } catch (e) {
-      if (spinner !== undefined) {
-        spinner.fail(Prompts.PREVIEW_FAILED)
-      }
+      spinner.fail(Prompts.PREVIEW_FAILED)
       throw e
     }
   },

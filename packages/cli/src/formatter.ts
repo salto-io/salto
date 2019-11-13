@@ -362,7 +362,7 @@ export const formatMergeErrors = (mergeErrors: ReadonlyArray<MergeError>): strin
   ).join('\n')}`
 
 export const formatWorkspaceAbort = (numErrors: number): string =>
-  error(`${Prompts.WORKSPACE_LOAD_FAILED(numErrors)}\n`)
+  header(`${Prompts.WORKSPACE_LOAD_FAILED(numErrors)}\n`)
 
 export const formatShouldContinueWithWarning = (numWarnings: number): string =>
   warn(Prompts.SHOULDCONTINUE(numWarnings))

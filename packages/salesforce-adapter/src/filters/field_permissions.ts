@@ -22,9 +22,7 @@ const log = logger(module)
 
 // --- Utils functions
 export const fieldPermissions = (field: Field): Values =>
-  (field.annotations[FIELD_LEVEL_SECURITY_ANNOTATION]
-    ? field.annotations[FIELD_LEVEL_SECURITY_ANNOTATION]
-    : {})
+  (field.annotations[FIELD_LEVEL_SECURITY_ANNOTATION] || {})
 
 const setEmptyFieldPermissions = (field: Field): void => {
   field.annotations[FIELD_LEVEL_SECURITY_ANNOTATION] = {}
@@ -156,7 +154,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
     return []
   },
 
-  onUpdate: async (before: Element, after: Element, changes: Iterable<Change>):
+  onUpdate: async (before: Element, after: Element, changes: ReadonlyArray<Change>):
     Promise<SaveResult[]> => {
     if (!(isObjectType(before) && isObjectType(after) && isCustomObject(before))) {
       return []
@@ -166,10 +164,11 @@ const filterCreator: FilterCreator = ({ client }) => ({
     // For those fields we will mark then as { editable: false, readable: false } explcit
     wu(changes)
       .forEach(c => {
-        if (!isField(getChangeElement(c))) {
+        const changeElement = getChangeElement(c)
+        if (!isField(changeElement)) {
           return
         }
-        const fieldName = (getChangeElement(c) as Field).name
+        const fieldName = changeElement.name
         // Set default permissions for new fields
         if (c.action === 'add') {
           setDefaultFieldPermissions(after.fields[fieldName])

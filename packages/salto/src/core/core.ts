@@ -23,7 +23,7 @@ const deployAction = async (
       await adapter.remove(parent.data.before)
       return Promise.resolve(parent.data.before)
     case 'modify':
-      return adapter.update(parent.data.before, parent.data.after, planItem.changes())
+      return adapter.update(parent.data.before, parent.data.after, [...planItem.changes()])
     default:
       throw new Error('Unkown action type')
   }

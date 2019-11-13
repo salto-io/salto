@@ -120,20 +120,19 @@ const filterCreator: FilterCreator = ({ client }) => ({
    * In Salesforce you can't add a lookup/masterdetail relationship with a lookupFilter upon
    * the field's creation. Thus, we need to first create the field and then update it using filter
    */
-  onUpdate: async (before: Element, after: Element, changes: Iterable<Change>):
+  onUpdate: async (before: Element, after: Element, changes: ReadonlyArray<Change>):
     Promise<SaveResult[]> => {
     if (!(isObjectType(before) && isObjectType(after))) {
       return []
     }
 
-    const fieldsToUpdate = wu(changes)
+    const fieldsToUpdate = changes
       .filter(c => isField(getChangeElement(c)))
       .map(c => [_.get(c.data, 'before'), _.get(c.data, 'after')])
       .filter(([b, a]) => !_.isEqual(b ? getLookupFilter(b) : undefined,
         a ? getLookupFilter(a) : undefined))
       .map(([_b, a]) => a)
-      .reject(_.isUndefined)
-      .toArray() as Field[]
+      .filter(f => f)
 
     if (fieldsToUpdate.length > 0) {
       return client.update(CUSTOM_FIELD, fieldsToUpdate

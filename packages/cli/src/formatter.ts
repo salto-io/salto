@@ -242,10 +242,24 @@ export const cancelDeployOutput = [
   emptyLine(),
 ].join('\n')
 
-export const deployPhaseEpilogue = header([
-  emptyLine(),
-  Prompts.FINISHEDDEPLOYEXEC,
-].join('\n'))
+export const deployPhaseEpilogue = (numChanges: number, numErrors: number): string => {
+  const hadChanges = numChanges > 0
+  const hadErrors = numErrors > 0
+  if (hadChanges || hadErrors) {
+    const epilogueLines = [
+      emptyLine(),
+    ]
+    if (hadChanges && hadErrors) {
+      epilogueLines.push(Prompts.FULL_DEPLOY_SUMMARY(numChanges, numErrors))
+    } else if (hadChanges) {
+      epilogueLines.push(Prompts.CHANGES_DEPLOY_SUMMARY(numChanges))
+    } else {
+      epilogueLines.push(Prompts.ERRORS_DEPLOY_SUMMARY(numErrors))
+    }
+    return epilogueLines.join('\n')
+  }
+  return ''
+}
 
 export const formatCancelAction = (itemName: string, parentItemName: string): string => {
   const formattedItemName = formatItemName(itemName)

@@ -5,7 +5,9 @@ export default class Prompts {
 
   public static readonly CANCELDEPLOYACTION = 'Cancelled: Due to an erroneous dependency -'
   public static readonly STARTDEPLOYEXEC = 'Starting the deployment plan'
-  public static readonly FINISHEDDEPLOYEXEC = 'Deployment is complete'
+  public static readonly FULL_DEPLOY_SUMMARY = (numChanges: number, numErrors: number): string => `Deployment partially succeeded with ${numChanges} applied change(s) and ${numErrors} error(s).`
+  public static readonly CHANGES_DEPLOY_SUMMARY = (numChanges: number): string => `Deployment succeeded - ${numChanges} applied change(s).`
+  public static readonly ERRORS_DEPLOY_SUMMARY = (numErrors: number): string => `Deployment failed with ${numErrors} error(s).`
   public static readonly CANCELDEPLOY = 'Canceling deploy'
   public static readonly PLANNEDFORPREVIEW = ''
   public static readonly MODIFIERS = {

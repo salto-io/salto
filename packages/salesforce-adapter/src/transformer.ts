@@ -731,7 +731,7 @@ export const createMetadataTypeElements = (
   objectName: string,
   fields: ValueTypeField[],
   knownTypes: Map<string, Type>,
-  isSubtype = false,
+  baseTypeNames: Set<string>,
   isSettings = false,
 ): ObjectType[] => {
   if (knownTypes.has(objectName)) {
@@ -742,7 +742,11 @@ export const createMetadataTypeElements = (
   knownTypes.set(objectName, element)
   element.annotationTypes[METADATA_TYPE] = BuiltinTypes.SERVICE_ID
   element.annotate({ [METADATA_TYPE]: objectName })
-  element.path = ['types', ...(isSubtype ? ['subtypes'] : []), element.elemID.name]
+  element.path = [
+    'types',
+    ...(baseTypeNames.has(objectName) ? [] : ['subtypes']),
+    element.elemID.name,
+  ]
   if (!fields) {
     return [element]
   }
@@ -755,7 +759,7 @@ export const createMetadataTypeElements = (
       field.soapType,
       makeArray(field.fields),
       knownTypes,
-      true,
+      baseTypeNames,
       false,
     )
   ))

@@ -76,6 +76,14 @@ describe('getPlan', () => {
     const plan = getPlan(allElements, afterElements)
     return [plan, saltoOffice]
   }
+  const planWithFieldIsListChanges = (): [Plan, ObjectType] => {
+    const afterElements = mock.getAllElements()
+    const saltoOffice = afterElements[2] as ObjectType
+    // Adding new field
+    saltoOffice.fields.name.isList = true
+    const plan = getPlan(allElements, afterElements)
+    return [plan, saltoOffice]
+  }
 
   it('should create empty plan', () => {
     const plan = getPlan(allElements, allElements)
@@ -220,6 +228,17 @@ describe('getPlan', () => {
         const [annoChange] = changes
         expect(annoChange.action).toEqual('modify')
         expect(annoChange.id).toEqual(obj.elemID)
+      })
+      
+      it('should return is list value modification when a field is changed to list', () => {
+        const [plan, changedElem] = planWithFieldIsListChanges()
+        const planItem = getFirstPlanItem(plan)
+        const changes = wu(planItem.detailedChanges()).toArray()
+        expect(changes).toHaveLength(1)
+        const [listChange] = changes
+        expect(listChange.action).toEqual('modify')
+        expect(listChange.id).toEqual(changedElem.elemID.createNestedID('field', 'name'))
+        expect(_.get(listChange.data, 'after').isList).toBe(true)
       })
     })
   })

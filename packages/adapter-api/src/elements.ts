@@ -389,7 +389,7 @@ export class InstanceElement implements Element {
   path?: ReadonlyArray<string>
   type: ObjectType
   value: Values
-  constructor(name: string, type: ObjectType, value: Values, path?: string[]) {
+  constructor(name: string, type: ObjectType, value: Values, path?: ReadonlyArray<string>) {
     this.elemID = type.elemID.createNestedID('instance', name)
     this.type = type
     this.value = value

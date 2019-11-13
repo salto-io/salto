@@ -4,7 +4,6 @@ import {
 } from 'adapter-api'
 import filterCreator, { ASSIGNMENT_RULES_TYPE_ID } from '../../src/filters/assignment_rules'
 import * as constants from '../../src/constants'
-import { bpCase } from '../../src/transformer'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
 
@@ -17,7 +16,7 @@ describe('assignment rules filter', () => {
       elemID: ASSIGNMENT_RULES_TYPE_ID,
     }),
     {
-      [bpCase(constants.METADATA_OBJECT_NAME_FIELD)]: 'Lead',
+      [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead',
     },
   )
 

@@ -220,8 +220,7 @@ describe('Salesforce adapter E2E with real account', () => {
           },
         ],
         description: 'new e2e profile',
-        // eslint-disable-next-line @typescript-eslint/camelcase
-        full_name: instanceElementName,
+        [constants.INSTANCE_FULL_NAME_FIELD]: instanceElementName,
       })
 
       if (await objectExists(PROFILE_METADATA_TYPE, sfCase(instance.elemID.name))) {
@@ -463,6 +462,8 @@ describe('Salesforce adapter E2E with real account', () => {
           },
         ],
         description: 'new e2e profile',
+        [constants.INSTANCE_FULL_NAME_FIELD]: instanceElementName,
+
       })
 
       const newInstance = new InstanceElement(instanceElementName, new ObjectType({
@@ -507,6 +508,7 @@ describe('Salesforce adapter E2E with real account', () => {
           },
         ],
         description: 'updated e2e profile',
+        [constants.INSTANCE_FULL_NAME_FIELD]: instanceElementName,
 
       })
 
@@ -1330,8 +1332,7 @@ describe('Salesforce adapter E2E with real account', () => {
         after.value.assignment_rule = _.flatten([
           after.value.assignment_rule,
           {
-            // eslint-disable-next-line @typescript-eslint/camelcase
-            full_name: 'NonStandard',
+            [constants.INSTANCE_FULL_NAME_FIELD]: 'NonStandard',
             active: 'false',
             // eslint-disable-next-line @typescript-eslint/camelcase
             rule_entry: _.merge({}, validAssignment, {

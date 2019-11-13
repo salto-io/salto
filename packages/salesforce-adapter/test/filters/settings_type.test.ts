@@ -5,7 +5,6 @@ import filterCreator, { } from '../../src/filters/settings_type'
 import mockClient from '../client'
 import { FilterWith } from '../../src/filter'
 import * as constants from '../../src/constants'
-import { bpCase } from '../../src/transformer'
 import SalesforceClient from '../../src/client/client'
 
 
@@ -33,7 +32,7 @@ describe('Test Settings Type', () => {
       elemID: new ElemID(constants.SALESFORCE, 'ass'),
     }),
     {
-      [bpCase(constants.METADATA_OBJECT_NAME_FIELD)]: 'Lead',
+      [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead',
     },
   )
 
@@ -44,7 +43,7 @@ describe('Test Settings Type', () => {
       isSettings: false,
     }),
     {
-      [bpCase(constants.METADATA_OBJECT_NAME_FIELD)]: 'Lead',
+      [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead',
     },
   )
 

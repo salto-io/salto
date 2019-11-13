@@ -25,7 +25,6 @@ describe('SalesforceAdapter CRUD', () => {
   let adapter: SalesforceAdapter
 
   const stringType = Types.primitiveDataTypes.text
-
   const mockElemID = new ElemID(constants.SALESFORCE, 'test')
   const mockInstanceName = 'instance'
   const mockInstanceFullName = 'Instance'
@@ -605,11 +604,13 @@ describe('SalesforceAdapter CRUD', () => {
               password: new Field(mockElemID, 'password', BuiltinTypes.STRING),
               token: new Field(mockElemID, 'token', BuiltinTypes.STRING),
               sandbox: new Field(mockElemID, 'sandbox', BuiltinTypes.BOOLEAN),
+              [constants.INSTANCE_FULL_NAME_FIELD]:
+                new Field(mockElemID, constants.INSTANCE_FULL_NAME_FIELD, BuiltinTypes.SERVICE_ID),
             },
             annotationTypes: {},
             annotations: { [constants.METADATA_TYPE]: 'Flow' },
           }),
-          {},
+          { [constants.INSTANCE_FULL_NAME_FIELD]: mockInstanceFullName },
         )
 
         beforeEach(async () => {
@@ -687,26 +688,32 @@ describe('SalesforceAdapter CRUD', () => {
         mockInstanceName,
         new ObjectType({
           elemID: mockElemID,
-          fields: {},
+          fields: {
+            [constants.INSTANCE_FULL_NAME_FIELD]:
+              new Field(mockElemID, constants.INSTANCE_FULL_NAME_FIELD, BuiltinTypes.SERVICE_ID),
+          },
           annotationTypes: {},
           annotations: {
             [constants.METADATA_TYPE]: PROFILE_METADATA_TYPE,
           },
         }),
-        {}
+        { [constants.INSTANCE_FULL_NAME_FIELD]: mockInstanceFullName },
       )
 
       const newElement = new InstanceElement(
-        'wrong',
+        mockInstanceName,
         new ObjectType({
           elemID: mockElemID,
-          fields: {},
+          fields: {
+            [constants.INSTANCE_FULL_NAME_FIELD]:
+              new Field(mockElemID, constants.INSTANCE_FULL_NAME_FIELD, BuiltinTypes.SERVICE_ID),
+          },
           annotationTypes: {},
           annotations: {
             [constants.METADATA_TYPE]: PROFILE_METADATA_TYPE,
           },
         }),
-        {},
+        { [constants.INSTANCE_FULL_NAME_FIELD]: 'wrong' },
       )
 
       describe('when the request fails because fullNames are not the same', () => {
@@ -790,6 +797,8 @@ describe('SalesforceAdapter CRUD', () => {
           new ObjectType({
             elemID: mockElemID,
             fields: {
+              [constants.INSTANCE_FULL_NAME_FIELD]:
+                new Field(mockElemID, constants.INSTANCE_FULL_NAME_FIELD, BuiltinTypes.SERVICE_ID),
             },
             annotationTypes: {},
             annotations: {
@@ -817,6 +826,7 @@ describe('SalesforceAdapter CRUD', () => {
               },
             ],
             description: 'old unit test instance profile',
+            [constants.INSTANCE_FULL_NAME_FIELD]: mockInstanceFullName,
           },
         )
 
@@ -825,6 +835,8 @@ describe('SalesforceAdapter CRUD', () => {
           new ObjectType({
             elemID: mockElemID,
             fields: {
+              [constants.INSTANCE_FULL_NAME_FIELD]:
+                new Field(mockElemID, constants.INSTANCE_FULL_NAME_FIELD, BuiltinTypes.SERVICE_ID),
             },
             annotationTypes: {},
             annotations: {
@@ -864,6 +876,7 @@ describe('SalesforceAdapter CRUD', () => {
               },
             ],
             description: 'new unit test instance profile',
+            [constants.INSTANCE_FULL_NAME_FIELD]: mockInstanceFullName,
           },
         )
 

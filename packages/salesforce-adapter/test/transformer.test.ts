@@ -9,9 +9,9 @@ import {
   getValueTypeFieldElement, getCompoundChildFields, sfCase,
 } from '../src/transformer'
 import {
-  METADATA_TYPE, METADATA_OBJECT_NAME_FIELD, FIELD_ANNOTATIONS, FIELD_TYPE_NAMES,
+  METADATA_TYPE, FIELD_ANNOTATIONS, FIELD_TYPE_NAMES,
   LABEL, FIELD_TYPE_API_NAMES, ADDRESS_FIELDS, SALESFORCE, GEOLOCATION_FIELDS, NAME_FIELDS,
-  API_NAME,
+  API_NAME, INSTANCE_FULL_NAME_FIELD,
 } from '../src/constants'
 import { CustomField } from '../src/client/types'
 
@@ -32,7 +32,7 @@ describe('transformer', () => {
     'instance',
     dummyType,
     {
-      [bpCase(METADATA_OBJECT_NAME_FIELD)]: 'Instance',
+      [INSTANCE_FULL_NAME_FIELD]: 'Instance',
       str: 'val',
       lst: [1, 2],
       bool: true,

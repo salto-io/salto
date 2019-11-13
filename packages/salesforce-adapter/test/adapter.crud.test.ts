@@ -28,6 +28,7 @@ describe('SalesforceAdapter CRUD', () => {
 
   const mockElemID = new ElemID(constants.SALESFORCE, 'test')
   const mockInstanceName = 'instance'
+  const mockInstanceFullName = 'Instance'
 
   const getDeployResult = (success: boolean, details?: DeployDetails[]): Promise<DeployResult> =>
     Promise.resolve({
@@ -111,8 +112,8 @@ describe('SalesforceAdapter CRUD', () => {
 
         it('Should add new instance', async () => {
           expect(result).toBeInstanceOf(InstanceElement)
-          expect(result).toBe(instance)
           expect(result.elemID).toEqual(instance.elemID)
+          expect(result.value.full_name).toEqual(mockInstanceFullName)
           expect(result.value.token).toBeDefined()
           expect(result.value.token).toBe('instanceTest')
           expect(result.value.Token).toBeUndefined()

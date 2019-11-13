@@ -5,7 +5,7 @@ import {
 import SalesforceAdapter from '../src/adapter'
 import Connection from '../src/client/jsforce'
 import * as constants from '../src/constants'
-import { Types } from '../src/transformer'
+import { bpCase, Types } from '../src/transformer'
 import mockAdpater from './adapter'
 import { findElements } from './utils'
 
@@ -536,6 +536,53 @@ describe('SalesforceAdapter fetch', () => {
       expect(flow.value.bla.bla).toBe(55)
       expect(flow.value.bla.bla_2).toBe(false)
       expect(flow.value.bla.bla_3).toBe(true)
+    })
+
+    it('should use existing elemID when fetching metadata instance', async () => {
+      ({ connection, adapter } = mockAdpater({
+        adapterParams: {
+          metadataAdditionalTypes: [],
+          getElemIdFunc: (adapterName: string, serviceIds: ServiceIds, name: string):
+            ElemID => new ElemID(adapterName, name === 'flow_instance'
+            && serviceIds[bpCase(constants.METADATA_OBJECT_NAME_FIELD)] === 'FlowInstance'
+            ? 'my_flow_instance' : name),
+        },
+      }))
+
+      mockSingleMetadataType('Flow', [
+        {
+          name: 'bla',
+          soapType: 'Bla',
+          fields: [
+            {
+              name: 'bla',
+              soapType: 'double',
+            },
+            {
+              name: 'bla2',
+              soapType: 'boolean',
+            },
+            {
+              name: 'bla3',
+              soapType: 'boolean',
+            },
+          ],
+        },
+        {
+          name: 'fullName',
+          soapType: 'string',
+        },
+      ])
+
+      mockSingleMetadataInstance('FlowInstance', {
+        fullName: 'FlowInstance',
+        bla: { bla: '55', bla2: 'false', bla3: 'true' },
+      })
+
+      const result = await adapter.fetch()
+      const flow = findElements(result, 'flow', 'my_flow_instance').pop() as InstanceElement
+      expect(flow.type.elemID).toEqual(new ElemID(constants.SALESFORCE, 'flow'))
+      expect(flow.value.full_name).toEqual('FlowInstance')
     })
 
     it('should fetch complicated metadata instance', async () => {

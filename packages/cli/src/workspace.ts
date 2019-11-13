@@ -52,7 +52,7 @@ export const loadWorkspace = async (workingDir: string, cliOutput: CliOutput,
     const numErrors = workspace.getWorkspaceErrors().filter(isError).length
     spinner.fail(formatWorkspaceAbort(numErrors))
   } else {
-    spinner.succeed(Prompts.LOADING_WORKSPACE)
+    spinner.succeed(Prompts.FINISHED_LOADING)
   }
 
   return { workspace, errored: wsStatus === 'Error' }

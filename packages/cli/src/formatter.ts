@@ -28,6 +28,11 @@ export const emptyLine = (): string => ''
 
 export const seperator = (): string => `\n${'-'.repeat(78)}\n`
 
+const capitalize = (s: string): string => {
+  if (typeof s !== 'string') return ''
+  return s.charAt(0).toUpperCase() + s.slice(1)
+}
+
 const fullName = (change: Change): string => getChangeElement(change).elemID.getFullName()
 
 const planItemName = (step: PlanItem): string => fullName(step.parent())
@@ -331,6 +336,13 @@ export const formatChangesSummary = (changes: number, approved: number): string 
   }
   return Prompts.FETCH_CHANGES_TO_APPLY(approved)
 }
+
+export const formatConfigFieldInput = (fieldName: string): string => `${capitalize(fieldName)}:`
+
+export const formatConfigHeader = (adapterName: string): string => [
+  Prompts.CONFIG_HEADER(capitalize(adapterName)),
+  emptyLine(),
+].join('\n')
 
 /**
   * Format workspace errors

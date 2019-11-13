@@ -228,7 +228,6 @@ export default class SalesforceAdapter {
 
   /**
    * Imports instances of type from the data stream
-   * @param type the object type of which to import
    * @param instancesIterator the iterator that provides the instances to delete
    * @returns a promise that represents action completion
    */
@@ -346,8 +345,9 @@ export default class SalesforceAdapter {
 
   /**
    * Updates an Element
-   * @param prevElement The metadata of the old element
-   * @param newElement The new metadata of the element to replace
+   * @param before The metadata of the old element
+   * @param after The new metadata of the element to replace
+   * @param changes to apply
    * @returns the updated element
    */
   @logDuration()
@@ -371,8 +371,9 @@ export default class SalesforceAdapter {
 
   /**
    * Update a custom object
-   * @param prevObject The metadata of the old object
-   * @param newObject The new metadata of the object to replace
+   * @param before The metadata of the old element
+   * @param after The new metadata of the element to replace
+   * @param changes to apply
    * @returns the updated object
    */
   private async updateObject(before: ObjectType, after: ObjectType,
@@ -501,7 +502,6 @@ export default class SalesforceAdapter {
         .filter(name => !this.metadataTypeBlacklist.includes(name))
     )
   }
-
 
   @logDuration('finish fetching metadata types')
   private async fetchMetadataTypes(typeNames: Promise<string[]>): Promise<Type[]> {

@@ -8,7 +8,6 @@ import {
 } from 'jsforce'
 import _ from 'lodash'
 import { logger } from '@salto/logging'
-import wu from 'wu'
 import { decorators, collections } from '@salto/lowerdash'
 import SalesforceClient, { Credentials } from './client/client'
 import * as constants from './constants'
@@ -353,12 +352,12 @@ export default class SalesforceAdapter {
    */
   @logDuration()
   public async update(before: Element, after: Element,
-    changes: Iterable<Change>): Promise<Element> {
+    changes: ReadonlyArray<Change>): Promise<Element> {
     let result = after
 
     if (isObjectType(before) && isObjectType(after)) {
       result = await this.updateObject(before, after,
-        wu(changes).toArray() as Change<ObjectType | Field>[])
+        changes as ReadonlyArray<Change<Field | ObjectType>>)
     }
 
     if (isInstanceElement(before) && isInstanceElement(after)) {
@@ -367,7 +366,6 @@ export default class SalesforceAdapter {
 
     // Aspects should be updated once all object related properties updates are over
     await this.runFiltersOnUpdate(before, result, changes)
-
     return result
   }
 

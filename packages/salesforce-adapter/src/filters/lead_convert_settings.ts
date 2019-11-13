@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import {
-  Element, isObjectType, ElemID, findInstances, findObjectType,
+  Element, isObjectType, ElemID, findInstances, findObjectType, Change,
 } from 'adapter-api'
 import { SaveResult } from 'jsforce-types'
 import { collections } from '@salto/lowerdash'
@@ -60,7 +60,8 @@ const filterCreator: FilterCreator = ({ client }) => ({
     }
   },
 
-  onUpdate: async (before: Element, after: Element): Promise<SaveResult[]> => {
+  onUpdate: async (before: Element, after: Element,
+    _changes: ReadonlyArray<Change>): Promise<SaveResult[]> => {
     if (isObjectType(before) && before.elemID.isEqual(LEAD_TYPE_ID)) {
       const beforeSettings = before.annotations[CONVERT_SETTINGS_ANNOTATION]
       const afterSettings = after.annotations[CONVERT_SETTINGS_ANNOTATION]

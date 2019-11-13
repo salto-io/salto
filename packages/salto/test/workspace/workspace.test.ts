@@ -238,13 +238,8 @@ type salesforce_lead {
         {},
         false
       )
-      const newField = new Field(
-        new ElemID('salesforce', 'lead'),
-        'not_a_list_yet_field',
-        BuiltinTypes.NUMBER,
-        {},
-        true
-      )
+      const newField = oldField.clone()
+      newField.isList = true
       const changes: DetailedChange[] = [
         { // modify value
           id: new ElemID('salesforce', 'lead', 'field', 'base_field', Type.DEFAULT),

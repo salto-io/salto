@@ -237,7 +237,7 @@ describe('getPlan', () => {
         expect(changes).toHaveLength(1)
         const [listChange] = changes
         expect(listChange.action).toEqual('modify')
-        expect(listChange.id).toEqual(changedElem.elemID.createNestedID('field', 'name'))
+        expect(listChange.id).toEqual(changedElem.fields.name.elemID)
         expect(_.get(listChange.data, 'after').isList).toBe(true)
       })
     })

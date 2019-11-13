@@ -4,6 +4,7 @@ import {
   Element, ElemID, Adapter, TypeMap, Values, ServiceIds, BuiltinTypes, ObjectType, ADAPTER,
   toServiceIdsString, Field, OBJECT_SERVICE_ID, InstanceElement, isInstanceElement, isObjectType,
   ElemIdGetter,
+  findElements,
 } from 'adapter-api'
 import { logger } from '@salto/logging'
 import { getPlan, DetailedChange } from './plan'
@@ -44,9 +45,7 @@ const getChangeMap = (
 type ChangeTransformFunction = (sourceChange: FetchChange) => FetchChange[]
 const toChangesWithPath = (serviceElements: ReadonlyArray<Element>): ChangeTransformFunction => (
   change => {
-    const originalElements = serviceElements.filter(
-      elem => elem.elemID.getFullName() === change.change.id.getFullName()
-    )
+    const originalElements = [...findElements(serviceElements, change.change.id)]
     if (originalElements.length === 0) {
       // Element does not exist upstream, this is either field/value change or a remove change
       // either way there is no path hint to add here

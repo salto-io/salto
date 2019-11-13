@@ -108,8 +108,8 @@ const svsValuesToRef = (svsInstances: InstanceElement[]): Record<string, string>
 const isStandardPickList = (f: Field): boolean => {
   const apiNameResult = apiName(f)
   return apiNameResult ? (
-    f.type.elemID.getFullName() === Types.primitiveDataTypes.picklist.elemID.getFullName()
-    || f.type.elemID.getFullName() === Types.primitiveDataTypes.multipicklist.elemID.getFullName())
+    f.type.elemID.isEqual(Types.primitiveDataTypes.picklist.elemID)
+    || f.type.elemID.isEqual(Types.primitiveDataTypes.multipicklist.elemID))
     && !apiName(f).endsWith(SALESFORCE_CUSTOM_SUFFIX) : false
 }
 

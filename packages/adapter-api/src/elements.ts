@@ -1,3 +1,4 @@
+import wu from 'wu'
 import _ from 'lodash'
 
 /**
@@ -94,6 +95,10 @@ export class ElemID {
   isTopLevel(): boolean {
     return this.idType === 'type'
       || (this.idType === 'instance' && this.nameParts.length === 1)
+  }
+
+  isEqual(other: ElemID): boolean {
+    return this.getFullName() === other.getFullName()
   }
 
   createNestedID(...nameParts: string[]): ElemID {
@@ -530,4 +535,25 @@ export function isEqualElements(first?: any, second?: any): boolean {
     return first.isEqual(second)
   }
   return false
+}
+
+export const findElements = (elements: Iterable<Element>, id: ElemID): Iterable<Element> => (
+  wu(elements).filter(e => e.elemID.isEqual(id))
+)
+
+export const findElement = (elements: Iterable<Element>, id: ElemID): Element | undefined => (
+  wu(elements).find(e => e.elemID.isEqual(id))
+)
+
+export const findObjectType = (elements: Iterable<Element>, id: ElemID): ObjectType | undefined => {
+  const objects = wu(elements).filter(isObjectType) as wu.WuIterable<ObjectType>
+  return objects.find(e => e.elemID.isEqual(id))
+}
+
+export const findInstances = (
+  elements: Iterable<Element>,
+  typeID: ElemID,
+): Iterable<InstanceElement> => {
+  const instances = wu(elements).filter(isInstanceElement) as wu.WuIterable<InstanceElement>
+  return instances.filter(e => e.type.elemID.isEqual(typeID))
 }

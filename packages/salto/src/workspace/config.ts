@@ -2,7 +2,7 @@ import * as path from 'path'
 import os from 'os'
 import uuidv5 from 'uuid/v5'
 import _ from 'lodash'
-import { ObjectType, ElemID, BuiltinTypes, Field, InstanceElement, isInstanceElement, Type } from 'adapter-api'
+import { ObjectType, ElemID, BuiltinTypes, Field, InstanceElement, Type, findInstances } from 'adapter-api'
 import { logger } from '@salto/logging'
 import { dump } from '../parser/dump'
 import { parse } from '../parser/parse'
@@ -109,9 +109,7 @@ export const getConfigPath = (baseDir: string): string => (
 
 export const parseConfig = async (buffer: Buffer): Promise<Partial<Config>> => {
   const parsedConfig = await parse(buffer, '')
-  const [configInstance] = parsedConfig.elements
-    .filter(isInstanceElement)
-    .filter(e => e.type.elemID.getFullName() === saltoConfigType.elemID.getFullName())
+  const [configInstance] = [...findInstances(parsedConfig.elements, saltoConfigElemID)]
   if (!configInstance) throw new ConfigParseError()
   return _.mapKeys(configInstance.value, (_v, k) => _.camelCase(k)) as unknown as Partial<Config>
 }

@@ -86,6 +86,6 @@ export default class State {
     }
 
     private static find(elements: Element[], element: Element): number {
-      return elements.findIndex(e => e.elemID.getFullName() === element.elemID.getFullName())
+      return elements.findIndex(e => e.elemID.isEqual(element.elemID))
     }
 }

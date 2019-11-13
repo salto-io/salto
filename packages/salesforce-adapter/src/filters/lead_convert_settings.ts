@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import {
-  Element, isInstanceElement, isObjectType, ElemID,
+  Element, isObjectType, ElemID, findInstances, findObjectType,
 } from 'adapter-api'
 import { SaveResult } from 'jsforce-types'
 import { collections } from '@salto/lowerdash'
@@ -31,15 +31,9 @@ const filterCreator: FilterCreator = ({ client }) => ({
    * @param elements the already fetched elements
    */
   onFetch: async (elements: Element[]) => {
-    const lead = _(elements)
-      .filter(isObjectType)
-      .find(e => e.elemID.getFullName() === LEAD_TYPE_ID.getFullName())
-    const convertType = _(elements)
-      .filter(isObjectType)
-      .find(e => e.elemID.getFullName() === LEAD_CONVERT_SETTINGS_TYPE_ID.getFullName())
-    const convertInstance = _(elements)
-      .filter(isInstanceElement)
-      .find(e => e.type.elemID.getFullName() === LEAD_CONVERT_SETTINGS_TYPE_ID.getFullName())
+    const lead = findObjectType(elements, LEAD_TYPE_ID)
+    const convertType = findObjectType(elements, LEAD_CONVERT_SETTINGS_TYPE_ID)
+    const convertInstance = [...findInstances(elements, LEAD_CONVERT_SETTINGS_TYPE_ID)].pop()
 
     if (lead && convertType) {
       delete convertType.fields[bpCase(METADATA_OBJECT_NAME_FIELD)]
@@ -60,16 +54,14 @@ const filterCreator: FilterCreator = ({ client }) => ({
 
         lead.annotate({ [CONVERT_SETTINGS_ANNOTATION]: transform(value, convertType, false) || {} })
 
-        const index = elements.findIndex(
-          e => e.elemID.getFullName() === convertInstance.elemID.getFullName(),
-        )
+        const index = elements.findIndex(e => e.elemID.isEqual(convertInstance.elemID))
         elements.splice(index, 1)
       }
     }
   },
 
   onUpdate: async (before: Element, after: Element): Promise<SaveResult[]> => {
-    if (isObjectType(before) && before.elemID.getFullName() === LEAD_TYPE_ID.getFullName()) {
+    if (isObjectType(before) && before.elemID.isEqual(LEAD_TYPE_ID)) {
       const beforeSettings = before.annotations[CONVERT_SETTINGS_ANNOTATION]
       const afterSettings = after.annotations[CONVERT_SETTINGS_ANNOTATION]
 

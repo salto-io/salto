@@ -1,6 +1,6 @@
-import _ from 'lodash'
+import wu from 'wu'
 import {
-  Element, isInstanceElement, ElemID,
+  Element, ElemID, findInstances,
 } from 'adapter-api'
 import { FilterCreator } from '../filter'
 import { apiName, bpCase } from '../transformer'
@@ -19,9 +19,7 @@ const filterCreator: FilterCreator = () => ({
    * @param elements the already fetched elements
    */
   onFetch: async (elements: Element[]) => {
-    _(elements)
-      .filter(isInstanceElement)
-      .filter(e => e.type.elemID.getFullName() === ASSIGNMENT_RULES_TYPE_ID.getFullName())
+    wu(findInstances(elements, ASSIGNMENT_RULES_TYPE_ID))
       .forEach(rule => {
         // We aim to get `lead_assignment_rules` and `case_assignment_rules`, since the instance
         // name we get from the API is Lead / Case we can just use the instance name followed by

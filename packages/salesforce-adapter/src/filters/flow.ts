@@ -1,7 +1,5 @@
-
-import _ from 'lodash'
 import {
-  Element, isObjectType, Type, ElemID,
+  Element, Type, ElemID, findObjectType,
 } from 'adapter-api'
 import { FilterWith } from '../filter'
 import { SALESFORCE } from '../constants'
@@ -19,8 +17,7 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
    */
   onFetch: async (elements: Element[]): Promise<void> => {
     // fix flow_metadata_value - mark restriction values as not enforced, see: SALTO-93
-    const flowMetadataValue = _(elements).filter(isObjectType)
-      .find(e => e.elemID.getFullName() === FLOW_METADATA_TYPE_ID.getFullName())
+    const flowMetadataValue = findObjectType(elements, FLOW_METADATA_TYPE_ID)
     if (flowMetadataValue && flowMetadataValue.fields.name) {
       flowMetadataValue.fields.name.annotations[Type.RESTRICTION] = { [Type.ENFORCE_VALUE]: false }
     }

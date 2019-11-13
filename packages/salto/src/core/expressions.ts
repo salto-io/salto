@@ -2,7 +2,7 @@ import _ from 'lodash'
 
 import {
   ElemID, Element, isObjectType, isInstanceElement, isType, Value,
-  ReferenceExpression, TemplateExpression,
+  ReferenceExpression, TemplateExpression, findElement,
 } from 'adapter-api'
 
 type Resolver<T> = (v: T, contextElements: Element[], visited?: Set<string>) => Value
@@ -49,7 +49,7 @@ resolveReferenceExpression = (
   }
   visited.add(traversal)
 
-  const { parent: root, path } = ElemID.fromFullName(traversal).createTopLevelParentID()
+  const { parent, path } = ElemID.fromFullName(traversal).createTopLevelParentID()
 
   const resolvePath = (rootElement: Element): Value => {
     if (isInstanceElement(rootElement)) {
@@ -68,7 +68,7 @@ resolveReferenceExpression = (
   }
 
   // Validation should throw an error if there is not match, or more than one match
-  const rootElement = contextElements.filter(e => e.elemID.getFullName() === root.getFullName())[0]
+  const rootElement = findElement(contextElements, parent)
   if (!rootElement) {
     return new UnresolvedReference(traversal)
   }

@@ -1,6 +1,6 @@
-import _ from 'lodash'
+import wu from 'wu'
 import {
-  Element, isInstanceElement, isObjectType, Type, ElemID,
+  Element, Type, ElemID, findObjectType, findInstances,
 } from 'adapter-api'
 import { FilterWith } from '../filter'
 import { SALESFORCE } from '../constants'
@@ -19,15 +19,11 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
    * @param elements the already discoverd elements
    */
   onFetch: async (elements: Element[]) => {
-    const canvasType = _(elements)
-      .filter(isObjectType)
-      .find(e => e.elemID.getFullName() === CANVAS_METADATA_TYPE_ID.getFullName())
+    const canvasType = findObjectType(elements, CANVAS_METADATA_TYPE_ID)
     const initMethods = canvasType ? canvasType.fields[SAML_INIT_METHOD_FIELD_NAME] : undefined
     const values = initMethods ? initMethods.annotations[Type.VALUES] : undefined
 
-    _(elements)
-      .filter(isInstanceElement)
-      .filter(e => e.type.elemID.getFullName() === CANVAS_METADATA_TYPE_ID.getFullName())
+    wu(findInstances(elements, CANVAS_METADATA_TYPE_ID))
       .forEach(canvas => {
         const saml = canvas.value[SAML_INIT_METHOD_FIELD_NAME]
         if (saml && values && !values.includes(saml)) {

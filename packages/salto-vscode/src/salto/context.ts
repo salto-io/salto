@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import wu from 'wu'
 import {
-  Element, isField, isType, isObjectType,
+  Element, isField, isType, isObjectType, findElement,
 } from 'adapter-api'
 import { ParsedBlueprint } from 'salto'
 import { EditorWorkspace } from './workspace'
@@ -163,8 +163,7 @@ export const buildDefinitionsTree = (
 }
 
 const getFullElement = (workspace: EditorWorkspace, partial: Element): Element => {
-  const fullElement = extractFields(workspace.elements || [])
-    .find(e => e.elemID.getFullName() === partial.elemID.getFullName())
+  const fullElement = findElement(extractFields(workspace.elements || []), partial.elemID)
   return fullElement || partial
 }
 

@@ -1,25 +1,22 @@
 import _ from 'lodash'
 import {
-  Element, isInstanceElement, isObjectType,
+  Element, isInstanceElement, isObjectType, ElemID,
 } from 'adapter-api'
 import { SaveResult } from 'jsforce-types'
 import { collections } from '@salto/lowerdash'
 import { FilterCreator } from '../filter'
 import { toMetadataInfo, metadataType, bpCase } from '../transformer'
-import { METADATA_OBJECT_NAME_FIELD } from '../constants'
+import { METADATA_OBJECT_NAME_FIELD, SALESFORCE } from '../constants'
 import { transform } from './convert_types'
 
 const { makeArray } = collections.array
 
-export const LEAD_CONVERT_SETTINGS_TYPE = 'lead_convert_settings'
-export const LEAD_TYPE = 'lead'
+export const LEAD_CONVERT_SETTINGS_TYPE_ID = new ElemID(SALESFORCE, 'lead_convert_settings')
+export const LEAD_TYPE_ID = new ElemID(SALESFORCE, 'lead')
 export const CONVERT_SETTINGS_ANNOTATION = 'convert_settings'
 export const OBJECT_MAPPING_FIELD = 'object_mapping'
 export const MAPPING_FIELDS_FIELD = 'mapping_fields'
 export const INSTANCE_FULL_NAME = 'LeadConvertSettings'
-
-const isTypeName = (element: Element, name: string): boolean =>
-  (isInstanceElement(element) ? element.type.elemID.name === name : element.elemID.name === name)
 
 /**
 * Declare the lead convert settings filter, this filter add lead_convert_setting annotation
@@ -34,11 +31,15 @@ const filterCreator: FilterCreator = ({ client }) => ({
    * @param elements the already fetched elements
    */
   onFetch: async (elements: Element[]) => {
-    const lead = _(elements).filter(isObjectType).find(e => isTypeName(e, LEAD_TYPE))
-    const convertType = _(elements).filter(isObjectType)
-      .find(e => isTypeName(e, LEAD_CONVERT_SETTINGS_TYPE))
-    const convertInstance = _(elements).filter(isInstanceElement)
-      .find(e => isTypeName(e, LEAD_CONVERT_SETTINGS_TYPE))
+    const lead = _(elements)
+      .filter(isObjectType)
+      .find(e => e.elemID.getFullName() === LEAD_TYPE_ID.getFullName())
+    const convertType = _(elements)
+      .filter(isObjectType)
+      .find(e => e.elemID.getFullName() === LEAD_CONVERT_SETTINGS_TYPE_ID.getFullName())
+    const convertInstance = _(elements)
+      .filter(isInstanceElement)
+      .find(e => e.type.elemID.getFullName() === LEAD_CONVERT_SETTINGS_TYPE_ID.getFullName())
 
     if (lead && convertType) {
       delete convertType.fields[bpCase(METADATA_OBJECT_NAME_FIELD)]
@@ -68,7 +69,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
   },
 
   onUpdate: async (before: Element, after: Element): Promise<SaveResult[]> => {
-    if (isTypeName(before, LEAD_TYPE) && isObjectType(before)) {
+    if (isObjectType(before) && before.elemID.getFullName() === LEAD_TYPE_ID.getFullName()) {
       const beforeSettings = before.annotations[CONVERT_SETTINGS_ANNOTATION]
       const afterSettings = after.annotations[CONVERT_SETTINGS_ANNOTATION]
 

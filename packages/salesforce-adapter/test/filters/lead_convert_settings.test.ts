@@ -1,10 +1,10 @@
 import _ from 'lodash'
 import {
-  ObjectType, ElemID, InstanceElement, Element, Field, BuiltinTypes,
+  ObjectType, InstanceElement, Element, Field, BuiltinTypes,
 } from 'adapter-api'
 import { bpCase } from '../../src/transformer'
 import filterCreator, {
-  LEAD_CONVERT_SETTINGS_TYPE, LEAD_TYPE, CONVERT_SETTINGS_ANNOTATION,
+  LEAD_CONVERT_SETTINGS_TYPE_ID, LEAD_TYPE_ID, CONVERT_SETTINGS_ANNOTATION,
   OBJECT_MAPPING_FIELD, MAPPING_FIELDS_FIELD,
 } from '../../src/filters/lead_convert_settings'
 import * as constants from '../../src/constants'
@@ -17,11 +17,11 @@ describe('lead convert settings filter', () => {
   const filter = filterCreator({ client }) as FilterWith<'onFetch'> & FilterWith<'onUpdate'>
 
   const mockLead = new ObjectType(
-    { elemID: new ElemID(constants.SALESFORCE, LEAD_TYPE) }
+    { elemID: LEAD_TYPE_ID }
   )
 
   const fullName = bpCase(constants.METADATA_OBJECT_NAME_FIELD)
-  const elemID = new ElemID(constants.SALESFORCE, LEAD_CONVERT_SETTINGS_TYPE)
+  const elemID = LEAD_CONVERT_SETTINGS_TYPE_ID
   const mockConvertSettingsType = new ObjectType(
     {
       elemID,
@@ -56,12 +56,12 @@ describe('lead convert settings filter', () => {
         _.cloneDeep(mockConvertSettingsType),
         _.cloneDeep(mockConvertSettingsInstance)]
       await filter.onFetch(testElements)
-      leadPostFilter = findElements(testElements, LEAD_TYPE).pop() as ObjectType
+      leadPostFilter = findElements(testElements, LEAD_TYPE_ID.name).pop() as ObjectType
     })
 
     it('should add annotations to lead', async () => {
-      expect(leadPostFilter.annotationTypes[CONVERT_SETTINGS_ANNOTATION].elemID.name)
-        .toBe(LEAD_CONVERT_SETTINGS_TYPE)
+      expect(leadPostFilter.annotationTypes[CONVERT_SETTINGS_ANNOTATION].elemID)
+        .toEqual(LEAD_CONVERT_SETTINGS_TYPE_ID)
       expect(leadPostFilter.annotations[CONVERT_SETTINGS_ANNOTATION]).toBeDefined()
     })
 

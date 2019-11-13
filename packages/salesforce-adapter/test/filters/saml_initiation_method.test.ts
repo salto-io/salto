@@ -1,22 +1,23 @@
 import _ from 'lodash'
 import {
-  ObjectType, ElemID, InstanceElement, Element, Type, Field, BuiltinTypes,
+  ObjectType, InstanceElement, Element, Type, Field, BuiltinTypes,
 } from 'adapter-api'
-import filterCreator, { CANVAS_METADATA_TYPE_NAME, SAML_INIT_METHOD_FIELD_NAME }
+import filterCreator, { CANVAS_METADATA_TYPE_ID, SAML_INIT_METHOD_FIELD_NAME }
   from '../../src/filters/saml_initiation_method'
-import { SALESFORCE } from '../../src/constants'
 import { bpCase } from '../../src/transformer'
 import { FilterWith } from '../../src/filter'
 
 describe('saml initiation method filter', () => {
-  const typeElemID = new ElemID(SALESFORCE, CANVAS_METADATA_TYPE_NAME)
   const mockType = new ObjectType(
     {
-      elemID: typeElemID,
+      elemID: CANVAS_METADATA_TYPE_ID,
       fields: {
-        [SAML_INIT_METHOD_FIELD_NAME]: new Field(typeElemID, SAML_INIT_METHOD_FIELD_NAME,
+        [SAML_INIT_METHOD_FIELD_NAME]: new Field(
+          CANVAS_METADATA_TYPE_ID,
+          SAML_INIT_METHOD_FIELD_NAME,
           BuiltinTypes.STRING,
-          { [Type.VALUES]: ['None', 'IdpInitiated', 'SpInitiated'] }),
+          { [Type.VALUES]: ['None', 'IdpInitiated', 'SpInitiated'] },
+        ),
       },
     }
   )

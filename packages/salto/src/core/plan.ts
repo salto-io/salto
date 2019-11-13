@@ -99,11 +99,9 @@ const toNodeMap = (
     // Add object type
     nodeMap.addNode(id(obj.elemID), [], obj)
     // Add object type fields
-    // TODO: once we move to '.' seprator we can remove FIELD perfix, see:
-    // https://github.com/salto-io/salto/pull/118
     const fieldDependencies = withDependencies ? [id(obj.elemID)] : []
     Object.values(obj.fields).forEach(
-      field => nodeMap.addNode(`FIELD_${id(field.elemID)}`, fieldDependencies, field)
+      field => nodeMap.addNode(id(field.elemID), fieldDependencies, field)
     )
   })
 

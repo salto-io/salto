@@ -4,7 +4,7 @@ import {
 } from 'adapter-api'
 import { FilterCreator } from '../filter'
 import { SALESFORCE } from '../constants'
-import { LEAD_CONVERT_SETTINGS_TYPE } from './lead_convert_settings'
+import { LEAD_CONVERT_SETTINGS_TYPE_ID } from './lead_convert_settings'
 
 interface MissingField {
   name: string
@@ -30,7 +30,7 @@ const allMissingFields: {id: ElemID; fields: MissingField[]}[] = [
     ],
   },
   {
-    id: new ElemID(SALESFORCE, LEAD_CONVERT_SETTINGS_TYPE),
+    id: LEAD_CONVERT_SETTINGS_TYPE_ID,
     fields: [
       {
         name: 'object_mapping',

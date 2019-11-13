@@ -49,7 +49,7 @@ resolveReferenceExpression = (
   }
   visited.add(traversal)
 
-  const { id: root, path } = ElemID.fromFullName(traversal).createTopLevelParentID()
+  const { parent: root, path } = ElemID.fromFullName(traversal).createTopLevelParentID()
 
   const resolvePath = (rootElement: Element): Value => {
     if (isInstanceElement(rootElement)) {

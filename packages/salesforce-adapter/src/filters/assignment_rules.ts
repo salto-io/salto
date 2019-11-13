@@ -1,11 +1,12 @@
 import _ from 'lodash'
 import {
-  Element, isInstanceElement,
+  Element, isInstanceElement, ElemID,
 } from 'adapter-api'
 import { FilterCreator } from '../filter'
 import { apiName, bpCase } from '../transformer'
+import { SALESFORCE } from '../constants'
 
-export const ASSIGNMENT_RULES_TYPE_NAME = 'assignment_rules'
+export const ASSIGNMENT_RULES_TYPE_ID = new ElemID(SALESFORCE, 'assignment_rules')
 
 /**
 * Declare the assignment rules filter, this filter renames assignment rules instances to match
@@ -20,12 +21,12 @@ const filterCreator: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
     _(elements)
       .filter(isInstanceElement)
-      .filter(e => e.type.elemID.name === ASSIGNMENT_RULES_TYPE_NAME)
+      .filter(e => e.type.elemID.getFullName() === ASSIGNMENT_RULES_TYPE_ID.getFullName())
       .forEach(rule => {
         // We aim to get `lead_assignment_rules` and `case_assignment_rules`, since the instance
         // name we get from the API is Lead / Case we can just use the instance name followed by
         // assignment_rules to get the desired name
-        const newName = `${bpCase(apiName(rule))}_${ASSIGNMENT_RULES_TYPE_NAME}`
+        const newName = `${bpCase(apiName(rule))}_${ASSIGNMENT_RULES_TYPE_ID.name}`
         // Replace the element ID
         rule.elemID = rule.type.elemID.createNestedID('instance', newName)
       })

@@ -17,7 +17,7 @@ import {
   FORMULA_TYPE_PREFIX, FIELD_TYPE_NAMES, FIELD_TYPE_API_NAMES, METADATA_OBJECT_NAME_FIELD,
   METADATA_TYPE, FIELD_ANNOTATIONS, SALESFORCE_CUSTOM_SUFFIX, DEFAULT_VALUE_FORMULA,
   MAX_METADATA_RESTRICTION_VALUES, LOOKUP_FILTER_FIELDS,
-  ADDRESS_FIELDS, NAME_FIELDS, GEOLOCATION_FIELDS,
+  ADDRESS_FIELDS, NAME_FIELDS, GEOLOCATION_FIELDS, INSTANCE_FULL_NAME_FIELD,
 } from './constants'
 
 const { makeArray } = collections.array
@@ -54,8 +54,7 @@ export const isCustomObject = (element: ObjectType): boolean =>
 
 export const apiName = (elem: Element): string => {
   if (isInstanceElement(elem)) {
-    // Instance API name comes from the full name value, fallback to the elem ID
-    return elem.value[bpCase(METADATA_OBJECT_NAME_FIELD)] || sfCase(elem.elemID.name)
+    return elem.value[INSTANCE_FULL_NAME_FIELD]
   }
   const elemMetadataType = metadataType(elem)
   return elemMetadataType === CUSTOM_OBJECT ? elem.annotations[API_NAME] : elemMetadataType
@@ -733,7 +732,7 @@ export const createInstanceElement = (
     }
 
     return {
-      [bpCase(METADATA_OBJECT_NAME_FIELD)]: mdInfo.fullName,
+      [INSTANCE_FULL_NAME_FIELD]: mdInfo.fullName,
       [ADAPTER]: SALESFORCE,
       [OBJECT_SERVICE_ID]: toServiceIdsString(typeServiceIds()),
     }

@@ -5,7 +5,7 @@ import {
 import SalesforceAdapter from '../src/adapter'
 import Connection from '../src/client/jsforce'
 import * as constants from '../src/constants'
-import { bpCase, Types } from '../src/transformer'
+import { Types } from '../src/transformer'
 import mockAdpater from './adapter'
 import { findElements } from './utils'
 
@@ -544,7 +544,7 @@ describe('SalesforceAdapter fetch', () => {
           metadataAdditionalTypes: [],
           getElemIdFunc: (adapterName: string, serviceIds: ServiceIds, name: string):
             ElemID => new ElemID(adapterName, name === 'flow_instance'
-            && serviceIds[bpCase(constants.METADATA_OBJECT_NAME_FIELD)] === 'FlowInstance'
+            && serviceIds[constants.INSTANCE_FULL_NAME_FIELD] === 'FlowInstance'
             ? 'my_flow_instance' : name),
         },
       }))

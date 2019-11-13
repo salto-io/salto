@@ -16,7 +16,7 @@ import {
   toCustomField, toCustomObject, apiName, sfCase, fieldFullName, Types,
   getSObjectFieldElement, toMetadataInfo, createInstanceElement,
   metadataType, toMetadataPackageZip, toInstanceElements, createMetadataTypeElements,
-  instanceElementstoRecords, elemIDstoRecords, getCompoundChildFields, bpCase,
+  instanceElementstoRecords, elemIDstoRecords, getCompoundChildFields,
 } from './transformer'
 import layoutFilter from './filters/layouts'
 import fieldPermissionsFilter from './filters/field_permissions'
@@ -321,8 +321,8 @@ export default class SalesforceAdapter {
    */
   private async addInstance(element: InstanceElement): Promise<InstanceElement> {
     const addInstanceDefaults = (elem: InstanceElement): void => {
-      if (elem.value[bpCase(constants.METADATA_OBJECT_NAME_FIELD)] === undefined) {
-        elem.value[bpCase(constants.METADATA_OBJECT_NAME_FIELD)] = sfCase(elem.elemID.name)
+      if (elem.value[constants.INSTANCE_FULL_NAME_FIELD] === undefined) {
+        elem.value[constants.INSTANCE_FULL_NAME_FIELD] = sfCase(elem.elemID.name)
       }
     }
 

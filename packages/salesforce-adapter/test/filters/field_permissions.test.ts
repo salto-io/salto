@@ -1,6 +1,6 @@
 import {
   ObjectType, ElemID, PrimitiveType, Field, PrimitiveTypes,
-  InstanceElement, isObjectType, isInstanceElement,
+  InstanceElement, isObjectType, isInstanceElement, BuiltinTypes,
 } from 'adapter-api'
 import _ from 'lodash'
 import { metadataType } from '../../src/transformer'
@@ -56,6 +56,8 @@ describe('Field Permissions filter', () => {
     elemID: mockProfileElemID,
     fields: {
       [constants.FIELD_PERMISSIONS]: new Field(mockProfileElemID, 'field_permissions', mockFieldPermissions),
+      [constants.INSTANCE_FULL_NAME_FIELD]:
+        new Field(mockProfileElemID, constants.INSTANCE_FULL_NAME_FIELD, BuiltinTypes.SERVICE_ID),
     },
     annotationTypes: {},
     annotations: {
@@ -79,6 +81,7 @@ describe('Field Permissions filter', () => {
         },
       ],
       description: 'Admin profile',
+      [constants.INSTANCE_FULL_NAME_FIELD]: 'Admin',
     })
   const mockStandard = new InstanceElement('standard',
     mockProfile,
@@ -91,6 +94,7 @@ describe('Field Permissions filter', () => {
         },
       ],
       description: 'Standard profile',
+      [constants.INSTANCE_FULL_NAME_FIELD]: 'Standard',
     })
   const mockNoFieldPerm = new InstanceElement('fake_no_field_permissions',
     mockProfile,

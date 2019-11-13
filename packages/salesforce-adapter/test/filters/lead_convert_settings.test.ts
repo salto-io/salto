@@ -2,7 +2,6 @@ import _ from 'lodash'
 import {
   ObjectType, InstanceElement, Element, Field, BuiltinTypes,
 } from 'adapter-api'
-import { bpCase } from '../../src/transformer'
 import filterCreator, {
   LEAD_CONVERT_SETTINGS_TYPE_ID, LEAD_TYPE_ID, CONVERT_SETTINGS_ANNOTATION,
   OBJECT_MAPPING_FIELD, MAPPING_FIELDS_FIELD,
@@ -20,13 +19,13 @@ describe('lead convert settings filter', () => {
     { elemID: LEAD_TYPE_ID }
   )
 
-  const fullName = bpCase(constants.METADATA_OBJECT_NAME_FIELD)
   const elemID = LEAD_CONVERT_SETTINGS_TYPE_ID
   const mockConvertSettingsType = new ObjectType(
     {
       elemID,
       fields: {
-        [fullName]: new Field(elemID, fullName, BuiltinTypes.STRING),
+        [constants.INSTANCE_FULL_NAME_FIELD]:
+          new Field(elemID, constants.INSTANCE_FULL_NAME_FIELD, BuiltinTypes.STRING),
         fake: new Field(elemID, 'fake', BuiltinTypes.BOOLEAN),
       },
       annotations: {
@@ -39,7 +38,7 @@ describe('lead convert settings filter', () => {
     'lead_convert_settings',
     mockConvertSettingsType,
     {
-      [fullName]: 'full',
+      [constants.INSTANCE_FULL_NAME_FIELD]: 'full',
       [OBJECT_MAPPING_FIELD]: {
         [MAPPING_FIELDS_FIELD]: 'mapping',
       },
@@ -78,9 +77,9 @@ describe('lead convert settings filter', () => {
 
     it('should remove full_name', async () => {
       const value = leadPostFilter.annotations[CONVERT_SETTINGS_ANNOTATION]
-      expect(value[fullName]).toBeUndefined()
+      expect(value[constants.INSTANCE_FULL_NAME_FIELD]).toBeUndefined()
       const type = leadPostFilter.annotationTypes[CONVERT_SETTINGS_ANNOTATION] as ObjectType
-      expect(type.fields[fullName]).toBeUndefined()
+      expect(type.fields[constants.INSTANCE_FULL_NAME_FIELD]).toBeUndefined()
     })
   })
 

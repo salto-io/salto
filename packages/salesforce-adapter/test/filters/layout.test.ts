@@ -4,7 +4,6 @@ import {
 import _ from 'lodash'
 import makeFilter, { LAYOUT_ANNOTATION, LAYOUT_TYPE_ID } from '../../src/filters/layouts'
 import * as constants from '../../src/constants'
-import { bpCase } from '../../src/transformer'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
 
@@ -31,7 +30,7 @@ describe('Test layout filter', () => {
       const testSObj = mockSObject.clone()
       testSObj.annotate({ [constants.API_NAME]: apiName })
       const testLayout = _.clone(mockLayout)
-      testLayout.value[bpCase(constants.METADATA_OBJECT_NAME_FIELD)] = `${apiName}-Test layout`
+      testLayout.value[constants.INSTANCE_FULL_NAME_FIELD] = `${apiName}-Test layout`
       const elements = [testSObj, testLayout]
 
       await filter.onFetch(elements)

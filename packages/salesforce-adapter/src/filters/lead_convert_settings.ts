@@ -5,8 +5,8 @@ import {
 import { SaveResult } from 'jsforce-types'
 import { collections } from '@salto/lowerdash'
 import { FilterCreator } from '../filter'
-import { toMetadataInfo, metadataType, bpCase } from '../transformer'
-import { METADATA_OBJECT_NAME_FIELD, SALESFORCE } from '../constants'
+import { toMetadataInfo, metadataType } from '../transformer'
+import { INSTANCE_FULL_NAME_FIELD, SALESFORCE } from '../constants'
 import { transform } from './convert_types'
 
 const { makeArray } = collections.array
@@ -36,13 +36,13 @@ const filterCreator: FilterCreator = ({ client }) => ({
     const convertInstance = [...findInstances(elements, LEAD_CONVERT_SETTINGS_TYPE_ID)].pop()
 
     if (lead && convertType) {
-      delete convertType.fields[bpCase(METADATA_OBJECT_NAME_FIELD)]
+      delete convertType.fields[INSTANCE_FULL_NAME_FIELD]
       lead.annotationTypes[CONVERT_SETTINGS_ANNOTATION] = convertType
 
       if (convertInstance) {
         const { value } = convertInstance
         // Remove fullName from the value and type
-        delete value[bpCase(METADATA_OBJECT_NAME_FIELD)]
+        delete value[INSTANCE_FULL_NAME_FIELD]
 
         // Fix list values where needed - convert_list filter is not running on annotations.
         // As annotations are created case by case in the adapter I think it's ok to keep

@@ -7,7 +7,6 @@ import filterCreator, {
   VALIDATION_RULE_TYPE_ID, VALIDATION_RULE_ANNOTATION,
 } from '../../src/filters/validation_rules'
 import * as constants from '../../src/constants'
-import { bpCase } from '../../src/transformer'
 import mockClient from '../client'
 
 describe('validation rules filter', () => {
@@ -27,7 +26,7 @@ describe('validation rules filter', () => {
       elemID: VALIDATION_RULE_TYPE_ID,
     }),
     {
-      [bpCase(constants.METADATA_OBJECT_NAME_FIELD)]: 'Test__c.validate_stuff',
+      [constants.INSTANCE_FULL_NAME_FIELD]: 'Test__c.validate_stuff',
     },
   )
 

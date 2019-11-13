@@ -31,6 +31,7 @@ import lookupFiltersFilter from './filters/lookup_filters'
 import samlInitMethodFilter from './filters/saml_initiation_method'
 import settingsFilter from './filters/settings_type'
 import listOrderFilter from './filters/list_order'
+import workflowActions from './filters/workflow_actions'
 import {
   FilterCreator, Filter, FilterWith, filtersWith,
 } from './filter'
@@ -160,6 +161,7 @@ export default class SalesforceAdapter {
       samlInitMethodFilter,
       settingsFilter,
       listOrderFilter,
+      workflowActions,
       // The following filters should remain last in order to make sure they fix all elements
       convertListsFilter,
       convertTypeFilter,

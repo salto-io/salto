@@ -229,7 +229,7 @@ describe('getPlan', () => {
         expect(annoChange.action).toEqual('modify')
         expect(annoChange.id).toEqual(obj.elemID)
       })
-      
+
       it('should return is list value modification when a field is changed to list', () => {
         const [plan, changedElem] = planWithFieldIsListChanges()
         const planItem = getFirstPlanItem(plan)

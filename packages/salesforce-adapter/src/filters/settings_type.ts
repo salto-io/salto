@@ -18,7 +18,7 @@ const createSettingsType = async (
   settingsTypesName: string,
   knownTypes: Map<string, Type>): Promise<ObjectType[]> => {
   const typeFields = await client.describeMetadataType(settingsTypesName)
-  const baseTypeNames = new Set([settingsTypesName, ...typeFields.map(f => f.name)])
+  const baseTypeNames = new Set([settingsTypesName])
   return createMetadataTypeElements(settingsTypesName, typeFields, knownTypes, baseTypeNames, true)
 }
 

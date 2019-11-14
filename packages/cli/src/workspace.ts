@@ -1,5 +1,5 @@
 import _ from 'lodash'
-import { Workspace, loadConfig, FetchChange, WorkspaceError, WorkspaceErrorSeverity } from 'salto'
+import { Workspace, loadConfig, FetchChange, WorkspaceError } from 'salto'
 import { logger } from '@salto/logging'
 import { formatWorkspaceErrors, formatChange, formatWorkspaceAbort } from './formatter'
 import { CliOutput, SpinnerCreator } from './types'
@@ -15,9 +15,10 @@ export type LoadWorkspaceResult = {
   errored: boolean
 }
 
+type WorkspaceStatus = 'Error' | 'Warning' | 'Valid'
 // Exported for testing purposes
 export const validateWorkspace = (ws: Workspace,
-  { stdout, stderr }: CliOutput): WorkspaceErrorSeverity | true => {
+  { stdout, stderr }: CliOutput): WorkspaceStatus => {
   if (ws.hasErrors()) {
     const workspaceErrors = ws.getWorkspaceErrors()
     const severeErrors = workspaceErrors.filter(isError)
@@ -28,14 +29,14 @@ export const validateWorkspace = (ws: Workspace,
     stdout.write(`\n${formatWorkspaceErrors(workspaceErrors)}`)
     return 'Warning'
   }
-  return true
+  return 'Valid'
 }
 
 export const loadWorkspace = async (workingDir: string, cliOutput: CliOutput,
   spinnerCreator?: SpinnerCreator): Promise<LoadWorkspaceResult> => {
   const spinner = spinnerCreator
     ? spinnerCreator(Prompts.LOADING_WORKSPACE, {})
-    : { succeed: () => {}, fail: () => {} }
+    : { succeed: () => { }, fail: () => { } }
   const config = await loadConfig(workingDir)
   const workspace = await Workspace.load(config)
   const wsStatus = validateWorkspace(workspace, cliOutput)

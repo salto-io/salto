@@ -33,7 +33,7 @@ describe('workspace', () => {
         mockWs.hasErrors = jest.fn().mockImplementation(() => false)
         const wsValid = validateWorkspace(mockWs, cliOutput)
         expect(mockWs.hasErrors).toHaveBeenCalled()
-        expect(wsValid).toBeTruthy()
+        expect(wsValid).toBe('Valid')
       })
     })
     describe('when there are errors', () => {
@@ -55,7 +55,7 @@ describe('workspace', () => {
         const wsValid = validateWorkspace(mockWs, cliOutput)
         expect(mockWs.hasErrors).toHaveBeenCalled()
         expect(mockWs.getWorkspaceErrors).toHaveBeenCalled()
-        expect(wsValid).toBeTruthy()
+        expect(wsValid).toBe('Warning')
       })
 
       it('returns false if there is at least one sever error', () => {

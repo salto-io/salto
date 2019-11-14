@@ -31,6 +31,11 @@ export const serialize = (elements: Element[]): string => {
       o.className = e.constructor.name
       return o
     }
+    // We need to sort objects so that the state file won't change for the same data.
+    if (_.isPlainObject(e)) {
+      return _(e).toPairs().sortBy().fromPairs()
+        .value()
+    }
     return e
   }
 

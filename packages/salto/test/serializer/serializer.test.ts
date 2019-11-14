@@ -79,4 +79,21 @@ describe('State serialization', () => {
     const sortedElements = _.sortBy(elements, e => e.elemID.getFullName())
     expect(deserialized).toEqual(sortedElements)
   })
+  it('should create the same result for the same input regardless of elements order', () => {
+    const serialized = serialize(elements)
+    const shuffledSer = serialize(_.shuffle(elements))
+    expect(serialized).toEqual(shuffledSer)
+  })
+  it('should create the same result for the same input regardless of values order', () => {
+    const serialized = serialize(elements)
+    const shuffledConfig = _.last(elements) as InstanceElement
+    // We maintain values but shuffle set order
+    shuffledConfig.value.num = 5
+    shuffledConfig.value.name = 'other'
+    const shuffledSer = serialize([
+      ...elements.slice(0, -1),
+      shuffledConfig,
+    ])
+    expect(serialized).toEqual(shuffledSer)
+  })
 })

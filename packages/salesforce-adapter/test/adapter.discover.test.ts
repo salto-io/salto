@@ -388,10 +388,14 @@ describe('SalesforceAdapter fetch', () => {
         .mockImplementation(async () => [])
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const mockSingleMetadataInstance = (name: string, data: Record<string, any>): void => {
+    const mockSingleMetadataInstance = (
+      name: string,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      data: Record<string, any>,
+      namespace?: string
+    ): void => {
       connection.metadata.list = jest.fn()
-        .mockImplementation(async () => [{ fullName: name }])
+        .mockImplementation(async () => [{ fullName: name, namespacePrefix: namespace }])
 
       connection.metadata.read = jest.fn()
         .mockImplementation(async () => data)
@@ -764,6 +768,23 @@ describe('SalesforceAdapter fetch', () => {
       expect(describeMock.mock.calls[1][0]).toBe('{http://soap.sforce.com/2006/04/metadata}Child')
       const child = findElements(result, 'child').pop() as ObjectType
       expect(child.fields.description.type.elemID.name).toBe('string')
+    })
+
+    it('should fetch metadata instances with namespace', async () => {
+      mockSingleMetadataType('Test', [])
+      mockSingleMetadataInstance('Test', { fullName: 'asd__Test' }, 'asd')
+
+      const result = await adapter.fetch()
+      const testInst = findElements(result, 'test', 'asd___test')
+      expect(testInst).toBeDefined()
+    })
+    it('should fetch metadata instances with namespace when fullname already includes the namespace', async () => {
+      mockSingleMetadataType('Test', [])
+      mockSingleMetadataInstance('asd__Test', { fullName: 'asd__Test' }, 'asd')
+
+      const result = await adapter.fetch()
+      const testInst = findElements(result, 'test', 'asd___test')
+      expect(testInst).toBeDefined()
     })
   })
 })

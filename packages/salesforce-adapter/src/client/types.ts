@@ -143,7 +143,7 @@ export class CustomObject implements MetadataInfo {
   readonly sharingModel: string
   readonly nameField = {
     type: 'Text',
-    label: 'Test Object Name',
+    label: 'Name',
   }
 
   constructor(

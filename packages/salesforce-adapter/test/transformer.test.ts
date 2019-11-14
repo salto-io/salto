@@ -6,7 +6,7 @@ import {
 import { Field as SalesforceField, ValueTypeField } from 'jsforce'
 import {
   toMetadataPackageZip, bpCase, getSObjectFieldElement, Types, toCustomField, toCustomObject,
-  getValueTypeFieldElement, getCompoundChildFields, sfCase,
+  getValueTypeFieldElement, getCompoundChildFields, sfCase, createMetadataTypeElements,
 } from '../src/transformer'
 import {
   METADATA_TYPE, FIELD_ANNOTATIONS, FIELD_TYPE_NAMES,
@@ -429,6 +429,73 @@ describe('transformer', () => {
       Object.values(Types.getAllFieldTypes()).forEach(type => {
         expect(type.annotationTypes[API_NAME]).toEqual(BuiltinTypes.SERVICE_ID)
       })
+    })
+  })
+
+  describe('create a path with subtype for subtypes', () => {
+    const nestedField = {
+      fields: [],
+      foreignKeyDomain: '',
+      isForeignKey: false,
+      isNameField: false,
+      minOccurs: 0,
+      name: 'Nested',
+      picklistValues: [],
+      soapType: 'NestedFieldType',
+      valueRequired: false,
+    }
+    const field = {
+      fields: [nestedField],
+      foreignKeyDomain: '',
+      isForeignKey: false,
+      isNameField: false,
+      minOccurs: 0,
+      name: 'Field',
+      picklistValues: [],
+      soapType: 'FieldType',
+      valueRequired: false,
+    }
+    it('should not create a base element as subtype', () => {
+      const [element] = createMetadataTypeElements(
+        'BaseType',
+        [],
+        new Map<string, Type>(),
+        new Set(['BaseType']),
+      )
+      expect(element.path).not.toContain('subtypes')
+    })
+
+    it('should create a type which is not a base element as subtype', () => {
+      const [element] = createMetadataTypeElements(
+        'BaseType',
+        [],
+        new Map<string, Type>(),
+        new Set(),
+      )
+      expect(element.path).toContain('subtypes')
+    })
+
+    it('should not create a field which is a base element as subtype', () => {
+      const elements = createMetadataTypeElements(
+        'BaseType',
+        [field],
+        new Map<string, Type>(),
+        new Set(['BaseType', 'FieldType']),
+      )
+      const [element, fieldType] = elements
+      expect(element.path).not.toContain('subtypes')
+      expect(fieldType.path).not.toContain('subtypes')
+    })
+
+    it('should create a field which is not a base element as subtype', () => {
+      const [element, fieldType] = createMetadataTypeElements(
+        'BaseType',
+        [field],
+        new Map<string, Type>(),
+        new Set(['BaseType']),
+      )
+      expect(element.path).not.toContain('subtypes')
+      expect(fieldType.path).toContain('subtypes')
     })
   })
 })

@@ -1,3 +1,4 @@
+import _ from 'lodash'
 import {
   PrimitiveType, PrimitiveTypes, ElemID, Field,
   ObjectType, InstanceElement, TemplateExpression, ReferenceExpression,
@@ -75,6 +76,7 @@ describe('State serialization', () => {
   it('should serialize and deserialize all element types', () => {
     const serialized = serialize(elements)
     const deserialized = deserialize(serialized)
-    expect(deserialized).toEqual(elements)
+    const sortedElements = _.sortBy(elements, e => e.elemID.getFullName())
+    expect(deserialized).toEqual(sortedElements)
   })
 })

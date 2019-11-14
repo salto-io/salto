@@ -504,16 +504,20 @@ export default class SalesforceAdapter {
   }
 
   @logDuration('finish fetching metadata types')
-  private async fetchMetadataTypes(typeNames: Promise<string[]>): Promise<Type[]> {
+  private async fetchMetadataTypes(typeNamesPromise: Promise<string[]>): Promise<Type[]> {
+    const typeNames = await typeNamesPromise
     const knownTypes = new Map<string, Type>()
-    return _.flatten(await Promise.all((await typeNames)
-      .map(obj => this.fetchMetadataType(obj, knownTypes))))
+    return _.flatten(await Promise.all((typeNames)
+      .map(obj => this.fetchMetadataType(obj, knownTypes, new Set(typeNames)))))
   }
 
-  private async fetchMetadataType(objectName: string, knownTypes: Map<string, Type>):
-    Promise<Type[]> {
+  private async fetchMetadataType(
+    objectName: string,
+    knownTypes: Map<string, Type>,
+    baseTypeNames: Set<string>
+  ): Promise<Type[]> {
     const fields = await this.client.describeMetadataType(objectName)
-    return createMetadataTypeElements(objectName, fields, knownTypes)
+    return createMetadataTypeElements(objectName, fields, knownTypes, baseTypeNames)
   }
 
   @logDuration('finish fetching instances')

@@ -38,8 +38,8 @@ export const serialize = (elements: Element[]): string => {
     element,
     (v, k) => ((k !== undefined && isType(v)) ? new ObjectType({ elemID: v.elemID }) : undefined)
   ))
-
-  return JSON.stringify(weakElements, elementReplacer)
+  const sortedElements = _.sortBy(weakElements, e => e.elemID.getFullName())
+  return JSON.stringify(sortedElements, elementReplacer)
 }
 
 export const deserialize = (data: string): Element[] => {

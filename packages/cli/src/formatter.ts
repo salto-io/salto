@@ -168,13 +168,13 @@ const getElapsedTime = (start: Date): number => Math.ceil(
   (new Date().getTime() - start.getTime()) / 1000,
 )
 
-const formatExecution = (plan: Plan): string[] => {
+export const formatExecutionPlan = (plan: Plan): string => {
   if (_.isEmpty(plan)) {
     return [
       emptyLine(),
       Prompts.EMPTY_PLAN,
       emptyLine(),
-    ]
+    ].join('\n')
   }
   const actionCount = formatCountPlanItemTypes(plan)
   const planSteps = formatDetailedChanges(
@@ -190,17 +190,7 @@ const formatExecution = (plan: Plan): string[] => {
     actionCount,
     emptyLine(),
     emptyLine(),
-  ]
-}
-
-export const formatDeployPlan = (plan: Plan): string => formatExecution(plan).join('\n')
-
-export const formatPlan = (plan: Plan): string => {
-  const executionOutput = formatExecution(plan)
-  return executionOutput.concat([
-    subHeader(Prompts.PREVIEWDISCLAIMER),
-    emptyLine(),
-  ]).join('\n')
+  ].join('\n')
 }
 
 export const formatSearchResults = (result: SearchResult): string => {

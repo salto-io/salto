@@ -7,7 +7,7 @@ import {
 } from 'adapter-api'
 import { Plan, FetchChange } from 'salto'
 import {
-  formatDeployPlan, formatFetchChangeForApproval,
+  formatExecutionPlan, formatFetchChangeForApproval,
   deployPhaseHeader, cancelDeployOutput,
 } from './formatter'
 import Prompts from './prompts'
@@ -24,7 +24,7 @@ const getUserBooleanInput = async (prompt: string): Promise<boolean> => {
 }
 
 export const shouldDeploy = ({ stdout }: CliOutput) => async (actions: Plan): Promise<boolean> => {
-  const planOutput = formatDeployPlan(actions)
+  const planOutput = formatExecutionPlan(actions)
   stdout.write(planOutput)
   if (_.isEmpty(actions)) {
     return false

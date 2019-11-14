@@ -3,7 +3,7 @@ import { createCommandBuilder } from '../command_builder'
 import {
   ParsedCliInput, CliCommand, CliOutput, SpinnerCreator, CliExitCode,
 } from '../types'
-import { formatPlan } from '../formatter'
+import { formatExecutionPlan } from '../formatter'
 import { loadWorkspace } from '../workspace'
 import Prompts from '../prompts'
 
@@ -23,7 +23,7 @@ export const command = (
       // TODO: inline commands.plan here
       const workspacePlan = await preview(workspace)
       spinner.succeed(Prompts.PREVIEW_FINISHED)
-      stdout.write(formatPlan(workspacePlan))
+      stdout.write(formatExecutionPlan(workspacePlan))
       return CliExitCode.Success
     } catch (error) {
       spinner.fail(Prompts.PREVIEW_FAILED)

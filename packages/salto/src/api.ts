@@ -67,21 +67,15 @@ export const deploy = async (
       const changes = wu(getDetailedChanges(workspace.elements
         .filter(e => changedElementsIds.includes(e.elemID.getFullName())), changedElements))
         .map(change => ({ change, serviceChange: change }))
-      console.log(wu(getDetailedChanges(workspace.elements
-          .filter(e => changedElementsIds.includes(e.elemID.getFullName())), changedElements))
-          .map(change => ({ change, serviceChange: change })).toArray())
       const errored = errors.length > 0
-      console.log("PROPER RETURN")
       return {
         sucesses: errored,
         changes,
         errors: errored ? errors : [],
       }
     }
-    console.log("SUP")
     return { sucesses: true, errors: [] }
   } finally {
-    console.log("DONEEEEEEEEEE")
     await state.flush()
   }
 }

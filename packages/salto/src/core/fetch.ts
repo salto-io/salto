@@ -1,5 +1,6 @@
 import wu from 'wu'
 import _ from 'lodash'
+import { EventEmitter } from 'pietile-eventemitter'
 import {
   Element, ElemID, Adapter, TypeMap, Values, ServiceIds, BuiltinTypes, ObjectType, ADAPTER,
   toServiceIdsString, Field, OBJECT_SERVICE_ID, InstanceElement, isInstanceElement, isObjectType,
@@ -19,6 +20,13 @@ export type FetchChange = {
   serviceChange: DetailedChange
   // The change between the working copy and the state
   pendingChange?: DetailedChange
+}
+
+export type FetchProgress = {
+  fetchChangesStart: (adapters: string[]) => void
+  fetchChangesFinish: (adapters: string[]) => void
+  calculateDiffStart: () => void
+  calculateDiffFinish: () => void
 }
 
 export type MergeErrorWithElements = {
@@ -152,12 +160,16 @@ export const fetchChanges = async (
   adapters: Record<string, Adapter>,
   workspaceElements: ReadonlyArray<Element>,
   stateElements: ReadonlyArray<Element>,
+  progressEmitter?: EventEmitter<FetchProgress>
 ): Promise<FetchChangesResult> => {
+  const adapterNames = _.keys(adapters).map(adapter => _.capitalize(adapter))
+  if (progressEmitter) progressEmitter.emit('fetchChangesStart', adapterNames)
   const serviceElements = _.flatten(await Promise.all(
     Object.values(adapters).map(adapter => adapter.fetch())
   ))
   log.debug(`fetched ${serviceElements.length} elements from adapters`)
-
+  if (progressEmitter) progressEmitter.emit('fetchChangesFinish', adapterNames)
+  if (progressEmitter) progressEmitter.emit('calculateDiffStart')
   const { errors: mergeErrors, merged: elements } = mergeElements(serviceElements)
   log.debug(`got ${serviceElements.length} from merge results and elements and to ${elements.length} elements [errors=${
     mergeErrors.length}]`)
@@ -183,6 +195,7 @@ export const fetchChanges = async (
     .map(toChangesWithPath(serviceElements))
     .flatten()
   log.debug('finished to calculate fetch changes')
+  if (progressEmitter) progressEmitter.emit('calculateDiffFinish')
   return {
     changes,
     elements: mergedServiceElements,

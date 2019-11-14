@@ -4,13 +4,14 @@ import {
   Workspace,
   fetchFunc,
   FetchChange,
+  FetchProgress,
 } from 'salto'
+import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto/logging'
 import { createCommandBuilder } from '../command_builder'
-import { ParsedCliInput, CliCommand, CliOutput, CliExitCode, SpinnerCreator } from '../types'
+import { ParsedCliInput, CliCommand, CliOutput, CliExitCode, SpinnerCreator, Spinner } from '../types'
 import { formatChangesSummary, formatMergeErrors, formatFatalFetchError } from '../formatter'
 import { getConfigWithHeader, getApprovedChanges as cliGetApprovedChanges } from '../callbacks'
-import Prompts from '../prompts'
 import { updateWorkspace, loadWorkspace } from '../workspace'
 
 const log = logger(module)
@@ -25,13 +26,39 @@ export const fetchCommand = async (
   force: boolean,
   interactive: boolean,
   output: CliOutput,
+  spinnerCreator: SpinnerCreator,
   fetch: fetchFunc,
   getApprovedChanges: approveChangesFunc,
 ): Promise<CliExitCode> => {
-  const outputLine = (text: string): void => output.stdout.write(`${text}\n`)
+  const progressEmitter = new EventEmitter<FetchProgress>()
 
-  outputLine(Prompts.FETCH_BEGIN)
-  const fetchResult = await fetch(workspace, _.partial(getConfigWithHeader, output.stdout))
+  let fetchingSpinner: Spinner
+  progressEmitter.on('fetchChangesStart', (adapters: string[]) => {
+    fetchingSpinner = spinnerCreator(`Fetching the latest configs from: ${adapters}`, { prefixText: '\n' })
+  })
+
+  progressEmitter.on('fetchChangesFinish', (adapters: string[]) => {
+    if (fetchingSpinner) {
+      fetchingSpinner.succeed(`Finished fetching the latest configs from: ${adapters}`)
+    }
+  })
+
+  let diffCalcSpinner: Spinner
+  progressEmitter.on('calculateDiffStart', () => {
+    diffCalcSpinner = spinnerCreator('Calculating diff between remote and local', { prefixText: '\n' })
+  })
+
+  progressEmitter.on('calculateDiffFinish', () => {
+    if (diffCalcSpinner) {
+      diffCalcSpinner.succeed('Finished calculating the diff between remote and local')
+    }
+  })
+
+  const fetchResult = await fetch(
+    workspace,
+    _.partial(getConfigWithHeader, output.stdout),
+    progressEmitter
+  )
   if (!fetchResult.success) {
     output.stderr.write(formatFatalFetchError(fetchResult.mergeErrors))
     return CliExitCode.AppError
@@ -52,8 +79,18 @@ export const fetchCommand = async (
   const changesToApply = force || isEmptyWorkspace
     ? changes
     : await getApprovedChanges(changes, interactive)
-  outputLine(formatChangesSummary(changes.length, changesToApply.length))
-  return await updateWorkspace(workspace, output, ...changesToApply)
+
+  const updateWsSpinner = spinnerCreator(
+    formatChangesSummary(changes.length, changesToApply.length),
+    { prefixText: '\n' }
+  )
+  const updatingWsSucceeded = await updateWorkspace(workspace, output, ...changesToApply)
+  if (updatingWsSucceeded) {
+    updateWsSpinner.succeed('Updated workspace with changes')
+  } else {
+    updateWsSpinner.fail('Failed to update workspace')
+  }
+  return updatingWsSucceeded
     ? CliExitCode.Success
     : CliExitCode.AppError
 }
@@ -72,7 +109,8 @@ export const command = (
     if (errored) {
       return CliExitCode.AppError
     }
-    return fetchCommand(workspace, force, interactive, output, apiFetch, cliGetApprovedChanges)
+    return fetchCommand(workspace, force, interactive, output,
+      spinnerCreator, apiFetch, cliGetApprovedChanges)
   },
 })
 

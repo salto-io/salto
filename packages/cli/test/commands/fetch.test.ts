@@ -3,6 +3,7 @@ import { ElemID, ObjectType } from 'adapter-api'
 import {
   Workspace, fetch, loadConfig, FetchChange, DetailedChange,
 } from 'salto'
+import { Spinner, SpinnerCreator } from 'src/types'
 import { command, fetchCommand } from '../../src/commands/fetch'
 import { MockWriteStream, getWorkspaceErrors, dummyChanges, mockSpinnerCreator } from '../mocks'
 import Prompts from '../../src/prompts'
@@ -26,10 +27,15 @@ jest.mock('salto', () => ({
 
 describe('fetch command', () => {
   const workspaceDir = 'dummy_dir'
+  let spinners: Spinner[]
+  let spinnerCreator: SpinnerCreator
+
   let cliOutput: { stdout: MockWriteStream; stderr: MockWriteStream }
 
   beforeEach(() => {
     cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
+    spinners = []
+    spinnerCreator = mockSpinnerCreator(spinners)
   })
 
   describe('execute', () => {
@@ -41,7 +47,7 @@ describe('fetch command', () => {
           getWorkspaceErrors,
         } as unknown as Workspace
         (Workspace.load as jest.Mock).mockResolvedValueOnce(Promise.resolve(erroredWorkspace))
-        await command(workspaceDir, true, false, cliOutput, mockSpinnerCreator([])).execute()
+        await command(workspaceDir, true, false, cliOutput, spinnerCreator).execute()
       })
 
       it('should fail', async () => {
@@ -52,7 +58,7 @@ describe('fetch command', () => {
 
     describe('with valid workspace', () => {
       beforeEach(async () => {
-        await command(workspaceDir, true, false, cliOutput, mockSpinnerCreator([])).execute()
+        await command(workspaceDir, true, false, cliOutput, spinnerCreator).execute()
       })
 
       it('should load the workspace from the provided directory', () => {
@@ -83,7 +89,8 @@ describe('fetch command', () => {
 
       describe('with no upstream changes', () => {
         beforeEach(async () => {
-          await fetchCommand(mockWorkspace, true, false, cliOutput, mockFetch, mockApprove)
+          await fetchCommand(mockWorkspace, true, false, cliOutput,
+            spinnerCreator, mockFetch, mockApprove)
         })
         it('should not update workspace', () => {
           expect(mockWorkspace.updateBlueprints).not.toHaveBeenCalled()
@@ -102,7 +109,8 @@ describe('fetch command', () => {
         })
         describe('when called with force', () => {
           beforeEach(async () => {
-            await fetchCommand(mockWorkspace, true, false, cliOutput, mockFetch, mockApprove)
+            await fetchCommand(mockWorkspace, true, false, cliOutput,
+              spinnerCreator, mockFetch, mockApprove)
           })
           it('should deploy all changes', () => {
             expect(mockWorkspace.updateBlueprints).toHaveBeenCalledWith(...dummyChanges)
@@ -110,7 +118,8 @@ describe('fetch command', () => {
         })
         describe('when initial workspace is empty', () => {
           beforeEach(async () => {
-            await fetchCommand(mockWorkspace, false, false, cliOutput, mockFetch, mockApprove)
+            await fetchCommand(mockWorkspace, false, false, cliOutput,
+              spinnerCreator, mockFetch, mockApprove)
           })
           it('should deploy all changes', () => {
             expect(mockWorkspace.updateBlueprints).toHaveBeenCalledWith(...dummyChanges)
@@ -119,7 +128,8 @@ describe('fetch command', () => {
         describe('when initial workspace has only config', () => {
           beforeEach(async () => {
             _.set(mockWorkspace, 'elements', [new ObjectType({ elemID: new ElemID('adapter') })])
-            await fetchCommand(mockWorkspace, false, false, cliOutput, mockFetch, mockApprove)
+            await fetchCommand(mockWorkspace, false, false, cliOutput,
+              spinnerCreator, mockFetch, mockApprove)
           })
           it('should deploy all changes', () => {
             expect(mockWorkspace.updateBlueprints).toHaveBeenCalledWith(...dummyChanges)
@@ -131,7 +141,8 @@ describe('fetch command', () => {
           })
           describe('if no change is approved', () => {
             beforeEach(async () => {
-              await fetchCommand(mockWorkspace, false, false, cliOutput, mockFetch, mockApprove)
+              await fetchCommand(mockWorkspace, false, false, cliOutput,
+                spinnerCreator, mockFetch, mockApprove)
             })
             it('should not update workspace', () => {
               expect(mockWorkspace.updateBlueprints).not.toHaveBeenCalled()
@@ -143,7 +154,8 @@ describe('fetch command', () => {
               mockApprove.mockImplementationOnce(changes => [changes[0]])
             })
             it('should update workspace only with approved changes', async () => {
-              await fetchCommand(mockWorkspace, false, false, cliOutput, mockFetch, mockApprove)
+              await fetchCommand(mockWorkspace, false, false, cliOutput,
+                spinnerCreator, mockFetch, mockApprove)
               expect(mockWorkspace.updateBlueprints).toHaveBeenCalledWith(dummyChanges[0])
               expect(mockWorkspace.flush).toHaveBeenCalledTimes(1)
             })
@@ -156,7 +168,8 @@ describe('fetch command', () => {
               }]
               mockWorkspace.hasErrors = () => true
 
-              await fetchCommand(mockWorkspace, false, false, cliOutput, mockFetch, mockApprove)
+              await fetchCommand(mockWorkspace, false, false, cliOutput,
+                spinnerCreator, mockFetch, mockApprove)
               expect(mockWorkspace.updateBlueprints).toHaveBeenCalledWith(dummyChanges[0])
               expect(cliOutput.stderr.content).toContain('Error')
               expect(cliOutput.stderr.content).toContain('BLA Error')
@@ -170,7 +183,8 @@ describe('fetch command', () => {
               }]
               mockWorkspace.hasErrors = () => true
 
-              await fetchCommand(mockWorkspace, false, false, cliOutput, mockFetch, mockApprove)
+              await fetchCommand(mockWorkspace, false, false, cliOutput,
+                spinnerCreator, mockFetch, mockApprove)
               expect(mockWorkspace.updateBlueprints).toHaveBeenCalledWith(dummyChanges[0])
               expect(cliOutput.stderr.content).not.toContain(Prompts.SHOULDCONTINUE(1))
               expect(cliOutput.stdout.content).not.toContain(Prompts.SHOULDCONTINUE(1))
@@ -184,6 +198,7 @@ describe('fetch command', () => {
                 false,
                 false,
                 cliOutput,
+                spinnerCreator,
                 mockFailedFetch,
                 mockApprove
               )

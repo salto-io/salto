@@ -1,9 +1,10 @@
 import * as vscode from 'vscode'
 import { InstanceElement, ObjectType, Values, isPrimitiveType, PrimitiveTypes, Value } from 'adapter-api'
-import { preview, Plan, deploy, ItemStatus, PlanItem, DeployResult } from 'salto'
+import { preview, Plan, deploy, ItemStatus, PlanItem, DeployResult, WorkspaceError } from 'salto'
 import { EditorWorkspace } from './salto/workspace'
 import { displayError, getBooleanInput, displayHTML, getStringInput, getNumberInput, hrefToUri } from './output'
 import { getActionName, renderDiffView, createPlanDiff } from './format'
+import wu from 'wu'
 
 const displayPlan = async (
   planActions: Plan,
@@ -56,9 +57,11 @@ const updateProgress = async (
   progress.report({ message })
 }
 
-const hasCriticalErrors = (workspace: EditorWorkspace): boolean => (
-  workspace.workspace.getWorkspaceErrors().find(e => e.severity === 'Error') !== undefined
+const getCriticalErrors = (workspace: EditorWorkspace) : ReadonlyArray<WorkspaceError> => (
+  workspace.workspace.getWorkspaceErrors().filter(e => e.severity === 'Error')
 )
+
+const hasCriticalErrors = (workspace: EditorWorkspace): boolean => getCriticalErrors(workspace).length > 0
 
 export const previewCommand = async (
   workspace: EditorWorkspace,
@@ -118,8 +121,16 @@ export const deployCommand = async (
       shouldDeployCB,
       updateActionCB
     )
-    await deployProcess
+    const result = await deployProcess
+    await workspace.updateBlueprints(...wu(result.changes || []).map(c => c.change).toArray())
+    if (hasCriticalErrors(workspace)){
+      getCriticalErrors(workspace).map(e => displayError(e.error))
+    }
+    else {
+      await workspace.flush()
+    }
   } catch (e) {
+    console.log(e)
     displayError(e.message)
   }
 }

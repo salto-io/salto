@@ -32,6 +32,10 @@ describe('missing fields filter', () => {
         name: 'complex',
         type: complexType.elemID,
       },
+      {
+        name: 'missing',
+        type: new ElemID('test', 'none'),
+      },
     ],
   })({ client }) as FilterWith<'onFetch'>
 
@@ -47,7 +51,7 @@ describe('missing fields filter', () => {
   describe('on fetch', () => {
     beforeEach(() => filter.onFetch(testElements))
 
-    it('should add primitive list fields', async () => {
+    it('should add primitive list fields', () => {
       const [testType] = testElements
       expect(testType.fields.lst).toBeDefined()
       expect(testType.fields.lst.isList).toBe(true)
@@ -55,7 +59,7 @@ describe('missing fields filter', () => {
       expect(testType.fields.lst.type).toEqual(BuiltinTypes.STRING)
     })
 
-    it('should add fields by type name', async () => {
+    it('should add fields by type name', () => {
       const [testType] = testElements
       expect(testType.fields.complex).toBeDefined()
       expect(testType.fields.complex.isList).toBe(false)
@@ -63,9 +67,14 @@ describe('missing fields filter', () => {
       expect(testType.fields.complex.type).toEqual(complexType)
     })
 
-    it('should keep existing fields unchanged', async () => {
+    it('should keep existing fields unchanged', () => {
       const [testType] = testElements
       expect(testType.fields.existing).toEqual(mockType.fields.existing)
+    })
+
+    it('should quietly omit fields with missing types', () => {
+      const [testType] = testElements
+      expect(testType.fields).not.toHaveProperty('missing')
     })
   })
 })

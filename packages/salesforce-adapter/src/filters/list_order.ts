@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import {
-  Element, isInstanceElement, InstanceElement, Value, isObjectType, ObjectType,
+  Element, isInstanceElement, InstanceElement, Value, isObjectType, ObjectType, Type,
 } from 'adapter-api'
 import { FilterWith } from '../filter'
 
@@ -73,18 +73,22 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
           fieldsToSort = sortFieldInfo.path.length > 0 ? _.get(
             elem.value[fieldToStart],
             sortFieldInfo.path
-          ) as Value[] : elem.value[fieldToStart]
-          // The purpose of the following foreach is to sort the items in each field required to be
-          // sorted (there can be many list/array fields to sort)
-          fieldsToSort.forEach(field => {
-            field[arrayPropertyToSort] = _.orderBy(
-              field[arrayPropertyToSort],
-              sortFieldInfo.fieldToSortBy
-            )
-          })
+          ) : elem.value[fieldToStart]
+          if (_.isArray(fieldsToSort)) {
+            // The purpose of the following foreach is to sort the items in each field required to
+            // be sorted (there can be many list/array fields to sort)
+            fieldsToSort
+              .filter(field => _.isArray(field[arrayPropertyToSort]))
+              .forEach(field => {
+                field[arrayPropertyToSort] = _.orderBy(
+                  field[arrayPropertyToSort],
+                  sortFieldInfo.fieldToSortBy
+                )
+              })
+          }
         // We don't have an additional property to sort, and we sort the elements inside the
         // initial field at the top level (right below to elem.value)
-        } else {
+        } else if (_.isArray(elem.value[fieldToStart])) {
           elem.value[fieldToStart] = _.orderBy(
             elem.value[fieldToStart],
             sortFieldInfo.fieldToSortBy
@@ -104,13 +108,13 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
         return
       }
       // const sortInfo = _.clone(sortFieldInfo)
-      typesToChange.forEach(typeElem => {
-        // eslint-disable-next-line no-underscore-dangle
-        typeElem.fields[sortFieldInfo.path[0]].annotations._values = _.orderBy(
-          // eslint-disable-next-line no-underscore-dangle
-          typeElem.fields[sortFieldInfo.path[0]].annotations._values
-        )
-      })
+      typesToChange
+        .map(type => type.fields[sortFieldInfo.path[0]])
+        .filter(field => field !== undefined)
+        .filter(field => _.isArray(field.annotations[Type.VALUES]))
+        .forEach(field => {
+          field.annotations[Type.VALUES] = field.annotations[Type.VALUES].sort()
+        })
     }
     const instanceElements = elements.filter(isInstanceElement)
     orderListFieldsInInstances(instanceElements, CLEAN_DATA_SERVICE_SORT)

@@ -4,7 +4,7 @@ import {
   Value, Change, getChangeElement, isField, isElement, ElemIdGetter, ADAPTER,
 } from 'adapter-api'
 import {
-  SaveResult, MetadataInfo, Field as SObjField, DescribeSObjectResult, QueryResult,
+  SaveResult, MetadataInfo, Field as SObjField, DescribeSObjectResult, QueryResult, FileProperties,
 } from 'jsforce'
 import _ from 'lodash'
 import { logger } from '@salto/logging'
@@ -644,7 +644,12 @@ export default class SalesforceAdapter {
       return []
     }
 
-    return this.client.readMetadata(type, objs.map(obj => obj.fullName))
+    const getFullName = (obj: FileProperties): string => {
+      const namePrefix = obj.namespacePrefix ? `${obj.namespacePrefix}__` : ''
+      return obj.fullName.startsWith(namePrefix) ? obj.fullName : `${namePrefix}${obj.fullName}`
+    }
+
+    return this.client.readMetadata(type, objs.map(getFullName))
   }
 
   private filtersWith<M extends keyof Filter>(m: M): FilterWith<M>[] {

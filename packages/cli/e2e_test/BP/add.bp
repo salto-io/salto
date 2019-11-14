@@ -1,4 +1,4 @@
-type salesforce_e2etest {
+type salesforce_new_object_name {
   salesforce_text my_name {
     label = "My Name"
     _required = false
@@ -9,6 +9,6 @@ type salesforce_e2etest {
   }
 }
 
-salesforce_profile my_new_profile1 {
+salesforce_profile new_instance_name {
   description = "To Be Modified Description"
 }

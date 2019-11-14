@@ -12,9 +12,10 @@ import {
 } from 'salto'
 import wu from 'wu'
 import {
-  API_NAME, CUSTOM_OBJECT, INSTANCE_FULL_NAME_FIELD,
+  API_NAME, CUSTOM_OBJECT, INSTANCE_FULL_NAME_FIELD, SALESFORCE_CUSTOM_SUFFIX,
 } from 'salesforce-adapter/dist/src/constants'
 import { logger } from '@salto/logging'
+import { ActionName } from '@salto/dag'
 import { CliOutput, SpinnerCreator, Spinner } from '../src/types'
 
 import { MockWriteStream, mockSpinnerCreator } from '../test/mocks'
@@ -62,10 +63,13 @@ describe('commands e2e', () => {
   const spinners: Spinner[] = []
   cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
   spinnerCreator = mockSpinnerCreator(spinners)
-  const NEW_INSTANCE_ELEM_NAME = 'my_new_profile1'
-  const NEW_INSTANCE_FULL_NAME = 'MyNewProfile1'
-  const NEW_OBJECT_ELEM_NAME = 'e2etest'
-  const NEW_OBJECT_API_NAME = 'E2etest__c'
+  const NEW_INSTANCE_BASE_ELEM_NAME = 'new_instance_name'
+  const NEW_OBJECT_BASE_ELEM_NAME = 'new_object_name'
+  const randomString = String(Date.now()).substring(6)
+  const NEW_INSTANCE_ELEM_NAME = NEW_INSTANCE_BASE_ELEM_NAME + randomString
+  const NEW_INSTANCE_FULL_NAME = `NewInstanceName${randomString}`
+  const NEW_OBJECT_ELEM_NAME = NEW_OBJECT_BASE_ELEM_NAME + randomString
+  const NEW_OBJECT_API_NAME = `NewObjectName${randomString}${SALESFORCE_CUSTOM_SUFFIX}`
   const PROFILE = 'Profile'
 
   const objectExists = async (
@@ -115,6 +119,12 @@ describe('commands e2e', () => {
   afterAll(async () => {
     await rm(fetchOutputDir)
     await rm(localStorageDir)
+    if (await objectExists(NEW_OBJECT_API_NAME)) {
+      await client.delete(CUSTOM_OBJECT, NEW_OBJECT_API_NAME)
+    }
+    if (await instanceExists(NEW_INSTANCE_FULL_NAME)) {
+      await client.delete(PROFILE, NEW_INSTANCE_FULL_NAME)
+    }
   })
 
   const loadValidWorkspace = async (): Promise<Workspace> => {
@@ -123,21 +133,33 @@ describe('commands e2e', () => {
     return workspace
   }
 
+  type Pair = [string, string]
+
+  const editBlueprint = async (replacements: Pair[]): Promise<void> => {
+    let fileAsString = await file.readTextFile(tmpBP)
+    replacements.forEach(pair => {
+      fileAsString = fileAsString.replace(pair[0], pair[1])
+    })
+    await file.writeTextFile(tmpBP, fileAsString)
+  }
+
   const findTestObject = (workspace: Workspace): ObjectType =>
-    workspace.elements.find(elem => elem.elemID.name === NEW_OBJECT_ELEM_NAME) as ObjectType
+    wu(workspace.elements)
+      .find(elem => elem.elemID.name === NEW_OBJECT_ELEM_NAME) as ObjectType
 
   const findTestInstance = (workspace: Workspace): InstanceElement =>
-    workspace.elements.find(elem => elem.elemID.name === NEW_INSTANCE_ELEM_NAME) as InstanceElement
+    wu(workspace.elements)
+      .find(elem => elem.elemID.name === NEW_INSTANCE_ELEM_NAME) as InstanceElement
 
   const getChangedElementName = (change: Change): string => getChangeElement(change).elemID.name
 
-  const verifyChanges = (plan: Plan, changesAction: string, expectedSize = 2,
+  const verifyChanges = (plan: Plan, changesAction: ActionName, expectedSize = 2,
     expectedElementNames = [NEW_OBJECT_ELEM_NAME, NEW_INSTANCE_ELEM_NAME]): void => {
     expect(plan.size).toBe(expectedSize)
     const changes = wu(plan.itemsByEvalOrder()).map(item => item.parent() as Change).toArray()
     changes.forEach(change => expect(change.action).toBe(changesAction))
-    expect(changes.map(change => getChangedElementName(change)))
-      .toEqual(expectedElementNames)
+    expect(changes.map(change => getChangedElementName(change)).sort())
+      .toEqual(expectedElementNames.sort())
   }
 
   const verifyNewInstanceBP = (workspace: Workspace, expectedDescription: string): void => {
@@ -178,6 +200,10 @@ describe('commands e2e', () => {
 
   const deployNewElementsAndVerify = async (): Promise<void> => {
     await copyFile(addModelBP, tmpBP)
+    await editBlueprint([
+      [NEW_OBJECT_BASE_ELEM_NAME, NEW_OBJECT_ELEM_NAME],
+      [NEW_INSTANCE_BASE_ELEM_NAME, NEW_INSTANCE_ELEM_NAME],
+    ])
     await runDeploy()
     verifyChanges(lastPlan, 'add')
     expect(await objectExists(NEW_OBJECT_API_NAME, ['MyName__c', 'ToBeModified__c']))
@@ -190,14 +216,11 @@ describe('commands e2e', () => {
   }
 
   const deployModifiedElements = async (): Promise<void> => {
-    const editBlueprint = async (): Promise<void> => {
-      let fileAsString = await file.readTextFile(tmpBP)
-      fileAsString = fileAsString.replace('to_be_modified', 'i_am_modified')
-      fileAsString = fileAsString.replace('ToBeModified__c', 'IAmModified__c')
-      fileAsString = fileAsString.replace('To Be Modified Description', 'I Am Modified')
-      await file.writeTextFile(tmpBP, fileAsString)
-    }
-    await editBlueprint()
+    await editBlueprint([
+      ['to_be_modified', 'i_am_modified'],
+      ['ToBeModified__c', 'IAmModified__c'],
+      ['To Be Modified Description', 'I Am Modified'],
+    ])
     await runDeploy()
     verifyChanges(lastPlan, 'modify')
     expect(await objectExists(NEW_OBJECT_API_NAME, ['MyName__c', 'IAmModified__c']))

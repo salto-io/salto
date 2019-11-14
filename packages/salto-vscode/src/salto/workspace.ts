@@ -4,7 +4,7 @@ import path from 'path'
 import {
   Workspace, Blueprint,
   ParsedBlueprint, ParsedBlueprintMap,
-  SourceMap, Errors, Config,
+  SourceMap, Errors, Config, DetailedChange,
 } from 'salto'
 import { Element } from 'adapter-api'
 
@@ -41,7 +41,6 @@ export class EditorWorkspace {
   get parsedBlueprints(): ParsedBlueprintMap { return this.workspace.parsedBlueprints }
   get sourceMap(): SourceMap { return this.workspace.sourceMap }
   get baseDir(): string { return this.workspace.config.baseDir }
-
   private hasPendingUpdates(): boolean {
     return !(_.isEmpty(this.pendingSets) && _.isEmpty(this.pendingDeletes))
   }
@@ -103,19 +102,31 @@ export class EditorWorkspace {
     return this.parsedBlueprints[this.getWorkspaceName(filename)]
   }
 
-  setBlueprints(...blueprints: Blueprint[]): void {
+  async updateBlueprints(...changes: DetailedChange[]): Promise<void> {
+    if (this.runningSetOperation === undefined) {
+      this.runningSetOperation = this.workspace.updateBlueprints(...changes)
+      return this.runningSetOperation
+    }
+    throw new Error('Can not update blueprints during a running set operation')
+  }
+
+  async flush(): Promise<void> {
+    return this.workspace.flush()
+  }
+
+  setBlueprints(...blueprints: Blueprint[]): Promise<void> {
     this.addPendingBlueprints(
       blueprints.map(bp => ({
         ...bp,
         filename: this.getWorkspaceName(bp.filename),
       }))
     )
-    this.triggerAggregatedSetOperation()
+    return this.triggerAggregatedSetOperation()
   }
 
-  removeBlueprints(...names: string[]): void {
+  removeBlueprints(...names: string[]): Promise<void> {
     this.addPendingDeletes(names.map(n => this.getWorkspaceName(n)))
-    this.triggerAggregatedSetOperation()
+    return this.triggerAggregatedSetOperation()
   }
 
   getValidCopy(): EditorWorkspace | undefined {

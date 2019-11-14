@@ -67,7 +67,6 @@ export const deploy = async (
       const changes = wu(getDetailedChanges(workspace.elements
         .filter(e => changedElementsIds.includes(e.elemID.getFullName())), changedElements))
         .map(change => ({ change, serviceChange: change }))
-
       const errored = errors.length > 0
       return {
         sucesses: errored,

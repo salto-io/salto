@@ -108,4 +108,11 @@ describe('TEST', () => {
     expect(lastValid.errors.hasErrors()).toBeFalsy()
     expect(lastValid).not.toEqual(workspace)
   })
+
+  it('should not allow to update bluprints before all pending operations are done', async () => {
+    const workspace = await EditorWorkspace.load(getConfig(baseBPDir, []), false)
+    const extraContent = await file.readTextFile(extraBP)
+    workspace.setBlueprints({ filename: extraBP, buffer: extraContent })
+    await expect(workspace.updateBlueprints()).rejects.toThrow()
+  })
 })

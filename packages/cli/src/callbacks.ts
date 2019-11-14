@@ -8,7 +8,8 @@ import {
 import { Plan, FetchChange } from 'salto'
 import {
   formatExecutionPlan, formatFetchChangeForApproval, deployPhaseHeader, cancelDeployOutput,
-  formatShouldContinueWithWarning, formatCancelCommand,
+  formatShouldContinueWithWarning, formatCancelCommand, formatConfigHeader,
+  formatConfigFieldInput,
 } from './formatter'
 import Prompts from './prompts'
 import { CliOutput, WriteStream, Spinner } from './types'
@@ -109,9 +110,16 @@ export const getConfigFromUser = async (configType: ObjectType): Promise<Instanc
   const questions = Object.keys(configType.fields).map(fieldName =>
     ({
       type: getFieldInputType(configType.fields[fieldName].type, fieldName),
+      mask: '*',
       name: fieldName,
-      message: `Enter ${fieldName}:`,
+      message: formatConfigFieldInput(fieldName),
     }))
   const values = await inquirer.prompt(questions)
   return new InstanceElement(ElemID.CONFIG_NAME, configType, values)
+}
+
+export const getConfigWithHeader = async (output: WriteStream, configType: ObjectType):
+  Promise<InstanceElement> => {
+  output.write(formatConfigHeader(configType.elemID.adapter))
+  return getConfigFromUser(configType)
 }

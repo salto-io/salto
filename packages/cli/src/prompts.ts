@@ -87,4 +87,5 @@ Be sure to go over the preview output when invoking the deploy command.`
     } - do you want to continue?`
 
   public static readonly CANCELD = 'Canceling...'
+  public static readonly CONFIG_HEADER = (adapterName: string): string => `Please enter your ${adapterName} credentials:`
 }

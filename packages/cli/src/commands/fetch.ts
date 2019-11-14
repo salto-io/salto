@@ -8,7 +8,7 @@ import {
 import { logger } from '@salto/logging'
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput, CliExitCode, SpinnerCreator } from '../types'
-import { formatChangesSummary, formatMergeErrors } from '../formatter'
+import { formatChangesSummary, formatMergeErrors, formatFatalFetchError } from '../formatter'
 import { getConfigWithHeader, getApprovedChanges as cliGetApprovedChanges } from '../callbacks'
 import Prompts from '../prompts'
 import { updateWorkspace, loadWorkspace } from '../workspace'
@@ -32,6 +32,11 @@ export const fetchCommand = async (
 
   outputLine(Prompts.FETCH_BEGIN)
   const fetchResult = await fetch(workspace, _.partial(getConfigWithHeader, output.stdout))
+  if (!fetchResult.success) {
+    output.stderr.write(formatFatalFetchError(fetchResult.mergeErrors))
+    return CliExitCode.AppError
+  }
+
   // A few merge errors might have occured,
   // but since it's fetch flow, we omitted the elements
   // and only print the merge errors

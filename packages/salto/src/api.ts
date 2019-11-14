@@ -14,7 +14,7 @@ import {
 import State from './state/state'
 import { findElement, SearchResult } from './core/search'
 import { Workspace, CREDS_DIR } from './workspace/workspace'
-import { fetchChanges, FetchChange, getDetailedChanges, createElemIdGetter, MergeErrorWithElements } from './core/fetch'
+import { fetchChanges, FetchChange, getDetailedChanges, createElemIdGetter, MergeErrorWithElements, FatalFetchMergeError } from './core/fetch'
 
 export { ItemStatus }
 
@@ -85,6 +85,7 @@ export type fillConfigFunc = (configType: ObjectType) => Promise<InstanceElement
 export type FetchResult = {
   changes: Iterable<FetchChange>
   mergeErrors: MergeErrorWithElements[]
+  success: boolean
 }
 export type fetchFunc = (
   workspace: Workspace,
@@ -111,17 +112,28 @@ export const fetch: fetchFunc = async (workspace, fillConfig) => {
     createElemIdGetter(stateElements))
   log.debug(`${adapters.length} were initialized [newConfigs=${newConfigs.length}]`)
 
-  const { changes, elements, mergeErrors } = await fetchChanges(
-    adapters, workspace.elements, stateElements,
-  )
-  log.debug(`${elements.length} elements were fetched [mergedErrors=${mergeErrors.length}]`)
-
-  state.override(elements)
-  await state.flush()
-  log.debug(`finish to override state with ${elements.length} elements`)
-  return {
-    changes: wu.chain(changes, newConfigs.map(configToChange)),
-    mergeErrors,
+  try {
+    const { changes, elements, mergeErrors } = await fetchChanges(
+      adapters, workspace.elements, stateElements,
+    )
+    log.debug(`${elements.length} elements were fetched [mergedErrors=${mergeErrors.length}]`)
+    state.override(elements)
+    await state.flush()
+    log.debug(`finish to override state with ${elements.length} elements`)
+    return {
+      changes: wu.chain(changes, newConfigs.map(configToChange)),
+      mergeErrors,
+      success: true,
+    }
+  } catch (error) {
+    if (error instanceof FatalFetchMergeError) {
+      return {
+        changes: [],
+        mergeErrors: error.causes,
+        success: false,
+      }
+    }
+    throw error
   }
 }
 

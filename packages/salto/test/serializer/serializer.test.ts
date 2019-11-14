@@ -86,13 +86,13 @@ describe('State serialization', () => {
   })
   it('should create the same result for the same input regardless of values order', () => {
     const serialized = serialize(elements)
-    const suffledConfig = _.last(elements) as InstanceElement
-    // We maintain values but suffle set order
-    suffledConfig.value.num = 5
-    suffledConfig.value.name = 'other'
+    const shuffledConfig = _.last(elements) as InstanceElement
+    // We maintain values but shuffle set order
+    shuffledConfig.value.num = 5
+    shuffledConfig.value.name = 'other'
     const shuffledSer = serialize([
       ...elements.slice(0, -1),
-      suffledConfig,
+      shuffledConfig,
     ])
     expect(serialized).toEqual(shuffledSer)
   })

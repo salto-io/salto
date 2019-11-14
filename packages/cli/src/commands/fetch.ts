@@ -8,7 +8,7 @@ import {
 import { logger } from '@salto/logging'
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput, CliExitCode, SpinnerCreator } from '../types'
-import { formatChangesSummary, formatMergeErrors } from '../formatter'
+import { formatChangesSummary, formatMergeErrors, formatFatalFetchError } from '../formatter'
 import { getConfigWithHeader, getApprovedChanges as cliGetApprovedChanges } from '../callbacks'
 import Prompts from '../prompts'
 import { updateWorkspace, loadWorkspace } from '../workspace'
@@ -32,25 +32,29 @@ export const fetchCommand = async (
 
   outputLine(Prompts.FETCH_BEGIN)
   const fetchResult = await fetch(workspace, _.partial(getConfigWithHeader, output.stdout))
-  // A few merge errors might have occured,
-  // but since it's fetch flow, we omitted the elements
-  // and only print the merge errors
-  if (!_.isEmpty(fetchResult.mergeErrors)) {
-    log.debug(`fetch had ${fetchResult.mergeErrors} merge errors`)
-    output.stderr.write(formatMergeErrors(fetchResult.mergeErrors))
-  }
+  if (fetchResult.success) {
+    // A few merge errors might have occured,
+    // but since it's fetch flow, we omitted the elements
+    // and only print the merge errors
+    if (!_.isEmpty(fetchResult.mergeErrors)) {
+      log.debug(`fetch had ${fetchResult.mergeErrors} merge errors`)
+      output.stderr.write(formatMergeErrors(fetchResult.mergeErrors))
+    }
 
-  // Unpack changes to array so we can iterate on them more than once
-  const changes = [...fetchResult.changes]
-  // If the workspace starts empty there is no point in showing a huge amount of changes
-  const isEmptyWorkspace = workspace.elements.filter(elem => !elem.elemID.isConfig()).length === 0
-  const changesToApply = force || isEmptyWorkspace
-    ? changes
-    : await getApprovedChanges(changes, interactive)
-  outputLine(formatChangesSummary(changes.length, changesToApply.length))
-  return await updateWorkspace(workspace, output, ...changesToApply)
-    ? CliExitCode.Success
-    : CliExitCode.AppError
+    // Unpack changes to array so we can iterate on them more than once
+    const changes = [...fetchResult.changes]
+    // If the workspace starts empty there is no point in showing a huge amount of changes
+    const isEmptyWorkspace = workspace.elements.filter(elem => !elem.elemID.isConfig()).length === 0
+    const changesToApply = force || isEmptyWorkspace
+      ? changes
+      : await getApprovedChanges(changes, interactive)
+    outputLine(formatChangesSummary(changes.length, changesToApply.length))
+    return await updateWorkspace(workspace, output, ...changesToApply)
+      ? CliExitCode.Success
+      : CliExitCode.AppError
+  }
+  output.stderr.write(formatFatalFetchError(fetchResult.mergeErrors))
+  return CliExitCode.AppError
 }
 
 export const command = (

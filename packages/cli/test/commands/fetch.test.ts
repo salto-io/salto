@@ -9,7 +9,11 @@ import Prompts from '../../src/prompts'
 
 jest.mock('salto', () => ({
   ...require.requireActual('salto'),
-  fetch: jest.fn().mockImplementation(() => Promise.resolve({ changes: [], mergeErrors: [] })),
+  fetch: jest.fn().mockImplementation(() => Promise.resolve({
+    changes: [],
+    mergeErrors: [],
+    sucess: true,
+  })),
   Workspace: {
     load: jest.fn().mockImplementation(
       config => ({ config, elements: [], hasErrors: () => false }),
@@ -61,7 +65,10 @@ describe('fetch command', () => {
 
     describe('fetch command', () => {
       const mockFetch = jest.fn().mockResolvedValue(
-        Promise.resolve({ changes: [], mergeErrors: [] })
+        Promise.resolve({ changes: [], mergeErrors: [], success: true })
+      )
+      const mockFailedFetch = jest.fn().mockResolvedValue(
+        Promise.resolve({ changes: [], mergeErrors: [], success: false })
       )
       const mockApprove = jest.fn().mockResolvedValue(Promise.resolve([]))
       let mockWorkspace: Workspace
@@ -90,6 +97,7 @@ describe('fetch command', () => {
               (change: DetailedChange): FetchChange => ({ change, serviceChange: change })
             ),
             mergeErrors: [],
+            success: true,
           }))
         })
         describe('when called with force', () => {
@@ -169,6 +177,19 @@ describe('fetch command', () => {
               expect(cliOutput.stdout.content).toContain('Warning')
               expect(cliOutput.stdout.content).toContain('BLA Warning')
               expect(mockWorkspace.flush).toHaveBeenCalled()
+            })
+            it('should not update workspace if fetch failed', async () => {
+              await fetchCommand(
+                mockWorkspace,
+                false,
+                false,
+                cliOutput,
+                mockFailedFetch,
+                mockApprove
+              )
+              expect(cliOutput.stderr.content).toContain('Error')
+              expect(mockWorkspace.flush).not.toHaveBeenCalled()
+              expect(mockWorkspace.updateBlueprints).not.toHaveBeenCalled()
             })
           })
         })

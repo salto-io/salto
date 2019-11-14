@@ -75,6 +75,7 @@ Be sure to go over the preview output when invoking the deploy command.`
   public static readonly FETCH_CHANGES_TO_APPLY = (numChanges: number): string => `Updating workspace with ${numChanges} changes from the service`
   public static readonly FETCH_CONFLICTING_CHANGE = 'This change conflicts with the following pending change from your workspace:'
   public static readonly FETCH_MERGE_ERRORS = 'These errors occured as part of the fetch:'
+  public static readonly FETCH_FATAL_MERGE_ERROR_PREFIX = 'Error occured during fetch, cause:\n'
 
   public static readonly LOADING_WORKSPACE = 'Loading workspce...'
   public static readonly FINISHED_LOADING = 'Finished loading workspce'

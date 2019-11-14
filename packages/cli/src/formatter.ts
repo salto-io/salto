@@ -368,6 +368,11 @@ export const formatMergeErrors = (mergeErrors: ReadonlyArray<MergeError>): strin
     }`
   ).join('\n')}`
 
+export const formatFatalFetchError = (causes: MergeError[]): string =>
+  error(`${Prompts.FETCH_FATAL_MERGE_ERROR_PREFIX}${
+    causes.map(c => `Error: ${c.error.message}, Elements: ${c.elements.map(e => e.elemID.getFullName()).join(', ')}\n`)
+  }`)
+
 export const formatWorkspaceAbort = (numErrors: number): string =>
   error(`${Prompts.WORKSPACE_LOAD_FAILED(numErrors)}\n`)
 

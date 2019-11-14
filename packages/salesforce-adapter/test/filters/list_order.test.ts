@@ -46,8 +46,8 @@ describe('list order filter', () => {
       ).toEqual(['Alpha', 'Bravo', 'Charlie'])
     })
 
+    const typeElemID = new ElemID(SALESFORCE, FIELD_PERMISSIONS_TYPE_NAME)
     it('should properly sort values in a field in an ObjectType', async () => {
-      const typeElemID = new ElemID(SALESFORCE, FIELD_PERMISSIONS_TYPE_NAME)
       const testType = new ObjectType(
         {
           elemID: typeElemID,
@@ -60,6 +60,10 @@ describe('list order filter', () => {
       await filter.onFetch([testType])
       expect(testType.fields[FIELD_FIELD_NAME].annotations[Type.VALUES])
         .toEqual(['a', 'b', 'c'])
+    })
+    it('should not fail if target field does not exist', async () => {
+      const testType = new ObjectType({ elemID: typeElemID })
+      await expect(filter.onFetch([testType])).resolves.not.toThrow()
     })
   })
 })

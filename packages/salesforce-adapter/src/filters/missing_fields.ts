@@ -99,7 +99,7 @@ export const makeFilter = (
     const addMissingField = (elem: Element) => (f: MissingField): Field | undefined => {
       const type = isType(f.type) ? f.type : typeMap[f.type.getFullName()]
       if (type === undefined) {
-        log.warn(`Failed to find type ${(f.type as ElemID).getFullName()}, omitting field ${f.name}`)
+        log.warn('Failed to find type %s, omitting field %s', (f.type as ElemID).getFullName(), f.name)
         return undefined
       }
       return new Field(elem.elemID, f.name, type, f.annotations, f.isList)

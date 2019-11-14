@@ -77,14 +77,14 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
           if (_.isArray(fieldsToSort)) {
             // The purpose of the following foreach is to sort the items in each field required to
             // be sorted (there can be many list/array fields to sort)
-            fieldsToSort.forEach(field => {
-              if (_.isArray(field[arrayPropertyToSort])) {
+            fieldsToSort
+              .filter(field => _.isArray(field[arrayPropertyToSort]))
+              .forEach(field => {
                 field[arrayPropertyToSort] = _.orderBy(
                   field[arrayPropertyToSort],
                   sortFieldInfo.fieldToSortBy
                 )
-              }
-            })
+              })
           }
         // We don't have an additional property to sort, and we sort the elements inside the
         // initial field at the top level (right below to elem.value)
@@ -108,16 +108,13 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
         return
       }
       // const sortInfo = _.clone(sortFieldInfo)
-      typesToChange.forEach(typeElem => {
-        const field = typeElem.fields[sortFieldInfo.path[0]]
-        if (field === undefined) {
-          return
-        }
-        const { annotations } = field
-        if (_.isArray(annotations[Type.VALUES])) {
-          annotations[Type.VALUES] = _.orderBy(annotations[Type.VALUES])
-        }
-      })
+      typesToChange
+        .map(type => type.fields[sortFieldInfo.path[0]])
+        .filter(field => field !== undefined)
+        .filter(field => _.isArray(field.annotations[Type.VALUES]))
+        .forEach(field => {
+          field.annotations[Type.VALUES] = field.annotations[Type.VALUES].sort()
+        })
     }
     const instanceElements = elements.filter(isInstanceElement)
     orderListFieldsInInstances(instanceElements, CLEAN_DATA_SERVICE_SORT)

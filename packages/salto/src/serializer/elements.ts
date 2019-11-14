@@ -31,6 +31,15 @@ export const serialize = (elements: Element[]): string => {
       o.className = e.constructor.name
       return o
     }
+    // We need to sort objects so that the state file won't change for the same data.
+    if (_.isPlainObject(e)) {
+      const o = _(e).keys().sort().reduce((acc, k) => {
+        acc[k] = _.get(e, k)
+        return acc
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      }, {} as {[key: string]: any})
+      return o
+    }
     return e
   }
 

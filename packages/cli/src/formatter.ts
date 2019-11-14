@@ -356,13 +356,13 @@ export const formatWorkspaceErrors = (workspaceErrors: ReadonlyArray<WorkspaceEr
 
 export const formatMergeErrors = (mergeErrors: ReadonlyArray<MergeError>): string =>
   `${Prompts.FETCH_MERGE_ERRORS}${mergeErrors.map(
-    me => `${formatError(me)}, dropped elements: ${
+    me => `${formatError(me.error)}, dropped elements: ${
       me.elements.map(e => e.elemID.getFullName()).join(', ')
     }`
   ).join('\n')}`
 
 export const formatWorkspaceAbort = (numErrors: number): string =>
-  header(`${Prompts.WORKSPACE_LOAD_FAILED(numErrors)}\n`)
+  error(`${Prompts.WORKSPACE_LOAD_FAILED(numErrors)}\n`)
 
 export const formatShouldContinueWithWarning = (numWarnings: number): string =>
   warn(Prompts.SHOULDCONTINUE(numWarnings))

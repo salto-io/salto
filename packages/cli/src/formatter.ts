@@ -6,8 +6,8 @@ import {
   isObjectType, isField, isPrimitiveType, Field, PrimitiveTypes, ActionName,
 } from 'adapter-api'
 import {
-  Plan, PlanItem, FoundSearchResult, SearchResult, DetailedChange,
-  WorkspaceError, SourceFragment, FetchChange, MergeError, WorkspaceErrorSeverity,
+  Plan, PlanItem, FoundSearchResult, SearchResult, DetailedChange, WorkspaceError, SourceFragment,
+  FetchChange, MergeError,
 } from 'salto'
 import Prompts from './prompts'
 
@@ -18,7 +18,7 @@ export const subHeader = (txt: string): string => chalk.grey(txt)
 
 export const body = (txt: string): string => chalk.reset(txt)
 
-export const warn = (txt: string): string => chalk.red(txt)
+export const warn = (txt: string): string => chalk.yellow.bold(txt)
 
 export const success = (txt: string): string => chalk.green(txt)
 
@@ -274,7 +274,7 @@ export const formatItemDone = (item: PlanItem, startTime: Date): string => {
   const elapsed = getElapsedTime(startTime)
   const itemName = formatItemName(planItemName(item))
   const completedText = success(`${Prompts.ENDACTION[item.parent().action]}`
-  + ` completed after ${elapsed}s`)
+    + ` completed after ${elapsed}s`)
   const itemDone = [
     `${itemName} ${completedText}`,
     emptyLine(),
@@ -338,25 +338,33 @@ export const formatChangesSummary = (changes: number, approved: number): string 
 const TAB = '  '
 const fomratSourceFragment = (sf: Readonly<SourceFragment>): string =>
   `${chalk.underline(sf.sourceRange.filename)}(${chalk.cyan(`${sf.sourceRange.start.line}`)}`
-   + `:${chalk.cyan(`${sf.sourceRange.start.col}`)})\n${TAB}${chalk.blueBright(sf.fragment.split('\n').join(`\n${TAB}`))}\n`
+  + `:${chalk.cyan(`${sf.sourceRange.start.col}`)})\n${TAB}${
+    subHeader(sf.fragment.split('\n').join(`\n${TAB}`))}\n`
+
 const fomratSourceFragments = (sourceFragments: ReadonlyArray<SourceFragment>): string =>
   (sourceFragments.length > 0
-    ? ` on ${sourceFragments.map(fomratSourceFragment).join('\n and ')}`
+    ? `\n on ${sourceFragments.map(fomratSourceFragment).join('\n and ')}`
     : '')
 
-const formatError = (err: {error: string}, severity: WorkspaceErrorSeverity): string => {
-  const severityPainter = severity === 'Error' ? chalk.red : chalk.yellow
-  return `${severityPainter(chalk.bold(`${severity}:`))} ${chalk.bold(err.error)}`
-}
+const formatError = (err: { error: string }): string => header(err.error)
+
 const formatWorkspaceError = (we: Readonly<WorkspaceError>): string =>
-  `${formatError(we, we.severity)}\n${fomratSourceFragments(we.sourceFragments)}`
+  `${formatError(we)}${fomratSourceFragments(we.sourceFragments)}`
 
 export const formatWorkspaceErrors = (workspaceErrors: ReadonlyArray<WorkspaceError>): string =>
-  `${Prompts.WORKSPACE_LOAD_FAILED}\n${workspaceErrors.map(formatWorkspaceError).join('\n\n')}\n`
+  `${workspaceErrors.map(formatWorkspaceError).join('\n')}\n`
 
 export const formatMergeErrors = (mergeErrors: ReadonlyArray<MergeError>): string =>
   `${Prompts.FETCH_MERGE_ERRORS}${mergeErrors.map(
-    me => `${formatError(me.error, 'Error')}, dropped elements: ${
+    me => `${formatError(me.error)}, dropped elements: ${
       me.elements.map(e => e.elemID.getFullName()).join(', ')
     }`
   ).join('\n')}`
+
+export const formatWorkspaceAbort = (numErrors: number): string =>
+  error(`${Prompts.WORKSPACE_LOAD_FAILED(numErrors)}\n`)
+
+export const formatShouldContinueWithWarning = (numWarnings: number): string =>
+  warn(Prompts.SHOULDCONTINUE(numWarnings))
+
+export const formatCancelCommand = header(`${Prompts.CANCELD}\n`)

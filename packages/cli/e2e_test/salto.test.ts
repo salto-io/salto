@@ -99,7 +99,7 @@ describe('commands e2e', () => {
   })
 
   it('should run fetch and create the state bp file', async () => {
-    await fetch(fetchOutputDir, true, false, cliOutput).execute()
+    await fetch(fetchOutputDir, true, false, cliOutput, mockSpinnerCreator([])).execute()
     expect(await exists(fetchOutputDir)).toBe(true)
     expect(await exists(statePath)).toBe(true)
   })

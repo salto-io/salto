@@ -19,7 +19,7 @@ export abstract class FieldDefinitionMergeError extends MergeError {
     { elemID, parentID, fieldName, cause }:
       { elemID: ElemID; parentID: string; fieldName: string; cause: string },
   ) {
-    super({ elemID, error: `Cannot extend '${parentID}': field: '${fieldName}' ${cause}` })
+    super({ elemID, error: `Cannot merge '${parentID}': field '${fieldName}' ${cause}` })
     this.parentID = parentID
     this.fieldName = fieldName
     this.cause = cause
@@ -41,7 +41,7 @@ export class MultipleBaseDefinitionsMergeError extends FieldDefinitionMergeError
     { elemID, parentID, fieldName, bases }:
       { elemID: ElemID; parentID: string; fieldName: string; bases: Field[] }
   ) {
-    super({ elemID, parentID, fieldName, cause: 'has multiple base definitions' })
+    super({ elemID, parentID, fieldName, cause: 'has multiple definitions' })
     this.bases = bases
   }
 }

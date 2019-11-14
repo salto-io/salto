@@ -23,7 +23,7 @@ describe('TEST', () => {
     expect(workspace.errors.hasErrors()).toBeTruthy()
     const diag = getDiagnostics(workspace)['../BP2/parse_error.bp'][0]
     expect(diag).toBeDefined()
-    expect(diag.msg).toBe(
+    expect(diag.msg).toContain(
       'Expected the start of an expression, but found an invalid expression token.'
     )
     expect(diag.severity).toBe('Error')
@@ -34,7 +34,7 @@ describe('TEST', () => {
     expect(workspace.errors.hasErrors()).toBeTruthy()
     const diag = getDiagnostics(workspace)['../BP2/error.bp'][0]
     expect(diag).toBeDefined()
-    expect(diag.msg).toBe(
+    expect(diag.msg).toContain(
       'Invalid value type for salto.number : "ooppps"'
     )
     expect(diag.severity).toBe('Warning')

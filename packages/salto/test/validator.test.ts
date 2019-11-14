@@ -257,12 +257,12 @@ describe('Elements validation', () => {
 
           expect(errors[0]).toBeInstanceOf(InvalidValueValidationError)
           expect(errors[0].message).toMatch('Value "wrongValue2" is not valid')
-          expect(errors[0].message).toMatch('expected: one of: "str"')
+          expect(errors[0].message).toMatch('expected one of: "str"')
           expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('nested', 'str'))
 
           expect(errors[1]).toBeInstanceOf(InvalidValueValidationError)
           expect(errors[1].message).toMatch('Value "wrongValue" is not valid')
-          expect(errors[1].message).toMatch('expected: one of: "restriction1", "restriction2"')
+          expect(errors[1].message).toMatch('expected one of: "restriction1", "restriction2"')
           expect(errors[1].elemID).toEqual(extInst.elemID.createNestedID('restrictStr'))
         }
 

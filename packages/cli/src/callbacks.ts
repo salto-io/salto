@@ -7,11 +7,11 @@ import {
 } from 'adapter-api'
 import { Plan, FetchChange } from 'salto'
 import {
-  formatExecutionPlan, formatFetchChangeForApproval,
-  deployPhaseHeader, cancelDeployOutput,
+  formatExecutionPlan, formatFetchChangeForApproval, deployPhaseHeader, cancelDeployOutput,
+  formatShouldContinueWithWarning, formatCancelCommand,
 } from './formatter'
 import Prompts from './prompts'
-import { CliOutput } from './types'
+import { CliOutput, WriteStream, Spinner } from './types'
 
 const getUserBooleanInput = async (prompt: string): Promise<boolean> => {
   const question = {
@@ -23,19 +23,29 @@ const getUserBooleanInput = async (prompt: string): Promise<boolean> => {
   return answers.userInput
 }
 
-export const shouldDeploy = ({ stdout }: CliOutput) => async (actions: Plan): Promise<boolean> => {
-  const planOutput = formatExecutionPlan(actions)
-  stdout.write(planOutput)
-  if (_.isEmpty(actions)) {
-    return false
+export const shouldDeploy = (stdout: WriteStream, spinner: Spinner) =>
+  async (actions: Plan): Promise<boolean> => {
+    spinner.succeed(Prompts.PREVIEW_FINISHED)
+    stdout.write(formatExecutionPlan(actions))
+    if (_.isEmpty(actions)) {
+      return false
+    }
+    const shouldExecute = await getUserBooleanInput(Prompts.SHOULDEXECUTREPLAN)
+    if (shouldExecute) {
+      stdout.write(deployPhaseHeader)
+    } else {
+      stdout.write(cancelDeployOutput)
+    }
+    return shouldExecute
   }
-  const shouldExecute = await getUserBooleanInput(Prompts.SHOULDEXECUTREPLAN)
-  if (shouldExecute) {
-    stdout.write(deployPhaseHeader)
-  } else {
-    stdout.write(cancelDeployOutput)
+
+export const shouldContinueInCaseOfWarnings = async (numWarnings: number,
+  { stdout }: CliOutput): Promise<boolean> => {
+  const shouldContinue = await getUserBooleanInput(formatShouldContinueWithWarning(numWarnings))
+  if (!shouldContinue) {
+    stdout.write(formatCancelCommand)
   }
-  return shouldExecute
+  return shouldContinue
 }
 
 export const getApprovedChanges = async (

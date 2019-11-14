@@ -18,7 +18,7 @@ export const command = (
       return CliExitCode.AppError
     }
     const records = await readCsv(inputPath)
-    const { workspace, errored } = await loadWorkspace(workingDir, stderr)
+    const { workspace, errored } = await loadWorkspace(workingDir, { stdout, stderr })
     if (errored) {
       return CliExitCode.AppError
     }

@@ -308,7 +308,7 @@ export class Workspace {
         const sourceFragments = sourceRanges.map(sr => this.resolveSourceFragment(sr))
         return {
           sourceFragments,
-          error: me.error,
+          error: me.message,
           severity: 'Error',
           cause: me,
         }
@@ -318,7 +318,7 @@ export class Workspace {
         const sourceFragments = sourceRanges.map(sr => this.resolveSourceFragment(sr))
         return {
           sourceFragments,
-          error: ve.error,
+          error: ve.message,
           severity: calculateValidationSeverity(ve),
           cause: ve,
         }

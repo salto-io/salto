@@ -57,10 +57,10 @@ describe('preview command', () => {
 
     it('should have started spinner and it should succeed (and not fail)', async () => {
       expect(spinnerCreator).toHaveBeenCalled()
-      expect(spinners).toHaveLength(1)
-      expect(spinners[0].fail).not.toHaveBeenCalled()
-      expect(spinners[0].succeed).toHaveBeenCalled()
-      expect((spinners[0].succeed as jest.Mock).mock.calls[0][0]).toContain('Calculated')
+      expect(spinners).toHaveLength(2) // first is for workspace load
+      expect(spinners[1].fail).not.toHaveBeenCalled()
+      expect(spinners[1].succeed).toHaveBeenCalled()
+      expect((spinners[1].succeed as jest.Mock).mock.calls[0][0]).toContain('Calculated')
     })
   })
 
@@ -73,10 +73,8 @@ describe('preview command', () => {
       expect(cliOutput.stderr.content).toContain('Error')
     })
 
-    it('should fail the spinner', () => {
-      expect(spinners[0].succeed).not.toHaveBeenCalled()
-      expect(spinners[0].fail).toHaveBeenCalled()
-      expect((spinners[0].fail as jest.Mock).mock.calls[0][0]).toContain('failed')
+    it('should not start the preview spinner', () => {
+      expect(spinners[1]).toBeUndefined()
     })
   })
 })

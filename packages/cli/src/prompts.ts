@@ -76,5 +76,15 @@ Be sure to go over the preview output when invoking the deploy command.`
   public static readonly FETCH_CONFLICTING_CHANGE = 'This change conflicts with the following pending change from your workspace:'
   public static readonly FETCH_MERGE_ERRORS = 'These errors occured as part of the fetch:'
 
-  public static readonly WORKSPACE_LOAD_FAILED = 'Failed to load workspace'
+  public static readonly LOADING_WORKSPACE = 'Loading workspce...'
+  public static readonly FINISHED_LOADING = 'Finished loading workspce'
+
+  public static readonly WORKSPACE_LOAD_FAILED = (numErrors: number): string =>
+    `Workspace has ${numErrors === 1 ? 'an error' : `${numErrors} errors`} - aborting!`
+
+  public static readonly SHOULDCONTINUE = (numWarning: number): string =>
+    `Workspace has ${numWarning === 1 ? 'a warning' : `${numWarning} warnings`
+    } - do you want to continue?`
+
+  public static readonly CANCELD = 'Canceling...'
 }

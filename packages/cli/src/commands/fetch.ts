@@ -7,7 +7,7 @@ import {
 } from 'salto'
 import { logger } from '@salto/logging'
 import { createCommandBuilder } from '../command_builder'
-import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'
+import { ParsedCliInput, CliCommand, CliOutput, CliExitCode, SpinnerCreator } from '../types'
 import { formatChangesSummary, formatMergeErrors } from '../formatter'
 import { getConfigFromUser, getApprovedChanges as cliGetApprovedChanges } from '../callbacks'
 import Prompts from '../prompts'
@@ -48,7 +48,7 @@ export const fetchCommand = async (
     ? changes
     : await getApprovedChanges(changes, interactive)
   outputLine(formatChangesSummary(changes.length, changesToApply.length))
-  return await updateWorkspace(workspace, output.stderr, ...changesToApply)
+  return await updateWorkspace(workspace, output, ...changesToApply)
     ? CliExitCode.Success
     : CliExitCode.AppError
 }
@@ -57,12 +57,13 @@ export const command = (
   workspaceDir: string,
   force: boolean,
   interactive: boolean,
-  output: CliOutput
+  output: CliOutput,
+  spinnerCreator: SpinnerCreator,
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
     log.debug(`running fetch command on '${workspaceDir}' [force=${force}, interactive=${
       interactive}]`)
-    const { workspace, errored } = await loadWorkspace(workspaceDir, output.stderr)
+    const { workspace, errored } = await loadWorkspace(workspaceDir, output, spinnerCreator)
     if (errored) {
       return CliExitCode.AppError
     }
@@ -99,8 +100,8 @@ const fetchBuilder = createCommandBuilder({
     },
   },
 
-  async build(input: FetchParsedCliInput, output: CliOutput) {
-    return command('.', input.args.force, input.args.interactive, output)
+  async build(input: FetchParsedCliInput, output: CliOutput, spinnerCreator: SpinnerCreator) {
+    return command('.', input.args.force, input.args.interactive, output, spinnerCreator)
   },
 })
 

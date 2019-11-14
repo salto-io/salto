@@ -4,7 +4,8 @@ import {
   Workspace, fetch, loadConfig, FetchChange, DetailedChange,
 } from 'salto'
 import { command, fetchCommand } from '../../src/commands/fetch'
-import { MockWriteStream, getWorkspaceErrors, dummyChanges } from '../mocks'
+import { MockWriteStream, getWorkspaceErrors, dummyChanges, mockSpinnerCreator } from '../mocks'
+import Prompts from '../../src/prompts'
 
 jest.mock('salto', () => ({
   ...require.requireActual('salto'),
@@ -21,8 +22,8 @@ jest.mock('salto', () => ({
 
 describe('fetch command', () => {
   const workspaceDir = 'dummy_dir'
-
   let cliOutput: { stdout: MockWriteStream; stderr: MockWriteStream }
+
   beforeEach(() => {
     cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
   })
@@ -36,17 +37,18 @@ describe('fetch command', () => {
           getWorkspaceErrors,
         } as unknown as Workspace
         (Workspace.load as jest.Mock).mockResolvedValueOnce(Promise.resolve(erroredWorkspace))
-        await command(workspaceDir, true, false, cliOutput).execute()
+        await command(workspaceDir, true, false, cliOutput, mockSpinnerCreator([])).execute()
       })
 
       it('should fail', async () => {
-        expect(cliOutput.stderr.content).toContain('Failed to load workspace')
+        expect(cliOutput.stderr.content).toContain('Error')
+        expect(fetch).not.toHaveBeenCalled()
       })
     })
 
     describe('with valid workspace', () => {
       beforeEach(async () => {
-        await command(workspaceDir, true, false, cliOutput).execute()
+        await command(workspaceDir, true, false, cliOutput, mockSpinnerCreator([])).execute()
       })
 
       it('should load the workspace from the provided directory', () => {
@@ -141,29 +143,31 @@ describe('fetch command', () => {
             it('should exit if errors identified in workspace after update', async () => {
               mockWorkspace.getWorkspaceErrors = () => [{
                 sourceFragments: [],
-                error: 'Error',
+                error: 'BLA Error',
                 severity: 'Error',
               }]
               mockWorkspace.hasErrors = () => (true)
 
               await fetchCommand(mockWorkspace, false, false, cliOutput, mockFetch, mockApprove)
               expect(mockWorkspace.updateBlueprints).toHaveBeenCalledWith(dummyChanges[0])
-              expect(cliOutput.stderr.content).toContain('Failed to load workspace')
               expect(cliOutput.stderr.content).toContain('Error')
+              expect(cliOutput.stderr.content).toContain('BLA Error')
               expect(mockWorkspace.flush).not.toHaveBeenCalled()
             })
             it('should not exit if warning identified in workspace after update', async () => {
               mockWorkspace.getWorkspaceErrors = () => [{
                 sourceFragments: [],
-                error: 'Warning',
+                error: 'BLA Warning',
                 severity: 'Warning',
               }]
               mockWorkspace.hasErrors = () => true
 
               await fetchCommand(mockWorkspace, false, false, cliOutput, mockFetch, mockApprove)
               expect(mockWorkspace.updateBlueprints).toHaveBeenCalledWith(dummyChanges[0])
-              expect(cliOutput.stderr.content).toContain('Failed to load workspace')
-              expect(cliOutput.stderr.content).toContain('Warning')
+              expect(cliOutput.stderr.content).not.toContain(Prompts.SHOULDCONTINUE(1))
+              expect(cliOutput.stdout.content).not.toContain(Prompts.SHOULDCONTINUE(1))
+              expect(cliOutput.stdout.content).toContain('Warning')
+              expect(cliOutput.stdout.content).toContain('BLA Warning')
               expect(mockWorkspace.flush).toHaveBeenCalled()
             })
           })

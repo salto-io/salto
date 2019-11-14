@@ -10,6 +10,7 @@ import { command as exportCommand } from '../src/commands/export'
 import { command as deleteCommand } from '../src/commands/delete'
 import adapterConfigs from './adapter_configs'
 import Prompts from '../src/prompts'
+import * as callbacksImpl from '../src/callbacks'
 
 const { copyFile, rm, mkdirp, exists } = file
 
@@ -25,12 +26,8 @@ const exportFile = 'export_test.csv'
 const exportOutputFullPath = path.join(exportOutputDir, exportFile)
 const dataFilePath = `${__dirname}/../../e2e_test/CSV/import.csv`
 
-// Attempting to access the functions on run time without the mock implementation, or
-// omitting the mock prefix in their names (YES I KNOW) will result in a runtime exception
-// to be thrown
-jest.mock('../src/callbacks', () => ({
-  getConfigFromUser: jest.fn().mockImplementation(() => mockGetConfigType()),
-}))
+jest.spyOn(callbacksImpl, 'getConfigFromUser').mockImplementation(() => mockGetConfigType())
+
 describe('Data migration operations E2E', () => {
   jest.setTimeout(15 * 60 * 1000)
   const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }

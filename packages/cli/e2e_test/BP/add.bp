@@ -1,10 +1,14 @@
 type salesforce_e2etest {
-  salesforce_text name {
-    label = "Name"
-    _required = true
+  salesforce_text my_name {
+    label = "My Name"
+    _required = false
   }
-  salesforce_text test {
-    label = "test"
-    _required = true
+  salesforce_text to_be_modified {
+    label = "To Be Modified"
+    _required = false
   }
+}
+
+salesforce_profile my_new_profile1 {
+  description = "To Be Modified Description"
 }

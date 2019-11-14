@@ -21,7 +21,7 @@
     "generate": "./generate.sh",
     "build": "yarn generate && yarn lint && yarn build-ts",
     "test": "jest --forceExit --detectOpenHandles",
-    "e2e-test": "RUN_E2E_TESTS=1 jest --forceExit --detectOpenHandles",
+    "e2e-test": "RUN_E2E_TESTS=1 SALTO_LOG_NS=cli/e2e/salto SALTO_LOG_LEVEL=info jest --forceExit --detectOpenHandles",
     "clean": "rm -rf ./dist ./pkg",
     "build-ts": "tsc",
     "watch-ts": "tsc -w",

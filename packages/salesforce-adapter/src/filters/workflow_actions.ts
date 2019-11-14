@@ -1,7 +1,8 @@
 import {
-  Element, isObjectType, ObjectType, ElemID, Field, isInstanceElement,
+  Element, ObjectType, ElemID, Field, findObjectType, findInstances, isInstanceElement,
 } from 'adapter-api'
 import _ from 'lodash'
+import wu from 'wu'
 import { SALESFORCE } from '../constants'
 import { FilterCreator } from '../filter'
 
@@ -29,7 +30,7 @@ const filterCreator: FilterCreator = () => ({
    * Add the various actions to the workflow rule object type and discard records whose data
    * is already embedded in the workflow records
    *
-   * @param elements
+   * @param allElements
    */
   onFetch: async (allElements: Element[]): Promise<void> => {
     /**
@@ -38,51 +39,58 @@ const filterCreator: FilterCreator = () => ({
      * @param elements the list of elements
      */
     const changeWorkFlowRule = (elements: Element[]): void => {
-      const objectTypes = elements
-        .filter(isObjectType)
-      const alert = objectTypes
-        .find(objType => objType.elemID.name === WORKFLOW_ALERT) as ObjectType
-      const fieldUpdate = objectTypes
-        .find(objType => objType.elemID.name === WORKFLOW_FIELD_UPDATE) as ObjectType
-      const outboundMessage = objectTypes
-        .find(objType => objType.elemID.name === WORKFLOW_OUTBOUND_MESSAGE) as ObjectType
-      const task = objectTypes
-        .find(objType => objType.elemID.name === WORKFLOW_TASK) as ObjectType
-      const knowledgePublish = objectTypes
-        .find(objType => objType.elemID.name === WORKFLOW_KNOWLEDGE_PUBLISH) as ObjectType
-      const send = objectTypes
-        .find(objType => objType.elemID.name === WORKFLOW_SEND) as ObjectType
-      const workFlowRuleObjectType = objectTypes
-        .find(objType => objType.elemID.name === WORKFLOW_RULE)
+      const workFlowRuleObjectType = findObjectType(
+        elements,
+        new ElemID(SALESFORCE, WORKFLOW_RULE)
+      )
       if (!workFlowRuleObjectType) {
         return
       }
-      const actionField = workFlowRuleObjectType.fields[ACTIONS]
+
       const actionsElemId = new ElemID(SALESFORCE, WORKFLOW_ACTIONS)
       const workflowActionsType = new ObjectType({
         elemID: actionsElemId,
         fields: {
           [ALERTS_FIELD_NAME]: new Field(
-            actionsElemId, ALERTS_FIELD_NAME, alert, {}, true
+            actionsElemId, ALERTS_FIELD_NAME, findObjectType(
+              elements,
+              new ElemID(SALESFORCE, WORKFLOW_ALERT)
+            ) as ObjectType, {}, true
           ),
           [FIELD_UPDATES_FIELD_NAME]: new Field(
-            actionsElemId, FIELD_UPDATES_FIELD_NAME, fieldUpdate, {}, true
+            actionsElemId, FIELD_UPDATES_FIELD_NAME, findObjectType(
+              elements,
+              new ElemID(SALESFORCE, WORKFLOW_FIELD_UPDATE)
+            ) as ObjectType, {}, true
           ),
           [OUTBOUND_MESSAGES_FIELD_NAME]: new Field(
-            actionsElemId, OUTBOUND_MESSAGES_FIELD_NAME, outboundMessage, {}, true
+            actionsElemId, OUTBOUND_MESSAGES_FIELD_NAME, findObjectType(
+              elements,
+              new ElemID(SALESFORCE, WORKFLOW_OUTBOUND_MESSAGE)
+            ) as ObjectType, {}, true
           ),
           [TASKS_FIELD_NAME]: new Field(
-            actionsElemId, TASKS_FIELD_NAME, task, {}, true
+            actionsElemId, TASKS_FIELD_NAME, findObjectType(
+              elements,
+              new ElemID(SALESFORCE, WORKFLOW_TASK)
+            ) as ObjectType, {}, true
           ),
           [KNOWLEDGE_PUBLISHES_FIELD_NAME]: new Field(
-            actionsElemId, KNOWLEDGE_PUBLISHES_FIELD_NAME, knowledgePublish, {}, true
+            actionsElemId, KNOWLEDGE_PUBLISHES_FIELD_NAME, findObjectType(
+              elements,
+              new ElemID(SALESFORCE, WORKFLOW_KNOWLEDGE_PUBLISH)
+            ) as ObjectType, {}, true
           ),
           [SEND_FIELD_NAME]: new Field(
-            actionsElemId, SEND_FIELD_NAME, send, {}, true
+            actionsElemId, SEND_FIELD_NAME, findObjectType(
+              elements,
+              new ElemID(SALESFORCE, WORKFLOW_SEND)
+            ) as ObjectType, {}, true
           ),
         },
       })
       workflowActionsType.path = ['types', 'subtypes', WORKFLOW_ACTIONS]
+      const actionField = workFlowRuleObjectType.fields[ACTIONS]
       actionField.type = workflowActionsType
       elements.push(workflowActionsType)
     }
@@ -92,48 +100,24 @@ const filterCreator: FilterCreator = () => ({
      * @param elements the list of elements
      */
     const changeWorkFlowInstances = (elements: Element[]): void => {
-      const instances = elements
-        .filter(isInstanceElement)
-      const workflows = instances.filter(instance => instance.type.elemID.name === 'workflow')
-      workflows.forEach(workflow => {
+      const workflows = findInstances(elements, new ElemID(SALESFORCE, 'workflow'))
+      wu(workflows).forEach(workflow => {
         workflow.value.rules.actions = {}
         const { actions } = workflow.value.rules
-        if (workflow.value[ALERTS_FIELD_NAME]) {
-          _.assign(
-            actions,
-            { [ALERTS_FIELD_NAME]: workflow.value[ALERTS_FIELD_NAME] }
-          )
-        }
-        if (workflow.value[FIELD_UPDATES_FIELD_NAME]) {
-          _.assign(
-            actions,
-            { [FIELD_UPDATES_FIELD_NAME]: workflow.value[FIELD_UPDATES_FIELD_NAME] }
-          )
-        }
-        if (workflow.value[OUTBOUND_MESSAGES_FIELD_NAME]) {
-          _.assign(
-            actions,
-            { [OUTBOUND_MESSAGES_FIELD_NAME]: workflow.value[OUTBOUND_MESSAGES_FIELD_NAME] }
-          )
-        }
-        if (workflow.value[TASKS_FIELD_NAME]) {
-          _.assign(
-            actions,
-            { [TASKS_FIELD_NAME]: workflow.value[TASKS_FIELD_NAME] }
-          )
-        }
-        if (workflow.value[KNOWLEDGE_PUBLISHES_FIELD_NAME]) {
-          _.assign(
-            actions,
-            { [KNOWLEDGE_PUBLISHES_FIELD_NAME]: workflow.value[KNOWLEDGE_PUBLISHES_FIELD_NAME] }
-          )
-        }
-        if (workflow.value[SEND_FIELD_NAME]) {
-          _.assign(
-            actions,
-            { [SEND_FIELD_NAME]: workflow.value[SEND_FIELD_NAME] }
-          )
-        }
+        const fieldsToAssign = [ALERTS_FIELD_NAME,
+          FIELD_UPDATES_FIELD_NAME,
+          OUTBOUND_MESSAGES_FIELD_NAME,
+          TASKS_FIELD_NAME,
+          KNOWLEDGE_PUBLISHES_FIELD_NAME,
+          SEND_FIELD_NAME]
+        fieldsToAssign.forEach(field => {
+          if (workflow.value[field]) {
+            _.assign(
+              actions,
+              { [field]: workflow.value[field] }
+            )
+          }
+        })
       })
     }
 
@@ -144,13 +128,13 @@ const filterCreator: FilterCreator = () => ({
      */
     const removeNestedInstances = (elements: Element[]): void => {
       _.remove(elements, elem => isInstanceElement(elem) && (
-        elem.type.elemID.name === 'workflow_alert'
-          || elem.type.elemID.name === 'workflow_field_update'
-          || elem.type.elemID.name === 'workflow_outbound_message'
-          || elem.type.elemID.name === 'workflow_knowledge_publish'
-          || elem.type.elemID.name === 'workflow_task'
-          || elem.type.elemID.name === 'workflow_send'
-          || elem.type.elemID.name === 'workflow_rule'
+        [WORKFLOW_ALERT,
+          WORKFLOW_FIELD_UPDATE,
+          WORKFLOW_OUTBOUND_MESSAGE,
+          WORKFLOW_KNOWLEDGE_PUBLISH,
+          WORKFLOW_TASK,
+          WORKFLOW_SEND,
+          WORKFLOW_RULE].includes(elem.type.elemID.name)
       ))
     }
 

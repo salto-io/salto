@@ -120,7 +120,13 @@ const sendChunked = async <TIn, TOut>(input: TIn | TIn[],
   const chunks = _.chunk(makeArray(input), chunkSize)
   const promises: Promise<TOut[]>[] = chunks
     .filter(chunk => !_.isEmpty(chunk))
-    .map(chunk => sendChunk(chunk).then(makeArray))
+    .map(chunk => sendChunk(chunk)
+      .then(makeArray)
+      .catch(e => {
+        log.error('failed to send chunk in %s %o: %o, returning empty list',
+          sendChunked.toString(), chunk, e)
+        return []
+      }))
   const results = await Promise.all(promises)
   return _.flatten(results)
 }
@@ -232,8 +238,9 @@ export default class SalesforceClient {
   @SalesforceClient.logDecorator
   @SalesforceClient.requiresLogin
   public async readMetadata(type: string, name: string | string[]): Promise<MetadataInfo[]> {
-    return sendChunked(makeArray(name), chunk =>
-      this.conn.metadata.read(type, chunk), MAX_ITEMS_IN_READ_METADATA_REQUEST)
+    return sendChunked(makeArray(name),
+      chunk => this.conn.metadata.read(type, chunk),
+      MAX_ITEMS_IN_READ_METADATA_REQUEST)
   }
 
   /**

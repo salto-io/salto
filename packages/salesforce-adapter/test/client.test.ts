@@ -71,7 +71,7 @@ describe('salesforce client', () => {
         .reply(500, 'server error')
         .post(/.*/)
         .reply(200, {
-          'a:Envelope': { 'a:Body': { a: { result: { metadataObjects: [] } } } },
+          'a:Envelope': { 'a:Body': { a: { result: [{ fullName: 'BLA' }] } } },
         }, {
           'content-type': 'application/json',
         })
@@ -84,6 +84,26 @@ describe('salesforce client', () => {
         expect(e.attempts).toBeUndefined()
       }
       expect(dodoScope.isDone()).toBeFalsy()
+    })
+
+    it('continue in case of error in single chunk', async () => {
+      const dodoScope = nock('http://dodo22/services/Soap/m/46.0')
+        .post(/.*/)
+        .times(2)
+        .reply(200,
+          {
+            'a:Envelope': { 'a:Body': { a: { result: { records: [{ fullName: 'BLA' }] } } } },
+          },
+          {
+            'content-type': 'application/json',
+          })
+        .post(/.*/)
+        .times(1)
+        .reply(500, 'server error')
+      // create an array with 30 names so we will have 3 calls (chunk size is 10 for readMetadata)
+      const result = await client.readMetadata('FakeType', Array.from({ length: 30 }, () => 'FakeName'))
+      expect(result).toHaveLength(2)
+      expect(dodoScope.isDone()).toBeTruthy()
     })
   })
 })

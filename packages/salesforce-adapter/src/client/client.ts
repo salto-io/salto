@@ -238,8 +238,7 @@ export default class SalesforceClient {
   @SalesforceClient.logDecorator
   @SalesforceClient.requiresLogin
   public async readMetadata(type: string, name: string | string[]): Promise<MetadataInfo[]> {
-    return sendChunked(makeArray(name),
-      chunk => this.conn.metadata.read(type, chunk),
+    return sendChunked(makeArray(name), chunk => this.conn.metadata.read(type, chunk),
       MAX_ITEMS_IN_READ_METADATA_REQUEST)
   }
 

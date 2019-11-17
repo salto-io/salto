@@ -70,11 +70,8 @@ describe('salesforce client', () => {
         .times(1)
         .reply(500, 'server error')
         .post(/.*/)
-        .reply(200, {
-          'a:Envelope': { 'a:Body': { a: { result: [{ fullName: 'BLA' }] } } },
-        }, {
-          'content-type': 'application/json',
-        })
+        .reply(200, { 'a:Envelope': { 'a:Body': { a: { result: { metadataObjects: [] } } } } },
+          { 'content-type': 'application/json' })
 
       try {
         await client.listMetadataTypes()

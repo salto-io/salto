@@ -311,7 +311,7 @@ describe('SalesforceAdapter fetch', () => {
       expect(testCustomizations.fields.custom_field__c).toBeDefined()
     })
 
-    it('should place SObjects that are not custom objects in the types directory', async () => {
+    it('should filter (inner) SObjects that are not custom objects', async () => {
       mockSingleSObject('Test', [
         {
           name: 'dummy', label: 'dummy', type: 'string',

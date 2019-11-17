@@ -324,11 +324,7 @@ describe('SalesforceAdapter fetch', () => {
       const result = await adapter.fetch()
 
       const testElements = findElements(result, 'test') as ObjectType[]
-      expect(testElements).toHaveLength(1)
-      const [test] = testElements
-      expect(test.path).toEqual(['types', 'object', 'test'])
-      expect(test.fields.dummy).toBeDefined()
-      expect(test.fields.custom_field__c).toBeDefined()
+      expect(testElements).toHaveLength(0)
     })
 
     it('should not split custom SObjects', async () => {

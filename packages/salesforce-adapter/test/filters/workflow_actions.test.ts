@@ -52,9 +52,10 @@ describe('validation rules filter', () => {
       // Make sure the alerts field in the test is included with our 'ananas' field
       expect(alertsField).toBeDefined()
       expect((alertsField.type as ObjectType).fields.ananas).toBeDefined()
-      // And that the rest of the fields are included (such as 'field_updates')
+      // And that the rest of the fields which were not in the elements,
+      // are not included (such as 'field_updates')
       expect((newActionsType as ObjectType)
-        .fields[WORKFLOW_FIELD_TO_TYPE_MAP.FIELD_UPDATE[0]]).toBeDefined()
+        .fields[WORKFLOW_FIELD_TO_TYPE_MAP.FIELD_UPDATE[0]]).toBeUndefined()
       expect(resultAlert).toBeDefined()
       // Make sure the new type is added to the elements
       expect(_.isEqual(workflowActionsResult, newActionsType)).toBeTruthy()
@@ -86,6 +87,27 @@ describe('validation rules filter', () => {
       expect((resultWorkFlow as InstanceElement).value.rules.actions[WORKFLOW_FIELD_TO_TYPE_MAP.OUTBOUND_MESSAGE[0]]).toEqual('kadabra')
       // A field that should not move
       expect((resultWorkFlow as InstanceElement).value.rules.actions.notMoving).toBeUndefined()
+    })
+
+    it('should not move any action data of a workflow instance if it has not rules field', async () => {
+      const workflowId = new ElemID(constants.SALESFORCE, 'workflow')
+      const mockWorkflowInstance = new InstanceElement(
+        'mockWorkflow',
+        new ObjectType({
+          elemID: workflowId,
+        }),
+        {
+          [WORKFLOW_FIELD_TO_TYPE_MAP.ALERT[0]]: 'abra',
+          [WORKFLOW_FIELD_TO_TYPE_MAP.OUTBOUND_MESSAGE[0]]: 'kadabra',
+        }
+      )
+      testElements = [mockWorkflowInstance]
+      // Run filter
+      await filter.onFetch(testElements)
+      // Get results
+      const [resultWorkFlow] = testElements
+      // Fields that should move
+      expect((resultWorkFlow as InstanceElement).value.rules).toBeUndefined()
     })
 
     it('should remove only the required instance records', async () => {

@@ -69,12 +69,15 @@ const filterCreator: FilterCreator = () => ({
         const actionsElemId = new ElemID(SALESFORCE, WORKFLOW_ACTIONS)
         const result: FieldMap = {}
         Object.values(fieldsToObjectTypesMap).forEach(mapping => {
-          result[mapping[0]] = new Field(
-            actionsElemId, mapping[0], findObjectType(
-              elems,
-              new ElemID(SALESFORCE, mapping[1])
-            ) as ObjectType, {}, true
+          const objectType = findObjectType(
+            elems,
+            new ElemID(SALESFORCE, mapping[1])
           )
+          if (objectType) {
+            result[mapping[0]] = new Field(
+              actionsElemId, mapping[0], objectType, {}, true
+            )
+          }
         })
         return result
       }
@@ -97,6 +100,10 @@ const filterCreator: FilterCreator = () => ({
     const changeWorkFlowInstances = (elements: Element[]): void => {
       const workflows = findInstances(elements, new ElemID(SALESFORCE, 'workflow'))
       wu(workflows).map(w => w.value).forEach(value => {
+        // Skip if the workflow has no rules
+        if (!value.rules) {
+          return
+        }
         value.rules.actions = {}
         const { actions } = value.rules
         const workflowFields = _(FIELDS_TO_ASSIGN)

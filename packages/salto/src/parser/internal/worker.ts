@@ -1,7 +1,15 @@
-import { parentPort } from 'worker_threads'
-import './wasm_exec'
+import { isMainThread, parentPort } from 'worker_threads'
 import { HclReturn, HclCallContext } from './types'
 
+if (isMainThread) {
+  // We need to load wasm_exec. we have to use require because in the packages application we
+  // cannot import wasm_exec when running from a thread, so we only import if we are running
+  // in the main thread (which means we are currently being imported).
+  // When running from a thread we will actually have the text of wasm_exec prefixed before
+  // the code in this file so we won't actually have to require the module
+  // eslint-disable-next-line global-require
+  require('./wasm_exec')
+}
 
 const GO_ENV = {
   // Go garbage collection target percentage (lower means more aggressive, default is 100)
@@ -17,17 +25,17 @@ global.hclParserCall = {}
 
 export type WorkerInterface = {
   call: (
-    callId: number,
+    callID: number,
     wasmModule: WebAssembly.Module,
     context: HclCallContext,
   ) => Promise<HclReturn>
 }
 
 export const hclWorker: WorkerInterface = {
-  call: async (callId, wasmModule, context) => {
+  call: async (callID, wasmModule, context) => {
     // Place call context in global object
     const { hclParserCall } = global
-    hclParserCall[callId] = context
+    hclParserCall[callID] = context
 
     try {
       // Not sure why eslint ignores this definition from webassembly.d.ts,
@@ -44,14 +52,14 @@ export const hclWorker: WorkerInterface = {
           // Wait for next tick to ensure the line that assigns `exitPromise` runs before we use it
           process.nextTick(() => exitPromise.then(resolve))
         }
-        exitPromise = go.run(inst, [callId.toString()])
+        exitPromise = go.run(inst, [callID.toString()])
       })
 
       await execDone
       return context.return as HclReturn
     } finally {
       // cleanup call context from global scope
-      delete hclParserCall[callId]
+      delete hclParserCall[callID]
     }
   },
 }
@@ -64,13 +72,13 @@ if (parentPort !== null) {
     if (func === 'stop') {
       process.exit(0)
     } else if (func === 'call') {
-      const [callId, wasmModule, context] = args
+      const [callID, wasmModule, context] = args
       const ret = await hclWorker.call(
-        callId as number,
+        callID as number,
         wasmModule as WebAssembly.Module,
         context as HclCallContext,
       )
-      parent.postMessage([callId, ret])
+      parent.postMessage([callID, ret])
     }
   }
   parent.on('message', handleCall)

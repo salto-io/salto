@@ -1,12 +1,16 @@
 import _ from 'lodash'
+import fs from 'fs'
 import path from 'path'
+import { promisify } from 'util'
 import { Worker } from 'worker_threads'
-import { readFile } from '../../file'
 import {
   HclParseReturn, DumpedHclBlock, HclDumpReturn, HclReturn, HclWorkerFuncNames, HclArgs,
 } from './types'
 import { hclWorker, WorkerInterface } from './worker'
 
+// We must use the standard readFile here beacuse we want to read things that are inside the
+// packaged application
+const readFile = promisify(fs.readFile)
 
 const loadWasmModule = async (): Promise<WebAssembly.Module> => {
   // Relative path from source location
@@ -21,18 +25,24 @@ const loadWasmModule = async (): Promise<WebAssembly.Module> => {
 type HclWorker = WorkerInterface & {
   stop: () => Promise<void>
 }
-
-const createThreadWorker = (): HclWorker => {
-  const activeCalls: Record<number, (ret: HclReturn) => void> = {}
-  const worker = new Worker(require.resolve('./worker'))
-  worker.on('message', ([callId, ret]: [number, HclReturn]): void => {
-    activeCalls[callId](ret)
-    delete activeCalls[callId]
+type HclReturnResolver = (ret: HclReturn) => void
+const createThreadWorker = async (): Promise<HclWorker> => {
+  const activeCalls = new Map<number, HclReturnResolver>()
+  const workerData = await Promise.all([
+    // Since worker cannot load wasm_exec dynamically when packaged, we run both modules together
+    readFile(require.resolve('./wasm_exec')),
+    readFile(require.resolve('./worker')),
+  ])
+  const worker = new Worker(workerData.join('\n'), { eval: true })
+  worker.on('message', ([callID, ret]: [number, HclReturn]): void => {
+    const resolver = activeCalls.get(callID) as HclReturnResolver
+    resolver(ret)
+    activeCalls.delete(callID)
   })
   return {
-    call: (callId, wasmModule, context) => new Promise<HclReturn>(resolve => {
-      activeCalls[callId] = resolve
-      worker.postMessage(['call', [callId, wasmModule, context]])
+    call: (callID, wasmModule, context) => new Promise<HclReturn>(resolve => {
+      activeCalls.set(callID, resolve)
+      worker.postMessage(['call', [callID, wasmModule, context]])
     }),
     stop: () => new Promise<void>(resolve => {
       worker.on('exit', resolve)
@@ -43,9 +53,9 @@ const createThreadWorker = (): HclWorker => {
 
 // Exported only for tests, any other use case should use the default export
 export class HclParserCls {
-  private inFlightIDs = new Set<number>()
-  private workerInst: HclWorker | null = null
-  private wasmModuleInst: Promise<WebAssembly.Module> | null = null
+  private activeCallIDs = new Set<number>()
+  private workerInstance: Promise<HclWorker> | null = null
+  private wasmModuleInstance: Promise<WebAssembly.Module> | null = null
 
   constructor(
     private singleThreaded = true,
@@ -55,42 +65,42 @@ export class HclParserCls {
     this.singleThreaded = singleThreaded
   }
 
-  private get worker(): HclWorker {
-    if (this.workerInst === null) {
-      this.workerInst = this.singleThreaded
-        ? { call: hclWorker.call, stop: () => Promise.resolve() }
+  private get worker(): Promise<HclWorker> {
+    if (this.workerInstance === null) {
+      this.workerInstance = this.singleThreaded
+        ? Promise.resolve({ call: hclWorker.call, stop: () => Promise.resolve() })
         : createThreadWorker()
     }
-    return this.workerInst
+    return this.workerInstance
   }
 
   private get wasmModule(): Promise<WebAssembly.Module> {
-    if (this.wasmModuleInst === null) {
-      this.wasmModuleInst = loadWasmModule()
+    if (this.wasmModuleInstance === null) {
+      this.wasmModuleInstance = loadWasmModule()
     }
-    return this.wasmModuleInst
+    return this.wasmModuleInstance
   }
 
   private async callWorker(func: HclWorkerFuncNames, args: HclArgs): Promise<HclReturn> {
     // Generate call ID
-    const currMaxID = _.max([0, ...this.inFlightIDs]) as number
+    const currMaxID = _.max([0, ...this.activeCallIDs]) as number
     const callID = currMaxID + 1
-    this.inFlightIDs.add(callID)
+    this.activeCallIDs.add(callID)
 
     // Call the actual function
-    const res = await this.worker.call(callID, await this.wasmModule, { func, args })
+    const res = await (await this.worker).call(callID, await this.wasmModule, { func, args })
     // Cleanup call ID and close pool if it is no longer used
-    this.inFlightIDs.delete(callID)
+    this.activeCallIDs.delete(callID)
 
-    if (this.inFlightIDs.size === 0) {
+    if (this.activeCallIDs.size === 0) {
       await this.stop()
     }
     return res
   }
 
   async stop(): Promise<void> {
-    await this.worker.stop()
-    this.workerInst = null
+    await (await this.worker).stop()
+    this.workerInstance = null
   }
 
   /**

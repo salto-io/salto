@@ -4,13 +4,17 @@ import _ from 'lodash'
 import tmp from 'tmp-promise'
 import {
   Element, ObjectType, ElemID, Type, Field, PrimitiveType, PrimitiveTypes, BuiltinTypes,
+  findElement,
 } from 'adapter-api'
 import { Config } from '../../src/workspace/config'
-import { Workspace, Blueprint, ParsedBlueprint, parseBlueprints, calculateValidationSeverity } from '../../src/workspace/workspace'
+import {
+  Workspace, Blueprint, ParsedBlueprint, parseBlueprints, calculateValidationSeverity,
+} from '../../src/workspace/workspace'
 import { DetailedChange } from '../../src/core/plan'
 import { MergeError } from '../../src/core/merger/internal/common'
 import { rm, mkdirp, writeTextFile, exists, readTextFile } from '../../src/file'
 import { UnresolvedReferenceValidationError, InvalidValueValidationError } from '../../src/core/validator'
+import * as dump from '../../src/parser/dump'
 
 describe('Workspace', () => {
   const workspaceFiles = {
@@ -328,6 +332,18 @@ type salesforce_lead {
       })
       it('should change isList value in fields', () => {
         expect(lead.fields.not_a_list_yet_field.isList).toBe(true)
+      })
+
+      it('shouldnt fail in case one of the changes fails', async () => {
+        jest.spyOn(dump, 'dump').mockImplementationOnce(() => { throw new Error('failed') })
+        const realChange = _.cloneDeep(changes[0])
+        _.set(realChange.data, 'after', 'blabla')
+        const fakeChange = _.cloneDeep(changes[0])
+        fakeChange.id = new ElemID('salesforce', 'lead').createNestedID('field', 'fake')
+
+        await workspace.updateBlueprints(fakeChange, realChange)
+        lead = findElement(workspace.elements, new ElemID('salesforce', 'lead')) as ObjectType
+        expect(lead.fields.base_field.annotations[Type.DEFAULT]).toEqual('blabla')
       })
     })
   })

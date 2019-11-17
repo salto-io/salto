@@ -342,18 +342,25 @@ export class Workspace {
     }
 
     log.debug('going to calculate new blueprints data')
-    const updatedBlueprints: Blueprint[] = await Promise.all(
+    const updatedBlueprints = (await Promise.all(
       _(changes)
         .map(change => getChangeLocations(change, this.sourceMap))
         .flatten()
         .groupBy(change => change.location.filename)
         .entries()
-        .map(async ([filename, fileChanges]) => ({
-          filename,
-          buffer: await updateBlueprintData(getBlueprintData(filename), fileChanges),
-        }))
+        .map(async ([filename, fileChanges]) => {
+          try {
+            const buffer = await updateBlueprintData(getBlueprintData(filename), fileChanges)
+            return { filename, buffer }
+          } catch (e) {
+            log.error('failed to update blueprint %s with %o changes due to: %o',
+              filename, fileChanges, e)
+            return undefined
+          }
+        })
         .value()
-    )
+    )).filter(b => b !== undefined) as Blueprint[]
+
     log.debug('going to set the new blueprints')
     return this.setBlueprints(...updatedBlueprints)
   }

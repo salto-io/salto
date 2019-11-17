@@ -574,6 +574,11 @@ export default class SalesforceAdapter {
     fields: SObjField[],
     customObjectNames: Set<string>,
   ): Type[] {
+    // We are filtering sObjects internal types SALTO-346
+    if (!customObjectNames.has(objectName)) {
+      return []
+    }
+
     const serviceIds = {
       [ADAPTER]: constants.SALESFORCE,
       [constants.API_NAME]: objectName,
@@ -599,15 +604,6 @@ export default class SalesforceAdapter {
     const customFields = filteredFields
       .filter(f => f.custom)
       .map(f => getSObjectFieldElement(element.elemID, f, serviceIds))
-
-    if (!customObjectNames.has(objectName)) {
-      // This is not a custom object type, no need to separate standard part from custom part
-      customFields.forEach(field => {
-        element.fields[field.name] = field
-      })
-      element.path = ['types', 'object', element.elemID.name]
-      return [element]
-    }
 
     if (isCustom) {
       // This is custom object, we treat standard fields as if they were custom as well

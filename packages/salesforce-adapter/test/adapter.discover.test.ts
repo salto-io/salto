@@ -311,7 +311,7 @@ describe('SalesforceAdapter fetch', () => {
       expect(testCustomizations.fields.custom_field__c).toBeDefined()
     })
 
-    it('should place SObjects that are not custom objects in the types directory', async () => {
+    it('should filter (inner) SObjects that are not custom objects', async () => {
       mockSingleSObject('Test', [
         {
           name: 'dummy', label: 'dummy', type: 'string',
@@ -324,11 +324,7 @@ describe('SalesforceAdapter fetch', () => {
       const result = await adapter.fetch()
 
       const testElements = findElements(result, 'test') as ObjectType[]
-      expect(testElements).toHaveLength(1)
-      const [test] = testElements
-      expect(test.path).toEqual(['types', 'object', 'test'])
-      expect(test.fields.dummy).toBeDefined()
-      expect(test.fields.custom_field__c).toBeDefined()
+      expect(testElements).toHaveLength(0)
     })
 
     it('should not split custom SObjects', async () => {

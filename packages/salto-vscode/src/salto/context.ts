@@ -77,7 +77,7 @@ const getContextReference = (
   return undefined
 }
 
-const getPositionConextType = (
+const getPositionContextType = (
   ref?: ContextReference
 ): PositionContextType => {
   if (!ref) {
@@ -132,7 +132,7 @@ const buildPositionContext = (
     parent,
     ref,
     range: range.range,
-    type: getPositionConextType(ref),
+    type: getPositionContextType(ref),
   }
   context.children = _.isEmpty(encapsulatedRanges) ? [] : buildChildren(encapsulatedRanges)
   return context

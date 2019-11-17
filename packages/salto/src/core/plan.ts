@@ -46,7 +46,7 @@ const getValuesChanges = (id: ElemID, before: Value, after: Value): DetailedChan
   }
   if (_.isArray(before) && _.isArray(after)) {
     // If there is an addition or deletion in the list we treat the whole list as changed
-    // This is because we cannot serialize addtion / deletion from a list properly
+    // This is because we cannot serialize addition / deletion from a list properly
     if (before.length === after.length) {
       return _.flatten(
         _.times(before.length).map(
@@ -109,7 +109,7 @@ const toNodeMap = (
     // Add instance elements
     const instanceDependencies = withDependencies ? [id(inst.type.elemID)] : []
     nodeMap.addNode(id(inst.elemID), instanceDependencies, inst)
-    // We are not adding the fields values because unlike types, values are objects with hirerchy
+    // We are not adding the fields values because unlike types, values are objects with hierarchy
     // and we cannot just cut them on the first level. For types, subtypes declared outside.
   })
 
@@ -164,7 +164,7 @@ export const getPlan = (
         return false
       }
 
-      // If we have change in the annotation type we will mark the entir element as changes
+      // If we have change in the annotation type we will mark the entire element as changes
       // due to: SALTO-333
       const topLevelChange = getGroupLevelChange(group)
       if (topLevelChange && topLevelChange.action === 'modify'

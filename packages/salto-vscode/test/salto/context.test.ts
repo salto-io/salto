@@ -84,7 +84,7 @@ describe('Cursor context resolver', () => {
       expect(ctx.type).toBe('instance')
     })
 
-    it('should identify intance element', () => {
+    it('should identify instance element', () => {
       const pos = { line: 33, col: 1 }
       const ctx = getPositionContext(workspace, bpContent, filename, pos)
       expect(ctx.type).toBe('instance')

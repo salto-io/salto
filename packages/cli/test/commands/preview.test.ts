@@ -32,7 +32,7 @@ describe('preview command', () => {
     spinnerCreator = mockSpinnerCreator(spinners)
   })
 
-  describe('when the workspace loads succesfully', () => {
+  describe('when the workspace loads successfully', () => {
     beforeEach(async () => {
       await command('', cliOutput, spinnerCreator).execute()
     })

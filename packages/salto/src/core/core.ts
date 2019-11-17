@@ -25,7 +25,7 @@ const deployAction = async (
     case 'modify':
       return adapter.update(parent.data.before, parent.data.after, [...planItem.changes()])
     default:
-      throw new Error('Unkown action type')
+      throw new Error('Unknown action type')
   }
 }
 

@@ -1067,7 +1067,7 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(autonumber).toBeDefined()
       expect(autonumber.label).toBe('Autonumber description label')
       expect(autonumber.type).toBe('string')
-      // TODO: As of this point we do not knpow how to retrieve the displayFormat annotation from
+      // TODO: As of this point we do not know how to retrieve the displayFormat annotation from
       // the autonumber field
 
       // Verify date

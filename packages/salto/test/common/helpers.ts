@@ -5,7 +5,7 @@ import {
 /**
  * Compare two types and expect them to be the same.
  * This is slightly different than just deep equality because
- * in fields and annotations we only exepct the type ID to match
+ * in fields and annotations we only expect the type ID to match
  */
 export const expectTypesToMatch = (actual: Type, expected: Type): void => {
   expect(typeof actual).toBe(typeof expected)
@@ -40,7 +40,7 @@ export const expectTypesToMatch = (actual: Type, expected: Type): void => {
 
 /**
  * Compare two instance elements and expect them to be the same.
- * This is slightly different than just deep equality beacuse we only expect
+ * This is slightly different than just deep equality because we only expect
  * the type ID to match and not the whole type instance
  */
 export const expectInstancesToMatch = (

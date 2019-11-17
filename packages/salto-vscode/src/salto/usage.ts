@@ -4,7 +4,7 @@ import { Element, isObjectType, isInstanceElement } from 'adapter-api'
 import { getLocations, SaltoElemLocation } from './location'
 import { EditorWorkspace } from './workspace'
 
-// TODO - Note that this will have no great performances untill we will get the
+// TODO - Note that this will have no great performances until we will get the
 // reverse SM from salto's core. This is acceptable as this is not called so often
 const getUsages = (
   workspace: EditorWorkspace,

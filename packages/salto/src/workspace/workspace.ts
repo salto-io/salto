@@ -29,7 +29,7 @@ class ExistingWorkspaceError extends Error {
   }
 }
 
-const SeverValiationErrors = [UnresolvedReferenceValidationError]
+const SeverValidationErrors = [UnresolvedReferenceValidationError]
 
 class NotAnEmptyWorkspaceError extends Error {
   constructor(exsitingPathes: string[]) {
@@ -197,15 +197,15 @@ const ensureEmptyWorkspace = async (config: Config): Promise<void> => {
     config.localStorage,
     config.stateLocation,
   ]
-  const existanceMask = await Promise.all(shouldNotExist.map(exists))
-  const existing = shouldNotExist.filter((_p, i) => existanceMask[i])
+  const existenceMask = await Promise.all(shouldNotExist.map(exists))
+  const existing = shouldNotExist.filter((_p, i) => existenceMask[i])
   if (existing.length > 0) {
     throw new NotAnEmptyWorkspaceError(existing)
   }
 }
 
 export const calculateValidationSeverity = (ve: ValidationError): WorkspaceErrorSeverity =>
-  (_.some(SeverValiationErrors, e => ve instanceof e) ? 'Error' : 'Warning')
+  (_.some(SeverValidationErrors, e => ve instanceof e) ? 'Error' : 'Warning')
 /**
  * The Workspace class exposes the content of a collection (usually a directory) of blueprints
  * in the form of Elements.
@@ -260,7 +260,7 @@ export class Workspace {
       name: workspaceName || path.basename(absBaseDir),
     }
     const config = completeConfig(absBaseDir, minimalConfig)
-    // We want to make sure that *ALL* of the pathes we are going to create
+    // We want to make sure that *ALL* of the paths we are going to create
     // do not exist right now before writing anything to disk.
     await ensureEmptyWorkspace(config)
     await dumpConfig(absBaseDir, minimalConfig)

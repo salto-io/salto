@@ -16,7 +16,7 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
   /**
    * Upon discover, rename assignment rules instances
    *
-   * @param elements the already discoverd elements
+   * @param elements the already discovered elements
    */
   onFetch: async (elements: Element[]) => {
     const canvasType = findObjectType(elements, CANVAS_METADATA_TYPE_ID)

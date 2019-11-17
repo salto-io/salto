@@ -9,7 +9,7 @@ type Resolver<T> = (v: T, contextElements: Element[], visited?: Set<string>) => 
 
 class CircularReferenceError extends Error {
   constructor(ref: string, public elemID?: ElemID) {
-    super(`failed to resolve reference ${ref} - circular dependcy detected`)
+    super(`failed to resolve reference ${ref} - circular dependecy detected`)
   }
 }
 

@@ -3,15 +3,15 @@ import {
 } from 'adapter-api'
 import SalesforceAdapter from '../src/adapter'
 import Connection from '../src/client/jsforce'
-import mockAdpater from './adapter'
 import * as constants from '../src/constants'
+import mockAdapter from './adapter'
 
 describe('SalesforceAdapter import-export operations', () => {
   let connection: Connection
   let adapter: SalesforceAdapter
 
   beforeEach(() => {
-    ({ connection, adapter } = mockAdpater({
+    ({ connection, adapter } = mockAdapter({
       adapterParams: {
         metadataAdditionalTypes: [],
       },

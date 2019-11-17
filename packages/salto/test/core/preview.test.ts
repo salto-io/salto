@@ -71,7 +71,7 @@ describe('getPlan', () => {
     const saltoOffice = afterElements[2] as ObjectType
     // update existing field
     saltoOffice.fields.name.annotations.new = 'new'
-    // update anntation types
+    // update annotation types
     saltoOffice.annotationTypes.new = BuiltinTypes.STRING
     const plan = getPlan(allElements, afterElements)
     return [plan, saltoOffice]
@@ -155,7 +155,7 @@ describe('getPlan', () => {
         const groupLevelChange = getChange(planItem, changedElem.elemID)
         expect(planItem.parent()).toBe(groupLevelChange)
       })
-      it('should craete modify parent if none exists', () => {
+      it('should create modify parent if none exists', () => {
         const [plan, changedElem] = planWithFieldChanges()
         const planItem = getFirstPlanItem(plan)
         const parent = planItem.parent()

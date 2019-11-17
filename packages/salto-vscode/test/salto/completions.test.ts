@@ -159,7 +159,7 @@ describe('Test auto complete', () => {
   })
 
   describe('annotation values definitions in field', () => {
-    it('should give field annotaion as 1st token', () => {
+    it('should give field annotation as 1st token', () => {
       const pos = { line: 34, col: 8 }
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)
@@ -221,7 +221,7 @@ describe('Test auto complete', () => {
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })
 
-    it('should instace names as 2nd token', () => {
+    it('should instance names as 2nd token', () => {
       const pos = { line: 87, col: 8 }
       const line = getLine(workspace, bpFileName, pos)
       const ctx = getPositionContext(workspace, bpContent, bpFileName, pos)

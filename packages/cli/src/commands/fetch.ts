@@ -37,7 +37,7 @@ export const fetchCommand = async (
     return CliExitCode.AppError
   }
 
-  // A few merge errors might have occured,
+  // A few merge errors might have occurred,
   // but since it's fetch flow, we omitted the elements
   // and only print the merge errors
   if (!_.isEmpty(fetchResult.mergeErrors)) {

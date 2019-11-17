@@ -17,7 +17,7 @@ export const getSubElement = (baseType: Type, pathParts: string[]): Field| Type 
   // care of the next "join"
 
   // We start by filtering out numbers from the path as they are
-  // list indexes, which are irelevant for type extractions
+  // list indexes, which are irrelevant for type extractions
   const getChildElement = (source: Type, key: string): Field | Type | undefined => {
     if (source.annotationTypes[key]) return source.annotationTypes[key]
     if (isObjectType(source)) return source.fields[key]

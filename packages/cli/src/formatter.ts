@@ -343,20 +343,20 @@ export const formatConfigHeader = (adapterName: string): string => [
   * Format workspace errors
   */
 const TAB = '  '
-const fomratSourceFragment = (sf: Readonly<SourceFragment>): string =>
+const formatSourceFragment = (sf: Readonly<SourceFragment>): string =>
   `${chalk.underline(sf.sourceRange.filename)}(${chalk.cyan(`${sf.sourceRange.start.line}`)}`
   + `:${chalk.cyan(`${sf.sourceRange.start.col}`)})\n${TAB}${
     subHeader(sf.fragment.split('\n').join(`\n${TAB}`))}\n`
 
-const fomratSourceFragments = (sourceFragments: ReadonlyArray<SourceFragment>): string =>
+const formatSourceFragments = (sourceFragments: ReadonlyArray<SourceFragment>): string =>
   (sourceFragments.length > 0
-    ? `\n on ${sourceFragments.map(fomratSourceFragment).join('\n and ')}`
+    ? `\n on ${sourceFragments.map(formatSourceFragment).join('\n and ')}`
     : '')
 
 const formatError = (err: { error: string }): string => header(err.error)
 
 const formatWorkspaceError = (we: Readonly<WorkspaceError>): string =>
-  `${formatError(we)}${fomratSourceFragments(we.sourceFragments)}`
+  `${formatError(we)}${formatSourceFragments(we.sourceFragments)}`
 
 export const formatWorkspaceErrors = (workspaceErrors: ReadonlyArray<WorkspaceError>): string =>
   `${workspaceErrors.map(formatWorkspaceError).join('\n')}\n`

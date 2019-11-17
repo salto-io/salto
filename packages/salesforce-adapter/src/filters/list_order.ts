@@ -48,7 +48,7 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
   /**
    * Upon fetch, order elements is specific lists
    *
-   * @param elements the already discoverd elements
+   * @param elements the already discovered elements
    */
   onFetch: async (elements: Element[]) => {
     // An internal method that receives the sort info and the records and does the sorting

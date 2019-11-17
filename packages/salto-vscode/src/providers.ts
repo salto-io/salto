@@ -63,14 +63,14 @@ export const createDefinitionsProvider = (
   ): vscode.Definition => {
     const validWorkspace = workspace.getValidCopy()
     if (validWorkspace) {
-      const currenToken = doc.getText(doc.getWordRangeAtPosition(position))
+      const currentToken = doc.getText(doc.getWordRangeAtPosition(position))
       const context = getPositionContext(
         validWorkspace,
         doc.getText(),
         doc.fileName,
         vsPosToSaltoPos(position)
       )
-      return provideWorkspaceDefinition(validWorkspace, context, currenToken).map(
+      return provideWorkspaceDefinition(validWorkspace, context, currentToken).map(
         def => new vscode.Location(
           vscode.Uri.file(path.resolve(workspace.baseDir, def.filename)),
           saltoPosToVsPos(def.range.start)

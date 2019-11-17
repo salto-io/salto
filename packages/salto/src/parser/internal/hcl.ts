@@ -82,7 +82,7 @@ class HclParser {
     GOGC: '20',
     // Go garbage collection strategy, it seems like concurrent strategies do not work well
     // and causes the code to crash with bad pointers to go heap, so we set the strategy to
-    // "stop the world" in every collection cycle to make grabage collection single threaded
+    // "stop the world" in every collection cycle to make garbage collection single threaded
     GODEBUG: 'gcstoptheworld=2',
   }
 

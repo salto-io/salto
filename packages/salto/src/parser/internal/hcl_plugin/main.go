@@ -13,7 +13,7 @@ func convertAllDiagnostics(
 	parserErrs hcl.Diagnostics,
 	traversalErrs hcl.Diagnostics,
 ) []interface{} {
-	result := make([]interface{}, 0, len(parserErrs) + len(traversalErrs))
+	result := make([]interface{}, 0, len(parserErrs)+len(traversalErrs))
 
 	for _, err := range parserErrs {
 		result = append(result, convertDiagnostic(err))
@@ -29,7 +29,7 @@ func convertAllDiagnostics(
 // ParseHCL parses a buffer with HCL data and returns the structure
 // Args:
 // 	args: a js object that contains the following fields
-//		src: buffer with data to parse
+//		content: buffer with data to parse
 // 		filename: the filename to include in error messages
 //
 // Returns:
@@ -38,11 +38,11 @@ func convertAllDiagnostics(
 // 		errors: a list of error strings
 func ParseHCL(args js.Value) interface{} {
 	// Get input parameters
-	src := []byte(args.Get("src").String())
+	content := []byte(args.Get("content").String())
 	filename := args.Get("filename").String()
 
 	// Parse
-	body, parseErrs := hclsyntax.ParseConfig(src, filename, hcl.InitialPos)
+	body, parseErrs := hclsyntax.ParseConfig(content, filename, hcl.InitialPos)
 
 	// Serialize the body to a javascript compatible object
 	jsMaker := newHclConverter("#")

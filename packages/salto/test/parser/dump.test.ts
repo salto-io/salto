@@ -132,7 +132,7 @@ describe('Salto Dump', () => {
     })
 
     it('can be parsed back', async () => {
-      const { elements, errors } = await parse(Buffer.from(body), 'none')
+      const { elements, errors } = await parse(body, 'none')
       expect(errors.length).toEqual(0)
       expect(elements.length).toEqual(8)
       expect(elements[0]).toEqual(strType)

@@ -76,6 +76,12 @@ const createYargsParser = (outStream: WriteStream, errStream: WriteStream):
     describe: 'Output extra logs',
   })
 
+  parser.option('single-threaded', {
+    boolean: true,
+    default: false,
+    describe: 'Run all calculations on the main application thread',
+  })
+
   // Update texts and define un-wanted yargs messages
   parser.updateLocale({
     'Not enough non-option arguments: got %s, need at least %s': DO_NOT_SHOW,
@@ -117,6 +123,7 @@ const handleErrors = (parser: Argv, outStream: WriteStream, errors: string[]): v
 
 export type GlobalArgs = Arguments<{
   verbose: boolean
+  'single-threaded': boolean
 }>
 
 export type ParseResult =

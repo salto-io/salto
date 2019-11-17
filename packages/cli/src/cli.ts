@@ -1,5 +1,6 @@
 import { EOL } from 'os'
 import chalk from 'chalk'
+import { initializeCore } from 'salto'
 import { compareLogLevels, LogLevel, logger } from '@salto/logging'
 import { streams } from '@salto/lowerdash'
 import { CliInput, CliOutput, CliExitCode, SpinnerCreator } from './types'
@@ -41,6 +42,8 @@ export default async (
       if (parsedArgs.verbose) {
         increaseLoggingLogLevel()
       }
+
+      await initializeCore({ singleThreaded: parsedArgs['single-threaded'] })
 
       log.info('CLI started')
 

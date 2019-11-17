@@ -3,8 +3,10 @@ import {
   Type, ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field, Values,
   Element, InstanceElement,
 } from 'adapter-api'
-import { SourceRange as InternalSourceRange, SourceMap as SourceMapImpl } from './internal/types'
-import HclParser, { ParsedHclBlock, HclParseError } from './internal/hcl'
+import {
+  SourceRange as InternalSourceRange, SourceMap as SourceMapImpl, ParsedHclBlock, HclParseError,
+} from './internal/types'
+import HclParser from './internal/hcl'
 import evaluate from './expressions'
 import { Keywords } from './language'
 
@@ -52,13 +54,13 @@ export type ParseResult = {
 /**
  * Parse a blueprint
  *
- * @param blueprint A buffer the contains the blueprint to parse
+ * @param content The content to parse
  * @param filename The name of the file from which the blueprint was read
  * @returns elements: Type elements found in the blueprint
  *          errors: Errors encountered during parsing
  */
-export const parse = async (blueprint: Buffer, filename: string): Promise<ParseResult> => {
-  const { body, errors } = await HclParser.parse(blueprint, filename)
+export const parse = async (content: string, filename: string): Promise<ParseResult> => {
+  const { body, errors } = await HclParser.parse(content, filename)
   const sourceMap = new SourceMapImpl()
 
   const attrValues = (block: ParsedHclBlock, parentId: ElemID): Values => _.mapValues(

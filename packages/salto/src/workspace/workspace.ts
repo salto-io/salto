@@ -91,7 +91,7 @@ const loadBlueprints = async (
 
 const parseBlueprint = async (bp: Blueprint): Promise<ParsedBlueprint> => ({
   ...bp,
-  ...await parse(Buffer.from(bp.buffer), bp.filename),
+  ...await parse(bp.buffer, bp.filename),
 })
 
 export const parseBlueprints = async (blueprints: Blueprint[]): Promise<ParsedBlueprint[]> =>

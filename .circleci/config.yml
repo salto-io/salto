@@ -193,6 +193,7 @@ jobs:
       - image: circleci/python
 
     steps:
+      # needed so set_s3_pkg_urls will have a git repo
       - attach_workspace:
           at: .
 
@@ -201,7 +202,7 @@ jobs:
       - aws-s3/sync:
           from: ${S3_PKG_HASH_PREFIX}/
           to: s3://${S3_PKG_BUCKET}/${CIRCLE_BRANCH}/latest/
-          arguments: '--delete'
+          arguments: '--delete --acl public-read'
 
       - run:
           name: Create a marker file with the git hash
@@ -210,6 +211,7 @@ jobs:
       - aws-s3/copy:
           from: ./PACKAGED_FROM.${PKG_PREFIX}
           to: s3://${S3_PKG_BUCKET}/${CIRCLE_BRANCH}/latest/
+          arguments: '--acl public-read'
 
 workflows:
   version: 2

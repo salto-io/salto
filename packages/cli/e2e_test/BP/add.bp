@@ -10,5 +10,5 @@ type salesforce_new_object_name {
 }
 
 salesforce_profile new_instance_name {
-  description = "To Be Modified Description"
+  description = "To Be Modified"
 }

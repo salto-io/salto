@@ -1,20 +1,19 @@
 import { testHelpers as salesforceTestHelpers, SalesforceClient } from 'salesforce-adapter'
 import { InstanceElement } from 'adapter-api'
-import { Plan, file } from 'salto'
+import { Plan, file, Workspace } from 'salto'
 import wu from 'wu'
 import {
-  API_NAME, CUSTOM_OBJECT, INSTANCE_FULL_NAME_FIELD, SALESFORCE_CUSTOM_SUFFIX,
+  API_NAME, CUSTOM_OBJECT, INSTANCE_FULL_NAME_FIELD, SALESFORCE, SALESFORCE_CUSTOM_SUFFIX,
 } from 'salesforce-adapter/dist/src/constants'
-import { logger } from '@salto/logging'
+import { exists } from 'salto/dist/src/file'
 import adapterConfigs from './adapter_configs'
 import * as formatterImpl from '../src/formatter'
 import * as callbacksImpl from '../src/callbacks'
 import {
-  editBlueprint, instanceExists, loadValidWorkspace, objectExists, runDeploy, runEmptyPreview,
-  runFetch, verifyChanges, verifyNewInstanceBP, verifyNewObjectBP,
-} from './helpers'
-
-const log = logger('cli/e2e/salto')
+  editBlueprint, loadValidWorkspace, runDeploy,
+  runFetch, verifyChanges, verifyInstance, verifyObject, runEmptyPreview,
+} from './helpers/workspace'
+import { instanceExists, objectExists } from './helpers/salesforce'
 
 const { copyFile, rm, mkdirp } = file
 
@@ -76,79 +75,118 @@ describe('commands e2e', () => {
     }
   })
 
-  const deployNewElementsAndVerify = async (): Promise<void> => {
-    await copyFile(addModelBP, tmpBP)
-    await editBlueprint(tmpBP, [
-      [NEW_OBJECT_BASE_ELEM_NAME, NEW_OBJECT_ELEM_NAME],
-      [NEW_INSTANCE_BASE_ELEM_NAME, NEW_INSTANCE_ELEM_NAME],
-    ])
-    await runDeploy(lastPlan, fetchOutputDir)
-    verifyChanges(lastPlan, 'add', [NEW_OBJECT_ELEM_NAME, NEW_INSTANCE_ELEM_NAME])
-    expect(await objectExists(client, NEW_OBJECT_API_NAME, ['Alpha__c', 'Beta__c']))
-      .toBe(true)
-    expect(await instanceExists(client, PROFILE, NEW_INSTANCE_FULL_NAME,
-      [['description', 'To Be Modified Description']])).toBe(true)
-    const workspace = await loadValidWorkspace(fetchOutputDir)
-    verifyNewObjectBP(workspace, NEW_OBJECT_ELEM_NAME, [[API_NAME, NEW_OBJECT_API_NAME]], {
-      alpha: [API_NAME, 'Alpha__c'],
-      beta: [API_NAME, 'Beta__c'],
+  describe('Running initial fetch', () => {
+    beforeAll(async () => {
+      await runFetch(fetchOutputDir)
     })
-    verifyNewInstanceBP(workspace, NEW_INSTANCE_ELEM_NAME,
-      [['description', 'To Be Modified Description'],
-        [INSTANCE_FULL_NAME_FIELD, NEW_INSTANCE_FULL_NAME]])
-  }
-
-  const deployModifiedElements = async (): Promise<void> => {
-    await editBlueprint(tmpBP, [
-      ['beta', 'modified'],
-      ['Beta__c', 'Modified__c'],
-      ['To Be Modified Description', 'I Am Modified'],
-    ])
-    await runDeploy(lastPlan, fetchOutputDir)
-    verifyChanges(lastPlan, 'modify', [NEW_OBJECT_ELEM_NAME, NEW_INSTANCE_ELEM_NAME])
-    expect(await objectExists(client, NEW_OBJECT_API_NAME, ['Alpha__c', 'Modified__c']))
-      .toBe(true)
-    expect(await instanceExists(client, PROFILE, NEW_INSTANCE_FULL_NAME,
-      [['description', 'I Am Modified']])).toBe(true)
-  }
-
-  const runFetchAndExpectNoChanges = async (): Promise<void> => {
-    await runFetch(statePath, fetchOutputDir)
-    const workspace = await loadValidWorkspace(fetchOutputDir)
-    verifyNewObjectBP(workspace, NEW_OBJECT_ELEM_NAME, [[API_NAME, NEW_OBJECT_API_NAME]], {
-      alpha: [API_NAME, 'Alpha__c'],
-      modified: [API_NAME, 'Modified__c'],
+    it('should create fetchOutputDir', async () => {
+      expect(await exists(fetchOutputDir)).toBe(true)
     })
-    verifyNewInstanceBP(workspace, NEW_INSTANCE_ELEM_NAME, [['description', 'I Am Modified'],
-      [INSTANCE_FULL_NAME_FIELD, NEW_INSTANCE_FULL_NAME]])
-  }
+    it('should create statePath', async () => {
+      expect(await exists(statePath)).toBe(true)
+    })
+    afterAll(async () => {
+      await runEmptyPreview(lastPlan, fetchOutputDir)
+    })
+  })
 
-  const deleteCreatedElementsAndVerify = async (): Promise<void> => {
-    await rm(tmpBP)
-    await runDeploy(lastPlan, fetchOutputDir)
-    verifyChanges(lastPlan, 'remove', [NEW_OBJECT_ELEM_NAME, NEW_INSTANCE_ELEM_NAME])
-    expect(await objectExists(client, NEW_OBJECT_API_NAME)).toBe(false)
-    expect(await instanceExists(client, PROFILE, NEW_INSTANCE_FULL_NAME)).toBe(false)
-  }
+  describe('Running deploy with a new object and instance', () => {
+    let workspace: Workspace
+    beforeAll(async () => {
+      await copyFile(addModelBP, tmpBP)
+      await editBlueprint(tmpBP, [
+        [NEW_OBJECT_BASE_ELEM_NAME, NEW_OBJECT_ELEM_NAME],
+        [NEW_INSTANCE_BASE_ELEM_NAME, NEW_INSTANCE_ELEM_NAME],
+      ])
+      await runDeploy(lastPlan, fetchOutputDir)
+      workspace = await loadValidWorkspace(fetchOutputDir)
+    })
+    it('should have "add" changes', async () => {
+      verifyChanges(lastPlan, [{ action: 'add', element: NEW_OBJECT_ELEM_NAME },
+        { action: 'add', element: NEW_INSTANCE_ELEM_NAME }])
+    })
+    it('should create the object in salesforce', async () => {
+      expect(await objectExists(client, NEW_OBJECT_API_NAME, ['Alpha__c', 'Beta__c'])).toBe(true)
+    })
+    it('should create the instance in salesforce', async () => {
+      expect(await instanceExists(client, PROFILE, NEW_INSTANCE_FULL_NAME,
+        { description: 'To Be Modified' })).toBe(true)
+    })
+    it('should update the object in the BP', async () => {
+      verifyObject(workspace, SALESFORCE, NEW_OBJECT_ELEM_NAME, { [API_NAME]: NEW_OBJECT_API_NAME },
+        { alpha: { [API_NAME]: 'Alpha__c' }, beta: { [API_NAME]: 'Beta__c' } })
+    })
+    it('should update the instance in the BP', async () => {
+      verifyInstance(workspace, SALESFORCE, PROFILE.toLowerCase(), NEW_INSTANCE_ELEM_NAME,
+        { description: 'To Be Modified', [INSTANCE_FULL_NAME_FIELD]: NEW_INSTANCE_FULL_NAME })
+    })
+    afterAll(async () => {
+      await runEmptyPreview(lastPlan, fetchOutputDir)
+    })
+  })
 
-  it('should run full flow', async () => {
-    log.info('Running initial fetch')
-    await runFetch(statePath, fetchOutputDir)
-    log.info('Running preview and expecting no changes')
-    await runEmptyPreview(lastPlan, fetchOutputDir)
-    log.info('Running deploy with a new object and instance')
-    await deployNewElementsAndVerify()
-    log.info('Running preview and expecting no changes')
-    await runEmptyPreview(lastPlan, fetchOutputDir)
-    log.info('Running deploy after modifying the object and the instance')
-    await deployModifiedElements()
-    log.info('Running preview and expecting no changes')
-    await runEmptyPreview(lastPlan, fetchOutputDir)
-    log.info('Running fetch and expecting no changes')
-    await runFetchAndExpectNoChanges()
-    log.info('Running deploy after deleting the object and the instance')
-    await deleteCreatedElementsAndVerify()
-    log.info('Running preview and expecting no changes')
-    await runEmptyPreview(lastPlan, fetchOutputDir)
+  describe('Running deploy after modifying the object and the instance', () => {
+    beforeAll(async () => {
+      await editBlueprint(tmpBP, [
+        ['beta', 'modified'],
+        ['Beta__c', 'Modified__c'],
+        ['To Be Modified', 'I Am Modified'],
+      ])
+      await runDeploy(lastPlan, fetchOutputDir)
+    })
+    it('should have "modify" changes', async () => {
+      verifyChanges(lastPlan, [{ action: 'modify', element: NEW_OBJECT_ELEM_NAME },
+        { action: 'modify', element: NEW_INSTANCE_ELEM_NAME }])
+    })
+    it('should update the object in salesforce', async () => {
+      expect(await objectExists(client, NEW_OBJECT_API_NAME, ['Alpha__c', 'Modified__c']))
+        .toBe(true)
+    })
+    it('should update the instance in salesforce', async () => {
+      expect(await instanceExists(client, PROFILE, NEW_INSTANCE_FULL_NAME,
+        { description: 'I Am Modified' })).toBe(true)
+    })
+    afterAll(async () => {
+      await runEmptyPreview(lastPlan, fetchOutputDir)
+    })
+  })
+
+  describe('Running fetch and expecting no changes', () => {
+    let workspace: Workspace
+    beforeAll(async () => {
+      await runFetch(fetchOutputDir)
+      workspace = await loadValidWorkspace(fetchOutputDir)
+    })
+    it('should have no change in the object', async () => {
+      verifyObject(workspace, SALESFORCE, NEW_OBJECT_ELEM_NAME, { [API_NAME]: NEW_OBJECT_API_NAME },
+        { alpha: { [API_NAME]: 'Alpha__c' }, modified: { [API_NAME]: 'Modified__c' } })
+    })
+    it('should have no change in the instance', async () => {
+      verifyInstance(workspace, SALESFORCE, PROFILE.toLowerCase(), NEW_INSTANCE_ELEM_NAME,
+        { description: 'I Am Modified', [INSTANCE_FULL_NAME_FIELD]: NEW_INSTANCE_FULL_NAME })
+    })
+    afterAll(async () => {
+      await runEmptyPreview(lastPlan, fetchOutputDir)
+    })
+  })
+
+  describe('Running deploy after deleting the object and the instance', () => {
+    beforeAll(async () => {
+      await rm(tmpBP)
+      await runDeploy(lastPlan, fetchOutputDir)
+    })
+    it('should have "remove" changes', async () => {
+      verifyChanges(lastPlan, [{ action: 'remove', element: NEW_OBJECT_ELEM_NAME },
+        { action: 'remove', element: NEW_INSTANCE_ELEM_NAME }])
+    })
+    it('should remove the object in salesforce', async () => {
+      expect(await objectExists(client, NEW_OBJECT_API_NAME)).toBe(false)
+    })
+    it('should remove the instance in salesforce', async () => {
+      expect(await instanceExists(client, PROFILE, NEW_INSTANCE_FULL_NAME)).toBe(false)
+    })
+    afterAll(async () => {
+      await runEmptyPreview(lastPlan, fetchOutputDir)
+    })
   })
 })

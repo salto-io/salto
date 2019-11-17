@@ -43,8 +43,8 @@ const filter: FilterCreator = () => ({
       }
       return value
     }
-    elements.filter(isInstanceElement).forEach(instnace =>
-      applyRecursive(instnace.type as ObjectType, instnace.value, markList))
+    elements.filter(isInstanceElement).forEach(instance =>
+      applyRecursive(instance.type as ObjectType, instance.value, markList))
 
     // Cast all lists to list
     const castLists = (field: Field, value: Value): Value => {
@@ -57,8 +57,8 @@ const filter: FilterCreator = () => ({
       }
       return value
     }
-    elements.filter(isInstanceElement).forEach(instnace =>
-      applyRecursive(instnace.type as ObjectType, instnace.value, castLists))
+    elements.filter(isInstanceElement).forEach(instance =>
+      applyRecursive(instance.type as ObjectType, instance.value, castLists))
   },
 })
 

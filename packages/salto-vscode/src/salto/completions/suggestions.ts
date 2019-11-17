@@ -262,7 +262,7 @@ export const keywordSuggestions = (params: SuggestionsParams): Suggestions => [
   ...typesSuggestions(params),
 ]
 
-export const eqSugestions = (): Suggestions => ['=']
+export const eqSuggestions = (): Suggestions => ['=']
 
 export const isSuggestions = (): Suggestions => ['is']
 

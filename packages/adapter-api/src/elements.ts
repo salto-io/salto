@@ -225,7 +225,7 @@ export abstract class Type implements Element {
   }
 
   /**
-   * Return a deep copy of the instance annotations by recursivally
+   * Return a deep copy of the instance annotations by recursively
    * cloning all annotations (by invoking their clone method)
    */
   protected cloneAnnotationTypes(): TypeMap {
@@ -455,7 +455,7 @@ export class ElementsRegistry {
     type?: PrimitiveTypes|ObjectType,
     /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
   ): any {
-    // Using any here is ugly, but I can't find a better comiling solution. TODO - fix this
+    // Using any here is ugly, but I can't find a better compiling solution. TODO - fix this
     const key = elemID.getFullName()
     let res: Element = this.registeredElements[key]
     if (!res) {

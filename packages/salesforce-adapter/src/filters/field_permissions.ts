@@ -161,7 +161,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
     }
 
     // Look for fields that used to have permissions and permission was deleted from BP
-    // For those fields we will mark then as { editable: false, readable: false } explcit
+    // For those fields we will mark then as { editable: false, readable: false } explicit
     wu(changes)
       .forEach(c => {
         const changeElement = getChangeElement(c)

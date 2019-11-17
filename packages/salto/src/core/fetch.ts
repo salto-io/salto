@@ -92,7 +92,7 @@ export type FetchChangesResult = {
 
 export class FatalFetchMergeError extends Error {
   constructor(public causes: MergeErrorWithElements[]) {
-    super(`Error occured during fetch, cause:\n${
+    super(`Error occurred during fetch, cause:\n${
       causes.map(c => `Error: ${c.error.message}, Elements: ${c.elements.map(e => e.elemID.getFullName()).join(', ')}\n`)
     }`)
   }

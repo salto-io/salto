@@ -6,8 +6,8 @@ import SalesforceAdapter from '../src/adapter'
 import Connection from '../src/client/jsforce'
 import * as constants from '../src/constants'
 import { Types } from '../src/transformer'
-import mockAdpater from './adapter'
 import { findElements } from './utils'
+import mockAdapter from './adapter'
 
 describe('SalesforceAdapter fetch', () => {
   let connection: Connection
@@ -17,7 +17,7 @@ describe('SalesforceAdapter fetch', () => {
     ElemID => new ElemID(adapterName, name)
 
   beforeEach(() => {
-    ({ connection, adapter } = mockAdpater({
+    ({ connection, adapter } = mockAdapter({
       adapterParams: {
         metadataAdditionalTypes: [],
         getElemIdFunc: mockGetElemIdFunc,
@@ -108,7 +108,7 @@ describe('SalesforceAdapter fetch', () => {
       const lead = findElements(result, 'lead').pop() as ObjectType
       expect(lead.fields.last_name.type.elemID.name).toBe('text')
       expect(lead.fields.last_name.annotations.label).toBe('Last Name')
-      // Test Rquired true and false
+      // Test Required true and false
       expect(lead.fields.last_name.annotations[Type.REQUIRED]).toBe(false)
       expect(lead.fields.first_name.annotations[Type.REQUIRED]).toBe(false)
       // Default string and boolean
@@ -197,7 +197,7 @@ describe('SalesforceAdapter fetch', () => {
     })
 
     it('should use existing elemID when fetching custom object', async () => {
-      ({ connection, adapter } = mockAdpater({
+      ({ connection, adapter } = mockAdapter({
         adapterParams: {
           metadataAdditionalTypes: [],
           getElemIdFunc: (adapterName: string, _serviceIds: ServiceIds, name: string):
@@ -539,7 +539,7 @@ describe('SalesforceAdapter fetch', () => {
     })
 
     it('should use existing elemID when fetching metadata instance', async () => {
-      ({ connection, adapter } = mockAdpater({
+      ({ connection, adapter } = mockAdapter({
         adapterParams: {
           metadataAdditionalTypes: [],
           getElemIdFunc: (adapterName: string, serviceIds: ServiceIds, name: string):

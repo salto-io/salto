@@ -28,7 +28,7 @@ Salto is still not registered in the marketplace. To install:
 - Open the extension menu
 - Select install from .vsix
 - Choose the downloaded file
-- Note: On version updates you might need to manualy delete the extension directory in `$home/.vscode/extensions`
+- Note: On version updates you might need to manually delete the extension directory in `$home/.vscode/extensions`
 
 <img src="https://raw.githubusercontent.com/salto-io/extension_resources/master/install.gif" alt="Installation" width="720"/>
 

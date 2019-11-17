@@ -2,7 +2,7 @@ import _ from 'lodash'
 
 import {
   isInsertText, Suggestions, SuggestionsResolver, keywordSuggestions, typesSuggestions,
-  isSuggestions, inheritanceSuggestions, annoSuggestions, eqSugestions,
+  isSuggestions, inheritanceSuggestions, annoSuggestions, eqSuggestions,
   annoValueSuggestions, instanceSuggestions, fieldSuggestions, fieldValueSuggestions,
 } from './suggestions'
 import { PositionContext, EditorPosition } from '../context'
@@ -24,11 +24,11 @@ const LINE_SUGGESTIONS: {[key in LineType]: SuggestionsResolver[] } = {
   // <field_type>
   field: [typesSuggestions],
   // <annotationName> = <value>
-  annotation: [annoSuggestions, eqSugestions, annoValueSuggestions],
+  annotation: [annoSuggestions, eqSuggestions, annoValueSuggestions],
   // <instanceType> <instance_name>
   instance: [typesSuggestions, instanceSuggestions],
   // <fieldName> = <value>
-  attr: [fieldSuggestions, eqSugestions, fieldValueSuggestions],
+  attr: [fieldSuggestions, eqSuggestions, fieldValueSuggestions],
   // <value>
   fieldList: [fieldValueSuggestions],
   // <value>
@@ -116,12 +116,12 @@ const createCompletionItems = (
 })
 
 // Returns a list of suggestions for the current line.
-// Note - line includes all of the charecters in the line *before* the cursor
+// Note - line includes all of the characters in the line *before* the cursor
 // The line is stripped of its prefix (which is not a part of the line. this
 // allows in line attr def a = {<only this is the line>})
 // Once stripped and tokenized, we count the existing tokens and give
 // the suggestions to the last token which is the token which we want
-// to complete. (We reurn all values, VS filter by token prefix)
+// to complete. (We return all values, VS filter by token prefix)
 // The token to needed types mapping is in LINE_SUGGESTIONS.
 export const provideWorkspaceCompletionItems = (
   workspace: EditorWorkspace,

@@ -373,7 +373,7 @@ describe('Salto parser', () => {
   })
 
   describe('error tests', () => {
-    it('fails on invalid inheritence syntax', async () => {
+    it('fails on invalid inheritance syntax', async () => {
       const body = `
       type salesforce_string string {}
       `

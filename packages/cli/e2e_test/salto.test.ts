@@ -30,7 +30,7 @@ let spinnerCreator: SpinnerCreator
 let lastPlan: Plan
 const mockShouldDeploy = (p: Plan): boolean => {
   lastPlan = p
-  return wu(p.itemsByEvalOrder()).toArray().length < 100 // Safty to avoid breaking the SF instance
+  return wu(p.itemsByEvalOrder()).toArray().length < 100 // Safety to avoid breaking the SF instance
 }
 
 // Attempting to access the functions on run time without the mock implementation, or

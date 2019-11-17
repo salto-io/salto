@@ -29,7 +29,7 @@ export const command = (
       getConfigFromUser
     )
     // TODO: Return here the full report that contains the numbers of successful and failed rows.
-    // Also: print the errors of the erronous rows to a log file and print the path of the log.
+    // Also: print the errors of the erroneous rows to a log file and print the path of the log.
     stdout.write(Prompts.IMPORT_FINISHED_SUCCESSFULLY)
 
     return CliExitCode.Success

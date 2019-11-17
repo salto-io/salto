@@ -98,10 +98,10 @@ describe('deploy command', () => {
         await command.execute()
         content = cliOutput.stdout.content
       })
-      it('should load worksapce', () => {
+      it('should load workspace', () => {
         expect(Workspace.load).toHaveBeenCalled()
       })
-      it('should print completness', () => {
+      it('should print completeness', () => {
         expect(content).toContain('Deployment succeeded')
       })
       it('should Update workspace', () => {

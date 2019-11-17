@@ -16,7 +16,7 @@ import * as constants from '../src/constants'
 import { Types, sfCase } from '../src/transformer'
 import { PROFILE_METADATA_TYPE } from '../src/filters/field_permissions'
 import Connection from '../src/client/jsforce'
-import mockAdpater from './adapter'
+import mockAdapter from './adapter'
 
 const { makeArray } = collections.array
 
@@ -57,7 +57,7 @@ describe('SalesforceAdapter CRUD', () => {
   let mockDeploy: jest.Mock<unknown>
 
   beforeEach(() => {
-    ({ connection, adapter } = mockAdpater({
+    ({ connection, adapter } = mockAdapter({
       adapterParams: {
         filterCreators: [],
         metadataToUpdateWithDeploy: [deployTypeName],

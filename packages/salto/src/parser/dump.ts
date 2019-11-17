@@ -25,7 +25,8 @@ const getPrimitiveTypeName = (primitiveType: PrimitiveTypes): string => {
 
 const QUOTE_MARKER = 'Q_MARKER'
 
-const markQuote = (value: string): string => `${QUOTE_MARKER}${value}${QUOTE_MARKER}`
+const markQuote = (value: string): string =>
+  (value.search(new RegExp('^[a-zA-Z]')) === 0 ? `${QUOTE_MARKER}${value}${QUOTE_MARKER}` : value)
 
 export const dumpElemID = ({ elemID }: Type): string => {
   if (elemID.isConfig()) {

@@ -71,11 +71,18 @@ describe('Salto Dump', () => {
     { name: 'other', num: 5 },
   )
 
+  const instanceStartsWithNumber = new InstanceElement(
+    '3me',
+    model,
+    { name: '3me', num: 7 },
+  )
+
   describe('dump elements', () => {
     let body: string
 
     beforeAll(async () => {
-      body = await dump([strType, numType, boolType, fieldType, model, instance, config])
+      body = await dump([strType, numType, boolType, fieldType, model, instance, config,
+        instanceStartsWithNumber])
     })
 
     it('dumps primitive types', () => {
@@ -119,18 +126,23 @@ describe('Salto Dump', () => {
           /list salesforce_string list {/m
         )
       })
-      it('can be parsed back', async () => {
-        const { elements, errors } = await parse(Buffer.from(body), 'none')
-        expect(errors.length).toEqual(0)
-        expect(elements.length).toEqual(7)
-        expect(elements[0]).toEqual(strType)
-        expect(elements[1]).toEqual(numType)
-        expect(elements[2]).toEqual(boolType)
-        TestHelpers.expectTypesToMatch(elements[3] as Type, fieldType)
-        TestHelpers.expectTypesToMatch(elements[4] as Type, model)
-        TestHelpers.expectInstancesToMatch(elements[5] as InstanceElement, instance)
-        TestHelpers.expectInstancesToMatch(elements[6] as InstanceElement, config)
-      })
+    })
+    it('dumped instance with name that starts with number', () => {
+      expect(body).toMatch(/salesforce_test "3me"/)
+    })
+
+    it('can be parsed back', async () => {
+      const { elements, errors } = await parse(Buffer.from(body), 'none')
+      expect(errors.length).toEqual(0)
+      expect(elements.length).toEqual(8)
+      expect(elements[0]).toEqual(strType)
+      expect(elements[1]).toEqual(numType)
+      expect(elements[2]).toEqual(boolType)
+      TestHelpers.expectTypesToMatch(elements[3] as Type, fieldType)
+      TestHelpers.expectTypesToMatch(elements[4] as Type, model)
+      TestHelpers.expectInstancesToMatch(elements[5] as InstanceElement, instance)
+      TestHelpers.expectInstancesToMatch(elements[6] as InstanceElement, config)
+      TestHelpers.expectInstancesToMatch(elements[7] as InstanceElement, instanceStartsWithNumber)
     })
   })
   describe('dump field', () => {

@@ -19,7 +19,9 @@ const filterCreator: FilterCreator = () => ({
       .forEach(obj => {
         const rules = rulesByObject[apiName(obj)]
         if (rules) {
-          obj.annotate({ [VALIDATION_RULE_ANNOTATION]: rules.map(r => r.elemID.getFullName()) })
+          obj.annotate({
+            [VALIDATION_RULE_ANNOTATION]: rules.map(r => r.elemID.getFullName()).sort(),
+          })
         }
       })
   },

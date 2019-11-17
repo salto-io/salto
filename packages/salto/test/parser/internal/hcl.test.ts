@@ -1,7 +1,8 @@
 import _ from 'lodash'
-import HclParser, {
-  ParsedHclBlock, HclAttribute, HclExpression, HclParseError,
-} from '../../../src/parser/internal/hcl'
+import HclParser, { HclParserCls } from '../../../src/parser/internal/hcl'
+import {
+  ParsedHclBlock, HclAttribute, HclExpression, HclParseError, HclParseReturn,
+} from '../../../src/parser/internal/types'
 import devaluate from './devaluate'
 import evaluate from '../../../src/parser/expressions'
 import { SourceRange } from '../../../src/parser/parse'
@@ -41,7 +42,7 @@ describe('HCL Parser', () => {
       user = "me"
     }`
 
-    const { body } = await HclParser.parse(Buffer.from(configBlock), 'none')
+    const { body } = await HclParser.parse(configBlock, 'none')
     expect(body.blocks.length).toEqual(1)
     const config = body.blocks[0]
     expect(config.type).toEqual('salesforce')
@@ -63,7 +64,7 @@ describe('HCL Parser', () => {
         }
       }`
 
-    const { body } = await HclParser.parse(Buffer.from(typeDefBlock), 'none')
+    const { body } = await HclParser.parse(typeDefBlock, 'none')
     expect(body.blocks.length).toEqual(1)
     const typeBlock = body.blocks[0]
     expect(typeBlock.type).toEqual('type')
@@ -94,10 +95,7 @@ describe('HCL Parser', () => {
         ]
       }`
 
-    const { body } = await HclParser.parse(
-      Buffer.from(instanceDefBlock),
-      'none',
-    )
+    const { body } = await HclParser.parse(instanceDefBlock, 'none')
     expect(body.blocks.length).toEqual(1)
     const instBlock = body.blocks[0]
     expect(instBlock.type).toEqual('salto_employee')
@@ -118,7 +116,7 @@ describe('HCL Parser', () => {
           EOF
       }`
 
-    const { body } = await HclParser.parse(Buffer.from(blockDef), 'none')
+    const { body } = await HclParser.parse(blockDef, 'none')
     expect(body.blocks.length).toEqual(1)
     expect(body.blocks[0].attrs).toHaveProperty('thing')
     expect(body.blocks[0].attrs.thing.expressions[0].type).toEqual('template')
@@ -131,7 +129,7 @@ describe('HCL Parser', () => {
         that = ">>>\${a.b}<<<"
       }`
 
-    const { body } = await HclParser.parse(Buffer.from(blockDef), 'none')
+    const { body } = await HclParser.parse(blockDef, 'none')
     expect(body.blocks.length).toEqual(1)
     expect(body.blocks[0].attrs).toHaveProperty('thing')
     expect(body.blocks[0].attrs.thing.expressions[0].type).toEqual('reference')
@@ -140,21 +138,35 @@ describe('HCL Parser', () => {
     expect(body.blocks[0].attrs.that.expressions[0].expressions.length).toEqual(3)
   })
 
-  it('can run concurrently', async () => {
-    const blockDef = 'type label {}'
-    const blocksToParse = _.times(3, () => blockDef)
-    const results = await Promise.all(
-      blocksToParse.map(block => HclParser.parse(Buffer.from(block), 'none'))
-    )
-    expect(results.length).toEqual(3)
-    // Check the first result
-    expect(results[0].body.blocks.length).toEqual(1)
-    expect(results[0].body.blocks[0].type).toEqual('type')
-    expect(results[0].body.blocks[0].labels).toEqual(['label'])
-    // Check all the rest are the same
-    results.reduce((prev, curr) => {
-      expect(prev).toEqual(curr)
-      return curr
+  describe('concurrent execution', () => {
+    let results: HclParseReturn[]
+    let parser: HclParserCls
+    let parserPoolStop: jest.SpyInstance
+
+    // For some reason multi-threaded parsing takes significantly longer in jest
+    jest.setTimeout(30 * 1000)
+
+    beforeAll(async () => {
+      parser = new HclParserCls(false)
+      parserPoolStop = jest.spyOn(parser, 'stop')
+      const blocksToParse = _.times(3, num => `type label_${num} {}`)
+      results = await Promise.all(
+        blocksToParse.map(block => parser.parse(block, 'none'))
+      )
+    })
+
+    it('returns correct results', () => {
+      expect(results.length).toEqual(3)
+      const checkResult = (result: HclParseReturn, idx: number): void => {
+        expect(result.body.blocks).toHaveLength(1)
+        expect(result.body.blocks[0].type).toEqual('type')
+        expect(result.body.blocks[0].labels).toEqual([`label_${idx}`])
+      }
+      results.forEach(checkResult)
+    })
+
+    it('should stop the worker pool', () => {
+      expect(parserPoolStop).toHaveBeenCalled()
     })
   })
 
@@ -164,7 +176,7 @@ describe('HCL Parser', () => {
     const blockDef = `type voodoo {
       thing = "\ufeffHIDE"
     }`
-    const { body } = await HclParser.parse(Buffer.from(blockDef), 'none')
+    const { body } = await HclParser.parse(blockDef, 'none')
     expect(body.blocks.length).toEqual(1)
     expect(body.blocks[0].attrs).toHaveProperty('thing')
     expect(evaluate(body.blocks[0].attrs.thing.expressions[0]).length).toEqual(5)
@@ -175,7 +187,7 @@ describe('HCL Parser', () => {
     let errors: HclParseError[]
 
     beforeAll(async () => {
-      ({ errors } = await HclParser.parse(Buffer.from(blockDef), 'none'))
+      ({ errors } = await HclParser.parse(blockDef, 'none'))
     })
 
     it('is not empty', () => {
@@ -201,7 +213,7 @@ describe('HCL Parser', () => {
     let errors: HclParseError[]
 
     beforeAll(async () => {
-      ({ errors } = await HclParser.parse(Buffer.from(blockDef), 'none'))
+      ({ errors } = await HclParser.parse(blockDef, 'none'))
     })
 
     it('is not empty', () => {
@@ -270,7 +282,7 @@ describe('HCL Parser', () => {
       expect(serialized).toMatch(/nested\s*=\s*{\s*val\s*=\s*"so deep"\s*}/m)
     })
     it('dumps parsable text', async () => {
-      const parsed = await HclParser.parse(Buffer.from(serialized), 'none')
+      const parsed = await HclParser.parse(serialized, 'none')
       expect(parsed.errors.length).toEqual(0)
       // Filter out source ranges since they are only generated during parsing
       const removeSrcFromBlock = (block: ParsedHclBlock): ParsedHclBlock =>

@@ -100,7 +100,7 @@ describe('Salto parser', () => {
       `
 
     beforeAll(async () => {
-      ({ elements, sourceMap } = await parse(Buffer.from(body), 'none'))
+      ({ elements, sourceMap } = await parse(body, 'none'))
     })
 
     describe('parse result', () => {
@@ -377,11 +377,11 @@ describe('Salto parser', () => {
       const body = `
       type salesforce_string string {}
       `
-      await expect(parse(Buffer.from(body), 'none')).rejects.toThrow()
+      await expect(parse(body, 'none')).rejects.toThrow()
     })
   })
   it('fails on invalid top level syntax', async () => {
     const body = 'bla'
-    expect((await parse(Buffer.from(body), 'none')).errors.length).not.toBe(0)
+    expect((await parse(body, 'none')).errors.length).not.toBe(0)
   })
 })

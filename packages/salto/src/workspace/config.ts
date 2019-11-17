@@ -108,7 +108,7 @@ export const getConfigPath = (baseDir: string): string => (
 )
 
 export const parseConfig = async (buffer: Buffer): Promise<Partial<Config>> => {
-  const parsedConfig = await parse(buffer, '')
+  const parsedConfig = await parse(buffer.toString(), '')
   const [configInstance] = [...findInstances(parsedConfig.elements, saltoConfigElemID)]
   if (!configInstance) throw new ConfigParseError()
   return _.mapKeys(configInstance.value, (_v, k) => _.camelCase(k)) as unknown as Partial<Config>

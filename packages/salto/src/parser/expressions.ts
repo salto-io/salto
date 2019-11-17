@@ -2,8 +2,7 @@ import _ from 'lodash'
 import {
   Value, ElemID, TemplateExpression, ReferenceExpression,
 } from 'adapter-api'
-import { HclExpression, ExpressionType } from './internal/hcl'
-import { SourceMap, SourceRange } from './internal/types'
+import { SourceMap, SourceRange, HclExpression, ExpressionType } from './internal/types'
 
 type ExpEvaluator = (expression: HclExpression) => Value
 

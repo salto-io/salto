@@ -14,7 +14,10 @@ import {
 import State from './state/state'
 import { findElement, SearchResult } from './core/search'
 import { Workspace, CREDS_DIR } from './workspace/workspace'
-import { fetchChanges, FetchChange, getDetailedChanges, createElemIdGetter, MergeErrorWithElements, FatalFetchMergeError } from './core/fetch'
+import {
+  fetchChanges, FetchChange, getDetailedChanges, createElemIdGetter, MergeErrorWithElements,
+  FatalFetchMergeError,
+} from './core/fetch'
 
 export { ItemStatus }
 
@@ -28,7 +31,7 @@ export const preview = async (
 }
 
 export interface DeployResult {
-  sucesses: boolean
+  success: boolean
   errors: DeployError[]
   changes?: Iterable<FetchChange>
 }
@@ -69,12 +72,12 @@ export const deploy = async (
         .map(change => ({ change, serviceChange: change }))
       const errored = errors.length > 0
       return {
-        sucesses: errored,
+        success: errored,
         changes,
         errors: errored ? errors : [],
       }
     }
-    return { sucesses: true, errors: [] }
+    return { success: true, errors: [] }
   } finally {
     await state.flush()
   }

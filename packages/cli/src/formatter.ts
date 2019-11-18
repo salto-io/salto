@@ -26,8 +26,6 @@ export const error = (txt: string): string => chalk.red.bold(txt)
 
 export const emptyLine = (): string => ''
 
-export const seperator = (): string => `\n${'-'.repeat(78)}\n`
-
 const fullName = (change: Change): string => getChangeElement(change).elemID.getFullName()
 
 const planItemName = (step: PlanItem): string => fullName(step.parent())

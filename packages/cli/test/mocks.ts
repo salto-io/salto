@@ -1,8 +1,10 @@
 import { GroupedNodeMap } from '@salto/dag'
-import { BuiltinTypes, Change, Element, ElemID, Field, getChangeElement, InstanceElement, ObjectType, Type } from 'adapter-api'
+import {
+  BuiltinTypes, Change, Element, ElemID, Field, getChangeElement, InstanceElement,
+  ObjectType, Type,
+} from 'adapter-api'
 import _ from 'lodash'
 import { DetailedChange, Plan, PlanItem, SearchResult, Workspace, WorkspaceError, DeployResult } from 'salto'
-import stream from 'stream'
 import wu from 'wu'
 import realCli from '../src/cli'
 import builders from '../src/commands/index'
@@ -22,25 +24,11 @@ export class MockWriteStream {
   isTTY: boolean
 
   write(s: string): void { this.content += s }
-  getColorDepth(): number { return this.colors ? 8 : 1 }
 }
 
 export type MockWritableStream = NodeJS.WritableStream & {
   contents(): string
 }
-
-export const mockWritableStream = (): MockWritableStream => {
-  let content = ''
-
-  const writable = new stream.Writable({
-    write: s => { content += s },
-  })
-
-  return Object.assign(writable, {
-    contents(): string { return content },
-  })
-}
-
 
 export const mockSpinnerCreator = (spinners: Spinner[]): SpinnerCreator => jest.fn(() => {
   const result = {

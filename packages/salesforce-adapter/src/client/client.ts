@@ -285,7 +285,7 @@ export default class SalesforceClient {
   @validateSaveResult
   @SalesforceClient.requiresLogin
   public async delete(type: string, fullNames: string | string[]): Promise<SaveResult[]> {
-    const result = sendChunked(fullNames, chunk => this.conn.metadata.delete(type, chunk))
+    const result = await sendChunked(fullNames, chunk => this.conn.metadata.delete(type, chunk))
     log.debug('deleted %o of type %s [result=%o]', fullNames, type, result)
     return result
   }
@@ -301,7 +301,7 @@ export default class SalesforceClient {
   @SalesforceClient.requiresLogin
   public async update(type: string, metadata: MetadataInfo | MetadataInfo[]):
     Promise<SaveResult[]> {
-    const result = sendChunked(metadata, chunk => this.conn.metadata.update(type, chunk))
+    const result = await sendChunked(metadata, chunk => this.conn.metadata.update(type, chunk))
     log.debug('updated %o of type %s [result=%o]', makeArray(metadata).map(f => f.fullName),
       type, result)
     return result

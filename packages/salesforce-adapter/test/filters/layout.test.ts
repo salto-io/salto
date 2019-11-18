@@ -22,12 +22,14 @@ describe('Test layout filter', () => {
       const testSObj = mockSObject.clone()
       testSObj.annotate({ [constants.API_NAME]: apiName })
 
+      const fullName = `${apiName}-Test layout`
       const testLayout = new InstanceElement(
-        bpCase(`${apiName}-Test layout`),
+        bpCase(fullName),
         new ObjectType({
           elemID: LAYOUT_TYPE_ID,
         }),
-        { [constants.INSTANCE_FULL_NAME_FIELD]: `${apiName}-Test layout` },
+        { [constants.INSTANCE_FULL_NAME_FIELD]: fullName },
+        ['records', 'layout', bpCase(fullName)]
       )
       testLayout.value[constants.INSTANCE_FULL_NAME_FIELD] = `${apiName}-Test layout`
       const elements = [testSObj, testLayout]
@@ -36,6 +38,7 @@ describe('Test layout filter', () => {
 
       const instance = elements[1] as InstanceElement
       expect(instance.elemID.getFullName()).toBe('salesforce.layout.instance.test')
+      expect(instance.path?.join()).toBe('records,layout,test')
 
       const sobject = elements[0] as ObjectType
       expect(sobject.annotations[LAYOUT_ANNOTATION][0]).toBe(instance.elemID.getFullName())

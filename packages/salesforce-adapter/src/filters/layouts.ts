@@ -40,6 +40,9 @@ const fixNames = (layouts: InstanceElement[]): void => {
     if (l.elemID.name.startsWith(objName)) {
       updateElemID(l, _.trimStart(l.elemID.name.slice(objName.length), '_'))
     }
+    if (l.path) {
+      l.path = [...l.path.slice(0, -1), l.elemID.name]
+    }
   })
 }
 /**

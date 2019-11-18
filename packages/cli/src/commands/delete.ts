@@ -40,15 +40,12 @@ export const command = (
 type DeleteArgs = {
   'type-name': string
   'input-path': string
-  'blueprint': string[]
-  'blueprints-dir': string
 }
 type DeleteParsedCliInput = ParsedCliInput<DeleteArgs>
 
 const deleteBuilder = createCommandBuilder({
   options: {
     command: 'delete <type-name> <input-path>',
-    aliases: ['del'],
     description: 'Deletes records in the provided CSV file from the target service',
     positional: {
       'type-name': {
@@ -60,27 +57,11 @@ const deleteBuilder = createCommandBuilder({
         description: 'A path to the input CSV file',
       },
     },
-    keyed: {
-      'blueprints-dir': {
-        alias: 'd',
-        describe: 'A path to the blueprints directory',
-        string: true,
-        demandOption: true,
-      },
-      blueprint: {
-        alias: 'b',
-        describe: 'Path to input blueprint file. This option can be specified multiple times',
-        demandOption: false,
-        array: true,
-        requiresArg: true,
-      },
-    },
   },
-
 
   async build(input: DeleteParsedCliInput, output: CliOutput) {
     return command(
-      input.args['blueprints-dir'],
+      '.',
       input.args['type-name'],
       input.args['input-path'],
       output

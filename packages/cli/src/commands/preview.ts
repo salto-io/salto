@@ -38,7 +38,6 @@ type PreviewParsedCliInput = ParsedCliInput<PreviewArgs>
 const previewBuilder = createCommandBuilder({
   options: {
     command: 'preview',
-    aliases: ['p'],
     description: 'Shows Salto\'s execution plan next time deploy is run',
     keyed: {
       'workspace-dir': {

@@ -85,7 +85,6 @@ type FetchParsedCliInput = ParsedCliInput<FetchArgs>
 const fetchBuilder = createCommandBuilder({
   options: {
     command: 'fetch',
-    aliases: ['f'],
     description: 'Syncs this workspace\'s blueprints with the services\' current state',
     keyed: {
       force: {

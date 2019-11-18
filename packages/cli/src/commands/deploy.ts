@@ -137,7 +137,6 @@ type DeployParsedCliInput = ParsedCliInput<DeployArgs>
 const deployBuilder = createCommandBuilder({
   options: {
     command: 'deploy',
-    aliases: ['dep'],
     description: 'Deploys the current blueprints config to the target services',
     keyed: {
       force: {

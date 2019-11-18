@@ -37,8 +37,6 @@ export const command = (
 })
 
 type ImportArgs = {
-    'blueprint': string[]
-    'blueprints-dir': string
     'type-name': string
     'input-path': string
   }
@@ -59,25 +57,10 @@ const importBuilder = createCommandBuilder({
         description: 'A path to an input CSV file',
       },
     },
-    keyed: {
-      'blueprints-dir': {
-        alias: 'd',
-        describe: 'A path to the blueprints directory',
-        string: true,
-        demandOption: true,
-      },
-      blueprint: {
-        alias: 'b',
-        describe: 'Path to input blueprint file. This option can be specified multiple times',
-        demandOption: false,
-        array: true,
-        requiresArg: true,
-      },
-    },
   },
 
   async build(input: ImportParsedCliInput, output: CliOutput) {
-    return command(input.args['blueprints-dir'], input.args['type-name'], input.args['input-path'], output)
+    return command('.', input.args['type-name'], input.args['input-path'], output)
   },
 })
 

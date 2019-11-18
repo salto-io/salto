@@ -3,7 +3,7 @@ import {
   dumpCsv, readCsv, file,
 } from 'salto'
 import { InstanceElement } from 'adapter-api'
-import { MockWriteStream, mockSpinnerCreator } from '../test/mocks'
+import { MockWriteStream } from '../test/mocks'
 import { command as fetch } from '../src/commands/fetch'
 import { command as importCommand } from '../src/commands/import'
 import { command as exportCommand } from '../src/commands/export'
@@ -38,7 +38,7 @@ describe('Data migration operations E2E', () => {
       await rm(fetchOutputDir)
       await mkdirp(`${fetchOutputDir}/salto.config`)
       await copyFile(configFile, `${fetchOutputDir}/salto.config/config.bp`)
-      await fetch(fetchOutputDir, true, false, cliOutput, mockSpinnerCreator([])).execute()
+      await fetch(fetchOutputDir, true, false, cliOutput).execute()
     })
 
     it('should save the data in csv file when running export', async () => {

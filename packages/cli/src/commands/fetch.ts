@@ -7,7 +7,7 @@ import {
 } from 'salto'
 import { logger } from '@salto/logging'
 import { createCommandBuilder } from '../command_builder'
-import { ParsedCliInput, CliCommand, CliOutput, CliExitCode, SpinnerCreator } from '../types'
+import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'
 import { formatChangesSummary, formatMergeErrors, formatFatalFetchError } from '../formatter'
 import { getConfigWithHeader, getApprovedChanges as cliGetApprovedChanges } from '../callbacks'
 import Prompts from '../prompts'
@@ -63,12 +63,11 @@ export const command = (
   force: boolean,
   interactive: boolean,
   output: CliOutput,
-  spinnerCreator: SpinnerCreator,
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
     log.debug(`running fetch command on '${workspaceDir}' [force=${force}, interactive=${
       interactive}]`)
-    const { workspace, errored } = await loadWorkspace(workspaceDir, output, spinnerCreator)
+    const { workspace, errored } = await loadWorkspace(workspaceDir, output)
     if (errored) {
       return CliExitCode.AppError
     }
@@ -104,8 +103,8 @@ const fetchBuilder = createCommandBuilder({
     },
   },
 
-  async build(input: FetchParsedCliInput, output: CliOutput, spinnerCreator: SpinnerCreator) {
-    return command('.', input.args.force, input.args.interactive, output, spinnerCreator)
+  async build(input: FetchParsedCliInput, output: CliOutput) {
+    return command('.', input.args.force, input.args.interactive, output)
   },
 })
 

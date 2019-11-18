@@ -25,7 +25,7 @@ const mockCliOutput = (): CliOutput =>
   ({ stdout: new MockWriteStream(), stderr: new MockWriteStream() })
 
 export const runFetch = async (fetchOutputDir: string): Promise<void> => {
-  await fetch(fetchOutputDir, true, false, mockCliOutput(), mockSpinnerCreator([])).execute()
+  await fetch(fetchOutputDir, true, false, mockCliOutput()).execute()
 }
 
 export const runDeploy = async (lastPlan: Plan, fetchOutputDir: string): Promise<void> => {

@@ -4,7 +4,7 @@ import {
   Workspace, fetch, loadConfig, FetchChange, DetailedChange,
 } from 'salto'
 import { command, fetchCommand } from '../../src/commands/fetch'
-import { MockWriteStream, getWorkspaceErrors, dummyChanges, mockSpinnerCreator } from '../mocks'
+import { MockWriteStream, getWorkspaceErrors, dummyChanges } from '../mocks'
 import Prompts from '../../src/prompts'
 
 jest.mock('salto', () => ({
@@ -41,7 +41,7 @@ describe('fetch command', () => {
           getWorkspaceErrors,
         } as unknown as Workspace
         (Workspace.load as jest.Mock).mockResolvedValueOnce(Promise.resolve(erroredWorkspace))
-        await command(workspaceDir, true, false, cliOutput, mockSpinnerCreator([])).execute()
+        await command(workspaceDir, true, false, cliOutput).execute()
       })
 
       it('should fail', async () => {
@@ -52,7 +52,7 @@ describe('fetch command', () => {
 
     describe('with valid workspace', () => {
       beforeEach(async () => {
-        await command(workspaceDir, true, false, cliOutput, mockSpinnerCreator([])).execute()
+        await command(workspaceDir, true, false, cliOutput).execute()
       })
 
       it('should load the workspace from the provided directory', () => {

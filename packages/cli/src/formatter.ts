@@ -379,4 +379,4 @@ export const formatWorkspaceAbort = (numErrors: number): string =>
 export const formatShouldContinueWithWarning = (numWarnings: number): string =>
   warn(Prompts.SHOULDCONTINUE(numWarnings))
 
-export const formatCancelCommand = header(`${Prompts.CANCELD}\n`)
+export const formatCancelCommand = header(`${Prompts.CANCELED}\n`)

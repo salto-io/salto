@@ -154,7 +154,7 @@ describe('fetch command', () => {
                 error: 'BLA Error',
                 severity: 'Error',
               }]
-              mockWorkspace.hasErrors = () => (true)
+              mockWorkspace.hasErrors = () => true
 
               await fetchCommand(mockWorkspace, false, false, cliOutput, mockFetch, mockApprove)
               expect(mockWorkspace.updateBlueprints).toHaveBeenCalledWith(dummyChanges[0])

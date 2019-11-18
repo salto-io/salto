@@ -1,10 +1,14 @@
-type salesforce_e2etest {
-  salesforce_text name {
-    label = "Name"
-    _required = true
+type salesforce_new_object_name {
+  salesforce_text alpha {
+    label = "Alpha"
+    _required = false
   }
-  salesforce_text test {
-    label = "test"
-    _required = true
+  salesforce_text beta {
+    label = "Beta"
+    _required = false
   }
+}
+
+salesforce_profile new_instance_name {
+  description = "To Be Modified"
 }

@@ -5,11 +5,11 @@ import quickHash, { MIN_HASH, MAX_HASH } from './quickhash'
 
 // Partial of ES6 Module
 export type LoggingModule = {
-  filename: string
+  id: string
 }
 
 export const isLoggingModule = (o: unknown): o is LoggingModule => typeof o === 'object'
-  && Object.prototype.hasOwnProperty.call(o, 'filename')
+  && Object.prototype.hasOwnProperty.call(o, 'id')
 
 export type Namespace = string
 
@@ -45,9 +45,9 @@ export const toHexColor = (
   hashToNamespaceColorIndex(quickHash(namespace))
 ]
 
-const fromFilename = (
-  filename: string
-): Namespace => path.relative(MONOREPO_PACKAGES_DIRNAME, filename)
+const fromId = (
+  id: string
+): Namespace => path.relative(MONOREPO_PACKAGES_DIRNAME, id)
   .replace(/dist\/((src)\/)?/, '')
   .replace(/\.[^.]+$/, '') // remove extension
   .replace(/\/{2}/g, '/') // normalize double slashes to single
@@ -56,6 +56,6 @@ export const normalizeNamespaceOrModule = (
   namespace: NamespaceOrModule,
 ): Namespace => (
   isLoggingModule(namespace)
-    ? fromFilename(namespace.filename)
+    ? fromId(namespace.id)
     : namespace
 )

@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import { Workspace, loadConfig, FetchChange, WorkspaceError } from 'salto'
 import { logger } from '@salto/logging'
-import { formatWorkspaceErrors, formatChange, formatWorkspaceAbort } from './formatter'
+import { formatWorkspaceErrors, formatWorkspaceAbort, formatDetailedChanges } from './formatter'
 import { CliOutput, SpinnerCreator } from './types'
 import { shouldContinueInCaseOfWarnings } from './callbacks'
 import Prompts from './prompts'
@@ -65,7 +65,7 @@ export const updateWorkspace = async (ws: Workspace, cliOutput: CliOutput,
       changes.length} changes`)
     const isEmpty = ws.elements ? !ws.elements.some(elem => !elem.elemID.isConfig()) : false
     if (!isEmpty) {
-      _(changes.map(c => formatChange(c.change).split('\n'))).flatten().forEach(s => log.info(s))
+      formatDetailedChanges([changes.map(c => c.change)]).split('\n').forEach(s => log.info(s))
     }
 
     await ws.updateBlueprints(...changes.map(c => c.change))

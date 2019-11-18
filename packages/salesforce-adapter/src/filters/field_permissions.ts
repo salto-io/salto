@@ -47,7 +47,7 @@ const setDefaultFieldPermissions = (field: Field): void => {
   }
   if (_.isEmpty(fieldPermissions(field))) {
     setProfileFieldPermissions(field, ADMIN_PROFILE, true, true)
-    log.debug(`set ${ADMIN_PROFILE} field permissions for ${field.name}.${field.name}`)
+    log.debug('set %s field permissions for %s.%s', ADMIN_PROFILE, field.parentID.name, field.name)
   }
 }
 

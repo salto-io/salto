@@ -4,7 +4,7 @@ import {
   isPrimitiveType, Element, isInstanceElement, isField, isElement, Value,
 } from 'adapter-api'
 import { DumpedHclBlock, HclDumpReturn } from './internal/types'
-import HclParser from './internal/hcl'
+import getHclParser from './internal/hcl'
 import { Keywords } from './language'
 
 /**
@@ -149,6 +149,7 @@ const primitiveSerializers: Record<string, PrimitiveSerializer> = {
 export const dump = async (
   elementsOrValues: Element | Element[] | Values | Value | Value[]
 ): Promise<string> => {
+  const parser = await getHclParser()
   // If we got a single element, put it in an array because we need to wrap it with an empty block
   const elemListOrValues = isElement(elementsOrValues) ? [elementsOrValues] : elementsOrValues
 
@@ -177,5 +178,5 @@ export const dump = async (
     : dumpBlock(elemListOrValues)
 
   body.blocks = body.blocks.map(markDumpedBlockQuotes)
-  return removeQuotes(await HclParser.dump(body))
+  return removeQuotes(await parser.dump(body))
 }

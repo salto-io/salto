@@ -72,31 +72,22 @@ export interface HclParseError {
   context?: SourceRange
 }
 
-export interface HclParseArgs {
-  content: string
-  filename: string
-}
+export type HclDumpReturn = string
 
 export interface HclParseReturn {
   body: ParsedHclBlock
   errors: HclParseError[]
 }
 
-export interface HclDumpArgs {
-  body: DumpedHclBlock
+export type HclParser = {
+  parse(content: string, filename: string): HclParseReturn
+  dump(body: DumpedHclBlock): HclDumpReturn
+  stop(): Promise<void>
 }
 
-export type HclDumpReturn = string
-
-export type HclReturn = HclParseReturn | HclDumpReturn
-
-export type HclArgs = HclParseArgs | HclDumpArgs | {}
-
-export type HclWorkerFuncNames = 'parse' | 'dump' | 'stop'
-
-export interface HclCallContext {
-  func: HclWorkerFuncNames
-  callback?: () => void
-  args: HclArgs
-  return?: HclReturn
+// TODO: There must be some TypeScript magic that can be done
+export interface AsyncHclParser {
+  parse(content: string, filename: string): Promise<HclParseReturn>
+  dump(body: DumpedHclBlock): Promise<HclDumpReturn>
+  stop(): Promise<void>
 }

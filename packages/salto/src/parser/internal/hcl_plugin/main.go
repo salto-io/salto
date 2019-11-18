@@ -1,7 +1,6 @@
 package main
 
 import (
-	"os"
 	"syscall/js"
 
 	"github.com/hashicorp/hcl2/hcl"
@@ -36,10 +35,10 @@ func convertAllDiagnostics(
 // 	a js object that contains the following fields
 //	  body: The parsed body
 // 		errors: a list of error strings
-func ParseHCL(args js.Value) interface{} {
+func ParseHCL(this js.Value, args []js.Value) interface{} {
 	// Get input parameters
-	content := []byte(args.Get("content").String())
-	filename := args.Get("filename").String()
+	content := []byte(args[0].String())
+	filename := args[1].String()
 
 	// Parse
 	body, parseErrs := hclsyntax.ParseConfig(content, filename, hcl.InitialPos)
@@ -61,37 +60,48 @@ func ParseHCL(args js.Value) interface{} {
 //
 // Returns:
 //  A buffer with the serialized HCL
-func DumpHCL(args js.Value) interface{} {
+func DumpHCL(this js.Value, args []js.Value) interface{} {
 	file := hclwrite.NewEmptyFile()
-	fillBody(file.Body(), args.Get("body"))
+	fillBody(file.Body(), args[0])
 	return string(format(file.Bytes()))
 }
 
-var exportedFuncs = map[string]func(js.Value) interface{}{
+var exportedFuncs = map[string]func(this js.Value, args []js.Value) interface{}{
 	"parse": ParseHCL,
-	"dump":  DumpHCL,
+	"dump": DumpHCL,
 }
+
+const globalModuleName = "saltoGoHclParser"
 
 // main communicates with javascript by looking at a global object
 // we use this method because go does not support exporting functions in web assembly yet
 // see: https://github.com/golang/go/issues/25612
 func main() {
-	callContext := js.Global().Get("hclParserCall").Get(os.Args[0])
+	done := make(chan interface{})
 
-	funcName := callContext.Get("func").String()
-	args := callContext.Get("args")
+	js.Global().Set(globalModuleName, make(map[string]interface{}))
+	module := js.Global().Get(globalModuleName)
 
-	op, exists := exportedFuncs[funcName]
-	var ret interface{}
-	if !exists {
-		ret = map[string]interface{}{
-			"errors": []interface{}{"Unknown function name " + funcName},
-		}
-	} else {
-		ret = op(args)
+	jsFuncs := []js.Func{}
+	for funcName, funcVal := range exportedFuncs {
+		jsFunc := js.FuncOf(funcVal)
+		jsFuncs = append(jsFuncs, jsFunc)
+		module.Set(funcName, jsFunc)
 	}
-	callContext.Set("return", ret)
-	// Signal JS that we finished
-	callback := callContext.Get("callback")
-	callback.Invoke()
+
+	var stopFunc js.Func
+	stopFunc = js.FuncOf(func(this js.Value, args []js.Value) interface {} {
+		for _, jsFunc := range jsFuncs {
+			jsFunc.Release()
+		}
+		go func() {
+			stopFunc.Release()
+		}()
+		js.Global().Set(globalModuleName, js.Null())
+		done <- true
+		return 0
+	})
+
+	module.Set("stop", stopFunc)
+	<-done
 }

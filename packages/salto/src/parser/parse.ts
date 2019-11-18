@@ -6,7 +6,7 @@ import {
 import {
   SourceRange as InternalSourceRange, SourceMap as SourceMapImpl, ParsedHclBlock, HclParseError,
 } from './internal/types'
-import HclParser from './internal/hcl'
+import getHclParser from './internal/hcl'
 import evaluate from './expressions'
 import { Keywords } from './language'
 
@@ -60,7 +60,8 @@ export type ParseResult = {
  *          errors: Errors encountered during parsing
  */
 export const parse = async (content: string, filename: string): Promise<ParseResult> => {
-  const { body, errors } = await HclParser.parse(content, filename)
+  const parser = await getHclParser()
+  const { body, errors } = await parser.parse(content, filename)
   const sourceMap = new SourceMapImpl()
 
   const attrValues = (block: ParsedHclBlock, parentId: ElemID): Values => _.mapValues(

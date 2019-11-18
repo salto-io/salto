@@ -18,7 +18,7 @@ import {
   fetchChanges, FetchChange, getDetailedChanges, createElemIdGetter, MergeErrorWithElements,
   FatalFetchMergeError,
 } from './core/fetch'
-import HclParser from './parser/internal/hcl'
+import { setThreading } from './parser/internal/hcl'
 
 export { ItemStatus }
 
@@ -30,7 +30,7 @@ type InitializeArgs = {
 export const initializeCore = async (
   args: InitializeArgs = { singleThreaded: true },
 ): Promise<void> => {
-  HclParser.setThreading(args.singleThreaded)
+  setThreading(args.singleThreaded)
 }
 
 export const preview = async (

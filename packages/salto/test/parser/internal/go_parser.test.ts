@@ -1,7 +1,7 @@
 import _ from 'lodash'
-import HclParser, { HclParserCls } from '../../../src/parser/internal/hcl'
+import { createInlineAsyncParser } from '../../../src/parser/internal/go_parser'
 import {
-  ParsedHclBlock, HclAttribute, HclExpression, HclParseError, HclParseReturn,
+  ParsedHclBlock, HclAttribute, HclExpression, HclParseError, AsyncHclParser,
 } from '../../../src/parser/internal/types'
 import devaluate from './devaluate'
 import evaluate from '../../../src/parser/expressions'
@@ -37,12 +37,21 @@ const expectExpressionsMatch = (actual: HclExpression, expected: HclExpression):
 }
 
 describe('HCL Parser', () => {
+  let parser: AsyncHclParser
+  beforeAll(async () => {
+    parser = await createInlineAsyncParser()
+  })
+
+  afterAll(async () => {
+    await parser.stop()
+  })
+
   it('parses adapter config block', async () => {
     const configBlock = `salesforce {
       user = "me"
     }`
 
-    const { body } = await HclParser.parse(configBlock, 'none')
+    const { body } = await parser.parse(configBlock, 'none')
     expect(body.blocks.length).toEqual(1)
     const config = body.blocks[0]
     expect(config.type).toEqual('salesforce')
@@ -64,7 +73,7 @@ describe('HCL Parser', () => {
         }
       }`
 
-    const { body } = await HclParser.parse(typeDefBlock, 'none')
+    const { body } = await parser.parse(typeDefBlock, 'none')
     expect(body.blocks.length).toEqual(1)
     const typeBlock = body.blocks[0]
     expect(typeBlock.type).toEqual('type')
@@ -95,7 +104,7 @@ describe('HCL Parser', () => {
         ]
       }`
 
-    const { body } = await HclParser.parse(instanceDefBlock, 'none')
+    const { body } = await parser.parse(instanceDefBlock, 'none')
     expect(body.blocks.length).toEqual(1)
     const instBlock = body.blocks[0]
     expect(instBlock.type).toEqual('salto_employee')
@@ -116,7 +125,7 @@ describe('HCL Parser', () => {
           EOF
       }`
 
-    const { body } = await HclParser.parse(blockDef, 'none')
+    const { body } = await parser.parse(blockDef, 'none')
     expect(body.blocks.length).toEqual(1)
     expect(body.blocks[0].attrs).toHaveProperty('thing')
     expect(body.blocks[0].attrs.thing.expressions[0].type).toEqual('template')
@@ -129,7 +138,7 @@ describe('HCL Parser', () => {
         that = ">>>\${a.b}<<<"
       }`
 
-    const { body } = await HclParser.parse(blockDef, 'none')
+    const { body } = await parser.parse(blockDef, 'none')
     expect(body.blocks.length).toEqual(1)
     expect(body.blocks[0].attrs).toHaveProperty('thing')
     expect(body.blocks[0].attrs.thing.expressions[0].type).toEqual('reference')
@@ -138,37 +147,37 @@ describe('HCL Parser', () => {
     expect(body.blocks[0].attrs.that.expressions[0].expressions.length).toEqual(3)
   })
 
-  describe('concurrent execution', () => {
-    let results: HclParseReturn[]
-    let parser: HclParserCls
-    let parserPoolStop: jest.SpyInstance
+  // describe('concurrent execution', () => {
+  //   let results: HclParseReturn[]
+  //   let parser: HclParserCls
+  //   let parserPoolStop: jest.SpyInstance
 
-    // For some reason multi-threaded parsing takes significantly longer in jest
-    jest.setTimeout(30 * 1000)
+  //   // For some reason multi-threaded parsing takes significantly longer in jest
+  //   jest.setTimeout(30 * 1000)
 
-    beforeAll(async () => {
-      parser = new HclParserCls(false)
-      parserPoolStop = jest.spyOn(parser, 'stop')
-      const blocksToParse = _.times(3, num => `type label_${num} {}`)
-      results = await Promise.all(
-        blocksToParse.map(block => parser.parse(block, 'none'))
-      )
-    })
+  //   beforeAll(async () => {
+  //     parser = new HclParserCls(false)
+  //     parserPoolStop = jest.spyOn(parser, 'stop')
+  //     const blocksToParse = _.times(3, num => `type label_${num} {}`)
+  //     results = await Promise.all(
+  //       blocksToParse.map(block => parser.parse(block, 'none'))
+  //     )
+  //   })
 
-    it('returns correct results', () => {
-      expect(results.length).toEqual(3)
-      const checkResult = (result: HclParseReturn, idx: number): void => {
-        expect(result.body.blocks).toHaveLength(1)
-        expect(result.body.blocks[0].type).toEqual('type')
-        expect(result.body.blocks[0].labels).toEqual([`label_${idx}`])
-      }
-      results.forEach(checkResult)
-    })
+  //   it('returns correct results', () => {
+  //     expect(results.length).toEqual(3)
+  //     const checkResult = (result: HclParseReturn, idx: number): void => {
+  //       expect(result.body.blocks).toHaveLength(1)
+  //       expect(result.body.blocks[0].type).toEqual('type')
+  //       expect(result.body.blocks[0].labels).toEqual([`label_${idx}`])
+  //     }
+  //     results.forEach(checkResult)
+  //   })
 
-    it('should stop the worker pool', () => {
-      expect(parserPoolStop).toHaveBeenCalled()
-    })
-  })
+  //   it('should stop the worker pool', () => {
+  //     expect(parserPoolStop).toHaveBeenCalled()
+  //   })
+  // })
 
   // If this test fails you probably replaced wasm_exec with a newer version and did not modify
   // the TextEncoder and Decoder to ignore DOM. See the old wasm_exec file lines 100:101
@@ -176,7 +185,7 @@ describe('HCL Parser', () => {
     const blockDef = `type voodoo {
       thing = "\ufeffHIDE"
     }`
-    const { body } = await HclParser.parse(blockDef, 'none')
+    const { body } = await parser.parse(blockDef, 'none')
     expect(body.blocks.length).toEqual(1)
     expect(body.blocks[0].attrs).toHaveProperty('thing')
     expect(evaluate(body.blocks[0].attrs.thing.expressions[0]).length).toEqual(5)
@@ -186,8 +195,8 @@ describe('HCL Parser', () => {
     const blockDef = 'type some.thing {}'
     let errors: HclParseError[]
 
-    beforeAll(async () => {
-      ({ errors } = await HclParser.parse(blockDef, 'none'))
+    beforeEach(async () => {
+      ({ errors } = await parser.parse(blockDef, 'none'))
     })
 
     it('is not empty', () => {
@@ -212,8 +221,8 @@ describe('HCL Parser', () => {
     const blockDef = 'type sometype { a = { foo.bar = 5 } }'
     let errors: HclParseError[]
 
-    beforeAll(async () => {
-      ({ errors } = await HclParser.parse(blockDef, 'none'))
+    beforeEach(async () => {
+      ({ errors } = await parser.parse(blockDef, 'none'))
     })
 
     it('is not empty', () => {
@@ -258,8 +267,8 @@ describe('HCL Parser', () => {
     } as unknown
     let serialized: string
 
-    beforeAll(async () => {
-      const buffer = await HclParser.dump(body as ParsedHclBlock)
+    beforeEach(async () => {
+      const buffer = await parser.dump(body as ParsedHclBlock)
       serialized = buffer.toString()
     })
 
@@ -282,7 +291,7 @@ describe('HCL Parser', () => {
       expect(serialized).toMatch(/nested\s*=\s*{\s*val\s*=\s*"so deep"\s*}/m)
     })
     it('dumps parsable text', async () => {
-      const parsed = await HclParser.parse(serialized, 'none')
+      const parsed = await parser.parse(serialized, 'none')
       expect(parsed.errors.length).toEqual(0)
       // Filter out source ranges since they are only generated during parsing
       const removeSrcFromBlock = (block: ParsedHclBlock): ParsedHclBlock =>

@@ -43,9 +43,11 @@ export default async (
         increaseLoggingLogLevel()
       }
 
-      await initializeCore({ singleThreaded: parsedArgs['single-threaded'] })
+      log.info('CLI starting')
 
-      log.info('CLI started')
+      const singleThreaded = parsedArgs['single-threaded']
+      log.debug('setting singleThreaded to %s', singleThreaded)
+      await initializeCore({ singleThreaded })
 
       const parsedInput = { ...input, args: parsedArgs }
       const command = await commandBuilder(parsedInput, output, spinnerCreator)

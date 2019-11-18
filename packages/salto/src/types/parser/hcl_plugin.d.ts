@@ -1,5 +1,5 @@
 declare namespace NodeJS {
   interface Global {
-    hclParserCall: Record<number, any>
+    saltoGoHclParser: import('../../parser/internal/types').HclParser
   }
 }

@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -e
+
 function abspath {
     [[ $1 = /* ]] && echo "$1" || echo "$PWD/${1#./}"
 }

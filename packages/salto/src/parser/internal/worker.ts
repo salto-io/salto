@@ -1,78 +1,104 @@
-import { parentPort } from 'worker_threads'
-import './wasm_exec'
-import { HclReturn, HclCallContext } from './types'
+import {
+  parentPort, workerData, MessagePort, Worker, MessageChannel,
+} from 'worker_threads'
+import { DumpedHclBlock, AsyncHclParser, HclParseReturn, HclDumpReturn } from './types'
+import { createInlineParser, wasmModule as getWasmModule } from './go_parser'
 
+export const createParserWorker = async (timeout = 10000): Promise<AsyncHclParser> => {
+  const worker = new Worker(__filename, {
+    workerData: { wasmModule: await getWasmModule() },
+  })
 
-const GO_ENV = {
-  // Go garbage collection target percentage (lower means more aggressive, default is 100)
-  GOGC: '20',
-  // Go garbage collection strategy, it seems like concurrent strategies do not work well
-  // and causes the code to crash with bad pointers to go heap, so we set the strategy to
-  // "stop the world" in every collection cycle to make garbage collection single threaded
-  GODEBUG: 'gcstoptheworld=2',
-}
+  const callWorker = <
+    TArgs extends unknown[], TResult
+  >(name: string, ...args: TArgs): Promise<TResult> => new Promise((resolve, reject) => {
+      const { port1, port2 } = new MessageChannel()
 
-// Initialize empty parser call context
-global.hclParserCall = {}
+      const exitHandler = (code: number): void => {
+        reject(new Error(`worker has exited with code ${code}`))
+      }
 
-export type WorkerInterface = {
-  call: (
-    callId: number,
-    wasmModule: WebAssembly.Module,
-    context: HclCallContext,
-  ) => Promise<HclReturn>
-}
+      worker.on('error', reject)
+      worker.on('exit', exitHandler)
 
-export const hclWorker: WorkerInterface = {
-  call: async (callId, wasmModule, context) => {
-    // Place call context in global object
-    const { hclParserCall } = global
-    hclParserCall[callId] = context
+      let timeoutId: NodeJS.Timeout
 
-    try {
-      // Not sure why eslint ignores this definition from webassembly.d.ts,
-      // but this doesn't work without the following disable
-      // eslint-disable-next-line no-undef
-      const go = new Go()
-      go.env = GO_ENV
-      // eslint-disable-next-line no-undef
-      const inst = await WebAssembly.instantiate(wasmModule, go.importObject)
+      const cleanup = (): void => {
+        worker.off('error', reject)
+        worker.off('exit', exitHandler)
+        clearTimeout(timeoutId)
+      }
 
-      const execDone = new Promise<void>(resolve => {
-        let exitPromise: Promise<void>
-        context.callback = () => {
-          // Wait for next tick to ensure the line that assigns `exitPromise` runs before we use it
-          process.nextTick(() => exitPromise.then(resolve))
+      timeoutId = setTimeout(() => {
+        cleanup()
+        reject(new Error(`call to ${name} had timed out after ${timeout} ms`))
+      }, timeout)
+
+      port1.on('message', ([err, result]: [unknown, TResult]): void => {
+        cleanup()
+
+        if (err !== undefined && err !== null) {
+          reject(err)
+        } else {
+          resolve(result)
         }
-        exitPromise = go.run(inst, [callId.toString()])
       })
 
-      await execDone
-      return context.return as HclReturn
-    } finally {
-      // cleanup call context from global scope
-      delete hclParserCall[callId]
-    }
-  },
+      worker.postMessage({
+        port: port2,
+        call: name,
+        args,
+      }, [port2])
+    })
+
+  return {
+    parse: (
+      content: string, filename: string,
+    ): Promise<HclParseReturn> => callWorker('parse', content, filename),
+    dump: (
+      body: DumpedHclBlock,
+    ): Promise<HclDumpReturn> => callWorker('dump', body),
+    stop: (): Promise<void> => callWorker('stop'),
+  }
 }
 
-// The following code only runs in the worker thread so it is never reported for coverage
-/* istanbul ignore next */
-if (parentPort !== null) {
-  const parent = parentPort
-  const handleCall = async ([func, args]: ['call' | 'stop', unknown[]]): Promise<void> => {
-    if (func === 'stop') {
+const workerMain = async (
+  parent: MessagePort,
+  { wasmModule }: { wasmModule: WebAssembly.Module },
+): Promise<void> => {
+  const parser = await createInlineParser(wasmModule)
+
+  const handleCall = async (
+    { port, call, args }: {
+      port: MessagePort
+      call: 'stop' | 'parse' | 'dump'
+      args: unknown[]
+    }
+  ): Promise<void> => {
+    const returnResult = <T>(result: T): void => port.postMessage([null, result])
+    const returnError = <T>(error: T): void => port.postMessage([error])
+
+    if (call === 'stop') {
+      await parser.stop()
+      returnResult('stopping') // trigger the parent message handler before exiting
       process.exit(0)
-    } else if (func === 'call') {
-      const [callId, wasmModule, context] = args
-      const ret = await hclWorker.call(
-        callId as number,
-        wasmModule as WebAssembly.Module,
-        context as HclCallContext,
-      )
-      parent.postMessage([callId, ret])
+    } else if (call === 'parse') {
+      returnResult(parser.parse(args[0] as string, args[1] as string))
+    } else if (call === 'dump') {
+      returnResult(parser.dump(args[0] as DumpedHclBlock))
+    } else {
+      returnError(new Error(`Invalid call ${call}`))
     }
   }
+
   parent.on('message', handleCall)
   parent.on('close', () => process.exit(0))
+}
+
+if (parentPort) {
+  const parent = parentPort
+  workerMain(parent, workerData).catch(err => {
+    parent.emit('error', err)
+    process.exit(2)
+  })
 }

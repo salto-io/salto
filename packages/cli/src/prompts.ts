@@ -1,7 +1,7 @@
 import chalk from 'chalk'
 
 export default class Prompts {
-  public static readonly SHOULDEXECUTREPLAN = 'Do you want to perform these actions?'
+  public static readonly SHOULDEXECUTEPLAN = 'Do you want to perform these actions?'
 
   public static readonly CANCELDEPLOYACTION = 'Cancelled: Due to an erroneous dependency -'
   public static readonly STARTDEPLOYEXEC = 'Starting the deployment plan'
@@ -74,11 +74,11 @@ Be sure to go over the preview output when invoking the deploy command.`
   public static readonly FETCH_NOTHING_TO_UPDATE = 'No changes chosen, Leaving workspace unchanged'
   public static readonly FETCH_CHANGES_TO_APPLY = (numChanges: number): string => `Updating workspace with ${numChanges} changes from the service`
   public static readonly FETCH_CONFLICTING_CHANGE = 'This change conflicts with the following pending change from your workspace:'
-  public static readonly FETCH_MERGE_ERRORS = 'These errors occured as part of the fetch:'
-  public static readonly FETCH_FATAL_MERGE_ERROR_PREFIX = 'Error occured during fetch, cause:\n'
+  public static readonly FETCH_MERGE_ERRORS = 'These errors occurred as part of the fetch:'
+  public static readonly FETCH_FATAL_MERGE_ERROR_PREFIX = 'Error occurred during fetch, cause:\n'
 
-  public static readonly LOADING_WORKSPACE = 'Loading workspce...'
-  public static readonly FINISHED_LOADING = 'Finished loading workspce'
+  public static readonly LOADING_WORKSPACE = 'Loading workspace...'
+  public static readonly FINISHED_LOADING = 'Finished loading workspace'
 
   public static readonly WORKSPACE_LOAD_FAILED = (numErrors: number): string =>
     `Workspace has ${numErrors === 1 ? 'an error' : `${numErrors} errors`} - aborting!`
@@ -87,6 +87,6 @@ Be sure to go over the preview output when invoking the deploy command.`
     `Workspace has ${numWarning === 1 ? 'a warning' : `${numWarning} warnings`
     } - do you want to continue?`
 
-  public static readonly CANCELD = 'Canceling...'
+  public static readonly CANCELED = 'Canceling...'
   public static readonly CONFIG_HEADER = (adapterName: string): string => `Please enter your ${adapterName} credentials:`
 }

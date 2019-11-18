@@ -120,7 +120,7 @@ const formatCountPlanItemTypes = (plan: Plan): string => {
   )
 }
 
-const formatDetailedChanges = (changeGroups: Iterable<Iterable<DetailedChange>>): string => {
+export const formatDetailedChanges = (changeGroups: Iterable<Iterable<DetailedChange>>): string => {
   const addMissingEmptyChanges = (changes: DetailedChange[]): DetailedChange[] => {
     const emptyChange = (id: ElemID): DetailedChange => ({
       action: 'modify',

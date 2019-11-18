@@ -125,7 +125,7 @@ export class DeployCommand implements CliCommand {
         : CliExitCode.AppError
     }
     this.stdout.write(EOL)
-    return result.sucesses ? CliExitCode.Success : CliExitCode.AppError
+    return result.success ? CliExitCode.Success : CliExitCode.AppError
   }
 }
 

@@ -1,5 +1,6 @@
 import _ from 'lodash'
-import { createInlineAsyncParser } from '../../../src/parser/internal/go_parser'
+// import { createInlineAsyncParser } from '../../../src/parser/internal/go_parser'
+import { createWorkerParser } from '../../../src/parser/internal/worker'
 import {
   ParsedHclBlock, HclAttribute, HclExpression, HclParseError, AsyncHclParser,
 } from '../../../src/parser/internal/types'
@@ -39,7 +40,7 @@ const expectExpressionsMatch = (actual: HclExpression, expected: HclExpression):
 describe('HCL Parser', () => {
   let parser: AsyncHclParser
   beforeAll(async () => {
-    parser = await createInlineAsyncParser()
+    parser = await createWorkerParser()
   })
 
   afterAll(async () => {

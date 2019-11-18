@@ -4,7 +4,7 @@ import {
 import { DumpedHclBlock, AsyncHclParser, HclParseReturn, HclDumpReturn } from './types'
 import { createInlineParser, wasmModule as getWasmModule } from './go_parser'
 
-export const createParserWorker = async (timeout = 10000): Promise<AsyncHclParser> => {
+export const createWorkerParser = async (timeout = 10000): Promise<AsyncHclParser> => {
   const worker = new Worker(__filename, {
     workerData: { wasmModule: await getWasmModule() },
   })
@@ -92,7 +92,10 @@ const workerMain = async (
   }
 
   parent.on('message', handleCall)
-  parent.on('close', () => process.exit(0))
+  parent.on('close', () => {
+    parser.stop()
+    process.exit(0)
+  })
 }
 
 if (parentPort) {

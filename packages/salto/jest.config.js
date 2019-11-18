@@ -1,3 +1,4 @@
+const path = require('path')
 const deepMerge = require('../../build_utils/deep_merge')
 
 module.exports = deepMerge(
@@ -10,6 +11,7 @@ module.exports = deepMerge(
       '!**/wasm_exec.*', // External source file
       '!<rootDir>/dist/index.js',
     ],
+    globalTeardown: path.join(__dirname, './dist/test/global_teardown'),
     coverageThreshold: {
       // Slowly start increasing here, never decrease!
       global: {

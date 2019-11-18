@@ -56,12 +56,17 @@ export const createInlineParser = async (
 
   return new Promise(resolve => {
     const goMain = go.run(inst, [])
+    let stopping = false
 
     process.nextTick(() => {
       const goHclParser = global.saltoGoHclParser
       resolve({
         ...global.saltoGoHclParser,
         stop: async () => {
+          if (stopping) {
+            return
+          }
+          stopping = true
           await goHclParser.stop()
           await goMain
         },
@@ -70,13 +75,22 @@ export const createInlineParser = async (
   })
 }
 
+// wraps a sync function with a promise of the same type
+const asyncify = <
+  TReturn,
+  TArgs extends unknown,
+  TFunc extends (...args: TArgs[]) => TReturn,
+>(f: TFunc): (
+  ...args: TArgs[]
+) => Promise<TReturn> => (...args: TArgs[]): Promise<TReturn> => Promise.resolve(f(...args))
+
 export const createInlineAsyncParser = async (
   useWasmModule?: WebAssembly.Module
 ): Promise<AsyncHclParser> => {
   const syncParser = await createInlineParser(useWasmModule)
   return {
     ...syncParser,
-    parse: (content, filename) => Promise.resolve(syncParser.parse(content, filename)),
-    dump: body => Promise.resolve(syncParser.dump(body)),
+    parse: asyncify(syncParser.parse),
+    dump: asyncify(syncParser.dump),
   }
 }

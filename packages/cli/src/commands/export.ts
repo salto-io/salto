@@ -37,15 +37,12 @@ CliCommand => ({
 type ExportArgs = {
   'type-name': string
   'output-path': string
-  'blueprint': string[]
-  'blueprints-dir': string
  }
 type ExportParsedCliInput = ParsedCliInput<ExportArgs>
 
 const exportBuilder = createCommandBuilder({
   options: {
     command: 'export <type-name>',
-    aliases: ['e'],
     description: 'Downloads all records of the input type from the target service to a CSV file',
     positional: {
       'type-name': {
@@ -55,19 +52,6 @@ const exportBuilder = createCommandBuilder({
       },
     },
     keyed: {
-      'blueprints-dir': {
-        alias: 'd',
-        describe: 'A path to the blueprints directory',
-        string: true,
-        demandOption: true,
-      },
-      blueprint: {
-        alias: 'b',
-        describe: 'Path to input blueprint file. This option can be specified multiple times',
-        demandOption: false,
-        array: true,
-        requiresArg: true,
-      },
       'output-path': {
         alias: ['o'],
         describe: 'A path to the output CSV file',
@@ -78,7 +62,7 @@ const exportBuilder = createCommandBuilder({
   },
 
   async build(input: ExportParsedCliInput, output: CliOutput) {
-    return command(input.args['blueprints-dir'], input.args['type-name'], input.args['output-path'], output)
+    return command('.', input.args['type-name'], input.args['output-path'], output)
   },
 })
 

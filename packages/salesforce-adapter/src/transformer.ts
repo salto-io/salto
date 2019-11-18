@@ -27,10 +27,12 @@ const capitalize = (s: string): string => {
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
-const toSfCamelCase = (name: string): string => _.replace(name, /_[a-z]|_[0-9]/g,
-  (match: string) => match.charAt(1).toUpperCase())
-
 export const sfCase = (name: string, custom = false, capital = true): string => {
+  const toSfCamelCase = (word: string): string =>
+    word.split('__')
+      .map(_.camelCase)
+      .map((v, idx) => (idx === 0 ? v : capitalize(v)))
+      .join('_')
   const sf = name.endsWith(SALESFORCE_CUSTOM_SUFFIX)
     ? toSfCamelCase(name.slice(0, -3)) + name.slice(-3)
     : toSfCamelCase(name) + (custom ? SALESFORCE_CUSTOM_SUFFIX : '')
@@ -38,11 +40,24 @@ export const sfCase = (name: string, custom = false, capital = true): string => 
 }
 
 export const bpCase = (name: string): string => {
+  const isLetter = /[a-zA-z]/
+  const isUpperCase = (c: string): boolean => (c.toUpperCase() === c && c.match(isLetter) !== null)
+  const toBpSnakeCase = (word: string): string => word.split('_')
+    .reduce((prevRes, w, idx) => {
+      if (idx > 0 && isUpperCase(w.charAt(0))) {
+        prevRes.push('_')
+      }
+      prevRes.push(w)
+      return prevRes
+    }, [] as string[])
+    .map(_.snakeCase).join('_')
+
   // Using specific replace for chars then _.unescape is not replacing well
   // and we see in our responses for sfdc
-  const unescaped = _.unescape(name).replace(/%26|%28|%29|[^A-Za-z0-9_]/g, '_')
-  return unescaped.charAt(0).toLowerCase()
-    + _.replace(unescaped.slice(1), /[A-Z]|[0-9]/g, (char: string) => `_${char.toLowerCase()}`)
+  const unescaped = _.unescape(name).replace(/%26|%28|%29/g, '_')
+  return unescaped.toLocaleLowerCase().endsWith(SALESFORCE_CUSTOM_SUFFIX)
+    ? toBpSnakeCase(unescaped.slice(0, -3)) + SALESFORCE_CUSTOM_SUFFIX
+    : toBpSnakeCase(unescaped)
 }
 
 export const metadataType = (element: Element): string => (

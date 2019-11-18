@@ -10,41 +10,42 @@ export const LAYOUT_TYPE_ID = new ElemID(SALESFORCE, 'layout')
 export const LAYOUT_ANNOTATION = 'layouts'
 export const LAYOUT_SUFFIX = 'layout'
 
+const MIN_NAME_LENGTH = 4
+
 // Layout full name starts with related sobject and then '-'
 const layoutObj = (layout: InstanceElement): string => apiName(layout).split('-')[0]
+const fullName = (elem: Element): string => elem.elemID.getFullName()
 
 const fixNames = (layouts: InstanceElement[]): void => {
-  const names = layouts.map(l => l.elemID.getFullName())
+  const name = (elem: Element): string => elem.elemID.name
+  let names = layouts.map(fullName)
 
   const updateElemID = (layout: InstanceElement, newName: string): void => {
-    if (newName.length < 4) {
+    if (newName.length < MIN_NAME_LENGTH) {
       return
     }
     const newId = layout.type.elemID.createNestedID('instance', newName)
     if (!names.includes(newId.getFullName())) {
-      const pre = names.findIndex(n => n === layout.elemID.getFullName())
-      if (pre > -1) {
-        names[pre] = newId.getFullName()
-      } else {
-        names.push(newId.getFullName())
-      }
+      names = _.without(names, fullName(layout))
+      names.push(newId.getFullName())
       layout.elemID = newId
     }
   }
 
   layouts.forEach(l => {
-    if (l.elemID.name.endsWith(LAYOUT_SUFFIX)) {
-      updateElemID(l, _.trimEnd(l.elemID.name.slice(0, -1 * LAYOUT_SUFFIX.length), '_'))
+    if (name(l).endsWith(LAYOUT_SUFFIX)) {
+      updateElemID(l, _.trimEnd(name(l).slice(0, -1 * LAYOUT_SUFFIX.length), '_'))
     }
     const objName = bpCase(layoutObj(l))
-    if (l.elemID.name.startsWith(objName)) {
-      updateElemID(l, _.trimStart(l.elemID.name.slice(objName.length), '_'))
+    if (name(l).startsWith(objName)) {
+      updateElemID(l, _.trimStart(name(l).slice(objName.length), '_'))
     }
     if (l.path) {
-      l.path = [...l.path.slice(0, -1), l.elemID.name]
+      l.path = [...l.path.slice(0, -1), name(l)]
     }
   })
 }
+
 /**
 * Declare the layout filter, this filter adds reference from the sobject to it's layouts.
 */
@@ -67,7 +68,7 @@ const filterCreator: FilterCreator = () => ({
       .forEach(obj => {
         const objLayouts = obj2layout[apiName(obj)]
         if (objLayouts) {
-          obj.annotate({ [LAYOUT_ANNOTATION]: objLayouts.map(l => l.elemID.getFullName()).sort() })
+          obj.annotate({ [LAYOUT_ANNOTATION]: objLayouts.map(fullName).sort() })
         }
       })
   },

@@ -45,7 +45,6 @@ type ImportParsedCliInput = ParsedCliInput<ImportArgs>
 const importBuilder = createCommandBuilder({
   options: {
     command: 'import <type-name> <input-path>',
-    aliases: ['i'],
     description: 'Uploads all records of the input type from a CSV file to the target service',
     positional: {
       'type-name': {

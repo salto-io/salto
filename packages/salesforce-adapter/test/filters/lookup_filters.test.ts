@@ -8,7 +8,6 @@ import filterCreator from '../../src/filters/lookup_filters'
 import { FilterWith } from '../../src/filter'
 import * as constants from '../../src/constants'
 
-
 describe('Test lookup filters filter', () => {
   const lookupType = new PrimitiveType({
     elemID: new ElemID(constants.SALESFORCE, constants.FIELD_TYPE_NAMES.LOOKUP),
@@ -105,6 +104,25 @@ describe('Test lookup filters filter', () => {
       expect(lookupFilterAnnotation[constants.LOOKUP_FILTER_FIELDS.ERROR_MESSAGE]).toEqual('myErrorMessage')
       expect(lookupFilterAnnotation[constants.LOOKUP_FILTER_FIELDS.INFO_MESSAGE]).toEqual('myInfoMessage')
       expect(lookupFilterAnnotation[constants.LOOKUP_FILTER_FIELDS.IS_OPTIONAL]).toBe(false)
+      verifyFilterItemsTransformation(lookupFilterAnnotation)
+    })
+
+    it('should add lookupFilter data to a field with lookupFilter when object is split over few elements', async () => {
+      mockClientReadMetadata()
+      const testElement = mockObject.clone()
+      delete testElement.annotations[constants.API_NAME]
+      testElements = [testElement,
+        new ObjectType({ elemID: objectTypeElemId,
+          annotations: { [constants.API_NAME]: mockObjectApiName } })]
+      await initFilter()
+      const lookupFilterAnnotation = testElement.fields.lookup_field
+        .annotations[constants.FIELD_ANNOTATIONS.LOOKUP_FILTER]
+      expect(lookupFilterAnnotation).toBeDefined()
+      expect(lookupFilterAnnotation[constants.LOOKUP_FILTER_FIELDS.ACTIVE]).toBe(true)
+      expect(lookupFilterAnnotation[constants.LOOKUP_FILTER_FIELDS.BOOLEAN_FILTER]).toEqual('myBooleanFilter')
+      expect(lookupFilterAnnotation[constants.LOOKUP_FILTER_FIELDS.ERROR_MESSAGE]).toBeUndefined()
+      expect(lookupFilterAnnotation[constants.LOOKUP_FILTER_FIELDS.INFO_MESSAGE]).toEqual('myInfoMessage')
+      expect(lookupFilterAnnotation[constants.LOOKUP_FILTER_FIELDS.IS_OPTIONAL]).toBe(true)
       verifyFilterItemsTransformation(lookupFilterAnnotation)
     })
 

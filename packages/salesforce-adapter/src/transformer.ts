@@ -40,8 +40,8 @@ export const sfCase = (name: string, custom = false, capital = true): string => 
 }
 
 export const bpCase = (name: string): string => {
-  const isLetter = /[a-zA-z]/
-  const isUpperCase = (c: string): boolean => (c.toUpperCase() === c && c.match(isLetter) !== null)
+  const upperCase = /[A-Z]/
+  const isUpperCase = (c: string): boolean => (c.match(upperCase) !== null)
   const toBpSnakeCase = (word: string): string => word.split('_')
     .reduce((prevRes, w, idx) => {
       if (idx > 0 && isUpperCase(w.charAt(0))) {

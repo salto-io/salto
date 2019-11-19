@@ -2,7 +2,7 @@ import { ObjectType, ElemID } from 'adapter-api'
 import * as path from 'path'
 import { ParseResultFSCache } from '../../src/workspace/cache'
 import { SourceMap } from '../../src/parser/internal/types'
-import { stat, mkdirp, writeTextFile, readTextFile } from '../../src/file'
+import { stat, mkdirp, writeFile, readTextFile } from '../../src/file'
 
 const mockSerializedBPC = `[{"annotationTypes":{},"annotations":{},"elemID":{"adapter":"salesforce","typeName":"dummy","idType":"type","nameParts":[]},"fields":{},"isSettings":false,"className":"ObjectType"}]
 []
@@ -28,7 +28,7 @@ jest.mock('../../src/file', () => ({
         : undefined
     )),
   },
-  writeTextFile: jest.fn(() => Promise.resolve()),
+  writeFile: jest.fn(() => Promise.resolve()),
   readTextFile: jest.fn((filename: string) => {
     switch (filename) {
       case mockMalformedCacheLoc:
@@ -96,7 +96,7 @@ describe('Parse Result FS Cache', () => {
         lastModified: 0,
       }, parseResult)
       expect(mkdirp).toHaveBeenCalledWith(`${mockBaseDirPath}/blabla`)
-      expect(writeTextFile).toHaveBeenLastCalledWith(`${mockBaseDirPath}/blabla/blurprint.bpc`, mockSerializedBPC)
+      expect(writeFile).toHaveBeenLastCalledWith(`${mockBaseDirPath}/blabla/blurprint.bpc`, mockSerializedBPC)
     })
 
     it('writes a external content with the right filename', async () => {
@@ -105,7 +105,7 @@ describe('Parse Result FS Cache', () => {
         lastModified: 0,
       }, externalParseResult)
       expect(mkdirp).toHaveBeenCalledWith(path.dirname(mockExternalCacheLoc))
-      expect(writeTextFile).toHaveBeenLastCalledWith(
+      expect(writeFile).toHaveBeenLastCalledWith(
         mockExternalCacheLoc, mockSerializedExternalBPC,
       )
     })

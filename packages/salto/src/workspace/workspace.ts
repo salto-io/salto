@@ -6,7 +6,7 @@ import uuidv4 from 'uuid/v4'
 import { collections, types } from '@salto/lowerdash'
 import { Element } from 'adapter-api'
 import { logger } from '@salto/logging'
-import { stat, mkdirp, readTextFile, rm, writeTextFile, exists, Stats } from '../file'
+import { stat, mkdirp, readTextFile, rm, writeFile, exists, Stats } from '../file'
 import { SourceMap, parse, SourceRange, ParseResult, ParseError } from '../parser/parse'
 import { mergeElements, MergeError } from '../core/merger'
 import { validateElements, ValidationError, UnresolvedReferenceValidationError } from '../core/validator'
@@ -417,7 +417,7 @@ export class Workspace {
         await rm(filePath)
       } else {
         await mkdirp(path.dirname(filePath))
-        await writeTextFile(filePath, bp.buffer.toString())
+        await writeFile(filePath, bp.buffer.toString())
         if (this.useCache) {
           await cache.put({
             filename: filePath,

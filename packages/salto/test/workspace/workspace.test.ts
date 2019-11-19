@@ -12,7 +12,7 @@ import {
 } from '../../src/workspace/workspace'
 import { DetailedChange } from '../../src/core/plan'
 import { MergeError } from '../../src/core/merger/internal/common'
-import { rm, mkdirp, writeTextFile, exists, readTextFile } from '../../src/file'
+import { rm, mkdirp, writeFile, exists, readTextFile } from '../../src/file'
 import { UnresolvedReferenceValidationError, InvalidValueValidationError } from '../../src/core/validator'
 import * as dump from '../../src/parser/dump'
 
@@ -370,7 +370,7 @@ type salesforce_lead {
         .map(async ([name, data]) => {
           const filePath = getPath(name)
           await mkdirp(path.dirname(filePath))
-          return writeTextFile(filePath, data)
+          return writeFile(filePath, data)
         }))
       config = {
         uid: '',

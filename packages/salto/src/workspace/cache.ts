@@ -1,7 +1,7 @@
 import path from 'path'
 import _ from 'lodash'
 import { logger } from '@salto/logging'
-import { stat, mkdirp, writeTextFile, readTextFile } from '../file'
+import { stat, mkdirp, writeFile, readTextFile } from '../file'
 import { ParseResult } from '../parser/parse'
 import * as parseResultSerializer from '../serializer/parse_result'
 
@@ -51,7 +51,7 @@ export class ParseResultFSCache implements ParseResultCache {
       async put(key: ParseResultKey, value: ParseResult): Promise<void> {
         const filePath = this.resolveCacheFilePath(key)
         await mkdirp(path.parse(filePath).dir)
-        return writeTextFile(filePath, parseResultSerializer.serialize(value))
+        return writeFile(filePath, parseResultSerializer.serialize(value))
       }
 
       async get(key: ParseResultKey): Promise<ParseResult | undefined> {

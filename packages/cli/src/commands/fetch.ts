@@ -4,12 +4,13 @@ import {
   Workspace,
   fetchFunc,
   FetchChange,
-  FetchProgress,
+  FetchProgressEvents,
+  ProgressEmitter,
 } from 'salto'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto/logging'
 import { createCommandBuilder } from '../command_builder'
-import { ParsedCliInput, CliCommand, CliOutput, CliExitCode, SpinnerCreator, Spinner } from '../types'
+import { ParsedCliInput, CliCommand, CliOutput, CliExitCode, SpinnerCreator } from '../types'
 import { formatChangesSummary, formatMergeErrors, formatFatalFetchError } from '../formatter'
 import { getConfigWithHeader, getApprovedChanges as cliGetApprovedChanges } from '../callbacks'
 import { updateWorkspace, loadWorkspace } from '../workspace'
@@ -30,34 +31,32 @@ export const fetchCommand = async (
   fetch: fetchFunc,
   getApprovedChanges: approveChangesFunc,
 ): Promise<CliExitCode> => {
-  const progressEmitter = new EventEmitter<FetchProgress>()
+  const progressSpinner = (
+    startText: string,
+    successText: string,
+    defaultErrorText: string
+  ) => (progress: ProgressEmitter) => {
+    const spinner = spinnerCreator(startText, { prefixText: '\n' })
+    progress.on('completed', () => spinner.succeed(successText))
+    progress.on('failed', (errorText?: string) => spinner.fail(errorText || defaultErrorText))
+  }
+  const fetchProgress = new EventEmitter<FetchProgressEvents>()
+  fetchProgress.on('getChanges', (progress: ProgressEmitter, adapters: string[]) => progressSpinner(
+    `Fetching the latest configs from: ${adapters}`,
+    `Finished fetching the latest configs from: ${adapters}`,
+    'Fetching failed!'
+  )(progress))
 
-  let fetchingSpinner: Spinner
-  progressEmitter.on('fetchChangesStart', (adapters: string[]) => {
-    fetchingSpinner = spinnerCreator(`Fetching the latest configs from: ${adapters}`, { prefixText: '\n' })
-  })
-
-  progressEmitter.on('fetchChangesFinish', (adapters: string[]) => {
-    if (fetchingSpinner) {
-      fetchingSpinner.succeed(`Finished fetching the latest configs from: ${adapters}`)
-    }
-  })
-
-  let diffCalcSpinner: Spinner
-  progressEmitter.on('calculateDiffStart', () => {
-    diffCalcSpinner = spinnerCreator('Calculating diff between remote and local', { prefixText: '\n' })
-  })
-
-  progressEmitter.on('calculateDiffFinish', () => {
-    if (diffCalcSpinner) {
-      diffCalcSpinner.succeed('Finished calculating the diff between remote and local')
-    }
-  })
+  fetchProgress.on('calculateDiff', progressSpinner(
+    'Calculating diff between remote and local',
+    'Finished calculating the diff between remote and local',
+    'Calculating diff failed!',
+  ))
 
   const fetchResult = await fetch(
     workspace,
     _.partial(getConfigWithHeader, output.stdout),
-    progressEmitter
+    fetchProgress
   )
   if (!fetchResult.success) {
     output.stderr.write(formatFatalFetchError(fetchResult.mergeErrors))

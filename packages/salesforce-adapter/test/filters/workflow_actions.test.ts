@@ -9,7 +9,7 @@ import filterCreator, {
 import * as constants from '../../src/constants'
 import mockClient from '../client'
 
-describe('validation rules filter', () => {
+describe('Workflow actions filter', () => {
   const { client } = mockClient()
   const filter = filterCreator({ client }) as FilterWith<'onFetch'>
 

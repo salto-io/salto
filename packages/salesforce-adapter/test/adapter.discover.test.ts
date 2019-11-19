@@ -666,7 +666,7 @@ describe('SalesforceAdapter fetch', () => {
       })
 
       const result = await adapter.fetch()
-      const layout = findElements(result, 'layout', 'order__order__layout').pop() as InstanceElement
+      const layout = findElements(result, 'layout', 'order').pop() as InstanceElement
       expect(layout.type.elemID).toEqual(new ElemID(constants.SALESFORCE, 'layout'))
       expect(layout.value.full_name).toBe('Order-Order Layout')
       expect(layout.value.layout_sections.length).toBe(3)

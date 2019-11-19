@@ -1,11 +1,13 @@
 import {
-  Element, ElemID, Field, InstanceElement, ObjectType, PrimitiveType, PrimitiveTypes,
+  Element, ElemID, Field, InstanceElement, ObjectType, PrimitiveType, PrimitiveTypes, Values,
 } from 'adapter-api'
 import { MetadataInfo } from 'jsforce'
+import _ from 'lodash'
 import mockClient from '../client'
 import filterCreator from '../../src/filters/lookup_filters'
 import { FilterWith } from '../../src/filter'
 import * as constants from '../../src/constants'
+
 
 describe('Test lookup filters filter', () => {
   const lookupType = new PrimitiveType({
@@ -20,23 +22,16 @@ describe('Test lookup filters filter', () => {
     ([{
       fullName: `${mockObjectApiName}.${lookupFieldApiName}`,
       lookupFilter: {
-        active: true,
+        active: _.toString(true),
         booleanFilter: 'myBooleanFilter',
         errorMessage: 'myErrorMessage',
         infoMessage: 'myInfoMessage',
-        isOptional: isFilterOptional,
-        filterItems: [
-          {
-            field: 'myField1',
-            operation: 'myOperation1',
-            valueField: 'myValueField1',
-          },
-          {
-            field: 'myField2',
-            operation: 'myOperation2',
-            valueField: 'myValueField2',
-          },
-        ],
+        isOptional: _.toString(isFilterOptional),
+        filterItems: {
+          field: 'myField1',
+          operation: 'myOperation1',
+          valueField: 'myValueField1',
+        },
       },
     } as MetadataInfo,
     ])
@@ -77,6 +72,14 @@ describe('Test lookup filters filter', () => {
       await filter.onFetch(testElements)
     }
 
+    const verifyFilterItemsTransformation = (lookupFilterAnnotation: Values): void => {
+      expect(lookupFilterAnnotation[constants.LOOKUP_FILTER_FIELDS.FILTER_ITEMS]).toBeDefined()
+      expect(lookupFilterAnnotation[constants.LOOKUP_FILTER_FIELDS.FILTER_ITEMS]).toHaveLength(1)
+      expect(lookupFilterAnnotation[constants.LOOKUP_FILTER_FIELDS.FILTER_ITEMS][0][constants.LOOKUP_FILTER_FIELDS.FIELD]).toEqual('myField1')
+      expect(lookupFilterAnnotation[constants.LOOKUP_FILTER_FIELDS.FILTER_ITEMS][0][constants.LOOKUP_FILTER_FIELDS.OPERATION]).toEqual('myOperation1')
+      expect(lookupFilterAnnotation[constants.LOOKUP_FILTER_FIELDS.FILTER_ITEMS][0][constants.LOOKUP_FILTER_FIELDS.VALUE_FIELD]).toEqual('myValueField1')
+    }
+
     it('should add lookupFilter data to a field with lookupFilter when lookupFilter is optional', async () => {
       mockClientReadMetadata()
       await initFilter()
@@ -88,14 +91,7 @@ describe('Test lookup filters filter', () => {
       expect(lookupFilterAnnotation[constants.LOOKUP_FILTER_FIELDS.ERROR_MESSAGE]).toBeUndefined()
       expect(lookupFilterAnnotation[constants.LOOKUP_FILTER_FIELDS.INFO_MESSAGE]).toEqual('myInfoMessage')
       expect(lookupFilterAnnotation[constants.LOOKUP_FILTER_FIELDS.IS_OPTIONAL]).toBe(true)
-      expect(lookupFilterAnnotation[constants.LOOKUP_FILTER_FIELDS.FILTER_ITEMS]).toBeDefined()
-      expect(lookupFilterAnnotation[constants.LOOKUP_FILTER_FIELDS.FILTER_ITEMS]).toHaveLength(2)
-      expect(lookupFilterAnnotation[constants.LOOKUP_FILTER_FIELDS.FILTER_ITEMS][0][constants.LOOKUP_FILTER_FIELDS.FIELD]).toEqual('myField1')
-      expect(lookupFilterAnnotation[constants.LOOKUP_FILTER_FIELDS.FILTER_ITEMS][0][constants.LOOKUP_FILTER_FIELDS.OPERATION]).toEqual('myOperation1')
-      expect(lookupFilterAnnotation[constants.LOOKUP_FILTER_FIELDS.FILTER_ITEMS][0][constants.LOOKUP_FILTER_FIELDS.VALUE_FIELD]).toEqual('myValueField1')
-      expect(lookupFilterAnnotation[constants.LOOKUP_FILTER_FIELDS.FILTER_ITEMS][1][constants.LOOKUP_FILTER_FIELDS.FIELD]).toEqual('myField2')
-      expect(lookupFilterAnnotation[constants.LOOKUP_FILTER_FIELDS.FILTER_ITEMS][1][constants.LOOKUP_FILTER_FIELDS.OPERATION]).toEqual('myOperation2')
-      expect(lookupFilterAnnotation[constants.LOOKUP_FILTER_FIELDS.FILTER_ITEMS][1][constants.LOOKUP_FILTER_FIELDS.VALUE_FIELD]).toEqual('myValueField2')
+      verifyFilterItemsTransformation(lookupFilterAnnotation)
     })
 
     it('should add lookupFilter data to a field with lookupFilter when lookupFilter is not optional', async () => {
@@ -109,14 +105,7 @@ describe('Test lookup filters filter', () => {
       expect(lookupFilterAnnotation[constants.LOOKUP_FILTER_FIELDS.ERROR_MESSAGE]).toEqual('myErrorMessage')
       expect(lookupFilterAnnotation[constants.LOOKUP_FILTER_FIELDS.INFO_MESSAGE]).toEqual('myInfoMessage')
       expect(lookupFilterAnnotation[constants.LOOKUP_FILTER_FIELDS.IS_OPTIONAL]).toBe(false)
-      expect(lookupFilterAnnotation[constants.LOOKUP_FILTER_FIELDS.FILTER_ITEMS]).toBeDefined()
-      expect(lookupFilterAnnotation[constants.LOOKUP_FILTER_FIELDS.FILTER_ITEMS]).toHaveLength(2)
-      expect(lookupFilterAnnotation[constants.LOOKUP_FILTER_FIELDS.FILTER_ITEMS][0][constants.LOOKUP_FILTER_FIELDS.FIELD]).toEqual('myField1')
-      expect(lookupFilterAnnotation[constants.LOOKUP_FILTER_FIELDS.FILTER_ITEMS][0][constants.LOOKUP_FILTER_FIELDS.OPERATION]).toEqual('myOperation1')
-      expect(lookupFilterAnnotation[constants.LOOKUP_FILTER_FIELDS.FILTER_ITEMS][0][constants.LOOKUP_FILTER_FIELDS.VALUE_FIELD]).toEqual('myValueField1')
-      expect(lookupFilterAnnotation[constants.LOOKUP_FILTER_FIELDS.FILTER_ITEMS][1][constants.LOOKUP_FILTER_FIELDS.FIELD]).toEqual('myField2')
-      expect(lookupFilterAnnotation[constants.LOOKUP_FILTER_FIELDS.FILTER_ITEMS][1][constants.LOOKUP_FILTER_FIELDS.OPERATION]).toEqual('myOperation2')
-      expect(lookupFilterAnnotation[constants.LOOKUP_FILTER_FIELDS.FILTER_ITEMS][1][constants.LOOKUP_FILTER_FIELDS.VALUE_FIELD]).toEqual('myValueField2')
+      verifyFilterItemsTransformation(lookupFilterAnnotation)
     })
 
     it('should do nothing if a field doesnt have a lookupFilter', async () => {

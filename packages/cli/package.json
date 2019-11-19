@@ -23,6 +23,7 @@
     "test": "jest --forceExit --detectOpenHandles",
     "e2e-test": "RUN_E2E_TESTS=1 jest --forceExit --detectOpenHandles",
     "clean": "rm -rf ./dist ./pkg",
+    "clean-ts": "../../build_utils/ts_cleaner.js -d dist -s . -v",
     "build-ts": "tsc",
     "watch-ts": "tsc -w",
     "lint": "eslint --cache --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
@@ -69,6 +70,7 @@
     "memory-streams": "^0.1.3",
     "nexe": "https://github.com/salto-io/nexe#fix_windows_fs_patch_normalization",
     "source-map-loader": "^0.2.4",
+    "ts-cleaner": "^1.0.3",
     "typescript": "^3.7.2",
     "webpack": "^4.41.2",
     "webpack-cli": "^3.3.10"

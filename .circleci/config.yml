@@ -116,6 +116,18 @@ jobs:
           root: .
           paths: '*'
 
+      - run:
+          name: create packages_build_cache.tar.gz
+          # run clean-ts before creating the build cache so it would not contain old files (e.g, renames).
+          # this cannot be done as part of the build-ts step or before persist_to_workspace since it also
+          # removes some important build artifacts, e.g, wasm and code generation products.
+          command: yarn clean-ts && tar cfz packages_build_cache.tar.gz packages/*/dist packages/*/.eslintcache
+
+      - save_cache:
+          paths:
+            - packages_build_cache.tar.gz
+          key: v2-build-{{ .Branch }}
+
   unittest:
     docker:
       - image: circleci/node:12.12

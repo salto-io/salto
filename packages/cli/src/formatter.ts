@@ -88,22 +88,26 @@ const isDummyChange = (change: DetailedChange): boolean => (
 )
 
 const formatChangeData = (change: DetailedChange): string => {
-  if (isDummyChange(change) || change.action === 'remove') {
-    // No need to format details about dummy changes and removals
+  if (isDummyChange(change)) {
+    // Dummy changes are only headers, so add a ":"
+    return ':'
+  }
+  if (change.action === 'remove') {
+    // No need to emit any details about a remove change
     return ''
   }
   if (change.action === 'modify') {
     const { before, after } = change.data
-    return `${formatValue(before)} => ${formatValue(after)}`
+    return `: ${formatValue(before)} => ${formatValue(after)}`
   }
-  return formatValue(_.get(change.data, 'before', _.get(change.data, 'after')))
+  return `: ${formatValue(_.get(change.data, 'before', _.get(change.data, 'after')))}`
 }
 
 export const formatChange = (change: DetailedChange): string => {
   const modifierType = isDummyChange(change) ? 'eq' : change.action
   const modifier = Prompts.MODIFIERS[modifierType]
   const id = change.id.isTopLevel() ? change.id.getFullName() : change.id.name
-  return indent(`${modifier} ${id}: ${formatChangeData(change)}`, change.id.nestingLevel)
+  return indent(`${modifier} ${id}${formatChangeData(change)}`, change.id.nestingLevel)
 }
 
 const formatCountPlanItemTypes = (plan: Plan): string => {

@@ -11,7 +11,7 @@ import {
 import {
   METADATA_TYPE, FIELD_ANNOTATIONS, FIELD_TYPE_NAMES,
   LABEL, FIELD_TYPE_API_NAMES, ADDRESS_FIELDS, SALESFORCE, GEOLOCATION_FIELDS, NAME_FIELDS,
-  API_NAME, INSTANCE_FULL_NAME_FIELD,
+  API_NAME, INSTANCE_FULL_NAME_FIELD, FIELD_LEVEL_SECURITY_ANNOTATION, FIELD_LEVEL_SECURITY_FIELDS,
 } from '../src/constants'
 import { CustomField } from '../src/client/types'
 
@@ -436,6 +436,18 @@ describe('transformer', () => {
     it('should include api_name annotation with service_id type', async () => {
       Object.values(Types.getAllFieldTypes()).forEach(type => {
         expect(type.annotationTypes[API_NAME]).toEqual(BuiltinTypes.SERVICE_ID)
+      })
+    })
+
+    it('should include field_level_security annotation with appropriate type', async () => {
+      Object.values(Types.getAllFieldTypes()).forEach(type => {
+        expect(type.annotationTypes[API_NAME]).toEqual(BuiltinTypes.SERVICE_ID)
+        const fieldLevelSecurityType = type.annotationTypes[FIELD_LEVEL_SECURITY_ANNOTATION]
+        expect(fieldLevelSecurityType).toBeInstanceOf(ObjectType)
+        expect((fieldLevelSecurityType as ObjectType).fields[FIELD_LEVEL_SECURITY_FIELDS.EDITABLE])
+          .toBeDefined()
+        expect((fieldLevelSecurityType as ObjectType).fields[FIELD_LEVEL_SECURITY_FIELDS.READABLE])
+          .toBeDefined()
       })
     })
   })

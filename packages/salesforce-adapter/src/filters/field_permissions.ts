@@ -1,43 +1,46 @@
 import {
   ObjectType, Element, Values, Field, isObjectType, isInstanceElement, InstanceElement, isField,
-  Change,
-  getChangeElement,
+  Change, getChangeElement, ElemID, findElement,
 } from 'adapter-api'
 import _ from 'lodash'
 import { SaveResult } from 'jsforce'
 import wu from 'wu'
 import { logger } from '@salto/logging'
-import { FIELD_PERMISSIONS, API_NAME } from '../constants'
 import {
-  sfCase, fieldFullName, bpCase, apiName, metadataType, isCustomObject, Types,
+  FIELD_PERMISSIONS, API_NAME, SALESFORCE, FIELD_LEVEL_SECURITY_ANNOTATION,
+  FIELD_LEVEL_SECURITY_FIELDS,
+} from '../constants'
+import {
+  sfCase, fieldFullName, bpCase, metadataType, isCustomObject, Types,
 } from '../transformer'
 import { FilterCreator } from '../filter'
-import { ProfileInfo } from '../client/types'
+import { ProfileInfo, FieldPermissions } from '../client/types'
 
-export const FIELD_LEVEL_SECURITY_ANNOTATION = 'field_level_security'
 export const PROFILE_METADATA_TYPE = 'Profile'
 export const ADMIN_PROFILE = 'admin'
 
 const log = logger(module)
 
+const { EDITABLE, READABLE } = FIELD_LEVEL_SECURITY_FIELDS
+
 // --- Utils functions
-export const fieldPermissions = (field: Field): Values =>
+export const getFieldPermissions = (field: Field): Values =>
   (field.annotations[FIELD_LEVEL_SECURITY_ANNOTATION] || {})
 
-const setEmptyFieldPermissions = (field: Field): void => {
-  field.annotations[FIELD_LEVEL_SECURITY_ANNOTATION] = {}
-}
+const id = (elem: Element): string => elem.elemID.getFullName()
 
 const setProfileFieldPermissions = (field: Field, profile: string, editable: boolean,
   readable: boolean): void => {
-  if (_.isEmpty(fieldPermissions(field))) {
-    setEmptyFieldPermissions(field)
+  if (_.isEmpty(getFieldPermissions(field))) {
+    field.annotations[FIELD_LEVEL_SECURITY_ANNOTATION] = { [EDITABLE]: [] as string[],
+      [READABLE]: [] as string[] }
   }
-  field.annotations[FIELD_LEVEL_SECURITY_ANNOTATION][profile] = { editable, readable }
-}
-
-const setFieldPermissions = (field: Field, fieldPermission: ProfileToPermission): void => {
-  field.annotations[FIELD_LEVEL_SECURITY_ANNOTATION] = fieldPermission
+  if (editable) {
+    getFieldPermissions(field)[EDITABLE].push(profile)
+  }
+  if (readable) {
+    getFieldPermissions(field)[READABLE].push(profile)
+  }
 }
 
 const setDefaultFieldPermissions = (field: Field): void => {
@@ -45,33 +48,33 @@ const setDefaultFieldPermissions = (field: Field): void => {
   if (field.type.isEqual(Types.primitiveDataTypes.masterdetail)) {
     return
   }
-  if (_.isEmpty(fieldPermissions(field))) {
-    setProfileFieldPermissions(field, ADMIN_PROFILE, true, true)
+  if (_.isEmpty(getFieldPermissions(field))) {
+    const adminElemID = new ElemID(SALESFORCE, bpCase(PROFILE_METADATA_TYPE), 'instance', ADMIN_PROFILE)
+    setProfileFieldPermissions(field, adminElemID.getFullName(), true, true)
     log.debug('set %s field permissions for %s.%s', ADMIN_PROFILE, field.parentID.name, field.name)
   }
 }
 
-const toProfiles = (object: ObjectType): ProfileInfo[] => {
-  const profiles = new Map<string, ProfileInfo>()
-  Object.values(object.fields).forEach(field => {
-    if (!fieldPermissions(field)) {
-      return
-    }
-    Object.entries(fieldPermissions(field)).forEach(fieldLevelSecurity => {
-      const profile = sfCase(fieldLevelSecurity[0])
-      const permissions = fieldLevelSecurity[1] as { editable: boolean; readable: boolean }
-      if (!profiles.has(profile)) {
-        profiles.set(profile, new ProfileInfo(sfCase(profile)))
+const toProfiles = (object: ObjectType): ProfileInfo[] =>
+  Object.values(Object.values(object.fields)
+    .reduce((profiles, field) => {
+      if (!getFieldPermissions(field)) {
+        return profiles
       }
-      (profiles.get(profile) as ProfileInfo).fieldPermissions.push({
-        field: fieldFullName(object, field),
-        editable: permissions.editable,
-        readable: permissions.readable,
+      const fieldEditable = getFieldPermissions(field)[EDITABLE] as string[]
+      const fieldReadable = getFieldPermissions(field)[READABLE] as string[]
+      _.union(fieldEditable, fieldReadable).forEach((profile: string) => {
+        if (_.isUndefined(profiles[profile])) {
+          profiles[profile] = new ProfileInfo(sfCase(ElemID.fromFullName(profile).name), [])
+        }
+        profiles[profile].fieldPermissions.push({
+          field: fieldFullName(object, field),
+          editable: fieldEditable ? fieldEditable.includes(profile) : false,
+          readable: fieldReadable ? fieldReadable.includes(profile) : false,
+        })
       })
-    })
-  })
-  return Array.from(profiles.values())
-}
+      return profiles
+    }, {} as Record<string, ProfileInfo>))
 
 type FieldPermission = { field: string; editable: boolean; readable: boolean }
 type ProfileToPermission = Record<string, { editable: boolean; readable: boolean }>
@@ -82,7 +85,6 @@ type ProfileToPermission = Record<string, { editable: boolean; readable: boolean
  */
 const profile2Permissions = (profileInstance: InstanceElement):
   Record<string, ProfileToPermission> => {
-  const profileInstanceName = bpCase(apiName(profileInstance))
   const instanceFieldPermissions = (profileInstance.value[FIELD_PERMISSIONS] as FieldPermission[])
   if (!instanceFieldPermissions) {
     return {}
@@ -90,7 +92,7 @@ const profile2Permissions = (profileInstance: InstanceElement):
   return _.merge({}, ...instanceFieldPermissions.map(({ field, readable, editable }) => (
     {
       [field]: {
-        [profileInstanceName]: { readable, editable },
+        [id(profileInstance)]: { readable, editable },
       },
     })))
 }
@@ -119,17 +121,22 @@ const filterCreator: FilterCreator = ({ client }) => ({
     // we need to know the api name to build full field name
     const elemID2ApiName = _(customObjectTypes)
       .filter(obj => obj.annotations[API_NAME] !== undefined)
-      .map(obj => [obj.elemID.getFullName(), obj.annotations[API_NAME]])
+      .map(obj => [id(obj), obj.annotations[API_NAME]])
       .fromPairs()
       .value()
 
     // Add field permissions to all fetched elements
     customObjectTypes.forEach(obj => {
       Object.values(obj.fields).forEach(field => {
-        const fieldPermission = permissions[
-          fieldFullName(elemID2ApiName[obj.elemID.getFullName()] || obj, field)]
+        const fullName = fieldFullName(elemID2ApiName[id(obj)] || obj, field)
+        const fieldPermission = permissions[fullName] as ProfileToPermission | undefined
         if (fieldPermission) {
-          setFieldPermissions(field, fieldPermission)
+          Object.entries(fieldPermission).forEach(p2f => {
+            const profile = findElement(profileInstances, ElemID.fromFullName(p2f[0]))
+            if (profile) {
+              setProfileFieldPermissions(field, id(profile), p2f[1].editable, p2f[1].readable)
+            }
+          })
         }
       })
     })
@@ -165,49 +172,44 @@ const filterCreator: FilterCreator = ({ client }) => ({
     wu(changes)
       .forEach(c => {
         const changeElement = getChangeElement(c)
-        if (!isField(changeElement)) {
-          return
-        }
-        const fieldName = changeElement.name
-        // Set default permissions for new fields
-        if (c.action === 'add') {
-          setDefaultFieldPermissions(after.fields[fieldName])
-        }
-        if (c.action === 'modify') {
-          const beforeField = c.data.before as Field
-          const afterField = after.fields[fieldName]
-          // If the delta is only new field permissions, then skip
-          if (_.isEmpty(fieldPermissions(beforeField))) {
-            return
-          }
-          if (_.isEmpty(fieldPermissions(afterField))) {
-            setEmptyFieldPermissions(afterField)
-          }
-          const afterFieldPermissions = fieldPermissions(afterField)
-          // If some permissions were removed, we will need to remove the permissions from the
-          // field explicitly (update them to be not editable and not readable)
-          Object.keys(fieldPermissions(beforeField)).forEach((p: string) => {
-            if (afterFieldPermissions[p] === undefined) {
-              setProfileFieldPermissions(afterField, p, false, false)
-            }
-          })
+        if (isField(changeElement) && c.action === 'add') {
+          setDefaultFieldPermissions(after.fields[changeElement.name])
         }
       })
 
-    const preProfiles = toProfiles(before)
-    // Filter out permissions that were already updated
-    const profiles = toProfiles(after)
-      .map(p => {
-        const preProfile = preProfiles.find(pre => pre.fullName === p.fullName)
-        if (preProfile) {
-          const prePermissions = (fieldName: string): FieldPermission | undefined =>
-            preProfile.fieldPermissions.find(fp => fp.field === fieldName)
-          return { fullName: p.fullName,
-            fieldPermissions: p.fieldPermissions
-              .filter(f => !_.isEqual(prePermissions(f.field), f)) }
+    const findProfile = (profiles: ProfileInfo[], profile: string): ProfileInfo | undefined =>
+      profiles.find(p => p.fullName === profile)
+
+    const findPermissions = (permissions: FieldPermissions[], field: string):
+      FieldPermission | undefined => permissions.find(fp => fp.field === field)
+
+    const emptyPermissions = (permission: FieldPermission): FieldPermission =>
+      ({ field: permission.field, readable: false, editable: false })
+
+    const beforeProfiles = toProfiles(before)
+    const afterProfiles = toProfiles(after)
+    const profiles = afterProfiles
+      .map(afterProfile => {
+        let { fieldPermissions } = afterProfile
+        const beforeProfile = findProfile(beforeProfiles, afterProfile.fullName)
+        if (beforeProfile) {
+          fieldPermissions = fieldPermissions
+            // Filter out permissions that were already updated
+            .filter(f => !_.isEqual(findPermissions(beforeProfile.fieldPermissions, f.field), f))
+            // Add missing permissions with editable=false and readable=false
+            .concat(beforeProfile.fieldPermissions
+              .filter(f => _.isUndefined(findPermissions(afterProfile.fieldPermissions, f.field)))
+              .map(emptyPermissions))
         }
-        return { fullName: p.fullName, fieldPermissions: p.fieldPermissions }
+        return { fullName: afterProfile.fullName, fieldPermissions }
       })
+      // Add missing permissions for profiles that dosen't exists in after with editable=false and
+      // readable=false
+      .concat(beforeProfiles
+        .filter(p => _.isUndefined(findProfile(afterProfiles, p.fullName)))
+        .map(p => ({ fullName: p.fullName,
+          fieldPermissions: p.fieldPermissions.map(emptyPermissions) })))
+      // Filter out empty field permissions
       .filter(p => p.fieldPermissions.length > 0)
 
     return client.update(PROFILE_METADATA_TYPE, profiles)

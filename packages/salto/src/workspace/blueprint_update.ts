@@ -1,7 +1,8 @@
 import _ from 'lodash'
 import path from 'path'
-import { getChangeElement, isElement } from 'adapter-api'
+import { getChangeElement, isElement, ObjectType, ElemID, Element } from 'adapter-api'
 
+import { AdditionDiff } from '@salto/dag'
 import { DetailedChange } from '../core/plan'
 import { SourceRange } from '../parser/parse'
 import { dump as saltoDump } from '../parser/dump'
@@ -49,7 +50,7 @@ export const getChangeLocations = (
       }
     }
     // Fallback to using the path from the element itself
-    const elemPath = path.join(...(getChangeElement(change).path || ['unsorted']))
+    const elemPath = path.join(...(change.path || getChangeElement(change).path || ['unsorted']))
     return [{
       filename: `${elemPath}.bp`,
       start: { col: 1, line: 1, byte: 0 },
@@ -135,4 +136,73 @@ export const updateBlueprintData = async (
   const sortedChanges = _.sortBy(bufferChanges, change => change.start).reverse()
   const ret = sortedChanges.reduce(replaceBufferPart, currentData)
   return ret
+}
+
+type DetailedAddition = AdditionDiff<Element> & {
+  id: ElemID
+  path: string[]
+}
+
+const wrapAdditions = (nestedAdditions: DetailedAddition[]): DetailedAddition => {
+  const createObjectTypeFromNestedAdditions = (additions: DetailedAddition[]): ObjectType =>
+    new ObjectType(additions.reduce((prev, addition) => {
+      switch (addition.id.idType) {
+        case 'field': return { ...prev,
+          fields: {
+            ...prev.fields,
+            [addition.id.name]: addition.data.after,
+          } }
+        case 'attr': return { ...prev,
+          annotations: {
+            ...prev.annotations,
+            [addition.id.name]: addition.data.after,
+          } }
+        case 'annotation': return { ...prev,
+          annotationTypes: {
+            ...prev.annotationTypes,
+            [addition.id.name]: addition.data.after,
+          } }
+        default: return prev
+      }
+    }, {
+      elemID: additions[0].id.createTopLevelParentID().parent,
+      fields: {},
+      annotationTypes: {},
+      annotations: {},
+    }))
+  const wrapperObject = createObjectTypeFromNestedAdditions(nestedAdditions)
+  return {
+    action: 'add',
+    id: wrapperObject.elemID,
+    path: nestedAdditions[0].path,
+    data: {
+      after: wrapperObject as Element,
+    },
+  } as DetailedAddition
+}
+
+export const getChangesToUpdate = (
+  changes: DetailedChange[],
+  existingFullNames: string []
+): DetailedChange[] => {
+  const isNestedAddition = (dc: DetailedChange): boolean => (dc.path
+    && dc.action === 'add'
+    && !dc.id.isTopLevel()
+    && !existingFullNames
+      .includes(
+        dc.id.createTopLevelParentID().parent.getFullName()
+      )) ?? false
+
+  const [nestedAdditionsWithPath, otherChanges] = _.partition(
+    changes,
+    isNestedAddition
+  ) as [DetailedAddition[], DetailedChange[]]
+
+  const wrappedNestedAdditions: DetailedAddition[] = _(nestedAdditionsWithPath)
+    .groupBy(addition => [addition.path, addition.id.createTopLevelParentID().parent])
+    .values()
+    .map(wrapAdditions)
+    .value()
+
+  return _.concat(otherChanges, wrappedNestedAdditions)
 }

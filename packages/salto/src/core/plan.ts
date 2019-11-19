@@ -10,7 +10,10 @@ import {
 } from '@salto/dag'
 
 export type DetailedChange<T = ChangeDataType | Values | Value> =
-  (AdditionDiff<T> | ModificationDiff<T> | RemovalDiff<T>) & { id: ElemID }
+  (AdditionDiff<T> | ModificationDiff<T> | RemovalDiff<T>) & {
+    id: ElemID
+    path?: string[]
+  }
 
 export type PlanItemId = NodeId
 export type PlanItem = Group<Change> & {

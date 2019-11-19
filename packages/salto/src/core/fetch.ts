@@ -5,7 +5,6 @@ import {
   Element, ElemID, Adapter, TypeMap, Values, ServiceIds, BuiltinTypes, ObjectType, ADAPTER,
   toServiceIdsString, Field, OBJECT_SERVICE_ID, InstanceElement, isInstanceElement, isObjectType,
   ElemIdGetter,
-  findElements,
 } from 'adapter-api'
 import { logger } from '@salto/logging'
 import { StepEvents } from './core'
@@ -57,13 +56,50 @@ const getChangeMap = (
   )
 )
 
+const findNestedElementPath = (
+  changeElemID: ElemID,
+  originalParentElements: Element[]
+): readonly string[] | undefined => {
+  const { idType } = changeElemID
+  const propName = changeElemID.createTopLevelParentID().path[0]
+  switch (idType) {
+    case 'field':
+      return originalParentElements
+        .filter(isObjectType)
+        .find(e => e.fields[propName])?.path
+    case 'attr':
+      return originalParentElements
+        .find(e => e.annotations[propName])?.path
+    // This is still not supprted as we have no changes for annotation types ATM.
+    case 'annotation':
+      return originalParentElements
+        .filter(isObjectType)
+        .find(e => e.annotationTypes[propName])?.path
+    default: return undefined
+  }
+}
+
 type ChangeTransformFunction = (sourceChange: FetchChange) => FetchChange[]
-const toChangesWithPath = (serviceElements: ReadonlyArray<Element>): ChangeTransformFunction => (
+const toChangesWithPath = (
+  serviceElementByFullName: (fullName: string) => Element[]
+):
+  ChangeTransformFunction => (
   change => {
-    const originalElements = [...findElements(serviceElements, change.change.id)]
+    const changeID: ElemID = change.change.id
+    if (!changeID.isTopLevel() && change.change.action === 'add') {
+      const path = findNestedElementPath(
+        changeID,
+        serviceElementByFullName(changeID.createTopLevelParentID().parent.getFullName())
+      )
+      log.debug(`addition change for nested ${changeID.idType} with id ${changeID.getFullName()}, path found ${path?.join('/')}`)
+
+      return path
+        ? [_.merge({}, change, { change: { path } })]
+        : [change]
+    }
+    const originalElements = serviceElementByFullName(changeID.getFullName())
     if (originalElements.length === 0) {
-      // Element does not exist upstream, this is either field/value change or a remove change
-      // either way there is no path hint to add here
+      log.debug(`no original elements found for change element id ${changeID.getFullName()}`)
       return [change]
     }
     // Replace merged element with original elements that have a path hint
@@ -99,7 +135,6 @@ export type FetchChangesResult = {
   elements: Element[]
   mergeErrors: MergeErrorWithElements[]
 }
-
 
 export class FatalFetchMergeError extends Error {
   constructor(public causes: MergeErrorWithElements[]) {
@@ -217,10 +252,16 @@ export const fetchChanges = async (
   const workspaceToServiceChanges = getChangeMap(workspaceElements, mergedServiceElements)
   log.debug('finished to calculate service-workspace changes')
 
+  const serviceElementsMap: Record<string, Element[]> = _.groupBy(
+    serviceElements,
+    se => se.elemID.getFullName()
+  )
+
+
   const changes = wu(serviceChanges)
     .map(toFetchChanges(pendingChanges, workspaceToServiceChanges))
     .flatten()
-    .map(toChangesWithPath(serviceElements))
+    .map(toChangesWithPath(fullName => serviceElementsMap[fullName] || []))
     .flatten()
   log.debug('finished to calculate fetch changes')
   if (progressEmitter) {

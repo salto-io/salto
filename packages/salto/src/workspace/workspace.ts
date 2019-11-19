@@ -12,10 +12,8 @@ import { mergeElements, MergeError } from '../core/merger'
 import { validateElements, ValidationError, UnresolvedReferenceValidationError } from '../core/validator'
 import { DetailedChange } from '../core/plan'
 import { ParseResultFSCache } from './cache'
-import { getChangeLocations, updateBlueprintData } from './blueprint_update'
-import {
-  Config, dumpConfig, locateWorkspaceRoot, getConfigPath, completeConfig, saltoConfigType,
-} from './config'
+import { getChangeLocations, updateBlueprintData, getChangesToUpdate } from './blueprint_update'
+import { Config, dumpConfig, locateWorkspaceRoot, getConfigPath, completeConfig, saltoConfigType } from './config'
 
 const { DefaultMap } = collections.map
 
@@ -330,6 +328,7 @@ export class Workspace {
     names.forEach(name => this.dirtyBlueprints.add(name))
   }
 
+
   /**
    * Update workspace with changes to elements in the workspace
    *
@@ -340,10 +339,15 @@ export class Workspace {
       const currentBlueprint = this.parsedBlueprints[filename]
       return currentBlueprint ? currentBlueprint.buffer : ''
     }
-
     log.debug('going to calculate new blueprints data')
+
+    const changesToUpdate = getChangesToUpdate(
+      changes,
+      Object.keys(this.sourceMap)
+    )
+
     const updatedBlueprints = (await Promise.all(
-      _(changes)
+      _(changesToUpdate)
         .map(change => getChangeLocations(change, this.sourceMap))
         .flatten()
         .groupBy(change => change.location.filename)
@@ -364,6 +368,7 @@ export class Workspace {
     log.debug('going to set the new blueprints')
     return this.setBlueprints(...updatedBlueprints)
   }
+
 
   /**
    * Low level interface for updating/adding a specific blueprint to a workspace

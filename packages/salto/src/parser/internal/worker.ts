@@ -2,7 +2,7 @@ import {
   parentPort, workerData, MessagePort, Worker, MessageChannel,
 } from 'worker_threads'
 import { DumpedHclBlock, AsyncHclParser, HclParseReturn, HclDumpReturn } from './types'
-import { createInlineParser, wasmModule as getWasmModule } from './go_parser'
+import createInlineParser, { wasmModule as getWasmModule } from './go_parser'
 
 export const createWorkerParser = async (timeout = 10000): Promise<AsyncHclParser> => {
   const worker = new Worker(__filename, {

@@ -1,7 +1,7 @@
 import fs from 'fs'
 import { promisify } from 'util'
 import path from 'path'
-import { AsyncHclParser, HclParser } from './types'
+import { HclParser } from './types'
 import './wasm_exec'
 
 const readFile = promisify(fs.readFile)
@@ -49,7 +49,7 @@ const wasmInstance = async (
   return { go, inst: await WebAssembly.instantiate(m, go.importObject) }
 }
 
-export const createInlineParser = async (
+const createInlineParser = async (
   useWasmModule?: WebAssembly.Module
 ): Promise<HclParser> => {
   const { go, inst } = await wasmInstance(useWasmModule)
@@ -75,22 +75,24 @@ export const createInlineParser = async (
   })
 }
 
-// wraps a sync function with a promise of the same type
-const asyncify = <
-  TReturn,
-  TArgs extends unknown,
-  TFunc extends (...args: TArgs[]) => TReturn,
->(f: TFunc): (
-  ...args: TArgs[]
-) => Promise<TReturn> => (...args: TArgs[]): Promise<TReturn> => Promise.resolve(f(...args))
+export default createInlineParser
 
-export const createInlineAsyncParser = async (
-  useWasmModule?: WebAssembly.Module
-): Promise<AsyncHclParser> => {
-  const syncParser = await createInlineParser(useWasmModule)
-  return {
-    ...syncParser,
-    parse: asyncify(syncParser.parse),
-    dump: asyncify(syncParser.dump),
-  }
-}
+// // wraps a sync function with a promise of the same type
+// const asyncify = <
+//   TReturn,
+//   TArgs extends unknown,
+//   TFunc extends (...args: TArgs[]) => TReturn,
+// >(f: TFunc): (
+//   ...args: TArgs[]
+// ) => Promise<TReturn> => (...args: TArgs[]): Promise<TReturn> => Promise.resolve(f(...args))
+
+// export const createInlineAsyncParser = async (
+//   useWasmModule?: WebAssembly.Module
+// ): Promise<AsyncHclParser> => {
+//   const syncParser = await createInlineParser(useWasmModule)
+//   return {
+//     ...syncParser,
+//     parse: asyncify(syncParser.parse),
+//     dump: asyncify(syncParser.dump),
+//   }
+// }

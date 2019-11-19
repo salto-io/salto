@@ -1,4 +1,4 @@
-FROM circleci/node:12.12
+FROM circleci/node:13.1
 
 RUN sudo npm i --global yarn@1.19.1
 

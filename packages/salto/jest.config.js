@@ -11,7 +11,7 @@ module.exports = deepMerge(
       '!**/wasm_exec.*', // External source file
       '!<rootDir>/dist/index.js',
     ],
-    globalTeardown: path.join(__dirname, './dist/test/global_teardown'),
+    globalTeardown: path.join(__dirname, './dist/test/global_teardown.js'),
     coverageThreshold: {
       // Slowly start increasing here, never decrease!
       global: {

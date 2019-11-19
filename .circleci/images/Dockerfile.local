@@ -1,6 +1,8 @@
-FROM saltolabs/salto:0.0.10
+FROM saltolabs/salto:0.0.11
 
 ADD . /app
 RUN sudo chown -R circleci /app
 WORKDIR /app
+
+RUN yarn && yarn build
 

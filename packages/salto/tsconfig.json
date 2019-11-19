@@ -8,15 +8,15 @@
         "paths": {
             "jsforce": [
                 "../../node_modules/jsforce-types"
-            ]
+            ],
         },
         "lib": [
             "esnext.asynciterable"
-          ]
+        ],
     },
     "include": [
         "src/**/*",
         "test/**/*",
-        "index.ts"
+        "index.ts",
     ]
 }

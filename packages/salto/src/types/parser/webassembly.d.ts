@@ -35,4 +35,3 @@ declare namespace WebAssembly {
 
   function validate(bufferSource: ArrayBuffer | Uint8Array): boolean;
 }
-

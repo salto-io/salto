@@ -16,7 +16,7 @@ export namespace validator {
 
 export { Plan, PlanItem, DetailedChange } from './src/core/plan'
 export { dumpCsv, readCsv } from './src/core/csv'
-export { FetchChange, FetchProgressEvents, ProgressEmitter, MergeErrorWithElements as MergeError } from './src/core/fetch'
+export { FetchChange, FetchProgressEvents, StepEmitter, MergeErrorWithElements as MergeError } from './src/core/fetch'
 export * from './src/api'
 export { FoundSearchResult, SearchResult } from './src/core/search'
 // ParsedBlueprint and Blueprint are exported with an alias to avoid

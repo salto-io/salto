@@ -5,15 +5,16 @@ import {
   fetchFunc,
   FetchChange,
   FetchProgressEvents,
-  ProgressEmitter,
+  StepEmitter,
 } from 'salto'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto/logging'
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput, CliExitCode, SpinnerCreator } from '../types'
-import { formatChangesSummary, formatMergeErrors, formatFatalFetchError } from '../formatter'
+import { formatChangesSummary, formatMergeErrors, formatFatalFetchError, error } from '../formatter'
 import { getConfigWithHeader, getApprovedChanges as cliGetApprovedChanges } from '../callbacks'
 import { updateWorkspace, loadWorkspace } from '../workspace'
+import Prompts from '../prompts'
 
 const log = logger(module)
 
@@ -35,22 +36,22 @@ export const fetchCommand = async (
     startText: string,
     successText: string,
     defaultErrorText: string
-  ) => (progress: ProgressEmitter) => {
+  ) => (progress: StepEmitter) => {
     const spinner = spinnerCreator(startText, { prefixText: '\n' })
     progress.on('completed', () => spinner.succeed(successText))
     progress.on('failed', (errorText?: string) => spinner.fail(errorText || defaultErrorText))
   }
   const fetchProgress = new EventEmitter<FetchProgressEvents>()
-  fetchProgress.on('getChanges', (progress: ProgressEmitter, adapters: string[]) => progressSpinner(
-    `Fetching the latest configs from: ${adapters}`,
-    `Finished fetching the latest configs from: ${adapters}`,
-    'Fetching failed!'
+  fetchProgress.on('getChanges', (progress: StepEmitter, adapters: string[]) => progressSpinner(
+    Prompts.FETCH_GET_CHANGES_START(adapters),
+    Prompts.FETCH_GET_CHANGES_FINISH(adapters),
+    error(Prompts.FETCH_GET_CHANGES_FAIL)
   )(progress))
 
   fetchProgress.on('calculateDiff', progressSpinner(
-    'Calculating diff between remote and local',
-    'Finished calculating the diff between remote and local',
-    'Calculating diff failed!',
+    Prompts.FETCH_CALC_DIFF_START,
+    Prompts.FETCH_CALC_DIFF_FINISH,
+    error(Prompts.FETCH_CALC_DIFF_FAIL),
   ))
 
   const fetchResult = await fetch(
@@ -85,9 +86,9 @@ export const fetchCommand = async (
   )
   const updatingWsSucceeded = await updateWorkspace(workspace, output, ...changesToApply)
   if (updatingWsSucceeded) {
-    updateWsSpinner.succeed('Updated workspace with changes')
+    updateWsSpinner.succeed(Prompts.FETCH_UPDATE_WORKSPACE_SUCCESS)
   } else {
-    updateWsSpinner.fail('Failed to update workspace')
+    updateWsSpinner.fail(error(Prompts.FETCH_UPDATE_WORKSPACE_FAIL))
   }
   return updatingWsSucceeded
     ? CliExitCode.Success

@@ -66,7 +66,14 @@ Be sure to go over the preview output when invoking the deploy command.`
     return `Initiated workspace ${name} at ${baseDir}\n`
   }
 
-  public static readonly FETCH_BEGIN = 'Refreshing workspace from service(s)...'
+  public static readonly FETCH_GET_CHANGES_START = (adapters: string[]): string => `Fetching the latest configs from: ${adapters}`
+  public static readonly FETCH_GET_CHANGES_FINISH = (adapters: string[]): string => `Finished fetching the latest configs from: ${adapters}`
+  public static readonly FETCH_GET_CHANGES_FAIL = 'Fetching failed!'
+  public static readonly FETCH_CALC_DIFF_START = 'Calculating diff between remote and local'
+  public static readonly FETCH_CALC_DIFF_FINISH = 'Finished calculating the diff between remote and local'
+  public static readonly FETCH_CALC_DIFF_FAIL = 'Calculating diff failed!'
+  public static readonly FETCH_UPDATE_WORKSPACE_SUCCESS = 'Updated workspace successfully'
+  public static readonly FETCH_UPDATE_WORKSPACE_FAIL = 'Failed to update workspace'
   public static readonly FETCH_CHANGE_HEADER = (changeIdx: number, totalChanges: number): string => `Change ${changeIdx} of ${totalChanges}:`
   public static readonly FETCH_SHOULD_APPROVE_CHANGE = 'Would you like to update your workspace with this change?'
   public static readonly FETCH_CHANGE_REJECTED = 'The change will not be applied to your workspace'

@@ -27,11 +27,11 @@ type StepEvents = {
   failed: (errorText?: string) => void
 }
 
-export class ProgressEmitter extends EventEmitter<StepEvents> {}
+export class StepEmitter extends EventEmitter<StepEvents> {}
 
 export type FetchProgressEvents = {
-  getChanges: (progress: ProgressEmitter, adapterNames: string[]) => void
-  calculateDiff: (progress: ProgressEmitter) => void
+  getChanges: (stepProgress: StepEmitter, adapterNames: string[]) => void
+  calculateDiff: (stepProgress: StepEmitter) => void
 }
 
 export type MergeErrorWithElements = {
@@ -168,7 +168,7 @@ export const fetchChanges = async (
   progressEmitter?: EventEmitter<FetchProgressEvents>
 ): Promise<FetchChangesResult> => {
   const adapterNames = _.keys(adapters).map(adapter => _.capitalize(adapter))
-  const getChangesEmitter = new ProgressEmitter()
+  const getChangesEmitter = new StepEmitter()
   if (progressEmitter) {
     progressEmitter.emit('getChanges', getChangesEmitter, adapterNames)
   }
@@ -180,16 +180,23 @@ export const fetchChanges = async (
   const { errors: mergeErrors, merged: elements } = mergeElements(serviceElements)
   log.debug(`got ${serviceElements.length} from merge results and elements and to ${elements.length} elements [errors=${
     mergeErrors.length}]`)
-  const processErrorsResult: ProcessMergeErrorsResult = processMergeErrors(
-    elements,
-    mergeErrors,
-    stateElements.map(e => e.elemID.getFullName())
-  )
+  let processErrorsResult: ProcessMergeErrorsResult
+  try {
+    processErrorsResult = processMergeErrors(
+      elements,
+      mergeErrors,
+      stateElements.map(e => e.elemID.getFullName())
+    )
+  } catch (error) {
+    getChangesEmitter.emit('failed', error.message)
+    throw error
+  }
+
   const mergedServiceElements = processErrorsResult.keptElements
   log.debug(`after merge there are ${mergedServiceElements.length} elements [errors=${
     mergeErrors.length}]`)
 
-  const calculateDiffEmitter = new ProgressEmitter()
+  const calculateDiffEmitter = new StepEmitter()
   if (progressEmitter) {
     getChangesEmitter.emit('completed')
     progressEmitter.emit('calculateDiff', calculateDiffEmitter)

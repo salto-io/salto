@@ -1,5 +1,6 @@
 import wu from 'wu'
 import { ObjectType, InstanceElement, Element, Value, ActionName } from 'adapter-api'
+import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto/logging'
 import {
   deployActions, ItemStatus, DeployError,
@@ -15,7 +16,7 @@ import State from './state/state'
 import { findElement, SearchResult } from './core/search'
 import {
   fetchChanges, FetchChange, getDetailedChanges, createElemIdGetter,
-  MergeErrorWithElements, FatalFetchMergeError, ProgressEmitter,
+  MergeErrorWithElements, FatalFetchMergeError, FetchProgressEvents,
 } from './core/fetch'
 import { Workspace, CREDS_DIR } from './workspace/workspace'
 
@@ -93,7 +94,7 @@ export type FetchResult = {
 export type fetchFunc = (
   workspace: Workspace,
   fillConfig: fillConfigFunc,
-  progressEmitter?: ProgressEmitter,
+  progressEmitter?: EventEmitter<FetchProgressEvents>,
 ) => Promise<FetchResult>
 
 export const fetch: fetchFunc = async (workspace, fillConfig, progressEmitter?) => {

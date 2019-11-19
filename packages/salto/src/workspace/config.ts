@@ -6,7 +6,7 @@ import { ObjectType, ElemID, BuiltinTypes, Field, InstanceElement, Type, findIns
 import { logger } from '@salto/logging'
 import { dump } from '../parser/dump'
 import { parse } from '../parser/parse'
-import { mkdirp, exists, writeTextFile, readFile } from '../file'
+import { mkdirp, exists, writeFile, readFile } from '../file'
 
 const log = logger(module)
 
@@ -122,7 +122,7 @@ export const dumpConfig = async (baseDir: string, config: Partial<Config>): Prom
     saltoConfigType,
     _.mapKeys(config as object, (_v, k) => _.snakeCase(k))
   )
-  return writeTextFile(configPath, await dump([configInstance]))
+  return writeFile(configPath, await dump([configInstance]))
 }
 
 export const loadConfig = async (lookupDir: string): Promise<Config> => {

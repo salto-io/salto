@@ -2,26 +2,27 @@ import { promisify } from 'util'
 import fs from 'fs'
 import rimRafLib from 'rimraf'
 import mkdirpLib from 'mkdirp'
+import { strings } from '@salto/lowerdash'
+
+const statP = promisify(fs.stat)
+const readFileP = promisify(fs.readFile)
+const copyFileP = promisify(fs.copyFile)
+const writeFileP = promisify(fs.writeFile)
+const renameP = promisify(fs.rename)
 
 export const rm = promisify(rimRafLib)
 export const mkdirp = promisify(mkdirpLib)
 
-/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-type FuncReturningPromise<TReturn> = (...args: any) => Promise<TReturn>
-
-type FuncReturningPromiseOrUndefined<
-  TReturn, TFunc extends FuncReturningPromise<TReturn>
-  > = (
-    ...args: Parameters<TFunc>
-  ) => Promise<TReturn | undefined>
-
-export const notFoundAsUndefined = <TReturn, TFunc extends FuncReturningPromise<TReturn>>(
-  f: TFunc,
-): FuncReturningPromiseOrUndefined<TReturn, TFunc> => async (
-    ...args: Parameters<TFunc>
+export const notFoundAsUndefined = <
+  TArgs extends unknown[],
+  TReturn,
+  >(
+    f: (...args: TArgs) => Promise<TReturn>
+  ): (...args: TArgs) => Promise<TReturn | undefined> => async (
+    ...args: TArgs
   ): Promise<TReturn | undefined> => {
     try {
-      return await f.call(null, ...args)
+      return await f(...args)
     } catch (err) {
       if (err.code === 'ENOENT') {
         return undefined
@@ -30,12 +31,10 @@ export const notFoundAsUndefined = <TReturn, TFunc extends FuncReturningPromise<
     }
   }
 
-const statP = promisify(fs.stat)
-
 export type Stats = fs.Stats
 export const stat = (filename: string): Promise<fs.Stats> => statP(filename)
 
-stat.notFoundAsUndefined = notFoundAsUndefined<fs.Stats, FuncReturningPromise<fs.Stats>>(stat)
+stat.notFoundAsUndefined = notFoundAsUndefined(stat)
 
 export const exists = async (
   filename: string
@@ -43,27 +42,40 @@ export const exists = async (
 
 export const readTextFile = (
   filename: string,
-): Promise<string> => fs.promises.readFile(filename, { encoding: 'utf8' })
+): Promise<string> => readFileP(filename, { encoding: 'utf8' })
 
-readTextFile.notFoundAsUndefined = notFoundAsUndefined<string, FuncReturningPromise<string>>(
-  readTextFile
+readTextFile.notFoundAsUndefined = notFoundAsUndefined(readTextFile)
+
+export const readFile = (filename: string): Promise<Buffer> => readFileP(filename)
+
+readFile.notFoundAsUndefined = notFoundAsUndefined(readFile)
+
+const contentsAsBuffer = (contents: Buffer | string): Buffer => (
+  typeof contents === 'string'
+    ? Buffer.from(contents, 'utf8')
+    : contents
 )
 
-export const readFile = (filename: string): Promise<Buffer> => fs.promises.readFile(filename)
-
-readFile.notFoundAsUndefined = notFoundAsUndefined<Buffer, FuncReturningPromise<Buffer>>(readFile)
-
-export const writeTextFile = (
+export const writeFile = (
   filename: string,
-  contents: string,
-): Promise<void> => fs.promises.writeFile(filename, contents)
+  contents: Buffer | string,
+): Promise<void> => writeFileP(filename, contentsAsBuffer(contents))
 
 export const appendTextFile = (
   filename: string,
   contents: string,
-): Promise<void> => fs.promises.writeFile(filename, contents, { flag: 'a' })
+): Promise<void> => writeFileP(filename, contents, { flag: 'a' })
 
-export const copyFile = (
+export const copyFile: (
   sourcePath: string,
   destPath: string,
-): Promise<void> => fs.promises.copyFile(sourcePath, destPath)
+) => Promise<void> = copyFileP
+
+export const replaceContents = async (
+  filename: string,
+  contents: Buffer | string
+): Promise<void> => {
+  const tempFilename = `${filename}.tmp.${strings.insecureRandomString()}`
+  await writeFile(tempFilename, contents)
+  await renameP(tempFilename, filename)
+}

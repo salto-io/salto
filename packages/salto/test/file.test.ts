@@ -3,9 +3,7 @@ import path from 'path'
 import { promisify } from 'util'
 import tmp from 'tmp-promise'
 import rimRafLib from 'rimraf'
-import {
-  stat, readTextFile, readFile, exists, copyFile, rm, mkdirp, writeTextFile, appendTextFile,
-} from '../src/file'
+import * as file from '../src/file'
 
 const rimRaf = promisify(rimRafLib)
 
@@ -26,14 +24,14 @@ describe('file', () => {
   describe('stat', () => {
     describe('when the file does not exist', () => {
       it('should reject with ErrnoException', () => {
-        expectRejectWithErrnoException(() => stat('nosuchfile'))
+        expectRejectWithErrnoException(() => file.stat('nosuchfile'))
       })
     })
 
     describe('when the file exists', () => {
       it('should return its stats', async () => {
         // can't compare all stats since aTime and aTimeMs might differ slightly
-        const r = (await stat(__filename)).ctime
+        const r = (await file.stat(__filename)).ctime
         expect(r).toEqual((await promisify(fs.stat)(__filename)).ctime)
       })
     })
@@ -42,14 +40,14 @@ describe('file', () => {
   describe('stat.notFoundAsUndefined', () => {
     describe('when the file does not exist', () => {
       it('should return undefined', async () => {
-        const r = await stat.notFoundAsUndefined('nosuchfile')
+        const r = await file.stat.notFoundAsUndefined('nosuchfile')
         expect(r).toBeUndefined()
       })
     })
 
     describe('when the file exists', () => {
       it('should return its stats', async () => {
-        const r = await stat(__filename)
+        const r = await file.stat(__filename)
         expect(r).toEqual(await promisify(fs.stat)(__filename))
       })
     })
@@ -58,13 +56,13 @@ describe('file', () => {
   describe('exists', () => {
     describe('when the file does not exist', () => {
       it('should return false', async () => {
-        expect(await exists('nosuchfile')).toBe(false)
+        expect(await file.exists('nosuchfile')).toBe(false)
       })
     })
 
     describe('when the file exists', () => {
       it('should return true', async () => {
-        expect(await exists(__filename)).toBe(true)
+        expect(await file.exists(__filename)).toBe(true)
       })
     })
   })
@@ -72,13 +70,13 @@ describe('file', () => {
   describe('readFile', () => {
     describe('when the file does not exist', () => {
       it('should reject with ErrnoException', () => {
-        expectRejectWithErrnoException(() => readFile('nosuchfile'))
+        expectRejectWithErrnoException(() => file.readFile('nosuchfile'))
       })
     })
 
     describe('when the file exists', () => {
       it('should return its contents', async () => {
-        const r = await readFile(__filename)
+        const r = await file.readFile(__filename)
         expect(r).toEqual(await fs.promises.readFile(__filename))
       })
     })
@@ -87,14 +85,14 @@ describe('file', () => {
   describe('readFile.notFoundAsUndefined', () => {
     describe('when the file exists', () => {
       it('should return its contents as text', async () => {
-        const r = await readFile.notFoundAsUndefined(__filename)
+        const r = await file.readFile.notFoundAsUndefined(__filename)
         expect(r).toEqual(await fs.promises.readFile(__filename))
       })
     })
 
     describe('when the file does not exist', () => {
       it('should return undefined', async () => {
-        const r = await readFile.notFoundAsUndefined('nosuchfile')
+        const r = await file.readFile.notFoundAsUndefined('nosuchfile')
         expect(r).toBeUndefined()
       })
     })
@@ -103,13 +101,13 @@ describe('file', () => {
   describe('readTextFile', () => {
     describe('when the file does not exist', () => {
       it('should reject with ErrnoException', () => {
-        expectRejectWithErrnoException(() => readTextFile('nosuchfile'))
+        expectRejectWithErrnoException(() => file.readTextFile('nosuchfile'))
       })
     })
 
     describe('when the file exists', () => {
       it('should return its contents', async () => {
-        const r = await readTextFile(__filename)
+        const r = await file.readTextFile(__filename)
         expect(r).toEqual(await fs.promises.readFile(__filename, { encoding: 'utf8' }))
       })
     })
@@ -118,20 +116,20 @@ describe('file', () => {
   describe('readTextFile.notFoundAsUndefined', () => {
     describe('when the file exists', () => {
       it('should return its contents as text', async () => {
-        const r = await readTextFile.notFoundAsUndefined(__filename)
+        const r = await file.readTextFile.notFoundAsUndefined(__filename)
         expect(r).toEqual(await fs.promises.readFile(__filename, { encoding: 'utf8' }))
       })
     })
 
     describe('when the file does not exist', () => {
       it('should return undefined', async () => {
-        const r = await readTextFile.notFoundAsUndefined('nosuchfile')
+        const r = await file.readTextFile.notFoundAsUndefined('nosuchfile')
         expect(r).toBeUndefined()
       })
     })
   })
 
-  describe('writeTextFile', () => {
+  describe('writeFile', () => {
     const source = __filename
     let destTmp: tmp.FileResult
     let dest: string
@@ -139,37 +137,66 @@ describe('file', () => {
     beforeEach(async () => {
       destTmp = await tmp.file()
       dest = destTmp.path
-      await copyFile(source, dest)
+      await file.copyFile(source, dest)
     })
 
     afterEach(async () => {
       await destTmp.cleanup()
     })
 
-    describe('when the file exists', () => {
-      beforeEach(async () => {
-        expect(await exists(dest)).toBeTruthy()
-        await writeTextFile(dest, 'a')
+    const expectedContents = 'a'
+
+    describe('when given a string', () => {
+      describe('when the file exists', () => {
+        beforeEach(async () => {
+          expect(await file.exists(dest)).toBeTruthy()
+          await file.writeFile(dest, expectedContents)
+        })
+
+        it('overwrites its contents', async () => {
+          const contents = await fs.promises.readFile(dest, { encoding: 'utf8' })
+          expect(contents).toEqual(expectedContents)
+        })
       })
 
-      it('overwrites its contents', async () => {
-        const contents = await fs.promises.readFile(dest, { encoding: 'utf8' })
-        const expectedContents = 'a'
-        expect(contents).toEqual(expectedContents)
+      describe('when the file does not exist', () => {
+        beforeEach(async () => {
+          await file.rm(dest)
+          expect(await file.exists(dest)).toBeFalsy()
+          await file.writeFile(dest, expectedContents)
+        })
+
+        it('writes the contents to the file', async () => {
+          const contents = await fs.promises.readFile(dest, { encoding: 'utf8' })
+          expect(contents).toEqual(expectedContents)
+        })
       })
     })
 
-    describe('when the file does not exist', () => {
-      beforeEach(async () => {
-        await rm(dest)
-        expect(await exists(dest)).toBeFalsy()
-        await writeTextFile(dest, 'a')
+    describe('when given a buffer', () => {
+      describe('when the file exists', () => {
+        beforeEach(async () => {
+          expect(await file.exists(dest)).toBeTruthy()
+          await file.writeFile(dest, Buffer.from(expectedContents, 'utf8'))
+        })
+
+        it('overwrites its contents', async () => {
+          const contents = await fs.promises.readFile(dest, { encoding: 'utf8' })
+          expect(contents).toEqual(expectedContents)
+        })
       })
 
-      it('writes the contents to the file', async () => {
-        const contents = await fs.promises.readFile(dest, { encoding: 'utf8' })
-        const expectedContents = 'a'
-        expect(contents).toEqual(expectedContents)
+      describe('when the file does not exist', () => {
+        beforeEach(async () => {
+          await file.rm(dest)
+          expect(await file.exists(dest)).toBeFalsy()
+          await file.writeFile(dest, Buffer.from(expectedContents, 'utf8'))
+        })
+
+        it('writes the contents to the file', async () => {
+          const contents = await fs.promises.readFile(dest, { encoding: 'utf8' })
+          expect(contents).toEqual(expectedContents)
+        })
       })
     })
   })
@@ -182,7 +209,7 @@ describe('file', () => {
     beforeEach(async () => {
       destTmp = await tmp.file()
       dest = destTmp.path
-      await copyFile(source, dest)
+      await file.copyFile(source, dest)
     })
 
     afterEach(async () => {
@@ -191,8 +218,8 @@ describe('file', () => {
 
     describe('when the file exists', () => {
       beforeEach(async () => {
-        expect(await exists(dest)).toBeTruthy()
-        await appendTextFile(dest, 'a')
+        expect(await file.exists(dest)).toBeTruthy()
+        await file.appendTextFile(dest, 'a')
       })
 
       it('appends to it', async () => {
@@ -204,9 +231,9 @@ describe('file', () => {
 
     describe('when the file does not exist', () => {
       beforeEach(async () => {
-        await rm(dest)
-        expect(await exists(dest)).toBeFalsy()
-        await appendTextFile(dest, 'a')
+        await file.rm(dest)
+        expect(await file.exists(dest)).toBeFalsy()
+        await file.appendTextFile(dest, 'a')
       })
 
       it('writes the contents to the file', async () => {
@@ -225,7 +252,7 @@ describe('file', () => {
     beforeEach(async () => {
       destTmp = await tmp.file()
       dest = destTmp.path
-      await copyFile(source, dest)
+      await file.copyFile(source, dest)
     })
 
     afterEach(async () => {
@@ -233,7 +260,56 @@ describe('file', () => {
     })
 
     it('copies the file', async () => {
-      expect(await readTextFile(dest)).toEqual(await readTextFile(source))
+      expect(await file.readTextFile(dest)).toEqual(await file.readTextFile(source))
+    })
+  })
+
+  describe('replaceContents', () => {
+    let destTmp: tmp.FileResult
+    let dest: string
+
+    beforeEach(async () => {
+      destTmp = await tmp.file()
+      dest = destTmp.path
+      await file.copyFile(__filename, dest)
+    })
+
+    afterEach(async () => {
+      await destTmp.cleanup()
+    })
+
+    describe('when interrupted while writing the new contents', () => {
+      beforeEach(async () => {
+        jest.spyOn(file, 'writeFile').mockImplementationOnce(async filename => {
+          await fs.promises.writeFile(filename, 'corrupted')
+          throw new Error('testing')
+        })
+        await expect(file.replaceContents(dest, 'aa')).rejects.toThrow('testing')
+      })
+
+      it('does not modify the original file', async () => {
+        expect(await file.readTextFile(dest)).toEqual(await file.readTextFile(__filename))
+      })
+    })
+
+    describe('when given a buffer', () => {
+      beforeEach(async () => {
+        await file.replaceContents(dest, Buffer.from('aa', 'utf8'))
+      })
+
+      it('replaces the contents of the file', async () => {
+        expect(await file.readTextFile(dest)).toEqual('aa')
+      })
+    })
+
+    describe('when given a string', () => {
+      beforeEach(async () => {
+        await file.replaceContents(dest, 'aa')
+      })
+
+      it('replaces the contents of the file', async () => {
+        expect(await file.readTextFile(dest)).toEqual('aa')
+      })
     })
   })
 
@@ -241,7 +317,7 @@ describe('file', () => {
     describe('for a directory', () => {
       describe('when the directory does not exist', () => {
         it('does not throw', async () => {
-          await rm('nosuchdir')
+          await file.rm('nosuchdir')
         })
       })
 
@@ -253,11 +329,11 @@ describe('file', () => {
           dirTmp = await tmp.dir()
           dir = dirTmp.path
           await fs.promises.copyFile(__filename, path.join(dir, 'a_file'))
-          await rm(dir)
+          await file.rm(dir)
         })
 
         it('removes the dir', async () => {
-          expect(await exists(dir)).toBeFalsy()
+          expect(await file.exists(dir)).toBeFalsy()
         })
       })
     })
@@ -265,7 +341,7 @@ describe('file', () => {
     describe('for a file', () => {
       describe('when the file does not exist', () => {
         it('does not throw', async () => {
-          await rm('nosuchfile')
+          await file.rm('nosuchfile')
         })
       })
 
@@ -276,8 +352,8 @@ describe('file', () => {
         beforeEach(async () => {
           fileTmp = await tmp.file()
           filename = fileTmp.path
-          expect(await exists(filename)).toBeTruthy()
-          await rm(filename)
+          expect(await file.exists(filename)).toBeTruthy()
+          await file.rm(filename)
         })
 
         afterEach(async () => {
@@ -285,7 +361,7 @@ describe('file', () => {
         })
 
         it('removes the file', async () => {
-          expect(await exists(filename)).toBeFalsy()
+          expect(await file.exists(filename)).toBeFalsy()
         })
       })
     })
@@ -309,24 +385,24 @@ describe('file', () => {
 
     describe('when the parent directory exists', () => {
       beforeEach(async () => {
-        await mkdirp(dir)
+        await file.mkdirp(dir)
       })
 
       it('creates the dir', async () => {
-        const s = await stat(dir)
+        const s = await file.stat(dir)
         expect(s.isDirectory()).toBeTruthy()
       })
     })
 
     describe('when the parent directory does not exist', () => {
       beforeEach(async () => {
-        await rm(parentDir)
-        expect(await exists(parentDir)).toBeFalsy()
-        await mkdirp(dir)
+        await file.rm(parentDir)
+        expect(await file.exists(parentDir)).toBeFalsy()
+        await file.mkdirp(dir)
       })
 
       it('creates the dir', async () => {
-        const s = await stat(dir)
+        const s = await file.stat(dir)
         expect(s.isDirectory()).toBeTruthy()
       })
     })

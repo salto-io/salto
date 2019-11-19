@@ -18,7 +18,7 @@ export const editBlueprint = async (filename: string, replacements: Pair[]): Pro
   replacements.forEach(pair => {
     fileAsString = fileAsString.replace(pair[0], pair[1])
   })
-  await file.writeTextFile(filename, fileAsString)
+  await file.writeFile(filename, fileAsString)
 }
 
 const mockCliOutput = (): CliOutput =>

@@ -10,7 +10,7 @@ import {
 import _ from 'lodash'
 import * as TestHelpers from '../common/helpers'
 import State from '../../src/state/state'
-import { rm, readTextFile, mkdirp, writeTextFile } from '../../src/file'
+import { rm, readTextFile, mkdirp, writeFile } from '../../src/file'
 
 describe('Test state mechanism', () => {
   const stateErrorFile = 'stateerror.bp'
@@ -87,7 +87,7 @@ describe('Test state mechanism', () => {
       path.join(blueprintsDirectory, stateErrorFile),
     )
     await mkdirp(path.dirname(statePath))
-    await writeTextFile(statePath, text)
+    await writeFile(statePath, text)
 
     // Test
     await expect(state.get()).rejects.toThrow()

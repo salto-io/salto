@@ -2,7 +2,7 @@ import path from 'path'
 import { parseAsync } from 'json2csv'
 import csvtojson from 'csvtojson'
 import { Value } from 'adapter-api'
-import { mkdirp, writeTextFile, appendTextFile } from '../file'
+import { mkdirp, writeFile, appendTextFile } from '../file'
 
 /**
  * Write objects to CSV file
@@ -25,7 +25,7 @@ export const dumpCsv = async (
   let csvString: string
   if (!append) { // If this is the first chunk, create the headers
     csvString = `${await parseAsync(objects)}\n`
-    await writeTextFile(outputPath, formatHeader(csvString))
+    await writeFile(outputPath, formatHeader(csvString))
   } else { // Otherwise do not create the headers as we only append data
     csvString = `${await parseAsync(objects, { header: false })}\n`
     await appendTextFile(outputPath, csvString)

@@ -16,6 +16,27 @@ describe('Test extension format', () => {
       {
         elemID: removeBaseID,
         fields: {
+          unchanged: new Field(removeBaseID, 'unchanged', BuiltinTypes.STRING),
+          before: new Field(removeBaseID, 'before', BuiltinTypes.STRING),
+        },
+      }
+    ),
+    new ObjectType(
+      {
+        elemID: modifyBaseID,
+        fields: {
+          unchanged: new Field(removeBaseID, 'unchanged', BuiltinTypes.STRING),
+          before: new Field(modifyBaseID, 'before', BuiltinTypes.STRING),
+        },
+      }
+    ),
+  ]
+  const beforeShuffled = [
+    new ObjectType(
+      {
+        elemID: removeBaseID,
+        fields: {
+          unchanged: new Field(removeBaseID, 'unchanged', BuiltinTypes.STRING),
           before: new Field(removeBaseID, 'before', BuiltinTypes.STRING),
         },
       }
@@ -25,6 +46,7 @@ describe('Test extension format', () => {
         elemID: modifyBaseID,
         fields: {
           before: new Field(modifyBaseID, 'before', BuiltinTypes.STRING),
+          unchanged: new Field(removeBaseID, 'unchanged', BuiltinTypes.STRING),
         },
       }
     ),
@@ -34,6 +56,7 @@ describe('Test extension format', () => {
       {
         elemID: addBaseID,
         fields: {
+          unchanged: new Field(removeBaseID, 'unchanged', BuiltinTypes.STRING),
           before: new Field(addBaseID, 'before', BuiltinTypes.STRING),
         },
       }
@@ -42,27 +65,36 @@ describe('Test extension format', () => {
       {
         elemID: modifyBaseID,
         fields: {
+          unchanged: new Field(removeBaseID, 'unchanged', BuiltinTypes.STRING),
           before: new Field(modifyBaseID, 'after', BuiltinTypes.STRING),
         },
       }
     ),
   ]
 
+
   const diffFile = path.resolve(`${__dirname}/../../test/diffs/all.diff`)
   const cssHref = '~/.vscode/extensions/salto/test.css'
   let expectedDif: UnifiedDiff
   let diff: UnifiedDiff
+  let shuffledDiff: UnifiedDiff
   let html: string
   beforeAll(async () => {
     expectedDif = await file.readTextFile(diffFile)
     diff = await createPlanDiff(getPlan(before, after).itemsByEvalOrder())
+    shuffledDiff = await createPlanDiff(getPlan(beforeShuffled, after).itemsByEvalOrder())
     html = renderDiffView(diff, [cssHref])
   })
   describe('create diff', () => {
     it('should create plan diff', () => {
       expect(diff).toEqual(expectedDif)
     })
+
+    it('should not be effected by fields and values order', () => {
+      expect(shuffledDiff).toEqual(expectedDif)
+    })
   })
+
 
   describe('render html', () => {
     it('should render the diff as pretty html', () => {

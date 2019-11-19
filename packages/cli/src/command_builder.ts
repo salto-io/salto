@@ -65,6 +65,7 @@ export const createCommandBuilder = <
 
         // apply keyed arguments
         parser.options(options.keyed || {})
+        parser.version(false)
 
         // apply filters
         return Filter.applyParser(filters, parser)

@@ -23,6 +23,16 @@ export { ItemStatus }
 
 const log = logger(module)
 
+const configToChange = (config: InstanceElement): FetchChange => {
+  config.path = [CREDS_DIR, config.elemID.adapter]
+  const change: DetailedChange = {
+    id: config.elemID,
+    action: 'add',
+    data: { after: config },
+  }
+  return { change, serviceChange: change }
+}
+
 export const preview = async (
   workspace: Workspace,
 ): Promise<Plan> => {
@@ -57,7 +67,7 @@ export const deploy = async (
   try {
     const actionPlan = getPlan(stateElements, workspace.elements)
     if (force || await shouldDeploy(actionPlan)) {
-      const [adapters] = await initAdapters(workspace.elements, fillConfig)
+      const [adapters, newConfigs] = await initAdapters(workspace.elements, fillConfig)
       const errors = await deployActions(
         actionPlan,
         adapters,
@@ -73,7 +83,7 @@ export const deploy = async (
       const errored = errors.length > 0
       return {
         success: errored,
-        changes,
+        changes: wu.chain(changes, newConfigs.map(configToChange)),
         errors: errored ? errors : [],
       }
     }
@@ -96,15 +106,6 @@ export type fetchFunc = (
 ) => Promise<FetchResult>
 
 export const fetch: fetchFunc = async (workspace, fillConfig) => {
-  const configToChange = (config: InstanceElement): FetchChange => {
-    config.path = [CREDS_DIR, config.elemID.adapter]
-    const change: DetailedChange = {
-      id: config.elemID,
-      action: 'add',
-      data: { after: config },
-    }
-    return { change, serviceChange: change }
-  }
   log.debug('fetch starting..')
 
   const state = new State(workspace.config.stateLocation)

@@ -3,6 +3,7 @@ import wu from 'wu'
 import { Element, Field, isObjectType, ObjectType, Change, getChangeElement,
   isField, Values } from 'adapter-api'
 import { SaveResult } from 'jsforce'
+import { collections } from '@salto/lowerdash'
 import { FilterCreator } from '../filter'
 import {
   CUSTOM_FIELD, FIELD_ANNOTATIONS, LOOKUP_FILTER_FIELDS, METADATA_TYPE,
@@ -12,6 +13,9 @@ import {
   bpCase, fieldFullName, mapKeysRecursive, sfCase, toCustomField, Types,
   isCustomObject,
 } from '../transformer'
+import { transform } from './convert_types'
+
+const { makeArray } = collections.array
 
 const getLookupFilter = (field: Field): Values =>
   field.annotations[FIELD_ANNOTATIONS.LOOKUP_FILTER]
@@ -43,6 +47,9 @@ const filterCreator: FilterCreator = ({ client }) => ({
    * @param elements the already fetched elements
    */
   onFetch: async (elements: Element[]): Promise<void> => {
+    const lookupFilterType = Types.primitiveDataTypes.lookup
+      .annotationTypes[FIELD_ANNOTATIONS.LOOKUP_FILTER] as ObjectType
+
     const readCustomFields = async (fieldNames: string[]): Promise<Record<string, CustomField>> => (
       _(await client.readMetadata(CUSTOM_FIELD, fieldNames))
         .map(field => [field.fullName, field])
@@ -73,25 +80,24 @@ const filterCreator: FilterCreator = ({ client }) => ({
     const name2Field = await readCustomFields(customFieldNames)
 
     const addLookupFilterData = (fieldWithLookupFilter: Field): void => {
+      const { FILTER_ITEMS, ERROR_MESSAGE, IS_OPTIONAL } = LOOKUP_FILTER_FIELDS
       const fieldFromMap = name2Field[getCustomFieldName(fieldWithLookupFilter)]
-      const lookupFilter = fieldFromMap ? fieldFromMap.lookupFilter : undefined
-      if (lookupFilter) {
-        _.assign(fieldWithLookupFilter.annotations[FIELD_ANNOTATIONS.LOOKUP_FILTER],
-          mapKeysRecursive(lookupFilter, bpCase))
-        if (lookupFilter.isOptional) {
-          // eslint-disable-next-line max-len
-          delete fieldWithLookupFilter.annotations[FIELD_ANNOTATIONS.LOOKUP_FILTER][LOOKUP_FILTER_FIELDS.ERROR_MESSAGE]
+      const lookupFilterInfo = fieldFromMap?.lookupFilter
+      if (lookupFilterInfo) {
+        const values = mapKeysRecursive(lookupFilterInfo, bpCase)
+        values[FILTER_ITEMS] = makeArray(values[FILTER_ITEMS])
+        const lookupFilter = transform(values, lookupFilterType) || {}
+        if (lookupFilter[IS_OPTIONAL]) {
+          delete lookupFilter[ERROR_MESSAGE]
         }
+        fieldWithLookupFilter.annotations[FIELD_ANNOTATIONS.LOOKUP_FILTER] = lookupFilter
       }
     }
 
     const addLookupFilterElement = (): void => {
-      const lookupFilterElement = Types.primitiveDataTypes.lookup
-        .annotationTypes[FIELD_ANNOTATIONS.LOOKUP_FILTER]
-      lookupFilterElement.annotate({ [METADATA_TYPE]: 'LookupFilter' })
-      lookupFilterElement.path = ['types', 'subtypes', lookupFilterElement.elemID.name]
-
-      elements.push(...[lookupFilterElement])
+      lookupFilterType.annotate({ [METADATA_TYPE]: 'LookupFilter' })
+      lookupFilterType.path = ['types', 'subtypes', lookupFilterType.elemID.name]
+      elements.push(...[lookupFilterType])
     }
 
     fieldsWithLookupFilter.forEach(addLookupFilterData)

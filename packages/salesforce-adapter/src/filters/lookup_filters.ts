@@ -6,12 +6,11 @@ import { SaveResult } from 'jsforce'
 import { collections } from '@salto/lowerdash'
 import { FilterCreator } from '../filter'
 import {
-  CUSTOM_FIELD, FIELD_ANNOTATIONS, LOOKUP_FILTER_FIELDS, METADATA_TYPE,
+  API_NAME, CUSTOM_FIELD, FIELD_ANNOTATIONS, LOOKUP_FILTER_FIELDS, METADATA_TYPE,
 } from '../constants'
 import { CustomField } from '../client/types'
 import {
-  bpCase, fieldFullName, mapKeysRecursive, sfCase, toCustomField, Types,
-  isCustomObject,
+  bpCase, fieldFullName, mapKeysRecursive, sfCase, toCustomField, Types, isCustomObject,
 } from '../transformer'
 import { transform } from './convert_types'
 
@@ -62,9 +61,8 @@ const filterCreator: FilterCreator = ({ client }) => ({
       .filter(e => isObjectType(e) && isCustomObject(e))
       .toArray() as ObjectType[]
 
-    const objectFullNameToObjectMap: Record<string, ObjectType> = _(customObjectElements)
-      .map(obj => [obj.elemID.getFullName(), obj])
-      .fromPairs()
+    const objectFullNameToObjectMap: Record<string, ObjectType[]> = _(customObjectElements)
+      .groupBy(e => e.elemID.getFullName())
       .value()
 
     const fieldsWithLookupFilter = _(customObjectElements)
@@ -72,8 +70,14 @@ const filterCreator: FilterCreator = ({ client }) => ({
       .flatten()
       .value()
 
-    const getCustomFieldName = (field: Field): string =>
-      fieldFullName(objectFullNameToObjectMap[field.parentID.getFullName()], field)
+    const getCustomFieldName = (field: Field): string => {
+      const matchingObjects = objectFullNameToObjectMap[field.parentID.getFullName()]
+      // CustomObjects may spread over several elements.
+      // Thus, we should find the one that holds the API_NAME in order to get the field's full name
+      const objectApiName = matchingObjects.find(obj => obj.annotations[API_NAME])
+        ?.annotations[API_NAME]
+      return fieldFullName(objectApiName, field)
+    }
 
     const customFieldNames = fieldsWithLookupFilter.map(getCustomFieldName)
 

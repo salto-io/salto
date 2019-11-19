@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import { Element } from 'adapter-api'
 import { logger } from '@salto/logging'
-import { readTextFile, writeFile } from '../file'
+import { readTextFile, replaceContents } from '../file'
 import { serialize, deserialize } from '../serializer/elements'
 
 const log = logger(module)
@@ -56,7 +56,7 @@ export default class State {
       // If state is not loaded we don't have anything to save
       if (!this.state) return
       const buffer = serialize(this.state)
-      await writeFile(this.statePath, buffer)
+      await replaceContents(this.statePath, buffer)
       log.debug(`finish flushing state [#elements=${countElements(this.state)}]`)
     }
 

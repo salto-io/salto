@@ -127,9 +127,9 @@ export const createFoldingProvider = (
     const parsedBlueprint = workspace.getParsedBlueprint(document.fileName)
     return parsedBlueprint
       ? wu(parsedBlueprint.sourceMap.entries())
-      .map(([name, ranges]) => ranges.map(r => sourceRangeToFoldRange(r, name)))
-      .flatten()
-      .toArray()
+        .map(([name, ranges]) => ranges.map(r => sourceRangeToFoldRange(r, name)))
+        .flatten()
+        .toArray()
       : []
   },
 })

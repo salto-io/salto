@@ -1,11 +1,12 @@
 import {
-  ObjectType, ElemID, InstanceElement, Field, BuiltinTypes, Type,
+  ObjectType, ElemID, InstanceElement, Field, BuiltinTypes, Type, Value,
 } from 'adapter-api'
+import _ from 'lodash'
 import filterCreator, { CLEAN_DATA_SERVICE_TYPE_NAME, CLEAN_RULES_FIELD_NAME,
   FIELD_MAPPINGS_FIELD_NAME, FIELD_MAPPINGS_FIELD_TO_SORT_BY, FIELD_PERMISSIONS_TYPE_NAME,
   FIELD_FIELD_NAME }
   from '../../src/filters/list_order'
-import { SALESFORCE } from '../../src/constants'
+import { SALESFORCE, INSTANCE_FULL_NAME_FIELD } from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 
 describe('list order filter', () => {
@@ -64,6 +65,70 @@ describe('list order filter', () => {
     it('should not fail if target field does not exist', async () => {
       const testType = new ObjectType({ elemID: typeElemID })
       await expect(filter.onFetch([testType])).resolves.not.toThrow()
+    })
+
+    it('should properly sort an object instance field by its sort property and a sort callback', async () => {
+      const opportunityStageElemId = new ElemID(SALESFORCE, 'standard_value_set')
+      const STANDARD_VALUE = 'standard_value'
+      const mockOpportunityStageInstance = new InstanceElement(
+        'opportunity_stage',
+        new ObjectType({
+          elemID: opportunityStageElemId,
+        }),
+        {
+          [STANDARD_VALUE]: [
+            {
+              [INSTANCE_FULL_NAME_FIELD]: 'd',
+            },
+            {
+              [INSTANCE_FULL_NAME_FIELD]: 'c',
+            },
+            {
+              [INSTANCE_FULL_NAME_FIELD]: 'b',
+            },
+            {
+              [INSTANCE_FULL_NAME_FIELD]: 'a',
+            },
+          ],
+        }
+      )
+      const businessProcessElemId = new ElemID(SALESFORCE, 'business_process')
+      const mockbusinessProcessInstance = new InstanceElement(
+        'OpportunityStage',
+        new ObjectType({
+          elemID: businessProcessElemId,
+        }),
+        {
+          values: [
+            {
+              test: 'super',
+              [INSTANCE_FULL_NAME_FIELD]: 'a',
+            },
+            {
+              test: 'califragilistic',
+              [INSTANCE_FULL_NAME_FIELD]: 'd',
+            },
+            {
+              test: 'expiali',
+              [INSTANCE_FULL_NAME_FIELD]: 'b',
+            },
+            {
+              test: 'docious',
+              [INSTANCE_FULL_NAME_FIELD]: 'c',
+            },
+          ],
+        }
+      )
+      const testElements = [mockOpportunityStageInstance, mockbusinessProcessInstance]
+      // Run filter
+      await filter.onFetch(testElements)
+      // Get results
+      const [resultOpportunityStage, resultBusinessProcess] = testElements
+      // Opportunity stage should not change
+      expect(_.isEqual(mockOpportunityStageInstance, resultOpportunityStage)).toBeTruthy()
+      // Verify that the order of the values of the Business Process mock is the same as the
+      // Opportunity stage standard value
+      expect((resultBusinessProcess as InstanceElement).value.values.map((val: { [x: string]: Value }) => val[INSTANCE_FULL_NAME_FIELD])).toEqual(['d', 'c', 'b', 'a'])
     })
   })
 })

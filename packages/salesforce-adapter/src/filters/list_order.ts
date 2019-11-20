@@ -1,13 +1,18 @@
 import _ from 'lodash'
 import {
-  Element, isInstanceElement, InstanceElement, Value, isObjectType, ObjectType, Type,
+  Element, InstanceElement, Value, Values, Type, findElement, ElemID, findInstances,
+  findObjectType,
 } from 'adapter-api'
+import wu from 'wu'
+import { INSTANCE_FULL_NAME_FIELD, SALESFORCE } from '../constants'
 import { FilterWith } from '../filter'
 
 interface SortField {
   typeName: string // The Object Type we wish to sort its instances
   path: string[] // The properties hierarchy to the required list property we wish to sort
   fieldToSortBy?: string // The property by which we sort the objects in the array
+   // A comparison function that will be used in ordering the list elements:
+  sortCallback?: (value: Value) => number
 }
 
 export const CLEAN_DATA_SERVICE_TYPE_NAME = 'clean_data_service'
@@ -19,6 +24,9 @@ const CLEAN_DATA_SERVICE_SORT = {
   path: [CLEAN_RULES_FIELD_NAME, FIELD_MAPPINGS_FIELD_NAME],
   fieldToSortBy: FIELD_MAPPINGS_FIELD_TO_SORT_BY,
 }
+export const BUSINESS_PROCESS_TYPE_NAME = 'business_process'
+export const VALUES_FIELD_NAME = 'values'
+export const VALUES_FIELD_TO_SORT_BY = INSTANCE_FULL_NAME_FIELD
 
 export const ANIMATION_RULE_TYPE_NAME = 'animation_rule'
 export const TARGET_FIELD_NAME = 'target_field'
@@ -53,14 +61,13 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
   onFetch: async (elements: Element[]) => {
     // An internal method that receives the sort info and the records and does the sorting
     const orderListFieldsInInstances = (
-      instances: InstanceElement[],
+      elems: Element[],
       sortFieldInfo: SortField
     ): void => {
       // Filter the instances we wish to sort their sub properties
-      const instancesToChange = instances.filter(
-        inst => inst.type.elemID.name === sortFieldInfo.typeName
-      )
-      instancesToChange.forEach(elem => {
+
+      const instancesToChange = findInstances(elems, new ElemID(SALESFORCE, sortFieldInfo.typeName))
+      wu(instancesToChange).forEach(elem => {
         // Get the initial field to start with, this one is special because it is the only one
         // accessed by elem.value[fieldToStart], while the rest of the path is accessed by .
         const fieldToStart = sortFieldInfo.path.shift() as string
@@ -80,48 +87,74 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
             fieldsToSort
               .filter(field => _.isArray(field[arrayPropertyToSort]))
               .forEach(field => {
-                field[arrayPropertyToSort] = _.orderBy(
-                  field[arrayPropertyToSort],
-                  sortFieldInfo.fieldToSortBy
-                )
+                if (sortFieldInfo.sortCallback) {
+                  field[arrayPropertyToSort] = _.sortBy(
+                    [arrayPropertyToSort],
+                    sortFieldInfo.sortCallback
+                  )
+                } else {
+                  field[arrayPropertyToSort] = _.orderBy(
+                    field[arrayPropertyToSort],
+                    sortFieldInfo.fieldToSortBy
+                  )
+                }
               })
           }
         // We don't have an additional property to sort, and we sort the elements inside the
         // initial field at the top level (right below to elem.value)
         } else if (_.isArray(elem.value[fieldToStart])) {
-          elem.value[fieldToStart] = _.orderBy(
-            elem.value[fieldToStart],
-            sortFieldInfo.fieldToSortBy
-          )
+          if (sortFieldInfo.sortCallback) {
+            elem.value[fieldToStart] = _.sortBy(
+              elem.value[fieldToStart],
+              sortFieldInfo.sortCallback
+            )
+          } else {
+            elem.value[fieldToStart] = _.orderBy(
+              elem.value[fieldToStart],
+              sortFieldInfo.fieldToSortBy
+            )
+          }
         }
       })
     }
 
     // An internal method that receives the sort info and the ObjectTypes and does the sorting
     const orderListFieldsInTypes = (
-      types: ObjectType[],
+      elems: Element[],
       sortFieldInfo: SortField
     ): void => {
       // Filter the types we wish to sort their sub properties
-      const typesToChange = types.filter(t => t.elemID.name === sortFieldInfo.typeName)
-      if (typesToChange.length === 0) {
+      const typeToChange = findObjectType(elems, new ElemID(SALESFORCE, sortFieldInfo.typeName))
+      if (!typeToChange) {
         return
       }
-      // const sortInfo = _.clone(sortFieldInfo)
-      typesToChange
-        .map(type => type.fields[sortFieldInfo.path[0]])
-        .filter(field => field !== undefined)
-        .filter(field => _.isArray(field.annotations[Type.VALUES]))
-        .forEach(field => {
-          field.annotations[Type.VALUES] = field.annotations[Type.VALUES].sort()
-        })
+      let valuesToSort = typeToChange.fields[sortFieldInfo.path[0]]?.annotations[Type.VALUES]
+      if (_.isArray(valuesToSort)) {
+        valuesToSort = valuesToSort.sort()
+      }
     }
-    const instanceElements = elements.filter(isInstanceElement)
-    orderListFieldsInInstances(instanceElements, CLEAN_DATA_SERVICE_SORT)
-    const typeElements = elements.filter(isObjectType)
-    orderListFieldsInTypes(typeElements, ANIMATION_RULE_SORT)
-    orderListFieldsInTypes(typeElements, FIELD_PERMISSIONS_SORT)
-    orderListFieldsInTypes(typeElements, LEAD_HISTORY_SORT)
+    orderListFieldsInInstances(elements, CLEAN_DATA_SERVICE_SORT)
+    // Order the opportunity stages items in the business process' values field according to the
+    // opportunity stages picklist values.
+    const opportunityStageElem = new ElemID(SALESFORCE, 'standard_value_set', 'instance', 'opportunity_stage')
+    const opportunityStage = findElement(elements, opportunityStageElem)
+    const BUSINESS_PROCESS_VALUES_SORT = {
+      typeName: BUSINESS_PROCESS_TYPE_NAME,
+      path: [VALUES_FIELD_NAME],
+      fieldToSortBy: VALUES_FIELD_TO_SORT_BY,
+      sortCallback: (stage: Value): number => {
+        if (!opportunityStage) {
+          return 0
+        }
+        const orderedStageNames = (opportunityStage as InstanceElement).value.standard_value
+          .map((val: Values) => val[INSTANCE_FULL_NAME_FIELD])
+        return orderedStageNames.indexOf(stage[INSTANCE_FULL_NAME_FIELD])
+      },
+    }
+    orderListFieldsInInstances(elements, BUSINESS_PROCESS_VALUES_SORT)
+    orderListFieldsInTypes(elements, ANIMATION_RULE_SORT)
+    orderListFieldsInTypes(elements, FIELD_PERMISSIONS_SORT)
+    orderListFieldsInTypes(elements, LEAD_HISTORY_SORT)
   },
 })
 

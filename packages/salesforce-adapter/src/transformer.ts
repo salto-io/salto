@@ -445,10 +445,17 @@ export class Types {
     return _.concat(
       Object.values(Types.primitiveDataTypes),
       Object.values(Types.compoundDataTypes),
-      [Types.fieldLevelSecurityType],
     ).map(type => {
       const fieldType = type.clone()
       fieldType.path = ['types', 'field_types']
+      return fieldType
+    })
+  }
+
+  static getAnnotationTypes(): Type[] {
+    return [Types.fieldLevelSecurityType].map(type => {
+      const fieldType = type.clone()
+      fieldType.path = ['types', 'annotation_types']
       return fieldType
     })
   }

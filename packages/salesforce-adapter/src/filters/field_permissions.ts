@@ -63,31 +63,30 @@ const toProfiles = (object: ObjectType): ProfileInfo[] =>
       if (!getFieldPermissions(field)) {
         return profiles
       }
-      const fieldEditable = getFieldPermissions(field)[EDITABLE] as string[]
-      const fieldReadable = getFieldPermissions(field)[READABLE] as string[]
+      const fieldEditable: string[] = getFieldPermissions(field)[EDITABLE] || []
+      const fieldReadable: string[] = getFieldPermissions(field)[READABLE] || []
       _.union(fieldEditable, fieldReadable).forEach((profile: string) => {
         if (_.isUndefined(profiles[profile])) {
           profiles[profile] = new ProfileInfo(sfCase(ElemID.fromFullName(profile).name), [])
         }
         profiles[profile].fieldPermissions.push({
           field: fieldFullName(object, field),
-          editable: fieldEditable ? fieldEditable.includes(profile) : false,
-          readable: fieldReadable ? fieldReadable.includes(profile) : false,
+          editable: fieldEditable.includes(profile),
+          readable: fieldReadable.includes(profile),
         })
       })
       return profiles
     }, {} as Record<string, ProfileInfo>))
 
-type FieldPermission = { field: string; editable: boolean; readable: boolean }
-type ProfileToPermission = Record<string, { editable: boolean; readable: boolean }>
+type ProfileToPermissions = Record<string, { editable: boolean; readable: boolean }>
 
 /**
  * Create a record of { field_name: { profile_name: { editable: boolean, readable: boolean } } }
  * from the profile's field permissions
  */
 const profile2Permissions = (profileInstance: InstanceElement):
-  Record<string, ProfileToPermission> => {
-  const instanceFieldPermissions = (profileInstance.value[FIELD_PERMISSIONS] as FieldPermission[])
+  Record<string, ProfileToPermissions> => {
+  const instanceFieldPermissions = (profileInstance.value[FIELD_PERMISSIONS] as FieldPermissions[])
   if (!instanceFieldPermissions) {
     return {}
   }
@@ -131,15 +130,18 @@ const filterCreator: FilterCreator = ({ client }) => ({
     customObjectTypes.forEach(obj => {
       Object.values(obj.fields).forEach(field => {
         const fullName = fieldFullName(elemID2ApiName[id(obj)] || obj, field)
-        const fieldPermission = permissions[fullName] as ProfileToPermission | undefined
-        if (fieldPermission) {
-          Object.entries(fieldPermission).forEach(p2f => {
+        const fieldPermissions = permissions[fullName] as ProfileToPermissions | undefined
+        if (fieldPermissions) {
+          Object.entries(fieldPermissions).forEach(p2f => {
             const profile = findElement(profileInstances, ElemID.fromFullName(p2f[0]))
             if (profile) {
               setProfileFieldPermissions(field, id(profile), p2f[1].editable, p2f[1].readable)
             }
           })
         }
+        // sort to prevent future fetch conflicts
+        getFieldPermissions(field)[EDITABLE].sort()
+        getFieldPermissions(field)[READABLE].sort()
       })
     })
 
@@ -181,10 +183,10 @@ const filterCreator: FilterCreator = ({ client }) => ({
       profiles.find(p => p.fullName === profile)
 
     const findPermissions = (permissions: FieldPermissions[], field: string):
-      FieldPermission | undefined => permissions.find(fp => fp.field === field)
+      FieldPermissions | undefined => permissions.find(fp => fp.field === field)
 
-    const emptyPermissions = (permission: FieldPermission): FieldPermission =>
-      ({ field: permission.field, readable: false, editable: false })
+    const emptyPermissions = (permissions: FieldPermissions): FieldPermissions =>
+      ({ field: permissions.field, readable: false, editable: false })
 
     const beforeProfiles = toProfiles(before)
     const afterProfiles = toProfiles(after)

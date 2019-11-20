@@ -24,14 +24,15 @@ type approveChangesFunc = (
 ) => Promise<ReadonlyArray<FetchChange>>
 
 export const fetchCommand = async (
-  workspace: Workspace,
-  force: boolean,
-  interactive: boolean,
-  output: CliOutput,
-  spinnerCreator: SpinnerCreator,
-  fetch: fetchFunc,
-  getApprovedChanges: approveChangesFunc,
-): Promise<CliExitCode> => {
+  { workspace, force, interactive, output, spinnerCreator, fetch, getApprovedChanges }: {
+    workspace: Workspace
+    force: boolean
+    interactive: boolean
+    output: CliOutput
+    spinnerCreator: SpinnerCreator
+    fetch: fetchFunc
+    getApprovedChanges: approveChangesFunc
+  }): Promise<CliExitCode> => {
   const progressSpinner = (
     startText: string,
     successText: string,
@@ -109,8 +110,15 @@ export const command = (
     if (errored) {
       return CliExitCode.AppError
     }
-    return fetchCommand(workspace, force, interactive, output,
-      spinnerCreator, apiFetch, cliGetApprovedChanges)
+    return fetchCommand({
+      workspace,
+      force,
+      interactive,
+      output,
+      spinnerCreator,
+      fetch: apiFetch,
+      getApprovedChanges: cliGetApprovedChanges,
+    })
   },
 })
 

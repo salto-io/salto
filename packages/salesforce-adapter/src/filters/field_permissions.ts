@@ -23,6 +23,9 @@ const log = logger(module)
 
 const { EDITABLE, READABLE } = FIELD_LEVEL_SECURITY_FIELDS
 
+const ADMIN_ELEM_ID = new ElemID(SALESFORCE, bpCase(PROFILE_METADATA_TYPE),
+  'instance', ADMIN_PROFILE)
+
 // --- Utils functions
 export const getFieldPermissions = (field: Field): Values =>
   (field.annotations[FIELD_LEVEL_SECURITY_ANNOTATION] || {})
@@ -49,8 +52,7 @@ const setDefaultFieldPermissions = (field: Field): void => {
     return
   }
   if (_.isEmpty(getFieldPermissions(field))) {
-    const adminElemID = new ElemID(SALESFORCE, bpCase(PROFILE_METADATA_TYPE), 'instance', ADMIN_PROFILE)
-    setProfileFieldPermissions(field, adminElemID.getFullName(), true, true)
+    setProfileFieldPermissions(field, ADMIN_ELEM_ID.getFullName(), true, true)
     log.debug('set %s field permissions for %s.%s', ADMIN_PROFILE, field.parentID.name, field.name)
   }
 }
@@ -167,8 +169,6 @@ const filterCreator: FilterCreator = ({ client }) => ({
       return []
     }
 
-    // Look for fields that used to have permissions and permission was deleted from BP
-    // For those fields we will mark then as { editable: false, readable: false } explicit
     wu(changes)
       .forEach(c => {
         const changeElement = getChangeElement(c)

@@ -125,11 +125,9 @@ export const createFoldingProvider = (
     document: vscode.TextDocument,
   ): vscode.ProviderResult<vscode.FoldingRange[]> => {
     const parsedBlueprint = workspace.getParsedBlueprint(document.fileName)
-    return parsedBlueprint
-      ? wu(parsedBlueprint.sourceMap.entries())
-        .map(([name, ranges]) => ranges.map(r => sourceRangeToFoldRange(r, name)))
-        .flatten()
-        .toArray()
-      : []
+    return wu(parsedBlueprint?.sourceMap?.entries() ?? [])
+      .map(([name, ranges]) => ranges.map(r => sourceRangeToFoldRange(r, name)))
+      .flatten()
+      .toArray()
   },
 })

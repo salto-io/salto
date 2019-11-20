@@ -132,16 +132,13 @@ const filterCreator: FilterCreator = ({ client }) => ({
         const fullName = fieldFullName(elemID2ApiName[id(obj)] || obj, field)
         const fieldPermissions = permissions[fullName] as ProfileToPermissions | undefined
         if (fieldPermissions) {
-          Object.entries(fieldPermissions).forEach(p2f => {
+          Object.entries(fieldPermissions).sort().forEach(p2f => {
             const profile = findElement(profileInstances, ElemID.fromFullName(p2f[0]))
             if (profile) {
               setProfileFieldPermissions(field, id(profile), p2f[1].editable, p2f[1].readable)
             }
           })
         }
-        // sort to prevent future fetch conflicts
-        getFieldPermissions(field)[EDITABLE].sort()
-        getFieldPermissions(field)[READABLE].sort()
       })
     })
 

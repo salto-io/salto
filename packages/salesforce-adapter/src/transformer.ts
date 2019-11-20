@@ -18,6 +18,8 @@ import {
   METADATA_TYPE, FIELD_ANNOTATIONS, SALESFORCE_CUSTOM_SUFFIX, DEFAULT_VALUE_FORMULA,
   MAX_METADATA_RESTRICTION_VALUES, LOOKUP_FILTER_FIELDS,
   ADDRESS_FIELDS, NAME_FIELDS, GEOLOCATION_FIELDS, INSTANCE_FULL_NAME_FIELD,
+  FIELD_LEVEL_SECURITY_ANNOTATION,
+  FIELD_LEVEL_SECURITY_FIELDS,
 } from './constants'
 
 const { makeArray } = collections.array
@@ -133,177 +135,197 @@ const geoLocationElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.LOCATION)
 export class Types {
   private static getElemIdFunc: ElemIdGetter
 
+  private static fieldLevelSecurityElemID = new ElemID(SALESFORCE, FIELD_LEVEL_SECURITY_ANNOTATION)
+  private static fieldLevelSecurityType = new ObjectType({
+    elemID: Types.fieldLevelSecurityElemID,
+    fields: {
+      [FIELD_LEVEL_SECURITY_FIELDS.EDITABLE]: new TypeField(
+        Types.fieldLevelSecurityElemID, FIELD_LEVEL_SECURITY_FIELDS.EDITABLE,
+        BuiltinTypes.STRING, {}, true
+      ),
+      [FIELD_LEVEL_SECURITY_FIELDS.READABLE]: new TypeField(
+        Types.fieldLevelSecurityElemID, FIELD_LEVEL_SECURITY_FIELDS.READABLE,
+        BuiltinTypes.STRING, {}, true
+      ),
+    },
+  })
+
+  private static commonAnnotationTypes = {
+    [API_NAME]: BuiltinTypes.SERVICE_ID,
+    [FIELD_LEVEL_SECURITY_ANNOTATION]: Types.fieldLevelSecurityType,
+  }
+
   // Type mapping for custom objects
   public static primitiveDataTypes: Record<string, Type> = {
     text: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.TEXT),
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
+        ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.UNIQUE]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.CASE_SENSITIVE]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.LENGTH]: BuiltinTypes.NUMBER,
-        [API_NAME]: BuiltinTypes.SERVICE_ID,
       },
     }),
     number: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.NUMBER),
       primitive: PrimitiveTypes.NUMBER,
       annotationTypes: {
+        ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.SCALE]: BuiltinTypes.NUMBER,
         [FIELD_ANNOTATIONS.PRECISION]: BuiltinTypes.NUMBER,
         [FIELD_ANNOTATIONS.UNIQUE]: BuiltinTypes.BOOLEAN,
-        [API_NAME]: BuiltinTypes.SERVICE_ID,
       },
     }),
     autonumber: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.AUTONUMBER),
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
+        ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.DISPLAY_FORMAT]: BuiltinTypes.STRING,
-        [API_NAME]: BuiltinTypes.SERVICE_ID,
       },
     }),
     boolean: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.CHECKBOX),
       primitive: PrimitiveTypes.BOOLEAN,
       annotationTypes: {
-        [API_NAME]: BuiltinTypes.SERVICE_ID,
+        ...Types.commonAnnotationTypes,
       },
     }),
     date: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.DATE),
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
-        [API_NAME]: BuiltinTypes.SERVICE_ID,
+        ...Types.commonAnnotationTypes,
       },
     }),
     time: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.TIME),
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
-        [API_NAME]: BuiltinTypes.SERVICE_ID,
+        ...Types.commonAnnotationTypes,
       },
     }),
     datetime: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.DATETIME),
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
-        [API_NAME]: BuiltinTypes.SERVICE_ID,
+        ...Types.commonAnnotationTypes,
       },
     }),
     currency: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.CURRENCY),
       primitive: PrimitiveTypes.NUMBER,
       annotationTypes: {
+        ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.SCALE]: BuiltinTypes.NUMBER,
         [FIELD_ANNOTATIONS.PRECISION]: BuiltinTypes.NUMBER,
-        [API_NAME]: BuiltinTypes.SERVICE_ID,
       },
     }),
     picklist: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.PICKLIST),
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
-        [API_NAME]: BuiltinTypes.SERVICE_ID,
+        ...Types.commonAnnotationTypes,
       },
     }),
     multipicklist: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.MULTIPICKLIST),
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
+        ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.VISIBLE_LINES]: BuiltinTypes.NUMBER,
-        [API_NAME]: BuiltinTypes.SERVICE_ID,
       },
     }),
     email: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.EMAIL),
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
+        ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.UNIQUE]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.CASE_SENSITIVE]: BuiltinTypes.BOOLEAN,
-        [API_NAME]: BuiltinTypes.SERVICE_ID,
       },
     }),
     percent: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.PERCENT),
       primitive: PrimitiveTypes.NUMBER,
       annotationTypes: {
+        ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.SCALE]: BuiltinTypes.NUMBER,
         [FIELD_ANNOTATIONS.PRECISION]: BuiltinTypes.NUMBER,
-        [API_NAME]: BuiltinTypes.SERVICE_ID,
       },
     }),
     phone: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.PHONE),
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
-        [API_NAME]: BuiltinTypes.SERVICE_ID,
+        ...Types.commonAnnotationTypes,
       },
     }),
     longtextarea: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.LONGTEXTAREA),
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
+        ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.VISIBLE_LINES]: BuiltinTypes.NUMBER,
         [FIELD_ANNOTATIONS.LENGTH]: BuiltinTypes.NUMBER,
-        [API_NAME]: BuiltinTypes.SERVICE_ID,
       },
     }),
     richtextarea: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.RICHTEXTAREA),
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
+        ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.VISIBLE_LINES]: BuiltinTypes.NUMBER,
         [FIELD_ANNOTATIONS.LENGTH]: BuiltinTypes.NUMBER,
-        [API_NAME]: BuiltinTypes.SERVICE_ID,
       },
     }),
     textarea: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.TEXTAREA),
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
-        [API_NAME]: BuiltinTypes.SERVICE_ID,
+        ...Types.commonAnnotationTypes,
       },
     }),
     encryptedtext: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.ENCRYPTEDTEXT),
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
+        ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.MASK_CHAR]: BuiltinTypes.STRING,
         [FIELD_ANNOTATIONS.MASK_TYPE]: BuiltinTypes.STRING,
         [FIELD_ANNOTATIONS.MASK]: BuiltinTypes.STRING,
         [FIELD_ANNOTATIONS.LENGTH]: BuiltinTypes.NUMBER,
-        [API_NAME]: BuiltinTypes.SERVICE_ID,
       },
     }),
     url: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.URL),
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
-        [API_NAME]: BuiltinTypes.SERVICE_ID,
+        ...Types.commonAnnotationTypes,
       },
     }),
     lookup: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.LOOKUP),
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
+        ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION]: BuiltinTypes.BOOLEAN,
         // Todo SALTO-228 The FIELD_ANNOTATIONS.RELATED_TO annotation is missing since
         // currently there is no way to declare on a list annotation
         [FIELD_ANNOTATIONS.LOOKUP_FILTER]: lookupFilterObjectType,
-        [API_NAME]: BuiltinTypes.SERVICE_ID,
       },
     }),
     masterdetail: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.MASTER_DETAIL),
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
+        ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.LOOKUP_FILTER]: lookupFilterObjectType,
         // Todo SALTO-228 The FIELD_ANNOTATIONS.RELATED_TO annotation is missing since
         // currently there is no way to declare on a list annotation
-        [API_NAME]: BuiltinTypes.SERVICE_ID,
       },
     }),
   }
@@ -339,7 +361,7 @@ export class Types {
         ),
       },
       annotationTypes: {
-        [API_NAME]: BuiltinTypes.SERVICE_ID,
+        ...Types.commonAnnotationTypes,
       },
     }),
     name: new ObjectType({
@@ -356,7 +378,7 @@ export class Types {
         ),
       },
       annotationTypes: {
-        [API_NAME]: BuiltinTypes.SERVICE_ID,
+        ...Types.commonAnnotationTypes,
       },
     }),
     location: new ObjectType({
@@ -372,7 +394,7 @@ export class Types {
       annotationTypes: {
         [FIELD_ANNOTATIONS.DISPLAY_LOCATION_IN_DECIMAL]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.SCALE]: BuiltinTypes.NUMBER,
-        [API_NAME]: BuiltinTypes.SERVICE_ID,
+        ...Types.commonAnnotationTypes,
       },
     }),
   }
@@ -426,6 +448,14 @@ export class Types {
     ).map(type => {
       const fieldType = type.clone()
       fieldType.path = ['types', 'field_types']
+      return fieldType
+    })
+  }
+
+  static getAnnotationTypes(): Type[] {
+    return [Types.fieldLevelSecurityType].map(type => {
+      const fieldType = type.clone()
+      fieldType.path = ['types', 'annotation_types']
       return fieldType
     })
   }

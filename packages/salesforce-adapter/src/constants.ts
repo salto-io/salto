@@ -13,6 +13,7 @@ export const FORMULA = 'formula'
 export const DEFAULT_VALUE_FORMULA = 'default_value_formula'
 export const METADATA_TYPE = 'metadata_type'
 export const FIELD_PERMISSIONS = 'field_permissions'
+export const FIELD_LEVEL_SECURITY_ANNOTATION = 'field_level_security'
 export const FIELD_TYPE_NAMES = {
   STRING: 'string',
   AUTONUMBER: 'autonumber',
@@ -117,6 +118,11 @@ export const NAME_FIELDS = {
 export const GEOLOCATION_FIELDS = {
   LATITUDE: 'latitude',
   LONGITUDE: 'longitude',
+}
+
+export const FIELD_LEVEL_SECURITY_FIELDS = {
+  EDITABLE: 'editable',
+  READABLE: 'readable',
 }
 
 // Limits

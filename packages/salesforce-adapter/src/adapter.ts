@@ -190,6 +190,7 @@ export default class SalesforceAdapter {
   public async fetch(): Promise<Element[]> {
     log.debug('going to fetch salesforce account configuration..')
     const fieldTypes = Types.getAllFieldTypes()
+    const annotationTypes = Types.getAnnotationTypes()
     const metadataTypeNames = this.listMetadataTypes()
     const metadataTypes = this.fetchMetadataTypes(metadataTypeNames)
     const metadataInstances = this.fetchMetadataInstances(metadataTypeNames, metadataTypes)
@@ -206,7 +207,8 @@ export default class SalesforceAdapter {
     )
 
     const elements = _.flatten(
-      await Promise.all([fieldTypes, metadataTypes, sObjects, metadataInstances]) as Element[][]
+      await Promise.all([annotationTypes, fieldTypes, metadataTypes, sObjects,
+        metadataInstances]) as Element[][]
     )
 
     await this.runFiltersOnFetch(elements)

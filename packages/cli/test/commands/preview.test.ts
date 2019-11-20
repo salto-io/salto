@@ -42,7 +42,7 @@ describe('preview command', () => {
     })
 
     it('should print summary', async () => {
-      expect(cliOutput.stdout.content.search(/Plan.*0 to add, 3 to change, 0 to remove./)).toBeGreaterThan(0)
+      expect(cliOutput.stdout.content.search(/Impacts.*2 types and 1 instance/)).toBeGreaterThan(0)
     })
 
     it('should find all elements', async () => {

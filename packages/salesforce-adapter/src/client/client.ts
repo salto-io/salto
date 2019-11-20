@@ -104,7 +104,13 @@ const realConnection = (isSandbox: boolean, retryOptions: RequestRetryOptions): 
     version: API_VERSION,
     loginUrl: `https://${isSandbox ? 'test' : 'login'}.salesforce.com/`,
     requestModule: (opts: Options, callback: RequestCallback) =>
-      requestretry({ ...retryOptions, ...opts }, callback),
+      requestretry({ ...retryOptions, ...opts }, (err, response, body) => {
+        const attempts = _.get(response, 'attempts') || _.get(err, 'attempts')
+        if (attempts && attempts > 1) {
+          log.warn('sfdc client retry attempts: %o', attempts)
+        }
+        return callback(err, response, body)
+      }),
   })
   // Set poll interval and timeout for deploy
   connection.metadata.pollInterval = 3000

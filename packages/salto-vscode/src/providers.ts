@@ -21,8 +21,11 @@ export const createDocumentSymbolsProvider = (
     doc: vscode.TextDocument
   ) => {
     const blueprint = workspace.getParsedBlueprint(doc.fileName)
-    const defTree = buildDefinitionsTree(doc.getText(), blueprint)
-    return (defTree.children || []).map(c => buildVSDefinitions(c))
+    if (blueprint) {
+      const defTree = buildDefinitionsTree(doc.getText(), blueprint)
+      return (defTree.children || []).map(c => buildVSDefinitions(c))
+    }
+    return []
   },
 })
 
@@ -122,7 +125,7 @@ export const createFoldingProvider = (
     document: vscode.TextDocument,
   ): vscode.ProviderResult<vscode.FoldingRange[]> => {
     const parsedBlueprint = workspace.getParsedBlueprint(document.fileName)
-    return wu(parsedBlueprint.sourceMap.entries())
+    return wu(parsedBlueprint?.sourceMap?.entries() ?? [])
       .map(([name, ranges]) => ranges.map(r => sourceRangeToFoldRange(r, name)))
       .flatten()
       .toArray()

@@ -189,7 +189,7 @@ describe('fetch', () => {
       it('should call emit on changesWillBeFetched & diffWillBeCalculcated', () => {
         expect(progressEmitter.emit).toHaveBeenCalledTimes(2)
         expect(progressEmitter.emit).toHaveBeenCalledWith('changesWillBeFetched', expect.anything(), expect.anything())
-        expect(progressEmitter.emit).toHaveBeenCalledWith('diffWillBeCalculcated', expect.anything())
+        expect(progressEmitter.emit).toHaveBeenCalledWith('diffWillBeCalculated', expect.anything())
       })
     })
     describe('when the adapter returns elements that should be split', () => {

@@ -1,5 +1,6 @@
 import wu from 'wu'
 import _ from 'lodash'
+import { EventEmitter } from 'pietile-eventemitter'
 import {
   Element, ElemID, Adapter, TypeMap, Values, ServiceIds, BuiltinTypes, ObjectType, ADAPTER,
   toServiceIdsString, Field, OBJECT_SERVICE_ID, InstanceElement, isInstanceElement, isObjectType,
@@ -7,6 +8,7 @@ import {
   findElements,
 } from 'adapter-api'
 import { logger } from '@salto/logging'
+import { StepEvents } from './core'
 import { getPlan, DetailedChange } from './plan'
 import { mergeElements, MergeError } from './merger'
 
@@ -19,6 +21,13 @@ export type FetchChange = {
   serviceChange: DetailedChange
   // The change between the working copy and the state
   pendingChange?: DetailedChange
+}
+
+export class StepEmitter extends EventEmitter<StepEvents> {}
+
+export type FetchProgressEvents = {
+  changesWillBeFetched: (stepProgress: StepEmitter, adapterNames: string[]) => void
+  diffWillBeCalculated: (stepProgress: StepEmitter) => void
 }
 
 export type MergeErrorWithElements = {
@@ -152,23 +161,42 @@ export const fetchChanges = async (
   adapters: Record<string, Adapter>,
   workspaceElements: ReadonlyArray<Element>,
   stateElements: ReadonlyArray<Element>,
+  progressEmitter?: EventEmitter<FetchProgressEvents>
 ): Promise<FetchChangesResult> => {
+  const adapterNames = _.keys(adapters)
+  const getChangesEmitter = new StepEmitter()
+  if (progressEmitter) {
+    progressEmitter.emit('changesWillBeFetched', getChangesEmitter, adapterNames)
+  }
+
   const serviceElements = _.flatten(await Promise.all(
     Object.values(adapters).map(adapter => adapter.fetch())
   ))
   log.debug(`fetched ${serviceElements.length} elements from adapters`)
-
   const { errors: mergeErrors, merged: elements } = mergeElements(serviceElements)
   log.debug(`got ${serviceElements.length} from merge results and elements and to ${elements.length} elements [errors=${
     mergeErrors.length}]`)
-  const processErrorsResult: ProcessMergeErrorsResult = processMergeErrors(
-    elements,
-    mergeErrors,
-    stateElements.map(e => e.elemID.getFullName())
-  )
+  let processErrorsResult: ProcessMergeErrorsResult
+  try {
+    processErrorsResult = processMergeErrors(
+      elements,
+      mergeErrors,
+      stateElements.map(e => e.elemID.getFullName())
+    )
+  } catch (error) {
+    getChangesEmitter.emit('failed', error.message)
+    throw error
+  }
+
   const mergedServiceElements = processErrorsResult.keptElements
   log.debug(`after merge there are ${mergedServiceElements.length} elements [errors=${
     mergeErrors.length}]`)
+
+  const calculateDiffEmitter = new StepEmitter()
+  if (progressEmitter) {
+    getChangesEmitter.emit('completed')
+    progressEmitter.emit('diffWillBeCalculated', calculateDiffEmitter)
+  }
 
   const serviceChanges = getDetailedChanges(stateElements, mergedServiceElements)
   log.debug('finished to calculate service-state changes')
@@ -183,6 +211,9 @@ export const fetchChanges = async (
     .map(toChangesWithPath(serviceElements))
     .flatten()
   log.debug('finished to calculate fetch changes')
+  if (progressEmitter) {
+    calculateDiffEmitter.emit('completed')
+  }
   return {
     changes,
     elements: mergedServiceElements,

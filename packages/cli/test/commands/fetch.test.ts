@@ -1,8 +1,10 @@
 import _ from 'lodash'
 import { ElemID, ObjectType } from 'adapter-api'
 import {
-  Workspace, fetch, loadConfig, FetchChange, DetailedChange,
+  Workspace, fetch, loadConfig, FetchChange, DetailedChange, FetchProgressEvents, StepEmitter,
 } from 'salto'
+import { EventEmitter } from 'pietile-eventemitter'
+import { Spinner, SpinnerCreator } from 'src/types'
 import { command, fetchCommand } from '../../src/commands/fetch'
 import { MockWriteStream, getWorkspaceErrors, dummyChanges, mockSpinnerCreator } from '../mocks'
 import Prompts from '../../src/prompts'
@@ -24,12 +26,18 @@ jest.mock('salto', () => ({
   ),
 }))
 
+
 describe('fetch command', () => {
   const workspaceDir = 'dummy_dir'
+  let spinners: Spinner[]
+  let spinnerCreator: SpinnerCreator
+
   let cliOutput: { stdout: MockWriteStream; stderr: MockWriteStream }
 
   beforeEach(() => {
     cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
+    spinners = []
+    spinnerCreator = mockSpinnerCreator(spinners)
   })
 
   describe('execute', () => {
@@ -41,7 +49,7 @@ describe('fetch command', () => {
           getWorkspaceErrors,
         } as unknown as Workspace
         (Workspace.load as jest.Mock).mockResolvedValueOnce(Promise.resolve(erroredWorkspace))
-        await command(workspaceDir, true, false, cliOutput, mockSpinnerCreator([])).execute()
+        await command(workspaceDir, true, false, cliOutput, spinnerCreator).execute()
       })
 
       it('should fail', async () => {
@@ -52,7 +60,7 @@ describe('fetch command', () => {
 
     describe('with valid workspace', () => {
       beforeEach(async () => {
-        await command(workspaceDir, true, false, cliOutput, mockSpinnerCreator([])).execute()
+        await command(workspaceDir, true, false, cliOutput, spinnerCreator).execute()
       })
 
       it('should load the workspace from the provided directory', () => {
@@ -81,9 +89,51 @@ describe('fetch command', () => {
         } as unknown as Workspace
       })
 
+      describe('with emitters called', () => {
+        const mockFetchWithEmitter = jest.fn((
+          _workspace,
+          _fillConfig,
+          progressEmitter: EventEmitter<FetchProgressEvents>
+        ) => {
+          const getChangesEmitter = new StepEmitter()
+          progressEmitter.emit('changesWillBeFetched', getChangesEmitter, ['adapterName'])
+          getChangesEmitter.emit('completed')
+          const calculateDiffEmitter = new StepEmitter()
+          progressEmitter.emit('diffWillBeCalculated', calculateDiffEmitter)
+          calculateDiffEmitter.emit('failed')
+          return Promise.resolve({ changes: [], mergeErrors: [], success: true })
+        })
+        beforeEach(async () => {
+          await fetchCommand({
+            workspace: mockWorkspace,
+            force: true,
+            interactive: false,
+            output: cliOutput,
+            spinnerCreator,
+            fetch: mockFetchWithEmitter,
+            getApprovedChanges: mockApprove,
+          })
+        })
+        it('should initiate spinners', () => {
+          expect(spinnerCreator).toHaveBeenCalled()
+          expect(spinners.length).toBeGreaterThanOrEqual(2)
+        })
+        it('should have emitted spinners succeed/fail', () => {
+          expect(spinners[0].succeed).toHaveBeenCalled()
+          expect(spinners[1].fail).toHaveBeenCalled()
+        })
+      })
       describe('with no upstream changes', () => {
         beforeEach(async () => {
-          await fetchCommand(mockWorkspace, true, false, cliOutput, mockFetch, mockApprove)
+          await fetchCommand({
+            workspace: mockWorkspace,
+            force: true,
+            interactive: false,
+            output: cliOutput,
+            spinnerCreator,
+            fetch: mockFetch,
+            getApprovedChanges: mockApprove,
+          })
         })
         it('should not update workspace', () => {
           expect(mockWorkspace.updateBlueprints).not.toHaveBeenCalled()
@@ -102,7 +152,15 @@ describe('fetch command', () => {
         })
         describe('when called with force', () => {
           beforeEach(async () => {
-            await fetchCommand(mockWorkspace, true, false, cliOutput, mockFetch, mockApprove)
+            await fetchCommand({
+              workspace: mockWorkspace,
+              force: true,
+              interactive: false,
+              output: cliOutput,
+              spinnerCreator,
+              fetch: mockFetch,
+              getApprovedChanges: mockApprove,
+            })
           })
           it('should deploy all changes', () => {
             expect(mockWorkspace.updateBlueprints).toHaveBeenCalledWith(...dummyChanges)
@@ -110,7 +168,15 @@ describe('fetch command', () => {
         })
         describe('when initial workspace is empty', () => {
           beforeEach(async () => {
-            await fetchCommand(mockWorkspace, false, false, cliOutput, mockFetch, mockApprove)
+            await fetchCommand({
+              workspace: mockWorkspace,
+              force: false,
+              interactive: false,
+              output: cliOutput,
+              spinnerCreator,
+              fetch: mockFetch,
+              getApprovedChanges: mockApprove,
+            })
           })
           it('should deploy all changes', () => {
             expect(mockWorkspace.updateBlueprints).toHaveBeenCalledWith(...dummyChanges)
@@ -119,7 +185,15 @@ describe('fetch command', () => {
         describe('when initial workspace has only config', () => {
           beforeEach(async () => {
             _.set(mockWorkspace, 'elements', [new ObjectType({ elemID: new ElemID('adapter') })])
-            await fetchCommand(mockWorkspace, false, false, cliOutput, mockFetch, mockApprove)
+            await fetchCommand({
+              workspace: mockWorkspace,
+              force: false,
+              interactive: false,
+              output: cliOutput,
+              spinnerCreator,
+              fetch: mockFetch,
+              getApprovedChanges: mockApprove,
+            })
           })
           it('should deploy all changes', () => {
             expect(mockWorkspace.updateBlueprints).toHaveBeenCalledWith(...dummyChanges)
@@ -131,7 +205,15 @@ describe('fetch command', () => {
           })
           describe('if no change is approved', () => {
             beforeEach(async () => {
-              await fetchCommand(mockWorkspace, false, false, cliOutput, mockFetch, mockApprove)
+              await fetchCommand({
+                workspace: mockWorkspace,
+                force: false,
+                interactive: false,
+                output: cliOutput,
+                spinnerCreator,
+                fetch: mockFetch,
+                getApprovedChanges: mockApprove,
+              })
             })
             it('should not update workspace', () => {
               expect(mockWorkspace.updateBlueprints).not.toHaveBeenCalled()
@@ -143,7 +225,15 @@ describe('fetch command', () => {
               mockApprove.mockImplementationOnce(changes => [changes[0]])
             })
             it('should update workspace only with approved changes', async () => {
-              await fetchCommand(mockWorkspace, false, false, cliOutput, mockFetch, mockApprove)
+              await fetchCommand({
+                workspace: mockWorkspace,
+                force: false,
+                interactive: false,
+                output: cliOutput,
+                spinnerCreator,
+                fetch: mockFetch,
+                getApprovedChanges: mockApprove,
+              })
               expect(mockWorkspace.updateBlueprints).toHaveBeenCalledWith(dummyChanges[0])
               expect(mockWorkspace.flush).toHaveBeenCalledTimes(1)
             })
@@ -156,7 +246,15 @@ describe('fetch command', () => {
               }]
               mockWorkspace.hasErrors = () => true
 
-              await fetchCommand(mockWorkspace, false, false, cliOutput, mockFetch, mockApprove)
+              await fetchCommand({
+                workspace: mockWorkspace,
+                force: false,
+                interactive: false,
+                output: cliOutput,
+                spinnerCreator,
+                fetch: mockFetch,
+                getApprovedChanges: mockApprove,
+              })
               expect(mockWorkspace.updateBlueprints).toHaveBeenCalledWith(dummyChanges[0])
               expect(cliOutput.stderr.content).toContain('Error')
               expect(cliOutput.stderr.content).toContain('BLA Error')
@@ -170,7 +268,15 @@ describe('fetch command', () => {
               }]
               mockWorkspace.hasErrors = () => true
 
-              await fetchCommand(mockWorkspace, false, false, cliOutput, mockFetch, mockApprove)
+              await fetchCommand({
+                workspace: mockWorkspace,
+                force: false,
+                interactive: false,
+                output: cliOutput,
+                spinnerCreator,
+                fetch: mockFetch,
+                getApprovedChanges: mockApprove,
+              })
               expect(mockWorkspace.updateBlueprints).toHaveBeenCalledWith(dummyChanges[0])
               expect(cliOutput.stderr.content).not.toContain(Prompts.SHOULDCONTINUE(1))
               expect(cliOutput.stdout.content).not.toContain(Prompts.SHOULDCONTINUE(1))
@@ -179,14 +285,15 @@ describe('fetch command', () => {
               expect(mockWorkspace.flush).toHaveBeenCalled()
             })
             it('should not update workspace if fetch failed', async () => {
-              await fetchCommand(
-                mockWorkspace,
-                false,
-                false,
-                cliOutput,
-                mockFailedFetch,
-                mockApprove
-              )
+              await fetchCommand({
+                workspace: mockWorkspace,
+                force: false,
+                interactive: false,
+                output: cliOutput,
+                spinnerCreator,
+                fetch: mockFailedFetch,
+                getApprovedChanges: mockApprove,
+              })
               expect(cliOutput.stderr.content).toContain('Error')
               expect(mockWorkspace.flush).not.toHaveBeenCalled()
               expect(mockWorkspace.updateBlueprints).not.toHaveBeenCalled()

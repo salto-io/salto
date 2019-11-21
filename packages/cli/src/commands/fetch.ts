@@ -4,14 +4,18 @@ import {
   Workspace,
   fetchFunc,
   FetchChange,
+  FetchProgressEvents,
+  StepEmitter,
 } from 'salto'
+import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto/logging'
+import { EOL } from 'os'
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput, CliExitCode, SpinnerCreator } from '../types'
-import { formatChangesSummary, formatMergeErrors, formatFatalFetchError } from '../formatter'
+import { formatChangesSummary, formatMergeErrors, formatFatalFetchError, error } from '../formatter'
 import { getConfigWithHeader, getApprovedChanges as cliGetApprovedChanges } from '../callbacks'
-import Prompts from '../prompts'
 import { updateWorkspace, loadWorkspace } from '../workspace'
+import Prompts from '../prompts'
 
 const log = logger(module)
 
@@ -21,17 +25,42 @@ type approveChangesFunc = (
 ) => Promise<ReadonlyArray<FetchChange>>
 
 export const fetchCommand = async (
-  workspace: Workspace,
-  force: boolean,
-  interactive: boolean,
-  output: CliOutput,
-  fetch: fetchFunc,
-  getApprovedChanges: approveChangesFunc,
-): Promise<CliExitCode> => {
-  const outputLine = (text: string): void => output.stdout.write(`${text}\n`)
+  { workspace, force, interactive, output, spinnerCreator, fetch, getApprovedChanges }: {
+    workspace: Workspace
+    force: boolean
+    interactive: boolean
+    output: CliOutput
+    spinnerCreator: SpinnerCreator
+    fetch: fetchFunc
+    getApprovedChanges: approveChangesFunc
+  }): Promise<CliExitCode> => {
+  const progressSpinner = (
+    startText: string,
+    successText: string,
+    defaultErrorText: string
+  ) => (progress: StepEmitter) => {
+    const spinner = spinnerCreator(startText, { prefixText: EOL })
+    progress.on('completed', () => spinner.succeed(successText))
+    progress.on('failed', (errorText?: string) => spinner.fail(errorText ?? defaultErrorText))
+  }
+  const fetchProgress = new EventEmitter<FetchProgressEvents>()
+  fetchProgress.on('changesWillBeFetched', (progress: StepEmitter, adapters: string[]) => progressSpinner(
+    Prompts.FETCH_GET_CHANGES_START(adapters),
+    Prompts.FETCH_GET_CHANGES_FINISH(adapters),
+    error(Prompts.FETCH_GET_CHANGES_FAIL)
+  )(progress))
 
-  outputLine(Prompts.FETCH_BEGIN)
-  const fetchResult = await fetch(workspace, _.partial(getConfigWithHeader, output.stdout))
+  fetchProgress.on('diffWillBeCalculated', progressSpinner(
+    Prompts.FETCH_CALC_DIFF_START,
+    Prompts.FETCH_CALC_DIFF_FINISH,
+    error(Prompts.FETCH_CALC_DIFF_FAIL),
+  ))
+
+  const fetchResult = await fetch(
+    workspace,
+    _.partial(getConfigWithHeader, output.stdout),
+    fetchProgress
+  )
   if (!fetchResult.success) {
     output.stderr.write(formatFatalFetchError(fetchResult.mergeErrors))
     return CliExitCode.AppError
@@ -52,8 +81,18 @@ export const fetchCommand = async (
   const changesToApply = force || isEmptyWorkspace
     ? changes
     : await getApprovedChanges(changes, interactive)
-  outputLine(formatChangesSummary(changes.length, changesToApply.length))
-  return await updateWorkspace(workspace, output, ...changesToApply)
+
+  const updateWsSpinner = spinnerCreator(
+    formatChangesSummary(changes.length, changesToApply.length),
+    { prefixText: '\n' }
+  )
+  const updatingWsSucceeded = await updateWorkspace(workspace, output, ...changesToApply)
+  if (updatingWsSucceeded) {
+    updateWsSpinner.succeed(Prompts.FETCH_UPDATE_WORKSPACE_SUCCESS)
+  } else {
+    updateWsSpinner.fail(error(Prompts.FETCH_UPDATE_WORKSPACE_FAIL))
+  }
+  return updatingWsSucceeded
     ? CliExitCode.Success
     : CliExitCode.AppError
 }
@@ -72,7 +111,15 @@ export const command = (
     if (errored) {
       return CliExitCode.AppError
     }
-    return fetchCommand(workspace, force, interactive, output, apiFetch, cliGetApprovedChanges)
+    return fetchCommand({
+      workspace,
+      force,
+      interactive,
+      output,
+      spinnerCreator,
+      fetch: apiFetch,
+      getApprovedChanges: cliGetApprovedChanges,
+    })
   },
 })
 

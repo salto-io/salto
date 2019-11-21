@@ -1,5 +1,6 @@
 import wu from 'wu'
 import { ObjectType, InstanceElement, Element, Value, ActionName } from 'adapter-api'
+import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto/logging'
 import {
   deployActions, ItemStatus, DeployError,
@@ -13,11 +14,11 @@ import {
 } from './core/plan'
 import State from './state/state'
 import { findElement, SearchResult } from './core/search'
-import { Workspace, CREDS_DIR } from './workspace/workspace'
 import {
-  fetchChanges, FetchChange, getDetailedChanges, createElemIdGetter, MergeErrorWithElements,
-  FatalFetchMergeError,
+  fetchChanges, FetchChange, getDetailedChanges, createElemIdGetter,
+  MergeErrorWithElements, FatalFetchMergeError, FetchProgressEvents,
 } from './core/fetch'
+import { Workspace, CREDS_DIR } from './workspace/workspace'
 
 export { ItemStatus }
 
@@ -93,9 +94,10 @@ export type FetchResult = {
 export type fetchFunc = (
   workspace: Workspace,
   fillConfig: fillConfigFunc,
+  progressEmitter?: EventEmitter<FetchProgressEvents>,
 ) => Promise<FetchResult>
 
-export const fetch: fetchFunc = async (workspace, fillConfig) => {
+export const fetch: fetchFunc = async (workspace, fillConfig, progressEmitter?) => {
   const configToChange = (config: InstanceElement): FetchChange => {
     config.path = [CREDS_DIR, config.elemID.adapter]
     const change: DetailedChange = {
@@ -114,10 +116,9 @@ export const fetch: fetchFunc = async (workspace, fillConfig) => {
   const [adapters, newConfigs] = await initAdapters(workspace.elements, fillConfig,
     createElemIdGetter(stateElements))
   log.debug(`${Object.keys(adapters).length} were initialized [newConfigs=${newConfigs.length}]`)
-
   try {
     const { changes, elements, mergeErrors } = await fetchChanges(
-      adapters, workspace.elements, stateElements,
+      adapters, workspace.elements, stateElements, progressEmitter,
     )
     log.debug(`${elements.length} elements were fetched [mergedErrors=${mergeErrors.length}]`)
     state.override(elements)

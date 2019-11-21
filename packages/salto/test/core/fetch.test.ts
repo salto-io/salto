@@ -2,12 +2,16 @@ import {
   ElemID, Field, BuiltinTypes, ObjectType, getChangeElement, Adapter, Element,
   PrimitiveType, PrimitiveTypes, ADAPTER, OBJECT_SERVICE_ID, InstanceElement,
 } from 'adapter-api'
+import { EventEmitter } from 'pietile-eventemitter'
 import {
-  fetchChanges, FetchChange, generateServiceIdToStateElemId, FetchChangesResult,
+  fetchChanges, FetchChange, generateServiceIdToStateElemId,
+  FetchChangesResult, FetchProgressEvents,
 } from '../../src/core/fetch'
 
 import * as merger from '../../src/core/merger'
 import { DuplicateAnnotationError } from '../../src/core/merger/internal/object_types'
+
+jest.mock('pietile-eventemitter')
 
 describe('fetch', () => {
   const mockMergeResult = (mockResult: merger.MergeResult): jest.Mock<unknown> =>
@@ -164,6 +168,28 @@ describe('fetch', () => {
       it('should return the change with no conflict', () => {
         expect(changes).toHaveLength(1)
         expect(changes[0].pendingChange).toBeUndefined()
+      })
+    })
+    describe('when a progressEmitter is provided', () => {
+      let progressEmitter: EventEmitter<FetchProgressEvents>
+      beforeEach(async () => {
+        mockAdapters.dummy.fetch.mockResolvedValueOnce(
+          Promise.resolve([newTypeBase, newTypeExt])
+        )
+        progressEmitter = new EventEmitter<FetchProgressEvents>()
+        const result = await fetchChanges(
+          mockAdapters as unknown as Record<string, Adapter>,
+          [],
+          [],
+          progressEmitter
+        )
+        changes = [...result.changes]
+      })
+
+      it('should call emit on changesWillBeFetched & diffWillBeCalculcated', () => {
+        expect(progressEmitter.emit).toHaveBeenCalledTimes(2)
+        expect(progressEmitter.emit).toHaveBeenCalledWith('changesWillBeFetched', expect.anything(), expect.anything())
+        expect(progressEmitter.emit).toHaveBeenCalledWith('diffWillBeCalculated', expect.anything())
       })
     })
     describe('when the adapter returns elements that should be split', () => {

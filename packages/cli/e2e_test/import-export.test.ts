@@ -3,6 +3,7 @@ import {
   dumpCsv, readCsv, file,
 } from 'salto'
 import { InstanceElement } from 'adapter-api'
+import { Spinner } from '../src/types'
 import { MockWriteStream, mockSpinnerCreator } from '../test/mocks'
 import { command as fetch } from '../src/commands/fetch'
 import { command as importCommand } from '../src/commands/import'
@@ -31,6 +32,8 @@ jest.spyOn(callbacksImpl, 'getConfigFromUser').mockImplementation(() => mockGetC
 describe('Data migration operations E2E', () => {
   jest.setTimeout(15 * 60 * 1000)
   const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
+  const spinners = [] as Spinner[]
+  const spinnerCreator = mockSpinnerCreator(spinners)
   describe('When running fetch beforehand', () => {
     beforeAll(async () => {
       await rm(exportOutputDir)
@@ -38,7 +41,7 @@ describe('Data migration operations E2E', () => {
       await rm(fetchOutputDir)
       await mkdirp(`${fetchOutputDir}/salto.config`)
       await copyFile(configFile, `${fetchOutputDir}/salto.config/config.bp`)
-      await fetch(fetchOutputDir, true, false, cliOutput, mockSpinnerCreator([])).execute()
+      await fetch(fetchOutputDir, true, false, cliOutput, spinnerCreator).execute()
     })
 
     it('should save the data in csv file when running export', async () => {

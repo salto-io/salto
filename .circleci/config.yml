@@ -80,9 +80,9 @@ jobs:
 
       - restore_cache:
           keys:
-            - v1-build-{{ .Branch }}
-            - v1-build-master
-            - v1-build-
+            - v3-build-{{ .Branch }}
+            - v3-build-master
+            - v3-build-
 
       - run:
           name: extract packages_build_cache.tar.gz
@@ -96,12 +96,17 @@ jobs:
 
       - run:
           name: create packages_build_cache.tar.gz
-          command: tar cfz packages_build_cache.tar.gz packages/*/dist packages/*/.eslintcache
+          # Note: The build cache cannot include the dist directories -
+          # they might contain old (e.g. renamed) files, which will leak into the current dist.
+          # * The TypeScript compiler does not currently have an option to remove old files.
+          # * Utilities such as ts-cleaner can break the build because they use heuristics and
+          #   might wrongly remove needed build artifacts, e.g, generated code, wasm.
+          command: tar cfz packages_build_cache.tar.gz packages/*/.eslintcache
 
       - save_cache:
           paths:
             - packages_build_cache.tar.gz
-          key: v1-build-{{ .Branch }}
+          key: v3-build-{{ .Branch }}
 
       - run:
           name: Remove unneeded files before saving workspace

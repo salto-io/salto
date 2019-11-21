@@ -40,7 +40,7 @@ export const fetchCommand = async (
   ) => (progress: StepEmitter) => {
     const spinner = spinnerCreator(startText, { prefixText: '\n' })
     progress.on('completed', () => spinner.succeed(successText))
-    progress.on('failed', (errorText?: string) => spinner.fail(errorText || defaultErrorText))
+    progress.on('failed', (errorText?: string) => spinner.fail(errorText ?? defaultErrorText))
   }
   const fetchProgress = new EventEmitter<FetchProgressEvents>()
   fetchProgress.on('getChanges', (progress: StepEmitter, adapters: string[]) => progressSpinner(

@@ -3,7 +3,7 @@ import {
   dumpCsv, readCsv, file,
 } from 'salto'
 import { InstanceElement } from 'adapter-api'
-import { Spinner } from 'src/types'
+import { Spinner } from '../src/types'
 import { MockWriteStream, mockSpinnerCreator } from '../test/mocks'
 import { command as fetch } from '../src/commands/fetch'
 import { command as importCommand } from '../src/commands/import'

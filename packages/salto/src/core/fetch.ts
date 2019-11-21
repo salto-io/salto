@@ -26,8 +26,10 @@ export type FetchChange = {
 export class StepEmitter extends EventEmitter<StepEvents> {}
 
 export type FetchProgressEvents = {
+  adaptersWereInitiated: () => void
   changesWillBeFetched: (stepProgress: StepEmitter, adapterNames: string[]) => void
   diffWillBeCalculated: (stepProgress: StepEmitter) => void
+  workspaceWillBeUpdated: (stepProgress: StepEmitter, changes: number, approved: number) => void
 }
 
 export type MergeErrorWithElements = {
@@ -168,36 +170,35 @@ export const fetchChanges = async (
   if (progressEmitter) {
     progressEmitter.emit('changesWillBeFetched', getChangesEmitter, adapterNames)
   }
-
-  const serviceElements = _.flatten(await Promise.all(
-    Object.values(adapters).map(adapter => adapter.fetch())
-  ))
-  log.debug(`fetched ${serviceElements.length} elements from adapters`)
-  const { errors: mergeErrors, merged: elements } = mergeElements(serviceElements)
-  log.debug(`got ${serviceElements.length} from merge results and elements and to ${elements.length} elements [errors=${
-    mergeErrors.length}]`)
   let processErrorsResult: ProcessMergeErrorsResult
+  let serviceElements: Element[]
   try {
+    serviceElements = _.flatten(await Promise.all(
+      Object.values(adapters).map(adapter => adapter.fetch())
+    ))
+    log.debug(`fetched ${serviceElements.length} elements from adapters`)
+    const { errors: mergeErrors, merged: elements } = mergeElements(serviceElements)
+    log.debug(`got ${serviceElements.length} from merge results and elements and to ${elements.length} elements [errors=${
+      mergeErrors.length}]`)
+
     processErrorsResult = processMergeErrors(
       elements,
       mergeErrors,
       stateElements.map(e => e.elemID.getFullName())
     )
+
+    log.debug(`after merge there are ${processErrorsResult.keptElements.length} elements [errors=${
+      mergeErrors.length}]`)
   } catch (error) {
-    getChangesEmitter.emit('failed', error.message)
+    getChangesEmitter.emit('failed')
     throw error
   }
-
-  const mergedServiceElements = processErrorsResult.keptElements
-  log.debug(`after merge there are ${mergedServiceElements.length} elements [errors=${
-    mergeErrors.length}]`)
-
   const calculateDiffEmitter = new StepEmitter()
   if (progressEmitter) {
     getChangesEmitter.emit('completed')
     progressEmitter.emit('diffWillBeCalculated', calculateDiffEmitter)
   }
-
+  const mergedServiceElements = processErrorsResult.keptElements
   const serviceChanges = getDetailedChanges(stateElements, mergedServiceElements)
   log.debug('finished to calculate service-state changes')
   const pendingChanges = getChangeMap(stateElements, workspaceElements)

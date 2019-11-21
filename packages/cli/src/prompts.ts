@@ -66,20 +66,24 @@ Be sure to go over the preview output when invoking the deploy command.`
     return `Initiated workspace ${name} at ${baseDir}\n`
   }
 
+  public static readonly FETCH_HEADER = 'Fetching and applying changes from the service(s)'
+  public static readonly FETCH_SUB_HEADER = `This might take a few minutes. You can go grab your favorite beverage.
+The steps are: I. Fetching configs, II. Calculating difference and III. Applying the changes`
   public static readonly FETCH_GET_CHANGES_START = (adapters: string[]): string => `Fetching the latest configs from: ${adapters}`
   public static readonly FETCH_GET_CHANGES_FINISH = (adapters: string[]): string => `Finished fetching the latest configs from: ${adapters}`
-  public static readonly FETCH_GET_CHANGES_FAIL = 'Fetching failed!'
-  public static readonly FETCH_CALC_DIFF_START = 'Calculating diff between remote and local'
-  public static readonly FETCH_CALC_DIFF_FINISH = 'Finished calculating the diff between remote and local'
+  public static readonly FETCH_GET_CHANGES_FAIL = 'Fetching failed'
+  public static readonly FETCH_CALC_DIFF_START = 'Calculating the difference between local and remote'
+  public static readonly FETCH_CALC_DIFF_FINISH = 'Finished calculating the difference between local and remote'
   public static readonly FETCH_CALC_DIFF_FAIL = 'Calculating diff failed!'
-  public static readonly FETCH_UPDATE_WORKSPACE_SUCCESS = 'Updated workspace successfully'
-  public static readonly FETCH_UPDATE_WORKSPACE_FAIL = 'Failed to update workspace'
+  public static readonly FETCH_UPDATE_WORKSPACE_SUCCESS = 'Applied changes'
+  public static readonly FETCH_SUCCESS_FINISHED = 'Done! Your workspace is now updated with the latest changes.'
+  public static readonly FETCH_UPDATE_WORKSPACE_FAIL = 'Failed to apply changes to your local workspace'
   public static readonly FETCH_CHANGE_HEADER = (changeIdx: number, totalChanges: number): string => `Change ${changeIdx} of ${totalChanges}:`
   public static readonly FETCH_SHOULD_APPROVE_CHANGE = 'Would you like to update your workspace with this change?'
   public static readonly FETCH_CHANGE_REJECTED = 'The change will not be applied to your workspace'
   public static readonly FETCH_NO_CHANGES = 'No changes found, Workspace is up to date'
   public static readonly FETCH_NOTHING_TO_UPDATE = 'No changes chosen, Leaving workspace unchanged'
-  public static readonly FETCH_CHANGES_TO_APPLY = (numChanges: number): string => `Updating workspace with ${numChanges} changes from the service`
+  public static readonly FETCH_CHANGES_TO_APPLY = (numChanges: number): string => `Applying ${numChanges} changes to the local workspace`
   public static readonly FETCH_CONFLICTING_CHANGE = 'This change conflicts with the following pending change from your workspace:'
   public static readonly FETCH_MERGE_ERRORS = 'These errors occurred as part of the fetch:'
   public static readonly FETCH_FATAL_MERGE_ERROR_PREFIX = 'Error occurred during fetch, cause:\n'

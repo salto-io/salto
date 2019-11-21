@@ -23,6 +23,9 @@ const resources = [
 
 const BASE_NEXE_CONFIG = {
   loglevel: 'verbose',
+  flags: [
+    '--max-old-space-size=8192',
+  ],
   resources,
 }
 

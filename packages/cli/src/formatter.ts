@@ -35,6 +35,9 @@ const indent = (text: string, level: number): string => {
   return text.split('\n').map(line => `${indentText}${line}`).join('\n')
 }
 
+const singleOrPluralString = (number: number, single: string, plural: string): string =>
+  ((number || 0) === 1 ? `${number} ${single}` : `${number} ${plural}`)
+
 const formatValue = (value: Element | Value): string => {
   const formatAnnotations = (annotations: Values): string =>
     (_.isEmpty(annotations) ? '' : formatValue(annotations))
@@ -112,14 +115,13 @@ export const formatChange = (change: DetailedChange): string => {
 
 const formatCountPlanItemTypes = (plan: Plan): string => {
   const items = wu(plan.itemsByEvalOrder())
-    .map(item => ({ action: item.parent().action, name: planItemName(item) }))
-    .unique().toArray()
-  const counter = _.countBy(items, 'action')
-  return (
-    `${chalk.bold('Plan: ')}${counter.add || 0} to add`
-    + `, ${counter.modify || 0} to change`
-    + `, ${counter.remove || 0} to remove.`
-  )
+    .map(item => ({
+      type: getChangeElement(item.parent()).elemID.idType,
+      name: planItemName(item),
+    })).unique().toArray()
+  const counter = _.countBy(items, 'type')
+  return `${chalk.bold('Impacts:')} ${singleOrPluralString(counter.type || 0, 'type', 'types')} `
+    + `and ${singleOrPluralString(counter.instance || 0, 'instance', 'instances')}.`
 }
 
 export const formatDetailedChanges = (changeGroups: Iterable<Iterable<DetailedChange>>): string => {

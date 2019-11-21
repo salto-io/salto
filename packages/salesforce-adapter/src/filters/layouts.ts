@@ -4,7 +4,7 @@ import {
 } from 'adapter-api'
 import { apiName, bpCase } from '../transformer'
 import { FilterCreator } from '../filter'
-import { SALESFORCE } from '../constants'
+import { SALESFORCE, SALESFORCE_CUSTOM_SUFFIX } from '../constants'
 
 export const LAYOUT_TYPE_ID = new ElemID(SALESFORCE, 'layout')
 export const LAYOUT_ANNOTATION = 'layouts'
@@ -37,7 +37,10 @@ const fixNames = (layouts: InstanceElement[]): void => {
       updateElemID(l, _.trimEnd(name(l).slice(0, -1 * LAYOUT_SUFFIX.length), '_'))
     }
     const objName = bpCase(layoutObj(l))
-    if (name(l).startsWith(objName)) {
+    const objNameNoSuffix = objName.endsWith(SALESFORCE_CUSTOM_SUFFIX)
+      ? objName.slice(0, -1 * SALESFORCE_CUSTOM_SUFFIX.length)
+      : objName
+    if (name(l).startsWith(`${objName}_${objNameNoSuffix}`)) {
       updateElemID(l, _.trimStart(name(l).slice(objName.length), '_'))
     }
     if (l.path) {

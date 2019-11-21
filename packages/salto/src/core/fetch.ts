@@ -8,6 +8,7 @@ import {
   findElements,
 } from 'adapter-api'
 import { logger } from '@salto/logging'
+import { StepEvents } from './core'
 import { getPlan, DetailedChange } from './plan'
 import { mergeElements, MergeError } from './merger'
 
@@ -22,16 +23,11 @@ export type FetchChange = {
   pendingChange?: DetailedChange
 }
 
-type StepEvents = {
-  completed: () => void
-  failed: (errorText?: string) => void
-}
-
 export class StepEmitter extends EventEmitter<StepEvents> {}
 
 export type FetchProgressEvents = {
-  getChanges: (stepProgress: StepEmitter, adapterNames: string[]) => void
-  calculateDiff: (stepProgress: StepEmitter) => void
+  changesWillBeFetched: (stepProgress: StepEmitter, adapterNames: string[]) => void
+  diffWillBeCalculated: (stepProgress: StepEmitter) => void
 }
 
 export type MergeErrorWithElements = {
@@ -167,10 +163,10 @@ export const fetchChanges = async (
   stateElements: ReadonlyArray<Element>,
   progressEmitter?: EventEmitter<FetchProgressEvents>
 ): Promise<FetchChangesResult> => {
-  const adapterNames = _.keys(adapters).map(adapter => _.capitalize(adapter))
+  const adapterNames = _.keys(adapters)
   const getChangesEmitter = new StepEmitter()
   if (progressEmitter) {
-    progressEmitter.emit('getChanges', getChangesEmitter, adapterNames)
+    progressEmitter.emit('changesWillBeFetched', getChangesEmitter, adapterNames)
   }
 
   const serviceElements = _.flatten(await Promise.all(
@@ -199,7 +195,7 @@ export const fetchChanges = async (
   const calculateDiffEmitter = new StepEmitter()
   if (progressEmitter) {
     getChangesEmitter.emit('completed')
-    progressEmitter.emit('calculateDiff', calculateDiffEmitter)
+    progressEmitter.emit('diffWillBeCalculated', calculateDiffEmitter)
   }
 
   const serviceChanges = getDetailedChanges(stateElements, mergedServiceElements)

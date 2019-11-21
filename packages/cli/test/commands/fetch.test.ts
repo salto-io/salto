@@ -96,10 +96,10 @@ describe('fetch command', () => {
           progressEmitter: EventEmitter<FetchProgressEvents>
         ) => {
           const getChangesEmitter = new StepEmitter()
-          progressEmitter.emit('getChanges', getChangesEmitter, ['adapterName'])
+          progressEmitter.emit('changesWillBeFetched', getChangesEmitter, ['adapterName'])
           getChangesEmitter.emit('completed')
           const calculateDiffEmitter = new StepEmitter()
-          progressEmitter.emit('calculateDiff', calculateDiffEmitter)
+          progressEmitter.emit('diffWillBeCalculated', calculateDiffEmitter)
           calculateDiffEmitter.emit('failed')
           return Promise.resolve({ changes: [], mergeErrors: [], success: true })
         })

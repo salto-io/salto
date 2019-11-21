@@ -9,6 +9,7 @@ import {
 } from 'salto'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto/logging'
+import { EOL } from 'os'
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput, CliExitCode, SpinnerCreator } from '../types'
 import { formatChangesSummary, formatMergeErrors, formatFatalFetchError, error } from '../formatter'
@@ -38,18 +39,18 @@ export const fetchCommand = async (
     successText: string,
     defaultErrorText: string
   ) => (progress: StepEmitter) => {
-    const spinner = spinnerCreator(startText, { prefixText: '\n' })
+    const spinner = spinnerCreator(startText, { prefixText: EOL })
     progress.on('completed', () => spinner.succeed(successText))
     progress.on('failed', (errorText?: string) => spinner.fail(errorText ?? defaultErrorText))
   }
   const fetchProgress = new EventEmitter<FetchProgressEvents>()
-  fetchProgress.on('getChanges', (progress: StepEmitter, adapters: string[]) => progressSpinner(
+  fetchProgress.on('changesWillBeFetched', (progress: StepEmitter, adapters: string[]) => progressSpinner(
     Prompts.FETCH_GET_CHANGES_START(adapters),
     Prompts.FETCH_GET_CHANGES_FINISH(adapters),
     error(Prompts.FETCH_GET_CHANGES_FAIL)
   )(progress))
 
-  fetchProgress.on('calculateDiff', progressSpinner(
+  fetchProgress.on('diffWillBeCalculated', progressSpinner(
     Prompts.FETCH_CALC_DIFF_START,
     Prompts.FETCH_CALC_DIFF_FINISH,
     error(Prompts.FETCH_CALC_DIFF_FAIL),

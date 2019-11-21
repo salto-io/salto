@@ -37,6 +37,11 @@ export class DeployError extends Error {
 
 export type ItemStatus = 'started' | 'finished' | 'error' | 'cancelled'
 
+export type StepEvents = {
+  completed: () => void
+  failed: (errorText?: string) => void
+}
+
 export const deployActions = async (
   deployPlan: Plan,
   adapters: Record<string, Adapter>,

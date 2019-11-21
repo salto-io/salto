@@ -35,7 +35,7 @@ const indent = (text: string, level: number): string => {
   return text.split('\n').map(line => `${indentText}${line}`).join('\n')
 }
 
-const singleOrFloralString = (number: number, single: string, plural: string): string =>
+const singleOrPluralString = (number: number, single: string, plural: string): string =>
   ((number || 0) === 1 ? `${number} ${single}` : `${number} ${plural}`)
 
 const formatValue = (value: Element | Value): string => {
@@ -120,8 +120,8 @@ const formatCountPlanItemTypes = (plan: Plan): string => {
       name: planItemName(item),
     })).unique().toArray()
   const counter = _.countBy(items, 'type')
-  return `${chalk.bold('Impacts:')} ${singleOrFloralString(counter.type || 0, 'type', 'types')} `
-    + `and ${singleOrFloralString(counter.instance || 0, 'instance', 'instances')}.`
+  return `${chalk.bold('Impacts:')} ${singleOrPluralString(counter.type || 0, 'type', 'types')} `
+    + `and ${singleOrPluralString(counter.instance || 0, 'instance', 'instances')}.`
 }
 
 export const formatDetailedChanges = (changeGroups: Iterable<Iterable<DetailedChange>>): string => {

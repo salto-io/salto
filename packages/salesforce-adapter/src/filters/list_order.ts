@@ -67,21 +67,21 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
       // Filter the instances we wish to sort their sub properties
       const instancesToChange = findInstances(elems, new ElemID(SALESFORCE, sortFieldInfo.typeName))
       wu(instancesToChange).forEach(elem => {
-        // First, for each element clone the sortFieldInfo since we perform changes on it during
-        // the sorting operation:
-        const sortFieldInfoCopy = _.cloneDeep(sortFieldInfo)
+        // First, for each element clone the sortFieldInfo.path since we perform changes on it
+        // during the sorting operation:
+        const clonedPath = _.clone(sortFieldInfo.path)
         // Get the initial field to start with, this one is special because it is the only one
         // accessed by elem.value[fieldToStart], while the rest of the path is accessed by .
-        const fieldToStart = sortFieldInfoCopy.path.shift() as string
-        const arrayPropertyToSort = sortFieldInfoCopy.path.pop()
+        const fieldToStart = clonedPath.shift() as string
+        const arrayPropertyToSort = clonedPath.pop()
         let fieldsToSort: Value[]
         // If we have an additional nested property to sort
         if (arrayPropertyToSort) {
           // If the path still remains after the initial field and the property to sort,
           // get the elements in that path, otherwise get the elements from the fieldToStart
-          fieldsToSort = sortFieldInfoCopy.path.length > 0 ? _.get(
+          fieldsToSort = clonedPath.length > 0 ? _.get(
             elem.value[fieldToStart],
-            sortFieldInfoCopy.path
+            clonedPath
           ) : elem.value[fieldToStart]
           if (_.isArray(fieldsToSort)) {
             // The purpose of the following foreach is to sort the items in each field required to
@@ -91,7 +91,7 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
               .forEach(field => {
                 field[arrayPropertyToSort] = _.orderBy(
                   field[arrayPropertyToSort],
-                  sortFieldInfoCopy.fieldOrCallbackToSortBy
+                  sortFieldInfo.fieldOrCallbackToSortBy
                 )
               })
           }
@@ -100,7 +100,7 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
         } else if (_.isArray(elem.value[fieldToStart])) {
           elem.value[fieldToStart] = _.orderBy(
             elem.value[fieldToStart],
-            sortFieldInfoCopy.fieldOrCallbackToSortBy
+            sortFieldInfo.fieldOrCallbackToSortBy
           )
         }
       })

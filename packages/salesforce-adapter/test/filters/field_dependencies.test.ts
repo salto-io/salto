@@ -135,15 +135,5 @@ describe('Test field dependencies filter', () => {
         .annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY]
       assertFieldDependencyTransformation(fieldDependencyAnnotation)
     })
-
-    it('should add element types for field dependency and its inner types', async () => {
-      testElements = []
-      await initFilter()
-      expect(testElements).toHaveLength(2)
-      expect(testElements[0])
-        .toEqual(expect.objectContaining({ path: ['types', 'subtypes', 'field_dependency'] }))
-      expect(testElements[1])
-        .toEqual(expect.objectContaining({ path: ['types', 'subtypes', 'value_settings'] }))
-    })
   })
 })

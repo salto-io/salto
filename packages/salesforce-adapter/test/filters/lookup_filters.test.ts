@@ -135,13 +135,6 @@ describe('Test lookup filters filter', () => {
       expect(mockObject.fields.lookup_field
         .annotations[constants.FIELD_ANNOTATIONS.LOOKUP_FILTER]).toBeUndefined()
     })
-
-    it('should add element types for LookupFilter & FilterItem', async () => {
-      testElements = []
-      await initFilter()
-      expect(testElements).toHaveLength(1)
-      expect(testElements[0]).toEqual(expect.objectContaining({ path: ['types', 'subtypes', 'lookup_filter'] }))
-    })
   })
 
   describe('on add', () => {

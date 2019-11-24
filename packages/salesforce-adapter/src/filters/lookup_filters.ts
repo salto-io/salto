@@ -4,7 +4,7 @@ import { Element, Field, isObjectType, ObjectType, Change, getChangeElement,
 import { SaveResult } from 'jsforce'
 import { collections } from '@salto/lowerdash'
 import { FilterCreator } from '../filter'
-import { CUSTOM_FIELD, FIELD_ANNOTATIONS, LOOKUP_FILTER_FIELDS, METADATA_TYPE } from '../constants'
+import { CUSTOM_FIELD, FIELD_ANNOTATIONS, LOOKUP_FILTER_FIELDS } from '../constants'
 import { CustomField } from '../client/types'
 import { bpCase, mapKeysRecursive, sfCase, toCustomField, Types } from '../transformer'
 import { transform } from './convert_types'
@@ -60,9 +60,9 @@ const filterCreator: FilterCreator = ({ client }) => ({
 
     const addLookupFilterData = (fieldWithLookupFilter: Field): void => {
       const { FILTER_ITEMS, ERROR_MESSAGE, IS_OPTIONAL } = LOOKUP_FILTER_FIELDS
-      const fieldFromMap = name2Field[getCustomFieldName(fieldWithLookupFilter,
+      const salesforceField = name2Field[getCustomFieldName(fieldWithLookupFilter,
         objectElemID2ApiName)]
-      const lookupFilterInfo = fieldFromMap?.lookupFilter
+      const lookupFilterInfo = salesforceField?.lookupFilter
       if (lookupFilterInfo) {
         const values = mapKeysRecursive(lookupFilterInfo, bpCase)
         values[FILTER_ITEMS] = makeArray(values[FILTER_ITEMS])
@@ -74,14 +74,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
       }
     }
 
-    const addLookupFilterElement = (): void => {
-      lookupFilterType.annotate({ [METADATA_TYPE]: 'LookupFilter' })
-      lookupFilterType.path = ['types', 'subtypes', lookupFilterType.elemID.name]
-      elements.push(...[lookupFilterType])
-    }
-
     fieldsWithLookupFilter.forEach(addLookupFilterData)
-    addLookupFilterElement()
   },
 
   /**

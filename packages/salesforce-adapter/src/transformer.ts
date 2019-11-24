@@ -88,75 +88,6 @@ const fieldTypeName = (typeName: string): string => (
 // Ref: https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/primitive_data_types.htm
 // Ref: https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_field_types.htm#meta_type_fieldtype
 
-const lookupFilterElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.LOOKUP_FILTER)
-const filterItemElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.FILTER_ITEM)
-const lookupFilterObjectType = new ObjectType({
-  elemID: lookupFilterElemID,
-  fields: {
-    [LOOKUP_FILTER_FIELDS.ACTIVE]: new TypeField(
-      lookupFilterElemID, LOOKUP_FILTER_FIELDS.ACTIVE, BuiltinTypes.BOOLEAN
-    ),
-    [LOOKUP_FILTER_FIELDS.BOOLEAN_FILTER]: new TypeField(
-      lookupFilterElemID, LOOKUP_FILTER_FIELDS.BOOLEAN_FILTER, BuiltinTypes.STRING
-    ),
-    [LOOKUP_FILTER_FIELDS.ERROR_MESSAGE]: new TypeField(
-      lookupFilterElemID, LOOKUP_FILTER_FIELDS.ERROR_MESSAGE, BuiltinTypes.STRING
-    ),
-    [LOOKUP_FILTER_FIELDS.INFO_MESSAGE]: new TypeField(
-      lookupFilterElemID, LOOKUP_FILTER_FIELDS.INFO_MESSAGE, BuiltinTypes.STRING
-    ),
-    [LOOKUP_FILTER_FIELDS.IS_OPTIONAL]: new TypeField(
-      lookupFilterElemID, LOOKUP_FILTER_FIELDS.IS_OPTIONAL, BuiltinTypes.BOOLEAN
-    ),
-    [LOOKUP_FILTER_FIELDS.FILTER_ITEMS]: new TypeField(
-      lookupFilterElemID, LOOKUP_FILTER_FIELDS.FILTER_ITEMS,
-      new ObjectType({
-        elemID: filterItemElemID,
-        fields: {
-          [LOOKUP_FILTER_FIELDS.FIELD]: new TypeField(
-            filterItemElemID, LOOKUP_FILTER_FIELDS.FIELD, BuiltinTypes.STRING
-          ),
-          [LOOKUP_FILTER_FIELDS.OPERATION]: new TypeField(
-            filterItemElemID, LOOKUP_FILTER_FIELDS.OPERATION, BuiltinTypes.STRING
-          ),
-          [LOOKUP_FILTER_FIELDS.VALUE_FIELD]: new TypeField(
-            filterItemElemID, LOOKUP_FILTER_FIELDS.VALUE_FIELD, BuiltinTypes.STRING
-          ),
-        },
-      }), {}, true
-    ),
-  },
-})
-
-const fieldDependencyElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.FIELD_DEPENDENCY)
-const valueSettingsElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.VALUE_SETTINGS)
-
-const fieldDependencyObjectType = new ObjectType({
-  elemID: fieldDependencyElemID,
-  fields: {
-    [FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD]: new TypeField(
-      fieldDependencyElemID, FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD, BuiltinTypes.STRING
-    ),
-    [FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS]: new TypeField(
-      fieldDependencyElemID, FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS,
-      new ObjectType({
-        elemID: valueSettingsElemID,
-        fields: {
-          // todo: currently this field is populated with the referenced field's API name,
-          // todo: should be modified to elemID reference once we'll use HIL
-          [VALUE_SETTINGS_FIELDS.VALUE_NAME]: new TypeField(
-            valueSettingsElemID, VALUE_SETTINGS_FIELDS.VALUE_NAME, BuiltinTypes.STRING
-          ),
-          [VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE]: new TypeField(
-            valueSettingsElemID, VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE,
-            BuiltinTypes.STRING, {}, true
-          ),
-        },
-      }), {}, true
-    ),
-  },
-})
-
 const addressElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.ADDRESS)
 const nameElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.FIELD_NAME)
 const geoLocationElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.LOCATION)
@@ -175,6 +106,76 @@ export class Types {
       [FIELD_LEVEL_SECURITY_FIELDS.READABLE]: new TypeField(
         Types.fieldLevelSecurityElemID, FIELD_LEVEL_SECURITY_FIELDS.READABLE,
         BuiltinTypes.STRING, {}, true
+      ),
+    },
+  })
+
+  private static lookupFilterElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.LOOKUP_FILTER)
+  private static filterItemElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.FILTER_ITEM)
+  private static lookupFilterType = new ObjectType({
+    elemID: Types.lookupFilterElemID,
+    fields: {
+      [LOOKUP_FILTER_FIELDS.ACTIVE]: new TypeField(
+        Types.lookupFilterElemID, LOOKUP_FILTER_FIELDS.ACTIVE, BuiltinTypes.BOOLEAN
+      ),
+      [LOOKUP_FILTER_FIELDS.BOOLEAN_FILTER]: new TypeField(
+        Types.lookupFilterElemID, LOOKUP_FILTER_FIELDS.BOOLEAN_FILTER, BuiltinTypes.STRING
+      ),
+      [LOOKUP_FILTER_FIELDS.ERROR_MESSAGE]: new TypeField(
+        Types.lookupFilterElemID, LOOKUP_FILTER_FIELDS.ERROR_MESSAGE, BuiltinTypes.STRING
+      ),
+      [LOOKUP_FILTER_FIELDS.INFO_MESSAGE]: new TypeField(
+        Types.lookupFilterElemID, LOOKUP_FILTER_FIELDS.INFO_MESSAGE, BuiltinTypes.STRING
+      ),
+      [LOOKUP_FILTER_FIELDS.IS_OPTIONAL]: new TypeField(
+        Types.lookupFilterElemID, LOOKUP_FILTER_FIELDS.IS_OPTIONAL, BuiltinTypes.BOOLEAN
+      ),
+      [LOOKUP_FILTER_FIELDS.FILTER_ITEMS]: new TypeField(
+        Types.lookupFilterElemID, LOOKUP_FILTER_FIELDS.FILTER_ITEMS,
+        new ObjectType({
+          elemID: Types.filterItemElemID,
+          fields: {
+            [LOOKUP_FILTER_FIELDS.FIELD]: new TypeField(
+              Types.filterItemElemID, LOOKUP_FILTER_FIELDS.FIELD, BuiltinTypes.STRING
+            ),
+            [LOOKUP_FILTER_FIELDS.OPERATION]: new TypeField(
+              Types.filterItemElemID, LOOKUP_FILTER_FIELDS.OPERATION, BuiltinTypes.STRING
+            ),
+            [LOOKUP_FILTER_FIELDS.VALUE_FIELD]: new TypeField(
+              Types.filterItemElemID, LOOKUP_FILTER_FIELDS.VALUE_FIELD, BuiltinTypes.STRING
+            ),
+          },
+        }), {}, true
+      ),
+    },
+  })
+
+  private static valueSettingsElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.VALUE_SETTINGS)
+  private static valueSettingsType = new ObjectType({
+    elemID: Types.valueSettingsElemID,
+    fields: {
+      // todo: currently this field is populated with the referenced field's API name,
+      // todo: should be modified to elemID reference once we'll use HIL
+      [VALUE_SETTINGS_FIELDS.VALUE_NAME]: new TypeField(
+        Types.valueSettingsElemID, VALUE_SETTINGS_FIELDS.VALUE_NAME, BuiltinTypes.STRING
+      ),
+      [VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE]: new TypeField(
+        Types.valueSettingsElemID, VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE,
+        BuiltinTypes.STRING, {}, true
+      ),
+    },
+  })
+
+  private static fieldDependencyElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.FIELD_DEPENDENCY)
+  private static fieldDependencyType = new ObjectType({
+    elemID: Types.fieldDependencyElemID,
+    fields: {
+      [FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD]: new TypeField(
+        Types.fieldDependencyElemID, FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD, BuiltinTypes.STRING
+      ),
+      [FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS]: new TypeField(
+        Types.fieldDependencyElemID, FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS,
+        Types.valueSettingsType, {}, true
       ),
     },
   })
@@ -256,7 +257,7 @@ export class Types {
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
         ...Types.commonAnnotationTypes,
-        [FIELD_ANNOTATIONS.FIELD_DEPENDENCY]: fieldDependencyObjectType,
+        [FIELD_ANNOTATIONS.FIELD_DEPENDENCY]: Types.fieldDependencyType,
       },
     }),
     multipicklist: new PrimitiveType({
@@ -265,7 +266,7 @@ export class Types {
       annotationTypes: {
         ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.VISIBLE_LINES]: BuiltinTypes.NUMBER,
-        [FIELD_ANNOTATIONS.FIELD_DEPENDENCY]: fieldDependencyObjectType,
+        [FIELD_ANNOTATIONS.FIELD_DEPENDENCY]: Types.fieldDependencyType,
       },
     }),
     email: new PrimitiveType({
@@ -344,7 +345,7 @@ export class Types {
         [FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION]: BuiltinTypes.BOOLEAN,
         // Todo SALTO-228 The FIELD_ANNOTATIONS.RELATED_TO annotation is missing since
         // currently there is no way to declare on a list annotation
-        [FIELD_ANNOTATIONS.LOOKUP_FILTER]: lookupFilterObjectType,
+        [FIELD_ANNOTATIONS.LOOKUP_FILTER]: Types.lookupFilterType,
       },
     }),
     masterdetail: new PrimitiveType({
@@ -354,7 +355,7 @@ export class Types {
         ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ]: BuiltinTypes.BOOLEAN,
-        [FIELD_ANNOTATIONS.LOOKUP_FILTER]: lookupFilterObjectType,
+        [FIELD_ANNOTATIONS.LOOKUP_FILTER]: Types.lookupFilterType,
         // Todo SALTO-228 The FIELD_ANNOTATIONS.RELATED_TO annotation is missing since
         // currently there is no way to declare on a list annotation
       },
@@ -484,11 +485,13 @@ export class Types {
   }
 
   static getAnnotationTypes(): Type[] {
-    return [Types.fieldLevelSecurityType].map(type => {
-      const fieldType = type.clone()
-      fieldType.path = ['types', 'annotation_types']
-      return fieldType
-    })
+    return [Types.fieldLevelSecurityType, Types.fieldDependencyType, Types.valueSettingsType,
+      Types.lookupFilterType]
+      .map(type => {
+        const fieldType = type.clone()
+        fieldType.path = ['types', 'annotation_types']
+        return fieldType
+      })
   }
 }
 

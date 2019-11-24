@@ -3,7 +3,7 @@ import { Element, Field, ObjectType, Values } from 'adapter-api'
 import { collections } from '@salto/lowerdash'
 import { FilterCreator } from '../filter'
 import {
-  FIELD_ANNOTATIONS, FIELD_DEPENDENCY_FIELDS, METADATA_TYPE, VALUE_SETTINGS_FIELDS,
+  FIELD_ANNOTATIONS, FIELD_DEPENDENCY_FIELDS, VALUE_SETTINGS_FIELDS,
 } from '../constants'
 import {
   bpCase, mapKeysRecursive, Types,
@@ -39,7 +39,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
     const customObjects = getCustomObjects(elements)
     const objectElemID2ApiName = generateObjectElemID2ApiName(customObjects)
     const fieldsWithFieldDependency = _(customObjects)
-      .map(obj => getFieldsWithFieldDependency(obj))
+      .map(getFieldsWithFieldDependency)
       .flatten()
       .value()
 
@@ -52,10 +52,10 @@ const filterCreator: FilterCreator = ({ client }) => ({
       .annotationTypes[FIELD_ANNOTATIONS.FIELD_DEPENDENCY] as ObjectType
 
     const addFieldDependencyData = (field: Field): void => {
-      const fieldFromMap = name2Field[getCustomFieldName(field, objectElemID2ApiName)]
+      const salesforceField = name2Field[getCustomFieldName(field, objectElemID2ApiName)]
 
-      const controllingField = fieldFromMap?.valueSet?.controllingField
-      const valueSettingsInfo = fieldFromMap?.valueSet?.valueSettings
+      const controllingField = salesforceField?.valueSet?.controllingField
+      const valueSettingsInfo = salesforceField?.valueSet?.valueSettings
       if (controllingField && valueSettingsInfo) {
         const values = mapKeysRecursive(valueSettingsInfo, bpCase)
         const valueSettings = makeArray(values)
@@ -71,18 +71,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
       }
     }
 
-    const addFieldDependencyElements = (): void => {
-      fieldDependencyType.annotate({ [METADATA_TYPE]: 'FieldDependency' })
-      fieldDependencyType.path = ['types', 'subtypes', fieldDependencyType.elemID.name]
-      const valueSettingsType = fieldDependencyType
-        .fields[FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS].type
-      valueSettingsType.annotate({ [METADATA_TYPE]: 'ValueSettings' })
-      valueSettingsType.path = ['types', 'subtypes', valueSettingsType.elemID.name]
-      elements.push(...[fieldDependencyType, valueSettingsType])
-    }
-
     fieldsWithFieldDependency.forEach(addFieldDependencyData)
-    addFieldDependencyElements()
   },
 })
 

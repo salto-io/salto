@@ -18,13 +18,13 @@ describe('Test layout filter', () => {
   const filter = makeFilter({ client }) as FilterWith<'onFetch'>
 
   describe('Test layout fetch', () => {
-    const fetch = async (apiName: string): Promise<void> => {
+    const fetch = async (apiName: string, opts = { fixedName: true }): Promise<void> => {
       const testSObj = mockSObject.clone()
       testSObj.annotate({ [constants.API_NAME]: apiName })
 
       const fullName = `${apiName}-Test layout`
       const testLayout = new InstanceElement(
-        bpCase(fullName),
+        opts.fixedName ? 'test' : bpCase(fullName),
         new ObjectType({
           elemID: LAYOUT_TYPE_ID,
         }),
@@ -49,6 +49,9 @@ describe('Test layout filter', () => {
     })
     it('should add relation between layout to related custom sobject', async () => {
       await fetch('Test__c')
+    })
+    it('should not transform instance name if it is already fixed', async () => {
+      await fetch('Test', { fixedName: true })
     })
   })
 })

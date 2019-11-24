@@ -18,11 +18,7 @@ describe('Test layout filter', () => {
   const filter = makeFilter({ client }) as FilterWith<'onFetch'>
 
   describe('Test layout fetch', () => {
-    type FetchOpts = {
-      fixedName: boolean
-    }
-    const defaultFetchOpts: FetchOpts = { fixedName: true }
-    const fetch = async (apiName: string, opts: FetchOpts = defaultFetchOpts): Promise<void> => {
+    const fetch = async (apiName: string, opts = { fixedName: true }): Promise<void> => {
       const testSObj = mockSObject.clone()
       testSObj.annotate({ [constants.API_NAME]: apiName })
 

@@ -116,7 +116,7 @@ export const fetch: fetchFunc = async (workspace, fillConfig, progressEmitter?) 
   const [adapters, newConfigs] = await initAdapters(workspace.elements, fillConfig,
     createElemIdGetter(stateElements))
   if (progressEmitter) {
-    progressEmitter.emit('adaptersWereInitiated')
+    progressEmitter.emit('adaptersDidInitialize')
   }
   log.debug(`${Object.keys(adapters).length} were initialized [newConfigs=${newConfigs.length}]`)
   try {

@@ -51,7 +51,7 @@ export const fetchCommand = async (
     })
   }
   const fetchProgress = new EventEmitter<FetchProgressEvents>()
-  fetchProgress.on('adaptersWereInitiated', () => {
+  fetchProgress.on('adaptersDidInitialize', () => {
     outputLine(formatFetchHeader())
   })
 

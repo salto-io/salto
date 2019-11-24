@@ -65,7 +65,6 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
       sortFieldInfo: SortField
     ): void => {
       // Filter the instances we wish to sort their sub properties
-
       const instancesToChange = findInstances(elems, new ElemID(SALESFORCE, sortFieldInfo.typeName))
       wu(instancesToChange).forEach(elem => {
         // First, for each element clone the sortFieldInfo since we perform changes on it during

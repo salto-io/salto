@@ -134,7 +134,7 @@ const sendChunked = async <TIn, TOut>(input: TIn | TIn[],
         return []
       }))
   const results = await Promise.all(promises)
-  return _.flatten(results)
+  return _.flatten(results.map(ret => JSON.parse(JSON.stringify(ret))))
 }
 
 export default class SalesforceClient {
@@ -229,7 +229,7 @@ export default class SalesforceClient {
   public async describeMetadataType(type: string): Promise<ValueTypeField[]> {
     const fullName = `{${METADATA_NAMESPACE}}${type}`
     const describeResult = this.conn.metadata.describeValueType(fullName)
-    return (await describeResult).valueTypeFields
+    return JSON.parse(JSON.stringify((await describeResult).valueTypeFields))
   }
 
   @SalesforceClient.logDecorator

@@ -13,7 +13,7 @@ describe('list order filter', () => {
   const filter = filterCreator() as FilterWith<'onFetch'>
 
   describe('on fetch', () => {
-    it('should properly sort an object instance field by its sort property', async () => {
+    it('should properly sort field of object instances by its sort property', async () => {
       const typeElemID = new ElemID(SALESFORCE, CLEAN_DATA_SERVICE_TYPE_NAME)
       const testType = new ObjectType({ elemID: typeElemID })
 
@@ -38,13 +38,18 @@ describe('list order filter', () => {
           },
         ],
       })
-      const testEmpty = new InstanceElement('test2', testType, {})
-      await filter.onFetch([testInstance, testEmpty])
-      expect(
-        testInstance.value[CLEAN_RULES_FIELD_NAME][0][FIELD_MAPPINGS_FIELD_NAME].map(
-          (e: { name: string }) => e.name
-        )
-      ).toEqual(['Alpha', 'Bravo', 'Charlie'])
+
+      const testInstance2 = _.cloneDeep(testInstance)
+      const testInstance3 = _.cloneDeep(testInstance)
+      const testElements = [testInstance, testInstance2, testInstance3]
+      await filter.onFetch(testElements)
+      testElements.forEach(testElem => {
+        expect(
+          testElem.value[CLEAN_RULES_FIELD_NAME][0][FIELD_MAPPINGS_FIELD_NAME].map(
+            (e: { name: string }) => e.name
+          )
+        ).toEqual(['Alpha', 'Bravo', 'Charlie'])
+      })
     })
 
     const typeElemID = new ElemID(SALESFORCE, FIELD_PERMISSIONS_TYPE_NAME)

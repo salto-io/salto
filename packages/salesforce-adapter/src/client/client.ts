@@ -124,6 +124,7 @@ const sendChunked = async <TIn, TOut>(input: TIn | TIn[],
   chunkSize = MAX_ITEMS_IN_WRITE_REQUEST):
   Promise<TOut[]> => {
   const chunks = _.chunk(makeArray(input), chunkSize)
+  let lastException: Error | undefined
   const promises: Promise<TOut[]>[] = chunks
     .filter(chunk => !_.isEmpty(chunk))
     .map(chunk => sendChunk(chunk)
@@ -131,10 +132,14 @@ const sendChunked = async <TIn, TOut>(input: TIn | TIn[],
       .catch(e => {
         log.error('failed to send chunk in %s %o: %o, returning empty list',
           sendChunked.toString(), chunk, e)
+        lastException = e
         return []
       }))
-  const results = await Promise.all(promises)
-  return _.flatten(results)
+  const results = _.flatten(await Promise.all(promises))
+  if (_.isEmpty(results) && lastException) {
+    throw lastException
+  }
+  return results
 }
 
 export default class SalesforceClient {

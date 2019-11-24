@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-const fs = require('fs')
 const path = require('path')
 const webpack = require('webpack')
 const nexe = require('nexe')
@@ -10,18 +9,27 @@ const TARGET_FILE_BASENAME = 'salto'
 const TARGET_DIR = 'pkg'
 const TARGET_ARCH = 'x64'
 const TARGET_NODE_VERSION = '12.9.1'
-const TARGET_PLATFORMS = {
-  win: { ext: '.exe' },
-  linux: {},
-  mac: {},
-} // alpine not included for now
 
 const resources = [
   ...fontFiles.values(),
-  path.join(__dirname, '..', 'salto', 'dist', 'hcl.wasm')
+  path.join(__dirname, '..', 'salto', 'dist', 'hcl.wasm'),
 ]
 
+const { platform } = process
+const isWindows = platform === 'win32'
+
+const platformDir = {
+  win32: 'windows',
+  darwin: 'osx',
+  linux: 'linux',
+}
+
 const BASE_NEXE_CONFIG = {
+  output: [
+    path.join(TARGET_DIR, platformDir[platform], TARGET_FILE_BASENAME),
+    isWindows ? '.exe' : '',
+  ].join(''),
+  target: { platform, arch: TARGET_ARCH, version: TARGET_NODE_VERSION },
   loglevel: 'verbose',
   flags: [
     '--max-old-space-size=8192',
@@ -29,11 +37,7 @@ const BASE_NEXE_CONFIG = {
   resources,
 }
 
-const nexeConfigs = () => Object.entries(TARGET_PLATFORMS)
-  .map(([platform, platformOpts = {}]) => ({
-    output: `${path.join(TARGET_DIR, platform, TARGET_FILE_BASENAME)}${platformOpts.ext || ''}`,
-    target: { platform, arch: TARGET_ARCH, version: TARGET_NODE_VERSION },
-  }))
+console.dir(BASE_NEXE_CONFIG)
 
 const handleError = err => {
   console.error(err.stack || err);
@@ -71,30 +75,17 @@ const doWebpack = (config) => new Promise((resolve, reject) => {
 })
 
 const doNexe = (input) => new Promise((resolve, reject) => {
-  const next = configs => {
-    const [ config ] = configs
-    if (!config) {
+  nexe.compile({
+    ...BASE_NEXE_CONFIG,
+    input,
+  }, err => {
+    if (err) {
+      handleError(err)
+      reject()
+    } else {
       resolve()
-      return
     }
-
-    console.log('Running nexe for platform %o', config.target)
-
-    nexe.compile({
-      ...BASE_NEXE_CONFIG,
-      ...config,
-      input,
-    }, err => {
-      if (err) {
-        handleError(err)
-        reject()
-      }
-
-      next(configs.slice(1))
-    })
-  }
-
-  next(nexeConfigs())
+  })
 })
 
 ;(async () => {

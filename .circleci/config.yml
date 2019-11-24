@@ -35,6 +35,33 @@ commands:
           from: packages/<< parameters.workspace_dir >>/pkg
           to: ${S3_PKG_HASH_PREFIX}/<< parameters.out_filename >>
 
+  package_cli:
+    description: Create a standalone CLI executable
+
+    parameters:
+      out_filename:
+        type: string
+
+    steps:
+      - attach_workspace:
+          at: .
+
+      - run:
+          name: Remove node_modules
+          command: rm -r node_modules packages/*/node_modules
+
+      - run:
+          name: Rebuild node_modules
+          command: yarn install --pure-lockfile --ignore-scripts
+
+      - run:
+          name: Build native executable
+          command: yarn workspace @salto/cli run package
+
+      - upload_pkg:
+          workspace_dir: cli
+          out_filename: cli/<< parameters.out_filename >>
+
 jobs:
   build:
     docker:
@@ -161,21 +188,40 @@ jobs:
           name: Upload coverage to codecov.io
           command: npx codecov -F e2e_test -f coverage/*.json
 
-  package_cli:
+  package_cli_windows:
+    executor:
+      name: win/vs2019
+      shell: bash.exe
+
+    working_directory: c:\workspace
+
+    steps:
+      - run:
+          name: Install yarn
+          command: npm i --g yarn
+
+      - package_cli:
+          out_filename: "windows/salto.exe"
+
+  package_cli_linux:
     docker:
       - image: circleci/node:12.12
 
     steps:
-      - attach_workspace:
-          at: .
+      - package_cli:
+          out_filename: "linux/salto"
 
+  package_cli_osx:
+    macos:
+      xcode: "11.0"
+
+    steps:
       - run:
-          name: Build native executables
-          command: yarn workspace @salto/cli run package
+          name: Install yarn
+          command: npm i --g yarn
 
-      - upload_pkg:
-          workspace_dir: cli
-          out_filename: cli
+      - package_cli:
+          out_filename: "osx/salto"
 
   package_vscode_extension:
     docker:
@@ -233,7 +279,15 @@ workflows:
           requires:
             - build
 
-      - package_cli:
+      - package_cli_windows:
+          requires:
+            - unittest
+
+      - package_cli_linux:
+          requires:
+            - unittest
+
+      - package_cli_osx:
           requires:
             - unittest
 
@@ -243,7 +297,9 @@ workflows:
 
       - sync_s3_pkg_latest:
           requires:
-            - package_cli
+            - package_cli_windows
+            - package_cli_linux
+            - package_cli_osx
             - package_vscode_extension
 
   post-commit:
@@ -262,11 +318,23 @@ workflows:
           requires:
             - unittest
 
-      - package_cli:
+      - package_cli_windows:
+          # Note: Temporarily removed requirement for e2e due to flaky e2e tests.
           requires:
             - build
-            # Note: Temporarily removed requirement for e2e due to flaky e2e tests.
-            # - e2e_test
+          #   - e2e_test
+
+      - package_cli_linux:
+          # Note: Temporarily removed requirement for e2e due to flaky e2e tests.
+          requires:
+            - build
+          #   - e2e_test
+
+      - package_cli_osx:
+          # Note: Temporarily removed requirement for e2e due to flaky e2e tests.
+          requires:
+            - build
+          #   - e2e_test
 
       - package_vscode_extension:
           requires:
@@ -276,5 +344,7 @@ workflows:
 
       - sync_s3_pkg_latest:
           requires:
-            - package_cli
+            - package_cli_windows
+            - package_cli_linux
+            - package_cli_osx
             - package_vscode_extension

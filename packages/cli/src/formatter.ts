@@ -326,6 +326,7 @@ export const formatFetchChangeForApproval = (
   ].join('\n')
 }
 
+
 export const formatChangesSummary = (changes: number, approved: number): string => {
   if (changes === 0) {
     return Prompts.FETCH_NO_CHANGES
@@ -361,6 +362,20 @@ const formatError = (err: { error: string }): string => header(err.error)
 
 const formatWorkspaceError = (we: Readonly<WorkspaceError>): string =>
   `${formatError(we)}${formatSourceFragments(we.sourceFragments)}`
+
+
+export const formatFetchHeader = (): string => [
+  emptyLine(),
+  header(Prompts.FETCH_HEADER),
+  subHeader(Prompts.FETCH_SUB_HEADER),
+].join('\n')
+export const formatFetchFinish = (): string => [
+  emptyLine(),
+  Prompts.FETCH_SUCCESS_FINISHED,
+].join('\n')
+export const formatStepStart = (text: string, indentLevel?: number): string => indent(`${chalk.yellow('>>>')} ${text}`, indentLevel ?? 1)
+export const formatStepCompleted = (text: string, indentLevel?: number): string => indent(`${chalk.green('vvv')} ${text}`, indentLevel ?? 1)
+export const formatStepFailed = (text: string, indentLevel?: number): string => indent(`${error('xxx')} ${text}`, indentLevel ?? 1)
 
 export const formatWorkspaceErrors = (workspaceErrors: ReadonlyArray<WorkspaceError>): string =>
   `${workspaceErrors.map(formatWorkspaceError).join('\n')}\n`

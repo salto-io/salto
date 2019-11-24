@@ -109,18 +109,18 @@ describe('fetch command', () => {
             force: true,
             interactive: false,
             output: cliOutput,
-            spinnerCreator,
             fetch: mockFetchWithEmitter,
             getApprovedChanges: mockApprove,
           })
         })
-        it('should initiate spinners', () => {
-          expect(spinnerCreator).toHaveBeenCalled()
-          expect(spinners.length).toBeGreaterThanOrEqual(2)
+        it('should start at least one step', () => {
+          expect(cliOutput.stdout.content).toContain('>>>')
         })
-        it('should have emitted spinners succeed/fail', () => {
-          expect(spinners[0].succeed).toHaveBeenCalled()
-          expect(spinners[1].fail).toHaveBeenCalled()
+        it('should finish one step', () => {
+          expect(cliOutput.stdout.content).toContain('vvv')
+        })
+        it('should fail one step', () => {
+          expect(cliOutput.stdout.content).toContain('xxx')
         })
       })
       describe('with no upstream changes', () => {
@@ -130,7 +130,6 @@ describe('fetch command', () => {
             force: true,
             interactive: false,
             output: cliOutput,
-            spinnerCreator,
             fetch: mockFetch,
             getApprovedChanges: mockApprove,
           })
@@ -157,7 +156,6 @@ describe('fetch command', () => {
               force: true,
               interactive: false,
               output: cliOutput,
-              spinnerCreator,
               fetch: mockFetch,
               getApprovedChanges: mockApprove,
             })
@@ -173,7 +171,6 @@ describe('fetch command', () => {
               force: false,
               interactive: false,
               output: cliOutput,
-              spinnerCreator,
               fetch: mockFetch,
               getApprovedChanges: mockApprove,
             })
@@ -190,7 +187,6 @@ describe('fetch command', () => {
               force: false,
               interactive: false,
               output: cliOutput,
-              spinnerCreator,
               fetch: mockFetch,
               getApprovedChanges: mockApprove,
             })
@@ -210,7 +206,6 @@ describe('fetch command', () => {
                 force: false,
                 interactive: false,
                 output: cliOutput,
-                spinnerCreator,
                 fetch: mockFetch,
                 getApprovedChanges: mockApprove,
               })
@@ -230,7 +225,6 @@ describe('fetch command', () => {
                 force: false,
                 interactive: false,
                 output: cliOutput,
-                spinnerCreator,
                 fetch: mockFetch,
                 getApprovedChanges: mockApprove,
               })
@@ -251,7 +245,6 @@ describe('fetch command', () => {
                 force: false,
                 interactive: false,
                 output: cliOutput,
-                spinnerCreator,
                 fetch: mockFetch,
                 getApprovedChanges: mockApprove,
               })
@@ -273,7 +266,6 @@ describe('fetch command', () => {
                 force: false,
                 interactive: false,
                 output: cliOutput,
-                spinnerCreator,
                 fetch: mockFetch,
                 getApprovedChanges: mockApprove,
               })
@@ -290,7 +282,6 @@ describe('fetch command', () => {
                 force: false,
                 interactive: false,
                 output: cliOutput,
-                spinnerCreator,
                 fetch: mockFailedFetch,
                 getApprovedChanges: mockApprove,
               })

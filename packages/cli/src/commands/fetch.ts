@@ -12,7 +12,10 @@ import { logger } from '@salto/logging'
 import { EOL } from 'os'
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput, CliExitCode, SpinnerCreator } from '../types'
-import { formatChangesSummary, formatMergeErrors, formatFatalFetchError, error } from '../formatter'
+import {
+  formatChangesSummary, formatMergeErrors, formatFatalFetchError, formatStepStart,
+  formatStepCompleted, formatStepFailed, formatFetchHeader, formatFetchFinish,
+} from '../formatter'
 import { getConfigWithHeader, getApprovedChanges as cliGetApprovedChanges } from '../callbacks'
 import { updateWorkspace, loadWorkspace } from '../workspace'
 import Prompts from '../prompts'
@@ -25,36 +28,50 @@ type approveChangesFunc = (
 ) => Promise<ReadonlyArray<FetchChange>>
 
 export const fetchCommand = async (
-  { workspace, force, interactive, output, spinnerCreator, fetch, getApprovedChanges }: {
+  { workspace, force, interactive, output, fetch, getApprovedChanges }: {
     workspace: Workspace
     force: boolean
     interactive: boolean
     output: CliOutput
-    spinnerCreator: SpinnerCreator
     fetch: fetchFunc
     getApprovedChanges: approveChangesFunc
   }): Promise<CliExitCode> => {
-  const progressSpinner = (
+  const outputLine = (text: string): void => output.stdout.write(`${text}\n`)
+  const progressOutputer = (
     startText: string,
     successText: string,
     defaultErrorText: string
   ) => (progress: StepEmitter) => {
-    const spinner = spinnerCreator(startText, { prefixText: EOL })
-    progress.on('completed', () => spinner.succeed(successText))
-    progress.on('failed', (errorText?: string) => spinner.fail(errorText ?? defaultErrorText))
+    outputLine(EOL)
+    outputLine(formatStepStart(startText))
+    progress.on('completed', () => outputLine(formatStepCompleted(successText)))
+    progress.on('failed', (errorText?: string) => {
+      outputLine(formatStepFailed(errorText ?? defaultErrorText))
+      outputLine(EOL)
+    })
   }
   const fetchProgress = new EventEmitter<FetchProgressEvents>()
-  fetchProgress.on('changesWillBeFetched', (progress: StepEmitter, adapters: string[]) => progressSpinner(
+  fetchProgress.on('adaptersDidInitialize', () => {
+    outputLine(formatFetchHeader())
+  })
+
+  fetchProgress.on('changesWillBeFetched', (progress: StepEmitter, adapters: string[]) => progressOutputer(
     Prompts.FETCH_GET_CHANGES_START(adapters),
     Prompts.FETCH_GET_CHANGES_FINISH(adapters),
-    error(Prompts.FETCH_GET_CHANGES_FAIL)
+    Prompts.FETCH_GET_CHANGES_FAIL
   )(progress))
 
-  fetchProgress.on('diffWillBeCalculated', progressSpinner(
+  fetchProgress.on('diffWillBeCalculated', progressOutputer(
     Prompts.FETCH_CALC_DIFF_START,
     Prompts.FETCH_CALC_DIFF_FINISH,
-    error(Prompts.FETCH_CALC_DIFF_FAIL),
+    Prompts.FETCH_CALC_DIFF_FAIL,
   ))
+  fetchProgress.on('workspaceWillBeUpdated', (progress: StepEmitter, changes: number, approved: number) =>
+    progressOutputer(
+      formatChangesSummary(changes, approved),
+      Prompts.FETCH_UPDATE_WORKSPACE_SUCCESS,
+      Prompts.FETCH_UPDATE_WORKSPACE_FAIL
+    )(progress))
 
   const fetchResult = await fetch(
     workspace,
@@ -82,15 +99,15 @@ export const fetchCommand = async (
     ? changes
     : await getApprovedChanges(changes, interactive)
 
-  const updateWsSpinner = spinnerCreator(
-    formatChangesSummary(changes.length, changesToApply.length),
-    { prefixText: '\n' }
-  )
+
+  const updatingWsEmitter = new StepEmitter()
+  fetchProgress.emit('workspaceWillBeUpdated', updatingWsEmitter, changes.length, changesToApply.length)
   const updatingWsSucceeded = await updateWorkspace(workspace, output, ...changesToApply)
   if (updatingWsSucceeded) {
-    updateWsSpinner.succeed(Prompts.FETCH_UPDATE_WORKSPACE_SUCCESS)
+    updatingWsEmitter.emit('completed')
+    outputLine(formatFetchFinish())
   } else {
-    updateWsSpinner.fail(error(Prompts.FETCH_UPDATE_WORKSPACE_FAIL))
+    updatingWsEmitter.emit('failed')
   }
   return updatingWsSucceeded
     ? CliExitCode.Success
@@ -116,7 +133,6 @@ export const command = (
       force,
       interactive,
       output,
-      spinnerCreator,
       fetch: apiFetch,
       getApprovedChanges: cliGetApprovedChanges,
     })

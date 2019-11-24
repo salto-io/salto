@@ -43,20 +43,17 @@ commands:
         type: string
 
     steps:
-      - attach_workspace:
-          at: .
-
-      - run:
-          name: Remove node_modules
-          command: rm -r node_modules packages/*/node_modules
-
-      - run:
-          name: Rebuild node_modules
-          command: yarn install --pure-lockfile --ignore-scripts
+      - restore_cache:
+          keys:
+            - v1-nexe-{{ arch }}
 
       - run:
           name: Build native executable
           command: yarn workspace @salto/cli run package
+
+      - save_cache:
+          key: v1-nexe-{{ arch }}
+          paths: $HOME/.nexe
 
       - upload_pkg:
           workspace_dir: cli
@@ -196,9 +193,24 @@ jobs:
     working_directory: c:\workspace
 
     steps:
+      - attach_workspace:
+          at: .
+
       - run:
           name: Install yarn
           command: npm i --g yarn
+
+      - run:
+          name: Install prereqs for building node
+          command: powershell -file packages/cli/install_node_prereqs.ps1
+
+      - run:
+          name: Remove node_modules
+          command: rm -r node_modules packages/*/node_modules
+
+      - run:
+          name: Rebuild node_modules
+          command: yarn install --pure-lockfile --ignore-scripts
 
       - package_cli:
           out_filename: "windows/salto.exe"
@@ -208,6 +220,9 @@ jobs:
       - image: circleci/node:12.12
 
     steps:
+      - attach_workspace:
+          at: .
+
       - package_cli:
           out_filename: "linux/salto"
 
@@ -219,6 +234,17 @@ jobs:
       - run:
           name: Install yarn
           command: npm i --g yarn
+
+      - attach_workspace:
+          at: .
+
+      - run:
+          name: Remove node_modules
+          command: rm -r node_modules packages/*/node_modules
+
+      - run:
+          name: Rebuild node_modules
+          command: yarn install --pure-lockfile --ignore-scripts
 
       - package_cli:
           out_filename: "osx/salto"

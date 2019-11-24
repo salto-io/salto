@@ -31,6 +31,7 @@ const BASE_NEXE_CONFIG = {
   ].join(''),
   target: { platform, arch: TARGET_ARCH, version: TARGET_NODE_VERSION },
   loglevel: 'verbose',
+  build: true,
   flags: [
     '--max-old-space-size=8192',
   ],

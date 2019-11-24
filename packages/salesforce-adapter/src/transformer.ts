@@ -490,7 +490,9 @@ export const toCustomField = (
   const blacklistedAnnotations: string[] = [
     API_NAME, // used to mark the SERVICE_ID but does not exist in the CustomObject
     FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION, // handled in the CustomField constructor
-    FIELD_ANNOTATIONS.LOOKUP_FILTER] // handled in lookup_filters filter
+    FIELD_ANNOTATIONS.LOOKUP_FILTER, // handled in lookup_filters filter
+    FIELD_LEVEL_SECURITY_ANNOTATION,
+  ]
   const isBlacklisted = (annotationValue: string): boolean =>
     blacklistedAnnotations.includes(annotationValue)
 

@@ -10,7 +10,7 @@ import {
   ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, isObjectType,
 } from 'adapter-api'
 import { collections } from '@salto/lowerdash'
-import { CustomObject, CustomField } from './client/types'
+import { CustomObject, CustomField, ValueSettings } from './client/types'
 import { API_VERSION, METADATA_NAMESPACE } from './client/client'
 import {
   API_NAME, CUSTOM_OBJECT, LABEL, SALESFORCE, FORMULA,
@@ -18,8 +18,8 @@ import {
   METADATA_TYPE, FIELD_ANNOTATIONS, SALESFORCE_CUSTOM_SUFFIX, DEFAULT_VALUE_FORMULA,
   MAX_METADATA_RESTRICTION_VALUES, LOOKUP_FILTER_FIELDS,
   ADDRESS_FIELDS, NAME_FIELDS, GEOLOCATION_FIELDS, INSTANCE_FULL_NAME_FIELD,
-  FIELD_LEVEL_SECURITY_ANNOTATION,
-  FIELD_LEVEL_SECURITY_FIELDS,
+  FIELD_LEVEL_SECURITY_ANNOTATION, FIELD_LEVEL_SECURITY_FIELDS, FIELD_DEPENDENCY_FIELDS,
+  VALUE_SETTINGS_FIELDS,
 } from './constants'
 
 const { makeArray } = collections.array
@@ -128,6 +128,35 @@ const lookupFilterObjectType = new ObjectType({
   },
 })
 
+const fieldDependencyElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.FIELD_DEPENDENCY)
+const valueSettingsElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.VALUE_SETTINGS)
+
+const fieldDependencyObjectType = new ObjectType({
+  elemID: fieldDependencyElemID,
+  fields: {
+    [FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD]: new TypeField(
+      fieldDependencyElemID, FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD, BuiltinTypes.STRING
+    ),
+    [FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS]: new TypeField(
+      fieldDependencyElemID, FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS,
+      new ObjectType({
+        elemID: valueSettingsElemID,
+        fields: {
+          // todo: currently this field is populated with the referenced field's API name,
+          // todo: should be modified to elemID reference once we'll use HIL
+          [VALUE_SETTINGS_FIELDS.VALUE_NAME]: new TypeField(
+            valueSettingsElemID, VALUE_SETTINGS_FIELDS.VALUE_NAME, BuiltinTypes.STRING
+          ),
+          [VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE]: new TypeField(
+            valueSettingsElemID, VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE,
+            BuiltinTypes.STRING, {}, true
+          ),
+        },
+      }), {}, true
+    ),
+  },
+})
+
 const addressElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.ADDRESS)
 const nameElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.FIELD_NAME)
 const geoLocationElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.LOCATION)
@@ -227,6 +256,7 @@ export class Types {
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
         ...Types.commonAnnotationTypes,
+        [FIELD_ANNOTATIONS.FIELD_DEPENDENCY]: fieldDependencyObjectType,
       },
     }),
     multipicklist: new PrimitiveType({
@@ -235,6 +265,7 @@ export class Types {
       annotationTypes: {
         ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.VISIBLE_LINES]: BuiltinTypes.NUMBER,
+        [FIELD_ANNOTATIONS.FIELD_DEPENDENCY]: fieldDependencyObjectType,
       },
     }),
     email: new PrimitiveType({
@@ -469,9 +500,31 @@ const allowedAnnotations = (key: string): string[] => {
   return returnedType ? Object.keys(returnedType.annotationTypes) : []
 }
 
+/**
+ * Deploy transform function on all keys in a values map recursively
+ *
+ * @param obj Input object to transform
+ * @param func Transform function to deploy to all keys
+ */
+export const mapKeysRecursive = (obj: Values, func: (key: string) => string): Values => {
+  if (_.isArray(obj)) {
+    return obj.map(val => mapKeysRecursive(val, func))
+  }
+  if (_.isObject(obj)) {
+    return _(obj)
+      .mapKeys((_val, key) => func(key))
+      .mapValues(val => mapKeysRecursive(val, func))
+      .value()
+  }
+  return obj
+}
+
 export const toCustomField = (
   object: ObjectType, field: TypeField, fullname = false
 ): CustomField => {
+  const fieldDependency = field.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY]
+  const valueSettings = mapKeysRecursive(fieldDependency?.[FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS],
+    key => sfCase(key, false, false)) as ValueSettings[]
   const newField = new CustomField(
     fullname ? fieldFullName(object, field) : apiName(field),
     FIELD_TYPE_API_NAMES[fieldTypeName(field.type.elemID.name)],
@@ -480,6 +533,8 @@ export const toCustomField = (
     field.annotations[Type.DEFAULT],
     field.annotations[DEFAULT_VALUE_FORMULA],
     field.annotations[Type.VALUES],
+    fieldDependency?.[FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD],
+    valueSettings,
     field.annotations[FORMULA],
     field.annotations[FIELD_ANNOTATIONS.RELATED_TO],
     sfCase(field.name),
@@ -490,6 +545,7 @@ export const toCustomField = (
   const blacklistedAnnotations: string[] = [
     API_NAME, // used to mark the SERVICE_ID but does not exist in the CustomObject
     FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION, // handled in the CustomField constructor
+    FIELD_ANNOTATIONS.FIELD_DEPENDENCY, // handled in field_dependencies filter
     FIELD_ANNOTATIONS.LOOKUP_FILTER, // handled in lookup_filters filter
     FIELD_LEVEL_SECURITY_ANNOTATION,
   ]
@@ -629,6 +685,10 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field,
         annotations[Type.DEFAULT] = defaults
       }
     }
+    if (field.dependentPicklist) {
+      // will be populated in the field_dependencies filter
+      annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY] = {}
+    }
     if (field.type === 'multipicklist') {
       // Precision is the field for multi-picklist in SFDC API that defines how many objects will
       // be visible in the picklist in the UI. Why? Because.
@@ -654,6 +714,8 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field,
       annotations[FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION] = !(_.get(field, 'restrictedDelete'))
     }
     if (!_.isEmpty(field.referenceTo)) {
+      // todo: currently this field is populated with the referenced object's API name,
+      // todo: should be modified to elemID reference once we'll use HIL
       // there are some SF reference fields without related fields
       // e.g. salesforce_user_app_menu_item.ApplicationId, salesforce_login_event.LoginHistoryId
       annotations[FIELD_ANNOTATIONS.RELATED_TO] = field.referenceTo
@@ -684,25 +746,6 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field,
 
   const fieldName = Types.getElemId(field.name, true, serviceIds).name
   return new TypeField(parentID, fieldName, bpFieldType, annotations)
-}
-
-/**
- * Deploy transform function on all keys in a values map recursively
- *
- * @param obj Input object to transform
- * @param func Transform function to deploy to all keys
- */
-export const mapKeysRecursive = (obj: Values, func: (key: string) => string): Values => {
-  if (_.isArray(obj)) {
-    return obj.map(val => mapKeysRecursive(val, func))
-  }
-  if (_.isObject(obj)) {
-    return _(obj)
-      .mapKeys((_val, key) => func(key))
-      .mapValues(val => mapKeysRecursive(val, func))
-      .value()
-  }
-  return obj
 }
 
 export const fromMetadataInfo = (info: MetadataInfo):

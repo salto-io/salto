@@ -485,7 +485,9 @@ describe('SalesforceAdapter fetch', () => {
       ).length
         + 1 /* LookupFilter */
         + 3
-        + 1 /* field permissions */)
+        + 1 /* field permissions */
+        + 2 /* field dependency & value settings */)
+
       const types = _.assign({}, ...result.map(t => ({ [t.elemID.getFullName()]: t })))
       const nestingType = types['salesforce.nesting_type']
       const nestedType = types['salesforce.nested_type']

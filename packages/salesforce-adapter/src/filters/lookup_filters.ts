@@ -1,18 +1,16 @@
 import _ from 'lodash'
-import wu from 'wu'
 import { Element, Field, isObjectType, ObjectType, Change, getChangeElement,
   isField, Values } from 'adapter-api'
 import { SaveResult } from 'jsforce'
 import { collections } from '@salto/lowerdash'
 import { FilterCreator } from '../filter'
-import {
-  API_NAME, CUSTOM_FIELD, FIELD_ANNOTATIONS, LOOKUP_FILTER_FIELDS, METADATA_TYPE,
-} from '../constants'
+import { CUSTOM_FIELD, FIELD_ANNOTATIONS, LOOKUP_FILTER_FIELDS, METADATA_TYPE } from '../constants'
 import { CustomField } from '../client/types'
-import {
-  bpCase, fieldFullName, mapKeysRecursive, sfCase, toCustomField, Types, isCustomObject,
-} from '../transformer'
+import { bpCase, mapKeysRecursive, sfCase, toCustomField, Types } from '../transformer'
 import { transform } from './convert_types'
+import {
+  generateObjectElemID2ApiName, getCustomFieldName, getCustomObjects, readCustomFields,
+} from './utils'
 
 const { makeArray } = collections.array
 
@@ -46,46 +44,24 @@ const filterCreator: FilterCreator = ({ client }) => ({
    * @param elements the already fetched elements
    */
   onFetch: async (elements: Element[]): Promise<void> => {
-    const lookupFilterType = Types.primitiveDataTypes.lookup
-      .annotationTypes[FIELD_ANNOTATIONS.LOOKUP_FILTER] as ObjectType
-
-    const readCustomFields = async (fieldNames: string[]): Promise<Record<string, CustomField>> => (
-      _(await client.readMetadata(CUSTOM_FIELD, fieldNames))
-        .map(field => [field.fullName, field])
-        .fromPairs()
-        .value()
-    )
-
-    const customObjectElements = wu(elements)
-      // using single filter as wu is not preserving type information
-      .filter(e => isObjectType(e) && isCustomObject(e))
-      .toArray() as ObjectType[]
-
-    const objectFullNameToObjectMap: Record<string, ObjectType[]> = _(customObjectElements)
-      .groupBy(e => e.elemID.getFullName())
-      .value()
-
-    const fieldsWithLookupFilter = _(customObjectElements)
+    const customObjects = getCustomObjects(elements)
+    const objectElemID2ApiName = generateObjectElemID2ApiName(customObjects)
+    const fieldsWithLookupFilter = _(customObjects)
       .map(obj => getFieldsWithLookupFilter(obj))
       .flatten()
       .value()
+    const customFieldNames = fieldsWithLookupFilter
+      .map(f => getCustomFieldName(f, objectElemID2ApiName))
 
-    const getCustomFieldName = (field: Field): string => {
-      const matchingObjects = objectFullNameToObjectMap[field.parentID.getFullName()]
-      // CustomObjects may spread over several elements.
-      // Thus, we should find the one that holds the API_NAME in order to get the field's full name
-      const objectApiName = matchingObjects.find(obj => obj.annotations[API_NAME])
-        ?.annotations[API_NAME]
-      return fieldFullName(objectApiName, field)
-    }
+    const name2Field = await readCustomFields(client, customFieldNames)
 
-    const customFieldNames = fieldsWithLookupFilter.map(getCustomFieldName)
-
-    const name2Field = await readCustomFields(customFieldNames)
+    const lookupFilterType = Types.primitiveDataTypes.lookup
+      .annotationTypes[FIELD_ANNOTATIONS.LOOKUP_FILTER] as ObjectType
 
     const addLookupFilterData = (fieldWithLookupFilter: Field): void => {
       const { FILTER_ITEMS, ERROR_MESSAGE, IS_OPTIONAL } = LOOKUP_FILTER_FIELDS
-      const fieldFromMap = name2Field[getCustomFieldName(fieldWithLookupFilter)]
+      const fieldFromMap = name2Field[getCustomFieldName(fieldWithLookupFilter,
+        objectElemID2ApiName)]
       const lookupFilterInfo = fieldFromMap?.lookupFilter
       if (lookupFilterInfo) {
         const values = mapKeysRecursive(lookupFilterInfo, bpCase)

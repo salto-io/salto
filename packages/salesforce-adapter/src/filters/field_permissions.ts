@@ -7,7 +7,7 @@ import { SaveResult } from 'jsforce'
 import wu from 'wu'
 import { logger } from '@salto/logging'
 import {
-  FIELD_PERMISSIONS, API_NAME, SALESFORCE, FIELD_LEVEL_SECURITY_ANNOTATION,
+  FIELD_PERMISSIONS, SALESFORCE, FIELD_LEVEL_SECURITY_ANNOTATION,
   FIELD_LEVEL_SECURITY_FIELDS,
 } from '../constants'
 import {
@@ -15,6 +15,7 @@ import {
 } from '../transformer'
 import { FilterCreator } from '../filter'
 import { ProfileInfo, FieldPermissions } from '../client/types'
+import { generateObjectElemID2ApiName, getCustomObjects } from './utils'
 
 export const PROFILE_METADATA_TYPE = 'Profile'
 export const ADMIN_PROFILE = 'admin'
@@ -105,8 +106,7 @@ const profile2Permissions = (profileInstance: InstanceElement):
  */
 const filterCreator: FilterCreator = ({ client }) => ({
   onFetch: async (elements: Element[]): Promise<void> => {
-    const customObjectTypes = elements.filter(isObjectType)
-      .filter(isCustomObject)
+    const customObjectTypes = getCustomObjects(elements)
     if (_.isEmpty(customObjectTypes)) {
       return
     }
@@ -118,18 +118,12 @@ const filterCreator: FilterCreator = ({ client }) => ({
 
     const permissionsPerProfile = profileInstances.map(profile2Permissions)
     const permissions = _.merge({}, ...permissionsPerProfile)
-    // collect element ID to api name as we have elements that are splitted and
-    // we need to know the api name to build full field name
-    const elemID2ApiName = _(customObjectTypes)
-      .filter(obj => obj.annotations[API_NAME] !== undefined)
-      .map(obj => [id(obj), obj.annotations[API_NAME]])
-      .fromPairs()
-      .value()
+    const objectElemID2ApiName = generateObjectElemID2ApiName(customObjectTypes)
 
     // Add field permissions to all fetched elements
     customObjectTypes.forEach(obj => {
       Object.values(obj.fields).forEach(field => {
-        const fullName = fieldFullName(elemID2ApiName[id(obj)] || obj, field)
+        const fullName = fieldFullName(objectElemID2ApiName[id(obj)] || obj, field)
         const fieldPermissions = permissions[fullName] as ProfileToPermissions | undefined
         if (fieldPermissions) {
           Object.entries(fieldPermissions).sort().forEach(p2f => {

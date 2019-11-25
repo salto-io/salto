@@ -68,9 +68,9 @@ describe('Standard Value Sets filter', () => {
   let filter: FilterType
 
   beforeEach(() => {
-    client.readMetadata = jest.fn()
-      .mockImplementationOnce(() => createStandardValueSetMetadataInfo('Simpsons', ['Bart', 'Homer', 'Lisa']))
-      .mockImplementationOnce(() => createStandardValueSetMetadataInfo('Numbers', ['One', 'Two', 'Three']))
+    client.readMetadata = jest.fn().mockImplementationOnce(() =>
+      [createStandardValueSetMetadataInfo('Simpsons', ['Bart', 'Homer', 'Lisa']),
+        createStandardValueSetMetadataInfo('Numbers', ['One', 'Two', 'Three'])])
     filter = filterCreator(client)
   })
 
@@ -85,7 +85,7 @@ describe('Standard Value Sets filter', () => {
   it('should add standard value set instances', async () => {
     const elements: Element[] = [mockSVSType.clone()]
     await filter.onFetch(elements)
-    expect(client.readMetadata).toHaveBeenCalledTimes(2)
+    expect(client.readMetadata).toHaveBeenCalledTimes(1)
     expect(elements.length).toBe(3)
     const simpsonsSvs = elements[1]
     expect(simpsonsSvs.elemID).toEqual(new ElemID(mockSVSType.elemID.adapter, mockSVSType.elemID.name, 'instance', 'simpsons'))

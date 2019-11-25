@@ -147,9 +147,10 @@ const findStandardValueSetType = (elements: Element[]): ObjectType | undefined =
     (element: Element) => metadataType(element) === STANDARD_VALUE_SET
   ) as ObjectType | undefined
 
-const fetchStandardValueSets = async (
+const fetchStandardValueSets = (
   standardValueSets: Set<string>,
-  client: SalesforceClient): Promise<MetadataInfo[]> =>
+  client: SalesforceClient
+): Promise<MetadataInfo[]> =>
   client.readMetadata(STANDARD_VALUE_SET, [...standardValueSets])
 
 const createSVSInstances = async (

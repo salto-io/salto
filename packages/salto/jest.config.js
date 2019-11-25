@@ -8,6 +8,7 @@ module.exports = deepMerge(
     rootDir: `${__dirname}`,
     collectCoverageFrom: [
       '!**/wasm_exec.*', // External source file
+      '!**/hcl.js', // Generated parser file
       '!<rootDir>/dist/index.js',
     ],
     coverageThreshold: {

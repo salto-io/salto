@@ -40,7 +40,7 @@ describe('TEST', () => {
     expect(workspace.errors.hasErrors()).toBeTruthy()
   })
 
-  it('should update a single file', async () => {
+  fit('should update a single file', async () => {
     const workspace = await EditorWorkspace.load(getConfig(baseBPDir, [extraBP]), false)
     expect(workspace.elements).toBeDefined()
     expect(workspace.elements && workspace.elements.length).toBe(5)

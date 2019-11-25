@@ -1,6 +1,6 @@
 type salesforce.test {
 	string name {
-	  label = "Name"
+	  label =
 	  _required = true
 	}
 

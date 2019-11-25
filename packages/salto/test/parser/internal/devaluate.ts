@@ -2,8 +2,7 @@ import _ from 'lodash'
 import {
   ReferenceExpression, TemplateExpression,
 } from 'adapter-api'
-import { HclExpression } from '../../../src/parser/internal/hcl'
-import { SourceRange } from '../../../src/parser/internal/types'
+import { SourceRange, HclExpression } from '../../../src/parser/internal/types'
 
 const source: SourceRange = {
   filename: 'dummy',

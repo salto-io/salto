@@ -17,7 +17,7 @@ describe('TEST', () => {
   const parseErrorBp = `${__dirname}/../../../test/salto/BP2/parse_error.bp`
   const validationErrorBp = `${__dirname}/../../../test/salto/BP2/error.bp`
 
-  it('should diagnostics on parse errors', async () => {
+  it.skip('should diagnostics on parse errors', async () => {
     const workspace = await EditorWorkspace.load(getConfig(baseBPDir, [parseErrorBp]), false)
     expect(workspace.elements).toBeDefined()
     expect(workspace.errors.hasErrors()).toBeTruthy()

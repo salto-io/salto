@@ -27,6 +27,11 @@ class CustomPicklistValue implements MetadataInfo {
   }
 }
 
+export interface ValueSettings {
+  controllingFieldValue: string[]
+  valueName: string
+}
+
 export interface FilterItem {
   field: string
   operation: string
@@ -50,7 +55,12 @@ export class CustomField implements MetadataInfo {
   // For formula fields
   readonly formula?: string
   // To be used for picklist and combobox types
-  readonly valueSet?: { valueSetDefinition: { value: CustomPicklistValue[] } }
+  valueSet?: {
+    controllingField?: string
+    valueSetDefinition: { value: CustomPicklistValue[] }
+    valueSettings?: ValueSettings[]
+  }
+
   // To be used for lookup and masterdetail types
   readonly referenceTo?: string[]
   readonly relationshipName?: string
@@ -81,6 +91,8 @@ export class CustomField implements MetadataInfo {
     defaultVal?: string,
     defaultValFormula?: string,
     values?: string[],
+    controllingField?: string,
+    valueSettings?: ValueSettings[],
     formula?: string,
     relatedTo?: string[],
     relationshipName?: string,
@@ -119,6 +131,10 @@ export class CustomField implements MetadataInfo {
           valueSetDefinition: {
             value: values.map(val => new CustomPicklistValue(val, val === defaultVal)),
           },
+        }
+        if (controllingField && valueSettings) {
+          this.valueSet.controllingField = controllingField
+          this.valueSet.valueSettings = valueSettings
         }
       }
     } else if (type === FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.CHECKBOX]) {

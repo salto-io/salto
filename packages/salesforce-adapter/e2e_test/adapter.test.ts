@@ -796,7 +796,7 @@ describe('Salesforce adapter E2E with real account', () => {
     })
 
     it('should add a custom object with various field types', async () => {
-      const customObjectName = 'TestAddFieldTypes__c'
+      const customObjectName = 'TestAddFields__c'
       const mockElemID = new ElemID(constants.SALESFORCE, 'test add object with various field types')
       const adminReadable = {
         [FIELD_LEVEL_SECURITY_ANNOTATION]: {
@@ -807,6 +807,7 @@ describe('Salesforce adapter E2E with real account', () => {
       // we use random suffix for the reference field names since they cannot be created
       // more than once until they are permanently deleted (after 15 days)
       const randomString = String(Date.now()).substring(6)
+      const picklistFieldApiName = 'Pickle__c'
       const element = new ObjectType({
         elemID: mockElemID,
         annotations: {
@@ -908,9 +909,22 @@ describe('Salesforce adapter E2E with real account', () => {
             Types.primitiveDataTypes.multipicklist,
             {
               [constants.LABEL]: 'Multipicklist description label',
-              [Type.VALUES]: ['DO', 'RE', 'MI', 'FA', 'SOL', 'LA', 'SI'],
+              [Type.VALUES]: ['DO', 'RE'],
               [Type.DEFAULT]: 'DO',
               [constants.FIELD_ANNOTATIONS.VISIBLE_LINES]: 4,
+              [constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY]: {
+                [constants.FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD]: picklistFieldApiName,
+                [constants.FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS]: [
+                  {
+                    [constants.VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE]: ['NEW', 'OLD'],
+                    [constants.VALUE_SETTINGS_FIELDS.VALUE_NAME]: 'DO',
+                  },
+                  {
+                    [constants.VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE]: ['OLD'],
+                    [constants.VALUE_SETTINGS_FIELDS.VALUE_NAME]: 'RE',
+                  },
+                ],
+              },
               ...adminReadable,
             },
           ),
@@ -1051,10 +1065,11 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(objectFields[0]).toBeDefined()
       const allFields = objectFields[0].fields
       // Verify picklist
-      const picklistField = allFields.filter(field => field.name === 'Pickle__c')[0]
+      const picklistField = allFields.filter(field => field.name === picklistFieldApiName)[0]
       expect(picklistField).toBeDefined()
       expect(picklistField.label).toBe('Picklist description label')
       expect(picklistField.type).toBe('picklist')
+      expect(picklistField.dependentPicklist).toBeFalsy()
       expect(_.isEqual((picklistField.picklistValues as PicklistEntry[]).map(value => value.label), ['NEW', 'OLD'])).toBeTruthy()
       const picklistValueNew = (picklistField.picklistValues as PicklistEntry[]).filter(value => value.label === 'NEW')[0]
       expect(picklistValueNew).toBeDefined()
@@ -1116,7 +1131,8 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(multipicklist.label).toBe('Multipicklist description label')
       expect(multipicklist.type).toBe('multipicklist')
       expect(multipicklist.precision).toBe(4)
-      expect(_.isEqual((multipicklist.picklistValues as PicklistEntry[]).map(value => value.label), ['DO', 'RE', 'MI', 'FA', 'SOL', 'LA', 'SI'])).toBeTruthy()
+      expect(multipicklist.dependentPicklist).toBeTruthy()
+      expect(_.isEqual((multipicklist.picklistValues as PicklistEntry[]).map(value => value.label), ['DO', 'RE'])).toBeTruthy()
       const multipicklistValueDo = (multipicklist.picklistValues as PicklistEntry[]).filter(value => value.label === 'DO')[0]
       expect(multipicklistValueDo).toBeDefined()
       expect(multipicklistValueDo.defaultValue).toEqual(true)

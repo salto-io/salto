@@ -9,9 +9,10 @@ import {
   getValueTypeFieldElement, getCompoundChildFields, sfCase, createMetadataTypeElements,
 } from '../src/transformer'
 import {
-  METADATA_TYPE, FIELD_ANNOTATIONS, FIELD_TYPE_NAMES,
-  LABEL, FIELD_TYPE_API_NAMES, ADDRESS_FIELDS, SALESFORCE, GEOLOCATION_FIELDS, NAME_FIELDS,
-  API_NAME, INSTANCE_FULL_NAME_FIELD, FIELD_LEVEL_SECURITY_ANNOTATION, FIELD_LEVEL_SECURITY_FIELDS,
+  METADATA_TYPE, FIELD_ANNOTATIONS, FIELD_TYPE_NAMES, LABEL, FIELD_TYPE_API_NAMES, ADDRESS_FIELDS,
+  SALESFORCE, GEOLOCATION_FIELDS, NAME_FIELDS, API_NAME, INSTANCE_FULL_NAME_FIELD,
+  FIELD_LEVEL_SECURITY_ANNOTATION, FIELD_LEVEL_SECURITY_FIELDS, FIELD_DEPENDENCY_FIELDS,
+  VALUE_SETTINGS_FIELDS,
 } from '../src/constants'
 import { CustomField } from '../src/client/types'
 
@@ -126,193 +127,345 @@ describe('transformer', () => {
       })
     })
   })
-
   describe('getSObjectFieldElement', () => {
-    const origSalesforceReferenceField: SalesforceField = {
-      aggregatable: false,
-      cascadeDelete: false,
-      dependentPicklist: false,
-      externalId: false,
-      htmlFormatted: false,
-      autoNumber: false,
-      byteLength: 18,
-      calculated: false,
-      caseSensitive: false,
-      createable: true,
-      custom: false,
-      defaultedOnCreate: true,
-      deprecatedAndHidden: false,
-      digits: 0,
-      filterable: true,
-      groupable: true,
-      idLookup: false,
-      label: 'Owner ID',
-      length: 18,
-      name: 'OwnerId',
-      nameField: false,
-      namePointing: true,
-      nillable: false,
-      permissionable: false,
-      polymorphicForeignKey: true,
-      precision: 0,
-      queryByDistance: false,
-      referenceTo: [
-        'Group',
+    describe('reference field transformation', () => {
+      const origSalesforceReferenceField: SalesforceField = {
+        aggregatable: false,
+        cascadeDelete: false,
+        dependentPicklist: false,
+        externalId: false,
+        htmlFormatted: false,
+        autoNumber: false,
+        byteLength: 18,
+        calculated: false,
+        caseSensitive: false,
+        createable: true,
+        custom: false,
+        defaultedOnCreate: true,
+        deprecatedAndHidden: false,
+        digits: 0,
+        filterable: true,
+        groupable: true,
+        idLookup: false,
+        label: 'Owner ID',
+        length: 18,
+        name: 'OwnerId',
+        nameField: false,
+        namePointing: true,
+        nillable: false,
+        permissionable: false,
+        polymorphicForeignKey: true,
+        precision: 0,
+        queryByDistance: false,
+        referenceTo: [
+          'Group',
+          // eslint-disable-next-line comma-dangle
+          'User'
+        ],
+        relationshipName: 'Owner',
+        restrictedPicklist: false,
+        scale: 0,
+        searchPrefilterable: false,
+        soapType: 'tns:ID',
+        sortable: true,
+        type: 'reference',
+        unique: false,
         // eslint-disable-next-line comma-dangle
-        'User'
-      ],
-      relationshipName: 'Owner',
-      restrictedPicklist: false,
-      scale: 0,
-      searchPrefilterable: false,
-      soapType: 'tns:ID',
-      sortable: true,
-      type: 'reference',
-      unique: false,
-      // eslint-disable-next-line comma-dangle
-      updateable: true
-    }
+        updateable: true
+      }
 
-    let salesforceReferenceField: SalesforceField
-    beforeEach(() => {
-      salesforceReferenceField = _.cloneDeep(origSalesforceReferenceField)
-    })
+      let salesforceReferenceField: SalesforceField
+      beforeEach(() => {
+        salesforceReferenceField = _.cloneDeep(origSalesforceReferenceField)
+      })
 
-    const dummyElemID = new ElemID('adapter', 'dummy')
+      const dummyElemID = new ElemID('adapter', 'dummy')
 
-    const assertReferenceFieldTransformation = (fieldElement: Field, expectedRelatedTo: string[],
-      expectedType: Type, expectedAllowLookupRecordDeletion: boolean | undefined,
-      expectedLookupFilter: object | undefined):
+      const assertReferenceFieldTransformation = (fieldElement: Field, expectedRelatedTo: string[],
+        expectedType: Type, expectedAllowLookupRecordDeletion: boolean | undefined,
+        expectedLookupFilter: object | undefined):
         void => {
-      expect(fieldElement.type).toEqual(expectedType)
-      expect(fieldElement.name).toEqual('owner_id')
-      expect(fieldElement.annotations[FIELD_ANNOTATIONS.RELATED_TO])
-        .toHaveLength(expectedRelatedTo.length)
-      expectedRelatedTo.forEach(expectedRelatedToValue =>
+        expect(fieldElement.type).toEqual(expectedType)
+        expect(fieldElement.name).toEqual('owner_id')
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.RELATED_TO])
-          .toContain(expectedRelatedToValue))
-      expect(fieldElement.annotations[FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION])
-        .toEqual(expectedAllowLookupRecordDeletion)
-      expect(fieldElement.annotations[FIELD_ANNOTATIONS.LOOKUP_FILTER])
-        .toEqual(expectedLookupFilter)
-    }
+          .toHaveLength(expectedRelatedTo.length)
+        expectedRelatedTo.forEach(expectedRelatedToValue =>
+          expect(fieldElement.annotations[FIELD_ANNOTATIONS.RELATED_TO])
+            .toContain(expectedRelatedToValue))
+        expect(fieldElement.annotations[FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION])
+          .toEqual(expectedAllowLookupRecordDeletion)
+        expect(fieldElement.annotations[FIELD_ANNOTATIONS.LOOKUP_FILTER])
+          .toEqual(expectedLookupFilter)
+      }
 
-    it('should fetch lookup relationships with restricted deletion', async () => {
-      _.set(salesforceReferenceField, 'restrictedDelete', true)
-      const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField, {})
-      assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.lookup, false, undefined)
+      it('should fetch lookup relationships with restricted deletion', async () => {
+        _.set(salesforceReferenceField, 'restrictedDelete', true)
+        const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField, {})
+        assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.lookup, false, undefined)
+      })
+
+      it('should fetch lookup relationships with allowed related record deletion when restrictedDelete set to false', async () => {
+        _.set(salesforceReferenceField, 'restrictedDelete', false)
+        const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField, {})
+        assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.lookup, true, undefined)
+      })
+
+      it('should fetch lookup relationships with allowed related record deletion when restrictedDelete is undefined', async () => {
+        _.set(salesforceReferenceField, 'restrictedDelete', undefined)
+        const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField, {})
+        assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.lookup, true, undefined)
+      })
+
+      it('should fetch masterdetail relationships', async () => {
+        salesforceReferenceField.cascadeDelete = true
+        salesforceReferenceField.updateable = true
+        salesforceReferenceField.writeRequiresMasterRead = true
+        const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField, {})
+        assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.masterdetail, undefined, undefined)
+        expect(fieldElement.annotations[FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL]).toBe(true)
+        expect(fieldElement.annotations[FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ]).toBe(true)
+      })
+
+      it('should fetch masterdetail relationships which are not reparentable and requires read/write access', async () => {
+        salesforceReferenceField.cascadeDelete = true
+        salesforceReferenceField.updateable = false
+        delete salesforceReferenceField.writeRequiresMasterRead
+        const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField, {})
+        assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.masterdetail, undefined, undefined)
+        expect(fieldElement.annotations[Type.REQUIRED]).toBe(false)
+        expect(fieldElement.annotations[FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL]).toBe(false)
+        expect(fieldElement.annotations[FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ]).toBe(false)
+      })
+
+      it('should fetch lookup filters and init its annotation', async () => {
+        _.set(salesforceReferenceField, 'filteredLookupInfo', {})
+        const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField, {})
+        assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.lookup, true, {})
+      })
     })
 
-    it('should fetch lookup relationships with allowed related record deletion when restrictedDelete set to false', async () => {
-      _.set(salesforceReferenceField, 'restrictedDelete', false)
-      const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField, {})
-      assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.lookup, true, undefined)
-    })
+    describe('field dependency transformation', () => {
+      const origFieldDependencyField: SalesforceField = {
+        aggregatable: false,
+        cascadeDelete: false,
+        dependentPicklist: true,
+        externalId: false,
+        htmlFormatted: false,
+        autoNumber: false,
+        byteLength: 18,
+        calculated: false,
+        caseSensitive: false,
+        createable: true,
+        custom: false,
+        defaultedOnCreate: true,
+        deprecatedAndHidden: false,
+        digits: 0,
+        filterable: true,
+        groupable: true,
+        idLookup: false,
+        label: 'Owner ID',
+        length: 18,
+        name: 'OwnerId',
+        nameField: false,
+        namePointing: true,
+        nillable: false,
+        permissionable: false,
+        polymorphicForeignKey: true,
+        precision: 0,
+        queryByDistance: false,
+        relationshipName: 'Owner',
+        restrictedPicklist: false,
+        scale: 0,
+        searchPrefilterable: false,
+        soapType: 'tns:ID',
+        sortable: true,
+        picklistValues: [
+          { active: true, defaultValue: false, value: 'a' },
+          { active: true, defaultValue: false, value: 'b' },
+        ],
+        type: 'picklist',
+        unique: false,
+        // eslint-disable-next-line comma-dangle
+        updateable: true
+      }
 
-    it('should fetch lookup relationships with allowed related record deletion when restrictedDelete is undefined', async () => {
-      _.set(salesforceReferenceField, 'restrictedDelete', undefined)
-      const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField, {})
-      assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.lookup, true, undefined)
-    })
+      let salesforceFieldDependencyField: SalesforceField
+      beforeEach(() => {
+        salesforceFieldDependencyField = _.cloneDeep(origFieldDependencyField)
+      })
 
-    it('should fetch masterdetail relationships', async () => {
-      salesforceReferenceField.cascadeDelete = true
-      salesforceReferenceField.updateable = true
-      salesforceReferenceField.writeRequiresMasterRead = true
-      const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField, {})
-      assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.masterdetail, undefined, undefined)
-      expect(fieldElement.annotations[FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL]).toBe(true)
-      expect(fieldElement.annotations[FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ]).toBe(true)
-    })
+      const dummyElemID = new ElemID('adapter', 'dummy')
 
-    it('should fetch masterdetail relationships which are not reparentable and requires read/write access', async () => {
-      salesforceReferenceField.cascadeDelete = true
-      salesforceReferenceField.updateable = false
-      delete salesforceReferenceField.writeRequiresMasterRead
-      const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField, {})
-      assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.masterdetail, undefined, undefined)
-      expect(fieldElement.annotations[Type.REQUIRED]).toBe(false)
-      expect(fieldElement.annotations[FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL]).toBe(false)
-      expect(fieldElement.annotations[FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ]).toBe(false)
-    })
+      it('should fetch field dependency and init its annotation for picklist', async () => {
+        const fieldElement = getSObjectFieldElement(dummyElemID, salesforceFieldDependencyField, {})
+        expect(fieldElement.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY]).toEqual({})
+        expect(fieldElement.type).toEqual(Types.primitiveDataTypes.picklist)
+      })
 
-    it('should fetch lookup filters and init its annotation', async () => {
-      _.set(salesforceReferenceField, 'filteredLookupInfo', {})
-      const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField, {})
-      assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.lookup, true, {})
+      it('should fetch field dependency and init its annotation for multi picklist', async () => {
+        salesforceFieldDependencyField.type = 'multipicklist'
+        const fieldElement = getSObjectFieldElement(dummyElemID, salesforceFieldDependencyField, {})
+        expect(fieldElement.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY]).toEqual({})
+        expect(fieldElement.type).toEqual(Types.primitiveDataTypes.multipicklist)
+      })
+
+      it('should not init field dependency annotation when having no field dependency ', async () => {
+        salesforceFieldDependencyField.dependentPicklist = false
+        const fieldElement = getSObjectFieldElement(dummyElemID, salesforceFieldDependencyField, {})
+        expect(fieldElement.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY]).toBeUndefined()
+      })
     })
   })
 
   describe('toCustomObject', () => {
-    const elemID = new ElemID('salesforce', 'test')
-    const relatedTo = ['User', 'Property__c']
-    const annotations: Values = {
-      [API_NAME]: 'field_name',
-      [LABEL]: 'field_label',
-      [Type.REQUIRED]: false,
-      [FIELD_ANNOTATIONS.RELATED_TO]: relatedTo,
-    }
-    const fieldName = 'field_name'
-    const origObjectType = new ObjectType({ elemID,
-      fields: { [fieldName]: new TypeField(elemID, fieldName, Types.primitiveDataTypes.lookup,
-        annotations) } })
-    let objectType: ObjectType
-    beforeEach(() => {
-      objectType = _.cloneDeep(origObjectType)
-    })
+    describe('reference field transformation', () => {
+      const elemID = new ElemID('salesforce', 'test')
+      const relatedTo = ['User', 'Property__c']
+      const annotations: Values = {
+        [API_NAME]: 'field_name',
+        [LABEL]: 'field_label',
+        [Type.REQUIRED]: false,
+        [FIELD_ANNOTATIONS.RELATED_TO]: relatedTo,
+      }
+      const fieldName = 'field_name'
+      const origObjectType = new ObjectType({
+        elemID,
+        fields: {
+          [fieldName]: new TypeField(elemID, fieldName, Types.primitiveDataTypes.lookup,
+            annotations),
+        },
+      })
+      let objectType: ObjectType
+      beforeEach(() => {
+        objectType = _.cloneDeep(origObjectType)
+      })
 
-    const assertCustomFieldTransformation = (customField: CustomField, expectedType: string,
-      expectedRelationshipName: string, expectedDeleteConstraint: string | undefined,
-      expectedReferenceTo: string[]):
+      const assertCustomFieldTransformation = (customField: CustomField, expectedType: string,
+        expectedRelationshipName: string, expectedDeleteConstraint: string | undefined,
+        expectedReferenceTo: string[]):
         void => {
-      expect(customField.type).toEqual(expectedType)
-      expect(customField.relationshipName).toEqual(expectedRelationshipName)
-      expect(customField.deleteConstraint).toEqual(expectedDeleteConstraint)
-      expect(customField.referenceTo).toEqual(expectedReferenceTo)
-    }
+        expect(customField.type).toEqual(expectedType)
+        expect(customField.relationshipName).toEqual(expectedRelationshipName)
+        expect(customField.deleteConstraint).toEqual(expectedDeleteConstraint)
+        expect(customField.referenceTo).toEqual(expectedReferenceTo)
+      }
 
-    it('should transform lookup field with deletion constraint', async () => {
-      // eslint-disable-next-line max-len
-      objectType.fields[fieldName].annotations[FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION] = false
-      const customLookupField = toCustomField(objectType, objectType.fields[fieldName])
-      assertCustomFieldTransformation(customLookupField,
-        FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.LOOKUP], 'FieldName', 'Restrict', relatedTo)
+      it('should transform lookup field with deletion constraint', async () => {
+        // eslint-disable-next-line max-len
+        objectType.fields[fieldName].annotations[FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION] = false
+        const customLookupField = toCustomField(objectType, objectType.fields[fieldName])
+        assertCustomFieldTransformation(customLookupField,
+          FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.LOOKUP], 'FieldName', 'Restrict', relatedTo)
+      })
+
+      it('should transform lookup field with no deletion constraint', async () => {
+        // eslint-disable-next-line max-len
+        objectType.fields[fieldName].annotations[FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION] = true
+        const customLookupField = toCustomField(objectType, objectType.fields[fieldName])
+        assertCustomFieldTransformation(customLookupField,
+          FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.LOOKUP], 'FieldName', 'SetNull', relatedTo)
+      })
+
+      it('should transform masterdetail field', async () => {
+        const masterDetailField = objectType.fields[fieldName]
+        masterDetailField.type = Types.primitiveDataTypes.masterdetail
+        masterDetailField.annotations[FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ] = true
+        masterDetailField.annotations[FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL] = true
+        const customMasterDetailField = toCustomField(objectType, masterDetailField)
+        assertCustomFieldTransformation(customMasterDetailField,
+          FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.MASTER_DETAIL], 'FieldName', undefined, relatedTo)
+        expect(customMasterDetailField.reparentableMasterDetail).toBe(true)
+        expect(customMasterDetailField.writeRequiresMasterRead).toBe(true)
+      })
+
+      it('should have ControlledByParent sharing model when having masterdetail field', async () => {
+        objectType.fields[fieldName].type = Types.primitiveDataTypes.masterdetail
+        const customObjectWithMasterDetailField = toCustomObject(objectType, true)
+        expect(customObjectWithMasterDetailField.sharingModel).toEqual('ControlledByParent')
+      })
+
+      it('should have ReadWrite sharing model when not having masterdetail field', async () => {
+        const customObjectWithMasterDetailField = toCustomObject(objectType, true)
+        expect(customObjectWithMasterDetailField.sharingModel).toEqual('ReadWrite')
+      })
+
+      it('should have ReadWrite sharing model when not including fields', async () => {
+        const customObjectWithMasterDetailField = toCustomObject(objectType, false)
+        expect(customObjectWithMasterDetailField.sharingModel).toEqual('ReadWrite')
+      })
     })
 
-    it('should transform lookup field with no deletion constraint', async () => {
-      // eslint-disable-next-line max-len
-      objectType.fields[fieldName].annotations[FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION] = true
-      const customLookupField = toCustomField(objectType, objectType.fields[fieldName])
-      assertCustomFieldTransformation(customLookupField,
-        FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.LOOKUP], 'FieldName', 'SetNull', relatedTo)
-    })
+    describe('field dependency transformation', () => {
+      const elemID = new ElemID('salesforce', 'test')
+      const annotations: Values = {
+        [API_NAME]: 'field_name',
+        [LABEL]: 'field_label',
+        [Type.REQUIRED]: false,
+        [Type.VALUES]: ['Val1', 'Val2'],
+        [FIELD_ANNOTATIONS.FIELD_DEPENDENCY]: {
+          [FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD]: 'ControllingFieldName',
+          [FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS]: [{
+            [VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE]: ['ControllingVal1'],
+            [VALUE_SETTINGS_FIELDS.VALUE_NAME]: 'Val1',
+          },
+          {
+            [VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE]: ['ControllingVal1', 'ControllingVal2'],
+            [VALUE_SETTINGS_FIELDS.VALUE_NAME]: 'Val2',
+          }],
+        },
+      }
+      const fieldName = 'field_name'
+      const origObjectType = new ObjectType({
+        elemID,
+        fields: {
+          [fieldName]: new TypeField(elemID, fieldName, Types.primitiveDataTypes.picklist,
+            annotations),
+        },
+      })
+      let obj: ObjectType
+      beforeEach(() => {
+        obj = _.cloneDeep(origObjectType)
+      })
 
-    it('should transform masterdetail field', async () => {
-      const masterDetailField = objectType.fields[fieldName]
-      masterDetailField.type = Types.primitiveDataTypes.masterdetail
-      masterDetailField.annotations[FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ] = true
-      masterDetailField.annotations[FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL] = true
-      const customMasterDetailField = toCustomField(objectType, masterDetailField)
-      assertCustomFieldTransformation(customMasterDetailField,
-        FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.MASTER_DETAIL], 'FieldName', undefined, relatedTo)
-      expect(customMasterDetailField.reparentableMasterDetail).toBe(true)
-      expect(customMasterDetailField.writeRequiresMasterRead).toBe(true)
-    })
+      it('should transform field dependency for picklist field', async () => {
+        const customFieldWithFieldDependency = toCustomField(obj, obj.fields[fieldName])
+        expect(customFieldWithFieldDependency.type)
+          .toEqual(FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.PICKLIST])
+        expect(customFieldWithFieldDependency?.valueSet?.controllingField)
+          .toEqual('ControllingFieldName')
+        const valueSettings = customFieldWithFieldDependency?.valueSet?.valueSettings
+        expect(valueSettings).toHaveLength(2)
+        expect(valueSettings?.[0].valueName).toEqual('Val1')
+        expect(valueSettings?.[0].controllingFieldValue).toEqual(['ControllingVal1'])
+        expect(valueSettings?.[1].valueName).toEqual('Val2')
+        expect(valueSettings?.[1].controllingFieldValue)
+          .toEqual(['ControllingVal1', 'ControllingVal2'])
+      })
 
-    it('should have ControlledByParent sharing model when having masterdetail field', async () => {
-      objectType.fields[fieldName].type = Types.primitiveDataTypes.masterdetail
-      const customObjectWithMasterDetailField = toCustomObject(objectType, true)
-      expect(customObjectWithMasterDetailField.sharingModel).toEqual('ControlledByParent')
-    })
+      it('should transform field dependency for multi picklist field', async () => {
+        obj.fields[fieldName].type = Types.primitiveDataTypes.multipicklist
+        const customFieldWithFieldDependency = toCustomField(obj, obj.fields[fieldName])
+        expect(customFieldWithFieldDependency.type)
+          .toEqual(FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.MULTIPICKLIST])
+        expect(customFieldWithFieldDependency?.valueSet?.controllingField)
+          .toEqual('ControllingFieldName')
+        const valueSettings = customFieldWithFieldDependency?.valueSet?.valueSettings
+        expect(valueSettings).toHaveLength(2)
+        expect(valueSettings?.[0].valueName).toEqual('Val1')
+        expect(valueSettings?.[0].controllingFieldValue).toEqual(['ControllingVal1'])
+        expect(valueSettings?.[1].valueName).toEqual('Val2')
+        expect(valueSettings?.[1].controllingFieldValue)
+          .toEqual(['ControllingVal1', 'ControllingVal2'])
+      })
 
-    it('should have ReadWrite sharing model when not having masterdetail field', async () => {
-      const customObjectWithMasterDetailField = toCustomObject(objectType, true)
-      expect(customObjectWithMasterDetailField.sharingModel).toEqual('ReadWrite')
-    })
-
-    it('should have ReadWrite sharing model when not including fields', async () => {
-      const customObjectWithMasterDetailField = toCustomObject(objectType, false)
-      expect(customObjectWithMasterDetailField.sharingModel).toEqual('ReadWrite')
+      it('should ignore field dependency when not defined', async () => {
+        delete obj.fields[fieldName].annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY]
+        const customFieldWithFieldDependency = toCustomField(obj, obj.fields[fieldName])
+        expect(customFieldWithFieldDependency.type)
+          .toEqual(FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.PICKLIST])
+        expect(customFieldWithFieldDependency?.valueSet?.controllingField).toBeUndefined()
+        expect(customFieldWithFieldDependency?.valueSet?.valueSettings).toBeUndefined()
+      })
     })
   })
 

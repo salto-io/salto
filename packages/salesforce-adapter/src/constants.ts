@@ -39,6 +39,8 @@ export const FIELD_TYPE_NAMES = {
   MASTER_DETAIL: 'masterdetail',
   LOOKUP_FILTER: 'lookup_filter',
   FILTER_ITEM: 'filter_item',
+  FIELD_DEPENDENCY: 'field_dependency',
+  VALUE_SETTINGS: 'value_settings',
   ADDRESS: 'address',
   FIELD_NAME: 'field_name',
 }
@@ -84,6 +86,17 @@ export const FIELD_ANNOTATIONS = {
   REPARENTABLE_MASTER_DETAIL: 'reparentable_master_detail',
   WRITE_REQUIRES_MASTER_READ: 'write_requires_master_read',
   LOOKUP_FILTER: 'lookup_filter',
+  FIELD_DEPENDENCY: 'field_dependency',
+}
+
+export const FIELD_DEPENDENCY_FIELDS = {
+  CONTROLLING_FIELD: 'controlling_field',
+  VALUE_SETTINGS: 'value_settings',
+}
+
+export const VALUE_SETTINGS_FIELDS = {
+  CONTROLLING_FIELD_VALUE: 'controlling_field_value',
+  VALUE_NAME: 'value_name',
 }
 
 export const LOOKUP_FILTER_FIELDS = {

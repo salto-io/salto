@@ -1,5 +1,5 @@
 {
-  "name": "hubspot-adapter",
+  "name": "@salto/hubspot-adapter",
   "version": "0.1.0",
   "description": "Salto Hubspot adapter",
   "repository": {

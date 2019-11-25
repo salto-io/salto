@@ -35,6 +35,7 @@ export interface ValueSettings {
 export interface FilterItem {
   field: string
   operation: string
+  value: string
   valueField: string
 }
 

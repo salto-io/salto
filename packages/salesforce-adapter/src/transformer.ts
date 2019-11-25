@@ -19,7 +19,7 @@ import {
   MAX_METADATA_RESTRICTION_VALUES, LOOKUP_FILTER_FIELDS,
   ADDRESS_FIELDS, NAME_FIELDS, GEOLOCATION_FIELDS, INSTANCE_FULL_NAME_FIELD,
   FIELD_LEVEL_SECURITY_ANNOTATION, FIELD_LEVEL_SECURITY_FIELDS, FIELD_DEPENDENCY_FIELDS,
-  VALUE_SETTINGS_FIELDS,
+  VALUE_SETTINGS_FIELDS, FILTER_ITEM_FIELDS,
 } from './constants'
 
 const { makeArray } = collections.array
@@ -110,8 +110,26 @@ export class Types {
     },
   })
 
-  private static lookupFilterElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.LOOKUP_FILTER)
   private static filterItemElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.FILTER_ITEM)
+  private static filterItemType = new ObjectType({
+    elemID: Types.filterItemElemID,
+    fields: {
+      [FILTER_ITEM_FIELDS.FIELD]: new TypeField(
+        Types.filterItemElemID, FILTER_ITEM_FIELDS.FIELD, BuiltinTypes.STRING
+      ),
+      [FILTER_ITEM_FIELDS.OPERATION]: new TypeField(
+        Types.filterItemElemID, FILTER_ITEM_FIELDS.OPERATION, BuiltinTypes.STRING
+      ),
+      [FILTER_ITEM_FIELDS.VALUE_FIELD]: new TypeField(
+        Types.filterItemElemID, FILTER_ITEM_FIELDS.VALUE_FIELD, BuiltinTypes.STRING
+      ),
+      [FILTER_ITEM_FIELDS.VALUE]: new TypeField(
+        Types.filterItemElemID, FILTER_ITEM_FIELDS.VALUE, BuiltinTypes.STRING
+      ),
+    },
+  })
+
+  private static lookupFilterElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.LOOKUP_FILTER)
   private static lookupFilterType = new ObjectType({
     elemID: Types.lookupFilterElemID,
     fields: {
@@ -132,20 +150,7 @@ export class Types {
       ),
       [LOOKUP_FILTER_FIELDS.FILTER_ITEMS]: new TypeField(
         Types.lookupFilterElemID, LOOKUP_FILTER_FIELDS.FILTER_ITEMS,
-        new ObjectType({
-          elemID: Types.filterItemElemID,
-          fields: {
-            [LOOKUP_FILTER_FIELDS.FIELD]: new TypeField(
-              Types.filterItemElemID, LOOKUP_FILTER_FIELDS.FIELD, BuiltinTypes.STRING
-            ),
-            [LOOKUP_FILTER_FIELDS.OPERATION]: new TypeField(
-              Types.filterItemElemID, LOOKUP_FILTER_FIELDS.OPERATION, BuiltinTypes.STRING
-            ),
-            [LOOKUP_FILTER_FIELDS.VALUE_FIELD]: new TypeField(
-              Types.filterItemElemID, LOOKUP_FILTER_FIELDS.VALUE_FIELD, BuiltinTypes.STRING
-            ),
-          },
-        }), {}, true
+        Types.filterItemType, {}, true
       ),
     },
   })

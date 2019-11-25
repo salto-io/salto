@@ -30,6 +30,9 @@ import { findElements } from '../test/utils'
 const { makeArray } = collections.array
 const { FIELD_LEVEL_SECURITY_ANNOTATION } = constants
 
+const ADMIN = 'salesforce.profile.instance.admin'
+const STANDARD = 'salesforce.profile.instance.standard'
+
 describe('Salesforce adapter E2E with real account', () => {
   const { adapter, client } = realAdapter()
 
@@ -262,8 +265,8 @@ describe('Salesforce adapter E2E with real account', () => {
               [constants.DEFAULT_VALUE_FORMULA]: '"test"',
               [constants.LABEL]: 'description label',
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
-                admin: { editable: true, readable: true },
-                standard: { editable: true, readable: true },
+                editable: [ADMIN, STANDARD],
+                readable: [ADMIN, STANDARD],
               },
             },
           ),
@@ -393,8 +396,8 @@ describe('Salesforce adapter E2E with real account', () => {
             stringType,
             {
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
-                admin: { editable: true, readable: true },
-                standard: { editable: true, readable: true },
+                editable: [ADMIN, STANDARD],
+                readable: [ADMIN, STANDARD],
               },
             },
           ),
@@ -663,7 +666,8 @@ describe('Salesforce adapter E2E with real account', () => {
             {
               [constants.API_NAME]: 'Address__c',
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
-                admin: { editable: true, readable: true },
+                editable: [ADMIN],
+                readable: [ADMIN],
               },
             },
           ),
@@ -674,7 +678,8 @@ describe('Salesforce adapter E2E with real account', () => {
             {
               [constants.API_NAME]: 'Banana__c',
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
-                standard: { editable: true, readable: true },
+                editable: [STANDARD],
+                readable: [STANDARD],
               },
             },
           ),
@@ -685,8 +690,8 @@ describe('Salesforce adapter E2E with real account', () => {
             {
               [constants.API_NAME]: 'Delta__c',
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
-                standard: { editable: false, readable: true },
-                admin: { editable: true, readable: true },
+                editable: [ADMIN],
+                readable: [ADMIN, STANDARD],
               },
             },
           ),
@@ -717,7 +722,8 @@ describe('Salesforce adapter E2E with real account', () => {
             {
               [constants.API_NAME]: 'Address__c',
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
-                standard: { editable: true, readable: true },
+                editable: [STANDARD],
+                readable: [STANDARD],
               },
             },
           ),
@@ -728,8 +734,8 @@ describe('Salesforce adapter E2E with real account', () => {
             {
               [constants.API_NAME]: 'Banana__c',
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
-                admin: { editable: true, readable: true },
-                standard: { editable: true, readable: true },
+                editable: [ADMIN, STANDARD],
+                readable: [ADMIN, STANDARD],
               },
             },
           ),
@@ -740,7 +746,7 @@ describe('Salesforce adapter E2E with real account', () => {
             {
               [constants.API_NAME]: 'Delta__c',
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
-                standard: { editable: false, readable: true },
+                readable: [STANDARD],
               },
             },
           ),
@@ -794,7 +800,8 @@ describe('Salesforce adapter E2E with real account', () => {
       const mockElemID = new ElemID(constants.SALESFORCE, 'test add object with various field types')
       const adminReadable = {
         [FIELD_LEVEL_SECURITY_ANNOTATION]: {
-          admin: { editable: false, readable: true },
+          editable: [],
+          readable: [ADMIN],
         },
       }
       // we use random suffix for the reference field names since they cannot be created
@@ -1220,7 +1227,8 @@ describe('Salesforce adapter E2E with real account', () => {
           [constants.API_NAME]: lookupFieldApiName,
           [constants.FIELD_ANNOTATIONS.RELATED_TO]: ['Case'],
           [FIELD_LEVEL_SECURITY_ANNOTATION]: {
-            admin: { editable: true, readable: true },
+            editable: [ADMIN],
+            readable: [ADMIN],
           },
         },
       )
@@ -1261,7 +1269,8 @@ describe('Salesforce adapter E2E with real account', () => {
             ],
           },
           [FIELD_LEVEL_SECURITY_ANNOTATION]: {
-            admin: { editable: true, readable: true },
+            editable: [ADMIN],
+            readable: [ADMIN],
           },
         },
       )

@@ -25,13 +25,13 @@ const getFieldsWithFieldDependency = (obj: ObjectType): Field[] =>
   Object.values(obj.fields).filter(hasFieldDependency)
 
 /**
- * Declare the lookupFilters filter, this filter adds the lookupFilter annotation to the
- * lookup & masterDetail fields if needed
+ * Declare the field dependency filter, this filter adds the field_dependency annotation to the
+ * picklist & multi_picklist fields if needed
  * */
 const filterCreator: FilterCreator = ({ client }) => ({
 
   /**
-   * In order to fetch the lookupFilter we should use a different API than in the general flow
+   * In order to fetch the field_dependency we should use a different API than in the general flow
    * (i.e. readMetadata())
    * @param elements the already fetched elements
    */

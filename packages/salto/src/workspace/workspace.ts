@@ -378,13 +378,22 @@ export class Workspace {
   async setBlueprints(...blueprints: Blueprint[]): Promise<void> {
     log.debug(`going to parse ${blueprints.length} blueprints`)
     const parsed = await parseBlueprints(blueprints)
-    const newParsedMap = Object.assign(
+
+    const parsedMap = Object.assign(
       {},
       this.parsedBlueprints,
-      ...parsed.map(bp => ({ [bp.filename]: bp })),
+      ...parsed.map(bp => ({ [bp.filename]: bp }))
     )
+    // remove empty blueprints
+    const emptyBPFiles: string[] = _(parsed)
+      .filter(bp => _.isEmpty(bp.buffer.trim()))
+      .map(bp => bp.filename)
+      .value()
+    log.debug(`empty bp files to remove : ${emptyBPFiles.join(', ')}`)
+    const newParsedMap = _.omit(parsedMap, emptyBPFiles)
     // Mark changed blueprints as dirty
     this.markDirty(blueprints.map(bp => bp.filename))
+
     // Swap state
     this.state = createWorkspaceState(Object.values(newParsedMap))
   }
@@ -394,6 +403,7 @@ export class Workspace {
    * @param names Names of the blueprints to remove
    */
   removeBlueprints(...names: string[]): void {
+    log.debug(`removing ${names.length} blueprints`)
     const newParsedBlueprints = _(this.parsedBlueprints).omit(names).values().value()
     // Mark removed blueprints as dirty
     this.markDirty(names)

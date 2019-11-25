@@ -49,7 +49,7 @@ describe('TEST', () => {
     await workspace.awaitAllUpdates()
     expect(workspace.elements).toBeDefined()
     expect(workspace.elements && workspace.elements.length).toBe(4)
-    expect(_.keys(workspace.parsedBlueprints).length).toBe(3)
+    expect(_.keys(workspace.parsedBlueprints).length).toBe(2)
   })
 
   it('should maintain status on error', async () => {

@@ -1,6 +1,5 @@
 import fs from 'fs'
 import tmp from 'tmp-promise'
-import { pollPromise } from '../poll'
 import { mockConsoleStream, MockWritableStream } from '../console'
 import { LogLevel, LOG_LEVELS } from '../../src/internal/level'
 import { Config, mergeConfigs } from '../../src/internal/config'
@@ -55,15 +54,6 @@ describe('winston based logger', () => {
           initialConfig.filename = filename
           logger = createLogger()
           await logLine()
-
-          // Polling abomination is here since the feature in winston that waits for logging is
-          // broken. Tried and failed:
-          // - Passing a callback to winstonLogger.log() - not called
-          // - logger.impl.on('finish', done), logger.impl.end(done) - done called too soon
-          await pollPromise(
-            // can't just poll for existence since it may be created and empty
-            () => fs.existsSync(filename) && readFileContent() !== '',
-          )
           const fileContents = readFileContent();
           [line] = fileContents.split('\n')
         })

@@ -70,6 +70,9 @@ export class CustomField implements MetadataInfo {
   readonly writeRequiresMasterRead?: boolean
   readonly lookupFilter?: LookupFilter
 
+  // To be used for rollupSummary type
+  readonly summaryFilterItems?: FilterItem | FilterItem[]
+
   // To be used for Text types fields
   readonly length?: number
 
@@ -95,6 +98,7 @@ export class CustomField implements MetadataInfo {
     controllingField?: string,
     valueSettings?: ValueSettings[],
     formula?: string,
+    summaryFilterItems?: FilterItem[],
     relatedTo?: string[],
     relationshipName?: string,
     allowLookupRecordDeletion?: boolean,
@@ -148,6 +152,9 @@ export class CustomField implements MetadataInfo {
     } else if (type === FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.MASTER_DETAIL]) {
       this.relationshipName = relationshipName
       this.referenceTo = relatedTo
+    }
+    if (type === FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.ROLLUP_SUMMARY] && summaryFilterItems) {
+      this.summaryFilterItems = summaryFilterItems
     }
   }
 }

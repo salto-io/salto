@@ -1,25 +1,15 @@
 import _ from 'lodash'
 import {
-  Type,
-  ObjectType,
-  ElemID,
-  InstanceElement,
-  Field,
-  Value,
-  Element,
-  Values,
-  BuiltinTypes,
+  Type, ObjectType, ElemID, InstanceElement, Field, Value, Element, Values, BuiltinTypes,
   isInstanceElement,
 } from 'adapter-api'
-import { PicklistEntry } from 'jsforce'
+import { MetadataInfo, PicklistEntry } from 'jsforce'
 import { collections } from '@salto/lowerdash'
 import * as constants from '../src/constants'
-import { PROFILE_METADATA_TYPE } from '../src/filters/field_permissions'
+import { ADMIN_PROFILE, PROFILE_METADATA_TYPE } from '../src/filters/field_permissions'
 import { STANDARD_VALUE_SET } from '../src/filters/standard_value_sets'
 import {
-  CustomObject,
-  ProfileInfo,
-  FieldPermissions,
+  CustomObject, ProfileInfo, FieldPermissions, CustomField, FilterItem,
 } from '../src/client/types'
 import {
   Types, sfCase, fromMetadataInfo, bpCase,
@@ -39,13 +29,57 @@ describe('Salesforce adapter E2E with real account', () => {
   // Set long timeout as we communicate with salesforce API
   jest.setTimeout(1000000)
 
+  let result: Element[]
+
+  const objectExists = async (type: string, name: string, fields?: string[],
+    missingFields?: string[], label?: string): Promise<boolean> => {
+    const readResult = (await client.readMetadata(type, name)
+    )[0] as CustomObject
+    if (!readResult || !readResult.fullName) {
+      return false
+    }
+    if (label && label !== readResult.label) {
+      return false
+    }
+    if (fields || missingFields) {
+      const fieldNames = makeArray(readResult.fields).map(rf => rf.fullName)
+      if (fields && !fields.every(f => fieldNames.includes(f))) {
+        return false
+      }
+      return (!missingFields || missingFields.every(f => !fieldNames.includes(f)))
+    }
+    return true
+  }
+
+  const fetchedRollupSummaryFieldName = 'rollupsummary__c'
+
+  beforeAll(async () => {
+    const accountApiName = 'Account'
+    if (!(await objectExists(constants.CUSTOM_OBJECT, accountApiName,
+      [fetchedRollupSummaryFieldName]))) {
+      await client.create(constants.CUSTOM_FIELD, {
+        fullName: `${accountApiName}.${fetchedRollupSummaryFieldName}`,
+        label: 'Test Fetch Rollup Summary Field',
+        summarizedField: 'Opportunity.Amount',
+        summaryFilterItems: {
+          field: 'Opportunity.Amount',
+          operation: 'greaterThan',
+          value: '1',
+        },
+        summaryForeignKey: 'Opportunity.AccountId',
+        summaryOperation: 'sum',
+        type: 'Summary',
+      } as MetadataInfo)
+      await client.update(PROFILE_METADATA_TYPE, new ProfileInfo(sfCase(ADMIN_PROFILE), [{
+        field: `${accountApiName}.${fetchedRollupSummaryFieldName}`,
+        editable: true,
+        readable: true,
+      }]))
+    }
+    result = await adapter.fetch()
+  })
+
   describe('should fetch account settings', () => {
-    let result: Element[]
-
-    beforeAll(async () => {
-      result = await adapter.fetch()
-    })
-
     beforeEach(() => {
       expect(result).toBeDefined()
     })
@@ -113,6 +147,25 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(lead.fields.status.annotations[Type.DEFAULT]).toBe(
         'Open - Not Contacted'
       )
+
+      // Test Rollup Summary
+      const account = (findElements(result, 'account') as ObjectType[])
+        .filter(a => a.fields[fetchedRollupSummaryFieldName])[0]
+      expect(account).toBeDefined()
+      const rollupSummary = account.fields[fetchedRollupSummaryFieldName]
+      expect(rollupSummary.type.elemID).toEqual(Types.primitiveDataTypes.rollupsummary.elemID)
+      expect(rollupSummary.annotations[constants.FIELD_ANNOTATIONS.SUMMARIZED_FIELD])
+        .toEqual('Opportunity.Amount')
+      expect(rollupSummary.annotations[constants.FIELD_ANNOTATIONS.SUMMARY_FOREIGN_KEY])
+        .toEqual('Opportunity.AccountId')
+      expect(rollupSummary.annotations[constants.FIELD_ANNOTATIONS.SUMMARY_OPERATION])
+        .toEqual('sum')
+      const filterItems = rollupSummary
+        .annotations[constants.FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS]
+      expect(filterItems).toHaveLength(1)
+      expect(filterItems[0][constants.FILTER_ITEM_FIELDS.FIELD]).toEqual('Opportunity.Amount')
+      expect(filterItems[0][constants.FILTER_ITEM_FIELDS.OPERATION]).toEqual('greaterThan')
+      expect(filterItems[0][constants.FILTER_ITEM_FIELDS.VALUE]).toEqual('1')
     })
 
     it('should fetch metadata type', () => {
@@ -135,26 +188,6 @@ describe('Salesforce adapter E2E with real account', () => {
   })
 
   describe('should perform CRUD operations', () => {
-    const objectExists = async (type: string, name: string, fields?: string[],
-      missingFields?: string[], label?: string): Promise<boolean> => {
-      const result = (await client.readMetadata(type, name)
-      )[0] as CustomObject
-      if (!result || !result.fullName) {
-        return false
-      }
-      if (label && label !== result.label) {
-        return false
-      }
-      if (fields || missingFields) {
-        const fieldNames = makeArray(result.fields).map(rf => rf.fullName)
-        if (fields && !fields.every(f => fieldNames.includes(f))) {
-          return false
-        }
-        return (!missingFields || missingFields.every(f => !fieldNames.includes(f)))
-      }
-      return true
-    }
-
     const permissionExists = async (profile: string, fields: string[]): Promise<boolean[]> => {
       // The following const method is a workaround for a bug in SFDC metadata API that returns
       // the editable and readable fields in FieldPermissions as string instead of boolean
@@ -1054,6 +1087,36 @@ describe('Salesforce adapter E2E with real account', () => {
           ),
         },
       })
+      const rollupSummaryFieldName = 'susu'
+      const rollupSummaryFieldApiName = `${rollupSummaryFieldName}__c`
+
+      const findCustomCase = (): ObjectType => {
+        const caseObjects = findElements(result, 'case') as ObjectType[]
+        const customCase = caseObjects
+          .filter(c => _.isUndefined(c.annotations[constants.API_NAME]))[0]
+        const caseObject = customCase ?? caseObjects[0]
+        // we add API_NAME annotation so the adapter will be able to construct the fields full name
+        // upon update. in a real scenario, the case object is merged in the core and passed
+        // to the adapter with the API_NAME annotation
+        caseObject.annotations[constants.API_NAME] = 'Case'
+        return caseObject
+      }
+
+      let origCase = findCustomCase()
+
+      const removeRollupSummaryFieldFromCase = async (caseObj: ObjectType, fieldName: string):
+        Promise<ObjectType> => {
+        const caseAfterFieldRemoval = caseObj.clone()
+        delete caseAfterFieldRemoval.fields[fieldName]
+        await adapter.update(caseObj, caseAfterFieldRemoval,
+          [{ action: 'remove',
+            data: { before: caseObj.fields[fieldName] } }])
+        return caseAfterFieldRemoval
+      }
+
+      if (await objectExists(constants.CUSTOM_OBJECT, 'Case', [rollupSummaryFieldApiName])) {
+        origCase = await removeRollupSummaryFieldFromCase(origCase, rollupSummaryFieldApiName)
+      }
 
       if (await objectExists(constants.CUSTOM_OBJECT, customObjectName)) {
         await adapter.remove(element)
@@ -1079,7 +1142,8 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(picklistValueOld.defaultValue).toEqual(false)
 
       // Verify currency
-      const currencyField = allFields.filter(field => field.name === 'Alpha__c')[0]
+      const currencyFieldApiName = 'Alpha__c'
+      const currencyField = allFields.filter(field => field.name === currencyFieldApiName)[0]
       expect(currencyField).toBeDefined()
       expect(currencyField.label).toBe('Currency description label')
       expect(currencyField.scale).toBe(3)
@@ -1204,7 +1268,8 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(_.get(lookupField, 'restrictedDelete')).toBe(true)
       expect(lookupField.filteredLookupInfo).toBeDefined()
       // Verify masterdetail
-      const masterDetailField = allFields.filter(field => field.name === `Rocket${randomString}__c`)[0]
+      const masterDetailApiName = `Rocket${randomString}__c`
+      const masterDetailField = allFields.filter(field => field.name === masterDetailApiName)[0]
       expect(masterDetailField).toBeDefined()
       expect(masterDetailField.label).toBe('MasterDetail description label')
       expect(masterDetailField.type).toBe('reference')
@@ -1214,6 +1279,56 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(masterDetailField.writeRequiresMasterRead).toBe(true)
       expect(masterDetailField.updateable).toBe(true)
 
+      const verifyRollupSummaryFieldAddition = async (): Promise<void> => {
+        const addRollupSummaryField = async (): Promise<ObjectType> => {
+          const caseAfterFieldAddition = origCase.clone()
+          caseAfterFieldAddition.fields[rollupSummaryFieldName] = new Field(
+            caseAfterFieldAddition.elemID,
+            rollupSummaryFieldName,
+            Types.primitiveDataTypes.rollupsummary,
+            {
+              [Type.REQUIRED]: false,
+              [constants.LABEL]: 'Rollup Summary description label',
+              [constants.API_NAME]: rollupSummaryFieldApiName,
+              [constants.FIELD_ANNOTATIONS.SUMMARIZED_FIELD]: `${customObjectName}.${currencyFieldApiName}`,
+              [constants.FIELD_ANNOTATIONS.SUMMARY_FOREIGN_KEY]: `${customObjectName}.${masterDetailApiName}`,
+              [constants.FIELD_ANNOTATIONS.SUMMARY_OPERATION]: 'max',
+              [constants.FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS]: [
+                {
+                  [constants.FILTER_ITEM_FIELDS.FIELD]: `${customObjectName}.${currencyFieldApiName}`,
+                  [constants.FILTER_ITEM_FIELDS.OPERATION]: 'greaterThan',
+                  [constants.FILTER_ITEM_FIELDS.VALUE]: '1',
+                },
+              ],
+            }
+          )
+          await adapter.update(origCase, caseAfterFieldAddition,
+            [{ action: 'add',
+              data: { after: caseAfterFieldAddition.fields[rollupSummaryFieldName] } }])
+          return caseAfterFieldAddition
+        }
+
+        const verifyRollupSummaryField = async (): Promise<void> => {
+          const fetchedRollupSummary = (await client.readMetadata(constants.CUSTOM_FIELD,
+            `Case.${rollupSummaryFieldApiName}`))[0] as CustomField
+          expect(_.get(fetchedRollupSummary, 'summarizedField'))
+            .toEqual(`${customObjectName}.${currencyFieldApiName}`)
+          expect(_.get(fetchedRollupSummary, 'summaryForeignKey'))
+            .toEqual(`${customObjectName}.${masterDetailApiName}`)
+          expect(_.get(fetchedRollupSummary, 'summaryOperation')).toEqual('max')
+          expect(fetchedRollupSummary.summaryFilterItems).toBeDefined()
+          const filterItems = fetchedRollupSummary.summaryFilterItems as FilterItem
+          expect(filterItems.field).toEqual(`${customObjectName}.${currencyFieldApiName}`)
+          expect(filterItems.operation).toEqual('greaterThan')
+          expect(filterItems.value).toEqual('1')
+        }
+
+        const caseAfterFieldAddition = await addRollupSummaryField()
+        await verifyRollupSummaryField()
+        await removeRollupSummaryFieldFromCase(caseAfterFieldAddition, rollupSummaryFieldName)
+      }
+
+      await verifyRollupSummaryFieldAddition()
       // Clean-up
       await adapter.remove(post as ObjectType)
     })

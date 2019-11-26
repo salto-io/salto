@@ -12,9 +12,9 @@ import {
   METADATA_TYPE, FIELD_ANNOTATIONS, FIELD_TYPE_NAMES, LABEL, FIELD_TYPE_API_NAMES, ADDRESS_FIELDS,
   SALESFORCE, GEOLOCATION_FIELDS, NAME_FIELDS, API_NAME, INSTANCE_FULL_NAME_FIELD,
   FIELD_LEVEL_SECURITY_ANNOTATION, FIELD_LEVEL_SECURITY_FIELDS, FIELD_DEPENDENCY_FIELDS,
-  VALUE_SETTINGS_FIELDS,
+  VALUE_SETTINGS_FIELDS, FILTER_ITEM_FIELDS,
 } from '../src/constants'
-import { CustomField } from '../src/client/types'
+import { CustomField, FilterItem } from '../src/client/types'
 
 describe('transformer', () => {
   const dummyTypeId = new ElemID('adapter', 'dummy')
@@ -315,6 +315,66 @@ describe('transformer', () => {
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY]).toBeUndefined()
       })
     })
+
+    describe('rollup summary field transformation', () => {
+      const origRollupSummaryField: SalesforceField = {
+        aggregatable: false,
+        cascadeDelete: false,
+        dependentPicklist: false,
+        externalId: false,
+        htmlFormatted: false,
+        autoNumber: false,
+        byteLength: 18,
+        calculated: true,
+        caseSensitive: false,
+        createable: true,
+        custom: false,
+        defaultedOnCreate: true,
+        deprecatedAndHidden: false,
+        digits: 0,
+        filterable: true,
+        groupable: true,
+        idLookup: false,
+        label: 'Owner ID',
+        length: 18,
+        name: 'OwnerId',
+        nameField: false,
+        namePointing: true,
+        nillable: false,
+        permissionable: false,
+        polymorphicForeignKey: true,
+        precision: 0,
+        queryByDistance: false,
+        relationshipName: 'Owner',
+        restrictedPicklist: false,
+        scale: 0,
+        searchPrefilterable: false,
+        soapType: 'xsd:double',
+        sortable: true,
+        type: 'currency',
+        unique: false,
+        // eslint-disable-next-line comma-dangle
+        updateable: true
+      }
+
+      let salesforceRollupSummaryField: SalesforceField
+      beforeEach(() => {
+        salesforceRollupSummaryField = _.cloneDeep(origRollupSummaryField)
+      })
+
+      const dummyElemID = new ElemID('adapter', 'dummy')
+
+      it('should fetch rollup summary field', async () => {
+        const fieldElement = getSObjectFieldElement(dummyElemID, salesforceRollupSummaryField, {})
+        expect(fieldElement.type).toEqual(Types.primitiveDataTypes.rollupsummary)
+      })
+
+      it('should not fetch summary field if it is a calculated formula', async () => {
+        salesforceRollupSummaryField.calculatedFormula = 'dummy formula'
+        const fieldElement = getSObjectFieldElement(dummyElemID, salesforceRollupSummaryField, {})
+        expect(fieldElement.type).not.toEqual(Types.primitiveDataTypes.rollupsummary)
+      })
+    })
   })
 
   describe('toCustomObject', () => {
@@ -465,6 +525,75 @@ describe('transformer', () => {
           .toEqual(FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.PICKLIST])
         expect(customFieldWithFieldDependency?.valueSet?.controllingField).toBeUndefined()
         expect(customFieldWithFieldDependency?.valueSet?.valueSettings).toBeUndefined()
+      })
+    })
+
+    describe('rollup summary field transformation', () => {
+      const elemID = new ElemID('salesforce', 'test')
+      const annotations: Values = {
+        [API_NAME]: 'field_name',
+        [LABEL]: 'field_label',
+        [Type.REQUIRED]: false,
+        [FIELD_ANNOTATIONS.SUMMARY_OPERATION]: 'count',
+        [FIELD_ANNOTATIONS.SUMMARY_FOREIGN_KEY]: 'Opportunity.AccountId',
+        [FIELD_ANNOTATIONS.SUMMARIZED_FIELD]: 'Opportunity.Amount',
+        [FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS]: [{
+          [FILTER_ITEM_FIELDS.FIELD]: 'FieldName1',
+          [FILTER_ITEM_FIELDS.OPERATION]: 'equals',
+          [FILTER_ITEM_FIELDS.VALUE]: 'val1',
+        },
+        {
+          [FILTER_ITEM_FIELDS.FIELD]: 'FieldName2',
+          [FILTER_ITEM_FIELDS.OPERATION]: 'equals',
+          [FILTER_ITEM_FIELDS.VALUE]: 'val2',
+        }],
+      }
+      const fieldName = 'field_name'
+      const origObjectType = new ObjectType({
+        elemID,
+        fields: {
+          [fieldName]: new TypeField(elemID, fieldName, Types.primitiveDataTypes.rollupsummary,
+            annotations),
+        },
+      })
+      let obj: ObjectType
+      beforeEach(() => {
+        obj = _.clone(origObjectType)
+      })
+
+      it('should transform rollup summary field', async () => {
+        const rollupSummaryInfo = toCustomField(obj, obj.fields[fieldName])
+        expect(rollupSummaryInfo.type)
+          .toEqual(FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.ROLLUP_SUMMARY])
+        expect(_.get(rollupSummaryInfo, 'summarizedField'))
+          .toEqual('Opportunity.Amount')
+        expect(_.get(rollupSummaryInfo, 'summaryForeignKey'))
+          .toEqual('Opportunity.AccountId')
+        expect(_.get(rollupSummaryInfo, 'summaryOperation'))
+          .toEqual('count')
+        expect(rollupSummaryInfo.summaryFilterItems).toBeDefined()
+        const filterItems = rollupSummaryInfo.summaryFilterItems as FilterItem[]
+        expect(filterItems).toHaveLength(2)
+        expect(filterItems[0].field).toEqual('FieldName1')
+        expect(filterItems[0].operation).toEqual('equals')
+        expect(filterItems[0].value).toEqual('val1')
+        expect(filterItems[1].field).toEqual('FieldName2')
+        expect(filterItems[1].operation).toEqual('equals')
+        expect(filterItems[1].value).toEqual('val2')
+      })
+
+      it('should ignore field dependency when not defined', async () => {
+        delete obj.fields[fieldName].annotations[FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS]
+        const rollupSummaryInfo = toCustomField(obj, obj.fields[fieldName])
+        expect(rollupSummaryInfo.type)
+          .toEqual(FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.ROLLUP_SUMMARY])
+        expect(_.get(rollupSummaryInfo, 'summarizedField'))
+          .toEqual('Opportunity.Amount')
+        expect(_.get(rollupSummaryInfo, 'summaryForeignKey'))
+          .toEqual('Opportunity.AccountId')
+        expect(_.get(rollupSummaryInfo, 'summaryOperation'))
+          .toEqual('count')
+        expect(rollupSummaryInfo.summaryFilterItems).toBeUndefined()
       })
     })
   })

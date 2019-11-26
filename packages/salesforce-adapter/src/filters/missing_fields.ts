@@ -28,6 +28,9 @@ const allMissingFields: {id: ElemID; fields: MissingField[]}[] = [
             'equals', 'notEqual', 'lessThan', 'greaterThan', 'lessOrEqual', 'greaterOrEqual',
             'contains', 'notContain', 'startsWith', 'includes', 'excludes', 'within',
           ],
+          [Type.RESTRICTION]: {
+            [Type.ENFORCE_VALUE]: true,
+          },
         },
       },
     ],

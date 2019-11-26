@@ -43,6 +43,7 @@ export const FIELD_TYPE_NAMES = {
   VALUE_SETTINGS: 'value_settings',
   ADDRESS: 'address',
   FIELD_NAME: 'field_name',
+  ROLLUP_SUMMARY: 'rollupsummary',
 }
 
 export const FIELD_TYPE_API_NAMES = {
@@ -67,6 +68,7 @@ export const FIELD_TYPE_API_NAMES = {
   [FIELD_TYPE_NAMES.URL]: 'Url',
   [FIELD_TYPE_NAMES.LOOKUP]: 'Lookup',
   [FIELD_TYPE_NAMES.MASTER_DETAIL]: 'MasterDetail',
+  [FIELD_TYPE_NAMES.ROLLUP_SUMMARY]: 'Summary',
 }
 
 export const FIELD_ANNOTATIONS = {
@@ -87,6 +89,10 @@ export const FIELD_ANNOTATIONS = {
   WRITE_REQUIRES_MASTER_READ: 'write_requires_master_read',
   LOOKUP_FILTER: 'lookup_filter',
   FIELD_DEPENDENCY: 'field_dependency',
+  SUMMARIZED_FIELD: 'summarized_field',
+  SUMMARY_FILTER_ITEMS: 'summary_filter_items',
+  SUMMARY_FOREIGN_KEY: 'summary_foreign_key',
+  SUMMARY_OPERATION: 'summary_operation',
 }
 
 export const FIELD_DEPENDENCY_FIELDS = {

@@ -49,22 +49,20 @@ export type MergeErrorWithElements = {
 export const getDetailedChanges = (
   before: ReadonlyArray<Element>,
   after: ReadonlyArray<Element>,
-): Iterable<DetailedChange> => (
+): Iterable<DetailedChange> =>
   wu(getPlan(before, after, false).itemsByEvalOrder())
     .map(item => item.detailedChanges())
     .flatten()
-)
 
 const getChangeMap = (
   before: ReadonlyArray<Element>,
   after: ReadonlyArray<Element>,
-): Record<string, DetailedChange> => (
+): Record<string, DetailedChange> =>
   _.fromPairs(
     wu(getDetailedChanges(before, after))
       .map(change => [change.id.getFullName(), change])
       .toArray(),
   )
-)
 
 const findNestedElementPath = (
   changeElemID: ElemID,
@@ -114,8 +112,7 @@ const toChangesWithPath = (
     }
     // Replace merged element with original elements that have a path hint
     return originalElements.map(elem => _.merge({}, change, { change: { data: { after: elem } } }))
-  }
-)
+  })
 
 type FetchChangeConvertor = (change: DetailedChange) => FetchChange[]
 const toFetchChanges = (
@@ -163,7 +160,7 @@ const processMergeErrors = (
   elements: Element[],
   errors: MergeError[],
   stateElementIDs: string[]
-): ProcessMergeErrorsResult => {
+): ProcessMergeErrorsResult => log.time(() => {
   const mergeErrsByElemID = _(errors)
     .map(me => ([
       me.elemID.createTopLevelParentID().parent.getFullName(),
@@ -202,7 +199,8 @@ const processMergeErrors = (
     keptElements,
     errorsWithDroppedElements,
   }
-}
+}, 'process merge errors for %o elements with %o errors and %o state elements',
+elements.length, errors.length, stateElementIDs.length)
 
 const fetchAndProcessMergeErrors = async (
   adapters: Record<string, Adapter>,
@@ -241,12 +239,12 @@ const calcFetchChanges = (
   stateElements: ReadonlyArray<Element>,
   workspaceElements: ReadonlyArray<Element>
 ): Iterable<FetchChange> => {
-  const serviceChanges = getDetailedChanges(stateElements, mergedServiceElements)
-  log.debug('finished to calculate service-state changes')
-  const pendingChanges = getChangeMap(stateElements, workspaceElements)
-  log.debug('finished to calculate pending changes')
-  const workspaceToServiceChanges = getChangeMap(workspaceElements, mergedServiceElements)
-  log.debug('finished to calculate service-workspace changes')
+  const serviceChanges = log.time(() => getDetailedChanges(stateElements, mergedServiceElements),
+    'finished to calculate service-state changes')
+  const pendingChanges = log.time(() => getChangeMap(stateElements, workspaceElements),
+    'finished to calculate pending changes')
+  const workspaceToServiceChanges = log.time(() => getChangeMap(workspaceElements,
+    mergedServiceElements), 'finished to calculate service-workspace changes')
 
   const serviceElementsMap: Record<string, Element[]> = _.groupBy(
     serviceElements,

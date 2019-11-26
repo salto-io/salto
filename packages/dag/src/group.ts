@@ -1,6 +1,9 @@
 import wu from 'wu'
 import _ from 'lodash'
+import { logger } from '@salto/logging'
 import { NodeId, DataNodeMap } from './nodemap'
+
+const log = logger(module)
 
 export interface Group<T> {
   groupKey: string
@@ -36,40 +39,42 @@ export class GroupedNodeMap<T> extends DataNodeMap<Group<T>> {
 }
 
 export const buildGroupedGraph = <T>(source: DataNodeMap<T>, groupKey: (id: NodeId) => string):
-GroupedNodeMap<T> => {
-  const mergeCandidates = new Map<string, NodeId>()
-  return (wu(source.evaluationOrder())
+GroupedNodeMap<T> => log.time(() => {
+    const mergeCandidates = new Map<string, NodeId>()
+    return (wu(source.evaluationOrder())
 
-    .map((nodeId: NodeId): Group<T> | undefined => {
-      const node = source.getData(nodeId)
-      if (!node) return undefined
-      const groupNodes = {
-        groupKey: groupKey(nodeId),
-        items: new Map<NodeId, T>([[nodeId, node]]),
-      }
-      return groupNodes
-    }).reject(_.isUndefined) as wu.WuIterable<Group<T>>)
+      .map((nodeId: NodeId): Group<T> | undefined => {
+        const node = source.getData(nodeId)
+        if (!node) return undefined
+        const groupNodes = {
+          groupKey: groupKey(nodeId),
+          items: new Map<NodeId, T>([[nodeId, node]]),
+        }
+        return groupNodes
+      })
+      .reject(_.isUndefined) as wu.WuIterable<Group<T>>)
 
-    .reduce((result, group) => {
-      const deps = wu(group.items.keys())
-        .map(nodeId => source.get(nodeId)).flatten()
-        .map(dep => result.getGroupIdFromItemId(dep))
-        .reject(_.isUndefined) as Iterable<NodeId>
-      const groupId = _.uniqueId(`${group.groupKey}-`)
-      result.addNode(groupId, deps, group)
+      .reduce((result, group) =>
+        log.time(() => {
+          const deps = wu(group.items.keys())
+            .map(nodeId => source.get(nodeId)).flatten()
+            .map(dep => result.getGroupIdFromItemId(dep))
+            .reject(_.isUndefined) as Iterable<NodeId>
+          const groupId = _.uniqueId(`${group.groupKey}-`)
+          result.addNode(groupId, deps, group)
 
-      // Try to merge with existing node
-      const mergeCandidate = mergeCandidates.get(group.groupKey)
-      if (mergeCandidate) {
-        const [transformed, success] = result.tryTransform(groupGraph => {
-          groupGraph.merge(groupId, mergeCandidate)
-          return mergeCandidate
-        })
-        if (success) return transformed
-      }
+          // Try to merge with existing node
+          const mergeCandidate = mergeCandidates.get(group.groupKey)
+          if (mergeCandidate) {
+            const [transformed, success] = result.tryTransform(groupGraph => {
+              groupGraph.merge(groupId, mergeCandidate)
+              return mergeCandidate
+            })
+            if (success) return transformed
+          }
 
-      // If merge failed, we need to update state of mergeCandidates
-      mergeCandidates.set(group.groupKey, groupId)
-      return result
-    }, new GroupedNodeMap<T>())
-}
+          // If merge failed, we need to update state of mergeCandidates
+          mergeCandidates.set(group.groupKey, groupId)
+          return result
+        }, 'merge nodes to group %o', group.groupKey), new GroupedNodeMap<T>())
+  }, 'build grouped graph for %o nodes', source.size)

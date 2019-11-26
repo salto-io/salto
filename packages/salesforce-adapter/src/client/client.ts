@@ -179,15 +179,10 @@ export default class SalesforceClient {
       this: SalesforceClient,
       { call, name, args }: decorators.OriginalCall,
     ): Promise<unknown> {
-      const desc = `client.${name}(${args
-        .map(arg => _.get(arg, 'fullName', arg))
-        .filter(arg => typeof arg === 'string')
-        .join(', ')})`
+      const desc = `client.${name}(${args.map(arg => _.get(arg, 'fullName', arg))
+        .filter(arg => typeof arg === 'string').join(', ')})`
       try {
-        const before = Date.now()
-        const ret = await call()
-        log.debug('%s took %o ms', desc, Date.now() - before)
-        return ret
+        return await log.time(call, desc)
       } catch (e) {
         log.error('Failed to run SFDC client call %s: %s', desc, e.message)
         throw e

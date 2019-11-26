@@ -13,7 +13,7 @@ export type BaseLoggerMaker = (namespace: Namespace) => BaseLogger
 
 export type BaseLoggerRepo = BaseLoggerMaker & {
   configure(config: Readonly<Config>): void
-  end(): void // Note: there is currently no way to wait for a logger to end; see tests
+  end(): Promise<void>
 }
 
 // indexed type - needs a separate definition
@@ -65,7 +65,7 @@ export const logger = (
 export type LoggerRepo = ((namespace: NamespaceOrModule) => Logger) & {
   configure(config: Readonly<Partial<Config>>): void
   readonly config: Readonly<Config>
-  end(): void
+  end(): Promise<void>
 }
 
 export const loggerRepo = (
@@ -91,7 +91,7 @@ export const loggerRepo = (
       config = Object.freeze(resolveConfig(mergeConfigs(config, newConfig)))
       baseLoggerRepo.configure(config)
     },
-    end(): void { baseLoggerRepo.end() },
+    async end(): Promise<void> { await baseLoggerRepo.end() },
   })
 
   return Object.defineProperty(result, 'config', {

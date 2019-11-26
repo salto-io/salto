@@ -118,7 +118,12 @@ export const loggerRepo = (
   })
 
   return Object.assign(loggerMaker, {
-    end(): void { winstonLogger.end() },
+    async end(): Promise<void> {
+      winstonLogger.end()
+      await Promise.all(winstonLogger.transports.map(t => new Promise(
+        resolve => t.on('finish', resolve)
+      )))
+    },
     configure(config: Config): void {
       winstonLogger.configure(winstonLoggerOptions(deps, config))
     },

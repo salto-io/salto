@@ -33,11 +33,11 @@ describe('winston based logger', () => {
   let logger: Logger
   let line: string
 
-  const logLine = (
+  const logLine = async (
     { level = 'error', logger: l = logger }: { level?: LogLevel; logger?: Logger } = {},
-  ): void => {
+  ): Promise<void> => {
     l[level]('hello %o', { world: true }, { extra: 'stuff' })
-    repo.end();
+    await repo.end();
     [line] = consoleStream.contents().split('\n')
   }
 
@@ -54,7 +54,7 @@ describe('winston based logger', () => {
           filename = tmp.tmpNameSync({ postfix: '.log' })
           initialConfig.filename = filename
           logger = createLogger()
-          logLine()
+          await logLine()
 
           // Polling abomination is here since the feature in winston that waits for logging is
           // broken. Tried and failed:
@@ -79,9 +79,9 @@ describe('winston based logger', () => {
       })
 
       describe('when not set', () => {
-        beforeEach(() => {
+        beforeEach(async () => {
           logger = createLogger()
-          logLine()
+          await logLine()
         })
 
         it('should write the message to the console stream', () => {
@@ -105,8 +105,8 @@ describe('winston based logger', () => {
         })
 
         describe('when logging at the configured level', () => {
-          beforeEach(() => {
-            logLine({ level: initialConfig.minLevel as LogLevel })
+          beforeEach(async () => {
+            await logLine({ level: initialConfig.minLevel as LogLevel })
           })
 
           it('should write the message to the console stream', () => {
@@ -115,8 +115,8 @@ describe('winston based logger', () => {
         })
 
         describe('when logging above the configured level', () => {
-          beforeEach(() => {
-            logLine({ level: 'error' })
+          beforeEach(async () => {
+            await logLine({ level: 'error' })
           })
 
           it('should write the message to the console stream', () => {
@@ -125,8 +125,8 @@ describe('winston based logger', () => {
         })
 
         describe('when logging below the configured level', () => {
-          beforeEach(() => {
-            logLine({ level: 'debug' })
+          beforeEach(async () => {
+            await logLine({ level: 'debug' })
           })
 
           it('should not write the message to the console stream', () => {
@@ -143,8 +143,8 @@ describe('winston based logger', () => {
 
         LOG_LEVELS.forEach(level => {
           describe(`when logging at level ${level}`, () => {
-            beforeEach(() => {
-              logLine({ level })
+            beforeEach(async () => {
+              await logLine({ level })
             })
 
             it('should not write the message to the console stream', () => {
@@ -158,10 +158,10 @@ describe('winston based logger', () => {
     describe('namespaceFilter', () => {
       describe('as a function', () => {
         describe('when it returns true', () => {
-          beforeEach(() => {
+          beforeEach(async () => {
             initialConfig.namespaceFilter = () => true
             logger = createLogger()
-            logLine()
+            await logLine()
           })
 
           it('should write the message to the console stream', () => {
@@ -170,10 +170,10 @@ describe('winston based logger', () => {
         })
 
         describe('when it returns false', () => {
-          beforeEach(() => {
+          beforeEach(async () => {
             initialConfig.namespaceFilter = () => false
             logger = createLogger()
-            logLine()
+            await logLine()
           })
 
           it('should not write the message to the console stream', () => {
@@ -184,10 +184,10 @@ describe('winston based logger', () => {
 
       describe('as a string', () => {
         describe('when it is "*"', () => {
-          beforeEach(() => {
+          beforeEach(async () => {
             initialConfig.namespaceFilter = '*'
             logger = createLogger()
-            logLine()
+            await logLine()
           })
 
           it('should write the message to the console stream', () => {
@@ -196,10 +196,10 @@ describe('winston based logger', () => {
         })
 
         describe('when it is another namespace', () => {
-          beforeEach(() => {
+          beforeEach(async () => {
             initialConfig.namespaceFilter = 'other-namespace'
             logger = createLogger()
-            logLine()
+            await logLine()
           })
 
           it('should not write the message to the console stream', () => {
@@ -208,10 +208,10 @@ describe('winston based logger', () => {
         })
 
         describe('when it is a glob matching the namespace', () => {
-          beforeEach(() => {
+          beforeEach(async () => {
             initialConfig.namespaceFilter = `${NAMESPACE}**`
             logger = createLogger()
-            logLine()
+            await logLine()
           })
 
           it('should write the message to the console stream', () => {
@@ -228,9 +228,9 @@ describe('winston based logger', () => {
         })
 
         describe('when the console supports color', () => {
-          beforeEach(() => {
+          beforeEach(async () => {
             logger = createLogger()
-            logLine()
+            await logLine()
           })
 
           it('should colorize the line', () => {
@@ -239,10 +239,10 @@ describe('winston based logger', () => {
         })
 
         describe('when the console does not support color', () => {
-          beforeEach(() => {
+          beforeEach(async () => {
             consoleStream.supportsColor = false
             logger = createLogger()
-            logLine()
+            await logLine()
           })
 
           it('should still colorize the line', () => {
@@ -257,9 +257,9 @@ describe('winston based logger', () => {
         })
 
         describe('when the console supports color', () => {
-          beforeEach(() => {
+          beforeEach(async () => {
             logger = createLogger()
-            logLine()
+            await logLine()
           })
 
           it('should not colorize the line', () => {
@@ -268,10 +268,10 @@ describe('winston based logger', () => {
         })
 
         describe('when the console does not support color', () => {
-          beforeEach(() => {
+          beforeEach(async () => {
             consoleStream.supportsColor = false
             logger = createLogger()
-            logLine()
+            await logLine()
           })
 
           it('should not colorize the line', () => {
@@ -291,8 +291,8 @@ describe('winston based logger', () => {
 
     LOG_LEVELS.forEach(level => {
       describe(`when calling method ${level}`, () => {
-        beforeEach(() => {
-          logLine({ level })
+        beforeEach(async () => {
+          await logLine({ level })
         })
 
         it('should log the message correctly', () => {
@@ -308,9 +308,9 @@ describe('winston based logger', () => {
     })
 
     describe('when created with a string namespace', () => {
-      beforeEach(() => {
+      beforeEach(async () => {
         logger = repo(NAMESPACE)
-        logLine()
+        await logLine()
       })
 
       it('should write the message with the namespace', () => {
@@ -331,9 +331,9 @@ describe('winston based logger', () => {
     })
 
     describe('when created with a module namespace arg', () => {
-      beforeEach(() => {
+      beforeEach(async () => {
         logger = repo(module)
-        logLine()
+        await logLine()
       })
 
       it('should write the message with the child namespace as string', () => {
@@ -356,10 +356,10 @@ describe('winston based logger', () => {
 
   describe('configure', () => {
     describe('when a partial config is specified', () => {
-      beforeEach(() => {
+      beforeEach(async () => {
         logger = createLogger()
         repo.configure({ minLevel: 'debug' })
-        logLine({ level: 'debug' })
+        await logLine({ level: 'debug' })
       })
 
       it('should update the existing logger', () => {
@@ -420,10 +420,10 @@ describe('winston based logger', () => {
   })
 
   describe('JSON format', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
       logger = createLogger()
       repo.configure({ format: 'json' })
-      logLine({ level: 'warn' })
+      await logLine({ level: 'warn' })
       jsonLine = JSON.parse(line)
     })
 

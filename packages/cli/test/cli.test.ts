@@ -173,8 +173,11 @@ describe('cli', () => {
     it('logs the error', () => {
       expect(cliLogger.error).toHaveBeenCalled()
     })
-  })
 
+    it('calls logger.end', () => {
+      expect(logger.end).toHaveBeenCalled()
+    })
+  })
 
   describe('when called with --verbose', () => {
     let configure: jest.SpyInstance

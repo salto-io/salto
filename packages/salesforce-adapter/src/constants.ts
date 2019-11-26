@@ -106,8 +106,12 @@ export const LOOKUP_FILTER_FIELDS = {
   INFO_MESSAGE: 'info_message',
   IS_OPTIONAL: 'is_optional',
   FILTER_ITEMS: 'filter_items',
+}
+
+export const FILTER_ITEM_FIELDS = {
   FIELD: 'field',
   OPERATION: 'operation',
+  VALUE: 'value',
   VALUE_FIELD: 'value_field',
 }
 

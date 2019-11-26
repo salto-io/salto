@@ -72,11 +72,17 @@ describe('Test lookup filters filter', () => {
     }
 
     const verifyFilterItemsTransformation = (lookupFilterAnnotation: Values): void => {
-      expect(lookupFilterAnnotation[constants.LOOKUP_FILTER_FIELDS.FILTER_ITEMS]).toBeDefined()
-      expect(lookupFilterAnnotation[constants.LOOKUP_FILTER_FIELDS.FILTER_ITEMS]).toHaveLength(1)
-      expect(lookupFilterAnnotation[constants.LOOKUP_FILTER_FIELDS.FILTER_ITEMS][0][constants.LOOKUP_FILTER_FIELDS.FIELD]).toEqual('myField1')
-      expect(lookupFilterAnnotation[constants.LOOKUP_FILTER_FIELDS.FILTER_ITEMS][0][constants.LOOKUP_FILTER_FIELDS.OPERATION]).toEqual('myOperation1')
-      expect(lookupFilterAnnotation[constants.LOOKUP_FILTER_FIELDS.FILTER_ITEMS][0][constants.LOOKUP_FILTER_FIELDS.VALUE_FIELD]).toEqual('myValueField1')
+      const { FILTER_ITEMS } = constants.LOOKUP_FILTER_FIELDS
+      expect(lookupFilterAnnotation[FILTER_ITEMS]).toBeDefined()
+      expect(lookupFilterAnnotation[FILTER_ITEMS]).toHaveLength(1)
+      expect(lookupFilterAnnotation[FILTER_ITEMS][0][constants.FILTER_ITEM_FIELDS.FIELD])
+        .toEqual('myField1')
+      expect(lookupFilterAnnotation[FILTER_ITEMS][0][constants.FILTER_ITEM_FIELDS.OPERATION])
+        .toEqual('myOperation1')
+      expect(lookupFilterAnnotation[FILTER_ITEMS][0][constants.FILTER_ITEM_FIELDS.VALUE_FIELD])
+        .toEqual('myValueField1')
+      expect(lookupFilterAnnotation[FILTER_ITEMS][0][constants.FILTER_ITEM_FIELDS.VALUE])
+        .toBeUndefined()
     }
 
     it('should add lookupFilter data to a field with lookupFilter when lookupFilter is optional', async () => {
@@ -149,14 +155,14 @@ describe('Test lookup filters filter', () => {
           [constants.LOOKUP_FILTER_FIELDS.INFO_MESSAGE]: 'This is the Info message',
           [constants.LOOKUP_FILTER_FIELDS.IS_OPTIONAL]: false,
           [constants.LOOKUP_FILTER_FIELDS.FILTER_ITEMS]: [{
-            [constants.LOOKUP_FILTER_FIELDS.FIELD]: 'Case.OwnerId',
-            [constants.LOOKUP_FILTER_FIELDS.OPERATION]: 'equals',
-            [constants.LOOKUP_FILTER_FIELDS.VALUE_FIELD]: '$User.Id',
+            [constants.FILTER_ITEM_FIELDS.FIELD]: 'Case.OwnerId',
+            [constants.FILTER_ITEM_FIELDS.OPERATION]: 'equals',
+            [constants.FILTER_ITEM_FIELDS.VALUE_FIELD]: '$User.Id',
           },
           {
-            [constants.LOOKUP_FILTER_FIELDS.FIELD]: 'Case.ParentId',
-            [constants.LOOKUP_FILTER_FIELDS.OPERATION]: 'equals',
-            [constants.LOOKUP_FILTER_FIELDS.VALUE_FIELD]: '$User.Id',
+            [constants.FILTER_ITEM_FIELDS.FIELD]: 'Case.ParentId',
+            [constants.FILTER_ITEM_FIELDS.OPERATION]: 'equals',
+            [constants.FILTER_ITEM_FIELDS.VALUE]: 'ParentIdValue',
           }],
         },
       })
@@ -201,7 +207,7 @@ describe('Test lookup filters filter', () => {
               {
                 field: 'Case.ParentId',
                 operation: 'equals',
-                valueField: '$User.Id',
+                value: 'ParentIdValue',
               },
             ],
           },
@@ -231,14 +237,14 @@ describe('Test lookup filters filter', () => {
       [constants.LOOKUP_FILTER_FIELDS.INFO_MESSAGE]: 'This is the Info message',
       [constants.LOOKUP_FILTER_FIELDS.IS_OPTIONAL]: false,
       [constants.LOOKUP_FILTER_FIELDS.FILTER_ITEMS]: [{
-        [constants.LOOKUP_FILTER_FIELDS.FIELD]: 'Case.OwnerId',
-        [constants.LOOKUP_FILTER_FIELDS.OPERATION]: 'equals',
-        [constants.LOOKUP_FILTER_FIELDS.VALUE_FIELD]: '$User.Id',
+        [constants.FILTER_ITEM_FIELDS.FIELD]: 'Case.OwnerId',
+        [constants.FILTER_ITEM_FIELDS.OPERATION]: 'equals',
+        [constants.FILTER_ITEM_FIELDS.VALUE_FIELD]: '$User.Id',
       },
       {
-        [constants.LOOKUP_FILTER_FIELDS.FIELD]: 'Case.ParentId',
-        [constants.LOOKUP_FILTER_FIELDS.OPERATION]: 'equals',
-        [constants.LOOKUP_FILTER_FIELDS.VALUE_FIELD]: '$User.Id',
+        [constants.FILTER_ITEM_FIELDS.FIELD]: 'Case.ParentId',
+        [constants.FILTER_ITEM_FIELDS.OPERATION]: 'equals',
+        [constants.FILTER_ITEM_FIELDS.VALUE]: 'ParentIdValue',
       }],
     }
 
@@ -292,7 +298,7 @@ describe('Test lookup filters filter', () => {
               {
                 field: 'Case.ParentId',
                 operation: 'equals',
-                valueField: '$User.Id',
+                value: 'ParentIdValue',
               },
             ],
           },
@@ -320,7 +326,7 @@ describe('Test lookup filters filter', () => {
               {
                 field: 'Case.ParentId',
                 operation: 'equals',
-                valueField: '$User.Id',
+                value: 'ParentIdValue',
               },
             ],
           },

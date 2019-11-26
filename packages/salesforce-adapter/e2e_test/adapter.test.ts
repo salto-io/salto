@@ -1027,14 +1027,14 @@ describe('Salesforce adapter E2E with real account', () => {
                 [constants.LOOKUP_FILTER_FIELDS.INFO_MESSAGE]: 'This is the Info message',
                 [constants.LOOKUP_FILTER_FIELDS.IS_OPTIONAL]: false,
                 [constants.LOOKUP_FILTER_FIELDS.FILTER_ITEMS]: [{
-                  [constants.LOOKUP_FILTER_FIELDS.FIELD]: 'Case.OwnerId',
-                  [constants.LOOKUP_FILTER_FIELDS.OPERATION]: 'equals',
-                  [constants.LOOKUP_FILTER_FIELDS.VALUE_FIELD]: '$User.Id',
+                  [constants.FILTER_ITEM_FIELDS.FIELD]: 'Case.OwnerId',
+                  [constants.FILTER_ITEM_FIELDS.OPERATION]: 'equals',
+                  [constants.FILTER_ITEM_FIELDS.VALUE_FIELD]: '$User.Id',
                 },
                 {
-                  [constants.LOOKUP_FILTER_FIELDS.FIELD]: 'Case.ParentId',
-                  [constants.LOOKUP_FILTER_FIELDS.OPERATION]: 'equals',
-                  [constants.LOOKUP_FILTER_FIELDS.VALUE_FIELD]: '$User.Id',
+                  [constants.FILTER_ITEM_FIELDS.FIELD]: 'Case.ParentId',
+                  [constants.FILTER_ITEM_FIELDS.OPERATION]: 'equals',
+                  [constants.FILTER_ITEM_FIELDS.VALUE]: 'ParentIdValue',
                 }],
               },
               ...adminReadable,
@@ -1279,9 +1279,9 @@ describe('Salesforce adapter E2E with real account', () => {
             [constants.LOOKUP_FILTER_FIELDS.INFO_MESSAGE]: 'Info message',
             [constants.LOOKUP_FILTER_FIELDS.IS_OPTIONAL]: true,
             [constants.LOOKUP_FILTER_FIELDS.FILTER_ITEMS]: [
-              { [constants.LOOKUP_FILTER_FIELDS.FIELD]: 'Case.OwnerId',
-                [constants.LOOKUP_FILTER_FIELDS.OPERATION]: 'equals',
-                [constants.LOOKUP_FILTER_FIELDS.VALUE_FIELD]: '$User.Id' },
+              { [constants.FILTER_ITEM_FIELDS.FIELD]: 'Case.OwnerId',
+                [constants.FILTER_ITEM_FIELDS.OPERATION]: 'equals',
+                [constants.FILTER_ITEM_FIELDS.VALUE_FIELD]: '$User.Id' },
             ],
           },
           [FIELD_LEVEL_SECURITY_ANNOTATION]: {

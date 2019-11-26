@@ -62,14 +62,17 @@ export const parse = (src: Buffer, filename: string): HclParseReturn => {
     setFilename(filename)
     const HclParser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar))
     HclParser.feed(src.toString())
-    const res = HclParser.finish()
-    if (res.length === 0) {
+    const blockItems = HclParser.finish()[0]
+    if (blockItems !== undefined) {
       return {
-        body: createEmptyBody(src.toString(), filename),
-        errors: [unexpectedEOFError(src.toString(), filename)],
+        body: blockItems ? convertMain(blockItems) : createEmptyBody(src.toString(), filename),
+        errors: [],
       }
     }
-    return { body: convertMain(res[0]), errors: [] }
+    return {
+      body: createEmptyBody(src.toString(), filename),
+      errors: [unexpectedEOFError(src.toString(), filename)],
+    }
   } catch (err) {
     return { body: createEmptyBody(src.toString(), filename),
       errors: [convertParserError(err as NearleyError, filename)] }

@@ -126,7 +126,7 @@ describe('HCL Parser', () => {
     expect(body.blocks[0].attrs.thing.expressions[0].expressions.length).toEqual(2)
   })
 
-  it.skip('parses references', async () => {
+  it('parses references', async () => {
     const blockDef = `type label {
         thing = a.b
         that = ">>>\${a.b}<<<"

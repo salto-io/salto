@@ -14,11 +14,11 @@ block -> blockLabels %oCurly _nl (blockItem __nl {% id %}):* %cCurly {% d => con
 blockLabels -> %word __nl (label __nl {% d => d[0] %}):* {% d=> _.flatten([d[0], d[2]]) %}
 label -> 
 	  %word {% id %}
-	| %string {% id %}
+	| string {% id %}
 blockItem -> 
 	  block {% id %}
 	| attr {% id %}
-attr -> (%word {% id %} | %string {% id %}) _nl %eq _nl value {% d => convertors.convertAttr(d[0], d[4]) %}
+attr -> (%word {% id %} | string {% id %}) _nl %eq _nl value {% d => convertors.convertAttr(d[0], d[4]) %}
 array -> %arrOpen _nl arrayItems %arrClose {% d => convertors.convertArray(d[0], d[2], d[3])%}
 arrayItems ->
 	  null {% () => [] %}
@@ -34,10 +34,11 @@ value ->
 
 primitive ->
 	  %number {% d => convertors.convertNumber(d[0]) %}
-	| %string {% d => convertors.convertString(d[0]) %}
+	| string {% id %}
 	| %boolean {% d => convertors.convertBoolean(d[0]) %}
 	| %word {% d => convertors.convertReference(d[0]) %}
 	| %multilineString {% d=> convertors.convertMultilineString(d[0]) %}
 
+string -> %dq (%content {% id %} |%reference {% id %}):* %dq {% d => convertors.convertString(d[0], d[1], d[2]) %}
 _nl -> (%ws | %newline | %comment ):* {% () => null %}
 __nl -> (%ws| %newline | %comment ):+ {% () => null %}

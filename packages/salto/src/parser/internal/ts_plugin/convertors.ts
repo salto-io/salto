@@ -66,7 +66,7 @@ const convertBlockItems = (
     if ('type' in item && item.type === 'map') {
       const key = item.expressions[0].value
       const value = item.expressions[1]
-      if (attrs[key]) throw new Error('Oy we have this key block')
+      if (attrs[key]) throw new Error('duplicated attribure name')
       attrs[key] = {
         expressions: [value],
         source: item.source,
@@ -87,20 +87,28 @@ export const convertMain = (
   labels: [],
   source: createSourceRange(
       _.first(blockItems) as HclExpression,
-       _.last(blockItems) as HclExpression
+      _.last(blockItems) as HclExpression
   ),
 })
 
 export const convertBlock = (
-  words: LexerToken[],
+  words: Token[],
   blockItems: HclExpression[],
   cb: LexerToken
 ): ParsedHclBlock => {
-  const [type, ...labels] = words
+  const [type, ...labels] = words.map(l => {
+    if (isLexerToken(l)) return l.text
+    // (l.type === 'string' ? JSON.parse(l.text) : l.text)
+    const exp = l as HclExpression
+    if (exp.type === 'template' && exp.expressions.length === 1) {
+      return exp.expressions[0].value
+    }
+    throw new Error('invalid block definition')
+  })
   return {
     ...convertBlockItems(blockItems),
-    type: type.text,
-    labels: labels.map(l => (l.type === 'string' ? JSON.parse(l.text) : l.text)),
+    type,
+    labels,
     source: createSourceRange(words[0], cb),
   }
 }
@@ -146,15 +154,21 @@ export const convertReference = (reference: LexerToken): HclExpression => ({
   source: createSourceRange(reference, reference),
 })
 
-export const convertString = (str: LexerToken): HclExpression => ({
+export const convertString = (
+  oq: LexerToken,
+  contentTokens: LexerToken[],
+  cq: LexerToken
+): HclExpression => ({
   type: 'template',
-  expressions: [{
-    type: 'literal',
-    value: JSON.parse(str.text),
-    expressions: [],
-    source: createSourceRange(str, str),
-  }],
-  source: createSourceRange(str, str),
+  expressions: contentTokens.map(t => (t.type === 'reference'
+    ? convertReference(t)
+    : {
+      type: 'literal',
+      value: t?.text ?? '',
+      expressions: [],
+      source: createSourceRange(t, t),
+    })),
+  source: createSourceRange(oq, cq),
 })
 
 export const convertMultilineString = (str: LexerToken): HclExpression => {

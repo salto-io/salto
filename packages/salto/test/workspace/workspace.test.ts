@@ -4,7 +4,7 @@ import _ from 'lodash'
 import tmp from 'tmp-promise'
 import {
   Element, ObjectType, ElemID, Type, Field, PrimitiveType, PrimitiveTypes, BuiltinTypes,
-  findElement,
+  findElement, isObjectType,
 } from 'adapter-api'
 import { Config } from '../../src/workspace/config'
 import {
@@ -244,6 +244,13 @@ type salesforce_lead {
       )
       const newField = oldField.clone()
       newField.isList = true
+      const anotherNewField = new Field(
+        new ElemID('salesforce', 'lead'),
+        'lala',
+        BuiltinTypes.NUMBER,
+        {},
+        false
+      )
       const changes: DetailedChange[] = [
         { // modify value
           id: new ElemID('salesforce', 'lead', 'field', 'base_field', Type.DEFAULT),
@@ -291,6 +298,13 @@ type salesforce_lead {
           action: 'modify',
           data: { before: oldField, after: newField },
         },
+        {
+          path: ['other', 'bar'],
+          id: anotherNewField.elemID,
+          action: 'add',
+          data: { after: anotherNewField },
+
+        },
       ]
 
       let lead: ObjectType
@@ -320,6 +334,13 @@ type salesforce_lead {
       it('should add new blueprint', () => {
         expect(Object.keys(workspace.parsedBlueprints)).toContain('test/new.bp')
       })
+
+      it('should add new blueprint for field with path', () => {
+        expect(Object.keys(workspace.parsedBlueprints)).toContain('other/bar.bp')
+        expect(workspace.parsedBlueprints['other/bar.bp'].elements[0].elemID.getFullName()).toEqual('salesforce.lead')
+        expect((workspace.parsedBlueprints['other/bar.bp'].elements.filter(e => isObjectType(e))[0] as ObjectType).fields.lala).toBeDefined()
+      })
+
       it('should add annotations under correct field', () => {
         expect(lead.fields.base_field.annotations).toHaveProperty('complex')
         expect(lead.fields.base_field.annotations.complex).toEqual({ key: 'value' })

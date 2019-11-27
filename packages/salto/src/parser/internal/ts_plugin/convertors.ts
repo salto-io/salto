@@ -92,7 +92,6 @@ export const convertBlock = (
 ): ParsedHclBlock => {
   const [type, ...labels] = words.map(l => {
     if (isLexerToken(l)) return l.text
-    // (l.type === 'string' ? JSON.parse(l.text) : l.text)
     const exp = l as HclExpression
     if (exp.type === 'template' && exp.expressions.length === 1) {
       return exp.expressions[0].value

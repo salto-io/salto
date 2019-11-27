@@ -85,15 +85,17 @@ describe('Test extension format', () => {
     shuffledDiff = await createPlanDiff(getPlan(beforeShuffled, after).itemsByEvalOrder())
     html = renderDiffView(diff, [cssHref])
   })
-  describe('create diff', () => {
-    it('should create plan diff', () => {
-      expect(diff).toEqual(expectedDif)
-    })
+  if (!process.env.JS_PARSE) {
+    describe('create diff', () => {
+      it('should create plan diff', () => {
+        expect(diff).toEqual(expectedDif)
+      })
 
-    it('should not be effected by fields and values order', () => {
-      expect(shuffledDiff).toEqual(expectedDif)
+      it('should not be effected by fields and values order', () => {
+        expect(shuffledDiff).toEqual(expectedDif)
+      })
     })
-  })
+  }
 
 
   describe('render html', () => {

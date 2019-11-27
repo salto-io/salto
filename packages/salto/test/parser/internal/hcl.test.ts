@@ -7,6 +7,7 @@ import devaluate from './devaluate'
 import evaluate from '../../../src/parser/expressions'
 import { SourceRange } from '../../../src/parser/parse'
 
+const jsParseMode = process.env.JS_PARSE
 const expectSourceLocation = (
   { source }: { source: SourceRange},
   startLine: number,
@@ -188,8 +189,12 @@ describe('HCL Parser', () => {
       expect(errors[0].subject.filename).toBe('none')
     })
 
-    it.skip('contains the error summary', () => {
-      expect(errors[0].summary).toBe('Invalid block definition')
+    it('contains the error summary', () => {
+      if (jsParseMode) {
+        expect(errors[0].summary).toBe('Unexpected token: :thing')
+      } else {
+        expect(errors[0].summary).toBe('Invalid block definition')
+      }
     })
 
     it('contains the error detail', () => {
@@ -197,31 +202,33 @@ describe('HCL Parser', () => {
     })
   })
 
-  describe('traversal error', () => {
-    const blockDef = 'type sometype { a = { foo.bar = 5 } }'
-    let errors: HclParseError[]
+  if (!jsParseMode) {
+    describe('traversal error', () => {
+      const blockDef = 'type sometype { a = { foo.bar = 5 } }'
+      let errors: HclParseError[]
 
-    beforeAll(async () => {
-      ({ errors } = await HclParser.parse(Buffer.from(blockDef), 'none'))
-    })
+      beforeAll(async () => {
+        ({ errors } = await HclParser.parse(Buffer.from(blockDef), 'none'))
+      })
 
-    it.skip('is not empty', () => {
-      expect(errors.length).not.toEqual(0)
-    })
+      it('is not empty', () => {
+        expect(errors.length).not.toEqual(0)
+      })
 
-    it.skip('contains the error location', () => {
-      expect(errors[0].subject.start).toMatchObject({ line: 1, col: 23 })
-      expect(errors[0].subject.filename).toBe('none')
-    })
+      it('contains the error location', () => {
+        expect(errors[0].subject.start).toMatchObject({ line: 1, col: 23 })
+        expect(errors[0].subject.filename).toBe('none')
+      })
 
-    it.skip('contains the error summary', () => {
-      expect(errors[0].summary).toBe('Ambiguous attribute key')
-    })
+      it('contains the error summary', () => {
+        expect(errors[0].summary).toBe('Ambiguous attribute key')
+      })
 
-    it.skip('contains the error detail', () => {
-      expect(errors[0].detail).not.toBeFalsy()
+      it('contains the error detail', () => {
+        expect(errors[0].detail).not.toBeFalsy()
+      })
     })
-  })
+  }
 
   describe('HCL dump', () => {
     const body = {
@@ -270,11 +277,11 @@ describe('HCL Parser', () => {
     it('handles nested attributes', () => {
       expect(serialized).toMatch(/nested\s*=\s*{\s*val\s*=\s*"so deep"\s*}/m)
     })
-    it.skip('dumps parsable text', async () => {
+    it('dumps parsable text', async () => {
       const parsed = await HclParser.parse(Buffer.from(serialized), 'none')
       expect(parsed.errors.length).toEqual(0)
       // Filter out source ranges since they are only generated during parsing
-      const removeSrcFromBlock = (block: ParsedHclBlock): ParsedHclBlock =>
+      const removeSrcFromBlock = (block: Partial<ParsedHclBlock>): ParsedHclBlock =>
         _.mapValues(block, (val, key) => {
           if (key === 'attrs') {
             return _.mapValues(val as Record<string, HclAttribute>, v => evaluate(v.expressions[0]))

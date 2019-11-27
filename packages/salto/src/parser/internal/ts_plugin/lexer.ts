@@ -22,7 +22,7 @@ const lexer = moo.states({
   string: {
     reference: { match: /\$\{[ \t]*[\d\w.]+[ \t]*\}/, value: s => s.slice(2, -1).trim() },
     dq: { match: '"', pop: 1 },
-    content: { match: /.+?(?=\$\{|"|\n)/, lineBreaks: false },
+    content: { match: /[^\\](?=")|.+?[^\\](?=\$\{|")/, lineBreaks: false },
     invalidSytax: { match: /[^ ]+/, error: true },
   },
   multilineString: {

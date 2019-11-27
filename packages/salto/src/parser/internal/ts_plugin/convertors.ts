@@ -81,14 +81,8 @@ const convertBlockItems = (
 
 export const convertMain = (
   blockItems: HclExpression[]
-): ParsedHclBlock => ({
+): Pick<ParsedHclBlock, 'attrs' | 'blocks'> => ({
   ...convertBlockItems(blockItems),
-  type: 'main',
-  labels: [],
-  source: createSourceRange(
-      _.first(blockItems) as HclExpression,
-      _.last(blockItems) as HclExpression
-  ),
 })
 
 export const convertBlock = (

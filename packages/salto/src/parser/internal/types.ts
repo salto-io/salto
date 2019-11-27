@@ -48,7 +48,7 @@ export interface HclParseArgs {
 }
 
 export interface HclParseReturn {
-  body: ParsedHclBlock
+  body: Pick<ParsedHclBlock, 'attrs' | 'blocks'>
   errors: HclParseError[]
 }
 

@@ -17,14 +17,16 @@ describe('TEST', () => {
   const parseErrorBp = `${__dirname}/../../../test/salto/BP2/parse_error.bp`
   const validationErrorBp = `${__dirname}/../../../test/salto/BP2/error.bp`
 
-  it.skip('should diagnostics on parse errors', async () => {
+  it('should diagnostics on parse errors', async () => {
     const workspace = await EditorWorkspace.load(getConfig(baseBPDir, [parseErrorBp]), false)
     expect(workspace.elements).toBeDefined()
     expect(workspace.errors.hasErrors()).toBeTruthy()
     const diag = getDiagnostics(workspace)['../BP2/parse_error.bp'][0]
     expect(diag).toBeDefined()
     expect(diag.msg).toContain(
-      'Expected the start of an expression, but found an invalid expression token.'
+      process.env.JS_PARSE
+        ? 'Unexpected token: }'
+        : 'Expected the start of an expression, but found an invalid expression token.'
     )
     expect(diag.severity).toBe('Error')
   })

@@ -16,7 +16,7 @@
   "scripts": {
     "prepare": "yarn run build",
     "prepublishOnly": "yarn test",
-    "build": "yarn run lint && yarn run build-parser && yarn run build-ts && yarn run build-go",
+    "build": "yarn run lint  && yarn run build-ts && yarn run build-parser && yarn run build-go",
     "client": "src/cli/salto-cli.ts",
     "test": "jest --forceExit --detectOpenHandles",
     "clean": "rm -rf ./dist",

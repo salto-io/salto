@@ -1,5 +1,5 @@
 import _ from 'lodash'
-import { Value, isExpression } from 'adapter-api'
+import { Value } from 'adapter-api'
 import { HclDumpReturn, DumpedHclBlock } from '../types'
 
 const O_BLOCK = '{'
@@ -30,7 +30,10 @@ const seperateByCommas = (items: string[][]): string[][] => {
   ]
 }
 
-const dumpPrimitive = (prim: Value): string => JSON.stringify(prim)
+const dumpPrimitive = (prim: Value): string => {
+  if (_.isString(prim)) return `"${prim}"`
+  return `${prim}`
+}
 
 const dumpObject = (obj: Value): string[] => {
   // eslint-disable-next-line @typescript-eslint/no-use-before-define

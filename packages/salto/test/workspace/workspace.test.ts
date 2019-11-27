@@ -141,7 +141,7 @@ type salesforce_lead {
         expect(workspace.hasErrors()).toBeFalsy()
         expect(workspace.getWorkspaceErrors()).toHaveLength(0)
       })
-      it.skip('should contain parse errors', async () => {
+      it('should contain parse errors', async () => {
         const erroredWorkspace = new Workspace(
           config,
           parsedBPs.filter(bp => !bp.filename.startsWith('..') || bp.filename === '../error.bp'),
@@ -149,7 +149,9 @@ type salesforce_lead {
         const workspaceErrors = erroredWorkspace.getWorkspaceErrors()
         expect(erroredWorkspace.errors.hasErrors()).toBeTruthy()
         expect(erroredWorkspace.hasErrors()).toBeTruthy()
-        const parseError = /Either a quoted string block label or an opening brace/
+        const parseError = process.env.JS_PARSE
+          ? 'Unexpected token: }'
+          : /Either a quoted string block label or an opening brace/
         expect(erroredWorkspace.errors.strings()[0]).toMatch(parseError)
         expect(erroredWorkspace.errors.parse[0].detail).toMatch(parseError)
 

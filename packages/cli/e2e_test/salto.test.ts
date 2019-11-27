@@ -40,7 +40,6 @@ describe('commands e2e', () => {
   const addModelBP = `${__dirname}/../../e2e_test/BP/add.bp`
   const configFile = `${__dirname}/../../e2e_test/BP/salto.config/config.bp`
   const statePath = `${fetchOutputDir}/salto.config/state.bpc`
-  const tmpBP = `${fetchOutputDir}/tmp.bp`
   const client = new SalesforceClient({ credentials })
   const NEW_INSTANCE_BASE_ELEM_NAME = 'new_instance_name'
   const NEW_OBJECT_BASE_ELEM_NAME = 'new_object_name'
@@ -48,6 +47,8 @@ describe('commands e2e', () => {
   const NEW_INSTANCE_ELEM_NAME = NEW_INSTANCE_BASE_ELEM_NAME + randomString
   const NEW_INSTANCE_FULL_NAME = `NewInstanceName${randomString}`
   const NEW_OBJECT_ELEM_NAME = NEW_OBJECT_BASE_ELEM_NAME + randomString
+  const tmpBP = `${fetchOutputDir}/objects/custom/${NEW_OBJECT_ELEM_NAME}.bp`
+
   const NEW_OBJECT_API_NAME = `NewObjectName${randomString}${SALESFORCE_CUSTOM_SUFFIX}`
   const PROFILE = 'Profile'
 
@@ -169,7 +170,6 @@ describe('commands e2e', () => {
       await runEmptyPreview(lastPlan, fetchOutputDir)
     })
   })
-
   describe('Running deploy after deleting the object and the instance', () => {
     beforeAll(async () => {
       await rm(tmpBP)

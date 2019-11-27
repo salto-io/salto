@@ -311,10 +311,7 @@ export const describe = async (_searchWords: string[]):
     isGuess: false,
   })
 
-export const exportToCsv = async (_typeId: string, _outPath: string,
-  _workspace: Workspace, _fillConfig: (configType: ObjectType) => Promise<InstanceElement>):
-  Promise<void> => { }
-
+export const exportToCsv = async (): Promise<void> => { }
 export const importFromCsvFile = async (): Promise<void> => { }
 export const deleteFromCsvFile = async (): Promise<void> => { }
 

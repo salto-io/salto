@@ -22,6 +22,16 @@ export type FetchChange = {
   pendingChange?: DetailedChange
 }
 
+export const toFetchChange = (elem: Element): FetchChange => {
+  const change: DetailedChange = {
+    id: elem.elemID,
+    action: 'add',
+    data: { after: elem },
+  }
+  return { change, serviceChange: change }
+}
+
+
 export class StepEmitter extends EventEmitter<StepEvents> {}
 
 export type FetchProgressEvents = {
@@ -223,6 +233,32 @@ const fetchAndProcessMergeErrors = async (
   }
 }
 
+// Calculate the fetch changes - calculation should be done only if workspace has data,
+// o/w all service elements should be consider as "add" changes.
+const calcFetchChanges = (
+  serviceElements: ReadonlyArray<Element>,
+  mergedServiceElements: ReadonlyArray<Element>,
+  stateElements: ReadonlyArray<Element>,
+  workspaceElements: ReadonlyArray<Element>
+): Iterable<FetchChange> => {
+  const serviceChanges = getDetailedChanges(stateElements, mergedServiceElements)
+  log.debug('finished to calculate service-state changes')
+  const pendingChanges = getChangeMap(stateElements, workspaceElements)
+  log.debug('finished to calculate pending changes')
+  const workspaceToServiceChanges = getChangeMap(workspaceElements, mergedServiceElements)
+  log.debug('finished to calculate service-workspace changes')
+
+  const serviceElementsMap: Record<string, Element[]> = _.groupBy(
+    serviceElements,
+    se => se.elemID.getFullName()
+  )
+  return wu(serviceChanges)
+    .map(toFetchChanges(pendingChanges, workspaceToServiceChanges))
+    .flatten()
+    .map(toChangesWithPath(fullName => serviceElementsMap[fullName] || []))
+    .flatten()
+}
+
 export const fetchChanges = async (
   adapters: Record<string, Adapter>,
   workspaceElements: ReadonlyArray<Element>,
@@ -244,32 +280,22 @@ export const fetchChanges = async (
     getChangesEmitter.emit('completed')
     progressEmitter.emit('diffWillBeCalculated', calculateDiffEmitter)
   }
-  const mergedServiceElements = processErrorsResult.keptElements
-  const serviceChanges = getDetailedChanges(stateElements, mergedServiceElements)
-  log.debug('finished to calculate service-state changes')
-  const pendingChanges = getChangeMap(stateElements, workspaceElements)
-  log.debug('finished to calculate pending changes')
-  const workspaceToServiceChanges = getChangeMap(workspaceElements, mergedServiceElements)
-  log.debug('finished to calculate service-workspace changes')
 
-  const serviceElementsMap: Record<string, Element[]> = _.groupBy(
-    serviceElements,
-    se => se.elemID.getFullName()
-  )
+  const notConfig = (elem: Element): boolean => !elem.elemID.isConfig()
+  const isFirstFetch = workspaceElements.filter(notConfig)
+    .concat(stateElements.filter(notConfig)).length === 0
+  const changes = isFirstFetch
+    ? serviceElements.map(toFetchChange)
+    : calcFetchChanges(serviceElements, processErrorsResult.keptElements, stateElements,
+      workspaceElements)
 
-
-  const changes = wu(serviceChanges)
-    .map(toFetchChanges(pendingChanges, workspaceToServiceChanges))
-    .flatten()
-    .map(toChangesWithPath(fullName => serviceElementsMap[fullName] || []))
-    .flatten()
   log.debug('finished to calculate fetch changes')
   if (progressEmitter) {
     calculateDiffEmitter.emit('completed')
   }
   return {
     changes,
-    elements: mergedServiceElements,
+    elements: processErrorsResult.keptElements,
     mergeErrors: processErrorsResult.errorsWithDroppedElements,
   }
 }

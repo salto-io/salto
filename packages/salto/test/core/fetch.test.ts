@@ -3,6 +3,7 @@ import {
   PrimitiveType, PrimitiveTypes, ADAPTER, OBJECT_SERVICE_ID, InstanceElement,
 } from 'adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
+import * as plan from '../../src/core/plan'
 import {
   fetchChanges, FetchChange, generateServiceIdToStateElemId,
   FetchChangesResult, FetchProgressEvents,
@@ -44,6 +45,17 @@ describe('fetch', () => {
       ext: new Field(newTypeID, 'ext', BuiltinTypes.STRING),
     },
   })
+  const configID = new ElemID('conf')
+  const configType = new ObjectType({
+    elemID: configID,
+    fields: {
+      username: new Field(configID, 'username', BuiltinTypes.STRING),
+    },
+    annotationTypes: {},
+    annotations: {},
+  })
+  const config = new InstanceElement(ElemID.CONFIG_NAME, configType, { username: 'bla' })
+
   beforeEach(() => jest.spyOn(merger, 'mergeElements').mockRestore())
 
   describe('fetchChanges', () => {
@@ -467,6 +479,30 @@ describe('fetch', () => {
         expect(Object.entries(serviceIdToStateElemId)[0][0])
           .toEqual(`${ADAPTER},${instance.elemID.adapter},instance_name,${instance.elemID.getFullName()},${OBJECT_SERVICE_ID},${expectedObjectServiceId}`)
         expect(Object.entries(serviceIdToStateElemId)[0][1]).toEqual(instance.elemID)
+      })
+    })
+
+    describe('first fetch', () => {
+      let planSpy: jest.SpyInstance
+      beforeEach(async () => {
+        planSpy = jest.spyOn(plan, 'getPlan')
+        mockAdapters.dummy.fetch.mockResolvedValueOnce(
+          Promise.resolve([typeWithField])
+        )
+        const result = await fetchChanges(
+          mockAdapters as unknown as Record<string, Adapter>,
+          [configType, config],
+          [configType, config],
+        )
+        changes = [...result.changes]
+      })
+      it('should return the change with no conflict', () => {
+        expect(changes).toHaveLength(1)
+        expect(changes[0].pendingChange).toBeUndefined()
+      })
+
+      it('shoudldnt call plan', () => {
+        expect(planSpy).not.toHaveBeenCalled()
       })
     })
   })

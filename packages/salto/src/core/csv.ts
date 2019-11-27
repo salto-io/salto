@@ -35,4 +35,4 @@ export const dumpCsv = async (
 
 export const readCsvFromStream = (
   inputPath: string
-): AsyncIterable<Value[]> => fs.createReadStream(inputPath).pipe(csv())
+): AsyncIterable<Value> => fs.createReadStream(inputPath).pipe(csv())

@@ -4,6 +4,7 @@ import './wasm_exec'
 import { queue, AsyncQueue, ErrorCallback } from 'async'
 import { HclCallContext, HclParseReturn, DumpedHclBlock, HclDumpReturn, HclReturn } from './types'
 import { parse as tsParse } from './ts_plugin/parse'
+import { dump as tsDump } from './ts_plugin/dump'
 
 
 class HclParser {
@@ -113,7 +114,9 @@ class HclParser {
    * @returns The serialized data
    */
   public dump(body: DumpedHclBlock): Promise<HclDumpReturn> {
-    return this.callPlugin({ func: 'dump', args: { body } }) as Promise<HclDumpReturn>
+    return process.env.JS_PARSE
+      ? tsDump(body)
+      : this.callPlugin({ func: 'dump', args: { body } }) as Promise<HclDumpReturn>
   }
 }
 

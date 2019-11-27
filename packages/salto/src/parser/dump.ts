@@ -176,6 +176,8 @@ export const dump = async (
     ? wrapBlocks(elemListOrValues.map(dumpBlock))
     : dumpBlock(elemListOrValues)
 
-  body.blocks = body.blocks.map(markDumpedBlockQuotes)
+  if (!process.env.JS_PARSE) {
+    body.blocks = body.blocks.map(markDumpedBlockQuotes)
+  }
   return removeQuotes(await HclParser.dump(body))
 }

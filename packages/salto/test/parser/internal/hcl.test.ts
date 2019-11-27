@@ -253,7 +253,7 @@ describe('HCL Parser', () => {
     })
 
     it('dumps type and labels', () => {
-      expect(serialized).toMatch('type "lbl1" "lbl2" {')
+      expect(serialized).toMatch(/type "*lbl1"* "*lbl2"* {/)
     })
     it('dumps numbers', () => {
       expect(serialized).toMatch(/number\s*=\s*1/m)
@@ -265,7 +265,7 @@ describe('HCL Parser', () => {
       expect(serialized).toMatch(/lst\s*=\s*[\s*"val1",\s*"val2"\s*]/m)
     })
     it('dumps empty list', () => {
-      expect(serialized).toMatch(/empty\s*=\s*\[\]/m)
+      expect(serialized).toMatch(/empty\s*=\s*\[\s*\]/m)
     })
     it('handles nested attributes', () => {
       expect(serialized).toMatch(/nested\s*=\s*{\s*val\s*=\s*"so deep"\s*}/m)

@@ -1,6 +1,7 @@
 import path from 'path'
 import { parseAsync } from 'json2csv'
-import csvtojson from 'csvtojson'
+import fs from 'fs'
+import csv from 'csv-parser'
 import { Value } from 'adapter-api'
 import { mkdirp, writeFile, appendTextFile } from '../file'
 
@@ -32,6 +33,6 @@ export const dumpCsv = async (
   }
 }
 
-export const readCsv = async (inputPath: string): Promise<Value[]> => (
-  csvtojson().fromFile(inputPath)
-)
+export const readCsvFromStream = (
+  inputPath: string
+): AsyncIterable<Value[]> => fs.createReadStream(inputPath).pipe(csv())

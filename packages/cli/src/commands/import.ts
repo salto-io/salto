@@ -1,4 +1,4 @@
-import { importFromCsvFile, readCsv, file } from 'salto'
+import { importFromCsvFile, file } from 'salto'
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'
 import { getConfigFromUser } from '../callbacks'
@@ -17,14 +17,13 @@ export const command = (
       stderr.write(Prompts.COULD_NOT_FIND_FILE)
       return CliExitCode.AppError
     }
-    const records = await readCsv(inputPath)
     const { workspace, errored } = await loadWorkspace(workingDir, { stdout, stderr })
     if (errored) {
       return CliExitCode.AppError
     }
     await importFromCsvFile(
       typeName,
-      records,
+      inputPath,
       workspace,
       getConfigFromUser
     )

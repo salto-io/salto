@@ -1,6 +1,6 @@
 import path from 'path'
 import {
-  dumpCsv, readCsv, file,
+  dumpCsv, file, readAllCsvContents,
 } from 'salto'
 import { InstanceElement } from 'adapter-api'
 import { Spinner } from '../src/types'
@@ -48,7 +48,7 @@ describe('Data migration operations E2E', () => {
       await exportCommand(fetchOutputDir, sfLeadObjectName,
         exportOutputFullPath, cliOutput).execute()
       expect(await exists(exportOutputFullPath)).toBe(true)
-      const exportObjects = await readCsv(exportOutputFullPath)
+      const exportObjects = await readAllCsvContents(exportOutputFullPath)
       expect(exportObjects.length).toBeGreaterThan(0)
     })
 
@@ -65,11 +65,11 @@ describe('Data migration operations E2E', () => {
       // Replicate the file with the Ids of the created items
       await exportCommand(fetchOutputDir, sfLeadObjectName,
         exportOutputFullPath, cliOutput).execute()
-      const exportObjects = await readCsv(exportOutputFullPath)
+      const exportObjects = await readAllCsvContents(exportOutputFullPath)
       const clark = exportObjects.find(object => object.FirstName === 'Clark' && object.LastName === 'Kent')
       const bruce = exportObjects.find(object => object.FirstName === 'Bruce' && object.LastName === 'Wayne')
 
-      const deletionObjects = await readCsv(dataFilePath)
+      const deletionObjects = await readAllCsvContents(dataFilePath)
       deletionObjects[0].Id = clark.Id
       deletionObjects[1].Id = bruce.Id
 

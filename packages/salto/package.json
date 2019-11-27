@@ -37,7 +37,7 @@
     "adapter-api": "0.1.0",
     "async": "^3.1.0",
     "chalk": "^2.3.0",
-    "csvtojson": "^2.0.10",
+    "csv-parser": "^2.3.2",
     "fuse.js": "^3.4.5",
     "json2csv": "^4.5.2",
     "lodash": "^4.17.11",

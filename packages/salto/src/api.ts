@@ -1,5 +1,5 @@
 import wu from 'wu'
-import { ObjectType, InstanceElement, Element, Value, ActionName } from 'adapter-api'
+import { ObjectType, InstanceElement, Element, ActionName } from 'adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto/logging'
 import {
@@ -170,7 +170,7 @@ export const exportToCsv = async (
 
 export const importFromCsvFile = async (
   typeId: string,
-  records: Value[],
+  inputPath: string,
   workspace: Workspace,
   fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
 ): Promise<void> => {
@@ -182,12 +182,12 @@ export const importFromCsvFile = async (
     throw new Error(`Couldn't find the type you are looking for: ${typeId}. Have you run salto fetch yet?`)
   }
   const [adapters] = await initAdapters(workspace.elements, fillConfig)
-  await importInstancesOfType(type as ObjectType, records, adapters)
+  await importInstancesOfType(type as ObjectType, inputPath, adapters)
 }
 
 export const deleteFromCsvFile = async (
   typeId: string,
-  records: Value[],
+  inputPath: string,
   workspace: Workspace,
   fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
 ): Promise<void> => {
@@ -199,7 +199,7 @@ export const deleteFromCsvFile = async (
     throw new Error(`Couldn't find the type you are looking for: ${typeId}. Have you run salto fetch yet?`)
   }
   const [adapters] = await initAdapters(workspace.elements, fillConfig)
-  await deleteInstancesOfType(type as ObjectType, records, adapters)
+  await deleteInstancesOfType(type as ObjectType, inputPath, adapters)
 }
 
 export const init = async (workspaceName?: string): Promise<Workspace> => {

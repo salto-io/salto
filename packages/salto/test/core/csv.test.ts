@@ -1,5 +1,6 @@
 import path from 'path'
 import _ from 'lodash'
+import { readAllCsvContents } from '../common/helpers'
 import * as csv from '../../src/core/csv'
 import { rm, exists, readTextFile } from '../../src/file'
 
@@ -102,7 +103,8 @@ describe('CSV reader/writer', () => {
         Street: 'Wayne mansion',
         City: 'Gotham',
       }
-      const results = await csv.readCsv(path.join(csvDirectory, importFileName))
+
+      const results = await readAllCsvContents(path.join(csvDirectory, importFileName))
       expect(_.isEqual(results[0], clarkKent)).toBeTruthy()
       expect(_.isEqual(results[1], bruceWayne)).toBeTruthy()
     })

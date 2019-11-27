@@ -5,8 +5,11 @@ import { CliExitCode } from '../src/types'
 
 describe('cli', () => {
   let o: mocks.MockCliOutput
+  const cliLogger = logger('cli/cli')
 
   jest.setTimeout(200)
+  jest.spyOn(logger, 'end').mockResolvedValue(undefined)
+
   const noArgsTests = (args: string | string[]): void => {
     describe('when stderr is TTY with colors', () => {
       beforeEach(async () => {
@@ -143,6 +146,10 @@ describe('cli', () => {
     it('exits with code 2 (app error)', () => {
       expect(o.exitCode).toEqual(CliExitCode.AppError)
     })
+
+    it('calls logger.end', () => {
+      expect(logger.end).toHaveBeenCalled()
+    })
   })
 
   describe('when command execution throws error ', () => {
@@ -150,6 +157,7 @@ describe('cli', () => {
 
     beforeEach(async () => {
       deployCommand = jest.fn<Promise<CliExitCode>>().mockImplementation(() => { throw new Error('blabla') })
+      jest.spyOn(cliLogger, 'error').mockReturnValue(undefined)
       jest.spyOn(deployBuilder, 'build').mockResolvedValue({ execute: deployCommand })
       o = await mocks.cli({ args: 'deploy --force' })
     })
@@ -161,8 +169,15 @@ describe('cli', () => {
     it('exits with code 2 (app error)', () => {
       expect(o.exitCode).toEqual(CliExitCode.AppError)
     })
-  })
 
+    it('logs the error', () => {
+      expect(cliLogger.error).toHaveBeenCalled()
+    })
+
+    it('calls logger.end', () => {
+      expect(logger.end).toHaveBeenCalled()
+    })
+  })
 
   describe('when called with --verbose', () => {
     let configure: jest.SpyInstance

@@ -1,3 +1,5 @@
+import fs from 'fs'
+import { Writable, PassThrough } from 'stream'
 import winston from 'winston'
 import * as Transport from 'winston-transport'
 import chalk from 'chalk'
@@ -63,8 +65,11 @@ const fileTransport = (
     format: Format
     colorize: boolean | null
   }
-): Transport => new winston.transports.File({
-  filename,
+): Transport => new winston.transports.Stream({
+  stream: fs.createWriteStream(filename, {
+    flags: 'a',
+    emitClose: true,
+  } as {} /* emitClose is new in Node 12.10, was not added yet to @types/node */),
   format: format({ colorize: !!colorize, format: formatType }),
 })
 
@@ -88,6 +93,16 @@ export type Dependencies = {
   consoleStream: NodeJS.WritableStream
 }
 
+type WritableMaybeTty = NodeJS.WritableStream & streams.MaybeTty
+
+const wrapStream = (consoleStream: WritableMaybeTty): WritableMaybeTty => {
+  const wrapped = new PassThrough() as PassThrough & streams.MaybeTty
+  wrapped.pipe(consoleStream)
+  wrapped.isTTY = consoleStream.isTTY
+  wrapped.getColorDepth = consoleStream.getColorDepth?.bind(consoleStream)
+  return wrapped
+}
+
 const winstonLoggerOptions = (
   { consoleStream }: Dependencies,
   { filename, minLevel, format: formatType, colorize }: Config,
@@ -95,7 +110,13 @@ const winstonLoggerOptions = (
   levels: winstonLogLevels,
   transports: filename
     ? fileTransport({ filename, format: formatType, colorize })
-    : consoleTransport({ stream: consoleStream, format: formatType, colorize }),
+    : consoleTransport({
+      // This is needed because process.stdout does not emit the 'close' event until
+      // the process is closing.
+      stream: wrapStream(consoleStream),
+      format: formatType,
+      colorize,
+    }),
   exitOnError: false,
   level: minLevel,
 })
@@ -118,7 +139,19 @@ export const loggerRepo = (
   })
 
   return Object.assign(loggerMaker, {
-    end(): void { winstonLogger.end() },
+    async end(): Promise<void> {
+      const transportsEnded = Promise.all(winstonLogger.transports.map(t => new Promise(resolve => {
+        // Workaround for https://github.com/winstonjs/winston/issues/1504
+        // eslint-disable-next-line no-underscore-dangle, @typescript-eslint/no-explicit-any
+        const stream: Writable = (t as any)._stream || t
+
+        stream.once('finish', resolve)
+        stream.end()
+      })))
+      winstonLogger.end()
+      await transportsEnded
+    },
+
     configure(config: Config): void {
       winstonLogger.configure(winstonLoggerOptions(deps, config))
     },

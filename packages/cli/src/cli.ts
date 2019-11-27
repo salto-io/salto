@@ -60,5 +60,7 @@ export default async (
     errorStream.write(errorString)
     errorStream.write(EOL)
     return CliExitCode.AppError
+  } finally {
+    await logger.end()
   }
 }

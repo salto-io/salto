@@ -311,40 +311,9 @@ export const describe = async (_searchWords: string[]):
     isGuess: false,
   })
 
-export const exportToCsv = async (_typeId: string, _workspace: Workspace,
-  _fillConfig: (configType: ObjectType) => Promise<InstanceElement>):
-  Promise<AsyncIterable<InstanceElement[]>> => (
-  async function *mockIterator(): AsyncIterable<InstanceElement[]> {
-    const testType = new ObjectType({
-      elemID: new ElemID('salesforce', 'test'),
-    })
-    const values = [
-      {
-        Id: '1',
-        FirstName: 'Daile',
-        LastName: 'Limeburn',
-        Email: 'dlimeburn0@blogs.com',
-        Gender: 'Female',
-      }, {
-        Id: '2',
-        FirstName: 'Murial',
-        LastName: 'Morson',
-        Email: 'mmorson1@google.nl',
-        Gender: 'Female',
-      }, {
-        Id: '3',
-        FirstName: 'Minna',
-        LastName: 'Noe',
-        Email: 'mnoe2@wikimedia.org',
-        Gender: 'Female',
-      },
-    ]
-    yield values.map(value => new InstanceElement(
-      value.Id,
-      testType,
-      value
-    ))
-  }())
+export const exportToCsv = async (_typeId: string, _outPath: string,
+  _workspace: Workspace, _fillConfig: (configType: ObjectType) => Promise<InstanceElement>):
+  Promise<void> => { }
 
 export const importFromCsvFile = async (): Promise<void> => { }
 export const deleteFromCsvFile = async (): Promise<void> => { }

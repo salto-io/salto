@@ -299,27 +299,14 @@ describe('api functions', () => {
 
       describe('export', () => {
         it('should complete successfully', async () => {
-          const returnedIterator = await commands.exportToCsv(
+          await commands.exportToCsv(
             testType.elemID.getFullName(),
+            'test',
             ws,
             mockGetConfigFromUser
           )
           expect(mockStateGet).toHaveBeenCalled()
-          const iterator = returnedIterator[Symbol.asyncIterator]()
-          const firstBatch = async (): Promise<InstanceElement[]> => {
-            const { done, value } = await iterator.next()
-            if (done) {
-              return []
-            }
-            return value
-          }
-          const results = await firstBatch()
-          expect(results).toHaveLength(1)
-          expect(results[0].value.Id).toBe('1')
-          expect(results[0].value.FirstName).toBe('Daile')
-          expect(results[0].value.LastName).toBe('Limeburn')
-          expect(results[0].value.Email).toBe('dlimeburn0@blogs.com')
-          expect(results[0].value.Gender).toBe('Female')
+          expect(mockGetInstancesOfType).toHaveBeenCalled()
         })
       })
 

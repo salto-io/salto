@@ -171,21 +171,22 @@ export const convertString = (
   source: createSourceRange(oq, cq),
 })
 
-export const convertMultilineString = (str: LexerToken): HclExpression => {
-  const firstNewline = str.text.indexOf('\n')
-  const lastNewline = str.text.lastIndexOf('\n')
-  const content = str.text.slice(firstNewline + 1, lastNewline)
-  return {
-    type: 'template',
-    expressions: content.split('\n').map(line => ({
+export const convertMultilineString = (
+  mlStart: LexerToken,
+  contentTokens: LexerToken[],
+  mlEnd: LexerToken
+): HclExpression => ({
+  type: 'template',
+  expressions: contentTokens.map(t => (t.type === 'reference'
+    ? convertReference(t)
+    : {
       type: 'literal',
-      value: `${line}\n`,
+      value: t.text,
       expressions: [],
-      source: createSourceRange(str, str),
-    })),
-    source: createSourceRange(str, str),
-  }
-}
+      source: createSourceRange(t, t),
+    } as HclExpression)),
+  source: createSourceRange(mlStart, mlEnd),
+})
 
 export const convertBoolean = (bool: LexerToken): HclExpression => ({
   type: 'literal',

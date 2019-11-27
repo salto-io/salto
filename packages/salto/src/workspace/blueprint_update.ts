@@ -187,7 +187,7 @@ export const getChangesToUpdate = (
 ): DetailedChange[] => {
   const isNestedAddition = (dc: DetailedChange): boolean => (dc.path
     && dc.action === 'add'
-    && !dc.id.isTopLevel()
+    && dc.id.nestingLevel === 1
     && !existingFullNames
       .includes(
         dc.id.createTopLevelParentID().parent.getFullName()

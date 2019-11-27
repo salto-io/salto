@@ -327,7 +327,7 @@ describe('api functions', () => {
         it('should complete import successfully', async () => {
           await commands.importFromCsvFile(
             testType.elemID.getFullName(),
-            [],
+            'test',
             ws,
             mockGetConfigFromUser
           )
@@ -339,7 +339,7 @@ describe('api functions', () => {
         it('should complete delete successfully', async () => {
           await commands.deleteFromCsvFile(
             testType.elemID.getFullName(),
-            [],
+            'test',
             ws,
             mockGetConfigFromUser
           )

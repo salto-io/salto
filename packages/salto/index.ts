@@ -15,7 +15,7 @@ export namespace validator {
 }
 
 export { Plan, PlanItem, DetailedChange } from './src/core/plan'
-export { dumpCsv, readCsv } from './src/core/csv'
+export { dumpCsv, readCsvFromStream } from './src/core/csv'
 export { FetchChange, FetchProgressEvents, StepEmitter, MergeErrorWithElements as MergeError } from './src/core/fetch'
 export * from './src/api'
 export { FoundSearchResult, SearchResult } from './src/core/search'
@@ -29,5 +29,6 @@ export {
 export { Config, loadConfig } from './src/workspace/config'
 export { SourceMap, SourceRange, parseElemID } from './src/parser/parse'
 export { dump, dumpElemID } from './src/parser/dump'
+export { readAllCsvContents } from './test/common/helpers'
 
 export const file = f

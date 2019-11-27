@@ -1,4 +1,4 @@
-import { deleteFromCsvFile, readCsv, file } from 'salto'
+import { deleteFromCsvFile, file } from 'salto'
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'
 
@@ -18,14 +18,13 @@ export const command = (
       return CliExitCode.UserInputError
     }
 
-    const records = await readCsv(inputPath)
     const { workspace, errored } = await loadWorkspace(workingDir, { stdout, stderr })
     if (errored) {
       return CliExitCode.AppError
     }
     await deleteFromCsvFile(
       typeName,
-      records,
+      inputPath,
       workspace,
       getConfigFromUser
     )

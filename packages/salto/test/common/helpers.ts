@@ -1,6 +1,7 @@
 import {
-  isObjectType, Type, InstanceElement,
+  isObjectType, Type, InstanceElement, Value,
 } from 'adapter-api'
+import { readCsvFromStream } from '../../src/core/csv'
 
 /**
  * Compare two types and expect them to be the same.
@@ -50,4 +51,16 @@ export const expectInstancesToMatch = (
   expect(expected.elemID).toEqual(actual.elemID)
   expect(expected.value).toEqual(actual.value)
   expect(expected.type.elemID).toEqual(actual.type.elemID)
+}
+
+export const readAllCsvContents = async (
+  csvPath: string
+): Promise<Value[]> => {
+  const csvIterator = readCsvFromStream(csvPath)
+  const results: Value[] = []
+  // eslint-disable-next-line no-restricted-syntax
+  for await (const record of csvIterator) {
+    results.push(record)
+  }
+  return results
 }

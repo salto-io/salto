@@ -9,8 +9,9 @@
 
 # Pass your lexer object using the @lexer option:
 @lexer lexer 
-main -> _ (blockItem __:? {% d=> d[0] %}):* {% d=> _.flatten(d.filter(d => d)) %}
-block -> blockLabels "{" _ (blockItem __ {% id %}):* "}" {% d => converters.convertBlock(d[0], d[3], d[4]) %}
+
+main -> _nl (blockItem __nl:? {% d=> d[0] %}):* {% d=> _.flatten(d.filter(d => d)) %}
+block -> blockLabels "{" _nl (blockItem __nl {% id %}):* "}" {% d => convertors.convertBlock(d[0], d[3], d[4]) %}
 blockLabels -> %word __ (label __ {% d => d[0] %}):* {% d=> _.flatten([d[0], d[2]]) %}
 label -> 
 	  %word {% id %}
@@ -18,15 +19,15 @@ label ->
 blockItem -> 
 	  block {% id %}
 	| attr {% id %}
-attr -> (%word {% id %} | string {% id %}) _ "=" _ value {% d => converters.convertAttr(d[0], d[4]) %}
-array -> "[" _ arrayItems "]" {% d => converters.convertArray(d[0], d[2], d[3])%}
+attr -> (%word {% id %} | string {% id %}) _ "=" _ value {% d => convertors.convertAttr(d[0], d[4]) %}
+array -> "[" _nl arrayItems "]" {% d => convertors.convertArray(d[0], d[2], d[3])%}
 arrayItems ->
 	  null {% () => [] %}
-	| value _ ("," _ value _ {% d => d[2] %}):*  ( "," _ ):? {% d => _.flatten([d[0], d[2]]) %}
-object -> %oCurly _ objectItems "}" {% d => converters.convertObject(d[0], d[2], d[3]) %}
+	| value _nl ("," _nl value _nl {% d => d[2] %}):* {% d => _.flatten([d[0], d[2]]) %}
+object -> %oCurly _nl objectItems "}" {% d => convertors.convertObject(d[0], d[2], d[3]) %}
 objectItems ->
 	  null {% () => [] %}
-	| attr _ (",":? _ attr _ {% d=> d[2] %}):* ( "," _ ):? {% d => _.flatten([d[0], d[2]]) %}
+	| attr _nl (",":? _nl attr _nl {% d=> d[2] %}):* {% d => _.flatten([d[0], d[2]]) %}
 value -> 
 	  primitive {% id %}
 	| array {% id %}
@@ -39,7 +40,9 @@ primitive ->
 	| %word {% d => converters.convertReference(d[0]) %}
 	| multilineString {% id %}
 
-string -> "\"" (%content {% id %} |%reference {% id %}):* "\"" {% d => converters.convertString(d[0], d[1], d[2]) %}
-multilineString -> %mlStart (%content {% id %} | %reference {% id %}):* %mlEnd {% d => converters.convertMultilineString(d[0], d[1], d[2]) %}
-_ -> (%ws | %newline | %comment ):* {% () => null %}
-__ -> (%ws| %newline | %comment ):+ {% () => null %}
+string -> "\"" (%content {% id %} |%reference {% id %}):* "\"" {% d => convertors.convertString(d[0], d[1], d[2]) %}
+multilineString -> %mlStart (%content {% id %} | %reference {% id %}):* %mlEnd {% d => convertors.convertMultilineString(d[0], d[1], d[2]) %}
+_nl  -> (%ws | %newline | %comment ):* {% () => null %}
+__nl -> (%ws | %newline | %comment ):+ {% () => null %}
+_ -> (%ws | %comment ):* {% () => null %}
+__ -> (%ws | %comment ):+ {% () => null %}

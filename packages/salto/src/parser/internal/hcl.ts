@@ -101,8 +101,8 @@ class HclParser {
    * @returns body: The parsed HCL body
    *          errors: a list of errors encountered during parsing
    */
-  public async parse(src: Buffer, filename: string): Promise<HclParseReturn> {
-    return process.env.JS_PARSE
+  public async parse(src: Buffer, filename: string, forceJS = false): Promise<HclParseReturn> {
+    return process.env.JS_PARSE || forceJS
       ? tsParse(src, filename)
       : this.callPlugin({ func: 'parse', args: { src: src.toString(), filename } }) as Promise<HclParseReturn>
   }
@@ -113,8 +113,8 @@ class HclParser {
    * @param body The HCL data to dump
    * @returns The serialized data
    */
-  public dump(body: DumpedHclBlock): Promise<HclDumpReturn> {
-    return process.env.JS_PARSE
+  public dump(body: DumpedHclBlock, forceJS = false): Promise<HclDumpReturn> {
+    return process.env.JS_PARSE || forceJS
       ? tsDump(body)
       : this.callPlugin({ func: 'dump', args: { body } }) as Promise<HclDumpReturn>
   }

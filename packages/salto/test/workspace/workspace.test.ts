@@ -149,11 +149,9 @@ type salesforce_lead {
         const workspaceErrors = erroredWorkspace.getWorkspaceErrors()
         expect(erroredWorkspace.errors.hasErrors()).toBeTruthy()
         expect(erroredWorkspace.hasErrors()).toBeTruthy()
-        const parseError = process.env.JS_PARSE
-          ? 'Unexpected token: }'
-          : /Either a quoted string block label or an opening brace/
-        expect(erroredWorkspace.errors.strings()[0]).toMatch(parseError)
-        expect(erroredWorkspace.errors.parse[0].detail).toMatch(parseError)
+        const err = /Unexpected token: }|Either a quoted string block label or an opening brace/
+        expect(erroredWorkspace.errors.strings()[0]).toMatch(err)
+        expect(erroredWorkspace.errors.parse[0].detail).toMatch(err)
 
         expect(workspaceErrors).toHaveLength(1)
       })

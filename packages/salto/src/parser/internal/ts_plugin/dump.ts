@@ -30,10 +30,7 @@ const seperateByCommas = (items: string[][]): string[][] => {
   ]
 }
 
-const dumpPrimitive = (prim: Value): string => {
-  if (_.isString(prim)) return `"${prim}"`
-  return `${prim}`
-}
+const dumpPrimitive = (prim: Value): string => JSON.stringify(prim)
 
 const dumpObject = (obj: Value): string[] => {
   // eslint-disable-next-line @typescript-eslint/no-use-before-define

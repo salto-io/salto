@@ -157,7 +157,7 @@ export const convertString = (
     ? convertReference(t)
     : {
       type: 'literal',
-      value: t?.text ?? '',
+      value: t && t.text ? JSON.parse(`"${t.text}"`) : '',
       expressions: [],
       source: createSourceRange(t, t),
     })),
@@ -174,7 +174,7 @@ export const convertMultilineString = (
     ? convertReference(t)
     : {
       type: 'literal',
-      value: t.text,
+      value: JSON.parse(`"${t.text}"`),
       expressions: [],
       source: createSourceRange(t, t),
     } as HclExpression)),

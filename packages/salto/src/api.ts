@@ -10,13 +10,13 @@ import {
 } from './core/records'
 import initAdapters from './core/adapters/adapters'
 import {
-  getPlan, Plan, PlanItem, DetailedChange,
+  getPlan, Plan, PlanItem,
 } from './core/plan'
 import State from './state/state'
 import { findElement, SearchResult } from './core/search'
 import {
   fetchChanges, FetchChange, getDetailedChanges, createElemIdGetter,
-  MergeErrorWithElements, FatalFetchMergeError, FetchProgressEvents,
+  MergeErrorWithElements, FatalFetchMergeError, FetchProgressEvents, toAddFetchChange,
 } from './core/fetch'
 import { Workspace, CREDS_DIR } from './workspace/workspace'
 
@@ -100,12 +100,7 @@ export type fetchFunc = (
 export const fetch: fetchFunc = async (workspace, fillConfig, progressEmitter?) => {
   const configToChange = (config: InstanceElement): FetchChange => {
     config.path = [CREDS_DIR, config.elemID.adapter]
-    const change: DetailedChange = {
-      id: config.elemID,
-      action: 'add',
-      data: { after: config },
-    }
-    return { change, serviceChange: change }
+    return toAddFetchChange(config)
   }
   log.debug('fetch starting..')
 

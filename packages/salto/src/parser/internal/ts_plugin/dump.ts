@@ -22,13 +22,9 @@ const addTrailingComma = (lines: string[]): string[] => {
   ]
 }
 
-const seperateByCommas = (items: string[][]): string[][] => {
-  const lastItem = items.pop()
-  return [
-    ...items.map(itemLines => addTrailingComma(itemLines)),
-    lastItem || [],
-  ]
-}
+const seperateByCommas = (items: string[][]): string[][] => (
+  items.map(itemLines => addTrailingComma(itemLines))
+)
 
 const dumpPrimitive = (prim: Value): string => JSON.stringify(prim)
 

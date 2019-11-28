@@ -2,7 +2,6 @@ import wu from 'wu'
 import { ObjectType, InstanceElement, Element, ActionName } from 'adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto/logging'
-import fs from 'fs'
 import {
   deployActions, ItemStatus, DeployError,
 } from './core/core'
@@ -20,7 +19,6 @@ import {
   MergeErrorWithElements, FatalFetchMergeError, FetchProgressEvents,
 } from './core/fetch'
 import { Workspace, CREDS_DIR } from './workspace/workspace'
-import { serialize } from './serializer/elements'
 
 export { ItemStatus }
 
@@ -125,8 +123,6 @@ export const fetch: fetchFunc = async (workspace, fillConfig, progressEmitter?) 
     const { changes, elements, mergeErrors } = await fetchChanges(
       adapters, workspace.elements, stateElements, progressEmitter,
     )
-    const ser = serialize(elements)
-    fs.writeFileSync('sf_adapter_res.bpc', ser)
     log.debug(`${elements.length} elements were fetched [mergedErrors=${mergeErrors.length}]`)
     state.override(elements)
     await state.flush()

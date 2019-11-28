@@ -275,10 +275,11 @@ describe('HCL Parser', () => {
       expect(serialized).toMatch(/empty\s*=\s*\[\s*\]/m)
     })
     it('handles nested attributes', () => {
-      expect(serialized).toMatch(/nested\s*=\s*{\s*val\s*=\s*"so deep"\s*}/m)
+      expect(serialized).toMatch(/nested\s*=\s*{\s*val\s*=\s*"so deep",*\s*}/m)
     })
     it('dumps parsable text', async () => {
       const parsed = await HclParser.parse(Buffer.from(serialized), 'none')
+
       expect(parsed.errors.length).toEqual(0)
       // Filter out source ranges since they are only generated during parsing
       const removeSrcFromBlock = (block: Partial<ParsedHclBlock>): ParsedHclBlock =>

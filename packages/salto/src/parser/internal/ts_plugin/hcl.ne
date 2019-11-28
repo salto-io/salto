@@ -22,11 +22,11 @@ attr -> (%word {% id %} | string {% id %}) _ "=" _ value {% d => convertors.conv
 array -> "[" _ arrayItems "]" {% d => convertors.convertArray(d[0], d[2], d[3])%}
 arrayItems ->
 	  null {% () => [] %}
-	| value _ ("," _ value _ {% d => d[2] %}):* {% d => _.flatten([d[0], d[2]]) %}
+	| value _ ("," _ value _ {% d => d[2] %}):*  ( "," _ ):? {% d => _.flatten([d[0], d[2]]) %}
 object -> %oCurly _ objectItems "}" {% d => convertors.convertObject(d[0], d[2], d[3]) %}
 objectItems ->
 	  null {% () => [] %}
-	| attr _ (",":? _ attr _ {% d=> d[2] %}):* {% d => _.flatten([d[0], d[2]]) %}
+	| attr _ (",":? _ attr _ {% d=> d[2] %}):* ( "," _ ):? {% d => _.flatten([d[0], d[2]]) %}
 value -> 
 	  primitive {% id %}
 	| array {% id %}

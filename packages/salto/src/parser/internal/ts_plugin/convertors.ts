@@ -7,8 +7,7 @@ let currentFilename: string
 export interface NearleyError {
   token: {
     type: string
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    value: any
+    value: unknown
     text: string
     offset: number
     lineBreaks: number
@@ -22,8 +21,7 @@ type HCLToken = ParsedHclBlock | HclAttribute | HclExpression
 
 interface LexerToken {
   type: string
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  value: any
+  value: unknown
   text: string
   line: number
   lineBreaks: number
@@ -109,16 +107,11 @@ export const convertBlock = (
 export const convertArray = (
   ob: LexerToken, arrayItems:
     HclExpression[], cb: LexerToken
-): HclExpression => {
-  if (arrayItems === undefined) {
-    throw new Error(JSON.stringify(ob))
-  }
-  return {
-    type: 'list',
-    expressions: arrayItems,
-    source: createSourceRange(ob, cb),
-  }
-}
+): HclExpression => ({
+  type: 'list',
+  expressions: arrayItems,
+  source: createSourceRange(ob, cb),
+})
 
 export const convertObject = (
   ob: LexerToken,
@@ -174,7 +167,7 @@ export const convertMultilineString = (
     ? convertReference(t)
     : {
       type: 'literal',
-      value: JSON.parse(`"${t.text}"`),
+      value: t.text,
       expressions: [],
       source: createSourceRange(t, t),
     } as HclExpression)),

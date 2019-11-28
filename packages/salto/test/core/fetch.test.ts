@@ -501,7 +501,7 @@ describe('fetch', () => {
         expect(changes[0].pendingChange).toBeUndefined()
       })
 
-      it('shoudldnt call plan', () => {
+      it('shouldn\'t call plan', () => {
         expect(planSpy).not.toHaveBeenCalled()
       })
     })

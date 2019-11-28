@@ -22,7 +22,7 @@ export type FetchChange = {
   pendingChange?: DetailedChange
 }
 
-export const toFetchChange = (elem: Element): FetchChange => {
+export const toAddFetchChange = (elem: Element): FetchChange => {
   const change: DetailedChange = {
     id: elem.elemID,
     action: 'add',
@@ -285,7 +285,7 @@ export const fetchChanges = async (
   const isFirstFetch = workspaceElements.filter(notConfig)
     .concat(stateElements.filter(notConfig)).length === 0
   const changes = isFirstFetch
-    ? serviceElements.map(toFetchChange)
+    ? serviceElements.map(toAddFetchChange)
     : calcFetchChanges(serviceElements, processErrorsResult.keptElements, stateElements,
       workspaceElements)
 

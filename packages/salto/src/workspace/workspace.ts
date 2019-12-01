@@ -385,10 +385,9 @@ export class Workspace {
       ...parsed.map(bp => ({ [bp.filename]: bp }))
     )
     // remove empty blueprints
-    const emptyBPFiles: string[] = _(parsed)
+    const emptyBPFiles: string[] = parsed
       .filter(bp => _.isEmpty(bp.buffer.trim()))
       .map(bp => bp.filename)
-      .value()
     log.debug(`empty bp files to remove : ${emptyBPFiles.join(', ')}`)
     const newParsedMap = _.omit(parsedMap, emptyBPFiles)
     // Mark changed blueprints as dirty

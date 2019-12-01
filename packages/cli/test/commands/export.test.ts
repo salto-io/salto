@@ -1,4 +1,4 @@
-import { Workspace, exportToCsv, loadConfig } from 'salto'
+import { Workspace, exportToCsv, loadConfig, ExportResult } from 'salto'
 import Prompts from '../../src/prompts'
 import { MockWriteStream, getWorkspaceErrors } from '../mocks'
 import { command } from '../../src/commands/export'
@@ -44,5 +44,16 @@ describe('export command', () => {
     (Workspace.load as jest.Mock).mockResolvedValueOnce(Promise.resolve(erroredWorkspace))
     await command(workspaceDir, 'Test', outputPath, cliOutput).execute()
     expect(cliOutput.stderr.content).toContain('Error')
+  })
+
+  it('should fail if export operation failed', async () => {
+    const erroredExportResult = {
+      success: false,
+      Errors: [],
+    } as unknown as ExportResult
+    (exportToCsv as jest.Mock).mockResolvedValueOnce(Promise.resolve(erroredExportResult))
+    await command(workspaceDir, 'Test', outputPath, cliOutput).execute()
+    expect(Workspace.load).toHaveBeenCalledWith(loadConfig(workspaceDir))
+    expect(cliOutput.stderr.content).toContain(Prompts.OPERATION_FAILED)
   })
 })

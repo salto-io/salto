@@ -58,6 +58,7 @@ Be sure to go over the preview output when invoking the deploy command.`
   public static readonly IMPORT_FINISHED_SUCCESSFULLY = 'Finished importing records from CSV file.'
   public static readonly DELETE_FINISHED_SUCCESSFULLY = 'Finished deleting records read from CSV file.'
   public static readonly EXPORT_FINISHED_SUCCESSFULLY = 'Finished exporting records to CSV file.'
+  public static readonly OPERATION_FAILED = 'Operation failed.'
 
   public static initFailed(msg: string): string {
     return `Could not initiate workspace: ${msg}\n`

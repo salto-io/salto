@@ -1,4 +1,4 @@
-import { Workspace, loadConfig, file, deleteFromCsvFile } from 'salto'
+import { Workspace, loadConfig, file, deleteFromCsvFile, ModifyDataResult } from 'salto'
 import { MockWriteStream, getWorkspaceErrors } from '../mocks'
 import { command } from '../../src/commands/delete'
 import Prompts from '../../src/prompts'
@@ -53,5 +53,17 @@ describe('delete command', () => {
     await command(workspaceDir, 'mockName', 'mockPath', cliOutput).execute()
     expect(Workspace.load).toHaveBeenCalledWith(loadConfig(workspaceDir))
     expect(cliOutput.stderr.content).toContain('Error')
+  })
+
+  it('should fail if delete operation failed', async () => {
+    existsReturn = true
+    const erroredModifyDataResult = {
+      success: false,
+      Errors: [],
+    } as unknown as ModifyDataResult
+    (deleteFromCsvFile as jest.Mock).mockResolvedValueOnce(Promise.resolve(erroredModifyDataResult))
+    await command(workspaceDir, 'mockName', 'mockPath', cliOutput).execute()
+    expect(Workspace.load).toHaveBeenCalledWith(loadConfig(workspaceDir))
+    expect(cliOutput.stderr.content).toContain(Prompts.OPERATION_FAILED)
   })
 })

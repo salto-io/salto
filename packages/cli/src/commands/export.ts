@@ -28,6 +28,7 @@ CliCommand => ({
       stdout.write(Prompts.EXPORT_FINISHED_SUCCESSFULLY)
       return CliExitCode.Success
     }
+    stderr.write(Prompts.OPERATION_FAILED)
     return CliExitCode.AppError
   },
 })

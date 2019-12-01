@@ -1,4 +1,4 @@
-import { Workspace, loadConfig, file, importFromCsvFile } from 'salto'
+import { Workspace, loadConfig, file, importFromCsvFile, ModifyDataResult } from 'salto'
 import { MockWriteStream, getWorkspaceErrors } from '../mocks'
 import { command } from '../../src/commands/import'
 import Prompts from '../../src/prompts'
@@ -53,5 +53,17 @@ describe('import command', () => {
     await command(workspaceDir, '', '', cliOutput).execute()
     expect(Workspace.load).toHaveBeenCalledWith(loadConfig(workspaceDir))
     expect(cliOutput.stderr.content).toContain('Error')
+  })
+
+  it('should fail if import operation failed', async () => {
+    existsReturn = true
+    const erroredModifyDataResult = {
+      success: false,
+      Errors: [],
+    } as unknown as ModifyDataResult
+    (importFromCsvFile as jest.Mock).mockResolvedValueOnce(Promise.resolve(erroredModifyDataResult))
+    await command(workspaceDir, '', '', cliOutput).execute()
+    expect(Workspace.load).toHaveBeenCalledWith(loadConfig(workspaceDir))
+    expect(cliOutput.stderr.content).toContain(Prompts.OPERATION_FAILED)
   })
 })

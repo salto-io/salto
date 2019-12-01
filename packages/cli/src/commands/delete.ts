@@ -34,6 +34,7 @@ export const command = (
       stdout.write(Prompts.DELETE_FINISHED_SUCCESSFULLY)
       return CliExitCode.Success
     }
+    stderr.write(Prompts.OPERATION_FAILED)
     return CliExitCode.AppError
   },
 })

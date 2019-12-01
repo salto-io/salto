@@ -5,7 +5,7 @@ import {
   DescribeGlobalSObjectResult, DeployOptions, DeployResultLocator,
   DeployResult, QueryResult, BulkLoadOperation, BulkOptions, Batch,
   Record as SfRecord,
-  RecordResult,
+  RecordResult, RetrieveRequest, RetrieveResult, Callback, RetrieveResultLocator,
 } from 'jsforce'
 import { Value } from 'adapter-api'
 
@@ -24,6 +24,8 @@ export interface Metadata {
   update(
     type: string, updateMetadata: MetadataInfo | MetadataInfo[]
   ): Promise<SaveResult | SaveResult[]>
+  retrieve(request: RetrieveRequest,
+    callback?: Callback<RetrieveResult>): RetrieveResultLocator<RetrieveResult>
   deploy(
     zipInput: Stream | Buffer | string, options: DeployOptions
   ): DeployResultLocator<DeployResult>

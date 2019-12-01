@@ -3,7 +3,7 @@ import {
   Type, ObjectType, ElemID, InstanceElement, Field, Value, Element, Values, BuiltinTypes,
   isInstanceElement,
 } from 'adapter-api'
-import { MetadataInfo, PicklistEntry } from 'jsforce'
+import { MetadataInfo, PicklistEntry, RetrieveResult } from 'jsforce'
 import { collections } from '@salto/lowerdash'
 import * as constants from '../src/constants'
 import { ADMIN_PROFILE, PROFILE_METADATA_TYPE } from '../src/filters/field_permissions'
@@ -12,10 +12,12 @@ import {
   CustomObject, ProfileInfo, FieldPermissions, CustomField, FilterItem,
 } from '../src/client/types'
 import {
-  Types, sfCase, fromMetadataInfo, bpCase,
-} from '../src/transformer'
+  Types, sfCase, fromMetadataInfo, bpCase, metadataType, apiName,
+} from '../src/transformers/transformer'
 import realAdapter from './adapter'
 import { findElements } from '../test/utils'
+import { API_VERSION } from '../src/client/client'
+import { fromRetrieveResult, toMetadataPackageZip } from '../src/transformers/xml_transformer'
 
 const { makeArray } = collections.array
 const { FIELD_LEVEL_SECURITY_ANNOTATION } = constants
@@ -1531,6 +1533,183 @@ describe('Salesforce adapter E2E with real account', () => {
 
         const updatedRules = await getRulesFromClient()
         expect(updatedRules).toEqual(after.value)
+      })
+    })
+
+    describe('deploy retrieve manipulations', () => {
+      const retrieve = async (type: string): Promise<RetrieveResult> => {
+        const retrieveRequest = {
+          apiVersion: API_VERSION,
+          singlePackage: false,
+          unpackaged: [{ types: { name: type, members: '*' } }],
+        }
+        return client.retrieve(retrieveRequest)
+      }
+
+      const findInstance = async (instance: InstanceElement): Promise<MetadataInfo | undefined> => {
+        const type = metadataType(instance)
+        const retrieveResult = await retrieve(type)
+        const instanceInfos = (await fromRetrieveResult(retrieveResult, [type]))[type]
+        return instanceInfos.find(info => info.fullName === apiName(instance))
+      }
+
+      const removeIfAlreadyExists = async (instance: InstanceElement): Promise<void> => {
+        if (await findInstance(instance)) {
+          await client.deploy(await toMetadataPackageZip(apiName(instance),
+            metadataType(instance), instance.value, true) as Buffer)
+        }
+      }
+
+      const verifyCreateInstance = async (instance: InstanceElement): Promise<void> => {
+        await adapter.add(instance)
+        const instanceInfo = await findInstance(instance)
+        expect(instanceInfo).toBeDefined()
+        expect(_.get(instanceInfo, 'content').includes('Created')).toBeTruthy()
+      }
+
+      const verifyUpdateInstance = async (instance: InstanceElement): Promise<void> => {
+        const after = instance.clone()
+        after.value.content = after.value.content.replace('Created', 'Updated')
+        await adapter.update(instance, after, [])
+        const instanceInfo = await findInstance(instance)
+        expect(instanceInfo).toBeDefined()
+        expect(_.get(instanceInfo, 'content').includes('Updated')).toBeTruthy()
+      }
+
+      const verifyRemoveInstance = async (instance: InstanceElement): Promise<void> => {
+        await adapter.remove(instance)
+        const instanceInfo = await findInstance(instance)
+        expect(instanceInfo).toBeUndefined()
+      }
+
+      const createInstanceElement = (fullName: string, typeName: string, content: string):
+        InstanceElement => {
+        const objectType = new ObjectType({
+          elemID: new ElemID(constants.SALESFORCE, _.snakeCase(typeName)),
+          annotations: {
+            [constants.METADATA_TYPE]: typeName,
+          },
+        })
+        return new InstanceElement(
+          _.snakeCase(fullName),
+          objectType,
+          {
+            [constants.INSTANCE_FULL_NAME_FIELD]: fullName,
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            api_version: API_VERSION,
+            content,
+          }
+        )
+      }
+
+      describe('apex class manipulation', () => {
+        const apexClassInstance = createInstanceElement('MyApexClass', 'ApexClass',
+          'public class MyApexClass {\n    public void printLog() {\n        System.debug(\'Created\');\n    }\n}')
+
+        beforeAll(async () => {
+          await removeIfAlreadyExists(apexClassInstance)
+        })
+
+        describe('create apex class instance', () => {
+          it('should create apex class instance', async () => {
+            await verifyCreateInstance(apexClassInstance)
+          })
+        })
+
+        describe('update apex class instance', () => {
+          it('should update apex class instance', async () => {
+            await verifyUpdateInstance(apexClassInstance)
+          })
+        })
+
+        describe('remove apex class instance', () => {
+          it('should remove apex class instance', async () => {
+            await verifyRemoveInstance(apexClassInstance)
+          })
+        })
+      })
+
+      describe('apex trigger manipulation', () => {
+        const apexTriggerInstance = createInstanceElement('MyApexTrigger', 'ApexTrigger',
+          'trigger MyApexTrigger on Account (before insert) {\n    System.debug(\'Created\');\n}')
+
+        beforeAll(async () => {
+          await removeIfAlreadyExists(apexTriggerInstance)
+        })
+
+        describe('create apex trigger instance', () => {
+          it('should create apex trigger instance', async () => {
+            await verifyCreateInstance(apexTriggerInstance)
+          })
+        })
+
+        describe('update apex trigger instance', () => {
+          it('should update apex trigger instance', async () => {
+            await verifyUpdateInstance(apexTriggerInstance)
+          })
+        })
+
+        describe('remove apex trigger instance', () => {
+          it('should remove apex trigger instance', async () => {
+            await verifyRemoveInstance(apexTriggerInstance)
+          })
+        })
+      })
+
+      describe('apex page manipulation', () => {
+        const apexPageInstance = createInstanceElement('MyApexPage', 'ApexPage',
+          '<apex:page >Created by e2e test!</apex:page>')
+        apexPageInstance.value.label = 'MyApexPage'
+
+        beforeAll(async () => {
+          await removeIfAlreadyExists(apexPageInstance)
+        })
+
+        describe('create apex page instance', () => {
+          it('should create apex page instance', async () => {
+            await verifyCreateInstance(apexPageInstance)
+          })
+        })
+
+        describe('update apex page instance', () => {
+          it('should update apex page instance', async () => {
+            await verifyUpdateInstance(apexPageInstance)
+          })
+        })
+
+        describe('remove apex page instance', () => {
+          it('should remove apex page instance', async () => {
+            await verifyRemoveInstance(apexPageInstance)
+          })
+        })
+      })
+
+      describe('apex component manipulation', () => {
+        const apexComponentInstance = createInstanceElement('MyApexComponent', 'ApexComponent',
+          '<apex:component >Created by e2e test!</apex:component>')
+        apexComponentInstance.value.label = 'MyApexComponent'
+
+        beforeAll(async () => {
+          await removeIfAlreadyExists(apexComponentInstance)
+        })
+
+        describe('create apex component instance', () => {
+          it('should create apex component instance', async () => {
+            await verifyCreateInstance(apexComponentInstance)
+          })
+        })
+
+        describe('update apex component instance', () => {
+          it('should update apex component instance', async () => {
+            await verifyUpdateInstance(apexComponentInstance)
+          })
+        })
+
+        describe('remove apex component instance', () => {
+          it('should remove apex component instance', async () => {
+            await verifyRemoveInstance(apexComponentInstance)
+          })
+        })
       })
     })
   })

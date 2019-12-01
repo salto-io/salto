@@ -10,6 +10,7 @@ const mockJsforce: () => Connection = () => ({
     create: jest.fn().mockImplementation(() => Promise.resolve([])),
     delete: jest.fn().mockImplementation(() => Promise.resolve([])),
     update: jest.fn().mockImplementation(() => Promise.resolve([])),
+    retrieve: jest.fn().mockImplementation(() => ({ complete: () => ({ zipFile: 'UEsFBgAAAAAAAAAAAAAAAAAAAAAAAA==' }) })), // encoded empty zipFile
     deploy: jest.fn().mockImplementation(() => Promise.resolve({})),
   } as Metadata,
   soap: {

@@ -17,6 +17,7 @@ import { Types, sfCase } from '../src/transformer'
 import { PROFILE_METADATA_TYPE } from '../src/filters/field_permissions'
 import Connection from '../src/client/jsforce'
 import mockAdapter from './adapter'
+import { ASSIGNMENT_RULES_TYPE_ID } from '../src/filters/assignment_rules'
 
 const { makeArray } = collections.array
 
@@ -49,7 +50,7 @@ describe('SalesforceAdapter CRUD', () => {
       success,
     })
 
-  const deployTypeName = 'DeployType'
+  const deployTypeNames = ['AssignmentRules', 'UnsupportedType']
 
   let mockCreate: jest.Mock<unknown>
   let mockDelete: jest.Mock<unknown>
@@ -60,7 +61,7 @@ describe('SalesforceAdapter CRUD', () => {
     ({ connection, adapter } = mockAdapter({
       adapterParams: {
         filterCreators: [],
-        metadataToUpdateWithDeploy: [deployTypeName],
+        metadataToRetrieveAndDeploy: deployTypeNames,
       },
     }))
 
@@ -1537,33 +1538,56 @@ describe('SalesforceAdapter CRUD', () => {
     })
 
     describe('update with deploy', () => {
-      const deployTypeId = new ElemID(constants.SALESFORCE, 'deploy_type')
+      const deployTypeId = ASSIGNMENT_RULES_TYPE_ID
       const deployType = new ObjectType({
         elemID: deployTypeId,
         annotations: {
-          [constants.METADATA_TYPE]: 'DeployType',
+          [constants.METADATA_TYPE]: 'AssignmentRules',
         },
         fields: {
           dummy: new Field(deployTypeId, 'dummy', BuiltinTypes.STRING),
         },
       })
-      const before = new InstanceElement(
+      const origBefore = new InstanceElement(
         'deploy_inst',
         deployType,
         { dummy: 'before' },
       )
-      const after = new InstanceElement(
-        before.elemID.name,
-        before.type,
-        _.cloneDeep(before.value),
-      )
-      after.value.dummy = 'after'
+
+      let before: InstanceElement
+      let after: InstanceElement
+      beforeEach(() => {
+        before = _.cloneDeep(origBefore)
+        after = new InstanceElement(
+          before.elemID.name,
+          before.type,
+          _.cloneDeep(before.value),
+        )
+        after.value.dummy = 'after'
+      })
 
       describe('when the deploy call succeeds', () => {
         it('should update with deploy for specific types', async () => {
           await adapter.update(before, after, [])
           expect(mockDeploy).toHaveBeenCalled()
           expect(mockUpdate).not.toHaveBeenCalled()
+        })
+      })
+
+      describe('when the deploy call should not be triggered', () => {
+        it('should not update with deploy for unsupported types even if listed', async () => {
+          before.type.annotations[constants.METADATA_TYPE] = 'UnsupportedType'
+          after.type.annotations[constants.METADATA_TYPE] = 'UnsupportedType'
+          await adapter.update(before, after, [])
+          expect(mockDeploy).not.toHaveBeenCalled()
+          expect(mockUpdate).not.toHaveBeenCalled()
+        })
+        it('should not update with deploy not listed types', async () => {
+          before.type.annotations[constants.METADATA_TYPE] = 'NotListedType'
+          after.type.annotations[constants.METADATA_TYPE] = 'NotListedType'
+          await adapter.update(before, after, [])
+          expect(mockDeploy).not.toHaveBeenCalled()
+          expect(mockUpdate).toHaveBeenCalled()
         })
       })
 

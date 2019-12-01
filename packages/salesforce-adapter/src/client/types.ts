@@ -16,6 +16,11 @@ export class ProfileInfo implements MetadataInfo {
   ) {}
 }
 
+// https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_metadatawithcontent.htm
+export interface MetadataWithContent extends MetadataInfo {
+  fullName: string
+  content: string
+}
 
 class CustomPicklistValue implements MetadataInfo {
   readonly default: boolean

@@ -8,3 +8,5 @@ export const insecureRandomString = (
 ): string => Array(...Array(length))
   .map(() => alphabet.charAt(Math.floor(Math.random() * alphabet.length)))
   .join('')
+
+export const isEmptyString = (value: unknown): boolean => value === ''

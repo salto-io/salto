@@ -11,7 +11,7 @@ import {
   BuiltinTypes,
   isInstanceElement,
 } from 'adapter-api'
-import { PicklistEntry } from 'jsforce'
+import { FileProperties, PicklistEntry, RetrieveResult } from 'jsforce'
 import { collections } from '@salto/lowerdash'
 import * as constants from '../src/constants'
 import { PROFILE_METADATA_TYPE } from '../src/filters/field_permissions'
@@ -26,6 +26,8 @@ import {
 } from '../src/transformer'
 import realAdapter from './adapter'
 import { findElements } from '../test/utils'
+import { API_VERSION } from '../src/client/client'
+import { fromRetrieveResult, toMetadataPackageZip } from '../src/transformers/xml_transformer'
 
 const { makeArray } = collections.array
 const { FIELD_LEVEL_SECURITY_ANNOTATION } = constants
@@ -1416,6 +1418,148 @@ describe('Salesforce adapter E2E with real account', () => {
 
         const updatedRules = await getRulesFromClient()
         expect(updatedRules).toEqual(after.value)
+      })
+    })
+
+    describe('apex class manipulation', () => {
+      const APEX_CLASS_INSTANCE_FILE_NAME = 'classes/MyApexClass.cls'
+      const APEX_CLASS_INSTANCE_FULL_NAME = 'MyApexClass'
+      const APEX_CLASS_METADATA_TYPE = 'ApexClass'
+      const retrieveApexClass = async (): Promise<RetrieveResult> => {
+        const retrieveRequest = {
+          apiVersion: API_VERSION,
+          singlePackage: true,
+          specificFiles: APEX_CLASS_INSTANCE_FILE_NAME,
+          unpackaged: [{ types: { name: APEX_CLASS_METADATA_TYPE } }],
+        }
+        return client.retrieve(retrieveRequest)
+      }
+
+      const apexClassType = new ObjectType({
+        elemID: new ElemID(constants.SALESFORCE, 'apex_class'),
+        annotations: {
+          [constants.METADATA_TYPE]: APEX_CLASS_METADATA_TYPE,
+        },
+      })
+      const apexClassInstance = new InstanceElement(
+        'my_apex_class',
+        apexClassType,
+        {
+          [constants.INSTANCE_FULL_NAME_FIELD]: APEX_CLASS_INSTANCE_FULL_NAME,
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          api_version: API_VERSION,
+          content: 'public class MyApexClass {\n    public void printLog() {\n        System.debug(\'Created\');\n    }\n}',
+        }
+      )
+
+      beforeAll(async () => {
+        if ((await retrieveApexClass()).fileProperties) {
+          await client.deploy(await toMetadataPackageZip(apexClassInstance, true))
+        }
+      })
+
+      describe('create apex class instance', () => {
+        it('should create apex class instance', async () => {
+          await adapter.add(apexClassInstance)
+          const retrieveResult = await retrieveApexClass()
+          const [myApexClassInfo] = await fromRetrieveResult(retrieveResult,
+            [{ fileName: APEX_CLASS_INSTANCE_FILE_NAME,
+              fullName: APEX_CLASS_INSTANCE_FULL_NAME } as FileProperties])
+          expect(_.get(myApexClassInfo, 'content').includes('Created')).toBeTruthy()
+        })
+      })
+
+      describe('update apex class instance', () => {
+        it('should update apex class instance', async () => {
+          const after = apexClassInstance.clone()
+          after.value.content = after.value.content.replace('Created', 'Updated')
+          await adapter.update(apexClassInstance, after, [])
+          const retrieveResult = await retrieveApexClass()
+
+          const [myApexClassInfo] = await fromRetrieveResult(retrieveResult,
+            [{ fileName: APEX_CLASS_INSTANCE_FILE_NAME,
+              fullName: APEX_CLASS_INSTANCE_FULL_NAME } as FileProperties])
+          expect(_.get(myApexClassInfo, 'content').includes('Updated')).toBeTruthy()
+        })
+      })
+
+      describe('remove apex class instance', () => {
+        it('should remove apex class instance', async () => {
+          await adapter.remove(apexClassInstance)
+          const retrieveResult = await retrieveApexClass()
+          expect(retrieveResult.fileProperties).toBeUndefined()
+        })
+      })
+    })
+
+    describe('apex trigger manipulation', () => {
+      const APEX_TRIGGER_INSTANCE_FILE_NAME = 'triggers/MyApexTrigger.trigger'
+      const APEX_TRIGGER_INSTANCE_FULL_NAME = 'MyApexTrigger'
+      const APEX_TRIGGER_METADATA_TYPE = 'ApexTrigger'
+      const retrieveApexTrigger = async (): Promise<RetrieveResult> => {
+        const retrieveRequest = {
+          apiVersion: API_VERSION,
+          singlePackage: true,
+          specificFiles: APEX_TRIGGER_INSTANCE_FILE_NAME,
+          unpackaged: [{ types: { name: APEX_TRIGGER_METADATA_TYPE } }],
+        }
+        return client.retrieve(retrieveRequest)
+      }
+
+      const apexTriggerType = new ObjectType({
+        elemID: new ElemID(constants.SALESFORCE, 'apex_trigger'),
+        annotations: {
+          [constants.METADATA_TYPE]: APEX_TRIGGER_METADATA_TYPE,
+        },
+      })
+      const apexTriggerInstance = new InstanceElement(
+        'my_apex_trigger',
+        apexTriggerType,
+        {
+          [constants.INSTANCE_FULL_NAME_FIELD]: APEX_TRIGGER_INSTANCE_FULL_NAME,
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          api_version: API_VERSION,
+          content: 'trigger MyApexTrigger on Account (before insert) {\n    System.debug(\'Created\');\n}',
+        }
+      )
+
+      beforeAll(async () => {
+        if ((await retrieveApexTrigger()).fileProperties) {
+          await client.deploy(await toMetadataPackageZip(apexTriggerInstance, true))
+        }
+      })
+
+      describe('create apex trigger instance', () => {
+        it('should create apex trigger instance', async () => {
+          await adapter.add(apexTriggerInstance)
+          const retrieveResult = await retrieveApexTrigger()
+          const [myApexTriggerInfo] = await fromRetrieveResult(retrieveResult,
+            [{ fileName: APEX_TRIGGER_INSTANCE_FILE_NAME,
+              fullName: APEX_TRIGGER_INSTANCE_FULL_NAME } as FileProperties])
+          expect(_.get(myApexTriggerInfo, 'content').includes('Created')).toBeTruthy()
+        })
+      })
+
+      describe('update apex trigger instance', () => {
+        it('should update apex trigger instance', async () => {
+          const after = apexTriggerInstance.clone()
+          after.value.content = after.value.content.replace('Created', 'Updated')
+          await adapter.update(apexTriggerInstance, after, [])
+          const retrieveResult = await retrieveApexTrigger()
+
+          const [myApexTriggerInfo] = await fromRetrieveResult(retrieveResult,
+            [{ fileName: APEX_TRIGGER_INSTANCE_FILE_NAME,
+              fullName: APEX_TRIGGER_INSTANCE_FULL_NAME } as FileProperties])
+          expect(_.get(myApexTriggerInfo, 'content').includes('Updated')).toBeTruthy()
+        })
+      })
+
+      describe('remove apex trigger instance', () => {
+        it('should remove apex trigger instance', async () => {
+          await adapter.remove(apexTriggerInstance)
+          const retrieveResult = await retrieveApexTrigger()
+          expect(retrieveResult.fileProperties).toBeUndefined()
+        })
       })
     })
   })

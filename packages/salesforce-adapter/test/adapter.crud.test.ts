@@ -17,6 +17,7 @@ import { Types, sfCase } from '../src/transformer'
 import { PROFILE_METADATA_TYPE } from '../src/filters/field_permissions'
 import Connection from '../src/client/jsforce'
 import mockAdapter from './adapter'
+import { ASSIGNMENT_RULES_TYPE_ID } from '../src/filters/assignment_rules'
 
 const { makeArray } = collections.array
 
@@ -60,7 +61,7 @@ describe('SalesforceAdapter CRUD', () => {
     ({ connection, adapter } = mockAdapter({
       adapterParams: {
         filterCreators: [],
-        metadataToUpdateWithDeploy: [deployTypeName],
+        metadataToModifyWithDeploy: [deployTypeName],
       },
     }))
 
@@ -1537,7 +1538,7 @@ describe('SalesforceAdapter CRUD', () => {
     })
 
     describe('update with deploy', () => {
-      const deployTypeId = new ElemID(constants.SALESFORCE, 'deploy_type')
+      const deployTypeId = ASSIGNMENT_RULES_TYPE_ID
       const deployType = new ObjectType({
         elemID: deployTypeId,
         annotations: {

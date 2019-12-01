@@ -2,8 +2,6 @@ import _ from 'lodash'
 import {
   ValueTypeField, Field, MetadataInfo, DefaultValueWithType, QueryResult, Record as SfRecord,
 } from 'jsforce'
-import JSZip from 'jszip'
-
 import {
   Type, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values, Value, Field as TypeField,
   BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter,
@@ -11,7 +9,6 @@ import {
 } from 'adapter-api'
 import { collections } from '@salto/lowerdash'
 import { CustomObject, CustomField, ValueSettings } from './client/types'
-import { API_VERSION, METADATA_NAMESPACE } from './client/client'
 import {
   API_NAME, CUSTOM_OBJECT, LABEL, SALESFORCE, FORMULA,
   FORMULA_TYPE_PREFIX, FIELD_TYPE_NAMES, FIELD_TYPE_API_NAMES, METADATA_OBJECT_NAME_FIELD,
@@ -765,43 +762,6 @@ export const toMetadataInfo = (fullName: string, values: Values):
     fullName,
     ...mapKeysRecursive(values, name => sfCase(name, false, false)),
   })
-
-const toMetadataXml = (name: string, val: Value, inner = false): string => {
-  if (_.isArray(val)) {
-    return val.map(v => toMetadataXml(name, v, true)).join('')
-  }
-  const innerXml = _.isObject(val)
-    ? _(val)
-      .entries()
-      .filter(([k]) => inner || k !== 'fullName')
-      .map(([k, v]) => toMetadataXml(k, v, true))
-      .value()
-      .join('')
-    : val
-  const openName = inner ? name : `${name} xmlns="${METADATA_NAMESPACE}"`
-  return `<${openName}>${innerXml}</${name}>`
-}
-
-export const toMetadataPackageZip = (instance: InstanceElement): Promise<Buffer> => {
-  const instanceName = apiName(instance)
-  const typeName = metadataType(instance)
-
-  const zip = new JSZip()
-  // Add package "manifest" that specifies what is contained in the rest of the zip
-  zip.file(
-    'default/package.xml',
-    toMetadataXml('Package', {
-      types: { members: instanceName, name: typeName },
-      version: API_VERSION,
-    }),
-  )
-  // Add the instance
-  zip.file(
-    `default/${_.camelCase(typeName)}/${instanceName}.${_.camelCase(typeName)}`,
-    toMetadataXml(typeName, toMetadataInfo(instanceName, instance.value)),
-  )
-  return zip.generateAsync({ type: 'nodebuffer' })
-}
 
 export const toInstanceElements = (type: ObjectType, queryResult: QueryResult<Value>):
   InstanceElement[] => {

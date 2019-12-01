@@ -9,14 +9,15 @@ import {
 import _ from 'lodash'
 import { logger } from '@salto/logging'
 import { decorators, collections } from '@salto/lowerdash'
-import SalesforceClient, { Credentials } from './client/client'
+import SalesforceClient, { API_VERSION, Credentials } from './client/client'
 import * as constants from './constants'
 import {
   toCustomField, toCustomObject, apiName, sfCase, fieldFullName, Types,
   getSObjectFieldElement, toMetadataInfo, createInstanceElement,
-  metadataType, toMetadataPackageZip, toInstanceElements, createMetadataTypeElements,
+  metadataType, toInstanceElements, createMetadataTypeElements,
   instanceElementstoRecords, elemIDstoRecords, getCompoundChildFields,
 } from './transformer'
+import { fromRetrieveResult, toMetadataPackageZip } from './transformers/xml_transformer'
 import layoutFilter from './filters/layouts'
 import fieldPermissionsFilter from './filters/field_permissions'
 import validationRulesFilter from './filters/validation_rules'
@@ -105,8 +106,11 @@ export interface SalesforceAdapterParams {
   // types from the API
   metadataTypeBlacklist?: string[]
 
-  // Metadata types that we have to update using the deploy API endpoint
-  metadataToUpdateWithDeploy?: string[]
+  // Metadata types that we have to fetch using the retrieve API endpoint
+  metadataToFetchWithRetrieve?: string[]
+
+  // Metadata types that we add update or remove them using the deploy API endpoint
+  metadataToModifyWithDeploy?: string[]
 
   // Filters to deploy to all adapter operations
   filterCreators?: FilterCreator[]
@@ -132,14 +136,13 @@ const logDuration = (message?: string): decorators.InstanceMethodDecorator =>
 
 export default class SalesforceAdapter {
   private metadataTypeBlacklist: string[]
-  private metadataToUpdateWithDeploy: string[]
+  private metadataToFetchWithRetrieve: string[]
+  private metadataToModifyWithDeploy: string[]
   private filterCreators: FilterCreator[]
 
   public constructor({
     metadataTypeBlacklist = [
       'ReportType', // See SALTO-76
-      'ApexClass', 'ApexTrigger', // For some reason we cannot access this from the metadata API
-      // See also SALTO-168.
       'InstalledPackage', // Instances of this don't actually have an ID and they contain duplicates
       'CustomObject', 'CustomField', // We have special treatment for those type
       'Settings',
@@ -147,7 +150,13 @@ export default class SalesforceAdapter {
       // readMetadata fails on those and pass on the parents (AssignmentRules and EscalationRules)
       'AssignmentRule', 'EscalationRule',
     ],
-    metadataToUpdateWithDeploy = [
+    metadataToFetchWithRetrieve = [
+      'ApexClass', // readMetadata is not supported for instances of that type
+      'ApexTrigger', // readMetadata is not supported for instances of that type
+    ],
+    metadataToModifyWithDeploy = [
+      'ApexClass',
+      'ApexTrigger',
       'AssignmentRules',
     ],
     filterCreators = [
@@ -174,7 +183,8 @@ export default class SalesforceAdapter {
     getElemIdFunc,
   }: SalesforceAdapterParams) {
     this.metadataTypeBlacklist = metadataTypeBlacklist
-    this.metadataToUpdateWithDeploy = metadataToUpdateWithDeploy
+    this.metadataToFetchWithRetrieve = metadataToFetchWithRetrieve
+    this.metadataToModifyWithDeploy = metadataToModifyWithDeploy
     this.filterCreators = filterCreators
     this.client = client
     if (getElemIdFunc) {
@@ -333,11 +343,13 @@ export default class SalesforceAdapter {
     }
 
     const post = element.clone()
+    const type = metadataType(post)
     addInstanceDefaults(post)
-    await this.client.create(
-      metadataType(post),
-      toMetadataInfo(apiName(post), post.value)
-    )
+    if (this.metadataToModifyWithDeploy.includes(type)) {
+      await this.client.deploy(await toMetadataPackageZip(post))
+    } else {
+      await this.client.create(type, toMetadataInfo(apiName(post), post.value))
+    }
     return post
   }
 
@@ -347,7 +359,12 @@ export default class SalesforceAdapter {
    */
   @logDuration()
   public async remove(element: Element): Promise<void> {
-    await this.client.delete(metadataType(element), apiName(element))
+    const type = metadataType(element)
+    if (isInstanceElement(element) && this.metadataToModifyWithDeploy.includes(type)) {
+      await this.client.deploy(await toMetadataPackageZip(element, true))
+    } else {
+      await this.client.delete(type, apiName(element))
+    }
     await this.runFiltersOnRemove(element)
   }
 
@@ -452,7 +469,7 @@ export default class SalesforceAdapter {
     validateApiName(prevInstance, newInstance)
 
     const typeName = metadataType(newInstance)
-    if (this.metadataToUpdateWithDeploy.includes(typeName)) {
+    if (this.metadataToModifyWithDeploy.includes(typeName)) {
       await this.client.deploy(await toMetadataPackageZip(newInstance))
     } else {
       await this.client.update(typeName, toMetadataInfo(
@@ -638,6 +655,19 @@ export default class SalesforceAdapter {
     return [element, customPart]
   }
 
+  private async retrieveMetadata(type: string, fileProperties: FileProperties[]):
+    Promise<MetadataInfo[]> {
+    const retrieveRequest = {
+      apiVersion: API_VERSION,
+      singlePackage: true,
+      specificFiles: fileProperties.map(obj => obj.fileName),
+      unpackaged: [{ types: { name: type } }],
+    }
+
+    const retrieveResult = await this.client.retrieve(retrieveRequest)
+    return fromRetrieveResult(retrieveResult, fileProperties)
+  }
+
   /**
    * List all the instances of specific metadataType
    * @param type the metadata type
@@ -653,6 +683,9 @@ export default class SalesforceAdapter {
       return obj.fullName.startsWith(namePrefix) ? obj.fullName : `${namePrefix}${obj.fullName}`
     }
 
+    if (this.metadataToFetchWithRetrieve.includes(type)) {
+      return this.retrieveMetadata(type, objs)
+    }
     return this.client.readMetadata(type, objs.map(getFullName))
   }
 

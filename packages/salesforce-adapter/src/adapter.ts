@@ -9,14 +9,15 @@ import {
 import _ from 'lodash'
 import { logger } from '@salto/logging'
 import { decorators, collections } from '@salto/lowerdash'
-import SalesforceClient, { Credentials } from './client/client'
+import SalesforceClient, { API_VERSION, Credentials } from './client/client'
 import * as constants from './constants'
 import {
   toCustomField, toCustomObject, apiName, sfCase, fieldFullName, Types,
   getSObjectFieldElement, toMetadataInfo, createInstanceElement,
-  metadataType, toMetadataPackageZip, toInstanceElements, createMetadataTypeElements,
+  metadataType, toInstanceElements, createMetadataTypeElements,
   instanceElementstoRecords, elemIDstoRecords, getCompoundChildFields,
 } from './transformer'
+import { fromRetrieveResult, toMetadataPackageZip } from './transformers/xml_transformer'
 import layoutFilter from './filters/layouts'
 import fieldPermissionsFilter from './filters/field_permissions'
 import validationRulesFilter from './filters/validation_rules'
@@ -106,8 +107,9 @@ export interface SalesforceAdapterParams {
   // types from the API
   metadataTypeBlacklist?: string[]
 
-  // Metadata types that we have to update using the deploy API endpoint
-  metadataToUpdateWithDeploy?: string[]
+  // Metadata types that we have to fetch using the retrieve API endpoint and add update or remove
+  // using the deploy API endpoint
+  metadataToRetrieveAndDeploy?: string[]
 
   // Filters to deploy to all adapter operations
   filterCreators?: FilterCreator[]
@@ -130,14 +132,12 @@ const logDuration = (message?: string): decorators.InstanceMethodDecorator =>
 
 export default class SalesforceAdapter {
   private metadataTypeBlacklist: string[]
-  private metadataToUpdateWithDeploy: string[]
+  private metadataToRetrieveAndDeploy: string[]
   private filterCreators: FilterCreator[]
 
   public constructor({
     metadataTypeBlacklist = [
       'ReportType', // See SALTO-76
-      'ApexClass', 'ApexTrigger', // For some reason we cannot access this from the metadata API
-      // See also SALTO-168.
       'InstalledPackage', // Instances of this don't actually have an ID and they contain duplicates
       'CustomObject', 'CustomField', // We have special treatment for those type
       'Settings',
@@ -145,7 +145,11 @@ export default class SalesforceAdapter {
       // readMetadata fails on those and pass on the parents (AssignmentRules and EscalationRules)
       'AssignmentRule', 'EscalationRule',
     ],
-    metadataToUpdateWithDeploy = [
+    metadataToRetrieveAndDeploy = [
+      'ApexClass', // readMetadata is not supported for that type & contains encoded zip content
+      'ApexTrigger', // readMetadata is not supported for that type & contains encoded zip content
+      'ApexPage', // contains encoded zip content
+      'ApexComponent', // contains encoded zip content
       'AssignmentRules',
     ],
     filterCreators = [
@@ -173,7 +177,7 @@ export default class SalesforceAdapter {
     getElemIdFunc,
   }: SalesforceAdapterParams) {
     this.metadataTypeBlacklist = metadataTypeBlacklist
-    this.metadataToUpdateWithDeploy = metadataToUpdateWithDeploy
+    this.metadataToRetrieveAndDeploy = metadataToRetrieveAndDeploy
     this.filterCreators = filterCreators
     this.client = client
     if (getElemIdFunc) {
@@ -332,12 +336,24 @@ export default class SalesforceAdapter {
     }
 
     const post = element.clone()
+    const type = metadataType(post)
     addInstanceDefaults(post)
-    await this.client.create(
-      metadataType(post),
-      toMetadataInfo(apiName(post), post.value)
-    )
+    if (this.metadataToRetrieveAndDeploy.includes(type)) {
+      await this.deployInstance(post)
+    } else {
+      await this.client.create(type, toMetadataInfo(apiName(post), post.value))
+    }
     return post
+  }
+
+  private async deployInstance(instance: InstanceElement, deletion = false): Promise<void> {
+    const zip = await toMetadataPackageZip(apiName(instance), metadataType(instance),
+      instance.value, deletion)
+    if (zip) {
+      await this.client.deploy(zip)
+    } else {
+      log.warn('Skipped deploying instance %s of type %s', apiName(instance), metadataType(instance))
+    }
   }
 
   /**
@@ -346,7 +362,12 @@ export default class SalesforceAdapter {
    */
   @logDuration()
   public async remove(element: Element): Promise<void> {
-    await this.client.delete(metadataType(element), apiName(element))
+    const type = metadataType(element)
+    if (isInstanceElement(element) && this.metadataToRetrieveAndDeploy.includes(type)) {
+      await this.deployInstance(element, true)
+    } else {
+      await this.client.delete(type, apiName(element))
+    }
     await this.runFiltersOnRemove(element)
   }
 
@@ -451,8 +472,8 @@ export default class SalesforceAdapter {
     validateApiName(prevInstance, newInstance)
 
     const typeName = metadataType(newInstance)
-    if (this.metadataToUpdateWithDeploy.includes(typeName)) {
-      await this.client.deploy(await toMetadataPackageZip(newInstance))
+    if (this.metadataToRetrieveAndDeploy.includes(typeName)) {
+      await this.deployInstance(newInstance)
     } else {
       await this.client.update(typeName, toMetadataInfo(
         apiName(newInstance),
@@ -527,24 +548,56 @@ export default class SalesforceAdapter {
     return createMetadataTypeElements(objectName, fields, knownTypes, baseTypeNames)
   }
 
+  // Todo (SALTO-281) Currently we retrieve only instances that are not part of an Application.
+  //   If we want them to be returned we should state their names explicitly in the members section:
+  //  (await this.client.listMetadataObjects(type)).map(file => file.fullName)
+  private async retrieveMetadata(metadataTypes: string[]): Promise<Record<string, MetadataInfo[]>> {
+    const retrieveRequest = {
+      apiVersion: API_VERSION,
+      singlePackage: false,
+      unpackaged: { types: metadataTypes.map(type => ({ name: type, members: '*' })) },
+    }
+    const retrieveResult = await this.client.retrieve(retrieveRequest)
+    return fromRetrieveResult(retrieveResult, metadataTypes)
+  }
+
   @logDuration('fetching instances')
   private async fetchMetadataInstances(typeNames: Promise<string[]>, types: Promise<Type[]>):
     Promise<InstanceElement[]> {
+    type TypeAndInstances = { type: ObjectType; instanceInfos: MetadataInfo[] }
+    const readInstances = async (metadataTypesToRead: ObjectType[]):
+      Promise<TypeAndInstances[]> =>
+      Promise.all(metadataTypesToRead.map(async type =>
+        ({ type, instanceInfos: await this.listMetadataInstances(metadataType(type)) })))
+
+    const retrieveInstances = async (metadataTypesToRetrieve: ObjectType[]):
+      Promise<TypeAndInstances[]> => {
+      const nameToType: Record<string, ObjectType> = _(metadataTypesToRetrieve)
+        .map(t => [metadataType(t), t])
+        .fromPairs()
+        .value()
+      const typeNameToInstanceInfos = await this.retrieveMetadata(Object.keys(nameToType))
+      return Object.entries(typeNameToInstanceInfos)
+        .map(([typeName, instanceInfos]) => ({ type: nameToType[typeName], instanceInfos }))
+    }
+
     const topLevelTypeNames = await typeNames
-    const instances = await Promise.all((await types)
+    const topLevelTypes = (await types)
       .filter(isObjectType)
-      .filter(t => topLevelTypeNames.includes(sfCase(t.elemID.name)))
-      .map(t => this.createInstanceElements(t)))
-    return _.flatten(instances)
-  }
+      .filter(t => topLevelTypeNames.includes(metadataType(t)))
 
+    const [metadataTypesToRetrieve, metadataTypesToRead] = _.partition(topLevelTypes,
+      t => this.metadataToRetrieveAndDeploy.includes(sfCase(t.elemID.name)))
 
-  private async createInstanceElements(type: ObjectType): Promise<InstanceElement[]> {
-    const typeName = sfCase(type.elemID.name)
-    const instances = await this.listMetadataInstances(typeName)
-    return instances
-      .filter(i => i.fullName !== undefined)
-      .map(i => createInstanceElement(i, type))
+    const typesAndInstances = _.flatten(await Promise.all(
+      [retrieveInstances(metadataTypesToRetrieve), readInstances(metadataTypesToRead)]
+    ))
+    return _(typesAndInstances)
+      .map(typeAndInstances => typeAndInstances.instanceInfos
+        .filter(instanceInfo => instanceInfo.fullName !== undefined)
+        .map(instanceInfo => createInstanceElement(instanceInfo, typeAndInstances.type)))
+      .flatten()
+      .value()
   }
 
 

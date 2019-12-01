@@ -2,20 +2,10 @@ import _ from 'lodash'
 import requestretry, { RequestRetryOptions, RetryStrategies } from 'requestretry'
 import { collections, decorators } from '@salto/lowerdash'
 import {
-  Connection as RealConnection,
-  MetadataObject,
-  DescribeGlobalSObjectResult,
-  FileProperties,
-  MetadataInfo,
-  SaveResult,
-  ValueTypeField,
-  DescribeSObjectResult,
-  QueryResult,
-  DeployResult,
-  BatchResultInfo,
-  Record as SfRecord,
-  RecordResult,
-  BulkLoadOperation,
+  Connection as RealConnection, MetadataObject, DescribeGlobalSObjectResult, FileProperties,
+  MetadataInfo, SaveResult, ValueTypeField, DescribeSObjectResult, QueryResult, DeployResult,
+  BatchResultInfo, Record as SfRecord, RecordResult, BulkLoadOperation, RetrieveRequest,
+  RetrieveResult,
 } from 'jsforce'
 import { Value } from 'adapter-api'
 import { logger } from '@salto/logging'
@@ -311,6 +301,12 @@ export default class SalesforceClient {
     log.debug('updated %o of type %s [result=%o]', makeArray(metadata).map(f => f.fullName),
       type, result)
     return result
+  }
+
+  @SalesforceClient.logDecorator
+  @SalesforceClient.requiresLogin
+  public async retrieve(retrieveRequest: RetrieveRequest): Promise<RetrieveResult> {
+    return this.conn.metadata.retrieve(retrieveRequest).complete()
   }
 
   /**

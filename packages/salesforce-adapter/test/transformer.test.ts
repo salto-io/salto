@@ -1,45 +1,21 @@
 import _ from 'lodash'
-import jszip from 'jszip'
 import {
-  ObjectType, ElemID, InstanceElement, Field, BuiltinTypes, Type, Field as TypeField, Values,
+  ObjectType, ElemID, Field, BuiltinTypes, Type, Field as TypeField, Values,
 } from 'adapter-api'
 import { Field as SalesforceField, ValueTypeField } from 'jsforce'
 import {
-  toMetadataPackageZip, bpCase, getSObjectFieldElement, Types, toCustomField, toCustomObject,
+  bpCase, getSObjectFieldElement, Types, toCustomField, toCustomObject,
   getValueTypeFieldElement, getCompoundChildFields, sfCase, createMetadataTypeElements,
 } from '../src/transformer'
 import {
-  METADATA_TYPE, FIELD_ANNOTATIONS, FIELD_TYPE_NAMES, LABEL, FIELD_TYPE_API_NAMES, ADDRESS_FIELDS,
-  SALESFORCE, GEOLOCATION_FIELDS, NAME_FIELDS, API_NAME, INSTANCE_FULL_NAME_FIELD,
+  FIELD_ANNOTATIONS, FIELD_TYPE_NAMES, LABEL, FIELD_TYPE_API_NAMES, ADDRESS_FIELDS,
+  SALESFORCE, GEOLOCATION_FIELDS, NAME_FIELDS, API_NAME,
   FIELD_LEVEL_SECURITY_ANNOTATION, FIELD_LEVEL_SECURITY_FIELDS, FIELD_DEPENDENCY_FIELDS,
   VALUE_SETTINGS_FIELDS, FILTER_ITEM_FIELDS,
 } from '../src/constants'
 import { CustomField, FilterItem } from '../src/client/types'
 
 describe('transformer', () => {
-  const dummyTypeId = new ElemID('adapter', 'dummy')
-  const dummyType = new ObjectType({
-    elemID: dummyTypeId,
-    annotations: {
-      [METADATA_TYPE]: 'Dummy',
-    },
-    fields: {
-      str: new Field(dummyTypeId, 'str', BuiltinTypes.STRING),
-      lst: new Field(dummyTypeId, 'lst', BuiltinTypes.NUMBER, {}, true),
-      bool: new Field(dummyTypeId, 'bool', BuiltinTypes.BOOLEAN),
-    },
-  })
-  const dummyInstance = new InstanceElement(
-    'instance',
-    dummyType,
-    {
-      [INSTANCE_FULL_NAME_FIELD]: 'Instance',
-      str: 'val',
-      lst: [1, 2],
-      bool: true,
-    },
-  )
-
   describe('bpCase & sfCase transformation', () => {
     const assertBpTransformation = (bpName: string, sfName: string): void => {
       expect(bpCase(sfName)).toEqual(bpName)
@@ -61,35 +37,6 @@ describe('transformer', () => {
         'DSCORGPKG__DiscoverOrg_Update_History__c')
       assertBpTransformation('crm_fusion_dbr_101___scenario__c',
         'CRMFusionDBR101__Scenario__C')
-    })
-  })
-
-  describe('toMetadataPackageZip', () => {
-    const zip = toMetadataPackageZip(dummyInstance)
-      .then(buf => jszip.loadAsync(buf))
-
-    it('should contain package xml', async () => {
-      const packageXml = (await zip).files['default/package.xml']
-      expect(packageXml).toBeDefined()
-      expect(await packageXml.async('text')).toMatch(
-        `<Package xmlns="http://soap.sforce.com/2006/04/metadata">
-           <types><members>Instance</members><name>Dummy</name></types>
-           <version>46.0</version>
-         </Package>`.replace(/>\s+</gs, '><')
-      )
-    })
-
-    it('should contain instance xml', async () => {
-      const instanceXml = (await zip).files['default/dummy/Instance.dummy']
-      expect(instanceXml).toBeDefined()
-      expect(await instanceXml.async('text')).toMatch(
-        `<Dummy xmlns="http://soap.sforce.com/2006/04/metadata">
-           <str>val</str>
-           <lst>1</lst>
-           <lst>2</lst>
-           <bool>true</bool>
-         </Dummy>`.replace(/>\s+</gs, '><')
-      )
     })
   })
 
@@ -115,7 +62,8 @@ describe('transformer', () => {
     describe('enum field', () => {
       let enumField: TypeField
       beforeEach(() => {
-        enumField = getValueTypeFieldElement(dummyTypeId, salesforceEnumField, new Map())
+        enumField = getValueTypeFieldElement(new ElemID('adapter', 'dummy'), salesforceEnumField,
+          new Map())
       })
       describe('restriction values', () => {
         it('should not have duplicate values', () => {

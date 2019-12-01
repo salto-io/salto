@@ -2,11 +2,15 @@ import _ from 'lodash'
 import {
   Element, isObjectType, PrimitiveTypes, Values, ObjectType, isPrimitiveType, isInstanceElement,
 } from 'adapter-api'
+import { strings } from '@salto/lowerdash'
 import { FilterCreator } from '../filter'
 
+const { isEmptyString } = strings
 
-type Value = string | boolean | number | null | undefined
-const transformPrimitive = (val: string, primitive: PrimitiveTypes): Value => {
+
+type PrimitiveValue = string | boolean | number
+type Value = PrimitiveValue | null | undefined
+const transformPrimitive = (val: PrimitiveValue, primitive: PrimitiveTypes): Value => {
   // Salesforce returns nulls as objects like { $: { 'xsi:nil': 'true' } }
   // our key name transform replaces '$' and ':' with '_'
   if (_.isObject(val) && (_.get(val, ['_', 'xsi_nil']) === 'true'
@@ -19,12 +23,9 @@ const transformPrimitive = (val: string, primitive: PrimitiveTypes): Value => {
     case PrimitiveTypes.NUMBER:
       return Number(val)
     case PrimitiveTypes.BOOLEAN:
-      return val.toLowerCase() === 'true'
+      return _.isBoolean(val) ? val : (val as string).toLowerCase() === 'true'
     case PrimitiveTypes.STRING:
-      if (val.length === 0) {
-        return undefined
-      }
-      return val
+      return (val as string).length === 0 ? undefined : val
     default:
       return val
   }
@@ -33,11 +34,11 @@ const transformPrimitive = (val: string, primitive: PrimitiveTypes): Value => {
 export const transform = (obj: Values, type: ObjectType, strict = true): Values | undefined => {
   const result = _(obj).mapValues((value, key) => {
     // we get lists of empty strings that we would like to filter out
-    if (_.isArray(value) && _.isEmpty(value.filter(v => !_.isEmpty(v)))) {
+    if (_.isArray(value) && value.every(isEmptyString)) {
       return undefined
     }
-    // we get empty strings that we would like to filter out, will filter non string cases too.
-    if (_.isEmpty(value)) {
+    // we get empty strings that we would like to filter out
+    if (isEmptyString(value)) {
       return undefined
     }
 

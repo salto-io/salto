@@ -1,5 +1,8 @@
+import { strings } from '@salto/lowerdash'
 import { validateLogLevel } from './level'
 import { Config, validateFormat } from './config'
+
+const { isEmptyString } = strings
 
 export type Env = { [key: string]: string | undefined }
 
@@ -13,7 +16,7 @@ export const config = (env: Env): Partial<Config> => {
     transform: (s: string) => T,
   ): T | undefined => {
     const val = env[ENV_KEY_PREFIX + k]
-    return val === undefined || val === '' ? undefined : transform(val)
+    return val === undefined || isEmptyString(val) ? undefined : transform(val)
   }
 
   const toBoolean = (val: string): boolean => BOOLEAN_TRUE_VALUES.includes(val)

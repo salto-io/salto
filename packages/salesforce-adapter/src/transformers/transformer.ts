@@ -8,7 +8,7 @@ import {
   ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, isObjectType,
 } from 'adapter-api'
 import { collections } from '@salto/lowerdash'
-import { CustomObject, CustomField, ValueSettings, FilterItem } from './client/types'
+import { CustomObject, CustomField, ValueSettings, FilterItem } from '../client/types'
 import {
   API_NAME, CUSTOM_OBJECT, LABEL, SALESFORCE, FORMULA,
   FORMULA_TYPE_PREFIX, FIELD_TYPE_NAMES, FIELD_TYPE_API_NAMES, METADATA_OBJECT_NAME_FIELD,
@@ -17,7 +17,7 @@ import {
   ADDRESS_FIELDS, NAME_FIELDS, GEOLOCATION_FIELDS, INSTANCE_FULL_NAME_FIELD,
   FIELD_LEVEL_SECURITY_ANNOTATION, FIELD_LEVEL_SECURITY_FIELDS, FIELD_DEPENDENCY_FIELDS,
   VALUE_SETTINGS_FIELDS, FILTER_ITEM_FIELDS,
-} from './constants'
+} from '../constants'
 
 const { makeArray } = collections.array
 

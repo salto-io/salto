@@ -5,7 +5,7 @@ import makeFilter, { LAYOUT_ANNOTATION, LAYOUT_TYPE_ID } from '../../src/filters
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
-import { bpCase } from '../../src/transformer'
+import { bpCase } from '../../src/transformers/transformer'
 
 describe('Test layout filter', () => {
   const { client } = mockClient()

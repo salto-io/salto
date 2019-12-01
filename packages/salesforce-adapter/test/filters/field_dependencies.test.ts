@@ -9,7 +9,7 @@ import {
   API_NAME, CUSTOM_OBJECT, FIELD_ANNOTATIONS, FIELD_DEPENDENCY_FIELDS, METADATA_TYPE, SALESFORCE,
   VALUE_SETTINGS_FIELDS,
 } from '../../src/constants'
-import { Types } from '../../src/transformer'
+import { Types } from '../../src/transformers/transformer'
 
 describe('Test field dependencies filter', () => {
   const picklistType = Types.primitiveDataTypes.picklist

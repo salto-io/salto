@@ -6,7 +6,7 @@ import {
 import { FilterCreator } from '../filter'
 import {
   createInstanceElement, createMetadataTypeElements, sfCase,
-} from '../transformer'
+} from '../transformers/transformer'
 import SalesforceClient from '../client/client'
 
 export const SETTINGS_METADATA_TYPE = 'Settings'

@@ -2,7 +2,7 @@ import _ from 'lodash'
 import {
   Element, isObjectType, ElemID, findInstances, InstanceElement,
 } from 'adapter-api'
-import { apiName, bpCase } from '../transformer'
+import { apiName, bpCase } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
 import { SALESFORCE, SALESFORCE_CUSTOM_SUFFIX } from '../constants'
 

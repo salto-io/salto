@@ -9,7 +9,7 @@ import {
   makeFilter, extractFullNamesFromValueList, STANDARD_VALUE_SET, STANDARD_VALUE,
 } from '../../src/filters/standard_value_sets'
 import SalesforceClient from '../../src/client/client'
-import { Types } from '../../src/transformer'
+import { Types } from '../../src/transformers/transformer'
 
 const createStandardValueSetMetadataInfo = (name: string, values: string[]): MetadataInfo =>
   ({

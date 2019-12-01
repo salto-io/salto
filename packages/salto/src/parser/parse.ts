@@ -3,8 +3,11 @@ import {
   Type, ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field, Values,
   Element, InstanceElement,
 } from 'adapter-api'
-import { SourceRange as InternalSourceRange, SourceMap as SourceMapImpl } from './internal/types'
-import HclParser, { ParsedHclBlock, HclParseError } from './internal/hcl'
+import {
+  SourceRange as InternalSourceRange, SourceMap as SourceMapImpl,
+  ParsedHclBlock, HclParseError,
+} from './internal/types'
+import HclParser, { } from './internal/hcl'
 import evaluate from './expressions'
 import { Keywords } from './language'
 

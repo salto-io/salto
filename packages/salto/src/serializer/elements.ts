@@ -2,7 +2,7 @@ import _ from 'lodash'
 import {
   PrimitiveType, ElemID, Field, Element, BuiltinTypes,
   ObjectType, InstanceElement, isType, isElement, isExpression,
-  ReferenceExpression, TemplateExpression, Expression,
+  ReferenceExpression, TemplateExpression, Expression, isInstanceElement,
 } from 'adapter-api'
 
 // There are two issues with naive json stringification:
@@ -86,7 +86,11 @@ export const deserialize = (data: string): Element[] => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const elementReviver = (_k: string, v: any): any => {
     if (v.className) {
-      return revivers[v.className](v)
+      const e = revivers[v.className](v)
+      if (isType(e) || isInstanceElement(e)) {
+        e.path = v.path
+      }
+      return e
     }
     return v
   }

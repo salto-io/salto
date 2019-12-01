@@ -24,7 +24,9 @@ describe('TEST', () => {
     const diag = getDiagnostics(workspace)['../BP2/parse_error.bp'][0]
     expect(diag).toBeDefined()
     expect(diag.msg).toContain(
-      'Expected the start of an expression, but found an invalid expression token.'
+      process.env.JS_PARSE
+        ? 'Unexpected token: }'
+        : 'Expected the start of an expression, but found an invalid expression token.'
     )
     expect(diag.severity).toBe('Error')
   })

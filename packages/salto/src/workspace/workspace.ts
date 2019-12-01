@@ -56,7 +56,7 @@ export interface ParsedBlueprintMap {
   [key: string]: ParsedBlueprint
 }
 
-const getBlueprintsFromDir = async (
+export const getBlueprintsFromDir = async (
   blueprintsDir: string,
 ): Promise<string[]> => {
   const entries = await readdirp.promise(blueprintsDir, {

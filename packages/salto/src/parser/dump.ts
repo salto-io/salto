@@ -3,7 +3,8 @@ import {
   Type, Field, Values, isObjectType, PrimitiveTypes,
   isPrimitiveType, Element, isInstanceElement, isField, isElement, Value,
 } from 'adapter-api'
-import HclParser, { DumpedHclBlock, HclDumpReturn } from './internal/hcl'
+import HclParser from './internal/hcl'
+import { DumpedHclBlock, HclDumpReturn } from './internal/types'
 import { Keywords } from './language'
 
 /**
@@ -175,6 +176,8 @@ export const dump = async (
     ? wrapBlocks(elemListOrValues.map(dumpBlock))
     : dumpBlock(elemListOrValues)
 
-  body.blocks = body.blocks.map(markDumpedBlockQuotes)
+  if (!process.env.JS_PARSE) {
+    body.blocks = body.blocks.map(markDumpedBlockQuotes)
+  }
   return removeQuotes(await HclParser.dump(body))
 }

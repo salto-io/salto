@@ -2,76 +2,10 @@ import fs from 'fs'
 import path from 'path'
 import './wasm_exec'
 import { queue, AsyncQueue, ErrorCallback } from 'async'
-import { SourceRange } from './types'
+import { HclCallContext, HclParseReturn, DumpedHclBlock, HclDumpReturn, HclReturn } from './types'
+import { parse as tsParse } from './ts_plugin/parse'
+import { dump as tsDump } from './ts_plugin/dump'
 
-export type ExpressionType = 'list'|'map'|'template'|'literal'|'reference'
-
-export type HclExpression = {
-  type: ExpressionType
-  expressions: HclExpression[]
-  source: SourceRange
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  value?: any
-}
-
-export type HclAttribute = {
-  source: SourceRange
-  expressions: HclExpression[]
-}
-
-// TODO: add "blocks" with recursive reference when it's allowed in TS3.7
-export type HclBlock = {
-  type: string
-  labels: string[]
-  attrs: Record<string, HclAttribute>
-}
-
-export type ParsedHclBlock = HclBlock & {
-  blocks: ParsedHclBlock[]
-  source: SourceRange
-}
-
-export type DumpedHclBlock = HclBlock & {
-  blocks: DumpedHclBlock[]
-}
-
-// hcl.Diagnostic struct taken from
-// https://github.com/hashicorp/hcl2/blob/f45c1cd/hcl/diagnostic.go#L26
-// TODO: include expression and evalContext when it's needed
-export interface HclParseError {
-  severity: number
-  summary: string
-  detail: string
-  subject: SourceRange
-  context?: SourceRange
-}
-
-interface HclParseArgs {
-  src: string
-  filename: string
-}
-
-interface HclParseReturn {
-  body: ParsedHclBlock
-  errors: HclParseError[]
-}
-
-interface HclDumpArgs {
-  body: DumpedHclBlock
-}
-
-
-export type HclDumpReturn = string
-
-type HclArgs = HclParseArgs | HclDumpArgs
-type HclReturn = HclParseReturn | HclDumpReturn
-
-interface HclCallContext {
-  func: 'parse' | 'dump'
-  callback?: () => void
-  args: HclArgs
-  return?: HclReturn
-}
 
 class HclParser {
   // Limit max concurrency to avoid web assembly out of memory errors
@@ -167,8 +101,10 @@ class HclParser {
    * @returns body: The parsed HCL body
    *          errors: a list of errors encountered during parsing
    */
-  public parse(src: Buffer, filename: string): Promise<HclParseReturn> {
-    return this.callPlugin({ func: 'parse', args: { src: src.toString(), filename } }) as Promise<HclParseReturn>
+  public async parse(src: Buffer, filename: string, forceJS = false): Promise<HclParseReturn> {
+    return process.env.JS_PARSE || forceJS
+      ? tsParse(src, filename)
+      : this.callPlugin({ func: 'parse', args: { src: src.toString(), filename } }) as Promise<HclParseReturn>
   }
 
   /**
@@ -177,8 +113,10 @@ class HclParser {
    * @param body The HCL data to dump
    * @returns The serialized data
    */
-  public dump(body: DumpedHclBlock): Promise<HclDumpReturn> {
-    return this.callPlugin({ func: 'dump', args: { body } }) as Promise<HclDumpReturn>
+  public dump(body: DumpedHclBlock, forceJS = false): Promise<HclDumpReturn> {
+    return process.env.JS_PARSE || forceJS
+      ? tsDump(body)
+      : this.callPlugin({ func: 'dump', args: { body } }) as Promise<HclDumpReturn>
   }
 }
 

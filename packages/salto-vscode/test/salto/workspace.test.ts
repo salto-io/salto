@@ -101,7 +101,9 @@ describe('TEST', () => {
     await workspace.awaitAllUpdates()
     expect(workspace.elements).toBeDefined()
     expect(workspace.errors.hasErrors()).toBeTruthy()
-    expect(workspace.elements && workspace.elements.length).toBe(5)
+    if (!process.env.JS_PARSE) {
+      expect(workspace.elements && workspace.elements.length).toBe(5)
+    }
     expect(_.keys(workspace.parsedBlueprints).length).toBe(3)
     const lastValid = workspace.getValidCopy()
     if (!lastValid) throw new Error('lastValid not defined')

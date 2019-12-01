@@ -4,7 +4,7 @@ import {
 } from 'adapter-api'
 import makeFilter from '../../src/filters/convert_types'
 import * as constants from '../../src/constants'
-import { bpCase } from '../../src/transformer'
+import { bpCase } from '../../src/transformers/transformer'
 import { FilterWith } from '../../src/filter'
 import { SETTINGS_METADATA_TYPE } from '../../src/filters/settings_type'
 import mockClient from '../client'

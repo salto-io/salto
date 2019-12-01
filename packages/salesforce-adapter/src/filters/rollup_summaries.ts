@@ -3,7 +3,7 @@ import { Element, Field } from 'adapter-api'
 import { collections } from '@salto/lowerdash'
 import { FilterCreator } from '../filter'
 import { FIELD_ANNOTATIONS } from '../constants'
-import { bpCase, mapKeysRecursive, Types } from '../transformer'
+import { bpCase, mapKeysRecursive, Types } from '../transformers/transformer'
 import { runOnFields } from './utils'
 import { CustomField } from '../client/types'
 

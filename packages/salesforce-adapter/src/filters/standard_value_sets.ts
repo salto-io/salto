@@ -11,7 +11,7 @@ import {
 } from '../constants'
 import {
   metadataType, apiName, createInstanceElement, isCustomObject, Types,
-} from '../transformer'
+} from '../transformers/transformer'
 
 const { makeArray } = collections.array
 

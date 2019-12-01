@@ -5,7 +5,7 @@ import JSZip, { JSZipObject } from 'jszip'
 import parser from 'fast-xml-parser'
 import { logger } from '@salto/logging'
 import { API_VERSION, METADATA_NAMESPACE } from '../client/client'
-import { toMetadataInfo } from '../transformer'
+import { toMetadataInfo } from './transformer'
 import { MetadataWithContent } from '../client/types'
 
 const log = logger(module)

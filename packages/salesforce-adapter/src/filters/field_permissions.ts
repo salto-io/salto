@@ -12,7 +12,7 @@ import {
 } from '../constants'
 import {
   sfCase, fieldFullName, bpCase, metadataType, isCustomObject, Types,
-} from '../transformer'
+} from '../transformers/transformer'
 import { FilterCreator } from '../filter'
 import { ProfileInfo, FieldPermissions } from '../client/types'
 import { generateObjectElemID2ApiName, getCustomObjects } from './utils'

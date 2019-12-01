@@ -3,7 +3,7 @@ import {
   InstanceElement, isObjectType, isInstanceElement, BuiltinTypes,
 } from 'adapter-api'
 import _ from 'lodash'
-import { metadataType } from '../../src/transformer'
+import { metadataType } from '../../src/transformers/transformer'
 import { ProfileInfo, FieldPermissions } from '../../src/client/types'
 import filterCreator, {
   PROFILE_METADATA_TYPE, ADMIN_PROFILE,

@@ -6,7 +6,7 @@ import {
   Values,
 } from 'adapter-api'
 import * as constants from '../src/constants'
-import { Types, apiName } from '../src/transformer'
+import { Types, apiName } from '../src/transformers/transformer'
 import realAdapter from './adapter'
 
 describe('Adapter E2E import-export related operations with real account', () => {

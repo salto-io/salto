@@ -13,7 +13,7 @@ import {
   METADATA_TYPE,
   SALESFORCE,
 } from '../../src/constants'
-import { Types } from '../../src/transformer'
+import { Types } from '../../src/transformers/transformer'
 
 describe('Test field dependencies filter', () => {
   const objectTypeElemId = new ElemID(SALESFORCE, 'test')

@@ -54,6 +54,7 @@ type multi_loc { b = 1 }`,
 type salesforce_lead {
   string base_field {}
 }`,
+    '/salto/willbempty.bp': 'type nonempty { a = 2 }',
   }
 
   const changedBP = {
@@ -61,6 +62,10 @@ type salesforce_lead {
     buffer: `type salesforce_lead {
       salesforce_text new_base {}
     }`,
+  }
+  const emptyBP = {
+    filename: 'willbempty.bp',
+    buffer: ' ',
   }
   const newBP = {
     filename: 'new.bp',
@@ -213,7 +218,7 @@ type salesforce_lead {
     describe('setBlueprints', () => {
       beforeAll(async () => {
         resetWorkspace()
-        await workspace.setBlueprints(changedBP, newBP)
+        await workspace.setBlueprints(changedBP, newBP, emptyBP)
         updateElemMap()
       })
       afterAll(resetWorkspace)
@@ -228,6 +233,9 @@ type salesforce_lead {
         const lead = elemMap['salesforce.lead'] as ObjectType
         expect(lead.fields.new_base).toBeDefined()
         expect(lead.fields.base_field).not.toBeDefined()
+      })
+      it('should remove empty blueprints', () => {
+        expect(_.keys(workspace.parsedBlueprints)).not.toContain('willbempty.bp')
       })
     })
 

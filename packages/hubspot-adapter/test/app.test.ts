@@ -2,7 +2,8 @@ import { firstFunc } from '../src/main'
 
 describe('Test example', () => {
   beforeAll(async () => {
-    firstFunc()
+    const resp = await firstFunc()
+    expect(resp).toMatchObject({})
   })
 
   it('should pass', () => {

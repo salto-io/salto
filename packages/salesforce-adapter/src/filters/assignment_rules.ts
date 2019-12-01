@@ -3,7 +3,7 @@ import {
   Element, ElemID, findInstances,
 } from 'adapter-api'
 import { FilterCreator } from '../filter'
-import { apiName, bpCase } from '../transformer'
+import { apiName, bpCase } from '../transformers/transformer'
 import { SALESFORCE } from '../constants'
 
 export const ASSIGNMENT_RULES_TYPE_ID = new ElemID(SALESFORCE, 'assignment_rules')

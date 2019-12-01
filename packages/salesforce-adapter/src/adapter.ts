@@ -16,7 +16,7 @@ import {
   getSObjectFieldElement, toMetadataInfo, createInstanceElement,
   metadataType, toInstanceElements, createMetadataTypeElements,
   instanceElementstoRecords, elemIDstoRecords, getCompoundChildFields,
-} from './transformer'
+} from './transformers/transformer'
 import { fromRetrieveResult, toMetadataPackageZip } from './transformers/xml_transformer'
 import layoutFilter from './filters/layouts'
 import fieldPermissionsFilter from './filters/field_permissions'

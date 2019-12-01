@@ -13,7 +13,7 @@ import {
 } from 'jsforce'
 import SalesforceAdapter from '../src/adapter'
 import * as constants from '../src/constants'
-import { Types, sfCase } from '../src/transformer'
+import { Types, sfCase } from '../src/transformers/transformer'
 import { PROFILE_METADATA_TYPE } from '../src/filters/field_permissions'
 import Connection from '../src/client/jsforce'
 import mockAdapter from './adapter'

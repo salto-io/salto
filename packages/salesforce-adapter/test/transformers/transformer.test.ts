@@ -6,14 +6,14 @@ import { Field as SalesforceField, ValueTypeField } from 'jsforce'
 import {
   bpCase, getSObjectFieldElement, Types, toCustomField, toCustomObject,
   getValueTypeFieldElement, getCompoundChildFields, sfCase, createMetadataTypeElements,
-} from '../src/transformer'
+} from '../../src/transformers/transformer'
 import {
   FIELD_ANNOTATIONS, FIELD_TYPE_NAMES, LABEL, FIELD_TYPE_API_NAMES, ADDRESS_FIELDS,
   SALESFORCE, GEOLOCATION_FIELDS, NAME_FIELDS, API_NAME,
   FIELD_LEVEL_SECURITY_ANNOTATION, FIELD_LEVEL_SECURITY_FIELDS, FIELD_DEPENDENCY_FIELDS,
   VALUE_SETTINGS_FIELDS,
-} from '../src/constants'
-import { CustomField } from '../src/client/types'
+} from '../../src/constants'
+import { CustomField } from '../../src/client/types'
 
 describe('transformer', () => {
   describe('bpCase & sfCase transformation', () => {

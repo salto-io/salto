@@ -5,7 +5,7 @@ import JSZip from 'jszip'
 import { API_VERSION, METADATA_NAMESPACE } from '../client/client'
 import { SALESFORCE } from '../constants'
 import { ASSIGNMENT_RULES_TYPE_ID } from '../filters/assignment_rules'
-import { apiName, metadataType, toMetadataInfo } from '../transformer'
+import { apiName, metadataType, toMetadataInfo } from './transformer'
 
 const DEFAULT = 'default'
 

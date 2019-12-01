@@ -7,7 +7,7 @@ import {
 } from '../constants'
 import {
   bpCase, mapKeysRecursive, Types,
-} from '../transformer'
+} from '../transformers/transformer'
 import { transform } from './convert_types'
 import {
   generateObjectElemID2ApiName, getCustomFieldName, getCustomObjects, readCustomFields,

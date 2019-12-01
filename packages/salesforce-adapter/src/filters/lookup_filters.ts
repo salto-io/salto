@@ -6,7 +6,7 @@ import { collections } from '@salto/lowerdash'
 import { FilterCreator } from '../filter'
 import { CUSTOM_FIELD, FIELD_ANNOTATIONS, LOOKUP_FILTER_FIELDS } from '../constants'
 import { CustomField } from '../client/types'
-import { bpCase, mapKeysRecursive, sfCase, toCustomField, Types } from '../transformer'
+import { bpCase, mapKeysRecursive, sfCase, toCustomField, Types } from '../transformers/transformer'
 import { transform } from './convert_types'
 import {
   generateObjectElemID2ApiName, getCustomFieldName, getCustomObjects, readCustomFields,

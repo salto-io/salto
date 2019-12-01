@@ -23,7 +23,7 @@ import {
 } from '../src/client/types'
 import {
   Types, sfCase, fromMetadataInfo, bpCase,
-} from '../src/transformer'
+} from '../src/transformers/transformer'
 import realAdapter from './adapter'
 import { findElements } from '../test/utils'
 import { API_VERSION } from '../src/client/client'

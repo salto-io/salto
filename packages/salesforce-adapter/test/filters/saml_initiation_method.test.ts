@@ -4,7 +4,7 @@ import {
 } from 'adapter-api'
 import filterCreator, { CANVAS_METADATA_TYPE_ID, SAML_INIT_METHOD_FIELD_NAME }
   from '../../src/filters/saml_initiation_method'
-import { bpCase } from '../../src/transformer'
+import { bpCase } from '../../src/transformers/transformer'
 import { FilterWith } from '../../src/filter'
 
 describe('saml initiation method filter', () => {

@@ -2,7 +2,7 @@ import _ from 'lodash'
 import { Element, Field, isObjectType, ObjectType } from 'adapter-api'
 import { API_NAME, CUSTOM_FIELD } from '../constants'
 import { CustomField } from '../client/types'
-import { fieldFullName, isCustomObject } from '../transformer'
+import { fieldFullName, isCustomObject } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
 
 export const readCustomFields = async (client: SalesforceClient, fieldNames: string[]):

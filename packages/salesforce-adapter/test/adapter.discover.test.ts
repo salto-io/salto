@@ -5,7 +5,7 @@ import {
 import SalesforceAdapter from '../src/adapter'
 import Connection from '../src/client/jsforce'
 import * as constants from '../src/constants'
-import { Types } from '../src/transformer'
+import { Types } from '../src/transformers/transformer'
 import { findElements } from './utils'
 import mockAdapter from './adapter'
 

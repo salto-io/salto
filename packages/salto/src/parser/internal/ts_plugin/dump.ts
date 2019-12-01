@@ -46,7 +46,6 @@ const dumpArray = (arr: Value): string[] => {
   // eslint-disable-next-line @typescript-eslint/no-use-before-define
   const items = seperateByCommas(arr.map(dumpValue))
   const res = [O_ARR]
-  // itemLines.forEach((l: string) => res.push(l))
   items.forEach(itemLines => itemLines.forEach(l => res.push(l)))
   res.push(C_ARR)
   return ident(res)

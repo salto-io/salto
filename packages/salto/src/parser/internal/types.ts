@@ -98,7 +98,3 @@ export class SourceMap extends Map<string, SourceRange[]> {
     sourceRangeList.push(sourceRange)
   }
 }
-
-export class SourceTreeMap {
-
-}

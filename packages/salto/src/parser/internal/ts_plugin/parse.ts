@@ -1,5 +1,5 @@
 import * as nearley from 'nearley'
-import { setFilename, convertMain } from './convertors'
+import { setFilename, convertMain } from './converters'
 import { HclParseError, HclParseReturn, ParsedHclBlock } from '../types'
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const grammar = require('./hcl')

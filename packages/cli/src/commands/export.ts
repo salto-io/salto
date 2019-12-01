@@ -1,5 +1,6 @@
 import path from 'path'
 import { exportToCsv } from 'salto'
+import Prompts from '../prompts'
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'
 import { getConfigFromUser } from '../callbacks'
@@ -9,11 +10,11 @@ export const command = (
   workingDir: string,
   typeName: string,
   outputPath: string,
-  cliCommand: CliOutput
+  { stdout, stderr }: CliOutput
 ):
 CliCommand => ({
   async execute(): Promise<CliExitCode> {
-    const { workspace, errored } = await loadWorkspace(workingDir, cliCommand)
+    const { workspace, errored } = await loadWorkspace(workingDir, { stdout, stderr })
     if (errored) {
       return CliExitCode.AppError
     }
@@ -21,9 +22,13 @@ CliCommand => ({
     // Check if output path is provided, otherwise use the template
     // <working dir>/<typeName>_<current timestamp>.csv
     const outPath = outputPath || path.join(path.resolve('./'), `${typeName}_${Date.now()}.csv`)
-    await exportToCsv(typeName, outPath, workspace, getConfigFromUser)
+    const result = await exportToCsv(typeName, outPath, workspace, getConfigFromUser)
 
-    return CliExitCode.Success
+    if (result.success) {
+      stdout.write(Prompts.EXPORT_FINISHED_SUCCESSFULLY)
+      return CliExitCode.Success
+    }
+    return CliExitCode.AppError
   },
 })
 

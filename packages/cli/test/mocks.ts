@@ -311,10 +311,6 @@ export const describe = async (_searchWords: string[]):
     isGuess: false,
   })
 
-export const exportToCsv = async (): Promise<void> => { }
-export const importFromCsvFile = async (): Promise<void> => { }
-export const deleteFromCsvFile = async (): Promise<void> => { }
-
 export const getWorkspaceErrors = (): ReadonlyArray<WorkspaceError> => [{
   sourceFragments: [],
   error: 'Error',

@@ -22,7 +22,7 @@ export const command = (
     if (errored) {
       return CliExitCode.AppError
     }
-    await deleteFromCsvFile(
+    const result = await deleteFromCsvFile(
       typeName,
       inputPath,
       workspace,
@@ -30,9 +30,11 @@ export const command = (
     )
     // TODO: Return here the full report that contains the numbers of successful and failed rows.
     // Also: print the errors of the erroneous rows to a log file and print the path of the log.
-    stdout.write(Prompts.DELETE_FINISHED_SUCCESSFULLY)
-
-    return CliExitCode.Success
+    if (result.success) {
+      stdout.write(Prompts.DELETE_FINISHED_SUCCESSFULLY)
+      return CliExitCode.Success
+    }
+    return CliExitCode.AppError
   },
 })
 

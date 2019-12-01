@@ -1,46 +1,69 @@
-import * as saltoImp from 'salto'
-import { getConfigFromUser } from '../../src/callbacks'
-import { MockWriteStream, importFromCsvFile as mockImportFromCsv, getWorkspaceErrors } from '../mocks'
+import { Workspace, loadConfig, file, importFromCsvFile, ModifyDataResult } from 'salto'
+import { MockWriteStream, getWorkspaceErrors } from '../mocks'
 import { command } from '../../src/commands/import'
 import Prompts from '../../src/prompts'
 
-const { file } = saltoImp
-const workspaceDir = `${__dirname}/../../../test/BP`
-let importFromCsvSpy: jest.Mock<unknown>
+jest.mock('salto', () => ({
+  ...require.requireActual('salto'),
+  importFromCsvFile: jest.fn().mockImplementation(() => Promise.resolve({
+    success: true,
+    Errors: [],
+  })),
+  Workspace: {
+    load: jest.fn().mockImplementation(
+      config => ({ config, elements: [], hasErrors: () => false }),
+    ),
+  },
+  loadConfig: jest.fn().mockImplementation(
+    workspaceDir => ({ baseDir: workspaceDir, additionalBlueprints: [], cacheLocation: '' })
+  ),
+}))
 
 describe('import command', () => {
+  let cliOutput: { stdout: MockWriteStream; stderr: MockWriteStream }
+  const workspaceDir = 'dummy_dir'
   let existsReturn = true
 
   beforeEach(() => {
     jest.spyOn(file, 'exists').mockImplementation(() => Promise.resolve(existsReturn))
+    cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
   })
 
-  const mockWS = { hasErrors: () => false, errors: {}, getWorkspaceErrors }
   it('should run import successfully if given a correct path to a real CSV file', async () => {
     existsReturn = true
-    importFromCsvSpy = jest.spyOn(saltoImp, 'importFromCsvFile').mockImplementation(() => mockImportFromCsv())
-    const loadSpy = jest.spyOn(saltoImp.Workspace, 'load').mockImplementation(() => mockWS)
-    const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
     await command(workspaceDir, 'mockName', 'mockPath', cliOutput).execute()
-    expect(importFromCsvSpy).toHaveBeenCalledWith('mockName', 'mockPath', mockWS, getConfigFromUser)
+    expect(importFromCsvFile).toHaveBeenCalled()
     expect(cliOutput.stdout.content).toMatch(Prompts.IMPORT_FINISHED_SUCCESSFULLY)
-    expect(loadSpy).toHaveBeenCalled()
+    expect(Workspace.load).toHaveBeenCalledWith(loadConfig(workspaceDir))
   })
 
   it('should fail if given a wrong path for a CSV file', async () => {
     existsReturn = false
-    const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
     await command(workspaceDir, '', '', cliOutput).execute()
     expect(cliOutput.stderr.content).toMatch(Prompts.COULD_NOT_FIND_FILE)
   })
-  it('should fail of workspace load failed', async () => {
+  it('should fail if workspace load failed', async () => {
     existsReturn = true
-    mockWS.hasErrors = () => true
-    mockWS.errors = { strings: () => ['Error'] }
-    const loadSpy = jest.spyOn(saltoImp.Workspace, 'load').mockImplementation(() => mockWS)
-    const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
+    const erroredWorkspace = {
+      hasErrors: () => true,
+      errors: { strings: () => ['some error'] },
+      getWorkspaceErrors,
+    } as unknown as Workspace
+    (Workspace.load as jest.Mock).mockResolvedValueOnce(Promise.resolve(erroredWorkspace))
     await command(workspaceDir, '', '', cliOutput).execute()
-    expect(loadSpy).toHaveBeenCalled()
+    expect(Workspace.load).toHaveBeenCalledWith(loadConfig(workspaceDir))
     expect(cliOutput.stderr.content).toContain('Error')
+  })
+
+  it('should fail if import operation failed', async () => {
+    existsReturn = true
+    const erroredModifyDataResult = {
+      success: false,
+      Errors: [],
+    } as unknown as ModifyDataResult
+    (importFromCsvFile as jest.Mock).mockResolvedValueOnce(Promise.resolve(erroredModifyDataResult))
+    await command(workspaceDir, '', '', cliOutput).execute()
+    expect(Workspace.load).toHaveBeenCalledWith(loadConfig(workspaceDir))
+    expect(cliOutput.stderr.content).toContain(Prompts.OPERATION_FAILED)
   })
 })

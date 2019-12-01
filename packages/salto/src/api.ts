@@ -145,12 +145,16 @@ export const describeElement = async (
 ): Promise<SearchResult> =>
   findElement(searchWords, workspace.elements)
 
-
+export interface ExportResult {
+  success: boolean
+  errors: Error[]
+}
 export const exportToCsv = async (
   typeId: string,
+  outPath: string,
   workspace: Workspace,
   fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
-): Promise<AsyncIterable<InstanceElement[]>> => {
+): Promise<ExportResult> => {
   // Find the corresponding element in the state
   const state = new State(workspace.config.stateLocation)
   const stateElements = await state.get()
@@ -160,15 +164,20 @@ export const exportToCsv = async (
   }
   const [adapters] = await initAdapters(workspace.elements, fillConfig)
 
-  return getInstancesOfType(type as ObjectType, adapters)
+  await getInstancesOfType(type as ObjectType, adapters, outPath)
+  return { success: true, errors: [] }
 }
 
+export interface ModifyDataResult {
+  success: boolean
+  errors: DeployError[]
+}
 export const importFromCsvFile = async (
   typeId: string,
   inputPath: string,
   workspace: Workspace,
   fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
-): Promise<void> => {
+): Promise<ModifyDataResult> => {
   // Find the corresponding element in the state
   const state = new State(workspace.config.stateLocation)
   const stateElements = await state.get()
@@ -178,6 +187,7 @@ export const importFromCsvFile = async (
   }
   const [adapters] = await initAdapters(workspace.elements, fillConfig)
   await importInstancesOfType(type as ObjectType, inputPath, adapters)
+  return { success: true, errors: [] }
 }
 
 export const deleteFromCsvFile = async (
@@ -185,7 +195,7 @@ export const deleteFromCsvFile = async (
   inputPath: string,
   workspace: Workspace,
   fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
-): Promise<void> => {
+): Promise<ModifyDataResult> => {
   // Find the corresponding element in the state
   const state = new State(workspace.config.stateLocation)
   const stateElements = await state.get()
@@ -195,6 +205,7 @@ export const deleteFromCsvFile = async (
   }
   const [adapters] = await initAdapters(workspace.elements, fillConfig)
   await deleteInstancesOfType(type as ObjectType, inputPath, adapters)
+  return { success: true, errors: [] }
 }
 
 export const init = async (workspaceName?: string): Promise<Workspace> => {

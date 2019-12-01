@@ -2,15 +2,24 @@ import {
   ObjectType, Adapter, InstanceElement, Values, ElemID,
 } from 'adapter-api'
 import { adapterId as SALESFORCE } from 'salesforce-adapter'
-import { readCsvFromStream } from './csv'
+import { readCsvFromStream, dumpCsv } from './csv'
 
-export const getInstancesOfType = (type: ObjectType, adapters: Record<string, Adapter>):
-AsyncIterable<InstanceElement[]> => {
+export const getInstancesOfType = async (
+  type: ObjectType,
+  adapters: Record<string, Adapter>,
+  outPath: string
+): Promise<void> => {
   const adapter = adapters[type.elemID.adapter]
   if (!adapter) {
     throw new Error(`Failed to find the adapter for the given type: ${type.elemID.getFullName()}`)
   }
-  return adapter.getInstancesOfType(type)
+  const outputObjectsIterator = await adapter.getInstancesOfType(type)
+  let toAppend = false
+  // eslint-disable-next-line no-restricted-syntax
+  for await (const objects of outputObjectsIterator) {
+    await dumpCsv(objects.map(instance => instance.value), outPath, toAppend)
+    toAppend = true
+  }
 }
 
 const recordToInstanceElement = (type: ObjectType, record: Values):

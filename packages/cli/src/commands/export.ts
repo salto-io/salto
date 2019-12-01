@@ -1,5 +1,6 @@
 import path from 'path'
-import { exportToCsv, dumpCsv } from 'salto'
+import { exportToCsv } from 'salto'
+import Prompts from '../prompts'
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'
 import { getConfigFromUser } from '../callbacks'
@@ -9,28 +10,26 @@ export const command = (
   workingDir: string,
   typeName: string,
   outputPath: string,
-  cliCommand: CliOutput
+  { stdout, stderr }: CliOutput
 ):
 CliCommand => ({
   async execute(): Promise<CliExitCode> {
-    const { workspace, errored } = await loadWorkspace(workingDir, cliCommand)
+    const { workspace, errored } = await loadWorkspace(workingDir, { stdout, stderr })
     if (errored) {
       return CliExitCode.AppError
     }
-    const outputObjectsIterator = await exportToCsv(typeName, workspace, getConfigFromUser)
 
     // Check if output path is provided, otherwise use the template
     // <working dir>/<typeName>_<current timestamp>.csv
     const outPath = outputPath || path.join(path.resolve('./'), `${typeName}_${Date.now()}.csv`)
+    const result = await exportToCsv(typeName, outPath, workspace, getConfigFromUser)
 
-    let toAppend = false
-    // eslint-disable-next-line no-restricted-syntax
-    for await (const objects of outputObjectsIterator) {
-      await dumpCsv(objects.map(instance => instance.value), outPath, toAppend)
-      toAppend = true
+    if (result.success) {
+      stdout.write(Prompts.EXPORT_FINISHED_SUCCESSFULLY)
+      return CliExitCode.Success
     }
-
-    return CliExitCode.Success
+    stderr.write(Prompts.OPERATION_FAILED)
+    return CliExitCode.AppError
   },
 })
 

@@ -1,48 +1,59 @@
-import path from 'path'
-import { ObjectType, InstanceElement } from 'adapter-api'
-import { Workspace, dumpCsv as dumpCsvMock } from 'salto'
-import { exportToCsv, MockWriteStream, getWorkspaceErrors } from '../mocks'
+import { Workspace, exportToCsv, loadConfig, ExportResult } from 'salto'
+import Prompts from '../../src/prompts'
+import { MockWriteStream, getWorkspaceErrors } from '../mocks'
 import { command } from '../../src/commands/export'
 
-const mockExportToCsv = exportToCsv
-const mockWS = { hasErrors: () => false, errors: {}, getWorkspaceErrors }
 jest.mock('salto', () => ({
-  ...(require.requireActual('salto')),
-  exportToCsv: jest.fn().mockImplementation((
-    workspace: Workspace,
-    typeId: string,
-    fillConfig: (configType: ObjectType) => Promise<InstanceElement>
-  ) => mockExportToCsv(typeId, workspace, fillConfig)),
+  ...require.requireActual('salto'),
+  exportToCsv: jest.fn().mockImplementation(() => Promise.resolve({
+    success: true,
+    Errors: [],
+  })),
   Workspace: {
-    load: jest.fn().mockImplementation(() => mockWS),
+    load: jest.fn().mockImplementation(
+      config => ({ config, elements: [], hasErrors: () => false }),
+    ),
   },
-  loadConfig: jest.fn(),
-  dumpCsv: jest.fn().mockImplementation(() => { }),
+  loadConfig: jest.fn().mockImplementation(
+    workspaceDir => ({ baseDir: workspaceDir, additionalBlueprints: [], cacheLocation: '' })
+  ),
 }))
 
 describe('export command', () => {
-  const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
+  let cliOutput: { stdout: MockWriteStream; stderr: MockWriteStream }
+  const workspaceDir = 'dummy_dir'
+  const outputPath = 'dummy_outpath'
+
+  beforeEach(() => {
+    cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
+  })
 
   it('should run export', async () => {
-    const outputPath = path.join(__dirname, '__test_export.csv')
-    await command('', 'Test', outputPath, cliOutput).execute()
-
-    const [objects, output] = (dumpCsvMock as jest.Mock).mock.calls[0]
-    expect(objects).toHaveLength(3)
-    expect(objects[0].Id).toBe('1')
-    expect(objects[0].FirstName).toBe('Daile')
-    expect(objects[0].LastName).toBe('Limeburn')
-    expect(objects[0].Email).toBe('dlimeburn0@blogs.com')
-    expect(objects[0].Gender).toBe('Female')
-    expect(output).toBe(outputPath)
-    expect(Workspace.load).toHaveBeenCalled()
+    await command(workspaceDir, 'Test', outputPath, cliOutput).execute()
+    expect(exportToCsv).toHaveBeenCalled()
+    expect(cliOutput.stdout.content).toMatch(Prompts.EXPORT_FINISHED_SUCCESSFULLY)
+    expect(Workspace.load).toHaveBeenCalledWith(loadConfig(workspaceDir))
   })
 
   it('should fail on workspace errors', async () => {
-    mockWS.hasErrors = () => true
-    mockWS.errors = { strings: () => ['Error'] }
-    const outputPath = path.join(__dirname, '__test_export.csv')
-    await command('', 'Test', outputPath, cliOutput).execute()
+    const erroredWorkspace = {
+      hasErrors: () => true,
+      errors: { strings: () => ['some error'] },
+      getWorkspaceErrors,
+    } as unknown as Workspace
+    (Workspace.load as jest.Mock).mockResolvedValueOnce(Promise.resolve(erroredWorkspace))
+    await command(workspaceDir, 'Test', outputPath, cliOutput).execute()
     expect(cliOutput.stderr.content).toContain('Error')
+  })
+
+  it('should fail if export operation failed', async () => {
+    const erroredExportResult = {
+      success: false,
+      Errors: [],
+    } as unknown as ExportResult
+    (exportToCsv as jest.Mock).mockResolvedValueOnce(Promise.resolve(erroredExportResult))
+    await command(workspaceDir, 'Test', outputPath, cliOutput).execute()
+    expect(Workspace.load).toHaveBeenCalledWith(loadConfig(workspaceDir))
+    expect(cliOutput.stderr.content).toContain(Prompts.OPERATION_FAILED)
   })
 })

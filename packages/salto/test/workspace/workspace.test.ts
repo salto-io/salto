@@ -259,6 +259,7 @@ type salesforce_lead {
         {},
         false
       )
+
       const changes: DetailedChange[] = [
         { // modify value
           id: new ElemID('salesforce', 'lead', 'field', 'base_field', Type.DEFAULT),
@@ -313,6 +314,19 @@ type salesforce_lead {
           data: { after: anotherNewField },
 
         },
+        {
+          path: ['other', 'battr'],
+          id: new ElemID('salesforce', 'lead', 'attr', 'bobo'),
+          action: 'add',
+          data: { after: 'baba' },
+
+        },
+        {
+          path: ['other', 'foo', 'bar'],
+          id: new ElemID('salesforce', 'lead', 'field', 'ext_field', Type.DEFAULT),
+          action: 'add',
+          data: { after: 'blublu' },
+        },
       ]
 
       let lead: ObjectType
@@ -347,6 +361,17 @@ type salesforce_lead {
         expect(Object.keys(workspace.parsedBlueprints)).toContain('other/bar.bp')
         expect(workspace.parsedBlueprints['other/bar.bp'].elements[0].elemID.getFullName()).toEqual('salesforce.lead')
         expect((workspace.parsedBlueprints['other/bar.bp'].elements.filter(e => isObjectType(e))[0] as ObjectType).fields.lala).toBeDefined()
+      })
+
+      it('should add new blueprint for annotation with path', () => {
+        expect(Object.keys(workspace.parsedBlueprints)).toContain('other/battr.bp')
+        expect(workspace.parsedBlueprints['other/battr.bp'].elements[0].elemID.getFullName()).toEqual('salesforce.lead')
+        expect((workspace.parsedBlueprints['other/battr.bp'].elements.filter(e => isObjectType(e))[0] as ObjectType).annotations.bobo).toBeDefined()
+      })
+
+
+      it('should not add new blueprint for deeply nested type ', () => {
+        expect(Object.keys(workspace.parsedBlueprints)).not.toContain('other/foo/bar.bp')
       })
 
       it('should add annotations under correct field', () => {

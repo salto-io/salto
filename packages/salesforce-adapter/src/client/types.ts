@@ -152,8 +152,8 @@ export class CustomField implements MetadataInfo {
     } else if (type === FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.MASTER_DETAIL]) {
       this.relationshipName = relationshipName
       this.referenceTo = relatedTo
-    }
-    if (type === FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.ROLLUP_SUMMARY] && summaryFilterItems) {
+    } else if (type === FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.ROLLUP_SUMMARY]
+        && summaryFilterItems) {
       this.summaryFilterItems = summaryFilterItems
     }
   }

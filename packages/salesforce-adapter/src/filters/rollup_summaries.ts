@@ -25,7 +25,8 @@ const filterCreator: FilterCreator = ({ client }) => ({
    */
   onFetch: async (elements: Element[]): Promise<void> => {
     const getRollupSummaryFields = (obj: ObjectType): Field[] =>
-      Object.values(obj.fields).filter(f => Types.primitiveDataTypes.rollupsummary.isEqual(f.type))
+      Object.values(obj.fields)
+        .filter(f => Types.primitiveDataTypes.rollupsummary.elemID.isEqual(f.type.elemID))
 
     const customObjects = getCustomObjects(elements)
     const objectElemID2ApiName = generateObjectElemID2ApiName(customObjects)
@@ -41,6 +42,10 @@ const filterCreator: FilterCreator = ({ client }) => ({
     const name2Field = await readCustomFields(client, customFieldNames)
 
     const addRollupSummaryData = (field: Field): void => {
+      const isRollupSummaryAnnotation = (annotationTypeKey: string): boolean =>
+        Object.keys(Types.primitiveDataTypes.rollupsummary.annotationTypes)
+          .includes(annotationTypeKey)
+
       const salesforceField = name2Field[getCustomFieldName(field, objectElemID2ApiName)]
       const summaryFilterItemsInfo = salesforceField.summaryFilterItems
       if (summaryFilterItemsInfo) {
@@ -50,10 +55,8 @@ const filterCreator: FilterCreator = ({ client }) => ({
       }
       _.assign(field.annotations,
         _.pickBy(
-          _.mapKeys(salesforceField,
-            (_val, key) => bpCase(key)),
-          (_val, key) => Object.keys(Types.primitiveDataTypes.rollupsummary.annotationTypes)
-            .includes(key)
+          _.mapKeys(salesforceField, (_val, key) => bpCase(key)),
+          (_val, key) => isRollupSummaryAnnotation(key)
         ))
     }
 

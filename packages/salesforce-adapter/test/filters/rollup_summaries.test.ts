@@ -20,21 +20,19 @@ describe('Test field dependencies filter', () => {
   const rollupSummaryFieldApiName = 'RollupSummaryField__c'
   const mockObjectApiName = 'Test__c'
 
-  const createRollupSummaryCustomField = (): MetadataInfo[] =>
-    ([{
-      fullName: `${mockObjectApiName}.${rollupSummaryFieldApiName}`,
-      label: 'My Summary',
-      summarizedField: 'Opportunity.Amount',
-      summaryFilterItems: {
-        field: 'Opportunity.Amount',
-        operation: 'greaterThan',
-        value: '1',
-      },
-      summaryForeignKey: 'Opportunity.AccountId',
-      summaryOperation: 'sum',
-      type: 'Summary',
-    } as MetadataInfo,
-    ])
+  const rollupSummaryCustomField = {
+    fullName: `${mockObjectApiName}.${rollupSummaryFieldApiName}`,
+    label: 'My Summary',
+    summarizedField: 'Opportunity.Amount',
+    summaryFilterItems: {
+      field: 'Opportunity.Amount',
+      operation: 'greaterThan',
+      value: '1',
+    },
+    summaryForeignKey: 'Opportunity.AccountId',
+    summaryOperation: 'sum',
+    type: 'Summary',
+  }
 
   describe('on fetch', () => {
     const mockObject = new ObjectType({
@@ -60,7 +58,8 @@ describe('Test field dependencies filter', () => {
     })
 
     const mockClientReadMetadata = (): void => {
-      client.readMetadata = jest.fn().mockImplementation(() => createRollupSummaryCustomField())
+      client.readMetadata = jest.fn().mockImplementation(() =>
+        [rollupSummaryCustomField as MetadataInfo])
     }
 
     const initFilter = async (): Promise<void> => {
@@ -71,17 +70,20 @@ describe('Test field dependencies filter', () => {
     const assertRollupSummaryFieldTransformation = (rollupSummaryField: Field): void => {
       expect(rollupSummaryField).toBeDefined()
       expect(rollupSummaryField.annotations[FIELD_ANNOTATIONS.SUMMARIZED_FIELD])
-        .toEqual('Opportunity.Amount')
+        .toEqual(rollupSummaryCustomField.summarizedField)
       expect(rollupSummaryField.annotations[FIELD_ANNOTATIONS.SUMMARY_FOREIGN_KEY])
-        .toEqual('Opportunity.AccountId')
+        .toEqual(rollupSummaryCustomField.summaryForeignKey)
       expect(rollupSummaryField.annotations[FIELD_ANNOTATIONS.SUMMARY_OPERATION])
-        .toEqual('sum')
+        .toEqual(rollupSummaryCustomField.summaryOperation)
       const filterItems = rollupSummaryField.annotations[FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS]
       expect(filterItems).toBeDefined()
       expect(filterItems).toHaveLength(1)
-      expect(filterItems[0][FILTER_ITEM_FIELDS.FIELD]).toEqual('Opportunity.Amount')
-      expect(filterItems[0][FILTER_ITEM_FIELDS.OPERATION]).toEqual('greaterThan')
-      expect(filterItems[0][FILTER_ITEM_FIELDS.VALUE]).toEqual('1')
+      expect(filterItems[0][FILTER_ITEM_FIELDS.FIELD])
+        .toEqual(rollupSummaryCustomField.summaryFilterItems.field)
+      expect(filterItems[0][FILTER_ITEM_FIELDS.OPERATION])
+        .toEqual(rollupSummaryCustomField.summaryFilterItems.operation)
+      expect(filterItems[0][FILTER_ITEM_FIELDS.VALUE])
+        .toEqual(rollupSummaryCustomField.summaryFilterItems.value)
       expect(filterItems[0][FILTER_ITEM_FIELDS.VALUE_FIELD]).toBeUndefined()
     }
 

@@ -1,14 +1,11 @@
 import _ from 'lodash'
-import { Element, Field, ObjectType } from 'adapter-api'
+import { Element, Field } from 'adapter-api'
 import { collections } from '@salto/lowerdash'
 import { FilterCreator } from '../filter'
 import { FIELD_ANNOTATIONS } from '../constants'
-import {
-  bpCase, mapKeysRecursive, Types,
-} from '../transformer'
-import {
-  generateObjectElemID2ApiName, getCustomFieldName, getCustomObjects, readCustomFields,
-} from './utils'
+import { bpCase, mapKeysRecursive, Types } from '../transformer'
+import { runOnFields } from './utils'
+import { CustomField } from '../client/types'
 
 const { makeArray } = collections.array
 
@@ -24,29 +21,11 @@ const filterCreator: FilterCreator = ({ client }) => ({
    * @param elements the already fetched elements
    */
   onFetch: async (elements: Element[]): Promise<void> => {
-    const getRollupSummaryFields = (obj: ObjectType): Field[] =>
-      Object.values(obj.fields)
-        .filter(f => Types.primitiveDataTypes.rollupsummary.elemID.isEqual(f.type.elemID))
-
-    const customObjects = getCustomObjects(elements)
-    const objectElemID2ApiName = generateObjectElemID2ApiName(customObjects)
-
-    const rollupSummaryFields = _(customObjects)
-      .map(getRollupSummaryFields)
-      .flatten()
-      .value()
-
-    const customFieldNames = rollupSummaryFields
-      .map(f => getCustomFieldName(f, objectElemID2ApiName))
-
-    const name2Field = await readCustomFields(client, customFieldNames)
-
-    const addRollupSummaryData = (field: Field): void => {
+    const addRollupSummaryData = (field: Field, salesforceField: CustomField): void => {
       const isRollupSummaryAnnotation = (annotationTypeKey: string): boolean =>
         Object.keys(Types.primitiveDataTypes.rollupsummary.annotationTypes)
           .includes(annotationTypeKey)
 
-      const salesforceField = name2Field[getCustomFieldName(field, objectElemID2ApiName)]
       const summaryFilterItemsInfo = salesforceField.summaryFilterItems
       if (summaryFilterItemsInfo) {
         field.annotations[FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS] = makeArray(
@@ -60,7 +39,10 @@ const filterCreator: FilterCreator = ({ client }) => ({
         ))
     }
 
-    rollupSummaryFields.forEach(addRollupSummaryData)
+    const isRollupSummaryField = (field: Field): boolean =>
+      Types.primitiveDataTypes.rollupsummary.elemID.isEqual(field.type.elemID)
+
+    await runOnFields(elements, isRollupSummaryField, addRollupSummaryData, client)
   },
 })
 

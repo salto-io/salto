@@ -5,7 +5,7 @@ import { CustomField } from '../client/types'
 import { fieldFullName, isCustomObject } from '../transformer'
 import SalesforceClient from '../client/client'
 
-export const readCustomFields = async (client: SalesforceClient, fieldNames: string[]):
+const readSalesforceFields = async (client: SalesforceClient, fieldNames: string[]):
   Promise<Record<string, CustomField>> => (
   _(await client.readMetadata(CUSTOM_FIELD, fieldNames))
     .map(field => [field.fullName, field])
@@ -27,5 +27,25 @@ export const generateObjectElemID2ApiName = (customObjects: ObjectType[]): Recor
     .fromPairs()
     .value()
 
-export const getCustomFieldName = (field: Field, objectElemID2ApiName: Record<string, string>):
-  string => fieldFullName(objectElemID2ApiName[field.parentID.getFullName()], field)
+const getSalesforceFieldFullName = (field: Field,
+  objectElemID2ApiName: Record<string, string>): string =>
+  fieldFullName(objectElemID2ApiName[field.parentID.getFullName()], field)
+
+export const runOnFields = async (elements: Element[], condition: (field: Field) => boolean,
+  runOnField: (field: Field, salesforceField: CustomField) => void, client: SalesforceClient):
+  Promise<void> => {
+  const customObjects = getCustomObjects(elements)
+  const objectElemID2ApiName = generateObjectElemID2ApiName(customObjects)
+  const fields = _(customObjects)
+    .map(obj => Object.values(obj.fields))
+    .flatten()
+    .filter(condition)
+    .value()
+  const salesforceFieldNames = fields
+    .map(f => getSalesforceFieldFullName(f, objectElemID2ApiName))
+  const name2Field = await readSalesforceFields(client, salesforceFieldNames)
+  fields.forEach(field => {
+    const salesforceField = name2Field[getSalesforceFieldFullName(field, objectElemID2ApiName)]
+    runOnField(field, salesforceField)
+  })
+}

@@ -14,11 +14,11 @@ const ident = (lines: string[]): string[] => {
   // Using the good ol` for i syntax here for memory effeciancy.
   // (to avoid creating new copies of the lines)
   if (lines.length <= 2) return lines
-  for (let i = 0; i < lines.length; i += 1) {
-    if (i > 0 && i < lines.length - 1) {
-      lines[i] = `${IDENT}${lines[i]}`
+  lines.forEach((_l, index) => {
+    if (index > 0 && index < lines.length - 1) {
+      lines[index] = `${IDENT}${lines[index]}`
     }
-  }
+  })
   return lines
 }
 

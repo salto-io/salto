@@ -37,12 +37,13 @@ describe('SalesforceAdapter fetch', () => {
       isMetadataType = false,
       isInCustomObjectList = true,
       custom = false,
+      label = name,
     ): void => {
       connection.describeGlobal = jest.fn()
         .mockImplementation(async () => ({ sobjects: [{ name }] }))
 
       connection.soap.describeSObjects = jest.fn()
-        .mockImplementation(async () => [{ name, custom, fields }])
+        .mockImplementation(async () => [{ name, label, custom, fields }])
 
       connection.metadata.describe = jest.fn()
         .mockImplementation(async () => ({
@@ -194,6 +195,14 @@ describe('SalesforceAdapter fetch', () => {
       expect(lead.annotationTypes[constants.METADATA_TYPE]).toEqual(BuiltinTypes.SERVICE_ID)
       expect(lead.annotations[constants.API_NAME]).toEqual('Lead')
       expect(lead.annotations[constants.METADATA_TYPE]).toEqual(constants.CUSTOM_OBJECT)
+    })
+
+    it('should fetch sobject with label', async () => {
+      mockSingleSObject('Lead', [], false, true, false, 'Lead Label')
+      const result = await adapter.fetch()
+
+      const lead = result.filter(o => o.elemID.name === 'lead').pop() as ObjectType
+      expect(lead.annotations[constants.LABEL]).toEqual('Lead Label')
     })
 
     it('should use existing elemID when fetching custom object', async () => {

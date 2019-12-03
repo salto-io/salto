@@ -45,12 +45,12 @@ const log = logger(module)
 const RECORDS_CHUNK_SIZE = 10000
 
 // Add elements defaults
-const addLabel = (elem: Type | Field): void => {
+const addLabel = (elem: Type | Field, label?: string): void => {
   const name = isField(elem) ? elem.name : elem.elemID.name
   const { annotations } = elem
   if (!annotations[constants.LABEL]) {
-    annotations[constants.LABEL] = sfCase(name)
-    log.debug(`added LABEL=${sfCase(name)} to ${name}`)
+    annotations[constants.LABEL] = label || sfCase(name)
+    log.debug(`added LABEL=${annotations[constants.LABEL]} to ${name}`)
   }
 }
 
@@ -566,8 +566,8 @@ export default class SalesforceAdapter {
     ])
 
     const sobjects = sobjectsDescriptions.map(
-      ({ name, custom, fields }) => SalesforceAdapter.createSObjectTypes(
-        name, custom, fields, customObjectNames
+      ({ name, label, custom, fields }) => SalesforceAdapter.createSObjectTypes(
+        name, label, custom, fields, customObjectNames
       )
     )
 
@@ -576,6 +576,7 @@ export default class SalesforceAdapter {
 
   private static createSObjectTypes(
     objectName: string,
+    label: string,
     isCustom: boolean,
     fields: SObjField[],
     customObjectNames: Set<string>,
@@ -594,6 +595,7 @@ export default class SalesforceAdapter {
     const element = Types.get(objectName, true, false, serviceIds) as ObjectType
     addApiName(element, objectName)
     addMetadataType(element)
+    addLabel(element, label)
 
     // Filter out nested fields of compound fields
     const filteredFields = fields.filter(field => !field.compoundFieldName)

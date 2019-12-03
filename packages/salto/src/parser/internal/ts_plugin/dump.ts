@@ -10,42 +10,45 @@ const O_ARR = '['
 const C_ARR = ']'
 const IDENT = '  '
 
-const ident = (lines: string[]): string[] => lines.map(l => `${IDENT}${l}`)
+const ident = (lines: string[]): string[] => {
+  // Using the good ol` for i syntax here for memory effeciancy.
+  // (to avoid creating new copies of the lines)
+  if (lines.length <= 2) return lines
+  lines.forEach((_l, index) => {
+    if (index > 0 && index < lines.length - 1) {
+      lines[index] = `${IDENT}${lines[index]}`
+    }
+  })
+  return lines
+}
 
 const dumpWord = (word: string): string => (/^\D/.test(word) ? word : `"${word}"`)
 
-const addTrailingComma = (lines: string[]): string[] => {
-  const lastLine = lines.pop()
-  return [
-    ...lines,
-    `${lastLine},`,
-  ]
+const seperateByCommas = (items: string[][]): string[][] => {
+  items.forEach(itemLines => {
+    itemLines[itemLines.length - 1] += ','
+  })
+  return items
 }
-
-const seperateByCommas = (items: string[][]): string[][] => (
-  items.map(itemLines => addTrailingComma(itemLines))
-)
 
 const dumpPrimitive = (prim: Value): string => JSON.stringify(prim)
 
 const dumpObject = (obj: Value): string[] => {
   // eslint-disable-next-line @typescript-eslint/no-use-before-define
-  const attrLines = _.flatten(seperateByCommas(_.toPairs(obj).map(dumpAttr)))
-  return [
-    O_OBJ,
-    ...ident(attrLines),
-    C_OBJ,
-  ]
+  const attributes = seperateByCommas(_.toPairs(obj).map(dumpAttr))
+  const res = [O_OBJ]
+  attributes.forEach(attrLines => attrLines.forEach((l: string) => res.push(l)))
+  res.push(C_OBJ)
+  return ident(res)
 }
 
 const dumpArray = (arr: Value): string[] => {
   // eslint-disable-next-line @typescript-eslint/no-use-before-define
-  const itemLines = _.flatten(seperateByCommas(arr.map(dumpValue)))
-  return [
-    O_ARR,
-    ...ident(itemLines),
-    C_ARR,
-  ]
+  const items = seperateByCommas(arr.map(dumpValue))
+  const res = [O_ARR]
+  items.forEach(itemLines => itemLines.forEach(l => res.push(l)))
+  res.push(C_ARR)
+  return ident(res)
 }
 
 // const dumpExpresion = (exp: Value): string[] => {
@@ -63,13 +66,8 @@ const dumpValue = (value: Value): string[] => {
 const dumpAttr = (attr: [string, Value]): string[] => {
   const [key, value] = attr
   const valueLines = dumpValue(value)
-  const defLine = `${dumpWord(key)} = ${valueLines.shift()}`
-  const lastLine = valueLines.pop()
-  return [
-    defLine,
-    ...ident(valueLines),
-    lastLine,
-  ].filter(_.isString)
+  valueLines[0] = `${dumpWord(key)} = ${valueLines[0]}`
+  return ident(valueLines)
 }
 
 const createBlockDefLine = (block: DumpedHclBlock): string => {
@@ -80,16 +78,13 @@ const createBlockDefLine = (block: DumpedHclBlock): string => {
 
 const dumpBlock = (block: DumpedHclBlock): string[] => {
   const defLine = createBlockDefLine(block)
-  const blockLines = _(block.blocks).map(dumpBlock).flatten().value()
-  const attributeLines = _(block.attrs).toPairs().map(dumpAttr).flatten()
-    .value()
-  const closeLine = C_BLOCK
-  return [
-    defLine,
-    ...ident(blockLines),
-    ...ident(attributeLines),
-    closeLine,
-  ]
+  const blocks = block.blocks.map(dumpBlock)
+  const attributes = _(block.attrs).toPairs().map(dumpAttr).value()
+  const res = [defLine]
+  blocks.forEach(blockLines => blockLines.forEach(b => res.push(b)))
+  attributes.forEach(attributeLines => attributeLines.forEach(a => res.push(a)))
+  res.push(C_BLOCK)
+  return ident(res)
 }
 
 export const dump = async (body: DumpedHclBlock): Promise<HclDumpReturn> => {

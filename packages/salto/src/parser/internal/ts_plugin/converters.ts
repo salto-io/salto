@@ -4,19 +4,6 @@ import { ParsedHclBlock, HclAttribute, HclExpression, SourceRange } from '../typ
 
 let currentFilename: string
 
-export interface NearleyError {
-  token: {
-    type: string
-    value: unknown
-    text: string
-    offset: number
-    lineBreaks: number
-    line: number
-    col: number
-  }
-  offset: number
-}
-
 type HCLToken = ParsedHclBlock | HclAttribute | HclExpression
 
 interface LexerToken {
@@ -41,7 +28,7 @@ export const setFilename = (filename: string): void => {
   currentFilename = filename
 }
 
-export const createSourceRange = (st: Token, et: Token): SourceRange => {
+const createSourceRange = (st: Token, et: Token): SourceRange => {
   const start = isLexerToken(st)
     ? { line: st.line, col: st.col, byte: st.offset }
     : (st as HCLToken).source.start

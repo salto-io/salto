@@ -1,8 +1,21 @@
 import * as nearley from 'nearley'
-import { setFilename, NearleyError, convertMain } from './convertors'
+import { setFilename, convertMain } from './converters'
 import { HclParseError, HclParseReturn, ParsedHclBlock } from '../types'
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const grammar = require('./hcl')
+
+interface NearleyError {
+  token: {
+    type: string
+    value: unknown
+    text: string
+    offset: number
+    lineBreaks: number
+    line: number
+    col: number
+  }
+  offset: number
+}
 
 const convertParserError = (err: NearleyError, filename: string): HclParseError => ({
   severity: 1,

@@ -101,6 +101,9 @@ describe('TEST', () => {
     await workspace.awaitAllUpdates()
     expect(workspace.elements).toBeDefined()
     expect(workspace.errors.hasErrors()).toBeTruthy()
+    // Until the error correction logic in the TS parser will be implemented
+    // files with parsing errors will not have elements, resulting in this
+    // expect to fail. Once the logic will be added this will be removed.
     if (!process.env.JS_PARSE) {
       expect(workspace.elements && workspace.elements.length).toBe(5)
     }

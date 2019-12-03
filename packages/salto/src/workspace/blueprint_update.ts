@@ -9,6 +9,8 @@ import { dump as saltoDump } from '../parser/dump'
 
 type DetailedChangeWithSource = DetailedChange & { location: SourceRange }
 
+export const BP_EXTENSION = '.bp'
+
 export const getChangeLocations = (
   change: DetailedChange,
   sourceMap: ReadonlyMap<string, SourceRange[]>,
@@ -52,7 +54,7 @@ export const getChangeLocations = (
     // Fallback to using the path from the element itself
     const elemPath = path.join(...(change.path || getChangeElement(change).path || ['unsorted']))
     return [{
-      filename: `${elemPath}.bp`,
+      filename: `${elemPath}${BP_EXTENSION}`,
       start: { col: 1, line: 1, byte: 0 },
       end: { col: 1, line: 1, byte: 0 },
     }]

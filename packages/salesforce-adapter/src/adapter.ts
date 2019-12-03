@@ -120,13 +120,10 @@ export interface SalesforceAdapterParams {
 const logDuration = (message?: string): decorators.InstanceMethodDecorator =>
   decorators.wrapMethodWith(
     async (original: decorators.OriginalCall): Promise<unknown> => {
-      const start = Date.now()
-      const result = await original.call()
       const element = original.args.find(isElement)
-      const defaultMessage = `finished running salesforce.${original.name} ${
+      const defaultMessage = `running salesforce.${original.name} ${
         element ? `element=${element.elemID.getFullName()}` : ''} `
-      log.debug(`${message || defaultMessage} [took=${Date.now() - start} ms]`)
-      return result
+      return log.time(original.call, message || defaultMessage)
     }
   )
 
@@ -188,7 +185,7 @@ export default class SalesforceAdapter {
    * Fetch configuration elements (types and instances in the given salesforce account)
    * Account credentials were given in the constructor.
    */
-  @logDuration('finished fetching account configuration')
+  @logDuration('fetching account configuration')
   public async fetch(): Promise<Element[]> {
     log.debug('going to fetch salesforce account configuration..')
     const fieldTypes = Types.getAllFieldTypes()
@@ -511,7 +508,7 @@ export default class SalesforceAdapter {
     )
   }
 
-  @logDuration('finish fetching metadata types')
+  @logDuration('fetching metadata types')
   private async fetchMetadataTypes(typeNamesPromise: Promise<string[]>): Promise<Type[]> {
     const typeNames = await typeNamesPromise
     const knownTypes = new Map<string, Type>()
@@ -528,7 +525,7 @@ export default class SalesforceAdapter {
     return createMetadataTypeElements(objectName, fields, knownTypes, baseTypeNames)
   }
 
-  @logDuration('finish fetching instances')
+  @logDuration('fetching instances')
   private async fetchMetadataInstances(typeNames: Promise<string[]>, types: Promise<Type[]>):
     Promise<InstanceElement[]> {
     const topLevelTypeNames = await typeNames

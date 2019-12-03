@@ -1,7 +1,10 @@
 import _ from 'lodash'
 import wu from 'wu'
 import { collections } from '@salto/lowerdash'
+import { logger } from '@salto/logging'
 import { NodeId, DataNodeMap } from './nodemap'
+
+const log = logger(module)
 
 const { intersection, difference } = collections.set
 
@@ -154,7 +157,7 @@ export const buildDiffGraph = (() => {
     before: DataNodeMap<T>,
     after: DataNodeMap<T>,
     equals: (id: NodeId) => boolean,
-  ): DiffGraph<T> => {
+  ): DiffGraph<T> => log.time(() => {
     let result = new DataNodeMap<DiffNode<T>>()
 
     const removals = addBeforeNodesAsRemovals(result, before)
@@ -180,5 +183,5 @@ export const buildDiffGraph = (() => {
       (res, originalId) => tryCreateModificationNode(res, ...removalAndAdditionIds(originalId)),
       result,
     )
-  }
+  }, 'build diff graph for %o -> %o nodes', before.size, after.size)
 })()

@@ -8,6 +8,9 @@ import {
   buildDiffGraph, buildGroupedGraph, Group, DataNodeMap, NodeId, GroupedNodeMap,
   AdditionDiff, ModificationDiff, RemovalDiff,
 } from '@salto/dag'
+import { logger } from '@salto/logging'
+
+const log = logger(module)
 
 export type DetailedChange<T = ChangeDataType | Values | Value> =
   (AdditionDiff<T> | ModificationDiff<T> | RemovalDiff<T>) & {
@@ -95,7 +98,7 @@ const isEqualsNode = (node1: Node, node2: Node): boolean => {
 const toNodeMap = (
   elements: readonly Element[],
   withDependencies = true
-): DataNodeMap<Node> => {
+): DataNodeMap<Node> => log.time(() => {
   const nodeMap = new DataNodeMap<Node>()
 
   elements.filter(e => !e.elemID.isConfig()).filter(isObjectType).forEach(obj => {
@@ -120,13 +123,13 @@ const toNodeMap = (
     nodeMap.addNode(id(type.elemID), [], type)
   })
   return nodeMap
-}
+}, 'build node map for %s for %o elements', withDependencies ? 'deploy' : 'fetch', elements.length)
 
 export const getPlan = (
   beforeElements: readonly Element[],
   afterElements: readonly Element[],
   withDependencies = true
-): Plan => {
+): Plan => log.time(() => {
   // getPlan
   const before = toNodeMap(beforeElements, withDependencies)
   const after = toNodeMap(afterElements, withDependencies)
@@ -231,4 +234,5 @@ export const getPlan = (
   )
 
   return addPlanFunctions(buildGroupedGraph(diffGraph, groupKey))
-}
+}, 'get %s changes %o -> %o elements', withDependencies ? 'deploy' : 'fetch',
+beforeElements.length, afterElements.length)

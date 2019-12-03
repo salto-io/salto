@@ -23,6 +23,7 @@ type HasLoggerFuncs = {
 
 export type Logger = BaseLogger & HasLoggerFuncs & {
   readonly namespace: Namespace
+  readonly time: <T>(inner: () => T, desc: string, ...descArgs: unknown[]) => T
 }
 
 type ResolvedConfig = Omit<Config, 'namespaceFilter'> & {
@@ -39,6 +40,21 @@ export const resolveConfig = (c: Config): ResolvedConfig => ({
 const addLogMethods = (logger: BaseLogger): Logger => Object.assign(
   logger,
   ...LOG_LEVELS.map(level => ({ [level]: logger.log.bind(logger, level) })),
+  {
+    time<T>(inner: () => T, desc: string, ...descArgs: unknown[]): T {
+      const before = Date.now()
+      const log = (): void => {
+        logger.log('debug', `${desc} took %o ms`, ...descArgs, Date.now() - before)
+      }
+
+      const result = inner()
+      if (result instanceof Promise) {
+        return result.finally(log) as unknown as T
+      }
+      log()
+      return result
+    },
+  }
 )
 
 export const logger = (

@@ -1,28 +1,14 @@
-import _ from 'lodash'
-import { Element, Field, ObjectType, Values } from 'adapter-api'
+import { Element, Field, ObjectType } from 'adapter-api'
 import { collections } from '@salto/lowerdash'
 import { FilterCreator } from '../filter'
-import {
-  FIELD_ANNOTATIONS, FIELD_DEPENDENCY_FIELDS, VALUE_SETTINGS_FIELDS,
-} from '../constants'
-import {
-  bpCase, mapKeysRecursive, Types,
-} from '../transformer'
+import { FIELD_ANNOTATIONS, FIELD_DEPENDENCY_FIELDS, VALUE_SETTINGS_FIELDS } from '../constants'
+import { bpCase, mapKeysRecursive, Types } from '../transformer'
 import { transform } from './convert_types'
-import {
-  generateObjectElemID2ApiName, getCustomFieldName, getCustomObjects, readCustomFields,
-} from './utils'
+import { runOnFields } from './utils'
+import { CustomField } from '../client/types'
 
 const { makeArray } = collections.array
 
-const getFieldDependency = (field: Field): Values =>
-  field.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY]
-
-const hasFieldDependency = (field: Field): boolean =>
-  getFieldDependency(field) !== undefined
-
-const getFieldsWithFieldDependency = (obj: ObjectType): Field[] =>
-  Object.values(obj.fields).filter(hasFieldDependency)
 
 /**
  * Declare the field dependency filter, this filter adds the field_dependency annotation to the
@@ -36,24 +22,9 @@ const filterCreator: FilterCreator = ({ client }) => ({
    * @param elements the already fetched elements
    */
   onFetch: async (elements: Element[]): Promise<void> => {
-    const customObjects = getCustomObjects(elements)
-    const objectElemID2ApiName = generateObjectElemID2ApiName(customObjects)
-    const fieldsWithFieldDependency = _(customObjects)
-      .map(getFieldsWithFieldDependency)
-      .flatten()
-      .value()
-
-    const customFieldNames = fieldsWithFieldDependency
-      .map(f => getCustomFieldName(f, objectElemID2ApiName))
-
-    const name2Field = await readCustomFields(client, customFieldNames)
-
-    const fieldDependencyType = Types.primitiveDataTypes.picklist
-      .annotationTypes[FIELD_ANNOTATIONS.FIELD_DEPENDENCY] as ObjectType
-
-    const addFieldDependencyData = (field: Field): void => {
-      const salesforceField = name2Field[getCustomFieldName(field, objectElemID2ApiName)]
-
+    const addFieldDependencyData = (field: Field, salesforceField: CustomField): void => {
+      const fieldDependencyType = Types.primitiveDataTypes.picklist
+        .annotationTypes[FIELD_ANNOTATIONS.FIELD_DEPENDENCY] as ObjectType
       const controllingField = salesforceField?.valueSet?.controllingField
       const valueSettingsInfo = salesforceField?.valueSet?.valueSettings
       if (controllingField && valueSettingsInfo) {
@@ -71,7 +42,10 @@ const filterCreator: FilterCreator = ({ client }) => ({
       }
     }
 
-    fieldsWithFieldDependency.forEach(addFieldDependencyData)
+    const hasFieldDependency = (field: Field): boolean =>
+      field.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY] !== undefined
+
+    await runOnFields(elements, hasFieldDependency, addFieldDependencyData, client)
   },
 })
 

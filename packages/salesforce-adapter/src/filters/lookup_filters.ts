@@ -1,6 +1,8 @@
 import _ from 'lodash'
-import { Element, Field, isObjectType, ObjectType, Change, getChangeElement,
-  isField, Values } from 'adapter-api'
+import {
+  Element, Field, isObjectType, ObjectType, Change, getChangeElement,
+  isField, Values,
+} from 'adapter-api'
 import { SaveResult } from 'jsforce'
 import { collections } from '@salto/lowerdash'
 import { FilterCreator } from '../filter'
@@ -8,9 +10,7 @@ import { CUSTOM_FIELD, FIELD_ANNOTATIONS, LOOKUP_FILTER_FIELDS } from '../consta
 import { CustomField } from '../client/types'
 import { bpCase, mapKeysRecursive, sfCase, toCustomField, Types } from '../transformer'
 import { transform } from './convert_types'
-import {
-  generateObjectElemID2ApiName, getCustomFieldName, getCustomObjects, readCustomFields,
-} from './utils'
+import { runOnFields } from './utils'
 
 const { makeArray } = collections.array
 
@@ -44,24 +44,11 @@ const filterCreator: FilterCreator = ({ client }) => ({
    * @param elements the already fetched elements
    */
   onFetch: async (elements: Element[]): Promise<void> => {
-    const customObjects = getCustomObjects(elements)
-    const objectElemID2ApiName = generateObjectElemID2ApiName(customObjects)
-    const fieldsWithLookupFilter = _(customObjects)
-      .map(obj => getFieldsWithLookupFilter(obj))
-      .flatten()
-      .value()
-    const customFieldNames = fieldsWithLookupFilter
-      .map(f => getCustomFieldName(f, objectElemID2ApiName))
-
-    const name2Field = await readCustomFields(client, customFieldNames)
-
-    const lookupFilterType = Types.primitiveDataTypes.lookup
-      .annotationTypes[FIELD_ANNOTATIONS.LOOKUP_FILTER] as ObjectType
-
-    const addLookupFilterData = (fieldWithLookupFilter: Field): void => {
+    const addLookupFilterData = (fieldWithLookupFilter: Field, salesforceField: CustomField):
+      void => {
+      const lookupFilterType = Types.primitiveDataTypes.lookup
+        .annotationTypes[FIELD_ANNOTATIONS.LOOKUP_FILTER] as ObjectType
       const { FILTER_ITEMS, ERROR_MESSAGE, IS_OPTIONAL } = LOOKUP_FILTER_FIELDS
-      const salesforceField = name2Field[getCustomFieldName(fieldWithLookupFilter,
-        objectElemID2ApiName)]
       const lookupFilterInfo = salesforceField?.lookupFilter
       if (lookupFilterInfo) {
         const values = mapKeysRecursive(lookupFilterInfo, bpCase)
@@ -74,7 +61,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
       }
     }
 
-    fieldsWithLookupFilter.forEach(addLookupFilterData)
+    await runOnFields(elements, hasLookupFilter, addLookupFilterData, client)
   },
 
   /**

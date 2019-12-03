@@ -493,6 +493,7 @@ describe('SalesforceAdapter fetch', () => {
         Object.keys(Types.compoundDataTypes)
       ).length
         + 1 /* LookupFilter */
+        + 1 /* rollup summary operation */
         + 3
         + 1 /* field permissions */
         + 2 /* field dependency & value settings */)

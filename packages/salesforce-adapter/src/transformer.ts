@@ -10,7 +10,7 @@ import {
   ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, isObjectType,
 } from 'adapter-api'
 import { collections } from '@salto/lowerdash'
-import { CustomObject, CustomField, ValueSettings } from './client/types'
+import { CustomObject, CustomField, ValueSettings, FilterItem } from './client/types'
 import { API_VERSION, METADATA_NAMESPACE } from './client/client'
 import {
   API_NAME, CUSTOM_OBJECT, LABEL, SALESFORCE, FORMULA,
@@ -160,7 +160,7 @@ export class Types {
     elemID: Types.valueSettingsElemID,
     fields: {
       // todo: currently this field is populated with the referenced field's API name,
-      // todo: should be modified to elemID reference once we'll use HIL
+      //  should be modified to elemID reference once we'll use HIL
       [VALUE_SETTINGS_FIELDS.VALUE_NAME]: new TypeField(
         Types.valueSettingsElemID, VALUE_SETTINGS_FIELDS.VALUE_NAME, BuiltinTypes.STRING
       ),
@@ -182,6 +182,20 @@ export class Types {
         Types.fieldDependencyElemID, FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS,
         Types.valueSettingsType, {}, true
       ),
+    },
+  })
+
+  private static rollupSummaryOperationTypeElemID = new ElemID(SALESFORCE,
+    FIELD_ANNOTATIONS.SUMMARY_OPERATION)
+
+  private static rollupSummaryOperationType = new PrimitiveType({
+    elemID: Types.rollupSummaryOperationTypeElemID,
+    primitive: PrimitiveTypes.STRING,
+    annotations: {
+      [Type.VALUES]: ['count', 'min', 'max', 'sum'],
+      [Type.RESTRICTION]: {
+        [Type.ENFORCE_VALUE]: true,
+      },
     },
   })
 
@@ -349,7 +363,7 @@ export class Types {
         ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION]: BuiltinTypes.BOOLEAN,
         // Todo SALTO-228 The FIELD_ANNOTATIONS.RELATED_TO annotation is missing since
-        // currently there is no way to declare on a list annotation
+        //  currently there is no way to declare on a list annotation
         [FIELD_ANNOTATIONS.LOOKUP_FILTER]: Types.lookupFilterType,
       },
     }),
@@ -362,7 +376,21 @@ export class Types {
         [FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.LOOKUP_FILTER]: Types.lookupFilterType,
         // Todo SALTO-228 The FIELD_ANNOTATIONS.RELATED_TO annotation is missing since
-        // currently there is no way to declare on a list annotation
+        //  currently there is no way to declare on a list annotation
+      },
+    }),
+    rollupsummary: new PrimitiveType({
+      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.ROLLUP_SUMMARY),
+      primitive: PrimitiveTypes.STRING,
+      annotationTypes: {
+        ...Types.commonAnnotationTypes,
+        // todo: currently SUMMARIZED_FIELD && SUMMARY_FOREIGN_KEY are populated with the referenced
+        //  field's API name should be modified to elemID reference once we'll use HIL
+        [FIELD_ANNOTATIONS.SUMMARIZED_FIELD]: BuiltinTypes.STRING,
+        // Todo SALTO-228 The FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS annotation is missing since
+        //  currently there is no way to declare on a list annotation
+        [FIELD_ANNOTATIONS.SUMMARY_FOREIGN_KEY]: BuiltinTypes.STRING,
+        [FIELD_ANNOTATIONS.SUMMARY_OPERATION]: Types.rollupSummaryOperationType,
       },
     }),
   }
@@ -491,7 +519,7 @@ export class Types {
 
   static getAnnotationTypes(): Type[] {
     return [Types.fieldLevelSecurityType, Types.fieldDependencyType, Types.valueSettingsType,
-      Types.lookupFilterType]
+      Types.lookupFilterType, Types.rollupSummaryOperationType]
       .map(type => {
         const fieldType = type.clone()
         fieldType.path = ['types', 'annotation_types']
@@ -533,6 +561,9 @@ export const toCustomField = (
   const fieldDependency = field.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY]
   const valueSettings = mapKeysRecursive(fieldDependency?.[FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS],
     key => sfCase(key, false, false)) as ValueSettings[]
+  const summaryFilterItems = mapKeysRecursive(
+    field.annotations[FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS], key => sfCase(key, false, false)
+  ) as FilterItem[]
   const newField = new CustomField(
     fullname ? fieldFullName(object, field) : apiName(field),
     FIELD_TYPE_API_NAMES[fieldTypeName(field.type.elemID.name)],
@@ -544,6 +575,7 @@ export const toCustomField = (
     fieldDependency?.[FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD],
     valueSettings,
     field.annotations[FORMULA],
+    summaryFilterItems,
     field.annotations[FIELD_ANNOTATIONS.RELATED_TO],
     sfCase(field.name),
     field.annotations[FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION]
@@ -702,11 +734,15 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field,
       // be visible in the picklist in the UI. Why? Because.
       annotations[FIELD_ANNOTATIONS.VISIBLE_LINES] = field.precision
     }
-    // Formulas
-  } else if (field.calculated && !_.isEmpty(field.calculatedFormula)) {
-    bpFieldType = getFieldType(formulaTypeName(bpFieldType.elemID.name))
-    annotations[FORMULA] = field.calculatedFormula
-
+  } else if (field.calculated) {
+    if (!_.isEmpty(field.calculatedFormula)) {
+      // Formulas
+      bpFieldType = getFieldType(formulaTypeName(bpFieldType.elemID.name))
+      annotations[FORMULA] = field.calculatedFormula
+    } else {
+      // Rollup Summary
+      bpFieldType = getFieldType(FIELD_TYPE_NAMES.ROLLUP_SUMMARY)
+    }
     // Lookup & MasterDetail
   } else if (field.type === 'reference') {
     if (field.cascadeDelete) {
@@ -723,7 +759,7 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field,
     }
     if (!_.isEmpty(field.referenceTo)) {
       // todo: currently this field is populated with the referenced object's API name,
-      // todo: should be modified to elemID reference once we'll use HIL
+      //  should be modified to elemID reference once we'll use HIL
       // there are some SF reference fields without related fields
       // e.g. salesforce_user_app_menu_item.ApplicationId, salesforce_login_event.LoginHistoryId
       annotations[FIELD_ANNOTATIONS.RELATED_TO] = field.referenceTo

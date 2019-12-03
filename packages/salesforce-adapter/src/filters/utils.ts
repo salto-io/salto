@@ -27,13 +27,13 @@ export const generateObjectElemID2ApiName = (customObjects: ObjectType[]): Recor
     .fromPairs()
     .value()
 
-const getSalesforceFieldFullName = (field: Field,
-  objectElemID2ApiName: Record<string, string>): string =>
-  fieldFullName(objectElemID2ApiName[field.parentID.getFullName()], field)
-
 export const runOnFields = async (elements: Element[], condition: (field: Field) => boolean,
   runOnField: (field: Field, salesforceField: CustomField) => void, client: SalesforceClient):
   Promise<void> => {
+  const getSalesforceFieldFullName = (field: Field,
+    objectElemID2ApiName: Record<string, string>): string =>
+    fieldFullName(objectElemID2ApiName[field.parentID.getFullName()], field)
+
   const customObjects = getCustomObjects(elements)
   const objectElemID2ApiName = generateObjectElemID2ApiName(customObjects)
   const fields = _(customObjects)

@@ -54,6 +54,18 @@ const allMissingFields: {id: ElemID; fields: MissingField[]}[] = [
       },
     ],
   },
+  {
+    id: new ElemID(SALESFORCE, 'profile_tab_visibility'),
+    fields: [
+      {
+        name: 'visibility',
+        type: BuiltinTypes.STRING,
+        annotations: {
+          [Type.VALUES]: ['DefaultOff', 'DefaultOn', 'Hidden'],
+        },
+      },
+    ],
+  },
 ]
 
 export const makeFilter = (

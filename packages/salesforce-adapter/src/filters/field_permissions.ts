@@ -72,8 +72,8 @@ const toProfiles = (object: ObjectType): ProfileInfo[] =>
         }
         profiles[profile].fieldPermissions.push({
           field: fieldFullName(object, field),
-          editable: fieldEditable.includes(profile),
-          readable: fieldReadable.includes(profile),
+          editable: fieldEditable.includes(profile) ? 'true' : 'false',
+          readable: fieldReadable.includes(profile) ? 'true' : 'false',
         })
       })
       return profiles
@@ -87,16 +87,17 @@ type ProfileToPermissions = Record<string, { editable: boolean; readable: boolea
  */
 const profile2Permissions = (profileInstance: InstanceElement):
   Record<string, ProfileToPermissions> => {
-  const instanceFieldPermissions = (profileInstance.value[FIELD_PERMISSIONS] as FieldPermissions[])
+  const instanceFieldPermissions: FieldPermissions[] = profileInstance.value[FIELD_PERMISSIONS]
   if (!instanceFieldPermissions) {
     return {}
   }
-  return _.merge({}, ...instanceFieldPermissions.map(({ field, readable, editable }) => (
-    {
-      [field]: {
-        [id(profileInstance)]: { readable, editable },
-      },
-    })))
+  return _.merge({}, ...instanceFieldPermissions
+    .map(({ field, readable, editable }) => (
+      {
+        [field]: {
+          [id(profileInstance)]: { readable: readable === 'true', editable: editable === 'true' },
+        },
+      })))
 }
 // ---
 
@@ -117,14 +118,14 @@ const filterCreator: FilterCreator = ({ client }) => ({
     }
 
     const permissionsPerProfile = profileInstances.map(profile2Permissions)
-    const permissions = _.merge({}, ...permissionsPerProfile)
+    const permissions: Record<string, ProfileToPermissions> = _.merge({}, ...permissionsPerProfile)
     const objectElemID2ApiName = generateObjectElemID2ApiName(customObjectTypes)
 
     // Add field permissions to all fetched elements
     customObjectTypes.forEach(obj => {
       Object.values(obj.fields).forEach(field => {
         const fullName = fieldFullName(objectElemID2ApiName[id(obj)] || obj, field)
-        const fieldPermissions = permissions[fullName] as ProfileToPermissions | undefined
+        const fieldPermissions = permissions[fullName]
         if (fieldPermissions) {
           Object.entries(fieldPermissions).sort().forEach(p2f => {
             const profile = findElement(profileInstances, ElemID.fromFullName(p2f[0]))
@@ -177,7 +178,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
       FieldPermissions | undefined => permissions.find(fp => fp.field === field)
 
     const emptyPermissions = (permissions: FieldPermissions): FieldPermissions =>
-      ({ field: permissions.field, readable: false, editable: false })
+      ({ field: permissions.field, readable: 'false', editable: 'false' })
 
     const beforeProfiles = toProfiles(before)
     const afterProfiles = toProfiles(after)

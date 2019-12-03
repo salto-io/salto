@@ -5,8 +5,8 @@ import { FIELD_TYPE_NAMES, FIELD_TYPE_API_NAMES } from '../constants'
 
 export interface FieldPermissions {
   field: string
-  editable: boolean
-  readable: boolean
+  editable: 'true' | 'false'
+  readable: 'true' | 'false'
 }
 
 export class ProfileInfo implements MetadataInfo {

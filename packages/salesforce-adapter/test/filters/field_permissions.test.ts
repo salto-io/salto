@@ -27,6 +27,9 @@ describe('Field Permissions filter', () => {
       description:
         new Field(mockElemID, 'description', stringType,
           { [constants.API_NAME]: 'Description__c' }),
+      noStandard:
+          new Field(mockElemID, 'noStandard', stringType,
+            { [constants.API_NAME]: 'No_standard__c' }),
     },
     annotations: {
       label: 'test label',
@@ -82,13 +85,18 @@ describe('Field Permissions filter', () => {
       [constants.FIELD_PERMISSIONS]: [
         {
           field: 'Test__c.Description__c',
-          readable: true,
-          editable: false,
+          readable: 'true',
+          editable: 'false',
         },
         {
           field: 'Test__c.Plus__c',
-          readable: true,
-          editable: false,
+          readable: 'true',
+          editable: 'false',
+        },
+        {
+          field: 'Test__c.No_standard__c',
+          readable: 'true',
+          editable: 'true',
         },
       ],
       description: 'Admin profile',
@@ -100,8 +108,13 @@ describe('Field Permissions filter', () => {
       [constants.FIELD_PERMISSIONS]: [
         {
           field: 'Test__c.Description__c',
-          readable: false,
-          editable: true,
+          readable: 'false',
+          editable: 'true',
+        },
+        {
+          field: 'Test__c.No_standard__c',
+          readable: 'false',
+          editable: 'false',
         },
       ],
       description: 'Standard profile',
@@ -134,8 +147,8 @@ describe('Field Permissions filter', () => {
     const profile = profiles.find(p => p.fullName === profileName) as ProfileInfo
     const fieldPermissions = profile.fieldPermissions
       .find(f => f.field === fieldName) as FieldPermissions
-    expect(fieldPermissions.editable).toBe(editable)
-    expect(fieldPermissions.readable).toBe(readable)
+    expect(fieldPermissions.editable).toBe(editable ? 'true' : 'false')
+    expect(fieldPermissions.readable).toBe(readable ? 'true' : 'false')
   }
 
   beforeEach(() => {
@@ -159,6 +172,11 @@ describe('Field Permissions filter', () => {
         .annotations[FIELD_LEVEL_SECURITY_ANNOTATION]
       expect(fieldLevelSecurityPlus.readable).toEqual([ADMIN_FULL_NAME])
       expect(fieldLevelSecurityPlus.editable).toEqual([])
+
+      const fieldLevelSecurityNoStandard = objectTypes[0].fields.noStandard
+        .annotations[FIELD_LEVEL_SECURITY_ANNOTATION]
+      expect(fieldLevelSecurityNoStandard.readable).toEqual([ADMIN_FULL_NAME])
+      expect(fieldLevelSecurityNoStandard.editable).toEqual([ADMIN_FULL_NAME])
 
       // Check profile instances' field_permissions were deleted
       elements.filter(isInstanceElement)
@@ -302,14 +320,14 @@ describe('Field Permissions filter', () => {
     expect(adminProfile.fullName).toBe('Admin')
     expect(adminProfile.fieldPermissions.length).toBe(3)
     expect(adminProfile.fieldPermissions[0].field).toBe('Test__c.Delta__c')
-    expect(adminProfile.fieldPermissions[0].editable).toBe(true)
-    expect(adminProfile.fieldPermissions[0].readable).toBe(true)
+    expect(adminProfile.fieldPermissions[0].editable).toBe('true')
+    expect(adminProfile.fieldPermissions[0].readable).toBe('true')
     expect(adminProfile.fieldPermissions[1].field).toBe('Test__c.Address__c')
-    expect(adminProfile.fieldPermissions[1].editable).toBe(false)
-    expect(adminProfile.fieldPermissions[1].readable).toBe(false)
+    expect(adminProfile.fieldPermissions[1].editable).toBe('false')
+    expect(adminProfile.fieldPermissions[1].readable).toBe('false')
     expect(adminProfile.fieldPermissions[2].field).toBe('Test__c.Apple__c')
-    expect(adminProfile.fieldPermissions[2].editable).toBe(false)
-    expect(adminProfile.fieldPermissions[2].readable).toBe(false)
+    expect(adminProfile.fieldPermissions[2].editable).toBe('false')
+    expect(adminProfile.fieldPermissions[2].readable).toBe('false')
   })
 
   it('should set default field permissions upon add', async () => {

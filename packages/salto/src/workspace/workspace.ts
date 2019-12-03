@@ -12,7 +12,7 @@ import { mergeElements, MergeError } from '../core/merger'
 import { validateElements, ValidationError, UnresolvedReferenceValidationError } from '../core/validator'
 import { DetailedChange } from '../core/plan'
 import { ParseResultFSCache } from './cache'
-import { getChangeLocations, updateBlueprintData, getChangesToUpdate } from './blueprint_update'
+import { getChangeLocations, updateBlueprintData, getChangesToUpdate, BP_EXTENSION } from './blueprint_update'
 import { Config, dumpConfig, locateWorkspaceRoot, getConfigPath, completeConfig, saltoConfigType } from './config'
 
 const { DefaultMap } = collections.map
@@ -20,7 +20,6 @@ const { DefaultMap } = collections.map
 const log = logger(module)
 
 export const CREDS_DIR = 'credentials'
-
 class ExistingWorkspaceError extends Error {
   constructor() {
     super('existing salto workspace')
@@ -60,7 +59,7 @@ export const getBlueprintsFromDir = async (
   blueprintsDir: string,
 ): Promise<string[]> => {
   const entries = await readdirp.promise(blueprintsDir, {
-    fileFilter: '*.bp',
+    fileFilter: `*${BP_EXTENSION}`,
     directoryFilter: e => e.basename[0] !== '.',
   })
   return entries.map(e => e.fullPath)
@@ -418,7 +417,7 @@ export class Workspace {
       bp
       && bp.elements.length === 1
       && bp.elements[0].elemID.isConfig
-      && bp.filename === path.join(CREDS_DIR, `${bp.elements[0].elemID.adapter}.bp`)
+      && bp.filename === path.join(CREDS_DIR, `${bp.elements[0].elemID.adapter}${BP_EXTENSION}`)
     )
 
     const cache = new ParseResultFSCache(this.config.localStorage, this.config.baseDir)

@@ -69,6 +69,34 @@ const allMissingFields: {id: ElemID; fields: MissingField[]}[] = [
       },
     ],
   },
+  {
+    id: new ElemID(SALESFORCE, 'layout_section'),
+    fields: [
+      {
+        name: 'style',
+        type: BuiltinTypes.STRING,
+        annotations: {
+          [Type.VALUES]: [
+            'TwoColumnsTopToBottom', 'TwoColumnsLeftToRight', 'OneColumn', 'CustomLinks',
+          ],
+        },
+      },
+    ],
+  },
+  {
+    id: new ElemID(SALESFORCE, 'layout_item'),
+    fields: [
+      {
+        name: 'behavior',
+        type: BuiltinTypes.STRING,
+        annotations: {
+          [Type.VALUES]: [
+            'Edit', 'Required', 'Readonly',
+          ],
+        },
+      },
+    ],
+  },
 ]
 
 export const makeFilter = (

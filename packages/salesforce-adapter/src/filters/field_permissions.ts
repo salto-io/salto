@@ -72,8 +72,8 @@ const toProfiles = (object: ObjectType): ProfileInfo[] =>
         }
         profiles[profile].fieldPermissions.push({
           field: fieldFullName(object, field),
-          editable: fieldEditable.includes(profile) ? 'true' : 'false',
-          readable: fieldReadable.includes(profile) ? 'true' : 'false',
+          editable: fieldEditable.includes(profile),
+          readable: fieldReadable.includes(profile),
         })
       })
       return profiles
@@ -87,6 +87,7 @@ type ProfileToPermissions = Record<string, { editable: boolean; readable: boolea
  */
 const profile2Permissions = (profileInstance: InstanceElement):
   Record<string, ProfileToPermissions> => {
+  const boolValue = (val: boolean | 'true' | 'false'): boolean => val === 'true' || val === true
   const instanceFieldPermissions: FieldPermissions[] = profileInstance.value[FIELD_PERMISSIONS]
   if (!instanceFieldPermissions) {
     return {}
@@ -95,7 +96,7 @@ const profile2Permissions = (profileInstance: InstanceElement):
     .map(({ field, readable, editable }) => (
       {
         [field]: {
-          [id(profileInstance)]: { readable: readable === 'true', editable: editable === 'true' },
+          [id(profileInstance)]: { readable: boolValue(readable), editable: boolValue(editable) },
         },
       })))
 }
@@ -178,7 +179,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
       FieldPermissions | undefined => permissions.find(fp => fp.field === field)
 
     const emptyPermissions = (permissions: FieldPermissions): FieldPermissions =>
-      ({ field: permissions.field, readable: 'false', editable: 'false' })
+      ({ field: permissions.field, readable: false, editable: false })
 
     const beforeProfiles = toProfiles(before)
     const afterProfiles = toProfiles(after)

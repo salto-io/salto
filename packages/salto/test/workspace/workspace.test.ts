@@ -322,10 +322,28 @@ type salesforce_lead {
 
         },
         {
+          path: ['other', 'boo'],
+          id: new ElemID('salesforce', 'lead', 'attr', 'nono'),
+          action: 'add',
+          data: { after: 'nono' },
+        },
+        {
+          path: ['other', 'boo'],
+          id: new ElemID('salesforce', 'lead', 'attr', 'momo'),
+          action: 'add',
+          data: { after: 'momo' },
+        },
+        {
           path: ['other', 'foo', 'bar'],
           id: new ElemID('salesforce', 'lead', 'field', 'ext_field', Type.DEFAULT),
           action: 'add',
           data: { after: 'blublu' },
+        },
+        { // Add to an exiting path
+          path: ['file'],
+          id: new ElemID('salesforce', 'lead', 'attr', 'dodo'),
+          action: 'add',
+          data: { after: 'dodo' },
         },
       ]
 
@@ -369,6 +387,17 @@ type salesforce_lead {
         expect((workspace.parsedBlueprints['other/battr.bp'].elements.filter(e => isObjectType(e))[0] as ObjectType).annotations.bobo).toBeDefined()
       })
 
+      it('should add nested attributes with same parent on the same path to the same wrapper', () => {
+        expect(Object.keys(workspace.parsedBlueprints)).toContain('other/boo.bp')
+        expect(workspace.parsedBlueprints['other/boo.bp'].elements.length).toBe(1)
+        expect(workspace.parsedBlueprints['other/boo.bp'].elements[0].annotations.nono).toBeDefined()
+        expect(workspace.parsedBlueprints['other/boo.bp'].elements[0].annotations.momo).toBeDefined()
+      })
+      it('should add to an exiting type another nested addition', () => {
+        // original file.bp had 2 elements in it
+        expect(workspace.parsedBlueprints['file.bp'].elements.length).toBe(2)
+        expect(workspace.parsedBlueprints['file.bp'].elements[0].annotations.dodo).toBeDefined()
+      })
 
       it('should not add new blueprint for deeply nested type ', () => {
         expect(Object.keys(workspace.parsedBlueprints)).not.toContain('other/foo/bar.bp')

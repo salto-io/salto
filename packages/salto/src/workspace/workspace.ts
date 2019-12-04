@@ -128,7 +128,6 @@ const mergeSourceMaps = (bps: ReadonlyArray<ParsedBlueprint>): SourceMap => {
   return result
 }
 
-
 export class Errors extends types.Bean<Readonly<{
   parse: ReadonlyArray<ParseError>
   merge: ReadonlyArray<MergeError>
@@ -327,7 +326,6 @@ export class Workspace {
     names.forEach(name => this.dirtyBlueprints.add(name))
   }
 
-
   /**
    * Update workspace with changes to elements in the workspace
    *
@@ -342,7 +340,7 @@ export class Workspace {
 
     const changesToUpdate = getChangesToUpdate(
       changes,
-      Object.keys(this.sourceMap)
+      this.sourceMap
     )
 
     const updatedBlueprints = (await Promise.all(
@@ -367,7 +365,6 @@ export class Workspace {
     log.debug('going to set the new blueprints')
     return this.setBlueprints(...updatedBlueprints)
   }
-
 
   /**
    * Low level interface for updating/adding a specific blueprint to a workspace

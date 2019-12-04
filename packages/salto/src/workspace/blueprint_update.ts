@@ -1,15 +1,22 @@
 import _ from 'lodash'
 import path from 'path'
 import { getChangeElement, isElement, ObjectType, ElemID, Element } from 'adapter-api'
-
+import { collections } from '@salto/lowerdash'
 import { AdditionDiff } from '@salto/dag'
 import { DetailedChange } from '../core/plan'
-import { SourceRange } from '../parser/parse'
+import { SourceRange, SourceMap } from '../parser/parse'
 import { dump as saltoDump } from '../parser/dump'
+
+const { makeArray } = collections.array
 
 type DetailedChangeWithSource = DetailedChange & { location: SourceRange }
 
 export const BP_EXTENSION = '.bp'
+
+const createFileNameFromPath = (pathParts?: string[]): string =>
+  (pathParts
+    ? `${path.join(...pathParts)}${BP_EXTENSION}`
+    : '')
 
 export const getChangeLocations = (
   change: DetailedChange,
@@ -30,6 +37,7 @@ export const getChangeLocations = (
       end: nestedPosition,
     }
   }
+
   const findLocations = (): SourceRange[] => {
     if (change.action !== 'add') {
       // We want to get the location of the existing element
@@ -47,14 +55,16 @@ export const getChangeLocations = (
       const parentID = change.id.createParentID()
       const possibleLocations = sourceMap.get(parentID.getFullName()) || []
       if (possibleLocations.length > 0) {
+        const foundInPath = possibleLocations.find(sr =>
+          sr.filename === createFileNameFromPath(change.path))
         // TODO: figure out how to choose the correct location if there is more than one option
-        return [lastNestedLocation(possibleLocations[0])]
+        return [lastNestedLocation(foundInPath || possibleLocations[0])]
       }
     }
     // Fallback to using the path from the element itself
-    const elemPath = path.join(...(change.path || getChangeElement(change).path || ['unsorted']))
+    const bpPath = change.path || getChangeElement(change).path
     return [{
-      filename: `${elemPath}${BP_EXTENSION}`,
+      filename: createFileNameFromPath(bpPath),
       start: { col: 1, line: 1, byte: 0 },
       end: { col: 1, line: 1, byte: 0 },
     }]
@@ -183,17 +193,20 @@ const wrapAdditions = (nestedAdditions: DetailedAddition[]): DetailedAddition =>
   } as DetailedAddition
 }
 
+const parentElementExistsInPath = (dc: DetailedChange, sourceMap: SourceMap): boolean => {
+  const { parent } = dc.id.createTopLevelParentID()
+  return makeArray(sourceMap.get(parent.getFullName()))
+    .map(range => range.filename)
+    .includes(createFileNameFromPath(dc.path))
+}
 export const getChangesToUpdate = (
   changes: DetailedChange[],
-  existingFullNames: string []
+  sourceMap: SourceMap
 ): DetailedChange[] => {
-  const isNestedAddition = (dc: DetailedChange): boolean => (dc.path
+  const isNestedAddition = (dc: DetailedChange): boolean => (dc.path || false)
     && dc.action === 'add'
     && dc.id.nestingLevel === 1
-    && !existingFullNames
-      .includes(
-        dc.id.createTopLevelParentID().parent.getFullName()
-      )) ?? false
+    && !parentElementExistsInPath(dc, sourceMap)
 
   const [nestedAdditionsWithPath, otherChanges] = _.partition(
     changes,

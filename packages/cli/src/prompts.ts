@@ -55,8 +55,12 @@ Be sure to go over the preview output when invoking the deploy command.`
   public static readonly DESCRIBE_NOT_FOUND = 'Unknown element type.'
 
   public static readonly COULD_NOT_FIND_FILE = 'Could not find the input file. Make sure the path you provided is correct.'
-  public static readonly IMPORT_FINISHED_SUCCESSFULLY = 'Finished importing records from CSV file.'
-  public static readonly DELETE_FINISHED_SUCCESSFULLY = 'Finished deleting records read from CSV file.'
+  public static readonly IMPORT_FINISHED_SUMMARY = (numSuccess: number, numErrors: number): string => `Finished importing records from CSV file.\nNumber of rows imported successfully: ${numSuccess}
+Number of rows with errors: ${numErrors}`
+
+  public static readonly DELETE_FINISHED_SUMMARY = (numSuccess: number, numErrors: number): string => `Finished deleting records from CSV file.\nNumber of rows deleted successfully: ${numSuccess}
+Number of rows with errors: ${numErrors}`
+
   public static readonly EXPORT_FINISHED_SUCCESSFULLY = 'Finished exporting records to CSV file.'
   public static readonly OPERATION_FAILED = 'Operation failed.'
 

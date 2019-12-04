@@ -130,7 +130,23 @@ describe('SalesforceAdapter import-export operations', () => {
 
     beforeEach(() => {
       mockThen = jest.fn(() => Promise.resolve())
-      mockRetrieve = jest.fn(() => Promise.resolve())
+      mockRetrieve = jest.fn(() => Promise.resolve([
+        {
+          id: '1',
+          success: true,
+          errors: [],
+        },
+        {
+          id: '2',
+          success: true,
+          errors: [],
+        },
+        {
+          id: '3',
+          success: true,
+          errors: [],
+        },
+      ]))
       mockLoad = jest.fn(() => ({ then: mockThen, retrieve: mockRetrieve }))
       connection.bulk.load = mockLoad
     })
@@ -200,7 +216,7 @@ describe('SalesforceAdapter import-export operations', () => {
 
     describe('Import (upsert) instances of type', () => {
       it('should call the bulk API with the correct object type name', async () => {
-        await adapter.importInstancesOfType(mockSingleInstanceIterator())
+        await adapter.importInstancesOfType(testType, mockSingleInstanceIterator())
         expect(mockLoad.mock.calls[0][0]).toEqual(testObjectType)
         expect(mockLoad.mock.calls[0][1]).toEqual('upsert')
       })
@@ -211,6 +227,31 @@ describe('SalesforceAdapter import-export operations', () => {
         await adapter.deleteInstancesOfType(testType, mockSingleElemIdIterator())
         expect(mockLoad.mock.calls[0][0]).toEqual(testObjectType)
         expect(mockLoad.mock.calls[0][1]).toEqual('delete')
+      })
+    })
+
+    describe('Return correct modification result', () => {
+      it('should return correct successful and failed rows number', async () => {
+        mockRetrieve = jest.fn(() => Promise.resolve([
+          {
+            id: '1',
+            success: false,
+            errors: [],
+          },
+          {
+            id: '2',
+            success: true,
+            errors: [],
+          },
+          {
+            id: '3',
+            success: false,
+            errors: [],
+          },
+        ]))
+        const result = await adapter.deleteInstancesOfType(testType, mockSingleElemIdIterator())
+        expect(result.failedRows).toEqual(2)
+        expect(result.successfulRows).toEqual(1)
       })
     })
   })

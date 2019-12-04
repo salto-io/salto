@@ -30,11 +30,10 @@ export const command = (
     )
     // TODO: Return here the full report that contains the numbers of successful and failed rows.
     // Also: print the errors of the erroneous rows to a log file and print the path of the log.
-    if (result.success) {
-      stdout.write(Prompts.DELETE_FINISHED_SUCCESSFULLY)
+    stdout.write(Prompts.DELETE_FINISHED_SUMMARY(result.successfulRows, result.failedRows))
+    if (result.successfulRows > 0 || result.failedRows === 0) {
       return CliExitCode.Success
     }
-    stderr.write(Prompts.OPERATION_FAILED)
     return CliExitCode.AppError
   },
 })

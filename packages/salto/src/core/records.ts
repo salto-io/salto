@@ -1,5 +1,5 @@
 import {
-  ObjectType, Adapter, InstanceElement, Values, ElemID,
+  ObjectType, Adapter, InstanceElement, Values, ElemID, DataModificationResult,
 } from 'adapter-api'
 import { adapterId as SALESFORCE } from 'salesforce-adapter'
 import { readCsvFromStream, dumpCsv } from './csv'
@@ -40,12 +40,12 @@ const instancesIterator = async function *instancesIterator(
 
 export const importInstancesOfType = async (
   type: ObjectType, inputPath: string, adapters: Record<string, Adapter>):
-Promise<void> => {
+Promise<DataModificationResult> => {
   const adapter = adapters[type.elemID.adapter]
   if (!adapter) {
     throw new Error(`Failed to find the adapter for the given type: ${type.elemID.getFullName()}`)
   }
-  await adapter.importInstancesOfType(instancesIterator(type, inputPath))
+  return adapter.importInstancesOfType(type, instancesIterator(type, inputPath))
 }
 
 // Convert the result to Instance Elements
@@ -65,10 +65,10 @@ const elemIdsIterator = async function *elemIdsIterator(
 
 export const deleteInstancesOfType = async (
   type: ObjectType, inputPath: string, adapters: Record<string, Adapter>):
-Promise<void> => {
+Promise<DataModificationResult> => {
   const adapter = adapters[type.elemID.adapter]
   if (!adapter) {
     throw new Error(`Failed to find the adapter for the given type: ${type.elemID.getFullName()}`)
   }
-  await adapter.deleteInstancesOfType(type, elemIdsIterator(type, inputPath))
+  return adapter.deleteInstancesOfType(type, elemIdsIterator(type, inputPath))
 }

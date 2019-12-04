@@ -1,5 +1,7 @@
 import wu from 'wu'
-import { ObjectType, InstanceElement, Element, ActionName } from 'adapter-api'
+import {
+  ObjectType, InstanceElement, Element, ActionName, DataModificationResult,
+} from 'adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto/logging'
 import {
@@ -168,16 +170,12 @@ export const exportToCsv = async (
   return { success: true, errors: [] }
 }
 
-export interface ModifyDataResult {
-  success: boolean
-  errors: DeployError[]
-}
 export const importFromCsvFile = async (
   typeId: string,
   inputPath: string,
   workspace: Workspace,
   fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
-): Promise<ModifyDataResult> => {
+): Promise<DataModificationResult> => {
   // Find the corresponding element in the state
   const state = new State(workspace.config.stateLocation)
   const stateElements = await state.get()
@@ -186,8 +184,7 @@ export const importFromCsvFile = async (
     throw new Error(`Couldn't find the type you are looking for: ${typeId}. Have you run salto fetch yet?`)
   }
   const [adapters] = await initAdapters(workspace.elements, fillConfig)
-  await importInstancesOfType(type as ObjectType, inputPath, adapters)
-  return { success: true, errors: [] }
+  return importInstancesOfType(type as ObjectType, inputPath, adapters)
 }
 
 export const deleteFromCsvFile = async (
@@ -195,7 +192,7 @@ export const deleteFromCsvFile = async (
   inputPath: string,
   workspace: Workspace,
   fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
-): Promise<ModifyDataResult> => {
+): Promise<DataModificationResult> => {
   // Find the corresponding element in the state
   const state = new State(workspace.config.stateLocation)
   const stateElements = await state.get()
@@ -204,8 +201,7 @@ export const deleteFromCsvFile = async (
     throw new Error(`Couldn't find the type you are looking for: ${typeId}. Have you run salto fetch yet?`)
   }
   const [adapters] = await initAdapters(workspace.elements, fillConfig)
-  await deleteInstancesOfType(type as ObjectType, inputPath, adapters)
-  return { success: true, errors: [] }
+  return deleteInstancesOfType(type as ObjectType, inputPath, adapters)
 }
 
 export const init = async (workspaceName?: string): Promise<Workspace> => {

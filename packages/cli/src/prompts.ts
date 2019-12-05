@@ -63,8 +63,8 @@ Number of rows with errors: ${numErrors}\n`
 
   public static readonly ERROR_SUMMARY = (errors: string[]): string => `The following errors were encountered:\n${errors.join('\n')}`
 
-  public static readonly EXPORT_FINISHED_SUCCESSFULLY = 'Finished exporting records to CSV file.'
-  public static readonly OPERATION_FAILED = 'Operation failed.'
+  public static readonly EXPORT_FINISHED_SUMMARY = (numRows: number, type: string, path: string): string => `Finished exporting ${numRows} records of type ${type} to CSV file.\nThe csv file path is: ${path}`
+  public static readonly OPERATION_FAILED_WITH_ERROR = (error: Error): string => `Operation failed: ${error.message}`
 
   public static initFailed(msg: string): string {
     return `Could not initiate workspace: ${msg}\n`

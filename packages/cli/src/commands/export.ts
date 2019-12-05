@@ -22,14 +22,14 @@ CliCommand => ({
     // Check if output path is provided, otherwise use the template
     // <working dir>/<typeName>_<current timestamp>.csv
     const outPath = outputPath || path.join(path.resolve('./'), `${typeName}_${Date.now()}.csv`)
-    const result = await exportToCsv(typeName, outPath, workspace, getConfigFromUser)
-
-    if (result.success) {
-      stdout.write(Prompts.EXPORT_FINISHED_SUCCESSFULLY)
+    try {
+      const exportedRows = await exportToCsv(typeName, outPath, workspace, getConfigFromUser)
+      stdout.write(Prompts.EXPORT_FINISHED_SUMMARY(exportedRows, typeName, outputPath))
       return CliExitCode.Success
+    } catch (error) {
+      stderr.write(Prompts.OPERATION_FAILED_WITH_ERROR(error))
+      return CliExitCode.AppError
     }
-    stderr.write(Prompts.OPERATION_FAILED)
-    return CliExitCode.AppError
   },
 })
 

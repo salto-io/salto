@@ -147,16 +147,12 @@ export const describeElement = async (
 ): Promise<SearchResult> =>
   findElement(searchWords, workspace.elements)
 
-export interface ExportResult {
-  success: boolean
-  errors: Error[]
-}
 export const exportToCsv = async (
   typeId: string,
   outPath: string,
   workspace: Workspace,
   fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
-): Promise<ExportResult> => {
+): Promise<number> => {
   // Find the corresponding element in the state
   const state = new State(workspace.config.stateLocation)
   const stateElements = await state.get()
@@ -166,8 +162,8 @@ export const exportToCsv = async (
   }
   const [adapters] = await initAdapters(workspace.elements, fillConfig)
 
-  await getInstancesOfType(type as ObjectType, adapters, outPath)
-  return { success: true, errors: [] }
+  const exportedRows = await getInstancesOfType(type as ObjectType, adapters, outPath)
+  return exportedRows
 }
 
 export const importFromCsvFile = async (

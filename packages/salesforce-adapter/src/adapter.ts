@@ -282,7 +282,7 @@ export default class SalesforceAdapter {
     const returnResult = {
       successfulRows: 0,
       failedRows: 0,
-      uniqueErrors: errorSet,
+      errors: errorSet,
     }
     const updateReturnResult = (
       retResult: DataModificationResult,
@@ -296,8 +296,16 @@ export default class SalesforceAdapter {
         if (!result.success) {
           // Emit the error to the log
           const rowNumber = RECORDS_CHUNK_SIZE * batchNumber + index + 1
-          log.error(`Failed to perform ${bulkOperation} on row ${rowNumber} with the following
-          errors:\n${result.errors?.join('\n')}`)
+          if (result.errors && result.errors.length > 0) {
+            log.error('Failed to perform %o on row %o with the following errors:\n%o',
+              bulkOperation,
+              rowNumber,
+              result.errors?.join('\n'))
+          } else {
+            log.error('Failed to perform %o on row %o',
+              bulkOperation,
+              rowNumber)
+          }
 
           // Add the error string to the set if it doesn't appear there already
           // eslint-disable-next-line no-unused-expressions

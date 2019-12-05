@@ -6,7 +6,7 @@ import { Change } from './change'
 export interface DataModificationResult {
   successfulRows: number
   failedRows: number
-  uniqueErrors: Set<string>
+  errors: Set<string>
 }
 
 export interface Adapter {

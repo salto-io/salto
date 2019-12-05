@@ -275,8 +275,8 @@ describe('SalesforceAdapter import-export operations', () => {
           },
         ]))
         const result = await adapter.deleteInstancesOfType(testType, mockSingleElemIdIterator())
-        expect(result.uniqueErrors.size).toEqual(3)
-        expect(_.isEqual(wu(result.uniqueErrors.values()).toArray(), ['error1', 'error2', 'error6'])).toBeTruthy()
+        expect(result.errors.size).toEqual(3)
+        expect(_.isEqual(wu(result.errors.values()).toArray(), ['error1', 'error2', 'error6'])).toBeTruthy()
       })
     })
   })

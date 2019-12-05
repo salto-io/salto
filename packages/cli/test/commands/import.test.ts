@@ -10,7 +10,7 @@ jest.mock('salto', () => ({
   importFromCsvFile: jest.fn().mockImplementation(() => Promise.resolve({
     successfulRows: 5,
     failedRows: 0,
-    uniqueErrors: new Set<string>(),
+    errors: new Set<string>(),
   })),
   Workspace: {
     load: jest.fn().mockImplementation(
@@ -63,7 +63,7 @@ describe('import command', () => {
     const erroredModifyDataResult = {
       successfulRows: 0,
       failedRows: 5,
-      uniqueErrors: new Set<string>(),
+      errors: new Set<string>(),
     } as unknown as DataModificationResult
     (importFromCsvFile as jest.Mock).mockResolvedValueOnce(Promise.resolve(erroredModifyDataResult))
     const exitCode = await command(workspaceDir, '', '', cliOutput).execute()

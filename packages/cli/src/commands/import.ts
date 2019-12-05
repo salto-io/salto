@@ -31,11 +31,11 @@ export const command = (
     // Print the full report that contains the numbers of successful and failed rows.
     stdout.write(Prompts.IMPORT_FINISHED_SUMMARY(result.successfulRows, result.failedRows))
     // Print the unique errors encountered during the import
-    if (result.uniqueErrors.size > 0) {
-      stdout.write(Prompts.ERROR_SUMMARY(wu(result.uniqueErrors.values()).toArray()))
+    if (result.errors.size > 0) {
+      stdout.write(Prompts.ERROR_SUMMARY(wu(result.errors.values()).toArray()))
     }
-    // If all rows failed (there are no successful rows), return error exit code
-    if (result.successfulRows === 0 && result.failedRows > 0) {
+    // If any rows failed, return error exit code
+    if (result.failedRows > 0) {
       return CliExitCode.AppError
     }
     // Otherwise return success

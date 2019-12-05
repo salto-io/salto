@@ -9,7 +9,8 @@ import * as constants from '../src/constants'
 import { ADMIN_PROFILE, PROFILE_METADATA_TYPE } from '../src/filters/field_permissions'
 import { STANDARD_VALUE_SET } from '../src/filters/standard_value_sets'
 import {
-  CustomObject, ProfileInfo, FieldPermissions, CustomField, FilterItem,
+  CustomObject, ProfileFieldPermissionsInfo,
+  FieldPermissions, CustomField, FilterItem,
 } from '../src/client/types'
 import {
   Types, sfCase, fromMetadataInfo, bpCase, metadataType, apiName,
@@ -198,7 +199,7 @@ describe('Salesforce adapter E2E with real account', () => {
         return typeof unknownVariable === 'string' ? JSON.parse(unknownVariable) : variable
       }
       const profileInfo = (await client.readMetadata(PROFILE_METADATA_TYPE,
-        profile))[0] as ProfileInfo
+        profile))[0] as ProfileFieldPermissionsInfo
       const fieldPermissionsMap = new Map<string, FieldPermissions>()
       profileInfo.fieldPermissions.map(f => fieldPermissionsMap.set(f.field, f))
       return fields.map(field => {
@@ -566,7 +567,7 @@ describe('Salesforce adapter E2E with real account', () => {
         PROFILE_METADATA_TYPE, sfCase(newInstance.elemID.name)
       ))[0] as Profile
 
-      type Profile = ProfileInfo & {
+      type Profile = ProfileFieldPermissionsInfo & {
         tabVisibilities: Record<string, Value>
         applicationVisibilities: Record<string, Value>
       }

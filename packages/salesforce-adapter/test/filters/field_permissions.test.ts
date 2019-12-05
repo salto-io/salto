@@ -143,8 +143,8 @@ describe('Field Permissions filter', () => {
   const verifyUpdateCall = (profileName: string, fieldName: string, editable = true,
     readable = true): void => {
     expect(mockUpdate.mock.calls.length).toBe(1)
-    const profiles = mockUpdate.mock.calls[0][1] as ProfileInfo[]
-    const profile = profiles.find(p => p.fullName === profileName) as ProfileInfo
+    const profiles = mockUpdate.mock.calls[0][1] as ProfileFieldPermissionsInfo[]
+    const profile = profiles.find(p => p.fullName === profileName) as ProfileFieldPermissionsInfo
     const fieldPermissions = profile.fieldPermissions
       .find(f => f.field === fieldName) as FieldPermissions
     expect(fieldPermissions.editable).toBe(editable)

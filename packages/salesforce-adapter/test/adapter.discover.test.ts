@@ -496,6 +496,7 @@ describe('SalesforceAdapter fetch', () => {
         + 1 /* rollup summary operation */
         + 3
         + 1 /* field permissions */
+        + 1 /* object permissions */
         + 2 /* field dependency & value settings */)
 
       const types = _.assign({}, ...result.map(t => ({ [t.elemID.getFullName()]: t })))

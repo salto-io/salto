@@ -13,7 +13,9 @@ export const FORMULA = 'formula'
 export const DEFAULT_VALUE_FORMULA = 'default_value_formula'
 export const METADATA_TYPE = 'metadata_type'
 export const FIELD_PERMISSIONS = 'field_permissions'
+export const OBJECT_PERMISSIONS = 'object_permissions'
 export const FIELD_LEVEL_SECURITY_ANNOTATION = 'field_level_security'
+export const OBJECT_LEVEL_SECURITY_ANNOTATION = 'object_level_security'
 export const FIELD_TYPE_NAMES = {
   STRING: 'string',
   AUTONUMBER: 'autonumber',
@@ -146,6 +148,15 @@ export const GEOLOCATION_FIELDS = {
 export const FIELD_LEVEL_SECURITY_FIELDS = {
   EDITABLE: 'editable',
   READABLE: 'readable',
+}
+
+export const OBJECT_LEVEL_SECURITY_FIELDS = {
+  ALLOW_CREATE: 'allow_create',
+  ALLOW_DELETE: 'allow_delete',
+  ALLOW_EDIT: 'allow_edit',
+  ALLOW_READ: 'allow_read',
+  MODIFY_ALL_RECORDS: 'modify_all_records',
+  VIEW_ALL_RECORDS: 'view_all_records',
 }
 
 // Limits

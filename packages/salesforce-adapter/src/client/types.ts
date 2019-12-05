@@ -9,10 +9,30 @@ export interface FieldPermissions {
   readable: boolean | 'true' | 'false'
 }
 
-export class ProfileInfo implements MetadataInfo {
+
+export interface ObjectPermissions {
+  object: string
+  allowCreate: 'true' | 'false'
+  allowDelete: 'true' | 'false'
+  allowEdit: 'true' | 'false'
+  allowRead: 'true' | 'false'
+  modifyAllRecords: 'true' | 'false'
+  viewAllRecords: 'true' | 'false'
+}
+
+
+export class ProfileFieldPermissionsInfo implements MetadataInfo {
   constructor(
     public readonly fullName: string,
-    public fieldPermissions: FieldPermissions[] = []
+    public fieldPermissions: FieldPermissions[] = [],
+  ) {}
+}
+
+
+export class ProfileObjectPermissionsInfo implements MetadataInfo {
+  constructor(
+    public readonly fullName: string,
+    public objectPermissions: ObjectPermissions[] = [],
   ) {}
 }
 

@@ -14,7 +14,7 @@ import {
   sfCase, fieldFullName, bpCase, metadataType, isCustomObject, Types,
 } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
-import { ProfileInfo, FieldPermissions } from '../client/types'
+import { ProfileFieldPermissionsInfo, FieldPermissions } from '../client/types'
 import { generateObjectElemID2ApiName, getCustomObjects } from './utils'
 
 export const PROFILE_METADATA_TYPE = 'Profile'
@@ -58,7 +58,7 @@ const setDefaultFieldPermissions = (field: Field): void => {
   }
 }
 
-const toProfiles = (object: ObjectType): ProfileInfo[] =>
+const toProfiles = (object: ObjectType): ProfileFieldPermissionsInfo[] =>
   Object.values(Object.values(object.fields)
     .reduce((profiles, field) => {
       if (!getFieldPermissions(field)) {
@@ -68,7 +68,9 @@ const toProfiles = (object: ObjectType): ProfileInfo[] =>
       const fieldReadable: string[] = getFieldPermissions(field)[READABLE] || []
       _.union(fieldEditable, fieldReadable).forEach((profile: string) => {
         if (_.isUndefined(profiles[profile])) {
-          profiles[profile] = new ProfileInfo(sfCase(ElemID.fromFullName(profile).name), [])
+          profiles[profile] = new ProfileFieldPermissionsInfo(
+            sfCase(ElemID.fromFullName(profile).name), []
+          )
         }
         profiles[profile].fieldPermissions.push({
           field: fieldFullName(object, field),
@@ -77,7 +79,7 @@ const toProfiles = (object: ObjectType): ProfileInfo[] =>
         })
       })
       return profiles
-    }, {} as Record<string, ProfileInfo>))
+    }, {} as Record<string, ProfileFieldPermissionsInfo>))
 
 type ProfileToPermissions = Record<string, { editable: boolean; readable: boolean }>
 
@@ -172,7 +174,8 @@ const filterCreator: FilterCreator = ({ client }) => ({
         }
       })
 
-    const findProfile = (profiles: ProfileInfo[], profile: string): ProfileInfo | undefined =>
+    const findProfile = (profiles: ProfileFieldPermissionsInfo[], profile: string):
+     ProfileFieldPermissionsInfo | undefined =>
       profiles.find(p => p.fullName === profile)
 
     const findPermissions = (permissions: FieldPermissions[], field: string):

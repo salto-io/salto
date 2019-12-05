@@ -10,6 +10,7 @@ jest.mock('salto', () => ({
   deleteFromCsvFile: jest.fn().mockImplementation(() => Promise.resolve({
     successfulRows: 5,
     failedRows: 0,
+    uniqueErrors: new Set<string>(),
   })),
   Workspace: {
     load: jest.fn().mockImplementation(
@@ -62,6 +63,7 @@ describe('delete command', () => {
     const erroredModifyDataResult = {
       successfulRows: 0,
       failedRows: 5,
+      uniqueErrors: new Set<string>(),
     } as unknown as DataModificationResult
     (deleteFromCsvFile as jest.Mock).mockResolvedValueOnce(Promise.resolve(erroredModifyDataResult))
     const exitCode = await command(workspaceDir, 'mockName', 'mockPath', cliOutput).execute()

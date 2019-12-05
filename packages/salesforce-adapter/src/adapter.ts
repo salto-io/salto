@@ -278,9 +278,11 @@ export default class SalesforceAdapter {
     bulkOperation: BulkLoadOperation,
     transformFuction: (values: Value[]) => SfRecord[]
   ): Promise<DataModificationResult> {
+    const errorSet = new Set<string>()
     const returnResult = {
       successfulRows: 0,
       failedRows: 0,
+      uniqueErrors: errorSet,
     }
     const updateReturnResult = (
       retResult: DataModificationResult,
@@ -290,12 +292,21 @@ export default class SalesforceAdapter {
       retResult.successfulRows += bulkResult.filter(result => result.success).length
       retResult.failedRows = bulkResult.length - retResult.successfulRows
       // Log the errors for each row
-      const indices = bulkResult
-        .map((result, i) => (!result.success ? i : -1)).filter(x => x !== -1)
-      indices.forEach(index => {
-        const rowNumber = RECORDS_CHUNK_SIZE * batchNumber + index + 1
-        log.error(`Failed to perform ${bulkOperation} on row ${rowNumber} with the following
-          errors:\n${bulkResult[index].errors?.join('\n')}`)
+      bulkResult.forEach((result, index) => {
+        if (!result.success) {
+          // Emit the error to the log
+          const rowNumber = RECORDS_CHUNK_SIZE * batchNumber + index + 1
+          log.error(`Failed to perform ${bulkOperation} on row ${rowNumber} with the following
+          errors:\n${result.errors?.join('\n')}`)
+
+          // Add the error string to the set if it doesn't appear there already
+          // eslint-disable-next-line no-unused-expressions
+          result.errors?.forEach(error => {
+            if (!errorSet.has(error)) {
+              errorSet.add(error)
+            }
+          })
+        }
       })
     }
     let batch: Value[] = []

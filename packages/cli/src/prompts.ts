@@ -56,10 +56,12 @@ Be sure to go over the preview output when invoking the deploy command.`
 
   public static readonly COULD_NOT_FIND_FILE = 'Could not find the input file. Make sure the path you provided is correct.'
   public static readonly IMPORT_FINISHED_SUMMARY = (numSuccess: number, numErrors: number): string => `Finished importing records from CSV file.\nNumber of rows imported successfully: ${numSuccess}
-Number of rows with errors: ${numErrors}`
+Number of rows with errors: ${numErrors}\n`
 
   public static readonly DELETE_FINISHED_SUMMARY = (numSuccess: number, numErrors: number): string => `Finished deleting records from CSV file.\nNumber of rows deleted successfully: ${numSuccess}
-Number of rows with errors: ${numErrors}`
+Number of rows with errors: ${numErrors}\n`
+
+  public static readonly ERROR_SUMMARY = (errors: string[]): string => `The following errors were encountered:\n${errors.join('\n')}`
 
   public static readonly EXPORT_FINISHED_SUCCESSFULLY = 'Finished exporting records to CSV file.'
   public static readonly OPERATION_FAILED = 'Operation failed.'

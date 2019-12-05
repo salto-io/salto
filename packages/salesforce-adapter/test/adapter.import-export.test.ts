@@ -1,6 +1,8 @@
 import {
   ObjectType, ElemID, InstanceElement,
 } from 'adapter-api'
+import _ from 'lodash'
+import wu from 'wu'
 import SalesforceAdapter from '../src/adapter'
 import Connection from '../src/client/jsforce'
 import * as constants from '../src/constants'
@@ -252,6 +254,29 @@ describe('SalesforceAdapter import-export operations', () => {
         const result = await adapter.deleteInstancesOfType(testType, mockSingleElemIdIterator())
         expect(result.failedRows).toEqual(2)
         expect(result.successfulRows).toEqual(1)
+      })
+
+      it('should return correct error data from only failed results', async () => {
+        mockRetrieve = jest.fn(() => Promise.resolve([
+          {
+            id: '1',
+            success: false,
+            errors: ['error1', 'error2'],
+          },
+          {
+            id: '2',
+            success: true,
+            errors: ['error3', 'error4'],
+          },
+          {
+            id: '3',
+            success: false,
+            errors: ['error2', 'error6'],
+          },
+        ]))
+        const result = await adapter.deleteInstancesOfType(testType, mockSingleElemIdIterator())
+        expect(result.uniqueErrors.size).toEqual(3)
+        expect(_.isEqual(wu(result.uniqueErrors.values()).toArray(), ['error1', 'error2', 'error6'])).toBeTruthy()
       })
     })
   })

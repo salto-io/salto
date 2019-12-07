@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import {
   ObjectType, Element, Values, isObjectType, isInstanceElement, InstanceElement,
   Change, ElemID, findElement,

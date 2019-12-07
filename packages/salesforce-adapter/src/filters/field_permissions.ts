@@ -8,17 +8,14 @@ import wu from 'wu'
 import { logger } from '@salto/logging'
 import {
   FIELD_PERMISSIONS, SALESFORCE, FIELD_LEVEL_SECURITY_ANNOTATION,
-  FIELD_LEVEL_SECURITY_FIELDS,
+  FIELD_LEVEL_SECURITY_FIELDS, PROFILE_METADATA_TYPE, ADMIN_PROFILE,
 } from '../constants'
 import {
   sfCase, fieldFullName, bpCase, metadataType, isCustomObject, Types,
 } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
 import { ProfileFieldPermissionsInfo, FieldPermissions } from '../client/types'
-import { generateObjectElemID2ApiName, getCustomObjects } from './utils'
-
-export const PROFILE_METADATA_TYPE = 'Profile'
-export const ADMIN_PROFILE = 'admin'
+import { generateObjectElemID2ApiName, getCustomObjects, id } from './utils'
 
 const log = logger(module)
 
@@ -30,8 +27,6 @@ const ADMIN_ELEM_ID = new ElemID(SALESFORCE, bpCase(PROFILE_METADATA_TYPE),
 // --- Utils functions
 export const getFieldPermissions = (field: Field): Values =>
   (field.annotations[FIELD_LEVEL_SECURITY_ANNOTATION] || {})
-
-const id = (elem: Element): string => elem.elemID.getFullName()
 
 const setProfileFieldPermissions = (field: Field, profile: string, editable: boolean,
   readable: boolean): void => {

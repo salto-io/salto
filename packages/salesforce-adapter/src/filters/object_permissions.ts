@@ -1,28 +1,24 @@
 /* eslint-disable no-console */
 import {
   ObjectType, Element, Values, isObjectType, isInstanceElement, InstanceElement,
-  Change, getChangeElement, ElemID, findElement,
+  Change, ElemID, findElement,
 } from 'adapter-api'
 import _ from 'lodash'
 import { SaveResult } from 'jsforce'
-import wu from 'wu'
 import { logger } from '@salto/logging'
 import { collections } from '@salto/lowerdash'
 import {
   SALESFORCE, OBJECT_LEVEL_SECURITY_ANNOTATION, OBJECT_PERMISSIONS,
-  OBJECT_LEVEL_SECURITY_FIELDS, API_NAME,
+  OBJECT_LEVEL_SECURITY_FIELDS, API_NAME, PROFILE_METADATA_TYPE, ADMIN_PROFILE,
 } from '../constants'
 import {
   sfCase, bpCase, metadataType, isCustomObject, apiName, mapKeysRecursive,
 } from '../transformer'
 import { FilterCreator } from '../filter'
 import { ProfileObjectPermissionsInfo, ObjectPermissions } from '../client/types'
-import { /* generateObjectElemID2ApiName, */ getCustomObjects } from './utils'
+import { getCustomObjects, id } from './utils'
 
 const { makeArray } = collections.array
-
-export const PROFILE_METADATA_TYPE = 'Profile'
-export const ADMIN_PROFILE = 'admin'
 
 const log = logger(module)
 
@@ -35,8 +31,6 @@ const ADMIN_ELEM_ID = new ElemID(SALESFORCE, bpCase(PROFILE_METADATA_TYPE),
 // --- Utils functions
 export const getObjectPermissions = (object: ObjectType): Values =>
   (object.annotations[OBJECT_LEVEL_SECURITY_ANNOTATION] || {})
-
-const id = (elem: Element): string => elem.elemID.getFullName()
 
 const setProfileObjectPermissions = (object: ObjectType, profile: string, allowCreate: boolean,
   allowDelete: boolean, allowEdit: boolean, allowRead: boolean, modifyAllRecords: boolean,
@@ -70,10 +64,6 @@ const setProfileObjectPermissions = (object: ObjectType, profile: string, allowC
 }
 
 const setDefaultObjectPermissions = (object: ObjectType): void => {
-  // TODO - We can't set permissions for master detail
-  // if (field.type.isEqual(Types.primitiveDataTypes.masterdetail)) {
-  //   return
-  // }
   if (_.isEmpty(getObjectPermissions(object))) {
     setProfileObjectPermissions(object, ADMIN_ELEM_ID.getFullName(),
       true, true, true, true, true, true)
@@ -123,11 +113,10 @@ type ProfileToObjectPermissions = Record<string,
   viewAllRecords: boolean }>
 
 /**
- * TODO
- * Create a record of { object_name: { profile_name: { allow_create: boolean, allow_delete: boolean,
- *                                                     allow_edit: boolean, allow_read: boolean,
- *                                                     modify_all_records: boolean,
- *                                                     view_all_records: boolean } } }
+ * Create a record of { object_name: { profile_name: { allowCreate: boolean, allowDelete: boolean,
+ *                                                     allowEdit: boolean, allowRead: boolean,
+ *                                                     modifyAllRecords: boolean,
+ *                                                     viewAllRecords: boolean } } }
  * from the profile's object permissions
  */
 const profile2ObjectPermissions = (profileInstance: InstanceElement):
@@ -172,11 +161,9 @@ const filterCreator: FilterCreator = ({ client }) => ({
     const objectPermissionsPerProfile = profileInstances.map(profile2ObjectPermissions)
     const permissions: Record<string, ProfileToObjectPermissions> = _.merge({},
       ...objectPermissionsPerProfile)
-    // const objectElemID2ApiName = generateObjectElemID2ApiName(customObjectTypes)
 
     // Add object permissions to all fetched elements
     customObjectTypes.forEach(obj => {
-      // const fullName = objectElemID2ApiName[id(obj)] || apiName(obj)
       const fullName = apiName(obj)
       const objectPermissions = permissions[fullName]
       if (objectPermissions) {
@@ -190,7 +177,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
       }
     })
 
-    // Remove field permissions from Profile Instances & Type to avoid information duplication
+    // Remove object permissions from Profile Instances & Type to avoid information duplication
     profileInstances.forEach(profileInstance => delete profileInstance.value[OBJECT_PERMISSIONS])
     elements.filter(isObjectType)
       .filter(element => metadataType(element) === PROFILE_METADATA_TYPE)
@@ -199,7 +186,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
 
   onAdd: async (after: Element): Promise<SaveResult[]> => {
     if (isObjectType(after) && isCustomObject(after)) {
-      // Set default permissions for all fields of new object
+      // Set default permissions for the new object
       setDefaultObjectPermissions(after)
 
       const profiles = toProfiles(after)
@@ -208,19 +195,11 @@ const filterCreator: FilterCreator = ({ client }) => ({
     return []
   },
 
-  onUpdate: async (before: Element, after: Element, changes: ReadonlyArray<Change>):
+  onUpdate: async (before: Element, after: Element, _changes: ReadonlyArray<Change>):
     Promise<SaveResult[]> => {
     if (!(isObjectType(before) && isObjectType(after) && isCustomObject(before))) {
       return []
     }
-
-    wu(changes)
-      .forEach(c => {
-        const changeElement = getChangeElement(c)
-        if (isObjectType(changeElement) && c.action === 'add') {
-          setDefaultObjectPermissions(after)
-        }
-      })
 
     const findProfile = (profiles: ProfileObjectPermissionsInfo[], profile: string):
      ProfileObjectPermissionsInfo | undefined =>
@@ -240,9 +219,6 @@ const filterCreator: FilterCreator = ({ client }) => ({
 
     const beforeProfiles = toProfiles(before)
     const afterProfiles = toProfiles(after)
-    const profileNames = beforeProfiles
-      .map((profile: ProfileObjectPermissionsInfo) => profile.fullName)
-    console.log(profileNames)
     const profiles = afterProfiles
       .map(afterProfile => {
         let { objectPermissions } = afterProfile
@@ -251,20 +227,20 @@ const filterCreator: FilterCreator = ({ client }) => ({
           objectPermissions = objectPermissions
             // Filter out permissions that were already updated
             .filter(o => !_.isEqual(findPermissions(beforeProfile.objectPermissions, o.object), o))
-            // Add missing permissions with editable=false and readable=false
+            // Add missing permissions with all options set to false
             .concat(beforeProfile.objectPermissions
               .filter(o => _.isUndefined(findPermissions(afterProfile.objectPermissions, o.object)))
               .map(emptyPermissions))
         }
         return { fullName: afterProfile.fullName, objectPermissions }
       })
-      // Add missing permissions for profiles that dosen't exists in after with editable=false and
-      // readable=false
+      // Add missing permissions for profiles that dosen't exists in after with
+      // all options set to false
       .concat(beforeProfiles
         .filter(p => _.isUndefined(findProfile(afterProfiles, p.fullName)))
         .map(p => ({ fullName: p.fullName,
           objectPermissions: p.objectPermissions.map(emptyPermissions) })))
-      // Filter out empty field permissions
+      // Filter out empty object permissions
       .filter(p => p.objectPermissions.length > 0)
 
     return client.update(PROFILE_METADATA_TYPE, profiles)

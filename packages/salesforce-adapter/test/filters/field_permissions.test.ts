@@ -4,15 +4,13 @@ import {
 } from 'adapter-api'
 import _ from 'lodash'
 import { metadataType } from '../../src/transformers/transformer'
-import { ProfileInfo, FieldPermissions } from '../../src/client/types'
-import filterCreator, {
-  PROFILE_METADATA_TYPE, ADMIN_PROFILE,
-} from '../../src/filters/field_permissions'
+import { ProfileFieldPermissionsInfo, FieldPermissions } from '../../src/client/types'
+import filterCreator from '../../src/filters/field_permissions'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
 
-const { FIELD_LEVEL_SECURITY_ANNOTATION } = constants
+const { FIELD_LEVEL_SECURITY_ANNOTATION, ADMIN_PROFILE, PROFILE_METADATA_TYPE } = constants
 
 describe('Field Permissions filter', () => {
   const { client } = mockClient()

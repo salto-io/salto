@@ -5,14 +5,12 @@ import {
 import _ from 'lodash'
 import { metadataType } from '../../src/transformer'
 import { ObjectPermissions, ProfileObjectPermissionsInfo } from '../../src/client/types'
-import filterCreator, {
-  PROFILE_METADATA_TYPE, ADMIN_PROFILE,
-} from '../../src/filters/object_permissions'
+import filterCreator from '../../src/filters/object_permissions'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
 
-const { OBJECT_LEVEL_SECURITY_ANNOTATION } = constants
+const { OBJECT_LEVEL_SECURITY_ANNOTATION, PROFILE_METADATA_TYPE, ADMIN_PROFILE } = constants
 const { ALLOW_CREATE, ALLOW_DELETE, ALLOW_EDIT, ALLOW_READ,
   MODIFY_ALL_RECORDS, VIEW_ALL_RECORDS } = constants.OBJECT_LEVEL_SECURITY_FIELDS
 
@@ -21,7 +19,6 @@ describe('Object Permissions filter', () => {
   const mockElemID = new ElemID(constants.SALESFORCE, 'test')
   const mockObject = new ObjectType({
     elemID: mockElemID,
-    fields: {},
     annotations: {
       label: 'test label',
       [constants.API_NAME]: 'Test__c',
@@ -30,7 +27,6 @@ describe('Object Permissions filter', () => {
   })
   const mockExtendObject = new ObjectType({
     elemID: mockElemID,
-    fields: {},
     annotations: {
       label: 'another test label',
       [constants.API_NAME]: 'Test_Extend__c',
@@ -56,7 +52,6 @@ describe('Object Permissions filter', () => {
   const mockProfileElemID = new ElemID(constants.SALESFORCE, 'profile')
   const mockObjectPermissions = new ObjectType({
     elemID: new ElemID(constants.SALESFORCE, 'profile_object_level_security'),
-    fields: {},
     annotations: { [constants.METADATA_TYPE]: 'ProfileObjectLevelSecurity' },
   })
   const mockProfile = new ObjectType({
@@ -115,11 +110,6 @@ describe('Object Permissions filter', () => {
       description: 'Standard profile',
       [constants.INSTANCE_FULL_NAME_FIELD]: 'Standard',
     })
-  const mockNoFieldPerm = new InstanceElement('fake_no_field_permissions',
-    mockProfile,
-    {
-      description: 'Profile with no field_permissions',
-    })
 
   let mockUpdate: jest.Mock<unknown>
 
@@ -149,7 +139,7 @@ describe('Object Permissions filter', () => {
   it('should add object_level_security to object types and remove it from profile type & instances',
     async () => {
       const elements = [mockObject.clone(), mockExtendObject.clone(), mockAdmin, mockStandard,
-        mockNoFieldPerm, mockProfile]
+        mockProfile]
       await filter().onFetch(elements)
       const objectTypes = elements.filter(isObjectType)
 

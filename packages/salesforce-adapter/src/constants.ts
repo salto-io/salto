@@ -5,6 +5,8 @@ export const METADATA_OBJECT_NAME_FIELD = 'fullName'
 export const INSTANCE_FULL_NAME_FIELD = 'full_name'
 export const FORMULA_TYPE_PREFIX = 'formula_'
 export const SALESFORCE_CUSTOM_SUFFIX = '__c'
+export const PROFILE_METADATA_TYPE = 'Profile'
+export const ADMIN_PROFILE = 'admin'
 
 // Annotations
 export const LABEL = 'label'

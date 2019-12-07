@@ -682,8 +682,6 @@ describe('transformer', () => {
     })
   })
 
-  // TODO add test for object_level_security annotation
-
   describe('create a path with subtype for subtypes', () => {
     const nestedField = {
       fields: [],

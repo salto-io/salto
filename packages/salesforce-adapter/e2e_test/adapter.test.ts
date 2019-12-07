@@ -6,11 +6,15 @@ import {
 import { MetadataInfo, PicklistEntry, RetrieveResult } from 'jsforce'
 import { collections } from '@salto/lowerdash'
 import * as constants from '../src/constants'
-import { ADMIN_PROFILE, PROFILE_METADATA_TYPE } from '../src/filters/field_permissions'
 import { STANDARD_VALUE_SET } from '../src/filters/standard_value_sets'
 import {
-  CustomObject, ProfileFieldPermissionsInfo,
-  FieldPermissions, CustomField, FilterItem,
+  CustomObject,
+  ProfileFieldPermissionsInfo,
+  FieldPermissions,
+  ProfileObjectPermissionsInfo,
+  ObjectPermissions,
+  CustomField,
+  FilterItem,
 } from '../src/client/types'
 import {
   Types, sfCase, fromMetadataInfo, bpCase, metadataType, apiName,
@@ -21,7 +25,7 @@ import { API_VERSION } from '../src/client/client'
 import { fromRetrieveResult, toMetadataPackageZip } from '../src/transformers/xml_transformer'
 
 const { makeArray } = collections.array
-const { FIELD_LEVEL_SECURITY_ANNOTATION } = constants
+const { FIELD_LEVEL_SECURITY_ANNOTATION, PROFILE_METADATA_TYPE, ADMIN_PROFILE } = constants
 
 const ADMIN = 'salesforce.profile.instance.admin'
 const STANDARD = 'salesforce.profile.instance.standard'
@@ -191,13 +195,14 @@ describe('Salesforce adapter E2E with real account', () => {
   })
 
   describe('should perform CRUD operations', () => {
-    const permissionExists = async (profile: string, fields: string[]): Promise<boolean[]> => {
-      // The following const method is a workaround for a bug in SFDC metadata API that returns
-      // the editable and readable fields in FieldPermissions as string instead of boolean
-      const verifyBoolean = (variable: string | boolean): boolean => {
-        const unknownVariable = variable as unknown
-        return typeof unknownVariable === 'string' ? JSON.parse(unknownVariable) : variable
-      }
+    // The following const method is a workaround for a bug in SFDC metadata API that returns
+    // the fields in FieldPermissions and ObjectPermissions as string instead of boolean
+    const verifyBoolean = (variable: string | boolean): boolean => {
+      const unknownVariable = variable as unknown
+      return typeof unknownVariable === 'string' ? JSON.parse(unknownVariable) : variable
+    }
+
+    const fieldPermissionExists = async (profile: string, fields: string[]): Promise<boolean[]> => {
       const profileInfo = (await client.readMetadata(PROFILE_METADATA_TYPE,
         profile))[0] as ProfileFieldPermissionsInfo
       const fieldPermissionsMap = new Map<string, FieldPermissions>()
@@ -208,6 +213,27 @@ describe('Salesforce adapter E2E with real account', () => {
         }
         const fieldObject: FieldPermissions = fieldPermissionsMap.get(field) as FieldPermissions
         return verifyBoolean(fieldObject.editable) || verifyBoolean(fieldObject.readable)
+      })
+    }
+
+    const objectPermissionExists = async (profile: string, objects: string[]):
+     Promise<boolean[]> => {
+      const profileInfo = (await client.readMetadata(PROFILE_METADATA_TYPE,
+        profile))[0] as ProfileObjectPermissionsInfo
+      const objectPermissionsMap = new Map<string, ObjectPermissions>()
+      profileInfo.objectPermissions.map(f => objectPermissionsMap.set(f.object, f))
+      return objects.map(object => {
+        if (!objectPermissionsMap.has(object)) {
+          return false
+        }
+        const objectPermission: ObjectPermissions = objectPermissionsMap
+          .get(object) as ObjectPermissions
+        return verifyBoolean(objectPermission.allowCreate)
+         || verifyBoolean(objectPermission.allowDelete)
+         || verifyBoolean(objectPermission.allowEdit)
+         || verifyBoolean(objectPermission.allowRead)
+         || verifyBoolean(objectPermission.modifyAllRecords)
+         || verifyBoolean(objectPermission.viewAllRecords)
       })
     }
 
@@ -238,6 +264,17 @@ describe('Salesforce adapter E2E with real account', () => {
             editable: false,
             field: 'Account.AccountNumber',
             readable: false,
+          },
+        ],
+        objectPermissions: [
+          {
+            allowCreate: true,
+            allowDelete: true,
+            allowEdit: true,
+            allowRead: true,
+            modifyAllRecords: false,
+            viewAllRecords: false,
+            object: 'Account',
           },
         ],
         tabVisibilities: [
@@ -290,6 +327,14 @@ describe('Salesforce adapter E2E with real account', () => {
         annotations: {
           [constants.API_NAME]: customObjectName,
           [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
+          [constants.OBJECT_LEVEL_SECURITY_ANNOTATION]: {
+            [constants.OBJECT_LEVEL_SECURITY_FIELDS.ALLOW_CREATE]: [ADMIN],
+            [constants.OBJECT_LEVEL_SECURITY_FIELDS.ALLOW_DELETE]: [ADMIN],
+            [constants.OBJECT_LEVEL_SECURITY_FIELDS.ALLOW_EDIT]: [ADMIN],
+            [constants.OBJECT_LEVEL_SECURITY_FIELDS.ALLOW_READ]: [ADMIN, STANDARD],
+            [constants.OBJECT_LEVEL_SECURITY_FIELDS.MODIFY_ALL_RECORDS]: [ADMIN],
+            [constants.OBJECT_LEVEL_SECURITY_FIELDS.VIEW_ALL_RECORDS]: [ADMIN],
+          },
         },
         fields: {
           description: new Field(
@@ -333,8 +378,10 @@ describe('Salesforce adapter E2E with real account', () => {
       ).toBe('Formula__c')
 
       expect(await objectExists(constants.CUSTOM_OBJECT, customObjectName, ['Description__c', 'Formula__c'])).toBe(true)
-      expect((await permissionExists('Admin', [`${customObjectName}.Description__c`]))[0]).toBe(true)
-      expect((await permissionExists('Standard', [`${customObjectName}.Description__c`]))[0]).toBe(true)
+      expect((await fieldPermissionExists('Admin', [`${customObjectName}.Description__c`]))[0]).toBe(true)
+      expect((await fieldPermissionExists('Standard', [`${customObjectName}.Description__c`]))[0]).toBe(true)
+      expect((await objectPermissionExists('Admin', [`${customObjectName}`]))[0]).toBe(true)
+      expect((await objectPermissionExists('Standard', [`${customObjectName}`]))[0]).toBe(true)
 
       // Clean-up
       await adapter.remove(post)
@@ -456,7 +503,7 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(modificationResult).toBeInstanceOf(ObjectType)
       expect(await objectExists(constants.CUSTOM_OBJECT, customObjectName, ['Banana__c', 'Description__c'],
         ['Address__c'])).toBe(true)
-      expect((await permissionExists('Admin', [`${customObjectName}.Description__c`]))[0]).toBe(true)
+      expect((await fieldPermissionExists('Admin', [`${customObjectName}.Description__c`]))[0]).toBe(true)
 
       // Clean-up
       await adapter.remove(oldElement)
@@ -486,6 +533,17 @@ describe('Salesforce adapter E2E with real account', () => {
             editable: 'false',
             field: 'Account.AccountNumber',
             readable: 'false',
+          },
+        ],
+        objectPermissions: [
+          {
+            allowCreate: 'true',
+            allowDelete: 'true',
+            allowEdit: 'true',
+            allowRead: 'true',
+            modifyAllRecords: 'false',
+            viewAllRecords: 'false',
+            object: 'Account',
           },
         ],
         tabVisibilities: [
@@ -534,6 +592,17 @@ describe('Salesforce adapter E2E with real account', () => {
             readable: 'false',
           },
         ],
+        objectPermissions: [
+          {
+            allowCreate: 'true',
+            allowDelete: 'true',
+            allowEdit: 'true',
+            allowRead: 'true',
+            modifyAllRecords: 'true',
+            viewAllRecords: 'true',
+            object: 'Account',
+          },
+        ],
         tabVisibilities: [
           {
             tab: 'standard-Account',
@@ -570,6 +639,7 @@ describe('Salesforce adapter E2E with real account', () => {
       type Profile = ProfileFieldPermissionsInfo & {
         tabVisibilities: Record<string, Value>
         applicationVisibilities: Record<string, Value>
+        objectPermissions: Record<string, Value>
       }
 
       const valuesMap = new Map<string, Value>()
@@ -577,6 +647,7 @@ describe('Salesforce adapter E2E with real account', () => {
       savedInstance.fieldPermissions.forEach(f => valuesMap.set(f.field, f))
       savedInstance.tabVisibilities.forEach((f: Value) => valuesMap.set(f.tab, f))
       savedInstance.applicationVisibilities.forEach((f: Value) => valuesMap.set(f.application, f))
+      savedInstance.objectPermissions.forEach((f: Value) => valuesMap.set(f.object, f))
 
       expect((newValues.fieldPermissions as []).some((v: Value) =>
         _.isEqual(v, valuesMap.get(v.field)))).toBeTruthy()
@@ -587,6 +658,8 @@ describe('Salesforce adapter E2E with real account', () => {
       expect((newValues.applicationVisibilities as []).some((v: Value) =>
         _.isEqual(v, valuesMap.get(v.application)))).toBeTruthy()
 
+      expect((newValues.objectPermissions as []).some((v: Value) =>
+        _.isEqual(v, valuesMap.get(v.object)))).toBeTruthy()
 
       // Clean-up
       await adapter.remove(post)
@@ -686,6 +759,69 @@ describe('Salesforce adapter E2E with real account', () => {
 
       // Clean-up
       await adapter.remove(oldElement)
+    })
+
+    it("should modify an object's object permissions", async () => {
+      const customObjectName = 'TestModifyObjectPermissions__c'
+      const mockElemID = new ElemID(constants.SALESFORCE, 'test modify object permissions')
+      const oldElement = new ObjectType({
+        elemID: mockElemID,
+        annotations: {
+          [Type.REQUIRED]: false,
+          [constants.LABEL]: 'test label',
+          [constants.API_NAME]: customObjectName,
+          [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
+          [constants.OBJECT_LEVEL_SECURITY_ANNOTATION]: {
+            [constants.OBJECT_LEVEL_SECURITY_FIELDS.ALLOW_CREATE]: [ADMIN],
+            [constants.OBJECT_LEVEL_SECURITY_FIELDS.ALLOW_DELETE]: [ADMIN],
+            [constants.OBJECT_LEVEL_SECURITY_FIELDS.ALLOW_EDIT]: [ADMIN],
+            [constants.OBJECT_LEVEL_SECURITY_FIELDS.ALLOW_READ]: [ADMIN],
+            [constants.OBJECT_LEVEL_SECURITY_FIELDS.MODIFY_ALL_RECORDS]: [ADMIN],
+            [constants.OBJECT_LEVEL_SECURITY_FIELDS.VIEW_ALL_RECORDS]: [ADMIN],
+          },
+        },
+      })
+
+      if (await objectExists(constants.CUSTOM_OBJECT, customObjectName)) {
+        await adapter.remove(oldElement)
+      }
+      const addResult = await adapter.add(oldElement)
+      // Verify setup was performed properly
+      expect(addResult).toBeInstanceOf(ObjectType)
+
+      expect((await objectPermissionExists('Standard', [`${customObjectName}`]))[0]).toBeFalsy()
+      expect((await objectPermissionExists('Admin', [`${customObjectName}`]))[0]).toBeTruthy()
+
+      const newElement = new ObjectType({
+        elemID: mockElemID,
+        annotations: {
+          [Type.REQUIRED]: false,
+          [constants.LABEL]: 'test label',
+          [constants.API_NAME]: customObjectName,
+          [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
+          [constants.OBJECT_LEVEL_SECURITY_ANNOTATION]: {
+            [constants.OBJECT_LEVEL_SECURITY_FIELDS.ALLOW_CREATE]: [ADMIN],
+            [constants.OBJECT_LEVEL_SECURITY_FIELDS.ALLOW_DELETE]: [ADMIN],
+            [constants.OBJECT_LEVEL_SECURITY_FIELDS.ALLOW_EDIT]: [ADMIN],
+            [constants.OBJECT_LEVEL_SECURITY_FIELDS.ALLOW_READ]: [ADMIN, STANDARD],
+            [constants.OBJECT_LEVEL_SECURITY_FIELDS.MODIFY_ALL_RECORDS]: [ADMIN],
+            [constants.OBJECT_LEVEL_SECURITY_FIELDS.VIEW_ALL_RECORDS]: [ADMIN],
+          },
+        },
+      })
+
+      // Test
+      const modificationResult = await adapter.update(oldElement, newElement, [
+        { action: 'modify',
+          data: { before: oldElement,
+            after: newElement } },
+      ])
+      expect(modificationResult).toBeInstanceOf(ObjectType)
+
+      expect(await objectExists(constants.CUSTOM_OBJECT, customObjectName)).toBe(true)
+
+      expect(await objectPermissionExists('Standard', [`${customObjectName}`])).toBeTruthy()
+      expect(await objectPermissionExists('Admin', [`${customObjectName}`])).toBeTruthy()
     })
 
     it("should modify an object's custom fields' permissions", async () => {
@@ -810,7 +946,7 @@ describe('Salesforce adapter E2E with real account', () => {
 
       const [addressStandardExists,
         bananaStandardExists,
-        deltaStandardExists] = await permissionExists(
+        deltaStandardExists] = await fieldPermissionExists(
         'Standard',
         [`${customObjectName}.Address__c`, `${customObjectName}.Banana__c`, `${customObjectName}.Delta__c`]
       )
@@ -819,7 +955,7 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(deltaStandardExists).toBeTruthy()
       const [addressAdminExists,
         bananaAdminExists,
-        deltaAdminExists] = await permissionExists(
+        deltaAdminExists] = await fieldPermissionExists(
         'Admin',
         [`${customObjectName}.Address__c`, `${customObjectName}.Banana__c`, `${customObjectName}.Delta__c`]
       )

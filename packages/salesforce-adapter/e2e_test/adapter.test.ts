@@ -77,11 +77,12 @@ describe('Salesforce adapter E2E with real account', () => {
         summaryOperation: 'sum',
         type: 'Summary',
       } as MetadataInfo)
-      await client.update(PROFILE_METADATA_TYPE, new ProfileInfo(sfCase(ADMIN_PROFILE), [{
-        field: `${accountApiName}.${fetchedRollupSummaryFieldName}`,
-        editable: true,
-        readable: true,
-      }]))
+      await client.update(PROFILE_METADATA_TYPE,
+        new ProfileFieldPermissionsInfo(sfCase(ADMIN_PROFILE), [{
+          field: `${accountApiName}.${fetchedRollupSummaryFieldName}`,
+          editable: true,
+          readable: true,
+        }]))
     }
     result = await adapter.fetch()
   })

@@ -66,3 +66,5 @@ export const runOnFields = async (elements: Element[], condition: (field: Field)
     runOnField(field, salesforceField)
   })
 }
+
+export const boolValue = (val: boolean | 'true' | 'false'): boolean => val === 'true' || val === true

@@ -18,6 +18,7 @@ export const FIELD_PERMISSIONS = 'field_permissions'
 export const OBJECT_PERMISSIONS = 'object_permissions'
 export const FIELD_LEVEL_SECURITY_ANNOTATION = 'field_level_security'
 export const OBJECT_LEVEL_SECURITY_ANNOTATION = 'object_level_security'
+export const TOPICS_FOR_OBJECTS_ANNOTATION = 'topics_for_objects'
 export const FIELD_TYPE_NAMES = {
   STRING: 'string',
   AUTONUMBER: 'autonumber',
@@ -159,6 +160,11 @@ export const OBJECT_LEVEL_SECURITY_FIELDS = {
   ALLOW_READ: 'allow_read',
   MODIFY_ALL_RECORDS: 'modify_all_records',
   VIEW_ALL_RECORDS: 'view_all_records',
+}
+
+export const TOPICS_FOR_OBJECTS_FIELDS = {
+  ENABLE_TOPICS: 'enable_topics',
+  ENTITY_API_NAME: 'entity_api_name',
 }
 
 // Limits

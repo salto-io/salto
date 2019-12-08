@@ -1,6 +1,4 @@
 import SalesforceClient from '../src/client/client'
-import createCredentials from './credentials'
+import credentials from './credentials'
 
-export default (): SalesforceClient => new SalesforceClient({
-  credentials: createCredentials(),
-})
+export default (): SalesforceClient => new SalesforceClient({ credentials: credentials() })

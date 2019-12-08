@@ -7,11 +7,11 @@ import {
 } from 'adapter-api'
 import * as constants from '../src/constants'
 import { Types, apiName } from '../src/transformers/transformer'
+import SalesforceClient from '../src/client/client'
+import SalesforceAdapter from '../src/adapter'
 import realAdapter from './adapter'
 
 describe('Adapter E2E import-export related operations with real account', () => {
-  const { adapter, client } = realAdapter()
-
   const sfLeadName = 'Lead'
   const leadName = 'lead'
   const stringType = Types.primitiveDataTypes.text
@@ -54,6 +54,13 @@ describe('Adapter E2E import-export related operations with real account', () =>
   // Set long timeout as we communicate with salesforce API
   jest.setTimeout(1000000)
 
+  let client: SalesforceClient
+  let adapter: SalesforceAdapter
+
+  beforeAll(() => {
+    ({ adapter, client } = realAdapter())
+  })
+
   describe('Read data', () => {
     it('should read instances of specific type', async () => {
       const iterator = adapter.getInstancesOfType(leadType)[Symbol.asyncIterator]()
@@ -74,9 +81,9 @@ describe('Adapter E2E import-export related operations with real account', () =>
 
   describe('Write data', () => {
     const existingInstances = async (instance: InstanceElement): Promise<string[]> => {
-      const queryString = `SELECT Id 
-      FROM ${instance.type.annotations[constants.API_NAME]} 
-      WHERE 
+      const queryString = `SELECT Id
+      FROM ${instance.type.annotations[constants.API_NAME]}
+      WHERE
       ${Object.keys(instance.value).filter(key => key !== 'Id')
     .map(key => `${key}='${instance.value[key]}'`).join(' AND ')}`
       const result = await client.runQuery(queryString)
@@ -112,7 +119,7 @@ describe('Adapter E2E import-export related operations with real account', () =>
       await adapter.importInstancesOfType(leadType, iter())
 
       // Test
-      const queryString = `SELECT Id,${Object.values(leadType.fields).map(apiName)} 
+      const queryString = `SELECT Id,${Object.values(leadType.fields).map(apiName)}
       FROM ${apiName(leadType)} WHERE FirstName='${testFirstName}' AND LastName='${testLastName}'
       AND Company='${testCompany}'`
       const result = await client.runQuery(queryString)
@@ -135,7 +142,7 @@ describe('Adapter E2E import-export related operations with real account', () =>
         await adapter.importInstancesOfType(leadType, iter())
       }
 
-      const queryString = `SELECT Id,${Object.values(leadType.fields).map(apiName)} 
+      const queryString = `SELECT Id,${Object.values(leadType.fields).map(apiName)}
       FROM ${apiName(leadType)} WHERE FirstName='${testFirstName}' AND LastName='${testLastName}'
       AND Company='${testCompany}'`
       const queryResult = await client.runQuery(queryString)

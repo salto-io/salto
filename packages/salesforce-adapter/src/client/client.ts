@@ -89,7 +89,10 @@ export type SalesforceClientOpts = {
   retryOptions?: RequestRetryOptions
 }
 
-const realConnection = (isSandbox: boolean, retryOptions: RequestRetryOptions): Connection => {
+export const realConnection = (
+  isSandbox: boolean,
+  retryOptions: RequestRetryOptions,
+): Connection => {
   const connection = new RealConnection({
     version: API_VERSION,
     loginUrl: `https://${isSandbox ? 'test' : 'login'}.salesforce.com/`,

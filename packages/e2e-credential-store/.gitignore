@@ -1,0 +1,9 @@
+# Coverage reports
+coverage
+/reports
+
+# API keys and secrets
+.env
+
+/dist
+

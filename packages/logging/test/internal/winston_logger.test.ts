@@ -43,7 +43,7 @@ describe('winston based logger', () => {
   describe('initial configuration', () => {
     describe('filename', () => {
       describe('when set', () => {
-        jest.setTimeout(200)
+        jest.setTimeout(600)
 
         let filename: string
 

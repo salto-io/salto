@@ -1,0 +1,13 @@
+# Coverage reports
+coverage
+/reports
+
+# API keys and secrets
+.env
+
+/dist
+
+node_modules
+.history
+.eslintcache
+

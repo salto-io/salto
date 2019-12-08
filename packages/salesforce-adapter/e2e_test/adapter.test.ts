@@ -21,7 +21,8 @@ import {
 } from '../src/transformers/transformer'
 import realAdapter from './adapter'
 import { findElements } from '../test/utils'
-import { API_VERSION } from '../src/client/client'
+import SalesforceClient, { API_VERSION } from '../src/client/client'
+import SalesforceAdapter from '../src/adapter'
 import { fromRetrieveResult, toMetadataPackageZip } from '../src/transformers/xml_transformer'
 
 const { makeArray } = collections.array
@@ -32,7 +33,12 @@ const ADMIN = 'Admin'
 const STANDARD = 'Standard'
 
 describe('Salesforce adapter E2E with real account', () => {
-  const { adapter, client } = realAdapter()
+  let client: SalesforceClient
+  let adapter: SalesforceAdapter
+
+  beforeAll(() => {
+    ({ adapter, client } = realAdapter())
+  })
 
   // Set long timeout as we communicate with salesforce API
   jest.setTimeout(1000000)

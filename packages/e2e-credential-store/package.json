@@ -1,0 +1,69 @@
+{
+  "name": "@salto/e2e-credentials-store",
+  "version": "0.1.0",
+  "description": "Salto E2E tests credentials store",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/salto-io/salto_monorepo"
+  },
+  "private": true,
+  "bin": {
+    "store": "./bin/store"
+  },
+  "files": [
+    "dist/src/**/*"
+  ],
+  "main": "dist/src",
+  "types": "dist/src/index.d.ts",
+  "scripts": {
+    "prepare": "yarn run build",
+    "prepublishOnly": "yarn test",
+    "build": "yarn run lint && tsc",
+    "test": "jest --verbose=false --coverage=false",
+    "clean": "rm -rf ./dist",
+    "clean-ts": "node ./node_modules/.bin/ts-cleaner -d dist -s . -v",
+    "clean-ts-test": "yarn run clean-ts && yarn run test",
+    "watch-test": "yarn run tsc-watch --onSuccess 'yarn run clean-ts-test'",
+    "watch-ts": "tsc -w",
+    "lint": "eslint --cache --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
+    "lint-fix": "yarn run lint --fix"
+  },
+  "dependencies": {
+    "@jest/environment": "^24.0.0",
+    "@salto/logging": "0.1.0",
+    "@salto/lowerdash": "0.1.0",
+    "@salto/persistent-pool": "0.1.0",
+    "easy-table": "^1.1.1",
+    "humanize-duration": "^3.21.0",
+    "jest-circus": "^24.9.0",
+    "jest-environment-node": "^24.9.0",
+    "lodash": "^4.17.11",
+    "wu": "^2.1.0",
+    "yargs": "^13.3.0"
+  },
+  "devDependencies": {
+    "@jest/types": "^24.0.0",
+    "@types/easy-table": "^0.0.32",
+    "@types/humanize-duration": "^3.18.0",
+    "@types/jest": "^24.0.0",
+    "@types/lodash": "^4.14.133",
+    "@types/node": "^12.7.1",
+    "@types/yargs": "^13.0.0",
+    "@typescript-eslint/eslint-plugin": "^2.6.1",
+    "@typescript-eslint/parser": "^2.6.1",
+    "eslint": "^6.2.2",
+    "eslint-config-airbnb": "18.0.1",
+    "eslint-plugin-import": "^2.18.2",
+    "eslint-plugin-jest": "^22.6.4",
+    "eslint-plugin-jsx-a11y": "^6.2.1",
+    "eslint-plugin-react": "^7.14.3",
+    "eslint-plugin-react-hooks": "^1.7.0",
+    "jest": "^24.0.0",
+    "jest-circus": "^24.9.0",
+    "jest-junit": "^6.4.0",
+    "memory-streams": "^0.1.3",
+    "ts-cleaner": "^1.0.2",
+    "tsc-watch": "^2.2.1",
+    "typescript": "^3.7.2"
+  }
+}

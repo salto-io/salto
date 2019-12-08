@@ -1,8 +1,8 @@
 import path from 'path'
+import tmp from 'tmp-promise'
 import {
-  dumpCsv, file, readAllCsvContents,
+  dumpCsv, file, readAllCsvContents, SALTO_HOME_VAR,
 } from 'salto'
-import { InstanceElement } from 'adapter-api'
 import { Spinner } from '../src/types'
 import { MockWriteStream, mockSpinnerCreator } from '../test/mocks'
 import { command as fetch } from '../src/commands/fetch'
@@ -17,19 +17,32 @@ const { copyFile, rm, mkdirp, exists } = file
 
 const sfLeadObjectName = 'salesforce.lead'
 
-const mockGetConfigType = async (): Promise<InstanceElement> => adapterConfigs.salesforce()
-const homePath = process.env.HOME || process.env.HOMEPATH || process.env.USERPROFILE
-const fetchOutputDir = `${homePath}/BP/test_import`
-const configFile = `${__dirname}/../../e2e_test/BP/salto.config/config.bp`
+let homePath: string
+let fetchOutputDir: string
+let exportOutputDir: string
+let exportOutputFullPath: string
 
-const exportOutputDir = `${homePath}/tmp/export`
+const configFile = `${__dirname}/../../e2e_test/BP/salto.config/config.bp`
 const exportFile = 'export_test.csv'
-const exportOutputFullPath = path.join(exportOutputDir, exportFile)
 const dataFilePath = `${__dirname}/../../e2e_test/CSV/import.csv`
 
-jest.spyOn(callbacksImpl, 'getConfigFromUser').mockImplementation(() => mockGetConfigType())
+jest.spyOn(callbacksImpl, 'getConfigFromUser').mockImplementation(
+  () => Promise.resolve(adapterConfigs.salesforce())
+)
 
 describe('Data migration operations E2E', () => {
+  beforeAll(() => {
+    homePath = tmp.dirSync().name
+    fetchOutputDir = `${homePath}/BP/test_import`
+    exportOutputDir = `${homePath}/tmp/export`
+    exportOutputFullPath = path.join(exportOutputDir, exportFile)
+
+    process.env[SALTO_HOME_VAR] = homePath
+  })
+  afterAll(async () => {
+    await rm(homePath)
+  })
+
   jest.setTimeout(15 * 60 * 1000)
   const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
   const spinners = [] as Spinner[]

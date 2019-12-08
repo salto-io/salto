@@ -8,21 +8,29 @@ export const getInstancesOfType = async (
   type: ObjectType,
   adapters: Record<string, Adapter>,
   outPath: string
-): Promise<number> => {
+): Promise<DataModificationResult> => {
   const adapter = adapters[type.elemID.adapter]
   if (!adapter) {
     throw new Error(`Failed to find the adapter for the given type: ${type.elemID.getFullName()}`)
   }
-  const outputObjectsIterator = await adapter.getInstancesOfType(type)
   let toAppend = false
-  let objectsCounter = 0
-  // eslint-disable-next-line no-restricted-syntax
-  for await (const objects of outputObjectsIterator) {
-    await dumpCsv(objects.map(instance => instance.value), outPath, toAppend)
-    toAppend = true
-    objectsCounter += objects.length
+  const returnResult = {
+    successfulRows: 0,
+    failedRows: 0,
+    errors: new Set<string>(),
   }
-  return objectsCounter
+  try {
+    const outputObjectsIterator = await adapter.getInstancesOfType(type)
+    // eslint-disable-next-line no-restricted-syntax
+    for await (const objects of outputObjectsIterator) {
+      await dumpCsv(objects.map(instance => instance.value), outPath, toAppend)
+      toAppend = true
+      returnResult.successfulRows += objects.length
+    }
+  } catch (error) {
+    returnResult.errors.add(error)
+  }
+  return returnResult
 }
 
 const recordToInstanceElement = (type: ObjectType, record: Values):

@@ -152,7 +152,7 @@ export const exportToCsv = async (
   outPath: string,
   workspace: Workspace,
   fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
-): Promise<number> => {
+): Promise<DataModificationResult> => {
   // Find the corresponding element in the state
   const state = new State(workspace.config.stateLocation)
   const stateElements = await state.get()
@@ -162,8 +162,7 @@ export const exportToCsv = async (
   }
   const [adapters] = await initAdapters(workspace.elements, fillConfig)
 
-  const exportedRows = await getInstancesOfType(type as ObjectType, adapters, outPath)
-  return exportedRows
+  return getInstancesOfType(type as ObjectType, adapters, outPath)
 }
 
 export const importFromCsvFile = async (

@@ -55,15 +55,21 @@ Be sure to go over the preview output when invoking the deploy command.`
   public static readonly DESCRIBE_NOT_FOUND = 'Unknown element type.'
 
   public static readonly COULD_NOT_FIND_FILE = 'Could not find the input file. Make sure the path you provided is correct.'
-  public static readonly IMPORT_FINISHED_SUMMARY = (numSuccess: number, numErrors: number): string => `Finished importing records from CSV file.\nNumber of rows imported successfully: ${numSuccess}
+  public static readonly IMPORT_ENDED_SUMMARY = (numSuccess: number, numErrors: number): string => `Importing records from CSV file ended.\nNumber of rows imported successfully: ${numSuccess}
 Number of rows with errors: ${numErrors}\n`
 
-  public static readonly DELETE_FINISHED_SUMMARY = (numSuccess: number, numErrors: number): string => `Finished deleting records from CSV file.\nNumber of rows deleted successfully: ${numSuccess}
+  public static readonly IMPORT_FINISHED_SUCCESSFULLY = 'Import operation completed successfully.'
+  public static readonly DELETE_FINISHED_SUCCESSFULLY = 'Delete operation completed successfully.'
+  public static readonly EXPORT_FINISHED_SUCCESSFULLY = 'Export operation completed successfully.'
+
+  public static readonly DELETE_ENDED_SUMMARY = (numSuccess: number, numErrors: number): string => `Deleting records from CSV file ended.\nNumber of rows deleted successfully: ${numSuccess}
 Number of rows with errors: ${numErrors}\n`
 
   public static readonly ERROR_SUMMARY = (errors: string[]): string => `The following errors were encountered:\n${errors.join('\n')}`
 
-  public static readonly EXPORT_FINISHED_SUMMARY = (numRows: number, type: string, path: string): string => `Finished exporting ${numRows} records of type ${type} to CSV file.\nThe csv file path is: ${path}`
+  public static readonly EXPORT_ENDED_SUMMARY = (numRows: number, type: string, path: string): string => `Exporting records of type ${type} to CSV file ended.\n${numRows} records were exported.
+The csv file path is: ${path}\n`
+
   public static readonly OPERATION_FAILED_WITH_ERROR = (error: Error): string => `Operation failed: ${error.message}`
 
   public static initFailed(msg: string): string {

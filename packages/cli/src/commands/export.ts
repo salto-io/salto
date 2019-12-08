@@ -1,5 +1,6 @@
 import path from 'path'
 import { exportToCsv } from 'salto'
+import wu from 'wu'
 import Prompts from '../prompts'
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'
@@ -22,14 +23,14 @@ CliCommand => ({
     // Check if output path is provided, otherwise use the template
     // <working dir>/<typeName>_<current timestamp>.csv
     const outPath = outputPath || path.join(path.resolve('./'), `${typeName}_${Date.now()}.csv`)
-    try {
-      const exportedRows = await exportToCsv(typeName, outPath, workspace, getConfigFromUser)
-      stdout.write(Prompts.EXPORT_FINISHED_SUMMARY(exportedRows, typeName, outputPath))
-      return CliExitCode.Success
-    } catch (error) {
-      stderr.write(Prompts.OPERATION_FAILED_WITH_ERROR(error))
+    const result = await exportToCsv(typeName, outPath, workspace, getConfigFromUser)
+    stdout.write(Prompts.EXPORT_ENDED_SUMMARY(result.successfulRows, typeName, outputPath))
+    if (result.errors.size > 0) {
+      stdout.write(Prompts.ERROR_SUMMARY(wu(result.errors.values()).toArray()))
       return CliExitCode.AppError
     }
+    stdout.write(Prompts.EXPORT_FINISHED_SUCCESSFULLY)
+    return CliExitCode.Success
   },
 })
 

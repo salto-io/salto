@@ -278,11 +278,10 @@ export default class SalesforceAdapter {
     bulkOperation: BulkLoadOperation,
     transformFuction: (values: Value[]) => SfRecord[]
   ): Promise<DataModificationResult> {
-    const errorSet = new Set<string>()
     const returnResult = {
       successfulRows: 0,
       failedRows: 0,
-      errors: errorSet,
+      errors: new Set<string>(),
     }
     const updateReturnResult = (
       retResult: DataModificationResult,
@@ -310,8 +309,8 @@ export default class SalesforceAdapter {
           // Add the error string to the set if it doesn't appear there already
           // eslint-disable-next-line no-unused-expressions
           result.errors?.forEach(error => {
-            if (!errorSet.has(error)) {
-              errorSet.add(error)
+            if (!returnResult.errors.has(error)) {
+              returnResult.errors.add(error)
             }
           })
         }

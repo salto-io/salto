@@ -36,7 +36,8 @@ describe('import command', () => {
     existsReturn = true
     await command(workspaceDir, 'mockName', 'mockPath', cliOutput).execute()
     expect(importFromCsvFile).toHaveBeenCalled()
-    expect(cliOutput.stdout.content).toMatch(Prompts.IMPORT_FINISHED_SUMMARY(5, 0))
+    expect(cliOutput.stdout.content).toMatch(Prompts.IMPORT_ENDED_SUMMARY(5, 0))
+    expect(cliOutput.stdout.content).toMatch(Prompts.IMPORT_FINISHED_SUCCESSFULLY)
     expect(Workspace.load).toHaveBeenCalledWith(loadConfig(workspaceDir))
   })
 
@@ -60,13 +61,15 @@ describe('import command', () => {
 
   it('should fail if import operation failed', async () => {
     existsReturn = true
+    const errors = ['error1', 'error2']
     const erroredModifyDataResult = {
       successfulRows: 0,
       failedRows: 5,
-      errors: new Set<string>(),
+      errors: new Set<string>(errors),
     } as unknown as DataModificationResult
     (importFromCsvFile as jest.Mock).mockResolvedValueOnce(Promise.resolve(erroredModifyDataResult))
     const exitCode = await command(workspaceDir, '', '', cliOutput).execute()
+    expect(cliOutput.stdout.content).toMatch(Prompts.ERROR_SUMMARY(errors))
     expect(Workspace.load).toHaveBeenCalledWith(loadConfig(workspaceDir))
     expect(exitCode).toEqual(CliExitCode.AppError)
   })

@@ -54,7 +54,7 @@ describe('Data migration operations E2E', () => {
 
     it('should succeed when running import from a CSV file', async () => {
       await importCommand(fetchOutputDir, sfLeadObjectName, dataFilePath, cliOutput).execute()
-      expect(cliOutput.stdout.content).toMatch(Prompts.IMPORT_FINISHED_SUMMARY(2, 0))
+      expect(cliOutput.stdout.content).toMatch(Prompts.IMPORT_ENDED_SUMMARY(2, 0))
     })
 
     it('should succeed When running delete instances read from a CSV file', async () => {
@@ -77,7 +77,7 @@ describe('Data migration operations E2E', () => {
 
       await deleteCommand(fetchOutputDir, sfLeadObjectName,
         updatedDataFilePath, cliOutput).execute()
-      expect(cliOutput.stdout.content).toMatch(Prompts.DELETE_FINISHED_SUMMARY(2, 0))
+      expect(cliOutput.stdout.content).toMatch(Prompts.DELETE_ENDED_SUMMARY(2, 0))
     })
   })
 

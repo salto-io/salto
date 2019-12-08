@@ -29,7 +29,7 @@ export const command = (
       getConfigFromUser
     )
     // Print here the full report that contains the numbers of successful and failed rows.
-    stdout.write(Prompts.DELETE_FINISHED_SUMMARY(result.successfulRows, result.failedRows))
+    stdout.write(Prompts.DELETE_ENDED_SUMMARY(result.successfulRows, result.failedRows))
     // Print the unique errors encountered during the import
     if (result.errors.size > 0) {
       stdout.write(Prompts.ERROR_SUMMARY(wu(result.errors.values()).toArray()))
@@ -39,6 +39,7 @@ export const command = (
       return CliExitCode.AppError
     }
     // Otherwise return success
+    stdout.write(Prompts.DELETE_FINISHED_SUCCESSFULLY)
     return CliExitCode.Success
   },
 })

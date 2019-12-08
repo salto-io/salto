@@ -8,7 +8,7 @@ import filterCreator from '../../src/filters/lookup_filters'
 import { FilterWith } from '../../src/filter'
 import * as constants from '../../src/constants'
 
-describe('Test lookup filters filter', () => {
+describe('lookup filters filter', () => {
   const lookupType = new PrimitiveType({
     elemID: new ElemID(constants.SALESFORCE, constants.FIELD_TYPE_NAMES.LOOKUP),
     primitive: PrimitiveTypes.STRING,
@@ -63,7 +63,7 @@ describe('Test lookup filters filter', () => {
 
     const mockClientReadMetadata = (isLookupFilterOptional = true): void => {
       client.readMetadata = jest.fn().mockImplementation(() =>
-        createLookupFilterCustomField(isLookupFilterOptional))
+        Promise.resolve(createLookupFilterCustomField(isLookupFilterOptional)))
     }
 
     const initFilter = async (): Promise<void> => {

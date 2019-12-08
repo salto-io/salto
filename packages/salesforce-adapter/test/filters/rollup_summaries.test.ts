@@ -15,7 +15,7 @@ import {
 } from '../../src/constants'
 import { Types } from '../../src/transformers/transformer'
 
-describe('Test field dependencies filter', () => {
+describe('roll up summary filter', () => {
   const objectTypeElemId = new ElemID(SALESFORCE, 'test')
   const rollupSummaryFieldApiName = 'RollupSummaryField__c'
   const mockObjectApiName = 'Test__c'
@@ -59,7 +59,7 @@ describe('Test field dependencies filter', () => {
 
     const mockClientReadMetadata = (): void => {
       client.readMetadata = jest.fn().mockImplementation(() =>
-        [rollupSummaryCustomField as MetadataInfo])
+        Promise.resolve([rollupSummaryCustomField as MetadataInfo]))
     }
 
     const initFilter = async (): Promise<void> => {

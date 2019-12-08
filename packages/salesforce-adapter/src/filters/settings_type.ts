@@ -3,11 +3,15 @@ import {
   Element, InstanceElement, isObjectType,
   ObjectType, Type,
 } from 'adapter-api'
+import { logger } from '@salto/logging'
+import { MetadataInfo } from 'jsforce-types'
 import { FilterCreator } from '../filter'
 import {
   createInstanceElement, createMetadataTypeElements, sfCase,
 } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
+
+const log = logger(module)
 
 export const SETTINGS_METADATA_TYPE = 'Settings'
 
@@ -28,7 +32,11 @@ const createSettingsTypes = async (
   const knownTypes = new Map<string, Type>()
   return _.flatten(await Promise.all(settingsTypesNames
     .map(settingsName => settingsName.concat(SETTINGS_METADATA_TYPE))
-    .map(settingsTypesName => createSettingsType(client, settingsTypesName, knownTypes))))
+    .map(settingsTypesName => createSettingsType(client, settingsTypesName, knownTypes)
+      .catch(e => {
+        log.error('failed to fetch settings type %s reason: %o', settingsTypesName, e)
+        return []
+      }))))
 }
 
 const extractSettingName = (settingType: string): string =>
@@ -41,10 +49,12 @@ const createSettingsInstance = async (
   settingsType: ObjectType
 ): Promise<InstanceElement[]> => {
   const typeName = sfCase(settingsType.elemID.name)
-  const metadataInfos = await client.readMetadata(
-    typeName,
-    extractSettingName(typeName),
-  )
+  let metadataInfos: MetadataInfo[] = []
+  try {
+    metadataInfos = await client.readMetadata(typeName, extractSettingName(typeName))
+  } catch (e) {
+    log.error('failed to fetch settings instances of tyoe %s reason: %o', typeName, e)
+  }
   return metadataInfos
     .filter(m => m.fullName !== undefined)
     .map(m => createInstanceElement(m, settingsType))

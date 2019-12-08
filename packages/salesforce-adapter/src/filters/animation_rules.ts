@@ -37,7 +37,7 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
 
     const animationRuleType = findObjectType(elements, ANIMATION_RULE_TYPE_ID) as ObjectType
     const getValues = (fieldName: string): string[] =>
-      animationRuleType?.fields[fieldName].annotations[Type.VALUES]
+      animationRuleType?.fields[fieldName]?.annotations[Type.VALUES] ?? []
 
     const animationFrequencyValues = getValues(ANIMATION_FREQUENCY)
     const recordTypeContextValues = getValues(RECORD_TYPE_CONTEXT)

@@ -80,7 +80,8 @@ describe('Test field dependencies filter', () => {
     })
 
     const mockClientReadMetadata = (): void => {
-      client.readMetadata = jest.fn().mockImplementation(() => createFieldDependencyCustomField())
+      client.readMetadata = jest.fn().mockImplementation(() =>
+        Promise.resolve(createFieldDependencyCustomField()))
     }
 
     const initFilter = async (): Promise<void> => {

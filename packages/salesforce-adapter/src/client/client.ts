@@ -218,8 +218,8 @@ export default class SalesforceClient {
   @SalesforceClient.requiresLogin
   public async describeMetadataType(type: string): Promise<ValueTypeField[]> {
     const fullName = `{${METADATA_NAMESPACE}}${type}`
-    const describeResult = this.conn.metadata.describeValueType(fullName)
-    return (await describeResult).valueTypeFields
+    const describeResult = await this.conn.metadata.describeValueType(fullName)
+    return describeResult.valueTypeFields
   }
 
   @SalesforceClient.logDecorator

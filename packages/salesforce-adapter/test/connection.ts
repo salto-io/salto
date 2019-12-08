@@ -20,7 +20,7 @@ const mockJsforce: () => Connection = () => ({
     load: jest.fn().mockImplementation(() => Promise.resolve()),
   },
 
-  describeGlobal: jest.fn().mockImplementation(async () => ({ sobjects: [] })),
+  describeGlobal: jest.fn().mockImplementation(async () => Promise.resolve({ sobjects: [] })),
   query: jest.fn().mockImplementation(() => Promise.resolve()),
   queryMore: jest.fn().mockImplementation(() => Promise.resolve()),
   destroy: jest.fn().mockImplementation(() => Promise.resolve()),

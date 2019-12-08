@@ -82,7 +82,7 @@ const mockAdapterCreator: AdapterCreator = {
 
 jest.mock('../../src/core/adapters/creators')
 jest.mock('../../src/state/state')
-
+jest.mock('../../src/core/csv')
 adapterCreators.salesforce = mockAdapterCreator
 
 describe('api functions', () => {

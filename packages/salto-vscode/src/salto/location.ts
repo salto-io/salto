@@ -12,41 +12,6 @@ export interface SaltoElemLocation {
 
 const MAX_LOCATION_SEARCH_RESULT = 20
 
-// // Get an array of all of the "definitions" that are stored in a sepecifi
-// const getBlueprintLocations = (blueprint: ResolvedParsedBlueprint): SaltoElemLocation[] => {
-//   // We want to transform the blueprint structure to a flattened def array
-//   // We start with [elementFullName ... elementFullName]
-//   const elementNames = wu(blueprint.sourceMap.keys()).toArray()
-//   return _(elementNames).map(fullname => {
-//     const ranges = blueprint.sourceMap.get(fullname) || []
-//     // For each element we create a [def, ... def ] array from the ranges
-//     // associated with it
-//     return ranges.map(range => ({
-//       fullname,
-//       filename: range.filename,
-//       range: { start: range.start, end: range.end },
-//     }))
-//   // We get [[def,... def] ... [def, ... , def]] so we flatten
-//   }).flatten().value()
-// }
-
-// const getLocationsByFullname = async (
-//   workspace: EditorWorkspace,
-//   names: string[]
-// ): Promise<{[key: string]: SaltoElemLocation[]}> => {
-//   const bps = await Promise.all(_(names)
-//     .map(name => workspace.elementsIndex[name] || [])
-//     .flatten()
-//     .uniq()
-//     .map( name => workspace.getParsedBlueprint(name))
-//     .value())
-//   return _(bps)
-//     .map(bp => getBlueprintLocations(bp))
-//     .flatten()
-//     .groupBy('fullname')
-//     .value()
-// }
-
 export const getLocations = async (
   workspace: EditorWorkspace,
   fullname: string

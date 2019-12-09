@@ -1,8 +1,6 @@
 import _ from 'lodash'
-import wu from 'wu'
 
-import { ParsedBlueprint } from 'salto'
-import { Element } from 'adapter-api'
+import { Element, ElemID } from 'adapter-api'
 import { EditorWorkspace } from './workspace'
 import { EditorRange } from './context'
 
@@ -14,43 +12,51 @@ export interface SaltoElemLocation {
 
 const MAX_LOCATION_SEARCH_RESULT = 20
 
-// Get an array of all of the "definitions" that are stored in a sepecifi
-const getBlueprintLocations = (blueprint: ParsedBlueprint): SaltoElemLocation[] => {
-  // We want to transform the blueprint structure to a flattened def array
-  // We start with [elementFullName ... elementFullName]
-  const elementNames = wu(blueprint.sourceMap.keys()).toArray()
-  return _(elementNames).map(fullname => {
-    const ranges = blueprint.sourceMap.get(fullname) || []
-    // For each element we create a [def, ... def ] array from the ranges
-    // associated with it
-    return ranges.map(range => ({
-      fullname,
-      filename: range.filename,
-      range: { start: range.start, end: range.end },
-    }))
-  // We get [[def,... def] ... [def, ... , def]] so we flatten
-  }).flatten().value()
-}
+// // Get an array of all of the "definitions" that are stored in a sepecifi
+// const getBlueprintLocations = (blueprint: ResolvedParsedBlueprint): SaltoElemLocation[] => {
+//   // We want to transform the blueprint structure to a flattened def array
+//   // We start with [elementFullName ... elementFullName]
+//   const elementNames = wu(blueprint.sourceMap.keys()).toArray()
+//   return _(elementNames).map(fullname => {
+//     const ranges = blueprint.sourceMap.get(fullname) || []
+//     // For each element we create a [def, ... def ] array from the ranges
+//     // associated with it
+//     return ranges.map(range => ({
+//       fullname,
+//       filename: range.filename,
+//       range: { start: range.start, end: range.end },
+//     }))
+//   // We get [[def,... def] ... [def, ... , def]] so we flatten
+//   }).flatten().value()
+// }
 
-const getLocationsByFullname = (
-  workspace: EditorWorkspace
-): {[key: string]: SaltoElemLocation[]} => (
-  _(workspace.parsedBlueprints)
-    .values()
-    .map(bp => getBlueprintLocations(bp))
-    .flatten()
-    .groupBy('fullname')
-    .value()
-)
-export const getLocations = (workspace: EditorWorkspace, fullname: string): SaltoElemLocation[] => {
-  const allDef = getLocationsByFullname(workspace)
-  return allDef[fullname] || []
-}
+// const getLocationsByFullname = async (
+//   workspace: EditorWorkspace,
+//   names: string[]
+// ): Promise<{[key: string]: SaltoElemLocation[]}> => {
+//   const bps = await Promise.all(_(names)
+//     .map(name => workspace.elementsIndex[name] || [])
+//     .flatten()
+//     .uniq()
+//     .map( name => workspace.getParsedBlueprint(name))
+//     .value())
+//   return _(bps)
+//     .map(bp => getBlueprintLocations(bp))
+//     .flatten()
+//     .groupBy('fullname')
+//     .value()
+// }
 
-export const getQueryLocations = (
+export const getLocations = async (
+  workspace: EditorWorkspace,
+  fullname: string
+): Promise<SaltoElemLocation[]> => (await workspace.getSourceRanges(ElemID.fromFullName(fullname)))
+  .map(range => ({ fullname, filename: range.filename, range }))
+
+export const getQueryLocations = async (
   workspace: EditorWorkspace,
   query: string
-): SaltoElemLocation[] => {
+): Promise<SaltoElemLocation[]> => {
   const lastIDPartContains = (element: Element): boolean => {
     const fullname = element.elemID.getFullName()
     const firstIndex = fullname.indexOf(query)
@@ -68,13 +74,8 @@ export const getQueryLocations = (
     .slice(0, MAX_LOCATION_SEARCH_RESULT)
 
   if (matchingNames.length > 0) {
-    const allDef = getLocationsByFullname(workspace)
-    return _(allDef)
-      .pick(matchingNames)
-      .values()
-      .flatten()
-      .value()
+    const locations = await Promise.all(matchingNames.map(name => getLocations(workspace, name)))
+    return _.flatten(locations)
   }
-
   return []
 }

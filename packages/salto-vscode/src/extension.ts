@@ -102,7 +102,10 @@ const onActivate = async (context: vscode.ExtensionContext): Promise<void> => {
     fileWatcher.onDidCreate((uri: vscode.Uri) => onFileChange(workspace, uri.fsPath))
     fileWatcher.onDidChange((uri: vscode.Uri) => onFileChange(workspace, uri.fsPath))
     fileWatcher.onDidDelete((uri: vscode.Uri) => onFileDelete(workspace, uri.fsPath))
-    const newDiag = toVSDiagnostics(workspace.workspace.config.baseDir, getDiagnostics(workspace))
+    const newDiag = toVSDiagnostics(
+      workspace.workspace.config.baseDir,
+      await getDiagnostics(workspace)
+    )
     diagCollection.set(newDiag)
   }
   // We need this log until the parse time will be shorter so we will know when to expect the plugin

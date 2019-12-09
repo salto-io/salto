@@ -3,7 +3,7 @@ import wu from 'wu'
 import {
   Element, isField, isType, isObjectType, findElement,
 } from 'adapter-api'
-import { ParsedBlueprint } from 'salto'
+import { ResolvedParsedBlueprint } from 'salto'
 import { EditorWorkspace } from './workspace'
 
 type PositionContextType = 'global'|'instance'|'type'|'field'
@@ -93,7 +93,7 @@ const getPositionContextType = (
 }
 
 const flattenBlueprintRanges = (
-  parsedBlueprint: ParsedBlueprint
+  parsedBlueprint: ResolvedParsedBlueprint
 ): NamedRange[] => wu(parsedBlueprint.sourceMap.entries())
   .map(([name, ranges]) => ranges.map(range => ({ name, range })))
   .flatten()
@@ -146,7 +146,7 @@ const extractFields = (elements: readonly Element[]): Element[] => (
 
 export const buildDefinitionsTree = (
   fileContent: string,
-  parsedBlueprint: ParsedBlueprint
+  parsedBlueprint: ResolvedParsedBlueprint
 ): PositionContext => {
   const startPosComparator = (left: NamedRange, right: NamedRange): number => (
     (left.range.start.line === right.range.start.line)
@@ -176,13 +176,13 @@ const getPositionFromTree = (
   return (nextBase) ? getPositionFromTree(nextBase, position) : treeBase
 }
 
-export const getPositionContext = (
+export const getPositionContext = async (
   workspace: EditorWorkspace,
   fileContent: string,
   filename: string,
   position: EditorPosition
-): PositionContext => {
-  const parsedBlueprint = workspace.getParsedBlueprint(filename)
+): Promise<PositionContext> => {
+  const parsedBlueprint = await workspace.getParsedBlueprint(filename)
   const definitionsTree = buildDefinitionsTree(fileContent, parsedBlueprint)
   const partialContext = getPositionFromTree(definitionsTree, position)
   const fullRef = (partialContext.ref)

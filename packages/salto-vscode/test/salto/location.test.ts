@@ -19,23 +19,23 @@ describe('workspace query', () => {
     workspace = await EditorWorkspace.load(getConfig(baseBPDir, []), false)
   })
 
-  it('should find prefixes', () => {
-    const res = getQueryLocations(workspace, 'vs.per')
+  it('should find prefixes', async () => {
+    const res = await getQueryLocations(workspace, 'vs.per')
     expect(res).toHaveLength(5)
     expect(res[0].fullname).toBe('vs.person')
   })
-  it('should find suffixes', () => {
-    const res = getQueryLocations(workspace, 's.person')
+  it('should find suffixes', async () => {
+    const res = await getQueryLocations(workspace, 's.person')
     expect(res).toHaveLength(2)
     expect(res[0].fullname).toBe('vs.person')
   })
-  it('should find fragments in last name part', () => {
-    const res = getQueryLocations(workspace, 'erso')
+  it('should find fragments in last name part', async () => {
+    const res = await getQueryLocations(workspace, 'erso')
     expect(res).toHaveLength(2)
     expect(res[0].fullname).toBe('vs.person')
   })
-  it('should  return empty results on not found', () => {
-    const res = getQueryLocations(workspace, 'nope')
+  it('should  return empty results on not found', async () => {
+    const res = await getQueryLocations(workspace, 'nope')
     expect(res).toHaveLength(0)
   })
 })

@@ -4,11 +4,11 @@ import { EditorWorkspace } from './workspace'
 import { PositionContext } from './context'
 import { getLocations, SaltoElemLocation } from './location'
 
-export const provideWorkspaceDefinition = (
+export const provideWorkspaceDefinition = async (
   workspace: EditorWorkspace,
   context: PositionContext,
   token: string
-): SaltoElemLocation[] => {
+): Promise<SaltoElemLocation[]> => {
   if (context.ref && isInstanceElement(context.ref.element)) {
     const refPath = context.ref.path.replace(new RegExp(`${token}$`), '')
     const refType = (refPath)

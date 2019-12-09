@@ -17,10 +17,10 @@ import { getQueryLocations, SaltoElemLocation } from './salto/location'
 export const createDocumentSymbolsProvider = (
   workspace: EditorWorkspace
 ): vscode.DocumentSymbolProvider => ({
-  provideDocumentSymbols: (
+  provideDocumentSymbols: async (
     doc: vscode.TextDocument
   ) => {
-    const blueprint = workspace.getParsedBlueprint(doc.fileName)
+    const blueprint = await workspace.getParsedBlueprint(doc.fileName)
     if (blueprint) {
       const defTree = buildDefinitionsTree(doc.getText(), blueprint)
       return (defTree.children || []).map(c => buildVSDefinitions(c))
@@ -42,7 +42,7 @@ export const createCompletionsProvider = (
     const validWorkspace = workspace.getValidCopy()
     if (validWorkspace) {
       const saltoPos = vsPosToSaltoPos(position)
-      const context = getPositionContext(
+      const context = await getPositionContext(
         validWorkspace,
         doc.getText(),
         doc.fileName,
@@ -60,20 +60,20 @@ export const createCompletionsProvider = (
 export const createDefinitionsProvider = (
   workspace: EditorWorkspace
 ): vscode.DefinitionProvider => ({
-  provideDefinition: (
+  provideDefinition: async (
     doc: vscode.TextDocument,
     position: vscode.Position,
-  ): vscode.Definition => {
+  ): Promise<vscode.Definition> => {
     const validWorkspace = workspace.getValidCopy()
     if (validWorkspace) {
       const currentToken = doc.getText(doc.getWordRangeAtPosition(position))
-      const context = getPositionContext(
+      const context = await getPositionContext(
         validWorkspace,
         doc.getText(),
         doc.fileName,
         vsPosToSaltoPos(position)
       )
-      return provideWorkspaceDefinition(validWorkspace, context, currentToken).map(
+      return (await provideWorkspaceDefinition(validWorkspace, context, currentToken)).map(
         def => new vscode.Location(
           vscode.Uri.file(path.resolve(workspace.baseDir, def.filename)),
           saltoPosToVsPos(def.range.start)
@@ -87,12 +87,12 @@ export const createDefinitionsProvider = (
 export const createReferenceProvider = (
   workspace: EditorWorkspace
 ): vscode.ReferenceProvider => ({
-  provideReferences: (
+  provideReferences: async (
     doc: vscode.TextDocument,
     position: vscode.Position,
-  ): vscode.Location[] => {
+  ): Promise<vscode.Location[]> => {
     const currenToken = doc.getText(doc.getWordRangeAtPosition(position))
-    return provideWorkspaceReferences(workspace, currenToken).map(
+    return (await provideWorkspaceReferences(workspace, currenToken)).map(
       def => new vscode.Location(
         vscode.Uri.file(path.resolve(workspace.baseDir, def.filename)),
         saltoPosToVsPos(def.range.start)
@@ -104,27 +104,30 @@ export const createReferenceProvider = (
 export const createWorkspaceSymbolProvider = (
   workspace: EditorWorkspace
 ): vscode.WorkspaceSymbolProvider => ({
-  provideWorkspaceSymbols: (query: string): vscode.SymbolInformation[] => {
-    const locToContext = (loc: SaltoElemLocation): PositionContext => (
+  provideWorkspaceSymbols: async (query: string): Promise<vscode.SymbolInformation[]> => {
+    const locToContext = async (loc: SaltoElemLocation): Promise<PositionContext> => (
       getPositionContext(
         workspace,
-        workspace.getParsedBlueprint(loc.filename).buffer,
+        (await workspace.getParsedBlueprint(loc.filename)).buffer,
         loc.filename,
         loc.range.start
       )
     )
-    return getQueryLocations(workspace, query)
-      .map(l => buildVSSymbol(locToContext(l), toVSFileName(workspace.baseDir, l.filename)))
+    return Promise.all((await getQueryLocations(workspace, query))
+      .map(async l => buildVSSymbol(
+        await locToContext(l),
+        toVSFileName(workspace.baseDir, l.filename)
+      )))
   },
 })
 
 export const createFoldingProvider = (
   workspace: EditorWorkspace
 ): vscode.FoldingRangeProvider => ({
-  provideFoldingRanges: (
+  provideFoldingRanges: async (
     document: vscode.TextDocument,
-  ): vscode.ProviderResult<vscode.FoldingRange[]> => {
-    const parsedBlueprint = workspace.getParsedBlueprint(document.fileName)
+  ): Promise<vscode.FoldingRange[]> => {
+    const parsedBlueprint = await workspace.getParsedBlueprint(document.fileName)
     return wu(parsedBlueprint?.sourceMap?.entries() ?? [])
       .map(([name, ranges]) => ranges.map(r => sourceRangeToFoldRange(r, name)))
       .flatten()

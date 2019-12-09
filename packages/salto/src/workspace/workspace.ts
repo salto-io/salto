@@ -3,19 +3,18 @@ import wu from 'wu'
 import path from 'path'
 import readdirp from 'readdirp'
 import uuidv4 from 'uuid/v4'
-import { collections, types } from '@salto/lowerdash'
-import { Element } from 'adapter-api'
+import { types } from '@salto/lowerdash'
+import { Element, ElemID } from 'adapter-api'
 import { logger } from '@salto/logging'
+import { DefaultMap } from '@salto/lowerdash/dist/src/collections/map'
 import { stat, mkdirp, readTextFile, rm, writeFile, exists, Stats } from '../file'
-import { SourceMap, parse, SourceRange, ParseResult, ParseError } from '../parser/parse'
+import { SourceMap, parse, SourceRange, ParseError, ParseResult } from '../parser/parse'
 import { mergeElements, MergeError } from '../core/merger'
 import { validateElements, ValidationError, UnresolvedReferenceValidationError } from '../core/validator'
 import { DetailedChange } from '../core/plan'
 import { ParseResultFSCache } from './cache'
 import { getChangeLocations, updateBlueprintData, getChangesToUpdate, BP_EXTENSION } from './blueprint_update'
 import { Config, dumpConfig, locateWorkspaceRoot, getConfigPath, completeConfig, saltoConfigType } from './config'
-
-const { DefaultMap } = collections.map
 
 const log = logger(module)
 
@@ -49,7 +48,15 @@ export type WorkspaceError = Readonly<{
    cause?: ParseError | ValidationError | MergeError
 }>
 
-export type ParsedBlueprint = Blueprint & ParseResult
+export type ParsedBlueprint = Omit<Blueprint, 'buffer'> &
+Partial<Pick<Blueprint, 'buffer'>> & {
+  elements: Element[]
+  errors: ParseError[]
+  sourceMap?: SourceMap
+}
+
+export type ResolvedParsedBlueprint = ParsedBlueprint &
+  Required<Pick<ParsedBlueprint, 'sourceMap'|'buffer'>>
 
 export interface ParsedBlueprintMap {
   [key: string]: ParsedBlueprint
@@ -65,6 +72,18 @@ export const getBlueprintsFromDir = async (
   return entries.map(e => e.fullPath)
 }
 
+const loadBlueprint = async (filename: string, blueprintsDir: string): Promise<Blueprint> => {
+  const relFileName = path.isAbsolute(filename)
+    ? path.relative(blueprintsDir, filename)
+    : filename
+  const absFileName = path.resolve(blueprintsDir, relFileName)
+  return {
+    filename: relFileName,
+    buffer: await readTextFile(absFileName),
+    timestamp: (await stat(absFileName) as Stats).mtimeMs,
+  }
+}
+
 const loadBlueprints = async (
   blueprintsDir: string,
   credsDir: string,
@@ -76,57 +95,71 @@ const loadBlueprints = async (
       ...await getBlueprintsFromDir(blueprintsDir),
       ...await getBlueprintsFromDir(credsDir),
     ]
-    return Promise.all(filenames.map(async filename => ({
-      filename: path.relative(blueprintsDir, filename),
-      buffer: await readTextFile(filename),
-      timestamp: (await stat(filename) as Stats).mtimeMs,
-    })))
+    return Promise.all(filenames.map(filename => loadBlueprint(filename, blueprintsDir)))
   } catch (e) {
     throw Error(`Failed to load blueprint files: ${e.message}`)
   }
 }
 
-const parseBlueprint = async (bp: Blueprint): Promise<ParsedBlueprint> => ({
-  ...bp,
-  ...await parse(Buffer.from(bp.buffer), bp.filename),
-})
-
-export const parseBlueprints = async (blueprints: Blueprint[]): Promise<ParsedBlueprint[]> =>
-  Promise.all(blueprints.map(parseBlueprint))
-
-
-const parseBlueprintsWithCache = (
-  blueprints: Blueprint[],
+const getParseResult = async (
+  bp: Blueprint,
   cacheFolder: string,
-  workspaceFolder: string
-): Promise<ParsedBlueprint[]> => {
-  const cache = new ParseResultFSCache(cacheFolder, workspaceFolder)
-  return Promise.all(blueprints.map(async bp => {
-    if (bp.timestamp === undefined) return parseBlueprint(bp)
+  workspaceFolder: string,
+  useCache = true
+): Promise<ParseResult> => {
+  if (bp.timestamp && useCache) {
+    const cache = new ParseResultFSCache(cacheFolder, workspaceFolder)
     const key = {
       filename: bp.filename,
       lastModified: bp.timestamp,
     }
-    const cachedParseResult = await cache.get(key)
-    if (cachedParseResult === undefined) {
-      const parsedBP = await parseBlueprint(bp)
-      await cache.put(key, parsedBP)
-      return parsedBP
-    }
-    return { ...bp, ...cachedParseResult }
-  }))
+    const cachedParsedResult = await cache.get(key)
+    if (cachedParsedResult) return cachedParsedResult
+    const parsedBP = await parse(Buffer.from(bp.buffer), bp.filename)
+    await cache.put(key, parsedBP)
+    return parsedBP
+  }
+  return parse(Buffer.from(bp.buffer), bp.filename)
 }
 
-const mergeSourceMaps = (bps: ReadonlyArray<ParsedBlueprint>): SourceMap => {
+const mergeSourceMaps = (sourceMaps: SourceMap[]): SourceMap => {
   const result = new DefaultMap<string, SourceRange[]>(() => [])
-  bps.forEach(bp => {
-    const { sourceMap } = bp
+  sourceMaps.forEach(sourceMap => {
     sourceMap.forEach((ranges, key) => {
       result.get(key).push(...ranges)
     })
   })
   return result
 }
+
+const parseBlueprint = async (
+  bp: Blueprint,
+  cacheFolder: string,
+  workspaceFolder: string,
+  useCache = true,
+  keepSource = false
+): Promise<ParsedBlueprint> => {
+  const parseResult = await getParseResult(bp, cacheFolder, workspaceFolder, useCache)
+  return keepSource
+    ? { ...bp, ...parseResult }
+    : {
+      timestamp: bp.timestamp,
+      filename: bp.filename,
+      elements: parseResult.elements,
+      errors: parseResult.errors,
+    }
+}
+
+export const parseBlueprints = async (
+  blueprints: Blueprint[],
+  cacheFolder: string,
+  workspaceFolder: string,
+  useCache = true,
+  keepSource = false
+): Promise<ParsedBlueprint[]> =>
+  Promise.all(
+    blueprints.map(bp => parseBlueprint(bp, cacheFolder, workspaceFolder, useCache, keepSource))
+  )
 
 export class Errors extends types.Bean<Readonly<{
   parse: ReadonlyArray<ParseError>
@@ -153,27 +186,33 @@ export type SourceFragment = {
 
 type WorkspaceState = {
   readonly parsedBlueprints: ParsedBlueprintMap
-  readonly sourceMap: SourceMap
   readonly elements: ReadonlyArray<Element>
   readonly errors: Errors
+  readonly elementsIndex: Record<string, string[]>
 }
 
 const createWorkspaceState = (blueprints: ReadonlyArray<ParsedBlueprint>): WorkspaceState => {
   log.info(`going to create new workspace state with ${blueprints.length} blueprints`)
   const partialWorkspace = {
     parsedBlueprints: _.keyBy(blueprints, 'filename'),
-    sourceMap: mergeSourceMaps(blueprints),
   }
   const parseErrors = _.flatten(blueprints.map(bp => bp.errors))
   const elements = [
     ..._.flatten(blueprints.map(bp => bp.elements)),
     saltoConfigType,
   ]
+  const elementsIndex: Record<string, string[]> = {}
+  blueprints.forEach(bp => bp.elements.forEach(e => {
+    const key = e.elemID.getFullName()
+    elementsIndex[key] = elementsIndex[key] || []
+    elementsIndex[key] = _.uniq([...elementsIndex[key], bp.filename])
+  }))
   const { merged: mergedElements, errors: mergeErrors } = mergeElements(elements)
   const validationErrors = validateElements(mergedElements)
   log.info(`found ${mergeErrors.length} merge errors and ${validationErrors.length} validation errors`)
   return {
     ...partialWorkspace,
+    elementsIndex,
     elements: mergedElements,
     errors: new Errors({
       parse: Object.freeze(parseErrors),
@@ -232,17 +271,14 @@ export class Workspace {
       path.join(config.localStorage, CREDS_DIR),
       config.additionalBlueprints || []
     )
-    const parsedBlueprints = useCache
-      ? parseBlueprintsWithCache(bps, config.localStorage, config.baseDir)
-      : parseBlueprints(bps)
+    const parsedBlueprints = parseBlueprints(bps, config.localStorage, config.baseDir, useCache)
     const ws = new Workspace(config, await parsedBlueprints)
-
     log.debug(`finished loading workspace with ${ws.elements.length} elements`)
     if (ws.hasErrors()) {
-      const errors = ws.getWorkspaceErrors()
+      const errors = await ws.getWorkspaceErrors()
       log.warn(`workspace ${ws.config.name} has ${errors.filter(e => e.severity === 'Error').length
       } workspace errors and ${errors.filter(e => e.severity === 'Warning').length} warnings`)
-      ws.getWorkspaceErrors().forEach(e => {
+      errors.forEach(e => {
         log.warn(`\t${e.severity}: ${e.error}`)
       })
     }
@@ -278,10 +314,42 @@ export class Workspace {
   get errors(): Errors { return this.state.errors }
   hasErrors(): boolean { return this.state.errors.hasErrors() }
   get parsedBlueprints(): ParsedBlueprintMap { return this.state.parsedBlueprints }
-  get sourceMap(): SourceMap { return this.state.sourceMap }
+  get elementsIndex(): Record<string, string[]> { return this.state.elementsIndex }
 
-  private resolveSourceFragment(sourceRange: SourceRange): SourceFragment {
-    const bpString = this.state.parsedBlueprints[sourceRange.filename].buffer
+  async resolveParsedBlueprint(bp: ParsedBlueprint): Promise<ResolvedParsedBlueprint> {
+    if (bp.buffer && bp.sourceMap) {
+      return bp as ResolvedParsedBlueprint
+    }
+    const baseBP = bp.buffer ? bp : await loadBlueprint(bp.filename, this.config.baseDir)
+    const resolvedBP = await parseBlueprint(
+      baseBP as Blueprint,
+      this.config.localStorage,
+      this.config.baseDir,
+      true,
+      true
+    )
+    this.parsedBlueprints[bp.filename] = resolvedBP
+    return resolvedBP as ResolvedParsedBlueprint
+  }
+
+  private getElementBlueprints(elemID: ElemID): ParsedBlueprint[] {
+    const topLevelID = elemID.createTopLevelParentID()
+    const bpNames = this.elementsIndex[topLevelID.parent.getFullName()] || []
+    return bpNames.map(bpName => this.parsedBlueprints[bpName])
+  }
+
+  async getSourceRanges(elemID: ElemID): Promise<SourceRange[]> {
+    const bps = this.getElementBlueprints(elemID)
+    const sourceRanges = await Promise.all(
+      bps.map(async bp => (
+        await this.resolveParsedBlueprint(bp)).sourceMap.get(elemID.getFullName()) || [])
+    )
+    return _.flatten(sourceRanges)
+  }
+
+  private async resolveSourceFragment(sourceRange: SourceRange): Promise<SourceFragment> {
+    const bp = await this.resolveParsedBlueprint(this.state.parsedBlueprints[sourceRange.filename])
+    const bpString = bp.buffer
     const fragment = bpString.substring(sourceRange.start.byte, sourceRange.end.byte)
     return {
       sourceRange,
@@ -289,36 +357,43 @@ export class Workspace {
     }
   }
 
-  getWorkspaceErrors(): ReadonlyArray<WorkspaceError> {
+  async getWorkspaceErrors(): Promise<ReadonlyArray<WorkspaceError>> {
     const wsErrors = this.state.errors
     return [
-      ...wsErrors.parse.map((pe: ParseError): WorkspaceError =>
+      ...(await Promise.all(wsErrors.parse.map(async (pe: ParseError): Promise<WorkspaceError> =>
         ({
-          sourceFragments: [this.resolveSourceFragment(pe.subject)],
+          sourceFragments: [await this.resolveSourceFragment(pe.subject)],
           error: pe.detail,
           severity: 'Error',
           cause: pe,
-        })),
-      ...wsErrors.merge.map((me: MergeError): WorkspaceError => {
-        const sourceRanges = this.sourceMap.get(me.elemID.getFullName()) || []
-        const sourceFragments = sourceRanges.map(sr => this.resolveSourceFragment(sr))
+        })))),
+      ...(await Promise.all(wsErrors.merge.map(async (me: MergeError): Promise<WorkspaceError> => {
+        const sourceRanges = await this.getSourceRanges(me.elemID)
+        const sourceFragments = await Promise.all(
+          sourceRanges.map(sr => this.resolveSourceFragment(sr))
+        )
         return {
           sourceFragments,
           error: me.message,
           severity: 'Error',
           cause: me,
         }
-      }),
-      ...wsErrors.validation.map((ve: ValidationError): WorkspaceError => {
-        const sourceRanges = this.sourceMap.get(ve.elemID.getFullName()) || []
-        const sourceFragments = sourceRanges.map(sr => this.resolveSourceFragment(sr))
-        return {
-          sourceFragments,
-          error: ve.message,
-          severity: calculateValidationSeverity(ve),
-          cause: ve,
-        }
-      }),
+      }))),
+      ...(await Promise.all(
+        wsErrors.validation.map(async (ve: ValidationError): Promise<WorkspaceError> => {
+          const sourceRanges = await this.getSourceRanges(ve.elemID)
+          const sourceFragments = await Promise.all(
+            sourceRanges.map(sr => this.resolveSourceFragment(sr))
+          )
+          return {
+            sourceFragments,
+            error: ve.message,
+            severity: calculateValidationSeverity(ve),
+            cause: ve,
+          }
+        })
+      )
+      ),
     ]
   }
 
@@ -332,26 +407,37 @@ export class Workspace {
    * @param changes The changes to apply
    */
   async updateBlueprints(...changes: DetailedChange[]): Promise<void> {
-    const getBlueprintData = (filename: string): string => {
+    const getBlueprintData = async (filename: string): Promise<string> => {
       const currentBlueprint = this.parsedBlueprints[filename]
-      return currentBlueprint ? currentBlueprint.buffer : ''
+      return currentBlueprint
+        ? (await this.resolveParsedBlueprint(currentBlueprint)).buffer
+        : ''
     }
     log.debug('going to calculate new blueprints data')
 
     const changesToUpdate = getChangesToUpdate(
       changes,
-      this.sourceMap
+      this.elementsIndex
     )
 
+    const changeSourceMaps = await Promise.all(_(changesToUpdate)
+      .map('id')
+      .map(elemID => this.getElementBlueprints(elemID))
+      .flatten()
+      .uniq()
+      .map(async bp => (await this.resolveParsedBlueprint(bp)).sourceMap)
+      .value())
+
+    const mergedSourceMap = mergeSourceMaps(changeSourceMaps)
     const updatedBlueprints = (await Promise.all(
       _(changesToUpdate)
-        .map(change => getChangeLocations(change, this.sourceMap))
+        .map(change => getChangeLocations(change, mergedSourceMap))
         .flatten()
         .groupBy(change => change.location.filename)
         .entries()
         .map(async ([filename, fileChanges]) => {
           try {
-            const buffer = await updateBlueprintData(getBlueprintData(filename), fileChanges)
+            const buffer = await updateBlueprintData(await getBlueprintData(filename), fileChanges)
             return { filename, buffer }
           } catch (e) {
             log.error('failed to update blueprint %s with %o changes due to: %o',
@@ -373,7 +459,13 @@ export class Workspace {
    */
   async setBlueprints(...blueprints: Blueprint[]): Promise<void> {
     log.debug(`going to parse ${blueprints.length} blueprints`)
-    const parsed = await parseBlueprints(blueprints)
+    const parsed = await parseBlueprints(
+      blueprints,
+      this.config.localStorage,
+      this.config.baseDir,
+      true,
+      true
+    )
 
     const parsedMap = Object.assign(
       {},
@@ -382,7 +474,7 @@ export class Workspace {
     )
     // remove empty blueprints
     const emptyBPFiles: string[] = parsed
-      .filter(bp => _.isEmpty(bp.buffer.trim()))
+      .filter(bp => _.isEmpty(bp.elements))
       .map(bp => bp.filename)
     log.debug(`empty bp files to remove : ${emptyBPFiles.join(', ')}`)
     const newParsedMap = _.omit(parsedMap, emptyBPFiles)
@@ -427,12 +519,12 @@ export class Workspace {
         await rm(filePath)
       } else {
         await mkdirp(path.dirname(filePath))
-        await writeFile(filePath, bp.buffer.toString())
+        await writeFile(filePath, (await this.resolveParsedBlueprint(bp)).buffer.toString())
         if (this.useCache) {
           await cache.put({
             filename: filePath,
             lastModified: Date.now(),
-          }, bp)
+          }, await this.resolveParsedBlueprint(bp))
         }
       }
       this.dirtyBlueprints.delete(filename)

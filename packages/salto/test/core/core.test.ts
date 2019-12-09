@@ -301,7 +301,7 @@ describe('api functions', () => {
         it('should complete successfully', async () => {
           await commands.exportToCsv(
             testType.elemID.getFullName(),
-            'test',
+            'test.csv',
             ws,
             mockGetConfigFromUser
           )

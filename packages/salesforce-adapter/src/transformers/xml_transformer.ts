@@ -79,7 +79,7 @@ export const fromRetrieveResult = async (retrieveResult: RetrieveResult,
       Promise<MetadataInfo> => {
       const metadataXmlContent = await decodeContent(`${file.name}${METADATA_XML_SUFFIX}`)
       const parsedResult = parser.parse(metadataXmlContent)[type]
-      const metadataInfo = (isEmptyString(parsedResult) ? {} : parsedResult) as MetadataWithContent
+      const metadataInfo: MetadataWithContent = isEmptyString(parsedResult) ? {} : parsedResult
       metadataInfo.fullName = getFullName(file, zipProps)
       metadataInfo.content = await decodeContent(file.name)
       return metadataInfo
@@ -88,7 +88,7 @@ export const fromRetrieveResult = async (retrieveResult: RetrieveResult,
     const decodeFile = async (file: JSZipObject, zipProps: ZipProps): Promise<MetadataInfo> => {
       const metadataXmlContent = await decodeContent(file.name)
       const parsedResult = parser.parse(metadataXmlContent)[type]
-      const metadataInfo = (isEmptyString(parsedResult) ? {} : parsedResult) as MetadataInfo
+      const metadataInfo: MetadataInfo = isEmptyString(parsedResult) ? {} : parsedResult
       metadataInfo.fullName = getFullName(file, zipProps)
       return metadataInfo
     }

@@ -4,6 +4,7 @@ import {
   Element, ObjectType, InstanceElement, isObjectType, Field, Type,
 } from 'adapter-api'
 import { collections } from '@salto/lowerdash'
+import { logger } from '@salto/logging'
 import SalesforceClient from '../client/client'
 import { FilterCreator } from '../filter'
 import {
@@ -15,6 +16,7 @@ import {
 
 const { makeArray } = collections.array
 
+const log = logger(module)
 
 export const STANDARD_VALUE_SET = 'StandardValueSet'
 export const STANDARD_VALUE = 'standard_value'
@@ -157,9 +159,13 @@ const createSVSInstances = async (
   standardValueSetNames: Set<string>,
   client: SalesforceClient,
   svsMetadataType: ObjectType): Promise<InstanceElement[]> => {
-  const valueSets = await fetchStandardValueSets(standardValueSetNames, client)
-  const svsInstances = createStandardValueSetInstances(valueSets, svsMetadataType)
-  return svsInstances
+  try {
+    const valueSets = await fetchStandardValueSets(standardValueSetNames, client)
+    return createStandardValueSetInstances(valueSets, svsMetadataType)
+  } catch (e) {
+    log.error('failed to fetch standard value set %o reason: %o', standardValueSetNames, e)
+    return []
+  }
 }
 
 const updateSVSReferences = (elements: Element[], svsInstances: InstanceElement[]): void => {

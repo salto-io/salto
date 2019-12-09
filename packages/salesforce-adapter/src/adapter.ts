@@ -203,15 +203,20 @@ export default class SalesforceAdapter {
     const metadataInstances = this.fetchMetadataInstances(metadataTypeNames, metadataTypes)
 
     // Filter out types returned as both metadata types and SObjects
-    const sObjects = this.fetchSObjects().then(
-      async types => {
+    const sObjects = this.fetchSObjects()
+      .then(
+        async types => {
         // All metadata type names include subtypes as well as the "top level" type names
-        const allMetadataTypeNames = new Set(
-          (await metadataTypes).map(elem => elem.elemID.getFullName()),
-        )
-        return types.filter(t => !allMetadataTypeNames.has(t.elemID.getFullName()))
-      }
-    )
+          const allMetadataTypeNames = new Set(
+            (await metadataTypes).map(elem => elem.elemID.getFullName()),
+          )
+          return types.filter(t => !allMetadataTypeNames.has(t.elemID.getFullName()))
+        }
+      )
+      .catch(e => {
+        log.error('failed to fetch sobjects reason: %o', e)
+        return []
+      })
 
     const elements = _.flatten(
       await Promise.all([annotationTypes, fieldTypes, metadataTypes, sObjects,
@@ -599,7 +604,11 @@ export default class SalesforceAdapter {
     const typeNames = await typeNamesPromise
     const knownTypes = new Map<string, Type>()
     return _.flatten(await Promise.all((typeNames)
-      .map(obj => this.fetchMetadataType(obj, knownTypes, new Set(typeNames)))))
+      .map(typeName => this.fetchMetadataType(typeName, knownTypes, new Set(typeNames))
+        .catch(e => {
+          log.error('failed to fetch metadata for type %s reason: %o', typeName, e)
+          return []
+        }))))
   }
 
   private async fetchMetadataType(
@@ -630,8 +639,15 @@ export default class SalesforceAdapter {
     type TypeAndInstances = { type: ObjectType; instanceInfos: MetadataInfo[] }
     const readInstances = async (metadataTypesToRead: ObjectType[]):
       Promise<TypeAndInstances[]> =>
-      Promise.all(metadataTypesToRead.map(async type =>
-        ({ type, instanceInfos: await this.listMetadataInstances(metadataType(type)) })))
+      Promise.all(metadataTypesToRead.map(async type => {
+        let instanceInfos: MetadataInfo[] = []
+        try {
+          instanceInfos = await this.listMetadataInstances(metadataType(type))
+        } catch (e) {
+          log.error('failed to fetch instances of type %s reason: %o', type.elemID.getFullName(), e)
+        }
+        return { type, instanceInfos }
+      }))
 
     const retrieveInstances = async (metadataTypesToRetrieve: ObjectType[]):
       Promise<TypeAndInstances[]> => {

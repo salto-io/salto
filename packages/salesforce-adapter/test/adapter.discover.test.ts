@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import {
-  ObjectType, Type, InstanceElement, ServiceIds, ElemID, BuiltinTypes,
+  ObjectType, Type, InstanceElement, ServiceIds, ElemID, BuiltinTypes, Element,
 } from 'adapter-api'
 import SalesforceAdapter from '../src/adapter'
 import Connection from '../src/client/jsforce'
@@ -795,6 +795,48 @@ describe('SalesforceAdapter fetch', () => {
       const result = await adapter.fetch()
       const testInst = findElements(result, 'test', 'asd___test')
       expect(testInst).toBeDefined()
+    })
+
+    describe('should fetch when there are errors', async () => {
+      connection.describeGlobal = jest.fn().mockImplementation(async () => ({ sobjects: [] }))
+      connection.metadata.describe = jest.fn().mockImplementation(async () => ({
+        metadataObjects: [{ xmlName: 'Test1' }, { xmlName: 'Test2' }, { xmlName: 'Test3' }],
+      }))
+      connection.metadata.describeValueType = jest.fn().mockImplementation(
+        async (typeName: string) => {
+          if (typeName.endsWith('Test1')) {
+            throw new Error('fake error')
+          }
+          return { valueTypeFields: [] }
+        }
+      )
+      connection.metadata.list = jest.fn().mockImplementation(
+        async () => [{ fullName: 'instance1' }]
+      )
+      connection.metadata.read = jest.fn().mockImplementation(
+        async (typeName: string, fullNames: string | string[]) => {
+          if (typeName === 'Test2') {
+            throw new Error('fake error')
+          }
+          return { fullName: Array.isArray(fullNames) ? fullNames[0] : fullNames }
+        }
+      )
+
+      let result: Element[] = []
+      beforeEach(async () => {
+        result = await adapter.fetch()
+      })
+
+      it('should fetch types when there is failure in a type', () => {
+        expect(findElements(result, 'test_1')).toHaveLength(0)
+        expect(findElements(result, 'test_2')).toHaveLength(1)
+        expect(findElements(result, 'test_3')).toHaveLength(1)
+      })
+
+      it('should fetch instances when there is failure in an instance', () => {
+        expect(findElements(result, 'test_2', 'instance1')).toHaveLength(0)
+        expect(findElements(result, 'test_3', 'instance1')).toHaveLength(1)
+      })
     })
   })
 })

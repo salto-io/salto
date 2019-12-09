@@ -1,13 +1,20 @@
 import _ from 'lodash'
 import { Element, Field, isObjectType, ObjectType } from 'adapter-api'
+import { logger } from '@salto/logging'
 import { API_NAME, CUSTOM_FIELD } from '../constants'
 import { CustomField } from '../client/types'
 import { fieldFullName, isCustomObject } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
 
+const log = logger(module)
+
 const readSalesforceFields = async (client: SalesforceClient, fieldNames: string[]):
   Promise<Record<string, CustomField>> => (
-  _(await client.readMetadata(CUSTOM_FIELD, fieldNames))
+  _(await client.readMetadata(CUSTOM_FIELD, fieldNames)
+    .catch(e => {
+      log.error('failed to read fields %o reason: %o', fieldNames, e)
+      return []
+    }))
     .map(field => [field.fullName, field])
     .fromPairs()
     .value()

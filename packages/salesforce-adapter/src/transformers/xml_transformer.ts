@@ -4,10 +4,12 @@ import { MetadataInfo, RetrieveResult } from 'jsforce'
 import JSZip, { JSZipObject } from 'jszip'
 import parser from 'fast-xml-parser'
 import { logger } from '@salto/logging'
+import { strings } from '@salto/lowerdash'
 import { API_VERSION, METADATA_NAMESPACE } from '../client/client'
 import { toMetadataInfo } from './transformer'
 import { MetadataWithContent } from '../client/types'
 
+const { isEmptyString } = strings
 const log = logger(module)
 
 const PACKAGE = 'unpackaged'
@@ -76,7 +78,8 @@ export const fromRetrieveResult = async (retrieveResult: RetrieveResult,
     const decodeFileWithContent = async (file: JSZipObject, zipProps: ZipProps):
       Promise<MetadataInfo> => {
       const metadataXmlContent = await decodeContent(`${file.name}${METADATA_XML_SUFFIX}`)
-      const metadataInfo = parser.parse(metadataXmlContent)[type] as MetadataWithContent
+      const parsedResult = parser.parse(metadataXmlContent)[type]
+      const metadataInfo = (isEmptyString(parsedResult) ? {} : parsedResult) as MetadataWithContent
       metadataInfo.fullName = getFullName(file, zipProps)
       metadataInfo.content = await decodeContent(file.name)
       return metadataInfo
@@ -84,7 +87,8 @@ export const fromRetrieveResult = async (retrieveResult: RetrieveResult,
 
     const decodeFile = async (file: JSZipObject, zipProps: ZipProps): Promise<MetadataInfo> => {
       const metadataXmlContent = await decodeContent(file.name)
-      const metadataInfo = parser.parse(metadataXmlContent)[type] as MetadataInfo
+      const parsedResult = parser.parse(metadataXmlContent)[type]
+      const metadataInfo = (isEmptyString(parsedResult) ? {} : parsedResult) as MetadataInfo
       metadataInfo.fullName = getFullName(file, zipProps)
       return metadataInfo
     }

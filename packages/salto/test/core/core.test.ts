@@ -1,11 +1,11 @@
+import _ from 'lodash'
 import path from 'path'
 import tmp from 'tmp-promise'
 import {
   ElemID, InstanceElement, ObjectType, AdapterCreator, Field, BuiltinTypes,
 } from 'adapter-api'
-import { Config } from 'src/workspace/config'
-import _ from 'lodash'
-import { DeployError } from 'src/core/deploy'
+import { Config } from '../../src/workspace/config'
+import { DeployError } from '../../src/core/deploy'
 import * as commands from '../../src/api'
 import State from '../../src/state/state'
 import adapterCreators from '../../src/core/adapters/creators'

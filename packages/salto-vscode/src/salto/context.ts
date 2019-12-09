@@ -176,13 +176,13 @@ const getPositionFromTree = (
   return (nextBase) ? getPositionFromTree(nextBase, position) : treeBase
 }
 
-export const getPositionContext = (
+export const getPositionContext = async (
   workspace: EditorWorkspace,
   fileContent: string,
   filename: string,
   position: EditorPosition
-): PositionContext => {
-  const parsedBlueprint = workspace.getParsedBlueprint(filename)
+): Promise<PositionContext> => {
+  const parsedBlueprint = await workspace.getParsedBlueprint(filename)
   const definitionsTree = buildDefinitionsTree(fileContent, parsedBlueprint)
   const partialContext = getPositionFromTree(definitionsTree, position)
   const fullRef = (partialContext.ref)

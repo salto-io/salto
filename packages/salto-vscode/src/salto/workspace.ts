@@ -3,10 +3,10 @@ import path from 'path'
 
 import {
   Workspace, Blueprint,
-  ParsedBlueprint, ParsedBlueprintMap,
-  SourceMap, Errors, Config, DetailedChange,
+  ParsedBlueprintMap,
+  Errors, Config, DetailedChange, ParsedBlueprint, SourceRange,
 } from 'salto'
-import { Element } from 'adapter-api'
+import { Element, ElemID } from 'adapter-api'
 
 export class EditorWorkspace {
   workspace: Workspace
@@ -39,8 +39,8 @@ export class EditorWorkspace {
   get elements(): ReadonlyArray<Element> { return this.workspace.elements }
   get errors(): Errors { return this.workspace.errors }
   get parsedBlueprints(): ParsedBlueprintMap { return this.workspace.parsedBlueprints }
-  get sourceMap(): SourceMap { return this.workspace.sourceMap }
   get baseDir(): string { return this.workspace.config.baseDir }
+  get elementsIndex(): Record<string, string[]> { return this.workspace.elementsIndex }
   private hasPendingUpdates(): boolean {
     return !(_.isEmpty(this.pendingSets) && _.isEmpty(this.pendingDeletes))
   }
@@ -98,8 +98,13 @@ export class EditorWorkspace {
       : filename
   }
 
-  getParsedBlueprint(filename: string): ParsedBlueprint {
-    return this.parsedBlueprints[this.getWorkspaceName(filename)]
+  async getSourceRanges(elemID: ElemID): Promise<SourceRange[]> {
+    return this.workspace.getSourceRanges(elemID)
+  }
+
+  async getParsedBlueprint(filename: string): Promise<ParsedBlueprint> {
+    const bp = this.parsedBlueprints[this.getWorkspaceName(filename)]
+    return this.workspace.resolveParsedBlueprint(bp)
   }
 
   async updateBlueprints(...changes: DetailedChange[]): Promise<void> {

@@ -233,7 +233,7 @@ describe('fetch command', () => {
             })
 
             it('should exit if errors identified in workspace after update', async () => {
-              mockWorkspace.getWorkspaceErrors = () => [{
+              mockWorkspace.getWorkspaceErrors = async () => [{
                 sourceFragments: [],
                 error: 'BLA Error',
                 severity: 'Error',
@@ -254,7 +254,7 @@ describe('fetch command', () => {
               expect(mockWorkspace.flush).not.toHaveBeenCalled()
             })
             it('should not exit if warning identified in workspace after update', async () => {
-              mockWorkspace.getWorkspaceErrors = () => [{
+              mockWorkspace.getWorkspaceErrors = async () => [{
                 sourceFragments: [],
                 error: 'BLA Warning',
                 severity: 'Warning',

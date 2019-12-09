@@ -6,34 +6,31 @@ import { EditorWorkspace } from './workspace'
 
 // TODO - Note that this will have no great performances until we will get the
 // reverse SM from salto's core. This is acceptable as this is not called so often
-const getUsages = (
+const getUsages = async (
   workspace: EditorWorkspace,
   element: Element,
   fullName: string
-): SaltoElemLocation[] => {
+): Promise<SaltoElemLocation[]> => {
   if (isObjectType(element)) {
-    return _(element.fields)
+    const locs = await Promise.all(_(element.fields)
       .values()
       .filter(f => fullName === dumpElemID(f.type))
       .map(f => getLocations(workspace, f.elemID.getFullName()))
-      .flatten()
-      .value()
+      .value())
+    return _.flatten(locs)
   }
   if (isInstanceElement(element)) {
     const typeDumpName = dumpElemID(element.type)
-    return (typeDumpName === fullName) ? getLocations(workspace, element.elemID.getFullName())
+    return (typeDumpName === fullName)
+      ? getLocations(workspace, element.elemID.getFullName())
       : []
   }
   return []
 }
 
-export const provideWorkspaceReferences = (
+export const provideWorkspaceReferences = async (
   workspace: EditorWorkspace,
   token: string
-): SaltoElemLocation[] => (
-  _.reduce(
-    workspace.elements,
-    (acc, e) => ([...acc, ...getUsages(workspace, e, token)]),
-    [] as SaltoElemLocation[]
-  )
+): Promise<SaltoElemLocation[]> => (
+  _.flatten(await Promise.all(workspace.elements.map(e => getUsages(workspace, e, token))))
 )

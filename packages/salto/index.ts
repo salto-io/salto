@@ -19,12 +19,10 @@ export { dumpCsv, readCsvFromStream } from './src/core/csv'
 export { FetchChange, FetchProgressEvents, StepEmitter, MergeErrorWithElements as MergeError } from './src/core/fetch'
 export * from './src/api'
 export { FoundSearchResult, SearchResult } from './src/core/search'
-// ParsedBlueprint and Blueprint are exported with an alias to avoid
-// conflict with the Blueprint and ParsedBlueprint from ./src/core/blueprint
-// which are still used. See: SALTO-205
 export {
-  Workspace, Blueprint, Errors, ParsedBlueprint, ParsedBlueprintMap,
+  Workspace, Blueprint, Errors, ParsedBlueprintMap,
   WorkspaceError, SourceFragment, WorkspaceErrorSeverity,
+  ResolvedParsedBlueprint as ParsedBlueprint,
 } from './src/workspace/workspace'
 export { Config, loadConfig } from './src/workspace/config'
 export { SourceMap, SourceRange, parseElemID } from './src/parser/parse'

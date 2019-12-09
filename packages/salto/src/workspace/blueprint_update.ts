@@ -1,13 +1,10 @@
 import _ from 'lodash'
 import path from 'path'
 import { getChangeElement, isElement, ObjectType, ElemID, Element } from 'adapter-api'
-import { collections } from '@salto/lowerdash'
 import { AdditionDiff } from '@salto/dag'
 import { DetailedChange } from '../core/plan'
-import { SourceRange, SourceMap } from '../parser/parse'
+import { SourceRange } from '../parser/parse'
 import { dump as saltoDump } from '../parser/dump'
-
-const { makeArray } = collections.array
 
 type DetailedChangeWithSource = DetailedChange & { location: SourceRange }
 
@@ -193,20 +190,22 @@ const wrapAdditions = (nestedAdditions: DetailedAddition[]): DetailedAddition =>
   } as DetailedAddition
 }
 
-const parentElementExistsInPath = (dc: DetailedChange, sourceMap: SourceMap): boolean => {
+const parentElementExistsInPath = (
+  dc: DetailedChange,
+  elementsIndex: Record<string, string[]>
+): boolean => {
   const { parent } = dc.id.createTopLevelParentID()
-  return makeArray(sourceMap.get(parent.getFullName()))
-    .map(range => range.filename)
+  return (elementsIndex[parent.getFullName()] || [])
     .includes(createFileNameFromPath(dc.path))
 }
 export const getChangesToUpdate = (
   changes: DetailedChange[],
-  sourceMap: SourceMap
+  elementsIndex: Record<string, string[]>
 ): DetailedChange[] => {
   const isNestedAddition = (dc: DetailedChange): boolean => (dc.path || false)
     && dc.action === 'add'
     && dc.id.nestingLevel === 1
-    && !parentElementExistsInPath(dc, sourceMap)
+    && !parentElementExistsInPath(dc, elementsIndex)
 
   const [nestedAdditionsWithPath, otherChanges] = _.partition(
     changes,

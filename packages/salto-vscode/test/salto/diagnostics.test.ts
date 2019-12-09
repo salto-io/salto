@@ -21,7 +21,7 @@ describe('TEST', () => {
     const workspace = await EditorWorkspace.load(getConfig(baseBPDir, [parseErrorBp]), false)
     expect(workspace.elements).toBeDefined()
     expect(workspace.errors.hasErrors()).toBeTruthy()
-    const diag = getDiagnostics(workspace)['../BP2/parse_error.bp'][0]
+    const diag = (await getDiagnostics(workspace))['../BP2/parse_error.bp'][0]
     expect(diag).toBeDefined()
     expect(diag.msg).toContain(
       process.env.JS_PARSE
@@ -34,7 +34,7 @@ describe('TEST', () => {
     const workspace = await EditorWorkspace.load(getConfig(baseBPDir, [validationErrorBp]), false)
     expect(workspace.elements).toBeDefined()
     expect(workspace.errors.hasErrors()).toBeTruthy()
-    const diag = getDiagnostics(workspace)['../BP2/error.bp'][0]
+    const diag = (await getDiagnostics(workspace))['../BP2/error.bp'][0]
     expect(diag).toBeDefined()
     expect(diag.msg).toContain(
       'Invalid value type for salto.number : "ooppps"'
@@ -45,6 +45,6 @@ describe('TEST', () => {
     const workspace = await EditorWorkspace.load(getConfig(baseBPDir, []), false)
     expect(workspace.elements).toBeDefined()
     expect(workspace.errors.hasErrors()).toBeFalsy()
-    expect(getDiagnostics(workspace)).toEqual({ 'complex_type.bp': [], 'simple_types.bp': [] })
+    expect(await getDiagnostics(workspace)).toEqual({ 'complex_type.bp': [], 'simple_types.bp': [] })
   })
 })

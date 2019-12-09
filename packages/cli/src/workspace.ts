@@ -17,10 +17,10 @@ export type LoadWorkspaceResult = {
 
 type WorkspaceStatus = 'Error' | 'Warning' | 'Valid'
 // Exported for testing purposes
-export const validateWorkspace = (ws: Workspace,
-  { stdout, stderr }: CliOutput): WorkspaceStatus => {
+export const validateWorkspace = async (ws: Workspace,
+  { stdout, stderr }: CliOutput): Promise<WorkspaceStatus> => {
   if (ws.hasErrors()) {
-    const workspaceErrors = ws.getWorkspaceErrors()
+    const workspaceErrors = await ws.getWorkspaceErrors()
     const severeErrors = workspaceErrors.filter(isError)
     if (!_.isEmpty(severeErrors)) {
       stderr.write(`\n${formatWorkspaceErrors(severeErrors)}`)
@@ -39,17 +39,17 @@ export const loadWorkspace = async (workingDir: string, cliOutput: CliOutput,
     : { succeed: () => { }, fail: () => { } }
   const config = await loadConfig(workingDir)
   const workspace = await Workspace.load(config)
-  const wsStatus = validateWorkspace(workspace, cliOutput)
+  const wsStatus = await validateWorkspace(workspace, cliOutput)
 
   if (wsStatus === 'Warning') {
     spinner.succeed(Prompts.FINISHED_LOADING)
-    const numWarnings = workspace.getWorkspaceErrors().filter(e => !isError(e)).length
+    const numWarnings = (await workspace.getWorkspaceErrors()).filter(e => !isError(e)).length
     const shouldContinue = await shouldContinueInCaseOfWarnings(numWarnings, cliOutput)
     return { workspace, errored: !shouldContinue }
   }
 
   if (wsStatus === 'Error') {
-    const numErrors = workspace.getWorkspaceErrors().filter(isError).length
+    const numErrors = (await workspace.getWorkspaceErrors()).filter(isError).length
     spinner.fail(formatWorkspaceAbort(numErrors))
   } else {
     spinner.succeed(Prompts.FINISHED_LOADING)
@@ -69,8 +69,8 @@ export const updateWorkspace = async (ws: Workspace, cliOutput: CliOutput,
     }
 
     await ws.updateBlueprints(...changes.map(c => c.change))
-    if (validateWorkspace(ws, cliOutput) === 'Error') {
-      log.warn(`workspace has ${ws.getWorkspaceErrors().filter(isError).length} errors - ABORT`)
+    if (await validateWorkspace(ws, cliOutput) === 'Error') {
+      log.warn(`workspace has ${(await ws.getWorkspaceErrors()).filter(isError).length} errors - ABORT`)
       return false
     }
     await ws.flush()

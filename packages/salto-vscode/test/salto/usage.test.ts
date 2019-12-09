@@ -25,23 +25,23 @@ describe('Test go to definitions', () => {
     workspace = await EditorWorkspace.load(getConfig(baseBPDir, []), false)
   })
 
-  it('should give all fields usages of a type', () => {
+  it('should give all fields usages of a type', async () => {
     const token = 'vs_str'
-    const defs = provideWorkspaceReferences(workspace, token)
+    const defs = await provideWorkspaceReferences(workspace, token)
     expect(getRefLines(defs)).toEqual(
       [33, 37, 50, 67, 114, 126, 138, 141, 144, 147, 150, 153, 156, 159]
     )
   })
 
-  it('should give all instance usages of a type', () => {
+  it('should give all instance usages of a type', async () => {
     const token = 'vs_loan'
-    const defs = provideWorkspaceReferences(workspace, token)
+    const defs = await provideWorkspaceReferences(workspace, token)
     expect(getRefLines(defs)).toEqual([87, 107])
   })
 
-  it('should give all instance AND field usages of a type', () => {
+  it('should give all instance AND field usages of a type', async () => {
     const token = 'vs_person'
-    const defs = provideWorkspaceReferences(workspace, token)
+    const defs = await provideWorkspaceReferences(workspace, token)
     expect(getRefLines(defs)).toEqual([47, 64, 75, 81, 131])
   })
 })

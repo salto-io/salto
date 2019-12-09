@@ -1,5 +1,5 @@
 import {
-  ObjectType, Adapter, InstanceElement, Values, ElemID,
+  ObjectType, Adapter, InstanceElement, Values, ElemID, DataModificationResult,
 } from 'adapter-api'
 import { adapterId as SALESFORCE } from 'salesforce-adapter'
 import { readCsvFromStream, dumpCsv } from './csv'
@@ -8,18 +8,29 @@ export const getInstancesOfType = async (
   type: ObjectType,
   adapters: Record<string, Adapter>,
   outPath: string
-): Promise<void> => {
+): Promise<DataModificationResult> => {
   const adapter = adapters[type.elemID.adapter]
   if (!adapter) {
     throw new Error(`Failed to find the adapter for the given type: ${type.elemID.getFullName()}`)
   }
-  const outputObjectsIterator = await adapter.getInstancesOfType(type)
   let toAppend = false
-  // eslint-disable-next-line no-restricted-syntax
-  for await (const objects of outputObjectsIterator) {
-    await dumpCsv(objects.map(instance => instance.value), outPath, toAppend)
-    toAppend = true
+  const returnResult = {
+    successfulRows: 0,
+    failedRows: 0,
+    errors: new Set<string>(),
   }
+  try {
+    const outputObjectsIterator = await adapter.getInstancesOfType(type)
+    // eslint-disable-next-line no-restricted-syntax
+    for await (const objects of outputObjectsIterator) {
+      await dumpCsv(objects.map(instance => instance.value), outPath, toAppend)
+      toAppend = true
+      returnResult.successfulRows += objects.length
+    }
+  } catch (error) {
+    returnResult.errors.add(error)
+  }
+  return returnResult
 }
 
 const recordToInstanceElement = (type: ObjectType, record: Values):
@@ -40,12 +51,12 @@ const instancesIterator = async function *instancesIterator(
 
 export const importInstancesOfType = async (
   type: ObjectType, inputPath: string, adapters: Record<string, Adapter>):
-Promise<void> => {
+Promise<DataModificationResult> => {
   const adapter = adapters[type.elemID.adapter]
   if (!adapter) {
     throw new Error(`Failed to find the adapter for the given type: ${type.elemID.getFullName()}`)
   }
-  await adapter.importInstancesOfType(instancesIterator(type, inputPath))
+  return adapter.importInstancesOfType(type, instancesIterator(type, inputPath))
 }
 
 // Convert the result to Instance Elements
@@ -65,10 +76,10 @@ const elemIdsIterator = async function *elemIdsIterator(
 
 export const deleteInstancesOfType = async (
   type: ObjectType, inputPath: string, adapters: Record<string, Adapter>):
-Promise<void> => {
+Promise<DataModificationResult> => {
   const adapter = adapters[type.elemID.adapter]
   if (!adapter) {
     throw new Error(`Failed to find the adapter for the given type: ${type.elemID.getFullName()}`)
   }
-  await adapter.deleteInstancesOfType(type, elemIdsIterator(type, inputPath))
+  return adapter.deleteInstancesOfType(type, elemIdsIterator(type, inputPath))
 }

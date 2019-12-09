@@ -3,14 +3,26 @@ import {
 } from './elements'
 import { Change } from './change'
 
+export interface DataModificationResult {
+  successfulRows: number
+  failedRows: number
+  errors: Set<string>
+}
+
 export interface Adapter {
   fetch(): Promise<Element[]>
   add(element: Element): Promise<Element>
   remove(element: Element): Promise<void>
   update(before: Element, after: Element, changes: Iterable<Change>): Promise<Element>
   getInstancesOfType(type: ObjectType): AsyncIterable<InstanceElement[]>
-  importInstancesOfType(records: AsyncIterable<InstanceElement>): Promise<void>
-  deleteInstancesOfType(type: ObjectType, records: AsyncIterable<ElemID>): Promise<void>
+  importInstancesOfType(
+    type: ObjectType,
+    records: AsyncIterable<InstanceElement>
+  ): Promise<DataModificationResult>
+  deleteInstancesOfType(
+    type: ObjectType,
+    records: AsyncIterable<ElemID>
+  ): Promise<DataModificationResult>
 }
 
 export const OBJECT_SERVICE_ID = 'object_service_id'

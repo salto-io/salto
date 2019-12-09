@@ -1,7 +1,7 @@
 import { deleteFromCsvFile, file } from 'salto'
+import wu from 'wu'
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'
-
 import { getConfigFromUser } from '../callbacks'
 import Prompts from '../prompts'
 import { loadWorkspace } from '../workspace'
@@ -28,14 +28,19 @@ export const command = (
       workspace,
       getConfigFromUser
     )
-    // TODO: Return here the full report that contains the numbers of successful and failed rows.
-    // Also: print the errors of the erroneous rows to a log file and print the path of the log.
-    if (result.success) {
-      stdout.write(Prompts.DELETE_FINISHED_SUCCESSFULLY)
-      return CliExitCode.Success
+    // Print here the full report that contains the numbers of successful and failed rows.
+    stdout.write(Prompts.DELETE_ENDED_SUMMARY(result.successfulRows, result.failedRows))
+    // Print the unique errors encountered during the import
+    if (result.errors.size > 0) {
+      stdout.write(Prompts.ERROR_SUMMARY(wu(result.errors.values()).toArray()))
     }
-    stderr.write(Prompts.OPERATION_FAILED)
-    return CliExitCode.AppError
+    // If any rows failed, return error exit code
+    if (result.failedRows > 0) {
+      return CliExitCode.AppError
+    }
+    // Otherwise return success
+    stdout.write(Prompts.DELETE_FINISHED_SUCCESSFULLY)
+    return CliExitCode.Success
   },
 })
 

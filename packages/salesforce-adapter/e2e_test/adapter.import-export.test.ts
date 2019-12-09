@@ -109,7 +109,7 @@ describe('Adapter E2E import-export related operations with real account', () =>
         await client.destroy(testInstance.type.annotations[constants.API_NAME], ids)
       }
 
-      await adapter.importInstancesOfType(iter())
+      await adapter.importInstancesOfType(leadType, iter())
 
       // Test
       const queryString = `SELECT Id,${Object.values(leadType.fields).map(apiName)} 
@@ -132,7 +132,7 @@ describe('Adapter E2E import-export related operations with real account', () =>
       // Prepare
       const ids = await existingInstances(testInstance)
       if (ids.length < 1) {
-        await adapter.importInstancesOfType(iter())
+        await adapter.importInstancesOfType(leadType, iter())
       }
 
       const queryString = `SELECT Id,${Object.values(leadType.fields).map(apiName)} 

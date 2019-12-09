@@ -55,10 +55,22 @@ Be sure to go over the preview output when invoking the deploy command.`
   public static readonly DESCRIBE_NOT_FOUND = 'Unknown element type.'
 
   public static readonly COULD_NOT_FIND_FILE = 'Could not find the input file. Make sure the path you provided is correct.'
-  public static readonly IMPORT_FINISHED_SUCCESSFULLY = 'Finished importing records from CSV file.'
-  public static readonly DELETE_FINISHED_SUCCESSFULLY = 'Finished deleting records read from CSV file.'
-  public static readonly EXPORT_FINISHED_SUCCESSFULLY = 'Finished exporting records to CSV file.'
-  public static readonly OPERATION_FAILED = 'Operation failed.'
+  public static readonly IMPORT_ENDED_SUMMARY = (numSuccess: number, numErrors: number): string => `Importing records from CSV file ended.\nNumber of rows imported successfully: ${numSuccess}
+Number of rows with errors: ${numErrors}\n`
+
+  public static readonly IMPORT_FINISHED_SUCCESSFULLY = 'Import operation completed successfully.'
+  public static readonly DELETE_FINISHED_SUCCESSFULLY = 'Delete operation completed successfully.'
+  public static readonly EXPORT_FINISHED_SUCCESSFULLY = 'Export operation completed successfully.'
+
+  public static readonly DELETE_ENDED_SUMMARY = (numSuccess: number, numErrors: number): string => `Deleting records from CSV file ended.\nNumber of rows deleted successfully: ${numSuccess}
+Number of rows with errors: ${numErrors}\n`
+
+  public static readonly ERROR_SUMMARY = (errors: string[]): string => `The following errors were encountered:\n${errors.join('\n')}`
+
+  public static readonly EXPORT_ENDED_SUMMARY = (numRows: number, type: string, path: string): string => `Exporting records of type ${type} to CSV file ended.\n${numRows} records were exported.
+The csv file path is: ${path}\n`
+
+  public static readonly OPERATION_FAILED_WITH_ERROR = (error: Error): string => `Operation failed: ${error.message}`
 
   public static initFailed(msg: string): string {
     return `Could not initiate workspace: ${msg}\n`

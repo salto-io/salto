@@ -2,9 +2,11 @@ import {
   BuiltinTypes, Type, ObjectType, ElemID, InstanceElement, isModificationDiff,
   isRemovalDiff, isAdditionDiff, Field, Element, isObjectType, isInstanceElement, AdapterCreator,
   Value, Change, getChangeElement, isField, isElement, ElemIdGetter, ADAPTER,
+  DataModificationResult,
 } from 'adapter-api'
 import {
   SaveResult, MetadataInfo, Field as SObjField, DescribeSObjectResult, QueryResult, FileProperties,
+  BatchResultInfo, BulkLoadOperation, Record as SfRecord,
 } from 'jsforce'
 import _ from 'lodash'
 import { logger } from '@salto/logging'
@@ -239,27 +241,20 @@ export default class SalesforceAdapter {
 
   /**
    * Imports instances of type from the data stream
-   * @param instancesIterator the iterator that provides the instances to delete
+   * @param type the object type of which to import instances
+   * @param instancesIterator the iterator that provides the instances to import
    * @returns a promise that represents action completion
    */
   public async importInstancesOfType(
+    type: ObjectType,
     instancesIterator: AsyncIterable<InstanceElement>
-  ): Promise<void> {
-    let instances: InstanceElement[] = []
-    // eslint-disable-next-line no-restricted-syntax
-    for await (const instance of instancesIterator) {
-      // Aggregate the instance elements for the proper bulk size
-      const length = instances.push(instance)
-      if (length === RECORDS_CHUNK_SIZE) {
-        // Convert the instances in the transformer to SfRecord[] and send to bulk API
-        await this.client.updateBulk(apiName(instances[0].type), 'upsert', instanceElementstoRecords(instances))
-        instances = []
-      }
-    }
-    // Send the remaining instances
-    if (instances.length > 0) {
-      await this.client.updateBulk(apiName(instances[0].type), 'upsert', instanceElementstoRecords(instances))
-    }
+  ): Promise<DataModificationResult> {
+    return this.iterateBulkOperation(
+      type,
+      instancesIterator,
+      'upsert',
+      instanceElementstoRecords
+    )
   }
 
   /**
@@ -271,22 +266,90 @@ export default class SalesforceAdapter {
   public async deleteInstancesOfType(
     type: ObjectType,
     elemIdIterator: AsyncIterable<ElemID>
-  ): Promise<void> {
-    let elemIds: ElemID[] = []
+  ): Promise<DataModificationResult> {
+    return this.iterateBulkOperation(
+      type,
+      elemIdIterator,
+      'delete',
+      elemIDstoRecords
+    )
+  }
+
+  private async iterateBulkOperation(
+    type: ObjectType,
+    iterator: AsyncIterable<Value>,
+    bulkOperation: BulkLoadOperation,
+    transformFuction: (values: Value[]) => SfRecord[]
+  ): Promise<DataModificationResult> {
+    const returnResult = {
+      successfulRows: 0,
+      failedRows: 0,
+      errors: new Set<string>(),
+    }
+    const updateReturnResult = (
+      retResult: DataModificationResult,
+      bulkResult: BatchResultInfo[],
+      batchNumber: number
+    ): void => {
+      retResult.successfulRows += bulkResult.filter(result => result.success).length
+      retResult.failedRows = bulkResult.length - retResult.successfulRows
+      // Log the errors for each row
+      bulkResult.forEach((result, index) => {
+        if (!result.success) {
+          // Emit the error to the log
+          const rowNumber = RECORDS_CHUNK_SIZE * batchNumber + index + 1
+          if (result.errors && result.errors.length > 0) {
+            log.error('Failed to perform %o on row %o with the following errors:\n%o',
+              bulkOperation,
+              rowNumber,
+              result.errors?.join('\n'))
+          } else {
+            log.error('Failed to perform %o on row %o',
+              bulkOperation,
+              rowNumber)
+          }
+
+          // Add the error string to the set if it doesn't appear there already
+          // eslint-disable-next-line no-unused-expressions
+          result.errors?.forEach(error => {
+            if (!returnResult.errors.has(error)) {
+              returnResult.errors.add(error)
+            }
+          })
+        }
+      })
+    }
+    let batch: Value[] = []
+    let batchNumber = 0
+
     // eslint-disable-next-line no-restricted-syntax
-    for await (const elemId of elemIdIterator) {
+    for await (const element of iterator) {
       // Aggregate the instance elements for the proper bulk size
-      const length = elemIds.push(elemId)
+      const length = batch.push(element)
       if (length === RECORDS_CHUNK_SIZE) {
         // Convert the instances in the transformer to SfRecord[] and send to bulk API
-        await this.client.updateBulk(apiName(type), 'delete', elemIDstoRecords(elemIds))
-        elemIds = []
+        const result = await this.client.updateBulk(
+          apiName(type),
+          bulkOperation,
+          transformFuction(batch)
+        )
+        batch = []
+        // Update the return result
+        updateReturnResult(returnResult, result, batchNumber)
+        batchNumber += 1
       }
     }
     // Send the remaining instances
-    if (elemIds.length > 0) {
-      await this.client.updateBulk(apiName(type), 'delete', elemIDstoRecords(elemIds))
+    if (batch.length > 0) {
+      const result = await this.client.updateBulk(
+        apiName(type),
+        bulkOperation,
+        transformFuction(batch)
+      )
+      // Update the return result
+      updateReturnResult(returnResult, result, batchNumber)
     }
+    return returnResult
   }
 
   /**

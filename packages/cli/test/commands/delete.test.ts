@@ -1,13 +1,16 @@
-import { Workspace, loadConfig, file, deleteFromCsvFile, ModifyDataResult } from 'salto'
+import { Workspace, loadConfig, file, deleteFromCsvFile } from 'salto'
+import { DataModificationResult } from 'adapter-api'
 import { MockWriteStream, getWorkspaceErrors } from '../mocks'
 import { command } from '../../src/commands/delete'
 import Prompts from '../../src/prompts'
+import { CliExitCode } from '../../src/types'
 
 jest.mock('salto', () => ({
   ...require.requireActual('salto'),
   deleteFromCsvFile: jest.fn().mockImplementation(() => Promise.resolve({
-    success: true,
-    Errors: [],
+    successfulRows: 5,
+    failedRows: 0,
+    errors: new Set<string>(),
   })),
   Workspace: {
     load: jest.fn().mockImplementation(
@@ -33,6 +36,7 @@ describe('delete command', () => {
     existsReturn = true
     await command(workspaceDir, 'mockName', 'mockPath', cliOutput).execute()
     expect(deleteFromCsvFile).toHaveBeenCalled()
+    expect(cliOutput.stdout.content).toMatch(Prompts.DELETE_ENDED_SUMMARY(5, 0))
     expect(cliOutput.stdout.content).toMatch(Prompts.DELETE_FINISHED_SUCCESSFULLY)
     expect(Workspace.load).toHaveBeenCalledWith(loadConfig(workspaceDir))
   })
@@ -57,13 +61,16 @@ describe('delete command', () => {
 
   it('should fail if delete operation failed', async () => {
     existsReturn = true
+    const errors = ['error1', 'error2']
     const erroredModifyDataResult = {
-      success: false,
-      Errors: [],
-    } as unknown as ModifyDataResult
+      successfulRows: 0,
+      failedRows: 5,
+      errors: new Set<string>(errors),
+    } as unknown as DataModificationResult
     (deleteFromCsvFile as jest.Mock).mockResolvedValueOnce(Promise.resolve(erroredModifyDataResult))
-    await command(workspaceDir, 'mockName', 'mockPath', cliOutput).execute()
+    const exitCode = await command(workspaceDir, 'mockName', 'mockPath', cliOutput).execute()
+    expect(cliOutput.stdout.content).toMatch(Prompts.ERROR_SUMMARY(errors))
     expect(Workspace.load).toHaveBeenCalledWith(loadConfig(workspaceDir))
-    expect(cliOutput.stderr.content).toContain(Prompts.OPERATION_FAILED)
+    expect(exitCode).toEqual(CliExitCode.AppError)
   })
 })

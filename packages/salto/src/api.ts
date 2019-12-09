@@ -6,7 +6,7 @@ import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto/logging'
 import {
   deployActions, ItemStatus, DeployError,
-} from './core/core'
+} from './core/deploy'
 import {
   getInstancesOfType, importInstancesOfType, deleteInstancesOfType,
 } from './core/records'

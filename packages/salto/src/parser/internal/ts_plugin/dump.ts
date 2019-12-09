@@ -1,5 +1,5 @@
 import _ from 'lodash'
-import { Value } from 'adapter-api'
+import { Value, isExpression, ReferenceExpression, TemplateExpression } from 'adapter-api'
 import { HclDumpReturn, DumpedHclBlock } from '../types'
 
 const O_BLOCK = '{'
@@ -51,15 +51,21 @@ const dumpArray = (arr: Value): string[] => {
   return ident(res)
 }
 
-// const dumpExpresion = (exp: Value): string[] => {
-//   // TODO Still not supported.
-//   return []
-// }
+const dumpExpresion = (exp: Value): string[] => {
+  if (exp instanceof ReferenceExpression) return [exp.traversalParts.join('.')]
+  const { parts } = exp as TemplateExpression
+  return [
+    dumpPrimitive(parts
+      .map(part => (isExpression(part)
+        ? `\${ ${dumpExpresion(part).join('\n')} }`
+        : part)).join('')),
+  ]
+}
 
 const dumpValue = (value: Value): string[] => {
   if (_.isArray(value)) return dumpArray(value)
   if (_.isPlainObject(value)) return dumpObject(value)
-  // if (isExpression(value)) return dumpExpresion(value)
+  if (isExpression(value)) return dumpExpresion(value)
   return [dumpPrimitive(value)]
 }
 

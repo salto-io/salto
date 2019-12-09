@@ -1,5 +1,6 @@
 import each from 'jest-each'
 import _ from 'lodash'
+import { TemplateExpression, ReferenceExpression } from 'adapter-api'
 import HclParser from '../../../src/parser/internal/hcl'
 import {
   ParsedHclBlock, HclAttribute, HclExpression, HclParseError,
@@ -245,6 +246,15 @@ each([false, true]).describe('HCL Parser', jsParseMode => {
               str: 'string',
               lst: ['val1', 'val2'],
               empty: [],
+              exp: (process.env.JS_PARSE)
+                ? new TemplateExpression({
+                  parts: [
+                    'test ',
+                    new ReferenceExpression({ traversalParts: ['a', 'b'] }),
+                    ' test',
+                  ],
+                })
+                : 'not supported',
               nested: {
                 val: 'so deep',
               },
@@ -255,7 +265,6 @@ each([false, true]).describe('HCL Parser', jsParseMode => {
       ],
     } as unknown
     let serialized: string
-
     beforeAll(async () => {
       const buffer = await HclParser.dump(body as ParsedHclBlock, jsParseMode)
       serialized = buffer.toString()
@@ -275,6 +284,12 @@ each([false, true]).describe('HCL Parser', jsParseMode => {
     })
     it('dumps empty list', () => {
       expect(serialized).toMatch(/empty\s*=\s*\[\s*\]/m)
+    })
+    it('dumps expressions', () => {
+      if (process.env.JS_PARSE){
+        // eslint-disable-next-line no-template-curly-in-string
+        expect(serialized).toMatch('exp = "test ${ a.b } test"')
+      }
     })
     it('handles nested attributes', () => {
       expect(serialized).toMatch(/nested\s*=\s*{\s*val\s*=\s*"so deep",*\s*}/m)

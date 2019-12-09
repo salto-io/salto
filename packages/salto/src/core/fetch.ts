@@ -7,7 +7,7 @@ import {
   ElemIdGetter,
 } from 'adapter-api'
 import { logger } from '@salto/logging'
-import { StepEvents } from './core'
+import { StepEvents } from './deploy'
 import { getPlan, DetailedChange } from './plan'
 import { mergeElements, MergeError } from './merger'
 

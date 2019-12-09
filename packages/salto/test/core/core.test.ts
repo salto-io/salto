@@ -5,7 +5,7 @@ import {
 } from 'adapter-api'
 import { Config } from 'src/workspace/config'
 import _ from 'lodash'
-import { DeployError } from 'src/core/core'
+import { DeployError } from 'src/core/deploy'
 import * as commands from '../../src/api'
 import State from '../../src/state/state'
 import adapterCreators from '../../src/core/adapters/creators'

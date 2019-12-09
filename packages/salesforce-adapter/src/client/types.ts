@@ -2,32 +2,21 @@ import { MetadataInfo, SaveResult } from 'jsforce'
 import _ from 'lodash'
 import { FIELD_TYPE_NAMES, FIELD_TYPE_API_NAMES } from '../constants'
 
+export type JSONBool = boolean | 'true' | 'false'
 
-export interface FieldPermissions {
-  field: string
-  editable: boolean | 'true' | 'false'
-  readable: boolean | 'true' | 'false'
-}
+export type ObjectPermissionsOptions = { allowCreate: JSONBool
+  allowDelete: JSONBool
+  allowEdit: JSONBool
+  allowRead: JSONBool
+  modifyAllRecords: JSONBool
+  viewAllRecords: JSONBool }
 
-export interface ObjectPermissions {
-  object: string
-  allowCreate: boolean | 'true' | 'false'
-  allowDelete: boolean | 'true' | 'false'
-  allowEdit: boolean | 'true' | 'false'
-  allowRead: boolean | 'true' | 'false'
-  modifyAllRecords: boolean | 'true' | 'false'
-  viewAllRecords: boolean | 'true' | 'false'
-}
+export type FieldPermissionsOptions = { editable: JSONBool
+   readable: JSONBool }
 
-export type ObjectPermissionsOptions = { allowCreate: boolean | 'true' | 'false'
-  allowDelete: boolean | 'true' | 'false'
-  allowEdit: boolean | 'true' | 'false'
-  allowRead: boolean | 'true' | 'false'
-  modifyAllRecords: boolean | 'true' | 'false'
-  viewAllRecords: boolean | 'true' | 'false' }
+export type FieldPermissions = { field: string } & FieldPermissionsOptions
 
-export type FieldPermissionsOptions = { editable: boolean | 'true' | 'false'
-   readable: boolean | 'true' | 'false' }
+export type ObjectPermissions = { object: string } & ObjectPermissionsOptions
 
 export class ProfileInfo implements MetadataInfo {
   constructor(

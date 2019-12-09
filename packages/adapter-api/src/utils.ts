@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import {
-  isObjectType, Type, Field, ObjectType, ElemID, isField,
+  isObjectType, Type, Field, ObjectType, ElemID, isField, Values,
 } from './elements'
 
 interface AnnoRef {
@@ -72,3 +72,6 @@ export const getAnnotationKey = (annotations: {[key: string]: Type}, path: strin
   const annoType = (annoName) ? annotations[annoName] : undefined
   return { annoName, annoType }
 }
+
+export const getAnnotationValue = (element: ObjectType | Field, annotation: string): Values =>
+  (element.annotations[annotation] || {})

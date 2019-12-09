@@ -1,6 +1,6 @@
 import {
   ObjectType, ElemID, PrimitiveType, Field, PrimitiveTypes,
-  InstanceElement, isObjectType, isInstanceElement, BuiltinTypes,
+  InstanceElement, isObjectType, BuiltinTypes,
 } from 'adapter-api'
 import _ from 'lodash'
 import { metadataType } from '../../src/transformers/transformer'
@@ -9,6 +9,7 @@ import filterCreator from '../../src/filters/field_permissions'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
+import { getProfileInstances } from '../../src/filters/permissions_utils'
 
 const { FIELD_LEVEL_SECURITY_ANNOTATION, ADMIN_PROFILE, PROFILE_METADATA_TYPE } = constants
 
@@ -177,8 +178,7 @@ describe('Field Permissions filter', () => {
       expect(fieldLevelSecurityNoStandard.editable).toEqual([ADMIN_FULL_NAME])
 
       // Check profile instances' field_permissions were deleted
-      elements.filter(isInstanceElement)
-        .filter(elem => metadataType(elem) === PROFILE_METADATA_TYPE)
+      getProfileInstances(elements)
         .forEach(profileInstance => expect(profileInstance.value[constants.FIELD_PERMISSIONS])
           .toBeUndefined())
 

@@ -1,6 +1,6 @@
 import {
   ObjectType, ElemID, Field, InstanceElement,
-  isObjectType, isInstanceElement, BuiltinTypes,
+  isObjectType, BuiltinTypes,
 } from 'adapter-api'
 import _ from 'lodash'
 import { metadataType } from '../../src/transformers/transformer'
@@ -9,6 +9,7 @@ import filterCreator from '../../src/filters/object_permissions'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
+import { getProfileInstances } from '../../src/filters/permissions_utils'
 
 const { OBJECT_LEVEL_SECURITY_ANNOTATION, PROFILE_METADATA_TYPE, ADMIN_PROFILE } = constants
 const { ALLOW_CREATE, ALLOW_DELETE, ALLOW_EDIT, ALLOW_READ,
@@ -124,12 +125,12 @@ describe('Object Permissions filter', () => {
     const profile = profiles.find(p => p.fullName === profileName) as ProfileInfo
     const objectPermissions = profile.objectPermissions
       .find(o => o.object === objectName) as ObjectPermissions
-    expect(objectPermissions.allowCreate).toBe(allowCreate ? 'true' : 'false')
-    expect(objectPermissions.allowDelete).toBe(allowDelete ? 'true' : 'false')
-    expect(objectPermissions.allowEdit).toBe(allowEdit ? 'true' : 'false')
-    expect(objectPermissions.allowRead).toBe(allowRead ? 'true' : 'false')
-    expect(objectPermissions.modifyAllRecords).toBe(modifyAllRecords ? 'true' : 'false')
-    expect(objectPermissions.viewAllRecords).toBe(viewAllRecords ? 'true' : 'false')
+    expect(objectPermissions.allowCreate).toBe(allowCreate)
+    expect(objectPermissions.allowDelete).toBe(allowDelete)
+    expect(objectPermissions.allowEdit).toBe(allowEdit)
+    expect(objectPermissions.allowRead).toBe(allowRead)
+    expect(objectPermissions.modifyAllRecords).toBe(modifyAllRecords)
+    expect(objectPermissions.viewAllRecords).toBe(viewAllRecords)
   }
 
   beforeEach(() => {
@@ -163,8 +164,7 @@ describe('Object Permissions filter', () => {
       expect(objectLevelSecurityExtend[VIEW_ALL_RECORDS]).toEqual([])
 
       // Check profile instances' object_permissions were deleted
-      elements.filter(isInstanceElement)
-        .filter(elem => metadataType(elem) === PROFILE_METADATA_TYPE)
+      getProfileInstances(elements)
         .forEach(profileInstance => expect(profileInstance.value[constants.OBJECT_PERMISSIONS])
           .toBeUndefined())
 

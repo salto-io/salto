@@ -1,9 +1,9 @@
 import _ from 'lodash'
 import { logger } from '@salto/logging'
-import { Element, Field, isObjectType, ObjectType, Values } from 'adapter-api'
+import { Element, Field, isObjectType, ObjectType, InstanceElement, isInstanceElement } from 'adapter-api'
 import { API_NAME, CUSTOM_FIELD } from '../constants'
-import { CustomField } from '../client/types'
-import { fieldFullName, isCustomObject } from '../transformers/transformer'
+import { CustomField, JSONBool } from '../client/types'
+import { fieldFullName, isCustomObject, metadataType } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
 
 const log = logger(module)
@@ -59,8 +59,10 @@ export const runOnFields = async (elements: Element[], condition: (field: Field)
 
 export const id = (elem: Element): string => elem.elemID.getFullName()
 
-export const getAnnotationValue = (element: ObjectType | Field, annotation: string): Values =>
-  (element.annotations[annotation] || {})
-
-export const boolValue = (val: boolean | 'true' | 'false'):
+export const boolValue = (val: JSONBool):
  boolean => val === 'true' || val === true
+
+export const getInstancesOfMetadataType = (elements: Element[], metadataTypeName: string):
+ InstanceElement[] =>
+  elements.filter(isInstanceElement)
+    .filter(element => metadataType(element) === metadataTypeName)

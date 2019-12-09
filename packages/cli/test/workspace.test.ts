@@ -29,15 +29,15 @@ describe('workspace', () => {
 
   describe('error validation', () => {
     describe('when there are no errors', () => {
-      it('returns true', () => {
+      it('returns true', async () => {
         mockWs.hasErrors = jest.fn().mockImplementation(() => false)
-        const wsValid = validateWorkspace(mockWs, cliOutput)
+        const wsValid = await validateWorkspace(mockWs, cliOutput)
         expect(mockWs.hasErrors).toHaveBeenCalled()
         expect(wsValid).toBe('Valid')
       })
     })
     describe('when there are errors', () => {
-      it('returns true if there are only warnings', () => {
+      it('returns true if there are only warnings', async () => {
         mockWs.hasErrors = jest.fn().mockImplementation(() => true)
         mockWs.getWorkspaceErrors = jest.fn().mockImplementation(() => (
           [{
@@ -52,13 +52,13 @@ describe('workspace', () => {
           }]
         ))
 
-        const wsValid = validateWorkspace(mockWs, cliOutput)
+        const wsValid = await validateWorkspace(mockWs, cliOutput)
         expect(mockWs.hasErrors).toHaveBeenCalled()
         expect(mockWs.getWorkspaceErrors).toHaveBeenCalled()
         expect(wsValid).toBe('Warning')
       })
 
-      it('returns false if there is at least one sever error', () => {
+      it('returns false if there is at least one sever error', async () => {
         mockWs.hasErrors = jest.fn().mockImplementation(() => true)
         mockWs.getWorkspaceErrors = jest.fn().mockImplementation(() => (
           [{
@@ -73,7 +73,7 @@ describe('workspace', () => {
           }]
         ))
 
-        const wsValid = validateWorkspace(mockWs, cliOutput)
+        const wsValid = await validateWorkspace(mockWs, cliOutput)
         expect(mockWs.hasErrors).toHaveBeenCalled()
         expect(mockWs.getWorkspaceErrors).toHaveBeenCalled()
         expect(wsValid).toBe('Error')

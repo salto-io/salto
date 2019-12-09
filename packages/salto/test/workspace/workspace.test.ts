@@ -375,13 +375,13 @@ type salesforce_lead {
         expect(Object.keys(workspace.parsedBlueprints)).toContain('test/new.bp')
       })
 
-      it.skip('should add new blueprint for field with path', () => {
+      it('should add new blueprint for field with path', () => {
         expect(Object.keys(workspace.parsedBlueprints)).toContain('other/bar.bp')
         expect(workspace.parsedBlueprints['other/bar.bp'].elements[0].elemID.getFullName()).toEqual('salesforce.lead')
         expect((workspace.parsedBlueprints['other/bar.bp'].elements.filter(e => isObjectType(e))[0] as ObjectType).fields.lala).toBeDefined()
       })
 
-      it.skip('should add new blueprint for annotation with path', () => {
+      it('should add new blueprint for annotation with path', () => {
         expect(Object.keys(workspace.parsedBlueprints)).toContain('other/battr.bp')
         expect(workspace.parsedBlueprints['other/battr.bp'].elements[0].elemID.getFullName()).toEqual('salesforce.lead')
         expect((workspace.parsedBlueprints['other/battr.bp'].elements.filter(e => isObjectType(e))[0] as ObjectType).annotations.bobo).toBeDefined()

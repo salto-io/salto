@@ -48,15 +48,19 @@ export type WorkspaceError = Readonly<{
    cause?: ParseError | ValidationError | MergeError
 }>
 
-export type ParsedBlueprint = Omit<Blueprint, 'buffer'> &
-Partial<Pick<Blueprint, 'buffer'>> & {
+export interface ParsedBlueprint {
+  filename: string
   elements: Element[]
   errors: ParseError[]
+  timestamp?: number
   sourceMap?: SourceMap
+  buffer?: string
 }
 
-export type ResolvedParsedBlueprint = ParsedBlueprint &
-  Required<Pick<ParsedBlueprint, 'sourceMap'|'buffer'>>
+export type ResolvedParsedBlueprint = ParsedBlueprint & {
+  sourceMap: SourceMap
+  buffer: string
+}
 
 export interface ParsedBlueprintMap {
   [key: string]: ParsedBlueprint
@@ -107,19 +111,17 @@ const getParseResult = async (
   workspaceFolder: string,
   useCache = true
 ): Promise<ParseResult> => {
-  if (bp.timestamp && useCache) {
-    const cache = new ParseResultFSCache(cacheFolder, workspaceFolder)
-    const key = {
-      filename: bp.filename,
-      lastModified: bp.timestamp,
-    }
+  const cache = new ParseResultFSCache(cacheFolder, workspaceFolder)
+  const key = { filename: bp.filename, lastModified: bp.timestamp || Date.now() }
+  if (useCache) {
     const cachedParsedResult = await cache.get(key)
     if (cachedParsedResult) return cachedParsedResult
-    const parsedBP = await parse(Buffer.from(bp.buffer), bp.filename)
-    await cache.put(key, parsedBP)
-    return parsedBP
   }
-  return parse(Buffer.from(bp.buffer), bp.filename)
+  const result = await parse(Buffer.from(bp.buffer), bp.filename)
+  if (useCache) {
+    await cache.put(key, result)
+  }
+  return result
 }
 
 const mergeSourceMaps = (sourceMaps: SourceMap[]): SourceMap => {

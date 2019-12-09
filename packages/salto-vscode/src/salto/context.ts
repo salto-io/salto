@@ -3,7 +3,7 @@ import wu from 'wu'
 import {
   Element, isField, isType, isObjectType, findElement,
 } from 'adapter-api'
-import { ResolvedParsedBlueprint } from 'salto'
+import { ParsedBlueprint } from 'salto'
 import { EditorWorkspace } from './workspace'
 
 type PositionContextType = 'global'|'instance'|'type'|'field'
@@ -93,7 +93,7 @@ const getPositionContextType = (
 }
 
 const flattenBlueprintRanges = (
-  parsedBlueprint: ResolvedParsedBlueprint
+  parsedBlueprint: ParsedBlueprint
 ): NamedRange[] => wu(parsedBlueprint.sourceMap.entries())
   .map(([name, ranges]) => ranges.map(range => ({ name, range })))
   .flatten()
@@ -146,7 +146,7 @@ const extractFields = (elements: readonly Element[]): Element[] => (
 
 export const buildDefinitionsTree = (
   fileContent: string,
-  parsedBlueprint: ResolvedParsedBlueprint
+  parsedBlueprint: ParsedBlueprint
 ): PositionContext => {
   const startPosComparator = (left: NamedRange, right: NamedRange): number => (
     (left.range.start.line === right.range.start.line)

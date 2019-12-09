@@ -4,7 +4,7 @@ import path from 'path'
 import {
   Workspace, Blueprint,
   ParsedBlueprintMap,
-  Errors, Config, DetailedChange, ResolvedParsedBlueprint, SourceRange,
+  Errors, Config, DetailedChange, ParsedBlueprint, SourceRange,
 } from 'salto'
 import { Element, ElemID } from 'adapter-api'
 
@@ -102,7 +102,7 @@ export class EditorWorkspace {
     return this.workspace.getSourceRanges(elemID)
   }
 
-  async getParsedBlueprint(filename: string): Promise<ResolvedParsedBlueprint> {
+  async getParsedBlueprint(filename: string): Promise<ParsedBlueprint> {
     const bp = this.parsedBlueprints[this.getWorkspaceName(filename)]
     return this.workspace.resolveParsedBlueprint(bp)
   }

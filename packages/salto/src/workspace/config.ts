@@ -151,8 +151,7 @@ const baseDirFromLookup = async (lookupDir: string): Promise<string> => {
 
 const getConfigData = async (baseDir: string): Promise<Partial<Config>> => {
   const configPath = getConfigPath(baseDir)
-  const configData = await parseConfig(await readFile(configPath))
-  return configData
+  return parseConfig(await readFile(configPath))
 }
 
 export const loadConfig = async (lookupDir: string): Promise<Config> => {

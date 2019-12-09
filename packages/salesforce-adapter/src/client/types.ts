@@ -9,29 +9,30 @@ export interface FieldPermissions {
   readable: boolean | 'true' | 'false'
 }
 
-
 export interface ObjectPermissions {
   object: string
-  allowCreate: 'true' | 'false'
-  allowDelete: 'true' | 'false'
-  allowEdit: 'true' | 'false'
-  allowRead: 'true' | 'false'
-  modifyAllRecords: 'true' | 'false'
-  viewAllRecords: 'true' | 'false'
+  allowCreate: boolean | 'true' | 'false'
+  allowDelete: boolean | 'true' | 'false'
+  allowEdit: boolean | 'true' | 'false'
+  allowRead: boolean | 'true' | 'false'
+  modifyAllRecords: boolean | 'true' | 'false'
+  viewAllRecords: boolean | 'true' | 'false'
 }
 
+export type ObjectPermissionsOptions = { allowCreate: boolean | 'true' | 'false'
+  allowDelete: boolean | 'true' | 'false'
+  allowEdit: boolean | 'true' | 'false'
+  allowRead: boolean | 'true' | 'false'
+  modifyAllRecords: boolean | 'true' | 'false'
+  viewAllRecords: boolean | 'true' | 'false' }
 
-export class ProfileFieldPermissionsInfo implements MetadataInfo {
+export type FieldPermissionsOptions = { editable: boolean | 'true' | 'false'
+   readable: boolean | 'true' | 'false' }
+
+export class ProfileInfo implements MetadataInfo {
   constructor(
     public readonly fullName: string,
     public fieldPermissions: FieldPermissions[] = [],
-  ) {}
-}
-
-
-export class ProfileObjectPermissionsInfo implements MetadataInfo {
-  constructor(
-    public readonly fullName: string,
     public objectPermissions: ObjectPermissions[] = [],
   ) {}
 }

@@ -4,7 +4,7 @@ import {
 } from 'adapter-api'
 import _ from 'lodash'
 import { metadataType } from '../../src/transformer'
-import { ObjectPermissions, ProfileObjectPermissionsInfo } from '../../src/client/types'
+import { ObjectPermissions, ProfileInfo } from '../../src/client/types'
 import filterCreator from '../../src/filters/object_permissions'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
@@ -120,8 +120,8 @@ describe('Object Permissions filter', () => {
     allowDelete = true, allowEdit = true, allowRead = true, modifyAllRecords = true,
     viewAllRecords = true): void => {
     expect(mockUpdate.mock.calls.length).toBe(1)
-    const profiles = mockUpdate.mock.calls[0][1] as ProfileObjectPermissionsInfo[]
-    const profile = profiles.find(p => p.fullName === profileName) as ProfileObjectPermissionsInfo
+    const profiles = mockUpdate.mock.calls[0][1] as ProfileInfo[]
+    const profile = profiles.find(p => p.fullName === profileName) as ProfileInfo
     const objectPermissions = profile.objectPermissions
       .find(o => o.object === objectName) as ObjectPermissions
     expect(objectPermissions.allowCreate).toBe(allowCreate ? 'true' : 'false')

@@ -4,7 +4,7 @@ import {
 } from 'adapter-api'
 import _ from 'lodash'
 import { metadataType } from '../../src/transformers/transformer'
-import { ProfileFieldPermissionsInfo, FieldPermissions } from '../../src/client/types'
+import { ProfileInfo, FieldPermissions } from '../../src/client/types'
 import filterCreator from '../../src/filters/field_permissions'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
@@ -141,8 +141,8 @@ describe('Field Permissions filter', () => {
   const verifyUpdateCall = (profileName: string, fieldName: string, editable = true,
     readable = true): void => {
     expect(mockUpdate.mock.calls.length).toBe(1)
-    const profiles = mockUpdate.mock.calls[0][1] as ProfileFieldPermissionsInfo[]
-    const profile = profiles.find(p => p.fullName === profileName) as ProfileFieldPermissionsInfo
+    const profiles = mockUpdate.mock.calls[0][1] as ProfileInfo[]
+    const profile = profiles.find(p => p.fullName === profileName) as ProfileInfo
     const fieldPermissions = profile.fieldPermissions
       .find(f => f.field === fieldName) as FieldPermissions
     expect(fieldPermissions.editable).toBe(editable)

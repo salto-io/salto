@@ -9,9 +9,8 @@ import * as constants from '../src/constants'
 import { STANDARD_VALUE_SET } from '../src/filters/standard_value_sets'
 import {
   CustomObject,
-  ProfileFieldPermissionsInfo,
+  ProfileInfo,
   FieldPermissions,
-  ProfileObjectPermissionsInfo,
   ObjectPermissions,
   CustomField,
   FilterItem,
@@ -78,7 +77,7 @@ describe('Salesforce adapter E2E with real account', () => {
         type: 'Summary',
       } as MetadataInfo)
       await client.update(PROFILE_METADATA_TYPE,
-        new ProfileFieldPermissionsInfo(sfCase(ADMIN_PROFILE), [{
+        new ProfileInfo(sfCase(ADMIN_PROFILE), [{
           field: `${accountApiName}.${fetchedRollupSummaryFieldName}`,
           editable: true,
           readable: true,
@@ -198,14 +197,14 @@ describe('Salesforce adapter E2E with real account', () => {
   describe('should perform CRUD operations', () => {
     // The following const method is a workaround for a bug in SFDC metadata API that returns
     // the fields in FieldPermissions and ObjectPermissions as string instead of boolean
-    const verifyBoolean = (variable: string | boolean): boolean => {
-      const unknownVariable = variable as unknown
-      return typeof unknownVariable === 'string' ? JSON.parse(unknownVariable) : variable
-    }
+    const verifyBoolean = (variable: string | boolean): boolean => (
+      typeof variable === 'string' ? JSON.parse(variable) : variable)
+
+    const getProfileInfo = async (profile: string): Promise<ProfileInfo> =>
+    (await client.readMetadata(PROFILE_METADATA_TYPE, profile))[0] as ProfileInfo
 
     const fieldPermissionExists = async (profile: string, fields: string[]): Promise<boolean[]> => {
-      const profileInfo = (await client.readMetadata(PROFILE_METADATA_TYPE,
-        profile))[0] as ProfileFieldPermissionsInfo
+      const profileInfo = await getProfileInfo(profile)
       const fieldPermissionsMap = new Map<string, FieldPermissions>()
       profileInfo.fieldPermissions.map(f => fieldPermissionsMap.set(f.field, f))
       return fields.map(field => {
@@ -219,8 +218,7 @@ describe('Salesforce adapter E2E with real account', () => {
 
     const objectPermissionExists = async (profile: string, objects: string[]):
      Promise<boolean[]> => {
-      const profileInfo = (await client.readMetadata(PROFILE_METADATA_TYPE,
-        profile))[0] as ProfileObjectPermissionsInfo
+      const profileInfo = await getProfileInfo(profile)
       const objectPermissionsMap = new Map<string, ObjectPermissions>()
       profileInfo.objectPermissions.map(f => objectPermissionsMap.set(f.object, f))
       return objects.map(object => {
@@ -637,7 +635,7 @@ describe('Salesforce adapter E2E with real account', () => {
         PROFILE_METADATA_TYPE, sfCase(newInstance.elemID.name)
       ))[0] as Profile
 
-      type Profile = ProfileFieldPermissionsInfo & {
+      type Profile = ProfileInfo & {
         tabVisibilities: Record<string, Value>
         applicationVisibilities: Record<string, Value>
         objectPermissions: Record<string, Value>

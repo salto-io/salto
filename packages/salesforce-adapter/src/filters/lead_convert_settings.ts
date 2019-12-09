@@ -16,6 +16,8 @@ export const LEAD_TYPE_ID = new ElemID(SALESFORCE, 'lead')
 export const CONVERT_SETTINGS_ANNOTATION = 'convert_settings'
 export const OBJECT_MAPPING_FIELD = 'object_mapping'
 export const MAPPING_FIELDS_FIELD = 'mapping_fields'
+export const INPUT_FIELD = 'input_field'
+export const OUTPUT_FIELD = 'output_field'
 export const INSTANCE_FULL_NAME = 'LeadConvertSettings'
 
 /**
@@ -49,7 +51,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
         // manual fix behavior for now.
         value[OBJECT_MAPPING_FIELD] = makeArray(value[OBJECT_MAPPING_FIELD])
         _.forEach(value[OBJECT_MAPPING_FIELD], mapping => {
-          mapping[MAPPING_FIELDS_FIELD] = makeArray(mapping[MAPPING_FIELDS_FIELD])
+          mapping[MAPPING_FIELDS_FIELD] = _.orderBy(makeArray(mapping[MAPPING_FIELDS_FIELD]), [INPUT_FIELD, OUTPUT_FIELD], ['asc', 'asc'])
         })
 
         lead.annotate({ [CONVERT_SETTINGS_ANNOTATION]: transform(value, convertType, false) || {} })

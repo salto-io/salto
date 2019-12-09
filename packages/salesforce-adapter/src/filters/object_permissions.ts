@@ -10,9 +10,7 @@ import {
   SALESFORCE, OBJECT_LEVEL_SECURITY_ANNOTATION, OBJECT_PERMISSIONS,
   OBJECT_LEVEL_SECURITY_FIELDS, API_NAME, PROFILE_METADATA_TYPE, ADMIN_PROFILE,
 } from '../constants'
-import {
-  sfCase, bpCase, isCustomObject, apiName, mapKeysRecursive,
-} from '../transformer'
+import { sfCase, bpCase, isCustomObject, apiName, mapKeysRecursive } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
 import { ProfileInfo, ObjectPermissions, ObjectPermissionsOptions } from '../client/types'
 import { getCustomObjects, id, getAnnotationValue } from './utils'

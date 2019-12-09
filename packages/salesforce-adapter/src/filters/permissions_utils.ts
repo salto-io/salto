@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import { Values, ObjectType, Field, Element, isInstanceElement, InstanceElement, isObjectType } from 'adapter-api'
 import { ObjectPermissionsOptions, FieldPermissionsOptions, ProfileInfo } from '../client/types'
-import { bpCase, metadataType } from '../transformer'
+import { bpCase, metadataType } from '../transformers/transformer'
 import { getAnnotationValue } from './utils'
 import { PROFILE_METADATA_TYPE } from '../constants'
 

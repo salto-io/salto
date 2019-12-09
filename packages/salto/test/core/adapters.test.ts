@@ -1,10 +1,31 @@
 import {
-  InstanceElement, ObjectType, ElemID,
+  InstanceElement, ObjectType, ElemID, Element,
 } from 'adapter-api'
 import { creator } from 'salesforce-adapter'
 import initAdapters from '../../src/core/adapters/adapters'
+import { Workspace, CREDS_DIR } from '../../src/workspace/workspace'
+import { toAddFetchChange } from '../../src/core/fetch'
+import { DetailedChange } from '../../src/core/plan'
+
 
 describe('Test adapters.ts', () => {
+  const createMockWorkspace = (
+    elements: Readonly<Element[]>,
+    addErrors = false
+  ): Workspace => ({
+    elements,
+    updateBlueprints: jest.fn(),
+    flush: jest.fn(),
+    getWorkspaceErrors: () => (addErrors
+      ? [{ severity: 'Error' }]
+      : []),
+  } as unknown as Workspace)
+
+  const configToChange = (config: InstanceElement): DetailedChange => {
+    config.path = [CREDS_DIR, config.elemID.adapter]
+    return toAddFetchChange(config).change
+  }
+
   const { configType } = creator
 
   const notConfigType = new ObjectType({ elemID: new ElemID('salesforce', 'not_config') })
@@ -62,20 +83,47 @@ describe('Test adapters.ts', () => {
       RedHeringWrongAdapter,
       bpConfig,
     ]
-    const [adapters, newConfigs] = await initAdapters(elements, fillConfig)
+    const workspace = createMockWorkspace(elements)
+    const adapters = await initAdapters(
+      workspace,
+      fillConfig
+    )
     expect(adapters.salesforce).toBeDefined()
-    expect(newConfigs.length).toBe(0)
+    expect((workspace.updateBlueprints as jest.FunctionLike)).not.toHaveBeenCalled()
+    expect((workspace.flush as jest.FunctionLike)).not.toHaveBeenCalled()
   })
 
-  it('should prompt for config when no proper config exists', async () => {
+  it('should prompt for config when no proper config exists and flush it', async () => {
     const elements = [
       configType,
       RedHeringNotConfig,
       RedHeringWrongAdapter,
     ]
-    const [adapters, newConfigs] = await initAdapters(elements, fillConfig)
+    const workspace = createMockWorkspace(elements)
+    const adapters = await initAdapters(
+      workspace,
+      fillConfig
+    )
     expect(adapters.salesforce).toBeDefined()
-    expect(newConfigs.length).toEqual(1)
-    expect(newConfigs[0]).toBe(userConfig)
+    expect((workspace.updateBlueprints as jest.FunctionLike))
+      .toHaveBeenCalledWith(configToChange(userConfig))
+    expect((workspace.flush as jest.FunctionLike)).toHaveBeenCalled()
+  })
+
+  it('should not flush when critical errors are created', async () => {
+    const elements = [
+      configType,
+      RedHeringNotConfig,
+      RedHeringWrongAdapter,
+    ]
+    const workspace = createMockWorkspace(elements, true)
+    const adapters = await initAdapters(
+      workspace,
+      fillConfig
+    )
+    expect(adapters.salesforce).toBeDefined()
+    expect((workspace.updateBlueprints as jest.FunctionLike))
+      .toHaveBeenCalledWith(configToChange(userConfig))
+    expect((workspace.flush as jest.FunctionLike)).not.toHaveBeenCalled()
   })
 })

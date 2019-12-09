@@ -18,9 +18,9 @@ import State from './state/state'
 import { findElement, SearchResult } from './core/search'
 import {
   fetchChanges, FetchChange, getDetailedChanges, createElemIdGetter,
-  MergeErrorWithElements, FatalFetchMergeError, FetchProgressEvents, toAddFetchChange,
+  MergeErrorWithElements, FatalFetchMergeError, FetchProgressEvents,
 } from './core/fetch'
-import { Workspace, CREDS_DIR } from './workspace/workspace'
+import { Workspace } from './workspace/workspace'
 
 export { ItemStatus }
 
@@ -60,7 +60,7 @@ export const deploy = async (
   try {
     const actionPlan = getPlan(stateElements, workspace.elements)
     if (force || await shouldDeploy(actionPlan)) {
-      const [adapters] = await initAdapters(workspace.elements, fillConfig)
+      const adapters = await initAdapters(workspace, fillConfig)
       const errors = await deployActions(
         actionPlan,
         adapters,
@@ -100,23 +100,20 @@ export type fetchFunc = (
 ) => Promise<FetchResult>
 
 export const fetch: fetchFunc = async (workspace, fillConfig, progressEmitter?) => {
-  const configToChange = (config: InstanceElement): FetchChange => {
-    config.path = [CREDS_DIR, config.elemID.adapter]
-    return toAddFetchChange(config)
-  }
   log.debug('fetch starting..')
 
   const state = new State(workspace.config.stateLocation)
   const stateElements = await state.get()
   log.debug(`finished loading ${stateElements.length} state elements`)
 
-  const [adapters, newConfigs] = await initAdapters(workspace.elements, fillConfig,
-    createElemIdGetter(stateElements))
+  const adapters = await initAdapters(
+    workspace,
+    fillConfig,
+    createElemIdGetter(stateElements)
+  )
   if (progressEmitter) {
     progressEmitter.emit('adaptersDidInitialize')
   }
-  log.debug(`${Object.keys(adapters).length} adapters were initialized [newConfigs=${
-    newConfigs.length}]`)
   try {
     const { changes, elements, mergeErrors } = await fetchChanges(
       adapters, workspace.elements, stateElements, progressEmitter,
@@ -126,7 +123,7 @@ export const fetch: fetchFunc = async (workspace, fillConfig, progressEmitter?) 
     await state.flush()
     log.debug(`finish to override state with ${elements.length} elements`)
     return {
-      changes: wu.chain(changes, newConfigs.map(configToChange)),
+      changes,
       mergeErrors,
       success: true,
     }
@@ -161,7 +158,7 @@ export const exportToCsv = async (
   if (!type) {
     throw new Error(`Couldn't find the type you are looking for: ${typeId}. Have you run salto fetch yet?`)
   }
-  const [adapters] = await initAdapters(workspace.elements, fillConfig)
+  const adapters = await initAdapters(workspace, fillConfig)
 
   return getInstancesOfType(type as ObjectType, adapters, outPath)
 }
@@ -179,7 +176,7 @@ export const importFromCsvFile = async (
   if (!type) {
     throw new Error(`Couldn't find the type you are looking for: ${typeId}. Have you run salto fetch yet?`)
   }
-  const [adapters] = await initAdapters(workspace.elements, fillConfig)
+  const adapters = await initAdapters(workspace, fillConfig)
   return importInstancesOfType(type as ObjectType, inputPath, adapters)
 }
 
@@ -196,7 +193,7 @@ export const deleteFromCsvFile = async (
   if (!type) {
     throw new Error(`Couldn't find the type you are looking for: ${typeId}. Have you run salto fetch yet?`)
   }
-  const [adapters] = await initAdapters(workspace.elements, fillConfig)
+  const adapters = await initAdapters(workspace, fillConfig)
   return deleteInstancesOfType(type as ObjectType, inputPath, adapters)
 }
 

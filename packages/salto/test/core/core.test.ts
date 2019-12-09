@@ -89,12 +89,12 @@ describe('api functions', () => {
   let baseDir: tmp.DirectoryResult
   let localDir: tmp.DirectoryResult
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     baseDir = await tmp.dir({ unsafeCleanup: true })
     localDir = await tmp.dir({ unsafeCleanup: true })
   })
 
-  afterAll(async () => {
+  afterEach(async () => {
     await baseDir.cleanup()
     await localDir.cleanup()
   })
@@ -186,7 +186,7 @@ describe('api functions', () => {
 
     it('should error on failure', async () => {
       const config: Config = {
-        uid: '',
+        uid: '1',
         name: 'test',
         localStorage: localDir.path,
         baseDir: baseDir.path,
@@ -343,13 +343,16 @@ describe('api functions', () => {
         elements: [],
         config: { stateLocation: '.' },
         resolvePath: _.identity,
+        updateBlueprints: jest.fn(),
+        flush: jest.fn(),
+        getWorkspaceErrors: async () => [],
       } as unknown as Workspace
       changes = [...(await commands.fetch(mockWorkspace, mockGetConfigFromUser)).changes]
         .map(change => change.change)
     })
 
-    it('should return newly fetched elements and configs', () => {
-      expect(changes.map(change => change.action)).toEqual(['add', 'add', 'add', 'add'])
+    it('should return newly fetched elements', () => {
+      expect(changes.map(change => change.action)).toEqual(['add', 'add', 'add'])
     })
     it('should add newly fetched elements to state', () => {
       expect(State.prototype.override).toHaveBeenCalledWith(fetchedElements)

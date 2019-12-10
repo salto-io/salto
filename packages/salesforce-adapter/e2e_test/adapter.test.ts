@@ -1471,6 +1471,28 @@ describe('Salesforce adapter E2E with real account', () => {
       await adapter.remove(post as ObjectType)
     })
 
+    it('should update topics for objects field', async () => {
+      const customObjectName = 'TestUpdateTopicsForObjects__c'
+      const mockElemID = new ElemID(constants.SALESFORCE, 'test update topics for objects')
+      const element = new ObjectType({
+        elemID: mockElemID,
+        annotations: {
+          [Type.REQUIRED]: false,
+          [constants.LABEL]: 'test label',
+          [constants.API_NAME]: customObjectName,
+          [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
+        },
+      })
+      if (await objectExists(constants.CUSTOM_OBJECT, customObjectName)) {
+        await adapter.remove(element)
+      }
+      const addResult = await adapter.add(element)
+      // Verify setup was performed properly
+      expect(addResult).toBeInstanceOf(ObjectType)
+      expect(await objectExists(constants.CUSTOM_OBJECT, customObjectName))
+        .toBe(true)
+    })
+
     it('should add lookupFilter to an existing lookup field', async () => {
       const customObjectName = 'TestAddLookupFilter__c'
       const mockElemID = new ElemID(constants.SALESFORCE, 'test add lookupFilter')

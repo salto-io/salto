@@ -28,11 +28,6 @@ export type PermissionsOptionsTypes = FieldPermissionsOptions | ObjectPermission
 export type PermissionsOptionsFieldsTypes = ObjectPermissionsOptionsFields |
  FieldPermissionsOptionsFields
 
-export interface TopicsForObjects {
-  entityApiName: string
-  enableTopics: boolean | 'true' | 'false'
-}
-
 export class ProfileInfo implements MetadataInfo {
   constructor(
     public readonly fullName: string,
@@ -50,7 +45,8 @@ export interface MetadataWithContent extends MetadataInfo {
 export class TopicsForObjectsInfo implements MetadataInfo {
   constructor(
     public readonly fullName: string,
-    public topicsForObjects: TopicsForObjects
+    public entityApiName: string,
+    public enableTopics: boolean | 'true' | 'false'
   ) {}
 }
 

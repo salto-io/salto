@@ -1,34 +1,23 @@
 import {
-  ObjectType, Element, Values, isObjectType, isInstanceElement, InstanceElement,
+  ObjectType, Element, Values, isObjectType, isInstanceElement, InstanceElement, Change,
 } from 'adapter-api'
 import _ from 'lodash'
 import { SaveResult } from 'jsforce'
-// import wu from 'wu'
-import {
-  TOPICS_FOR_OBJECTS_FIELDS, TOPICS_FOR_OBJECTS_ANNOTATION,
-} from '../constants'
-import {
-  metadataType, isCustomObject, apiName,
-} from '../transformer'
+import { TOPICS_FOR_OBJECTS_FIELDS, TOPICS_FOR_OBJECTS_ANNOTATION } from '../constants'
+import { metadataType, isCustomObject, apiName } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
-import { TopicsForObjects, TopicsForObjectsInfo } from '../client/types'
-import { getCustomObjects, boolValue } from './utils'
+import { TopicsForObjectsInfo } from '../client/types'
+import { getCustomObjects, boolValue, getAnnotationValue } from './utils'
 
 const { ENABLE_TOPICS, ENTITY_API_NAME } = TOPICS_FOR_OBJECTS_FIELDS
 
 export const TOPICS_FOR_OBJECTS_METADATA_TYPE = 'TopicsForObjects'
 
-// --- Utils functions
-export const getTopicsForObjects = (object: ObjectType): Values =>
-  (object.annotations[TOPICS_FOR_OBJECTS_ANNOTATION] || {})
+const getTopicsForObjects = (obj: ObjectType): Values => getAnnotationValue(obj,
+  TOPICS_FOR_OBJECTS_ANNOTATION)
 
 const setTopicsForObjects = (object: ObjectType, enableTopics: boolean): void => {
-  if (_.isEmpty(getTopicsForObjects(object))) {
-    object.annotations[TOPICS_FOR_OBJECTS_ANNOTATION] = { [ENABLE_TOPICS]: false }
-  }
-  if (enableTopics) {
-    getTopicsForObjects(object)[ENABLE_TOPICS] = true
-  }
+  object.annotations[TOPICS_FOR_OBJECTS_ANNOTATION] = { [ENABLE_TOPICS]: enableTopics }
 }
 
 const setDefaultTopicsForObjects = (object: ObjectType): void => {
@@ -37,36 +26,6 @@ const setDefaultTopicsForObjects = (object: ObjectType): void => {
   }
 }
 
-type ObjectToTopics = Record<string, { enableTopics: boolean; entityApiName: string }>
-
-/**
- * Create a record of { full_name: { enableTopics: boolean, entityApiName: string } }
- * from the topics for objects
- */
-const object2Topics = (topicsForObjectInstance: InstanceElement): ObjectToTopics => {
-  const instanceTopicsToObjects:
-   TopicsForObjects = { enableTopics: topicsForObjectInstance.value[ENABLE_TOPICS],
-     entityApiName: topicsForObjectInstance.value[ENTITY_API_NAME] }
-
-  if (!instanceTopicsToObjects) {
-    return {}
-  }
-
-  return (
-    {
-      [instanceTopicsToObjects.entityApiName]: {
-        enableTopics: boolValue(instanceTopicsToObjects.enableTopics),
-        entityApiName: instanceTopicsToObjects.entityApiName,
-      },
-    })
-}
-// ---
-
-/**
- * TODO
- * Field permissions filter. Handle the mapping from sobject field FIELD_LEVEL_SECURITY_ANNOTATION
- * annotation and remove Profile.fieldsPermissions.
- */
 const filterCreator: FilterCreator = ({ client }) => ({
   onFetch: async (elements: Element[]): Promise<void> => {
     const customObjectTypes = getCustomObjects(elements)
@@ -79,19 +38,22 @@ const filterCreator: FilterCreator = ({ client }) => ({
       return
     }
 
-    const topicsPerObject = topicsForObjectsInstances.map(object2Topics)
-    const topics: ObjectToTopics = _.merge({}, ...topicsPerObject)
+    const topicsPerObject = topicsForObjectsInstances.map(
+      (instance: InstanceElement) => ({ [instance.value[ENTITY_API_NAME]]:
+         boolValue(instance.value[ENABLE_TOPICS]) })
+    )
+    const topics = _.merge({}, ...topicsPerObject)
 
     // Add topics for objects to all fetched elements
     customObjectTypes.forEach(obj => {
       const fullName = apiName(obj)
-      const topicsToObject = topics[fullName]
-      if (topicsToObject) {
-        setTopicsForObjects(obj, topicsToObject.enableTopics)
+      if (fullName in topics) {
+        setTopicsForObjects(obj, topics[fullName])
       }
     })
 
-    // Remove field permissions from Profile Instances & Type to avoid information duplication
+    // Remove enable topic field from TopicsForObjects Instances & Type
+    // to avoid information duplication
     topicsForObjectsInstances.forEach(topic => delete topic.value[ENABLE_TOPICS])
     elements.filter(isObjectType)
       .filter(element => metadataType(element) === TOPICS_FOR_OBJECTS_METADATA_TYPE)
@@ -100,14 +62,29 @@ const filterCreator: FilterCreator = ({ client }) => ({
 
   onAdd: async (after: Element): Promise<SaveResult[]> => {
     if (isObjectType(after) && isCustomObject(after)) {
-      // Set default permissions for all fields of new object
       setDefaultTopicsForObjects(after)
 
       return client.update(TOPICS_FOR_OBJECTS_METADATA_TYPE,
-        new TopicsForObjectsInfo(apiName(after),
-          { entityApiName: apiName(after), enableTopics: false }))
+        new TopicsForObjectsInfo(apiName(after), apiName(after), false))
     }
     return []
+  },
+
+  onUpdate: async (before: Element, after: Element, _changes: ReadonlyArray<Change>):
+    Promise<SaveResult[]> => {
+    if (!(isObjectType(before) && isObjectType(after) && isCustomObject(before))) {
+      return []
+    }
+
+    // No change
+    const topicsBefore = getTopicsForObjects(before)
+    const topicsAfter = getTopicsForObjects(after)
+    if (_.isEmpty(topicsAfter) || (topicsAfter[ENABLE_TOPICS] === topicsBefore[ENABLE_TOPICS])) {
+      return []
+    }
+
+    return client.update(TOPICS_FOR_OBJECTS_METADATA_TYPE,
+      new TopicsForObjectsInfo(apiName(after), apiName(after), topicsAfter[ENABLE_TOPICS]))
   },
 })
 

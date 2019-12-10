@@ -2,11 +2,12 @@ import {
   ObjectType, ElemID, Field,
   InstanceElement, isObjectType, isInstanceElement, BuiltinTypes,
 } from 'adapter-api'
-import { metadataType, apiName } from '../../src/transformer'
+import { metadataType } from '../../src/transformers/transformer'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
 import filterCreator, { TOPICS_FOR_OBJECTS_METADATA_TYPE } from '../../src/filters/topics_for_objects'
+import { TopicsForObjectsInfo } from '../../src/client/types'
 
 const { TOPICS_FOR_OBJECTS_ANNOTATION, TOPICS_FOR_OBJECTS_FIELDS } = constants
 const { ENABLE_TOPICS, ENTITY_API_NAME } = TOPICS_FOR_OBJECTS_FIELDS
@@ -45,19 +46,18 @@ describe('Field Permissions filter', () => {
       [constants.INSTANCE_FULL_NAME_FIELD]: 'Test__c',
     })
 
+  const enableTopicTrue = { [ENABLE_TOPICS]: true }
+
   let mockUpdate: jest.Mock<unknown>
 
   type FilterType = FilterWith<'onFetch' | 'onAdd' | 'onUpdate'>
   const filter = (): FilterType => filterCreator({ client }) as FilterType
 
-  const verifyUpdateCall = (object: string, editable: boolean): void => {
+  const verifyUpdateCall = (object: string, enableTopics: boolean): void => {
     expect(mockUpdate.mock.calls.length).toBe(1)
-    const profiles = mockUpdate.mock.calls[0][1] as ProfileInfo[]
-    const profile = profiles.find(p => p.fullName === profileName) as ProfileInfo
-    const fieldPermissions = profile.fieldPermissions
-      .find(f => f.field === fieldName) as FieldPermissions
-    expect(fieldPermissions.editable).toBe(editable)
-    expect(fieldPermissions.readable).toBe(readable)
+    const topicsForObjects = mockUpdate.mock.calls[0][1] as TopicsForObjectsInfo
+    expect(topicsForObjects.enableTopics).toBe(enableTopics)
+    expect(topicsForObjects.entityApiName).toBe(object)
   }
 
   beforeEach(() => {
@@ -88,49 +88,23 @@ describe('Field Permissions filter', () => {
       expect(topicType.fields[ENABLE_TOPICS]).toBeUndefined()
     })
 
-  // it('should update the new profile on existing field', async () => {
-  //   const before = mockObject.clone()
-  //   before.fields = { ...before.fields, address }
-  //   const after = before.clone()
-  //   // Add admin permissions with readable=true and editable=false for description field
-  //   after.fields.description.annotations[FIELD_LEVEL_SECURITY_ANNOTATION] = { readable:
-  //     [ADMIN_FULL_NAME] }
-  //   // Add standard profile field permissions to address
-  //   addStandard(after.fields.address)
-
-  //   await filter().onUpdate(before, after, [
-  //     { action: 'modify',
-  //       data: { before: before.fields.description,
-  //         after: after.fields.description } },
-  //     { action: 'modify',
-  //       data: { before: before.fields.address,
-  //         after: after.fields.address } },
-  //   ])
-
-  //   // Verify the field permissions creation
-  //   verifyUpdateCall('Admin', 'Test__c.Description__c', false, true)
-  //   verifyUpdateCall('Standard', 'Test__c.Address__c', false, true)
-  // })
-
   it('should set default value upon add', async () => {
     const after = mockObject.clone()
     await filter().onAdd(after)
 
     expect(after.annotations[TOPICS_FOR_OBJECTS_ANNOTATION])
       .toEqual({ [ENABLE_TOPICS]: false })
-    // verifyUpdateCall('Test__c', 'Test__c')
+    verifyUpdateCall('Test__c', false)
   })
 
-  // it('should set new value for enable_topics upon update', async () => {
-  //   const before = mockObject.clone()
-  //   const after = before.clone()
-  //   after.fields = { ...after.fields, apple: apple.clone() }
+  it('should set new value for enable_topics upon update', async () => {
+    const before = mockObject.clone()
+    const after = before.clone()
+    after.annotations[TOPICS_FOR_OBJECTS_ANNOTATION] = enableTopicTrue
 
-  //   await filter().onUpdate(before, after,
-  //     [{ action: 'add', data: { after: after.fields.apple } }])
+    await filter().onUpdate(before, after,
+      [{ action: 'modify', data: { before, after } }])
 
-  //   expect(after.fields.apple.annotations[FIELD_LEVEL_SECURITY_ANNOTATION])
-  //     .toEqual(admin[FIELD_LEVEL_SECURITY_ANNOTATION])
-  //   verifyUpdateCall('Admin', 'Test__c.Apple__c')
-  // })
+    verifyUpdateCall('Test__c', true)
+  })
 })

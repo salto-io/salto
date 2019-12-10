@@ -173,6 +173,7 @@ export default class SalesforceAdapter {
       settingsFilter,
       listOrderFilter,
       workflowActions,
+      topicsForObjectsFilter,
       // The following filters should remain last in order to make sure they fix all elements
       convertListsFilter,
       convertTypeFilter,

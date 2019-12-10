@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import {
-  isObjectType, Type, Field, ObjectType, ElemID, isField,
+  isObjectType, Type, Field, ObjectType, ElemID, isField, Values,
 } from './elements'
 
 interface AnnoRef {

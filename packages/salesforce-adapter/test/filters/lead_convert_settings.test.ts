@@ -4,7 +4,7 @@ import {
 } from 'adapter-api'
 import filterCreator, {
   LEAD_CONVERT_SETTINGS_TYPE_ID, LEAD_TYPE_ID, CONVERT_SETTINGS_ANNOTATION,
-  OBJECT_MAPPING_FIELD, MAPPING_FIELDS_FIELD,
+  OBJECT_MAPPING_FIELD, MAPPING_FIELDS_FIELD, INPUT_FIELD, OUTPUT_FIELD, OUTPUT_OBJECT,
 } from '../../src/filters/lead_convert_settings'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
@@ -39,11 +39,30 @@ describe('lead convert settings filter', () => {
     mockConvertSettingsType,
     {
       [constants.INSTANCE_FULL_NAME_FIELD]: 'full',
-      [OBJECT_MAPPING_FIELD]: {
-        [MAPPING_FIELDS_FIELD]: 'mapping',
-      },
+      [OBJECT_MAPPING_FIELD]: [
+        {
+          [OUTPUT_OBJECT]: 'z',
+        },
+        {
+          [MAPPING_FIELDS_FIELD]: [
+            {
+              [INPUT_FIELD]: 'a',
+              [OUTPUT_FIELD]: 'b',
+            },
+            {
+              [INPUT_FIELD]: 'd',
+              [OUTPUT_FIELD]: 'c',
+            },
+            {
+              [INPUT_FIELD]: 'a',
+              [OUTPUT_FIELD]: 'a',
+            },
+          ],
+          [OUTPUT_OBJECT]: 'a',
+        },
+      ],
       fake: 'true',
-    }
+    },
   )
 
   describe('on fetch', () => {
@@ -81,25 +100,43 @@ describe('lead convert settings filter', () => {
       const type = leadPostFilter.annotationTypes[CONVERT_SETTINGS_ANNOTATION] as ObjectType
       expect(type.fields[constants.INSTANCE_FULL_NAME_FIELD]).toBeUndefined()
     })
-  })
 
-  describe('on update', () => {
-    const clientUpdate = jest.spyOn(client, 'update').mockImplementation(() => Promise.resolve([]))
-
-    beforeEach(async () => {
-      const before = _.cloneDeep(mockLead)
-      before.annotations[constants.METADATA_TYPE] = 'Lead'
-      before.annotationTypes[CONVERT_SETTINGS_ANNOTATION] = mockConvertSettingsType
-      before.annotations[CONVERT_SETTINGS_ANNOTATION] = {}
-      before.annotations[CONVERT_SETTINGS_ANNOTATION].change = true
-      const after = _.cloneDeep(before)
-      after.annotations[CONVERT_SETTINGS_ANNOTATION].change = false
-      await filter.onUpdate(before, after, [{ action: 'modify', data: { before, after } }])
+    it('should sort the mapping fields and the object mapping', async () => {
+      const value = leadPostFilter.annotations[CONVERT_SETTINGS_ANNOTATION]
+      expect(value.object_mapping[0].mapping_fields).toEqual([
+        {
+          [INPUT_FIELD]: 'a',
+          [OUTPUT_FIELD]: 'a',
+        },
+        {
+          [INPUT_FIELD]: 'a',
+          [OUTPUT_FIELD]: 'b',
+        },
+        {
+          [INPUT_FIELD]: 'd',
+          [OUTPUT_FIELD]: 'c',
+        },
+      ])
     })
 
-    it('should call client update', async () => {
+    describe('on update', () => {
+      const clientUpdate = jest.spyOn(client, 'update').mockImplementation(() => Promise.resolve([]))
+
+      beforeEach(async () => {
+        const before = _.cloneDeep(mockLead)
+        before.annotations[constants.METADATA_TYPE] = 'Lead'
+        before.annotationTypes[CONVERT_SETTINGS_ANNOTATION] = mockConvertSettingsType
+        before.annotations[CONVERT_SETTINGS_ANNOTATION] = {}
+        before.annotations[CONVERT_SETTINGS_ANNOTATION].change = true
+        const after = _.cloneDeep(before)
+        after.annotations[CONVERT_SETTINGS_ANNOTATION].change = false
+        await filter.onUpdate(before, after, [{ action: 'modify', data: { before, after } }])
+      })
+
+      it('should call client update', async () => {
       // validate client calls
-      expect(clientUpdate.mock.calls).toHaveLength(1)
+        expect(clientUpdate.mock.calls).toHaveLength(1)
+      })
     })
   })
 })

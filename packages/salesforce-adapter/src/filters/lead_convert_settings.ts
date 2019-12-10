@@ -18,6 +18,7 @@ export const OBJECT_MAPPING_FIELD = 'object_mapping'
 export const MAPPING_FIELDS_FIELD = 'mapping_fields'
 export const INPUT_FIELD = 'input_field'
 export const OUTPUT_FIELD = 'output_field'
+export const OUTPUT_OBJECT = 'output_object'
 export const INSTANCE_FULL_NAME = 'LeadConvertSettings'
 
 /**
@@ -49,9 +50,15 @@ const filterCreator: FilterCreator = ({ client }) => ({
         // Fix list values where needed - convert_list filter is not running on annotations.
         // As annotations are created case by case in the adapter I think it's ok to keep
         // manual fix behavior for now.
-        value[OBJECT_MAPPING_FIELD] = makeArray(value[OBJECT_MAPPING_FIELD])
+        value[OBJECT_MAPPING_FIELD] = _.orderBy(
+          makeArray(value[OBJECT_MAPPING_FIELD]),
+          OUTPUT_OBJECT
+        )
         _.forEach(value[OBJECT_MAPPING_FIELD], mapping => {
-          mapping[MAPPING_FIELDS_FIELD] = _.orderBy(makeArray(mapping[MAPPING_FIELDS_FIELD]), [INPUT_FIELD, OUTPUT_FIELD], ['asc', 'asc'])
+          mapping[MAPPING_FIELDS_FIELD] = _.orderBy(
+            makeArray(mapping[MAPPING_FIELDS_FIELD]),
+            [INPUT_FIELD, OUTPUT_FIELD]
+          )
         })
 
         lead.annotate({ [CONVERT_SETTINGS_ANNOTATION]: transform(value, convertType, false) || {} })

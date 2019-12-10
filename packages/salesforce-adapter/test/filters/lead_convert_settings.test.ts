@@ -4,7 +4,7 @@ import {
 } from 'adapter-api'
 import filterCreator, {
   LEAD_CONVERT_SETTINGS_TYPE_ID, LEAD_TYPE_ID, CONVERT_SETTINGS_ANNOTATION,
-  OBJECT_MAPPING_FIELD, MAPPING_FIELDS_FIELD, INPUT_FIELD, OUTPUT_FIELD,
+  OBJECT_MAPPING_FIELD, MAPPING_FIELDS_FIELD, INPUT_FIELD, OUTPUT_FIELD, OUTPUT_OBJECT,
 } from '../../src/filters/lead_convert_settings'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
@@ -39,24 +39,30 @@ describe('lead convert settings filter', () => {
     mockConvertSettingsType,
     {
       [constants.INSTANCE_FULL_NAME_FIELD]: 'full',
-      [OBJECT_MAPPING_FIELD]: {
-        [MAPPING_FIELDS_FIELD]: [
-          {
-            [INPUT_FIELD]: 'a',
-            [OUTPUT_FIELD]: 'b',
-          },
-          {
-            [INPUT_FIELD]: 'd',
-            [OUTPUT_FIELD]: 'c',
-          },
-          {
-            [INPUT_FIELD]: 'a',
-            [OUTPUT_FIELD]: 'a',
-          },
-        ],
-      },
+      [OBJECT_MAPPING_FIELD]: [
+        {
+          [OUTPUT_OBJECT]: 'z',
+        },
+        {
+          [MAPPING_FIELDS_FIELD]: [
+            {
+              [INPUT_FIELD]: 'a',
+              [OUTPUT_FIELD]: 'b',
+            },
+            {
+              [INPUT_FIELD]: 'd',
+              [OUTPUT_FIELD]: 'c',
+            },
+            {
+              [INPUT_FIELD]: 'a',
+              [OUTPUT_FIELD]: 'a',
+            },
+          ],
+          [OUTPUT_OBJECT]: 'a',
+        },
+      ],
       fake: 'true',
-    }
+    },
   )
 
   describe('on fetch', () => {
@@ -95,9 +101,9 @@ describe('lead convert settings filter', () => {
       expect(type.fields[constants.INSTANCE_FULL_NAME_FIELD]).toBeUndefined()
     })
 
-    it('should sort the mapping fields', async () => {
+    it('should sort the mapping fields and the object mapping', async () => {
       const value = leadPostFilter.annotations[CONVERT_SETTINGS_ANNOTATION]
-      expect(_.isEqual(value.object_mapping[0].mapping_fields, [
+      expect(value.object_mapping[0].mapping_fields).toEqual([
         {
           [INPUT_FIELD]: 'a',
           [OUTPUT_FIELD]: 'a',
@@ -110,7 +116,7 @@ describe('lead convert settings filter', () => {
           [INPUT_FIELD]: 'd',
           [OUTPUT_FIELD]: 'c',
         },
-      ])).toBeTruthy()
+      ])
     })
 
     describe('on update', () => {

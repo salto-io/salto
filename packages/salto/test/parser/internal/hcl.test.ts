@@ -286,7 +286,7 @@ each([false, true]).describe('HCL Parser', jsParseMode => {
       expect(serialized).toMatch(/empty\s*=\s*\[\s*\]/m)
     })
     it('dumps expressions', () => {
-      if (process.env.JS_PARSE){
+      if (process.env.JS_PARSE) {
         // eslint-disable-next-line no-template-curly-in-string
         expect(serialized).toMatch('exp = "test ${ a.b } test"')
       }

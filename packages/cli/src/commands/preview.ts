@@ -1,3 +1,4 @@
+import _ from 'lodash'
 import { preview } from 'salto'
 import { createCommandBuilder } from '../command_builder'
 import {
@@ -10,7 +11,8 @@ import Prompts from '../prompts'
 export const command = (
   workspaceDir: string,
   { stdout, stderr }: CliOutput,
-  spinnerCreator: SpinnerCreator
+  spinnerCreator: SpinnerCreator,
+  services: string[]
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
     const { workspace, errored } = await loadWorkspace(workspaceDir,
@@ -18,9 +20,14 @@ export const command = (
     if (errored) {
       return CliExitCode.AppError
     }
+    const diffServices = _.difference(services, workspace.config.services || [])
+    if (diffServices.length > 0) {
+      throw new Error(`Not all services (${diffServices}) are set up for this workspace`)
+    }
+
     const spinner = spinnerCreator(Prompts.PREVIEW_STARTED, {})
     try {
-      const workspacePlan = await preview(workspace)
+      const workspacePlan = await preview(workspace, services)
       spinner.succeed(Prompts.PREVIEW_FINISHED)
       stdout.write(formatExecutionPlan(workspacePlan))
       return CliExitCode.Success
@@ -32,6 +39,7 @@ export const command = (
 })
 
 type PreviewArgs = {
+  services: string[]
 }
 type PreviewParsedCliInput = ParsedCliInput<PreviewArgs>
 
@@ -46,11 +54,16 @@ const previewBuilder = createCommandBuilder({
         string: true,
         default: '.',
       },
+      services: {
+        alias: 's',
+        describe: 'Specific services to perform this action for (default=all)',
+        string: true,
+      },
     },
   },
 
-  async build(_input: PreviewParsedCliInput, output: CliOutput, spinnerCreator: SpinnerCreator) {
-    return command('.', output, spinnerCreator)
+  async build(input: PreviewParsedCliInput, output: CliOutput, spinnerCreator: SpinnerCreator) {
+    return command('.', output, spinnerCreator, input.args.services)
   },
 })
 

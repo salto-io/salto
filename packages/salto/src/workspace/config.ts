@@ -69,8 +69,8 @@ export interface Config {
   stateLocation: string
   localStorage: string
   name: string
+  services: string[]
   additionalBlueprints?: string[]
-  services?: string[]
 }
 
 const createDefaultConfig = (
@@ -151,16 +151,7 @@ const baseDirFromLookup = async (lookupDir: string): Promise<string> => {
 
 const getConfigData = async (baseDir: string): Promise<Partial<Config>> => {
   const configPath = getConfigPath(baseDir)
-<<<<<<< HEAD
-<<<<<<< HEAD
   return parseConfig(await readFile(configPath))
-=======
-  const configData = await parseConfig(await readFile(configPath))
-  return configData
->>>>>>> Add the ability to add a service to the config
-=======
-  return parseConfig(await readFile(configPath))
->>>>>>> Readability improvement
 }
 
 export const loadConfig = async (lookupDir: string): Promise<Config> => {

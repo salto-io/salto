@@ -286,6 +286,7 @@ export const deploy = async (
   _fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
   shouldDeploy: (plan: Plan) => Promise<boolean>,
   reportProgress: (action: PlanItem, step: string, details?: string) => void,
+  _services: string[],
   force = false
 ): Promise<DeployResult> => {
   const changes = preview()

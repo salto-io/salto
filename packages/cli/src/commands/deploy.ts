@@ -1,3 +1,4 @@
+import _ from 'lodash'
 import { deploy, PlanItem, ItemStatus } from 'salto'
 import { setInterval } from 'timers'
 import { logger } from '@salto/logging'
@@ -33,6 +34,7 @@ export class DeployCommand implements CliCommand {
   constructor(
     private readonly workspaceDir: string,
     readonly force: boolean,
+    readonly services: string[] | undefined,
     { stdout, stderr }: CliOutput,
     private readonly spinnerCreator: SpinnerCreator,
   ) {
@@ -104,12 +106,20 @@ export class DeployCommand implements CliCommand {
       return CliExitCode.AppError
     }
 
+    if (this.services) {
+      const diffServices = _.difference(this.services, workspace.config.services || [])
+      if (diffServices.length > 0) {
+        throw new Error(`Not all services (${diffServices}) are set up for this workspace`)
+      }
+    }
+
     const planSpinner = this.spinnerCreator(Prompts.PREVIEW_STARTED, {})
     const result = await deploy(workspace,
       getConfigFromUser,
       shouldDeploy(this.stdout, planSpinner),
       (item: PlanItem, step: ItemStatus, details?: string) =>
         this.updateAction(item, step, details),
+      this.services,
       this.force)
 
     const nonErroredActions = [...this.actions.keys()]
@@ -131,6 +141,7 @@ export class DeployCommand implements CliCommand {
 
 type DeployArgs = {
   force: boolean
+  services: string[]
 }
 type DeployParsedCliInput = ParsedCliInput<DeployArgs>
 
@@ -146,6 +157,11 @@ const deployBuilder = createCommandBuilder({
         default: false,
         demandOption: false,
       },
+      services: {
+        alias: 's',
+        describe: 'Specific services to perform this action for (default=all)',
+        string: true,
+      },
     },
   },
 
@@ -154,7 +170,7 @@ const deployBuilder = createCommandBuilder({
     output: CliOutput,
     spinnerCreator: SpinnerCreator
   ): Promise<CliCommand> {
-    return new DeployCommand('.', input.args.force, output, spinnerCreator)
+    return new DeployCommand('.', input.args.force, input.args.services, output, spinnerCreator)
   },
 })
 

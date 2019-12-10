@@ -8,7 +8,8 @@ import adapterCreators from './creators'
 const initAdapters = async (
   elements: Readonly<Element[]>,
   fillConfig: (t: ObjectType) => Promise<InstanceElement>,
-  getElemIdFunc?: ElemIdGetter):
+  names: string[],
+  getElemIdFunc?: ElemIdGetter,):
   Promise<[Record<string, Adapter>, InstanceElement[]]> => {
   const configs = elements.filter(isInstanceElement)
     .filter(e => e.elemID.isConfig())
@@ -23,8 +24,9 @@ const initAdapters = async (
     return config
   }
 
+  const relevantAdapterCreators = _.pick(adapterCreators, names)
   const adapterPromises: Record<string, Promise<Adapter>> = _.mapValues(
-    adapterCreators, async creator => {
+    relevantAdapterCreators, async creator => {
       const config = await findConfig(creator.configType)
       return creator.create({ config, getElemIdFunc })
     }

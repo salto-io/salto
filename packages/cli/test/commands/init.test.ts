@@ -11,6 +11,7 @@ jest.mock('salto', () => ({
       baseDir: '',
       stateLocation: '',
       additionalBlueprints: [],
+      services: ['salesforce'],
       uid: '',
     } }
   }),

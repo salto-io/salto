@@ -42,14 +42,15 @@ jest.mock('salto', () => ({
     fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
     shouldDeploy: (plan: Plan) => Promise<boolean>,
     reportProgress: (action: PlanItem, step: string, details?: string) => void,
-    force = false
+    force = false,
+    services: string[] = workspace.config.services
   ) =>
   // Deploy with blueprints will fail, doing this trick as we cannot reference vars, we get error:
   // "The module factory of `jest.mock()` is not allowed to reference any
   // out-of-scope variables."
   // Notice that blueprints are ignored in mockDeploy.
 
-    mockDeploy(workspace, fillConfig, shouldDeploy, reportProgress, force)),
+    mockDeploy(workspace, fillConfig, shouldDeploy, reportProgress, services, force)),
 }))
 
 describe('deploy command', () => {
@@ -65,7 +66,7 @@ describe('deploy command', () => {
 
   describe('valid deploy', () => {
     beforeEach(() => {
-      command = new DeployCommand('', true, cliOutput, spinnerCreator)
+      command = new DeployCommand('', true, undefined, cliOutput, spinnerCreator)
     })
 
     describe('report progress upon updates', () => {
@@ -114,7 +115,7 @@ describe('deploy command', () => {
   describe('invalid deploy', () => {
     beforeEach(() => {
       // Creating here with base dir 'errorDir' will cause the mock to throw an error
-      command = new DeployCommand('errorDir', true, cliOutput, spinnerCreator)
+      command = new DeployCommand('errorDir', true, undefined, cliOutput, spinnerCreator)
     })
     it('should fail gracefully', async () => {
       await command.execute()

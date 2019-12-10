@@ -34,7 +34,7 @@ describe('preview command', () => {
 
   describe('when the workspace loads successfully', () => {
     beforeEach(async () => {
-      await command('', cliOutput, spinnerCreator).execute()
+      await command('', cliOutput, spinnerCreator, ['salesforce']).execute()
     })
 
     it('should load the workspace', async () => {
@@ -66,7 +66,7 @@ describe('preview command', () => {
 
   describe('when the workspace fails to load', () => {
     beforeEach(async () => {
-      await command('errdir', cliOutput, spinnerCreator).execute()
+      await command('errdir', cliOutput, spinnerCreator, ['salesforce']).execute()
     })
 
     it('should print the error', () => {

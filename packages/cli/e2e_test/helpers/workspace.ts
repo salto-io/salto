@@ -32,14 +32,20 @@ export const runDeploy = async (lastPlan: Plan, fetchOutputDir: string): Promise
   if (lastPlan) {
     lastPlan.clear()
   }
-  await new DeployCommand(fetchOutputDir, false, mockCliOutput(), mockSpinnerCreator([])).execute()
+  await new DeployCommand(
+    fetchOutputDir,
+    false,
+    undefined,
+    mockCliOutput(),
+    mockSpinnerCreator([])
+  ).execute()
 }
 
 export const runEmptyPreview = async (lastPlan: Plan, fetchOutputDir: string): Promise<void> => {
   if (lastPlan) {
     lastPlan.clear()
   }
-  await preview(fetchOutputDir, mockCliOutput(), mockSpinnerCreator([])).execute()
+  await preview(fetchOutputDir, mockCliOutput(), mockSpinnerCreator([]), ['salesforce']).execute()
   expect(_.isEmpty(lastPlan)).toBeTruthy()
 }
 

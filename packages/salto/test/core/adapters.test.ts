@@ -62,7 +62,7 @@ describe('Test adapters.ts', () => {
       RedHeringWrongAdapter,
       bpConfig,
     ]
-    const [adapters, newConfigs] = await initAdapters(elements, fillConfig)
+    const [adapters, newConfigs] = await initAdapters(elements, fillConfig, ['salesforce'])
     expect(adapters.salesforce).toBeDefined()
     expect(newConfigs.length).toBe(0)
   })
@@ -73,7 +73,7 @@ describe('Test adapters.ts', () => {
       RedHeringNotConfig,
       RedHeringWrongAdapter,
     ]
-    const [adapters, newConfigs] = await initAdapters(elements, fillConfig)
+    const [adapters, newConfigs] = await initAdapters(elements, fillConfig, ['salesforce'])
     expect(adapters.salesforce).toBeDefined()
     expect(newConfigs.length).toEqual(1)
     expect(newConfigs[0]).toBe(userConfig)

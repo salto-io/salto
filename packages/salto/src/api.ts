@@ -1,6 +1,6 @@
 import wu from 'wu'
 import {
-  ObjectType, InstanceElement, Element, ActionName, DataModificationResult,
+  ObjectType, InstanceElement, Element, ActionName, DataModificationResult, ElemIdGetter, Adapter,
 } from 'adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto/logging'
@@ -12,7 +12,7 @@ import {
 } from './core/records'
 import initAdapters from './core/adapters/adapters'
 import {
-  getPlan, Plan, PlanItem,
+  getPlan, Plan, PlanItem, DetailedChange,
 } from './core/plan'
 import State from './state/state'
 import { findElement, SearchResult } from './core/search'
@@ -25,6 +25,35 @@ import { Workspace, CREDS_DIR } from './workspace/workspace'
 export { ItemStatus }
 
 const log = logger(module)
+
+export const login = async (
+  workspace: Workspace,
+  fillConfig: (t: ObjectType) => Promise<InstanceElement>,
+  getElemIdFunc?: ElemIdGetter
+): Promise<Record<string, Adapter>> => {
+  const configToChange = (config: InstanceElement): DetailedChange => {
+    config.path = [CREDS_DIR, config.elemID.adapter]
+    return toAddFetchChange(config).change
+  }
+
+  const [adapters, newConfigs] = await initAdapters(workspace.elements, fillConfig, getElemIdFunc)
+  log.debug(`${Object.keys(adapters).length} adapters were initialized [newConfigs=${
+    newConfigs.length}]`)
+
+  if (newConfigs.length > 0) {
+    await workspace.updateBlueprints(...newConfigs.map(configToChange))
+    const criticalErrors = (await workspace.getWorkspaceErrors())
+      .filter(e => e.severity === 'Error')
+    if (criticalErrors.length > 0) {
+      log.warn('can not persist new configs due to critical workspace errors.')
+    } else {
+      await workspace.flush()
+      const newAdapters = newConfigs.map(config => config.elemID.adapter)
+      log.debug(`persisted new configs for adapers: ${newAdapters.join(',')}`)
+    }
+  }
+  return adapters
+}
 
 export const preview = async (
   workspace: Workspace,
@@ -60,7 +89,7 @@ export const deploy = async (
   try {
     const actionPlan = getPlan(stateElements, workspace.elements)
     if (force || await shouldDeploy(actionPlan)) {
-      const [adapters] = await initAdapters(workspace.elements, fillConfig)
+      const adapters = await login(workspace, fillConfig)
       const errors = await deployActions(
         actionPlan,
         adapters,
@@ -100,23 +129,20 @@ export type fetchFunc = (
 ) => Promise<FetchResult>
 
 export const fetch: fetchFunc = async (workspace, fillConfig, progressEmitter?) => {
-  const configToChange = (config: InstanceElement): FetchChange => {
-    config.path = [CREDS_DIR, config.elemID.adapter]
-    return toAddFetchChange(config)
-  }
   log.debug('fetch starting..')
 
   const state = new State(workspace.config.stateLocation)
   const stateElements = await state.get()
   log.debug(`finished loading ${stateElements.length} state elements`)
 
-  const [adapters, newConfigs] = await initAdapters(workspace.elements, fillConfig,
-    createElemIdGetter(stateElements))
+  const adapters = await login(
+    workspace,
+    fillConfig,
+    createElemIdGetter(stateElements)
+  )
   if (progressEmitter) {
     progressEmitter.emit('adaptersDidInitialize')
   }
-  log.debug(`${Object.keys(adapters).length} adapters were initialized [newConfigs=${
-    newConfigs.length}]`)
   try {
     const { changes, elements, mergeErrors } = await fetchChanges(
       adapters, workspace.elements, stateElements, progressEmitter,
@@ -126,7 +152,7 @@ export const fetch: fetchFunc = async (workspace, fillConfig, progressEmitter?) 
     await state.flush()
     log.debug(`finish to override state with ${elements.length} elements`)
     return {
-      changes: wu.chain(changes, newConfigs.map(configToChange)),
+      changes,
       mergeErrors,
       success: true,
     }
@@ -161,7 +187,7 @@ export const exportToCsv = async (
   if (!type) {
     throw new Error(`Couldn't find the type you are looking for: ${typeId}. Have you run salto fetch yet?`)
   }
-  const [adapters] = await initAdapters(workspace.elements, fillConfig)
+  const adapters = await login(workspace, fillConfig)
 
   return getInstancesOfType(type as ObjectType, adapters, outPath)
 }
@@ -179,7 +205,7 @@ export const importFromCsvFile = async (
   if (!type) {
     throw new Error(`Couldn't find the type you are looking for: ${typeId}. Have you run salto fetch yet?`)
   }
-  const [adapters] = await initAdapters(workspace.elements, fillConfig)
+  const adapters = await login(workspace, fillConfig)
   return importInstancesOfType(type as ObjectType, inputPath, adapters)
 }
 
@@ -196,7 +222,7 @@ export const deleteFromCsvFile = async (
   if (!type) {
     throw new Error(`Couldn't find the type you are looking for: ${typeId}. Have you run salto fetch yet?`)
   }
-  const [adapters] = await initAdapters(workspace.elements, fillConfig)
+  const adapters = await login(workspace, fillConfig)
   return deleteInstancesOfType(type as ObjectType, inputPath, adapters)
 }
 

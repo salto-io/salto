@@ -2,8 +2,10 @@ import _ from 'lodash'
 import path from 'path'
 import tmp from 'tmp-promise'
 import {
-  ElemID, InstanceElement, ObjectType, AdapterCreator, Field, BuiltinTypes,
+  ElemID, InstanceElement, ObjectType, AdapterCreator, Field, BuiltinTypes, Element,
+  PrimitiveType, PrimitiveTypes,
 } from 'adapter-api'
+import { creator } from 'salesforce-adapter'
 import { Config } from '../../src/workspace/config'
 import { DeployError } from '../../src/core/deploy'
 import * as commands from '../../src/api'
@@ -80,6 +82,16 @@ const mockAdapterCreator: AdapterCreator = {
   configType: mockConfigType,
 }
 
+const createMockWorkspace = (elements: Element[]): Workspace => ({
+  elements,
+  config: { stateLocation: '.' },
+  resolvePath: _.identity,
+  updateBlueprints: jest.fn(),
+  flush: jest.fn(),
+  getWorkspaceErrors: async () => [],
+} as unknown as Workspace
+)
+
 jest.mock('../../src/core/adapters/creators')
 jest.mock('../../src/state/state')
 jest.mock('../../src/core/csv')
@@ -89,12 +101,12 @@ describe('api functions', () => {
   let baseDir: tmp.DirectoryResult
   let localDir: tmp.DirectoryResult
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     baseDir = await tmp.dir({ unsafeCleanup: true })
     localDir = await tmp.dir({ unsafeCleanup: true })
   })
 
-  afterAll(async () => {
+  afterEach(async () => {
     await baseDir.cleanup()
     await localDir.cleanup()
   })
@@ -186,7 +198,7 @@ describe('api functions', () => {
 
     it('should error on failure', async () => {
       const config: Config = {
-        uid: '',
+        uid: '1',
         name: 'test',
         localStorage: localDir.path,
         baseDir: baseDir.path,
@@ -339,20 +351,40 @@ describe('api functions', () => {
     let mockWorkspace: Workspace
     let changes: plan.DetailedChange[]
     beforeEach(async () => {
-      mockWorkspace = {
-        elements: [],
-        config: { stateLocation: '.' },
-        resolvePath: _.identity,
-      } as unknown as Workspace
+      mockWorkspace = createMockWorkspace([])
       changes = [...(await commands.fetch(mockWorkspace, mockGetConfigFromUser)).changes]
         .map(change => change.change)
     })
 
-    it('should return newly fetched elements and configs', () => {
-      expect(changes.map(change => change.action)).toEqual(['add', 'add', 'add', 'add'])
+    it('should return newly fetched elements', () => {
+      expect(changes.map(change => change.action)).toEqual(['add', 'add', 'add'])
     })
     it('should add newly fetched elements to state', () => {
       expect(State.prototype.override).toHaveBeenCalledWith(fetchedElements)
+    })
+  })
+  describe('login', () => {
+    const elements: Element[] = [
+      new PrimitiveType({
+        elemID: new ElemID('salesforce', 'prim'),
+        primitive: PrimitiveTypes.STRING,
+      }),
+    ]
+    const { configType } = creator
+
+    it('should persist a new config', async () => {
+      const ws = createMockWorkspace(elements)
+      const adapters = await commands.login(ws, mockGetConfigFromUser)
+      expect(adapters.salesforce).toBeDefined()
+      expect(ws.flush as jest.FunctionLike).toHaveBeenCalled()
+    })
+
+    it('should not persist an existing config', async () => {
+      const configInst = await mockGetConfigFromUser(configType)
+      const ws = createMockWorkspace([configInst, ...elements])
+      const adapters = await commands.login(ws, mockGetConfigFromUser)
+      expect(adapters.salesforce).toBeDefined()
+      expect(ws.flush as jest.FunctionLike).not.toHaveBeenCalled()
     })
   })
 })

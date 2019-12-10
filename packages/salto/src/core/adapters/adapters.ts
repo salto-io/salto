@@ -1,12 +1,12 @@
 import _ from 'lodash'
 import {
-  InstanceElement, Element, ObjectType, isInstanceElement, Adapter, ElemIdGetter,
+  InstanceElement, ObjectType, isInstanceElement, Adapter, ElemIdGetter, Element,
 } from 'adapter-api'
 import { promises } from '@salto/lowerdash'
 import adapterCreators from './creators'
 
 const initAdapters = async (
-  elements: ReadonlyArray<Element>,
+  elements: Readonly<Element[]>,
   fillConfig: (t: ObjectType) => Promise<InstanceElement>,
   getElemIdFunc?: ElemIdGetter):
   Promise<[Record<string, Adapter>, InstanceElement[]]> => {
@@ -31,7 +31,6 @@ const initAdapters = async (
   )
 
   const adapters = await promises.object.resolveValues(adapterPromises)
-
   return [adapters, newConfigs]
 }
 

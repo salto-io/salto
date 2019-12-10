@@ -21,8 +21,7 @@ import {
 } from './transformers/transformer'
 import { fromRetrieveResult, toMetadataPackageZip } from './transformers/xml_transformer'
 import layoutFilter from './filters/layouts'
-import fieldPermissionsFilter from './filters/field_permissions'
-import objectPermissionsFilter from './filters/object_permissions'
+import profilePermissionsFilter from './filters/profile_permissions'
 import validationRulesFilter from './filters/validation_rules'
 import assignmentRulesFilter from './filters/assignment_rules'
 import convertListsFilter from './filters/convert_lists'
@@ -156,8 +155,7 @@ export default class SalesforceAdapter {
       'AssignmentRules',
     ],
     filterCreators = [
-      fieldPermissionsFilter,
-      objectPermissionsFilter,
+      profilePermissionsFilter,
       layoutFilter,
       validationRulesFilter,
       assignmentRulesFilter,

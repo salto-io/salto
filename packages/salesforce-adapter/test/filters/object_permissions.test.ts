@@ -5,7 +5,7 @@ import {
 import _ from 'lodash'
 import { metadataType } from '../../src/transformers/transformer'
 import { ObjectPermissions, ProfileInfo } from '../../src/client/types'
-import filterCreator from '../../src/filters/object_permissions'
+import filterCreator from '../../src/filters/profile_permissions'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'

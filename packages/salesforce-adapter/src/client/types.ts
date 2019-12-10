@@ -15,8 +15,13 @@ export type FieldPermissionsOptions = { editable: JSONBool
    readable: JSONBool }
 
 export type FieldPermissions = { field: string } & FieldPermissionsOptions
-
 export type ObjectPermissions = { object: string } & ObjectPermissionsOptions
+
+export type PermissionsTypes = FieldPermissions | ObjectPermissions
+export type PermissionsOptionsTypes = FieldPermissionsOptions | ObjectPermissionsOptions
+
+export type ProfileToFieldPermissions = Record<string, FieldPermissionsOptions>
+export type ProfileToObjectPermissions = Record<string, ObjectPermissionsOptions>
 
 export class ProfileInfo implements MetadataInfo {
   constructor(

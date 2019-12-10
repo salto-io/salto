@@ -8,7 +8,7 @@ type HCLToken = ParsedHclBlock | HclAttribute | HclExpression
 
 interface LexerToken {
   type: string
-  value: unknown
+  value: string
   text: string
   line: number
   lineBreaks: number
@@ -122,7 +122,7 @@ export const convertObject = (
 
 export const convertReference = (reference: LexerToken): HclExpression => ({
   type: 'reference',
-  value: reference.text.split('.'),
+  value: reference.value.split('.'),
   expressions: [],
   source: createSourceRange(reference, reference),
 })

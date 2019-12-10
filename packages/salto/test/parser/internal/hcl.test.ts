@@ -246,7 +246,7 @@ each([false, true]).describe('HCL Parser', jsParseMode => {
               str: 'string',
               lst: ['val1', 'val2'],
               empty: [],
-              exp: (process.env.JS_PARSE)
+              exp: (jsParseMode)
                 ? new TemplateExpression({
                   parts: [
                     'test ',
@@ -286,7 +286,7 @@ each([false, true]).describe('HCL Parser', jsParseMode => {
       expect(serialized).toMatch(/empty\s*=\s*\[\s*\]/m)
     })
     it('dumps expressions', () => {
-      if (process.env.JS_PARSE) {
+      if (jsParseMode) {
         // eslint-disable-next-line no-template-curly-in-string
         expect(serialized).toMatch('exp = "test ${ a.b } test"')
       }

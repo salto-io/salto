@@ -57,16 +57,12 @@ const setDefaultObjectPermissions = (object: ObjectType): void => {
 }
 
 const profile2FieldPermissions = (profileInstance: InstanceElement):
-  Record<string, ProfileToFieldPermissions> => {
-  const instanceFieldPermissions: FieldPermissions[] = profileInstance.value[FIELD_PERMISSIONS]
-  return profile2Permissions(profileInstance, instanceFieldPermissions)
-}
+  Record<string, ProfileToFieldPermissions> =>
+  profile2Permissions(profileInstance, profileInstance.value[FIELD_PERMISSIONS])
 
 const profile2ObjectPermissions = (profileInstance: InstanceElement):
-  Record<string, ProfileToObjectPermissions> => {
-  const instanceObjectPermissions: ObjectPermissions[] = profileInstance.value[OBJECT_PERMISSIONS]
-  return profile2Permissions(profileInstance, instanceObjectPermissions)
-}
+  Record<string, ProfileToObjectPermissions> =>
+  profile2Permissions(profileInstance, profileInstance.value[OBJECT_PERMISSIONS])
 
 const toProfilesFromObject = (object: ObjectType,
   profiles: Record<string, ProfileInfo> = {}): Record<string, ProfileInfo> => {

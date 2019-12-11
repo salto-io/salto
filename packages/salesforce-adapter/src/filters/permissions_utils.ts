@@ -53,10 +53,6 @@ export const findProfile = (profiles: ProfileInfo[], profile: string):
 export const getProfileInstances = (elements: Element[]): InstanceElement[] =>
   getInstancesOfMetadataType(elements, PROFILE_METADATA_TYPE)
 
-export const profileInPermissionsList = (permissions: Record<string, string[]>,
-  profile: string, permissionFieldName: string):
-  boolean => permissions[sfCase(permissionFieldName, false, false)].includes(profile)
-
 export const setPermissions = <T = PermissionsOptionsTypes>(
   element: ObjectType | Field, permissionAnnotationName: string, fullName: string,
   permissions: Record<string, Record<string, T>>, profileInstances: InstanceElement[]): void => {
@@ -73,20 +69,11 @@ export const setPermissions = <T = PermissionsOptionsTypes>(
 
 export const findPermissions = <T = PermissionsTypes>(
   permissions: T[], value: string): T | undefined =>
-    permissions.find(op => {
-      if ((op as unknown as ObjectPermissions).object) {
-        return (op as unknown as ObjectPermissions).object === value
-      }
-      if ((op as unknown as FieldPermissions).field) {
-        return (op as unknown as FieldPermissions).field === value
-      }
-      return undefined
-    })
+    permissions.find(op => (_.get(op, 'object')
+      ? _.get(op, 'object') === value : _.get(op, 'field') === value))
 
 const getElementName = <T = PermissionsTypes>(element: T): string =>
-  (_.isUndefined((element as unknown as FieldPermissions).field)
-    ? (element as unknown as ObjectPermissions).object
-    : (element as unknown as FieldPermissions).field)
+  (_.get(element, 'field') ? _.get(element, 'field') : _.get(element, 'object'))
 
 export const filterPermissions = <T = PermissionsTypes>(
   permissions: T[], beforeProfilePermissions: T[], afterProfilePermissions: T[],
@@ -102,7 +89,7 @@ export const filterPermissions = <T = PermissionsTypes>(
 export const initProfile = (profiles: Record<string, ProfileInfo>, profile: string): void => {
   if (_.isUndefined(profiles[profile])) {
     profiles[profile] = new ProfileInfo(
-      sfCase(ElemID.fromFullName(profile).name), []
+      sfCase(ElemID.fromFullName(profile).name)
     )
   }
 }
@@ -128,10 +115,10 @@ export const profile2Permissions = <T = PermissionsTypes,
     .map(element => {
       const elementName = getElementName(element)
       const elementClone: T = { ...element }
-      if (_.isUndefined((elementClone as unknown as FieldPermissions).field)) {
-        delete (elementClone as unknown as ObjectPermissions).object
-      } else {
+      if (_.get(elementClone, 'field')) {
         delete (elementClone as unknown as FieldPermissions).field
+      } else {
+        delete (elementClone as unknown as ObjectPermissions).object
       }
       return { [elementName]: { [id(profileInstance)]: elementClone } }
     }))

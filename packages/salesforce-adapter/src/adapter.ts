@@ -157,7 +157,6 @@ export default class SalesforceAdapter {
     ],
     filterCreators = [
       profilePermissionsFilter,
-      topicsForObjectsFilter,
       layoutFilter,
       validationRulesFilter,
       assignmentRulesFilter,

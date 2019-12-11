@@ -8,8 +8,8 @@ import { TOPICS_FOR_OBJECTS_FIELDS, TOPICS_FOR_OBJECTS_ANNOTATION, API_NAME,
   TOPICS_FOR_OBJECTS_METADATA_TYPE } from '../constants'
 import { metadataType, isCustomObject, apiName } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
-import { TopicsForObjectsInfo } from '../client/types'
-import { getCustomObjects, boolValue } from './utils'
+import { TopicsForObjectsInfo, JSONBool } from '../client/types'
+import { getCustomObjects, boolValue, removeFieldsFromInstanceAndType } from './utils'
 
 const { ENABLE_TOPICS, ENTITY_API_NAME } = TOPICS_FOR_OBJECTS_FIELDS
 
@@ -47,17 +47,14 @@ const filterCreator: FilterCreator = ({ client }) => ({
     // Add topics for objects to all fetched elements
     customObjectTypes.forEach(obj => {
       const fullName = apiName(obj)
-      if (fullName in topics) {
+      if (Object.keys(topics).includes(fullName)) {
         setTopicsForObjects(obj, topics[fullName])
       }
     })
 
     // Remove enable topic field from TopicsForObjects Instances & Type
     // to avoid information duplication
-    topicsForObjectsInstances.forEach(topic => delete topic.value[ENABLE_TOPICS])
-    elements.filter(isObjectType)
-      .filter(element => metadataType(element) === TOPICS_FOR_OBJECTS_METADATA_TYPE)
-      .forEach(topic => delete topic.fields[ENABLE_TOPICS])
+    removeFieldsFromInstanceAndType(elements, [ENABLE_TOPICS], TOPICS_FOR_OBJECTS_METADATA_TYPE)
   },
 
   onAdd: async (after: Element): Promise<SaveResult[]> => {
@@ -80,13 +77,16 @@ const filterCreator: FilterCreator = ({ client }) => ({
     // No change
     const topicsBefore = getTopicsForObjects(before)
     const topicsAfter = getTopicsForObjects(after)
-    if (_.isEmpty(topicsAfter) || _.isEqual(topicsAfter[ENABLE_TOPICS],
-      topicsBefore[ENABLE_TOPICS])) {
+    if (_.isEqual(topicsAfter[ENABLE_TOPICS], topicsBefore[ENABLE_TOPICS])) {
       return []
     }
 
+    // In case that the topicsForObjects doesn't exist anymore -> enable_topics=false
+    const topicsEnabled: JSONBool = _.isUndefined(topicsAfter[ENABLE_TOPICS])
+      ? false : boolValue(topicsAfter[ENABLE_TOPICS])
+
     return client.update(TOPICS_FOR_OBJECTS_METADATA_TYPE,
-      new TopicsForObjectsInfo(apiName(after), apiName(after), topicsAfter[ENABLE_TOPICS]))
+      new TopicsForObjectsInfo(apiName(after), apiName(after), topicsEnabled))
   },
 })
 

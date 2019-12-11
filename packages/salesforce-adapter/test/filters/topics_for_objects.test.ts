@@ -6,10 +6,11 @@ import { metadataType } from '../../src/transformers/transformer'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
-import filterCreator, { TOPICS_FOR_OBJECTS_METADATA_TYPE } from '../../src/filters/topics_for_objects'
+import filterCreator from '../../src/filters/topics_for_objects'
 import { TopicsForObjectsInfo } from '../../src/client/types'
 
-const { TOPICS_FOR_OBJECTS_ANNOTATION, TOPICS_FOR_OBJECTS_FIELDS } = constants
+const { TOPICS_FOR_OBJECTS_ANNOTATION, TOPICS_FOR_OBJECTS_FIELDS,
+  TOPICS_FOR_OBJECTS_METADATA_TYPE } = constants
 const { ENABLE_TOPICS, ENTITY_API_NAME } = TOPICS_FOR_OBJECTS_FIELDS
 
 describe('Field Permissions filter', () => {

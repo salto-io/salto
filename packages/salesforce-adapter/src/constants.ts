@@ -169,3 +169,6 @@ export const TOPICS_FOR_OBJECTS_FIELDS = {
 
 // Limits
 export const MAX_METADATA_RESTRICTION_VALUES = 500
+
+// Metadata types
+export const TOPICS_FOR_OBJECTS_METADATA_TYPE = 'TopicsForObjects'

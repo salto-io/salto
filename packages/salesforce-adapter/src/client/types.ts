@@ -46,7 +46,7 @@ export class TopicsForObjectsInfo implements MetadataInfo {
   constructor(
     public readonly fullName: string,
     public entityApiName: string,
-    public enableTopics: boolean | 'true' | 'false'
+    public enableTopics: JSONBool
   ) {}
 }
 

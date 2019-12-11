@@ -1,17 +1,17 @@
 import {
-  ObjectType, Element, Values, isObjectType, isInstanceElement, InstanceElement, Change,
+  ObjectType, Element, Values, isObjectType, isInstanceElement, InstanceElement,
+  Change, getAnnotationValue,
 } from 'adapter-api'
 import _ from 'lodash'
 import { SaveResult } from 'jsforce'
-import { TOPICS_FOR_OBJECTS_FIELDS, TOPICS_FOR_OBJECTS_ANNOTATION } from '../constants'
+import { TOPICS_FOR_OBJECTS_FIELDS, TOPICS_FOR_OBJECTS_ANNOTATION, API_NAME,
+  TOPICS_FOR_OBJECTS_METADATA_TYPE } from '../constants'
 import { metadataType, isCustomObject, apiName } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
 import { TopicsForObjectsInfo } from '../client/types'
-import { getCustomObjects, boolValue, getAnnotationValue } from './utils'
+import { getCustomObjects, boolValue } from './utils'
 
 const { ENABLE_TOPICS, ENTITY_API_NAME } = TOPICS_FOR_OBJECTS_FIELDS
-
-export const TOPICS_FOR_OBJECTS_METADATA_TYPE = 'TopicsForObjects'
 
 const getTopicsForObjects = (obj: ObjectType): Values => getAnnotationValue(obj,
   TOPICS_FOR_OBJECTS_ANNOTATION)
@@ -28,7 +28,7 @@ const setDefaultTopicsForObjects = (object: ObjectType): void => {
 
 const filterCreator: FilterCreator = ({ client }) => ({
   onFetch: async (elements: Element[]): Promise<void> => {
-    const customObjectTypes = getCustomObjects(elements)
+    const customObjectTypes = getCustomObjects(elements).filter(obj => obj.annotations[API_NAME])
     if (_.isEmpty(customObjectTypes)) {
       return
     }
@@ -39,10 +39,10 @@ const filterCreator: FilterCreator = ({ client }) => ({
     }
 
     const topicsPerObject = topicsForObjectsInstances.map(
-      (instance: InstanceElement) => ({ [instance.value[ENTITY_API_NAME]]:
+      (instance: InstanceElement): Record<string, boolean> => ({ [instance.value[ENTITY_API_NAME]]:
          boolValue(instance.value[ENABLE_TOPICS]) })
     )
-    const topics = _.merge({}, ...topicsPerObject)
+    const topics: Record<string, boolean> = _.merge({}, ...topicsPerObject)
 
     // Add topics for objects to all fetched elements
     customObjectTypes.forEach(obj => {
@@ -65,7 +65,8 @@ const filterCreator: FilterCreator = ({ client }) => ({
       setDefaultTopicsForObjects(after)
 
       return client.update(TOPICS_FOR_OBJECTS_METADATA_TYPE,
-        new TopicsForObjectsInfo(apiName(after), apiName(after), false))
+        new TopicsForObjectsInfo(apiName(after), apiName(after),
+          getTopicsForObjects(after)[ENABLE_TOPICS]))
     }
     return []
   },
@@ -79,7 +80,8 @@ const filterCreator: FilterCreator = ({ client }) => ({
     // No change
     const topicsBefore = getTopicsForObjects(before)
     const topicsAfter = getTopicsForObjects(after)
-    if (_.isEmpty(topicsAfter) || (topicsAfter[ENABLE_TOPICS] === topicsBefore[ENABLE_TOPICS])) {
+    if (_.isEmpty(topicsAfter) || _.isEqual(topicsAfter[ENABLE_TOPICS],
+      topicsBefore[ENABLE_TOPICS])) {
       return []
     }
 

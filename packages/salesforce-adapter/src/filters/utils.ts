@@ -67,8 +67,4 @@ export const runOnFields = async (elements: Element[], condition: (field: Field)
   })
 }
 
-export const boolValue = (val: boolean | 'true' | 'false'): boolean => val === 'true' || val === true
-
-export const getAnnotationValue = (object: ObjectType,
-  annotation: string): Values =>
-  (object.annotations[annotation] || {})
+export const boolValue = (val: JSONBool): boolean => val === 'true' || val === true

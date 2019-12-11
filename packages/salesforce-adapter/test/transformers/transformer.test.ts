@@ -2,6 +2,7 @@ import _ from 'lodash'
 import {
   ObjectType, ElemID, Field, BuiltinTypes, Type, Field as TypeField, Values,
 } from 'adapter-api'
+import { collections } from '@salto/lowerdash'
 import { Field as SalesforceField, ValueTypeField } from 'jsforce'
 import {
   bpCase, getSObjectFieldElement, Types, toCustomField, toCustomObject,
@@ -11,9 +12,11 @@ import {
   FIELD_ANNOTATIONS, FIELD_TYPE_NAMES, LABEL, FIELD_TYPE_API_NAMES, ADDRESS_FIELDS,
   SALESFORCE, GEOLOCATION_FIELDS, NAME_FIELDS, API_NAME,
   FIELD_LEVEL_SECURITY_ANNOTATION, FIELD_LEVEL_SECURITY_FIELDS, FIELD_DEPENDENCY_FIELDS,
-  VALUE_SETTINGS_FIELDS, FILTER_ITEM_FIELDS,
+  VALUE_SETTINGS_FIELDS, FILTER_ITEM_FIELDS, METADATA_TYPE, CUSTOM_OBJECT,
 } from '../../src/constants'
-import { CustomField, FilterItem } from '../../src/client/types'
+import { CustomField, FilterItem, CustomObject } from '../../src/client/types'
+
+const { makeArray } = collections.array
 
 describe('transformer', () => {
   describe('bpCase & sfCase transformation', () => {
@@ -326,8 +329,58 @@ describe('transformer', () => {
   })
 
   describe('toCustomObject', () => {
+    const elemID = new ElemID('salesforce', 'test')
+    describe('standard field transformation', () => {
+      const ignoredField = 'ignored'
+      const existingField = 'test'
+      const objType = new ObjectType({
+        elemID,
+        fields: {
+          [existingField]: new Field(
+            elemID, existingField, Types.primitiveDataTypes.text, { [API_NAME]: 'Test__c' },
+          ),
+          [ignoredField]: new Field(
+            elemID, ignoredField, Types.primitiveDataTypes.text, { [API_NAME]: 'Ignored__c' },
+          ),
+        },
+        annotations: {
+          [API_NAME]: 'Test__c',
+          [METADATA_TYPE]: CUSTOM_OBJECT,
+        },
+      })
+      describe('with fields', () => {
+        let customObj: CustomObject
+        beforeEach(() => {
+          customObj = toCustomObject(
+            objType, true, [objType.fields[ignoredField].annotations[API_NAME]],
+          )
+        })
+        it('should have correct name', () => {
+          expect(customObj.fullName).toEqual(objType.annotations[API_NAME])
+        })
+        it('should have fields', () => {
+          expect(customObj.fields).toBeDefined()
+          expect(makeArray(customObj.fields).map(f => f.fullName)).toContainEqual(
+            objType.fields[existingField].annotations[API_NAME]
+          )
+        })
+        it('should not have ignored fields', () => {
+          expect(makeArray(customObj.fields).map(f => f.fullName)).not.toContainEqual(
+            objType.fields[ignoredField].annotations[API_NAME]
+          )
+        })
+      })
+      describe('without fields', () => {
+        let customObj: CustomObject
+        beforeEach(() => {
+          customObj = toCustomObject(objType, false)
+        })
+        it('should not contain fields', () => {
+          expect(customObj.fields).toBeUndefined()
+        })
+      })
+    })
     describe('reference field transformation', () => {
-      const elemID = new ElemID('salesforce', 'test')
       const relatedTo = ['User', 'Property__c']
       const annotations: Values = {
         [API_NAME]: 'field_name',
@@ -404,7 +457,6 @@ describe('transformer', () => {
     })
 
     describe('field dependency transformation', () => {
-      const elemID = new ElemID('salesforce', 'test')
       const annotations: Values = {
         [API_NAME]: 'field_name',
         [LABEL]: 'field_label',
@@ -477,7 +529,6 @@ describe('transformer', () => {
     })
 
     describe('rollup summary field transformation', () => {
-      const elemID = new ElemID('salesforce', 'test')
       const annotations: Values = {
         [API_NAME]: 'field_name',
         [LABEL]: 'field_label',

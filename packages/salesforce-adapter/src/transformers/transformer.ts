@@ -635,11 +635,16 @@ export const toCustomField = (
   return newField
 }
 
-export const toCustomObject = (element: ObjectType, includeFields = true): CustomObject =>
+export const toCustomObject = (
+  element: ObjectType, includeFields: boolean, skipFields: string[] = [],
+): CustomObject =>
   new CustomObject(
     apiName(element),
     element.annotations[LABEL],
-    includeFields ? Object.values(element.fields).map(field => toCustomField(element, field))
+    includeFields
+      ? Object.values(element.fields)
+        .map(field => toCustomField(element, field))
+        .filter(field => !skipFields.includes(field.fullName))
       : undefined
   )
 

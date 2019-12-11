@@ -121,7 +121,11 @@ export interface SalesforceAdapterParams {
   client: SalesforceClient
 
   // callback function to get an existing elemId or create a new one by the ServiceIds values
-  getElemIdFunc?: ElemIdGetter}
+  getElemIdFunc?: ElemIdGetter
+
+  // System fields that salesforce may add to custom objects - to be ignored when creating objects
+  systemFields?: string[]
+}
 
 const logDuration = (message?: string): decorators.InstanceMethodDecorator =>
   decorators.wrapMethodWith(
@@ -137,6 +141,8 @@ export default class SalesforceAdapter {
   private metadataTypeBlacklist: string[]
   private metadataToRetrieveAndDeploy: string[]
   private filterCreators: FilterCreator[]
+  private client: SalesforceClient
+  private systemFields: string[]
 
   public constructor({
     metadataTypeBlacklist = [
@@ -179,17 +185,35 @@ export default class SalesforceAdapter {
     ],
     client,
     getElemIdFunc,
+    // See: https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/sforce_api_objects_custom_object__c.htm
+    systemFields = [
+      'ConnectionReceivedId',
+      'ConnectionSentId',
+      'CreatedById',
+      'CreatedDate',
+      'CurrencyIsoCode',
+      'Id',
+      'IsDeleted',
+      'LastActivityDate',
+      'LastModifiedDate',
+      'LastModifiedById',
+      'LastReferencedDate',
+      'LastViewedDate',
+      'Name',
+      'RecordTypeId',
+      'SystemModstamp',
+      'OwnerId',
+    ],
   }: SalesforceAdapterParams) {
     this.metadataTypeBlacklist = metadataTypeBlacklist
     this.metadataToRetrieveAndDeploy = metadataToRetrieveAndDeploy
     this.filterCreators = filterCreators
     this.client = client
+    this.systemFields = systemFields
     if (getElemIdFunc) {
       Types.setElemIdGetter(getElemIdFunc)
     }
   }
-
-  private client: SalesforceClient
 
   /**
    * Fetch configuration elements (types and instances in the given salesforce account)
@@ -387,7 +411,9 @@ export default class SalesforceAdapter {
     const post = element.clone()
     addDefaults(post)
 
-    await this.client.create(constants.CUSTOM_OBJECT, toCustomObject(post))
+    await this.client.create(
+      constants.CUSTOM_OBJECT, toCustomObject(post, true, this.systemFields),
+    )
 
     return post
   }
@@ -504,6 +530,7 @@ export default class SalesforceAdapter {
       // Retrieve the custom fields for addition and than create them
       this.createFields(clonedObject, fieldChanges
         .filter(isAdditionDiff)
+        .filter(c => !this.systemFields.includes(getChangeElement(c).name))
         .map(c => clonedObject.fields[c.data.after.name])),
       // Update the remaining fields that were changed
       this.updateFields(clonedObject, fieldChanges

@@ -5,11 +5,10 @@ import {
 import _ from 'lodash'
 import { metadataType } from '../../src/transformers/transformer'
 import { ProfileInfo, FieldPermissions } from '../../src/client/types'
-import filterCreator from '../../src/filters/profile_permissions'
+import filterCreator, { getProfileInstances } from '../../src/filters/profile_permissions'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
-import { getProfileInstances } from '../../src/filters/permissions_utils'
 
 const { FIELD_LEVEL_SECURITY_ANNOTATION, ADMIN_PROFILE, PROFILE_METADATA_TYPE } = constants
 

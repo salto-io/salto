@@ -1,28 +1,130 @@
 import {
   ObjectType, Element, Field, isObjectType, InstanceElement, isField,
-  Change, getChangeElement, getAnnotationValue, ElemID,
+  Change, getChangeElement, getAnnotationValue, ElemID, Values, findElement,
 } from 'adapter-api'
 import _ from 'lodash'
 import { SaveResult } from 'jsforce'
 import wu from 'wu'
+import { collections } from '@salto/lowerdash'
 import { logger } from '@salto/logging'
 import {
   FIELD_PERMISSIONS, FIELD_LEVEL_SECURITY_ANNOTATION,
   PROFILE_METADATA_TYPE, ADMIN_PROFILE,
-  OBJECT_LEVEL_SECURITY_ANNOTATION, OBJECT_PERMISSIONS,
+  OBJECT_LEVEL_SECURITY_ANNOTATION, OBJECT_PERMISSIONS, SALESFORCE,
 } from '../constants'
 import {
-  fieldFullName, isCustomObject, Types, apiName, sfCase,
+  fieldFullName, isCustomObject, Types, apiName, sfCase, bpCase, metadataType,
 } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
 import { ProfileInfo, FieldPermissions, FieldPermissionsOptions, ObjectPermissionsOptions,
-  ObjectPermissions, ProfileToFieldPermissions, ProfileToObjectPermissions, OBJECT_PERMISSIONS_OPTIONS, FIELD_PERMISSIONS_OPTIONS, PermissionsTypes } from '../client/types'
-import { generateObjectElemID2ApiName, getCustomObjects, id } from './utils'
-import { setProfilePermissions, removePermissionsInfoFromProfile, getProfileInstances,
-  findProfile, ADMIN_ELEM_ID, setPermissions, filterPermissions, getPermissionsValues,
-  profile2Permissions, getFieldPermissions, getObjectPermissions } from './permissions_utils'
+  ObjectPermissions, OBJECT_PERMISSIONS_OPTIONS, FIELD_PERMISSIONS_OPTIONS,
+  PermissionsTypes, PermissionsOptionsFieldsTypes } from '../client/types'
+import { generateObjectElemID2ApiName, getCustomObjects, id, boolValue, getInstancesOfMetadataType } from './utils'
 
 const log = logger(module)
+
+const { makeArray } = collections.array
+
+type ProfileToFieldPermissions = Record<string, FieldPermissions>
+type ProfileToObjectPermissions = Record<string, ObjectPermissions>
+
+const ADMIN_ELEM_ID = new ElemID(SALESFORCE, bpCase(PROFILE_METADATA_TYPE),
+  'instance', ADMIN_PROFILE)
+
+const getFieldPermissions = (field: Field): Values =>
+  (getAnnotationValue(field, FIELD_LEVEL_SECURITY_ANNOTATION))
+
+const getObjectPermissions = (object: ObjectType): Values =>
+  (getAnnotationValue(object, OBJECT_LEVEL_SECURITY_ANNOTATION))
+
+const setProfilePermissions = <T = PermissionsTypes>
+  (element: ObjectType | Field, profile: string,
+    annotationName: string, permissions: T): void => {
+  if (_.get(permissions, 'field')) {
+    delete (permissions as unknown as FieldPermissions).field
+  } else {
+    delete (permissions as unknown as ObjectPermissions).object
+  }
+
+  if (_.isEmpty(getAnnotationValue(element, annotationName))) {
+    element.annotations[annotationName] = _.merge(
+      {}, ...Object.keys(permissions).map(f => ({ [bpCase(f)]: [] as string[] }))
+    )
+  }
+
+  Object.entries(permissions).forEach(permissionOption => {
+    if (boolValue(permissionOption[1])) {
+      getAnnotationValue(element, annotationName)[bpCase(permissionOption[0])].push(profile)
+    }
+  })
+}
+
+export const getProfileInstances = (elements: Element[]): InstanceElement[] =>
+  getInstancesOfMetadataType(elements, PROFILE_METADATA_TYPE)
+
+const removePermissionsInfoFromProfile = (elements: Element[],
+  fieldNamesToDelete: string[]): void => {
+  getProfileInstances(elements)
+    .forEach(profileInstance => fieldNamesToDelete
+      .forEach(fieldNameToDelete => delete profileInstance.value[fieldNameToDelete]))
+  elements.filter(isObjectType)
+    .filter(element => metadataType(element) === PROFILE_METADATA_TYPE)
+    .forEach(profileType => fieldNamesToDelete
+      .forEach(fieldNameToDelete => delete profileType.fields[fieldNameToDelete]))
+}
+
+const findProfile = (profiles: ProfileInfo[], profile: string):
+     ProfileInfo | undefined =>
+  profiles.find(p => p.fullName === profile)
+
+const setPermissions = <T = PermissionsTypes>(
+  element: ObjectType | Field, permissionAnnotationName: string, fullName: string,
+  permissions: Record<string, Record<string, T>>, profileInstances: InstanceElement[]): void => {
+  const elementPermissions = permissions[fullName]
+  if (elementPermissions) {
+    Object.entries(elementPermissions).sort().forEach(p2f => {
+      const profile = findElement(profileInstances, ElemID.fromFullName(p2f[0]))
+      if (profile) {
+        setProfilePermissions(element, id(profile), permissionAnnotationName, p2f[1])
+      }
+    })
+  }
+}
+
+const findPermissions = <T = PermissionsTypes>(
+  permissions: T[], value: string): T | undefined =>
+    permissions.find(op => (_.get(op, 'object')
+      ? _.get(op, 'object') === value : _.get(op, 'field') === value))
+
+const getElementName = <T = PermissionsTypes>(element: T): string =>
+  (_.get(element, 'field') ? _.get(element, 'field') : _.get(element, 'object'))
+
+const filterPermissions = <T = PermissionsTypes>(
+  permissions: T[], beforeProfilePermissions: T[], afterProfilePermissions: T[],
+  emptyPermissions: (permissions: T) => T): T[] =>
+    permissions
+      // Filter out permissions that were already updated
+      .filter(f => !_.isEqual(findPermissions(beforeProfilePermissions, getElementName(f)), f))
+    // Add missing permissions with =false for all the permissions options
+      .concat(beforeProfilePermissions
+        .filter(f => _.isUndefined(findPermissions(afterProfilePermissions, getElementName(f))))
+        .map(emptyPermissions))
+
+const getPermissionsValues = (element: Element,
+  permissionFields: readonly PermissionsOptionsFieldsTypes[],
+  annotationName: string): Record<string, string[]> =>
+  Object.values(permissionFields)
+    .sort().reduce((permission, field) => {
+      permission[field] = getAnnotationValue(element, annotationName)[bpCase(field)]
+       || []
+      return permission
+    }, {} as Record<string, string[]>)
+
+const profile2Permissions = <T = PermissionsTypes>(
+  profile: string, elementPermissions: T[]): Record<string, Record<string, T>> =>
+    _.merge({}, ...makeArray(elementPermissions)
+      .map(element => ({ [getElementName(element)]: { [profile]: element } })))
+
 
 const setProfileFieldPermissions = (field: Field, profile: string,
   permissions: FieldPermissionsOptions):
@@ -55,18 +157,20 @@ const setDefaultObjectPermissions = (object: ObjectType): void => {
 
 const profile2FieldPermissions = (profileInstance: InstanceElement):
   Record<string, ProfileToFieldPermissions> =>
-  profile2Permissions(profileInstance, profileInstance.value[FIELD_PERMISSIONS])
+  profile2Permissions(id(profileInstance), profileInstance.value[FIELD_PERMISSIONS])
 
 const profile2ObjectPermissions = (profileInstance: InstanceElement):
   Record<string, ProfileToObjectPermissions> =>
-  profile2Permissions(profileInstance, profileInstance.value[OBJECT_PERMISSIONS])
+  profile2Permissions(id(profileInstance), profileInstance.value[OBJECT_PERMISSIONS])
 
 const toProfilePermissions = <T = PermissionsTypes>(element: Element, annotationName: string,
-  permissionsOptionsFields: readonly string[], fullNameObject: Record<string, string>,
-  permissions: Record<string, T[]> = {}): Record<string, T[]> => {
+  permissionsOptionsFields: readonly PermissionsOptionsFieldsTypes[],
+  fullNameObject: Record<string, string>, permissions: Record<string, T[]> = {}):
+   Record<string, T[]> => {
   if (!getAnnotationValue(element, annotationName)) {
     return {}
   }
+
   const elementPermissions = getPermissionsValues(element, permissionsOptionsFields, annotationName)
   _.union(...Object.values(elementPermissions)).forEach((profile: string) => {
     if (_.isUndefined(permissions[profile])) {

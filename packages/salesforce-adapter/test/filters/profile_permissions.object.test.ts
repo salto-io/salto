@@ -5,11 +5,10 @@ import {
 import _ from 'lodash'
 import { metadataType } from '../../src/transformers/transformer'
 import { ObjectPermissions, ProfileInfo } from '../../src/client/types'
-import filterCreator from '../../src/filters/profile_permissions'
+import filterCreator, { getProfileInstances } from '../../src/filters/profile_permissions'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
-import { getProfileInstances } from '../../src/filters/permissions_utils'
 
 const { OBJECT_LEVEL_SECURITY_ANNOTATION, PROFILE_METADATA_TYPE, ADMIN_PROFILE } = constants
 const { ALLOW_CREATE, ALLOW_DELETE, ALLOW_EDIT, ALLOW_READ,

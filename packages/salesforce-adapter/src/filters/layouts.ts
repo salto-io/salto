@@ -5,6 +5,7 @@ import {
 import { apiName, bpCase } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
 import { SALESFORCE, SALESFORCE_CUSTOM_SUFFIX } from '../constants'
+import { id } from './utils'
 
 export const LAYOUT_TYPE_ID = new ElemID(SALESFORCE, 'layout')
 export const LAYOUT_ANNOTATION = 'layouts'
@@ -14,11 +15,10 @@ const MIN_NAME_LENGTH = 4
 
 // Layout full name starts with related sobject and then '-'
 const layoutObj = (layout: InstanceElement): string => apiName(layout).split('-')[0]
-const fullName = (elem: Element): string => elem.elemID.getFullName()
 
 const fixNames = (layouts: InstanceElement[]): void => {
   const name = (elem: Element): string => elem.elemID.name
-  let names = layouts.map(fullName)
+  let names = layouts.map(id)
 
   const updateElemID = (layout: InstanceElement, newName: string): void => {
     if (newName.length < MIN_NAME_LENGTH) {
@@ -26,7 +26,7 @@ const fixNames = (layouts: InstanceElement[]): void => {
     }
     const newId = layout.type.elemID.createNestedID('instance', newName)
     if (!names.includes(newId.getFullName())) {
-      names = _.without(names, fullName(layout))
+      names = _.without(names, id(layout))
       names.push(newId.getFullName())
       layout.elemID = newId
     }
@@ -71,7 +71,7 @@ const filterCreator: FilterCreator = () => ({
       .forEach(obj => {
         const objLayouts = obj2layout[apiName(obj)]
         if (objLayouts) {
-          obj.annotate({ [LAYOUT_ANNOTATION]: objLayouts.map(fullName).sort() })
+          obj.annotate({ [LAYOUT_ANNOTATION]: objLayouts.map(id).sort() })
         }
       })
   },

@@ -16,7 +16,8 @@ import {
   MAX_METADATA_RESTRICTION_VALUES, LOOKUP_FILTER_FIELDS,
   ADDRESS_FIELDS, NAME_FIELDS, GEOLOCATION_FIELDS, INSTANCE_FULL_NAME_FIELD,
   FIELD_LEVEL_SECURITY_ANNOTATION, FIELD_LEVEL_SECURITY_FIELDS, FIELD_DEPENDENCY_FIELDS,
-  VALUE_SETTINGS_FIELDS, FILTER_ITEM_FIELDS,
+  VALUE_SETTINGS_FIELDS, FILTER_ITEM_FIELDS, OBJECT_LEVEL_SECURITY_ANNOTATION,
+  OBJECT_LEVEL_SECURITY_FIELDS,
 } from '../constants'
 
 const { makeArray } = collections.array
@@ -102,6 +103,39 @@ export class Types {
       ),
       [FIELD_LEVEL_SECURITY_FIELDS.READABLE]: new TypeField(
         Types.fieldLevelSecurityElemID, FIELD_LEVEL_SECURITY_FIELDS.READABLE,
+        BuiltinTypes.STRING, {}, true
+      ),
+    },
+  })
+
+  private static objectLevelSecurityElemID = new ElemID(SALESFORCE,
+    OBJECT_LEVEL_SECURITY_ANNOTATION)
+
+  private static objectLevelSecurityType = new ObjectType({
+    elemID: Types.objectLevelSecurityElemID,
+    fields: {
+      [OBJECT_LEVEL_SECURITY_FIELDS.ALLOW_CREATE]: new TypeField(
+        Types.objectLevelSecurityElemID, OBJECT_LEVEL_SECURITY_FIELDS.ALLOW_CREATE,
+        BuiltinTypes.STRING, {}, true
+      ),
+      [OBJECT_LEVEL_SECURITY_FIELDS.ALLOW_DELETE]: new TypeField(
+        Types.objectLevelSecurityElemID, OBJECT_LEVEL_SECURITY_FIELDS.ALLOW_DELETE,
+        BuiltinTypes.STRING, {}, true
+      ),
+      [OBJECT_LEVEL_SECURITY_FIELDS.ALLOW_EDIT]: new TypeField(
+        Types.objectLevelSecurityElemID, OBJECT_LEVEL_SECURITY_FIELDS.ALLOW_EDIT,
+        BuiltinTypes.STRING, {}, true
+      ),
+      [OBJECT_LEVEL_SECURITY_FIELDS.ALLOW_READ]: new TypeField(
+        Types.objectLevelSecurityElemID, OBJECT_LEVEL_SECURITY_FIELDS.ALLOW_READ,
+        BuiltinTypes.STRING, {}, true
+      ),
+      [OBJECT_LEVEL_SECURITY_FIELDS.MODIFY_ALL_RECORDS]: new TypeField(
+        Types.objectLevelSecurityElemID, OBJECT_LEVEL_SECURITY_FIELDS.MODIFY_ALL_RECORDS,
+        BuiltinTypes.STRING, {}, true
+      ),
+      [OBJECT_LEVEL_SECURITY_FIELDS.VIEW_ALL_RECORDS]: new TypeField(
+        Types.objectLevelSecurityElemID, OBJECT_LEVEL_SECURITY_FIELDS.VIEW_ALL_RECORDS,
         BuiltinTypes.STRING, {}, true
       ),
     },
@@ -516,7 +550,7 @@ export class Types {
 
   static getAnnotationTypes(): Type[] {
     return [Types.fieldLevelSecurityType, Types.fieldDependencyType, Types.valueSettingsType,
-      Types.lookupFilterType, Types.rollupSummaryOperationType]
+      Types.lookupFilterType, Types.rollupSummaryOperationType, Types.objectLevelSecurityType]
       .map(type => {
         const fieldType = type.clone()
         fieldType.path = ['types', 'annotation_types']

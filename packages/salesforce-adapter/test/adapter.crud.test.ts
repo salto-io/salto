@@ -14,7 +14,6 @@ import {
 import SalesforceAdapter from '../src/adapter'
 import * as constants from '../src/constants'
 import { Types, sfCase } from '../src/transformers/transformer'
-import { PROFILE_METADATA_TYPE } from '../src/filters/field_permissions'
 import Connection from '../src/client/jsforce'
 import mockAdapter from './adapter'
 import { ASSIGNMENT_RULES_TYPE_ID } from '../src/filters/assignment_rules'
@@ -695,7 +694,7 @@ describe('SalesforceAdapter CRUD', () => {
           },
           annotationTypes: {},
           annotations: {
-            [constants.METADATA_TYPE]: PROFILE_METADATA_TYPE,
+            [constants.METADATA_TYPE]: constants.PROFILE_METADATA_TYPE,
           },
         }),
         { [constants.INSTANCE_FULL_NAME_FIELD]: mockInstanceFullName },
@@ -711,7 +710,7 @@ describe('SalesforceAdapter CRUD', () => {
           },
           annotationTypes: {},
           annotations: {
-            [constants.METADATA_TYPE]: PROFILE_METADATA_TYPE,
+            [constants.METADATA_TYPE]: constants.PROFILE_METADATA_TYPE,
           },
         }),
         { [constants.INSTANCE_FULL_NAME_FIELD]: 'wrong' },
@@ -803,7 +802,7 @@ describe('SalesforceAdapter CRUD', () => {
             },
             annotationTypes: {},
             annotations: {
-              [constants.METADATA_TYPE]: PROFILE_METADATA_TYPE,
+              [constants.METADATA_TYPE]: constants.PROFILE_METADATA_TYPE,
             },
           }),
           {
@@ -821,9 +820,13 @@ describe('SalesforceAdapter CRUD', () => {
             ],
             fieldPermissions: [
               {
-                field: 'Lead.Fax',
-                readable: false,
-                editable: false,
+                allowCreate: false,
+                allowDelete: false,
+                allowEdit: false,
+                allowRead: false,
+                modifyAllRecords: false,
+                viewAllRecords: false,
+                object: 'Lead',
               },
             ],
             description: 'old unit test instance profile',
@@ -841,7 +844,7 @@ describe('SalesforceAdapter CRUD', () => {
             },
             annotationTypes: {},
             annotations: {
-              [constants.METADATA_TYPE]: PROFILE_METADATA_TYPE,
+              [constants.METADATA_TYPE]: constants.PROFILE_METADATA_TYPE,
             },
           }),
           {
@@ -861,6 +864,26 @@ describe('SalesforceAdapter CRUD', () => {
                 editable: false,
                 field: 'Account.AccountNumber',
                 readable: false,
+              },
+            ],
+            objectermissions: [
+              {
+                allowCreate: true,
+                allowDelete: true,
+                allowEdit: true,
+                allowRead: true,
+                modifyAllRecords: true,
+                viewAllRecords: true,
+                object: 'Lead',
+              },
+              {
+                allowCreate: true,
+                allowDelete: true,
+                allowEdit: true,
+                allowRead: true,
+                modifyAllRecords: true,
+                viewAllRecords: true,
+                object: 'Account',
               },
             ],
             tabVisibilities: [
@@ -891,12 +914,13 @@ describe('SalesforceAdapter CRUD', () => {
 
         it('should call the connection methods correctly', () => {
           expect(mockUpdate.mock.calls.length).toBe(1)
-          expect(mockUpdate.mock.calls[0][0]).toEqual(PROFILE_METADATA_TYPE)
+          expect(mockUpdate.mock.calls[0][0]).toEqual(constants.PROFILE_METADATA_TYPE)
           const obj = mockUpdate.mock.calls[0][1][0]
           expect(obj.fullName).toEqual(sfCase(mockInstanceName))
           expect(obj.description).toEqual(newElement.value.description)
           expect(obj.userPermissions).toEqual(newElement.value.userPermissions)
           expect(obj.fieldPermissions).toEqual(newElement.value.fieldPermissions)
+          expect(obj.objectPermissions).toEqual(newElement.value.objectPermissions)
           expect(obj.applicationVisibilities).toEqual(newElement.value.applicationVisibilities)
           expect(obj.tabVisibilities).toEqual(newElement.value.tabVisibilities)
         })

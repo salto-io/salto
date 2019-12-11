@@ -1,12 +1,22 @@
 import _ from 'lodash'
-import { Element, Field, isObjectType, ObjectType } from 'adapter-api'
 import { logger } from '@salto/logging'
+import { Element, Field, isObjectType, ObjectType, InstanceElement, isInstanceElement } from 'adapter-api'
 import { API_NAME, CUSTOM_FIELD } from '../constants'
-import { CustomField } from '../client/types'
-import { fieldFullName, isCustomObject } from '../transformers/transformer'
+import { CustomField, JSONBool } from '../client/types'
+import { fieldFullName, isCustomObject, metadataType } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
 
 const log = logger(module)
+
+export const id = (elem: Element): string => elem.elemID.getFullName()
+
+export const boolValue = (val: JSONBool):
+ boolean => val === 'true' || val === true
+
+export const getInstancesOfMetadataType = (elements: Element[], metadataTypeName: string):
+ InstanceElement[] =>
+  elements.filter(isInstanceElement)
+    .filter(element => metadataType(element) === metadataTypeName)
 
 const readSalesforceFields = async (client: SalesforceClient, fieldNames: string[]):
   Promise<Record<string, CustomField>> => (
@@ -30,7 +40,7 @@ export const getCustomObjects = (elements: Element[]): ObjectType[] =>
 export const generateObjectElemID2ApiName = (customObjects: ObjectType[]): Record<string, string> =>
   _(customObjects)
     .filter(obj => obj.annotations[API_NAME])
-    .map(obj => [obj.elemID.getFullName(), obj.annotations[API_NAME]])
+    .map(obj => [id(obj), obj.annotations[API_NAME]])
     .fromPairs()
     .value()
 

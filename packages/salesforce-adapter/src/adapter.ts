@@ -21,7 +21,7 @@ import {
 } from './transformers/transformer'
 import { fromRetrieveResult, toMetadataPackageZip } from './transformers/xml_transformer'
 import layoutFilter from './filters/layouts'
-import fieldPermissionsFilter from './filters/field_permissions'
+import profilePermissionsFilter from './filters/profile_permissions'
 import validationRulesFilter from './filters/validation_rules'
 import assignmentRulesFilter from './filters/assignment_rules'
 import convertListsFilter from './filters/convert_lists'
@@ -41,6 +41,7 @@ import workflowActions from './filters/workflow_actions'
 import {
   FilterCreator, Filter, FilterWith, filtersWith,
 } from './filter'
+import { id } from './filters/utils'
 
 const { makeArray } = collections.array
 
@@ -75,8 +76,7 @@ const addMetadataType = (elem: ObjectType, metadataTypeValue = constants.CUSTOM_
   }
   if (!annotations[constants.METADATA_TYPE]) {
     annotations[constants.METADATA_TYPE] = metadataTypeValue
-    log.debug(`added METADATA_TYPE=${sfCase(metadataTypeValue)} to ${
-      elem.elemID.getFullName()}`)
+    log.debug(`added METADATA_TYPE=${sfCase(metadataTypeValue)} to ${id(elem)}`)
   }
 }
 
@@ -127,7 +127,7 @@ const logDuration = (message?: string): decorators.InstanceMethodDecorator =>
     async (original: decorators.OriginalCall): Promise<unknown> => {
       const element = original.args.find(isElement)
       const defaultMessage = `running salesforce.${original.name} ${
-        element ? `element=${element.elemID.getFullName()}` : ''} `
+        element ? `element=${id(element)}` : ''} `
       return log.time(original.call, message || defaultMessage)
     }
   )
@@ -155,7 +155,7 @@ export default class SalesforceAdapter {
       'AssignmentRules',
     ],
     filterCreators = [
-      fieldPermissionsFilter,
+      profilePermissionsFilter,
       layoutFilter,
       validationRulesFilter,
       assignmentRulesFilter,
@@ -208,9 +208,9 @@ export default class SalesforceAdapter {
         async types => {
         // All metadata type names include subtypes as well as the "top level" type names
           const allMetadataTypeNames = new Set(
-            (await metadataTypes).map(elem => elem.elemID.getFullName()),
+            (await metadataTypes).map(elem => id(elem)),
           )
-          return types.filter(t => !allMetadataTypeNames.has(t.elemID.getFullName()))
+          return types.filter(t => !allMetadataTypeNames.has(id(t)))
         }
       )
       .catch(e => {
@@ -644,7 +644,7 @@ export default class SalesforceAdapter {
         try {
           instanceInfos = await this.listMetadataInstances(metadataType(type))
         } catch (e) {
-          log.error('failed to fetch instances of type %s reason: %o', type.elemID.getFullName(), e)
+          log.error('failed to fetch instances of type %s reason: %o', id(type), e)
         }
         return { type, instanceInfos }
       }))

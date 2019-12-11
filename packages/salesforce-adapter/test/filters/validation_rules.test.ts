@@ -8,6 +8,7 @@ import filterCreator, {
 } from '../../src/filters/validation_rules'
 import * as constants from '../../src/constants'
 import mockClient from '../client'
+import { id } from '../../src/filters/utils'
 
 describe('validation rules filter', () => {
   const { client } = mockClient()
@@ -44,7 +45,7 @@ describe('validation rules filter', () => {
       await filter.onFetch(testElements)
       const [sobject] = testElements
       expect(sobject.annotations[VALIDATION_RULE_ANNOTATION]).toEqual(
-        [mockValidationRule.elemID.getFullName()]
+        [id(mockValidationRule)]
       )
     })
   })

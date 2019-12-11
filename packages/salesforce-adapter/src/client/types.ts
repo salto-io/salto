@@ -2,17 +2,37 @@ import { MetadataInfo, SaveResult } from 'jsforce'
 import _ from 'lodash'
 import { FIELD_TYPE_NAMES, FIELD_TYPE_API_NAMES } from '../constants'
 
+export type JSONBool = boolean | 'true' | 'false'
 
-export interface FieldPermissions {
-  field: string
-  editable: boolean | 'true' | 'false'
-  readable: boolean | 'true' | 'false'
-}
+export type ObjectPermissionsOptionsFields = 'allowCreate' | 'allowDelete' | 'allowEdit'
+ | 'allowRead' | 'modifyAllRecords' | 'viewAllRecords'
+export const OBJECT_PERMISSIONS_OPTIONS:
+ ReadonlyArray<ObjectPermissionsOptionsFields> = Object.freeze([
+   'allowCreate', 'allowDelete', 'allowEdit', 'allowRead',
+   'modifyAllRecords', 'viewAllRecords',
+ ])
+export type ObjectPermissionsOptions = {[option in ObjectPermissionsOptionsFields]: JSONBool}
+
+export type FieldPermissionsOptionsFields = 'editable' | 'readable'
+export const FIELD_PERMISSIONS_OPTIONS:
+ ReadonlyArray<FieldPermissionsOptionsFields> = Object.freeze([
+   'readable', 'editable',
+ ])
+export type FieldPermissionsOptions = {[option in FieldPermissionsOptionsFields]: JSONBool}
+
+export type FieldPermissions = { field: string } & FieldPermissionsOptions
+export type ObjectPermissions = { object: string } & ObjectPermissionsOptions
+
+export type PermissionsTypes = FieldPermissions | ObjectPermissions
+export type PermissionsOptionsTypes = FieldPermissionsOptions | ObjectPermissionsOptions
+export type PermissionsOptionsFieldsTypes = ObjectPermissionsOptionsFields |
+ FieldPermissionsOptionsFields
 
 export class ProfileInfo implements MetadataInfo {
   constructor(
     public readonly fullName: string,
-    public fieldPermissions: FieldPermissions[] = []
+    public fieldPermissions: FieldPermissions[] = [],
+    public objectPermissions: ObjectPermissions[] = [],
   ) {}
 }
 

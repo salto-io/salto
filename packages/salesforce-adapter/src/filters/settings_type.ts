@@ -10,6 +10,7 @@ import {
   createInstanceElement, createMetadataTypeElements, sfCase,
 } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
+import { id } from './utils'
 
 const log = logger(module)
 
@@ -91,10 +92,10 @@ const filterCreator: FilterCreator = ({ client }) => ({
 
     // Add all settings types to elements
     const knownTypesNames = new Set<string>(
-      elements.filter(e => isObjectType(e)).map(a => a.elemID.getFullName())
+      elements.filter(e => isObjectType(e)).map(a => id(a))
     )
     settingsTypes
-      .filter(st => !knownTypesNames.has(st.elemID.getFullName()))
+      .filter(st => !knownTypesNames.has(id(st)))
       .forEach(e => elements.push(e))
 
     // Create all settings instances

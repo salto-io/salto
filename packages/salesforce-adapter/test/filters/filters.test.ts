@@ -3,6 +3,7 @@ import SalesforceAdapter from '../../src/adapter'
 import { FilterWith, FilterCreator } from '../../src/filter'
 import { API_NAME } from '../../src/constants'
 import mockAdapter from '../adapter'
+import { id } from '../../src/filters/utils'
 
 describe('SalesforceAdapter filters', () => {
   const object = new ObjectType({
@@ -40,14 +41,14 @@ describe('SalesforceAdapter filters', () => {
       await adapter.add(object)
       const { mock } = filter.onAdd as jest.Mock<undefined>
       expect(mock.calls.length).toBe(1)
-      expect(mock.calls[0][0].elemID.getFullName()).toEqual(object.elemID.getFullName())
+      expect(id(mock.calls[0][0])).toEqual(id(object))
     })
 
     it('should call inner aspects upon remove', async () => {
       await adapter.remove(object)
       const { mock } = filter.onRemove as jest.Mock<undefined>
       expect(mock.calls.length).toBe(1)
-      expect(mock.calls[0][0].elemID.getFullName()).toEqual(object.elemID.getFullName())
+      expect(id(mock.calls[0][0])).toEqual(id(object))
     })
 
     it('should call inner aspects upon update', async () => {
@@ -55,7 +56,7 @@ describe('SalesforceAdapter filters', () => {
       const { mock } = filter.onUpdate as jest.Mock<undefined>
       expect(mock.calls.length).toBe(1)
       expect(mock.calls[0][0]).toEqual(object)
-      expect(mock.calls[0][1].elemID.getFullName()).toEqual(object.elemID.getFullName())
+      expect(id(mock.calls[0][1])).toEqual(id(object))
       expect(mock.calls[0][2]).toHaveLength(1)
       expect(mock.calls[0][2][0].action).toBe('modify')
     })

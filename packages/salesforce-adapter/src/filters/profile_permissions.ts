@@ -40,19 +40,16 @@ const getObjectPermissions = (object: ObjectType): Values =>
 const setProfilePermissions = <T = PermissionsTypes>
   (element: ObjectType | Field, profile: string,
     annotationName: string, permissions: T): void => {
-  if (_.get(permissions, 'field')) {
-    delete (permissions as unknown as FieldPermissions).field
-  } else {
-    delete (permissions as unknown as ObjectPermissions).object
-  }
+  const isElementName = (name: string): boolean => !['object', 'field'].includes(name)
 
   if (_.isEmpty(getAnnotationValue(element, annotationName))) {
     element.annotations[annotationName] = _.merge(
-      {}, ...Object.keys(permissions).map(f => ({ [bpCase(f)]: [] as string[] }))
+      {}, ...Object.keys(permissions).filter(isElementName)
+        .map(f => ({ [bpCase(f)]: [] as string[] }))
     )
   }
 
-  Object.entries(permissions).forEach(permissionOption => {
+  Object.entries(permissions).filter(p => isElementName(p[0])).forEach(permissionOption => {
     if (boolValue(permissionOption[1])) {
       getAnnotationValue(element, annotationName)[bpCase(permissionOption[0])].push(profile)
     }

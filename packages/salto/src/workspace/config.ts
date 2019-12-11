@@ -28,6 +28,12 @@ class ConfigParseError extends Error {
   }
 }
 
+class ServiceDuplicationError extends Error {
+  constructor(service: string) {
+    super(`${service} is already defined at this workspace`)
+  }
+}
+
 const saltoConfigElemID = new ElemID('salto')
 const requireAnno = { [Type.REQUIRED]: true }
 export const saltoConfigType = new ObjectType({
@@ -38,6 +44,13 @@ export const saltoConfigType = new ObjectType({
     stateLocation: new Field(saltoConfigElemID, 'state_location', BuiltinTypes.STRING),
     localStorage: new Field(saltoConfigElemID, 'local_storage', BuiltinTypes.STRING),
     name: new Field(saltoConfigElemID, 'name', BuiltinTypes.STRING, requireAnno),
+    services: new Field(
+      saltoConfigElemID,
+      'services',
+      BuiltinTypes.STRING,
+      {},
+      true
+    ),
     additionalBlueprints: new Field(
       saltoConfigElemID,
       'additional_blueprints',
@@ -57,6 +70,7 @@ export interface Config {
   localStorage: string
   name: string
   additionalBlueprints?: string[]
+  services?: string[]
 }
 
 const createDefaultConfig = (
@@ -72,6 +86,7 @@ const createDefaultConfig = (
     baseDir,
     stateLocation: path.join(baseDir, CONFIG_DIR_NAME, 'state.bpc'),
     additionalBlueprints: [],
+    services: [],
     localStorage: path.join(saltoHome, `${name}-${uid}`),
     name,
   }
@@ -125,14 +140,39 @@ export const dumpConfig = async (baseDir: string, config: Partial<Config>): Prom
   return replaceContents(configPath, await dump([configInstance]))
 }
 
-export const loadConfig = async (lookupDir: string): Promise<Config> => {
+const baseDirFromLookup = async (lookupDir: string): Promise<string> => {
   const absLookupDir = path.resolve(lookupDir)
   const baseDir = await locateWorkspaceRoot(absLookupDir)
   if (!baseDir) {
     throw new NotAWorkspaceError()
   }
-  const configData = await parseConfig(await readFile(getConfigPath(baseDir)))
+  return baseDir
+}
+
+const getConfigData = async (baseDir: string): Promise<Partial<Config>> => {
+  const configPath = getConfigPath(baseDir)
+  return parseConfig(await readFile(configPath))
+}
+
+export const loadConfig = async (lookupDir: string): Promise<Config> => {
+  const baseDir = await baseDirFromLookup(lookupDir)
+  const configData = await getConfigData(baseDir)
   const config = completeConfig(baseDir, configData)
   log.debug(`loaded config ${JSON.stringify(config)}`)
   return config
+}
+
+export const addServiceToConfig = async (lookupDir: string, service: string): Promise<void> => {
+  const baseDir = await baseDirFromLookup(lookupDir)
+  const currentConfig = await getConfigData(baseDir)
+  const currentServices = currentConfig.services ? currentConfig.services : []
+  if (currentServices.includes(service)) {
+    throw new ServiceDuplicationError(service)
+  }
+  currentServices.push(service)
+  const updatedConfig = {
+    ...currentConfig,
+    services: currentServices,
+  }
+  dumpConfig(baseDir, updatedConfig)
 }

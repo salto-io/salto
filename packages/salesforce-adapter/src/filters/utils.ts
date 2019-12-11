@@ -66,5 +66,3 @@ export const runOnFields = async (elements: Element[], condition: (field: Field)
     runOnField(field, salesforceField)
   })
 }
-
-export const boolValue = (val: JSONBool): boolean => val === 'true' || val === true

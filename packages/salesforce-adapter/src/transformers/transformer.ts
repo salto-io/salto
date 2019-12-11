@@ -17,7 +17,7 @@ import {
   ADDRESS_FIELDS, NAME_FIELDS, GEOLOCATION_FIELDS, INSTANCE_FULL_NAME_FIELD,
   FIELD_LEVEL_SECURITY_ANNOTATION, FIELD_LEVEL_SECURITY_FIELDS, FIELD_DEPENDENCY_FIELDS,
   VALUE_SETTINGS_FIELDS, FILTER_ITEM_FIELDS, OBJECT_LEVEL_SECURITY_ANNOTATION,
-  OBJECT_LEVEL_SECURITY_FIELDS,
+  OBJECT_LEVEL_SECURITY_FIELDS, NAMESPACE_SEPARATOR,
 } from '../constants'
 
 const { makeArray } = collections.array
@@ -29,7 +29,7 @@ const capitalize = (s: string): string => {
 
 export const sfCase = (name: string, custom = false, capital = true): string => {
   const toSfCamelCase = (word: string): string =>
-    word.split('__')
+    word.split(NAMESPACE_SEPARATOR)
       .map(_.camelCase)
       .map((v, idx) => (idx === 0 ? v : capitalize(v)))
       .join('_')
@@ -843,10 +843,20 @@ export const toInstanceElements = (type: ObjectType, queryResult: QueryResult<Va
   return results.map(res => new InstanceElement(res.Id, type, res))
 }
 
-export const createInstanceElement = (
-  mdInfo: MetadataInfo,
-  type: ObjectType
-): InstanceElement => {
+export const createInstanceElement = (mdInfo: MetadataInfo, type: ObjectType,
+  namespacePrefix?: string): InstanceElement => {
+  const getPackagePath = (): string[] => {
+    if (namespacePrefix) {
+      if (namespacePrefix === 'standard' || mdInfo.fullName === namespacePrefix) {
+        // InstalledPackage records should be under records and not within their package
+        // Some CustomApplications have 'standard' namespace although they are not part of a package
+        return []
+      }
+      return ['installed_packages', namespacePrefix]
+    }
+    return []
+  }
+
   const instanceServiceIds = (): ServiceIds => {
     const typeServiceIds = (): ServiceIds => {
       const serviceIds: ServiceIds = {
@@ -872,9 +882,11 @@ export const createInstanceElement = (
     type.isSettings ? ElemID.CONFIG_NAME : name(),
     type,
     fromMetadataInfo(mdInfo),
-    ['records', type.isSettings ? 'settings' : typeName, bpCase(mdInfo.fullName)],
+    [...getPackagePath(), 'records',
+      type.isSettings ? 'settings' : typeName, bpCase(mdInfo.fullName)],
   )
 }
+
 
 export const createMetadataTypeElements = (
   objectName: string,
@@ -1006,7 +1018,7 @@ export const getCompoundChildFields = (objectType: ObjectType): TypeField[] => {
         const childFieldName = `${isCustomField ? key.slice(0, -SALESFORCE_CUSTOM_SUFFIX.length) : key}_${clonedField.name}`
         clonedField.name = childFieldName
         clonedField.annotations = {
-          [API_NAME]: `${key.slice(0, -SALESFORCE_CUSTOM_SUFFIX.length)}__${capitalize(childField.name)}${isCustomField ? '__s' : ''}`,
+          [API_NAME]: `${key.slice(0, -SALESFORCE_CUSTOM_SUFFIX.length)}${NAMESPACE_SEPARATOR}${capitalize(childField.name)}${isCustomField ? '__s' : ''}`,
         }
         object.fields[childFieldName] = clonedField
       })

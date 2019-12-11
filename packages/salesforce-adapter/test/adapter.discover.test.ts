@@ -358,6 +358,91 @@ describe('SalesforceAdapter fetch', () => {
       expect(test.fields.custom_field__c).toBeDefined()
     })
 
+    it('should fetch packaged custom SObjects', async () => {
+      const namespaceName = 'namespaceName'
+      mockSingleSObject(`${namespaceName}${constants.NAMESPACE_SEPARATOR}Test__c`, [
+        {
+          name: 'dummy', label: 'dummy', type: 'string',
+        },
+        {
+          name: 'CustomField__c', label: 'custom field', type: 'string', custom: true,
+        },
+      ], false, true, true)
+
+      const result = await adapter.fetch()
+
+      const testElements = findElements(result, 'namespace_name___test__c') as ObjectType[]
+      // custom objects should not be split
+      expect(testElements).toHaveLength(1)
+      const [test] = testElements
+      expect(test.path)
+        .toEqual(['installed_packages', namespaceName, 'objects', 'namespace_name___test__c'])
+      expect(test.fields.dummy).toBeDefined()
+      expect(test.fields.custom_field__c).toBeDefined()
+    })
+
+    it('should fetch standard sobject with packaged custom field', async () => {
+      const namespaceName = 'namespaceName'
+      mockSingleSObject('Test__c', [
+        {
+          name: 'dummy', label: 'dummy', type: 'string',
+        },
+        {
+          name: `${namespaceName}${constants.NAMESPACE_SEPARATOR}PackagedField__c`, label: 'custom field', type: 'string', custom: true,
+        },
+      ], false, true, false)
+
+      const result = await adapter.fetch()
+
+      const testElements = findElements(result, 'test__c') as ObjectType[]
+      // custom objects should not be split
+      expect(testElements).toHaveLength(2)
+      const [[obj], [packagedObj]] = _.partition(testElements, elem => elem.fields.dummy)
+      expect(obj.path).toEqual(['objects', 'standard', 'test__c'])
+      expect(obj.fields.dummy).toBeDefined()
+      expect(obj.fields.namespace_name___packaged_field__c).toBeUndefined()
+      expect(packagedObj.path).toEqual(['installed_packages', namespaceName, 'objects', 'test__c'])
+      expect(packagedObj.fields.dummy).toBeUndefined()
+      expect(packagedObj.fields.namespace_name___packaged_field__c).toBeDefined()
+    })
+
+    it('should fetch standard sobject with packaged and not packaged custom field', async () => {
+      const namespaceName = 'namespaceName'
+      mockSingleSObject('Test__c', [
+        {
+          name: 'dummy', label: 'dummy', type: 'string',
+        },
+        {
+          name: 'CustomField__c', label: 'custom field', type: 'string', custom: true,
+        },
+        {
+          name: `${namespaceName}${constants.NAMESPACE_SEPARATOR}PackagedField__c`, label: 'custom field', type: 'string', custom: true,
+        },
+      ], false, true, false)
+
+      const result = await adapter.fetch()
+
+      const testElements = findElements(result, 'test__c') as ObjectType[]
+      // custom objects should not be split
+      expect(testElements).toHaveLength(3)
+      const [[packagedObj], objs] = _.partition(testElements,
+        elem => elem.fields.namespace_name___packaged_field__c)
+      const [[obj], [customObj]] = _.partition(objs, elem => elem.fields.dummy)
+
+      expect(obj.path).toEqual(['objects', 'standard', 'test__c'])
+      expect(obj.fields.dummy).toBeDefined()
+      expect(obj.fields.custom_field__c).toBeUndefined()
+      expect(obj.fields.namespace_name___packaged_field__c).toBeUndefined()
+      expect(customObj.path).toEqual(['objects', 'custom', 'test__c'])
+      expect(customObj.fields.dummy).toBeUndefined()
+      expect(customObj.fields.custom_field__c).toBeDefined()
+      expect(customObj.fields.namespace_name___packaged_field__c).toBeUndefined()
+      expect(packagedObj.path).toEqual(['installed_packages', namespaceName, 'objects', 'test__c'])
+      expect(packagedObj.fields.dummy).toBeUndefined()
+      expect(packagedObj.fields.custom_field__c).toBeUndefined()
+      expect(packagedObj.fields.namespace_name___packaged_field__c).toBeDefined()
+    })
+
     it('should not fetch SObjects that conflict with metadata types', async () => {
       mockSingleSObject('Flow', [
         { name: 'dummy', label: 'dummy', type: 'string' },
@@ -398,13 +483,19 @@ describe('SalesforceAdapter fetch', () => {
       name: string,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       data: Record<string, any>,
-      namespace?: string
+      namespace?: string,
+      retrievedZipFile?: string
     ): void => {
       connection.metadata.list = jest.fn()
         .mockImplementation(async () => [{ fullName: name, namespacePrefix: namespace }])
 
       connection.metadata.read = jest.fn()
         .mockImplementation(async () => data)
+
+      if (retrievedZipFile) {
+        connection.metadata.retrieve = jest.fn().mockImplementation(() =>
+          ({ complete: async () => ({ zipFile: retrievedZipFile }) }))
+      }
     }
 
     it('should fetch basic metadata type', async () => {
@@ -782,21 +873,39 @@ describe('SalesforceAdapter fetch', () => {
       expect(child.fields.description.type.elemID.name).toBe('string')
     })
 
+    it('should fetch metadata instances with namespace using retrieve', async () => {
+      mockSingleMetadataType('ApexPage', [])
+      const namespaceName = 'th_con_app'
+      mockSingleMetadataInstance('th_con_app__ThHomepage', { fullName: 'th_con_app__ThHomepage' }, namespaceName,
+        // encoded zip with a package.xml and an packaged ApexPage named th_con_app__ThHomepage
+        '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')
+
+      const result = await adapter.fetch()
+      const [testInst] = findElements(result, 'apex_page', 'th_con_app___th_homepage')
+      expect(testInst).toBeDefined()
+      expect(testInst.path).toEqual(['installed_packages', namespaceName, 'records', 'apex_page', 'th_con_app___th_homepage'])
+    })
+
     it('should fetch metadata instances with namespace', async () => {
       mockSingleMetadataType('Test', [])
-      mockSingleMetadataInstance('Test', { fullName: 'asd__Test' }, 'asd')
+      const namespaceName = 'asd'
+      mockSingleMetadataInstance('Test', { fullName: 'asd__Test' }, namespaceName)
 
       const result = await adapter.fetch()
-      const testInst = findElements(result, 'test', 'asd___test')
+      const [testInst] = findElements(result, 'test', 'asd___test')
       expect(testInst).toBeDefined()
+      expect(testInst.path).toEqual(['installed_packages', namespaceName, 'records', 'test', 'asd___test'])
     })
+
     it('should fetch metadata instances with namespace when fullname already includes the namespace', async () => {
+      const namespaceName = 'asd'
       mockSingleMetadataType('Test', [])
-      mockSingleMetadataInstance('asd__Test', { fullName: 'asd__Test' }, 'asd')
+      mockSingleMetadataInstance('asd__Test', { fullName: 'asd__Test' }, namespaceName)
 
       const result = await adapter.fetch()
-      const testInst = findElements(result, 'test', 'asd___test')
+      const [testInst] = findElements(result, 'test', 'asd___test')
       expect(testInst).toBeDefined()
+      expect(testInst.path).toEqual(['installed_packages', namespaceName, 'records', 'test', 'asd___test'])
     })
 
     describe('should fetch when there are errors', () => {

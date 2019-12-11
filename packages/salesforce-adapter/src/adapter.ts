@@ -2,7 +2,7 @@ import {
   BuiltinTypes, Type, ObjectType, ElemID, InstanceElement, isModificationDiff,
   isRemovalDiff, isAdditionDiff, Field, Element, isObjectType, isInstanceElement, AdapterCreator,
   Value, Change, getChangeElement, isField, isElement, ElemIdGetter, ADAPTER,
-  DataModificationResult,
+  DataModificationResult, ServiceIds,
 } from 'adapter-api'
 import {
   SaveResult, MetadataInfo, Field as SObjField, DescribeSObjectResult, QueryResult, FileProperties,
@@ -132,6 +132,8 @@ const logDuration = (message?: string): decorators.InstanceMethodDecorator =>
       return log.time(original.call, message || defaultMessage)
     }
   )
+
+type NamespaceAndInstances = { namespace?: string; instanceInfo: MetadataInfo }
 
 export default class SalesforceAdapter {
   private metadataTypeBlacklist: string[]
@@ -622,33 +624,47 @@ export default class SalesforceAdapter {
     return createMetadataTypeElements(objectName, fields, knownTypes, baseTypeNames)
   }
 
-  // Todo (SALTO-281) Currently we retrieve only instances that are not part of an Application.
-  //   If we want them to be returned we should state their names explicitly in the members section:
-  //  (await this.client.listMetadataObjects(type)).map(file => file.fullName)
-  private async retrieveMetadata(metadataTypes: string[]): Promise<Record<string, MetadataInfo[]>> {
+  private async retrieveMetadata(metadataTypes: string[]):
+    Promise<Record<string, NamespaceAndInstances[]>> {
+    const typeToFileProperties: Record<string, FileProperties[]> = await Promise.all(metadataTypes
+      .map(async type => [type, await this.client.listMetadataObjects(type)]))
+      .then(pairs => _(pairs).fromPairs().value())
     const retrieveRequest = {
       apiVersion: API_VERSION,
       singlePackage: false,
-      unpackaged: { types: metadataTypes.map(type => ({ name: type, members: '*' })) },
+      unpackaged: { types: await Promise.all(metadataTypes.map(type => (
+        { name: type,
+          members: typeToFileProperties[type].map(file => file.fullName) }))) },
     }
     const retrieveResult = await this.client.retrieve(retrieveRequest)
-    return fromRetrieveResult(retrieveResult, metadataTypes)
+    const typeToInstanceInfos = await fromRetrieveResult(retrieveResult, metadataTypes)
+    const fullNameToNamespace: Record<string, string> = _(Object.values(typeToFileProperties))
+      .flatten()
+      .map(file => [file.fullName, file.namespacePrefix])
+      .fromPairs()
+      .value()
+    return _(Object.entries(typeToInstanceInfos))
+      .map(([type, instanceInfos]) =>
+        [type, instanceInfos.map(instanceInfo =>
+          ({ namespace: fullNameToNamespace[instanceInfo.fullName], instanceInfo }))])
+      .fromPairs()
+      .value()
   }
 
   @logDuration('fetching instances')
   private async fetchMetadataInstances(typeNames: Promise<string[]>, types: Promise<Type[]>):
     Promise<InstanceElement[]> {
-    type TypeAndInstances = { type: ObjectType; instanceInfos: MetadataInfo[] }
+    type TypeAndInstances = { type: ObjectType; namespaceAndInstances: NamespaceAndInstances[] }
     const readInstances = async (metadataTypesToRead: ObjectType[]):
       Promise<TypeAndInstances[]> =>
       Promise.all(metadataTypesToRead.map(async type => {
-        let instanceInfos: MetadataInfo[] = []
+        let namespaceAndInstances: NamespaceAndInstances[] = []
         try {
-          instanceInfos = await this.listMetadataInstances(metadataType(type))
+          namespaceAndInstances = await this.listMetadataInstances(metadataType(type))
         } catch (e) {
           log.error('failed to fetch instances of type %s reason: %o', id(type), e)
         }
-        return { type, instanceInfos }
+        return { type, namespaceAndInstances }
       }))
 
     const retrieveInstances = async (metadataTypesToRetrieve: ObjectType[]):
@@ -657,9 +673,10 @@ export default class SalesforceAdapter {
         .map(t => [metadataType(t), t])
         .fromPairs()
         .value()
-      const typeNameToInstanceInfos = await this.retrieveMetadata(Object.keys(nameToType))
-      return Object.entries(typeNameToInstanceInfos)
-        .map(([typeName, instanceInfos]) => ({ type: nameToType[typeName], instanceInfos }))
+      const typeNameToNamespaceAndInfos = await this.retrieveMetadata(Object.keys(nameToType))
+      return Object.entries(typeNameToNamespaceAndInfos)
+        .map(([typeName, namespaceAndInstances]) =>
+          ({ type: nameToType[typeName], namespaceAndInstances }))
     }
 
     const topLevelTypeNames = await typeNames
@@ -674,9 +691,10 @@ export default class SalesforceAdapter {
       [retrieveInstances(metadataTypesToRetrieve), readInstances(metadataTypesToRead)]
     ))
     return _(typesAndInstances)
-      .map(typeAndInstances => typeAndInstances.instanceInfos
-        .filter(instanceInfo => instanceInfo.fullName !== undefined)
-        .map(instanceInfo => createInstanceElement(instanceInfo, typeAndInstances.type)))
+      .map(typeAndInstances => typeAndInstances.namespaceAndInstances
+        .filter(namespaceAndInstance => namespaceAndInstance.instanceInfo.fullName !== undefined)
+        .map(namespaceAndInstance => createInstanceElement(namespaceAndInstance.instanceInfo,
+          typeAndInstances.type, namespaceAndInstance.namespace)))
       .flatten()
       .value()
   }
@@ -752,7 +770,7 @@ export default class SalesforceAdapter {
       customFields.forEach(field => {
         element.fields[field.name] = field
       })
-      element.path = ['objects', 'custom', element.elemID.name]
+      element.path = this.getCustomObjectPackagePath(element)
       return [element]
     }
 
@@ -763,32 +781,74 @@ export default class SalesforceAdapter {
       // No custom parts, only standard element needed
       return [element]
     }
+    return [element, ...this.getPartialCustomObjects(customFields, objectName, serviceIds)]
+  }
 
-    // Custom fields go in a separate element
-    const customPart = Types.get(objectName, true, false, serviceIds) as ObjectType
-    customFields.forEach(field => {
-      customPart.fields[field.name] = field
+  private static getCustomObjectPackagePath(obj: ObjectType): string[] {
+    if (this.hasNamespace(obj)) {
+      const namespace = apiName(obj).split(constants.NAMESPACE_SEPARATOR)[0]
+      return ['installed_packages', namespace, 'objects', obj.elemID.name]
+    }
+    return ['objects', 'custom', obj.elemID.name]
+  }
+
+  private static getPartialCustomObjects(customFields: Field[], objectName: string,
+    serviceIds: ServiceIds): ObjectType[] {
+    const [packagedFields, regularCustomFields] = _.partition(customFields,
+      f => this.hasNamespace(f))
+    const namespaceToFields: Record<string, Field[]> = _.groupBy(packagedFields,
+      field => apiName(field).split(constants.NAMESPACE_SEPARATOR)[0])
+    // Custom fields that belong to a package go in a separate element
+    const customParts = Object.entries(namespaceToFields)
+      .map(([namespace, packageFields]) => {
+        const packageObj = this.createObjectWithFields(objectName, serviceIds, packageFields)
+        packageObj.path = ['installed_packages', namespace, 'objects', packageObj.elemID.name]
+        return packageObj
+      })
+    if (!_.isEmpty(regularCustomFields)) {
+      // Custom fields go in a separate element
+      const customPart = this.createObjectWithFields(objectName, serviceIds, regularCustomFields)
+      customPart.path = ['objects', 'custom', customPart.elemID.name]
+      customParts.push(customPart)
+    }
+    return customParts
+  }
+
+  private static createObjectWithFields(objectName: string, serviceIds: ServiceIds,
+    fields: Field[]): ObjectType {
+    const packageObj = Types.get(objectName, true, false, serviceIds) as ObjectType
+    fields.forEach(field => {
+      packageObj.fields[field.name] = field
     })
-    customPart.path = ['objects', 'custom', customPart.elemID.name]
-    return [element, customPart]
+    return packageObj
+  }
+
+  private static hasNamespace(customElement: Element): boolean {
+    return apiName(customElement).split(constants.NAMESPACE_SEPARATOR).length === 3
   }
 
   /**
    * List all the instances of specific metadataType
    * @param type the metadata type
    */
-  private async listMetadataInstances(type: string): Promise<MetadataInfo[]> {
+  private async listMetadataInstances(type: string): Promise<NamespaceAndInstances[]> {
     const objs = await this.client.listMetadataObjects(type)
     if (!objs) {
       return []
     }
-
     const getFullName = (obj: FileProperties): string => {
-      const namePrefix = obj.namespacePrefix ? `${obj.namespacePrefix}__` : ''
+      const namePrefix = obj.namespacePrefix
+        ? `${obj.namespacePrefix}${constants.NAMESPACE_SEPARATOR}` : ''
       return obj.fullName.startsWith(namePrefix) ? obj.fullName : `${namePrefix}${obj.fullName}`
     }
+    const fullNameToNamespace = _(objs)
+      .map(obj => [getFullName(obj), obj.namespacePrefix])
+      .fromPairs()
+      .value()
 
-    return this.client.readMetadata(type, objs.map(getFullName))
+    const instanceInfos = await this.client.readMetadata(type, objs.map(getFullName))
+    return instanceInfos.map(instanceInfo =>
+      ({ namespace: fullNameToNamespace[instanceInfo.fullName], instanceInfo }))
   }
 
   private filtersWith<M extends keyof Filter>(m: M): FilterWith<M>[] {

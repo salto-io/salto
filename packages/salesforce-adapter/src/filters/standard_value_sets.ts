@@ -13,6 +13,7 @@ import {
 import {
   metadataType, apiName, createInstanceElement, isCustomObject, Types,
 } from '../transformers/transformer'
+import { id } from './utils'
 
 const { makeArray } = collections.array
 
@@ -103,7 +104,7 @@ const svsValuesToRef = (svsInstances: InstanceElement[]): Record<string, string>
     .filter(i => i.value[STANDARD_VALUE])
     .map(i => {
       const standardValue = makeArray(i.value[STANDARD_VALUE])
-      return [encodeValues(extractFullNamesFromValueList(standardValue)), i.elemID.getFullName()]
+      return [encodeValues(extractFullNamesFromValueList(standardValue)), id(i)]
     })
 )
 

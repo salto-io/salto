@@ -4,15 +4,21 @@ import { FIELD_TYPE_NAMES, FIELD_TYPE_API_NAMES } from '../constants'
 
 export type JSONBool = boolean | 'true' | 'false'
 
-export type ObjectPermissionsOptions = { allowCreate: JSONBool
-  allowDelete: JSONBool
-  allowEdit: JSONBool
-  allowRead: JSONBool
-  modifyAllRecords: JSONBool
-  viewAllRecords: JSONBool }
+type ObjectPermissionsOptionsFields = 'allowCreate' | 'allowDelete' | 'allowEdit'
+ | 'allowRead' | 'modifyAllRecords' | 'viewAllRecords'
+export const OBJECT_PERMISSIONS_OPTIONS:
+ ReadonlyArray<ObjectPermissionsOptionsFields> = Object.freeze([
+   'allowCreate', 'allowDelete', 'allowEdit', 'allowRead',
+   'modifyAllRecords', 'viewAllRecords',
+ ])
+export type ObjectPermissionsOptions = {[option in ObjectPermissionsOptionsFields]: JSONBool}
 
-export type FieldPermissionsOptions = { editable: JSONBool
-   readable: JSONBool }
+type FieldPermissionsOptionsFields = 'editable' | 'readable'
+export const FIELD_PERMISSIONS_OPTIONS:
+ ReadonlyArray<FieldPermissionsOptionsFields> = Object.freeze([
+   'readable', 'editable',
+ ])
+export type FieldPermissionsOptions = {[option in FieldPermissionsOptionsFields]: JSONBool}
 
 export type FieldPermissions = { field: string } & FieldPermissionsOptions
 export type ObjectPermissions = { object: string } & ObjectPermissionsOptions

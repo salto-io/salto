@@ -6,6 +6,7 @@ import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
 import { bpCase } from '../../src/transformers/transformer'
+import { id } from '../../src/filters/utils'
 
 describe('Test layout filter', () => {
   const { client } = mockClient()
@@ -37,11 +38,11 @@ describe('Test layout filter', () => {
       await filter.onFetch(elements)
 
       const instance = elements[1] as InstanceElement
-      expect(instance.elemID.getFullName()).toBe('salesforce.layout.instance.test')
+      expect(id(instance)).toBe('salesforce.layout.instance.test')
       expect(instance.path?.join()).toBe('records,layout,test')
 
       const sobject = elements[0] as ObjectType
-      expect(sobject.annotations[LAYOUT_ANNOTATION][0]).toBe(instance.elemID.getFullName())
+      expect(sobject.annotations[LAYOUT_ANNOTATION][0]).toBe(id(instance))
     }
 
     it('should add relation between layout to related sobject', async () => {

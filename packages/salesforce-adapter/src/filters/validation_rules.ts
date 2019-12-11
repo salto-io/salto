@@ -3,6 +3,7 @@ import { Element, isObjectType, ElemID, findInstances } from 'adapter-api'
 import { FilterCreator } from '../filter'
 import { apiName } from '../transformers/transformer'
 import { SALESFORCE } from '../constants'
+import { id } from './utils'
 
 export const VALIDATION_RULE_TYPE_ID = new ElemID(SALESFORCE, 'validation_rule')
 export const VALIDATION_RULE_ANNOTATION = 'validation_rules'
@@ -20,7 +21,7 @@ const filterCreator: FilterCreator = () => ({
         const rules = rulesByObject[apiName(obj)]
         if (rules) {
           obj.annotate({
-            [VALIDATION_RULE_ANNOTATION]: rules.map(r => r.elemID.getFullName()).sort(),
+            [VALIDATION_RULE_ANNOTATION]: rules.map(r => id(r)).sort(),
           })
         }
       })

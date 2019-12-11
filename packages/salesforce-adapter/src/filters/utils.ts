@@ -8,6 +8,16 @@ import SalesforceClient from '../client/client'
 
 const log = logger(module)
 
+export const id = (elem: Element): string => elem.elemID.getFullName()
+
+export const boolValue = (val: JSONBool):
+ boolean => val === 'true' || val === true
+
+export const getInstancesOfMetadataType = (elements: Element[], metadataTypeName: string):
+ InstanceElement[] =>
+  elements.filter(isInstanceElement)
+    .filter(element => metadataType(element) === metadataTypeName)
+
 const readSalesforceFields = async (client: SalesforceClient, fieldNames: string[]):
   Promise<Record<string, CustomField>> => (
   _(await client.readMetadata(CUSTOM_FIELD, fieldNames)
@@ -30,7 +40,7 @@ export const getCustomObjects = (elements: Element[]): ObjectType[] =>
 export const generateObjectElemID2ApiName = (customObjects: ObjectType[]): Record<string, string> =>
   _(customObjects)
     .filter(obj => obj.annotations[API_NAME])
-    .map(obj => [obj.elemID.getFullName(), obj.annotations[API_NAME]])
+    .map(obj => [id(obj), obj.annotations[API_NAME]])
     .fromPairs()
     .value()
 
@@ -56,13 +66,3 @@ export const runOnFields = async (elements: Element[], condition: (field: Field)
     runOnField(field, salesforceField)
   })
 }
-
-export const id = (elem: Element): string => elem.elemID.getFullName()
-
-export const boolValue = (val: JSONBool):
- boolean => val === 'true' || val === true
-
-export const getInstancesOfMetadataType = (elements: Element[], metadataTypeName: string):
- InstanceElement[] =>
-  elements.filter(isInstanceElement)
-    .filter(element => metadataType(element) === metadataTypeName)

@@ -8,6 +8,7 @@ import * as constants from '../src/constants'
 import { Types } from '../src/transformers/transformer'
 import { findElements } from './utils'
 import mockAdapter from './adapter'
+import { id } from '../src/filters/utils'
 
 describe('SalesforceAdapter fetch', () => {
   let connection: Connection
@@ -499,7 +500,7 @@ describe('SalesforceAdapter fetch', () => {
         + 1 /* object permissions */
         + 2 /* field dependency & value settings */)
 
-      const types = _.assign({}, ...result.map(t => ({ [t.elemID.getFullName()]: t })))
+      const types = _.assign({}, ...result.map(t => ({ [id(t)]: t })))
       const nestingType = types['salesforce.nesting_type']
       const nestedType = types['salesforce.nested_type']
       const singleField = types['salesforce.single_field_type']

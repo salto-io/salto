@@ -36,10 +36,14 @@ export const setProfilePermissions = <T = PermissionsOptionsTypes>
   })
 }
 
-export const removePermissionsInfoFromProfile = (profileInstances: InstanceElement[],
-  elements: Element[], fieldNamesToDelete: string[]): void => {
+export const getProfileInstances = (elements: Element[]): InstanceElement[] =>
+  getInstancesOfMetadataType(elements, PROFILE_METADATA_TYPE)
+
+export const removePermissionsInfoFromProfile = (elements: Element[],
+  fieldNamesToDelete: string[]): void => {
   fieldNamesToDelete.forEach(fieldNameToDelete => {
-    profileInstances.forEach(profileInstance => delete profileInstance.value[fieldNameToDelete])
+    getProfileInstances(elements)
+      .forEach(profileInstance => delete profileInstance.value[fieldNameToDelete])
     elements.filter(isObjectType)
       .filter(element => metadataType(element) === PROFILE_METADATA_TYPE)
       .forEach(profileType => delete profileType.fields[fieldNameToDelete])
@@ -49,9 +53,6 @@ export const removePermissionsInfoFromProfile = (profileInstances: InstanceEleme
 export const findProfile = (profiles: ProfileInfo[], profile: string):
      ProfileInfo | undefined =>
   profiles.find(p => p.fullName === profile)
-
-export const getProfileInstances = (elements: Element[]): InstanceElement[] =>
-  getInstancesOfMetadataType(elements, PROFILE_METADATA_TYPE)
 
 export const setPermissions = <T = PermissionsOptionsTypes>(
   element: ObjectType | Field, permissionAnnotationName: string, fullName: string,
@@ -94,11 +95,11 @@ export const initProfile = (profiles: Record<string, ProfileInfo>, profile: stri
   }
 }
 
-export const getPermissionsValues = (element: ObjectType | Field, permissionFields: Values,
+export const getPermissionsValues = (element: Element, permissionFields: Values,
   annotationName: string): Record<string, string[]> =>
   Object.values(permissionFields)
     .sort().reduce((permission, field) => {
-      permission[sfCase(field, false, false)] = getAnnotationValue(element, annotationName)[field]
+      permission[field] = getAnnotationValue(element, annotationName)[bpCase(field)]
        || []
       return permission
     }, {} as Record<string, string[]>)

@@ -6,6 +6,7 @@ import { logger } from '@salto/logging'
 import { FilterCreator } from '../filter'
 import { SALESFORCE } from '../constants'
 import { LEAD_CONVERT_SETTINGS_TYPE_ID } from './lead_convert_settings'
+import { id } from './utils'
 
 const log = logger(module)
 
@@ -106,7 +107,7 @@ export const makeFilter = (
     // We need a mapping of all the types so we can replace type names with the correct types
     const typeMap: Record<string, Type> = _(elements)
       .filter(isType)
-      .map(t => [t.elemID.getFullName(), t])
+      .map(t => [id(t), t])
       .fromPairs()
       .value()
 
@@ -121,7 +122,7 @@ export const makeFilter = (
 
     // Add missing fields to types
     elements.filter(isObjectType).forEach(elem => {
-      const fieldsToAdd = missingFields[elem.elemID.getFullName()]
+      const fieldsToAdd = missingFields[id(elem)]
       if (fieldsToAdd !== undefined) {
         _.assign(elem.fields, _(fieldsToAdd)
           .map(addMissingField(elem))
@@ -136,7 +137,7 @@ export const makeFilter = (
 
 export default makeFilter(
   _(allMissingFields)
-    .map(({ id, fields }) => [id.getFullName(), fields])
+    .map(missingField => [missingField.id.getFullName(), missingField.fields])
     .fromPairs()
     .value(),
 )

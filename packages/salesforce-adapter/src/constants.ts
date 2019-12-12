@@ -5,7 +5,6 @@ export const METADATA_OBJECT_NAME_FIELD = 'fullName'
 export const INSTANCE_FULL_NAME_FIELD = 'full_name'
 export const FORMULA_TYPE_PREFIX = 'formula_'
 export const SALESFORCE_CUSTOM_SUFFIX = '__c'
-export const PROFILE_METADATA_TYPE = 'Profile'
 export const ADMIN_PROFILE = 'admin'
 
 // Annotations
@@ -18,6 +17,7 @@ export const FIELD_PERMISSIONS = 'field_permissions'
 export const OBJECT_PERMISSIONS = 'object_permissions'
 export const FIELD_LEVEL_SECURITY_ANNOTATION = 'field_level_security'
 export const OBJECT_LEVEL_SECURITY_ANNOTATION = 'object_level_security'
+export const TOPICS_FOR_OBJECTS_ANNOTATION = 'topics_for_objects'
 export const FIELD_TYPE_NAMES = {
   STRING: 'string',
   AUTONUMBER: 'autonumber',
@@ -161,5 +161,14 @@ export const OBJECT_LEVEL_SECURITY_FIELDS = {
   VIEW_ALL_RECORDS: 'view_all_records',
 }
 
+export const TOPICS_FOR_OBJECTS_FIELDS = {
+  ENABLE_TOPICS: 'enable_topics',
+  ENTITY_API_NAME: 'entity_api_name',
+}
+
 // Limits
 export const MAX_METADATA_RESTRICTION_VALUES = 500
+
+// Metadata types
+export const TOPICS_FOR_OBJECTS_METADATA_TYPE = 'TopicsForObjects'
+export const PROFILE_METADATA_TYPE = 'Profile'

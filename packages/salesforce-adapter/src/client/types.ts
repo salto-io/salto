@@ -42,6 +42,14 @@ export interface MetadataWithContent extends MetadataInfo {
   content: string
 }
 
+export class TopicsForObjectsInfo implements MetadataInfo {
+  constructor(
+    public readonly fullName: string,
+    public entityApiName: string,
+    public enableTopics: JSONBool
+  ) {}
+}
+
 class CustomPicklistValue implements MetadataInfo {
   readonly default: boolean
   constructor(public readonly fullName: string, isDefault: boolean, readonly label?: string) {

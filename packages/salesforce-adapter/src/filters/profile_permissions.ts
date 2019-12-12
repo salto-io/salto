@@ -13,13 +13,14 @@ import {
   OBJECT_LEVEL_SECURITY_ANNOTATION, OBJECT_PERMISSIONS, SALESFORCE,
 } from '../constants'
 import {
-  fieldFullName, isCustomObject, Types, apiName, sfCase, bpCase, metadataType,
+  fieldFullName, isCustomObject, Types, apiName, sfCase, bpCase,
 } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
 import { ProfileInfo, FieldPermissions, FieldPermissionsOptions, ObjectPermissionsOptions,
   ObjectPermissions, OBJECT_PERMISSIONS_OPTIONS, FIELD_PERMISSIONS_OPTIONS,
   PermissionsTypes, PermissionsOptionsFieldsTypes } from '../client/types'
-import { generateObjectElemID2ApiName, getCustomObjects, id, boolValue, getInstancesOfMetadataType } from './utils'
+import { generateObjectElemID2ApiName, getCustomObjects, id, boolValue,
+  getInstancesOfMetadataType, removeFieldsFromInstanceAndType } from './utils'
 
 const log = logger(module)
 
@@ -58,17 +59,6 @@ const setProfilePermissions = <T = PermissionsTypes>
 
 export const getProfileInstances = (elements: Element[]): InstanceElement[] =>
   getInstancesOfMetadataType(elements, PROFILE_METADATA_TYPE)
-
-const removePermissionsInfoFromProfile = (elements: Element[],
-  fieldNamesToDelete: string[]): void => {
-  getProfileInstances(elements)
-    .forEach(profileInstance => fieldNamesToDelete
-      .forEach(fieldNameToDelete => delete profileInstance.value[fieldNameToDelete]))
-  elements.filter(isObjectType)
-    .filter(element => metadataType(element) === PROFILE_METADATA_TYPE)
-    .forEach(profileType => fieldNamesToDelete
-      .forEach(fieldNameToDelete => delete profileType.fields[fieldNameToDelete]))
-}
 
 const findProfile = (profiles: ProfileInfo[], profile: string):
      ProfileInfo | undefined =>
@@ -238,7 +228,8 @@ const filterCreator: FilterCreator = ({ client }) => ({
     })
 
     // Remove field permissions from Profile Instances & Type to avoid information duplication
-    removePermissionsInfoFromProfile(elements, [FIELD_PERMISSIONS, OBJECT_PERMISSIONS])
+    removeFieldsFromInstanceAndType(elements, [FIELD_PERMISSIONS, OBJECT_PERMISSIONS],
+      PROFILE_METADATA_TYPE)
   },
 
   onAdd: async (after: Element): Promise<SaveResult[]> => {

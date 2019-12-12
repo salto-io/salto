@@ -66,3 +66,14 @@ export const runOnFields = async (elements: Element[], condition: (field: Field)
     runOnField(field, salesforceField)
   })
 }
+
+export const removeFieldsFromInstanceAndType = (elements: Element[], fieldNamesToDelete: string[],
+  metadataTypeName: string): void => {
+  getInstancesOfMetadataType(elements, metadataTypeName)
+    .forEach(instance => fieldNamesToDelete
+      .forEach(fieldNameToDelete => delete instance.value[fieldNameToDelete]))
+  elements.filter(isObjectType)
+    .filter(element => metadataType(element) === metadataTypeName)
+    .forEach(elementType => fieldNamesToDelete
+      .forEach(fieldNameToDelete => delete elementType.fields[fieldNameToDelete]))
+}

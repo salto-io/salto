@@ -14,6 +14,7 @@ import {
   ObjectPermissions,
   CustomField,
   FilterItem,
+  TopicsForObjectsInfo,
 } from '../src/client/types'
 import {
   Types, sfCase, fromMetadataInfo, bpCase, metadataType, apiName,
@@ -25,6 +26,7 @@ import { fromRetrieveResult, toMetadataPackageZip } from '../src/transformers/xm
 
 const { makeArray } = collections.array
 const { FIELD_LEVEL_SECURITY_ANNOTATION, PROFILE_METADATA_TYPE, ADMIN_PROFILE } = constants
+
 
 const ADMIN = 'salesforce.profile.instance.admin'
 const STANDARD = 'salesforce.profile.instance.standard'
@@ -1562,6 +1564,109 @@ describe('Salesforce adapter E2E with real account', () => {
       // Clean-up
       await adapter.remove(oldElement)
     })
+    it('should add default TopicsForObjects values', async () => {
+      const customObjectName = 'TestAddTopicsForObjects__c'
+      const mockElemID = new ElemID(constants.SALESFORCE, 'test add default topic for objects')
+      const element = new ObjectType({
+        elemID: mockElemID,
+        fields: {},
+        annotations: {
+          [Type.REQUIRED]: false,
+          [constants.LABEL]: 'test label',
+          [constants.API_NAME]: customObjectName,
+          [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
+        },
+      })
+
+      if (await objectExists(constants.CUSTOM_OBJECT, customObjectName)) {
+        await adapter.remove(element)
+      }
+      const addResult = await adapter.add(element)
+      expect(addResult).toBeInstanceOf(ObjectType)
+      expect(addResult.annotations[constants.TOPICS_FOR_OBJECTS_ANNOTATION][constants
+        .TOPICS_FOR_OBJECTS_FIELDS.ENABLE_TOPICS]).toBe(false)
+    })
+
+    it('should add element TopicsForObjects value', async () => {
+      const customObjectName = 'TestAddTopicsForObjects__c'
+      const mockElemID = new ElemID(constants.SALESFORCE, 'test add element topic for objects')
+      const element = new ObjectType({
+        elemID: mockElemID,
+        fields: {},
+        annotations: {
+          [Type.REQUIRED]: false,
+          [constants.LABEL]: 'test label',
+          [constants.API_NAME]: customObjectName,
+          [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
+          [constants.TOPICS_FOR_OBJECTS_ANNOTATION]: { [constants
+            .TOPICS_FOR_OBJECTS_FIELDS.ENABLE_TOPICS]: true },
+        },
+      })
+
+      if (await objectExists(constants.CUSTOM_OBJECT, customObjectName)) {
+        await adapter.remove(element)
+      }
+      const addResult = await adapter.add(element)
+      expect(addResult).toBeInstanceOf(ObjectType)
+      expect(addResult.annotations[constants.TOPICS_FOR_OBJECTS_ANNOTATION][constants
+        .TOPICS_FOR_OBJECTS_FIELDS.ENABLE_TOPICS]).toBe(true)
+
+      // Checks if the new topic' object exists
+      const results = (await client.readMetadata(constants.TOPICS_FOR_OBJECTS_METADATA_TYPE,
+        apiName(addResult))) as TopicsForObjectsInfo[]
+      expect(results).toHaveLength(1)
+      expect(results[0].enableTopics).toBe('true')
+    })
+
+    it('should update TopicsForObjects field', async () => {
+      const customObjectName = 'TestUpdateTopicsForObjects__c'
+      const mockElemID = new ElemID(constants.SALESFORCE, 'test add topic for objects')
+      const oldElement = new ObjectType({
+        elemID: mockElemID,
+        fields: {},
+        annotations: {
+          [Type.REQUIRED]: false,
+          [constants.LABEL]: 'test label',
+          [constants.API_NAME]: customObjectName,
+          [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
+        },
+      })
+
+      if (await objectExists(constants.CUSTOM_OBJECT, customObjectName)) {
+        await adapter.remove(oldElement)
+      }
+      const addResult = await adapter.add(oldElement)
+      // Verify setup was performed properly
+      expect(await objectExists(constants.CUSTOM_OBJECT, customObjectName)).toBe(true)
+      expect(addResult).toBeInstanceOf(ObjectType)
+      expect(addResult.annotations[constants.TOPICS_FOR_OBJECTS_ANNOTATION][constants
+        .TOPICS_FOR_OBJECTS_FIELDS.ENABLE_TOPICS]).toBe(false)
+
+      const newElement = new ObjectType({
+        elemID: mockElemID,
+        annotations: {
+          [Type.REQUIRED]: false,
+          [constants.LABEL]: 'test label',
+          [constants.API_NAME]: customObjectName,
+          [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
+          [constants.TOPICS_FOR_OBJECTS_ANNOTATION]:
+          { [constants.TOPICS_FOR_OBJECTS_FIELDS.ENABLE_TOPICS]: true },
+        },
+      })
+
+      // Test
+      const modificationResult = await adapter.update(oldElement, newElement,
+        [{ action: 'modify', data: { before: oldElement, after: newElement } }])
+
+      // Verify the enable topics was changed correctly
+      expect(modificationResult).toBeInstanceOf(ObjectType)
+      expect(modificationResult.annotations[constants.TOPICS_FOR_OBJECTS_ANNOTATION][constants
+        .TOPICS_FOR_OBJECTS_FIELDS.ENABLE_TOPICS]).toBe(true)
+
+      // Clean-up
+      await adapter.remove(oldElement)
+    })
+
     // Assignment rules are special because they use the Deploy API so they get their own test
     describe('assignment rules manipulation', () => {
       const getRulesFromClient = async (): Promise<Values> => fromMetadataInfo(

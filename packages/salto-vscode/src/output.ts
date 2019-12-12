@@ -43,3 +43,13 @@ export const getNumberInput = async (msg: string): Promise<number|undefined> => 
   const res = await vscode.window.showInputBox({ prompt: msg })
   return res ? Number.parseInt(res, 10) : undefined
 }
+
+export const handleErrors = (msgErrs: string[]): void => {
+  const outputChannel = vscode.window.createOutputChannel('salto')
+  outputChannel.clear()
+  if (msgErrs) {
+    msgErrs.forEach(msgErr => outputChannel.appendLine(msgErr))
+    outputChannel.show()
+    vscode.window.showErrorMessage('Deploy Failed', 'OK')
+  }
+}

@@ -104,7 +104,7 @@ export const deploy = async (
         .map(change => ({ change, serviceChange: change }))
       const errored = errors.length > 0
       return {
-        success: !errored,
+        success: errored,
         changes,
         errors: errored ? errors : [],
       }

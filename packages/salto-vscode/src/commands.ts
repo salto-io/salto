@@ -71,7 +71,7 @@ export const previewCommand = async (
   workspace: EditorWorkspace,
   extensionPath: string
 ): Promise<void> => {
-  if (!hasCriticalErrors(workspace)) {
+  if (!(await hasCriticalErrors(workspace))) {
     displayPlan(await preview(workspace.workspace), extensionPath)
   } else {
     displayError('Failed to create a preview. Please fix the detected problems and try again.')
@@ -113,7 +113,7 @@ export const deployCommand = async (
     return Promise.resolve()
   }
 
-  if (hasCriticalErrors(workspace)) {
+  if (await hasCriticalErrors(workspace)) {
     displayError('Failed to run plan. Please fix the detected problems and try again.')
     return
   }
@@ -127,7 +127,7 @@ export const deployCommand = async (
     )
     const result = await deployProcess
     await workspace.updateBlueprints(...wu(result.changes || []).map(c => c.change).toArray())
-    if (hasCriticalErrors(workspace)) {
+    if (await hasCriticalErrors(workspace)) {
       (await getCriticalErrors(workspace)).map(e => displayError(e.error))
     } else {
       await workspace.flush()

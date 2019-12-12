@@ -126,10 +126,10 @@ export const deployCommand = async (
       updateActionCB
     )
     const result = await deployProcess
-    result.errors.map(e => displayError(e.message))
+    result.errors.forEach(e => displayError(e.message))
     await workspace.updateBlueprints(...wu(result.changes || []).map(c => c.change).toArray())
     if (await hasCriticalErrors(workspace)) {
-      (await getCriticalErrors(workspace)).map(e => displayError(e.error))
+      (await getCriticalErrors(workspace)).forEach(e => displayError(e.error))
     } else {
       await workspace.flush()
     }

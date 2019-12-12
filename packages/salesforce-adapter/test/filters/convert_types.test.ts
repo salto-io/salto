@@ -16,9 +16,12 @@ describe('convert types filter', () => {
   const mockType = new ObjectType({
     elemID: mockObjId,
     fields: {
-      str: new Field(mockObjId, 'str', BuiltinTypes.STRING),
-      bool: new Field(mockObjId, 'bool', BuiltinTypes.BOOLEAN),
-      num: new Field(mockObjId, 'num', BuiltinTypes.NUMBER),
+      strAsStr: new Field(mockObjId, 'strAsStr', BuiltinTypes.STRING),
+      strAsNum: new Field(mockObjId, 'strAsNum', BuiltinTypes.STRING),
+      boolAsBool: new Field(mockObjId, 'boolAsBool', BuiltinTypes.BOOLEAN),
+      boolAsStr: new Field(mockObjId, 'boolAsStr', BuiltinTypes.BOOLEAN),
+      numAsNum: new Field(mockObjId, 'numAsNum', BuiltinTypes.NUMBER),
+      numAsStr: new Field(mockObjId, 'numAsStr', BuiltinTypes.NUMBER),
       nullStr: new Field(mockObjId, 'nullStr', BuiltinTypes.STRING),
       numArray: new Field(mockObjId, 'numArray', BuiltinTypes.NUMBER, {}, true),
       picklist: new Field(mockObjId, 'picklist', BuiltinTypes.STRING,
@@ -30,9 +33,12 @@ describe('convert types filter', () => {
     'test_inst_with_list',
     mockType,
     {
-      str: 'val',
-      bool: 'false',
-      num: '12',
+      strAsStr: '1.6',
+      strAsNum: 1.6,
+      boolAsBool: false,
+      boolAsStr: 'false',
+      numAsStr: '12',
+      numAsNum: 12,
       // eslint-disable-next-line @typescript-eslint/camelcase
       nullStr: { _: { xsi_nil: 'true' } },
       numArray: ['12', '13', '14'],
@@ -67,9 +73,12 @@ describe('convert types filter', () => {
       })
 
       it('should convert primitive types', () => {
-        expect(inst.value.str).toEqual('val')
-        expect(inst.value.bool).toEqual(false)
-        expect(inst.value.num).toEqual(12)
+        expect(inst.value.strAsStr).toEqual('1.6')
+        expect(inst.value.strAsNum).toEqual('1.6')
+        expect(inst.value.boolAsBool).toEqual(false)
+        expect(inst.value.boolAsStr).toEqual(false)
+        expect(inst.value.numAsStr).toEqual(12)
+        expect(inst.value.numAsNum).toEqual(12)
       })
 
       it('should convert lists in instances', () => {

@@ -25,7 +25,7 @@ const transformPrimitive = (val: PrimitiveValue, primitive: PrimitiveTypes): Val
     case PrimitiveTypes.BOOLEAN:
       return _.isBoolean(val) ? val : (val as string).toLowerCase() === 'true'
     case PrimitiveTypes.STRING:
-      return (val as string).length === 0 ? undefined : val
+      return val.toString().length === 0 ? undefined : val.toString()
     default:
       return val
   }

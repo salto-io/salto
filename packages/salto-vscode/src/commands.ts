@@ -129,6 +129,7 @@ export const deployCommand = async (
     const handleErrors = (msgErrs: string[]): void => {
       if (msgErrs) {
         const outputChannel = vscode.window.createOutputChannel('salto')
+        outputChannel.clear()
         msgErrs.forEach(msgErr => outputChannel.appendLine(msgErr))
         outputChannel.show()
         vscode.window.showErrorMessage('Deploy Failed', 'OK')

@@ -1565,7 +1565,7 @@ describe('Salesforce adapter E2E with real account', () => {
       await adapter.remove(oldElement)
     })
     it('should add default TopicsForObjects values', async () => {
-      const customObjectName = 'TestAddTopicsForObjects__c'
+      const customObjectName = 'TestAddDefaultTopicsForObjects__c'
       const mockElemID = new ElemID(constants.SALESFORCE, 'test add default topic for objects')
       const element = new ObjectType({
         elemID: mockElemID,
@@ -1588,7 +1588,7 @@ describe('Salesforce adapter E2E with real account', () => {
     })
 
     it('should add element TopicsForObjects value', async () => {
-      const customObjectName = 'TestAddTopicsForObjects__c'
+      const customObjectName = 'TestAddElementTopicsForObjects__c'
       const mockElemID = new ElemID(constants.SALESFORCE, 'test add element topic for objects')
       const element = new ObjectType({
         elemID: mockElemID,

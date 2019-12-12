@@ -14,6 +14,7 @@ import {
   ObjectPermissions,
   CustomField,
   FilterItem,
+  TopicsForObjectsInfo,
 } from '../src/client/types'
 import {
   Types, sfCase, fromMetadataInfo, bpCase, metadataType, apiName,
@@ -1611,12 +1612,10 @@ describe('Salesforce adapter E2E with real account', () => {
         .TOPICS_FOR_OBJECTS_FIELDS.ENABLE_TOPICS]).toBe(true)
 
       // Checks if the new topic' object exists
-      result = await adapter.fetch()
-      expect(result.filter(isInstanceElement)
-        .filter(instance => metadataType(instance) === constants.TOPICS_FOR_OBJECTS_METADATA_TYPE)
-        .filter(instance => instance.value[constants
-          .TOPICS_FOR_OBJECTS_FIELDS.ENTITY_API_NAME] === apiName(element)))
-        .toHaveLength(1)
+      const results = (await client.readMetadata(constants.TOPICS_FOR_OBJECTS_METADATA_TYPE,
+        apiName(addResult))) as TopicsForObjectsInfo[]
+      expect(results).toHaveLength(1)
+      expect(results[0].enableTopics).toBe('true')
     })
 
     it('should update TopicsForObjects field', async () => {

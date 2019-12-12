@@ -4,7 +4,8 @@ import { setFilename, convertMain } from './converters'
 import { HclParseError, HclParseReturn, ParsedHclBlock } from '../types'
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const grammar = require('./hcl')
-
+const WILDCARD = '####'
+const MAX_ERRORS = 20
 interface NearleyError {
   token: {
     type: string
@@ -20,20 +21,43 @@ interface NearleyError {
   message: string
 }
 
-const convertParserError = (err: NearleyError, filename: string, hclParser: nearley.Parser): HclParseError => {
+const getStateSymbol = (state: nearley.LexerState) : string => {
+  const symbol = state.rule.symbols[state.dot]
+  const type = typeof symbol;
+  if (type === "string") {
+      return symbol;
+  } else if (type === "object" && symbol.literal) {
+      return JSON.stringify(symbol.literal);
+  } else if (type === "object" && symbol instanceof RegExp) {
+      return 'character matching ' + symbol;
+  } else if (type === "object" && symbol.type) {
+      return symbol.type + ' token';
+  } else {
+      return JSON.stringify(symbol)
+  }
+}
+
+const getExpectedSymbols = (hclParser: nearley.Parser): string[] => {
+  const printableToken = (token: string): boolean => {
+    const allowed = ['value', 'newline', 'whitespace', 'word', ]
+    return allowed.indexOf(token) >= 0
+  }
   const table = _.get(hclParser, 'table')
-  console.log(table[table.length - 2].wants['blockLabels$ebnf$1'][1].rule)
-  const [key, want] = _(table[table.length - 2].wants)
-    .toPairs()
-    .filter(([v, w]) => v.indexOf('$') === -1  && w[0].rule.name.indexOf('$') === -1)
-    .sortBy(([_v, w]) => -w[0].dot )
-    .value()[0]
-  const rule = want[0].rule
+  const lastColumnIndex = table.length - 2;
+  const lastColumn = table[lastColumnIndex];
+  return lastColumn.states.map(getStateSymbol).filter(printableToken)
+}
+const convertParserError = (err: NearleyError, filename: string, hclParser: nearley.Parser): HclParseError => {
+  const expected = getExpectedSymbols(hclParser)
   const token = err.token;
   return {
     severity: 1,
-    summary:  `Unexpected ${rule.name}`,
-    detail: `Expected a ${key} token but found ${token} instead.`,
+    summary:  `Unexpected ${token}`,
+    detail: `Expected ${
+      expected.length > 1 
+      ? `${expected.slice(0, -1).join(', ')} or ${expected[expected.length -1]}`
+      : expected[0]
+    } token but found: ${token} instead.`,
     subject: {
       filename,
       start: { col: token.col, line: token.line, byte: token.offset },
@@ -79,25 +103,32 @@ const unexpectedEOFError = (src: string, filename: string): HclParseError => {
 
 export const parse = (src: Buffer, filename: string): HclParseReturn => {
   const hclParser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar))
-  try {
-    setFilename(filename)
-    hclParser.feed(src.toString())
-    const blockItems = hclParser.finish()[0]
-    if (blockItems !== undefined) {
-      return {
-        body: blockItems ? convertMain(blockItems) : createEmptyBody(src.toString(), filename),
-        errors: [],
-      }
+  setFilename(filename)
+  const words = src.toString().split(' ').map(w => `${w} `)
+  const errors = []
+  let savedState = hclParser.save()
+  for (const word of words) {
+    try {
+      hclParser.feed(word)
     }
+    catch(e) {
+      errors.push(convertParserError(e as NearleyError, filename, hclParser))
+      if (errors.length > MAX_ERRORS) break
+      hclParser.restore(savedState)
+      hclParser.feed(WILDCARD)
+      hclParser.feed(word)
+    }
+    savedState = hclParser.save()
+  }
+  const blockItems = hclParser.finish()[0]
+  if (blockItems !== undefined) {
     return {
-      body: createEmptyBody(src.toString(), filename),
-      errors: [unexpectedEOFError(src.toString(), filename)],
+      body: blockItems ? convertMain(blockItems) : createEmptyBody(src.toString(), filename),
+      errors,
     }
-  } catch (err) {
-    //const table = _.get(hclParser, 'table')
-    //const wants = table[table.length - 2].wants
-    //console.log(table[table.length - 2].wants)
-    return { body: createEmptyBody(src.toString(), filename),
-      errors: [convertParserError(err as NearleyError, filename, hclParser)] }
+  }
+  return {
+    body: createEmptyBody(src.toString(), filename),
+    errors: [unexpectedEOFError(src.toString(), filename)],
   }
 }

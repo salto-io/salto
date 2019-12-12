@@ -188,3 +188,7 @@ export const convertAttr = (key: LexerToken, value: HclExpression): HclExpressio
   value,
   source: createSourceRange(key, value),
 })
+
+export const convertWildcard = (wildcard: LexerToken): HclExpression => {
+  return convertString(wildcard, [wildcard], wildcard)
+}

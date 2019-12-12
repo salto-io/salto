@@ -2,6 +2,7 @@ import * as moo from 'moo'
 
 const lexer = moo.states({
   main: {
+    wildcard : "####",
     mlStart: { match: /<<EOF[ \t]*\n/, lineBreaks: true, push: 'multilineString' },
     dq: { match: '"', push: 'string' },
     // string: /".*?"/,

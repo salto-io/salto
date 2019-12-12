@@ -27,6 +27,7 @@ type ZipPropsMap = {
   ApexPage: ZipProps
   ApexComponent: ZipProps
   AssignmentRules: ZipProps
+  InstalledPackage: ZipProps
 }
 
 const zipPropsMap: ZipPropsMap = {
@@ -53,6 +54,11 @@ const zipPropsMap: ZipPropsMap = {
   AssignmentRules: {
     dir: 'assignmentRules',
     fileSuffix: 'assignmentRules',
+    isMetadataWithContent: false,
+  },
+  InstalledPackage: {
+    dir: 'installedPackages',
+    fileSuffix: 'installedPackage',
     isMetadataWithContent: false,
   },
 }

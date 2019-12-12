@@ -3,7 +3,7 @@ import { InstanceElement, ObjectType, Values, isPrimitiveType, PrimitiveTypes, V
 import { preview, Plan, deploy, ItemStatus, PlanItem, DeployResult, WorkspaceError } from 'salto'
 import wu from 'wu'
 import { EditorWorkspace } from './salto/workspace'
-import { displayError, getBooleanInput, displayHTML, getStringInput, getNumberInput, hrefToUri } from './output'
+import { displayError, getBooleanInput, displayHTML, getStringInput, getNumberInput, hrefToUri, handleErrors } from './output'
 import { getActionName, renderDiffView, createPlanDiff } from './format'
 
 const displayPlan = async (
@@ -126,9 +126,10 @@ export const deployCommand = async (
       updateActionCB
     )
     const result = await deployProcess
+    handleErrors(result.errors.map(e => e.message))
     await workspace.updateBlueprints(...wu(result.changes || []).map(c => c.change).toArray())
     if (await hasCriticalErrors(workspace)) {
-      (await getCriticalErrors(workspace)).map(e => displayError(e.error))
+      (await getCriticalErrors(workspace)).forEach(e => displayError(e.error))
     } else {
       await workspace.flush()
     }

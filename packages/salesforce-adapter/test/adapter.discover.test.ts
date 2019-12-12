@@ -799,33 +799,32 @@ describe('SalesforceAdapter fetch', () => {
       expect(testInst).toBeDefined()
     })
 
-    describe('should fetch when there are errors', async () => {
-      connection.describeGlobal = jest.fn().mockImplementation(async () => ({ sobjects: [] }))
-      connection.metadata.describe = jest.fn().mockImplementation(async () => ({
-        metadataObjects: [{ xmlName: 'Test1' }, { xmlName: 'Test2' }, { xmlName: 'Test3' }],
-      }))
-      connection.metadata.describeValueType = jest.fn().mockImplementation(
-        async (typeName: string) => {
-          if (typeName.endsWith('Test1')) {
-            throw new Error('fake error')
-          }
-          return { valueTypeFields: [] }
-        }
-      )
-      connection.metadata.list = jest.fn().mockImplementation(
-        async () => [{ fullName: 'instance1' }]
-      )
-      connection.metadata.read = jest.fn().mockImplementation(
-        async (typeName: string, fullNames: string | string[]) => {
-          if (typeName === 'Test2') {
-            throw new Error('fake error')
-          }
-          return { fullName: Array.isArray(fullNames) ? fullNames[0] : fullNames }
-        }
-      )
-
+    describe('should fetch when there are errors', () => {
       let result: Element[] = []
       beforeEach(async () => {
+        connection.describeGlobal = jest.fn().mockImplementation(async () => ({ sobjects: [] }))
+        connection.metadata.describe = jest.fn().mockImplementation(async () => ({
+          metadataObjects: [{ xmlName: 'Test1' }, { xmlName: 'Test2' }, { xmlName: 'Test3' }],
+        }))
+        connection.metadata.describeValueType = jest.fn().mockImplementation(
+          async (typeName: string) => {
+            if (typeName.endsWith('Test1')) {
+              throw new Error('fake error')
+            }
+            return { valueTypeFields: [] }
+          }
+        )
+        connection.metadata.list = jest.fn().mockImplementation(
+          async () => [{ fullName: 'instance1' }]
+        )
+        connection.metadata.read = jest.fn().mockImplementation(
+          async (typeName: string, fullNames: string | string[]) => {
+            if (typeName === 'Test2') {
+              throw new Error('fake error')
+            }
+            return { fullName: Array.isArray(fullNames) ? fullNames[0] : fullNames }
+          }
+        )
         result = await adapter.fetch()
       })
 
@@ -836,8 +835,8 @@ describe('SalesforceAdapter fetch', () => {
       })
 
       it('should fetch instances when there is failure in an instance', () => {
-        expect(findElements(result, 'test_2', 'instance1')).toHaveLength(0)
-        expect(findElements(result, 'test_3', 'instance1')).toHaveLength(1)
+        expect(findElements(result, 'test_2', 'instance_1')).toHaveLength(0)
+        expect(findElements(result, 'test_3', 'instance_1')).toHaveLength(1)
       })
     })
   })

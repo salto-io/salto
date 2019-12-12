@@ -126,7 +126,16 @@ export const deployCommand = async (
       updateActionCB
     )
     const result = await deployProcess
-    result.errors.forEach(e => displayError(e.message))
+    const handleErrors = (msgErrs: string[]): void => {
+      if (msgErrs) {
+        const outputChannel = vscode.window.createOutputChannel('salto')
+        msgErrs.forEach(msgErr => outputChannel.appendLine(msgErr))
+        outputChannel.show()
+        vscode.window.showErrorMessage('Deploy Failed', 'OK')
+      }
+    }
+    
+    handleErrors(result.errors.map(e => e.message))
     await workspace.updateBlueprints(...wu(result.changes || []).map(c => c.change).toArray())
     if (await hasCriticalErrors(workspace)) {
       (await getCriticalErrors(workspace)).forEach(e => displayError(e.error))

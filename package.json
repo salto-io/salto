@@ -17,7 +17,6 @@
     "build": "lerna run build",
     "lint-fix": "lerna run lint-fix",
     "clean": "lerna run clean",
-    "test": "yarn run jest --forceExit --detectOpenHandles",
-    "clean-all": "rm -rf node_modules && rm -rf packages/*/{node_modules,dist}"
+    "test": "yarn run jest --forceExit --detectOpenHandles"
   }
 }

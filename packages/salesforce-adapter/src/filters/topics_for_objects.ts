@@ -12,6 +12,8 @@ import { getCustomObjects, boolValue, removeFieldsFromInstanceAndType, getInstan
 
 const { ENABLE_TOPICS, ENTITY_API_NAME } = TOPICS_FOR_OBJECTS_FIELDS
 
+export const DEFAULT_ENABLE_TOPICS_VALUE = false
+
 const getTopicsForObjects = (obj: ObjectType): Values => getAnnotationValue(obj,
   TOPICS_FOR_OBJECTS_ANNOTATION)
 
@@ -19,7 +21,8 @@ const setTopicsForObjects = (object: ObjectType, enableTopics: boolean): void =>
   object.annotate({ [TOPICS_FOR_OBJECTS_ANNOTATION]: { [ENABLE_TOPICS]: enableTopics } })
 }
 
-const setDefaultTopicsForObjects = (object: ObjectType): void => setTopicsForObjects(object, false)
+const setDefaultTopicsForObjects = (object: ObjectType): void => setTopicsForObjects(object,
+  DEFAULT_ENABLE_TOPICS_VALUE)
 
 const filterCreator: FilterCreator = ({ client }) => ({
   onFetch: async (elements: Element[]): Promise<void> => {
@@ -52,12 +55,19 @@ const filterCreator: FilterCreator = ({ client }) => ({
   },
 
   onAdd: async (after: Element): Promise<SaveResult[]> => {
-    if (isObjectType(after) && isCustomObject(after) && _.isEmpty(getTopicsForObjects(after))) {
-      setDefaultTopicsForObjects(after)
+    if (isObjectType(after) && isCustomObject(after)) {
+      const topicsForObjects = getTopicsForObjects(after)
 
-      return client.update(TOPICS_FOR_OBJECTS_METADATA_TYPE,
-        new TopicsForObjectsInfo(apiName(after), apiName(after),
-          getTopicsForObjects(after)[ENABLE_TOPICS]))
+      // In case that we add an object with enable_topics that differs from the default -> Adds
+      //  a TopicsForObjects with the object' value. Else, Don't send an update request
+      if (boolValue(topicsForObjects[ENABLE_TOPICS]) !== DEFAULT_ENABLE_TOPICS_VALUE) {
+        return client.update(TOPICS_FOR_OBJECTS_METADATA_TYPE,
+          new TopicsForObjectsInfo(apiName(after), apiName(after),
+            getTopicsForObjects(after)[ENABLE_TOPICS]))
+      }
+      if (_.isEmpty(topicsForObjects)) {
+        setDefaultTopicsForObjects(after)
+      }
     }
     return []
   },

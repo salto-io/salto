@@ -95,7 +95,19 @@ describe('Field Permissions filter', () => {
 
     expect(after.annotations[TOPICS_FOR_OBJECTS_ANNOTATION])
       .toEqual({ [ENABLE_TOPICS]: false })
-    verifyUpdateCall('Test__c', false)
+    // Verify that no update calls were made
+    expect(mockUpdate.mock.calls).toHaveLength(0)
+  })
+
+  it('should update topicsForObjects value upon add', async () => {
+    const after = mockObject.clone()
+    after.annotate({ [TOPICS_FOR_OBJECTS_ANNOTATION]: enableTopicTrue })
+
+    await filter().onAdd(after)
+
+    expect(after.annotations[TOPICS_FOR_OBJECTS_ANNOTATION])
+      .toEqual({ [ENABLE_TOPICS]: true })
+    verifyUpdateCall('Test__c', true)
   })
 
   it('should set new value for enable_topics upon update', async () => {

@@ -670,6 +670,7 @@ export const getValueTypeFieldElement = (parentID: ElemID, field: ValueTypeField
     if (defaults.length === 1) {
       annotations[Type.DEFAULT] = defaults.pop()
     }
+    annotations[Type.RESTRICTION] = { [Type.ENFORCE_VALUE]: false }
   }
   return new TypeField(parentID, bpFieldName, bpFieldType, annotations)
 }

@@ -663,6 +663,7 @@ export const getValueTypeFieldElement = (parentID: ElemID, field: ValueTypeField
     // restriction where there are too many possible values
     if (field.picklistValues.length < MAX_METADATA_RESTRICTION_VALUES) {
       annotations[Type.VALUES] = _.sortedUniq(field.picklistValues.map(val => val.value).sort())
+      annotations[Type.RESTRICTION] = { [Type.ENFORCE_VALUE]: false }
     }
     const defaults = field.picklistValues
       .filter(val => val.defaultValue)

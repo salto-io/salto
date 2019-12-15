@@ -141,7 +141,6 @@ export default class SalesforceAdapter {
   public constructor({
     metadataTypeBlacklist = [
       'ReportType', // See SALTO-76
-      'InstalledPackage', // Instances of this don't actually have an ID and they contain duplicates
       'CustomObject', 'CustomField', // We have special treatment for those type
       'Settings',
       'StaticResource',
@@ -154,6 +153,7 @@ export default class SalesforceAdapter {
       'ApexPage', // contains encoded zip content
       'ApexComponent', // contains encoded zip content
       'AssignmentRules',
+      'InstalledPackage', // listMetadataObjects of this types returns duplicates
     ],
     filterCreators = [
       profilePermissionsFilter,

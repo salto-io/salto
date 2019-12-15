@@ -6,6 +6,7 @@ export const INSTANCE_FULL_NAME_FIELD = 'full_name'
 export const FORMULA_TYPE_PREFIX = 'formula_'
 export const SALESFORCE_CUSTOM_SUFFIX = '__c'
 export const ADMIN_PROFILE = 'admin'
+export const NAMESPACE_SEPARATOR = '__'
 
 // Annotations
 export const LABEL = 'label'

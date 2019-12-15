@@ -191,6 +191,7 @@ describe('api functions', () => {
         mockShouldDeployYes,
         mockReportCurrentAction
       )
+      expect(deployResult.success).toBeFalsy()
       expect(deployResult.errors.length).toBeGreaterThan(0)
       const missingAdapterErrors = deployResult.errors.filter((error: DeployError) => error.message.includes('Missing adapter for'))
       expect(missingAdapterErrors.length).toBeGreaterThan(0)
@@ -212,6 +213,7 @@ describe('api functions', () => {
         mockShouldDeployYes,
         mockReportCurrentAction
       )
+      expect(deployResult.success).toBeFalsy()
       expect(deployResult.errors.length).toBeGreaterThan(0)
     })
 

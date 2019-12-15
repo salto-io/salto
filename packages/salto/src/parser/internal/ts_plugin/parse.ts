@@ -116,7 +116,7 @@ export const parseBuffer = (
       hclParser.restore(lastColumn)
       // Adding the wildcard token to bypass the error and give the parser another change
       const restOfBuffer = WILDCARD + src.slice(parserError.subject.start.byte)
-      setErrorRecoveryMode() //Allows the wildcard token to be parsed from now on in this file
+      setErrorRecoveryMode() // Allows the wildcard token to be parsed from now on in this file
       const [blockItems, errors] = parseBuffer(
         restOfBuffer,
         hclParser,

@@ -632,9 +632,9 @@ export default class SalesforceAdapter {
     const retrieveRequest = {
       apiVersion: API_VERSION,
       singlePackage: false,
-      unpackaged: { types: await Promise.all(metadataTypes.map(type => (
-        { name: type,
-          members: typeToFileProperties[type].map(file => file.fullName) }))) },
+      unpackaged: { types: metadataTypes.map(type =>
+        ({ name: type,
+          members: typeToFileProperties[type].map(file => file.fullName) })) },
     }
     const retrieveResult = await this.client.retrieve(retrieveRequest)
     const typeToInstanceInfos = await fromRetrieveResult(retrieveResult, metadataTypes)
@@ -786,18 +786,15 @@ export default class SalesforceAdapter {
 
   private static getCustomObjectPackagePath(obj: ObjectType): string[] {
     if (this.hasNamespace(obj)) {
-      const namespace = apiName(obj).split(constants.NAMESPACE_SEPARATOR)[0]
-      return ['installed_packages', namespace, 'objects', obj.elemID.name]
+      return ['installed_packages', this.getNamespace(obj), 'objects', obj.elemID.name]
     }
     return ['objects', 'custom', obj.elemID.name]
   }
 
   private static getPartialCustomObjects(customFields: Field[], objectName: string,
     serviceIds: ServiceIds): ObjectType[] {
-    const [packagedFields, regularCustomFields] = _.partition(customFields,
-      f => this.hasNamespace(f))
-    const namespaceToFields: Record<string, Field[]> = _.groupBy(packagedFields,
-      field => apiName(field).split(constants.NAMESPACE_SEPARATOR)[0])
+    const [packagedFields, regularCustomFields] = _.partition(customFields, this.hasNamespace)
+    const namespaceToFields: Record<string, Field[]> = _.groupBy(packagedFields, this.getNamespace)
     // Custom fields that belong to a package go in a separate element
     const customParts = Object.entries(namespaceToFields)
       .map(([namespace, packageFields]) => {
@@ -816,15 +813,19 @@ export default class SalesforceAdapter {
 
   private static createObjectWithFields(objectName: string, serviceIds: ServiceIds,
     fields: Field[]): ObjectType {
-    const packageObj = Types.get(objectName, true, false, serviceIds) as ObjectType
+    const obj = Types.get(objectName, true, false, serviceIds) as ObjectType
     fields.forEach(field => {
-      packageObj.fields[field.name] = field
+      obj.fields[field.name] = field
     })
-    return packageObj
+    return obj
   }
 
-  private static hasNamespace(customElement: Element): boolean {
+  private static hasNamespace(customElement: Field | ObjectType): boolean {
     return apiName(customElement).split(constants.NAMESPACE_SEPARATOR).length === 3
+  }
+
+  private static getNamespace(customElement: Field | ObjectType): string {
+    return apiName(customElement).split(constants.NAMESPACE_SEPARATOR)[0]
   }
 
   /**

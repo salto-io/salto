@@ -2,7 +2,7 @@ import * as moo from 'moo'
 
 const lexer = moo.states({
   main: {
-    wildcard : "####",
+    wildcard: '****dynamic****',
     mlStart: { match: /<<EOF[ \t]*\n/, lineBreaks: true, push: 'multilineString' },
     dq: { match: '"', push: 'string' },
     // string: /".*?"/,
@@ -21,12 +21,14 @@ const lexer = moo.states({
     invalidSytax: { match: /[^ ]+/, error: true },
   },
   string: {
+    wildcard: '****dynamic****',
     reference: { match: /\$\{[ \t]*[\d\w.]+[ \t]*\}/, value: s => s.slice(2, -1).trim() },
     dq: { match: '"', pop: 1 },
-    content: { match: /[^\\](?=")|.+?[^\\](?=\$\{|")/, lineBreaks: false },
+    content: { match: /[^\\](?=")|.+?[^\\](?=\$\{|"|\n)/, lineBreaks: false },
     invalidSytax: { match: /[^ ]+/, error: true },
   },
   multilineString: {
+    wildcard: '****dynamic****',
     reference: { match: /\$\{[ \t]*[\d\w.]+[ \t]*\}/, value: s => s.slice(2, -1).trim() },
     mlEnd: { match: /^[ \t]*EOF/, pop: 1 },
     content: { match: /^.*\n/, lineBreaks: true },

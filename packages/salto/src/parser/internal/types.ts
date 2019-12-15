@@ -1,6 +1,6 @@
 import { ElemID } from 'adapter-api'
 
-export type ExpressionType = 'list'|'map'|'template'|'literal'|'reference'
+export type ExpressionType = 'list'|'map'|'template'|'literal'|'reference'|'dynamic'
 
 export type HclExpression = {
   type: ExpressionType

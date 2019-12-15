@@ -1,62 +1,37 @@
 import * as nearley from 'nearley'
 import _ from 'lodash'
-import { setFilename, convertMain } from './converters'
-import { HclParseError, HclParseReturn, ParsedHclBlock } from '../types'
+import { startFile, convertMain, NearleyError, setErrorRecoveryMode } from './converters'
+import { HclParseError, HclParseReturn, ParsedHclBlock, SourcePos, isSourceRange, HclExpression } from '../types'
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const grammar = require('./hcl')
-const WILDCARD = '####'
-const MAX_ERRORS = 20
-interface NearleyError {
-  token: {
-    type: string
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    value: any
-    text: string
-    offset: number
-    lineBreaks: number
-    line: number
-    col: number
-  }
-  offset: number
-  message: string
-}
 
-const getStateSymbol = (state: nearley.LexerState) : string => {
+const WILDCARD = '****dynamic****'
+const MAX_FILE_ERRORS = 20
+
+const getStatePrintToken = (state: nearley.LexerState): string | undefined => {
   const symbol = state.rule.symbols[state.dot]
-  const type = typeof symbol;
-  if (type === "string") {
-      return symbol;
-  } else if (type === "object" && symbol.literal) {
-      return JSON.stringify(symbol.literal);
-  } else if (type === "object" && symbol instanceof RegExp) {
-      return 'character matching ' + symbol;
-  } else if (type === "object" && symbol.type) {
-      return symbol.type + ' token';
-  } else {
-      return JSON.stringify(symbol)
-  }
+  const type = typeof symbol
+  return (type === 'object' && symbol.type && symbol.type !== 'wildcard')
+    ? symbol.type
+    : undefined
 }
 
-const getExpectedSymbols = (hclParser: nearley.Parser): string[] => {
-  const printableToken = (token: string): boolean => {
-    const allowed = ['value', 'newline', 'whitespace', 'word', ]
-    return allowed.indexOf(token) >= 0
-  }
-  const table = _.get(hclParser, 'table')
-  const lastColumnIndex = table.length - 2;
-  const lastColumn = table[lastColumnIndex];
-  return lastColumn.states.map(getStateSymbol).filter(printableToken)
-}
-const convertParserError = (err: NearleyError, filename: string, hclParser: nearley.Parser): HclParseError => {
-  const expected = getExpectedSymbols(hclParser)
-  const token = err.token;
+const convertParserError = (
+  err: NearleyError,
+  filename: string,
+  lastColumn: nearley.LexerState
+): HclParseError => {
+  const expected = lastColumn.states
+    .map(getStatePrintToken)
+    .filter((s: string | undefined) => s !== undefined)
+  const { token } = err
   return {
     severity: 1,
-    summary:  `Unexpected ${token}`,
+    summary: `Unexpected ${token}`,
     detail: `Expected ${
-      expected.length > 1 
-      ? `${expected.slice(0, -1).join(', ')} or ${expected[expected.length -1]}`
-      : expected[0]
+      expected.length > 1
+        ? `${expected.slice(0, -1).join(', ')} or ${expected[expected.length - 1]}`
+        : expected[0]
     } token but found: ${token} instead.`,
     subject: {
       filename,
@@ -65,7 +40,6 @@ const convertParserError = (err: NearleyError, filename: string, hclParser: near
     },
   }
 }
-
 
 const createEmptyBody = (src: string, filename: string): ParsedHclBlock => ({
   attrs: {},
@@ -101,29 +75,69 @@ const unexpectedEOFError = (src: string, filename: string): HclParseError => {
   }
 }
 
-export const parse = (src: Buffer, filename: string): HclParseReturn => {
-  const hclParser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar))
-  setFilename(filename)
-  const words = src.toString().split(' ').map(w => `${w} `)
-  const errors = []
-  let savedState = hclParser.save()
-  for (const word of words) {
-    try {
-      hclParser.feed(word)
+const addLineOffset = (pos: SourcePos, wildcardPosition: SourcePos): SourcePos => (
+  pos.line === wildcardPosition.line && pos.col > wildcardPosition.col
+    ? { line: pos.line, col: pos.col - WILDCARD.length, byte: pos.byte }
+    : pos
+)
+
+const restoreOrigRanges = (
+  blockItems: HclExpression[],
+  wildcardPosition: SourcePos
+): HclExpression[] => (
+  _.cloneDeepWith(blockItems, value => ((isSourceRange(value))
+    ? {
+      start: addLineOffset(value.start, wildcardPosition),
+      end: addLineOffset(value.end, wildcardPosition),
+      filename: value.filename,
     }
-    catch(e) {
-      errors.push(convertParserError(e as NearleyError, filename, hclParser))
-      if (errors.length > MAX_ERRORS) break
-      hclParser.restore(savedState)
-      hclParser.feed(WILDCARD)
-      hclParser.feed(word)
+    : undefined))
+)
+
+export const parseBuffer = (
+  src: string,
+  hclParser: nearley.Parser,
+  filename: string,
+  prevErrors: HclParseError[] = []
+): [HclExpression[], HclParseError[]] => {
+  try {
+    hclParser.feed(src)
+  } catch (err) {
+    // The next two lines recover the state of the parser before the bad token was
+    // entered - so we can understand what token was needed, and so we can recover
+    // the parsing using the wildcard token
+    const parseTable = _.get(hclParser, 'table')
+    const lastColumn = parseTable[parseTable.length - 2]
+    const parserError = convertParserError(err, filename, lastColumn)
+    // The is equal check is here to make sure we won't get into a "recovery loop" which
+    // is a condition in which the error recovery does not change the state.
+    if (prevErrors.length < MAX_FILE_ERRORS && !_.isEqual(_.last(prevErrors), parserError)) {
+      // Restoring the state to before the error took place
+      hclParser.restore(lastColumn)
+      // Adding the wildcard token to bypass the error and give the parser another change
+      const restOfBuffer = WILDCARD + src.slice(parserError.subject.start.byte)
+      setErrorRecoveryMode() //Allows the wildcard token to be parsed from now on in this file
+      const [blockItems, errors] = parseBuffer(
+        restOfBuffer,
+        hclParser,
+        filename,
+        [...prevErrors, parserError]
+      )
+      return [restoreOrigRanges(blockItems, parserError.subject.start), errors]
     }
-    savedState = hclParser.save()
+    return [[], [...prevErrors, parserError]]
   }
   const blockItems = hclParser.finish()[0]
+  return [blockItems, prevErrors]
+}
+
+export const parse = (src: Buffer, filename: string): HclParseReturn => {
+  const hclParser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar), { keepHistory: true })
+  startFile(filename)
+  const [blockItems, errors] = parseBuffer(src.toString(), hclParser, filename)
   if (blockItems !== undefined) {
     return {
-      body: blockItems ? convertMain(blockItems) : createEmptyBody(src.toString(), filename),
+      body: convertMain(blockItems),
       errors,
     }
   }

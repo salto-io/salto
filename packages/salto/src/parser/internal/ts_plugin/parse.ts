@@ -27,12 +27,12 @@ const convertParserError = (
   const { token } = err
   return {
     severity: 1,
-    summary: `Unexpected ${token}`,
+    summary: `Unexpected ${token.text}`,
     detail: `Expected ${
       expected.length > 1
         ? `${expected.slice(0, -1).join(', ')} or ${expected[expected.length - 1]}`
         : expected[0]
-    } token but found: ${token} instead.`,
+    } token but found: ${token.text} instead.`,
     subject: {
       filename,
       start: { col: token.col, line: token.line, byte: token.offset },

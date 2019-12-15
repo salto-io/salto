@@ -19,7 +19,7 @@ const { copyFile, rm, mkdirp } = file
 
 const credentials = salesforceTestHelpers.credentials()
 let lastPlan: Plan
-const mockShouldDeploy = (p: Plan): boolean => {
+const mockShouldDeploy = async (p: Plan): Promise<boolean> => {
   lastPlan = p
   return wu(p.itemsByEvalOrder()).toArray().length < 100 // Safety to avoid breaking the SF instance
 }
@@ -28,8 +28,10 @@ const mockFormatExecutionPlan = (p: Plan): string => {
   lastPlan = p
   return 'plan'
 }
-jest.spyOn(formatterImpl, 'formatExecutionPlan').mockImplementation(() => mockFormatExecutionPlan)
-jest.spyOn(callbacksImpl, 'getConfigFromUser').mockImplementation(() => mockGetConfigType())
+jest.spyOn(formatterImpl, 'formatExecutionPlan').mockImplementation(mockFormatExecutionPlan)
+jest.spyOn(callbacksImpl, 'getConfigFromUser').mockImplementation(
+  () => Promise.resolve(mockGetConfigType())
+)
 jest.spyOn(callbacksImpl, 'shouldDeploy').mockImplementation(() => mockShouldDeploy)
 
 describe('commands e2e', () => {

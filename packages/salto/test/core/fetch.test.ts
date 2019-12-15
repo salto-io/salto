@@ -15,7 +15,7 @@ import { DuplicateAnnotationError } from '../../src/core/merger/internal/object_
 jest.mock('pietile-eventemitter')
 
 describe('fetch', () => {
-  const mockMergeResult = (mockResult: merger.MergeResult): jest.Mock<unknown> =>
+  const mockMergeResult = (mockResult: merger.MergeResult): jest.SpyInstance =>
     jest.spyOn(merger, 'mergeElements').mockImplementation(() => mockResult)
   const testID = new ElemID('dummy', 'elem')
   const testField = new Field(testID, 'test', BuiltinTypes.STRING, { annotation: 'value' })

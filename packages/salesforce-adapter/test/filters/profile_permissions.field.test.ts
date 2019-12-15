@@ -133,7 +133,7 @@ describe('Field Permissions filter', () => {
     { ...admin, [constants.API_NAME]: 'Delta__c' }))
   addStandard(delta)
 
-  let mockUpdate: jest.Mock<unknown>
+  let mockUpdate: jest.Mock
 
   type FilterType = FilterWith<'onFetch' | 'onAdd' | 'onUpdate'>
   const filter = (): FilterType => filterCreator({ client }) as FilterType

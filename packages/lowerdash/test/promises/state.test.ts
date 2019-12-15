@@ -6,7 +6,7 @@ describe('promiseWithState', () => {
 
   describe('when the promise is not resolved or rejected', () => {
     beforeEach(() => {
-      o = new Promise<number>(() => {})
+      o = new Promise<number>(() => undefined)
       p = promiseWithState(o)
     })
 

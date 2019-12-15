@@ -36,10 +36,11 @@ const mockConfigType = new ObjectType({
   annotations: {},
 })
 
-const mockRemove = jest.fn(a => new ObjectType({ elemID: new ElemID('salesforce', a.elemID.name) }))
+const mockRemove = jest.fn(() => Promise.resolve())
 
-const mockUpdate = jest.fn((b, _a) => new ObjectType({ elemID: new ElemID('salesforce', b.elemID.name) }))
-
+const mockUpdate = jest.fn(b => Promise.resolve(
+  new ObjectType({ elemID: new ElemID('salesforce', b.elemID.name) })
+))
 
 const objType = new ObjectType({ elemID: new ElemID('salesforce', 'dummy') })
 const fetchedElements = [
@@ -47,7 +48,7 @@ const fetchedElements = [
   new InstanceElement('instance_1', objType, {}),
   new InstanceElement('instance_2', objType, {}),
 ]
-const mockFetch = jest.fn(() => fetchedElements)
+const mockFetch = jest.fn(() => Promise.resolve(fetchedElements))
 
 const instancesIterator = async function *instancesIterator(): AsyncIterable<InstanceElement[]> {
   const testType = new ObjectType({
@@ -288,7 +289,7 @@ describe('api functions', () => {
     })
     describe('data migration', () => {
       let ws: Workspace
-      let mockStateGet: jest.Mock<unknown>
+      let mockStateGet: jest.Mock
       const elemID = new ElemID('salesforce', 'test')
       const testType = new ObjectType({ elemID })
       const instanceElement = new InstanceElement(

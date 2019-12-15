@@ -111,7 +111,7 @@ describe('Object Permissions filter', () => {
       [constants.INSTANCE_FULL_NAME_FIELD]: 'Standard',
     })
 
-  let mockUpdate: jest.Mock<unknown>
+  let mockUpdate: jest.Mock
 
   type FilterType = FilterWith<'onFetch' | 'onAdd' | 'onUpdate'>
   const filter = (): FilterType => filterCreator({ client }) as FilterType

@@ -90,7 +90,7 @@ describe('fetch command', () => {
       })
 
       describe('with emitters called', () => {
-        const mockFetchWithEmitter = jest.fn((
+        const mockFetchWithEmitter: jest.Mock = jest.fn((
           _workspace,
           _fillConfig,
           progressEmitter: EventEmitter<FetchProgressEvents>

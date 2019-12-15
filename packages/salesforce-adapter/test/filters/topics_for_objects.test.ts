@@ -49,7 +49,7 @@ describe('Field Permissions filter', () => {
 
   const enableTopicTrue = { [ENABLE_TOPICS]: true }
 
-  let mockUpdate: jest.Mock<unknown>
+  let mockUpdate: jest.Mock
 
   type FilterType = FilterWith<'onFetch' | 'onAdd' | 'onUpdate'>
   const filter = (): FilterType => filterCreator({ client }) as FilterType

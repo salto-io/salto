@@ -33,27 +33,27 @@ describe('SalesforceAdapter filters', () => {
 
     it('should call inner aspects upon fetch', async () => {
       await adapter.fetch()
-      const { mock } = filter.onFetch as jest.Mock<undefined>
+      const { mock } = filter.onFetch as jest.Mock
       expect(mock.calls.length).toBe(1)
     })
 
     it('should call inner aspects upon add', async () => {
       await adapter.add(object)
-      const { mock } = filter.onAdd as jest.Mock<undefined>
+      const { mock } = filter.onAdd as jest.Mock
       expect(mock.calls.length).toBe(1)
       expect(id(mock.calls[0][0])).toEqual(id(object))
     })
 
     it('should call inner aspects upon remove', async () => {
       await adapter.remove(object)
-      const { mock } = filter.onRemove as jest.Mock<undefined>
+      const { mock } = filter.onRemove as jest.Mock
       expect(mock.calls.length).toBe(1)
       expect(id(mock.calls[0][0])).toEqual(id(object))
     })
 
     it('should call inner aspects upon update', async () => {
       await adapter.update(object, object, [{ action: 'modify', data: { before: object, after: object } }])
-      const { mock } = filter.onUpdate as jest.Mock<undefined>
+      const { mock } = filter.onUpdate as jest.Mock
       expect(mock.calls.length).toBe(1)
       expect(mock.calls[0][0]).toEqual(object)
       expect(id(mock.calls[0][1])).toEqual(id(object))

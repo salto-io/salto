@@ -126,9 +126,9 @@ describe('SalesforceAdapter import-export operations', () => {
   })
 
   describe('Update (create/modify/delete) operations', () => {
-    let mockLoad: jest.Mock<unknown>
-    let mockThen: jest.Mock<unknown>
-    let mockRetrieve: jest.Mock<unknown>
+    let mockLoad: jest.Mock
+    let mockThen: jest.Mock
+    let mockRetrieve: jest.Mock
 
     beforeEach(() => {
       mockThen = jest.fn(() => Promise.resolve())

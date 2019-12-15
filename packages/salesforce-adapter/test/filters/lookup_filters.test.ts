@@ -181,7 +181,7 @@ describe('lookup filters filter', () => {
     const { client } = mockClient()
     const filter = filterCreator({ client }) as FilterWith<'onAdd'>
 
-    const updateSpy = jest.spyOn(client, 'update').mockImplementation(() => [])
+    const updateSpy = jest.spyOn(client, 'update').mockImplementation(() => Promise.resolve([]))
     beforeEach(() => {
       mockObject = origMockObject.clone()
       updateSpy.mockReset()
@@ -270,7 +270,7 @@ describe('lookup filters filter', () => {
 
     const { client } = mockClient()
     const filter = filterCreator({ client }) as FilterWith<'onUpdate'>
-    const updateSpy = jest.spyOn(client, 'update').mockImplementation(() => [])
+    const updateSpy = jest.spyOn(client, 'update').mockImplementation(() => Promise.resolve([]))
     beforeEach(() => {
       beforeObject = origBeforeObject.clone()
       afterObject = origAfterObject.clone()

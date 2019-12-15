@@ -22,7 +22,7 @@ jest.mock('salto', () => ({
     ),
   },
   loadConfig: jest.fn().mockImplementation(
-    workspaceDir => ({ baseDir: workspaceDir, additionalBlueprints: [], cacheLocation: '' })
+    workspaceDir => ({ baseDir: workspaceDir, additionalBlueprints: [], services: ['salesforce'], cacheLocation: '' })
   ),
 }))
 
@@ -46,10 +46,11 @@ describe('fetch command', () => {
         const erroredWorkspace = {
           hasErrors: () => true,
           errors: { strings: () => ['some error'] },
+          config: { services: ['salesforce'] },
           getWorkspaceErrors,
         } as unknown as Workspace
         (Workspace.load as jest.Mock).mockResolvedValueOnce(Promise.resolve(erroredWorkspace))
-        await command(workspaceDir, true, false, cliOutput, spinnerCreator).execute()
+        await command(workspaceDir, true, false, ['salesforce'], cliOutput, spinnerCreator).execute()
       })
 
       it('should fail', async () => {
@@ -60,7 +61,7 @@ describe('fetch command', () => {
 
     describe('with valid workspace', () => {
       beforeEach(async () => {
-        await command(workspaceDir, true, false, cliOutput, spinnerCreator).execute()
+        await command(workspaceDir, true, false, ['salesforce'], cliOutput, spinnerCreator).execute()
       })
 
       it('should load the workspace from the provided directory', () => {
@@ -84,6 +85,7 @@ describe('fetch command', () => {
         mockWorkspace = {
           hasErrors: () => false,
           elements: [],
+          config: { services: ['salesforce'] },
           updateBlueprints: jest.fn(),
           flush: jest.fn(),
         } as unknown as Workspace
@@ -93,6 +95,7 @@ describe('fetch command', () => {
         const mockFetchWithEmitter: jest.Mock = jest.fn((
           _workspace,
           _fillConfig,
+          _services,
           progressEmitter: EventEmitter<FetchProgressEvents>
         ) => {
           const getChangesEmitter = new StepEmitter()
@@ -109,6 +112,7 @@ describe('fetch command', () => {
             force: true,
             interactive: false,
             output: cliOutput,
+            inputServices: ['salesforce'],
             fetch: mockFetchWithEmitter,
             getApprovedChanges: mockApprove,
           })
@@ -130,6 +134,7 @@ describe('fetch command', () => {
             force: true,
             interactive: false,
             output: cliOutput,
+            inputServices: ['salesforce'],
             fetch: mockFetch,
             getApprovedChanges: mockApprove,
           })
@@ -155,6 +160,7 @@ describe('fetch command', () => {
               workspace: mockWorkspace,
               force: true,
               interactive: false,
+              inputServices: ['salesforce'],
               output: cliOutput,
               fetch: mockFetch,
               getApprovedChanges: mockApprove,
@@ -170,6 +176,7 @@ describe('fetch command', () => {
               workspace: mockWorkspace,
               force: false,
               interactive: false,
+              inputServices: ['salesforce'],
               output: cliOutput,
               fetch: mockFetch,
               getApprovedChanges: mockApprove,
@@ -186,6 +193,7 @@ describe('fetch command', () => {
               workspace: mockWorkspace,
               force: false,
               interactive: false,
+              inputServices: ['salesforce'],
               output: cliOutput,
               fetch: mockFetch,
               getApprovedChanges: mockApprove,
@@ -205,6 +213,7 @@ describe('fetch command', () => {
                 workspace: mockWorkspace,
                 force: false,
                 interactive: false,
+                inputServices: ['salesforce'],
                 output: cliOutput,
                 fetch: mockFetch,
                 getApprovedChanges: mockApprove,
@@ -224,6 +233,7 @@ describe('fetch command', () => {
                 workspace: mockWorkspace,
                 force: false,
                 interactive: false,
+                inputServices: ['salesforce'],
                 output: cliOutput,
                 fetch: mockFetch,
                 getApprovedChanges: mockApprove,
@@ -244,6 +254,7 @@ describe('fetch command', () => {
                 workspace: mockWorkspace,
                 force: false,
                 interactive: false,
+                inputServices: ['salesforce'],
                 output: cliOutput,
                 fetch: mockFetch,
                 getApprovedChanges: mockApprove,
@@ -265,6 +276,7 @@ describe('fetch command', () => {
                 workspace: mockWorkspace,
                 force: false,
                 interactive: false,
+                inputServices: ['salesforce'],
                 output: cliOutput,
                 fetch: mockFetch,
                 getApprovedChanges: mockApprove,
@@ -281,6 +293,7 @@ describe('fetch command', () => {
                 workspace: mockWorkspace,
                 force: false,
                 interactive: false,
+                inputServices: ['salesforce'],
                 output: cliOutput,
                 fetch: mockFailedFetch,
                 getApprovedChanges: mockApprove,

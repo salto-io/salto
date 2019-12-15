@@ -4,20 +4,29 @@ import { preview, MockWriteStream, getWorkspaceErrors, mockSpinnerCreator } from
 import { SpinnerCreator, Spinner } from '../../src/types'
 
 const mockPreview = preview
-const mockWs = { hasErrors: () => false }
-const mockErrWs = {
-  hasErrors: () => true,
-  errors: { strings: () => ['Error'] },
-  getWorkspaceErrors,
-}
 jest.mock('salto', () => ({
   ...require.requireActual('salto'),
   preview: jest.fn().mockImplementation(() => mockPreview()),
   Workspace: {
-    load: jest.fn().mockImplementation(config => (config.baseDir === 'errdir' ? mockErrWs : mockWs)),
+    load: jest.fn().mockImplementation(config => {
+      if (config.baseDir === 'errdir') {
+        return {
+          hasErrors: () => true,
+          errors: {
+            strings: () => ['Error', 'Error'],
+          },
+          getWorkspaceErrors,
+          config,
+        }
+      }
+      return {
+        hasErrors: () => false,
+        config,
+      }
+    }),
   },
   loadConfig: jest.fn().mockImplementation(
-    workspaceDir => ({ baseDir: workspaceDir, additionalBlueprints: [], cacheLocation: '' })
+    workspaceDir => ({ baseDir: workspaceDir, additionalBlueprints: [], services: ['salesforce'], cacheLocation: '' })
   ),
 }))
 

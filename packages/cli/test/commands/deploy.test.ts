@@ -15,7 +15,7 @@ const mockFlush = jest.fn().mockImplementation(() => Promise.resolve())
 jest.mock('salto', () => ({
   ...require.requireActual('salto'),
   loadConfig: jest.fn().mockImplementation(
-    workspaceDir => Promise.resolve({ baseDir: workspaceDir, additionalBlueprints: [], cacheLocation: '' })
+    workspaceDir => Promise.resolve({ baseDir: workspaceDir, additionalBlueprints: [], services: ['salesforce'], cacheLocation: '' })
   ),
   Workspace: {
     load: jest.fn().mockImplementation((
@@ -28,12 +28,14 @@ jest.mock('salto', () => ({
             strings: () => ['Error', 'Error'],
           },
           getWorkspaceErrors,
+          config,
         }
       }
       return {
         hasErrors: () => false,
         updateBlueprints: mockUpdateBlueprints,
         flush: mockFlush,
+        config,
       }
     }),
   },

@@ -185,7 +185,7 @@ describe('api functions', () => {
         localStorage: localDir.path,
         baseDir: baseDir.path,
         stateLocation: './latest_state.bpc',
-        services: ['salesforce'],
+        services: ['jira'],
         additionalBlueprints: [filePath('missing.bp')],
       }
       const ws: Workspace = await Workspace.load(config)
@@ -194,7 +194,7 @@ describe('api functions', () => {
         mockGetConfigFromUser,
         mockShouldDeployYes,
         mockReportCurrentAction,
-        ['salesforce']
+        ['jira']
       )
       expect(deployResult.success).toBeFalsy()
       expect(deployResult.errors.length).toBeGreaterThan(0)
@@ -367,7 +367,7 @@ describe('api functions', () => {
     let changes: plan.DetailedChange[]
     beforeEach(async () => {
       mockWorkspace = createMockWorkspace([])
-      changes = [...(await commands.fetch(mockWorkspace, mockGetConfigFromUser)).changes]
+      changes = [...(await commands.fetch(mockWorkspace, mockGetConfigFromUser, ['salesforce'])).changes]
         .map(change => change.change)
     })
 

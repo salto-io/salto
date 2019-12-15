@@ -1,4 +1,3 @@
-import _ from 'lodash'
 import { preview } from 'salto'
 import { createCommandBuilder } from '../command_builder'
 import {
@@ -7,12 +6,13 @@ import {
 import { formatExecutionPlan } from '../formatter'
 import { loadWorkspace } from '../workspace'
 import Prompts from '../prompts'
+import { validateAndDefaultServices } from '../services'
 
 export const command = (
   workspaceDir: string,
   { stdout, stderr }: CliOutput,
   spinnerCreator: SpinnerCreator,
-  services: string[]
+  inputServices: string[]
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
     const { workspace, errored } = await loadWorkspace(workspaceDir,
@@ -20,14 +20,12 @@ export const command = (
     if (errored) {
       return CliExitCode.AppError
     }
-    const diffServices = _.difference(services, workspace.config.services || [])
-    if (diffServices.length > 0) {
-      throw new Error(`Not all services (${diffServices}) are set up for this workspace`)
-    }
+
+    const commandServices = validateAndDefaultServices(workspace.config.services, inputServices)
 
     const spinner = spinnerCreator(Prompts.PREVIEW_STARTED, {})
     try {
-      const workspacePlan = await preview(workspace, services)
+      const workspacePlan = await preview(workspace, commandServices)
       spinner.succeed(Prompts.PREVIEW_FINISHED)
       stdout.write(formatExecutionPlan(workspacePlan))
       return CliExitCode.Success
@@ -57,6 +55,7 @@ const previewBuilder = createCommandBuilder({
       services: {
         alias: 's',
         describe: 'Specific services to perform this action for (default=all)',
+        type: 'array',
         string: true,
       },
     },

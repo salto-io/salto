@@ -19,6 +19,7 @@ import {
 import { getConfigWithHeader, getApprovedChanges as cliGetApprovedChanges } from '../callbacks'
 import { updateWorkspace, loadWorkspace } from '../workspace'
 import Prompts from '../prompts'
+import { validateAndDefaultServices } from '../services'
 
 const log = logger(module)
 
@@ -28,14 +29,16 @@ type approveChangesFunc = (
 ) => Promise<ReadonlyArray<FetchChange>>
 
 export const fetchCommand = async (
-  { workspace, force, interactive, output, fetch, getApprovedChanges }: {
+  { workspace, force, interactive, inputServices, output, fetch, getApprovedChanges }: {
     workspace: Workspace
     force: boolean
     interactive: boolean
+    inputServices: string[]
     output: CliOutput
     fetch: fetchFunc
     getApprovedChanges: approveChangesFunc
   }): Promise<CliExitCode> => {
+  const commandServices = validateAndDefaultServices(workspace.config.services, inputServices)
   const outputLine = (text: string): void => output.stdout.write(`${text}\n`)
   const progressOutputer = (
     startText: string,
@@ -76,7 +79,8 @@ export const fetchCommand = async (
   const fetchResult = await fetch(
     workspace,
     _.partial(getConfigWithHeader, output.stdout),
-    fetchProgress
+    commandServices,
+    fetchProgress,
   )
   if (!fetchResult.success) {
     output.stderr.write(formatFatalFetchError(fetchResult.mergeErrors))
@@ -118,6 +122,7 @@ export const command = (
   workspaceDir: string,
   force: boolean,
   interactive: boolean,
+  inputServices: string[],
   output: CliOutput,
   spinnerCreator: SpinnerCreator,
 ): CliCommand => ({
@@ -132,6 +137,7 @@ export const command = (
       workspace,
       force,
       interactive,
+      inputServices,
       output,
       fetch: apiFetch,
       getApprovedChanges: cliGetApprovedChanges,
@@ -142,6 +148,7 @@ export const command = (
 type FetchArgs = {
   force: boolean
   interactive: boolean
+  services: string[]
 }
 type FetchParsedCliInput = ParsedCliInput<FetchArgs>
 
@@ -164,11 +171,17 @@ const fetchBuilder = createCommandBuilder({
         default: false,
         demandOption: false,
       },
+      services: {
+        alias: 's',
+        describe: 'Specific services to perform this action for (default=all)',
+        type: 'array',
+        string: true,
+      },
     },
   },
 
   async build(input: FetchParsedCliInput, output: CliOutput, spinnerCreator: SpinnerCreator) {
-    return command('.', input.args.force, input.args.interactive, output, spinnerCreator)
+    return command('.', input.args.force, input.args.interactive, input.args.services, output, spinnerCreator)
   },
 })
 

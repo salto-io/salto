@@ -144,21 +144,28 @@ export type FetchResult = {
 export type fetchFunc = (
   workspace: Workspace,
   fillConfig: fillConfigFunc,
+  services: string[],
   progressEmitter?: EventEmitter<FetchProgressEvents>,
 ) => Promise<FetchResult>
 
-export const fetch: fetchFunc = async (workspace, fillConfig, progressEmitter?) => {
+export const fetch: fetchFunc = async (
+  workspace,
+  fillConfig,
+  services = workspace.config.services,
+  progressEmitter?
+) => {
   log.debug('fetch starting..')
 
   const state = new State(workspace.config.stateLocation)
   const stateElements = await state.get()
+  const filteredStateElements = filterElementsByServices(stateElements, services)
   log.debug(`finished loading ${stateElements.length} state elements`)
 
   const adapters = await login(
     workspace,
     fillConfig,
-    workspace.config.services || [],
-    createElemIdGetter(stateElements)
+    services,
+    createElemIdGetter(filteredStateElements)
   )
 
   if (progressEmitter) {
@@ -166,7 +173,10 @@ export const fetch: fetchFunc = async (workspace, fillConfig, progressEmitter?) 
   }
   try {
     const { changes, elements, mergeErrors } = await fetchChanges(
-      adapters, workspace.elements, stateElements, progressEmitter,
+      adapters,
+      filterElementsByServices(workspace.elements, services),
+      filteredStateElements,
+      progressEmitter,
     )
     log.debug(`${elements.length} elements were fetched [mergedErrors=${mergeErrors.length}]`)
     state.override(elements)

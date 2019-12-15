@@ -292,6 +292,7 @@ export class Workspace {
     const minimalConfig = {
       uid: uuidv4(),
       name: workspaceName || path.basename(absBaseDir),
+      services: ['salesforce'], // TODO: Remove this when we support service management
     }
     const config = completeConfig(absBaseDir, minimalConfig)
     // We want to make sure that *ALL* of the paths we are going to create

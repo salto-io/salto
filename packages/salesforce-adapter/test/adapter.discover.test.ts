@@ -20,7 +20,6 @@ describe('SalesforceAdapter fetch', () => {
   beforeEach(() => {
     ({ connection, adapter } = mockAdapter({
       adapterParams: {
-        metadataAdditionalTypes: [],
         getElemIdFunc: mockGetElemIdFunc,
       },
     }))
@@ -209,7 +208,6 @@ describe('SalesforceAdapter fetch', () => {
     it('should use existing elemID when fetching custom object', async () => {
       ({ connection, adapter } = mockAdapter({
         adapterParams: {
-          metadataAdditionalTypes: [],
           getElemIdFunc: (adapterName: string, _serviceIds: ServiceIds, name: string):
             ElemID => new ElemID(adapterName, name.endsWith(constants.SALESFORCE_CUSTOM_SUFFIX)
             ? name.slice(0, -3) : name),
@@ -589,6 +587,7 @@ describe('SalesforceAdapter fetch', () => {
         + 3
         + 1 /* field permissions */
         + 1 /* object permissions */
+        + 1 /* user permissions */
         + 2 /* field dependency & value settings */)
 
       const types = _.assign({}, ...result.map(t => ({ [id(t)]: t })))
@@ -648,7 +647,6 @@ describe('SalesforceAdapter fetch', () => {
     it('should use existing elemID when fetching metadata instance', async () => {
       ({ connection, adapter } = mockAdapter({
         adapterParams: {
-          metadataAdditionalTypes: [],
           getElemIdFunc: (adapterName: string, serviceIds: ServiceIds, name: string):
             ElemID => new ElemID(adapterName, name === 'flow_instance'
             && serviceIds[constants.INSTANCE_FULL_NAME_FIELD] === 'FlowInstance'

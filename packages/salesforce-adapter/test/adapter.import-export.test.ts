@@ -15,7 +15,6 @@ describe('SalesforceAdapter import-export operations', () => {
   beforeEach(() => {
     ({ connection, adapter } = mockAdapter({
       adapterParams: {
-        metadataAdditionalTypes: [],
       },
     }))
   })

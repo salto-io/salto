@@ -32,12 +32,12 @@ const evaluate = (expression: HclExpression, baseId?: ElemID, sourceMap?: Source
       .value(),
     literal: exp => exp.value,
     reference: exp => new ReferenceExpression({ traversalParts: exp.value }),
+    dynamic: _exp => undefined,
   }
 
   if (sourceMap && baseId && expression.source) {
     sourceMap.push(baseId, expression as { source: SourceRange })
   }
-
   return evaluators[expression.type](expression)
 }
 

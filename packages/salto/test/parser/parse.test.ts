@@ -98,7 +98,6 @@ describe('Salto parser', () => {
         path_assistant_enabled = false
       }
       `
-
     beforeAll(async () => {
       ({ elements, sourceMap } = await parse(Buffer.from(body), 'none'))
     })

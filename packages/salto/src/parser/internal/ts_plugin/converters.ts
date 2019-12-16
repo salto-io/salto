@@ -3,6 +3,7 @@ import { ParsedHclBlock, HclAttribute, HclExpression, SourceRange } from '../typ
 
 
 let currentFilename: string
+let allowWildcard = false
 
 type HCLToken = ParsedHclBlock | HclAttribute | HclExpression
 
@@ -16,6 +17,16 @@ interface LexerToken {
   offset: number
 }
 
+export class NearleyError extends Error {
+  constructor(
+    public token: LexerToken,
+    public offset: number,
+    message: string
+  ) {
+    super(message)
+  }
+}
+
 type Token = HCLToken | LexerToken
 
 const isLexerToken = (token: Token): token is LexerToken => 'value' in token
@@ -24,8 +35,13 @@ const isLexerToken = (token: Token): token is LexerToken => 'value' in token
     && 'col' in token
     && 'offset' in token
 
-export const setFilename = (filename: string): void => {
+export const startParse = (filename: string): void => {
   currentFilename = filename
+  allowWildcard = false
+}
+
+export const setErrorRecoveryMode = (): void => {
+  allowWildcard = true
 }
 
 const createSourceRange = (st: Token, et: Token): SourceRange => {
@@ -188,3 +204,14 @@ export const convertAttr = (key: LexerToken, value: HclExpression): HclExpressio
   value,
   source: createSourceRange(key, value),
 })
+
+export const convertWildcard = (wildcard: LexerToken): HclExpression => {
+  if (allowWildcard) {
+    return {
+      type: 'dynamic',
+      expressions: [],
+      source: createSourceRange(wildcard, wildcard),
+    }
+  }
+  throw new NearleyError(wildcard, wildcard.offset, 'Invalid wildcard token')
+}

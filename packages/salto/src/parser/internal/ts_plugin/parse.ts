@@ -27,7 +27,7 @@ const convertParserError = (
   const { token } = err
   return {
     severity: 1,
-    summary: `Unexpected ${token.text}`,
+    summary: `Unexpected token: ${token.text}`,
     detail: `Expected ${
       expected.length > 1
         ? `${expected.slice(0, -1).join(', ')} or ${expected[expected.length - 1]}`

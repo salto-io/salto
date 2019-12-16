@@ -102,8 +102,7 @@ const validateApiName = (prevElement: Element, newElement: Element): void => {
 }
 
 export interface SalesforceAdapterParams {
-  // Metadata types that we want to treat as top level types (fetch instances of them)
-  // even though they are not returned as top level metadata types from the API
+  // Metadata types that we want to fetch even though they are not returned from the API
   metadataAdditionalTypes?: string[]
 
   // Metadata types that we do not want to fetch even though they are returned as top level
@@ -113,9 +112,6 @@ export interface SalesforceAdapterParams {
   // Metadata types that we have to fetch using the retrieve API endpoint and add update or remove
   // using the deploy API endpoint
   metadataToRetrieveAndDeploy?: string[]
-
-  // MetadataTypes that we want to fetch their types since we don't get them
-  metadataTypesToFetch?: string[]
 
   // Filters to deploy to all adapter operations
   filterCreators?: FilterCreator[]
@@ -145,7 +141,7 @@ type NamespaceAndInstances = { namespace?: string; instanceInfo: MetadataInfo }
 export default class SalesforceAdapter {
   private metadataTypeBlacklist: string[]
   private metadataToRetrieveAndDeploy: string[]
-  private metadataTypesToFetch: string[]
+  private metadataAdditionalTypes: string[]
   private filterCreators: FilterCreator[]
   private client: SalesforceClient
   private systemFields: string[]
@@ -167,7 +163,7 @@ export default class SalesforceAdapter {
       'AssignmentRules',
       'InstalledPackage', // listMetadataObjects of this types returns duplicates
     ],
-    metadataTypesToFetch = [
+    metadataAdditionalTypes = [
       'ProfileUserPermission',
     ],
     filterCreators = [
@@ -216,7 +212,7 @@ export default class SalesforceAdapter {
   }: SalesforceAdapterParams) {
     this.metadataTypeBlacklist = metadataTypeBlacklist
     this.metadataToRetrieveAndDeploy = metadataToRetrieveAndDeploy
-    this.metadataTypesToFetch = metadataTypesToFetch
+    this.metadataAdditionalTypes = metadataAdditionalTypes
     this.filterCreators = filterCreators
     this.client = client
     this.systemFields = systemFields
@@ -634,7 +630,7 @@ export default class SalesforceAdapter {
     return this.client.listMetadataTypes().then(
       types => _.flatten(types
         .map(x => [x.xmlName, ...makeArray(x.childXmlNames)]))
-        .concat(this.metadataTypesToFetch)
+        .concat(this.metadataAdditionalTypes)
         .filter(name => !this.metadataTypeBlacklist.includes(name))
     )
   }

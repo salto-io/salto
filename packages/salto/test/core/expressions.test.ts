@@ -7,12 +7,9 @@ import { resolve, UnresolvedReference } from '../../src/core/expressions'
 
 describe('Test Salto Expressions', () => {
   const refTo = ({ elemID }: { elemID: ElemID }, ...path: string[]): ReferenceExpression => (
-    new ReferenceExpression({
-      traversalParts: elemID
-        .createNestedID(...path)
-        .getFullName()
-        .split(ElemID.NAMESPACE_SEPARATOR),
-    })
+    new ReferenceExpression(
+      elemID.createNestedID(...path)
+    )
   )
 
   describe('Reference Expression', () => {
@@ -175,7 +172,7 @@ describe('Test Salto Expressions', () => {
       const firstRef = new InstanceElement(
         'first',
         simpleRefType,
-        { test: new ReferenceExpression({ traversalParts: ['noop', 'test'] }) },
+        { test: new ReferenceExpression(new ElemID('noop', 'test')) },
       )
       const bad = [firstRef]
       const res = resolve(firstRef, bad) as InstanceElement

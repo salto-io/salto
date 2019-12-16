@@ -1,6 +1,6 @@
 import {
   ObjectType, ElemID, PrimitiveType, Field, PrimitiveTypes,
-  InstanceElement, isObjectType, BuiltinTypes,
+  InstanceElement, isObjectType, isInstanceElement, BuiltinTypes, ReferenceExpression,
 } from 'adapter-api'
 import _ from 'lodash'
 import { metadataType } from '../../src/transformers/transformer'
@@ -163,18 +163,31 @@ describe('Field Permissions filter', () => {
       // Check mockObject has the right permissions
       const fieldLevelSecurity = objectTypes[0].fields.description
         .annotations[FIELD_LEVEL_SECURITY_ANNOTATION]
-      expect(fieldLevelSecurity.readable).toEqual([ADMIN_FULL_NAME])
-      expect(fieldLevelSecurity.editable).toEqual([STANDARD_FULL_NAME])
+      expect((fieldLevelSecurity.readable[0] as ReferenceExpression).traversalParts).toEqual(
+        [...ADMIN_FULL_NAME.split('.'), constants.INSTANCE_FULL_NAME_FIELD]
+      )
+      expect((fieldLevelSecurity.editable[0] as ReferenceExpression).traversalParts).toEqual(
+        [...STANDARD_FULL_NAME.split('.'), constants.INSTANCE_FULL_NAME_FIELD]
+      )
 
       const fieldLevelSecurityPlus = objectTypes[1].fields.plus
         .annotations[FIELD_LEVEL_SECURITY_ANNOTATION]
-      expect(fieldLevelSecurityPlus.readable).toEqual([ADMIN_FULL_NAME])
+      expect((fieldLevelSecurityPlus.readable[0] as ReferenceExpression).traversalParts)
+        .toEqual(
+          [...ADMIN_FULL_NAME.split('.'), constants.INSTANCE_FULL_NAME_FIELD]
+        )
       expect(fieldLevelSecurityPlus.editable).toEqual([])
 
       const fieldLevelSecurityNoStandard = objectTypes[0].fields.noStandard
         .annotations[FIELD_LEVEL_SECURITY_ANNOTATION]
-      expect(fieldLevelSecurityNoStandard.readable).toEqual([ADMIN_FULL_NAME])
-      expect(fieldLevelSecurityNoStandard.editable).toEqual([ADMIN_FULL_NAME])
+      expect((fieldLevelSecurityNoStandard.readable[0] as ReferenceExpression).traversalParts)
+        .toEqual(
+          [...ADMIN_FULL_NAME.split('.'), constants.INSTANCE_FULL_NAME_FIELD]
+        )
+      expect((fieldLevelSecurityNoStandard.editable[0] as ReferenceExpression).traversalParts)
+        .toEqual(
+          [...ADMIN_FULL_NAME.split('.'), constants.INSTANCE_FULL_NAME_FIELD]
+        )
 
       // Check profile instances' field_permissions were deleted
       getProfileInstances(elements)

@@ -88,6 +88,13 @@ export class ElemID {
       .join(ElemID.NAMESPACE_SEPARATOR)
   }
 
+  getFullNameParts(): string[] {
+    const nameParts = this.fullNameParts()
+    return this.fullNameParts()
+      // If the last part of the name is empty we can omit it
+      .filter((part, idx) => idx !== nameParts.length - 1 || part !== ElemID.CONFIG_NAME)
+  }
+
   isConfig(): boolean {
     return this.typeName === ElemID.CONFIG_NAME
   }

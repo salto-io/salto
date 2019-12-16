@@ -2,16 +2,16 @@ import * as nearley from 'nearley'
 import _ from 'lodash'
 import { startFile, convertMain, NearleyError, setErrorRecoveryMode } from './converters'
 import { HclParseError, HclParseReturn, ParsedHclBlock, SourcePos, isSourceRange, HclExpression } from '../types'
+import { WILDCARD } from './lexer'
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const grammar = require('./hcl')
 
-const WILDCARD = '****dynamic****'
+
 const MAX_FILE_ERRORS = 20
 
 const getStatePrintToken = (state: nearley.LexerState): string | undefined => {
   const symbol = state.rule.symbols[state.dot]
-  const type = typeof symbol
-  return (type === 'object' && symbol.type && symbol.type !== 'wildcard')
+  return (typeof symbol === 'object' && symbol.type && symbol.type !== 'wildcard')
     ? symbol.type
     : undefined
 }
@@ -25,14 +25,13 @@ const convertParserError = (
     .map(getStatePrintToken)
     .filter((s: string | undefined) => s !== undefined)
   const { token } = err
+  const expectedMsg = expected.length > 1
+    ? `${expected.slice(0, -1).join(', ')} or ${expected[expected.length - 1]}`
+    : expected[0]
   return {
     severity: 1,
     summary: `Unexpected token: ${token.text}`,
-    detail: `Expected ${
-      expected.length > 1
-        ? `${expected.slice(0, -1).join(', ')} or ${expected[expected.length - 1]}`
-        : expected[0]
-    } token but found: ${token.text} instead.`,
+    detail: `Expected ${expectedMsg} token but found: ${token.text} instead.`,
     subject: {
       filename,
       start: { col: token.col, line: token.line, byte: token.offset },
@@ -105,7 +104,8 @@ export const parseBuffer = (
   } catch (err) {
     // The next two lines recover the state of the parser before the bad token was
     // entered - so we can understand what token was needed, and so we can recover
-    // the parsing using the wildcard token
+    // the parsing using the wildcard token. We use _.get to overide a type issue
+    // with nearley (the table is not defined, but documented)
     const parseTable = _.get(hclParser, 'table')
     const lastColumn = parseTable[parseTable.length - 2]
     const parserError = convertParserError(err, filename, lastColumn)

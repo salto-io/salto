@@ -1,8 +1,10 @@
 import * as moo from 'moo'
 
+export const WILDCARD = '****dynamic****'
+
 const lexer = moo.states({
   main: {
-    wildcard: '****dynamic****',
+    wildcard: WILDCARD,
     mlStart: { match: /<<EOF[ \t]*\n/, lineBreaks: true, push: 'multilineString' },
     dq: { match: '"', push: 'string' },
     // string: /".*?"/,
@@ -21,14 +23,14 @@ const lexer = moo.states({
     invalidSytax: { match: /[^ ]+/, error: true },
   },
   string: {
-    wildcard: '****dynamic****',
+    wildcard: WILDCARD,
     reference: { match: /\$\{[ \t]*[\d\w.]+[ \t]*\}/, value: s => s.slice(2, -1).trim() },
     dq: { match: '"', pop: 1 },
     content: { match: /[^\\](?=")|.+?[^\\](?=\$\{|"|\n)/, lineBreaks: false },
     invalidSytax: { match: /[^ ]+/, error: true },
   },
   multilineString: {
-    wildcard: '****dynamic****',
+    wildcard: WILDCARD,
     reference: { match: /\$\{[ \t]*[\d\w.]+[ \t]*\}/, value: s => s.slice(2, -1).trim() },
     mlEnd: { match: /^[ \t]*EOF/, pop: 1 },
     content: { match: /^.*\n/, lineBreaks: true },

@@ -114,6 +114,9 @@ export interface SalesforceAdapterParams {
   // using the deploy API endpoint
   metadataToRetrieveAndDeploy?: string[]
 
+  // MetadataTypes that we want to fetch their types since we don't get them
+  metadataTypesToFetch?: string[]
+
   // Filters to deploy to all adapter operations
   filterCreators?: FilterCreator[]
 
@@ -142,6 +145,7 @@ type NamespaceAndInstances = { namespace?: string; instanceInfo: MetadataInfo }
 export default class SalesforceAdapter {
   private metadataTypeBlacklist: string[]
   private metadataToRetrieveAndDeploy: string[]
+  private metadataTypesToFetch: string[]
   private filterCreators: FilterCreator[]
   private client: SalesforceClient
   private systemFields: string[]
@@ -162,6 +166,9 @@ export default class SalesforceAdapter {
       'ApexComponent', // contains encoded zip content
       'AssignmentRules',
       'InstalledPackage', // listMetadataObjects of this types returns duplicates
+    ],
+    metadataTypesToFetch = [
+      'ProfileUserPermission',
     ],
     filterCreators = [
       profilePermissionsFilter,
@@ -209,6 +216,7 @@ export default class SalesforceAdapter {
   }: SalesforceAdapterParams) {
     this.metadataTypeBlacklist = metadataTypeBlacklist
     this.metadataToRetrieveAndDeploy = metadataToRetrieveAndDeploy
+    this.metadataTypesToFetch = metadataTypesToFetch
     this.filterCreators = filterCreators
     this.client = client
     this.systemFields = systemFields
@@ -626,6 +634,7 @@ export default class SalesforceAdapter {
     return this.client.listMetadataTypes().then(
       types => _.flatten(types
         .map(x => [x.xmlName, ...makeArray(x.childXmlNames)]))
+        .concat(this.metadataTypesToFetch)
         .filter(name => !this.metadataTypeBlacklist.includes(name))
     )
   }

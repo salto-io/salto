@@ -589,6 +589,7 @@ describe('SalesforceAdapter fetch', () => {
         + 3
         + 1 /* field permissions */
         + 1 /* object permissions */
+        + 1 /* user permissions */
         + 2 /* field dependency & value settings */)
 
       const types = _.assign({}, ...result.map(t => ({ [id(t)]: t })))

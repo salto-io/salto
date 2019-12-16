@@ -562,6 +562,12 @@ describe('Salesforce adapter E2E with real account', () => {
             visible: 'true',
           },
         ],
+        userPermissions: [
+          {
+            name: 'APIEnabled',
+            enabled: 'false',
+          },
+        ],
         description: 'new e2e profile',
         [constants.INSTANCE_FULL_NAME_FIELD]: instanceElementName,
 
@@ -619,6 +625,12 @@ describe('Salesforce adapter E2E with real account', () => {
             visible: 'true',
           },
         ],
+        userPermissions: [
+          {
+            name: 'APIEnabled',
+            enabled: 'true',
+          },
+        ],
         description: 'updated e2e profile',
         [constants.INSTANCE_FULL_NAME_FIELD]: instanceElementName,
 
@@ -643,6 +655,7 @@ describe('Salesforce adapter E2E with real account', () => {
         tabVisibilities: Record<string, Value>
         applicationVisibilities: Record<string, Value>
         objectPermissions: Record<string, Value>
+        userPermissions: Record<string, Value>
       }
 
       const valuesMap = new Map<string, Value>()
@@ -651,6 +664,7 @@ describe('Salesforce adapter E2E with real account', () => {
       savedInstance.tabVisibilities.forEach((f: Value) => valuesMap.set(f.tab, f))
       savedInstance.applicationVisibilities.forEach((f: Value) => valuesMap.set(f.application, f))
       savedInstance.objectPermissions.forEach((f: Value) => valuesMap.set(f.object, f))
+      savedInstance.objectPermissions.forEach((f: Value) => valuesMap.set(f.name, f))
 
       expect((newValues.fieldPermissions as []).some((v: Value) =>
         _.isEqual(v, valuesMap.get(v.field)))).toBeTruthy()
@@ -663,6 +677,9 @@ describe('Salesforce adapter E2E with real account', () => {
 
       expect((newValues.objectPermissions as []).some((v: Value) =>
         _.isEqual(v, valuesMap.get(v.object)))).toBeTruthy()
+
+      expect((newValues.userPermissions as []).some((v: Value) =>
+        _.isEqual(v, valuesMap.get(v.name)))).toBeTruthy()
 
       // Clean-up
       await adapter.remove(post)

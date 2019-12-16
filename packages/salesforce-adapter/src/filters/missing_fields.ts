@@ -98,6 +98,16 @@ const allMissingFields: {id: ElemID; fields: MissingField[]}[] = [
       },
     ],
   },
+  {
+    id: new ElemID(SALESFORCE, 'profile'),
+    fields: [
+      {
+        name: 'user_permissions',
+        type: new ElemID(SALESFORCE, 'profile_user_permission'),
+        isList: true,
+      },
+    ],
+  },
 ]
 
 export const makeFilter = (

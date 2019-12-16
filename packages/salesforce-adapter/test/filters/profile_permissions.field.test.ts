@@ -1,6 +1,6 @@
 import {
   ObjectType, ElemID, PrimitiveType, Field, PrimitiveTypes,
-  InstanceElement, isObjectType, BuiltinTypes, ReferenceExpression,
+  InstanceElement, isObjectType, BuiltinTypes, ReferenceExpression, Type,
 } from 'adapter-api'
 import _ from 'lodash'
 import { metadataType } from '../../src/transformers/transformer'
@@ -376,5 +376,19 @@ describe('Field Permissions filter', () => {
     expect(after.fields.apple.annotations[FIELD_LEVEL_SECURITY_ANNOTATION])
       .toEqual(admin[FIELD_LEVEL_SECURITY_ANNOTATION])
     verifyUpdateCall('Admin', 'Test__c.Apple__c')
+  })
+
+  it('should not set permissions for required fields', async () => {
+    const after = mockObject.clone()
+    Object.values(after.fields).forEach(f => {
+      f.annotations[Type.REQUIRED] = true
+    })
+
+    await filter().onAdd(after)
+
+    expect(after.fields.description.annotations).not.toHaveProperty(FIELD_LEVEL_SECURITY_ANNOTATION)
+    expect(mockUpdate).toHaveBeenCalledTimes(1)
+    const profile = mockUpdate.mock.calls[0][1][0]
+    expect(profile.fieldPermissions).toHaveLength(0)
   })
 })

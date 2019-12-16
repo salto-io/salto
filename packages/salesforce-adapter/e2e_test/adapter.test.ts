@@ -110,7 +110,7 @@ describe('Salesforce adapter E2E with real account', () => {
 
       // Test true and false required
       expect(lead.fields.description.annotations[Type.REQUIRED]).toBe(false)
-      expect(lead.fields.created_date.annotations[Type.REQUIRED]).toBe(false)
+      expect(lead.fields.created_date.annotations[Type.REQUIRED]).toBe(true)
 
       // Test picklist restriction.enforce_value prop
       expect(lead.fields.industry.annotations[Type.RESTRICTION][Type.ENFORCE_VALUE]).toBe(

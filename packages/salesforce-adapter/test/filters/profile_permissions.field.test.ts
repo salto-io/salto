@@ -1,6 +1,6 @@
 import {
   ObjectType, ElemID, PrimitiveType, Field, PrimitiveTypes,
-  InstanceElement, isObjectType, isInstanceElement, BuiltinTypes, ReferenceExpression,
+  InstanceElement, isObjectType, BuiltinTypes, ReferenceExpression,
 } from 'adapter-api'
 import _ from 'lodash'
 import { metadataType } from '../../src/transformers/transformer'

@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import {
-  Value, ElemID, TemplateExpression, ReferenceExpression, ElemIDType,
+  Value, ElemID, TemplateExpression, ReferenceExpression,
 } from 'adapter-api'
 import { HclExpression, ExpressionType, SourceMap, SourceRange } from './internal/types'
 
@@ -34,12 +34,9 @@ const evaluate = (expression: HclExpression, baseId?: ElemID, sourceMap?: Source
     dynamic: _exp => undefined,
     reference: exp => {
       const traversalParts = exp.value as unknown as string[]
-      return new ReferenceExpression(new ElemID(
-        traversalParts[0],
-        traversalParts[1],
-        traversalParts[2] as ElemIDType,
-        ...traversalParts.slice(3)
-      ))
+      return new ReferenceExpression(
+        ElemID.fromFullName(traversalParts.join(ElemID.NAMESPACE_SEPARATOR))
+      )
     },
   }
 

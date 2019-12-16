@@ -1,6 +1,6 @@
 import {
   ObjectType, Element, Field, isObjectType, InstanceElement, isField,
-  Change, getChangeElement, getAnnotationValue, ElemID, Values, findElement,
+  Change, getChangeElement, getAnnotationValue, ElemID, Values, findElement, ReferenceExpression,
 } from 'adapter-api'
 import _ from 'lodash'
 import { SaveResult } from 'jsforce'
@@ -10,7 +10,7 @@ import { logger } from '@salto/logging'
 import {
   FIELD_PERMISSIONS, FIELD_LEVEL_SECURITY_ANNOTATION,
   PROFILE_METADATA_TYPE, ADMIN_PROFILE,
-  OBJECT_LEVEL_SECURITY_ANNOTATION, OBJECT_PERMISSIONS, SALESFORCE,
+  OBJECT_LEVEL_SECURITY_ANNOTATION, OBJECT_PERMISSIONS, SALESFORCE, INSTANCE_FULL_NAME_FIELD,
 } from '../constants'
 import {
   fieldFullName, isCustomObject, Types, apiName, sfCase, bpCase,
@@ -39,8 +39,8 @@ const getObjectPermissions = (object: ObjectType): Values =>
   (getAnnotationValue(object, OBJECT_LEVEL_SECURITY_ANNOTATION))
 
 const setProfilePermissions = <T = PermissionsTypes>
-  (element: ObjectType | Field, profile: string,
-    annotationName: string, permissions: T): void => {
+  (element: ObjectType | Field, profile: ElemID,
+    annotationName: string, permissions: T, createReferences = false): void => {
   const isElementName = (name: string): boolean => !['object', 'field'].includes(name)
 
   if (_.isEmpty(getAnnotationValue(element, annotationName))) {
@@ -52,7 +52,11 @@ const setProfilePermissions = <T = PermissionsTypes>
 
   Object.entries(permissions).filter(p => isElementName(p[0])).forEach(permissionOption => {
     if (boolValue(permissionOption[1])) {
-      getAnnotationValue(element, annotationName)[bpCase(permissionOption[0])].push(profile)
+      getAnnotationValue(element, annotationName)[bpCase(permissionOption[0])].push(
+        createReferences ? new ReferenceExpression(
+          profile.createNestedID(INSTANCE_FULL_NAME_FIELD)
+        ) : profile.getFullName()
+      )
     }
   })
 }
@@ -72,7 +76,7 @@ const setPermissions = <T = PermissionsTypes>(
     Object.entries(elementPermissions).sort().forEach(p2f => {
       const profile = findElement(profileInstances, ElemID.fromFullName(p2f[0]))
       if (profile) {
-        setProfilePermissions(element, id(profile), permissionAnnotationName, p2f[1])
+        setProfilePermissions(element, profile.elemID, permissionAnnotationName, p2f[1], true)
       }
     })
   }
@@ -113,11 +117,11 @@ const profile2Permissions = <T = PermissionsTypes>(
       .map(element => ({ [getElementName(element)]: { [profile]: element } })))
 
 
-const setProfileFieldPermissions = (field: Field, profile: string,
+const setProfileFieldPermissions = (field: Field, profile: ElemID,
   permissions: FieldPermissionsOptions):
    void => setProfilePermissions(field, profile, FIELD_LEVEL_SECURITY_ANNOTATION, permissions)
 
-const setProfileObjectPermissions = (object: ObjectType, profile: string,
+const setProfileObjectPermissions = (object: ObjectType, profile: ElemID,
   permissions: ObjectPermissionsOptions): void => setProfilePermissions(
   object, profile, OBJECT_LEVEL_SECURITY_ANNOTATION, permissions
 )
@@ -128,7 +132,7 @@ const setDefaultFieldPermissions = (field: Field): void => {
     return
   }
   if (_.isEmpty(getFieldPermissions(field))) {
-    setProfileFieldPermissions(field, ADMIN_ELEM_ID.getFullName(),
+    setProfileFieldPermissions(field, ADMIN_ELEM_ID,
       { readable: true, editable: true })
     log.debug('set %s field permissions for %s.%s', ADMIN_PROFILE, field.parentID.name, field.name)
   }
@@ -136,7 +140,7 @@ const setDefaultFieldPermissions = (field: Field): void => {
 
 const setDefaultObjectPermissions = (object: ObjectType): void => {
   if (_.isEmpty(getObjectPermissions(object))) {
-    setProfileObjectPermissions(object, ADMIN_ELEM_ID.getFullName(),
+    setProfileObjectPermissions(object, ADMIN_ELEM_ID,
       Object.assign({}, ...OBJECT_PERMISSIONS_OPTIONS.map(option => ({ [option]: true }))))
     log.debug('set %s object permissions for %s', ADMIN_PROFILE, apiName(object))
   }

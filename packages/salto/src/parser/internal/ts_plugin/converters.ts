@@ -35,7 +35,7 @@ const isLexerToken = (token: Token): token is LexerToken => 'value' in token
     && 'col' in token
     && 'offset' in token
 
-export const startFile = (filename: string): void => {
+export const startParse = (filename: string): void => {
   currentFilename = filename
   allowWildcard = false
 }

@@ -1,6 +1,6 @@
 import * as nearley from 'nearley'
 import _ from 'lodash'
-import { startFile, convertMain, NearleyError, setErrorRecoveryMode } from './converters'
+import { startParse, convertMain, NearleyError, setErrorRecoveryMode } from './converters'
 import { HclParseError, HclParseReturn, ParsedHclBlock, SourcePos, isSourceRange, HclExpression } from '../types'
 import { WILDCARD } from './lexer'
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -111,7 +111,7 @@ export const parseBuffer = (
     const parserError = convertParserError(err, filename, lastColumn)
     // The is equal check is here to make sure we won't get into a "recovery loop" which
     // is a condition in which the error recovery does not change the state.
-    if (prevErrors.length < MAX_FILE_ERRORS && !_.isEqual(_.last(prevErrors), parserError)) {
+    if (prevErrors.length < MAX_FILE_ERRORS) {
       // Restoring the state to before the error took place
       hclParser.restore(lastColumn)
       // Adding the wildcard token to bypass the error and give the parser another change
@@ -133,7 +133,7 @@ export const parseBuffer = (
 
 export const parse = (src: Buffer, filename: string): HclParseReturn => {
   const hclParser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar), { keepHistory: true })
-  startFile(filename)
+  startParse(filename)
   const [blockItems, errors] = parseBuffer(src.toString(), hclParser, filename)
   if (blockItems !== undefined) {
     return {

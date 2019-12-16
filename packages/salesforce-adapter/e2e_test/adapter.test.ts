@@ -564,7 +564,7 @@ describe('Salesforce adapter E2E with real account', () => {
         ],
         userPermissions: [
           {
-            name: 'APIEnabled',
+            name: 'ApiEnabled',
             enabled: 'false',
           },
         ],
@@ -627,7 +627,7 @@ describe('Salesforce adapter E2E with real account', () => {
         ],
         userPermissions: [
           {
-            name: 'APIEnabled',
+            name: 'ApiEnabled',
             enabled: 'true',
           },
         ],
@@ -664,7 +664,7 @@ describe('Salesforce adapter E2E with real account', () => {
       savedInstance.tabVisibilities.forEach((f: Value) => valuesMap.set(f.tab, f))
       savedInstance.applicationVisibilities.forEach((f: Value) => valuesMap.set(f.application, f))
       savedInstance.objectPermissions.forEach((f: Value) => valuesMap.set(f.object, f))
-      savedInstance.objectPermissions.forEach((f: Value) => valuesMap.set(f.name, f))
+      savedInstance.userPermissions.forEach((f: Value) => valuesMap.set(f.name, f))
 
       expect((newValues.fieldPermissions as []).some((v: Value) =>
         _.isEqual(v, valuesMap.get(v.field)))).toBeTruthy()

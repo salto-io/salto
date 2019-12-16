@@ -70,7 +70,7 @@ export const parse = async (blueprint: Buffer, filename: string): Promise<ParseR
       // Use attribute source as expression source so it includes the key as well
       return evaluate({ ...exp, source: val.source }, parentId.createNestedID(key), sourceMap)
     })
-      .reject(_.isUndefined)
+      .omitBy(_.isUndefined)
       .value()
   )
 

@@ -11,7 +11,7 @@ import {
 import _ from 'lodash'
 import { logger } from '@salto/logging'
 import { decorators, collections } from '@salto/lowerdash'
-import SalesforceClient, { API_VERSION, Credentials } from './client/client'
+import SalesforceClient, { API_VERSION, Credentials, standardLoginUrl } from './client/client'
 import * as constants from './constants'
 import {
   toCustomField, toCustomObject, apiName, sfCase, fieldFullName, Types,
@@ -941,7 +941,7 @@ const credentialsFromConfig = (config: InstanceElement): Credentials => ({
   username: config.value.username,
   password: config.value.password,
   apiToken: config.value.token,
-  isSandbox: config.value.sandbox,
+  loginUrl: standardLoginUrl(config.value.sandbox),
 })
 
 const clientFromConfig = (config: InstanceElement): SalesforceClient =>

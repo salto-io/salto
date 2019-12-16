@@ -8,7 +8,7 @@ const mockClient = (): { connection: Connection; client: SalesforceClient } => {
     credentials: {
       username: 'mockUser',
       password: 'mockPassword',
-      isSandbox: false,
+      loginUrl: 'https://loginUrl/',
     },
     connection,
   })

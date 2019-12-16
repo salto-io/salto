@@ -80,8 +80,12 @@ export type Credentials = {
   username: string
   password: string
   apiToken?: string
-  isSandbox: boolean
+  loginUrl: string
 }
+
+export const standardLoginUrl = (
+  isSandbox: boolean
+): string => `https://${isSandbox ? 'test' : 'login'}.salesforce.com/`
 
 export type SalesforceClientOpts = {
   credentials: Credentials
@@ -89,10 +93,10 @@ export type SalesforceClientOpts = {
   retryOptions?: RequestRetryOptions
 }
 
-const realConnection = (isSandbox: boolean, retryOptions: RequestRetryOptions): Connection => {
+const realConnection = (loginUrl: string, retryOptions: RequestRetryOptions): Connection => {
   const connection = new RealConnection({
     version: API_VERSION,
-    loginUrl: `https://${isSandbox ? 'test' : 'login'}.salesforce.com/`,
+    loginUrl,
     requestModule: (opts: Options, callback: RequestCallback) =>
       requestretry({ ...retryOptions, ...opts }, (err, response, body) => {
         const attempts = _.get(response, 'attempts') || _.get(err, 'attempts')
@@ -142,7 +146,7 @@ export default class SalesforceClient {
   ) {
     this.credentials = credentials
     this.conn = connection
-      || realConnection(credentials.isSandbox, retryOptions || DEFAULT_RETRY_OPTS)
+      || realConnection(credentials.loginUrl, retryOptions || DEFAULT_RETRY_OPTS)
   }
 
   private async ensureLoggedIn(): Promise<void> {

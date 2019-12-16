@@ -1,8 +1,6 @@
-import { InstanceElement, ElemID } from 'adapter-api'
+import _ from 'lodash'
+import { InstanceElement, ElemID, Adapter } from 'adapter-api'
 import { creator } from '../src/adapter'
-import SalesforceClient from '../src/client/client'
-
-jest.mock('../src/client/client')
 
 describe('SalesforceAdapter creator', () => {
   describe('when passed a config element', () => {
@@ -17,18 +15,18 @@ describe('SalesforceAdapter creator', () => {
       }
     )
 
+    let adapter: Adapter
+
     beforeEach(() => {
-      creator.create({ config })
+      adapter = creator.create({ config })
     })
 
     it('creates the client correctly', () => {
-      expect(SalesforceClient).toHaveBeenCalledWith({
-        credentials: {
-          username: 'myUser',
-          password: 'myPassword',
-          apiToken: 'myToken',
-          isSandbox: false,
-        },
+      expect(_.get(adapter, 'client.credentials')).toMatchObject({
+        username: 'myUser',
+        password: 'myPassword',
+        apiToken: 'myToken',
+        loginUrl: 'https://login.salesforce.com/',
       })
     })
   })

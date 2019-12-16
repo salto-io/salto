@@ -12,7 +12,7 @@ describe('salesforce client', () => {
       .reply(200, '<serverUrl>http://dodo22</serverUrl>/')
   })
   const client = new SalesforceClient({ credentials: {
-    isSandbox: false,
+    loginUrl: '',
     username: '',
     password: '',
   },

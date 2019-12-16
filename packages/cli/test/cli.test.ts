@@ -116,7 +116,7 @@ describe('cli', () => {
     let deployCommand: jest.Mock<Promise<CliExitCode>>
 
     beforeEach(async () => {
-      deployCommand = jest.fn<Promise<CliExitCode>>().mockImplementation(() => CliExitCode.Success)
+      deployCommand = jest.fn().mockImplementation(() => CliExitCode.Success)
       jest.spyOn(deployBuilder, 'build').mockResolvedValue({ execute: deployCommand })
       o = await mocks.cli({ args: 'deploy --force' })
     })
@@ -134,7 +134,7 @@ describe('cli', () => {
     let deployCommand: jest.Mock<Promise<CliExitCode>>
 
     beforeEach(async () => {
-      deployCommand = jest.fn<Promise<CliExitCode>>().mockImplementation(() => CliExitCode.AppError)
+      deployCommand = jest.fn().mockImplementation(() => CliExitCode.AppError)
       jest.spyOn(deployBuilder, 'build').mockResolvedValue({ execute: deployCommand })
       o = await mocks.cli({ args: 'deploy --force' })
     })
@@ -156,7 +156,7 @@ describe('cli', () => {
     let deployCommand: jest.Mock<Promise<CliExitCode>>
 
     beforeEach(async () => {
-      deployCommand = jest.fn<Promise<CliExitCode>>().mockImplementation(() => { throw new Error('blabla') })
+      deployCommand = jest.fn().mockImplementation(() => { throw new Error('blabla') })
       jest.spyOn(cliLogger, 'error').mockReturnValue(undefined)
       jest.spyOn(deployBuilder, 'build').mockResolvedValue({ execute: deployCommand })
       o = await mocks.cli({ args: 'deploy --force' })

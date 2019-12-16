@@ -36,7 +36,7 @@ export const loadWorkspace = async (workingDir: string, cliOutput: CliOutput,
   spinnerCreator?: SpinnerCreator): Promise<LoadWorkspaceResult> => {
   const spinner = spinnerCreator
     ? spinnerCreator(Prompts.LOADING_WORKSPACE, {})
-    : { succeed: () => { }, fail: () => { } }
+    : { succeed: () => undefined, fail: () => undefined }
   const config = await loadConfig(workingDir)
   const workspace = await Workspace.load(config)
   const wsStatus = await validateWorkspace(workspace, cliOutput)

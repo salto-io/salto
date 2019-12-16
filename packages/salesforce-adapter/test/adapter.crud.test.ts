@@ -51,10 +51,10 @@ describe('SalesforceAdapter CRUD', () => {
 
   const deployTypeNames = ['AssignmentRules', 'UnsupportedType']
 
-  let mockCreate: jest.Mock<unknown>
-  let mockDelete: jest.Mock<unknown>
-  let mockUpdate: jest.Mock<unknown>
-  let mockDeploy: jest.Mock<unknown>
+  let mockCreate: jest.Mock
+  let mockDelete: jest.Mock
+  let mockUpdate: jest.Mock
+  let mockDeploy: jest.Mock
 
   beforeEach(() => {
     ({ connection, adapter } = mockAdapter({

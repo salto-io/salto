@@ -17,7 +17,7 @@ const { copyFile, rm, mkdirp, exists } = file
 
 const sfLeadObjectName = 'salesforce.lead'
 
-const mockGetConfigType = (): InstanceElement => adapterConfigs.salesforce()
+const mockGetConfigType = async (): Promise<InstanceElement> => adapterConfigs.salesforce()
 const homePath = process.env.HOME || process.env.HOMEPATH || process.env.USERPROFILE
 const fetchOutputDir = `${homePath}/BP/test_import`
 const configFile = `${__dirname}/../../e2e_test/BP/salto.config/config.bp`

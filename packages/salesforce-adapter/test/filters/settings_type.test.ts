@@ -50,9 +50,9 @@ describe('Test Settings Type', () => {
   const testElements = [mockInstance, mockObject, anotherMockInstance]
 
   describe('on discover', () => {
-    let mockDescribeMetadata: jest.Mock<unknown>
-    let mockListMetadataObjects: jest.Mock<unknown>
-    let mockReadMetadata: jest.Mock<unknown>
+    let mockDescribeMetadata: jest.Mock
+    let mockListMetadataObjects: jest.Mock
+    let mockReadMetadata: jest.Mock
 
     beforeEach(() => {
       mockListMetadataObjects = jest.fn()

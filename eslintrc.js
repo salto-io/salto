@@ -77,6 +77,9 @@ module.exports = {
             devDependencies: ['!test/**/*'],
         }],
         'jest/valid-describe': ['off'],
+        'import/extensions': [ 'error', 'never', {
+            'json': 'always',
+        }],
     },
     overrides: [
         {

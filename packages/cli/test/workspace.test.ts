@@ -85,8 +85,8 @@ describe('workspace', () => {
     let spinner: Spinner
     beforeEach(() => {
       spinner = {
-        fail: jest.fn().mockImplementation(() => { }),
-        succeed: jest.fn().mockImplementation(() => { }),
+        fail: jest.fn().mockImplementation(() => undefined),
+        succeed: jest.fn().mockImplementation(() => undefined),
       }
     })
     it('mark spinner as success in case there are no errors', async () => {

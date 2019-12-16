@@ -154,11 +154,11 @@ type salesforce_lead {
         const workspaceErrors = await erroredWorkspace.getWorkspaceErrors()
         expect(erroredWorkspace.errors.hasErrors()).toBeTruthy()
         expect(erroredWorkspace.hasErrors()).toBeTruthy()
-        const err = /Unexpected token: }|Either a quoted string block label or an opening brace/
+        const err = 'Expected ws, comment or word token but found: } instead.'
         expect(erroredWorkspace.errors.strings()[0]).toMatch(err)
         expect(erroredWorkspace.errors.parse[0].detail).toMatch(err)
 
-        expect(workspaceErrors).toHaveLength(1)
+        expect(workspaceErrors.length).toBeGreaterThanOrEqual(1)
       })
       it('should contain merge errors', async () => {
         const erroredWorkspace = new Workspace(

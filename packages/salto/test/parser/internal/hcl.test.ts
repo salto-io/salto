@@ -39,13 +39,13 @@ const expectExpressionsMatch = (actual: HclExpression, expected: HclExpression):
 }
 
 
-each([false, true]).describe('HCL Parser', jsParseMode => {
+each([false, true]).describe('HCL Parser', goParseMode => {
   it('parses adapter config block', async () => {
     const configBlock = `salesforce {
       user = "me"
     }`
 
-    const { body } = await HclParser.parse(Buffer.from(configBlock), 'none', jsParseMode)
+    const { body } = await HclParser.parse(Buffer.from(configBlock), 'none', goParseMode)
     expect(body.blocks.length).toEqual(1)
     const config = body.blocks[0]
     expect(config.type).toEqual('salesforce')
@@ -67,7 +67,7 @@ each([false, true]).describe('HCL Parser', jsParseMode => {
         }
       }`
 
-    const { body } = await HclParser.parse(Buffer.from(typeDefBlock), 'none', jsParseMode)
+    const { body } = await HclParser.parse(Buffer.from(typeDefBlock), 'none', goParseMode)
     expect(body.blocks.length).toEqual(1)
     const typeBlock = body.blocks[0]
     expect(typeBlock.type).toEqual('type')
@@ -101,7 +101,7 @@ each([false, true]).describe('HCL Parser', jsParseMode => {
     const { body } = await HclParser.parse(
       Buffer.from(instanceDefBlock),
       'none',
-      jsParseMode
+      goParseMode
     )
     expect(body.blocks.length).toEqual(1)
     const instBlock = body.blocks[0]
@@ -123,7 +123,7 @@ each([false, true]).describe('HCL Parser', jsParseMode => {
           EOF
       }`
 
-    const { body } = await HclParser.parse(Buffer.from(blockDef), 'none', jsParseMode)
+    const { body } = await HclParser.parse(Buffer.from(blockDef), 'none', goParseMode)
     expect(body.blocks.length).toEqual(1)
     expect(body.blocks[0].attrs).toHaveProperty('thing')
     expect(body.blocks[0].attrs.thing.expressions[0].type).toEqual('template')
@@ -136,7 +136,7 @@ each([false, true]).describe('HCL Parser', jsParseMode => {
         that = ">>>\${a.b}<<<"
       }`
 
-    const { body } = await HclParser.parse(Buffer.from(blockDef), 'none', jsParseMode)
+    const { body } = await HclParser.parse(Buffer.from(blockDef), 'none', goParseMode)
     expect(body.blocks.length).toEqual(1)
     expect(body.blocks[0].attrs).toHaveProperty('thing')
     expect(body.blocks[0].attrs.thing.expressions[0].type).toEqual('reference')
@@ -149,7 +149,7 @@ each([false, true]).describe('HCL Parser', jsParseMode => {
     const blockDef = 'type label {}'
     const blocksToParse = _.times(3, () => blockDef)
     const results = await Promise.all(
-      blocksToParse.map(block => HclParser.parse(Buffer.from(block), 'none', jsParseMode))
+      blocksToParse.map(block => HclParser.parse(Buffer.from(block), 'none', goParseMode))
     )
     expect(results.length).toEqual(3)
     // Check the first result
@@ -169,7 +169,7 @@ each([false, true]).describe('HCL Parser', jsParseMode => {
     const blockDef = `type voodoo {
       thing = "\ufeffHIDE"
     }`
-    const { body } = await HclParser.parse(Buffer.from(blockDef), 'none', jsParseMode)
+    const { body } = await HclParser.parse(Buffer.from(blockDef), 'none', goParseMode)
     expect(body.blocks.length).toEqual(1)
     expect(body.blocks[0].attrs).toHaveProperty('thing')
     expect(evaluate(body.blocks[0].attrs.thing.expressions[0]).length).toEqual(5)
@@ -180,7 +180,7 @@ each([false, true]).describe('HCL Parser', jsParseMode => {
     let errors: HclParseError[]
 
     beforeAll(async () => {
-      ({ errors } = await HclParser.parse(Buffer.from(blockDef), 'none', jsParseMode))
+      ({ errors } = await HclParser.parse(Buffer.from(blockDef), 'none', goParseMode))
     })
 
     it('is not empty', () => {
@@ -193,10 +193,10 @@ each([false, true]).describe('HCL Parser', jsParseMode => {
     })
 
     it('contains the error summary', () => {
-      if (jsParseMode) {
-        expect(errors[0].summary).toBe('Unexpected token: :thing')
-      } else {
+      if (goParseMode) {
         expect(errors[0].summary).toBe('Invalid block definition')
+      } else {
+        expect(errors[0].summary).toBe('Unexpected token: :thing')
       }
     })
 
@@ -205,13 +205,13 @@ each([false, true]).describe('HCL Parser', jsParseMode => {
     })
   })
 
-  if (!jsParseMode) {
+  if (goParseMode) {
     describe('traversal error', () => {
       const blockDef = 'type sometype { a = { foo.bar = 5 } }'
       let errors: HclParseError[]
 
       beforeAll(async () => {
-        ({ errors } = await HclParser.parse(Buffer.from(blockDef), 'none', jsParseMode))
+        ({ errors } = await HclParser.parse(Buffer.from(blockDef), 'none', goParseMode))
       })
 
       it('is not empty', () => {
@@ -246,15 +246,15 @@ each([false, true]).describe('HCL Parser', jsParseMode => {
               str: 'string',
               lst: ['val1', 'val2'],
               empty: [],
-              exp: (jsParseMode)
-                ? new TemplateExpression({
+              exp: (goParseMode)
+                ? 'not supported'
+                : new TemplateExpression({
                   parts: [
                     'test ',
                     new ReferenceExpression({ traversalParts: ['a', 'b'] }),
                     ' test',
                   ],
-                })
-                : 'not supported',
+                }),
               nested: {
                 val: 'so deep',
               },
@@ -266,7 +266,7 @@ each([false, true]).describe('HCL Parser', jsParseMode => {
     } as unknown
     let serialized: string
     beforeAll(async () => {
-      const buffer = await HclParser.dump(body as ParsedHclBlock, jsParseMode)
+      const buffer = await HclParser.dump(body as ParsedHclBlock, goParseMode)
       serialized = buffer.toString()
     })
 
@@ -286,7 +286,7 @@ each([false, true]).describe('HCL Parser', jsParseMode => {
       expect(serialized).toMatch(/empty\s*=\s*\[\s*\]/m)
     })
     it('dumps expressions', () => {
-      if (jsParseMode) {
+      if (!goParseMode) {
         // eslint-disable-next-line no-template-curly-in-string
         expect(serialized).toMatch('exp = "test ${ a.b } test"')
       }
@@ -295,7 +295,7 @@ each([false, true]).describe('HCL Parser', jsParseMode => {
       expect(serialized).toMatch(/nested\s*=\s*{\s*val\s*=\s*"so deep",*\s*}/m)
     })
     it('dumps parsable text', async () => {
-      const parsed = await HclParser.parse(Buffer.from(serialized), 'none', jsParseMode)
+      const parsed = await HclParser.parse(Buffer.from(serialized), 'none', goParseMode)
 
       expect(parsed.errors.length).toEqual(0)
       // Filter out source ranges since they are only generated during parsing

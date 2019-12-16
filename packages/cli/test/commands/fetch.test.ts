@@ -6,7 +6,7 @@ import {
 import { EventEmitter } from 'pietile-eventemitter'
 import { Spinner, SpinnerCreator } from 'src/types'
 import { command, fetchCommand } from '../../src/commands/fetch'
-import { MockWriteStream, getWorkspaceErrors, dummyChanges, mockSpinnerCreator } from '../mocks'
+import { MockWriteStream, getWorkspaceErrors, dummyChanges, mockSpinnerCreator, mockLoadConfig } from '../mocks'
 import Prompts from '../../src/prompts'
 
 jest.mock('salto', () => ({
@@ -21,9 +21,7 @@ jest.mock('salto', () => ({
       config => ({ config, elements: [], hasErrors: () => false }),
     ),
   },
-  loadConfig: jest.fn().mockImplementation(
-    workspaceDir => ({ baseDir: workspaceDir, additionalBlueprints: [], services: ['salesforce'], cacheLocation: '' })
-  ),
+  loadConfig: jest.fn().mockImplementation((workspaceDir: string) => mockLoadConfig(workspaceDir)),
 }))
 
 
@@ -50,7 +48,7 @@ describe('fetch command', () => {
           getWorkspaceErrors,
         } as unknown as Workspace
         (Workspace.load as jest.Mock).mockResolvedValueOnce(Promise.resolve(erroredWorkspace))
-        await command(workspaceDir, true, false, ['salesforce'], cliOutput, spinnerCreator).execute()
+        await command(workspaceDir, true, false, cliOutput, spinnerCreator, ['salesforce']).execute()
       })
 
       it('should fail', async () => {
@@ -61,7 +59,7 @@ describe('fetch command', () => {
 
     describe('with valid workspace', () => {
       beforeEach(async () => {
-        await command(workspaceDir, true, false, ['salesforce'], cliOutput, spinnerCreator).execute()
+        await command(workspaceDir, true, false, cliOutput, spinnerCreator, ['salesforce']).execute()
       })
 
       it('should load the workspace from the provided directory', () => {

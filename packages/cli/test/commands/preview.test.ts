@@ -1,6 +1,6 @@
 import { Workspace } from 'salto'
 import { command } from '../../src/commands/preview'
-import { preview, MockWriteStream, getWorkspaceErrors, mockSpinnerCreator } from '../mocks'
+import { preview, MockWriteStream, getWorkspaceErrors, mockSpinnerCreator, mockLoadConfig } from '../mocks'
 import { SpinnerCreator, Spinner } from '../../src/types'
 
 const mockPreview = preview
@@ -25,9 +25,7 @@ jest.mock('salto', () => ({
       }
     }),
   },
-  loadConfig: jest.fn().mockImplementation(
-    workspaceDir => ({ baseDir: workspaceDir, additionalBlueprints: [], services: ['salesforce'], cacheLocation: '' })
-  ),
+  loadConfig: jest.fn().mockImplementation((workspaceDir: string) => mockLoadConfig(workspaceDir)),
 }))
 
 describe('preview command', () => {

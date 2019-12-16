@@ -4,7 +4,10 @@ import {
   ObjectType, Type,
 } from 'adapter-api'
 import _ from 'lodash'
-import { DetailedChange, Plan, PlanItem, SearchResult, Workspace, WorkspaceError, DeployResult } from 'salto'
+import {
+  DetailedChange, Plan, PlanItem, SearchResult, Workspace, WorkspaceError,
+  DeployResult, Config,
+} from 'salto'
 import wu from 'wu'
 import realCli from '../src/cli'
 import builders from '../src/commands/index'
@@ -164,6 +167,9 @@ export const elements = (): Element[] => {
 
   return [BuiltinTypes.STRING, saltoAddr, saltoOffice, saltoEmployee, saltoEmployeeInstance]
 }
+
+export const mockLoadConfig = (workspaceDir: string): Config =>
+  ({ uid: '123', baseDir: workspaceDir, additionalBlueprints: [], services: ['salesforce'], name: 'mock-ws', localStorage: '', stateLocation: '' })
 
 export const detailedChange = (
   action: 'add' | 'modify' | 'remove', path: ReadonlyArray<string> | ElemID,

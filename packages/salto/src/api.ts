@@ -215,18 +215,23 @@ const getTypeFromState = async (stateLocation: string, typeId: string): Promise<
   return type
 }
 
+const getTypeForDataMigration = async (workspace: Workspace, typeId: string): Promise<Element> => {
+  const type = await getTypeFromState(workspace.config.stateLocation, typeId)
+  const typeAdapter = type.elemID.adapter
+  if (!workspace.config.services?.includes(typeAdapter)) {
+    throw new Error(`The type is from a service (${typeAdapter}) that is not set up for this workspace`)
+  }
+  return type
+}
+
 export const exportToCsv = async (
   typeId: string,
   outPath: string,
   workspace: Workspace,
   fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
 ): Promise<DataModificationResult> => {
-  const type = await getTypeFromState(workspace.config.stateLocation, typeId)
-  const typeAdapter = type.elemID.adapter
-  if (!workspace.config.services?.includes(typeAdapter)) {
-    throw new Error(`The type is from a service (${typeAdapter}) that is not set up for this workspace`)
-  }
-  const adapters = await login(workspace, fillConfig, [typeAdapter])
+  const type = await getTypeForDataMigration(workspace, typeId)
+  const adapters = await login(workspace, fillConfig, [type.elemID.adapter])
   return getInstancesOfType(type as ObjectType, adapters, outPath)
 }
 
@@ -236,12 +241,8 @@ export const importFromCsvFile = async (
   workspace: Workspace,
   fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
 ): Promise<DataModificationResult> => {
-  const type = await getTypeFromState(workspace.config.stateLocation, typeId)
-  const typeAdapter = type.elemID.adapter
-  if (!workspace.config.services?.includes(typeAdapter)) {
-    throw new Error(`The type is from a service (${typeAdapter}) that is not set up for this workspace`)
-  }
-  const adapters = await login(workspace, fillConfig, [typeAdapter])
+  const type = await getTypeForDataMigration(workspace, typeId)
+  const adapters = await login(workspace, fillConfig, [type.elemID.adapter])
   return importInstancesOfType(type as ObjectType, inputPath, adapters)
 }
 
@@ -251,12 +252,8 @@ export const deleteFromCsvFile = async (
   workspace: Workspace,
   fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
 ): Promise<DataModificationResult> => {
-  const type = await getTypeFromState(workspace.config.stateLocation, typeId)
-  const typeAdapter = type.elemID.adapter
-  if (!workspace.config.services?.includes(typeAdapter)) {
-    throw new Error(`The type is from a service (${typeAdapter}) that is not set up for this workspace`)
-  }
-  const adapters = await login(workspace, fillConfig, [typeAdapter])
+  const type = await getTypeForDataMigration(workspace, typeId)
+  const adapters = await login(workspace, fillConfig, [type.elemID.adapter])
   return deleteInstancesOfType(type as ObjectType, inputPath, adapters)
 }
 

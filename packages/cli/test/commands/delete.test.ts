@@ -1,6 +1,6 @@
 import { Workspace, loadConfig, file, deleteFromCsvFile } from 'salto'
 import { DataModificationResult } from 'adapter-api'
-import { MockWriteStream, getWorkspaceErrors } from '../mocks'
+import { MockWriteStream, getWorkspaceErrors, mockLoadConfig } from '../mocks'
 import { command } from '../../src/commands/delete'
 import Prompts from '../../src/prompts'
 import { CliExitCode } from '../../src/types'
@@ -17,9 +17,7 @@ jest.mock('salto', () => ({
       config => ({ config, elements: [], hasErrors: () => false }),
     ),
   },
-  loadConfig: jest.fn().mockImplementation(
-    workspaceDir => ({ baseDir: workspaceDir, additionalBlueprints: [], services: ['salesforce'], cacheLocation: '' })
-  ),
+  loadConfig: jest.fn().mockImplementation((workspaceDir: string) => mockLoadConfig(workspaceDir)),
 }))
 
 describe('delete command', () => {

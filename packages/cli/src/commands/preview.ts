@@ -12,7 +12,7 @@ export const command = (
   workspaceDir: string,
   { stdout, stderr }: CliOutput,
   spinnerCreator: SpinnerCreator,
-  inputServices: string[]
+  inputServices?: string[]
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
     const { workspace, errored } = await loadWorkspace(workspaceDir,
@@ -37,7 +37,7 @@ export const command = (
 })
 
 type PreviewArgs = {
-  services: string[]
+  services?: string[]
 }
 type PreviewParsedCliInput = ParsedCliInput<PreviewArgs>
 

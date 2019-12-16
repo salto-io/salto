@@ -139,7 +139,7 @@ export class DeployCommand implements CliCommand {
 
 type DeployArgs = {
   force: boolean
-  services: string[]
+  services?: string[]
 }
 type DeployParsedCliInput = ParsedCliInput<DeployArgs>
 

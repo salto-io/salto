@@ -33,10 +33,10 @@ export const fetchCommand = async (
     workspace: Workspace
     force: boolean
     interactive: boolean
-    inputServices: string[]
     output: CliOutput
     fetch: fetchFunc
     getApprovedChanges: approveChangesFunc
+    inputServices?: string[]
   }): Promise<CliExitCode> => {
   const commandServices = validateAndDefaultServices(workspace.config.services, inputServices)
   const outputLine = (text: string): void => output.stdout.write(`${text}\n`)
@@ -122,9 +122,9 @@ export const command = (
   workspaceDir: string,
   force: boolean,
   interactive: boolean,
-  inputServices: string[],
   output: CliOutput,
   spinnerCreator: SpinnerCreator,
+  inputServices?: string[],
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
     log.debug(`running fetch command on '${workspaceDir}' [force=${force}, interactive=${
@@ -148,7 +148,7 @@ export const command = (
 type FetchArgs = {
   force: boolean
   interactive: boolean
-  services: string[]
+  services?: string[]
 }
 type FetchParsedCliInput = ParsedCliInput<FetchArgs>
 
@@ -181,7 +181,7 @@ const fetchBuilder = createCommandBuilder({
   },
 
   async build(input: FetchParsedCliInput, output: CliOutput, spinnerCreator: SpinnerCreator) {
-    return command('.', input.args.force, input.args.interactive, input.args.services, output, spinnerCreator)
+    return command('.', input.args.force, input.args.interactive, output, spinnerCreator, input.args.services)
   },
 })
 

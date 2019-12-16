@@ -6,7 +6,7 @@ import {
   Workspace, Plan, PlanItem, Config,
 } from 'salto'
 import { Spinner, SpinnerCreator } from 'src/types'
-import { deploy, preview, mockSpinnerCreator, MockWriteStream, getWorkspaceErrors } from '../mocks'
+import { deploy, preview, mockSpinnerCreator, MockWriteStream, getWorkspaceErrors, mockLoadConfig } from '../mocks'
 import { DeployCommand } from '../../src/commands/deploy'
 
 const mockDeploy = deploy
@@ -14,9 +14,7 @@ const mockUpdateBlueprints = jest.fn().mockImplementation(() => Promise.resolve(
 const mockFlush = jest.fn().mockImplementation(() => Promise.resolve())
 jest.mock('salto', () => ({
   ...require.requireActual('salto'),
-  loadConfig: jest.fn().mockImplementation(
-    workspaceDir => Promise.resolve({ baseDir: workspaceDir, additionalBlueprints: [], services: ['salesforce'], cacheLocation: '' })
-  ),
+  loadConfig: jest.fn().mockImplementation((workspaceDir: string) => mockLoadConfig(workspaceDir)),
   Workspace: {
     load: jest.fn().mockImplementation((
       config: Config

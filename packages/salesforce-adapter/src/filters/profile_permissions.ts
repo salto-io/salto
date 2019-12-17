@@ -1,5 +1,5 @@
 import {
-  ObjectType, Element, Field, isObjectType, InstanceElement, isField,
+  ObjectType, Element, Field, isObjectType, InstanceElement, isField, Type,
   Change, getChangeElement, getAnnotationValue, ElemID, Values, findElement, ReferenceExpression,
 } from 'adapter-api'
 import _ from 'lodash'
@@ -128,8 +128,9 @@ const setProfileObjectPermissions = (object: ObjectType, profile: ElemID,
 )
 
 const setDefaultFieldPermissions = (field: Field): void => {
-  // We can't set permissions for master detail
-  if (field.type.isEqual(Types.primitiveDataTypes.masterdetail)) {
+  // We can't set permissions for master detail or required fields
+  if (field.type.isEqual(Types.primitiveDataTypes.masterdetail)
+    || field.annotations[Type.REQUIRED]) {
     return
   }
   if (_.isEmpty(getFieldPermissions(field))) {

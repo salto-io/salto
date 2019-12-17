@@ -31,8 +31,13 @@ const evaluate = (expression: HclExpression, baseId?: ElemID, sourceMap?: Source
       .fromPairs()
       .value(),
     literal: exp => exp.value,
-    reference: exp => new ReferenceExpression({ traversalParts: exp.value }),
     dynamic: _exp => undefined,
+    reference: exp => {
+      const traversalParts = exp.value as unknown as string[]
+      return new ReferenceExpression(
+        ElemID.fromFullName(traversalParts.join(ElemID.NAMESPACE_SEPARATOR))
+      )
+    },
   }
 
   if (sourceMap && baseId && expression.source) {

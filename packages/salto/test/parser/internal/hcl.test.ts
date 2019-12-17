@@ -1,6 +1,6 @@
 import each from 'jest-each'
 import _ from 'lodash'
-import { TemplateExpression, ReferenceExpression } from 'adapter-api'
+import { TemplateExpression, ReferenceExpression, ElemID } from 'adapter-api'
 import HclParser from '../../../src/parser/internal/hcl'
 import {
   ParsedHclBlock, HclAttribute, HclExpression, HclParseError,
@@ -250,7 +250,7 @@ each([false, true]).describe('HCL Parser', jsParseMode => {
                 ? new TemplateExpression({
                   parts: [
                     'test ',
-                    new ReferenceExpression({ traversalParts: ['a', 'b'] }),
+                    new ReferenceExpression(new ElemID('a', 'b')),
                     ' test',
                   ],
                 })

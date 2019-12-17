@@ -80,7 +80,7 @@ export const deserialize = (data: string): Element[] => {
       v.isList,
     ),
     [TemplateExpression.name]: v => new TemplateExpression({ parts: v.parts }),
-    [ReferenceExpression.name]: v => new ReferenceExpression({ traversalParts: v.traversalParts }),
+    [ReferenceExpression.name]: v => new ReferenceExpression(reviveElemID(v.elemId)),
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -1,6 +1,6 @@
 import {
-  ObjectType, ElemID, Field, InstanceElement,
-  isObjectType, BuiltinTypes,
+  ObjectType, ElemID, Field, InstanceElement, isObjectType, BuiltinTypes,
+  ReferenceExpression, Value,
 } from 'adapter-api'
 import _ from 'lodash'
 import { metadataType } from '../../src/transformers/transformer'
@@ -143,19 +143,25 @@ describe('Object Permissions filter', () => {
       await filter().onFetch(elements)
       const objectTypes = elements.filter(isObjectType)
 
+      const verifyReference = (permission: Value, expectedValue: string): void => {
+        expect((permission[0] as ReferenceExpression).traversalParts).toEqual(
+          [...expectedValue.split('.'), constants.INSTANCE_FULL_NAME_FIELD]
+        )
+      }
+
       // Check mockObject has the right permissions
       const objectLevelSecurity = objectTypes[0]
         .annotations[OBJECT_LEVEL_SECURITY_ANNOTATION]
-      expect(objectLevelSecurity[ALLOW_CREATE]).toEqual([ADMIN_FULL_NAME])
-      expect(objectLevelSecurity[ALLOW_DELETE]).toEqual([ADMIN_FULL_NAME])
-      expect(objectLevelSecurity[ALLOW_EDIT]).toEqual([STANDARD_FULL_NAME])
-      expect(objectLevelSecurity[ALLOW_READ]).toEqual([ADMIN_FULL_NAME])
-      expect(objectLevelSecurity[MODIFY_ALL_RECORDS]).toEqual([ADMIN_FULL_NAME])
-      expect(objectLevelSecurity[VIEW_ALL_RECORDS]).toEqual([ADMIN_FULL_NAME])
+      verifyReference(objectLevelSecurity[ALLOW_CREATE], ADMIN_FULL_NAME)
+      verifyReference(objectLevelSecurity[ALLOW_DELETE], ADMIN_FULL_NAME)
+      verifyReference(objectLevelSecurity[ALLOW_EDIT], STANDARD_FULL_NAME)
+      verifyReference(objectLevelSecurity[ALLOW_READ], ADMIN_FULL_NAME)
+      verifyReference(objectLevelSecurity[MODIFY_ALL_RECORDS], ADMIN_FULL_NAME)
+      verifyReference(objectLevelSecurity[VIEW_ALL_RECORDS], ADMIN_FULL_NAME)
 
       const objectLevelSecurityExtend = objectTypes[1]
         .annotations[OBJECT_LEVEL_SECURITY_ANNOTATION]
-      expect(objectLevelSecurityExtend[ALLOW_CREATE]).toEqual([ADMIN_FULL_NAME])
+      verifyReference(objectLevelSecurityExtend[ALLOW_CREATE], ADMIN_FULL_NAME)
       expect(objectLevelSecurityExtend[ALLOW_DELETE]).toEqual([])
       expect(objectLevelSecurityExtend[ALLOW_EDIT]).toEqual([])
       expect(objectLevelSecurityExtend[ALLOW_READ]).toEqual([])

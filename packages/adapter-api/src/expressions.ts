@@ -1,7 +1,17 @@
 import { types } from '@salto/lowerdash'
-import { Value } from './elements'
+import { ElemID } from './elements'
 
-export class ReferenceExpression extends types.Bean<{ traversalParts: Value[] }> {}
+export class ReferenceExpression {
+  constructor(
+    private readonly elemId: ElemID
+  ) {
+    this.elemId = elemId
+  }
+
+  get traversalParts(): string[] {
+    return this.elemId.getFullNameParts()
+  }
+}
 
 export class TemplateExpression extends types.Bean<{ parts: TemplatePart[] }> {}
 

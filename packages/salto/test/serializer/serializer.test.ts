@@ -54,14 +54,10 @@ describe('State serialization', () => {
       name: new TemplateExpression({
         parts: [
           'I am not',
-          new ReferenceExpression({
-            traversalParts: [instance.elemID.getFullName(), 'name'],
-          }),
+          new ReferenceExpression(instance.elemID.createNestedID('name')),
         ],
       }),
-      num: new ReferenceExpression({
-        traversalParts: [instance.elemID.getFullName(), 'num'],
-      }),
+      num: new ReferenceExpression(instance.elemID.createNestedID('num')),
     }
   )
 

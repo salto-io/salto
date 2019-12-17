@@ -23,11 +23,7 @@ describe('TEST', () => {
     expect(workspace.errors.hasErrors()).toBeTruthy()
     const diag = (await getDiagnostics(workspace))['../BP2/parse_error.bp'][0]
     expect(diag).toBeDefined()
-    expect(diag.msg).toContain(
-      process.env.JS_PARSE
-        ? 'Unexpected token: }'
-        : 'Expected the start of an expression, but found an invalid expression token.'
-    )
+    expect(diag.msg).toContain('Expected ws, comment, number, boolean, word')
     expect(diag.severity).toBe('Error')
   })
   it('should diagnostics on validations errors', async () => {

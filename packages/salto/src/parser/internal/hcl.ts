@@ -6,6 +6,7 @@ import { HclCallContext, HclParseReturn, DumpedHclBlock, HclDumpReturn, HclRetur
 import { parse as tsParse } from './ts_plugin/parse'
 import { dump as tsDump } from './ts_plugin/dump'
 
+export const useGoParser = (Object.keys(process.env).includes('GO_PARSE'))
 
 class HclParser {
   // Limit max concurrency to avoid web assembly out of memory errors
@@ -101,10 +102,10 @@ class HclParser {
    * @returns body: The parsed HCL body
    *          errors: a list of errors encountered during parsing
    */
-  public async parse(src: Buffer, filename: string, forceJS = false): Promise<HclParseReturn> {
-    return process.env.JS_PARSE || forceJS
-      ? tsParse(src, filename)
-      : this.callPlugin({ func: 'parse', args: { src: src.toString(), filename } }) as Promise<HclParseReturn>
+  public async parse(src: Buffer, filename: string, forceGo = false): Promise<HclParseReturn> {
+    return useGoParser || forceGo
+      ? this.callPlugin({ func: 'parse', args: { src: src.toString(), filename } }) as Promise<HclParseReturn>
+      : tsParse(src, filename)
   }
 
   /**
@@ -113,10 +114,10 @@ class HclParser {
    * @param body The HCL data to dump
    * @returns The serialized data
    */
-  public dump(body: DumpedHclBlock, forceJS = false): Promise<HclDumpReturn> {
-    return process.env.JS_PARSE || forceJS
-      ? tsDump(body)
-      : this.callPlugin({ func: 'dump', args: { body } }) as Promise<HclDumpReturn>
+  public dump(body: DumpedHclBlock, forceGo = false): Promise<HclDumpReturn> {
+    return useGoParser || forceGo
+      ? this.callPlugin({ func: 'dump', args: { body } }) as Promise<HclDumpReturn>
+      : tsDump(body)
   }
 }
 

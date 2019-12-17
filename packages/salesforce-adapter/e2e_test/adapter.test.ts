@@ -424,6 +424,61 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(await objectExists(constants.CUSTOM_OBJECT, customObjectName)).toBe(false)
     })
 
+    it('should remove field with permissions', async () => {
+      const customObjectName = 'TestRemoveFieldWithPermission__c'
+      const mockElemID = new ElemID(constants.SALESFORCE, 'test remove field with permission')
+      const oldElement = new ObjectType({
+        elemID: mockElemID,
+        annotations: {
+          [constants.API_NAME]: customObjectName,
+          [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
+        },
+        fields: {
+          description: new Field(
+            mockElemID,
+            'description',
+            stringType,
+            {
+              [constants.API_NAME]: 'Description__c',
+              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
+                editable: [ADMIN],
+                readable: [ADMIN],
+              },
+            },
+          ),
+        },
+      })
+      const newElement = new ObjectType({
+        elemID: mockElemID,
+        annotations: {
+          [constants.API_NAME]: customObjectName,
+          [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
+        },
+        fields: {},
+      })
+      // Setup
+      if (await objectExists(constants.CUSTOM_OBJECT, customObjectName)) {
+        await adapter.remove(oldElement)
+      }
+      await adapter.add(oldElement)
+      expect(await objectExists(constants.CUSTOM_OBJECT, customObjectName)).toBe(true)
+
+      // Verify that admin has that field permission
+      expect((await fieldPermissionExists('Admin', [`${customObjectName}.Description__c`]))[0]).toBe(true)
+
+      // Run
+      const removeFieldResult = await adapter.update(oldElement, newElement,
+        [{ action: 'remove', data: { before: oldElement.fields.description } }])
+
+      // Validate
+      expect(removeFieldResult).toBeInstanceOf(ObjectType)
+      expect(await objectExists(constants.CUSTOM_OBJECT, customObjectName, [])).toBe(true)
+      expect((await fieldPermissionExists('Admin', [`${customObjectName}.Description__c`]))[0]).toBe(false)
+
+      // Clean-up
+      await adapter.remove(oldElement)
+    })
+
     it('should modify an object by creating a new custom field and remove another one', async () => {
       const customObjectName = 'TestModifyCustom__c'
       const mockElemID = new ElemID(constants.SALESFORCE, 'test modify fields')

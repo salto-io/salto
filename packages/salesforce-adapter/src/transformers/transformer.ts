@@ -718,6 +718,8 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field,
   const annotations: Values = {
     [API_NAME]: field.name,
     [LABEL]: field.label,
+    // nillable is the closest thing we could find to infer if a field is required, it might not
+    // be perfect
     [Type.REQUIRED]: !field.nillable,
   }
   const defaultValue = getDefaultValue(field)

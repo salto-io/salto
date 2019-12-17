@@ -92,12 +92,13 @@ const getElementName = <T = PermissionsTypes>(element: T): string =>
 
 const filterPermissions = <T = PermissionsTypes>(
   permissions: T[], beforeProfilePermissions: T[], afterProfilePermissions: T[],
-  emptyPermissions: (permissions: T) => T): T[] =>
+  emptyPermissions: (permissions: T) => T, notRemovedField?: (element: T) => boolean): T[] =>
     permissions
       // Filter out permissions that were already updated
       .filter(f => !_.isEqual(findPermissions(beforeProfilePermissions, getElementName(f)), f))
-    // Add missing permissions with =false for all the permissions options
+      // Add missing permissions with =false for all the permissions options
       .concat(beforeProfilePermissions
+        .filter(_.isUndefined(notRemovedField) ? (() => true) : notRemovedField)
         .filter(f => _.isUndefined(findPermissions(afterProfilePermissions, getElementName(f))))
         .map(emptyPermissions))
 
@@ -256,11 +257,21 @@ const filterCreator: FilterCreator = ({ client }) => ({
       return []
     }
 
+    const removedElements: string[] = []
     wu(changes)
       .forEach(c => {
         const changeElement = getChangeElement(c)
-        if (isField(changeElement) && c.action === 'add') {
-          setDefaultFieldPermissions(after.fields[changeElement.name])
+        if (isField(changeElement)) {
+          switch (c.action) {
+            case 'add':
+              setDefaultFieldPermissions(after.fields[changeElement.name])
+              break
+            case 'remove':
+              removedElements.push(fieldFullName(before, changeElement))
+              break
+            default:
+              break
+          }
         }
       })
 
@@ -271,6 +282,9 @@ const filterCreator: FilterCreator = ({ client }) => ({
       Object.assign({ object: permissions.object },
         ...OBJECT_PERMISSIONS_OPTIONS.map(option => ({ [option]: false })))
 
+    const notRemovedField = (permission: FieldPermissions): boolean =>
+      !removedElements.includes(getElementName(permission))
+
     const beforeProfiles = toProfiles(before)
     const afterProfiles = toProfiles(after)
     const profiles = afterProfiles
@@ -278,10 +292,10 @@ const filterCreator: FilterCreator = ({ client }) => ({
         let { fieldPermissions, objectPermissions } = afterProfile
         const beforeProfile = findProfile(beforeProfiles, afterProfile.fullName)
         if (beforeProfile) {
-          fieldPermissions = filterPermissions(fieldPermissions,
-            beforeProfile.fieldPermissions, afterProfile.fieldPermissions, emptyFieldPermissions)
-          objectPermissions = filterPermissions(objectPermissions,
-            beforeProfile.objectPermissions, afterProfile.objectPermissions, emptyObjectPermissions)
+          fieldPermissions = filterPermissions(fieldPermissions, beforeProfile.fieldPermissions,
+            afterProfile.fieldPermissions, emptyFieldPermissions, notRemovedField)
+          objectPermissions = filterPermissions(objectPermissions, beforeProfile.objectPermissions,
+            afterProfile.objectPermissions, emptyObjectPermissions)
         }
         return { fullName: afterProfile.fullName, fieldPermissions, objectPermissions }
       })
@@ -290,10 +304,15 @@ const filterCreator: FilterCreator = ({ client }) => ({
       .concat(beforeProfiles
         .filter(p => _.isUndefined(findProfile(afterProfiles, p.fullName)))
         .map(p => ({ fullName: p.fullName,
-          fieldPermissions: p.fieldPermissions.map(emptyFieldPermissions),
+          fieldPermissions: p.fieldPermissions.filter(notRemovedField)
+            .map(emptyFieldPermissions),
           objectPermissions: p.objectPermissions.map(emptyObjectPermissions) })))
       // Filter out empty permissions
       .filter(p => (p.fieldPermissions.length > 0) || (p.objectPermissions.length > 0))
+
+    if (_.isEmpty(profiles)) {
+      return []
+    }
 
     return client.update(PROFILE_METADATA_TYPE, profiles)
   },

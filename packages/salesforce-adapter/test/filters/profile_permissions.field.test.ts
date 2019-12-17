@@ -268,6 +268,22 @@ describe('Field Permissions filter', () => {
       verifyUpdateCall('Admin', 'Test__c.Apple__c')
     })
 
+  it('should not call update on remove field',
+    async () => {
+      const before = mockObject.clone()
+      before.fields = { address }
+
+      const after = mockObject.clone()
+      after.fields = { }
+
+      await filter().onUpdate(before, after, [
+        { action: 'remove', data: { before: address } },
+      ])
+
+      // Verify there was no update call
+      expect(mockUpdate).not.toHaveBeenCalled()
+    })
+
   it('should update the new profile on existing field', async () => {
     const before = mockObject.clone()
     before.fields = { ...before.fields, address }

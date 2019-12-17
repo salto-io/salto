@@ -43,6 +43,8 @@ import {
   FilterCreator, Filter, FilterWith, filtersWith,
 } from './filter'
 import { id } from './filters/utils'
+import { readFileSync } from 'fs'
+import { deserialize } from 'salto'
 
 const { makeArray } = collections.array
 
@@ -226,7 +228,7 @@ export default class SalesforceAdapter {
    * Account credentials were given in the constructor.
    */
   @logDuration('fetching account configuration')
-  public async fetch(): Promise<Element[]> {
+  public async fetch2(): Promise<Element[]> {
     log.debug('going to fetch salesforce account configuration..')
     const fieldTypes = Types.getAllFieldTypes()
     const annotationTypes = Types.getAnnotationTypes()
@@ -254,6 +256,14 @@ export default class SalesforceAdapter {
       await Promise.all([annotationTypes, fieldTypes, metadataTypes, sObjects,
         metadataInstances]) as Element[][]
     )
+
+    await this.runFiltersOnFetch(elements)
+    return elements
+  }
+
+  @logDuration('fetching account configuration')
+  public async fetch(): Promise<Element[]> {
+    const elements = deserialize(readFileSync('fetch.bpc', 'utf8'))
 
     await this.runFiltersOnFetch(elements)
     return elements

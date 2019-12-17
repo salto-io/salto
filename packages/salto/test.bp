@@ -1,0 +1,87 @@
+          type salesforce_string is string {
+          }
+
+          type salesforce_number is number {
+          }
+
+          type salesforce_boolean is boolean {
+          }
+
+          type salesforce_obj is object {
+            salesforce_number num {}
+          }
+
+          type salesforce_test {
+            salesforce_string name {
+              label = "Name"
+              _required = true
+            }
+
+            list salesforce_string nicknames {
+            }
+
+            salesforce_phone fax {
+              field_level_security = {
+                all_profiles = {
+                  visible = false
+                  read_only = false
+                }
+              }
+            }
+
+            lead_convert_settings = {
+              account = [
+                {
+                  input = "bla"
+                  output = "foo"
+                }
+              ]
+            }
+
+            annotations {
+              salesforce_lead_convert_settings convert_settings {}
+            }
+          }
+
+          salesforce_test inst {
+            name = "me"
+          }
+
+          salesforce {
+            username = "foo"
+          }
+
+          type salesforce_type {
+            salesforce_number num {}
+          }
+
+          type salesforce_type {
+            update num {
+              label = "Name"
+              _required = true
+            }
+          }
+
+          type salesforce_field is number {
+            annotations {
+              number scale {
+              }
+              number precision {
+              }
+              boolean unique {
+              }
+            }
+          }
+          settings salesforce_path_assistant_settings {
+             metadata_type = "PathAssistantSettings"
+             string full_name {
+               _required = false
+             }
+             boolean path_assistant_enabled {
+               _required = false
+             }
+          }
+          salesforce_path_assistant_settings {
+            full_name              = "PathAssistant"
+            path_assistant_enabled = false
+          }

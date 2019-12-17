@@ -92,12 +92,13 @@ const getElementName = <T = PermissionsTypes>(element: T): string =>
 
 const filterPermissions = <T = PermissionsTypes>(
   permissions: T[], beforeProfilePermissions: T[], afterProfilePermissions: T[],
-  emptyPermissions: (permissions: T) => T): T[] =>
+  emptyPermissions: (permissions: T) => T, removedElements: string[] = []): T[] =>
     permissions
       // Filter out permissions that were already updated
       .filter(f => !_.isEqual(findPermissions(beforeProfilePermissions, getElementName(f)), f))
     // Add missing permissions with =false for all the permissions options
       .concat(beforeProfilePermissions
+        .filter(f => !removedElements.includes(getElementName(f)))
         .filter(f => _.isUndefined(findPermissions(afterProfilePermissions, getElementName(f))))
         .map(emptyPermissions))
 
@@ -256,11 +257,21 @@ const filterCreator: FilterCreator = ({ client }) => ({
       return []
     }
 
+    const removedElements: string[] = []
     wu(changes)
       .forEach(c => {
         const changeElement = getChangeElement(c)
-        if (isField(changeElement) && c.action === 'add') {
-          setDefaultFieldPermissions(after.fields[changeElement.name])
+        if (isField(changeElement)) {
+          switch (c.action) {
+            case 'add':
+              setDefaultFieldPermissions(after.fields[changeElement.name])
+              break
+            case 'remove':
+              removedElements.push(fieldFullName(before, changeElement))
+              break
+            default:
+              break
+          }
         }
       })
 
@@ -278,8 +289,8 @@ const filterCreator: FilterCreator = ({ client }) => ({
         let { fieldPermissions, objectPermissions } = afterProfile
         const beforeProfile = findProfile(beforeProfiles, afterProfile.fullName)
         if (beforeProfile) {
-          fieldPermissions = filterPermissions(fieldPermissions,
-            beforeProfile.fieldPermissions, afterProfile.fieldPermissions, emptyFieldPermissions)
+          fieldPermissions = filterPermissions(fieldPermissions, beforeProfile.fieldPermissions,
+            afterProfile.fieldPermissions, emptyFieldPermissions, removedElements)
           objectPermissions = filterPermissions(objectPermissions,
             beforeProfile.objectPermissions, afterProfile.objectPermissions, emptyObjectPermissions)
         }

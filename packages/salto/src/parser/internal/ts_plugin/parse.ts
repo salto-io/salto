@@ -132,7 +132,7 @@ export const parseBuffer = (
 }
 
 export const parse = (src: Buffer, filename: string): HclParseReturn => {
-  const hclParser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar), { keepHistory: true })
+  const hclParser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar))
   startParse(filename)
   const [blockItems, errors] = parseBuffer(src.toString(), hclParser, filename)
   if (blockItems !== undefined) {

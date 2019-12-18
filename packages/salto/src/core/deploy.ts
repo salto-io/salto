@@ -49,7 +49,7 @@ export const deployActions = async (
   postApplyAction: (action: ActionName, element: Element) => Promise<void>
 ): Promise<DeployError[]> => {
   try {
-    await deployPlan.walk(async (itemId: PlanItemId): Promise<void> => {
+    await deployPlan.walkAsync(async (itemId: PlanItemId): Promise<void> => {
       const item = deployPlan.getItem(itemId) as PlanItem
       reportProgress(item, 'started')
       try {

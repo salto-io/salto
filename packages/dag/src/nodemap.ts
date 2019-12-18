@@ -174,29 +174,68 @@ export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<Node
     return wu(this.evaluationOrderGroups()).flatten()
   }
 
-  async walkDestructive(handler: AsyncNodeHandler): Promise<void> {
+  async walkAsyncDestructive(handler: AsyncNodeHandler): Promise<void> {
     const errors = new Map<NodeId, Error>()
     let reverse: this // lazy load
-
-    const setError = (node: NodeId, error: Error): void => {
-      errors.set(node, error)
-      if (!reverse) reverse = this.reverse()
-      reverse.get(node).forEach(
-        dependentNode => setError(dependentNode, new NodeSkippedError(node))
-      )
-    }
 
     const next = (affectedNodes: Iterable<NodeId>): Promise<void> => promiseAllToSingle(
       wu(this.freeNodes(affectedNodes)).map(
         node => handler(node).then(
           () => next(this.deleteNode(node)),
-          e => setError(node, e),
+          e => {
+            if (!reverse) {
+              reverse = this.reverse()
+            }
+            this.setError(node, e, errors, reverse)
+          },
         )
       )
     )
 
     await next(this.keys())
 
+    this.throwWalkErrors(errors)
+  }
+
+  async walkAsync(handler: AsyncNodeHandler): Promise<void> {
+    return this.clone().walkAsyncDestructive(handler)
+  }
+
+  private walkSyncDestructive(handler: NodeHandler): void {
+    const errors = new Map<NodeId, Error>()
+    let reverse: this // lazy load
+
+    const next = (affectedNodes: Iterable<NodeId>): void => {
+      wu(this.freeNodes(affectedNodes))
+        .forEach(node => {
+          try {
+            handler(node)
+            next(this.deleteNode(node))
+          } catch (e) {
+            if (!reverse) {
+              reverse = this.reverse()
+            }
+            this.setError(node, e, errors, reverse)
+          }
+        })
+    }
+
+    next(this.keys())
+    this.throwWalkErrors(errors)
+  }
+
+  walkSync(handler: NodeHandler): void {
+    return this.clone().walkSyncDestructive(handler)
+  }
+
+  private setError(node: NodeId, error: Error, errors: Map<NodeId, Error>, reverse: this): void {
+    errors.set(node, error)
+    reverse.get(node).forEach(
+      dependentNode => this.setError(dependentNode, new NodeSkippedError(node), errors, reverse)
+    )
+  }
+
+  private throwWalkErrors(errors: Map<NodeId, Error>): void {
     const errorNodes = new Set(errors.keys())
     const unhandledNodes = difference(this.keys(), errorNodes)
 
@@ -208,10 +247,6 @@ export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<Node
           : undefined,
       )
     }
-  }
-
-  async walk(handler: AsyncNodeHandler): Promise<void> {
-    return this.clone().walkDestructive(handler)
   }
 
   tryTransform(transform: (nodeMap: this) => NodeId): [this, boolean] {

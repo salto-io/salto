@@ -13,7 +13,7 @@ import {
   OBJECT_LEVEL_SECURITY_ANNOTATION, OBJECT_PERMISSIONS, SALESFORCE, INSTANCE_FULL_NAME_FIELD,
 } from '../constants'
 import {
-  fieldFullName, isCustomObject, Types, apiName, sfCase, bpCase,
+  fieldFullName, isCustomObject, Types, apiName, bpCase,
 } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
 import { ProfileInfo, FieldPermissions, FieldPermissionsOptions, ObjectPermissionsOptions,
@@ -191,7 +191,7 @@ const toProfiles = (object: ObjectType): ProfileInfo[] => {
   const profileToFieldPermissions = toProfilesFieldPermissions(object)
   const profiles = Object.keys(profileToObjectPermissions)
     .concat(Object.keys(profileToFieldPermissions))
-  return profiles.map(profile => new ProfileInfo(sfCase(ElemID.fromFullName(profile).name),
+  return profiles.map(profile => new ProfileInfo(profile,
     profileToFieldPermissions[profile] || [], profileToObjectPermissions[profile] || []))
 }
 

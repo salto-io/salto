@@ -451,184 +451,398 @@ describe('NodeMap', () => {
   })
 
   describe('walk', () => {
-    let handler: jest.Mock<Promise<void>>
-    let result: Promise<void>
-    let concurrencyCounter: MaxCounter
+    describe('walkSync', () => {
+      let handler: jest.Mock<void>
 
-    // simulates an async operation in zero time
-    const dummyAsyncOperation = (): Promise<void> =>
-      new Promise(resolve => setTimeout(resolve, 0))
-
-    beforeEach(() => {
-      concurrencyCounter = new MaxCounter()
-      const handled = new Set<NodeId>()
-
-      handler = jest.fn(async node => {
-        concurrencyCounter.increment()
-        expect(handled).not.toContain(node)
-        expect(wu(subject.get(node)).every(n => handled.has(n))).toBeTruthy()
-        await dummyAsyncOperation()
-        handled.add(node)
-        concurrencyCounter.decrement()
-      })
-
-      subject.addNode(2, [1])
-      subject.addNode(3, [2])
-      subject.addNode(4, [2])
-      subject.addNode(5, [1])
-    })
-
-    describe('for a simple graph', () => {
       beforeEach(() => {
-        result = subject.walk(handler)
-        return result
-      }, 0)
-
-      it('should resolve the promise', () => expect(result).resolves.toBeUndefined())
-
-      it('should call the handler in the correct order', () => {
-        expect(_.flatten(handler.mock.calls)).toEqual([1, 2, 5, 3, 4])
-      })
-
-      it('should call the handler as concurrently as possible', () => {
-        expect(concurrencyCounter.maximum).toBe(3)
-      })
-    })
-
-    describe('for a graph with a circular dependency', () => {
-      let error: WalkError
-      beforeEach(async () => {
-        subject.get(2).add(3)
-        await subject.walk(handler).catch(e => { error = e })
-      })
-
-      it('should reject with WalkError', () => {
-        expect(error).toBeInstanceOf(WalkError)
-      })
-
-      describe('the error\'s "circularDependencyError" property', () => {
-        let depError: CircularDependencyError
-        beforeEach(() => { depError = error.circularDependencyError as CircularDependencyError })
-
-        it('should be an instance of CircularDependencyError', () => {
-          expect(depError).toBeInstanceOf(CircularDependencyError)
+        const handled = new Set<NodeId>()
+        handler = jest.fn((nodeId: string) => {
+          handled.add(nodeId)
+          expect(wu(subject.get(nodeId)).every(n => handled.has(n))).toBeTruthy()
         })
 
-        it('should have a proper message', () => {
-          expect(String(depError)).toContain(
-            'Circular dependencies exist among these items: 2->[3], 3->[2], 4->[2]'
-          )
+        subject.addNode(2, [1])
+        subject.addNode(3, [2])
+        subject.addNode(4, [2])
+      })
+
+      describe('for a simple graph', () => {
+        beforeEach(() => subject.walkSync(handler))
+
+        it('should call the handler in the correct order', () => {
+          expect(_.flatten(handler.mock.calls)).toEqual([1, 2, 3, 4])
         })
       })
-    })
 
-    describe('when the handler throws an error', () => {
-      class MyError extends Error {}
-      let handlerError: MyError
-      let error: Error
-
-      beforeEach(async () => {
-        await subject.walk(async (id: NodeId) => {
-          if (id === 2) {
-            handlerError = new MyError('My error message')
-            throw handlerError
+      describe('for a graph with a circular dependency', () => {
+        let error: WalkError
+        beforeEach(() => {
+          subject.addNode(1, [4])
+          try {
+            subject.walkSync(handler)
+          } catch (e) {
+            error = e
           }
-        }).catch(e => { error = e })
-        expect(error).toBeDefined()
-      })
-
-      it('should throw a WalkError', () => {
-        expect(error).toBeInstanceOf(WalkError)
-      })
-
-      describe('the error message', () => {
-        let message: string
-        beforeEach(() => { message = error.message })
-
-        it('should contain the id of the errored node with the error\'s message', () => {
-          expect(message).toContain('2: Error: My error message')
         })
 
-        it('should contain the ids of the skipped nodes with a "skipped" message', () => {
-          expect(message).toContain('3: Error: Skipped due to an error in parent node 2')
-          expect(message).toContain('4: Error: Skipped due to an error in parent node 2')
+        it('should reject with WalkError', () => {
+          expect(error).toBeInstanceOf(WalkError)
+        })
+
+        describe('the error\'s "circularDependencyError" property', () => {
+          let depError: CircularDependencyError
+          beforeEach(() => {
+            depError = error.circularDependencyError as CircularDependencyError
+          })
+
+          it('should be an instance of CircularDependencyError', () => {
+            expect(depError).toBeInstanceOf(CircularDependencyError)
+          })
+
+          it('should have a proper message', () => {
+            expect(String(depError)).toContain(
+              'Circular dependencies exist among these items: 2->[1], 1->[4], 3->[2], 4->[2]'
+            )
+          })
         })
       })
 
-      describe('the error\'s "errors" property', () => {
-        let errors: ReadonlyMap<NodeId, Error>
-        beforeEach(() => { errors = (error as WalkError).handlerErrors })
+      describe('when the handler throws an error', () => {
+        class MyError extends Error {
+        }
 
-        it('should contain the id of the errored node with the error', () => {
-          expect(errors.get(2)).toBe(handlerError)
+        let handlerError: MyError
+        let error: Error
+
+        beforeEach(() => {
+          try {
+            subject.walkSync((id: NodeId) => {
+              if (id === 2) {
+                handlerError = new MyError('My error message')
+                throw handlerError
+              }
+            })
+          } catch (e) {
+            error = e
+          }
+          expect(error).toBeDefined()
         })
 
-        it('should contain the ids of the skipped nodes with a "skipped" Error', () => {
-          expect(errors.get(3)).toBeInstanceOf(NodeSkippedError)
-          expect(errors.get(4)).toBeInstanceOf(NodeSkippedError)
+        it('should throw a WalkError', () => {
+          expect(error).toBeInstanceOf(WalkError)
+        })
+
+        describe('the error message', () => {
+          let message: string
+          beforeEach(() => {
+            message = error.message
+          })
+
+          it('should contain the id of the errored node with the error\'s message', () => {
+            expect(message).toContain('2: Error: My error message')
+          })
+
+          it('should contain the ids of the skipped nodes with a "skipped" message', () => {
+            expect(message).toContain('3: Error: Skipped due to an error in parent node 2')
+            expect(message).toContain('4: Error: Skipped due to an error in parent node 2')
+          })
+        })
+
+        describe('the error\'s "errors" property', () => {
+          let errors: ReadonlyMap<NodeId, Error>
+          beforeEach(() => {
+            errors = (error as WalkError).handlerErrors
+          })
+
+          it('should contain the id of the errored node with the error', () => {
+            expect(errors.get(2)).toBe(handlerError)
+          })
+
+          it('should contain the ids of the skipped nodes with a "skipped" Error', () => {
+            expect(errors.get(3)).toBeInstanceOf(NodeSkippedError)
+            expect(errors.get(4)).toBeInstanceOf(NodeSkippedError)
+          })
+        })
+      })
+
+      describe('when there is a circular dependency AND the handler throws an error', () => {
+        class MyError extends Error {
+        }
+
+        let handlerError: MyError
+        let error: WalkError
+
+        beforeEach(() => {
+          subject.addNode(2, [3])
+          subject.addNode(6, [5])
+          try {
+            subject.walkSync((id: NodeId) => {
+              if (id === 5) {
+                handlerError = new MyError('My error message')
+                throw handlerError
+              }
+            })
+          } catch (e) {
+            error = e
+          }
+          expect(error).toBeDefined()
+        })
+
+        it('should throw a WalkError', () => {
+          expect(error).toBeInstanceOf(WalkError)
+        })
+
+        describe('the error message', () => {
+          let message: string
+          beforeEach(() => {
+            message = error.message
+          })
+
+          it('should contain the id of the errored node with the error\'s message', () => {
+            expect(message).toContain('5: Error: My error message')
+          })
+
+          it('should contain the ids of the skipped nodes with a "skipped" message', () => {
+            expect(message).toContain('6: Error: Skipped due to an error in parent node 5')
+          })
+        })
+
+        describe('the error\'s "errors" property', () => {
+          let errors: ReadonlyMap<NodeId, Error>
+          beforeEach(() => {
+            errors = (error as WalkError).handlerErrors
+          })
+
+          it('should contain the id of the errored node with the error', () => {
+            expect(errors.get(5)).toBe(handlerError)
+          })
+
+          it('should contain the ids of the skipped nodes with a "skipped" Error', () => {
+            expect(errors.get(6)).toBeInstanceOf(NodeSkippedError)
+          })
+        })
+
+        describe('the error\'s "circularDependencyError" property', () => {
+          let depError: CircularDependencyError
+          beforeEach(() => {
+            depError = error.circularDependencyError as CircularDependencyError
+          })
+
+          it('should be an instance of CircularDependencyError', () => {
+            expect(depError).toBeInstanceOf(CircularDependencyError)
+          })
+
+          it('should have a proper message', () => {
+            expect(String(depError)).toContain(
+              'Circular dependencies exist among these items: 2->[3], 3->[2], 4->[2]'
+            )
+          })
         })
       })
     })
 
-    describe('when there is a circular dependency AND the handler throws an error', () => {
-      class MyError extends Error { }
-      let handlerError: MyError
-      let error: WalkError
+    describe('walkAsync', () => {
+      let handler: jest.Mock<Promise<void>>
+      let result: Promise<void>
+      let concurrencyCounter: MaxCounter
 
-      beforeEach(async () => {
-        subject.addNode(2, [3])
-        subject.addNode(6, [5])
-        await subject.walk(async (id: NodeId) => {
-          if (id === 5) {
-            handlerError = new MyError('My error message')
-            throw handlerError
-          }
-        }).catch(e => { error = e })
-        expect(error).toBeDefined()
+      // simulates an async operation in zero time
+      const dummyAsyncOperation = (): Promise<void> =>
+        new Promise(resolve => setTimeout(resolve, 0))
+
+      beforeEach(() => {
+        concurrencyCounter = new MaxCounter()
+        const handled = new Set<NodeId>()
+
+        handler = jest.fn(async node => {
+          concurrencyCounter.increment()
+          expect(handled).not.toContain(node)
+          expect(wu(subject.get(node)).every(n => handled.has(n))).toBeTruthy()
+          await dummyAsyncOperation()
+          handled.add(node)
+          concurrencyCounter.decrement()
+        })
+
+        subject.addNode(2, [1])
+        subject.addNode(3, [2])
+        subject.addNode(4, [2])
+        subject.addNode(5, [1])
       })
 
-      it('should throw a WalkError', () => {
-        expect(error).toBeInstanceOf(WalkError)
-      })
+      describe('for a simple graph', () => {
+        beforeEach(async () => {
+          result = subject.walkAsync(handler)
+          await result
+        }, 0)
 
-      describe('the error message', () => {
-        let message: string
-        beforeEach(() => { message = error.message })
+        it('should resolve the promise', () => expect(result).resolves.toBeUndefined())
 
-        it('should contain the id of the errored node with the error\'s message', () => {
-          expect(message).toContain('5: Error: My error message')
+        it('should call the handler in the correct order', () => {
+          expect(_.flatten(handler.mock.calls)).toEqual([1, 2, 5, 3, 4])
         })
 
-        it('should contain the ids of the skipped nodes with a "skipped" message', () => {
-          expect(message).toContain('6: Error: Skipped due to an error in parent node 5')
-        })
-      })
-
-      describe('the error\'s "errors" property', () => {
-        let errors: ReadonlyMap<NodeId, Error>
-        beforeEach(() => { errors = (error as WalkError).handlerErrors })
-
-        it('should contain the id of the errored node with the error', () => {
-          expect(errors.get(5)).toBe(handlerError)
-        })
-
-        it('should contain the ids of the skipped nodes with a "skipped" Error', () => {
-          expect(errors.get(6)).toBeInstanceOf(NodeSkippedError)
+        it('should call the handler as concurrently as possible', async () => {
+          expect(concurrencyCounter.maximum).toBeGreaterThanOrEqual(2)
         })
       })
 
-      describe('the error\'s "circularDependencyError" property', () => {
-        let depError: CircularDependencyError
-        beforeEach(() => { depError = error.circularDependencyError as CircularDependencyError })
-
-        it('should be an instance of CircularDependencyError', () => {
-          expect(depError).toBeInstanceOf(CircularDependencyError)
+      describe('for a graph with a circular dependency', () => {
+        let error: WalkError
+        beforeEach(async () => {
+          subject.get(2).add(3)
+          await subject.walkAsync(handler).catch(e => {
+            error = e
+          })
         })
 
-        it('should have a proper message', () => {
-          expect(String(depError)).toContain(
-            'Circular dependencies exist among these items: 2->[3], 3->[2], 4->[2]'
-          )
+        it('should reject with WalkError', () => {
+          expect(error).toBeInstanceOf(WalkError)
+        })
+
+        describe('the error\'s "circularDependencyError" property', () => {
+          let depError: CircularDependencyError
+          beforeEach(() => {
+            depError = error.circularDependencyError as CircularDependencyError
+          })
+
+          it('should be an instance of CircularDependencyError', () => {
+            expect(depError).toBeInstanceOf(CircularDependencyError)
+          })
+
+          it('should have a proper message', () => {
+            expect(String(depError)).toContain(
+              'Circular dependencies exist among these items: 2->[3], 3->[2], 4->[2]'
+            )
+          })
+        })
+      })
+
+      describe('when the handler throws an error', () => {
+        class MyError extends Error {
+        }
+
+        let handlerError: MyError
+        let error: Error
+
+        beforeEach(async () => {
+          await subject.walkAsync(async (id: NodeId) => {
+            if (id === 2) {
+              handlerError = new MyError('My error message')
+              throw handlerError
+            }
+          }).catch(e => {
+            error = e
+          })
+          expect(error).toBeDefined()
+        })
+
+        it('should throw a WalkError', () => {
+          expect(error).toBeInstanceOf(WalkError)
+        })
+
+        describe('the error message', () => {
+          let message: string
+          beforeEach(() => {
+            message = error.message
+          })
+
+          it('should contain the id of the errored node with the error\'s message', () => {
+            expect(message).toContain('2: Error: My error message')
+          })
+
+          it('should contain the ids of the skipped nodes with a "skipped" message', () => {
+            expect(message).toContain('3: Error: Skipped due to an error in parent node 2')
+            expect(message).toContain('4: Error: Skipped due to an error in parent node 2')
+          })
+        })
+
+        describe('the error\'s "errors" property', () => {
+          let errors: ReadonlyMap<NodeId, Error>
+          beforeEach(() => {
+            errors = (error as WalkError).handlerErrors
+          })
+
+          it('should contain the id of the errored node with the error', () => {
+            expect(errors.get(2)).toBe(handlerError)
+          })
+
+          it('should contain the ids of the skipped nodes with a "skipped" Error', () => {
+            expect(errors.get(3)).toBeInstanceOf(NodeSkippedError)
+            expect(errors.get(4)).toBeInstanceOf(NodeSkippedError)
+          })
+        })
+      })
+
+      describe('when there is a circular dependency AND the handler throws an error', () => {
+        class MyError extends Error {
+        }
+
+        let handlerError: MyError
+        let error: WalkError
+
+        beforeEach(async () => {
+          subject.addNode(2, [3])
+          subject.addNode(6, [5])
+          await subject.walkAsync(async (id: NodeId) => {
+            if (id === 5) {
+              handlerError = new MyError('My error message')
+              throw handlerError
+            }
+          }).catch(e => {
+            error = e
+          })
+          expect(error).toBeDefined()
+        })
+
+        it('should throw a WalkError', () => {
+          expect(error).toBeInstanceOf(WalkError)
+        })
+
+        describe('the error message', () => {
+          let message: string
+          beforeEach(() => {
+            message = error.message
+          })
+
+          it('should contain the id of the errored node with the error\'s message', () => {
+            expect(message).toContain('5: Error: My error message')
+          })
+
+          it('should contain the ids of the skipped nodes with a "skipped" message', () => {
+            expect(message).toContain('6: Error: Skipped due to an error in parent node 5')
+          })
+        })
+
+        describe('the error\'s "errors" property', () => {
+          let errors: ReadonlyMap<NodeId, Error>
+          beforeEach(() => {
+            errors = (error as WalkError).handlerErrors
+          })
+
+          it('should contain the id of the errored node with the error', () => {
+            expect(errors.get(5)).toBe(handlerError)
+          })
+
+          it('should contain the ids of the skipped nodes with a "skipped" Error', () => {
+            expect(errors.get(6)).toBeInstanceOf(NodeSkippedError)
+          })
+        })
+
+        describe('the error\'s "circularDependencyError" property', () => {
+          let depError: CircularDependencyError
+          beforeEach(() => {
+            depError = error.circularDependencyError as CircularDependencyError
+          })
+
+          it('should be an instance of CircularDependencyError', () => {
+            expect(depError).toBeInstanceOf(CircularDependencyError)
+          })
+
+          it('should have a proper message', () => {
+            expect(String(depError)).toContain(
+              'Circular dependencies exist among these items: 2->[3], 3->[2], 4->[2]'
+            )
+          })
         })
       })
     })

@@ -6,7 +6,7 @@ import { HclCallContext, HclParseReturn, DumpedHclBlock, HclDumpReturn, HclRetur
 import { parse as tsParse } from './ts_plugin/parse'
 import { dump as tsDump } from './ts_plugin/dump'
 
-export const useGoParser = (Object.keys(process.env).includes('GO_PARSE'))
+export const useGoParser = (Object.keys(process.env).includes('SALTO_USE_GO_PARSER'))
 
 class HclParser {
   // Limit max concurrency to avoid web assembly out of memory errors

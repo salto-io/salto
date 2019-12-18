@@ -154,7 +154,6 @@ export class CustomField implements MetadataInfo {
         default:
           break
       }
-      this.required = required
     }
 
     if (defaultValFormula) {
@@ -188,6 +187,11 @@ export class CustomField implements MetadataInfo {
     } else if (type === FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.ROLLUP_SUMMARY]
         && summaryFilterItems) {
       this.summaryFilterItems = summaryFilterItems
+    }
+
+    // Checkbox must not have required field
+    if (this.type !== FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.CHECKBOX]) {
+      this.required = required
     }
   }
 }

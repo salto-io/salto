@@ -1,5 +1,5 @@
 import {
-  ObjectType, ElemID, Element, InstanceElement, Field, Type,
+  ObjectType, ElemID, Element, InstanceElement, Field, Type, ReferenceExpression,
 } from 'adapter-api'
 import { MetadataInfo } from 'jsforce'
 import * as constants from '../../src/constants'
@@ -10,7 +10,6 @@ import {
 } from '../../src/filters/standard_value_sets'
 import SalesforceClient from '../../src/client/client'
 import { Types } from '../../src/transformers/transformer'
-import { id } from '../../src/filters/utils'
 
 const createStandardValueSetMetadataInfo = (name: string, values: string[]): MetadataInfo =>
   ({
@@ -106,7 +105,8 @@ describe('Standard Value Sets filter', () => {
     await filter.onFetch(elements)
     expect(elements.length).toBe(4)
     const simpsonsSvs = elements[2]
-    expect(typeElement.fields.state.annotations[Type.VALUES]).toEqual(id(simpsonsSvs))
+    expect(typeElement.fields.state.annotations[Type.VALUES])
+      .toEqual(new ReferenceExpression(simpsonsSvs.elemID.createNestedID(STANDARD_VALUE)))
   })
 
   it('should replace value list with references for standard multipicklist fields', async () => {
@@ -118,7 +118,8 @@ describe('Standard Value Sets filter', () => {
     await filter.onFetch(elements)
     expect(elements.length).toBe(4)
     const simpsonsSvs = elements[2]
-    expect(typeElement.fields.state.annotations[Type.VALUES]).toEqual(id(simpsonsSvs))
+    expect(typeElement.fields.state.annotations[Type.VALUES])
+      .toEqual(new ReferenceExpression(simpsonsSvs.elemID.createNestedID(STANDARD_VALUE)))
   })
 
   it('should not replace value list with references for custom picklist fields', async () => {

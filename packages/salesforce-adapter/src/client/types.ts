@@ -189,8 +189,8 @@ export class CustomField implements MetadataInfo {
       this.summaryFilterItems = summaryFilterItems
     }
 
-    // Checkbox must not have required field
-    if (this.type !== FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.CHECKBOX]) {
+    // Checkbox and Formula fields should not have required field
+    if ((this.type !== FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.CHECKBOX]) && !formula) {
       this.required = required
     }
   }

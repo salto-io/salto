@@ -1,11 +1,11 @@
 import {
   BuiltinTypes, Type, ObjectType, ElemID, InstanceElement, isModificationDiff,
   isRemovalDiff, isAdditionDiff, Field, Element, isObjectType, isInstanceElement, AdapterCreator,
-  Value, Change, getChangeElement, isField, isElement, ElemIdGetter, ADAPTER,
-  DataModificationResult, ServiceIds,
+  Value, Change, getChangeElement, isField, isElement, ElemIdGetter,
+  DataModificationResult,
 } from 'adapter-api'
 import {
-  SaveResult, MetadataInfo, Field as SObjField, DescribeSObjectResult, QueryResult, FileProperties,
+  SaveResult, MetadataInfo, QueryResult, FileProperties,
   BatchResultInfo, BulkLoadOperation, Record as SfRecord,
 } from 'jsforce'
 import _ from 'lodash'
@@ -15,12 +15,13 @@ import SalesforceClient, { API_VERSION, Credentials } from './client/client'
 import * as constants from './constants'
 import {
   toCustomField, toCustomObject, apiName, sfCase, fieldFullName, Types,
-  getSObjectFieldElement, toMetadataInfo, createInstanceElement,
+  toMetadataInfo, createInstanceElement,
   metadataType, toInstanceElements, createMetadataTypeElements,
   instanceElementstoRecords, elemIDstoRecords, getCompoundChildFields,
 } from './transformers/transformer'
 import { fromRetrieveResult, toMetadataPackageZip } from './transformers/xml_transformer'
 import layoutFilter from './filters/layouts'
+import CustomObjectsFilter from './filters/custom_objects'
 import profilePermissionsFilter from './filters/profile_permissions'
 import validationRulesFilter from './filters/validation_rules'
 import assignmentRulesFilter from './filters/assignment_rules'
@@ -42,7 +43,7 @@ import topicsForObjectsFilter from './filters/topics_for_objects'
 import {
   FilterCreator, Filter, FilterWith, filtersWith,
 } from './filter'
-import { id } from './filters/utils'
+import { id, addApiName, addMetadataType, addLabel } from './filters/utils'
 
 const { makeArray } = collections.array
 
@@ -51,36 +52,6 @@ const log = logger(module)
 const RECORDS_CHUNK_SIZE = 10000
 
 // Add elements defaults
-const addLabel = (elem: Type | Field, label?: string): void => {
-  const name = isField(elem) ? elem.name : elem.elemID.name
-  const { annotations } = elem
-  if (!annotations[constants.LABEL]) {
-    annotations[constants.LABEL] = label || sfCase(name)
-    log.debug(`added LABEL=${annotations[constants.LABEL]} to ${name}`)
-  }
-}
-
-const addApiName = (elem: Type | Field, name: string): void => {
-  if (!elem.annotations[constants.API_NAME]) {
-    elem.annotations[constants.API_NAME] = name
-    log.debug(`added API_NAME=${name} to ${isField(elem) ? elem.name : elem.elemID.name}`)
-  }
-  if (!isField(elem) && !elem.annotationTypes[constants.API_NAME]) {
-    elem.annotationTypes[constants.API_NAME] = BuiltinTypes.SERVICE_ID
-  }
-}
-
-const addMetadataType = (elem: ObjectType, metadataTypeValue = constants.CUSTOM_OBJECT): void => {
-  const { annotations, annotationTypes } = elem
-  if (!annotationTypes[constants.METADATA_TYPE]) {
-    annotationTypes[constants.METADATA_TYPE] = BuiltinTypes.SERVICE_ID
-  }
-  if (!annotations[constants.METADATA_TYPE]) {
-    annotations[constants.METADATA_TYPE] = metadataTypeValue
-    log.debug(`added METADATA_TYPE=${sfCase(metadataTypeValue)} to ${id(elem)}`)
-  }
-}
-
 const addDefaults = (element: ObjectType): void => {
   addApiName(element, sfCase(element.elemID.name, true))
   addMetadataType(element)
@@ -167,6 +138,7 @@ export default class SalesforceAdapter {
       'ProfileUserPermission',
     ],
     filterCreators = [
+      CustomObjectsFilter,
       profilePermissionsFilter,
       layoutFilter,
       validationRulesFilter,
@@ -234,24 +206,8 @@ export default class SalesforceAdapter {
     const metadataTypes = this.fetchMetadataTypes(metadataTypeNames)
     const metadataInstances = this.fetchMetadataInstances(metadataTypeNames, metadataTypes)
 
-    // Filter out types returned as both metadata types and SObjects
-    const sObjects = this.fetchSObjects()
-      .then(
-        async types => {
-        // All metadata type names include subtypes as well as the "top level" type names
-          const allMetadataTypeNames = new Set(
-            (await metadataTypes).map(elem => id(elem)),
-          )
-          return types.filter(t => !allMetadataTypeNames.has(id(t)))
-        }
-      )
-      .catch(e => {
-        log.error('failed to fetch sobjects reason: %o', e)
-        return []
-      })
-
     const elements = _.flatten(
-      await Promise.all([annotationTypes, fieldTypes, metadataTypes, sObjects,
+      await Promise.all([annotationTypes, fieldTypes, metadataTypes,
         metadataInstances]) as Element[][]
     )
 
@@ -729,135 +685,6 @@ export default class SalesforceAdapter {
           typeAndInstances.type, namespaceAndInstance.namespace)))
       .flatten()
       .value()
-  }
-
-
-  private async fetchSObjects(): Promise<Type[]> {
-    const getSobjectDescriptions = async (): Promise<DescribeSObjectResult[]> => {
-      const sobjectsList = await this.client.listSObjects()
-      const sobjectNames = sobjectsList.map(sobj => sobj.name)
-      return this.client.describeSObjects(sobjectNames)
-    }
-
-    const getCustomObjectNames = async (): Promise<Set<string>> => {
-      const customObjects = await this.client.listMetadataObjects(constants.CUSTOM_OBJECT)
-      return new Set(customObjects.map(o => o.fullName))
-    }
-
-    const [customObjectNames, sobjectsDescriptions] = await Promise.all([
-      getCustomObjectNames(), getSobjectDescriptions(),
-    ])
-
-    const sobjects = sobjectsDescriptions.map(
-      ({ name, label, custom, fields }) => SalesforceAdapter.createSObjectTypes(
-        name, label, custom, fields, customObjectNames
-      )
-    )
-
-    return _.flatten(sobjects)
-  }
-
-  private static createSObjectTypes(
-    objectName: string,
-    label: string,
-    isCustom: boolean,
-    fields: SObjField[],
-    customObjectNames: Set<string>,
-  ): Type[] {
-    // We are filtering sObjects internal types SALTO-346
-    if (!customObjectNames.has(objectName)) {
-      return []
-    }
-
-    const serviceIds = {
-      [ADAPTER]: constants.SALESFORCE,
-      [constants.API_NAME]: objectName,
-      [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
-    }
-
-    const element = Types.get(objectName, true, false, serviceIds) as ObjectType
-    addApiName(element, objectName)
-    addMetadataType(element)
-    addLabel(element, label)
-
-    // Filter out nested fields of compound fields
-    const filteredFields = fields.filter(field => !field.compoundFieldName)
-
-    // Set standard fields on element
-    filteredFields
-      .filter(f => !f.custom)
-      .map(f => getSObjectFieldElement(element.elemID, f, serviceIds))
-      .forEach(field => {
-        element.fields[field.name] = field
-      })
-
-    // Create custom fields (if any)
-    const customFields = filteredFields
-      .filter(f => f.custom)
-      .map(f => getSObjectFieldElement(element.elemID, f, serviceIds))
-
-    if (isCustom) {
-      // This is custom object, we treat standard fields as if they were custom as well
-      // so we put all fields in the same element definition
-      customFields.forEach(field => {
-        element.fields[field.name] = field
-      })
-      element.path = this.getCustomObjectPackagePath(element)
-      return [element]
-    }
-
-    // This is a standard object
-    element.path = ['objects', 'standard', element.elemID.name]
-
-    if (_.isEmpty(customFields)) {
-      // No custom parts, only standard element needed
-      return [element]
-    }
-    return [element, ...this.getPartialCustomObjects(customFields, objectName, serviceIds)]
-  }
-
-  private static getCustomObjectPackagePath(obj: ObjectType): string[] {
-    if (this.hasNamespace(obj)) {
-      return ['installed_packages', this.getNamespace(obj), 'objects', obj.elemID.name]
-    }
-    return ['objects', 'custom', obj.elemID.name]
-  }
-
-  private static getPartialCustomObjects(customFields: Field[], objectName: string,
-    serviceIds: ServiceIds): ObjectType[] {
-    const [packagedFields, regularCustomFields] = _.partition(customFields, this.hasNamespace)
-    const namespaceToFields: Record<string, Field[]> = _.groupBy(packagedFields, this.getNamespace)
-    // Custom fields that belong to a package go in a separate element
-    const customParts = Object.entries(namespaceToFields)
-      .map(([namespace, packageFields]) => {
-        const packageObj = this.createObjectWithFields(objectName, serviceIds, packageFields)
-        packageObj.path = ['installed_packages', namespace, 'objects', packageObj.elemID.name]
-        return packageObj
-      })
-    if (!_.isEmpty(regularCustomFields)) {
-      // Custom fields go in a separate element
-      const customPart = this.createObjectWithFields(objectName, serviceIds, regularCustomFields)
-      customPart.path = ['objects', 'custom', customPart.elemID.name]
-      customParts.push(customPart)
-    }
-    return customParts
-  }
-
-  private static createObjectWithFields(objectName: string, serviceIds: ServiceIds,
-    fields: Field[]): ObjectType {
-    const obj = Types.get(objectName, true, false, serviceIds) as ObjectType
-    fields.forEach(field => {
-      obj.fields[field.name] = field
-    })
-    return obj
-  }
-
-  private static hasNamespace(customElement: Field | ObjectType): boolean {
-    return apiName(customElement).split(constants.NAMESPACE_SEPARATOR).length === 3
-  }
-
-  private static getNamespace(customElement: Field | ObjectType): string {
-    return apiName(customElement).split(constants.NAMESPACE_SEPARATOR)[0]
   }
 
   /**

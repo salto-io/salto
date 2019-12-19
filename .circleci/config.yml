@@ -251,7 +251,7 @@ workflows:
       - build:
           filters:
             branches:
-              ignore:
+              only:
                 - master
 
       - unittest:

@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import { MetadataInfo } from 'jsforce'
 import {
-  Element, ObjectType, InstanceElement, isObjectType, Field, Type,
+  Element, ObjectType, InstanceElement, isObjectType, Field, Type, ReferenceExpression,
 } from 'adapter-api'
 import { collections } from '@salto/lowerdash'
 import { logger } from '@salto/logging'
@@ -13,7 +13,6 @@ import {
 import {
   metadataType, apiName, createInstanceElement, isCustomObject, Types,
 } from '../transformers/transformer'
-import { id } from './utils'
 
 const { makeArray } = collections.array
 
@@ -24,7 +23,7 @@ export const STANDARD_VALUE = 'standard_value'
 
 
 type StandardValuesSets = Set<string>
-
+type StandartValueSetsLookup = Record<string, ReferenceExpression>
 /*
  * Standard values sets and references are specified in this API apendix:
  * https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/standardvalueset_names.htm
@@ -99,12 +98,15 @@ const encodeValues = (values: string[]): string =>
 export const extractFullNamesFromValueList = (values: {full_name: string}[]): string[] =>
   values.map(v => v.full_name)
 
-const svsValuesToRef = (svsInstances: InstanceElement[]): Record<string, string> => _.fromPairs(
+const svsValuesToRef = (svsInstances: InstanceElement[]): StandartValueSetsLookup => _.fromPairs(
   svsInstances
     .filter(i => i.value[STANDARD_VALUE])
     .map(i => {
       const standardValue = makeArray(i.value[STANDARD_VALUE])
-      return [encodeValues(extractFullNamesFromValueList(standardValue)), id(i)]
+      return [
+        encodeValues(extractFullNamesFromValueList(standardValue)),
+        new ReferenceExpression(i.elemID.createNestedID(STANDARD_VALUE)),
+      ]
     })
 )
 
@@ -118,7 +120,7 @@ const isStandardPickList = (f: Field): boolean => {
 
 const calculatePicklistFieldsToUpdate = (
   custObjectFields: Record<string, Field>,
-  svsValuesToName: Record<string, string>
+  svsValuesToName: StandartValueSetsLookup
 ): Record<string, Field> => _.mapValues(custObjectFields, (f: Field) => {
   if (!isStandardPickList(f) || _.isEmpty(f.annotations[Type.VALUES])) {
     return f

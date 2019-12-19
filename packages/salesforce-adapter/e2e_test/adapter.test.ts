@@ -2,6 +2,7 @@ import _ from 'lodash'
 import {
   Type, ObjectType, ElemID, InstanceElement, Field, Value, Element, Values, BuiltinTypes,
   isInstanceElement,
+  ReferenceExpression,
 } from 'adapter-api'
 import { MetadataInfo, PicklistEntry, RetrieveResult } from 'jsforce'
 import { collections } from '@salto/lowerdash'
@@ -123,12 +124,12 @@ describe('Salesforce adapter E2E with real account', () => {
 
       // Test standard picklist values from a standard value set
       expect(lead.fields.lead_source.annotations[Type.VALUES]).toEqual(
-        new ElemID(
+        new ReferenceExpression(new ElemID(
           constants.SALESFORCE,
           bpCase(STANDARD_VALUE_SET),
           'instance',
           'lead_source',
-        ).getFullName()
+        ).createNestedID('standard_value'))
       )
 
       // Test picklist values

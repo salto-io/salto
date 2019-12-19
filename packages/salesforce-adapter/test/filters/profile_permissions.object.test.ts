@@ -36,6 +36,7 @@ describe('Object Permissions filter', () => {
 
   const fullName = (profile: string): string => `salesforce.profile.instance.${profile}`
   const ADMIN_FULL_NAME = fullName(ADMIN_PROFILE)
+  const ADMIN_NAME = 'Admin'
   const admin = {
     [OBJECT_LEVEL_SECURITY_ANNOTATION]:
       { [ALLOW_CREATE]: [ADMIN_FULL_NAME],
@@ -185,13 +186,13 @@ describe('Object Permissions filter', () => {
     await filter().onAdd(after)
 
     expect(after.annotations[OBJECT_LEVEL_SECURITY_ANNOTATION])
-      .toEqual({ [ALLOW_CREATE]: [ADMIN_FULL_NAME],
-        [ALLOW_DELETE]: [ADMIN_FULL_NAME],
-        [ALLOW_EDIT]: [ADMIN_FULL_NAME],
-        [ALLOW_READ]: [ADMIN_FULL_NAME],
-        [MODIFY_ALL_RECORDS]: [ADMIN_FULL_NAME],
-        [VIEW_ALL_RECORDS]: [ADMIN_FULL_NAME] })
-    verifyUpdateCall('Admin', 'Test__c')
+      .toEqual({ [ALLOW_CREATE]: [ADMIN_NAME],
+        [ALLOW_DELETE]: [ADMIN_NAME],
+        [ALLOW_EDIT]: [ADMIN_NAME],
+        [ALLOW_READ]: [ADMIN_NAME],
+        [MODIFY_ALL_RECORDS]: [ADMIN_NAME],
+        [VIEW_ALL_RECORDS]: [ADMIN_NAME] })
+    verifyUpdateCall(ADMIN_NAME, 'Test__c')
   })
 
   it('should update object permissions upon new salesforce type', async () => {
@@ -202,8 +203,8 @@ describe('Object Permissions filter', () => {
     await filter().onAdd(after)
 
     // Verify permissions creation
-    verifyUpdateCall('Admin', 'Test__c', true, true, true, true, true, true)
-    verifyUpdateCall('Standard', 'Test__c', false, false, false, true, false, false)
+    verifyUpdateCall('salesforce.profile.instance.admin', 'Test__c', true, true, true, true, true, true)
+    verifyUpdateCall('salesforce.profile.instance.standard', 'Test__c', false, false, false, true, false, false)
   })
 
   it('should fail object permissions filter add due to sfdc error', async () => {
@@ -238,8 +239,8 @@ describe('Object Permissions filter', () => {
         [ALLOW_READ]: [ADMIN_FULL_NAME, STANDARD_FULL_NAME],
         [MODIFY_ALL_RECORDS]: [ADMIN_FULL_NAME],
         [VIEW_ALL_RECORDS]: [ADMIN_FULL_NAME] })
-    verifyUpdateCall('Admin', 'Test__c')
-    verifyUpdateCall('Standard', 'Test__c', false, false, false, true, false, false)
+    verifyUpdateCall('salesforce.profile.instance.admin', 'Test__c')
+    verifyUpdateCall('salesforce.profile.instance.standard', 'Test__c', false, false, false, true, false, false)
   })
 
   it('should update object permissions upon modification - remove', async () => {
@@ -254,6 +255,6 @@ describe('Object Permissions filter', () => {
 
     expect(after.annotations[OBJECT_LEVEL_SECURITY_ANNOTATION])
       .toEqual(admin[OBJECT_LEVEL_SECURITY_ANNOTATION])
-    verifyUpdateCall('Standard', 'Test__c', false, false, false, false, false, false)
+    verifyUpdateCall('salesforce.profile.instance.standard', 'Test__c', false, false, false, false, false, false)
   })
 })

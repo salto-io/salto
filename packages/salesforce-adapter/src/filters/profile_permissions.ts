@@ -13,7 +13,7 @@ import {
   OBJECT_LEVEL_SECURITY_ANNOTATION, OBJECT_PERMISSIONS, SALESFORCE, INSTANCE_FULL_NAME_FIELD,
 } from '../constants'
 import {
-  fieldFullName, isCustomObject, Types, apiName, sfCase, bpCase,
+  fieldFullName, isCustomObject, Types, apiName, bpCase, sfCase,
 } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
 import { ProfileInfo, FieldPermissions, FieldPermissionsOptions, ObjectPermissionsOptions,
@@ -43,11 +43,13 @@ const setProfilePermissions = <T = PermissionsTypes>
     annotationName: string, permissions: T, createReferences = false): void => {
   const isElementName = (name: string): boolean => !['object', 'field'].includes(name)
 
+  let permission = profile.getFullName()
   if (_.isEmpty(getAnnotationValue(element, annotationName))) {
     element.annotations[annotationName] = _.merge(
       {}, ...Object.keys(permissions).filter(isElementName)
         .map(f => ({ [bpCase(f)]: [] as string[] }))
     )
+    permission = sfCase(profile.name)
   }
 
   Object.entries(permissions).filter(p => isElementName(p[0])).forEach(permissionOption => {
@@ -55,7 +57,7 @@ const setProfilePermissions = <T = PermissionsTypes>
       getAnnotationValue(element, annotationName)[bpCase(permissionOption[0])].push(
         createReferences ? new ReferenceExpression(
           profile.createNestedID(INSTANCE_FULL_NAME_FIELD)
-        ) : profile.getFullName()
+        ) : permission
       )
     }
   })
@@ -191,7 +193,7 @@ const toProfiles = (object: ObjectType): ProfileInfo[] => {
   const profileToFieldPermissions = toProfilesFieldPermissions(object)
   const profiles = Object.keys(profileToObjectPermissions)
     .concat(Object.keys(profileToFieldPermissions))
-  return profiles.map(profile => new ProfileInfo(sfCase(ElemID.fromFullName(profile).name),
+  return profiles.map(profile => new ProfileInfo(profile,
     profileToFieldPermissions[profile] || [], profileToObjectPermissions[profile] || []))
 }
 

@@ -9,7 +9,7 @@ import { findElements } from '../utils'
 import filterCreator from '../../src/filters/custom_objects'
 import { FilterWith } from '../../src/filter'
 
-describe('SalesforceAdapter fetch', () => {
+describe('Custom Objects filter', () => {
   let connection: Connection
   let client: SalesforceClient
 

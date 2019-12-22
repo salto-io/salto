@@ -19,7 +19,7 @@ const getStatePrintToken = (state: nearley.LexerState): string | undefined => {
 const convertParserError = (
   err: NearleyError,
   filename: string,
-  lastColumn: nearley.LexerState
+  lastColumn: nearley.LexerState,
 ): HclParseError => {
   const expected = lastColumn.states
     .map(getStatePrintToken)
@@ -28,14 +28,19 @@ const convertParserError = (
   const expectedMsg = expected.length > 1
     ? `${expected.slice(0, -1).join(', ')} or ${expected[expected.length - 1]}`
     : expected[0]
+  const text = token.value || ''
+  const start = token?.source?.start 
+    ?? {line: token.line, col: token.col, bytes: token.offset} as unknown as SourcePos 
+  const end = token?.source?.start 
+    ?? {line: token.line, col: token.col, bytes: token.offset} as unknown as SourcePos 
   return {
     severity: 1,
-    summary: `Unexpected token: ${token.text}`,
-    detail: `Expected ${expectedMsg} token but found: ${token.text} instead.`,
+    summary: `Unexpected token: ${text}`,
+    detail: `Expected ${expectedMsg} token but found: ${text} instead.`,
     subject: {
       filename,
-      start: { col: token.col, line: token.line, byte: token.offset },
-      end: { col: token.col, line: token.line, byte: token.offset },
+      start,
+      end,
     },
   }
 }

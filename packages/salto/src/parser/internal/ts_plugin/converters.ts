@@ -17,9 +17,13 @@ interface LexerToken {
   offset: number
 }
 
+type Token = HCLToken | LexerToken
+
+type NearleyErrorToken = Partial<HclExpression & LexerToken>
+
 export class NearleyError extends Error {
   constructor(
-    public token: LexerToken,
+    public token: NearleyErrorToken,
     public offset: number,
     message: string
   ) {
@@ -27,7 +31,6 @@ export class NearleyError extends Error {
   }
 }
 
-type Token = HCLToken | LexerToken
 
 const isLexerToken = (token: Token): token is LexerToken => 'value' in token
     && 'text' in token
@@ -125,7 +128,7 @@ export const convertObject = (
   attrs.forEach(attr => {
     const key = attr.expressions[0]
     if (res[key.value] !== undefined) {
-      throw new Error('Oy we have this key')
+      throw new NearleyError(key, key.source.start.byte, 'Invalid wildcard token')
     }
     res[key.value] = attr.expressions
   })
@@ -206,12 +209,11 @@ export const convertAttr = (key: LexerToken, value: HclExpression): HclExpressio
 })
 
 export const convertWildcard = (wildcard: LexerToken): HclExpression => {
-  if (allowWildcard) {
-    return {
-      type: 'dynamic',
-      expressions: [],
-      source: createSourceRange(wildcard, wildcard),
-    }
-  }
-  throw new NearleyError(wildcard, wildcard.offset, 'Invalid wildcard token')
+  const exp = {
+    type: 'dynamic',
+    expressions: [],
+    source: createSourceRange(wildcard, wildcard),
+  } as HclExpression
+  if (allowWildcard) exp
+  throw new NearleyError(exp, wildcard.offset, 'Invalid wildcard token')
 }

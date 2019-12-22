@@ -47,16 +47,23 @@ describe('Field Permissions filter', () => {
   const fullName = (profile: string): string => `salesforce.profile.instance.${profile}`
   const ADMIN_FULL_NAME = fullName(ADMIN_PROFILE)
   const ADMIN_NAME = 'Admin'
+  const STANDARD_NAME = 'Standard'
+  const ANALYTICS_CLOUD_INTEGRATION_USER_NAME = 'Analytics Cloud Integration User'
   const admin = {
     [FIELD_LEVEL_SECURITY_ANNOTATION]:
-      { editable: [ADMIN_FULL_NAME], readable: [ADMIN_FULL_NAME] },
+      { editable: [ADMIN_NAME], readable: [ADMIN_NAME] },
   }
   const STANDARD_FULL_NAME = fullName('standard')
   const standard = {
-    [FIELD_LEVEL_SECURITY_ANNOTATION]: { readable: [STANDARD_FULL_NAME] },
+    [FIELD_LEVEL_SECURITY_ANNOTATION]: { readable: [STANDARD_NAME] },
   }
   const addStandard = (field: Field): void =>
-    field.annotations[FIELD_LEVEL_SECURITY_ANNOTATION].readable.push(STANDARD_FULL_NAME)
+    field.annotations[FIELD_LEVEL_SECURITY_ANNOTATION].readable.push(STANDARD_NAME)
+
+  const addAnalyticsCloudIntegrationUser = (field: Field): void =>
+    field.annotations[FIELD_LEVEL_SECURITY_ANNOTATION].readable.push(
+      ANALYTICS_CLOUD_INTEGRATION_USER_NAME
+    )
 
 
   const mockProfileElemID = new ElemID(constants.SALESFORCE, 'profile')
@@ -206,12 +213,14 @@ describe('Field Permissions filter', () => {
     const after = mockObject.clone()
     _.merge(after.fields.description.annotations, admin)
     addStandard(after.fields.description)
+    addAnalyticsCloudIntegrationUser(after.fields.description)
 
     await filter().onAdd(after)
 
     // Verify permissions creation
-    verifyUpdateCall('salesforce.profile.instance.admin', 'Test__c.Description__c')
-    verifyUpdateCall('salesforce.profile.instance.standard', 'Test__c.Description__c', false, true)
+    verifyUpdateCall(ADMIN_NAME, 'Test__c.Description__c')
+    verifyUpdateCall(ANALYTICS_CLOUD_INTEGRATION_USER_NAME, 'Test__c.Description__c', false, true)
+    verifyUpdateCall(STANDARD_NAME, 'Test__c.Description__c', false, true)
   })
 
   it('should fail field permissions filter add due to sfdc error', async () => {
@@ -247,8 +256,8 @@ describe('Field Permissions filter', () => {
       ])
 
     // Verify the field permissions update
-    verifyUpdateCall('salesforce.profile.instance.admin', 'Test__c.Description__c')
-    verifyUpdateCall('salesforce.profile.instance.admin', 'Test__c.Apple__c')
+    verifyUpdateCall(ADMIN_NAME, 'Test__c.Description__c')
+    verifyUpdateCall(ADMIN_NAME, 'Test__c.Apple__c')
   })
 
   it('should update field permissions upon update that include add and remove of fields',
@@ -266,7 +275,7 @@ describe('Field Permissions filter', () => {
       ])
 
       // Verify the field permissions update
-      verifyUpdateCall('salesforce.profile.instance.admin', 'Test__c.Apple__c')
+      verifyUpdateCall(ADMIN_NAME, 'Test__c.Apple__c')
     })
 
   it('should not call update on remove field',
@@ -291,7 +300,7 @@ describe('Field Permissions filter', () => {
     const after = before.clone()
     // Add admin permissions with readable=true and editable=false for description field
     after.fields.description.annotations[FIELD_LEVEL_SECURITY_ANNOTATION] = { readable:
-      [ADMIN_FULL_NAME] }
+      [ADMIN_NAME] }
     // Add standard profile field permissions to address
     addStandard(after.fields.address)
 
@@ -305,8 +314,8 @@ describe('Field Permissions filter', () => {
     ])
 
     // Verify the field permissions creation
-    verifyUpdateCall('salesforce.profile.instance.admin', 'Test__c.Description__c', false, true)
-    verifyUpdateCall('salesforce.profile.instance.standard', 'Test__c.Address__c', false, true)
+    verifyUpdateCall(ADMIN_NAME, 'Test__c.Description__c', false, true)
+    verifyUpdateCall(STANDARD_NAME, 'Test__c.Address__c', false, true)
   })
 
   it('should properly update the remaining fields permissions of the object', async () => {
@@ -340,11 +349,11 @@ describe('Field Permissions filter', () => {
     ])
 
     // Verify the field permissions change
-    verifyUpdateCall('salesforce.profile.instance.standard', 'Test__c.Delta__c', false, true)
+    verifyUpdateCall(STANDARD_NAME, 'Test__c.Delta__c', false, true)
 
     // Banana field was removed so no need to explicitly remove from profile
     const adminProfile = mockUpdate.mock.calls[0][1][1]
-    expect(adminProfile.fullName).toBe('salesforce.profile.instance.admin')
+    expect(adminProfile.fullName).toBe(ADMIN_NAME)
     expect(adminProfile.fieldPermissions.length).toBe(3)
     expect(adminProfile.fieldPermissions[0].field).toBe('Test__c.Delta__c')
     expect(adminProfile.fieldPermissions[0].editable).toBe(true)
@@ -376,7 +385,7 @@ describe('Field Permissions filter', () => {
 
     expect(after.fields.apple.annotations[FIELD_LEVEL_SECURITY_ANNOTATION])
       .toEqual(admin[FIELD_LEVEL_SECURITY_ANNOTATION])
-    verifyUpdateCall('salesforce.profile.instance.admin', 'Test__c.Apple__c')
+    verifyUpdateCall(ADMIN_NAME, 'Test__c.Apple__c')
   })
 
   it('should not set permissions for required fields', async () => {

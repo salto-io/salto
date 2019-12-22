@@ -43,13 +43,13 @@ const setProfilePermissions = <T = PermissionsTypes>
     annotationName: string, permissions: T, createReferences = false): void => {
   const isElementName = (name: string): boolean => !['object', 'field'].includes(name)
 
-  let permission = profile.getFullName()
+  let profileName = profile.name
   if (_.isEmpty(getAnnotationValue(element, annotationName))) {
     element.annotations[annotationName] = _.merge(
       {}, ...Object.keys(permissions).filter(isElementName)
         .map(f => ({ [bpCase(f)]: [] as string[] }))
     )
-    permission = sfCase(profile.name)
+    profileName = sfCase(profileName)
   }
 
   Object.entries(permissions).filter(p => isElementName(p[0])).forEach(permissionOption => {
@@ -57,7 +57,7 @@ const setProfilePermissions = <T = PermissionsTypes>
       getAnnotationValue(element, annotationName)[bpCase(permissionOption[0])].push(
         createReferences ? new ReferenceExpression(
           profile.createNestedID(INSTANCE_FULL_NAME_FIELD)
-        ) : permission
+        ) : profileName
       )
     }
   })

@@ -36,18 +36,20 @@ describe('Object Permissions filter', () => {
 
   const fullName = (profile: string): string => `salesforce.profile.instance.${profile}`
   const ADMIN_FULL_NAME = fullName(ADMIN_PROFILE)
+  const ADMIN_NAME = 'Admin'
+  const STANDARD_NAME = 'Standard'
   const admin = {
     [OBJECT_LEVEL_SECURITY_ANNOTATION]:
-      { [ALLOW_CREATE]: [ADMIN_FULL_NAME],
-        [ALLOW_DELETE]: [ADMIN_FULL_NAME],
-        [ALLOW_EDIT]: [ADMIN_FULL_NAME],
-        [ALLOW_READ]: [ADMIN_FULL_NAME],
-        [MODIFY_ALL_RECORDS]: [ADMIN_FULL_NAME],
-        [VIEW_ALL_RECORDS]: [ADMIN_FULL_NAME] },
+      { [ALLOW_CREATE]: [ADMIN_NAME],
+        [ALLOW_DELETE]: [ADMIN_NAME],
+        [ALLOW_EDIT]: [ADMIN_NAME],
+        [ALLOW_READ]: [ADMIN_NAME],
+        [MODIFY_ALL_RECORDS]: [ADMIN_NAME],
+        [VIEW_ALL_RECORDS]: [ADMIN_NAME] },
   }
   const STANDARD_FULL_NAME = fullName('standard')
   const addStandard = (object: ObjectType): void =>
-    object.annotations[OBJECT_LEVEL_SECURITY_ANNOTATION][ALLOW_READ].push(STANDARD_FULL_NAME)
+    object.annotations[OBJECT_LEVEL_SECURITY_ANNOTATION][ALLOW_READ].push(STANDARD_NAME)
 
   const mockProfileElemID = new ElemID(constants.SALESFORCE, 'profile')
   const mockObjectPermissions = new ObjectType({
@@ -185,13 +187,13 @@ describe('Object Permissions filter', () => {
     await filter().onAdd(after)
 
     expect(after.annotations[OBJECT_LEVEL_SECURITY_ANNOTATION])
-      .toEqual({ [ALLOW_CREATE]: [ADMIN_FULL_NAME],
-        [ALLOW_DELETE]: [ADMIN_FULL_NAME],
-        [ALLOW_EDIT]: [ADMIN_FULL_NAME],
-        [ALLOW_READ]: [ADMIN_FULL_NAME],
-        [MODIFY_ALL_RECORDS]: [ADMIN_FULL_NAME],
-        [VIEW_ALL_RECORDS]: [ADMIN_FULL_NAME] })
-    verifyUpdateCall('Admin', 'Test__c')
+      .toEqual({ [ALLOW_CREATE]: [ADMIN_NAME],
+        [ALLOW_DELETE]: [ADMIN_NAME],
+        [ALLOW_EDIT]: [ADMIN_NAME],
+        [ALLOW_READ]: [ADMIN_NAME],
+        [MODIFY_ALL_RECORDS]: [ADMIN_NAME],
+        [VIEW_ALL_RECORDS]: [ADMIN_NAME] })
+    verifyUpdateCall(ADMIN_NAME, 'Test__c')
   })
 
   it('should update object permissions upon new salesforce type', async () => {
@@ -202,8 +204,8 @@ describe('Object Permissions filter', () => {
     await filter().onAdd(after)
 
     // Verify permissions creation
-    verifyUpdateCall('Admin', 'Test__c', true, true, true, true, true, true)
-    verifyUpdateCall('Standard', 'Test__c', false, false, false, true, false, false)
+    verifyUpdateCall(ADMIN_NAME, 'Test__c', true, true, true, true, true, true)
+    verifyUpdateCall(STANDARD_NAME, 'Test__c', false, false, false, true, false, false)
   })
 
   it('should fail object permissions filter add due to sfdc error', async () => {
@@ -232,14 +234,14 @@ describe('Object Permissions filter', () => {
       [{ action: 'modify', data: { before, after } }])
 
     expect(after.annotations[OBJECT_LEVEL_SECURITY_ANNOTATION])
-      .toEqual({ [ALLOW_CREATE]: [ADMIN_FULL_NAME],
-        [ALLOW_DELETE]: [ADMIN_FULL_NAME],
-        [ALLOW_EDIT]: [ADMIN_FULL_NAME],
-        [ALLOW_READ]: [ADMIN_FULL_NAME, STANDARD_FULL_NAME],
-        [MODIFY_ALL_RECORDS]: [ADMIN_FULL_NAME],
-        [VIEW_ALL_RECORDS]: [ADMIN_FULL_NAME] })
-    verifyUpdateCall('Admin', 'Test__c')
-    verifyUpdateCall('Standard', 'Test__c', false, false, false, true, false, false)
+      .toEqual({ [ALLOW_CREATE]: [ADMIN_NAME],
+        [ALLOW_DELETE]: [ADMIN_NAME],
+        [ALLOW_EDIT]: [ADMIN_NAME],
+        [ALLOW_READ]: [ADMIN_NAME, STANDARD_NAME],
+        [MODIFY_ALL_RECORDS]: [ADMIN_NAME],
+        [VIEW_ALL_RECORDS]: [ADMIN_NAME] })
+    verifyUpdateCall(ADMIN_NAME, 'Test__c')
+    verifyUpdateCall(STANDARD_NAME, 'Test__c', false, false, false, true, false, false)
   })
 
   it('should update object permissions upon modification - remove', async () => {
@@ -254,6 +256,6 @@ describe('Object Permissions filter', () => {
 
     expect(after.annotations[OBJECT_LEVEL_SECURITY_ANNOTATION])
       .toEqual(admin[OBJECT_LEVEL_SECURITY_ANNOTATION])
-    verifyUpdateCall('Standard', 'Test__c', false, false, false, false, false, false)
+    verifyUpdateCall(STANDARD_NAME, 'Test__c', false, false, false, false, false, false)
   })
 })

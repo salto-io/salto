@@ -35,6 +35,7 @@ const mockConfigType = new ObjectType({
   annotationTypes: {},
   annotations: {},
 })
+const services = ['salesforce']
 
 const mockRemove = jest.fn(() => Promise.resolve())
 
@@ -149,7 +150,7 @@ describe('api functions', () => {
         localStorage: localDir.path,
         baseDir: baseDir.path,
         stateLocation: './latest_state.bpc',
-        services: ['salesforce'],
+        services,
         additionalBlueprints: [filePath('salto.bp'), filePath('salto2.bp')],
       }
       const workspace = await Workspace.load(config)
@@ -171,7 +172,7 @@ describe('api functions', () => {
         localStorage: localDir.path,
         baseDir: baseDir.path,
         stateLocation: './latest_state.bpc',
-        services: ['salesforce'],
+        services,
         additionalBlueprints: [filePath('error.bp')],
       }
       const workspace = await Workspace.load(config)
@@ -209,7 +210,7 @@ describe('api functions', () => {
         localStorage: localDir.path,
         baseDir: baseDir.path,
         stateLocation: './latest_state.bpc',
-        services: ['salesforce'],
+        services,
         additionalBlueprints: [filePath('fail.bp')],
       }
       const ws: Workspace = await Workspace.load(config)
@@ -218,7 +219,7 @@ describe('api functions', () => {
         mockGetConfigFromUser,
         mockShouldDeployYes,
         mockReportCurrentAction,
-        ['salesforce']
+        services
       )
       expect(deployResult.success).toBeFalsy()
       expect(deployResult.errors.length).toBeGreaterThan(0)
@@ -234,7 +235,7 @@ describe('api functions', () => {
           localStorage: localDir.path,
           baseDir: baseDir.path,
           stateLocation: './latest_state.bpc',
-          services: ['salesforce'],
+          services,
           additionalBlueprints: [filePath('salto.bp')],
         }
         ws = await Workspace.load(config)
@@ -244,7 +245,7 @@ describe('api functions', () => {
         const spy = jest.spyOn(plan, 'getPlan')
         await commands.preview(
           ws,
-          ['salesforce']
+          services
         )
         expect(spy).toHaveBeenCalled()
       })
@@ -255,7 +256,7 @@ describe('api functions', () => {
           mockGetConfigFromUser,
           mockShouldDeployYes,
           mockReportCurrentAction,
-          ['salesforce']
+          services
         )
         expect(mockAdd).toHaveBeenCalled()
       })
@@ -268,7 +269,7 @@ describe('api functions', () => {
           mockGetConfigFromUser,
           mockShouldDeployYes,
           mockReportCurrentAction,
-          ['salesforce']
+          services
         )
         expect(mockAdd).toHaveBeenCalled()
         expect(mockRemove).toHaveBeenCalled()
@@ -285,7 +286,7 @@ describe('api functions', () => {
           mockGetConfigFromUser,
           mockShouldDeployYes,
           mockReportCurrentAction,
-          ['salesforce']
+          services
         )
         expect(mockUpdate).toHaveBeenCalled()
         expect(mockStateGet).toHaveBeenCalled()
@@ -315,7 +316,7 @@ describe('api functions', () => {
           localStorage: localDir.path,
           baseDir: baseDir.path,
           stateLocation: './latest_state.bpc',
-          services: ['salesforce'],
+          services,
           additionalBlueprints: [filePath('salto.bp')],
         }
         ws = await Workspace.load(config)
@@ -367,7 +368,7 @@ describe('api functions', () => {
     let changes: plan.DetailedChange[]
     beforeEach(async () => {
       mockWorkspace = createMockWorkspace([])
-      changes = [...(await commands.fetch(mockWorkspace, mockGetConfigFromUser, ['salesforce'])).changes]
+      changes = [...(await commands.fetch(mockWorkspace, mockGetConfigFromUser, services)).changes]
         .map(change => change.change)
     })
 
@@ -389,7 +390,7 @@ describe('api functions', () => {
 
     it('should persist a new config', async () => {
       const ws = createMockWorkspace(elements)
-      const adapters = await commands.login(ws, mockGetConfigFromUser, ['salesforce'])
+      const adapters = await commands.login(ws, mockGetConfigFromUser, services)
       expect(adapters.salesforce).toBeDefined()
       expect(ws.flush as jest.FunctionLike).toHaveBeenCalled()
     })
@@ -397,7 +398,7 @@ describe('api functions', () => {
     it('should not persist an existing config', async () => {
       const configInst = await mockGetConfigFromUser(configType)
       const ws = createMockWorkspace([configInst, ...elements])
-      const adapters = await commands.login(ws, mockGetConfigFromUser, ['salesforce'])
+      const adapters = await commands.login(ws, mockGetConfigFromUser, services)
       expect(adapters.salesforce).toBeDefined()
       expect(ws.flush as jest.FunctionLike).not.toHaveBeenCalled()
     })

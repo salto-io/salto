@@ -44,6 +44,7 @@ import {
   FilterCreator, Filter, FilterWith, filtersWith,
 } from './filter'
 import { id, addApiName, addMetadataType, addLabel } from './filters/utils'
+import { changeValidator } from './change_validator'
 
 const { makeArray } = collections.array
 
@@ -787,4 +788,5 @@ export const creator: AdapterCreator = {
     getElemIdFunc,
   }),
   configType,
+  changeValidator,
 }

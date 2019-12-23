@@ -50,7 +50,7 @@ export const getDetailedChanges = (
   before: ReadonlyArray<Element>,
   after: ReadonlyArray<Element>,
 ): Iterable<DetailedChange> =>
-  wu(getPlan(before, after, false).itemsByEvalOrder())
+  wu(getPlan(before, after, undefined, false).itemsByEvalOrder())
     .map(item => item.detailedChanges())
     .flatten()
 

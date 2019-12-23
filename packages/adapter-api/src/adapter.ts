@@ -2,6 +2,7 @@ import {
   InstanceElement, ObjectType, Element, ElemID,
 } from './elements'
 import { Change } from './change'
+import { ChangeValidator } from './change_validators'
 
 export interface DataModificationResult {
   successfulRows: number
@@ -35,4 +36,5 @@ export type ElemIdGetter = (adapterName: string, serviceIds: ServiceIds, name: s
 export type AdapterCreator = {
   create: (opts: { config: InstanceElement; getElemIdFunc?: ElemIdGetter }) => Adapter
   configType: ObjectType
+  changeValidator?: ChangeValidator
 }

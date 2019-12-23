@@ -445,6 +445,62 @@ describe('SalesforceAdapter fetch', () => {
       expect(child.fields.description.type.elemID.name).toBe('string')
     })
 
+    it('should fetch metadata instances using retrieve', async () => {
+      mockSingleMetadataType('EmailTemplate', [{
+        name: 'fullName',
+        soapType: 'string',
+        valueRequired: true,
+      },
+      {
+        name: 'name',
+        soapType: 'string',
+        valueRequired: false,
+      },
+      {
+        name: 'content',
+        soapType: 'string',
+        valueRequired: false,
+      }])
+      mockSingleMetadataInstance('my_folder_my_email_template',
+        { fullName: 'MyFolder/MyEmailTemplate' }, undefined,
+        // encoded zip with a package.xml and EmailTemplate named MyFolder/MyEmailTemplate
+        'UEsDBBQACAgIAI1pnU8AAAAAAAAAAAAAAAAvAAAAdW5wYWNrYWdlZC9lbWFpbC9NeUZvbGRlci9NeUVtYWlsVGVtcGxhdGUuZW1haWxzzU3MzFFwyk+pBABQSwcIx/Bz0AwAAAAKAAAAUEsDBBQACAgIAI1pnU8AAAAAAAAAAAAAAAA4AAAAdW5wYWNrYWdlZC9lbWFpbC9NeUZvbGRlci9NeUVtYWlsVGVtcGxhdGUuZW1haWwtbWV0YS54bWxVkMtuwkAMRff5itHsE4eqVGk1GcSCSgihLkg/wAQDqeYRMQaRv+80E9TWq+vj64esFndrxI0uofOulrOilIJc6w+dO9Xys3nPK7nQmVpZ7ExDtjfIJGKPC7U8M/dvAMFjX4Sjv7RUtN7CU1m+QPkMlhgPyCh1JmIovMUZuDekj2gCKfgFyfBYvKFBr3cfeVXNX/OZgr88OR1a0ttBjGeJx10KRp4sgYc42HkXcdITv+6/qOXYvUsqlieUDDz0pJnusTDKRK9d85MsjT+jginLFPx7jM6+AVBLBwhq/zc91wAAAFABAABQSwMEFAAICAgAjWmdTwAAAAAAAAAAAAAAABYAAAB1bnBhY2thZ2VkL3BhY2thZ2UueG1sXY9NC4JAEIbv/grZeztbiESs6ylvQgf7AZNOJu2HuEvkv0/8oGhO8w7P8PDK/G10/KLBd85mbM8Fi8nWrulsm7FrVeyOLFeRvGD9xJbiibY+Y48Q+hOAd9hzf3dDTbx2Bg5CpCASMBSwwYBMRfE0Mow9+WWfsyFzm5SqHAunGxqgHM8GO12R6TUGkrAR3x+LhtQfNd8WBfw45NpHJSkXErYUSVhrqOgDUEsHCKDBWBKoAAAA+AAAAFBLAQIUABQACAgIAI1pnU/H8HPQDAAAAAoAAAAvAAAAAAAAAAAAAAAAAAAAAAB1bnBhY2thZ2VkL2VtYWlsL015Rm9sZGVyL015RW1haWxUZW1wbGF0ZS5lbWFpbFBLAQIUABQACAgIAI1pnU9q/zc91wAAAFABAAA4AAAAAAAAAAAAAAAAAGkAAAB1bnBhY2thZ2VkL2VtYWlsL015Rm9sZGVyL015RW1haWxUZW1wbGF0ZS5lbWFpbC1tZXRhLnhtbFBLAQIUABQACAgIAI1pnU+gwVgSqAAAAPgAAAAWAAAAAAAAAAAAAAAAAKYBAAB1bnBhY2thZ2VkL3BhY2thZ2UueG1sUEsFBgAAAAADAAMABwEAAJICAAAAAA==')
+
+      const result = await adapter.fetch()
+      const [testElem] = findElements(result, 'email_template', 'my_folder_my_email_template')
+      const testInst = testElem as InstanceElement
+      expect(testInst).toBeDefined()
+      expect(testInst.path).toEqual(['records', 'email_template', 'my_folder_my_email_template'])
+      expect(testInst.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('MyFolder/MyEmailTemplate')
+      expect(testInst.value.name).toEqual('My Email Template')
+      expect(testInst.value.content).toEqual('Email Body')
+    })
+
+    it('should fetch metadata instances folders using retrieve', async () => {
+      mockSingleMetadataType('EmailFolder', [{
+        name: 'fullName',
+        soapType: 'string',
+        valueRequired: true,
+      },
+      {
+        name: 'name',
+        soapType: 'string',
+        valueRequired: false,
+      }])
+      mockSingleMetadataInstance('my_folder',
+        { fullName: 'MyFolder' }, undefined,
+        // encoded zip with a package.xml and EmailFolder named MyFolder
+        'UEsDBBQACAgIAI1rnU8AAAAAAAAAAAAAAAAiAAAAdW5wYWNrYWdlZC9lbWFpbC9NeUZvbGRlci1tZXRhLnhtbG2OzQrCMBCE73mKkLvdKCIiaYoHexNEKp5jutVA80MSxb69pb304N5mZz5mRPW1Pf1gTMa7kq0Lzig67VvjniW7NfVqzypJxMkq09e+bzHSkXCpZK+cwwEgeRWK1PmosdDewobzHfAtWMyqVVkxSeh4QmmNKTVDQHl5P3qjBSxec8Ypi/I80G4qEjDp2QoTMy84Tpy8omrv0WQU8MclAhajJfkBUEsHCDx5OaSkAAAA6gAAAFBLAwQUAAgICACNa51PAAAAAAAAAAAAAAAAFgAAAHVucGFja2FnZWQvcGFja2FnZS54bWxNTksKwjAU3PcUJXvzopQikqYruxNc1AM802ctNh+aIPb2ln7QWc0Mw8zI8mP69E1D6Jwt2J4LlpLVrulsW7BbXe2OrFSJvKJ+YUvplLahYM8Y/QkgOPQ8PNygiWtn4CBEDiIDQxEbjMhUkk6QcfQUFj5rQ+Y+TarLWLm+oUHC5vwyFg2ps8Gur8n4HiNJmL2lEv465fpfZTkXEjaVSFhvq+QLUEsHCJHJKn2jAAAA6AAAAFBLAQIUABQACAgIAI1rnU88eTmkpAAAAOoAAAAiAAAAAAAAAAAAAAAAAAAAAAB1bnBhY2thZ2VkL2VtYWlsL015Rm9sZGVyLW1ldGEueG1sUEsBAhQAFAAICAgAjWudT5HJKn2jAAAA6AAAABYAAAAAAAAAAAAAAAAA9AAAAHVucGFja2FnZWQvcGFja2FnZS54bWxQSwUGAAAAAAIAAgCUAAAA2wEAAAAA')
+
+      const result = await adapter.fetch()
+      const [testElem] = findElements(result, 'email_folder', 'my_folder')
+      const testInst = testElem as InstanceElement
+      expect(testInst).toBeDefined()
+      expect(testInst.path).toEqual(['records', 'email_folder', 'my_folder'])
+      expect(testInst.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('MyFolder')
+      expect(testInst.value.name).toEqual('My folder')
+    })
+
     it('should fetch metadata instances with namespace using retrieve', async () => {
       mockSingleMetadataType('ApexPage', [])
       const namespaceName = 'th_con_app'

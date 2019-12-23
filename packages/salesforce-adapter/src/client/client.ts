@@ -5,7 +5,7 @@ import {
   Connection as RealConnection, MetadataObject, DescribeGlobalSObjectResult, FileProperties,
   MetadataInfo, SaveResult, ValueTypeField, DescribeSObjectResult, QueryResult, DeployResult,
   BatchResultInfo, Record as SfRecord, RecordResult, BulkLoadOperation, RetrieveRequest,
-  RetrieveResult,
+  RetrieveResult, ListMetadataQuery,
 } from 'jsforce'
 import { Value } from 'adapter-api'
 import { logger } from '@salto/logging'
@@ -236,8 +236,9 @@ export default class SalesforceClient {
 
   @SalesforceClient.logDecorator
   @SalesforceClient.requiresLogin
-  public async listMetadataObjects(type: string): Promise<FileProperties[]> {
-    return makeArray(await this.conn.metadata.list({ type }))
+  public async listMetadataObjects(listMetadataQuery: ListMetadataQuery | ListMetadataQuery[]):
+    Promise<FileProperties[]> {
+    return makeArray(await this.conn.metadata.list(listMetadataQuery))
   }
 
   /**

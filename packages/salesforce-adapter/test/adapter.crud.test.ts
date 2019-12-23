@@ -49,7 +49,10 @@ describe('SalesforceAdapter CRUD', () => {
       success,
     })
 
-  const deployTypeNames = ['AssignmentRules', 'UnsupportedType']
+  const deployTypeNames = {
+    AssignmentRules: undefined,
+    UnsupportedType: undefined,
+  }
 
   let mockCreate: jest.Mock
   let mockDelete: jest.Mock

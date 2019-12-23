@@ -82,7 +82,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
    */
   onFetch: async (elements: Element[]): Promise<void> => {
     // Fetch list of all settings types
-    const settingsList = await client.listMetadataObjects(SETTINGS_METADATA_TYPE)
+    const settingsList = await client.listMetadataObjects({ type: SETTINGS_METADATA_TYPE })
 
     // Extract settings names
     const settingsTypesNames = settingsList.map(set => set.fullName)

@@ -169,7 +169,7 @@ export const elements = (): Element[] => {
 }
 
 export const mockLoadConfig = (workspaceDir: string): Config =>
-  ({ uid: '123', baseDir: workspaceDir, additionalBlueprints: [], services: ['salesforce'], name: 'mock-ws', localStorage: '', stateLocation: '' })
+  ({ uid: '123', baseDir: workspaceDir, additionalBlueprints: [], services: ['salesforce', 'hubspot'], name: 'mock-ws', localStorage: '', stateLocation: '' })
 
 export const detailedChange = (
   action: 'add' | 'modify' | 'remove', path: ReadonlyArray<string> | ElemID,

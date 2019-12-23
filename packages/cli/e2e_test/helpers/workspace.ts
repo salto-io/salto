@@ -35,7 +35,7 @@ export const runDeploy = async (lastPlan: Plan, fetchOutputDir: string): Promise
   await new DeployCommand(
     fetchOutputDir,
     false,
-    undefined,
+    ['salesforce'],
     mockCliOutput(),
     mockSpinnerCreator([])
   ).execute()

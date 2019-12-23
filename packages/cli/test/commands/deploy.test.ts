@@ -66,7 +66,7 @@ describe('deploy command', () => {
 
   describe('valid deploy', () => {
     beforeEach(() => {
-      command = new DeployCommand('', true, undefined, cliOutput, spinnerCreator)
+      command = new DeployCommand('', true, ['salesforce'], cliOutput, spinnerCreator)
     })
 
     describe('report progress upon updates', () => {
@@ -115,7 +115,7 @@ describe('deploy command', () => {
   describe('invalid deploy', () => {
     beforeEach(() => {
       // Creating here with base dir 'errorDir' will cause the mock to throw an error
-      command = new DeployCommand('errorDir', true, undefined, cliOutput, spinnerCreator)
+      command = new DeployCommand('errorDir', true, ['salesforce'], cliOutput, spinnerCreator)
     })
     it('should fail gracefully', async () => {
       await command.execute()

@@ -6,13 +6,13 @@ import {
 import { formatExecutionPlan } from '../formatter'
 import { loadWorkspace } from '../workspace'
 import Prompts from '../prompts'
-import { validateAndDefaultServices } from '../services'
+import { servicesFilter } from '../filters/services'
 
 export const command = (
   workspaceDir: string,
   { stdout, stderr }: CliOutput,
   spinnerCreator: SpinnerCreator,
-  inputServices?: string[]
+  inputServices: string[]
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
     const { workspace, errored } = await loadWorkspace(workspaceDir,
@@ -21,11 +21,9 @@ export const command = (
       return CliExitCode.AppError
     }
 
-    const commandServices = validateAndDefaultServices(workspace.config.services, inputServices)
-
     const spinner = spinnerCreator(Prompts.PREVIEW_STARTED, {})
     try {
-      const workspacePlan = await preview(workspace, commandServices)
+      const workspacePlan = await preview(workspace, inputServices)
       spinner.succeed(Prompts.PREVIEW_FINISHED)
       stdout.write(formatExecutionPlan(workspacePlan))
       return CliExitCode.Success
@@ -37,7 +35,7 @@ export const command = (
 })
 
 type PreviewArgs = {
-  services?: string[]
+  services: string[]
 }
 type PreviewParsedCliInput = ParsedCliInput<PreviewArgs>
 
@@ -52,14 +50,9 @@ const previewBuilder = createCommandBuilder({
         string: true,
         default: '.',
       },
-      services: {
-        alias: 's',
-        describe: 'Specific services to perform this action for (default=all)',
-        type: 'array',
-        string: true,
-      },
     },
   },
+  filters: [servicesFilter],
 
   async build(input: PreviewParsedCliInput, output: CliOutput, spinnerCreator: SpinnerCreator) {
     return command('.', output, spinnerCreator, input.args.services)

@@ -19,7 +19,7 @@ import {
 import { getConfigWithHeader, getApprovedChanges as cliGetApprovedChanges } from '../callbacks'
 import { updateWorkspace, loadWorkspace } from '../workspace'
 import Prompts from '../prompts'
-import { validateAndDefaultServices } from '../services'
+import { servicesFilter } from '../filters/services'
 
 const log = logger(module)
 
@@ -36,9 +36,8 @@ export const fetchCommand = async (
     output: CliOutput
     fetch: fetchFunc
     getApprovedChanges: approveChangesFunc
-    inputServices?: string[]
+    inputServices: string[]
   }): Promise<CliExitCode> => {
-  const commandServices = validateAndDefaultServices(workspace.config.services, inputServices)
   const outputLine = (text: string): void => output.stdout.write(`${text}\n`)
   const progressOutputer = (
     startText: string,
@@ -79,7 +78,7 @@ export const fetchCommand = async (
   const fetchResult = await fetch(
     workspace,
     _.partial(getConfigWithHeader, output.stdout),
-    commandServices,
+    inputServices,
     fetchProgress,
   )
   if (!fetchResult.success) {
@@ -124,7 +123,7 @@ export const command = (
   interactive: boolean,
   output: CliOutput,
   spinnerCreator: SpinnerCreator,
-  inputServices?: string[],
+  inputServices: string[],
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
     log.debug(`running fetch command on '${workspaceDir}' [force=${force}, interactive=${
@@ -148,7 +147,7 @@ export const command = (
 type FetchArgs = {
   force: boolean
   interactive: boolean
-  services?: string[]
+  services: string[]
 }
 type FetchParsedCliInput = ParsedCliInput<FetchArgs>
 
@@ -171,14 +170,10 @@ const fetchBuilder = createCommandBuilder({
         default: false,
         demandOption: false,
       },
-      services: {
-        alias: 's',
-        describe: 'Specific services to perform this action for (default=all)',
-        type: 'array',
-        string: true,
-      },
     },
   },
+
+  filters: [servicesFilter],
 
   async build(input: FetchParsedCliInput, output: CliOutput, spinnerCreator: SpinnerCreator) {
     return command('.', input.args.force, input.args.interactive, output, spinnerCreator, input.args.services)

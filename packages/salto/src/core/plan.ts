@@ -132,8 +132,8 @@ export const getPlan = (
   withDependencies = true
 ): Plan => log.time(() => {
   // getPlan
-  const resolvedBefore = beforeElements.map(e => resolve(e, beforeElements))
-  const resolvedAfter = afterElements.map(e => resolve(e, afterElements))
+  const resolvedBefore = resolve(beforeElements)
+  const resolvedAfter = resolve(afterElements)
   const before = toNodeMap(resolvedBefore, withDependencies)
   const after = toNodeMap(resolvedAfter, withDependencies)
   // Calculate the diff

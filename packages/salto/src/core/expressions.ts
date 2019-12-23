@@ -5,7 +5,7 @@ import {
   ReferenceExpression, TemplateExpression, findElement,
 } from 'adapter-api'
 
-type Resolver<T> = (v: T, contextElements: Element[], visited?: Set<string>) => Value
+type Resolver<T> = (v: T, contextElements: readonly Element[], visited?: Set<string>) => Value
 
 class CircularReferenceError extends Error {
   constructor(ref: string, public elemID?: ElemID) {
@@ -22,7 +22,7 @@ let resolveTemplateExpression: Resolver<TemplateExpression>
 
 const resolveMaybeExpression: Resolver<Value> = (
   value: Value,
-  contextElements: Element[],
+  contextElements: readonly Element[],
   visited: Set<string> = new Set<string>(),
 ): Value => {
   if (value instanceof ReferenceExpression) {
@@ -38,7 +38,7 @@ const resolveMaybeExpression: Resolver<Value> = (
 
 resolveReferenceExpression = (
   expression: ReferenceExpression,
-  contextElements: Element[],
+  contextElements: readonly Element[],
   visited: Set<string> = new Set<string>(),
 ): Value => {
   const { traversalParts } = expression
@@ -83,15 +83,15 @@ resolveReferenceExpression = (
 
 resolveTemplateExpression = (
   expression: TemplateExpression,
-  contextElements: Element[],
+  contextElements: readonly Element[],
   visited: Set<string> = new Set<string>(),
 ): Value => expression.parts
   .map(p => resolveMaybeExpression(p, contextElements, visited) || p)
   .join('')
 
-export const resolve = (element: Element, contextElements: Element[]): Element => {
+export const resolve = (srcElement: Element, contextElements: readonly Element[]): Element => {
   const referenceCloner = (v: Value): Value => resolveMaybeExpression(v, contextElements)
-
+  const element = _.clone(srcElement)
   if (isInstanceElement(element)) {
     element.value = _.cloneDeepWith(element.value, referenceCloner)
   }

@@ -5,7 +5,7 @@ import {
   isPrimitiveType, Value, ElemID,
 } from 'adapter-api'
 import { makeArray } from '@salto/lowerdash/dist/src/collections/array'
-import { UnresolvedReference } from './expressions'
+import { UnresolvedReference, resolve } from './expressions'
 
 export abstract class ValidationError extends types.Bean<Readonly<{
   elemID: ElemID
@@ -231,10 +231,9 @@ const validateInstanceElements = (element: InstanceElement): ValidationError[] =
   _.flatten(instanceElementValidators.map(v => v(element.elemID, element.value, element.type)))
 
 export const validateElements = (elements: Element[]): ValidationError[] => (
-  _.flatten(elements.map(element => {
-    if (isInstanceElement(element)) {
-      return validateInstanceElements(element)
-    }
-    return validateType(element as Type)
-  }))
+  _(elements)
+    .map(e => resolve(e, elements))
+    .map(e => (isInstanceElement(e) ? validateInstanceElements(e) : validateType(e as Type)))
+    .flatten()
+    .value()
 )

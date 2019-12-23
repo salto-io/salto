@@ -62,7 +62,10 @@ jobs:
 
       - run:
           name: extract packages_node_modules_cache.tar.gz
-          command: if [ -f packages_node_modules_cache.tar.gz ]; then tar xf packages_node_modules_cache.tar.gz; fi
+          command: |
+            if [ -f packages_node_modules_cache.tar.gz ]; then
+              ls packages | xargs -I{} tar xf packages_node_modules_cache.tar.gz --wildcards "packages/{}/**";
+            fi
 
       - run: yarn --frozen-lockfile
 

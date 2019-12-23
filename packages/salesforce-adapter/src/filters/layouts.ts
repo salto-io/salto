@@ -1,10 +1,10 @@
 import _ from 'lodash'
 import {
-  Element, isObjectType, ElemID, findInstances, InstanceElement,
+  Element, isObjectType, ElemID, findInstances, InstanceElement, ReferenceExpression,
 } from 'adapter-api'
 import { apiName, bpCase } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
-import { SALESFORCE, SALESFORCE_CUSTOM_SUFFIX } from '../constants'
+import { SALESFORCE, SALESFORCE_CUSTOM_SUFFIX, INSTANCE_FULL_NAME_FIELD } from '../constants'
 import { id } from './utils'
 
 export const LAYOUT_TYPE_ID = new ElemID(SALESFORCE, 'layout')
@@ -71,7 +71,8 @@ const filterCreator: FilterCreator = () => ({
       .forEach(obj => {
         const objLayouts = obj2layout[apiName(obj)]
         if (objLayouts) {
-          obj.annotate({ [LAYOUT_ANNOTATION]: objLayouts.map(id).sort() })
+          obj.annotate({ [LAYOUT_ANNOTATION]: _.sortBy(objLayouts, id).map(layout =>
+            new ReferenceExpression(layout.elemID.createNestedID(INSTANCE_FULL_NAME_FIELD))) })
         }
       })
   },

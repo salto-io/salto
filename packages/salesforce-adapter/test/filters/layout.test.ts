@@ -1,5 +1,5 @@
 import {
-  ObjectType, ElemID, InstanceElement,
+  ObjectType, ElemID, InstanceElement, ReferenceExpression,
 } from 'adapter-api'
 import makeFilter, { LAYOUT_ANNOTATION, LAYOUT_TYPE_ID } from '../../src/filters/layouts'
 import * as constants from '../../src/constants'
@@ -42,7 +42,8 @@ describe('Test layout filter', () => {
       expect(instance.path?.join()).toBe('records,layout,test')
 
       const sobject = elements[0] as ObjectType
-      expect(sobject.annotations[LAYOUT_ANNOTATION][0]).toBe(id(instance))
+      expect((sobject.annotations[LAYOUT_ANNOTATION][0] as ReferenceExpression).traversalParts)
+        .toEqual([...id(instance).split('.'), constants.INSTANCE_FULL_NAME_FIELD])
     }
 
     it('should add relation between layout to related sobject', async () => {

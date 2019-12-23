@@ -39,7 +39,8 @@ export const login = async (
 
   const [adapters, newConfigs] = await initAdapters(
     workspace.elements,
-    fillConfig, services,
+    fillConfig,
+    services,
     getElemIdFunc
   )
   log.debug(`${Object.keys(adapters).length} adapters were initialized [newConfigs=${

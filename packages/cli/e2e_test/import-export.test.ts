@@ -34,6 +34,7 @@ describe('Data migration operations E2E', () => {
   const cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
   const spinners = [] as Spinner[]
   const spinnerCreator = mockSpinnerCreator(spinners)
+  const services = ['salesforce']
   describe('When running fetch beforehand', () => {
     beforeAll(async () => {
       await rm(exportOutputDir)
@@ -41,7 +42,7 @@ describe('Data migration operations E2E', () => {
       await rm(fetchOutputDir)
       await mkdirp(`${fetchOutputDir}/salto.config`)
       await copyFile(configFile, `${fetchOutputDir}/salto.config/config.bp`)
-      await fetch(fetchOutputDir, true, false, cliOutput, spinnerCreator, ['salesforce']).execute()
+      await fetch(fetchOutputDir, true, false, cliOutput, spinnerCreator, services).execute()
     })
 
     it('should save the data in csv file when running export', async () => {

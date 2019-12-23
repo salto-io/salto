@@ -6,7 +6,7 @@ import {
 import { formatExecutionPlan } from '../formatter'
 import { loadWorkspace } from '../workspace'
 import Prompts from '../prompts'
-import { servicesFilter } from '../filters/services'
+import { servicesFilter, ServicesArgs } from '../filters/services'
 
 export const command = (
   workspaceDir: string,
@@ -35,8 +35,7 @@ export const command = (
 })
 
 type PreviewArgs = {
-  services: string[]
-}
+} & ServicesArgs
 type PreviewParsedCliInput = ParsedCliInput<PreviewArgs>
 
 const previewBuilder = createCommandBuilder({

@@ -13,6 +13,8 @@ import { command as preview } from '../../src/commands/preview'
 
 export type Pair = [string, string]
 
+const services = ['salesforce']
+
 export const editBlueprint = async (filename: string, replacements: Pair[]): Promise<void> => {
   let fileAsString = await file.readTextFile(filename)
   replacements.forEach(pair => {
@@ -25,7 +27,8 @@ const mockCliOutput = (): CliOutput =>
   ({ stdout: new MockWriteStream(), stderr: new MockWriteStream() })
 
 export const runFetch = async (fetchOutputDir: string): Promise<void> => {
-  await fetch(fetchOutputDir, true, false, mockCliOutput(), mockSpinnerCreator([]), ['salesforce']).execute()
+  await fetch(fetchOutputDir, true, false, mockCliOutput(), mockSpinnerCreator([]), services)
+    .execute()
 }
 
 export const runDeploy = async (lastPlan: Plan, fetchOutputDir: string): Promise<void> => {
@@ -35,7 +38,7 @@ export const runDeploy = async (lastPlan: Plan, fetchOutputDir: string): Promise
   await new DeployCommand(
     fetchOutputDir,
     false,
-    ['salesforce'],
+    services,
     mockCliOutput(),
     mockSpinnerCreator([])
   ).execute()
@@ -45,7 +48,7 @@ export const runEmptyPreview = async (lastPlan: Plan, fetchOutputDir: string): P
   if (lastPlan) {
     lastPlan.clear()
   }
-  await preview(fetchOutputDir, mockCliOutput(), mockSpinnerCreator([]), ['salesforce']).execute()
+  await preview(fetchOutputDir, mockCliOutput(), mockSpinnerCreator([]), services).execute()
   expect(_.isEmpty(lastPlan)).toBeTruthy()
 }
 

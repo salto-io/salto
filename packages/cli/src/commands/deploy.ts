@@ -14,7 +14,7 @@ import {
 } from '../formatter'
 import { shouldDeploy, getConfigFromUser } from '../callbacks'
 import { loadWorkspace, updateWorkspace } from '../workspace'
-import { servicesFilter } from '../filters/services'
+import { servicesFilter, ServicesArgs } from '../filters/services'
 
 const log = logger(module)
 
@@ -134,8 +134,7 @@ export class DeployCommand implements CliCommand {
 
 type DeployArgs = {
   force: boolean
-  services: string[]
-}
+} & ServicesArgs
 type DeployParsedCliInput = ParsedCliInput<DeployArgs>
 
 const deployBuilder = createCommandBuilder({

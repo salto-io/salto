@@ -32,6 +32,7 @@ describe('preview command', () => {
   let cliOutput: { stdout: MockWriteStream; stderr: MockWriteStream }
   let spinners: Spinner[]
   let spinnerCreator: SpinnerCreator
+  const services = ['salesforce']
 
   beforeEach(() => {
     cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
@@ -41,7 +42,7 @@ describe('preview command', () => {
 
   describe('when the workspace loads successfully', () => {
     beforeEach(async () => {
-      await command('', cliOutput, spinnerCreator, ['salesforce']).execute()
+      await command('', cliOutput, spinnerCreator, services).execute()
     })
 
     it('should load the workspace', async () => {
@@ -73,7 +74,7 @@ describe('preview command', () => {
 
   describe('when the workspace fails to load', () => {
     beforeEach(async () => {
-      await command('errdir', cliOutput, spinnerCreator, ['salesforce']).execute()
+      await command('errdir', cliOutput, spinnerCreator, services).execute()
     })
 
     it('should print the error', () => {

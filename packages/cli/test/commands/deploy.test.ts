@@ -58,6 +58,7 @@ describe('deploy command', () => {
   let command: DeployCommand
   const spinners: Spinner[] = []
   let spinnerCreator: SpinnerCreator
+  const services = ['salesforce']
 
   beforeEach(() => {
     cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
@@ -66,7 +67,7 @@ describe('deploy command', () => {
 
   describe('valid deploy', () => {
     beforeEach(() => {
-      command = new DeployCommand('', true, ['salesforce'], cliOutput, spinnerCreator)
+      command = new DeployCommand('', true, services, cliOutput, spinnerCreator)
     })
 
     describe('report progress upon updates', () => {
@@ -115,7 +116,7 @@ describe('deploy command', () => {
   describe('invalid deploy', () => {
     beforeEach(() => {
       // Creating here with base dir 'errorDir' will cause the mock to throw an error
-      command = new DeployCommand('errorDir', true, ['salesforce'], cliOutput, spinnerCreator)
+      command = new DeployCommand('errorDir', true, services, cliOutput, spinnerCreator)
     })
     it('should fail gracefully', async () => {
       await command.execute()

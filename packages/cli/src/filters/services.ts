@@ -4,14 +4,15 @@ import yargs from 'yargs'
 import { ParsedCliInput } from '../types'
 import { ParserFilter, ParsedCliInputFilter } from '../filter'
 
-export interface Arg { services: string[] }
+export interface ServicesArgs { services: string[] }
 
-export type ServicesParsedCliInput = ParsedCliInput<Arg>
+export type ServicesParsedCliInput = ParsedCliInput<ServicesArgs>
 
-type ServicesFilter = ParserFilter<Arg> & ParsedCliInputFilter<Arg, ServicesParsedCliInput>
+type ServicesFilter = ParserFilter<ServicesArgs>
+  & ParsedCliInputFilter<ServicesArgs, ServicesParsedCliInput>
 
 export const servicesFilter: ServicesFilter = {
-  transformParser(parser: yargs.Argv): yargs.Argv<Arg> {
+  transformParser(parser: yargs.Argv): yargs.Argv<ServicesArgs> {
     return parser
       .options({
         services: {
@@ -20,11 +21,13 @@ export const servicesFilter: ServicesFilter = {
           type: 'array',
           string: true,
         },
-      }) as yargs.Argv<Arg>
+      }) as yargs.Argv<ServicesArgs>
   },
 
-  async transformParsedCliInput(input: ParsedCliInput<Arg>): Promise<ParsedCliInput<Arg>> {
-    const args = input.args as yargs.Arguments<Arg>
+  async transformParsedCliInput(
+    input: ParsedCliInput<ServicesArgs>
+  ): Promise<ParsedCliInput<ServicesArgs>> {
+    const args = input.args as yargs.Arguments<ServicesArgs>
     const workspaceServices = (await loadConfig('.')).services
     if (workspaceServices.length === 0) {
       throw new Error('No services are configured for this workspace. Use \'salto services add\'.')

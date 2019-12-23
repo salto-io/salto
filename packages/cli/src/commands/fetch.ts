@@ -19,7 +19,7 @@ import {
 import { getConfigWithHeader, getApprovedChanges as cliGetApprovedChanges } from '../callbacks'
 import { updateWorkspace, loadWorkspace } from '../workspace'
 import Prompts from '../prompts'
-import { servicesFilter } from '../filters/services'
+import { servicesFilter, ServicesArgs } from '../filters/services'
 
 const log = logger(module)
 
@@ -147,8 +147,7 @@ export const command = (
 type FetchArgs = {
   force: boolean
   interactive: boolean
-  services: string[]
-}
+} & ServicesArgs
 type FetchParsedCliInput = ParsedCliInput<FetchArgs>
 
 const fetchBuilder = createCommandBuilder({

@@ -121,8 +121,7 @@ export default class SalesforceAdapter {
   public constructor({
     metadataTypeBlacklist = [
       'ReportType', // See SALTO-76
-      // 'CustomObject',
-      'CustomField', // We have special treatment for those type
+      'CustomField', // We have special treatment for this type
       'Settings',
       'StaticResource',
       // readMetadata fails on those and pass on the parents (AssignmentRules and EscalationRules)

@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import {
-  ObjectType, ElemID, Field, BuiltinTypes, InstanceElement, Type,
+  ObjectType, ElemID, Field, BuiltinTypes, InstanceElement, Type, ReferenceExpression,
 } from 'adapter-api'
 import { validateElements, InvalidValueValidationError } from '../src/core/validator'
 
@@ -122,6 +122,37 @@ describe('Elements validation', () => {
         flatbool: true,
         list: ['item', 'item2'],
         restrictStr: 'restriction1',
+      }
+    )
+
+    const circularRefInst = new InstanceElement(
+      'unresolved',
+      simpleType,
+      {
+        str: 'str',
+        num: 12,
+      }
+    )
+
+    const unresolvedRefInst = new InstanceElement(
+      'unresolved',
+      simpleType,
+      {
+        str: 'str',
+        num: 12,
+        bool: new ReferenceExpression(circularRefInst.elemID.createNestedID('Nope')),
+      }
+    )
+
+    circularRefInst.value.bool = new ReferenceExpression(unresolvedRefInst.elemID.createNestedID('Nope'))
+
+    const wrongRefInst = new InstanceElement(
+      'unresolved',
+      simpleType,
+      {
+        str: 'str',
+        num: 12,
+        bool: new ReferenceExpression(nestedInstance.elemID.createNestedID('flatnum')),
       }
     )
 
@@ -369,6 +400,26 @@ describe('Elements validation', () => {
         const errors = validateElements([extInst])
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('list', '2'))
+      })
+    })
+
+    describe('reference validation', () => {
+      it('should return error when encountering an unresolved reference', () => {
+        const errors = validateElements([unresolvedRefInst])
+        expect(errors).toHaveLength(1)
+        expect(errors[0].elemID).toEqual(unresolvedRefInst.elemID.createNestedID('bool'))
+      })
+
+      it('should return error when encountering a circular reference', () => {
+        const errors = validateElements([unresolvedRefInst, circularRefInst])
+        expect(errors).toHaveLength(2)
+        expect(errors[0].elemID).toEqual(unresolvedRefInst.elemID.createNestedID('bool'))
+      })
+
+      it('should validate throw error on reference that points to a bad type', () => {
+        const errors = validateElements([wrongRefInst, extInst])
+        expect(errors).toHaveLength(1)
+        expect(errors[0].elemID).toEqual(wrongRefInst.elemID.createNestedID('bool'))
       })
     })
   })

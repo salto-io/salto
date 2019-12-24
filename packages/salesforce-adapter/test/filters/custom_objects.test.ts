@@ -1,5 +1,5 @@
 import _ from 'lodash'
-import { ElemID, ObjectType, ServiceIds, Type, BuiltinTypes, Element } from 'adapter-api'
+import { ElemID, ObjectType, ServiceIds, Type, BuiltinTypes, Element, InstanceElement, isObjectType } from 'adapter-api'
 import SalesforceClient from '../../src/client/client'
 import Connection from '../../src/client/jsforce'
 import * as constants from '../../src/constants'
@@ -477,6 +477,58 @@ describe('Custom Objects filter', () => {
       expect(flow).toBeDefined() // We do expect to get the metadata type here
       expect(Object.keys(flow.fields)).toHaveLength(0)
       expect(flow.path).toEqual(['types', 'flow'])
+    })
+    describe('Merge elements', () => {
+      const testInstanceElement = new InstanceElement('lead', new ObjectType(
+        { elemID: mockGetElemIdFunc(constants.SALESFORCE, {}, constants.CUSTOM_OBJECT) }
+      ),
+      { fields: [{ [constants.INSTANCE_FULL_NAME_FIELD]: 'MyAutoNumber',
+        [constants.FIELD_ANNOTATIONS.DISPLAY_FORMAT]: 'A-{0000}' }],
+      [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead' })
+      it('should merge sobject fields with a custom object instance elemenet', async () => {
+        mockSingleSObject('Lead', [{
+          name: 'MyAutoNumber',
+          type: 'string',
+          label: 'AutoNumero',
+          autoNumber: true,
+        }], false, true, false, 'Lead Label')
+        const result: Element[] = [testInstanceElement]
+        await filter().onFetch(result)
+
+        const lead = result.filter(o => o.elemID.name === 'lead').pop()
+        expect(lead).toBeDefined()
+        expect(isObjectType(lead)).toBeTruthy()
+        const leadObjectType = lead as ObjectType
+        expect(leadObjectType.fields.my_auto_number
+          .annotations[constants.FIELD_ANNOTATIONS.DISPLAY_FORMAT]).toBe('A-{0000}')
+        expect(leadObjectType.fields.my_auto_number
+          .annotations.label).toBe('AutoNumero')
+      })
+
+      it('should change instance element to object type if we do not get it from the soap api', async () => {
+        const result: Element[] = [testInstanceElement]
+        await filter().onFetch(result)
+
+        const lead = result.filter(o => o.elemID.name === 'lead').pop()
+        expect(lead).toBeDefined()
+        expect(isObjectType(lead)).toBeTruthy()
+        const leadObjectType = lead as ObjectType
+        expect(leadObjectType.fields.my_auto_number
+          .annotations[constants.FIELD_ANNOTATIONS.DISPLAY_FORMAT]).toBe('A-{0000}')
+      })
+
+      it('should add fields that exist in the instance element and not in sObject', async () => {
+        mockSingleSObject('Lead', [], false, true, false, 'Lead Label')
+        const result: Element[] = [testInstanceElement]
+        await filter().onFetch(result)
+
+        const lead = result.filter(o => o.elemID.name === 'lead').pop()
+        expect(lead).toBeDefined()
+        expect(isObjectType(lead)).toBeTruthy()
+        const leadObjectType = lead as ObjectType
+        expect(leadObjectType.fields.my_auto_number
+          .annotations[constants.FIELD_ANNOTATIONS.DISPLAY_FORMAT]).toBe('A-{0000}')
+      })
     })
   })
 })

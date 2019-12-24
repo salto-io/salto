@@ -5,7 +5,7 @@ import {
   isPrimitiveType, Value, ElemID,
 } from 'adapter-api'
 import { makeArray } from '@salto/lowerdash/dist/src/collections/array'
-import { UnresolvedReference } from './expressions'
+import { UnresolvedReference, resolve, CircularReference } from './expressions'
 
 export abstract class ValidationError extends types.Bean<Readonly<{
   elemID: ElemID
@@ -86,6 +86,16 @@ export class UnresolvedReferenceValidationError extends ValidationError {
     { elemID: ElemID; ref: string }
   ) {
     super({ elemID, error: `unresolved reference ${ref}` })
+  }
+}
+
+
+export class CircularReferenceValidationError extends ValidationError {
+  constructor(
+    { elemID, ref }:
+    { elemID: ElemID; ref: string }
+  ) {
+    super({ elemID, error: `circular reference ${ref}` })
   }
 }
 
@@ -170,6 +180,9 @@ const validateValue = (elemID: ElemID, value: Value, type: Type): ValidationErro
   if (value instanceof UnresolvedReference) {
     return [new UnresolvedReferenceValidationError({ elemID, ref: value.ref })]
   }
+  if (value instanceof CircularReference) {
+    return [new CircularReferenceValidationError({ elemID, ref: value.ref })]
+  }
   if ((isPrimitiveType(type) && !primitiveValidators[type.primitive](value))
     || (isObjectType(type) && !_.isPlainObject(value))) {
     return [new InvalidValueTypeValidationError({ elemID, value, type })]
@@ -231,10 +244,8 @@ const validateInstanceElements = (element: InstanceElement): ValidationError[] =
   _.flatten(instanceElementValidators.map(v => v(element.elemID, element.value, element.type)))
 
 export const validateElements = (elements: Element[]): ValidationError[] => (
-  _.flatten(elements.map(element => {
-    if (isInstanceElement(element)) {
-      return validateInstanceElements(element)
-    }
-    return validateType(element as Type)
-  }))
+  _(resolve(elements))
+    .map(e => (isInstanceElement(e) ? validateInstanceElements(e) : validateType(e as Type)))
+    .flatten()
+    .value()
 )

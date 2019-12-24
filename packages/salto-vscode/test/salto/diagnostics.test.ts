@@ -10,6 +10,7 @@ describe('TEST', () => {
     stateLocation: path.join(baseDir, 'salto.config', 'state.bpc'),
     localStorage: '.',
     name: 'test',
+    services: ['salesforce'],
     uid: '',
   })
 

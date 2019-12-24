@@ -79,6 +79,7 @@ type salesforce_lead {
       password = "password"
     }`,
   }
+  const services = ['salesforce']
 
   describe('Workspace class', () => {
     let parsedBPs: ParsedBlueprint[]
@@ -103,6 +104,7 @@ type salesforce_lead {
         localStorage: path.join(os.homedir(), '.salto', 'test'),
         baseDir: '/salto',
         additionalBlueprints: ['../outside/file.bp'],
+        services,
         stateLocation: '/salto/latest_state.bp',
       }
       workspace = new Workspace(
@@ -138,6 +140,7 @@ type salesforce_lead {
         localStorage: path.join(os.homedir(), '.salto', 'test'),
         baseDir: '/salto',
         additionalBlueprints: [],
+        services,
         stateLocation: '/salto/latest_state.bp',
       }
 
@@ -461,6 +464,7 @@ type salesforce_lead {
         localStorage: path.join(tmpHome.path, '.salto', 'test'),
         baseDir: getPath('salto'),
         additionalBlueprints: [getPath('/outside/file.bp')],
+        services,
         stateLocation: '/salto/latest_state.bp',
       }
       workspace = await Workspace.load(config)

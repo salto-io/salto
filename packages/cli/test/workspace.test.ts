@@ -14,7 +14,7 @@ jest.mock('salto', () => ({
     load: jest.fn().mockImplementation(() => mockWs),
   },
   loadConfig: jest.fn().mockImplementation(
-    workspaceDir => ({ baseDir: workspaceDir, additionalBlueprints: [], cacheLocation: '' })
+    workspaceDir => ({ baseDir: workspaceDir, additionalBlueprints: [], services: ['salesforce'], cacheLocation: '' })
   ),
 }))
 jest.mock('inquirer', () => ({

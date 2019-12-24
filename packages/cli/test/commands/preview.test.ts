@@ -1,30 +1,38 @@
 import { Workspace } from 'salto'
 import { command } from '../../src/commands/preview'
-import { preview, MockWriteStream, getWorkspaceErrors, mockSpinnerCreator } from '../mocks'
+import { preview, MockWriteStream, getWorkspaceErrors, mockSpinnerCreator, mockLoadConfig } from '../mocks'
 import { SpinnerCreator, Spinner } from '../../src/types'
 
 const mockPreview = preview
-const mockWs = { hasErrors: () => false }
-const mockErrWs = {
-  hasErrors: () => true,
-  errors: { strings: () => ['Error'] },
-  getWorkspaceErrors,
-}
 jest.mock('salto', () => ({
   ...require.requireActual('salto'),
   preview: jest.fn().mockImplementation(() => mockPreview()),
   Workspace: {
-    load: jest.fn().mockImplementation(config => (config.baseDir === 'errdir' ? mockErrWs : mockWs)),
+    load: jest.fn().mockImplementation(config => {
+      if (config.baseDir === 'errdir') {
+        return {
+          hasErrors: () => true,
+          errors: {
+            strings: () => ['Error', 'Error'],
+          },
+          getWorkspaceErrors,
+          config,
+        }
+      }
+      return {
+        hasErrors: () => false,
+        config,
+      }
+    }),
   },
-  loadConfig: jest.fn().mockImplementation(
-    workspaceDir => ({ baseDir: workspaceDir, additionalBlueprints: [], cacheLocation: '' })
-  ),
+  loadConfig: jest.fn().mockImplementation((workspaceDir: string) => mockLoadConfig(workspaceDir)),
 }))
 
 describe('preview command', () => {
   let cliOutput: { stdout: MockWriteStream; stderr: MockWriteStream }
   let spinners: Spinner[]
   let spinnerCreator: SpinnerCreator
+  const services = ['salesforce']
 
   beforeEach(() => {
     cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
@@ -34,7 +42,7 @@ describe('preview command', () => {
 
   describe('when the workspace loads successfully', () => {
     beforeEach(async () => {
-      await command('', cliOutput, spinnerCreator).execute()
+      await command('', cliOutput, spinnerCreator, services).execute()
     })
 
     it('should load the workspace', async () => {
@@ -66,7 +74,7 @@ describe('preview command', () => {
 
   describe('when the workspace fails to load', () => {
     beforeEach(async () => {
-      await command('errdir', cliOutput, spinnerCreator).execute()
+      await command('errdir', cliOutput, spinnerCreator, services).execute()
     })
 
     it('should print the error', () => {

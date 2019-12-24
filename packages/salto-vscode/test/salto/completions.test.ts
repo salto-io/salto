@@ -19,6 +19,7 @@ describe('Test auto complete', () => {
     additionalBlueprints,
     stateLocation: path.join(baseDir, 'salto.config', 'state.bpc'),
     localStorage: '.',
+    services: ['salesforce'],
     name: 'test',
     uid: '',
   })

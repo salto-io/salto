@@ -64,7 +64,7 @@ export const metadataType = (element: Element): string => (
   element.annotations[METADATA_TYPE] || CUSTOM_OBJECT
 )
 
-export const isCustomObject = (element: ObjectType): boolean =>
+export const isCustomObject = (element: Element): boolean =>
   (metadataType(element) === CUSTOM_OBJECT)
 
 export const apiName = (elem: Element): string => {

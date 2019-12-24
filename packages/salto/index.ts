@@ -24,7 +24,7 @@ export {
   WorkspaceError, SourceFragment, WorkspaceErrorSeverity,
   ResolvedParsedBlueprint as ParsedBlueprint,
 } from './src/workspace/workspace'
-export { Config, loadConfig } from './src/workspace/config'
+export { Config, loadConfig, addServiceToConfig } from './src/workspace/config'
 export { SourceMap, SourceRange, parseElemID } from './src/parser/parse'
 export { dump, dumpElemID } from './src/parser/dump'
 export { readAllCsvContents } from './test/common/helpers'

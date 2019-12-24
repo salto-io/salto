@@ -13,6 +13,8 @@ import {
   getInstancesOfType, importInstancesOfType, deleteInstancesOfType,
 } from './core/records'
 import initAdapters from './core/adapters/adapters'
+import { addServiceToConfig } from './workspace/config'
+import { isAdapterAvailable } from './core/adapters/creators'
 import {
   getPlan, Plan, PlanItem, DetailedChange,
 } from './core/plan'
@@ -276,4 +278,24 @@ export const init = async (workspaceName?: string): Promise<Workspace> => {
   await state.flush()
   await workspace.flush()
   return workspace
+}
+
+export const addAdapter = async (
+  adapterName: string,
+  workspaceDir: string
+): Promise<boolean> => {
+  if (!isAdapterAvailable(adapterName)) {
+    throw new Error('No adapter available for this service')
+  }
+  await addServiceToConfig(workspaceDir, adapterName)
+  return true
+}
+
+export const loginAdapter = async (
+  workspace: Workspace,
+  fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
+  adapterName: string
+): Promise<boolean> => {
+  await login(workspace, fillConfig, [adapterName])
+  return true
 }

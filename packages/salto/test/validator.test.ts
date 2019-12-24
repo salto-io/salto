@@ -140,11 +140,21 @@ describe('Elements validation', () => {
       {
         str: 'str',
         num: 12,
-        bool: new ReferenceExpression(circularRefInst.elemID.createNestedID('Nope')),
+        bool: new ReferenceExpression(nestedInstance.elemID.createNestedID('nope')),
       }
     )
 
-    circularRefInst.value.bool = new ReferenceExpression(unresolvedRefInst.elemID.createNestedID('Nope'))
+    const circularRefInst2 = new InstanceElement(
+      'unresolved',
+      simpleType,
+      {
+        str: 'str',
+        num: 12,
+        bool: new ReferenceExpression(circularRefInst.elemID.createNestedID('bool')),
+      }
+    )
+
+    circularRefInst.value.bool = new ReferenceExpression(circularRefInst2.elemID.createNestedID('bool'))
 
     const wrongRefInst = new InstanceElement(
       'unresolved',
@@ -411,9 +421,9 @@ describe('Elements validation', () => {
       })
 
       it('should return error when encountering a circular reference', () => {
-        const errors = validateElements([unresolvedRefInst, circularRefInst])
+        const errors = validateElements([circularRefInst, circularRefInst2])
         expect(errors).toHaveLength(2)
-        expect(errors[0].elemID).toEqual(unresolvedRefInst.elemID.createNestedID('bool'))
+        expect(errors[0].elemID).toEqual(circularRefInst.elemID.createNestedID('bool'))
       })
 
       it('should validate throw error on reference that points to a bad type', () => {

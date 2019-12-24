@@ -1,20 +1,25 @@
 import { logger } from '@salto/logging'
-import { ADAPTER, Element, Field, ObjectType, ServiceIds, Type, isObjectType } from 'adapter-api'
+import { collections } from '@salto/lowerdash'
+import { ADAPTER, Element, Field, ObjectType, ServiceIds, Type, isObjectType, InstanceElement, Values, isInstanceElement, ElemID, BuiltinTypes } from 'adapter-api'
 import { SalesforceClient } from 'index'
 import { DescribeSObjectResult, Field as SObjField } from 'jsforce'
 import _ from 'lodash'
-import { API_NAME, CUSTOM_OBJECT, METADATA_TYPE, NAMESPACE_SEPARATOR, SALESFORCE } from '../constants'
+import { API_NAME, CUSTOM_OBJECT, METADATA_TYPE, NAMESPACE_SEPARATOR, SALESFORCE, INSTANCE_FULL_NAME_FIELD, SALESFORCE_CUSTOM_SUFFIX, INSTANCE_TYPE_FIELD, LABEL } from '../constants'
 import { FilterCreator } from '../filter'
-import { apiName, getSObjectFieldElement, Types } from '../transformers/transformer'
+import { apiName, getSObjectFieldElement, Types, isCustomObject, bpCase } from '../transformers/transformer'
 import { id, addApiName, addMetadataType, addLabel } from './utils'
 
 const log = logger(module)
+const { makeArray } = collections.array
 
 const hasNamespace = (customElement: Field | ObjectType): boolean =>
   apiName(customElement).split(NAMESPACE_SEPARATOR).length === 3
 
 const getNamespace = (customElement: Field | ObjectType): string =>
   apiName(customElement).split(NAMESPACE_SEPARATOR)[0]
+
+const getFieldType = (type: string): Type =>
+  (_.isUndefined(type) ? BuiltinTypes.STRING : Types.get(bpCase(type)))
 
 const createObjectWithFields = (objectName: string, serviceIds: ServiceIds,
   fields: Field[]): ObjectType => {
@@ -136,6 +141,46 @@ const fetchSObjects = async (client: SalesforceClient): Promise<Type[]> => {
   return _.flatten(sobjects)
 }
 
+const fixInstanceFieldValueBeforeMerge = (instanceFieldValues: Values): Values =>
+  Object.assign({}, ...Object.entries(instanceFieldValues).filter(([k, _v]) => !['type', 'track_feed_history'].includes(k)).map(
+    ([k, v]) => {
+      switch (k) {
+        case 'required':
+          return { [Type.REQUIRED]: v }
+        case INSTANCE_FULL_NAME_FIELD:
+          return { [API_NAME]: v }
+        case 'value_set':
+          return { [Type.VALUES]: v.value_set_definition.value
+            .map((value: Values) => value.full_name) }
+        default:
+          return { [k]: v }
+      }
+    }
+  ))
+
+const mergeCustomObjectWithInstance = (customObject: ObjectType,
+  instance: InstanceElement): void => {
+  _(customObject.fields).forEach(field => {
+    field.annotations = _.merge(field.annotations,
+      fixInstanceFieldValueBeforeMerge(makeArray(instance.value.fields)
+        .find((f: Values) => f.full_name === field.annotations[API_NAME]) || {}))
+  })
+}
+
+const createObjectTypeFromInstance = (instance: InstanceElement): ObjectType => {
+  const objectName = instance.value[INSTANCE_FULL_NAME_FIELD]
+  const objectElemID = new ElemID(SALESFORCE, bpCase(objectName), 'type')
+  const instanceFields = makeArray(instance.value.fields)
+  return new ObjectType({ elemID: objectElemID,
+    fields: Object.assign({}, ...instanceFields
+      .map((field: Values) => ({ [bpCase(field[INSTANCE_FULL_NAME_FIELD])]: new Field(objectElemID,
+        bpCase(field[INSTANCE_FULL_NAME_FIELD]), getFieldType(field[INSTANCE_TYPE_FIELD]),
+        fixInstanceFieldValueBeforeMerge(field)) }))),
+    annotations: { [API_NAME]: objectName,
+      [METADATA_TYPE]: CUSTOM_OBJECT,
+      [LABEL]: instance.value[LABEL] } })
+}
+
 // ---
 
 /**
@@ -156,7 +201,47 @@ const filterCreator: FilterCreator = ({ client }) => ({
       .catch(e => {
         log.error('failed to fetch sobjects reason: %o', e)
         return []
-      })
+      }) as ObjectType[]
+    const customObjectInstances = elements.filter(isCustomObject).filter(isInstanceElement)
+
+    sObjects.forEach(obj => {
+      const matchedInstance = customObjectInstances
+        .find(instance => instance.elemID.name === obj.elemID.name)
+      if (!_.isUndefined(matchedInstance)) {
+        mergeCustomObjectWithInstance(obj, matchedInstance)
+      }
+    })
+
+    customObjectInstances.forEach(instance => {
+      const objectsTypesOfInstance = sObjects
+        .filter(obj => obj.elemID.name === instance.elemID.name)
+      // Adds objects that exists in the metadata api but don't exist in the soap api
+      if (_.isEmpty(objectsTypesOfInstance)) {
+        sObjects.push(createObjectTypeFromInstance(instance))
+      } else {
+        // Adds fields that exists in the metadata api but don't exist in the soap api
+        const instanceFields = makeArray(instance.value.fields)
+        const newFields = instanceFields.filter((f: Values) =>
+          _.isUndefined(_.flatten(objectsTypesOfInstance
+            .map(o => Object.values(o.fields).map(v => v.name)))
+            .find(fieldName => fieldName === bpCase(f[INSTANCE_FULL_NAME_FIELD]))))
+        newFields.forEach((field: Values) => {
+          const objectPath = field[INSTANCE_FULL_NAME_FIELD]
+            .endsWith(SALESFORCE_CUSTOM_SUFFIX) ? 'custom' : 'standard'
+          const objectTypeOfInstance = objectsTypesOfInstance
+            .find(objType => objType.path && (objType.path[1] === objectPath))
+            || objectsTypesOfInstance[0]
+          // TODO I might not support lists - need to check it out
+          const fullNameBpCased = bpCase(field[INSTANCE_FULL_NAME_FIELD])
+          objectTypeOfInstance.fields[fullNameBpCased] = new Field(
+            objectTypeOfInstance.elemID, fullNameBpCased,
+            getFieldType(field[INSTANCE_TYPE_FIELD]), fixInstanceFieldValueBeforeMerge(field)
+          )
+        })
+      }
+    })
+
+    _.remove(elements, elem => (isCustomObject(elem) && isInstanceElement(elem)))
     sObjects.forEach(elem => elements.push(elem))
   },
 })

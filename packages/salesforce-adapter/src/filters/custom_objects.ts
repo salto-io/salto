@@ -231,7 +231,6 @@ const filterCreator: FilterCreator = ({ client }) => ({
           const objectTypeOfInstance = objectsTypesOfInstance
             .find(objType => objType.path && (objType.path[1] === objectPath))
             || objectsTypesOfInstance[0]
-          // TODO I might not support lists - need to check it out
           const fullNameBpCased = bpCase(field[INSTANCE_FULL_NAME_FIELD])
           objectTypeOfInstance.fields[fullNameBpCased] = new Field(
             objectTypeOfInstance.elemID, fullNameBpCased,

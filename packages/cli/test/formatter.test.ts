@@ -189,7 +189,7 @@ describe('formatter', () => {
         fragment: '{ This is my code fragment }',
 
       }],
-      error: 'This is my error',
+      message: 'This is my error',
       severity: 'Error',
     }
     let formattedErrors: string

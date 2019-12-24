@@ -1,5 +1,5 @@
 import _ from 'lodash'
-import { WorkspaceErrorSeverity } from 'salto'
+import { SaltoErrorSeverity } from 'adapter-api'
 import { EditorRange } from './context'
 import { EditorWorkspace } from './workspace'
 
@@ -7,7 +7,7 @@ export interface SaltoDiagnostic {
   filename: string
   msg: string
   range: EditorRange
-  severity: WorkspaceErrorSeverity
+  severity: SaltoErrorSeverity
 }
 
 export type WorkspaceSaltoDiagnostics = Record<string, SaltoDiagnostic[]>
@@ -20,7 +20,7 @@ export const getDiagnostics = async (
     .map(err => err.sourceFragments.map(f => ({
       filename: f.sourceRange.filename,
       severity: err.severity,
-      msg: err.error,
+      msg: err.message,
       range: {
         start: f.sourceRange.start,
         end: f.sourceRange.end,

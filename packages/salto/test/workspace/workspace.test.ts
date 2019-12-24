@@ -8,10 +8,9 @@ import {
 } from 'adapter-api'
 import { Config } from '../../src/workspace/config'
 import {
-  Workspace, Blueprint, ParsedBlueprint, parseBlueprints, calculateValidationSeverity,
+  Workspace, Blueprint, ParsedBlueprint, parseBlueprints,
 } from '../../src/workspace/workspace'
 import { DetailedChange } from '../../src/core/plan'
-import { MergeError } from '../../src/core/merger/internal/common'
 import { rm, mkdirp, writeFile, exists, readTextFile } from '../../src/file'
 import { UnresolvedReferenceValidationError, InvalidValueValidationError } from '../../src/core/validator'
 import * as dump from '../../src/parser/dump'
@@ -175,9 +174,8 @@ type salesforce_lead {
         expect(erroredWorkspace.errors.strings()[0]).toMatch(mergeError)
         expect(erroredWorkspace.errors.merge[0].error).toMatch(mergeError)
         expect(workspaceErrors).toHaveLength(1)
-        expect(workspaceErrors[0].cause).toBeInstanceOf(MergeError)
         expect(workspaceErrors[0].sourceFragments).toHaveLength(2)
-        expect(workspaceErrors[0].error).toMatch(mergeError)
+        expect(workspaceErrors[0].message).toMatch(mergeError)
         expect(workspaceErrors[0].severity).toBe('Error')
 
         const firstSourceFragment = workspaceErrors[0].sourceFragments[0]
@@ -564,19 +562,19 @@ type salesforce_lead {
   describe('validation errors serverity', () => {
     const elemID = new ElemID('salesforce', 'new_elem')
     it('should be Error for reference error', () => {
-      expect(calculateValidationSeverity(new UnresolvedReferenceValidationError({
+      expect((new UnresolvedReferenceValidationError({
         elemID,
         ref: '',
-      }))).toBe('Error')
+      })).severity).toBe('Error')
     })
     it('should be Warning for other errors', () => {
-      expect(calculateValidationSeverity(new InvalidValueValidationError({
+      expect(new InvalidValueValidationError({
         elemID,
         value: '',
         field: new Field(elemID, '', new PrimitiveType({ elemID,
           primitive: PrimitiveTypes.STRING })),
         expectedValue: 'baba',
-      }))).toBe('Warning')
+      }).severity).toBe('Warning')
     })
   })
 })

@@ -4,13 +4,13 @@ import path from 'path'
 import readdirp from 'readdirp'
 import uuidv4 from 'uuid/v4'
 import { types } from '@salto/lowerdash'
-import { Element, ElemID, isInstanceElement, InstanceElement } from 'adapter-api'
+import { Element, ElemID, isInstanceElement, InstanceElement, SaltoError, SaltoElementError } from 'adapter-api'
 import { logger } from '@salto/logging'
 import { DefaultMap } from '@salto/lowerdash/dist/src/collections/map'
 import { stat, mkdirp, readTextFile, rm, writeFile, exists, Stats } from '../file'
 import { SourceMap, parse, SourceRange, ParseError, ParseResult } from '../parser/parse'
 import { mergeElements, MergeError } from '../core/merger'
-import { validateElements, ValidationError, UnresolvedReferenceValidationError } from '../core/validator'
+import { validateElements, ValidationError } from '../core/validator'
 import { DetailedChange } from '../core/plan'
 import { ParseResultFSCache } from './cache'
 import { getChangeLocations, updateBlueprintData, getChangesToUpdate, BP_EXTENSION } from './blueprint_update'
@@ -25,8 +25,6 @@ class ExistingWorkspaceError extends Error {
   }
 }
 
-const SeverValidationErrors = [UnresolvedReferenceValidationError]
-
 class NotAnEmptyWorkspaceError extends Error {
   constructor(exsitingPathes: string[]) {
     super(`not an empty workspace. ${exsitingPathes.join('')} already exists.`)
@@ -39,13 +37,9 @@ export type Blueprint = {
   timestamp?: number
 }
 
-export type WorkspaceErrorSeverity = 'Error' | 'Warning'
 
-export type WorkspaceError = Readonly<{
+export type WorkspaceError = Readonly<SaltoError & {
    sourceFragments: SourceFragment[]
-   error: string
-   severity: WorkspaceErrorSeverity
-   cause?: ParseError | ValidationError | MergeError
 }>
 
 export interface ParsedBlueprint {
@@ -241,8 +235,6 @@ const ensureEmptyWorkspace = async (config: Config): Promise<void> => {
   }
 }
 
-export const calculateValidationSeverity = (ve: ValidationError): WorkspaceErrorSeverity =>
-  (_.some(SeverValidationErrors, e => ve instanceof e) ? 'Error' : 'Warning')
 /**
  * The Workspace class exposes the content of a collection (usually a directory) of blueprints
  * in the form of Elements.
@@ -281,7 +273,7 @@ export class Workspace {
       log.warn(`workspace ${ws.config.name} has ${errors.filter(e => e.severity === 'Error').length
       } workspace errors and ${errors.filter(e => e.severity === 'Warning').length} warnings`)
       errors.forEach(e => {
-        log.warn(`\t${e.severity}: ${e.error}`)
+        log.warn(`\t${e.severity}: ${e.message}`)
       })
     }
     return ws
@@ -363,43 +355,31 @@ export class Workspace {
     }
   }
 
+  async createWorkspaceErrorFromSaltoElementError(saltoElemErr: SaltoElementError):
+  Promise<Readonly<WorkspaceError>> {
+    const sourceRanges = await this.getSourceRanges(saltoElemErr.elemID)
+    const sourceFragments = await Promise.all(
+      sourceRanges.map(sr => this.resolveSourceFragment(sr))
+    )
+    return {
+      ...saltoElemErr,
+      message: saltoElemErr.message,
+      sourceFragments,
+    }
+  }
+
   async getWorkspaceErrors(): Promise<ReadonlyArray<WorkspaceError>> {
     const wsErrors = this.state.errors
     return [
-      ...(await Promise.all(wsErrors.parse.map(async (pe: ParseError): Promise<WorkspaceError> =>
-        ({
-          sourceFragments: [await this.resolveSourceFragment(pe.subject)],
-          error: pe.detail,
-          severity: 'Error',
-          cause: pe,
-        })))),
-      ...(await Promise.all(wsErrors.merge.map(async (me: MergeError): Promise<WorkspaceError> => {
-        const sourceRanges = await this.getSourceRanges(me.elemID)
-        const sourceFragments = await Promise.all(
-          sourceRanges.map(sr => this.resolveSourceFragment(sr))
-        )
-        return {
-          sourceFragments,
-          error: me.message,
-          severity: 'Error',
-          cause: me,
-        }
-      }))),
-      ...(await Promise.all(
-        wsErrors.validation.map(async (ve: ValidationError): Promise<WorkspaceError> => {
-          const sourceRanges = await this.getSourceRanges(ve.elemID)
-          const sourceFragments = await Promise.all(
-            sourceRanges.map(sr => this.resolveSourceFragment(sr))
-          )
-          return {
-            sourceFragments,
-            error: ve.message,
-            severity: calculateValidationSeverity(ve),
-            cause: ve,
-          }
-        })
-      )
-      ),
+      ...(await Promise.all(wsErrors.parse.map(
+        async (parseError: ParseError): Promise<WorkspaceError> =>
+          ({ ...parseError,
+            sourceFragments: [await this.resolveSourceFragment(parseError.subject)] })
+      ))),
+      ...(await Promise.all(wsErrors.merge.map(mergeError =>
+        this.createWorkspaceErrorFromSaltoElementError(mergeError)))),
+      ...(await Promise.all(wsErrors.validation.map(validationError =>
+        this.createWorkspaceErrorFromSaltoElementError(validationError)))),
     ]
   }
 

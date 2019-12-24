@@ -373,7 +373,7 @@ const filterInvalidChanges = async (beforeElementsMap: ElementMap, afterElements
       })
   ))
 
-  const invalidChanges = changeErrors.filter(v => v.level === 'ERROR')
+  const invalidChanges = changeErrors.filter(v => v.severity === 'Error')
   const nodeIdsToOmit = new Set(invalidChanges.map(change => id(change.elemID)))
   const validAfterElementsMap = createValidAfterElementsMap(invalidChanges)
   const validDiffGraph = buildValidDiffGraph(nodeIdsToOmit, validAfterElementsMap)

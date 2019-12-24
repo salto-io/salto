@@ -3,15 +3,20 @@ import { types } from '@salto/lowerdash'
 
 import {
   ElemID,
+  SaltoElementError,
+  SaltoErrorSeverity,
 } from 'adapter-api'
+
 
 export abstract class MergeError extends types.Bean<Readonly<{
   elemID: ElemID
   error: string
-}>> {
+}>> implements SaltoElementError {
   get message(): string {
     return `Error merging ${this.elemID.getFullName()}: ${this.error}`
   }
+
+  public severity: SaltoErrorSeverity = 'Error'
 
   toString(): string {
     return this.message

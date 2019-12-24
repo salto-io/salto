@@ -2,18 +2,20 @@ import _ from 'lodash'
 
 import {
   ElemID, Element, isObjectType, isInstanceElement, isType, Value,
-  ReferenceExpression, TemplateExpression, findElement,
+  ReferenceExpression, TemplateExpression,
 } from 'adapter-api'
 
-type Resolver<T> = (v: T, contextElements: Element[], visited?: Set<string>) => Value
-
-class CircularReferenceError extends Error {
-  constructor(ref: string, public elemID?: ElemID) {
-    super(`failed to resolve reference ${ref} - circular dependecy detected`)
-  }
-}
+type Resolver<T> = (
+  v: T,
+  contextElements: Record<string, Element[]>,
+  visited?: Set<string>
+) => Value
 
 export class UnresolvedReference {
+  constructor(public ref: string) {}
+}
+
+export class CircularReference {
   constructor(public ref: string) {}
 }
 
@@ -22,7 +24,7 @@ let resolveTemplateExpression: Resolver<TemplateExpression>
 
 const resolveMaybeExpression: Resolver<Value> = (
   value: Value,
-  contextElements: Element[],
+  contextElements: Record<string, Element[]>,
   visited: Set<string> = new Set<string>(),
 ): Value => {
   if (value instanceof ReferenceExpression) {
@@ -38,14 +40,14 @@ const resolveMaybeExpression: Resolver<Value> = (
 
 resolveReferenceExpression = (
   expression: ReferenceExpression,
-  contextElements: Element[],
+  contextElements: Record<string, Element[]>,
   visited: Set<string> = new Set<string>(),
 ): Value => {
   const { traversalParts } = expression
   const traversal = traversalParts.join(ElemID.NAMESPACE_SEPARATOR)
 
   if (visited.has(traversal)) {
-    throw new CircularReferenceError(traversal)
+    return new CircularReference(traversal)
   }
   visited.add(traversal)
 
@@ -68,7 +70,9 @@ resolveReferenceExpression = (
   }
 
   // Validation should throw an error if there is not match, or more than one match
-  const rootElement = findElement(contextElements, parent)
+  const rootElement = contextElements[parent.getFullName()]
+    && contextElements[parent.getFullName()][0]
+
   if (!rootElement) {
     return new UnresolvedReference(traversal)
   }
@@ -83,15 +87,18 @@ resolveReferenceExpression = (
 
 resolveTemplateExpression = (
   expression: TemplateExpression,
-  contextElements: Element[],
+  contextElements: Record<string, Element[]>,
   visited: Set<string> = new Set<string>(),
 ): Value => expression.parts
   .map(p => resolveMaybeExpression(p, contextElements, visited) || p)
   .join('')
 
-export const resolve = (element: Element, contextElements: Element[]): Element => {
+export const resolveElement = (
+  srcElement: Element,
+  contextElements: Record<string, Element[]>
+): Element => {
   const referenceCloner = (v: Value): Value => resolveMaybeExpression(v, contextElements)
-
+  const element = _.clone(srcElement)
   if (isInstanceElement(element)) {
     element.value = _.cloneDeepWith(element.value, referenceCloner)
   }
@@ -105,4 +112,9 @@ export const resolve = (element: Element, contextElements: Element[]): Element =
   }
 
   return element
+}
+
+export const resolve = (elements: readonly Element[]): Element[] => {
+  const contextElements = _.groupBy(elements, e => e.elemID.getFullName())
+  return elements.map(e => resolveElement(e, contextElements))
 }

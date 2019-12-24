@@ -9,6 +9,7 @@ import {
   AdditionDiff, ModificationDiff, RemovalDiff,
 } from '@salto/dag'
 import { logger } from '@salto/logging'
+import { resolve } from './expressions'
 
 const log = logger(module)
 
@@ -131,8 +132,10 @@ export const getPlan = (
   withDependencies = true
 ): Plan => log.time(() => {
   // getPlan
-  const before = toNodeMap(beforeElements, withDependencies)
-  const after = toNodeMap(afterElements, withDependencies)
+  const resolvedBefore = resolve(beforeElements)
+  const resolvedAfter = resolve(afterElements)
+  const before = toNodeMap(resolvedBefore, withDependencies)
+  const after = toNodeMap(resolvedAfter, withDependencies)
   // Calculate the diff
   const diffGraph = buildDiffGraph(before, after,
     nodeId => isEqualsNode(before.getData(nodeId), after.getData(nodeId)))

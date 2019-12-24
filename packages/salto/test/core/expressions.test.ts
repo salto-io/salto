@@ -3,7 +3,7 @@ import {
   ElemID, ObjectType, Field, BuiltinTypes, InstanceElement, Element,
   ReferenceExpression, TemplateExpression,
 } from 'adapter-api'
-import { resolve, UnresolvedReference } from '../../src/core/expressions'
+import { resolve, UnresolvedReference, CircularReference } from '../../src/core/expressions'
 
 describe('Test Salto Expressions', () => {
   const refTo = ({ elemID }: { elemID: ElemID }, ...path: string[]): ReferenceExpression => (
@@ -101,7 +101,7 @@ describe('Test Salto Expressions', () => {
       objectRef,
     ]
 
-    const resolved = elements.map(e => resolve(e, elements))
+    const resolved = resolve(elements)
 
     const findResolved = <T extends Element>(
       target: Element): T => resolved.filter(
@@ -155,7 +155,8 @@ describe('Test Salto Expressions', () => {
       firstRef.value.test = refTo(secondRef, 'test')
       secondRef.value.test = refTo(firstRef, 'test')
       const chained = [firstRef, secondRef]
-      expect(() => chained.map(e => resolve(e, chained))).toThrow()
+      const inst = resolve(chained)[0] as InstanceElement
+      expect(inst.value.test).toBeInstanceOf(CircularReference)
     })
 
     it('should fail on unresolvable', () => {
@@ -164,7 +165,7 @@ describe('Test Salto Expressions', () => {
         test: refTo(firstRef, 'test'),
       })
       const bad = [firstRef, secondRef]
-      const res = resolve(secondRef, bad) as InstanceElement
+      const res = resolve(bad)[1] as InstanceElement
       expect(res.value.test).toBeInstanceOf(UnresolvedReference)
     })
 
@@ -175,7 +176,7 @@ describe('Test Salto Expressions', () => {
         { test: new ReferenceExpression(new ElemID('noop', 'test')) },
       )
       const bad = [firstRef]
-      const res = resolve(firstRef, bad) as InstanceElement
+      const res = resolve(bad)[0] as InstanceElement
       expect(res.value.test).toBeInstanceOf(UnresolvedReference)
       expect(res.value.test.ref).toEqual('noop.test')
     })
@@ -206,7 +207,7 @@ describe('Test Salto Expressions', () => {
           }),
         }
       )
-      const element = resolve(secondRef, [firstRef, secondRef]) as InstanceElement
+      const element = resolve([firstRef, secondRef])[1] as InstanceElement
       expect(element.value.into).toEqual(
         'Well, you made a long journey from Milano to Minsk, Rochelle Rochelle'
       )

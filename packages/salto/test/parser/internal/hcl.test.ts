@@ -203,6 +203,17 @@ each([false, true]).describe('HCL Parser', goParseMode => {
     it('contains the error detail', () => {
       expect(errors[0].detail).not.toBeFalsy()
     })
+
+    it('throw error on duplicate keys', async () => {
+      const multiDefBlock = `
+        type multidef {
+          key = "KEY"
+          key = "KEYYY"
+        }
+      `
+      const res = await HclParser.parse(Buffer.from(multiDefBlock), 'none', goParseMode)
+      expect(res.errors[0].summary).toBe('Attribute redefined')
+    })
   })
 
   if (goParseMode) {

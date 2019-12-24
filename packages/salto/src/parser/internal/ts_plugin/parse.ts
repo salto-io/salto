@@ -29,13 +29,14 @@ const convertParserError = (
     ? `${expected.slice(0, -1).join(', ')} or ${expected[expected.length - 1]}`
     : expected[0]
   const text = token.value || ''
-  const start = token?.source?.start 
-    ?? {line: token.line, col: token.col, bytes: token.offset} as unknown as SourcePos 
-  const end = token?.source?.start 
-    ?? {line: token.line, col: token.col, bytes: token.offset} as unknown as SourcePos 
+  const summary = err.message.includes('\n') ? `Unexpected token: ${text}` : err.message
+  const start = token?.source?.start
+    ?? { line: token.line, col: token.col, bytes: token.offset } as unknown as SourcePos
+  const end = token?.source?.start
+    ?? { line: token.line, col: token.col, bytes: token.offset } as unknown as SourcePos
   return {
+    summary,
     severity: 1,
-    summary: `Unexpected token: ${text}`,
     detail: `Expected ${expectedMsg} token but found: ${text} instead.`,
     subject: {
       filename,

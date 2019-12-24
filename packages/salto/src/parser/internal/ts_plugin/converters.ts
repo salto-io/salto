@@ -17,9 +17,13 @@ interface LexerToken {
   offset: number
 }
 
+type Token = HCLToken | LexerToken
+
+type NearleyErrorToken = Partial<HclExpression & LexerToken>
+
 export class NearleyError extends Error {
   constructor(
-    public token: LexerToken,
+    public token: NearleyErrorToken,
     public offset: number,
     message: string
   ) {
@@ -27,7 +31,6 @@ export class NearleyError extends Error {
   }
 }
 
-type Token = HCLToken | LexerToken
 
 const isLexerToken = (token: Token): token is LexerToken => 'value' in token
     && 'text' in token
@@ -65,10 +68,12 @@ const convertBlockItems = (
   const blocks: ParsedHclBlock[] = []
   blockItems.forEach(item => {
     if ('type' in item && item.type === 'map') {
-      const key = item.expressions[0].value
+      const key = item.expressions[0]
       const value = item.expressions[1]
-      if (attrs[key]) throw new Error('duplicated attribure name')
-      attrs[key] = {
+      if (attrs[key.value]) {
+        throw new NearleyError(key, key.source.start.byte, 'Attribute redefined')
+      }
+      attrs[key.value] = {
         expressions: [value],
         source: item.source,
       }
@@ -125,7 +130,7 @@ export const convertObject = (
   attrs.forEach(attr => {
     const key = attr.expressions[0]
     if (res[key.value] !== undefined) {
-      throw new Error('Oy we have this key')
+      throw new NearleyError(key, key.source.start.byte, 'Attribute redefined')
     }
     res[key.value] = attr.expressions
   })
@@ -206,12 +211,11 @@ export const convertAttr = (key: LexerToken, value: HclExpression): HclExpressio
 })
 
 export const convertWildcard = (wildcard: LexerToken): HclExpression => {
-  if (allowWildcard) {
-    return {
-      type: 'dynamic',
-      expressions: [],
-      source: createSourceRange(wildcard, wildcard),
-    }
-  }
-  throw new NearleyError(wildcard, wildcard.offset, 'Invalid wildcard token')
+  const exp = {
+    type: 'dynamic',
+    expressions: [],
+    source: createSourceRange(wildcard, wildcard),
+  } as HclExpression
+  if (allowWildcard) return exp
+  throw new NearleyError(exp, wildcard.offset, 'Invalid wildcard token')
 }

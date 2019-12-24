@@ -30,10 +30,11 @@ const convertParserError = (
     : expected[0]
   const text = token.value || ''
   const summary = err.message.includes('\n') ? `Unexpected token: ${text}` : err.message
+  
   const start = token?.source?.start
-    ?? { line: token.line, col: token.col, bytes: token.offset } as unknown as SourcePos
+    ?? { line: token.line, col: token.col, byte: token.offset } as unknown as SourcePos
   const end = token?.source?.start
-    ?? { line: token.line, col: token.col, bytes: token.offset } as unknown as SourcePos
+    ?? { line: token.line, col: token.col, byte: token.offset } as unknown as SourcePos
   return {
     summary,
     severity: 1,

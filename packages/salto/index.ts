@@ -21,7 +21,7 @@ export * from './src/api'
 export { FoundSearchResult, SearchResult } from './src/core/search'
 export {
   Workspace, Blueprint, Errors, ParsedBlueprintMap,
-  WorkspaceError, SourceFragment, WorkspaceErrorSeverity,
+  WorkspaceError, SourceFragment,
   ResolvedParsedBlueprint as ParsedBlueprint,
 } from './src/workspace/workspace'
 export { Config, loadConfig, addServiceToConfig } from './src/workspace/config'

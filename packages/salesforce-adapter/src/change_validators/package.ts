@@ -38,7 +38,7 @@ export const changeValidator = {
     if ((isInstanceElement(after) || isObjectType(after)) && hasNamespace(after)) {
       return [{
         elemID: after.elemID,
-        level: 'ERROR',
+        severity: 'Error',
         message: generateAddPackageMessage(getNamespace(after)),
         detailedMessage: 'You cannot add an Instance or an Object to a package',
       }]
@@ -48,7 +48,7 @@ export const changeValidator = {
         .filter(hasNamespace)
         .map(field => ({
           elemID: field.elemID,
-          level: 'ERROR',
+          severity: 'Error',
           message: generateAddPackageMessage(getNamespace(field)),
           detailedMessage: 'You cannot add or remove a field that is a part of a package',
         }))
@@ -60,7 +60,7 @@ export const changeValidator = {
     if ((isInstanceElement(before) || isObjectType(before)) && hasNamespace(before)) {
       return [{
         elemID: before.elemID,
-        level: 'ERROR',
+        severity: 'Error',
         message: generateRemovePackageMessage(getNamespace(before)),
         detailedMessage: 'You cannot remove an Instance or an Object that are a part of a package',
       }]
@@ -70,7 +70,7 @@ export const changeValidator = {
         .filter(hasNamespace)
         .map(field => ({
           elemID: field.elemID,
-          level: 'ERROR',
+          severity: 'Error',
           message: generateRemovePackageMessage(getNamespace(field)),
           detailedMessage: 'You cannot add or remove a field that is a part of a package',
         }))
@@ -98,7 +98,7 @@ export const changeValidator = {
     if (installedPackageVersionChange) {
       return [{
         elemID: getChangeElement(installedPackageVersionChange).elemID,
-        level: 'ERROR',
+        severity: 'Error',
         message: generateModifyPackageVersionMessage(
           getNamespace(getChangeElement(installedPackageVersionChange) as InstanceElement)
         ),
@@ -109,7 +109,7 @@ export const changeValidator = {
       .filter(isAddOrRemovePackageFieldChange)
       .map(change => ({
         elemID: getChangeElement(change).elemID,
-        level: 'ERROR',
+        severity: 'Error',
         message: isAdditionDiff(change)
           ? generateAddPackageMessage(getNamespace(change.data.after as Field))
           : generateRemovePackageMessage(getNamespace(change.data.before as Field)),

@@ -42,12 +42,12 @@ describe('workspace', () => {
         mockWs.getWorkspaceErrors = jest.fn().mockImplementation(() => (
           [{
             sourceFragments: [],
-            error: 'Error',
+            message: 'Error',
             severity: 'Warning',
           },
           {
             sourceFragments: [],
-            error: 'Error2',
+            message: 'Error2',
             severity: 'Warning',
           }]
         ))
@@ -103,7 +103,7 @@ describe('workspace', () => {
       mockWs.hasErrors = jest.fn().mockImplementation(() => true)
       mockWs.getWorkspaceErrors = jest.fn().mockImplementation(() => ([{
         sourceFragments: [],
-        error: 'Error BLA',
+        message: 'Error BLA',
         severity: 'Warning',
       }]))
       await loadWorkspace('', cliOutput, () => spinner)
@@ -116,7 +116,7 @@ describe('workspace', () => {
       mockWs.hasErrors = jest.fn().mockImplementation(() => true)
       mockWs.getWorkspaceErrors = jest.fn().mockImplementation(() => ([{
         sourceFragments: [],
-        error: 'Error BLA',
+        message: 'Error BLA',
         severity: 'Error',
       }]))
       await loadWorkspace('', cliOutput, () => spinner)

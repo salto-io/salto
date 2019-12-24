@@ -250,7 +250,7 @@ describe('getPlan', () => {
       if (element.elemID.name.includes('invalid')) {
         return [{
           elemID: element.elemID,
-          level: 'ERROR',
+          severity: 'Error',
           message: 'message',
           detailedMessage: 'detailedMessage',
         }] as ChangeError[]
@@ -260,7 +260,7 @@ describe('getPlan', () => {
           .filter(field => field.elemID.name.includes('invalid'))
           .map(field => ({
             elemID: field.elemID,
-            level: 'ERROR',
+            severity: 'Error',
             message: 'message',
             detailedMessage: 'detailedMessage',
           }))
@@ -311,7 +311,7 @@ describe('getPlan', () => {
         .toBeTruthy()
       expect(planResult.changeErrors.some(v => v.elemID.isEqual(newInvalidInst.elemID)))
         .toBeTruthy()
-      expect(planResult.changeErrors.every(v => v.level === 'ERROR')).toBeTruthy()
+      expect(planResult.changeErrors.every(v => v.severity === 'Error')).toBeTruthy()
       expect(planResult.size).toBe(0)
     })
 
@@ -325,7 +325,7 @@ describe('getPlan', () => {
       expect(planResult.changeErrors).toHaveLength(1)
       expect(planResult.changeErrors[0].elemID.isEqual(newValidObj.fields.invalid.elemID))
         .toBeTruthy()
-      expect(planResult.changeErrors[0].level === 'ERROR').toBeTruthy()
+      expect(planResult.changeErrors[0].severity === 'Error').toBeTruthy()
       expect(planResult.size).toBe(1)
       const planItem = getFirstPlanItem(planResult)
       expect(planItem.items.size).toBe(1)
@@ -341,7 +341,7 @@ describe('getPlan', () => {
       saltoOffice.fields.invalid = new Field(saltoOffice.elemID, 'invalid', BuiltinTypes.STRING)
       const planResult = await getPlan(allElements, afterElements, { salto: mockChangeValidator })
       expect(planResult.changeErrors).toHaveLength(1)
-      expect(planResult.changeErrors[0].level).toEqual('ERROR')
+      expect(planResult.changeErrors[0].severity).toEqual('Error')
       expect(planResult.changeErrors[0].elemID.isEqual(saltoOffice.fields.invalid.elemID))
         .toBeTruthy()
       expect(planResult.size).toBe(0)
@@ -354,7 +354,7 @@ describe('getPlan', () => {
       saltoOffice.fields.valid = new Field(saltoOffice.elemID, 'valid', BuiltinTypes.STRING)
       const planResult = await getPlan(allElements, afterElements, { salto: mockChangeValidator })
       expect(planResult.changeErrors).toHaveLength(1)
-      expect(planResult.changeErrors[0].level).toEqual('ERROR')
+      expect(planResult.changeErrors[0].severity).toEqual('Error')
       expect(planResult.changeErrors[0].elemID.isEqual(saltoOffice.fields.invalid.elemID))
         .toBeTruthy()
       expect(planResult.size).toBe(1)
@@ -376,7 +376,7 @@ describe('getPlan', () => {
       const planResult = await getPlan([...allElements, beforeInvalidObj],
         [...allElements, afterInvalidObj], { salto: mockChangeValidator })
       expect(planResult.changeErrors).toHaveLength(1)
-      expect(planResult.changeErrors[0].level).toEqual('ERROR')
+      expect(planResult.changeErrors[0].severity).toEqual('Error')
       expect(planResult.changeErrors[0].elemID.isEqual(afterInvalidObj.elemID)).toBeTruthy()
       expect(planResult.size).toBe(0)
     })
@@ -388,7 +388,7 @@ describe('getPlan', () => {
       saltoOffice.fields.valid = new Field(saltoOffice.elemID, 'valid', BuiltinTypes.STRING)
       const planResult = await getPlan(beforeElements, allElements, { salto: mockChangeValidator })
       expect(planResult.changeErrors).toHaveLength(1)
-      expect(planResult.changeErrors[0].level).toEqual('ERROR')
+      expect(planResult.changeErrors[0].severity).toEqual('Error')
       expect(planResult.changeErrors[0].elemID.isEqual(saltoOffice.fields.invalid.elemID))
         .toBeTruthy()
       expect(planResult.size).toBe(1)
@@ -412,7 +412,7 @@ describe('getPlan', () => {
       const planResult = await getPlan(beforeElements, afterElements,
         { salto: mockChangeValidator })
       expect(planResult.changeErrors).toHaveLength(1)
-      expect(planResult.changeErrors[0].level).toEqual('ERROR')
+      expect(planResult.changeErrors[0].severity).toEqual('Error')
       expect(planResult.changeErrors[0].elemID.isEqual(afterSaltoOffice.fields.invalid.elemID))
         .toBeTruthy()
       expect(planResult.size).toBe(0)
@@ -430,7 +430,7 @@ describe('getPlan', () => {
         .toBeTruthy()
       expect(planResult.changeErrors.some(v => v.elemID.isEqual(beforeInvalidInst.elemID)))
         .toBeTruthy()
-      expect(planResult.changeErrors.every(v => v.level === 'ERROR')).toBeTruthy()
+      expect(planResult.changeErrors.every(v => v.severity === 'Error')).toBeTruthy()
       expect(planResult.size).toBe(0)
     })
 
@@ -443,7 +443,7 @@ describe('getPlan', () => {
       expect(planResult.changeErrors).toHaveLength(1)
       expect(planResult.changeErrors[0].elemID.isEqual(beforeValidObj.fields.invalid.elemID))
         .toBeTruthy()
-      expect(planResult.changeErrors[0].level === 'ERROR').toBeTruthy()
+      expect(planResult.changeErrors[0].severity === 'Error').toBeTruthy()
       expect(planResult.size).toBe(0)
     })
   })

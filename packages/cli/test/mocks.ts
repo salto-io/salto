@@ -320,6 +320,6 @@ export const describe = async (_searchWords: string[]):
 
 export const getWorkspaceErrors = (): ReadonlyArray<WorkspaceError> => [{
   sourceFragments: [],
-  error: 'Error',
+  message: 'Error',
   severity: 'Error',
 }]

@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import {
   Type, ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field, Values,
-  Element, InstanceElement,
+  Element, InstanceElement, SaltoError,
 } from 'adapter-api'
 import {
   SourceRange as InternalSourceRange, SourceMap as SourceMapImpl,
@@ -13,7 +13,7 @@ import { Keywords } from './language'
 
 // Re-export these types because we do not want code outside the parser to import hcl
 export type SourceRange = InternalSourceRange
-export type ParseError = HclParseError
+export type ParseError = HclParseError & SaltoError
 
 export type SourceMap = ReadonlyMap<string, SourceRange[]>
 
@@ -61,7 +61,7 @@ export type ParseResult = {
  *          errors: Errors encountered during parsing
  */
 export const parse = (blueprint: Buffer, filename: string): ParseResult => {
-  const { body, errors } = hclParse(blueprint, filename)
+  const { body, errors: parseErrors } = hclParse(blueprint, filename)
   const sourceMap = new SourceMapImpl()
 
   const attrValues = (block: ParsedHclBlock, parentId: ElemID): Values => (
@@ -175,6 +175,12 @@ export const parse = (blueprint: Buffer, filename: string): ParseResult => {
     // without a return value
     throw new Error('unsupported block')
   })
+  const errors: ParseError[] = parseErrors.map(err =>
+  ({ ...err,
+    ...{
+      severity: 'Error',
+      message: err.detail,
+    } }) as ParseError)
 
   return { elements, errors, sourceMap }
 }

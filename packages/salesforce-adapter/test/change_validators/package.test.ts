@@ -20,7 +20,7 @@ describe('package change validator', () => {
         obj.annotate({ [API_NAME]: 'MyNamespace__ObjectName__c' })
         const changeErrors = await packageValidator.onAdd(obj)
         expect(changeErrors).toHaveLength(1)
-        expect(changeErrors[0].level).toEqual('ERROR')
+        expect(changeErrors[0].severity).toEqual('Error')
         expect(changeErrors[0].elemID).toEqual(obj.elemID)
       })
 
@@ -30,7 +30,7 @@ describe('package change validator', () => {
           { [API_NAME]: 'MyNamespace__FieldName__c' })
         const changeErrors = await packageValidator.onAdd(obj)
         expect(changeErrors).toHaveLength(1)
-        expect(changeErrors[0].level).toEqual('ERROR')
+        expect(changeErrors[0].severity).toEqual('Error')
         expect(changeErrors[0].elemID).toEqual(obj.fields.field.elemID)
       })
 
@@ -51,7 +51,7 @@ describe('package change validator', () => {
         inst.value[INSTANCE_FULL_NAME_FIELD] = 'MyNamespace__InstanceName__c'
         const changeErrors = await packageValidator.onAdd(inst)
         expect(changeErrors).toHaveLength(1)
-        expect(changeErrors[0].level).toEqual('ERROR')
+        expect(changeErrors[0].severity).toEqual('Error')
         expect(changeErrors[0].elemID).toEqual(inst.elemID)
       })
 
@@ -74,7 +74,7 @@ describe('package change validator', () => {
         obj.annotate({ [API_NAME]: 'MyNamespace__ObjectName__c' })
         const changeErrors = await packageValidator.onRemove(obj)
         expect(changeErrors).toHaveLength(1)
-        expect(changeErrors[0].level).toEqual('ERROR')
+        expect(changeErrors[0].severity).toEqual('Error')
         expect(changeErrors[0].elemID).toEqual(obj.elemID)
       })
 
@@ -84,7 +84,7 @@ describe('package change validator', () => {
           { [API_NAME]: 'MyNamespace__FieldName__c' })
         const changeErrors = await packageValidator.onRemove(obj)
         expect(changeErrors).toHaveLength(1)
-        expect(changeErrors[0].level).toEqual('ERROR')
+        expect(changeErrors[0].severity).toEqual('Error')
         expect(changeErrors[0].elemID).toEqual(obj.fields.field.elemID)
       })
 
@@ -104,7 +104,7 @@ describe('package change validator', () => {
         inst.value[INSTANCE_FULL_NAME_FIELD] = 'MyNamespace__InstanceName__c'
         const changeErrors = await packageValidator.onRemove(inst)
         expect(changeErrors).toHaveLength(1)
-        expect(changeErrors[0].level).toEqual('ERROR')
+        expect(changeErrors[0].severity).toEqual('Error')
         expect(changeErrors[0].elemID).toEqual(inst.elemID)
       })
 
@@ -131,7 +131,7 @@ describe('package change validator', () => {
           data: { after: newField },
         }])
         expect(changeErrors).toHaveLength(1)
-        expect(changeErrors[0].level).toEqual('ERROR')
+        expect(changeErrors[0].severity).toEqual('Error')
         expect(changeErrors[0].elemID).toEqual(newField.elemID)
       })
 
@@ -164,7 +164,7 @@ describe('package change validator', () => {
           data: { before: oldField },
         }])
         expect(changeErrors).toHaveLength(1)
-        expect(changeErrors[0].level).toEqual('ERROR')
+        expect(changeErrors[0].severity).toEqual('Error')
         expect(changeErrors[0].elemID).toEqual(oldField.elemID)
       })
 
@@ -200,7 +200,7 @@ describe('package change validator', () => {
           data: { before: inst, after: afterInst },
         }])
         expect(changeErrors).toHaveLength(1)
-        expect(changeErrors[0].level).toEqual('ERROR')
+        expect(changeErrors[0].severity).toEqual('Error')
         expect(changeErrors[0].elemID).toEqual(afterInst.elemID)
       })
     })

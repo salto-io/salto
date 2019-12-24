@@ -2,7 +2,7 @@ import _ from 'lodash'
 import { types } from '@salto/lowerdash'
 import {
   Element, isObjectType, isInstanceElement, Type, InstanceElement, Field, PrimitiveTypes,
-  isPrimitiveType, Value, ElemID, CORE_ANNOTATIONS,
+  isPrimitiveType, Value, ElemID, CORE_ANNOTATIONS, SaltoElementError, SaltoErrorSeverity,
 } from 'adapter-api'
 import { makeArray } from '@salto/lowerdash/dist/src/collections/array'
 import { UnresolvedReference, resolve, CircularReference } from './expressions'
@@ -10,7 +10,8 @@ import { UnresolvedReference, resolve, CircularReference } from './expressions'
 export abstract class ValidationError extends types.Bean<Readonly<{
   elemID: ElemID
   error: string
-}>> {
+  severity: SaltoErrorSeverity
+}>> implements SaltoElementError {
   get message(): string {
     return `Error validating "${this.elemID.getFullName()}": ${this.error}`
   }
@@ -61,6 +62,7 @@ export class InvalidValueValidationError extends ValidationError {
       elemID,
       error: `Value "${value}" is not valid for field ${field.name}`
         + ` expected ${InvalidValueValidationError.formatExpectedValue(expectedValue)}`,
+      severity: 'Warning',
     })
     this.value = value
     this.field = field
@@ -75,6 +77,7 @@ export class MissingRequiredFieldValidationError extends ValidationError {
     super({
       elemID,
       error: `Field ${field.name} is required but has no value`,
+      severity: 'Warning',
     })
     this.field = field
   }
@@ -85,7 +88,7 @@ export class UnresolvedReferenceValidationError extends ValidationError {
     { elemID, ref }:
     { elemID: ElemID; ref: string }
   ) {
-    super({ elemID, error: `unresolved reference ${ref}` })
+    super({ elemID, error: `unresolved reference ${ref}`, severity: 'Error' })
   }
 }
 
@@ -95,7 +98,7 @@ export class CircularReferenceValidationError extends ValidationError {
     { elemID, ref }:
     { elemID: ElemID; ref: string }
   ) {
-    super({ elemID, error: `circular reference ${ref}` })
+    super({ elemID, error: `circular reference ${ref}`, severity: 'Warning' })
   }
 }
 
@@ -170,6 +173,7 @@ export class InvalidValueTypeValidationError extends ValidationError {
     super({
       elemID,
       error: `Invalid value type for ${type.elemID.getFullName()} : ${JSON.stringify(value)}`,
+      severity: 'Warning',
     })
     this.value = value
     this.type = type

@@ -360,7 +360,7 @@ const formatSourceFragments = (sourceFragments: ReadonlyArray<SourceFragment>): 
     ? `\n on ${sourceFragments.map(formatSourceFragment).join('\n and ')}`
     : '')
 
-const formatError = (err: { error: string }): string => header(err.error)
+const formatError = (err: { message: string }): string => header(err.message)
 
 const formatWorkspaceError = (we: Readonly<WorkspaceError>): string =>
   `${formatError(we)}${formatSourceFragments(we.sourceFragments)}`

@@ -6,7 +6,7 @@ import {
   Workspace, Plan, PlanItem, Config,
 } from 'salto'
 import { Spinner, SpinnerCreator } from 'src/types'
-import { deploy, preview, mockSpinnerCreator, MockWriteStream, getWorkspaceErrors } from '../mocks'
+import { deploy, preview, mockSpinnerCreator, MockWriteStream, getWorkspaceErrors, mockLoadConfig } from '../mocks'
 import { DeployCommand } from '../../src/commands/deploy'
 
 const mockDeploy = deploy
@@ -14,9 +14,7 @@ const mockUpdateBlueprints = jest.fn().mockImplementation(() => Promise.resolve(
 const mockFlush = jest.fn().mockImplementation(() => Promise.resolve())
 jest.mock('salto', () => ({
   ...require.requireActual('salto'),
-  loadConfig: jest.fn().mockImplementation(
-    workspaceDir => Promise.resolve({ baseDir: workspaceDir, additionalBlueprints: [], cacheLocation: '' })
-  ),
+  loadConfig: jest.fn().mockImplementation((workspaceDir: string) => mockLoadConfig(workspaceDir)),
   Workspace: {
     load: jest.fn().mockImplementation((
       config: Config
@@ -28,12 +26,14 @@ jest.mock('salto', () => ({
             strings: () => ['Error', 'Error'],
           },
           getWorkspaceErrors,
+          config,
         }
       }
       return {
         hasErrors: () => false,
         updateBlueprints: mockUpdateBlueprints,
         flush: mockFlush,
+        config,
       }
     }),
   },
@@ -42,14 +42,15 @@ jest.mock('salto', () => ({
     fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
     shouldDeploy: (plan: Plan) => Promise<boolean>,
     reportProgress: (action: PlanItem, step: string, details?: string) => void,
-    force = false
+    force = false,
+    services: string[] = workspace.config.services
   ) =>
   // Deploy with blueprints will fail, doing this trick as we cannot reference vars, we get error:
   // "The module factory of `jest.mock()` is not allowed to reference any
   // out-of-scope variables."
   // Notice that blueprints are ignored in mockDeploy.
 
-    mockDeploy(workspace, fillConfig, shouldDeploy, reportProgress, force)),
+    mockDeploy(workspace, fillConfig, shouldDeploy, reportProgress, services, force)),
 }))
 
 describe('deploy command', () => {
@@ -57,6 +58,7 @@ describe('deploy command', () => {
   let command: DeployCommand
   const spinners: Spinner[] = []
   let spinnerCreator: SpinnerCreator
+  const services = ['salesforce']
 
   beforeEach(() => {
     cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
@@ -65,7 +67,7 @@ describe('deploy command', () => {
 
   describe('valid deploy', () => {
     beforeEach(() => {
-      command = new DeployCommand('', true, cliOutput, spinnerCreator)
+      command = new DeployCommand('', true, services, cliOutput, spinnerCreator)
     })
 
     describe('report progress upon updates', () => {
@@ -114,7 +116,7 @@ describe('deploy command', () => {
   describe('invalid deploy', () => {
     beforeEach(() => {
       // Creating here with base dir 'errorDir' will cause the mock to throw an error
-      command = new DeployCommand('errorDir', true, cliOutput, spinnerCreator)
+      command = new DeployCommand('errorDir', true, services, cliOutput, spinnerCreator)
     })
     it('should fail gracefully', async () => {
       await command.execute()

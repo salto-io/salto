@@ -19,6 +19,7 @@ import {
 import { getConfigWithHeader, getApprovedChanges as cliGetApprovedChanges } from '../callbacks'
 import { updateWorkspace, loadWorkspace } from '../workspace'
 import Prompts from '../prompts'
+import { servicesFilter, ServicesArgs } from '../filters/services'
 
 const log = logger(module)
 
@@ -28,13 +29,14 @@ type approveChangesFunc = (
 ) => Promise<ReadonlyArray<FetchChange>>
 
 export const fetchCommand = async (
-  { workspace, force, interactive, output, fetch, getApprovedChanges }: {
+  { workspace, force, interactive, inputServices, output, fetch, getApprovedChanges }: {
     workspace: Workspace
     force: boolean
     interactive: boolean
     output: CliOutput
     fetch: fetchFunc
     getApprovedChanges: approveChangesFunc
+    inputServices: string[]
   }): Promise<CliExitCode> => {
   const outputLine = (text: string): void => output.stdout.write(`${text}\n`)
   const progressOutputer = (
@@ -76,7 +78,8 @@ export const fetchCommand = async (
   const fetchResult = await fetch(
     workspace,
     _.partial(getConfigWithHeader, output.stdout),
-    fetchProgress
+    inputServices,
+    fetchProgress,
   )
   if (!fetchResult.success) {
     output.stderr.write(formatFatalFetchError(fetchResult.mergeErrors))
@@ -120,6 +123,7 @@ export const command = (
   interactive: boolean,
   output: CliOutput,
   spinnerCreator: SpinnerCreator,
+  inputServices: string[],
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
     log.debug(`running fetch command on '${workspaceDir}' [force=${force}, interactive=${
@@ -132,6 +136,7 @@ export const command = (
       workspace,
       force,
       interactive,
+      inputServices,
       output,
       fetch: apiFetch,
       getApprovedChanges: cliGetApprovedChanges,
@@ -142,7 +147,7 @@ export const command = (
 type FetchArgs = {
   force: boolean
   interactive: boolean
-}
+} & ServicesArgs
 type FetchParsedCliInput = ParsedCliInput<FetchArgs>
 
 const fetchBuilder = createCommandBuilder({
@@ -167,8 +172,10 @@ const fetchBuilder = createCommandBuilder({
     },
   },
 
+  filters: [servicesFilter],
+
   async build(input: FetchParsedCliInput, output: CliOutput, spinnerCreator: SpinnerCreator) {
-    return command('.', input.args.force, input.args.interactive, output, spinnerCreator)
+    return command('.', input.args.force, input.args.interactive, output, spinnerCreator, input.args.services)
   },
 })
 

@@ -14,6 +14,7 @@ import {
 } from '../formatter'
 import { shouldDeploy, getConfigFromUser } from '../callbacks'
 import { loadWorkspace, updateWorkspace } from '../workspace'
+import { servicesFilter, ServicesArgs } from '../filters/services'
 
 const log = logger(module)
 
@@ -33,6 +34,7 @@ export class DeployCommand implements CliCommand {
   constructor(
     private readonly workspaceDir: string,
     readonly force: boolean,
+    readonly inputServices: string[],
     { stdout, stderr }: CliOutput,
     private readonly spinnerCreator: SpinnerCreator,
   ) {
@@ -110,6 +112,7 @@ export class DeployCommand implements CliCommand {
       shouldDeploy(this.stdout, planSpinner),
       (item: PlanItem, step: ItemStatus, details?: string) =>
         this.updateAction(item, step, details),
+      this.inputServices,
       this.force)
 
     const nonErroredActions = [...this.actions.keys()]
@@ -131,7 +134,7 @@ export class DeployCommand implements CliCommand {
 
 type DeployArgs = {
   force: boolean
-}
+} & ServicesArgs
 type DeployParsedCliInput = ParsedCliInput<DeployArgs>
 
 const deployBuilder = createCommandBuilder({
@@ -149,12 +152,14 @@ const deployBuilder = createCommandBuilder({
     },
   },
 
+  filters: [servicesFilter],
+
   async build(
     input: DeployParsedCliInput,
     output: CliOutput,
     spinnerCreator: SpinnerCreator
   ): Promise<CliCommand> {
-    return new DeployCommand('.', input.args.force, output, spinnerCreator)
+    return new DeployCommand('.', input.args.force, input.args.services, output, spinnerCreator)
   },
 })
 

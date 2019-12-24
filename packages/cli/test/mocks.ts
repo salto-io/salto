@@ -4,7 +4,10 @@ import {
   ObjectType, Type,
 } from 'adapter-api'
 import _ from 'lodash'
-import { DetailedChange, Plan, PlanItem, SearchResult, Workspace, WorkspaceError, DeployResult } from 'salto'
+import {
+  DetailedChange, Plan, PlanItem, SearchResult, Workspace, WorkspaceError,
+  DeployResult, Config,
+} from 'salto'
 import wu from 'wu'
 import realCli from '../src/cli'
 import builders from '../src/commands/index'
@@ -165,6 +168,9 @@ export const elements = (): Element[] => {
   return [BuiltinTypes.STRING, saltoAddr, saltoOffice, saltoEmployee, saltoEmployeeInstance]
 }
 
+export const mockLoadConfig = (workspaceDir: string): Config =>
+  ({ uid: '123', baseDir: workspaceDir, additionalBlueprints: [], services: ['salesforce', 'hubspot'], name: 'mock-ws', localStorage: '', stateLocation: '' })
+
 export const detailedChange = (
   action: 'add' | 'modify' | 'remove', path: ReadonlyArray<string> | ElemID,
   /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
@@ -286,6 +292,7 @@ export const deploy = async (
   _fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
   shouldDeploy: (plan: Plan) => Promise<boolean>,
   reportProgress: (action: PlanItem, step: string, details?: string) => void,
+  _services: string[],
   force = false
 ): Promise<DeployResult> => {
   const changes = preview()

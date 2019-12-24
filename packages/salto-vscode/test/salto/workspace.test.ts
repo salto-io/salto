@@ -11,6 +11,7 @@ describe('TEST', () => {
     stateLocation: path.join(baseDir, 'salto.config', 'state.bpc'),
     localStorage: '.',
     name: 'test',
+    services: ['salesforce'],
     uid: '',
   })
   const baseBPDir = `${__dirname}/../../../test/salto/BP`

@@ -6,7 +6,7 @@ import {
 import { EventEmitter } from 'pietile-eventemitter'
 import { Spinner, SpinnerCreator } from 'src/types'
 import { command, fetchCommand } from '../../src/commands/fetch'
-import { MockWriteStream, getWorkspaceErrors, dummyChanges, mockSpinnerCreator } from '../mocks'
+import { MockWriteStream, getWorkspaceErrors, dummyChanges, mockSpinnerCreator, mockLoadConfig } from '../mocks'
 import Prompts from '../../src/prompts'
 
 jest.mock('salto', () => ({
@@ -21,9 +21,7 @@ jest.mock('salto', () => ({
       config => ({ config, elements: [], hasErrors: () => false }),
     ),
   },
-  loadConfig: jest.fn().mockImplementation(
-    workspaceDir => ({ baseDir: workspaceDir, additionalBlueprints: [], cacheLocation: '' })
-  ),
+  loadConfig: jest.fn().mockImplementation((workspaceDir: string) => mockLoadConfig(workspaceDir)),
 }))
 
 
@@ -31,7 +29,7 @@ describe('fetch command', () => {
   const workspaceDir = 'dummy_dir'
   let spinners: Spinner[]
   let spinnerCreator: SpinnerCreator
-
+  const services = ['salesforce']
   let cliOutput: { stdout: MockWriteStream; stderr: MockWriteStream }
 
   beforeEach(() => {
@@ -46,10 +44,11 @@ describe('fetch command', () => {
         const erroredWorkspace = {
           hasErrors: () => true,
           errors: { strings: () => ['some error'] },
+          config: { services },
           getWorkspaceErrors,
         } as unknown as Workspace
         (Workspace.load as jest.Mock).mockResolvedValueOnce(Promise.resolve(erroredWorkspace))
-        await command(workspaceDir, true, false, cliOutput, spinnerCreator).execute()
+        await command(workspaceDir, true, false, cliOutput, spinnerCreator, services).execute()
       })
 
       it('should fail', async () => {
@@ -60,7 +59,7 @@ describe('fetch command', () => {
 
     describe('with valid workspace', () => {
       beforeEach(async () => {
-        await command(workspaceDir, true, false, cliOutput, spinnerCreator).execute()
+        await command(workspaceDir, true, false, cliOutput, spinnerCreator, services).execute()
       })
 
       it('should load the workspace from the provided directory', () => {
@@ -84,6 +83,7 @@ describe('fetch command', () => {
         mockWorkspace = {
           hasErrors: () => false,
           elements: [],
+          config: { services },
           updateBlueprints: jest.fn(),
           flush: jest.fn(),
         } as unknown as Workspace
@@ -93,6 +93,7 @@ describe('fetch command', () => {
         const mockFetchWithEmitter: jest.Mock = jest.fn((
           _workspace,
           _fillConfig,
+          _services,
           progressEmitter: EventEmitter<FetchProgressEvents>
         ) => {
           const getChangesEmitter = new StepEmitter()
@@ -109,6 +110,7 @@ describe('fetch command', () => {
             force: true,
             interactive: false,
             output: cliOutput,
+            inputServices: services,
             fetch: mockFetchWithEmitter,
             getApprovedChanges: mockApprove,
           })
@@ -130,6 +132,7 @@ describe('fetch command', () => {
             force: true,
             interactive: false,
             output: cliOutput,
+            inputServices: services,
             fetch: mockFetch,
             getApprovedChanges: mockApprove,
           })
@@ -155,6 +158,7 @@ describe('fetch command', () => {
               workspace: mockWorkspace,
               force: true,
               interactive: false,
+              inputServices: services,
               output: cliOutput,
               fetch: mockFetch,
               getApprovedChanges: mockApprove,
@@ -170,6 +174,7 @@ describe('fetch command', () => {
               workspace: mockWorkspace,
               force: false,
               interactive: false,
+              inputServices: services,
               output: cliOutput,
               fetch: mockFetch,
               getApprovedChanges: mockApprove,
@@ -186,6 +191,7 @@ describe('fetch command', () => {
               workspace: mockWorkspace,
               force: false,
               interactive: false,
+              inputServices: services,
               output: cliOutput,
               fetch: mockFetch,
               getApprovedChanges: mockApprove,
@@ -205,6 +211,7 @@ describe('fetch command', () => {
                 workspace: mockWorkspace,
                 force: false,
                 interactive: false,
+                inputServices: services,
                 output: cliOutput,
                 fetch: mockFetch,
                 getApprovedChanges: mockApprove,
@@ -224,6 +231,7 @@ describe('fetch command', () => {
                 workspace: mockWorkspace,
                 force: false,
                 interactive: false,
+                inputServices: services,
                 output: cliOutput,
                 fetch: mockFetch,
                 getApprovedChanges: mockApprove,
@@ -244,6 +252,7 @@ describe('fetch command', () => {
                 workspace: mockWorkspace,
                 force: false,
                 interactive: false,
+                inputServices: services,
                 output: cliOutput,
                 fetch: mockFetch,
                 getApprovedChanges: mockApprove,
@@ -265,6 +274,7 @@ describe('fetch command', () => {
                 workspace: mockWorkspace,
                 force: false,
                 interactive: false,
+                inputServices: services,
                 output: cliOutput,
                 fetch: mockFetch,
                 getApprovedChanges: mockApprove,
@@ -281,6 +291,7 @@ describe('fetch command', () => {
                 workspace: mockWorkspace,
                 force: false,
                 interactive: false,
+                inputServices: services,
                 output: cliOutput,
                 fetch: mockFailedFetch,
                 getApprovedChanges: mockApprove,

@@ -69,8 +69,8 @@ export interface Config {
   stateLocation: string
   localStorage: string
   name: string
+  services: string[]
   additionalBlueprints?: string[]
-  services?: string[]
 }
 
 const createDefaultConfig = (

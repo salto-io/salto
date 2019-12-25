@@ -1,4 +1,5 @@
-const DEFAULT_ALPHABET = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+export const DEFAULT_ALPHABET = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+export const LOWERCASE = 'abcdefghijklmnopqrstuvwxyz'
 
 export const insecureRandomString = (
   { length = 10, alphabet = DEFAULT_ALPHABET }: {
@@ -8,5 +9,3 @@ export const insecureRandomString = (
 ): string => Array(...Array(length))
   .map(() => alphabet.charAt(Math.floor(Math.random() * alphabet.length)))
   .join('')
-
-export const isEmptyString = (value: unknown): boolean => value === ''

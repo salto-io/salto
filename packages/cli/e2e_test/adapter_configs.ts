@@ -8,11 +8,11 @@ import {
 
 export default {
   salesforce: (): InstanceElement => {
-    const credentials = salesforceTestHelpers.credentials()
+    const { credentials } = salesforceTestHelpers()
     const configValues = {
       username: credentials.username,
       password: credentials.password,
-      token: credentials.apiToken,
+      token: credentials.apiToken ?? '',
       sandbox: credentials.isSandbox,
     }
 

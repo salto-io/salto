@@ -28,5 +28,6 @@ export { Config, loadConfig } from './src/workspace/config'
 export { SourceMap, SourceRange, parseElemID } from './src/parser/parse'
 export { dump, dumpElemID } from './src/parser/dump'
 export { readAllCsvContents } from './test/common/helpers'
+export { SALTO_HOME_VAR } from './src/workspace/config'
 
 export const file = f

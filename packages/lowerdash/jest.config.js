@@ -3,8 +3,8 @@ const deepMerge = require('../../build_utils/deep_merge')
 module.exports = deepMerge(
   require('../../jest.base.config.js'),
   {
-    name: 'salto',
-    displayName: 'salto',
+    name: 'lowerdash',
+    displayName: 'lowerdash',
     rootDir: `${__dirname}`,
     collectCoverageFrom: [
       '!<rootDir>/dist/index.js',

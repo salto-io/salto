@@ -1,0 +1,50 @@
+{
+  "name": "@salto/persistent-pool",
+  "version": "0.1.0",
+  "description": "Keeps a persistent pool of objects",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/salto-io/salto_monorepo"
+  },
+  "private": true,
+  "files": [
+    "dist/src/**/*"
+  ],
+  "main": "dist/src",
+  "types": "dist/src/index.d.ts",
+  "scripts": {
+    "prepublishOnly": "yarn test",
+    "build": "yarn lint && yarn tsc",
+    "test": "jest --verbose=false --coverage=false",
+    "clean": "rm -rf ./dist",
+    "watch-ts": "tsc -w",
+    "lint": "eslint --cache --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
+    "lint-fix": "yarn lint --fix"
+  },
+  "dependencies": {
+    "@salto/lowerdash": "0.1.0",
+    "aws-sdk": "^2.573.0",
+    "uuid": "^3.3.3"
+  },
+  "devDependencies": {
+    "@types/jest": "^24.0.0",
+    "@types/lodash": "^4.14.133",
+    "@types/node": "^12.7.1",
+    "@types/uuid": "^3.4.6",
+    "@typescript-eslint/eslint-plugin": "^2.6.1",
+    "@typescript-eslint/parser": "^2.6.1",
+    "eslint": "^6.2.2",
+    "eslint-config-airbnb": "18.0.1",
+    "eslint-plugin-import": "^2.18.2",
+    "eslint-plugin-jest": "^22.6.4",
+    "eslint-plugin-jsx-a11y": "^6.2.1",
+    "eslint-plugin-react": "^7.14.3",
+    "eslint-plugin-react-hooks": "^1.7.0",
+    "jest": "^24.0.0",
+    "jest-circus": "^24.9.0",
+    "jest-dynalite": "1.1.1",
+    "jest-environment-node": "^24.9.0",
+    "jest-junit": "^6.4.0",
+    "typescript": "^3.7.2"
+  }
+}

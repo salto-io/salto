@@ -2,11 +2,7 @@ import _ from 'lodash'
 import {
   Element, isObjectType, PrimitiveTypes, Values, ObjectType, isPrimitiveType, isInstanceElement,
 } from 'adapter-api'
-import { strings } from '@salto/lowerdash'
 import { FilterCreator } from '../filter'
-
-const { isEmptyString } = strings
-
 
 type PrimitiveValue = string | boolean | number
 type Value = PrimitiveValue | null | undefined
@@ -34,11 +30,11 @@ const transformPrimitive = (val: PrimitiveValue, primitive: PrimitiveTypes): Val
 export const transform = (obj: Values, type: ObjectType, strict = true): Values | undefined => {
   const result = _(obj).mapValues((value, key) => {
     // we get lists of empty strings that we would like to filter out
-    if (_.isArray(value) && value.every(isEmptyString)) {
+    if (_.isArray(value) && value.every(s => s === '')) {
       return undefined
     }
     // we get empty strings that we would like to filter out
-    if (isEmptyString(value)) {
+    if (value === '') {
       return undefined
     }
 

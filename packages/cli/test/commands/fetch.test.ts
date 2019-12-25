@@ -10,7 +10,7 @@ import { MockWriteStream, getWorkspaceErrors, dummyChanges, mockSpinnerCreator, 
 import Prompts from '../../src/prompts'
 
 jest.mock('salto', () => ({
-  ...require.requireActual('salto'),
+  ...jest.requireActual('salto'),
   fetch: jest.fn().mockImplementation(() => Promise.resolve({
     changes: [],
     mergeErrors: [],

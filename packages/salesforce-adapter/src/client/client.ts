@@ -89,7 +89,10 @@ export type SalesforceClientOpts = {
   retryOptions?: RequestRetryOptions
 }
 
-const realConnection = (isSandbox: boolean, retryOptions: RequestRetryOptions): Connection => {
+export const realConnection = (
+  isSandbox: boolean,
+  retryOptions: RequestRetryOptions,
+): Connection => {
   const connection = new RealConnection({
     version: API_VERSION,
     loginUrl: `https://${isSandbox ? 'test' : 'login'}.salesforce.com/`,
@@ -107,6 +110,11 @@ const realConnection = (isSandbox: boolean, retryOptions: RequestRetryOptions): 
   connection.metadata.pollTimeout = 60000
 
   return connection
+}
+
+export const validateCredentials = async (creds: Credentials): Promise<void> => {
+  const conn = realConnection(creds.isSandbox, { maxAttempts: 1 })
+  await conn.login(creds.username, creds.password + (creds.apiToken ?? ''))
 }
 
 const sendChunked = async <TIn, TOut>(input: TIn | TIn[],

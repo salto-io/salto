@@ -40,6 +40,8 @@ jobs:
     docker:
       - image: saltolabs/salto:0.0.10
 
+    resource_class: large
+
     steps:
       - restore_cache:
           keys:
@@ -119,20 +121,11 @@ jobs:
           root: .
           paths: '*'
 
-  unittest:
-    docker:
-      - image: circleci/node:12.12
-
-    steps:
-      - attach_workspace:
-          at: .
-
       - run:
-          name: Run Jest tests
-          command: yarn run jest --forceExit --detectOpenHandles --reporters=default --reporters=jest-junit
+          name: Run unit tests
+          command: yarn test --reporters=default --reporters=jest-junit
           environment:
             JEST_JUNIT_OUTPUT: "reports/unittests/test-results.xml"
-
 
       - store_test_results:
           path: reports
@@ -145,24 +138,23 @@ jobs:
     docker:
       - image: circleci/node:12.12
 
+    resource_class: large
+
     steps:
       - attach_workspace:
           at: .
 
       - run:
           name: Run E2E tests
-          command: yarn run jest --forceExit --detectOpenHandles --reporters=default --reporters=jest-junit
+          command: yarn test --reporters=default --reporters=jest-junit --coverage=false
           no_output_timeout: 20m
           environment:
             RUN_E2E_TESTS: '1'
+            SALTO_LOG_LEVEL: 'info'
             JEST_JUNIT_OUTPUT: "reports/e2e/test-results.xml"
 
       - store_test_results:
           path: reports
-
-      - run:
-          name: Upload coverage to codecov.io
-          command: npx codecov -F e2e_test -f coverage/*.json
 
   package_cli:
     docker:
@@ -174,7 +166,7 @@ jobs:
 
       - run:
           name: Build native executables
-          command: yarn workspace @salto/cli run package
+          command: yarn workspace @salto/cli package
 
       - upload_pkg:
           workspace_dir: cli
@@ -226,55 +218,20 @@ workflows:
 
   commit:
     jobs:
-      - build:
-          filters:
-            branches:
-              ignore:
-                - master
-
-      - unittest:
-          requires:
-            - build
-
-      - package_cli:
-          requires:
-            - unittest
-
-      - package_vscode_extension:
-          requires:
-            - unittest
-
-      - sync_s3_pkg_latest:
-          requires:
-            - package_cli
-            - package_vscode_extension
-
-  post-commit:
-    jobs:
-      - build:
-          filters:
-            branches:
-              only:
-                - master
-
-      - unittest:
-          requires:
-            - build
+      - build
 
       - e2e_test:
           requires:
-            - unittest
+            - build
 
       - package_cli:
           requires:
             - build
-            # Note: Temporarily removed requirement for e2e due to flaky e2e tests.
             # - e2e_test
 
       - package_vscode_extension:
           requires:
             - build
-            # Note: Temporarily removed requirement for e2e due to flaky e2e tests.
             # - e2e_test
 
       - sync_s3_pkg_latest:

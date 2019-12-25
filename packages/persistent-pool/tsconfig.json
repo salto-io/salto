@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "outDir": "dist",
+    "baseUrl": ".",
+    "declaration": true,
+    "declarationMap": true,
+    "module": "commonjs",
+    "esModuleInterop": true,
+    "target": "es6",
+    "noImplicitAny": true,
+    "moduleResolution": "node",
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "strictNullChecks": true,
+    "strict": true,
+    "sourceMap": true,
+    "incremental": true,
+    "experimentalDecorators": true
+  },
+  "include": [
+    "src/**/*",
+    "test/**/*",
+    "index.ts", "../lowerdash/test/retry/wait_for.test.ts"
+  ]
+}

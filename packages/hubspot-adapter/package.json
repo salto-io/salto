@@ -16,7 +16,7 @@
     "prepare": "yarn run build",
     "prepublishOnly": "yarn test",
     "build": "yarn run lint && yarn run build-ts",
-    "test": "jest --forceExit --detectOpenHandles",
+    "test": "jest",
     "clean": "rm -rf ./dist",
     "clean-ts": "node ./node_modules/.bin/ts-cleaner -d dist -s . -v",
     "clean-ts-test": "yarn run clean-ts && yarn run test",

@@ -11,6 +11,7 @@ module.exports = deepMerge(
       '!<rootDir>/dist/src/tools/**', // At the moment we do not cover the tools
       '!<rootDir>/dist/index.js',
     ],
+    testEnvironment: process.env.RUN_E2E_TESTS ? './dist/e2e_test/jest_environment' : undefined,
     coverageThreshold: {
       './src/client/types.ts': {
         branches: 49,

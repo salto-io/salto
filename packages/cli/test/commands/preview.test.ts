@@ -5,7 +5,7 @@ import { SpinnerCreator, Spinner } from '../../src/types'
 
 const mockPreview = preview
 jest.mock('salto', () => ({
-  ...require.requireActual('salto'),
+  ...jest.requireActual('salto'),
   preview: jest.fn().mockImplementation(() => mockPreview()),
   Workspace: {
     load: jest.fn().mockImplementation(config => {

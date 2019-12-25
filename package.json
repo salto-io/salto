@@ -17,6 +17,6 @@
     "build": "lerna run build",
     "lint-fix": "lerna run lint-fix",
     "clean": "lerna run clean",
-    "test": "yarn run jest --forceExit --detectOpenHandles"
+    "test": "yarn run jest"
   }
 }

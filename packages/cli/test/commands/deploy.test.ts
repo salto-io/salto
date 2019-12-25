@@ -13,7 +13,7 @@ const mockDeploy = deploy
 const mockUpdateBlueprints = jest.fn().mockImplementation(() => Promise.resolve())
 const mockFlush = jest.fn().mockImplementation(() => Promise.resolve())
 jest.mock('salto', () => ({
-  ...require.requireActual('salto'),
+  ...jest.requireActual('salto'),
   loadConfig: jest.fn().mockImplementation((workspaceDir: string) => mockLoadConfig(workspaceDir)),
   Workspace: {
     load: jest.fn().mockImplementation((
@@ -43,7 +43,7 @@ jest.mock('salto', () => ({
     shouldDeploy: (plan: Plan) => Promise<boolean>,
     reportProgress: (action: PlanItem, step: string, details?: string) => void,
     force = false,
-    services: string[] = workspace.config.services
+    services = workspace.config.services as string[]
   ) =>
   // Deploy with blueprints will fail, doing this trick as we cannot reference vars, we get error:
   // "The module factory of `jest.mock()` is not allowed to reference any

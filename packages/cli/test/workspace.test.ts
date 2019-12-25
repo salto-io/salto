@@ -9,7 +9,7 @@ const mockWs = {
   getWorkspaceErrors: jest.fn(),
 } as unknown as Workspace
 jest.mock('salto', () => ({
-  ...require.requireActual('salto'),
+  ...jest.requireActual('salto'),
   Workspace: {
     load: jest.fn().mockImplementation(() => mockWs),
   },

@@ -6,7 +6,7 @@ import Prompts from '../../src/prompts'
 import { CliExitCode } from '../../src/types'
 
 jest.mock('salto', () => ({
-  ...require.requireActual('salto'),
+  ...jest.requireActual('salto'),
   importFromCsvFile: jest.fn().mockImplementation(() => Promise.resolve({
     successfulRows: 5,
     failedRows: 0,

@@ -6,7 +6,7 @@ import { command } from '../../src/commands/export'
 import { CliExitCode } from '../../src/types'
 
 jest.mock('salto', () => ({
-  ...require.requireActual('salto'),
+  ...jest.requireActual('salto'),
   exportToCsv: jest.fn().mockImplementation(() => Promise.resolve({
     successfulRows: 5,
     failedRows: 0,

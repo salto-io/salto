@@ -4,7 +4,7 @@ import { MockCliOutput, mockLoadConfig, cli } from '../mocks'
 import { servicesFilter } from '../../src/filters/services'
 
 jest.mock('salto', () => ({
-  ...require.requireActual('salto'),
+  ...jest.requireActual('salto'),
   loadConfig: jest.fn().mockImplementation((workspaceDir: string) => mockLoadConfig(workspaceDir)),
 }))
 

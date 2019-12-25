@@ -22,7 +22,7 @@ let lastPlan: Plan
 describe('commands e2e', () => {
   jest.setTimeout(15 * 60 * 1000)
 
-  beforeEach(() => {
+  beforeAll(() => {
     jest.spyOn(formatterImpl, 'formatExecutionPlan').mockImplementation((p: Plan): string => {
       lastPlan = p
       return 'plan'

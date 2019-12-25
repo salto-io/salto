@@ -31,7 +31,8 @@ export const isInsertText = (value: any): value is InsertText => (
 )
 
 const getRestrictionValues = (annotatingElem: Type|Field, valueType: Type): Value[]|undefined =>
-  annotatingElem.annotations[Type.VALUES] || valueType.annotations[Type.VALUES]
+  annotatingElem.annotations[Type.ANNOTATIONS.VALUES]
+  || valueType.annotations[Type.ANNOTATIONS.VALUES]
 
 const getAllInstances = (
   elements: ReadonlyArray<Element>,

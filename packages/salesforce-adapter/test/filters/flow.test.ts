@@ -14,14 +14,15 @@ describe('flow filter', () => {
     fields: {
       name: new Field(elemID, 'name', BuiltinTypes.STRING,
         {
-          [Type.VALUES]: values,
+          [Type.ANNOTATIONS.VALUES]: values,
         }),
     },
   })
 
   it('remove restriction values from flow_metadata_value.name', () => {
     filter.onFetch([mockFlow])
-    expect(mockFlow.fields.name.annotations[Type.VALUES]).toEqual(values)
-    expect(mockFlow.fields.name.annotations[Type.RESTRICTION][Type.ENFORCE_VALUE]).toBe(false)
+    expect(mockFlow.fields.name.annotations[Type.ANNOTATIONS.VALUES]).toEqual(values)
+    expect(mockFlow.fields.name
+      .annotations[Type.ANNOTATIONS.RESTRICTION][Type.ANNOTATIONS.ENFORCE_VALUE]).toBe(false)
   })
 })

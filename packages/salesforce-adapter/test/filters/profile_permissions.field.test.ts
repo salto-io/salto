@@ -391,7 +391,7 @@ describe('Field Permissions filter', () => {
   it('should not set permissions for required fields', async () => {
     const after = mockObject.clone()
     Object.values(after.fields).forEach(f => {
-      f.annotations[Type.REQUIRED] = true
+      f.annotations[Type.ANNOTATIONS.REQUIRED] = true
     })
 
     await filter().onAdd(after)

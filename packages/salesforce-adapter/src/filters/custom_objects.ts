@@ -1,10 +1,13 @@
 import { logger } from '@salto/logging'
 import { collections } from '@salto/lowerdash'
-import { ADAPTER, Element, Field, ObjectType, ServiceIds, Type, isObjectType, InstanceElement, Values, isInstanceElement, ElemID, BuiltinTypes } from 'adapter-api'
+import { ADAPTER, Element, Field, ObjectType, ServiceIds, Type, isObjectType, InstanceElement,
+  Values, isInstanceElement, ElemID, BuiltinTypes } from 'adapter-api'
 import { SalesforceClient } from 'index'
 import { DescribeSObjectResult, Field as SObjField } from 'jsforce'
 import _ from 'lodash'
-import { API_NAME, CUSTOM_OBJECT, METADATA_TYPE, NAMESPACE_SEPARATOR, SALESFORCE, INSTANCE_FULL_NAME_FIELD, SALESFORCE_CUSTOM_SUFFIX, INSTANCE_TYPE_FIELD, LABEL } from '../constants'
+import { transformPrimitiveAnnotations } from './convert_types'
+import { API_NAME, CUSTOM_OBJECT, METADATA_TYPE, NAMESPACE_SEPARATOR, SALESFORCE,
+  INSTANCE_FULL_NAME_FIELD, SALESFORCE_CUSTOM_SUFFIX, INSTANCE_TYPE_FIELD, LABEL, FIELD_TYPE_API_NAMES, DEFAULT_VALUE_FORMULA } from '../constants'
 import { FilterCreator } from '../filter'
 import { apiName, getSObjectFieldElement, Types, isCustomObject, bpCase } from '../transformers/transformer'
 import { id, addApiName, addMetadataType, addLabel } from './utils'
@@ -141,29 +144,49 @@ const fetchSObjects = async (client: SalesforceClient): Promise<Type[]> => {
   return _.flatten(sobjects)
 }
 
-const fixInstanceFieldValueBeforeMerge = (instanceFieldValues: Values): Values =>
-  Object.assign({}, ...Object.entries(instanceFieldValues).filter(([k, _v]) => !['type', 'track_feed_history'].includes(k)).map(
-    ([k, v]) => {
+const fixInstanceFieldValueBeforeMergeToAnnotations = (instanceFieldValues: Values): Values => {
+  // Ignores typeless/unknown typed instances
+  if (!_.has(instanceFieldValues, INSTANCE_TYPE_FIELD)) {
+    return {}
+  }
+  const getFieldTypeFromName = (typeName: string): Type | undefined => {
+    const apiTypeName = Object.entries(FIELD_TYPE_API_NAMES)
+      .find(([_k, v]) => v === typeName)?.[0]
+    const dataTypeName = apiTypeName === 'checkbox' ? 'boolean' : apiTypeName
+    return dataTypeName ? (Types.primitiveDataTypes[dataTypeName]
+      || Types.compoundDataTypes[dataTypeName]) : undefined
+  }
+
+  const fieldType = getFieldTypeFromName(instanceFieldValues[INSTANCE_TYPE_FIELD])
+  if (_.isUndefined(fieldType)) {
+    return {}
+  }
+
+  return transformPrimitiveAnnotations(Object.assign({},
+    ...Object.entries(instanceFieldValues).map(([k, v]) => {
       switch (k) {
         case 'required':
-          return { [Type.REQUIRED]: v }
+          return { [Type.ANNOTATIONS.REQUIRED]: v }
         case INSTANCE_FULL_NAME_FIELD:
           return { [API_NAME]: v }
+        case 'default_value':
+          return { [DEFAULT_VALUE_FORMULA]: v }
         case 'value_set':
-          return { [Type.VALUES]: v.value_set_definition.value
+          return { [Type.ANNOTATIONS.VALUES]: v.value_set_definition.value
             .map((value: Values) => value.full_name) }
         default:
           return { [k]: v }
       }
-    }
-  ))
+    })), fieldType)
+}
 
 const mergeCustomObjectWithInstance = (customObject: ObjectType,
   instance: InstanceElement): void => {
   _(customObject.fields).forEach(field => {
-    field.annotations = _.merge(field.annotations,
-      fixInstanceFieldValueBeforeMerge(makeArray(instance.value.fields)
-        .find((f: Values) => f.full_name === field.annotations[API_NAME]) || {}))
+    Object.assign(field.annotations, fixInstanceFieldValueBeforeMergeToAnnotations(
+      makeArray(instance.value.fields)
+        .find((f: Values) => f.full_name === field.annotations[API_NAME]) || {}
+    ))
   })
 }
 
@@ -171,14 +194,17 @@ const createObjectTypeFromInstance = (instance: InstanceElement): ObjectType => 
   const objectName = instance.value[INSTANCE_FULL_NAME_FIELD]
   const objectElemID = new ElemID(SALESFORCE, bpCase(objectName), 'type')
   const instanceFields = makeArray(instance.value.fields)
-  return new ObjectType({ elemID: objectElemID,
+  const object = new ObjectType({ elemID: objectElemID,
     fields: Object.assign({}, ...instanceFields
       .map((field: Values) => ({ [bpCase(field[INSTANCE_FULL_NAME_FIELD])]: new Field(objectElemID,
         bpCase(field[INSTANCE_FULL_NAME_FIELD]), getFieldType(field[INSTANCE_TYPE_FIELD]),
-        fixInstanceFieldValueBeforeMerge(field)) }))),
+        fixInstanceFieldValueBeforeMergeToAnnotations(field)) }))),
     annotations: { [API_NAME]: objectName,
       [METADATA_TYPE]: CUSTOM_OBJECT,
       [LABEL]: instance.value[LABEL] } })
+  const objectPathType = bpCase(objectName).endsWith(SALESFORCE_CUSTOM_SUFFIX) ? 'custom' : 'standard'
+  object.path = ['objects', objectPathType, bpCase(objectName)]
+  return object
 }
 
 // ---
@@ -234,7 +260,8 @@ const filterCreator: FilterCreator = ({ client }) => ({
           const fullNameBpCased = bpCase(field[INSTANCE_FULL_NAME_FIELD])
           objectTypeOfInstance.fields[fullNameBpCased] = new Field(
             objectTypeOfInstance.elemID, fullNameBpCased,
-            getFieldType(field[INSTANCE_TYPE_FIELD]), fixInstanceFieldValueBeforeMerge(field)
+            getFieldType(field[INSTANCE_TYPE_FIELD]),
+            fixInstanceFieldValueBeforeMergeToAnnotations(field)
           )
         })
       }

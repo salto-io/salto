@@ -35,7 +35,7 @@ class ServiceDuplicationError extends Error {
 }
 
 const saltoConfigElemID = new ElemID('salto')
-const requireAnno = { [Type.REQUIRED]: true }
+const requireAnno = { [Type.ANNOTATIONS.REQUIRED]: true }
 export const saltoConfigType = new ObjectType({
   elemID: saltoConfigElemID,
   fields: {

@@ -25,7 +25,7 @@ describe('convert types filter', () => {
       nullStr: new Field(mockObjId, 'nullStr', BuiltinTypes.STRING),
       numArray: new Field(mockObjId, 'numArray', BuiltinTypes.NUMBER, {}, true),
       picklist: new Field(mockObjId, 'picklist', BuiltinTypes.STRING,
-        { [Type.VALUES]: ['a', 'b', 'c'], [Type.RESTRICTION]: { [Type.ENFORCE_VALUE]: true } }),
+        { [Type.ANNOTATIONS.VALUES]: ['a', 'b', 'c'], [Type.ANNOTATIONS.RESTRICTION]: { [Type.ANNOTATIONS.ENFORCE_VALUE]: true } }),
     },
   })
 

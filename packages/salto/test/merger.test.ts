@@ -301,7 +301,7 @@ describe('merger', () => {
       })
     })
 
-    it('should use type defaults', () => {
+    it('should use Type.ANNOTATIONS.DEFAULTs', () => {
       const elements = [shouldUseTypeDef, ins2]
       const { merged, errors } = mergeElements(elements)
       expect(errors).toHaveLength(0)

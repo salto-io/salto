@@ -116,7 +116,8 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
       if (!typeToChange) {
         return
       }
-      let valuesToSort = typeToChange.fields[sortFieldInfo.path[0]]?.annotations[Type.VALUES]
+      let valuesToSort = typeToChange
+        .fields[sortFieldInfo.path[0]]?.annotations[Type.ANNOTATIONS.VALUES]
       if (_.isArray(valuesToSort)) {
         valuesToSort = valuesToSort.sort()
       }

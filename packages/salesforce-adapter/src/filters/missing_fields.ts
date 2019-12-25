@@ -25,12 +25,12 @@ const allMissingFields: {id: ElemID; fields: MissingField[]}[] = [
         name: 'operation',
         type: BuiltinTypes.STRING,
         annotations: {
-          [Type.VALUES]: [
+          [Type.ANNOTATIONS.VALUES]: [
             'equals', 'notEqual', 'lessThan', 'greaterThan', 'lessOrEqual', 'greaterOrEqual',
             'contains', 'notContain', 'startsWith', 'includes', 'excludes', 'within',
           ],
-          [Type.RESTRICTION]: {
-            [Type.ENFORCE_VALUE]: true,
+          [Type.ANNOTATIONS.RESTRICTION]: {
+            [Type.ANNOTATIONS.ENFORCE_VALUE]: true,
           },
         },
       },
@@ -53,7 +53,7 @@ const allMissingFields: {id: ElemID; fields: MissingField[]}[] = [
         name: 'assigned_to_type',
         type: BuiltinTypes.STRING,
         annotations: {
-          [Type.VALUES]: ['User', 'Queue'],
+          [Type.ANNOTATIONS.VALUES]: ['User', 'Queue'],
         },
       },
     ],
@@ -65,7 +65,7 @@ const allMissingFields: {id: ElemID; fields: MissingField[]}[] = [
         name: 'visibility',
         type: BuiltinTypes.STRING,
         annotations: {
-          [Type.VALUES]: ['DefaultOff', 'DefaultOn', 'Hidden'],
+          [Type.ANNOTATIONS.VALUES]: ['DefaultOff', 'DefaultOn', 'Hidden'],
         },
       },
     ],
@@ -77,7 +77,7 @@ const allMissingFields: {id: ElemID; fields: MissingField[]}[] = [
         name: 'style',
         type: BuiltinTypes.STRING,
         annotations: {
-          [Type.VALUES]: [
+          [Type.ANNOTATIONS.VALUES]: [
             'TwoColumnsTopToBottom', 'TwoColumnsLeftToRight', 'OneColumn', 'CustomLinks',
           ],
         },
@@ -91,7 +91,7 @@ const allMissingFields: {id: ElemID; fields: MissingField[]}[] = [
         name: 'behavior',
         type: BuiltinTypes.STRING,
         annotations: {
-          [Type.VALUES]: [
+          [Type.ANNOTATIONS.VALUES]: [
             'Edit', 'Required', 'Readonly',
           ],
         },

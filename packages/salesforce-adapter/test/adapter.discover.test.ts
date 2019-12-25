@@ -104,13 +104,13 @@ describe('SalesforceAdapter fetch', () => {
       const flow = findElements(result, 'flow').pop() as ObjectType
       expect(flow.fields.description.type.elemID.name).toBe('string')
       // TODO: remove comment when SALTO-45 will be resolved
-      // expect(flow.fields.description.annotations[Type.REQUIRED]).toBe(true)
+      // expect(flow.fields.description.annotations[Type.ANNOTATIONS.REQUIRED]).toBe(true)
       expect(flow.fields.is_template.type.elemID.name).toBe('boolean')
-      expect(flow.fields.is_template.annotations[Type.REQUIRED]).toBe(false)
+      expect(flow.fields.is_template.annotations[Type.ANNOTATIONS.REQUIRED]).toBe(false)
       expect(flow.fields.enum.type.elemID.name).toBe('string')
-      expect(flow.fields.enum.annotations[Type.DEFAULT]).toBe('yes')
+      expect(flow.fields.enum.annotations[Type.ANNOTATIONS.DEFAULT]).toBe('yes')
       // Note the order here is important because we expect restriction values to be sorted
-      expect(flow.fields.enum.annotations[Type.VALUES]).toEqual(['no', 'yes'])
+      expect(flow.fields.enum.annotations[Type.ANNOTATIONS.VALUES]).toEqual(['no', 'yes'])
       expect(flow.path).toEqual(['types', 'flow'])
       expect(flow.fields.full_name.type).toEqual(BuiltinTypes.SERVICE_ID)
       expect(flow.annotationTypes[constants.METADATA_TYPE]).toEqual(BuiltinTypes.SERVICE_ID)
@@ -156,7 +156,7 @@ describe('SalesforceAdapter fetch', () => {
         Object.keys(Types.primitiveDataTypes),
         Object.keys(Types.compoundDataTypes)
       ).length
-        + 1 /* LookupFilter */
+        + 2 /* LookupFilter & filter items */
         + 1 /* rollup summary operation */
         + 3
         + 1 /* field permissions */

@@ -1,6 +1,8 @@
 import _ from 'lodash'
 import {
-  Element, isObjectType, PrimitiveTypes, Values, ObjectType, isPrimitiveType, isInstanceElement,
+  Element, isObjectType, PrimitiveTypes, Values, ObjectType,
+  isPrimitiveType, isInstanceElement, Type, PrimitiveType,
+  AnnotationTypeConversion,
 } from 'adapter-api'
 import { FilterCreator } from '../filter'
 
@@ -68,6 +70,18 @@ export const transform = (obj: Values, type: ObjectType, strict = true): Values 
     .value()
   return _.isEmpty(result) ? undefined : result
 }
+
+export const transformPrimitiveAnnotations = (val: Values, primitive: Type): Values =>
+  Object.assign({}, ...Object.entries(primitive.annotationTypes)
+    .concat(Object.entries(AnnotationTypeConversion))
+    .filter(([fieldName, _v]) => !_.isUndefined(val[fieldName]))
+    .map(([fieldName, fieldType]): Values => ({ [fieldName]: (isObjectType(fieldType)
+      ? transform(val[fieldName], fieldType)
+      : transformPrimitive(val[fieldName], (fieldType as PrimitiveType).primitive)) }))
+    .concat(Object.values(Type.ANNOTATIONS)
+      .filter(a => !_.includes(Object.keys(AnnotationTypeConversion), a))
+      .filter(a => !_.isUndefined(val[a]))
+      .map(a => ({ [a]: val[a] }))))
 
 /**
  * Convert types of values in instance elements to match the expected types according to the

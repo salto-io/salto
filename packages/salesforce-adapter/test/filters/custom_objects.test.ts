@@ -113,15 +113,15 @@ describe('Custom Objects filter', () => {
       expect(lead.fields.last_name.type.elemID.name).toBe('text')
       expect(lead.fields.last_name.annotations.label).toBe('Last Name')
       // Test Required true and false
-      expect(lead.fields.last_name.annotations[Type.REQUIRED]).toBe(true)
-      expect(lead.fields.first_name.annotations[Type.REQUIRED]).toBe(false)
+      expect(lead.fields.last_name.annotations[Type.ANNOTATIONS.REQUIRED]).toBe(true)
+      expect(lead.fields.first_name.annotations[Type.ANNOTATIONS.REQUIRED]).toBe(false)
       // Default string and boolean
-      expect(lead.fields.last_name.annotations[Type.DEFAULT]).toBe('BLABLA')
-      expect(lead.fields.is_deleted.annotations[Type.DEFAULT]).toBe(false)
+      expect(lead.fields.last_name.annotations[Type.ANNOTATIONS.DEFAULT]).toBe('BLABLA')
+      expect(lead.fields.is_deleted.annotations[Type.ANNOTATIONS.DEFAULT]).toBe(false)
       // Custom type
       expect(lead.fields.custom__c).not.toBeUndefined()
       expect(lead.fields.custom__c.annotations[constants.API_NAME]).toBe('Custom__c')
-      expect(lead.fields.custom__c.annotations[Type.DEFAULT]).toBe(false)
+      expect(lead.fields.custom__c.annotations[Type.ANNOTATIONS.DEFAULT]).toBe(false)
       // Formula field
       expect(lead.fields.formula__c).toBeDefined()
       expect(lead.fields.formula__c.type.elemID.name).toBe('formula_text')
@@ -147,9 +147,10 @@ describe('Custom Objects filter', () => {
 
       const lead = findElements(result, 'lead').pop() as ObjectType
       expect(lead.fields.primary_c.type.elemID.name).toBe('picklist')
-      expect((lead.fields.primary_c.annotations[Type.VALUES] as string[]).join(';')).toBe('No;Yes')
-      expect(lead.fields.primary_c.annotations[Type.DEFAULT]).toBe('Yes')
-      expect(lead.fields.primary_c.annotations[Type.RESTRICTION][Type.ENFORCE_VALUE]).toBe(true)
+      expect((lead.fields.primary_c.annotations[Type.ANNOTATIONS.VALUES] as string[]).join(';')).toBe('No;Yes')
+      expect(lead.fields.primary_c.annotations[Type.ANNOTATIONS.DEFAULT]).toBe('Yes')
+      expect(lead.fields.primary_c
+        .annotations[Type.ANNOTATIONS.RESTRICTION][Type.ANNOTATIONS.ENFORCE_VALUE]).toBe(true)
     })
 
     it('should fetch sobject with combobox field', async () => {
@@ -170,10 +171,10 @@ describe('Custom Objects filter', () => {
 
       const lead = findElements(result, 'lead').pop() as ObjectType
       expect(lead.fields.primary_c.type.elemID.name).toBe('combobox')
-      expect((lead.fields.primary_c.annotations[Type.VALUES] as string[]).join(';'))
+      expect((lead.fields.primary_c.annotations[Type.ANNOTATIONS.VALUES] as string[]).join(';'))
         .toBe('No;Yes')
-      expect(lead.fields.primary_c.annotations[Type.DEFAULT].length).toBe(1)
-      expect(lead.fields.primary_c.annotations[Type.DEFAULT].pop()).toBe('Yes')
+      expect(lead.fields.primary_c.annotations[Type.ANNOTATIONS.DEFAULT].length).toBe(1)
+      expect(lead.fields.primary_c.annotations[Type.ANNOTATIONS.DEFAULT].pop()).toBe('Yes')
     })
 
     it('should fetch sobject with number field', async () => {
@@ -483,6 +484,7 @@ describe('Custom Objects filter', () => {
         { elemID: mockGetElemIdFunc(constants.SALESFORCE, {}, constants.CUSTOM_OBJECT) }
       ),
       { fields: [{ [constants.INSTANCE_FULL_NAME_FIELD]: 'MyAutoNumber',
+        [constants.INSTANCE_TYPE_FIELD]: 'AutoNumber',
         [constants.FIELD_ANNOTATIONS.DISPLAY_FORMAT]: 'A-{0000}' }],
       [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead' })
       it('should merge sobject fields with a custom object instance elemenet', async () => {

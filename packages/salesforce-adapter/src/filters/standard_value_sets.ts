@@ -122,18 +122,18 @@ const calculatePicklistFieldsToUpdate = (
   custObjectFields: Record<string, Field>,
   svsValuesToName: StandartValueSetsLookup
 ): Record<string, Field> => _.mapValues(custObjectFields, (f: Field) => {
-  if (!isStandardPickList(f) || _.isEmpty(f.annotations[Type.VALUES])) {
+  if (!isStandardPickList(f) || _.isEmpty(f.annotations[Type.ANNOTATIONS.VALUES])) {
     return f
   }
 
-  const encodedPlVals = encodeValues(f.annotations[Type.VALUES])
+  const encodedPlVals = encodeValues(f.annotations[Type.ANNOTATIONS.VALUES])
   const foundStandardValueSet = svsValuesToName[encodedPlVals]
 
   if (!foundStandardValueSet) {
     return f
   }
   const newField = f.clone()
-  newField.annotations[Type.VALUES] = foundStandardValueSet
+  newField.annotations[Type.ANNOTATIONS.VALUES] = foundStandardValueSet
   return newField
 })
 

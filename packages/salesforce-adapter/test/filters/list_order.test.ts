@@ -59,12 +59,12 @@ describe('list order filter', () => {
           elemID: typeElemID,
           fields: {
             [FIELD_FIELD_NAME]: new Field(typeElemID, 'FIELD_FIELD_NAME', BuiltinTypes.STRING,
-              { [Type.VALUES]: ['c', 'a', 'b'] }),
+              { [Type.ANNOTATIONS.VALUES]: ['c', 'a', 'b'] }),
           },
         }
       )
       await filter.onFetch([testType])
-      expect(testType.fields[FIELD_FIELD_NAME].annotations[Type.VALUES])
+      expect(testType.fields[FIELD_FIELD_NAME].annotations[Type.ANNOTATIONS.VALUES])
         .toEqual(['a', 'b', 'c'])
     })
     it('should not fail if target field does not exist', async () => {

@@ -12,11 +12,11 @@ describe('animation rules filter', () => {
     fields: {
       [ANIMATION_FREQUENCY]: new Field(ANIMATION_RULE_TYPE_ID, ANIMATION_FREQUENCY,
         BuiltinTypes.STRING, {
-          [Type.VALUES]: ['always', 'often', 'rarely', 'sometimes'],
+          [Type.ANNOTATIONS.VALUES]: ['always', 'often', 'rarely', 'sometimes'],
         }),
       [RECORD_TYPE_CONTEXT]: new Field(ANIMATION_RULE_TYPE_ID, RECORD_TYPE_CONTEXT,
         BuiltinTypes.STRING, {
-          [Type.VALUES]: ['All', 'Custom', 'Master'],
+          [Type.ANNOTATIONS.VALUES]: ['All', 'Custom', 'Master'],
         }),
     },
   })

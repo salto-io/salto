@@ -204,7 +204,7 @@ export default class SalesforceAdapter {
     const fieldTypes = Types.getAllFieldTypes()
     const annotationTypes = Types.getAnnotationTypes()
     const metadataTypeNames = this.listMetadataTypes()
-    const metadataTypes = this.fetchMetadataTypes(metadataTypeNames)
+    const metadataTypes = this.fetchMetadataTypes(metadataTypeNames, annotationTypes)
     const additionalMetadataTypes = this.fetchMetadataTypes(this.listAdditionalMetadataTypes())
     const metadataInstances = this.fetchMetadataInstances(metadataTypeNames, metadataTypes)
 
@@ -597,9 +597,12 @@ export default class SalesforceAdapter {
   }
 
   @logDuration('fetching metadata types')
-  private async fetchMetadataTypes(typeNamesPromise: Promise<string[]>): Promise<Type[]> {
+  private async fetchMetadataTypes(typeNamesPromise: Promise<string[]>,
+    annotationTypes: Type[]): Promise<Type[]> {
     const typeNames = await typeNamesPromise
     const knownTypes = new Map<string, Type>()
+    annotationTypes.forEach(annotation =>
+      knownTypes.set(sfCase(annotation.elemID.name), annotation))
     return _.flatten(await Promise.all((typeNames)
       .map(typeName => this.fetchMetadataType(typeName, knownTypes, new Set(typeNames))
         .catch(e => {

@@ -11,6 +11,8 @@ export const NAMESPACE_SEPARATOR = '__'
 
 // Annotations
 export const LABEL = 'label'
+export const DESCRIPTION = 'description'
+export const HELP_TEXT = 'inline_help_text'
 export const API_NAME = 'api_name'
 export const FORMULA = 'formula'
 export const DEFAULT_VALUE_FORMULA = 'default_value_formula'
@@ -79,6 +81,7 @@ export const FIELD_TYPE_API_NAMES = {
 
 export const FIELD_ANNOTATIONS = {
   UNIQUE: 'unique',
+  EXTERNAL_ID: 'external_id',
   CASE_SENSITIVE: 'case_sensitive',
   LENGTH: 'length',
   SCALE: 'scale',

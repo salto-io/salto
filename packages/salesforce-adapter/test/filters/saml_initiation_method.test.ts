@@ -16,7 +16,7 @@ describe('saml initiation method filter', () => {
           CANVAS_METADATA_TYPE_ID,
           SAML_INIT_METHOD_FIELD_NAME,
           BuiltinTypes.STRING,
-          { [Type.VALUES]: ['None', 'IdpInitiated', 'SpInitiated'] },
+          { [Type.ANNOTATIONS.VALUES]: ['None', 'IdpInitiated', 'SpInitiated'] },
         ),
       },
     }

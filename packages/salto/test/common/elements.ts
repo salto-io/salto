@@ -70,14 +70,14 @@ export const getAllElements = (): Element[] => {
         {
           label: 'Based In',
           name: {
-            [Type.DEFAULT]: 'HQ',
+            [Type.ANNOTATIONS.DEFAULT]: 'HQ',
           },
           location: {
             country: {
-              [Type.DEFAULT]: 'IL',
+              [Type.ANNOTATIONS.DEFAULT]: 'IL',
             },
             city: {
-              [Type.DEFAULT]: 'Raanana',
+              [Type.ANNOTATIONS.DEFAULT]: 'Raanana',
             },
           },
         },

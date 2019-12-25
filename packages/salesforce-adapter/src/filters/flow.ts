@@ -19,7 +19,8 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
     // fix flow_metadata_value - mark restriction values as not enforced, see: SALTO-93
     const flowMetadataValue = findObjectType(elements, FLOW_METADATA_TYPE_ID)
     if (flowMetadataValue && flowMetadataValue.fields.name) {
-      flowMetadataValue.fields.name.annotations[Type.RESTRICTION] = { [Type.ENFORCE_VALUE]: false }
+      flowMetadataValue.fields.name
+        .annotations[Type.ANNOTATIONS.RESTRICTION] = { [Type.ANNOTATIONS.ENFORCE_VALUE]: false }
     }
   },
 })

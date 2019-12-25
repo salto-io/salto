@@ -109,7 +109,7 @@ const validateAnnotationsValues = (
 ): ValidationError[] => {
   const validateRestrictionsValue = (val: Value):
     ValidationError[] => {
-    const restrictionValues = makeArray(field.annotations[Type.VALUES])
+    const restrictionValues = makeArray(field.annotations[Type.ANNOTATIONS.VALUES])
 
     // When value is array we iterate (validate) each element
     if (_.isArray(val)) {
@@ -127,7 +127,7 @@ const validateAnnotationsValues = (
   }
 
   const validateRequiredValue = (): ValidationError[] =>
-    (field.annotations[Type.REQUIRED] === true
+    (field.annotations[Type.ANNOTATIONS.REQUIRED] === true
       ? [new MissingRequiredFieldValidationError({ elemID, field })] : [])
 
   // Checking _required annotation
@@ -136,11 +136,11 @@ const validateAnnotationsValues = (
   }
 
   const shouldEnforceValue = (): boolean => {
-    const restriction = field.annotations[Type.RESTRICTION]
+    const restriction = field.annotations[Type.ANNOTATIONS.RESTRICTION]
     // enforce_value is true by default
-    return (restriction && restriction[Type.ENFORCE_VALUE] === true)
-      || (field.annotations[Type.VALUES]
-        && !(restriction && restriction[Type.ENFORCE_VALUE] === false))
+    return (restriction && restriction[Type.ANNOTATIONS.ENFORCE_VALUE] === true)
+      || (field.annotations[Type.ANNOTATIONS.VALUES]
+        && !(restriction && restriction[Type.ANNOTATIONS.ENFORCE_VALUE] === false))
   }
 
   // Checking _values annotation

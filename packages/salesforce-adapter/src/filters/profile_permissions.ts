@@ -132,7 +132,7 @@ const setProfileObjectPermissions = (object: ObjectType, profile: ElemID,
 const setDefaultFieldPermissions = (field: Field): void => {
   // We can't set permissions for master detail or required fields
   if (field.type.isEqual(Types.primitiveDataTypes.masterdetail)
-    || field.annotations[Type.REQUIRED]) {
+    || field.annotations[Type.ANNOTATIONS.REQUIRED]) {
     return
   }
   if (_.isEmpty(getFieldPermissions(field))) {

@@ -1,8 +1,11 @@
+import { logger } from '@salto/logging'
 import { JestEnvironment, createEnvUtils } from '@salto/e2e-credentials-store'
-import { Credentials, realConnection } from '../src/client/client'
+import { Credentials, validateCredentials } from '../src/client/client'
+
+const log = logger(module)
 
 export default JestEnvironment<Credentials>({
-  logBaseName: module.id,
+  logBaseName: log.namespace,
   credsSpec: {
     envHasCreds: env => 'SF_USER' in env,
     fromEnv: env => {
@@ -14,10 +17,7 @@ export default JestEnvironment<Credentials>({
         isSandbox: envUtils.bool('SF_SANDBOX'),
       }
     },
-    validate: async (creds: Credentials): Promise<void> => {
-      const conn = realConnection(creds.isSandbox, { maxAttempts: 1 })
-      await conn.login(creds.username, creds.password + (creds.apiToken ?? ''))
-    },
+    validate: validateCredentials,
     typeName: 'salesforce',
   },
 })

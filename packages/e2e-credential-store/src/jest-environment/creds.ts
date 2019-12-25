@@ -3,6 +3,7 @@ import { retry } from '@salto/lowerdash'
 import {
   Pool, dynamoDbRepo, RenewedLease, Lease,
 } from '@salto/persistent-pool'
+import REPO_PARAMS from '../repo_params'
 import createEnvUtils from './process_env'
 
 const { retryStrategies } = retry
@@ -25,12 +26,6 @@ const LEASE_PARAMS: Parameters<Pool['waitForLease']> = [
   LEASE_TIMEOUT,
   retryStrategies.intervals({ maxRetries: 40, interval: 1000 * 15 }),
 ]
-
-const REPO_PARAMS = {
-  leaseRandomizationRange: 10,
-  tableName: 'e2e_credentials',
-  serviceOpts: { region: 'eu-west-1' },
-}
 
 export default <TCreds extends {}>(
   spec: CredsSpec<TCreds>,

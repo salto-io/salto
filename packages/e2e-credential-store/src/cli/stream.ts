@@ -8,4 +8,4 @@ export const writeLine = (stream: Writable, s = ''): void => {
 
 export const terminalWidth = (
   s: Writable
-): number | undefined => (s as NodeJS.WriteStream)?.columns
+): number | undefined => (s as NodeJS.WriteStream).columns

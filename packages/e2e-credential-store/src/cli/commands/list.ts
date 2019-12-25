@@ -31,7 +31,7 @@ const listPretty: Lister = async iterable => {
     return next()
   }
   await next()
-  return t.columns().length > 0 ? t.toString() : ''
+  return t.toString().trim()
 }
 
 const listJson: Lister = async iterable => {

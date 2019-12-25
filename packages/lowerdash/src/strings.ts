@@ -1,4 +1,5 @@
-const DEFAULT_ALPHABET = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+export const DEFAULT_ALPHABET = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+export const LOWERCASE = 'abcdefghijklmnopqrstuvwxyz'
 
 export const insecureRandomString = (
   { length = 10, alphabet = DEFAULT_ALPHABET }: {

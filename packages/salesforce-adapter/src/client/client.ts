@@ -112,6 +112,11 @@ export const realConnection = (
   return connection
 }
 
+export const validateCredentials = async (creds: Credentials): Promise<void> => {
+  const conn = realConnection(creds.isSandbox, { maxAttempts: 1 })
+  await conn.login(creds.username, creds.password + (creds.apiToken ?? ''))
+}
+
 const sendChunked = async <TIn, TOut>(input: TIn | TIn[],
   sendChunk: (chunk: TIn[]) => Promise<TOut | TOut[]>,
   chunkSize = MAX_ITEMS_IN_WRITE_REQUEST):

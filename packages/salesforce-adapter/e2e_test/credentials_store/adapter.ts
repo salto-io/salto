@@ -1,12 +1,5 @@
-// import { Credentials } from 'salesforce-adapter'
-import { Adapter } from '../types'
-
-type Credentials = {
-  username: string
-  password: string
-  apiToken?: string
-  isSandbox: boolean
-}
+import { Adapter } from '@salto/e2e-credentials-store'
+import { Credentials, validateCredentials } from '../../src/client/client'
 
 type Args = {
   username: string
@@ -15,7 +8,7 @@ type Args = {
   sandbox: boolean
 }
 
-const adapter = (): Adapter<Args, Credentials> => ({
+const adapter: Adapter<Args, Credentials> = {
   name: 'salesforce',
   credentialsOpts: {
     username: {
@@ -41,6 +34,7 @@ const adapter = (): Adapter<Args, Credentials> => ({
     apiToken: args['api-token'],
     isSandbox: args.sandbox,
   }),
-})
+  validateCredentials,
+}
 
 export default adapter

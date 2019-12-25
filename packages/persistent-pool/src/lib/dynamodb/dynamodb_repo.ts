@@ -228,7 +228,9 @@ export const repo = defaultOpts.withRequired<
           throw new InstanceNotFoundError({ id, typeName })
         }
 
-        if (validateClientId && item.leasingClientId !== clientId) {
+        if (item.leaseExpiresBy === NOT_LEASED || (
+          validateClientId && item.leasingClientId !== clientId
+        )) {
           throw new InstanceNotLeasedError({ id, typeName, clientId })
         }
 

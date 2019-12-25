@@ -1,6 +1,7 @@
 import NodeEnvironment from 'jest-environment-node'
 import { JestEnvironment } from '@jest/environment'
 import { Event } from 'jest-circus'
+import humanizeDuration from 'humanize-duration'
 import { logger, Logger } from '@salto/logging'
 import creds, { CredsSpec, CredsLease } from './creds'
 import IntervalScheduler from './interval_scheduler'
@@ -29,7 +30,10 @@ export default <TCreds>({
     super(...args)
     this.log = logger([logBaseName, process.env.JEST_WORKER_ID].filter(x => x).join('/'))
     this.runningTasksPrinter = new IntervalScheduler(
-      id => this.log.warn('Still running: %s', id),
+      (id, startTime) => {
+        const duration = humanizeDuration(Date.now() - startTime.getTime(), { round: true })
+        this.log.warn('Still running (%s): %s', duration, id)
+      },
       STILL_RUNNING_WARN_INTERVAL,
     )
   }

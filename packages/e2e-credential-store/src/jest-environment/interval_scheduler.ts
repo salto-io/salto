@@ -1,23 +1,32 @@
+type IntervalEntry = {
+  startTime: Date
+  intervalId: NodeJS.Timeout
+}
+
 export default class IntervalScheduler {
-  private readonly intervals = new Map<string, NodeJS.Timeout>()
+  private readonly intervals = new Map<string, IntervalEntry>()
   constructor(
-    private readonly f: (id: string) => void,
+    private readonly f: (id: string, startTime: Date) => void,
     private readonly interval: number
   ) { }
 
   schedule(id: string): void {
-    this.intervals.set(id, setInterval(() => this.f(id), this.interval))
+    const startTime = new Date()
+    this.intervals.set(id, {
+      startTime,
+      intervalId: setInterval(() => this.f(id, startTime), this.interval),
+    })
   }
 
   unschedule(id: string): void {
-    const intervalId = this.intervals.get(id)
+    const { intervalId } = this.intervals.get(id) ?? {}
     if (intervalId === undefined) return
     clearTimeout(intervalId)
     this.intervals.delete(id)
   }
 
   clear(): void {
-    [...this.intervals.values()].forEach(clearInterval)
+    [...this.intervals.values()].map(v => v.intervalId).forEach(clearInterval)
     this.intervals.clear()
   }
 }

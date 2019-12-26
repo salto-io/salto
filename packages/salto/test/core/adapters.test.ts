@@ -1,14 +1,12 @@
 import {
-  InstanceElement, ObjectType, ElemID,
+  InstanceElement, ElemID, ObjectType,
 } from 'adapter-api'
 import { creator } from 'salesforce-adapter'
-import initAdapters from '../../src/core/adapters/adapters'
+import { initAdapters, loginAdapters } from '../../src/core/adapters/adapters'
 
 describe('Test adapters.ts', () => {
   const { configType } = creator
   const services = ['salesforce']
-
-  const notConfigType = new ObjectType({ elemID: new ElemID('salesforce', 'not_config') })
 
   const bpConfig = new InstanceElement(
     ElemID.CONFIG_NAME,
@@ -32,51 +30,30 @@ describe('Test adapters.ts', () => {
     }
   )
 
-  const RedHeringWrongAdapter = new InstanceElement(
-    ElemID.CONFIG_NAME,
-    new ObjectType({ elemID: new ElemID('err') }),
-    {
-      username: 'err',
-      password: 'err',
-      token: 'err',
-      sandbox: true,
-    }
-  )
-
-  const RedHeringNotConfig = new InstanceElement(
-    'reg',
-    notConfigType,
-    {
-      username: 'err',
-      password: 'err',
-      token: 'err',
-      sandbox: true,
-    }
-  )
-
   const fillConfig = async (_ct: ObjectType): Promise<InstanceElement> => userConfig
 
-  it('should return adapter when config is defined', async () => {
-    const elements = [
-      configType,
-      RedHeringNotConfig,
-      RedHeringWrongAdapter,
-      bpConfig,
-    ]
-    const [adapters, newConfigs] = await initAdapters(elements, fillConfig, services)
-    expect(adapters.salesforce).toBeDefined()
-    expect(newConfigs.length).toBe(0)
+  it('should login when config is empty', async () => {
+    const newConfigs = await loginAdapters([], fillConfig, services)
+    expect(newConfigs.length).toBeGreaterThan(0)
   })
 
-  it('should prompt for config when no proper config exists', async () => {
-    const elements = [
-      configType,
-      RedHeringNotConfig,
-      RedHeringWrongAdapter,
-    ]
-    const [adapters, newConfigs] = await initAdapters(elements, fillConfig, services)
+  it('should not have new configs if exits and no force', async () => {
+    const newConfigs = await loginAdapters([bpConfig], fillConfig, services)
+    expect(newConfigs.length).toEqual(0)
+  })
+
+  it('should have new configs if config exits but ran with force', async () => {
+    const newConfigs = await loginAdapters([bpConfig], fillConfig, services, true)
+    expect(newConfigs.length).toBeGreaterThan(0)
+  })
+
+  it('should return adapter when config is defined', async () => {
+    const adapters = await initAdapters([bpConfig], services)
     expect(adapters.salesforce).toBeDefined()
-    expect(newConfigs.length).toEqual(1)
-    expect(newConfigs[0]).toBe(userConfig)
+  })
+
+  it('should throw error when no proper config exists', async () => {
+    const configs = [] as InstanceElement[]
+    await expect(initAdapters(configs, services)).rejects.toThrow()
   })
 })

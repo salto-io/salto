@@ -1,7 +1,7 @@
 import wu from 'wu'
 import {
-  ObjectType, InstanceElement, Element, ActionName, DataModificationResult, ElemIdGetter, Adapter,
-  ChangeValidator,
+  ObjectType, InstanceElement, Element, ActionName, DataModificationResult,
+  ElemIdGetter, Adapter, ChangeValidator,
 } from 'adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto/logging'
@@ -12,9 +12,9 @@ import {
 import {
   getInstancesOfType, importInstancesOfType, deleteInstancesOfType,
 } from './core/records'
-import initAdapters from './core/adapters/adapters'
+import { loginAdapters, initAdapters } from './core/adapters/adapters'
 import { addServiceToConfig } from './workspace/config'
-import { isAdapterAvailable } from './core/adapters/creators'
+import adapterCreators, { isAdapterAvailable } from './core/adapters/creators'
 import {
   getPlan, Plan, PlanItem, DetailedChange,
 } from './core/plan'
@@ -25,32 +25,19 @@ import {
   MergeErrorWithElements, FatalFetchMergeError, FetchProgressEvents, toAddFetchChange,
 } from './core/fetch'
 import { Workspace, CREDS_DIR } from './workspace/workspace'
-import adapterCreators from './core/adapters/creators'
 
 export { ItemStatus }
 
 const log = logger(module)
 
-export const login = async (
+export const updateLoginConfig = async (
   workspace: Workspace,
-  fillConfig: (t: ObjectType) => Promise<InstanceElement>,
-  services: string[],
-  getElemIdFunc?: ElemIdGetter
-): Promise<Record<string, Adapter>> => {
+  newConfigs: Readonly<InstanceElement[]>
+): Promise<void> => {
   const configToChange = (config: InstanceElement): DetailedChange => {
     config.path = [CREDS_DIR, config.elemID.adapter]
     return toAddFetchChange(config).change
   }
-
-  const [adapters, newConfigs] = await initAdapters(
-    workspace.elements,
-    fillConfig,
-    services,
-    getElemIdFunc
-  )
-  log.debug(`${Object.keys(adapters).length} adapters were initialized [newConfigs=${
-    newConfigs.length}]`)
-
   if (newConfigs.length > 0) {
     await workspace.updateBlueprints(...newConfigs.map(configToChange))
     const criticalErrors = (await workspace.getWorkspaceErrors())
@@ -63,7 +50,17 @@ export const login = async (
       log.debug(`persisted new configs for adapers: ${newAdapters.join(',')}`)
     }
   }
-  return adapters
+}
+
+export const getAdapters = async (
+  workspace: Workspace,
+  fillConfig: (t: ObjectType) => Promise<InstanceElement>,
+  services: string[],
+  getElemIdFunc?: ElemIdGetter
+): Promise<Record<string, Adapter>> => {
+  const newConfigs = await loginAdapters(workspace.configElements, fillConfig, services)
+  await updateLoginConfig(workspace, newConfigs)
+  return initAdapters(workspace.configElements, services, getElemIdFunc)
 }
 
 const filterElementsByServices = (
@@ -123,7 +120,7 @@ export const deploy = async (
       getChangeValidators()
     )
     if (force || await shouldDeploy(actionPlan)) {
-      const adapters = await login(workspace, fillConfig, services)
+      const adapters = await getAdapters(workspace, fillConfig, services)
       const errors = await deployActions(
         actionPlan,
         adapters,
@@ -176,7 +173,7 @@ export const fetch: fetchFunc = async (
   const filteredStateElements = filterElementsByServices(stateElements, services)
   log.debug(`finished loading ${stateElements.length} state elements`)
 
-  const adapters = await login(
+  const adapters = await getAdapters(
     workspace,
     fillConfig,
     services,
@@ -246,7 +243,7 @@ export const exportToCsv = async (
   fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
 ): Promise<DataModificationResult> => {
   const type = await getTypeForDataMigration(workspace, typeId)
-  const adapters = await login(workspace, fillConfig, [type.elemID.adapter])
+  const adapters = await getAdapters(workspace, fillConfig, [type.elemID.adapter])
   return getInstancesOfType(type as ObjectType, adapters, outPath)
 }
 
@@ -257,7 +254,7 @@ export const importFromCsvFile = async (
   fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
 ): Promise<DataModificationResult> => {
   const type = await getTypeForDataMigration(workspace, typeId)
-  const adapters = await login(workspace, fillConfig, [type.elemID.adapter])
+  const adapters = await getAdapters(workspace, fillConfig, [type.elemID.adapter])
   return importInstancesOfType(type as ObjectType, inputPath, adapters)
 }
 
@@ -268,7 +265,7 @@ export const deleteFromCsvFile = async (
   fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
 ): Promise<DataModificationResult> => {
   const type = await getTypeForDataMigration(workspace, typeId)
-  const adapters = await login(workspace, fillConfig, [type.elemID.adapter])
+  const adapters = await getAdapters(workspace, fillConfig, [type.elemID.adapter])
   return deleteInstancesOfType(type as ObjectType, inputPath, adapters)
 }
 
@@ -294,8 +291,13 @@ export const addAdapter = async (
 export const loginAdapter = async (
   workspace: Workspace,
   fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
-  adapterName: string
+  adapterName: string,
+  force = false
 ): Promise<boolean> => {
-  await login(workspace, fillConfig, [adapterName])
-  return true
+  const newConfigs = await loginAdapters(workspace.configElements, fillConfig, [adapterName], force)
+  if (newConfigs.length > 0) {
+    await updateLoginConfig(workspace, newConfigs)
+    return true
+  }
+  return false
 }

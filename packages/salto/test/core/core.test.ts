@@ -36,6 +36,7 @@ const mockConfigType = new ObjectType({
   annotations: {},
 })
 const services = ['salesforce']
+const { configType } = creator
 
 const mockRemove = jest.fn(() => Promise.resolve())
 
@@ -90,6 +91,7 @@ const createMockWorkspace = (elements: Element[]): Workspace => ({
   resolvePath: _.identity,
   updateBlueprints: jest.fn(),
   flush: jest.fn(),
+  configElements: elements.filter(e => e.elemID.isConfig()),
   getWorkspaceErrors: async () => [],
 } as unknown as Workspace
 )
@@ -122,7 +124,7 @@ describe('api functions', () => {
   })
 
   const mockGetConfigFromUser = async (
-    configType: ObjectType
+    configObjType: ObjectType
   ): Promise<InstanceElement> => {
     const value = {
       username: 'test@test',
@@ -131,7 +133,7 @@ describe('api functions', () => {
       sandbox: false,
     }
 
-    return new InstanceElement(ElemID.CONFIG_NAME, configType, value)
+    return new InstanceElement(ElemID.CONFIG_NAME, configObjType, value)
   }
 
   describe('Test commands.ts and core.ts', () => {
@@ -367,7 +369,8 @@ describe('api functions', () => {
     let mockWorkspace: Workspace
     let changes: plan.DetailedChange[]
     beforeEach(async () => {
-      mockWorkspace = createMockWorkspace([])
+      const configInst = await mockGetConfigFromUser(configType)
+      mockWorkspace = createMockWorkspace([configInst])
       changes = [...(await commands.fetch(mockWorkspace, mockGetConfigFromUser, services)).changes]
         .map(change => change.change)
     })
@@ -386,19 +389,18 @@ describe('api functions', () => {
         primitive: PrimitiveTypes.STRING,
       }),
     ]
-    const { configType } = creator
 
     it('should persist a new config', async () => {
       const ws = createMockWorkspace(elements)
-      const adapters = await commands.login(ws, mockGetConfigFromUser, services)
-      expect(adapters.salesforce).toBeDefined()
+      const didLogin = await commands.loginAdapter(ws, mockGetConfigFromUser, services[0])
+      expect(didLogin).toBeTruthy()
       expect(ws.flush as jest.FunctionLike).toHaveBeenCalled()
     })
 
     it('should not persist an existing config', async () => {
       const configInst = await mockGetConfigFromUser(configType)
       const ws = createMockWorkspace([configInst, ...elements])
-      const adapters = await commands.login(ws, mockGetConfigFromUser, services)
+      const adapters = await commands.getAdapters(ws, mockGetConfigFromUser, services)
       expect(adapters.salesforce).toBeDefined()
       expect(ws.flush as jest.FunctionLike).not.toHaveBeenCalled()
     })

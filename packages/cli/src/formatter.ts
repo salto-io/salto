@@ -399,3 +399,40 @@ export const formatShouldContinueWithWarning = (numWarnings: number): string =>
   warn(Prompts.SHOULDCONTINUE(numWarnings))
 
 export const formatCancelCommand = header(`${Prompts.CANCELED}\n`)
+
+export const formatLoginUpdated = [
+  Prompts.SERVICES_LOGIN_UPDATED,
+  emptyLine(),
+].join('\n')
+
+export const formatLoginOverride = [
+  Prompts.SERVICES_LOGIN_OVERRIDE,
+  emptyLine(),
+  emptyLine(),
+].join('\n')
+
+export const formatServiceConfigured = (serviceName: string): string => [
+  Prompts.SERVICE_CONFIGURED(serviceName),
+  emptyLine(),
+].join('\n')
+
+export const formatServiceNotConfigured = (serviceName: string): string => [
+  Prompts.SERVICE_NOT_CONFIGURED(serviceName),
+  emptyLine(),
+].join('\n')
+
+export const formatConfiguredServices = (serviceNames: string[]): string => {
+  if (serviceNames.length === 0) {
+    return Prompts.NO_CONFIGURED_SERVICES
+  }
+
+  const formattedServices = serviceNames.map(service => indent(`* ${service}`, 1))
+  formattedServices.unshift(Prompts.CONFIGURED_SERVICES_TITLE)
+  formattedServices.push(emptyLine())
+  return formattedServices.join('\n')
+}
+
+export const formatServiceAdded = (serviceName: string): string => [
+  Prompts.SERVICE_ADDED(serviceName),
+  emptyLine(),
+].join('\n')

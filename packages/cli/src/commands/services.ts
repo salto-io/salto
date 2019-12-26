@@ -1,9 +1,15 @@
 import _ from 'lodash'
+import { EOL } from 'os'
 import { addAdapter, loginAdapter } from 'salto'
 import { createCommandBuilder } from '../command_builder'
 import { CliOutput, ParsedCliInput, CliCommand, CliExitCode } from '../types'
 import { loadWorkspace } from '../workspace'
 import { getConfigWithHeader } from '../callbacks'
+import { serviceCmdFilter } from '../filters/services'
+import {
+  formatServiceConfigured, formatServiceNotConfigured, formatConfiguredServices,
+  formatLoginUpdated, formatLoginOverride, formatServiceAdded,
+} from '../formatter'
 
 const addService = async (
   workspaceDir: string,
@@ -17,10 +23,10 @@ const addService = async (
   }
 
   if (workspace.config.services.includes(serviceName)) {
-    throw new Error('Service already exists for this workspace')
+    throw new Error('Service was already added to this workspace.')
   }
-  await addAdapter(workspaceDir, serviceName) // TODO: Need to fill config!
-  stdout.write(`${serviceName} added to the workspace`)
+  await addAdapter(workspaceDir, serviceName)
+  stdout.write(formatServiceAdded(serviceName))
   await loginAdapter(workspace, _.partial(getConfigWithHeader, stdout), serviceName)
   return CliExitCode.Success
 }
@@ -36,12 +42,12 @@ const listServices = async (
   }
   if (serviceName) {
     if (workspace.config.services.includes(serviceName)) {
-      stdout.write(`${serviceName} is configured in this workspace\n`)
+      stdout.write(formatServiceConfigured(serviceName))
     } else {
-      stdout.write(`${serviceName} is not configured in this workspace\n`)
+      stdout.write(formatServiceNotConfigured(serviceName))
     }
   } else {
-    stdout.write(`The configured services are: ${workspace.config.services}\n`)
+    stdout.write(formatConfiguredServices(workspace.config.services))
   }
 
   return CliExitCode.Success
@@ -60,8 +66,24 @@ const loginService = async (
   if (!workspace.config.services.includes(serviceName)) {
     throw new Error('Service isn\'t configured for this workspace')
   }
-  // TODO: What happens if it's already logged in
-  await loginAdapter(workspace, _.partial(getConfigWithHeader, stdout), serviceName)
+  const didLogin = await loginAdapter(
+    workspace,
+    _.partial(getConfigWithHeader, stdout),
+    serviceName
+  )
+  if (didLogin) {
+    stdout.write(formatLoginUpdated)
+  } else {
+    stdout.write(formatLoginOverride)
+    await loginAdapter(
+      workspace,
+      _.partial(getConfigWithHeader, stdout),
+      serviceName,
+      true
+    )
+    stdout.write(EOL)
+    stdout.write(formatLoginUpdated)
+  }
   return CliExitCode.Success
 }
 
@@ -80,7 +102,7 @@ export const command = (
       case 'login':
         return loginService(workspaceDir, serviceName, { stdout, stderr })
       default:
-        throw new Error('Unknown command')
+        throw new Error('Unknown service management command')
     }
   },
 })
@@ -94,22 +116,11 @@ type ServiceParsedCliInput = ParsedCliInput<ServiceArgs>
 
 const servicesBuilder = createCommandBuilder({
   options: {
-    command: 'services [command] [name]',
+    command: 'services <command> [name]',
     description: 'Manage your workspace services',
-    positional: {
-      command: {
-        type: 'string',
-        description: 'The command - add, login or list',
-        default: '',
-      },
-      name: {
-        type: 'string',
-        description: 'The name of the service (required for add & login)',
-        default: undefined,
-      },
-    },
   },
 
+  filters: [serviceCmdFilter],
   async build(input: ServiceParsedCliInput, output: CliOutput) {
     return command('.', input.args.command, input.args.name, output)
   },

@@ -258,14 +258,14 @@ describe('getPlan', () => {
       return []
     }
 
-    const mockOnAdd = jest.fn(generateChangeErrorForInvalidElements)
-    const mockOnRemove = jest.fn(generateChangeErrorForInvalidElements)
-    const mockOnUpdate = jest.fn(async (changes: ReadonlyArray<Change>) =>
+    const mockOnAdd = generateChangeErrorForInvalidElements
+    const mockOnRemove = generateChangeErrorForInvalidElements
+    const mockOnUpdate = async (changes: ReadonlyArray<Change>): Promise<ChangeError[]> =>
       _.flatten(await Promise.all(
         _(changes)
           .map(change => generateChangeErrorForInvalidElements(getChangeElement(change)))
           .value()
-      )))
+      ))
 
     const mockChangeValidator: ChangeValidator = {
       onAdd: mockOnAdd,

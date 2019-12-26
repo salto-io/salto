@@ -50,7 +50,7 @@ export const getDetailedChanges = async (
   before: ReadonlyArray<Element>,
   after: ReadonlyArray<Element>,
 ): Promise<Iterable<DetailedChange>> =>
-  wu((await getPlan(before, after, undefined, false)).itemsByEvalOrder())
+  wu((await getPlan(before, after, {}, false)).itemsByEvalOrder())
     .map(item => item.detailedChanges())
     .flatten()
 

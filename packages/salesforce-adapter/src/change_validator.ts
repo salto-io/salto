@@ -1,5 +1,5 @@
 import { Change, Element, ChangeValidator, ChangeError } from 'adapter-api'
-import { filterHasMember } from '@salto/lowerdash/dist/src/types'
+import { types } from '@salto/lowerdash'
 import _ from 'lodash'
 import packageValidator from './change_validators/package'
 
@@ -11,19 +11,19 @@ const changeValidators: Partial<ChangeValidator>[] = [
 const runOnUpdateValidators = async (changes: ReadonlyArray<Change>):
   Promise<ReadonlyArray<ChangeError>> =>
   _.flatten(await Promise.all(
-    filterHasMember('onUpdate', changeValidators)
+    types.filterHasMember('onUpdate', changeValidators)
       .map(v => v.onUpdate(changes))
   ))
 
 const runOnAddValidators = async (after: Element): Promise<ReadonlyArray<ChangeError>> =>
   _.flatten(await Promise.all(
-    filterHasMember('onAdd', changeValidators)
+    types.filterHasMember('onAdd', changeValidators)
       .map(v => v.onAdd(after))
   ))
 
 const runOnRemoveValidators = async (before: Element): Promise<ReadonlyArray<ChangeError>> =>
   _.flatten(await Promise.all(
-    filterHasMember('onRemove', changeValidators)
+    types.filterHasMember('onRemove', changeValidators)
       .map(v => v.onRemove(before))
   ))
 

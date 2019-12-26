@@ -11,6 +11,7 @@ import {
 } from '@salto/dag'
 import { logger } from '@salto/logging'
 import { resolve } from './expressions'
+import { createElementsMap, ElementMap } from './search'
 
 const log = logger(module)
 
@@ -133,18 +134,18 @@ const findGroupLevelChange = (group: Group<Change>): Change | undefined =>
     change => getChangeElement(change).elemID.getFullName() === group.groupKey
   )
 
-const getOrCreateGroupLevelChange = (group: Group<Change>,
-  idToBeforeElement: Record<NodeId, Element>, idToAfterElement: Record<NodeId, Element>): Change =>
+const getOrCreateGroupLevelChange = (group: Group<Change>, beforeElementsMap: ElementMap,
+  afterElementsMap: ElementMap): Change =>
   findGroupLevelChange(group) || {
     action: 'modify',
-    data: { before: idToBeforeElement[group.groupKey] as ChangeDataType,
-      after: idToAfterElement[group.groupKey] as ChangeDataType },
+    data: { before: beforeElementsMap[group.groupKey] as ChangeDataType,
+      after: afterElementsMap[group.groupKey] as ChangeDataType },
   }
 
-const addPlanItemAccessors = (group: Group<Change>, idToBeforeElement: Record<NodeId, Element>,
-  idToAfterElement: Record<NodeId, Element>): PlanItem => Object.assign(group, {
+const addPlanItemAccessors = (group: Group<Change>, beforeElementsMap: Record<NodeId, Element>,
+  afterElementsMap: Record<NodeId, Element>): PlanItem => Object.assign(group, {
   parent() {
-    return getOrCreateGroupLevelChange(group, idToBeforeElement, idToAfterElement)
+    return getOrCreateGroupLevelChange(group, beforeElementsMap, afterElementsMap)
   },
   changes() {
     return group.items.values()
@@ -159,7 +160,7 @@ const addPlanItemAccessors = (group: Group<Change>, idToBeforeElement: Record<No
       return false
     }
 
-    // If we have change in the annotation type we will mark the entire element as changes
+    // If we have a change in the annotation type we will mark the entire element as changed
     // due to: SALTO-333
     const topLevelChange = findGroupLevelChange(group)
     if (topLevelChange && topLevelChange.action === 'modify'
@@ -200,8 +201,8 @@ const addPlanItemAccessors = (group: Group<Change>, idToBeforeElement: Record<No
 })
 
 const addPlanFunctions = (groupGraph: GroupedNodeMap<Change>,
-  changeErrors: ReadonlyArray<ChangeError>, idToBeforeElement: Record<NodeId, Element>,
-  idToAfterElement: Record<NodeId, Element>): Plan => Object.assign(groupGraph,
+  changeErrors: ReadonlyArray<ChangeError>, beforeElementsMap: ElementMap,
+  afterElementsMap: ElementMap): Plan => Object.assign(groupGraph,
   {
     itemsByEvalOrder(): Iterable<PlanItem> {
       return wu(groupGraph.evaluationOrder())
@@ -214,12 +215,12 @@ const addPlanFunctions = (groupGraph: GroupedNodeMap<Change>,
             ? { ...group, items: new Map([[group.groupKey, groupLevelChange]]) }
             : group
         })
-        .map(group => addPlanItemAccessors(group, idToBeforeElement, idToAfterElement))
+        .map(group => addPlanItemAccessors(group, beforeElementsMap, afterElementsMap))
     },
 
     getItem(planItemId: PlanItemId): PlanItem {
-      return addPlanItemAccessors(groupGraph.getData(planItemId), idToBeforeElement,
-        idToAfterElement)
+      return addPlanItemAccessors(groupGraph.getData(planItemId), beforeElementsMap,
+        afterElementsMap)
     },
     changeErrors,
   })
@@ -238,14 +239,14 @@ const buildGroupedGraphFromDiffGraph = (diffGraph: DataNodeMap<Change>): Grouped
 type FilterResult = {
   changeErrors: ChangeError[]
   validDiffGraph: DataNodeMap<Change>
-  idToValidAfterElement: Record<NodeId, Element>
+  validAfterElementsMap: ElementMap
 }
 
 type TopLevelElement = InstanceElement | Type
 
-const filterInvalidChanges = async (idToBeforeElement: Record<NodeId, Element>,
-  idToAfterElement: Record<NodeId, Element>, diffGraph: DataNodeMap<Change>,
-  changeValidators: Record<string, ChangeValidator>): Promise<FilterResult> => {
+const filterInvalidChanges = async (beforeElementsMap: ElementMap, afterElementsMap: ElementMap,
+  diffGraph: DataNodeMap<Change>, changeValidators: Record<string, ChangeValidator>):
+  Promise<FilterResult> => {
   const validateChanges = async (groupLevelChange: Change, group: Group<Change>):
     Promise<ReadonlyArray<ChangeError>> => {
     const changeValidator = changeValidators[getChangeElement(groupLevelChange).elemID.adapter]
@@ -266,53 +267,73 @@ const filterInvalidChanges = async (idToBeforeElement: Record<NodeId, Element>,
 
   const createValidTopLevelElem = (beforeTopLevelElem: TopLevelElement,
     afterTopLevelElem: TopLevelElement, elemIdsToOmit: ElemID[]): Element | undefined => {
-    if (_.isUndefined(beforeTopLevelElem)) {
+    const elemIdFullNamesToOmit = new Set(elemIdsToOmit.map(id))
+    if (_.isUndefined(beforeTopLevelElem)
+      && elemIdFullNamesToOmit.has(id(afterTopLevelElem.elemID))) {
       // revert the invalid creation of a new top-level element
       return undefined
     }
-    if (_.isUndefined(afterTopLevelElem) || isInstanceElement(afterTopLevelElem)
-      || isPrimitiveType(afterTopLevelElem)) {
+    if (_.isUndefined(afterTopLevelElem)
+      || elemIdFullNamesToOmit.has(id(afterTopLevelElem.elemID))) {
       // revert the invalid deletion of a top-level element OR
-      // modification of an instance/primitive that should be reverted as a whole
+      // modification of a top level element that should be reverted as a whole
       return beforeTopLevelElem.clone()
     }
     // ObjectType's fields and/or annotations modification
     const beforeObj = beforeTopLevelElem as ObjectType
     const afterObj = afterTopLevelElem as ObjectType
-
-    const validFields = _.clone(afterObj.fields)
-    const afterFieldIds = new Set(Object.values(afterObj.fields)
-      .map(field => id(field.elemID)))
-    elemIdsToOmit
-      .filter(elemId => !elemId.isTopLevel()) // only field changes
-      .forEach(elemId => {
-        const beforeField = beforeObj.fields[elemId.name]
-        if (afterFieldIds.has(id(elemId))) {
-          if (beforeField) {
-            // revert the invalid modification of a field
-            validFields[elemId.name] = beforeField.clone()
-          } else {
-            // revert the invalid creation of a field
-            delete validFields[elemId.name]
-          }
-        } else {
-          // revert the invalid deletion of a field
-          validFields[elemId.name] = beforeField.clone()
-        }
+    const afterFieldNames = afterObj ? Object.keys(afterObj.fields) : []
+    const beforeFieldNames = beforeObj ? Object.keys(beforeObj.fields) : []
+    const allFieldNames = [...new Set([...beforeFieldNames, ...afterFieldNames])]
+    const validFields = _(allFieldNames)
+      .map(name => {
+        const beforeField = beforeObj?.fields[name]
+        const afterField = afterObj?.fields[name]
+        const { elemID } = afterField ?? beforeField
+        const validField = elemIdFullNamesToOmit.has(id(elemID)) ? beforeField : afterField
+        return validField === undefined ? undefined : [name, validField.clone()]
       })
+      .filter(field => field !== undefined)
+      .fromPairs()
+      .value()
+
     // identify whether the annotations changes should be reverted
     const annotationsSource = elemIdsToOmit.some(e => e.isTopLevel()) ? beforeObj : afterObj
     return new ObjectType({
       elemID: afterObj.elemID,
       fields: validFields,
       annotationTypes: _.clone(annotationsSource.annotationTypes),
-      annotations: _.clone(annotationsSource.annotations),
+      annotations: _.cloneDeep(annotationsSource.annotations),
     })
+  }
+
+  const createValidAfterElementsMap = (invalidChanges: ChangeError[]): ElementMap => {
+    const topLevelNodeIdToElemIds = _(invalidChanges)
+      .map(c => c.elemID)
+      .groupBy(elemId => id(elemId.createTopLevelParentID().parent))
+
+    const beforeElementNames = Object.keys(beforeElementsMap)
+    const afterElementNames = Object.keys(afterElementsMap)
+    const allElementNames = [...new Set([...beforeElementNames, ...afterElementNames])]
+    return _(allElementNames)
+      .map(name => {
+        const beforeElem = beforeElementsMap[name]
+        const afterElem = afterElementsMap[name]
+        const { elemID } = afterElem ?? beforeElem
+        const validElement = topLevelNodeIdToElemIds.has(id(elemID))
+          ? createValidTopLevelElem(beforeElem as TopLevelElement, afterElem as TopLevelElement,
+            topLevelNodeIdToElemIds.get(id(elemID)))
+          : afterElem
+        return validElement === undefined ? undefined : [name, validElement]
+      })
+      .filter(elem => elem !== undefined)
+      .fromPairs()
+      .value()
   }
 
   const isParentInvalidObjectRemoval = (change: Change, nodeIdsToOmit: Set<string>): boolean => {
     const parentId = id(getChangeElement(change).elemID.createTopLevelParentID().parent)
-    return nodeIdsToOmit.has(parentId) && !idToAfterElement[parentId]
+    return nodeIdsToOmit.has(parentId) && !afterElementsMap[parentId]
   }
 
   const groupedGraph = buildGroupedGraphFromDiffGraph(diffGraph)
@@ -321,8 +342,8 @@ const filterInvalidChanges = async (idToBeforeElement: Record<NodeId, Element>,
     wu(groupedGraph.keys())
       .map((groupId: NodeId) => {
         const group = groupedGraph.getData(groupId)
-        const groupLevelChange = getOrCreateGroupLevelChange(group, idToBeforeElement,
-          idToAfterElement)
+        const groupLevelChange = getOrCreateGroupLevelChange(group, beforeElementsMap,
+          afterElementsMap)
         return validateChanges(groupLevelChange, group)
       })
   ))
@@ -337,10 +358,10 @@ const filterInvalidChanges = async (idToBeforeElement: Record<NodeId, Element>,
     diffGraph.walkSync(nodeId => {
       const data = diffGraph.getData(nodeId)
       if (nodeIdsToOmit.has(id(getChangeElement(data).elemID))
-      // hack until Salto-447 will be implemented. we wan't all the field nodes to be omitted
-      // in case the object is removed. Once we will dependency between the field and the object,
-      // this check can be removed
-        || isParentInvalidObjectRemoval(data, nodeIdsToOmit)) {
+      // HACK until SALTO-447 is implemented - We want all fields to be omitted if the object is
+      // omitted. this doesn't work now because field removal has the wrong type of dependency on
+      // the object, once this is fixed we can remove this check
+      || isParentInvalidObjectRemoval(data, nodeIdsToOmit)) {
         // in case this is an invalid node we throw error so the walk will skip the dependent nodes
         throw new Error()
       }
@@ -349,37 +370,15 @@ const filterInvalidChanges = async (idToBeforeElement: Record<NodeId, Element>,
     // eslint-disable-next-line no-empty
   } catch (e) {} // do nothing, we have errors since we may skip nodes that depends on invalid nodes
 
+  const validAfterElementsMap = createValidAfterElementsMap(invalidChanges)
 
-  const topLevelNodeIdToElemIds = _(invalidChanges)
-    .map(c => c.elemID)
-    .groupBy(elemId => id(elemId.createTopLevelParentID().parent))
-
-  const idToValidAfterElement = _.clone(idToAfterElement)
-
-  topLevelNodeIdToElemIds
-    .entries()
-    .forEach(([topLevelNodeId, elemIds]) => {
-      const validTopLevelElem = createValidTopLevelElem(idToBeforeElement[topLevelNodeId] as
-          TopLevelElement, idToAfterElement[topLevelNodeId] as TopLevelElement, elemIds)
-      if (validTopLevelElem) {
-        idToValidAfterElement[topLevelNodeId] = validTopLevelElem
-      } else {
-        delete idToValidAfterElement[topLevelNodeId]
-      }
-    })
-  return { changeErrors, validDiffGraph, idToValidAfterElement }
+  return { changeErrors, validDiffGraph, validAfterElementsMap }
 }
-
-const getIdToElement = (elements: readonly Element[]): Record<NodeId, Element> =>
-  _(elements)
-    .map(elem => [id(elem.elemID), elem])
-    .fromPairs()
-    .value()
 
 export const getPlan = async (
   beforeElements: readonly Element[],
   afterElements: readonly Element[],
-  changeValidators?: Record<string, ChangeValidator>,
+  changeValidators: Record<string, ChangeValidator> = {},
   withDependencies = true
 ): Promise<Plan> => log.time(async () => {
   // getPlan
@@ -391,15 +390,15 @@ export const getPlan = async (
   const diffGraph = buildDiffGraph(before, after,
     nodeId => isEqualsNode(before.getData(nodeId), after.getData(nodeId)))
 
-  const idToBeforeElement = getIdToElement(beforeElements)
-  const idToAfterElement = getIdToElement(afterElements)
+  const beforeElementsMap = createElementsMap(beforeElements)
+  const afterElementsMap = createElementsMap(afterElements)
   // filter invalid changes from the graph and the after elements
-  const { changeErrors, validDiffGraph, idToValidAfterElement } = changeValidators
-    ? await filterInvalidChanges(idToBeforeElement, idToAfterElement, diffGraph, changeValidators)
-    : { changeErrors: [], validDiffGraph: diffGraph, idToValidAfterElement: idToAfterElement }
+  const filterResult = await filterInvalidChanges(beforeElementsMap, afterElementsMap, diffGraph,
+    changeValidators)
   // build graph
-  const groupedGraph = buildGroupedGraphFromDiffGraph(validDiffGraph)
+  const groupedGraph = buildGroupedGraphFromDiffGraph(filterResult.validDiffGraph)
   // build plan
-  return addPlanFunctions(groupedGraph, changeErrors, idToBeforeElement, idToValidAfterElement)
+  return addPlanFunctions(groupedGraph, filterResult.changeErrors, beforeElementsMap,
+    filterResult.validAfterElementsMap)
 }, 'get %s changes %o -> %o elements', withDependencies ? 'deploy' : 'fetch',
 beforeElements.length, afterElements.length)

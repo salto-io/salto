@@ -3,7 +3,7 @@ import _ from 'lodash'
 
 import { isObjectType, Element } from 'adapter-api'
 
-type ElementMap = Record<string, Element>
+export type ElementMap = Record<string, Element>
 type NotFound = null
 type OptionalString = string | undefined
 
@@ -74,7 +74,7 @@ const findInnerElement = (
   return { key: bestKey, element: bestElement, isGuess }
 }
 
-const createElementsMap = (
+export const createElementsMap = (
   elements: readonly Element[]
 ): ElementMap => elements.reduce(
   (accumulator: ElementMap, element: Element) => {

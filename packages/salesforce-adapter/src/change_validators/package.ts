@@ -12,13 +12,10 @@ export const hasNamespace = (customElement: Element): boolean => {
   if (_.isUndefined(apiNameResult)) {
     return false
   }
-  if (isInstanceElement(customElement)) {
-    const partialFullName = apiNameResult.split('-')[0]
-    const cleanFullName = partialFullName.endsWith(SALESFORCE_CUSTOM_SUFFIX)
-      ? partialFullName.slice(0, -3) : partialFullName
-    return cleanFullName.includes(NAMESPACE_SEPARATOR)
-  }
-  return apiNameResult.split(NAMESPACE_SEPARATOR).length === 3 // <namespace>__<name>__c
+  const partialFullName = apiNameResult.split('-')[0]
+  const cleanFullName = partialFullName.endsWith(SALESFORCE_CUSTOM_SUFFIX)
+    ? partialFullName.slice(0, -3) : partialFullName
+  return cleanFullName.includes(NAMESPACE_SEPARATOR)
 }
 
 export const getNamespace = (customElement: Element): string =>

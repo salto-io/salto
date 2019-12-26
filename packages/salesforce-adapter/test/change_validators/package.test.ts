@@ -16,43 +16,43 @@ describe('package change validator', () => {
   })
   describe('onAdd', () => {
     describe('Object', () => {
-      it('should have change error when adding an object with namespace', () => {
+      it('should have change error when adding an object with namespace', async () => {
         obj.annotate({ [API_NAME]: 'MyNamespace__ObjectName__c' })
-        const changeErrors = packageValidator.onAdd(obj)
+        const changeErrors = await packageValidator.onAdd(obj)
         expect(changeErrors).toHaveLength(1)
         expect(changeErrors[0].level).toEqual('ERROR')
         expect(changeErrors[0].elemID).toEqual(obj.elemID)
       })
 
-      it('should have no change errors when adding an object without namespace', () => {
+      it('should have no change errors when adding an object without namespace', async () => {
         obj.annotate({ [API_NAME]: 'ObjectName__c' })
-        const changeErrors = packageValidator.onAdd(obj)
+        const changeErrors = await packageValidator.onAdd(obj)
         expect(changeErrors).toHaveLength(0)
       })
 
-      it('should have no change errors when adding an object without api_name', () => {
-        const changeErrors = packageValidator.onAdd(obj)
+      it('should have no change errors when adding an object without api_name', async () => {
+        const changeErrors = await packageValidator.onAdd(obj)
         expect(changeErrors).toHaveLength(0)
       })
     })
 
     describe('Instance', () => {
-      it('should have change error when adding an instance with namespace', () => {
+      it('should have change error when adding an instance with namespace', async () => {
         inst.value[INSTANCE_FULL_NAME_FIELD] = 'MyNamespace__InstanceName__c'
-        const changeErrors = packageValidator.onAdd(inst)
+        const changeErrors = await packageValidator.onAdd(inst)
         expect(changeErrors).toHaveLength(1)
         expect(changeErrors[0].level).toEqual('ERROR')
         expect(changeErrors[0].elemID).toEqual(inst.elemID)
       })
 
-      it('should have no change errors when adding an instance without namespace', () => {
+      it('should have no change errors when adding an instance without namespace', async () => {
         inst.value[INSTANCE_FULL_NAME_FIELD] = 'InstanceName__c'
-        const changeErrors = packageValidator.onAdd(inst)
+        const changeErrors = await packageValidator.onAdd(inst)
         expect(changeErrors).toHaveLength(0)
       })
 
-      it('should have no change errors when adding an instance without full_name', () => {
-        const changeErrors = packageValidator.onAdd(inst)
+      it('should have no change errors when adding an instance without full_name', async () => {
+        const changeErrors = await packageValidator.onAdd(inst)
         expect(changeErrors).toHaveLength(0)
       })
     })
@@ -60,42 +60,42 @@ describe('package change validator', () => {
 
   describe('onRemove', () => {
     describe('Object', () => {
-      it('should have change error when removing an object with namespace', () => {
+      it('should have change error when removing an object with namespace', async () => {
         obj.annotate({ [API_NAME]: 'MyNamespace__ObjectName__c' })
-        const changeErrors = packageValidator.onRemove(obj)
+        const changeErrors = await packageValidator.onRemove(obj)
         expect(changeErrors).toHaveLength(1)
         expect(changeErrors[0].level).toEqual('ERROR')
         expect(changeErrors[0].elemID).toEqual(obj.elemID)
       })
 
-      it('should have no change errors when removing an object without namespace', () => {
+      it('should have no change errors when removing an object without namespace', async () => {
         obj.annotate({ [API_NAME]: 'ObjectName__c' })
-        const changeErrors = packageValidator.onRemove(obj)
+        const changeErrors = await packageValidator.onRemove(obj)
         expect(changeErrors).toHaveLength(0)
       })
 
-      it('should have no change errors when removing an object without api_name', () => {
-        const changeErrors = packageValidator.onRemove(obj)
+      it('should have no change errors when removing an object without api_name', async () => {
+        const changeErrors = await packageValidator.onRemove(obj)
         expect(changeErrors).toHaveLength(0)
       })
     })
     describe('Instance', () => {
-      it('should have change error when removing an instance with namespace', () => {
+      it('should have change error when removing an instance with namespace', async () => {
         inst.value[INSTANCE_FULL_NAME_FIELD] = 'MyNamespace__InstanceName__c'
-        const changeErrors = packageValidator.onRemove(inst)
+        const changeErrors = await packageValidator.onRemove(inst)
         expect(changeErrors).toHaveLength(1)
         expect(changeErrors[0].level).toEqual('ERROR')
         expect(changeErrors[0].elemID).toEqual(inst.elemID)
       })
 
-      it('should have no change errors when removing an instance without namespace', () => {
+      it('should have no change errors when removing an instance without namespace', async () => {
         inst.value[INSTANCE_FULL_NAME_FIELD] = 'InstanceName__c'
-        const changeErrors = packageValidator.onRemove(inst)
+        const changeErrors = await packageValidator.onRemove(inst)
         expect(changeErrors).toHaveLength(0)
       })
 
-      it('should have no change errors when removing an instance without full_name', () => {
-        const changeErrors = packageValidator.onRemove(inst)
+      it('should have no change errors when removing an instance without full_name', async () => {
+        const changeErrors = await packageValidator.onRemove(inst)
         expect(changeErrors).toHaveLength(0)
       })
     })
@@ -103,10 +103,10 @@ describe('package change validator', () => {
 
   describe('onUpdate', () => {
     describe('add field', () => {
-      it('should have change error when adding a field with namespace to an object', () => {
+      it('should have change error when adding a field with namespace to an object', async () => {
         const newField = new Field(obj.elemID, 'field', BuiltinTypes.STRING,
           { [API_NAME]: 'MyNamespace__FieldName__c' })
-        const changeErrors = packageValidator.onUpdate([{
+        const changeErrors = await packageValidator.onUpdate([{
           action: 'add',
           data: { after: newField },
         }])
@@ -115,19 +115,19 @@ describe('package change validator', () => {
         expect(changeErrors[0].elemID).toEqual(newField.elemID)
       })
 
-      it('should have no change error when adding a field without namespace to an object', () => {
+      it('should have no change error when adding a field without namespace to an object', async () => {
         const newField = new Field(obj.elemID, 'field', BuiltinTypes.STRING,
           { [API_NAME]: 'FieldName__c' })
-        const changeErrors = packageValidator.onUpdate([{
+        const changeErrors = await packageValidator.onUpdate([{
           action: 'add',
           data: { after: newField },
         }])
         expect(changeErrors).toHaveLength(0)
       })
 
-      it('should have no change error when adding a field without api_name to an object', () => {
+      it('should have no change error when adding a field without api_name to an object', async () => {
         const newField = new Field(obj.elemID, 'field', BuiltinTypes.STRING, {})
-        const changeErrors = packageValidator.onUpdate([{
+        const changeErrors = await packageValidator.onUpdate([{
           action: 'add',
           data: { after: newField },
         }])
@@ -136,10 +136,10 @@ describe('package change validator', () => {
     })
 
     describe('remove field', () => {
-      it('should have change error when removing a field with namespace from an object', () => {
+      it('should have change error when removing a field with namespace from an object', async () => {
         const oldField = new Field(obj.elemID, 'field', BuiltinTypes.STRING,
           { [API_NAME]: 'MyNamespace__FieldName__c' })
-        const changeErrors = packageValidator.onUpdate([{
+        const changeErrors = await packageValidator.onUpdate([{
           action: 'remove',
           data: { before: oldField },
         }])
@@ -148,19 +148,19 @@ describe('package change validator', () => {
         expect(changeErrors[0].elemID).toEqual(oldField.elemID)
       })
 
-      it('should have no change error when removing a field without namespace from an object', () => {
+      it('should have no change error when removing a field without namespace from an object', async () => {
         const oldField = new Field(obj.elemID, 'field', BuiltinTypes.STRING,
           { [API_NAME]: 'FieldName__c' })
-        const changeErrors = packageValidator.onUpdate([{
+        const changeErrors = await packageValidator.onUpdate([{
           action: 'remove',
           data: { before: oldField },
         }])
         expect(changeErrors).toHaveLength(0)
       })
 
-      it('should have no change error when removing a field without api_name from an object', () => {
+      it('should have no change error when removing a field without api_name from an object', async () => {
         const oldField = new Field(obj.elemID, 'field', BuiltinTypes.STRING, {})
-        const changeErrors = packageValidator.onUpdate([{
+        const changeErrors = await packageValidator.onUpdate([{
           action: 'remove',
           data: { before: oldField },
         }])
@@ -169,13 +169,13 @@ describe('package change validator', () => {
     })
 
     describe('installed package instance modification', () => {
-      it('should have change error when modifying an InstalledPackage instance version', () => {
+      it('should have change error when modifying an InstalledPackage instance version', async () => {
         obj.annotate({ [METADATA_TYPE]: INSTALLED_PACKAGE_METADATA })
         inst.value[INSTANCE_FULL_NAME_FIELD] = 'MyNamespace__InstanceName__c'
         inst.value[PACKAGE_VERSION_NUMBER_FIELD_NAME] = '1.0'
         const afterInst = inst.clone()
         afterInst.value[PACKAGE_VERSION_NUMBER_FIELD_NAME] = '1.1'
-        const changeErrors = packageValidator.onUpdate([{
+        const changeErrors = await packageValidator.onUpdate([{
           action: 'modify',
           data: { before: inst, after: afterInst },
         }])

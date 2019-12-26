@@ -8,14 +8,24 @@ const changeValidators: Partial<ChangeValidator>[] = [
   packageValidator,
 ]
 
-const runOnUpdateValidators = (changes: ReadonlyArray<Change>): ReadonlyArray<ChangeError> =>
-  _.flatMap(filterHasMember('onUpdate', changeValidators), v => v.onUpdate(changes))
+const runOnUpdateValidators = async (changes: ReadonlyArray<Change>):
+  Promise<ReadonlyArray<ChangeError>> =>
+  _.flatten(await Promise.all(
+    filterHasMember('onUpdate', changeValidators)
+      .map(v => v.onUpdate(changes))
+  ))
 
-const runOnAddValidators = (after: Element): ReadonlyArray<ChangeError> =>
-  _.flatMap(filterHasMember('onAdd', changeValidators), v => v.onAdd(after))
+const runOnAddValidators = async (after: Element): Promise<ReadonlyArray<ChangeError>> =>
+  _.flatten(await Promise.all(
+    filterHasMember('onAdd', changeValidators)
+      .map(v => v.onAdd(after))
+  ))
 
-const runOnRemoveValidators = (before: Element): ReadonlyArray<ChangeError> =>
-  _.flatMap(filterHasMember('onRemove', changeValidators), v => v.onRemove(before))
+const runOnRemoveValidators = async (before: Element): Promise<ReadonlyArray<ChangeError>> =>
+  _.flatten(await Promise.all(
+    filterHasMember('onRemove', changeValidators)
+      .map(v => v.onRemove(before))
+  ))
 
 export const changeValidator: ChangeValidator = {
   onUpdate: (changes: ReadonlyArray<Change>) => runOnUpdateValidators(changes),

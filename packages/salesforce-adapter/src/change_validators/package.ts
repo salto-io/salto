@@ -37,7 +37,7 @@ const generateModifyPackageVersionMessage = (namespace: string): string =>
   `You cannot modify the version of a package using Salto. Package namespace: ${namespace}`
 
 export const changeValidator = {
-  onAdd: (after: Element): ReadonlyArray<ChangeError> => {
+  onAdd: async (after: Element): Promise<ReadonlyArray<ChangeError>> => {
     if ((isInstanceElement(after) || isObjectType(after)) && hasNamespace(after)) {
       return [{
         elemID: after.elemID,
@@ -49,7 +49,7 @@ export const changeValidator = {
     return []
   },
 
-  onRemove: (before: Element): ReadonlyArray<ChangeError> => {
+  onRemove: async (before: Element): Promise<ReadonlyArray<ChangeError>> => {
     if ((isInstanceElement(before) || isObjectType(before)) && hasNamespace(before)) {
       return [{
         elemID: before.elemID,
@@ -61,7 +61,7 @@ export const changeValidator = {
     return []
   },
 
-  onUpdate: (changes: ReadonlyArray<Change>): ReadonlyArray<ChangeError> => {
+  onUpdate: async (changes: ReadonlyArray<Change>): Promise<ReadonlyArray<ChangeError>> => {
     const isInstalledPackageVersionChange = (change: Change): boolean =>
       isInstanceElement(getChangeElement(change))
         && metadataType(getChangeElement(change)) === INSTALLED_PACKAGE_METADATA

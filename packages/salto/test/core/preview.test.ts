@@ -21,78 +21,78 @@ describe('getPlan', () => {
     wu(item.changes()).find(change => getChangeElement(change).elemID.isEqual(elemID))!
   const allElements = mock.getAllElements()
 
-  const planWithTypeChanges = (): [Plan, ObjectType] => {
+  const planWithTypeChanges = async (): Promise<[Plan, ObjectType]> => {
     const afterElements = mock.getAllElements()
     const saltoOffice = afterElements[2] as ObjectType
     saltoOffice.annotations.label = 'new label'
     saltoOffice.annotations.new = 'new annotation'
-    const plan = getPlan(allElements, afterElements)
+    const plan = await getPlan(allElements, afterElements)
     return [plan, saltoOffice]
   }
 
-  const planWithFieldChanges = (): [Plan, ObjectType] => {
+  const planWithFieldChanges = async (): Promise<[Plan, ObjectType]> => {
     const afterElements = mock.getAllElements()
     const saltoOffice = afterElements[2] as ObjectType
     // Adding new field
     saltoOffice.fields.new = new Field(saltoOffice.elemID, 'new', BuiltinTypes.STRING)
     // Sub element change
     saltoOffice.fields.location.annotations.label = 'new label'
-    const plan = getPlan(allElements, afterElements)
+    const plan = await getPlan(allElements, afterElements)
     return [plan, saltoOffice]
   }
 
-  const planWithNewType = (): [Plan, PrimitiveType] => {
+  const planWithNewType = async (): Promise<[Plan, PrimitiveType]> => {
     const newElement = new PrimitiveType({
       elemID: new ElemID('salto', 'additional'),
       primitive: PrimitiveTypes.STRING,
     })
-    const plan = getPlan(allElements, [...allElements, newElement])
+    const plan = await getPlan(allElements, [...allElements, newElement])
     return [plan, newElement]
   }
 
-  const planWithInstanceChange = (): [Plan, InstanceElement] => {
+  const planWithInstanceChange = async (): Promise<[Plan, InstanceElement]> => {
     const afterElements = mock.getAllElements()
     const updatedEmployee = afterElements[4] as InstanceElement
     updatedEmployee.value.nicknames[1] = 'new'
     delete updatedEmployee.value.office.name
-    const plan = getPlan(allElements, afterElements)
+    const plan = await getPlan(allElements, afterElements)
     return [plan, updatedEmployee]
   }
 
-  const planWithListChange = (): [Plan, InstanceElement] => {
+  const planWithListChange = async (): Promise<[Plan, InstanceElement]> => {
     const afterElements = mock.getAllElements()
     const updatedEmployee = afterElements[4] as InstanceElement
     updatedEmployee.value.nicknames.push('new')
-    const plan = getPlan(allElements, afterElements)
+    const plan = await getPlan(allElements, afterElements)
     return [plan, updatedEmployee]
   }
 
-  const planWithAnnotationTypesChanges = (): [Plan, ObjectType] => {
+  const planWithAnnotationTypesChanges = async (): Promise<[Plan, ObjectType]> => {
     const afterElements = mock.getAllElements()
     const saltoOffice = afterElements[2] as ObjectType
     // update existing field
     saltoOffice.fields.name.annotations.new = 'new'
     // update annotation types
     saltoOffice.annotationTypes.new = BuiltinTypes.STRING
-    const plan = getPlan(allElements, afterElements)
+    const plan = await getPlan(allElements, afterElements)
     return [plan, saltoOffice]
   }
-  const planWithFieldIsListChanges = (): [Plan, ObjectType] => {
+  const planWithFieldIsListChanges = async (): Promise<[Plan, ObjectType]> => {
     const afterElements = mock.getAllElements()
     const saltoOffice = afterElements[2] as ObjectType
     // Adding new field
     saltoOffice.fields.name.isList = true
-    const plan = getPlan(allElements, afterElements)
+    const plan = await getPlan(allElements, afterElements)
     return [plan, saltoOffice]
   }
 
-  it('should create empty plan', () => {
-    const plan = getPlan(allElements, allElements)
+  it('should create empty plan', async () => {
+    const plan = await getPlan(allElements, allElements)
     expect(plan.size).toBe(0)
   })
 
-  it('should create plan with add change', () => {
-    const [plan, newElement] = planWithNewType()
+  it('should create plan with add change', async () => {
+    const [plan, newElement] = await planWithNewType()
     expect(plan.size).toBe(1)
     const planItem = getFirstPlanItem(plan)
     expect(planItem.groupKey).toBe(newElement.elemID.getFullName())
@@ -103,9 +103,9 @@ describe('getPlan', () => {
     expect(getChangeElement(change)).toEqual(newElement)
   })
 
-  it('should create plan with remove change', () => {
+  it('should create plan with remove change', async () => {
     const pre = allElements
-    const plan = getPlan(pre, pre.slice(0, pre.length - 1))
+    const plan = await getPlan(pre, pre.slice(0, pre.length - 1))
     expect(plan.size).toBe(1)
     const planItem = getFirstPlanItem(plan)
     const removed = pre[pre.length - 1]
@@ -117,8 +117,8 @@ describe('getPlan', () => {
     }
   })
 
-  it('should create plan with modification changes due to field changes', () => {
-    const [plan, changedElem] = planWithFieldChanges()
+  it('should create plan with modification changes due to field changes', async () => {
+    const [plan, changedElem] = await planWithFieldChanges()
     expect(plan.size).toBe(1)
     const planItem = getFirstPlanItem(plan)
     expect(planItem.groupKey).toBe(changedElem.elemID.getFullName())
@@ -127,19 +127,19 @@ describe('getPlan', () => {
     expect(getChange(planItem, changedElem.fields.location.elemID).action).toBe('modify')
   })
 
-  it('should create plan with modification changes due to value change', () => {
+  it('should create plan with modification changes due to value change', async () => {
     const post = mock.getAllElements()
     const employee = post[4] as InstanceElement
     employee.value.name = 'SecondEmployee'
-    const plan = getPlan(allElements, post)
+    const plan = await getPlan(allElements, post)
     expect(plan.size).toBe(1)
     const planItem = getFirstPlanItem(plan)
     expect(planItem.groupKey).toBe(employee.elemID.getFullName())
     expect(getChange(planItem, employee.elemID).action).toBe('modify')
     expect(planItem.items.size).toBe(1)
   })
-  it('should create plan with modification change in primary element (no inner changes)', () => {
-    const [plan, changedElem] = planWithTypeChanges()
+  it('should create plan with modification change in primary element (no inner changes)', async () => {
+    const [plan, changedElem] = await planWithTypeChanges()
 
     expect(plan.size).toBe(1)
     const planItem = getFirstPlanItem(plan)
@@ -150,14 +150,14 @@ describe('getPlan', () => {
 
   describe('PlanItem', () => {
     describe('parent method', () => {
-      it('should return group level change', () => {
-        const [plan, changedElem] = planWithTypeChanges()
+      it('should return group level change', async () => {
+        const [plan, changedElem] = await planWithTypeChanges()
         const planItem = getFirstPlanItem(plan)
         const groupLevelChange = getChange(planItem, changedElem.elemID)
         expect(planItem.parent()).toBe(groupLevelChange)
       })
-      it('should create modify parent if none exists', () => {
-        const [plan, changedElem] = planWithFieldChanges()
+      it('should create modify parent if none exists', async () => {
+        const [plan, changedElem] = await planWithFieldChanges()
         const planItem = getFirstPlanItem(plan)
         const parent = planItem.parent()
         expect(parent.action).toEqual('modify')
@@ -166,8 +166,8 @@ describe('getPlan', () => {
     })
 
     describe('detailedChange method', () => {
-      it('should break field modification to specific value changes', () => {
-        const [plan, newElement] = planWithTypeChanges()
+      it('should break field modification to specific value changes', async () => {
+        const [plan, newElement] = await planWithTypeChanges()
         const planItem = getFirstPlanItem(plan)
         const changes = [...planItem.detailedChanges()]
         expect(changes).toHaveLength(2)
@@ -180,8 +180,8 @@ describe('getPlan', () => {
         expect(changes[1].action).toEqual('add')
         expect(_.get(changes[1].data, 'after')).toEqual(newElement.annotations.new)
       })
-      it('should return field changes with the correct id', () => {
-        const [plan, newElement] = planWithFieldChanges()
+      it('should return field changes with the correct id', async () => {
+        const [plan, newElement] = await planWithFieldChanges()
         const planItem = getFirstPlanItem(plan)
         const changes = [...planItem.detailedChanges()]
         expect(changes).toHaveLength(2)
@@ -193,15 +193,15 @@ describe('getPlan', () => {
         expect(changes[1].action).toEqual('modify')
         expect(_.get(changes[1].data, 'after')).toEqual(newElement.fields.location.annotations.label)
       })
-      it('should return add / remove changes at the appropriate level', () => {
-        const [plan, newElement] = planWithNewType()
+      it('should return add / remove changes at the appropriate level', async () => {
+        const [plan, newElement] = await planWithNewType()
         const planItem = getFirstPlanItem(plan)
         const changes = [...planItem.detailedChanges()]
         expect(changes).toHaveLength(1)
         expect(changes[0].id).toEqual(newElement.elemID)
       })
-      it('should return deep nested changes', () => {
-        const [plan, updatedInst] = planWithInstanceChange()
+      it('should return deep nested changes', async () => {
+        const [plan, updatedInst] = await planWithInstanceChange()
         const planItem = getFirstPlanItem(plan)
         const changes = [...planItem.detailedChanges()]
         expect(changes).toHaveLength(2)
@@ -211,8 +211,8 @@ describe('getPlan', () => {
         expect(nameRemove.action).toEqual('remove')
         expect(nameRemove.id).toEqual(updatedInst.elemID.createNestedID('office', 'name'))
       })
-      it('should return list modification when a value is added', () => {
-        const [plan, updatedInst] = planWithListChange()
+      it('should return list modification when a value is added', async () => {
+        const [plan, updatedInst] = await planWithListChange()
         const planItem = getFirstPlanItem(plan)
         const changes = [...planItem.detailedChanges()]
         expect(changes).toHaveLength(1)
@@ -221,8 +221,8 @@ describe('getPlan', () => {
         expect(listChange.id).toEqual(updatedInst.elemID.createNestedID('nicknames'))
       })
 
-      it('should return only top level change in case of annotationType change', () => {
-        const [plan, obj] = planWithAnnotationTypesChanges()
+      it('should return only top level change in case of annotationType change', async () => {
+        const [plan, obj] = await planWithAnnotationTypesChanges()
         const planItem = getFirstPlanItem(plan)
         const changes = [...planItem.detailedChanges()]
         expect(changes).toHaveLength(1)
@@ -231,8 +231,8 @@ describe('getPlan', () => {
         expect(annoChange.id).toEqual(obj.elemID)
       })
 
-      it('should return is list value modification when a field is changed to list', () => {
-        const [plan, changedElem] = planWithFieldIsListChanges()
+      it('should return is list value modification when a field is changed to list', async () => {
+        const [plan, changedElem] = await planWithFieldIsListChanges()
         const planItem = getFirstPlanItem(plan)
         const changes = wu(planItem.detailedChanges()).toArray()
         expect(changes).toHaveLength(1)
@@ -245,7 +245,8 @@ describe('getPlan', () => {
   })
 
   describe('change errors', () => {
-    const generateChangeErrorForInvalidElements = (element: Element): ChangeError[] => {
+    const generateChangeErrorForInvalidElements = async (element: Element):
+      Promise<ChangeError[]> => {
       if (element.elemID.name.includes('invalid')) {
         return [{
           elemID: element.elemID,
@@ -259,11 +260,12 @@ describe('getPlan', () => {
 
     const mockOnAdd = jest.fn(generateChangeErrorForInvalidElements)
     const mockOnRemove = jest.fn(generateChangeErrorForInvalidElements)
-    const mockOnUpdate = jest.fn((changes: ReadonlyArray<Change>) =>
-      _(changes)
-        .map(change => generateChangeErrorForInvalidElements(getChangeElement(change)))
-        .flatten()
-        .value())
+    const mockOnUpdate = jest.fn(async (changes: ReadonlyArray<Change>) =>
+      _.flatten(await Promise.all(
+        _(changes)
+          .map(change => generateChangeErrorForInvalidElements(getChangeElement(change)))
+          .value()
+      )))
 
     const mockChangeValidator: ChangeValidator = {
       onAdd: mockOnAdd,
@@ -272,7 +274,7 @@ describe('getPlan', () => {
     }
 
     it('should have no change errors when having no diffs', async () => {
-      const planResult = getPlan(allElements, allElements, { salto: mockChangeValidator })
+      const planResult = await getPlan(allElements, allElements, { salto: mockChangeValidator })
       expect(planResult.changeErrors).toHaveLength(0)
       expect(planResult.size).toBe(0)
     })
@@ -280,7 +282,7 @@ describe('getPlan', () => {
     it('should have no change errors when having only valid changes', async () => {
       const newValidObj = new ObjectType({ elemID: new ElemID('salto', 'new_valid_obj') })
       const newValidInst = new InstanceElement('new_valid_inst', newValidObj, {})
-      const planResult = getPlan(allElements, [...allElements, newValidObj, newValidInst],
+      const planResult = await getPlan(allElements, [...allElements, newValidObj, newValidInst],
         { salto: mockChangeValidator })
       expect(planResult.changeErrors).toHaveLength(0)
       expect(planResult.size).toBe(2)
@@ -292,7 +294,7 @@ describe('getPlan', () => {
       newInvalidObj.fields.invalid = new Field(newInvalidObj.elemID, 'invalid', BuiltinTypes.STRING)
       newInvalidObj.annotations.value = 'value'
       const newInvalidInst = new InstanceElement('new_invalid_inst', newInvalidObj, {})
-      const planResult = getPlan(allElements, [...allElements, newInvalidObj, newInvalidInst],
+      const planResult = await getPlan(allElements, [...allElements, newInvalidObj, newInvalidInst],
         { salto: mockChangeValidator })
       expect(planResult.changeErrors).toHaveLength(2)
       expect(planResult.changeErrors.some(v => v.elemID.isEqual(newInvalidObj.elemID)))
@@ -307,7 +309,7 @@ describe('getPlan', () => {
       const afterElements = mock.getAllElements()
       const saltoOffice = afterElements[2] as ObjectType
       saltoOffice.fields.invalid = new Field(saltoOffice.elemID, 'invalid', BuiltinTypes.STRING)
-      const planResult = getPlan(allElements, afterElements, { salto: mockChangeValidator })
+      const planResult = await getPlan(allElements, afterElements, { salto: mockChangeValidator })
       expect(planResult.changeErrors).toHaveLength(1)
       expect(planResult.changeErrors[0].level).toEqual('ERROR')
       expect(planResult.changeErrors[0].elemID.isEqual(saltoOffice.fields.invalid.elemID))
@@ -320,7 +322,7 @@ describe('getPlan', () => {
       const saltoOffice = afterElements[2] as ObjectType
       saltoOffice.fields.invalid = new Field(saltoOffice.elemID, 'invalid', BuiltinTypes.STRING)
       saltoOffice.fields.valid = new Field(saltoOffice.elemID, 'valid', BuiltinTypes.STRING)
-      const planResult = getPlan(allElements, afterElements, { salto: mockChangeValidator })
+      const planResult = await getPlan(allElements, afterElements, { salto: mockChangeValidator })
       expect(planResult.changeErrors).toHaveLength(1)
       expect(planResult.changeErrors[0].level).toEqual('ERROR')
       expect(planResult.changeErrors[0].elemID.isEqual(saltoOffice.fields.invalid.elemID))
@@ -341,7 +343,7 @@ describe('getPlan', () => {
       afterInvalidObj.annotations.new = 'value'
       afterInvalidObj.annotationTypes.new = BuiltinTypes.STRING
       afterInvalidObj.fields.valid = new Field(invalidObjElemId, 'valid', BuiltinTypes.STRING)
-      const planResult = getPlan([...allElements, beforeInvalidObj],
+      const planResult = await getPlan([...allElements, beforeInvalidObj],
         [...allElements, afterInvalidObj], { salto: mockChangeValidator })
       expect(planResult.changeErrors).toHaveLength(1)
       expect(planResult.changeErrors[0].level).toEqual('ERROR')
@@ -354,7 +356,7 @@ describe('getPlan', () => {
       const saltoOffice = beforeElements[2] as ObjectType
       saltoOffice.fields.invalid = new Field(saltoOffice.elemID, 'invalid', BuiltinTypes.STRING)
       saltoOffice.fields.valid = new Field(saltoOffice.elemID, 'valid', BuiltinTypes.STRING)
-      const planResult = getPlan(beforeElements, allElements, { salto: mockChangeValidator })
+      const planResult = await getPlan(beforeElements, allElements, { salto: mockChangeValidator })
       expect(planResult.changeErrors).toHaveLength(1)
       expect(planResult.changeErrors[0].level).toEqual('ERROR')
       expect(planResult.changeErrors[0].elemID.isEqual(saltoOffice.fields.invalid.elemID))
@@ -377,7 +379,8 @@ describe('getPlan', () => {
       const afterSaltoOffice = afterElements[2] as ObjectType
       afterSaltoOffice.fields.invalid = new Field(afterSaltoOffice.elemID, 'invalid',
         BuiltinTypes.STRING, { label: 'dummy annotation' })
-      const planResult = getPlan(beforeElements, afterElements, { salto: mockChangeValidator })
+      const planResult = await getPlan(beforeElements, afterElements,
+        { salto: mockChangeValidator })
       expect(planResult.changeErrors).toHaveLength(1)
       expect(planResult.changeErrors[0].level).toEqual('ERROR')
       expect(planResult.changeErrors[0].elemID.isEqual(afterSaltoOffice.fields.invalid.elemID))
@@ -390,8 +393,8 @@ describe('getPlan', () => {
       beforeInvalidObj.fields.invalid = new Field(beforeInvalidObj.elemID, 'invalid',
         BuiltinTypes.STRING)
       const beforeInvalidInst = new InstanceElement('before_invalid_inst', beforeInvalidObj, {})
-      const planResult = getPlan([...allElements, beforeInvalidObj, beforeInvalidInst], allElements,
-        { salto: mockChangeValidator })
+      const planResult = await getPlan([...allElements, beforeInvalidObj, beforeInvalidInst],
+        allElements, { salto: mockChangeValidator })
       expect(planResult.changeErrors).toHaveLength(2)
       expect(planResult.changeErrors.some(v => v.elemID.isEqual(beforeInvalidObj.elemID)))
         .toBeTruthy()

@@ -46,20 +46,20 @@ export type MergeErrorWithElements = {
   elements: Element[]
 }
 
-export const getDetailedChanges = (
+export const getDetailedChanges = async (
   before: ReadonlyArray<Element>,
   after: ReadonlyArray<Element>,
-): Iterable<DetailedChange> =>
-  wu(getPlan(before, after, undefined, false).itemsByEvalOrder())
+): Promise<Iterable<DetailedChange>> =>
+  wu((await getPlan(before, after, undefined, false)).itemsByEvalOrder())
     .map(item => item.detailedChanges())
     .flatten()
 
-const getChangeMap = (
+const getChangeMap = async (
   before: ReadonlyArray<Element>,
   after: ReadonlyArray<Element>,
-): Record<string, DetailedChange> =>
+): Promise<Record<string, DetailedChange>> =>
   _.fromPairs(
-    wu(getDetailedChanges(before, after))
+    wu(await getDetailedChanges(before, after))
       .map(change => [change.id.getFullName(), change])
       .toArray(),
   )
@@ -233,17 +233,18 @@ const fetchAndProcessMergeErrors = async (
 
 // Calculate the fetch changes - calculation should be done only if workspace has data,
 // o/w all service elements should be consider as "add" changes.
-const calcFetchChanges = (
+const calcFetchChanges = async (
   serviceElements: ReadonlyArray<Element>,
   mergedServiceElements: ReadonlyArray<Element>,
   stateElements: ReadonlyArray<Element>,
   workspaceElements: ReadonlyArray<Element>
-): Iterable<FetchChange> => {
-  const serviceChanges = log.time(() => getDetailedChanges(stateElements, mergedServiceElements),
-    'finished to calculate service-state changes')
-  const pendingChanges = log.time(() => getChangeMap(stateElements, workspaceElements),
+): Promise<Iterable<FetchChange>> => {
+  const serviceChanges = await log.time(() =>
+    getDetailedChanges(stateElements, mergedServiceElements),
+  'finished to calculate service-state changes')
+  const pendingChanges = await log.time(() => getChangeMap(stateElements, workspaceElements),
     'finished to calculate pending changes')
-  const workspaceToServiceChanges = log.time(() => getChangeMap(workspaceElements,
+  const workspaceToServiceChanges = await log.time(() => getChangeMap(workspaceElements,
     mergedServiceElements), 'finished to calculate service-workspace changes')
 
   const serviceElementsMap: Record<string, Element[]> = _.groupBy(
@@ -284,7 +285,7 @@ export const fetchChanges = async (
     .concat(stateElements.filter(notConfig)).length === 0
   const changes = isFirstFetch
     ? serviceElements.map(toAddFetchChange)
-    : calcFetchChanges(serviceElements, processErrorsResult.keptElements, stateElements,
+    : await calcFetchChanges(serviceElements, processErrorsResult.keptElements, stateElements,
       workspaceElements)
 
   log.debug('finished to calculate fetch changes')

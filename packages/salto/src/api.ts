@@ -115,7 +115,7 @@ export const deploy = async (
   const state = new State(workspace.config.stateLocation)
   const stateElements = await state.get()
   try {
-    const actionPlan = getPlan(
+    const actionPlan = await getPlan(
       filterElementsByServices(stateElements, services),
       filterElementsByServices(workspace.elements, services),
       getChangeValidators()
@@ -131,7 +131,7 @@ export const deploy = async (
 
       const changedElementsIds = changedElements.map(e => e.elemID.getFullName())
 
-      const changes = wu(getDetailedChanges(workspace.elements
+      const changes = wu(await getDetailedChanges(workspace.elements
         .filter(e => changedElementsIds.includes(e.elemID.getFullName())), changedElements))
         .map(change => ({ change, serviceChange: change }))
       const errored = errors.length > 0

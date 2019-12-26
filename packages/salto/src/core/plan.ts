@@ -243,11 +243,11 @@ type FilterResult = {
 
 type TopLevelElement = InstanceElement | Type
 
-const filterInvalidChanges = (idToBeforeElement: Record<NodeId, Element>,
+const filterInvalidChanges = async (idToBeforeElement: Record<NodeId, Element>,
   idToAfterElement: Record<NodeId, Element>, diffGraph: DataNodeMap<Change>,
-  changeValidators: Record<string, ChangeValidator>): FilterResult => {
-  const validateChanges = (groupLevelChange: Change, group: Group<Change>):
-    ReadonlyArray<ChangeError> => {
+  changeValidators: Record<string, ChangeValidator>): Promise<FilterResult> => {
+  const validateChanges = async (groupLevelChange: Change, group: Group<Change>):
+    Promise<ReadonlyArray<ChangeError>> => {
     const changeValidator = changeValidators[getChangeElement(groupLevelChange).elemID.adapter]
     if (_.isUndefined(changeValidator)) {
       return []
@@ -317,15 +317,15 @@ const filterInvalidChanges = (idToBeforeElement: Record<NodeId, Element>,
 
   const groupedGraph = buildGroupedGraphFromDiffGraph(diffGraph)
 
-  const changeErrors: ChangeError[] = wu(groupedGraph.keys())
-    .map((groupId: NodeId) => {
-      const group = groupedGraph.getData(groupId)
-      const groupLevelChange = getOrCreateGroupLevelChange(group, idToBeforeElement,
-        idToAfterElement)
-      return validateChanges(groupLevelChange, group)
-    })
-    .flatten()
-    .toArray()
+  const changeErrors: ChangeError[] = _.flatten(await Promise.all(
+    wu(groupedGraph.keys())
+      .map((groupId: NodeId) => {
+        const group = groupedGraph.getData(groupId)
+        const groupLevelChange = getOrCreateGroupLevelChange(group, idToBeforeElement,
+          idToAfterElement)
+        return validateChanges(groupLevelChange, group)
+      })
+  ))
 
   const invalidChanges = changeErrors
     .filter(v => v.level === 'ERROR')
@@ -376,12 +376,12 @@ const getIdToElement = (elements: readonly Element[]): Record<NodeId, Element> =
     .fromPairs()
     .value()
 
-export const getPlan = (
+export const getPlan = async (
   beforeElements: readonly Element[],
   afterElements: readonly Element[],
   changeValidators?: Record<string, ChangeValidator>,
   withDependencies = true
-): Plan => log.time(() => {
+): Promise<Plan> => log.time(async () => {
   // getPlan
   const resolvedBefore = resolve(beforeElements)
   const resolvedAfter = resolve(afterElements)
@@ -395,7 +395,7 @@ export const getPlan = (
   const idToAfterElement = getIdToElement(afterElements)
   // filter invalid changes from the graph and the after elements
   const { changeErrors, validDiffGraph, idToValidAfterElement } = changeValidators
-    ? filterInvalidChanges(idToBeforeElement, idToAfterElement, diffGraph, changeValidators)
+    ? await filterInvalidChanges(idToBeforeElement, idToAfterElement, diffGraph, changeValidators)
     : { changeErrors: [], validDiffGraph: diffGraph, idToValidAfterElement: idToAfterElement }
   // build graph
   const groupedGraph = buildGroupedGraphFromDiffGraph(validDiffGraph)

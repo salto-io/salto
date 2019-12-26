@@ -2,9 +2,9 @@ import { Element, ElemID } from './elements'
 import { Change } from './change'
 
 export type ChangeValidator = {
-  onAdd(after: Element): ReadonlyArray<ChangeError>
-  onRemove(before: Element): ReadonlyArray<ChangeError>
-  onUpdate(changes: ReadonlyArray<Change>): ReadonlyArray<ChangeError>
+  onAdd(after: Element): Promise<ReadonlyArray<ChangeError>>
+  onRemove(before: Element): Promise<ReadonlyArray<ChangeError>>
+  onUpdate(changes: ReadonlyArray<Change>): Promise<ReadonlyArray<ChangeError>>
 }
 
 export type ErrorLevel = 'WARNING' | 'ERROR'

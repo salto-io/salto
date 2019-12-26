@@ -675,25 +675,25 @@ export const getValueTypeFieldElement = (parentID: ElemID, field: ValueTypeField
   return new TypeField(parentID, bpFieldName, bpFieldType, annotations)
 }
 
-type DefaultValueType = string | boolean | number
+export type PrimitiveValue = string | boolean | number
+type ConvertXsdTypeFunc = (v: string) => PrimitiveValue
+export const convertXsdTypeFuncMap: Record<string, ConvertXsdTypeFunc> = {
+  'xsd:string': String,
+  'xsd:boolean': v => v === 'true',
+  'xsd:double': Number,
+  'xsd:int': Number,
+  'xsd:long': Number,
+}
 
-const isDefaultWithType = (val: DefaultValueType | DefaultValueWithType):
+const isDefaultWithType = (val: PrimitiveValue | DefaultValueWithType):
   val is DefaultValueWithType => new Set(_.keys(val)).has('_')
 
-const valueFromXsdType = (val: DefaultValueWithType): DefaultValueType => {
-  type ConvertFuncT = (v: string) => DefaultValueType
-  const convertFuncMap: Record<string, ConvertFuncT> = {
-    'xsd:string': String,
-    'xsd:boolean': v => v === 'true',
-    'xsd:double': Number,
-    'xsd:int': Number,
-    'xsd:long': Number,
-  }
-  const convertFunc = convertFuncMap[val.$['xsi:type']] || (v => v)
+const valueFromXsdType = (val: DefaultValueWithType): PrimitiveValue => {
+  const convertFunc = convertXsdTypeFuncMap[val.$['xsi:type']] || (v => v)
   return convertFunc(val._)
 }
 
-const getDefaultValue = (field: Field): DefaultValueType | undefined => {
+const getDefaultValue = (field: Field): PrimitiveValue | undefined => {
   if (field.defaultValue === null || field.defaultValue === undefined) {
     return undefined
   }

@@ -13,6 +13,7 @@ export type CredsSpec<TCreds extends {}> = {
   fromEnv(env: NodeJS.ProcessEnv): TCreds
   validate(creds: TCreds): Promise<void>
   typeName: string
+  globalProp: string
 }
 
 export type CredsLease<TCreds extends {}> = Lease<TCreds> & {

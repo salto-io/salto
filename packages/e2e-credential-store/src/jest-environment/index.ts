@@ -1,3 +1,4 @@
+import { Global } from '@jest/types'
 import NodeEnvironment from 'jest-environment-node'
 import { JestEnvironment } from '@jest/environment'
 import { Event } from 'jest-circus'
@@ -44,12 +45,12 @@ export default <TCreds>({
     this.runningTasksPrinter.schedule(CREDS_INTERVAL_ID)
     this.credsLease = await creds(credsSpec)
       .finally(() => this.runningTasksPrinter.unschedule(CREDS_INTERVAL_ID))
-    this.global.salesforceCredentials = this.credsLease.value
+    this.global[credsSpec.globalProp as keyof Global.Global] = this.credsLease.value
     this.log.info(`setup, using creds: ${this.credsLease.id}`)
   }
 
   async teardown(): Promise<void> {
-    delete this.global.salesforceCredentials
+    delete this.global[credsSpec.globalProp as keyof Global.Global]
     if (this.credsLease !== undefined) {
       await this.credsLease.return?.()
       this.log.info(`teardown, returned creds ${this.credsLease?.id}`)

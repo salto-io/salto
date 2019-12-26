@@ -336,8 +336,62 @@ const filterInvalidChanges = async (beforeElementsMap: ElementMap, afterElements
     return nodeIdsToOmit.has(parentId) && !afterElementsMap[parentId]
   }
 
-  const groupedGraph = buildGroupedGraphFromDiffGraph(diffGraph)
+  const buildValidDiffGraph = (nodeIdsToOmit: Set<string>, validAfterElementsMap: ElementMap):
+    DataNodeMap<Change<ChangeDataType>> => {
+    const validDiffGraph = new DataNodeMap<Change<ChangeDataType>>()
+    try {
+      diffGraph.walkSync(nodeId => {
+        const change = diffGraph.getData(nodeId)
+        const { elemID } = getChangeElement(change)
+        if (nodeIdsToOmit.has(id(elemID))
+          // HACK until SALTO-447 is implemented - We want all fields to be omitted if the object is
+          // omitted. this doesn't work now because field removal has the wrong type of dependency
+          // on the object, once this is fixed we can remove this check
+          || isParentInvalidObjectRemoval(change, nodeIdsToOmit)) {
+          // in case this is an invalid node throw error so the walk will skip the dependent nodes
+          throw new Error()
+        }
 
+        const getValidChange = (): Change<ChangeDataType> => {
+          switch (change.action) {
+            case 'add':
+              return {
+                action: change.action,
+                data: {
+                  after: elemID.isTopLevel()
+                    ? validAfterElementsMap[id(elemID)]
+                    : change.data.after,
+                },
+              } as Change<ChangeDataType>
+            case 'modify':
+              return {
+                action: change.action,
+                data: {
+                  before: change.data.before,
+                  after: elemID.isTopLevel()
+                    ? validAfterElementsMap[id(elemID)]
+                    : change.data.after,
+                },
+              } as Change<ChangeDataType>
+            case 'remove':
+              return {
+                action: change.action,
+                data: { before: change.data.before },
+              }
+            default:
+              throw new Error('Unknown action type')
+          }
+        }
+
+        validDiffGraph.addNode(nodeId, diffGraph.get(nodeId), getValidChange())
+      })
+    } catch (e) {
+      // do nothing, we may have errors since we may skip nodes that depends on invalid nodes
+    }
+    return validDiffGraph
+  }
+
+  const groupedGraph = buildGroupedGraphFromDiffGraph(diffGraph)
   const changeErrors: ChangeError[] = _.flatten(await Promise.all(
     wu(groupedGraph.keys())
       .map((groupId: NodeId) => {
@@ -353,25 +407,8 @@ const filterInvalidChanges = async (beforeElementsMap: ElementMap, afterElements
   const nodeIdsToOmit = new Set(invalidChanges
     .map(change => id(change.elemID)))
 
-  const validDiffGraph = new DataNodeMap<Change<ChangeDataType>>()
-  try {
-    diffGraph.walkSync(nodeId => {
-      const data = diffGraph.getData(nodeId)
-      if (nodeIdsToOmit.has(id(getChangeElement(data).elemID))
-      // HACK until SALTO-447 is implemented - We want all fields to be omitted if the object is
-      // omitted. this doesn't work now because field removal has the wrong type of dependency on
-      // the object, once this is fixed we can remove this check
-      || isParentInvalidObjectRemoval(data, nodeIdsToOmit)) {
-        // in case this is an invalid node we throw error so the walk will skip the dependent nodes
-        throw new Error()
-      }
-      validDiffGraph.addNode(nodeId, diffGraph.get(nodeId), data)
-    })
-    // eslint-disable-next-line no-empty
-  } catch (e) {} // do nothing, we have errors since we may skip nodes that depends on invalid nodes
-
   const validAfterElementsMap = createValidAfterElementsMap(invalidChanges)
-
+  const validDiffGraph = buildValidDiffGraph(nodeIdsToOmit, validAfterElementsMap)
   return { changeErrors, validDiffGraph, validAfterElementsMap }
 }
 

@@ -2,9 +2,9 @@ import _ from 'lodash'
 import wu from 'wu'
 import {
   ElemID, ObjectType, Field, BuiltinTypes, InstanceElement, Change, getChangeElement, PrimitiveType,
-  PrimitiveTypes, ChangeError, ChangeValidator, Element,
+  PrimitiveTypes, ChangeError, ChangeValidator, Element, isObjectType,
 } from 'adapter-api'
-import { ModificationDiff } from '@salto/dag'
+import { AdditionDiff, ModificationDiff } from '@salto/dag'
 import * as mock from '../common/elements'
 import {
   getPlan, Plan, PlanItem,
@@ -255,6 +255,16 @@ describe('getPlan', () => {
           detailedMessage: 'detailedMessage',
         }] as ChangeError[]
       }
+      if (isObjectType(element)) {
+        return Object.values(element.fields)
+          .filter(field => field.elemID.name.includes('invalid'))
+          .map(field => ({
+            elemID: field.elemID,
+            level: 'ERROR',
+            message: 'message',
+            detailedMessage: 'detailedMessage',
+          }))
+      }
       return []
     }
 
@@ -303,6 +313,26 @@ describe('getPlan', () => {
         .toBeTruthy()
       expect(planResult.changeErrors.every(v => v.level === 'ERROR')).toBeTruthy()
       expect(planResult.size).toBe(0)
+    })
+
+    it('should have onAdd change errors and omit invalid object & insatance additionaaaaa', async () => {
+      const newValidObj = new ObjectType({ elemID: new ElemID('salto', 'new_valid_obj') })
+      newValidObj.fields.valid = new Field(newValidObj.elemID, 'valid', BuiltinTypes.STRING)
+      newValidObj.fields.invalid = new Field(newValidObj.elemID, 'invalid', BuiltinTypes.STRING)
+      newValidObj.annotations.value = 'value'
+      const planResult = await getPlan(allElements, [...allElements, newValidObj],
+        { salto: mockChangeValidator })
+      expect(planResult.changeErrors).toHaveLength(1)
+      expect(planResult.changeErrors[0].elemID.isEqual(newValidObj.fields.invalid.elemID))
+        .toBeTruthy()
+      expect(planResult.changeErrors[0].level === 'ERROR').toBeTruthy()
+      expect(planResult.size).toBe(1)
+      const planItem = getFirstPlanItem(planResult)
+      expect(planItem.items.size).toBe(1)
+      const parent = planItem.parent() as AdditionDiff<ObjectType>
+      const parentFields = Object.keys(parent.data.after.fields)
+      expect(parentFields).toContain('valid')
+      expect(parentFields).not.toContain('invalid')
     })
 
     it('should have onUpdate change errors when all changes are invalid', async () => {
@@ -401,6 +431,19 @@ describe('getPlan', () => {
       expect(planResult.changeErrors.some(v => v.elemID.isEqual(beforeInvalidInst.elemID)))
         .toBeTruthy()
       expect(planResult.changeErrors.every(v => v.level === 'ERROR')).toBeTruthy()
+      expect(planResult.size).toBe(0)
+    })
+
+    it('should not remove object if having invalid field errors', async () => {
+      const beforeValidObj = new ObjectType({ elemID: new ElemID('salto', 'before_valid_obj') })
+      beforeValidObj.fields.invalid = new Field(beforeValidObj.elemID, 'invalid',
+        BuiltinTypes.STRING)
+      const planResult = await getPlan([...allElements, beforeValidObj],
+        allElements, { salto: mockChangeValidator })
+      expect(planResult.changeErrors).toHaveLength(1)
+      expect(planResult.changeErrors[0].elemID.isEqual(beforeValidObj.fields.invalid.elemID))
+        .toBeTruthy()
+      expect(planResult.changeErrors[0].level === 'ERROR').toBeTruthy()
       expect(planResult.size).toBe(0)
     })
   })

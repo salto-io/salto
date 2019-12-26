@@ -24,6 +24,16 @@ describe('package change validator', () => {
         expect(changeErrors[0].elemID).toEqual(obj.elemID)
       })
 
+      it('should have change error when adding an object containing field with namespace', async () => {
+        obj.annotate({ [API_NAME]: 'ObjectName__c' })
+        obj.fields.field = new Field(obj.elemID, 'field', BuiltinTypes.STRING,
+          { [API_NAME]: 'MyNamespace__FieldName__c' })
+        const changeErrors = await packageValidator.onAdd(obj)
+        expect(changeErrors).toHaveLength(1)
+        expect(changeErrors[0].level).toEqual('ERROR')
+        expect(changeErrors[0].elemID).toEqual(obj.fields.field.elemID)
+      })
+
       it('should have no change errors when adding an object without namespace', async () => {
         obj.annotate({ [API_NAME]: 'ObjectName__c' })
         const changeErrors = await packageValidator.onAdd(obj)
@@ -66,6 +76,16 @@ describe('package change validator', () => {
         expect(changeErrors).toHaveLength(1)
         expect(changeErrors[0].level).toEqual('ERROR')
         expect(changeErrors[0].elemID).toEqual(obj.elemID)
+      })
+
+      it('should have change error when removing an object containing field with namespace', async () => {
+        obj.annotate({ [API_NAME]: 'ObjectName__c' })
+        obj.fields.field = new Field(obj.elemID, 'field', BuiltinTypes.STRING,
+          { [API_NAME]: 'MyNamespace__FieldName__c' })
+        const changeErrors = await packageValidator.onRemove(obj)
+        expect(changeErrors).toHaveLength(1)
+        expect(changeErrors[0].level).toEqual('ERROR')
+        expect(changeErrors[0].elemID).toEqual(obj.fields.field.elemID)
       })
 
       it('should have no change errors when removing an object without namespace', async () => {

@@ -43,6 +43,16 @@ export const changeValidator = {
         detailedMessage: 'You cannot add an Instance or an Object to a package',
       }]
     }
+    if (isObjectType(after)) {
+      return Object.values(after.fields)
+        .filter(hasNamespace)
+        .map(field => ({
+          elemID: field.elemID,
+          level: 'ERROR',
+          message: generateAddPackageMessage(getNamespace(field)),
+          detailedMessage: 'You cannot add or remove a field that is a part of a package',
+        }))
+    }
     return []
   },
 
@@ -54,6 +64,16 @@ export const changeValidator = {
         message: generateRemovePackageMessage(getNamespace(before)),
         detailedMessage: 'You cannot remove an Instance or an Object that are a part of a package',
       }]
+    }
+    if (isObjectType(before)) {
+      return Object.values(before.fields)
+        .filter(hasNamespace)
+        .map(field => ({
+          elemID: field.elemID,
+          level: 'ERROR',
+          message: generateRemovePackageMessage(getNamespace(field)),
+          detailedMessage: 'You cannot add or remove a field that is a part of a package',
+        }))
     }
     return []
   },

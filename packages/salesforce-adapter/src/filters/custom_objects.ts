@@ -144,11 +144,29 @@ const fetchSObjects = async (client: SalesforceClient): Promise<Type[]> => {
   return _.flatten(sobjects)
 }
 
+const renameFields = (fields: Values): Values => Object.assign({},
+  ...Object.entries(fields).map(([k, v]) => {
+    switch (k) {
+      case 'required':
+        return { [Type.ANNOTATIONS.REQUIRED]: v }
+      case INSTANCE_FULL_NAME_FIELD:
+        return { [API_NAME]: v }
+      case 'default_value':
+        return { [DEFAULT_VALUE_FORMULA]: v }
+      case 'value_set':
+        return { [Type.ANNOTATIONS.VALUES]: v.value_set_definition.value
+          .map((value: Values) => value.full_name) }
+      default:
+        return { [k]: v }
+    }
+  }))
+
 const fixInstanceFieldValueBeforeMergeToAnnotations = (instanceFieldValues: Values): Values => {
   // Ignores typeless/unknown typed instances
   if (!_.has(instanceFieldValues, INSTANCE_TYPE_FIELD)) {
     return {}
   }
+
   const getFieldTypeFromName = (typeName: string): Type | undefined => {
     const apiTypeName = Object.entries(FIELD_TYPE_API_NAMES)
       .find(([_k, v]) => v === typeName)?.[0]
@@ -162,22 +180,7 @@ const fixInstanceFieldValueBeforeMergeToAnnotations = (instanceFieldValues: Valu
     return {}
   }
 
-  return transformPrimitiveAnnotations(Object.assign({},
-    ...Object.entries(instanceFieldValues).map(([k, v]) => {
-      switch (k) {
-        case 'required':
-          return { [Type.ANNOTATIONS.REQUIRED]: v }
-        case INSTANCE_FULL_NAME_FIELD:
-          return { [API_NAME]: v }
-        case 'default_value':
-          return { [DEFAULT_VALUE_FORMULA]: v }
-        case 'value_set':
-          return { [Type.ANNOTATIONS.VALUES]: v.value_set_definition.value
-            .map((value: Values) => value.full_name) }
-        default:
-          return { [k]: v }
-      }
-    })), fieldType)
+  return transformPrimitiveAnnotations(renameFields(instanceFieldValues), fieldType)
 }
 
 const mergeCustomObjectWithInstance = (customObject: ObjectType,
@@ -239,31 +242,9 @@ const filterCreator: FilterCreator = ({ client }) => ({
     })
 
     customObjectInstances.forEach(instance => {
-      const objectsTypesOfInstance = sObjects
-        .filter(obj => obj.elemID.name === instance.elemID.name)
       // Adds objects that exists in the metadata api but don't exist in the soap api
-      if (_.isEmpty(objectsTypesOfInstance)) {
+      if (!sObjects.find(obj => obj.elemID.name === instance.elemID.name)) {
         sObjects.push(createObjectTypeFromInstance(instance))
-      } else {
-        // Adds fields that exists in the metadata api but don't exist in the soap api
-        const instanceFields = makeArray(instance.value.fields)
-        const newFields = instanceFields.filter((f: Values) =>
-          _.isUndefined(_.flatten(objectsTypesOfInstance
-            .map(o => Object.values(o.fields).map(v => v.name)))
-            .find(fieldName => fieldName === bpCase(f[INSTANCE_FULL_NAME_FIELD]))))
-        newFields.forEach((field: Values) => {
-          const objectPath = field[INSTANCE_FULL_NAME_FIELD]
-            .endsWith(SALESFORCE_CUSTOM_SUFFIX) ? 'custom' : 'standard'
-          const objectTypeOfInstance = objectsTypesOfInstance
-            .find(objType => objType.path && (objType.path[1] === objectPath))
-            || objectsTypesOfInstance[0]
-          const fullNameBpCased = bpCase(field[INSTANCE_FULL_NAME_FIELD])
-          objectTypeOfInstance.fields[fullNameBpCased] = new Field(
-            objectTypeOfInstance.elemID, fullNameBpCased,
-            getFieldType(field[INSTANCE_TYPE_FIELD]),
-            fixInstanceFieldValueBeforeMergeToAnnotations(field)
-          )
-        })
       }
     })
 

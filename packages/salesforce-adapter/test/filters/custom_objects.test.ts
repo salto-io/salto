@@ -518,19 +518,6 @@ describe('Custom Objects filter', () => {
         expect(leadObjectType.fields.my_auto_number
           .annotations[constants.FIELD_ANNOTATIONS.DISPLAY_FORMAT]).toBe('A-{0000}')
       })
-
-      it('should add fields that exist in the instance element and not in sObject', async () => {
-        mockSingleSObject('Lead', [], false, true, false, 'Lead Label')
-        const result: Element[] = [testInstanceElement]
-        await filter().onFetch(result)
-
-        const lead = result.filter(o => o.elemID.name === 'lead').pop()
-        expect(lead).toBeDefined()
-        expect(isObjectType(lead)).toBeTruthy()
-        const leadObjectType = lead as ObjectType
-        expect(leadObjectType.fields.my_auto_number
-          .annotations[constants.FIELD_ANNOTATIONS.DISPLAY_FORMAT]).toBe('A-{0000}')
-      })
     })
   })
 })

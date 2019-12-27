@@ -236,6 +236,7 @@ export class Types {
     [HELP_TEXT]: BuiltinTypes.STRING,
     [LABEL]: BuiltinTypes.STRING,
     [FIELD_LEVEL_SECURITY_ANNOTATION]: Types.fieldLevelSecurityType,
+    [DEFAULT_VALUE_FORMULA]: BuiltinTypes.STRING,
   }
 
   // Type mapping for custom objects

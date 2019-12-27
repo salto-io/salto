@@ -485,7 +485,15 @@ describe('Custom Objects filter', () => {
       ),
       { fields: [{ [constants.INSTANCE_FULL_NAME_FIELD]: 'MyAutoNumber',
         [constants.INSTANCE_TYPE_FIELD]: 'AutoNumber',
-        [constants.FIELD_ANNOTATIONS.DISPLAY_FORMAT]: 'A-{0000}' }],
+        [constants.FIELD_ANNOTATIONS.DISPLAY_FORMAT]: 'A-{0000}',
+        [constants.INSTANCE_REQUIRED_FIELD]: 'false' },
+      { [constants.INSTANCE_FULL_NAME_FIELD]: 'MyPicklist',
+        [constants.INSTANCE_TYPE_FIELD]: 'Picklist',
+        [constants.INSTANCE_REQUIRED_FIELD]: 'true',
+        [constants.INSTANCE_DEFAULT_VALUE_FIELD]: 'YES',
+        [constants.INSTANCE_VALUE_SET_FIELD]: { [constants.VALUE_SET_FIELDS.VALUE_SET_DEFINITION]:
+          { value: [{ [constants.INSTANCE_FULL_NAME_FIELD]: 'YES' },
+            { [constants.INSTANCE_FULL_NAME_FIELD]: 'NO' }] } } }],
       [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead' })
       it('should merge sobject fields with a custom object instance elemenet', async () => {
         mockSingleSObject('Lead', [{
@@ -493,7 +501,13 @@ describe('Custom Objects filter', () => {
           type: 'string',
           label: 'AutoNumero',
           autoNumber: true,
-        }], false, true, false, 'Lead Label')
+        },
+        {
+          name: 'MyPicklist',
+          type: 'picklist',
+          label: 'My Picklist',
+          picklistValues: [],
+        }], false, true, false, 'Picklist Label')
         const result: Element[] = [testInstanceElement]
         await filter().onFetch(result)
 
@@ -505,6 +519,14 @@ describe('Custom Objects filter', () => {
           .annotations[constants.FIELD_ANNOTATIONS.DISPLAY_FORMAT]).toBe('A-{0000}')
         expect(leadObjectType.fields.my_auto_number
           .annotations.label).toBe('AutoNumero')
+        expect(leadObjectType.fields.my_auto_number
+          .annotations[Type.ANNOTATIONS.REQUIRED]).toBe(false)
+        expect(leadObjectType.fields.my_picklist
+          .annotations[Type.ANNOTATIONS.VALUES]).toEqual(['YES', 'NO'])
+        expect(leadObjectType.fields.my_picklist
+          .annotations[constants.DEFAULT_VALUE_FORMULA]).toBe('YES')
+        expect(leadObjectType.fields.my_picklist
+          .annotations[Type.ANNOTATIONS.REQUIRED]).toBe(true)
       })
 
       it('should change instance element to object type if we do not get it from the soap api', async () => {

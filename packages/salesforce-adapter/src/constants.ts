@@ -4,6 +4,9 @@ export const CUSTOM_OBJECT = 'CustomObject'
 export const METADATA_OBJECT_NAME_FIELD = 'fullName'
 export const INSTANCE_FULL_NAME_FIELD = 'full_name'
 export const INSTANCE_TYPE_FIELD = 'type'
+export const INSTANCE_REQUIRED_FIELD = 'required'
+export const INSTANCE_DEFAULT_VALUE_FIELD = 'default_value'
+export const INSTANCE_VALUE_SET_FIELD = 'value_set'
 export const FORMULA_TYPE_PREFIX = 'formula_'
 export const SALESFORCE_CUSTOM_SUFFIX = '__c'
 export const ADMIN_PROFILE = 'admin'
@@ -112,6 +115,10 @@ export const FIELD_DEPENDENCY_FIELDS = {
 export const VALUE_SETTINGS_FIELDS = {
   CONTROLLING_FIELD_VALUE: 'controlling_field_value',
   VALUE_NAME: 'value_name',
+}
+
+export const VALUE_SET_FIELDS = {
+  VALUE_SET_DEFINITION: 'value_set_definition',
 }
 
 export const LOOKUP_FILTER_FIELDS = {

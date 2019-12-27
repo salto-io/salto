@@ -1,9 +1,11 @@
 import wu from 'wu'
 import {
   ObjectType, InstanceElement, Element, ActionName, DataModificationResult, ElemIdGetter, Adapter,
+  ChangeValidator,
 } from 'adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto/logging'
+import _ from 'lodash'
 import {
   deployActions, ItemStatus, DeployError,
 } from './core/deploy'
@@ -21,6 +23,7 @@ import {
   MergeErrorWithElements, FatalFetchMergeError, FetchProgressEvents, toAddFetchChange,
 } from './core/fetch'
 import { Workspace, CREDS_DIR } from './workspace/workspace'
+import adapterCreators from './core/adapters/creators'
 
 export { ItemStatus }
 
@@ -66,6 +69,13 @@ const filterElementsByServices = (
   services: string[]
 ): Element[] => elements.filter(e => services.includes(e.elemID.adapter))
 
+const getChangeValidators = (): Record<string, ChangeValidator> =>
+  _(adapterCreators)
+    .entries()
+    .map(([name, creator]) => [name, creator.changeValidator])
+    .fromPairs()
+    .value()
+
 export const preview = async (
   workspace: Workspace,
   services: string[] = workspace.config.services
@@ -74,7 +84,8 @@ export const preview = async (
   const stateElements = await state.get()
   return getPlan(
     filterElementsByServices(stateElements, services),
-    filterElementsByServices(workspace.elements, services)
+    filterElementsByServices(workspace.elements, services),
+    getChangeValidators()
   )
 }
 
@@ -104,9 +115,10 @@ export const deploy = async (
   const state = new State(workspace.config.stateLocation)
   const stateElements = await state.get()
   try {
-    const actionPlan = getPlan(
+    const actionPlan = await getPlan(
       filterElementsByServices(stateElements, services),
-      filterElementsByServices(workspace.elements, services)
+      filterElementsByServices(workspace.elements, services),
+      getChangeValidators()
     )
     if (force || await shouldDeploy(actionPlan)) {
       const adapters = await login(workspace, fillConfig, services)
@@ -119,7 +131,7 @@ export const deploy = async (
 
       const changedElementsIds = changedElements.map(e => e.elemID.getFullName())
 
-      const changes = wu(getDetailedChanges(workspace.elements
+      const changes = wu(await getDetailedChanges(workspace.elements
         .filter(e => changedElementsIds.includes(e.elemID.getFullName())), changedElements))
         .map(change => ({ change, serviceChange: change }))
       const errored = errors.length > 0

@@ -3,18 +3,13 @@ import { ADAPTER, Element, Field, ObjectType, ServiceIds, Type, isObjectType } f
 import { SalesforceClient } from 'index'
 import { DescribeSObjectResult, Field as SObjField } from 'jsforce'
 import _ from 'lodash'
-import { API_NAME, CUSTOM_OBJECT, METADATA_TYPE, NAMESPACE_SEPARATOR, SALESFORCE } from '../constants'
+import { API_NAME, CUSTOM_OBJECT, METADATA_TYPE, SALESFORCE } from '../constants'
 import { FilterCreator } from '../filter'
-import { apiName, getSObjectFieldElement, Types } from '../transformers/transformer'
+import { getSObjectFieldElement, Types } from '../transformers/transformer'
 import { id, addApiName, addMetadataType, addLabel } from './utils'
+import { getNamespace, hasNamespace } from '../change_validators/package'
 
 const log = logger(module)
-
-const hasNamespace = (customElement: Field | ObjectType): boolean =>
-  apiName(customElement).split(NAMESPACE_SEPARATOR).length === 3
-
-const getNamespace = (customElement: Field | ObjectType): string =>
-  apiName(customElement).split(NAMESPACE_SEPARATOR)[0]
 
 const createObjectWithFields = (objectName: string, serviceIds: ServiceIds,
   fields: Field[]): ObjectType => {
@@ -34,8 +29,8 @@ const getCustomObjectPackagePath = (obj: ObjectType): string[] => {
 
 const getPartialCustomObjects = (customFields: Field[], objectName: string,
   serviceIds: ServiceIds): ObjectType[] => {
-  const [packagedFields, regularCustomFields] = _.partition(customFields, hasNamespace)
-  const namespaceToFields: Record<string, Field[]> = _.groupBy(packagedFields, getNamespace)
+  const [packagedFields, regularCustomFields] = _.partition(customFields, f => hasNamespace(f))
+  const namespaceToFields: Record<string, Field[]> = _.groupBy(packagedFields, f => getNamespace(f))
   // Custom fields that belong to a package go in a separate element
   const customParts = Object.entries(namespaceToFields)
     .map(([namespace, packageFields]) => {

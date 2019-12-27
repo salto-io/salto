@@ -81,8 +81,8 @@ describe('Test extension format', () => {
   let html: string
   beforeAll(async () => {
     expectedDif = await file.readTextFile(diffFile)
-    diff = await createPlanDiff(getPlan(before, after).itemsByEvalOrder())
-    shuffledDiff = await createPlanDiff(getPlan(beforeShuffled, after).itemsByEvalOrder())
+    diff = await createPlanDiff((await getPlan(before, after)).itemsByEvalOrder())
+    shuffledDiff = await createPlanDiff((await getPlan(beforeShuffled, after)).itemsByEvalOrder())
     html = renderDiffView(diff, [cssHref])
   })
   describe('create diff', () => {

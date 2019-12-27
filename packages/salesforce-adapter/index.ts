@@ -4,6 +4,7 @@ import testCredentials from './e2e_test/credentials'
 import { Credentials } from './src/client/client'
 
 export { default, creator } from './src/adapter'
+export { changeValidator } from './src/change_validator'
 export { default as SalesforceClient } from './src/client/client'
 export { Credentials } from './src/client/client'
 export { SALESFORCE as adapterId } from './src/constants'

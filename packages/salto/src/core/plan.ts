@@ -3,7 +3,7 @@ import wu from 'wu'
 import {
   Element, ElemID, isObjectType, isInstanceElement, Value, Values, ChangeDataType, isField, Change,
   getChangeElement, isEqualElements, isPrimitiveType, ObjectType, PrimitiveType, ChangeError,
-  ChangeValidator, InstanceElement, Type,
+  ChangeValidator, InstanceElement, Type, isRemovalDiff,
 } from 'adapter-api'
 import {
   buildDiffGraph, buildGroupedGraph, Group, DataNodeMap, NodeId, GroupedNodeMap,
@@ -279,7 +279,7 @@ const filterInvalidChanges = async (beforeElementsMap: ElementMap, afterElements
       // modification of a top level element that should be reverted as a whole
       return beforeTopLevelElem.clone()
     }
-    // ObjectType's fields and/or annotations modification
+    // ObjectType's fields changes
     const beforeObj = beforeTopLevelElem as ObjectType
     const afterObj = afterTopLevelElem as ObjectType
     const afterFieldNames = afterObj ? Object.keys(afterObj.fields) : []
@@ -297,18 +297,16 @@ const filterInvalidChanges = async (beforeElementsMap: ElementMap, afterElements
       .fromPairs()
       .value()
 
-    // identify whether the annotations changes should be reverted
-    const annotationsSource = elemIdsToOmit.some(e => e.isTopLevel()) ? beforeObj : afterObj
     return new ObjectType({
       elemID: afterObj.elemID,
       fields: validFields,
-      annotationTypes: _.clone(annotationsSource.annotationTypes),
-      annotations: _.cloneDeep(annotationsSource.annotations),
+      annotationTypes: _.clone(afterObj.annotationTypes),
+      annotations: _.cloneDeep(afterObj.annotations),
     })
   }
 
   const createValidAfterElementsMap = (invalidChanges: ChangeError[]): ElementMap => {
-    const topLevelNodeIdToElemIds = _(invalidChanges)
+    const topLevelNodeIdToInvalidElemIds = _(invalidChanges)
       .map(c => c.elemID)
       .groupBy(elemId => id(elemId.createTopLevelParentID().parent))
 
@@ -320,9 +318,9 @@ const filterInvalidChanges = async (beforeElementsMap: ElementMap, afterElements
         const beforeElem = beforeElementsMap[name]
         const afterElem = afterElementsMap[name]
         const { elemID } = afterElem ?? beforeElem
-        const validElement = topLevelNodeIdToElemIds.has(id(elemID))
+        const validElement = topLevelNodeIdToInvalidElemIds.has(id(elemID))
           ? createValidTopLevelElem(beforeElem as TopLevelElement, afterElem as TopLevelElement,
-            topLevelNodeIdToElemIds.get(id(elemID)))
+            topLevelNodeIdToInvalidElemIds.get(id(elemID)))
           : afterElem
         return validElement === undefined ? undefined : [name, validElement]
       })
@@ -351,39 +349,12 @@ const filterInvalidChanges = async (beforeElementsMap: ElementMap, afterElements
           // in case this is an invalid node throw error so the walk will skip the dependent nodes
           throw new Error()
         }
-
-        const getValidChange = (): Change<ChangeDataType> => {
-          switch (change.action) {
-            case 'add':
-              return {
-                action: change.action,
-                data: {
-                  after: elemID.isTopLevel()
-                    ? validAfterElementsMap[id(elemID)]
-                    : change.data.after,
-                },
-              } as Change<ChangeDataType>
-            case 'modify':
-              return {
-                action: change.action,
-                data: {
-                  before: change.data.before,
-                  after: elemID.isTopLevel()
-                    ? validAfterElementsMap[id(elemID)]
-                    : change.data.after,
-                },
-              } as Change<ChangeDataType>
-            case 'remove':
-              return {
-                action: change.action,
-                data: { before: change.data.before },
-              }
-            default:
-              throw new Error('Unknown action type')
-          }
-        }
-
-        validDiffGraph.addNode(nodeId, diffGraph.get(nodeId), getValidChange())
+        const validChange = isRemovalDiff(change) ? change : { ...change,
+          data: {
+            ...change.data,
+            after: validAfterElementsMap[id(elemID)] || change.data.after,
+          } } as Change<ChangeDataType>
+        validDiffGraph.addNode(nodeId, diffGraph.get(nodeId), validChange)
       })
     } catch (e) {
       // do nothing, we may have errors since we may skip nodes that depends on invalid nodes
@@ -402,11 +373,8 @@ const filterInvalidChanges = async (beforeElementsMap: ElementMap, afterElements
       })
   ))
 
-  const invalidChanges = changeErrors
-    .filter(v => v.level === 'ERROR')
-  const nodeIdsToOmit = new Set(invalidChanges
-    .map(change => id(change.elemID)))
-
+  const invalidChanges = changeErrors.filter(v => v.level === 'ERROR')
+  const nodeIdsToOmit = new Set(invalidChanges.map(change => id(change.elemID)))
   const validAfterElementsMap = createValidAfterElementsMap(invalidChanges)
   const validDiffGraph = buildValidDiffGraph(nodeIdsToOmit, validAfterElementsMap)
   return { changeErrors, validDiffGraph, validAfterElementsMap }

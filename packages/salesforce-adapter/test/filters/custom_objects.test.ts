@@ -524,7 +524,7 @@ describe('Custom Objects filter', () => {
         expect(leadObjectType.fields.my_picklist
           .annotations[Type.ANNOTATIONS.VALUES]).toEqual(['YES', 'NO'])
         expect(leadObjectType.fields.my_picklist
-          .annotations[constants.DEFAULT_VALUE_FORMULA]).toBe('YES')
+          .annotations[Type.ANNOTATIONS.DEFAULT]).toBe('YES')
         expect(leadObjectType.fields.my_picklist
           .annotations[Type.ANNOTATIONS.REQUIRED]).toBe(true)
       })

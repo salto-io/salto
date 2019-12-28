@@ -8,7 +8,7 @@ import _ from 'lodash'
 import { transformPrimitiveAnnotations } from './convert_types'
 import { API_NAME, CUSTOM_OBJECT, METADATA_TYPE, NAMESPACE_SEPARATOR, SALESFORCE,
   INSTANCE_FULL_NAME_FIELD, SALESFORCE_CUSTOM_SUFFIX, INSTANCE_TYPE_FIELD, LABEL,
-  FIELD_TYPE_API_NAMES, DEFAULT_VALUE_FORMULA, INSTANCE_REQUIRED_FIELD,
+  FIELD_TYPE_API_NAMES, INSTANCE_REQUIRED_FIELD,
   INSTANCE_DEFAULT_VALUE_FIELD, INSTANCE_VALUE_SET_FIELD } from '../constants'
 import { FilterCreator } from '../filter'
 import { apiName, getSObjectFieldElement, Types, isCustomObject, bpCase } from '../transformers/transformer'
@@ -154,7 +154,7 @@ const renameFields = (fields: Values): Values => Object.assign({},
       case INSTANCE_FULL_NAME_FIELD:
         return { [API_NAME]: v }
       case INSTANCE_DEFAULT_VALUE_FIELD:
-        return { [DEFAULT_VALUE_FORMULA]: v }
+        return { [Type.ANNOTATIONS.DEFAULT]: v }
       case INSTANCE_VALUE_SET_FIELD:
         return { [Type.ANNOTATIONS.VALUES]: v.value_set_definition.value
           .map((value: Values) => value.full_name) }

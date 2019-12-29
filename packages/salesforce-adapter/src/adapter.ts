@@ -74,7 +74,7 @@ const validateApiName = (prevElement: Element, newElement: Element): void => {
 }
 
 export interface SalesforceAdapterParams {
-  // Metadata types that we want to fetch even though they are not returned from the API
+  // Metadata types that we want to fetch that exist in the SOAP API but not in the metadata API
   metadataAdditionalTypes?: string[]
 
   // Metadata types that we do not want to fetch even though they are returned as top level
@@ -205,11 +205,12 @@ export default class SalesforceAdapter {
     const annotationTypes = Types.getAnnotationTypes()
     const metadataTypeNames = this.listMetadataTypes()
     const metadataTypes = this.fetchMetadataTypes(metadataTypeNames)
+    const additionalMetadataTypes = this.fetchMetadataTypes(this.listAdditionalMetadataTypes())
     const metadataInstances = this.fetchMetadataInstances(metadataTypeNames, metadataTypes)
 
     const elements = _.flatten(
       await Promise.all([annotationTypes, fieldTypes, metadataTypes,
-        metadataInstances]) as Element[][]
+        additionalMetadataTypes, metadataInstances]) as Element[][]
     )
 
     await this.runFiltersOnFetch(elements)
@@ -587,9 +588,12 @@ export default class SalesforceAdapter {
     return this.client.listMetadataTypes().then(
       types => _.flatten(types
         .map(x => [x.xmlName, ...makeArray(x.childXmlNames)]))
-        .concat(this.metadataAdditionalTypes)
         .filter(name => !this.metadataTypeBlacklist.includes(name))
     )
+  }
+
+  private async listAdditionalMetadataTypes(): Promise<string[]> {
+    return this.metadataAdditionalTypes
   }
 
   @logDuration('fetching metadata types')

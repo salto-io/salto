@@ -3,14 +3,14 @@ import chalk from 'chalk'
 import wu from 'wu'
 import {
   isType, Element, Type, isInstanceElement, Values, Change, Value, getChangeElement, ElemID,
-  isObjectType, isField, isPrimitiveType, Field, PrimitiveTypes, ActionName,
+  isObjectType, isField, isPrimitiveType, Field, PrimitiveTypes,
+  ActionName, ChangeError, SaltoError,
 } from 'adapter-api'
 import {
-  Plan, PlanItem, FoundSearchResult, SearchResult, DetailedChange, WorkspaceError, SourceFragment,
-  FetchChange, MergeError,
+  Plan, PlanItem, FoundSearchResult, SearchResult, DetailedChange, WorkspaceError,
+  SourceFragment, FetchChange, MergeError,
 } from 'salto'
 import Prompts from './prompts'
-
 
 export const header = (txt: string): string => chalk.bold(txt)
 
@@ -29,6 +29,27 @@ export const emptyLine = (): string => ''
 const fullName = (change: Change): string => getChangeElement(change).elemID.getFullName()
 
 const planItemName = (step: PlanItem): string => fullName(step.parent())
+
+const formatError = (err: { message: string }): string => header(err.message)
+
+/**
+  * Format workspace errors
+  */
+const TAB = '  '
+const formatSourceFragment = (sf: Readonly<SourceFragment>): string =>
+  `${chalk.underline(sf.sourceRange.filename)}(${chalk.cyan(`${sf.sourceRange.start.line}`)}`
+   + `:${chalk.cyan(`${sf.sourceRange.start.col}`)})\n${TAB}${
+     subHeader(sf.fragment.split('\n').join(`\n${TAB}`))}\n`
+
+const formatSourceFragments = (sourceFragments: ReadonlyArray<SourceFragment>): string =>
+  (sourceFragments.length > 0
+    ? `\n on ${sourceFragments.map(formatSourceFragment).join('\n and ')}`
+    : '')
+
+
+const formatWorkspaceError = (we: Readonly<WorkspaceError<SaltoError>>): string =>
+  `${formatError(we)}${formatSourceFragments(we.sourceFragments)}`
+
 
 const indent = (text: string, level: number): string => {
   const indentText = _.repeat('  ', level)
@@ -174,11 +195,50 @@ const getElapsedTime = (start: Date): number => Math.ceil(
   (new Date().getTime() - start.getTime()) / 1000,
 )
 
-export const formatExecutionPlan = (plan: Plan): string => {
+type ChangeWorkspaceError = WorkspaceError<ChangeError>
+
+export const formatChangeErrors = (
+  wsChangeErrors: ReadonlyArray<ChangeWorkspaceError>
+): string => {
+  const formatGroupedChangeErrors = (groupedChangeErrors: ChangeWorkspaceError[]): string => {
+    const errorsIndent = 2
+    const firstErr: ChangeWorkspaceError = groupedChangeErrors[0]
+    if (groupedChangeErrors.length > 1) {
+      return indent(`${firstErr.severity}: ${formatError(firstErr)} (${groupedChangeErrors.length} Elements)`,
+        errorsIndent)
+    }
+    const formattedWSerror = formatWorkspaceError(firstErr)
+    return indent(`${formattedWSerror}${firstErr.severity}: ${firstErr.detailedMessage}`,
+      errorsIndent)
+  }
+  const ret = _(wsChangeErrors)
+    .groupBy(ce => ce.message)
+    .values()
+    .sortBy(errs => -errs.length)
+    .map(cerrs => formatGroupedChangeErrors(cerrs))
+    .join('\n')
+  return ret
+}
+
+
+export const formatExecutionPlan = (
+  plan: Plan,
+  workspaceErrors: ReadonlyArray<ChangeWorkspaceError>
+): string => {
+  const formattedPlanChangeErrors: string = formatChangeErrors(
+    workspaceErrors
+  )
+  const planErrorsOutput: string[] = _.isEmpty(formattedPlanChangeErrors)
+    ? [emptyLine()]
+    : [emptyLine(),
+      header(Prompts.PLAN_CHANGE_ERRS_HEADER),
+      formattedPlanChangeErrors, emptyLine(),
+    ]
   if (_.isEmpty(plan)) {
     return [
       emptyLine(),
       Prompts.EMPTY_PLAN,
+      ...planErrorsOutput,
       emptyLine(),
     ].join('\n')
   }
@@ -190,9 +250,9 @@ export const formatExecutionPlan = (plan: Plan): string => {
     emptyLine(),
     header(Prompts.PLANSTEPSHEADER),
     planSteps,
+    ...planErrorsOutput,
     emptyLine(),
     subHeader(Prompts.EXPLAINPREVIEWRESULT),
-    emptyLine(),
     actionCount,
     emptyLine(),
     emptyLine(),
@@ -346,26 +406,6 @@ export const formatConfigHeader = (adapterName: string): string => [
   emptyLine(),
 ].join('\n')
 
-/**
-  * Format workspace errors
-  */
-const TAB = '  '
-const formatSourceFragment = (sf: Readonly<SourceFragment>): string =>
-  `${chalk.underline(sf.sourceRange.filename)}(${chalk.cyan(`${sf.sourceRange.start.line}`)}`
-  + `:${chalk.cyan(`${sf.sourceRange.start.col}`)})\n${TAB}${
-    subHeader(sf.fragment.split('\n').join(`\n${TAB}`))}\n`
-
-const formatSourceFragments = (sourceFragments: ReadonlyArray<SourceFragment>): string =>
-  (sourceFragments.length > 0
-    ? `\n on ${sourceFragments.map(formatSourceFragment).join('\n and ')}`
-    : '')
-
-const formatError = (err: { message: string }): string => header(err.message)
-
-const formatWorkspaceError = (we: Readonly<WorkspaceError>): string =>
-  `${formatError(we)}${formatSourceFragments(we.sourceFragments)}`
-
-
 export const formatFetchHeader = (): string => [
   emptyLine(),
   header(Prompts.FETCH_HEADER),
@@ -379,7 +419,9 @@ export const formatStepStart = (text: string, indentLevel?: number): string => i
 export const formatStepCompleted = (text: string, indentLevel?: number): string => indent(`${chalk.green('vvv')} ${text}`, indentLevel ?? 1)
 export const formatStepFailed = (text: string, indentLevel?: number): string => indent(`${error('xxx')} ${text}`, indentLevel ?? 1)
 
-export const formatWorkspaceErrors = (workspaceErrors: ReadonlyArray<WorkspaceError>): string =>
+export const formatWorkspaceErrors = (
+  workspaceErrors: ReadonlyArray<WorkspaceError<SaltoError>>
+): string =>
   `${workspaceErrors.map(formatWorkspaceError).join('\n')}\n`
 
 export const formatMergeErrors = (mergeErrors: ReadonlyArray<MergeError>): string =>

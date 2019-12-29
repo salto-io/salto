@@ -25,7 +25,14 @@ export const command = (
     try {
       const workspacePlan = await preview(workspace, inputServices)
       spinner.succeed(Prompts.PREVIEW_FINISHED)
-      stdout.write(formatExecutionPlan(workspacePlan))
+      const planWorkspaceErrors = await Promise.all(
+        workspacePlan.changeErrors.map(ce => workspace.transformToWorkspaceError(ce))
+      )
+      const formattedPlanOutput = formatExecutionPlan(
+        workspacePlan,
+        planWorkspaceErrors
+      )
+      stdout.write(formattedPlanOutput)
       return CliExitCode.Success
     } catch (e) {
       spinner.fail(Prompts.PREVIEW_FAILED)

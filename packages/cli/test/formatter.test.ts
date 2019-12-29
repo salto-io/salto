@@ -1,11 +1,33 @@
 import {
-  Element, ObjectType, InstanceElement, PrimitiveType, ElemID, PrimitiveTypes, BuiltinTypes,
+  Element, ObjectType, InstanceElement, PrimitiveType, ElemID,
+  PrimitiveTypes, BuiltinTypes, ChangeError, SaltoError,
 } from 'adapter-api'
 import { WorkspaceError, FetchChange } from 'salto'
-import { formatSearchResults, formatExecutionPlan, formatChange, formatFetchChangeForApproval, formatWorkspaceErrors } from '../src/formatter'
+import { formatSearchResults, formatExecutionPlan, formatChange, formatFetchChangeForApproval, formatWorkspaceErrors, formatChangeErrors } from '../src/formatter'
 import { elements, preview, detailedChange } from './mocks'
 
 describe('formatter', () => {
+  const workspaceErrorWithSourceFragments: WorkspaceError<SaltoError> = {
+    sourceFragments: [{
+      sourceRange: {
+        start: {
+          byte: 20,
+          col: 10,
+          line: 2,
+        },
+        end: {
+          byte: 30,
+          col: 10,
+          line: 3,
+        },
+        filename: 'test.bp',
+      },
+      fragment: '{ This is my code fragment }',
+
+    }],
+    message: 'This is my error',
+    severity: 'Error',
+  }
   describe('formatSearchResults', () => {
     const find = (name: string): Element =>
       elements().find(e => e.elemID.getFullName() === name) as Element
@@ -56,7 +78,12 @@ describe('formatter', () => {
   })
 
   describe('createPlanOutput', () => {
-    const output = formatExecutionPlan(preview())
+    const plan = preview()
+    const output = formatExecutionPlan(plan, plan.changeErrors.map(ce => ({
+      ...ce,
+      sourceFragments: workspaceErrorWithSourceFragments.sourceFragments,
+    })))
+
     it('should return type field addition', () => {
       expect(output).toMatch(/|[^\n]+salesforce.lead.*\+[^\n]+do_you_have_a_sales_team/s)
     })
@@ -65,6 +92,82 @@ describe('formatter', () => {
     })
     it('should have titles for all level of nested modifications', () => {
       expect(output).toMatch(/|[^\n]+salesforce.lead.*|[^\n]+how_many_sales_people.*M[^\n]+label/s)
+    })
+  })
+
+  describe('formatPlanValidations', () => {
+    it('should be empty when there are no validations', async () => {
+      const output = formatChangeErrors([],)
+      expect(output).toEqual('')
+    })
+    it('should have single validation', () => {
+      const changeErrors: ReadonlyArray<WorkspaceError<ChangeError>> = [{
+        elemID: new ElemID('salesforce', 'test'),
+        severity: 'Error',
+        message: 'Message key for test',
+        detailedMessage: 'Validation message',
+        sourceFragments: workspaceErrorWithSourceFragments.sourceFragments,
+      }]
+      const output = formatChangeErrors(changeErrors)
+      expect(output)
+        .toContain('Error')
+      expect(output)
+        .toMatch(new RegExp(`.*${changeErrors[0].detailedMessage}`, 's'))
+      expect(output).toMatch(new RegExp(`.*${workspaceErrorWithSourceFragments.sourceFragments[0].sourceRange.filename}`, 's'))
+    })
+    it('should have grouped validations', () => {
+      const changeErrors: ReadonlyArray<WorkspaceError<ChangeError>> = [{
+        elemID: new ElemID('salesforce', 'test'),
+        severity: 'Error',
+        message: 'Message key for test',
+        detailedMessage: 'Validation message',
+        sourceFragments: workspaceErrorWithSourceFragments.sourceFragments,
+
+      },
+      {
+        elemID: new ElemID('salesforce', 'test2'),
+        severity: 'Error',
+        message: 'Message key for test',
+        detailedMessage: 'Validation message 2',
+        sourceFragments: workspaceErrorWithSourceFragments.sourceFragments,
+
+      }]
+      const output = formatChangeErrors(changeErrors)
+      expect(output)
+        .toContain('Error')
+      expect(output)
+        .toMatch(new RegExp(`.*${changeErrors[0].message}.*2 Elements`, 's'))
+    })
+    it('should order validations from most to least occurrences', () => {
+      const differentValidationKey: WorkspaceError<ChangeError> = {
+        elemID: new ElemID('salesforce', 'test3'),
+        severity: 'Error',
+        message: 'Different message key',
+        detailedMessage: 'Validation message 3',
+        sourceFragments: workspaceErrorWithSourceFragments.sourceFragments,
+      }
+      const changeErrors: ReadonlyArray<WorkspaceError<ChangeError>> = [{
+        elemID: new ElemID('salesforce', 'test'),
+        severity: 'Error',
+        message: 'Message key for test',
+        detailedMessage: 'Validation message',
+        sourceFragments: workspaceErrorWithSourceFragments.sourceFragments,
+
+      },
+      {
+        elemID: new ElemID('salesforce', 'test2'),
+        severity: 'Error',
+        message: 'Message key for test',
+        detailedMessage: 'Validation message 2',
+        sourceFragments: workspaceErrorWithSourceFragments.sourceFragments,
+
+      },
+      differentValidationKey]
+      const output = formatChangeErrors(changeErrors)
+      expect(output)
+        .toContain('Error')
+      expect(output)
+        .toMatch(new RegExp(`.*${changeErrors[0].message}.*2 Elements.*\n.*${differentValidationKey.detailedMessage}`, 's'))
     })
   })
 
@@ -171,27 +274,6 @@ describe('formatter', () => {
   })
 
   describe('workspace error format', () => {
-    const workspaceErrorWithSourceFragments: WorkspaceError = {
-      sourceFragments: [{
-        sourceRange: {
-          start: {
-            byte: 20,
-            col: 10,
-            line: 2,
-          },
-          end: {
-            byte: 30,
-            col: 10,
-            line: 3,
-          },
-          filename: 'test.bp',
-        },
-        fragment: '{ This is my code fragment }',
-
-      }],
-      message: 'This is my error',
-      severity: 'Error',
-    }
     let formattedErrors: string
     beforeEach(() => {
       formattedErrors = formatWorkspaceErrors([workspaceErrorWithSourceFragments])

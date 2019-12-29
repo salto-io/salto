@@ -1,5 +1,5 @@
 import * as vscode from 'vscode'
-import { InstanceElement, ObjectType, Values, isPrimitiveType, PrimitiveTypes, Value } from 'adapter-api'
+import { InstanceElement, ObjectType, Values, isPrimitiveType, PrimitiveTypes, Value, SaltoError } from 'adapter-api'
 import { preview, Plan, deploy, ItemStatus, PlanItem, DeployResult, WorkspaceError } from 'salto'
 import wu from 'wu'
 import { EditorWorkspace } from './salto/workspace'
@@ -59,7 +59,7 @@ const updateProgress = async (
 
 const getCriticalErrors = async (
   workspace: EditorWorkspace
-): Promise<ReadonlyArray<WorkspaceError>> => (
+): Promise<ReadonlyArray<WorkspaceError<SaltoError>>> => (
   (await workspace.workspace.getWorkspaceErrors()).filter(e => e.severity === 'Error')
 )
 

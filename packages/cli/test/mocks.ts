@@ -1,7 +1,7 @@
 import { GroupedNodeMap } from '@salto/dag'
 import {
   BuiltinTypes, Change, Element, ElemID, Field, getChangeElement, InstanceElement,
-  ObjectType, CORE_ANNOTATIONS,
+  ObjectType, CORE_ANNOTATIONS, SaltoError,
 } from 'adapter-api'
 import _ from 'lodash'
 import {
@@ -273,7 +273,12 @@ export const preview = (): Plan => {
     ],
   )
   result.addNode(_.uniqueId('instance'), [], instancePlanItem)
-
+  const changeErrors = [{
+    elemID: new ElemID('salesforce', 'test'),
+    severity: 'Error',
+    message: 'Message key for test',
+    detailedMessage: 'Validation message',
+  }]
   Object.assign(result, {
     itemsByEvalOrder(): Iterable<PlanItem> {
       return [leadPlanItem, accountPlanItem, instancePlanItem]
@@ -282,8 +287,8 @@ export const preview = (): Plan => {
       if (id.startsWith('lead')) return leadPlanItem
       return id.startsWith('account') ? accountPlanItem : instancePlanItem
     },
+    changeErrors,
   })
-
   return result as Plan
 }
 
@@ -318,8 +323,14 @@ export const describe = async (_searchWords: string[]):
     isGuess: false,
   })
 
-export const getWorkspaceErrors = (): ReadonlyArray<WorkspaceError> => [{
+export const getWorkspaceErrors = (): ReadonlyArray<WorkspaceError<SaltoError>> => [{
   sourceFragments: [],
   message: 'Error',
   severity: 'Error',
 }]
+
+export const transformToWorkspaceError = (): Readonly<WorkspaceError<SaltoError>> => ({
+  sourceFragments: [],
+  message: 'Error',
+  severity: 'Error',
+})

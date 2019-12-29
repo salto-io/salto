@@ -1,5 +1,6 @@
 import _ from 'lodash'
 import { Workspace, loadConfig, FetchChange, WorkspaceError } from 'salto'
+import { SaltoError } from 'adapter-api'
 import { logger } from '@salto/logging'
 import { formatWorkspaceErrors, formatWorkspaceAbort, formatDetailedChanges } from './formatter'
 import { CliOutput, SpinnerCreator } from './types'
@@ -8,7 +9,7 @@ import Prompts from './prompts'
 
 const log = logger(module)
 
-const isError = (e: WorkspaceError): boolean => (e.severity === 'Error')
+const isError = (e: WorkspaceError<SaltoError>): boolean => (e.severity === 'Error')
 
 export type LoadWorkspaceResult = {
   workspace: Workspace

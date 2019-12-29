@@ -38,7 +38,7 @@ export type Blueprint = {
 }
 
 
-export type WorkspaceError = Readonly<SaltoError & {
+export type WorkspaceError<T extends SaltoError > = Readonly<T & {
    sourceFragments: SourceFragment[]
 }>
 
@@ -355,8 +355,8 @@ export class Workspace {
     }
   }
 
-  async createWorkspaceErrorFromSaltoElementError(saltoElemErr: SaltoElementError):
-  Promise<Readonly<WorkspaceError>> {
+  async transformToWorkspaceError<T extends SaltoElementError>(saltoElemErr: T):
+  Promise<Readonly<WorkspaceError<T>>> {
     const sourceRanges = await this.getSourceRanges(saltoElemErr.elemID)
     const sourceFragments = await Promise.all(
       sourceRanges.map(sr => this.resolveSourceFragment(sr))
@@ -368,19 +368,19 @@ export class Workspace {
     }
   }
 
-  async getWorkspaceErrors(): Promise<ReadonlyArray<WorkspaceError>> {
+  async getWorkspaceErrors(): Promise<ReadonlyArray<WorkspaceError<SaltoError>>> {
     const wsErrors = this.state.errors
-    return [
-      ...(await Promise.all(wsErrors.parse.map(
-        async (parseError: ParseError): Promise<WorkspaceError> =>
+    return Promise.all(_.flatten([
+      wsErrors.parse.map(
+        async (parseError: ParseError): Promise<WorkspaceError<SaltoError>> =>
           ({ ...parseError,
             sourceFragments: [await this.resolveSourceFragment(parseError.subject)] })
-      ))),
-      ...(await Promise.all(wsErrors.merge.map(mergeError =>
-        this.createWorkspaceErrorFromSaltoElementError(mergeError)))),
-      ...(await Promise.all(wsErrors.validation.map(validationError =>
-        this.createWorkspaceErrorFromSaltoElementError(validationError)))),
-    ]
+      ),
+      wsErrors.merge.map(mergeError =>
+        this.transformToWorkspaceError(mergeError)),
+      wsErrors.validation.map(validationError =>
+        this.transformToWorkspaceError(validationError)),
+    ]))
   }
 
   private markDirty(names: string[]): void {

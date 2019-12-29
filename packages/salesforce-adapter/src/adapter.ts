@@ -205,7 +205,8 @@ export default class SalesforceAdapter {
     const annotationTypes = Types.getAnnotationTypes()
     const metadataTypeNames = this.listMetadataTypes()
     const metadataTypes = this.fetchMetadataTypes(metadataTypeNames, annotationTypes)
-    const additionalMetadataTypes = this.fetchMetadataTypes(this.listAdditionalMetadataTypes())
+    const additionalMetadataTypes = this.fetchMetadataTypes(this.listAdditionalMetadataTypes(),
+      annotationTypes)
     const metadataInstances = this.fetchMetadataInstances(metadataTypeNames, metadataTypes)
 
     const elements = _.flatten(

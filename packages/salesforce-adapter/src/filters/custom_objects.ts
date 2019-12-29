@@ -177,8 +177,9 @@ const fixInstanceFieldValueBeforeMergeToAnnotations = (instanceFieldValues: Valu
     const apiTypeName = Object.entries(FIELD_TYPE_API_NAMES)
       .find(([_k, v]) => v === typeName)?.[0]
     const dataTypeName = apiTypeName === 'checkbox' ? 'boolean' : apiTypeName
-    return dataTypeName ? (Types.primitiveDataTypes[dataTypeName]
-      || Types.compoundDataTypes[dataTypeName]) : undefined
+    return dataTypeName
+      ? (Types.getKnownType(dataTypeName, true) || Types.getKnownType(dataTypeName, false))
+      : undefined
   }
 
   const fieldType = getFieldTypeFromName(instanceFieldValues[INSTANCE_TYPE_FIELD])

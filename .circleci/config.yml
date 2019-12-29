@@ -150,7 +150,7 @@ jobs:
           no_output_timeout: 20m
           environment:
             RUN_E2E_TESTS: '1'
-            SALTO_LOG_LEVEL: 'info'
+            SALTO_LOG_LEVEL: 'warn'
             JEST_JUNIT_OUTPUT: "reports/e2e/test-results.xml"
 
       - store_test_results:

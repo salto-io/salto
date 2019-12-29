@@ -592,7 +592,7 @@ export default class SalesforceAdapter {
   }
 
   private async listAdditionalMetadataTypes(): Promise<string[]> {
-    return Promise.resolve(this.metadataAdditionalTypes)
+    return this.metadataAdditionalTypes
   }
 
   @logDuration('fetching metadata types')

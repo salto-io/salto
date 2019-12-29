@@ -5,58 +5,62 @@ import { createCommandBuilder } from '../command_builder'
 import { CliOutput, ParsedCliInput, CliCommand, CliExitCode } from '../types'
 import { loadWorkspace } from '../workspace'
 import { getConfigWithHeader } from '../callbacks'
-import { serviceCmdFilter } from '../filters/services'
+import { serviceCmdFilter, ServiceCmdArgs } from '../filters/services'
 import {
   formatServiceConfigured, formatServiceNotConfigured, formatConfiguredServices,
-  formatLoginUpdated, formatLoginOverride, formatServiceAdded,
+  formatLoginUpdated, formatLoginOverride, formatServiceAdded, formatServiceAlreadyAdded,
 } from '../formatter'
 
 const addService = async (
   workspaceDir: string,
+  { stdout, stderr }: CliOutput,
   serviceName: string,
-  { stdout, stderr }: CliOutput
 ): Promise<CliExitCode> => {
   const { workspace, errored } = await loadWorkspace(workspaceDir,
     { stdout, stderr })
   if (errored) {
     return CliExitCode.AppError
   }
-
   if (workspace.config.services.includes(serviceName)) {
-    throw new Error('Service was already added to this workspace.')
+    stderr.write(formatServiceAlreadyAdded(serviceName))
+    return CliExitCode.UserInputError
   }
   await addAdapter(workspaceDir, serviceName)
   stdout.write(formatServiceAdded(serviceName))
-  await loginAdapter(workspace, _.partial(getConfigWithHeader, stdout), serviceName)
+  const didLogin = await loginAdapter(
+    workspace,
+    _.partial(getConfigWithHeader, stdout),
+    serviceName
+  )
+  if (didLogin) {
+    stdout.write(formatLoginUpdated)
+  }
   return CliExitCode.Success
 }
 
 const listServices = async (
   workspaceDir: string,
+  { stdout, stderr }: CliOutput,
   serviceName: string,
-  { stdout, stderr }: CliOutput
 ): Promise<CliExitCode> => {
   const { workspace, errored } = await loadWorkspace(workspaceDir, { stdout, stderr })
   if (errored) {
     return CliExitCode.AppError
   }
-  if (serviceName) {
-    if (workspace.config.services.includes(serviceName)) {
-      stdout.write(formatServiceConfigured(serviceName))
-    } else {
-      stdout.write(formatServiceNotConfigured(serviceName))
-    }
-  } else {
+  if (_.isEmpty(serviceName)) {
     stdout.write(formatConfiguredServices(workspace.config.services))
+  } else if (workspace.config.services.includes(serviceName)) {
+    stdout.write(formatServiceConfigured(serviceName))
+  } else {
+    stdout.write(formatServiceNotConfigured(serviceName))
   }
-
   return CliExitCode.Success
 }
 
 const loginService = async (
   workspaceDir: string,
+  { stdout, stderr }: CliOutput,
   serviceName: string,
-  { stdout, stderr }: CliOutput
 ): Promise<CliExitCode> => {
   const { workspace, errored } = await loadWorkspace(workspaceDir,
     { stdout, stderr })
@@ -64,7 +68,7 @@ const loginService = async (
     return CliExitCode.AppError
   }
   if (!workspace.config.services.includes(serviceName)) {
-    throw new Error('Service isn\'t configured for this workspace')
+    stderr.write(formatServiceNotConfigured(serviceName))
   }
   const didLogin = await loginAdapter(
     workspace,
@@ -90,27 +94,24 @@ const loginService = async (
 export const command = (
   workspaceDir: string,
   commandName: string,
-  serviceName: string,
-  { stdout, stderr }: CliOutput
+  { stdout, stderr }: CliOutput,
+  serviceName = '',
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
     switch (commandName) {
       case 'add':
-        return addService(workspaceDir, serviceName, { stdout, stderr })
+        return addService(workspaceDir, { stdout, stderr }, serviceName)
       case 'list':
-        return listServices(workspaceDir, serviceName, { stdout, stderr })
+        return listServices(workspaceDir, { stdout, stderr }, serviceName)
       case 'login':
-        return loginService(workspaceDir, serviceName, { stdout, stderr })
+        return loginService(workspaceDir, { stdout, stderr }, serviceName)
       default:
         throw new Error('Unknown service management command')
     }
   },
 })
 
-type ServiceArgs = {
-  name: string
-  command: string
-}
+type ServiceArgs = {} & ServiceCmdArgs
 
 type ServiceParsedCliInput = ParsedCliInput<ServiceArgs>
 
@@ -122,7 +123,7 @@ const servicesBuilder = createCommandBuilder({
 
   filters: [serviceCmdFilter],
   async build(input: ServiceParsedCliInput, output: CliOutput) {
-    return command('.', input.args.command, input.args.name, output)
+    return command('.', input.args.command, output, input.args.name)
   },
 })
 

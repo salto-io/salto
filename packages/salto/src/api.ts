@@ -278,8 +278,8 @@ export const init = async (workspaceName?: string): Promise<Workspace> => {
 }
 
 export const addAdapter = async (
-  adapterName: string,
-  workspaceDir: string
+  workspaceDir: string,
+  adapterName: string
 ): Promise<boolean> => {
   if (!isAdapterAvailable(adapterName)) {
     throw new Error('No adapter available for this service')

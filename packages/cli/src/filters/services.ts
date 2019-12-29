@@ -5,7 +5,7 @@ import { ParsedCliInput } from '../types'
 import { ParserFilter, ParsedCliInputFilter } from '../filter'
 
 export interface ServiceCmdArgs {
-  command?: string
+  command: string
   name?: string
 }
 
@@ -29,7 +29,10 @@ export const serviceCmdFilter: ServiceCmdFilter = {
         {
           type: 'string',
           desc: 'The name of the service [required for add & login]',
-        }).check((args: yargs.Arguments<ServiceCmdArgs>): true => {
+        }).check((args: yargs.Arguments<{
+          command?: string
+          name?: string
+        }>): true => {
         if (args.command && nameRequiredCommands.includes(args.command)) {
           if (_.isEmpty(args.name)) {
             throw new Error(`Missing required argument: name\n\nExample usage: salto services ${args.command} salesforce`)

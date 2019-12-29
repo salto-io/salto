@@ -38,6 +38,8 @@ const indent = (text: string, level: number): string => {
 const singleOrPluralString = (number: number, single: string, plural: string): string =>
   ((number || 0) === 1 ? `${number} ${single}` : `${number} ${plural}`)
 
+const formatSimpleError = (errorMsg: string): string => header(error(`Error: ${errorMsg}`))
+
 const formatValue = (value: Element | Value): string => {
   const formatAnnotations = (annotations: Values): string =>
     (_.isEmpty(annotations) ? '' : formatValue(annotations))
@@ -419,6 +421,8 @@ export const formatServiceConfigured = (serviceName: string): string => [
 export const formatServiceNotConfigured = (serviceName: string): string => [
   Prompts.SERVICE_NOT_CONFIGURED(serviceName),
   emptyLine(),
+  Prompts.SERVICE_HOW_ADD,
+  emptyLine(),
 ].join('\n')
 
 export const formatConfiguredServices = (serviceNames: string[]): string => {
@@ -434,5 +438,10 @@ export const formatConfiguredServices = (serviceNames: string[]): string => {
 
 export const formatServiceAdded = (serviceName: string): string => [
   Prompts.SERVICE_ADDED(serviceName),
+  emptyLine(),
+].join('\n')
+
+export const formatServiceAlreadyAdded = (serviceName: string): string => [
+  formatSimpleError(Prompts.SERVICE_ALREADY_ADDED(serviceName)),
   emptyLine(),
 ].join('\n')

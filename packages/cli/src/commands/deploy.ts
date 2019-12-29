@@ -109,7 +109,7 @@ export class DeployCommand implements CliCommand {
     const planSpinner = this.spinnerCreator(Prompts.PREVIEW_STARTED, {})
     const result = await deploy(workspace,
       getConfigFromUser,
-      shouldDeploy(this.stdout, planSpinner),
+      shouldDeploy(this.stdout, planSpinner, workspace),
       (item: PlanItem, step: ItemStatus, details?: string) =>
         this.updateAction(item, step, details),
       this.inputServices,

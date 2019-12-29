@@ -23,7 +23,7 @@ describe('commands e2e', () => {
   jest.setTimeout(15 * 60 * 1000)
 
   beforeAll(() => {
-    jest.spyOn(formatterImpl, 'formatExecutionPlan').mockImplementation((p: Plan): string => {
+    jest.spyOn(formatterImpl, 'formatExecutionPlan').mockImplementation((p: Plan, _planErrors): string => {
       lastPlan = p
       return 'plan'
     })

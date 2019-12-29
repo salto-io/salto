@@ -5,7 +5,7 @@ import {
   Type, ObjectType, ElemID, InstanceElement,
   isPrimitiveType, PrimitiveTypes,
 } from 'adapter-api'
-import { Plan, FetchChange } from 'salto'
+import { Plan, FetchChange, Workspace } from 'salto'
 import {
   formatExecutionPlan, formatFetchChangeForApproval, deployPhaseHeader, cancelDeployOutput,
   formatShouldContinueWithWarning, formatCancelCommand, formatConfigHeader,
@@ -24,10 +24,13 @@ const getUserBooleanInput = async (prompt: string): Promise<boolean> => {
   return answers.userInput
 }
 
-export const shouldDeploy = (stdout: WriteStream, spinner: Spinner) =>
+export const shouldDeploy = (stdout: WriteStream, spinner: Spinner, workspace: Workspace) =>
   async (actions: Plan): Promise<boolean> => {
     spinner.succeed(Prompts.PREVIEW_FINISHED)
-    stdout.write(formatExecutionPlan(actions))
+    const planWorkspaceErrors = await Promise.all(
+      actions.changeErrors.map(ce => workspace.transformToWorkspaceError(ce))
+    )
+    stdout.write(await formatExecutionPlan(actions, planWorkspaceErrors))
     if (_.isEmpty(actions)) {
       return false
     }

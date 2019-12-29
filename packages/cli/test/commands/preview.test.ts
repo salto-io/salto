@@ -1,6 +1,6 @@
 import { Workspace } from 'salto'
 import { command } from '../../src/commands/preview'
-import { preview, MockWriteStream, getWorkspaceErrors, mockSpinnerCreator, mockLoadConfig } from '../mocks'
+import { preview, MockWriteStream, getWorkspaceErrors, mockSpinnerCreator, mockLoadConfig, transformToWorkspaceError } from '../mocks'
 import { SpinnerCreator, Spinner } from '../../src/types'
 
 const mockPreview = preview
@@ -17,11 +17,13 @@ jest.mock('salto', () => ({
           },
           getWorkspaceErrors,
           config,
+          transformToWorkspaceError,
         }
       }
       return {
         hasErrors: () => false,
         config,
+        transformToWorkspaceError,
       }
     }),
   },

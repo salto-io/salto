@@ -42,7 +42,7 @@ export default class Prompts {
   ${Prompts.MODIFIERS.remove} remove`
 
   public static readonly PLANSTEPSHEADER = 'Salto will perform the following actions:'
-
+  public static readonly PLAN_CHANGE_ERRS_HEADER = 'Encountered the following validations and will ignore their execution:'
   public static readonly PREVIEWDISCLAIMER = `Note: Salto cannot guarantee that exactly these actions will be performed if "salto deploy" is run.
 Be sure to go over the preview output when invoking the deploy command.`
 

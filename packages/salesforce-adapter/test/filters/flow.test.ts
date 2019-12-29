@@ -1,5 +1,5 @@
 import {
-  ObjectType, ElemID, Field, BuiltinTypes, Type,
+  ObjectType, ElemID, Field, BuiltinTypes, ANNOTATION_TYPES,
 } from 'adapter-api'
 import filterCreator from '../../src/filters/flow'
 import { SALESFORCE } from '../../src/constants'
@@ -14,15 +14,15 @@ describe('flow filter', () => {
     fields: {
       name: new Field(elemID, 'name', BuiltinTypes.STRING,
         {
-          [Type.ANNOTATIONS.VALUES]: values,
+          [ANNOTATION_TYPES.VALUES]: values,
         }),
     },
   })
 
   it('remove restriction values from flow_metadata_value.name', () => {
     filter.onFetch([mockFlow])
-    expect(mockFlow.fields.name.annotations[Type.ANNOTATIONS.VALUES]).toEqual(values)
+    expect(mockFlow.fields.name.annotations[ANNOTATION_TYPES.VALUES]).toEqual(values)
     expect(mockFlow.fields.name
-      .annotations[Type.ANNOTATIONS.RESTRICTION][Type.ANNOTATIONS.ENFORCE_VALUE]).toBe(false)
+      .annotations[ANNOTATION_TYPES.RESTRICTION][ANNOTATION_TYPES.ENFORCE_VALUE]).toBe(false)
   })
 })

@@ -1,21 +1,25 @@
 import { logger } from '@salto/logging'
 import { collections } from '@salto/lowerdash'
 import { ADAPTER, Element, Field, ObjectType, ServiceIds, Type, isObjectType, InstanceElement,
-  Values, isInstanceElement, ElemID, BuiltinTypes } from 'adapter-api'
+  Values, isInstanceElement, ElemID, BuiltinTypes, ANNOTATION_TYPES, BuiltinAnnotationTypes } from 'adapter-api'
 import { SalesforceClient } from 'index'
 import { DescribeSObjectResult, Field as SObjField } from 'jsforce'
 import _ from 'lodash'
-import { transformPrimitiveAnnotations } from './convert_types'
+import { transform } from './convert_types'
 import { API_NAME, CUSTOM_OBJECT, METADATA_TYPE, NAMESPACE_SEPARATOR, SALESFORCE,
-  INSTANCE_FULL_NAME_FIELD, SALESFORCE_CUSTOM_SUFFIX, INSTANCE_TYPE_FIELD, LABEL,
-  FIELD_TYPE_API_NAMES, INSTANCE_REQUIRED_FIELD,
-  INSTANCE_DEFAULT_VALUE_FIELD, INSTANCE_VALUE_SET_FIELD } from '../constants'
+  INSTANCE_FULL_NAME_FIELD, SALESFORCE_CUSTOM_SUFFIX, LABEL,
+  FIELD_TYPE_API_NAMES } from '../constants'
 import { FilterCreator } from '../filter'
 import { apiName, getSObjectFieldElement, Types, isCustomObject, bpCase } from '../transformers/transformer'
 import { id, addApiName, addMetadataType, addLabel } from './utils'
 
 const log = logger(module)
 const { makeArray } = collections.array
+
+export const INSTANCE_DEFAULT_VALUE_FIELD = 'default_value'
+export const INSTANCE_VALUE_SET_FIELD = 'value_set'
+export const INSTANCE_REQUIRED_FIELD = 'required'
+export const INSTANCE_TYPE_FIELD = 'type'
 
 const hasNamespace = (customElement: Field | ObjectType): boolean =>
   apiName(customElement).split(NAMESPACE_SEPARATOR).length === 3
@@ -146,17 +150,17 @@ const fetchSObjects = async (client: SalesforceClient): Promise<Type[]> => {
   return _.flatten(sobjects)
 }
 
-const renameFields = (fields: Values): Values => Object.assign({},
+const transfromAnnotations = (fields: Values): Values => Object.assign({},
   ...Object.entries(fields).map(([k, v]) => {
     switch (k) {
       case INSTANCE_REQUIRED_FIELD:
-        return { [Type.ANNOTATIONS.REQUIRED]: v }
+        return { [ANNOTATION_TYPES.REQUIRED]: v }
       case INSTANCE_FULL_NAME_FIELD:
         return { [API_NAME]: v }
       case INSTANCE_DEFAULT_VALUE_FIELD:
-        return { [Type.ANNOTATIONS.DEFAULT]: v }
+        return { [ANNOTATION_TYPES.DEFAULT]: v }
       case INSTANCE_VALUE_SET_FIELD:
-        return { [Type.ANNOTATIONS.VALUES]: v.value_set_definition.value
+        return { [ANNOTATION_TYPES.VALUES]: v.value_set_definition.value
           .map((value: Values) => value.full_name) }
       default:
         return { [k]: v }
@@ -182,7 +186,16 @@ const fixInstanceFieldValueBeforeMergeToAnnotations = (instanceFieldValues: Valu
     return {}
   }
 
-  return transformPrimitiveAnnotations(renameFields(instanceFieldValues), fieldType)
+  const annotationTypesElemID = new ElemID(SALESFORCE, 'annotation_type')
+  const annotationTypesObject = new ObjectType({ elemID: annotationTypesElemID,
+    fields: Object.assign({}, ...Object.entries(fieldType.annotationTypes)
+      .concat(Object.entries(BuiltinAnnotationTypes))
+      .map(([k, v]) => ({ [k]: new Field(annotationTypesElemID, k, v) }))) })
+
+  annotationTypesObject.fields[ANNOTATION_TYPES.VALUES] = new Field(
+    annotationTypesElemID, ANNOTATION_TYPES.VALUES, BuiltinTypes.STRING, undefined, true
+  )
+  return transform(transfromAnnotations(instanceFieldValues), annotationTypesObject) || {}
 }
 
 const mergeCustomObjectWithInstance = (customObject: ObjectType,

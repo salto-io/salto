@@ -598,11 +598,11 @@ export default class SalesforceAdapter {
 
   @logDuration('fetching metadata types')
   private async fetchMetadataTypes(typeNamesPromise: Promise<string[]>,
-    annotationTypes: Type[]): Promise<Type[]> {
+    knownMetadataTypes: Type[]): Promise<Type[]> {
     const typeNames = await typeNamesPromise
     const knownTypes = new Map<string, Type>()
-    annotationTypes.forEach(annotation =>
-      knownTypes.set(sfCase(annotation.elemID.name), annotation))
+    knownMetadataTypes.forEach(knownMetadataType =>
+      knownTypes.set(sfCase(knownMetadataType.elemID.name), knownMetadataType))
     return _.flatten(await Promise.all((typeNames)
       .map(typeName => this.fetchMetadataType(typeName, knownTypes, new Set(typeNames))
         .catch(e => {

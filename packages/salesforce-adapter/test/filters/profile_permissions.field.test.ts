@@ -1,6 +1,6 @@
 import {
   ObjectType, ElemID, PrimitiveType, Field, PrimitiveTypes,
-  InstanceElement, isObjectType, BuiltinTypes, ReferenceExpression, Type,
+  InstanceElement, isObjectType, BuiltinTypes, ReferenceExpression, ANNOTATION_TYPES,
 } from 'adapter-api'
 import _ from 'lodash'
 import { metadataType } from '../../src/transformers/transformer'
@@ -391,7 +391,7 @@ describe('Field Permissions filter', () => {
   it('should not set permissions for required fields', async () => {
     const after = mockObject.clone()
     Object.values(after.fields).forEach(f => {
-      f.annotations[Type.ANNOTATIONS.REQUIRED] = true
+      f.annotations[ANNOTATION_TYPES.REQUIRED] = true
     })
 
     await filter().onAdd(after)

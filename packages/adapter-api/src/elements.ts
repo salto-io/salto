@@ -205,14 +205,6 @@ export class Field implements Element {
  * dependent.
  */
 export abstract class Type implements Element {
-  public static ANNOTATIONS = {
-    DEFAULT: '_default',
-    REQUIRED: '_required',
-    VALUES: '_values',
-    RESTRICTION: '_restriction',
-    ENFORCE_VALUE: 'enforce_value',
-  }
-
   readonly elemID: ElemID
   path?: ReadonlyArray<string>
   annotationTypes: TypeMap
@@ -506,12 +498,22 @@ export const BuiltinTypes: Record<string, PrimitiveType> = {
   }),
 }
 
-export const AnnotationTypeConversion: Record<string, Type> = {
-  [Type.ANNOTATIONS.DEFAULT]: BuiltinTypes.STRING,
-  [Type.ANNOTATIONS.REQUIRED]: BuiltinTypes.BOOLEAN,
-  [Type.ANNOTATIONS.RESTRICTION]: new ObjectType({ elemID: new ElemID('', 'restriction'),
-    fields: { [Type.ANNOTATIONS.RESTRICTION]: new Field(
-      new ElemID('', 'restriction'), Type.ANNOTATIONS.ENFORCE_VALUE, BuiltinTypes.BOOLEAN
+// export type AnnotationTypesType = 'type' | 'field' | 'instance' | 'attr' | 'annotation'
+
+export const ANNOTATION_TYPES = {
+  DEFAULT: '_default',
+  REQUIRED: '_required',
+  VALUES: '_values',
+  RESTRICTION: '_restriction',
+  ENFORCE_VALUE: 'enforce_value',
+}
+
+export const BuiltinAnnotationTypes: Record<string, Type> = {
+  [ANNOTATION_TYPES.DEFAULT]: BuiltinTypes.STRING,
+  [ANNOTATION_TYPES.REQUIRED]: BuiltinTypes.BOOLEAN,
+  [ANNOTATION_TYPES.RESTRICTION]: new ObjectType({ elemID: new ElemID('', 'restriction'),
+    fields: { [ANNOTATION_TYPES.RESTRICTION]: new Field(
+      new ElemID('', 'restriction'), ANNOTATION_TYPES.ENFORCE_VALUE, BuiltinTypes.BOOLEAN
     ) } }),
 }
 

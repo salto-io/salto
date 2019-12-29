@@ -1,5 +1,5 @@
 import {
-  ObjectType, ElemID, InstanceElement, Field, BuiltinTypes, Type, Value,
+  ObjectType, ElemID, InstanceElement, Field, BuiltinTypes, Value, ANNOTATION_TYPES,
 } from 'adapter-api'
 import _ from 'lodash'
 import filterCreator, { CLEAN_DATA_SERVICE_TYPE_NAME, CLEAN_RULES_FIELD_NAME,
@@ -59,12 +59,12 @@ describe('list order filter', () => {
           elemID: typeElemID,
           fields: {
             [FIELD_FIELD_NAME]: new Field(typeElemID, 'FIELD_FIELD_NAME', BuiltinTypes.STRING,
-              { [Type.ANNOTATIONS.VALUES]: ['c', 'a', 'b'] }),
+              { [ANNOTATION_TYPES.VALUES]: ['c', 'a', 'b'] }),
           },
         }
       )
       await filter.onFetch([testType])
-      expect(testType.fields[FIELD_FIELD_NAME].annotations[Type.ANNOTATIONS.VALUES])
+      expect(testType.fields[FIELD_FIELD_NAME].annotations[ANNOTATION_TYPES.VALUES])
         .toEqual(['a', 'b', 'c'])
     })
     it('should not fail if target field does not exist', async () => {

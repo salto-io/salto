@@ -1,7 +1,7 @@
 import { GroupedNodeMap } from '@salto/dag'
 import {
   BuiltinTypes, Change, Element, ElemID, Field, getChangeElement, InstanceElement,
-  ObjectType, Type,
+  ObjectType, ANNOTATION_TYPES,
 } from 'adapter-api'
 import _ from 'lodash'
 import {
@@ -145,14 +145,14 @@ export const elements = (): Element[] => {
         {
           label: 'Based In',
           name: {
-            [Type.ANNOTATIONS.DEFAULT]: 'HQ',
+            [ANNOTATION_TYPES.DEFAULT]: 'HQ',
           },
           location: {
             country: {
-              [Type.ANNOTATIONS.DEFAULT]: 'IL',
+              [ANNOTATION_TYPES.DEFAULT]: 'IL',
             },
             city: {
-              [Type.ANNOTATIONS.DEFAULT]: 'Raanana',
+              [ANNOTATION_TYPES.DEFAULT]: 'Raanana',
             },
           },
         },

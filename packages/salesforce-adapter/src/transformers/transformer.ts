@@ -5,7 +5,7 @@ import {
 import {
   Type, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values, Value, Field as TypeField,
   BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter,
-  ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, isObjectType,
+  ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, isObjectType, ANNOTATION_TYPES,
 } from 'adapter-api'
 import { collections } from '@salto/lowerdash'
 import { CustomObject, CustomField, ValueSettings, FilterItem } from '../client/types'
@@ -223,10 +223,8 @@ export class Types {
     elemID: Types.rollupSummaryOperationTypeElemID,
     primitive: PrimitiveTypes.STRING,
     annotations: {
-      [Type.ANNOTATIONS.VALUES]: ['count', 'min', 'max', 'sum'],
-      [Type.ANNOTATIONS.RESTRICTION]: {
-        [Type.ANNOTATIONS.ENFORCE_VALUE]: true,
-      },
+      [ANNOTATION_TYPES.RESTRICTION]: { [ANNOTATION_TYPES.ENFORCE_VALUE]: true },
+      [ANNOTATION_TYPES.VALUES]: ['count', 'min', 'max', 'sum'],
     },
   })
 
@@ -514,11 +512,14 @@ export class Types {
     this.getElemIdFunc = getElemIdFunc
   }
 
-  static get(name: string, customObject = true, isSettings = false, serviceIds?: ServiceIds): Type {
-    const type = customObject
+  static getKnownType(name: string, customObject = true): Type {
+    return customObject
       ? this.primitiveDataTypes[name.toLowerCase()]
       : this.metadataPrimitiveTypes[name.toLowerCase()]
+  }
 
+  static get(name: string, customObject = true, isSettings = false, serviceIds?: ServiceIds): Type {
+    const type = Types.getKnownType(name, customObject)
     if (type === undefined) {
       return this.createObjectType(name, customObject, isSettings, serviceIds)
     }
@@ -607,10 +608,10 @@ export const toCustomField = (
     fullname ? fieldFullName(object, field) : apiName(field),
     FIELD_TYPE_API_NAMES[fieldTypeName(field.type.elemID.name)],
     field.annotations[LABEL],
-    field.annotations[Type.ANNOTATIONS.REQUIRED],
-    field.annotations[Type.ANNOTATIONS.DEFAULT],
+    field.annotations[ANNOTATION_TYPES.REQUIRED],
+    field.annotations[ANNOTATION_TYPES.DEFAULT],
     field.annotations[DEFAULT_VALUE_FORMULA],
-    field.annotations[Type.ANNOTATIONS.VALUES],
+    field.annotations[ANNOTATION_TYPES.VALUES],
     fieldDependency?.[FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD],
     valueSettings,
     field.annotations[FORMULA],
@@ -662,7 +663,7 @@ export const getValueTypeFieldElement = (parentID: ElemID, field: ValueTypeField
   const bpFieldType = (field.name === METADATA_OBJECT_NAME_FIELD) ? BuiltinTypes.SERVICE_ID
     : knownTypes.get(field.soapType) || Types.get(field.soapType, false)
   // mark required as false until SALTO-45 will be resolved
-  const annotations: Values = { [Type.ANNOTATIONS.REQUIRED]: false }
+  const annotations: Values = { [ANNOTATION_TYPES.REQUIRED]: false }
 
   if (field.picklistValues && field.picklistValues.length > 0) {
     // picklist values in metadata types are used to restrict a field to a list of allowed values
@@ -670,15 +671,15 @@ export const getValueTypeFieldElement = (parentID: ElemID, field: ValueTypeField
     // might be very large and cause memory problems on parsing, so we choose to omit the
     // restriction where there are too many possible values
     if (field.picklistValues.length < MAX_METADATA_RESTRICTION_VALUES) {
-      annotations[Type.ANNOTATIONS.VALUES] = _.sortedUniq(field
+      annotations[ANNOTATION_TYPES.VALUES] = _.sortedUniq(field
         .picklistValues.map(val => val.value).sort())
-      annotations[Type.ANNOTATIONS.RESTRICTION] = { [Type.ANNOTATIONS.ENFORCE_VALUE]: false }
+      annotations[ANNOTATION_TYPES.RESTRICTION] = { [ANNOTATION_TYPES.ENFORCE_VALUE]: false }
     }
     const defaults = field.picklistValues
       .filter(val => val.defaultValue)
       .map(val => val.value)
     if (defaults.length === 1) {
-      annotations[Type.ANNOTATIONS.DEFAULT] = defaults.pop()
+      annotations[ANNOTATION_TYPES.DEFAULT] = defaults.pop()
     }
   }
   return new TypeField(parentID, bpFieldName, bpFieldType, annotations)
@@ -732,11 +733,11 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field,
     // nillable is the closest thing we could find to infer if a field is required, it might not
     // be perfect
     // boolean (i.e. Checkbox) must not have required field
-    annotations[Type.ANNOTATIONS.REQUIRED] = !field.nillable
+    annotations[ANNOTATION_TYPES.REQUIRED] = !field.nillable
   }
   const defaultValue = getDefaultValue(field)
   if (defaultValue !== undefined) {
-    annotations[Type.ANNOTATIONS.DEFAULT] = defaultValue
+    annotations[ANNOTATION_TYPES.DEFAULT] = defaultValue
   }
 
   if (field.defaultValueFormula) {
@@ -763,8 +764,8 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field,
   }
   // Picklists
   if (field.picklistValues && field.picklistValues.length > 0) {
-    annotations[Type.ANNOTATIONS.VALUES] = field.picklistValues.map(val => val.value)
-    annotations[Type.ANNOTATIONS.RESTRICTION] = { [Type.ANNOTATIONS.ENFORCE_VALUE]:
+    annotations[ANNOTATION_TYPES.VALUES] = field.picklistValues.map(val => val.value)
+    annotations[ANNOTATION_TYPES.RESTRICTION] = { [ANNOTATION_TYPES.ENFORCE_VALUE]:
        Boolean(field.restrictedPicklist) }
 
     const defaults = field.picklistValues
@@ -772,9 +773,9 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field,
       .map(val => val.value)
     if (defaults.length > 0) {
       if (field.type.endsWith('picklist')) {
-        annotations[Type.ANNOTATIONS.DEFAULT] = defaults.pop()
+        annotations[ANNOTATION_TYPES.DEFAULT] = defaults.pop()
       } else {
-        annotations[Type.ANNOTATIONS.DEFAULT] = defaults
+        annotations[ANNOTATION_TYPES.DEFAULT] = defaults
       }
     }
     if (field.dependentPicklist) {
@@ -800,7 +801,7 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field,
     if (field.cascadeDelete) {
       bpFieldType = getFieldType(FIELD_TYPE_NAMES.MASTER_DETAIL)
       // master detail fields are always not required in SF although returned as nillable=false
-      annotations[Type.ANNOTATIONS.REQUIRED] = false
+      annotations[ANNOTATION_TYPES.REQUIRED] = false
       annotations[FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ] = Boolean(
         field.writeRequiresMasterRead
       )

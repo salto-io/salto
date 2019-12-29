@@ -1,5 +1,5 @@
 import {
-  Type, BuiltinTypes, ElemID, ObjectType,
+  ANNOTATION_TYPES, BuiltinTypes, ElemID, ObjectType,
   Field, InstanceElement, Element,
 } from 'adapter-api'
 
@@ -70,14 +70,14 @@ export const getAllElements = (): Element[] => {
         {
           label: 'Based In',
           name: {
-            [Type.ANNOTATIONS.DEFAULT]: 'HQ',
+            [ANNOTATION_TYPES.DEFAULT]: 'HQ',
           },
           location: {
             country: {
-              [Type.ANNOTATIONS.DEFAULT]: 'IL',
+              [ANNOTATION_TYPES.DEFAULT]: 'IL',
             },
             city: {
-              [Type.ANNOTATIONS.DEFAULT]: 'Raanana',
+              [ANNOTATION_TYPES.DEFAULT]: 'Raanana',
             },
           },
         },

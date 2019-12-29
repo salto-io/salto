@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import {
-  isObjectType, Field, Values, Type, isType, BuiltinTypes, ElemID, Element, ANNOTATION_TYPES,
+  isObjectType, Field, Values, Type, isType, BuiltinTypes, ElemID, Element, CORE_ANNOTATIONS,
 } from 'adapter-api'
 import { logger } from '@salto/logging'
 import { FilterCreator } from '../filter'
@@ -25,12 +25,12 @@ const allMissingFields: {id: ElemID; fields: MissingField[]}[] = [
         name: 'operation',
         type: BuiltinTypes.STRING,
         annotations: {
-          [ANNOTATION_TYPES.VALUES]: [
+          [CORE_ANNOTATIONS.VALUES]: [
             'equals', 'notEqual', 'lessThan', 'greaterThan', 'lessOrEqual', 'greaterOrEqual',
             'contains', 'notContain', 'startsWith', 'includes', 'excludes', 'within',
           ],
-          [ANNOTATION_TYPES.RESTRICTION]: {
-            [ANNOTATION_TYPES.ENFORCE_VALUE]: true,
+          [CORE_ANNOTATIONS.RESTRICTION]: {
+            [CORE_ANNOTATIONS.ENFORCE_VALUE]: true,
           },
         },
       },
@@ -53,7 +53,7 @@ const allMissingFields: {id: ElemID; fields: MissingField[]}[] = [
         name: 'assigned_to_type',
         type: BuiltinTypes.STRING,
         annotations: {
-          [ANNOTATION_TYPES.VALUES]: ['User', 'Queue'],
+          [CORE_ANNOTATIONS.VALUES]: ['User', 'Queue'],
         },
       },
     ],
@@ -65,7 +65,7 @@ const allMissingFields: {id: ElemID; fields: MissingField[]}[] = [
         name: 'visibility',
         type: BuiltinTypes.STRING,
         annotations: {
-          [ANNOTATION_TYPES.VALUES]: ['DefaultOff', 'DefaultOn', 'Hidden'],
+          [CORE_ANNOTATIONS.VALUES]: ['DefaultOff', 'DefaultOn', 'Hidden'],
         },
       },
     ],
@@ -77,7 +77,7 @@ const allMissingFields: {id: ElemID; fields: MissingField[]}[] = [
         name: 'style',
         type: BuiltinTypes.STRING,
         annotations: {
-          [ANNOTATION_TYPES.VALUES]: [
+          [CORE_ANNOTATIONS.VALUES]: [
             'TwoColumnsTopToBottom', 'TwoColumnsLeftToRight', 'OneColumn', 'CustomLinks',
           ],
         },
@@ -91,7 +91,7 @@ const allMissingFields: {id: ElemID; fields: MissingField[]}[] = [
         name: 'behavior',
         type: BuiltinTypes.STRING,
         annotations: {
-          [ANNOTATION_TYPES.VALUES]: [
+          [CORE_ANNOTATIONS.VALUES]: [
             'Edit', 'Required', 'Readonly',
           ],
         },

@@ -1,6 +1,6 @@
 import wu from 'wu'
 import {
-  Element, ElemID, findObjectType, findInstances, ANNOTATION_TYPES, ObjectType, InstanceElement,
+  Element, ElemID, findObjectType, findInstances, CORE_ANNOTATIONS, ObjectType, InstanceElement,
 } from 'adapter-api'
 import { FilterWith } from '../filter'
 import { SALESFORCE } from '../constants'
@@ -37,7 +37,7 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
 
     const animationRuleType = findObjectType(elements, ANIMATION_RULE_TYPE_ID) as ObjectType
     const getValues = (fieldName: string): string[] =>
-      animationRuleType?.fields[fieldName]?.annotations[ANNOTATION_TYPES.VALUES] ?? []
+      animationRuleType?.fields[fieldName]?.annotations[CORE_ANNOTATIONS.VALUES] ?? []
 
     const animationFrequencyValues = getValues(ANIMATION_FREQUENCY)
     const recordTypeContextValues = getValues(RECORD_TYPE_CONTEXT)

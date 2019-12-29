@@ -498,9 +498,7 @@ export const BuiltinTypes: Record<string, PrimitiveType> = {
   }),
 }
 
-// export type AnnotationTypesType = 'type' | 'field' | 'instance' | 'attr' | 'annotation'
-
-export const ANNOTATION_TYPES = {
+export const CORE_ANNOTATIONS = {
   DEFAULT: '_default',
   REQUIRED: '_required',
   VALUES: '_values',
@@ -509,11 +507,11 @@ export const ANNOTATION_TYPES = {
 }
 
 export const BuiltinAnnotationTypes: Record<string, Type> = {
-  [ANNOTATION_TYPES.DEFAULT]: BuiltinTypes.STRING,
-  [ANNOTATION_TYPES.REQUIRED]: BuiltinTypes.BOOLEAN,
-  [ANNOTATION_TYPES.RESTRICTION]: new ObjectType({ elemID: new ElemID('', 'restriction'),
-    fields: { [ANNOTATION_TYPES.RESTRICTION]: new Field(
-      new ElemID('', 'restriction'), ANNOTATION_TYPES.ENFORCE_VALUE, BuiltinTypes.BOOLEAN
+  [CORE_ANNOTATIONS.DEFAULT]: BuiltinTypes.STRING,
+  [CORE_ANNOTATIONS.REQUIRED]: BuiltinTypes.BOOLEAN,
+  [CORE_ANNOTATIONS.RESTRICTION]: new ObjectType({ elemID: new ElemID('', 'restriction'),
+    fields: { [CORE_ANNOTATIONS.ENFORCE_VALUE]: new Field(
+      new ElemID('', 'restriction'), CORE_ANNOTATIONS.ENFORCE_VALUE, BuiltinTypes.BOOLEAN
     ) } }),
 }
 

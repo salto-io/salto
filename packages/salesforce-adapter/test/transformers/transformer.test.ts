@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import {
-  ObjectType, ElemID, Field, BuiltinTypes, Type, Field as TypeField, Values, ANNOTATION_TYPES,
+  ObjectType, ElemID, Field, BuiltinTypes, Type, Field as TypeField, Values, CORE_ANNOTATIONS,
 } from 'adapter-api'
 import { collections } from '@salto/lowerdash'
 import { Field as SalesforceField, ValueTypeField } from 'jsforce'
@@ -70,10 +70,10 @@ describe('transformer', () => {
       })
       describe('restriction values', () => {
         it('should not have duplicate values', () => {
-          expect(enumField.annotations[ANNOTATION_TYPES.VALUES]).toHaveLength(2)
+          expect(enumField.annotations[CORE_ANNOTATIONS.VALUES]).toHaveLength(2)
         })
         it('should be sorted alphabetically', () => {
-          expect(enumField.annotations[ANNOTATION_TYPES.VALUES]).toEqual(['a', 'b'])
+          expect(enumField.annotations[CORE_ANNOTATIONS.VALUES]).toEqual(['a', 'b'])
         })
       })
     })
@@ -183,7 +183,7 @@ describe('transformer', () => {
         delete salesforceReferenceField.writeRequiresMasterRead
         const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField, {})
         assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.masterdetail, undefined, undefined)
-        expect(fieldElement.annotations[ANNOTATION_TYPES.REQUIRED]).toBe(false)
+        expect(fieldElement.annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL]).toBe(false)
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ]).toBe(false)
       })
@@ -385,7 +385,7 @@ describe('transformer', () => {
       const annotations: Values = {
         [API_NAME]: 'field_name',
         [LABEL]: 'field_label',
-        [ANNOTATION_TYPES.REQUIRED]: false,
+        [CORE_ANNOTATIONS.REQUIRED]: false,
         [FIELD_ANNOTATIONS.RELATED_TO]: relatedTo,
       }
       const fieldName = 'field_name'
@@ -460,8 +460,8 @@ describe('transformer', () => {
       const annotations: Values = {
         [API_NAME]: 'field_name',
         [LABEL]: 'field_label',
-        [ANNOTATION_TYPES.REQUIRED]: false,
-        [ANNOTATION_TYPES.VALUES]: ['Val1', 'Val2'],
+        [CORE_ANNOTATIONS.REQUIRED]: false,
+        [CORE_ANNOTATIONS.VALUES]: ['Val1', 'Val2'],
         [FIELD_ANNOTATIONS.FIELD_DEPENDENCY]: {
           [FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD]: 'ControllingFieldName',
           [FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS]: [{
@@ -532,7 +532,7 @@ describe('transformer', () => {
       const annotations: Values = {
         [API_NAME]: 'field_name',
         [LABEL]: 'field_label',
-        [ANNOTATION_TYPES.REQUIRED]: false,
+        [CORE_ANNOTATIONS.REQUIRED]: false,
         [FIELD_ANNOTATIONS.SUMMARY_OPERATION]: 'count',
         [FIELD_ANNOTATIONS.SUMMARY_FOREIGN_KEY]: 'Opportunity.AccountId',
         [FIELD_ANNOTATIONS.SUMMARIZED_FIELD]: 'Opportunity.Amount',

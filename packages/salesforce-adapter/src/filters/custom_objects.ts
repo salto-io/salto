@@ -1,17 +1,18 @@
 import { logger } from '@salto/logging'
 import { collections } from '@salto/lowerdash'
 import { ADAPTER, Element, Field, ObjectType, ServiceIds, Type, isObjectType, InstanceElement,
-  Values, isInstanceElement, ElemID, BuiltinTypes, ANNOTATION_TYPES, BuiltinAnnotationTypes } from 'adapter-api'
+  Values, isInstanceElement, ElemID, BuiltinTypes,
+  CORE_ANNOTATIONS, BuiltinAnnotationTypes } from 'adapter-api'
 import { SalesforceClient } from 'index'
 import { DescribeSObjectResult, Field as SObjField } from 'jsforce'
 import _ from 'lodash'
 import { transform } from './convert_types'
-import { API_NAME, CUSTOM_OBJECT, METADATA_TYPE, NAMESPACE_SEPARATOR, SALESFORCE,
+import { API_NAME, CUSTOM_OBJECT, METADATA_TYPE, SALESFORCE,
   INSTANCE_FULL_NAME_FIELD, SALESFORCE_CUSTOM_SUFFIX, LABEL,
   FIELD_TYPE_API_NAMES } from '../constants'
 import { FilterCreator } from '../filter'
-import { apiName, getSObjectFieldElement, Types, isCustomObject, bpCase } from '../transformers/transformer'
-import { id, addApiName, addMetadataType, addLabel } from './utils'
+import { getSObjectFieldElement, Types, isCustomObject, bpCase } from '../transformers/transformer'
+import { id, addApiName, addMetadataType, addLabel, hasNamespace, getNamespace } from './utils'
 
 const log = logger(module)
 const { makeArray } = collections.array
@@ -20,12 +21,6 @@ export const INSTANCE_DEFAULT_VALUE_FIELD = 'default_value'
 export const INSTANCE_VALUE_SET_FIELD = 'value_set'
 export const INSTANCE_REQUIRED_FIELD = 'required'
 export const INSTANCE_TYPE_FIELD = 'type'
-
-const hasNamespace = (customElement: Field | ObjectType): boolean =>
-  apiName(customElement).split(NAMESPACE_SEPARATOR).length === 3
-
-const getNamespace = (customElement: Field | ObjectType): string =>
-  apiName(customElement).split(NAMESPACE_SEPARATOR)[0]
 
 const getFieldType = (type: string): Type =>
   (_.isUndefined(type) ? BuiltinTypes.STRING : Types.get(bpCase(type)))
@@ -150,24 +145,37 @@ const fetchSObjects = async (client: SalesforceClient): Promise<Type[]> => {
   return _.flatten(sobjects)
 }
 
-const transfromAnnotations = (fields: Values): Values => Object.assign({},
+const transfromAnnotationsNames = (fields: Values): Values => Object.assign({},
   ...Object.entries(fields).map(([k, v]) => {
     switch (k) {
       case INSTANCE_REQUIRED_FIELD:
-        return { [ANNOTATION_TYPES.REQUIRED]: v }
+        return { [CORE_ANNOTATIONS.REQUIRED]: v }
       case INSTANCE_FULL_NAME_FIELD:
         return { [API_NAME]: v }
       case INSTANCE_DEFAULT_VALUE_FIELD:
-        return { [ANNOTATION_TYPES.DEFAULT]: v }
+        return { [CORE_ANNOTATIONS.DEFAULT]: v }
       case INSTANCE_VALUE_SET_FIELD:
-        return { [ANNOTATION_TYPES.VALUES]: v.value_set_definition.value
+        return { [CORE_ANNOTATIONS.VALUES]: v.value_set_definition.value
           .map((value: Values) => value.full_name) }
       default:
         return { [k]: v }
     }
   }))
 
-const fixInstanceFieldValueBeforeMergeToAnnotations = (instanceFieldValues: Values): Values => {
+const buildAnnotationsObjectType = (fieldType: Type): ObjectType => {
+  const annotationTypesElemID = new ElemID(SALESFORCE, 'annotation_type')
+  const annotationTypesObject = new ObjectType({ elemID: annotationTypesElemID,
+    fields: Object.assign({}, ...Object.entries(fieldType.annotationTypes)
+      .concat(Object.entries(BuiltinAnnotationTypes))
+      .map(([k, v]) => ({ [k]: new Field(annotationTypesElemID, k, v) }))) })
+
+  annotationTypesObject.fields[CORE_ANNOTATIONS.VALUES] = new Field(
+    annotationTypesElemID, CORE_ANNOTATIONS.VALUES, BuiltinTypes.STRING, undefined, true
+  )
+  return annotationTypesObject
+}
+
+const transformFieldAnnotations = (instanceFieldValues: Values): Values => {
   // Ignores typeless/unknown typed instances
   if (!_.has(instanceFieldValues, INSTANCE_TYPE_FIELD)) {
     return {}
@@ -187,22 +195,14 @@ const fixInstanceFieldValueBeforeMergeToAnnotations = (instanceFieldValues: Valu
     return {}
   }
 
-  const annotationTypesElemID = new ElemID(SALESFORCE, 'annotation_type')
-  const annotationTypesObject = new ObjectType({ elemID: annotationTypesElemID,
-    fields: Object.assign({}, ...Object.entries(fieldType.annotationTypes)
-      .concat(Object.entries(BuiltinAnnotationTypes))
-      .map(([k, v]) => ({ [k]: new Field(annotationTypesElemID, k, v) }))) })
-
-  annotationTypesObject.fields[ANNOTATION_TYPES.VALUES] = new Field(
-    annotationTypesElemID, ANNOTATION_TYPES.VALUES, BuiltinTypes.STRING, undefined, true
-  )
-  return transform(transfromAnnotations(instanceFieldValues), annotationTypesObject) || {}
+  return transform(transfromAnnotationsNames(instanceFieldValues),
+    buildAnnotationsObjectType(fieldType)) || {}
 }
 
 const mergeCustomObjectWithInstance = (customObject: ObjectType,
   instance: InstanceElement): void => {
   _(customObject.fields).forEach(field => {
-    Object.assign(field.annotations, fixInstanceFieldValueBeforeMergeToAnnotations(
+    Object.assign(field.annotations, transformFieldAnnotations(
       makeArray(instance.value.fields)
         .find((f: Values) => f.full_name === field.annotations[API_NAME]) || {}
     ))
@@ -215,9 +215,12 @@ const createObjectTypeFromInstance = (instance: InstanceElement): ObjectType => 
   const instanceFields = makeArray(instance.value.fields)
   const object = new ObjectType({ elemID: objectElemID,
     fields: Object.assign({}, ...instanceFields
-      .map((field: Values) => ({ [bpCase(field[INSTANCE_FULL_NAME_FIELD])]: new Field(objectElemID,
-        bpCase(field[INSTANCE_FULL_NAME_FIELD]), getFieldType(field[INSTANCE_TYPE_FIELD]),
-        fixInstanceFieldValueBeforeMergeToAnnotations(field)) }))),
+      .map((field: Values) => {
+        const fieldFullName = bpCase(field[INSTANCE_FULL_NAME_FIELD])
+        return { [fieldFullName]: new Field(objectElemID,
+          fieldFullName, getFieldType(field[INSTANCE_TYPE_FIELD]),
+          transformFieldAnnotations(field)) }
+      })),
     annotations: { [API_NAME]: objectName,
       [METADATA_TYPE]: CUSTOM_OBJECT,
       [LABEL]: instance.value[LABEL] } })

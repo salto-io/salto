@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import {
   ObjectType, ElemID, InstanceElement, Field, Value, Element, Values, BuiltinTypes,
-  isInstanceElement, ReferenceExpression, ANNOTATION_TYPES,
+  isInstanceElement, ReferenceExpression, CORE_ANNOTATIONS,
 } from 'adapter-api'
 import { MetadataInfo, PicklistEntry, RetrieveResult } from 'jsforce'
 import { collections } from '@salto/lowerdash'
@@ -115,22 +115,22 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(lead.fields.name.annotations[constants.LABEL]).toBe('Full Name')
 
       // Test true and false required
-      expect(lead.fields.description.annotations[ANNOTATION_TYPES.REQUIRED]).toBe(false)
-      expect(lead.fields.created_date.annotations[ANNOTATION_TYPES.REQUIRED]).toBe(true)
+      expect(lead.fields.description.annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
+      expect(lead.fields.created_date.annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(true)
 
       // Test picklist restriction.enforce_value prop
       expect(lead.fields.industry
-        .annotations[ANNOTATION_TYPES.RESTRICTION][ANNOTATION_TYPES.ENFORCE_VALUE]).toBe(
+        .annotations[CORE_ANNOTATIONS.RESTRICTION][CORE_ANNOTATIONS.ENFORCE_VALUE]).toBe(
         false
       )
       expect(
         lead.fields.clean_status
-          .annotations[ANNOTATION_TYPES.RESTRICTION][ANNOTATION_TYPES.ENFORCE_VALUE]
+          .annotations[CORE_ANNOTATIONS.RESTRICTION][CORE_ANNOTATIONS.ENFORCE_VALUE]
       ).toBe(true)
 
 
       // Test standard picklist values from a standard value set
-      expect(lead.fields.lead_source.annotations[ANNOTATION_TYPES.VALUES]).toEqual(
+      expect(lead.fields.lead_source.annotations[CORE_ANNOTATIONS.VALUES]).toEqual(
         new ReferenceExpression(new ElemID(
           constants.SALESFORCE,
           bpCase(STANDARD_VALUE_SET),
@@ -141,7 +141,7 @@ describe('Salesforce adapter E2E with real account', () => {
 
       // Test picklist values
       expect(
-        lead.fields.clean_status.annotations[ANNOTATION_TYPES.VALUES]
+        lead.fields.clean_status.annotations[CORE_ANNOTATIONS.VALUES]
       ).toEqual([
         'Acknowledged',
         'Different',
@@ -161,7 +161,7 @@ describe('Salesforce adapter E2E with real account', () => {
 
       // Test _default
       // TODO: add test to primitive with _default and combobox _default (no real example for lead)
-      expect(lead.fields.status.annotations[ANNOTATION_TYPES.DEFAULT]).toBe(
+      expect(lead.fields.status.annotations[CORE_ANNOTATIONS.DEFAULT]).toBe(
         'Open - Not Contacted'
       )
 
@@ -191,7 +191,7 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(flow.fields.is_template.type).toEqual(BuiltinTypes.BOOLEAN)
       expect(flow.fields.action_calls.type).toEqual(findElements(result, 'flow_action_call')[0])
       expect(flow.fields.process_type
-        .annotations[ANNOTATION_TYPES.RESTRICTION][ANNOTATION_TYPES.ENFORCE_VALUE])
+        .annotations[CORE_ANNOTATIONS.RESTRICTION][CORE_ANNOTATIONS.ENFORCE_VALUE])
         .toEqual(false)
     })
 
@@ -354,7 +354,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'description',
             stringType,
             {
-              [ANNOTATION_TYPES.REQUIRED]: false,
+              [CORE_ANNOTATIONS.REQUIRED]: false,
               [constants.DEFAULT_VALUE_FORMULA]: '"test"',
               [constants.LABEL]: 'description label',
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
@@ -415,8 +415,8 @@ describe('Salesforce adapter E2E with real account', () => {
             stringType,
             {
               [constants.LABEL]: 'test label',
-              [ANNOTATION_TYPES.REQUIRED]: false,
-              [ANNOTATION_TYPES.DEFAULT]: '"test"',
+              [CORE_ANNOTATIONS.REQUIRED]: false,
+              [CORE_ANNOTATIONS.DEFAULT]: '"test"',
             },
           ),
         },
@@ -457,7 +457,7 @@ describe('Salesforce adapter E2E with real account', () => {
           ),
         },
         annotations: {
-          [ANNOTATION_TYPES.REQUIRED]: false,
+          [CORE_ANNOTATIONS.REQUIRED]: false,
           [constants.DEFAULT_VALUE_FORMULA]: 'test',
           [constants.LABEL]: 'test label',
           [constants.API_NAME]: customObjectName,
@@ -498,7 +498,7 @@ describe('Salesforce adapter E2E with real account', () => {
           ),
         },
         annotations: {
-          [ANNOTATION_TYPES.REQUIRED]: false,
+          [CORE_ANNOTATIONS.REQUIRED]: false,
           [constants.DEFAULT_VALUE_FORMULA]: 'test2',
           [constants.LABEL]: 'test2 label',
           [constants.API_NAME]: customObjectName,
@@ -720,7 +720,7 @@ describe('Salesforce adapter E2E with real account', () => {
           ),
         },
         annotations: {
-          [ANNOTATION_TYPES.REQUIRED]: false,
+          [CORE_ANNOTATIONS.REQUIRED]: false,
           [constants.DEFAULT_VALUE_FORMULA]: 'test',
           [constants.LABEL]: 'test label',
           [constants.API_NAME]: customObjectName,
@@ -756,7 +756,7 @@ describe('Salesforce adapter E2E with real account', () => {
           ),
         },
         annotations: {
-          [ANNOTATION_TYPES.REQUIRED]: false,
+          [CORE_ANNOTATIONS.REQUIRED]: false,
           [constants.DEFAULT_VALUE_FORMULA]: 'test2',
           [constants.LABEL]: 'test label 2',
           [constants.API_NAME]: customObjectName,
@@ -796,7 +796,7 @@ describe('Salesforce adapter E2E with real account', () => {
       const oldElement = new ObjectType({
         elemID: mockElemID,
         annotations: {
-          [ANNOTATION_TYPES.REQUIRED]: false,
+          [CORE_ANNOTATIONS.REQUIRED]: false,
           [constants.LABEL]: 'test label',
           [constants.API_NAME]: customObjectName,
           [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
@@ -824,7 +824,7 @@ describe('Salesforce adapter E2E with real account', () => {
       const newElement = new ObjectType({
         elemID: mockElemID,
         annotations: {
-          [ANNOTATION_TYPES.REQUIRED]: false,
+          [CORE_ANNOTATIONS.REQUIRED]: false,
           [constants.LABEL]: 'test label',
           [constants.API_NAME]: customObjectName,
           [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
@@ -898,7 +898,7 @@ describe('Salesforce adapter E2E with real account', () => {
           ),
         },
         annotations: {
-          [ANNOTATION_TYPES.REQUIRED]: false,
+          [CORE_ANNOTATIONS.REQUIRED]: false,
           [constants.DEFAULT_VALUE_FORMULA]: 'test',
           [constants.LABEL]: 'test label',
           [constants.API_NAME]: customObjectName,
@@ -953,7 +953,7 @@ describe('Salesforce adapter E2E with real account', () => {
           ),
         },
         annotations: {
-          [ANNOTATION_TYPES.REQUIRED]: false,
+          [CORE_ANNOTATIONS.REQUIRED]: false,
           [constants.DEFAULT_VALUE_FORMULA]: 'test',
           [constants.LABEL]: 'test label',
           [constants.API_NAME]: customObjectName,
@@ -1021,10 +1021,10 @@ describe('Salesforce adapter E2E with real account', () => {
             'pickle',
             Types.primitiveDataTypes.picklist,
             {
-              [ANNOTATION_TYPES.REQUIRED]: false,
-              [ANNOTATION_TYPES.DEFAULT]: 'NEW',
+              [CORE_ANNOTATIONS.REQUIRED]: false,
+              [CORE_ANNOTATIONS.DEFAULT]: 'NEW',
               [constants.LABEL]: 'Picklist description label',
-              [ANNOTATION_TYPES.VALUES]: ['NEW', 'OLD'],
+              [CORE_ANNOTATIONS.VALUES]: ['NEW', 'OLD'],
               ...adminReadable,
             },
           ),
@@ -1033,7 +1033,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'alpha',
             Types.primitiveDataTypes.currency,
             {
-              [ANNOTATION_TYPES.REQUIRED]: false,
+              [CORE_ANNOTATIONS.REQUIRED]: false,
               [constants.DEFAULT_VALUE_FORMULA]: 25,
               [constants.LABEL]: 'Currency description label',
               [constants.FIELD_ANNOTATIONS.SCALE]: 3,
@@ -1046,7 +1046,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'bravo',
             Types.primitiveDataTypes.autonumber,
             {
-              [ANNOTATION_TYPES.REQUIRED]: false,
+              [CORE_ANNOTATIONS.REQUIRED]: false,
               [constants.LABEL]: 'Autonumber description label',
               [constants.FIELD_ANNOTATIONS.DISPLAY_FORMAT]: 'ZZZ-{0000}',
               ...adminReadable,
@@ -1110,8 +1110,8 @@ describe('Salesforce adapter E2E with real account', () => {
             Types.primitiveDataTypes.multipicklist,
             {
               [constants.LABEL]: 'Multipicklist description label',
-              [ANNOTATION_TYPES.VALUES]: ['DO', 'RE'],
-              [ANNOTATION_TYPES.DEFAULT]: 'DO',
+              [CORE_ANNOTATIONS.VALUES]: ['DO', 'RE'],
+              [CORE_ANNOTATIONS.DEFAULT]: 'DO',
               [constants.FIELD_ANNOTATIONS.VISIBLE_LINES]: 4,
               [constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY]: {
                 [constants.FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD]: picklistFieldApiName,
@@ -1217,7 +1217,7 @@ describe('Salesforce adapter E2E with real account', () => {
             `queen${randomString}`,
             Types.primitiveDataTypes.lookup,
             {
-              [ANNOTATION_TYPES.REQUIRED]: false,
+              [CORE_ANNOTATIONS.REQUIRED]: false,
               [constants.FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION]: false,
               [constants.FIELD_ANNOTATIONS.RELATED_TO]: ['Case'],
               [constants.LABEL]: 'Lookup description label',
@@ -1246,7 +1246,7 @@ describe('Salesforce adapter E2E with real account', () => {
             `rocket${randomString}`,
             Types.primitiveDataTypes.masterdetail,
             {
-              [ANNOTATION_TYPES.REQUIRED]: false,
+              [CORE_ANNOTATIONS.REQUIRED]: false,
               [constants.FIELD_ANNOTATIONS.RELATED_TO]: ['Case'],
               [constants.LABEL]: 'MasterDetail description label',
               [constants.FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ]: true,
@@ -1467,7 +1467,7 @@ describe('Salesforce adapter E2E with real account', () => {
             rollupSummaryFieldName,
             Types.primitiveDataTypes.rollupsummary,
             {
-              [ANNOTATION_TYPES.REQUIRED]: false,
+              [CORE_ANNOTATIONS.REQUIRED]: false,
               [constants.LABEL]: 'Rollup Summary description label',
               [constants.API_NAME]: rollupSummaryFieldApiName,
               [constants.FIELD_ANNOTATIONS.SUMMARIZED_FIELD]: `${customObjectName}.${currencyFieldApiName}`,
@@ -1523,7 +1523,7 @@ describe('Salesforce adapter E2E with real account', () => {
         elemID: mockElemID,
         fields: {},
         annotations: {
-          [ANNOTATION_TYPES.REQUIRED]: false,
+          [CORE_ANNOTATIONS.REQUIRED]: false,
           [constants.LABEL]: 'test label',
           [constants.API_NAME]: customObjectName,
           [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
@@ -1555,7 +1555,7 @@ describe('Salesforce adapter E2E with real account', () => {
       const newElement = new ObjectType({
         elemID: mockElemID,
         annotations: {
-          [ANNOTATION_TYPES.REQUIRED]: false,
+          [CORE_ANNOTATIONS.REQUIRED]: false,
           [constants.LABEL]: 'test label',
           [constants.API_NAME]: customObjectName,
           [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
@@ -1611,7 +1611,7 @@ describe('Salesforce adapter E2E with real account', () => {
         elemID: mockElemID,
         fields: {},
         annotations: {
-          [ANNOTATION_TYPES.REQUIRED]: false,
+          [CORE_ANNOTATIONS.REQUIRED]: false,
           [constants.LABEL]: 'test label',
           [constants.API_NAME]: customObjectName,
           [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
@@ -1634,7 +1634,7 @@ describe('Salesforce adapter E2E with real account', () => {
         elemID: mockElemID,
         fields: {},
         annotations: {
-          [ANNOTATION_TYPES.REQUIRED]: false,
+          [CORE_ANNOTATIONS.REQUIRED]: false,
           [constants.LABEL]: 'test label',
           [constants.API_NAME]: customObjectName,
           [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
@@ -1665,7 +1665,7 @@ describe('Salesforce adapter E2E with real account', () => {
         elemID: mockElemID,
         fields: {},
         annotations: {
-          [ANNOTATION_TYPES.REQUIRED]: false,
+          [CORE_ANNOTATIONS.REQUIRED]: false,
           [constants.LABEL]: 'test label',
           [constants.API_NAME]: customObjectName,
           [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
@@ -1685,7 +1685,7 @@ describe('Salesforce adapter E2E with real account', () => {
       const newElement = new ObjectType({
         elemID: mockElemID,
         annotations: {
-          [ANNOTATION_TYPES.REQUIRED]: false,
+          [CORE_ANNOTATIONS.REQUIRED]: false,
           [constants.LABEL]: 'test label',
           [constants.API_NAME]: customObjectName,
           [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,

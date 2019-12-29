@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import { MetadataInfo } from 'jsforce'
 import {
-  Element, ObjectType, InstanceElement, isObjectType, Field, ReferenceExpression, ANNOTATION_TYPES,
+  Element, ObjectType, InstanceElement, isObjectType, Field, ReferenceExpression, CORE_ANNOTATIONS,
 } from 'adapter-api'
 import { collections } from '@salto/lowerdash'
 import { logger } from '@salto/logging'
@@ -122,18 +122,18 @@ const calculatePicklistFieldsToUpdate = (
   custObjectFields: Record<string, Field>,
   svsValuesToName: StandartValueSetsLookup
 ): Record<string, Field> => _.mapValues(custObjectFields, (f: Field) => {
-  if (!isStandardPickList(f) || _.isEmpty(f.annotations[ANNOTATION_TYPES.VALUES])) {
+  if (!isStandardPickList(f) || _.isEmpty(f.annotations[CORE_ANNOTATIONS.VALUES])) {
     return f
   }
 
-  const encodedPlVals = encodeValues(f.annotations[ANNOTATION_TYPES.VALUES])
+  const encodedPlVals = encodeValues(f.annotations[CORE_ANNOTATIONS.VALUES])
   const foundStandardValueSet = svsValuesToName[encodedPlVals]
 
   if (!foundStandardValueSet) {
     return f
   }
   const newField = f.clone()
-  newField.annotations[ANNOTATION_TYPES.VALUES] = foundStandardValueSet
+  newField.annotations[CORE_ANNOTATIONS.VALUES] = foundStandardValueSet
   return newField
 })
 

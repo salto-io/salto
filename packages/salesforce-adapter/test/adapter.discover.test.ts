@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import {
-  ObjectType, InstanceElement, ServiceIds, ElemID, BuiltinTypes, Element, ANNOTATION_TYPES,
+  ObjectType, InstanceElement, ServiceIds, ElemID, BuiltinTypes, Element, CORE_ANNOTATIONS,
 } from 'adapter-api'
 import SalesforceAdapter from '../src/adapter'
 import Connection from '../src/client/jsforce'
@@ -105,13 +105,13 @@ describe('SalesforceAdapter fetch', () => {
       const flow = findElements(result, 'flow').pop() as ObjectType
       expect(flow.fields.description.type.elemID.name).toBe('string')
       // TODO: remove comment when SALTO-45 will be resolved
-      // expect(flow.fields.description.annotations[ANNOTATION_TYPES.REQUIRED]).toBe(true)
+      // expect(flow.fields.description.annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(true)
       expect(flow.fields.is_template.type.elemID.name).toBe('boolean')
-      expect(flow.fields.is_template.annotations[ANNOTATION_TYPES.REQUIRED]).toBe(false)
+      expect(flow.fields.is_template.annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
       expect(flow.fields.enum.type.elemID.name).toBe('string')
-      expect(flow.fields.enum.annotations[ANNOTATION_TYPES.DEFAULT]).toBe('yes')
+      expect(flow.fields.enum.annotations[CORE_ANNOTATIONS.DEFAULT]).toBe('yes')
       // Note the order here is important because we expect restriction values to be sorted
-      expect(flow.fields.enum.annotations[ANNOTATION_TYPES.VALUES]).toEqual(['no', 'yes'])
+      expect(flow.fields.enum.annotations[CORE_ANNOTATIONS.VALUES]).toEqual(['no', 'yes'])
       expect(flow.path).toEqual(['types', 'flow'])
       expect(flow.fields.full_name.type).toEqual(BuiltinTypes.SERVICE_ID)
       expect(flow.annotationTypes[constants.METADATA_TYPE]).toEqual(BuiltinTypes.SERVICE_ID)

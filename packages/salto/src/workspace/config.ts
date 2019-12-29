@@ -2,7 +2,7 @@ import * as path from 'path'
 import os from 'os'
 import uuidv5 from 'uuid/v5'
 import _ from 'lodash'
-import { ObjectType, ElemID, BuiltinTypes, Field, InstanceElement, findInstances, ANNOTATION_TYPES } from 'adapter-api'
+import { ObjectType, ElemID, BuiltinTypes, Field, InstanceElement, findInstances, CORE_ANNOTATIONS } from 'adapter-api'
 import { logger } from '@salto/logging'
 import { dump } from '../parser/dump'
 import { parse } from '../parser/parse'
@@ -35,7 +35,7 @@ class ServiceDuplicationError extends Error {
 }
 
 const saltoConfigElemID = new ElemID('salto')
-const requireAnno = { [ANNOTATION_TYPES.REQUIRED]: true }
+const requireAnno = { [CORE_ANNOTATIONS.REQUIRED]: true }
 export const saltoConfigType = new ObjectType({
   elemID: saltoConfigElemID,
   fields: {

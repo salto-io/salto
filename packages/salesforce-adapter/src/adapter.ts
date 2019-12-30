@@ -652,6 +652,7 @@ export default class SalesforceAdapter {
       Promise.all(metadataTypesToRead.map(async type => {
         let namespaceAndInstances: NamespaceAndInstances[] = []
         try {
+          // Just fetch metadata instances of the types that we receive from the describe call
           if (!this.metadataAdditionalTypes.includes(metadataType(type))) {
             namespaceAndInstances = await this.listMetadataInstances(metadataType(type))
           }

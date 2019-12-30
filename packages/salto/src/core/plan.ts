@@ -380,15 +380,22 @@ const filterInvalidChanges = async (beforeElementsMap: ElementMap, afterElements
   return { changeErrors, validDiffGraph, validAfterElementsMap }
 }
 
-export const getPlan = async (
-  beforeElements: readonly Element[],
-  afterElements: readonly Element[],
-  changeValidators: Record<string, ChangeValidator> = {},
-  withDependencies = true
-): Promise<Plan> => log.time(async () => {
-  // getPlan
-  const resolvedBefore = resolve(beforeElements)
-  const resolvedAfter = resolve(afterElements)
+type GetPlanParams = {
+  beforeElements: readonly Element[]
+  afterElements: readonly Element[]
+  changeValidators?: Record<string, ChangeValidator>
+  withDependencies?: boolean
+  shouldResolve?: boolean
+}
+export const getPlan = async ({
+  beforeElements,
+  afterElements,
+  changeValidators = {},
+  withDependencies = true,
+  shouldResolve = true,
+}: GetPlanParams): Promise<Plan> => log.time(async () => {
+  const resolvedBefore = shouldResolve ? resolve(beforeElements) : beforeElements
+  const resolvedAfter = shouldResolve ? resolve(afterElements) : afterElements
   const before = toNodeMap(resolvedBefore, withDependencies)
   const after = toNodeMap(resolvedAfter, withDependencies)
   // Calculate the diff

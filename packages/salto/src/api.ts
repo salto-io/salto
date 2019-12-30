@@ -82,11 +82,11 @@ export const preview = async (
 ): Promise<Plan> => {
   const state = new State(workspace.config.stateLocation)
   const stateElements = await state.get()
-  return getPlan(
-    filterElementsByServices(stateElements, services),
-    filterElementsByServices(workspace.elements, services),
-    getChangeValidators()
-  )
+  return getPlan({
+    beforeElements: filterElementsByServices(stateElements, services),
+    afterElements: filterElementsByServices(workspace.elements, services),
+    changeValidators: getChangeValidators(),
+  })
 }
 
 export interface DeployResult {
@@ -115,11 +115,11 @@ export const deploy = async (
   const state = new State(workspace.config.stateLocation)
   const stateElements = await state.get()
   try {
-    const actionPlan = await getPlan(
-      filterElementsByServices(stateElements, services),
-      filterElementsByServices(workspace.elements, services),
-      getChangeValidators()
-    )
+    const actionPlan = await getPlan({
+      beforeElements: filterElementsByServices(stateElements, services),
+      afterElements: filterElementsByServices(workspace.elements, services),
+      changeValidators: getChangeValidators(),
+    })
     if (force || await shouldDeploy(actionPlan)) {
       const adapters = await login(workspace, fillConfig, services)
       const errors = await deployActions(

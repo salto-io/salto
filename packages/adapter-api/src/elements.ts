@@ -205,12 +205,6 @@ export class Field implements Element {
  * dependent.
  */
 export abstract class Type implements Element {
-  public static DEFAULT = '_default'
-  public static REQUIRED = '_required'
-  public static VALUES = '_values'
-  public static RESTRICTION = '_restriction'
-  public static ENFORCE_VALUE = 'enforce_value'
-
   readonly elemID: ElemID
   path?: ReadonlyArray<string>
   annotationTypes: TypeMap
@@ -504,6 +498,22 @@ export const BuiltinTypes: Record<string, PrimitiveType> = {
   }),
 }
 
+export const CORE_ANNOTATIONS = {
+  DEFAULT: '_default',
+  REQUIRED: '_required',
+  VALUES: '_values',
+  RESTRICTION: '_restriction',
+  ENFORCE_VALUE: 'enforce_value',
+}
+
+export const BuiltinAnnotationTypes: Record<string, Type> = {
+  [CORE_ANNOTATIONS.DEFAULT]: BuiltinTypes.STRING,
+  [CORE_ANNOTATIONS.REQUIRED]: BuiltinTypes.BOOLEAN,
+  [CORE_ANNOTATIONS.RESTRICTION]: new ObjectType({ elemID: new ElemID('', 'restriction'),
+    fields: { [CORE_ANNOTATIONS.ENFORCE_VALUE]: new Field(
+      new ElemID('', 'restriction'), CORE_ANNOTATIONS.ENFORCE_VALUE, BuiltinTypes.BOOLEAN
+    ) } }),
+}
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 export function isElement(value: any): value is Element {

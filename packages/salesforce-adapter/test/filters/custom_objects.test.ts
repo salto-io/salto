@@ -1,12 +1,13 @@
 import _ from 'lodash'
-import { ElemID, ObjectType, ServiceIds, Type, BuiltinTypes, Element } from 'adapter-api'
+import { ElemID, ObjectType, ServiceIds, BuiltinTypes, Element, InstanceElement, isObjectType, CORE_ANNOTATIONS } from 'adapter-api'
 import SalesforceClient from '../../src/client/client'
 import Connection from '../../src/client/jsforce'
 import * as constants from '../../src/constants'
 import { } from '../../src/filters/settings_type'
 import mockAdapter from '../adapter'
 import { findElements } from '../utils'
-import filterCreator from '../../src/filters/custom_objects'
+import filterCreator, { INSTANCE_REQUIRED_FIELD, INSTANCE_TYPE_FIELD,
+  INSTANCE_DEFAULT_VALUE_FIELD, INSTANCE_VALUE_SET_FIELD } from '../../src/filters/custom_objects'
 import { FilterWith } from '../../src/filter'
 
 describe('Custom Objects filter', () => {
@@ -113,15 +114,15 @@ describe('Custom Objects filter', () => {
       expect(lead.fields.last_name.type.elemID.name).toBe('text')
       expect(lead.fields.last_name.annotations.label).toBe('Last Name')
       // Test Required true and false
-      expect(lead.fields.last_name.annotations[Type.REQUIRED]).toBe(true)
-      expect(lead.fields.first_name.annotations[Type.REQUIRED]).toBe(false)
+      expect(lead.fields.last_name.annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(true)
+      expect(lead.fields.first_name.annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
       // Default string and boolean
-      expect(lead.fields.last_name.annotations[Type.DEFAULT]).toBe('BLABLA')
-      expect(lead.fields.is_deleted.annotations[Type.DEFAULT]).toBe(false)
+      expect(lead.fields.last_name.annotations[CORE_ANNOTATIONS.DEFAULT]).toBe('BLABLA')
+      expect(lead.fields.is_deleted.annotations[CORE_ANNOTATIONS.DEFAULT]).toBe(false)
       // Custom type
       expect(lead.fields.custom__c).not.toBeUndefined()
       expect(lead.fields.custom__c.annotations[constants.API_NAME]).toBe('Custom__c')
-      expect(lead.fields.custom__c.annotations[Type.DEFAULT]).toBe(false)
+      expect(lead.fields.custom__c.annotations[CORE_ANNOTATIONS.DEFAULT]).toBe(false)
       // Formula field
       expect(lead.fields.formula__c).toBeDefined()
       expect(lead.fields.formula__c.type.elemID.name).toBe('formula_text')
@@ -147,9 +148,10 @@ describe('Custom Objects filter', () => {
 
       const lead = findElements(result, 'lead').pop() as ObjectType
       expect(lead.fields.primary_c.type.elemID.name).toBe('picklist')
-      expect((lead.fields.primary_c.annotations[Type.VALUES] as string[]).join(';')).toBe('No;Yes')
-      expect(lead.fields.primary_c.annotations[Type.DEFAULT]).toBe('Yes')
-      expect(lead.fields.primary_c.annotations[Type.RESTRICTION][Type.ENFORCE_VALUE]).toBe(true)
+      expect((lead.fields.primary_c.annotations[CORE_ANNOTATIONS.VALUES] as string[]).join(';')).toBe('No;Yes')
+      expect(lead.fields.primary_c.annotations[CORE_ANNOTATIONS.DEFAULT]).toBe('Yes')
+      expect(lead.fields.primary_c
+        .annotations[CORE_ANNOTATIONS.RESTRICTION][CORE_ANNOTATIONS.ENFORCE_VALUE]).toBe(true)
     })
 
     it('should fetch sobject with combobox field', async () => {
@@ -170,10 +172,10 @@ describe('Custom Objects filter', () => {
 
       const lead = findElements(result, 'lead').pop() as ObjectType
       expect(lead.fields.primary_c.type.elemID.name).toBe('combobox')
-      expect((lead.fields.primary_c.annotations[Type.VALUES] as string[]).join(';'))
+      expect((lead.fields.primary_c.annotations[CORE_ANNOTATIONS.VALUES] as string[]).join(';'))
         .toBe('No;Yes')
-      expect(lead.fields.primary_c.annotations[Type.DEFAULT].length).toBe(1)
-      expect(lead.fields.primary_c.annotations[Type.DEFAULT].pop()).toBe('Yes')
+      expect(lead.fields.primary_c.annotations[CORE_ANNOTATIONS.DEFAULT].length).toBe(1)
+      expect(lead.fields.primary_c.annotations[CORE_ANNOTATIONS.DEFAULT].pop()).toBe('Yes')
     })
 
     it('should fetch sobject with number field', async () => {
@@ -477,6 +479,68 @@ describe('Custom Objects filter', () => {
       expect(flow).toBeDefined() // We do expect to get the metadata type here
       expect(Object.keys(flow.fields)).toHaveLength(0)
       expect(flow.path).toEqual(['types', 'flow'])
+    })
+    describe('Merge elements', () => {
+      const testInstanceElement = new InstanceElement('lead', new ObjectType(
+        { elemID: mockGetElemIdFunc(constants.SALESFORCE, {}, constants.CUSTOM_OBJECT) }
+      ),
+      { fields: [{ [constants.INSTANCE_FULL_NAME_FIELD]: 'MyAutoNumber',
+        [INSTANCE_TYPE_FIELD]: 'AutoNumber',
+        [constants.FIELD_ANNOTATIONS.DISPLAY_FORMAT]: 'A-{0000}',
+        [INSTANCE_REQUIRED_FIELD]: 'false' },
+      { [constants.INSTANCE_FULL_NAME_FIELD]: 'MyPicklist',
+        [INSTANCE_TYPE_FIELD]: 'Picklist',
+        [INSTANCE_REQUIRED_FIELD]: 'true',
+        [INSTANCE_DEFAULT_VALUE_FIELD]: 'YES',
+        [INSTANCE_VALUE_SET_FIELD]: { [constants.VALUE_SET_FIELDS.VALUE_SET_DEFINITION]:
+          { value: [{ [constants.INSTANCE_FULL_NAME_FIELD]: 'YES' },
+            { [constants.INSTANCE_FULL_NAME_FIELD]: 'NO' }] } } }],
+      [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead' })
+      it('should merge sobject fields with a custom object instance elemenet', async () => {
+        mockSingleSObject('Lead', [{
+          name: 'MyAutoNumber',
+          type: 'string',
+          label: 'AutoNumero',
+          autoNumber: true,
+        },
+        {
+          name: 'MyPicklist',
+          type: 'picklist',
+          label: 'My Picklist',
+          picklistValues: [],
+        }], false, true, false, 'Picklist Label')
+        const result: Element[] = [testInstanceElement]
+        await filter().onFetch(result)
+
+        const lead = result.filter(o => o.elemID.name === 'lead').pop()
+        expect(lead).toBeDefined()
+        expect(isObjectType(lead)).toBeTruthy()
+        const leadObjectType = lead as ObjectType
+        expect(leadObjectType.fields.my_auto_number
+          .annotations[constants.FIELD_ANNOTATIONS.DISPLAY_FORMAT]).toBe('A-{0000}')
+        expect(leadObjectType.fields.my_auto_number
+          .annotations.label).toBe('AutoNumero')
+        expect(leadObjectType.fields.my_auto_number
+          .annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
+        expect(leadObjectType.fields.my_picklist
+          .annotations[CORE_ANNOTATIONS.VALUES]).toEqual(['YES', 'NO'])
+        expect(leadObjectType.fields.my_picklist
+          .annotations[CORE_ANNOTATIONS.DEFAULT]).toBe('YES')
+        expect(leadObjectType.fields.my_picklist
+          .annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(true)
+      })
+
+      it('should change instance element to object type if we do not get it from the soap api', async () => {
+        const result: Element[] = [testInstanceElement]
+        await filter().onFetch(result)
+
+        const lead = result.filter(o => o.elemID.name === 'lead').pop()
+        expect(lead).toBeDefined()
+        expect(isObjectType(lead)).toBeTruthy()
+        const leadObjectType = lead as ObjectType
+        expect(leadObjectType.fields.my_auto_number
+          .annotations[constants.FIELD_ANNOTATIONS.DISPLAY_FORMAT]).toBe('A-{0000}')
+      })
     })
   })
 })

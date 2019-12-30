@@ -10,6 +10,8 @@ export const NAMESPACE_SEPARATOR = '__'
 
 // Annotations
 export const LABEL = 'label'
+export const DESCRIPTION = 'description'
+export const HELP_TEXT = 'inline_help_text'
 export const API_NAME = 'api_name'
 export const FORMULA = 'formula'
 export const DEFAULT_VALUE_FORMULA = 'default_value_formula'
@@ -78,6 +80,7 @@ export const FIELD_TYPE_API_NAMES = {
 
 export const FIELD_ANNOTATIONS = {
   UNIQUE: 'unique',
+  EXTERNAL_ID: 'external_id',
   CASE_SENSITIVE: 'case_sensitive',
   LENGTH: 'length',
   SCALE: 'scale',
@@ -108,6 +111,10 @@ export const FIELD_DEPENDENCY_FIELDS = {
 export const VALUE_SETTINGS_FIELDS = {
   CONTROLLING_FIELD_VALUE: 'controlling_field_value',
   VALUE_NAME: 'value_name',
+}
+
+export const VALUE_SET_FIELDS = {
+  VALUE_SET_DEFINITION: 'value_set_definition',
 }
 
 export const LOOKUP_FILTER_FIELDS = {

@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import {
-  InstanceElement, ElemID, ObjectType, Type, Values, isObjectType,
+  InstanceElement, ElemID, ObjectType, Type, Values, isObjectType, CORE_ANNOTATIONS,
 } from 'adapter-api'
 import { logger } from '@salto/logging'
 import {
@@ -23,15 +23,15 @@ const buildDefaults = (
 ): Values | undefined => {
   const buildObjectDefaults = (object: ObjectType): Values | undefined => {
     const def = _(object.fields).mapValues(field =>
-      ((field.annotations[Type.DEFAULT] === undefined && !field.isList)
+      ((field.annotations[CORE_ANNOTATIONS.DEFAULT] === undefined && !field.isList)
         ? buildDefaults(field.type)
-        : field.annotations[Type.DEFAULT])).pickBy(v => v !== undefined).value()
+        : field.annotations[CORE_ANNOTATIONS.DEFAULT])).pickBy(v => v !== undefined).value()
     return _.isEmpty(def) ? undefined : def
   }
 
-  return (type.annotations[Type.DEFAULT] === undefined && isObjectType(type)
+  return (type.annotations[CORE_ANNOTATIONS.DEFAULT] === undefined && isObjectType(type)
     ? buildObjectDefaults(type)
-    : type.annotations[Type.DEFAULT])
+    : type.annotations[CORE_ANNOTATIONS.DEFAULT])
 }
 
 const mergeInstanceDefinitions = (

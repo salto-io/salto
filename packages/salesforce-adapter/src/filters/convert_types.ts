@@ -1,6 +1,7 @@
 import _ from 'lodash'
 import {
-  Element, isObjectType, PrimitiveTypes, Values, ObjectType, isPrimitiveType, isInstanceElement,
+  Element, isObjectType, PrimitiveTypes, Values, ObjectType,
+  isPrimitiveType, isInstanceElement,
 } from 'adapter-api'
 import { FilterCreator } from '../filter'
 import { convertXsdTypeFuncMap, PrimitiveValue } from '../transformers/transformer'

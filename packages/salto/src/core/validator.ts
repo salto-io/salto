@@ -2,7 +2,7 @@ import _ from 'lodash'
 import { types } from '@salto/lowerdash'
 import {
   Element, isObjectType, isInstanceElement, Type, InstanceElement, Field, PrimitiveTypes,
-  isPrimitiveType, Value, ElemID,
+  isPrimitiveType, Value, ElemID, CORE_ANNOTATIONS,
 } from 'adapter-api'
 import { makeArray } from '@salto/lowerdash/dist/src/collections/array'
 import { UnresolvedReference, resolve, CircularReference } from './expressions'
@@ -109,7 +109,7 @@ const validateAnnotationsValues = (
 ): ValidationError[] => {
   const validateRestrictionsValue = (val: Value):
     ValidationError[] => {
-    const restrictionValues = makeArray(field.annotations[Type.VALUES])
+    const restrictionValues = makeArray(field.annotations[CORE_ANNOTATIONS.VALUES])
 
     // When value is array we iterate (validate) each element
     if (_.isArray(val)) {
@@ -127,7 +127,7 @@ const validateAnnotationsValues = (
   }
 
   const validateRequiredValue = (): ValidationError[] =>
-    (field.annotations[Type.REQUIRED] === true
+    (field.annotations[CORE_ANNOTATIONS.REQUIRED] === true
       ? [new MissingRequiredFieldValidationError({ elemID, field })] : [])
 
   // Checking _required annotation
@@ -136,11 +136,11 @@ const validateAnnotationsValues = (
   }
 
   const shouldEnforceValue = (): boolean => {
-    const restriction = field.annotations[Type.RESTRICTION]
+    const restriction = field.annotations[CORE_ANNOTATIONS.RESTRICTION]
     // enforce_value is true by default
-    return (restriction && restriction[Type.ENFORCE_VALUE] === true)
-      || (field.annotations[Type.VALUES]
-        && !(restriction && restriction[Type.ENFORCE_VALUE] === false))
+    return (restriction && restriction[CORE_ANNOTATIONS.ENFORCE_VALUE] === true)
+      || (field.annotations[CORE_ANNOTATIONS.VALUES]
+        && !(restriction && restriction[CORE_ANNOTATIONS.ENFORCE_VALUE] === false))
   }
 
   // Checking _values annotation

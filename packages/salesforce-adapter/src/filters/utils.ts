@@ -2,9 +2,10 @@ import _ from 'lodash'
 import { logger } from '@salto/logging'
 import { Element, Field, isObjectType, ObjectType, InstanceElement, isInstanceElement,
   isField, Type, BuiltinTypes } from 'adapter-api'
-import { API_NAME, CUSTOM_FIELD, LABEL, CUSTOM_OBJECT, METADATA_TYPE } from '../constants'
+import { API_NAME, CUSTOM_FIELD, LABEL, CUSTOM_OBJECT,
+  METADATA_TYPE, NAMESPACE_SEPARATOR } from '../constants'
 import { CustomField, JSONBool } from '../client/types'
-import { fieldFullName, isCustomObject, metadataType, sfCase } from '../transformers/transformer'
+import { fieldFullName, isCustomObject, metadataType, sfCase, apiName } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
 
 const log = logger(module)
@@ -109,3 +110,9 @@ export const addMetadataType = (elem: ObjectType,
     log.debug(`added METADATA_TYPE=${sfCase(metadataTypeValue)} to ${id(elem)}`)
   }
 }
+
+export const hasNamespace = (customElement: Field | ObjectType): boolean =>
+  apiName(customElement).split(NAMESPACE_SEPARATOR).length === 3
+
+export const getNamespace = (customElement: Field | ObjectType): string =>
+  apiName(customElement).split(NAMESPACE_SEPARATOR)[0]

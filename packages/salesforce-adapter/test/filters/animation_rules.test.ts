@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import {
-  ObjectType, InstanceElement, Element, Field, BuiltinTypes, Type, findElement,
+  ObjectType, InstanceElement, Element, Field, BuiltinTypes, findElement, CORE_ANNOTATIONS,
 } from 'adapter-api'
 import filterCreator, { ANIMATION_FREQUENCY, ANIMATION_RULE_TYPE_ID, RECORD_TYPE_CONTEXT } from '../../src/filters/animation_rules'
 import * as constants from '../../src/constants'
@@ -12,11 +12,11 @@ describe('animation rules filter', () => {
     fields: {
       [ANIMATION_FREQUENCY]: new Field(ANIMATION_RULE_TYPE_ID, ANIMATION_FREQUENCY,
         BuiltinTypes.STRING, {
-          [Type.VALUES]: ['always', 'often', 'rarely', 'sometimes'],
+          [CORE_ANNOTATIONS.VALUES]: ['always', 'often', 'rarely', 'sometimes'],
         }),
       [RECORD_TYPE_CONTEXT]: new Field(ANIMATION_RULE_TYPE_ID, RECORD_TYPE_CONTEXT,
         BuiltinTypes.STRING, {
-          [Type.VALUES]: ['All', 'Custom', 'Master'],
+          [CORE_ANNOTATIONS.VALUES]: ['All', 'Custom', 'Master'],
         }),
     },
   })

@@ -121,7 +121,7 @@ export default class SalesforceAdapter {
   public constructor({
     metadataTypeBlacklist = [
       'ReportType', // See SALTO-76
-      'CustomObject', 'CustomField', // We have special treatment for those type
+      'CustomField', // We have special treatment for this type
       'Settings',
       'StaticResource',
       // readMetadata fails on those and pass on the parents (AssignmentRules and EscalationRules)
@@ -204,8 +204,9 @@ export default class SalesforceAdapter {
     const fieldTypes = Types.getAllFieldTypes()
     const annotationTypes = Types.getAnnotationTypes()
     const metadataTypeNames = this.listMetadataTypes()
-    const metadataTypes = this.fetchMetadataTypes(metadataTypeNames)
-    const additionalMetadataTypes = this.fetchMetadataTypes(this.listAdditionalMetadataTypes())
+    const metadataTypes = this.fetchMetadataTypes(metadataTypeNames, annotationTypes)
+    const additionalMetadataTypes = this.fetchMetadataTypes(this.listAdditionalMetadataTypes(),
+      annotationTypes)
     const metadataInstances = this.fetchMetadataInstances(metadataTypeNames, metadataTypes)
 
     const elements = _.flatten(
@@ -597,9 +598,12 @@ export default class SalesforceAdapter {
   }
 
   @logDuration('fetching metadata types')
-  private async fetchMetadataTypes(typeNamesPromise: Promise<string[]>): Promise<Type[]> {
+  private async fetchMetadataTypes(typeNamesPromise: Promise<string[]>,
+    knownMetadataTypes: Type[]): Promise<Type[]> {
     const typeNames = await typeNamesPromise
     const knownTypes = new Map<string, Type>()
+    knownMetadataTypes.forEach(knownMetadataType =>
+      knownTypes.set(sfCase(knownMetadataType.elemID.name), knownMetadataType))
     return _.flatten(await Promise.all((typeNames)
       .map(typeName => this.fetchMetadataType(typeName, knownTypes, new Set(typeNames))
         .catch(e => {

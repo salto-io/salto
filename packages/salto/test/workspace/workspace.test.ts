@@ -3,7 +3,7 @@ import path from 'path'
 import _ from 'lodash'
 import tmp from 'tmp-promise'
 import {
-  Element, ObjectType, ElemID, Type, Field, PrimitiveType, PrimitiveTypes, BuiltinTypes,
+  Element, ObjectType, ElemID, CORE_ANNOTATIONS, Field, PrimitiveType, PrimitiveTypes, BuiltinTypes,
   findElement, isObjectType,
 } from 'adapter-api'
 import { Config } from '../../src/workspace/config'
@@ -21,10 +21,10 @@ describe('Workspace', () => {
     '/salto/file.bp': `
 type salesforce_lead {
   salesforce_text base_field {
-    ${Type.DEFAULT} = "asd"
+    ${CORE_ANNOTATIONS.DEFAULT} = "asd"
   }
   list number list_field {
-    ${Type.DEFAULT} = [
+    ${CORE_ANNOTATIONS.DEFAULT} = [
       1,
       2,
       3,
@@ -41,7 +41,7 @@ type one_liner { a = 1 }`,
     '/salto/subdir/file.bp': `
 type salesforce_lead {
   salesforce_text ext_field {
-    ${Type.DEFAULT} = "foo"
+    ${CORE_ANNOTATIONS.DEFAULT} = "foo"
   }
 }
 type multi_loc { b = 1 }`,
@@ -265,7 +265,7 @@ type salesforce_lead {
 
       const changes: DetailedChange[] = [
         { // modify value
-          id: new ElemID('salesforce', 'lead', 'field', 'base_field', Type.DEFAULT),
+          id: new ElemID('salesforce', 'lead', 'field', 'base_field', CORE_ANNOTATIONS.DEFAULT),
           action: 'modify',
           data: { before: 'asd', after: 'foo' },
         },
@@ -280,12 +280,12 @@ type salesforce_lead {
           data: { after: { key: 'value' } },
         },
         { // remove value
-          id: new ElemID('salesforce', 'lead', 'field', 'ext_field', Type.DEFAULT),
+          id: new ElemID('salesforce', 'lead', 'field', 'ext_field', CORE_ANNOTATIONS.DEFAULT),
           action: 'remove',
           data: { before: 'foo' },
         },
         { // Add value to empty scope
-          id: new ElemID('external', 'file', 'attr', Type.DEFAULT),
+          id: new ElemID('external', 'file', 'attr', CORE_ANNOTATIONS.DEFAULT),
           action: 'add',
           data: { after: 'some value' },
         },
@@ -301,7 +301,7 @@ type salesforce_lead {
           data: { before: new ObjectType({ elemID: new ElemID('multi', 'loc') }) },
         },
         { // Modify value in list
-          id: new ElemID('salesforce', 'lead', 'field', 'list_field', Type.DEFAULT, '3'),
+          id: new ElemID('salesforce', 'lead', 'field', 'list_field', CORE_ANNOTATIONS.DEFAULT, '3'),
           action: 'modify',
           data: { before: 4, after: 5 },
         },
@@ -338,7 +338,7 @@ type salesforce_lead {
         },
         {
           path: ['other', 'foo', 'bar'],
-          id: new ElemID('salesforce', 'lead', 'field', 'ext_field', Type.DEFAULT),
+          id: new ElemID('salesforce', 'lead', 'field', 'ext_field', CORE_ANNOTATIONS.DEFAULT),
           action: 'add',
           data: { after: 'blublu' },
         },
@@ -365,7 +365,7 @@ type salesforce_lead {
       })
       it('should modify existing element', () => {
         expect(lead).toBeDefined()
-        expect(lead.fields.base_field.annotations[Type.DEFAULT]).toEqual('foo')
+        expect(lead.fields.base_field.annotations[CORE_ANNOTATIONS.DEFAULT]).toEqual('foo')
       })
       it('should update existing parsed blueprints content', () => {
         const updatedBlueprint = workspace.parsedBlueprints['file.bp']
@@ -414,7 +414,8 @@ type salesforce_lead {
         expect(Object.keys(elemMap)).not.toContain('multi_loc')
       })
       it('should update value in list', () => {
-        expect(lead.fields.list_field.annotations[Type.DEFAULT]).toEqual([1, 2, 3, 5, 5])
+        expect(lead.fields.list_field
+          .annotations[CORE_ANNOTATIONS.DEFAULT]).toEqual([1, 2, 3, 5, 5])
       })
       it('should change isList value in fields', () => {
         expect(lead.fields.not_a_list_yet_field.isList).toBe(true)
@@ -429,7 +430,7 @@ type salesforce_lead {
 
         await workspace.updateBlueprints(fakeChange, realChange)
         lead = findElement(workspace.elements, new ElemID('salesforce', 'lead')) as ObjectType
-        expect(lead.fields.base_field.annotations[Type.DEFAULT]).toEqual('blabla')
+        expect(lead.fields.base_field.annotations[CORE_ANNOTATIONS.DEFAULT]).toEqual('blabla')
       })
     })
   })

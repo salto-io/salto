@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import {
-  Element, InstanceElement, Value, Values, Type, findElement, ElemID, findInstances,
+  Element, InstanceElement, Value, Values, CORE_ANNOTATIONS, findElement, ElemID, findInstances,
   findObjectType,
 } from 'adapter-api'
 import wu from 'wu'
@@ -116,7 +116,8 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
       if (!typeToChange) {
         return
       }
-      let valuesToSort = typeToChange.fields[sortFieldInfo.path[0]]?.annotations[Type.VALUES]
+      let valuesToSort = typeToChange
+        .fields[sortFieldInfo.path[0]]?.annotations[CORE_ANNOTATIONS.VALUES]
       if (_.isArray(valuesToSort)) {
         valuesToSort = valuesToSort.sort()
       }

@@ -1,6 +1,6 @@
 import wu from 'wu'
 import {
-  Element, Type, ElemID, findObjectType, findInstances,
+  Element, CORE_ANNOTATIONS, ElemID, findObjectType, findInstances,
 } from 'adapter-api'
 import { FilterWith } from '../filter'
 import { SALESFORCE } from '../constants'
@@ -21,7 +21,7 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
   onFetch: async (elements: Element[]) => {
     const canvasType = findObjectType(elements, CANVAS_METADATA_TYPE_ID)
     const initMethods = canvasType ? canvasType.fields[SAML_INIT_METHOD_FIELD_NAME] : undefined
-    const values = initMethods ? initMethods.annotations[Type.VALUES] : undefined
+    const values = initMethods ? initMethods.annotations[CORE_ANNOTATIONS.VALUES] : undefined
 
     wu(findInstances(elements, CANVAS_METADATA_TYPE_ID))
       .forEach(canvas => {

@@ -3,7 +3,7 @@ import {
   Type, Field, isObjectType, isInstanceElement, isPrimitiveType,
   isField, PrimitiveTypes, BuiltinTypes, isType, Value, getField,
   getFieldNames, getFieldType, getAnnotationKey, ElemID, Element,
-  Values,
+  Values, CORE_ANNOTATIONS,
 } from 'adapter-api'
 
 import { dumpElemID, parseElemID } from 'salto'
@@ -31,7 +31,8 @@ export const isInsertText = (value: any): value is InsertText => (
 )
 
 const getRestrictionValues = (annotatingElem: Type|Field, valueType: Type): Value[]|undefined =>
-  annotatingElem.annotations[Type.VALUES] || valueType.annotations[Type.VALUES]
+  annotatingElem.annotations[CORE_ANNOTATIONS.VALUES]
+  || valueType.annotations[CORE_ANNOTATIONS.VALUES]
 
 const getAllInstances = (
   elements: ReadonlyArray<Element>,

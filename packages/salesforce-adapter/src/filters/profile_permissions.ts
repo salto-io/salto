@@ -1,6 +1,7 @@
 import {
-  ObjectType, Element, Field, isObjectType, InstanceElement, isField, Type,
-  Change, getChangeElement, getAnnotationValue, ElemID, Values, findElement, ReferenceExpression,
+  ObjectType, Element, Field, isObjectType, InstanceElement, isField, Change,
+  getChangeElement, getAnnotationValue, ElemID, Values, findElement,
+  ReferenceExpression, CORE_ANNOTATIONS,
 } from 'adapter-api'
 import _ from 'lodash'
 import { SaveResult } from 'jsforce'
@@ -132,7 +133,7 @@ const setProfileObjectPermissions = (object: ObjectType, profile: ElemID,
 const setDefaultFieldPermissions = (field: Field): void => {
   // We can't set permissions for master detail or required fields
   if (field.type.isEqual(Types.primitiveDataTypes.masterdetail)
-    || field.annotations[Type.REQUIRED]) {
+    || field.annotations[CORE_ANNOTATIONS.REQUIRED]) {
     return
   }
   if (_.isEmpty(getFieldPermissions(field))) {

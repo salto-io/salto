@@ -205,13 +205,11 @@ export default class SalesforceAdapter {
     const annotationTypes = Types.getAnnotationTypes()
     const metadataTypeNames = this.listMetadataTypes()
     const metadataTypes = this.fetchMetadataTypes(metadataTypeNames, annotationTypes)
-    const additionalMetadataTypes = this.fetchMetadataTypes(this.listAdditionalMetadataTypes(),
-      annotationTypes)
     const metadataInstances = this.fetchMetadataInstances(metadataTypeNames, metadataTypes)
 
     const elements = _.flatten(
-      await Promise.all([annotationTypes, fieldTypes, metadataTypes,
-        additionalMetadataTypes, metadataInstances]) as Element[][]
+      await Promise.all([annotationTypes, fieldTypes,
+        metadataTypes, metadataInstances]) as Element[][]
     )
 
     await this.runFiltersOnFetch(elements)
@@ -589,12 +587,9 @@ export default class SalesforceAdapter {
     return this.client.listMetadataTypes().then(
       types => _.flatten(types
         .map(x => [x.xmlName, ...makeArray(x.childXmlNames)]))
+        .concat(this.metadataAdditionalTypes)
         .filter(name => !this.metadataTypeBlacklist.includes(name))
     )
-  }
-
-  private async listAdditionalMetadataTypes(): Promise<string[]> {
-    return this.metadataAdditionalTypes
   }
 
   @logDuration('fetching metadata types')
@@ -657,7 +652,10 @@ export default class SalesforceAdapter {
       Promise.all(metadataTypesToRead.map(async type => {
         let namespaceAndInstances: NamespaceAndInstances[] = []
         try {
-          namespaceAndInstances = await this.listMetadataInstances(metadataType(type))
+          // Just fetch metadata instances of the types that we receive from the describe call
+          if (!this.metadataAdditionalTypes.includes(metadataType(type))) {
+            namespaceAndInstances = await this.listMetadataInstances(metadataType(type))
+          }
         } catch (e) {
           log.error('failed to fetch instances of type %s reason: %o', id(type), e)
         }

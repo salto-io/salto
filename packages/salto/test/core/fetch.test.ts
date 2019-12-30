@@ -485,7 +485,7 @@ describe('fetch', () => {
     describe('first fetch', () => {
       let planSpy: jest.SpyInstance
       beforeEach(async () => {
-        planSpy = jest.spyOn(plan, 'getPlan')
+        planSpy = jest.spyOn(plan, 'getFetchPlan')
         mockAdapters.dummy.fetch.mockResolvedValueOnce(
           Promise.resolve([typeWithField])
         )

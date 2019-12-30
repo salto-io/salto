@@ -380,20 +380,16 @@ const filterInvalidChanges = async (beforeElementsMap: ElementMap, afterElements
   return { changeErrors, validDiffGraph, validAfterElementsMap }
 }
 
-export const getPlan = async (
+const createPlan = async (
   beforeElements: readonly Element[],
   afterElements: readonly Element[],
+  beforeNodes: DataNodeMap<ChangeDataType>,
+  afterNodes: DataNodeMap<ChangeDataType>,
   changeValidators: Record<string, ChangeValidator> = {},
-  withDependencies = true
-): Promise<Plan> => log.time(async () => {
-  // getPlan
-  const resolvedBefore = resolve(beforeElements)
-  const resolvedAfter = resolve(afterElements)
-  const before = toNodeMap(resolvedBefore, withDependencies)
-  const after = toNodeMap(resolvedAfter, withDependencies)
+): Promise<Plan> => {
   // Calculate the diff
-  const diffGraph = buildDiffGraph(before, after,
-    nodeId => isEqualsNode(before.getData(nodeId), after.getData(nodeId)))
+  const diffGraph = buildDiffGraph(beforeNodes, afterNodes,
+    nodeId => isEqualsNode(beforeNodes.getData(nodeId), afterNodes.getData(nodeId)))
 
   const beforeElementsMap = createElementsMap(beforeElements)
   const afterElementsMap = createElementsMap(afterElements)
@@ -405,5 +401,25 @@ export const getPlan = async (
   // build plan
   return addPlanFunctions(groupedGraph, filterResult.changeErrors, beforeElementsMap,
     filterResult.validAfterElementsMap)
-}, 'get %s changes %o -> %o elements', withDependencies ? 'deploy' : 'fetch',
-beforeElements.length, afterElements.length)
+}
+
+export const getFetchPlan = async (
+  beforeElements: readonly Element[],
+  afterElements: readonly Element[],
+): Promise<Plan> => log.time(async () => {
+  const before = toNodeMap(beforeElements, false)
+  const after = toNodeMap(afterElements, false)
+  return createPlan(beforeElements, afterElements, before, after)
+}, 'get fetch changes %o -> %o elements', beforeElements.length, afterElements.length)
+
+export const getDeployPlan = async (
+  beforeElements: readonly Element[],
+  afterElements: readonly Element[],
+  changeValidators: Record<string, ChangeValidator> = {}
+): Promise<Plan> => log.time(async () => {
+  const resolvedBefore = resolve(beforeElements)
+  const resolvedAfter = resolve(afterElements)
+  const before = toNodeMap(resolvedBefore)
+  const after = toNodeMap(resolvedAfter)
+  return createPlan(resolvedBefore, resolvedAfter, before, after, changeValidators)
+}, 'get deploy changes %o -> %o elements', beforeElements.length, afterElements.length)

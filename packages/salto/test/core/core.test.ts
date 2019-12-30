@@ -242,7 +242,7 @@ describe('api functions', () => {
       })
 
       it('should create an deploy plan using the plan method', async () => {
-        const spy = jest.spyOn(plan, 'getPlan')
+        const spy = jest.spyOn(plan, 'getDeployPlan')
         await commands.preview(
           ws,
           services

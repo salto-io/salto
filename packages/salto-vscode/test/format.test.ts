@@ -4,7 +4,7 @@ import { Diff2Html } from 'diff2html'
 import { ObjectType, Field, BuiltinTypes, ElemID } from 'adapter-api'
 import { file } from 'salto'
 
-import { getPlan } from 'salto/dist/src/core/plan'
+import { getDeployPlan } from 'salto/dist/src/core/plan'
 import { createPlanDiff, UnifiedDiff, renderDiffView } from '../src/format'
 
 describe('Test extension format', () => {
@@ -81,8 +81,10 @@ describe('Test extension format', () => {
   let html: string
   beforeAll(async () => {
     expectedDif = await file.readTextFile(diffFile)
-    diff = await createPlanDiff((await getPlan(before, after)).itemsByEvalOrder())
-    shuffledDiff = await createPlanDiff((await getPlan(beforeShuffled, after)).itemsByEvalOrder())
+    diff = await createPlanDiff((await getDeployPlan(before, after)).itemsByEvalOrder())
+    shuffledDiff = await createPlanDiff(
+      (await getDeployPlan(beforeShuffled, after)).itemsByEvalOrder(),
+    )
     html = renderDiffView(diff, [cssHref])
   })
   describe('create diff', () => {

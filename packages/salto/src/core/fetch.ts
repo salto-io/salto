@@ -8,7 +8,7 @@ import {
 } from 'adapter-api'
 import { logger } from '@salto/logging'
 import { StepEvents } from './deploy'
-import { getPlan, DetailedChange } from './plan'
+import { DetailedChange, getFetchPlan } from './plan'
 import { mergeElements, MergeError } from './merger'
 
 const log = logger(module)
@@ -50,7 +50,7 @@ export const getDetailedChanges = async (
   before: ReadonlyArray<Element>,
   after: ReadonlyArray<Element>,
 ): Promise<Iterable<DetailedChange>> =>
-  wu((await getPlan(before, after, {}, false)).itemsByEvalOrder())
+  wu((await getFetchPlan(before, after)).itemsByEvalOrder())
     .map(item => item.detailedChanges())
     .flatten()
 

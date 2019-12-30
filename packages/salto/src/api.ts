@@ -14,7 +14,7 @@ import {
 } from './core/records'
 import initAdapters from './core/adapters/adapters'
 import {
-  getPlan, Plan, PlanItem, DetailedChange,
+  getDeployPlan, Plan, PlanItem, DetailedChange,
 } from './core/plan'
 import State from './state/state'
 import { findElement, SearchResult } from './core/search'
@@ -82,7 +82,7 @@ export const preview = async (
 ): Promise<Plan> => {
   const state = new State(workspace.config.stateLocation)
   const stateElements = await state.get()
-  return getPlan(
+  return getDeployPlan(
     filterElementsByServices(stateElements, services),
     filterElementsByServices(workspace.elements, services),
     getChangeValidators()
@@ -115,7 +115,7 @@ export const deploy = async (
   const state = new State(workspace.config.stateLocation)
   const stateElements = await state.get()
   try {
-    const actionPlan = await getPlan(
+    const actionPlan = await getDeployPlan(
       filterElementsByServices(stateElements, services),
       filterElementsByServices(workspace.elements, services),
       getChangeValidators()

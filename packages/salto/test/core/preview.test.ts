@@ -7,7 +7,7 @@ import {
 import { AdditionDiff, ModificationDiff } from '@salto/dag'
 import * as mock from '../common/elements'
 import {
-  getPlan, Plan, PlanItem,
+  getDeployPlan, Plan, PlanItem,
 } from '../../src/core/plan'
 
 jest.mock('../../src/state/state')
@@ -26,7 +26,7 @@ describe('getPlan', () => {
     const saltoOffice = afterElements[2] as ObjectType
     saltoOffice.annotations.label = 'new label'
     saltoOffice.annotations.new = 'new annotation'
-    const plan = await getPlan(allElements, afterElements)
+    const plan = await getDeployPlan(allElements, afterElements)
     return [plan, saltoOffice]
   }
 
@@ -37,7 +37,7 @@ describe('getPlan', () => {
     saltoOffice.fields.new = new Field(saltoOffice.elemID, 'new', BuiltinTypes.STRING)
     // Sub element change
     saltoOffice.fields.location.annotations.label = 'new label'
-    const plan = await getPlan(allElements, afterElements)
+    const plan = await getDeployPlan(allElements, afterElements)
     return [plan, saltoOffice]
   }
 
@@ -46,7 +46,7 @@ describe('getPlan', () => {
       elemID: new ElemID('salto', 'additional'),
       primitive: PrimitiveTypes.STRING,
     })
-    const plan = await getPlan(allElements, [...allElements, newElement])
+    const plan = await getDeployPlan(allElements, [...allElements, newElement])
     return [plan, newElement]
   }
 
@@ -55,7 +55,7 @@ describe('getPlan', () => {
     const updatedEmployee = afterElements[4] as InstanceElement
     updatedEmployee.value.nicknames[1] = 'new'
     delete updatedEmployee.value.office.name
-    const plan = await getPlan(allElements, afterElements)
+    const plan = await getDeployPlan(allElements, afterElements)
     return [plan, updatedEmployee]
   }
 
@@ -63,7 +63,7 @@ describe('getPlan', () => {
     const afterElements = mock.getAllElements()
     const updatedEmployee = afterElements[4] as InstanceElement
     updatedEmployee.value.nicknames.push('new')
-    const plan = await getPlan(allElements, afterElements)
+    const plan = await getDeployPlan(allElements, afterElements)
     return [plan, updatedEmployee]
   }
 
@@ -74,7 +74,7 @@ describe('getPlan', () => {
     saltoOffice.fields.name.annotations.new = 'new'
     // update annotation types
     saltoOffice.annotationTypes.new = BuiltinTypes.STRING
-    const plan = await getPlan(allElements, afterElements)
+    const plan = await getDeployPlan(allElements, afterElements)
     return [plan, saltoOffice]
   }
   const planWithFieldIsListChanges = async (): Promise<[Plan, ObjectType]> => {
@@ -82,12 +82,12 @@ describe('getPlan', () => {
     const saltoOffice = afterElements[2] as ObjectType
     // Adding new field
     saltoOffice.fields.name.isList = true
-    const plan = await getPlan(allElements, afterElements)
+    const plan = await getDeployPlan(allElements, afterElements)
     return [plan, saltoOffice]
   }
 
   it('should create empty plan', async () => {
-    const plan = await getPlan(allElements, allElements)
+    const plan = await getDeployPlan(allElements, allElements)
     expect(plan.size).toBe(0)
   })
 
@@ -105,7 +105,7 @@ describe('getPlan', () => {
 
   it('should create plan with remove change', async () => {
     const pre = allElements
-    const plan = await getPlan(pre, pre.slice(0, pre.length - 1))
+    const plan = await getDeployPlan(pre, pre.slice(0, pre.length - 1))
     expect(plan.size).toBe(1)
     const planItem = getFirstPlanItem(plan)
     const removed = pre[pre.length - 1]
@@ -131,7 +131,7 @@ describe('getPlan', () => {
     const post = mock.getAllElements()
     const employee = post[4] as InstanceElement
     employee.value.name = 'SecondEmployee'
-    const plan = await getPlan(allElements, post)
+    const plan = await getDeployPlan(allElements, post)
     expect(plan.size).toBe(1)
     const planItem = getFirstPlanItem(plan)
     expect(planItem.groupKey).toBe(employee.elemID.getFullName())
@@ -284,7 +284,11 @@ describe('getPlan', () => {
     }
 
     it('should have no change errors when having no diffs', async () => {
-      const planResult = await getPlan(allElements, allElements, { salto: mockChangeValidator })
+      const planResult = await getDeployPlan(
+        allElements,
+        allElements,
+        { salto: mockChangeValidator },
+      )
       expect(planResult.changeErrors).toHaveLength(0)
       expect(planResult.size).toBe(0)
     })
@@ -292,8 +296,11 @@ describe('getPlan', () => {
     it('should have no change errors when having only valid changes', async () => {
       const newValidObj = new ObjectType({ elemID: new ElemID('salto', 'new_valid_obj') })
       const newValidInst = new InstanceElement('new_valid_inst', newValidObj, {})
-      const planResult = await getPlan(allElements, [...allElements, newValidObj, newValidInst],
-        { salto: mockChangeValidator })
+      const planResult = await getDeployPlan(
+        allElements,
+        [...allElements, newValidObj, newValidInst],
+        { salto: mockChangeValidator },
+      )
       expect(planResult.changeErrors).toHaveLength(0)
       expect(planResult.size).toBe(2)
     })
@@ -304,8 +311,11 @@ describe('getPlan', () => {
       newInvalidObj.fields.invalid = new Field(newInvalidObj.elemID, 'invalid', BuiltinTypes.STRING)
       newInvalidObj.annotations.value = 'value'
       const newInvalidInst = new InstanceElement('new_invalid_inst', newInvalidObj, {})
-      const planResult = await getPlan(allElements, [...allElements, newInvalidObj, newInvalidInst],
-        { salto: mockChangeValidator })
+      const planResult = await getDeployPlan(
+        allElements,
+        [...allElements, newInvalidObj, newInvalidInst],
+        { salto: mockChangeValidator },
+      )
       expect(planResult.changeErrors).toHaveLength(2)
       expect(planResult.changeErrors.some(v => v.elemID.isEqual(newInvalidObj.elemID)))
         .toBeTruthy()
@@ -320,7 +330,7 @@ describe('getPlan', () => {
       newValidObj.fields.valid = new Field(newValidObj.elemID, 'valid', BuiltinTypes.STRING)
       newValidObj.fields.invalid = new Field(newValidObj.elemID, 'invalid', BuiltinTypes.STRING)
       newValidObj.annotations.value = 'value'
-      const planResult = await getPlan(allElements, [...allElements, newValidObj],
+      const planResult = await getDeployPlan(allElements, [...allElements, newValidObj],
         { salto: mockChangeValidator })
       expect(planResult.changeErrors).toHaveLength(1)
       expect(planResult.changeErrors[0].elemID.isEqual(newValidObj.fields.invalid.elemID))
@@ -339,7 +349,11 @@ describe('getPlan', () => {
       const afterElements = mock.getAllElements()
       const saltoOffice = afterElements[2] as ObjectType
       saltoOffice.fields.invalid = new Field(saltoOffice.elemID, 'invalid', BuiltinTypes.STRING)
-      const planResult = await getPlan(allElements, afterElements, { salto: mockChangeValidator })
+      const planResult = await getDeployPlan(
+        allElements,
+        afterElements,
+        { salto: mockChangeValidator },
+      )
       expect(planResult.changeErrors).toHaveLength(1)
       expect(planResult.changeErrors[0].level).toEqual('ERROR')
       expect(planResult.changeErrors[0].elemID.isEqual(saltoOffice.fields.invalid.elemID))
@@ -352,7 +366,11 @@ describe('getPlan', () => {
       const saltoOffice = afterElements[2] as ObjectType
       saltoOffice.fields.invalid = new Field(saltoOffice.elemID, 'invalid', BuiltinTypes.STRING)
       saltoOffice.fields.valid = new Field(saltoOffice.elemID, 'valid', BuiltinTypes.STRING)
-      const planResult = await getPlan(allElements, afterElements, { salto: mockChangeValidator })
+      const planResult = await getDeployPlan(
+        allElements,
+        afterElements,
+        { salto: mockChangeValidator },
+      )
       expect(planResult.changeErrors).toHaveLength(1)
       expect(planResult.changeErrors[0].level).toEqual('ERROR')
       expect(planResult.changeErrors[0].elemID.isEqual(saltoOffice.fields.invalid.elemID))
@@ -373,7 +391,7 @@ describe('getPlan', () => {
       afterInvalidObj.annotations.new = 'value'
       afterInvalidObj.annotationTypes.new = BuiltinTypes.STRING
       afterInvalidObj.fields.valid = new Field(invalidObjElemId, 'valid', BuiltinTypes.STRING)
-      const planResult = await getPlan([...allElements, beforeInvalidObj],
+      const planResult = await getDeployPlan([...allElements, beforeInvalidObj],
         [...allElements, afterInvalidObj], { salto: mockChangeValidator })
       expect(planResult.changeErrors).toHaveLength(1)
       expect(planResult.changeErrors[0].level).toEqual('ERROR')
@@ -386,7 +404,11 @@ describe('getPlan', () => {
       const saltoOffice = beforeElements[2] as ObjectType
       saltoOffice.fields.invalid = new Field(saltoOffice.elemID, 'invalid', BuiltinTypes.STRING)
       saltoOffice.fields.valid = new Field(saltoOffice.elemID, 'valid', BuiltinTypes.STRING)
-      const planResult = await getPlan(beforeElements, allElements, { salto: mockChangeValidator })
+      const planResult = await getDeployPlan(
+        beforeElements,
+        allElements,
+        { salto: mockChangeValidator },
+      )
       expect(planResult.changeErrors).toHaveLength(1)
       expect(planResult.changeErrors[0].level).toEqual('ERROR')
       expect(planResult.changeErrors[0].elemID.isEqual(saltoOffice.fields.invalid.elemID))
@@ -409,7 +431,7 @@ describe('getPlan', () => {
       const afterSaltoOffice = afterElements[2] as ObjectType
       afterSaltoOffice.fields.invalid = new Field(afterSaltoOffice.elemID, 'invalid',
         BuiltinTypes.STRING, { label: 'dummy annotation' })
-      const planResult = await getPlan(beforeElements, afterElements,
+      const planResult = await getDeployPlan(beforeElements, afterElements,
         { salto: mockChangeValidator })
       expect(planResult.changeErrors).toHaveLength(1)
       expect(planResult.changeErrors[0].level).toEqual('ERROR')
@@ -423,7 +445,7 @@ describe('getPlan', () => {
       beforeInvalidObj.fields.invalid = new Field(beforeInvalidObj.elemID, 'invalid',
         BuiltinTypes.STRING)
       const beforeInvalidInst = new InstanceElement('before_invalid_inst', beforeInvalidObj, {})
-      const planResult = await getPlan([...allElements, beforeInvalidObj, beforeInvalidInst],
+      const planResult = await getDeployPlan([...allElements, beforeInvalidObj, beforeInvalidInst],
         allElements, { salto: mockChangeValidator })
       expect(planResult.changeErrors).toHaveLength(2)
       expect(planResult.changeErrors.some(v => v.elemID.isEqual(beforeInvalidObj.elemID)))
@@ -438,7 +460,7 @@ describe('getPlan', () => {
       const beforeValidObj = new ObjectType({ elemID: new ElemID('salto', 'before_valid_obj') })
       beforeValidObj.fields.invalid = new Field(beforeValidObj.elemID, 'invalid',
         BuiltinTypes.STRING)
-      const planResult = await getPlan([...allElements, beforeValidObj],
+      const planResult = await getDeployPlan([...allElements, beforeValidObj],
         allElements, { salto: mockChangeValidator })
       expect(planResult.changeErrors).toHaveLength(1)
       expect(planResult.changeErrors[0].elemID.isEqual(beforeValidObj.fields.invalid.elemID))

@@ -9,10 +9,11 @@ import _ from 'lodash'
 import { transform } from './convert_types'
 import { API_NAME, CUSTOM_OBJECT, METADATA_TYPE, SALESFORCE,
   INSTANCE_FULL_NAME_FIELD, SALESFORCE_CUSTOM_SUFFIX, LABEL,
-  FIELD_TYPE_API_NAMES } from '../constants'
+  FIELD_TYPE_API_NAMES, FIELD_ANNOTATIONS } from '../constants'
 import { FilterCreator } from '../filter'
 import { getSObjectFieldElement, Types, isCustomObject, bpCase } from '../transformers/transformer'
 import { id, addApiName, addMetadataType, addLabel, hasNamespace, getNamespace } from './utils'
+import { convertList } from './convert_lists'
 
 const log = logger(module)
 const { makeArray } = collections.array
@@ -157,6 +158,8 @@ const transfromAnnotationsNames = (fields: Values): Values => Object.assign({},
       case INSTANCE_VALUE_SET_FIELD:
         return { [CORE_ANNOTATIONS.VALUES]: v.value_set_definition.value
           .map((value: Values) => value.full_name) }
+      case FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS:
+        return { [k]: makeArray(v) }
       default:
         return { [k]: v }
     }
@@ -168,10 +171,6 @@ const buildAnnotationsObjectType = (fieldType: Type): ObjectType => {
     fields: Object.assign({}, ...Object.entries(fieldType.annotationTypes)
       .concat(Object.entries(BuiltinAnnotationTypes))
       .map(([k, v]) => ({ [k]: new Field(annotationTypesElemID, k, v) }))) })
-
-  annotationTypesObject.fields[CORE_ANNOTATIONS.VALUES] = new Field(
-    annotationTypesElemID, CORE_ANNOTATIONS.VALUES, BuiltinTypes.STRING, undefined, true
-  )
   return annotationTypesObject
 }
 
@@ -195,8 +194,11 @@ const transformFieldAnnotations = (instanceFieldValues: Values): Values => {
     return {}
   }
 
-  return transform(transfromAnnotationsNames(instanceFieldValues),
-    buildAnnotationsObjectType(fieldType)) || {}
+  const annotations = transfromAnnotationsNames(instanceFieldValues)
+  const annotationsType = buildAnnotationsObjectType(fieldType)
+  convertList(annotationsType, annotations)
+
+  return transform(annotations, annotationsType) || {}
 }
 
 const mergeCustomObjectWithInstance = (customObject: ObjectType,

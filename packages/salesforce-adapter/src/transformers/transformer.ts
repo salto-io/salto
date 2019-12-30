@@ -229,6 +229,44 @@ export class Types {
     },
   })
 
+  private static rollupSummaryFilterOperationTypeElemID = new ElemID(SALESFORCE,
+    FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS, 'type', FILTER_ITEM_FIELDS.OPERATION)
+
+  private static rollupSummaryFilterOperationTypeType = new PrimitiveType({
+    elemID: Types.rollupSummaryFilterOperationTypeElemID,
+    primitive: PrimitiveTypes.STRING,
+    annotations: {
+      [CORE_ANNOTATIONS.RESTRICTION]: { [CORE_ANNOTATIONS.ENFORCE_VALUE]: true },
+      [CORE_ANNOTATIONS.VALUES]: [
+        'equals', 'notEqual', 'lessThan', 'greaterThan', 'lessOrEqual',
+        'greaterOrEqual', 'contains', 'notContain', 'startsWith',
+        'includes', 'excludes', 'within',
+      ],
+    },
+  })
+
+  private static rollupSummaryFilterItemsElemID = new ElemID(SALESFORCE,
+    FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS)
+
+  private static rollupSummaryFilterItemsType = new ObjectType({
+    elemID: Types.rollupSummaryFilterItemsElemID,
+    fields: {
+      [FILTER_ITEM_FIELDS.FIELD]: new TypeField(
+        Types.rollupSummaryFilterItemsElemID, FILTER_ITEM_FIELDS.FIELD, BuiltinTypes.STRING
+      ),
+      [FILTER_ITEM_FIELDS.OPERATION]: new TypeField(
+        Types.rollupSummaryFilterItemsElemID, FILTER_ITEM_FIELDS.OPERATION,
+        Types.rollupSummaryFilterOperationTypeType
+      ),
+      [FILTER_ITEM_FIELDS.VALUE]: new TypeField(
+        Types.rollupSummaryFilterItemsElemID, FILTER_ITEM_FIELDS.VALUE, BuiltinTypes.STRING
+      ),
+      [FILTER_ITEM_FIELDS.VALUE_FIELD]: new TypeField(
+        Types.rollupSummaryFilterItemsElemID, FILTER_ITEM_FIELDS.VALUE_FIELD, BuiltinTypes.STRING
+      ),
+    },
+  })
+
   private static commonAnnotationTypes = {
     [API_NAME]: BuiltinTypes.SERVICE_ID,
     [DESCRIPTION]: BuiltinTypes.STRING,
@@ -424,8 +462,7 @@ export class Types {
         // todo: currently SUMMARIZED_FIELD && SUMMARY_FOREIGN_KEY are populated with the referenced
         //  field's API name should be modified to elemID reference once we'll use HIL
         [FIELD_ANNOTATIONS.SUMMARIZED_FIELD]: BuiltinTypes.STRING,
-        // Todo SALTO-228 The FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS annotation is missing since
-        //  currently there is no way to declare on a list annotation
+        [FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS]: Types.rollupSummaryFilterItemsType,
         [FIELD_ANNOTATIONS.SUMMARY_FOREIGN_KEY]: BuiltinTypes.STRING,
         [FIELD_ANNOTATIONS.SUMMARY_OPERATION]: Types.rollupSummaryOperationType,
       },

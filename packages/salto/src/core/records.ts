@@ -13,6 +13,11 @@ export const getInstancesOfType = async (
   if (!adapter) {
     throw new Error(`Failed to find the adapter for the given type: ${type.elemID.getFullName()}`)
   }
+
+  if (!adapter.getInstancesOfType) {
+    throw new Error(`getInstancesOfType is undefined for adapter: ${type.elemID.adapter}`)
+  }
+
   let toAppend = false
   const returnResult = {
     successfulRows: 0,
@@ -34,7 +39,7 @@ export const getInstancesOfType = async (
 }
 
 const recordToInstanceElement = (type: ObjectType, record: Values):
-InstanceElement =>
+  InstanceElement =>
   // Convert the result to Instance Elements
   new InstanceElement(record.Id, type, record)
 
@@ -51,17 +56,22 @@ const instancesIterator = async function *instancesIterator(
 
 export const importInstancesOfType = async (
   type: ObjectType, inputPath: string, adapters: Record<string, Adapter>):
-Promise<DataModificationResult> => {
+  Promise<DataModificationResult> => {
   const adapter = adapters[type.elemID.adapter]
   if (!adapter) {
     throw new Error(`Failed to find the adapter for the given type: ${type.elemID.getFullName()}`)
   }
+
+  if (!adapter.importInstancesOfType) {
+    throw new Error(`importInstancesOfType is undefined for adapter: ${type.elemID.adapter}`)
+  }
+
   return adapter.importInstancesOfType(type, instancesIterator(type, inputPath))
 }
 
 // Convert the result to Instance Elements
 const recordToElementId = (type: ObjectType, record: Values):
-ElemID => new ElemID(SALESFORCE, type.elemID.name, record.Id)
+  ElemID => new ElemID(SALESFORCE, type.elemID.name, record.Id)
 
 const elemIdsIterator = async function *elemIdsIterator(
   type: ObjectType,
@@ -75,11 +85,18 @@ const elemIdsIterator = async function *elemIdsIterator(
 }
 
 export const deleteInstancesOfType = async (
-  type: ObjectType, inputPath: string, adapters: Record<string, Adapter>):
-Promise<DataModificationResult> => {
+  type: ObjectType,
+  inputPath: string,
+  adapters: Record<string, Adapter>
+): Promise<DataModificationResult> => {
   const adapter = adapters[type.elemID.adapter]
   if (!adapter) {
     throw new Error(`Failed to find the adapter for the given type: ${type.elemID.getFullName()}`)
   }
+
+  if (!adapter.deleteInstancesOfType) {
+    throw new Error(`deleteInstancesOfType is undefined for adapter: ${type.elemID.adapter}`)
+  }
+
   return adapter.deleteInstancesOfType(type, elemIdsIterator(type, inputPath))
 }

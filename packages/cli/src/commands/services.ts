@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import { EOL } from 'os'
-import { addAdapter, loginAdapter } from 'salto'
+import { addAdapter, loginAdapter, loadConfig } from 'salto'
 import { createCommandBuilder } from '../command_builder'
 import { CliOutput, ParsedCliInput, CliCommand, CliExitCode } from '../types'
 import { loadWorkspace } from '../workspace'
@@ -40,16 +40,13 @@ const addService = async (
 
 const listServices = async (
   workspaceDir: string,
-  { stdout, stderr }: CliOutput,
+  { stdout }: CliOutput,
   serviceName: string,
 ): Promise<CliExitCode> => {
-  const { workspace, errored } = await loadWorkspace(workspaceDir, { stdout, stderr })
-  if (errored) {
-    return CliExitCode.AppError
-  }
+  const workspaceConfig = await loadConfig(workspaceDir)
   if (_.isEmpty(serviceName)) {
-    stdout.write(formatConfiguredServices(workspace.config.services))
-  } else if (workspace.config.services.includes(serviceName)) {
+    stdout.write(formatConfiguredServices(workspaceConfig.services))
+  } else if (workspaceConfig.services.includes(serviceName)) {
     stdout.write(formatServiceConfigured(serviceName))
   } else {
     stdout.write(formatServiceNotConfigured(serviceName))

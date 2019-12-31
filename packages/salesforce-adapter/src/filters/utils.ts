@@ -46,29 +46,6 @@ export const generateObjectElemID2ApiName = (customObjects: ObjectType[]): Recor
     .fromPairs()
     .value()
 
-export const runOnFields = async (elements: Element[], condition: (field: Field) => boolean,
-  runOnField: (field: Field, salesforceField: CustomField) => void, client: SalesforceClient):
-  Promise<void> => {
-  const getSalesforceFieldFullName = (field: Field,
-    objectElemID2ApiName: Record<string, string>): string =>
-    fieldFullName(objectElemID2ApiName[field.parentID.getFullName()], field)
-
-  const customObjects = getCustomObjects(elements)
-  const objectElemID2ApiName = generateObjectElemID2ApiName(customObjects)
-  const fields = _(customObjects)
-    .map(obj => Object.values(obj.fields))
-    .flatten()
-    .filter(condition)
-    .value()
-  const salesforceFieldNames = fields
-    .map(f => getSalesforceFieldFullName(f, objectElemID2ApiName))
-  const name2Field = await readSalesforceFields(client, salesforceFieldNames)
-  fields.forEach(field => {
-    const salesforceField = name2Field[getSalesforceFieldFullName(field, objectElemID2ApiName)]
-    runOnField(field, salesforceField)
-  })
-}
-
 export const removeFieldsFromInstanceAndType = (elements: Element[], fieldNamesToDelete: string[],
   metadataTypeName: string): void => {
   getInstancesOfMetadataType(elements, metadataTypeName)

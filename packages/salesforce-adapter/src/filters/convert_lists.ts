@@ -70,7 +70,9 @@ const filter: FilterCreator = () => ({
    */
   onFetch: async (elements: Element[]) => {
     elements.filter(isInstanceElement).forEach(instance =>
-      convertList(instance.type as ObjectType, instance.value))
+      markListRecursivly(instance.type as ObjectType, instance.value))
+    elements.filter(isInstanceElement).forEach(instance =>
+      castListRecursivly(instance.type as ObjectType, instance.value))
   },
 })
 

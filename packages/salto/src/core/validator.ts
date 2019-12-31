@@ -180,19 +180,34 @@ export class InvalidValueTypeValidationError extends ValidationError {
   }
 }
 
-const validateValue = (elemID: ElemID, value: Value, type: Type): ValidationError[] => {
+const validateValue = (elemID: ElemID, value: Value,
+  type: Type, isAnnotations = false): ValidationError[] => {
   if (value instanceof UnresolvedReference) {
     return [new UnresolvedReferenceValidationError({ elemID, ref: value.ref })]
   }
   if (value instanceof CircularReference) {
     return [new CircularReferenceValidationError({ elemID, ref: value.ref })]
   }
-  if ((isPrimitiveType(type) && !primitiveValidators[type.primitive](value))
-    || (isObjectType(type) && !_.isPlainObject(value))) {
-    return [new InvalidValueTypeValidationError({ elemID, value, type })]
+  if (isPrimitiveType(type)) {
+    if (!primitiveValidators[type.primitive](value)) {
+      // NOTE: this area should be deleted as soon as
+      //  we complete the implementation of SALTO-484 (i.e. support container's type)
+      if (!isAnnotations || !_.isArray(value)) {
+        return [new InvalidValueTypeValidationError({ elemID, value, type })]
+      }
+      return _.flatten(value.map((val: Value) => validateValue(elemID, val, type, false)))
+    }
   }
 
   if (isObjectType(type)) {
+    if (!_.isPlainObject(value)) {
+      // NOTE: this area should be deleted as soon as
+      //  we complete the implementation of SALTO-484 (i.e. support container's type)
+      if (!isAnnotations) {
+        return [new InvalidValueTypeValidationError({ elemID, value, type })]
+      }
+      return _.flatten(value.map((val: Value) => validateValue(elemID, val, type, false)))
+    }
     return _.flatten(Object.keys(value).filter(k => type.fields[k]).map(
       // eslint-disable-next-line @typescript-eslint/no-use-before-define
       k => validateFieldValue(elemID.createNestedID(k), value[k], type.fields[k])
@@ -220,7 +235,8 @@ const validateField = (field: Field): ValidationError[] =>
     .map(k => validateValue(
       field.elemID.createNestedID(k),
       field.annotations[k],
-      field.type.annotationTypes[k]
+      field.type.annotationTypes[k],
+      true
     )))
 
 const validateType = (element: Type): ValidationError[] => {

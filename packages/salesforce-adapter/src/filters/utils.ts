@@ -2,11 +2,10 @@ import _ from 'lodash'
 import { logger } from '@salto/logging'
 import { Element, Field, isObjectType, ObjectType, InstanceElement, isInstanceElement,
   isField, Type, BuiltinTypes } from 'adapter-api'
-import { API_NAME, CUSTOM_FIELD, LABEL, CUSTOM_OBJECT,
+import { API_NAME, LABEL, CUSTOM_OBJECT,
   METADATA_TYPE, NAMESPACE_SEPARATOR } from '../constants'
-import { CustomField, JSONBool } from '../client/types'
-import { fieldFullName, isCustomObject, metadataType, sfCase, apiName } from '../transformers/transformer'
-import SalesforceClient from '../client/client'
+import { JSONBool } from '../client/types'
+import { isCustomObject, metadataType, sfCase, apiName } from '../transformers/transformer'
 
 const log = logger(module)
 
@@ -19,18 +18,6 @@ export const getInstancesOfMetadataType = (elements: Element[], metadataTypeName
  InstanceElement[] =>
   elements.filter(isInstanceElement)
     .filter(element => metadataType(element) === metadataTypeName)
-
-const readSalesforceFields = async (client: SalesforceClient, fieldNames: string[]):
-  Promise<Record<string, CustomField>> => (
-  _(await client.readMetadata(CUSTOM_FIELD, fieldNames)
-    .catch(e => {
-      log.error('failed to read fields %o reason: %o', fieldNames, e)
-      return []
-    }))
-    .map(field => [field.fullName, field])
-    .fromPairs()
-    .value()
-)
 
 export const getCustomObjects = (elements: Element[]): ObjectType[] =>
   elements

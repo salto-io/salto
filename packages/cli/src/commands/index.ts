@@ -6,6 +6,7 @@ import exportBuilder from './export'
 import importBuilder from './import'
 import deleteBuilder from './delete'
 import initBuilder from './init'
+import servicesBuilder from './services'
 
 
 // The order of the builders determines order of appearance in help text
@@ -14,6 +15,7 @@ export default [
   fetchBuilder,
   previewBuilder,
   deployBuilder,
+  servicesBuilder,
   exportBuilder,
   importBuilder,
   deleteBuilder,

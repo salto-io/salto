@@ -4,6 +4,51 @@ import yargs from 'yargs'
 import { ParsedCliInput } from '../types'
 import { ParserFilter, ParsedCliInputFilter } from '../filter'
 
+export interface ServiceCmdArgs {
+  command: string
+  name?: string
+}
+
+export type ServiceCmdParsedCliInput = ParsedCliInput<ServiceCmdArgs>
+
+type ServiceCmdFilter = ParserFilter<ServiceCmdArgs>
+  & ParsedCliInputFilter<ServiceCmdArgs, ServiceCmdParsedCliInput>
+
+const nameRequiredCommands = ['add', 'login']
+
+export const serviceCmdFilter: ServiceCmdFilter = {
+  transformParser(parser: yargs.Argv): yargs.Argv<ServiceCmdArgs> {
+    return parser
+      .positional('command',
+        {
+          type: 'string',
+          choices: ['add', 'login', 'list'],
+          description: 'The services management command',
+        })
+      .positional('name',
+        {
+          type: 'string',
+          desc: 'The name of the service [required for add & login]',
+        }).check((args: yargs.Arguments<{
+          command?: string
+          name?: string
+        }>): true => {
+        if (args.command && nameRequiredCommands.includes(args.command)) {
+          if (_.isEmpty(args.name)) {
+            throw new Error(`Missing required argument: name\n\nExample usage: salto services ${args.command} salesforce`)
+          }
+        }
+        return true
+      }) as yargs.Argv<ServiceCmdArgs>
+  },
+
+  async transformParsedCliInput(
+    input: ParsedCliInput<ServiceCmdArgs>
+  ): Promise<ParsedCliInput<ServiceCmdArgs>> {
+    return input
+  },
+}
+
 export interface ServicesArgs { services: string[] }
 
 export type ServicesParsedCliInput = ParsedCliInput<ServicesArgs>

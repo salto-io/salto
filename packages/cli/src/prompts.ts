@@ -114,4 +114,14 @@ The steps are: I. Fetching configs, II. Calculating difference and III. Applying
 
   public static readonly CANCELED = 'Canceling...'
   public static readonly CONFIG_HEADER = (adapterName: string): string => `Please enter your ${adapterName} credentials:`
+
+  public static readonly SERVICE_HOW_ADD = 'Use `salto service add` to add the service to the workspace'
+  public static readonly SERVICE_ADDED = (serviceName: string): string => `${serviceName} added to the workspace`
+  public static readonly SERVICES_LOGIN_UPDATED = 'Login information succesfully updated!'
+  public static readonly SERVICES_LOGIN_OVERRIDE = '** This will override the current login information **'
+  public static readonly SERVICE_CONFIGURED = (serviceName: string): string => `${serviceName} is configured in this workspace`
+  public static readonly SERVICE_NOT_CONFIGURED = (serviceName: string): string => `${serviceName} is not configured in this workspace`
+  public static readonly CONFIGURED_SERVICES_TITLE = 'The configured services are:'
+  public static readonly NO_CONFIGURED_SERVICES = 'There are not configured services in this workspace'
+  public static readonly SERVICE_ALREADY_ADDED = (serviceName: string): string => `${serviceName} was already added to this workspace`
 }

@@ -38,6 +38,8 @@ const indent = (text: string, level: number): string => {
 const singleOrPluralString = (number: number, single: string, plural: string): string =>
   ((number || 0) === 1 ? `${number} ${single}` : `${number} ${plural}`)
 
+const formatSimpleError = (errorMsg: string): string => header(error(`Error: ${errorMsg}`))
+
 const formatValue = (value: Element | Value): string => {
   const formatAnnotations = (annotations: Values): string =>
     (_.isEmpty(annotations) ? '' : formatValue(annotations))
@@ -388,14 +390,58 @@ export const formatMergeErrors = (mergeErrors: ReadonlyArray<MergeError>): strin
   ).join('\n')}`
 
 export const formatFatalFetchError = (causes: MergeError[]): string =>
-  error(`${Prompts.FETCH_FATAL_MERGE_ERROR_PREFIX}${
+  formatSimpleError(`${Prompts.FETCH_FATAL_MERGE_ERROR_PREFIX}${
     causes.map(c => `Error: ${c.error.message}, Elements: ${c.elements.map(e => e.elemID.getFullName()).join(', ')}\n`)
   }`)
 
 export const formatWorkspaceAbort = (numErrors: number): string =>
-  error(`${Prompts.WORKSPACE_LOAD_FAILED(numErrors)}\n`)
+  formatSimpleError(`${Prompts.WORKSPACE_LOAD_FAILED(numErrors)}\n`)
 
 export const formatShouldContinueWithWarning = (numWarnings: number): string =>
   warn(Prompts.SHOULDCONTINUE(numWarnings))
 
 export const formatCancelCommand = header(`${Prompts.CANCELED}\n`)
+
+export const formatLoginUpdated = [
+  Prompts.SERVICES_LOGIN_UPDATED,
+  emptyLine(),
+].join('\n')
+
+export const formatLoginOverride = [
+  Prompts.SERVICES_LOGIN_OVERRIDE,
+  emptyLine(),
+  emptyLine(),
+].join('\n')
+
+export const formatServiceConfigured = (serviceName: string): string => [
+  Prompts.SERVICE_CONFIGURED(serviceName),
+  emptyLine(),
+].join('\n')
+
+export const formatServiceNotConfigured = (serviceName: string): string => [
+  Prompts.SERVICE_NOT_CONFIGURED(serviceName),
+  emptyLine(),
+  Prompts.SERVICE_HOW_ADD,
+  emptyLine(),
+].join('\n')
+
+export const formatConfiguredServices = (serviceNames: string[]): string => {
+  if (serviceNames.length === 0) {
+    return Prompts.NO_CONFIGURED_SERVICES
+  }
+
+  const formattedServices = serviceNames.map(service => indent(`* ${service}`, 1))
+  formattedServices.unshift(Prompts.CONFIGURED_SERVICES_TITLE)
+  formattedServices.push(emptyLine())
+  return formattedServices.join('\n')
+}
+
+export const formatServiceAdded = (serviceName: string): string => [
+  Prompts.SERVICE_ADDED(serviceName),
+  emptyLine(),
+].join('\n')
+
+export const formatServiceAlreadyAdded = (serviceName: string): string => [
+  formatSimpleError(Prompts.SERVICE_ALREADY_ADDED(serviceName)),
+  emptyLine(),
+].join('\n')

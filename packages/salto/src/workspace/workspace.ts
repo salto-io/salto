@@ -4,7 +4,7 @@ import path from 'path'
 import readdirp from 'readdirp'
 import uuidv4 from 'uuid/v4'
 import { types } from '@salto/lowerdash'
-import { Element, ElemID } from 'adapter-api'
+import { Element, ElemID, isInstanceElement, InstanceElement } from 'adapter-api'
 import { logger } from '@salto/logging'
 import { DefaultMap } from '@salto/lowerdash/dist/src/collections/map'
 import { stat, mkdirp, readTextFile, rm, writeFile, exists, Stats } from '../file'
@@ -318,6 +318,9 @@ export class Workspace {
   hasErrors(): boolean { return this.state.errors.hasErrors() }
   get parsedBlueprints(): ParsedBlueprintMap { return this.state.parsedBlueprints }
   get elementsIndex(): Record<string, string[]> { return this.state.elementsIndex }
+  get configElements(): ReadonlyArray<InstanceElement> {
+    return this.state.elements.filter(isInstanceElement).filter(e => e.elemID.isConfig())
+  }
 
   async resolveParsedBlueprint(bp: ParsedBlueprint): Promise<ResolvedParsedBlueprint> {
     if (bp.buffer && bp.sourceMap) {

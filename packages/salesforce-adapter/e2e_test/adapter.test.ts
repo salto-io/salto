@@ -122,9 +122,33 @@ describe('Salesforce adapter E2E with real account', () => {
       }
     }
 
+    const verifyReportFolderExist = async (): Promise<void> => {
+      if (!(await objectExists('ReportFolder', 'TestReportFolder'))) {
+        await client.create('ReportFolder', {
+          fullName: 'TestReportFolder',
+          name: 'Test Report Folder Name',
+          accessType: 'Public',
+          publicFolderAccess: 'ReadWrite',
+        } as MetadataInfo)
+      }
+    }
+
+    const verifyReportExist = async (): Promise<void> => {
+      if (!(await objectExists('Report', 'TestReportFolder/TestReport'))) {
+        await client.create('Report', {
+          fullName: 'TestReportFolder/TestReport',
+          format: 'Summary',
+          name: 'Test Report Name',
+          reportType: 'Opportunity',
+        } as MetadataInfo)
+      }
+    }
+
     await verifyAccountWithRollupSummaryExists()
     await verifyEmailFolderExist()
     await verifyEmailTemplateExists()
+    await verifyReportFolderExist()
+    await verifyReportExist()
     result = await adapter.fetch()
   })
 
@@ -255,6 +279,21 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(emailFolder.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('TestEmailFolder')
       expect(emailFolder.value.name).toEqual('Test Email Folder Name')
       expect(emailFolder.value.access_type).toEqual('Public')
+    })
+
+    it('should retrieve Report instance', () => {
+      const report = findElements(result, 'report',
+        'test_report_folder_test_report')[0] as InstanceElement
+      expect(report.value[constants.INSTANCE_FULL_NAME_FIELD])
+        .toEqual('TestReportFolder/TestReport')
+      expect(report.value.name).toEqual('Test Report Name')
+    })
+
+    it('should retrieve ReportFolder instance', () => {
+      const reportFolder = findElements(result, 'report_folder',
+        'test_report_folder')[0] as InstanceElement
+      expect(reportFolder.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('TestReportFolder')
+      expect(reportFolder.value.name).toEqual('Test Report Folder Name')
     })
   })
 
@@ -2208,6 +2247,67 @@ describe('Salesforce adapter E2E with real account', () => {
           describe('remove report type instance', () => {
             it('should remove report type instance', async () => {
               await verifyRemoveInstance(reportTypeInstance)
+            })
+          })
+        })
+
+        describe('report folder manipulation', () => {
+          const reportFolderInstance = createInstanceElement('MyReportFolder', 'ReportFolder',
+            { name: 'My Report Folder Name' })
+
+          beforeAll(async () => {
+            await removeIfAlreadyExists(reportFolderInstance)
+          })
+
+          describe('create report folder instance', () => {
+            it('should create report folder instance', async () => {
+              await verifyCreateInstance(reportFolderInstance)
+            })
+          })
+
+          describe('update report folder instance', () => {
+            it('should update report folder instance', async () => {
+              await verifyUpdateInstance(reportFolderInstance, 'name',
+                'My Updated Report Folder Name')
+            })
+          })
+
+          describe('remove report folder instance', () => {
+            it('should remove report folder instance', async () => {
+              await verifyRemoveInstance(reportFolderInstance)
+            })
+          })
+        })
+
+        describe('report manipulation', () => {
+          const reportInstance = createInstanceElement('TestReportFolder/MyReport',
+            'Report', {
+              name: 'My Report Name',
+              format: 'Summary',
+              // eslint-disable-next-line @typescript-eslint/camelcase
+              report_type: 'Opportunity',
+            })
+
+          beforeAll(async () => {
+            await removeIfAlreadyExists(reportInstance)
+          })
+
+          describe('create report instance', () => {
+            it('should create report instance', async () => {
+              await verifyCreateInstance(reportInstance)
+            })
+          })
+
+          describe('update report instance', () => {
+            it('should update report instance', async () => {
+              await verifyUpdateInstance(reportInstance, 'name',
+                'My Updated Report Name')
+            })
+          })
+
+          describe('remove report instance', () => {
+            it('should remove report instance', async () => {
+              await verifyRemoveInstance(reportInstance)
             })
           })
         })

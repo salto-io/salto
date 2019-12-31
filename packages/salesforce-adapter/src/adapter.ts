@@ -135,10 +135,12 @@ export default class SalesforceAdapter {
       InstalledPackage: undefined, // listMetadataObjects of this types returns duplicates
       EmailTemplate: 'EmailFolder', // contains encoded zip content, is under a folder
       ReportType: undefined,
+      Report: 'ReportFolder',
     },
     metadataAdditionalTypes = [
       'ProfileUserPermission',
       'EmailFolder',
+      'ReportFolder',
     ],
     filterCreators = [
       CustomObjectsFilter,
@@ -616,7 +618,7 @@ export default class SalesforceAdapter {
     baseTypeNames: Set<string>
   ): Promise<Type[]> {
     const fields = await this.client.describeMetadataType(objectName)
-    return createMetadataTypeElements(objectName, fields, knownTypes, baseTypeNames)
+    return createMetadataTypeElements(objectName, fields, knownTypes, baseTypeNames, this.client)
   }
 
   private async retrieveMetadata(metadataTypes: string[]):

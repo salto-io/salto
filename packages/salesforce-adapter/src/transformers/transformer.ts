@@ -19,6 +19,7 @@ import {
   VALUE_SETTINGS_FIELDS, FILTER_ITEM_FIELDS, OBJECT_LEVEL_SECURITY_ANNOTATION,
   OBJECT_LEVEL_SECURITY_FIELDS, NAMESPACE_SEPARATOR, DESCRIPTION, HELP_TEXT,
 } from '../constants'
+import SalesforceClient from '../client/client'
 
 const { makeArray } = collections.array
 
@@ -505,6 +506,7 @@ export class Types {
     string: BuiltinTypes.STRING,
     double: BuiltinTypes.NUMBER,
     int: BuiltinTypes.NUMBER,
+    integer: BuiltinTypes.NUMBER,
     boolean: BuiltinTypes.BOOLEAN,
   }
 
@@ -910,13 +912,14 @@ export const createInstanceElement = (mdInfo: MetadataInfo, type: ObjectType,
 }
 
 
-export const createMetadataTypeElements = (
+export const createMetadataTypeElements = async (
   objectName: string,
   fields: ValueTypeField[],
   knownTypes: Map<string, Type>,
   baseTypeNames: Set<string>,
+  client: SalesforceClient,
   isSettings = false,
-): ObjectType[] => {
+): Promise<ObjectType[]> => {
   if (knownTypes.has(objectName)) {
     // Already created this type, no new types to return here
     return []
@@ -930,33 +933,60 @@ export const createMetadataTypeElements = (
     ...(baseTypeNames.has(objectName) ? [] : ['subtypes']),
     element.elemID.name,
   ]
-  if (!fields) {
+  if (!fields || _.isEmpty(fields)) {
     return [element]
+  }
+
+  /* Due to a SF API bug, there are field types that returned with no nested fields why they should.
+   * Only a specific call to describeMetadataType with the nested type returns the inner fields.
+   * e.g. the nested fields of Report fields are not returned from describeMetadataType('Report')
+   */
+  const shouldEnrichFieldValue = (field: ValueTypeField): boolean => {
+    const isKnownType = (): boolean =>
+      knownTypes.has(field.soapType) || baseTypeNames.has(field.soapType)
+        || isPrimitiveType(Types.get(field.soapType, false))
+
+    const startsWithUppercase = (): boolean =>
+      // covers types like base64Binary, anyType etc.
+      field.soapType[0] === field.soapType[0].toUpperCase()
+
+    return _.isEmpty(field.fields) && _.isEmpty(field.picklistValues)
+      && !isKnownType() && startsWithUppercase()
   }
 
   // We need to create embedded types BEFORE creating this element's fields
   // in order to make sure all internal types we may need are updated in the
   // knownTypes map
-  const embeddedTypes = _.flatten(fields.filter(field => !_.isEmpty(field.fields)).map(
-    field => createMetadataTypeElements(
+  const enrichedFields = await Promise.all(fields.map(async field => {
+    if (shouldEnrichFieldValue(field)) {
+      const innerFields = await client.describeMetadataType(field.soapType)
+      return { ...field,
+        fields: innerFields }
+    }
+    return field
+  }))
+
+  const embeddedTypes = await Promise.all(_.flatten(enrichedFields
+    .filter(field => !_.isEmpty(field.fields))
+    .map(field => createMetadataTypeElements(
       field.soapType,
       makeArray(field.fields),
       knownTypes,
       baseTypeNames,
+      client,
       false,
-    )
-  ))
+    ))))
 
   // Enum fields sometimes show up with a type name that is not primitive but also does not
   // have fields (so we won't create an embedded type for it). it seems like these "empty" types
   // are always supposed to be a string with some restriction so we map all non primitive "empty"
   // types to string
-  fields
+  enrichedFields
     .filter(field => _.isEmpty(field.fields))
     .filter(field => !isPrimitiveType(Types.get(field.soapType, false)))
     .forEach(field => knownTypes.set(field.soapType, BuiltinTypes.STRING))
 
-  const fieldElements = fields.map(field =>
+  const fieldElements = enrichedFields.map(field =>
     getValueTypeFieldElement(element.elemID, field, knownTypes))
 
   // Set fields on elements
@@ -964,7 +994,7 @@ export const createMetadataTypeElements = (
     element.fields[field.name] = field
   })
 
-  return _.flatten([element, embeddedTypes])
+  return _.flatten([element, ...embeddedTypes])
 }
 
 // Convert the InstanceElements to records

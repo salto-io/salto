@@ -91,7 +91,7 @@ export const FIELD_ANNOTATIONS = {
   MASK_TYPE: 'mask_type',
   MASK: 'mask',
   DISPLAY_LOCATION_IN_DECIMAL: 'display_location_in_decimal',
-  RELATED_TO: 'related_to',
+  REFERENCE_TO: 'reference_to',
   ALLOW_LOOKUP_RECORD_DELETION: 'allow_lookup_record_deletion',
   REPARENTABLE_MASTER_DETAIL: 'reparentable_master_detail',
   WRITE_REQUIRES_MASTER_READ: 'write_requires_master_read',

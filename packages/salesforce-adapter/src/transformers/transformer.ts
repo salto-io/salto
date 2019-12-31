@@ -437,8 +437,7 @@ export class Types {
       annotationTypes: {
         ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION]: BuiltinTypes.BOOLEAN,
-        // Todo SALTO-228 The FIELD_ANNOTATIONS.RELATED_TO annotation is missing since
-        //  currently there is no way to declare on a list annotation
+        [FIELD_ANNOTATIONS.REFERENCE_TO]: BuiltinTypes.STRING,
         [FIELD_ANNOTATIONS.LOOKUP_FILTER]: Types.lookupFilterType,
       },
     }),
@@ -450,8 +449,7 @@ export class Types {
         [FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.LOOKUP_FILTER]: Types.lookupFilterType,
-        // Todo SALTO-228 The FIELD_ANNOTATIONS.RELATED_TO annotation is missing since
-        //  currently there is no way to declare on a list annotation
+        [FIELD_ANNOTATIONS.REFERENCE_TO]: BuiltinTypes.STRING,
       },
     }),
     rollupsummary: new PrimitiveType({
@@ -655,7 +653,7 @@ export const toCustomField = (
     valueSettings,
     field.annotations[FORMULA],
     summaryFilterItems,
-    field.annotations[FIELD_ANNOTATIONS.RELATED_TO],
+    field.annotations[FIELD_ANNOTATIONS.REFERENCE_TO],
     sfCase(field.name),
     field.annotations[FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION]
   )
@@ -854,7 +852,7 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field,
       //  should be modified to elemID reference once we'll use HIL
       // there are some SF reference fields without related fields
       // e.g. salesforce_user_app_menu_item.ApplicationId, salesforce_login_event.LoginHistoryId
-      annotations[FIELD_ANNOTATIONS.RELATED_TO] = field.referenceTo
+      annotations[FIELD_ANNOTATIONS.REFERENCE_TO] = field.referenceTo
     }
     if (field.filteredLookupInfo) {
       // will be populated in the lookup_filter filter

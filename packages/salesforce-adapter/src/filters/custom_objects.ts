@@ -191,7 +191,7 @@ const transfromAnnotationsNames = (fields: Values): Values => {
         }
         annotations[k] = v
         break
-      case FIELD_ANNOTATIONS.RELATED_TO:
+      case FIELD_ANNOTATIONS.REFERENCE_TO:
         annotations[k] = makeArray(v)
         break
       case FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS:

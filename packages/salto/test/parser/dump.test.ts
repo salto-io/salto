@@ -80,8 +80,8 @@ describe('Salto Dump', () => {
   describe('dump elements', () => {
     let body: string
 
-    beforeAll(async () => {
-      body = await dump([strType, numType, boolType, fieldType, model, instance, config,
+    beforeAll(() => {
+      body = dump([strType, numType, boolType, fieldType, model, instance, config,
         instanceStartsWithNumber])
     })
 
@@ -131,8 +131,8 @@ describe('Salto Dump', () => {
       expect(body).toMatch(/salesforce_test "3me"/)
     })
 
-    it('can be parsed back', async () => {
-      const { elements, errors } = await parse(Buffer.from(body), 'none')
+    it('can be parsed back', () => {
+      const { elements, errors } = parse(Buffer.from(body), 'none')
       expect(errors.length).toEqual(0)
       expect(elements.length).toEqual(8)
       expect(elements[0]).toEqual(strType)
@@ -148,8 +148,8 @@ describe('Salto Dump', () => {
   describe('dump field', () => {
     let body: string
 
-    beforeAll(async () => {
-      body = await dump(model.fields.name)
+    beforeAll(() => {
+      body = dump(model.fields.name)
     })
 
     it('should contain only field', () => {
@@ -159,8 +159,8 @@ describe('Salto Dump', () => {
   describe('dump attribute', () => {
     let body: string
 
-    beforeAll(async () => {
-      body = await dump({ attr: 'value' })
+    beforeAll(() => {
+      body = dump({ attr: 'value' })
     })
 
     it('should contain only attribute', () => {
@@ -169,16 +169,16 @@ describe('Salto Dump', () => {
   })
   describe('dump primitive', () => {
     it('should serialize numbers', async () => {
-      expect(await dump(123)).toEqual('123')
+      expect(dump(123)).toEqual('123')
     })
     it('should serialize strings', async () => {
-      expect(await dump('aaa')).toEqual('"aaa"')
+      expect(dump('aaa')).toEqual('"aaa"')
     })
     it('should serialize booleans', async () => {
-      expect(await dump(false)).toEqual('false')
+      expect(dump(false)).toEqual('false')
     })
     it('should dump list', async () => {
-      expect(await dump([1, 'asd', true, { complex: 'value' }])).toMatch(
+      expect(dump([1, 'asd', true, { complex: 'value' }])).toMatch(
         /\[\s+1,\s+"asd",\s+true,\s+\{\s+complex = "value"\s+\}\s+]/s
       )
     })

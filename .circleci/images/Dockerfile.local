@@ -1,6 +1,0 @@
-FROM saltolabs/salto:0.0.10
-
-ADD . /app
-RUN sudo chown -R circleci /app
-WORKDIR /app
-

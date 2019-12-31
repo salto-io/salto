@@ -1,4 +1,4 @@
-import { ElemID } from 'adapter-api'
+import { ElemID, Values } from 'adapter-api'
 
 export type ExpressionType = 'list'|'map'|'template'|'literal'|'reference'|'dynamic'
 
@@ -15,19 +15,18 @@ export type HclAttribute = {
   expressions: HclExpression[]
 }
 
-// TODO: add "blocks" with recursive reference when it's allowed in TS3.7
-export type HclBlock = {
+export type HclBlock<AttrT = HclAttribute | Values> = {
   type: string
   labels: string[]
-  attrs: Record<string, HclAttribute>
+  attrs: Record<string, AttrT>
 }
 
-export type ParsedHclBlock = HclBlock & {
+export type ParsedHclBlock = HclBlock<HclAttribute> & {
   blocks: ParsedHclBlock[]
   source: SourceRange
 }
 
-export type DumpedHclBlock = HclBlock & {
+export type DumpedHclBlock = HclBlock<Values> & {
   blocks: DumpedHclBlock[]
 }
 
@@ -42,32 +41,13 @@ export interface HclParseError {
   context?: SourceRange
 }
 
-export interface HclParseArgs {
-  src: string
-  filename: string
-}
-
+export type ParsedHclBody = Pick<ParsedHclBlock, 'attrs' | 'blocks'>
 export interface HclParseReturn {
-  body: Pick<ParsedHclBlock, 'attrs' | 'blocks'>
+  body: ParsedHclBody
   errors: HclParseError[]
 }
 
-export interface HclDumpArgs {
-  body: DumpedHclBlock
-}
-
-
-export type HclDumpReturn = string
-
-export type HclArgs = HclParseArgs | HclDumpArgs
-export type HclReturn = HclParseReturn | HclDumpReturn
-
-export interface HclCallContext {
-  func: 'parse' | 'dump'
-  callback?: () => void
-  args: HclArgs
-  return?: HclReturn
-}
+export type DumpedHclBody = Pick<DumpedHclBlock, 'attrs' | 'blocks'>
 
 export interface SourcePos {
   line: number

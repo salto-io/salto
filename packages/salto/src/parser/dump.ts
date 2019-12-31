@@ -3,8 +3,8 @@ import {
   Type, Field, Values, isObjectType, PrimitiveTypes,
   isPrimitiveType, Element, isInstanceElement, isField, isElement, Value,
 } from 'adapter-api'
-import HclParser, { useGoParser } from './internal/hcl'
-import { DumpedHclBlock, HclDumpReturn } from './internal/types'
+import { dump as hclDump } from './internal/dump'
+import { DumpedHclBlock } from './internal/types'
 import { Keywords } from './language'
 
 /**
@@ -24,12 +24,6 @@ const getPrimitiveTypeName = (primitiveType: PrimitiveTypes): string => {
   return Keywords.TYPE_OBJECT
 }
 
-const QUOTE_MARKER = 'Q_MARKER'
-
-const startsWithLatter = /^[a-zA-Z]/
-const markQuote = (value: string): string =>
-  (value.match(startsWithLatter) ? `${QUOTE_MARKER}${value}${QUOTE_MARKER}` : value)
-
 export const dumpElemID = ({ elemID }: Type): string => {
   if (elemID.isConfig()) {
     return elemID.adapter
@@ -38,16 +32,6 @@ export const dumpElemID = ({ elemID }: Type): string => {
     .filter(part => !_.isEmpty(part))
     .join(Keywords.NAMESPACE_SEPARATOR)
 }
-
-const markDumpedBlockQuotes = (block: DumpedHclBlock): DumpedHclBlock => {
-  block.labels = block.labels.map(markQuote)
-  block.blocks = block.blocks.map(markDumpedBlockQuotes)
-  return block
-}
-
-const removeQuotes = (
-  value: HclDumpReturn
-): HclDumpReturn => value.replace(new RegExp(`"${QUOTE_MARKER}|${QUOTE_MARKER}"`, 'g'), '')
 
 const dumpFieldBlock = (field: Field): DumpedHclBlock => ({
   type: dumpElemID(field.type),
@@ -146,23 +130,23 @@ const primitiveSerializers: Record<string, PrimitiveSerializer> = {
   boolean: val => (val ? 'true' : 'false'),
 }
 
-export const dump = async (
+export const dump = (
   elementsOrValues: Element | Element[] | Values | Value | Value[]
-): Promise<string> => {
+): string => {
   // If we got a single element, put it in an array because we need to wrap it with an empty block
   const elemListOrValues = isElement(elementsOrValues) ? [elementsOrValues] : elementsOrValues
 
   if (_.isArray(elemListOrValues) && !isElement(elemListOrValues[0])) {
     // We got a Value array, we need to serialize this "manually" because our HCL implementation
     // only accepts blocks
-    const nestedValues = await Promise.all(elemListOrValues.map(async elem => {
-      const serializedElem = await dump(elem)
+    const nestedValues = elemListOrValues.map(elem => {
+      const serializedElem = dump(elem)
       if ((_.isElement(elem) || _.isPlainObject(elem)) && !(serializedElem[0] === '{')) {
         // We need to make sure nested complex elements are wrapped in {}
         return `{\n${serializedElem}\n}`
       }
       return serializedElem
-    }))
+    })
     return `[\n${nestedValues.join(',\n  ')}\n]`
   }
   if (!_.isArray(elemListOrValues) && !_.isPlainObject(elemListOrValues)) {
@@ -176,8 +160,5 @@ export const dump = async (
     ? wrapBlocks(elemListOrValues.map(dumpBlock))
     : dumpBlock(elemListOrValues)
 
-  if (useGoParser) {
-    body.blocks = body.blocks.map(markDumpedBlockQuotes)
-  }
-  return removeQuotes(await HclParser.dump(body))
+  return hclDump(body)
 }

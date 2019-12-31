@@ -96,16 +96,16 @@ const indent = (data: string, indentLevel: number, newValue: boolean): string =>
   ].join('\n')
 }
 
-export const updateBlueprintData = async (
+export const updateBlueprintData = (
   currentData: string,
   changes: DetailedChangeWithSource[]
-): Promise<string> => {
+): string => {
   type BufferChange = {
     newData: string
     start: number
     end: number
   }
-  const toBufferChange = async (change: DetailedChangeWithSource): Promise<BufferChange> => {
+  const toBufferChange = (change: DetailedChangeWithSource): BufferChange => {
     const elem = change.action === 'remove' ? undefined : change.data.after
     let newData: string
     if (elem !== undefined) {
@@ -113,10 +113,10 @@ export const updateBlueprintData = async (
       const isListElement = changeKey.match(/^\d+$/) !== null
       if (isElement(elem) || isListElement) {
         // elements and list values do not need to be serialized with their key
-        newData = await saltoDump(elem)
+        newData = saltoDump(elem)
       } else {
         // When dumping values (attributes) we need to dump the key as well
-        newData = await saltoDump({ [changeKey]: elem })
+        newData = saltoDump({ [changeKey]: elem })
         // We need a leading line break if we are in an empty scope (otherwise we get values
         // in the same line as the opening bracket), since finding out whether we are in an empty
         // scope isn't easy and adding a line break where we don't need it doesn't actually do
@@ -139,7 +139,7 @@ export const updateBlueprintData = async (
     data.slice(0, change.start) + change.newData + data.slice(change.end)
   )
 
-  const bufferChanges = await Promise.all(changes.map(toBufferChange))
+  const bufferChanges = changes.map(toBufferChange)
   // We want to replace buffers from last to first, that way we won't have to re-calculate
   // the source locations after every change
   const sortedChanges = _.sortBy(bufferChanges, change => change.start).reverse()

@@ -16,7 +16,7 @@
   "scripts": {
     "prepare": "yarn run build",
     "prepublishOnly": "yarn test",
-    "build": "yarn run lint  && yarn run build-ts && yarn run build-parser && yarn run build-go",
+    "build": "yarn run lint  && yarn run build-ts && yarn run build-parser",
     "client": "src/cli/salto-cli.ts",
     "test": "jest",
     "clean": "rm -rf ./dist",
@@ -24,9 +24,8 @@
     "clean-ts-test": "yarn run clean-ts && yarn run test",
     "watch-test": "yarn run tsc-watch --onSuccess 'yarn run clean-ts-test'",
     "build-ts": "tsc",
-    "build-parser": "yarn run nearleyc src/parser/internal/ts_plugin/hcl.ne -o dist/src/parser/internal/ts_plugin/hcl.js",
+    "build-parser": "yarn run nearleyc src/parser/internal/hcl.ne -o dist/src/parser/internal/hcl.js",
     "watch-ts": "tsc -w",
-    "build-go": "./src/parser/internal/hcl_plugin/build.sh ./dist",
     "lint": "eslint --cache --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
     "lint-fix": "yarn run lint --fix"
   },
@@ -40,7 +39,6 @@
     "chalk": "^2.3.0",
     "csv-parser": "^2.3.2",
     "fuse.js": "^3.4.5",
-    "jest-each": "^24.9.0",
     "json2csv": "^4.5.2",
     "lodash": "^4.17.11",
     "mkdirp": "^0.5.1",

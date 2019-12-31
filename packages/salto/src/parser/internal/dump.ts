@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import { Value, isExpression, ReferenceExpression, TemplateExpression } from 'adapter-api'
-import { HclDumpReturn, DumpedHclBlock } from '../types'
+import { DumpedHclBlock, DumpedHclBody } from './types'
 
 const O_BLOCK = '{'
 const C_BLOCK = '}'
@@ -93,7 +93,7 @@ const dumpBlock = (block: DumpedHclBlock): string[] => {
   return ident(res)
 }
 
-export const dump = async (body: DumpedHclBlock): Promise<HclDumpReturn> => {
+export const dump = (body: DumpedHclBody): string => {
   const attributesLines = _(body.attrs).toPairs().map(dumpAttr).flatten()
     .value()
   const blockLines = _(body.blocks).map(dumpBlock).flatten().value()

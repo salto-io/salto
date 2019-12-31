@@ -32,7 +32,6 @@ import standardValueSetFilter from './filters/standard_value_sets'
 import flowFilter from './filters/flow'
 import leadConvertSettingsFilter from './filters/lead_convert_settings'
 import lookupFiltersFilter from './filters/lookup_filters'
-import fieldDependencyFilter from './filters/field_dependencies'
 import animationRulesFilter from './filters/animation_rules'
 import samlInitMethodFilter from './filters/saml_initiation_method'
 import settingsFilter from './filters/settings_type'
@@ -154,7 +153,6 @@ export default class SalesforceAdapter {
       flowFilter,
       leadConvertSettingsFilter,
       lookupFiltersFilter,
-      fieldDependencyFilter,
       animationRulesFilter,
       samlInitMethodFilter,
       settingsFilter,

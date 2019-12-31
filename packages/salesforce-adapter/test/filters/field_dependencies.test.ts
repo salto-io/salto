@@ -1,88 +1,61 @@
 import {
-  Element, ElemID, Field, ObjectType, Values,
+  Element, ElemID, ObjectType, Values, InstanceElement,
 } from 'adapter-api'
-import { MetadataInfo } from 'jsforce'
 import mockClient from '../client'
-import filterCreator from '../../src/filters/field_dependencies'
+import filterCreator, { INSTANCE_TYPE_FIELD, INSTANCE_VALUE_SET_FIELD } from '../../src/filters/custom_objects'
 import { FilterWith } from '../../src/filter'
 import {
-  API_NAME, CUSTOM_OBJECT, FIELD_ANNOTATIONS, FIELD_DEPENDENCY_FIELDS, METADATA_TYPE, SALESFORCE,
-  VALUE_SETTINGS_FIELDS,
+  CUSTOM_OBJECT, FIELD_ANNOTATIONS, FIELD_DEPENDENCY_FIELDS, SALESFORCE,
+  VALUE_SETTINGS_FIELDS, INSTANCE_FULL_NAME_FIELD, LABEL, VALUE_SET_FIELDS,
+  VALUE_SET_DEFINITION_FIELDS, VALUE_SET_DEFINITION_VALUE_FIELDS,
 } from '../../src/constants'
-import { Types } from '../../src/transformers/transformer'
 
 describe('Test field dependencies filter', () => {
-  const picklistType = Types.primitiveDataTypes.picklist
-  const objectTypeElemId = new ElemID(SALESFORCE, 'test')
-  const picklistFieldApiName = 'PicklistField__c'
-  const mockObjectApiName = 'Test__c'
-
-  const createFieldDependencyCustomField = (): MetadataInfo[] =>
-    ([{
-      fullName: `${mockObjectApiName}.${picklistFieldApiName}`,
-      valueSet: {
-        controllingField: 'ControllingFieldName',
-        valueSetDefinition: {
-          value: [
+  describe('on fetch', () => {
+    const fieldDependenciesInstanceElement = new InstanceElement('account', new ObjectType(
+      { elemID: new ElemID(SALESFORCE, CUSTOM_OBJECT) }
+    ),
+    { fields: [{
+      [INSTANCE_FULL_NAME_FIELD]: 'picklist_field',
+      [LABEL]: 'My Field Dependency',
+      [INSTANCE_VALUE_SET_FIELD]: {
+        [FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD]: 'ControllingFieldName',
+        [FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS]: [
+          {
+            [VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE]: ['Controlling1', 'Controlling2'],
+            [VALUE_SETTINGS_FIELDS.VALUE_NAME]: 'Val1',
+          },
+          {
+            [VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE]: ['Controlling1'],
+            [VALUE_SETTINGS_FIELDS.VALUE_NAME]: 'Val2',
+          },
+        ],
+        [VALUE_SET_FIELDS.VALUE_SET_DEFINITION]: {
+          [VALUE_SET_DEFINITION_FIELDS.VALUE]: [
             {
-              fullName: 'Val1',
-              default: false,
-              label: 'Val1',
+              [VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'Val1',
+              [VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: 'false',
+              [VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'Val1',
             },
             {
-              fullName: 'Val2',
-              default: false,
-              label: 'Val2',
+              [VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'Val2',
+              [VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: 'false',
+              [VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'Val2',
             },
           ],
         },
-        valueSettings: [
-          {
-            controllingFieldValue: [
-              'Controlling1',
-              'Controlling2',
-            ],
-            valueName: 'Val1',
-          },
-          {
-            controllingFieldValue: 'Controlling1',
-            valueName: 'Val2',
-          },
-        ],
       },
-    } as MetadataInfo,
-    ])
+      [INSTANCE_TYPE_FIELD]: 'Picklist',
+    }],
+    [INSTANCE_FULL_NAME_FIELD]: 'Account' })
 
-  describe('on fetch', () => {
-    const mockObject = new ObjectType({
-      elemID: objectTypeElemId,
-      fields: {
-        // eslint-disable-next-line @typescript-eslint/camelcase
-        picklist_field:
-          new Field(objectTypeElemId, 'picklist_field', picklistType,
-            {
-              [API_NAME]: picklistFieldApiName,
-              [FIELD_ANNOTATIONS.FIELD_DEPENDENCY]: {},
-            }),
-      },
-      annotations: {
-        label: 'test label',
-        [API_NAME]: mockObjectApiName,
-        [METADATA_TYPE]: CUSTOM_OBJECT,
-      },
-    })
     let testElements: Element[]
     const { client } = mockClient()
     let filter: FilterWith<'onFetch'>
 
     beforeEach(() => {
-      testElements = [mockObject.clone()]
+      testElements = [fieldDependenciesInstanceElement.clone()]
     })
-
-    const mockClientReadMetadata = (): void => {
-      client.readMetadata = jest.fn().mockImplementation(() =>
-        Promise.resolve(createFieldDependencyCustomField()))
-    }
 
     const initFilter = async (): Promise<void> => {
       filter = filterCreator({ client }) as FilterWith<'onFetch'>
@@ -105,33 +78,8 @@ describe('Test field dependencies filter', () => {
     }
 
     it('should add field dependency data to a field with field dependency annotation', async () => {
-      mockClientReadMetadata()
       await initFilter()
       const testElement = testElements[0] as ObjectType
-      const fieldDependencyAnnotation = testElement.fields.picklist_field
-        .annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY]
-      assertFieldDependencyTransformation(fieldDependencyAnnotation)
-    })
-
-    it('should do nothing if a field doesnt have a field dependency annotation', async () => {
-      mockClientReadMetadata()
-      await initFilter()
-      const testElement = testElements[0] as ObjectType
-      delete testElement.fields.picklist_field
-        .annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY]
-      await filter.onFetch(testElements)
-      expect(testElement.fields.picklist_field
-        .annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY]).toBeUndefined()
-    })
-
-    it('should add field dependency data when object is split over few elements', async () => {
-      mockClientReadMetadata()
-      const testElement = testElements[0] as ObjectType
-      delete testElement.annotations[API_NAME]
-      testElements = [testElement,
-        new ObjectType({ elemID: objectTypeElemId,
-          annotations: { [API_NAME]: mockObjectApiName } })]
-      await initFilter()
       const fieldDependencyAnnotation = testElement.fields.picklist_field
         .annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY]
       assertFieldDependencyTransformation(fieldDependencyAnnotation)

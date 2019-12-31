@@ -437,7 +437,8 @@ export class Types {
       annotationTypes: {
         ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION]: BuiltinTypes.BOOLEAN,
-        [FIELD_ANNOTATIONS.RELATED_TO]: BuiltinTypes.STRING,
+        // Todo SALTO-228 The FIELD_ANNOTATIONS.RELATED_TO annotation is missing since
+        //  currently there is no way to declare on a list annotation
         [FIELD_ANNOTATIONS.LOOKUP_FILTER]: Types.lookupFilterType,
       },
     }),
@@ -449,7 +450,8 @@ export class Types {
         [FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.LOOKUP_FILTER]: Types.lookupFilterType,
-        [FIELD_ANNOTATIONS.RELATED_TO]: BuiltinTypes.STRING,
+        // Todo SALTO-228 The FIELD_ANNOTATIONS.RELATED_TO annotation is missing since
+        //  currently there is no way to declare on a list annotation
       },
     }),
     rollupsummary: new PrimitiveType({

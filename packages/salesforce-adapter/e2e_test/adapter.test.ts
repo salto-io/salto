@@ -68,29 +68,63 @@ describe('Salesforce adapter E2E with real account', () => {
   const fetchedRollupSummaryFieldName = 'rollupsummary__c'
 
   beforeAll(async () => {
-    const accountApiName = 'Account'
-    if (!(await objectExists(constants.CUSTOM_OBJECT, accountApiName,
-      [fetchedRollupSummaryFieldName]))) {
-      await client.create(constants.CUSTOM_FIELD, {
-        fullName: `${accountApiName}.${fetchedRollupSummaryFieldName}`,
-        label: 'Test Fetch Rollup Summary Field',
-        summarizedField: 'Opportunity.Amount',
-        summaryFilterItems: {
-          field: 'Opportunity.Amount',
-          operation: 'greaterThan',
-          value: '1',
-        },
-        summaryForeignKey: 'Opportunity.AccountId',
-        summaryOperation: 'sum',
-        type: 'Summary',
-      } as MetadataInfo)
-      await client.update(PROFILE_METADATA_TYPE,
-        new ProfileInfo(sfCase(ADMIN_PROFILE), [{
-          field: `${accountApiName}.${fetchedRollupSummaryFieldName}`,
-          editable: true,
-          readable: true,
-        }]))
+    const verifyAccountWithRollupSummaryExists = async (): Promise<void> => {
+      const accountApiName = 'Account'
+      if (!(await objectExists(constants.CUSTOM_OBJECT, accountApiName,
+        [fetchedRollupSummaryFieldName]))) {
+        await client.create(constants.CUSTOM_FIELD, {
+          fullName: `${accountApiName}.${fetchedRollupSummaryFieldName}`,
+          label: 'Test Fetch Rollup Summary Field',
+          summarizedField: 'Opportunity.Amount',
+          summaryFilterItems: {
+            field: 'Opportunity.Amount',
+            operation: 'greaterThan',
+            value: '1',
+          },
+          summaryForeignKey: 'Opportunity.AccountId',
+          summaryOperation: 'sum',
+          type: 'Summary',
+        } as MetadataInfo)
+        await client.update(PROFILE_METADATA_TYPE,
+          new ProfileInfo(sfCase(ADMIN_PROFILE), [{
+            field: `${accountApiName}.${fetchedRollupSummaryFieldName}`,
+            editable: true,
+            readable: true,
+          }]))
+      }
     }
+
+    const verifyEmailFolderExist = async (): Promise<void> => {
+      if (!(await objectExists('EmailFolder', 'TestEmailFolder'))) {
+        await client.create('EmailFolder', {
+          fullName: 'TestEmailFolder',
+          name: 'Test Email Folder Name',
+          accessType: 'Public',
+          publicFolderAccess: 'ReadWrite',
+        } as MetadataInfo)
+      }
+    }
+
+    const verifyEmailTemplateExists = async (): Promise<void> => {
+      if (!(await objectExists('EmailTemplate', 'TestEmailFolder/TestEmailTemplate'))) {
+        await client.create('EmailTemplate', {
+          fullName: 'TestEmailFolder/TestEmailTemplate',
+          name: 'Test Email Template Name',
+          available: true,
+          style: 'none',
+          subject: 'Test Email Template Subject',
+          uiType: 'Aloha',
+          encodingKey: 'UTF-8',
+          type: 'text',
+          description: 'Test Email Template Description',
+          content: 'Email Body',
+        } as MetadataInfo)
+      }
+    }
+
+    await verifyAccountWithRollupSummaryExists()
+    await verifyEmailFolderExist()
+    await verifyEmailTemplateExists()
     result = await adapter.fetch()
   })
 
@@ -205,6 +239,23 @@ describe('Salesforce adapter E2E with real account', () => {
 
       expect(quoteSettings).toBeUndefined()
     })
+
+    it('should retrieve EmailTemplate instance', () => {
+      const emailTemplate = findElements(result, 'email_template',
+        'test_email_folder_test_email_template')[0] as InstanceElement
+      expect(emailTemplate.value[constants.INSTANCE_FULL_NAME_FIELD])
+        .toEqual('TestEmailFolder/TestEmailTemplate')
+      expect(emailTemplate.value.name).toEqual('Test Email Template Name')
+      expect(emailTemplate.value.type).toEqual('text')
+    })
+
+    it('should retrieve EmailFolder instance', () => {
+      const emailFolder = findElements(result, 'email_folder',
+        'test_email_folder')[0] as InstanceElement
+      expect(emailFolder.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('TestEmailFolder')
+      expect(emailFolder.value.name).toEqual('Test Email Folder Name')
+      expect(emailFolder.value.access_type).toEqual('Public')
+    })
   })
 
   describe('should perform CRUD operations', () => {
@@ -214,7 +265,7 @@ describe('Salesforce adapter E2E with real account', () => {
       typeof variable === 'string' ? JSON.parse(variable) : variable)
 
     const getProfileInfo = async (profile: string): Promise<ProfileInfo> =>
-    (await client.readMetadata(PROFILE_METADATA_TYPE, profile))[0] as ProfileInfo
+      (await client.readMetadata(PROFILE_METADATA_TYPE, profile))[0] as ProfileInfo
 
     const fieldPermissionExists = async (profile: string, fields: string[]): Promise<boolean[]> => {
       const profileInfo = await getProfileInfo(profile)
@@ -1818,177 +1869,305 @@ describe('Salesforce adapter E2E with real account', () => {
     })
 
     describe('deploy retrieve manipulations', () => {
-      const retrieve = async (type: string): Promise<RetrieveResult> => {
-        const retrieveRequest = {
-          apiVersion: API_VERSION,
-          singlePackage: false,
-          unpackaged: [{ types: { name: type, members: '*' } }],
-        }
-        return client.retrieve(retrieveRequest)
-      }
-
-      const findInstance = async (instance: InstanceElement): Promise<MetadataInfo | undefined> => {
-        const type = metadataType(instance)
-        const retrieveResult = await retrieve(type)
-        const instanceInfos = (await fromRetrieveResult(retrieveResult, [type]))[type]
-        return instanceInfos.find(info => info.fullName === apiName(instance))
-      }
-
-      const removeIfAlreadyExists = async (instance: InstanceElement): Promise<void> => {
-        if (await findInstance(instance)) {
-          await client.deploy(await toMetadataPackageZip(apiName(instance),
-            metadataType(instance), instance.value, true) as Buffer)
-        }
-      }
-
-      const verifyCreateInstance = async (instance: InstanceElement): Promise<void> => {
-        await adapter.add(instance)
-        const instanceInfo = await findInstance(instance)
-        expect(instanceInfo).toBeDefined()
-        expect(_.get(instanceInfo, 'content').includes('Created')).toBeTruthy()
-      }
-
-      const verifyUpdateInstance = async (instance: InstanceElement): Promise<void> => {
-        const after = instance.clone()
-        after.value.content = after.value.content.replace('Created', 'Updated')
-        await adapter.update(instance, after, [])
-        const instanceInfo = await findInstance(instance)
-        expect(instanceInfo).toBeDefined()
-        expect(_.get(instanceInfo, 'content').includes('Updated')).toBeTruthy()
-      }
-
-      const verifyRemoveInstance = async (instance: InstanceElement): Promise<void> => {
-        await adapter.remove(instance)
-        const instanceInfo = await findInstance(instance)
-        expect(instanceInfo).toBeUndefined()
-      }
-
-      const createInstanceElement = (fullName: string, typeName: string, content: string):
-        InstanceElement => {
-        const objectType = new ObjectType({
-          elemID: new ElemID(constants.SALESFORCE, _.snakeCase(typeName)),
-          annotations: {
-            [constants.METADATA_TYPE]: typeName,
-          },
-        })
-        return new InstanceElement(
-          _.snakeCase(fullName),
-          objectType,
-          {
-            [constants.INSTANCE_FULL_NAME_FIELD]: fullName,
-            // eslint-disable-next-line @typescript-eslint/camelcase
-            api_version: API_VERSION,
-            content,
+      describe('types that support only retrieve & deploy', () => {
+        const retrieve = async (type: string): Promise<RetrieveResult> => {
+          const retrieveRequest = {
+            apiVersion: API_VERSION,
+            singlePackage: false,
+            unpackaged: [{ types: { name: type, members: '*' } }],
           }
-        )
-      }
+          return client.retrieve(retrieveRequest)
+        }
 
-      describe('apex class manipulation', () => {
-        const apexClassInstance = createInstanceElement('MyApexClass', 'ApexClass',
-          'public class MyApexClass {\n    public void printLog() {\n        System.debug(\'Created\');\n    }\n}')
+        const findInstance = async (instance: InstanceElement):
+          Promise<MetadataInfo | undefined> => {
+          const type = metadataType(instance)
+          const retrieveResult = await retrieve(type)
+          const instanceInfos = (await fromRetrieveResult(retrieveResult, [type]))[type]
+          return instanceInfos.find(info => info.fullName === apiName(instance))
+        }
 
-        beforeAll(async () => {
-          await removeIfAlreadyExists(apexClassInstance)
-        })
+        const removeIfAlreadyExists = async (instance: InstanceElement): Promise<void> => {
+          if (await findInstance(instance)) {
+            await client.deploy(await toMetadataPackageZip(apiName(instance),
+              metadataType(instance), instance.value, true) as Buffer)
+          }
+        }
 
-        describe('create apex class instance', () => {
-          it('should create apex class instance', async () => {
-            await verifyCreateInstance(apexClassInstance)
+        const verifyCreateInstance = async (instance: InstanceElement): Promise<void> => {
+          await adapter.add(instance)
+          const instanceInfo = await findInstance(instance)
+          expect(instanceInfo).toBeDefined()
+          expect(_.get(instanceInfo, 'content').includes('Created')).toBeTruthy()
+        }
+
+        const verifyUpdateInstance = async (instance: InstanceElement): Promise<void> => {
+          const after = instance.clone()
+          after.value.content = after.value.content.replace('Created', 'Updated')
+          await adapter.update(instance, after, [])
+          const instanceInfo = await findInstance(instance)
+          expect(instanceInfo).toBeDefined()
+          expect(_.get(instanceInfo, 'content').includes('Updated')).toBeTruthy()
+        }
+
+        const verifyRemoveInstance = async (instance: InstanceElement): Promise<void> => {
+          await adapter.remove(instance)
+          const instanceInfo = await findInstance(instance)
+          expect(instanceInfo).toBeUndefined()
+        }
+
+        const createInstanceElement = (fullName: string, typeName: string, content: string):
+          InstanceElement => {
+          const objectType = new ObjectType({
+            elemID: new ElemID(constants.SALESFORCE, _.snakeCase(typeName)),
+            annotations: {
+              [constants.METADATA_TYPE]: typeName,
+            },
+          })
+          return new InstanceElement(
+            _.snakeCase(fullName),
+            objectType,
+            {
+              [constants.INSTANCE_FULL_NAME_FIELD]: fullName,
+              // eslint-disable-next-line @typescript-eslint/camelcase
+              api_version: API_VERSION,
+              content,
+            }
+          )
+        }
+
+        describe('apex class manipulation', () => {
+          const apexClassInstance = createInstanceElement('MyApexClass', 'ApexClass',
+            'public class MyApexClass {\n    public void printLog() {\n        System.debug(\'Created\');\n    }\n}')
+
+          beforeAll(async () => {
+            await removeIfAlreadyExists(apexClassInstance)
+          })
+
+          describe('create apex class instance', () => {
+            it('should create apex class instance', async () => {
+              await verifyCreateInstance(apexClassInstance)
+            })
+          })
+
+          describe('update apex class instance', () => {
+            it('should update apex class instance', async () => {
+              await verifyUpdateInstance(apexClassInstance)
+            })
+          })
+
+          describe('remove apex class instance', () => {
+            it('should remove apex class instance', async () => {
+              await verifyRemoveInstance(apexClassInstance)
+            })
           })
         })
 
-        describe('update apex class instance', () => {
-          it('should update apex class instance', async () => {
-            await verifyUpdateInstance(apexClassInstance)
+        describe('apex trigger manipulation', () => {
+          const apexTriggerInstance = createInstanceElement('MyApexTrigger', 'ApexTrigger',
+            'trigger MyApexTrigger on Account (before insert) {\n    System.debug(\'Created\');\n}')
+
+          beforeAll(async () => {
+            await removeIfAlreadyExists(apexTriggerInstance)
+          })
+
+          describe('create apex trigger instance', () => {
+            it('should create apex trigger instance', async () => {
+              await verifyCreateInstance(apexTriggerInstance)
+            })
+          })
+
+          describe('update apex trigger instance', () => {
+            it('should update apex trigger instance', async () => {
+              await verifyUpdateInstance(apexTriggerInstance)
+            })
+          })
+
+          describe('remove apex trigger instance', () => {
+            it('should remove apex trigger instance', async () => {
+              await verifyRemoveInstance(apexTriggerInstance)
+            })
           })
         })
 
-        describe('remove apex class instance', () => {
-          it('should remove apex class instance', async () => {
-            await verifyRemoveInstance(apexClassInstance)
+        describe('apex page manipulation', () => {
+          const apexPageInstance = createInstanceElement('MyApexPage', 'ApexPage',
+            '<apex:page >Created by e2e test!</apex:page>')
+          apexPageInstance.value.label = 'MyApexPage'
+
+          beforeAll(async () => {
+            await removeIfAlreadyExists(apexPageInstance)
+          })
+
+          describe('create apex page instance', () => {
+            it('should create apex page instance', async () => {
+              await verifyCreateInstance(apexPageInstance)
+            })
+          })
+
+          describe('update apex page instance', () => {
+            it('should update apex page instance', async () => {
+              await verifyUpdateInstance(apexPageInstance)
+            })
+          })
+
+          describe('remove apex page instance', () => {
+            it('should remove apex page instance', async () => {
+              await verifyRemoveInstance(apexPageInstance)
+            })
+          })
+        })
+
+        describe('apex component manipulation', () => {
+          const apexComponentInstance = createInstanceElement('MyApexComponent', 'ApexComponent',
+            '<apex:component >Created by e2e test!</apex:component>')
+          apexComponentInstance.value.label = 'MyApexComponent'
+
+          beforeAll(async () => {
+            await removeIfAlreadyExists(apexComponentInstance)
+          })
+
+          describe('create apex component instance', () => {
+            it('should create apex component instance', async () => {
+              await verifyCreateInstance(apexComponentInstance)
+            })
+          })
+
+          describe('update apex component instance', () => {
+            it('should update apex component instance', async () => {
+              await verifyUpdateInstance(apexComponentInstance)
+            })
+          })
+
+          describe('remove apex component instance', () => {
+            it('should remove apex component instance', async () => {
+              await verifyRemoveInstance(apexComponentInstance)
+            })
           })
         })
       })
 
-      describe('apex trigger manipulation', () => {
-        const apexTriggerInstance = createInstanceElement('MyApexTrigger', 'ApexTrigger',
-          'trigger MyApexTrigger on Account (before insert) {\n    System.debug(\'Created\');\n}')
+      describe('types that support also CRUD-Based calls', () => {
+        const findInstance = async (instance: InstanceElement):
+          Promise<MetadataInfo | undefined> => {
+          const instanceInfo = (await client.readMetadata(
+            instance.type.annotations[constants.METADATA_TYPE],
+            instance.value[constants.INSTANCE_FULL_NAME_FIELD],
+          ))[0]
+          if (instanceInfo && instanceInfo.fullName) {
+            return instanceInfo
+          }
+          return undefined
+        }
 
-        beforeAll(async () => {
-          await removeIfAlreadyExists(apexTriggerInstance)
-        })
+        const removeIfAlreadyExists = async (instance: InstanceElement): Promise<void> => {
+          if (await findInstance(instance)) {
+            await client.delete(instance.type.annotations[constants.METADATA_TYPE],
+              instance.value[constants.INSTANCE_FULL_NAME_FIELD])
+          }
+        }
 
-        describe('create apex trigger instance', () => {
-          it('should create apex trigger instance', async () => {
-            await verifyCreateInstance(apexTriggerInstance)
+        const verifyCreateInstance = async (instance: InstanceElement): Promise<void> => {
+          await adapter.add(instance)
+          const instanceInfo = await findInstance(instance)
+          expect(instanceInfo).toBeDefined()
+        }
+
+        const verifyUpdateInstance = async (instance: InstanceElement, updatedName: string):
+          Promise<void> => {
+          const after = instance.clone()
+          after.value.name = updatedName
+          await adapter.update(instance, after, [])
+          const instanceInfo = await findInstance(instance)
+          expect(instanceInfo).toBeDefined()
+          expect(_.get(instanceInfo, 'name')).toEqual(updatedName)
+        }
+
+        const verifyRemoveInstance = async (instance: InstanceElement): Promise<void> => {
+          await adapter.remove(instance)
+          const instanceInfo = await findInstance(instance)
+          expect(instanceInfo).toBeUndefined()
+        }
+
+        const createInstanceElement = (fullName: string, typeName: string, values: Values):
+          InstanceElement => {
+          const objectType = new ObjectType({
+            elemID: new ElemID(constants.SALESFORCE, _.snakeCase(typeName)),
+            annotations: {
+              [constants.METADATA_TYPE]: typeName,
+            },
+          })
+          return new InstanceElement(
+            _.snakeCase(fullName),
+            objectType,
+            {
+              ...values,
+              [constants.INSTANCE_FULL_NAME_FIELD]: fullName,
+            }
+          )
+        }
+
+        describe('email folder manipulation', () => {
+          const emailFolderInstance = createInstanceElement('MyEmailFolder', 'EmailFolder',
+            { name: 'My Email Folder Name' })
+
+          beforeAll(async () => {
+            await removeIfAlreadyExists(emailFolderInstance)
+          })
+
+          describe('create email folder instance', () => {
+            it('should create email folder instance', async () => {
+              await verifyCreateInstance(emailFolderInstance)
+            })
+          })
+
+          describe('update email folder instance', () => {
+            it('should update email folder instance', async () => {
+              await verifyUpdateInstance(emailFolderInstance, 'My Updated Email Folder Name')
+            })
+          })
+
+          describe('remove email folder instance', () => {
+            it('should remove email folder instance', async () => {
+              await verifyRemoveInstance(emailFolderInstance)
+            })
           })
         })
 
-        describe('update apex trigger instance', () => {
-          it('should update apex trigger instance', async () => {
-            await verifyUpdateInstance(apexTriggerInstance)
+        describe('email template manipulation', () => {
+          const emailTemplateInstance = createInstanceElement('TestEmailFolder/MyEmailTemplate',
+            'EmailTemplate', {
+              name: 'My Email Template Name',
+              available: true,
+              style: 'none',
+              subject: 'My Email Template Subject',
+              uiType: 'Aloha',
+              encodingKey: 'UTF-8',
+              type: 'text',
+              description: 'My Email Template Description',
+              content: 'My Email Template Body',
+            })
+
+          beforeAll(async () => {
+            await removeIfAlreadyExists(emailTemplateInstance)
           })
-        })
 
-        describe('remove apex trigger instance', () => {
-          it('should remove apex trigger instance', async () => {
-            await verifyRemoveInstance(apexTriggerInstance)
+          describe('create email template instance', () => {
+            it('should create email template instance', async () => {
+              await verifyCreateInstance(emailTemplateInstance)
+            })
           })
-        })
-      })
 
-      describe('apex page manipulation', () => {
-        const apexPageInstance = createInstanceElement('MyApexPage', 'ApexPage',
-          '<apex:page >Created by e2e test!</apex:page>')
-        apexPageInstance.value.label = 'MyApexPage'
-
-        beforeAll(async () => {
-          await removeIfAlreadyExists(apexPageInstance)
-        })
-
-        describe('create apex page instance', () => {
-          it('should create apex page instance', async () => {
-            await verifyCreateInstance(apexPageInstance)
+          describe('update email template instance', () => {
+            it('should update email template instance', async () => {
+              await verifyUpdateInstance(emailTemplateInstance, 'My Updated Email Template Name')
+            })
           })
-        })
 
-        describe('update apex page instance', () => {
-          it('should update apex page instance', async () => {
-            await verifyUpdateInstance(apexPageInstance)
-          })
-        })
-
-        describe('remove apex page instance', () => {
-          it('should remove apex page instance', async () => {
-            await verifyRemoveInstance(apexPageInstance)
-          })
-        })
-      })
-
-      describe('apex component manipulation', () => {
-        const apexComponentInstance = createInstanceElement('MyApexComponent', 'ApexComponent',
-          '<apex:component >Created by e2e test!</apex:component>')
-        apexComponentInstance.value.label = 'MyApexComponent'
-
-        beforeAll(async () => {
-          await removeIfAlreadyExists(apexComponentInstance)
-        })
-
-        describe('create apex component instance', () => {
-          it('should create apex component instance', async () => {
-            await verifyCreateInstance(apexComponentInstance)
-          })
-        })
-
-        describe('update apex component instance', () => {
-          it('should update apex component instance', async () => {
-            await verifyUpdateInstance(apexComponentInstance)
-          })
-        })
-
-        describe('remove apex component instance', () => {
-          it('should remove apex component instance', async () => {
-            await verifyRemoveInstance(apexComponentInstance)
+          describe('remove email template instance', () => {
+            it('should remove email template instance', async () => {
+              await verifyRemoveInstance(emailTemplateInstance)
+            })
           })
         })
       })

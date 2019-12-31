@@ -6,7 +6,7 @@ import {
 } from 'adapter-api'
 import {
   SaveResult, MetadataInfo, QueryResult, FileProperties,
-  BatchResultInfo, BulkLoadOperation, Record as SfRecord,
+  BatchResultInfo, BulkLoadOperation, Record as SfRecord, ListMetadataQuery,
 } from 'jsforce'
 import _ from 'lodash'
 import { logger } from '@salto/logging'
@@ -83,7 +83,7 @@ export interface SalesforceAdapterParams {
 
   // Metadata types that we have to fetch using the retrieve API endpoint and add update or remove
   // using the deploy API endpoint
-  metadataToRetrieveAndDeploy?: string[]
+  metadataToRetrieveAndDeploy?: Record<string, string | undefined>
 
   // Filters to deploy to all adapter operations
   filterCreators?: FilterCreator[]
@@ -112,7 +112,7 @@ type NamespaceAndInstances = { namespace?: string; instanceInfo: MetadataInfo }
 
 export default class SalesforceAdapter {
   private metadataTypeBlacklist: string[]
-  private metadataToRetrieveAndDeploy: string[]
+  private metadataToRetrieveAndDeploy: Record<string, string | undefined>
   private metadataAdditionalTypes: string[]
   private filterCreators: FilterCreator[]
   private client: SalesforceClient
@@ -127,16 +127,18 @@ export default class SalesforceAdapter {
       // readMetadata fails on those and pass on the parents (AssignmentRules and EscalationRules)
       'AssignmentRule', 'EscalationRule',
     ],
-    metadataToRetrieveAndDeploy = [
-      'ApexClass', // readMetadata is not supported for that type & contains encoded zip content
-      'ApexTrigger', // readMetadata is not supported for that type & contains encoded zip content
-      'ApexPage', // contains encoded zip content
-      'ApexComponent', // contains encoded zip content
-      'AssignmentRules',
-      'InstalledPackage', // listMetadataObjects of this types returns duplicates
-    ],
+    metadataToRetrieveAndDeploy = {
+      ApexClass: undefined, // readMetadata is not supported, contains encoded zip content
+      ApexTrigger: undefined, // readMetadata is not supported, contains encoded zip content
+      ApexPage: undefined, // contains encoded zip content
+      ApexComponent: undefined, // contains encoded zip content
+      AssignmentRules: undefined,
+      InstalledPackage: undefined, // listMetadataObjects of this types returns duplicates
+      EmailTemplate: 'EmailFolder', // contains encoded zip content, is under a folder
+    },
     metadataAdditionalTypes = [
       'ProfileUserPermission',
+      'EmailFolder',
     ],
     filterCreators = [
       CustomObjectsFilter,
@@ -397,7 +399,7 @@ export default class SalesforceAdapter {
     const post = element.clone()
     const type = metadataType(post)
     addInstanceDefaults(post)
-    if (this.metadataToRetrieveAndDeploy.includes(type)) {
+    if (this.isMetadataTypeToRetrieveAndDeploy(type)) {
       await this.deployInstance(post)
     } else {
       await this.client.create(type, toMetadataInfo(apiName(post), post.value))
@@ -422,7 +424,8 @@ export default class SalesforceAdapter {
   @logDuration()
   public async remove(element: Element): Promise<void> {
     const type = metadataType(element)
-    if (isInstanceElement(element) && this.metadataToRetrieveAndDeploy.includes(type)) {
+    if (isInstanceElement(element)
+      && this.isMetadataTypeToRetrieveAndDeploy(type)) {
       await this.deployInstance(element, true)
     } else {
       await this.client.delete(type, apiName(element))
@@ -532,7 +535,7 @@ export default class SalesforceAdapter {
     validateApiName(prevInstance, newInstance)
 
     const typeName = metadataType(newInstance)
-    if (this.metadataToRetrieveAndDeploy.includes(typeName)) {
+    if (this.isMetadataTypeToRetrieveAndDeploy(typeName)) {
       await this.deployInstance(newInstance)
     } else {
       await this.client.update(typeName, toMetadataInfo(
@@ -618,19 +621,41 @@ export default class SalesforceAdapter {
 
   private async retrieveMetadata(metadataTypes: string[]):
     Promise<Record<string, NamespaceAndInstances[]>> {
-    const typeToFileProperties: Record<string, FileProperties[]> = await Promise.all(metadataTypes
-      .map(async type => [type, await this.client.listMetadataObjects(type)]))
-      .then(pairs => _(pairs).fromPairs().value())
+    const getFolders = async (typeToRetrieve: string): Promise<FileProperties[]> => {
+      const folderType = this.metadataToRetrieveAndDeploy[typeToRetrieve]
+      if (folderType) {
+        return this.client.listMetadataObjects({ type: folderType })
+      }
+      return []
+    }
+
+    const isFolder = (type: string): boolean =>
+      Object.values(this.metadataToRetrieveAndDeploy).includes(type)
+
+    const retrieveMetadataTypes = metadataTypes.filter(type => !isFolder(type))
+    const retrieveTypeToFiles: Record<string, FileProperties[]> = await Promise.all(
+      retrieveMetadataTypes
+        .map(async type => {
+          const folders = await getFolders(type)
+          let listMetadataQuery: ListMetadataQuery | ListMetadataQuery[]
+          if (_.isEmpty(folders)) {
+            listMetadataQuery = { type }
+          } else {
+            listMetadataQuery = folders.map(folder => ({ type, folder: folder.fullName }))
+          }
+          return [type, [...(await this.client.listMetadataObjects(listMetadataQuery)), ...folders]]
+        })
+    ).then(pairs => _(pairs).fromPairs().value())
     const retrieveRequest = {
       apiVersion: API_VERSION,
       singlePackage: false,
-      unpackaged: { types: metadataTypes.map(type =>
+      unpackaged: { types: retrieveMetadataTypes.map(type =>
         ({ name: type,
-          members: typeToFileProperties[type].map(file => file.fullName) })) },
+          members: retrieveTypeToFiles[type].map(file => file.fullName) })) },
     }
     const retrieveResult = await this.client.retrieve(retrieveRequest)
     const typeToInstanceInfos = await fromRetrieveResult(retrieveResult, metadataTypes)
-    const fullNameToNamespace: Record<string, string> = _(Object.values(typeToFileProperties))
+    const fullNameToNamespace: Record<string, string> = _(Object.values(retrieveTypeToFiles))
       .flatten()
       .map(file => [file.fullName, file.namespacePrefix])
       .fromPairs()
@@ -680,7 +705,7 @@ export default class SalesforceAdapter {
       .filter(t => topLevelTypeNames.includes(metadataType(t)))
 
     const [metadataTypesToRetrieve, metadataTypesToRead] = _.partition(topLevelTypes,
-      t => this.metadataToRetrieveAndDeploy.includes(sfCase(t.elemID.name)))
+      t => this.isMetadataTypeToRetrieveAndDeploy(sfCase(t.elemID.name)))
 
     const typesAndInstances = _.flatten(await Promise.all(
       [retrieveInstances(metadataTypesToRetrieve), readInstances(metadataTypesToRead)]
@@ -694,12 +719,17 @@ export default class SalesforceAdapter {
       .value()
   }
 
+  private isMetadataTypeToRetrieveAndDeploy(type: string): boolean {
+    return [...Object.keys(this.metadataToRetrieveAndDeploy),
+      ...Object.values(this.metadataToRetrieveAndDeploy)].includes(type)
+  }
+
   /**
    * List all the instances of specific metadataType
    * @param type the metadata type
    */
   private async listMetadataInstances(type: string): Promise<NamespaceAndInstances[]> {
-    const objs = await this.client.listMetadataObjects(type)
+    const objs = await this.client.listMetadataObjects({ type })
     if (!objs) {
       return []
     }

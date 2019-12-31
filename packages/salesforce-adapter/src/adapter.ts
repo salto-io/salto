@@ -120,7 +120,6 @@ export default class SalesforceAdapter {
 
   public constructor({
     metadataTypeBlacklist = [
-      'ReportType', // See SALTO-76
       'CustomField', // We have special treatment for this type
       'Settings',
       'StaticResource',
@@ -135,6 +134,7 @@ export default class SalesforceAdapter {
       AssignmentRules: undefined,
       InstalledPackage: undefined, // listMetadataObjects of this types returns duplicates
       EmailTemplate: 'EmailFolder', // contains encoded zip content, is under a folder
+      ReportType: undefined,
     },
     metadataAdditionalTypes = [
       'ProfileUserPermission',

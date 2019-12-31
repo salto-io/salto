@@ -29,6 +29,7 @@ type ZipPropsMap = {
   InstalledPackage: ZipProps
   EmailTemplate: ZipProps
   EmailFolder: ZipProps
+  ReportType: ZipProps
 }
 
 const zipPropsMap: ZipPropsMap = {
@@ -71,6 +72,11 @@ const zipPropsMap: ZipPropsMap = {
     folderType: 'EmailTemplate',
     dirName: 'email',
     fileSuffix: METADATA_XML_SUFFIX,
+    isMetadataWithContent: false,
+  },
+  ReportType: {
+    dirName: 'reportTypes',
+    fileSuffix: '.reportType',
     isMetadataWithContent: false,
   },
 }

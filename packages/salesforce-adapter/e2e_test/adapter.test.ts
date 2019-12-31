@@ -2073,14 +2073,14 @@ describe('Salesforce adapter E2E with real account', () => {
           expect(instanceInfo).toBeDefined()
         }
 
-        const verifyUpdateInstance = async (instance: InstanceElement, updatedName: string):
-          Promise<void> => {
+        const verifyUpdateInstance = async (instance: InstanceElement, updatedField: string,
+          updatedValue: string): Promise<void> => {
           const after = instance.clone()
-          after.value.name = updatedName
+          after.value[updatedField] = updatedValue
           await adapter.update(instance, after, [])
           const instanceInfo = await findInstance(instance)
           expect(instanceInfo).toBeDefined()
-          expect(_.get(instanceInfo, 'name')).toEqual(updatedName)
+          expect(_.get(instanceInfo, updatedField)).toEqual(updatedValue)
         }
 
         const verifyRemoveInstance = async (instance: InstanceElement): Promise<void> => {
@@ -2123,7 +2123,8 @@ describe('Salesforce adapter E2E with real account', () => {
 
           describe('update email folder instance', () => {
             it('should update email folder instance', async () => {
-              await verifyUpdateInstance(emailFolderInstance, 'My Updated Email Folder Name')
+              await verifyUpdateInstance(emailFolderInstance, 'name',
+                'My Updated Email Folder Name')
             })
           })
 
@@ -2160,13 +2161,53 @@ describe('Salesforce adapter E2E with real account', () => {
 
           describe('update email template instance', () => {
             it('should update email template instance', async () => {
-              await verifyUpdateInstance(emailTemplateInstance, 'My Updated Email Template Name')
+              await verifyUpdateInstance(emailTemplateInstance, 'name',
+                'My Updated Email Template Name')
             })
           })
 
           describe('remove email template instance', () => {
             it('should remove email template instance', async () => {
               await verifyRemoveInstance(emailTemplateInstance)
+            })
+          })
+        })
+
+        describe('report type manipulation', () => {
+          const reportTypeInstance = createInstanceElement('MyReportType',
+            'ReportType', {
+              label: 'My Report Type Label',
+              // eslint-disable-next-line @typescript-eslint/camelcase
+              base_object: 'Account',
+              category: 'accounts',
+              deployed: true,
+              sections: [{
+                columns: [],
+                // eslint-disable-next-line @typescript-eslint/camelcase
+                master_label: 'Master Label',
+              }],
+            })
+
+          beforeAll(async () => {
+            await removeIfAlreadyExists(reportTypeInstance)
+          })
+
+          describe('create report type instance', () => {
+            it('should create report type instance', async () => {
+              await verifyCreateInstance(reportTypeInstance)
+            })
+          })
+
+          describe('update report type instance', () => {
+            it('should update report type instance', async () => {
+              await verifyUpdateInstance(reportTypeInstance, 'label',
+                'My Updated Report Type Label')
+            })
+          })
+
+          describe('remove report type instance', () => {
+            it('should remove report type instance', async () => {
+              await verifyRemoveInstance(reportTypeInstance)
             })
           })
         })

@@ -420,7 +420,6 @@ export class Types {
         ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.MASK_CHAR]: BuiltinTypes.STRING,
         [FIELD_ANNOTATIONS.MASK_TYPE]: BuiltinTypes.STRING,
-        [FIELD_ANNOTATIONS.MASK]: BuiltinTypes.STRING,
         [FIELD_ANNOTATIONS.LENGTH]: BuiltinTypes.NUMBER,
       },
     }),

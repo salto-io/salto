@@ -136,11 +136,13 @@ export default class SalesforceAdapter {
       EmailTemplate: 'EmailFolder', // contains encoded zip content, is under a folder
       ReportType: undefined,
       Report: 'ReportFolder',
+      Dashboard: 'DashboardFolder',
     },
     metadataAdditionalTypes = [
       'ProfileUserPermission',
       'EmailFolder',
       'ReportFolder',
+      'DashboardFolder',
     ],
     filterCreators = [
       CustomObjectsFilter,

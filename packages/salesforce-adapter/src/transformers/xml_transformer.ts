@@ -32,6 +32,8 @@ type ZipPropsMap = {
   ReportType: ZipProps
   Report: ZipProps
   ReportFolder: ZipProps
+  Dashboard: ZipProps
+  DashboardFolder: ZipProps
 }
 
 const zipPropsMap: ZipPropsMap = {
@@ -89,6 +91,17 @@ const zipPropsMap: ZipPropsMap = {
   ReportFolder: {
     folderType: 'Report',
     dirName: 'reports',
+    fileSuffix: METADATA_XML_SUFFIX,
+    isMetadataWithContent: false,
+  },
+  Dashboard: {
+    dirName: 'dashboards',
+    fileSuffix: '.dashboard',
+    isMetadataWithContent: false,
+  },
+  DashboardFolder: {
+    folderType: 'Dashboard',
+    dirName: 'dashboards',
     fileSuffix: METADATA_XML_SUFFIX,
     isMetadataWithContent: false,
   },

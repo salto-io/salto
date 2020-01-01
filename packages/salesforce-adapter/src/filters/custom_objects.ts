@@ -12,7 +12,7 @@ import { API_NAME, CUSTOM_OBJECT, METADATA_TYPE, SALESFORCE,
   FIELD_TYPE_API_NAMES, FIELD_ANNOTATIONS,
   LOOKUP_FILTER_FIELDS, VALUE_SETTINGS_FIELDS } from '../constants'
 import { FilterCreator } from '../filter'
-import { getSObjectFieldElement, Types, isCustomObject, bpCase } from '../transformers/transformer'
+import { getSObjectFieldElement, Types, isCustomObject, bpCase, apiName } from '../transformers/transformer'
 import { id, addApiName, addMetadataType, addLabel, hasNamespace, getNamespace, boolValue } from './utils'
 import { convertList } from './convert_lists'
 
@@ -135,31 +135,6 @@ const createSObjectTypes = (
     return [element]
   }
   return [element, ...getPartialCustomObjects(customFields, objectName, serviceIds)]
-}
-
-const fetchSObjects = async (client: SalesforceClient): Promise<Type[]> => {
-  const getSobjectDescriptions = async (): Promise<DescribeSObjectResult[]> => {
-    const sobjectsList = await client.listSObjects()
-    const sobjectNames = sobjectsList.map(sobj => sobj.name)
-    return client.describeSObjects(sobjectNames)
-  }
-
-  const getCustomObjectNames = async (): Promise<Set<string>> => {
-    const customObjects = await client.listMetadataObjects({ type: CUSTOM_OBJECT })
-    return new Set(customObjects.map(o => o.fullName))
-  }
-
-  const [customObjectNames, sobjectsDescriptions] = await Promise.all([
-    getCustomObjectNames(), getSobjectDescriptions(),
-  ])
-
-  const sobjects = sobjectsDescriptions.map(
-    ({ name, label, custom, fields }) => createSObjectTypes(
-      name, label, custom, fields, customObjectNames
-    )
-  )
-
-  return _.flatten(sobjects)
 }
 
 const getFieldDependency = (values: Values): Values | undefined => {
@@ -286,6 +261,37 @@ const createObjectTypeFromInstance = (instance: InstanceElement): ObjectType => 
   return object
 }
 
+const fetchSObjects = async (client: SalesforceClient,
+  instances: Record<string, InstanceElement>): Promise<Type[]> => {
+  const getSobjectDescriptions = async (): Promise<DescribeSObjectResult[]> => {
+    const sobjectsList = await client.listSObjects()
+    const sobjectNames = sobjectsList.map(sobj => sobj.name)
+    return client.describeSObjects(sobjectNames)
+  }
+
+  const getCustomObjectNames = async (): Promise<Set<string>> => {
+    const customObjects = await client.listMetadataObjects({ type: CUSTOM_OBJECT })
+    return new Set(customObjects.map(o => o.fullName))
+  }
+
+  const [customObjectNames, sobjectsDescriptions] = await Promise.all([
+    getCustomObjectNames(), getSobjectDescriptions(),
+  ])
+
+  const sobjects = sobjectsDescriptions.map(
+    ({ name, label, custom, fields }) => {
+      const objects = createSObjectTypes(name, label, custom, fields, customObjectNames)
+      if (instances[name]) {
+        objects.filter(isObjectType)
+          .forEach(obj => mergeCustomObjectWithInstance(obj, instances[name]))
+      }
+      return objects
+    }
+  )
+
+  return _.flatten(sobjects)
+}
+
 // ---
 
 /**
@@ -294,7 +300,10 @@ const createObjectTypeFromInstance = (instance: InstanceElement): ObjectType => 
  */
 const filterCreator: FilterCreator = ({ client }) => ({
   onFetch: async (elements: Element[]): Promise<void> => {
-    const sObjects = await fetchSObjects(client)
+    const customObjectInstances: Record<string, InstanceElement> = Object.assign({},
+      ...elements.filter(isCustomObject).filter(isInstanceElement)
+        .map(instance => ({ [apiName(instance)]: instance })))
+    const sObjects = await fetchSObjects(client, customObjectInstances)
       .then(
         async types => {
         // All metadata type names include subtypes as well as the "top level" type names
@@ -307,19 +316,10 @@ const filterCreator: FilterCreator = ({ client }) => ({
         log.error('failed to fetch sobjects reason: %o', e)
         return []
       }) as ObjectType[]
-    const customObjectInstances = elements.filter(isCustomObject).filter(isInstanceElement)
 
-    sObjects.forEach(obj => {
-      const matchedInstance = customObjectInstances
-        .find(instance => instance.elemID.name === obj.elemID.name)
-      if (!_.isUndefined(matchedInstance)) {
-        mergeCustomObjectWithInstance(obj, matchedInstance)
-      }
-    })
-
-    customObjectInstances.forEach(instance => {
+    Object.entries(customObjectInstances).forEach(([instanceApiName, instance]) => {
       // Adds objects that exists in the metadata api but don't exist in the soap api
-      if (!sObjects.find(obj => obj.elemID.name === instance.elemID.name)) {
+      if (!sObjects.find(obj => apiName(obj) === instanceApiName)) {
         sObjects.push(createObjectTypeFromInstance(instance))
       }
     })

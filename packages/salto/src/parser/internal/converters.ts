@@ -1,5 +1,5 @@
 import _ from 'lodash'
-import { ParsedHclBlock, HclAttribute, HclExpression, SourceRange } from '../types'
+import { ParsedHclBlock, HclAttribute, HclExpression, SourceRange } from './types'
 
 
 let currentFilename: string

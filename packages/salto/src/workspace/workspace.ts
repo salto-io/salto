@@ -117,7 +117,7 @@ const getParseResult = async (
     const cachedParsedResult = await cache.get(key)
     if (cachedParsedResult) return cachedParsedResult
   }
-  const result = await parse(Buffer.from(bp.buffer), bp.filename)
+  const result = parse(Buffer.from(bp.buffer), bp.filename)
   if (useCache) {
     await cache.put(key, result)
   }

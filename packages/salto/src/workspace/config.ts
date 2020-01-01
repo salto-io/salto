@@ -122,8 +122,8 @@ export const getConfigPath = (baseDir: string): string => (
   path.join(baseDir, CONFIG_DIR_NAME, CONFIG_FILENAME)
 )
 
-export const parseConfig = async (buffer: Buffer): Promise<Partial<Config>> => {
-  const parsedConfig = await parse(buffer, '')
+export const parseConfig = (buffer: Buffer): Partial<Config> => {
+  const parsedConfig = parse(buffer, '')
   const [configInstance] = [...findInstances(parsedConfig.elements, saltoConfigElemID)]
   if (!configInstance) throw new ConfigParseError()
   return _.mapKeys(configInstance.value, (_v, k) => _.camelCase(k)) as unknown as Partial<Config>
@@ -137,7 +137,7 @@ export const dumpConfig = async (baseDir: string, config: Partial<Config>): Prom
     saltoConfigType,
     _.mapKeys(config as object, (_v, k) => _.snakeCase(k))
   )
-  return replaceContents(configPath, await dump([configInstance]))
+  return replaceContents(configPath, dump([configInstance]))
 }
 
 const baseDirFromLookup = async (lookupDir: string): Promise<string> => {

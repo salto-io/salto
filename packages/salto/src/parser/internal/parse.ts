@@ -1,7 +1,7 @@
 import * as nearley from 'nearley'
 import _ from 'lodash'
 import { startParse, convertMain, NearleyError, setErrorRecoveryMode } from './converters'
-import { HclParseError, HclParseReturn, ParsedHclBlock, SourcePos, isSourceRange, HclExpression } from '../types'
+import { HclParseError, HclParseReturn, ParsedHclBlock, SourcePos, isSourceRange, HclExpression } from './types'
 import { WILDCARD } from './lexer'
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const grammar = require('./hcl')

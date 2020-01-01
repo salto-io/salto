@@ -1,15 +1,19 @@
 import { types } from '@salto/lowerdash'
-import { ElemID } from './elements'
+import { ElemID, Value } from './elements'
 
 export class ReferenceExpression {
   constructor(
-    private readonly elemId: ElemID
-  ) {
-    this.elemId = elemId
-  }
+    public readonly elemId: ElemID, private resValue?: Value
+  ) {}
 
   get traversalParts(): string[] {
     return this.elemId.getFullNameParts()
+  }
+
+  get value(): Value {
+    return (this.resValue instanceof ReferenceExpression) 
+      ? this.resValue.value
+      : this.resValue
   }
 }
 

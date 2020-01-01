@@ -5,7 +5,8 @@ import {
 import {
   Type, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values, Value, Field as TypeField,
   BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter,
-  ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, CORE_ANNOTATIONS,
+  ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, CORE_ANNOTATIONS, 
+  ReferenceExpression, isField, isElement,
 } from 'adapter-api'
 import { collections } from '@salto/lowerdash'
 import { CustomObject, CustomField, ValueSettings, FilterItem } from '../client/types'
@@ -683,6 +684,7 @@ export const toCustomField = (
 export const toCustomObject = (
   element: ObjectType, includeFields: boolean, skipFields: string[] = [],
 ): CustomObject =>
+  //TODO RESOLVE VALUE
   new CustomObject(
     apiName(element),
     element.annotations[LABEL],
@@ -1122,4 +1124,19 @@ export const getCompoundChildFields = (objectType: ObjectType): TypeField[] => {
   // 3) Handle geolocation fields
   handleGeolocationFields(clonedObject)
   return Object.values(clonedObject.fields)
+}
+
+export const transformReferences = <T extends Element>(element: T): T => {
+  const refReplacer = (value: Value): Value => {
+    if (!(value instanceof ReferenceExpression)) return undefined
+    if (isField(value.value)) {
+      return [apiName(value.value.type), apiName(value.value)].join(".")
+    }
+    if (isElement(value.value)) {
+      return apiName(value.value)
+    }
+    return value.value
+  }
+
+  return _.cloneDeepWith(element, refReplacer)
 }

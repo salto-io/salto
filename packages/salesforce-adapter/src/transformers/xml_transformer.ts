@@ -30,6 +30,8 @@ type ZipPropsMap = {
   EmailTemplate: ZipProps
   EmailFolder: ZipProps
   ReportType: ZipProps
+  Report: ZipProps
+  ReportFolder: ZipProps
 }
 
 const zipPropsMap: ZipPropsMap = {
@@ -77,6 +79,17 @@ const zipPropsMap: ZipPropsMap = {
   ReportType: {
     dirName: 'reportTypes',
     fileSuffix: '.reportType',
+    isMetadataWithContent: false,
+  },
+  Report: {
+    dirName: 'reports',
+    fileSuffix: '.report',
+    isMetadataWithContent: false,
+  },
+  ReportFolder: {
+    folderType: 'Report',
+    dirName: 'reports',
+    fileSuffix: METADATA_XML_SUFFIX,
     isMetadataWithContent: false,
   },
 }

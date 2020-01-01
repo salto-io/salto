@@ -206,6 +206,7 @@ describe('HCL parse', () => {
     })
   })
 
+  // TODO: remove the skip once SALTO-487 is resolved
   // eslint-disable-next-line jest/no-disabled-tests
   describe.skip('traversal error', () => {
     const blockDef = 'type sometype { a = { foo.bar = 5 } }'

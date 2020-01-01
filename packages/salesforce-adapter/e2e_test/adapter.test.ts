@@ -144,11 +144,47 @@ describe('Salesforce adapter E2E with real account', () => {
       }
     }
 
+    const verifyDashboardFolderExist = async (): Promise<void> => {
+      if (!(await objectExists('DashboardFolder', 'TestDashboardFolder'))) {
+        await client.create('DashboardFolder', {
+          fullName: 'TestDashboardFolder',
+          name: 'Test Dashboard Folder Name',
+          accessType: 'Public',
+          publicFolderAccess: 'ReadWrite',
+        } as MetadataInfo)
+      }
+    }
+
+    const verifyDashboardExist = async (): Promise<void> => {
+      if (!(await objectExists('Dashboard', 'TestDashboardFolder/TestDashboard'))) {
+        await client.create('Dashboard', {
+          fullName: 'TestDashboardFolder/TestDashboard',
+          backgroundEndColor: '#FFFFFF',
+          backgroundFadeDirection: 'Diagonal',
+          backgroundStartColor: '#FFFFFF',
+          textColor: '#000000',
+          title: 'Test Dashboard Title',
+          titleColor: '#000000',
+          titleSize: '12',
+          leftSection: {
+            columnSize: 'Medium',
+            components: [],
+          },
+          rightSection: {
+            columnSize: 'Medium',
+            components: [],
+          },
+        } as MetadataInfo)
+      }
+    }
+
     await verifyAccountWithRollupSummaryExists()
     await verifyEmailFolderExist()
     await verifyEmailTemplateExists()
     await verifyReportFolderExist()
     await verifyReportExist()
+    await verifyDashboardFolderExist()
+    await verifyDashboardExist()
     result = await adapter.fetch()
   })
 
@@ -294,6 +330,22 @@ describe('Salesforce adapter E2E with real account', () => {
         'test_report_folder')[0] as InstanceElement
       expect(reportFolder.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('TestReportFolder')
       expect(reportFolder.value.name).toEqual('Test Report Folder Name')
+    })
+
+    it('should retrieve Dashboard instance', () => {
+      const dashboard = findElements(result, 'dashboard',
+        'test_dashboard_folder_test_dashboard')[0] as InstanceElement
+      expect(dashboard.value[constants.INSTANCE_FULL_NAME_FIELD])
+        .toEqual('TestDashboardFolder/TestDashboard')
+      expect(dashboard.value.title).toEqual('Test Dashboard Title')
+    })
+
+    it('should retrieve DashboardFolder instance', () => {
+      const dashboardFolder = findElements(result, 'dashboard_folder',
+        'test_dashboard_folder')[0] as InstanceElement
+      expect(dashboardFolder.value[constants.INSTANCE_FULL_NAME_FIELD])
+        .toEqual('TestDashboardFolder')
+      expect(dashboardFolder.value.name).toEqual('Test Dashboard Folder Name')
     })
   })
 
@@ -2308,6 +2360,88 @@ describe('Salesforce adapter E2E with real account', () => {
           describe('remove report instance', () => {
             it('should remove report instance', async () => {
               await verifyRemoveInstance(reportInstance)
+            })
+          })
+        })
+
+        describe('dashboard folder manipulation', () => {
+          const dashboardFolderInstance = createInstanceElement('MyDashboardFolder', 'DashboardFolder',
+            { name: 'My Dashboard Folder Name' })
+
+          beforeAll(async () => {
+            await removeIfAlreadyExists(dashboardFolderInstance)
+          })
+
+          describe('create dashboard folder instance', () => {
+            it('should create dashboard folder instance', async () => {
+              await verifyCreateInstance(dashboardFolderInstance)
+            })
+          })
+
+          describe('update dashboard folder instance', () => {
+            it('should update dashboard folder instance', async () => {
+              await verifyUpdateInstance(dashboardFolderInstance, 'name',
+                'My Updated Dashboard Folder Name')
+            })
+          })
+
+          describe('remove dashboard folder instance', () => {
+            it('should remove dashboard folder instance', async () => {
+              await verifyRemoveInstance(dashboardFolderInstance)
+            })
+          })
+        })
+
+        describe('dashboard manipulation', () => {
+          const dashboardInstance = createInstanceElement('TestDashboardFolder/MyDashboard',
+            'Dashboard', {
+              // eslint-disable-next-line @typescript-eslint/camelcase
+              background_end_color: '#FFFFFF',
+              // eslint-disable-next-line @typescript-eslint/camelcase
+              background_fade_direction: 'Diagonal',
+              // eslint-disable-next-line @typescript-eslint/camelcase
+              background_start_color: '#FFFFFF',
+              // eslint-disable-next-line @typescript-eslint/camelcase
+              text_color: '#000000',
+              title: 'My Dashboard Title',
+              // eslint-disable-next-line @typescript-eslint/camelcase
+              title_color: '#000000',
+              // eslint-disable-next-line @typescript-eslint/camelcase
+              title_size: '12',
+              // eslint-disable-next-line @typescript-eslint/camelcase
+              left_section: {
+                // eslint-disable-next-line @typescript-eslint/camelcase
+                column_size: 'Medium',
+                components: [],
+              },
+              // eslint-disable-next-line @typescript-eslint/camelcase
+              right_section: {
+                // eslint-disable-next-line @typescript-eslint/camelcase
+                column_size: 'Medium',
+                components: [],
+              },
+            })
+
+          beforeAll(async () => {
+            await removeIfAlreadyExists(dashboardInstance)
+          })
+
+          describe('create dashboard instance', () => {
+            it('should create dashboard instance', async () => {
+              await verifyCreateInstance(dashboardInstance)
+            })
+          })
+
+          describe('update dashboard instance', () => {
+            it('should update dashboard instance', async () => {
+              await verifyUpdateInstance(dashboardInstance, 'title',
+                'My Updated Dashboard Title')
+            })
+          })
+
+          describe('remove dashboard instance', () => {
+            it('should remove dashboard instance', async () => {
+              await verifyRemoveInstance(dashboardInstance)
             })
           })
         })

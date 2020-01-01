@@ -247,8 +247,8 @@ describe('Salesforce adapter E2E with real account', () => {
         'Skipped',
       ])
 
-      // Test lookup related_to annotation
-      expect(lead.fields.owner_id.annotations.related_to).toEqual(['Group', 'User'])
+      // Test lookup reference_to annotation
+      expect(lead.fields.owner_id.annotations.reference_to).toEqual(['Group', 'User'])
 
       // Test lookup allow_lookup_record_deletion annotation
       expect(lead.fields.owner_id.annotations.allow_lookup_record_deletion).toBe(true)
@@ -1361,7 +1361,7 @@ describe('Salesforce adapter E2E with real account', () => {
             {
               [CORE_ANNOTATIONS.REQUIRED]: false,
               [constants.FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION]: false,
-              [constants.FIELD_ANNOTATIONS.RELATED_TO]: ['Case'],
+              [constants.FIELD_ANNOTATIONS.REFERENCE_TO]: ['Case'],
               [constants.LABEL]: 'Lookup description label',
               [constants.FIELD_ANNOTATIONS.LOOKUP_FILTER]: {
                 [constants.LOOKUP_FILTER_FIELDS.ACTIVE]: true,
@@ -1389,7 +1389,7 @@ describe('Salesforce adapter E2E with real account', () => {
             Types.primitiveDataTypes.masterdetail,
             {
               [CORE_ANNOTATIONS.REQUIRED]: false,
-              [constants.FIELD_ANNOTATIONS.RELATED_TO]: ['Case'],
+              [constants.FIELD_ANNOTATIONS.REFERENCE_TO]: ['Case'],
               [constants.LABEL]: 'MasterDetail description label',
               [constants.FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ]: true,
               [constants.FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL]: true,
@@ -1678,7 +1678,7 @@ describe('Salesforce adapter E2E with real account', () => {
         Types.primitiveDataTypes.lookup,
         {
           [constants.API_NAME]: lookupFieldApiName,
-          [constants.FIELD_ANNOTATIONS.RELATED_TO]: ['Case'],
+          [constants.FIELD_ANNOTATIONS.REFERENCE_TO]: ['Case'],
           [FIELD_LEVEL_SECURITY_ANNOTATION]: {
             editable: [ADMIN],
             readable: [ADMIN],
@@ -1710,7 +1710,7 @@ describe('Salesforce adapter E2E with real account', () => {
         Types.primitiveDataTypes.lookup,
         {
           [constants.API_NAME]: lookupFieldApiName,
-          [constants.FIELD_ANNOTATIONS.RELATED_TO]: ['Case'],
+          [constants.FIELD_ANNOTATIONS.REFERENCE_TO]: ['Case'],
           [constants.FIELD_ANNOTATIONS.LOOKUP_FILTER]: {
             [constants.LOOKUP_FILTER_FIELDS.ACTIVE]: true,
             [constants.LOOKUP_FILTER_FIELDS.INFO_MESSAGE]: 'Info message',

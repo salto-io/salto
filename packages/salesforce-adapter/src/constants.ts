@@ -91,7 +91,7 @@ export const FIELD_ANNOTATIONS = {
   MASK_TYPE: 'mask_type',
   MASK: 'mask',
   DISPLAY_LOCATION_IN_DECIMAL: 'display_location_in_decimal',
-  RELATED_TO: 'related_to',
+  REFERENCE_TO: 'reference_to',
   ALLOW_LOOKUP_RECORD_DELETION: 'allow_lookup_record_deletion',
   REPARENTABLE_MASTER_DETAIL: 'reparentable_master_detail',
   WRITE_REQUIRES_MASTER_READ: 'write_requires_master_read',
@@ -111,10 +111,6 @@ export const FIELD_DEPENDENCY_FIELDS = {
 export const VALUE_SETTINGS_FIELDS = {
   CONTROLLING_FIELD_VALUE: 'controlling_field_value',
   VALUE_NAME: 'value_name',
-}
-
-export const VALUE_SET_FIELDS = {
-  VALUE_SET_DEFINITION: 'value_set_definition',
 }
 
 export const LOOKUP_FILTER_FIELDS = {

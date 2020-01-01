@@ -229,6 +229,44 @@ export class Types {
     },
   })
 
+  private static rollupSummaryFilterOperationTypeElemID = new ElemID(SALESFORCE,
+    FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS, 'type', FILTER_ITEM_FIELDS.OPERATION)
+
+  private static rollupSummaryFilterOperationTypeType = new PrimitiveType({
+    elemID: Types.rollupSummaryFilterOperationTypeElemID,
+    primitive: PrimitiveTypes.STRING,
+    annotations: {
+      [CORE_ANNOTATIONS.RESTRICTION]: { [CORE_ANNOTATIONS.ENFORCE_VALUE]: true },
+      [CORE_ANNOTATIONS.VALUES]: [
+        'equals', 'notEqual', 'lessThan', 'greaterThan', 'lessOrEqual',
+        'greaterOrEqual', 'contains', 'notContain', 'startsWith',
+        'includes', 'excludes', 'within',
+      ],
+    },
+  })
+
+  private static rollupSummaryFilterItemsElemID = new ElemID(SALESFORCE,
+    FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS)
+
+  private static rollupSummaryFilterItemsType = new ObjectType({
+    elemID: Types.rollupSummaryFilterItemsElemID,
+    fields: {
+      [FILTER_ITEM_FIELDS.FIELD]: new TypeField(
+        Types.rollupSummaryFilterItemsElemID, FILTER_ITEM_FIELDS.FIELD, BuiltinTypes.STRING
+      ),
+      [FILTER_ITEM_FIELDS.OPERATION]: new TypeField(
+        Types.rollupSummaryFilterItemsElemID, FILTER_ITEM_FIELDS.OPERATION,
+        Types.rollupSummaryFilterOperationTypeType
+      ),
+      [FILTER_ITEM_FIELDS.VALUE]: new TypeField(
+        Types.rollupSummaryFilterItemsElemID, FILTER_ITEM_FIELDS.VALUE, BuiltinTypes.STRING
+      ),
+      [FILTER_ITEM_FIELDS.VALUE_FIELD]: new TypeField(
+        Types.rollupSummaryFilterItemsElemID, FILTER_ITEM_FIELDS.VALUE_FIELD, BuiltinTypes.STRING
+      ),
+    },
+  })
+
   private static commonAnnotationTypes = {
     [API_NAME]: BuiltinTypes.SERVICE_ID,
     [DESCRIPTION]: BuiltinTypes.STRING,
@@ -399,8 +437,7 @@ export class Types {
       annotationTypes: {
         ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION]: BuiltinTypes.BOOLEAN,
-        // Todo SALTO-228 The FIELD_ANNOTATIONS.RELATED_TO annotation is missing since
-        //  currently there is no way to declare on a list annotation
+        [FIELD_ANNOTATIONS.REFERENCE_TO]: BuiltinTypes.STRING,
         [FIELD_ANNOTATIONS.LOOKUP_FILTER]: Types.lookupFilterType,
       },
     }),
@@ -412,8 +449,7 @@ export class Types {
         [FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.LOOKUP_FILTER]: Types.lookupFilterType,
-        // Todo SALTO-228 The FIELD_ANNOTATIONS.RELATED_TO annotation is missing since
-        //  currently there is no way to declare on a list annotation
+        [FIELD_ANNOTATIONS.REFERENCE_TO]: BuiltinTypes.STRING,
       },
     }),
     rollupsummary: new PrimitiveType({
@@ -424,8 +460,7 @@ export class Types {
         // todo: currently SUMMARIZED_FIELD && SUMMARY_FOREIGN_KEY are populated with the referenced
         //  field's API name should be modified to elemID reference once we'll use HIL
         [FIELD_ANNOTATIONS.SUMMARIZED_FIELD]: BuiltinTypes.STRING,
-        // Todo SALTO-228 The FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS annotation is missing since
-        //  currently there is no way to declare on a list annotation
+        [FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS]: Types.rollupSummaryFilterItemsType,
         [FIELD_ANNOTATIONS.SUMMARY_FOREIGN_KEY]: BuiltinTypes.STRING,
         [FIELD_ANNOTATIONS.SUMMARY_OPERATION]: Types.rollupSummaryOperationType,
       },
@@ -618,7 +653,7 @@ export const toCustomField = (
     valueSettings,
     field.annotations[FORMULA],
     summaryFilterItems,
-    field.annotations[FIELD_ANNOTATIONS.RELATED_TO],
+    field.annotations[FIELD_ANNOTATIONS.REFERENCE_TO],
     sfCase(field.name),
     field.annotations[FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION]
   )
@@ -817,7 +852,7 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field,
       //  should be modified to elemID reference once we'll use HIL
       // there are some SF reference fields without related fields
       // e.g. salesforce_user_app_menu_item.ApplicationId, salesforce_login_event.LoginHistoryId
-      annotations[FIELD_ANNOTATIONS.RELATED_TO] = field.referenceTo
+      annotations[FIELD_ANNOTATIONS.REFERENCE_TO] = field.referenceTo
     }
     if (field.filteredLookupInfo) {
       // will be populated in the lookup_filter filter

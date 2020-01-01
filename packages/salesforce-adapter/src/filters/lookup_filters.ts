@@ -4,15 +4,10 @@ import {
   isField, Values,
 } from 'adapter-api'
 import { SaveResult } from 'jsforce'
-import { collections } from '@salto/lowerdash'
 import { FilterCreator } from '../filter'
-import { CUSTOM_FIELD, FIELD_ANNOTATIONS, LOOKUP_FILTER_FIELDS } from '../constants'
+import { CUSTOM_FIELD, FIELD_ANNOTATIONS } from '../constants'
 import { CustomField } from '../client/types'
-import { bpCase, mapKeysRecursive, sfCase, toCustomField, Types } from '../transformers/transformer'
-import { transform } from './convert_types'
-import { runOnFields } from './utils'
-
-const { makeArray } = collections.array
+import { mapKeysRecursive, sfCase, toCustomField } from '../transformers/transformer'
 
 const getLookupFilter = (field: Field): Values =>
   field.annotations[FIELD_ANNOTATIONS.LOOKUP_FILTER]
@@ -37,33 +32,6 @@ const createCustomFieldWithLookupFilter = (obj: ObjectType, fieldWithLookupFilte
  * lookup & masterDetail fields if needed
  * */
 const filterCreator: FilterCreator = ({ client }) => ({
-
-  /**
-   * In order to fetch the lookupFilter we should use a different API than in the general flow
-   * (i.e. readMetadata())
-   * @param elements the already fetched elements
-   */
-  onFetch: async (elements: Element[]): Promise<void> => {
-    const addLookupFilterData = (fieldWithLookupFilter: Field, salesforceField: CustomField):
-      void => {
-      const lookupFilterType = Types.primitiveDataTypes.lookup
-        .annotationTypes[FIELD_ANNOTATIONS.LOOKUP_FILTER] as ObjectType
-      const { FILTER_ITEMS, ERROR_MESSAGE, IS_OPTIONAL } = LOOKUP_FILTER_FIELDS
-      const lookupFilterInfo = salesforceField?.lookupFilter
-      if (lookupFilterInfo) {
-        const values = mapKeysRecursive(lookupFilterInfo, bpCase)
-        values[FILTER_ITEMS] = makeArray(values[FILTER_ITEMS])
-        const lookupFilter = transform(values, lookupFilterType) || {}
-        if (lookupFilter[IS_OPTIONAL]) {
-          delete lookupFilter[ERROR_MESSAGE]
-        }
-        fieldWithLookupFilter.annotations[FIELD_ANNOTATIONS.LOOKUP_FILTER] = lookupFilter
-      }
-    }
-
-    await runOnFields(elements, hasLookupFilter, addLookupFilterData, client)
-  },
-
   /**
    * In Salesforce you can't add a lookup/masterdetail relationship with a lookupFilter upon
    * the field's creation (and thus also upon an object creation).

@@ -2,11 +2,10 @@ import _ from 'lodash'
 import { logger } from '@salto/logging'
 import { Element, Field, isObjectType, ObjectType, InstanceElement, isInstanceElement,
   isField, Type, BuiltinTypes } from 'adapter-api'
-import { API_NAME, CUSTOM_FIELD, LABEL, CUSTOM_OBJECT,
+import { API_NAME, LABEL, CUSTOM_OBJECT,
   METADATA_TYPE, NAMESPACE_SEPARATOR } from '../constants'
-import { CustomField, JSONBool } from '../client/types'
-import { fieldFullName, isCustomObject, metadataType, sfCase, apiName } from '../transformers/transformer'
-import SalesforceClient from '../client/client'
+import { JSONBool } from '../client/types'
+import { isCustomObject, metadataType, sfCase, apiName } from '../transformers/transformer'
 
 const log = logger(module)
 
@@ -19,18 +18,6 @@ export const getInstancesOfMetadataType = (elements: Element[], metadataTypeName
  InstanceElement[] =>
   elements.filter(isInstanceElement)
     .filter(element => metadataType(element) === metadataTypeName)
-
-const readSalesforceFields = async (client: SalesforceClient, fieldNames: string[]):
-  Promise<Record<string, CustomField>> => (
-  _(await client.readMetadata(CUSTOM_FIELD, fieldNames)
-    .catch(e => {
-      log.error('failed to read fields %o reason: %o', fieldNames, e)
-      return []
-    }))
-    .map(field => [field.fullName, field])
-    .fromPairs()
-    .value()
-)
 
 export const getCustomObjects = (elements: Element[]): ObjectType[] =>
   elements
@@ -45,29 +32,6 @@ export const generateObjectElemID2ApiName = (customObjects: ObjectType[]): Recor
     .map(obj => [id(obj), obj.annotations[API_NAME]])
     .fromPairs()
     .value()
-
-export const runOnFields = async (elements: Element[], condition: (field: Field) => boolean,
-  runOnField: (field: Field, salesforceField: CustomField) => void, client: SalesforceClient):
-  Promise<void> => {
-  const getSalesforceFieldFullName = (field: Field,
-    objectElemID2ApiName: Record<string, string>): string =>
-    fieldFullName(objectElemID2ApiName[field.parentID.getFullName()], field)
-
-  const customObjects = getCustomObjects(elements)
-  const objectElemID2ApiName = generateObjectElemID2ApiName(customObjects)
-  const fields = _(customObjects)
-    .map(obj => Object.values(obj.fields))
-    .flatten()
-    .filter(condition)
-    .value()
-  const salesforceFieldNames = fields
-    .map(f => getSalesforceFieldFullName(f, objectElemID2ApiName))
-  const name2Field = await readSalesforceFields(client, salesforceFieldNames)
-  fields.forEach(field => {
-    const salesforceField = name2Field[getSalesforceFieldFullName(field, objectElemID2ApiName)]
-    runOnField(field, salesforceField)
-  })
-}
 
 export const removeFieldsFromInstanceAndType = (elements: Element[], fieldNamesToDelete: string[],
   metadataTypeName: string): void => {

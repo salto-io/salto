@@ -8,11 +8,13 @@ import { DescribeSObjectResult, Field as SObjField } from 'jsforce'
 import _ from 'lodash'
 import { transform } from './convert_types'
 import { API_NAME, CUSTOM_OBJECT, METADATA_TYPE, SALESFORCE,
-  INSTANCE_FULL_NAME_FIELD, SALESFORCE_CUSTOM_SUFFIX, LABEL,
-  FIELD_TYPE_API_NAMES } from '../constants'
+  INSTANCE_FULL_NAME_FIELD, SALESFORCE_CUSTOM_SUFFIX, LABEL, FIELD_DEPENDENCY_FIELDS,
+  FIELD_TYPE_API_NAMES, FIELD_ANNOTATIONS,
+  LOOKUP_FILTER_FIELDS, VALUE_SETTINGS_FIELDS } from '../constants'
 import { FilterCreator } from '../filter'
 import { getSObjectFieldElement, Types, isCustomObject, bpCase } from '../transformers/transformer'
-import { id, addApiName, addMetadataType, addLabel, hasNamespace, getNamespace } from './utils'
+import { id, addApiName, addMetadataType, addLabel, hasNamespace, getNamespace, boolValue } from './utils'
+import { convertList } from './convert_lists'
 
 const log = logger(module)
 const { makeArray } = collections.array
@@ -21,6 +23,21 @@ export const INSTANCE_DEFAULT_VALUE_FIELD = 'default_value'
 export const INSTANCE_VALUE_SET_FIELD = 'value_set'
 export const INSTANCE_REQUIRED_FIELD = 'required'
 export const INSTANCE_TYPE_FIELD = 'type'
+
+export const VALUE_SET_FIELDS = {
+  VALUE_SET_DEFINITION: 'value_set_definition',
+}
+
+export const VALUE_SET_DEFINITION_FIELDS = {
+  VALUE: 'value',
+}
+
+export const VALUE_SET_DEFINITION_VALUE_FIELDS = {
+  FULL_NAME: 'full_name',
+  DEFAULT: 'default',
+  LABEL: 'label',
+}
+
 
 const getFieldType = (type: string): Type =>
   (_.isUndefined(type) ? BuiltinTypes.STRING : Types.get(bpCase(type)))
@@ -145,22 +162,63 @@ const fetchSObjects = async (client: SalesforceClient): Promise<Type[]> => {
   return _.flatten(sobjects)
 }
 
-const transfromAnnotationsNames = (fields: Values): Values => Object.assign({},
-  ...Object.entries(fields).map(([k, v]) => {
+const getFieldDependency = (values: Values): Values | undefined => {
+  const controllingField = values[FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD]
+  const valueSettingsInfo = values[FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS]
+  if (controllingField && valueSettingsInfo) {
+    const valueSettings = makeArray(valueSettingsInfo)
+      .map(value => ({
+        [VALUE_SETTINGS_FIELDS.VALUE_NAME]: value[VALUE_SETTINGS_FIELDS.VALUE_NAME],
+        [VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE]:
+          makeArray(value[VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE]),
+      }))
+    return {
+      [FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD]: controllingField,
+      [FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS]: valueSettings,
+    }
+  }
+  return undefined
+}
+
+const transfromAnnotationsNames = (fields: Values): Values => {
+  const annotations: Values = {}
+  Object.entries(fields).forEach(([k, v]) => {
     switch (k) {
       case INSTANCE_REQUIRED_FIELD:
-        return { [CORE_ANNOTATIONS.REQUIRED]: v }
+        annotations[CORE_ANNOTATIONS.REQUIRED] = v
+        break
       case INSTANCE_FULL_NAME_FIELD:
-        return { [API_NAME]: v }
+        annotations[API_NAME] = v
+        break
       case INSTANCE_DEFAULT_VALUE_FIELD:
-        return { [CORE_ANNOTATIONS.DEFAULT]: v }
+        annotations[CORE_ANNOTATIONS.DEFAULT] = v
+        break
       case INSTANCE_VALUE_SET_FIELD:
-        return { [CORE_ANNOTATIONS.VALUES]: v.value_set_definition.value
-          .map((value: Values) => value.full_name) }
+        annotations[CORE_ANNOTATIONS.VALUES] = v[VALUE_SET_FIELDS
+          .VALUE_SET_DEFINITION][VALUE_SET_DEFINITION_FIELDS.VALUE]
+          .map((value: Values) => value[VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME])
+        if (!_.isUndefined(getFieldDependency(v))) {
+          annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY] = getFieldDependency(v)
+        }
+        break
+      case FIELD_ANNOTATIONS.LOOKUP_FILTER:
+        if (boolValue(v[LOOKUP_FILTER_FIELDS.IS_OPTIONAL])) {
+          delete v[LOOKUP_FILTER_FIELDS.ERROR_MESSAGE]
+        }
+        annotations[k] = v
+        break
+      case FIELD_ANNOTATIONS.REFERENCE_TO:
+        annotations[k] = makeArray(v)
+        break
+      case FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS:
+        annotations[k] = makeArray(v)
+        break
       default:
-        return { [k]: v }
+        annotations[k] = v
     }
-  }))
+  })
+  return annotations
+}
 
 const buildAnnotationsObjectType = (fieldType: Type): ObjectType => {
   const annotationTypesElemID = new ElemID(SALESFORCE, 'annotation_type')
@@ -168,10 +226,6 @@ const buildAnnotationsObjectType = (fieldType: Type): ObjectType => {
     fields: Object.assign({}, ...Object.entries(fieldType.annotationTypes)
       .concat(Object.entries(BuiltinAnnotationTypes))
       .map(([k, v]) => ({ [k]: new Field(annotationTypesElemID, k, v) }))) })
-
-  annotationTypesObject.fields[CORE_ANNOTATIONS.VALUES] = new Field(
-    annotationTypesElemID, CORE_ANNOTATIONS.VALUES, BuiltinTypes.STRING, undefined, true
-  )
   return annotationTypesObject
 }
 
@@ -195,8 +249,11 @@ const transformFieldAnnotations = (instanceFieldValues: Values): Values => {
     return {}
   }
 
-  return transform(transfromAnnotationsNames(instanceFieldValues),
-    buildAnnotationsObjectType(fieldType)) || {}
+  const annotations = transfromAnnotationsNames(instanceFieldValues)
+  const annotationsType = buildAnnotationsObjectType(fieldType)
+  convertList(annotationsType, annotations)
+
+  return transform(annotations, annotationsType) || {}
 }
 
 const mergeCustomObjectWithInstance = (customObject: ObjectType,

@@ -140,10 +140,10 @@ describe('transformer', () => {
         void => {
         expect(fieldElement.type).toEqual(expectedType)
         expect(fieldElement.name).toEqual('owner_id')
-        expect(fieldElement.annotations[FIELD_ANNOTATIONS.RELATED_TO])
+        expect(fieldElement.annotations[FIELD_ANNOTATIONS.REFERENCE_TO])
           .toHaveLength(expectedRelatedTo.length)
         expectedRelatedTo.forEach(expectedRelatedToValue =>
-          expect(fieldElement.annotations[FIELD_ANNOTATIONS.RELATED_TO])
+          expect(fieldElement.annotations[FIELD_ANNOTATIONS.REFERENCE_TO])
             .toContain(expectedRelatedToValue))
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION])
           .toEqual(expectedAllowLookupRecordDeletion)
@@ -388,7 +388,7 @@ describe('transformer', () => {
         [API_NAME]: 'field_name',
         [LABEL]: 'field_label',
         [CORE_ANNOTATIONS.REQUIRED]: false,
-        [FIELD_ANNOTATIONS.RELATED_TO]: relatedTo,
+        [FIELD_ANNOTATIONS.REFERENCE_TO]: relatedTo,
       }
       const fieldName = 'field_name'
       const origObjectType = new ObjectType({

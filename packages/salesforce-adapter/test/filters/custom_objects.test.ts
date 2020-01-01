@@ -1,13 +1,18 @@
 import _ from 'lodash'
-import { ElemID, ObjectType, ServiceIds, BuiltinTypes, Element, InstanceElement, isObjectType, CORE_ANNOTATIONS } from 'adapter-api'
+import { ElemID, ObjectType, ServiceIds, BuiltinTypes, Element,
+  InstanceElement, isObjectType, CORE_ANNOTATIONS, Value } from 'adapter-api'
 import SalesforceClient from '../../src/client/client'
 import Connection from '../../src/client/jsforce'
-import * as constants from '../../src/constants'
-import { } from '../../src/filters/settings_type'
+import { FIELD_ANNOTATIONS, FILTER_ITEM_FIELDS, SALESFORCE, METADATA_TYPE,
+  CUSTOM_OBJECT, INSTANCE_FULL_NAME_FIELD, LABEL, NAMESPACE_SEPARATOR,
+  SALESFORCE_CUSTOM_SUFFIX, API_NAME, FORMULA, LOOKUP_FILTER_FIELDS,
+  FIELD_DEPENDENCY_FIELDS, VALUE_SETTINGS_FIELDS } from '../../src/constants'
 import mockAdapter from '../adapter'
 import { findElements } from '../utils'
 import filterCreator, { INSTANCE_REQUIRED_FIELD, INSTANCE_TYPE_FIELD,
-  INSTANCE_DEFAULT_VALUE_FIELD, INSTANCE_VALUE_SET_FIELD } from '../../src/filters/custom_objects'
+  INSTANCE_DEFAULT_VALUE_FIELD, INSTANCE_VALUE_SET_FIELD,
+  VALUE_SET_FIELDS, VALUE_SET_DEFINITION_FIELDS,
+  VALUE_SET_DEFINITION_VALUE_FIELDS } from '../../src/filters/custom_objects'
 import { FilterWith } from '../../src/filter'
 
 describe('Custom Objects filter', () => {
@@ -51,7 +56,7 @@ describe('Custom Objects filter', () => {
       connection.metadata.describe = jest.fn()
         .mockImplementation(async () => ({
           metadataObjects: [
-            constants.CUSTOM_OBJECT, ...(isMetadataType ? [name] : []),
+            CUSTOM_OBJECT, ...(isMetadataType ? [name] : []),
           ].map(xmlName => ({ xmlName })),
         }))
 
@@ -60,7 +65,7 @@ describe('Custom Objects filter', () => {
 
       connection.metadata.list = jest.fn()
         .mockImplementation(async ([{ type }]) => (
-          (type === constants.CUSTOM_OBJECT && isInCustomObjectList) ? [{ fullName: name }] : [{}]
+          (type === CUSTOM_OBJECT && isInCustomObjectList) ? [{ fullName: name }] : []
         ))
     }
 
@@ -121,12 +126,12 @@ describe('Custom Objects filter', () => {
       expect(lead.fields.is_deleted.annotations[CORE_ANNOTATIONS.DEFAULT]).toBe(false)
       // Custom type
       expect(lead.fields.custom__c).not.toBeUndefined()
-      expect(lead.fields.custom__c.annotations[constants.API_NAME]).toBe('Custom__c')
+      expect(lead.fields.custom__c.annotations[API_NAME]).toBe('Custom__c')
       expect(lead.fields.custom__c.annotations[CORE_ANNOTATIONS.DEFAULT]).toBe(false)
       // Formula field
       expect(lead.fields.formula__c).toBeDefined()
       expect(lead.fields.formula__c.type.elemID.name).toBe('formula_text')
-      expect(lead.fields.formula__c.annotations[constants.FORMULA]).toBe('my formula')
+      expect(lead.fields.formula__c.annotations[FORMULA]).toBe('my formula')
     })
 
     it('should fetch sobject with picklist field', async () => {
@@ -200,10 +205,10 @@ describe('Custom Objects filter', () => {
       await filter().onFetch(result)
 
       const lead = result.filter(o => o.elemID.name === 'lead').pop() as ObjectType
-      expect(lead.annotationTypes[constants.API_NAME]).toEqual(BuiltinTypes.SERVICE_ID)
-      expect(lead.annotationTypes[constants.METADATA_TYPE]).toEqual(BuiltinTypes.SERVICE_ID)
-      expect(lead.annotations[constants.API_NAME]).toEqual('Lead')
-      expect(lead.annotations[constants.METADATA_TYPE]).toEqual(constants.CUSTOM_OBJECT)
+      expect(lead.annotationTypes[API_NAME]).toEqual(BuiltinTypes.SERVICE_ID)
+      expect(lead.annotationTypes[METADATA_TYPE]).toEqual(BuiltinTypes.SERVICE_ID)
+      expect(lead.annotations[API_NAME]).toEqual('Lead')
+      expect(lead.annotations[METADATA_TYPE]).toEqual(CUSTOM_OBJECT)
     })
 
     it('should fetch sobject with label', async () => {
@@ -212,14 +217,14 @@ describe('Custom Objects filter', () => {
       await filter().onFetch(result)
 
       const lead = result.filter(o => o.elemID.name === 'lead').pop() as ObjectType
-      expect(lead.annotations[constants.LABEL]).toEqual('Lead Label')
+      expect(lead.annotations[LABEL]).toEqual('Lead Label')
     })
 
     it('should use existing elemID when fetching custom object', async () => {
       ({ connection, client } = mockAdapter({
         adapterParams: {
           getElemIdFunc: (adapterName: string, _serviceIds: ServiceIds, name: string):
-            ElemID => new ElemID(adapterName, name.endsWith(constants.SALESFORCE_CUSTOM_SUFFIX)
+            ElemID => new ElemID(adapterName, name.endsWith(SALESFORCE_CUSTOM_SUFFIX)
             ? name.slice(0, -3) : name),
         },
       }))
@@ -236,7 +241,7 @@ describe('Custom Objects filter', () => {
       await newFilter().onFetch(result)
 
       const custom = result.filter(o => o.elemID.name === 'custom').pop() as ObjectType
-      expect(custom.fields.string_field.annotations[constants.API_NAME]).toEqual('StringField__c')
+      expect(custom.fields.string_field.annotations[API_NAME]).toEqual('StringField__c')
     })
 
     it('should fetch sobject with various field types', async () => {
@@ -306,7 +311,7 @@ describe('Custom Objects filter', () => {
       expect(lead.fields.my_encrypted_string.type.elemID.name).toBe('encryptedtext')
       expect(lead.fields.my_multi_pick_list.type.elemID.name).toBe('multipicklist')
       expect(lead.fields.my_multi_pick_list
-        .annotations[constants.FIELD_ANNOTATIONS.VISIBLE_LINES]).toBe(5)
+        .annotations[FIELD_ANNOTATIONS.VISIBLE_LINES]).toBe(5)
     })
 
     it('should split customizations to different elements', async () => {
@@ -374,7 +379,7 @@ describe('Custom Objects filter', () => {
 
     it('should fetch packaged custom SObjects', async () => {
       const namespaceName = 'namespaceName'
-      mockSingleSObject(`${namespaceName}${constants.NAMESPACE_SEPARATOR}Test__c`, [
+      mockSingleSObject(`${namespaceName}${NAMESPACE_SEPARATOR}Test__c`, [
         {
           name: 'dummy', label: 'dummy', type: 'string',
         },
@@ -403,7 +408,7 @@ describe('Custom Objects filter', () => {
           name: 'dummy', label: 'dummy', type: 'string',
         },
         {
-          name: `${namespaceName}${constants.NAMESPACE_SEPARATOR}PackagedField__c`, label: 'custom field', type: 'string', custom: true,
+          name: `${namespaceName}${NAMESPACE_SEPARATOR}PackagedField__c`, label: 'custom field', type: 'string', custom: true,
         },
       ], false, true, false)
 
@@ -432,7 +437,7 @@ describe('Custom Objects filter', () => {
           name: 'CustomField__c', label: 'custom field', type: 'string', custom: true,
         },
         {
-          name: `${namespaceName}${constants.NAMESPACE_SEPARATOR}PackagedField__c`, label: 'custom field', type: 'string', custom: true,
+          name: `${namespaceName}${NAMESPACE_SEPARATOR}PackagedField__c`, label: 'custom field', type: 'string', custom: true,
         },
       ], false, true, false)
 
@@ -466,10 +471,10 @@ describe('Custom Objects filter', () => {
       ], true)
 
       // result of fetch (before filters) includes the metadata type
-      const flowElemID = mockGetElemIdFunc(constants.SALESFORCE, {}, 'flow')
+      const flowElemID = mockGetElemIdFunc(SALESFORCE, {}, 'flow')
       const flowMetadataType = new ObjectType({ elemID: flowElemID,
-        annotations: { [constants.METADATA_TYPE]: 'Flow' },
-        annotationTypes: { [constants.METADATA_TYPE]: BuiltinTypes.SERVICE_ID } })
+        annotations: { [METADATA_TYPE]: 'Flow' },
+        annotationTypes: { [METADATA_TYPE]: BuiltinTypes.SERVICE_ID } })
       flowMetadataType.path = ['types', 'flow']
       const result: Element[] = [flowMetadataType]
 
@@ -482,20 +487,98 @@ describe('Custom Objects filter', () => {
     })
     describe('Merge elements', () => {
       const testInstanceElement = new InstanceElement('lead', new ObjectType(
-        { elemID: mockGetElemIdFunc(constants.SALESFORCE, {}, constants.CUSTOM_OBJECT) }
+        { elemID: mockGetElemIdFunc(SALESFORCE, {}, CUSTOM_OBJECT) }
       ),
-      { fields: [{ [constants.INSTANCE_FULL_NAME_FIELD]: 'MyAutoNumber',
-        [INSTANCE_TYPE_FIELD]: 'AutoNumber',
-        [constants.FIELD_ANNOTATIONS.DISPLAY_FORMAT]: 'A-{0000}',
-        [INSTANCE_REQUIRED_FIELD]: 'false' },
-      { [constants.INSTANCE_FULL_NAME_FIELD]: 'MyPicklist',
-        [INSTANCE_TYPE_FIELD]: 'Picklist',
-        [INSTANCE_REQUIRED_FIELD]: 'true',
-        [INSTANCE_DEFAULT_VALUE_FIELD]: 'YES',
-        [INSTANCE_VALUE_SET_FIELD]: { [constants.VALUE_SET_FIELDS.VALUE_SET_DEFINITION]:
-          { value: [{ [constants.INSTANCE_FULL_NAME_FIELD]: 'YES' },
-            { [constants.INSTANCE_FULL_NAME_FIELD]: 'NO' }] } } }],
-      [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead' })
+      { fields: [
+        {
+          [INSTANCE_FULL_NAME_FIELD]: 'MyAutoNumber',
+          [INSTANCE_TYPE_FIELD]: 'AutoNumber',
+          [FIELD_ANNOTATIONS.DISPLAY_FORMAT]: 'A-{0000}',
+          [INSTANCE_REQUIRED_FIELD]: 'false',
+        },
+        {
+          [INSTANCE_FULL_NAME_FIELD]: 'MyPicklist',
+          [INSTANCE_TYPE_FIELD]: 'Picklist',
+          [INSTANCE_REQUIRED_FIELD]: 'true',
+          [INSTANCE_DEFAULT_VALUE_FIELD]: 'YES',
+          [INSTANCE_VALUE_SET_FIELD]: { [VALUE_SET_FIELDS.VALUE_SET_DEFINITION]:
+            { value: [{ [INSTANCE_FULL_NAME_FIELD]: 'YES' },
+              { [INSTANCE_FULL_NAME_FIELD]: 'NO' }] } },
+        },
+        {
+          [INSTANCE_FULL_NAME_FIELD]: 'rollup',
+          [LABEL]: 'My Summary',
+          [FIELD_ANNOTATIONS.SUMMARIZED_FIELD]: 'Opportunity.Amount',
+          [FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS]: {
+            [FILTER_ITEM_FIELDS.FIELD]: 'Opportunity.Amount',
+            [FILTER_ITEM_FIELDS.OPERATION]: 'greaterThan',
+            [FILTER_ITEM_FIELDS.VALUE]: '1',
+          },
+          [FIELD_ANNOTATIONS.SUMMARY_FOREIGN_KEY]: 'Opportunity.AccountId',
+          [FIELD_ANNOTATIONS.SUMMARY_OPERATION]: 'sum',
+          [INSTANCE_TYPE_FIELD]: 'Summary',
+        },
+        {
+          [INSTANCE_FULL_NAME_FIELD]: 'lookup_field',
+          [LABEL]: 'My Lookup',
+          [FIELD_ANNOTATIONS.LOOKUP_FILTER]: {
+            [LOOKUP_FILTER_FIELDS.ACTIVE]: 'true',
+            [LOOKUP_FILTER_FIELDS.BOOLEAN_FILTER]: 'myBooleanFilter',
+            [LOOKUP_FILTER_FIELDS.ERROR_MESSAGE]: 'myErrorMessage',
+            [LOOKUP_FILTER_FIELDS.INFO_MESSAGE]: 'myInfoMessage',
+            [LOOKUP_FILTER_FIELDS.IS_OPTIONAL]: 'false',
+            [LOOKUP_FILTER_FIELDS.FILTER_ITEMS]: {
+              [FILTER_ITEM_FIELDS.FIELD]: 'myField1',
+              [FILTER_ITEM_FIELDS.OPERATION]: 'myOperation1',
+              [FILTER_ITEM_FIELDS.VALUE_FIELD]: 'myValueField1',
+            },
+          },
+          [INSTANCE_TYPE_FIELD]: 'Lookup',
+        },
+        {
+          [INSTANCE_FULL_NAME_FIELD]: 'lookup_field_optional',
+          [LABEL]: 'My Lookup',
+          [FIELD_ANNOTATIONS.LOOKUP_FILTER]: {
+            [LOOKUP_FILTER_FIELDS.ACTIVE]: 'true',
+            [LOOKUP_FILTER_FIELDS.ERROR_MESSAGE]: 'myErrorMessage',
+            [LOOKUP_FILTER_FIELDS.IS_OPTIONAL]: 'true',
+          },
+          [INSTANCE_TYPE_FIELD]: 'Lookup',
+        },
+        {
+          [INSTANCE_FULL_NAME_FIELD]: 'picklist_field',
+          [LABEL]: 'My Field Dependency',
+          [INSTANCE_VALUE_SET_FIELD]: {
+            [FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD]: 'ControllingFieldName',
+            [FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS]: [
+              {
+                [VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE]: ['Controlling1', 'Controlling2'],
+                [VALUE_SETTINGS_FIELDS.VALUE_NAME]: 'Val1',
+              },
+              {
+                [VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE]: ['Controlling1'],
+                [VALUE_SETTINGS_FIELDS.VALUE_NAME]: 'Val2',
+              },
+            ],
+            [VALUE_SET_FIELDS.VALUE_SET_DEFINITION]: {
+              [VALUE_SET_DEFINITION_FIELDS.VALUE]: [
+                {
+                  [VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'Val1',
+                  [VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: 'false',
+                  [VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'Val1',
+                },
+                {
+                  [VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'Val2',
+                  [VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: 'false',
+                  [VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'Val2',
+                },
+              ],
+            },
+          },
+          [INSTANCE_TYPE_FIELD]: 'Picklist',
+        },
+      ],
+      [INSTANCE_FULL_NAME_FIELD]: 'Lead' })
       it('should merge sobject fields with a custom object instance elemenet', async () => {
         mockSingleSObject('Lead', [{
           name: 'MyAutoNumber',
@@ -508,7 +591,25 @@ describe('Custom Objects filter', () => {
           type: 'picklist',
           label: 'My Picklist',
           picklistValues: [],
-        }], false, true, false, 'Picklist Label')
+        },
+        {
+          name: 'rollup',
+          type: 'rollupsummary',
+        },
+        {
+          name: 'lookup_field',
+          type: 'lookup',
+        },
+        {
+          name: 'lookup_field_optional',
+          type: 'lookup',
+        },
+        {
+          name: 'picklist_field',
+          type: 'picklist',
+          picklistValues: [],
+        },
+        ], false, true, false, 'Picklist Label')
         const result: Element[] = [testInstanceElement]
         await filter().onFetch(result)
 
@@ -517,7 +618,7 @@ describe('Custom Objects filter', () => {
         expect(isObjectType(lead)).toBeTruthy()
         const leadObjectType = lead as ObjectType
         expect(leadObjectType.fields.my_auto_number
-          .annotations[constants.FIELD_ANNOTATIONS.DISPLAY_FORMAT]).toBe('A-{0000}')
+          .annotations[FIELD_ANNOTATIONS.DISPLAY_FORMAT]).toBe('A-{0000}')
         expect(leadObjectType.fields.my_auto_number
           .annotations.label).toBe('AutoNumero')
         expect(leadObjectType.fields.my_auto_number
@@ -528,6 +629,77 @@ describe('Custom Objects filter', () => {
           .annotations[CORE_ANNOTATIONS.DEFAULT]).toBe('YES')
         expect(leadObjectType.fields.my_picklist
           .annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(true)
+
+        // Verify rollup field
+        const expectedRollupSummaryField = testInstanceElement.value.fields
+          .find((e: Value) => e[INSTANCE_FULL_NAME_FIELD] === 'rollup')
+        const rollupSummaryField = leadObjectType.fields.rollup
+        expect(rollupSummaryField).toBeDefined()
+        expect(rollupSummaryField.annotations[FIELD_ANNOTATIONS.SUMMARIZED_FIELD])
+          .toEqual(expectedRollupSummaryField[FIELD_ANNOTATIONS.SUMMARIZED_FIELD])
+        expect(rollupSummaryField.annotations[FIELD_ANNOTATIONS.SUMMARY_FOREIGN_KEY])
+          .toEqual(expectedRollupSummaryField[FIELD_ANNOTATIONS.SUMMARY_FOREIGN_KEY])
+        expect(rollupSummaryField.annotations[FIELD_ANNOTATIONS.SUMMARY_OPERATION])
+          .toEqual(expectedRollupSummaryField[FIELD_ANNOTATIONS.SUMMARY_OPERATION])
+        const filterItemsRollup = rollupSummaryField
+          .annotations[FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS]
+        expect(filterItemsRollup).toBeDefined()
+        expect(filterItemsRollup).toHaveLength(1)
+        expect(filterItemsRollup[0][FILTER_ITEM_FIELDS.FIELD])
+          .toEqual(expectedRollupSummaryField[FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS].field)
+        expect(filterItemsRollup[0][FILTER_ITEM_FIELDS.OPERATION])
+          .toEqual(expectedRollupSummaryField[FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS].operation)
+        expect(filterItemsRollup[0][FILTER_ITEM_FIELDS.VALUE])
+          .toEqual(expectedRollupSummaryField[FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS].value)
+        expect(filterItemsRollup[0][FILTER_ITEM_FIELDS.VALUE_FIELD]).toBeUndefined()
+
+        // Verify field dependency field
+        const fieldDependencyAnnotation = leadObjectType.fields.picklist_field
+          .annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY]
+        expect(fieldDependencyAnnotation).toBeDefined()
+        expect(fieldDependencyAnnotation[FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD])
+          .toEqual('ControllingFieldName')
+        const valuesSettings = fieldDependencyAnnotation[FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS]
+        expect(valuesSettings).toBeDefined()
+        expect(valuesSettings).toHaveLength(2)
+        expect(valuesSettings[0][VALUE_SETTINGS_FIELDS.VALUE_NAME]).toEqual('Val1')
+        expect(valuesSettings[0][VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE])
+          .toEqual(['Controlling1', 'Controlling2'])
+        expect(valuesSettings[1][VALUE_SETTINGS_FIELDS.VALUE_NAME]).toEqual('Val2')
+        expect(valuesSettings[1][VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE])
+          .toEqual(['Controlling1'])
+
+        // Verify lookup field
+        const lookupFilterAnnotation = leadObjectType.fields.lookup_field
+          .annotations[FIELD_ANNOTATIONS.LOOKUP_FILTER]
+        expect(lookupFilterAnnotation).toBeDefined()
+        expect(lookupFilterAnnotation[LOOKUP_FILTER_FIELDS.ACTIVE]).toBe(true)
+        expect(lookupFilterAnnotation[LOOKUP_FILTER_FIELDS.BOOLEAN_FILTER])
+          .toEqual('myBooleanFilter')
+        expect(lookupFilterAnnotation[LOOKUP_FILTER_FIELDS.ERROR_MESSAGE])
+          .toEqual('myErrorMessage')
+        expect(lookupFilterAnnotation[LOOKUP_FILTER_FIELDS.INFO_MESSAGE]).toEqual('myInfoMessage')
+        expect(lookupFilterAnnotation[LOOKUP_FILTER_FIELDS.IS_OPTIONAL]).toBe(false)
+        expect(lookupFilterAnnotation[LOOKUP_FILTER_FIELDS.FILTER_ITEMS]).toBeDefined()
+        expect(lookupFilterAnnotation[LOOKUP_FILTER_FIELDS.FILTER_ITEMS]).toHaveLength(1)
+        expect(lookupFilterAnnotation[LOOKUP_FILTER_FIELDS
+          .FILTER_ITEMS][0][FILTER_ITEM_FIELDS.FIELD])
+          .toEqual('myField1')
+        expect(lookupFilterAnnotation[LOOKUP_FILTER_FIELDS
+          .FILTER_ITEMS][0][FILTER_ITEM_FIELDS.OPERATION])
+          .toEqual('myOperation1')
+        expect(lookupFilterAnnotation[LOOKUP_FILTER_FIELDS
+          .FILTER_ITEMS][0][FILTER_ITEM_FIELDS.VALUE_FIELD])
+          .toEqual('myValueField1')
+        expect(lookupFilterAnnotation[LOOKUP_FILTER_FIELDS
+          .FILTER_ITEMS][0][FILTER_ITEM_FIELDS.VALUE])
+          .toBeUndefined()
+        const lookupFilterOptinalAnnotation = leadObjectType.fields.lookup_field_optional
+          .annotations[FIELD_ANNOTATIONS.LOOKUP_FILTER]
+        expect(lookupFilterOptinalAnnotation).toBeDefined()
+        expect(lookupFilterOptinalAnnotation[LOOKUP_FILTER_FIELDS.ACTIVE]).toBe(true)
+        expect(lookupFilterOptinalAnnotation[LOOKUP_FILTER_FIELDS.IS_OPTIONAL]).toBe(true)
+        expect(lookupFilterOptinalAnnotation[LOOKUP_FILTER_FIELDS.ERROR_MESSAGE]).toBeUndefined()
       })
 
       it('should change instance element to object type if we do not get it from the soap api', async () => {
@@ -539,7 +711,7 @@ describe('Custom Objects filter', () => {
         expect(isObjectType(lead)).toBeTruthy()
         const leadObjectType = lead as ObjectType
         expect(leadObjectType.fields.my_auto_number
-          .annotations[constants.FIELD_ANNOTATIONS.DISPLAY_FORMAT]).toBe('A-{0000}')
+          .annotations[FIELD_ANNOTATIONS.DISPLAY_FORMAT]).toBe('A-{0000}')
       })
     })
   })

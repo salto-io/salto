@@ -509,6 +509,7 @@ export const CORE_ANNOTATIONS = {
 export const BuiltinAnnotationTypes: Record<string, Type> = {
   [CORE_ANNOTATIONS.DEFAULT]: BuiltinTypes.STRING,
   [CORE_ANNOTATIONS.REQUIRED]: BuiltinTypes.BOOLEAN,
+  [CORE_ANNOTATIONS.VALUES]: BuiltinTypes.STRING,
   [CORE_ANNOTATIONS.RESTRICTION]: new ObjectType({ elemID: new ElemID('', 'restriction'),
     fields: { [CORE_ANNOTATIONS.ENFORCE_VALUE]: new Field(
       new ElemID('', 'restriction'), CORE_ANNOTATIONS.ENFORCE_VALUE, BuiltinTypes.BOOLEAN

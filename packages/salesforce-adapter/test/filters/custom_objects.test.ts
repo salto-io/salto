@@ -64,7 +64,7 @@ describe('Custom Objects filter', () => {
         .mockImplementation(async () => ({ valueTypeFields: [] }))
 
       connection.metadata.list = jest.fn()
-        .mockImplementation(async ({ type }) => (
+        .mockImplementation(async ([{ type }]) => (
           (type === CUSTOM_OBJECT && isInCustomObjectList) ? [{ fullName: name }] : []
         ))
     }

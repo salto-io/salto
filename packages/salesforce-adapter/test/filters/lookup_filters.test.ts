@@ -3,7 +3,6 @@ import {
 } from 'adapter-api'
 import mockClient from '../client'
 import filterCreator from '../../src/filters/lookup_filters'
-import filterCreatorCustomObject, { INSTANCE_TYPE_FIELD } from '../../src/filters/custom_objects'
 import { FilterWith } from '../../src/filter'
 import * as constants from '../../src/constants'
 

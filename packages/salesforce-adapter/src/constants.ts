@@ -113,20 +113,6 @@ export const VALUE_SETTINGS_FIELDS = {
   VALUE_NAME: 'value_name',
 }
 
-export const VALUE_SET_FIELDS = {
-  VALUE_SET_DEFINITION: 'value_set_definition',
-}
-
-export const VALUE_SET_DEFINITION_FIELDS = {
-  VALUE: 'value',
-}
-
-export const VALUE_SET_DEFINITION_VALUE_FIELDS = {
-  FULL_NAME: 'full_name',
-  DEFAULT: 'default',
-  LABEL: 'label',
-}
-
 export const LOOKUP_FILTER_FIELDS = {
   ACTIVE: 'active',
   BOOLEAN_FILTER: 'boolean_filter',

@@ -8,8 +8,9 @@ import { DescribeSObjectResult, Field as SObjField } from 'jsforce'
 import _ from 'lodash'
 import { transform } from './convert_types'
 import { API_NAME, CUSTOM_OBJECT, METADATA_TYPE, SALESFORCE,
-  INSTANCE_FULL_NAME_FIELD, SALESFORCE_CUSTOM_SUFFIX, LABEL,
-  FIELD_TYPE_API_NAMES, FIELD_ANNOTATIONS, FIELD_DEPENDENCY_FIELDS, VALUE_SETTINGS_FIELDS, VALUE_SET_FIELDS, VALUE_SET_DEFINITION_FIELDS, VALUE_SET_DEFINITION_VALUE_FIELDS, LOOKUP_FILTER_FIELDS } from '../constants'
+  INSTANCE_FULL_NAME_FIELD, SALESFORCE_CUSTOM_SUFFIX, LABEL, FIELD_DEPENDENCY_FIELDS,
+  FIELD_TYPE_API_NAMES, FIELD_ANNOTATIONS,
+  LOOKUP_FILTER_FIELDS, VALUE_SETTINGS_FIELDS } from '../constants'
 import { FilterCreator } from '../filter'
 import { getSObjectFieldElement, Types, isCustomObject, bpCase } from '../transformers/transformer'
 import { id, addApiName, addMetadataType, addLabel, hasNamespace, getNamespace, boolValue } from './utils'
@@ -22,6 +23,21 @@ export const INSTANCE_DEFAULT_VALUE_FIELD = 'default_value'
 export const INSTANCE_VALUE_SET_FIELD = 'value_set'
 export const INSTANCE_REQUIRED_FIELD = 'required'
 export const INSTANCE_TYPE_FIELD = 'type'
+
+export const VALUE_SET_FIELDS = {
+  VALUE_SET_DEFINITION: 'value_set_definition',
+}
+
+export const VALUE_SET_DEFINITION_FIELDS = {
+  VALUE: 'value',
+}
+
+export const VALUE_SET_DEFINITION_VALUE_FIELDS = {
+  FULL_NAME: 'full_name',
+  DEFAULT: 'default',
+  LABEL: 'label',
+}
+
 
 const getFieldType = (type: string): Type =>
   (_.isUndefined(type) ? BuiltinTypes.STRING : Types.get(bpCase(type)))

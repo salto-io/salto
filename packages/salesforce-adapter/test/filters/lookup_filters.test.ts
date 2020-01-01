@@ -1,9 +1,8 @@
 import {
-  Element, ElemID, Field, InstanceElement, ObjectType, PrimitiveType, PrimitiveTypes, Values,
+  ElemID, Field, InstanceElement, ObjectType, PrimitiveType, PrimitiveTypes,
 } from 'adapter-api'
 import mockClient from '../client'
 import filterCreator from '../../src/filters/lookup_filters'
-import filterCreatorCustomObject, { INSTANCE_TYPE_FIELD } from '../../src/filters/custom_objects'
 import { FilterWith } from '../../src/filter'
 import * as constants from '../../src/constants'
 
@@ -15,86 +14,6 @@ describe('lookup filters filter', () => {
   const objectTypeElemId = new ElemID(constants.SALESFORCE, 'test')
   const lookupFieldApiName = 'LookupField__c'
   const mockObjectApiName = 'Test__c'
-
-  describe('on fetch', () => {
-    const lookupFilterInstanceElement = new InstanceElement('account', new ObjectType(
-      { elemID: new ElemID(constants.SALESFORCE, constants.CUSTOM_OBJECT) }
-    ),
-    { fields: [{
-      [constants.INSTANCE_FULL_NAME_FIELD]: 'lookup_field',
-      [constants.LABEL]: 'My Lookup',
-      [constants.FIELD_ANNOTATIONS.LOOKUP_FILTER]: {
-        [constants.LOOKUP_FILTER_FIELDS.ACTIVE]: 'true',
-        [constants.LOOKUP_FILTER_FIELDS.BOOLEAN_FILTER]: 'myBooleanFilter',
-        [constants.LOOKUP_FILTER_FIELDS.ERROR_MESSAGE]: 'myErrorMessage',
-        [constants.LOOKUP_FILTER_FIELDS.INFO_MESSAGE]: 'myInfoMessage',
-        [constants.LOOKUP_FILTER_FIELDS.IS_OPTIONAL]: 'true',
-        [constants.LOOKUP_FILTER_FIELDS.FILTER_ITEMS]: {
-          [constants.FILTER_ITEM_FIELDS.FIELD]: 'myField1',
-          [constants.FILTER_ITEM_FIELDS.OPERATION]: 'myOperation1',
-          [constants.FILTER_ITEM_FIELDS.VALUE_FIELD]: 'myValueField1',
-        },
-      },
-      [INSTANCE_TYPE_FIELD]: 'Lookup',
-    }],
-    [constants.INSTANCE_FULL_NAME_FIELD]: 'Account' })
-
-    let testElements: Element[]
-    const { client } = mockClient()
-    let filter: FilterWith<'onFetch'>
-
-    beforeEach(() => {
-      testElements = [lookupFilterInstanceElement.clone()]
-    })
-
-    const initFilter = async (): Promise<void> => {
-      filter = filterCreatorCustomObject({ client }) as FilterWith<'onFetch'>
-      await filter.onFetch(testElements)
-    }
-
-    const verifyFilterItemsTransformation = (lookupFilterAnnotation: Values): void => {
-      const { FILTER_ITEMS } = constants.LOOKUP_FILTER_FIELDS
-      expect(lookupFilterAnnotation[FILTER_ITEMS]).toBeDefined()
-      expect(lookupFilterAnnotation[FILTER_ITEMS]).toHaveLength(1)
-      expect(lookupFilterAnnotation[FILTER_ITEMS][0][constants.FILTER_ITEM_FIELDS.FIELD])
-        .toEqual('myField1')
-      expect(lookupFilterAnnotation[FILTER_ITEMS][0][constants.FILTER_ITEM_FIELDS.OPERATION])
-        .toEqual('myOperation1')
-      expect(lookupFilterAnnotation[FILTER_ITEMS][0][constants.FILTER_ITEM_FIELDS.VALUE_FIELD])
-        .toEqual('myValueField1')
-      expect(lookupFilterAnnotation[FILTER_ITEMS][0][constants.FILTER_ITEM_FIELDS.VALUE])
-        .toBeUndefined()
-    }
-
-    it('should add lookupFilter data to a field with lookupFilter when lookupFilter is optional', async () => {
-      await initFilter()
-      const lookupFilterAnnotation = (testElements[0] as ObjectType).fields.lookup_field
-        .annotations[constants.FIELD_ANNOTATIONS.LOOKUP_FILTER]
-      expect(lookupFilterAnnotation).toBeDefined()
-      expect(lookupFilterAnnotation[constants.LOOKUP_FILTER_FIELDS.ACTIVE]).toBe(true)
-      expect(lookupFilterAnnotation[constants.LOOKUP_FILTER_FIELDS.BOOLEAN_FILTER]).toEqual('myBooleanFilter')
-      expect(lookupFilterAnnotation[constants.LOOKUP_FILTER_FIELDS.ERROR_MESSAGE]).toBeUndefined()
-      expect(lookupFilterAnnotation[constants.LOOKUP_FILTER_FIELDS.INFO_MESSAGE]).toEqual('myInfoMessage')
-      expect(lookupFilterAnnotation[constants.LOOKUP_FILTER_FIELDS.IS_OPTIONAL]).toBe(true)
-      verifyFilterItemsTransformation(lookupFilterAnnotation)
-    })
-
-    it('should add lookupFilter data to a field with lookupFilter when lookupFilter is not optional', async () => {
-      (testElements[0] as InstanceElement).value
-        .fields[0][constants
-          .FIELD_ANNOTATIONS.LOOKUP_FILTER][constants.LOOKUP_FILTER_FIELDS.IS_OPTIONAL] = 'false'
-      await initFilter()
-      const lookupFilterAnnotation = (testElements[0] as ObjectType).fields.lookup_field
-        .annotations[constants.FIELD_ANNOTATIONS.LOOKUP_FILTER]
-      expect(lookupFilterAnnotation).toBeDefined()
-      expect(lookupFilterAnnotation[constants.LOOKUP_FILTER_FIELDS.ACTIVE]).toBe(true)
-      expect(lookupFilterAnnotation[constants.LOOKUP_FILTER_FIELDS.BOOLEAN_FILTER]).toEqual('myBooleanFilter')
-      expect(lookupFilterAnnotation[constants.LOOKUP_FILTER_FIELDS.ERROR_MESSAGE]).toEqual('myErrorMessage')
-      expect(lookupFilterAnnotation[constants.LOOKUP_FILTER_FIELDS.INFO_MESSAGE]).toEqual('myInfoMessage')
-      expect(lookupFilterAnnotation[constants.LOOKUP_FILTER_FIELDS.IS_OPTIONAL]).toBe(false)
-      verifyFilterItemsTransformation(lookupFilterAnnotation)
-    })
-  })
 
   describe('on add', () => {
     let mockObject: ObjectType

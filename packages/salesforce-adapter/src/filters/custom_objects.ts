@@ -83,13 +83,7 @@ const createSObjectTypes = (
   label: string,
   isCustom: boolean,
   fields: SObjField[],
-  customObjectNames: Set<string>,
-): Type[] => {
-  // We are filtering sObjects internal types SALTO-346
-  if (!customObjectNames.has(objectName)) {
-    return []
-  }
-
+): ObjectType[] => {
   const serviceIds = {
     [ADAPTER]: SALESFORCE,
     [API_NAME]: objectName,
@@ -261,8 +255,8 @@ const createObjectTypeFromInstance = (instance: InstanceElement): ObjectType => 
   return object
 }
 
-const fetchSObjects = async (client: SalesforceClient,
-  instances: Record<string, InstanceElement>): Promise<Type[]> => {
+const fetchSObjects = async (client: SalesforceClient):
+  Promise<Record<string, DescribeSObjectResult[]>> => {
   const getSobjectDescriptions = async (): Promise<DescribeSObjectResult[]> => {
     const sobjectsList = await client.listSObjects()
     const sobjectNames = sobjectsList.map(sobj => sobj.name)
@@ -278,19 +272,21 @@ const fetchSObjects = async (client: SalesforceClient,
     getCustomObjectNames(), getSobjectDescriptions(),
   ])
 
-  const sobjects = sobjectsDescriptions.map(
-    ({ name, label, custom, fields }) => {
-      const objects = createSObjectTypes(name, label, custom, fields, customObjectNames)
-      if (instances[name]) {
-        objects.filter(isObjectType)
-          .forEach(obj => mergeCustomObjectWithInstance(obj, instances[name]))
-      }
-      return objects
-    }
-  )
-
-  return _.flatten(sobjects)
+  return _.groupBy(sobjectsDescriptions.filter(({ name }) => customObjectNames.has(name)),
+    e => e.name)
 }
+
+const createCustomObjectTypesFromDescriptions = (
+  sObjects: DescribeSObjectResult[],
+  instances: Record<string, InstanceElement>
+): ObjectType[] =>
+  _.flatten(sObjects.map(({ name, label, custom, fields }) => {
+    const objects = createSObjectTypes(name, label, custom, fields)
+    if (instances[name]) {
+      objects.forEach(obj => mergeCustomObjectWithInstance(obj, instances[name]))
+    }
+    return objects
+  }))
 
 // ---
 
@@ -300,32 +296,30 @@ const fetchSObjects = async (client: SalesforceClient,
  */
 const filterCreator: FilterCreator = ({ client }) => ({
   onFetch: async (elements: Element[]): Promise<void> => {
+    const sObjects = await fetchSObjects(client).catch(e => {
+      log.error('failed to fetch sobjects reason: %o', e)
+      return []
+    })
     const customObjectInstances: Record<string, InstanceElement> = Object.assign({},
       ...elements.filter(isCustomObject).filter(isInstanceElement)
         .map(instance => ({ [apiName(instance)]: instance })))
-    const sObjects = await fetchSObjects(client, customObjectInstances)
-      .then(
-        async types => {
-        // All metadata type names include subtypes as well as the "top level" type names
-          const metadataTypeNames = new Set(elements.filter(isObjectType)
-            .map(elem => id(elem)))
-          return types.filter(t => !metadataTypeNames.has(id(t)))
-        }
-      )
-      .catch(e => {
-        log.error('failed to fetch sobjects reason: %o', e)
-        return []
-      }) as ObjectType[]
 
+    const metadataTypeNames = new Set(elements.filter(isObjectType).map(elem => id(elem)))
+    const customObjectTypes = createCustomObjectTypesFromDescriptions(
+      _.flatten(Object.values(sObjects)),
+      customObjectInstances
+    ).filter(obj => !metadataTypeNames.has(id(obj)))
+
+    const objectTypeNames = new Set(Object.keys(sObjects))
     Object.entries(customObjectInstances).forEach(([instanceApiName, instance]) => {
       // Adds objects that exists in the metadata api but don't exist in the soap api
-      if (!sObjects.find(obj => apiName(obj) === instanceApiName)) {
-        sObjects.push(createObjectTypeFromInstance(instance))
+      if (!objectTypeNames.has(instanceApiName)) {
+        customObjectTypes.push(createObjectTypeFromInstance(instance))
       }
     })
 
     _.remove(elements, elem => (isCustomObject(elem) && isInstanceElement(elem)))
-    sObjects.forEach(elem => elements.push(elem))
+    customObjectTypes.forEach(elem => elements.push(elem))
   },
 })
 

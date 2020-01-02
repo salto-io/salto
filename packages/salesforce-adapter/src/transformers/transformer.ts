@@ -816,7 +816,7 @@ export const getSObjectFieldElement = (parent: Element, field: Field,
   const fieldApiName = [parent.annotations[API_NAME], field.name].join(API_NAME_SEPERATOR)
   const serviceIds = {
     [ADAPTER]: SALESFORCE,
-    [API_NAME]: fieldApiName,
+    [API_NAME]: field.name,
     [OBJECT_SERVICE_ID]: toServiceIdsString(parentServiceIds),
   }
 

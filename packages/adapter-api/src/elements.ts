@@ -187,7 +187,7 @@ export const isEqualValues = (first: Value, second: Value): boolean => _.isEqual
       const fValue = f instanceof ReferenceExpression ? f.value : f
       const sValue = s instanceof ReferenceExpression ? s.value : s
       return (f instanceof ReferenceExpression && s instanceof ReferenceExpression)
-        ? _.isEqual(f.elemId, s.elemId)
+        ? f.elemId.isEqual(s.elemId)
         : isEqualValues(fValue, sValue)
     }
     // eslint-disable-next-line @typescript-eslint/no-use-before-define

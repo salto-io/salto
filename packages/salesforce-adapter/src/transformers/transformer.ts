@@ -6,7 +6,7 @@ import {
   Type, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values, Value, Field as TypeField,
   BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter,
   ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, isObjectType, CORE_ANNOTATIONS,
-  ReferenceExpression, isField, isElement,
+  ReferenceExpression, isElement,
 } from 'adapter-api'
 import { collections } from '@salto/lowerdash'
 import { CustomObject, CustomField, ValueSettings, FilterItem } from '../client/types'
@@ -684,7 +684,6 @@ export const toCustomField = (
 export const toCustomObject = (
   element: ObjectType, includeFields: boolean, skipFields: string[] = [],
 ): CustomObject =>
-  // TODO RESOLVE VALUE
   new CustomObject(
     apiName(element),
     element.annotations[LABEL],
@@ -1127,9 +1126,6 @@ export const getCompoundChildFields = (objectType: ObjectType): TypeField[] => {
 }
 
 const getRefSFValue = (refValue: Value): Value => {
-  if (isField(refValue)) {
-    return [apiName(refValue.type), apiName(refValue)].join('.')
-  }
   if (isElement(refValue)) {
     return apiName(refValue)
   }

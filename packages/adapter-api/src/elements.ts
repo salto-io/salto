@@ -159,7 +159,7 @@ export interface Element {
   annotations: Values
 }
 
-type ElementMap = Record<string, Element>
+export type ElementMap = Record<string, Element>
 
 /**
  * Represents a field inside a type

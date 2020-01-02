@@ -10,8 +10,6 @@ import {
   getPlan, Plan, PlanItem,
 } from '../../src/core/plan'
 
-jest.mock('../../src/state/state')
-
 describe('getPlan', () => {
   const getFirstPlanItem = (plan: Plan): PlanItem =>
     wu(plan.itemsByEvalOrder()).next().value

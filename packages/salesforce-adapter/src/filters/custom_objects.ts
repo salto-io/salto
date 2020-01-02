@@ -226,11 +226,10 @@ const transformFieldAnnotations = (instanceFieldValues: Values): Values => {
 }
 
 const mergeCustomObjectWithInstance = (customObject: ObjectType,
-  instance: InstanceElement): void => {
+  fieldNameToFieldAnnotations: Record<string, Values>): void => {
   _(customObject.fields).forEach(field => {
     Object.assign(field.annotations, transformFieldAnnotations(
-      makeArray(instance.value.fields)
-        .find((f: Values) => f.full_name === field.annotations[API_NAME]) || {}
+      fieldNameToFieldAnnotations[field.annotations[API_NAME]] || {}
     ))
   })
 }
@@ -285,7 +284,11 @@ const createCustomObjectTypesFromSObjectAndInstance = (
   _.flatten(sObjects.map(({ name, label, custom, fields }) => {
     const objects = createSObjectTypes(name, label, custom, fields)
     if (instances[name]) {
-      objects.forEach(obj => mergeCustomObjectWithInstance(obj, instances[name]))
+      const fieldNameToFieldAnnotations = _(makeArray(instances[name].value.fields))
+        .map(field => [field[INSTANCE_FULL_NAME_FIELD], field])
+        .fromPairs()
+        .value()
+      objects.forEach(obj => mergeCustomObjectWithInstance(obj, fieldNameToFieldAnnotations))
     }
     return objects
   }))

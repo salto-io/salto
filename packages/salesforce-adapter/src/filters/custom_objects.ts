@@ -278,7 +278,7 @@ const fetchSObjects = async (client: SalesforceClient):
     .value()
 }
 
-const createCustomObjectTypesFromDescriptions = (
+const createCustomObjectTypesFromSObjectAndInstance = (
   sObjects: DescribeSObjectResult[],
   instances: Record<string, InstanceElement>
 ): ObjectType[] =>
@@ -302,15 +302,18 @@ const filterCreator: FilterCreator = ({ client }) => ({
       log.error('failed to fetch sobjects reason: %o', e)
       return []
     })
-    const customObjectInstances: Record<string, InstanceElement> = Object.assign({},
-      ...elements.filter(isCustomObject).filter(isInstanceElement)
-        .map(instance => ({ [apiName(instance)]: instance })))
 
-    const metadataTypeNames = new Set(elements.filter(isObjectType).map(elem => id(elem)))
-    const customObjectTypes = createCustomObjectTypesFromDescriptions(
+    const customObjectInstances = _(elements)
+      .filter(isCustomObject)
+      .filter(isInstanceElement)
+      .map(instance => [apiName(instance), instance])
+      .fromPairs()
+      .value()
+
+    const customObjectTypes = createCustomObjectTypesFromSObjectAndInstance(
       _.flatten(Object.values(sObjects)),
       customObjectInstances
-    ).filter(obj => !metadataTypeNames.has(id(obj)))
+    )
 
     const objectTypeNames = new Set(Object.keys(sObjects))
     Object.entries(customObjectInstances).forEach(([instanceApiName, instance]) => {
@@ -320,8 +323,11 @@ const filterCreator: FilterCreator = ({ client }) => ({
       }
     })
 
+    const objectTypeFullNames = new Set(elements.filter(isObjectType).map(elem => id(elem)))
     _.remove(elements, elem => (isCustomObject(elem) && isInstanceElement(elem)))
-    customObjectTypes.forEach(elem => elements.push(elem))
+    customObjectTypes
+      .filter(obj => !objectTypeFullNames.has(id(obj)))
+      .forEach(elem => elements.push(elem))
   },
 })
 

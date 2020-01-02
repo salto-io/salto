@@ -1,9 +1,10 @@
-import Hubspot from 'hubspot'
 import HubspotClient from '../src/client/client'
+import createConnection from './connection'
+import Connection from '../src/client/madku'
 
 
-const mockClient = (): { connection: Hubspot; client: HubspotClient } => {
-  const connection = new Hubspot({ apiKey: 'mockToken' })
+const mockClient = (): { connection: Connection; client: HubspotClient } => {
+  const connection = createConnection()
   const client = new HubspotClient({
     credentials: {
       apiKey: 'mockToken',

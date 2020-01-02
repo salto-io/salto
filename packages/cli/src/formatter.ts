@@ -4,7 +4,7 @@ import wu from 'wu'
 import {
   isType, Element, Type, isInstanceElement, Values, Change, Value, getChangeElement, ElemID,
   isObjectType, isField, isPrimitiveType, Field, PrimitiveTypes, ReferenceExpression,
-  ActionName, ChangeError, SaltoError, isElement
+  ActionName, ChangeError, SaltoError, isElement,
 } from 'adapter-api'
 import {
   Plan, PlanItem, FoundSearchResult, SearchResult, DetailedChange, WorkspaceError,

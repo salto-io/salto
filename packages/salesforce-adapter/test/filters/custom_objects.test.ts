@@ -126,7 +126,7 @@ describe('Custom Objects filter', () => {
       expect(lead.fields.is_deleted.annotations[CORE_ANNOTATIONS.DEFAULT]).toBe(false)
       // Custom type
       expect(lead.fields.custom__c).not.toBeUndefined()
-      expect(lead.fields.custom__c.annotations[API_NAME]).toBe('Custom__c')
+      expect(lead.fields.custom__c.annotations[API_NAME]).toBe('Lead.Custom__c')
       expect(lead.fields.custom__c.annotations[CORE_ANNOTATIONS.DEFAULT]).toBe(false)
       // Formula field
       expect(lead.fields.formula__c).toBeDefined()
@@ -241,7 +241,7 @@ describe('Custom Objects filter', () => {
       await newFilter().onFetch(result)
 
       const custom = result.filter(o => o.elemID.name === 'custom').pop() as ObjectType
-      expect(custom.fields.string_field.annotations[API_NAME]).toEqual('StringField__c')
+      expect(custom.fields.string_field.annotations[API_NAME]).toEqual('Custom__c.StringField__c')
     })
 
     it('should fetch sobject with various field types', async () => {

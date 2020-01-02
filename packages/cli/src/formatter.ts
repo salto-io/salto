@@ -3,8 +3,8 @@ import chalk from 'chalk'
 import wu from 'wu'
 import {
   isType, Element, Type, isInstanceElement, Values, Change, Value, getChangeElement, ElemID,
-  isObjectType, isField, isPrimitiveType, Field, PrimitiveTypes,
-  ActionName, ChangeError, SaltoError,
+  isObjectType, isField, isPrimitiveType, Field, PrimitiveTypes, ReferenceExpression,
+  ActionName, ChangeError, SaltoError, isElement
 } from 'adapter-api'
 import {
   Plan, PlanItem, FoundSearchResult, SearchResult, DetailedChange, WorkspaceError,
@@ -105,6 +105,9 @@ const formatValue = (value: Element | Value): string => {
       .map(([k, v]) => `${k}: ${formatValue(v)}`)
       .join('\n')
     return `\n${indent(formattedKeys, 2)}`
+  }
+  if (value instanceof ReferenceExpression) {
+    return isElement(value.value) ? value.elemId.getFullName() : formatValue(value.value)
   }
   return JSON.stringify(value)
 }

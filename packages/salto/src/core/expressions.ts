@@ -29,7 +29,7 @@ const resolveMaybeExpression: Resolver<Value> = (
 ): Value => {
   if (value instanceof ReferenceExpression) {
     return new ReferenceExpression(
-      value.elemId, 
+      value.elemId,
       resolveReferenceExpression(value, contextElements, visited)
     )
   }
@@ -58,7 +58,7 @@ resolveReferenceExpression = (
 
   const resolvePath = (rootElement: Element): Value => {
     if (isInstanceElement(rootElement)) {
-      return (!_.isEmpty(path)) ? _.get(rootElement.value, path) : rootElement.value
+      return (!_.isEmpty(path)) ? _.get(rootElement.value, path) : rootElement
     }
 
     if (isObjectType(rootElement) && rootElement.fields[path[0]]) {

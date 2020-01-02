@@ -1,6 +1,6 @@
 import wu from 'wu'
 import _ from 'lodash'
-
+import { types } from '@salto/lowerdash'
 /**
  * Defines the list of supported types.
  */
@@ -15,6 +15,34 @@ export type Value = any
 export interface Values {
   [key: string]: Value
 }
+
+export class ReferenceExpression {
+  constructor(
+    public readonly elemId: ElemID, private resValue?: Value
+  ) {}
+
+  get traversalParts(): string[] {
+    return this.elemId.getFullNameParts()
+  }
+
+  get value(): Value {
+    return (this.resValue instanceof ReferenceExpression)
+      ? this.resValue.value
+      : this.resValue
+  }
+}
+
+export class TemplateExpression extends types.Bean<{ parts: TemplatePart[] }> {}
+
+export type Expression = ReferenceExpression | TemplateExpression
+
+export type TemplatePart = string | Expression
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const isExpression = (value: any): value is Expression => (
+  value instanceof ReferenceExpression
+    || value instanceof TemplateExpression
+)
 
 export type FieldMap = Record<string, Field>
 export type TypeMap = Record<string, Type>
@@ -151,6 +179,26 @@ export class ElemID {
   }
 }
 
+export const isEqualValues = (first: Value, second: Value): boolean => _.isEqualWith(
+  first,
+  second,
+  (f, s) => {
+    if (f instanceof ReferenceExpression || s instanceof ReferenceExpression) {
+      const fValue = f instanceof ReferenceExpression ? f.value : f
+      const sValue = s instanceof ReferenceExpression ? s.value : s
+      return (f instanceof ReferenceExpression && s instanceof ReferenceExpression)
+        ? _.isEqual(f.elemId, s.elemId)
+        : isEqualValues(fValue, sValue)
+    }
+    // eslint-disable-next-line @typescript-eslint/no-use-before-define
+    if (isElement(f) || isElement(s)) {
+      // eslint-disable-next-line @typescript-eslint/no-use-before-define
+      return isEqualElements(f, s)
+    }
+    return undefined
+  }
+)
+
 export interface Element {
   elemID: ElemID
   path?: ReadonlyArray<string>
@@ -178,7 +226,7 @@ export class Field implements Element {
   isEqual(other: Field): boolean {
     return _.isEqual(this.type.elemID, other.type.elemID)
       && _.isEqual(this.elemID, other.elemID)
-      && _.isEqual(this.annotations, other.annotations)
+      && isEqualValues(this.annotations, other.annotations)
       && this.isList === other.isList
   }
 
@@ -251,7 +299,7 @@ export abstract class Type implements Element {
 
   isAnnotationsEqual(other: Type): boolean {
     return this.isAnnotationsTypesEqual(other)
-      && _.isEqual(this.annotations, other.annotations)
+      && isEqualValues(this.annotations, other.annotations)
   }
 
   isAnnotationsTypesEqual(other: Type): boolean {
@@ -403,7 +451,7 @@ export class InstanceElement implements Element {
 
   isEqual(other: InstanceElement): boolean {
     return _.isEqual(this.type.elemID, other.type.elemID)
-      && _.isEqual(this.value, other.value)
+      && isEqualValues(this.value, other.value)
   }
 
   /**
@@ -414,7 +462,7 @@ export class InstanceElement implements Element {
    * @return All values which unique (not in prev) or different.
    */
   getValuesThatNotInPrevOrDifferent(prevValues: Values): Values {
-    return _.pickBy(this.value, (val, key) => !_.isEqual(val, prevValues[key]))
+    return _.pickBy(this.value, (val, key) => !isEqualValues(val, prevValues[key]))
   }
 
   /**

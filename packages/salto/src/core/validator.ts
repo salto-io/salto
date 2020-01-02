@@ -3,7 +3,11 @@ import { types } from '@salto/lowerdash'
 import {
   Element, isObjectType, isInstanceElement, Type, InstanceElement, Field, PrimitiveTypes,
   isPrimitiveType, Value, ElemID, CORE_ANNOTATIONS, SaltoElementError, SaltoErrorSeverity,
+<<<<<<< HEAD
   ReferenceExpression, Values
+=======
+  ReferenceExpression, isElement,
+>>>>>>> changed references to hold value when resolved
 } from 'adapter-api'
 import { makeArray } from '@salto/lowerdash/dist/src/collections/array'
 import { UnresolvedReference, resolve, CircularReference } from './expressions'
@@ -196,7 +200,7 @@ export class InvalidValueTypeValidationError extends ValidationError {
 const validateValue = (elemID: ElemID, value: Value,
   type: Type, isAnnotations = false): ValidationError[] => {
   if (value instanceof ReferenceExpression) {
-    return validateValue(elemID, value.value, type)
+    return isElement(value.value) ? [] : validateValue(elemID, value.value, type)
   }
   if (value instanceof UnresolvedReference) {
     return [new UnresolvedReferenceValidationError({ elemID, ref: value.ref })]

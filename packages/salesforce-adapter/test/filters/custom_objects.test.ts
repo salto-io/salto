@@ -330,10 +330,10 @@ describe('Custom Objects filter', () => {
       const testElements = findElements(result, 'test') as ObjectType[]
       expect(testElements).toHaveLength(2)
       const [test, testCustomizations] = testElements
-      expect(test.path).toEqual(['objects', 'standard', 'test'])
+      expect(test.path).toEqual([SALESFORCE, 'objects', 'standard', 'test'])
       expect(test.fields.dummy).toBeDefined()
       expect(test.fields.custom_field__c).toBeUndefined()
-      expect(testCustomizations.path).toEqual(['objects', 'custom', 'test'])
+      expect(testCustomizations.path).toEqual([SALESFORCE, 'objects', 'custom', 'test'])
       expect(testCustomizations.fields.dummy).toBeUndefined()
       expect(testCustomizations.fields.custom_field__c).toBeDefined()
     })
@@ -372,7 +372,9 @@ describe('Custom Objects filter', () => {
       // custom objects should not be split
       expect(testElements).toHaveLength(1)
       const [test] = testElements
-      expect(test.path).toEqual(['objects', 'custom', 'test__c'])
+      expect(test.path).toEqual(
+        [SALESFORCE, 'objects', 'custom', 'test__c']
+      )
       expect(test.fields.dummy).toBeDefined()
       expect(test.fields.custom_field__c).toBeDefined()
     })
@@ -396,7 +398,8 @@ describe('Custom Objects filter', () => {
       expect(testElements).toHaveLength(1)
       const [test] = testElements
       expect(test.path)
-        .toEqual(['installed_packages', namespaceName, 'objects', 'namespace_name___test__c'])
+        .toEqual([SALESFORCE, 'installed_packages',
+          namespaceName, 'objects', 'namespace_name___test__c'])
       expect(test.fields.dummy).toBeDefined()
       expect(test.fields.custom_field__c).toBeDefined()
     })
@@ -419,10 +422,11 @@ describe('Custom Objects filter', () => {
       // custom objects should not be split
       expect(testElements).toHaveLength(2)
       const [[obj], [packagedObj]] = _.partition(testElements, elem => elem.fields.dummy)
-      expect(obj.path).toEqual(['objects', 'standard', 'test__c'])
+      expect(obj.path).toEqual([SALESFORCE, 'objects', 'standard', 'test__c'])
       expect(obj.fields.dummy).toBeDefined()
       expect(obj.fields.namespace_name___packaged_field__c).toBeUndefined()
-      expect(packagedObj.path).toEqual(['installed_packages', namespaceName, 'objects', 'test__c'])
+      expect(packagedObj.path)
+        .toEqual([SALESFORCE, 'installed_packages', namespaceName, 'objects', 'test__c'])
       expect(packagedObj.fields.dummy).toBeUndefined()
       expect(packagedObj.fields.namespace_name___packaged_field__c).toBeDefined()
     })
@@ -451,15 +455,17 @@ describe('Custom Objects filter', () => {
         elem => elem.fields.namespace_name___packaged_field__c)
       const [[obj], [customObj]] = _.partition(objs, elem => elem.fields.dummy)
 
-      expect(obj.path).toEqual(['objects', 'standard', 'test__c'])
+      expect(obj.path).toEqual([SALESFORCE, 'objects', 'standard', 'test__c'])
       expect(obj.fields.dummy).toBeDefined()
       expect(obj.fields.custom_field__c).toBeUndefined()
       expect(obj.fields.namespace_name___packaged_field__c).toBeUndefined()
-      expect(customObj.path).toEqual(['objects', 'custom', 'test__c'])
+      expect(customObj.path)
+        .toEqual([SALESFORCE, 'objects', 'custom', 'test__c'])
       expect(customObj.fields.dummy).toBeUndefined()
       expect(customObj.fields.custom_field__c).toBeDefined()
       expect(customObj.fields.namespace_name___packaged_field__c).toBeUndefined()
-      expect(packagedObj.path).toEqual(['installed_packages', namespaceName, 'objects', 'test__c'])
+      expect(packagedObj.path)
+        .toEqual([SALESFORCE, 'installed_packages', namespaceName, 'objects', 'test__c'])
       expect(packagedObj.fields.dummy).toBeUndefined()
       expect(packagedObj.fields.custom_field__c).toBeUndefined()
       expect(packagedObj.fields.namespace_name___packaged_field__c).toBeDefined()
@@ -475,7 +481,7 @@ describe('Custom Objects filter', () => {
       const flowMetadataType = new ObjectType({ elemID: flowElemID,
         annotations: { [METADATA_TYPE]: 'Flow' },
         annotationTypes: { [METADATA_TYPE]: BuiltinTypes.SERVICE_ID } })
-      flowMetadataType.path = ['types', 'flow']
+      flowMetadataType.path = [SALESFORCE, 'types', 'flow']
       const result: Element[] = [flowMetadataType]
 
       await filter().onFetch(result)
@@ -483,7 +489,7 @@ describe('Custom Objects filter', () => {
       const flow = findElements(result, 'flow').pop() as ObjectType
       expect(flow).toBeDefined() // We do expect to get the metadata type here
       expect(Object.keys(flow.fields)).toHaveLength(0)
-      expect(flow.path).toEqual(['types', 'flow'])
+      expect(flow.path).toEqual([SALESFORCE, 'types', 'flow'])
     })
     describe('Merge elements', () => {
       const testInstanceElement = new InstanceElement('lead', new ObjectType(

@@ -4,11 +4,12 @@ import {
 } from 'adapter-api'
 import SalesforceAdapter from '../src/adapter'
 import Connection from '../src/client/jsforce'
-import * as constants from '../src/constants'
 import { Types } from '../src/transformers/transformer'
 import { findElements } from './utils'
 import mockAdapter from './adapter'
 import { id } from '../src/filters/utils'
+import * as constants from '../src/constants'
+// import { SALESFORCE } from '../src/constants'
 
 describe('SalesforceAdapter fetch', () => {
   let connection: Connection
@@ -112,7 +113,7 @@ describe('SalesforceAdapter fetch', () => {
       expect(flow.fields.enum.annotations[CORE_ANNOTATIONS.DEFAULT]).toBe('yes')
       // Note the order here is important because we expect restriction values to be sorted
       expect(flow.fields.enum.annotations[CORE_ANNOTATIONS.VALUES]).toEqual(['no', 'yes'])
-      expect(flow.path).toEqual(['types', 'flow'])
+      expect(flow.path).toEqual([constants.SALESFORCE, 'types', 'flow'])
       expect(flow.fields.full_name.type).toEqual(BuiltinTypes.SERVICE_ID)
       expect(flow.annotationTypes[constants.METADATA_TYPE]).toEqual(BuiltinTypes.SERVICE_ID)
       expect(flow.annotations[constants.METADATA_TYPE]).toEqual('Flow')
@@ -511,7 +512,9 @@ describe('SalesforceAdapter fetch', () => {
       const result = await adapter.fetch()
       const [testInst] = findElements(result, 'apex_page', 'th_con_app___th_homepage')
       expect(testInst).toBeDefined()
-      expect(testInst.path).toEqual(['installed_packages', namespaceName, 'records', 'apex_page', 'th_con_app___th_homepage'])
+      expect(testInst.path)
+        .toEqual([constants.SALESFORCE, 'installed_packages',
+          namespaceName, 'records', 'apex_page', 'th_con_app___th_homepage'])
     })
 
     it('should fetch metadata instances with namespace', async () => {
@@ -522,7 +525,9 @@ describe('SalesforceAdapter fetch', () => {
       const result = await adapter.fetch()
       const [testInst] = findElements(result, 'test', 'asd___test')
       expect(testInst).toBeDefined()
-      expect(testInst.path).toEqual(['installed_packages', namespaceName, 'records', 'test', 'asd___test'])
+      expect(testInst.path)
+        .toEqual([constants.SALESFORCE, 'installed_packages',
+          namespaceName, 'records', 'test', 'asd___test'])
     })
 
     it('should fetch metadata instances with namespace when fullname already includes the namespace', async () => {
@@ -533,7 +538,9 @@ describe('SalesforceAdapter fetch', () => {
       const result = await adapter.fetch()
       const [testInst] = findElements(result, 'test', 'asd___test')
       expect(testInst).toBeDefined()
-      expect(testInst.path).toEqual(['installed_packages', namespaceName, 'records', 'test', 'asd___test'])
+      expect(testInst.path).toEqual(
+        [constants.SALESFORCE, 'installed_packages', namespaceName, 'records', 'test', 'asd___test']
+      )
     })
 
     describe('should fetch when there are errors', () => {

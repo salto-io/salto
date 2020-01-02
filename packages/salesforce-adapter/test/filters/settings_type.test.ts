@@ -110,10 +110,11 @@ describe('Test Settings Type', () => {
       expect(isObjectType(testElements[3])).toBeTruthy()
       const { path } = testElements[3]
       expect(path).toBeDefined()
-      expect(path).toHaveLength(2)
+      expect(path).toHaveLength(3)
       if (path !== undefined) {
-        expect(path[0]).toEqual('types')
-        expect(path[1]).toEqual('macro_settings')
+        expect(path[0]).toEqual(constants.SALESFORCE)
+        expect(path[1]).toEqual('types')
+        expect(path[2]).toEqual('macro_settings')
       }
       expect(isInstanceElement(testElements[4])).toBeTruthy()
       expect((testElements[4] as InstanceElement).type).toEqual(testElements[3])

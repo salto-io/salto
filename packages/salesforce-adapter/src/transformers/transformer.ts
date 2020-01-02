@@ -18,6 +18,7 @@ import {
   FIELD_LEVEL_SECURITY_ANNOTATION, FIELD_LEVEL_SECURITY_FIELDS, FIELD_DEPENDENCY_FIELDS,
   VALUE_SETTINGS_FIELDS, FILTER_ITEM_FIELDS, OBJECT_LEVEL_SECURITY_ANNOTATION,
   OBJECT_LEVEL_SECURITY_FIELDS, NAMESPACE_SEPARATOR, DESCRIPTION, HELP_TEXT,
+  API_NAME_SEPERATOR,
 } from '../constants'
 import SalesforceClient from '../client/client'
 
@@ -68,12 +69,15 @@ export const metadataType = (element: Element): string => (
 export const isCustomObject = (element: Element): boolean =>
   (metadataType(element) === CUSTOM_OBJECT)
 
-export const apiName = (elem: Element): string => {
+export const apiName = (elem: Element, relative = true): string => {
   if (isInstanceElement(elem)) {
     return elem.value[INSTANCE_FULL_NAME_FIELD]
   }
   const elemMetadataType = metadataType(elem)
-  return elemMetadataType === CUSTOM_OBJECT ? elem.annotations[API_NAME] : elemMetadataType
+  const name = elemMetadataType === CUSTOM_OBJECT
+    ? elem.annotations[API_NAME]
+    : elemMetadataType
+  return relative && name ? _.last(name.split(API_NAME_SEPERATOR)) : name
 }
 
 const formulaTypeName = (baseTypeName: string): string =>
@@ -750,11 +754,12 @@ const getDefaultValue = (field: Field): PrimitiveValue | undefined => {
 
 // The following method is used during the fetchy process and is used in building the objects
 // and their fields described in the blueprint
-export const getSObjectFieldElement = (parentID: ElemID, field: Field,
+export const getSObjectFieldElement = (parent: Element, field: Field,
   parentServiceIds: ServiceIds): TypeField => {
+  const fieldApiName = [parent.annotations[API_NAME], field.name].join(API_NAME_SEPERATOR)
   const serviceIds = {
     [ADAPTER]: SALESFORCE,
-    [API_NAME]: field.name,
+    [API_NAME]: fieldApiName,
     [OBJECT_SERVICE_ID]: toServiceIdsString(parentServiceIds),
   }
 
@@ -762,7 +767,7 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field,
 
   let bpFieldType = getFieldType(field.type)
   const annotations: Values = {
-    [API_NAME]: field.name,
+    [API_NAME]: fieldApiName,
     [LABEL]: field.label,
   }
   if (field.type !== 'boolean') {
@@ -878,7 +883,7 @@ export const getSObjectFieldElement = (parentID: ElemID, field: Field,
   }
 
   const fieldName = Types.getElemId(field.name, true, serviceIds).name
-  return new TypeField(parentID, fieldName, bpFieldType, annotations)
+  return new TypeField(parent.elemID, fieldName, bpFieldType, annotations)
 }
 
 export const fromMetadataInfo = (info: MetadataInfo):

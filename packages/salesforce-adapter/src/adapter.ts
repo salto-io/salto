@@ -785,7 +785,9 @@ export default class SalesforceAdapter {
 
   private async getFirstBatchOfInstances(type: ObjectType): Promise<QueryResult<Value>> {
     // build the initial query and populate the fields names list in the query
-    const queryString = `SELECT ${getCompoundChildFields(type).map(apiName)} FROM ${apiName(type)}`
+    const queryString = `SELECT ${
+      getCompoundChildFields(type).map(f => apiName(f))
+    } FROM ${apiName(type)}`
     return this.client.runQuery(queryString)
   }
 }

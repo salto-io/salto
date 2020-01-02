@@ -102,7 +102,7 @@ const createSObjectTypes = (
   // Set standard fields on element
   filteredFields
     .filter(f => !f.custom)
-    .map(f => getSObjectFieldElement(element.elemID, f, serviceIds))
+    .map(f => getSObjectFieldElement(element, f, serviceIds))
     .forEach(field => {
       element.fields[field.name] = field
     })
@@ -110,7 +110,7 @@ const createSObjectTypes = (
   // Create custom fields (if any)
   const customFields = filteredFields
     .filter(f => f.custom)
-    .map(f => getSObjectFieldElement(element.elemID, f, serviceIds))
+    .map(f => getSObjectFieldElement(element, f, serviceIds))
 
   if (isCustom) {
     // This is custom object, we treat standard fields as if they were custom as well
@@ -230,7 +230,7 @@ const mergeCustomObjectWithInstance = (customObject: ObjectType,
   fieldNameToFieldAnnotations: Record<string, Values>): void => {
   _(customObject.fields).forEach(field => {
     Object.assign(field.annotations, transformFieldAnnotations(
-      fieldNameToFieldAnnotations[field.annotations[API_NAME]] || {}
+      fieldNameToFieldAnnotations[apiName(field)] || {}
     ))
   })
 }

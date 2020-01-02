@@ -277,7 +277,7 @@ const fetchSObjects = async (client: SalesforceClient):
     .value()
 }
 
-const createCustomObjectTypesFromSObjectAndInstance = (
+const createCustomObjectTypesFromSObjectsAndInstances = (
   sObjects: DescribeSObjectResult[],
   instances: Record<string, InstanceElement>
 ): ObjectType[] =>
@@ -313,7 +313,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
       .fromPairs()
       .value()
 
-    const customObjectTypes = createCustomObjectTypesFromSObjectAndInstance(
+    const customObjectTypes = createCustomObjectTypesFromSObjectsAndInstances(
       _.flatten(Object.values(sObjects)),
       customObjectInstances
     )

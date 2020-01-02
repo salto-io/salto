@@ -908,11 +908,11 @@ export const createInstanceElement = (mdInfo: MetadataInfo, type: ObjectType,
       if (namespacePrefix === 'standard' || mdInfo.fullName === namespacePrefix) {
         // InstalledPackage records should be under records and not within their package
         // Some CustomApplications have 'standard' namespace although they are not part of a package
-        return []
+        return [SALESFORCE]
       }
       return [SALESFORCE, 'installed_packages', namespacePrefix]
     }
-    return []
+    return [SALESFORCE]
   }
 
   const instanceServiceIds = (): ServiceIds => {

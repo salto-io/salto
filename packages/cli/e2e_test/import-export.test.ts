@@ -33,8 +33,8 @@ jest.spyOn(callbacksImpl, 'getConfigFromUser').mockImplementation(
 describe('Data migration operations E2E', () => {
   beforeAll(() => {
     homePath = tmp.dirSync().name
-    fetchOutputDir = `${homePath}/BP/test_import`
-    exportOutputDir = `${homePath}/tmp/export`
+    fetchOutputDir = `${homePath}/salesforce/BP/test_import`
+    exportOutputDir = `${homePath}/salesforce/tmp/export`
     exportOutputFullPath = path.join(exportOutputDir, exportFile)
 
     process.env[SALTO_HOME_VAR] = homePath

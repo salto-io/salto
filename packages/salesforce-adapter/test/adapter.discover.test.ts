@@ -471,7 +471,8 @@ describe('SalesforceAdapter fetch', () => {
       const [testElem] = findElements(result, 'email_template', 'my_folder_my_email_template')
       const testInst = testElem as InstanceElement
       expect(testInst).toBeDefined()
-      expect(testInst.path).toEqual(['records', 'email_template', 'my_folder_my_email_template'])
+      expect(testInst.path)
+        .toEqual([constants.SALESFORCE, 'records', 'email_template', 'my_folder_my_email_template'])
       expect(testInst.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('MyFolder/MyEmailTemplate')
       expect(testInst.value.name).toEqual('My Email Template')
       expect(testInst.value.content).toEqual('Email Body')
@@ -497,7 +498,8 @@ describe('SalesforceAdapter fetch', () => {
       const [testElem] = findElements(result, 'email_folder', 'my_folder')
       const testInst = testElem as InstanceElement
       expect(testInst).toBeDefined()
-      expect(testInst.path).toEqual(['records', 'email_folder', 'my_folder'])
+      expect(testInst.path)
+        .toEqual([constants.SALESFORCE, 'records', 'email_folder', 'my_folder'])
       expect(testInst.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('MyFolder')
       expect(testInst.value.name).toEqual('My folder')
     })

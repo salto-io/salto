@@ -68,7 +68,7 @@ describe('commands e2e', () => {
     newInstanceFullName = `NewInstanceName${randomString}`
     newObjectElemName = NEW_OBJECT_BASE_ELEM_NAME + randomString
     newObjectApiName = `NewObjectName${randomString}${SALESFORCE_CUSTOM_SUFFIX}`
-    tmpBP = `${fetchOutputDir}/objects/custom/${newObjectElemName}.bp`
+    tmpBP = `${fetchOutputDir}/salesforce/objects/custom/${newObjectElemName}.bp`
 
     process.env[SALTO_HOME_VAR] = homePath
     client = new SalesforceClient({ credentials: salesforceTestHelpers().credentials })

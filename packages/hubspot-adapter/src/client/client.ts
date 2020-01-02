@@ -5,6 +5,7 @@ import {
 import {
   Form,
 } from './types'
+import Connection from './madku'
 
 
 export type Credentials = {
@@ -13,11 +14,11 @@ export type Credentials = {
 
 export type HubspotClientOpts = {
   credentials: Credentials
-  connection?: Hubspot
+  connection?: Connection
 }
 
 export default class HubspotClient {
-  private conn: Hubspot
+  private conn: Connection
 
   constructor(
     { credentials, connection }: HubspotClientOpts

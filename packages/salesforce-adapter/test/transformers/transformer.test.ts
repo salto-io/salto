@@ -1,18 +1,20 @@
 import _ from 'lodash'
 import {
   ObjectType, ElemID, Field, BuiltinTypes, Type, Field as TypeField, Values, CORE_ANNOTATIONS,
+  ReferenceExpression, InstanceElement,
 } from 'adapter-api'
 import { collections } from '@salto/lowerdash'
 import { Field as SalesforceField, ValueTypeField } from 'jsforce'
 import {
   bpCase, getSObjectFieldElement, Types, toCustomField, toCustomObject,
   getValueTypeFieldElement, getCompoundChildFields, sfCase, createMetadataTypeElements,
+  transformReferences, restoreReferences,
 } from '../../src/transformers/transformer'
 import {
   FIELD_ANNOTATIONS, FIELD_TYPE_NAMES, LABEL, FIELD_TYPE_API_NAMES, ADDRESS_FIELDS,
   SALESFORCE, GEOLOCATION_FIELDS, NAME_FIELDS, API_NAME,
   FIELD_LEVEL_SECURITY_ANNOTATION, FIELD_LEVEL_SECURITY_FIELDS, FIELD_DEPENDENCY_FIELDS,
-  VALUE_SETTINGS_FIELDS, FILTER_ITEM_FIELDS, METADATA_TYPE, CUSTOM_OBJECT,
+  VALUE_SETTINGS_FIELDS, FILTER_ITEM_FIELDS, METADATA_TYPE, CUSTOM_OBJECT, INSTANCE_FULL_NAME_FIELD,
 } from '../../src/constants'
 import { CustomField, FilterItem, CustomObject } from '../../src/client/types'
 import SalesforceClient from '../../src/client/client'
@@ -933,6 +935,79 @@ describe('transformer', () => {
       expect(elements).toHaveLength(1)
       expect(elements[0].path).not.toContain('subtypes')
       expect(client.describeMetadataType).toHaveBeenCalledTimes(0)
+    })
+  })
+
+  describe('transform references to SF lookup value', () => {
+    const instanceFullName = 'Instance'
+    const objectApiName = 'Object'
+    const regValue = 'REG'
+    const newValue = 'NEW'
+
+    const element = new ObjectType({
+      elemID: new ElemID('salesforce', 'elememt'),
+      annotations: {
+        [API_NAME]: objectApiName,
+      },
+    })
+
+    const instance = new InstanceElement('instance', element, {
+      [INSTANCE_FULL_NAME_FIELD]: instanceFullName,
+    })
+    const valueRef = new ReferenceExpression(instance.elemID.createNestedID('ref'), regValue)
+    const instanceRef = new ReferenceExpression(instance.elemID, instance)
+    const elementRef = new ReferenceExpression(element.elemID, element)
+    const elemID = new ElemID('salesforce', 'base')
+    const orig = new ObjectType({
+      elemID,
+      annotations: {
+        instanceRef,
+        objectRef: elementRef,
+        valueRef,
+        reg: regValue,
+      },
+      fields: {
+        field: new Field(elemID, 'field', BuiltinTypes.STRING, {
+          instanceRef,
+          objectRef: elementRef,
+          valueRef,
+          reg: regValue,
+        }),
+      },
+    })
+
+    const modified = transformReferences(orig)
+
+    it('should transform element ref values', () => {
+      expect(modified.annotations.instanceRef).toEqual(instanceFullName)
+      expect(modified.fields.field.annotations.instanceRef).toEqual(instanceFullName)
+      expect(modified.annotations.objectRef).toEqual(objectApiName)
+      expect(modified.fields.field.annotations.objectRef).toEqual(objectApiName)
+      expect(modified.annotations.valueRef).toEqual(regValue)
+      expect(modified.fields.field.annotations.valueRef).toEqual(regValue)
+    })
+
+    it('should transform regular ref values', () => {
+      expect(modified.annotations.reg).toEqual(regValue)
+      expect(modified.fields.field.annotations.reg).toEqual(regValue)
+    })
+
+    it('should transform back to orig value', () => {
+      const origClone = orig.clone()
+      expect(restoreReferences(orig, modified)).toEqual(origClone)
+    })
+
+    it('should maintain new values when transforming back to orig value', () => {
+      const after = modified.clone()
+      after.annotations.new = newValue
+      after.fields.field.annotations.new = newValue
+      after.annotations.regValue = newValue
+      after.fields.field.annotations.regValue = newValue
+      const restored = restoreReferences(orig, after)
+      expect(restored.annotations.new).toEqual(newValue)
+      expect(restored.fields.field.annotations.new).toEqual(newValue)
+      expect(restored.annotations.regValue).toEqual(newValue)
+      expect(restored.fields.field.annotations.regValue).toEqual(newValue)
     })
   })
 })

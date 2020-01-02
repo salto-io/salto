@@ -17,7 +17,8 @@ import {
   toCustomField, toCustomObject, apiName, sfCase, Types,
   toMetadataInfo, createInstanceElement,
   metadataType, toInstanceElements, createMetadataTypeElements,
-  instanceElementstoRecords, elemIDstoRecords, getCompoundChildFields,
+  instanceElementstoRecords, elemIDstoRecords, getCompoundChildFields, transformReferences,
+  restoreReferences,
 } from './transformers/transformer'
 import { fromRetrieveResult, toMetadataPackageZip } from './transformers/xml_transformer'
 import layoutFilter from './filters/layouts'
@@ -355,14 +356,15 @@ export default class SalesforceAdapter {
    */
   public async add(element: Element): Promise<Element> {
     let post: Element
-    if (isObjectType(element)) {
-      post = await this.addObject(element)
+    const resolved = transformReferences(element)
+    if (isObjectType(resolved)) {
+      post = await this.addObject(resolved)
     } else {
-      post = await this.addInstance(element as InstanceElement)
+      post = await this.addInstance(resolved as InstanceElement)
     }
 
     await this.runFiltersOnAdd(post)
-    return post
+    return restoreReferences(element, post)
   }
 
   /**
@@ -422,14 +424,15 @@ export default class SalesforceAdapter {
    */
   @logDuration()
   public async remove(element: Element): Promise<void> {
-    const type = metadataType(element)
-    if (isInstanceElement(element)
+    const resolved = transformReferences(element)
+    const type = metadataType(resolved)
+    if (isInstanceElement(resolved)
       && this.isMetadataTypeToRetrieveAndDeploy(type)) {
-      await this.deployInstance(element, true)
+      await this.deployInstance(resolved, true)
     } else {
-      await this.client.delete(type, apiName(element))
+      await this.client.delete(type, apiName(resolved))
     }
-    await this.runFiltersOnRemove(element)
+    await this.runFiltersOnRemove(resolved)
   }
 
   /**
@@ -442,20 +445,25 @@ export default class SalesforceAdapter {
   @logDuration()
   public async update(before: Element, after: Element,
     changes: ReadonlyArray<Change>): Promise<Element> {
-    let result = after
-
-    if (isObjectType(before) && isObjectType(after)) {
-      result = await this.updateObject(before, after,
-        changes as ReadonlyArray<Change<Field | ObjectType>>)
+    const resBefore = transformReferences(before)
+    const resAfter = transformReferences(after)
+    const resChanges = changes.map(c => ({
+      action: c.action,
+      data: _.mapValues(c.data, transformReferences),
+    })) as ReadonlyArray<Change>
+    let result = resAfter
+    if (isObjectType(resBefore) && isObjectType(resAfter)) {
+      result = await this.updateObject(resBefore, resAfter,
+        resChanges as ReadonlyArray<Change<Field | ObjectType>>)
     }
 
-    if (isInstanceElement(before) && isInstanceElement(after)) {
-      result = await this.updateInstance(before, after)
+    if (isInstanceElement(resBefore) && isInstanceElement(resAfter)) {
+      result = await this.updateInstance(resBefore, resAfter)
     }
 
     // Aspects should be updated once all object related properties updates are over
-    await this.runFiltersOnUpdate(before, result, changes)
-    return result
+    await this.runFiltersOnUpdate(resBefore, result, resChanges)
+    return restoreReferences(after, result)
   }
 
   /**

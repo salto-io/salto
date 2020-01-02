@@ -5,7 +5,7 @@ import {
 import {
   Type, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values, Value, Field as TypeField,
   BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter,
-  ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, CORE_ANNOTATIONS, 
+  ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, isObjectType, CORE_ANNOTATIONS,
   ReferenceExpression, isField, isElement,
 } from 'adapter-api'
 import { collections } from '@salto/lowerdash'
@@ -684,7 +684,7 @@ export const toCustomField = (
 export const toCustomObject = (
   element: ObjectType, includeFields: boolean, skipFields: string[] = [],
 ): CustomObject =>
-  //TODO RESOLVE VALUE
+  // TODO RESOLVE VALUE
   new CustomObject(
     apiName(element),
     element.annotations[LABEL],
@@ -1126,17 +1126,33 @@ export const getCompoundChildFields = (objectType: ObjectType): TypeField[] => {
   return Object.values(clonedObject.fields)
 }
 
+const getRefSFValue = (refValue: Value): Value => {
+  if (isField(refValue)) {
+    return [apiName(refValue.type), apiName(refValue)].join('.')
+  }
+  if (isElement(refValue)) {
+    return apiName(refValue)
+  }
+  return refValue
+}
+
 export const transformReferences = <T extends Element>(element: T): T => {
-  const refReplacer = (value: Value): Value => {
-    if (!(value instanceof ReferenceExpression)) return undefined
-    if (isField(value.value)) {
-      return [apiName(value.value.type), apiName(value.value)].join(".")
+  const refReplacer = (value: Value): Value => (
+    (value instanceof ReferenceExpression) ? getRefSFValue(value.value) : undefined
+  )
+  return _.cloneDeepWith(element, refReplacer)
+}
+
+export const restoreReferences = <T extends Element>(orig: T, modified: T): T => {
+  const resResotrer = (o: Value, m: Value): Value => {
+    if (isElement(o) && isElement(m)) {
+      return restoreReferences(o, m)
     }
-    if (isElement(value.value)) {
-      return apiName(value.value)
+    if (o instanceof ReferenceExpression || (m instanceof ReferenceExpression)) {
+      return (getRefSFValue(o.value) === m) ? o : m
     }
-    return value.value
+    return undefined
   }
 
-  return _.cloneDeepWith(element, refReplacer)
+  return _.mergeWith(orig, modified, resResotrer)
 }

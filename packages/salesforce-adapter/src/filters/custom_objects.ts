@@ -226,11 +226,10 @@ const transformFieldAnnotations = (instanceFieldValues: Values): Values => {
 }
 
 const mergeCustomObjectWithInstance = (customObject: ObjectType,
-  instance: InstanceElement): void => {
+  fieldNameToFieldAnnotations: Record<string, Values>): void => {
   _(customObject.fields).forEach(field => {
     Object.assign(field.annotations, transformFieldAnnotations(
-      makeArray(instance.value.fields)
-        .find((f: Values) => f.full_name === field.annotations[API_NAME]) || {}
+      fieldNameToFieldAnnotations[field.annotations[API_NAME]] || {}
     ))
   })
 }
@@ -278,14 +277,18 @@ const fetchSObjects = async (client: SalesforceClient):
     .value()
 }
 
-const createCustomObjectTypesFromDescriptions = (
+const createCustomObjectTypesFromSObjectsAndInstances = (
   sObjects: DescribeSObjectResult[],
   instances: Record<string, InstanceElement>
 ): ObjectType[] =>
   _.flatten(sObjects.map(({ name, label, custom, fields }) => {
     const objects = createSObjectTypes(name, label, custom, fields)
     if (instances[name]) {
-      objects.forEach(obj => mergeCustomObjectWithInstance(obj, instances[name]))
+      const fieldNameToFieldAnnotations = _(makeArray(instances[name].value.fields))
+        .map(field => [field[INSTANCE_FULL_NAME_FIELD], field])
+        .fromPairs()
+        .value()
+      objects.forEach(obj => mergeCustomObjectWithInstance(obj, fieldNameToFieldAnnotations))
     }
     return objects
   }))
@@ -302,15 +305,18 @@ const filterCreator: FilterCreator = ({ client }) => ({
       log.error('failed to fetch sobjects reason: %o', e)
       return []
     })
-    const customObjectInstances: Record<string, InstanceElement> = Object.assign({},
-      ...elements.filter(isCustomObject).filter(isInstanceElement)
-        .map(instance => ({ [apiName(instance)]: instance })))
 
-    const metadataTypeNames = new Set(elements.filter(isObjectType).map(elem => id(elem)))
-    const customObjectTypes = createCustomObjectTypesFromDescriptions(
+    const customObjectInstances = _(elements)
+      .filter(isCustomObject)
+      .filter(isInstanceElement)
+      .map(instance => [apiName(instance), instance])
+      .fromPairs()
+      .value()
+
+    const customObjectTypes = createCustomObjectTypesFromSObjectsAndInstances(
       _.flatten(Object.values(sObjects)),
       customObjectInstances
-    ).filter(obj => !metadataTypeNames.has(id(obj)))
+    )
 
     const objectTypeNames = new Set(Object.keys(sObjects))
     Object.entries(customObjectInstances).forEach(([instanceApiName, instance]) => {
@@ -320,8 +326,11 @@ const filterCreator: FilterCreator = ({ client }) => ({
       }
     })
 
+    const objectTypeFullNames = new Set(elements.filter(isObjectType).map(elem => id(elem)))
     _.remove(elements, elem => (isCustomObject(elem) && isInstanceElement(elem)))
-    customObjectTypes.forEach(elem => elements.push(elem))
+    customObjectTypes
+      .filter(obj => !objectTypeFullNames.has(id(obj)))
+      .forEach(elem => elements.push(elem))
   },
 })
 

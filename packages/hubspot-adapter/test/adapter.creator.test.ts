@@ -1,5 +1,5 @@
 import { ElemID, InstanceElement } from 'adapter-api'
-import { creator } from '../src/adapter'
+import { creator } from '../src/adapter_creator'
 import HubspotClient from '../src/client/client'
 
 jest.mock('../src/client/client')

@@ -1,11 +1,11 @@
 import {
-  AdapterCreator, BuiltinTypes, Change, ElemID, Field, ObjectType,
+  Change, ElemID, ObjectType,
   Element, InstanceElement, isInstanceElement,
 } from 'adapter-api'
 import {
-  FormObjectType,
+  Form,
 } from './client/types'
-import HubspotClient, { Credentials } from './client/client'
+import HubspotClient from './client/client'
 
 const validateFormGuid = (
   before: InstanceElement,
@@ -59,7 +59,7 @@ export default class HubspotAdapter {
       const resp = await this.client.createForm(
         {
           name: element.value.name,
-        } as FormObjectType
+        } as Form
       )
       element.value.guid = resp.guid
     }
@@ -76,7 +76,7 @@ export default class HubspotAdapter {
     await this.client.deleteForm(
       {
         guid: instance.value.guid,
-      } as FormObjectType
+      } as Form
     )
   }
 
@@ -97,39 +97,10 @@ export default class HubspotAdapter {
       await this.client.updateForm(
         {
           guid: after.value.guid,
-        } as FormObjectType
+        } as Form
       )
     }
 
     return after
   }
-}
-
-const configID = new ElemID('hubspot')
-
-const configType = new ObjectType({
-  elemID: configID,
-  fields: {
-    apiKey: new Field(configID, 'apiKey', BuiltinTypes.STRING),
-  },
-  annotationTypes: {},
-  annotations: {},
-})
-
-const credentialsFromConfig = (config: InstanceElement): Credentials => ({
-  apiKey: config.value.apiKey,
-})
-
-const clientFromConfig = (config: InstanceElement): HubspotClient =>
-  new HubspotClient(
-    {
-      credentials: credentialsFromConfig(config),
-    }
-  )
-
-export const creator: AdapterCreator = {
-  create: ({ config }) => new HubspotAdapter({
-    client: clientFromConfig(config),
-  }),
-  configType,
 }

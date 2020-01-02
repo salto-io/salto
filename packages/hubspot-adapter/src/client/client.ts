@@ -3,7 +3,7 @@ import {
   RequestPromise,
 } from 'requestretry'
 import {
-  FormObjectType,
+  Form,
 } from './types'
 
 
@@ -31,7 +31,7 @@ export default class HubspotClient {
     return this.conn.contacts.get()
   }
 
-  async getAllForms(): Promise<FormObjectType[]> {
+  async getAllForms(): Promise<Form[]> {
     const resp = await this.conn.forms.getAll()
 
     if (resp.status) {
@@ -42,7 +42,7 @@ export default class HubspotClient {
   }
 
 
-  async createForm(f: FormObjectType): Promise<FormObjectType> {
+  async createForm(f: Form): Promise<Form> {
     const resp = await this.conn.forms.create(f)
     if (resp.status) {
       throw new Error(resp.message)
@@ -50,7 +50,7 @@ export default class HubspotClient {
     return resp
   }
 
-  async updateForm(f: FormObjectType): Promise<FormObjectType> {
+  async updateForm(f: Form): Promise<Form> {
     const resp = await this.conn.forms.update(f.guid, f)
     if (resp.status) {
       throw new Error(resp.message)
@@ -58,7 +58,7 @@ export default class HubspotClient {
     return resp
   }
 
-  async deleteForm(f: FormObjectType): Promise<void> {
+  async deleteForm(f: Form): Promise<void> {
     const resp = await this.conn.forms.delete(f.guid)
     if (resp) {
       throw new Error(resp.message)

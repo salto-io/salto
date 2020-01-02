@@ -6,7 +6,7 @@ import HubspotAdapter from '../src/adapter'
 
 import mockAdapter from './mock'
 import HubspotClient from '../src/client/client'
-import { FormObjectType } from '../src/client/types'
+import { Form } from '../src/client/types'
 
 const mockElemID = new ElemID('hubspot', 'test')
 
@@ -26,10 +26,10 @@ describe('Hubspot Adapter Operations', () => {
     let mockGetAllForms: jest.Mock
 
     beforeEach(async () => {
-      const getAllResult = (): Promise<FormObjectType[]> => Promise.resolve([
+      const getAllResult = (): Promise<Form[]> => Promise.resolve([
         { guid: '12345' },
         { guid: '11111' },
-      ] as FormObjectType[])
+      ] as Form[])
 
       mockGetAllForms = jest.fn().mockImplementation(getAllResult)
       client.getAllForms = mockGetAllForms
@@ -60,7 +60,7 @@ describe('Hubspot Adapter Operations', () => {
 
     describe('When form name already exists', () => {
       beforeEach(async () => {
-        const createAlreadyExistsResult = (_f: FormObjectType):
+        const createAlreadyExistsResult = (_f: Form):
           Error => { throw new Error("Form already exists with name 'newTestForm'") }
         mockCreate = jest.fn().mockImplementation(createAlreadyExistsResult)
         client.createForm = mockCreate
@@ -74,7 +74,7 @@ describe('Hubspot Adapter Operations', () => {
 
     describe('Wrong apikey', () => {
       beforeEach(async () => {
-        const createErrorResult = (_f: FormObjectType):
+        const createErrorResult = (_f: Form):
           Error => { throw new Error("This apikey (wrongKey) doesn't exist.") }
         mockCreate = jest.fn().mockImplementation(createErrorResult)
         client.createForm = mockCreate
@@ -88,8 +88,8 @@ describe('Hubspot Adapter Operations', () => {
 
     describe('When a form is successfully added', () => {
       beforeEach(async () => {
-        const createResult = (_f: FormObjectType): Promise<FormObjectType> =>
-          Promise.resolve({ guid: '12345' } as FormObjectType)
+        const createResult = (_f: Form): Promise<Form> =>
+          Promise.resolve({ guid: '12345' } as Form)
         mockCreate = jest.fn().mockImplementation(createResult)
         client.createForm = mockCreate
       })
@@ -104,7 +104,6 @@ describe('Hubspot Adapter Operations', () => {
     afterEach(() => {
       expect(mockCreate.mock.calls).toHaveLength(1)
       expect(mockCreate.mock.calls[0]).toHaveLength(1)
-      // expect(mockCreate.mock.calls[0][0]).toMatchObject(formInstance)
 
       const object = mockCreate.mock.calls[0][0]
       expect(object.name).toBe('formInstanceTest')
@@ -131,7 +130,7 @@ describe('Hubspot Adapter Operations', () => {
 
     describe('When remove fails', () => {
       beforeEach(async () => {
-        const deleteErrorResult = (_f: FormObjectType):
+        const deleteErrorResult = (_f: Form):
           Error => { throw new Error("This apikey (wrongKey) doesn't exist.") }
         mockDelete = jest.fn().mockImplementation(deleteErrorResult)
         client.deleteForm = mockDelete
@@ -145,7 +144,7 @@ describe('Hubspot Adapter Operations', () => {
 
     describe('When remove success', () => {
       beforeEach(async () => {
-        const deleteResult = (_f: FormObjectType): Promise<void> =>
+        const deleteResult = (_f: Form): Promise<void> =>
           Promise.resolve(undefined)
 
         mockDelete = jest.fn().mockImplementation(deleteResult)
@@ -194,8 +193,8 @@ describe('Hubspot Adapter Operations', () => {
 
     describe('When Update success', () => {
       beforeEach(async () => {
-        const updateResult = (f: FormObjectType): Promise<FormObjectType> =>
-          Promise.resolve({ guid: f.guid } as FormObjectType)
+        const updateResult = (f: Form): Promise<Form> =>
+          Promise.resolve({ guid: f.guid } as Form)
 
         mockUpdate = jest.fn().mockImplementation(updateResult)
         client.updateForm = mockUpdate
@@ -213,7 +212,7 @@ describe('Hubspot Adapter Operations', () => {
 
     describe('When Form not found', () => {
       beforeEach(async () => {
-        const notFoundError = (_f: FormObjectType):
+        const notFoundError = (_f: Form):
           Error => { throw new Error("No form found with guid 'guid'") }
 
         mockUpdate = jest.fn().mockImplementation(notFoundError)

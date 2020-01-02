@@ -2,7 +2,7 @@ import {
   RequestPromise,
 } from 'requestretry'
 import createClient from './client'
-import { FormObjectType } from '../src/client/types'
+import { Form } from '../src/client/types'
 
 
 describe('Test HubSpot client', () => {
@@ -80,7 +80,7 @@ describe('Test HubSpot client', () => {
       submitText: 'Submit',
       deletable: true,
 
-    } as FormObjectType
+    } as Form
 
 
     describe('wrong apikey', () => {
@@ -171,7 +171,7 @@ describe('Test HubSpot client', () => {
       submitText: 'Submit',
       deletable: true,
 
-    } as FormObjectType
+    } as Form
 
 
     describe('wrong apikey', () => {
@@ -225,7 +225,7 @@ describe('Test HubSpot client', () => {
       submitText: 'Submit',
       deletable: true,
 
-    } as FormObjectType
+    } as Form
 
 
     describe('wrong apikey', () => {

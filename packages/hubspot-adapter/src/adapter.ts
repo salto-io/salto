@@ -7,6 +7,19 @@ import {
 } from './client/types'
 import HubspotClient, { Credentials } from './client/client'
 
+const validateFormGuid = (
+  before: InstanceElement,
+  after: InstanceElement
+): void => {
+  if (before.value.guid !== after.value.guid) {
+    throw Error(
+      `Failed to update element as guid's prev=${
+        before.value.guid
+      } and new=${after.value.guid} are different`
+    )
+  }
+}
+
 export interface HubspotAdapterParams {
   // client to use
   client: HubspotClient
@@ -80,6 +93,7 @@ export default class HubspotAdapter {
     _changes: ReadonlyArray<Change>
   ): Promise<Element> {
     if (isInstanceElement(before) && isInstanceElement(after)) {
+      validateFormGuid(before, after)
       await this.client.updateForm(
         {
           guid: after.value.guid,

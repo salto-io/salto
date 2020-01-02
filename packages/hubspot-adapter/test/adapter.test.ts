@@ -201,7 +201,7 @@ describe('Hubspot Adapter Operations', () => {
         client.updateForm = mockUpdate
       })
 
-      it('should return 204 response', async () => {
+      it('should return the updated form', async () => {
         const res = await adapter.update(
           beforeUpdateInstance,
           afterUpdateInstance,
@@ -220,13 +220,28 @@ describe('Hubspot Adapter Operations', () => {
         client.updateForm = mockUpdate
       })
 
-      it('should return 204 response', async () => {
+      it('should return 404 response', async () => {
         await expect(adapter.update(
           beforeUpdateInstance,
           afterUpdateInstance,
           []
         )).rejects
           .toThrow("No form found with guid 'guid'")
+      })
+    })
+
+    describe('When Forms have different guids', () => {
+      beforeEach(async () => {
+        beforeUpdateInstance.value.guid = 'differentGuid'
+      })
+
+      it('should return error', async () => {
+        await expect(adapter.update(
+          beforeUpdateInstance,
+          afterUpdateInstance,
+          []
+        )).rejects
+          .toThrow("Failed to update element as guid's prev=")
       })
     })
   })

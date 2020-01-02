@@ -272,8 +272,10 @@ const fetchSObjects = async (client: SalesforceClient):
     getCustomObjectNames(), getSobjectDescriptions(),
   ])
 
-  return _.groupBy(sobjectsDescriptions.filter(({ name }) => customObjectNames.has(name)),
-    e => e.name)
+  return _(sobjectsDescriptions)
+    .filter(({ name }) => customObjectNames.has(name))
+    .groupBy(e => e.name)
+    .value()
 }
 
 const createCustomObjectTypesFromDescriptions = (

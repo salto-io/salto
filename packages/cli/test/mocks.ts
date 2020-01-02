@@ -76,6 +76,19 @@ export const cli = async ({
   return { err: output.stderr.content, out: output.stdout.content, exitCode }
 }
 
+export const mockGetConfigFromUser = jest.fn(async (
+  configObjType: ObjectType
+): Promise<InstanceElement> => {
+  const value = {
+    username: 'test@test',
+    password: 'test',
+    token: 'test',
+    sandbox: false,
+  }
+
+  return new InstanceElement(ElemID.CONFIG_NAME, configObjType, value)
+})
+
 export const elements = (): Element[] => {
   const addrElemID = new ElemID('salto', 'address')
   const saltoAddr = new ObjectType({
@@ -170,6 +183,21 @@ export const elements = (): Element[] => {
 
 export const mockLoadConfig = (workspaceDir: string): Config =>
   ({ uid: '123', baseDir: workspaceDir, additionalBlueprints: [], services: ['salesforce', 'hubspot'], name: 'mock-ws', localStorage: '', stateLocation: '' })
+
+export const mockConfigType = (adapterName: string): ObjectType => {
+  const configID = new ElemID(adapterName)
+  return new ObjectType({
+    elemID: configID,
+    fields: {
+      username: new Field(configID, 'username', BuiltinTypes.STRING),
+      password: new Field(configID, 'password', BuiltinTypes.STRING),
+      token: new Field(configID, 'token', BuiltinTypes.STRING),
+      sandbox: new Field(configID, 'sandbox', BuiltinTypes.BOOLEAN),
+    },
+    annotationTypes: {},
+    annotations: {},
+  })
+}
 
 export const detailedChange = (
   action: 'add' | 'modify' | 'remove', path: ReadonlyArray<string> | ElemID,
@@ -294,7 +322,6 @@ export const preview = (): Plan => {
 
 export const deploy = async (
   _workspace: Workspace,
-  _fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
   shouldDeploy: (plan: Plan) => Promise<boolean>,
   reportProgress: (action: PlanItem, step: string, details?: string) => void,
   _services: string[],

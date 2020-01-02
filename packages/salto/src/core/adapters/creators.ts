@@ -7,6 +7,4 @@ const adapterCreators: Record<string, AdapterCreator> = {
   hubspot: hubspotAdapterCreator,
 }
 
-export const isAdapterAvailable = (adapterName: string): boolean => !!adapterCreators[adapterName]
-
 export default adapterCreators

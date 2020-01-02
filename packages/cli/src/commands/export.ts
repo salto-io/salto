@@ -4,7 +4,6 @@ import wu from 'wu'
 import Prompts from '../prompts'
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'
-import { getConfigFromUser } from '../callbacks'
 import { loadWorkspace } from '../workspace'
 
 export const command = (
@@ -23,7 +22,7 @@ CliCommand => ({
     // Check if output path is provided, otherwise use the template
     // <working dir>/<typeName>_<current timestamp>.csv
     const outPath = outputPath || path.join(path.resolve('./'), `${typeName}_${Date.now()}.csv`)
-    const result = await exportToCsv(typeName, outPath, workspace, getConfigFromUser)
+    const result = await exportToCsv(typeName, outPath, workspace)
     stdout.write(Prompts.EXPORT_ENDED_SUMMARY(result.successfulRows, typeName, outputPath))
     if (result.errors.size > 0) {
       stdout.write(Prompts.ERROR_SUMMARY(wu(result.errors.values()).toArray()))

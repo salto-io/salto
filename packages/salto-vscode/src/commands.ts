@@ -1,9 +1,9 @@
 import * as vscode from 'vscode'
-import { InstanceElement, ObjectType, Values, isPrimitiveType, PrimitiveTypes, Value, SaltoError } from 'adapter-api'
+import { SaltoError } from 'adapter-api'
 import { preview, Plan, deploy, ItemStatus, PlanItem, DeployResult, WorkspaceError } from 'salto'
 import wu from 'wu'
 import { EditorWorkspace } from './salto/workspace'
-import { displayError, getBooleanInput, displayHTML, getStringInput, getNumberInput, hrefToUri, handleErrors } from './output'
+import { displayError, getBooleanInput, displayHTML, hrefToUri, handleErrors } from './output'
 import { getActionName, renderDiffView, createPlanDiff } from './format'
 
 const displayPlan = async (
@@ -25,28 +25,6 @@ async () => {
 const shouldDeploy = async (planActions: Plan, extensionPath: string): Promise<boolean> => {
   await displayPlan(planActions, extensionPath)
   return getBooleanInput('Salto will deploy the displayed changes', 'Approve', 'Cancel')
-}
-
-const getUserConfig = async (
-  configType: ObjectType
-): Promise<InstanceElement> => {
-  const valuesGetters: {[key in PrimitiveTypes]: (msg: string) => Promise<Value>} = {
-    [PrimitiveTypes.BOOLEAN]: (msg: string) => getBooleanInput(msg, 'Yes', 'No'),
-    [PrimitiveTypes.STRING]: msg => getStringInput(msg),
-    [PrimitiveTypes.NUMBER]: msg => getNumberInput(msg),
-  }
-  const values: Values = {}
-  for (let i = 0; i < Object.values(configType.fields).length; i += 1) {
-    const field = Object.values(configType.fields)[i]
-    if (isPrimitiveType(field.type)) {
-      const prompt = `Enter values for ${field.name}`
-      /* eslint-disable-next-line no-await-in-loop */
-      const input = await valuesGetters[field.type.primitive](prompt)
-      if (!input) throw Error(`Did not provide input for ${field.name}`)
-      values[field.name] = input
-    }
-  }
-  return new InstanceElement('stam', configType, values)
 }
 
 const updateProgress = async (
@@ -121,7 +99,6 @@ export const deployCommand = async (
   try {
     deployProcess = deploy(
       workspace.workspace,
-      getUserConfig,
       shouldDeployCB,
       updateActionCB
     )

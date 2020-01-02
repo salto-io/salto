@@ -3,7 +3,6 @@ import path from 'path'
 import tmp from 'tmp-promise'
 import {
   ElemID, InstanceElement, ObjectType, AdapterCreator, Field, BuiltinTypes, Element,
-  PrimitiveType, PrimitiveTypes,
 } from 'adapter-api'
 import { creator } from 'salesforce-adapter'
 import { Config } from '../../src/workspace/config'
@@ -194,7 +193,6 @@ describe('api functions', () => {
       const ws: Workspace = await Workspace.load(config)
       const deployResult = await commands.deploy(
         ws,
-        mockGetConfigFromUser,
         mockShouldDeployYes,
         mockReportCurrentAction,
         ['jira']
@@ -206,6 +204,7 @@ describe('api functions', () => {
     })
 
     it('should error on failure', async () => {
+      const configInst = await mockGetConfigFromUser(configType)
       const config: Config = {
         uid: '1',
         name: 'test',
@@ -216,9 +215,9 @@ describe('api functions', () => {
         additionalBlueprints: [filePath('fail.bp')],
       }
       const ws: Workspace = await Workspace.load(config)
+      await commands.updateLoginConfig(ws, [configInst])
       const deployResult = await commands.deploy(
         ws,
-        mockGetConfigFromUser,
         mockShouldDeployYes,
         mockReportCurrentAction,
         services
@@ -255,7 +254,6 @@ describe('api functions', () => {
       it('should deploy an deploy plan', async () => {
         await commands.deploy(
           ws,
-          mockGetConfigFromUser,
           mockShouldDeployYes,
           mockReportCurrentAction,
           services
@@ -268,7 +266,6 @@ describe('api functions', () => {
           Promise.resolve([new ObjectType({ elemID: new ElemID('salesforce', 'employee') })]))
         await commands.deploy(
           ws,
-          mockGetConfigFromUser,
           mockShouldDeployYes,
           mockReportCurrentAction,
           services
@@ -285,7 +282,6 @@ describe('api functions', () => {
         State.prototype.update = mockStateUpdate
         await commands.deploy(
           ws,
-          mockGetConfigFromUser,
           mockShouldDeployYes,
           mockReportCurrentAction,
           services
@@ -333,7 +329,6 @@ describe('api functions', () => {
             testType.elemID.getFullName(),
             'test',
             ws,
-            mockGetConfigFromUser
           )
           expect(mockStateGet).toHaveBeenCalled()
           expect(mockGetInstancesOfType).toHaveBeenCalled()
@@ -346,7 +341,6 @@ describe('api functions', () => {
             testType.elemID.getFullName(),
             'test',
             ws,
-            mockGetConfigFromUser
           )
           expect(mockStateGet).toHaveBeenCalled()
         })
@@ -358,51 +352,72 @@ describe('api functions', () => {
             testType.elemID.getFullName(),
             'test',
             ws,
-            mockGetConfigFromUser
           )
           expect(mockStateGet).toHaveBeenCalled()
         })
       })
     })
-  })
-  describe('fetch', () => {
-    let mockWorkspace: Workspace
-    let changes: plan.DetailedChange[]
-    beforeEach(async () => {
-      const configInst = await mockGetConfigFromUser(configType)
-      mockWorkspace = createMockWorkspace([configInst])
-      changes = [...(await commands.fetch(mockWorkspace, mockGetConfigFromUser, services)).changes]
-        .map(change => change.change)
-    })
+    describe('fetch', () => {
+      let mockWorkspace: Workspace
+      let changes: plan.DetailedChange[]
 
-    it('should return newly fetched elements', () => {
-      expect(changes.map(change => change.action)).toEqual(['add', 'add', 'add'])
+      describe('workspace with saleforce logged in', () => {
+        beforeEach(async () => {
+          const configInst = await mockGetConfigFromUser(configType)
+          mockWorkspace = createMockWorkspace([configInst])
+          changes = [...(await commands.fetch(mockWorkspace, services)).changes]
+            .map(change => change.change)
+        })
+        it('should return newly fetched elements', () => {
+          expect(changes.map(change => change.action)).toEqual(['add', 'add', 'add'])
+        })
+        it('should add newly fetched elements to state', () => {
+          expect(State.prototype.override).toHaveBeenCalledWith(fetchedElements)
+        })
+      })
+      describe('workspace with no adapter logged in', () => {
+        beforeEach(async () => {
+          mockWorkspace = createMockWorkspace([])
+        })
+        it('should throw not logged in error', async () => {
+          await expect(commands.fetch(mockWorkspace, services)).rejects.toThrow()
+        })
+      })
     })
-    it('should add newly fetched elements to state', () => {
-      expect(State.prototype.override).toHaveBeenCalledWith(fetchedElements)
-    })
-  })
-  describe('login', () => {
-    const elements: Element[] = [
-      new PrimitiveType({
-        elemID: new ElemID('salesforce', 'prim'),
-        primitive: PrimitiveTypes.STRING,
-      }),
-    ]
-
-    it('should persist a new config', async () => {
-      const ws = createMockWorkspace(elements)
-      const didLogin = await commands.loginAdapter(ws, mockGetConfigFromUser, services[0])
-      expect(didLogin).toBeTruthy()
-      expect(ws.flush as jest.FunctionLike).toHaveBeenCalled()
-    })
-
-    it('should not persist an existing config', async () => {
-      const configInst = await mockGetConfigFromUser(configType)
-      const ws = createMockWorkspace([configInst, ...elements])
-      const adapters = await commands.getAdapters(ws, mockGetConfigFromUser, services)
-      expect(adapters.salesforce).toBeDefined()
-      expect(ws.flush as jest.FunctionLike).not.toHaveBeenCalled()
+    describe('init workspace and add salesforce login config', () => {
+      let ws: Workspace
+      beforeEach(async () => {
+        const config: Config = {
+          uid: '',
+          name: 'test',
+          localStorage: localDir.path,
+          baseDir: baseDir.path,
+          stateLocation: './latest_state.bpc',
+          services,
+          additionalBlueprints: [filePath('salto.bp')],
+        }
+        ws = await Workspace.load(config)
+        const configInst = await mockGetConfigFromUser(configType)
+        await commands.updateLoginConfig(ws, [configInst])
+      })
+      it('there should be ine config element', () => {
+        expect(ws.configElements.length).toEqual(1)
+      })
+      it('should be associated with the salesforce adapter', () => {
+        expect(ws.configElements[0].elemID.adapter).toEqual('salesforce')
+      })
+      describe('check adapters login status', () => {
+        let adaptersLoginStatus: Record<string, commands.loginStatus>
+        beforeEach(async () => {
+          adaptersLoginStatus = await commands.getLoginStatuses(ws)
+        })
+        it('should state salesforce is logged in', () => {
+          expect(adaptersLoginStatus.salesforce.isLoggedIn).toBeTruthy()
+        })
+        it('should have the salesforce configType', () => {
+          expect(adaptersLoginStatus.salesforce.configType.elemID.adapter).toEqual('salesforce')
+        })
+      })
     })
   })
 })

@@ -1125,7 +1125,7 @@ export const getCompoundChildFields = (objectType: ObjectType): TypeField[] => {
   return Object.values(clonedObject.fields)
 }
 
-const getRefSFValue = (refValue: Value): Value => {
+const getLookUpName = (refValue: Value): Value => {
   if (isElement(refValue)) {
     return apiName(refValue)
   }
@@ -1134,21 +1134,21 @@ const getRefSFValue = (refValue: Value): Value => {
 
 export const transformReferences = <T extends Element>(element: T): T => {
   const refReplacer = (value: Value): Value => (
-    (value instanceof ReferenceExpression) ? getRefSFValue(value.value) : undefined
+    (value instanceof ReferenceExpression) ? getLookUpName(value.value) : undefined
   )
   return _.cloneDeepWith(element, refReplacer)
 }
 
 export const restoreReferences = <T extends Element>(orig: T, modified: T): T => {
-  const resResotrer = (o: Value, m: Value): Value => {
-    if (isElement(o) && isElement(m)) {
-      return restoreReferences(o, m)
+  const resResotrer = (obj: Value, src: Value): Value => {
+    if (isElement(obj) && isElement(src)) {
+      return restoreReferences(obj, src)
     }
-    if (o instanceof ReferenceExpression || (m instanceof ReferenceExpression)) {
-      return (getRefSFValue(o.value) === m) ? o : m
+    if (obj instanceof ReferenceExpression && !(src instanceof ReferenceExpression)) {
+      return (getLookUpName(obj.value) === src) ? obj : src
     }
     return undefined
   }
 
-  return _.mergeWith(orig, modified, resResotrer)
+  return _.mergeWith(_.cloneDeep(orig), modified, resResotrer)
 }

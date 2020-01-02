@@ -32,6 +32,7 @@
   },
   "dependencies": {
     "@salto/dag": "0.1.0",
+    "@salto/hubspot-adapter": "0.1.0",
     "@salto/logging": "0.1.0",
     "@salto/lowerdash": "0.1.0",
     "@types/uuid": "^3.4.5",

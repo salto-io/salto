@@ -11,7 +11,7 @@ import { logger } from '@salto/logging'
 import {
   FIELD_PERMISSIONS, FIELD_LEVEL_SECURITY_ANNOTATION,
   PROFILE_METADATA_TYPE, ADMIN_PROFILE,
-  OBJECT_LEVEL_SECURITY_ANNOTATION, OBJECT_PERMISSIONS, SALESFORCE, INSTANCE_FULL_NAME_FIELD,
+  OBJECT_LEVEL_SECURITY_ANNOTATION, OBJECT_PERMISSIONS, SALESFORCE,
 } from '../constants'
 import {
   isCustomObject, Types, apiName, bpCase, sfCase,
@@ -56,9 +56,7 @@ const setProfilePermissions = <T = PermissionsTypes>
   Object.entries(permissions).filter(p => isElementName(p[0])).forEach(permissionOption => {
     if (boolValue(permissionOption[1])) {
       getAnnotationValue(element, annotationName)[bpCase(permissionOption[0])].push(
-        createReferences ? new ReferenceExpression(
-          profile.createNestedID(INSTANCE_FULL_NAME_FIELD)
-        ) : profileName
+        createReferences ? new ReferenceExpression(profile) : profileName
       )
     }
   })

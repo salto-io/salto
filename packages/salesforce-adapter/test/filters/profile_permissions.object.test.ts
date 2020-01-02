@@ -147,7 +147,7 @@ describe('Object Permissions filter', () => {
 
       const verifyReference = (permission: Value, expectedValue: string): void => {
         expect((permission[0] as ReferenceExpression).traversalParts).toEqual(
-          [...expectedValue.split('.'), constants.INSTANCE_FULL_NAME_FIELD]
+          expectedValue.split('.')
         )
       }
 

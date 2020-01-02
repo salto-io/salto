@@ -172,30 +172,24 @@ describe('Field Permissions filter', () => {
       const fieldLevelSecurity = objectTypes[0].fields.description
         .annotations[FIELD_LEVEL_SECURITY_ANNOTATION]
       expect((fieldLevelSecurity.readable[0] as ReferenceExpression).traversalParts).toEqual(
-        [...ADMIN_FULL_NAME.split('.'), constants.INSTANCE_FULL_NAME_FIELD]
+        ADMIN_FULL_NAME.split('.')
       )
       expect((fieldLevelSecurity.editable[0] as ReferenceExpression).traversalParts).toEqual(
-        [...STANDARD_FULL_NAME.split('.'), constants.INSTANCE_FULL_NAME_FIELD]
+        STANDARD_FULL_NAME.split('.')
       )
 
       const fieldLevelSecurityPlus = objectTypes[1].fields.plus
         .annotations[FIELD_LEVEL_SECURITY_ANNOTATION]
       expect((fieldLevelSecurityPlus.readable[0] as ReferenceExpression).traversalParts)
-        .toEqual(
-          [...ADMIN_FULL_NAME.split('.'), constants.INSTANCE_FULL_NAME_FIELD]
-        )
+        .toEqual(ADMIN_FULL_NAME.split('.'))
       expect(fieldLevelSecurityPlus.editable).toEqual([])
 
       const fieldLevelSecurityNoStandard = objectTypes[0].fields.noStandard
         .annotations[FIELD_LEVEL_SECURITY_ANNOTATION]
       expect((fieldLevelSecurityNoStandard.readable[0] as ReferenceExpression).traversalParts)
-        .toEqual(
-          [...ADMIN_FULL_NAME.split('.'), constants.INSTANCE_FULL_NAME_FIELD]
-        )
+        .toEqual(ADMIN_FULL_NAME.split('.'))
       expect((fieldLevelSecurityNoStandard.editable[0] as ReferenceExpression).traversalParts)
-        .toEqual(
-          [...ADMIN_FULL_NAME.split('.'), constants.INSTANCE_FULL_NAME_FIELD]
-        )
+        .toEqual(ADMIN_FULL_NAME.split('.'))
 
       // Check profile instances' field_permissions were deleted
       getProfileInstances(elements)

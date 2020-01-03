@@ -1,6 +1,7 @@
 import _ from 'lodash'
 import {
-  ObjectType, ElemID, Field, BuiltinTypes, InstanceElement, CORE_ANNOTATIONS, ReferenceExpression,
+  ObjectType, ElemID, Field, BuiltinTypes, InstanceElement, CORE_ANNOTATIONS,
+  ReferenceExpression, PrimitiveType, PrimitiveTypes,
 } from 'adapter-api'
 import { validateElements, InvalidValueValidationError } from '../src/core/validator'
 
@@ -23,6 +24,23 @@ describe('Elements validation', () => {
     },
   })
 
+  const restrictedType = new PrimitiveType({
+    elemID: new ElemID('salto', 'simple', 'type', 'restrictedType'),
+    primitive: PrimitiveTypes.STRING,
+    annotations: {
+      [CORE_ANNOTATIONS.RESTRICTION]: { [CORE_ANNOTATIONS.ENFORCE_VALUE]: true },
+      [CORE_ANNOTATIONS.VALUES]: ['val1', 'val2'],
+    },
+  })
+
+  const restrictedAnnotation = new PrimitiveType({
+    elemID: new ElemID('salto', 'simple', 'type', 'restrictedAnnotation'),
+    primitive: PrimitiveTypes.STRING,
+    annotationTypes: {
+      temp: restrictedType,
+    },
+  })
+
   const nestedElemID = new ElemID('salto', 'nested')
   const nestedType = new ObjectType({
     elemID: nestedElemID,
@@ -41,11 +59,15 @@ describe('Elements validation', () => {
           'restriction1', 'restriction2',
         ],
       }),
+      restrictedAnnotation: new Field(nestedElemID, 'restrictedPrimitive', restrictedAnnotation, {
+        temp: 'val1',
+      }),
       reqNested: new Field(nestedElemID, 'reqNested', simpleType, {
       }),
     },
     annotationTypes: {
       nested: simpleType,
+      restrictedPrimitive: restrictedType,
     },
   })
 
@@ -316,6 +338,12 @@ describe('Elements validation', () => {
             .annotations[CORE_ANNOTATIONS.RESTRICTION] = { [CORE_ANNOTATIONS.ENFORCE_VALUE]: true }
           extInst.type = extType
           testValuesAreNotListedButEnforced()
+        })
+
+        it('should return an error when annotations values doesnt match restriction values', () => {
+          const extType = _.cloneDeep(nestedType)
+          extType.fields.restrictedAnnotation.annotations.temp = 'wrong'
+          expect(validateElements([extType])).toHaveLength(1)
         })
 
         it('should return an error when list fields values doesnt match restriction values', () => {

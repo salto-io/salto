@@ -204,7 +204,7 @@ describe('SalesforceAdapter CRUD', () => {
         expect(result.annotations[constants.API_NAME]).toBe('Test__c')
         expect(
           result.fields.description.annotations[constants.API_NAME]
-        ).toBe('Description__c')
+        ).toBe('Test__c.Description__c')
         expect(result.annotations[constants.METADATA_TYPE]).toBe(constants.CUSTOM_OBJECT)
 
         expect(mockCreate.mock.calls.length).toBe(1)
@@ -1079,7 +1079,7 @@ describe('SalesforceAdapter CRUD', () => {
                 'address',
                 stringType,
                 {
-                  [constants.API_NAME]: 'Address__c',
+                  [constants.API_NAME]: 'Test__c.Address__c',
                 },
               ),
               banana: new Field(
@@ -1087,7 +1087,7 @@ describe('SalesforceAdapter CRUD', () => {
                 'banana',
                 stringType,
                 {
-                  [constants.API_NAME]: 'Banana__c',
+                  [constants.API_NAME]: 'Test__c.Banana__c',
                 },
               ),
               description: new Field(
@@ -1095,7 +1095,7 @@ describe('SalesforceAdapter CRUD', () => {
                 'description',
                 stringType,
                 {
-                  [constants.API_NAME]: 'Description__c',
+                  [constants.API_NAME]: 'Test__c.Description__c',
                 },
               ),
             },
@@ -1115,7 +1115,7 @@ describe('SalesforceAdapter CRUD', () => {
                 'description',
                 stringType,
                 {
-                  [constants.API_NAME]: 'Description__c',
+                  [constants.API_NAME]: 'Test__c.Description__c',
                 },
               ),
             },
@@ -1159,7 +1159,7 @@ describe('SalesforceAdapter CRUD', () => {
                 'address',
                 stringType,
                 {
-                  [constants.API_NAME]: 'Address__c',
+                  [constants.API_NAME]: 'Test__c.Address__c',
                 },
               ),
               banana: new Field(
@@ -1167,7 +1167,7 @@ describe('SalesforceAdapter CRUD', () => {
                 'banana',
                 stringType,
                 {
-                  [constants.API_NAME]: 'Banana__c',
+                  [constants.API_NAME]: 'Test__c.Banana__c',
                 },
               ),
             },
@@ -1187,7 +1187,7 @@ describe('SalesforceAdapter CRUD', () => {
                 'banana',
                 stringType,
                 {
-                  [constants.API_NAME]: 'Banana__c',
+                  [constants.API_NAME]: 'Test__c.Banana__c',
                 }
               ),
               description: new Field(
@@ -1303,7 +1303,7 @@ describe('SalesforceAdapter CRUD', () => {
                 'address',
                 stringType,
                 {
-                  [constants.API_NAME]: 'Address__c',
+                  [constants.API_NAME]: 'Test__c.Address__c',
                   [constants.LABEL]: 'Address',
                 },
               ),
@@ -1312,7 +1312,7 @@ describe('SalesforceAdapter CRUD', () => {
                 'banana',
                 stringType,
                 {
-                  [constants.API_NAME]: 'Banana__c',
+                  [constants.API_NAME]: 'Test__c.Banana__c',
                   [constants.LABEL]: 'Banana',
                 },
               ),
@@ -1321,7 +1321,7 @@ describe('SalesforceAdapter CRUD', () => {
                 'cat',
                 stringType,
                 {
-                  [constants.API_NAME]: 'Cat__c',
+                  [constants.API_NAME]: 'Test__c.Cat__c',
                   [constants.LABEL]: 'Cat',
                 },
               ),
@@ -1342,7 +1342,7 @@ describe('SalesforceAdapter CRUD', () => {
                 'banana',
                 stringType,
                 {
-                  [constants.API_NAME]: 'Banana__c',
+                  [constants.API_NAME]: 'Test__c.Banana__c',
                   [constants.LABEL]: 'Banana Split',
                 },
               ),
@@ -1351,7 +1351,7 @@ describe('SalesforceAdapter CRUD', () => {
                 'cat',
                 stringType,
                 {
-                  [constants.API_NAME]: 'Cat__c',
+                  [constants.API_NAME]: 'Test__c.Cat__c',
                   [constants.LABEL]: 'Cat',
                 },
               ),
@@ -1360,7 +1360,7 @@ describe('SalesforceAdapter CRUD', () => {
                 'description',
                 stringType,
                 {
-                  [constants.API_NAME]: 'Description__c',
+                  [constants.API_NAME]: 'Test__c.Description__c',
                   [constants.LABEL]: 'Description',
                 },
               ),
@@ -1445,7 +1445,7 @@ describe('SalesforceAdapter CRUD', () => {
                 'address',
                 stringType,
                 {
-                  [constants.API_NAME]: 'Address__c',
+                  [constants.API_NAME]: 'Test__c.Address__c',
                 },
               ),
               banana: new Field(
@@ -1453,7 +1453,7 @@ describe('SalesforceAdapter CRUD', () => {
                 'banana',
                 stringType,
                 {
-                  [constants.API_NAME]: 'Banana__c',
+                  [constants.API_NAME]: 'Test__c.Banana__c',
                 },
               ),
             },
@@ -1489,7 +1489,7 @@ describe('SalesforceAdapter CRUD', () => {
                 'banana',
                 stringType,
                 {
-                  [constants.API_NAME]: 'Banana__c',
+                  [constants.API_NAME]: 'Test__c.Banana__c',
                 },
               ),
             },
@@ -1510,7 +1510,7 @@ describe('SalesforceAdapter CRUD', () => {
                 stringType,
                 {
                   [constants.LABEL]: 'Banana Split',
-                  [constants.API_NAME]: 'Banana__c',
+                  [constants.API_NAME]: 'Test__c.Banana__c',
                 },
               ),
             },

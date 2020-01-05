@@ -14,7 +14,7 @@ import { decorators, collections } from '@salto/lowerdash'
 import SalesforceClient, { API_VERSION, Credentials } from './client/client'
 import * as constants from './constants'
 import {
-  toCustomField, toCustomObject, apiName, sfCase, fieldFullName, Types,
+  toCustomField, toCustomObject, apiName, sfCase, Types,
   toMetadataInfo, createInstanceElement,
   metadataType, toInstanceElements, createMetadataTypeElements,
   instanceElementstoRecords, elemIDstoRecords, getCompoundChildFields,
@@ -56,7 +56,7 @@ const addDefaults = (element: ObjectType): void => {
   addMetadataType(element)
   addLabel(element)
   Object.values(element.fields).forEach(field => {
-    addApiName(field, sfCase(field.name, true))
+    addApiName(field, sfCase(field.name, true), apiName(element))
     addLabel(field)
   })
 }
@@ -213,7 +213,6 @@ export default class SalesforceAdapter {
       await Promise.all([annotationTypes, fieldTypes,
         metadataTypes, metadataInstances]) as Element[][]
     )
-
     await this.runFiltersOnFetch(elements)
     return elements
   }
@@ -470,14 +469,13 @@ export default class SalesforceAdapter {
     changes: ReadonlyArray<Change<Field | ObjectType>>): Promise<ObjectType> {
     validateApiName(before, after)
     const clonedObject = after.clone()
-
     changes
       .filter(isAdditionDiff)
       .map(getChangeElement)
       .filter(isField)
       .forEach(f => {
         addLabel(clonedObject.fields[f.name])
-        addApiName(clonedObject.fields[f.name], sfCase(f.name, true))
+        addApiName(clonedObject.fields[f.name], sfCase(f.name, true), apiName(clonedObject))
       })
 
     const fieldChanges = changes.filter(c => isField(getChangeElement(c))) as Change<Field>[]
@@ -490,9 +488,7 @@ export default class SalesforceAdapter {
 
     await Promise.all([
       // Retrieve the custom fields for deletion and delete them
-      this.deleteCustomFields(clonedObject, fieldChanges
-        .filter(isRemovalDiff)
-        .map(getChangeElement)),
+      this.deleteCustomFields(fieldChanges.filter(isRemovalDiff).map(getChangeElement)),
       // Retrieve the custom fields for addition and than create them
       this.createFields(clonedObject, fieldChanges
         .filter(isAdditionDiff)
@@ -581,9 +577,9 @@ export default class SalesforceAdapter {
    * @param element the object api name those fields reside in
    * @param fields the custom fields we wish to delete
    */
-  private async deleteCustomFields(element: ObjectType, fields: Field[]): Promise<SaveResult[]> {
+  private async deleteCustomFields(fields: Field[]): Promise<SaveResult[]> {
     return this.client.delete(constants.CUSTOM_FIELD, fields
-      .map(field => fieldFullName(element, field)))
+      .map(field => apiName(field)))
   }
 
   private async listMetadataTypes(): Promise<string[]> {

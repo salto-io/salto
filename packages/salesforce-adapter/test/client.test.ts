@@ -84,7 +84,7 @@ describe('salesforce client', () => {
     })
 
     it('continue in case of error in single chunk', async () => {
-      const dodoScope = nock('http://dodo22/services/Soap/m/46.0')
+      const dodoScope = nock('http://dodo22/services/Soap/m/47.0')
         .post(/.*/)
         .times(2)
         .reply(200,
@@ -104,7 +104,7 @@ describe('salesforce client', () => {
     })
 
     it('fail in case of error in all chunk', async () => {
-      const dodoScope = nock('http://dodo22/services/Soap/m/46.0')
+      const dodoScope = nock('http://dodo22/services/Soap/m/47.0')
         .post(/.*/)
         .times(2)
         .reply(500, 'server error')

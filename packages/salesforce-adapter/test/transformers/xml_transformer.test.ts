@@ -45,7 +45,7 @@ describe('XML Transformer', () => {
         expect(packageXml).toBeDefined()
         expect(await packageXml.async('text')).toMatch(
           `<Package xmlns="http://soap.sforce.com/2006/04/metadata">
-           <version>46.0</version>
+           <version>47.0</version>
            <types><members>Instance</members><name>AssignmentRules</name></types>
          </Package>`.replace(/>\s+</gs, '><')
         )
@@ -83,7 +83,7 @@ describe('XML Transformer', () => {
         apexClassType,
         {
           [INSTANCE_FULL_NAME_FIELD]: 'MyApexClass',
-          [apiVersion]: 46.0,
+          [apiVersion]: 47.0,
           content: 'public class MyApexClass {\n    public void printLog() {\n        System.debug(\'Created\');\n    }\n}',
         },
       )
@@ -97,7 +97,7 @@ describe('XML Transformer', () => {
         expect(packageXml).toBeDefined()
         expect(await packageXml.async('text')).toMatch(
           `<Package xmlns="http://soap.sforce.com/2006/04/metadata">
-           <version>46.0</version>
+           <version>47.0</version>
            <types><members>MyApexClass</members><name>ApexClass</name></types>
          </Package>`.replace(/>\s+</gs, '><')
         )
@@ -108,7 +108,7 @@ describe('XML Transformer', () => {
         expect(instanceXml).toBeDefined()
         expect(await instanceXml.async('text')).toMatch(
           `<ApexClass xmlns="http://soap.sforce.com/2006/04/metadata">
-           <apiVersion>46</apiVersion>
+           <apiVersion>47</apiVersion>
          </ApexClass>`.replace(/>\s+</gs, '><')
         )
       })
@@ -188,7 +188,7 @@ describe('XML Transformer', () => {
         apexClassType,
         {
           [INSTANCE_FULL_NAME_FIELD]: 'MyApexClass',
-          [apiVersion]: 46.0,
+          [apiVersion]: 47.0,
           content: 'public class MyApexClass {\n    public void printLog() {\n        System.debug(\'Created\');\n    }\n}',
         },
       )
@@ -284,14 +284,14 @@ describe('XML Transformer', () => {
         id: '09S4J000001dSRcUAM',
         messages: [],
         zipFile:
-          'UEsDBBQACAgIALFhhU8AAAAAAAAAAAAAAAAiAAAAdW5wYWNrYWdlZC9jbGFzc2VzL015QXBleENsYXNzLmNscysoTcrJTFZIzkksLlbwrXQsSK1wBrOruRSAoAAiXZafmaJQUJSZV+KTn66hCZUEgeDK4pLUXL2U1KTSdA1156LUxJLUFHVNa7CCWq5aAFBLBwhoWu8NTgAAAGAAAABQSwMEFAAICAgAsWGFTwAAAAAAAAAAAAAAACsAAAB1bnBhY2thZ2VkL2NsYXNzZXMvTXlBcGV4Q2xhc3MuY2xzLW1ldGEueG1sTY1BCsIwEEX3OUXI3kyUUkTSlCJ4AnU/pFEDbRI6Y+nxLVTEv3ufB8+2yzjIOUwUc2rUXhslQ/K5j+nZqNv1sjuq1gnblbCcBySSq5+oUS/mcgKgjEXTI08+aJ9HOBhTg6lgDIw9Mion5DqLJd63iKtqbSz8HZtBjPwm13mOc7DwRWHhl3biA1BLBwhAKe+TiAAAAK4AAABQSwMEFAAICAgAsWGFTwAAAAAAAAAAAAAAABYAAAB1bnBhY2thZ2VkL3BhY2thZ2UueG1sTY7NCsIwEITvfYqQo2A2SikiaYoInj3oA6zpqsXmhyZIfXtLf9A5zccuM6Oq3rbsTV1svCv5RkjOyBlfN+5R8uvltN7xSmfqjOaFD2LDt4slf6YU9gDRYxDx7jtDwngLWykLkDlYSlhjQq4zNkilT6A4+ZEt2dtQqVcKFvs7OrSkD4H6Y4sxKhh5yoG/IDWP1nkhpIKFMgXzVp19AVBLBwhbjqgSnQAAAN0AAABQSwECFAAUAAgICACxYYVPaFrvDU4AAABgAAAAIgAAAAAAAAAAAAAAAAAAAAAAdW5wYWNrYWdlZC9jbGFzc2VzL015QXBleENsYXNzLmNsc1BLAQIUABQACAgIALFhhU9AKe+TiAAAAK4AAAArAAAAAAAAAAAAAAAAAJ4AAAB1bnBhY2thZ2VkL2NsYXNzZXMvTXlBcGV4Q2xhc3MuY2xzLW1ldGEueG1sUEsBAhQAFAAICAgAsWGFT1uOqBKdAAAA3QAAABYAAAAAAAAAAAAAAAAAfwEAAHVucGFja2FnZWQvcGFja2FnZS54bWxQSwUGAAAAAAMAAwDtAAAAYAIAAAAA',
+          'UEsDBAoAAAAAAEOEJVAAAAAAAAAAAAAAAAALABwAdW5wYWNrYWdlZC9VVAkAA97zEV7n8xFedXgL\nAAEE9QEAAAQUAAAAUEsDBBQAAAAIAJqDJVBVHiO3nQAAAN0AAAAWABwAdW5wYWNrYWdlZC9wYWNr\nYWdlLnhtbFVUCQADo/IRXsnyEV51eAsAAQT1AQAABBQAAABNjs0KwjAQhO95ipCjYDdKUZFtigie\nPegDxLjWYvNDE6S+vaU/6JzmY5eZwbKzDX9TG2vvCrHKpODkjL/XrirE9XJa7kSpGJ61eemKeP/t\nYiGeKYU9QPQ6ZPHhW0OZ8RbWUm5A5mAp6btOWijGe2H6BIqjH9iSvfWVaoEw29/RaUvqEKg7NjpG\nhIHHHPgLwmm0yreZRJiJIUxbFfsCUEsDBAoAAAAAAHGCJVAAAAAAAAAAAAAAAAATABwAdW5wYWNr\nYWdlZC9jbGFzc2VzL1VUCQADdvARXlzxEV51eAsAAQT1AQAABBQAAABQSwMEFAAAAAgAloMlUNMm\nKNmIAAAArgAAACsAHAB1bnBhY2thZ2VkL2NsYXNzZXMvTXlBcGV4Q2xhc3MuY2xzLW1ldGEueG1s\nVVQJAAOb8hFe6fIRXnV4CwABBPUBAAAEFAAAAE2NQQrCMBBF9zlFyN5MlKIiaUoRPIG6H9KogTYJ\nnbH0+BYq4t+9z4Nnm3no5RRGijnVaquNkiH53MX0rNXtetkcVeOEbUuYzz0SycVPVKsXczkBUMai\n6ZFHH7TPA+yM2YOpYAiMHTIqJ+QyiyXe14irDtpY+DtWgxj5Ta71HKdg4YvCwi/txAdQSwMEFAAA\nAAgAsWGFT2ha7w1OAAAAYAAAACIAHAB1bnBhY2thZ2VkL2NsYXNzZXMvTXlBcGV4Q2xhc3MuY2xz\nVVQJAANO2OhdmPIRXnV4CwABBPUBAAAEFAAAACsoTcrJTFZIzkksLlbwrXQsSK1wBrOruRSAoAAi\nXZafmaJQUJSZV+KTn66hCZUEgeDK4pLUXL2U1KTSdA1156LUxJLUFHVNa7CCWq5aAFBLAQIeAwoA\nAAAAAEOEJVAAAAAAAAAAAAAAAAALABgAAAAAAAAAEADtQQAAAAB1bnBhY2thZ2VkL1VUBQAD3vMR\nXnV4CwABBPUBAAAEFAAAAFBLAQIeAxQAAAAIAJqDJVBVHiO3nQAAAN0AAAAWABgAAAAAAAEAAAC0\ngUUAAAB1bnBhY2thZ2VkL3BhY2thZ2UueG1sVVQFAAOj8hFedXgLAAEE9QEAAAQUAAAAUEsBAh4D\nCgAAAAAAcYIlUAAAAAAAAAAAAAAAABMAGAAAAAAAAAAQAO1BMgEAAHVucGFja2FnZWQvY2xhc3Nl\ncy9VVAUAA3bwEV51eAsAAQT1AQAABBQAAABQSwECHgMUAAAACACWgyVQ0yYo2YgAAACuAAAAKwAY\nAAAAAAABAAAAtIF/AQAAdW5wYWNrYWdlZC9jbGFzc2VzL015QXBleENsYXNzLmNscy1tZXRhLnht\nbFVUBQADm/IRXnV4CwABBPUBAAAEFAAAAFBLAQIeAxQAAAAIALFhhU9oWu8NTgAAAGAAAAAiABgA\nAAAAAAEAAAC0gWwCAAB1bnBhY2thZ2VkL2NsYXNzZXMvTXlBcGV4Q2xhc3MuY2xzVVQFAANO2Ohd\ndXgLAAEE9QEAAAQUAAAAUEsFBgAAAAAFAAUA3wEAABYDAAAAAA==\n',
       }
 
       it('should transform zip to MetadataInfo', async () => {
         const typeNameToInstanceInfos = await fromRetrieveResult(retrieveResult, ['ApexClass'])
         const [metadataInfo] = typeNameToInstanceInfos.ApexClass
         expect(metadataInfo.fullName).toEqual('MyApexClass')
-        expect(_.get(metadataInfo, 'apiVersion')).toEqual(46)
+        expect(_.get(metadataInfo, 'apiVersion')).toEqual(47)
         expect(_.get(metadataInfo, 'status')).toEqual('Active')
         expect(_.get(metadataInfo, 'content'))
           .toEqual('public class MyApexClass {\n    public void printLog() {\n        System.debug(\'Created\');\n    }\n}')

@@ -1,11 +1,15 @@
+import _ from 'lodash'
 import {
-  Change, ElemID, ObjectType,
-  Element, InstanceElement, isInstanceElement,
+  Change, isInstanceElement,
+  Element, InstanceElement, ObjectType,
 } from 'adapter-api'
 import {
   Form,
 } from './client/types'
 import HubspotClient from './client/client'
+import {
+  Types, createHubspotInstanceElement,
+} from './transformers/transformer'
 
 const validateFormGuid = (
   before: InstanceElement,
@@ -40,13 +44,30 @@ export default class HubspotAdapter {
    * Account credentials were given in the constructor.
    */
   public async fetch(): Promise<Element[]> {
-    const resp = await this.client.getAllForms()
-    return resp.map(e => new InstanceElement(
-      e.name,
-      new ObjectType({ elemID: new ElemID('hubspot') }),
-      {}
-    ))
+    const fieldTypes = Types.getAllFieldTypes()
+    const objects = Types.hubspotObjects
+    objects.forEach(e => { e.path = ['hubspot', 'objects', e.elemID.name] })
+    const instances = await this.fetchHubInstances(objects)
+
+    return _.flatten(
+      [fieldTypes, objects, instances] as Element[][]
+    )
   }
+
+  private async fetchHubInstances(
+    types: ObjectType[]
+  ): Promise<InstanceElement[]> {
+    const instances = await Promise.all((types)
+      .map(t => this.fetchHubspotInstances(t)))
+    return _.flatten(instances)
+  }
+
+  private async fetchHubspotInstances(type: ObjectType): Promise<InstanceElement[]> {
+    const instances = await this.client.getAllForms()
+    return instances
+      .map(i => createHubspotInstanceElement(i, type))
+  }
+
 
   /**
    * Add new element

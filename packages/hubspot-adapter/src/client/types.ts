@@ -1,7 +1,10 @@
-export interface Form {
-  portalId: number
-  guid: string
+export interface HubspotMetadata {
   name: string
+  // TODO
+}
+
+export interface Form extends HubspotMetadata {
+  guid: string
   method: string
   cssClass: string
   redirect: string
@@ -10,5 +13,4 @@ export interface Form {
   ignoreCurrentValues: boolean
   deletable: boolean
   inlineMessage: string
-
 }

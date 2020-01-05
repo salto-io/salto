@@ -44,6 +44,7 @@ describe('Test HubSpot client', () => {
               action: '',
               method: 'POST',
               cssClass: 'abc',
+              followUpId: 'DEPRECATED',
             },
             {
               portalId: 6774238,
@@ -52,6 +53,7 @@ describe('Test HubSpot client', () => {
               action: '',
               method: 'POST',
               cssClass: 'css',
+              followUpId: 'DEPRECATED',
             },
           ] as unknown as RequestPromise)
 
@@ -286,8 +288,6 @@ describe('Test HubSpot client', () => {
       })
 
       it('should return the updated form', async () => {
-        // await expect(client.updateForm(formToUpdate)).rejects
-        //   .toThrow("No form found with guid 'guidToUpdate'")
         const resp = await client.updateForm(formToUpdate)
         expect(resp.name).toEqual(formToUpdate.name)
         expect(resp.guid).toEqual(formToUpdate.guid)
@@ -295,8 +295,6 @@ describe('Test HubSpot client', () => {
         expect(resp.deletable).toEqual(formToUpdate.deletable)
         expect(resp.redirect).not.toEqual(formToUpdate.redirect)
         expect(resp.redirect).toEqual('google.com')
-        expect(resp.portalId).not.toEqual(formToUpdate.portalId)
-        expect(resp.portalId).toEqual(6774238)
       })
     })
 

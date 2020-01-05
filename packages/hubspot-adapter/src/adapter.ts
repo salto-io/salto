@@ -50,7 +50,7 @@ export default class HubspotAdapter {
     const instances = await this.fetchHubInstances(objects)
 
     return _.flatten(
-      await Promise.all([fieldTypes, objects, instances]) as Element[][]
+      [fieldTypes, objects, instances] as Element[][]
     )
   }
 

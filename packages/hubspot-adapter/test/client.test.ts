@@ -288,8 +288,6 @@ describe('Test HubSpot client', () => {
       })
 
       it('should return the updated form', async () => {
-        // await expect(client.updateForm(formToUpdate)).rejects
-        //   .toThrow("No form found with guid 'guidToUpdate'")
         const resp = await client.updateForm(formToUpdate)
         expect(resp.name).toEqual(formToUpdate.name)
         expect(resp.guid).toEqual(formToUpdate.guid)

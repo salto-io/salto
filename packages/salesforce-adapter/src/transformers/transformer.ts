@@ -752,10 +752,10 @@ const getDefaultValue = (field: Field): PrimitiveValue | undefined => {
 // and their fields described in the blueprint
 export const getSObjectFieldElement = (parent: Element, field: Field,
   parentServiceIds: ServiceIds): TypeField => {
-  const fieldApiName = [parent.annotations[API_NAME], field.name].join(API_NAME_SEPERATOR)
+  const fieldApiName = [apiName(parent), field.name].join(API_NAME_SEPERATOR)
   const serviceIds = {
     [ADAPTER]: SALESFORCE,
-    [API_NAME]: field.name,
+    [API_NAME]: fieldApiName,
     [OBJECT_SERVICE_ID]: toServiceIdsString(parentServiceIds),
   }
 

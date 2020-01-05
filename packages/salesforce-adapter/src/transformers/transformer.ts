@@ -17,7 +17,8 @@ import {
   ADDRESS_FIELDS, NAME_FIELDS, GEOLOCATION_FIELDS, INSTANCE_FULL_NAME_FIELD,
   FIELD_LEVEL_SECURITY_ANNOTATION, FIELD_LEVEL_SECURITY_FIELDS, FIELD_DEPENDENCY_FIELDS,
   VALUE_SETTINGS_FIELDS, FILTER_ITEM_FIELDS, OBJECT_LEVEL_SECURITY_ANNOTATION,
-  OBJECT_LEVEL_SECURITY_FIELDS, NAMESPACE_SEPARATOR, DESCRIPTION, HELP_TEXT,
+  OBJECT_LEVEL_SECURITY_FIELDS, NAMESPACE_SEPARATOR, DESCRIPTION, HELP_TEXT, BUSINESS_STATUS,
+  SECURITY_CLASSIFICATION, BUSINESS_OWNER_GROUP, BUSINESS_OWNER_USER, COMPLIANCE_GROUP,
 } from '../constants'
 import SalesforceClient from '../client/client'
 
@@ -267,11 +268,65 @@ export class Types {
     },
   })
 
+  private static encryptedTextMaskTypeTypeElemID = new ElemID(SALESFORCE,
+    FIELD_ANNOTATIONS.MASK_TYPE, 'type')
+
+  private static encryptedTextMaskTypeType = new PrimitiveType({
+    elemID: Types.encryptedTextMaskTypeTypeElemID,
+    primitive: PrimitiveTypes.STRING,
+    annotations: {
+      [CORE_ANNOTATIONS.RESTRICTION]: { [CORE_ANNOTATIONS.ENFORCE_VALUE]: true },
+      [CORE_ANNOTATIONS.VALUES]: ['all', 'creditCard', 'ssn', 'lastFour', 'sin', 'nino'],
+    },
+  })
+
+  private static encryptedTextMaskCharTypeElemID = new ElemID(SALESFORCE,
+    FIELD_ANNOTATIONS.MASK_CHAR, 'type')
+
+  private static encryptedTextMaskCharType = new PrimitiveType({
+    elemID: Types.encryptedTextMaskCharTypeElemID,
+    primitive: PrimitiveTypes.STRING,
+    annotations: {
+      [CORE_ANNOTATIONS.RESTRICTION]: { [CORE_ANNOTATIONS.ENFORCE_VALUE]: true },
+      [CORE_ANNOTATIONS.VALUES]: ['X', 'asterisk'],
+    },
+  })
+
+  private static BusinessStatusTypeElemID = new ElemID(SALESFORCE, BUSINESS_STATUS)
+
+  private static BusinessStatusType = new PrimitiveType({
+    elemID: Types.BusinessStatusTypeElemID,
+    primitive: PrimitiveTypes.STRING,
+    annotations: {
+      [CORE_ANNOTATIONS.RESTRICTION]: { [CORE_ANNOTATIONS.ENFORCE_VALUE]: true },
+      [CORE_ANNOTATIONS.VALUES]: ['Active', 'DeprecateCandidate', 'Hidden'],
+    },
+  })
+
+  private static SecurityClassificationTypeElemID = new ElemID(SALESFORCE, SECURITY_CLASSIFICATION)
+
+  private static SecurityClassificationType = new PrimitiveType({
+    elemID: Types.SecurityClassificationTypeElemID,
+    primitive: PrimitiveTypes.STRING,
+    annotations: {
+      [CORE_ANNOTATIONS.RESTRICTION]: { [CORE_ANNOTATIONS.ENFORCE_VALUE]: true },
+      [CORE_ANNOTATIONS.VALUES]: [
+        'Public', 'Internal', 'Confidential', 'Restricted', 'MissionCritical',
+      ],
+    },
+  })
+
   private static commonAnnotationTypes = {
     [API_NAME]: BuiltinTypes.SERVICE_ID,
     [DESCRIPTION]: BuiltinTypes.STRING,
     [HELP_TEXT]: BuiltinTypes.STRING,
     [LABEL]: BuiltinTypes.STRING,
+    [FIELD_LEVEL_SECURITY_ANNOTATION]: Types.fieldLevelSecurityType,
+    [BUSINESS_OWNER_USER]: BuiltinTypes.STRING,
+    [BUSINESS_OWNER_GROUP]: BuiltinTypes.STRING,
+    [BUSINESS_STATUS]: Types.BusinessStatusType,
+    [SECURITY_CLASSIFICATION]: Types.SecurityClassificationType,
+    [COMPLIANCE_GROUP]: BuiltinTypes.STRING,
     [FIELD_LEVEL_SECURITY_ANNOTATION]: Types.fieldLevelSecurityType,
   }
 
@@ -418,8 +473,8 @@ export class Types {
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
         ...Types.commonAnnotationTypes,
-        [FIELD_ANNOTATIONS.MASK_CHAR]: BuiltinTypes.STRING,
-        [FIELD_ANNOTATIONS.MASK_TYPE]: BuiltinTypes.STRING,
+        [FIELD_ANNOTATIONS.MASK_CHAR]: Types.encryptedTextMaskCharType,
+        [FIELD_ANNOTATIONS.MASK_TYPE]: Types.encryptedTextMaskTypeType,
         [FIELD_ANNOTATIONS.LENGTH]: BuiltinTypes.NUMBER,
       },
     }),
@@ -595,7 +650,9 @@ export class Types {
   static getAnnotationTypes(): Type[] {
     return [Types.fieldLevelSecurityType, Types.fieldDependencyType,
       Types.rollupSummaryOperationType, Types.objectLevelSecurityType,
-      Types.valueSettingsType, Types.lookupFilterType, Types.filterItemType]
+      Types.valueSettingsType, Types.lookupFilterType, Types.filterItemType,
+      Types.encryptedTextMaskCharType, Types.encryptedTextMaskTypeType,
+    ]
       .map(type => {
         const fieldType = type.clone()
         fieldType.path = [SALESFORCE, 'types', 'annotation_types']

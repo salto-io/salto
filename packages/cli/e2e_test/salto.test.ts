@@ -6,12 +6,11 @@ import { Plan, file, Workspace, SALTO_HOME_VAR } from 'salto'
 import {
   API_NAME, CUSTOM_OBJECT, INSTANCE_FULL_NAME_FIELD, SALESFORCE, SALESFORCE_CUSTOM_SUFFIX,
 } from 'salesforce-adapter/dist/src/constants'
-import adapterConfigs from './adapter_configs'
 import * as formatterImpl from '../src/formatter'
 import * as callbacksImpl from '../src/callbacks'
 import {
   editBlueprint, loadValidWorkspace, runDeploy,
-  runFetch, verifyChanges, verifyInstance, verifyObject, runEmptyPreview,
+  runFetch, verifyChanges, verifyInstance, verifyObject, runEmptyPreview, runSalesforceLogin,
 } from './helpers/workspace'
 import { instanceExists, objectExists } from './helpers/salesforce'
 
@@ -33,9 +32,6 @@ describe('commands e2e', () => {
         const { length } = [...wu(p.itemsByEvalOrder())]
         return length < 100 // Safety to avoid breaking the SF instance
       }
-    )
-    jest.spyOn(callbacksImpl, 'getConfigFromUser').mockImplementation(
-      () => Promise.resolve(adapterConfigs.salesforce())
     )
   })
 
@@ -82,6 +78,7 @@ describe('commands e2e', () => {
     if (await instanceExists(client, PROFILE, newInstanceFullName)) {
       await client.delete(PROFILE, newInstanceFullName)
     }
+    await runSalesforceLogin(fetchOutputDir)
     await runFetch(fetchOutputDir)
   })
 

@@ -1,29 +1,41 @@
-import { Workspace, loginAdapter } from 'salto'
-import { ObjectType, InstanceElement } from 'adapter-api'
+import { Workspace, updateLoginConfig, LoginStatus } from 'salto'
+import { ObjectType } from 'adapter-api'
 import { command } from '../../src/commands/services'
-import { MockWriteStream, getWorkspaceErrors, mockLoadConfig } from '../mocks'
+import {
+  MockWriteStream, getWorkspaceErrors, mockLoadConfig, mockGetConfigFromUser, mockConfigType,
+} from '../mocks'
 
 jest.mock('salto', () => ({
   ...jest.requireActual('salto'),
   addAdapter: jest.fn().mockImplementation((
     _workspaceDir: string,
     adapterName: string
-  ): Promise<boolean> => {
+  ): Promise<ObjectType> => {
     if (adapterName === 'noAdapter') {
-      return Promise.resolve(false)
+      throw Error('no adapater')
     }
-    return Promise.resolve(true)
+    return Promise.resolve(mockConfigType(adapterName))
   }),
-  loginAdapter: jest.fn().mockImplementation((
+  updateLoginConfig: jest.fn(),
+  getLoginStatuses: jest.fn().mockImplementation((
     _workspace: Workspace,
-    _fillCofig: (configType: ObjectType) => Promise<InstanceElement>,
-    adapterName: string,
-    _force: boolean
-  ): Promise<boolean> => {
-    if (adapterName === 'hubspot') {
-      return Promise.resolve(false)
-    }
-    return Promise.resolve(true)
+    serviceNames: string[]
+  ) => {
+    const loginStatuses: Record<string, LoginStatus> = {}
+    serviceNames.forEach(serviceName => {
+      if (serviceName === 'salesforce') {
+        loginStatuses[serviceName] = {
+          isLoggedIn: true,
+          configType: mockConfigType(serviceName),
+        }
+      } else {
+        loginStatuses[serviceName] = {
+          isLoggedIn: false,
+          configType: mockConfigType(serviceName),
+        }
+      }
+    })
+    return loginStatuses
   }),
   Workspace: {
     load: jest.fn().mockImplementation(config => {
@@ -55,7 +67,7 @@ describe('services command', () => {
 
   describe('when workspace fails to load', () => {
     beforeEach(async () => {
-      await command('errdir', 'add', cliOutput, 'service').execute()
+      await command('errdir', 'add', cliOutput, mockGetConfigFromUser, 'service').execute()
     })
 
     it('should print the error', async () => {
@@ -67,7 +79,7 @@ describe('services command', () => {
     describe('when the workspace loads successfully', () => {
       describe('when called with no service name', () => {
         beforeEach(async () => {
-          await command('', 'list', cliOutput, undefined).execute()
+          await command('', 'list', cliOutput, mockGetConfigFromUser, undefined).execute()
         })
 
         it('should load the workspace', () => {
@@ -82,7 +94,7 @@ describe('services command', () => {
 
       describe('when called with service that is configured', () => {
         beforeEach(async () => {
-          await command('', 'list', cliOutput, 'hubspot').execute()
+          await command('', 'list', cliOutput, mockGetConfigFromUser, 'hubspot').execute()
         })
 
         it('should load the workspace', async () => {
@@ -96,11 +108,7 @@ describe('services command', () => {
 
       describe('when called with a service that is not configured', () => {
         beforeEach(async () => {
-          await command('', 'list', cliOutput, 'notConfigured').execute()
-        })
-
-        it('should load the workspace', async () => {
-          expect(Workspace.load).toHaveBeenCalled()
+          await command('', 'list', cliOutput, mockGetConfigFromUser, 'notConfigured').execute()
         })
 
         it('should print configured services', async () => {
@@ -114,25 +122,21 @@ describe('services command', () => {
     describe('when the workspace loads successfully', () => {
       describe('when called with already configured service', () => {
         beforeEach(async () => {
-          await command('', 'add', cliOutput, 'hubspot').execute()
+          await command('', 'add', cliOutput, mockGetConfigFromUser, 'salesforce').execute()
         })
 
         it('should print already added', async () => {
-          expect(cliOutput.stderr.content).toContain('hubspot was already added to this workspace')
+          expect(cliOutput.stderr.content).toContain('salesforce was already added to this workspace')
         })
       })
 
       describe('when called with a new service', () => {
         beforeEach(async () => {
-          await command('', 'add', cliOutput, 'newAdapter').execute()
+          await command('', 'add', cliOutput, mockGetConfigFromUser, 'newAdapter').execute()
         })
 
         it('should print added', async () => {
           expect(cliOutput.stdout.content).toContain('added to the workspace')
-        })
-
-        it('should log it in', async () => {
-          expect(loginAdapter).toHaveBeenCalled()
         })
 
         it('should print it logged in', async () => {
@@ -146,19 +150,19 @@ describe('services command', () => {
     describe('when the workspace loads successfully', () => {
       describe('when called with already logged in service', () => {
         beforeEach(async () => {
-          await command('', 'login', cliOutput, 'hubspot').execute()
-        })
-
-        it('should fail login once', () => {
-          expect(loginAdapter).toHaveReturnedWith(Promise.resolve(false))
+          await command('', 'login', cliOutput, mockGetConfigFromUser, 'salesforce').execute()
         })
 
         it('should print login override', () => {
           expect(cliOutput.stdout.content).toContain('override')
         })
 
-        it('should call login with force', () => {
-          expect(loginAdapter).toHaveBeenLastCalledWith(expect.anything(), expect.anything(), 'hubspot', true)
+        it('should get config from user', () => {
+          expect(mockGetConfigFromUser).toHaveBeenCalled()
+        })
+
+        it('should call update config', () => {
+          expect(updateLoginConfig).toHaveBeenCalled()
         })
 
         it('should print logged in', () => {
@@ -168,7 +172,7 @@ describe('services command', () => {
 
       describe('when called with not configured service', () => {
         beforeEach(async () => {
-          await command('', 'login', cliOutput, 'notConfigured').execute()
+          await command('', 'login', cliOutput, mockGetConfigFromUser, 'notConfigured').execute()
         })
 
         it('should print not configured', () => {
@@ -178,11 +182,15 @@ describe('services command', () => {
 
       describe('when called with configured but not logged in service', () => {
         beforeEach(async () => {
-          await command('', 'login', cliOutput, 'newAdapter').execute()
+          await command('', 'login', cliOutput, mockGetConfigFromUser, 'newAdapter').execute()
         })
 
-        it('should log it in', async () => {
-          expect(loginAdapter).toHaveBeenCalled()
+        it('should get config from user', () => {
+          expect(mockGetConfigFromUser).toHaveBeenCalled()
+        })
+
+        it('should call update config', async () => {
+          expect(updateLoginConfig).toHaveBeenCalled()
         })
 
         it('shoudl print it logged in', async () => {

@@ -1,19 +1,35 @@
 import _ from 'lodash'
 import { EOL } from 'os'
-import { addAdapter, loginAdapter, loadConfig } from 'salto'
+import { addAdapter, loadConfig, getLoginStatuses, LoginStatus, updateLoginConfig, Workspace } from 'salto'
+import { InstanceElement, ObjectType } from 'adapter-api'
 import { createCommandBuilder } from '../command_builder'
-import { CliOutput, ParsedCliInput, CliCommand, CliExitCode } from '../types'
+import { CliOutput, ParsedCliInput, CliCommand, CliExitCode, WriteStream } from '../types'
 import { loadWorkspace } from '../workspace'
-import { getConfigWithHeader } from '../callbacks'
+import { getConfigFromUser } from '../callbacks'
 import { serviceCmdFilter, ServiceCmdArgs } from '../filters/services'
 import {
   formatServiceConfigured, formatServiceNotConfigured, formatConfiguredServices,
-  formatLoginUpdated, formatLoginOverride, formatServiceAdded, formatServiceAlreadyAdded,
+  formatLoginUpdated, formatLoginOverride, formatServiceAdded,
+  formatServiceAlreadyAdded, formatConfigHeader,
 } from '../formatter'
+
+const getLoginInputFlow = async (
+  workspace: Workspace,
+  configType: ObjectType,
+  getLoginInput: (configType: ObjectType) => Promise<InstanceElement>,
+  stdout: WriteStream
+): Promise<void> => {
+  stdout.write(formatConfigHeader(configType.elemID.adapter))
+  const newConfig = await getLoginInput(configType)
+  await updateLoginConfig(workspace, [newConfig])
+  stdout.write(EOL)
+  stdout.write(formatLoginUpdated)
+}
 
 const addService = async (
   workspaceDir: string,
   { stdout, stderr }: CliOutput,
+  getLoginInput: (configType: ObjectType) => Promise<InstanceElement>,
   serviceName: string,
 ): Promise<CliExitCode> => {
   const { workspace, errored } = await loadWorkspace(workspaceDir,
@@ -25,16 +41,9 @@ const addService = async (
     stderr.write(formatServiceAlreadyAdded(serviceName))
     return CliExitCode.UserInputError
   }
-  await addAdapter(workspaceDir, serviceName)
+  const adapterConfigType = await addAdapter(workspaceDir, workspace, serviceName)
   stdout.write(formatServiceAdded(serviceName))
-  const didLogin = await loginAdapter(
-    workspace,
-    _.partial(getConfigWithHeader, stdout),
-    serviceName
-  )
-  if (didLogin) {
-    stdout.write(formatLoginUpdated)
-  }
+  await getLoginInputFlow(workspace, adapterConfigType, getLoginInput, stdout)
   return CliExitCode.Success
 }
 
@@ -57,6 +66,7 @@ const listServices = async (
 const loginService = async (
   workspaceDir: string,
   { stdout, stderr }: CliOutput,
+  getLoginInput: (configType: ObjectType) => Promise<InstanceElement>,
   serviceName: string,
 ): Promise<CliExitCode> => {
   const { workspace, errored } = await loadWorkspace(workspaceDir,
@@ -67,24 +77,14 @@ const loginService = async (
   if (!workspace.config.services.includes(serviceName)) {
     stderr.write(formatServiceNotConfigured(serviceName))
   }
-  const didLogin = await loginAdapter(
+  const serviceLoginStatus = (await getLoginStatuses(
     workspace,
-    _.partial(getConfigWithHeader, stdout),
-    serviceName
-  )
-  if (didLogin) {
-    stdout.write(formatLoginUpdated)
-  } else {
+    [serviceName]
+  ))[serviceName] as LoginStatus
+  if (serviceLoginStatus.isLoggedIn) {
     stdout.write(formatLoginOverride)
-    await loginAdapter(
-      workspace,
-      _.partial(getConfigWithHeader, stdout),
-      serviceName,
-      true
-    )
-    stdout.write(EOL)
-    stdout.write(formatLoginUpdated)
   }
+  await getLoginInputFlow(workspace, serviceLoginStatus.configType, getLoginInput, stdout)
   return CliExitCode.Success
 }
 
@@ -92,16 +92,17 @@ export const command = (
   workspaceDir: string,
   commandName: string,
   { stdout, stderr }: CliOutput,
+  getLoginInput: (configType: ObjectType) => Promise<InstanceElement>,
   serviceName = '',
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
     switch (commandName) {
       case 'add':
-        return addService(workspaceDir, { stdout, stderr }, serviceName)
+        return addService(workspaceDir, { stdout, stderr }, getLoginInput, serviceName)
       case 'list':
         return listServices(workspaceDir, { stdout, stderr }, serviceName)
       case 'login':
-        return loginService(workspaceDir, { stdout, stderr }, serviceName)
+        return loginService(workspaceDir, { stdout, stderr }, getLoginInput, serviceName)
       default:
         throw new Error('Unknown service management command')
     }
@@ -120,7 +121,7 @@ const servicesBuilder = createCommandBuilder({
 
   filters: [serviceCmdFilter],
   async build(input: ServiceParsedCliInput, output: CliOutput) {
-    return command('.', input.args.command, output, input.args.name)
+    return command('.', input.args.command, output, getConfigFromUser, input.args.name)
   },
 })
 

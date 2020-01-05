@@ -1,29 +1,23 @@
 import _ from 'lodash'
 import {
-  InstanceElement, ObjectType, Adapter, ElemIdGetter, isInstanceElement,
+  InstanceElement, ObjectType, Adapter, ElemIdGetter,
 } from 'adapter-api'
 import { promises } from '@salto/lowerdash'
 import adapterCreators from './creators'
 
-export const loginAdapters = async (
+export type LoginStatus = { configType: ObjectType; isLoggedIn: boolean }
+
+export const getAdaptersLoginStatus = async (
   configs: Readonly<InstanceElement[]>,
-  fillConfig: (t: ObjectType) => Promise<InstanceElement>,
   names: string[],
-  force = false
-): Promise<InstanceElement[]> => {
+): Promise<Record<string, LoginStatus>> => {
   const relevantAdapterCreators = _.pick(adapterCreators, names)
-  const newConfigsPromises = Object.values(relevantAdapterCreators).map(async creator => {
-    let config = configs.find(e => e.elemID.adapter === creator.configType.elemID.adapter)
-    if (force || !config) {
-      config = await fillConfig(creator.configType)
-      return config
-    }
-    return undefined
-  })
-  const newConfigs = (await Promise.all(newConfigsPromises)).filter(
-    val => isInstanceElement(val)
-  ) as InstanceElement[]
-  return newConfigs
+  const adaptersToLoggedIn = _.mapValues(relevantAdapterCreators,
+    creator => ({
+      configType: creator.configType,
+      isLoggedIn: !!configs.find(e => e.elemID.adapter === creator.configType.elemID.adapter),
+    }))
+  return adaptersToLoggedIn
 }
 
 export const initAdapters = async (
@@ -36,7 +30,7 @@ export const initAdapters = async (
     relevantAdapterCreators, async creator => {
       const config = configs.find(e => e.elemID.adapter === creator.configType.elemID.adapter)
       if (!config) {
-        throw new Error(`${creator.configType.elemID.adapter} is not logged in`)
+        throw new Error(`${creator.configType.elemID.adapter} is not logged in.\n\nPlease login and try again.`)
       }
       return creator.create({ config, getElemIdFunc })
     }

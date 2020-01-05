@@ -1,7 +1,6 @@
 import wu from 'wu'
 import {
-  ObjectType, InstanceElement, Element, ActionName, DataModificationResult,
-  ElemIdGetter, Adapter, ChangeValidator,
+  ObjectType, InstanceElement, Element, ActionName, DataModificationResult, ChangeValidator,
 } from 'adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto/logging'
@@ -12,9 +11,9 @@ import {
 import {
   getInstancesOfType, importInstancesOfType, deleteInstancesOfType,
 } from './core/records'
-import { loginAdapters, initAdapters } from './core/adapters/adapters'
+import { initAdapters, getAdaptersLoginStatus, LoginStatus } from './core/adapters/adapters'
 import { addServiceToConfig } from './workspace/config'
-import adapterCreators, { isAdapterAvailable } from './core/adapters/creators'
+import adapterCreators from './core/adapters/creators'
 import {
   getPlan, Plan, PlanItem, DetailedChange,
 } from './core/plan'
@@ -26,7 +25,7 @@ import {
 } from './core/fetch'
 import { Workspace, CREDS_DIR } from './workspace/workspace'
 
-export { ItemStatus }
+export { ItemStatus, LoginStatus }
 
 const log = logger(module)
 
@@ -50,17 +49,6 @@ export const updateLoginConfig = async (
       log.debug(`persisted new configs for adapers: ${newAdapters.join(',')}`)
     }
   }
-}
-
-export const getAdapters = async (
-  workspace: Workspace,
-  fillConfig: (t: ObjectType) => Promise<InstanceElement>,
-  services: string[],
-  getElemIdFunc?: ElemIdGetter
-): Promise<Record<string, Adapter>> => {
-  const newConfigs = await loginAdapters(workspace.configElements, fillConfig, services)
-  await updateLoginConfig(workspace, newConfigs)
-  return initAdapters(workspace.configElements, services, getElemIdFunc)
 }
 
 const filterElementsByServices = (
@@ -95,7 +83,6 @@ export interface DeployResult {
 }
 export const deploy = async (
   workspace: Workspace,
-  fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
   shouldDeploy: (plan: Plan) => Promise<boolean>,
   reportProgress: (item: PlanItem, status: ItemStatus, details?: string) => void,
   services: string[] = workspace.config.services,
@@ -110,7 +97,6 @@ export const deploy = async (
     changedElements.push(element)
     return state.update([element])
   }
-
   const state = new State(workspace.config.stateLocation)
   const stateElements = await state.get()
   try {
@@ -120,7 +106,7 @@ export const deploy = async (
       getChangeValidators()
     )
     if (force || await shouldDeploy(actionPlan)) {
-      const adapters = await getAdapters(workspace, fillConfig, services)
+      const adapters = await initAdapters(workspace.configElements, services)
       const errors = await deployActions(
         actionPlan,
         adapters,
@@ -155,14 +141,12 @@ export type FetchResult = {
 }
 export type fetchFunc = (
   workspace: Workspace,
-  fillConfig: fillConfigFunc,
   services: string[],
   progressEmitter?: EventEmitter<FetchProgressEvents>,
 ) => Promise<FetchResult>
 
 export const fetch: fetchFunc = async (
   workspace,
-  fillConfig,
   services = workspace.config.services,
   progressEmitter?
 ) => {
@@ -173,9 +157,8 @@ export const fetch: fetchFunc = async (
   const filteredStateElements = filterElementsByServices(stateElements, services)
   log.debug(`finished loading ${stateElements.length} state elements`)
 
-  const adapters = await getAdapters(
-    workspace,
-    fillConfig,
+  const adapters = await initAdapters(
+    workspace.configElements,
     services,
     createElemIdGetter(filteredStateElements)
   )
@@ -240,10 +223,9 @@ export const exportToCsv = async (
   typeId: string,
   outPath: string,
   workspace: Workspace,
-  fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
 ): Promise<DataModificationResult> => {
   const type = await getTypeForDataMigration(workspace, typeId)
-  const adapters = await getAdapters(workspace, fillConfig, [type.elemID.adapter])
+  const adapters = await initAdapters(workspace.configElements, [type.elemID.adapter])
   return getInstancesOfType(type as ObjectType, adapters, outPath)
 }
 
@@ -251,10 +233,9 @@ export const importFromCsvFile = async (
   typeId: string,
   inputPath: string,
   workspace: Workspace,
-  fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
 ): Promise<DataModificationResult> => {
   const type = await getTypeForDataMigration(workspace, typeId)
-  const adapters = await getAdapters(workspace, fillConfig, [type.elemID.adapter])
+  const adapters = await initAdapters(workspace.configElements, [type.elemID.adapter])
   return importInstancesOfType(type as ObjectType, inputPath, adapters)
 }
 
@@ -262,10 +243,9 @@ export const deleteFromCsvFile = async (
   typeId: string,
   inputPath: string,
   workspace: Workspace,
-  fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
 ): Promise<DataModificationResult> => {
   const type = await getTypeForDataMigration(workspace, typeId)
-  const adapters = await getAdapters(workspace, fillConfig, [type.elemID.adapter])
+  const adapters = await initAdapters(workspace.configElements, [type.elemID.adapter])
   return deleteInstancesOfType(type as ObjectType, inputPath, adapters)
 }
 
@@ -279,25 +259,22 @@ export const init = async (workspaceName?: string): Promise<Workspace> => {
 
 export const addAdapter = async (
   workspaceDir: string,
+  workspace: Workspace,
   adapterName: string
-): Promise<boolean> => {
-  if (!isAdapterAvailable(adapterName)) {
+): Promise<ObjectType> => {
+  const adapterLoginStatus = (await getAdaptersLoginStatus(
+    workspace.configElements,
+    [adapterName]
+  ))[adapterName]
+  if (!adapterLoginStatus) {
     throw new Error('No adapter available for this service')
   }
   await addServiceToConfig(workspaceDir, adapterName)
-  return true
+  return adapterLoginStatus.configType
 }
 
-export const loginAdapter = async (
+export const getLoginStatuses = async (
   workspace: Workspace,
-  fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
-  adapterName: string,
-  force = false
-): Promise<boolean> => {
-  const newConfigs = await loginAdapters(workspace.configElements, fillConfig, [adapterName], force)
-  if (newConfigs.length > 0) {
-    await updateLoginConfig(workspace, newConfigs)
-    return true
-  }
-  return false
-}
+  adapterNames = workspace.config.services,
+): Promise<Record<string, LoginStatus>> =>
+  getAdaptersLoginStatus(workspace.configElements, adapterNames)

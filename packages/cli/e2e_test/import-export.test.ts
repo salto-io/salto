@@ -9,9 +9,8 @@ import { command as fetch } from '../src/commands/fetch'
 import { command as importCommand } from '../src/commands/import'
 import { command as exportCommand } from '../src/commands/export'
 import { command as deleteCommand } from '../src/commands/delete'
-import adapterConfigs from './adapter_configs'
 import Prompts from '../src/prompts'
-import * as callbacksImpl from '../src/callbacks'
+import { runSalesforceLogin } from './helpers/workspace'
 
 const { copyFile, rm, mkdirp, exists } = file
 
@@ -25,10 +24,6 @@ let exportOutputFullPath: string
 const configFile = `${__dirname}/../../e2e_test/BP/salto.config/config.bp`
 const exportFile = 'export_test.csv'
 const dataFilePath = `${__dirname}/../../e2e_test/CSV/import.csv`
-
-jest.spyOn(callbacksImpl, 'getConfigFromUser').mockImplementation(
-  () => Promise.resolve(adapterConfigs.salesforce())
-)
 
 describe('Data migration operations E2E', () => {
   beforeAll(() => {
@@ -55,6 +50,7 @@ describe('Data migration operations E2E', () => {
       await rm(fetchOutputDir)
       await mkdirp(`${fetchOutputDir}/salto.config`)
       await copyFile(configFile, `${fetchOutputDir}/salto.config/config.bp`)
+      await runSalesforceLogin(fetchOutputDir)
       await fetch(fetchOutputDir, true, false, cliOutput, spinnerCreator, services).execute()
     })
 

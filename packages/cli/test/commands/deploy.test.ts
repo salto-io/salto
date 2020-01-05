@@ -1,8 +1,5 @@
 import wu from 'wu'
 import {
-  ObjectType, InstanceElement,
-} from 'adapter-api'
-import {
   Workspace, Plan, PlanItem, Config,
 } from 'salto'
 import { Spinner, SpinnerCreator } from 'src/types'
@@ -39,7 +36,6 @@ jest.mock('salto', () => ({
   },
   deploy: jest.fn().mockImplementation((
     workspace: Workspace,
-    fillConfig: (configType: ObjectType) => Promise<InstanceElement>,
     shouldDeploy: (plan: Plan) => Promise<boolean>,
     reportProgress: (action: PlanItem, step: string, details?: string) => void,
     force = false,
@@ -50,7 +46,7 @@ jest.mock('salto', () => ({
   // out-of-scope variables."
   // Notice that blueprints are ignored in mockDeploy.
 
-    mockDeploy(workspace, fillConfig, shouldDeploy, reportProgress, services, force)),
+    mockDeploy(workspace, shouldDeploy, reportProgress, services, force)),
 }))
 
 describe('deploy command', () => {

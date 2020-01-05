@@ -2,7 +2,6 @@ import { deleteFromCsvFile, file } from 'salto'
 import wu from 'wu'
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'
-import { getConfigFromUser } from '../callbacks'
 import Prompts from '../prompts'
 import { loadWorkspace } from '../workspace'
 
@@ -25,8 +24,7 @@ export const command = (
     const result = await deleteFromCsvFile(
       typeName,
       inputPath,
-      workspace,
-      getConfigFromUser
+      workspace
     )
     // Print here the full report that contains the numbers of successful and failed rows.
     stdout.write(Prompts.DELETE_ENDED_SUMMARY(result.successfulRows, result.failedRows))

@@ -2,7 +2,6 @@ import { deploy, PlanItem, ItemStatus } from 'salto'
 import { setInterval } from 'timers'
 import { logger } from '@salto/logging'
 import { EOL } from 'os'
-import Prompts from '../prompts'
 import { createCommandBuilder } from '../command_builder'
 import {
   CliCommand, CliOutput, ParsedCliInput, WriteStream, CliExitCode, SpinnerCreator,
@@ -12,7 +11,7 @@ import {
   formatCancelAction, formatActionInProgress,
   formatItemError, deployPhaseEpilogue,
 } from '../formatter'
-import { shouldDeploy, getConfigFromUser } from '../callbacks'
+import { shouldDeploy } from '../callbacks'
 import { loadWorkspace, updateWorkspace } from '../workspace'
 import { servicesFilter, ServicesArgs } from '../filters/services'
 
@@ -106,14 +105,14 @@ export class DeployCommand implements CliCommand {
       return CliExitCode.AppError
     }
 
-    const planSpinner = this.spinnerCreator(Prompts.PREVIEW_STARTED, {})
-    const result = await deploy(workspace,
-      getConfigFromUser,
-      shouldDeploy(this.stdout, planSpinner, workspace),
+    const result = await deploy(
+      workspace,
+      shouldDeploy(this.stdout, workspace),
       (item: PlanItem, step: ItemStatus, details?: string) =>
         this.updateAction(item, step, details),
       this.inputServices,
-      this.force)
+      this.force
+    )
 
     const nonErroredActions = [...this.actions.keys()]
       .filter(action => !result.errors.map(error => error.elementId).includes(action))

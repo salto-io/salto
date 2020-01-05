@@ -16,7 +16,7 @@ import {
   formatChangesSummary, formatMergeErrors, formatFatalFetchError, formatStepStart,
   formatStepCompleted, formatStepFailed, formatFetchHeader, formatFetchFinish,
 } from '../formatter'
-import { getConfigWithHeader, getApprovedChanges as cliGetApprovedChanges } from '../callbacks'
+import { getApprovedChanges as cliGetApprovedChanges } from '../callbacks'
 import { updateWorkspace, loadWorkspace } from '../workspace'
 import Prompts from '../prompts'
 import { servicesFilter, ServicesArgs } from '../filters/services'
@@ -77,7 +77,6 @@ export const fetchCommand = async (
 
   const fetchResult = await fetch(
     workspace,
-    _.partial(getConfigWithHeader, output.stdout),
     inputServices,
     fetchProgress,
   )

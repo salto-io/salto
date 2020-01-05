@@ -12,7 +12,7 @@ import {
   formatConfigFieldInput,
 } from './formatter'
 import Prompts from './prompts'
-import { CliOutput, WriteStream, Spinner } from './types'
+import { CliOutput, WriteStream } from './types'
 
 const getUserBooleanInput = async (prompt: string): Promise<boolean> => {
   const question = {
@@ -24,9 +24,8 @@ const getUserBooleanInput = async (prompt: string): Promise<boolean> => {
   return answers.userInput
 }
 
-export const shouldDeploy = (stdout: WriteStream, spinner: Spinner, workspace: Workspace) =>
+export const shouldDeploy = (stdout: WriteStream, workspace: Workspace) =>
   async (actions: Plan): Promise<boolean> => {
-    spinner.succeed(Prompts.PREVIEW_FINISHED)
     const planWorkspaceErrors = await Promise.all(
       actions.changeErrors.map(ce => workspace.transformToWorkspaceError(ce))
     )

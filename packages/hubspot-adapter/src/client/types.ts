@@ -13,4 +13,8 @@ export interface Form extends HubspotMetadata {
   ignoreCurrentValues: boolean
   deletable: boolean
   inlineMessage: string
+  createdAt: number
+  captchaEnabled: boolean
+  cloneable: boolean
+  editable: boolean
 }

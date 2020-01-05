@@ -1,8 +1,8 @@
 import _ from 'lodash'
 import {
-  ObjectType, ElemID, InstanceElement, Element, Field, BuiltinTypes,
+  ObjectType, ElemID, InstanceElement, Element, Field, BuiltinTypes, Value,
 } from 'adapter-api'
-import makeFilter from '../../src/filters/convert_lists'
+import { makeFilter, UnorderedList } from '../../src/filters/convert_lists'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
@@ -10,12 +10,22 @@ import mockClient from '../client'
 describe('convert lists filter', () => {
   const { client } = mockClient()
 
+  const mockInnerObjId = new ElemID(constants.SALESFORCE, 'inner')
+  const mockFieldType = new ObjectType({
+    elemID: mockInnerObjId,
+    fields: {
+      key: new Field(mockInnerObjId, 'key', BuiltinTypes.STRING),
+      value: new Field(mockInnerObjId, 'value', BuiltinTypes.STRING),
+    },
+  })
+
   const mockObjId = new ElemID(constants.SALESFORCE, 'test')
   const mockType = new ObjectType({
     elemID: mockObjId,
     fields: {
       lst: new Field(mockObjId, 'lst', BuiltinTypes.STRING),
       single: new Field(mockObjId, 'single', BuiltinTypes.STRING),
+      unordered: new Field(mockObjId, 'unordered', mockFieldType),
     },
   })
 
@@ -25,6 +35,10 @@ describe('convert lists filter', () => {
     {
       lst: ['val1', 'val2'],
       single: 'val',
+      unordered: [
+        { key: 'b', value: '1' },
+        { key: 'a', value: '2' },
+      ],
     },
   )
 
@@ -37,9 +51,16 @@ describe('convert lists filter', () => {
     },
   )
 
+  const unorderedLists: ReadonlyArray<UnorderedList> = [
+    {
+      fieldId: mockType.fields.unordered.elemID,
+      orderBy: mockFieldType.fields.key.name,
+    },
+  ]
+
   let testElements: Element[]
 
-  const filter = makeFilter({ client }) as FilterWith<'onFetch'>
+  const filter = makeFilter(unorderedLists)({ client }) as FilterWith<'onFetch'>
 
   beforeEach(() => {
     const typeClone = mockType.clone()
@@ -75,6 +96,12 @@ describe('convert lists filter', () => {
     it('should leave non lists unchanged', () => {
       expect(lstInst.value.single).toEqual('val')
       expect(nonLstInst.value.single).toEqual('val')
+    })
+
+    it('should sort unordered lists', () => {
+      expect(type.fields.unordered.isList).toBe(true)
+      expect(lstInst.value.unordered).toHaveLength(2)
+      expect(lstInst.value.unordered.map((item: Value) => item.key)).toEqual(['a', 'b'])
     })
   })
 })

@@ -59,7 +59,7 @@ describe('Elements validation', () => {
           'restriction1', 'restriction2',
         ],
       }),
-      restrictedAnnotation: new Field(nestedElemID, 'restrictedPrimitive', restrictedAnnotation, {
+      restrictedAnnotation: new Field(nestedElemID, 'restrictedAnnotation', restrictedAnnotation, {
         temp: 'val1',
       }),
       reqNested: new Field(nestedElemID, 'reqNested', simpleType, {
@@ -343,7 +343,15 @@ describe('Elements validation', () => {
         it('should return an error when annotations values doesnt match restriction values', () => {
           const extType = _.cloneDeep(nestedType)
           extType.fields.restrictedAnnotation.annotations.temp = 'wrong'
-          expect(validateElements([extType])).toHaveLength(1)
+          const errors = validateElements([extType])
+          expect(errors).toHaveLength(1)
+
+          expect(errors[0]).toBeInstanceOf(InvalidValueValidationError)
+          expect(errors[0].message).toMatch('Value "wrong" is not valid')
+          expect(errors[0].message).toMatch('expected one of: "val1", "val2"')
+          expect(errors[0].elemID).toEqual(
+            extType.elemID.createNestedID('field', 'restrictedAnnotation', 'temp')
+          )
         })
 
         it('should return an error when list fields values doesnt match restriction values', () => {

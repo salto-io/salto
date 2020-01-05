@@ -481,19 +481,19 @@ export default class SalesforceAdapter {
     // There are fields that are not equal but their transformation
     // to CustomField is (e.g. lookup field with LookupFilter).
     const shouldUpdateField = (beforeField: Field, afterField: Field): boolean =>
-      !_.isEqual(toCustomField(before, beforeField, true),
-        toCustomField(clonedObject, afterField, true))
+      !_.isEqual(toCustomField(beforeField, true),
+        toCustomField(afterField, true))
 
     await Promise.all([
       // Retrieve the custom fields for deletion and delete them
       this.deleteCustomFields(fieldChanges.filter(isRemovalDiff).map(getChangeElement)),
       // Retrieve the custom fields for addition and than create them
-      this.createFields(clonedObject, fieldChanges
+      this.createFields(fieldChanges
         .filter(isAdditionDiff)
         .filter(c => !this.systemFields.includes(getChangeElement(c).name))
         .map(c => clonedObject.fields[c.data.after.name])),
       // Update the remaining fields that were changed
-      this.updateFields(clonedObject, fieldChanges
+      this.updateFields(fieldChanges
         .filter(isModificationDiff)
         .filter(c => shouldUpdateField(c.data.before, c.data.after))
         .map(c => clonedObject.fields[c.data.after.name])),
@@ -550,10 +550,10 @@ export default class SalesforceAdapter {
    * @param fieldsToUpdate The fields to update
    * @returns successfully managed to update all fields
    */
-  private async updateFields(object: ObjectType, fieldsToUpdate: Field[]): Promise<SaveResult[]> {
+  private async updateFields(fieldsToUpdate: Field[]): Promise<SaveResult[]> {
     return this.client.update(
       constants.CUSTOM_FIELD,
-      fieldsToUpdate.map(f => toCustomField(object, f, true)),
+      fieldsToUpdate.map(f => toCustomField(f, true)),
     )
   }
 
@@ -563,10 +563,10 @@ export default class SalesforceAdapter {
    * @param fieldsToAdd The fields to create
    * @returns successfully managed to create all fields with their permissions or not
    */
-  private async createFields(object: ObjectType, fieldsToAdd: Field[]): Promise<UpsertResult[]> {
+  private async createFields(fieldsToAdd: Field[]): Promise<SaveResult[]> {
     return this.client.upsert(
       constants.CUSTOM_FIELD,
-      fieldsToAdd.map(f => toCustomField(object, f, true)),
+      fieldsToAdd.map(f => toCustomField(f, true)),
     )
   }
 

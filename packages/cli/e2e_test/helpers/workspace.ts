@@ -5,15 +5,28 @@ import {
 } from 'adapter-api'
 import wu from 'wu'
 import { command as fetch } from '../../src/commands/fetch'
+import adapterConfigs from '../adapter_configs'
 import { mockSpinnerCreator, MockWriteStream } from '../../test/mocks'
 import { CliOutput } from '../../src/types'
 import { loadWorkspace } from '../../src/workspace'
 import { DeployCommand } from '../../src/commands/deploy'
 import { command as preview } from '../../src/commands/preview'
+import { command as servicesCommand } from '../../src/commands/services'
 
 export type Pair = [string, string]
 
 const services = ['salesforce']
+
+const getSalesforceConfig = (): Promise<InstanceElement> =>
+  Promise.resolve(adapterConfigs.salesforce())
+
+const mockCliOutput = (): CliOutput =>
+  ({ stdout: new MockWriteStream(), stderr: new MockWriteStream() })
+
+export const runSalesforceLogin = async (workspaceDir: string): Promise<void> => {
+  await servicesCommand(workspaceDir, 'login', mockCliOutput(), getSalesforceConfig, 'salesforce')
+    .execute()
+}
 
 export const editBlueprint = async (filename: string, replacements: Pair[]): Promise<void> => {
   let fileAsString = await file.readTextFile(filename)
@@ -22,9 +35,6 @@ export const editBlueprint = async (filename: string, replacements: Pair[]): Pro
   })
   await file.writeFile(filename, fileAsString)
 }
-
-const mockCliOutput = (): CliOutput =>
-  ({ stdout: new MockWriteStream(), stderr: new MockWriteStream() })
 
 export const runFetch = async (fetchOutputDir: string): Promise<void> => {
   await fetch(fetchOutputDir, true, false, mockCliOutput(), mockSpinnerCreator([]), services)

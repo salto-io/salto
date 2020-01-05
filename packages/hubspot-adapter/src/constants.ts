@@ -19,7 +19,6 @@ export const FIELD_TYPES = {
 
 // All form fields names
 export const FORM_FIELDS = {
-  PORTALID: 'portalId',
   GUID: 'guid',
   NAME: 'name',
   METHOD: 'method',

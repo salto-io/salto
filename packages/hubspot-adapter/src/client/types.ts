@@ -1,5 +1,4 @@
 export interface Form {
-  portalId: number
   guid: string
   name: string
   method: string

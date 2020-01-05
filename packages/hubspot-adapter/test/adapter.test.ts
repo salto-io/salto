@@ -38,7 +38,6 @@ describe('Hubspot Adapter Operations', () => {
           },
           {
             guid: '11111',
-            portalId: 123,
             name: 'formTest1',
             method: 'POST',
             cssClass: 'abc',

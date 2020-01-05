@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import {
   Change, isInstanceElement,
-  Element, InstanceElement, isObjectType, ObjectType,
+  Element, InstanceElement, ObjectType,
 } from 'adapter-api'
 import {
   Form,
@@ -46,6 +46,7 @@ export default class HubspotAdapter {
   public async fetch(): Promise<Element[]> {
     const fieldTypes = Types.getAllFieldTypes()
     const objects = Types.hubspotObjects
+    objects.forEach(e => { e.path = ['hubspot', 'objects', e.elemID.name] })
     const instances = await this.fetchHubInstances(objects)
 
     return _.flatten(
@@ -57,7 +58,6 @@ export default class HubspotAdapter {
     types: ObjectType[]
   ): Promise<InstanceElement[]> {
     const instances = await Promise.all((types)
-      .filter(isObjectType)
       .map(t => this.fetchHubspotInstances(t)))
     return _.flatten(instances)
   }

@@ -297,8 +297,6 @@ describe('Test HubSpot client', () => {
         expect(resp.deletable).toEqual(formToUpdate.deletable)
         expect(resp.redirect).not.toEqual(formToUpdate.redirect)
         expect(resp.redirect).toEqual('google.com')
-        expect(resp.portalId).not.toEqual(formToUpdate.portalId)
-        expect(resp.portalId).toEqual(6774238)
       })
     })
 

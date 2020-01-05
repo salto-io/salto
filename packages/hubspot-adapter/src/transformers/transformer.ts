@@ -26,13 +26,6 @@ export class Types {
     new ObjectType({
       elemID: formElemID,
       fields: {
-        portalId: new TypeField(
-          formElemID, FORM_FIELDS.PORTALID, BuiltinTypes.NUMBER, {
-            name: FORM_FIELDS.PORTALID,
-            _readOnly: true,
-            [CORE_ANNOTATIONS.REQUIRED]: true,
-          },
-        ),
         guid: new TypeField(
           formElemID, FORM_FIELDS.GUID, BuiltinTypes.STRING, {
             name: FORM_FIELDS.GUID,

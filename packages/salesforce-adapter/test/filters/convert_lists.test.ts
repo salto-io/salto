@@ -25,6 +25,7 @@ describe('convert lists filter', () => {
     fields: {
       lst: new Field(mockObjId, 'lst', BuiltinTypes.STRING),
       single: new Field(mockObjId, 'single', BuiltinTypes.STRING),
+      ordered: new Field(mockObjId, 'ordered', mockFieldType),
       unordered: new Field(mockObjId, 'unordered', mockFieldType),
     },
   })
@@ -35,6 +36,10 @@ describe('convert lists filter', () => {
     {
       lst: ['val1', 'val2'],
       single: 'val',
+      ordered: [
+        { key: 'b', value: '1' },
+        { key: 'a', value: '2' },
+      ],
       unordered: [
         { key: 'b', value: '1' },
         { key: 'a', value: '2' },
@@ -102,6 +107,12 @@ describe('convert lists filter', () => {
       expect(type.fields.unordered.isList).toBe(true)
       expect(lstInst.value.unordered).toHaveLength(2)
       expect(lstInst.value.unordered.map((item: Value) => item.key)).toEqual(['a', 'b'])
+    })
+
+    it('should not reorder regular lists', () => {
+      expect(type.fields.ordered.isList).toBe(true)
+      expect(lstInst.value.ordered).toHaveLength(2)
+      expect(lstInst.value.ordered).toEqual(mockInstanceLst.value.ordered)
     })
   })
 })

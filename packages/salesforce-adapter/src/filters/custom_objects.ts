@@ -53,9 +53,9 @@ const createObjectWithFields = (objectName: string, serviceIds: ServiceIds,
 
 const getCustomObjectPackagePath = (obj: ObjectType): string[] => {
   if (hasNamespace(obj)) {
-    return ['installed_packages', getNamespace(obj), 'objects', obj.elemID.name]
+    return [SALESFORCE, 'installed_packages', getNamespace(obj), 'objects', obj.elemID.name]
   }
-  return ['objects', 'custom', obj.elemID.name]
+  return [SALESFORCE, 'objects', 'custom', obj.elemID.name]
 }
 
 const getPartialCustomObjects = (customFields: Field[], objectName: string,
@@ -66,13 +66,14 @@ const getPartialCustomObjects = (customFields: Field[], objectName: string,
   const customParts = Object.entries(namespaceToFields)
     .map(([namespace, packageFields]) => {
       const packageObj = createObjectWithFields(objectName, serviceIds, packageFields)
-      packageObj.path = ['installed_packages', namespace, 'objects', packageObj.elemID.name]
+      packageObj.path = [SALESFORCE, 'installed_packages',
+        namespace, 'objects', packageObj.elemID.name]
       return packageObj
     })
   if (!_.isEmpty(regularCustomFields)) {
     // Custom fields go in a separate element
     const customPart = createObjectWithFields(objectName, serviceIds, regularCustomFields)
-    customPart.path = ['objects', 'custom', customPart.elemID.name]
+    customPart.path = [SALESFORCE, 'objects', 'custom', customPart.elemID.name]
     customParts.push(customPart)
   }
   return customParts
@@ -122,7 +123,7 @@ const createSObjectTypes = (
   }
 
   // This is a standard object
-  element.path = ['objects', 'standard', element.elemID.name]
+  element.path = [SALESFORCE, 'objects', 'standard', element.elemID.name]
 
   if (_.isEmpty(customFields)) {
     // No custom parts, only standard element needed
@@ -250,7 +251,8 @@ const createObjectTypeFromInstance = (instance: InstanceElement): ObjectType => 
       [METADATA_TYPE]: CUSTOM_OBJECT,
       [LABEL]: instance.value[LABEL] } })
   const objectPathType = bpCase(objectName).endsWith(SALESFORCE_CUSTOM_SUFFIX) ? 'custom' : 'standard'
-  object.path = ['objects', objectPathType, bpCase(objectName)]
+  object.path = [SALESFORCE, 'objects',
+    objectPathType, bpCase(objectName)]
   return object
 }
 

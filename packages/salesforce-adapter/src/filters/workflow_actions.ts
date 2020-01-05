@@ -87,7 +87,7 @@ const filterCreator: FilterCreator = () => ({
         elemID: actionsElemId,
         fields: getFields(elements, WORKFLOW_FIELD_TO_TYPE_MAP),
       })
-      workflowActionsType.path = ['types', 'subtypes', WORKFLOW_ACTIONS]
+      workflowActionsType.path = [SALESFORCE, 'types', 'subtypes', WORKFLOW_ACTIONS]
       const actionField = workFlowRuleObjectType.fields[ACTIONS]
       actionField.type = workflowActionsType
       elements.push(workflowActionsType)

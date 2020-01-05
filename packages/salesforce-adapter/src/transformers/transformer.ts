@@ -587,7 +587,7 @@ export class Types {
       Object.values(Types.compoundDataTypes),
     ).map(type => {
       const fieldType = type.clone()
-      fieldType.path = ['types', 'field_types']
+      fieldType.path = [SALESFORCE, 'types', 'field_types']
       return fieldType
     })
   }
@@ -598,7 +598,7 @@ export class Types {
       Types.valueSettingsType, Types.lookupFilterType, Types.filterItemType]
       .map(type => {
         const fieldType = type.clone()
-        fieldType.path = ['types', 'annotation_types']
+        fieldType.path = [SALESFORCE, 'types', 'annotation_types']
         return fieldType
       })
   }
@@ -908,11 +908,11 @@ export const createInstanceElement = (mdInfo: MetadataInfo, type: ObjectType,
       if (namespacePrefix === 'standard' || mdInfo.fullName === namespacePrefix) {
         // InstalledPackage records should be under records and not within their package
         // Some CustomApplications have 'standard' namespace although they are not part of a package
-        return []
+        return [SALESFORCE]
       }
-      return ['installed_packages', namespacePrefix]
+      return [SALESFORCE, 'installed_packages', namespacePrefix]
     }
-    return []
+    return [SALESFORCE]
   }
 
   const instanceServiceIds = (): ServiceIds => {
@@ -963,6 +963,7 @@ export const createMetadataTypeElements = async (
   element.annotationTypes[METADATA_TYPE] = BuiltinTypes.SERVICE_ID
   element.annotate({ [METADATA_TYPE]: objectName })
   element.path = [
+    SALESFORCE,
     'types',
     ...(baseTypeNames.has(objectName) ? [] : ['subtypes']),
     element.elemID.name,

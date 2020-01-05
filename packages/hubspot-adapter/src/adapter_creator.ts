@@ -1,4 +1,7 @@
-import { AdapterCreator, BuiltinTypes, ElemID, Field, InstanceElement, ObjectType } from 'adapter-api'
+import {
+  AdapterCreator, BuiltinTypes, ElemID, Field,
+  InstanceElement, ObjectType,
+} from 'adapter-api'
 import HubspotClient, { Credentials } from './client/client'
 import HubspotAdapter from './adapter'
 

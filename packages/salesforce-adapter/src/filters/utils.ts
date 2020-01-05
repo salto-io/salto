@@ -3,7 +3,7 @@ import { logger } from '@salto/logging'
 import { Element, Field, isObjectType, ObjectType, InstanceElement, isInstanceElement,
   isField, Type, BuiltinTypes } from 'adapter-api'
 import { API_NAME, LABEL, CUSTOM_OBJECT,
-  METADATA_TYPE, NAMESPACE_SEPARATOR } from '../constants'
+  METADATA_TYPE, NAMESPACE_SEPARATOR, API_NAME_SEPERATOR } from '../constants'
 import { JSONBool } from '../client/types'
 import { isCustomObject, metadataType, sfCase, apiName } from '../transformers/transformer'
 
@@ -53,9 +53,15 @@ export const addLabel = (elem: Type | Field, label?: string): void => {
   }
 }
 
-export const addApiName = (elem: Type | Field, name: string): void => {
+export const addApiName = (
+  elem: Type | Field,
+  name: string,
+  parentName?: string
+): void => {
   if (!elem.annotations[API_NAME]) {
-    elem.annotations[API_NAME] = name
+    elem.annotations[API_NAME] = isField(elem) && parentName
+      ? [parentName, name].join(API_NAME_SEPERATOR)
+      : name
     log.debug(`added API_NAME=${name} to ${isField(elem) ? elem.name : elem.elemID.name}`)
   }
   if (!isField(elem) && !elem.annotationTypes[API_NAME]) {
@@ -75,8 +81,10 @@ export const addMetadataType = (elem: ObjectType,
   }
 }
 
-export const hasNamespace = (customElement: Field | ObjectType): boolean =>
-  apiName(customElement).split(NAMESPACE_SEPARATOR).length === 3
+export const hasNamespace = (customElement: Field | ObjectType): boolean => (
+  apiName(customElement) !== undefined
+  && apiName(customElement, true).split(NAMESPACE_SEPARATOR).length === 3
+)
 
 export const getNamespace = (customElement: Field | ObjectType): string =>
-  apiName(customElement).split(NAMESPACE_SEPARATOR)[0]
+  apiName(customElement, true).split(NAMESPACE_SEPARATOR)[0]

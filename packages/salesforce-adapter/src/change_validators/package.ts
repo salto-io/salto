@@ -12,14 +12,15 @@ export const hasNamespace = (customElement: Element): boolean => {
   if (_.isUndefined(apiNameResult)) {
     return false
   }
-  const partialFullName = apiNameResult.split('-')[0]
+  const relativeApiName = apiName(customElement, true)
+  const partialFullName = relativeApiName.split('-')[0]
   const cleanFullName = partialFullName.endsWith(SALESFORCE_CUSTOM_SUFFIX)
     ? partialFullName.slice(0, -3) : partialFullName
   return cleanFullName.includes(NAMESPACE_SEPARATOR)
 }
 
 export const getNamespace = (customElement: Element): string =>
-  apiName(customElement).split(NAMESPACE_SEPARATOR)[0]
+  apiName(customElement, true).split(NAMESPACE_SEPARATOR)[0]
 
 export const PACKAGE_VERSION_NUMBER_FIELD_NAME = 'version_number'
 export const INSTALLED_PACKAGE_METADATA = 'InstalledPackage'
@@ -90,7 +91,6 @@ export const changeValidator = {
       const changeElement = getChangeElement(change)
       return isField(changeElement)
         && (isAdditionDiff(change) || isRemovalDiff(change))
-        && !_.isUndefined(apiName(changeElement))
         && hasNamespace(changeElement)
     }
 

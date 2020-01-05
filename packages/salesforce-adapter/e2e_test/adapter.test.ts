@@ -780,7 +780,7 @@ describe('Salesforce adapter E2E with real account', () => {
       const updateResult = await adapter.update(oldInstance, newInstance, [])
 
       // Test
-      expect(updateResult).toBe(newInstance)
+      expect(updateResult).toStrictEqual(newInstance)
 
       // Checking that the saved instance identical to newInstance
       const savedInstance = (await client.readMetadata(

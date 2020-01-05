@@ -5,7 +5,7 @@ import {
 import {
   Type, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values, Value, Field as TypeField,
   BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter,
-  ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, isObjectType, CORE_ANNOTATIONS,
+  ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, CORE_ANNOTATIONS,
 } from 'adapter-api'
 import { collections } from '@salto/lowerdash'
 import { CustomObject, CustomField, ValueSettings, FilterItem } from '../client/types'
@@ -69,7 +69,7 @@ export const metadataType = (element: Element): string => (
 export const isCustomObject = (element: Element): boolean =>
   (metadataType(element) === CUSTOM_OBJECT)
 
-export const apiName = (elem: Element, relative = true): string => {
+export const apiName = (elem: Element, relative = false): string => {
   if (isInstanceElement(elem)) {
     return elem.value[INSTANCE_FULL_NAME_FIELD]
   }
@@ -77,7 +77,7 @@ export const apiName = (elem: Element, relative = true): string => {
   const name = elemMetadataType === CUSTOM_OBJECT
     ? elem.annotations[API_NAME]
     : elemMetadataType
-  return relative && name ? _.last(name.split(API_NAME_SEPERATOR)) : name
+  return relative ? _.last(name.split(API_NAME_SEPERATOR)) : name
 }
 
 const formulaTypeName = (baseTypeName: string): string =>
@@ -608,14 +608,10 @@ export class Types {
   }
 }
 
-export const fieldFullName = (object: ObjectType | string, field: TypeField): string =>
-  `${isObjectType(object) ? apiName(object) : object}.${apiName(field)}`
-
 const allowedAnnotations = (key: string): string[] => {
   const returnedType = Types.primitiveDataTypes[key] ?? Types.compoundDataTypes[key]
   return returnedType ? Object.keys(returnedType.annotationTypes) : []
 }
-
 /**
  * Deploy transform function on all keys in a values map recursively
  *
@@ -636,7 +632,7 @@ export const mapKeysRecursive = (obj: Values, func: (key: string) => string): Va
 }
 
 export const toCustomField = (
-  object: ObjectType, field: TypeField, fullname = false
+  _object: ObjectType, field: TypeField, fullname = false
 ): CustomField => {
   const fieldDependency = field.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY]
   const valueSettings = mapKeysRecursive(fieldDependency?.[FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS],
@@ -645,7 +641,7 @@ export const toCustomField = (
     field.annotations[FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS], key => sfCase(key, false, false)
   ) as FilterItem[]
   const newField = new CustomField(
-    fullname ? fieldFullName(object, field) : apiName(field),
+    apiName(field, !fullname),
     FIELD_TYPE_API_NAMES[fieldTypeName(field.type.elemID.name)],
     field.annotations[LABEL],
     field.annotations[CORE_ANNOTATIONS.REQUIRED],

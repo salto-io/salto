@@ -1,4 +1,4 @@
-import { Workspace, updateLoginConfig, loginStatus } from 'salto'
+import { Workspace, updateLoginConfig, LoginStatus } from 'salto'
 import { ObjectType } from 'adapter-api'
 import { command } from '../../src/commands/services'
 import {
@@ -21,7 +21,7 @@ jest.mock('salto', () => ({
     _workspace: Workspace,
     serviceNames: string[]
   ) => {
-    const loginStatuses: Record<string, loginStatus> = {}
+    const loginStatuses: Record<string, LoginStatus> = {}
     serviceNames.forEach(serviceName => {
       if (serviceName === 'salesforce') {
         loginStatuses[serviceName] = {

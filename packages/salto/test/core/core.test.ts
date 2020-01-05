@@ -407,7 +407,7 @@ describe('api functions', () => {
         expect(ws.configElements[0].elemID.adapter).toEqual('salesforce')
       })
       describe('check adapters login status', () => {
-        let adaptersLoginStatus: Record<string, commands.loginStatus>
+        let adaptersLoginStatus: Record<string, commands.LoginStatus>
         beforeEach(async () => {
           adaptersLoginStatus = await commands.getLoginStatuses(ws)
         })

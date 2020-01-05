@@ -5,12 +5,12 @@ import {
 import { promises } from '@salto/lowerdash'
 import adapterCreators from './creators'
 
-export type loginStatus = { configType: ObjectType; isLoggedIn: boolean }
+export type LoginStatus = { configType: ObjectType; isLoggedIn: boolean }
 
 export const getAdaptersLoginStatus = async (
   configs: Readonly<InstanceElement[]>,
   names: string[],
-): Promise<Record<string, loginStatus>> => {
+): Promise<Record<string, LoginStatus>> => {
   const relevantAdapterCreators = _.pick(adapterCreators, names)
   const adaptersToLoggedIn = _.mapValues(relevantAdapterCreators,
     creator => ({

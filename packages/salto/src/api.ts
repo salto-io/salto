@@ -11,7 +11,7 @@ import {
 import {
   getInstancesOfType, importInstancesOfType, deleteInstancesOfType,
 } from './core/records'
-import { initAdapters, getAdaptersLoginStatus, loginStatus } from './core/adapters/adapters'
+import { initAdapters, getAdaptersLoginStatus, LoginStatus } from './core/adapters/adapters'
 import { addServiceToConfig } from './workspace/config'
 import adapterCreators from './core/adapters/creators'
 import {
@@ -25,7 +25,7 @@ import {
 } from './core/fetch'
 import { Workspace, CREDS_DIR } from './workspace/workspace'
 
-export { ItemStatus, loginStatus }
+export { ItemStatus, LoginStatus }
 
 const log = logger(module)
 
@@ -276,5 +276,5 @@ export const addAdapter = async (
 export const getLoginStatuses = async (
   workspace: Workspace,
   adapterNames = workspace.config.services,
-): Promise<Record<string, loginStatus>> =>
+): Promise<Record<string, LoginStatus>> =>
   getAdaptersLoginStatus(workspace.configElements, adapterNames)

@@ -1,6 +1,6 @@
 import { InstanceElement, ElemID } from 'adapter-api'
 import { creator } from 'salesforce-adapter'
-import { initAdapters, getAdaptersLoginStatus, loginStatus } from '../../src/core/adapters/adapters'
+import { initAdapters, getAdaptersLoginStatus, LoginStatus } from '../../src/core/adapters/adapters'
 
 describe('Test adapters.ts', () => {
   const { configType } = creator
@@ -18,7 +18,7 @@ describe('Test adapters.ts', () => {
   )
 
   describe('run get adapters login statuses', () => {
-    let loginStatuses: Record<string, loginStatus>
+    let loginStatuses: Record<string, LoginStatus>
 
     it('should return logged in for defined adapter', async () => {
       loginStatuses = await getAdaptersLoginStatus([sfConfig], services)

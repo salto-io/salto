@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import { EOL } from 'os'
-import { addAdapter, loadConfig, getLoginStatuses, loginStatus, updateLoginConfig, Workspace } from 'salto'
+import { addAdapter, loadConfig, getLoginStatuses, LoginStatus, updateLoginConfig, Workspace } from 'salto'
 import { InstanceElement, ObjectType } from 'adapter-api'
 import { createCommandBuilder } from '../command_builder'
 import { CliOutput, ParsedCliInput, CliCommand, CliExitCode, WriteStream } from '../types'
@@ -80,7 +80,7 @@ const loginService = async (
   const serviceLoginStatus = (await getLoginStatuses(
     workspace,
     [serviceName]
-  ))[serviceName] as loginStatus
+  ))[serviceName] as LoginStatus
   if (serviceLoginStatus.isLoggedIn) {
     stdout.write(formatLoginOverride)
   }

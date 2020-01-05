@@ -119,6 +119,11 @@ export class CustomField implements MetadataInfo {
   visibleLines?: number
   maskType?: string
   maskChar?: string
+  businessOwnerGroup?: string
+  businessOwnerUser?: string
+  businessStatus?: string
+  securityClassification?: string
+  complianceGroup?: string
 
   constructor(
     public fullName: string,

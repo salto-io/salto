@@ -326,6 +326,7 @@ export class Types {
     [BUSINESS_OWNER_GROUP]: BuiltinTypes.STRING,
     [BUSINESS_STATUS]: Types.BusinessStatusType,
     [SECURITY_CLASSIFICATION]: Types.SecurityClassificationType,
+    // Supported since API version 47.0
     [COMPLIANCE_GROUP]: BuiltinTypes.STRING,
     [FIELD_LEVEL_SECURITY_ANNOTATION]: Types.fieldLevelSecurityType,
   }

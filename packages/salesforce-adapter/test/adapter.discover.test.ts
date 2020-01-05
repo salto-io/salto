@@ -9,7 +9,6 @@ import { findElements } from './utils'
 import mockAdapter from './adapter'
 import { id } from '../src/filters/utils'
 import * as constants from '../src/constants'
-// import { SALESFORCE } from '../src/constants'
 
 describe('SalesforceAdapter fetch', () => {
   let connection: Connection

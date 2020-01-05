@@ -8,6 +8,7 @@ const mockJsforce: () => Connection = () => ({
     read: jest.fn().mockImplementation(() => Promise.resolve([])),
     list: jest.fn().mockImplementation(() => Promise.resolve([])),
     create: jest.fn().mockImplementation(() => Promise.resolve([])),
+    upsert: jest.fn().mockImplementation(() => Promise.resolve([])),
     delete: jest.fn().mockImplementation(() => Promise.resolve([])),
     update: jest.fn().mockImplementation(() => Promise.resolve([])),
     retrieve: jest.fn().mockImplementation(() => ({ complete: async () => ({ zipFile: 'UEsFBgAAAAAAAAAAAAAAAAAAAAAAAA==' }) })), // encoded empty zipFile

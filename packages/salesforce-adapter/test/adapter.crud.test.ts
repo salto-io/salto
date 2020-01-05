@@ -54,7 +54,7 @@ describe('SalesforceAdapter CRUD', () => {
     UnsupportedType: undefined,
   }
 
-  let mockCreate: jest.Mock
+  let mockUpsert: jest.Mock
   let mockDelete: jest.Mock
   let mockUpdate: jest.Mock
   let mockDeploy: jest.Mock
@@ -72,8 +72,8 @@ describe('SalesforceAdapter CRUD', () => {
       { fullName: (makeArray(objects)[0] || {}).fullName, success: true },
     ])
 
-    mockCreate = jest.fn().mockImplementation(saveResultMock)
-    connection.metadata.create = mockCreate
+    mockUpsert = jest.fn().mockImplementation(saveResultMock)
+    connection.metadata.upsert = mockUpsert
     mockDelete = jest.fn().mockImplementation(saveResultMock)
     connection.metadata.delete = mockDelete
     mockUpdate = jest.fn().mockImplementation(saveResultMock)
@@ -120,11 +120,11 @@ describe('SalesforceAdapter CRUD', () => {
           expect(result.value.token).toBe('instanceTest')
           expect(result.value.Token).toBeUndefined()
 
-          expect(mockCreate.mock.calls.length).toBe(1)
-          expect(mockCreate.mock.calls[0].length).toBe(2)
-          expect(mockCreate.mock.calls[0][0]).toBe('Flow')
-          expect(mockCreate.mock.calls[0][1]).toHaveLength(1)
-          expect(mockCreate.mock.calls[0][1][0]).toMatchObject({
+          expect(mockUpsert.mock.calls.length).toBe(1)
+          expect(mockUpsert.mock.calls[0].length).toBe(2)
+          expect(mockUpsert.mock.calls[0][0]).toBe('Flow')
+          expect(mockUpsert.mock.calls[0][1]).toHaveLength(1)
+          expect(mockUpsert.mock.calls[0][1][0]).toMatchObject({
             fullName: sfCase(mockInstanceName),
             token: 'instanceTest',
           })
@@ -135,7 +135,7 @@ describe('SalesforceAdapter CRUD', () => {
         let result: Promise<Element>
 
         beforeEach(async () => {
-          connection.metadata.create = jest.fn()
+          connection.metadata.upsert = jest.fn()
             .mockImplementationOnce(async () => ([{
               success: false,
               fullName: 'Test__c',
@@ -207,9 +207,9 @@ describe('SalesforceAdapter CRUD', () => {
         ).toBe('Description__c')
         expect(result.annotations[constants.METADATA_TYPE]).toBe(constants.CUSTOM_OBJECT)
 
-        expect(mockCreate.mock.calls.length).toBe(1)
-        expect(mockCreate.mock.calls[0][1]).toHaveLength(1)
-        const object = mockCreate.mock.calls[0][1][0]
+        expect(mockUpsert.mock.calls.length).toBe(1)
+        expect(mockUpsert.mock.calls[0][1]).toHaveLength(1)
+        const object = mockUpsert.mock.calls[0][1][0]
         expect(object.fullName).toBe('Test__c')
         expect(object.fields.length).toBe(2)
         const [descriptionField, formulaField] = object.fields
@@ -251,8 +251,8 @@ describe('SalesforceAdapter CRUD', () => {
       })
 
       it('should create the type correctly', () => {
-        expect(mockCreate.mock.calls.length).toBe(1)
-        const object = mockCreate.mock.calls[0][1][0]
+        expect(mockUpsert.mock.calls.length).toBe(1)
+        const object = mockUpsert.mock.calls[0][1][0]
         expect(object.fields.length).toBe(1)
         expect(object.fields[0].fullName).toBe('State__c')
         expect(object.fields[0].type).toBe('Picklist')
@@ -467,9 +467,9 @@ describe('SalesforceAdapter CRUD', () => {
       })
 
       it('should create the element correctly', () => {
-        expect(mockCreate.mock.calls.length).toBe(1)
-        expect(mockCreate.mock.calls[0][1]).toHaveLength(1)
-        const object = mockCreate.mock.calls[0][1][0]
+        expect(mockUpsert.mock.calls.length).toBe(1)
+        expect(mockUpsert.mock.calls[0][1]).toHaveLength(1)
+        const object = mockUpsert.mock.calls[0][1][0]
         expect(object.fields.length).toBe(19)
         // Currency
         expect(object.fields[0].fullName).toBe('Currency__c')
@@ -979,7 +979,7 @@ describe('SalesforceAdapter CRUD', () => {
           })
 
           it('should call the connection methods correctly', () => {
-            expect(mockCreate.mock.calls.length).toBe(1)
+            expect(mockUpsert.mock.calls.length).toBe(1)
             expect(mockDelete.mock.calls.length).toBe(1)
             expect(mockUpdate.mock.calls.length).toBe(1)
           })
@@ -1056,11 +1056,11 @@ describe('SalesforceAdapter CRUD', () => {
           })
 
           it('should call the connection methods correctly', () => {
-            expect(mockCreate.mock.calls.length).toBe(1)
+            expect(mockUpsert.mock.calls.length).toBe(1)
             expect(mockDelete.mock.calls.length).toBe(0)
             expect(mockUpdate.mock.calls.length).toBe(0)
             // Verify the custom fields creation
-            const fields = mockCreate.mock.calls[0][1]
+            const fields = mockUpsert.mock.calls[0][1]
             expect(fields.length).toBe(2)
             expect(fields[0].fullName).toBe('Test__c.Description__c')
             expect(fields[0].type).toBe('Text')
@@ -1139,7 +1139,7 @@ describe('SalesforceAdapter CRUD', () => {
           })
 
           it('should only delete fields', () => {
-            expect(mockCreate.mock.calls.length).toBe(0)
+            expect(mockUpsert.mock.calls.length).toBe(0)
             expect(mockUpdate.mock.calls.length).toBe(0)
             expect(mockDelete.mock.calls.length).toBe(1)
 
@@ -1216,14 +1216,14 @@ describe('SalesforceAdapter CRUD', () => {
           })
 
           it('should only call delete and create', () => {
-            expect(mockCreate.mock.calls.length).toBe(1)
+            expect(mockUpsert.mock.calls.length).toBe(1)
             expect(mockDelete.mock.calls.length).toBe(1)
             expect(mockUpdate.mock.calls.length).toBe(0)
           })
 
           it('should call the connection.create method correctly', () => {
             // Verify the custom fields creation
-            const addedFields = mockCreate.mock.calls[0][1]
+            const addedFields = mockUpsert.mock.calls[0][1]
             expect(addedFields.length).toBe(1)
             const field = addedFields[0]
             expect(field.fullName).toBe('Test__c.Description__c')
@@ -1282,7 +1282,7 @@ describe('SalesforceAdapter CRUD', () => {
           })
 
           it('should only call update', () => {
-            expect(mockCreate.mock.calls.length).toBe(0)
+            expect(mockUpsert.mock.calls.length).toBe(0)
             expect(mockDelete.mock.calls.length).toBe(0)
             expect(mockUpdate.mock.calls.length).toBe(1)
           })
@@ -1391,13 +1391,13 @@ describe('SalesforceAdapter CRUD', () => {
           })
 
           it('should call delete, create and update', () => {
-            expect(mockCreate.mock.calls.length).toBe(1)
+            expect(mockUpsert.mock.calls.length).toBe(1)
             expect(mockDelete.mock.calls.length).toBe(1)
             expect(mockUpdate.mock.calls.length).toBe(1)
           })
 
           it('should call the connection methods correctly', () => {
-            const addedFields = mockCreate.mock.calls[0][1]
+            const addedFields = mockUpsert.mock.calls[0][1]
             expect(addedFields.length).toBe(1)
             const field = addedFields[0]
             expect(field.fullName).toBe('Test__c.Description__c')
@@ -1474,7 +1474,7 @@ describe('SalesforceAdapter CRUD', () => {
           })
 
           it('should not call delete, create or update', () => {
-            expect(mockCreate.mock.calls.length).toBe(0)
+            expect(mockUpsert.mock.calls.length).toBe(0)
             expect(mockDelete.mock.calls.length).toBe(0)
             expect(mockUpdate.mock.calls.length).toBe(0)
           })
@@ -1537,7 +1537,7 @@ describe('SalesforceAdapter CRUD', () => {
           })
 
           it('should call update twice', () => {
-            expect(mockCreate.mock.calls.length).toBe(0)
+            expect(mockUpsert.mock.calls.length).toBe(0)
             expect(mockDelete.mock.calls.length).toBe(0)
             expect(mockUpdate.mock.calls.length).toBe(2)
           })

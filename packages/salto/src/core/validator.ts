@@ -36,7 +36,7 @@ const validateAnnotations = (elemID: ElemID, value: Value, type: Type): Validati
   if (isObjectType(type)) {
     return _.flatten(Object.keys(type.fields).map(
       // eslint-disable-next-line @typescript-eslint/no-use-before-define
-      k => validateAnnotationsField(elemID.createNestedID(k), value[k], type.fields[k])
+      k => validateFieldAnnotations(elemID.createNestedID(k), value[k], type.fields[k])
     ))
   }
 
@@ -155,7 +155,7 @@ const validateAnnotationsValue = (
  * @param value- the field value
  * @param field
  */
-const validateAnnotationsField = (
+const validateFieldAnnotations = (
   elemID: ElemID, value: Value, field: Field,
 ): ValidationError[] => {
   const errors = validateAnnotationsValue(elemID, value, field.annotations, field.type)

@@ -3,7 +3,7 @@ import path from 'path'
 import _ from 'lodash'
 import tmp from 'tmp-promise'
 import {
-  Element, ObjectType, ElemID, CORE_ANNOTATIONS, Field, PrimitiveType, PrimitiveTypes, BuiltinTypes,
+  Element, ObjectType, ElemID, CORE_ANNOTATIONS, Field, BuiltinTypes,
   findElement, isObjectType,
 } from 'adapter-api'
 import { Config } from '../../src/workspace/config'
@@ -571,8 +571,7 @@ type salesforce_lead {
       expect(new InvalidValueValidationError({
         elemID,
         value: '',
-        field: new Field(elemID, '', new PrimitiveType({ elemID,
-          primitive: PrimitiveTypes.STRING })),
+        fieldName: '',
         expectedValue: 'baba',
       }).severity).toBe('Warning')
     })

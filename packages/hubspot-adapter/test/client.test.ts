@@ -45,6 +45,9 @@ describe('Test HubSpot client', () => {
               method: 'POST',
               cssClass: 'abc',
               followUpId: 'DEPRECATED',
+              editable: true,
+              createdAt: 1571588456053,
+              cloneable: true,
             },
             {
               portalId: 6774238,
@@ -54,6 +57,10 @@ describe('Test HubSpot client', () => {
               method: 'POST',
               cssClass: 'css',
               followUpId: 'DEPRECATED',
+              editable: false,
+              createdAt: 1561581451052,
+              cloneable: true,
+              captchaEnabled: false,
             },
           ] as unknown as RequestPromise)
 

@@ -35,12 +35,20 @@ describe('Hubspot Adapter Operations', () => {
             method: 'POST',
             cssClass: 'abc',
             followUpId: 'DEPRECATED',
+            editable: true,
+            cloneable: true,
+            captchaEnabled: false,
+            createdAt: 1500588456053,
           },
           {
             guid: '11111',
             name: 'formTest1',
             method: 'POST',
             cssClass: 'abc',
+            editable: true,
+            cloneable: true,
+            captchaEnabled: false,
+            createdAt: 1500588456053,
           },
         ] as Form[]
       )

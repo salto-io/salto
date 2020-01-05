@@ -96,6 +96,34 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
+        [FORM_FIELDS.CAPTCHAENABLED]: new TypeField(
+          formElemID, FORM_FIELDS.CAPTCHAENABLED, BuiltinTypes.BOOLEAN, {
+            name: FORM_FIELDS.CAPTCHAENABLED,
+            _readOnly: true,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [FORM_FIELDS.CREATEDAT]: new TypeField( // TODO: format milli -> readable date
+          formElemID, FORM_FIELDS.CREATEDAT, BuiltinTypes.NUMBER, {
+            name: FORM_FIELDS.CREATEDAT,
+            _readOnly: true,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [FORM_FIELDS.CLONEABLE]: new TypeField(
+          formElemID, FORM_FIELDS.CLONEABLE, BuiltinTypes.BOOLEAN, {
+            name: FORM_FIELDS.CLONEABLE,
+            _readOnly: true,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [FORM_FIELDS.EDITABLE]: new TypeField(
+          formElemID, FORM_FIELDS.EDITABLE, BuiltinTypes.BOOLEAN, {
+            name: FORM_FIELDS.EDITABLE,
+            _readOnly: true,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
       },
     }),
   ]

@@ -45,7 +45,7 @@ export default class HubspotAdapter {
    */
   public async fetch(): Promise<Element[]> {
     const fieldTypes = Types.getAllFieldTypes()
-    const objects = Types.hubspotTypes
+    const objects = Types.hubspotObjects
     const instances = await this.fetchHubInstances(objects)
 
     return _.flatten(

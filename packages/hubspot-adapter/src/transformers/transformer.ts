@@ -6,7 +6,7 @@ import {
   isObjectType, Type, CORE_ANNOTATIONS,
 } from 'adapter-api'
 import {
-  FIELD_TYPE_NAMES, FORM_FIELD_NAMES,
+  FIELD_TYPES, FORM_FIELDS,
   HUBSPOT, OBJECTS_NAMES,
 } from '../constants'
 import {
@@ -18,83 +18,87 @@ const formElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.FORM)
 
 
 export class Types {
-  public static hubspotTypes: ObjectType[] = [
+  /**
+   * This method create array of all supported Hubspot objects.
+   * This is static creation cause hubspot API support only instances.
+   */
+  public static hubspotObjects: ObjectType[] = [
     new ObjectType({
       elemID: formElemID,
       fields: {
         portalId: new TypeField(
-          formElemID, FORM_FIELD_NAMES.PORTALID, BuiltinTypes.NUMBER, {
-            name: FORM_FIELD_NAMES.PORTALID,
+          formElemID, FORM_FIELDS.PORTALID, BuiltinTypes.NUMBER, {
+            name: FORM_FIELDS.PORTALID,
             _readOnly: true,
             [CORE_ANNOTATIONS.REQUIRED]: true,
           },
         ),
         guid: new TypeField(
-          formElemID, FORM_FIELD_NAMES.GUID, BuiltinTypes.STRING, {
-            name: FORM_FIELD_NAMES.GUID,
+          formElemID, FORM_FIELDS.GUID, BuiltinTypes.STRING, {
+            name: FORM_FIELDS.GUID,
             _readOnly: true,
             [CORE_ANNOTATIONS.REQUIRED]: true,
           },
         ),
         name: new TypeField(
-          formElemID, FORM_FIELD_NAMES.NAME, BuiltinTypes.STRING, {
-            name: FORM_FIELD_NAMES.NAME,
+          formElemID, FORM_FIELDS.NAME, BuiltinTypes.STRING, {
+            name: FORM_FIELDS.NAME,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: true,
           },
         ),
         method: new TypeField(
-          formElemID, FORM_FIELD_NAMES.METHOD, BuiltinTypes.STRING, {
-            name: FORM_FIELD_NAMES.METHOD,
+          formElemID, FORM_FIELDS.METHOD, BuiltinTypes.STRING, {
+            name: FORM_FIELDS.METHOD,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
         cssClass: new TypeField(
-          formElemID, FORM_FIELD_NAMES.CSSCLASS, BuiltinTypes.STRING, {
-            name: FORM_FIELD_NAMES.CSSCLASS,
+          formElemID, FORM_FIELDS.CSSCLASS, BuiltinTypes.STRING, {
+            name: FORM_FIELDS.CSSCLASS,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
         redirect: new TypeField(
-          formElemID, FORM_FIELD_NAMES.REDIRECT, BuiltinTypes.STRING, {
-            name: FORM_FIELD_NAMES.REDIRECT,
+          formElemID, FORM_FIELDS.REDIRECT, BuiltinTypes.STRING, {
+            name: FORM_FIELDS.REDIRECT,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
         submitText: new TypeField(
-          formElemID, 'submitText', BuiltinTypes.STRING, {
-            name: 'submitText',
+          formElemID, FORM_FIELDS.SUBMITTEXT, BuiltinTypes.STRING, {
+            name: FORM_FIELDS.SUBMITTEXT,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
         notifyRecipients: new TypeField(
-          formElemID, 'notifyRecipients', BuiltinTypes.STRING, {
-            name: 'notifyRecipients',
+          formElemID, FORM_FIELDS.NOTIFYRECIPIENTS, BuiltinTypes.STRING, {
+            name: FORM_FIELDS.NOTIFYRECIPIENTS,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
         ignoreCurrentValues: new TypeField(
-          formElemID, 'ignoreCurrentValues', BuiltinTypes.BOOLEAN, {
-            name: 'ignoreCurrentValues',
+          formElemID, FORM_FIELDS.IGNORECURRENTVALUES, BuiltinTypes.BOOLEAN, {
+            name: FORM_FIELDS.IGNORECURRENTVALUES,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
         deletable: new TypeField(
-          formElemID, 'deletable', BuiltinTypes.BOOLEAN, {
-            name: 'deletable',
+          formElemID, FORM_FIELDS.DELETABLE, BuiltinTypes.BOOLEAN, {
+            name: FORM_FIELDS.DELETABLE,
             _readOnly: true,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
         inlineMessage: new TypeField(
-          formElemID, 'inlineMessage', BuiltinTypes.STRING, {
-            name: 'inlineMessage',
+          formElemID, FORM_FIELDS.INLINEMESSAGE, BuiltinTypes.STRING, {
+            name: FORM_FIELDS.INLINEMESSAGE,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
@@ -105,61 +109,64 @@ export class Types {
 
   public static fieldTypes: Record<string, Type> = {
     textarea: new PrimitiveType({
-      elemID: new ElemID(HUBSPOT, FIELD_TYPE_NAMES.TEXTAREA),
+      elemID: new ElemID(HUBSPOT, FIELD_TYPES.TEXTAREA),
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
       },
     }),
     text: new PrimitiveType({
-      elemID: new ElemID(HUBSPOT, FIELD_TYPE_NAMES.TEXT),
+      elemID: new ElemID(HUBSPOT, FIELD_TYPES.TEXT),
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
       },
     }),
     date: new PrimitiveType({
-      elemID: new ElemID(HUBSPOT, FIELD_TYPE_NAMES.DATE),
+      elemID: new ElemID(HUBSPOT, FIELD_TYPES.DATE),
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
       },
     }),
     file: new PrimitiveType({
-      elemID: new ElemID(HUBSPOT, FIELD_TYPE_NAMES.FILE),
+      elemID: new ElemID(HUBSPOT, FIELD_TYPES.FILE),
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
       },
     }),
     number: new PrimitiveType({
-      elemID: new ElemID(HUBSPOT, FIELD_TYPE_NAMES.NUMBER),
+      elemID: new ElemID(HUBSPOT, FIELD_TYPES.NUMBER),
       primitive: PrimitiveTypes.NUMBER,
       annotationTypes: {
       },
     }),
     select: new PrimitiveType({
-      elemID: new ElemID(HUBSPOT, FIELD_TYPE_NAMES.SELECT),
+      elemID: new ElemID(HUBSPOT, FIELD_TYPES.SELECT),
       primitive: PrimitiveTypes.NUMBER,
       annotationTypes: {
       },
     }),
     radio: new PrimitiveType({
-      elemID: new ElemID(HUBSPOT, FIELD_TYPE_NAMES.RADIO),
+      elemID: new ElemID(HUBSPOT, FIELD_TYPES.RADIO),
       primitive: PrimitiveTypes.NUMBER,
       annotationTypes: {
       },
     }),
     checkbox: new PrimitiveType({
-      elemID: new ElemID(HUBSPOT, FIELD_TYPE_NAMES.CHECKBOX),
+      elemID: new ElemID(HUBSPOT, FIELD_TYPES.CHECKBOX),
       primitive: PrimitiveTypes.NUMBER,
       annotationTypes: {
       },
     }),
     booleancheckbox: new PrimitiveType({
-      elemID: new ElemID(HUBSPOT, FIELD_TYPE_NAMES.BOOLEANCHECKBOX),
+      elemID: new ElemID(HUBSPOT, FIELD_TYPES.BOOLEANCHECKBOX),
       primitive: PrimitiveTypes.NUMBER,
       annotationTypes: {
       },
     }),
   }
 
+  /**
+   * This method create all the (basic) field types
+   */
   static getAllFieldTypes(): Type[] {
     return _.concat(
       Object.values(Types.fieldTypes),
@@ -171,6 +178,12 @@ export class Types {
   }
 }
 
+/**
+ * This method generate (instance) values by iterating hubspot object fields.
+ * Also ensure that only expected fields will shown
+ * @param info
+ * @param infoType
+ */
 export const fromHubspotObj = (info: Form, infoType: ObjectType): Values => {
   const transform = (obj: Values, type: ObjectType): Values =>
     _(obj).mapKeys((_value, key) => key).mapValues((value, key) => {
@@ -190,16 +203,21 @@ export const fromHubspotObj = (info: Form, infoType: ObjectType): Values => {
   return transform(info as Values, infoType)
 }
 
+/**
+ * Creating all the instance for specific type
+ * @param hubspotMetadata the instance metadata from hubspot
+ * @param type the objectType
+ */
 export const createHubspotInstanceElement = (
-  hubspotInfo: Form,
+  hubspotMetadata: Form,
   type: ObjectType
 ): InstanceElement => {
   const typeName = type.elemID.name
-  const values = fromHubspotObj(hubspotInfo, type)
+  const values = fromHubspotObj(hubspotMetadata, type)
   return new InstanceElement(
-    new ElemID(HUBSPOT, hubspotInfo.name).name,
+    new ElemID(HUBSPOT, hubspotMetadata.name).name,
     type,
     values,
-    [HUBSPOT, 'records', typeName, hubspotInfo.name],
+    [HUBSPOT, 'records', typeName, hubspotMetadata.name],
   )
 }

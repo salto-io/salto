@@ -2,11 +2,10 @@ export const HUBSPOT = 'hubspot'
 
 export const OBJECTS_NAMES = {
   FORM: 'form',
-
 }
 
-// fields names
-export const FIELD_TYPE_NAMES = {
+// fields types
+export const FIELD_TYPES = {
   TEXTAREA: 'textarea',
   TEXT: 'text',
   DATE: 'date',
@@ -18,8 +17,8 @@ export const FIELD_TYPE_NAMES = {
   BOOLEANCHECKBOX: 'booleancheckbox',
 }
 
-// fields names
-export const FORM_FIELD_NAMES = {
+// All form fields names
+export const FORM_FIELDS = {
   PORTALID: 'portalId',
   GUID: 'guid',
   NAME: 'name',

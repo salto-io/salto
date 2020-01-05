@@ -4,7 +4,7 @@ import {
 } from 'adapter-api'
 import { apiName, bpCase } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
-import { SALESFORCE, SALESFORCE_CUSTOM_SUFFIX, INSTANCE_FULL_NAME_FIELD } from '../constants'
+import { SALESFORCE, SALESFORCE_CUSTOM_SUFFIX } from '../constants'
 import { id } from './utils'
 
 export const LAYOUT_TYPE_ID = new ElemID(SALESFORCE, 'layout')
@@ -69,10 +69,13 @@ const filterCreator: FilterCreator = () => ({
     elements
       .filter(isObjectType)
       .forEach(obj => {
-        const objLayouts = obj2layout[apiName(obj)]
-        if (objLayouts) {
-          obj.annotate({ [LAYOUT_ANNOTATION]: _.sortBy(objLayouts, id).map(layout =>
-            new ReferenceExpression(layout.elemID.createNestedID(INSTANCE_FULL_NAME_FIELD))) })
+        const objName = apiName(obj)
+        if (objName) {
+          const objLayouts = obj2layout[objName]
+          if (objLayouts) {
+            obj.annotate({ [LAYOUT_ANNOTATION]: _.sortBy(objLayouts, id).map(layout =>
+              new ReferenceExpression(layout.elemID)) })
+          }
         }
       })
   },

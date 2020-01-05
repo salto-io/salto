@@ -18,11 +18,14 @@ const filterCreator: FilterCreator = () => ({
     elements
       .filter(isObjectType)
       .forEach(obj => {
-        const rules = rulesByObject[apiName(obj)]
-        if (rules) {
-          obj.annotate({
-            [VALIDATION_RULE_ANNOTATION]: rules.map(r => id(r)).sort(),
-          })
+        const objectName = apiName(obj)
+        if (objectName) {
+          const rules = rulesByObject[objectName]
+          if (rules) {
+            obj.annotate({
+              [VALIDATION_RULE_ANNOTATION]: rules.map(r => id(r)).sort(),
+            })
+          }
         }
       })
   },

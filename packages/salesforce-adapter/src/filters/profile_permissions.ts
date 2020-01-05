@@ -14,13 +14,13 @@ import {
   OBJECT_LEVEL_SECURITY_ANNOTATION, OBJECT_PERMISSIONS, SALESFORCE, INSTANCE_FULL_NAME_FIELD,
 } from '../constants'
 import {
-  fieldFullName, isCustomObject, Types, apiName, bpCase, sfCase,
+  isCustomObject, Types, apiName, bpCase, sfCase,
 } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
 import { ProfileInfo, FieldPermissions, FieldPermissionsOptions, ObjectPermissionsOptions,
   ObjectPermissions, OBJECT_PERMISSIONS_OPTIONS, FIELD_PERMISSIONS_OPTIONS,
   PermissionsTypes, PermissionsOptionsFieldsTypes } from '../client/types'
-import { generateObjectElemID2ApiName, getCustomObjects, id, boolValue,
+import { getCustomObjects, id, boolValue,
   getInstancesOfMetadataType, removeFieldsFromInstanceAndType } from './utils'
 
 const log = logger(module)
@@ -186,7 +186,7 @@ const toProfilesObjectPermissions = (object: ObjectType): Record<string, ObjectP
 const toProfilesFieldPermissions = (object: ObjectType): Record<string, FieldPermissions[]> =>
   Object.values(object.fields).reduce((permissions, field) =>
     (toProfilePermissions(field, FIELD_LEVEL_SECURITY_ANNOTATION,
-      FIELD_PERMISSIONS_OPTIONS, { field: fieldFullName(object, field) },
+      FIELD_PERMISSIONS_OPTIONS, { field: apiName(field) },
       permissions)), {} as Record<string, FieldPermissions[]>)
 
 const toProfiles = (object: ObjectType): ProfileInfo[] => {
@@ -223,17 +223,21 @@ const filterCreator: FilterCreator = ({ client }) => ({
     const objectPermissionsPerProfile = profileInstances.map(profile2ObjectPermissions)
     const objectPermissions: Record<string, ProfileToObjectPermissions> = _.merge({},
       ...objectPermissionsPerProfile)
-    const objectElemID2ApiName = generateObjectElemID2ApiName(customObjectTypes)
 
     // Add field permissions to all fetched elements
     customObjectTypes.forEach(obj => {
+      const objectName = apiName(obj, false)
       Object.values(obj.fields).forEach(field => {
-        const fullName = fieldFullName(objectElemID2ApiName[id(obj)] || obj, field)
-        setPermissions(field, FIELD_LEVEL_SECURITY_ANNOTATION, fullName,
-          fieldPermissions, profileInstances)
+        const fullName = apiName(field, false)
+        if (fullName) {
+          setPermissions(field, FIELD_LEVEL_SECURITY_ANNOTATION, fullName,
+            fieldPermissions, profileInstances)
+        }
       })
-      setPermissions(obj, OBJECT_LEVEL_SECURITY_ANNOTATION, apiName(obj),
-        objectPermissions, profileInstances)
+      if (objectName) {
+        setPermissions(obj, OBJECT_LEVEL_SECURITY_ANNOTATION, objectName,
+          objectPermissions, profileInstances)
+      }
     })
 
     // Remove field permissions from Profile Instances & Type to avoid information duplication
@@ -271,7 +275,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
               setDefaultFieldPermissions(after.fields[changeElement.name])
               break
             case 'remove':
-              removedElements.push(fieldFullName(before, changeElement))
+              removedElements.push(apiName(changeElement))
               break
             default:
               break

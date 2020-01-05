@@ -431,7 +431,7 @@ describe('transformer', () => {
       it('should transform lookup field with deletion constraint', async () => {
         // eslint-disable-next-line max-len
         objectType.fields[fieldName].annotations[FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION] = false
-        const customLookupField = toCustomField(objectType, objectType.fields[fieldName])
+        const customLookupField = toCustomField(objectType.fields[fieldName])
         assertCustomFieldTransformation(customLookupField,
           FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.LOOKUP], 'FieldName', 'Restrict', relatedTo)
       })
@@ -439,7 +439,7 @@ describe('transformer', () => {
       it('should transform lookup field with no deletion constraint', async () => {
         // eslint-disable-next-line max-len
         objectType.fields[fieldName].annotations[FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION] = true
-        const customLookupField = toCustomField(objectType, objectType.fields[fieldName])
+        const customLookupField = toCustomField(objectType.fields[fieldName])
         assertCustomFieldTransformation(customLookupField,
           FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.LOOKUP], 'FieldName', 'SetNull', relatedTo)
       })
@@ -449,7 +449,7 @@ describe('transformer', () => {
         masterDetailField.type = Types.primitiveDataTypes.masterdetail
         masterDetailField.annotations[FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ] = true
         masterDetailField.annotations[FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL] = true
-        const customMasterDetailField = toCustomField(objectType, masterDetailField)
+        const customMasterDetailField = toCustomField(masterDetailField)
         assertCustomFieldTransformation(customMasterDetailField,
           FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.MASTER_DETAIL], 'FieldName', undefined, relatedTo)
         expect(customMasterDetailField.reparentableMasterDetail).toBe(true)
@@ -505,7 +505,7 @@ describe('transformer', () => {
       })
 
       it('should transform field dependency for picklist field', async () => {
-        const customFieldWithFieldDependency = toCustomField(obj, obj.fields[fieldName])
+        const customFieldWithFieldDependency = toCustomField(obj.fields[fieldName])
         expect(customFieldWithFieldDependency.type)
           .toEqual(FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.PICKLIST])
         expect(customFieldWithFieldDependency?.valueSet?.controllingField)
@@ -521,7 +521,7 @@ describe('transformer', () => {
 
       it('should transform field dependency for multi picklist field', async () => {
         obj.fields[fieldName].type = Types.primitiveDataTypes.multipicklist
-        const customFieldWithFieldDependency = toCustomField(obj, obj.fields[fieldName])
+        const customFieldWithFieldDependency = toCustomField(obj.fields[fieldName])
         expect(customFieldWithFieldDependency.type)
           .toEqual(FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.MULTIPICKLIST])
         expect(customFieldWithFieldDependency?.valueSet?.controllingField)
@@ -537,7 +537,7 @@ describe('transformer', () => {
 
       it('should ignore field dependency when not defined', async () => {
         delete obj.fields[fieldName].annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY]
-        const customFieldWithFieldDependency = toCustomField(obj, obj.fields[fieldName])
+        const customFieldWithFieldDependency = toCustomField(obj.fields[fieldName])
         expect(customFieldWithFieldDependency.type)
           .toEqual(FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.PICKLIST])
         expect(customFieldWithFieldDependency?.valueSet?.controllingField).toBeUndefined()
@@ -578,7 +578,7 @@ describe('transformer', () => {
       })
 
       it('should transform rollup summary field', async () => {
-        const rollupSummaryInfo = toCustomField(obj, obj.fields[fieldName])
+        const rollupSummaryInfo = toCustomField(obj.fields[fieldName])
         expect(rollupSummaryInfo.type)
           .toEqual(FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.ROLLUP_SUMMARY])
         expect(_.get(rollupSummaryInfo, 'summarizedField'))
@@ -600,7 +600,7 @@ describe('transformer', () => {
 
       it('should ignore field dependency when not defined', async () => {
         delete obj.fields[fieldName].annotations[FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS]
-        const rollupSummaryInfo = toCustomField(obj, obj.fields[fieldName])
+        const rollupSummaryInfo = toCustomField(obj.fields[fieldName])
         expect(rollupSummaryInfo.type)
           .toEqual(FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.ROLLUP_SUMMARY])
         expect(_.get(rollupSummaryInfo, 'summarizedField'))

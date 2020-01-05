@@ -26,10 +26,25 @@ describe('Hubspot Adapter Operations', () => {
     let mockGetAllForms: jest.Mock
 
     beforeEach(async () => {
-      const getAllResult = (): Promise<Form[]> => Promise.resolve([
-        { guid: '12345' },
-        { guid: '11111' },
-      ] as Form[])
+      const getAllResult = (): Promise<Form[]> => Promise.resolve(
+        [
+          {
+            guid: '12345',
+            portalId: 123,
+            name: 'formTest1',
+            method: 'POST',
+            cssClass: 'abc',
+            followUpId: 'DEPRECATED',
+          },
+          {
+            guid: '11111',
+            portalId: 123,
+            name: 'formTest1',
+            method: 'POST',
+            cssClass: 'abc',
+          },
+        ] as Form[]
+      )
 
       mockGetAllForms = jest.fn().mockImplementation(getAllResult)
       client.getAllForms = mockGetAllForms

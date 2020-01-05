@@ -633,7 +633,7 @@ export const mapKeysRecursive = (obj: Values, func: (key: string) => string): Va
 }
 
 export const toCustomField = (
-  _object: ObjectType, field: TypeField, fullname = false
+  field: TypeField, fullname = false
 ): CustomField => {
   const fieldDependency = field.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY]
   const valueSettings = mapKeysRecursive(fieldDependency?.[FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS],
@@ -689,7 +689,7 @@ export const toCustomObject = (
     element.annotations[LABEL],
     includeFields
       ? Object.values(element.fields)
-        .map(field => toCustomField(element, field))
+        .map(field => toCustomField(field))
         .filter(field => !skipFields.includes(field.fullName))
       : undefined
   )

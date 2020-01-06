@@ -5,7 +5,7 @@ import {
   Connection as RealConnection, MetadataObject, DescribeGlobalSObjectResult, FileProperties,
   MetadataInfo, SaveResult, ValueTypeField, DescribeSObjectResult, QueryResult, DeployResult,
   BatchResultInfo, Record as SfRecord, RecordResult, BulkLoadOperation, RetrieveRequest,
-  RetrieveResult, ListMetadataQuery,
+  RetrieveResult, ListMetadataQuery, UpsertResult,
 } from 'jsforce'
 import { Value } from 'adapter-api'
 import { logger } from '@salto/logging'
@@ -273,18 +273,18 @@ export default class SalesforceClient {
   }
 
   /**
-   * Creates a salesforce object
-   * @param type The metadata type of the components to be created
+   * Create or update a salesforce object
+   * @param type The metadata type of the components to be created or updated
    * @param metadata The metadata of the object
    * @returns The save result of the requested creation
    */
   @SalesforceClient.logDecorator
   @validateSaveResult
   @SalesforceClient.requiresLogin
-  public async create(type: string, metadata: MetadataInfo | MetadataInfo[]):
-    Promise<SaveResult[]> {
-    const result = await sendChunked(metadata, chunk => this.conn.metadata.create(type, chunk))
-    log.debug('created %o of type %s [result=%o]', makeArray(metadata).map(f => f.fullName),
+  public async upsert(type: string, metadata: MetadataInfo | MetadataInfo[]):
+    Promise<UpsertResult[]> {
+    const result = await sendChunked(metadata, chunk => this.conn.metadata.upsert(type, chunk))
+    log.debug('upsert %o of type %s [result=%o]', makeArray(metadata).map(f => f.fullName),
       type, result)
     return result
   }

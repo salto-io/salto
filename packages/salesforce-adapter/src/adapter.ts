@@ -6,7 +6,7 @@ import {
 } from 'adapter-api'
 import {
   SaveResult, MetadataInfo, QueryResult, FileProperties,
-  BatchResultInfo, BulkLoadOperation, Record as SfRecord, ListMetadataQuery,
+  BatchResultInfo, BulkLoadOperation, Record as SfRecord, ListMetadataQuery, UpsertResult,
 } from 'jsforce'
 import _ from 'lodash'
 import { logger } from '@salto/logging'
@@ -374,7 +374,7 @@ export default class SalesforceAdapter {
     const post = element.clone()
     addDefaults(post)
 
-    await this.client.create(
+    await this.client.upsert(
       constants.CUSTOM_OBJECT, toCustomObject(post, true, this.systemFields),
     )
 
@@ -400,7 +400,7 @@ export default class SalesforceAdapter {
     if (this.isMetadataTypeToRetrieveAndDeploy(type)) {
       await this.deployInstance(post)
     } else {
-      await this.client.create(type, toMetadataInfo(apiName(post), post.value))
+      await this.client.upsert(type, toMetadataInfo(apiName(post), post.value))
     }
     return post
   }
@@ -567,8 +567,8 @@ export default class SalesforceAdapter {
    * @param fieldsToAdd The fields to create
    * @returns successfully managed to create all fields with their permissions or not
    */
-  private async createFields(object: ObjectType, fieldsToAdd: Field[]): Promise<SaveResult[]> {
-    return this.client.create(
+  private async createFields(object: ObjectType, fieldsToAdd: Field[]): Promise<UpsertResult[]> {
+    return this.client.upsert(
       constants.CUSTOM_FIELD,
       fieldsToAdd.map(f => toCustomField(object, f, true)),
     )

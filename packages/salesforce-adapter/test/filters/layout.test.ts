@@ -43,7 +43,7 @@ describe('Test layout filter', () => {
 
       const sobject = elements[0] as ObjectType
       expect((sobject.annotations[LAYOUT_ANNOTATION][0] as ReferenceExpression).traversalParts)
-        .toEqual(id(instance).split('.'))
+        .toEqual([...id(instance).split('.'), constants.INSTANCE_FULL_NAME_FIELD])
     }
 
     it('should add relation between layout to related sobject', async () => {

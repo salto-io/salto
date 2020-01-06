@@ -5,7 +5,8 @@ import {
 import {
   Type, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values, Value, Field as TypeField,
   BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter,
-  ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, isObjectType, CORE_ANNOTATIONS,
+  ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, isObjectType,
+  CORE_ANNOTATIONS, PrimitiveValue, convertXsdTypeFuncMap,
 } from 'adapter-api'
 import { collections } from '@salto/lowerdash'
 import { CustomObject, CustomField, ValueSettings, FilterItem } from '../client/types'
@@ -719,16 +720,6 @@ export const getValueTypeFieldElement = (parentID: ElemID, field: ValueTypeField
     }
   }
   return new TypeField(parentID, bpFieldName, bpFieldType, annotations)
-}
-
-export type PrimitiveValue = string | boolean | number
-type ConvertXsdTypeFunc = (v: string) => PrimitiveValue
-export const convertXsdTypeFuncMap: Record<string, ConvertXsdTypeFunc> = {
-  'xsd:string': String,
-  'xsd:boolean': v => v === 'true',
-  'xsd:double': Number,
-  'xsd:int': Number,
-  'xsd:long': Number,
 }
 
 const isDefaultWithType = (val: PrimitiveValue | DefaultValueWithType):

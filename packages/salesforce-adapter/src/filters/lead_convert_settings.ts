@@ -1,13 +1,13 @@
 import _ from 'lodash'
 import {
-  Element, isObjectType, ElemID, findInstances, findObjectType, Change,
+  Element, isObjectType, ElemID, findInstances, findObjectType,
+  Change, transform,
 } from 'adapter-api'
 import { SaveResult } from 'jsforce-types'
 import { collections } from '@salto/lowerdash'
 import { FilterCreator } from '../filter'
 import { toMetadataInfo, metadataType } from '../transformers/transformer'
 import { INSTANCE_FULL_NAME_FIELD, SALESFORCE } from '../constants'
-import { transform } from './convert_types'
 
 const { makeArray } = collections.array
 

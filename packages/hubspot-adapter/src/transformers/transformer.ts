@@ -3,7 +3,7 @@ import {
   ElemID, ObjectType,
   PrimitiveType, PrimitiveTypes,
   Field as TypeField, BuiltinTypes, InstanceElement, Values,
-  isObjectType, Type, CORE_ANNOTATIONS,
+  Type, CORE_ANNOTATIONS, transform,
 } from 'adapter-api'
 import {
   FIELD_TYPES, FORM_FIELDS,
@@ -190,24 +190,9 @@ export class Types {
 export const fromHubspotObject = (
   info: HubspotMetadata,
   infoType: ObjectType
-): Values => {
-  const transform = (obj: Values, type: ObjectType): Values =>
-    _(obj).mapKeys((_value, key) => key).mapValues((value, key) => {
-      const field = type.fields[key]
-      if (field !== undefined) {
-        const fieldType = field.type
-        if (isObjectType(fieldType)) {
-          return _.isArray(value)
-            ? (value as []).map(v => transform(v, fieldType))
-            : transform(value, fieldType)
-        }
-        return value
-      }
-      return undefined
-    }).omitBy(_.isUndefined)
-      .value()
-  return transform(info as Values, infoType)
-}
+): Values =>
+  transform(info as Values, infoType) || {}
+
 
 /**
  * Creating all the instance for specific type

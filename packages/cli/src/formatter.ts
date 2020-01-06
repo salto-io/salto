@@ -469,7 +469,10 @@ export const formatServiceNotConfigured = (serviceName: string): string => [
 
 export const formatConfiguredServices = (serviceNames: string[]): string => {
   if (serviceNames.length === 0) {
-    return Prompts.NO_CONFIGURED_SERVICES
+    return [
+      Prompts.NO_CONFIGURED_SERVICES,
+      emptyLine(),
+    ].join('\n')
   }
 
   const formattedServices = serviceNames.map(service => indent(`* ${service}`, 1))

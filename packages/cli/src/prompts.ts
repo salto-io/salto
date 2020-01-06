@@ -77,7 +77,10 @@ The csv file path is: ${path}\n`
   }
 
   public static initCompleted(name: string, baseDir: string): string {
-    return `Initiated workspace ${name} at ${baseDir}\n`
+    return `Initiated empty workspace ${name} at ${baseDir}
+    
+Use \`salto services add <service-name>\` to add services to the workspace
+`
   }
 
   public static readonly FETCH_HEADER = 'Fetching and applying changes from the service(s)'

@@ -10,60 +10,29 @@ import {
   CORE_ANNOTATIONS, PrimitiveValue, RESTRICTION_ANNOTATIONS,
 } from 'adapter-api'
 import { collections } from '@salto/lowerdash'
-import { CustomObject, CustomField, ValueSettings, FilterItem, PicklistValue } from '../client/types'
+import { CustomObject, CustomField } from '../client/types'
 import {
   API_NAME, CUSTOM_OBJECT, LABEL, SALESFORCE, FORMULA,
-  FORMULA_TYPE_PREFIX, FIELD_TYPE_NAMES, FIELD_TYPE_API_NAMES, METADATA_OBJECT_NAME_FIELD,
+  FORMULA_TYPE_PREFIX, FIELD_TYPE_NAMES,
   METADATA_TYPE, FIELD_ANNOTATIONS, SALESFORCE_CUSTOM_SUFFIX, DEFAULT_VALUE_FORMULA,
   LOOKUP_FILTER_FIELDS, ADDRESS_FIELDS, NAME_FIELDS, GEOLOCATION_FIELDS, INSTANCE_FULL_NAME_FIELD,
   FIELD_LEVEL_SECURITY_ANNOTATION, FIELD_LEVEL_SECURITY_FIELDS, FIELD_DEPENDENCY_FIELDS,
   VALUE_SETTINGS_FIELDS, FILTER_ITEM_FIELDS, OBJECT_LEVEL_SECURITY_ANNOTATION,
-  OBJECT_LEVEL_SECURITY_FIELDS, NAMESPACE_SEPARATOR, DESCRIPTION, HELP_TEXT, BUSINESS_STATUS,
+  OBJECT_LEVEL_SECURITY_FIELDS, DESCRIPTION, HELP_TEXT, BUSINESS_STATUS,
   SECURITY_CLASSIFICATION, BUSINESS_OWNER_GROUP, BUSINESS_OWNER_USER, COMPLIANCE_GROUP,
   VALUE_SET_DEFINITION_VALUE_FIELDS, API_NAME_SEPERATOR, MAX_METADATA_RESTRICTION_VALUES,
-  VALUE_SET_FIELDS,
+  VALUE_SET_FIELDS, COMPOUND_FIELD_TYPE_NAMES, ANNOTATION_TYPE_NAMES, FIELD_SOAP_TYPE_NAMES,
 } from '../constants'
 import SalesforceClient from '../client/client'
 
 const { makeArray } = collections.array
 
-const capitalize = (s: string): string => {
-  if (typeof s !== 'string') return ''
-  return s.charAt(0).toUpperCase() + s.slice(1)
-}
-
-export const sfCase = (name: string, custom = false, capital = true): string => {
-  const toSfCamelCase = (word: string): string =>
-    word.split(NAMESPACE_SEPARATOR)
-      .map(_.camelCase)
-      .map((v, idx) => (idx === 0 ? v : capitalize(v)))
-      .join('_')
-  const sf = name.endsWith(SALESFORCE_CUSTOM_SUFFIX)
-    ? toSfCamelCase(name.slice(0, -3)) + name.slice(-3)
-    : toSfCamelCase(name) + (custom ? SALESFORCE_CUSTOM_SUFFIX : '')
-  return capital ? capitalize(sf) : sf
-}
-
-export const bpCase = (name: string): string => {
-  const upperCase = /[A-Z]/
-  const isUpperCase = (c: string): boolean => (c.match(upperCase) !== null)
-  const toBpSnakeCase = (word: string): string => word.split('_')
-    .reduce((prevRes, w, idx) => {
-      if (idx > 0 && isUpperCase(w.charAt(0))) {
-        prevRes.push('_')
-      }
-      prevRes.push(w)
-      return prevRes
-    }, [] as string[])
-    .map(_.snakeCase).join('_')
-
-  // Using specific replace for chars then _.unescape is not replacing well
-  // and we see in our responses for sfdc
-  const unescaped = _.unescape(name).replace(/%26|%28|%29/g, '_')
-  return unescaped.toLocaleLowerCase().endsWith(SALESFORCE_CUSTOM_SUFFIX)
-    ? toBpSnakeCase(unescaped.slice(0, -3)) + SALESFORCE_CUSTOM_SUFFIX
-    : toBpSnakeCase(unescaped)
-}
+export const bpCase = (name?: string): string => (
+  // unescape changes HTML escaped parts (&gt; for example), then the regex
+  // replaces url escaped chars as well as any special character to keep names blueprint friendly
+  // Match multiple consecutive chars to compact names and avoid repeated _
+  name ? _.unescape(name).replace(/((%[0-9A-F]{2})|[^\w\d])+/g, '_') : ''
+)
 
 export const metadataType = (element: Element): string => (
   element.annotations[METADATA_TYPE] || CUSTOM_OBJECT
@@ -72,13 +41,20 @@ export const metadataType = (element: Element): string => (
 export const isCustomObject = (element: Element): boolean =>
   (metadataType(element) === CUSTOM_OBJECT)
 
+export const defaultApiName = (element: Element): string => {
+  const { name } = element.elemID
+  return name.endsWith(SALESFORCE_CUSTOM_SUFFIX) || isInstanceElement(element)
+    ? name
+    : `${name}${SALESFORCE_CUSTOM_SUFFIX}`
+}
+
 export const apiName = (elem: Element, relative = false): string => {
   if (isInstanceElement(elem)) {
     return elem.value[INSTANCE_FULL_NAME_FIELD]
   }
   const elemMetadataType = metadataType(elem)
   const name = elemMetadataType === CUSTOM_OBJECT
-    ? elem.annotations[API_NAME]
+    ? elem.annotations[API_NAME] ?? elem.annotations[METADATA_TYPE]
     : elemMetadataType
   return name && relative ? _.last(name.split(API_NAME_SEPERATOR)) : name
 }
@@ -112,9 +88,10 @@ const addPicklistAnnotations = (
 // Ref: https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/primitive_data_types.htm
 // Ref: https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_field_types.htm#meta_type_fieldtype
 
-const addressElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.ADDRESS)
-const nameElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.FIELD_NAME)
-const geoLocationElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.LOCATION)
+const addressElemID = new ElemID(SALESFORCE, COMPOUND_FIELD_TYPE_NAMES.ADDRESS)
+const nameElemID = new ElemID(SALESFORCE, COMPOUND_FIELD_TYPE_NAMES.FIELD_NAME)
+const geoLocationElemID = new ElemID(SALESFORCE, COMPOUND_FIELD_TYPE_NAMES.LOCATION)
+
 
 export class Types {
   private static getElemIdFunc: ElemIdGetter
@@ -167,7 +144,7 @@ export class Types {
     },
   })
 
-  private static filterItemElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.FILTER_ITEM)
+  private static filterItemElemID = new ElemID(SALESFORCE, ANNOTATION_TYPE_NAMES.FILTER_ITEM)
   private static filterItemType = new ObjectType({
     elemID: Types.filterItemElemID,
     fields: {
@@ -184,9 +161,12 @@ export class Types {
         Types.filterItemElemID, FILTER_ITEM_FIELDS.VALUE, BuiltinTypes.STRING
       ),
     },
+    annotations: {
+      [API_NAME]: 'FilterItem',
+    },
   })
 
-  private static lookupFilterElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.LOOKUP_FILTER)
+  private static lookupFilterElemID = new ElemID(SALESFORCE, ANNOTATION_TYPE_NAMES.LOOKUP_FILTER)
   private static lookupFilterType = new ObjectType({
     elemID: Types.lookupFilterElemID,
     fields: {
@@ -210,9 +190,12 @@ export class Types {
         Types.filterItemType, {}, true
       ),
     },
+    annotations: {
+      [API_NAME]: 'LookupFilter',
+    },
   })
 
-  private static valueSettingsElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.VALUE_SETTINGS)
+  private static valueSettingsElemID = new ElemID(SALESFORCE, ANNOTATION_TYPE_NAMES.VALUE_SETTINGS)
   private static valueSettingsType = new ObjectType({
     elemID: Types.valueSettingsElemID,
     fields: {
@@ -225,6 +208,9 @@ export class Types {
         Types.valueSettingsElemID, VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE,
         BuiltinTypes.STRING, {}, true
       ),
+    },
+    annotations: {
+      [API_NAME]: 'ValueSettings',
     },
   })
 
@@ -247,7 +233,10 @@ export class Types {
     },
   })
 
-  private static fieldDependencyElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.FIELD_DEPENDENCY)
+  private static fieldDependencyElemID = new ElemID(
+    SALESFORCE, ANNOTATION_TYPE_NAMES.FIELD_DEPENDENCY,
+  )
+
   private static fieldDependencyType = new ObjectType({
     elemID: Types.fieldDependencyElemID,
     fields: {
@@ -373,8 +362,8 @@ export class Types {
   }
 
   // Type mapping for custom objects
-  public static primitiveDataTypes: Record<string, Type> = {
-    text: new PrimitiveType({
+  public static primitiveDataTypes: Record<FIELD_TYPE_NAMES, Type> = {
+    Text: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.TEXT),
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
@@ -385,7 +374,7 @@ export class Types {
         [FIELD_ANNOTATIONS.LENGTH]: BuiltinTypes.NUMBER,
       },
     }),
-    number: new PrimitiveType({
+    Number: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.NUMBER),
       primitive: PrimitiveTypes.NUMBER,
       annotationTypes: {
@@ -396,7 +385,7 @@ export class Types {
         [FIELD_ANNOTATIONS.EXTERNAL_ID]: BuiltinTypes.BOOLEAN,
       },
     }),
-    autonumber: new PrimitiveType({
+    AutoNumber: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.AUTONUMBER),
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
@@ -405,7 +394,7 @@ export class Types {
         [FIELD_ANNOTATIONS.DISPLAY_FORMAT]: BuiltinTypes.STRING,
       },
     }),
-    boolean: new PrimitiveType({
+    Checkbox: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.CHECKBOX),
       primitive: PrimitiveTypes.BOOLEAN,
       annotationTypes: {
@@ -413,28 +402,28 @@ export class Types {
         [FIELD_ANNOTATIONS.DEFAULT_VALUE]: BuiltinTypes.BOOLEAN,
       },
     }),
-    date: new PrimitiveType({
+    Date: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.DATE),
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
         ...Types.commonAnnotationTypes,
       },
     }),
-    time: new PrimitiveType({
+    Time: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.TIME),
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
         ...Types.commonAnnotationTypes,
       },
     }),
-    datetime: new PrimitiveType({
+    DateTime: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.DATETIME),
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
         ...Types.commonAnnotationTypes,
       },
     }),
-    currency: new PrimitiveType({
+    Currency: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.CURRENCY),
       primitive: PrimitiveTypes.NUMBER,
       annotationTypes: {
@@ -443,7 +432,7 @@ export class Types {
         [FIELD_ANNOTATIONS.PRECISION]: BuiltinTypes.NUMBER,
       },
     }),
-    picklist: new PrimitiveType({
+    Picklist: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.PICKLIST),
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
@@ -454,7 +443,7 @@ export class Types {
         [VALUE_SET_FIELDS.VALUE_SET_NAME]: BuiltinTypes.STRING,
       },
     }),
-    multipicklist: new PrimitiveType({
+    MultiselectPicklist: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.MULTIPICKLIST),
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
@@ -466,7 +455,7 @@ export class Types {
         [VALUE_SET_FIELDS.VALUE_SET_NAME]: BuiltinTypes.STRING,
       },
     }),
-    email: new PrimitiveType({
+    Email: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.EMAIL),
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
@@ -476,7 +465,7 @@ export class Types {
         [FIELD_ANNOTATIONS.CASE_SENSITIVE]: BuiltinTypes.BOOLEAN,
       },
     }),
-    percent: new PrimitiveType({
+    Percent: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.PERCENT),
       primitive: PrimitiveTypes.NUMBER,
       annotationTypes: {
@@ -485,14 +474,14 @@ export class Types {
         [FIELD_ANNOTATIONS.PRECISION]: BuiltinTypes.NUMBER,
       },
     }),
-    phone: new PrimitiveType({
+    Phone: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.PHONE),
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
         ...Types.commonAnnotationTypes,
       },
     }),
-    longtextarea: new PrimitiveType({
+    LongTextArea: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.LONGTEXTAREA),
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
@@ -501,7 +490,7 @@ export class Types {
         [FIELD_ANNOTATIONS.LENGTH]: BuiltinTypes.NUMBER,
       },
     }),
-    richtextarea: new PrimitiveType({
+    Html: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.RICHTEXTAREA),
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
@@ -510,14 +499,14 @@ export class Types {
         [FIELD_ANNOTATIONS.LENGTH]: BuiltinTypes.NUMBER,
       },
     }),
-    textarea: new PrimitiveType({
+    TextArea: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.TEXTAREA),
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
         ...Types.commonAnnotationTypes,
       },
     }),
-    encryptedtext: new PrimitiveType({
+    EncryptedText: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.ENCRYPTEDTEXT),
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
@@ -527,14 +516,14 @@ export class Types {
         [FIELD_ANNOTATIONS.LENGTH]: BuiltinTypes.NUMBER,
       },
     }),
-    url: new PrimitiveType({
+    Url: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.URL),
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
         ...Types.commonAnnotationTypes,
       },
     }),
-    lookup: new PrimitiveType({
+    Lookup: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.LOOKUP),
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
@@ -544,7 +533,7 @@ export class Types {
         [FIELD_ANNOTATIONS.LOOKUP_FILTER]: Types.lookupFilterType,
       },
     }),
-    masterdetail: new PrimitiveType({
+    MasterDetail: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.MASTER_DETAIL),
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
@@ -555,7 +544,7 @@ export class Types {
         [FIELD_ANNOTATIONS.REFERENCE_TO]: BuiltinTypes.STRING,
       },
     }),
-    rollupsummary: new PrimitiveType({
+    Summary: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.ROLLUP_SUMMARY),
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
@@ -582,7 +571,7 @@ export class Types {
           addressElemID, ADDRESS_FIELDS.COUNTRY, BuiltinTypes.STRING
         ),
         [ADDRESS_FIELDS.GEOCODE_ACCURACY]: new TypeField(
-          addressElemID, ADDRESS_FIELDS.GEOCODE_ACCURACY, Types.primitiveDataTypes.picklist
+          addressElemID, ADDRESS_FIELDS.GEOCODE_ACCURACY, Types.primitiveDataTypes.Picklist
         ),
         [ADDRESS_FIELDS.LATITUDE]: new TypeField(
           addressElemID, ADDRESS_FIELDS.LATITUDE, BuiltinTypes.NUMBER
@@ -597,7 +586,7 @@ export class Types {
           addressElemID, ADDRESS_FIELDS.STATE, BuiltinTypes.STRING
         ),
         [ADDRESS_FIELDS.STREET]: new TypeField(
-          addressElemID, ADDRESS_FIELDS.STREET, Types.primitiveDataTypes.textarea
+          addressElemID, ADDRESS_FIELDS.STREET, Types.primitiveDataTypes.TextArea
         ),
       },
       annotationTypes: {
@@ -614,7 +603,7 @@ export class Types {
           nameElemID, NAME_FIELDS.LAST_NAME, BuiltinTypes.STRING
         ),
         [NAME_FIELDS.SALUTATION]: new TypeField(
-          nameElemID, NAME_FIELDS.SALUTATION, Types.primitiveDataTypes.picklist
+          nameElemID, NAME_FIELDS.SALUTATION, Types.primitiveDataTypes.Picklist
         ),
       },
       annotationTypes: {
@@ -654,7 +643,7 @@ export class Types {
 
   static getKnownType(name: string, customObject = true): Type {
     return customObject
-      ? this.primitiveDataTypes[name.toLowerCase()]
+      ? this.primitiveDataTypes[name as FIELD_TYPE_NAMES] || this.compoundDataTypes[name]
       : this.metadataPrimitiveTypes[name.toLowerCase()]
   }
 
@@ -711,10 +700,6 @@ export class Types {
   }
 }
 
-const allowedAnnotations = (key: string): string[] => {
-  const returnedType = Types.primitiveDataTypes[key] ?? Types.compoundDataTypes[key]
-  return returnedType ? Object.keys(returnedType.annotationTypes) : []
-}
 /**
  * Deploy transform function on all keys in a values map recursively
  *
@@ -738,29 +723,22 @@ export const toCustomField = (
   field: TypeField, fullname = false
 ): CustomField => {
   const fieldDependency = field.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY]
-  const valueSettings = mapKeysRecursive(fieldDependency?.[FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS],
-    key => sfCase(key, false, false)) as ValueSettings[]
-  const summaryFilterItems = mapKeysRecursive(
-    field.annotations[FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS], key => sfCase(key, false, false)
-  ) as FilterItem[]
-  const picklistValues = mapKeysRecursive(field.annotations[FIELD_ANNOTATIONS.VALUE_SET],
-    key => sfCase(key, false, false)) as PicklistValue[]
   const newField = new CustomField(
     apiName(field, !fullname),
-    FIELD_TYPE_API_NAMES[fieldTypeName(field.type.elemID.name)],
+    fieldTypeName(field.type.elemID.name),
     field.annotations[LABEL],
     field.annotations[CORE_ANNOTATIONS.REQUIRED],
     field.annotations[FIELD_ANNOTATIONS.DEFAULT_VALUE],
     field.annotations[DEFAULT_VALUE_FORMULA],
-    picklistValues,
+    field.annotations[FIELD_ANNOTATIONS.VALUE_SET],
     fieldDependency?.[FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD],
-    valueSettings,
+    fieldDependency?.[FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS],
     field.annotations[FIELD_ANNOTATIONS.RESTRICTED],
     field.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME],
     field.annotations[FORMULA],
-    summaryFilterItems,
+    field.annotations[FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS],
     field.annotations[FIELD_ANNOTATIONS.REFERENCE_TO],
-    sfCase(field.name),
+    field.name,
     field.annotations[FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION]
   )
 
@@ -775,18 +753,16 @@ export const toCustomField = (
     FIELD_ANNOTATIONS.LOOKUP_FILTER, // handled in lookup_filters filter
     FIELD_LEVEL_SECURITY_ANNOTATION,
   ]
-  const isBlacklisted = (annotationValue: string): boolean =>
-    blacklistedAnnotations.includes(annotationValue)
+  const isAllowed = (annotationName: string): boolean => (
+    Object.keys(field.type.annotationTypes).includes(annotationName)
+    && !blacklistedAnnotations.includes(annotationName)
+  )
 
   // Convert the annotations' names to the required API name
-  _.assign(newField,
-    _.mapKeys(
-      _.pickBy(field.annotations,
-        (_val, annotationValue) =>
-          allowedAnnotations(field.type.elemID.name).includes(annotationValue)
-          && !isBlacklisted(annotationValue)),
-      (_val, key) => sfCase(key, false, false)
-    ))
+  _.assign(
+    newField,
+    _.pickBy(field.annotations, (_val, annotationName) => isAllowed(annotationName)),
+  )
   return newField
 }
 
@@ -805,11 +781,13 @@ export const toCustomObject = (
 
 export const getValueTypeFieldElement = (parentID: ElemID, field: ValueTypeField,
   knownTypes: Map<string, Type>): TypeField => {
-  const bpFieldName = bpCase(field.name)
-  const bpFieldType = (field.name === METADATA_OBJECT_NAME_FIELD) ? BuiltinTypes.SERVICE_ID
+  const bpFieldType = (field.name === INSTANCE_FULL_NAME_FIELD)
+    ? BuiltinTypes.SERVICE_ID
     : knownTypes.get(field.soapType) || Types.get(field.soapType, false)
   // mark required as false until SALTO-45 will be resolved
-  const annotations: Values = { [CORE_ANNOTATIONS.REQUIRED]: false }
+  const annotations: Values = {
+    [CORE_ANNOTATIONS.REQUIRED]: false,
+  }
 
   if (field.picklistValues && field.picklistValues.length > 0) {
     // picklist values in metadata types are used to restrict a field to a list of allowed values
@@ -828,7 +806,7 @@ export const getValueTypeFieldElement = (parentID: ElemID, field: ValueTypeField
       annotations[CORE_ANNOTATIONS.DEFAULT] = defaults.pop()
     }
   }
-  return new TypeField(parentID, bpFieldName, bpFieldType, annotations)
+  return new TypeField(parentID, field.name, bpFieldType, annotations)
 }
 
 type ConvertXsdTypeFunc = (v: string) => PrimitiveValue
@@ -843,17 +821,15 @@ const convertXsdTypeFuncMap: Record<string, ConvertXsdTypeFunc> = {
 export const transformPrimitive = (val: PrimitiveValue, primitive: PrimitiveTypes):
   PrimitiveValue | undefined => {
   // Salesforce returns nulls as objects like { $: { 'xsi:nil': 'true' } }
-  // our key name transform replaces '$' with '' and ':' with '_'
-  if (_.isObject(val) && _.get(val, ['', 'xsi_nil']) === 'true') {
+  if (_.isObject(val) && _.get(val, ['$', 'xsi:nil']) === 'true') {
     // We transform null to undefined as currently we don't support null in Salto language
     // and the undefined values are omitted later in the code
     return undefined
   }
   // (Salto-394) Salesforce returns objects like:
   // { "_": "fieldValue", "$": { "xsi:type": "xsd:string" } }
-  // our key name transform replaces '$' with '' and ':' with '_'
   if (_.isObject(val) && Object.keys(val).includes('_')) {
-    const convertFunc = convertXsdTypeFuncMap[_.get(val, ['', 'xsi_type'])] || (v => v)
+    const convertFunc = convertXsdTypeFuncMap[_.get(val, ['$', 'xsi:type'])] || (v => v)
     return transformPrimitive(convertFunc(_.get(val, '_')), primitive)
   }
   switch (primitive) {
@@ -896,9 +872,11 @@ export const getSObjectFieldElement = (parent: Element, field: Field,
     [OBJECT_SERVICE_ID]: toServiceIdsString(parentServiceIds),
   }
 
-  const getFieldType = (typeName: string): Type => Types.get(typeName, true, false, serviceIds)
+  const getFieldType = (typeName: string): Type => (
+    Types.get(typeName, true, false, serviceIds)
+  )
 
-  let bpFieldType = getFieldType(field.type)
+  let bpFieldType = getFieldType(FIELD_SOAP_TYPE_NAMES[field.type])
   const annotations: Values = {
     [API_NAME]: fieldApiName,
     [LABEL]: field.label,
@@ -990,31 +968,28 @@ export const getSObjectFieldElement = (parent: Element, field: Field,
     bpFieldType = Types.getCompound(field.name)
   }
   if (!_.isEmpty(bpFieldType.annotationTypes)) {
-    // Convert the annotations' names to bp case for those that are not already in that format
-    // (annotations that consist of at least 2 words) and assign the additional annotations
-    // (ones that were received from the api)
-    _.assign(annotations,
-      _.pickBy(
-        _.mapKeys(field,
-          (_val, key) => bpCase(key)),
-        (_val, key) => allowedAnnotations(
-          _.toLower(bpFieldType.elemID.name)
-        ).includes(key)
-      ))
+    // Get the rest of the annotations if their name matches exactly the API response
+    // and they are not already assigned
+    _.assign(
+      annotations,
+      _.pick(
+        _.omit(field, Object.keys(annotations)),
+        Object.keys(bpFieldType.annotationTypes),
+      )
+    )
   }
 
   const fieldName = Types.getElemId(field.name, true, serviceIds).name
   return new TypeField(parent.elemID, fieldName, bpFieldType, annotations)
 }
 
-export const fromMetadataInfo = (info: MetadataInfo):
-  Values => mapKeysRecursive(info, bpCase)
+export const fromMetadataInfo = (info: MetadataInfo): Values => info
 
 export const toMetadataInfo = (fullName: string, values: Values):
   MetadataInfo =>
   ({
     fullName,
-    ...mapKeysRecursive(values, name => sfCase(name, false, false)),
+    ...values,
   })
 
 export const toInstanceElements = (type: ObjectType, queryResult: QueryResult<Value>):
@@ -1061,7 +1036,9 @@ export const createInstanceElement = (mdInfo: MetadataInfo, type: ObjectType,
   }
 
   const typeName = type.elemID.name
-  const name = (): string => Types.getElemId(mdInfo.fullName, true, instanceServiceIds()).name
+  const name = (): string => (
+    Types.getElemId(bpCase(mdInfo.fullName), true, instanceServiceIds()).name
+  )
   return new InstanceElement(
     type.isSettings ? ElemID.CONFIG_NAME : name(),
     type,
@@ -1182,13 +1159,15 @@ export const getCompoundChildFields = (objectType: ObjectType): TypeField[] => {
     // For each address field, get its prefix, then find its corresponding child fields by
     // this prefix.
     Object.keys(addressFields).forEach(key => {
-      const addressPrefix = key.replace(/address/, '')
+      const addressPrefix = key.replace(/Address/, '')
       Object.values(Types.compoundDataTypes.address.fields).forEach(childField => {
         const clonedField = childField.clone()
         // Add the child fields to the object type
         const childFieldName = addressPrefix + clonedField.name
         clonedField.name = childFieldName
-        clonedField.annotations = { [API_NAME]: sfCase(childFieldName) }
+        clonedField.annotations = {
+          [API_NAME]: [apiName(object), childFieldName].join(API_NAME_SEPERATOR),
+        }
         object.fields[childFieldName] = clonedField
       })
       // Remove the compound field from the element
@@ -1197,7 +1176,7 @@ export const getCompoundChildFields = (objectType: ObjectType): TypeField[] => {
   }
 
   const handleNameField = (object: ObjectType): void => {
-    const compoundNameFieldName = 'name'
+    const compoundNameFieldName = 'Name'
     const compoundNameFieldFullName = 'Full Name'
     // Find the name field
     const nameFields = _.pickBy(object.fields,
@@ -1210,7 +1189,9 @@ export const getCompoundChildFields = (objectType: ObjectType): TypeField[] => {
     // Add the child fields to the object type
     Object.values(Types.compoundDataTypes.name.fields).forEach(childField => {
       const clonedField = childField.clone()
-      clonedField.annotations = { [API_NAME]: sfCase(childField.name) }
+      clonedField.annotations = {
+        [API_NAME]: [apiName(object), childField.name].join(API_NAME_SEPERATOR),
+      }
       object.fields[childField.name] = clonedField
     })
     // Remove the compound field from the element
@@ -1225,13 +1206,14 @@ export const getCompoundChildFields = (objectType: ObjectType): TypeField[] => {
     // this name.
     Object.keys(locationFields).forEach(key => {
       const isCustomField = key.endsWith(SALESFORCE_CUSTOM_SUFFIX)
+      const keyBaseName = isCustomField ? key.slice(0, -SALESFORCE_CUSTOM_SUFFIX.length) : key
       Object.values(Types.compoundDataTypes.location.fields).forEach(childField => {
         const clonedField = childField.clone()
         // Add the child fields to the object type
-        const childFieldName = `${isCustomField ? key.slice(0, -SALESFORCE_CUSTOM_SUFFIX.length) : key}_${clonedField.name}`
+        const childFieldName = `${keyBaseName}__${clonedField.name}`
         clonedField.name = childFieldName
         clonedField.annotations = {
-          [API_NAME]: `${key.slice(0, -SALESFORCE_CUSTOM_SUFFIX.length)}${NAMESPACE_SEPARATOR}${capitalize(childField.name)}${isCustomField ? '__s' : ''}`,
+          [API_NAME]: `${[apiName(object), childFieldName].join(API_NAME_SEPERATOR)}${isCustomField ? '__s' : ''}`,
         }
         object.fields[childFieldName] = clonedField
       })

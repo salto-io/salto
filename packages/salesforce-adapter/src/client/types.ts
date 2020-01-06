@@ -1,6 +1,6 @@
 import { MetadataInfo, SaveResult } from 'jsforce'
 import _ from 'lodash'
-import { FIELD_TYPE_NAMES, FIELD_TYPE_API_NAMES } from '../constants'
+import { FIELD_TYPE_NAMES } from '../constants'
 
 export type JSONBool = boolean | 'true' | 'false'
 
@@ -181,8 +181,7 @@ export class CustomField implements MetadataInfo {
     }
 
     // For Picklist we save the default value in defaultVal but Metadata requires it at Value level
-    if (type === FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.PICKLIST]
-      || type === FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.MULTIPICKLIST]) {
+    if (type === FIELD_TYPE_NAMES.PICKLIST || type === FIELD_TYPE_NAMES.MULTIPICKLIST) {
       if ((values && !_.isEmpty(values)) || (valueSetName)) {
         if (values && !_.isEmpty(values)) {
           this.valueSet = {
@@ -203,23 +202,22 @@ export class CustomField implements MetadataInfo {
           this.valueSet.valueSettings = valueSettings
         }
       }
-    } else if (type === FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.CHECKBOX]) {
+    } else if (type === FIELD_TYPE_NAMES.CHECKBOX) {
       // For Checkbox the default value comes from defaultVal and not defaultValFormula
       this.defaultValue = defaultVal
-    } else if (type === FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.LOOKUP]) {
+    } else if (type === FIELD_TYPE_NAMES.LOOKUP) {
       this.relationshipName = relationshipName
       this.deleteConstraint = allowLookupRecordDeletion ? 'SetNull' : 'Restrict'
       this.referenceTo = relatedTo
-    } else if (type === FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.MASTER_DETAIL]) {
+    } else if (type === FIELD_TYPE_NAMES.MASTER_DETAIL) {
       this.relationshipName = relationshipName
       this.referenceTo = relatedTo
-    } else if (type === FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.ROLLUP_SUMMARY]
-        && summaryFilterItems) {
+    } else if (type === FIELD_TYPE_NAMES.ROLLUP_SUMMARY && summaryFilterItems) {
       this.summaryFilterItems = summaryFilterItems
     }
 
     // Checkbox and Formula fields should not have required field
-    if ((this.type !== FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.CHECKBOX]) && !formula) {
+    if ((this.type !== FIELD_TYPE_NAMES.CHECKBOX) && !formula) {
       this.required = required
     }
   }
@@ -247,7 +245,7 @@ export class CustomObject implements MetadataInfo {
     }
 
     const hasMasterDetailField = (): boolean|undefined => fields
-      && fields.some(field => field.type === FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.MASTER_DETAIL])
+      && fields.some(field => field.type === FIELD_TYPE_NAMES.MASTER_DETAIL)
 
     if (hasMasterDetailField()) {
       this.sharingModel = 'ControlledByParent'

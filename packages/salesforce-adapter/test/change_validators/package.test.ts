@@ -61,7 +61,7 @@ describe('package change validator', () => {
         expect(changeErrors).toHaveLength(0)
       })
 
-      it('should have no change errors when adding an instance without full_name', async () => {
+      it('should have no change errors when adding an instance without fullName', async () => {
         const changeErrors = await packageValidator.onAdd(inst)
         expect(changeErrors).toHaveLength(0)
       })
@@ -114,7 +114,7 @@ describe('package change validator', () => {
         expect(changeErrors).toHaveLength(0)
       })
 
-      it('should have no change errors when removing an instance without full_name', async () => {
+      it('should have no change errors when removing an instance without fullName', async () => {
         const changeErrors = await packageValidator.onRemove(inst)
         expect(changeErrors).toHaveLength(0)
       })

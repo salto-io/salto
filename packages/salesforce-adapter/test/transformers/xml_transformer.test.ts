@@ -67,7 +67,7 @@ describe('XML Transformer', () => {
 
     describe('apex class', () => {
       const apexTypeElemID = new ElemID(SALESFORCE, 'apex_class')
-      const apiVersion = 'api_version'
+      const apiVersion = 'apiVersion'
       const apexClassType = new ObjectType({
         elemID: apexTypeElemID,
         annotations: {
@@ -171,7 +171,7 @@ describe('XML Transformer', () => {
   describe('toMetadataPackageZip in deletion flow', () => {
     describe('apex class', () => {
       const apexTypeElemID = new ElemID(SALESFORCE, 'apex_class')
-      const apiVersion = 'api_version'
+      const apiVersion = 'apiVersion'
       const apexClassType = new ObjectType({
         elemID: apexTypeElemID,
         annotations: {

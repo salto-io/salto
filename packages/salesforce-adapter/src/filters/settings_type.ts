@@ -7,7 +7,7 @@ import { logger } from '@salto/logging'
 import { MetadataInfo } from 'jsforce-types'
 import { FilterCreator } from '../filter'
 import {
-  createInstanceElement, createMetadataTypeElements, sfCase,
+  createInstanceElement, createMetadataTypeElements, apiName,
 } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
 import { id } from './utils'
@@ -50,7 +50,7 @@ const createSettingsInstance = async (
   client: SalesforceClient,
   settingsType: ObjectType
 ): Promise<InstanceElement[]> => {
-  const typeName = sfCase(settingsType.elemID.name)
+  const typeName = apiName(settingsType)
   let metadataInfos: MetadataInfo[] = []
   try {
     metadataInfos = await client.readMetadata(typeName, extractSettingName(typeName))

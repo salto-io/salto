@@ -3,7 +3,7 @@ import { ElemID } from './elements'
 
 export class ReferenceExpression {
   constructor(
-    private readonly elemId: ElemID
+    public readonly elemId: ElemID
   ) {
     this.elemId = elemId
   }

@@ -5,7 +5,7 @@ import { Element, Field, isObjectType, ObjectType, InstanceElement, isInstanceEl
 import { API_NAME, LABEL, CUSTOM_OBJECT,
   METADATA_TYPE, NAMESPACE_SEPARATOR, API_NAME_SEPERATOR, INSTANCE_FULL_NAME_FIELD } from '../constants'
 import { JSONBool } from '../client/types'
-import { isCustomObject, metadataType, sfCase, apiName } from '../transformers/transformer'
+import { isCustomObject, metadataType, apiName, defaultApiName } from '../transformers/transformer'
 
 const log = logger(module)
 
@@ -45,24 +45,20 @@ export const removeFieldsFromInstanceAndType = (elements: Element[], fieldNamesT
 }
 
 export const addLabel = (elem: Type | Field, label?: string): void => {
-  const name = isField(elem) ? elem.name : elem.elemID.name
+  const { name } = elem.elemID
   const { annotations } = elem
   if (!annotations[LABEL]) {
-    annotations[LABEL] = label || sfCase(name)
+    annotations[LABEL] = label ?? name
     log.debug(`added LABEL=${annotations[LABEL]} to ${name}`)
   }
 }
 
-export const addApiName = (
-  elem: Type | Field,
-  name: string,
-  parentName?: string
-): void => {
+export const addApiName = (elem: Type | Field, name?: string, parentName?: string): void => {
   if (!elem.annotations[API_NAME]) {
-    elem.annotations[API_NAME] = isField(elem) && parentName
-      ? [parentName, name].join(API_NAME_SEPERATOR)
-      : name
-    log.debug(`added API_NAME=${name} to ${isField(elem) ? elem.name : elem.elemID.name}`)
+    const newApiName = name ?? defaultApiName(elem)
+    const fullApiName = parentName ? [parentName, newApiName].join(API_NAME_SEPERATOR) : newApiName
+    elem.annotations[API_NAME] = fullApiName
+    log.debug(`added API_NAME=${fullApiName} to ${elem.elemID.name}`)
   }
   if (!isField(elem) && !elem.annotationTypes[API_NAME]) {
     elem.annotationTypes[API_NAME] = BuiltinTypes.SERVICE_ID
@@ -77,7 +73,7 @@ export const addMetadataType = (elem: ObjectType,
   }
   if (!annotations[METADATA_TYPE]) {
     annotations[METADATA_TYPE] = metadataTypeValue
-    log.debug(`added METADATA_TYPE=${sfCase(metadataTypeValue)} to ${id(elem)}`)
+    log.debug(`added METADATA_TYPE=${metadataTypeValue} to ${id(elem)}`)
   }
 }
 

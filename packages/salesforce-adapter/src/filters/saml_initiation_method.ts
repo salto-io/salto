@@ -5,8 +5,8 @@ import {
 import { FilterWith } from '../filter'
 import { SALESFORCE } from '../constants'
 
-export const CANVAS_METADATA_TYPE_ID = new ElemID(SALESFORCE, 'canvas_metadata')
-export const SAML_INIT_METHOD_FIELD_NAME = 'saml_initiation_method'
+export const CANVAS_METADATA_TYPE_ID = new ElemID(SALESFORCE, 'CanvasMetadata')
+export const SAML_INIT_METHOD_FIELD_NAME = 'samlInitiationMethod'
 
 /**
 * Declare the assignment rules filter, this filter renames assignment rules instances to match

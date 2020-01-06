@@ -20,7 +20,7 @@ const { makeArray } = collections.array
 const log = logger(module)
 
 export const STANDARD_VALUE_SET = 'StandardValueSet'
-export const STANDARD_VALUE = 'standard_value'
+export const STANDARD_VALUE = 'standardValue'
 
 
 type StandardValuesSets = Set<string>
@@ -111,8 +111,8 @@ const svsValuesToRef = (svsInstances: InstanceElement[]): StandartValueSetsLooku
 const isStandardPickList = (f: Field): boolean => {
   const apiNameResult = apiName(f)
   return apiNameResult ? (
-    f.type.elemID.isEqual(Types.primitiveDataTypes.picklist.elemID)
-    || f.type.elemID.isEqual(Types.primitiveDataTypes.multipicklist.elemID))
+    f.type.elemID.isEqual(Types.primitiveDataTypes.Picklist.elemID)
+    || f.type.elemID.isEqual(Types.primitiveDataTypes.MultiselectPicklist.elemID))
     && !apiNameResult.endsWith(SALESFORCE_CUSTOM_SUFFIX) : false
 }
 

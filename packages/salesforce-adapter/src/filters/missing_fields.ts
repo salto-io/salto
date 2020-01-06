@@ -20,7 +20,7 @@ interface MissingField {
 
 const allMissingFields: {id: ElemID; fields: MissingField[]}[] = [
   {
-    id: new ElemID(SALESFORCE, 'filter_item'),
+    id: new ElemID(SALESFORCE, 'FilterItem'),
     fields: [
       {
         name: 'operation',
@@ -41,17 +41,17 @@ const allMissingFields: {id: ElemID; fields: MissingField[]}[] = [
     id: LEAD_CONVERT_SETTINGS_TYPE_ID,
     fields: [
       {
-        name: 'object_mapping',
-        type: new ElemID(SALESFORCE, 'object_mapping'),
+        name: 'objectMapping',
+        type: new ElemID(SALESFORCE, 'ObjectMapping'),
         isList: true,
       },
     ],
   },
   {
-    id: new ElemID(SALESFORCE, 'rule_entry'),
+    id: new ElemID(SALESFORCE, 'RuleEntry'),
     fields: [
       {
-        name: 'assigned_to_type',
+        name: 'assignedToType',
         type: BuiltinTypes.STRING,
         annotations: {
           [CORE_ANNOTATIONS.VALUES]: ['User', 'Queue'],
@@ -60,7 +60,7 @@ const allMissingFields: {id: ElemID; fields: MissingField[]}[] = [
     ],
   },
   {
-    id: new ElemID(SALESFORCE, 'profile_tab_visibility'),
+    id: new ElemID(SALESFORCE, 'ProfileTabVisibility'),
     fields: [
       {
         name: 'visibility',
@@ -72,7 +72,7 @@ const allMissingFields: {id: ElemID; fields: MissingField[]}[] = [
     ],
   },
   {
-    id: new ElemID(SALESFORCE, 'layout_section'),
+    id: new ElemID(SALESFORCE, 'LayoutSection'),
     fields: [
       {
         name: 'style',
@@ -86,7 +86,7 @@ const allMissingFields: {id: ElemID; fields: MissingField[]}[] = [
     ],
   },
   {
-    id: new ElemID(SALESFORCE, 'layout_item'),
+    id: new ElemID(SALESFORCE, 'LayoutItem'),
     fields: [
       {
         name: 'behavior',
@@ -100,11 +100,11 @@ const allMissingFields: {id: ElemID; fields: MissingField[]}[] = [
     ],
   },
   {
-    id: new ElemID(SALESFORCE, 'profile'),
+    id: new ElemID(SALESFORCE, 'Profile'),
     fields: [
       {
-        name: 'user_permissions',
-        type: new ElemID(SALESFORCE, 'profile_user_permission'),
+        name: 'userPermissions',
+        type: new ElemID(SALESFORCE, 'ProfileUserPermission'),
         isList: true,
       },
     ],

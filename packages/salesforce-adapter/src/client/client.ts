@@ -273,23 +273,6 @@ export default class SalesforceClient {
   }
 
   /**
-   * Creates a salesforce object
-   * @param type The metadata type of the components to be created
-   * @param metadata The metadata of the object
-   * @returns The save result of the requested creation
-   */
-  @SalesforceClient.logDecorator
-  @validateSaveResult
-  @SalesforceClient.requiresLogin
-  public async create(type: string, metadata: MetadataInfo | MetadataInfo[]):
-    Promise<SaveResult[]> {
-    const result = await sendChunked(metadata, chunk => this.conn.metadata.create(type, chunk))
-    log.debug('created %o of type %s [result=%o]', makeArray(metadata).map(f => f.fullName),
-      type, result)
-    return result
-  }
-
-  /**
    * Create or update a salesforce object
    * @param type The metadata type of the components to be created or updated
    * @param metadata The metadata of the object

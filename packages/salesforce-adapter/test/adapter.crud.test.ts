@@ -1215,13 +1215,13 @@ describe('SalesforceAdapter CRUD', () => {
             expect(result).toBeInstanceOf(ObjectType)
           })
 
-          it('should only call delete and create', () => {
-            expect(mockUpsert.mock.calls.length).toBe(1)
-            expect(mockDelete.mock.calls.length).toBe(1)
-            expect(mockUpdate.mock.calls.length).toBe(0)
+          it('should only call delete and upsert', () => {
+            expect(mockUpsert).toHaveBeenCalled()
+            expect(mockDelete).toHaveBeenCalled()
+            expect(mockUpdate).not.toHaveBeenCalled()
           })
 
-          it('should call the connection.create method correctly', () => {
+          it('should call the connection.upsert method correctly', () => {
             // Verify the custom fields creation
             const addedFields = mockUpsert.mock.calls[0][1]
             expect(addedFields.length).toBe(1)
@@ -1390,10 +1390,10 @@ describe('SalesforceAdapter CRUD', () => {
             expect(result).toBeInstanceOf(ObjectType)
           })
 
-          it('should call delete, create and update', () => {
-            expect(mockUpsert.mock.calls.length).toBe(1)
-            expect(mockDelete.mock.calls.length).toBe(1)
-            expect(mockUpdate.mock.calls.length).toBe(1)
+          it('should call delete, upsert and update', () => {
+            expect(mockUpsert).toHaveBeenCalled()
+            expect(mockDelete).toHaveBeenCalled()
+            expect(mockUpdate).toHaveBeenCalled()
           })
 
           it('should call the connection methods correctly', () => {
@@ -1473,10 +1473,10 @@ describe('SalesforceAdapter CRUD', () => {
             expect(result).toBeInstanceOf(ObjectType)
           })
 
-          it('should not call delete, create or update', () => {
-            expect(mockUpsert.mock.calls.length).toBe(0)
-            expect(mockDelete.mock.calls.length).toBe(0)
-            expect(mockUpdate.mock.calls.length).toBe(0)
+          it('should not call delete, upsert or update', () => {
+            expect(mockUpsert).not.toHaveBeenCalled()
+            expect(mockDelete).not.toHaveBeenCalled()
+            expect(mockUpdate).not.toHaveBeenCalled()
           })
         })
 

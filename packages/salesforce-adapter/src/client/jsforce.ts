@@ -17,9 +17,6 @@ export interface Metadata {
   describeValueType(type: string): Promise<{ valueTypeFields: ValueTypeField[] }>
   read(type: string, fullNames: string | string[]): Promise<MetadataInfo | MetadataInfo[]>
   list(queries: ListMetadataQuery | ListMetadataQuery[]): Promise<FileProperties[]>
-  create(
-    type: string, metadata: MetadataInfo | MetadataInfo[]
-  ): Promise<SaveResult | SaveResult[]>
   upsert(
     type: string, metadata: MetadataInfo | MetadataInfo[]
   ): Promise<UpsertResult | UpsertResult[]>

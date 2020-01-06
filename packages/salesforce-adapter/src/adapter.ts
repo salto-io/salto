@@ -563,7 +563,7 @@ export default class SalesforceAdapter {
    * @param fieldsToAdd The fields to create
    * @returns successfully managed to create all fields with their permissions or not
    */
-  private async createFields(fieldsToAdd: Field[]): Promise<SaveResult[]> {
+  private async createFields(fieldsToAdd: Field[]): Promise<UpsertResult[]> {
     return this.client.upsert(
       constants.CUSTOM_FIELD,
       fieldsToAdd.map(f => toCustomField(f, true)),

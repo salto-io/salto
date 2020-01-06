@@ -47,10 +47,14 @@ export default class HubspotAdapter {
     const fieldTypes = Types.getAllFieldTypes()
     const objects = Types.hubspotObjects
     objects.forEach(e => { e.path = ['hubspot', 'objects', e.elemID.name] })
+
+    const subTypes = Types.hubspotSubTypes
+    subTypes.forEach(e => { e.path = ['hubspot', 'types', 'subtypes', e.elemID.name] })
+    // TODO: going to pass it via the constructor
     const instances = await this.fetchHubInstances(objects)
 
     return _.flatten(
-      [fieldTypes, objects, instances] as Element[][]
+      [fieldTypes, objects, subTypes, instances] as Element[][]
     )
   }
 

@@ -19,6 +19,11 @@ const { copyFile, rm, mkdirp, exists } = file
 
 let lastPlan: Plan
 
+const apiNameAnno = (
+  obj: string,
+  field: string
+): Record<string, string> => ({ [API_NAME]: [obj, field].join(API_NAME_SEPERATOR) })
+
 describe('commands e2e', () => {
   jest.setTimeout(15 * 60 * 1000)
 
@@ -133,8 +138,8 @@ describe('commands e2e', () => {
         SALESFORCE,
         newObjectElemName, { [API_NAME]: newObjectApiName },
         {
-          alpha: { [API_NAME]: [newObjectApiName, 'Alpha__c'].join(API_NAME_SEPERATOR) },
-          beta: { [API_NAME]: [newObjectApiName, 'Beta__c'].join(API_NAME_SEPERATOR) },
+          alpha: { [API_NAME]: apiNameAnno(newObjectApiName, 'Alpha__c') },
+          beta: { [API_NAME]: apiNameAnno(newObjectApiName, 'Beta__c') },
         }
       )
     })
@@ -185,8 +190,8 @@ describe('commands e2e', () => {
         SALESFORCE,
         newObjectElemName, { [API_NAME]: newObjectApiName },
         {
-          alpha: { [API_NAME]: [newObjectApiName, 'Alpha__c'].join(API_NAME_SEPERATOR) },
-          modified: { [API_NAME]: [newObjectApiName, 'Modified__c'].join(API_NAME_SEPERATOR) },
+          alpha: { [API_NAME]: apiNameAnno(newObjectApiName, 'Alpha__c') },
+          modified: { [API_NAME]: apiNameAnno(newObjectApiName, 'Modified__c') },
         }
       )
     })

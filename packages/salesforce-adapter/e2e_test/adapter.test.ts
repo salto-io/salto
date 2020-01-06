@@ -1397,7 +1397,21 @@ describe('Salesforce adapter E2E with real account', () => {
         return caseObject
       }
 
+      const normalizeReferences = (obj: ObjectType): void => {
+        const relFields = Object.values(obj.fields)
+          .filter(f => f.annotations[FIELD_LEVEL_SECURITY_ANNOTATION])
+        relFields.forEach(field => {
+          Object.entries(field.annotations[FIELD_LEVEL_SECURITY_ANNOTATION]).forEach(keyValue => {
+            // Change all reference expressions to the name without the full_name at the end.
+            const fullNames = (keyValue[1] as ReferenceExpression[]).map(ref =>
+              sfCase(ref.traversalParts[3]))
+            field.annotations[FIELD_LEVEL_SECURITY_ANNOTATION][keyValue[0]] = fullNames
+          })
+        })
+      }
+
       let origCase = findCustomCase()
+      normalizeReferences(origCase)
 
       const removeRollupSummaryFieldFromCase = async (caseObj: ObjectType, fieldName: string):
         Promise<ObjectType> => {

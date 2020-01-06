@@ -1,6 +1,6 @@
 import { Stream } from 'stream'
 import {
-  MetadataObject, ValueTypeField, MetadataInfo, SaveResult,
+  MetadataObject, ValueTypeField, MetadataInfo, SaveResult, UpsertResult,
   ListMetadataQuery, FileProperties, DescribeSObjectResult,
   DescribeGlobalSObjectResult, DeployOptions, DeployResultLocator,
   DeployResult, QueryResult, BulkLoadOperation, BulkOptions, Batch,
@@ -17,9 +17,9 @@ export interface Metadata {
   describeValueType(type: string): Promise<{ valueTypeFields: ValueTypeField[] }>
   read(type: string, fullNames: string | string[]): Promise<MetadataInfo | MetadataInfo[]>
   list(queries: ListMetadataQuery | ListMetadataQuery[]): Promise<FileProperties[]>
-  create(
+  upsert(
     type: string, metadata: MetadataInfo | MetadataInfo[]
-  ): Promise<SaveResult | SaveResult[]>
+  ): Promise<UpsertResult | UpsertResult[]>
   delete(type: string, fullNames: string | string[]): Promise<SaveResult | SaveResult[]>
   update(
     type: string, updateMetadata: MetadataInfo | MetadataInfo[]

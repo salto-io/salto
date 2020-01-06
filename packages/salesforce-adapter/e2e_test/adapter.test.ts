@@ -70,112 +70,97 @@ describe('Salesforce adapter E2E with real account', () => {
   beforeAll(async () => {
     const verifyAccountWithRollupSummaryExists = async (): Promise<void> => {
       const accountApiName = 'Account'
-      if (!(await objectExists(constants.CUSTOM_OBJECT, accountApiName,
-        [fetchedRollupSummaryFieldName]))) {
-        await client.create(constants.CUSTOM_FIELD, {
-          fullName: `${accountApiName}.${fetchedRollupSummaryFieldName}`,
-          label: 'Test Fetch Rollup Summary Field',
-          summarizedField: 'Opportunity.Amount',
-          summaryFilterItems: {
-            field: 'Opportunity.Amount',
-            operation: 'greaterThan',
-            value: '1',
-          },
-          summaryForeignKey: 'Opportunity.AccountId',
-          summaryOperation: 'sum',
-          type: 'Summary',
-        } as MetadataInfo)
-        await client.update(PROFILE_METADATA_TYPE,
-          new ProfileInfo(sfCase(ADMIN_PROFILE), [{
-            field: `${accountApiName}.${fetchedRollupSummaryFieldName}`,
-            editable: true,
-            readable: true,
-          }]))
-      }
+      await client.upsert(constants.CUSTOM_FIELD, {
+        fullName: `${accountApiName}.${fetchedRollupSummaryFieldName}`,
+        label: 'Test Fetch Rollup Summary Field',
+        summarizedField: 'Opportunity.Amount',
+        summaryFilterItems: {
+          field: 'Opportunity.Amount',
+          operation: 'greaterThan',
+          value: '1',
+        },
+        summaryForeignKey: 'Opportunity.AccountId',
+        summaryOperation: 'sum',
+        type: 'Summary',
+      } as MetadataInfo)
+      await client.update(PROFILE_METADATA_TYPE,
+        new ProfileInfo(sfCase(ADMIN_PROFILE), [{
+          field: `${accountApiName}.${fetchedRollupSummaryFieldName}`,
+          editable: true,
+          readable: true,
+        }]))
     }
 
     const verifyEmailFolderExist = async (): Promise<void> => {
-      if (!(await objectExists('EmailFolder', 'TestEmailFolder'))) {
-        await client.create('EmailFolder', {
-          fullName: 'TestEmailFolder',
-          name: 'Test Email Folder Name',
-          accessType: 'Public',
-          publicFolderAccess: 'ReadWrite',
-        } as MetadataInfo)
-      }
+      await client.upsert('EmailFolder', {
+        fullName: 'TestEmailFolder',
+        name: 'Test Email Folder Name',
+        accessType: 'Public',
+        publicFolderAccess: 'ReadWrite',
+      } as MetadataInfo)
     }
 
     const verifyEmailTemplateExists = async (): Promise<void> => {
-      if (!(await objectExists('EmailTemplate', 'TestEmailFolder/TestEmailTemplate'))) {
-        await client.create('EmailTemplate', {
-          fullName: 'TestEmailFolder/TestEmailTemplate',
-          name: 'Test Email Template Name',
-          available: true,
-          style: 'none',
-          subject: 'Test Email Template Subject',
-          uiType: 'Aloha',
-          encodingKey: 'UTF-8',
-          type: 'text',
-          description: 'Test Email Template Description',
-          content: 'Email Body',
-        } as MetadataInfo)
-      }
+      await client.upsert('EmailTemplate', {
+        fullName: 'TestEmailFolder/TestEmailTemplate',
+        name: 'Test Email Template Name',
+        available: true,
+        style: 'none',
+        subject: 'Test Email Template Subject',
+        uiType: 'Aloha',
+        encodingKey: 'UTF-8',
+        type: 'text',
+        description: 'Test Email Template Description',
+        content: 'Email Body',
+      } as MetadataInfo)
     }
 
     const verifyReportFolderExist = async (): Promise<void> => {
-      if (!(await objectExists('ReportFolder', 'TestReportFolder'))) {
-        await client.create('ReportFolder', {
-          fullName: 'TestReportFolder',
-          name: 'Test Report Folder Name',
-          accessType: 'Public',
-          publicFolderAccess: 'ReadWrite',
-        } as MetadataInfo)
-      }
+      await client.upsert('ReportFolder', {
+        fullName: 'TestReportFolder',
+        name: 'Test Report Folder Name',
+        accessType: 'Public',
+        publicFolderAccess: 'ReadWrite',
+      } as MetadataInfo)
     }
 
     const verifyReportExist = async (): Promise<void> => {
-      if (!(await objectExists('Report', 'TestReportFolder/TestReport'))) {
-        await client.create('Report', {
-          fullName: 'TestReportFolder/TestReport',
-          format: 'Summary',
-          name: 'Test Report Name',
-          reportType: 'Opportunity',
-        } as MetadataInfo)
-      }
+      await client.upsert('Report', {
+        fullName: 'TestReportFolder/TestReport',
+        format: 'Summary',
+        name: 'Test Report Name',
+        reportType: 'Opportunity',
+      } as MetadataInfo)
     }
 
     const verifyDashboardFolderExist = async (): Promise<void> => {
-      if (!(await objectExists('DashboardFolder', 'TestDashboardFolder'))) {
-        await client.create('DashboardFolder', {
-          fullName: 'TestDashboardFolder',
-          name: 'Test Dashboard Folder Name',
-          accessType: 'Public',
-          publicFolderAccess: 'ReadWrite',
-        } as MetadataInfo)
-      }
+      await client.upsert('DashboardFolder', {
+        fullName: 'TestDashboardFolder',
+        name: 'Test Dashboard Folder Name',
+        accessType: 'Public',
+        publicFolderAccess: 'ReadWrite',
+      } as MetadataInfo)
     }
 
     const verifyDashboardExist = async (): Promise<void> => {
-      if (!(await objectExists('Dashboard', 'TestDashboardFolder/TestDashboard'))) {
-        await client.create('Dashboard', {
-          fullName: 'TestDashboardFolder/TestDashboard',
-          backgroundEndColor: '#FFFFFF',
-          backgroundFadeDirection: 'Diagonal',
-          backgroundStartColor: '#FFFFFF',
-          textColor: '#000000',
-          title: 'Test Dashboard Title',
-          titleColor: '#000000',
-          titleSize: '12',
-          leftSection: {
-            columnSize: 'Medium',
-            components: [],
-          },
-          rightSection: {
-            columnSize: 'Medium',
-            components: [],
-          },
-        } as MetadataInfo)
-      }
+      await client.upsert('Dashboard', {
+        fullName: 'TestDashboardFolder/TestDashboard',
+        backgroundEndColor: '#FFFFFF',
+        backgroundFadeDirection: 'Diagonal',
+        backgroundStartColor: '#FFFFFF',
+        textColor: '#000000',
+        title: 'Test Dashboard Title',
+        titleColor: '#000000',
+        titleSize: '12',
+        leftSection: {
+          columnSize: 'Medium',
+          components: [],
+        },
+        rightSection: {
+          columnSize: 'Medium',
+          components: [],
+        },
+      } as MetadataInfo)
     }
 
     await verifyAccountWithRollupSummaryExists()

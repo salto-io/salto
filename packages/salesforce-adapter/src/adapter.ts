@@ -35,7 +35,6 @@ import lookupFiltersFilter from './filters/lookup_filters'
 import animationRulesFilter from './filters/animation_rules'
 import samlInitMethodFilter from './filters/saml_initiation_method'
 import settingsFilter from './filters/settings_type'
-import listOrderFilter from './filters/list_order'
 import workflowActions from './filters/workflow_actions'
 import topicsForObjectsFilter from './filters/topics_for_objects'
 import {
@@ -156,7 +155,6 @@ export default class SalesforceAdapter {
       animationRulesFilter,
       samlInitMethodFilter,
       settingsFilter,
-      listOrderFilter,
       workflowActions,
       topicsForObjectsFilter,
       // The following filters should remain last in order to make sure they fix all elements

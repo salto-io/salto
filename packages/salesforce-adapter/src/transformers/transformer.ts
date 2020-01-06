@@ -327,7 +327,6 @@ export class Types {
     [BUSINESS_STATUS]: Types.BusinessStatusType,
     [SECURITY_CLASSIFICATION]: Types.SecurityClassificationType,
     [COMPLIANCE_GROUP]: BuiltinTypes.STRING,
-    [FIELD_LEVEL_SECURITY_ANNOTATION]: Types.fieldLevelSecurityType,
   }
 
   // Type mapping for custom objects

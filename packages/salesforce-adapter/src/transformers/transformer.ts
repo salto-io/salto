@@ -653,6 +653,7 @@ export class Types {
       Types.rollupSummaryOperationType, Types.objectLevelSecurityType,
       Types.valueSettingsType, Types.lookupFilterType, Types.filterItemType,
       Types.encryptedTextMaskCharType, Types.encryptedTextMaskTypeType,
+      Types.BusinessStatusType, Types.SecurityClassificationType,
     ]
       .map(type => {
         const fieldType = type.clone()

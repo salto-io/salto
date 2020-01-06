@@ -8,7 +8,7 @@ import { NAMESPACE_SEPARATOR, SALESFORCE_CUSTOM_SUFFIX } from '../constants'
 
 
 export const hasNamespace = (customElement: Element): boolean => {
-  const apiNameResult = apiName(customElement)
+  const apiNameResult = apiName(customElement, true)
   if (_.isUndefined(apiNameResult)) {
     return false
   }

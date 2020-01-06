@@ -70,112 +70,97 @@ describe('Salesforce adapter E2E with real account', () => {
   beforeAll(async () => {
     const verifyAccountWithRollupSummaryExists = async (): Promise<void> => {
       const accountApiName = 'Account'
-      if (!(await objectExists(constants.CUSTOM_OBJECT, accountApiName,
-        [fetchedRollupSummaryFieldName]))) {
-        await client.create(constants.CUSTOM_FIELD, {
-          fullName: `${accountApiName}.${fetchedRollupSummaryFieldName}`,
-          label: 'Test Fetch Rollup Summary Field',
-          summarizedField: 'Opportunity.Amount',
-          summaryFilterItems: {
-            field: 'Opportunity.Amount',
-            operation: 'greaterThan',
-            value: '1',
-          },
-          summaryForeignKey: 'Opportunity.AccountId',
-          summaryOperation: 'sum',
-          type: 'Summary',
-        } as MetadataInfo)
-        await client.update(PROFILE_METADATA_TYPE,
-          new ProfileInfo(sfCase(ADMIN_PROFILE), [{
-            field: `${accountApiName}.${fetchedRollupSummaryFieldName}`,
-            editable: true,
-            readable: true,
-          }]))
-      }
+      await client.upsert(constants.CUSTOM_FIELD, {
+        fullName: `${accountApiName}.${fetchedRollupSummaryFieldName}`,
+        label: 'Test Fetch Rollup Summary Field',
+        summarizedField: 'Opportunity.Amount',
+        summaryFilterItems: {
+          field: 'Opportunity.Amount',
+          operation: 'greaterThan',
+          value: '1',
+        },
+        summaryForeignKey: 'Opportunity.AccountId',
+        summaryOperation: 'sum',
+        type: 'Summary',
+      } as MetadataInfo)
+      await client.update(PROFILE_METADATA_TYPE,
+        new ProfileInfo(sfCase(ADMIN_PROFILE), [{
+          field: `${accountApiName}.${fetchedRollupSummaryFieldName}`,
+          editable: true,
+          readable: true,
+        }]))
     }
 
     const verifyEmailFolderExist = async (): Promise<void> => {
-      if (!(await objectExists('EmailFolder', 'TestEmailFolder'))) {
-        await client.create('EmailFolder', {
-          fullName: 'TestEmailFolder',
-          name: 'Test Email Folder Name',
-          accessType: 'Public',
-          publicFolderAccess: 'ReadWrite',
-        } as MetadataInfo)
-      }
+      await client.upsert('EmailFolder', {
+        fullName: 'TestEmailFolder',
+        name: 'Test Email Folder Name',
+        accessType: 'Public',
+        publicFolderAccess: 'ReadWrite',
+      } as MetadataInfo)
     }
 
     const verifyEmailTemplateExists = async (): Promise<void> => {
-      if (!(await objectExists('EmailTemplate', 'TestEmailFolder/TestEmailTemplate'))) {
-        await client.create('EmailTemplate', {
-          fullName: 'TestEmailFolder/TestEmailTemplate',
-          name: 'Test Email Template Name',
-          available: true,
-          style: 'none',
-          subject: 'Test Email Template Subject',
-          uiType: 'Aloha',
-          encodingKey: 'UTF-8',
-          type: 'text',
-          description: 'Test Email Template Description',
-          content: 'Email Body',
-        } as MetadataInfo)
-      }
+      await client.upsert('EmailTemplate', {
+        fullName: 'TestEmailFolder/TestEmailTemplate',
+        name: 'Test Email Template Name',
+        available: true,
+        style: 'none',
+        subject: 'Test Email Template Subject',
+        uiType: 'Aloha',
+        encodingKey: 'UTF-8',
+        type: 'text',
+        description: 'Test Email Template Description',
+        content: 'Email Body',
+      } as MetadataInfo)
     }
 
     const verifyReportFolderExist = async (): Promise<void> => {
-      if (!(await objectExists('ReportFolder', 'TestReportFolder'))) {
-        await client.create('ReportFolder', {
-          fullName: 'TestReportFolder',
-          name: 'Test Report Folder Name',
-          accessType: 'Public',
-          publicFolderAccess: 'ReadWrite',
-        } as MetadataInfo)
-      }
+      await client.upsert('ReportFolder', {
+        fullName: 'TestReportFolder',
+        name: 'Test Report Folder Name',
+        accessType: 'Public',
+        publicFolderAccess: 'ReadWrite',
+      } as MetadataInfo)
     }
 
     const verifyReportExist = async (): Promise<void> => {
-      if (!(await objectExists('Report', 'TestReportFolder/TestReport'))) {
-        await client.create('Report', {
-          fullName: 'TestReportFolder/TestReport',
-          format: 'Summary',
-          name: 'Test Report Name',
-          reportType: 'Opportunity',
-        } as MetadataInfo)
-      }
+      await client.upsert('Report', {
+        fullName: 'TestReportFolder/TestReport',
+        format: 'Summary',
+        name: 'Test Report Name',
+        reportType: 'Opportunity',
+      } as MetadataInfo)
     }
 
     const verifyDashboardFolderExist = async (): Promise<void> => {
-      if (!(await objectExists('DashboardFolder', 'TestDashboardFolder'))) {
-        await client.create('DashboardFolder', {
-          fullName: 'TestDashboardFolder',
-          name: 'Test Dashboard Folder Name',
-          accessType: 'Public',
-          publicFolderAccess: 'ReadWrite',
-        } as MetadataInfo)
-      }
+      await client.upsert('DashboardFolder', {
+        fullName: 'TestDashboardFolder',
+        name: 'Test Dashboard Folder Name',
+        accessType: 'Public',
+        publicFolderAccess: 'ReadWrite',
+      } as MetadataInfo)
     }
 
     const verifyDashboardExist = async (): Promise<void> => {
-      if (!(await objectExists('Dashboard', 'TestDashboardFolder/TestDashboard'))) {
-        await client.create('Dashboard', {
-          fullName: 'TestDashboardFolder/TestDashboard',
-          backgroundEndColor: '#FFFFFF',
-          backgroundFadeDirection: 'Diagonal',
-          backgroundStartColor: '#FFFFFF',
-          textColor: '#000000',
-          title: 'Test Dashboard Title',
-          titleColor: '#000000',
-          titleSize: '12',
-          leftSection: {
-            columnSize: 'Medium',
-            components: [],
-          },
-          rightSection: {
-            columnSize: 'Medium',
-            components: [],
-          },
-        } as MetadataInfo)
-      }
+      await client.upsert('Dashboard', {
+        fullName: 'TestDashboardFolder/TestDashboard',
+        backgroundEndColor: '#FFFFFF',
+        backgroundFadeDirection: 'Diagonal',
+        backgroundStartColor: '#FFFFFF',
+        textColor: '#000000',
+        title: 'Test Dashboard Title',
+        titleColor: '#000000',
+        titleSize: '12',
+        leftSection: {
+          columnSize: 'Medium',
+          components: [],
+        },
+        rightSection: {
+          columnSize: 'Medium',
+          components: [],
+        },
+      } as MetadataInfo)
     }
 
     await verifyAccountWithRollupSummaryExists()
@@ -526,10 +511,10 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(post).toBeInstanceOf(ObjectType)
       expect(
         post.fields.description.annotations[constants.API_NAME]
-      ).toBe('Description__c')
+      ).toBe('TestAddCustom__c.Description__c')
       expect(
         post.fields.formula.annotations[constants.API_NAME]
-      ).toBe('Formula__c')
+      ).toBe('TestAddCustom__c.Formula__c')
 
       expect(await objectExists(constants.CUSTOM_OBJECT, customObjectName, ['Description__c', 'Formula__c'])).toBe(true)
       expect((await fieldPermissionExists('Admin', [`${customObjectName}.Description__c`]))[0]).toBe(true)
@@ -586,7 +571,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'address',
             stringType,
             {
-              [constants.API_NAME]: 'Address__c',
+              [constants.API_NAME]: [customObjectName, 'Address__c'].join(constants.API_NAME_SEPERATOR),
             },
           ),
           banana: new Field(
@@ -594,7 +579,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'banana',
             stringType,
             {
-              [constants.API_NAME]: 'Banana__c',
+              [constants.API_NAME]: [customObjectName, 'Banana__c'].join(constants.API_NAME_SEPERATOR),
             },
           ),
         },
@@ -847,7 +832,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'address',
             stringType,
             {
-              [constants.API_NAME]: 'Address__c',
+              [constants.API_NAME]: [customObjectName, 'Address__c'].join(constants.API_NAME_SEPERATOR),
               [constants.LABEL]: 'Address',
             },
           ),
@@ -856,7 +841,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'banana',
             stringType,
             {
-              [constants.API_NAME]: 'Banana__c',
+              [constants.API_NAME]: [customObjectName, 'Banana__c'].join(constants.API_NAME_SEPERATOR),
               [constants.LABEL]: 'Banana',
             },
           ),
@@ -883,7 +868,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'address',
             stringType,
             {
-              [constants.API_NAME]: 'Address__c',
+              [constants.API_NAME]: [customObjectName, 'Address__c'].join(constants.API_NAME_SEPERATOR),
               [constants.LABEL]: 'Address',
             },
           ),
@@ -892,7 +877,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'banana',
             stringType,
             {
-              [constants.API_NAME]: 'Banana__c',
+              [constants.API_NAME]: [customObjectName, 'Banana__c'].join(constants.API_NAME_SEPERATOR),
               [constants.LABEL]: 'Banana Split',
             },
           ),
@@ -1007,7 +992,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'address',
             stringType,
             {
-              [constants.API_NAME]: 'Address__c',
+              [constants.API_NAME]: [customObjectName, 'Address__c'].join(constants.API_NAME_SEPERATOR),
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 editable: [ADMIN],
                 readable: [ADMIN],
@@ -1019,7 +1004,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'banana',
             stringType,
             {
-              [constants.API_NAME]: 'Banana__c',
+              [constants.API_NAME]: [customObjectName, 'Banana__c'].join(constants.API_NAME_SEPERATOR),
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 editable: [STANDARD],
                 readable: [STANDARD],
@@ -1031,7 +1016,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'delta',
             stringType,
             {
-              [constants.API_NAME]: 'Delta__c',
+              [constants.API_NAME]: [customObjectName, 'Delta__c'].join(constants.API_NAME_SEPERATOR),
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 editable: [ADMIN],
                 readable: [ADMIN, STANDARD],
@@ -1063,7 +1048,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'address',
             stringType,
             {
-              [constants.API_NAME]: 'Address__c',
+              [constants.API_NAME]: [customObjectName, 'Address__c'].join(constants.API_NAME_SEPERATOR),
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 editable: [STANDARD],
                 readable: [STANDARD],
@@ -1075,7 +1060,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'banana',
             stringType,
             {
-              [constants.API_NAME]: 'Banana__c',
+              [constants.API_NAME]: [customObjectName, 'Banana__c'].join(constants.API_NAME_SEPERATOR),
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 editable: [ADMIN, STANDARD],
                 readable: [ADMIN, STANDARD],
@@ -1087,7 +1072,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'delta',
             stringType,
             {
-              [constants.API_NAME]: 'Delta__c',
+              [constants.API_NAME]: [customObjectName, 'Delta__c'].join(constants.API_NAME_SEPERATOR),
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 readable: [STANDARD],
               },
@@ -1413,7 +1398,9 @@ describe('Salesforce adapter E2E with real account', () => {
       }
 
       const normalizeReferences = (obj: ObjectType): void => {
-        Object.values(obj.fields).forEach(field => {
+        const relFields = Object.values(obj.fields)
+          .filter(f => f.annotations[FIELD_LEVEL_SECURITY_ANNOTATION])
+        relFields.forEach(field => {
           Object.entries(field.annotations[FIELD_LEVEL_SECURITY_ANNOTATION]).forEach(keyValue => {
             // Change all reference expressions to the name without the full_name at the end.
             const fullNames = (keyValue[1] as ReferenceExpression[]).map(ref =>
@@ -1435,11 +1422,9 @@ describe('Salesforce adapter E2E with real account', () => {
             data: { before: caseObj.fields[fieldName] } }])
         return caseAfterFieldRemoval
       }
-
       if (await objectExists(constants.CUSTOM_OBJECT, 'Case', [rollupSummaryFieldApiName])) {
         origCase = await removeRollupSummaryFieldFromCase(origCase, rollupSummaryFieldApiName)
       }
-
       if (await objectExists(constants.CUSTOM_OBJECT, customObjectName)) {
         await adapter.remove(element)
       }
@@ -1611,7 +1596,7 @@ describe('Salesforce adapter E2E with real account', () => {
             {
               [CORE_ANNOTATIONS.REQUIRED]: false,
               [constants.LABEL]: 'Rollup Summary description label',
-              [constants.API_NAME]: rollupSummaryFieldApiName,
+              [constants.API_NAME]: ['Case', rollupSummaryFieldApiName].join(constants.API_NAME_SEPERATOR),
               [constants.FIELD_ANNOTATIONS.SUMMARIZED_FIELD]: `${customObjectName}.${currencyFieldApiName}`,
               [constants.FIELD_ANNOTATIONS.SUMMARY_FOREIGN_KEY]: `${customObjectName}.${masterDetailApiName}`,
               [constants.FIELD_ANNOTATIONS.SUMMARY_OPERATION]: 'max',
@@ -1661,6 +1646,10 @@ describe('Salesforce adapter E2E with real account', () => {
       const randomString = String(Date.now()).substring(6)
       const lookupFieldName = `lookup${randomString}`
       const lookupFieldApiName = `${_.camelCase(lookupFieldName)}__c`
+      const lookupFieldApiFullName = [
+        customObjectName,
+        lookupFieldApiName,
+      ].join(constants.API_NAME_SEPERATOR)
       const oldElement = new ObjectType({
         elemID: mockElemID,
         fields: {},
@@ -1677,7 +1666,7 @@ describe('Salesforce adapter E2E with real account', () => {
         lookupFieldName,
         Types.primitiveDataTypes.lookup,
         {
-          [constants.API_NAME]: lookupFieldApiName,
+          [constants.API_NAME]: lookupFieldApiFullName,
           [constants.FIELD_ANNOTATIONS.REFERENCE_TO]: ['Case'],
           [FIELD_LEVEL_SECURITY_ANNOTATION]: {
             editable: [ADMIN],
@@ -1709,7 +1698,7 @@ describe('Salesforce adapter E2E with real account', () => {
         lookupFieldName,
         Types.primitiveDataTypes.lookup,
         {
-          [constants.API_NAME]: lookupFieldApiName,
+          [constants.API_NAME]: lookupFieldApiFullName,
           [constants.FIELD_ANNOTATIONS.REFERENCE_TO]: ['Case'],
           [constants.FIELD_ANNOTATIONS.LOOKUP_FILTER]: {
             [constants.LOOKUP_FILTER_FIELDS.ACTIVE]: true,

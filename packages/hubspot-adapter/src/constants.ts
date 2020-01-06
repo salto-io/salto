@@ -29,4 +29,8 @@ export const FORM_FIELDS = {
   IGNORECURRENTVALUES: 'ignoreCurrentValues',
   DELETABLE: 'deletable',
   INLINEMESSAGE: 'inlineMessage',
+  CREATEDAT: 'createdAt',
+  CAPTCHAENABLED: 'captchaEnabled',
+  CLONEABLE: 'cloneable',
+  EDITABLE: 'editable',
 }

@@ -78,7 +78,7 @@ export const apiName = (elem: Element, relative = false): string => {
   const name = elemMetadataType === CUSTOM_OBJECT
     ? elem.annotations[API_NAME]
     : elemMetadataType
-  return relative ? _.last(name.split(API_NAME_SEPERATOR)) : name
+  return name && relative ? _.last(name.split(API_NAME_SEPERATOR)) : name
 }
 
 const formulaTypeName = (baseTypeName: string): string =>

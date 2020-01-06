@@ -224,9 +224,9 @@ const filterCreator: FilterCreator = ({ client }) => ({
 
     // Add field permissions to all fetched elements
     customObjectTypes.forEach(obj => {
-      const objectName = apiName(obj, false)
+      const objectName = apiName(obj)
       Object.values(obj.fields).forEach(field => {
-        const fullName = apiName(field, false)
+        const fullName = apiName(field)
         if (fullName) {
           setPermissions(field, FIELD_LEVEL_SECURITY_ANNOTATION, fullName,
             fieldPermissions, profileInstances)

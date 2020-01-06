@@ -6,7 +6,7 @@ import {
 } from 'adapter-api'
 import {
   SaveResult, MetadataInfo, QueryResult, FileProperties,
-  BatchResultInfo, BulkLoadOperation, Record as SfRecord, ListMetadataQuery,
+  BatchResultInfo, BulkLoadOperation, Record as SfRecord, ListMetadataQuery, UpsertResult,
 } from 'jsforce'
 import _ from 'lodash'
 import { logger } from '@salto/logging'
@@ -36,7 +36,6 @@ import lookupFiltersFilter from './filters/lookup_filters'
 import animationRulesFilter from './filters/animation_rules'
 import samlInitMethodFilter from './filters/saml_initiation_method'
 import settingsFilter from './filters/settings_type'
-import listOrderFilter from './filters/list_order'
 import workflowActions from './filters/workflow_actions'
 import topicsForObjectsFilter from './filters/topics_for_objects'
 import {
@@ -157,7 +156,6 @@ export default class SalesforceAdapter {
       animationRulesFilter,
       samlInitMethodFilter,
       settingsFilter,
-      listOrderFilter,
       workflowActions,
       topicsForObjectsFilter,
       // The following filters should remain last in order to make sure they fix all elements
@@ -377,7 +375,7 @@ export default class SalesforceAdapter {
     const post = element.clone()
     addDefaults(post)
 
-    await this.client.create(
+    await this.client.upsert(
       constants.CUSTOM_OBJECT, toCustomObject(post, true, this.systemFields),
     )
 
@@ -403,7 +401,7 @@ export default class SalesforceAdapter {
     if (this.isMetadataTypeToRetrieveAndDeploy(type)) {
       await this.deployInstance(post)
     } else {
-      await this.client.create(type, toMetadataInfo(apiName(post), post.value))
+      await this.client.upsert(type, toMetadataInfo(apiName(post), post.value))
     }
     return post
   }
@@ -573,8 +571,8 @@ export default class SalesforceAdapter {
    * @param fieldsToAdd The fields to create
    * @returns successfully managed to create all fields with their permissions or not
    */
-  private async createFields(fieldsToAdd: Field[]): Promise<SaveResult[]> {
-    return this.client.create(
+  private async createFields(fieldsToAdd: Field[]): Promise<UpsertResult[]> {
+    return this.client.upsert(
       constants.CUSTOM_FIELD,
       fieldsToAdd.map(f => toCustomField(f, true)),
     )

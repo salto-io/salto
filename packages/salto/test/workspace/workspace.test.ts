@@ -242,8 +242,10 @@ type salesforce_lead {
 
     describe('updateBlueprints', () => {
       const newElemID = new ElemID('salesforce', 'new_elem')
-      const newElem = new ObjectType({ elemID: newElemID })
-      newElem.path = ['test', 'new']
+      const newElem = new ObjectType({
+        elemID: newElemID,
+        path: ['test', 'new'],
+      })
       const oldField = new Field(
         new ElemID('salesforce', 'lead'),
         'not_a_list_yet_field',

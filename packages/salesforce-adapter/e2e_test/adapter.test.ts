@@ -843,6 +843,8 @@ describe('Salesforce adapter E2E with real account', () => {
             {
               [constants.API_NAME]: 'Banana__c',
               [constants.LABEL]: 'Banana',
+              [constants.BUSINESS_STATUS]: 'Active',
+              [constants.SECURITY_CLASSIFICATION]: 'Public',
             },
           ),
         },
@@ -879,6 +881,9 @@ describe('Salesforce adapter E2E with real account', () => {
             {
               [constants.API_NAME]: 'Banana__c',
               [constants.LABEL]: 'Banana Split',
+              [constants.BUSINESS_STATUS]: 'Hidden',
+              [constants.SECURITY_CLASSIFICATION]: 'Restricted',
+              [constants.COMPLIANCE_GROUP]: 'GDPR',
             },
           ),
         },
@@ -912,6 +917,9 @@ describe('Salesforce adapter E2E with real account', () => {
       const field = makeArray(readResult.fields).filter(f => f.fullName === 'Banana__c')[0]
       expect(field).toBeDefined()
       expect(field.label).toBe('Banana Split')
+      expect(field.securityClassification).toBe('Restricted')
+      expect(field.businessStatus).toBe('Hidden')
+      expect(field.complianceGroup).toBe('GDPR')
 
       // Clean-up
       await adapter.remove(oldElement)

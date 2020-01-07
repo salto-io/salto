@@ -46,7 +46,6 @@ export default class HubspotAdapter {
   public async fetch(): Promise<Element[]> {
     const fieldTypes = Types.getAllFieldTypes()
     const objects = Types.hubspotObjects
-    objects.forEach(e => { e.path = ['hubspot', 'objects', e.elemID.name] })
 
     const subTypes = Types.hubspotSubTypes
     subTypes.forEach(e => { e.path = ['hubspot', 'types', 'subtypes', e.elemID.name] })

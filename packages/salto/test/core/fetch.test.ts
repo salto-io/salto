@@ -31,13 +31,13 @@ describe('fetch', () => {
   const newTypeBase = new ObjectType({
     elemID: newTypeID,
     fields: { base: new Field(newTypeID, 'base', BuiltinTypes.STRING) },
+    path: ['path', 'base'],
   })
-  newTypeBase.path = ['path', 'base']
   const newTypeExt = new ObjectType({
     elemID: newTypeID,
     fields: { ext: new Field(newTypeID, 'ext', BuiltinTypes.STRING) },
+    path: ['path', 'ext'],
   })
-  newTypeExt.path = ['path', 'ext']
   const newTypeMerged = new ObjectType({
     elemID: newTypeID,
     fields: {
@@ -238,9 +238,9 @@ describe('fetch', () => {
                 newTypeExtWPath])
             )
             const result = await fetchChanges(
-            mockAdapters as unknown as Record<string, Adapter>,
-            [newTypeBaseWPath],
-            [newTypeBaseWPath],
+              mockAdapters as unknown as Record<string, Adapter>,
+              [newTypeBaseWPath],
+              [newTypeBaseWPath],
             )
             changes = [...result.changes]
           })
@@ -258,23 +258,24 @@ describe('fetch', () => {
           beforeEach(async () => {
             const newTypeA = new ObjectType({
               elemID: newTypeID,
+              path: ['a', 'b'],
             })
 
-            newTypeA.path = ['a', 'b']
             const newTypeB = new ObjectType({
               elemID: newTypeID,
               annotations: { baba: 'bob' },
+              path: ['c', 'd'],
             })
-            newTypeB.path = ['c', 'd']
+
             mockAdapters.dummy.fetch.mockResolvedValueOnce(
               Promise.resolve([
                 newTypeA,
                 newTypeB])
             )
             const result = await fetchChanges(
-            mockAdapters as unknown as Record<string, Adapter>,
-            [newTypeA],
-            [newTypeA],
+              mockAdapters as unknown as Record<string, Adapter>,
+              [newTypeA],
+              [newTypeA],
             )
             changes = [...result.changes]
           })
@@ -295,9 +296,9 @@ describe('fetch', () => {
             Promise.resolve([typeWithFieldChange])
           )
           const result = await fetchChanges(
-          mockAdapters as unknown as Record<string, Adapter>,
-          [typeWithFieldChange],
-          [typeWithField],
+            mockAdapters as unknown as Record<string, Adapter>,
+            [typeWithFieldChange],
+            [typeWithField],
           )
           changes = [...result.changes]
         })
@@ -312,9 +313,9 @@ describe('fetch', () => {
             Promise.resolve([typeWithFieldChange])
           )
           const result = await fetchChanges(
-          mockAdapters as unknown as Record<string, Adapter>,
-          [typeWithFieldConflict],
-          [typeWithField],
+            mockAdapters as unknown as Record<string, Adapter>,
+            [typeWithFieldConflict],
+            [typeWithField],
           )
           changes = [...result.changes]
         })
@@ -329,9 +330,9 @@ describe('fetch', () => {
             Promise.resolve([typeWithFieldChange])
           )
           const result = await fetchChanges(
-          mockAdapters as unknown as Record<string, Adapter>,
-          [],
-          [typeWithField],
+            mockAdapters as unknown as Record<string, Adapter>,
+            [],
+            [typeWithField],
           )
           changes = [...result.changes]
         })

@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import { Element, ElemID, ElementMap } from 'adapter-api'
 import { logger } from '@salto/logging'
-import { decorators, collections } from '@salto/lowerdash'
+import { collections } from '@salto/lowerdash'
 import { readTextFile, replaceContents } from '../../file'
 import { serialize, deserialize } from '../../serializer/elements'
 import { ElementsDataSource } from '../elements_data_source'
@@ -10,63 +10,79 @@ const { makeArray } = collections.array
 
 const log = logger(module)
 
+const EXIT_EVENTS: NodeJS.Signals[] = ['SIGHUP', 'SIGINT', 'SIGQUIT', 'SIGILL', 'SIGTRAP',
+  'SIGABRT', 'SIGBUS', 'SIGFPE', 'SIGUSR1', 'SIGSEGV', 'SIGUSR2', 'SIGTERM']
+
 export default class LocalState implements ElementsDataSource {
   private innerElements?: ElementMap
-  constructor(private filePath: string) {}
+  private dirty = false
 
-  private static load = decorators.wrapMethodWith(
-    // eslint-disable-next-line prefer-arrow-callback
-    async function load(this: LocalState, originalMethod: decorators.OriginalCall):
-    Promise<unknown> {
-      const read = async (): Promise<Element[]> => {
-        const text = await readTextFile(this.filePath)
-        return text === undefined ? [] : deserialize(text)
-      }
+  constructor(private filePath: string) {
+    process.on('exit', code => {
+      log.info('flush state on exit code: %d', code)
+      this.flush()
+    })
 
-      if (this.innerElements === undefined) {
-        const elements = await read()
-        this.innerElements = _.keyBy(elements, e => e.elemID.getFullName()) || {}
-        log.debug(`loaded state [#elements=${_.size(this.elements)}]`)
-      }
-      return originalMethod.call()
+    EXIT_EVENTS.forEach(event => {
+      process.on(event, code => {
+        log.error('flush state on signal: %o', code)
+        this.flush()
+        process.exit(1)
+      })
+    })
+  }
+
+  private async loadFromFile(): Promise<ElementMap> {
+    const text = await readTextFile(this.filePath)
+    const elements = text === undefined ? [] : deserialize(text)
+    log.debug(`loaded state [#elements=${elements.length}]`)
+    return _.keyBy(elements, e => e.elemID.getFullName()) || {}
+  }
+
+  private async elements(): Promise<ElementMap> {
+    if (this.innerElements === undefined) {
+      this.innerElements = await this.loadFromFile()
     }
-  )
-
-  private get elements(): ElementMap {
-    return this.innerElements || {}
+    return this.innerElements
   }
 
-  @LocalState.load
   async getAll(): Promise<Element[]> {
-    return Object.values(this.elements)
+    return Object.values(await this.elements())
   }
 
-  @LocalState.load
   async list(): Promise<ElemID[]> {
-    return Object.keys(this.elements).map(n => ElemID.fromFullName(n))
+    return Object.keys(await this.elements()).map(n => ElemID.fromFullName(n))
   }
 
-  @LocalState.load
   async get(id: ElemID): Promise<Element> {
-    return this.elements[id.getFullName()]
+    return (await this.elements())[id.getFullName()]
   }
 
-  @LocalState.load
   async set(element: Element | Element []): Promise<void> {
-    makeArray(element).forEach(e => { this.elements[e.elemID.getFullName()] = e })
+    if (this.innerElements === undefined) {
+      this.innerElements = await this.loadFromFile()
+    }
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    makeArray(element).forEach(e => { this.innerElements![e.elemID.getFullName()] = e })
+    this.dirty = true
   }
 
-  @LocalState.load
   async remove(id: ElemID | ElemID[]): Promise<void> {
-    makeArray(id).forEach(i => { delete this.elements[i.getFullName()] })
+    if (this.innerElements === undefined) {
+      this.innerElements = await this.loadFromFile()
+    }
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    makeArray(id).forEach(i => { delete this.innerElements![i.getFullName()] })
+    this.dirty = true
   }
 
   async flush(): Promise<void> {
-    if (this.innerElements === undefined) {
+    if (!this.dirty) {
       return
     }
-    const buffer = serialize(Object.values(this.elements))
+    const elements = await this.elements()
+    const buffer = serialize(Object.values(elements))
     await replaceContents(this.filePath, buffer)
-    log.debug(`finish flushing state [#elements=${_.size(this.elements)}]`)
+    log.debug(`finish flushing state [#elements=${elements.length}]`)
   }
 }

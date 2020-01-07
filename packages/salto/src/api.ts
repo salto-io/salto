@@ -85,37 +85,33 @@ export const deploy = async (
   force = false
 ): Promise<DeployResult> => {
   const changedElements: Element[] = []
-  try {
-    const actionPlan = await getPlan(
-      filterElementsByServices(await workspace.state.getAll(), services),
-      filterElementsByServices(workspace.elements, services),
-      getChangeValidators()
-    )
-    if (force || await shouldDeploy(actionPlan)) {
-      const adapters = await initAdapters(workspace.configElements, services)
+  const actionPlan = await getPlan(
+    filterElementsByServices(await workspace.state.getAll(), services),
+    filterElementsByServices(workspace.elements, services),
+    getChangeValidators()
+  )
+  if (force || await shouldDeploy(actionPlan)) {
+    const adapters = await initAdapters(workspace.configElements, services)
 
-      const postDeploy = async (action: ActionName, element: Element): Promise<void> =>
-        ((action === 'remove')
-          ? workspace.state.remove(element.elemID)
-          : workspace.state.set(element)
-            .then(() => { changedElements.push(element) }))
-      const errors = await deployActions(actionPlan, adapters, reportProgress, postDeploy)
+    const postDeploy = async (action: ActionName, element: Element): Promise<void> =>
+      ((action === 'remove')
+        ? workspace.state.remove(element.elemID)
+        : workspace.state.set(element)
+          .then(() => { changedElements.push(element) }))
+    const errors = await deployActions(actionPlan, adapters, reportProgress, postDeploy)
 
-      const changedElementsIds = changedElements.map(e => e.elemID.getFullName())
-      const changes = wu(await getDetailedChanges(workspace.elements
-        .filter(e => changedElementsIds.includes(e.elemID.getFullName())), changedElements))
-        .map(change => ({ change, serviceChange: change }))
-      const errored = errors.length > 0
-      return {
-        success: !errored,
-        changes,
-        errors: errored ? errors : [],
-      }
+    const changedElementsIds = changedElements.map(e => e.elemID.getFullName())
+    const changes = wu(await getDetailedChanges(workspace.elements
+      .filter(e => changedElementsIds.includes(e.elemID.getFullName())), changedElements))
+      .map(change => ({ change, serviceChange: change }))
+    const errored = errors.length > 0
+    return {
+      success: !errored,
+      changes,
+      errors: errored ? errors : [],
     }
-    return { success: true, errors: [] }
-  } finally {
-    await workspace.state.flush()
   }
+  return { success: true, errors: [] }
 }
 
 export type fillConfigFunc = (configType: ObjectType) => Promise<InstanceElement>
@@ -139,7 +135,6 @@ export const fetch: fetchFunc = async (
   const overrideState = async (elements: Element[]): Promise<void> => {
     await workspace.state.remove(await workspace.state.list())
     await workspace.state.set(elements)
-    await workspace.state.flush()
     log.debug(`finish to override state with ${elements.length} elements`)
   }
   log.debug('fetch starting..')

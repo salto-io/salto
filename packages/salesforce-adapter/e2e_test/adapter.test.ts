@@ -44,6 +44,10 @@ describe('Salesforce adapter E2E with real account', () => {
   jest.setTimeout(1000000)
 
   let result: Element[]
+  const apiNameAnno = (object: string, field: string): string => [
+    object,
+    field,
+  ].join(constants.API_NAME_SEPERATOR)
 
   const objectExists = async (type: string, name: string, fields?: string[],
     missingFields?: string[], label?: string): Promise<boolean> => {
@@ -571,7 +575,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'address',
             stringType,
             {
-              [constants.API_NAME]: [customObjectName, 'Address__c'].join(constants.API_NAME_SEPERATOR),
+              [constants.API_NAME]: apiNameAnno(customObjectName, 'Address__c'),
             },
           ),
           banana: new Field(
@@ -579,7 +583,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'banana',
             stringType,
             {
-              [constants.API_NAME]: [customObjectName, 'Banana__c'].join(constants.API_NAME_SEPERATOR),
+              [constants.API_NAME]: apiNameAnno(customObjectName, 'Banana__c'),
             },
           ),
         },
@@ -832,7 +836,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'address',
             stringType,
             {
-              [constants.API_NAME]: [customObjectName, 'Address__c'].join(constants.API_NAME_SEPERATOR),
+              [constants.API_NAME]: apiNameAnno(customObjectName, 'Address__c'),
               [constants.LABEL]: 'Address',
             },
           ),
@@ -841,7 +845,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'banana',
             stringType,
             {
-              [constants.API_NAME]: [customObjectName, 'Banana__c'].join(constants.API_NAME_SEPERATOR),
+              [constants.API_NAME]: apiNameAnno(customObjectName, 'Banana__c'),
               [constants.LABEL]: 'Banana',
               [constants.BUSINESS_STATUS]: 'Active',
               [constants.SECURITY_CLASSIFICATION]: 'Public',
@@ -870,7 +874,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'address',
             stringType,
             {
-              [constants.API_NAME]: [customObjectName, 'Address__c'].join(constants.API_NAME_SEPERATOR),
+              [constants.API_NAME]: apiNameAnno(customObjectName, 'Address__c'),
               [constants.LABEL]: 'Address',
             },
           ),
@@ -879,7 +883,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'banana',
             stringType,
             {
-              [constants.API_NAME]: [customObjectName, 'Banana__c'].join(constants.API_NAME_SEPERATOR),
+              [constants.API_NAME]: apiNameAnno(customObjectName, 'Banana__c'),
               [constants.LABEL]: 'Banana Split',
               [constants.BUSINESS_STATUS]: 'Hidden',
               [constants.SECURITY_CLASSIFICATION]: 'Restricted',
@@ -1000,7 +1004,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'address',
             stringType,
             {
-              [constants.API_NAME]: [customObjectName, 'Address__c'].join(constants.API_NAME_SEPERATOR),
+              [constants.API_NAME]: apiNameAnno(customObjectName, 'Address__c'),
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 editable: [ADMIN],
                 readable: [ADMIN],
@@ -1012,7 +1016,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'banana',
             stringType,
             {
-              [constants.API_NAME]: [customObjectName, 'Banana__c'].join(constants.API_NAME_SEPERATOR),
+              [constants.API_NAME]: apiNameAnno(customObjectName, 'Banana__c'),
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 editable: [STANDARD],
                 readable: [STANDARD],
@@ -1024,7 +1028,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'delta',
             stringType,
             {
-              [constants.API_NAME]: [customObjectName, 'Delta__c'].join(constants.API_NAME_SEPERATOR),
+              [constants.API_NAME]: apiNameAnno(customObjectName, 'Delta__c'),
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 editable: [ADMIN],
                 readable: [ADMIN, STANDARD],
@@ -1056,7 +1060,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'address',
             stringType,
             {
-              [constants.API_NAME]: [customObjectName, 'Address__c'].join(constants.API_NAME_SEPERATOR),
+              [constants.API_NAME]: apiNameAnno(customObjectName, 'Address__c'),
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 editable: [STANDARD],
                 readable: [STANDARD],
@@ -1068,7 +1072,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'banana',
             stringType,
             {
-              [constants.API_NAME]: [customObjectName, 'Banana__c'].join(constants.API_NAME_SEPERATOR),
+              [constants.API_NAME]: apiNameAnno(customObjectName, 'Banana__c'),
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 editable: [ADMIN, STANDARD],
                 readable: [ADMIN, STANDARD],
@@ -1080,7 +1084,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'delta',
             stringType,
             {
-              [constants.API_NAME]: [customObjectName, 'Delta__c'].join(constants.API_NAME_SEPERATOR),
+              [constants.API_NAME]: apiNameAnno(customObjectName, 'Delta__c'),
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 readable: [STANDARD],
               },
@@ -1604,7 +1608,7 @@ describe('Salesforce adapter E2E with real account', () => {
             {
               [CORE_ANNOTATIONS.REQUIRED]: false,
               [constants.LABEL]: 'Rollup Summary description label',
-              [constants.API_NAME]: ['Case', rollupSummaryFieldApiName].join(constants.API_NAME_SEPERATOR),
+              [constants.API_NAME]: apiNameAnno('Case', rollupSummaryFieldApiName),
               [constants.FIELD_ANNOTATIONS.SUMMARIZED_FIELD]: `${customObjectName}.${currencyFieldApiName}`,
               [constants.FIELD_ANNOTATIONS.SUMMARY_FOREIGN_KEY]: `${customObjectName}.${masterDetailApiName}`,
               [constants.FIELD_ANNOTATIONS.SUMMARY_OPERATION]: 'max',

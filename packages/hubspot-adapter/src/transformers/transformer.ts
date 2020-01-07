@@ -374,6 +374,10 @@ export class Types {
   }
 }
 
+const createInstanceName = (
+  name: string
+): string => name.split(' ').join('_')
+
 /**
  * This method generate (instance) values by iterating hubspot object fields.
  * Also ensure that only expected fields will shown
@@ -413,10 +417,11 @@ export const createHubspotInstanceElement = (
 ): InstanceElement => {
   const typeName = type.elemID.name
   const values = fromHubspotObject(hubspotMetadata, type)
+  const instanceName = createInstanceName(hubspotMetadata.name)
   return new InstanceElement(
-    new ElemID(HUBSPOT, hubspotMetadata.name).name,
+    new ElemID(HUBSPOT, instanceName).name,
     type,
     values,
-    [HUBSPOT, 'records', typeName, hubspotMetadata.name],
+    [HUBSPOT, 'records', typeName, instanceName],
   )
 }

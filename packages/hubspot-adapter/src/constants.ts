@@ -2,6 +2,8 @@ export const HUBSPOT = 'hubspot'
 
 export const OBJECTS_NAMES = {
   FORM: 'form',
+  PROPERTYGROUP: 'PropertyGroup',
+  PROPERTY: 'Property',
 }
 
 // fields types
@@ -33,4 +35,24 @@ export const FORM_FIELDS = {
   CAPTCHAENABLED: 'captchaEnabled',
   CLONEABLE: 'cloneable',
   EDITABLE: 'editable',
+  FORMFIELDGROUPS: 'formFieldGroups',
+}
+
+export const PROPERTY_GROUP_FIELDS = {
+  DEFAULT: 'default',
+  FIELDS: 'fields',
+  ISSMARTGROUP: 'isSmartGroup',
+}
+
+export const PROPERTY_FIELDS = {
+  NAME: 'name',
+  LABEL: 'label',
+  DESCRIPTION: 'description',
+  GROUPNAME: 'groupName',
+  TYPE: 'type',
+  FIELDTYPE: 'fieldType',
+  REQUIRED: 'required',
+  HIDDEN: 'hidden',
+  ISSMARTFIELD: 'isSmartField',
+  DEFAULTVALUE: 'defaultValue',
 }

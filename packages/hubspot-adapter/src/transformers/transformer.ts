@@ -7,7 +7,7 @@ import {
 } from 'adapter-api'
 import {
   FIELD_TYPES, FORM_FIELDS,
-  HUBSPOT, OBJECTS_NAMES,
+  HUBSPOT, OBJECTS_NAMES, PROPERTY_FIELDS, PROPERTY_GROUP_FIELDS,
 } from '../constants'
 import {
   HubspotMetadata,
@@ -15,9 +15,118 @@ import {
 
 
 const formElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.FORM)
-
+const propertyGroupElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.PROPERTYGROUP)
+const propertyElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.PROPERTY)
 
 export class Types {
+  public static propertyType: ObjectType =
+    new ObjectType({
+      elemID: propertyElemID,
+      fields: {
+        [PROPERTY_FIELDS.NAME]: new TypeField(
+          propertyElemID, PROPERTY_FIELDS.NAME, BuiltinTypes.STRING, {
+            name: PROPERTY_FIELDS.NAME,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [PROPERTY_FIELDS.LABEL]: new TypeField(
+          propertyElemID, PROPERTY_FIELDS.LABEL, BuiltinTypes.STRING, {
+            name: PROPERTY_FIELDS.LABEL,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [PROPERTY_FIELDS.DESCRIPTION]: new TypeField(
+          propertyElemID, PROPERTY_FIELDS.DESCRIPTION, BuiltinTypes.STRING, {
+            name: PROPERTY_FIELDS.DESCRIPTION,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [PROPERTY_FIELDS.GROUPNAME]: new TypeField(
+          propertyElemID, PROPERTY_FIELDS.GROUPNAME, BuiltinTypes.STRING, {
+            name: PROPERTY_FIELDS.GROUPNAME,
+            _readOnly: true,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [PROPERTY_FIELDS.TYPE]: new TypeField(
+          propertyElemID, PROPERTY_FIELDS.TYPE, BuiltinTypes.STRING, {
+            name: PROPERTY_FIELDS.TYPE,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [PROPERTY_FIELDS.FIELDTYPE]: new TypeField(
+          propertyElemID, PROPERTY_FIELDS.FIELDTYPE, BuiltinTypes.STRING, {
+            name: PROPERTY_FIELDS.FIELDTYPE,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [PROPERTY_FIELDS.ISSMARTFIELD]: new TypeField(
+          propertyElemID, PROPERTY_FIELDS.ISSMARTFIELD, BuiltinTypes.BOOLEAN, {
+            name: PROPERTY_FIELDS.ISSMARTFIELD,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [PROPERTY_FIELDS.REQUIRED]: new TypeField(
+          propertyElemID, PROPERTY_FIELDS.REQUIRED, BuiltinTypes.BOOLEAN, {
+            name: PROPERTY_FIELDS.REQUIRED,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [PROPERTY_FIELDS.HIDDEN]: new TypeField(
+          propertyElemID, PROPERTY_FIELDS.HIDDEN, BuiltinTypes.BOOLEAN, {
+            name: PROPERTY_FIELDS.HIDDEN,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [PROPERTY_FIELDS.DEFAULTVALUE]: new TypeField(
+          propertyElemID, PROPERTY_FIELDS.DEFAULTVALUE, BuiltinTypes.STRING, {
+            name: PROPERTY_FIELDS.DEFAULTVALUE,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+      },
+      path: ['hubspot', 'types', 'subtypes', propertyElemID.name],
+    })
+
+  public static propertyGroupType: ObjectType =
+    new ObjectType({
+      elemID: propertyGroupElemID,
+      fields: {
+        [PROPERTY_GROUP_FIELDS.DEFAULT]: new TypeField(
+          propertyGroupElemID, PROPERTY_GROUP_FIELDS.DEFAULT, BuiltinTypes.BOOLEAN, {
+            name: PROPERTY_GROUP_FIELDS.DEFAULT,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [PROPERTY_GROUP_FIELDS.FIELDS]: new TypeField(
+          propertyGroupElemID, PROPERTY_GROUP_FIELDS.FIELDS, Types.propertyType, {
+            name: PROPERTY_GROUP_FIELDS.FIELDS,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+          true,
+        ),
+        [PROPERTY_GROUP_FIELDS.ISSMARTGROUP]: new TypeField(
+          propertyGroupElemID, PROPERTY_GROUP_FIELDS.ISSMARTGROUP, BuiltinTypes.BOOLEAN, {
+            name: PROPERTY_GROUP_FIELDS.ISSMARTGROUP,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+      },
+      path: ['hubspot', 'types', 'subtypes', propertyGroupElemID.name],
+    })
+
   /**
    * This method create array of all supported Hubspot objects.
    * This is static creation cause hubspot API support only instances.
@@ -96,37 +205,23 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [FORM_FIELDS.CAPTCHAENABLED]: new TypeField(
-          formElemID, FORM_FIELDS.CAPTCHAENABLED, BuiltinTypes.BOOLEAN, {
-            name: FORM_FIELDS.CAPTCHAENABLED,
-            _readOnly: true,
+        [FORM_FIELDS.FORMFIELDGROUPS]: new TypeField(
+          formElemID, FORM_FIELDS.FORMFIELDGROUPS, Types.propertyGroupType, {
+            name: FORM_FIELDS.FORMFIELDGROUPS,
+            _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
-        ),
-        [FORM_FIELDS.CREATEDAT]: new TypeField( // TODO: format milli -> readable date
-          formElemID, FORM_FIELDS.CREATEDAT, BuiltinTypes.NUMBER, {
-            name: FORM_FIELDS.CREATEDAT,
-            _readOnly: true,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
-        [FORM_FIELDS.CLONEABLE]: new TypeField(
-          formElemID, FORM_FIELDS.CLONEABLE, BuiltinTypes.BOOLEAN, {
-            name: FORM_FIELDS.CLONEABLE,
-            _readOnly: true,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
-        [FORM_FIELDS.EDITABLE]: new TypeField(
-          formElemID, FORM_FIELDS.EDITABLE, BuiltinTypes.BOOLEAN, {
-            name: FORM_FIELDS.EDITABLE,
-            _readOnly: true,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
+          true,
         ),
       },
       path: [HUBSPOT, 'objects', formElemID.name],
     }),
+  ]
+
+
+  public static hubspotSubTypes: ObjectType[] = [
+    Types.propertyGroupType,
+    Types.propertyType,
   ]
 
   public static fieldTypes: Record<string, Type> = {

@@ -138,8 +138,8 @@ describe('commands e2e', () => {
         SALESFORCE,
         newObjectElemName, { [API_NAME]: newObjectApiName },
         {
-          alpha: { [API_NAME]: apiNameAnno(newObjectApiName, 'Alpha__c') },
-          beta: { [API_NAME]: apiNameAnno(newObjectApiName, 'Beta__c') },
+          alpha: apiNameAnno(newObjectApiName, 'Alpha__c'),
+          beta: apiNameAnno(newObjectApiName, 'Beta__c'),
         }
       )
     })
@@ -190,8 +190,8 @@ describe('commands e2e', () => {
         SALESFORCE,
         newObjectElemName, { [API_NAME]: newObjectApiName },
         {
-          alpha: { [API_NAME]: apiNameAnno(newObjectApiName, 'Alpha__c') },
-          modified: { [API_NAME]: apiNameAnno(newObjectApiName, 'Modified__c') },
+          alpha: apiNameAnno(newObjectApiName, 'Alpha__c'),
+          modified: apiNameAnno(newObjectApiName, 'Modified__c'),
         }
       )
     })

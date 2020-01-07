@@ -1160,6 +1160,7 @@ describe('Salesforce adapter E2E with real account', () => {
               [CORE_ANNOTATIONS.DEFAULT]: 'NEW',
               [constants.LABEL]: 'Picklist description label',
               [CORE_ANNOTATIONS.VALUES]: ['NEW', 'OLD'],
+              [CORE_ANNOTATIONS.RESTRICTION]: { [CORE_ANNOTATIONS.ENFORCE_VALUE]: true },
               ...adminReadable,
             },
           ),
@@ -1448,6 +1449,7 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(picklistField.label).toBe('Picklist description label')
       expect(picklistField.type).toBe('picklist')
       expect(picklistField.dependentPicklist).toBeFalsy()
+      expect(picklistField.restrictedPicklist).toBeTruthy()
       expect(_.isEqual((picklistField.picklistValues as PicklistEntry[]).map(value => value.label), ['NEW', 'OLD'])).toBeTruthy()
       const picklistValueNew = (picklistField.picklistValues as PicklistEntry[]).filter(value => value.label === 'NEW')[0]
       expect(picklistValueNew).toBeDefined()

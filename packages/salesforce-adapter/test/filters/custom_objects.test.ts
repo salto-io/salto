@@ -507,7 +507,9 @@ describe('Custom Objects filter', () => {
           [INSTANCE_TYPE_FIELD]: 'Picklist',
           [INSTANCE_REQUIRED_FIELD]: 'true',
           [INSTANCE_DEFAULT_VALUE_FIELD]: 'YES',
-          [INSTANCE_VALUE_SET_FIELD]: { [VALUE_SET_FIELDS.VALUE_SET_DEFINITION]:
+          [INSTANCE_VALUE_SET_FIELD]:
+          { [VALUE_SET_FIELDS.RESTRICTED]: true,
+            [VALUE_SET_FIELDS.VALUE_SET_DEFINITION]:
             { value: [{ [INSTANCE_FULL_NAME_FIELD]: 'YES' },
               { [INSTANCE_FULL_NAME_FIELD]: 'NO' }] } },
         },
@@ -635,6 +637,8 @@ describe('Custom Objects filter', () => {
           .annotations[CORE_ANNOTATIONS.DEFAULT]).toBe('YES')
         expect(leadObjectType.fields.my_picklist
           .annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(true)
+        expect(leadObjectType.fields.my_picklist
+          .annotations[CORE_ANNOTATIONS.RESTRICTION][CORE_ANNOTATIONS.ENFORCE_VALUE]).toBe(true)
 
         // Verify rollup field
         const expectedRollupSummaryField = testInstanceElement.value.fields

@@ -224,13 +224,6 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: true,
           },
         ),
-        [FORM_FIELDS.METHOD]: new TypeField(
-          formElemID, FORM_FIELDS.METHOD, BuiltinTypes.STRING, {
-            name: FORM_FIELDS.METHOD,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
         [FORM_FIELDS.CSSCLASS]: new TypeField(
           formElemID, FORM_FIELDS.CSSCLASS, BuiltinTypes.STRING, {
             name: FORM_FIELDS.CSSCLASS,

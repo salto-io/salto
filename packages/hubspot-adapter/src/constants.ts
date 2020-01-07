@@ -24,7 +24,6 @@ export const FIELD_TYPES = {
 export const FORM_FIELDS = {
   GUID: 'guid',
   NAME: 'name',
-  METHOD: 'method',
   CSSCLASS: 'cssClass',
   REDIRECT: 'redirect',
   SUBMITTEXT: 'submitText',

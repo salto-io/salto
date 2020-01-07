@@ -26,6 +26,16 @@ interface PropertyGroup {
   isSmartGroup: boolean
 }
 
+interface Options {
+  label: string
+  value: string
+  displayOrder: number
+  doubleData: number
+  hidden: boolean
+  description: string
+  readOnly: boolean
+}
+
 export interface Property {
   name: string
   // String; The internal name of the property.
@@ -53,4 +63,5 @@ export interface Property {
   defaultValue: string
   // The default value of the field
   selectedOptions: string[]
+  options: Options[]
 }

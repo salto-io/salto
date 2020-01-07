@@ -7,7 +7,7 @@ import {
 } from 'adapter-api'
 import {
   FIELD_TYPES, FORM_FIELDS,
-  HUBSPOT, OBJECTS_NAMES, PROPERTY_FIELDS, PROPERTY_GROUP_FIELDS,
+  HUBSPOT, OBJECTS_NAMES, PROPERTY_FIELDS, PROPERTY_GROUP_FIELDS, OPTIONS_FIELDS,
 } from '../constants'
 import {
   HubspotMetadata,
@@ -17,8 +17,66 @@ import {
 const formElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.FORM)
 const propertyGroupElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.PROPERTYGROUP)
 const propertyElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.PROPERTY)
+const optionsElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.OPTIONS)
 
 export class Types {
+  public static optionsType: ObjectType =
+    new ObjectType({
+      elemID: optionsElemID,
+      fields: {
+        [OPTIONS_FIELDS.LABEL]: new TypeField(
+          optionsElemID, OPTIONS_FIELDS.LABEL, BuiltinTypes.STRING, {
+            name: OPTIONS_FIELDS.LABEL,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [OPTIONS_FIELDS.VALUE]: new TypeField(
+          optionsElemID, OPTIONS_FIELDS.VALUE, BuiltinTypes.STRING, {
+            name: OPTIONS_FIELDS.VALUE,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [OPTIONS_FIELDS.DISPLAYORDER]: new TypeField(
+          optionsElemID, OPTIONS_FIELDS.DISPLAYORDER, BuiltinTypes.NUMBER, {
+            name: OPTIONS_FIELDS.DISPLAYORDER,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [OPTIONS_FIELDS.DOUBLEDATA]: new TypeField(
+          optionsElemID, OPTIONS_FIELDS.DOUBLEDATA, BuiltinTypes.NUMBER, {
+            name: OPTIONS_FIELDS.DOUBLEDATA,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [OPTIONS_FIELDS.HIDDEN]: new TypeField(
+          optionsElemID, OPTIONS_FIELDS.HIDDEN, BuiltinTypes.BOOLEAN, {
+            name: OPTIONS_FIELDS.HIDDEN,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [OPTIONS_FIELDS.DESCRIPTION]: new TypeField(
+          optionsElemID, OPTIONS_FIELDS.DESCRIPTION, BuiltinTypes.STRING, {
+            name: OPTIONS_FIELDS.DESCRIPTION,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [OPTIONS_FIELDS.READONLY]: new TypeField(
+          optionsElemID, OPTIONS_FIELDS.READONLY, BuiltinTypes.BOOLEAN, {
+            name: OPTIONS_FIELDS.READONLY,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+      },
+      path: ['hubspot', 'types', 'subtypes', optionsElemID.name],
+    })
+
   public static propertyType: ObjectType =
     new ObjectType({
       elemID: propertyElemID,
@@ -101,6 +159,14 @@ export class Types {
           },
           true,
         ),
+        [PROPERTY_FIELDS.OPTIONS]: new TypeField(
+          propertyElemID, PROPERTY_FIELDS.OPTIONS, Types.optionsType, {
+            name: PROPERTY_FIELDS.OPTIONS,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+          true,
+        ),
       },
       path: ['hubspot', 'types', 'subtypes', propertyElemID.name],
     })
@@ -134,6 +200,7 @@ export class Types {
       },
       path: ['hubspot', 'types', 'subtypes', propertyGroupElemID.name],
     })
+
 
   /**
    * This method create array of all supported Hubspot objects.
@@ -230,6 +297,7 @@ export class Types {
   public static hubspotSubTypes: ObjectType[] = [
     Types.propertyGroupType,
     Types.propertyType,
+    Types.optionsType,
   ]
 
   public static fieldTypes: Record<string, Type> = {

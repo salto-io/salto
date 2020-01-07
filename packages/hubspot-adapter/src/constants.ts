@@ -4,6 +4,7 @@ export const OBJECTS_NAMES = {
   FORM: 'form',
   PROPERTYGROUP: 'PropertyGroup',
   PROPERTY: 'Property',
+  OPTIONS: 'options',
 }
 
 // fields types
@@ -56,4 +57,16 @@ export const PROPERTY_FIELDS = {
   ISSMARTFIELD: 'isSmartField',
   DEFAULTVALUE: 'defaultValue',
   SELECTEDOPTIONS: 'selectedOptions',
+  OPTIONS: 'options',
+}
+
+export const OPTIONS_FIELDS = {
+  LABEL: 'label',
+  DESCRIPTION: 'description',
+  VALUE: 'value',
+  DOUBLEDATA: 'doubleData',
+  HIDDEN: 'hidden',
+  ISSMARTFIELD: 'isSmartField',
+  DISPLAYORDER: 'displayOrder',
+  READONLY: 'readOnly',
 }

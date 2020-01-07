@@ -7,6 +7,7 @@ export const FORMULA_TYPE_PREFIX = 'formula_'
 export const SALESFORCE_CUSTOM_SUFFIX = '__c'
 export const ADMIN_PROFILE = 'admin'
 export const NAMESPACE_SEPARATOR = '__'
+export const API_NAME_SEPERATOR = '.'
 
 // Annotations
 export const LABEL = 'label'

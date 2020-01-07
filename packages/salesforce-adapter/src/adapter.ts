@@ -14,7 +14,7 @@ import { decorators, collections } from '@salto/lowerdash'
 import SalesforceClient, { API_VERSION, Credentials } from './client/client'
 import * as constants from './constants'
 import {
-  toCustomField, toCustomObject, apiName, sfCase, fieldFullName, Types,
+  toCustomField, toCustomObject, apiName, sfCase, Types,
   toMetadataInfo, createInstanceElement,
   metadataType, toInstanceElements, createMetadataTypeElements,
   instanceElementstoRecords, elemIDstoRecords, getCompoundChildFields,
@@ -55,7 +55,7 @@ const addDefaults = (element: ObjectType): void => {
   addMetadataType(element)
   addLabel(element)
   Object.values(element.fields).forEach(field => {
-    addApiName(field, sfCase(field.name, true))
+    addApiName(field, sfCase(field.name, true), apiName(element))
     addLabel(field)
   })
 }
@@ -211,7 +211,6 @@ export default class SalesforceAdapter {
       await Promise.all([annotationTypes, fieldTypes,
         metadataTypes, metadataInstances]) as Element[][]
     )
-
     await this.runFiltersOnFetch(elements)
     return elements
   }
@@ -468,14 +467,13 @@ export default class SalesforceAdapter {
     changes: ReadonlyArray<Change<Field | ObjectType>>): Promise<ObjectType> {
     validateApiName(before, after)
     const clonedObject = after.clone()
-
     changes
       .filter(isAdditionDiff)
       .map(getChangeElement)
       .filter(isField)
       .forEach(f => {
         addLabel(clonedObject.fields[f.name])
-        addApiName(clonedObject.fields[f.name], sfCase(f.name, true))
+        addApiName(clonedObject.fields[f.name], sfCase(f.name, true), apiName(clonedObject))
       })
 
     const fieldChanges = changes.filter(c => isField(getChangeElement(c))) as Change<Field>[]
@@ -483,21 +481,19 @@ export default class SalesforceAdapter {
     // There are fields that are not equal but their transformation
     // to CustomField is (e.g. lookup field with LookupFilter).
     const shouldUpdateField = (beforeField: Field, afterField: Field): boolean =>
-      !_.isEqual(toCustomField(before, beforeField, true),
-        toCustomField(clonedObject, afterField, true))
+      !_.isEqual(toCustomField(beforeField, true),
+        toCustomField(afterField, true))
 
     await Promise.all([
       // Retrieve the custom fields for deletion and delete them
-      this.deleteCustomFields(clonedObject, fieldChanges
-        .filter(isRemovalDiff)
-        .map(getChangeElement)),
+      this.deleteCustomFields(fieldChanges.filter(isRemovalDiff).map(getChangeElement)),
       // Retrieve the custom fields for addition and than create them
-      this.createFields(clonedObject, fieldChanges
+      this.createFields(fieldChanges
         .filter(isAdditionDiff)
         .filter(c => !this.systemFields.includes(getChangeElement(c).name))
         .map(c => clonedObject.fields[c.data.after.name])),
       // Update the remaining fields that were changed
-      this.updateFields(clonedObject, fieldChanges
+      this.updateFields(fieldChanges
         .filter(isModificationDiff)
         .filter(c => shouldUpdateField(c.data.before, c.data.after))
         .map(c => clonedObject.fields[c.data.after.name])),
@@ -554,10 +550,10 @@ export default class SalesforceAdapter {
    * @param fieldsToUpdate The fields to update
    * @returns successfully managed to update all fields
    */
-  private async updateFields(object: ObjectType, fieldsToUpdate: Field[]): Promise<SaveResult[]> {
+  private async updateFields(fieldsToUpdate: Field[]): Promise<SaveResult[]> {
     return this.client.update(
       constants.CUSTOM_FIELD,
-      fieldsToUpdate.map(f => toCustomField(object, f, true)),
+      fieldsToUpdate.map(f => toCustomField(f, true)),
     )
   }
 
@@ -567,10 +563,10 @@ export default class SalesforceAdapter {
    * @param fieldsToAdd The fields to create
    * @returns successfully managed to create all fields with their permissions or not
    */
-  private async createFields(object: ObjectType, fieldsToAdd: Field[]): Promise<UpsertResult[]> {
+  private async createFields(fieldsToAdd: Field[]): Promise<UpsertResult[]> {
     return this.client.upsert(
       constants.CUSTOM_FIELD,
-      fieldsToAdd.map(f => toCustomField(object, f, true)),
+      fieldsToAdd.map(f => toCustomField(f, true)),
     )
   }
 
@@ -579,9 +575,9 @@ export default class SalesforceAdapter {
    * @param element the object api name those fields reside in
    * @param fields the custom fields we wish to delete
    */
-  private async deleteCustomFields(element: ObjectType, fields: Field[]): Promise<SaveResult[]> {
+  private async deleteCustomFields(fields: Field[]): Promise<SaveResult[]> {
     return this.client.delete(constants.CUSTOM_FIELD, fields
-      .map(field => fieldFullName(element, field)))
+      .map(field => apiName(field)))
   }
 
   private async listMetadataTypes(): Promise<string[]> {
@@ -785,7 +781,9 @@ export default class SalesforceAdapter {
 
   private async getFirstBatchOfInstances(type: ObjectType): Promise<QueryResult<Value>> {
     // build the initial query and populate the fields names list in the query
-    const queryString = `SELECT ${getCompoundChildFields(type).map(apiName)} FROM ${apiName(type)}`
+    const queryString = `SELECT ${
+      getCompoundChildFields(type).map(f => apiName(f))
+    } FROM ${apiName(type)}`
     return this.client.runQuery(queryString)
   }
 }

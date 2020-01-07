@@ -44,6 +44,10 @@ describe('Salesforce adapter E2E with real account', () => {
   jest.setTimeout(1000000)
 
   let result: Element[]
+  const apiNameAnno = (object: string, field: string): string => [
+    object,
+    field,
+  ].join(constants.API_NAME_SEPERATOR)
 
   const objectExists = async (type: string, name: string, fields?: string[],
     missingFields?: string[], label?: string): Promise<boolean> => {
@@ -511,10 +515,10 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(post).toBeInstanceOf(ObjectType)
       expect(
         post.fields.description.annotations[constants.API_NAME]
-      ).toBe('Description__c')
+      ).toBe('TestAddCustom__c.Description__c')
       expect(
         post.fields.formula.annotations[constants.API_NAME]
-      ).toBe('Formula__c')
+      ).toBe('TestAddCustom__c.Formula__c')
 
       expect(await objectExists(constants.CUSTOM_OBJECT, customObjectName, ['Description__c', 'Formula__c'])).toBe(true)
       expect((await fieldPermissionExists('Admin', [`${customObjectName}.Description__c`]))[0]).toBe(true)
@@ -571,7 +575,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'address',
             stringType,
             {
-              [constants.API_NAME]: 'Address__c',
+              [constants.API_NAME]: apiNameAnno(customObjectName, 'Address__c'),
             },
           ),
           banana: new Field(
@@ -579,7 +583,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'banana',
             stringType,
             {
-              [constants.API_NAME]: 'Banana__c',
+              [constants.API_NAME]: apiNameAnno(customObjectName, 'Banana__c'),
             },
           ),
         },
@@ -780,7 +784,7 @@ describe('Salesforce adapter E2E with real account', () => {
       const updateResult = await adapter.update(oldInstance, newInstance, [])
 
       // Test
-      expect(updateResult).toBe(newInstance)
+      expect(updateResult).toStrictEqual(newInstance)
 
       // Checking that the saved instance identical to newInstance
       const savedInstance = (await client.readMetadata(
@@ -832,7 +836,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'address',
             stringType,
             {
-              [constants.API_NAME]: 'Address__c',
+              [constants.API_NAME]: apiNameAnno(customObjectName, 'Address__c'),
               [constants.LABEL]: 'Address',
             },
           ),
@@ -841,7 +845,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'banana',
             stringType,
             {
-              [constants.API_NAME]: 'Banana__c',
+              [constants.API_NAME]: apiNameAnno(customObjectName, 'Banana__c'),
               [constants.LABEL]: 'Banana',
               [constants.BUSINESS_STATUS]: 'Active',
               [constants.SECURITY_CLASSIFICATION]: 'Public',
@@ -870,7 +874,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'address',
             stringType,
             {
-              [constants.API_NAME]: 'Address__c',
+              [constants.API_NAME]: apiNameAnno(customObjectName, 'Address__c'),
               [constants.LABEL]: 'Address',
             },
           ),
@@ -879,7 +883,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'banana',
             stringType,
             {
-              [constants.API_NAME]: 'Banana__c',
+              [constants.API_NAME]: apiNameAnno(customObjectName, 'Banana__c'),
               [constants.LABEL]: 'Banana Split',
               [constants.BUSINESS_STATUS]: 'Hidden',
               [constants.SECURITY_CLASSIFICATION]: 'Restricted',
@@ -1000,7 +1004,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'address',
             stringType,
             {
-              [constants.API_NAME]: 'Address__c',
+              [constants.API_NAME]: apiNameAnno(customObjectName, 'Address__c'),
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 editable: [ADMIN],
                 readable: [ADMIN],
@@ -1012,7 +1016,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'banana',
             stringType,
             {
-              [constants.API_NAME]: 'Banana__c',
+              [constants.API_NAME]: apiNameAnno(customObjectName, 'Banana__c'),
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 editable: [STANDARD],
                 readable: [STANDARD],
@@ -1024,7 +1028,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'delta',
             stringType,
             {
-              [constants.API_NAME]: 'Delta__c',
+              [constants.API_NAME]: apiNameAnno(customObjectName, 'Delta__c'),
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 editable: [ADMIN],
                 readable: [ADMIN, STANDARD],
@@ -1056,7 +1060,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'address',
             stringType,
             {
-              [constants.API_NAME]: 'Address__c',
+              [constants.API_NAME]: apiNameAnno(customObjectName, 'Address__c'),
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 editable: [STANDARD],
                 readable: [STANDARD],
@@ -1068,7 +1072,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'banana',
             stringType,
             {
-              [constants.API_NAME]: 'Banana__c',
+              [constants.API_NAME]: apiNameAnno(customObjectName, 'Banana__c'),
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 editable: [ADMIN, STANDARD],
                 readable: [ADMIN, STANDARD],
@@ -1080,7 +1084,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'delta',
             stringType,
             {
-              [constants.API_NAME]: 'Delta__c',
+              [constants.API_NAME]: apiNameAnno(customObjectName, 'Delta__c'),
               [FIELD_LEVEL_SECURITY_ANNOTATION]: {
                 readable: [STANDARD],
               },
@@ -1406,7 +1410,9 @@ describe('Salesforce adapter E2E with real account', () => {
       }
 
       const normalizeReferences = (obj: ObjectType): void => {
-        Object.values(obj.fields).forEach(field => {
+        const relFields = Object.values(obj.fields)
+          .filter(f => f.annotations[FIELD_LEVEL_SECURITY_ANNOTATION])
+        relFields.forEach(field => {
           Object.entries(field.annotations[FIELD_LEVEL_SECURITY_ANNOTATION]).forEach(keyValue => {
             // Change all reference expressions to the name without the full_name at the end.
             const fullNames = (keyValue[1] as ReferenceExpression[]).map(ref =>
@@ -1428,11 +1434,9 @@ describe('Salesforce adapter E2E with real account', () => {
             data: { before: caseObj.fields[fieldName] } }])
         return caseAfterFieldRemoval
       }
-
       if (await objectExists(constants.CUSTOM_OBJECT, 'Case', [rollupSummaryFieldApiName])) {
         origCase = await removeRollupSummaryFieldFromCase(origCase, rollupSummaryFieldApiName)
       }
-
       if (await objectExists(constants.CUSTOM_OBJECT, customObjectName)) {
         await adapter.remove(element)
       }
@@ -1604,7 +1608,7 @@ describe('Salesforce adapter E2E with real account', () => {
             {
               [CORE_ANNOTATIONS.REQUIRED]: false,
               [constants.LABEL]: 'Rollup Summary description label',
-              [constants.API_NAME]: rollupSummaryFieldApiName,
+              [constants.API_NAME]: apiNameAnno('Case', rollupSummaryFieldApiName),
               [constants.FIELD_ANNOTATIONS.SUMMARIZED_FIELD]: `${customObjectName}.${currencyFieldApiName}`,
               [constants.FIELD_ANNOTATIONS.SUMMARY_FOREIGN_KEY]: `${customObjectName}.${masterDetailApiName}`,
               [constants.FIELD_ANNOTATIONS.SUMMARY_OPERATION]: 'max',
@@ -1654,6 +1658,10 @@ describe('Salesforce adapter E2E with real account', () => {
       const randomString = String(Date.now()).substring(6)
       const lookupFieldName = `lookup${randomString}`
       const lookupFieldApiName = `${_.camelCase(lookupFieldName)}__c`
+      const lookupFieldApiFullName = [
+        customObjectName,
+        lookupFieldApiName,
+      ].join(constants.API_NAME_SEPERATOR)
       const oldElement = new ObjectType({
         elemID: mockElemID,
         fields: {},
@@ -1670,7 +1678,7 @@ describe('Salesforce adapter E2E with real account', () => {
         lookupFieldName,
         Types.primitiveDataTypes.lookup,
         {
-          [constants.API_NAME]: lookupFieldApiName,
+          [constants.API_NAME]: lookupFieldApiFullName,
           [constants.FIELD_ANNOTATIONS.REFERENCE_TO]: ['Case'],
           [FIELD_LEVEL_SECURITY_ANNOTATION]: {
             editable: [ADMIN],
@@ -1702,7 +1710,7 @@ describe('Salesforce adapter E2E with real account', () => {
         lookupFieldName,
         Types.primitiveDataTypes.lookup,
         {
-          [constants.API_NAME]: lookupFieldApiName,
+          [constants.API_NAME]: lookupFieldApiFullName,
           [constants.FIELD_ANNOTATIONS.REFERENCE_TO]: ['Case'],
           [constants.FIELD_ANNOTATIONS.LOOKUP_FILTER]: {
             [constants.LOOKUP_FILTER_FIELDS.ACTIVE]: true,

@@ -24,10 +24,10 @@ describe('Field Permissions filter', () => {
     fields: {
       description:
         new Field(mockElemID, 'description', stringType,
-          { [constants.API_NAME]: 'Description__c' }),
+          { [constants.API_NAME]: 'Test__c.Description__c' }),
       noStandard:
           new Field(mockElemID, 'noStandard', stringType,
-            { [constants.API_NAME]: 'No_standard__c' }),
+            { [constants.API_NAME]: 'Test__c.No_standard__c' }),
     },
     annotations: {
       label: 'test label',
@@ -40,7 +40,7 @@ describe('Field Permissions filter', () => {
     fields: {
       plus:
         new Field(mockElemID, 'plus', stringType,
-          { [constants.API_NAME]: 'Plus__c' }),
+          { [constants.API_NAME]: 'Test__c.Plus__c' }),
     },
   })
 
@@ -132,13 +132,13 @@ describe('Field Permissions filter', () => {
       description: 'Profile with no field_permissions',
     })
   const address = new Field(mockElemID, 'address', stringType, _.merge({},
-    { ...admin, [constants.API_NAME]: 'Address__c' }))
+    { ...admin, [constants.API_NAME]: 'Test__c.Address__c' }))
   const banana = new Field(mockElemID, 'banana', stringType, _.merge({},
-    { ...admin, [constants.API_NAME]: 'Banana__c' }))
+    { ...admin, [constants.API_NAME]: 'Test__c.Banana__c' }))
   const apple = new Field(mockElemID, 'apple', stringType, _.merge({},
-    { ...admin, [constants.API_NAME]: 'Apple__c' }))
+    { ...admin, [constants.API_NAME]: 'Test__c.Apple__c' }))
   const delta = new Field(mockElemID, 'delta', stringType, _.merge({},
-    { ...admin, [constants.API_NAME]: 'Delta__c' }))
+    { ...admin, [constants.API_NAME]: 'Test__c.Delta__c' }))
   addStandard(delta)
 
   let mockUpdate: jest.Mock

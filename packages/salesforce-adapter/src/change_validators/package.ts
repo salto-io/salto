@@ -8,7 +8,7 @@ import { NAMESPACE_SEPARATOR, SALESFORCE_CUSTOM_SUFFIX } from '../constants'
 
 
 export const hasNamespace = (customElement: Element): boolean => {
-  const apiNameResult = apiName(customElement)
+  const apiNameResult = apiName(customElement, true)
   if (_.isUndefined(apiNameResult)) {
     return false
   }
@@ -19,7 +19,7 @@ export const hasNamespace = (customElement: Element): boolean => {
 }
 
 export const getNamespace = (customElement: Element): string =>
-  apiName(customElement).split(NAMESPACE_SEPARATOR)[0]
+  apiName(customElement, true).split(NAMESPACE_SEPARATOR)[0]
 
 export const PACKAGE_VERSION_NUMBER_FIELD_NAME = 'version_number'
 export const INSTALLED_PACKAGE_METADATA = 'InstalledPackage'
@@ -90,7 +90,6 @@ export const changeValidator = {
       const changeElement = getChangeElement(change)
       return isField(changeElement)
         && (isAdditionDiff(change) || isRemovalDiff(change))
-        && !_.isUndefined(apiName(changeElement))
         && hasNamespace(changeElement)
     }
 

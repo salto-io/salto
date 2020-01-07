@@ -119,7 +119,7 @@ describe('Adapter E2E import-export related operations with real account', () =>
       await adapter.importInstancesOfType(leadType, iter())
 
       // Test
-      const queryString = `SELECT Id,${Object.values(leadType.fields).map(apiName)}
+      const queryString = `SELECT Id,${Object.values(leadType.fields).map(f => apiName(f))}
       FROM ${apiName(leadType)} WHERE FirstName='${testFirstName}' AND LastName='${testLastName}'
       AND Company='${testCompany}'`
       const result = await client.runQuery(queryString)
@@ -142,7 +142,7 @@ describe('Adapter E2E import-export related operations with real account', () =>
         await adapter.importInstancesOfType(leadType, iter())
       }
 
-      const queryString = `SELECT Id,${Object.values(leadType.fields).map(apiName)}
+      const queryString = `SELECT Id,${Object.values(leadType.fields).map(f => apiName(f))}
       FROM ${apiName(leadType)} WHERE FirstName='${testFirstName}' AND LastName='${testLastName}'
       AND Company='${testCompany}'`
       const queryResult = await client.runQuery(queryString)

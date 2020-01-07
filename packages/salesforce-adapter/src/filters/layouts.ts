@@ -69,10 +69,13 @@ const filterCreator: FilterCreator = () => ({
     elements
       .filter(isObjectType)
       .forEach(obj => {
-        const objLayouts = obj2layout[apiName(obj)]
-        if (objLayouts) {
-          obj.annotate({ [LAYOUT_ANNOTATION]: _.sortBy(objLayouts, id).map(layout =>
-            new ReferenceExpression(layout.elemID.createNestedID(INSTANCE_FULL_NAME_FIELD))) })
+        const objName = apiName(obj)
+        if (objName) {
+          const objLayouts = obj2layout[objName]
+          if (objLayouts) {
+            obj.annotate({ [LAYOUT_ANNOTATION]: _.sortBy(objLayouts, id).map(layout =>
+              new ReferenceExpression(layout.elemID.createNestedID(INSTANCE_FULL_NAME_FIELD))) })
+          }
         }
       })
   },

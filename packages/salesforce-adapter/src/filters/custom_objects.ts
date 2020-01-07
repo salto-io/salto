@@ -10,7 +10,7 @@ import { transform } from './convert_types'
 import { API_NAME, CUSTOM_OBJECT, METADATA_TYPE, SALESFORCE,
   INSTANCE_FULL_NAME_FIELD, SALESFORCE_CUSTOM_SUFFIX, LABEL, FIELD_DEPENDENCY_FIELDS,
   FIELD_TYPE_API_NAMES, FIELD_ANNOTATIONS,
-  LOOKUP_FILTER_FIELDS, VALUE_SETTINGS_FIELDS } from '../constants'
+  LOOKUP_FILTER_FIELDS, VALUE_SETTINGS_FIELDS, API_NAME_SEPERATOR } from '../constants'
 import { FilterCreator } from '../filter'
 import { getSObjectFieldElement, Types, isCustomObject, bpCase, apiName } from '../transformers/transformer'
 import { id, addApiName, addMetadataType, addLabel, hasNamespace, getNamespace, boolValue } from './utils'
@@ -102,7 +102,7 @@ const createSObjectTypes = (
   // Set standard fields on element
   filteredFields
     .filter(f => !f.custom)
-    .map(f => getSObjectFieldElement(element.elemID, f, serviceIds))
+    .map(f => getSObjectFieldElement(element, f, serviceIds))
     .forEach(field => {
       element.fields[field.name] = field
     })
@@ -110,7 +110,7 @@ const createSObjectTypes = (
   // Create custom fields (if any)
   const customFields = filteredFields
     .filter(f => f.custom)
-    .map(f => getSObjectFieldElement(element.elemID, f, serviceIds))
+    .map(f => getSObjectFieldElement(element, f, serviceIds))
 
   if (isCustom) {
     // This is custom object, we treat standard fields as if they were custom as well
@@ -150,7 +150,7 @@ const getFieldDependency = (values: Values): Values | undefined => {
   return undefined
 }
 
-const transfromAnnotationsNames = (fields: Values): Values => {
+const transfromAnnotationsNames = (fields: Values, parentApiName: string): Values => {
   const annotations: Values = {}
   Object.entries(fields).forEach(([k, v]) => {
     switch (k) {
@@ -158,7 +158,7 @@ const transfromAnnotationsNames = (fields: Values): Values => {
         annotations[CORE_ANNOTATIONS.REQUIRED] = v
         break
       case INSTANCE_FULL_NAME_FIELD:
-        annotations[API_NAME] = v
+        annotations[API_NAME] = [parentApiName, v].join(API_NAME_SEPERATOR)
         break
       case INSTANCE_DEFAULT_VALUE_FIELD:
         annotations[CORE_ANNOTATIONS.DEFAULT] = v
@@ -199,7 +199,10 @@ const buildAnnotationsObjectType = (fieldType: Type): ObjectType => {
   return annotationTypesObject
 }
 
-const transformFieldAnnotations = (instanceFieldValues: Values): Values => {
+const transformFieldAnnotations = (
+  instanceFieldValues: Values,
+  parentApiName: string
+): Values => {
   // Ignores typeless/unknown typed instances
   if (!_.has(instanceFieldValues, INSTANCE_TYPE_FIELD)) {
     return {}
@@ -219,18 +222,22 @@ const transformFieldAnnotations = (instanceFieldValues: Values): Values => {
     return {}
   }
 
-  const annotations = transfromAnnotationsNames(instanceFieldValues)
+  const annotations = transfromAnnotationsNames(instanceFieldValues, parentApiName)
   const annotationsType = buildAnnotationsObjectType(fieldType)
   convertList(annotationsType, annotations)
 
   return transform(annotations, annotationsType) || {}
 }
 
-const mergeCustomObjectWithInstance = (customObject: ObjectType,
-  fieldNameToFieldAnnotations: Record<string, Values>): void => {
+const mergeCustomObjectWithInstance = (
+  customObject: ObjectType,
+  fieldNameToFieldAnnotations: Record<string, Values>,
+  customObjectName: string
+): void => {
   _(customObject.fields).forEach(field => {
     Object.assign(field.annotations, transformFieldAnnotations(
-      fieldNameToFieldAnnotations[field.annotations[API_NAME]] || {}
+      fieldNameToFieldAnnotations[apiName(field, true)] || {},
+      customObjectName
     ))
   })
 }
@@ -245,7 +252,7 @@ const createObjectTypeFromInstance = (instance: InstanceElement): ObjectType => 
         const fieldFullName = bpCase(field[INSTANCE_FULL_NAME_FIELD])
         return { [fieldFullName]: new Field(objectElemID,
           fieldFullName, getFieldType(field[INSTANCE_TYPE_FIELD]),
-          transformFieldAnnotations(field)) }
+          transformFieldAnnotations(field, objectName)) }
       })),
     annotations: { [API_NAME]: objectName,
       [METADATA_TYPE]: CUSTOM_OBJECT,
@@ -290,7 +297,11 @@ const createCustomObjectTypesFromSObjectsAndInstances = (
         .map(field => [field[INSTANCE_FULL_NAME_FIELD], field])
         .fromPairs()
         .value()
-      objects.forEach(obj => mergeCustomObjectWithInstance(obj, fieldNameToFieldAnnotations))
+      objects.forEach(obj => mergeCustomObjectWithInstance(
+        obj,
+        fieldNameToFieldAnnotations,
+        name
+      ))
     }
     return objects
   }))

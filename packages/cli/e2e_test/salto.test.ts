@@ -4,7 +4,8 @@ import { strings } from '@salto/lowerdash'
 import { testHelpers as salesforceTestHelpers, SalesforceClient } from 'salesforce-adapter'
 import { Plan, file, Workspace, SALTO_HOME_VAR } from 'salto'
 import {
-  API_NAME, CUSTOM_OBJECT, INSTANCE_FULL_NAME_FIELD, SALESFORCE, SALESFORCE_CUSTOM_SUFFIX,
+  API_NAME, CUSTOM_OBJECT, INSTANCE_FULL_NAME_FIELD, SALESFORCE,
+  SALESFORCE_CUSTOM_SUFFIX, API_NAME_SEPERATOR,
 } from 'salesforce-adapter/dist/src/constants'
 import * as formatterImpl from '../src/formatter'
 import * as callbacksImpl from '../src/callbacks'
@@ -17,6 +18,11 @@ import { instanceExists, objectExists } from './helpers/salesforce'
 const { copyFile, rm, mkdirp, exists } = file
 
 let lastPlan: Plan
+
+const apiNameAnno = (
+  obj: string,
+  field: string
+): Record<string, string> => ({ [API_NAME]: [obj, field].join(API_NAME_SEPERATOR) })
 
 describe('commands e2e', () => {
   jest.setTimeout(15 * 60 * 1000)
@@ -127,8 +133,15 @@ describe('commands e2e', () => {
         { description: 'To Be Modified' })).toBe(true)
     })
     it('should update the object in the BP', async () => {
-      verifyObject(workspace, SALESFORCE, newObjectElemName, { [API_NAME]: newObjectApiName },
-        { alpha: { [API_NAME]: 'Alpha__c' }, beta: { [API_NAME]: 'Beta__c' } })
+      verifyObject(
+        workspace,
+        SALESFORCE,
+        newObjectElemName, { [API_NAME]: newObjectApiName },
+        {
+          alpha: apiNameAnno(newObjectApiName, 'Alpha__c'),
+          beta: apiNameAnno(newObjectApiName, 'Beta__c'),
+        }
+      )
     })
     it('should update the instance in the BP', async () => {
       verifyInstance(workspace, SALESFORCE, PROFILE.toLowerCase(), newInstanceElemName,
@@ -172,8 +185,15 @@ describe('commands e2e', () => {
       workspace = await loadValidWorkspace(fetchOutputDir)
     })
     it('should have no change in the object', async () => {
-      verifyObject(workspace, SALESFORCE, newObjectElemName, { [API_NAME]: newObjectApiName },
-        { alpha: { [API_NAME]: 'Alpha__c' }, modified: { [API_NAME]: 'Modified__c' } })
+      verifyObject(
+        workspace,
+        SALESFORCE,
+        newObjectElemName, { [API_NAME]: newObjectApiName },
+        {
+          alpha: apiNameAnno(newObjectApiName, 'Alpha__c'),
+          modified: apiNameAnno(newObjectApiName, 'Modified__c'),
+        }
+      )
     })
     it('should have no change in the instance', async () => {
       verifyInstance(workspace, SALESFORCE, PROFILE.toLowerCase(), newInstanceElemName,

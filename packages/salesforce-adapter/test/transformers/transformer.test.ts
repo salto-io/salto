@@ -132,7 +132,12 @@ describe('transformer', () => {
         salesforceReferenceField = _.cloneDeep(origSalesforceReferenceField)
       })
 
-      const dummyElemID = new ElemID('adapter', 'dummy')
+      const dummyElem = new ObjectType({
+        elemID: new ElemID('adapter', 'dummy'),
+        annotations: {
+          [API_NAME]: 'Dummy',
+        },
+      })
 
       const assertReferenceFieldTransformation = (fieldElement: Field, expectedRelatedTo: string[],
         expectedType: Type, expectedAllowLookupRecordDeletion: boolean | undefined,
@@ -153,19 +158,19 @@ describe('transformer', () => {
 
       it('should fetch lookup relationships with restricted deletion', async () => {
         _.set(salesforceReferenceField, 'restrictedDelete', true)
-        const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField, {})
+        const fieldElement = getSObjectFieldElement(dummyElem, salesforceReferenceField, {})
         assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.lookup, false, undefined)
       })
 
       it('should fetch lookup relationships with allowed related record deletion when restrictedDelete set to false', async () => {
         _.set(salesforceReferenceField, 'restrictedDelete', false)
-        const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField, {})
+        const fieldElement = getSObjectFieldElement(dummyElem, salesforceReferenceField, {})
         assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.lookup, true, undefined)
       })
 
       it('should fetch lookup relationships with allowed related record deletion when restrictedDelete is undefined', async () => {
         _.set(salesforceReferenceField, 'restrictedDelete', undefined)
-        const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField, {})
+        const fieldElement = getSObjectFieldElement(dummyElem, salesforceReferenceField, {})
         assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.lookup, true, undefined)
       })
 
@@ -173,7 +178,7 @@ describe('transformer', () => {
         salesforceReferenceField.cascadeDelete = true
         salesforceReferenceField.updateable = true
         salesforceReferenceField.writeRequiresMasterRead = true
-        const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField, {})
+        const fieldElement = getSObjectFieldElement(dummyElem, salesforceReferenceField, {})
         assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.masterdetail, undefined, undefined)
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL]).toBe(true)
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ]).toBe(true)
@@ -183,7 +188,7 @@ describe('transformer', () => {
         salesforceReferenceField.cascadeDelete = true
         salesforceReferenceField.updateable = false
         delete salesforceReferenceField.writeRequiresMasterRead
-        const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField, {})
+        const fieldElement = getSObjectFieldElement(dummyElem, salesforceReferenceField, {})
         assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.masterdetail, undefined, undefined)
         expect(fieldElement.annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL]).toBe(false)
@@ -192,7 +197,7 @@ describe('transformer', () => {
 
       it('should fetch lookup filters and init its annotation', async () => {
         _.set(salesforceReferenceField, 'filteredLookupInfo', {})
-        const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField, {})
+        const fieldElement = getSObjectFieldElement(dummyElem, salesforceReferenceField, {})
         assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.lookup, true, {})
       })
     })
@@ -247,24 +252,29 @@ describe('transformer', () => {
         salesforceFieldDependencyField = _.cloneDeep(origFieldDependencyField)
       })
 
-      const dummyElemID = new ElemID('adapter', 'dummy')
+      const dummyElem = new ObjectType({
+        elemID: new ElemID('adapter', 'dummy'),
+        annotations: {
+          [API_NAME]: 'Dummy',
+        },
+      })
 
       it('should fetch field dependency and init its annotation for picklist', async () => {
-        const fieldElement = getSObjectFieldElement(dummyElemID, salesforceFieldDependencyField, {})
+        const fieldElement = getSObjectFieldElement(dummyElem, salesforceFieldDependencyField, {})
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY]).toEqual({})
         expect(fieldElement.type).toEqual(Types.primitiveDataTypes.picklist)
       })
 
       it('should fetch field dependency and init its annotation for multi picklist', async () => {
         salesforceFieldDependencyField.type = 'multipicklist'
-        const fieldElement = getSObjectFieldElement(dummyElemID, salesforceFieldDependencyField, {})
+        const fieldElement = getSObjectFieldElement(dummyElem, salesforceFieldDependencyField, {})
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY]).toEqual({})
         expect(fieldElement.type).toEqual(Types.primitiveDataTypes.multipicklist)
       })
 
       it('should not init field dependency annotation when having no field dependency ', async () => {
         salesforceFieldDependencyField.dependentPicklist = false
-        const fieldElement = getSObjectFieldElement(dummyElemID, salesforceFieldDependencyField, {})
+        const fieldElement = getSObjectFieldElement(dummyElem, salesforceFieldDependencyField, {})
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY]).toBeUndefined()
       })
     })
@@ -315,16 +325,21 @@ describe('transformer', () => {
         salesforceRollupSummaryField = _.cloneDeep(origRollupSummaryField)
       })
 
-      const dummyElemID = new ElemID('adapter', 'dummy')
+      const dummyElem = new ObjectType({
+        elemID: new ElemID('adapter', 'dummy'),
+        annotations: {
+          [API_NAME]: 'Dummy',
+        },
+      })
 
       it('should fetch rollup summary field', async () => {
-        const fieldElement = getSObjectFieldElement(dummyElemID, salesforceRollupSummaryField, {})
+        const fieldElement = getSObjectFieldElement(dummyElem, salesforceRollupSummaryField, {})
         expect(fieldElement.type).toEqual(Types.primitiveDataTypes.rollupsummary)
       })
 
       it('should not fetch summary field if it is a calculated formula', async () => {
         salesforceRollupSummaryField.calculatedFormula = 'dummy formula'
-        const fieldElement = getSObjectFieldElement(dummyElemID, salesforceRollupSummaryField, {})
+        const fieldElement = getSObjectFieldElement(dummyElem, salesforceRollupSummaryField, {})
         expect(fieldElement.type).not.toEqual(Types.primitiveDataTypes.rollupsummary)
       })
     })
@@ -416,7 +431,7 @@ describe('transformer', () => {
       it('should transform lookup field with deletion constraint', async () => {
         // eslint-disable-next-line max-len
         objectType.fields[fieldName].annotations[FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION] = false
-        const customLookupField = toCustomField(objectType, objectType.fields[fieldName])
+        const customLookupField = toCustomField(objectType.fields[fieldName])
         assertCustomFieldTransformation(customLookupField,
           FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.LOOKUP], 'FieldName', 'Restrict', relatedTo)
       })
@@ -424,7 +439,7 @@ describe('transformer', () => {
       it('should transform lookup field with no deletion constraint', async () => {
         // eslint-disable-next-line max-len
         objectType.fields[fieldName].annotations[FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION] = true
-        const customLookupField = toCustomField(objectType, objectType.fields[fieldName])
+        const customLookupField = toCustomField(objectType.fields[fieldName])
         assertCustomFieldTransformation(customLookupField,
           FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.LOOKUP], 'FieldName', 'SetNull', relatedTo)
       })
@@ -434,7 +449,7 @@ describe('transformer', () => {
         masterDetailField.type = Types.primitiveDataTypes.masterdetail
         masterDetailField.annotations[FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ] = true
         masterDetailField.annotations[FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL] = true
-        const customMasterDetailField = toCustomField(objectType, masterDetailField)
+        const customMasterDetailField = toCustomField(masterDetailField)
         assertCustomFieldTransformation(customMasterDetailField,
           FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.MASTER_DETAIL], 'FieldName', undefined, relatedTo)
         expect(customMasterDetailField.reparentableMasterDetail).toBe(true)
@@ -490,7 +505,7 @@ describe('transformer', () => {
       })
 
       it('should transform field dependency for picklist field', async () => {
-        const customFieldWithFieldDependency = toCustomField(obj, obj.fields[fieldName])
+        const customFieldWithFieldDependency = toCustomField(obj.fields[fieldName])
         expect(customFieldWithFieldDependency.type)
           .toEqual(FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.PICKLIST])
         expect(customFieldWithFieldDependency?.valueSet?.controllingField)
@@ -506,7 +521,7 @@ describe('transformer', () => {
 
       it('should transform field dependency for multi picklist field', async () => {
         obj.fields[fieldName].type = Types.primitiveDataTypes.multipicklist
-        const customFieldWithFieldDependency = toCustomField(obj, obj.fields[fieldName])
+        const customFieldWithFieldDependency = toCustomField(obj.fields[fieldName])
         expect(customFieldWithFieldDependency.type)
           .toEqual(FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.MULTIPICKLIST])
         expect(customFieldWithFieldDependency?.valueSet?.controllingField)
@@ -522,7 +537,7 @@ describe('transformer', () => {
 
       it('should ignore field dependency when not defined', async () => {
         delete obj.fields[fieldName].annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY]
-        const customFieldWithFieldDependency = toCustomField(obj, obj.fields[fieldName])
+        const customFieldWithFieldDependency = toCustomField(obj.fields[fieldName])
         expect(customFieldWithFieldDependency.type)
           .toEqual(FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.PICKLIST])
         expect(customFieldWithFieldDependency?.valueSet?.controllingField).toBeUndefined()
@@ -563,7 +578,7 @@ describe('transformer', () => {
       })
 
       it('should transform rollup summary field', async () => {
-        const rollupSummaryInfo = toCustomField(obj, obj.fields[fieldName])
+        const rollupSummaryInfo = toCustomField(obj.fields[fieldName])
         expect(rollupSummaryInfo.type)
           .toEqual(FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.ROLLUP_SUMMARY])
         expect(_.get(rollupSummaryInfo, 'summarizedField'))
@@ -585,7 +600,7 @@ describe('transformer', () => {
 
       it('should ignore field dependency when not defined', async () => {
         delete obj.fields[fieldName].annotations[FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS]
-        const rollupSummaryInfo = toCustomField(obj, obj.fields[fieldName])
+        const rollupSummaryInfo = toCustomField(obj.fields[fieldName])
         expect(rollupSummaryInfo.type)
           .toEqual(FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.ROLLUP_SUMMARY])
         expect(_.get(rollupSummaryInfo, 'summarizedField'))

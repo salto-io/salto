@@ -18,9 +18,9 @@ const hasLookupFilter = (field: Field): boolean =>
 const getFieldsWithLookupFilter = (obj: ObjectType): Field[] =>
   Object.values(obj.fields).filter(hasLookupFilter)
 
-const createCustomFieldWithLookupFilter = (obj: ObjectType, fieldWithLookupFilter: Field):
+const createCustomFieldWithLookupFilter = (fieldWithLookupFilter: Field):
   CustomField => {
-  const customField = toCustomField(obj, fieldWithLookupFilter, true)
+  const customField = toCustomField(fieldWithLookupFilter, true)
   _.assign(customField, mapKeysRecursive(_.pickBy(fieldWithLookupFilter.annotations,
     (_val, annotationValue) => (annotationValue === FIELD_ANNOTATIONS.LOOKUP_FILTER)),
   key => sfCase(key, false, false)))
@@ -43,7 +43,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
     }
     const customFieldsWithLookupFilter = getFieldsWithLookupFilter(after)
       .map(fieldWithLookupFilter =>
-        createCustomFieldWithLookupFilter(after, fieldWithLookupFilter))
+        createCustomFieldWithLookupFilter(fieldWithLookupFilter))
     if (customFieldsWithLookupFilter && customFieldsWithLookupFilter.length > 0) {
       return client.update(CUSTOM_FIELD, customFieldsWithLookupFilter)
     }
@@ -70,7 +70,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
 
     if (fieldsToUpdate.length > 0) {
       return client.update(CUSTOM_FIELD, fieldsToUpdate
-        .map(field => createCustomFieldWithLookupFilter(after, field)))
+        .map(field => createCustomFieldWithLookupFilter(field)))
     }
 
     return []

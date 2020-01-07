@@ -115,7 +115,7 @@ const isStandardPickList = (f: Field): boolean => {
   return apiNameResult ? (
     f.type.elemID.isEqual(Types.primitiveDataTypes.picklist.elemID)
     || f.type.elemID.isEqual(Types.primitiveDataTypes.multipicklist.elemID))
-    && !apiName(f).endsWith(SALESFORCE_CUSTOM_SUFFIX) : false
+    && !apiNameResult.endsWith(SALESFORCE_CUSTOM_SUFFIX) : false
 }
 
 const calculatePicklistFieldsToUpdate = (

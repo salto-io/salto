@@ -52,4 +52,5 @@ export interface Property {
   // the field.
   defaultValue: string
   // The default value of the field
+  selectedOptions: string[]
 }

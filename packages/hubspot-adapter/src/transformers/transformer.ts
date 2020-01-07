@@ -93,6 +93,14 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
+        [PROPERTY_FIELDS.SELECTEDOPTIONS]: new TypeField(
+          propertyElemID, PROPERTY_FIELDS.SELECTEDOPTIONS, BuiltinTypes.STRING, {
+            name: PROPERTY_FIELDS.SELECTEDOPTIONS,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+          true,
+        ),
       },
       path: ['hubspot', 'types', 'subtypes', propertyElemID.name],
     })

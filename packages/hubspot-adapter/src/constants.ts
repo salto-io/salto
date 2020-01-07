@@ -55,4 +55,5 @@ export const PROPERTY_FIELDS = {
   HIDDEN: 'hidden',
   ISSMARTFIELD: 'isSmartField',
   DEFAULTVALUE: 'defaultValue',
+  SELECTEDOPTIONS: 'selectedOptions',
 }

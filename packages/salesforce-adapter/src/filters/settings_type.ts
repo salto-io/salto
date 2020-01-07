@@ -55,7 +55,7 @@ const createSettingsInstance = async (
   try {
     metadataInfos = await client.readMetadata(typeName, extractSettingName(typeName))
   } catch (e) {
-    log.error('failed to fetch settings instances of tyoe %s reason: %o', typeName, e)
+    log.error('failed to fetch settings instances of type %s reason: %o', typeName, e)
   }
   return metadataInfos
     .filter(m => m.fullName !== undefined)

@@ -224,13 +224,6 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: true,
           },
         ),
-        [FORM_FIELDS.METHOD]: new TypeField(
-          formElemID, FORM_FIELDS.METHOD, BuiltinTypes.STRING, {
-            name: FORM_FIELDS.METHOD,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
         [FORM_FIELDS.CSSCLASS]: new TypeField(
           formElemID, FORM_FIELDS.CSSCLASS, BuiltinTypes.STRING, {
             name: FORM_FIELDS.CSSCLASS,
@@ -287,6 +280,34 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
           true,
+        ),
+        [FORM_FIELDS.CAPTCHAENABLED]: new TypeField(
+          formElemID, FORM_FIELDS.CAPTCHAENABLED, BuiltinTypes.BOOLEAN, {
+            name: FORM_FIELDS.CAPTCHAENABLED,
+            _readOnly: true,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [FORM_FIELDS.CREATEDAT]: new TypeField( // TODO: format milli -> readable date
+          formElemID, FORM_FIELDS.CREATEDAT, BuiltinTypes.NUMBER, {
+            name: FORM_FIELDS.CREATEDAT,
+            _readOnly: true,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [FORM_FIELDS.CLONEABLE]: new TypeField(
+          formElemID, FORM_FIELDS.CLONEABLE, BuiltinTypes.BOOLEAN, {
+            name: FORM_FIELDS.CLONEABLE,
+            _readOnly: true,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [FORM_FIELDS.EDITABLE]: new TypeField(
+          formElemID, FORM_FIELDS.EDITABLE, BuiltinTypes.BOOLEAN, {
+            name: FORM_FIELDS.EDITABLE,
+            _readOnly: true,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
         ),
       },
       path: [HUBSPOT, 'objects', formElemID.name],
@@ -353,6 +374,10 @@ export class Types {
   }
 }
 
+const createInstanceName = (
+  name: string
+): string => name.split(' ').join('_')
+
 /**
  * This method generate (instance) values by iterating hubspot object fields.
  * Also ensure that only expected fields will shown
@@ -392,10 +417,11 @@ export const createHubspotInstanceElement = (
 ): InstanceElement => {
   const typeName = type.elemID.name
   const values = fromHubspotObject(hubspotMetadata, type)
+  const instanceName = createInstanceName(hubspotMetadata.name)
   return new InstanceElement(
-    new ElemID(HUBSPOT, hubspotMetadata.name).name,
+    new ElemID(HUBSPOT, instanceName).name,
     type,
     values,
-    [HUBSPOT, 'records', typeName, hubspotMetadata.name],
+    [HUBSPOT, 'records', typeName, instanceName],
   )
 }

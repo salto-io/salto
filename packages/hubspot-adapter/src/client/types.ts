@@ -5,7 +5,6 @@ export interface HubspotMetadata {
 
 export interface Form extends HubspotMetadata {
   guid: string
-  method: string
   cssClass: string
   redirect: string
   submitText: string

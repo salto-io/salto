@@ -43,7 +43,6 @@ describe('Hubspot Adapter Operations', () => {
           {
             guid: '11111',
             name: 'formTest1',
-            method: 'POST',
             cssClass: 'abc',
             editable: true,
             cloneable: true,

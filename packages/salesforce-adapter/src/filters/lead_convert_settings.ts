@@ -1,13 +1,15 @@
 import _ from 'lodash'
 import {
-  Element, isObjectType, ElemID, findInstances, findObjectType, Change,
+  Element, isObjectType, ElemID, findInstances, findObjectType,
+  Change, transform,
 } from 'adapter-api'
 import { SaveResult } from 'jsforce-types'
 import { collections } from '@salto/lowerdash'
 import { FilterCreator } from '../filter'
-import { toMetadataInfo, metadataType } from '../transformers/transformer'
+import {
+  toMetadataInfo, metadataType, transformPrimitive,
+} from '../transformers/transformer'
 import { INSTANCE_FULL_NAME_FIELD, SALESFORCE } from '../constants'
-import { transform } from './convert_types'
 
 const { makeArray } = collections.array
 
@@ -61,7 +63,12 @@ const filterCreator: FilterCreator = ({ client }) => ({
           )
         })
 
-        lead.annotate({ [CONVERT_SETTINGS_ANNOTATION]: transform(value, convertType, false) || {} })
+        lead.annotate({ [CONVERT_SETTINGS_ANNOTATION]: transform(
+          value,
+          convertType,
+          transformPrimitive,
+          false
+        ) || {} })
 
         const index = elements.findIndex(e => e.elemID.isEqual(convertInstance.elemID))
         elements.splice(index, 1)

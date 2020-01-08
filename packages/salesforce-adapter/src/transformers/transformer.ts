@@ -5,7 +5,8 @@ import {
 import {
   Type, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values, Value, Field as TypeField,
   BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter,
-  ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, CORE_ANNOTATIONS,
+  ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER,
+  CORE_ANNOTATIONS, PrimitiveValue,
 } from 'adapter-api'
 import { collections } from '@salto/lowerdash'
 import { CustomObject, CustomField, ValueSettings, FilterItem } from '../client/types'
@@ -778,14 +779,41 @@ export const getValueTypeFieldElement = (parentID: ElemID, field: ValueTypeField
   return new TypeField(parentID, bpFieldName, bpFieldType, annotations)
 }
 
-export type PrimitiveValue = string | boolean | number
 type ConvertXsdTypeFunc = (v: string) => PrimitiveValue
-export const convertXsdTypeFuncMap: Record<string, ConvertXsdTypeFunc> = {
+const convertXsdTypeFuncMap: Record<string, ConvertXsdTypeFunc> = {
   'xsd:string': String,
   'xsd:boolean': v => v === 'true',
   'xsd:double': Number,
   'xsd:int': Number,
   'xsd:long': Number,
+}
+
+export const transformPrimitive = (val: PrimitiveValue, primitive: PrimitiveTypes):
+  PrimitiveValue | undefined => {
+  // Salesforce returns nulls as objects like { $: { 'xsi:nil': 'true' } }
+  // our key name transform replaces '$' with '' and ':' with '_'
+  if (_.isObject(val) && _.get(val, ['', 'xsi_nil']) === 'true') {
+    // We transform null to undefined as currently we don't support null in Salto language
+    // and the undefined values are omitted later in the code
+    return undefined
+  }
+  // (Salto-394) Salesforce returns objects like:
+  // { "_": "fieldValue", "$": { "xsi:type": "xsd:string" } }
+  // our key name transform replaces '$' with '' and ':' with '_'
+  if (_.isObject(val) && Object.keys(val).includes('_')) {
+    const convertFunc = convertXsdTypeFuncMap[_.get(val, ['', 'xsi_type'])] || (v => v)
+    return transformPrimitive(convertFunc(_.get(val, '_')), primitive)
+  }
+  switch (primitive) {
+    case PrimitiveTypes.NUMBER:
+      return Number(val)
+    case PrimitiveTypes.BOOLEAN:
+      return val.toString().toLowerCase() === 'true'
+    case PrimitiveTypes.STRING:
+      return val.toString().length === 0 ? undefined : val.toString()
+    default:
+      return val
+  }
 }
 
 const isDefaultWithType = (val: PrimitiveValue | DefaultValueWithType):

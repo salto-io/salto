@@ -34,7 +34,6 @@ describe('local state', () => {
 
     it('should set state successfully, retrieve it and get the same result', async () => {
       await state.set([mockElement])
-      // Test
       const retrievedState = await state.getAll()
       expect(retrievedState.length).toBe(1)
       const retrievedStateObjectType = retrievedState[0] as ObjectType

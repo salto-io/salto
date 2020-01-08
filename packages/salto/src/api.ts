@@ -98,7 +98,14 @@ export const deploy = async (
         ? workspace.state.remove(element.elemID)
         : workspace.state.set(element)
           .then(() => { changedElements.push(element) }))
-    const errors = await deployActions(actionPlan, adapters, reportProgress, postDeploy)
+    let errors: DeployError[]
+    try {
+      errors = await deployActions(actionPlan, adapters, reportProgress, postDeploy)
+    } finally {
+      if (workspace.state.flush) {
+        await workspace.state.flush()
+      }
+    }
 
     const changedElementsIds = changedElements.map(e => e.elemID.getFullName())
     const changes = wu(await getDetailedChanges(workspace.elements
@@ -135,6 +142,9 @@ export const fetch: fetchFunc = async (
   const overrideState = async (elements: Element[]): Promise<void> => {
     await workspace.state.remove(await workspace.state.list())
     await workspace.state.set(elements)
+    if (workspace.state.flush) {
+      await workspace.state.flush()
+    }
     log.debug(`finish to override state with ${elements.length} elements`)
   }
   log.debug('fetch starting..')

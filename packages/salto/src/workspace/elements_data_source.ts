@@ -7,4 +7,5 @@ export interface ElementsDataSource {
   // TODO: updates should be implemented using changes
   set(element: Element | Element[]): Promise<void>
   remove(id: ElemID | ElemID[]): Promise<void>
+  flush?(): Promise<void>
 }

@@ -46,7 +46,6 @@ describe('Data migration operations E2E', () => {
   describe('When running fetch beforehand', () => {
     beforeAll(async () => {
       await rm(exportOutputDir)
-      await rm(exportOutputDir)
       await rm(fetchOutputDir)
       await mkdirp(`${fetchOutputDir}/salto.config`)
       await copyFile(configFile, `${fetchOutputDir}/salto.config/config.bp`)

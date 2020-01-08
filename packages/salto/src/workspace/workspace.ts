@@ -16,6 +16,7 @@ import { ParseResultFSCache } from './cache'
 import { getChangeLocations, updateBlueprintData, getChangesToUpdate, BP_EXTENSION } from './blueprint_update'
 import { Config, dumpConfig, locateWorkspaceRoot, getConfigPath, completeConfig, saltoConfigType } from './config'
 import LocalState from './local/state'
+import { ElementsDataSource } from './elements_data_source'
 
 const log = logger(module)
 
@@ -300,7 +301,7 @@ export class Workspace {
     public config: Config,
     blueprints: ReadonlyArray<ParsedBlueprint>,
     readonly useCache: boolean = true,
-    readonly state = new LocalState(config.stateLocation)
+    readonly state: ElementsDataSource = new LocalState(config.stateLocation)
   ) {
     this.workspaceState = createWorkspaceState(blueprints)
     this.dirtyBlueprints = new Set<string>()
@@ -498,7 +499,9 @@ export class Workspace {
       && bp.filename === path.join(CREDS_DIR, `${bp.elements[0].elemID.adapter}${BP_EXTENSION}`)
     )
 
-    await this.state.flush()
+    if (this.state.flush) {
+      await this.state.flush()
+    }
     const cache = new ParseResultFSCache(this.config.localStorage, this.config.baseDir)
     await Promise.all(wu(this.dirtyBlueprints).map(async filename => {
       const bp = this.parsedBlueprints[filename]

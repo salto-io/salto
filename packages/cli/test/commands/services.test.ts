@@ -182,7 +182,7 @@ describe('services command', () => {
 
       describe('when called with configured but not logged in service', () => {
         beforeEach(async () => {
-          await command('', 'login', cliOutput, mockGetConfigFromUser, 'newAdapter').execute()
+          await command('', 'login', cliOutput, mockGetConfigFromUser, 'salesforce').execute()
         })
 
         it('should get config from user', () => {
@@ -193,7 +193,7 @@ describe('services command', () => {
           expect(updateLoginConfig).toHaveBeenCalled()
         })
 
-        it('shoudl print it logged in', async () => {
+        it('should print it logged in', async () => {
           expect(cliOutput.stdout.content).toContain('Login information succesfully updated')
         })
       })

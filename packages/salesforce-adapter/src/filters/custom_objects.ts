@@ -1,18 +1,29 @@
 import { logger } from '@salto/logging'
 import { collections } from '@salto/lowerdash'
-import { ADAPTER, Element, Field, ObjectType, ServiceIds, Type, isObjectType, InstanceElement,
+import {
+  ADAPTER, Element, Field, ObjectType, ServiceIds, Type, isObjectType, InstanceElement,
   Values, isInstanceElement, ElemID, BuiltinTypes,
-  CORE_ANNOTATIONS, BuiltinAnnotationTypes } from 'adapter-api'
+  CORE_ANNOTATIONS, BuiltinAnnotationTypes,
+  transform,
+} from 'adapter-api'
 import { SalesforceClient } from 'index'
 import { DescribeSObjectResult, Field as SObjField } from 'jsforce'
 import _ from 'lodash'
-import { transform } from './convert_types'
-import { API_NAME, CUSTOM_OBJECT, METADATA_TYPE, SALESFORCE,
+import {
+  API_NAME, CUSTOM_OBJECT, METADATA_TYPE, SALESFORCE,
   INSTANCE_FULL_NAME_FIELD, SALESFORCE_CUSTOM_SUFFIX, LABEL, FIELD_DEPENDENCY_FIELDS,
   FIELD_TYPE_API_NAMES, FIELD_ANNOTATIONS,
-  LOOKUP_FILTER_FIELDS, VALUE_SETTINGS_FIELDS, API_NAME_SEPERATOR } from '../constants'
+  LOOKUP_FILTER_FIELDS, VALUE_SETTINGS_FIELDS, API_NAME_SEPERATOR,
+} from '../constants'
 import { FilterCreator } from '../filter'
-import { getSObjectFieldElement, Types, isCustomObject, bpCase, apiName } from '../transformers/transformer'
+import {
+  getSObjectFieldElement,
+  Types,
+  isCustomObject,
+  bpCase,
+  apiName,
+  transformPrimitive,
+} from '../transformers/transformer'
 import { id, addApiName, addMetadataType, addLabel, hasNamespace, getNamespace, boolValue } from './utils'
 import { convertList } from './convert_lists'
 
@@ -196,11 +207,10 @@ const transfromAnnotationsNames = (fields: Values, parentApiName: string): Value
 
 const buildAnnotationsObjectType = (fieldType: Type): ObjectType => {
   const annotationTypesElemID = new ElemID(SALESFORCE, 'annotation_type')
-  const annotationTypesObject = new ObjectType({ elemID: annotationTypesElemID,
+  return new ObjectType({ elemID: annotationTypesElemID,
     fields: Object.assign({}, ...Object.entries(fieldType.annotationTypes)
       .concat(Object.entries(BuiltinAnnotationTypes))
       .map(([k, v]) => ({ [k]: new Field(annotationTypesElemID, k, v) }))) })
-  return annotationTypesObject
 }
 
 const transformFieldAnnotations = (
@@ -230,7 +240,7 @@ const transformFieldAnnotations = (
   const annotationsType = buildAnnotationsObjectType(fieldType)
   convertList(annotationsType, annotations)
 
-  return transform(annotations, annotationsType) || {}
+  return transform(annotations, annotationsType, transformPrimitive) || {}
 }
 
 const mergeCustomObjectWithInstance = (

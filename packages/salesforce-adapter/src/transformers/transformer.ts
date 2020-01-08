@@ -20,7 +20,7 @@ import {
   VALUE_SETTINGS_FIELDS, FILTER_ITEM_FIELDS, OBJECT_LEVEL_SECURITY_ANNOTATION,
   OBJECT_LEVEL_SECURITY_FIELDS, NAMESPACE_SEPARATOR, DESCRIPTION, HELP_TEXT, BUSINESS_STATUS,
   SECURITY_CLASSIFICATION, BUSINESS_OWNER_GROUP, BUSINESS_OWNER_USER, COMPLIANCE_GROUP,
-  VALUE_SET_DEFINITION_VALUE_FIELDS, API_NAME_SEPERATOR, MAX_METADATA_RESTRICTION_VALUES,
+  VALUE_SET_DEFINITION_VALUE_FIELDS, API_NAME_SEPERATOR,
 } from '../constants'
 import SalesforceClient from '../client/client'
 
@@ -816,21 +816,7 @@ export const getValueTypeFieldElement = (parentID: ElemID, field: ValueTypeField
   const annotations: Values = { [CORE_ANNOTATIONS.REQUIRED]: false }
 
   if (field.picklistValues && field.picklistValues.length > 0) {
-    // picklist values in metadata types are used to restrict a field to a list of allowed values
-    // because some fields can allow all fields names / all object names this restriction list
-    // might be very large and cause memory problems on parsing, so we choose to omit the
-    // restriction where there are too many possible values
-    if (field.picklistValues.length < MAX_METADATA_RESTRICTION_VALUES) {
-      annotations[CORE_ANNOTATIONS.VALUES] = _.sortedUniq(field
-        .picklistValues.map(val => val.value).sort())
-      annotations[CORE_ANNOTATIONS.RESTRICTION] = { [CORE_ANNOTATIONS.ENFORCE_VALUE]: false }
-    }
-    const defaults = field.picklistValues
-      .filter(val => val.defaultValue)
-      .map(val => val.value)
-    if (defaults.length === 1) {
-      annotations[CORE_ANNOTATIONS.DEFAULT] = defaults.pop()
-    }
+    addPicklistAnnotations(field.picklistValues, false, annotations)
   }
   return new TypeField(parentID, bpFieldName, bpFieldType, annotations)
 }

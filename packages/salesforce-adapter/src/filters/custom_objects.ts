@@ -25,6 +25,7 @@ export const INSTANCE_REQUIRED_FIELD = 'required'
 export const INSTANCE_TYPE_FIELD = 'type'
 
 export const VALUE_SET_FIELDS = {
+  RESTRICTED: 'restricted',
   VALUE_SET_DEFINITION: 'value_set_definition',
 }
 
@@ -164,6 +165,9 @@ const transfromAnnotationsNames = (fields: Values, parentApiName: string): Value
         annotations[CORE_ANNOTATIONS.DEFAULT] = v
         break
       case INSTANCE_VALUE_SET_FIELD:
+        annotations[CORE_ANNOTATIONS.RESTRICTION] = {
+          [CORE_ANNOTATIONS.ENFORCE_VALUE]: v[VALUE_SET_FIELDS.RESTRICTED] || false,
+        }
         annotations[CORE_ANNOTATIONS.VALUES] = v[VALUE_SET_FIELDS
           .VALUE_SET_DEFINITION][VALUE_SET_DEFINITION_FIELDS.VALUE]
           .map((value: Values) => value[VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME])

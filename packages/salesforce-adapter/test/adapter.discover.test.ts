@@ -431,7 +431,7 @@ describe('SalesforceAdapter fetch', () => {
       expect(connection.metadata.read).toHaveBeenCalledWith('QuoteSettings', ['Quote'])
     })
 
-    it('should fetch child metadata type', async () => {
+    it('should not fetch child metadata type', async () => {
       mockSingleMetadataType('Child', [
         {
           name: 'Description',
@@ -439,13 +439,12 @@ describe('SalesforceAdapter fetch', () => {
           valueRequired: true,
         },
       ], true)
-      const result = await adapter.fetch()
+      await adapter.fetch()
 
       const describeMock = connection.metadata.describeValueType as jest.Mock<unknown>
       expect(describeMock).toHaveBeenCalled()
-      expect(describeMock.mock.calls[1][0]).toBe('{http://soap.sforce.com/2006/04/metadata}Child')
-      const child = findElements(result, 'child').pop() as ObjectType
-      expect(child.fields.description.type.elemID.name).toBe('string')
+      expect(describeMock.mock.calls.length).toBe(1)
+      expect(describeMock.mock.calls[0][0]).toBe('{http://soap.sforce.com/2006/04/metadata}Base')
     })
 
     it('should fetch metadata instances using retrieve', async () => {

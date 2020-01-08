@@ -1,18 +1,24 @@
 import _ from 'lodash'
-import { ElemID, ObjectType, ServiceIds, BuiltinTypes, Element,
-  InstanceElement, isObjectType, CORE_ANNOTATIONS, Value } from 'adapter-api'
+import {
+  ElemID, ObjectType, ServiceIds, BuiltinTypes, Element,
+  InstanceElement, isObjectType, CORE_ANNOTATIONS, Value, FieldMap, Field,
+} from 'adapter-api'
 import SalesforceClient from '../../src/client/client'
 import Connection from '../../src/client/jsforce'
-import { FIELD_ANNOTATIONS, FILTER_ITEM_FIELDS, SALESFORCE, METADATA_TYPE,
+import {
+  FIELD_ANNOTATIONS, FILTER_ITEM_FIELDS, SALESFORCE, METADATA_TYPE,
   CUSTOM_OBJECT, INSTANCE_FULL_NAME_FIELD, LABEL, NAMESPACE_SEPARATOR,
   SALESFORCE_CUSTOM_SUFFIX, API_NAME, FORMULA, LOOKUP_FILTER_FIELDS,
-  FIELD_DEPENDENCY_FIELDS, VALUE_SETTINGS_FIELDS } from '../../src/constants'
+  FIELD_DEPENDENCY_FIELDS, VALUE_SETTINGS_FIELDS, DESCRIPTION,
+} from '../../src/constants'
 import mockAdapter from '../adapter'
 import { findElements } from '../utils'
-import filterCreator, { INSTANCE_REQUIRED_FIELD, INSTANCE_TYPE_FIELD,
+import filterCreator, {
+  INSTANCE_REQUIRED_FIELD, INSTANCE_TYPE_FIELD,
   INSTANCE_DEFAULT_VALUE_FIELD, INSTANCE_VALUE_SET_FIELD,
   VALUE_SET_FIELDS, VALUE_SET_DEFINITION_FIELDS,
-  VALUE_SET_DEFINITION_VALUE_FIELDS } from '../../src/filters/custom_objects'
+  VALUE_SET_DEFINITION_VALUE_FIELDS, customObjectAnnotationTypeIds,
+} from '../../src/filters/custom_objects'
 import { FilterWith } from '../../src/filter'
 
 describe('Custom Objects filter', () => {
@@ -22,15 +28,62 @@ describe('Custom Objects filter', () => {
   const mockGetElemIdFunc = (adapterName: string, _serviceIds: ServiceIds, name: string):
     ElemID => new ElemID(adapterName, name)
 
-  type FilterType = FilterWith<'onFetch'>
+  type FilterType = FilterWith<'onFetch' | 'onAdd' | 'onUpdate'>
   const filter = (): FilterType => filterCreator({ client }) as FilterType
+  let result: Element[]
 
+  const generateFetchedAnnotationTypes = (): ObjectType[] => {
+    const generateAnnotationTypeFields = (elemID: ElemID): FieldMap => {
+      if (elemID.name === 'list_view') {
+        const listViewFilterElemId = new ElemID(SALESFORCE, 'list_view_filter')
+        return {
+          [INSTANCE_FULL_NAME_FIELD]: new Field(elemID, INSTANCE_FULL_NAME_FIELD,
+            BuiltinTypes.STRING),
+          columns: new Field(elemID, 'columns', BuiltinTypes.STRING),
+          filters: new Field(elemID, 'filters', new ObjectType({
+            elemID: listViewFilterElemId,
+            fields: {
+              field: new Field(listViewFilterElemId, 'field', BuiltinTypes.STRING),
+              value: new Field(listViewFilterElemId, 'value', BuiltinTypes.STRING),
+            },
+          })),
+        }
+      }
+      if (elemID.name === 'field_set') {
+        return {
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          available_fields: new Field(elemID, 'available_fields', BuiltinTypes.STRING),
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          displayed_fields: new Field(elemID, 'displayed_fields', BuiltinTypes.STRING),
+          [INSTANCE_FULL_NAME_FIELD]: new Field(elemID, INSTANCE_FULL_NAME_FIELD,
+            BuiltinTypes.STRING),
+
+        }
+      }
+      if (elemID.name === 'compact_layout') {
+        return {
+          fields: new Field(elemID, 'fields', BuiltinTypes.STRING),
+          [INSTANCE_FULL_NAME_FIELD]: new Field(elemID, INSTANCE_FULL_NAME_FIELD,
+            BuiltinTypes.STRING),
+
+        }
+      }
+      return {}
+    }
+
+    const annotationTypesFromInstance = Object.values(customObjectAnnotationTypeIds)
+      .map(elemID => new ObjectType({ elemID, fields: generateAnnotationTypeFields(elemID) }))
+    return annotationTypesFromInstance
+  }
+
+  const annotationTypesFromInstance = generateFetchedAnnotationTypes()
   beforeEach(() => {
     ({ connection, client } = mockAdapter({
       adapterParams: {
         getElemIdFunc: mockGetElemIdFunc,
       },
     }))
+    result = _.cloneDeep(annotationTypesFromInstance)
   })
 
   afterEach(() => {
@@ -112,7 +165,6 @@ describe('Custom Objects filter', () => {
           calculatedFormula: 'my formula',
         },
       ])
-      const result: Element[] = []
       await filter().onFetch(result)
 
       const lead = findElements(result, 'lead').pop() as ObjectType
@@ -148,7 +200,6 @@ describe('Custom Objects filter', () => {
           restrictedPicklist: true,
         },
       ])
-      const result: Element[] = []
       await filter().onFetch(result)
 
       const lead = findElements(result, 'lead').pop() as ObjectType
@@ -172,7 +223,6 @@ describe('Custom Objects filter', () => {
           ],
         },
       ])
-      const result: Element[] = []
       await filter().onFetch(result)
 
       const lead = findElements(result, 'lead').pop() as ObjectType
@@ -192,7 +242,6 @@ describe('Custom Objects filter', () => {
           nillable: true,
         },
       ])
-      const result: Element[] = []
       await filter().onFetch(result)
 
       const lead = findElements(result, 'lead').pop() as ObjectType
@@ -201,7 +250,6 @@ describe('Custom Objects filter', () => {
 
     it('should fetch sobject with api_name and metadata_type service ids', async () => {
       mockSingleSObject('Lead', [])
-      const result: Element[] = []
       await filter().onFetch(result)
 
       const lead = result.filter(o => o.elemID.name === 'lead').pop() as ObjectType
@@ -213,7 +261,6 @@ describe('Custom Objects filter', () => {
 
     it('should fetch sobject with label', async () => {
       mockSingleSObject('Lead', [], false, true, false, 'Lead Label')
-      const result: Element[] = []
       await filter().onFetch(result)
 
       const lead = result.filter(o => o.elemID.name === 'lead').pop() as ObjectType
@@ -236,7 +283,6 @@ describe('Custom Objects filter', () => {
         },
       ])
 
-      const result: Element[] = []
       const newFilter = (): FilterType => filterCreator({ client }) as FilterType
       await newFilter().onFetch(result)
 
@@ -298,7 +344,6 @@ describe('Custom Objects filter', () => {
           ],
         },
       ])
-      const result: Element[] = []
       await filter().onFetch(result)
 
       const lead = findElements(result, 'lead').pop() as ObjectType
@@ -324,7 +369,6 @@ describe('Custom Objects filter', () => {
         },
       ])
 
-      const result: Element[] = []
       await filter().onFetch(result)
 
       const testElements = findElements(result, 'test') as ObjectType[]
@@ -348,7 +392,6 @@ describe('Custom Objects filter', () => {
         },
       ], false, false)
 
-      const result: Element[] = []
       await filter().onFetch(result)
 
       const testElements = findElements(result, 'test') as ObjectType[]
@@ -365,7 +408,6 @@ describe('Custom Objects filter', () => {
         },
       ], false, true, true)
 
-      const result: Element[] = []
       await filter().onFetch(result)
 
       const testElements = findElements(result, 'test__c') as ObjectType[]
@@ -390,7 +432,6 @@ describe('Custom Objects filter', () => {
         },
       ], false, true, true)
 
-      const result: Element[] = []
       await filter().onFetch(result)
 
       const testElements = findElements(result, 'namespace_name___test__c') as ObjectType[]
@@ -415,7 +456,6 @@ describe('Custom Objects filter', () => {
         },
       ], false, true, false)
 
-      const result: Element[] = []
       await filter().onFetch(result)
 
       const testElements = findElements(result, 'test__c') as ObjectType[]
@@ -445,7 +485,6 @@ describe('Custom Objects filter', () => {
         },
       ], false, true, false)
 
-      const result: Element[] = []
       await filter().onFetch(result)
 
       const testElements = findElements(result, 'test__c') as ObjectType[]
@@ -482,7 +521,7 @@ describe('Custom Objects filter', () => {
         annotations: { [METADATA_TYPE]: 'Flow' },
         annotationTypes: { [METADATA_TYPE]: BuiltinTypes.SERVICE_ID },
         path: [SALESFORCE, 'types', 'flow'] })
-      const result: Element[] = [flowMetadataType]
+      result.push(flowMetadataType)
 
       await filter().onFetch(result)
 
@@ -618,7 +657,7 @@ describe('Custom Objects filter', () => {
           picklistValues: [],
         },
         ], false, true, false, 'Picklist Label')
-        const result: Element[] = [testInstanceElement]
+        result.push(testInstanceElement)
         await filter().onFetch(result)
 
         const lead = result.filter(o => o.elemID.name === 'lead').pop()
@@ -713,7 +752,7 @@ describe('Custom Objects filter', () => {
       })
 
       it('should change instance element to object type if we do not get it from the soap api', async () => {
-        const result: Element[] = [testInstanceElement]
+        result.push(testInstanceElement)
         await filter().onFetch(result)
 
         const lead = result.filter(o => o.elemID.name === 'lead').pop()
@@ -722,6 +761,262 @@ describe('Custom Objects filter', () => {
         const leadObjectType = lead as ObjectType
         expect(leadObjectType.fields.my_auto_number
           .annotations[FIELD_ANNOTATIONS.DISPLAY_FORMAT]).toBe('A-{0000}')
+      })
+
+      describe('merge annotation types from custom object instance', () => {
+        let customObjectInstance: InstanceElement
+        beforeEach(() => {
+          customObjectInstance = new InstanceElement('lead',
+            new ObjectType({ elemID: mockGetElemIdFunc(SALESFORCE, {}, CUSTOM_OBJECT) }), {
+              [INSTANCE_FULL_NAME_FIELD]: 'Lead',
+              // eslint-disable-next-line @typescript-eslint/camelcase
+              list_views: {
+                [INSTANCE_FULL_NAME_FIELD]: 'PartialFullName',
+                columns: 'ListViewName',
+              },
+            })
+        })
+
+        it('should modify the annotationTypesFromInstance', async () => {
+          await filter().onFetch(result)
+
+          const listViewAnnoType = result.filter(o => o.elemID.name === 'list_view').pop() as ObjectType
+          expect(listViewAnnoType.fields.columns.isList).toBeTruthy()
+          expect(listViewAnnoType.fields.filter_scope).toBeDefined()
+          expect(listViewAnnoType.fields.filters.isList).toBeTruthy()
+          expect((listViewAnnoType.fields.filters.type as ObjectType).fields.operation)
+            .toBeDefined()
+
+          const fieldSetAnnoType = result.filter(o => o.elemID.name === 'field_set').pop() as ObjectType
+          expect(fieldSetAnnoType.fields.available_fields.isList).toBeTruthy()
+          expect(fieldSetAnnoType.fields.displayed_fields.isList).toBeTruthy()
+
+          const compactLayoutAnnoType = result.filter(o => o.elemID.name === 'compact_layout').pop() as ObjectType
+          expect(compactLayoutAnnoType.fields.fields.isList).toBeTruthy()
+
+          const webLinkAnnoType = result.filter(o => o.elemID.name === 'web_link').pop() as ObjectType
+          expect(webLinkAnnoType.fields.display_type).toBeDefined()
+        })
+
+        it('should merge instance element annotation values into the object type', async () => {
+          mockSingleSObject('Lead', [], false, true, false, 'Instance Label')
+          result.push(customObjectInstance)
+          await filter().onFetch(result)
+          const lead = result.filter(o => o.elemID.name === 'lead').pop()
+          expect(lead).toBeDefined()
+          expect(isObjectType(lead)).toBeTruthy()
+          const leadObjectType = lead as ObjectType
+          expect(leadObjectType.annotationTypes.list_views).toBeDefined()
+          expect(leadObjectType.annotations.list_views).toBeDefined()
+          expect(leadObjectType.annotations.list_views.columns)
+            .toEqual('ListViewName')
+          expect(leadObjectType.annotations.list_views[INSTANCE_FULL_NAME_FIELD])
+            .toEqual('Lead.PartialFullName')
+        })
+
+        it('should merge instance element annotation values into the object type when annotation value is an array', async () => {
+          mockSingleSObject('Lead', [], false, true, false, 'Instance Label')
+          const instanceWithAnnotationArray = _.cloneDeep(customObjectInstance)
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          instanceWithAnnotationArray.value.list_views = [{
+            columns: 'ListViewName1',
+            [INSTANCE_FULL_NAME_FIELD]: 'PartialName1',
+          },
+          {
+            [INSTANCE_FULL_NAME_FIELD]: 'PartialName2',
+            columns: 'ListViewName2',
+          }]
+          result.push(instanceWithAnnotationArray)
+          await filter().onFetch(result)
+          const lead = result.filter(o => o.elemID.name === 'lead').pop()
+          expect(lead).toBeDefined()
+          expect(isObjectType(lead)).toBeTruthy()
+          const leadObjectType = lead as ObjectType
+          expect(leadObjectType.annotationTypes.list_views).toBeDefined()
+          expect(leadObjectType.annotations.list_views).toBeDefined()
+          expect(leadObjectType.annotations.list_views).toHaveLength(2)
+          expect(leadObjectType.annotations.list_views[0].columns)
+            .toEqual('ListViewName1')
+          expect(leadObjectType.annotations.list_views[0][INSTANCE_FULL_NAME_FIELD])
+            .toEqual('Lead.PartialName1')
+          expect(leadObjectType.annotations.list_views[1].columns)
+            .toEqual('ListViewName2')
+          expect(leadObjectType.annotations.list_views[1][INSTANCE_FULL_NAME_FIELD])
+            .toEqual('Lead.PartialName2')
+        })
+
+        it('should merge instance element annotation values only into the object type that has API_NAME annotation', async () => {
+          mockSingleSObject('Lead', [{
+            name: 'CustomField__c',
+            type: 'text',
+            label: 'Custom Field so the object will be split to 2 elements',
+            nillable: false,
+            custom: true,
+          }], false, true, false, 'Instance Label')
+          result.push(customObjectInstance)
+          await filter().onFetch(result)
+          const leadElements = result.filter(o => o.elemID.name === 'lead')
+          expect(leadElements).toBeDefined()
+          expect(leadElements).toHaveLength(2)
+          const [leadsWithApiName, leadsWithoutApiName] = _.partition(leadElements,
+            elem => elem.annotations.api_name)
+
+          expect(leadsWithApiName).toHaveLength(1)
+          const leadWithApiName = leadsWithApiName[0] as ObjectType
+          expect(leadWithApiName.annotationTypes.list_views).toBeDefined()
+          expect(leadWithApiName.annotations.list_views).toBeDefined()
+          expect(leadWithApiName.annotations.list_views.columns)
+            .toEqual('ListViewName')
+          expect(leadWithApiName.annotations.list_views[INSTANCE_FULL_NAME_FIELD])
+            .toEqual('Lead.PartialFullName')
+
+          expect(leadsWithoutApiName).toHaveLength(1)
+          const leadWithoutApiName = leadsWithoutApiName[0] as ObjectType
+          expect(leadWithoutApiName.annotationTypes.list_views).toBeUndefined()
+          expect(leadWithoutApiName.annotations.list_views).toBeUndefined()
+        })
+      })
+    })
+  })
+
+  describe('onUpdate', () => {
+    let mockUpdate: jest.Mock
+    let mockUpsert: jest.Mock
+    let mockDelete: jest.Mock
+
+    beforeEach(() => {
+      mockUpdate = jest.fn().mockImplementationOnce(() => ([{ success: true }]))
+      mockUpsert = jest.fn().mockImplementationOnce(() => ([{ success: true }]))
+      mockDelete = jest.fn().mockImplementationOnce(() => ([{ success: true }]))
+      client.upsert = mockUpsert
+      client.update = mockUpdate
+      client.delete = mockDelete
+    })
+    describe('when the annotation values from the CustomObject instance are changed', () => {
+      const mockElemID = new ElemID(SALESFORCE, 'test')
+      const oldElement = new ObjectType({
+        elemID: mockElemID,
+        annotations: {
+          label: 'test label',
+          [API_NAME]: 'Test__c',
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          validation_rules: [{
+            [INSTANCE_FULL_NAME_FIELD]: 'Test__c.val1',
+            [DESCRIPTION]: 'to be edited',
+          },
+          {
+            [INSTANCE_FULL_NAME_FIELD]: 'Test__c.val2',
+            [DESCRIPTION]: 'to be deleted',
+          }],
+        },
+      })
+
+      const newElement = new ObjectType({
+        elemID: mockElemID,
+        annotations: {
+          label: 'test label',
+          [API_NAME]: 'Test__c',
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          validation_rules: [{
+            [INSTANCE_FULL_NAME_FIELD]: 'Test__c.val1',
+            [DESCRIPTION]: 'edited description',
+          },
+          {
+            [INSTANCE_FULL_NAME_FIELD]: 'Test__c.val3',
+            [DESCRIPTION]: 'created',
+          }],
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          record_types: {
+            [INSTANCE_FULL_NAME_FIELD]: 'Test__c.record',
+            [DESCRIPTION]: 'created description',
+          },
+        },
+      })
+
+      beforeEach(async () => {
+        await filter().onUpdate(oldElement, newElement, [
+          { action: 'modify', data: { before: oldElement, after: newElement } },
+        ])
+      })
+
+      it('should call update validation rule', () => {
+        expect(mockUpdate).toHaveBeenCalledTimes(2)
+        expect(mockUpdate).toHaveBeenCalledWith('ValidationRule', [{
+          fullName: 'Test__c.val1',
+          description: 'edited description',
+        }])
+        expect(mockUpdate).toHaveBeenCalledWith('RecordType', [])
+      })
+
+      it('should call upsert validation rule & record type', () => {
+        expect(mockUpsert).toHaveBeenCalledTimes(2)
+        expect(mockUpsert).toHaveBeenCalledWith('ValidationRule', [{
+          fullName: 'Test__c.val3',
+          description: 'created',
+        }])
+        expect(mockUpsert).toHaveBeenCalledWith('RecordType', [{
+          fullName: 'Test__c.record',
+          description: 'created description',
+        }])
+      })
+
+      it('should call delete validation rule', () => {
+        expect(mockDelete).toHaveBeenCalledTimes(2)
+        expect(mockDelete).toHaveBeenCalledWith('ValidationRule', ['Test__c.val2'])
+        expect(mockDelete).toHaveBeenCalledWith('RecordType', [])
+      })
+    })
+  })
+
+  describe('onAdd', () => {
+    let mockUpsert: jest.Mock
+
+    beforeEach(() => {
+      mockUpsert = jest.fn().mockImplementationOnce(() => ([{ success: true }]))
+      client.upsert = mockUpsert
+    })
+    describe('when creating an object with inner types', () => {
+      const mockElemID = new ElemID(SALESFORCE, 'test')
+
+      const newElement = new ObjectType({
+        elemID: mockElemID,
+        annotations: {
+          label: 'test label',
+          [API_NAME]: 'Test__c',
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          validation_rules: [{
+            [INSTANCE_FULL_NAME_FIELD]: 'Test__c.val1',
+            [DESCRIPTION]: 'created1',
+          },
+          {
+            [INSTANCE_FULL_NAME_FIELD]: 'Test__c.val2',
+            [DESCRIPTION]: 'created2',
+          }],
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          record_types: {
+            [INSTANCE_FULL_NAME_FIELD]: 'Test__c.record',
+            [DESCRIPTION]: 'created',
+          },
+        },
+      })
+
+      beforeEach(async () => {
+        await filter().onAdd(newElement)
+      })
+
+      it('should call upsert validation rules & record type', () => {
+        expect(mockUpsert).toHaveBeenCalledWith('ValidationRule', [{
+          fullName: 'Test__c.val1',
+          description: 'created1',
+        },
+        {
+          fullName: 'Test__c.val2',
+          description: 'created2',
+        }])
+        expect(mockUpsert).toHaveBeenCalledWith('RecordType', [{
+          fullName: 'Test__c.record',
+          description: 'created',
+        }])
       })
     })
   })

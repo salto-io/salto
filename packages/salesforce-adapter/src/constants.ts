@@ -109,6 +109,18 @@ export const FIELD_ANNOTATIONS = {
   SUMMARY_OPERATION: 'summary_operation',
 }
 
+export const CUSTOM_OBJECT_ANNOTATIONS = {
+  WEB_LINKS: 'web_links',
+  VALIDATION_RULES: 'validation_rules',
+  BUSINESS_PROCESSES: 'business_processes',
+  RECORD_TYPES: 'record_types',
+  LIST_VIEWS: 'list_views',
+  FIELD_SETS: 'field_sets',
+  COMPACT_LAYOUTS: 'compact_layouts',
+  SHARING_REASONS: 'sharing_reasons',
+  INDEXES: 'indexes',
+}
+
 export const FIELD_DEPENDENCY_FIELDS = {
   CONTROLLING_FIELD: 'controlling_field',
   VALUE_SETTINGS: 'value_settings',

@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import {
   isObjectType, Type, Field, ObjectType, ElemID, isField, Values,
-  Element, isPrimitiveType, PrimitiveTypes,
+  Element, isPrimitiveType, PrimitiveTypes, PrimitiveValue,
 } from './elements'
 
 interface AnnoRef {
@@ -78,16 +78,14 @@ export const getAnnotationKey = (annotations: {[key: string]: Type}, path: strin
 export const getAnnotationValue = (element: Element, annotation: string): Values =>
   (element.annotations[annotation] || {})
 
-export type PrimitiveValue = string | boolean | number
-
-const transformPrimitive = (val: PrimitiveValue, _primitive: PrimitiveTypes):
-  PrimitiveValue | undefined => val
 
 export const transform = (
   obj: Values,
   type: ObjectType,
-  transformPrimitives: (val: PrimitiveValue, p: PrimitiveTypes)
-    => PrimitiveValue | undefined = transformPrimitive,
+  transformPrimitives: (
+    val: PrimitiveValue,
+    p: PrimitiveTypes
+  ) => PrimitiveValue | undefined = val => (val),
   strict = true
 ): Values | undefined => {
   const result = _(obj).mapValues((value, key) => {

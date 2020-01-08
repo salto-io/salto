@@ -12,9 +12,9 @@ import _ from 'lodash'
 import {
   API_NAME, CUSTOM_OBJECT, METADATA_TYPE, SALESFORCE,
   INSTANCE_FULL_NAME_FIELD, SALESFORCE_CUSTOM_SUFFIX, LABEL, FIELD_DEPENDENCY_FIELDS,
-  FIELD_TYPE_API_NAMES, FIELD_ANNOTATIONS,
-  LOOKUP_FILTER_FIELDS, VALUE_SETTINGS_FIELDS, API_NAME_SEPERATOR, CUSTOM_OBJECT_ANNOTATIONS,
-} from '../constants'
+  FIELD_TYPE_API_NAMES, FIELD_ANNOTATIONS, VALUE_SET_FIELDS, INSTANCE_VALUE_SET_FIELD,
+  LOOKUP_FILTER_FIELDS, VALUE_SETTINGS_FIELDS, API_NAME_SEPERATOR,
+  CUSTOM_OBJECT_ANNOTATIONS } from '../constants'
 import { FilterCreator } from '../filter'
 import {
   getSObjectFieldElement, Types, isCustomObject, bpCase, apiName, transformPrimitive,
@@ -27,24 +27,8 @@ const log = logger(module)
 const { makeArray } = collections.array
 
 export const INSTANCE_DEFAULT_VALUE_FIELD = 'default_value'
-export const INSTANCE_VALUE_SET_FIELD = 'value_set'
 export const INSTANCE_REQUIRED_FIELD = 'required'
 export const INSTANCE_TYPE_FIELD = 'type'
-
-export const VALUE_SET_FIELDS = {
-  RESTRICTED: 'restricted',
-  VALUE_SET_DEFINITION: 'value_set_definition',
-}
-
-export const VALUE_SET_DEFINITION_FIELDS = {
-  VALUE: 'value',
-}
-
-export const VALUE_SET_DEFINITION_VALUE_FIELDS = {
-  FULL_NAME: 'full_name',
-  DEFAULT: 'default',
-  LABEL: 'label',
-}
 
 // The below annotationTypes' data is returned when using ReadMetadata on the CustomObject instances
 export const customObjectAnnotationTypeIds = {
@@ -184,12 +168,9 @@ const transfromAnnotationsNames = (fields: Values, parentApiName: string): Value
         annotations[CORE_ANNOTATIONS.DEFAULT] = v
         break
       case INSTANCE_VALUE_SET_FIELD:
-        annotations[CORE_ANNOTATIONS.RESTRICTION] = {
-          [CORE_ANNOTATIONS.ENFORCE_VALUE]: v[VALUE_SET_FIELDS.RESTRICTED] || false,
-        }
-        annotations[CORE_ANNOTATIONS.VALUES] = v[VALUE_SET_FIELDS
-          .VALUE_SET_DEFINITION][VALUE_SET_DEFINITION_FIELDS.VALUE]
-          .map((value: Values) => value[VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME])
+        annotations[INSTANCE_VALUE_SET_FIELD] = { [VALUE_SET_FIELDS.VALUE_SET_DEFINITION]:
+          annotations[VALUE_SET_FIELDS.VALUE_SET_DEFINITION],
+        [VALUE_SET_FIELDS.RESTRICTED]: annotations[VALUE_SET_FIELDS.RESTRICTED] || false }
         if (!_.isUndefined(getFieldDependency(v))) {
           annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY] = getFieldDependency(v)
         }

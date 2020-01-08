@@ -5,20 +5,17 @@ import {
 } from 'adapter-api'
 import SalesforceClient from '../../src/client/client'
 import Connection from '../../src/client/jsforce'
-import {
-  FIELD_ANNOTATIONS, FILTER_ITEM_FIELDS, SALESFORCE, METADATA_TYPE,
+import { FIELD_ANNOTATIONS, FILTER_ITEM_FIELDS, SALESFORCE, METADATA_TYPE,
   CUSTOM_OBJECT, INSTANCE_FULL_NAME_FIELD, LABEL, NAMESPACE_SEPARATOR,
   SALESFORCE_CUSTOM_SUFFIX, API_NAME, FORMULA, LOOKUP_FILTER_FIELDS,
-  FIELD_DEPENDENCY_FIELDS, VALUE_SETTINGS_FIELDS, DESCRIPTION,
-} from '../../src/constants'
+  FIELD_DEPENDENCY_FIELDS, VALUE_SETTINGS_FIELDS, VALUE_SET_FIELDS, INSTANCE_VALUE_SET_FIELD,
+  VALUE_SET_DEFINITION_VALUE_FIELDS, VALUE_SET_DEFINITION_FIELDS,
+  DESCRIPTION } from '../../src/constants'
 import mockAdapter from '../adapter'
 import { findElements } from '../utils'
-import filterCreator, {
-  INSTANCE_REQUIRED_FIELD, INSTANCE_TYPE_FIELD,
-  INSTANCE_DEFAULT_VALUE_FIELD, INSTANCE_VALUE_SET_FIELD,
-  VALUE_SET_FIELDS, VALUE_SET_DEFINITION_FIELDS,
-  VALUE_SET_DEFINITION_VALUE_FIELDS, customObjectAnnotationTypeIds,
-} from '../../src/filters/custom_objects'
+import filterCreator, { INSTANCE_REQUIRED_FIELD, INSTANCE_TYPE_FIELD,
+  INSTANCE_DEFAULT_VALUE_FIELD, customObjectAnnotationTypeIds }
+  from '../../src/filters/custom_objects'
 import { FilterWith } from '../../src/filter'
 
 describe('Custom Objects filter', () => {

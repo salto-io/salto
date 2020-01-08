@@ -463,7 +463,7 @@ export const formatServiceConfigured = (serviceName: string): string => [
 export const formatServiceNotConfigured = (serviceName: string): string => [
   Prompts.SERVICE_NOT_CONFIGURED(serviceName),
   emptyLine(),
-  Prompts.SERVICE_HOW_ADD,
+  Prompts.SERVICE_HOW_ADD(serviceName),
   emptyLine(),
 ].join('\n')
 

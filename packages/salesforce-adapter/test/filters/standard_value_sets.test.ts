@@ -42,7 +42,13 @@ const createPicklistObjectType = (
         [CORE_ANNOTATIONS.DEFAULT]: 'Bart',
         [constants.API_NAME]: apiName,
         label: 'test label',
-        [CORE_ANNOTATIONS.VALUES]: pickListValues,
+        [constants.INSTANCE_VALUE_SET_FIELD]: { [constants.VALUE_SET_FIELDS.VALUE_SET_DEFINITION]: {
+          [constants.VALUE_SET_DEFINITION_FIELDS.VALUE]: pickListValues.map(val => ({
+            [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: val,
+            [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: val,
+            [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: val === 'Bart',
+          })),
+        } },
       }
     ),
   },

@@ -201,10 +201,23 @@ describe('Custom Objects filter', () => {
 
       const lead = findElements(result, 'lead').pop() as ObjectType
       expect(lead.fields.primary_c.type.elemID.name).toBe('picklist')
-      expect((lead.fields.primary_c.annotations[CORE_ANNOTATIONS.VALUES] as string[]).join(';')).toBe('No;Yes')
-      expect(lead.fields.primary_c.annotations[CORE_ANNOTATIONS.DEFAULT]).toBe('Yes')
       expect(lead.fields.primary_c
-        .annotations[CORE_ANNOTATIONS.RESTRICTION][CORE_ANNOTATIONS.ENFORCE_VALUE]).toBe(true)
+        .annotations[INSTANCE_VALUE_SET_FIELD][VALUE_SET_FIELDS
+          .VALUE_SET_DEFINITION][VALUE_SET_DEFINITION_FIELDS.VALUE])
+        .toEqual([
+          {
+            [VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'No',
+            [VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'No',
+            [VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: false,
+          },
+          {
+            [VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'Yes',
+            [VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'Yes',
+            [VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: true,
+          },
+        ])
+      expect(lead.fields.primary_c
+        .annotations[INSTANCE_VALUE_SET_FIELD][VALUE_SET_FIELDS.RESTRICTED]).toBe(true)
     })
 
     it('should fetch sobject with combobox field', async () => {
@@ -224,10 +237,21 @@ describe('Custom Objects filter', () => {
 
       const lead = findElements(result, 'lead').pop() as ObjectType
       expect(lead.fields.primary_c.type.elemID.name).toBe('combobox')
-      expect((lead.fields.primary_c.annotations[CORE_ANNOTATIONS.VALUES] as string[]).join(';'))
-        .toBe('No;Yes')
-      expect(lead.fields.primary_c.annotations[CORE_ANNOTATIONS.DEFAULT].length).toBe(1)
-      expect(lead.fields.primary_c.annotations[CORE_ANNOTATIONS.DEFAULT].pop()).toBe('Yes')
+      expect(lead.fields.primary_c
+        .annotations[INSTANCE_VALUE_SET_FIELD][VALUE_SET_FIELDS
+          .VALUE_SET_DEFINITION][VALUE_SET_DEFINITION_FIELDS.VALUE])
+        .toEqual([
+          {
+            [VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'No',
+            [VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'No',
+            [VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: false,
+          },
+          {
+            [VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'Yes',
+            [VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'Yes',
+            [VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: true,
+          },
+        ])
     })
 
     it('should fetch sobject with number field', async () => {
@@ -544,10 +568,15 @@ describe('Custom Objects filter', () => {
           [INSTANCE_REQUIRED_FIELD]: 'true',
           [INSTANCE_DEFAULT_VALUE_FIELD]: 'YES',
           [INSTANCE_VALUE_SET_FIELD]:
-          { [VALUE_SET_FIELDS.RESTRICTED]: true,
+          { [VALUE_SET_FIELDS.RESTRICTED]: 'true',
             [VALUE_SET_FIELDS.VALUE_SET_DEFINITION]:
-            { value: [{ [INSTANCE_FULL_NAME_FIELD]: 'YES' },
-              { [INSTANCE_FULL_NAME_FIELD]: 'NO' }] } },
+            { [VALUE_SET_DEFINITION_FIELDS.VALUE]: [
+              { [VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'YES',
+                [VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'YES',
+                [VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: 'true' },
+              { [VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'NO',
+                [VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'NO',
+                [VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: 'false' }] } },
         },
         {
           [INSTANCE_FULL_NAME_FIELD]: 'rollup',
@@ -668,13 +697,21 @@ describe('Custom Objects filter', () => {
         expect(leadObjectType.fields.my_auto_number
           .annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
         expect(leadObjectType.fields.my_picklist
-          .annotations[CORE_ANNOTATIONS.VALUES]).toEqual(['YES', 'NO'])
+          .annotations[INSTANCE_VALUE_SET_FIELD][VALUE_SET_FIELDS
+            .VALUE_SET_DEFINITION][VALUE_SET_DEFINITION_FIELDS.VALUE])
+          .toEqual([
+            { [VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'YES',
+              [VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'YES',
+              [VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: true },
+            { [VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'NO',
+              [VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'NO',
+              [VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: false }])
+        expect(leadObjectType.fields.my_picklist
+          .annotations[INSTANCE_VALUE_SET_FIELD][VALUE_SET_FIELDS.RESTRICTED]).toBeTruthy()
         expect(leadObjectType.fields.my_picklist
           .annotations[CORE_ANNOTATIONS.DEFAULT]).toBe('YES')
         expect(leadObjectType.fields.my_picklist
           .annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(true)
-        expect(leadObjectType.fields.my_picklist
-          .annotations[CORE_ANNOTATIONS.RESTRICTION][CORE_ANNOTATIONS.ENFORCE_VALUE]).toBe(true)
 
         // Verify rollup field
         const expectedRollupSummaryField = testInstanceElement.value.fields

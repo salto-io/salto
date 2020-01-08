@@ -20,7 +20,7 @@ const propertyElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.PROPERTY)
 const optionsElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.OPTIONS)
 
 export class Types {
-  public static optionsType: ObjectType =
+  private static optionsType: ObjectType =
     new ObjectType({
       elemID: optionsElemID,
       fields: {
@@ -74,10 +74,10 @@ export class Types {
           },
         ),
       },
-      path: ['hubspot', 'types', 'subtypes', optionsElemID.name],
+      path: [HUBSPOT, 'types', 'subtypes', optionsElemID.name],
     })
 
-  public static propertyType: ObjectType =
+  private static propertyType: ObjectType =
     new ObjectType({
       elemID: propertyElemID,
       fields: {
@@ -168,7 +168,7 @@ export class Types {
           true,
         ),
       },
-      path: ['hubspot', 'types', 'subtypes', propertyElemID.name],
+      path: [HUBSPOT, 'types', 'subtypes', propertyElemID.name],
     })
 
   public static propertyGroupType: ObjectType =
@@ -198,7 +198,7 @@ export class Types {
           },
         ),
       },
-      path: ['hubspot', 'types', 'subtypes', propertyGroupElemID.name],
+      path: [HUBSPOT, 'types', 'subtypes', propertyGroupElemID.name],
     })
 
 
@@ -321,7 +321,7 @@ export class Types {
     Types.optionsType,
   ]
 
-  public static fieldTypes: Record<string, Type> = {
+  private static fieldTypes: Record<string, Type> = {
     [FIELD_TYPES.TEXTAREA]: new PrimitiveType({
       elemID: new ElemID(HUBSPOT, FIELD_TYPES.TEXTAREA),
       primitive: PrimitiveTypes.STRING,
@@ -384,7 +384,7 @@ const createInstanceName = (
  * @param info
  * @param infoType
  */
-export const fromHubspotObject = (
+const fromHubspotObject = (
   info: HubspotMetadata,
   infoType: ObjectType
 ): Values => {

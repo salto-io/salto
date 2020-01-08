@@ -13,6 +13,8 @@ import {
   SALESFORCE, GEOLOCATION_FIELDS, NAME_FIELDS, API_NAME,
   FIELD_LEVEL_SECURITY_ANNOTATION, FIELD_LEVEL_SECURITY_FIELDS, FIELD_DEPENDENCY_FIELDS,
   VALUE_SETTINGS_FIELDS, FILTER_ITEM_FIELDS, METADATA_TYPE, CUSTOM_OBJECT,
+  INSTANCE_VALUE_SET_FIELD, VALUE_SET_FIELDS, VALUE_SET_DEFINITION_FIELDS,
+  VALUE_SET_DEFINITION_VALUE_FIELDS,
 } from '../../src/constants'
 import { CustomField, FilterItem, CustomObject } from '../../src/client/types'
 import SalesforceClient from '../../src/client/client'
@@ -73,10 +75,23 @@ describe('transformer', () => {
       })
       describe('restriction values', () => {
         it('should not have duplicate values', () => {
-          expect(enumField.annotations[CORE_ANNOTATIONS.VALUES]).toHaveLength(2)
+          expect(enumField.annotations[INSTANCE_VALUE_SET_FIELD][VALUE_SET_FIELDS
+            .VALUE_SET_DEFINITION][VALUE_SET_DEFINITION_FIELDS.VALUE]).toHaveLength(2)
         })
         it('should be sorted alphabetically', () => {
-          expect(enumField.annotations[CORE_ANNOTATIONS.VALUES]).toEqual(['a', 'b'])
+          expect(enumField.annotations[INSTANCE_VALUE_SET_FIELD][VALUE_SET_FIELDS
+            .VALUE_SET_DEFINITION][VALUE_SET_DEFINITION_FIELDS.VALUE]).toEqual([
+            {
+              [VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'a',
+              [VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'a',
+              [VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: false,
+            },
+            {
+              [VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'b',
+              [VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'b',
+              [VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: false,
+            },
+          ])
         })
       })
     })

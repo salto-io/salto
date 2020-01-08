@@ -88,12 +88,24 @@ const fieldTypeName = (typeName: string): string => (
   typeName.startsWith(FORMULA_TYPE_PREFIX) ? typeName.slice(FORMULA_TYPE_PREFIX.length) : typeName
 )
 
-const createPicklistValuesAnnotations = (picklistValues: PicklistEntry[]): Values =>
-  picklistValues.map(val => ({
+const createPicklistValuesAnnotations = (picklistValues: PicklistEntry[],
+  sorted: boolean): Values => {
+  const values = picklistValues.map(val => ({
     [VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: val.value,
     [VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: val.defaultValue,
     [VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: val.label || val.value,
   }))
+  if (sorted) {
+    return _.sortedUniqBy(values.sort((first, second) => {
+      const firstValue = first[VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]
+      const secondValue = second[VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]
+      if (firstValue < secondValue) { return -1 }
+      if (firstValue > secondValue) { return 1 }
+      return 0
+    }), v => v[VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME])
+  }
+  return values
+}
 
 const addPicklistDefaultValue = (picklistValues: PicklistEntry[], annotations: Values): void => {
   const defaults = picklistValues
@@ -816,7 +828,7 @@ export const getValueTypeFieldElement = (parentID: ElemID, field: ValueTypeField
   const annotations: Values = { [CORE_ANNOTATIONS.REQUIRED]: false }
 
   if (field.picklistValues && field.picklistValues.length > 0) {
-    addPicklistAnnotations(field.picklistValues, false, annotations)
+    addPicklistAnnotations(field.picklistValues, false, annotations, true)
   }
   return new TypeField(parentID, bpFieldName, bpFieldType, annotations)
 }

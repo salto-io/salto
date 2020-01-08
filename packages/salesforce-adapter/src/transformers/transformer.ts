@@ -708,6 +708,7 @@ export const toCustomField = (
     field.annotations[CORE_ANNOTATIONS.VALUES],
     fieldDependency?.[FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD],
     valueSettings,
+    field.annotations[CORE_ANNOTATIONS.RESTRICTION]?.[CORE_ANNOTATIONS.ENFORCE_VALUE],
     field.annotations[FORMULA],
     summaryFilterItems,
     field.annotations[FIELD_ANNOTATIONS.REFERENCE_TO],

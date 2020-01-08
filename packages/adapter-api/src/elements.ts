@@ -10,6 +10,8 @@ export enum PrimitiveTypes {
   BOOLEAN,
 }
 
+export type PrimitiveValue = string | boolean | number
+
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 export type Value = any
 export interface Values {

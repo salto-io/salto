@@ -388,7 +388,7 @@ export const fromHubspotObject = (
   info: HubspotMetadata,
   infoType: ObjectType
 ): Values =>
-  transform(info as Values, infoType,) || {}
+  transform(info as Values, infoType) || {}
 
 /**
  * Creating all the instance for specific type

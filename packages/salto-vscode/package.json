@@ -120,6 +120,7 @@
         "watch": "tsc -w",
         "clean": "rm -rf ./dist",
         "test": "jest",
+        "e2e-test": "RUN_E2E_TESTS=1 jest",
         "clean-ts": "node ./node_modules/.bin/ts-cleaner -d dist -s . -v",
         "clean-ts-test": "yarn run clean-ts && yarn run test",
         "watch-test": "yarn run tsc-watch --onSuccess 'yarn run clean-ts-test'",
@@ -148,6 +149,8 @@
         "tslint": "^5.12.1",
         "typescript": "^3.7.2",
         "vsce": "^1.66.0",
-        "vscode-test": "^1.0.2"
+        "vscode-test": "^1.0.2",
+        "readdirp": "^3.1.1",
+        "tmp-promise": "^2.0.2"
     }
 }

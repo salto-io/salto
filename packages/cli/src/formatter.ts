@@ -157,7 +157,7 @@ export const formatDetailedChanges = (changeGroups: Iterable<Iterable<DetailedCh
 
     const formatMissingChanges = (id: ElemID, existingIds: Set<string>): DetailedChange[] => {
       const parentId = id.createParentID()
-      if (parentId.isConfig() || existingIds.has(parentId.getFullName())) {
+      if (existingIds.has(parentId.getFullName())) {
         return []
       }
       existingIds.add(parentId.getFullName())

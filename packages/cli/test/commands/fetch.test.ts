@@ -1,12 +1,12 @@
-import _ from 'lodash'
-import { ElemID, ObjectType } from 'adapter-api'
+import { ElemID, ObjectType, Element } from 'adapter-api'
 import {
   Workspace, fetch, loadConfig, FetchChange, DetailedChange, FetchProgressEvents, StepEmitter,
 } from 'salto'
 import { EventEmitter } from 'pietile-eventemitter'
-import { Spinner, SpinnerCreator } from 'src/types'
+import { Spinner, SpinnerCreator, CliExitCode } from '../../src/types'
 import { command, fetchCommand } from '../../src/commands/fetch'
-import { MockWriteStream, getWorkspaceErrors, dummyChanges, mockSpinnerCreator, mockLoadConfig } from '../mocks'
+import { MockWriteStream, getWorkspaceErrors, dummyChanges, mockSpinnerCreator, mockLoadConfig,
+  elements as mockElements } from '../mocks'
 import Prompts from '../../src/prompts'
 
 jest.mock('salto', () => ({
@@ -77,17 +77,15 @@ describe('fetch command', () => {
       const mockFailedFetch = jest.fn().mockResolvedValue(
         Promise.resolve({ changes: [], mergeErrors: [], success: false })
       )
-      const mockApprove = jest.fn().mockResolvedValue(Promise.resolve([]))
-      let mockWorkspace: Workspace
-      beforeEach(() => {
-        mockWorkspace = {
-          hasErrors: () => false,
-          elements: [],
-          config: { services },
-          updateBlueprints: jest.fn(),
-          flush: jest.fn(),
-        } as unknown as Workspace
-      })
+      const mockEmptyApprove = jest.fn().mockResolvedValue(Promise.resolve([]))
+
+      const mockWorkspace = (elements?: Element[]): Workspace => ({
+        hasErrors: () => false,
+        elements: elements || [],
+        config: { services },
+        updateBlueprints: jest.fn(),
+        flush: jest.fn(),
+      } as unknown as Workspace)
 
       describe('with emitters called', () => {
         const mockFetchWithEmitter: jest.Mock = jest.fn((
@@ -105,13 +103,13 @@ describe('fetch command', () => {
         })
         beforeEach(async () => {
           await fetchCommand({
-            workspace: mockWorkspace,
+            workspace: mockWorkspace(),
             force: true,
             interactive: false,
             output: cliOutput,
             inputServices: services,
             fetch: mockFetchWithEmitter,
-            getApprovedChanges: mockApprove,
+            getApprovedChanges: mockEmptyApprove,
           })
         })
         it('should start at least one step', () => {
@@ -125,179 +123,171 @@ describe('fetch command', () => {
         })
       })
       describe('with no upstream changes', () => {
+        let workspace: Workspace
         beforeEach(async () => {
+          workspace = mockWorkspace()
           await fetchCommand({
-            workspace: mockWorkspace,
+            workspace,
             force: true,
             interactive: false,
             output: cliOutput,
             inputServices: services,
             fetch: mockFetch,
-            getApprovedChanges: mockApprove,
+            getApprovedChanges: mockEmptyApprove,
           })
         })
         it('should not update workspace', () => {
-          expect(mockWorkspace.updateBlueprints).not.toHaveBeenCalled()
-          expect(mockWorkspace.flush).not.toHaveBeenCalled()
+          expect(workspace.updateBlueprints).not.toHaveBeenCalled()
+          expect(workspace.flush).not.toHaveBeenCalled()
         })
       })
       describe('with upstream changes', () => {
-        beforeEach(() => {
-          mockFetch.mockResolvedValueOnce(Promise.resolve({
+        const mockFetchWithChanges = jest.fn().mockResolvedValue(
+          {
             changes: dummyChanges.map(
               (change: DetailedChange): FetchChange => ({ change, serviceChange: change })
             ),
             mergeErrors: [],
             success: true,
-          }))
-        })
+          }
+        )
         describe('when called with force', () => {
+          let workspace: Workspace
           beforeEach(async () => {
-            await fetchCommand({
-              workspace: mockWorkspace,
+            workspace = mockWorkspace()
+            const result = await fetchCommand({
+              workspace,
               force: true,
               interactive: false,
               inputServices: services,
               output: cliOutput,
-              fetch: mockFetch,
-              getApprovedChanges: mockApprove,
+              fetch: mockFetchWithChanges,
+              getApprovedChanges: mockEmptyApprove,
             })
+            expect(result).toBe(CliExitCode.Success)
           })
           it('should deploy all changes', () => {
-            expect(mockWorkspace.updateBlueprints).toHaveBeenCalledWith(...dummyChanges)
+            expect(workspace.updateBlueprints).toHaveBeenCalledWith(...dummyChanges)
           })
         })
         describe('when initial workspace is empty', () => {
+          const workspace = mockWorkspace()
           beforeEach(async () => {
             await fetchCommand({
-              workspace: mockWorkspace,
+              workspace,
               force: false,
               interactive: false,
               inputServices: services,
               output: cliOutput,
-              fetch: mockFetch,
-              getApprovedChanges: mockApprove,
+              fetch: mockFetchWithChanges,
+              getApprovedChanges: mockEmptyApprove,
             })
           })
           it('should deploy all changes', () => {
-            expect(mockWorkspace.updateBlueprints).toHaveBeenCalledWith(...dummyChanges)
-          })
-        })
-        describe('when initial workspace has only config', () => {
-          beforeEach(async () => {
-            _.set(mockWorkspace, 'elements', [new ObjectType({ elemID: new ElemID('adapter') })])
-            await fetchCommand({
-              workspace: mockWorkspace,
-              force: false,
-              interactive: false,
-              inputServices: services,
-              output: cliOutput,
-              fetch: mockFetch,
-              getApprovedChanges: mockApprove,
-            })
-          })
-          it('should deploy all changes', () => {
-            expect(mockWorkspace.updateBlueprints).toHaveBeenCalledWith(...dummyChanges)
+            expect(workspace.updateBlueprints).toHaveBeenCalledWith(...dummyChanges)
           })
         })
         describe('when initial workspace is not empty', () => {
-          beforeEach(() => {
-            _.set(mockWorkspace, 'elements', [new ObjectType({ elemID: new ElemID('adapter', 'type') })])
-          })
           describe('if no change is approved', () => {
+            let workspace: Workspace
             beforeEach(async () => {
+              workspace = mockWorkspace([new ObjectType({ elemID: new ElemID('adapter', 'type') })])
               await fetchCommand({
-                workspace: mockWorkspace,
+                workspace,
                 force: false,
                 interactive: false,
                 inputServices: services,
                 output: cliOutput,
-                fetch: mockFetch,
-                getApprovedChanges: mockApprove,
+                fetch: mockFetchWithChanges,
+                getApprovedChanges: mockEmptyApprove,
               })
             })
             it('should not update workspace', () => {
-              expect(mockWorkspace.updateBlueprints).not.toHaveBeenCalled()
-              expect(mockWorkspace.flush).not.toHaveBeenCalled()
+              expect(workspace.updateBlueprints).not.toHaveBeenCalled()
+              expect(workspace.flush).not.toHaveBeenCalled()
             })
           })
           describe('if some changes are approved', () => {
-            beforeEach(async () => {
-              mockApprove.mockImplementationOnce(changes => [changes[0]])
-            })
+            const mockSingleChangeApprove = jest.fn().mockImplementation(changes =>
+              Promise.resolve([changes[0]]))
+
             it('should update workspace only with approved changes', async () => {
+              const workspace = mockWorkspace(mockElements())
               await fetchCommand({
-                workspace: mockWorkspace,
+                workspace,
                 force: false,
                 interactive: false,
                 inputServices: services,
                 output: cliOutput,
-                fetch: mockFetch,
-                getApprovedChanges: mockApprove,
+                fetch: mockFetchWithChanges,
+                getApprovedChanges: mockSingleChangeApprove,
               })
-              expect(mockWorkspace.updateBlueprints).toHaveBeenCalledWith(dummyChanges[0])
-              expect(mockWorkspace.flush).toHaveBeenCalledTimes(1)
+              expect(workspace.updateBlueprints).toHaveBeenCalledWith(dummyChanges[0])
+              expect(workspace.flush).toHaveBeenCalledTimes(1)
             })
 
             it('should exit if errors identified in workspace after update', async () => {
-              mockWorkspace.getWorkspaceErrors = async () => [{
+              const workspace = mockWorkspace(mockElements())
+              workspace.getWorkspaceErrors = async () => [{
                 sourceFragments: [],
                 message: 'BLA Error',
                 severity: 'Error',
               }]
-              mockWorkspace.hasErrors = () => true
+              workspace.hasErrors = () => true
 
               await fetchCommand({
-                workspace: mockWorkspace,
+                workspace,
                 force: false,
                 interactive: false,
                 inputServices: services,
                 output: cliOutput,
-                fetch: mockFetch,
-                getApprovedChanges: mockApprove,
+                fetch: mockFetchWithChanges,
+                getApprovedChanges: mockSingleChangeApprove,
               })
-              expect(mockWorkspace.updateBlueprints).toHaveBeenCalledWith(dummyChanges[0])
+              expect(workspace.updateBlueprints).toHaveBeenCalledWith(dummyChanges[0])
               expect(cliOutput.stderr.content).toContain('Error')
               expect(cliOutput.stderr.content).toContain('BLA Error')
-              expect(mockWorkspace.flush).not.toHaveBeenCalled()
+              expect(workspace.flush).not.toHaveBeenCalled()
             })
             it('should not exit if warning identified in workspace after update', async () => {
-              mockWorkspace.getWorkspaceErrors = async () => [{
+              const workspace = mockWorkspace(mockElements())
+              workspace.getWorkspaceErrors = async () => [{
                 sourceFragments: [],
                 message: 'BLA Warning',
                 severity: 'Warning',
               }]
-              mockWorkspace.hasErrors = () => true
+              workspace.hasErrors = () => true
 
               await fetchCommand({
-                workspace: mockWorkspace,
+                workspace,
                 force: false,
                 interactive: false,
                 inputServices: services,
                 output: cliOutput,
-                fetch: mockFetch,
-                getApprovedChanges: mockApprove,
+                fetch: mockFetchWithChanges,
+                getApprovedChanges: mockSingleChangeApprove,
               })
-              expect(mockWorkspace.updateBlueprints).toHaveBeenCalledWith(dummyChanges[0])
+              expect(workspace.updateBlueprints).toHaveBeenCalledWith(dummyChanges[0])
               expect(cliOutput.stderr.content).not.toContain(Prompts.SHOULDCONTINUE(1))
               expect(cliOutput.stdout.content).not.toContain(Prompts.SHOULDCONTINUE(1))
               expect(cliOutput.stdout.content).toContain('Warning')
               expect(cliOutput.stdout.content).toContain('BLA Warning')
-              expect(mockWorkspace.flush).toHaveBeenCalled()
+              expect(workspace.flush).toHaveBeenCalled()
             })
             it('should not update workspace if fetch failed', async () => {
+              const workspace = mockWorkspace(mockElements())
               await fetchCommand({
-                workspace: mockWorkspace,
+                workspace,
                 force: false,
                 interactive: false,
                 inputServices: services,
                 output: cliOutput,
                 fetch: mockFailedFetch,
-                getApprovedChanges: mockApprove,
+                getApprovedChanges: mockSingleChangeApprove,
               })
               expect(cliOutput.stderr.content).toContain('Error')
-              expect(mockWorkspace.flush).not.toHaveBeenCalled()
-              expect(mockWorkspace.updateBlueprints).not.toHaveBeenCalled()
+              expect(workspace.flush).not.toHaveBeenCalled()
+              expect(workspace.updateBlueprints).not.toHaveBeenCalled()
             })
           })
         })

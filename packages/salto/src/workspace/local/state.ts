@@ -4,7 +4,7 @@ import { logger } from '@salto/logging'
 import { collections } from '@salto/lowerdash'
 import { exists, readTextFile, replaceContents } from '../../file'
 import { serialize, deserialize } from '../../serializer/elements'
-import { ElementsDataSource } from '../elements_data_source'
+import { ElementsDataSource } from '../elements_datasource'
 
 const { makeArray } = collections.array
 

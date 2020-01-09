@@ -1,26 +1,27 @@
 import _ from 'lodash'
 import wu from 'wu'
 import path from 'path'
-import readdirp from 'readdirp'
 import uuidv4 from 'uuid/v4'
 import { types } from '@salto/lowerdash'
-import { Element, ElemID, isInstanceElement, InstanceElement, SaltoError, SaltoElementError } from 'adapter-api'
+import { Element, ElemID, SaltoError, SaltoElementError } from 'adapter-api'
 import { logger } from '@salto/logging'
 import { DefaultMap } from '@salto/lowerdash/dist/src/collections/map'
-import { stat, mkdirp, readTextFile, rm, writeFile, exists, Stats } from '../file'
+import { mkdirp, rm, writeFile, exists } from '../file'
 import { SourceMap, parse, SourceRange, ParseError, ParseResult } from '../parser/parse'
 import { mergeElements, MergeError } from '../core/merger'
 import { validateElements, ValidationError } from '../core/validator'
 import { DetailedChange } from '../core/plan'
 import { ParseResultFSCache } from './cache'
-import { getChangeLocations, updateBlueprintData, getChangesToUpdate, BP_EXTENSION } from './blueprint_update'
+import { getChangeLocations, updateBlueprintData, getChangesToUpdate } from './blueprint_update'
 import { Config, dumpConfig, locateWorkspaceRoot, getConfigPath, completeConfig, saltoConfigType } from './config'
+import { Blueprint, loadBlueprints, loadBlueprint } from './blueprint'
+import Credentials from './credentials'
+import LocalCredentials from './local/credentials'
+import State from './state'
 import LocalState from './local/state'
-import { State } from './state'
 
 const log = logger(module)
 
-export const CREDS_DIR = 'credentials'
 class ExistingWorkspaceError extends Error {
   constructor() {
     super('existing salto workspace')
@@ -32,13 +33,6 @@ class NotAnEmptyWorkspaceError extends Error {
     super(`not an empty workspace. ${exsitingPathes.join('')} already exists.`)
   }
 }
-
-export type Blueprint = {
-  buffer: string
-  filename: string
-  timestamp?: number
-}
-
 
 export type WorkspaceError<T extends SaltoError > = Readonly<T & {
    sourceFragments: SourceFragment[]
@@ -60,45 +54,6 @@ export type ResolvedParsedBlueprint = ParsedBlueprint & {
 
 export interface ParsedBlueprintMap {
   [key: string]: ParsedBlueprint
-}
-
-export const getBlueprintsFromDir = async (
-  blueprintsDir: string,
-): Promise<string[]> => {
-  const entries = await readdirp.promise(blueprintsDir, {
-    fileFilter: `*${BP_EXTENSION}`,
-    directoryFilter: e => e.basename[0] !== '.',
-  })
-  return entries.map(e => e.fullPath)
-}
-
-const loadBlueprint = async (filename: string, blueprintsDir: string): Promise<Blueprint> => {
-  const relFileName = path.isAbsolute(filename)
-    ? path.relative(blueprintsDir, filename)
-    : filename
-  const absFileName = path.resolve(blueprintsDir, relFileName)
-  return {
-    filename: relFileName,
-    buffer: await readTextFile(absFileName),
-    timestamp: (await stat(absFileName) as Stats).mtimeMs,
-  }
-}
-
-const loadBlueprints = async (
-  blueprintsDir: string,
-  credsDir: string,
-  blueprintsFiles: string[],
-): Promise<Blueprint[]> => {
-  try {
-    const filenames = [
-      ...blueprintsFiles,
-      ...await getBlueprintsFromDir(blueprintsDir),
-      ...await getBlueprintsFromDir(credsDir),
-    ]
-    return Promise.all(filenames.map(filename => loadBlueprint(filename, blueprintsDir)))
-  } catch (e) {
-    throw Error(`Failed to load blueprint files: ${e.message}`)
-  }
 }
 
 const getParseResult = async (
@@ -262,11 +217,7 @@ export class Workspace {
     config: Config,
     useCache = true
   ): Promise<Workspace> {
-    const bps = await loadBlueprints(
-      config.baseDir,
-      path.join(config.localStorage, CREDS_DIR),
-      config.additionalBlueprints || []
-    )
+    const bps = await loadBlueprints(config.baseDir)
     const parsedBlueprints = parseBlueprints(bps, config.localStorage, config.baseDir, useCache)
     const ws = new Workspace(config, await parsedBlueprints)
     log.debug(`finished loading workspace with ${ws.elements.length} elements`)
@@ -301,7 +252,10 @@ export class Workspace {
     public config: Config,
     blueprints: ReadonlyArray<ParsedBlueprint>,
     readonly useCache: boolean = true,
-    readonly state: State = new LocalState(config.stateLocation)
+    readonly state: State = new LocalState(config.stateLocation),
+    readonly credentials: Credentials = new LocalCredentials(
+      path.join(config.localStorage, 'credentials')
+    ),
   ) {
     this.workspaceState = createWorkspaceState(blueprints)
     this.dirtyBlueprints = new Set<string>()
@@ -313,9 +267,6 @@ export class Workspace {
   hasErrors(): boolean { return this.workspaceState.errors.hasErrors() }
   get parsedBlueprints(): ParsedBlueprintMap { return this.workspaceState.parsedBlueprints }
   get elementsIndex(): Record<string, string[]> { return this.workspaceState.elementsIndex }
-  get configElements(): ReadonlyArray<InstanceElement> {
-    return this.workspaceState.elements.filter(isInstanceElement).filter(e => e.elemID.isConfig())
-  }
 
   async resolveParsedBlueprint(bp: ParsedBlueprint): Promise<ResolvedParsedBlueprint> {
     if (bp.buffer && bp.sourceMap) {
@@ -492,22 +443,13 @@ export class Workspace {
    * Dump the current workspace state to the underlying persistent storage
    */
   async flush(): Promise<void> {
-    const isNewConfig = (bp: ParsedBlueprint): boolean => (
-      bp
-      && bp.elements.length === 1
-      && bp.elements[0].elemID.isConfig
-      && bp.filename === path.join(CREDS_DIR, `${bp.elements[0].elemID.adapter}${BP_EXTENSION}`)
-    )
-
     if (this.state.flush) {
       await this.state.flush()
     }
     const cache = new ParseResultFSCache(this.config.localStorage, this.config.baseDir)
     await Promise.all(wu(this.dirtyBlueprints).map(async filename => {
       const bp = this.parsedBlueprints[filename]
-      const filePath = isNewConfig(bp)
-        ? path.join(this.config.localStorage, filename)
-        : path.join(this.config.baseDir, filename)
+      const filePath = path.join(this.config.baseDir, filename)
       if (bp === undefined) {
         await rm(filePath)
       } else {

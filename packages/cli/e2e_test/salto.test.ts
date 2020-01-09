@@ -24,7 +24,7 @@ const apiNameAnno = (
   field: string
 ): Record<string, string> => ({ [API_NAME]: [obj, field].join(API_NAME_SEPERATOR) })
 
-describe('commands e2e', () => {
+describe('cli e2e', () => {
   jest.setTimeout(15 * 60 * 1000)
 
   beforeAll(() => {

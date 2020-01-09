@@ -1,47 +1,19 @@
-import * as path from 'path'
-import { Config } from 'salto'
 import { EditorWorkspace } from '../../src/salto/workspace'
 import { getDiagnostics } from '../../src/salto/diagnostics'
+import { mockWorkspace } from './workspace'
 
-describe('TEST', () => {
-  const getConfig = (baseDir: string, additionalBlueprints: string[]): Config => ({
-    baseDir,
-    additionalBlueprints,
-    stateLocation: path.join(baseDir, 'salto.config', 'state.bpc'),
-    localStorage: '.',
-    name: 'test',
-    services: ['salesforce'],
-    uid: '',
-  })
-
-  const baseBPDir = `${__dirname}/../../../test/salto/BP`
-  const parseErrorBp = `${__dirname}/../../../test/salto/BP2/parse_error.bp`
-  const validationErrorBp = `${__dirname}/../../../test/salto/BP2/error.bp`
-
-  it('should diagnostics on parse errors', async () => {
-    const workspace = await EditorWorkspace.load(getConfig(baseBPDir, [parseErrorBp]), false)
-    expect(workspace.elements).toBeDefined()
-    expect(workspace.errors.hasErrors()).toBeTruthy()
-    const diag = (await getDiagnostics(workspace))['../BP2/parse_error.bp'][0]
+describe('diagnostics', () => {
+  it('should diagnostics on errors', async () => {
+    const baseWs = await mockWorkspace()
+    baseWs.getWorkspaceErrors = jest.fn().mockImplementation(() => Promise.resolve([{
+      severity: 'Error',
+      message: 'Blabla',
+      sourceFragments: [{ sourceRange: { filename: 'parse_error.bp', start: 1, end: 2 } }],
+    }]))
+    const workspace = new EditorWorkspace(baseWs)
+    const diag = (await getDiagnostics(workspace))['parse_error.bp'][0]
     expect(diag).toBeDefined()
-    expect(diag.msg).toContain('Expected ws, comment, number, boolean, word')
+    expect(diag.msg).toContain('Blabla')
     expect(diag.severity).toBe('Error')
-  })
-  it('should diagnostics on validations errors', async () => {
-    const workspace = await EditorWorkspace.load(getConfig(baseBPDir, [validationErrorBp]), false)
-    expect(workspace.elements).toBeDefined()
-    expect(workspace.errors.hasErrors()).toBeTruthy()
-    const diag = (await getDiagnostics(workspace))['../BP2/error.bp'][0]
-    expect(diag).toBeDefined()
-    expect(diag.msg).toContain(
-      'Invalid value type for salto.number : "ooppps"'
-    )
-    expect(diag.severity).toBe('Warning')
-  })
-  it('should no errors on non-existing file', async () => {
-    const workspace = await EditorWorkspace.load(getConfig(baseBPDir, []), false)
-    expect(workspace.elements).toBeDefined()
-    expect(workspace.errors.hasErrors()).toBeFalsy()
-    expect(await getDiagnostics(workspace)).toEqual({ 'complex_type.bp': [], 'simple_types.bp': [] })
   })
 })

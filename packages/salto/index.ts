@@ -20,12 +20,13 @@ export { FetchChange, FetchProgressEvents, StepEmitter, MergeErrorWithElements a
 export * from './src/api'
 export { FoundSearchResult, SearchResult } from './src/core/search'
 export {
-  Workspace, Blueprint, Errors, ParsedBlueprintMap,
+  Workspace, Errors, ParsedBlueprintMap,
   WorkspaceError, SourceFragment,
   ResolvedParsedBlueprint as ParsedBlueprint,
 } from './src/workspace/workspace'
+export { Blueprint } from './src/workspace/blueprint'
 export { Config, loadConfig, addServiceToConfig } from './src/workspace/config'
-export { SourceMap, SourceRange, parseElemID } from './src/parser/parse'
+export { parse, SourceMap, SourceRange, parseElemID } from './src/parser/parse'
 export { dump, dumpElemID } from './src/parser/dump'
 export { readAllCsvContents } from './test/common/helpers'
 export { SALTO_HOME_VAR } from './src/workspace/config'

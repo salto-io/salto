@@ -4,7 +4,7 @@ import path from 'path'
 import {
   Workspace, Blueprint,
   ParsedBlueprintMap,
-  Errors, Config, DetailedChange, ParsedBlueprint, SourceRange,
+  Errors, DetailedChange, ParsedBlueprint, SourceRange,
 } from 'salto'
 import { Element, ElemID } from 'adapter-api'
 
@@ -19,18 +19,10 @@ export class EditorWorkspace {
   private pendingDeletes: Set<string> = new Set<string>()
   private lastValidCopy? : Workspace
 
-  static async load(
-    config: Config,
-    useCache = true
-  ): Promise<EditorWorkspace> {
-    const workspace = await Workspace.load(config, useCache)
-    return new EditorWorkspace(workspace)
-  }
-
   constructor(workspace: Workspace, isCopy = false) {
     this.workspace = workspace
     this.isCopy = isCopy
-    if (!workspace.errors.hasErrors()) {
+    if (!workspace.hasErrors()) {
       this.lastValidCopy = _.clone(workspace)
     }
   }

@@ -9,12 +9,11 @@ import {
 import { SalesforceClient } from 'index'
 import { DescribeSObjectResult, Field as SObjField, SaveResult, UpsertResult } from 'jsforce'
 import _ from 'lodash'
-import {
-  API_NAME, CUSTOM_OBJECT, METADATA_TYPE, SALESFORCE,
+import { API_NAME, CUSTOM_OBJECT, METADATA_TYPE, SALESFORCE,
   INSTANCE_FULL_NAME_FIELD, SALESFORCE_CUSTOM_SUFFIX, LABEL, FIELD_DEPENDENCY_FIELDS,
-  FIELD_TYPE_API_NAMES, FIELD_ANNOTATIONS, VALUE_SET_FIELDS, INSTANCE_VALUE_SET_FIELD,
+  FIELD_TYPE_API_NAMES, FIELD_ANNOTATIONS, VALUE_SET_FIELDS,
   LOOKUP_FILTER_FIELDS, VALUE_SETTINGS_FIELDS, API_NAME_SEPERATOR,
-  CUSTOM_OBJECT_ANNOTATIONS } from '../constants'
+  VALUE_SET_DEFINITION_FIELDS, CUSTOM_OBJECT_ANNOTATIONS } from '../constants'
 import { FilterCreator } from '../filter'
 import {
   getSObjectFieldElement, Types, isCustomObject, bpCase, apiName, transformPrimitive,
@@ -167,10 +166,10 @@ const transfromAnnotationsNames = (fields: Values, parentApiName: string): Value
       case INSTANCE_DEFAULT_VALUE_FIELD:
         annotations[CORE_ANNOTATIONS.DEFAULT] = v
         break
-      case INSTANCE_VALUE_SET_FIELD:
-        annotations[INSTANCE_VALUE_SET_FIELD] = { [VALUE_SET_FIELDS.VALUE_SET_DEFINITION]:
-          v[VALUE_SET_FIELDS.VALUE_SET_DEFINITION],
-        [VALUE_SET_FIELDS.RESTRICTED]: v[VALUE_SET_FIELDS.RESTRICTED] || false }
+      case FIELD_ANNOTATIONS.VALUE_SET:
+        annotations[FIELD_ANNOTATIONS.VALUE_SET] = v[VALUE_SET_FIELDS
+          .VALUE_SET_DEFINITION][VALUE_SET_DEFINITION_FIELDS.VALUE]
+        annotations[FIELD_ANNOTATIONS.RESTRICTED] = v[VALUE_SET_FIELDS.RESTRICTED] || false
         if (!_.isUndefined(getFieldDependency(v))) {
           annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY] = getFieldDependency(v)
         }

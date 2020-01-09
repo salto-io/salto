@@ -3,7 +3,6 @@ export const CUSTOM_FIELD = 'CustomField'
 export const CUSTOM_OBJECT = 'CustomObject'
 export const METADATA_OBJECT_NAME_FIELD = 'fullName'
 export const INSTANCE_FULL_NAME_FIELD = 'full_name'
-export const INSTANCE_VALUE_SET_FIELD = 'value_set'
 export const FORMULA_TYPE_PREFIX = 'formula_'
 export const SALESFORCE_CUSTOM_SUFFIX = '__c'
 export const ADMIN_PROFILE = 'admin'
@@ -108,6 +107,8 @@ export const FIELD_ANNOTATIONS = {
   SUMMARY_FILTER_ITEMS: 'summary_filter_items',
   SUMMARY_FOREIGN_KEY: 'summary_foreign_key',
   SUMMARY_OPERATION: 'summary_operation',
+  RESTRICTED: 'restricted',
+  VALUE_SET: 'value_set',
 }
 
 export const CUSTOM_OBJECT_ANNOTATIONS = {

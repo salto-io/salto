@@ -70,22 +70,19 @@ export default class HubspotAdapter {
 
 
   /**
-   * Add new element
-   * @param element the object/instance to add
+   * Add new instance
+   * Hubspot API support only instances additions
+   * @param instance the instance to add
    * @returns the updated element
    * @throws error in case of failure
    */
-  public async add(element: Element): Promise<Element> {
-    if (isInstanceElement(element)) {
-      const resp = await this.client.createForm(
-        {
-          name: element.value.name,
-        } as Form
-      )
-      element.value.guid = resp.guid
-    }
+  public async add(instance: InstanceElement): Promise<Element> {
+    const post = instance.clone()
+    const resp = await this.client.createForm(post.value as Form)
 
-    return element
+    // Copy the (auto generate) Form guid
+    post.value.guid = resp.guid
+    return post
   }
 
   /**

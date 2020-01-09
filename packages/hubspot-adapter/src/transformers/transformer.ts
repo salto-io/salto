@@ -28,26 +28,19 @@ export class Types {
           optionsElemID, OPTIONS_FIELDS.LABEL, BuiltinTypes.STRING, {
             name: OPTIONS_FIELDS.LABEL,
             _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.REQUIRED]: true,
           },
         ),
         [OPTIONS_FIELDS.VALUE]: new TypeField(
           optionsElemID, OPTIONS_FIELDS.VALUE, BuiltinTypes.STRING, {
             name: OPTIONS_FIELDS.VALUE,
             _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.REQUIRED]: true,
           },
         ),
         [OPTIONS_FIELDS.DISPLAYORDER]: new TypeField(
           optionsElemID, OPTIONS_FIELDS.DISPLAYORDER, BuiltinTypes.NUMBER, {
             name: OPTIONS_FIELDS.DISPLAYORDER,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
-        [OPTIONS_FIELDS.DOUBLEDATA]: new TypeField(
-          optionsElemID, OPTIONS_FIELDS.DOUBLEDATA, BuiltinTypes.NUMBER, {
-            name: OPTIONS_FIELDS.DOUBLEDATA,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
@@ -62,13 +55,6 @@ export class Types {
         [OPTIONS_FIELDS.DESCRIPTION]: new TypeField(
           optionsElemID, OPTIONS_FIELDS.DESCRIPTION, BuiltinTypes.STRING, {
             name: OPTIONS_FIELDS.DESCRIPTION,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
-        [OPTIONS_FIELDS.READONLY]: new TypeField(
-          optionsElemID, OPTIONS_FIELDS.READONLY, BuiltinTypes.BOOLEAN, {
-            name: OPTIONS_FIELDS.READONLY,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },

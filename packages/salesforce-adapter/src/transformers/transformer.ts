@@ -123,9 +123,12 @@ const addPicklistAnnotations = (
   toSort = false,
 ): void => {
   if (picklistValues && picklistValues.length > 0) {
-    annotations[FIELD_ANNOTATIONS.VALUE_SET] = createPicklistValuesAnnotations(picklistValues,
-      picklistValues.length < MAX_METADATA_RESTRICTION_VALUES ? toSort : false)
-    annotations[FIELD_ANNOTATIONS.RESTRICTED] = restricted
+    if (picklistValues.length < MAX_METADATA_RESTRICTION_VALUES) {
+      annotations[FIELD_ANNOTATIONS.VALUE_SET] = createPicklistValuesAnnotations(
+        picklistValues, toSort
+      )
+      annotations[FIELD_ANNOTATIONS.RESTRICTED] = restricted
+    }
     addPicklistDefaultValue(picklistValues, annotations)
   }
 }

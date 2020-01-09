@@ -35,6 +35,7 @@ export const FORM_FIELDS = {
   CAPTCHAENABLED: 'captchaEnabled',
   CLONEABLE: 'cloneable',
   EDITABLE: 'editable',
+  STYLE: 'style',
   FORMFIELDGROUPS: 'formFieldGroups',
 }
 

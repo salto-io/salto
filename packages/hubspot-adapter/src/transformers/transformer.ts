@@ -284,7 +284,7 @@ export class Types {
         [FORM_FIELDS.CAPTCHAENABLED]: new TypeField(
           formElemID, FORM_FIELDS.CAPTCHAENABLED, BuiltinTypes.BOOLEAN, {
             name: FORM_FIELDS.CAPTCHAENABLED,
-            _readOnly: true,
+            _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
@@ -301,6 +301,13 @@ export class Types {
             _readOnly: true,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
+        ),
+        [FORM_FIELDS.STYLE]: new TypeField(
+          formElemID, FORM_FIELDS.STYLE, BuiltinTypes.STRING, {
+            name: FORM_FIELDS.STYLE,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
         ),
         [FORM_FIELDS.EDITABLE]: new TypeField(
           formElemID, FORM_FIELDS.EDITABLE, BuiltinTypes.BOOLEAN, {

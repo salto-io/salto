@@ -13,7 +13,6 @@ import {
   SALESFORCE, GEOLOCATION_FIELDS, NAME_FIELDS, API_NAME,
   FIELD_LEVEL_SECURITY_ANNOTATION, FIELD_LEVEL_SECURITY_FIELDS, FIELD_DEPENDENCY_FIELDS,
   VALUE_SETTINGS_FIELDS, FILTER_ITEM_FIELDS, METADATA_TYPE, CUSTOM_OBJECT,
-  INSTANCE_VALUE_SET_FIELD, VALUE_SET_FIELDS, VALUE_SET_DEFINITION_FIELDS,
   VALUE_SET_DEFINITION_VALUE_FIELDS,
 } from '../../src/constants'
 import { CustomField, FilterItem, CustomObject } from '../../src/client/types'
@@ -75,12 +74,10 @@ describe('transformer', () => {
       })
       describe('restriction values', () => {
         it('should not have duplicate values', () => {
-          expect(enumField.annotations[INSTANCE_VALUE_SET_FIELD][VALUE_SET_FIELDS
-            .VALUE_SET_DEFINITION][VALUE_SET_DEFINITION_FIELDS.VALUE]).toHaveLength(2)
+          expect(enumField.annotations[FIELD_ANNOTATIONS.VALUE_SET]).toHaveLength(2)
         })
         it('should be sorted alphabetically', () => {
-          expect(enumField.annotations[INSTANCE_VALUE_SET_FIELD][VALUE_SET_FIELDS
-            .VALUE_SET_DEFINITION][VALUE_SET_DEFINITION_FIELDS.VALUE]).toEqual([
+          expect(enumField.annotations[FIELD_ANNOTATIONS.VALUE_SET]).toEqual([
             {
               [VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'a',
               [VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'a',

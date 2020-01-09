@@ -89,13 +89,13 @@ const fieldTypeName = (typeName: string): string => (
 )
 
 const createPicklistValuesAnnotations = (picklistValues: PicklistEntry[],
-  sorted: boolean): Values => {
+  toSort: boolean): Values => {
   const values = picklistValues.map(val => ({
     [VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: val.value,
     [VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: val.defaultValue,
     [VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: val.label || val.value,
   }))
-  if (sorted) {
+  if (toSort) {
     return _.sortedUniqBy(values.sort((first, second) => {
       const firstValue = first[VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]
       const secondValue = second[VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]

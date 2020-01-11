@@ -7,6 +7,7 @@ import {
   Element,
   Field, BuiltinTypes,
   CORE_ANNOTATIONS,
+  Values,
 } from 'adapter-api'
 import {
   MetadataInfo, SaveResult, DeployResult, DeployDetails,
@@ -58,6 +59,11 @@ describe('SalesforceAdapter CRUD', () => {
   let mockDelete: jest.Mock
   let mockUpdate: jest.Mock
   let mockDeploy: jest.Mock
+
+  const createValueSetEntry = (name: string, defaultValue = false, label?: string): Values =>
+    ({ [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: name,
+      [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: label || name,
+      [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: defaultValue })
 
   beforeEach(() => {
     ({ connection, adapter } = mockAdapter({
@@ -238,12 +244,8 @@ describe('SalesforceAdapter CRUD', () => {
               [CORE_ANNOTATIONS.REQUIRED]: false,
               label: 'test label',
               [constants.FIELD_ANNOTATIONS.VALUE_SET]: [
-                { [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'NEW',
-                  [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'NEW',
-                  [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: true },
-                { [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'OLD',
-                  [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'OLD',
-                  [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: false },
+                createValueSetEntry('NEW', true),
+                createValueSetEntry('OLD'),
               ],
             },
           ),
@@ -356,27 +358,13 @@ describe('SalesforceAdapter CRUD', () => {
             {
               [constants.LABEL]: 'Multipicklist description label',
               [constants.FIELD_ANNOTATIONS.VALUE_SET]: [
-                { [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'DO',
-                  [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'DO',
-                  [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: false },
-                { [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'RE',
-                  [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'RE',
-                  [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: true },
-                { [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'MI',
-                  [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'MI',
-                  [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: false },
-                { [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'FA',
-                  [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'FA',
-                  [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: false },
-                { [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'SOL',
-                  [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'SOL',
-                  [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: false },
-                { [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'LA',
-                  [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'LA',
-                  [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: false },
-                { [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'SI',
-                  [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'SI',
-                  [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: false },
+                createValueSetEntry('DO'),
+                createValueSetEntry('RE', true),
+                createValueSetEntry('MI'),
+                createValueSetEntry('FA'),
+                createValueSetEntry('SOL'),
+                createValueSetEntry('LA'),
+                createValueSetEntry('SI'),
               ],
               [constants.FIELD_ANNOTATIONS.VISIBLE_LINES]: 4,
             },
@@ -451,27 +439,13 @@ describe('SalesforceAdapter CRUD', () => {
             {
               [constants.LABEL]: 'Picklist description label',
               [constants.FIELD_ANNOTATIONS.VALUE_SET]: [
-                { [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'DO',
-                  [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'DO',
-                  [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: true },
-                { [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'RE',
-                  [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'RE',
-                  [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: false },
-                { [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'MI',
-                  [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'MI',
-                  [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: false },
-                { [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'FA',
-                  [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'FA',
-                  [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: false },
-                { [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'SOL',
-                  [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'SOL',
-                  [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: false },
-                { [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'LA',
-                  [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'LA',
-                  [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: false },
-                { [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'SI',
-                  [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'SI',
-                  [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: false },
+                createValueSetEntry('DO', true),
+                createValueSetEntry('RE'),
+                createValueSetEntry('MI'),
+                createValueSetEntry('FA'),
+                createValueSetEntry('SOL'),
+                createValueSetEntry('LA'),
+                createValueSetEntry('SI'),
               ],
             },
           ),

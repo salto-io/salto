@@ -143,7 +143,7 @@ export const VALUE_SET_DEFINITION_FIELDS = {
 }
 
 export const VALUE_SET_DEFINITION_VALUE_FIELDS = {
-  FULL_NAME: 'full_name',
+  FULL_NAME: INSTANCE_FULL_NAME_FIELD,
   DEFAULT: 'default',
   LABEL: 'label',
 }

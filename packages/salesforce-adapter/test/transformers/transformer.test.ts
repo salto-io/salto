@@ -73,21 +73,10 @@ describe('transformer', () => {
       })
       describe('restriction values', () => {
         it('should not have duplicate values', () => {
-          expect(enumField.annotations[FIELD_ANNOTATIONS.VALUE_SET]).toHaveLength(2)
+          expect(enumField.annotations[CORE_ANNOTATIONS.VALUES]).toHaveLength(2)
         })
         it('should be sorted alphabetically', () => {
-          expect(enumField.annotations[FIELD_ANNOTATIONS.VALUE_SET]).toEqual([
-            {
-              [VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'a',
-              [VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'a',
-              [VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: false,
-            },
-            {
-              [VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'b',
-              [VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'b',
-              [VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: false,
-            },
-          ])
+          expect(enumField.annotations[CORE_ANNOTATIONS.VALUES]).toEqual(['a', 'b'])
         })
       })
     })

@@ -461,7 +461,8 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(flow.fields.description.type).toEqual(BuiltinTypes.STRING)
       expect(flow.fields.is_template.type).toEqual(BuiltinTypes.BOOLEAN)
       expect(flow.fields.action_calls.type).toEqual(findElements(result, 'flow_action_call')[0])
-      expect(flow.fields.process_type.annotations[constants.FIELD_ANNOTATIONS.RESTRICTED])
+      expect(flow.fields.process_type
+        .annotations[CORE_ANNOTATIONS.RESTRICTION][CORE_ANNOTATIONS.ENFORCE_VALUE])
         .toEqual(false)
     })
 

@@ -54,6 +54,11 @@ describe('SalesforceAdapter CRUD', () => {
   let mockUpdate: jest.Mock
   let mockDeploy: jest.Mock
 
+  const createValueSetEntry = (name: string, defaultValue = false, label?: string): Values =>
+    ({ [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: name,
+      [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: label || name,
+      [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: defaultValue })
+
   beforeEach(() => {
     ({ connection, adapter } = mockAdapter({
       adapterParams: {

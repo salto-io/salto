@@ -88,24 +88,12 @@ const fieldTypeName = (typeName: string): string => (
   typeName.startsWith(FORMULA_TYPE_PREFIX) ? typeName.slice(FORMULA_TYPE_PREFIX.length) : typeName
 )
 
-const createPicklistValuesAnnotations = (picklistValues: PicklistEntry[],
-  toSort: boolean): Values => {
-  const values = picklistValues.map(val => ({
+const createPicklistValuesAnnotations = (picklistValues: PicklistEntry[]): Values =>
+  picklistValues.map(val => ({
     [VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: val.value,
     [VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: val.defaultValue,
     [VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: val.label || val.value,
   }))
-  if (toSort) {
-    return _.sortedUniqBy(values.sort((first, second) => {
-      const firstValue = first[VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]
-      const secondValue = second[VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]
-      if (firstValue < secondValue) { return -1 }
-      if (firstValue > secondValue) { return 1 }
-      return 0
-    }), v => v[VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME])
-  }
-  return values
-}
 
 const addPicklistDefaultValue = (picklistValues: PicklistEntry[], annotations: Values): void => {
   const defaults = picklistValues
@@ -828,7 +816,21 @@ export const getValueTypeFieldElement = (parentID: ElemID, field: ValueTypeField
   const annotations: Values = { [CORE_ANNOTATIONS.REQUIRED]: false }
 
   if (field.picklistValues && field.picklistValues.length > 0) {
-    addPicklistAnnotations(field.picklistValues, false, annotations, true)
+    // picklist values in metadata types are used to restrict a field to a list of allowed values
+    // because some fields can allow all fields names / all object names this restriction list
+    // might be very large and cause memory problems on parsing, so we choose to omit the
+    // restriction where there are too many possible values
+    if (field.picklistValues.length < MAX_METADATA_RESTRICTION_VALUES) {
+      annotations[CORE_ANNOTATIONS.VALUES] = _.sortedUniq(field
+        .picklistValues.map(val => val.value).sort())
+      annotations[CORE_ANNOTATIONS.RESTRICTION] = { [CORE_ANNOTATIONS.ENFORCE_VALUE]: false }
+    }
+    const defaults = field.picklistValues
+      .filter(val => val.defaultValue)
+      .map(val => val.value)
+    if (defaults.length === 1) {
+      annotations[CORE_ANNOTATIONS.DEFAULT] = defaults.pop()
+    }
   }
   return new TypeField(parentID, bpFieldName, bpFieldType, annotations)
 }

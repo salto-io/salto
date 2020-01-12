@@ -39,7 +39,6 @@ const createPicklistObjectType = (
         ? Types.primitiveDataTypes[constants.FIELD_TYPE_NAMES.MULTIPICKLIST]
         : Types.primitiveDataTypes[constants.FIELD_TYPE_NAMES.PICKLIST], {
         [CORE_ANNOTATIONS.REQUIRED]: false,
-        [CORE_ANNOTATIONS.DEFAULT]: 'Bart',
         [constants.API_NAME]: apiName,
         label: 'test label',
         [constants.FIELD_ANNOTATIONS.VALUE_SET]: pickListValues.map(val => ({

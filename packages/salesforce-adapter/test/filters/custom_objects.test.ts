@@ -14,8 +14,7 @@ import { FIELD_ANNOTATIONS, FILTER_ITEM_FIELDS, SALESFORCE, METADATA_TYPE,
 import mockAdapter from '../adapter'
 import { findElements, createValueSetEntry } from '../utils'
 import filterCreator, { INSTANCE_REQUIRED_FIELD, INSTANCE_TYPE_FIELD,
-  INSTANCE_DEFAULT_VALUE_FIELD, customObjectAnnotationTypeIds }
-  from '../../src/filters/custom_objects'
+  customObjectAnnotationTypeIds } from '../../src/filters/custom_objects'
 import { FilterWith } from '../../src/filter'
 
 describe('Custom Objects filter', () => {
@@ -171,12 +170,12 @@ describe('Custom Objects filter', () => {
       expect(lead.fields.last_name.annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(true)
       expect(lead.fields.first_name.annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
       // Default string and boolean
-      expect(lead.fields.last_name.annotations[CORE_ANNOTATIONS.DEFAULT]).toBe('BLABLA')
-      expect(lead.fields.is_deleted.annotations[CORE_ANNOTATIONS.DEFAULT]).toBe(false)
+      expect(lead.fields.last_name.annotations[INSTANCE_DEFAULT_VALUE_FIELD]).toBe('BLABLA')
+      expect(lead.fields.is_deleted.annotations[INSTANCE_DEFAULT_VALUE_FIELD]).toBe(false)
       // Custom type
       expect(lead.fields.custom__c).not.toBeUndefined()
       expect(lead.fields.custom__c.annotations[API_NAME]).toBe('Lead.Custom__c')
-      expect(lead.fields.custom__c.annotations[CORE_ANNOTATIONS.DEFAULT]).toBe(false)
+      expect(lead.fields.custom__c.annotations[INSTANCE_DEFAULT_VALUE_FIELD]).toBe(false)
       // Formula field
       expect(lead.fields.formula__c).toBeDefined()
       expect(lead.fields.formula__c.type.elemID.name).toBe('formula_text')
@@ -683,8 +682,6 @@ describe('Custom Objects filter', () => {
           ])
         expect(leadObjectType.fields.my_picklist.annotations[FIELD_ANNOTATIONS.RESTRICTED])
           .toBeTruthy()
-        expect(leadObjectType.fields.my_picklist
-          .annotations[CORE_ANNOTATIONS.DEFAULT]).toBe('YES')
         expect(leadObjectType.fields.my_picklist
           .annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(true)
 

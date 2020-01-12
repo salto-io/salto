@@ -95,15 +95,6 @@ const createPicklistValuesAnnotations = (picklistValues: PicklistEntry[]): Value
     [VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: val.label || val.value,
   }))
 
-const addPicklistDefaultValue = (picklistValues: PicklistEntry[], annotations: Values): void => {
-  const defaults = picklistValues
-    .filter(val => val.defaultValue)
-    .map(val => val.value)
-  if (defaults.length === 1) {
-    annotations[CORE_ANNOTATIONS.DEFAULT] = defaults.pop()
-  }
-}
-
 const addPicklistAnnotations = (
   picklistValues: PicklistEntry[],
   restricted: boolean,
@@ -113,7 +104,6 @@ const addPicklistAnnotations = (
     annotations[FIELD_ANNOTATIONS.VALUE_SET] = createPicklistValuesAnnotations(picklistValues)
     annotations[FIELD_ANNOTATIONS.RESTRICTED] = restricted
   }
-  addPicklistDefaultValue(picklistValues, annotations)
 }
 
 // Defines SFDC built-in field types & built-in primitive data types
@@ -756,7 +746,7 @@ export const toCustomField = (
     FIELD_TYPE_API_NAMES[fieldTypeName(field.type.elemID.name)],
     field.annotations[LABEL],
     field.annotations[CORE_ANNOTATIONS.REQUIRED],
-    field.annotations[CORE_ANNOTATIONS.DEFAULT],
+    field.annotations[INSTANCE_DEFAULT_VALUE_FIELD],
     field.annotations[DEFAULT_VALUE_FORMULA],
     picklistValues,
     fieldDependency?.[FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD],
@@ -915,7 +905,7 @@ export const getSObjectFieldElement = (parent: Element, field: Field,
   }
   const defaultValue = getDefaultValue(field)
   if (defaultValue !== undefined) {
-    annotations[CORE_ANNOTATIONS.DEFAULT] = defaultValue
+    annotations[INSTANCE_DEFAULT_VALUE_FIELD] = defaultValue
   }
 
   if (field.defaultValueFormula) {

@@ -13,19 +13,20 @@ import { API_NAME, CUSTOM_OBJECT, METADATA_TYPE, SALESFORCE,
   INSTANCE_FULL_NAME_FIELD, SALESFORCE_CUSTOM_SUFFIX, LABEL, FIELD_DEPENDENCY_FIELDS,
   FIELD_TYPE_API_NAMES, FIELD_ANNOTATIONS, VALUE_SET_FIELDS,
   LOOKUP_FILTER_FIELDS, VALUE_SETTINGS_FIELDS, API_NAME_SEPERATOR,
-  VALUE_SET_DEFINITION_FIELDS, CUSTOM_OBJECT_ANNOTATIONS } from '../constants'
+  VALUE_SET_DEFINITION_FIELDS, DEFAULT_VALUE_FORMULA,
+  CUSTOM_OBJECT_ANNOTATIONS, FIELD_TYPE_NAMES, INSTANCE_DEFAULT_VALUE_FIELD } from '../constants'
 import { FilterCreator } from '../filter'
 import {
   getSObjectFieldElement, Types, isCustomObject, bpCase, apiName, transformPrimitive,
   toMetadataInfo, sfCase,
 } from '../transformers/transformer'
-import { id, addApiName, addMetadataType, addLabel, hasNamespace, getNamespace, boolValue } from './utils'
+import { id, addApiName, addMetadataType, addLabel, hasNamespace,
+  getNamespace, boolValue } from './utils'
 import { convertList } from './convert_lists'
 
 const log = logger(module)
 const { makeArray } = collections.array
 
-export const INSTANCE_DEFAULT_VALUE_FIELD = 'default_value'
 export const INSTANCE_REQUIRED_FIELD = 'required'
 export const INSTANCE_TYPE_FIELD = 'type'
 
@@ -155,6 +156,7 @@ const getFieldDependency = (values: Values): Values | undefined => {
 
 const transfromAnnotationsNames = (fields: Values, parentApiName: string): Values => {
   const annotations: Values = {}
+  const typeName = fields[INSTANCE_TYPE_FIELD]
   Object.entries(fields).forEach(([k, v]) => {
     switch (k) {
       case INSTANCE_REQUIRED_FIELD:
@@ -164,7 +166,8 @@ const transfromAnnotationsNames = (fields: Values, parentApiName: string): Value
         annotations[API_NAME] = [parentApiName, v].join(API_NAME_SEPERATOR)
         break
       case INSTANCE_DEFAULT_VALUE_FIELD:
-        annotations[CORE_ANNOTATIONS.DEFAULT] = v
+        annotations[typeName === FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.CHECKBOX]
+          ? k : DEFAULT_VALUE_FORMULA] = v
         break
       case FIELD_ANNOTATIONS.VALUE_SET:
         annotations[FIELD_ANNOTATIONS.VALUE_SET] = v[VALUE_SET_FIELDS

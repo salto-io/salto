@@ -108,12 +108,8 @@ export default class HubspotAdapter {
     after: InstanceElement,
   ): Promise<InstanceElement> {
     validateFormGuid(before, after)
-    await this.client.updateForm(
-      {
-        guid: after.value.guid,
-      } as Form
-    )
 
+    await this.client.updateForm(after.value as Form)
     return after
   }
 }

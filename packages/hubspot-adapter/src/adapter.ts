@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import {
-  Change, isInstanceElement,
+  isInstanceElement,
   Element, InstanceElement, ObjectType,
 } from 'adapter-api'
 import {
@@ -102,13 +102,11 @@ export default class HubspotAdapter {
    * Updates an Element
    * @param before The metadata of the old element
    * @param after The new metadata of the element to replace
-   * @param changes to apply
    * @returns the updated element
    */
   public async update(
     before: Element,
     after: Element,
-    _changes: ReadonlyArray<Change>
   ): Promise<Element> {
     if (isInstanceElement(before) && isInstanceElement(after)) {
       validateFormGuid(before, after)

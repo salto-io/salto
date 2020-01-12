@@ -263,8 +263,7 @@ describe('Hubspot Adapter Operations', () => {
       it('should return the updated form', async () => {
         const res = await adapter.update(
           beforeUpdateInstance,
-          afterUpdateInstance,
-          []
+          afterUpdateInstance
         ) as InstanceElement
         expect(res).toBe(afterUpdateInstance)
       })
@@ -282,8 +281,7 @@ describe('Hubspot Adapter Operations', () => {
       it('should return 404 response', async () => {
         await expect(adapter.update(
           beforeUpdateInstance,
-          afterUpdateInstance,
-          []
+          afterUpdateInstance
         )).rejects
           .toThrow("No form found with guid 'guid'")
       })
@@ -297,8 +295,7 @@ describe('Hubspot Adapter Operations', () => {
       it('should return error', async () => {
         await expect(adapter.update(
           beforeUpdateInstance,
-          afterUpdateInstance,
-          []
+          afterUpdateInstance
         )).rejects
           .toThrow("Failed to update element as guid's prev=")
       })

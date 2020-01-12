@@ -14,7 +14,7 @@ import { API_NAME, CUSTOM_OBJECT, METADATA_TYPE, SALESFORCE,
   FIELD_TYPE_API_NAMES, FIELD_ANNOTATIONS, VALUE_SET_FIELDS,
   LOOKUP_FILTER_FIELDS, VALUE_SETTINGS_FIELDS, API_NAME_SEPERATOR,
   VALUE_SET_DEFINITION_FIELDS, DEFAULT_VALUE_FORMULA,
-  CUSTOM_OBJECT_ANNOTATIONS, FIELD_TYPE_NAMES, INSTANCE_DEFAULT_VALUE_FIELD } from '../constants'
+  CUSTOM_OBJECT_ANNOTATIONS, FIELD_TYPE_NAMES } from '../constants'
 import { FilterCreator } from '../filter'
 import {
   getSObjectFieldElement, Types, isCustomObject, bpCase, apiName, transformPrimitive,
@@ -165,9 +165,13 @@ const transfromAnnotationsNames = (fields: Values, parentApiName: string): Value
       case INSTANCE_FULL_NAME_FIELD:
         annotations[API_NAME] = [parentApiName, v].join(API_NAME_SEPERATOR)
         break
-      case INSTANCE_DEFAULT_VALUE_FIELD:
-        annotations[typeName === FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.CHECKBOX]
-          ? k : DEFAULT_VALUE_FORMULA] = v
+      case FIELD_ANNOTATIONS.DEFAULT_VALUE:
+        // Keep DEFAULT_VALUE annotations just in checkbox fields
+        if (typeName === FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.CHECKBOX]) {
+          annotations[k] = v
+        } else {
+          annotations[DEFAULT_VALUE_FORMULA] = v
+        }
         break
       case FIELD_ANNOTATIONS.VALUE_SET:
         annotations[FIELD_ANNOTATIONS.VALUE_SET] = v[VALUE_SET_FIELDS

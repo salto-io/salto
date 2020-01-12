@@ -21,7 +21,6 @@ import {
   OBJECT_LEVEL_SECURITY_FIELDS, NAMESPACE_SEPARATOR, DESCRIPTION, HELP_TEXT, BUSINESS_STATUS,
   SECURITY_CLASSIFICATION, BUSINESS_OWNER_GROUP, BUSINESS_OWNER_USER, COMPLIANCE_GROUP,
   VALUE_SET_DEFINITION_VALUE_FIELDS, API_NAME_SEPERATOR, MAX_METADATA_RESTRICTION_VALUES,
-  INSTANCE_DEFAULT_VALUE_FIELD,
 } from '../constants'
 import SalesforceClient from '../client/client'
 
@@ -410,6 +409,7 @@ export class Types {
       primitive: PrimitiveTypes.BOOLEAN,
       annotationTypes: {
         ...Types.commonAnnotationTypes,
+        [FIELD_ANNOTATIONS.DEFAULT_VALUE]: BuiltinTypes.BOOLEAN,
       },
     }),
     date: new PrimitiveType({
@@ -747,7 +747,7 @@ export const toCustomField = (
     FIELD_TYPE_API_NAMES[fieldTypeName(field.type.elemID.name)],
     field.annotations[LABEL],
     field.annotations[CORE_ANNOTATIONS.REQUIRED],
-    field.annotations[INSTANCE_DEFAULT_VALUE_FIELD],
+    field.annotations[FIELD_ANNOTATIONS.DEFAULT_VALUE],
     field.annotations[DEFAULT_VALUE_FORMULA],
     picklistValues,
     fieldDependency?.[FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD],
@@ -906,7 +906,7 @@ export const getSObjectFieldElement = (parent: Element, field: Field,
   }
   const defaultValue = getDefaultValue(field)
   if (defaultValue !== undefined) {
-    annotations[INSTANCE_DEFAULT_VALUE_FIELD] = defaultValue
+    annotations[FIELD_ANNOTATIONS.DEFAULT_VALUE] = defaultValue
   }
 
   if (field.defaultValueFormula) {

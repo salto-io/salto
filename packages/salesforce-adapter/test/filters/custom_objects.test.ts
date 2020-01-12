@@ -10,7 +10,7 @@ import { FIELD_ANNOTATIONS, FILTER_ITEM_FIELDS, SALESFORCE, METADATA_TYPE,
   SALESFORCE_CUSTOM_SUFFIX, API_NAME, FORMULA, LOOKUP_FILTER_FIELDS,
   FIELD_DEPENDENCY_FIELDS, VALUE_SETTINGS_FIELDS, VALUE_SET_FIELDS,
   VALUE_SET_DEFINITION_VALUE_FIELDS, VALUE_SET_DEFINITION_FIELDS,
-  DESCRIPTION, INSTANCE_DEFAULT_VALUE_FIELD } from '../../src/constants'
+  DESCRIPTION } from '../../src/constants'
 import mockAdapter from '../adapter'
 import { findElements, createValueSetEntry } from '../utils'
 import filterCreator, { INSTANCE_REQUIRED_FIELD, INSTANCE_TYPE_FIELD,
@@ -170,12 +170,12 @@ describe('Custom Objects filter', () => {
       expect(lead.fields.last_name.annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(true)
       expect(lead.fields.first_name.annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
       // Default string and boolean
-      expect(lead.fields.last_name.annotations[INSTANCE_DEFAULT_VALUE_FIELD]).toBe('BLABLA')
-      expect(lead.fields.is_deleted.annotations[INSTANCE_DEFAULT_VALUE_FIELD]).toBe(false)
+      expect(lead.fields.last_name.annotations[FIELD_ANNOTATIONS.DEFAULT_VALUE]).toBe('BLABLA')
+      expect(lead.fields.is_deleted.annotations[FIELD_ANNOTATIONS.DEFAULT_VALUE]).toBe(false)
       // Custom type
       expect(lead.fields.custom__c).not.toBeUndefined()
       expect(lead.fields.custom__c.annotations[API_NAME]).toBe('Lead.Custom__c')
-      expect(lead.fields.custom__c.annotations[INSTANCE_DEFAULT_VALUE_FIELD]).toBe(false)
+      expect(lead.fields.custom__c.annotations[FIELD_ANNOTATIONS.DEFAULT_VALUE]).toBe(false)
       // Formula field
       expect(lead.fields.formula__c).toBeDefined()
       expect(lead.fields.formula__c.type.elemID.name).toBe('formula_text')
@@ -545,7 +545,7 @@ describe('Custom Objects filter', () => {
           [INSTANCE_FULL_NAME_FIELD]: 'MyPicklist',
           [INSTANCE_TYPE_FIELD]: 'Picklist',
           [INSTANCE_REQUIRED_FIELD]: 'true',
-          [INSTANCE_DEFAULT_VALUE_FIELD]: 'YES',
+          [FIELD_ANNOTATIONS.DEFAULT_VALUE]: 'YES',
           [FIELD_ANNOTATIONS.VALUE_SET]:
           { [VALUE_SET_FIELDS.RESTRICTED]: 'true',
             [VALUE_SET_FIELDS.VALUE_SET_DEFINITION]:

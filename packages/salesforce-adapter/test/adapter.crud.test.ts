@@ -466,7 +466,7 @@ describe('SalesforceAdapter CRUD', () => {
             Types.primitiveDataTypes.boolean,
             {
               [constants.LABEL]: 'Checkbox description label',
-              [constants.INSTANCE_DEFAULT_VALUE_FIELD]: true,
+              [constants.FIELD_ANNOTATIONS.DEFAULT_VALUE]: true,
             },
           ),
         },

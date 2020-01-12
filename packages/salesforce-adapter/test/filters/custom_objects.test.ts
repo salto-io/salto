@@ -558,6 +558,12 @@ describe('Custom Objects filter', () => {
                 [VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: 'false' }] } },
         },
         {
+          [INSTANCE_FULL_NAME_FIELD]: 'MyCheckbox',
+          [INSTANCE_TYPE_FIELD]: 'Checkbox',
+          [INSTANCE_REQUIRED_FIELD]: 'false',
+          [FIELD_ANNOTATIONS.DEFAULT_VALUE]: 'true',
+        },
+        {
           [INSTANCE_FULL_NAME_FIELD]: 'rollup',
           [LABEL]: 'My Summary',
           [FIELD_ANNOTATIONS.SUMMARIZED_FIELD]: 'Opportunity.Amount',
@@ -573,6 +579,7 @@ describe('Custom Objects filter', () => {
         {
           [INSTANCE_FULL_NAME_FIELD]: 'lookup_field',
           [LABEL]: 'My Lookup',
+          [FIELD_ANNOTATIONS.REFERENCE_TO]: 'Account',
           [FIELD_ANNOTATIONS.LOOKUP_FILTER]: {
             [LOOKUP_FILTER_FIELDS.ACTIVE]: 'true',
             [LOOKUP_FILTER_FIELDS.BOOLEAN_FILTER]: 'myBooleanFilter',
@@ -645,6 +652,11 @@ describe('Custom Objects filter', () => {
           picklistValues: [],
         },
         {
+          name: 'MyCheckbox',
+          type: 'checkbox',
+          label: 'My Checkbox',
+        },
+        {
           name: 'rollup',
           type: 'rollupsummary',
         },
@@ -684,6 +696,12 @@ describe('Custom Objects filter', () => {
           .toBeTruthy()
         expect(leadObjectType.fields.my_picklist
           .annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(true)
+
+        // Verify checkbox field
+        expect(leadObjectType.fields.my_checkbox
+          .annotations[FIELD_ANNOTATIONS.DEFAULT_VALUE]).toBe(true)
+        expect(leadObjectType.fields.my_checkbox
+          .annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
 
         // Verify rollup field
         const expectedRollupSummaryField = testInstanceElement.value.fields
@@ -725,8 +743,9 @@ describe('Custom Objects filter', () => {
           .toEqual(['Controlling1'])
 
         // Verify lookup field
-        const lookupFilterAnnotation = leadObjectType.fields.lookup_field
-          .annotations[FIELD_ANNOTATIONS.LOOKUP_FILTER]
+        const lookupField = leadObjectType.fields.lookup_field
+        expect(lookupField.annotations[FIELD_ANNOTATIONS.REFERENCE_TO]).toEqual(['Account'])
+        const lookupFilterAnnotation = lookupField.annotations[FIELD_ANNOTATIONS.LOOKUP_FILTER]
         expect(lookupFilterAnnotation).toBeDefined()
         expect(lookupFilterAnnotation[LOOKUP_FILTER_FIELDS.ACTIVE]).toBe(true)
         expect(lookupFilterAnnotation[LOOKUP_FILTER_FIELDS.BOOLEAN_FILTER])

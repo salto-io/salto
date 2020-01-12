@@ -173,8 +173,13 @@ const transfromAnnotationsNames = (fields: Values, parentApiName: string): Value
         }
         break
       case FIELD_ANNOTATIONS.VALUE_SET:
-        annotations[FIELD_ANNOTATIONS.VALUE_SET] = v[VALUE_SET_FIELDS
-          .VALUE_SET_DEFINITION][VALUE_SET_DEFINITION_FIELDS.VALUE]
+        // Checks for global value set
+        if (!_.isUndefined(v[VALUE_SET_FIELDS.VALUE_SET_NAME])) {
+          annotations[k] = v
+        } else {
+          annotations[FIELD_ANNOTATIONS.VALUE_SET] = v[VALUE_SET_FIELDS
+            .VALUE_SET_DEFINITION][VALUE_SET_DEFINITION_FIELDS.VALUE]
+        }
         annotations[FIELD_ANNOTATIONS.RESTRICTED] = v[VALUE_SET_FIELDS.RESTRICTED] || false
         if (!_.isUndefined(getFieldDependency(v))) {
           annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY] = getFieldDependency(v)

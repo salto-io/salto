@@ -127,6 +127,7 @@ export const CUSTOM_OBJECT_ANNOTATIONS = {
 export const VALUE_SET_FIELDS = {
   RESTRICTED: 'restricted',
   VALUE_SET_DEFINITION: 'value_set_definition',
+  VALUE_SET_NAME: 'value_set_name',
 }
 
 export const FIELD_DEPENDENCY_FIELDS = {

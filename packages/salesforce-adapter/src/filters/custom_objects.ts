@@ -166,7 +166,6 @@ const transfromAnnotationsNames = (fields: Values, parentApiName: string): Value
         annotations[API_NAME] = [parentApiName, v].join(API_NAME_SEPERATOR)
         break
       case FIELD_ANNOTATIONS.DEFAULT_VALUE:
-        // Keep DEFAULT_VALUE annotations just in checkbox fields
         if (typeName === FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.CHECKBOX]) {
           annotations[k] = v
         } else {

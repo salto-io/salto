@@ -8,7 +8,7 @@ import {
 } from './client/types'
 import HubspotClient from './client/client'
 import {
-  Types, createHubspotInstanceElement,
+  Types, createHubspotInstanceElement, fromHubspotObject,
 } from './transformers/transformer'
 
 const validateFormGuid = (
@@ -80,8 +80,8 @@ export default class HubspotAdapter {
     const post = instance.clone()
     const resp = await this.client.createForm(post.value as Form)
 
-    // Copy the (auto generate) Form guid
-    post.value.guid = resp.guid
+    // Copy the response values
+    post.value = fromHubspotObject(resp, post.type)
     return post
   }
 

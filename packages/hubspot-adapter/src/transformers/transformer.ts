@@ -391,7 +391,7 @@ const createInstanceName = (
  * @param info
  * @param infoType
  */
-const fromHubspotObject = (
+export const fromHubspotObject = (
   info: HubspotMetadata,
   infoType: ObjectType
 ): Values => {

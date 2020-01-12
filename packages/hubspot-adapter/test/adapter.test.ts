@@ -138,7 +138,7 @@ describe('Hubspot Adapter Operations', () => {
         expect(result.value.cssClass).toEqual(formInstance.value.cssClass)
         expect(result.value.editable).toEqual(formInstance.value.editable)
 
-        // Fields that was filtered out
+        // Filtered out unsupported fields
         expect(result.value.method).toBeUndefined()
         expect(result.value.followUpId).toBeUndefined()
       })

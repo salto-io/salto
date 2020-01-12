@@ -17,6 +17,7 @@ import {
 import { CustomField, FilterItem, CustomObject } from '../../src/client/types'
 import SalesforceClient from '../../src/client/client'
 import mockClient from '../client'
+import { createValueSetEntry } from '../utils'
 
 const { makeArray } = collections.array
 
@@ -478,7 +479,10 @@ describe('transformer', () => {
         [API_NAME]: 'field_name',
         [LABEL]: 'field_label',
         [CORE_ANNOTATIONS.REQUIRED]: false,
-        [CORE_ANNOTATIONS.VALUES]: ['Val1', 'Val2'],
+        [FIELD_ANNOTATIONS.VALUE_SET]: [
+          createValueSetEntry('Val1'),
+          createValueSetEntry('Val2'),
+        ],
         [FIELD_ANNOTATIONS.FIELD_DEPENDENCY]: {
           [FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD]: 'ControllingFieldName',
           [FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS]: [{

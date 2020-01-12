@@ -65,6 +65,17 @@ export interface ValueSettings {
   valueName: string
 }
 
+export interface PicklistValue {
+  fullName: string
+  label: string
+  default: boolean
+}
+
+export interface ValueSet {
+  restricted: boolean
+  valueSetDefinition: { value: PicklistValue[] }
+}
+
 export interface FilterItem {
   field: string
   operation: string
@@ -133,7 +144,7 @@ export class CustomField implements MetadataInfo {
     required = false,
     defaultVal?: string,
     defaultValFormula?: string,
-    values?: string[],
+    values?: PicklistValue[],
     controllingField?: string,
     valueSettings?: ValueSettings[],
     picklistRestricted?: boolean,
@@ -174,7 +185,7 @@ export class CustomField implements MetadataInfo {
         this.valueSet = {
           restricted: picklistRestricted || false,
           valueSetDefinition: {
-            value: values.map(val => new CustomPicklistValue(val, val === defaultVal)),
+            value: values.map(val => new CustomPicklistValue(val.fullName, val.default, val.label)),
           },
         }
         if (controllingField && valueSettings) {

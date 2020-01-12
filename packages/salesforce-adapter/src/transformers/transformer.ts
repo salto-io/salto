@@ -1,6 +1,7 @@
 import _ from 'lodash'
 import {
-  ValueTypeField, Field, MetadataInfo, DefaultValueWithType, QueryResult, Record as SfRecord,
+  ValueTypeField, Field, MetadataInfo, DefaultValueWithType, QueryResult,
+  Record as SfRecord, PicklistEntry,
 } from 'jsforce'
 import {
   Type, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values, Value, Field as TypeField,
@@ -9,18 +10,17 @@ import {
   CORE_ANNOTATIONS, PrimitiveValue,
 } from 'adapter-api'
 import { collections } from '@salto/lowerdash'
-import { CustomObject, CustomField, ValueSettings, FilterItem } from '../client/types'
+import { CustomObject, CustomField, ValueSettings, FilterItem, PicklistValue } from '../client/types'
 import {
   API_NAME, CUSTOM_OBJECT, LABEL, SALESFORCE, FORMULA,
   FORMULA_TYPE_PREFIX, FIELD_TYPE_NAMES, FIELD_TYPE_API_NAMES, METADATA_OBJECT_NAME_FIELD,
   METADATA_TYPE, FIELD_ANNOTATIONS, SALESFORCE_CUSTOM_SUFFIX, DEFAULT_VALUE_FORMULA,
-  MAX_METADATA_RESTRICTION_VALUES, LOOKUP_FILTER_FIELDS,
-  ADDRESS_FIELDS, NAME_FIELDS, GEOLOCATION_FIELDS, INSTANCE_FULL_NAME_FIELD,
+  LOOKUP_FILTER_FIELDS, ADDRESS_FIELDS, NAME_FIELDS, GEOLOCATION_FIELDS, INSTANCE_FULL_NAME_FIELD,
   FIELD_LEVEL_SECURITY_ANNOTATION, FIELD_LEVEL_SECURITY_FIELDS, FIELD_DEPENDENCY_FIELDS,
   VALUE_SETTINGS_FIELDS, FILTER_ITEM_FIELDS, OBJECT_LEVEL_SECURITY_ANNOTATION,
   OBJECT_LEVEL_SECURITY_FIELDS, NAMESPACE_SEPARATOR, DESCRIPTION, HELP_TEXT, BUSINESS_STATUS,
   SECURITY_CLASSIFICATION, BUSINESS_OWNER_GROUP, BUSINESS_OWNER_USER, COMPLIANCE_GROUP,
-  API_NAME_SEPERATOR,
+  VALUE_SET_DEFINITION_VALUE_FIELDS, API_NAME_SEPERATOR, MAX_METADATA_RESTRICTION_VALUES,
 } from '../constants'
 import SalesforceClient from '../client/client'
 
@@ -87,6 +87,34 @@ const formulaTypeName = (baseTypeName: string): string =>
 const fieldTypeName = (typeName: string): string => (
   typeName.startsWith(FORMULA_TYPE_PREFIX) ? typeName.slice(FORMULA_TYPE_PREFIX.length) : typeName
 )
+
+const createPicklistValuesAnnotations = (picklistValues: PicklistEntry[]): Values =>
+  picklistValues.map(val => ({
+    [VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: val.value,
+    [VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: val.defaultValue,
+    [VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: val.label || val.value,
+  }))
+
+const addPicklistDefaultValue = (picklistValues: PicklistEntry[], annotations: Values): void => {
+  const defaults = picklistValues
+    .filter(val => val.defaultValue)
+    .map(val => val.value)
+  if (defaults.length === 1) {
+    annotations[CORE_ANNOTATIONS.DEFAULT] = defaults.pop()
+  }
+}
+
+const addPicklistAnnotations = (
+  picklistValues: PicklistEntry[],
+  restricted: boolean,
+  annotations: Values,
+): void => {
+  if (picklistValues && picklistValues.length > 0) {
+    annotations[FIELD_ANNOTATIONS.VALUE_SET] = createPicklistValuesAnnotations(picklistValues)
+    annotations[FIELD_ANNOTATIONS.RESTRICTED] = restricted
+  }
+  addPicklistDefaultValue(picklistValues, annotations)
+}
 
 // Defines SFDC built-in field types & built-in primitive data types
 // Ref: https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/field_types.htm
@@ -205,6 +233,25 @@ export class Types {
       [VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE]: new TypeField(
         Types.valueSettingsElemID, VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE,
         BuiltinTypes.STRING, {}, true
+      ),
+    },
+  })
+
+  private static valueSetElemID = new ElemID(SALESFORCE, FIELD_ANNOTATIONS.VALUE_SET)
+  private static valueSetType = new ObjectType({
+    elemID: Types.valueSetElemID,
+    fields: {
+      [VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: new TypeField(
+        Types.valueSetElemID, VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME,
+        BuiltinTypes.STRING,
+      ),
+      [VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: new TypeField(
+        Types.valueSetElemID, VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL,
+        BuiltinTypes.STRING,
+      ),
+      [VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: new TypeField(
+        Types.valueSetElemID, VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT,
+        BuiltinTypes.BOOLEAN,
       ),
     },
   })
@@ -410,6 +457,8 @@ export class Types {
       annotationTypes: {
         ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.FIELD_DEPENDENCY]: Types.fieldDependencyType,
+        [FIELD_ANNOTATIONS.VALUE_SET]: Types.valueSetType,
+        [FIELD_ANNOTATIONS.RESTRICTED]: BuiltinTypes.BOOLEAN,
       },
     }),
     multipicklist: new PrimitiveType({
@@ -419,6 +468,8 @@ export class Types {
         ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.VISIBLE_LINES]: BuiltinTypes.NUMBER,
         [FIELD_ANNOTATIONS.FIELD_DEPENDENCY]: Types.fieldDependencyType,
+        [FIELD_ANNOTATIONS.VALUE_SET]: Types.valueSetType,
+        [FIELD_ANNOTATIONS.RESTRICTED]: BuiltinTypes.BOOLEAN,
       },
     }),
     email: new PrimitiveType({
@@ -656,7 +707,7 @@ export class Types {
       Types.rollupSummaryOperationType, Types.objectLevelSecurityType,
       Types.valueSettingsType, Types.lookupFilterType, Types.filterItemType,
       Types.encryptedTextMaskCharType, Types.encryptedTextMaskTypeType,
-      Types.BusinessStatusType, Types.SecurityClassificationType,
+      Types.BusinessStatusType, Types.SecurityClassificationType, Types.valueSetType,
     ]
       .map(type => {
         const fieldType = type.clone()
@@ -698,6 +749,8 @@ export const toCustomField = (
   const summaryFilterItems = mapKeysRecursive(
     field.annotations[FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS], key => sfCase(key, false, false)
   ) as FilterItem[]
+  const picklistValues = mapKeysRecursive(field.annotations[FIELD_ANNOTATIONS.VALUE_SET],
+    key => sfCase(key, false, false)) as PicklistValue[]
   const newField = new CustomField(
     apiName(field, !fullname),
     FIELD_TYPE_API_NAMES[fieldTypeName(field.type.elemID.name)],
@@ -705,10 +758,10 @@ export const toCustomField = (
     field.annotations[CORE_ANNOTATIONS.REQUIRED],
     field.annotations[CORE_ANNOTATIONS.DEFAULT],
     field.annotations[DEFAULT_VALUE_FORMULA],
-    field.annotations[CORE_ANNOTATIONS.VALUES],
+    picklistValues,
     fieldDependency?.[FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD],
     valueSettings,
-    field.annotations[CORE_ANNOTATIONS.RESTRICTION]?.[CORE_ANNOTATIONS.ENFORCE_VALUE],
+    field.annotations[FIELD_ANNOTATIONS.RESTRICTED],
     field.annotations[FORMULA],
     summaryFilterItems,
     field.annotations[FIELD_ANNOTATIONS.REFERENCE_TO],
@@ -720,6 +773,8 @@ export const toCustomField = (
   const blacklistedAnnotations: string[] = [
     API_NAME, // used to mark the SERVICE_ID but does not exist in the CustomObject
     FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION, // handled in the CustomField constructor
+    FIELD_ANNOTATIONS.VALUE_SET, // handled in the CustomField constructor
+    FIELD_ANNOTATIONS.RESTRICTED, // handled in the CustomField constructor
     FIELD_ANNOTATIONS.FIELD_DEPENDENCY, // handled in field_dependencies filter
     FIELD_ANNOTATIONS.LOOKUP_FILTER, // handled in lookup_filters filter
     FIELD_LEVEL_SECURITY_ANNOTATION,
@@ -887,20 +942,8 @@ export const getSObjectFieldElement = (parent: Element, field: Field,
   }
   // Picklists
   if (field.picklistValues && field.picklistValues.length > 0) {
-    annotations[CORE_ANNOTATIONS.VALUES] = field.picklistValues.map(val => val.value)
-    annotations[CORE_ANNOTATIONS.RESTRICTION] = { [CORE_ANNOTATIONS.ENFORCE_VALUE]:
-       Boolean(field.restrictedPicklist) }
-
-    const defaults = field.picklistValues
-      .filter(val => val.defaultValue)
-      .map(val => val.value)
-    if (defaults.length > 0) {
-      if (field.type.endsWith('picklist')) {
-        annotations[CORE_ANNOTATIONS.DEFAULT] = defaults.pop()
-      } else {
-        annotations[CORE_ANNOTATIONS.DEFAULT] = defaults
-      }
-    }
+    addPicklistAnnotations(field.picklistValues,
+      Boolean(field.restrictedPicklist), annotations)
     if (field.dependentPicklist) {
       // will be populated in the field_dependencies filter
       annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY] = {}

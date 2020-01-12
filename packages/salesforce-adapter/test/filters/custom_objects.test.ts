@@ -5,20 +5,17 @@ import {
 } from 'adapter-api'
 import SalesforceClient from '../../src/client/client'
 import Connection from '../../src/client/jsforce'
-import {
-  FIELD_ANNOTATIONS, FILTER_ITEM_FIELDS, SALESFORCE, METADATA_TYPE,
+import { FIELD_ANNOTATIONS, FILTER_ITEM_FIELDS, SALESFORCE, METADATA_TYPE,
   CUSTOM_OBJECT, INSTANCE_FULL_NAME_FIELD, LABEL, NAMESPACE_SEPARATOR,
   SALESFORCE_CUSTOM_SUFFIX, API_NAME, FORMULA, LOOKUP_FILTER_FIELDS,
-  FIELD_DEPENDENCY_FIELDS, VALUE_SETTINGS_FIELDS, DESCRIPTION,
-} from '../../src/constants'
+  FIELD_DEPENDENCY_FIELDS, VALUE_SETTINGS_FIELDS, VALUE_SET_FIELDS,
+  VALUE_SET_DEFINITION_VALUE_FIELDS, VALUE_SET_DEFINITION_FIELDS,
+  DESCRIPTION } from '../../src/constants'
 import mockAdapter from '../adapter'
-import { findElements } from '../utils'
-import filterCreator, {
-  INSTANCE_REQUIRED_FIELD, INSTANCE_TYPE_FIELD,
-  INSTANCE_DEFAULT_VALUE_FIELD, INSTANCE_VALUE_SET_FIELD,
-  VALUE_SET_FIELDS, VALUE_SET_DEFINITION_FIELDS,
-  VALUE_SET_DEFINITION_VALUE_FIELDS, customObjectAnnotationTypeIds,
-} from '../../src/filters/custom_objects'
+import { findElements, createValueSetEntry } from '../utils'
+import filterCreator, { INSTANCE_REQUIRED_FIELD, INSTANCE_TYPE_FIELD,
+  INSTANCE_DEFAULT_VALUE_FIELD, customObjectAnnotationTypeIds }
+  from '../../src/filters/custom_objects'
 import { FilterWith } from '../../src/filter'
 
 describe('Custom Objects filter', () => {
@@ -204,10 +201,13 @@ describe('Custom Objects filter', () => {
 
       const lead = findElements(result, 'lead').pop() as ObjectType
       expect(lead.fields.primary_c.type.elemID.name).toBe('picklist')
-      expect((lead.fields.primary_c.annotations[CORE_ANNOTATIONS.VALUES] as string[]).join(';')).toBe('No;Yes')
-      expect(lead.fields.primary_c.annotations[CORE_ANNOTATIONS.DEFAULT]).toBe('Yes')
       expect(lead.fields.primary_c
-        .annotations[CORE_ANNOTATIONS.RESTRICTION][CORE_ANNOTATIONS.ENFORCE_VALUE]).toBe(true)
+        .annotations[FIELD_ANNOTATIONS.VALUE_SET])
+        .toEqual([
+          createValueSetEntry('No'),
+          createValueSetEntry('Yes', true),
+        ])
+      expect(lead.fields.primary_c.annotations[FIELD_ANNOTATIONS.RESTRICTED]).toBe(true)
     })
 
     it('should fetch sobject with combobox field', async () => {
@@ -227,10 +227,11 @@ describe('Custom Objects filter', () => {
 
       const lead = findElements(result, 'lead').pop() as ObjectType
       expect(lead.fields.primary_c.type.elemID.name).toBe('combobox')
-      expect((lead.fields.primary_c.annotations[CORE_ANNOTATIONS.VALUES] as string[]).join(';'))
-        .toBe('No;Yes')
-      expect(lead.fields.primary_c.annotations[CORE_ANNOTATIONS.DEFAULT].length).toBe(1)
-      expect(lead.fields.primary_c.annotations[CORE_ANNOTATIONS.DEFAULT].pop()).toBe('Yes')
+      expect(lead.fields.primary_c.annotations[FIELD_ANNOTATIONS.VALUE_SET])
+        .toEqual([
+          createValueSetEntry('No'),
+          createValueSetEntry('Yes', true),
+        ])
     })
 
     it('should fetch sobject with number field', async () => {
@@ -546,11 +547,16 @@ describe('Custom Objects filter', () => {
           [INSTANCE_TYPE_FIELD]: 'Picklist',
           [INSTANCE_REQUIRED_FIELD]: 'true',
           [INSTANCE_DEFAULT_VALUE_FIELD]: 'YES',
-          [INSTANCE_VALUE_SET_FIELD]:
-          { [VALUE_SET_FIELDS.RESTRICTED]: true,
+          [FIELD_ANNOTATIONS.VALUE_SET]:
+          { [VALUE_SET_FIELDS.RESTRICTED]: 'true',
             [VALUE_SET_FIELDS.VALUE_SET_DEFINITION]:
-            { value: [{ [INSTANCE_FULL_NAME_FIELD]: 'YES' },
-              { [INSTANCE_FULL_NAME_FIELD]: 'NO' }] } },
+            { [VALUE_SET_DEFINITION_FIELDS.VALUE]: [
+              { [VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'YES',
+                [VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'YES',
+                [VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: 'true' },
+              { [VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'NO',
+                [VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'NO',
+                [VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: 'false' }] } },
         },
         {
           [INSTANCE_FULL_NAME_FIELD]: 'rollup',
@@ -595,7 +601,7 @@ describe('Custom Objects filter', () => {
         {
           [INSTANCE_FULL_NAME_FIELD]: 'picklist_field',
           [LABEL]: 'My Field Dependency',
-          [INSTANCE_VALUE_SET_FIELD]: {
+          [FIELD_ANNOTATIONS.VALUE_SET]: {
             [FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD]: 'ControllingFieldName',
             [FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS]: [
               {
@@ -670,14 +676,17 @@ describe('Custom Objects filter', () => {
           .annotations.label).toBe('AutoNumero')
         expect(leadObjectType.fields.my_auto_number
           .annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
-        expect(leadObjectType.fields.my_picklist
-          .annotations[CORE_ANNOTATIONS.VALUES]).toEqual(['YES', 'NO'])
+        expect(leadObjectType.fields.my_picklist.annotations[FIELD_ANNOTATIONS.VALUE_SET])
+          .toEqual([
+            createValueSetEntry('YES', true),
+            createValueSetEntry('NO'),
+          ])
+        expect(leadObjectType.fields.my_picklist.annotations[FIELD_ANNOTATIONS.RESTRICTED])
+          .toBeTruthy()
         expect(leadObjectType.fields.my_picklist
           .annotations[CORE_ANNOTATIONS.DEFAULT]).toBe('YES')
         expect(leadObjectType.fields.my_picklist
           .annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(true)
-        expect(leadObjectType.fields.my_picklist
-          .annotations[CORE_ANNOTATIONS.RESTRICTION][CORE_ANNOTATIONS.ENFORCE_VALUE]).toBe(true)
 
         // Verify rollup field
         const expectedRollupSummaryField = testInstanceElement.value.fields

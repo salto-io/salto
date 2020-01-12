@@ -111,7 +111,8 @@ describe('SalesforceAdapter fetch', () => {
       expect(flow.fields.enum.type.elemID.name).toBe('string')
       expect(flow.fields.enum.annotations[CORE_ANNOTATIONS.DEFAULT]).toBe('yes')
       // Note the order here is important because we expect restriction values to be sorted
-      expect(flow.fields.enum.annotations[CORE_ANNOTATIONS.VALUES]).toEqual(['no', 'yes'])
+      expect(flow.fields.enum.annotations[CORE_ANNOTATIONS.VALUES])
+        .toEqual(['no', 'yes'])
       expect(flow.path).toEqual([constants.SALESFORCE, 'types', 'flow'])
       expect(flow.fields.full_name.type).toEqual(BuiltinTypes.SERVICE_ID)
       expect(flow.annotationTypes[constants.METADATA_TYPE]).toEqual(BuiltinTypes.SERVICE_ID)
@@ -165,6 +166,7 @@ describe('SalesforceAdapter fetch', () => {
         + 2 /* mask char & type */
         + 1 /* security classification */
         + 1 /* business status */
+        + 1 /* value set */
         + 2 /* field dependency & value settings */)
 
       const types = _.assign({}, ...result.map(t => ({ [id(t)]: t })))

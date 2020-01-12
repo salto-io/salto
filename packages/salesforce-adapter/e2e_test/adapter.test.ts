@@ -324,17 +324,13 @@ describe('Salesforce adapter E2E with real account', () => {
 
         // Test picklist restriction.enforce_value prop
         expect(lead.fields.industry
-          .annotations[CORE_ANNOTATIONS.RESTRICTION][CORE_ANNOTATIONS.ENFORCE_VALUE]).toBe(
-          false
-        )
-        expect(
-          lead.fields.clean_status
-            .annotations[CORE_ANNOTATIONS.RESTRICTION][CORE_ANNOTATIONS.ENFORCE_VALUE]
-        ).toBe(true)
-
+          .annotations[constants.FIELD_ANNOTATIONS.RESTRICTED]).toBe(false)
+        expect(lead.fields.clean_status
+          .annotations[constants.FIELD_ANNOTATIONS.RESTRICTED]).toBe(true)
 
         // Test standard picklist values from a standard value set
-        expect(lead.fields.lead_source.annotations[CORE_ANNOTATIONS.VALUES]).toEqual(
+        expect(lead.fields.lead_source
+          .annotations[constants.FIELD_ANNOTATIONS.VALUE_SET]).toEqual(
           new ReferenceExpression(new ElemID(
             constants.SALESFORCE,
             bpCase(STANDARD_VALUE_SET),
@@ -345,7 +341,9 @@ describe('Salesforce adapter E2E with real account', () => {
 
         // Test picklist values
         expect(
-          lead.fields.clean_status.annotations[CORE_ANNOTATIONS.VALUES]
+          lead.fields.clean_status
+            .annotations[constants.FIELD_ANNOTATIONS.VALUE_SET]
+            .map((val: Values) => val[constants.VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]).sort()
         ).toEqual([
           'Acknowledged',
           'Different',
@@ -1404,10 +1402,18 @@ describe('Salesforce adapter E2E with real account', () => {
             Types.primitiveDataTypes.picklist,
             {
               [CORE_ANNOTATIONS.REQUIRED]: false,
-              [CORE_ANNOTATIONS.DEFAULT]: 'NEW',
               [constants.LABEL]: 'Picklist description label',
-              [CORE_ANNOTATIONS.VALUES]: ['NEW', 'OLD'],
-              [CORE_ANNOTATIONS.RESTRICTION]: { [CORE_ANNOTATIONS.ENFORCE_VALUE]: true },
+              [constants.FIELD_ANNOTATIONS.RESTRICTED]: true,
+              [constants.FIELD_ANNOTATIONS.VALUE_SET]: [
+                {
+                  [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'NEW',
+                  [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: true,
+                },
+                {
+                  [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'OLD',
+                  [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: false,
+                },
+              ],
               ...adminReadable,
             },
           ),
@@ -1493,8 +1499,16 @@ describe('Salesforce adapter E2E with real account', () => {
             Types.primitiveDataTypes.multipicklist,
             {
               [constants.LABEL]: 'Multipicklist description label',
-              [CORE_ANNOTATIONS.VALUES]: ['DO', 'RE'],
-              [CORE_ANNOTATIONS.DEFAULT]: 'DO',
+              [constants.FIELD_ANNOTATIONS.VALUE_SET]: [
+                {
+                  [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'DO',
+                  [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: true,
+                },
+                {
+                  [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'RE',
+                  [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: false,
+                },
+              ],
               [constants.FIELD_ANNOTATIONS.VISIBLE_LINES]: 4,
               [constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY]: {
                 [constants.FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD]: picklistFieldApiName,

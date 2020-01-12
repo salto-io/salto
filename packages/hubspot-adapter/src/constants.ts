@@ -64,9 +64,7 @@ export const OPTIONS_FIELDS = {
   LABEL: 'label',
   DESCRIPTION: 'description',
   VALUE: 'value',
-  DOUBLEDATA: 'doubleData',
   HIDDEN: 'hidden',
   ISSMARTFIELD: 'isSmartField',
   DISPLAYORDER: 'displayOrder',
-  READONLY: 'readOnly',
 }

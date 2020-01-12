@@ -13,7 +13,6 @@ import {
   SALESFORCE, GEOLOCATION_FIELDS, NAME_FIELDS, API_NAME,
   FIELD_LEVEL_SECURITY_ANNOTATION, FIELD_LEVEL_SECURITY_FIELDS, FIELD_DEPENDENCY_FIELDS,
   VALUE_SETTINGS_FIELDS, FILTER_ITEM_FIELDS, METADATA_TYPE, CUSTOM_OBJECT,
-  VALUE_SET_DEFINITION_VALUE_FIELDS,
 } from '../../src/constants'
 import { CustomField, FilterItem, CustomObject } from '../../src/client/types'
 import SalesforceClient from '../../src/client/client'

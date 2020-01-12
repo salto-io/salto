@@ -342,6 +342,26 @@ describe('Test HubSpot client', () => {
       })
     })
 
+    describe('Wrong value', () => {
+      beforeEach(() => {
+        formToUpdate.editable = false
+        const wrongValueResult = (): RequestPromise => (
+          {
+            status: 'error',
+            message: 'You do not have enough privileges to change the editable property on this form',
+            correlationId: '00bf4db3-337a-4497-b899-6cc10f1bfde3',
+            requestId: '14e208be-e7ac-43ac-b7e4-c242bb6548b5',
+          } as unknown as RequestPromise)
+
+        mockUpdateForm = jest.fn().mockImplementation(wrongValueResult)
+        connection.forms.update = mockUpdateForm
+      })
+
+      it('should return error', async () => {
+        await expect(client.updateForm(formToUpdate)).rejects
+          .toThrow('You do not have enough privileges to change the editable property on this form')
+      })
+    })
 
     afterEach(() => {
       expect(mockUpdateForm.mock.calls).toHaveLength(1)

@@ -9,9 +9,10 @@ import { FIELD_ANNOTATIONS, FILTER_ITEM_FIELDS, SALESFORCE, METADATA_TYPE,
   CUSTOM_OBJECT, INSTANCE_FULL_NAME_FIELD, LABEL, NAMESPACE_SEPARATOR,
   SALESFORCE_CUSTOM_SUFFIX, API_NAME, FORMULA, LOOKUP_FILTER_FIELDS,
   FIELD_DEPENDENCY_FIELDS, VALUE_SETTINGS_FIELDS, VALUE_SET_FIELDS,
-  VALUE_SET_DEFINITION_VALUE_FIELDS, VALUE_SET_DEFINITION_FIELDS, DESCRIPTION } from '../../src/constants'
+  VALUE_SET_DEFINITION_VALUE_FIELDS, VALUE_SET_DEFINITION_FIELDS,
+  DESCRIPTION } from '../../src/constants'
 import mockAdapter from '../adapter'
-import { findElements } from '../utils'
+import { findElements, createValueSetEntry } from '../utils'
 import filterCreator, { INSTANCE_REQUIRED_FIELD, INSTANCE_TYPE_FIELD,
   INSTANCE_DEFAULT_VALUE_FIELD, customObjectAnnotationTypeIds }
   from '../../src/filters/custom_objects'
@@ -203,16 +204,8 @@ describe('Custom Objects filter', () => {
       expect(lead.fields.primary_c
         .annotations[FIELD_ANNOTATIONS.VALUE_SET])
         .toEqual([
-          {
-            [VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'No',
-            [VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'No',
-            [VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: false,
-          },
-          {
-            [VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'Yes',
-            [VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'Yes',
-            [VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: true,
-          },
+          createValueSetEntry('No'),
+          createValueSetEntry('Yes', true),
         ])
       expect(lead.fields.primary_c.annotations[FIELD_ANNOTATIONS.RESTRICTED]).toBe(true)
     })
@@ -236,16 +229,8 @@ describe('Custom Objects filter', () => {
       expect(lead.fields.primary_c.type.elemID.name).toBe('combobox')
       expect(lead.fields.primary_c.annotations[FIELD_ANNOTATIONS.VALUE_SET])
         .toEqual([
-          {
-            [VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'No',
-            [VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'No',
-            [VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: false,
-          },
-          {
-            [VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'Yes',
-            [VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'Yes',
-            [VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: true,
-          },
+          createValueSetEntry('No'),
+          createValueSetEntry('Yes', true),
         ])
     })
 
@@ -693,12 +678,9 @@ describe('Custom Objects filter', () => {
           .annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
         expect(leadObjectType.fields.my_picklist.annotations[FIELD_ANNOTATIONS.VALUE_SET])
           .toEqual([
-            { [VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'YES',
-              [VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'YES',
-              [VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: true },
-            { [VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'NO',
-              [VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'NO',
-              [VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: false }])
+            createValueSetEntry('YES', true),
+            createValueSetEntry('NO'),
+          ])
         expect(leadObjectType.fields.my_picklist.annotations[FIELD_ANNOTATIONS.RESTRICTED])
           .toBeTruthy()
         expect(leadObjectType.fields.my_picklist

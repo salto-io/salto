@@ -237,7 +237,6 @@ export class Types {
     },
   })
 
-  // Todo change the instance value set field to be a filed annotation
   private static valueSetElemID = new ElemID(SALESFORCE, FIELD_ANNOTATIONS.VALUE_SET)
   private static valueSetType = new ObjectType({
     elemID: Types.valueSetElemID,

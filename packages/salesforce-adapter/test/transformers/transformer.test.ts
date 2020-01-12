@@ -13,11 +13,11 @@ import {
   SALESFORCE, GEOLOCATION_FIELDS, NAME_FIELDS, API_NAME,
   FIELD_LEVEL_SECURITY_ANNOTATION, FIELD_LEVEL_SECURITY_FIELDS, FIELD_DEPENDENCY_FIELDS,
   VALUE_SETTINGS_FIELDS, FILTER_ITEM_FIELDS, METADATA_TYPE, CUSTOM_OBJECT,
-  VALUE_SET_DEFINITION_VALUE_FIELDS,
 } from '../../src/constants'
 import { CustomField, FilterItem, CustomObject } from '../../src/client/types'
 import SalesforceClient from '../../src/client/client'
 import mockClient from '../client'
+import { createValueSetEntry } from '../utils'
 
 const { makeArray } = collections.array
 
@@ -480,10 +480,9 @@ describe('transformer', () => {
         [LABEL]: 'field_label',
         [CORE_ANNOTATIONS.REQUIRED]: false,
         [FIELD_ANNOTATIONS.VALUE_SET]: [
-          { [VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'Val1',
-            [VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: false },
-          { [VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'Val2',
-            [VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: false }],
+          createValueSetEntry('Val1'),
+          createValueSetEntry('Val2'),
+        ],
         [FIELD_ANNOTATIONS.FIELD_DEPENDENCY]: {
           [FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD]: 'ControllingFieldName',
           [FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS]: [{

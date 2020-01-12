@@ -1,14 +1,7 @@
 import _ from 'lodash'
 import { collections } from '@salto/lowerdash'
-import {
-  ObjectType,
-  ElemID,
-  InstanceElement,
-  Element,
-  Field, BuiltinTypes,
-  CORE_ANNOTATIONS,
-  Values,
-} from 'adapter-api'
+import { ObjectType, ElemID, InstanceElement, Element, Field, BuiltinTypes,
+  CORE_ANNOTATIONS } from 'adapter-api'
 import {
   MetadataInfo, SaveResult, DeployResult, DeployDetails,
 } from 'jsforce'
@@ -18,6 +11,7 @@ import { Types, sfCase } from '../src/transformers/transformer'
 import Connection from '../src/client/jsforce'
 import mockAdapter from './adapter'
 import { ASSIGNMENT_RULES_TYPE_ID } from '../src/filters/assignment_rules'
+import { createValueSetEntry } from './utils'
 
 const { makeArray } = collections.array
 
@@ -59,11 +53,6 @@ describe('SalesforceAdapter CRUD', () => {
   let mockDelete: jest.Mock
   let mockUpdate: jest.Mock
   let mockDeploy: jest.Mock
-
-  const createValueSetEntry = (name: string, defaultValue = false, label?: string): Values =>
-    ({ [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: name,
-      [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: label || name,
-      [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: defaultValue })
 
   beforeEach(() => {
     ({ connection, adapter } = mockAdapter({

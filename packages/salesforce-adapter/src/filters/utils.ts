@@ -88,3 +88,6 @@ export const hasNamespace = (customElement: Field | ObjectType): boolean => (
 
 export const getNamespace = (customElement: Field | ObjectType): string =>
   apiName(customElement, true).split(NAMESPACE_SEPARATOR)[0]
+
+export const extractFullNamesFromValueList = (values: {full_name: string}[]): string[] =>
+  values.map(v => v.full_name)

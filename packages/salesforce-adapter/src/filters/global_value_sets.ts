@@ -2,12 +2,12 @@ import _ from 'lodash'
 import {
   Element, ObjectType, isObjectType, Field, ReferenceExpression, isInstanceElement,
 } from 'adapter-api'
-import { FilterCreator } from '../filter'
+import { FilterWith } from '../filter'
 import { FIELD_ANNOTATIONS, VALUE_SET_FIELDS } from '../constants'
 import { metadataType, isCustomObject } from '../transformers/transformer'
 
 export const GLOBAL_VALUE_SET = 'GlobalValueSet'
-export const GLOBAL_VALUE = 'global_value'
+export const CUSTOM_VALUE = 'custom_value'
 export const MASTER_LABEL = 'master_label'
 
 type GlobalValueSetsLookup = Record<string, ReferenceExpression>
@@ -19,7 +19,7 @@ const getValueSetNameToRef = (elements: Element[]): GlobalValueSetsLookup => {
   return _.fromPairs(globalValueSets
     .map(gvs => [
       gvs.value[MASTER_LABEL],
-      new ReferenceExpression(gvs.elemID.createNestedID(GLOBAL_VALUE)),
+      new ReferenceExpression(gvs.elemID.createNestedID(CUSTOM_VALUE)),
     ]))
 }
 
@@ -43,7 +43,7 @@ const addGlobalValueSetRefToObject = (
 /**
  * Create filter that adds global value set references where needed
  */
-const filterCreator: FilterCreator = () => ({
+const filterCreator = (): FilterWith<'onFetch'> => ({
   /**
    * @param elements the already fetched elements
    */

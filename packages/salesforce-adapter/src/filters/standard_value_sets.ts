@@ -13,6 +13,7 @@ import {
 import {
   metadataType, apiName, createInstanceElement, isCustomObject, Types,
 } from '../transformers/transformer'
+import { extractFullNamesFromValueList } from './utils'
 
 const { makeArray } = collections.array
 
@@ -94,9 +95,6 @@ const STANDARD_VALUE_SETS: StandardValuesSets = new Set<string>([
 
 const encodeValues = (values: string[]): string =>
   values.sort().join(';')
-
-export const extractFullNamesFromValueList = (values: {full_name: string}[]): string[] =>
-  values.map(v => v.full_name)
 
 const svsValuesToRef = (svsInstances: InstanceElement[]): StandartValueSetsLookup => _.fromPairs(
   svsInstances

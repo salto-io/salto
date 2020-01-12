@@ -76,7 +76,7 @@ export default class HubspotAdapter {
    * @returns the updated element
    * @throws error in case of failure
    */
-  public async add(instance: InstanceElement): Promise<Element> {
+  public async add(instance: InstanceElement): Promise<InstanceElement> {
     const post = instance.clone()
     const resp = await this.client.createForm(post.value as Form)
 

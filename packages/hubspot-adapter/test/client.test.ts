@@ -159,6 +159,27 @@ describe('Test HubSpot client', () => {
       })
     })
 
+    describe('wrong value', () => {
+      beforeEach(() => {
+        const formWrongValueResultMock = (): RequestPromise => (
+          {
+            status: 'error',
+            message: 'You do not have enough privileges to change the deletable property on this form',
+            correlationId: '03600615-45d5-4b38-bb92-805065b0f8b5',
+            requestId: '2b4100f6-b32c-4902-96ab-c94f4fe960d5',
+          } as unknown as RequestPromise)
+
+        mockCreateForm = jest.fn().mockImplementation(formWrongValueResultMock)
+
+        connection.forms.create = mockCreateForm
+      })
+
+      it('should return error', async () => {
+        await expect(client.createForm(formToCreate)).rejects
+          .toThrow('You do not have enough privileges to change the deletable property on this form')
+      })
+    })
+
     afterEach(() => {
       expect(mockCreateForm.mock.calls).toHaveLength(1)
       expect(mockCreateForm.mock.calls[0]).toHaveLength(1)

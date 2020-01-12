@@ -81,7 +81,7 @@ describe('Hubspot Adapter Operations', () => {
 
     describe('When form name already exists', () => {
       beforeEach(async () => {
-        const createAlreadyExistsResult = (_f: Form):
+        const createAlreadyExistsResult = ():
           Error => { throw new Error("Form already exists with name 'newTestForm'") }
         mockCreate = jest.fn().mockImplementation(createAlreadyExistsResult)
         client.createForm = mockCreate
@@ -95,7 +95,7 @@ describe('Hubspot Adapter Operations', () => {
 
     describe('Wrong apikey', () => {
       beforeEach(async () => {
-        const createErrorResult = (_f: Form):
+        const createErrorResult = ():
           Error => { throw new Error("This apikey (wrongKey) doesn't exist.") }
         mockCreate = jest.fn().mockImplementation(createErrorResult)
         client.createForm = mockCreate
@@ -109,16 +109,33 @@ describe('Hubspot Adapter Operations', () => {
 
     describe('When a form is successfully added', () => {
       beforeEach(async () => {
-        const createResult = (_f: Form): Promise<Form> =>
+        const createResult = (): Promise<Form> =>
           Promise.resolve({ guid: '12345' } as Form)
         mockCreate = jest.fn().mockImplementation(createResult)
         client.createForm = mockCreate
       })
 
       it('should return the new form', async () => {
-        const result = await adapter.add(formInstance) as InstanceElement
+        const result = await adapter.add(formInstance)
         expect(result.value.guid).toBe('12345')
         expect(result.value.name).toBe('formInstanceTest')
+      })
+    })
+
+    describe('When trying create form with wrong values', () => {
+      beforeEach(async () => {
+        formInstance.value.editable = false
+        const createWrongValueResult = ():
+          Error => {
+          throw new Error('You dont have enough privileges to set editable to false on this form')
+        }
+        mockCreate = jest.fn().mockImplementation(createWrongValueResult)
+        client.createForm = mockCreate
+      })
+
+      it('should return error (403 response)', async () => {
+        await expect(adapter.add(formInstance)).rejects
+          .toThrow('You dont have enough privileges to set editable to false on this form')
       })
     })
 
@@ -151,7 +168,7 @@ describe('Hubspot Adapter Operations', () => {
 
     describe('When remove fails', () => {
       beforeEach(async () => {
-        const deleteErrorResult = (_f: Form):
+        const deleteErrorResult = ():
           Error => { throw new Error("This apikey (wrongKey) doesn't exist.") }
         mockDelete = jest.fn().mockImplementation(deleteErrorResult)
         client.deleteForm = mockDelete
@@ -165,7 +182,7 @@ describe('Hubspot Adapter Operations', () => {
 
     describe('When remove success', () => {
       beforeEach(async () => {
-        const deleteResult = (_f: Form): Promise<void> =>
+        const deleteResult = (): Promise<void> =>
           Promise.resolve(undefined)
 
         mockDelete = jest.fn().mockImplementation(deleteResult)
@@ -233,7 +250,7 @@ describe('Hubspot Adapter Operations', () => {
 
     describe('When Form not found', () => {
       beforeEach(async () => {
-        const notFoundError = (_f: Form):
+        const notFoundError = ():
           Error => { throw new Error("No form found with guid 'guid'") }
 
         mockUpdate = jest.fn().mockImplementation(notFoundError)

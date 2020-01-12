@@ -109,6 +109,7 @@ export const FIELD_ANNOTATIONS = {
   SUMMARY_OPERATION: 'summary_operation',
   RESTRICTED: 'restricted',
   VALUE_SET: 'value_set',
+  DEFAULT_VALUE: 'default_value',
 }
 
 export const CUSTOM_OBJECT_ANNOTATIONS = {

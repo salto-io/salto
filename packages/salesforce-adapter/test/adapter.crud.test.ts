@@ -171,7 +171,6 @@ describe('SalesforceAdapter CRUD', () => {
             stringType,
             {
               [CORE_ANNOTATIONS.REQUIRED]: false,
-              [CORE_ANNOTATIONS.DEFAULT]: 'test',
               [constants.LABEL]: 'test label',
             },
           ),
@@ -467,7 +466,7 @@ describe('SalesforceAdapter CRUD', () => {
             Types.primitiveDataTypes.boolean,
             {
               [constants.LABEL]: 'Checkbox description label',
-              [CORE_ANNOTATIONS.DEFAULT]: true,
+              [constants.FIELD_ANNOTATIONS.DEFAULT_VALUE]: true,
             },
           ),
         },
@@ -761,7 +760,6 @@ describe('SalesforceAdapter CRUD', () => {
         },
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: false,
-          [CORE_ANNOTATIONS.DEFAULT]: 'test',
           label: 'test label',
           [constants.API_NAME]: 'Test2__c',
         },
@@ -778,7 +776,6 @@ describe('SalesforceAdapter CRUD', () => {
         },
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: false,
-          [CORE_ANNOTATIONS.DEFAULT]: 'test2',
           label: 'test2 label',
         },
       })
@@ -953,7 +950,6 @@ describe('SalesforceAdapter CRUD', () => {
             },
             annotations: {
               [CORE_ANNOTATIONS.REQUIRED]: false,
-              [CORE_ANNOTATIONS.DEFAULT]: 'test',
               label: 'test label',
               [constants.API_NAME]: 'Test__c',
             },
@@ -1017,7 +1013,6 @@ describe('SalesforceAdapter CRUD', () => {
             },
             annotations: {
               [CORE_ANNOTATIONS.REQUIRED]: false,
-              [CORE_ANNOTATIONS.DEFAULT]: 'test',
               label: 'test label',
               [constants.API_NAME]: 'Test__c',
             },
@@ -1049,7 +1044,6 @@ describe('SalesforceAdapter CRUD', () => {
             },
             annotations: {
               [CORE_ANNOTATIONS.REQUIRED]: false,
-              [CORE_ANNOTATIONS.DEFAULT]: 'test',
               label: 'test label',
               [constants.API_NAME]: 'Test__c',
             },
@@ -1112,7 +1106,6 @@ describe('SalesforceAdapter CRUD', () => {
             },
             annotations: {
               [CORE_ANNOTATIONS.REQUIRED]: false,
-              [CORE_ANNOTATIONS.DEFAULT]: 'test',
               label: 'test label',
               [constants.API_NAME]: 'Test__c',
             },
@@ -1132,7 +1125,6 @@ describe('SalesforceAdapter CRUD', () => {
             },
             annotations: {
               [CORE_ANNOTATIONS.REQUIRED]: false,
-              [CORE_ANNOTATIONS.DEFAULT]: 'test2',
               label: 'test2 label',
               [constants.API_NAME]: 'Test__c',
             },
@@ -1184,7 +1176,6 @@ describe('SalesforceAdapter CRUD', () => {
             },
             annotations: {
               [CORE_ANNOTATIONS.REQUIRED]: false,
-              [CORE_ANNOTATIONS.DEFAULT]: 'test',
               label: 'test label',
               [constants.API_NAME]: 'Test__c',
             },
@@ -1209,7 +1200,6 @@ describe('SalesforceAdapter CRUD', () => {
             },
             annotations: {
               [CORE_ANNOTATIONS.REQUIRED]: false,
-              [CORE_ANNOTATIONS.DEFAULT]: 'test',
               label: 'test label',
               [constants.API_NAME]: 'Test__c',
             },
@@ -1339,7 +1329,6 @@ describe('SalesforceAdapter CRUD', () => {
             },
             annotations: {
               [CORE_ANNOTATIONS.REQUIRED]: false,
-              [CORE_ANNOTATIONS.DEFAULT]: 'test',
               label: 'test label',
               [constants.API_NAME]: 'Test__c',
             },
@@ -1378,7 +1367,6 @@ describe('SalesforceAdapter CRUD', () => {
             },
             annotations: {
               [CORE_ANNOTATIONS.REQUIRED]: false,
-              [CORE_ANNOTATIONS.DEFAULT]: 'test',
               label: 'test label',
               [constants.API_NAME]: 'Test__c',
             },
@@ -1442,7 +1430,6 @@ describe('SalesforceAdapter CRUD', () => {
             },
             annotations: {
               [CORE_ANNOTATIONS.REQUIRED]: false,
-              [CORE_ANNOTATIONS.DEFAULT]: 'test',
               label: 'test label',
               [constants.API_NAME]: 'Test__c',
             },
@@ -1470,7 +1457,6 @@ describe('SalesforceAdapter CRUD', () => {
             },
             annotations: {
               [CORE_ANNOTATIONS.REQUIRED]: false,
-              [CORE_ANNOTATIONS.DEFAULT]: 'test',
               label: 'test label',
               [constants.API_NAME]: 'Test__c',
             },
@@ -1506,7 +1492,6 @@ describe('SalesforceAdapter CRUD', () => {
             },
             annotations: {
               [CORE_ANNOTATIONS.REQUIRED]: false,
-              [CORE_ANNOTATIONS.DEFAULT]: 'test',
               label: 'test label',
               [constants.API_NAME]: 'Test__c',
             },
@@ -1527,7 +1512,6 @@ describe('SalesforceAdapter CRUD', () => {
             },
             annotations: {
               [CORE_ANNOTATIONS.REQUIRED]: false,
-              [CORE_ANNOTATIONS.DEFAULT]: 'test2',
               label: 'test2 label',
               [constants.API_NAME]: 'Test__c',
             },

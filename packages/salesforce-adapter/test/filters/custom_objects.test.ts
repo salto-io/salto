@@ -14,8 +14,7 @@ import { FIELD_ANNOTATIONS, FILTER_ITEM_FIELDS, SALESFORCE, METADATA_TYPE,
 import mockAdapter from '../adapter'
 import { findElements, createValueSetEntry } from '../utils'
 import filterCreator, { INSTANCE_REQUIRED_FIELD, INSTANCE_TYPE_FIELD,
-  INSTANCE_DEFAULT_VALUE_FIELD, customObjectAnnotationTypeIds }
-  from '../../src/filters/custom_objects'
+  customObjectAnnotationTypeIds } from '../../src/filters/custom_objects'
 import { FilterWith } from '../../src/filter'
 
 describe('Custom Objects filter', () => {
@@ -171,12 +170,12 @@ describe('Custom Objects filter', () => {
       expect(lead.fields.last_name.annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(true)
       expect(lead.fields.first_name.annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
       // Default string and boolean
-      expect(lead.fields.last_name.annotations[CORE_ANNOTATIONS.DEFAULT]).toBe('BLABLA')
-      expect(lead.fields.is_deleted.annotations[CORE_ANNOTATIONS.DEFAULT]).toBe(false)
+      expect(lead.fields.last_name.annotations[FIELD_ANNOTATIONS.DEFAULT_VALUE]).toBe('BLABLA')
+      expect(lead.fields.is_deleted.annotations[FIELD_ANNOTATIONS.DEFAULT_VALUE]).toBe(false)
       // Custom type
       expect(lead.fields.custom__c).not.toBeUndefined()
       expect(lead.fields.custom__c.annotations[API_NAME]).toBe('Lead.Custom__c')
-      expect(lead.fields.custom__c.annotations[CORE_ANNOTATIONS.DEFAULT]).toBe(false)
+      expect(lead.fields.custom__c.annotations[FIELD_ANNOTATIONS.DEFAULT_VALUE]).toBe(false)
       // Formula field
       expect(lead.fields.formula__c).toBeDefined()
       expect(lead.fields.formula__c.type.elemID.name).toBe('formula_text')
@@ -546,7 +545,7 @@ describe('Custom Objects filter', () => {
           [INSTANCE_FULL_NAME_FIELD]: 'MyPicklist',
           [INSTANCE_TYPE_FIELD]: 'Picklist',
           [INSTANCE_REQUIRED_FIELD]: 'true',
-          [INSTANCE_DEFAULT_VALUE_FIELD]: 'YES',
+          [FIELD_ANNOTATIONS.DEFAULT_VALUE]: 'YES',
           [FIELD_ANNOTATIONS.VALUE_SET]:
           { [VALUE_SET_FIELDS.RESTRICTED]: 'true',
             [VALUE_SET_FIELDS.VALUE_SET_DEFINITION]:
@@ -557,6 +556,12 @@ describe('Custom Objects filter', () => {
               { [VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'NO',
                 [VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'NO',
                 [VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: 'false' }] } },
+        },
+        {
+          [INSTANCE_FULL_NAME_FIELD]: 'MyCheckbox',
+          [INSTANCE_TYPE_FIELD]: 'Checkbox',
+          [INSTANCE_REQUIRED_FIELD]: 'false',
+          [FIELD_ANNOTATIONS.DEFAULT_VALUE]: 'true',
         },
         {
           [INSTANCE_FULL_NAME_FIELD]: 'rollup',
@@ -574,6 +579,7 @@ describe('Custom Objects filter', () => {
         {
           [INSTANCE_FULL_NAME_FIELD]: 'lookup_field',
           [LABEL]: 'My Lookup',
+          [FIELD_ANNOTATIONS.REFERENCE_TO]: 'Account',
           [FIELD_ANNOTATIONS.LOOKUP_FILTER]: {
             [LOOKUP_FILTER_FIELDS.ACTIVE]: 'true',
             [LOOKUP_FILTER_FIELDS.BOOLEAN_FILTER]: 'myBooleanFilter',
@@ -646,6 +652,11 @@ describe('Custom Objects filter', () => {
           picklistValues: [],
         },
         {
+          name: 'MyCheckbox',
+          type: 'checkbox',
+          label: 'My Checkbox',
+        },
+        {
           name: 'rollup',
           type: 'rollupsummary',
         },
@@ -684,9 +695,13 @@ describe('Custom Objects filter', () => {
         expect(leadObjectType.fields.my_picklist.annotations[FIELD_ANNOTATIONS.RESTRICTED])
           .toBeTruthy()
         expect(leadObjectType.fields.my_picklist
-          .annotations[CORE_ANNOTATIONS.DEFAULT]).toBe('YES')
-        expect(leadObjectType.fields.my_picklist
           .annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(true)
+
+        // Verify checkbox field
+        expect(leadObjectType.fields.my_checkbox
+          .annotations[FIELD_ANNOTATIONS.DEFAULT_VALUE]).toBe(true)
+        expect(leadObjectType.fields.my_checkbox
+          .annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
 
         // Verify rollup field
         const expectedRollupSummaryField = testInstanceElement.value.fields
@@ -728,8 +743,9 @@ describe('Custom Objects filter', () => {
           .toEqual(['Controlling1'])
 
         // Verify lookup field
-        const lookupFilterAnnotation = leadObjectType.fields.lookup_field
-          .annotations[FIELD_ANNOTATIONS.LOOKUP_FILTER]
+        const lookupField = leadObjectType.fields.lookup_field
+        expect(lookupField.annotations[FIELD_ANNOTATIONS.REFERENCE_TO]).toEqual(['Account'])
+        const lookupFilterAnnotation = lookupField.annotations[FIELD_ANNOTATIONS.LOOKUP_FILTER]
         expect(lookupFilterAnnotation).toBeDefined()
         expect(lookupFilterAnnotation[LOOKUP_FILTER_FIELDS.ACTIVE]).toBe(true)
         expect(lookupFilterAnnotation[LOOKUP_FILTER_FIELDS.BOOLEAN_FILTER])

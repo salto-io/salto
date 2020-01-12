@@ -364,7 +364,7 @@ describe('Salesforce adapter E2E with real account', () => {
         // Test _default
         // TODO: add test to primitive with _default and combobox _default
         //  (no real example for lead)
-        expect(lead.fields.status.annotations[CORE_ANNOTATIONS.DEFAULT]).toBe(
+        expect(lead.fields.status.annotations[constants.FIELD_ANNOTATIONS.DEFAULT_VALUE]).toBe(
           'Open - Not Contacted'
         )
 
@@ -735,7 +735,7 @@ describe('Salesforce adapter E2E with real account', () => {
             {
               [constants.LABEL]: 'test label',
               [CORE_ANNOTATIONS.REQUIRED]: false,
-              [CORE_ANNOTATIONS.DEFAULT]: '"test"',
+              [constants.DEFAULT_VALUE_FORMULA]: '"test"',
             },
           ),
         },

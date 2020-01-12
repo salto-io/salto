@@ -540,7 +540,6 @@ export default class SalesforceAdapter {
 
   /**
    * Updates custom fields
-   * @param object the object that the fields belong to
    * @param fieldsToUpdate The fields to update
    * @returns successfully managed to update all fields
    */
@@ -553,7 +552,6 @@ export default class SalesforceAdapter {
 
   /**
    * Creates custom fields and their corresponding field permissions
-   * @param object the object that the fields belong to
    * @param fieldsToAdd The fields to create
    * @returns successfully managed to create all fields with their permissions or not
    */
@@ -566,7 +564,6 @@ export default class SalesforceAdapter {
 
   /**
    * Deletes custom fields
-   * @param element the object api name those fields reside in
    * @param fields the custom fields we wish to delete
    */
   private async deleteCustomFields(fields: Field[]): Promise<SaveResult[]> {

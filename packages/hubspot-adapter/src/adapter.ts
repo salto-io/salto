@@ -1,6 +1,5 @@
 import _ from 'lodash'
 import {
-  isInstanceElement,
   Element, InstanceElement, ObjectType,
 } from 'adapter-api'
 import {
@@ -105,17 +104,15 @@ export default class HubspotAdapter {
    * @returns the updated element
    */
   public async update(
-    before: Element,
-    after: Element,
-  ): Promise<Element> {
-    if (isInstanceElement(before) && isInstanceElement(after)) {
-      validateFormGuid(before, after)
-      await this.client.updateForm(
-        {
-          guid: after.value.guid,
-        } as Form
-      )
-    }
+    before: InstanceElement,
+    after: InstanceElement,
+  ): Promise<InstanceElement> {
+    validateFormGuid(before, after)
+    await this.client.updateForm(
+      {
+        guid: after.value.guid,
+      } as Form
+    )
 
     return after
   }

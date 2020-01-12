@@ -12,6 +12,7 @@ import Connection from '../src/client/jsforce'
 import mockAdapter from './adapter'
 import { ASSIGNMENT_RULES_TYPE_ID } from '../src/filters/assignment_rules'
 import { createValueSetEntry } from './utils'
+import { WORKFLOW_TYPE_ID } from '../src/filters/workflow'
 
 const { makeArray } = collections.array
 
@@ -597,6 +598,23 @@ describe('SalesforceAdapter CRUD', () => {
         expect(object.fields[18].defaultValue).toBe(true)
       })
     })
+
+    describe('for a workflow instance element', () => {
+      const workflowInstance = new InstanceElement(
+        mockInstanceName,
+        new ObjectType({
+          elemID: WORKFLOW_TYPE_ID,
+          annotations: {
+            [constants.METADATA_TYPE]: 'Workflow',
+          },
+        }), {}
+      )
+
+      it('should not add the instance in the main flow', async () => {
+        await adapter.add(workflowInstance)
+        expect(mockUpsert.mock.calls.length).toBe(0)
+      })
+    })
   })
 
   describe('Remove operation', () => {
@@ -691,6 +709,23 @@ describe('SalesforceAdapter CRUD', () => {
         'should reject the promise',
         () => expect(result).rejects.toEqual(new Error('Failed to remove Test__c'))
       )
+    })
+
+    describe('for a workflow instance element', () => {
+      const workflowInstance = new InstanceElement(
+        mockInstanceName,
+        new ObjectType({
+          elemID: WORKFLOW_TYPE_ID,
+          annotations: {
+            [constants.METADATA_TYPE]: 'Workflow',
+          },
+        }), {}
+      )
+
+      it('should not remove the instance in the main flow', async () => {
+        await adapter.remove(workflowInstance)
+        expect(mockDelete.mock.calls.length).toBe(0)
+      })
     })
   })
 
@@ -1647,6 +1682,23 @@ describe('SalesforceAdapter CRUD', () => {
             /Component.*InstName.*my error.*Component.*OtherInst.*some error/s
           )
         })
+      })
+    })
+
+    describe('for a workflow instance element', () => {
+      const beforeWorkflowInstance = new InstanceElement(
+        mockInstanceName,
+        new ObjectType({
+          elemID: WORKFLOW_TYPE_ID,
+          annotations: {
+            [constants.METADATA_TYPE]: 'Workflow',
+          },
+        }), {}
+      )
+
+      it('should not update the instance in the main flow', async () => {
+        await adapter.update(beforeWorkflowInstance, beforeWorkflowInstance.clone(), [])
+        expect(mockUpdate.mock.calls.length).toBe(0)
       })
     })
   })

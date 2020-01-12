@@ -109,6 +109,35 @@ const allMissingFields: {id: ElemID; fields: MissingField[]}[] = [
       },
     ],
   },
+  {
+    id: new ElemID(SALESFORCE, 'workflow'),
+    fields: [
+      {
+        name: 'alerts',
+        type: new ElemID(SALESFORCE, 'workflow_alert'),
+      },
+      {
+        name: 'field_updates',
+        type: new ElemID(SALESFORCE, 'workflow_field_update'),
+      },
+      {
+        name: 'flow_actions',
+        type: new ElemID(SALESFORCE, 'workflow_flow_action'),
+      },
+      {
+        name: 'knowledge_publishes',
+        type: new ElemID(SALESFORCE, 'workflow_knowledge_publish'),
+      },
+      {
+        name: 'outbound_messages',
+        type: new ElemID(SALESFORCE, 'workflow_outbound_message'),
+      },
+      {
+        name: 'tasks',
+        type: new ElemID(SALESFORCE, 'workflow_task'),
+      },
+    ],
+  },
 ]
 
 export const makeFilter = (

@@ -1,6 +1,6 @@
-import { ElementsDataSource } from 'src/workspace/elements_data_source'
+import { State } from '../../src/workspace/state'
 
-const mockDataSource = (): ElementsDataSource => ({
+const mockState = (): State => ({
   list: jest.fn().mockImplementation(() => Promise.resolve([])),
   get: jest.fn().mockImplementation(() => Promise.resolve()),
   getAll: jest.fn().mockImplementation(() => Promise.resolve([])),
@@ -8,4 +8,4 @@ const mockDataSource = (): ElementsDataSource => ({
   remove: jest.fn().mockImplementation(() => Promise.resolve()),
 })
 
-export default mockDataSource
+export default mockState

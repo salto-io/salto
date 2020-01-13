@@ -4,7 +4,7 @@ import {
   PrimitiveType, PrimitiveTypes, isInstanceElement, DataModificationResult,
 } from 'adapter-api'
 import wu from 'wu'
-import mockDataSource from './common/data_source'
+import mockState from './common/state'
 import { Config } from '../src/workspace/config'
 import { Workspace } from '../src/workspace/workspace'
 import * as api from '../src/api'
@@ -42,7 +42,7 @@ const mockWorkspace = (elements: Element[] = [], config?: Partial<Config>): Work
   return {
     elements: wsElements,
     config: config || { stateLocation: '.', services: SERVICES },
-    state: mockDataSource(),
+    state: mockState(),
     resolvePath: _.identity,
     updateBlueprints: jest.fn(),
     flush: jest.fn(),

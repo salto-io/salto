@@ -16,7 +16,7 @@ import { ParseResultFSCache } from './cache'
 import { getChangeLocations, updateBlueprintData, getChangesToUpdate, BP_EXTENSION } from './blueprint_update'
 import { Config, dumpConfig, locateWorkspaceRoot, getConfigPath, completeConfig, saltoConfigType } from './config'
 import LocalState from './local/state'
-import { ElementsDataSource } from './elements_data_source'
+import { State } from './state'
 
 const log = logger(module)
 
@@ -301,7 +301,7 @@ export class Workspace {
     public config: Config,
     blueprints: ReadonlyArray<ParsedBlueprint>,
     readonly useCache: boolean = true,
-    readonly state: ElementsDataSource = new LocalState(config.stateLocation)
+    readonly state: State = new LocalState(config.stateLocation)
   ) {
     this.workspaceState = createWorkspaceState(blueprints)
     this.dirtyBlueprints = new Set<string>()

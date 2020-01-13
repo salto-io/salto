@@ -96,16 +96,6 @@ describe('local state', () => {
     expect(onFlush[1]).toEqual(serialize([mockElement]))
   })
 
-  it('should flush on exit', async done => {
-    const state = new LocalState('on-exit')
-    await state.set([mockElement])
-    process.emit('exit', 202)
-    setTimeout(() => {
-      expect(findReplaceContentCall('on-exit')).toBeDefined()
-      done()
-    }, 10)
-  })
-
   it('shouldnt write file if state was not loaded on flush', async () => {
     const state = new LocalState('not-flush')
     await state.flush()

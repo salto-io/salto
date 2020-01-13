@@ -97,16 +97,14 @@ describe('Salesforce adapter E2E with real account', () => {
         }]))
     }
 
-    const verifyEmailFolderExist = async (): Promise<void> => {
+    const verifyEmailTemplateAndFolderExist = async (): Promise<void> => {
       await client.upsert('EmailFolder', {
         fullName: 'TestEmailFolder',
         name: 'Test Email Folder Name',
         accessType: 'Public',
         publicFolderAccess: 'ReadWrite',
       } as MetadataInfo)
-    }
 
-    const verifyEmailTemplateExists = async (): Promise<void> => {
       await client.upsert('EmailTemplate', {
         fullName: 'TestEmailFolder/TestEmailTemplate',
         name: 'Test Email Template Name',
@@ -121,16 +119,14 @@ describe('Salesforce adapter E2E with real account', () => {
       } as MetadataInfo)
     }
 
-    const verifyReportFolderExist = async (): Promise<void> => {
+    const verifyReportAndFolderExist = async (): Promise<void> => {
       await client.upsert('ReportFolder', {
         fullName: 'TestReportFolder',
         name: 'Test Report Folder Name',
         accessType: 'Public',
         publicFolderAccess: 'ReadWrite',
       } as MetadataInfo)
-    }
 
-    const verifyReportExist = async (): Promise<void> => {
       await client.upsert('Report', {
         fullName: 'TestReportFolder/TestReport',
         format: 'Summary',
@@ -139,16 +135,14 @@ describe('Salesforce adapter E2E with real account', () => {
       } as MetadataInfo)
     }
 
-    const verifyDashboardFolderExist = async (): Promise<void> => {
+    const verifyDashboardAndFolderExist = async (): Promise<void> => {
       await client.upsert('DashboardFolder', {
         fullName: 'TestDashboardFolder',
         name: 'Test Dashboard Folder Name',
         accessType: 'Public',
         publicFolderAccess: 'ReadWrite',
       } as MetadataInfo)
-    }
 
-    const verifyDashboardExist = async (): Promise<void> => {
       await client.upsert('Dashboard', {
         fullName: 'TestDashboardFolder/TestDashboard',
         backgroundEndColor: '#FFFFFF',
@@ -286,12 +280,9 @@ describe('Salesforce adapter E2E with real account', () => {
 
     await Promise.all([
       verifyAccountWithRollupSummaryExists(),
-      verifyEmailFolderExist(),
-      verifyEmailTemplateExists(),
-      verifyReportFolderExist(),
-      verifyReportExist(),
-      verifyDashboardFolderExist(),
-      verifyDashboardExist(),
+      verifyEmailTemplateAndFolderExist(),
+      verifyReportAndFolderExist(),
+      verifyDashboardAndFolderExist(),
       verifyCustomObjectInnerTypesExist(),
     ])
     result = await adapter.fetch()

@@ -2,7 +2,7 @@ import {
   RequestPromise,
 } from 'requestretry'
 import Connection, {
-  Contact, Form,
+  Contact, Form, Workflow,
 } from '../src/client/madku'
 
 const mockMadKu: () => Connection = () => ({
@@ -16,6 +16,14 @@ const mockMadKu: () => Connection = () => ({
     create: jest.fn().mockImplementation((): RequestPromise =>
       ({} as unknown as RequestPromise)),
   } as Form,
+  workflows: {
+    getAll: jest.fn().mockImplementation((): RequestPromise =>
+      ([] as unknown as RequestPromise)),
+    enroll: jest.fn().mockImplementation((): RequestPromise =>
+      (undefined as unknown as RequestPromise)),
+    unenroll: jest.fn().mockImplementation((): RequestPromise =>
+      ({} as unknown as RequestPromise)),
+  } as Workflow,
   contacts: {
     get: jest.fn().mockImplementation((): RequestPromise =>
       ([] as unknown as RequestPromise)),

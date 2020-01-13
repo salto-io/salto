@@ -14,7 +14,7 @@ export interface Adapter {
   fetch(): Promise<Element[]>
   add(element: Element): Promise<Element>
   remove(element: Element): Promise<void>
-  update(before: Element, after: Element, changes?: Iterable<Change>): Promise<Element>
+  update(before: Element, after: Element, changes: Iterable<Change>): Promise<Element>
   getInstancesOfType?(type: ObjectType): AsyncIterable<InstanceElement[]>
   importInstancesOfType?(
     type: ObjectType,

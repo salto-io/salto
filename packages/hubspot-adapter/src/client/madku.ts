@@ -9,6 +9,12 @@ export interface Form {
   delete(guid: string): RequestPromise
 }
 
+export interface Workflow {
+  getAll(opts?: {}): RequestPromise
+  enroll(workflowId: number, email: string): RequestPromise
+  unenroll(workflowId: number, email: string): RequestPromise
+}
+
 export interface Contact {
   getAll(opts?: {}): RequestPromise
   get(opts?: {}): RequestPromise
@@ -16,5 +22,6 @@ export interface Contact {
 
 export default interface Connection {
   forms: Form
+  workflows: Workflow
   contacts: Contact
 }

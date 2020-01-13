@@ -8,6 +8,9 @@ import { Form } from '../src/client/types'
 describe('Test HubSpot client', () => {
   const { connection, client } = createClient()
 
+  const apiKeyDoesntExistErrStr = "This apikey doesn't exist."
+  const privilegeErrStr = 'You do not have enough privileges to change the editable property on this form'
+
 
   describe('Test getAllForms', () => {
     let mockGetAllForms: jest.Mock
@@ -17,7 +20,7 @@ describe('Test HubSpot client', () => {
         const getAllFormsResultMock = (): RequestPromise => (
           {
             status: 'error',
-            message: "This apikey doesn't exist.",
+            message: apiKeyDoesntExistErrStr,
             correlationId: 'db8f8a2f-d799-4353-8a67-b85df639b3df',
             requestId: '493c8493-861b-4f56-be3b-3f6067238efd',
           } as unknown as RequestPromise)
@@ -29,7 +32,7 @@ describe('Test HubSpot client', () => {
 
       it('should return empty array', async () => {
         await expect(client.getAllForms()).rejects
-          .toThrow("This apikey doesn't exist.")
+          .toThrow(apiKeyDoesntExistErrStr)
       })
     })
 
@@ -154,11 +157,12 @@ describe('Test HubSpot client', () => {
     })
 
     describe('duplicate name', () => {
+      const formAlreadyExiststErrStr = "Form already exists with name 'newTestForm'"
       beforeEach(() => {
         const formAlreadyExistsResultMock = (): RequestPromise => (
           {
             status: 'error',
-            message: "Form already exists with name 'newTestForm'",
+            message: formAlreadyExiststErrStr,
             correlationId: '49ee8da1-7fb5-4066-b6ff-064c3066eb0f',
             type: 'DUPLICATE_NAME',
             requestId: '1c68e5ab-0729-4b9c-9848-f32cd237e058',
@@ -171,16 +175,18 @@ describe('Test HubSpot client', () => {
 
       it('should return error', async () => {
         await expect(client.createForm(formToCreate)).rejects
-          .toThrow("Form already exists with name 'newTestForm'")
+          .toThrow(formAlreadyExiststErrStr)
       })
     })
 
     describe('wrong value', () => {
       beforeEach(() => {
+        formToCreate.editable = false
+
         const formWrongValueResultMock = (): RequestPromise => (
           {
             status: 'error',
-            message: 'You do not have enough privileges to change the deletable property on this form',
+            message: privilegeErrStr,
             correlationId: '03600615-45d5-4b38-bb92-805065b0f8b5',
             requestId: '2b4100f6-b32c-4902-96ab-c94f4fe960d5',
           } as unknown as RequestPromise)
@@ -192,7 +198,7 @@ describe('Test HubSpot client', () => {
 
       it('should return error', async () => {
         await expect(client.createForm(formToCreate)).rejects
-          .toThrow('You do not have enough privileges to change the deletable property on this form')
+          .toThrow(privilegeErrStr)
       })
     })
 
@@ -225,7 +231,7 @@ describe('Test HubSpot client', () => {
         const unauthorizedResultMock = (): RequestPromise => (
           {
             status: 'error',
-            message: 'This apikey doesnt exist.',
+            message: apiKeyDoesntExistErrStr,
             correlationId: 'db8f8a2f-d799-4353-8a67-b85df639b3df',
             requestId: '493c8493-861b-4f56-be3b-3f6067238efd',
           } as unknown as RequestPromise)
@@ -236,7 +242,7 @@ describe('Test HubSpot client', () => {
 
       it('should return error', async () => {
         await expect(client.deleteForm(formToDelete)).rejects
-          .toThrow('This apikey doesnt exist.')
+          .toThrow(apiKeyDoesntExistErrStr)
       })
     })
 
@@ -279,7 +285,7 @@ describe('Test HubSpot client', () => {
         const unauthorizedResultMock = (): RequestPromise => (
           {
             status: 'error',
-            message: 'This apikey doesnt exist.',
+            message: apiKeyDoesntExistErrStr,
             correlationId: 'db8f8a2f-d799-4353-8a67-b85df639b3df',
             requestId: '493c8493-861b-4f56-be3b-3f6067238efd',
           } as unknown as RequestPromise)
@@ -290,16 +296,17 @@ describe('Test HubSpot client', () => {
 
       it('should return error', async () => {
         await expect(client.updateForm(formToUpdate)).rejects
-          .toThrow('This apikey doesnt exist.')
+          .toThrow(apiKeyDoesntExistErrStr)
       })
     })
 
     describe('When no form found with guid', () => {
+      const noFormFoundErrStr = "No form found with guid 'guidToUpdate'"
       beforeEach(() => {
         const notFoundResult = (): RequestPromise => (
           {
             status: 'error',
-            message: "No form found with guid 'guidToUpdate'",
+            message: noFormFoundErrStr,
             correlationId: '3c40a0ef-0bb8-4606-9133-1ddc3f947e49',
             type: 'NOT_FOUND',
             requestId: '873184b8-2842-4514-ac19-2b5a36413789',
@@ -311,7 +318,7 @@ describe('Test HubSpot client', () => {
 
       it('should return error(404 response)', async () => {
         await expect(client.updateForm(formToUpdate)).rejects
-          .toThrow("No form found with guid 'guidToUpdate'")
+          .toThrow(noFormFoundErrStr)
       })
     })
 
@@ -348,7 +355,7 @@ describe('Test HubSpot client', () => {
         const wrongValueResult = (): RequestPromise => (
           {
             status: 'error',
-            message: 'You do not have enough privileges to change the editable property on this form',
+            message: privilegeErrStr,
             correlationId: '00bf4db3-337a-4497-b899-6cc10f1bfde3',
             requestId: '14e208be-e7ac-43ac-b7e4-c242bb6548b5',
           } as unknown as RequestPromise)
@@ -359,7 +366,7 @@ describe('Test HubSpot client', () => {
 
       it('should return error', async () => {
         await expect(client.updateForm(formToUpdate)).rejects
-          .toThrow('You do not have enough privileges to change the editable property on this form')
+          .toThrow(privilegeErrStr)
       })
     })
 

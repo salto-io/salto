@@ -513,6 +513,8 @@ export const CORE_ANNOTATIONS = {
   VALUES: '_values',
   RESTRICTION: '_restriction',
   ENFORCE_VALUE: 'enforce_value',
+  MIN: 'min',
+  MAX: 'max',
 }
 
 export const BuiltinAnnotationTypes: Record<string, Type> = {

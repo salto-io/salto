@@ -3,7 +3,8 @@ import {
   ObjectType, ElemID, Field, BuiltinTypes, InstanceElement, CORE_ANNOTATIONS,
   ReferenceExpression, PrimitiveType, PrimitiveTypes, Field as TypeField,
 } from 'adapter-api'
-import { validateElements, InvalidValueValidationError } from '../src/core/validator'
+import { validateElements, InvalidValueValidationError,
+  InvalidValueRangeValidationError } from '../src/core/validator'
 
 describe('Elements validation', () => {
   const baseElemID = new ElemID('salto', 'simple')
@@ -33,11 +34,38 @@ describe('Elements validation', () => {
     },
   })
 
+  const restrictedRangeType = new PrimitiveType({
+    elemID: new ElemID('salto', 'simple', 'type', 'restrictedRangeType'),
+    primitive: PrimitiveTypes.NUMBER,
+    annotations: {
+      [CORE_ANNOTATIONS.RESTRICTION]: { [CORE_ANNOTATIONS.MIN]: 1, [CORE_ANNOTATIONS.MAX]: 10 },
+    },
+  })
+
+  const restrictedRangeNoMinType = new PrimitiveType({
+    elemID: new ElemID('salto', 'simple', 'type', 'restrictedRangeNoMinType'),
+    primitive: PrimitiveTypes.NUMBER,
+    annotations: {
+      [CORE_ANNOTATIONS.RESTRICTION]: { [CORE_ANNOTATIONS.MAX]: 10 },
+    },
+  })
+
+  const restrictedRangeNoMaxType = new PrimitiveType({
+    elemID: new ElemID('salto', 'simple', 'type', 'restrictedRangeNoMaxType'),
+    primitive: PrimitiveTypes.NUMBER,
+    annotations: {
+      [CORE_ANNOTATIONS.RESTRICTION]: { [CORE_ANNOTATIONS.MIN]: 1 },
+    },
+  })
+
   const restrictedAnnotation = new PrimitiveType({
     elemID: new ElemID('salto', 'simple', 'type', 'restrictedAnnotation'),
     primitive: PrimitiveTypes.STRING,
     annotationTypes: {
       temp: restrictedType,
+      range: restrictedRangeType,
+      rangeNoMin: restrictedRangeNoMinType,
+      rangeNoMax: restrictedRangeNoMaxType,
     },
   })
 
@@ -59,8 +87,14 @@ describe('Elements validation', () => {
           'restriction1', 'restriction2',
         ],
       }),
+      restrictNumber: new Field(nestedElemID, 'restrictNumber', BuiltinTypes.NUMBER, {
+        [CORE_ANNOTATIONS.RESTRICTION]: { [CORE_ANNOTATIONS.MIN]: 1, [CORE_ANNOTATIONS.MAX]: 10 },
+      }),
       restrictedAnnotation: new Field(nestedElemID, 'restrictedAnnotation', restrictedAnnotation, {
         temp: 'val1',
+        range: 5,
+        rangeNoMin: 5,
+        rangeNoMax: 5,
       }),
       reqNested: new Field(nestedElemID, 'reqNested', simpleType, {
       }),
@@ -387,6 +421,18 @@ describe('Elements validation', () => {
           expect(validateElements([extInst])).toHaveLength(0)
         })
 
+        it('should fail when value is not inside the range', () => {
+          extInst.value.restrictNumber = 0
+          const errors = validateElements([extInst])
+          expect(errors).toHaveLength(1)
+          expect(errors[0]).toBeInstanceOf(InvalidValueRangeValidationError)
+          expect(errors[0].message).toMatch('Value "0" is not valid')
+          expect(errors[0].message).toMatch('bigger than 1 and lower than 10')
+          expect(errors[0].elemID).toEqual(
+            extInst.elemID.createNestedID('restrictNumber')
+          )
+        })
+
         const testValuesAreNotListedButEnforced = (): void => {
           extInst.value.restrictStr = 'wrongValue'
           extInst.value.nested.str = 'wrongValue2'
@@ -425,6 +471,57 @@ describe('Elements validation', () => {
           expect(errors[0].message).toMatch('expected one of: "val1", "val2"')
           expect(errors[0].elemID).toEqual(
             extType.elemID.createNestedID('field', 'restrictedAnnotation', 'temp')
+          )
+        })
+
+        it('should succeed when annotation value is inside the range', () => {
+          const extType = _.cloneDeep(nestedType)
+          extType.fields.restrictedAnnotation.annotations.range = 7
+          const errors = validateElements([extType])
+          expect(errors).toHaveLength(0)
+        })
+
+        it('should return an error when annotations value is bigger than max restriction', () => {
+          const extType = _.cloneDeep(nestedType)
+          extType.fields.restrictedAnnotation.annotations.range = 11
+          extType.fields.restrictedAnnotation.annotations.rangeNoMin = 11
+          const errors = validateElements([extType])
+          expect(errors).toHaveLength(2)
+
+          expect(errors[0]).toBeInstanceOf(InvalidValueRangeValidationError)
+          expect(errors[0].message).toMatch('Value "11" is not valid')
+          expect(errors[0].message).toMatch('bigger than 1 and lower than 10')
+          expect(errors[0].elemID).toEqual(
+            extType.elemID.createNestedID('field', 'restrictedAnnotation', 'range')
+          )
+
+          expect(errors[1]).toBeInstanceOf(InvalidValueRangeValidationError)
+          expect(errors[1].message).toMatch('Value "11" is not valid')
+          expect(errors[1].message).toMatch('lower than 10')
+          expect(errors[1].elemID).toEqual(
+            extType.elemID.createNestedID('field', 'restrictedAnnotation', 'rangeNoMin')
+          )
+        })
+
+        it('should return an error when annotations value is lower than min restriction', () => {
+          const extType = _.cloneDeep(nestedType)
+          extType.fields.restrictedAnnotation.annotations.range = 0
+          extType.fields.restrictedAnnotation.annotations.rangeNoMax = 0
+          const errors = validateElements([extType])
+          expect(errors).toHaveLength(2)
+
+          expect(errors[0]).toBeInstanceOf(InvalidValueRangeValidationError)
+          expect(errors[0].message).toMatch('Value "0" is not valid')
+          expect(errors[0].message).toMatch('bigger than 1 and lower than 10')
+          expect(errors[0].elemID).toEqual(
+            extType.elemID.createNestedID('field', 'restrictedAnnotation', 'range')
+          )
+
+          expect(errors[1]).toBeInstanceOf(InvalidValueRangeValidationError)
+          expect(errors[1].message).toMatch('Value "0" is not valid')
+          expect(errors[1].message).toMatch('bigger than 1')
+          expect(errors[1].elemID).toEqual(
+            extType.elemID.createNestedID('field', 'restrictedAnnotation', 'rangeNoMax')
           )
         })
 

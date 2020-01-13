@@ -70,6 +70,36 @@ export class InvalidValueValidationError extends ValidationError {
   }
 }
 
+export class InvalidValueRangeValidationError extends ValidationError {
+  readonly value: Value
+  readonly fieldName: string
+  readonly minValue?: number
+  readonly maxValue?: number
+
+  static formatExpectedValue(minValue: number | undefined, maxValue: number | undefined): string {
+    const minErrStr: string = !_.isUndefined(minValue) ? `bigger than ${minValue}` : ''
+    const maxErrStr: string = !_.isUndefined(maxValue) ? `lower than ${maxValue}` : ''
+    return minErrStr + (!_.isEmpty(minErrStr) && !_.isEmpty(maxErrStr)
+      ? ` and ${maxErrStr}` : maxErrStr)
+  }
+
+  constructor(
+    { elemID, value, fieldName, minValue, maxValue }:
+      { elemID: ElemID; value: Value; fieldName: string; minValue?: number; maxValue?: number }
+  ) {
+    super({
+      elemID,
+      error: `Value "${value}" is not valid for field ${fieldName}`
+        + ` expected to be ${InvalidValueRangeValidationError.formatExpectedValue(minValue, maxValue)}`,
+      severity: 'Warning',
+    })
+    this.value = value
+    this.fieldName = fieldName
+    this.minValue = minValue
+    this.maxValue = maxValue
+  }
+}
+
 export class MissingRequiredFieldValidationError extends ValidationError {
   readonly fieldName: string
 
@@ -126,6 +156,29 @@ const validateAnnotationsValue = (
     return []
   }
 
+  const validateRestrictionsValueRange = (val: Value):
+    ValidationError[] => {
+    const restriction = annotations[CORE_ANNOTATIONS.RESTRICTION]
+    const minValue = restriction[CORE_ANNOTATIONS.MIN]
+    const maxValue = restriction[CORE_ANNOTATIONS.MAX]
+
+    // When value is array we iterate (validate) each element
+    if (_.isArray(val)) {
+      return _.flatten(val.map(v => validateRestrictionsValueRange(v)))
+    }
+
+    // The 'real' validation: is value in range
+    if ((minValue && (val < minValue)) || (maxValue && (val > maxValue))) {
+      return [
+        new InvalidValueRangeValidationError(
+          { elemID, value, fieldName: elemID.name, minValue, maxValue }
+        ),
+      ]
+    }
+
+    return []
+  }
+
   const validateRequiredValue = (): ValidationError[] =>
     (annotations[CORE_ANNOTATIONS.REQUIRED] === true
       ? [new MissingRequiredFieldValidationError({ elemID, fieldName: elemID.name })] : [])
@@ -143,9 +196,20 @@ const validateAnnotationsValue = (
         && !(restriction && restriction[CORE_ANNOTATIONS.ENFORCE_VALUE] === false))
   }
 
+  const shouldEnforceValueRange = (): boolean => {
+    const restriction = annotations[CORE_ANNOTATIONS.RESTRICTION]
+    return restriction
+      && (restriction[CORE_ANNOTATIONS.MIN] || restriction[CORE_ANNOTATIONS.MAX])
+  }
+
   // Checking _values annotation
   if (isPrimitiveType(type) && shouldEnforceValue()) {
     return validateRestrictionsValue(value)
+  }
+
+  // Checking value range
+  if (isPrimitiveType(type) && shouldEnforceValueRange()) {
+    return validateRestrictionsValueRange(value)
   }
   return undefined
 }

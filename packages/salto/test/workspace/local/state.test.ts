@@ -16,6 +16,7 @@ jest.mock('../../../src/file', () => ({
     }
     return Promise.resolve('[]')
   }),
+  exists: jest.fn().mockImplementation(((filename: string) => Promise.resolve(filename !== 'empty'))),
 }))
 
 describe('local state', () => {

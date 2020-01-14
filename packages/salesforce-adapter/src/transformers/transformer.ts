@@ -358,17 +358,6 @@ export class Types {
     },
   })
 
-  private static LengthTypeElemID = new ElemID(SALESFORCE, FIELD_ANNOTATIONS.LENGTH)
-
-  private static LengthType = new PrimitiveType({
-    elemID: Types.LengthTypeElemID,
-    primitive: PrimitiveTypes.NUMBER,
-    annotations: {
-      [CORE_ANNOTATIONS.RESTRICTION]: { [RESTRICTION_ANNOTATIONS.MIN]: 1,
-        [RESTRICTION_ANNOTATIONS.MAX]: 100 },
-    },
-  })
-
   private static commonAnnotationTypes = {
     [API_NAME]: BuiltinTypes.SERVICE_ID,
     [DESCRIPTION]: BuiltinTypes.STRING,
@@ -392,7 +381,7 @@ export class Types {
         [FIELD_ANNOTATIONS.UNIQUE]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.EXTERNAL_ID]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.CASE_SENSITIVE]: BuiltinTypes.BOOLEAN,
-        [FIELD_ANNOTATIONS.LENGTH]: Types.LengthType,
+        [FIELD_ANNOTATIONS.LENGTH]: BuiltinTypes.NUMBER,
       },
     }),
     number: new PrimitiveType({

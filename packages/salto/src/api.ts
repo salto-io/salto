@@ -1,6 +1,7 @@
 import wu from 'wu'
 import {
-  ObjectType, InstanceElement, Element, ActionName, DataModificationResult, ChangeValidator,
+  ObjectType, InstanceElement, Element, DataModificationResult,
+  ChangeValidator, ElemID, ActionName,
 } from 'adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto/logging'
@@ -17,7 +18,6 @@ import adapterCreators from './core/adapters/creators'
 import {
   getPlan, Plan, PlanItem, DetailedChange,
 } from './core/plan'
-import State from './state/state'
 import { findElement, SearchResult } from './core/search'
 import {
   fetchChanges, FetchChange, getDetailedChanges, createElemIdGetter,
@@ -66,15 +66,11 @@ const getChangeValidators = (): Record<string, ChangeValidator> =>
 export const preview = async (
   workspace: Workspace,
   services: string[] = workspace.config.services
-): Promise<Plan> => {
-  const state = new State(workspace.config.stateLocation)
-  const stateElements = await state.get()
-  return getPlan(
-    filterElementsByServices(stateElements, services),
-    filterElementsByServices(workspace.elements, services),
-    getChangeValidators()
-  )
-}
+): Promise<Plan> => getPlan(
+  filterElementsByServices(await workspace.state.getAll(), services),
+  filterElementsByServices(workspace.elements, services),
+  getChangeValidators()
+)
 
 export interface DeployResult {
   success: boolean
@@ -88,48 +84,41 @@ export const deploy = async (
   services: string[] = workspace.config.services,
   force = false
 ): Promise<DeployResult> => {
-  const changedElements = [] as Element[]
-  const deployActionOnState = async (state: State, action: ActionName, element: Element
-  ): Promise<void> => {
-    if (action === 'remove') {
-      return state.remove([element])
-    }
-    changedElements.push(element)
-    return state.update([element])
-  }
-  const state = new State(workspace.config.stateLocation)
-  const stateElements = await state.get()
-  try {
-    const actionPlan = await getPlan(
-      filterElementsByServices(stateElements, services),
-      filterElementsByServices(workspace.elements, services),
-      getChangeValidators()
-    )
-    if (force || await shouldDeploy(actionPlan)) {
-      const adapters = await initAdapters(workspace.configElements, services)
-      const errors = await deployActions(
-        actionPlan,
-        adapters,
-        reportProgress,
-        (action, element) => deployActionOnState(state, action, element)
-      )
+  const changedElements: Element[] = []
+  const actionPlan = await getPlan(
+    filterElementsByServices(await workspace.state.getAll(), services),
+    filterElementsByServices(workspace.elements, services),
+    getChangeValidators()
+  )
+  if (force || await shouldDeploy(actionPlan)) {
+    const adapters = await initAdapters(workspace.configElements, services)
 
-      const changedElementsIds = changedElements.map(e => e.elemID.getFullName())
-
-      const changes = wu(await getDetailedChanges(workspace.elements
-        .filter(e => changedElementsIds.includes(e.elemID.getFullName())), changedElements))
-        .map(change => ({ change, serviceChange: change }))
-      const errored = errors.length > 0
-      return {
-        success: !errored,
-        changes,
-        errors: errored ? errors : [],
+    const postDeploy = async (action: ActionName, element: Element): Promise<void> =>
+      ((action === 'remove')
+        ? workspace.state.remove(element.elemID)
+        : workspace.state.set(element)
+          .then(() => { changedElements.push(element) }))
+    let errors: DeployError[]
+    try {
+      errors = await deployActions(actionPlan, adapters, reportProgress, postDeploy)
+    } finally {
+      if (workspace.state.flush) {
+        await workspace.state.flush()
       }
     }
-    return { success: true, errors: [] }
-  } finally {
-    await state.flush()
+
+    const changedElementsIds = changedElements.map(e => e.elemID.getFullName())
+    const changes = wu(await getDetailedChanges(workspace.elements
+      .filter(e => changedElementsIds.includes(e.elemID.getFullName())), changedElements))
+      .map(change => ({ change, serviceChange: change }))
+    const errored = errors.length > 0
+    return {
+      success: !errored,
+      changes,
+      errors: errored ? errors : [],
+    }
   }
+  return { success: true, errors: [] }
 }
 
 export type fillConfigFunc = (configType: ObjectType) => Promise<InstanceElement>
@@ -150,12 +139,17 @@ export const fetch: fetchFunc = async (
   services = workspace.config.services,
   progressEmitter?
 ) => {
+  const overrideState = async (elements: Element[]): Promise<void> => {
+    await workspace.state.remove(await workspace.state.list())
+    await workspace.state.set(elements)
+    if (workspace.state.flush) {
+      await workspace.state.flush()
+    }
+    log.debug(`finish to override state with ${elements.length} elements`)
+  }
   log.debug('fetch starting..')
-
-  const state = new State(workspace.config.stateLocation)
-  const stateElements = await state.get()
-  const filteredStateElements = filterElementsByServices(stateElements, services)
-  log.debug(`finished loading ${stateElements.length} state elements`)
+  const filteredStateElements = filterElementsByServices(await workspace.state.getAll(),
+    services)
 
   const adapters = await initAdapters(
     workspace.configElements,
@@ -174,9 +168,7 @@ export const fetch: fetchFunc = async (
       progressEmitter,
     )
     log.debug(`${elements.length} elements were fetched [mergedErrors=${mergeErrors.length}]`)
-    state.override(elements)
-    await state.flush()
-    log.debug(`finish to override state with ${elements.length} elements`)
+    await overrideState(elements)
     return {
       changes,
       mergeErrors,
@@ -200,10 +192,8 @@ export const describeElement = async (
 ): Promise<SearchResult> =>
   findElement(searchWords, workspace.elements)
 
-const getTypeFromState = async (stateLocation: string, typeId: string): Promise<Element> => {
-  const state = new State(stateLocation)
-  const stateElements = await state.get()
-  const type = stateElements.find(elem => elem.elemID.getFullName() === typeId)
+const getTypeFromState = async (ws: Workspace, typeId: string): Promise<Element> => {
+  const type = await ws.state.get(ElemID.fromFullName(typeId))
   if (!type) {
     throw new Error(`Couldn't find the type you are looking for: ${typeId}. Have you run salto fetch yet?`)
   }
@@ -211,7 +201,7 @@ const getTypeFromState = async (stateLocation: string, typeId: string): Promise<
 }
 
 const getTypeForDataMigration = async (workspace: Workspace, typeId: string): Promise<Element> => {
-  const type = await getTypeFromState(workspace.config.stateLocation, typeId)
+  const type = await getTypeFromState(workspace, typeId)
   const typeAdapter = type.elemID.adapter
   if (!workspace.config.services?.includes(typeAdapter)) {
     throw new Error(`The type is from a service (${typeAdapter}) that is not set up for this workspace`)
@@ -251,8 +241,6 @@ export const deleteFromCsvFile = async (
 
 export const init = async (workspaceName?: string): Promise<Workspace> => {
   const workspace = await Workspace.init('.', workspaceName)
-  const state = new State(workspace.config.stateLocation)
-  await state.flush()
   await workspace.flush()
   return workspace
 }

@@ -15,6 +15,8 @@ import { DetailedChange } from '../core/plan'
 import { ParseResultFSCache } from './cache'
 import { getChangeLocations, updateBlueprintData, getChangesToUpdate, BP_EXTENSION } from './blueprint_update'
 import { Config, dumpConfig, locateWorkspaceRoot, getConfigPath, completeConfig, saltoConfigType } from './config'
+import LocalState from './local/state'
+import { State } from './state'
 
 const log = logger(module)
 
@@ -247,7 +249,7 @@ const ensureEmptyWorkspace = async (config: Config): Promise<void> => {
  * an out of date workspace and will probably lead to undesired behavior
  */
 export class Workspace {
-  private state: WorkspaceState
+  private workspaceState: WorkspaceState
   private dirtyBlueprints: Set<string>
 
   /**
@@ -298,20 +300,21 @@ export class Workspace {
   constructor(
     public config: Config,
     blueprints: ReadonlyArray<ParsedBlueprint>,
-    readonly useCache: boolean = true
+    readonly useCache: boolean = true,
+    readonly state: State = new LocalState(config.stateLocation)
   ) {
-    this.state = createWorkspaceState(blueprints)
+    this.workspaceState = createWorkspaceState(blueprints)
     this.dirtyBlueprints = new Set<string>()
   }
 
   // Accessors into state
-  get elements(): ReadonlyArray<Element> { return this.state.elements }
-  get errors(): Errors { return this.state.errors }
-  hasErrors(): boolean { return this.state.errors.hasErrors() }
-  get parsedBlueprints(): ParsedBlueprintMap { return this.state.parsedBlueprints }
-  get elementsIndex(): Record<string, string[]> { return this.state.elementsIndex }
+  get elements(): ReadonlyArray<Element> { return this.workspaceState.elements }
+  get errors(): Errors { return this.workspaceState.errors }
+  hasErrors(): boolean { return this.workspaceState.errors.hasErrors() }
+  get parsedBlueprints(): ParsedBlueprintMap { return this.workspaceState.parsedBlueprints }
+  get elementsIndex(): Record<string, string[]> { return this.workspaceState.elementsIndex }
   get configElements(): ReadonlyArray<InstanceElement> {
-    return this.state.elements.filter(isInstanceElement).filter(e => e.elemID.isConfig())
+    return this.workspaceState.elements.filter(isInstanceElement).filter(e => e.elemID.isConfig())
   }
 
   async resolveParsedBlueprint(bp: ParsedBlueprint): Promise<ResolvedParsedBlueprint> {
@@ -346,7 +349,8 @@ export class Workspace {
   }
 
   private async resolveSourceFragment(sourceRange: SourceRange): Promise<SourceFragment> {
-    const bp = await this.resolveParsedBlueprint(this.state.parsedBlueprints[sourceRange.filename])
+    const bp = await this.resolveParsedBlueprint(this.workspaceState.parsedBlueprints[
+      sourceRange.filename])
     const bpString = bp.buffer
     const fragment = bpString.substring(sourceRange.start.byte, sourceRange.end.byte)
     return {
@@ -369,7 +373,7 @@ export class Workspace {
   }
 
   async getWorkspaceErrors(): Promise<ReadonlyArray<WorkspaceError<SaltoError>>> {
-    const wsErrors = this.state.errors
+    const wsErrors = this.workspaceState.errors
     return Promise.all(_.flatten([
       wsErrors.parse.map(
         async (parseError: ParseError): Promise<WorkspaceError<SaltoError>> =>
@@ -468,7 +472,7 @@ export class Workspace {
     this.markDirty(blueprints.map(bp => bp.filename))
 
     // Swap state
-    this.state = createWorkspaceState(Object.values(newParsedMap))
+    this.workspaceState = createWorkspaceState(Object.values(newParsedMap))
   }
 
   /**
@@ -481,7 +485,7 @@ export class Workspace {
     // Mark removed blueprints as dirty
     this.markDirty(names)
     // Swap state
-    this.state = createWorkspaceState(newParsedBlueprints)
+    this.workspaceState = createWorkspaceState(newParsedBlueprints)
   }
 
   /**
@@ -495,6 +499,9 @@ export class Workspace {
       && bp.filename === path.join(CREDS_DIR, `${bp.elements[0].elemID.adapter}${BP_EXTENSION}`)
     )
 
+    if (this.state.flush) {
+      await this.state.flush()
+    }
     const cache = new ParseResultFSCache(this.config.localStorage, this.config.baseDir)
     await Promise.all(wu(this.dirtyBlueprints).map(async filename => {
       const bp = this.parsedBlueprints[filename]

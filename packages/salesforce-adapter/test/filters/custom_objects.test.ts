@@ -175,7 +175,7 @@ describe('Custom Objects filter', () => {
       // Custom type
       expect(lead.fields.custom__c).not.toBeUndefined()
       expect(lead.fields.custom__c.annotations[API_NAME]).toBe('Lead.Custom__c')
-      expect(lead.fields.custom__c.annotations[CORE_ANNOTATIONS.DEFAULT]).toBe(false)
+      expect(lead.fields.custom__c.annotations[FIELD_ANNOTATIONS.DEFAULT_VALUE]).toBe(false)
       // Formula field
       expect(lead.fields.formula__c).toBeDefined()
       expect(lead.fields.formula__c.type.elemID.name).toBe('formula_text')

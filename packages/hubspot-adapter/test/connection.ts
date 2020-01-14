@@ -18,7 +18,7 @@ const mockMadKu: () => Connection = () => ({
   } as Form,
   workflows: {
     getAll: jest.fn().mockImplementation((): RequestPromise =>
-      ([] as unknown as RequestPromise)),
+      ({ workflows: [] } as unknown as RequestPromise)),
     enroll: jest.fn().mockImplementation((): RequestPromise =>
       (undefined as unknown as RequestPromise)),
     unenroll: jest.fn().mockImplementation((): RequestPromise =>

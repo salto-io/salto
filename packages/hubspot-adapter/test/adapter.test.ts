@@ -59,14 +59,14 @@ describe('Hubspot Adapter Operations', () => {
 
     it('should fetch basic', async () => {
       const result = await adapter.fetch()
-      expect(result).toHaveLength(15)
+      expect(result).toHaveLength(17)
     })
   })
 
   describe('Add operation', () => {
     const formInstance = new InstanceElement(
       'formInstance',
-      Types.hubspotObjects[0],
+      Types.hubspotObjects.form,
       {
         name: 'formInstanceTest',
         method: 'POST',
@@ -175,7 +175,7 @@ describe('Hubspot Adapter Operations', () => {
   describe('Remove operation', () => {
     const formInstance = new InstanceElement(
       'formInstance',
-      Types.hubspotObjects[0],
+      Types.hubspotObjects.form,
       {
         name: 'formInstanceTest',
         guid: 'guid',
@@ -219,7 +219,7 @@ describe('Hubspot Adapter Operations', () => {
 
     const beforeUpdateInstance = new InstanceElement(
       'formInstance',
-      Types.hubspotObjects[0],
+      Types.hubspotObjects.form,
       {
         name: 'beforeUpdateInstance',
         guid: 'guid',
@@ -255,7 +255,7 @@ describe('Hubspot Adapter Operations', () => {
 
     const afterUpdateInstance = new InstanceElement(
       'formInstance',
-      Types.hubspotObjects[0],
+      Types.hubspotObjects.form,
       {
         name: 'afterUpdateInstance',
         guid: 'guid',

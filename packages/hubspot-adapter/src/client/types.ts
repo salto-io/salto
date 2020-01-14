@@ -1,6 +1,5 @@
 export interface HubspotMetadata {
   name: string
-  // TODO
 }
 
 export interface Form extends HubspotMetadata {
@@ -63,4 +62,20 @@ export interface Property {
   // The default value of the field
   selectedOptions: string[]
   options: Options[]
+}
+
+export interface Workflows extends HubspotMetadata {
+  id: number
+  type: string
+  enabled: boolean
+  insertedAt: number
+  updatedAt: number
+  contactListIds: ContactListIds
+}
+
+interface ContactListIds {
+  enrolled: number
+  active: number
+  completed: number
+  succeeded: number
 }

@@ -221,7 +221,9 @@ const transformFieldAnnotations = (
       .find(([_k, v]) => v === typeName)?.[0]
     const dataTypeName = apiTypeName === 'checkbox' ? 'boolean' : apiTypeName
     return dataTypeName
-      ? (Types.getKnownType(dataTypeName, true) || Types.getKnownType(dataTypeName, false))
+      ? (Types.getKnownType(dataTypeName, true)
+        || Types.getKnownType(dataTypeName, false))
+        || Types.getCompound(dataTypeName)
       : undefined
   }
 

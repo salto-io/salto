@@ -59,7 +59,7 @@ describe('Hubspot Adapter Operations', () => {
 
     it('should fetch basic', async () => {
       const result = await adapter.fetch()
-      expect(result).toHaveLength(17)
+      expect(result).toHaveLength(18)
     })
   })
 

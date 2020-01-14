@@ -41,6 +41,8 @@ export default class HubspotClient {
         return this.getAllForms()
       case OBJECTS_NAMES.WORKFLOWS:
         return this.getAllWorkflows()
+      case OBJECTS_NAMES.MARKETINGEMAIL: // TODO: change when Madkudu will support marketingEmail
+        return []
       default:
         break
     }

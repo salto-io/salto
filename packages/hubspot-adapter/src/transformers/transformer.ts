@@ -13,7 +13,7 @@ import {
   PROPERTY_FIELDS,
   PROPERTY_GROUP_FIELDS,
   OPTIONS_FIELDS,
-  CONTACTLISTIDS_FIELDS, WORKFLOWS_FIELDS,
+  CONTACTLISTIDS_FIELDS, WORKFLOWS_FIELDS, MARKETINGEMAIL_FIELDS,
 } from '../constants'
 import {
   HubspotMetadata,
@@ -22,6 +22,8 @@ import {
 
 const formElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.FORM)
 const workflowsElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.WORKFLOWS)
+const marketingEmailElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.MARKETINGEMAIL)
+
 const propertyGroupElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.PROPERTYGROUP)
 const propertyElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.PROPERTY)
 const optionsElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.OPTIONS)
@@ -403,6 +405,68 @@ export class Types {
         ),
       },
       path: [HUBSPOT, 'objects', workflowsElemID.name],
+    }),
+    [OBJECTS_NAMES.MARKETINGEMAIL]: new ObjectType({
+      elemID: marketingEmailElemID,
+      fields: {
+        [MARKETINGEMAIL_FIELDS.ID]: new TypeField(
+          marketingEmailElemID, MARKETINGEMAIL_FIELDS.ID, BuiltinTypes.NUMBER, {
+            name: MARKETINGEMAIL_FIELDS.ID,
+            _readOnly: true,
+            [CORE_ANNOTATIONS.REQUIRED]: true,
+          },
+        ),
+        [MARKETINGEMAIL_FIELDS.NAME]: new TypeField(
+          marketingEmailElemID, MARKETINGEMAIL_FIELDS.NAME, BuiltinTypes.STRING, {
+            name: MARKETINGEMAIL_FIELDS.NAME,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: true,
+          },
+        ),
+        [MARKETINGEMAIL_FIELDS.AB]: new TypeField(
+          marketingEmailElemID, MARKETINGEMAIL_FIELDS.AB, BuiltinTypes.STRING, {
+            name: MARKETINGEMAIL_FIELDS.AB,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [MARKETINGEMAIL_FIELDS.ABHOURSTOWAIT]: new TypeField(
+          marketingEmailElemID, MARKETINGEMAIL_FIELDS.ABHOURSTOWAIT, BuiltinTypes.NUMBER, {
+            name: MARKETINGEMAIL_FIELDS.ABHOURSTOWAIT,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [MARKETINGEMAIL_FIELDS.ABVARIATION]: new TypeField(
+          marketingEmailElemID, MARKETINGEMAIL_FIELDS.ABVARIATION, BuiltinTypes.BOOLEAN, {
+            name: MARKETINGEMAIL_FIELDS.ABVARIATION,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [MARKETINGEMAIL_FIELDS.ABSAMPLESIZEDEFAULT]: new TypeField(
+          marketingEmailElemID, MARKETINGEMAIL_FIELDS.ABSAMPLESIZEDEFAULT, BuiltinTypes.STRING, {
+            name: MARKETINGEMAIL_FIELDS.ABSAMPLESIZEDEFAULT,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [MARKETINGEMAIL_FIELDS.ABSAMPLINGDEFAULT]: new TypeField(
+          marketingEmailElemID, MARKETINGEMAIL_FIELDS.ABSAMPLINGDEFAULT, BuiltinTypes.STRING, {
+            name: MARKETINGEMAIL_FIELDS.ABSAMPLINGDEFAULT,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [MARKETINGEMAIL_FIELDS.ABSTATUS]: new TypeField(
+          marketingEmailElemID, MARKETINGEMAIL_FIELDS.ABSTATUS, BuiltinTypes.STRING, {
+            name: MARKETINGEMAIL_FIELDS.ABSTATUS,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+      },
+      path: [HUBSPOT, 'objects', marketingEmailElemID.name],
     }),
   }
 

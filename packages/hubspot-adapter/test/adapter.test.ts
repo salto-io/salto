@@ -5,8 +5,15 @@ import HubspotAdapter from '../src/adapter'
 
 import mockAdapter from './mock'
 import HubspotClient from '../src/client/client'
-import { Form } from '../src/client/types'
-import { Types } from '../src/transformers/transformer'
+import {
+  Form, HubspotMetadata, MarketingEmail, Workflows,
+} from '../src/client/types'
+import {
+  Types,
+} from '../src/transformers/transformer'
+import {
+  OBJECTS_NAMES,
+} from '../src/constants'
 
 
 describe('Hubspot Adapter Operations', () => {
@@ -24,42 +31,159 @@ describe('Hubspot Adapter Operations', () => {
   })
 
   describe('Fetch operation', () => {
-    let mockGetAllForms: jest.Mock
+    let mockGetAllInstances: jest.Mock
 
     beforeEach(async () => {
-      const getAllResult = (): Promise<Form[]> => Promise.resolve(
-        [
-          {
-            guid: '12345',
-            portalId: 123,
-            name: 'formTest1',
-            method: 'POST',
-            cssClass: 'abc',
-            followUpId: 'DEPRECATED',
-            editable: true,
-            cloneable: true,
-            captchaEnabled: false,
-            createdAt: 1500588456053,
-          },
-          {
-            guid: '11111',
-            name: 'formTest1',
-            cssClass: 'abc',
-            editable: true,
-            cloneable: true,
-            captchaEnabled: false,
-            createdAt: 1500588456053,
-          },
-        ] as Form[]
-      )
+      const getAllResult = (type: string): Promise<HubspotMetadata[]> => {
+        if (type === OBJECTS_NAMES.WORKFLOWS) {
+          return [
+            {
+              id: 12345,
+              name: 'workflowTest1',
+              type: 'DRIP_DELAY',
+              unsupportedField: 'bla',
+            },
+            {
+              id: 54321,
+              name: 'workflowTest1',
+              type: 'DRIP_DELAY',
+              enabled: false,
+              contactListIds: {
+                enrolled: 1,
+                active: 2,
+                completed: 3,
+                succeeded: 4,
 
-      mockGetAllForms = jest.fn().mockImplementation(getAllResult)
-      client.getAllForms = mockGetAllForms
+              },
+            },
+          ] as unknown as Promise<Workflows[]>
+        }
+        if (type === OBJECTS_NAMES.FORM) {
+          return [
+            {
+              portalId: 6774238,
+              guid: '3e2e7ef3-d0d4-418f-92e0-ad40ae2b622c',
+              name: 'formTest1',
+              action: '',
+              method: 'POST',
+              cssClass: 'abc',
+              followUpId: 'DEPRECATED',
+              editable: true,
+              createdAt: 1571588456053,
+              cloneable: true,
+            },
+            {
+              portalId: 6774238,
+              guid: '123e11f3-111-418f-92e0-cwwwe2b6999',
+              name: 'formTest2',
+              action: '',
+              method: 'POST',
+              cssClass: 'css',
+              followUpId: 'DEPRECATED',
+              editable: false,
+              createdAt: 1561581451052,
+              cloneable: true,
+              captchaEnabled: false,
+            },
+          ] as unknown as Promise<Form[]>
+        }
+        if (type === OBJECTS_NAMES.MARKETINGEMAIL) {
+          return [
+            {
+              ab: true,
+              abHoursToWait: 12,
+              abVariation: false,
+              abSampleSizeDefault: 'VARIANT',
+              abSamplingDefault: 'MASTER',
+              abStatus: 'MASTER',
+              abSuccessMetric: 'OPENS_BY_DELIVERED',
+              abTestId: '1234',
+              abTestPercentage: 12345,
+              absoluteUrl: 'google.com',
+              allEmailCampaignIds: [],
+              analyticsPageId: 'email ID',
+              archived: 'archived',
+              author: 'mail@gmail.com',
+              authorEmail: 'mail123@gmail.com',
+              authorName: 'userName',
+              blogEmailType: 'daily',
+              campaign: 'campaignID',
+              campaignName: 'campaignName',
+              canSpamSettingsId: 'id123',
+              clonedFrom: 1234,
+              createPage: false,
+              created: 12334567,
+              currentlyPublished: true,
+              domain: 'ynet.com',
+              emailBody: 'main email body',
+              emailNote: 'email notes',
+              emailType: 'AB_EMAIL',
+              feedbackEmailCategory: 'CUSTOM',
+              feedbackSurveyId: 1234,
+              folderId: 999,
+              freezeDate: 170456443,
+              fromName: 'sender name',
+              htmlTitle: 'title',
+              id: 111111,
+              isGraymailSuppressionEnabled: false,
+              isLocalTimezoneSend: false,
+              isPublished: true,
+              name: 'marketingEmail instance name',
+            },
+            {
+              ab: false,
+              abHoursToWait: 4,
+              abVariation: false,
+              abSampleSizeDefault: 'MASTER',
+              abSamplingDefault: 'MASTER',
+              abStatus: 'VARIANT',
+              abSuccessMetric: 'OPENS_BY_DELIVERED',
+              abTestId: '1234',
+              abTestPercentage: 12345,
+              absoluteUrl: 'google.com',
+              allEmailCampaignIds: [],
+              analyticsPageId: 'email ID',
+              archived: 'archived',
+              author: 'mail1@gmail.com',
+              authorEmail: 'mail13@gmail.com',
+              authorName: 'userNameOther',
+              blogEmailType: 'daily',
+              campaign: 'campaignID',
+              campaignName: 'campaignName',
+              canSpamSettingsId: 'id123',
+              clonedFrom: 1234,
+              createPage: true,
+              created: 12334567,
+              currentlyPublished: true,
+              domain: 'one.com',
+              emailBody: 'main body',
+              emailNote: 'emails notes',
+              emailType: 'ABC_EMAIL',
+              feedbackEmailCategory: 'CUSTOM',
+              feedbackSurveyId: 1234,
+              folderId: 919,
+              freezeDate: 170456443,
+              fromName: 'sender name',
+              htmlTitle: 'title',
+              id: 222222,
+              isGraymailSuppressionEnabled: true,
+              isLocalTimezoneSend: true,
+              isPublished: true,
+              name: 'marketingEmail instance2 name',
+            },
+          ] as unknown as Promise<MarketingEmail[]>
+        }
+        return (
+          [] as unknown as Promise<HubspotMetadata[]>)
+      }
+
+      mockGetAllInstances = jest.fn().mockImplementation(getAllResult)
+      client.getAllInstances = mockGetAllInstances
     })
 
     it('should fetch basic', async () => {
       const result = await adapter.fetch()
-      expect(result).toHaveLength(18)
+      expect(result).toHaveLength(22)
     })
   })
 

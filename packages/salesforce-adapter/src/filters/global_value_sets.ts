@@ -3,7 +3,7 @@ import {
   Element, ObjectType, isObjectType, Field, ReferenceExpression, isInstanceElement,
 } from 'adapter-api'
 import { FilterWith } from '../filter'
-import { FIELD_ANNOTATIONS, VALUE_SET_FIELDS } from '../constants'
+import { VALUE_SET_FIELDS, INSTANCE_FULL_NAME_FIELD } from '../constants'
 import { metadataType, isCustomObject } from '../transformers/transformer'
 
 export const GLOBAL_VALUE_SET = 'GlobalValueSet'
@@ -18,8 +18,8 @@ const getValueSetNameToRef = (elements: Element[]): GlobalValueSetsLookup => {
     .filter(e => metadataType(e) === GLOBAL_VALUE_SET)
   return _.fromPairs(globalValueSets
     .map(gvs => [
-      gvs.value[MASTER_LABEL],
-      new ReferenceExpression(gvs.elemID.createNestedID(CUSTOM_VALUE)),
+      gvs.value[INSTANCE_FULL_NAME_FIELD],
+      new ReferenceExpression(gvs.elemID.createNestedID(INSTANCE_FULL_NAME_FIELD)),
     ]))
 }
 
@@ -28,14 +28,14 @@ const addGlobalValueSetRefToObject = (
   gvsToRef: GlobalValueSetsLookup
 ): void => {
   const getValueSetName = (field: Field): string | undefined =>
-    field.annotations[FIELD_ANNOTATIONS.VALUE_SET]?.[VALUE_SET_FIELDS.VALUE_SET_NAME]
+    field.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME]
 
   Object.values(object.fields)
     .filter(f => getValueSetName(f))
     .forEach(f => {
       const valueSetName = getValueSetName(f)
       if (valueSetName && gvsToRef[valueSetName]) {
-        f.annotations[FIELD_ANNOTATIONS.VALUE_SET] = gvsToRef[valueSetName]
+        f.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME] = gvsToRef[valueSetName]
       }
     })
 }

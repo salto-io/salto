@@ -103,8 +103,9 @@ export class CustomField implements MetadataInfo {
   valueSet?: {
     restricted?: boolean
     controllingField?: string
-    valueSetDefinition: { value: CustomPicklistValue[] }
+    valueSetDefinition?: { value: CustomPicklistValue[] }
     valueSettings?: ValueSettings[]
+    valueSetName?: string
   }
 
   // To be used for lookup and masterdetail types
@@ -148,6 +149,7 @@ export class CustomField implements MetadataInfo {
     controllingField?: string,
     valueSettings?: ValueSettings[],
     picklistRestricted?: boolean,
+    valueSetName?: string,
     formula?: string,
     summaryFilterItems?: FilterItem[],
     relatedTo?: string[],
@@ -181,12 +183,20 @@ export class CustomField implements MetadataInfo {
     // For Picklist we save the default value in defaultVal but Metadata requires it at Value level
     if (type === FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.PICKLIST]
       || type === FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.MULTIPICKLIST]) {
-      if (values && !_.isEmpty(values)) {
-        this.valueSet = {
-          restricted: picklistRestricted || false,
-          valueSetDefinition: {
-            value: values.map(val => new CustomPicklistValue(val.fullName, val.default, val.label)),
-          },
+      if ((values && !_.isEmpty(values)) || (valueSetName)) {
+        if (values && !_.isEmpty(values)) {
+          this.valueSet = {
+            restricted: picklistRestricted || false,
+            valueSetDefinition: {
+              value: values.map(val =>
+                new CustomPicklistValue(val.fullName, val.default, val.label)),
+            },
+          }
+        } else {
+          this.valueSet = {
+            restricted: true,
+            valueSetName,
+          }
         }
         if (controllingField && valueSettings) {
           this.valueSet.controllingField = controllingField

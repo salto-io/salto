@@ -36,6 +36,7 @@ import samlInitMethodFilter from './filters/saml_initiation_method'
 import settingsFilter from './filters/settings_type'
 import workflowActions from './filters/workflow_actions'
 import topicsForObjectsFilter from './filters/topics_for_objects'
+import globalValueSetFilter from './filters/global_value_sets'
 import {
   FilterCreator, Filter, FilterWith, filtersWith,
 } from './filter'
@@ -153,6 +154,7 @@ export default class SalesforceAdapter {
       settingsFilter,
       workflowActions,
       topicsForObjectsFilter,
+      globalValueSetFilter,
       // The following filters should remain last in order to make sure they fix all elements
       convertListsFilter,
       convertTypeFilter,

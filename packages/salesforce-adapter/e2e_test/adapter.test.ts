@@ -7,6 +7,7 @@ import { MetadataInfo, PicklistEntry, RetrieveResult } from 'jsforce'
 import { collections } from '@salto/lowerdash'
 import * as constants from '../src/constants'
 import { STANDARD_VALUE_SET } from '../src/filters/standard_value_sets'
+import { GLOBAL_VALUE_SET } from '../src/filters/global_value_sets'
 import {
   CustomObject,
   ProfileInfo,
@@ -278,12 +279,54 @@ describe('Salesforce adapter E2E with real account', () => {
       ])
     }
 
+    const verifyGlobalValueSetAndCustomObjectExist = async (): Promise<void> => {
+      const gvsName = 'TestGlobalValueSet'
+      await client.upsert('GlobalValueSet', {
+        fullName: gvsName,
+        masterLabel: gvsName,
+        sorted: false,
+        description: 'GlobalValueSet that should be fetched in e2e test',
+        customValue: [
+          {
+            fullName: 'Val1',
+            default: true,
+            label: 'Val1',
+          },
+          {
+            fullName: 'Val2',
+            default: false,
+            label: 'Val2',
+          },
+        ],
+      } as MetadataInfo)
+
+      const accountApiName = 'Account'
+      const globalPicklistFieldName = 'gpicklist__c'
+      await client.upsert(constants.CUSTOM_FIELD, {
+        fullName: `${accountApiName}.${globalPicklistFieldName}`,
+        label: 'Test Fetch Global Picklist Field',
+        required: false,
+        valueSet: {
+          restricted: true,
+          valueSetName: gvsName,
+        },
+        type: 'Picklist',
+      } as MetadataInfo)
+      await client.update(PROFILE_METADATA_TYPE,
+        new ProfileInfo(sfCase(ADMIN_PROFILE), [{
+          field: `${accountApiName}.${globalPicklistFieldName}`,
+          editable: true,
+          readable: true,
+        }]))
+    }
+
     await Promise.all([
       verifyAccountWithRollupSummaryExists(),
       verifyEmailTemplateAndFolderExist(),
       verifyReportAndFolderExist(),
       verifyDashboardAndFolderExist(),
       verifyCustomObjectInnerTypesExist(),
+      verifyGlobalValueSetAndCustomObjectExist(),
     ])
     result = await adapter.fetch()
   })
@@ -2098,6 +2141,21 @@ describe('Salesforce adapter E2E with real account', () => {
 
       // Clean-up
       await adapter.remove(oldElement)
+    })
+
+    it('should fetch GlobalValueSet', async () => {
+      const account = findElements(result, 'account')[1] as ObjectType
+
+      expect(account.fields.gpicklist__c
+        .annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME])
+        .toEqual(new ReferenceExpression(
+          new ElemID(
+            constants.SALESFORCE,
+            bpCase(GLOBAL_VALUE_SET),
+            'instance',
+            'test_global_value_set'
+          ).createNestedID(constants.INSTANCE_FULL_NAME_FIELD)
+        ))
     })
 
     // Assignment rules are special because they use the Deploy API so they get their own test

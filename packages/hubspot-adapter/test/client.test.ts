@@ -3,9 +3,11 @@ import {
 } from 'requestretry'
 import createClient from './client'
 import {
-  Form, HubspotMetadata,
+  Form,
 } from '../src/client/types'
-import { OBJECTS_NAMES } from '../src/constants'
+import {
+  OBJECTS_NAMES,
+} from '../src/constants'
 
 
 describe('Test HubSpot client', () => {
@@ -15,75 +17,108 @@ describe('Test HubSpot client', () => {
   const privilegeErrStr = 'You do not have enough privileges to change the editable property on this form'
 
 
-  describe('Test getAllForms', () => {
-    let mockGetAllForms: jest.Mock
-
-    describe('wrong apikey', () => {
-      beforeEach(() => {
-        const getAllFormsResultMock = (): RequestPromise => (
-          {
-            status: 'error',
-            message: apiKeyDoesntExistErrStr,
-            correlationId: 'db8f8a2f-d799-4353-8a67-b85df639b3df',
-            requestId: '493c8493-861b-4f56-be3b-3f6067238efd',
-          } as unknown as RequestPromise)
-
-        mockGetAllForms = jest.fn().mockImplementation(getAllFormsResultMock)
-
-        connection.forms.getAll = mockGetAllForms
-      })
-
-      it('should return empty array', async () => {
-        await expect(client.getAllForms()).rejects
-          .toThrow(apiKeyDoesntExistErrStr)
+  describe('Test getAllInstances', () => {
+    describe('wrong type', () => {
+      it('should return Unknown HubSpot type error', async () => {
+        await expect(client.getAllInstances('wrongType')).rejects
+          .toThrow('Unknown HubSpot type: wrongType.')
       })
     })
 
-    describe('valid apikey', () => {
-      beforeEach(() => {
-        const getAllFormsResultMock = (): RequestPromise => (
-          [
-            {
-              portalId: 6774238,
-              guid: '3e2e7ef3-d0d4-418f-92e0-ad40ae2b622c',
-              name: 'formTest1',
-              action: '',
-              method: 'POST',
-              cssClass: 'abc',
-              followUpId: 'DEPRECATED',
-              editable: true,
-              createdAt: 1571588456053,
-              cloneable: true,
-            },
-            {
-              portalId: 6774238,
-              guid: '123e11f3-111-418f-92e0-cwwwe2b6999',
-              name: 'formTest2',
-              action: '',
-              method: 'POST',
-              cssClass: 'css',
-              followUpId: 'DEPRECATED',
-              editable: false,
-              createdAt: 1561581451052,
-              cloneable: true,
-              captchaEnabled: false,
-            },
-          ] as unknown as RequestPromise)
+    describe('valid HubSpot type', () => {
+      let mockGetAllInstances: jest.Mock
 
-        mockGetAllForms = jest.fn().mockImplementation(getAllFormsResultMock)
+      describe('wrong apikey', () => {
+        beforeEach(() => {
+          const getAllFormsResultMock = (): RequestPromise => (
+            {
+              status: 'error',
+              message: apiKeyDoesntExistErrStr,
+              correlationId: 'db8f8a2f-d799-4353-8a67-b85df639b3df',
+              requestId: '493c8493-861b-4f56-be3b-3f6067238efd',
+            } as unknown as RequestPromise)
 
-        connection.forms.getAll = mockGetAllForms
+          mockGetAllInstances = jest.fn().mockImplementation(getAllFormsResultMock)
+          connection.forms.getAll = mockGetAllInstances
+        })
+
+        it('should return error response (FORM type)', async () => {
+          await expect(client.getAllInstances(OBJECTS_NAMES.FORM)).rejects
+            .toThrow(apiKeyDoesntExistErrStr)
+        })
       })
 
-      it('should success', async () => {
-        const resp = await client.getAllForms()
-        expect(resp).toHaveLength(2)
-      })
-    })
+      describe('valid apikey', () => {
+        let mockGetAllForms: jest.Mock
 
-    afterEach(() => {
-      expect(mockGetAllForms.mock.calls).toHaveLength(1)
-      expect(mockGetAllForms.mock.calls[0]).toHaveLength(0)
+        beforeEach(() => {
+          const getAllFormsResultMock = (): RequestPromise => (
+              [
+                {
+                  portalId: 6774238,
+                  guid: '3e2e7ef3-d0d4-418f-92e0-ad40ae2b622c',
+                  name: 'formTest1',
+                  action: '',
+                  method: 'POST',
+                  cssClass: 'abc',
+                  followUpId: 'DEPRECATED',
+                  editable: true,
+                  createdAt: 1571588456053,
+                  cloneable: true,
+                },
+                {
+                  portalId: 6774238,
+                  guid: '123e11f3-111-418f-92e0-cwwwe2b6999',
+                  name: 'formTest2',
+                  action: '',
+                  method: 'POST',
+                  cssClass: 'css',
+                  followUpId: 'DEPRECATED',
+                  editable: false,
+                  createdAt: 1561581451052,
+                  cloneable: true,
+                  captchaEnabled: false,
+                },
+              ] as unknown as RequestPromise)
+
+          const getAllWorkflowsResultMock = (): RequestPromise => ({ workflows: [
+            {
+              id: 12345,
+              name: 'workflowTest1',
+              type: 'DRIP_DELAY',
+              unsupportedField: 'bla',
+            },
+            {
+              id: 54321,
+              name: 'workflowTest1',
+              type: 'DRIP_DELAY',
+              enabled: false,
+              contactListIds: {
+                enrolled: 1,
+                active: 2,
+                completed: 3,
+                succeeded: 4,
+
+              },
+            },
+          ] } as unknown as RequestPromise)
+          mockGetAllForms = jest.fn().mockImplementation(getAllFormsResultMock)
+
+          connection.forms.getAll = mockGetAllForms
+          connection.workflows.getAll = getAllWorkflowsResultMock
+        })
+
+        it('should success', async () => {
+          expect(await client.getAllInstances(OBJECTS_NAMES.FORM)).toHaveLength(2)
+          expect(await client.getAllInstances(OBJECTS_NAMES.WORKFLOWS)).toHaveLength(2)
+          expect(await client.getAllInstances(OBJECTS_NAMES.MARKETINGEMAIL)).toHaveLength(0)
+        })
+      })
+
+      afterEach(() => {
+        expect(mockGetAllInstances.mock.calls).toHaveLength(1)
+        expect(mockGetAllInstances.mock.calls[0]).toHaveLength(0)
+      })
     })
   })
 
@@ -378,31 +413,6 @@ describe('Test HubSpot client', () => {
       expect(mockUpdateForm.mock.calls[0]).toHaveLength(2)
       expect(mockUpdateForm.mock.calls[0][0]).toEqual('guidToUpdate')
       expect(mockUpdateForm.mock.calls[0][1]).toMatchObject(formToUpdate)
-    })
-  })
-
-  describe('Test getAllInstances', () => {
-    describe('wrong type', () => {
-      it('should return Unknown HubSpot type error', async () => {
-        await expect(client.getAllInstances('wrongType')).rejects
-          .toThrow('Unknown HubSpot type: wrongType.')
-      })
-    })
-
-    describe('valid HubSpot type', () => {
-      let resp: HubspotMetadata[]
-
-      it('should success (workflows type)', async () => {
-        resp = await client.getAllInstances(OBJECTS_NAMES.WORKFLOWS)
-      })
-
-      it('should success (marketingEmail type)', async () => {
-        resp = await client.getAllInstances(OBJECTS_NAMES.MARKETINGEMAIL)
-      })
-
-      afterEach(() => {
-        expect(resp).toHaveLength(0)
-      })
     })
   })
 })

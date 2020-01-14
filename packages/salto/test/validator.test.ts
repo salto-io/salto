@@ -399,20 +399,6 @@ describe('Elements validation', () => {
           expect(validateElements([extInst])).toHaveLength(0)
         })
 
-        it('should fail when restriction values are not defined and values are enforced', () => {
-          const extType = _.cloneDeep(nestedType)
-          delete extType.fields.restrictStr.annotations[CORE_ANNOTATIONS.VALUES]
-          extType.fields.restrictStr
-            .annotations[CORE_ANNOTATIONS.RESTRICTION] = {
-              [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: true,
-            }
-          extInst.type = extType
-          extInst.value.restrictStr = 'str'
-          const errors = validateElements([extInst])
-          expect(errors).toHaveLength(1)
-          expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('restrictStr'))
-        })
-
         it('should succeed when restriction values are not defined and enforce_values is undefined', () => {
           const extType = _.cloneDeep(nestedType)
           delete extType.fields.restrictStr.annotations[CORE_ANNOTATIONS.VALUES]

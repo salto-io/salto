@@ -6,8 +6,14 @@ import {
   Type, CORE_ANNOTATIONS, transform,
 } from 'adapter-api'
 import {
-  FIELD_TYPES, FORM_FIELDS,
-  HUBSPOT, OBJECTS_NAMES, PROPERTY_FIELDS, PROPERTY_GROUP_FIELDS, OPTIONS_FIELDS,
+  FIELD_TYPES,
+  FORM_FIELDS,
+  HUBSPOT,
+  OBJECTS_NAMES,
+  PROPERTY_FIELDS,
+  PROPERTY_GROUP_FIELDS,
+  OPTIONS_FIELDS,
+  CONTACTLISTIDS_FIELDS, WORKFLOWS_FIELDS,
 } from '../constants'
 import {
   HubspotMetadata,
@@ -15,9 +21,11 @@ import {
 
 
 const formElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.FORM)
+const workflowsElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.WORKFLOWS)
 const propertyGroupElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.PROPERTYGROUP)
 const propertyElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.PROPERTY)
 const optionsElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.OPTIONS)
+const contactListIdsElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.CONTACTLISTIDS)
 
 export class Types {
   private static optionsType: ObjectType =
@@ -187,13 +195,49 @@ export class Types {
       path: [HUBSPOT, 'types', 'subtypes', propertyGroupElemID.name],
     })
 
+  private static contactListIdsType: ObjectType =
+    new ObjectType({
+      elemID: contactListIdsElemID,
+      fields: {
+        [CONTACTLISTIDS_FIELDS.ENROLLED]: new TypeField(
+          contactListIdsElemID, CONTACTLISTIDS_FIELDS.ENROLLED, BuiltinTypes.NUMBER, {
+            name: CONTACTLISTIDS_FIELDS.ENROLLED,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [CONTACTLISTIDS_FIELDS.ACTIVE]: new TypeField(
+          contactListIdsElemID, CONTACTLISTIDS_FIELDS.ACTIVE, BuiltinTypes.NUMBER, {
+            name: CONTACTLISTIDS_FIELDS.ACTIVE,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [CONTACTLISTIDS_FIELDS.SUCCEEDED]: new TypeField(
+          contactListIdsElemID, CONTACTLISTIDS_FIELDS.SUCCEEDED, BuiltinTypes.NUMBER, {
+            name: CONTACTLISTIDS_FIELDS.SUCCEEDED,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [CONTACTLISTIDS_FIELDS.COMPLETED]: new TypeField(
+          contactListIdsElemID, CONTACTLISTIDS_FIELDS.COMPLETED, BuiltinTypes.NUMBER, {
+            name: CONTACTLISTIDS_FIELDS.COMPLETED,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+      },
+      path: [HUBSPOT, 'types', 'subtypes', contactListIdsElemID.name],
+    })
+
 
   /**
    * This method create array of all supported Hubspot objects.
    * This is static creation cause hubspot API support only instances.
    */
-  public static hubspotObjects: ObjectType[] = [
-    new ObjectType({
+  public static hubspotObjects: Record<string, ObjectType> = {
+    [OBJECTS_NAMES.FORM]: new ObjectType({
       elemID: formElemID,
       fields: {
         [FORM_FIELDS.GUID]: new TypeField(
@@ -305,13 +349,69 @@ export class Types {
       },
       path: [HUBSPOT, 'objects', formElemID.name],
     }),
-  ]
+    [OBJECTS_NAMES.WORKFLOWS]: new ObjectType({
+      elemID: workflowsElemID,
+      fields: {
+        [WORKFLOWS_FIELDS.ID]: new TypeField(
+          workflowsElemID, WORKFLOWS_FIELDS.ID, BuiltinTypes.NUMBER, {
+            name: WORKFLOWS_FIELDS.ID,
+            _readOnly: true,
+            [CORE_ANNOTATIONS.REQUIRED]: true,
+          },
+        ),
+        [WORKFLOWS_FIELDS.NAME]: new TypeField(
+          workflowsElemID, WORKFLOWS_FIELDS.NAME, BuiltinTypes.STRING, {
+            name: WORKFLOWS_FIELDS.NAME,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: true,
+          },
+        ),
+        [WORKFLOWS_FIELDS.TYPE]: new TypeField(
+          workflowsElemID, WORKFLOWS_FIELDS.TYPE, BuiltinTypes.STRING, {
+            name: WORKFLOWS_FIELDS.TYPE,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [WORKFLOWS_FIELDS.ENABLED]: new TypeField(
+          workflowsElemID, WORKFLOWS_FIELDS.ENABLED, BuiltinTypes.BOOLEAN, {
+            name: WORKFLOWS_FIELDS.ENABLED,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [WORKFLOWS_FIELDS.INSERTEDAT]: new TypeField(
+          workflowsElemID, WORKFLOWS_FIELDS.INSERTEDAT, BuiltinTypes.NUMBER, {
+            name: WORKFLOWS_FIELDS.INSERTEDAT,
+            _readOnly: true,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [WORKFLOWS_FIELDS.UPDATEDAT]: new TypeField(
+          workflowsElemID, WORKFLOWS_FIELDS.UPDATEDAT, BuiltinTypes.NUMBER, {
+            name: WORKFLOWS_FIELDS.UPDATEDAT,
+            _readOnly: true,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [WORKFLOWS_FIELDS.CONTACTLISTIDS]: new TypeField(
+          workflowsElemID, WORKFLOWS_FIELDS.CONTACTLISTIDS, Types.contactListIdsType, {
+            name: WORKFLOWS_FIELDS.CONTACTLISTIDS,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+      },
+      path: [HUBSPOT, 'objects', workflowsElemID.name],
+    }),
+  }
 
 
   public static hubspotSubTypes: ObjectType[] = [
     Types.propertyGroupType,
     Types.propertyType,
     Types.optionsType,
+    Types.contactListIdsType,
   ]
 
   private static fieldTypes: Record<string, Type> = {

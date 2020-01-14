@@ -3,9 +3,12 @@ import {
   RequestPromise,
 } from 'requestretry'
 import {
-  Form,
+  Form, HubspotMetadata, Workflows,
 } from './types'
 import Connection from './madku'
+import {
+  OBJECTS_NAMES,
+} from '../constants'
 
 
 export type Credentials = {
@@ -32,7 +35,21 @@ export default class HubspotClient {
     return this.conn.contacts.get()
   }
 
-  async getAllForms(): Promise<Form[]> {
+  async getAllInstances(typeName: string): Promise<HubspotMetadata[]> {
+
+    switch (typeName) { // TODO: ugly
+      case OBJECTS_NAMES.FORM:
+        return this.getAllForms()
+      case OBJECTS_NAMES.WORKFLOWS:
+        return this.getAllWorkflows()
+      default:
+        break
+    }
+
+    throw new Error(`Unknown HubSpot type: ${typeName}.`)
+  }
+
+  async getAllForms(): Promise<Form[]> { //TODO: make private
     const resp = await this.conn.forms.getAll()
 
     if (resp.status) {
@@ -40,6 +57,16 @@ export default class HubspotClient {
     }
 
     return resp
+  }
+
+  async getAllWorkflows(): Promise<Workflows[]> { //TODO: make private
+    const resp = await this.conn.workflows.getAll()
+
+    if (resp.status) { // TODO: check the behaviour when getting error
+      throw new Error(resp.message)
+    }
+
+    return resp.workflows
   }
 
 

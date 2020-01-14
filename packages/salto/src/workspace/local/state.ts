@@ -2,7 +2,7 @@ import _ from 'lodash'
 import { Element, ElemID, ElementMap } from 'adapter-api'
 import { logger } from '@salto/logging'
 import { collections } from '@salto/lowerdash'
-import { readTextFile, replaceContents } from '../../file'
+import { exists, readTextFile, replaceContents } from '../../file'
 import { serialize, deserialize } from '../../serializer/elements'
 import { ElementsDataSource } from '../elements_data_source'
 
@@ -17,7 +17,7 @@ export default class LocalState implements ElementsDataSource {
   constructor(private filePath: string) {}
 
   private async loadFromFile(): Promise<ElementMap> {
-    const text = await readTextFile(this.filePath)
+    const text = await exists(this.filePath) ? await readTextFile(this.filePath) : undefined
     const elements = text === undefined ? [] : deserialize(text)
     log.debug(`loaded state [#elements=${elements.length}]`)
     return _.keyBy(elements, e => e.elemID.getFullName()) || {}

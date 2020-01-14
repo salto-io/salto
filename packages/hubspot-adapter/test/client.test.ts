@@ -2,7 +2,10 @@ import {
   RequestPromise,
 } from 'requestretry'
 import createClient from './client'
-import { Form } from '../src/client/types'
+import {
+  Form, HubspotMetadata,
+} from '../src/client/types'
+import { OBJECTS_NAMES } from '../src/constants'
 
 
 describe('Test HubSpot client', () => {
@@ -375,6 +378,31 @@ describe('Test HubSpot client', () => {
       expect(mockUpdateForm.mock.calls[0]).toHaveLength(2)
       expect(mockUpdateForm.mock.calls[0][0]).toEqual('guidToUpdate')
       expect(mockUpdateForm.mock.calls[0][1]).toMatchObject(formToUpdate)
+    })
+  })
+
+  describe('Test getAllInstances', () => {
+    describe('wrong type', () => {
+      it('should return Unknown HubSpot type error', async () => {
+        await expect(client.getAllInstances('wrongType')).rejects
+          .toThrow('Unknown HubSpot type: wrongType.')
+      })
+    })
+
+    describe('valid HubSpot type', () => {
+      let resp: HubspotMetadata[]
+
+      it('should success (workflows type)', async () => {
+        resp = await client.getAllInstances(OBJECTS_NAMES.WORKFLOWS)
+      })
+
+      it('should success (marketingEmail type)', async () => {
+        resp = await client.getAllInstances(OBJECTS_NAMES.MARKETINGEMAIL)
+      })
+
+      afterEach(() => {
+        expect(resp).toHaveLength(0)
+      })
     })
   })
 })

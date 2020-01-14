@@ -20,6 +20,15 @@ export type HubspotClientOpts = {
   connection?: Connection
 }
 
+const validateResponse = async (
+  response: RequestPromise
+): Promise<void> => {
+  const resp = await response
+  if (resp.status) {
+    throw new Error(resp.message)
+  }
+}
+
 export default class HubspotClient {
   private conn: Connection
 
@@ -53,9 +62,7 @@ export default class HubspotClient {
   async getAllForms(): Promise<Form[]> { // TODO: make private
     const resp = await this.conn.forms.getAll()
 
-    if (resp.status) {
-      throw new Error(resp.message)
-    }
+    await validateResponse(resp)
 
     return resp
   }
@@ -63,9 +70,7 @@ export default class HubspotClient {
   async getAllWorkflows(): Promise<Workflows[]> { // TODO: make private
     const resp = await this.conn.workflows.getAll()
 
-    if (resp.status) { // TODO: check the behaviour when getting error
-      throw new Error(resp.message)
-    }
+    await validateResponse(resp)
 
     return resp.workflows
   }
@@ -73,17 +78,13 @@ export default class HubspotClient {
 
   async createForm(f: Form): Promise<Form> {
     const resp = await this.conn.forms.create(f)
-    if (resp.status) {
-      throw new Error(resp.message)
-    }
+    await validateResponse(resp)
     return resp
   }
 
   async updateForm(f: Form): Promise<Form> {
     const resp = await this.conn.forms.update(f.guid, f)
-    if (resp.status) {
-      throw new Error(resp.message)
-    }
+    await validateResponse(resp)
     return resp
   }
 

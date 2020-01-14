@@ -36,7 +36,6 @@ export default class HubspotClient {
   }
 
   async getAllInstances(typeName: string): Promise<HubspotMetadata[]> {
-
     switch (typeName) { // TODO: ugly
       case OBJECTS_NAMES.FORM:
         return this.getAllForms()
@@ -49,7 +48,7 @@ export default class HubspotClient {
     throw new Error(`Unknown HubSpot type: ${typeName}.`)
   }
 
-  async getAllForms(): Promise<Form[]> { //TODO: make private
+  async getAllForms(): Promise<Form[]> { // TODO: make private
     const resp = await this.conn.forms.getAll()
 
     if (resp.status) {
@@ -59,7 +58,7 @@ export default class HubspotClient {
     return resp
   }
 
-  async getAllWorkflows(): Promise<Workflows[]> { //TODO: make private
+  async getAllWorkflows(): Promise<Workflows[]> { // TODO: make private
     const resp = await this.conn.workflows.getAll()
 
     if (resp.status) { // TODO: check the behaviour when getting error

@@ -542,6 +542,14 @@ describe('Custom Objects filter', () => {
           [INSTANCE_REQUIRED_FIELD]: 'false',
         },
         {
+          [INSTANCE_FULL_NAME_FIELD]: 'MyGeolocation',
+          [DESCRIPTION]: 'My Geolocation description',
+          [INSTANCE_TYPE_FIELD]: 'Location',
+          [FIELD_ANNOTATIONS.DISPLAY_LOCATION_IN_DECIMAL]: 'true',
+          [FIELD_ANNOTATIONS.SCALE]: '7',
+          [INSTANCE_REQUIRED_FIELD]: 'false',
+        },
+        {
           [INSTANCE_FULL_NAME_FIELD]: 'MyPicklist',
           [INSTANCE_TYPE_FIELD]: 'Picklist',
           [INSTANCE_REQUIRED_FIELD]: 'true',
@@ -646,6 +654,11 @@ describe('Custom Objects filter', () => {
           autoNumber: true,
         },
         {
+          name: 'MyGeolocation',
+          type: 'location',
+          label: 'My Geolocation',
+        },
+        {
           name: 'MyPicklist',
           type: 'picklist',
           label: 'My Picklist',
@@ -702,6 +715,16 @@ describe('Custom Objects filter', () => {
           .annotations[FIELD_ANNOTATIONS.DEFAULT_VALUE]).toBe(true)
         expect(leadObjectType.fields.my_checkbox
           .annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
+
+        // Verify checkbox field
+        expect(leadObjectType.fields.my_geolocation
+          .annotations[LABEL]).toEqual('My Geolocation')
+        expect(leadObjectType.fields.my_geolocation
+          .annotations[DESCRIPTION]).toEqual('My Geolocation description')
+        expect(leadObjectType.fields.my_geolocation
+          .annotations[FIELD_ANNOTATIONS.DISPLAY_LOCATION_IN_DECIMAL]).toBe(true)
+        expect(leadObjectType.fields.my_geolocation
+          .annotations[FIELD_ANNOTATIONS.SCALE]).toEqual(7)
 
         // Verify rollup field
         const expectedRollupSummaryField = testInstanceElement.value.fields

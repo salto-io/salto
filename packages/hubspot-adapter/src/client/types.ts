@@ -34,6 +34,15 @@ interface Options {
   readOnly: boolean
 }
 
+interface RssToEmailTiming {
+  repeats: string
+  repeats_on_monthly: number
+  // Integer, what day of the month should the monthly email be sent [1-31]
+  repeats_on_weekly: number
+  // Integer, what day of the week should the weekly email be sent [1=monday - 7=sunday]
+  time: string // time the email should be sent at (9:00 am)
+}
+
 export interface Property {
   name: string
   // String; The internal name of the property.
@@ -163,4 +172,118 @@ export interface MarketingEmail extends HubspotMetadata {
   // if true, the email will adjust its send time relative to the recipients timezone.
   isPublished: boolean
   // if true, the email is in a published state.
+  isRecipientFatigueSuppressionEnabled: boolean
+  // Boolean; if true, enables a send frequency cap (a feature available to enterprise accounts).
+  leadFlowId: number
+  // Integer; the id of the parent leadflow if the email is a leadflow email.
+  liveDomain: string
+  // String; domain actually used in the web version (read only)
+  mailingListsExcluded: []
+  // A list of all contact lists to exclude from the email send.
+  mailingListsIncluded: []
+  // A list of all contact lists included in the email send.
+  maxRssEntries: number
+  // in blog and recurring emails, the max number of entries to include.
+  metaDescription: string
+  // String; meta description of the web version of the email,
+  // to drive search engine traffic to your page
+  name: string
+  // String; the name of the email, as displayed on the email dashboard.
+  pageExpiryDate: number
+  // Integer; the expiration date of the web version of an email, in milliseconds.
+  pageExpiryRedirectId: number
+  // String; the url of the page the user will be redirected to
+  // after the web version of the email expires.
+  pageRedirected: boolean
+  // Boolean; indicates if the email's web version has already been set to redirect
+  portalId: number
+  // Integer; the id of the parent portal.
+  previewKey: string
+  // String; the preview key used to generate the preview url before the email is published
+  processingStatus: string
+  // String; [ UNDEFINED, PUBLISHED, PUBLISHED_OR_SCHEDULED, SCHEDULED, PROCESSING,
+  // PRE_PROCESSING, ERROR, CANCELED_FORCIBLY, CANCELED_ABUSE ]
+  // the email's processing status.
+  publishDate: number
+  // Integer; the timestamp in milliseconds that the email has been published at,
+  // or scheduled to send at.
+  publishedAt: number
+  // Integer; if the email has been published, the time when the publish button has been pressed.
+  publishedById: number
+  // Integer; if the email has been published,
+  // email of the user that pressed the publish button (read only).
+  publishedByName: string
+  // String; if the email has been published,
+  // name of the user that pressed the publish button (read only).
+  publishImmediately: boolean
+  // Boolean; true if the email is not scheduled but will send at publish time.
+  publishedUrl: string
+  // String; absoluteUrl, only if the email is currentlyPublished (read-only),
+  replyTo: string
+  // String; The email address the recipient will see and reply to (linked to fromName).
+  resolvedDomain: string
+  // String; the domain used in the web version:
+  // either the primary one or the one set in the domain field (read only)
+  rssEmailAuthorLineTemplate: string
+  // String; text shown before the "author_line" tag in blog & RSS email's items.
+  rssEmailBlogImageMaxWidth: number
+  // Integer; the max width for blog post images in RSS emails.
+  rssEmailByText: string
+  // String; if rssEmailAuthorLineTemplate is not set,
+  // word before the author name in blog & RSS email's items.
+  rssEmailClickThroughText: string
+  // String; text shown on the link to see the full post in blog & RSS email's items.
+  rssEmailCommentText: string
+  // String; text shown on the link to comment the post in blog & RSS email's items.
+  rssEmailEntryTemplate: string
+  // String; optional, custom template for every RSS entry.
+  rssEmailEntryTemplateEnabled: boolean
+  // Boolean; determines if the Entry Template is used for an RSS email.
+  rssEmailUrl: string
+  // String; URL used for social sharing.
+  rssToEmailTiming: RssToEmailTiming
+  // A dictionary that determines what time the RSS email should be sent out.
+  slug: string
+  // String; path of the web version URL.
+  smartEmailFields: string
+  // String; lists the smart objects in email fields (from address, subject..)
+  styleSettings: string
+  // String; Custom email style settings (background color, primary font);
+  subcategory: string
+  // [ ab_master, ab_variant, automated, automated_for_deal, automated_for_form,
+  // automated_for_form_legacy, automated_for_form_buffer, automated_for_form_draft,
+  // rss_to_email, rss_to_email_child, blog_email, blog_email_child, optin_email,
+  // optin_followup_email, batch, resubscribe_email, single_send_api, smtp_token,
+  // localtime, automated_for_ticket, automated_for_leadflow, automated_for_feedback_ces,
+  // automated_for_feedback_nps, automated_for_feedback_custom ]
+  subject: string
+  // String; the subject of the email.
+  subscription: number
+  // Integer; the id of the email's subscription type.
+  subscriptionBlogId: number
+  // Integer; for blog emails, id of the linked blog.
+  subscription_name: string
+  // String; the name of the email's subscription type.
+  templatePath: string
+  // String; the path of the email's body template within the design manager.
+  transactional: boolean
+  // Boolean; determines whether the email is a transactional email or not.
+  unpublishedAt: number
+  // Integer; the timestamp in milliseconds of when the email was unpublished.
+  updated: number
+  // Integer; timestamp of the last update in milliseconds.
+  updatedById: number
+  // Integer; the ID of the last user who updated the email.
+  url: string
+  // String; the web version URL (read-only).
+  useRssHeadlineAsSubject: boolean
+  // Boolean; Setting for RSS emails, uses the latest RSS entry as the email subject.
+  vidsExcluded: []
+  // A list of contact IDs to exclude from being sent the email.
+  vidsIncluded: []
+  // A list of contacts IDs to include in the email send.
+  widgets: string
+  // The content of layout sections of the email (widgets).
+  workflowNames: []
+  // a list of all linked workflows to this email.
 }

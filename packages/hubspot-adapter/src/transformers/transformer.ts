@@ -6,28 +6,22 @@ import {
   TypeElement, CORE_ANNOTATIONS, transform, TypeMap,
 } from 'adapter-api'
 import {
-  FIELD_TYPES,
-  FORM_FIELDS,
-  HUBSPOT,
-  OBJECTS_NAMES,
-  PROPERTY_FIELDS,
-  PROPERTY_GROUP_FIELDS,
-  OPTIONS_FIELDS,
-  CONTACTLISTIDS_FIELDS, WORKFLOWS_FIELDS, MARKETINGEMAIL_FIELDS,
+  FIELD_TYPES, FORM_FIELDS, HUBSPOT, OBJECTS_NAMES, PROPERTY_FIELDS, RSSTOEMAILTIMING_FIELDS,
+  PROPERTY_GROUP_FIELDS, OPTIONS_FIELDS, CONTACTLISTIDS_FIELDS,
+  WORKFLOWS_FIELDS, MARKETING_EMAIL_FIELDS,
 } from '../constants'
 import {
   HubspotMetadata,
 } from '../client/types'
 
-
 const formElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.FORM)
 const workflowsElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.WORKFLOWS)
-const marketingEmailElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.MARKETINGEMAIL)
-
 const propertyGroupElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.PROPERTYGROUP)
 const propertyElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.PROPERTY)
 const optionsElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.OPTIONS)
 const contactListIdsElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.CONTACTLISTIDS)
+const marketingEmailElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.MARKETINGEMAIL)
+const rssToEmailTimingElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.RSSTOEMAILTIMING)
 
 export class Types {
   private static optionsType: ObjectType =
@@ -233,6 +227,42 @@ export class Types {
       path: [HUBSPOT, 'types', 'subtypes', contactListIdsElemID.name],
     })
 
+  private static rssToEmailTimingType: ObjectType =
+    new ObjectType({
+      elemID: rssToEmailTimingElemID,
+      fields: {
+        [RSSTOEMAILTIMING_FIELDS.REPEATS]: new TypeField(
+          rssToEmailTimingElemID, RSSTOEMAILTIMING_FIELDS.REPEATS, BuiltinTypes.STRING, {
+            name: RSSTOEMAILTIMING_FIELDS.REPEATS,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.VALUES]: ['instant', 'daily', 'weekly', 'monthly'],
+          },
+        ),
+        [RSSTOEMAILTIMING_FIELDS.REPEATS_ON_MONTHLY]: new TypeField(
+          rssToEmailTimingElemID, RSSTOEMAILTIMING_FIELDS.REPEATS_ON_MONTHLY, BuiltinTypes.NUMBER, {
+            name: RSSTOEMAILTIMING_FIELDS.REPEATS_ON_MONTHLY,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [RSSTOEMAILTIMING_FIELDS.REPEATS_ON_WEEKLY]: new TypeField(
+          rssToEmailTimingElemID, RSSTOEMAILTIMING_FIELDS.REPEATS_ON_WEEKLY, BuiltinTypes.NUMBER, {
+            name: RSSTOEMAILTIMING_FIELDS.REPEATS_ON_WEEKLY,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [RSSTOEMAILTIMING_FIELDS.TIME]: new TypeField(
+          rssToEmailTimingElemID, RSSTOEMAILTIMING_FIELDS.TIME, BuiltinTypes.STRING, {
+            name: RSSTOEMAILTIMING_FIELDS.TIME,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+      },
+      path: [HUBSPOT, 'types', 'subtypes', rssToEmailTimingElemID.name],
+    })
 
   /**
    * This method create array of all supported Hubspot objects.
@@ -409,199 +439,853 @@ export class Types {
     [OBJECTS_NAMES.MARKETINGEMAIL]: new ObjectType({
       elemID: marketingEmailElemID,
       fields: {
-        [MARKETINGEMAIL_FIELDS.ID]: new TypeField(
-          marketingEmailElemID, MARKETINGEMAIL_FIELDS.ID, BuiltinTypes.NUMBER, {
-            name: MARKETINGEMAIL_FIELDS.ID,
-            _readOnly: true,
-            [CORE_ANNOTATIONS.REQUIRED]: true,
-          },
-        ),
-        [MARKETINGEMAIL_FIELDS.NAME]: new TypeField(
-          marketingEmailElemID, MARKETINGEMAIL_FIELDS.NAME, BuiltinTypes.STRING, {
-            name: MARKETINGEMAIL_FIELDS.NAME,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: true,
-          },
-        ),
-        [MARKETINGEMAIL_FIELDS.AB]: new TypeField(
-          marketingEmailElemID, MARKETINGEMAIL_FIELDS.AB, BuiltinTypes.BOOLEAN, {
-            name: MARKETINGEMAIL_FIELDS.AB,
+        [MARKETING_EMAIL_FIELDS.AB]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.AB, BuiltinTypes.BOOLEAN, {
+            name: MARKETING_EMAIL_FIELDS.AB,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
+          }
         ),
-        [MARKETINGEMAIL_FIELDS.ABHOURSTOWAIT]: new TypeField(
-          marketingEmailElemID, MARKETINGEMAIL_FIELDS.ABHOURSTOWAIT, BuiltinTypes.NUMBER, {
-            name: MARKETINGEMAIL_FIELDS.ABHOURSTOWAIT,
+        [MARKETING_EMAIL_FIELDS.ABHOURSWAIT]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.ABHOURSWAIT, BuiltinTypes.NUMBER, {
+            name: MARKETING_EMAIL_FIELDS.ABHOURSWAIT,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
+          }
         ),
-        [MARKETINGEMAIL_FIELDS.ABVARIATION]: new TypeField(
-          marketingEmailElemID, MARKETINGEMAIL_FIELDS.ABVARIATION, BuiltinTypes.BOOLEAN, {
-            name: MARKETINGEMAIL_FIELDS.ABVARIATION,
+        [MARKETING_EMAIL_FIELDS.ABVARIATION]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.ABVARIATION, BuiltinTypes.BOOLEAN, {
+            name: MARKETING_EMAIL_FIELDS.ABVARIATION,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
+          }
         ),
-        [MARKETINGEMAIL_FIELDS.ABSAMPLESIZEDEFAULT]: new TypeField(
-          marketingEmailElemID, MARKETINGEMAIL_FIELDS.ABSAMPLESIZEDEFAULT, BuiltinTypes.STRING, {
-            name: MARKETINGEMAIL_FIELDS.ABSAMPLESIZEDEFAULT,
+        [MARKETING_EMAIL_FIELDS.ABSAMPLESIZEDEFAULT]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.ABSAMPLESIZEDEFAULT, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.ABSAMPLESIZEDEFAULT,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
+            [CORE_ANNOTATIONS.VALUES]: ['master', 'variant'],
+          }
         ),
-        [MARKETINGEMAIL_FIELDS.ABSAMPLINGDEFAULT]: new TypeField(
-          marketingEmailElemID, MARKETINGEMAIL_FIELDS.ABSAMPLINGDEFAULT, BuiltinTypes.STRING, {
-            name: MARKETINGEMAIL_FIELDS.ABSAMPLINGDEFAULT,
+        [MARKETING_EMAIL_FIELDS.ABSAMPLINGDEFAULT]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.ABSAMPLINGDEFAULT, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.ABSAMPLINGDEFAULT,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
+            [CORE_ANNOTATIONS.VALUES]: ['master', 'variant'],
+          }
         ),
-        [MARKETINGEMAIL_FIELDS.ABSTATUS]: new TypeField(
-          marketingEmailElemID, MARKETINGEMAIL_FIELDS.ABSTATUS, BuiltinTypes.STRING, {
-            name: MARKETINGEMAIL_FIELDS.ABSTATUS,
+        [MARKETING_EMAIL_FIELDS.ABSTATUS]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.ABSTATUS, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.ABSTATUS,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
+            [CORE_ANNOTATIONS.VALUES]: ['master', 'variant'],
+          }
         ),
-        [MARKETINGEMAIL_FIELDS.ABSUCCESSMETRIC]: new TypeField(
-          marketingEmailElemID, MARKETINGEMAIL_FIELDS.ABSUCCESSMETRIC, BuiltinTypes.STRING, {
-            name: MARKETINGEMAIL_FIELDS.ABSUCCESSMETRIC,
+        [MARKETING_EMAIL_FIELDS.ABSUCCESSMETRIC]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.ABSUCCESSMETRIC, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.ABSUCCESSMETRIC,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
+            [CORE_ANNOTATIONS.VALUES]: ['CLICKS_BY_OPENS', 'CLICKS_BY_DELIVERED', 'OPENS_BY_DELIVERED'],
+          }
         ),
-        [MARKETINGEMAIL_FIELDS.ABTESTID]: new TypeField(
-          marketingEmailElemID, MARKETINGEMAIL_FIELDS.ABTESTID, BuiltinTypes.STRING, {
-            name: MARKETINGEMAIL_FIELDS.ABTESTID,
+        [MARKETING_EMAIL_FIELDS.ABTESTID]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.ABTESTID, BuiltinTypes.NUMBER, {
+            name: MARKETING_EMAIL_FIELDS.ABTESTID,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
+          }
         ),
-        [MARKETINGEMAIL_FIELDS.ABTESTPERCENTAGE]: new TypeField(
-          marketingEmailElemID, MARKETINGEMAIL_FIELDS.ABTESTPERCENTAGE, BuiltinTypes.NUMBER, {
-            name: MARKETINGEMAIL_FIELDS.ABTESTPERCENTAGE,
+        [MARKETING_EMAIL_FIELDS.ABTESTPERCENTAGE]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.ABTESTPERCENTAGE, BuiltinTypes.NUMBER, {
+            name: MARKETING_EMAIL_FIELDS.ABTESTPERCENTAGE,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
+          }
         ),
-        [MARKETINGEMAIL_FIELDS.ABSOLUTEURL]: new TypeField(
-          marketingEmailElemID, MARKETINGEMAIL_FIELDS.ABSOLUTEURL, BuiltinTypes.STRING, {
-            name: MARKETINGEMAIL_FIELDS.ABSOLUTEURL,
+        [MARKETING_EMAIL_FIELDS.ABSOLUTEURL]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.ABSOLUTEURL, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.ABSOLUTEURL,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
+          }
         ),
-        [MARKETINGEMAIL_FIELDS.ALLEMAILCAMPAIGNIDS]: new TypeField(
-          marketingEmailElemID, MARKETINGEMAIL_FIELDS.ALLEMAILCAMPAIGNIDS, BuiltinTypes.NUMBER, {
-            name: MARKETINGEMAIL_FIELDS.ALLEMAILCAMPAIGNIDS,
+        [MARKETING_EMAIL_FIELDS.ALLEMAILCAMPAIGNIDS]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.ALLEMAILCAMPAIGNIDS, BuiltinTypes.NUMBER, {
+            name: MARKETING_EMAIL_FIELDS.ALLEMAILCAMPAIGNIDS,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
           true,
         ),
-        [MARKETINGEMAIL_FIELDS.ANALYTICSPAGEID]: new TypeField(
-          marketingEmailElemID, MARKETINGEMAIL_FIELDS.ANALYTICSPAGEID, BuiltinTypes.STRING, {
-            name: MARKETINGEMAIL_FIELDS.ANALYTICSPAGEID,
+        [MARKETING_EMAIL_FIELDS.ANALYTICSPAGEID]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.ANALYTICSPAGEID, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.ANALYTICSPAGEID,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.ANALYTICSPAGETYPE]: new TypeField( // TODO: Decide if to keep
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.ANALYTICSPAGETYPE, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.ANALYTICSPAGETYPE,
+            _readOnly: true,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.DEFAULT]: 'email',
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.ARCHIVED]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.ARCHIVED, BuiltinTypes.BOOLEAN, {
+            name: MARKETING_EMAIL_FIELDS.ARCHIVED,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.AUTHOR]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.AUTHOR, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.AUTHOR,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.AUTHORAT]: new TypeField( // TODO: Move to state only
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.AUTHORAT, BuiltinTypes.NUMBER, {
+            name: MARKETING_EMAIL_FIELDS.AUTHORAT,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.AUTHOREMAIL]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.AUTHOREMAIL, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.AUTHOREMAIL,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.AUTHORNAME]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.AUTHORNAME, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.AUTHORNAME,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.AUTHORUSERID]: new TypeField( // TODO: Replace with user's email
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.AUTHORUSERID, BuiltinTypes.NUMBER, {
+            name: MARKETING_EMAIL_FIELDS.AUTHORUSERID,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.BLOGEMAILTYPE]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.BLOGEMAILTYPE, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.BLOGEMAILTYPE,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.VALUES]: ['instant', 'daily', 'weekly', 'monthly'],
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.BLOGRSSSETTINGS]: new TypeField( // TODO: More human readable
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.BLOGRSSSETTINGS, BuiltinTypes.NUMBER, {
+            name: MARKETING_EMAIL_FIELDS.BLOGRSSSETTINGS,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.CAMPAIGN]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.CAMPAIGN, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.CAMPAIGN,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.CAMPAIGNNAME]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.CAMPAIGNNAME, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.CAMPAIGNNAME,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.CANSPAMSETTINGSID]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.CANSPAMSETTINGSID, BuiltinTypes.NUMBER, {
+            name: MARKETING_EMAIL_FIELDS.CANSPAMSETTINGSID,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.CATEGORYID]: new TypeField( // TODO: Decide if to keep
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.CATEGORYID, BuiltinTypes.NUMBER, {
+            name: MARKETING_EMAIL_FIELDS.CATEGORYID,
+            _readOnly: true,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.DEFAULT]: 2,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.CLONEDFROM]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.CLONEDFROM, BuiltinTypes.NUMBER, {
+            name: MARKETING_EMAIL_FIELDS.CLONEDFROM,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.CONTENTTYPECATEGORY]: new TypeField( // TODO: Decide if to keep
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.CONTENTTYPECATEGORY, BuiltinTypes.NUMBER, {
+            name: MARKETING_EMAIL_FIELDS.CONTENTTYPECATEGORY,
+            _readOnly: true,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.DEFAULT]: 2,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.CREATEPAGE]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.CREATEPAGE, BuiltinTypes.BOOLEAN, {
+            name: MARKETING_EMAIL_FIELDS.CREATEPAGE,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.CREATED]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.CREATED, BuiltinTypes.NUMBER, {
+            // TODO: Move to state only
+            name: MARKETING_EMAIL_FIELDS.CREATED,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.CURRENTLYPUBLISHED]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.CURRENTLYPUBLISHED, BuiltinTypes.BOOLEAN, {
+            name: MARKETING_EMAIL_FIELDS.CURRENTLYPUBLISHED,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: true,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.DOMAIN]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.DOMAIN, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.DOMAIN,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.EMAILBODY]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.EMAILBODY, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.EMAILBODY,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: true,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.EMAILNOTE]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.EMAILNOTE, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.EMAILNOTE,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.EMAILTYPE]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.EMAILTYPE, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.EMAILTYPE,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.VALUES]: ['BATCH_EMAIL', 'AB_EMAIL', 'AUTOMATED_EMAIL', 'BLOG_EMAIL', 'BLOG_EMAIL_CHILD', 'FOLLOWUP_EMAIL',
+              'LOCALTIME_EMAIL', 'OPTIN_EMAIL', 'OPTIN_FOLLOWUP_EMAIL', 'RESUBSCRIBE_EMAIL', 'RSS_EMAIL', 'RSS_EMAIL_CHILD', 'SINGLE_SEND_API',
+              'SMTP_TOKEN', 'LEADFLOW_EMAIL', 'FEEDBACK_CES_EMAIL', 'FEEDBACK_NPS_EMAIL', 'FEEDBACK_CUSTOM_EMAIL', 'TICKET_EMAIL',
+            ],
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.FEEDBACKEMAILCATEGORY]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.FEEDBACKEMAILCATEGORY, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.FEEDBACKEMAILCATEGORY,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.VALUES]: ['NPS', 'CES', 'CUSTOM'],
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.FEEDBACKSURVEYID]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.FEEDBACKSURVEYID, BuiltinTypes.NUMBER, {
+            name: MARKETING_EMAIL_FIELDS.FEEDBACKSURVEYID,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.FLEXAREAS]: new TypeField(
+          // TODO: Check the real type of this (sub-type)
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.FLEXAREAS, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.FLEXAREAS,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.FOLDERID]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.FOLDERID, BuiltinTypes.NUMBER, {
+            name: MARKETING_EMAIL_FIELDS.FOLDERID,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.FREEZEDATE]: new TypeField( // TODO: Move to state only
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.FREEZEDATE, BuiltinTypes.NUMBER, {
+            name: MARKETING_EMAIL_FIELDS.FREEZEDATE,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.FROMNAME]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.FROMNAME, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.FROMNAME,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.HTMLTITLE]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.HTMLTITLE, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.HTMLTITLE,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.ID]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.ID, BuiltinTypes.NUMBER, {
+            name: MARKETING_EMAIL_FIELDS.ID,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.ISGRAYMAILSUPPRESSIONENABLED]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.ISGRAYMAILSUPPRESSIONENABLED,
+          BuiltinTypes.BOOLEAN, {
+            name: MARKETING_EMAIL_FIELDS.ISGRAYMAILSUPPRESSIONENABLED,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.ISLOCALTIMEZONESEND]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.ISLOCALTIMEZONESEND, BuiltinTypes.BOOLEAN, {
+            name: MARKETING_EMAIL_FIELDS.ISLOCALTIMEZONESEND,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.ISPUBLISHED]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.ISPUBLISHED, BuiltinTypes.BOOLEAN, {
+            name: MARKETING_EMAIL_FIELDS.ISPUBLISHED,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.ISRECIPIENTFATIGUESUPPRESSIONENABLED]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.ISRECIPIENTFATIGUESUPPRESSIONENABLED,
+          BuiltinTypes.BOOLEAN, {
+            name: MARKETING_EMAIL_FIELDS.ISRECIPIENTFATIGUESUPPRESSIONENABLED,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.LEADFLOWID]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.LEADFLOWID, BuiltinTypes.NUMBER, {
+            name: MARKETING_EMAIL_FIELDS.LEADFLOWID,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.LIVEDOMAIN]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.LIVEDOMAIN, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.LIVEDOMAIN,
+            _readOnly: true,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.MAILINGLISTSEXCLUDED]: new TypeField(
+          // TODO: Convert this to reference
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.MAILINGLISTSEXCLUDED, BuiltinTypes.NUMBER, {
+            name: MARKETING_EMAIL_FIELDS.MAILINGLISTSEXCLUDED,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+          true,
+        ),
+        [MARKETING_EMAIL_FIELDS.MAILINGLISTSINCLUDED]: new TypeField(
+          // TODO: Convert this to reference
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.MAILINGLISTSINCLUDED, BuiltinTypes.NUMBER, {
+            name: MARKETING_EMAIL_FIELDS.MAILINGLISTSINCLUDED,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+          true,
+        ),
+        [MARKETING_EMAIL_FIELDS.MAXRSSENTRIES]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.MAXRSSENTRIES, BuiltinTypes.NUMBER, {
+            name: MARKETING_EMAIL_FIELDS.MAXRSSENTRIES,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.METADESCRIPTION]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.METADESCRIPTION, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.METADESCRIPTION,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.NAME]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.NAME, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.NAME,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.PAGEEXPIRYDATE]: new TypeField( // TODO: Decide if state or not
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.PAGEEXPIRYDATE, BuiltinTypes.NUMBER, {
+            name: MARKETING_EMAIL_FIELDS.PAGEEXPIRYDATE,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.PAGEEXPIRYREDIRECTEID]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.PAGEEXPIRYREDIRECTEID, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.PAGEEXPIRYREDIRECTEID,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.PAGEREDIRECTED]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.PAGEREDIRECTED, BuiltinTypes.BOOLEAN, {
+            name: MARKETING_EMAIL_FIELDS.PAGEREDIRECTED,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.PORTALID]: new TypeField( // TODO: Remove this?
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.PORTALID, BuiltinTypes.NUMBER, {
+            name: MARKETING_EMAIL_FIELDS.PORTALID,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.PREVIEWKEY]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.PREVIEWKEY, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.PREVIEWKEY,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.PROCESSINGSTATUS]: new TypeField( // TODO: Move to state only
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.PROCESSINGSTATUS, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.PROCESSINGSTATUS,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.VALUES]: ['UNDEFINED', 'PUBLISHED', 'PUBLISHED_OR_SCHEDULED', 'SCHEDULED', 'PROCESSING',
+              'PRE_PROCESSING', 'ERROR', 'CANCELED_FORCIBLY', 'CANCELED_ABUSE'],
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.PUBLISHDATE]: new TypeField(
+          // TODO: Human readable + decide if state
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.PUBLISHDATE, BuiltinTypes.NUMBER, {
+            name: MARKETING_EMAIL_FIELDS.PUBLISHDATE,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.PUBLISHEDAT]: new TypeField( // TODO: Move to state only
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.PUBLISHEDAT, BuiltinTypes.NUMBER, {
+            name: MARKETING_EMAIL_FIELDS.PUBLISHEDAT,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.PUBLISHEDBYID]: new TypeField( // TODO: Move to state only
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.PUBLISHEDBYID, BuiltinTypes.NUMBER, {
+            name: MARKETING_EMAIL_FIELDS.PUBLISHEDBYID,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.PUBLISHEDBYNAME]: new TypeField( // TODO: Move to state only
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.PUBLISHEDBYNAME, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.PUBLISHEDBYNAME,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.PUBLISHIMMEDIATELY]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.PUBLISHIMMEDIATELY, BuiltinTypes.BOOLEAN, {
+            name: MARKETING_EMAIL_FIELDS.PUBLISHIMMEDIATELY,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.PUBLISHEDURL]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.PUBLISHEDURL, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.PUBLISHEDURL,
+            _readOnly: true,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.REPLYTO]: new TypeField( // Enforce linked to fromName?
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.REPLYTO, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.REPLYTO,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.RESOLVEDDOMAIN]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.RESOLVEDDOMAIN, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.RESOLVEDDOMAIN,
+            _readOnly: true,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.RSSEMAILAUTHORLINETEMPLATE]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.RSSEMAILAUTHORLINETEMPLATE,
+          BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.RSSEMAILAUTHORLINETEMPLATE,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.RSSEMAILBLOGIMAGEMAXWIDTH]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.RSSEMAILBLOGIMAGEMAXWIDTH,
+          BuiltinTypes.NUMBER, {
+            name: MARKETING_EMAIL_FIELDS.RSSEMAILBLOGIMAGEMAXWIDTH,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.RSSEMAILBYTEXT]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.RSSEMAILBYTEXT, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.RSSEMAILBYTEXT,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.RSSEMAILCLICKTHROUGHTEXT]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.RSSEMAILCLICKTHROUGHTEXT,
+          BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.RSSEMAILCLICKTHROUGHTEXT,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.RSSEMAILCOMMENTTEXT]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.RSSEMAILCOMMENTTEXT, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.RSSEMAILCOMMENTTEXT,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.RSSEMAILENTRYTEMPLATE]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.RSSEMAILENTRYTEMPLATE,
+          BuiltinTypes.BOOLEAN, {
+            name: MARKETING_EMAIL_FIELDS.RSSEMAILENTRYTEMPLATE,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.RSSEMAILENTRYTEMPLATEENABLED]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.RSSEMAILENTRYTEMPLATEENABLED,
+          BuiltinTypes.BOOLEAN, {
+            name: MARKETING_EMAIL_FIELDS.RSSEMAILENTRYTEMPLATEENABLED,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.RSSEMAILURL]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.RSSEMAILURL, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.RSSEMAILURL,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.RSSTOEMAILTIMING]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.RSSTOEMAILTIMING,
+          Types.rssToEmailTimingType, {
+            name: MARKETING_EMAIL_FIELDS.RSSTOEMAILTIMING,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.SLUG]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.SLUG, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.SLUG,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.SMARTEMAILFIELDS]: new TypeField(
+        // TODO: Understand this and convert to a list of smart fields
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.SMARTEMAILFIELDS, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.SMARTEMAILFIELDS,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.STYLESETTINGS]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.STYLESETTINGS, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.STYLESETTINGS,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.SUBCATEGORY]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.SUBCATEGORY, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.SUBCATEGORY,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.VALUES]: ['ab_master', 'ab_variant', 'automated', 'automated_for_deal', 'automated_for_form',
+              'automated_for_form_legacy', 'automated_for_form_buffer', 'automated_for_form_draft',
+              'rss_to_email', 'rss_to_email_child', 'blog_email', 'blog_email_child', 'optin_email', 'optin_followup_email',
+              'batch', 'resubscribe_email', 'single_send_api', 'smtp_token', 'localtime', 'automated_for_ticket', 'automated_for_leadflow',
+              'automated_for_feedback_ces', 'automated_for_feedback_nps', 'automated_for_feedback_custom',
+            ],
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.SUBJECT]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.SUBJECT, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.SUBJECT,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.SUBSCRIPTION]: new TypeField(
+          // TODO: Check what email subscription type is
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.SUBSCRIPTION, BuiltinTypes.NUMBER, {
+            name: MARKETING_EMAIL_FIELDS.SUBSCRIPTION,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.SUBSCRIPTIONBLOGID]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.SUBSCRIPTIONBLOGID, BuiltinTypes.NUMBER, {
+            name: MARKETING_EMAIL_FIELDS.SUBSCRIPTIONBLOGID,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.SUBSCRIPTIONNAME]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.SUBSCRIPTIONNAME, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.SUBSCRIPTIONNAME,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.TEMPLATEPATH]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.TEMPLATEPATH, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.TEMPLATEPATH,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.TRANSACTIONAL]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.TRANSACTIONAL, BuiltinTypes.BOOLEAN, {
+            name: MARKETING_EMAIL_FIELDS.TRANSACTIONAL,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.UNPUBLISHEDAT]: new TypeField( // TODO: Move to state only
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.UNPUBLISHEDAT, BuiltinTypes.NUMBER, {
+            name: MARKETING_EMAIL_FIELDS.UNPUBLISHEDAT,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.UPDATED]: new TypeField( // TODO: Move to state only
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.UPDATED, BuiltinTypes.NUMBER, {
+            name: MARKETING_EMAIL_FIELDS.UPDATED,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.UPDATEDBYID]: new TypeField( // TODO: Move to state only
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.UPDATEDBYID, BuiltinTypes.NUMBER, {
+            name: MARKETING_EMAIL_FIELDS.UPDATEDBYID,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.URL]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.URL, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.URL,
+            _readOnly: true,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.USERSSHEADLINEASSUBJECT]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.USERSSHEADLINEASSUBJECT,
+          BuiltinTypes.BOOLEAN, {
+            name: MARKETING_EMAIL_FIELDS.USERSSHEADLINEASSUBJECT,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.VIDSEXCLUDED]: new TypeField(
+          // TODO: No contact instances (maybe convert to email)
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.VIDSEXCLUDED, BuiltinTypes.NUMBER, {
+            name: MARKETING_EMAIL_FIELDS.VIDSEXCLUDED,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+          true
+        ),
+        [MARKETING_EMAIL_FIELDS.VIDSINCLUDED]: new TypeField(
+          // TODO: No contact instances (maybe convert to email)
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.VIDSINCLUDED, BuiltinTypes.NUMBER, {
+            name: MARKETING_EMAIL_FIELDS.VIDSINCLUDED,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+          true
+        ),
+        [MARKETING_EMAIL_FIELDS.WIDGETS]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.WIDGETS, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.WIDGETS,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [MARKETING_EMAIL_FIELDS.WORKFLOWNAMES]: new TypeField( // TODO: Convert to reference
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.WORKFLOWNAMES, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.WORKFLOWNAMES,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+          true,
+        ),
+        [MARKETING_EMAIL_FIELDS.ABSUCCESSMETRIC]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.ABSUCCESSMETRIC, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.ABSUCCESSMETRIC,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [MARKETINGEMAIL_FIELDS.ARCHIVED]: new TypeField(
-          marketingEmailElemID, MARKETINGEMAIL_FIELDS.ARCHIVED, BuiltinTypes.BOOLEAN, {
-            name: MARKETINGEMAIL_FIELDS.ARCHIVED,
+        [MARKETING_EMAIL_FIELDS.ABTESTID]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.ABTESTID, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.ABTESTID,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [MARKETINGEMAIL_FIELDS.AUTHOR]: new TypeField(
-          marketingEmailElemID, MARKETINGEMAIL_FIELDS.AUTHOR, BuiltinTypes.STRING, {
-            name: MARKETINGEMAIL_FIELDS.AUTHOR,
+        [MARKETING_EMAIL_FIELDS.ABTESTPERCENTAGE]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.ABTESTPERCENTAGE, BuiltinTypes.NUMBER, {
+            name: MARKETING_EMAIL_FIELDS.ABTESTPERCENTAGE,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [MARKETINGEMAIL_FIELDS.AUTHOREMAIL]: new TypeField(
-          marketingEmailElemID, MARKETINGEMAIL_FIELDS.AUTHOREMAIL, BuiltinTypes.STRING, {
-            name: MARKETINGEMAIL_FIELDS.AUTHOREMAIL,
+        [MARKETING_EMAIL_FIELDS.ABSOLUTEURL]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.ABSOLUTEURL, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.ABSOLUTEURL,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [MARKETINGEMAIL_FIELDS.AUTHORNAME]: new TypeField(
-          marketingEmailElemID, MARKETINGEMAIL_FIELDS.AUTHORNAME, BuiltinTypes.STRING, {
-            name: MARKETINGEMAIL_FIELDS.AUTHORNAME,
+        [MARKETING_EMAIL_FIELDS.ALLEMAILCAMPAIGNIDS]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.ALLEMAILCAMPAIGNIDS, BuiltinTypes.NUMBER, {
+            name: MARKETING_EMAIL_FIELDS.ALLEMAILCAMPAIGNIDS,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+          true,
+        ),
+        [MARKETING_EMAIL_FIELDS.ANALYTICSPAGEID]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.ANALYTICSPAGEID, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.ANALYTICSPAGEID,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [MARKETINGEMAIL_FIELDS.BLOGEMAILTYPED]: new TypeField(
-          marketingEmailElemID, MARKETINGEMAIL_FIELDS.BLOGEMAILTYPED, BuiltinTypes.STRING, {
-            name: MARKETINGEMAIL_FIELDS.BLOGEMAILTYPED,
+        [MARKETING_EMAIL_FIELDS.ARCHIVED]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.ARCHIVED, BuiltinTypes.BOOLEAN, {
+            name: MARKETING_EMAIL_FIELDS.ARCHIVED,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [MARKETINGEMAIL_FIELDS.CAMPAIGN]: new TypeField(
-          marketingEmailElemID, MARKETINGEMAIL_FIELDS.CAMPAIGN, BuiltinTypes.STRING, {
-            name: MARKETINGEMAIL_FIELDS.CAMPAIGN,
+        [MARKETING_EMAIL_FIELDS.AUTHOR]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.AUTHOR, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.AUTHOR,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [MARKETINGEMAIL_FIELDS.CAMPAIGNNAME]: new TypeField(
-          marketingEmailElemID, MARKETINGEMAIL_FIELDS.CAMPAIGNNAME, BuiltinTypes.STRING, {
-            name: MARKETINGEMAIL_FIELDS.CAMPAIGNNAME,
+        [MARKETING_EMAIL_FIELDS.AUTHOREMAIL]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.AUTHOREMAIL, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.AUTHOREMAIL,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [MARKETINGEMAIL_FIELDS.CANSPAMID]: new TypeField(
-          marketingEmailElemID, MARKETINGEMAIL_FIELDS.CANSPAMID, BuiltinTypes.NUMBER, {
-            name: MARKETINGEMAIL_FIELDS.CANSPAMID,
+        [MARKETING_EMAIL_FIELDS.AUTHORNAME]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.AUTHORNAME, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.AUTHORNAME,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [MARKETINGEMAIL_FIELDS.CLONEDFORM]: new TypeField(
-          marketingEmailElemID, MARKETINGEMAIL_FIELDS.CLONEDFORM, BuiltinTypes.NUMBER, {
-            name: MARKETINGEMAIL_FIELDS.CLONEDFORM,
+        [MARKETING_EMAIL_FIELDS.BLOGEMAILTYPE]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.BLOGEMAILTYPE, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.BLOGEMAILTYPE,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [MARKETINGEMAIL_FIELDS.CREATEPAGE]: new TypeField(
-          marketingEmailElemID, MARKETINGEMAIL_FIELDS.CREATEPAGE, BuiltinTypes.BOOLEAN, {
-            name: MARKETINGEMAIL_FIELDS.CREATEPAGE,
+        [MARKETING_EMAIL_FIELDS.CAMPAIGN]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.CAMPAIGN, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.CAMPAIGN,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [MARKETINGEMAIL_FIELDS.CREATED]: new TypeField(
-          marketingEmailElemID, MARKETINGEMAIL_FIELDS.CREATED, BuiltinTypes.NUMBER, {
-            name: MARKETINGEMAIL_FIELDS.CREATED,
+        [MARKETING_EMAIL_FIELDS.CAMPAIGNNAME]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.CAMPAIGNNAME, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.CAMPAIGNNAME,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [MARKETINGEMAIL_FIELDS.CURRENTLYPUBLISHED]: new TypeField(
-          marketingEmailElemID, MARKETINGEMAIL_FIELDS.CURRENTLYPUBLISHED, BuiltinTypes.BOOLEAN, {
-            name: MARKETINGEMAIL_FIELDS.CURRENTLYPUBLISHED,
+        [MARKETING_EMAIL_FIELDS.CANSPAMSETTINGSID]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.CANSPAMSETTINGSID, BuiltinTypes.NUMBER, {
+            name: MARKETING_EMAIL_FIELDS.CANSPAMSETTINGSID,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [MARKETINGEMAIL_FIELDS.DOMAIN]: new TypeField(
-          marketingEmailElemID, MARKETINGEMAIL_FIELDS.DOMAIN, BuiltinTypes.STRING, {
-            name: MARKETINGEMAIL_FIELDS.DOMAIN,
+        [MARKETING_EMAIL_FIELDS.CLONEDFROM]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.CLONEDFROM, BuiltinTypes.NUMBER, {
+            name: MARKETING_EMAIL_FIELDS.CLONEDFROM,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [MARKETINGEMAIL_FIELDS.EMAILBODY]: new TypeField(
-          marketingEmailElemID, MARKETINGEMAIL_FIELDS.EMAILBODY, BuiltinTypes.STRING, {
-            name: MARKETINGEMAIL_FIELDS.EMAILBODY,
+        [MARKETING_EMAIL_FIELDS.CREATEPAGE]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.CREATEPAGE, BuiltinTypes.BOOLEAN, {
+            name: MARKETING_EMAIL_FIELDS.CREATEPAGE,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [MARKETING_EMAIL_FIELDS.CREATED]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.CREATED, BuiltinTypes.NUMBER, {
+            name: MARKETING_EMAIL_FIELDS.CREATED,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [MARKETING_EMAIL_FIELDS.CURRENTLYPUBLISHED]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.CURRENTLYPUBLISHED, BuiltinTypes.BOOLEAN, {
+            name: MARKETING_EMAIL_FIELDS.CURRENTLYPUBLISHED,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [MARKETING_EMAIL_FIELDS.DOMAIN]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.DOMAIN, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.DOMAIN,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [MARKETING_EMAIL_FIELDS.EMAILBODY]: new TypeField(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.EMAILBODY, BuiltinTypes.STRING, {
+            name: MARKETING_EMAIL_FIELDS.EMAILBODY,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },

@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import {
   ObjectType, ElemID, Field, BuiltinTypes, InstanceElement, CORE_ANNOTATIONS,
-  ReferenceExpression, PrimitiveType, PrimitiveTypes,
+  ReferenceExpression, PrimitiveType, PrimitiveTypes, Field as TypeField,
 } from 'adapter-api'
 import { validateElements, InvalidValueValidationError } from '../src/core/validator'
 
@@ -125,6 +125,80 @@ describe('Elements validation', () => {
       const badObj = _.cloneDeep(nestedType)
       badObj.annotations.nested = 'not an object'
       const errors = validateElements([badObj, clonedType])
+      expect(errors).toHaveLength(2)
+    })
+
+    it('should allow list of object annotation value when annotationType is object', () => {
+      const elemID = new ElemID('salto', 'simple')
+      const objWithListAnnotation = new ObjectType({
+        elemID,
+        fields: {
+        },
+        annotationTypes: {
+          notList: new ObjectType({ elemID,
+            fields: {
+              simple: new TypeField(elemID, 'simple', BuiltinTypes.STRING),
+            } }),
+        },
+        annotations: {
+          notList: [{ simple: 'str1' }, { simple: 'str2' }],
+        },
+      })
+      const errors = validateElements([objWithListAnnotation])
+      expect(errors).toHaveLength(0)
+    })
+
+    it('should allow list of primitive annotation value when annotationType is primitive', () => {
+      const elemID = new ElemID('salto', 'simple')
+      const objWithListAnnotation = new ObjectType({
+        elemID,
+        fields: {
+        },
+        annotationTypes: {
+          notList: BuiltinTypes.STRING,
+        },
+        annotations: {
+          notList: ['str1', 'str2'],
+        },
+      })
+      const errors = validateElements([objWithListAnnotation])
+      expect(errors).toHaveLength(0)
+    })
+
+    it('should return error for list of primitive annotation value when annotationType is an object', () => {
+      const elemID = new ElemID('salto', 'simple')
+      const objWithListAnnotation = new ObjectType({
+        elemID,
+        fields: {
+        },
+        annotationTypes: {
+          notList: new ObjectType({ elemID,
+            fields: {
+              simple: new TypeField(elemID, 'simple', BuiltinTypes.STRING),
+            } }),
+        },
+        annotations: {
+          notList: ['str1', 'str2'],
+        },
+      })
+      const errors = validateElements([objWithListAnnotation])
+      expect(errors).toHaveLength(2)
+    })
+
+    it('should return error for list of object annotation value when annotationType is a primitive', () => {
+      const elemID = new ElemID('salto', 'simple')
+      const objWithListAnnotation = new ObjectType({
+        elemID,
+        fields: {
+        },
+        annotationTypes: {
+          notList: BuiltinTypes.STRING,
+        },
+        annotations: {
+          notList: [{ simple: 'str1' }, { simple: 'str2' }],
+        },
+      })
+      const errors = validateElements([objWithListAnnotation])
       expect(errors).toHaveLength(2)
     })
   })
@@ -439,9 +513,8 @@ describe('Elements validation', () => {
       it('should return error list/object mismatch', () => {
         extInst.value = { nested: [] }
         const errors = validateElements([extInst])
-        expect(errors).toHaveLength(2)
-        expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('nested'))
-        expect(errors[1].elemID).toEqual(extInst.elemID.createNestedID('nested', 'bool'))
+        expect(errors).toHaveLength(1)
+        expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('nested', 'bool'))
       })
 
       it('should return error list item mismatch', () => {

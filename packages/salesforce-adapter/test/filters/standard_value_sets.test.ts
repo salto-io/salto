@@ -39,10 +39,13 @@ const createPicklistObjectType = (
         ? Types.primitiveDataTypes[constants.FIELD_TYPE_NAMES.MULTIPICKLIST]
         : Types.primitiveDataTypes[constants.FIELD_TYPE_NAMES.PICKLIST], {
         [CORE_ANNOTATIONS.REQUIRED]: false,
-        [CORE_ANNOTATIONS.DEFAULT]: 'Bart',
         [constants.API_NAME]: apiName,
         label: 'test label',
-        [CORE_ANNOTATIONS.VALUES]: pickListValues,
+        [constants.FIELD_ANNOTATIONS.VALUE_SET]: pickListValues.map(val => ({
+          [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: val,
+          [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: val,
+          [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: val === 'Bart',
+        })),
       }
     ),
   },
@@ -107,7 +110,7 @@ describe('Standard Value Sets filter', () => {
     await filter.onFetch(elements)
     expect(elements.length).toBe(4)
     const simpsonsSvs = elements[2]
-    expect(typeElement.fields.state.annotations[CORE_ANNOTATIONS.VALUES])
+    expect(typeElement.fields.state.annotations[constants.FIELD_ANNOTATIONS.VALUE_SET])
       .toEqual(new ReferenceExpression(simpsonsSvs.elemID.createNestedID(STANDARD_VALUE)))
   })
 
@@ -120,7 +123,7 @@ describe('Standard Value Sets filter', () => {
     await filter.onFetch(elements)
     expect(elements.length).toBe(4)
     const simpsonsSvs = elements[2]
-    expect(typeElement.fields.state.annotations[CORE_ANNOTATIONS.VALUES])
+    expect(typeElement.fields.state.annotations[constants.FIELD_ANNOTATIONS.VALUE_SET])
       .toEqual(new ReferenceExpression(simpsonsSvs.elemID.createNestedID(STANDARD_VALUE)))
   })
 
@@ -132,7 +135,8 @@ describe('Standard Value Sets filter', () => {
     const elements: Element[] = [mockSVSType.clone(), typeElement]
     await filter.onFetch(elements)
     expect(elements.length).toBe(4)
-    expect(typeElement.fields.state.annotations[CORE_ANNOTATIONS.VALUES]).toEqual(pickListValues)
+    expect(extractFullNamesFromValueList(typeElement.fields.state
+      .annotations[constants.FIELD_ANNOTATIONS.VALUE_SET])).toEqual(pickListValues)
   })
 
   it('should not replace value list with references for standard picklist fields if svs with values not found', async () => {
@@ -143,6 +147,7 @@ describe('Standard Value Sets filter', () => {
     const elements: Element[] = [mockSVSType.clone(), typeElement]
     await filter.onFetch(elements)
     expect(elements.length).toBe(4)
-    expect(typeElement.fields.state.annotations[CORE_ANNOTATIONS.VALUES]).toEqual(pickListValues)
+    expect(extractFullNamesFromValueList(typeElement.fields.state
+      .annotations[constants.FIELD_ANNOTATIONS.VALUE_SET])).toEqual(pickListValues)
   })
 })

@@ -10,7 +10,7 @@ import {
 } from 'jsforce'
 import _ from 'lodash'
 import { logger } from '@salto/logging'
-import { decorators, collections } from '@salto/lowerdash'
+import { decorators } from '@salto/lowerdash'
 import SalesforceClient, { API_VERSION, Credentials } from './client/client'
 import * as constants from './constants'
 import {
@@ -24,7 +24,6 @@ import { fromRetrieveResult, toMetadataPackageZip } from './transformers/xml_tra
 import layoutFilter from './filters/layouts'
 import CustomObjectsFilter from './filters/custom_objects'
 import profilePermissionsFilter from './filters/profile_permissions'
-import validationRulesFilter from './filters/validation_rules'
 import assignmentRulesFilter from './filters/assignment_rules'
 import convertListsFilter from './filters/convert_lists'
 import convertTypeFilter from './filters/convert_types'
@@ -43,8 +42,6 @@ import {
 } from './filter'
 import { id, addApiName, addMetadataType, addLabel } from './filters/utils'
 import { changeValidator } from './change_validator'
-
-const { makeArray } = collections.array
 
 const log = logger(module)
 
@@ -146,7 +143,6 @@ export default class SalesforceAdapter {
       CustomObjectsFilter,
       profilePermissionsFilter,
       layoutFilter,
-      validationRulesFilter,
       assignmentRulesFilter,
       standardValueSetFilter,
       missingFieldsFilter,
@@ -505,25 +501,23 @@ export default class SalesforceAdapter {
         .filter(isModificationDiff)
         .filter(c => shouldUpdateField(c.data.before, c.data.after))
         .map(c => clonedObject.fields[c.data.after.name])),
+      this.updateObjectAnnotations(before, clonedObject, changes),
     ])
+    return clonedObject
+  }
 
-    // Update the annotation values - this can't be done asynchronously with the previous
-    // operations because the update API expects to receive the updated list of fields,
-    // hence the need to perform the fields deletion and creation first, and then update the
-    // object.
-    // IMPORTANT: We don't update a built-in object (such as Lead, Customer, etc.)
-    // The update API currently allows us to add/remove custom fields to such objects, but not
-    // to update them.
-    if (apiName(clonedObject).endsWith(constants.SALESFORCE_CUSTOM_SUFFIX)
-      // Don't update the object unless its changed
-      && changes.find(c => isObjectType(getChangeElement(c)))) {
-      await this.client.update(
+  private async updateObjectAnnotations(before: ObjectType, clonedObject: ObjectType,
+    changes: ReadonlyArray<Change<Field | ObjectType>>): Promise<SaveResult[]> {
+    if (!_.isEqual(clonedObject.annotations[constants.LABEL], before.annotations[constants.LABEL])
+      && apiName(clonedObject).endsWith(constants.SALESFORCE_CUSTOM_SUFFIX)
+      && changes.some(c => isObjectType(getChangeElement(c)))) {
+      // Update object without custom object annotations (handled in custom_objects filter) & fields
+      return this.client.update(
         metadataType(clonedObject),
         toCustomObject(clonedObject, false)
-      ) // Update the object without its fields
+      )
     }
-
-    return clonedObject
+    return []
   }
 
   /**
@@ -554,7 +548,6 @@ export default class SalesforceAdapter {
 
   /**
    * Updates custom fields
-   * @param object the object that the fields belong to
    * @param fieldsToUpdate The fields to update
    * @returns successfully managed to update all fields
    */
@@ -567,7 +560,6 @@ export default class SalesforceAdapter {
 
   /**
    * Creates custom fields and their corresponding field permissions
-   * @param object the object that the fields belong to
    * @param fieldsToAdd The fields to create
    * @returns successfully managed to create all fields with their permissions or not
    */
@@ -580,7 +572,6 @@ export default class SalesforceAdapter {
 
   /**
    * Deletes custom fields
-   * @param element the object api name those fields reside in
    * @param fields the custom fields we wish to delete
    */
   private async deleteCustomFields(fields: Field[]): Promise<SaveResult[]> {
@@ -590,8 +581,8 @@ export default class SalesforceAdapter {
 
   private async listMetadataTypes(): Promise<string[]> {
     return this.client.listMetadataTypes().then(
-      types => _.flatten(types
-        .map(x => [x.xmlName, ...makeArray(x.childXmlNames)]))
+      types => types
+        .map(x => x.xmlName)
         .concat(this.metadataAdditionalTypes)
         .filter(name => !this.metadataTypeBlacklist.includes(name))
     )
@@ -774,12 +765,12 @@ export default class SalesforceAdapter {
     )
   }
 
-  private async runFiltersOnAdd(after: Element): Promise<SaveResult[]> {
+  private async runFiltersOnAdd(after: Element): Promise<(SaveResult| UpsertResult)[]> {
     return this.runFiltersInParallel('onAdd', filter => filter.onAdd(after))
   }
 
   private async runFiltersOnUpdate(before: Element, after: Element,
-    changes: Iterable<Change>): Promise<SaveResult[]> {
+    changes: Iterable<Change>): Promise<(SaveResult| UpsertResult)[]> {
     return this.runFiltersInParallel('onUpdate', filter => filter.onUpdate(before, after, changes))
   }
 

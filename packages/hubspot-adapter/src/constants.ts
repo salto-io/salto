@@ -2,6 +2,9 @@ export const HUBSPOT = 'hubspot'
 
 export const OBJECTS_NAMES = {
   FORM: 'form',
+  PROPERTYGROUP: 'PropertyGroup',
+  PROPERTY: 'Property',
+  OPTIONS: 'options',
 }
 
 // fields types
@@ -21,7 +24,6 @@ export const FIELD_TYPES = {
 export const FORM_FIELDS = {
   GUID: 'guid',
   NAME: 'name',
-  METHOD: 'method',
   CSSCLASS: 'cssClass',
   REDIRECT: 'redirect',
   SUBMITTEXT: 'submitText',
@@ -33,4 +35,36 @@ export const FORM_FIELDS = {
   CAPTCHAENABLED: 'captchaEnabled',
   CLONEABLE: 'cloneable',
   EDITABLE: 'editable',
+  STYLE: 'style',
+  FORMFIELDGROUPS: 'formFieldGroups',
+}
+
+export const PROPERTY_GROUP_FIELDS = {
+  DEFAULT: 'default',
+  FIELDS: 'fields',
+  ISSMARTGROUP: 'isSmartGroup',
+}
+
+export const PROPERTY_FIELDS = {
+  NAME: 'name',
+  LABEL: 'label',
+  DESCRIPTION: 'description',
+  GROUPNAME: 'groupName',
+  TYPE: 'type',
+  FIELDTYPE: 'fieldType',
+  REQUIRED: 'required',
+  HIDDEN: 'hidden',
+  ISSMARTFIELD: 'isSmartField',
+  DEFAULTVALUE: 'defaultValue',
+  SELECTEDOPTIONS: 'selectedOptions',
+  OPTIONS: 'options',
+}
+
+export const OPTIONS_FIELDS = {
+  LABEL: 'label',
+  DESCRIPTION: 'description',
+  VALUE: 'value',
+  HIDDEN: 'hidden',
+  ISSMARTFIELD: 'isSmartField',
+  DISPLAYORDER: 'displayOrder',
 }

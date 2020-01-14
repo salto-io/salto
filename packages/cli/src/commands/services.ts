@@ -76,6 +76,7 @@ const loginService = async (
   }
   if (!workspace.config.services.includes(serviceName)) {
     stderr.write(formatServiceNotConfigured(serviceName))
+    return CliExitCode.AppError
   }
   const serviceLoginStatus = (await getLoginStatuses(
     workspace,

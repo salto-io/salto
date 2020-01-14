@@ -1,6 +1,7 @@
 import _ from 'lodash'
 import {
-  isObjectType, Type, Field, ObjectType, ElemID, isField, Values, Element,
+  isObjectType, Type, Field, ObjectType, ElemID, isField, Values,
+  Element, isPrimitiveType, PrimitiveTypes, PrimitiveValue,
 } from './elements'
 
 interface AnnoRef {
@@ -73,5 +74,52 @@ export const getAnnotationKey = (annotations: {[key: string]: Type}, path: strin
   return { annoName, annoType }
 }
 
+
 export const getAnnotationValue = (element: Element, annotation: string): Values =>
   (element.annotations[annotation] || {})
+
+
+export const transform = (
+  obj: Values,
+  type: ObjectType,
+  transformPrimitives: (
+    val: PrimitiveValue,
+    p: PrimitiveTypes
+  ) => PrimitiveValue | undefined = val => (val),
+  strict = true
+): Values | undefined => {
+  const result = _(obj).mapValues((value, key) => {
+    // we get lists of empty strings that we would like to filter out
+    if (_.isArray(value) && value.every(s => s === '')) {
+      return undefined
+    }
+    // we get empty strings that we would like to filter out
+    if (value === '') {
+      return undefined
+    }
+
+    const field = type.fields[key]
+    if (field !== undefined) {
+      const fieldType = field.type
+      if (isObjectType(fieldType)) {
+        return _.isArray(value)
+          ? value.map(v => transform(v, fieldType, transformPrimitives, strict))
+            .filter(v => !_.isEmpty(v))
+          : transform(value, fieldType, transformPrimitives, strict)
+      }
+      if (isPrimitiveType(fieldType)) {
+        return _.isArray(value)
+          ? value.map(v => transformPrimitives(v, fieldType.primitive))
+            .filter(v => !_.isArrayLike(v) || !_.isEmpty(v))
+          : transformPrimitives(value, fieldType.primitive)
+      }
+    }
+
+    if (strict) {
+      return undefined
+    }
+    return value
+  }).omitBy(_.isUndefined)
+    .value()
+  return _.isEmpty(result) ? undefined : result
+}

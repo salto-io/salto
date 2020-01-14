@@ -1,13 +1,7 @@
 import _ from 'lodash'
 import { collections } from '@salto/lowerdash'
-import {
-  ObjectType,
-  ElemID,
-  InstanceElement,
-  Element,
-  Field, BuiltinTypes,
-  CORE_ANNOTATIONS,
-} from 'adapter-api'
+import { ObjectType, ElemID, InstanceElement, Element, Field, BuiltinTypes,
+  CORE_ANNOTATIONS } from 'adapter-api'
 import {
   MetadataInfo, SaveResult, DeployResult, DeployDetails,
 } from 'jsforce'
@@ -17,6 +11,7 @@ import { Types, sfCase } from '../src/transformers/transformer'
 import Connection from '../src/client/jsforce'
 import mockAdapter from './adapter'
 import { ASSIGNMENT_RULES_TYPE_ID } from '../src/filters/assignment_rules'
+import { createValueSetEntry } from './utils'
 
 const { makeArray } = collections.array
 
@@ -176,7 +171,6 @@ describe('SalesforceAdapter CRUD', () => {
             stringType,
             {
               [CORE_ANNOTATIONS.REQUIRED]: false,
-              [CORE_ANNOTATIONS.DEFAULT]: 'test',
               [constants.LABEL]: 'test label',
             },
           ),
@@ -236,9 +230,11 @@ describe('SalesforceAdapter CRUD', () => {
             Types.primitiveDataTypes.picklist,
             {
               [CORE_ANNOTATIONS.REQUIRED]: false,
-              [CORE_ANNOTATIONS.DEFAULT]: 'NEW',
               label: 'test label',
-              [CORE_ANNOTATIONS.VALUES]: ['NEW', 'OLD'],
+              [constants.FIELD_ANNOTATIONS.VALUE_SET]: [
+                createValueSetEntry('NEW', true),
+                createValueSetEntry('OLD'),
+              ],
             },
           ),
         },
@@ -349,8 +345,15 @@ describe('SalesforceAdapter CRUD', () => {
             Types.primitiveDataTypes.multipicklist,
             {
               [constants.LABEL]: 'Multipicklist description label',
-              [CORE_ANNOTATIONS.VALUES]: ['DO', 'RE', 'MI', 'FA', 'SOL', 'LA', 'SI'],
-              [CORE_ANNOTATIONS.DEFAULT]: 'RE',
+              [constants.FIELD_ANNOTATIONS.VALUE_SET]: [
+                createValueSetEntry('DO'),
+                createValueSetEntry('RE', true),
+                createValueSetEntry('MI'),
+                createValueSetEntry('FA'),
+                createValueSetEntry('SOL'),
+                createValueSetEntry('LA'),
+                createValueSetEntry('SI'),
+              ],
               [constants.FIELD_ANNOTATIONS.VISIBLE_LINES]: 4,
             },
           ),
@@ -423,8 +426,15 @@ describe('SalesforceAdapter CRUD', () => {
             Types.primitiveDataTypes.picklist,
             {
               [constants.LABEL]: 'Picklist description label',
-              [CORE_ANNOTATIONS.VALUES]: ['DO', 'RE', 'MI', 'FA', 'SOL', 'LA', 'SI'],
-              [CORE_ANNOTATIONS.DEFAULT]: 'DO',
+              [constants.FIELD_ANNOTATIONS.VALUE_SET]: [
+                createValueSetEntry('DO', true),
+                createValueSetEntry('RE'),
+                createValueSetEntry('MI'),
+                createValueSetEntry('FA'),
+                createValueSetEntry('SOL'),
+                createValueSetEntry('LA'),
+                createValueSetEntry('SI'),
+              ],
             },
           ),
           quebec: new Field(
@@ -456,7 +466,7 @@ describe('SalesforceAdapter CRUD', () => {
             Types.primitiveDataTypes.boolean,
             {
               [constants.LABEL]: 'Checkbox description label',
-              [CORE_ANNOTATIONS.DEFAULT]: true,
+              [constants.FIELD_ANNOTATIONS.DEFAULT_VALUE]: true,
             },
           ),
         },
@@ -750,7 +760,6 @@ describe('SalesforceAdapter CRUD', () => {
         },
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: false,
-          [CORE_ANNOTATIONS.DEFAULT]: 'test',
           label: 'test label',
           [constants.API_NAME]: 'Test2__c',
         },
@@ -767,7 +776,6 @@ describe('SalesforceAdapter CRUD', () => {
         },
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: false,
-          [CORE_ANNOTATIONS.DEFAULT]: 'test2',
           label: 'test2 label',
         },
       })
@@ -942,7 +950,6 @@ describe('SalesforceAdapter CRUD', () => {
             },
             annotations: {
               [CORE_ANNOTATIONS.REQUIRED]: false,
-              [CORE_ANNOTATIONS.DEFAULT]: 'test',
               label: 'test label',
               [constants.API_NAME]: 'Test__c',
             },
@@ -1006,7 +1013,6 @@ describe('SalesforceAdapter CRUD', () => {
             },
             annotations: {
               [CORE_ANNOTATIONS.REQUIRED]: false,
-              [CORE_ANNOTATIONS.DEFAULT]: 'test',
               label: 'test label',
               [constants.API_NAME]: 'Test__c',
             },
@@ -1038,7 +1044,6 @@ describe('SalesforceAdapter CRUD', () => {
             },
             annotations: {
               [CORE_ANNOTATIONS.REQUIRED]: false,
-              [CORE_ANNOTATIONS.DEFAULT]: 'test',
               label: 'test label',
               [constants.API_NAME]: 'Test__c',
             },
@@ -1101,7 +1106,6 @@ describe('SalesforceAdapter CRUD', () => {
             },
             annotations: {
               [CORE_ANNOTATIONS.REQUIRED]: false,
-              [CORE_ANNOTATIONS.DEFAULT]: 'test',
               label: 'test label',
               [constants.API_NAME]: 'Test__c',
             },
@@ -1121,7 +1125,6 @@ describe('SalesforceAdapter CRUD', () => {
             },
             annotations: {
               [CORE_ANNOTATIONS.REQUIRED]: false,
-              [CORE_ANNOTATIONS.DEFAULT]: 'test2',
               label: 'test2 label',
               [constants.API_NAME]: 'Test__c',
             },
@@ -1173,7 +1176,6 @@ describe('SalesforceAdapter CRUD', () => {
             },
             annotations: {
               [CORE_ANNOTATIONS.REQUIRED]: false,
-              [CORE_ANNOTATIONS.DEFAULT]: 'test',
               label: 'test label',
               [constants.API_NAME]: 'Test__c',
             },
@@ -1198,7 +1200,6 @@ describe('SalesforceAdapter CRUD', () => {
             },
             annotations: {
               [CORE_ANNOTATIONS.REQUIRED]: false,
-              [CORE_ANNOTATIONS.DEFAULT]: 'test',
               label: 'test label',
               [constants.API_NAME]: 'Test__c',
             },
@@ -1328,7 +1329,6 @@ describe('SalesforceAdapter CRUD', () => {
             },
             annotations: {
               [CORE_ANNOTATIONS.REQUIRED]: false,
-              [CORE_ANNOTATIONS.DEFAULT]: 'test',
               label: 'test label',
               [constants.API_NAME]: 'Test__c',
             },
@@ -1367,7 +1367,6 @@ describe('SalesforceAdapter CRUD', () => {
             },
             annotations: {
               [CORE_ANNOTATIONS.REQUIRED]: false,
-              [CORE_ANNOTATIONS.DEFAULT]: 'test',
               label: 'test label',
               [constants.API_NAME]: 'Test__c',
             },
@@ -1431,7 +1430,6 @@ describe('SalesforceAdapter CRUD', () => {
             },
             annotations: {
               [CORE_ANNOTATIONS.REQUIRED]: false,
-              [CORE_ANNOTATIONS.DEFAULT]: 'test',
               label: 'test label',
               [constants.API_NAME]: 'Test__c',
             },
@@ -1459,7 +1457,6 @@ describe('SalesforceAdapter CRUD', () => {
             },
             annotations: {
               [CORE_ANNOTATIONS.REQUIRED]: false,
-              [CORE_ANNOTATIONS.DEFAULT]: 'test',
               label: 'test label',
               [constants.API_NAME]: 'Test__c',
             },
@@ -1495,7 +1492,6 @@ describe('SalesforceAdapter CRUD', () => {
             },
             annotations: {
               [CORE_ANNOTATIONS.REQUIRED]: false,
-              [CORE_ANNOTATIONS.DEFAULT]: 'test',
               label: 'test label',
               [constants.API_NAME]: 'Test__c',
             },
@@ -1516,7 +1512,6 @@ describe('SalesforceAdapter CRUD', () => {
             },
             annotations: {
               [CORE_ANNOTATIONS.REQUIRED]: false,
-              [CORE_ANNOTATIONS.DEFAULT]: 'test2',
               label: 'test2 label',
               [constants.API_NAME]: 'Test__c',
             },

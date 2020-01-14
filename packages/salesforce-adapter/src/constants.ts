@@ -107,6 +107,26 @@ export const FIELD_ANNOTATIONS = {
   SUMMARY_FILTER_ITEMS: 'summary_filter_items',
   SUMMARY_FOREIGN_KEY: 'summary_foreign_key',
   SUMMARY_OPERATION: 'summary_operation',
+  RESTRICTED: 'restricted',
+  VALUE_SET: 'value_set',
+  DEFAULT_VALUE: 'default_value',
+}
+
+export const CUSTOM_OBJECT_ANNOTATIONS = {
+  WEB_LINKS: 'web_links',
+  VALIDATION_RULES: 'validation_rules',
+  BUSINESS_PROCESSES: 'business_processes',
+  RECORD_TYPES: 'record_types',
+  LIST_VIEWS: 'list_views',
+  FIELD_SETS: 'field_sets',
+  COMPACT_LAYOUTS: 'compact_layouts',
+  SHARING_REASONS: 'sharing_reasons',
+  INDEXES: 'indexes',
+}
+
+export const VALUE_SET_FIELDS = {
+  RESTRICTED: 'restricted',
+  VALUE_SET_DEFINITION: 'value_set_definition',
 }
 
 export const FIELD_DEPENDENCY_FIELDS = {
@@ -117,6 +137,16 @@ export const FIELD_DEPENDENCY_FIELDS = {
 export const VALUE_SETTINGS_FIELDS = {
   CONTROLLING_FIELD_VALUE: 'controlling_field_value',
   VALUE_NAME: 'value_name',
+}
+
+export const VALUE_SET_DEFINITION_FIELDS = {
+  VALUE: 'value',
+}
+
+export const VALUE_SET_DEFINITION_VALUE_FIELDS = {
+  FULL_NAME: INSTANCE_FULL_NAME_FIELD,
+  DEFAULT: 'default',
+  LABEL: 'label',
 }
 
 export const LOOKUP_FILTER_FIELDS = {

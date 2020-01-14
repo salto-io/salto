@@ -216,33 +216,36 @@ const validateValue = (elemID: ElemID, value: Value,
   }
 
   if (isObjectType(type)) {
-    if (!_.isPlainObject(value)) {
+    if (!_.isObjectLike(value)) {
       // NOTE: this area should be deleted as soon as
       //  we complete the implementation of SALTO-484 (i.e. support container's type)
-      if (!isAnnotations) {
-        return [new InvalidValueTypeValidationError({ elemID, value, type })]
-      }
-      return _.flatten(value.map((val: Value) => validateValue(elemID, val, type, false)))
+      return [new InvalidValueTypeValidationError({ elemID, value, type })]
+    }
+    if (_.isArray(value)) {
+      return _.flatten(value.map((val: Value) => validateValue(elemID, val, type, isAnnotations)))
     }
     return _.flatten(Object.keys(value).filter(k => type.fields[k]).map(
       // eslint-disable-next-line @typescript-eslint/no-use-before-define
-      k => validateFieldValue(elemID.createNestedID(k), value[k], type.fields[k])
+      k => validateFieldValue(elemID.createNestedID(k), value[k], type.fields[k], isAnnotations)
     ))
   }
 
   return validateAnnotationsValue(elemID, value, type.annotations, type) || []
 }
 
-const validateFieldValue = (elemID: ElemID, value: Value, field: Field): ValidationError[] => {
+const validateFieldValue = (elemID: ElemID, value: Value, field: Field, isAnnotations: boolean):
+  ValidationError[] => {
   if (field.isList) {
-    if (!_.isArray(value)) {
+    // todo remove the !isAnnotations once SALTO-228 (Support annotationTypes list) is implemented
+    if (!_.isArray(value) && !isAnnotations) {
       return [new InvalidValueValidationError({ elemID, value, fieldName: field.name, expectedValue: 'a list' })]
     }
     return _.flatten(
-      value.map((v, i) => validateValue(elemID.createNestedID(String(i)), v, field.type))
+      makeArray(value).map((v, i) =>
+        validateValue(elemID.createNestedID(String(i)), v, field.type, isAnnotations))
     )
   }
-  return validateValue(elemID, value, field.type)
+  return validateValue(elemID, value, field.type, isAnnotations)
 }
 
 const validateField = (field: Field): ValidationError[] =>
@@ -261,7 +264,8 @@ const validateType = (element: Type): ValidationError[] => {
       k => validateValue(
         element.elemID.createNestedID('attr', k),
         element.annotations[k],
-        element.annotationTypes[k]
+        element.annotationTypes[k],
+        true
       )
     ))
 

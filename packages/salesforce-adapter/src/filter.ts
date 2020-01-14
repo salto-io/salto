@@ -1,5 +1,5 @@
 import { Element, Change } from 'adapter-api'
-import { SaveResult } from 'jsforce-types'
+import { SaveResult, UpsertResult } from 'jsforce-types'
 import { types } from '@salto/lowerdash'
 import SalesforceClient from './client/client'
 
@@ -9,8 +9,9 @@ import SalesforceClient from './client/client'
 // it and update permissions accordingly.
 export type Filter = Partial<{
   onFetch(elements: Element[]): Promise<void>
-  onAdd(after: Element): Promise<SaveResult[]>
-  onUpdate(before: Element, after: Element, changes: Iterable<Change>): Promise<SaveResult[]>
+  onAdd(after: Element): Promise<(SaveResult| UpsertResult)[]>
+  onUpdate(before: Element, after: Element, changes: Iterable<Change>):
+    Promise<(SaveResult| UpsertResult)[]>
   onRemove(before: Element): Promise<SaveResult[]>
 }>
 

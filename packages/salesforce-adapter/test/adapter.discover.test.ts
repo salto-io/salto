@@ -111,7 +111,8 @@ describe('SalesforceAdapter fetch', () => {
       expect(flow.fields.enum.type.elemID.name).toBe('string')
       expect(flow.fields.enum.annotations[CORE_ANNOTATIONS.DEFAULT]).toBe('yes')
       // Note the order here is important because we expect restriction values to be sorted
-      expect(flow.fields.enum.annotations[CORE_ANNOTATIONS.VALUES]).toEqual(['no', 'yes'])
+      expect(flow.fields.enum.annotations[CORE_ANNOTATIONS.VALUES])
+        .toEqual(['no', 'yes'])
       expect(flow.path).toEqual([constants.SALESFORCE, 'types', 'flow'])
       expect(flow.fields.full_name.type).toEqual(BuiltinTypes.SERVICE_ID)
       expect(flow.annotationTypes[constants.METADATA_TYPE]).toEqual(BuiltinTypes.SERVICE_ID)
@@ -165,6 +166,7 @@ describe('SalesforceAdapter fetch', () => {
         + 2 /* mask char & type */
         + 1 /* security classification */
         + 1 /* business status */
+        + 1 /* value set */
         + 2 /* field dependency & value settings */)
 
       const types = _.assign({}, ...result.map(t => ({ [id(t)]: t })))
@@ -431,7 +433,7 @@ describe('SalesforceAdapter fetch', () => {
       expect(connection.metadata.read).toHaveBeenCalledWith('QuoteSettings', ['Quote'])
     })
 
-    it('should fetch child metadata type', async () => {
+    it('should not fetch child metadata type', async () => {
       mockSingleMetadataType('Child', [
         {
           name: 'Description',
@@ -439,13 +441,12 @@ describe('SalesforceAdapter fetch', () => {
           valueRequired: true,
         },
       ], true)
-      const result = await adapter.fetch()
+      await adapter.fetch()
 
       const describeMock = connection.metadata.describeValueType as jest.Mock<unknown>
       expect(describeMock).toHaveBeenCalled()
-      expect(describeMock.mock.calls[1][0]).toBe('{http://soap.sforce.com/2006/04/metadata}Child')
-      const child = findElements(result, 'child').pop() as ObjectType
-      expect(child.fields.description.type.elemID.name).toBe('string')
+      expect(describeMock.mock.calls.length).toBe(1)
+      expect(describeMock.mock.calls[0][0]).toBe('{http://soap.sforce.com/2006/04/metadata}Base')
     })
 
     it('should fetch metadata instances using retrieve', async () => {

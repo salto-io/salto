@@ -10,6 +10,8 @@ export enum PrimitiveTypes {
   BOOLEAN,
 }
 
+export type PrimitiveValue = string | boolean | number
+
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 export type Value = any
 export interface Values {
@@ -205,7 +207,7 @@ export interface Element {
   annotations: Values
 }
 
-type ElementMap = Record<string, Element>
+export type ElementMap = Record<string, Element>
 
 /**
  * Represents a field inside a type
@@ -261,14 +263,17 @@ export abstract class Type implements Element {
     annotationTypes,
     annotations,
     elemID,
+    path,
   }: {
     elemID: ElemID
     annotationTypes: TypeMap
     annotations: Values
+    path?: ReadonlyArray<string>
   }) {
     this.annotationTypes = annotationTypes
     this.annotations = annotations
     this.elemID = elemID
+    this.path = path
     // Prevents reregistration of clones, we only want to register
     // first creation
   }
@@ -335,13 +340,15 @@ export class PrimitiveType extends Type {
     primitive,
     annotationTypes = {},
     annotations = {},
+    path = undefined,
   }: {
     elemID: ElemID
     primitive: PrimitiveTypes
     annotationTypes?: TypeMap
     annotations?: Values
+    path?: ReadonlyArray<string>
   }) {
-    super({ elemID, annotationTypes, annotations })
+    super({ elemID, annotationTypes, annotations, path })
     this.primitive = primitive
   }
 
@@ -379,14 +386,16 @@ export class ObjectType extends Type {
     annotationTypes = {},
     annotations = {},
     isSettings = false,
+    path = undefined,
   }: {
     elemID: ElemID
     fields?: FieldMap
     annotationTypes?: TypeMap
     annotations?: Values
     isSettings?: boolean
+    path?: ReadonlyArray<string>
   }) {
-    super({ elemID, annotationTypes, annotations })
+    super({ elemID, annotationTypes, annotations, path })
     this.fields = fields
     this.isSettings = isSettings
   }

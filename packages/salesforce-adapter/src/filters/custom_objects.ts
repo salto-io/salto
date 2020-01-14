@@ -1,43 +1,47 @@
 import { logger } from '@salto/logging'
 import { collections } from '@salto/lowerdash'
-import { ADAPTER, Element, Field, ObjectType, ServiceIds, Type, isObjectType, InstanceElement,
+import {
+  ADAPTER, Element, Field, ObjectType, ServiceIds, Type, isObjectType, InstanceElement,
   Values, isInstanceElement, ElemID, BuiltinTypes,
-  CORE_ANNOTATIONS, BuiltinAnnotationTypes } from 'adapter-api'
+  CORE_ANNOTATIONS, BuiltinAnnotationTypes,
+  transform, TypeMap, getChangeElement, Value, findObjectType, Change,
+} from 'adapter-api'
 import { SalesforceClient } from 'index'
-import { DescribeSObjectResult, Field as SObjField } from 'jsforce'
+import { DescribeSObjectResult, Field as SObjField, SaveResult, UpsertResult } from 'jsforce'
 import _ from 'lodash'
-import { transform } from './convert_types'
 import { API_NAME, CUSTOM_OBJECT, METADATA_TYPE, SALESFORCE,
   INSTANCE_FULL_NAME_FIELD, SALESFORCE_CUSTOM_SUFFIX, LABEL, FIELD_DEPENDENCY_FIELDS,
-  FIELD_TYPE_API_NAMES, FIELD_ANNOTATIONS,
-  LOOKUP_FILTER_FIELDS, VALUE_SETTINGS_FIELDS, API_NAME_SEPERATOR } from '../constants'
+  FIELD_TYPE_API_NAMES, FIELD_ANNOTATIONS, VALUE_SET_FIELDS,
+  LOOKUP_FILTER_FIELDS, VALUE_SETTINGS_FIELDS, API_NAME_SEPERATOR,
+  VALUE_SET_DEFINITION_FIELDS, DEFAULT_VALUE_FORMULA,
+  CUSTOM_OBJECT_ANNOTATIONS, FIELD_TYPE_NAMES } from '../constants'
 import { FilterCreator } from '../filter'
-import { getSObjectFieldElement, Types, isCustomObject, bpCase, apiName } from '../transformers/transformer'
-import { id, addApiName, addMetadataType, addLabel, hasNamespace, getNamespace, boolValue } from './utils'
+import {
+  getSObjectFieldElement, Types, isCustomObject, bpCase, apiName, transformPrimitive,
+  toMetadataInfo, sfCase,
+} from '../transformers/transformer'
+import { id, addApiName, addMetadataType, addLabel, hasNamespace,
+  getNamespace, boolValue } from './utils'
 import { convertList } from './convert_lists'
 
 const log = logger(module)
 const { makeArray } = collections.array
 
-export const INSTANCE_DEFAULT_VALUE_FIELD = 'default_value'
-export const INSTANCE_VALUE_SET_FIELD = 'value_set'
 export const INSTANCE_REQUIRED_FIELD = 'required'
 export const INSTANCE_TYPE_FIELD = 'type'
 
-export const VALUE_SET_FIELDS = {
-  VALUE_SET_DEFINITION: 'value_set_definition',
+// The below annotationTypes' data is returned when using ReadMetadata on the CustomObject instances
+export const customObjectAnnotationTypeIds = {
+  [CUSTOM_OBJECT_ANNOTATIONS.WEB_LINKS]: new ElemID(SALESFORCE, 'web_link'),
+  [CUSTOM_OBJECT_ANNOTATIONS.VALIDATION_RULES]: new ElemID(SALESFORCE, 'validation_rule'),
+  [CUSTOM_OBJECT_ANNOTATIONS.BUSINESS_PROCESSES]: new ElemID(SALESFORCE, 'business_process'),
+  [CUSTOM_OBJECT_ANNOTATIONS.RECORD_TYPES]: new ElemID(SALESFORCE, 'record_type'),
+  [CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS]: new ElemID(SALESFORCE, 'list_view'),
+  [CUSTOM_OBJECT_ANNOTATIONS.FIELD_SETS]: new ElemID(SALESFORCE, 'field_set'),
+  [CUSTOM_OBJECT_ANNOTATIONS.COMPACT_LAYOUTS]: new ElemID(SALESFORCE, 'compact_layout'),
+  [CUSTOM_OBJECT_ANNOTATIONS.SHARING_REASONS]: new ElemID(SALESFORCE, 'sharing_reason'),
+  [CUSTOM_OBJECT_ANNOTATIONS.INDEXES]: new ElemID(SALESFORCE, 'index'),
 }
-
-export const VALUE_SET_DEFINITION_FIELDS = {
-  VALUE: 'value',
-}
-
-export const VALUE_SET_DEFINITION_VALUE_FIELDS = {
-  FULL_NAME: 'full_name',
-  DEFAULT: 'default',
-  LABEL: 'label',
-}
-
 
 const getFieldType = (type: string): Type =>
   (_.isUndefined(type) ? BuiltinTypes.STRING : Types.get(bpCase(type)))
@@ -152,6 +156,7 @@ const getFieldDependency = (values: Values): Values | undefined => {
 
 const transfromAnnotationsNames = (fields: Values, parentApiName: string): Values => {
   const annotations: Values = {}
+  const typeName = fields[INSTANCE_TYPE_FIELD]
   Object.entries(fields).forEach(([k, v]) => {
     switch (k) {
       case INSTANCE_REQUIRED_FIELD:
@@ -160,13 +165,17 @@ const transfromAnnotationsNames = (fields: Values, parentApiName: string): Value
       case INSTANCE_FULL_NAME_FIELD:
         annotations[API_NAME] = [parentApiName, v].join(API_NAME_SEPERATOR)
         break
-      case INSTANCE_DEFAULT_VALUE_FIELD:
-        annotations[CORE_ANNOTATIONS.DEFAULT] = v
+      case FIELD_ANNOTATIONS.DEFAULT_VALUE:
+        if (typeName === FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.CHECKBOX]) {
+          annotations[k] = v
+        } else {
+          annotations[DEFAULT_VALUE_FORMULA] = v
+        }
         break
-      case INSTANCE_VALUE_SET_FIELD:
-        annotations[CORE_ANNOTATIONS.VALUES] = v[VALUE_SET_FIELDS
+      case FIELD_ANNOTATIONS.VALUE_SET:
+        annotations[FIELD_ANNOTATIONS.VALUE_SET] = v[VALUE_SET_FIELDS
           .VALUE_SET_DEFINITION][VALUE_SET_DEFINITION_FIELDS.VALUE]
-          .map((value: Values) => value[VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME])
+        annotations[FIELD_ANNOTATIONS.RESTRICTED] = v[VALUE_SET_FIELDS.RESTRICTED] || false
         if (!_.isUndefined(getFieldDependency(v))) {
           annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY] = getFieldDependency(v)
         }
@@ -192,11 +201,10 @@ const transfromAnnotationsNames = (fields: Values, parentApiName: string): Value
 
 const buildAnnotationsObjectType = (fieldType: Type): ObjectType => {
   const annotationTypesElemID = new ElemID(SALESFORCE, 'annotation_type')
-  const annotationTypesObject = new ObjectType({ elemID: annotationTypesElemID,
+  return new ObjectType({ elemID: annotationTypesElemID,
     fields: Object.assign({}, ...Object.entries(fieldType.annotationTypes)
       .concat(Object.entries(BuiltinAnnotationTypes))
       .map(([k, v]) => ({ [k]: new Field(annotationTypesElemID, k, v) }))) })
-  return annotationTypesObject
 }
 
 const transformFieldAnnotations = (
@@ -226,20 +234,47 @@ const transformFieldAnnotations = (
   const annotationsType = buildAnnotationsObjectType(fieldType)
   convertList(annotationsType, annotations)
 
-  return transform(annotations, annotationsType) || {}
+  return transform(annotations, annotationsType, transformPrimitive) || {}
+}
+
+const transformObjectAnnotations = (customObject: ObjectType, annotationTypesFromInstance: TypeMap,
+  instance: InstanceElement): void => {
+  const transformAnnotationValue = (values: Values, annotationType: ObjectType):
+    Values | undefined => {
+    values[INSTANCE_FULL_NAME_FIELD] = [apiName(instance), values[INSTANCE_FULL_NAME_FIELD]]
+      .join(API_NAME_SEPERATOR)
+    return transform(values, annotationType, transformPrimitive)
+  }
+
+  Object.assign(customObject.annotationTypes, annotationTypesFromInstance)
+
+  Object.assign(customObject.annotations,
+    ...Object.entries(instance.value)
+      .filter(([k, _v]) => Object.keys(annotationTypesFromInstance).includes(k))
+      .map(([k, v]) => {
+        const annotationType = customObject.annotationTypes[k] as ObjectType
+        const transformedValue = _.isArray(v)
+          ? v.map(innerValue => transformAnnotationValue(innerValue, annotationType))
+            .filter(innerValue => !_.isUndefined(innerValue))
+          : transformAnnotationValue(v, annotationType) || {}
+        return { [k]: transformedValue }
+      }))
 }
 
 const mergeCustomObjectWithInstance = (
-  customObject: ObjectType,
-  fieldNameToFieldAnnotations: Record<string, Values>,
-  customObjectName: string
+  customObject: ObjectType, fieldNameToFieldAnnotations: Record<string, Values>,
+  instance: InstanceElement, annotationTypesFromInstance: TypeMap
 ): void => {
   _(customObject.fields).forEach(field => {
     Object.assign(field.annotations, transformFieldAnnotations(
       fieldNameToFieldAnnotations[apiName(field, true)] || {},
-      customObjectName
+      apiName(instance)
     ))
   })
+  if (customObject.annotations[API_NAME]) {
+    // assigning annotations only to the "main" ObjectType
+    transformObjectAnnotations(customObject, annotationTypesFromInstance, instance)
+  }
 }
 
 const createObjectTypeFromInstance = (instance: InstanceElement): ObjectType => {
@@ -288,7 +323,8 @@ const fetchSObjects = async (client: SalesforceClient):
 
 const createCustomObjectTypesFromSObjectsAndInstances = (
   sObjects: DescribeSObjectResult[],
-  instances: Record<string, InstanceElement>
+  instances: Record<string, InstanceElement>,
+  annotationTypesFromInstance: TypeMap
 ): ObjectType[] =>
   _.flatten(sObjects.map(({ name, label, custom, fields }) => {
     const objects = createSObjectTypes(name, label, custom, fields)
@@ -298,9 +334,7 @@ const createCustomObjectTypesFromSObjectsAndInstances = (
         .fromPairs()
         .value()
       objects.forEach(obj => mergeCustomObjectWithInstance(
-        obj,
-        fieldNameToFieldAnnotations,
-        name
+        obj, fieldNameToFieldAnnotations, instances[name], annotationTypesFromInstance
       ))
     }
     return objects
@@ -326,9 +360,69 @@ const filterCreator: FilterCreator = ({ client }) => ({
       .fromPairs()
       .value()
 
+    const annotationTypesToMergeFromInstance = (): TypeMap => {
+      const annotationTypesFromInstance = _(customObjectAnnotationTypeIds)
+        .entries()
+        .map(([name, elemID]) => [name, findObjectType(elements, elemID) as ObjectType])
+        .fromPairs()
+        .value()
+      // Fix some annotationTypes definitions
+      if (annotationTypesFromInstance[CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS]) {
+        annotationTypesFromInstance[CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS].fields.columns
+          .isList = true
+        annotationTypesFromInstance[CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS].fields.filters
+          .isList = true
+        annotationTypesFromInstance[CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS].fields.filters.type.fields
+          .operation = new Field(
+            annotationTypesFromInstance[CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS].fields.filters.type.elemID, 'operation',
+            BuiltinTypes.STRING, {
+              [CORE_ANNOTATIONS.RESTRICTION]: { [CORE_ANNOTATIONS.ENFORCE_VALUE]: true },
+              [CORE_ANNOTATIONS.VALUES]: [
+                'equals', 'notEqual', 'lessThan', 'greaterThan', 'lessOrEqual',
+                'greaterOrEqual', 'contains', 'notContain', 'startsWith',
+                'includes', 'excludes', 'within',
+              ],
+            },
+          )
+        // eslint-disable-next-line @typescript-eslint/camelcase
+        annotationTypesFromInstance[CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS].fields.filter_scope = new
+        Field(
+          customObjectAnnotationTypeIds[CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS], 'filter_scope',
+          BuiltinTypes.STRING, {
+            [CORE_ANNOTATIONS.RESTRICTION]: { [CORE_ANNOTATIONS.ENFORCE_VALUE]: true },
+            [CORE_ANNOTATIONS.VALUES]: ['Everything', 'Mine',
+              'MineAndMyGroups', 'Queue', 'Delegated', 'MyTerritory', 'MyTeamTerritory', 'Team'],
+          }
+        )
+      }
+      if (annotationTypesFromInstance[CUSTOM_OBJECT_ANNOTATIONS.FIELD_SETS]) {
+        annotationTypesFromInstance[CUSTOM_OBJECT_ANNOTATIONS.FIELD_SETS].fields.available_fields
+          .isList = true
+        annotationTypesFromInstance[CUSTOM_OBJECT_ANNOTATIONS.FIELD_SETS].fields.displayed_fields
+          .isList = true
+      }
+      if (annotationTypesFromInstance[CUSTOM_OBJECT_ANNOTATIONS.COMPACT_LAYOUTS]) {
+        annotationTypesFromInstance[CUSTOM_OBJECT_ANNOTATIONS.COMPACT_LAYOUTS].fields.fields
+          .isList = true
+      }
+      if (annotationTypesFromInstance[CUSTOM_OBJECT_ANNOTATIONS.WEB_LINKS]) {
+        // eslint-disable-next-line @typescript-eslint/camelcase
+        annotationTypesFromInstance[CUSTOM_OBJECT_ANNOTATIONS.WEB_LINKS].fields.display_type = new
+        Field(
+          customObjectAnnotationTypeIds[CUSTOM_OBJECT_ANNOTATIONS.WEB_LINKS], 'display_type',
+          BuiltinTypes.STRING, {
+            [CORE_ANNOTATIONS.RESTRICTION]: { [CORE_ANNOTATIONS.ENFORCE_VALUE]: true },
+            [CORE_ANNOTATIONS.VALUES]: ['link', 'button', 'massActionButton'],
+          }
+        )
+      }
+      return annotationTypesFromInstance
+    }
+
     const customObjectTypes = createCustomObjectTypesFromSObjectsAndInstances(
       _.flatten(Object.values(sObjects)),
-      customObjectInstances
+      customObjectInstances,
+      annotationTypesToMergeFromInstance(),
     )
 
     const objectTypeNames = new Set(Object.keys(sObjects))
@@ -344,6 +438,58 @@ const filterCreator: FilterCreator = ({ client }) => ({
     customObjectTypes
       .filter(obj => !objectTypeFullNames.has(id(obj)))
       .forEach(elem => elements.push(elem))
+  },
+
+  onUpdate: async (before: Element, after: Element, changes: ReadonlyArray<Change>):
+    Promise<(SaveResult| UpsertResult)[]> => {
+    if (!(isObjectType(before) && isObjectType(after)
+      && changes.some(c => isObjectType(getChangeElement(c))))) {
+      return []
+    }
+    const handleObjectAnnotationChanges = async (annotationName: string, typeName: string):
+      Promise<(SaveResult | UpsertResult)[][]> => {
+      const getFullNameToAnnotation = (obj: ObjectType): Record<string, Value> =>
+        _(makeArray(obj.annotations[annotationName]))
+          .map(annotation => [annotation[INSTANCE_FULL_NAME_FIELD], annotation])
+          .fromPairs()
+          .value()
+
+      const nameToBeforeAnnotation = getFullNameToAnnotation(before)
+      const nameToAfterAnnotation = getFullNameToAnnotation(after)
+      if (_.isEqual(nameToBeforeAnnotation, nameToAfterAnnotation)) {
+        return Promise.resolve([])
+      }
+      return Promise.all([
+        client.upsert(typeName,
+          Object.entries(nameToAfterAnnotation)
+            .filter(([fullName, _val]) => _.isUndefined(nameToBeforeAnnotation[fullName]))
+            .map(([fullName, val]) => toMetadataInfo(fullName, val))),
+        client.update(typeName,
+          Object.entries(nameToAfterAnnotation)
+            .filter(([fullName, val]) => nameToBeforeAnnotation[fullName]
+              && !_.isEqual(val, nameToBeforeAnnotation[fullName]))
+            .map(([fullName, val]) => toMetadataInfo(fullName, val))),
+        client.delete(typeName,
+          Object.keys(nameToBeforeAnnotation)
+            .filter(fullName => _.isUndefined(nameToAfterAnnotation[fullName]))),
+      ])
+    }
+
+    return _.flatten(_.flatten((await Promise.all(Object.entries(customObjectAnnotationTypeIds)
+      .map(([annotationName, elemID]) =>
+        handleObjectAnnotationChanges(annotationName,
+          sfCase(elemID.name)))))))
+  },
+
+  onAdd: async (after: Element): Promise<UpsertResult[]> => {
+    if (!(isObjectType(after))) {
+      return []
+    }
+    return _.flatten((await Promise.all(Object.entries(customObjectAnnotationTypeIds)
+      .map(([annotationName, elemID]) =>
+        client.upsert(sfCase(elemID.name),
+          makeArray(after.annotations[annotationName])
+            .map(val => toMetadataInfo(val[INSTANCE_FULL_NAME_FIELD], val)))))))
   },
 })
 

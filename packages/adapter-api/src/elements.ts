@@ -512,19 +512,31 @@ export const CORE_ANNOTATIONS = {
   REQUIRED: '_required',
   VALUES: '_values',
   RESTRICTION: '_restriction',
+}
+
+export const RESTRICTION_ANNOTATIONS = {
   ENFORCE_VALUE: 'enforce_value',
   MIN: 'min',
   MAX: 'max',
 }
 
+const restrictionElemID = new ElemID('', 'restriction')
 export const BuiltinAnnotationTypes: Record<string, Type> = {
   [CORE_ANNOTATIONS.DEFAULT]: BuiltinTypes.STRING,
   [CORE_ANNOTATIONS.REQUIRED]: BuiltinTypes.BOOLEAN,
   [CORE_ANNOTATIONS.VALUES]: BuiltinTypes.STRING,
-  [CORE_ANNOTATIONS.RESTRICTION]: new ObjectType({ elemID: new ElemID('', 'restriction'),
-    fields: { [CORE_ANNOTATIONS.ENFORCE_VALUE]: new Field(
-      new ElemID('', 'restriction'), CORE_ANNOTATIONS.ENFORCE_VALUE, BuiltinTypes.BOOLEAN
-    ) } }),
+  [CORE_ANNOTATIONS.RESTRICTION]: new ObjectType({ elemID: restrictionElemID,
+    fields: {
+      [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: new Field(
+        restrictionElemID, RESTRICTION_ANNOTATIONS.ENFORCE_VALUE, BuiltinTypes.BOOLEAN
+      ),
+      [RESTRICTION_ANNOTATIONS.MIN]: new Field(
+        restrictionElemID, RESTRICTION_ANNOTATIONS.MIN, BuiltinTypes.NUMBER
+      ),
+      [RESTRICTION_ANNOTATIONS.MAX]: new Field(
+        restrictionElemID, RESTRICTION_ANNOTATIONS.MAX, BuiltinTypes.NUMBER
+      ),
+    } }),
 }
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */

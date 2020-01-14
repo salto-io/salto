@@ -3,6 +3,7 @@ import { types } from '@salto/lowerdash'
 import {
   Element, isObjectType, isInstanceElement, Type, InstanceElement, Field, PrimitiveTypes,
   isPrimitiveType, Value, ElemID, CORE_ANNOTATIONS, SaltoElementError, SaltoErrorSeverity, Values,
+  RESTRICTION_ANNOTATIONS,
 } from 'adapter-api'
 import { makeArray } from '@salto/lowerdash/dist/src/collections/array'
 import { UnresolvedReference, resolve, CircularReference } from './expressions'
@@ -77,10 +78,9 @@ export class InvalidValueRangeValidationError extends ValidationError {
   readonly maxValue?: number
 
   static formatExpectedValue(minValue: number | undefined, maxValue: number | undefined): string {
-    const minErrStr: string = !_.isUndefined(minValue) ? `bigger than ${minValue}` : ''
-    const maxErrStr: string = !_.isUndefined(maxValue) ? `lower than ${maxValue}` : ''
-    return minErrStr + (!_.isEmpty(minErrStr) && !_.isEmpty(maxErrStr)
-      ? ` and ${maxErrStr}` : maxErrStr)
+    const minErrStr: string = _.isUndefined(minValue) ? '' : `bigger than ${minValue}`
+    const maxErrStr: string = _.isUndefined(maxValue) ? '' : `smaller than ${maxValue}`
+    return _.join([minErrStr, maxErrStr], ' and ')
   }
 
   constructor(
@@ -135,45 +135,48 @@ export class CircularReferenceValidationError extends ValidationError {
 const validateAnnotationsValue = (
   elemID: ElemID, value: Value, annotations: Values, type: Type
 ): ValidationError[] | undefined => {
+  const shouldEnforceValue = (): boolean => {
+    const restriction = annotations[CORE_ANNOTATIONS.RESTRICTION]
+    // enforce_value is true by default
+    return (restriction && restriction[RESTRICTION_ANNOTATIONS.ENFORCE_VALUE] === true)
+      || (annotations[CORE_ANNOTATIONS.VALUES]
+        && !(restriction && restriction[RESTRICTION_ANNOTATIONS.ENFORCE_VALUE] === false))
+  }
+
+  const shouldEnforceValueRange = (): boolean => {
+    const restriction = annotations[CORE_ANNOTATIONS.RESTRICTION]
+    return restriction
+      && (restriction[RESTRICTION_ANNOTATIONS.MIN] || restriction[RESTRICTION_ANNOTATIONS.MAX])
+  }
+
   const validateRestrictionsValue = (val: Value):
     ValidationError[] => {
-    const restrictionValues = makeArray(annotations[CORE_ANNOTATIONS.VALUES])
-
     // When value is array we iterate (validate) each element
     if (_.isArray(val)) {
       return _.flatten(val.map(v => validateRestrictionsValue(v)))
     }
 
     // The 'real' validation: is value is one of restrictionValues
-    if (!restrictionValues.some(i => _.isEqual(i, val))) {
-      return [
-        new InvalidValueValidationError(
-          { elemID, value, fieldName: elemID.name, expectedValue: restrictionValues }
-        ),
-      ]
+    if (shouldEnforceValue()) {
+      const restrictionValues = makeArray(annotations[CORE_ANNOTATIONS.VALUES])
+      if (!restrictionValues.some(i => _.isEqual(i, val))) {
+        return [
+          new InvalidValueValidationError(
+            { elemID, value, fieldName: elemID.name, expectedValue: restrictionValues }
+          ),
+        ]
+      }
     }
-
-    return []
-  }
-
-  const validateRestrictionsValueRange = (val: Value):
-    ValidationError[] => {
-    const restriction = annotations[CORE_ANNOTATIONS.RESTRICTION]
-    const minValue = restriction[CORE_ANNOTATIONS.MIN]
-    const maxValue = restriction[CORE_ANNOTATIONS.MAX]
-
-    // When value is array we iterate (validate) each element
-    if (_.isArray(val)) {
-      return _.flatten(val.map(v => validateRestrictionsValueRange(v)))
-    }
-
-    // The 'real' validation: is value in range
-    if ((minValue && (val < minValue)) || (maxValue && (val > maxValue))) {
-      return [
-        new InvalidValueRangeValidationError(
-          { elemID, value, fieldName: elemID.name, minValue, maxValue }
-        ),
-      ]
+    if (shouldEnforceValueRange()) {
+      const minValue = annotations[CORE_ANNOTATIONS.RESTRICTION][RESTRICTION_ANNOTATIONS.MIN]
+      const maxValue = annotations[CORE_ANNOTATIONS.RESTRICTION][RESTRICTION_ANNOTATIONS.MAX]
+      if ((minValue && (val < minValue)) || (maxValue && (val > maxValue))) {
+        return [
+          new InvalidValueRangeValidationError(
+            { elemID, value, fieldName: elemID.name, minValue, maxValue }
+          ),
+        ]
+      }
     }
 
     return []
@@ -188,29 +191,11 @@ const validateAnnotationsValue = (
     return validateRequiredValue()
   }
 
-  const shouldEnforceValue = (): boolean => {
-    const restriction = annotations[CORE_ANNOTATIONS.RESTRICTION]
-    // enforce_value is true by default
-    return (restriction && restriction[CORE_ANNOTATIONS.ENFORCE_VALUE] === true)
-      || (annotations[CORE_ANNOTATIONS.VALUES]
-        && !(restriction && restriction[CORE_ANNOTATIONS.ENFORCE_VALUE] === false))
-  }
-
-  const shouldEnforceValueRange = (): boolean => {
-    const restriction = annotations[CORE_ANNOTATIONS.RESTRICTION]
-    return restriction
-      && (restriction[CORE_ANNOTATIONS.MIN] || restriction[CORE_ANNOTATIONS.MAX])
-  }
-
-  // Checking _values annotation
-  if (isPrimitiveType(type) && shouldEnforceValue()) {
+  // Checking restrictions
+  if (isPrimitiveType(type) && (shouldEnforceValue() || shouldEnforceValueRange())) {
     return validateRestrictionsValue(value)
   }
 
-  // Checking value range
-  if (isPrimitiveType(type) && shouldEnforceValueRange()) {
-    return validateRestrictionsValueRange(value)
-  }
   return undefined
 }
 

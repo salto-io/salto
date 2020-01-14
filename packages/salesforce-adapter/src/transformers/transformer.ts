@@ -7,7 +7,7 @@ import {
   Type, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values, Value, Field as TypeField,
   BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter,
   ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER,
-  CORE_ANNOTATIONS, PrimitiveValue,
+  CORE_ANNOTATIONS, PrimitiveValue, RESTRICTION_ANNOTATIONS,
 } from 'adapter-api'
 import { collections } from '@salto/lowerdash'
 import { CustomObject, CustomField, ValueSettings, FilterItem, PicklistValue } from '../client/types'
@@ -267,7 +267,7 @@ export class Types {
     elemID: Types.rollupSummaryOperationTypeElemID,
     primitive: PrimitiveTypes.STRING,
     annotations: {
-      [CORE_ANNOTATIONS.RESTRICTION]: { [CORE_ANNOTATIONS.ENFORCE_VALUE]: true },
+      [CORE_ANNOTATIONS.RESTRICTION]: { [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: true },
       [CORE_ANNOTATIONS.VALUES]: ['count', 'min', 'max', 'sum'],
     },
   })
@@ -279,7 +279,7 @@ export class Types {
     elemID: Types.rollupSummaryFilterOperationTypeElemID,
     primitive: PrimitiveTypes.STRING,
     annotations: {
-      [CORE_ANNOTATIONS.RESTRICTION]: { [CORE_ANNOTATIONS.ENFORCE_VALUE]: true },
+      [CORE_ANNOTATIONS.RESTRICTION]: { [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: true },
       [CORE_ANNOTATIONS.VALUES]: [
         'equals', 'notEqual', 'lessThan', 'greaterThan', 'lessOrEqual',
         'greaterOrEqual', 'contains', 'notContain', 'startsWith',
@@ -317,7 +317,7 @@ export class Types {
     elemID: Types.encryptedTextMaskTypeTypeElemID,
     primitive: PrimitiveTypes.STRING,
     annotations: {
-      [CORE_ANNOTATIONS.RESTRICTION]: { [CORE_ANNOTATIONS.ENFORCE_VALUE]: true },
+      [CORE_ANNOTATIONS.RESTRICTION]: { [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: true },
       [CORE_ANNOTATIONS.VALUES]: ['all', 'creditCard', 'ssn', 'lastFour', 'sin', 'nino'],
     },
   })
@@ -329,7 +329,7 @@ export class Types {
     elemID: Types.encryptedTextMaskCharTypeElemID,
     primitive: PrimitiveTypes.STRING,
     annotations: {
-      [CORE_ANNOTATIONS.RESTRICTION]: { [CORE_ANNOTATIONS.ENFORCE_VALUE]: true },
+      [CORE_ANNOTATIONS.RESTRICTION]: { [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: true },
       [CORE_ANNOTATIONS.VALUES]: ['X', 'asterisk'],
     },
   })
@@ -340,7 +340,7 @@ export class Types {
     elemID: Types.BusinessStatusTypeElemID,
     primitive: PrimitiveTypes.STRING,
     annotations: {
-      [CORE_ANNOTATIONS.RESTRICTION]: { [CORE_ANNOTATIONS.ENFORCE_VALUE]: true },
+      [CORE_ANNOTATIONS.RESTRICTION]: { [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: true },
       [CORE_ANNOTATIONS.VALUES]: ['Active', 'DeprecateCandidate', 'Hidden'],
     },
   })
@@ -351,10 +351,21 @@ export class Types {
     elemID: Types.SecurityClassificationTypeElemID,
     primitive: PrimitiveTypes.STRING,
     annotations: {
-      [CORE_ANNOTATIONS.RESTRICTION]: { [CORE_ANNOTATIONS.ENFORCE_VALUE]: true },
+      [CORE_ANNOTATIONS.RESTRICTION]: { [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: true },
       [CORE_ANNOTATIONS.VALUES]: [
         'Public', 'Internal', 'Confidential', 'Restricted', 'MissionCritical',
       ],
+    },
+  })
+
+  private static LengthTypeElemID = new ElemID(SALESFORCE, FIELD_ANNOTATIONS.LENGTH)
+
+  private static LengthType = new PrimitiveType({
+    elemID: Types.LengthTypeElemID,
+    primitive: PrimitiveTypes.NUMBER,
+    annotations: {
+      [CORE_ANNOTATIONS.RESTRICTION]: { [RESTRICTION_ANNOTATIONS.MIN]: 1,
+        [RESTRICTION_ANNOTATIONS.MAX]: 100 },
     },
   })
 
@@ -381,7 +392,7 @@ export class Types {
         [FIELD_ANNOTATIONS.UNIQUE]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.EXTERNAL_ID]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.CASE_SENSITIVE]: BuiltinTypes.BOOLEAN,
-        [FIELD_ANNOTATIONS.LENGTH]: BuiltinTypes.NUMBER,
+        [FIELD_ANNOTATIONS.LENGTH]: Types.LengthType,
       },
     }),
     number: new PrimitiveType({
@@ -814,7 +825,7 @@ export const getValueTypeFieldElement = (parentID: ElemID, field: ValueTypeField
     if (field.picklistValues.length < MAX_METADATA_RESTRICTION_VALUES) {
       annotations[CORE_ANNOTATIONS.VALUES] = _.sortedUniq(field
         .picklistValues.map(val => val.value).sort())
-      annotations[CORE_ANNOTATIONS.RESTRICTION] = { [CORE_ANNOTATIONS.ENFORCE_VALUE]: false }
+      annotations[CORE_ANNOTATIONS.RESTRICTION] = { [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: false }
     }
     const defaults = field.picklistValues
       .filter(val => val.defaultValue)

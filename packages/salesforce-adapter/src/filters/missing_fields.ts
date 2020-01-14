@@ -1,6 +1,7 @@
 import _ from 'lodash'
 import {
-  isObjectType, Field, Values, Type, isType, BuiltinTypes, ElemID, Element, CORE_ANNOTATIONS,
+  isObjectType, Field, Values, Type, isType, BuiltinTypes, ElemID, Element,
+  CORE_ANNOTATIONS, RESTRICTION_ANNOTATIONS,
 } from 'adapter-api'
 import { logger } from '@salto/logging'
 import { FilterCreator } from '../filter'
@@ -30,7 +31,7 @@ const allMissingFields: {id: ElemID; fields: MissingField[]}[] = [
             'contains', 'notContain', 'startsWith', 'includes', 'excludes', 'within',
           ],
           [CORE_ANNOTATIONS.RESTRICTION]: {
-            [CORE_ANNOTATIONS.ENFORCE_VALUE]: true,
+            [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: true,
           },
         },
       },

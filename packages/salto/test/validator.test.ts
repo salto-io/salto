@@ -2,6 +2,7 @@ import _ from 'lodash'
 import {
   ObjectType, ElemID, Field, BuiltinTypes, InstanceElement, CORE_ANNOTATIONS,
   ReferenceExpression, PrimitiveType, PrimitiveTypes, Field as TypeField,
+  RESTRICTION_ANNOTATIONS,
 } from 'adapter-api'
 import { validateElements, InvalidValueValidationError,
   InvalidValueRangeValidationError } from '../src/core/validator'
@@ -29,7 +30,7 @@ describe('Elements validation', () => {
     elemID: new ElemID('salto', 'simple', 'type', 'restrictedType'),
     primitive: PrimitiveTypes.STRING,
     annotations: {
-      [CORE_ANNOTATIONS.RESTRICTION]: { [CORE_ANNOTATIONS.ENFORCE_VALUE]: true },
+      [CORE_ANNOTATIONS.RESTRICTION]: { [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: true },
       [CORE_ANNOTATIONS.VALUES]: ['val1', 'val2'],
     },
   })
@@ -38,7 +39,9 @@ describe('Elements validation', () => {
     elemID: new ElemID('salto', 'simple', 'type', 'restrictedRangeType'),
     primitive: PrimitiveTypes.NUMBER,
     annotations: {
-      [CORE_ANNOTATIONS.RESTRICTION]: { [CORE_ANNOTATIONS.MIN]: 1, [CORE_ANNOTATIONS.MAX]: 10 },
+      [CORE_ANNOTATIONS.RESTRICTION]: {
+        [RESTRICTION_ANNOTATIONS.MIN]: 1, [RESTRICTION_ANNOTATIONS.MAX]: 10,
+      },
     },
   })
 
@@ -46,7 +49,7 @@ describe('Elements validation', () => {
     elemID: new ElemID('salto', 'simple', 'type', 'restrictedRangeNoMinType'),
     primitive: PrimitiveTypes.NUMBER,
     annotations: {
-      [CORE_ANNOTATIONS.RESTRICTION]: { [CORE_ANNOTATIONS.MAX]: 10 },
+      [CORE_ANNOTATIONS.RESTRICTION]: { [RESTRICTION_ANNOTATIONS.MAX]: 10 },
     },
   })
 
@@ -54,7 +57,7 @@ describe('Elements validation', () => {
     elemID: new ElemID('salto', 'simple', 'type', 'restrictedRangeNoMaxType'),
     primitive: PrimitiveTypes.NUMBER,
     annotations: {
-      [CORE_ANNOTATIONS.RESTRICTION]: { [CORE_ANNOTATIONS.MIN]: 1 },
+      [CORE_ANNOTATIONS.RESTRICTION]: { [RESTRICTION_ANNOTATIONS.MIN]: 1 },
     },
   })
 
@@ -88,7 +91,10 @@ describe('Elements validation', () => {
         ],
       }),
       restrictNumber: new Field(nestedElemID, 'restrictNumber', BuiltinTypes.NUMBER, {
-        [CORE_ANNOTATIONS.RESTRICTION]: { [CORE_ANNOTATIONS.MIN]: 1, [CORE_ANNOTATIONS.MAX]: 10 },
+        [CORE_ANNOTATIONS.RESTRICTION]: {
+          [RESTRICTION_ANNOTATIONS.MIN]: 1,
+          [RESTRICTION_ANNOTATIONS.MAX]: 10,
+        },
       }),
       restrictedAnnotation: new Field(nestedElemID, 'restrictedAnnotation', restrictedAnnotation, {
         temp: 'val1',
@@ -376,7 +382,9 @@ describe('Elements validation', () => {
         it('should succeed when restriction values are not enforced even if the value not in _values', () => {
           const extType = _.cloneDeep(nestedType)
           extType.fields.restrictStr
-            .annotations[CORE_ANNOTATIONS.RESTRICTION] = { [CORE_ANNOTATIONS.ENFORCE_VALUE]: false }
+            .annotations[CORE_ANNOTATIONS.RESTRICTION] = {
+              [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: false,
+            }
           extType.fields.restrictStr.annotations[CORE_ANNOTATIONS.VALUES] = ['val1', 'val2']
           extInst.value.restrictStr = 'wrongValue'
           extInst.type = extType
@@ -395,7 +403,9 @@ describe('Elements validation', () => {
           const extType = _.cloneDeep(nestedType)
           delete extType.fields.restrictStr.annotations[CORE_ANNOTATIONS.VALUES]
           extType.fields.restrictStr
-            .annotations[CORE_ANNOTATIONS.RESTRICTION] = { [CORE_ANNOTATIONS.ENFORCE_VALUE]: true }
+            .annotations[CORE_ANNOTATIONS.RESTRICTION] = {
+              [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: true,
+            }
           extInst.type = extType
           extInst.value.restrictStr = 'str'
           const errors = validateElements([extInst])
@@ -427,7 +437,7 @@ describe('Elements validation', () => {
           expect(errors).toHaveLength(1)
           expect(errors[0]).toBeInstanceOf(InvalidValueRangeValidationError)
           expect(errors[0].message).toMatch('Value "0" is not valid')
-          expect(errors[0].message).toMatch('bigger than 1 and lower than 10')
+          expect(errors[0].message).toMatch('bigger than 1 and smaller than 10')
           expect(errors[0].elemID).toEqual(
             extInst.elemID.createNestedID('restrictNumber')
           )
@@ -455,7 +465,9 @@ describe('Elements validation', () => {
           const extType = _.cloneDeep(nestedType)
           // eslint-disable-next-line @typescript-eslint/camelcase
           extType.fields.restrictStr
-            .annotations[CORE_ANNOTATIONS.RESTRICTION] = { [CORE_ANNOTATIONS.ENFORCE_VALUE]: true }
+            .annotations[CORE_ANNOTATIONS.RESTRICTION] = {
+              [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: true,
+            }
           extInst.type = extType
           testValuesAreNotListedButEnforced()
         })
@@ -490,20 +502,20 @@ describe('Elements validation', () => {
 
           expect(errors[0]).toBeInstanceOf(InvalidValueRangeValidationError)
           expect(errors[0].message).toMatch('Value "11" is not valid')
-          expect(errors[0].message).toMatch('bigger than 1 and lower than 10')
+          expect(errors[0].message).toMatch('bigger than 1 and smaller than 10')
           expect(errors[0].elemID).toEqual(
             extType.elemID.createNestedID('field', 'restrictedAnnotation', 'range')
           )
 
           expect(errors[1]).toBeInstanceOf(InvalidValueRangeValidationError)
           expect(errors[1].message).toMatch('Value "11" is not valid')
-          expect(errors[1].message).toMatch('lower than 10')
+          expect(errors[1].message).toMatch('smaller than 10')
           expect(errors[1].elemID).toEqual(
             extType.elemID.createNestedID('field', 'restrictedAnnotation', 'rangeNoMin')
           )
         })
 
-        it('should return an error when annotations value is lower than min restriction', () => {
+        it('should return an error when annotations value is smaller than min restriction', () => {
           const extType = _.cloneDeep(nestedType)
           extType.fields.restrictedAnnotation.annotations.range = 0
           extType.fields.restrictedAnnotation.annotations.rangeNoMax = 0
@@ -512,7 +524,7 @@ describe('Elements validation', () => {
 
           expect(errors[0]).toBeInstanceOf(InvalidValueRangeValidationError)
           expect(errors[0].message).toMatch('Value "0" is not valid')
-          expect(errors[0].message).toMatch('bigger than 1 and lower than 10')
+          expect(errors[0].message).toMatch('bigger than 1 and smaller than 10')
           expect(errors[0].elemID).toEqual(
             extType.elemID.createNestedID('field', 'restrictedAnnotation', 'range')
           )

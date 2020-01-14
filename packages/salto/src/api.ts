@@ -193,7 +193,7 @@ export const describeElement = async (
   findElement(searchWords, workspace.elements)
 
 const getTypeFromState = async (ws: Workspace, typeId: string): Promise<Element> => {
-  const type = ws.state.get(ElemID.fromFullName(typeId))
+  const type = await ws.state.get(ElemID.fromFullName(typeId))
   if (!type) {
     throw new Error(`Couldn't find the type you are looking for: ${typeId}. Have you run salto fetch yet?`)
   }

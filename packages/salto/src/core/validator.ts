@@ -3,6 +3,7 @@ import { types } from '@salto/lowerdash'
 import {
   Element, isObjectType, isInstanceElement, Type, InstanceElement, Field, PrimitiveTypes,
   isPrimitiveType, Value, ElemID, CORE_ANNOTATIONS, SaltoElementError, SaltoErrorSeverity, Values,
+  RESTRICTION_ANNOTATIONS,
 } from 'adapter-api'
 import { makeArray } from '@salto/lowerdash/dist/src/collections/array'
 import { UnresolvedReference, resolve, CircularReference } from './expressions'
@@ -70,6 +71,35 @@ export class InvalidValueValidationError extends ValidationError {
   }
 }
 
+export class InvalidValueRangeValidationError extends ValidationError {
+  readonly value: Value
+  readonly fieldName: string
+  readonly minValue?: number
+  readonly maxValue?: number
+
+  static formatExpectedValue(minValue: number | undefined, maxValue: number | undefined): string {
+    const minErrStr: string = _.isUndefined(minValue) ? '' : `bigger than ${minValue}`
+    const maxErrStr: string = _.isUndefined(maxValue) ? '' : `smaller than ${maxValue}`
+    return _.join([minErrStr, maxErrStr], ' and ')
+  }
+
+  constructor(
+    { elemID, value, fieldName, minValue, maxValue }:
+      { elemID: ElemID; value: Value; fieldName: string; minValue?: number; maxValue?: number }
+  ) {
+    super({
+      elemID,
+      error: `Value "${value}" is not valid for field ${fieldName}`
+        + ` expected to be ${InvalidValueRangeValidationError.formatExpectedValue(minValue, maxValue)}`,
+      severity: 'Warning',
+    })
+    this.value = value
+    this.fieldName = fieldName
+    this.minValue = minValue
+    this.maxValue = maxValue
+  }
+}
+
 export class MissingRequiredFieldValidationError extends ValidationError {
   readonly fieldName: string
 
@@ -105,25 +135,46 @@ export class CircularReferenceValidationError extends ValidationError {
 const validateAnnotationsValue = (
   elemID: ElemID, value: Value, annotations: Values, type: Type
 ): ValidationError[] | undefined => {
+  const shouldEnforceValue = (): boolean =>
+    annotations[CORE_ANNOTATIONS.RESTRICTION]?.[RESTRICTION_ANNOTATIONS.ENFORCE_VALUE] !== false
+
   const validateRestrictionsValue = (val: Value):
     ValidationError[] => {
-    const restrictionValues = makeArray(annotations[CORE_ANNOTATIONS.VALUES])
-
     // When value is array we iterate (validate) each element
     if (_.isArray(val)) {
       return _.flatten(val.map(v => validateRestrictionsValue(v)))
     }
 
-    // The 'real' validation: is value is one of restrictionValues
-    if (!restrictionValues.some(i => _.isEqual(i, val))) {
-      return [
-        new InvalidValueValidationError(
-          { elemID, value, fieldName: elemID.name, expectedValue: restrictionValues }
-        ),
-      ]
+    const validateValueInsideRange = (): ValidationError[] => {
+      const minValue = annotations[CORE_ANNOTATIONS.RESTRICTION]?.[RESTRICTION_ANNOTATIONS.MIN]
+      const maxValue = annotations[CORE_ANNOTATIONS.RESTRICTION]?.[RESTRICTION_ANNOTATIONS.MAX]
+      if ((minValue && (val < minValue)) || (maxValue && (val > maxValue))) {
+        return [
+          new InvalidValueRangeValidationError(
+            { elemID, value, fieldName: elemID.name, minValue, maxValue }
+          ),
+        ]
+      }
+      return []
     }
 
-    return []
+    const validateValueInList = (): ValidationError[] => {
+      const restrictionValues = makeArray(annotations[CORE_ANNOTATIONS.VALUES])
+      if (_.isEmpty(restrictionValues)) {
+        return []
+      }
+      if (!restrictionValues.some(i => _.isEqual(i, val))) {
+        return [
+          new InvalidValueValidationError(
+            { elemID, value, fieldName: elemID.name, expectedValue: restrictionValues }
+          ),
+        ]
+      }
+      return []
+    }
+
+    const restrictionValidations = [validateValueInsideRange, validateValueInList]
+    return _.flatten(restrictionValidations.map(validation => validation()))
   }
 
   const validateRequiredValue = (): ValidationError[] =>
@@ -135,18 +186,11 @@ const validateAnnotationsValue = (
     return validateRequiredValue()
   }
 
-  const shouldEnforceValue = (): boolean => {
-    const restriction = annotations[CORE_ANNOTATIONS.RESTRICTION]
-    // enforce_value is true by default
-    return (restriction && restriction[CORE_ANNOTATIONS.ENFORCE_VALUE] === true)
-      || (annotations[CORE_ANNOTATIONS.VALUES]
-        && !(restriction && restriction[CORE_ANNOTATIONS.ENFORCE_VALUE] === false))
-  }
-
-  // Checking _values annotation
+  // Checking restrictions
   if (isPrimitiveType(type) && shouldEnforceValue()) {
     return validateRestrictionsValue(value)
   }
+
   return undefined
 }
 

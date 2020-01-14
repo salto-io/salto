@@ -3,7 +3,7 @@ import { collections } from '@salto/lowerdash'
 import {
   ADAPTER, Element, Field, ObjectType, ServiceIds, Type, isObjectType, InstanceElement,
   Values, isInstanceElement, ElemID, BuiltinTypes,
-  CORE_ANNOTATIONS, BuiltinAnnotationTypes,
+  CORE_ANNOTATIONS, BuiltinAnnotationTypes, RESTRICTION_ANNOTATIONS,
   transform, TypeMap, getChangeElement, Value, findObjectType, Change,
 } from 'adapter-api'
 import { SalesforceClient } from 'index'
@@ -376,7 +376,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
           .operation = new Field(
             annotationTypesFromInstance[CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS].fields.filters.type.elemID, 'operation',
             BuiltinTypes.STRING, {
-              [CORE_ANNOTATIONS.RESTRICTION]: { [CORE_ANNOTATIONS.ENFORCE_VALUE]: true },
+              [CORE_ANNOTATIONS.RESTRICTION]: { [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: true },
               [CORE_ANNOTATIONS.VALUES]: [
                 'equals', 'notEqual', 'lessThan', 'greaterThan', 'lessOrEqual',
                 'greaterOrEqual', 'contains', 'notContain', 'startsWith',
@@ -389,7 +389,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
         Field(
           customObjectAnnotationTypeIds[CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS], 'filter_scope',
           BuiltinTypes.STRING, {
-            [CORE_ANNOTATIONS.RESTRICTION]: { [CORE_ANNOTATIONS.ENFORCE_VALUE]: true },
+            [CORE_ANNOTATIONS.RESTRICTION]: { [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: true },
             [CORE_ANNOTATIONS.VALUES]: ['Everything', 'Mine',
               'MineAndMyGroups', 'Queue', 'Delegated', 'MyTerritory', 'MyTeamTerritory', 'Team'],
           }
@@ -411,7 +411,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
         Field(
           customObjectAnnotationTypeIds[CUSTOM_OBJECT_ANNOTATIONS.WEB_LINKS], 'display_type',
           BuiltinTypes.STRING, {
-            [CORE_ANNOTATIONS.RESTRICTION]: { [CORE_ANNOTATIONS.ENFORCE_VALUE]: true },
+            [CORE_ANNOTATIONS.RESTRICTION]: { [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: true },
             [CORE_ANNOTATIONS.VALUES]: ['link', 'button', 'massActionButton'],
           }
         )

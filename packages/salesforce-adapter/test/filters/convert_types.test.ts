@@ -1,6 +1,7 @@
 import _ from 'lodash'
 import {
   ObjectType, ElemID, InstanceElement, Element, Field, BuiltinTypes, CORE_ANNOTATIONS,
+  RESTRICTION_ANNOTATIONS,
 } from 'adapter-api'
 import makeFilter from '../../src/filters/convert_types'
 import * as constants from '../../src/constants'
@@ -33,7 +34,7 @@ describe('convert types filter', () => {
       numArray: new Field(mockObjId, 'numArray', BuiltinTypes.NUMBER, {}, true),
       picklist: new Field(mockObjId, 'picklist', BuiltinTypes.STRING,
         { [CORE_ANNOTATIONS.VALUES]: ['a', 'b', 'c'],
-          [CORE_ANNOTATIONS.RESTRICTION]: { [CORE_ANNOTATIONS.ENFORCE_VALUE]: true } }),
+          [CORE_ANNOTATIONS.RESTRICTION]: { [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: true } }),
     },
   })
   const XSI_TYPE = 'xsi_type'

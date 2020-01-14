@@ -4,10 +4,10 @@ import { ParseResultFSCache } from '../../src/workspace/cache'
 import { SourceMap } from '../../src/parser/internal/types'
 import { stat, mkdirp, writeFile, readTextFile } from '../../src/file'
 
-const mockSerializedBPC = `[{"annotationTypes":{},"annotations":{},"elemID":{"adapter":"salesforce","typeName":"dummy","idType":"type","nameParts":[]},"fields":{},"isSettings":false,"className":"ObjectType"}]
+const mockSerializedBPC = `[{"annotationTypes":{},"annotations":{},"elemID":{"adapter":"salesforce","typeName":"dummy","idType":"type","nameParts":[]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"}]
 []
 [["salesforce.dummy",[{"filename":"dummy.bp","start":{"line":1,"col":1,"byte":2},"end":{"line":12,"col":3,"byte":4}}]]]`
-const mockSerializedExternalBPC = `[{"annotationTypes":{},"annotations":{},"elemID":{"adapter":"salesforce","typeName":"external","idType":"type","nameParts":[]},"fields":{},"isSettings":false,"className":"ObjectType"}]
+const mockSerializedExternalBPC = `[{"annotationTypes":{},"annotations":{},"elemID":{"adapter":"salesforce","typeName":"external","idType":"type","nameParts":[]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"}]
 []
 [["salesforce.external",[{"filename":"external.bp","start":{"line":1,"col":1,"byte":2},"end":{"line":12,"col":3,"byte":4}}]]]`
 const mockMaliformedBPC = '[]]'

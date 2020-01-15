@@ -5,7 +5,7 @@ import {
 import { Credentials, validateCredentials, ApiLimitsTooLowError } from '../src/client/client'
 
 const MIN_API_REQUESTS_NEEDED = 500
-const NOT_ENOUGH_API_REQUESTS_SUSPENSION_TIMEOUT = 1000 * 60 * 60 * 6
+const NOT_ENOUGH_API_REQUESTS_SUSPENSION_TIMEOUT = 1000 * 60 * 60
 
 const log = logger(module)
 

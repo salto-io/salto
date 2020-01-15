@@ -3,12 +3,9 @@ import {
   RequestPromise,
 } from 'requestretry'
 import {
-  Form, HubspotMetadata, Workflows,
+  Form, HubspotMetadata, MarketingEmail, Workflows,
 } from './types'
 import Connection from './madku'
-import {
-  OBJECTS_NAMES,
-} from '../constants'
 
 
 export type Credentials = {
@@ -31,6 +28,7 @@ const validateResponse = async (
 
 export default class HubspotClient {
   private conn: Connection
+  private readonly getAllFunctions: Record<string, () => Promise<HubspotMetadata[]>>
 
   constructor(
     { credentials, connection }: HubspotClientOpts
@@ -38,6 +36,12 @@ export default class HubspotClient {
     const apiKeyOptions: ApiOptions = { apiKey: credentials.apiKey }
     this.conn = connection
       || new Hubspot(apiKeyOptions)
+
+    this.getAllFunctions = {
+      form: this.getAllForms,
+      workflows: this.getAllWorkflows,
+      marketingEmail: HubspotClient.getAllMarketingEmail,
+    }
   }
 
   getAllContacts(): RequestPromise {
@@ -45,15 +49,9 @@ export default class HubspotClient {
   }
 
   async getAllInstances(typeName: string): Promise<HubspotMetadata[]> {
-    switch (typeName) {
-      case OBJECTS_NAMES.FORM:
-        return this.getAllForms()
-      case OBJECTS_NAMES.WORKFLOWS:
-        return this.getAllWorkflows()
-      case OBJECTS_NAMES.MARKETINGEMAIL: // TODO: change when Madkudu will support marketingEmail
-        return []
-      default:
-        break
+    const getAllFunction = this.getAllFunctions[typeName]
+    if (getAllFunction) {
+      return getAllFunction.apply(this)
     }
 
     throw new Error(`Unknown HubSpot type: ${typeName}.`)
@@ -71,6 +69,10 @@ export default class HubspotClient {
     await validateResponse(resp)
 
     return resp.workflows
+  }
+
+  private static async getAllMarketingEmail(): Promise<MarketingEmail[]> {
+    return []
   }
 
 

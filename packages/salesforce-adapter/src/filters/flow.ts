@@ -1,5 +1,5 @@
 import {
-  Element, CORE_ANNOTATIONS, ElemID, findObjectType,
+  Element, CORE_ANNOTATIONS, ElemID, findObjectType, RESTRICTION_ANNOTATIONS,
 } from 'adapter-api'
 import { FilterWith } from '../filter'
 import { SALESFORCE } from '../constants'
@@ -20,7 +20,9 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
     const flowMetadataValue = findObjectType(elements, FLOW_METADATA_TYPE_ID)
     if (flowMetadataValue && flowMetadataValue.fields.name) {
       flowMetadataValue.fields.name
-        .annotations[CORE_ANNOTATIONS.RESTRICTION] = { [CORE_ANNOTATIONS.ENFORCE_VALUE]: false }
+        .annotations[CORE_ANNOTATIONS.RESTRICTION] = {
+          [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: false,
+        }
     }
   },
 })

@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import {
   ObjectType, ElemID, InstanceElement, Field, Value, Element, Values, BuiltinTypes,
-  isInstanceElement, ReferenceExpression, CORE_ANNOTATIONS,
+  isInstanceElement, ReferenceExpression, CORE_ANNOTATIONS, RESTRICTION_ANNOTATIONS,
 } from 'adapter-api'
 import { MetadataInfo, PicklistEntry, RetrieveResult } from 'jsforce'
 import { collections } from '@salto/lowerdash'
@@ -453,7 +453,7 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(flow.fields.is_template.type).toEqual(BuiltinTypes.BOOLEAN)
       expect(flow.fields.action_calls.type).toEqual(findElements(result, 'flow_action_call')[0])
       expect(flow.fields.process_type
-        .annotations[CORE_ANNOTATIONS.RESTRICTION][CORE_ANNOTATIONS.ENFORCE_VALUE])
+        .annotations[CORE_ANNOTATIONS.RESTRICTION][RESTRICTION_ANNOTATIONS.ENFORCE_VALUE])
         .toEqual(false)
     })
 

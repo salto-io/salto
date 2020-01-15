@@ -1,16 +1,17 @@
-import _ from 'lodash'
+import * as path from 'path'
 import { EditorWorkspace } from '../../src/salto/workspace'
 import { mockWorkspace } from './workspace'
 
 describe('workspace', () => {
   const bpFileName = `${__dirname}/../../../test/salto/test-bps/all.bp`
-  const validate = (workspace: EditorWorkspace, elements: number, bps: number): void => {
-    expect(workspace.elements && workspace.elements.length).toBe(elements)
-    expect(_.keys(workspace.parsedBlueprints).length).toBe(bps)
+  const validate = async (workspace: EditorWorkspace, elements: number):
+  Promise<void> => {
+    const wsElements = await workspace.elements
+    expect(wsElements && wsElements.length).toBe(elements)
   }
   it('should initiate a workspace', async () => {
     const workspace = new EditorWorkspace(await mockWorkspace(bpFileName))
-    validate(workspace, 14, 1)
+    await validate(workspace, 14)
   })
 
   it('should collect errors', async () => {
@@ -36,13 +37,13 @@ describe('workspace', () => {
     await workspace.awaitAllUpdates()
     expect(workspace.elements).toBeDefined()
     expect(workspace.hasErrors()).toBeTruthy()
-    validate(workspace, 14, 1)
+    await validate(workspace, 14)
   })
 
   it('should support file removal', async () => {
     const baseWs = await mockWorkspace(bpFileName)
     const workspace = new EditorWorkspace(baseWs)
-    workspace.removeBlueprints(bpFileName)
+    workspace.removeBlueprints(path.basename(bpFileName))
     await workspace.awaitAllUpdates()
     const removeBlueprintsMock = baseWs.removeBlueprints as jest.Mock
     expect(removeBlueprintsMock.mock.calls[0][0]).toBe('all.bp')
@@ -62,7 +63,7 @@ describe('workspace', () => {
     await workspace.awaitAllUpdates()
     expect(workspace.elements).toBeDefined()
     expect(workspace.hasErrors()).toBeTruthy()
-    validate(workspace, 14, 1)
+    await validate(workspace, 14)
     const lastValid = workspace.getValidCopy()
     if (!lastValid) throw new Error('lastValid not defined')
     expect(lastValid).not.toEqual(workspace)

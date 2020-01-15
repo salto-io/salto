@@ -5,7 +5,7 @@ import { AdditionDiff } from '@salto/dag'
 import { DetailedChange } from '../core/plan'
 import { SourceRange } from '../parser/parse'
 import { dump as saltoDump } from '../parser/dump'
-import { BP_EXTENSION } from './blueprint'
+import { BP_EXTENSION } from './blueprints_store'
 
 type DetailedChangeWithSource = DetailedChange & { location: SourceRange }
 

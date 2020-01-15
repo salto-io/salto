@@ -3,16 +3,13 @@ import { Spinner } from '../src/types'
 import { validateWorkspace, loadWorkspace } from '../src/workspace'
 import { MockWriteStream } from './mocks'
 
-
 const mockWs = {
   hasErrors: jest.fn(),
   getWorkspaceErrors: jest.fn(),
 } as unknown as Workspace
 jest.mock('salto', () => ({
   ...jest.requireActual('salto'),
-  Workspace: {
-    load: jest.fn().mockImplementation(() => mockWs),
-  },
+  Workspace: jest.fn().mockImplementation(() => mockWs),
   loadConfig: jest.fn().mockImplementation(
     workspaceDir => ({ baseDir: workspaceDir, additionalBlueprints: [], services: ['salesforce'], cacheLocation: '' })
   ),
@@ -30,7 +27,7 @@ describe('workspace', () => {
   describe('error validation', () => {
     describe('when there are no errors', () => {
       it('returns true', async () => {
-        mockWs.hasErrors = jest.fn().mockImplementation(() => false)
+        mockWs.hasErrors = jest.fn().mockResolvedValue(false)
         const wsValid = await validateWorkspace(mockWs, cliOutput)
         expect(mockWs.hasErrors).toHaveBeenCalled()
         expect(wsValid).toBe('Valid')
@@ -38,7 +35,7 @@ describe('workspace', () => {
     })
     describe('when there are errors', () => {
       it('returns true if there are only warnings', async () => {
-        mockWs.hasErrors = jest.fn().mockImplementation(() => true)
+        mockWs.hasErrors = jest.fn().mockResolvedValue(true)
         mockWs.getWorkspaceErrors = jest.fn().mockImplementation(() => (
           [{
             sourceFragments: [],
@@ -59,7 +56,7 @@ describe('workspace', () => {
       })
 
       it('returns false if there is at least one sever error', async () => {
-        mockWs.hasErrors = jest.fn().mockImplementation(() => true)
+        mockWs.hasErrors = jest.fn().mockResolvedValue(true)
         mockWs.getWorkspaceErrors = jest.fn().mockImplementation(() => (
           [{
             sourceFragments: [],
@@ -90,7 +87,7 @@ describe('workspace', () => {
       }
     })
     it('mark spinner as success in case there are no errors', async () => {
-      mockWs.hasErrors = jest.fn().mockImplementation(() => false)
+      mockWs.hasErrors = jest.fn().mockResolvedValue(false)
       mockWs.getWorkspaceErrors = jest.fn().mockImplementation(() => ([]))
       await loadWorkspace('', cliOutput, () => spinner)
 
@@ -100,7 +97,7 @@ describe('workspace', () => {
     })
 
     it('mark spinner as success in case of warning', async () => {
-      mockWs.hasErrors = jest.fn().mockImplementation(() => true)
+      mockWs.hasErrors = jest.fn().mockResolvedValue(true)
       mockWs.getWorkspaceErrors = jest.fn().mockImplementation(() => ([{
         sourceFragments: [],
         message: 'Error BLA',
@@ -113,7 +110,7 @@ describe('workspace', () => {
     })
 
     it('mark spinner as failed in case of error', async () => {
-      mockWs.hasErrors = jest.fn().mockImplementation(() => true)
+      mockWs.hasErrors = jest.fn().mockResolvedValue(true)
       mockWs.getWorkspaceErrors = jest.fn().mockImplementation(() => ([{
         sourceFragments: [],
         message: 'Error BLA',

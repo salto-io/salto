@@ -20,9 +20,10 @@ export const createDocumentSymbolsProvider = (
   provideDocumentSymbols: async (
     doc: vscode.TextDocument
   ) => {
-    const blueprint = await workspace.getParsedBlueprint(doc.fileName)
-    if (blueprint) {
-      const defTree = buildDefinitionsTree(doc.getText(), blueprint)
+    const sourceMap = await workspace.getSourceMap(doc.fileName)
+    const elements = await workspace.getElements(doc.fileName)
+    if (sourceMap && elements) {
+      const defTree = buildDefinitionsTree(doc.getText(), sourceMap, elements)
       return (defTree.children || []).map(c => buildVSDefinitions(c))
     }
     return []
@@ -44,13 +45,12 @@ export const createCompletionsProvider = (
       const saltoPos = vsPosToSaltoPos(position)
       const context = await getPositionContext(
         validWorkspace,
-        doc.getText(),
         doc.fileName,
         saltoPos
       )
       const line = doc.lineAt(position).text.substr(0, position.character)
       return buildVSCompletionItems(
-        provideWorkspaceCompletionItems(validWorkspace, context, line, saltoPos)
+        await provideWorkspaceCompletionItems(validWorkspace, context, line, saltoPos)
       )
     }
     return []
@@ -69,7 +69,6 @@ export const createDefinitionsProvider = (
       const currentToken = doc.getText(doc.getWordRangeAtPosition(position))
       const context = await getPositionContext(
         validWorkspace,
-        doc.getText(),
         doc.fileName,
         vsPosToSaltoPos(position)
       )
@@ -108,7 +107,6 @@ export const createWorkspaceSymbolProvider = (
     const locToContext = async (loc: SaltoElemLocation): Promise<PositionContext> => (
       getPositionContext(
         workspace,
-        (await workspace.getParsedBlueprint(loc.filename)).buffer,
         loc.filename,
         loc.range.start
       )
@@ -127,8 +125,8 @@ export const createFoldingProvider = (
   provideFoldingRanges: async (
     document: vscode.TextDocument,
   ): Promise<vscode.FoldingRange[]> => {
-    const parsedBlueprint = await workspace.getParsedBlueprint(document.fileName)
-    return wu(parsedBlueprint?.sourceMap?.entries() ?? [])
+    const sourceMap = await workspace.getSourceMap(document.fileName)
+    return wu(sourceMap?.entries() ?? [])
       .map(([name, ranges]) => ranges.map(r => sourceRangeToFoldRange(r, name)))
       .flatten()
       .toArray()

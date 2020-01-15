@@ -22,11 +22,10 @@ export { FoundSearchResult, SearchResult } from './src/core/search'
 export { ItemStatus } from './src/core/deploy'
 export { getAdaptersConfigType } from './src/core/adapters/adapters'
 export {
-  Workspace, Errors, ParsedBlueprintMap,
-  WorkspaceError, SourceFragment,
-  ResolvedParsedBlueprint as ParsedBlueprint,
+  Workspace, WorkspaceError, SourceFragment,
 } from './src/workspace/workspace'
-export { Blueprint } from './src/workspace/blueprint'
+export { ParsedBlueprintMap, Errors, ParsedBlueprint } from './src/workspace/blueprints_state'
+export { Blueprint } from './src/workspace/blueprints_store'
 export { Config, loadConfig, addServiceToConfig } from './src/workspace/config'
 export { parse, SourceMap, SourceRange, parseElemID } from './src/parser/parse'
 export { dump, dumpElemID } from './src/parser/dump'

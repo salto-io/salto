@@ -278,7 +278,6 @@ describe('api.ts', () => {
       newConf.value.password = 'bla'
       await api.updateLoginConfig(ws, newConf)
       expect((ws.credentials.set as jest.Mock).call).toHaveLength(1)
-      expect((ws.flush as jest.Mock).call).toHaveLength(1)
     })
   })
 })

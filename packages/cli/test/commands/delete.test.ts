@@ -1,9 +1,10 @@
-import { Workspace, loadConfig, file, deleteFromCsvFile } from 'salto'
+import { Workspace, file, deleteFromCsvFile } from 'salto'
 import { DataModificationResult } from 'adapter-api'
-import { MockWriteStream, getWorkspaceErrors, mockLoadConfig } from '../mocks'
 import { command } from '../../src/commands/delete'
 import Prompts from '../../src/prompts'
 import { CliExitCode } from '../../src/types'
+import * as workspace from '../../src/workspace'
+import * as mocks from '../mocks'
 
 jest.mock('salto', () => ({
   ...jest.requireActual('salto'),
@@ -12,22 +13,19 @@ jest.mock('salto', () => ({
     failedRows: 0,
     errors: new Set<string>(),
   })),
-  Workspace: {
-    load: jest.fn().mockImplementation(
-      config => ({ config, elements: [], hasErrors: () => false }),
-    ),
-  },
-  loadConfig: jest.fn().mockImplementation((workspaceDir: string) => mockLoadConfig(workspaceDir)),
 }))
-
+jest.mock('../../src/workspace')
 describe('delete command', () => {
-  let cliOutput: { stdout: MockWriteStream; stderr: MockWriteStream }
+  let cliOutput: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }
   const workspaceDir = 'dummy_dir'
   let existsReturn = true
+  const mockLoadWorkspace = workspace.loadWorkspace as jest.Mock
 
   beforeEach(() => {
     jest.spyOn(file, 'exists').mockImplementation(() => Promise.resolve(existsReturn))
-    cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
+    cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+    mockLoadWorkspace.mockResolvedValue({ workspace: mocks.mockLoadWorkspace(workspaceDir),
+      errored: false })
   })
 
   it('should run delete successfully if CSV file is found', async () => {
@@ -36,7 +34,6 @@ describe('delete command', () => {
     expect(deleteFromCsvFile).toHaveBeenCalled()
     expect(cliOutput.stdout.content).toMatch(Prompts.DELETE_ENDED_SUMMARY(5, 0))
     expect(cliOutput.stdout.content).toMatch(Prompts.DELETE_FINISHED_SUCCESSFULLY)
-    expect(Workspace.load).toHaveBeenCalledWith(loadConfig(workspaceDir))
   })
 
   it('should fail if CSV file is not found', async () => {
@@ -49,12 +46,11 @@ describe('delete command', () => {
     const erroredWorkspace = {
       hasErrors: () => true,
       errors: { strings: () => ['some error'] },
-      getWorkspaceErrors,
+      getWorkspaceErrors: mocks.getWorkspaceErrors,
     } as unknown as Workspace
-    (Workspace.load as jest.Mock).mockResolvedValueOnce(Promise.resolve(erroredWorkspace))
-    await command(workspaceDir, 'mockName', 'mockPath', cliOutput).execute()
-    expect(Workspace.load).toHaveBeenCalledWith(loadConfig(workspaceDir))
-    expect(cliOutput.stderr.content).toContain('Error')
+    mockLoadWorkspace.mockResolvedValueOnce({ workspace: erroredWorkspace, errored: true })
+    const result = await command(workspaceDir, 'mockName', 'mockPath', cliOutput).execute()
+    expect(result).toBe(CliExitCode.AppError)
   })
 
   it('should fail if delete operation failed', async () => {
@@ -67,8 +63,7 @@ describe('delete command', () => {
     } as unknown as DataModificationResult
     (deleteFromCsvFile as jest.Mock).mockResolvedValueOnce(Promise.resolve(erroredModifyDataResult))
     const exitCode = await command(workspaceDir, 'mockName', 'mockPath', cliOutput).execute()
-    expect(cliOutput.stdout.content).toMatch(Prompts.ERROR_SUMMARY(errors))
-    expect(Workspace.load).toHaveBeenCalledWith(loadConfig(workspaceDir))
     expect(exitCode).toEqual(CliExitCode.AppError)
+    expect(cliOutput.stdout.content).toMatch(Prompts.ERROR_SUMMARY(errors))
   })
 })

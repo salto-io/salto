@@ -33,13 +33,14 @@ export const getQueryLocations = async (
     return isPartOfLastNamePart || isPrefix || isSuffix
   }
 
-  const matchingNames = workspace.elements
+  const matchingNames = (await workspace.elements)
     .filter(lastIDPartContains)
     .map(e => e.elemID.getFullName())
     .slice(0, MAX_LOCATION_SEARCH_RESULT)
 
   if (matchingNames.length > 0) {
-    const locations = await Promise.all(matchingNames.map(name => getLocations(workspace, name)))
+    const locations = await Promise.all(matchingNames
+      .map(name => getLocations(workspace, name)))
     return _.flatten(locations)
   }
   return []

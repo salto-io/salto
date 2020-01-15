@@ -1,13 +1,9 @@
 import _ from 'lodash'
-import {
-  Type, Field, isObjectType, isInstanceElement, isPrimitiveType,
+import { Type, Field, isObjectType, isInstanceElement, isPrimitiveType,
   isField, PrimitiveTypes, BuiltinTypes, isType, Value, getField,
   getFieldNames, getFieldType, getAnnotationKey, ElemID, Element,
-  Values, CORE_ANNOTATIONS,
-} from 'adapter-api'
-
+  Values, CORE_ANNOTATIONS } from 'adapter-api'
 import { dumpElemID, parseElemID } from 'salto'
-import { EditorWorkspace } from '../workspace'
 import { ContextReference } from '../context'
 
 interface InsertText {
@@ -19,7 +15,7 @@ type Suggestion = string|InsertText
 export type Suggestions = Suggestion[]
 
 interface SuggestionsParams {
-  workspace: EditorWorkspace
+  elements: ReadonlyArray<Element>
   ref?: ContextReference
   tokens: string[]
 }
@@ -94,7 +90,7 @@ const getElementReferenceSuggestions = (
 }
 
 const referenceSuggestions = (
-  workspace: EditorWorkspace,
+  elements: ReadonlyArray<Element>,
   valueToken: string
 ): Suggestions => {
   // This means we are not defining a reference
@@ -104,16 +100,16 @@ const referenceSuggestions = (
   const [adapter, ...elemIDParts] = match.split(ElemID.NAMESPACE_SEPARATOR)
   // We still didn't define the type -> we are still defining the adapter
   if (_.isEmpty(elemIDParts)) {
-    return getAdapterNames(workspace.elements || [])
+    return getAdapterNames(elements || [])
   }
 
   if (elemIDParts.length === 1) {
-    return getAllTypes(workspace.elements || [], adapter)
+    return getAllTypes(elements || [], adapter)
       .map(n => n.substring(adapter.length + 1))
   }
 
   const elemID = new ElemID(adapter, ...elemIDParts)
-  const matchElement = _(workspace.elements)
+  const matchElement = _(elements)
     .filter(e => elemID.getFullName().indexOf(e.elemID.getFullName()) === 0)
     .sortBy(e => e.elemID.getFullName().length)
     .last()
@@ -121,7 +117,7 @@ const referenceSuggestions = (
     const path = elemID.getFullName()
       .slice(matchElement.elemID.getFullName().length + 1)
       .split(ElemID.NAMESPACE_SEPARATOR)
-    return getElementReferenceSuggestions(workspace.elements, matchElement, path)
+    return getElementReferenceSuggestions(elements, matchElement, path)
   }
 
   return []
@@ -178,9 +174,9 @@ export const fieldValueSuggestions = (params: SuggestionsParams): Suggestions =>
   return (valueField)
     ? [
       ...valueSuggestions(attrName, valueField, valueField.type),
-      ...referenceSuggestions(params.workspace, valueToken),
+      ...referenceSuggestions(params.elements, valueToken),
     ]
-    : referenceSuggestions(params.workspace, valueToken)
+    : referenceSuggestions(params.elements, valueToken)
 }
 
 export const annoSuggestions = (params: SuggestionsParams): Suggestions => {
@@ -215,16 +211,16 @@ export const annoValueSuggestions = (params: SuggestionsParams): Suggestions => 
     return (attrField)
       ? [
         ...valueSuggestions(annoName, attrField, attrField.type),
-        ...referenceSuggestions(params.workspace, valueToken),
+        ...referenceSuggestions(params.elements, valueToken),
       ]
-      : referenceSuggestions(params.workspace, valueToken)
+      : referenceSuggestions(params.elements, valueToken)
   }
   return (annoType)
     ? [
       ...valueSuggestions(annoName, annoType, annoType),
-      ...referenceSuggestions(params.workspace, valueToken),
+      ...referenceSuggestions(params.elements, valueToken),
     ]
-    : referenceSuggestions(params.workspace, valueToken)
+    : referenceSuggestions(params.elements, valueToken)
 }
 
 
@@ -234,7 +230,7 @@ export const annoValueSuggestions = (params: SuggestionsParams): Suggestions => 
  */
 export const typesSuggestions = (params: SuggestionsParams): Suggestions => {
   const contextAdapter = params.ref && params.ref.element.elemID.adapter
-  const elements = params.workspace.elements || [] // may be undefined
+  const elements = params.elements || [] // may be undefined
   const typeNames = [
     ..._.values(BuiltinTypes).map(e => e.elemID.getFullName()),
     ...getAllTypes(elements, contextAdapter),
@@ -272,7 +268,7 @@ export const instanceSuggestions = (
 ): Suggestions => {
   const elemID = parseElemID(params.tokens[0])
   return getAllInstances(
-    params.workspace.elements,
+    params.elements,
     elemID.adapter,
     elemID.getFullName()
   )

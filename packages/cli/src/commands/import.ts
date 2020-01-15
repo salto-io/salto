@@ -5,7 +5,6 @@ import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'
 import Prompts from '../prompts'
 import { loadWorkspace } from '../workspace'
 
-
 export const command = (
   workingDir: string,
   typeName: string,

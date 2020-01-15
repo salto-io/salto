@@ -20,7 +20,7 @@ type WorkspaceStatus = 'Error' | 'Warning' | 'Valid'
 // Exported for testing purposes
 export const validateWorkspace = async (ws: Workspace,
   { stdout, stderr }: CliOutput): Promise<WorkspaceStatus> => {
-  if (ws.hasErrors()) {
+  if (await ws.hasErrors()) {
     const workspaceErrors = await ws.getWorkspaceErrors()
     const severeErrors = workspaceErrors.filter(isError)
     if (!_.isEmpty(severeErrors)) {
@@ -38,8 +38,7 @@ export const loadWorkspace = async (workingDir: string, cliOutput: CliOutput,
   const spinner = spinnerCreator
     ? spinnerCreator(Prompts.LOADING_WORKSPACE, {})
     : { succeed: () => undefined, fail: () => undefined }
-  const config = await loadConfig(workingDir)
-  const workspace = await Workspace.load(config)
+  const workspace = new Workspace(await loadConfig(workingDir))
   const wsStatus = await validateWorkspace(workspace, cliOutput)
 
   if (wsStatus === 'Warning') {
@@ -64,16 +63,17 @@ export const updateWorkspace = async (ws: Workspace, cliOutput: CliOutput,
   if (changes.length > 0) {
     log.info(`going to update workspace with ${changes.length} changes out of ${
       changes.length} changes`)
-    if (!_.isEmpty(ws.elements.length)) {
+    if (await ws.isEmpty()) {
       formatDetailedChanges([changes.map(c => c.change)]).split('\n').forEach(s => log.info(s))
     }
 
     await ws.updateBlueprints(...changes.map(c => c.change))
     if (await validateWorkspace(ws, cliOutput) === 'Error') {
-      log.warn(`workspace has ${(await ws.getWorkspaceErrors()).filter(isError).length} errors - ABORT`)
+      const wsErrors = await ws.getWorkspaceErrors()
+      log.warn('workspace has %d errors - ABORT', wsErrors.filter(isError).length)
+      log.warn(formatWorkspaceErrors(wsErrors))
       return false
     }
-    await ws.flush()
     log.debug('finished to flush workspace state')
   }
   return true

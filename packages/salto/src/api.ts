@@ -67,7 +67,7 @@ export const preview = async (
   services: string[] = workspace.config.services
 ): Promise<Plan> => getPlan(
   filterElementsByServices(await workspace.state.getAll(), services),
-  filterElementsByServices(workspace.elements, services),
+  filterElementsByServices(await workspace.elements, services),
   getChangeValidators()
 )
 
@@ -98,7 +98,7 @@ export const deploy = async (
   const changedElements: Element[] = []
   const actionPlan = await getPlan(
     filterElementsByServices(await workspace.state.getAll(), services),
-    filterElementsByServices(workspace.elements, services),
+    filterElementsByServices(await workspace.elements, services),
     getChangeValidators()
   )
   if (force || await shouldDeploy(actionPlan)) {
@@ -121,7 +121,7 @@ export const deploy = async (
     const changedElementMap = _.groupBy(changedElements, e => e.elemID.getFullName())
     // Clone the elements because getDetailedChanges can change its input
     const clonedElements = changedElements.map(e => e.clone())
-    const relevantWorkspaceElements = workspace.elements
+    const relevantWorkspaceElements = (await workspace.elements)
       .filter(e => changedElementMap[e.elemID.getFullName()] !== undefined)
 
     const changes = wu(await getDetailedChanges(relevantWorkspaceElements, clonedElements))
@@ -180,7 +180,7 @@ export const fetch: fetchFunc = async (
   try {
     const { changes, elements, mergeErrors } = await fetchChanges(
       adapters,
-      filterElementsByServices(workspace.elements, services),
+      filterElementsByServices(await workspace.elements, services),
       filteredStateElements,
       progressEmitter,
     )
@@ -207,7 +207,7 @@ export const describeElement = async (
   workspace: Workspace,
   searchWords: string[],
 ): Promise<SearchResult> =>
-  findElement(searchWords, workspace.elements)
+  findElement(searchWords, await workspace.elements)
 
 const getTypeFromState = async (ws: Workspace, typeId: string): Promise<Element> => {
   const type = await ws.state.get(ElemID.fromFullName(typeId))
@@ -256,11 +256,7 @@ export const deleteFromCsvFile = async (
   return deleteInstancesOfType(type as ObjectType, inputPath, adapters)
 }
 
-export const init = async (workspaceName?: string): Promise<Workspace> => {
-  const workspace = await Workspace.init('.', workspaceName)
-  await workspace.flush()
-  return workspace
-}
+export const init = async (workspaceName?: string): Promise<Workspace> => Workspace.init('.', workspaceName)
 
 export const addAdapter = async (
   workspaceDir: string,

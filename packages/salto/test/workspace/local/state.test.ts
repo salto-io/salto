@@ -1,7 +1,8 @@
 import { ObjectType, ElemID, isObjectType } from 'adapter-api'
+import State from '../../../src/workspace/state'
+import { localState } from '../../../src/workspace/local/state'
 import { getAllElements } from '../../common/elements'
 import { expectTypesToMatch } from '../../common/helpers'
-import LocalState from '../../../src/workspace/local/state'
 import { serialize } from '../../../src/serializer/elements'
 import { replaceContents } from '../../../src/file'
 
@@ -24,9 +25,9 @@ describe('local state', () => {
   const replaceContentMock = replaceContents as jest.Mock
 
   describe('empty state', () => {
-    let state: LocalState
+    let state: State
     beforeEach(() => {
-      state = new LocalState('empty')
+      state = localState('empty')
     })
     it('should return an empty array if there is no saved state', async () => {
       const result = await state.getAll()
@@ -75,13 +76,13 @@ describe('local state', () => {
   })
 
   it('should read valid state file', async () => {
-    const state = new LocalState('full')
+    const state = localState('full')
     const elements = await state.getAll()
     expect(elements).toHaveLength(2)
   })
 
   it('should throw an error if the state bp is not valid', async () => {
-    const state = new LocalState('error')
+    const state = localState('error')
     await expect(state.getAll()).rejects.toThrow()
   })
 
@@ -89,8 +90,11 @@ describe('local state', () => {
     replaceContentMock.mock.calls.find(c => c[0] === filename)
 
   it('should write file on flush', async () => {
-    const state = new LocalState('on-flush')
+    const state = localState('on-flush')
     await state.set([mockElement])
+    if (state.flush === undefined) {
+      throw Error('local state should have flush')
+    }
     await state.flush()
     const onFlush = findReplaceContentCall('on-flush')
     expect(onFlush).toBeDefined()
@@ -98,7 +102,10 @@ describe('local state', () => {
   })
 
   it('shouldnt write file if state was not loaded on flush', async () => {
-    const state = new LocalState('not-flush')
+    const state = localState('not-flush')
+    if (state.flush === undefined) {
+      throw Error('local state should have flush')
+    }
     await state.flush()
     expect(findReplaceContentCall('not-flush')).toBeUndefined()
   })

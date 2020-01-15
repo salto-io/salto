@@ -1,14 +1,13 @@
 import readdirp from 'readdirp'
 import tmp from 'tmp-promise'
 import { file, SALTO_HOME_VAR, Workspace } from 'salto'
-import * as path from 'path'
 import { EditorWorkspace } from '../src/salto/workspace'
 import { getPositionContext } from '../src/salto/context'
 import { provideWorkspaceCompletionItems } from '../src/salto/completions/provider'
 import { getDiagnostics } from '../src/salto/diagnostics'
 import { provideWorkspaceDefinition } from '../src/salto/definitions'
 
-const { copyFile, rm, mkdirp, readTextFile } = file
+const { copyFile, rm, mkdirp } = file
 
 describe('extension e2e', () => {
   const wsBPs = `${__dirname}/../../e2e_test/test-workspace`
@@ -39,9 +38,8 @@ describe('extension e2e', () => {
   it('should suggest type and instances completions', async () => {
     const pos = { line: 10, col: 0 }
     const filename = 'extra.bp'
-    const ctx = await getPositionContext(workspace, await readTextFile(path.join(wsPath, filename)),
-      filename, pos)
-    const suggestions = provideWorkspaceCompletionItems(workspace, ctx, '', pos)
+    const ctx = await getPositionContext(workspace, filename, pos)
+    const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, '', pos)
     expect(suggestions.map(s => s.label).sort()).toEqual(
       ['boolean', 'number', 'salto', 'salto_complex', 'salto_complex2', 'salto_num', 'salto_number',
         'salto_obj', 'salto_str', 'salto_string', 'serviceid', 'string', 'type']
@@ -65,8 +63,7 @@ describe('extension e2e', () => {
     async () => {
       const pos = { line: 6, col: 9 }
       const filename = 'extra.bp'
-      const ctx = await getPositionContext(workspace,
-        await readTextFile(path.join(wsPath, filename)), filename, pos)
+      const ctx = await getPositionContext(workspace, filename, pos)
       const defs = await provideWorkspaceDefinition(workspace, ctx, 'salto_complex')
       expect(defs.length).toBe(2)
       expect(defs[0].fullname).toBe('salto.complex')

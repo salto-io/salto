@@ -24,7 +24,7 @@ const onActivate = async (context: vscode.ExtensionContext): Promise<void> => {
   if (name && rootPath) {
     const diagCollection = vscode.languages.createDiagnosticCollection('salto')
     const config = await loadConfig(rootPath)
-    const workspace = new EditorWorkspace(await Workspace.load(config))
+    const workspace = new EditorWorkspace(new Workspace(config))
 
     const completionProvider = vscode.languages.registerCompletionItemProvider(
       { scheme: 'file', pattern: { base: rootPath, pattern: '**/*.bp' } },
@@ -99,7 +99,7 @@ const onActivate = async (context: vscode.ExtensionContext): Promise<void> => {
     fileWatcher.onDidChange((uri: vscode.Uri) => onFileChange(workspace, uri.fsPath))
     fileWatcher.onDidDelete((uri: vscode.Uri) => onFileDelete(workspace, uri.fsPath))
     const newDiag = toVSDiagnostics(
-      workspace.workspace.config.baseDir,
+      workspace.baseDir,
       await getDiagnostics(workspace)
     )
     diagCollection.set(newDiag)

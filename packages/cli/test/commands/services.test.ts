@@ -1,13 +1,9 @@
 import { LoginStatus, updateLoginConfig, Workspace } from 'salto'
 import { ObjectType } from 'adapter-api'
+import { CliExitCode } from '../../src/types'
 import { command } from '../../src/commands/services'
-import {
-  createMockGetConfigFromUser,
-  getWorkspaceErrors,
-  mockConfigType,
-  mockLoadConfig,
-  MockWriteStream,
-} from '../mocks'
+import * as mocks from '../mocks'
+import * as workspace from '../../src/workspace'
 
 jest.mock('salto', () => ({
   ...jest.requireActual('salto'),
@@ -18,7 +14,7 @@ jest.mock('salto', () => ({
     if (adapterName === 'noAdapter') {
       throw Error('no adapater')
     }
-    return Promise.resolve(mockConfigType(adapterName))
+    return Promise.resolve(mocks.mockConfigType(adapterName))
   }),
   updateLoginConfig: jest.fn().mockResolvedValue(true),
   getLoginStatuses: jest.fn().mockImplementation((
@@ -30,58 +26,61 @@ jest.mock('salto', () => ({
       if (serviceName === 'salesforce') {
         loginStatuses[serviceName] = {
           isLoggedIn: true,
-          configType: mockConfigType(serviceName),
+          configType: mocks.mockConfigType(serviceName),
         }
       } else {
         loginStatuses[serviceName] = {
           isLoggedIn: false,
-          configType: mockConfigType(serviceName),
+          configType: mocks.mockConfigType(serviceName),
         }
       }
     })
     return loginStatuses
   }),
-  Workspace: {
-    load: jest.fn().mockImplementation(config => {
-      if (config.baseDir === 'errdir') {
-        return {
-          hasErrors: () => true,
-          errors: {
-            strings: () => ['Error', 'Error'],
-          },
-          getWorkspaceErrors,
-          config,
-        }
-      }
-      return {
-        hasErrors: () => false,
-        config,
-      }
-    }),
-  },
-  loadConfig: jest.fn().mockImplementation((workspaceDir: string) => mockLoadConfig(workspaceDir)),
+  loadConfig: jest.fn().mockImplementation((workspaceDir: string) =>
+    mocks.mockLoadConfig(workspaceDir)),
 }))
-
+jest.mock('../../src/workspace')
 describe('services command', () => {
-  let cliOutput: { stdout: MockWriteStream; stderr: MockWriteStream }
+  let cliOutput: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }
   const mockGetConfigFromUser = createMockGetConfigFromUser({
     username: 'test@test',
     password: 'test',
     token: 'test',
     sandbox: false,
+  const mockLoadWorkspace = workspace.loadWorkspace as jest.Mock
+  mockLoadWorkspace.mockImplementation(baseDir => {
+    if (baseDir === 'errdir') {
+      return { workspace: {
+        hasErrors: () => true,
+        errors: {
+          strings: () => ['Error', 'Error'],
+        },
+        getWorkspaceErrors: mocks.getWorkspaceErrors,
+        config: mocks.mockLoadConfig(baseDir),
+      },
+      errored: true }
+    }
+    return { workspace: {
+      hasErrors: () => false,
+      config: mocks.mockLoadConfig(baseDir),
+    },
+    errored: false }
   })
 
   beforeEach(() => {
-    cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
+    cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
   })
 
   describe('when workspace fails to load', () => {
+    let result: number
     beforeEach(async () => {
-      await command('errdir', 'add', cliOutput, mockGetConfigFromUser, 'service').execute()
+      result = await command('errdir', 'add', cliOutput, mocks.mockGetConfigFromUser, 'service')
+        .execute()
     })
 
-    it('should print the error', async () => {
-      expect(cliOutput.stderr.content).toContain('Error')
+    it('should fail', async () => {
+      expect(result).toBe(CliExitCode.AppError)
     })
   })
 
@@ -89,11 +88,11 @@ describe('services command', () => {
     describe('when the workspace loads successfully', () => {
       describe('when called with no service name', () => {
         beforeEach(async () => {
-          await command('', 'list', cliOutput, mockGetConfigFromUser, undefined).execute()
+          await command('', 'list', cliOutput, mocks.mockGetConfigFromUser, undefined).execute()
         })
 
         it('should load the workspace', () => {
-          expect(Workspace.load).toHaveBeenCalled()
+          expect(mockLoadWorkspace).toHaveBeenCalled()
         })
 
         it('should print configured services', () => {
@@ -104,11 +103,11 @@ describe('services command', () => {
 
       describe('when called with service that is configured', () => {
         beforeEach(async () => {
-          await command('', 'list', cliOutput, mockGetConfigFromUser, 'hubspot').execute()
+          await command('', 'list', cliOutput, mocks.mockGetConfigFromUser, 'hubspot').execute()
         })
 
         it('should load the workspace', async () => {
-          expect(Workspace.load).toHaveBeenCalled()
+          expect(mockLoadWorkspace).toHaveBeenCalled()
         })
 
         it('should print configured services', async () => {
@@ -118,7 +117,7 @@ describe('services command', () => {
 
       describe('when called with a service that is not configured', () => {
         beforeEach(async () => {
-          await command('', 'list', cliOutput, mockGetConfigFromUser, 'notConfigured').execute()
+          await command('', 'list', cliOutput, mocks.mockGetConfigFromUser, 'notConfigured').execute()
         })
 
         it('should print configured services', async () => {
@@ -132,7 +131,7 @@ describe('services command', () => {
     describe('when the workspace loads successfully', () => {
       describe('when called with already configured service', () => {
         beforeEach(async () => {
-          await command('', 'add', cliOutput, mockGetConfigFromUser, 'salesforce').execute()
+          await command('', 'add', cliOutput, mocks.mockGetConfigFromUser, 'salesforce').execute()
         })
 
         it('should print already added', async () => {
@@ -142,7 +141,7 @@ describe('services command', () => {
 
       describe('when called with a new service', () => {
         beforeEach(async () => {
-          await command('', 'add', cliOutput, mockGetConfigFromUser, 'newAdapter').execute()
+          await command('', 'add', cliOutput, mocks.mockGetConfigFromUser, 'newAdapter').execute()
         })
 
         it('should print added', async () => {
@@ -187,7 +186,7 @@ describe('services command', () => {
     describe('when the workspace loads successfully', () => {
       describe('when called with already logged in service', () => {
         beforeEach(async () => {
-          await command('', 'login', cliOutput, mockGetConfigFromUser, 'salesforce').execute()
+          await command('', 'login', cliOutput, mocks.mockGetConfigFromUser, 'salesforce').execute()
         })
 
         it('should print login override', () => {
@@ -195,7 +194,7 @@ describe('services command', () => {
         })
 
         it('should get config from user', () => {
-          expect(mockGetConfigFromUser).toHaveBeenCalled()
+          expect(mocks.mockGetConfigFromUser).toHaveBeenCalled()
         })
 
         it('should call update config', () => {
@@ -209,7 +208,7 @@ describe('services command', () => {
 
       describe('when called with not configured service', () => {
         beforeEach(async () => {
-          await command('', 'login', cliOutput, mockGetConfigFromUser, 'notConfigured').execute()
+          await command('', 'login', cliOutput, mocks.mockGetConfigFromUser, 'notConfigured').execute()
         })
 
         it('should print not configured', () => {
@@ -219,11 +218,11 @@ describe('services command', () => {
 
       describe('when called with configured but not logged in service', () => {
         beforeEach(async () => {
-          await command('', 'login', cliOutput, mockGetConfigFromUser, 'salesforce').execute()
+          await command('', 'login', cliOutput, mocks.mockGetConfigFromUser, 'salesforce').execute()
         })
 
         it('should get config from user', () => {
-          expect(mockGetConfigFromUser).toHaveBeenCalled()
+          expect(mocks.mockGetConfigFromUser).toHaveBeenCalled()
         })
 
         it('should call update config', async () => {

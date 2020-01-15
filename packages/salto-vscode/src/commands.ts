@@ -38,7 +38,7 @@ const updateProgress = async (
 const getCriticalErrors = async (
   workspace: EditorWorkspace
 ): Promise<ReadonlyArray<WorkspaceError<SaltoError>>> => (
-  (await workspace.workspace.getWorkspaceErrors()).filter(e => e.severity === 'Error')
+  (await workspace.getWorkspaceErrors()).filter(e => e.severity === 'Error')
 )
 
 const hasCriticalErrors = async (workspace: EditorWorkspace): Promise<boolean> => (
@@ -107,8 +107,6 @@ export const deployCommand = async (
     await workspace.updateBlueprints(...wu(result.changes || []).map(c => c.change).toArray())
     if (await hasCriticalErrors(workspace)) {
       (await getCriticalErrors(workspace)).forEach(e => displayError(e.message))
-    } else {
-      await workspace.flush()
     }
   } catch (e) {
     displayError(e.message)

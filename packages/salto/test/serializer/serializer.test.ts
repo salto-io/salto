@@ -1,10 +1,10 @@
 import _ from 'lodash'
 import {
-  PrimitiveType, PrimitiveTypes, ElemID, Field,
+  PrimitiveType, PrimitiveTypes, ElemID, Field, isInstanceElement,
   ObjectType, InstanceElement, TemplateExpression, ReferenceExpression,
 } from 'adapter-api'
 
-import { serialize, deserialize } from '../../src/serializer/elements'
+import { serialize, deserialize, SALTO_CLASS_FIELD } from '../../src/serializer/elements'
 
 describe('State serialization', () => {
   const strType = new PrimitiveType({
@@ -91,5 +91,18 @@ describe('State serialization', () => {
       shuffledConfig,
     ])
     expect(serialized).toEqual(shuffledSer)
+  })
+  describe('when a field collides with the hidden class name attribute', () => {
+    let deserialized: InstanceElement
+    beforeEach(() => {
+      const classNameInst = new InstanceElement('ClsName', model, { [SALTO_CLASS_FIELD]: 'bla' })
+      deserialized = deserialize(serialize([classNameInst]))[0] as InstanceElement
+    })
+    it('should keep deserialize the instance', () => {
+      expect(isInstanceElement(deserialized)).toBeTruthy()
+    })
+    it('should keep the original value', () => {
+      expect(deserialized.value[SALTO_CLASS_FIELD]).toEqual('bla')
+    })
   })
 })

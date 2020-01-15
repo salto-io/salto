@@ -1,7 +1,7 @@
 import {
   ObjectType, Element, Field, isObjectType, InstanceElement, isField, Change,
   getChangeElement, getAnnotationValue, ElemID, Values, findElement,
-  ReferenceExpression, CORE_ANNOTATIONS,
+  ReferenceExpression, CORE_ANNOTATIONS, isExpression,
 } from 'adapter-api'
 import _ from 'lodash'
 import { SaveResult } from 'jsforce'
@@ -14,7 +14,7 @@ import {
   OBJECT_LEVEL_SECURITY_ANNOTATION, OBJECT_PERMISSIONS, SALESFORCE, INSTANCE_FULL_NAME_FIELD,
 } from '../constants'
 import {
-  isCustomObject, Types, apiName, bpCase, sfCase,
+  isCustomObject, Types, apiName, bpCase,
 } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
 import { ProfileInfo, FieldPermissions, FieldPermissionsOptions, ObjectPermissionsOptions,
@@ -30,8 +30,9 @@ const { makeArray } = collections.array
 type ProfileToFieldPermissions = Record<string, FieldPermissions>
 type ProfileToObjectPermissions = Record<string, ObjectPermissions>
 
-const ADMIN_ELEM_ID = new ElemID(SALESFORCE, bpCase(PROFILE_METADATA_TYPE),
-  'instance', ADMIN_PROFILE)
+export const ADMIN_ELEM_ID = new ElemID(
+  SALESFORCE, PROFILE_METADATA_TYPE, 'instance', ADMIN_PROFILE,
+)
 
 const getFieldPermissions = (field: Field): Values =>
   (getAnnotationValue(field, FIELD_LEVEL_SECURITY_ANNOTATION))
@@ -41,24 +42,20 @@ const getObjectPermissions = (object: ObjectType): Values =>
 
 const setProfilePermissions = <T = PermissionsTypes>
   (element: ObjectType | Field, profile: ElemID,
-    annotationName: string, permissions: T, createReferences = false): void => {
+    annotationName: string, permissions: T): void => {
   const isElementName = (name: string): boolean => !['object', 'field'].includes(name)
 
-  let profileName = profile.name
   if (_.isEmpty(getAnnotationValue(element, annotationName))) {
     element.annotations[annotationName] = _.merge(
       {}, ...Object.keys(permissions).filter(isElementName)
         .map(f => ({ [bpCase(f)]: [] as string[] }))
     )
-    profileName = sfCase(profileName)
   }
 
   Object.entries(permissions).filter(p => isElementName(p[0])).forEach(permissionOption => {
     if (boolValue(permissionOption[1])) {
       getAnnotationValue(element, annotationName)[bpCase(permissionOption[0])].push(
-        createReferences ? new ReferenceExpression(
-          profile.createNestedID(INSTANCE_FULL_NAME_FIELD)
-        ) : profileName
+        new ReferenceExpression(profile.createNestedID(INSTANCE_FULL_NAME_FIELD))
       )
     }
   })
@@ -79,7 +76,7 @@ const setPermissions = <T = PermissionsTypes>(
     Object.entries(elementPermissions).sort().forEach(p2f => {
       const profile = findElement(profileInstances, ElemID.fromFullName(p2f[0]))
       if (profile) {
-        setProfilePermissions(element, profile.elemID, permissionAnnotationName, p2f[1], true)
+        setProfilePermissions(element, profile.elemID, permissionAnnotationName, p2f[1])
       }
     })
   }
@@ -110,8 +107,12 @@ const getPermissionsValues = (element: Element,
   annotationName: string): Record<string, string[]> =>
   Object.values(permissionFields)
     .sort().reduce((permission, field) => {
-      permission[field] = getAnnotationValue(element, annotationName)[bpCase(field)]
-       || []
+      const values = getAnnotationValue(element, annotationName)[field] || []
+      permission[field] = values.map((val: string | ReferenceExpression) => (
+        // We can get an expression here iff we just set the default permissions
+        // in which case we rely on the fact that we know the actual api name of the profile
+        isExpression(val) ? ADMIN_PROFILE : val
+      ))
       return permission
     }, {} as Record<string, string[]>)
 
@@ -132,7 +133,7 @@ const setProfileObjectPermissions = (object: ObjectType, profile: ElemID,
 
 const setDefaultFieldPermissions = (field: Field): void => {
   // We can't set permissions for master detail or required fields
-  if (field.type.isEqual(Types.primitiveDataTypes.masterdetail)
+  if (field.type.elemID.isEqual(Types.primitiveDataTypes.MasterDetail.elemID)
     || field.annotations[CORE_ANNOTATIONS.REQUIRED]) {
     return
   }

@@ -7,7 +7,7 @@ import {
 } from 'jsforce'
 import SalesforceAdapter from '../src/adapter'
 import * as constants from '../src/constants'
-import { Types, sfCase } from '../src/transformers/transformer'
+import { Types } from '../src/transformers/transformer'
 import Connection from '../src/client/jsforce'
 import mockAdapter from './adapter'
 import { ASSIGNMENT_RULES_TYPE_ID } from '../src/filters/assignment_rules'
@@ -19,10 +19,9 @@ describe('SalesforceAdapter CRUD', () => {
   let connection: Connection
   let adapter: SalesforceAdapter
 
-  const stringType = Types.primitiveDataTypes.text
-  const mockElemID = new ElemID(constants.SALESFORCE, 'test')
-  const mockInstanceName = 'instance'
-  const mockInstanceFullName = 'Instance'
+  const stringType = Types.primitiveDataTypes.Text
+  const mockElemID = new ElemID(constants.SALESFORCE, 'Test')
+  const mockInstanceName = 'Instance'
 
   const getDeployResult = (success: boolean, details?: DeployDetails[]): Promise<DeployResult> =>
     Promise.resolve({
@@ -110,7 +109,7 @@ describe('SalesforceAdapter CRUD', () => {
         it('Should add new instance', async () => {
           expect(result).toBeInstanceOf(InstanceElement)
           expect(result.elemID).toEqual(instance.elemID)
-          expect(result.value.full_name).toEqual(mockInstanceFullName)
+          expect(result.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual(mockInstanceName)
           expect(result.value.token).toBeDefined()
           expect(result.value.token).toBe('instanceTest')
           expect(result.value.Token).toBeUndefined()
@@ -120,7 +119,7 @@ describe('SalesforceAdapter CRUD', () => {
           expect(mockUpsert.mock.calls[0][0]).toBe('Flow')
           expect(mockUpsert.mock.calls[0][1]).toHaveLength(1)
           expect(mockUpsert.mock.calls[0][1][0]).toMatchObject({
-            fullName: sfCase(mockInstanceName),
+            fullName: mockInstanceName,
             token: 'instanceTest',
           })
         })
@@ -198,7 +197,7 @@ describe('SalesforceAdapter CRUD', () => {
         expect(result.annotations[constants.API_NAME]).toBe('Test__c')
         expect(
           result.fields.description.annotations[constants.API_NAME]
-        ).toBe('Test__c.Description__c')
+        ).toBe('Test__c.description__c')
         expect(result.annotations[constants.METADATA_TYPE]).toBe(constants.CUSTOM_OBJECT)
 
         expect(mockUpsert.mock.calls.length).toBe(1)
@@ -207,12 +206,12 @@ describe('SalesforceAdapter CRUD', () => {
         expect(object.fullName).toBe('Test__c')
         expect(object.fields.length).toBe(2)
         const [descriptionField, formulaField] = object.fields
-        expect(descriptionField.fullName).toBe('Description__c')
+        expect(descriptionField.fullName).toBe('description__c')
         expect(descriptionField.type).toBe('Text')
         expect(descriptionField.length).toBe(80)
         expect(descriptionField.required).toBe(false)
         expect(descriptionField.label).toBe('test label')
-        expect(formulaField.fullName).toBe('Formula__c')
+        expect(formulaField.fullName).toBe('formula__c')
         expect(formulaField.type).toBe('Text')
         expect(formulaField).not.toHaveProperty('required')
         expect(formulaField.label).toBe('formula field')
@@ -227,7 +226,7 @@ describe('SalesforceAdapter CRUD', () => {
           state: new Field(
             mockElemID,
             'state',
-            Types.primitiveDataTypes.picklist,
+            Types.primitiveDataTypes.Picklist,
             {
               [CORE_ANNOTATIONS.REQUIRED]: false,
               label: 'test label',
@@ -250,7 +249,7 @@ describe('SalesforceAdapter CRUD', () => {
         expect(mockUpsert.mock.calls.length).toBe(1)
         const object = mockUpsert.mock.calls[0][1][0]
         expect(object.fields.length).toBe(1)
-        expect(object.fields[0].fullName).toBe('State__c')
+        expect(object.fields[0].fullName).toBe('state__c')
         expect(object.fields[0].type).toBe('Picklist')
         expect(object.fields[0].valueSet.valueSetDefinition.value
           .map((v: {fullName: string}) => v.fullName).join(';'))
@@ -276,7 +275,7 @@ describe('SalesforceAdapter CRUD', () => {
           alpha: new Field(
             mockElemID,
             'currency',
-            Types.primitiveDataTypes.currency,
+            Types.primitiveDataTypes.Currency,
             {
               [constants.LABEL]: 'Currency description label',
               [constants.FIELD_ANNOTATIONS.SCALE]: 3,
@@ -286,7 +285,7 @@ describe('SalesforceAdapter CRUD', () => {
           bravo: new Field(
             mockElemID,
             'auto',
-            Types.primitiveDataTypes.autonumber,
+            Types.primitiveDataTypes.AutoNumber,
             {
               [constants.LABEL]: 'Autonumber description label',
               [constants.FIELD_ANNOTATIONS.DISPLAY_FORMAT]: 'ZZZ-{0000}',
@@ -295,7 +294,7 @@ describe('SalesforceAdapter CRUD', () => {
           charlie: new Field(
             mockElemID,
             'date',
-            Types.primitiveDataTypes.date,
+            Types.primitiveDataTypes.Date,
             {
               [constants.LABEL]: 'Date description label',
               [constants.DEFAULT_VALUE_FORMULA]: 'Today() + 7',
@@ -304,7 +303,7 @@ describe('SalesforceAdapter CRUD', () => {
           delta: new Field(
             mockElemID,
             'time',
-            Types.primitiveDataTypes.time,
+            Types.primitiveDataTypes.Time,
             {
               [constants.LABEL]: 'Time description label',
               [constants.DEFAULT_VALUE_FORMULA]: 'TIMENOW() + 5',
@@ -313,7 +312,7 @@ describe('SalesforceAdapter CRUD', () => {
           echo: new Field(
             mockElemID,
             'datetime',
-            Types.primitiveDataTypes.datetime,
+            Types.primitiveDataTypes.DateTime,
             {
               [constants.LABEL]: 'DateTime description label',
               [constants.DEFAULT_VALUE_FORMULA]: 'Now() + 7',
@@ -322,7 +321,7 @@ describe('SalesforceAdapter CRUD', () => {
           foxtrot: new Field(
             mockElemID,
             'email',
-            Types.primitiveDataTypes.email,
+            Types.primitiveDataTypes.Email,
             {
               [constants.LABEL]: 'Email description label',
               [constants.FIELD_ANNOTATIONS.UNIQUE]: true,
@@ -342,7 +341,7 @@ describe('SalesforceAdapter CRUD', () => {
           hotel: new Field(
             mockElemID,
             'multipicklist',
-            Types.primitiveDataTypes.multipicklist,
+            Types.primitiveDataTypes.MultiselectPicklist,
             {
               [constants.LABEL]: 'Multipicklist description label',
               [constants.FIELD_ANNOTATIONS.VALUE_SET]: [
@@ -360,7 +359,7 @@ describe('SalesforceAdapter CRUD', () => {
           india: new Field(
             mockElemID,
             'percent',
-            Types.primitiveDataTypes.percent,
+            Types.primitiveDataTypes.Percent,
             {
               [constants.LABEL]: 'Percent description label',
               [constants.FIELD_ANNOTATIONS.SCALE]: 3,
@@ -370,7 +369,7 @@ describe('SalesforceAdapter CRUD', () => {
           juliett: new Field(
             mockElemID,
             'phone',
-            Types.primitiveDataTypes.phone,
+            Types.primitiveDataTypes.Phone,
             {
               [constants.LABEL]: 'Phone description label',
             },
@@ -378,7 +377,7 @@ describe('SalesforceAdapter CRUD', () => {
           kilo: new Field(
             mockElemID,
             'longtextarea',
-            Types.primitiveDataTypes.longtextarea,
+            Types.primitiveDataTypes.LongTextArea,
             {
               [constants.LABEL]: 'LongTextArea description label',
               [constants.FIELD_ANNOTATIONS.VISIBLE_LINES]: 5,
@@ -387,7 +386,7 @@ describe('SalesforceAdapter CRUD', () => {
           lima: new Field(
             mockElemID,
             'richtextarea',
-            Types.primitiveDataTypes.richtextarea,
+            Types.primitiveDataTypes.Html,
             {
               [constants.LABEL]: 'RichTextArea description label',
               [constants.FIELD_ANNOTATIONS.VISIBLE_LINES]: 27,
@@ -396,7 +395,7 @@ describe('SalesforceAdapter CRUD', () => {
           mike: new Field(
             mockElemID,
             'textarea',
-            Types.primitiveDataTypes.textarea,
+            Types.primitiveDataTypes.TextArea,
             {
               [constants.LABEL]: 'TextArea description label',
             },
@@ -404,7 +403,7 @@ describe('SalesforceAdapter CRUD', () => {
           november: new Field(
             mockElemID,
             'encryptedtext',
-            Types.primitiveDataTypes.encryptedtext,
+            Types.primitiveDataTypes.EncryptedText,
             {
               [constants.LABEL]: 'EncryptedText description label',
               [constants.FIELD_ANNOTATIONS.MASK_TYPE]: 'creditCard',
@@ -415,7 +414,7 @@ describe('SalesforceAdapter CRUD', () => {
           oscar: new Field(
             mockElemID,
             'url',
-            Types.primitiveDataTypes.url,
+            Types.primitiveDataTypes.Url,
             {
               [constants.LABEL]: 'Url description label',
             },
@@ -423,7 +422,7 @@ describe('SalesforceAdapter CRUD', () => {
           papa: new Field(
             mockElemID,
             'picklist',
-            Types.primitiveDataTypes.picklist,
+            Types.primitiveDataTypes.Picklist,
             {
               [constants.LABEL]: 'Picklist description label',
               [constants.FIELD_ANNOTATIONS.VALUE_SET]: [
@@ -440,7 +439,7 @@ describe('SalesforceAdapter CRUD', () => {
           quebec: new Field(
             mockElemID,
             'text',
-            Types.primitiveDataTypes.text,
+            Types.primitiveDataTypes.Text,
             {
               [constants.LABEL]: 'Text description label',
               [CORE_ANNOTATIONS.VALUES]: ['DO', 'RE', 'MI', 'FA', 'SOL', 'LA', 'SI'],
@@ -452,7 +451,7 @@ describe('SalesforceAdapter CRUD', () => {
           Romeo: new Field(
             mockElemID,
             'number',
-            Types.primitiveDataTypes.number,
+            Types.primitiveDataTypes.Number,
             {
               [constants.LABEL]: 'Number description label',
               [constants.FIELD_ANNOTATIONS.SCALE]: 12,
@@ -463,7 +462,7 @@ describe('SalesforceAdapter CRUD', () => {
           quest: new Field(
             mockElemID,
             'checkbox',
-            Types.primitiveDataTypes.boolean,
+            Types.primitiveDataTypes.Checkbox,
             {
               [constants.LABEL]: 'Checkbox description label',
               [constants.FIELD_ANNOTATIONS.DEFAULT_VALUE]: true,
@@ -482,45 +481,45 @@ describe('SalesforceAdapter CRUD', () => {
         const object = mockUpsert.mock.calls[0][1][0]
         expect(object.fields.length).toBe(19)
         // Currency
-        expect(object.fields[0].fullName).toBe('Currency__c')
+        expect(object.fields[0].fullName).toBe('currency__c')
         expect(object.fields[0].type).toBe('Currency')
         expect(object.fields[0].label).toBe('Currency description label')
         expect(object.fields[0].scale).toBe(3)
         expect(object.fields[0].precision).toBe(18)
         // Autonumber
-        expect(object.fields[1].fullName).toBe('Auto__c')
+        expect(object.fields[1].fullName).toBe('auto__c')
         expect(object.fields[1].type).toBe('AutoNumber')
         expect(object.fields[1].label).toBe('Autonumber description label')
         expect(object.fields[1].displayFormat).toBe('ZZZ-{0000}')
         // Date
-        expect(object.fields[2].fullName).toBe('Date__c')
+        expect(object.fields[2].fullName).toBe('date__c')
         expect(object.fields[2].type).toBe('Date')
         expect(object.fields[2].label).toBe('Date description label')
         expect(object.fields[2].defaultValue).toBe('Today() + 7')
         // Time
-        expect(object.fields[3].fullName).toBe('Time__c')
+        expect(object.fields[3].fullName).toBe('time__c')
         expect(object.fields[3].type).toBe('Time')
         expect(object.fields[3].label).toBe('Time description label')
         expect(object.fields[3].defaultValue).toBe('TIMENOW() + 5')
         // Datetime
-        expect(object.fields[4].fullName).toBe('Datetime__c')
+        expect(object.fields[4].fullName).toBe('datetime__c')
         expect(object.fields[4].type).toBe('DateTime')
         expect(object.fields[4].label).toBe('DateTime description label')
         expect(object.fields[4].defaultValue).toBe('Now() + 7')
         // Email
-        expect(object.fields[5].fullName).toBe('Email__c')
+        expect(object.fields[5].fullName).toBe('email__c')
         expect(object.fields[5].type).toBe('Email')
         expect(object.fields[5].label).toBe('Email description label')
         expect(object.fields[5].unique).toBe(true)
         expect(object.fields[5].caseSensitive).toBe(true)
         // Location
-        expect(object.fields[6].fullName).toBe('Location__c')
+        expect(object.fields[6].fullName).toBe('location__c')
         expect(object.fields[6].type).toBe('Location')
         expect(object.fields[6].label).toBe('Location description label')
         expect(object.fields[6].displayLocationInDecimal).toBe(true)
         expect(object.fields[6].scale).toBe(2)
         // Multipicklist
-        expect(object.fields[7].fullName).toBe('Multipicklist__c')
+        expect(object.fields[7].fullName).toBe('multipicklist__c')
         expect(object.fields[7].type).toBe('MultiselectPicklist')
         expect(object.fields[7].label).toBe('Multipicklist description label')
         expect(object.fields[7].visibleLines).toBe(4)
@@ -531,44 +530,44 @@ describe('SalesforceAdapter CRUD', () => {
         expect(picklistValueRE).toBeDefined()
         expect(picklistValueRE.default).toEqual(true)
         // Percent
-        expect(object.fields[8].fullName).toBe('Percent__c')
+        expect(object.fields[8].fullName).toBe('percent__c')
         expect(object.fields[8].type).toBe('Percent')
         expect(object.fields[8].label).toBe('Percent description label')
         expect(object.fields[8].scale).toBe(3)
         expect(object.fields[8].precision).toBe(12)
         // Phone
-        expect(object.fields[9].fullName).toBe('Phone__c')
+        expect(object.fields[9].fullName).toBe('phone__c')
         expect(object.fields[9].type).toBe('Phone')
         expect(object.fields[9].label).toBe('Phone description label')
         // Longtextarea
-        expect(object.fields[10].fullName).toBe('Longtextarea__c')
+        expect(object.fields[10].fullName).toBe('longtextarea__c')
         expect(object.fields[10].type).toBe('LongTextArea')
         expect(object.fields[10].label).toBe('LongTextArea description label')
         expect(object.fields[10].visibleLines).toBe(5)
         expect(object.fields[11].length).toBe(32768)
         // Richtextarea
-        expect(object.fields[11].fullName).toBe('Richtextarea__c')
+        expect(object.fields[11].fullName).toBe('richtextarea__c')
         expect(object.fields[11].type).toBe('Html')
         expect(object.fields[11].label).toBe('RichTextArea description label')
         expect(object.fields[11].visibleLines).toBe(27)
         expect(object.fields[11].length).toBe(32768)
         // Textarea
-        expect(object.fields[12].fullName).toBe('Textarea__c')
+        expect(object.fields[12].fullName).toBe('textarea__c')
         expect(object.fields[12].type).toBe('TextArea')
         expect(object.fields[12].label).toBe('TextArea description label')
         // EncryptedText
-        expect(object.fields[13].fullName).toBe('Encryptedtext__c')
+        expect(object.fields[13].fullName).toBe('encryptedtext__c')
         expect(object.fields[13].type).toBe('EncryptedText')
         expect(object.fields[13].label).toBe('EncryptedText description label')
         expect(object.fields[13].maskChar).toBe('X')
         expect(object.fields[13].maskType).toBe('creditCard')
         expect(object.fields[13].length).toBe(35)
         // Url
-        expect(object.fields[14].fullName).toBe('Url__c')
+        expect(object.fields[14].fullName).toBe('url__c')
         expect(object.fields[14].type).toBe('Url')
         expect(object.fields[14].label).toBe('Url description label')
         // Picklist
-        expect(object.fields[15].fullName).toBe('Picklist__c')
+        expect(object.fields[15].fullName).toBe('picklist__c')
         expect(object.fields[15].type).toBe('Picklist')
         expect(object.fields[15].label).toBe('Picklist description label')
         expect(object.fields[15].valueSet.valueSetDefinition.value
@@ -578,21 +577,21 @@ describe('SalesforceAdapter CRUD', () => {
         expect(picklistValueDO).toBeDefined()
         expect(picklistValueDO.default).toEqual(true)
         // Text
-        expect(object.fields[16].fullName).toBe('Text__c')
+        expect(object.fields[16].fullName).toBe('text__c')
         expect(object.fields[16].type).toBe('Text')
         expect(object.fields[16].label).toBe('Text description label')
         expect(object.fields[16].unique).toBe(true)
         expect(object.fields[16].caseSensitive).toBe(true)
         expect(object.fields[16].length).toBe(90)
         // Number
-        expect(object.fields[17].fullName).toBe('Number__c')
+        expect(object.fields[17].fullName).toBe('number__c')
         expect(object.fields[17].type).toBe('Number')
         expect(object.fields[17].label).toBe('Number description label')
         expect(object.fields[17].unique).toBe(true)
         expect(object.fields[17].scale).toBe(12)
         expect(object.fields[17].precision).toBe(8)
         // Checkbox
-        expect(object.fields[18].fullName).toBe('Checkbox__c')
+        expect(object.fields[18].fullName).toBe('checkbox__c')
         expect(object.fields[18].type).toBe('Checkbox')
         expect(object.fields[18].label).toBe('Checkbox description label')
         expect(object.fields[18].defaultValue).toBe(true)
@@ -623,7 +622,7 @@ describe('SalesforceAdapter CRUD', () => {
             annotationTypes: {},
             annotations: { [constants.METADATA_TYPE]: 'Flow' },
           }),
-          { [constants.INSTANCE_FULL_NAME_FIELD]: mockInstanceFullName },
+          { [constants.INSTANCE_FULL_NAME_FIELD]: mockInstanceName },
         )
 
         beforeEach(async () => {
@@ -710,7 +709,7 @@ describe('SalesforceAdapter CRUD', () => {
             [constants.METADATA_TYPE]: constants.PROFILE_METADATA_TYPE,
           },
         }),
-        { [constants.INSTANCE_FULL_NAME_FIELD]: mockInstanceFullName },
+        { [constants.INSTANCE_FULL_NAME_FIELD]: mockInstanceName },
       )
 
       const newElement = new InstanceElement(
@@ -841,7 +840,7 @@ describe('SalesforceAdapter CRUD', () => {
               },
             ],
             description: 'old unit test instance profile',
-            [constants.INSTANCE_FULL_NAME_FIELD]: mockInstanceFullName,
+            [constants.INSTANCE_FULL_NAME_FIELD]: mockInstanceName,
           },
         )
 
@@ -911,7 +910,7 @@ describe('SalesforceAdapter CRUD', () => {
               },
             ],
             description: 'new unit test instance profile',
-            [constants.INSTANCE_FULL_NAME_FIELD]: mockInstanceFullName,
+            [constants.INSTANCE_FULL_NAME_FIELD]: mockInstanceName,
           },
         )
 
@@ -927,7 +926,7 @@ describe('SalesforceAdapter CRUD', () => {
           expect(mockUpdate.mock.calls.length).toBe(1)
           expect(mockUpdate.mock.calls[0][0]).toEqual(constants.PROFILE_METADATA_TYPE)
           const obj = mockUpdate.mock.calls[0][1][0]
-          expect(obj.fullName).toEqual(sfCase(mockInstanceName))
+          expect(obj.fullName).toEqual(mockInstanceName)
           expect(obj.description).toEqual(newElement.value.description)
           expect(obj.userPermissions).toEqual(newElement.value.userPermissions)
           expect(obj.fieldPermissions).toEqual(newElement.value.fieldPermissions)
@@ -1067,11 +1066,11 @@ describe('SalesforceAdapter CRUD', () => {
             // Verify the custom fields creation
             const fields = mockUpsert.mock.calls[0][1]
             expect(fields.length).toBe(2)
-            expect(fields[0].fullName).toBe('Test__c.Description__c')
+            expect(fields[0].fullName).toBe('Test__c.description__c')
             expect(fields[0].type).toBe('Text')
             expect(fields[0].length).toBe(80)
             expect(fields[0].required).toBe(false)
-            expect(fields[1].fullName).toBe('Test__c.Apple__c')
+            expect(fields[1].fullName).toBe('Test__c.apple__c')
           })
         })
 
@@ -1227,7 +1226,7 @@ describe('SalesforceAdapter CRUD', () => {
             const addedFields = mockUpsert.mock.calls[0][1]
             expect(addedFields.length).toBe(1)
             const field = addedFields[0]
-            expect(field.fullName).toBe('Test__c.Description__c')
+            expect(field.fullName).toBe('Test__c.description__c')
             expect(field.type).toBe('Text')
             expect(field.length).toBe(80)
             expect(field.required).toBe(false)

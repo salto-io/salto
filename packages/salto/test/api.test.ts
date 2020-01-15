@@ -126,6 +126,9 @@ describe('api.ts', () => {
     }
     mockedGetDetailedChanges.mockReturnValue(Promise.resolve([mockedGetDetailedChangesResult]))
 
+    const mockedToChangesWithPath = fetch.toChangesWithPath as jest.Mock
+    mockedToChangesWithPath.mockImplementation(() => (change: fetch.FetchChange) => [change])
+
     const ws = mockWorkspace(mockElements.getAllElements())
     let result: api.DeployResult
 

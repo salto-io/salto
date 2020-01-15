@@ -1,7 +1,6 @@
 import _ from 'lodash'
 import {
-  Element, isObjectType, ElemID, findInstances, findObjectType,
-  Change, transform,
+  Element, isObjectType, ElemID, findInstances, findObjectType, Change, ObjectType, transform,
 } from 'adapter-api'
 import { SaveResult } from 'jsforce-types'
 import { collections } from '@salto/lowerdash'
@@ -13,14 +12,14 @@ import { INSTANCE_FULL_NAME_FIELD, SALESFORCE } from '../constants'
 
 const { makeArray } = collections.array
 
-export const LEAD_CONVERT_SETTINGS_TYPE_ID = new ElemID(SALESFORCE, 'lead_convert_settings')
-export const LEAD_TYPE_ID = new ElemID(SALESFORCE, 'lead')
+export const LEAD_CONVERT_SETTINGS_TYPE_ID = new ElemID(SALESFORCE, 'LeadConvertSettings')
+export const LEAD_TYPE_ID = new ElemID(SALESFORCE, 'Lead')
 export const CONVERT_SETTINGS_ANNOTATION = 'convert_settings'
-export const OBJECT_MAPPING_FIELD = 'object_mapping'
-export const MAPPING_FIELDS_FIELD = 'mapping_fields'
-export const INPUT_FIELD = 'input_field'
-export const OUTPUT_FIELD = 'output_field'
-export const OUTPUT_OBJECT = 'output_object'
+export const OBJECT_MAPPING_FIELD = 'objectMapping'
+export const MAPPING_FIELDS_FIELD = 'mappingFields'
+export const INPUT_FIELD = 'inputField'
+export const OUTPUT_FIELD = 'outputField'
+export const OUTPUT_OBJECT = 'outputObject'
 export const INSTANCE_FULL_NAME = 'LeadConvertSettings'
 
 /**
@@ -83,7 +82,8 @@ const filterCreator: FilterCreator = ({ client }) => ({
       const afterSettings = after.annotations[CONVERT_SETTINGS_ANNOTATION]
 
       if (!_.isEqual(beforeSettings, afterSettings)) {
-        const metadataName = metadataType(before.annotationTypes[CONVERT_SETTINGS_ANNOTATION])
+        const settingsType = before.annotationTypes[CONVERT_SETTINGS_ANNOTATION] as ObjectType
+        const metadataName = metadataType(settingsType)
         return client.update(metadataName,
           toMetadataInfo(INSTANCE_FULL_NAME, afterSettings))
       }

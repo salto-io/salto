@@ -20,7 +20,7 @@ import {
 } from './core/plan'
 import { findElement, SearchResult } from './core/search'
 import {
-  fetchChanges, FetchChange, getDetailedChanges, createElemIdGetter,
+  fetchChanges, FetchChange, getDetailedChanges, createElemIdGetter, toChangesWithPath,
   MergeErrorWithElements, FatalFetchMergeError, FetchProgressEvents, toAddFetchChange,
 } from './core/fetch'
 import { Workspace, CREDS_DIR } from './workspace/workspace'
@@ -107,10 +107,16 @@ export const deploy = async (
       }
     }
 
-    const changedElementsIds = changedElements.map(e => e.elemID.getFullName())
-    const changes = wu(await getDetailedChanges(workspace.elements
-      .filter(e => changedElementsIds.includes(e.elemID.getFullName())), changedElements))
+    const changedElementMap = _.groupBy(changedElements, e => e.elemID.getFullName())
+    // Clone the elements because getDetailedChanges can change its input
+    const clonedElements = changedElements.map(e => e.clone())
+    const relevantWorkspaceElements = workspace.elements
+      .filter(e => changedElementMap[e.elemID.getFullName()] !== undefined)
+
+    const changes = wu(await getDetailedChanges(relevantWorkspaceElements, clonedElements))
       .map(change => ({ change, serviceChange: change }))
+      .map(toChangesWithPath(name => changedElementMap[name] || []))
+      .flatten()
     const errored = errors.length > 0
     return {
       success: !errored,

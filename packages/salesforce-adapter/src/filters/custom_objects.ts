@@ -9,16 +9,16 @@ import {
 import { SalesforceClient } from 'index'
 import { DescribeSObjectResult, Field as SObjField, SaveResult, UpsertResult } from 'jsforce'
 import _ from 'lodash'
-import { API_NAME, CUSTOM_OBJECT, METADATA_TYPE, SALESFORCE,
-  INSTANCE_FULL_NAME_FIELD, SALESFORCE_CUSTOM_SUFFIX, LABEL, FIELD_DEPENDENCY_FIELDS,
-  FIELD_TYPE_API_NAMES, FIELD_ANNOTATIONS, VALUE_SET_FIELDS,
-  LOOKUP_FILTER_FIELDS, VALUE_SETTINGS_FIELDS, API_NAME_SEPERATOR,
-  VALUE_SET_DEFINITION_FIELDS, DEFAULT_VALUE_FORMULA,
-  CUSTOM_OBJECT_ANNOTATIONS, FIELD_TYPE_NAMES } from '../constants'
+import {
+  API_NAME, CUSTOM_OBJECT, METADATA_TYPE, SALESFORCE, INSTANCE_FULL_NAME_FIELD,
+  SALESFORCE_CUSTOM_SUFFIX, LABEL, FIELD_DEPENDENCY_FIELDS, LOOKUP_FILTER_FIELDS,
+  VALUE_SETTINGS_FIELDS, API_NAME_SEPERATOR, FIELD_ANNOTATIONS, VALUE_SET_DEFINITION_FIELDS,
+  CUSTOM_OBJECT_ANNOTATIONS, VALUE_SET_FIELDS, DEFAULT_VALUE_FORMULA, FIELD_TYPE_NAMES,
+} from '../constants'
 import { FilterCreator } from '../filter'
 import {
   getSObjectFieldElement, Types, isCustomObject, bpCase, apiName, transformPrimitive,
-  toMetadataInfo, sfCase,
+  toMetadataInfo,
 } from '../transformers/transformer'
 import { id, addApiName, addMetadataType, addLabel, hasNamespace,
   getNamespace, boolValue } from './utils'
@@ -32,19 +32,19 @@ export const INSTANCE_TYPE_FIELD = 'type'
 
 // The below annotationTypes' data is returned when using ReadMetadata on the CustomObject instances
 export const customObjectAnnotationTypeIds = {
-  [CUSTOM_OBJECT_ANNOTATIONS.WEB_LINKS]: new ElemID(SALESFORCE, 'web_link'),
-  [CUSTOM_OBJECT_ANNOTATIONS.VALIDATION_RULES]: new ElemID(SALESFORCE, 'validation_rule'),
-  [CUSTOM_OBJECT_ANNOTATIONS.BUSINESS_PROCESSES]: new ElemID(SALESFORCE, 'business_process'),
-  [CUSTOM_OBJECT_ANNOTATIONS.RECORD_TYPES]: new ElemID(SALESFORCE, 'record_type'),
-  [CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS]: new ElemID(SALESFORCE, 'list_view'),
-  [CUSTOM_OBJECT_ANNOTATIONS.FIELD_SETS]: new ElemID(SALESFORCE, 'field_set'),
-  [CUSTOM_OBJECT_ANNOTATIONS.COMPACT_LAYOUTS]: new ElemID(SALESFORCE, 'compact_layout'),
-  [CUSTOM_OBJECT_ANNOTATIONS.SHARING_REASONS]: new ElemID(SALESFORCE, 'sharing_reason'),
-  [CUSTOM_OBJECT_ANNOTATIONS.INDEXES]: new ElemID(SALESFORCE, 'index'),
+  [CUSTOM_OBJECT_ANNOTATIONS.WEB_LINKS]: new ElemID(SALESFORCE, 'WebLink'),
+  [CUSTOM_OBJECT_ANNOTATIONS.VALIDATION_RULES]: new ElemID(SALESFORCE, 'ValidationRule'),
+  [CUSTOM_OBJECT_ANNOTATIONS.BUSINESS_PROCESSES]: new ElemID(SALESFORCE, 'BusinessProcess'),
+  [CUSTOM_OBJECT_ANNOTATIONS.RECORD_TYPES]: new ElemID(SALESFORCE, 'RecordType'),
+  [CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS]: new ElemID(SALESFORCE, 'ListView'),
+  [CUSTOM_OBJECT_ANNOTATIONS.FIELD_SETS]: new ElemID(SALESFORCE, 'FieldSet'),
+  [CUSTOM_OBJECT_ANNOTATIONS.COMPACT_LAYOUTS]: new ElemID(SALESFORCE, 'CompactLayout'),
+  [CUSTOM_OBJECT_ANNOTATIONS.SHARING_REASONS]: new ElemID(SALESFORCE, 'SharingReason'),
+  [CUSTOM_OBJECT_ANNOTATIONS.INDEXES]: new ElemID(SALESFORCE, 'Index'),
 }
 
 const getFieldType = (type: string): Type =>
-  (_.isUndefined(type) ? BuiltinTypes.STRING : Types.get(bpCase(type)))
+  (_.isUndefined(type) ? BuiltinTypes.STRING : Types.get(type))
 
 const createObjectWithFields = (objectName: string, serviceIds: ServiceIds,
   fields: Field[]): ObjectType => {
@@ -166,7 +166,7 @@ const transfromAnnotationsNames = (fields: Values, parentApiName: string): Value
         annotations[API_NAME] = [parentApiName, v].join(API_NAME_SEPERATOR)
         break
       case FIELD_ANNOTATIONS.DEFAULT_VALUE:
-        if (typeName === FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.CHECKBOX]) {
+        if (typeName === FIELD_TYPE_NAMES.CHECKBOX) {
           annotations[k] = v
         } else {
           annotations[DEFAULT_VALUE_FORMULA] = v
@@ -226,16 +226,7 @@ const transformFieldAnnotations = (
     return {}
   }
 
-  const getFieldTypeFromName = (typeName: string): Type | undefined => {
-    const apiTypeName = Object.entries(FIELD_TYPE_API_NAMES)
-      .find(([_k, v]) => v === typeName)?.[0]
-    const dataTypeName = apiTypeName === 'checkbox' ? 'boolean' : apiTypeName
-    return dataTypeName
-      ? (Types.getKnownType(dataTypeName, true) || Types.getKnownType(dataTypeName, false))
-      : undefined
-  }
-
-  const fieldType = getFieldTypeFromName(instanceFieldValues[INSTANCE_TYPE_FIELD])
+  const fieldType = Types.getKnownType(instanceFieldValues[INSTANCE_TYPE_FIELD], true)
   if (_.isUndefined(fieldType)) {
     return {}
   }
@@ -293,7 +284,7 @@ const mergeCustomObjectWithInstance = (
 
 const createObjectTypeFromInstance = (instance: InstanceElement): ObjectType => {
   const objectName = instance.value[INSTANCE_FULL_NAME_FIELD]
-  const objectElemID = new ElemID(SALESFORCE, bpCase(objectName), 'type')
+  const objectElemID = new ElemID(SALESFORCE, bpCase(objectName))
   const instanceFields = makeArray(instance.value.fields)
   const object = new ObjectType({ elemID: objectElemID,
     fields: Object.assign({}, ...instanceFields
@@ -306,7 +297,7 @@ const createObjectTypeFromInstance = (instance: InstanceElement): ObjectType => 
     annotations: { [API_NAME]: objectName,
       [METADATA_TYPE]: CUSTOM_OBJECT,
       [LABEL]: instance.value[LABEL] } })
-  const objectPathType = bpCase(objectName).endsWith(SALESFORCE_CUSTOM_SUFFIX) ? 'custom' : 'standard'
+  const objectPathType = objectName.endsWith(SALESFORCE_CUSTOM_SUFFIX) ? 'custom' : 'standard'
   object.path = [SALESFORCE, 'objects',
     objectPathType, bpCase(objectName)]
   return object
@@ -382,26 +373,22 @@ const filterCreator: FilterCreator = ({ client }) => ({
         .value()
       // Fix some annotationTypes definitions
       if (annotationTypesFromInstance[CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS]) {
-        annotationTypesFromInstance[CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS].fields.columns
-          .isList = true
-        annotationTypesFromInstance[CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS].fields.filters
-          .isList = true
-        annotationTypesFromInstance[CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS].fields.filters.type.fields
-          .operation = new Field(
-            annotationTypesFromInstance[CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS].fields.filters.type.elemID, 'operation',
-            BuiltinTypes.STRING, {
-              [CORE_ANNOTATIONS.RESTRICTION]: { [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: true },
-              [CORE_ANNOTATIONS.VALUES]: [
-                'equals', 'notEqual', 'lessThan', 'greaterThan', 'lessOrEqual',
-                'greaterOrEqual', 'contains', 'notContain', 'startsWith',
-                'includes', 'excludes', 'within',
-              ],
-            },
-          )
-        // eslint-disable-next-line @typescript-eslint/camelcase
-        annotationTypesFromInstance[CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS].fields.filter_scope = new
-        Field(
-          customObjectAnnotationTypeIds[CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS], 'filter_scope',
+        const listViews = annotationTypesFromInstance[CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS]
+        listViews.fields.columns.isList = true
+        listViews.fields.filters.isList = true
+        listViews.fields.filters.type.fields.operation = new Field(
+          listViews.fields.filters.type.elemID, 'operation',
+          BuiltinTypes.STRING, {
+            [CORE_ANNOTATIONS.RESTRICTION]: { [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: true },
+            [CORE_ANNOTATIONS.VALUES]: [
+              'equals', 'notEqual', 'lessThan', 'greaterThan', 'lessOrEqual',
+              'greaterOrEqual', 'contains', 'notContain', 'startsWith',
+              'includes', 'excludes', 'within',
+            ],
+          },
+        )
+        listViews.fields.filterScope = new Field(
+          customObjectAnnotationTypeIds[CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS], 'filterScope',
           BuiltinTypes.STRING, {
             [CORE_ANNOTATIONS.RESTRICTION]: { [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: true },
             [CORE_ANNOTATIONS.VALUES]: ['Everything', 'Mine',
@@ -410,9 +397,9 @@ const filterCreator: FilterCreator = ({ client }) => ({
         )
       }
       if (annotationTypesFromInstance[CUSTOM_OBJECT_ANNOTATIONS.FIELD_SETS]) {
-        annotationTypesFromInstance[CUSTOM_OBJECT_ANNOTATIONS.FIELD_SETS].fields.available_fields
+        annotationTypesFromInstance[CUSTOM_OBJECT_ANNOTATIONS.FIELD_SETS].fields.availableFields
           .isList = true
-        annotationTypesFromInstance[CUSTOM_OBJECT_ANNOTATIONS.FIELD_SETS].fields.displayed_fields
+        annotationTypesFromInstance[CUSTOM_OBJECT_ANNOTATIONS.FIELD_SETS].fields.displayedFields
           .isList = true
       }
       if (annotationTypesFromInstance[CUSTOM_OBJECT_ANNOTATIONS.COMPACT_LAYOUTS]) {
@@ -420,10 +407,9 @@ const filterCreator: FilterCreator = ({ client }) => ({
           .isList = true
       }
       if (annotationTypesFromInstance[CUSTOM_OBJECT_ANNOTATIONS.WEB_LINKS]) {
-        // eslint-disable-next-line @typescript-eslint/camelcase
-        annotationTypesFromInstance[CUSTOM_OBJECT_ANNOTATIONS.WEB_LINKS].fields.display_type = new
-        Field(
-          customObjectAnnotationTypeIds[CUSTOM_OBJECT_ANNOTATIONS.WEB_LINKS], 'display_type',
+        const webLinks = annotationTypesFromInstance[CUSTOM_OBJECT_ANNOTATIONS.WEB_LINKS]
+        webLinks.fields.displayType = new Field(
+          customObjectAnnotationTypeIds[CUSTOM_OBJECT_ANNOTATIONS.WEB_LINKS], 'displayType',
           BuiltinTypes.STRING, {
             [CORE_ANNOTATIONS.RESTRICTION]: { [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: true },
             [CORE_ANNOTATIONS.VALUES]: ['link', 'button', 'massActionButton'],
@@ -491,8 +477,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
 
     return _.flatten(_.flatten((await Promise.all(Object.entries(customObjectAnnotationTypeIds)
       .map(([annotationName, elemID]) =>
-        handleObjectAnnotationChanges(annotationName,
-          sfCase(elemID.name)))))))
+        handleObjectAnnotationChanges(annotationName, elemID.name))))))
   },
 
   onAdd: async (after: Element): Promise<UpsertResult[]> => {
@@ -501,7 +486,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
     }
     return _.flatten((await Promise.all(Object.entries(customObjectAnnotationTypeIds)
       .map(([annotationName, elemID]) =>
-        client.upsert(sfCase(elemID.name),
+        client.upsert(elemID.name,
           makeArray(after.annotations[annotationName])
             .map(val => toMetadataInfo(val[INSTANCE_FULL_NAME_FIELD], val)))))))
   },

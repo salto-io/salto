@@ -88,10 +88,9 @@ const findNestedElementPath = (
 }
 
 type ChangeTransformFunction = (sourceChange: FetchChange) => FetchChange[]
-const toChangesWithPath = (
+export const toChangesWithPath = (
   serviceElementByFullName: (fullName: string) => Element[]
-):
-  ChangeTransformFunction => (
+): ChangeTransformFunction => (
   change => {
     const changeID: ElemID = change.change.id
     if (!changeID.isTopLevel() && change.change.action === 'add') {

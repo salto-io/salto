@@ -4,7 +4,6 @@ import {
 } from 'adapter-api'
 import filterCreator, { CANVAS_METADATA_TYPE_ID, SAML_INIT_METHOD_FIELD_NAME }
   from '../../src/filters/saml_initiation_method'
-import { bpCase } from '../../src/transformers/transformer'
 import { FilterWith } from '../../src/filter'
 
 describe('saml initiation method filter', () => {
@@ -26,7 +25,7 @@ describe('saml initiation method filter', () => {
     'fake',
     mockType,
     {
-      [bpCase(SAML_INIT_METHOD_FIELD_NAME)]: '0',
+      [SAML_INIT_METHOD_FIELD_NAME]: '0',
     },
   )
 
@@ -44,16 +43,16 @@ describe('saml initiation method filter', () => {
   describe('on fetch', () => {
     it('should transform illegal val to None', async () => {
       await filter.onFetch(testElements)
-      expect((testElements[1] as InstanceElement).value[bpCase(SAML_INIT_METHOD_FIELD_NAME)])
+      expect((testElements[1] as InstanceElement).value[SAML_INIT_METHOD_FIELD_NAME])
         .toEqual('None')
     })
 
     it('should keep legal val to', async () => {
       (testElements[1] as InstanceElement)
-        .value[bpCase(SAML_INIT_METHOD_FIELD_NAME)] = 'IdpInitiated'
+        .value[SAML_INIT_METHOD_FIELD_NAME] = 'IdpInitiated'
       await filter.onFetch(testElements)
       expect((testElements[1] as InstanceElement)
-        .value[bpCase(SAML_INIT_METHOD_FIELD_NAME)]).toEqual('IdpInitiated')
+        .value[SAML_INIT_METHOD_FIELD_NAME]).toEqual('IdpInitiated')
     })
   })
 })

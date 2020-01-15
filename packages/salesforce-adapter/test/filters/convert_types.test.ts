@@ -5,7 +5,6 @@ import {
 } from 'adapter-api'
 import makeFilter from '../../src/filters/convert_types'
 import * as constants from '../../src/constants'
-import { bpCase } from '../../src/transformers/transformer'
 import { FilterWith } from '../../src/filter'
 import { SETTINGS_METADATA_TYPE } from '../../src/filters/settings_type'
 import mockClient from '../client'
@@ -37,9 +36,11 @@ describe('convert types filter', () => {
           [CORE_ANNOTATIONS.RESTRICTION]: { [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: true } }),
     },
   })
-  const XSI_TYPE = 'xsi_type'
-  const UNDERSCORE = '_'
-  const EMPTY_STRING = ''
+  type XsdValueType = { _: string; $: { 'xsi:type': string }}
+  const xsdValue = (val: string, type: string): XsdValueType => ({
+    _: val,
+    $: { 'xsi:type': type },
+  })
   const mockInstance = new InstanceElement(
     'test_inst_with_list',
     mockType,
@@ -50,42 +51,26 @@ describe('convert types filter', () => {
       boolAsStr: 'false',
       numAsStr: '12',
       numAsNum: 12,
-      // eslint-disable-next-line @typescript-eslint/camelcase
-      nullStr: { '': { xsi_nil: 'true' } },
+      nullStr: { $: { 'xsi:nil': 'true' } },
       values: [{
         field: 'xsdString',
-        value: {
-          [UNDERSCORE]: 'stringVal',
-          [EMPTY_STRING]: { [XSI_TYPE]: 'xsd:string' },
-        },
+        value: xsdValue('stringVal', 'xsd:string'),
       },
       {
         field: 'xsdBoolean',
-        value: {
-          [UNDERSCORE]: 'false',
-          [EMPTY_STRING]: { [XSI_TYPE]: 'xsd:boolean' },
-        },
+        value: xsdValue('false', 'xsd:boolean'),
       },
       {
         field: 'xsdInt',
-        value: {
-          [UNDERSCORE]: '6',
-          [EMPTY_STRING]: { [XSI_TYPE]: 'xsd:int' },
-        },
+        value: xsdValue('6', 'xsd:int'),
       },
       {
         field: 'xsdLong',
-        value: {
-          [UNDERSCORE]: '6.1',
-          [EMPTY_STRING]: { [XSI_TYPE]: 'xsd:long' },
-        },
+        value: xsdValue('6.1', 'xsd:long'),
       },
       {
         field: 'xsdDouble',
-        value: {
-          [UNDERSCORE]: '6.2',
-          [EMPTY_STRING]: { [XSI_TYPE]: 'xsd:double' },
-        },
+        value: xsdValue('6.2', 'xsd:double'),
       }],
       numArray: ['12', '13', '14'],
       picklist: '0',
@@ -95,7 +80,7 @@ describe('convert types filter', () => {
   const mockSettings = new InstanceElement(
     'test_settings',
     new ObjectType({
-      elemID: new ElemID(constants.SALESFORCE, bpCase(SETTINGS_METADATA_TYPE)),
+      elemID: new ElemID(constants.SALESFORCE, SETTINGS_METADATA_TYPE),
     }),
     {},
   )

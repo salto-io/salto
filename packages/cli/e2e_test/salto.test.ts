@@ -43,8 +43,8 @@ describe('commands e2e', () => {
 
   const addModelBP = `${__dirname}/../../e2e_test/BP/add.bp`
   const configFile = `${__dirname}/../../e2e_test/BP/salto.config/config.bp`
-  const NEW_INSTANCE_BASE_ELEM_NAME = 'new_instance_name'
-  const NEW_OBJECT_BASE_ELEM_NAME = 'new_object_name'
+  const NEW_INSTANCE_BASE_ELEM_NAME = 'NewInstanceName'
+  const NEW_OBJECT_BASE_ELEM_NAME = 'NewObjectName'
 
   let homePath: string
   let fetchOutputDir: string
@@ -138,13 +138,13 @@ describe('commands e2e', () => {
         SALESFORCE,
         newObjectElemName, { [API_NAME]: newObjectApiName },
         {
-          alpha: apiNameAnno(newObjectApiName, 'Alpha__c'),
-          beta: apiNameAnno(newObjectApiName, 'Beta__c'),
+          Alpha: apiNameAnno(newObjectApiName, 'Alpha__c'),
+          Beta: apiNameAnno(newObjectApiName, 'Beta__c'),
         }
       )
     })
     it('should update the instance in the BP', async () => {
-      verifyInstance(workspace, SALESFORCE, PROFILE.toLowerCase(), newInstanceElemName,
+      verifyInstance(workspace, SALESFORCE, PROFILE, newInstanceElemName,
         { description: 'To Be Modified', [INSTANCE_FULL_NAME_FIELD]: newInstanceFullName })
     })
     afterAll(async () => {
@@ -155,7 +155,7 @@ describe('commands e2e', () => {
   describe('deploy after modifying the object and the instance', () => {
     beforeAll(async () => {
       await editBlueprint(tmpBP, [
-        ['beta', 'modified'],
+        ['Beta', 'Modified'],
         ['Beta__c', 'Modified__c'],
         ['To Be Modified', 'I Am Modified'],
       ])
@@ -190,13 +190,13 @@ describe('commands e2e', () => {
         SALESFORCE,
         newObjectElemName, { [API_NAME]: newObjectApiName },
         {
-          alpha: apiNameAnno(newObjectApiName, 'Alpha__c'),
-          modified: apiNameAnno(newObjectApiName, 'Modified__c'),
+          Alpha: apiNameAnno(newObjectApiName, 'Alpha__c'),
+          Modified: apiNameAnno(newObjectApiName, 'Modified__c'),
         }
       )
     })
     it('should have no change in the instance', async () => {
-      verifyInstance(workspace, SALESFORCE, PROFILE.toLowerCase(), newInstanceElemName,
+      verifyInstance(workspace, SALESFORCE, PROFILE, newInstanceElemName,
         { description: 'I Am Modified', [INSTANCE_FULL_NAME_FIELD]: newInstanceFullName })
     })
     afterAll(async () => {

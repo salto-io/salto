@@ -7,7 +7,7 @@ import { SaveResult } from 'jsforce'
 import { FilterCreator } from '../filter'
 import { CUSTOM_FIELD, FIELD_ANNOTATIONS } from '../constants'
 import { CustomField } from '../client/types'
-import { mapKeysRecursive, sfCase, toCustomField } from '../transformers/transformer'
+import { toCustomField } from '../transformers/transformer'
 
 const getLookupFilter = (field: Field): Values =>
   field.annotations[FIELD_ANNOTATIONS.LOOKUP_FILTER]
@@ -21,9 +21,10 @@ const getFieldsWithLookupFilter = (obj: ObjectType): Field[] =>
 const createCustomFieldWithLookupFilter = (fieldWithLookupFilter: Field):
   CustomField => {
   const customField = toCustomField(fieldWithLookupFilter, true)
-  _.assign(customField, mapKeysRecursive(_.pickBy(fieldWithLookupFilter.annotations,
-    (_val, annotationValue) => (annotationValue === FIELD_ANNOTATIONS.LOOKUP_FILTER)),
-  key => sfCase(key, false, false)))
+  _.assign(
+    customField,
+    _.pick(fieldWithLookupFilter.annotations, FIELD_ANNOTATIONS.LOOKUP_FILTER),
+  )
   return customField
 }
 

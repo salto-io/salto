@@ -14,7 +14,7 @@ import { runSalesforceLogin } from './helpers/workspace'
 
 const { copyFile, rm, mkdirp, exists } = file
 
-const sfLeadObjectName = 'salesforce.lead'
+const sfLeadObjectName = 'salesforce.Lead'
 
 let homePath: string
 let fetchOutputDir: string

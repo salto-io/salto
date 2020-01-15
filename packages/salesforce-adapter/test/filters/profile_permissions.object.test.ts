@@ -1,6 +1,6 @@
 import {
   ObjectType, ElemID, Field, InstanceElement, isObjectType, BuiltinTypes,
-  ReferenceExpression, Value,
+  ReferenceExpression,
 } from 'adapter-api'
 import _ from 'lodash'
 import { metadataType } from '../../src/transformers/transformer'
@@ -34,24 +34,20 @@ describe('Object Permissions filter', () => {
     },
   })
 
-  const fullName = (profile: string): string => `salesforce.profile.instance.${profile}`
-  const ADMIN_FULL_NAME = fullName(ADMIN_PROFILE)
-  const ADMIN_NAME = 'Admin'
   const STANDARD_NAME = 'Standard'
   const admin = {
     [OBJECT_LEVEL_SECURITY_ANNOTATION]:
-      { [ALLOW_CREATE]: [ADMIN_NAME],
-        [ALLOW_DELETE]: [ADMIN_NAME],
-        [ALLOW_EDIT]: [ADMIN_NAME],
-        [ALLOW_READ]: [ADMIN_NAME],
-        [MODIFY_ALL_RECORDS]: [ADMIN_NAME],
-        [VIEW_ALL_RECORDS]: [ADMIN_NAME] },
+      { [ALLOW_CREATE]: [ADMIN_PROFILE],
+        [ALLOW_DELETE]: [ADMIN_PROFILE],
+        [ALLOW_EDIT]: [ADMIN_PROFILE],
+        [ALLOW_READ]: [ADMIN_PROFILE],
+        [MODIFY_ALL_RECORDS]: [ADMIN_PROFILE],
+        [VIEW_ALL_RECORDS]: [ADMIN_PROFILE] },
   }
-  const STANDARD_FULL_NAME = fullName('standard')
   const addStandard = (object: ObjectType): void =>
     object.annotations[OBJECT_LEVEL_SECURITY_ANNOTATION][ALLOW_READ].push(STANDARD_NAME)
 
-  const mockProfileElemID = new ElemID(constants.SALESFORCE, 'profile')
+  const mockProfileElemID = new ElemID(constants.SALESFORCE, PROFILE_METADATA_TYPE)
   const mockObjectPermissions = new ObjectType({
     elemID: new ElemID(constants.SALESFORCE, 'profile_object_level_security'),
     annotations: { [constants.METADATA_TYPE]: 'ProfileObjectLevelSecurity' },
@@ -69,7 +65,8 @@ describe('Object Permissions filter', () => {
       [constants.API_NAME]: 'Profile',
     },
   })
-  const mockAdmin = new InstanceElement('admin',
+  const mockAdmin = new InstanceElement(
+    ADMIN_PROFILE,
     mockProfile,
     {
       [constants.OBJECT_PERMISSIONS]: [
@@ -94,8 +91,10 @@ describe('Object Permissions filter', () => {
       ],
       description: 'Admin profile',
       [constants.INSTANCE_FULL_NAME_FIELD]: 'Admin',
-    })
-  const mockStandard = new InstanceElement('standard',
+    },
+  )
+  const mockStandard = new InstanceElement(
+    STANDARD_NAME,
     mockProfile,
     {
       [constants.OBJECT_PERMISSIONS]: [
@@ -111,7 +110,14 @@ describe('Object Permissions filter', () => {
       ],
       description: 'Standard profile',
       [constants.INSTANCE_FULL_NAME_FIELD]: 'Standard',
-    })
+    },
+  )
+  const adminRef = new ReferenceExpression(
+    mockAdmin.elemID.createNestedID(constants.INSTANCE_FULL_NAME_FIELD)
+  )
+  const standardRef = new ReferenceExpression(
+    mockStandard.elemID.createNestedID(constants.INSTANCE_FULL_NAME_FIELD)
+  )
 
   let mockUpdate: jest.Mock
 
@@ -145,25 +151,19 @@ describe('Object Permissions filter', () => {
       await filter().onFetch(elements)
       const objectTypes = elements.filter(isObjectType)
 
-      const verifyReference = (permission: Value, expectedValue: string): void => {
-        expect((permission[0] as ReferenceExpression).traversalParts).toEqual(
-          [...expectedValue.split('.'), constants.INSTANCE_FULL_NAME_FIELD]
-        )
-      }
-
       // Check mockObject has the right permissions
       const objectLevelSecurity = objectTypes[0]
         .annotations[OBJECT_LEVEL_SECURITY_ANNOTATION]
-      verifyReference(objectLevelSecurity[ALLOW_CREATE], ADMIN_FULL_NAME)
-      verifyReference(objectLevelSecurity[ALLOW_DELETE], ADMIN_FULL_NAME)
-      verifyReference(objectLevelSecurity[ALLOW_EDIT], STANDARD_FULL_NAME)
-      verifyReference(objectLevelSecurity[ALLOW_READ], ADMIN_FULL_NAME)
-      verifyReference(objectLevelSecurity[MODIFY_ALL_RECORDS], ADMIN_FULL_NAME)
-      verifyReference(objectLevelSecurity[VIEW_ALL_RECORDS], ADMIN_FULL_NAME)
+      expect(objectLevelSecurity[ALLOW_CREATE]).toEqual([adminRef])
+      expect(objectLevelSecurity[ALLOW_DELETE]).toEqual([adminRef])
+      expect(objectLevelSecurity[ALLOW_EDIT]).toEqual([standardRef])
+      expect(objectLevelSecurity[ALLOW_READ]).toEqual([adminRef])
+      expect(objectLevelSecurity[MODIFY_ALL_RECORDS]).toEqual([adminRef])
+      expect(objectLevelSecurity[VIEW_ALL_RECORDS]).toEqual([adminRef])
 
       const objectLevelSecurityExtend = objectTypes[1]
         .annotations[OBJECT_LEVEL_SECURITY_ANNOTATION]
-      verifyReference(objectLevelSecurityExtend[ALLOW_CREATE], ADMIN_FULL_NAME)
+      expect(objectLevelSecurityExtend[ALLOW_CREATE]).toEqual([adminRef])
       expect(objectLevelSecurityExtend[ALLOW_DELETE]).toEqual([])
       expect(objectLevelSecurityExtend[ALLOW_EDIT]).toEqual([])
       expect(objectLevelSecurityExtend[ALLOW_READ]).toEqual([])
@@ -187,13 +187,13 @@ describe('Object Permissions filter', () => {
     await filter().onAdd(after)
 
     expect(after.annotations[OBJECT_LEVEL_SECURITY_ANNOTATION])
-      .toEqual({ [ALLOW_CREATE]: [ADMIN_NAME],
-        [ALLOW_DELETE]: [ADMIN_NAME],
-        [ALLOW_EDIT]: [ADMIN_NAME],
-        [ALLOW_READ]: [ADMIN_NAME],
-        [MODIFY_ALL_RECORDS]: [ADMIN_NAME],
-        [VIEW_ALL_RECORDS]: [ADMIN_NAME] })
-    verifyUpdateCall(ADMIN_NAME, 'Test__c')
+      .toEqual({ [ALLOW_CREATE]: [adminRef],
+        [ALLOW_DELETE]: [adminRef],
+        [ALLOW_EDIT]: [adminRef],
+        [ALLOW_READ]: [adminRef],
+        [MODIFY_ALL_RECORDS]: [adminRef],
+        [VIEW_ALL_RECORDS]: [adminRef] })
+    verifyUpdateCall(ADMIN_PROFILE, 'Test__c')
   })
 
   it('should update object permissions upon new salesforce type', async () => {
@@ -204,7 +204,7 @@ describe('Object Permissions filter', () => {
     await filter().onAdd(after)
 
     // Verify permissions creation
-    verifyUpdateCall(ADMIN_NAME, 'Test__c', true, true, true, true, true, true)
+    verifyUpdateCall(ADMIN_PROFILE, 'Test__c', true, true, true, true, true, true)
     verifyUpdateCall(STANDARD_NAME, 'Test__c', false, false, false, true, false, false)
   })
 
@@ -234,13 +234,13 @@ describe('Object Permissions filter', () => {
       [{ action: 'modify', data: { before, after } }])
 
     expect(after.annotations[OBJECT_LEVEL_SECURITY_ANNOTATION])
-      .toEqual({ [ALLOW_CREATE]: [ADMIN_NAME],
-        [ALLOW_DELETE]: [ADMIN_NAME],
-        [ALLOW_EDIT]: [ADMIN_NAME],
-        [ALLOW_READ]: [ADMIN_NAME, STANDARD_NAME],
-        [MODIFY_ALL_RECORDS]: [ADMIN_NAME],
-        [VIEW_ALL_RECORDS]: [ADMIN_NAME] })
-    verifyUpdateCall(ADMIN_NAME, 'Test__c')
+      .toEqual({ [ALLOW_CREATE]: [ADMIN_PROFILE],
+        [ALLOW_DELETE]: [ADMIN_PROFILE],
+        [ALLOW_EDIT]: [ADMIN_PROFILE],
+        [ALLOW_READ]: [ADMIN_PROFILE, STANDARD_NAME],
+        [MODIFY_ALL_RECORDS]: [ADMIN_PROFILE],
+        [VIEW_ALL_RECORDS]: [ADMIN_PROFILE] })
+    verifyUpdateCall(ADMIN_PROFILE, 'Test__c')
     verifyUpdateCall(STANDARD_NAME, 'Test__c', false, false, false, true, false, false)
   })
 

@@ -3498,9 +3498,11 @@ describe('Salesforce adapter E2E with real account', () => {
               name: 'TestWorkflowFieldUpdate',
               description: 'My Workflow Field Update',
               field: 'Company',
+              formula: 'LastName',
               notifyAssignee: false,
+              reevaluateOnChange: true,
               protected: false,
-              operation: 'Null',
+              operation: 'Formula',
             }, ...makeArray(newWorkflow.value[WORKFLOW_FIELD_UPDATES_FIELD])]
 
             await adapter.update(oldWorkflow, newWorkflow,
@@ -3524,14 +3526,21 @@ describe('Salesforce adapter E2E with real account', () => {
               field[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.MyWorkflowFieldUpdate')
             expect(workflowFieldUpdateToUpdate).toBeDefined()
             workflowFieldUpdateToUpdate.description = 'My Updated Workflow Field Update'
+            workflowFieldUpdateToUpdate.field = 'Rating'
+            workflowFieldUpdateToUpdate.operation = 'PreviousValue'
+            workflowFieldUpdateToUpdate.reevaluateOnChange = false
 
             await adapter.update(oldWorkflow, newWorkflow,
               [{ action: 'modify', data: { before: oldWorkflow, after: newWorkflow } }])
 
-            const workflowFieldUpdateInfo = await findInstance('WorkflowFieldUpdate', 'Lead.MyWorkflowFieldUpdate')
+            const workflowFieldUpdateInfo = await findInstance('WorkflowFieldUpdate',
+              'Lead.MyWorkflowFieldUpdate')
             expect(workflowFieldUpdateInfo).toBeDefined()
             expect(_.get(workflowFieldUpdateInfo, 'description'))
               .toEqual('My Updated Workflow Field Update')
+            expect(_.get(workflowFieldUpdateInfo, 'field')).toEqual('Rating')
+            expect(_.get(workflowFieldUpdateInfo, 'operation')).toEqual('PreviousValue')
+            expect(_.get(workflowFieldUpdateInfo, 'reevaluateOnChange')).toBeUndefined()
           })
         })
 
@@ -3683,6 +3692,21 @@ describe('Salesforce adapter E2E with real account', () => {
               .find(rule => rule[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.MyWorkflowRule')
             expect(workflowRuleToUpdate).toBeDefined()
             workflowRuleToUpdate.description = 'My Updated Workflow Rule'
+            workflowRuleToUpdate.criteriaItems = []
+            workflowRuleToUpdate.formula = 'true'
+            workflowRuleToUpdate.triggerType = 'onCreateOrTriggeringUpdate'
+            workflowRuleToUpdate.workflowTimeTriggers = [
+              {
+                actions: [
+                  {
+                    name: 'TestWorkflowFieldUpdate',
+                    type: 'FieldUpdate',
+                  },
+                ],
+                timeLength: '2',
+                workflowTimeTriggerUnit: 'Days',
+              },
+            ]
 
             await adapter.update(oldWorkflow, newWorkflow,
               [{ action: 'modify', data: { before: oldWorkflow, after: newWorkflow } }])
@@ -3690,6 +3714,14 @@ describe('Salesforce adapter E2E with real account', () => {
             const workflowRuleInfo = await findInstance('WorkflowRule', 'Lead.MyWorkflowRule')
             expect(workflowRuleInfo).toBeDefined()
             expect(_.get(workflowRuleInfo, 'description')).toEqual('My Updated Workflow Rule')
+            expect(_.get(workflowRuleInfo, 'criteriaItems')).toBeUndefined()
+            expect(_.get(workflowRuleInfo, 'formula')).toEqual('true')
+            expect(_.get(workflowRuleInfo, 'triggerType')).toEqual('onCreateOrTriggeringUpdate')
+            const workflowTimeTrigger = _.get(workflowRuleInfo, 'workflowTimeTriggers')
+            expect(workflowTimeTrigger.actions).toEqual({ name: 'TestWorkflowFieldUpdate',
+              type: 'FieldUpdate' })
+            expect(workflowTimeTrigger.timeLength).toEqual('2')
+            expect(workflowTimeTrigger.workflowTimeTriggerUnit).toEqual('Days')
           })
         })
 

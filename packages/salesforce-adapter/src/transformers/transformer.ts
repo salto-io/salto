@@ -348,6 +348,22 @@ export class Types {
     },
   })
 
+  private static TextLengthTypeElemID = new ElemID(SALESFORCE,
+    'TextLength')
+
+  private static TextLengthType = new PrimitiveType({
+    elemID: Types.TextLengthTypeElemID,
+    primitive: PrimitiveTypes.NUMBER,
+    annotations: {
+      [CORE_ANNOTATIONS.RESTRICTION]: {
+        // enforce_value is true since there are standard fields that don't follow this restriction
+        [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: false,
+        [RESTRICTION_ANNOTATIONS.MIN]: 1,
+        [RESTRICTION_ANNOTATIONS.MAX]: 255,
+      },
+    },
+  })
+
   private static TextAreaLengthTypeElemID = new ElemID(SALESFORCE,
     'TextAreaLength')
 
@@ -446,7 +462,8 @@ export class Types {
     primitive: PrimitiveTypes.NUMBER,
     annotations: {
       [CORE_ANNOTATIONS.RESTRICTION]: {
-        [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: true,
+        // enforce_value is true since there are standard fields that don't follow this restriction
+        [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: false,
         [RESTRICTION_ANNOTATIONS.MIN]: 3,
         [RESTRICTION_ANNOTATIONS.MAX]: 10,
       },
@@ -491,7 +508,7 @@ export class Types {
         [FIELD_ANNOTATIONS.UNIQUE]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.EXTERNAL_ID]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.CASE_SENSITIVE]: BuiltinTypes.BOOLEAN,
-        [FIELD_ANNOTATIONS.LENGTH]: BuiltinTypes.NUMBER,
+        [FIELD_ANNOTATIONS.LENGTH]: Types.TextLengthType,
       },
     }),
     Number: new PrimitiveType({
@@ -814,6 +831,7 @@ export class Types {
       Types.EncryptedTextLengthType, Types.TextAreaLengthType, Types.ScaleType,
       Types.LocationScaleType, Types.PrecisionType, Types.LongTextAreaVisibleLinesType,
       Types.MultiPicklistVisibleLinesType, Types.RichTextAreaVisibleLinesType,
+      Types.TextLengthType,
     ]
       .map(type => {
         const fieldType = type.clone()
@@ -1026,8 +1044,13 @@ export const getSObjectFieldElement = (parent: Element, field: Field,
     bpFieldType = getFieldType(FIELD_TYPE_NAMES.AUTONUMBER)
   } else if (field.type === 'string' && !field.compoundFieldName) { // string
     bpFieldType = getFieldType(FIELD_TYPE_NAMES.TEXT)
-  } else if ((field.type === 'double' && !field.compoundFieldName) || field.type === 'int') { // number
+  } else if ((field.type === 'double' && !field.compoundFieldName)) {
     bpFieldType = getFieldType(FIELD_TYPE_NAMES.NUMBER)
+    annotations[FIELD_ANNOTATIONS.PRECISION] = field.precision
+    annotations[FIELD_ANNOTATIONS.SCALE] = field.scale
+  } else if (field.type === 'int') {
+    bpFieldType = getFieldType(FIELD_TYPE_NAMES.NUMBER)
+    annotations[FIELD_ANNOTATIONS.PRECISION] = field.digits
   } else if (field.type === 'textarea' && field.length > 255) { // long text area & rich text area
     if (field.extraTypeInfo === 'plaintextarea') {
       bpFieldType = getFieldType(FIELD_TYPE_NAMES.LONGTEXTAREA)

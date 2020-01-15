@@ -1,6 +1,6 @@
 import {
   ObjectType, ElemID, PrimitiveType, Field, PrimitiveTypes,
-  InstanceElement, isObjectType, BuiltinTypes, ReferenceExpression, CORE_ANNOTATIONS,
+  InstanceElement, isObjectType, BuiltinTypes, CORE_ANNOTATIONS, ReferenceExpression,
 } from 'adapter-api'
 import _ from 'lodash'
 import { metadataType } from '../../src/transformers/transformer'
@@ -10,7 +10,10 @@ import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
 
-const { FIELD_LEVEL_SECURITY_ANNOTATION, ADMIN_PROFILE, PROFILE_METADATA_TYPE } = constants
+const {
+  FIELD_LEVEL_SECURITY_ANNOTATION, ADMIN_PROFILE, PROFILE_METADATA_TYPE, SALESFORCE,
+  INSTANCE_FULL_NAME_FIELD,
+} = constants
 
 describe('Field Permissions filter', () => {
   const { client } = mockClient()
@@ -44,16 +47,12 @@ describe('Field Permissions filter', () => {
     },
   })
 
-  const fullName = (profile: string): string => `salesforce.profile.instance.${profile}`
-  const ADMIN_FULL_NAME = fullName(ADMIN_PROFILE)
-  const ADMIN_NAME = 'Admin'
   const STANDARD_NAME = 'Standard'
   const ANALYTICS_CLOUD_INTEGRATION_USER_NAME = 'Analytics Cloud Integration User'
   const admin = {
     [FIELD_LEVEL_SECURITY_ANNOTATION]:
-      { editable: [ADMIN_NAME], readable: [ADMIN_NAME] },
+      { editable: [ADMIN_PROFILE], readable: [ADMIN_PROFILE] },
   }
-  const STANDARD_FULL_NAME = fullName('standard')
   const standard = {
     [FIELD_LEVEL_SECURITY_ANNOTATION]: { readable: [STANDARD_NAME] },
   }
@@ -66,7 +65,7 @@ describe('Field Permissions filter', () => {
     )
 
 
-  const mockProfileElemID = new ElemID(constants.SALESFORCE, 'profile')
+  const mockProfileElemID = new ElemID(SALESFORCE, PROFILE_METADATA_TYPE)
   const mockFieldPermissions = new ObjectType({
     elemID: new ElemID(constants.SALESFORCE, 'profile_field_level_security'),
     fields: {},
@@ -75,9 +74,11 @@ describe('Field Permissions filter', () => {
   const mockProfile = new ObjectType({
     elemID: mockProfileElemID,
     fields: {
-      [constants.FIELD_PERMISSIONS]: new Field(mockProfileElemID, 'field_permissions', mockFieldPermissions),
-      [constants.INSTANCE_FULL_NAME_FIELD]:
-        new Field(mockProfileElemID, constants.INSTANCE_FULL_NAME_FIELD, BuiltinTypes.SERVICE_ID),
+      [constants.FIELD_PERMISSIONS]: new Field(
+        mockProfileElemID, constants.FIELD_PERMISSIONS, mockFieldPermissions,
+      ),
+      [INSTANCE_FULL_NAME_FIELD]:
+        new Field(mockProfileElemID, INSTANCE_FULL_NAME_FIELD, BuiltinTypes.SERVICE_ID),
     },
     annotationTypes: {},
     annotations: {
@@ -85,7 +86,7 @@ describe('Field Permissions filter', () => {
       [constants.API_NAME]: 'Profile',
     },
   })
-  const mockAdmin = new InstanceElement('admin',
+  const mockAdmin = new InstanceElement(ADMIN_PROFILE,
     mockProfile,
     {
       [constants.FIELD_PERMISSIONS]: [
@@ -106,9 +107,9 @@ describe('Field Permissions filter', () => {
         },
       ],
       description: 'Admin profile',
-      [constants.INSTANCE_FULL_NAME_FIELD]: 'Admin',
+      [INSTANCE_FULL_NAME_FIELD]: 'Admin',
     })
-  const mockStandard = new InstanceElement('standard',
+  const mockStandard = new InstanceElement('Standard',
     mockProfile,
     {
       [constants.FIELD_PERMISSIONS]: [
@@ -124,7 +125,7 @@ describe('Field Permissions filter', () => {
         },
       ],
       description: 'Standard profile',
-      [constants.INSTANCE_FULL_NAME_FIELD]: 'Standard',
+      [INSTANCE_FULL_NAME_FIELD]: 'Standard',
     })
   const mockNoFieldPerm = new InstanceElement('fake_no_field_permissions',
     mockProfile,
@@ -132,13 +133,13 @@ describe('Field Permissions filter', () => {
       description: 'Profile with no field_permissions',
     })
   const address = new Field(mockElemID, 'address', stringType, _.merge({},
-    { ...admin, [constants.API_NAME]: 'Test__c.Address__c' }))
+    { ...admin, [constants.API_NAME]: 'Test__c.address__c' }))
   const banana = new Field(mockElemID, 'banana', stringType, _.merge({},
-    { ...admin, [constants.API_NAME]: 'Test__c.Banana__c' }))
+    { ...admin, [constants.API_NAME]: 'Test__c.banana__c' }))
   const apple = new Field(mockElemID, 'apple', stringType, _.merge({},
-    { ...admin, [constants.API_NAME]: 'Test__c.Apple__c' }))
+    { ...admin, [constants.API_NAME]: 'Test__c.apple__c' }))
   const delta = new Field(mockElemID, 'delta', stringType, _.merge({},
-    { ...admin, [constants.API_NAME]: 'Test__c.Delta__c' }))
+    { ...admin, [constants.API_NAME]: 'Test__c.delta__c' }))
   addStandard(delta)
 
   let mockUpdate: jest.Mock
@@ -171,25 +172,28 @@ describe('Field Permissions filter', () => {
       // Check mockObject has the right permissions
       const fieldLevelSecurity = objectTypes[0].fields.description
         .annotations[FIELD_LEVEL_SECURITY_ANNOTATION]
-      expect((fieldLevelSecurity.readable[0] as ReferenceExpression).traversalParts).toEqual(
-        ADMIN_FULL_NAME.split('.')
+      expect(fieldLevelSecurity.readable[0].elemId).toEqual(
+        mockAdmin.elemID
       )
-      expect((fieldLevelSecurity.editable[0] as ReferenceExpression).traversalParts).toEqual(
-        STANDARD_FULL_NAME.split('.')
+      expect(fieldLevelSecurity.editable[0].elemId).toEqual(
+        mockStandard.elemID
       )
 
       const fieldLevelSecurityPlus = objectTypes[1].fields.plus
         .annotations[FIELD_LEVEL_SECURITY_ANNOTATION]
-      expect((fieldLevelSecurityPlus.readable[0] as ReferenceExpression).traversalParts)
-        .toEqual(ADMIN_FULL_NAME.split('.'))
+      expect(fieldLevelSecurityPlus.readable[0].elemId).toEqual(
+        mockAdmin.elemID
+      )
       expect(fieldLevelSecurityPlus.editable).toEqual([])
 
       const fieldLevelSecurityNoStandard = objectTypes[0].fields.noStandard
         .annotations[FIELD_LEVEL_SECURITY_ANNOTATION]
-      expect((fieldLevelSecurityNoStandard.readable[0] as ReferenceExpression).traversalParts)
-        .toEqual(ADMIN_FULL_NAME.split('.'))
-      expect((fieldLevelSecurityNoStandard.editable[0] as ReferenceExpression).traversalParts)
-        .toEqual(ADMIN_FULL_NAME.split('.'))
+      expect(fieldLevelSecurityNoStandard.readable[0].elemId).toEqual(
+        mockAdmin.elemID
+      )
+      expect(fieldLevelSecurityNoStandard.editable[0].elemId).toEqual(
+        mockAdmin.elemID
+      )
 
       // Check profile instances' field_permissions were deleted
       getProfileInstances(elements)
@@ -212,7 +216,7 @@ describe('Field Permissions filter', () => {
     await filter().onAdd(after)
 
     // Verify permissions creation
-    verifyUpdateCall(ADMIN_NAME, 'Test__c.Description__c')
+    verifyUpdateCall(ADMIN_PROFILE, 'Test__c.Description__c')
     verifyUpdateCall(ANALYTICS_CLOUD_INTEGRATION_USER_NAME, 'Test__c.Description__c', false, true)
     verifyUpdateCall(STANDARD_NAME, 'Test__c.Description__c', false, true)
   })
@@ -250,8 +254,8 @@ describe('Field Permissions filter', () => {
       ])
 
     // Verify the field permissions update
-    verifyUpdateCall(ADMIN_NAME, 'Test__c.Description__c')
-    verifyUpdateCall(ADMIN_NAME, 'Test__c.Apple__c')
+    verifyUpdateCall(ADMIN_PROFILE, 'Test__c.Description__c')
+    verifyUpdateCall(ADMIN_PROFILE, 'Test__c.apple__c')
   })
 
   it('should update field permissions upon update that include add and remove of fields',
@@ -269,7 +273,7 @@ describe('Field Permissions filter', () => {
       ])
 
       // Verify the field permissions update
-      verifyUpdateCall(ADMIN_NAME, 'Test__c.Apple__c')
+      verifyUpdateCall(ADMIN_PROFILE, 'Test__c.apple__c')
     })
 
   it('should not call update on remove field',
@@ -294,7 +298,7 @@ describe('Field Permissions filter', () => {
     const after = before.clone()
     // Add admin permissions with readable=true and editable=false for description field
     after.fields.description.annotations[FIELD_LEVEL_SECURITY_ANNOTATION] = { readable:
-      [ADMIN_NAME] }
+      [ADMIN_PROFILE] }
     // Add standard profile field permissions to address
     addStandard(after.fields.address)
 
@@ -308,8 +312,8 @@ describe('Field Permissions filter', () => {
     ])
 
     // Verify the field permissions creation
-    verifyUpdateCall(ADMIN_NAME, 'Test__c.Description__c', false, true)
-    verifyUpdateCall(STANDARD_NAME, 'Test__c.Address__c', false, true)
+    verifyUpdateCall(ADMIN_PROFILE, 'Test__c.Description__c', false, true)
+    verifyUpdateCall(STANDARD_NAME, 'Test__c.address__c', false, true)
   })
 
   it('should properly update the remaining fields permissions of the object', async () => {
@@ -343,19 +347,19 @@ describe('Field Permissions filter', () => {
     ])
 
     // Verify the field permissions change
-    verifyUpdateCall(STANDARD_NAME, 'Test__c.Delta__c', false, true)
+    verifyUpdateCall(STANDARD_NAME, 'Test__c.delta__c', false, true)
 
     // Banana field was removed so no need to explicitly remove from profile
     const adminProfile = mockUpdate.mock.calls[0][1][1]
-    expect(adminProfile.fullName).toBe(ADMIN_NAME)
+    expect(adminProfile.fullName).toBe(ADMIN_PROFILE)
     expect(adminProfile.fieldPermissions.length).toBe(3)
-    expect(adminProfile.fieldPermissions[0].field).toBe('Test__c.Delta__c')
+    expect(adminProfile.fieldPermissions[0].field).toBe('Test__c.delta__c')
     expect(adminProfile.fieldPermissions[0].editable).toBe(true)
     expect(adminProfile.fieldPermissions[0].readable).toBe(true)
-    expect(adminProfile.fieldPermissions[1].field).toBe('Test__c.Address__c')
+    expect(adminProfile.fieldPermissions[1].field).toBe('Test__c.address__c')
     expect(adminProfile.fieldPermissions[1].editable).toBe(false)
     expect(adminProfile.fieldPermissions[1].readable).toBe(false)
-    expect(adminProfile.fieldPermissions[2].field).toBe('Test__c.Apple__c')
+    expect(adminProfile.fieldPermissions[2].field).toBe('Test__c.apple__c')
     expect(adminProfile.fieldPermissions[2].editable).toBe(false)
     expect(adminProfile.fieldPermissions[2].readable).toBe(false)
   })
@@ -364,9 +368,13 @@ describe('Field Permissions filter', () => {
     const after = mockObject.clone()
     await filter().onAdd(after)
 
+    const adminRef = new ReferenceExpression(
+      mockAdmin.elemID.createNestedID(INSTANCE_FULL_NAME_FIELD)
+    )
+
     expect(after.fields.description.annotations[FIELD_LEVEL_SECURITY_ANNOTATION])
-      .toEqual({ editable: [ADMIN_NAME], readable: [ADMIN_NAME] })
-    verifyUpdateCall(ADMIN_NAME, 'Test__c.Description__c')
+      .toEqual({ editable: [adminRef], readable: [adminRef] })
+    verifyUpdateCall(ADMIN_PROFILE, 'Test__c.Description__c')
   })
 
   it('should set default field permissions upon update', async () => {
@@ -379,7 +387,7 @@ describe('Field Permissions filter', () => {
 
     expect(after.fields.apple.annotations[FIELD_LEVEL_SECURITY_ANNOTATION])
       .toEqual(admin[FIELD_LEVEL_SECURITY_ANNOTATION])
-    verifyUpdateCall(ADMIN_NAME, 'Test__c.Apple__c')
+    verifyUpdateCall(ADMIN_PROFILE, 'Test__c.apple__c')
   })
 
   it('should not set permissions for required fields', async () => {

@@ -2,7 +2,7 @@ import _ from 'lodash'
 import {
   Element, isObjectType, ElemID, findInstances, InstanceElement, ReferenceExpression,
 } from 'adapter-api'
-import { apiName, bpCase } from '../transformers/transformer'
+import { apiName } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
 import { SALESFORCE, SALESFORCE_CUSTOM_SUFFIX } from '../constants'
 import { id } from './utils'
@@ -36,7 +36,7 @@ const fixNames = (layouts: InstanceElement[]): void => {
     if (name(l).endsWith(LAYOUT_SUFFIX)) {
       updateElemID(l, _.trimEnd(name(l).slice(0, -1 * LAYOUT_SUFFIX.length), '_'))
     }
-    const objName = bpCase(layoutObj(l))
+    const objName = layoutObj(l)
     const objNameNoSuffix = objName.endsWith(SALESFORCE_CUSTOM_SUFFIX)
       ? objName.slice(0, -1 * SALESFORCE_CUSTOM_SUFFIX.length)
       : objName

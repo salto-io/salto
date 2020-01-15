@@ -1,12 +1,13 @@
 import _ from 'lodash'
 import {
   ObjectType, ElemID, InstanceElement, Field, Value, Element, Values, BuiltinTypes,
-  isInstanceElement, ReferenceExpression, CORE_ANNOTATIONS, RESTRICTION_ANNOTATIONS,
+  isInstanceElement, ReferenceExpression, CORE_ANNOTATIONS, RESTRICTION_ANNOTATIONS, findElement,
 } from 'adapter-api'
 import { MetadataInfo, PicklistEntry, RetrieveResult } from 'jsforce'
 import { collections } from '@salto/lowerdash'
 import * as constants from '../src/constants'
-import { STANDARD_VALUE_SET } from '../src/filters/standard_value_sets'
+import { STANDARD_VALUE_SET, STANDARD_VALUE } from '../src/filters/standard_value_sets'
+import { GLOBAL_VALUE_SET } from '../src/filters/global_value_sets'
 import {
   CustomObject,
   ProfileInfo,
@@ -17,7 +18,7 @@ import {
   TopicsForObjectsInfo,
 } from '../src/client/types'
 import {
-  Types, sfCase, fromMetadataInfo, bpCase, metadataType, apiName,
+  Types, fromMetadataInfo, metadataType, apiName, bpCase,
 } from '../src/transformers/transformer'
 import realAdapter from './adapter'
 import { findElements } from '../test/utils'
@@ -26,8 +27,9 @@ import SalesforceAdapter from '../src/adapter'
 import { fromRetrieveResult, toMetadataPackageZip } from '../src/transformers/xml_transformer'
 
 const { makeArray } = collections.array
-const { FIELD_LEVEL_SECURITY_ANNOTATION, PROFILE_METADATA_TYPE, ADMIN_PROFILE } = constants
-
+const {
+  FIELD_LEVEL_SECURITY_ANNOTATION, PROFILE_METADATA_TYPE, CUSTOM_OBJECT_ANNOTATIONS,
+} = constants
 
 const ADMIN = 'Admin'
 const STANDARD = 'Standard'
@@ -69,14 +71,38 @@ describe('Salesforce adapter E2E with real account', () => {
     return true
   }
 
+  const gvsName = 'TestGlobalValueSet'
   const fetchedRollupSummaryFieldName = 'rollupsummary__c'
+  const fetchedGlobalPicklistFieldName = 'gpicklist__c'
+  const accountApiName = 'Account'
 
   beforeAll(async () => {
     // enrich the salesforce account with several objects and fields that does not exist by default
     // in order to enrich our fetch test
-    const verifyAccountWithRollupSummaryExists = async (): Promise<void> => {
-      const accountApiName = 'Account'
-      await client.upsert(constants.CUSTOM_FIELD, {
+    const verifyCustomFieldsExists = async (): Promise<void> => {
+      // Add Global Value Set (needed for one of the custom fields)
+      await client.upsert('GlobalValueSet', {
+        fullName: gvsName,
+        masterLabel: gvsName,
+        sorted: false,
+        description: 'GlobalValueSet that should be fetched in e2e test',
+        customValue: [
+          {
+            fullName: 'Val1',
+            default: true,
+            label: 'Val1',
+          },
+          {
+            fullName: 'Val2',
+            default: false,
+            label: 'Val2',
+          },
+        ],
+      } as MetadataInfo)
+
+      // Add the custom fields
+      await client.upsert(constants.CUSTOM_FIELD, [
+      {
         fullName: `${accountApiName}.${fetchedRollupSummaryFieldName}`,
         label: 'Test Fetch Rollup Summary Field',
         summarizedField: 'Opportunity.Amount',
@@ -88,13 +114,32 @@ describe('Salesforce adapter E2E with real account', () => {
         summaryForeignKey: 'Opportunity.AccountId',
         summaryOperation: 'sum',
         type: 'Summary',
-      } as MetadataInfo)
+      } as MetadataInfo,
+      {
+        fullName: `${accountApiName}.${fetchedGlobalPicklistFieldName}`,
+        label: 'Test Fetch Global Picklist Field',
+        required: false,
+        valueSet: {
+          restricted: true,
+          valueSetName: gvsName,
+        },
+        type: 'Picklist',
+      } as MetadataInfo,
+      ])
+
+      // Add the fields permissions
       await client.update(PROFILE_METADATA_TYPE,
-        new ProfileInfo(sfCase(ADMIN_PROFILE), [{
+        new ProfileInfo(ADMIN, [{
           field: `${accountApiName}.${fetchedRollupSummaryFieldName}`,
           editable: true,
           readable: true,
-        }]))
+        },
+        {
+          field: `${accountApiName}.${fetchedGlobalPicklistFieldName}`,
+          editable: true,
+          readable: true,
+        },
+        ]))
     }
 
     const verifyEmailTemplateAndFolderExist = async (): Promise<void> => {
@@ -279,7 +324,7 @@ describe('Salesforce adapter E2E with real account', () => {
     }
 
     await Promise.all([
-      verifyAccountWithRollupSummaryExists(),
+      verifyCustomFieldsExists(),
       verifyEmailTemplateAndFolderExist(),
       verifyReportAndFolderExist(),
       verifyDashboardAndFolderExist(),
@@ -296,43 +341,43 @@ describe('Salesforce adapter E2E with real account', () => {
     describe('should fetch sobject', () => {
       it('should fetch sobject fields', async () => {
         // Check few field types on lead object
-        const lead = findElements(result, 'lead')[0] as ObjectType
+        const lead = findElements(result, 'Lead')[0] as ObjectType
 
         // Test few possible types
-        expect(lead.fields.address.type.elemID).toEqual(Types.compoundDataTypes.address.elemID)
-        expect(lead.fields.description.type.elemID).toEqual(
-          Types.primitiveDataTypes.longtextarea.elemID,
+        expect(lead.fields.Address.type.elemID).toEqual(Types.compoundDataTypes.address.elemID)
+        expect(lead.fields.Description.type.elemID).toEqual(
+          Types.primitiveDataTypes.LongTextArea.elemID,
         )
-        expect(lead.fields.name.type.elemID).toEqual(Types.compoundDataTypes.name.elemID)
-        expect(lead.fields.owner_id.type.elemID).toEqual(Types.primitiveDataTypes.lookup.elemID)
+        expect(lead.fields.Name.type.elemID).toEqual(Types.compoundDataTypes.name.elemID)
+        expect(lead.fields.OwnerId.type.elemID).toEqual(Types.primitiveDataTypes.Lookup.elemID)
 
         // Test label
-        expect(lead.fields.name.annotations[constants.LABEL]).toBe('Full Name')
+        expect(lead.fields.Name.annotations[constants.LABEL]).toBe('Full Name')
 
         // Test true and false required
-        expect(lead.fields.description.annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
-        expect(lead.fields.created_date.annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(true)
+        expect(lead.fields.Description.annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
+        expect(lead.fields.CreatedDate.annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(true)
 
         // Test picklist restriction.enforce_value prop
-        expect(lead.fields.industry
+        expect(lead.fields.Industry
           .annotations[constants.FIELD_ANNOTATIONS.RESTRICTED]).toBe(false)
-        expect(lead.fields.clean_status
+        expect(lead.fields.CleanStatus
           .annotations[constants.FIELD_ANNOTATIONS.RESTRICTED]).toBe(true)
 
         // Test standard picklist values from a standard value set
-        expect(lead.fields.lead_source
+        expect(lead.fields.LeadSource
           .annotations[constants.FIELD_ANNOTATIONS.VALUE_SET]).toEqual(
           new ReferenceExpression(new ElemID(
             constants.SALESFORCE,
-            bpCase(STANDARD_VALUE_SET),
+            STANDARD_VALUE_SET,
             'instance',
-            'lead_source',
-          ).createNestedID('standard_value'))
+            'LeadSource',
+          ).createNestedID(STANDARD_VALUE))
         )
 
         // Test picklist values
         expect(
-          lead.fields.clean_status
+          lead.fields.CleanStatus
             .annotations[constants.FIELD_ANNOTATIONS.VALUE_SET]
             .map((val: Values) => val[constants.VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]).sort()
         ).toEqual([
@@ -347,24 +392,31 @@ describe('Salesforce adapter E2E with real account', () => {
         ])
 
         // Test lookup reference_to annotation
-        expect(lead.fields.owner_id.annotations.reference_to).toEqual(['Group', 'User'])
+        expect(
+          lead.fields.OwnerId.annotations[constants.FIELD_ANNOTATIONS.REFERENCE_TO]
+        ).toEqual(['Group', 'User'])
 
         // Test lookup allow_lookup_record_deletion annotation
-        expect(lead.fields.owner_id.annotations.allow_lookup_record_deletion).toBe(true)
+        expect(
+          lead.fields.OwnerId.annotations[constants.FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION]
+        ).toBe(true)
 
         // Test _default
         // TODO: add test to primitive with _default and combobox _default
         //  (no real example for lead)
-        expect(lead.fields.status.annotations[constants.FIELD_ANNOTATIONS.DEFAULT_VALUE]).toBe(
+        expect(lead.fields.Status.annotations[constants.FIELD_ANNOTATIONS.DEFAULT_VALUE]).toBe(
           'Open - Not Contacted'
         )
 
         // Test Rollup Summary
-        const account = (findElements(result, 'account') as ObjectType[])
+        const account = (findElements(result, 'Account') as ObjectType[])
           .filter(a => a.fields[fetchedRollupSummaryFieldName])[0]
         expect(account).toBeDefined()
         const rollupSummary = account.fields[fetchedRollupSummaryFieldName]
-        expect(rollupSummary.type.elemID).toEqual(Types.primitiveDataTypes.rollupsummary.elemID)
+        expect(rollupSummary.type.elemID).toEqual(Types.primitiveDataTypes.Summary.elemID)
+        expect(rollupSummary.annotations).toHaveProperty(
+          constants.FIELD_ANNOTATIONS.SUMMARIZED_FIELD
+        )
         expect(rollupSummary.annotations[constants.FIELD_ANNOTATIONS.SUMMARIZED_FIELD])
           .toEqual('Opportunity.Amount')
         expect(rollupSummary.annotations[constants.FIELD_ANNOTATIONS.SUMMARY_FOREIGN_KEY])
@@ -381,78 +433,82 @@ describe('Salesforce adapter E2E with real account', () => {
 
       describe('should fetch sobject annotations from the custom object instance', () => {
         it('should fetch validation rules', async () => {
-          const lead = findElements(result, 'lead')[0] as ObjectType
-          expect(lead.annotationTypes.validation_rules).toBeDefined()
-          expect(lead.annotations.validation_rules).toBeDefined()
-          const validationRule = makeArray(lead.annotations.validation_rules)
-            .find(rule => rule[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.TestValidationRule')
+          const lead = findElements(result, 'Lead')[0] as ObjectType
+          expect(lead.annotationTypes).toHaveProperty(CUSTOM_OBJECT_ANNOTATIONS.VALIDATION_RULES)
+          expect(lead.annotations[CUSTOM_OBJECT_ANNOTATIONS.VALIDATION_RULES]).toBeDefined()
+          const validationRule = makeArray(
+            lead.annotations[CUSTOM_OBJECT_ANNOTATIONS.VALIDATION_RULES]
+          ).find(rule => rule[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.TestValidationRule')
           expect(validationRule.active).toBeTruthy()
         })
 
         it('should fetch business processes', async () => {
-          const lead = findElements(result, 'lead')[0] as ObjectType
-          expect(lead.annotationTypes.business_processes).toBeDefined()
-          expect(lead.annotations.business_processes).toBeDefined()
-          const businessProcess = makeArray(lead.annotations.business_processes)
-            .find(process =>
-              process[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.TestBusinessProcess')
-          expect(businessProcess.is_active).toBeTruthy()
+          const lead = findElements(result, 'Lead')[0] as ObjectType
+          expect(lead.annotationTypes[CUSTOM_OBJECT_ANNOTATIONS.BUSINESS_PROCESSES]).toBeDefined()
+          expect(lead.annotations[CUSTOM_OBJECT_ANNOTATIONS.BUSINESS_PROCESSES]).toBeDefined()
+          const businessProcess = makeArray(
+            lead.annotations[CUSTOM_OBJECT_ANNOTATIONS.BUSINESS_PROCESSES]
+          ).find(process =>
+            process[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.TestBusinessProcess')
+          expect(businessProcess.isActive).toBeTruthy()
         })
 
         it('should fetch record types', async () => {
-          const lead = findElements(result, 'lead')[0] as ObjectType
-          expect(lead.annotationTypes.record_types).toBeDefined()
-          expect(lead.annotations.record_types).toBeDefined()
-          const recordType = makeArray(lead.annotations.record_types)
-            .find(record => record[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.TestRecordType')
+          const lead = findElements(result, 'Lead')[0] as ObjectType
+          expect(lead.annotationTypes[CUSTOM_OBJECT_ANNOTATIONS.RECORD_TYPES]).toBeDefined()
+          expect(lead.annotations[CUSTOM_OBJECT_ANNOTATIONS.RECORD_TYPES]).toBeDefined()
+          const recordType = makeArray(
+            lead.annotations[CUSTOM_OBJECT_ANNOTATIONS.RECORD_TYPES]
+          ).find(record => record[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.TestRecordType')
           expect(recordType.active).toBeTruthy()
-          expect(recordType.business_process).toEqual('TestBusinessProcess')
+          expect(recordType.businessProcess).toEqual('TestBusinessProcess')
         })
 
         it('should fetch web links', async () => {
-          const lead = findElements(result, 'lead')[0] as ObjectType
-          expect(lead.annotationTypes.web_links).toBeDefined()
-          expect(lead.annotations.web_links).toBeDefined()
-          const webLink = makeArray(lead.annotations.web_links)
+          const lead = findElements(result, 'Lead')[0] as ObjectType
+          expect(lead.annotationTypes[CUSTOM_OBJECT_ANNOTATIONS.WEB_LINKS]).toBeDefined()
+          expect(lead.annotations[CUSTOM_OBJECT_ANNOTATIONS.WEB_LINKS]).toBeDefined()
+          const webLink = makeArray(lead.annotations[CUSTOM_OBJECT_ANNOTATIONS.WEB_LINKS])
             .find(link => link[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.TestWebLink')
           expect(webLink.availability).toEqual('online')
         })
 
         it('should fetch list views', async () => {
-          const lead = findElements(result, 'lead')[0] as ObjectType
-          expect(lead.annotationTypes.list_views).toBeDefined()
-          expect(lead.annotations.list_views).toBeDefined()
-          const listView = makeArray(lead.annotations.list_views)
+          const lead = findElements(result, 'Lead')[0] as ObjectType
+          expect(lead.annotationTypes[CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS]).toBeDefined()
+          expect(lead.annotations[CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS]).toBeDefined()
+          const listView = makeArray(lead.annotations[CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS])
             .find(view => view[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.TestListView')
           expect(listView.label).toEqual('E2E Fetch ListView')
         })
 
         it('should fetch field sets', async () => {
-          const lead = findElements(result, 'lead')[0] as ObjectType
-          expect(lead.annotationTypes.field_sets).toBeDefined()
-          expect(lead.annotations.field_sets).toBeDefined()
-          const fieldSet = makeArray(lead.annotations.field_sets)
+          const lead = findElements(result, 'Lead')[0] as ObjectType
+          expect(lead.annotationTypes[CUSTOM_OBJECT_ANNOTATIONS.FIELD_SETS]).toBeDefined()
+          expect(lead.annotations[CUSTOM_OBJECT_ANNOTATIONS.FIELD_SETS]).toBeDefined()
+          const fieldSet = makeArray(lead.annotations[CUSTOM_OBJECT_ANNOTATIONS.FIELD_SETS])
             .find(field => field[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.TestFieldSet')
           expect(fieldSet.label).toEqual('E2E Fetch FieldSet')
         })
 
         it('should fetch compact layouts', async () => {
-          const lead = findElements(result, 'lead')[0] as ObjectType
-          expect(lead.annotationTypes.compact_layouts).toBeDefined()
-          expect(lead.annotations.compact_layouts).toBeDefined()
-          const compactLayouts = makeArray(lead.annotations.compact_layouts)
-            .find(layout => layout[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.TestCompactLayout')
+          const lead = findElements(result, 'Lead')[0] as ObjectType
+          expect(lead.annotationTypes[CUSTOM_OBJECT_ANNOTATIONS.COMPACT_LAYOUTS]).toBeDefined()
+          expect(lead.annotations[CUSTOM_OBJECT_ANNOTATIONS.COMPACT_LAYOUTS]).toBeDefined()
+          const compactLayouts = makeArray(
+            lead.annotations[CUSTOM_OBJECT_ANNOTATIONS.COMPACT_LAYOUTS]
+          ).find(layout => layout[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.TestCompactLayout')
           expect(compactLayouts.label).toEqual('E2E Fetch CompactLayout')
         })
       })
     })
 
     it('should fetch metadata type', () => {
-      const flow = findElements(result, 'flow')[0] as ObjectType
+      const flow = findElements(result, 'Flow')[0] as ObjectType
       expect(flow.fields.description.type).toEqual(BuiltinTypes.STRING)
-      expect(flow.fields.is_template.type).toEqual(BuiltinTypes.BOOLEAN)
-      expect(flow.fields.action_calls.type).toEqual(findElements(result, 'flow_action_call')[0])
-      expect(flow.fields.process_type
+      expect(flow.fields.isTemplate.type).toEqual(BuiltinTypes.BOOLEAN)
+      expect(flow.fields.actionCalls.type).toEqual(findElements(result, 'FlowActionCall')[0])
+      expect(flow.fields.processType
         .annotations[CORE_ANNOTATIONS.RESTRICTION][RESTRICTION_ANNOTATIONS.ENFORCE_VALUE])
         .toEqual(false)
     })
@@ -461,7 +517,7 @@ describe('Salesforce adapter E2E with real account', () => {
       // As we fetch now only instances from the STANDALONE list,
       // settings is the only one with instance by default.
       // once we support adding instances test can be improved
-      const quoteSettings = findElements(result, 'settings_quote')
+      const quoteSettings = findElements(result, 'SettingsQuote')
         .filter(isInstanceElement)
         .pop() as InstanceElement
 
@@ -469,8 +525,8 @@ describe('Salesforce adapter E2E with real account', () => {
     })
 
     it('should retrieve EmailTemplate instance', () => {
-      const emailTemplate = findElements(result, 'email_template',
-        'test_email_folder_test_email_template')[0] as InstanceElement
+      const emailTemplate = findElements(result, 'EmailTemplate',
+        'TestEmailFolder_TestEmailTemplate')[0] as InstanceElement
       expect(emailTemplate.value[constants.INSTANCE_FULL_NAME_FIELD])
         .toEqual('TestEmailFolder/TestEmailTemplate')
       expect(emailTemplate.value.name).toEqual('Test Email Template Name')
@@ -478,39 +534,39 @@ describe('Salesforce adapter E2E with real account', () => {
     })
 
     it('should retrieve EmailFolder instance', () => {
-      const emailFolder = findElements(result, 'email_folder',
-        'test_email_folder')[0] as InstanceElement
+      const emailFolder = findElements(result, 'EmailFolder',
+        'TestEmailFolder')[0] as InstanceElement
       expect(emailFolder.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('TestEmailFolder')
       expect(emailFolder.value.name).toEqual('Test Email Folder Name')
-      expect(emailFolder.value.access_type).toEqual('Public')
+      expect(emailFolder.value.accessType).toEqual('Public')
     })
 
     it('should retrieve Report instance', () => {
-      const report = findElements(result, 'report',
-        'test_report_folder_test_report')[0] as InstanceElement
+      const report = findElements(result, 'Report',
+        'TestReportFolder_TestReport')[0] as InstanceElement
       expect(report.value[constants.INSTANCE_FULL_NAME_FIELD])
         .toEqual('TestReportFolder/TestReport')
       expect(report.value.name).toEqual('Test Report Name')
     })
 
     it('should retrieve ReportFolder instance', () => {
-      const reportFolder = findElements(result, 'report_folder',
-        'test_report_folder')[0] as InstanceElement
+      const reportFolder = findElements(result, 'ReportFolder',
+        'TestReportFolder')[0] as InstanceElement
       expect(reportFolder.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('TestReportFolder')
       expect(reportFolder.value.name).toEqual('Test Report Folder Name')
     })
 
     it('should retrieve Dashboard instance', () => {
-      const dashboard = findElements(result, 'dashboard',
-        'test_dashboard_folder_test_dashboard')[0] as InstanceElement
+      const dashboard = findElements(result, 'Dashboard',
+        'TestDashboardFolder_TestDashboard')[0] as InstanceElement
       expect(dashboard.value[constants.INSTANCE_FULL_NAME_FIELD])
         .toEqual('TestDashboardFolder/TestDashboard')
       expect(dashboard.value.title).toEqual('Test Dashboard Title')
     })
 
     it('should retrieve DashboardFolder instance', () => {
-      const dashboardFolder = findElements(result, 'dashboard_folder',
-        'test_dashboard_folder')[0] as InstanceElement
+      const dashboardFolder = findElements(result, 'DashboardFolder',
+        'TestDashboardFolder')[0] as InstanceElement
       expect(dashboardFolder.value[constants.INSTANCE_FULL_NAME_FIELD])
         .toEqual('TestDashboardFolder')
       expect(dashboardFolder.value.name).toEqual('Test Dashboard Folder Name')
@@ -559,7 +615,7 @@ describe('Salesforce adapter E2E with real account', () => {
       })
     }
 
-    const stringType = Types.primitiveDataTypes.text
+    const stringType = Types.primitiveDataTypes.Text
 
     it('should add new profile instance', async () => {
       const instanceElementName = 'TestAddProfileInstance__c'
@@ -622,7 +678,7 @@ describe('Salesforce adapter E2E with real account', () => {
         [constants.INSTANCE_FULL_NAME_FIELD]: instanceElementName,
       })
 
-      if (await objectExists(PROFILE_METADATA_TYPE, sfCase(instance.elemID.name))) {
+      if (await objectExists(PROFILE_METADATA_TYPE, apiName(instance))) {
         await adapter.remove(instance)
       }
 
@@ -633,7 +689,7 @@ describe('Salesforce adapter E2E with real account', () => {
 
       expect(
         await objectExists(
-          post.type.annotations[constants.METADATA_TYPE], sfCase(post.elemID.name)
+          post.type.annotations[constants.METADATA_TYPE], apiName(post)
         )
       ).toBeTruthy()
 
@@ -694,14 +750,14 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(post).toBeInstanceOf(ObjectType)
       expect(
         post.fields.description.annotations[constants.API_NAME]
-      ).toBe('TestAddCustom__c.Description__c')
+      ).toBe('TestAddCustom__c.description__c')
       expect(
         post.fields.formula.annotations[constants.API_NAME]
-      ).toBe('TestAddCustom__c.Formula__c')
+      ).toBe('TestAddCustom__c.formula__c')
 
-      expect(await objectExists(constants.CUSTOM_OBJECT, customObjectName, ['Description__c', 'Formula__c'])).toBe(true)
-      expect((await fieldPermissionExists('Admin', [`${customObjectName}.Description__c`]))[0]).toBe(true)
-      expect((await fieldPermissionExists('Standard', [`${customObjectName}.Description__c`]))[0]).toBe(true)
+      expect(await objectExists(constants.CUSTOM_OBJECT, customObjectName, ['description__c', 'formula__c'])).toBe(true)
+      expect((await fieldPermissionExists('Admin', [`${customObjectName}.description__c`]))[0]).toBe(true)
+      expect((await fieldPermissionExists('Standard', [`${customObjectName}.description__c`]))[0]).toBe(true)
       expect((await objectPermissionExists('Admin', [`${customObjectName}`]))[0]).toBe(true)
       expect((await objectPermissionExists('Standard', [`${customObjectName}`]))[0]).toBe(true)
 
@@ -792,7 +848,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'banana',
             stringType,
             {
-              [constants.API_NAME]: 'Banana__c',
+              [constants.API_NAME]: apiNameAnno(customObjectName, 'Banana__c'),
             },
           ),
           description: new Field(
@@ -823,9 +879,9 @@ describe('Salesforce adapter E2E with real account', () => {
         ])
 
       expect(modificationResult).toBeInstanceOf(ObjectType)
-      expect(await objectExists(constants.CUSTOM_OBJECT, customObjectName, ['Banana__c', 'Description__c'],
+      expect(await objectExists(constants.CUSTOM_OBJECT, customObjectName, ['Banana__c', 'description__c'],
         ['Address__c'])).toBe(true)
-      expect((await fieldPermissionExists('Admin', [`${customObjectName}.Description__c`]))[0]).toBe(true)
+      expect((await fieldPermissionExists('Admin', [`${customObjectName}.description__c`]))[0]).toBe(true)
 
       // Clean-up
       await adapter.remove(oldElement)
@@ -955,7 +1011,7 @@ describe('Salesforce adapter E2E with real account', () => {
 
       })
 
-      if (await objectExists(PROFILE_METADATA_TYPE, sfCase(oldInstance.elemID.name))) {
+      if (await objectExists(PROFILE_METADATA_TYPE, apiName(oldInstance))) {
         await adapter.remove(oldInstance)
       }
 
@@ -967,7 +1023,7 @@ describe('Salesforce adapter E2E with real account', () => {
 
       // Checking that the saved instance identical to newInstance
       const savedInstance = (await client.readMetadata(
-        PROFILE_METADATA_TYPE, sfCase(newInstance.elemID.name)
+        PROFILE_METADATA_TYPE, apiName(newInstance)
       ))[0] as Profile
 
       type Profile = ProfileInfo & {
@@ -1387,10 +1443,10 @@ describe('Salesforce adapter E2E with real account', () => {
           [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
         },
         fields: {
-          pickle: new Field(
+          Pickle: new Field(
             mockElemID,
-            'pickle',
-            Types.primitiveDataTypes.picklist,
+            'Pickle',
+            Types.primitiveDataTypes.Picklist,
             {
               [CORE_ANNOTATIONS.REQUIRED]: false,
               [constants.LABEL]: 'Picklist description label',
@@ -1408,10 +1464,10 @@ describe('Salesforce adapter E2E with real account', () => {
               ...adminReadable,
             },
           ),
-          alpha: new Field(
+          Alpha: new Field(
             mockElemID,
-            'alpha',
-            Types.primitiveDataTypes.currency,
+            'Alpha',
+            Types.primitiveDataTypes.Currency,
             {
               [CORE_ANNOTATIONS.REQUIRED]: false,
               [constants.DEFAULT_VALUE_FORMULA]: 25,
@@ -1421,10 +1477,10 @@ describe('Salesforce adapter E2E with real account', () => {
               ...adminReadable,
             },
           ),
-          bravo: new Field(
+          Bravo: new Field(
             mockElemID,
-            'bravo',
-            Types.primitiveDataTypes.autonumber,
+            'Bravo',
+            Types.primitiveDataTypes.AutoNumber,
             {
               [CORE_ANNOTATIONS.REQUIRED]: false,
               [constants.LABEL]: 'Autonumber description label',
@@ -1432,40 +1488,40 @@ describe('Salesforce adapter E2E with real account', () => {
               ...adminReadable,
             },
           ),
-          charlie: new Field(
+          Charlie: new Field(
             mockElemID,
-            'charlie',
-            Types.primitiveDataTypes.date,
+            'Charlie',
+            Types.primitiveDataTypes.Date,
             {
               [constants.LABEL]: 'Date description label',
               [constants.DEFAULT_VALUE_FORMULA]: 'Today() + 7',
               ...adminReadable,
             },
           ),
-          delta: new Field(
+          Delta: new Field(
             mockElemID,
-            'delta',
-            Types.primitiveDataTypes.time,
+            'Delta',
+            Types.primitiveDataTypes.Time,
             {
               [constants.LABEL]: 'Time description label',
               [constants.DEFAULT_VALUE_FORMULA]: 'TIMENOW() + 5',
               ...adminReadable,
             },
           ),
-          echo: new Field(
+          Echo: new Field(
             mockElemID,
-            'echo',
-            Types.primitiveDataTypes.datetime,
+            'Echo',
+            Types.primitiveDataTypes.DateTime,
             {
               [constants.LABEL]: 'DateTime description label',
               [constants.DEFAULT_VALUE_FORMULA]: 'Now() + 7',
               ...adminReadable,
             },
           ),
-          foxtrot: new Field(
+          Foxtrot: new Field(
             mockElemID,
-            'foxtrot',
-            Types.primitiveDataTypes.email,
+            'Foxtrot',
+            Types.primitiveDataTypes.Email,
             {
               [constants.LABEL]: 'Email description label',
               [constants.FIELD_ANNOTATIONS.UNIQUE]: true,
@@ -1473,9 +1529,9 @@ describe('Salesforce adapter E2E with real account', () => {
               ...adminReadable,
             },
           ),
-          golf: new Field(
+          Golf: new Field(
             mockElemID,
-            'golf',
+            'Golf',
             Types.compoundDataTypes.location,
             {
               [constants.LABEL]: 'Location description label',
@@ -1484,10 +1540,10 @@ describe('Salesforce adapter E2E with real account', () => {
               ...adminReadable,
             },
           ),
-          hotel: new Field(
+          Hotel: new Field(
             mockElemID,
-            'hotel',
-            Types.primitiveDataTypes.multipicklist,
+            'Hotel',
+            Types.primitiveDataTypes.MultiselectPicklist,
             {
               [constants.LABEL]: 'Multipicklist description label',
               [constants.FIELD_ANNOTATIONS.VALUE_SET]: [
@@ -1517,10 +1573,10 @@ describe('Salesforce adapter E2E with real account', () => {
               ...adminReadable,
             },
           ),
-          india: new Field(
+          India: new Field(
             mockElemID,
-            'india',
-            Types.primitiveDataTypes.percent,
+            'India',
+            Types.primitiveDataTypes.Percent,
             {
               [constants.LABEL]: 'Percent description label',
               [constants.FIELD_ANNOTATIONS.SCALE]: 3,
@@ -1528,48 +1584,48 @@ describe('Salesforce adapter E2E with real account', () => {
               ...adminReadable,
             },
           ),
-          juliett: new Field(
+          Juliett: new Field(
             mockElemID,
-            'juliett',
-            Types.primitiveDataTypes.phone,
+            'Juliett',
+            Types.primitiveDataTypes.Phone,
             {
               [constants.LABEL]: 'Phone description label',
               ...adminReadable,
             },
           ),
-          kilo: new Field(
+          Kilo: new Field(
             mockElemID,
-            'kilo',
-            Types.primitiveDataTypes.longtextarea,
+            'Kilo',
+            Types.primitiveDataTypes.LongTextArea,
             {
               [constants.LABEL]: 'LongTextArea description label',
               [constants.FIELD_ANNOTATIONS.VISIBLE_LINES]: 5,
               ...adminReadable,
             },
           ),
-          lima: new Field(
+          Lima: new Field(
             mockElemID,
-            'lima',
-            Types.primitiveDataTypes.richtextarea,
+            'Lima',
+            Types.primitiveDataTypes.Html,
             {
               [constants.LABEL]: 'RichTextArea description label',
               [constants.FIELD_ANNOTATIONS.VISIBLE_LINES]: 27,
               ...adminReadable,
             },
           ),
-          mike: new Field(
+          Mike: new Field(
             mockElemID,
-            'mike',
-            Types.primitiveDataTypes.textarea,
+            'Mike',
+            Types.primitiveDataTypes.TextArea,
             {
               [constants.LABEL]: 'TextArea description label',
               ...adminReadable,
             },
           ),
-          november: new Field(
+          November: new Field(
             mockElemID,
-            'november',
-            Types.primitiveDataTypes.encryptedtext,
+            'November',
+            Types.primitiveDataTypes.EncryptedText,
             {
               [constants.LABEL]: 'EncryptedText description label',
               [constants.FIELD_ANNOTATIONS.MASK_TYPE]: 'creditCard',
@@ -1578,19 +1634,19 @@ describe('Salesforce adapter E2E with real account', () => {
               ...adminReadable,
             },
           ),
-          oscar: new Field(
+          Oscar: new Field(
             mockElemID,
-            'oscar',
-            Types.primitiveDataTypes.url,
+            'Oscar',
+            Types.primitiveDataTypes.Url,
             {
               [constants.LABEL]: 'Url description label',
               ...adminReadable,
             },
           ),
-          papa: new Field(
+          Papa: new Field(
             mockElemID,
-            'papa',
-            Types.primitiveDataTypes.number,
+            'Papa',
+            Types.primitiveDataTypes.Number,
             {
               [constants.FIELD_ANNOTATIONS.SCALE]: 3,
               [constants.FIELD_ANNOTATIONS.PRECISION]: 15,
@@ -1600,10 +1656,10 @@ describe('Salesforce adapter E2E with real account', () => {
               ...adminReadable,
             },
           ),
-          queen: new Field(
+          Queen: new Field(
             mockElemID,
-            `queen${randomString}`,
-            Types.primitiveDataTypes.lookup,
+            `Queen${randomString}`,
+            Types.primitiveDataTypes.Lookup,
             {
               [CORE_ANNOTATIONS.REQUIRED]: false,
               [constants.FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION]: false,
@@ -1629,10 +1685,10 @@ describe('Salesforce adapter E2E with real account', () => {
               ...adminReadable,
             }
           ),
-          rocket: new Field(
+          Rocket: new Field(
             mockElemID,
-            `rocket${randomString}`,
-            Types.primitiveDataTypes.masterdetail,
+            `Rocket${randomString}`,
+            Types.primitiveDataTypes.MasterDetail,
             {
               [CORE_ANNOTATIONS.REQUIRED]: false,
               [constants.FIELD_ANNOTATIONS.REFERENCE_TO]: ['Case'],
@@ -1647,7 +1703,7 @@ describe('Salesforce adapter E2E with real account', () => {
       const rollupSummaryFieldApiName = `${rollupSummaryFieldName}__c`
 
       const findCustomCase = (): ObjectType => {
-        const caseObjects = findElements(result, 'case') as ObjectType[]
+        const caseObjects = findElements(result, 'Case') as ObjectType[]
         const customCase = caseObjects
           .filter(c => _.isUndefined(c.annotations[constants.API_NAME]))[0]
         const caseObject = customCase ?? caseObjects[0]
@@ -1659,16 +1715,18 @@ describe('Salesforce adapter E2E with real account', () => {
       }
 
       const normalizeReferences = (obj: ObjectType): void => {
-        const relFields = Object.values(obj.fields)
-          .filter(f => f.annotations[FIELD_LEVEL_SECURITY_ANNOTATION])
-        relFields.forEach(field => {
-          Object.entries(field.annotations[FIELD_LEVEL_SECURITY_ANNOTATION]).forEach(keyValue => {
-            // Change all reference expressions to the name without the full_name at the end.
-            const fullNames = (keyValue[1] as ReferenceExpression[]).map(ref =>
-              sfCase(ref.traversalParts[3]))
-            field.annotations[FIELD_LEVEL_SECURITY_ANNOTATION][keyValue[0]] = fullNames
+        const resolveRef = (ref: ReferenceExpression): string | undefined => {
+          const elem = findElement(result, ref.elemId)
+          return elem ? apiName(elem) : undefined
+        }
+        Object.values(obj.fields)
+          .map(field => field.annotations[FIELD_LEVEL_SECURITY_ANNOTATION])
+          .filter(fieldSecurity => fieldSecurity !== undefined)
+          .forEach(fieldSecurity => {
+            Object.entries(fieldSecurity).forEach(([key, values]) => {
+              fieldSecurity[key] = (values as ReferenceExpression[]).map(resolveRef)
+            })
           })
-        })
       }
 
       let origCase = findCustomCase()
@@ -1854,7 +1912,7 @@ describe('Salesforce adapter E2E with real account', () => {
           caseAfterFieldAddition.fields[rollupSummaryFieldName] = new Field(
             caseAfterFieldAddition.elemID,
             rollupSummaryFieldName,
-            Types.primitiveDataTypes.rollupsummary,
+            Types.primitiveDataTypes.Summary,
             {
               [CORE_ANNOTATIONS.REQUIRED]: false,
               [constants.LABEL]: 'Rollup Summary description label',
@@ -1926,7 +1984,7 @@ describe('Salesforce adapter E2E with real account', () => {
       oldElement.fields[lookupFieldName] = new Field(
         mockElemID,
         lookupFieldName,
-        Types.primitiveDataTypes.lookup,
+        Types.primitiveDataTypes.Lookup,
         {
           [constants.API_NAME]: lookupFieldApiFullName,
           [constants.FIELD_ANNOTATIONS.REFERENCE_TO]: ['Case'],
@@ -1958,7 +2016,7 @@ describe('Salesforce adapter E2E with real account', () => {
       newElement.fields[lookupFieldName] = new Field(
         mockElemID,
         lookupFieldName,
-        Types.primitiveDataTypes.lookup,
+        Types.primitiveDataTypes.Lookup,
         {
           [constants.API_NAME]: lookupFieldApiFullName,
           [constants.FIELD_ANNOTATIONS.REFERENCE_TO]: ['Case'],
@@ -2100,6 +2158,21 @@ describe('Salesforce adapter E2E with real account', () => {
       await adapter.remove(oldElement)
     })
 
+    it('should fetch GlobalValueSet', async () => {
+      const account = findElements(result, 'Account')[1] as ObjectType
+
+      expect(account.fields[fetchedGlobalPicklistFieldName]
+        .annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME])
+        .toEqual(new ReferenceExpression(
+          new ElemID(
+            constants.SALESFORCE,
+            bpCase(GLOBAL_VALUE_SET),
+            'instance',
+            bpCase(gvsName),
+          ).createNestedID(constants.INSTANCE_FULL_NAME_FIELD)
+        ))
+    })
+
     // Assignment rules are special because they use the Deploy API so they get their own test
     describe('assignment rules manipulation', () => {
       const getRulesFromClient = async (): Promise<Values> => fromMetadataInfo(
@@ -2107,7 +2180,7 @@ describe('Salesforce adapter E2E with real account', () => {
       )
 
       const dummyAssignmentRulesType = new ObjectType({
-        elemID: new ElemID(constants.SALESFORCE, 'assignment_rules'),
+        elemID: new ElemID(constants.SALESFORCE, 'AssignmentRules'),
         annotations: {
           [constants.METADATA_TYPE]: 'AssignmentRules',
         },
@@ -2122,13 +2195,13 @@ describe('Salesforce adapter E2E with real account', () => {
         await client.delete('AssignmentRule', 'Lead.NonStandard').catch(() => undefined)
 
         before = new InstanceElement(
-          'lead_assignment_rules',
+          'LeadAssignmentRules',
           dummyAssignmentRulesType,
           await getRulesFromClient(),
         )
         validAssignment = _.omit(
-          _.flatten([_.flatten([before.value.assignment_rule])[0].rule_entry]).pop(),
-          'criteria_items'
+          _.flatten([_.flatten([before.value.assignmentRule])[0].ruleEntry]).pop(),
+          'criteriaItems'
         )
       })
 
@@ -2145,16 +2218,13 @@ describe('Salesforce adapter E2E with real account', () => {
       })
 
       it('should create rule', async () => {
-        // eslint-disable-next-line @typescript-eslint/camelcase
-        after.value.assignment_rule = _.flatten([
-          after.value.assignment_rule,
+        after.value.assignmentRule = _.flatten([
+          after.value.assignmentRule,
           {
             [constants.INSTANCE_FULL_NAME_FIELD]: 'NonStandard',
             active: 'false',
-            // eslint-disable-next-line @typescript-eslint/camelcase
-            rule_entry: _.merge({}, validAssignment, {
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              criteria_items: {
+            ruleEntry: _.merge({}, validAssignment, {
+              criteriaItems: {
                 field: 'Lead.City',
                 operation: 'equals',
                 value: 'Here',
@@ -2167,7 +2237,7 @@ describe('Salesforce adapter E2E with real account', () => {
 
         const updatedRules = await getRulesFromClient()
         // Since assignment rules order is not relevant so we have to compare sets
-        expect(new Set(updatedRules.assignment_rule)).toEqual(new Set(after.value.assignment_rule))
+        expect(new Set(updatedRules.assignmentRule)).toEqual(new Set(after.value.assignmentRule))
 
         // Because removing assignment rules does not work currently, we have to clean up with a
         // different api call, this part of the test should be changed once removing rules works
@@ -2178,17 +2248,12 @@ describe('Salesforce adapter E2E with real account', () => {
       })
 
       it('should update existing', async () => {
-        // eslint-disable-next-line @typescript-eslint/camelcase
-        const rule = _.flatten([after.value.assignment_rule])[0]
-        // eslint-disable-next-line @typescript-eslint/camelcase
-        rule.rule_entry = _.flatten([rule.rule_entry])
-        rule.rule_entry.push(_.merge({}, validAssignment, {
-          // eslint-disable-next-line @typescript-eslint/camelcase
-          assigned_to: validAssignment.assigned_to,
-          // eslint-disable-next-line @typescript-eslint/camelcase
-          assigned_to_type: validAssignment.assigned_to_type,
-          // eslint-disable-next-line @typescript-eslint/camelcase
-          criteria_items: [
+        const rule = _.flatten([after.value.assignmentRule])[0]
+        rule.ruleEntry = _.flatten([rule.ruleEntry])
+        rule.ruleEntry.push(_.merge({}, validAssignment, {
+          assignedTo: validAssignment.assignedTo,
+          assignedToType: validAssignment.assigned_to_type,
+          criteriaItems: [
             {
               field: 'Lead.City',
               operation: 'startsWith',
@@ -2201,7 +2266,7 @@ describe('Salesforce adapter E2E with real account', () => {
             },
           ],
         }))
-        _.flatten([rule.rule_entry[0].criteria_items])[0].value = 'bla'
+        _.flatten([rule.ruleEntry[0].criteriaItems])[0].value = 'bla'
 
         await adapter.update(before, after, [])
 
@@ -2271,8 +2336,7 @@ describe('Salesforce adapter E2E with real account', () => {
             objectType,
             {
               [constants.INSTANCE_FULL_NAME_FIELD]: fullName,
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              api_version: API_VERSION,
+              apiVersion: API_VERSION,
               content,
             }
           )
@@ -2519,14 +2583,12 @@ describe('Salesforce adapter E2E with real account', () => {
           const reportTypeInstance = createInstanceElement('MyReportType',
             'ReportType', {
               label: 'My Report Type Label',
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              base_object: 'Account',
+              baseObject: 'Account',
               category: 'accounts',
               deployed: true,
               sections: [{
                 columns: [],
-                // eslint-disable-next-line @typescript-eslint/camelcase
-                master_label: 'Master Label',
+                masterLabel: 'Master Label',
               }],
             })
 
@@ -2587,8 +2649,7 @@ describe('Salesforce adapter E2E with real account', () => {
             'Report', {
               name: 'My Report Name',
               format: 'Summary',
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              report_type: 'Opportunity',
+              reportType: 'Opportunity',
             })
 
           beforeAll(async () => {
@@ -2646,29 +2707,19 @@ describe('Salesforce adapter E2E with real account', () => {
         describe('dashboard manipulation', () => {
           const dashboardInstance = createInstanceElement('TestDashboardFolder/MyDashboard',
             'Dashboard', {
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              background_end_color: '#FFFFFF',
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              background_fade_direction: 'Diagonal',
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              background_start_color: '#FFFFFF',
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              text_color: '#000000',
+              backgroundEndColor: '#FFFFFF',
+              backgroundFadeDirection: 'Diagonal',
+              backgroundStartColor: '#FFFFFF',
+              textColor: '#000000',
               title: 'My Dashboard Title',
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              title_color: '#000000',
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              title_size: '12',
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              left_section: {
-                // eslint-disable-next-line @typescript-eslint/camelcase
-                column_size: 'Medium',
+              titleColor: '#000000',
+              titleSize: '12',
+              leftSection: {
+                columnSize: 'Medium',
                 components: [],
               },
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              right_section: {
-                // eslint-disable-next-line @typescript-eslint/camelcase
-                column_size: 'Medium',
+              rightSection: {
+                columnSize: 'Medium',
                 components: [],
               },
             })
@@ -2713,7 +2764,7 @@ describe('Salesforce adapter E2E with real account', () => {
         Promise<void> => {
         if (await objectExists(type, fullName)) {
           await client.delete(type, fullName)
-          const lead = findElements(result, 'lead')[0] as ObjectType
+          const lead = findElements(result, 'Lead')[0] as ObjectType
           lead.annotations[annotationName] = makeArray(lead.annotations[annotationName])
             .filter(rule => rule[constants.INSTANCE_FULL_NAME_FIELD] !== fullName)
         }
@@ -2721,41 +2772,40 @@ describe('Salesforce adapter E2E with real account', () => {
 
       describe('validation rules manipulations', () => {
         beforeAll(async () => {
-          await removeIfAlreadyExists('ValidationRule', 'Lead.MyValidationRule', 'validation_rule')
+          await removeIfAlreadyExists(
+            'ValidationRule', 'Lead.MyValidationRule', CUSTOM_OBJECT_ANNOTATIONS.VALIDATION_RULES,
+          )
         })
 
         describe('create validation rule', () => {
           it('should create validation rule', async () => {
-            const oldLead = findElements(result, 'lead')[0] as ObjectType
+            const oldLead = findElements(result, 'Lead')[0] as ObjectType
             const newLead = oldLead.clone()
-            // eslint-disable-next-line @typescript-eslint/camelcase
-            newLead.annotations.validation_rules = [{
+            newLead.annotations[CUSTOM_OBJECT_ANNOTATIONS.VALIDATION_RULES] = [{
               [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead.MyValidationRule',
               active: true,
               description: 'My Validation Rule',
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              error_condition_formula: '$User.IsActive  = true',
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              error_message: 'Error Message!',
-            }, ...makeArray(newLead.annotations.validation_rules)]
+              errorConditionFormula: '$User.IsActive  = true',
+              errorMessage: 'Error Message!',
+            }, ...makeArray(newLead.annotations[CUSTOM_OBJECT_ANNOTATIONS.VALIDATION_RULES])]
 
             await adapter.update(oldLead, newLead,
               [{ action: 'modify', data: { before: oldLead, after: newLead } }])
 
             expect(await objectExists('ValidationRule', 'Lead.MyValidationRule')).toBeTruthy()
             // to save another fetch, we set the new validation rule on the old object
-            // eslint-disable-next-line @typescript-eslint/camelcase
-            oldLead.annotations.validation_rules = newLead.annotations.validation_rules
+            const newValidations = newLead.annotations[CUSTOM_OBJECT_ANNOTATIONS.VALIDATION_RULES]
+            oldLead.annotations[CUSTOM_OBJECT_ANNOTATIONS.VALIDATION_RULES] = newValidations
           })
         })
 
         describe('update validation rule', () => {
           it('should update validation rule', async () => {
-            const oldLead = findElements(result, 'lead')[0] as ObjectType
+            const oldLead = findElements(result, 'Lead')[0] as ObjectType
             const newLead = oldLead.clone()
-            // eslint-disable-next-line @typescript-eslint/camelcase
-            const validationRuleToUpdate = makeArray(newLead.annotations.validation_rules)
-              .find(rule => rule[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.MyValidationRule')
+            const validationRuleToUpdate = makeArray(
+              newLead.annotations[CUSTOM_OBJECT_ANNOTATIONS.VALIDATION_RULES]
+            ).find(rule => rule[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.MyValidationRule')
             expect(validationRuleToUpdate).toBeDefined()
             validationRuleToUpdate.description = 'My Updated Validation Rule'
 
@@ -2770,11 +2820,11 @@ describe('Salesforce adapter E2E with real account', () => {
 
         describe('delete validation rule', () => {
           it('should delete validation rule', async () => {
-            const oldLead = findElements(result, 'lead')[0] as ObjectType
+            const oldLead = findElements(result, 'Lead')[0] as ObjectType
             const newLead = oldLead.clone()
-            // eslint-disable-next-line @typescript-eslint/camelcase
-            newLead.annotations.validation_rules = makeArray(newLead.annotations.validation_rules)
-              .filter(rule => rule[constants.INSTANCE_FULL_NAME_FIELD] !== 'Lead.MyValidationRule')
+            newLead.annotations[CUSTOM_OBJECT_ANNOTATIONS.VALIDATION_RULES] = makeArray(
+              newLead.annotations[CUSTOM_OBJECT_ANNOTATIONS.VALIDATION_RULES],
+            ).filter(rule => rule[constants.INSTANCE_FULL_NAME_FIELD] !== 'Lead.MyValidationRule')
 
             await adapter.update(oldLead, newLead,
               [{ action: 'modify', data: { before: oldLead, after: newLead } }])
@@ -2791,32 +2841,22 @@ describe('Salesforce adapter E2E with real account', () => {
 
         describe('create web link', () => {
           it('should create web link', async () => {
-            const oldLead = findElements(result, 'lead')[0] as ObjectType
+            const oldLead = findElements(result, 'Lead')[0] as ObjectType
             const newLead = oldLead.clone()
-            // eslint-disable-next-line @typescript-eslint/camelcase
-            newLead.annotations.web_links = [{
+            newLead.annotations[constants.CUSTOM_OBJECT_ANNOTATIONS.WEB_LINKS] = [{
               [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead.MyWebLink',
               availability: 'online',
               description: 'My Web Link',
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              display_type: 'button',
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              encoding_key: 'UTF-8',
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              has_menubar: false,
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              has_scrollbars: true,
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              has_toolbar: false,
+              displayType: 'button',
+              encodingKey: 'UTF-8',
+              hasMenubar: false,
+              hasScrollbars: true,
+              hasToolbar: false,
               height: 600,
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              is_resizable: true,
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              link_type: 'url',
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              master_label: 'E2E Fetch WebLink',
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              open_type: 'newWindow',
+              isResizable: true,
+              linkType: 'url',
+              masterLabel: 'E2E Fetch WebLink',
+              openType: 'newWindow',
               position: 'none',
               protected: false,
               url: '{!Lead.CreatedBy} = "MyName"',
@@ -2827,18 +2867,18 @@ describe('Salesforce adapter E2E with real account', () => {
 
             expect(await objectExists('WebLink', 'Lead.MyWebLink')).toBeTruthy()
             // to save another fetch, we set the new web link on the old object
-            // eslint-disable-next-line @typescript-eslint/camelcase
-            oldLead.annotations.web_links = newLead.annotations.web_links
+            const links = newLead.annotations[constants.CUSTOM_OBJECT_ANNOTATIONS.WEB_LINKS]
+            oldLead.annotations[constants.CUSTOM_OBJECT_ANNOTATIONS.WEB_LINKS] = links
           })
         })
 
         describe('update web link', () => {
           it('should update web link', async () => {
-            const oldLead = findElements(result, 'lead')[0] as ObjectType
+            const oldLead = findElements(result, 'Lead')[0] as ObjectType
             const newLead = oldLead.clone()
-            // eslint-disable-next-line @typescript-eslint/camelcase
-            const webLinkToUpdate = makeArray(newLead.annotations.web_links)
-              .find(link => link[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.MyWebLink')
+            const webLinkToUpdate = makeArray(
+              newLead.annotations[constants.CUSTOM_OBJECT_ANNOTATIONS.WEB_LINKS]
+            ).find(link => link[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.MyWebLink')
             expect(webLinkToUpdate).toBeDefined()
             webLinkToUpdate.description = 'My Updated Web Link'
 
@@ -2853,11 +2893,11 @@ describe('Salesforce adapter E2E with real account', () => {
 
         describe('delete web link', () => {
           it('should delete web link', async () => {
-            const oldLead = findElements(result, 'lead')[0] as ObjectType
+            const oldLead = findElements(result, 'Lead')[0] as ObjectType
             const newLead = oldLead.clone()
-            // eslint-disable-next-line @typescript-eslint/camelcase
-            newLead.annotations.web_links = makeArray(newLead.annotations.web_links)
-              .filter(link => link[constants.INSTANCE_FULL_NAME_FIELD] !== 'Lead.MyWebLink')
+            newLead.annotations[constants.CUSTOM_OBJECT_ANNOTATIONS.WEB_LINKS] = makeArray(
+              newLead.annotations[constants.CUSTOM_OBJECT_ANNOTATIONS.WEB_LINKS]
+            ).filter(link => link[constants.INSTANCE_FULL_NAME_FIELD] !== 'Lead.MyWebLink')
 
             await adapter.update(oldLead, newLead,
               [{ action: 'modify', data: { before: oldLead, after: newLead } }])
@@ -2869,43 +2909,41 @@ describe('Salesforce adapter E2E with real account', () => {
 
       describe('list views manipulations', () => {
         beforeAll(async () => {
-          await removeIfAlreadyExists('ListView', 'Lead.MyListView', 'list_views')
+          await removeIfAlreadyExists('ListView', 'Lead.MyListView', '[CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS]')
         })
 
         describe('create list view', () => {
           it('should create list view', async () => {
-            const oldLead = findElements(result, 'lead')[0] as ObjectType
+            const oldLead = findElements(result, 'Lead')[0] as ObjectType
             const newLead = oldLead.clone()
-            // eslint-disable-next-line @typescript-eslint/camelcase
-            newLead.annotations.list_views = [{
+            newLead.annotations[CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS] = [{
               [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead.MyListView',
               label: 'My List View',
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              filter_scope: 'Everything',
+              filterScope: 'Everything',
               filters: {
                 field: 'LEAD.STATUS',
                 operation: 'equals',
                 value: 'closed',
               },
-            }, ...makeArray(newLead.annotations.list_views)]
+            }, ...makeArray(newLead.annotations[CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS])]
 
             await adapter.update(oldLead, newLead,
               [{ action: 'modify', data: { before: oldLead, after: newLead } }])
 
             expect(await objectExists('ListView', 'Lead.MyListView')).toBeTruthy()
             // to save another fetch, we set the new list view on the old object
-            // eslint-disable-next-line @typescript-eslint/camelcase
-            oldLead.annotations.list_views = newLead.annotations.list_views
+            const newLists = newLead.annotations[CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS]
+            oldLead.annotations[CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS] = newLists
           })
         })
 
         describe('update list view', () => {
           it('should update list view', async () => {
-            const oldLead = findElements(result, 'lead')[0] as ObjectType
+            const oldLead = findElements(result, 'Lead')[0] as ObjectType
             const newLead = oldLead.clone()
-            // eslint-disable-next-line @typescript-eslint/camelcase
-            const listViewToUpdate = makeArray(newLead.annotations.list_views)
-              .find(view => view[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.MyListView')
+            const listViewToUpdate = makeArray(
+              newLead.annotations[CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS]
+            ).find(view => view[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.MyListView')
             expect(listViewToUpdate).toBeDefined()
             listViewToUpdate.label = 'My Updated List View'
 
@@ -2920,11 +2958,11 @@ describe('Salesforce adapter E2E with real account', () => {
 
         describe('delete list view', () => {
           it('should delete list view', async () => {
-            const oldLead = findElements(result, 'lead')[0] as ObjectType
+            const oldLead = findElements(result, 'Lead')[0] as ObjectType
             const newLead = oldLead.clone()
-            // eslint-disable-next-line @typescript-eslint/camelcase
-            newLead.annotations.list_views = makeArray(newLead.annotations.list_views)
-              .filter(view => view[constants.INSTANCE_FULL_NAME_FIELD] !== 'Lead.MyListView')
+            newLead.annotations[CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS] = makeArray(
+              newLead.annotations[CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS]
+            ).filter(view => view[constants.INSTANCE_FULL_NAME_FIELD] !== 'Lead.MyListView')
 
             await adapter.update(oldLead, newLead,
               [{ action: 'modify', data: { before: oldLead, after: newLead } }])
@@ -2941,10 +2979,9 @@ describe('Salesforce adapter E2E with real account', () => {
 
         describe('create compact layout', () => {
           it('should create compact layout', async () => {
-            const oldLead = findElements(result, 'lead')[0] as ObjectType
+            const oldLead = findElements(result, 'Lead')[0] as ObjectType
             const newLead = oldLead.clone()
-            // eslint-disable-next-line @typescript-eslint/camelcase
-            newLead.annotations.compact_layouts = [{
+            newLead.annotations[constants.CUSTOM_OBJECT_ANNOTATIONS.COMPACT_LAYOUTS] = [{
               [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead.MyCompactLayout',
               label: 'My Compact Layout',
               fields: [
@@ -2958,18 +2995,18 @@ describe('Salesforce adapter E2E with real account', () => {
 
             expect(await objectExists('CompactLayout', 'Lead.MyCompactLayout')).toBeTruthy()
             // to save another fetch, we set the new compact layout on the old object
-            // eslint-disable-next-line @typescript-eslint/camelcase
-            oldLead.annotations.compact_layouts = newLead.annotations.compact_layouts
+            const layouts = newLead.annotations[constants.CUSTOM_OBJECT_ANNOTATIONS.COMPACT_LAYOUTS]
+            oldLead.annotations[constants.CUSTOM_OBJECT_ANNOTATIONS.COMPACT_LAYOUTS] = layouts
           })
         })
 
         describe('update compact layout', () => {
           it('should update compact layout', async () => {
-            const oldLead = findElements(result, 'lead')[0] as ObjectType
+            const oldLead = findElements(result, 'Lead')[0] as ObjectType
             const newLead = oldLead.clone()
-            // eslint-disable-next-line @typescript-eslint/camelcase
-            const compactLayoutToUpdate = makeArray(newLead.annotations.compact_layouts)
-              .find(layout => layout[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.MyCompactLayout')
+            const compactLayoutToUpdate = makeArray(
+              newLead.annotations[constants.CUSTOM_OBJECT_ANNOTATIONS.COMPACT_LAYOUTS]
+            ).find(layout => layout[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.MyCompactLayout')
             expect(compactLayoutToUpdate).toBeDefined()
             compactLayoutToUpdate.label = 'My Updated Compact Layout'
 
@@ -2984,11 +3021,11 @@ describe('Salesforce adapter E2E with real account', () => {
 
         describe('delete compact layout', () => {
           it('should delete compact layout', async () => {
-            const oldLead = findElements(result, 'lead')[0] as ObjectType
+            const oldLead = findElements(result, 'Lead')[0] as ObjectType
             const newLead = oldLead.clone()
-            // eslint-disable-next-line @typescript-eslint/camelcase
-            newLead.annotations.compact_layouts = makeArray(newLead.annotations.compact_layouts)
-              .filter(layout => layout[constants.INSTANCE_FULL_NAME_FIELD] !== 'Lead.MyCompactLayout')
+            newLead.annotations[constants.CUSTOM_OBJECT_ANNOTATIONS.COMPACT_LAYOUTS] = makeArray(
+              newLead.annotations[constants.CUSTOM_OBJECT_ANNOTATIONS.COMPACT_LAYOUTS]
+            ).filter(layout => layout[constants.INSTANCE_FULL_NAME_FIELD] !== 'Lead.MyCompactLayout')
 
             await adapter.update(oldLead, newLead,
               [{ action: 'modify', data: { before: oldLead, after: newLead } }])
@@ -3005,27 +3042,21 @@ describe('Salesforce adapter E2E with real account', () => {
 
         describe('create field set', () => {
           it('should create field set', async () => {
-            const oldLead = findElements(result, 'lead')[0] as ObjectType
+            const oldLead = findElements(result, 'Lead')[0] as ObjectType
             const newLead = oldLead.clone()
-            // eslint-disable-next-line @typescript-eslint/camelcase
-            newLead.annotations.field_sets = [{
+            newLead.annotations[constants.CUSTOM_OBJECT_ANNOTATIONS.FIELD_SETS] = [{
               [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead.MyFieldSet',
               description: 'My Field Set',
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              displayed_fields: [
+              displayedFields: [
                 {
                   field: 'State',
-                  // eslint-disable-next-line @typescript-eslint/camelcase
-                  is_field_managed: false,
-                  // eslint-disable-next-line @typescript-eslint/camelcase
-                  is_required: false,
+                  isFieldManaged: false,
+                  isRequired: false,
                 },
                 {
                   field: 'Status',
-                  // eslint-disable-next-line @typescript-eslint/camelcase
-                  is_field_managed: false,
-                  // eslint-disable-next-line @typescript-eslint/camelcase
-                  is_required: false,
+                  isFieldManaged: false,
+                  isRequired: false,
                 },
               ],
               label: 'My Field Set',
@@ -3036,18 +3067,18 @@ describe('Salesforce adapter E2E with real account', () => {
 
             expect(await objectExists('FieldSet', 'Lead.MyFieldSet')).toBeTruthy()
             // to save another fetch, we set the new field sets on the old object
-            // eslint-disable-next-line @typescript-eslint/camelcase
-            oldLead.annotations.field_sets = newLead.annotations.field_sets
+            const fieldSets = newLead.annotations[constants.CUSTOM_OBJECT_ANNOTATIONS.FIELD_SETS]
+            oldLead.annotations[constants.CUSTOM_OBJECT_ANNOTATIONS.FIELD_SETS] = fieldSets
           })
         })
 
         describe('update field set', () => {
           it('should update field set', async () => {
-            const oldLead = findElements(result, 'lead')[0] as ObjectType
+            const oldLead = findElements(result, 'Lead')[0] as ObjectType
             const newLead = oldLead.clone()
-            // eslint-disable-next-line @typescript-eslint/camelcase
-            const fieldSetToUpdate = makeArray(newLead.annotations.field_sets)
-              .find(fieldSet => fieldSet[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.MyFieldSet')
+            const fieldSetToUpdate = makeArray(
+              newLead.annotations[constants.CUSTOM_OBJECT_ANNOTATIONS.FIELD_SETS]
+            ).find(fieldSet => fieldSet[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.MyFieldSet')
             expect(fieldSetToUpdate).toBeDefined()
             fieldSetToUpdate.description = 'My Updated Field Set'
 
@@ -3062,11 +3093,11 @@ describe('Salesforce adapter E2E with real account', () => {
 
         describe('delete field set', () => {
           it('should delete field set', async () => {
-            const oldLead = findElements(result, 'lead')[0] as ObjectType
+            const oldLead = findElements(result, 'Lead')[0] as ObjectType
             const newLead = oldLead.clone()
-            // eslint-disable-next-line @typescript-eslint/camelcase
-            newLead.annotations.field_sets = makeArray(newLead.annotations.field_sets)
-              .filter(fieldSet => fieldSet[constants.INSTANCE_FULL_NAME_FIELD] !== 'Lead.MyFieldSet')
+            newLead.annotations[constants.CUSTOM_OBJECT_ANNOTATIONS.FIELD_SETS] = makeArray(
+              newLead.annotations[constants.CUSTOM_OBJECT_ANNOTATIONS.FIELD_SETS]
+            ).filter(fieldSet => fieldSet[constants.INSTANCE_FULL_NAME_FIELD] !== 'Lead.MyFieldSet')
 
             await adapter.update(oldLead, newLead,
               [{ action: 'modify', data: { before: oldLead, after: newLead } }])
@@ -3081,12 +3112,12 @@ describe('Salesforce adapter E2E with real account', () => {
         // Thus, we only update the existing BusinessProcess and not create new one.
         describe('update business process', () => {
           it('should update business process', async () => {
-            const oldLead = findElements(result, 'lead')[0] as ObjectType
+            const oldLead = findElements(result, 'Lead')[0] as ObjectType
             const newLead = oldLead.clone()
-            // eslint-disable-next-line @typescript-eslint/camelcase
-            const businessProcessToUpdate = makeArray(newLead.annotations.business_processes)
-              .find(process =>
-                process[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.TestBusinessProcess')
+            const businessProcessToUpdate = makeArray(
+              newLead.annotations[constants.CUSTOM_OBJECT_ANNOTATIONS.BUSINESS_PROCESSES]
+            ).find(process =>
+              process[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.TestBusinessProcess')
             expect(businessProcessToUpdate).toBeDefined()
             const randomString = String(Date.now()).substring(6)
             businessProcessToUpdate.description = `BusinessProcess that should be fetched in e2e test updated ${randomString}`
@@ -3108,11 +3139,11 @@ describe('Salesforce adapter E2E with real account', () => {
         // Thus, we only update the existing RecordType and not create new one.
         describe('update record type', () => {
           it('should update record type', async () => {
-            const oldLead = findElements(result, 'lead')[0] as ObjectType
+            const oldLead = findElements(result, 'Lead')[0] as ObjectType
             const newLead = oldLead.clone()
-            // eslint-disable-next-line @typescript-eslint/camelcase
-            const recordTypeToUpdate = makeArray(newLead.annotations.record_types)
-              .find(record => record[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.TestRecordType')
+            const recordTypeToUpdate = makeArray(
+              newLead.annotations[constants.CUSTOM_OBJECT_ANNOTATIONS.RECORD_TYPES]
+            ).find(record => record[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.TestRecordType')
             expect(recordTypeToUpdate).toBeDefined()
             const randomString = String(Date.now()).substring(6)
             recordTypeToUpdate.description = `RecordType that should be fetched in e2e test updated ${randomString}`
@@ -3136,47 +3167,33 @@ describe('Salesforce adapter E2E with real account', () => {
           annotations: {
             [constants.API_NAME]: customObjectName,
             [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
-            // eslint-disable-next-line @typescript-eslint/camelcase
-            web_links: {
+            [constants.CUSTOM_OBJECT_ANNOTATIONS.WEB_LINKS]: {
               [constants.INSTANCE_FULL_NAME_FIELD]: apiNameAnno(customObjectName, 'WebLink'),
               availability: 'online',
               description: 'My Web Link',
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              display_type: 'button',
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              encoding_key: 'UTF-8',
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              has_menubar: false,
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              has_scrollbars: true,
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              has_toolbar: false,
+              displayType: 'button',
+              encodingKey: 'UTF-8',
+              hasMenubar: false,
+              hasScrollbars: true,
+              hasToolbar: false,
               height: 600,
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              is_resizable: true,
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              link_type: 'url',
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              master_label: 'E2E Fetch WebLink',
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              open_type: 'newWindow',
+              isResizable: true,
+              linkType: 'url',
+              masterLabel: 'E2E Fetch WebLink',
+              openType: 'newWindow',
               position: 'none',
               protected: false,
               url: `!${customObjectName}.CreatedBy} = "MyName"`,
             },
-            // eslint-disable-next-line @typescript-eslint/camelcase
-            field_sets: [
+            [constants.CUSTOM_OBJECT_ANNOTATIONS.FIELD_SETS]: [
               {
                 [constants.INSTANCE_FULL_NAME_FIELD]: apiNameAnno(customObjectName, 'FieldSet1'),
                 description: 'My Field Set 1',
-                // eslint-disable-next-line @typescript-eslint/camelcase
-                displayed_fields: [
+                displayedFields: [
                   {
                     field: 'description__c',
-                    // eslint-disable-next-line @typescript-eslint/camelcase
-                    is_field_managed: false,
-                    // eslint-disable-next-line @typescript-eslint/camelcase
-                    is_required: false,
+                    isFieldManaged: false,
+                    isRequired: false,
                   },
                 ],
                 label: 'My Field Set 1',
@@ -3184,14 +3201,11 @@ describe('Salesforce adapter E2E with real account', () => {
               {
                 [constants.INSTANCE_FULL_NAME_FIELD]: apiNameAnno(customObjectName, 'FieldSet2'),
                 description: 'My Field Set 2',
-                // eslint-disable-next-line @typescript-eslint/camelcase
-                displayed_fields: [
+                displayedFields: [
                   {
                     field: 'description__c',
-                    // eslint-disable-next-line @typescript-eslint/camelcase
-                    is_field_managed: false,
-                    // eslint-disable-next-line @typescript-eslint/camelcase
-                    is_required: false,
+                    isFieldManaged: false,
+                    isRequired: false,
                   },
                 ],
                 label: 'My Field Set 2',
@@ -3214,7 +3228,10 @@ describe('Salesforce adapter E2E with real account', () => {
         }
         const created = await adapter.add(objectWithInnerTypes)
         expect(await objectExists(constants.CUSTOM_OBJECT, customObjectName)).toBeTruthy()
-        expect(created.annotations.web_links.full_name).toEqual(apiNameAnno(customObjectName, 'WebLink'))
+        const webLinks = created.annotations[constants.CUSTOM_OBJECT_ANNOTATIONS.WEB_LINKS]
+        expect(webLinks[constants.INSTANCE_FULL_NAME_FIELD]).toEqual(
+          apiNameAnno(customObjectName, 'WebLink')
+        )
         expect(await objectExists('WebLink', apiNameAnno(customObjectName, 'WebLink'))).toBeTruthy()
         expect(await objectExists('FieldSet', apiNameAnno(customObjectName, 'FieldSet1')))
           .toBeTruthy()

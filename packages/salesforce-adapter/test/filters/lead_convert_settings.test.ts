@@ -3,7 +3,7 @@ import {
   ObjectType, InstanceElement, Element, Field, BuiltinTypes,
 } from 'adapter-api'
 import filterCreator, {
-  LEAD_CONVERT_SETTINGS_TYPE_ID, LEAD_TYPE_ID, CONVERT_SETTINGS_ANNOTATION,
+  LEAD_CONVERT_SETTINGS_TYPE_ID, LEAD_TYPE_ID, CONVERT_SETTINGS_ANNOTATION, INSTANCE_FULL_NAME,
   OBJECT_MAPPING_FIELD, MAPPING_FIELDS_FIELD, INPUT_FIELD, OUTPUT_FIELD, OUTPUT_OBJECT,
 } from '../../src/filters/lead_convert_settings'
 import * as constants from '../../src/constants'
@@ -35,7 +35,7 @@ describe('lead convert settings filter', () => {
   )
 
   const mockConvertSettingsInstance = new InstanceElement(
-    'lead_convert_settings',
+    INSTANCE_FULL_NAME,
     mockConvertSettingsType,
     {
       [constants.INSTANCE_FULL_NAME_FIELD]: 'full',
@@ -94,7 +94,7 @@ describe('lead convert settings filter', () => {
       expect(value.fake).toBeTruthy()
     })
 
-    it('should remove full_name', async () => {
+    it('should remove fullName', async () => {
       const value = leadPostFilter.annotations[CONVERT_SETTINGS_ANNOTATION]
       expect(value[constants.INSTANCE_FULL_NAME_FIELD]).toBeUndefined()
       const type = leadPostFilter.annotationTypes[CONVERT_SETTINGS_ANNOTATION] as ObjectType
@@ -103,7 +103,7 @@ describe('lead convert settings filter', () => {
 
     it('should sort the mapping fields and the object mapping', async () => {
       const value = leadPostFilter.annotations[CONVERT_SETTINGS_ANNOTATION]
-      expect(value.object_mapping[0].mapping_fields).toEqual([
+      expect(value[OBJECT_MAPPING_FIELD][0][MAPPING_FIELDS_FIELD]).toEqual([
         {
           [INPUT_FIELD]: 'a',
           [OUTPUT_FIELD]: 'a',

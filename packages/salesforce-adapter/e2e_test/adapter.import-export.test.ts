@@ -12,15 +12,14 @@ import SalesforceAdapter from '../src/adapter'
 import realAdapter from './adapter'
 
 describe('Adapter E2E import-export related operations with real account', () => {
-  const sfLeadName = 'Lead'
-  const leadName = 'lead'
-  const stringType = Types.primitiveDataTypes.text
+  const leadName = 'Lead'
+  const stringType = Types.primitiveDataTypes.Text
 
   const leadElemID = new ElemID(constants.SALESFORCE, leadName)
   const leadType = new ObjectType({
     elemID: leadElemID,
     fields: {
-      firstName: new Field(
+      FirstName: new Field(
         leadElemID,
         'First Name',
         stringType,
@@ -28,7 +27,7 @@ describe('Adapter E2E import-export related operations with real account', () =>
           [constants.API_NAME]: 'FirstName',
         },
       ),
-      lastName: new Field(
+      LastName: new Field(
         leadElemID,
         'Last Name',
         stringType,
@@ -36,7 +35,7 @@ describe('Adapter E2E import-export related operations with real account', () =>
           [constants.API_NAME]: 'LastName',
         },
       ),
-      company: new Field(
+      Company: new Field(
         leadElemID,
         'Company',
         stringType,
@@ -47,7 +46,7 @@ describe('Adapter E2E import-export related operations with real account', () =>
     },
     annotationTypes: {},
     annotations: {
-      [constants.API_NAME]: sfLeadName,
+      [constants.API_NAME]: leadName,
     },
   })
 

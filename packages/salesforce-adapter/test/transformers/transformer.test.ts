@@ -7,14 +7,15 @@ import { collections } from '@salto/lowerdash'
 import { Field as SalesforceField, ValueTypeField } from 'jsforce'
 import {
   bpCase, getSObjectFieldElement, Types, toCustomField, toCustomObject,
-  getValueTypeFieldElement, getCompoundChildFields, sfCase, createMetadataTypeElements,
+  getValueTypeFieldElement, getCompoundChildFields, createMetadataTypeElements,
   transformReferences, restoreReferences,
 } from '../../src/transformers/transformer'
 import {
-  FIELD_ANNOTATIONS, FIELD_TYPE_NAMES, LABEL, FIELD_TYPE_API_NAMES, ADDRESS_FIELDS,
-  SALESFORCE, GEOLOCATION_FIELDS, NAME_FIELDS, API_NAME,
+  FIELD_ANNOTATIONS, FIELD_TYPE_NAMES, LABEL, ADDRESS_FIELDS,
+  SALESFORCE, GEOLOCATION_FIELDS, NAME_FIELDS, API_NAME, COMPOUND_FIELD_TYPE_NAMES,
   FIELD_LEVEL_SECURITY_ANNOTATION, FIELD_LEVEL_SECURITY_FIELDS, FIELD_DEPENDENCY_FIELDS,
   VALUE_SETTINGS_FIELDS, FILTER_ITEM_FIELDS, METADATA_TYPE, CUSTOM_OBJECT, INSTANCE_FULL_NAME_FIELD,
+  VALUE_SET_FIELDS,
 } from '../../src/constants'
 import { CustomField, FilterItem, CustomObject } from '../../src/client/types'
 import SalesforceClient from '../../src/client/client'
@@ -24,27 +25,21 @@ import { createValueSetEntry } from '../utils'
 const { makeArray } = collections.array
 
 describe('transformer', () => {
-  describe('bpCase & sfCase transformation', () => {
-    const assertBpTransformation = (bpName: string, sfName: string): void => {
-      expect(bpCase(sfName)).toEqual(bpName)
-    }
+  describe('bpCase', () => {
+    describe('names without special characters', () => {
+      const normalNames = [
+        'Offer__c', 'Lead', 'DSCORGPKG__DiscoverOrg_Update_History__c', 'NameWithNumber2',
+        'CRMFusionDBR101__Scenario__C',
+      ]
+      it('should remain the same', () => {
+        normalNames.forEach(name => expect(bpCase(name)).toEqual(name))
+      })
+    })
 
-    const assertNamingTransformation = (bpName: string, sfName: string): void => {
-      assertBpTransformation(bpName, sfName)
-      expect(sfCase(bpName)).toEqual(sfName)
-    }
-
-    it('should transform name correctly to bpCase', () => {
-      assertNamingTransformation('offer__c', 'Offer__c')
-      assertNamingTransformation('case_change_event', 'CaseChangeEvent')
-      assertBpTransformation('offer___change_event', 'Offer__ChangeEvent')
-      assertBpTransformation('column_preferences___change_event', 'ColumnPreferences__ChangeEvent')
-      assertBpTransformation('column__preferences___change_event', 'Column_Preferences__ChangeEvent')
-      assertNamingTransformation('name_with_number_2', 'NameWithNumber2')
-      assertBpTransformation('dscorgpkg___discover_org__update__history__c',
-        'DSCORGPKG__DiscoverOrg_Update_History__c')
-      assertBpTransformation('crm_fusion_dbr_101___scenario__c',
-        'CRMFusionDBR101__Scenario__C')
+    describe('names with spaces', () => {
+      it('should be replaced with _', () => {
+        expect(bpCase('Analytics Cloud Integration User')).toEqual('Analytics_Cloud_Integration_User')
+      })
     })
   })
 
@@ -147,7 +142,7 @@ describe('transformer', () => {
         expectedLookupFilter: object | undefined):
         void => {
         expect(fieldElement.type).toEqual(expectedType)
-        expect(fieldElement.name).toEqual('owner_id')
+        expect(fieldElement.name).toEqual('OwnerId')
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.REFERENCE_TO])
           .toHaveLength(expectedRelatedTo.length)
         expectedRelatedTo.forEach(expectedRelatedToValue =>
@@ -162,19 +157,19 @@ describe('transformer', () => {
       it('should fetch lookup relationships with restricted deletion', async () => {
         _.set(salesforceReferenceField, 'restrictedDelete', true)
         const fieldElement = getSObjectFieldElement(dummyElem, salesforceReferenceField, {})
-        assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.lookup, false, undefined)
+        assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.Lookup, false, undefined)
       })
 
       it('should fetch lookup relationships with allowed related record deletion when restrictedDelete set to false', async () => {
         _.set(salesforceReferenceField, 'restrictedDelete', false)
         const fieldElement = getSObjectFieldElement(dummyElem, salesforceReferenceField, {})
-        assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.lookup, true, undefined)
+        assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.Lookup, true, undefined)
       })
 
       it('should fetch lookup relationships with allowed related record deletion when restrictedDelete is undefined', async () => {
         _.set(salesforceReferenceField, 'restrictedDelete', undefined)
         const fieldElement = getSObjectFieldElement(dummyElem, salesforceReferenceField, {})
-        assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.lookup, true, undefined)
+        assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.Lookup, true, undefined)
       })
 
       it('should fetch masterdetail relationships', async () => {
@@ -182,7 +177,7 @@ describe('transformer', () => {
         salesforceReferenceField.updateable = true
         salesforceReferenceField.writeRequiresMasterRead = true
         const fieldElement = getSObjectFieldElement(dummyElem, salesforceReferenceField, {})
-        assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.masterdetail, undefined, undefined)
+        assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.MasterDetail, undefined, undefined)
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL]).toBe(true)
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ]).toBe(true)
       })
@@ -192,7 +187,7 @@ describe('transformer', () => {
         salesforceReferenceField.updateable = false
         delete salesforceReferenceField.writeRequiresMasterRead
         const fieldElement = getSObjectFieldElement(dummyElem, salesforceReferenceField, {})
-        assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.masterdetail, undefined, undefined)
+        assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.MasterDetail, undefined, undefined)
         expect(fieldElement.annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL]).toBe(false)
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ]).toBe(false)
@@ -201,7 +196,7 @@ describe('transformer', () => {
       it('should fetch lookup filters and init its annotation', async () => {
         _.set(salesforceReferenceField, 'filteredLookupInfo', {})
         const fieldElement = getSObjectFieldElement(dummyElem, salesforceReferenceField, {})
-        assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.lookup, true, {})
+        assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.Lookup, true, {})
       })
     })
 
@@ -265,14 +260,14 @@ describe('transformer', () => {
       it('should fetch field dependency and init its annotation for picklist', async () => {
         const fieldElement = getSObjectFieldElement(dummyElem, salesforceFieldDependencyField, {})
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY]).toEqual({})
-        expect(fieldElement.type).toEqual(Types.primitiveDataTypes.picklist)
+        expect(fieldElement.type).toEqual(Types.primitiveDataTypes.Picklist)
       })
 
       it('should fetch field dependency and init its annotation for multi picklist', async () => {
         salesforceFieldDependencyField.type = 'multipicklist'
         const fieldElement = getSObjectFieldElement(dummyElem, salesforceFieldDependencyField, {})
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY]).toEqual({})
-        expect(fieldElement.type).toEqual(Types.primitiveDataTypes.multipicklist)
+        expect(fieldElement.type).toEqual(Types.primitiveDataTypes.MultiselectPicklist)
       })
 
       it('should not init field dependency annotation when having no field dependency ', async () => {
@@ -337,13 +332,13 @@ describe('transformer', () => {
 
       it('should fetch rollup summary field', async () => {
         const fieldElement = getSObjectFieldElement(dummyElem, salesforceRollupSummaryField, {})
-        expect(fieldElement.type).toEqual(Types.primitiveDataTypes.rollupsummary)
+        expect(fieldElement.type).toEqual(Types.primitiveDataTypes.Summary)
       })
 
       it('should not fetch summary field if it is a calculated formula', async () => {
         salesforceRollupSummaryField.calculatedFormula = 'dummy formula'
         const fieldElement = getSObjectFieldElement(dummyElem, salesforceRollupSummaryField, {})
-        expect(fieldElement.type).not.toEqual(Types.primitiveDataTypes.rollupsummary)
+        expect(fieldElement.type).not.toEqual(Types.primitiveDataTypes.Summary)
       })
     })
   })
@@ -357,10 +352,10 @@ describe('transformer', () => {
         elemID,
         fields: {
           [existingField]: new Field(
-            elemID, existingField, Types.primitiveDataTypes.text, { [API_NAME]: 'Test__c' },
+            elemID, existingField, Types.primitiveDataTypes.Text, { [API_NAME]: 'Test__c' },
           ),
           [ignoredField]: new Field(
-            elemID, ignoredField, Types.primitiveDataTypes.text, { [API_NAME]: 'Ignored__c' },
+            elemID, ignoredField, Types.primitiveDataTypes.Text, { [API_NAME]: 'Ignored__c' },
           ),
         },
         annotations: {
@@ -403,17 +398,18 @@ describe('transformer', () => {
     describe('reference field transformation', () => {
       const relatedTo = ['User', 'Property__c']
       const annotations: Values = {
-        [API_NAME]: 'field_name',
+        [API_NAME]: COMPOUND_FIELD_TYPE_NAMES.FIELD_NAME,
         [LABEL]: 'field_label',
         [CORE_ANNOTATIONS.REQUIRED]: false,
         [FIELD_ANNOTATIONS.REFERENCE_TO]: relatedTo,
       }
-      const fieldName = 'field_name'
+      const fieldName = COMPOUND_FIELD_TYPE_NAMES.FIELD_NAME
       const origObjectType = new ObjectType({
         elemID,
         fields: {
-          [fieldName]: new TypeField(elemID, fieldName, Types.primitiveDataTypes.lookup,
-            annotations),
+          [fieldName]: new TypeField(
+            elemID, fieldName, Types.primitiveDataTypes.Lookup, annotations,
+          ),
         },
       })
       let objectType: ObjectType
@@ -436,7 +432,7 @@ describe('transformer', () => {
         objectType.fields[fieldName].annotations[FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION] = false
         const customLookupField = toCustomField(objectType.fields[fieldName])
         assertCustomFieldTransformation(customLookupField,
-          FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.LOOKUP], 'FieldName', 'Restrict', relatedTo)
+          FIELD_TYPE_NAMES.LOOKUP, 'FieldName', 'Restrict', relatedTo)
       })
 
       it('should transform lookup field with no deletion constraint', async () => {
@@ -444,23 +440,23 @@ describe('transformer', () => {
         objectType.fields[fieldName].annotations[FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION] = true
         const customLookupField = toCustomField(objectType.fields[fieldName])
         assertCustomFieldTransformation(customLookupField,
-          FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.LOOKUP], 'FieldName', 'SetNull', relatedTo)
+          FIELD_TYPE_NAMES.LOOKUP, 'FieldName', 'SetNull', relatedTo)
       })
 
       it('should transform masterdetail field', async () => {
         const masterDetailField = objectType.fields[fieldName]
-        masterDetailField.type = Types.primitiveDataTypes.masterdetail
+        masterDetailField.type = Types.primitiveDataTypes.MasterDetail
         masterDetailField.annotations[FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ] = true
         masterDetailField.annotations[FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL] = true
         const customMasterDetailField = toCustomField(masterDetailField)
         assertCustomFieldTransformation(customMasterDetailField,
-          FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.MASTER_DETAIL], 'FieldName', undefined, relatedTo)
+          FIELD_TYPE_NAMES.MASTER_DETAIL, 'FieldName', undefined, relatedTo)
         expect(customMasterDetailField.reparentableMasterDetail).toBe(true)
         expect(customMasterDetailField.writeRequiresMasterRead).toBe(true)
       })
 
       it('should have ControlledByParent sharing model when having masterdetail field', async () => {
-        objectType.fields[fieldName].type = Types.primitiveDataTypes.masterdetail
+        objectType.fields[fieldName].type = Types.primitiveDataTypes.MasterDetail
         const customObjectWithMasterDetailField = toCustomObject(objectType, true)
         expect(customObjectWithMasterDetailField.sharingModel).toEqual('ControlledByParent')
       })
@@ -501,7 +497,7 @@ describe('transformer', () => {
       const origObjectType = new ObjectType({
         elemID,
         fields: {
-          [fieldName]: new TypeField(elemID, fieldName, Types.primitiveDataTypes.picklist,
+          [fieldName]: new TypeField(elemID, fieldName, Types.primitiveDataTypes.Picklist,
             annotations),
         },
       })
@@ -513,7 +509,7 @@ describe('transformer', () => {
       it('should transform field dependency for picklist field', async () => {
         const customFieldWithFieldDependency = toCustomField(obj.fields[fieldName])
         expect(customFieldWithFieldDependency.type)
-          .toEqual(FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.PICKLIST])
+          .toEqual(FIELD_TYPE_NAMES.PICKLIST)
         expect(customFieldWithFieldDependency?.valueSet?.controllingField)
           .toEqual('ControllingFieldName')
         const valueSettings = customFieldWithFieldDependency?.valueSet?.valueSettings
@@ -526,10 +522,10 @@ describe('transformer', () => {
       })
 
       it('should transform field dependency for multi picklist field', async () => {
-        obj.fields[fieldName].type = Types.primitiveDataTypes.multipicklist
+        obj.fields[fieldName].type = Types.primitiveDataTypes.MultiselectPicklist
         const customFieldWithFieldDependency = toCustomField(obj.fields[fieldName])
         expect(customFieldWithFieldDependency.type)
-          .toEqual(FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.MULTIPICKLIST])
+          .toEqual(FIELD_TYPE_NAMES.MULTIPICKLIST)
         expect(customFieldWithFieldDependency?.valueSet?.controllingField)
           .toEqual('ControllingFieldName')
         const valueSettings = customFieldWithFieldDependency?.valueSet?.valueSettings
@@ -545,9 +541,38 @@ describe('transformer', () => {
         delete obj.fields[fieldName].annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY]
         const customFieldWithFieldDependency = toCustomField(obj.fields[fieldName])
         expect(customFieldWithFieldDependency.type)
-          .toEqual(FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.PICKLIST])
+          .toEqual(FIELD_TYPE_NAMES.PICKLIST)
         expect(customFieldWithFieldDependency?.valueSet?.controllingField).toBeUndefined()
         expect(customFieldWithFieldDependency?.valueSet?.valueSettings).toBeUndefined()
+      })
+    })
+
+    describe('global picklist transformation', () => {
+      const annotations: Values = {
+        [API_NAME]: 'field_name',
+        [LABEL]: 'field_label',
+        [CORE_ANNOTATIONS.REQUIRED]: false,
+        [VALUE_SET_FIELDS.VALUE_SET_NAME]: 'gvs',
+      }
+      const fieldName = 'field_name'
+      const origObjectType = new ObjectType({
+        elemID,
+        fields: {
+          [fieldName]: new TypeField(elemID, fieldName, Types.primitiveDataTypes.Picklist,
+            annotations),
+        },
+      })
+      let obj: ObjectType
+      beforeEach(() => {
+        obj = _.cloneDeep(origObjectType)
+      })
+
+      it('should transform global picklist field', async () => {
+        const customFieldWithGlobalPicklist = toCustomField(obj.fields[fieldName])
+        expect(customFieldWithGlobalPicklist.type)
+          .toEqual(FIELD_TYPE_NAMES.PICKLIST)
+        expect(customFieldWithGlobalPicklist?.valueSet?.valueSetName).toEqual('gvs')
+        expect(customFieldWithGlobalPicklist?.valueSet?.restricted).toBe(true)
       })
     })
 
@@ -574,7 +599,7 @@ describe('transformer', () => {
       const origObjectType = new ObjectType({
         elemID,
         fields: {
-          [fieldName]: new TypeField(elemID, fieldName, Types.primitiveDataTypes.rollupsummary,
+          [fieldName]: new TypeField(elemID, fieldName, Types.primitiveDataTypes.Summary,
             annotations),
         },
       })
@@ -586,7 +611,7 @@ describe('transformer', () => {
       it('should transform rollup summary field', async () => {
         const rollupSummaryInfo = toCustomField(obj.fields[fieldName])
         expect(rollupSummaryInfo.type)
-          .toEqual(FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.ROLLUP_SUMMARY])
+          .toEqual(FIELD_TYPE_NAMES.ROLLUP_SUMMARY)
         expect(_.get(rollupSummaryInfo, 'summarizedField'))
           .toEqual('Opportunity.Amount')
         expect(_.get(rollupSummaryInfo, 'summaryForeignKey'))
@@ -608,7 +633,7 @@ describe('transformer', () => {
         delete obj.fields[fieldName].annotations[FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS]
         const rollupSummaryInfo = toCustomField(obj.fields[fieldName])
         expect(rollupSummaryInfo.type)
-          .toEqual(FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.ROLLUP_SUMMARY])
+          .toEqual(FIELD_TYPE_NAMES.ROLLUP_SUMMARY)
         expect(_.get(rollupSummaryInfo, 'summarizedField'))
           .toEqual('Opportunity.Amount')
         expect(_.get(rollupSummaryInfo, 'summaryForeignKey'))
@@ -621,14 +646,14 @@ describe('transformer', () => {
   })
 
   describe('getCompoundChildFields', () => {
-    const nameElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.FIELD_NAME)
-    const geoLocationElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.LOCATION)
-    const elemID = new ElemID('salesforce', 'test')
-    const testName = 'test'
+    const nameElemID = new ElemID(SALESFORCE, COMPOUND_FIELD_TYPE_NAMES.FIELD_NAME)
+    const geoLocationElemID = new ElemID(SALESFORCE, COMPOUND_FIELD_TYPE_NAMES.LOCATION)
+    const elemID = new ElemID('salesforce', 'Test')
+    const testName = 'Test'
 
     it('should return sub fields of a compound address field', async () => {
-      const fieldName = 'test_address'
-      const addressElemID = new ElemID(SALESFORCE, FIELD_TYPE_NAMES.ADDRESS)
+      const fieldName = 'TestAddress'
+      const addressElemID = new ElemID(SALESFORCE, COMPOUND_FIELD_TYPE_NAMES.ADDRESS)
       const testedObjectType = new ObjectType({
         elemID,
         fields: {
@@ -641,12 +666,12 @@ describe('transformer', () => {
       expect(fields).toHaveLength(Object.values(Types.compoundDataTypes.address.fields).length)
       const fieldNamesSet = new Set<string>(fields.map(f => f.name))
       Object.values(ADDRESS_FIELDS).forEach(field => {
-        expect(fieldNamesSet).toContain(`${testName}_${field}`)
+        expect(fieldNamesSet).toContain(`${testName}${field}`)
       })
     })
 
     it('should return sub fields of a compound custom geolocation field', async () => {
-      const fieldName = 'test__c'
+      const fieldName = 'Test__c'
       const annotations: Values = {
         [API_NAME]: fieldName,
       }
@@ -662,7 +687,7 @@ describe('transformer', () => {
       expect(fields).toHaveLength(Object.values(Types.compoundDataTypes.location.fields).length)
       const fieldNamesSet = new Set<string>(fields.map(f => f.name))
       Object.values(GEOLOCATION_FIELDS).forEach(field => {
-        const expectedFieldName = `${testName}_${field}`
+        const expectedFieldName = `${testName}__${field}`
         expect(fieldNamesSet).toContain(expectedFieldName)
         const apiName = fields.find(
           f => f.name === expectedFieldName
@@ -672,7 +697,7 @@ describe('transformer', () => {
     })
 
     it('should return sub fields of a compound non-custom geolocation field', async () => {
-      const fieldName = 'test'
+      const fieldName = 'Test'
       const annotations: Values = {
         [API_NAME]: fieldName,
       }
@@ -688,7 +713,7 @@ describe('transformer', () => {
       expect(fields).toHaveLength(Object.values(Types.compoundDataTypes.location.fields).length)
       const fieldNamesSet = new Set<string>(fields.map(f => f.name))
       Object.values(GEOLOCATION_FIELDS).forEach(field => {
-        const expectedFieldName = `${testName}_${field}`
+        const expectedFieldName = `${testName}__${field}`
         expect(fieldNamesSet).toContain(expectedFieldName)
         const apiName = fields.find(
           f => f.name === expectedFieldName
@@ -698,7 +723,7 @@ describe('transformer', () => {
     })
 
     it('should return sub fields of a compound name field', async () => {
-      const fieldName = 'name'
+      const fieldName = 'Name'
       const annotations: Values = {
         [LABEL]: 'Full Name',
       }

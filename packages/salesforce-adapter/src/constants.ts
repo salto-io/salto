@@ -1,142 +1,152 @@
 export const SALESFORCE = 'salesforce'
 export const CUSTOM_FIELD = 'CustomField'
 export const CUSTOM_OBJECT = 'CustomObject'
-export const METADATA_OBJECT_NAME_FIELD = 'fullName'
-export const INSTANCE_FULL_NAME_FIELD = 'full_name'
-export const FORMULA_TYPE_PREFIX = 'formula_'
+export const INSTANCE_FULL_NAME_FIELD = 'fullName'
+export const FORMULA_TYPE_PREFIX = 'Formula'
 export const SALESFORCE_CUSTOM_SUFFIX = '__c'
-export const ADMIN_PROFILE = 'admin'
+export const ADMIN_PROFILE = 'Admin'
 export const NAMESPACE_SEPARATOR = '__'
 export const API_NAME_SEPERATOR = '.'
 
-// Annotations
-export const LABEL = 'label'
-export const DESCRIPTION = 'description'
-export const HELP_TEXT = 'inline_help_text'
+export enum FIELD_TYPE_NAMES {
+  AUTONUMBER = 'AutoNumber',
+  TEXT = 'Text',
+  NUMBER = 'Number',
+  PERCENT = 'Percent',
+  CHECKBOX = 'Checkbox',
+  DATE = 'Date',
+  TIME = 'Time',
+  DATETIME = 'DateTime',
+  CURRENCY = 'Currency',
+  PICKLIST = 'Picklist',
+  MULTIPICKLIST = 'MultiselectPicklist',
+  EMAIL = 'Email',
+  PHONE = 'Phone',
+  LONGTEXTAREA = 'LongTextArea',
+  RICHTEXTAREA = 'Html',
+  TEXTAREA = 'TextArea',
+  ENCRYPTEDTEXT = 'EncryptedText',
+  URL = 'Url',
+  LOOKUP = 'Lookup',
+  MASTER_DETAIL = 'MasterDetail',
+  ROLLUP_SUMMARY = 'Summary',
+}
+
+export enum COMPOUND_FIELD_TYPE_NAMES {
+  ADDRESS = 'Address',
+  FIELD_NAME = 'FieldName',
+  LOCATION = 'Location',
+}
+
+export const FIELD_SOAP_TYPE_NAMES: Record<string, FIELD_TYPE_NAMES> = {
+  // address: returns from the SOAP api but has special treatment in the code
+  anyType: FIELD_TYPE_NAMES.TEXT, // TODO: define specific type
+  base64: FIELD_TYPE_NAMES.TEXT, // TODO: define specific type
+  boolean: FIELD_TYPE_NAMES.CHECKBOX,
+  combobox: FIELD_TYPE_NAMES.PICKLIST,
+  complexvalue: FIELD_TYPE_NAMES.TEXT, // TODO: define specific type
+  currency: FIELD_TYPE_NAMES.CURRENCY,
+  date: FIELD_TYPE_NAMES.DATE,
+  datetime: FIELD_TYPE_NAMES.DATETIME,
+  double: FIELD_TYPE_NAMES.NUMBER,
+  email: FIELD_TYPE_NAMES.EMAIL,
+  encryptedstring: FIELD_TYPE_NAMES.ENCRYPTEDTEXT,
+  id: FIELD_TYPE_NAMES.TEXT, // TODO: define specific type
+  int: FIELD_TYPE_NAMES.NUMBER,
+  json: FIELD_TYPE_NAMES.TEXT, // TODO: define specific type
+  multipicklist: FIELD_TYPE_NAMES.MULTIPICKLIST,
+  percent: FIELD_TYPE_NAMES.PERCENT,
+  phone: FIELD_TYPE_NAMES.PHONE,
+  picklist: FIELD_TYPE_NAMES.PICKLIST,
+  // reference: FIELD_TYPE_NAMES.LOOKUP, // Has special treatment in the code
+  string: FIELD_TYPE_NAMES.TEXT,
+  textarea: FIELD_TYPE_NAMES.TEXTAREA,
+  time: FIELD_TYPE_NAMES.TIME,
+  url: FIELD_TYPE_NAMES.URL,
+}
+
+export enum ANNOTATION_TYPE_NAMES {
+  LOOKUP_FILTER = 'LookupFilter',
+  FILTER_ITEM = 'FilterItem',
+  FIELD_DEPENDENCY = 'FieldDependency',
+  VALUE_SETTINGS = 'ValueSettings',
+}
+
+// Salto annotations
 export const API_NAME = 'api_name'
-export const FORMULA = 'formula'
-export const DEFAULT_VALUE_FORMULA = 'default_value_formula'
-export const BUSINESS_OWNER_USER = 'business_owner_user'
-export const BUSINESS_OWNER_GROUP = 'business_owner_group'
-export const BUSINESS_STATUS = 'business_status'
-export const SECURITY_CLASSIFICATION = 'security_classification'
-export const COMPLIANCE_GROUP = 'compliance_group'
 export const METADATA_TYPE = 'metadata_type'
-export const FIELD_PERMISSIONS = 'field_permissions'
-export const OBJECT_PERMISSIONS = 'object_permissions'
+export const FIELD_PERMISSIONS = 'fieldPermissions'
+export const OBJECT_PERMISSIONS = 'objectPermissions'
 export const FIELD_LEVEL_SECURITY_ANNOTATION = 'field_level_security'
 export const OBJECT_LEVEL_SECURITY_ANNOTATION = 'object_level_security'
 export const TOPICS_FOR_OBJECTS_ANNOTATION = 'topics_for_objects'
-export const FIELD_TYPE_NAMES = {
-  STRING: 'string',
-  AUTONUMBER: 'autonumber',
-  TEXT: 'text',
-  NUMBER: 'number',
-  PERCENT: 'percent',
-  CHECKBOX: 'checkbox',
-  DATE: 'date',
-  TIME: 'time',
-  DATETIME: 'datetime',
-  CURRENCY: 'currency',
-  PICKLIST: 'picklist',
-  MULTIPICKLIST: 'multipicklist',
-  EMAIL: 'email',
-  LOCATION: 'location',
-  PHONE: 'phone',
-  LONGTEXTAREA: 'longtextarea',
-  RICHTEXTAREA: 'richtextarea',
-  TEXTAREA: 'textarea',
-  ENCRYPTEDTEXT: 'encryptedtext',
-  URL: 'url',
-  LOOKUP: 'lookup',
-  MASTER_DETAIL: 'masterdetail',
-  LOOKUP_FILTER: 'lookup_filter',
-  FILTER_ITEM: 'filter_item',
-  FIELD_DEPENDENCY: 'field_dependency',
-  VALUE_SETTINGS: 'value_settings',
-  ADDRESS: 'address',
-  FIELD_NAME: 'field_name',
-  ROLLUP_SUMMARY: 'rollupsummary',
-}
 
-export const FIELD_TYPE_API_NAMES = {
-  [FIELD_TYPE_NAMES.AUTONUMBER]: 'AutoNumber',
-  [FIELD_TYPE_NAMES.TEXT]: 'Text',
-  [FIELD_TYPE_NAMES.NUMBER]: 'Number',
-  [FIELD_TYPE_NAMES.PERCENT]: 'Percent',
-  [FIELD_TYPE_NAMES.CHECKBOX]: 'Checkbox',
-  [FIELD_TYPE_NAMES.DATE]: 'Date',
-  [FIELD_TYPE_NAMES.TIME]: 'Time',
-  [FIELD_TYPE_NAMES.DATETIME]: 'DateTime',
-  [FIELD_TYPE_NAMES.CURRENCY]: 'Currency',
-  [FIELD_TYPE_NAMES.PICKLIST]: 'Picklist',
-  [FIELD_TYPE_NAMES.MULTIPICKLIST]: 'MultiselectPicklist',
-  [FIELD_TYPE_NAMES.EMAIL]: 'Email',
-  [FIELD_TYPE_NAMES.LOCATION]: 'Location',
-  [FIELD_TYPE_NAMES.PHONE]: 'Phone',
-  [FIELD_TYPE_NAMES.LONGTEXTAREA]: 'LongTextArea',
-  [FIELD_TYPE_NAMES.RICHTEXTAREA]: 'Html',
-  [FIELD_TYPE_NAMES.TEXTAREA]: 'TextArea',
-  [FIELD_TYPE_NAMES.ENCRYPTEDTEXT]: 'EncryptedText',
-  [FIELD_TYPE_NAMES.URL]: 'Url',
-  [FIELD_TYPE_NAMES.LOOKUP]: 'Lookup',
-  [FIELD_TYPE_NAMES.MASTER_DETAIL]: 'MasterDetail',
-  [FIELD_TYPE_NAMES.ROLLUP_SUMMARY]: 'Summary',
-}
+// Salesforce annotations
+export const LABEL = 'label'
+export const DESCRIPTION = 'description'
+export const HELP_TEXT = 'inlineHelpText'
+export const FORMULA = 'formula'
+export const DEFAULT_VALUE_FORMULA = 'defaultValueFormula'
+export const BUSINESS_OWNER_USER = 'businessOwnerUser'
+export const BUSINESS_OWNER_GROUP = 'businessOwnerGroup'
+export const BUSINESS_STATUS = 'businessStatus'
+export const SECURITY_CLASSIFICATION = 'securityClassification'
+export const COMPLIANCE_GROUP = 'complianceGroup'
 
 export const FIELD_ANNOTATIONS = {
   UNIQUE: 'unique',
-  EXTERNAL_ID: 'external_id',
-  CASE_SENSITIVE: 'case_sensitive',
+  EXTERNAL_ID: 'externalId',
+  CASE_SENSITIVE: 'caseSensitive',
   LENGTH: 'length',
   SCALE: 'scale',
   PRECISION: 'precision',
-  DISPLAY_FORMAT: 'display_format',
-  VISIBLE_LINES: 'visible_lines',
-  MASK_CHAR: 'mask_char',
-  MASK_TYPE: 'mask_type',
+  DISPLAY_FORMAT: 'displayFormat',
+  VISIBLE_LINES: 'visibleLines',
+  MASK_CHAR: 'maskChar',
+  MASK_TYPE: 'maskType',
   MASK: 'mask',
-  DISPLAY_LOCATION_IN_DECIMAL: 'display_location_in_decimal',
-  REFERENCE_TO: 'reference_to',
-  ALLOW_LOOKUP_RECORD_DELETION: 'allow_lookup_record_deletion',
-  REPARENTABLE_MASTER_DETAIL: 'reparentable_master_detail',
-  WRITE_REQUIRES_MASTER_READ: 'write_requires_master_read',
-  LOOKUP_FILTER: 'lookup_filter',
-  FIELD_DEPENDENCY: 'field_dependency',
-  SUMMARIZED_FIELD: 'summarized_field',
-  SUMMARY_FILTER_ITEMS: 'summary_filter_items',
-  SUMMARY_FOREIGN_KEY: 'summary_foreign_key',
-  SUMMARY_OPERATION: 'summary_operation',
+  DISPLAY_LOCATION_IN_DECIMAL: 'displayLocationInDecimal',
+  REFERENCE_TO: 'referenceTo',
+  ALLOW_LOOKUP_RECORD_DELETION: 'allowLookupRecordDeletion',
+  REPARENTABLE_MASTER_DETAIL: 'reparentableMasterDetail',
+  WRITE_REQUIRES_MASTER_READ: 'writeRequiresMasterRead',
+  LOOKUP_FILTER: 'lookupFilter',
+  FIELD_DEPENDENCY: 'fieldDependency',
+  SUMMARIZED_FIELD: 'summarizedField',
+  SUMMARY_FILTER_ITEMS: 'summaryFilterItems',
+  SUMMARY_FOREIGN_KEY: 'summaryForeignKey',
+  SUMMARY_OPERATION: 'summaryOperation',
   RESTRICTED: 'restricted',
-  VALUE_SET: 'value_set',
-  DEFAULT_VALUE: 'default_value',
+  VALUE_SET: 'valueSet',
+  DEFAULT_VALUE: 'defaultValue',
 }
 
 export const CUSTOM_OBJECT_ANNOTATIONS = {
-  WEB_LINKS: 'web_links',
-  VALIDATION_RULES: 'validation_rules',
-  BUSINESS_PROCESSES: 'business_processes',
-  RECORD_TYPES: 'record_types',
-  LIST_VIEWS: 'list_views',
-  FIELD_SETS: 'field_sets',
-  COMPACT_LAYOUTS: 'compact_layouts',
-  SHARING_REASONS: 'sharing_reasons',
+  WEB_LINKS: 'webLinks',
+  VALIDATION_RULES: 'validationRules',
+  BUSINESS_PROCESSES: 'businessProcesses',
+  RECORD_TYPES: 'recordTypes',
+  LIST_VIEWS: 'listViews',
+  FIELD_SETS: 'fieldSets',
+  COMPACT_LAYOUTS: 'compactLayouts',
+  SHARING_REASONS: 'sharingReasons',
   INDEXES: 'indexes',
 }
 
 export const VALUE_SET_FIELDS = {
   RESTRICTED: 'restricted',
-  VALUE_SET_DEFINITION: 'value_set_definition',
+  VALUE_SET_DEFINITION: 'valueSetDefinition',
+  VALUE_SET_NAME: 'valueSetName',
 }
 
 export const FIELD_DEPENDENCY_FIELDS = {
-  CONTROLLING_FIELD: 'controlling_field',
-  VALUE_SETTINGS: 'value_settings',
+  CONTROLLING_FIELD: 'controllingField',
+  VALUE_SETTINGS: 'valueSettings',
 }
 
 export const VALUE_SETTINGS_FIELDS = {
-  CONTROLLING_FIELD_VALUE: 'controlling_field_value',
-  VALUE_NAME: 'value_name',
+  CONTROLLING_FIELD_VALUE: 'controllingFieldValue',
+  VALUE_NAME: 'valueName',
 }
 
 export const VALUE_SET_DEFINITION_FIELDS = {
@@ -151,40 +161,40 @@ export const VALUE_SET_DEFINITION_VALUE_FIELDS = {
 
 export const LOOKUP_FILTER_FIELDS = {
   ACTIVE: 'active',
-  BOOLEAN_FILTER: 'boolean_filter',
-  ERROR_MESSAGE: 'error_message',
-  INFO_MESSAGE: 'info_message',
-  IS_OPTIONAL: 'is_optional',
-  FILTER_ITEMS: 'filter_items',
+  BOOLEAN_FILTER: 'booleanFilter',
+  ERROR_MESSAGE: 'errorMessage',
+  INFO_MESSAGE: 'infoMessage',
+  IS_OPTIONAL: 'isOptional',
+  FILTER_ITEMS: 'filterItems',
 }
 
 export const FILTER_ITEM_FIELDS = {
   FIELD: 'field',
   OPERATION: 'operation',
   VALUE: 'value',
-  VALUE_FIELD: 'value_field',
+  VALUE_FIELD: 'valueField',
 }
 
 export const ADDRESS_FIELDS = {
-  CITY: 'city',
-  COUNTRY: 'country',
-  GEOCODE_ACCURACY: 'geocode_accuracy',
-  LATITUDE: 'latitude',
-  LONGITUDE: 'longitude',
-  POSTAL_CODE: 'postal_code',
-  STATE: 'state',
-  STREET: 'street',
+  CITY: 'City',
+  COUNTRY: 'Country',
+  GEOCODE_ACCURACY: 'GeocodeAccuracy',
+  LATITUDE: 'Latitude',
+  LONGITUDE: 'Longitude',
+  POSTAL_CODE: 'PostalCode',
+  STATE: 'State',
+  STREET: 'Street',
 }
 
 export const NAME_FIELDS = {
-  FIRST_NAME: 'first_name',
-  LAST_NAME: 'last_name',
-  SALUTATION: 'salutation',
+  FIRST_NAME: 'FirstName',
+  LAST_NAME: 'LastName',
+  SALUTATION: 'Salutation',
 }
 
 export const GEOLOCATION_FIELDS = {
-  LATITUDE: 'latitude',
-  LONGITUDE: 'longitude',
+  LATITUDE: 'Latitude',
+  LONGITUDE: 'Longitude',
 }
 
 export const FIELD_LEVEL_SECURITY_FIELDS = {
@@ -193,17 +203,17 @@ export const FIELD_LEVEL_SECURITY_FIELDS = {
 }
 
 export const OBJECT_LEVEL_SECURITY_FIELDS = {
-  ALLOW_CREATE: 'allow_create',
-  ALLOW_DELETE: 'allow_delete',
-  ALLOW_EDIT: 'allow_edit',
-  ALLOW_READ: 'allow_read',
-  MODIFY_ALL_RECORDS: 'modify_all_records',
-  VIEW_ALL_RECORDS: 'view_all_records',
+  ALLOW_CREATE: 'allowCreate',
+  ALLOW_DELETE: 'allowDelete',
+  ALLOW_EDIT: 'allowEdit',
+  ALLOW_READ: 'allowRead',
+  MODIFY_ALL_RECORDS: 'modifyAllRecords',
+  VIEW_ALL_RECORDS: 'viewAllRecords',
 }
 
 export const TOPICS_FOR_OBJECTS_FIELDS = {
-  ENABLE_TOPICS: 'enable_topics',
-  ENTITY_API_NAME: 'entity_api_name',
+  ENABLE_TOPICS: 'enableTopics',
+  ENTITY_API_NAME: 'entityApiName',
 }
 
 // Limits

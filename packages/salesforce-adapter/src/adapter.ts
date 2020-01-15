@@ -14,11 +14,10 @@ import { decorators } from '@salto/lowerdash'
 import SalesforceClient, { API_VERSION, Credentials } from './client/client'
 import * as constants from './constants'
 import {
-  toCustomField, toCustomObject, apiName, sfCase, Types,
-  toMetadataInfo, createInstanceElement,
+  toCustomField, toCustomObject, apiName, Types, toMetadataInfo, createInstanceElement,
   metadataType, toInstanceElements, createMetadataTypeElements,
   instanceElementstoRecords, elemIDstoRecords, getCompoundChildFields, transformReferences,
-  restoreReferences,
+  restoreReferences, defaultApiName
 } from './transformers/transformer'
 import { fromRetrieveResult, toMetadataPackageZip } from './transformers/xml_transformer'
 import layoutFilter from './filters/layouts'
@@ -37,6 +36,7 @@ import samlInitMethodFilter from './filters/saml_initiation_method'
 import settingsFilter from './filters/settings_type'
 import workflowActions from './filters/workflow_actions'
 import topicsForObjectsFilter from './filters/topics_for_objects'
+import globalValueSetFilter from './filters/global_value_sets'
 import {
   FilterCreator, Filter, FilterWith, filtersWith,
 } from './filter'
@@ -49,11 +49,11 @@ const RECORDS_CHUNK_SIZE = 10000
 
 // Add elements defaults
 const addDefaults = (element: ObjectType): void => {
-  addApiName(element, sfCase(element.elemID.name, true))
+  addApiName(element)
   addMetadataType(element)
   addLabel(element)
   Object.values(element.fields).forEach(field => {
-    addApiName(field, sfCase(field.name, true), apiName(element))
+    addApiName(field, undefined, apiName(element))
     addLabel(field)
   })
 }
@@ -154,6 +154,7 @@ export default class SalesforceAdapter {
       settingsFilter,
       workflowActions,
       topicsForObjectsFilter,
+      globalValueSetFilter,
       // The following filters should remain last in order to make sure they fix all elements
       convertListsFilter,
       convertTypeFilter,
@@ -387,7 +388,7 @@ export default class SalesforceAdapter {
   private async addInstance(element: InstanceElement): Promise<InstanceElement> {
     const addInstanceDefaults = (elem: InstanceElement): void => {
       if (elem.value[constants.INSTANCE_FULL_NAME_FIELD] === undefined) {
-        elem.value[constants.INSTANCE_FULL_NAME_FIELD] = sfCase(elem.elemID.name)
+        elem.value[constants.INSTANCE_FULL_NAME_FIELD] = defaultApiName(elem)
       }
     }
 
@@ -475,9 +476,10 @@ export default class SalesforceAdapter {
       .filter(isAdditionDiff)
       .map(getChangeElement)
       .filter(isField)
-      .forEach(f => {
-        addLabel(clonedObject.fields[f.name])
-        addApiName(clonedObject.fields[f.name], sfCase(f.name, true), apiName(clonedObject))
+      .map(fieldChange => clonedObject.fields[fieldChange.name])
+      .forEach(field => {
+        addLabel(field)
+        addApiName(field, undefined, apiName(clonedObject))
       })
 
     const fieldChanges = changes.filter(c => isField(getChangeElement(c))) as Change<Field>[]
@@ -592,9 +594,9 @@ export default class SalesforceAdapter {
   private async fetchMetadataTypes(typeNamesPromise: Promise<string[]>,
     knownMetadataTypes: Type[]): Promise<Type[]> {
     const typeNames = await typeNamesPromise
-    const knownTypes = new Map<string, Type>()
-    knownMetadataTypes.forEach(knownMetadataType =>
-      knownTypes.set(sfCase(knownMetadataType.elemID.name), knownMetadataType))
+    const knownTypes = new Map<string, Type>(
+      knownMetadataTypes.map(mdType => [apiName(mdType), mdType])
+    )
     return _.flatten(await Promise.all((typeNames)
       .map(typeName => this.fetchMetadataType(typeName, knownTypes, new Set(typeNames))
         .catch(e => {
@@ -671,8 +673,8 @@ export default class SalesforceAdapter {
         let namespaceAndInstances: NamespaceAndInstances[] = []
         try {
           // Just fetch metadata instances of the types that we receive from the describe call
-          if (!this.metadataAdditionalTypes.includes(metadataType(type))) {
-            namespaceAndInstances = await this.listMetadataInstances(metadataType(type))
+          if (!this.metadataAdditionalTypes.includes(apiName(type))) {
+            namespaceAndInstances = await this.listMetadataInstances(apiName(type))
           }
         } catch (e) {
           log.error('failed to fetch instances of type %s reason: %o', id(type), e)
@@ -683,7 +685,7 @@ export default class SalesforceAdapter {
     const retrieveInstances = async (metadataTypesToRetrieve: ObjectType[]):
       Promise<TypeAndInstances[]> => {
       const nameToType: Record<string, ObjectType> = _(metadataTypesToRetrieve)
-        .map(t => [metadataType(t), t])
+        .map(t => [apiName(t), t])
         .fromPairs()
         .value()
       const typeNameToNamespaceAndInfos = await this.retrieveMetadata(Object.keys(nameToType))
@@ -695,10 +697,12 @@ export default class SalesforceAdapter {
     const topLevelTypeNames = await typeNames
     const topLevelTypes = (await types)
       .filter(isObjectType)
-      .filter(t => topLevelTypeNames.includes(metadataType(t)))
+      .filter(t => topLevelTypeNames.includes(apiName(t)))
 
-    const [metadataTypesToRetrieve, metadataTypesToRead] = _.partition(topLevelTypes,
-      t => this.isMetadataTypeToRetrieveAndDeploy(sfCase(t.elemID.name)))
+    const [metadataTypesToRetrieve, metadataTypesToRead] = _.partition(
+      topLevelTypes,
+      t => this.isMetadataTypeToRetrieveAndDeploy(metadataType(t)),
+    )
 
     const typesAndInstances = _.flatten(await Promise.all(
       [retrieveInstances(metadataTypesToRetrieve), readInstances(metadataTypesToRead)]

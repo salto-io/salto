@@ -205,6 +205,7 @@ export interface Element {
   elemID: ElemID
   path?: ReadonlyArray<string>
   annotations: Values
+  clone: () => Element
 }
 
 export type ElementMap = Record<string, Element>

@@ -6,10 +6,11 @@ import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
 import {
-  makeFilter, extractFullNamesFromValueList, STANDARD_VALUE_SET, STANDARD_VALUE,
+  makeFilter, STANDARD_VALUE_SET, STANDARD_VALUE,
 } from '../../src/filters/standard_value_sets'
 import SalesforceClient from '../../src/client/client'
 import { Types } from '../../src/transformers/transformer'
+import { extractFullNamesFromValueList } from '../../src/filters/utils'
 
 const createStandardValueSetMetadataInfo = (name: string, values: string[]): MetadataInfo =>
   ({
@@ -91,14 +92,14 @@ describe('Standard Value Sets filter', () => {
     expect(client.readMetadata).toHaveBeenCalledTimes(1)
     expect(elements.length).toBe(3)
     const simpsonsSvs = elements[1]
-    expect(simpsonsSvs.elemID).toEqual(new ElemID(mockSVSType.elemID.adapter, mockSVSType.elemID.name, 'instance', 'simpsons'))
+    expect(simpsonsSvs.elemID).toEqual(mockSVSType.elemID.createNestedID('instance', 'Simpsons'))
     expect(simpsonsSvs.path)
-      .toEqual([constants.SALESFORCE, 'records', 'standard_value_set', 'simpsons'])
+      .toEqual([constants.SALESFORCE, 'records', 'standard_value_set', 'Simpsons'])
     expect(extractFullNamesFromValueList((simpsonsSvs as InstanceElement).value[STANDARD_VALUE])).toEqual(['Bart', 'Homer', 'Lisa'])
     const numbersSvs = elements[2]
-    expect(numbersSvs.elemID).toEqual(new ElemID(mockSVSType.elemID.adapter, mockSVSType.elemID.name, 'instance', 'numbers'))
+    expect(numbersSvs.elemID).toEqual(mockSVSType.elemID.createNestedID('instance', 'Numbers'))
     expect(numbersSvs.path)
-      .toEqual([constants.SALESFORCE, 'records', 'standard_value_set', 'numbers'])
+      .toEqual([constants.SALESFORCE, 'records', 'standard_value_set', 'Numbers'])
     expect(extractFullNamesFromValueList((numbersSvs as InstanceElement).value[STANDARD_VALUE])).toEqual(['One', 'Two', 'Three'])
   })
   it('should replace value list with references for standard picklist fields', async () => {

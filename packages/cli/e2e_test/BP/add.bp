@@ -1,15 +1,15 @@
-type salesforce_new_object_name {
-  salesforce_text alpha {
+type salesforce_NewObjectName {
+  salesforce_Text Alpha {
     label = "Alpha"
     _required = false
   }
-  salesforce_text beta {
+  salesforce_Text Beta {
     label = "Beta"
     _required = false
   }
 }
 
-salesforce_role new_instance_name {
+salesforce_Role NewInstanceName {
   description = "To Be Modified"
   name = "New Role Instance"
 }

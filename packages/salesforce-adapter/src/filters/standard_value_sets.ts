@@ -13,13 +13,14 @@ import {
 import {
   metadataType, apiName, createInstanceElement, isCustomObject, Types,
 } from '../transformers/transformer'
+import { extractFullNamesFromValueList } from './utils'
 
 const { makeArray } = collections.array
 
 const log = logger(module)
 
 export const STANDARD_VALUE_SET = 'StandardValueSet'
-export const STANDARD_VALUE = 'standard_value'
+export const STANDARD_VALUE = 'standardValue'
 
 
 type StandardValuesSets = Set<string>
@@ -95,9 +96,6 @@ const STANDARD_VALUE_SETS: StandardValuesSets = new Set<string>([
 const encodeValues = (values: string[]): string =>
   values.sort().join(';')
 
-export const extractFullNamesFromValueList = (values: {full_name: string}[]): string[] =>
-  values.map(v => v.full_name)
-
 const svsValuesToRef = (svsInstances: InstanceElement[]): StandartValueSetsLookup => _.fromPairs(
   svsInstances
     .filter(i => i.value[STANDARD_VALUE])
@@ -113,8 +111,8 @@ const svsValuesToRef = (svsInstances: InstanceElement[]): StandartValueSetsLooku
 const isStandardPickList = (f: Field): boolean => {
   const apiNameResult = apiName(f)
   return apiNameResult ? (
-    f.type.elemID.isEqual(Types.primitiveDataTypes.picklist.elemID)
-    || f.type.elemID.isEqual(Types.primitiveDataTypes.multipicklist.elemID))
+    f.type.elemID.isEqual(Types.primitiveDataTypes.Picklist.elemID)
+    || f.type.elemID.isEqual(Types.primitiveDataTypes.MultiselectPicklist.elemID))
     && !apiNameResult.endsWith(SALESFORCE_CUSTOM_SUFFIX) : false
 }
 

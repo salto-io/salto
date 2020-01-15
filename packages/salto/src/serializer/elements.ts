@@ -22,13 +22,14 @@ import {
 // The deserialization process recover the information by creating the classes based
 // on the _salto_class field, and then replacing the placeholders using the regular merge method.
 
-interface ClassName {className: string}
+export const SALTO_CLASS_FIELD = '_salto_class'
+interface ClassName {[SALTO_CLASS_FIELD]: string}
 export const serialize = (elements: Element[]): string => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const elementReplacer = (_k: string, e: any): any => {
     if (isElement(e) || isExpression(e)) {
       const o = e as Element & ClassName
-      o.className = e.constructor.name
+      o[SALTO_CLASS_FIELD] = e.constructor.name
       return o
     }
     // We need to sort objects so that the state file won't change for the same data.
@@ -85,8 +86,9 @@ export const deserialize = (data: string): Element[] => {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const elementReviver = (_k: string, v: any): any => {
-    if (v.className) {
-      const e = revivers[v.className](v)
+    const reviver = revivers[v[SALTO_CLASS_FIELD]]
+    if (reviver) {
+      const e = reviver(v)
       if (isType(e) || isInstanceElement(e)) {
         e.path = v.path
       }

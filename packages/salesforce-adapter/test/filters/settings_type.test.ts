@@ -114,7 +114,7 @@ describe('Test Settings Type', () => {
       if (path !== undefined) {
         expect(path[0]).toEqual(constants.SALESFORCE)
         expect(path[1]).toEqual('types')
-        expect(path[2]).toEqual('macro_settings')
+        expect(path[2]).toEqual('MacroSettings')
       }
       expect(isInstanceElement(testElements[4])).toBeTruthy()
       expect((testElements[4] as InstanceElement).type).toEqual(testElements[3])

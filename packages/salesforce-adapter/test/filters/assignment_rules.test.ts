@@ -34,7 +34,7 @@ describe('assignment rules filter', () => {
     it('should rename instances', async () => {
       await filter.onFetch(testElements)
       const [rulesInstance] = testElements
-      expect(rulesInstance.elemID.name).toEqual('lead_assignment_rules')
+      expect(rulesInstance.elemID.name).toEqual('LeadAssignmentRules')
     })
   })
 })

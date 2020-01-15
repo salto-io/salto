@@ -96,8 +96,7 @@ export const fetchCommand = async (
   // Unpack changes to array so we can iterate on them more than once
   const changes = [...fetchResult.changes]
   // If the workspace starts empty there is no point in showing a huge amount of changes
-  const isEmptyWorkspace = workspace.elements.length === 0
-  const changesToApply = force || isEmptyWorkspace
+  const changesToApply = force || _.isEmpty(workspace.elements)
     ? changes
     : await getApprovedChanges(changes, interactive)
 

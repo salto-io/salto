@@ -15,7 +15,6 @@ describe('workspace', () => {
     const baseWs = await mockWorkspace(bpFileName)
     baseWs.hasErrors = jest.fn().mockReturnValue(true)
     const workspace = new EditorWorkspace(baseWs)
-    expect(workspace.elements).toBeDefined()
     expect(workspace.elements && workspace.elements.length).toBe(16)
     expect(_.keys(workspace.parsedBlueprints).length).toBe(1)
     expect(workspace.hasErrors()).toBeTruthy()

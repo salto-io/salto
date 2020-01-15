@@ -178,9 +178,13 @@ const transfromAnnotationsNames = (fields: Values, parentApiName: string): Value
           annotations[VALUE_SET_FIELDS.VALUE_SET_NAME] = v[VALUE_SET_FIELDS.VALUE_SET_NAME]
           annotations[FIELD_ANNOTATIONS.RESTRICTED] = true
         } else {
-          annotations[FIELD_ANNOTATIONS.VALUE_SET] = v[VALUE_SET_FIELDS
-            .VALUE_SET_DEFINITION][VALUE_SET_DEFINITION_FIELDS.VALUE]
-          annotations[FIELD_ANNOTATIONS.RESTRICTED] = v[VALUE_SET_FIELDS.RESTRICTED] || false
+          const valueSetDefinition = v[VALUE_SET_FIELDS.VALUE_SET_DEFINITION]
+          if (valueSetDefinition) {
+            annotations[FIELD_ANNOTATIONS.VALUE_SET] = valueSetDefinition[
+              VALUE_SET_DEFINITION_FIELDS.VALUE
+            ]
+            annotations[FIELD_ANNOTATIONS.RESTRICTED] = v[VALUE_SET_FIELDS.RESTRICTED] || false
+          }
         }
         if (!_.isUndefined(getFieldDependency(v))) {
           annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY] = getFieldDependency(v)

@@ -393,8 +393,8 @@ export const getPlan = async (
   const after = toNodeMap(resolvedAfter, withDependencies)
   const diffGraph = buildDiffGraph(before, after,
     nodeId => isEqualsNode(before.getData(nodeId), after.getData(nodeId)))
-  const beforeElementsMap = createElementsMap(beforeElements)
-  const afterElementsMap = createElementsMap(afterElements)
+  const beforeElementsMap = createElementsMap(resolvedBefore)
+  const afterElementsMap = createElementsMap(resolvedAfter)
   // filter invalid changes from the graph and the after elements
   const filterResult = await filterInvalidChanges(beforeElementsMap, afterElementsMap, diffGraph,
     changeValidators)

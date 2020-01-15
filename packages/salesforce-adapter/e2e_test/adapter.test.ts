@@ -2808,13 +2808,16 @@ describe('Salesforce adapter E2E with real account', () => {
             ).find(rule => rule[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.MyValidationRule')
             expect(validationRuleToUpdate).toBeDefined()
             validationRuleToUpdate.description = 'My Updated Validation Rule'
-
+            validationRuleToUpdate.active = false
+            validationRuleToUpdate.errorDisplayField = 'Company'
             await adapter.update(oldLead, newLead,
               [{ action: 'modify', data: { before: oldLead, after: newLead } }])
 
             const validationRuleInfo = await findInstance('ValidationRule', 'Lead.MyValidationRule')
             expect(validationRuleInfo).toBeDefined()
             expect(_.get(validationRuleInfo, 'description')).toEqual('My Updated Validation Rule')
+            expect(_.get(validationRuleInfo, 'active')).toEqual('false')
+            expect(_.get(validationRuleInfo, 'errorDisplayField')).toEqual('Company')
           })
         })
 

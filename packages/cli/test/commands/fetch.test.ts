@@ -77,7 +77,7 @@ describe('fetch command', () => {
       const mockFailedFetch = jest.fn().mockResolvedValue(
         Promise.resolve({ changes: [], mergeErrors: [], success: false })
       )
-      const mockEmptyApprove = jest.fn().mockResolvedValue(Promise.resolve([]))
+      const mockEmptyApprove = jest.fn().mockResolvedValue([])
 
       const mockWorkspace = (elements?: Element[]): Workspace => ({
         hasErrors: () => false,

@@ -61,17 +61,27 @@ describe('extension e2e', () => {
   })
 
 
-  it('should give a single definition for a type that is defined once', async () => {
-    const pos = { line: 6, col: 9 }
-    const filename = 'extra.bp'
-    const ctx = await getPositionContext(workspace, await readTextFile(path.join(wsPath, filename)),
-      filename, pos)
-    const defs = await provideWorkspaceDefinition(workspace, ctx, 'salto_number')
-    expect(defs.length).toBe(1)
-    expect(defs[0].filename).toBe('simple_types.bp')
-    expect(defs[0].range.start.line).toBe(4)
-    expect(defs[0].range.start.col).toBe(1)
-    expect(defs[0].range.end.line).toBe(5)
-    expect(defs[0].range.end.col).toBe(2)
-  })
+  it('should give a single definition for a type that is defined in multiple files',
+    async () => {
+      const pos = { line: 6, col: 9 }
+      const filename = 'extra.bp'
+      const ctx = await getPositionContext(workspace,
+        await readTextFile(path.join(wsPath, filename)), filename, pos)
+      const defs = await provideWorkspaceDefinition(workspace, ctx, 'salto_complex')
+      expect(defs.length).toBe(2)
+      expect(defs[0].fullname).toBe('salto.complex')
+      expect(defs[0].filename).toBe('complex_type.bp')
+      expect(defs[0].range.start.line).toBe(1)
+      expect(defs[0].range.start.col).toBe(1)
+      expect(defs[0].range.end.line).toBe(9)
+      expect(defs[0].range.end.col).toBe(2)
+      expect(defs[1].fullname).toBe('salto.complex')
+      expect(defs[1].filename).toBe('context.bp')
+      expect(defs[1].range.start.line).toBe(18)
+      expect(defs[1].range.start.col).toBe(1)
+      expect(defs[1].range.end.line).toBe(20)
+      expect(defs[1].range.end.col).toBe(2)
+    })
+
+  // def from multiples files
 })

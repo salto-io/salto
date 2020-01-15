@@ -11,19 +11,16 @@ describe('workspace', () => {
     expect(_.keys(workspace.parsedBlueprints).length).toBe(1)
   })
 
-  it('should collect validation errors', async () => {
+  it('should collect errors', async () => {
     const baseWs = await mockWorkspace(bpFileName)
     baseWs.hasErrors = jest.fn().mockReturnValue(true)
     const workspace = new EditorWorkspace(baseWs)
-    expect(workspace.elements && workspace.elements.length).toBe(16)
-    expect(_.keys(workspace.parsedBlueprints).length).toBe(1)
     expect(workspace.hasErrors()).toBeTruthy()
   })
 
   it('should update a single file', async () => {
     const baseWs = await mockWorkspace(bpFileName)
     const workspace = new EditorWorkspace(baseWs)
-    expect(_.keys(workspace.parsedBlueprints).length).toBe(1)
     workspace.setBlueprints({ filename: 'new', buffer: '' })
     await workspace.awaitAllUpdates()
     expect((baseWs.setBlueprints as jest.Mock).mock.calls[0][0].filename).toBe('new')
@@ -73,7 +70,7 @@ describe('workspace', () => {
     expect(lastValid).not.toEqual(workspace)
   })
 
-  it('should not allow to update bluprints before all pending operations are done', async () => {
+  it('should not allow to update blueprints before all pending operations are done', async () => {
     const workspace = new EditorWorkspace(await mockWorkspace(bpFileName))
     workspace.setBlueprints({ filename: 'new', buffer: 'new content' })
     await expect(workspace.updateBlueprints()).rejects.toThrow()

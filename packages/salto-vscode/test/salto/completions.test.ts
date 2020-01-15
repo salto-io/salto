@@ -35,9 +35,7 @@ describe.skip('Test auto complete', () => {
     const intersect = (
       arrA: string[],
       arrB: string[]
-      // TODO: figure better fix, problem: suggestions contains duplicated vs_load
-      // adding uniq on the suggestion didn't solved the problem
-    ): string[] => _.uniq(arrA.filter(x => arrB.includes(x)))
+    ): string[] => arrA.filter(x => arrB.includes(x))
 
     const labels = suggestions.map(s => s.label)
     return intersect(labels, include).length === include.length

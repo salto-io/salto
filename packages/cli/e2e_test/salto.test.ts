@@ -57,7 +57,7 @@ describe('commands e2e', () => {
   let newObjectElemName: string
   let newObjectApiName: string
 
-  const PROFILE = 'Profile'
+  const ROLE = 'Role'
   let client: SalesforceClient
 
   beforeAll(async () => {
@@ -81,8 +81,8 @@ describe('commands e2e', () => {
     if (await objectExists(client, newObjectApiName)) {
       await client.delete(CUSTOM_OBJECT, newObjectApiName)
     }
-    if (await instanceExists(client, PROFILE, newInstanceFullName)) {
-      await client.delete(PROFILE, newInstanceFullName)
+    if (await instanceExists(client, ROLE, newInstanceFullName)) {
+      await client.delete(ROLE, newInstanceFullName)
     }
     await runSalesforceLogin(fetchOutputDir)
     await runFetch(fetchOutputDir)
@@ -92,8 +92,8 @@ describe('commands e2e', () => {
     if (await objectExists(client, newObjectApiName)) {
       await client.delete(CUSTOM_OBJECT, newObjectApiName)
     }
-    if (await instanceExists(client, PROFILE, newInstanceFullName)) {
-      await client.delete(PROFILE, newInstanceFullName)
+    if (await instanceExists(client, ROLE, newInstanceFullName)) {
+      await client.delete(ROLE, newInstanceFullName)
     }
     await rm(homePath)
   })
@@ -129,7 +129,7 @@ describe('commands e2e', () => {
       expect(await objectExists(client, newObjectApiName, ['Alpha__c', 'Beta__c'])).toBe(true)
     })
     it('should create the instance in salesforce', async () => {
-      expect(await instanceExists(client, PROFILE, newInstanceFullName,
+      expect(await instanceExists(client, ROLE, newInstanceFullName,
         { description: 'To Be Modified' })).toBe(true)
     })
     it('should update the object in the BP', async () => {
@@ -144,7 +144,7 @@ describe('commands e2e', () => {
       )
     })
     it('should update the instance in the BP', async () => {
-      verifyInstance(workspace, SALESFORCE, PROFILE.toLowerCase(), newInstanceElemName,
+      verifyInstance(workspace, SALESFORCE, ROLE.toLowerCase(), newInstanceElemName,
         { description: 'To Be Modified', [INSTANCE_FULL_NAME_FIELD]: newInstanceFullName })
     })
     afterAll(async () => {
@@ -170,7 +170,7 @@ describe('commands e2e', () => {
         .toBe(true)
     })
     it('should update the instance in salesforce', async () => {
-      expect(await instanceExists(client, PROFILE, newInstanceFullName,
+      expect(await instanceExists(client, ROLE, newInstanceFullName,
         { description: 'I Am Modified' })).toBe(true)
     })
     afterAll(async () => {
@@ -196,7 +196,7 @@ describe('commands e2e', () => {
       )
     })
     it('should have no change in the instance', async () => {
-      verifyInstance(workspace, SALESFORCE, PROFILE.toLowerCase(), newInstanceElemName,
+      verifyInstance(workspace, SALESFORCE, ROLE.toLowerCase(), newInstanceElemName,
         { description: 'I Am Modified', [INSTANCE_FULL_NAME_FIELD]: newInstanceFullName })
     })
     afterAll(async () => {
@@ -216,7 +216,7 @@ describe('commands e2e', () => {
       expect(await objectExists(client, newObjectApiName)).toBe(false)
     })
     it('should remove the instance in salesforce', async () => {
-      expect(await instanceExists(client, PROFILE, newInstanceFullName)).toBe(false)
+      expect(await instanceExists(client, ROLE, newInstanceFullName)).toBe(false)
     })
     afterAll(async () => {
       await runEmptyPreview(lastPlan, fetchOutputDir)

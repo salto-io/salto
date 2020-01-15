@@ -9,6 +9,7 @@ type salesforce_new_object_name {
   }
 }
 
-salesforce_profile new_instance_name {
+salesforce_role new_instance_name {
   description = "To Be Modified"
+  name = "New Role Instance"
 }

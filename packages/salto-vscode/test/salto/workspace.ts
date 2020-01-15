@@ -3,6 +3,7 @@ import { Config, Workspace, parse, file, SourceRange, ParsedBlueprint } from 'sa
 import { InstanceElement, ElemID, ObjectType, Field, BuiltinTypes } from 'adapter-api'
 import _ from 'lodash'
 import { ParseError } from 'salto/dist/src/parser/parse'
+import { mergeElements } from 'salto/dist/src/core/merger'
 
 const SERVICES = ['salesforce']
 
@@ -29,10 +30,10 @@ export const mockWorkspace = async (blueprint?: string, config?: Partial<Config>
     elements: parseResult.elements,
     errors: parseResult.errors,
   }
-
+  const merged = mergeElements(parseResult.elements)
   return {
     parsedBlueprints: { [filename]: parsedBlueprint },
-    elements: parseResult.elements,
+    elements: merged.merged,
     config: _.mergeWith(config, { stateLocation: '.', services: SERVICES, baseDir }),
     updateBlueprints: jest.fn(),
     flush: jest.fn(),
@@ -52,7 +53,7 @@ export const mockWorkspace = async (blueprint?: string, config?: Partial<Config>
     })),
     resolveParsedBlueprint: jest.fn().mockImplementation((bp: ParsedBlueprint): Promise<unknown> =>
       (bp.filename === filename
-        ? Promise.resolve(parsedBlueprint && { sourceMap: parseResult.sourceMap, buffer })
+        ? Promise.resolve({ ...parsedBlueprint, sourceMap: parseResult.sourceMap, buffer })
         : Promise.resolve(undefined))),
     getSourceRanges: jest.fn().mockImplementation((elemID: ElemID): SourceRange[] =>
       (parseResult.sourceMap.get(elemID.getFullName()) || [])),

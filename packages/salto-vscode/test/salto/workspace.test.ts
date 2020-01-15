@@ -4,11 +4,13 @@ import { mockWorkspace } from './workspace'
 
 describe('workspace', () => {
   const bpFileName = `${__dirname}/../../../test/salto/test-bps/all.bp`
-
+  const validate = (workspace: EditorWorkspace, elements: number, bps: number): void => {
+    expect(workspace.elements && workspace.elements.length).toBe(elements)
+    expect(_.keys(workspace.parsedBlueprints).length).toBe(bps)
+  }
   it('should initiate a workspace', async () => {
     const workspace = new EditorWorkspace(await mockWorkspace(bpFileName))
-    expect(workspace.elements && workspace.elements.length).toBe(16)
-    expect(_.keys(workspace.parsedBlueprints).length).toBe(1)
+    validate(workspace, 14, 1)
   })
 
   it('should collect errors', async () => {
@@ -29,15 +31,12 @@ describe('workspace', () => {
   it('should maintain status on error', async () => {
     const baseWs = await mockWorkspace(bpFileName)
     const workspace = new EditorWorkspace(baseWs)
-    expect(workspace.elements && workspace.elements.length).toBe(16)
-    expect(_.keys(workspace.parsedBlueprints).length).toBe(1)
     baseWs.hasErrors = jest.fn().mockImplementation(() => true)
     workspace.setBlueprints({ filename: 'error', buffer: 'error content' })
     await workspace.awaitAllUpdates()
     expect(workspace.elements).toBeDefined()
     expect(workspace.hasErrors()).toBeTruthy()
-    expect(workspace.elements && workspace.elements.length).toBe(16)
-    expect(_.keys(workspace.parsedBlueprints).length).toBe(1)
+    validate(workspace, 14, 1)
   })
 
   it('should support file removal', async () => {
@@ -63,8 +62,7 @@ describe('workspace', () => {
     await workspace.awaitAllUpdates()
     expect(workspace.elements).toBeDefined()
     expect(workspace.hasErrors()).toBeTruthy()
-    expect(workspace.elements && workspace.elements.length).toBe(16)
-    expect(_.keys(workspace.parsedBlueprints).length).toBe(1)
+    validate(workspace, 14, 1)
     const lastValid = workspace.getValidCopy()
     if (!lastValid) throw new Error('lastValid not defined')
     expect(lastValid).not.toEqual(workspace)

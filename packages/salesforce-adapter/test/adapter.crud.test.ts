@@ -605,7 +605,7 @@ describe('SalesforceAdapter CRUD', () => {
         new ObjectType({
           elemID: WORKFLOW_TYPE_ID,
           annotations: {
-            [constants.METADATA_TYPE]: 'Workflow',
+            [constants.METADATA_TYPE]: constants.WORKFLOW_METADATA_TYPE,
           },
         }), {}
       )
@@ -717,7 +717,7 @@ describe('SalesforceAdapter CRUD', () => {
         new ObjectType({
           elemID: WORKFLOW_TYPE_ID,
           annotations: {
-            [constants.METADATA_TYPE]: 'Workflow',
+            [constants.METADATA_TYPE]: constants.WORKFLOW_METADATA_TYPE,
           },
         }), {}
       )
@@ -1691,7 +1691,7 @@ describe('SalesforceAdapter CRUD', () => {
         new ObjectType({
           elemID: WORKFLOW_TYPE_ID,
           annotations: {
-            [constants.METADATA_TYPE]: 'Workflow',
+            [constants.METADATA_TYPE]: constants.WORKFLOW_METADATA_TYPE,
           },
         }), {}
       )

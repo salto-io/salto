@@ -5,27 +5,33 @@ import {
 import { SaveResult, UpsertResult } from 'jsforce'
 import { collections } from '@salto/lowerdash'
 import _ from 'lodash'
-import { API_NAME_SEPERATOR, INSTANCE_FULL_NAME_FIELD, SALESFORCE } from '../constants'
+import {
+  API_NAME_SEPERATOR, INSTANCE_FULL_NAME_FIELD, SALESFORCE, WORKFLOW_METADATA_TYPE,
+} from '../constants'
 import { FilterCreator } from '../filter'
-import { apiName, sfCase, toMetadataInfo } from '../transformers/transformer'
+import { apiName, toMetadataInfo } from '../transformers/transformer'
 
 const { makeArray } = collections.array
 
-export const WORKFLOW_FIELD_TO_TYPE = {
-  alerts: 'workflow_alert',
-  // eslint-disable-next-line @typescript-eslint/camelcase
-  field_updates: 'workflow_field_update',
-  // eslint-disable-next-line @typescript-eslint/camelcase
-  flow_actions: 'workflow_flow_action',
-  // eslint-disable-next-line @typescript-eslint/camelcase
-  outbound_messages: 'workflow_outbound_message',
-  // eslint-disable-next-line @typescript-eslint/camelcase
-  knowledge_publishes: 'workflow_knowledge_publish',
-  tasks: 'workflow_task',
-  rules: 'workflow_rule',
+export const WORKFLOW_ALERTS_FIELD = 'alerts'
+export const WORKFLOW_FIELD_UPDATES_FIELD = 'fieldUpdates'
+export const WORKFLOW_FLOW_ACTIONS_FIELD = 'flowActions'
+export const WORKFLOW_OUTBOUND_MESSAGES_FIELD = 'outboundMessages'
+export const WORKFLOW_KNOWLEDGE_PUBLISHES_FIELD = 'knowledgePublishes'
+export const WORKFLOW_TASKS_FIELD = 'tasks'
+export const WORKFLOW_RULES_FIELD = 'rules'
+
+const WORKFLOW_FIELD_TO_TYPE = {
+  [WORKFLOW_ALERTS_FIELD]: 'WorkflowAlert',
+  [WORKFLOW_FIELD_UPDATES_FIELD]: 'WorkflowFieldUpdate',
+  [WORKFLOW_FLOW_ACTIONS_FIELD]: 'WorkflowFlowAction',
+  [WORKFLOW_OUTBOUND_MESSAGES_FIELD]: 'WorkflowOutboundMessage',
+  [WORKFLOW_KNOWLEDGE_PUBLISHES_FIELD]: 'WorkflowKnowledgePublish',
+  [WORKFLOW_TASKS_FIELD]: 'WorkflowTask',
+  [WORKFLOW_RULES_FIELD]: 'WorkflowRule',
 }
 
-export const WORKFLOW_TYPE_ID = new ElemID(SALESFORCE, 'workflow')
+export const WORKFLOW_TYPE_ID = new ElemID(SALESFORCE, WORKFLOW_METADATA_TYPE)
 export const isWorkflowInstance = (instance: InstanceElement): boolean =>
   instance.type.elemID.isEqual(WORKFLOW_TYPE_ID)
 
@@ -49,8 +55,8 @@ const filterCreator: FilterCreator = ({ client }) => ({
     const modifyPath = (workflowInstance: InstanceElement): void => {
       if (workflowInstance.path) {
         workflowInstance.path = [...workflowInstance.path.slice(0, -2),
-          'workflow_rules',
-          `${workflowInstance.elemID.name}_workflow_rules`]
+          'WorkflowRules',
+          `${workflowInstance.elemID.name}WorkflowRules`]
       }
     }
 
@@ -103,7 +109,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
 
     return _.flatten(_.flatten((await Promise.all(
       Object.entries(WORKFLOW_FIELD_TO_TYPE)
-        .map(([name, type]) => handleWorkflowChanges(name, sfCase(type)))
+        .map(([name, type]) => handleWorkflowChanges(name, type))
     ))))
   },
 
@@ -117,7 +123,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
     const afterWorkflowInstance = after as InstanceElement
     return _.flatten(await Promise.all(Object.entries(WORKFLOW_FIELD_TO_TYPE)
       .map(([name, type]) =>
-        client.upsert(sfCase(type),
+        client.upsert(type,
           makeArray(afterWorkflowInstance.value[name])
             .map(val => toMetadataInfo(val[INSTANCE_FULL_NAME_FIELD], val))))))
   },
@@ -131,7 +137,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
     }
     return _.flatten(await Promise.all(Object.entries(WORKFLOW_FIELD_TO_TYPE)
       .map(([name, type]) =>
-        client.delete(sfCase(type),
+        client.delete(type,
           makeArray(before.value[name])
             .map(val => val[INSTANCE_FULL_NAME_FIELD])))))
   },

@@ -5,9 +5,13 @@ import {
 } from 'adapter-api'
 import { logger } from '@salto/logging'
 import { FilterCreator } from '../filter'
-import { SALESFORCE } from '../constants'
+import { SALESFORCE, WORKFLOW_METADATA_TYPE } from '../constants'
 import { LEAD_CONVERT_SETTINGS_TYPE_ID } from './lead_convert_settings'
 import { id } from './utils'
+import {
+  WORKFLOW_ALERTS_FIELD, WORKFLOW_FIELD_UPDATES_FIELD, WORKFLOW_FLOW_ACTIONS_FIELD,
+  WORKFLOW_KNOWLEDGE_PUBLISHES_FIELD, WORKFLOW_OUTBOUND_MESSAGES_FIELD, WORKFLOW_TASKS_FIELD,
+} from './workflow'
 
 const log = logger(module)
 
@@ -110,31 +114,31 @@ const allMissingFields: {id: ElemID; fields: MissingField[]}[] = [
     ],
   },
   {
-    id: new ElemID(SALESFORCE, 'workflow'),
+    id: new ElemID(SALESFORCE, WORKFLOW_METADATA_TYPE),
     fields: [
       {
-        name: 'alerts',
-        type: new ElemID(SALESFORCE, 'workflow_alert'),
+        name: WORKFLOW_ALERTS_FIELD,
+        type: new ElemID(SALESFORCE, 'WorkflowAlert'),
       },
       {
-        name: 'field_updates',
-        type: new ElemID(SALESFORCE, 'workflow_field_update'),
+        name: WORKFLOW_FIELD_UPDATES_FIELD,
+        type: new ElemID(SALESFORCE, 'WorkflowFieldUpdate'),
       },
       {
-        name: 'flow_actions',
-        type: new ElemID(SALESFORCE, 'workflow_flow_action'),
+        name: WORKFLOW_FLOW_ACTIONS_FIELD,
+        type: new ElemID(SALESFORCE, 'WorkflowFlowAction'),
       },
       {
-        name: 'knowledge_publishes',
-        type: new ElemID(SALESFORCE, 'workflow_knowledge_publish'),
+        name: WORKFLOW_KNOWLEDGE_PUBLISHES_FIELD,
+        type: new ElemID(SALESFORCE, 'WorkflowKnowledgePublish'),
       },
       {
-        name: 'outbound_messages',
-        type: new ElemID(SALESFORCE, 'workflow_outbound_message'),
+        name: WORKFLOW_OUTBOUND_MESSAGES_FIELD,
+        type: new ElemID(SALESFORCE, 'WorkflowOutboundMessage'),
       },
       {
-        name: 'tasks',
-        type: new ElemID(SALESFORCE, 'workflow_task'),
+        name: WORKFLOW_TASKS_FIELD,
+        type: new ElemID(SALESFORCE, 'WorkflowTask'),
       },
     ],
   },

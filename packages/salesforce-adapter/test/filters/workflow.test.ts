@@ -1,8 +1,13 @@
 import { ElemID, InstanceElement, ObjectType } from 'adapter-api'
 import { FilterWith } from '../../src/filter'
-import filterCreator, { WORKFLOW_TYPE_ID } from '../../src/filters/workflow'
+import filterCreator, {
+  WORKFLOW_ALERTS_FIELD, WORKFLOW_FIELD_UPDATES_FIELD, WORKFLOW_RULES_FIELD,
+  WORKFLOW_TASKS_FIELD, WORKFLOW_TYPE_ID,
+} from '../../src/filters/workflow'
 import mockClient from '../client'
-import { API_NAME_SEPERATOR, INSTANCE_FULL_NAME_FIELD, SALESFORCE } from '../../src/constants'
+import {
+  API_NAME_SEPERATOR, INSTANCE_FULL_NAME_FIELD, SALESFORCE, WORKFLOW_METADATA_TYPE,
+} from '../../src/constants'
 
 describe('Workflow filter', () => {
   const { client } = mockClient()
@@ -13,11 +18,11 @@ describe('Workflow filter', () => {
   const workflowObjectType = new ObjectType({ elemID: WORKFLOW_TYPE_ID })
   const generateWorkFlowInstance = (beforeFetch = false): InstanceElement => {
     const fullNamePrefix = beforeFetch ? '' : `${workflowInstanceName}${API_NAME_SEPERATOR}`
-    return new InstanceElement('account',
+    return new InstanceElement('Account',
       workflowObjectType,
       {
         [INSTANCE_FULL_NAME_FIELD]: workflowInstanceName,
-        alerts: [
+        [WORKFLOW_ALERTS_FIELD]: [
           {
             [INSTANCE_FULL_NAME_FIELD]: `${fullNamePrefix}MyWorkflowAlert1`,
             description: 'description',
@@ -27,34 +32,33 @@ describe('Workflow filter', () => {
             description: 'description',
           },
         ],
-        // eslint-disable-next-line @typescript-eslint/camelcase
-        field_updates: {
+        [WORKFLOW_FIELD_UPDATES_FIELD]: {
           [INSTANCE_FULL_NAME_FIELD]: `${fullNamePrefix}MyWorkflowFieldUpdate`,
         },
-        tasks: {
+        [WORKFLOW_TASKS_FIELD]: {
           [INSTANCE_FULL_NAME_FIELD]: `${fullNamePrefix}MyWorkflowTask`,
         },
-        rules: {
+        [WORKFLOW_RULES_FIELD]: {
           [INSTANCE_FULL_NAME_FIELD]: `${fullNamePrefix}MyWorkflowRule`,
         },
       },
-      beforeFetch ? [SALESFORCE, 'records', 'workflow', 'account']
-        : [SALESFORCE, 'records', 'workflow_rules', 'account_workflow_rules'])
+      beforeFetch ? [SALESFORCE, 'records', WORKFLOW_METADATA_TYPE, 'Account']
+        : [SALESFORCE, 'records', 'WorkflowRules', 'AccountWorkflowRules'])
   }
 
   describe('on fetch', () => {
-    it('should modify inner types full_names to contain the parent full_name', async () => {
+    it('should modify inner types full_names to contain the parent fullName', async () => {
       const workflowWithInnerTypes = generateWorkFlowInstance(true)
       await filter.onFetch([workflowWithInnerTypes])
-      expect(workflowWithInnerTypes.value.alerts[0][INSTANCE_FULL_NAME_FIELD])
+      expect(workflowWithInnerTypes.value[WORKFLOW_ALERTS_FIELD][0][INSTANCE_FULL_NAME_FIELD])
         .toEqual('Account.MyWorkflowAlert1')
-      expect(workflowWithInnerTypes.value.alerts[1][INSTANCE_FULL_NAME_FIELD])
+      expect(workflowWithInnerTypes.value[WORKFLOW_ALERTS_FIELD][1][INSTANCE_FULL_NAME_FIELD])
         .toEqual('Account.MyWorkflowAlert2')
-      expect(workflowWithInnerTypes.value.field_updates[INSTANCE_FULL_NAME_FIELD])
+      expect(workflowWithInnerTypes.value[WORKFLOW_FIELD_UPDATES_FIELD][INSTANCE_FULL_NAME_FIELD])
         .toEqual('Account.MyWorkflowFieldUpdate')
-      expect(workflowWithInnerTypes.value.tasks[INSTANCE_FULL_NAME_FIELD])
+      expect(workflowWithInnerTypes.value[WORKFLOW_TASKS_FIELD][INSTANCE_FULL_NAME_FIELD])
         .toEqual('Account.MyWorkflowTask')
-      expect(workflowWithInnerTypes.value.rules[INSTANCE_FULL_NAME_FIELD])
+      expect(workflowWithInnerTypes.value[WORKFLOW_RULES_FIELD][INSTANCE_FULL_NAME_FIELD])
         .toEqual('Account.MyWorkflowRule')
     })
 
@@ -62,15 +66,15 @@ describe('Workflow filter', () => {
       const dummyInstance = generateWorkFlowInstance(true)
       dummyInstance.type = new ObjectType({ elemID: new ElemID(SALESFORCE, 'dummy') })
       await filter.onFetch([dummyInstance])
-      expect(dummyInstance.value.alerts[0][INSTANCE_FULL_NAME_FIELD])
+      expect(dummyInstance.value[WORKFLOW_ALERTS_FIELD][0][INSTANCE_FULL_NAME_FIELD])
         .toEqual('MyWorkflowAlert1')
-      expect(dummyInstance.value.alerts[1][INSTANCE_FULL_NAME_FIELD])
+      expect(dummyInstance.value[WORKFLOW_ALERTS_FIELD][1][INSTANCE_FULL_NAME_FIELD])
         .toEqual('MyWorkflowAlert2')
-      expect(dummyInstance.value.field_updates[INSTANCE_FULL_NAME_FIELD])
+      expect(dummyInstance.value[WORKFLOW_FIELD_UPDATES_FIELD][INSTANCE_FULL_NAME_FIELD])
         .toEqual('MyWorkflowFieldUpdate')
-      expect(dummyInstance.value.tasks[INSTANCE_FULL_NAME_FIELD])
+      expect(dummyInstance.value[WORKFLOW_TASKS_FIELD][INSTANCE_FULL_NAME_FIELD])
         .toEqual('MyWorkflowTask')
-      expect(dummyInstance.value.rules[INSTANCE_FULL_NAME_FIELD])
+      expect(dummyInstance.value[WORKFLOW_RULES_FIELD][INSTANCE_FULL_NAME_FIELD])
         .toEqual('MyWorkflowRule')
     })
 
@@ -78,7 +82,7 @@ describe('Workflow filter', () => {
       const workflowWithInnerTypes = generateWorkFlowInstance(true)
       await filter.onFetch([workflowWithInnerTypes])
       expect(workflowWithInnerTypes.path)
-        .toEqual([SALESFORCE, 'records', 'workflow_rules', 'account_workflow_rules'])
+        .toEqual([SALESFORCE, 'records', 'WorkflowRules', 'AccountWorkflowRules'])
     })
 
     it('should set non workflow instances path correctly', async () => {
@@ -145,8 +149,8 @@ describe('Workflow filter', () => {
       beforeEach(async () => {
         const beforeWorkflowInstance = generateWorkFlowInstance()
         const afterWorkflowInstance = beforeWorkflowInstance.clone()
-        afterWorkflowInstance.value.alerts[0][INSTANCE_FULL_NAME_FIELD] = 'Account.MyWorkflowAlert3'
-        afterWorkflowInstance.value.alerts[1].description = 'updated description'
+        afterWorkflowInstance.value[WORKFLOW_ALERTS_FIELD][0][INSTANCE_FULL_NAME_FIELD] = 'Account.MyWorkflowAlert3'
+        afterWorkflowInstance.value[WORKFLOW_ALERTS_FIELD][1].description = 'updated description'
         await filter.onUpdate(beforeWorkflowInstance, afterWorkflowInstance, [])
       })
 
@@ -173,8 +177,8 @@ describe('Workflow filter', () => {
       const beforeDummyInstance = generateWorkFlowInstance()
       beforeDummyInstance.type = new ObjectType({ elemID: new ElemID(SALESFORCE, 'dummy') })
       const afterDummyInstance = beforeDummyInstance.clone()
-      afterDummyInstance.value.alerts[0][INSTANCE_FULL_NAME_FIELD] = 'Account.MyWorkflowAlert3'
-      afterDummyInstance.value.alerts[1].description = 'updated description'
+      afterDummyInstance.value[WORKFLOW_ALERTS_FIELD][0][INSTANCE_FULL_NAME_FIELD] = 'Account.MyWorkflowAlert3'
+      afterDummyInstance.value[WORKFLOW_ALERTS_FIELD][1].description = 'updated description'
       await filter.onUpdate(beforeDummyInstance, afterDummyInstance, [])
       expect(mockUpsert).toHaveBeenCalledTimes(0)
       expect(mockUpdate).toHaveBeenCalledTimes(0)

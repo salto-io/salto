@@ -25,6 +25,9 @@ import { findElements } from '../test/utils'
 import SalesforceClient, { API_VERSION } from '../src/client/client'
 import SalesforceAdapter from '../src/adapter'
 import { fromRetrieveResult, toMetadataPackageZip } from '../src/transformers/xml_transformer'
+import {
+  WORKFLOW_ALERTS_FIELD, WORKFLOW_FIELD_UPDATES_FIELD, WORKFLOW_RULES_FIELD, WORKFLOW_TASKS_FIELD,
+} from '../src/filters/workflow'
 
 const { makeArray } = collections.array
 const {
@@ -669,41 +672,41 @@ describe('Salesforce adapter E2E with real account', () => {
 
     describe('should fetch Workflow instance', () => {
       it('should fetch workflow alerts', async () => {
-        const leadWorkflow = findElements(result, 'workflow', 'lead')[0] as InstanceElement
-        expect(leadWorkflow.value.alerts).toBeDefined()
-        const workflowAlert = makeArray(leadWorkflow.value.alerts)
+        const leadWorkflow = findElements(result, constants.WORKFLOW_METADATA_TYPE, 'Lead')[0] as InstanceElement
+        expect(leadWorkflow.value[WORKFLOW_ALERTS_FIELD]).toBeDefined()
+        const workflowAlert = makeArray(leadWorkflow.value[WORKFLOW_ALERTS_FIELD])
           .find(alert => alert[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.TestWorkflowAlert')
         expect(workflowAlert.description).toEqual('E2E Fetch WorkflowAlert')
       })
 
       it('should fetch workflow field updates', async () => {
-        const leadWorkflow = findElements(result, 'workflow', 'lead')[0] as InstanceElement
-        expect(leadWorkflow.value.field_updates).toBeDefined()
-        const workflowFieldUpdate = makeArray(leadWorkflow.value.field_updates)
+        const leadWorkflow = findElements(result, constants.WORKFLOW_METADATA_TYPE, 'Lead')[0] as InstanceElement
+        expect(leadWorkflow.value[WORKFLOW_FIELD_UPDATES_FIELD]).toBeDefined()
+        const workflowFieldUpdate = makeArray(leadWorkflow.value[WORKFLOW_FIELD_UPDATES_FIELD])
           .find(alert => alert[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.TestWorkflowFieldUpdate')
         expect(workflowFieldUpdate.description).toEqual('E2E Fetch WorkflowFieldUpdate')
       })
 
       it('should fetch workflow task', async () => {
-        const leadWorkflow = findElements(result, 'workflow', 'lead')[0] as InstanceElement
-        expect(leadWorkflow.value.tasks).toBeDefined()
-        const workflowTask = makeArray(leadWorkflow.value.tasks)
+        const leadWorkflow = findElements(result, constants.WORKFLOW_METADATA_TYPE, 'Lead')[0] as InstanceElement
+        expect(leadWorkflow.value[WORKFLOW_TASKS_FIELD]).toBeDefined()
+        const workflowTask = makeArray(leadWorkflow.value[WORKFLOW_TASKS_FIELD])
           .find(task => task[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.TestWorkflowTask')
         expect(workflowTask.description).toEqual('E2E Fetch WorkflowTask')
       })
 
       it('should fetch workflow rule', async () => {
-        const leadWorkflow = findElements(result, 'workflow', 'lead')[0] as InstanceElement
-        expect(leadWorkflow.value.rules).toBeDefined()
-        const workflowRule = makeArray(leadWorkflow.value.rules)
+        const leadWorkflow = findElements(result, constants.WORKFLOW_METADATA_TYPE, 'Lead')[0] as InstanceElement
+        expect(leadWorkflow.value[WORKFLOW_RULES_FIELD]).toBeDefined()
+        const workflowRule = makeArray(leadWorkflow.value[WORKFLOW_RULES_FIELD])
           .find(rule => rule[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.TestWorkflowRule')
         expect(workflowRule.description).toEqual('E2E Fetch WorkflowRule')
       })
 
       it('should set workflow instance path correctly', async () => {
-        const leadWorkflow = findElements(result, 'workflow', 'lead')[0] as InstanceElement
+        const leadWorkflow = findElements(result, constants.WORKFLOW_METADATA_TYPE, 'Lead')[0] as InstanceElement
         expect(leadWorkflow.path)
-          .toEqual([constants.SALESFORCE, 'records', 'workflow_rules', 'lead_workflow_rules'])
+          .toEqual([constants.SALESFORCE, 'records', 'WorkflowRules', 'LeadWorkflowRules'])
       })
     })
   })
@@ -3399,9 +3402,9 @@ describe('Salesforce adapter E2E with real account', () => {
 
         describe('create workflow alert', () => {
           it('should create workflow alert', async () => {
-            const oldWorkflow = findElements(result, 'workflow', 'lead')[0] as InstanceElement
+            const oldWorkflow = findElements(result, constants.WORKFLOW_METADATA_TYPE, 'Lead')[0] as InstanceElement
             const newWorkflow = oldWorkflow.clone()
-            newWorkflow.value.alerts = [{
+            newWorkflow.value[WORKFLOW_ALERTS_FIELD] = [{
               [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead.MyWorkflowAlert',
               description: 'My Workflow Alert',
               protected: false,
@@ -3411,25 +3414,24 @@ describe('Salesforce adapter E2E with real account', () => {
                   type: 'role',
                 },
               ],
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              sender_type: 'CurrentUser',
+              senderType: 'CurrentUser',
               template: 'unfiled$public/SalesNewCustomerEmail',
-            }, ...makeArray(newWorkflow.value.alerts)]
+            }, ...makeArray(newWorkflow.value[WORKFLOW_ALERTS_FIELD])]
 
             await adapter.update(oldWorkflow, newWorkflow,
               [{ action: 'modify', data: { before: oldWorkflow, after: newWorkflow } }])
 
             expect(await objectExists('WorkflowAlert', 'Lead.MyWorkflowAlert')).toBeTruthy()
             // to save another fetch, we set the new workflow alert on the old instance
-            oldWorkflow.value.alerts = newWorkflow.value.alerts
+            oldWorkflow.value[WORKFLOW_ALERTS_FIELD] = newWorkflow.value[WORKFLOW_ALERTS_FIELD]
           })
         })
 
         describe('update workflow alert', () => {
           it('should update workflow alert', async () => {
-            const oldWorkflow = findElements(result, 'workflow', 'lead')[0] as InstanceElement
+            const oldWorkflow = findElements(result, constants.WORKFLOW_METADATA_TYPE, 'Lead')[0] as InstanceElement
             const newWorkflow = oldWorkflow.clone()
-            const workflowAlertToUpdate = makeArray(newWorkflow.value.alerts)
+            const workflowAlertToUpdate = makeArray(newWorkflow.value[WORKFLOW_ALERTS_FIELD])
               .find(alert => alert[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.MyWorkflowAlert')
             expect(workflowAlertToUpdate).toBeDefined()
             workflowAlertToUpdate.description = 'My Updated Workflow Alert'
@@ -3468,10 +3470,11 @@ describe('Salesforce adapter E2E with real account', () => {
 
         describe('delete workflow alert', () => {
           it('should delete workflow alert', async () => {
-            const oldWorkflow = findElements(result, 'workflow', 'lead')[0] as InstanceElement
+            const oldWorkflow = findElements(result, constants.WORKFLOW_METADATA_TYPE, 'Lead')[0] as InstanceElement
             const newWorkflow = oldWorkflow.clone()
-            newWorkflow.value.alerts = makeArray(newWorkflow.value.alerts)
-              .filter(alert => alert[constants.INSTANCE_FULL_NAME_FIELD] !== 'Lead.MyWorkflowAlert')
+            newWorkflow.value[WORKFLOW_ALERTS_FIELD] = makeArray(
+              newWorkflow.value[WORKFLOW_ALERTS_FIELD]
+            ).filter(alert => alert[constants.INSTANCE_FULL_NAME_FIELD] !== 'Lead.MyWorkflowAlert')
 
             await adapter.update(oldWorkflow, newWorkflow,
               [{ action: 'modify', data: { before: oldWorkflow, after: newWorkflow } }])
@@ -3488,19 +3491,17 @@ describe('Salesforce adapter E2E with real account', () => {
 
         describe('create workflow field update', () => {
           it('should create workflow field update', async () => {
-            const oldWorkflow = findElements(result, 'workflow', 'lead')[0] as InstanceElement
+            const oldWorkflow = findElements(result, constants.WORKFLOW_METADATA_TYPE, 'Lead')[0] as InstanceElement
             const newWorkflow = oldWorkflow.clone()
-            // eslint-disable-next-line @typescript-eslint/camelcase
-            newWorkflow.value.field_updates = [{
+            newWorkflow.value[WORKFLOW_FIELD_UPDATES_FIELD] = [{
               [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead.MyWorkflowFieldUpdate',
               name: 'TestWorkflowFieldUpdate',
               description: 'My Workflow Field Update',
               field: 'Company',
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              notify_assignee: false,
+              notifyAssignee: false,
               protected: false,
               operation: 'Null',
-            }, ...makeArray(newWorkflow.value.field_updates)]
+            }, ...makeArray(newWorkflow.value[WORKFLOW_FIELD_UPDATES_FIELD])]
 
             await adapter.update(oldWorkflow, newWorkflow,
               [{ action: 'modify', data: { before: oldWorkflow, after: newWorkflow } }])
@@ -3508,18 +3509,19 @@ describe('Salesforce adapter E2E with real account', () => {
             expect(await objectExists('WorkflowFieldUpdate', 'Lead.MyWorkflowFieldUpdate'))
               .toBeTruthy()
             // to save another fetch, we set the new workflow field update on the old instance
-            // eslint-disable-next-line @typescript-eslint/camelcase
-            oldWorkflow.value.field_updates = newWorkflow.value.field_updates
+            oldWorkflow.value[WORKFLOW_FIELD_UPDATES_FIELD] = newWorkflow
+              .value[WORKFLOW_FIELD_UPDATES_FIELD]
           })
         })
 
         describe('update workflow field update', () => {
           it('should update workflow field update', async () => {
-            const oldWorkflow = findElements(result, 'workflow', 'lead')[0] as InstanceElement
+            const oldWorkflow = findElements(result, constants.WORKFLOW_METADATA_TYPE, 'Lead')[0] as InstanceElement
             const newWorkflow = oldWorkflow.clone()
-            const workflowFieldUpdateToUpdate = makeArray(newWorkflow.value.field_updates)
-              .find(field =>
-                field[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.MyWorkflowFieldUpdate')
+            const workflowFieldUpdateToUpdate = makeArray(
+              newWorkflow.value[WORKFLOW_FIELD_UPDATES_FIELD]
+            ).find(field =>
+              field[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.MyWorkflowFieldUpdate')
             expect(workflowFieldUpdateToUpdate).toBeDefined()
             workflowFieldUpdateToUpdate.description = 'My Updated Workflow Field Update'
 
@@ -3535,12 +3537,12 @@ describe('Salesforce adapter E2E with real account', () => {
 
         describe('delete workflow field update', () => {
           it('should delete workflow field update', async () => {
-            const oldWorkflow = findElements(result, 'workflow', 'lead')[0] as InstanceElement
+            const oldWorkflow = findElements(result, constants.WORKFLOW_METADATA_TYPE, 'Lead')[0] as InstanceElement
             const newWorkflow = oldWorkflow.clone()
-            // eslint-disable-next-line @typescript-eslint/camelcase
-            newWorkflow.value.field_updates = makeArray(newWorkflow.value.field_updates)
-              .filter(field =>
-                field[constants.INSTANCE_FULL_NAME_FIELD] !== 'Lead.MyWorkflowFieldUpdate')
+            newWorkflow.value[WORKFLOW_FIELD_UPDATES_FIELD] = makeArray(
+              newWorkflow.value[WORKFLOW_FIELD_UPDATES_FIELD]
+            ).filter(field =>
+              field[constants.INSTANCE_FULL_NAME_FIELD] !== 'Lead.MyWorkflowFieldUpdate')
 
             await adapter.update(oldWorkflow, newWorkflow,
               [{ action: 'modify', data: { before: oldWorkflow, after: newWorkflow } }])
@@ -3557,39 +3559,35 @@ describe('Salesforce adapter E2E with real account', () => {
 
         describe('create workflow task', () => {
           it('should create workflow task', async () => {
-            const oldWorkflow = findElements(result, 'workflow', 'lead')[0] as InstanceElement
+            const oldWorkflow = findElements(result, constants.WORKFLOW_METADATA_TYPE, 'Lead')[0] as InstanceElement
             const newWorkflow = oldWorkflow.clone()
-            newWorkflow.value.tasks = [{
+            newWorkflow.value[WORKFLOW_TASKS_FIELD] = [{
               [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead.MyWorkflowTask',
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              assigned_to: 'CEO',
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              assigned_to_type: 'role',
+              assignedTo: 'CEO',
+              assignedToType: 'role',
               description: 'My Workflow Task',
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              due_date_offset: 1,
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              notify_assignee: false,
+              dueDateOffset: 1,
+              notifyAssignee: false,
               priority: 'Normal',
               protected: false,
               status: 'Not Started',
               subject: 'TestWorkflowOutboundMessage',
-            }, ...makeArray(newWorkflow.value.tasks)]
+            }, ...makeArray(newWorkflow.value[WORKFLOW_TASKS_FIELD])]
 
             await adapter.update(oldWorkflow, newWorkflow,
               [{ action: 'modify', data: { before: oldWorkflow, after: newWorkflow } }])
 
             expect(await objectExists('WorkflowTask', 'Lead.MyWorkflowTask')).toBeTruthy()
             // to save another fetch, we set the new workflow task on the old instance
-            oldWorkflow.value.tasks = newWorkflow.value.tasks
+            oldWorkflow.value[WORKFLOW_TASKS_FIELD] = newWorkflow.value[WORKFLOW_TASKS_FIELD]
           })
         })
 
         describe('update workflow task', () => {
           it('should update workflow task', async () => {
-            const oldWorkflow = findElements(result, 'workflow', 'lead')[0] as InstanceElement
+            const oldWorkflow = findElements(result, constants.WORKFLOW_METADATA_TYPE, 'Lead')[0] as InstanceElement
             const newWorkflow = oldWorkflow.clone()
-            const workflowTaskToUpdate = makeArray(newWorkflow.value.tasks)
+            const workflowTaskToUpdate = makeArray(newWorkflow.value[WORKFLOW_TASKS_FIELD])
               .find(task => task[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.MyWorkflowTask')
             expect(workflowTaskToUpdate).toBeDefined()
             workflowTaskToUpdate.description = 'My Updated Workflow Task'
@@ -3605,10 +3603,11 @@ describe('Salesforce adapter E2E with real account', () => {
 
         describe('delete workflow task', () => {
           it('should delete workflow task', async () => {
-            const oldWorkflow = findElements(result, 'workflow', 'lead')[0] as InstanceElement
+            const oldWorkflow = findElements(result, constants.WORKFLOW_METADATA_TYPE, 'Lead')[0] as InstanceElement
             const newWorkflow = oldWorkflow.clone()
-            newWorkflow.value.tasks = makeArray(newWorkflow.value.tasks)
-              .filter(task => task[constants.INSTANCE_FULL_NAME_FIELD] !== 'Lead.MyWorkflowTask')
+            newWorkflow.value[WORKFLOW_TASKS_FIELD] = makeArray(
+              newWorkflow.value[WORKFLOW_TASKS_FIELD]
+            ).filter(task => task[constants.INSTANCE_FULL_NAME_FIELD] !== 'Lead.MyWorkflowTask')
 
             await adapter.update(oldWorkflow, newWorkflow,
               [{ action: 'modify', data: { before: oldWorkflow, after: newWorkflow } }])
@@ -3625,9 +3624,9 @@ describe('Salesforce adapter E2E with real account', () => {
 
         describe('create workflow rule', () => {
           it('should create workflow rule', async () => {
-            const oldWorkflow = findElements(result, 'workflow', 'lead')[0] as InstanceElement
+            const oldWorkflow = findElements(result, constants.WORKFLOW_METADATA_TYPE, 'Lead')[0] as InstanceElement
             const newWorkflow = oldWorkflow.clone()
-            newWorkflow.value.rules = [{
+            newWorkflow.value[WORKFLOW_RULES_FIELD] = [{
               [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead.MyWorkflowRule',
               actions: [
                 {
@@ -3644,8 +3643,7 @@ describe('Salesforce adapter E2E with real account', () => {
                 },
               ],
               active: false,
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              criteria_items: [
+              criteriaItems: [
                 {
                   field: 'Lead.Company',
                   operation: 'notEqual',
@@ -3653,10 +3651,8 @@ describe('Salesforce adapter E2E with real account', () => {
                 },
               ],
               description: 'My Workflow Rule',
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              trigger_type: 'onCreateOnly',
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              workflow_time_triggers: [
+              triggerType: 'onCreateOnly',
+              workflowTimeTriggers: [
                 {
                   actions: [
                     {
@@ -3664,28 +3660,26 @@ describe('Salesforce adapter E2E with real account', () => {
                       type: 'Alert',
                     },
                   ],
-                  // eslint-disable-next-line @typescript-eslint/camelcase
-                  time_length: '1',
-                  // eslint-disable-next-line @typescript-eslint/camelcase
-                  workflow_time_trigger_unit: 'Hours',
+                  timeLength: '1',
+                  workflowTimeTriggerUnit: 'Hours',
                 },
               ],
-            }, ...makeArray(newWorkflow.value.rules)]
+            }, ...makeArray(newWorkflow.value[WORKFLOW_RULES_FIELD])]
 
             await adapter.update(oldWorkflow, newWorkflow,
               [{ action: 'modify', data: { before: oldWorkflow, after: newWorkflow } }])
 
             expect(await objectExists('WorkflowRule', 'Lead.MyWorkflowRule')).toBeTruthy()
             // to save another fetch, we set the new workflow rule on the old instance
-            oldWorkflow.value.rules = newWorkflow.value.rules
+            oldWorkflow.value[WORKFLOW_RULES_FIELD] = newWorkflow.value[WORKFLOW_RULES_FIELD]
           })
         })
 
         describe('update workflow rule', () => {
           it('should update workflow rule', async () => {
-            const oldWorkflow = findElements(result, 'workflow', 'lead')[0] as InstanceElement
+            const oldWorkflow = findElements(result, constants.WORKFLOW_METADATA_TYPE, 'Lead')[0] as InstanceElement
             const newWorkflow = oldWorkflow.clone()
-            const workflowRuleToUpdate = makeArray(newWorkflow.value.rules)
+            const workflowRuleToUpdate = makeArray(newWorkflow.value[WORKFLOW_RULES_FIELD])
               .find(rule => rule[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.MyWorkflowRule')
             expect(workflowRuleToUpdate).toBeDefined()
             workflowRuleToUpdate.description = 'My Updated Workflow Rule'
@@ -3701,10 +3695,11 @@ describe('Salesforce adapter E2E with real account', () => {
 
         describe('delete workflow rule', () => {
           it('should delete workflow rule', async () => {
-            const oldWorkflow = findElements(result, 'workflow', 'lead')[0] as InstanceElement
+            const oldWorkflow = findElements(result, constants.WORKFLOW_METADATA_TYPE, 'Lead')[0] as InstanceElement
             const newWorkflow = oldWorkflow.clone()
-            newWorkflow.value.rules = makeArray(newWorkflow.value.rules)
-              .filter(rule => rule[constants.INSTANCE_FULL_NAME_FIELD] !== 'Lead.MyWorkflowRule')
+            newWorkflow.value[WORKFLOW_RULES_FIELD] = makeArray(
+              newWorkflow.value[WORKFLOW_RULES_FIELD]
+            ).filter(rule => rule[constants.INSTANCE_FULL_NAME_FIELD] !== 'Lead.MyWorkflowRule')
 
             await adapter.update(oldWorkflow, newWorkflow,
               [{ action: 'modify', data: { before: oldWorkflow, after: newWorkflow } }])
@@ -3717,12 +3712,11 @@ describe('Salesforce adapter E2E with real account', () => {
       it('should create and remove a workflow instance with inner types', async () => {
         const workflowInstanceName = 'Campaign'
         const workflowWithInnerTypes = new InstanceElement(workflowInstanceName,
-          findElements(result, 'workflow')[0] as ObjectType,
+          findElements(result, constants.WORKFLOW_METADATA_TYPE)[0] as ObjectType,
           {
             [constants.INSTANCE_FULL_NAME_FIELD]: workflowInstanceName,
             [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
-            // eslint-disable-next-line @typescript-eslint/camelcase
-            alerts: [
+            [WORKFLOW_ALERTS_FIELD]: [
               {
                 [constants.INSTANCE_FULL_NAME_FIELD]: apiNameAnno(workflowInstanceName, 'MyWorkflowAlert1'),
                 description: 'My Workflow Alert 1',
@@ -3733,8 +3727,7 @@ describe('Salesforce adapter E2E with real account', () => {
                     type: 'role',
                   },
                 ],
-                // eslint-disable-next-line @typescript-eslint/camelcase
-                sender_type: 'CurrentUser',
+                senderType: 'CurrentUser',
                 template: 'TestEmailFolder/TestEmailTemplate',
               },
               {
@@ -3747,33 +3740,26 @@ describe('Salesforce adapter E2E with real account', () => {
                     type: 'role',
                   },
                 ],
-                // eslint-disable-next-line @typescript-eslint/camelcase
-                sender_type: 'CurrentUser',
+                senderType: 'CurrentUser',
                 template: 'TestEmailFolder/TestEmailTemplate',
               },
             ],
-            // eslint-disable-next-line @typescript-eslint/camelcase
-            field_updates: {
+            [WORKFLOW_FIELD_UPDATES_FIELD]: {
               [constants.INSTANCE_FULL_NAME_FIELD]: apiNameAnno(workflowInstanceName, 'MyWorkflowFieldUpdate'),
               name: 'TestWorkflowFieldUpdate',
               description: 'My Workflow Field Update',
               field: 'Description',
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              notify_assignee: false,
+              notifyAssignee: false,
               protected: false,
               operation: 'Null',
             },
             tasks: {
               [constants.INSTANCE_FULL_NAME_FIELD]: apiNameAnno(workflowInstanceName, 'MyWorkflowTask'),
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              assigned_to: 'CEO',
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              assigned_to_type: 'role',
+              assignedTo: 'CEO',
+              assignedToType: 'role',
               description: 'My Workflow Task',
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              due_date_offset: 1,
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              notify_assignee: false,
+              dueDateOffset: 1,
+              notifyAssignee: false,
               priority: 'Normal',
               protected: false,
               status: 'Not Started',
@@ -3800,8 +3786,7 @@ describe('Salesforce adapter E2E with real account', () => {
                 },
               ],
               active: false,
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              criteria_items: [
+              criteriaItems: [
                 {
                   field: apiNameAnno(workflowInstanceName, 'Description'),
                   operation: 'notEqual',
@@ -3809,10 +3794,8 @@ describe('Salesforce adapter E2E with real account', () => {
                 },
               ],
               description: 'My Workflow Rule',
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              trigger_type: 'onCreateOnly',
-              // eslint-disable-next-line @typescript-eslint/camelcase
-              workflow_time_triggers: [
+              triggerType: 'onCreateOnly',
+              workflowTimeTriggers: [
                 {
                   actions: [
                     {
@@ -3820,10 +3803,8 @@ describe('Salesforce adapter E2E with real account', () => {
                       type: 'Alert',
                     },
                   ],
-                  // eslint-disable-next-line @typescript-eslint/camelcase
-                  time_length: '1',
-                  // eslint-disable-next-line @typescript-eslint/camelcase
-                  workflow_time_trigger_unit: 'Hours',
+                  timeLength: '1',
+                  workflowTimeTriggerUnit: 'Hours',
                 },
               ],
             },

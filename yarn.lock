@@ -7473,7 +7473,7 @@ neo-async@^2.5.0, neo-async@^2.6.0, neo-async@^2.6.1:
 
 "nexe@https://github.com/salto-io/nexe#fix_windows_fs_patch_normalization":
   version "4.0.0-beta.3"
-  resolved "https://github.com/salto-io/nexe#138777af606a55246197769b8b7a9710e6fb4f48"
+  resolved "https://github.com/salto-io/nexe#5d4726dc01c601593d1f6e6c549b568cea03f3d4"
   dependencies:
     "@calebboyd/semaphore" "^1.3.1"
     app-builder "^5.2.0"

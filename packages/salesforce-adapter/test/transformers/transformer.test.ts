@@ -994,6 +994,7 @@ describe('transformer', () => {
         objectRef: elementRef,
         valueRef,
         reg: regValue,
+        changeToRef: regValue,
       },
       fields: {
         field: new Field(elemID, 'field', BuiltinTypes.STRING, {
@@ -1001,6 +1002,7 @@ describe('transformer', () => {
           objectRef: elementRef,
           valueRef,
           reg: regValue,
+          changeToRef: regValue,
         }),
       },
     })
@@ -1014,16 +1016,19 @@ describe('transformer', () => {
       expect(modified.fields.field.annotations.objectRef).toEqual(objectApiName)
       expect(modified.annotations.valueRef).toEqual(regValue)
       expect(modified.fields.field.annotations.valueRef).toEqual(regValue)
+      expect(modified.fields.field.annotations.changeToRef).toEqual(regValue)
+      expect(modified.annotations.changeToRef).toEqual(regValue)
     })
 
     it('should transform regular ref values', () => {
       expect(modified.annotations.reg).toEqual(regValue)
+      expect(modified.annotations.changeToRef).toEqual(regValue)
       expect(modified.fields.field.annotations.reg).toEqual(regValue)
+      expect(modified.fields.field.annotations.changeToRef).toEqual(regValue)
     })
 
     it('should transform back to orig value', () => {
-      const origClone = orig.clone()
-      expect(restoreReferences(orig, modified)).toEqual(origClone)
+      expect(restoreReferences(orig, modified)).toEqual(orig)
     })
 
     it('should maintain new values when transforming back to orig value', () => {
@@ -1032,11 +1037,15 @@ describe('transformer', () => {
       after.fields.field.annotations.new = newValue
       after.annotations.regValue = newValue
       after.fields.field.annotations.regValue = newValue
+      after.fields.field.annotations.changeToRef = instanceRef
+      after.annotations.changeToRef = instanceRef
       const restored = restoreReferences(orig, after)
       expect(restored.annotations.new).toEqual(newValue)
       expect(restored.fields.field.annotations.new).toEqual(newValue)
       expect(restored.annotations.regValue).toEqual(newValue)
       expect(restored.fields.field.annotations.regValue).toEqual(newValue)
+      expect(restored.fields.field.annotations.changeToRef).toEqual(instanceRef)
+      expect(restored.annotations.changeToRef).toEqual(instanceRef)
     })
   })
 })

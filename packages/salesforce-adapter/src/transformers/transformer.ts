@@ -1239,10 +1239,12 @@ const getLookUpName = (refValue: Value): Value => {
 }
 
 export const transformReferences = <T extends Element>(element: T): T => {
-  const refReplacer = (value: Value): Value => (
-    (value instanceof ReferenceExpression) ? getLookUpName(value.value) : undefined
-  )
-  return _.cloneDeepWith(element, refReplacer)
+  const refReplacer = (value: Value): Value => {
+    if (value instanceof ReferenceExpression) return getLookUpName(value.value)
+    if (isElement(value)) return transformReferences(value)
+    return undefined
+  }
+  return _.mergeWith(element.clone(), element, refReplacer)
 }
 
 export const restoreReferences = <T extends Element>(orig: T, modified: T): T => {
@@ -1256,5 +1258,5 @@ export const restoreReferences = <T extends Element>(orig: T, modified: T): T =>
     return undefined
   }
 
-  return _.mergeWith(_.cloneDeep(orig), modified, resResotrer)
+  return _.mergeWith(orig.clone(), modified, resResotrer)
 }

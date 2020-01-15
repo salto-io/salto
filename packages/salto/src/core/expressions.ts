@@ -93,7 +93,10 @@ resolveTemplateExpression = (
   contextElements: Record<string, Element[]>,
   visited: Set<string> = new Set<string>(),
 ): Value => expression.parts
-  .map(p => resolveMaybeExpression(p, contextElements, visited)?.value ?? p)
+  .map(p => {
+    const res = resolveMaybeExpression(p, contextElements, visited)
+    return res ? res?.value ?? res : p
+  })
   .join('')
 
 export const resolveElement = (

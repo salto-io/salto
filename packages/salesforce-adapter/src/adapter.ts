@@ -17,7 +17,7 @@ import {
   toCustomField, toCustomObject, apiName, Types, toMetadataInfo, createInstanceElement,
   metadataType, toInstanceElements, createMetadataTypeElements,
   instanceElementstoRecords, elemIDstoRecords, getCompoundChildFields, transformReferences,
-  restoreReferences, defaultApiName
+  restoreReferences, defaultApiName,
 } from './transformers/transformer'
 import { fromRetrieveResult, toMetadataPackageZip } from './transformers/xml_transformer'
 import layoutFilter from './filters/layouts'
@@ -445,11 +445,14 @@ export default class SalesforceAdapter {
     const resChanges = changes.map(c => ({
       action: c.action,
       data: _.mapValues(c.data, transformReferences),
-    })) as ReadonlyArray<Change>
+    })) as ReadonlyArray<Change<Field | ObjectType>>
     let result = resAfter
     if (isObjectType(resBefore) && isObjectType(resAfter)) {
-      result = await this.updateObject(resBefore, resAfter,
-        resChanges as ReadonlyArray<Change<Field | ObjectType>>)
+      result = await this.updateObject(
+        resBefore,
+        resAfter,
+        resChanges
+      )
     }
 
     if (isInstanceElement(resBefore) && isInstanceElement(resAfter)) {

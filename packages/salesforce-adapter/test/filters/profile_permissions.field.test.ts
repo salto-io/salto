@@ -369,7 +369,7 @@ describe('Field Permissions filter', () => {
     await filter().onAdd(after)
 
     const adminRef = new ReferenceExpression(
-      mockAdmin.elemID.createNestedID(INSTANCE_FULL_NAME_FIELD)
+      mockAdmin.elemID
     )
 
     expect(after.fields.description.annotations[FIELD_LEVEL_SECURITY_ANNOTATION])

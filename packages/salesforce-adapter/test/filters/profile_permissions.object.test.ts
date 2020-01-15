@@ -113,10 +113,10 @@ describe('Object Permissions filter', () => {
     },
   )
   const adminRef = new ReferenceExpression(
-    mockAdmin.elemID.createNestedID(constants.INSTANCE_FULL_NAME_FIELD)
+    mockAdmin.elemID
   )
   const standardRef = new ReferenceExpression(
-    mockStandard.elemID.createNestedID(constants.INSTANCE_FULL_NAME_FIELD)
+    mockStandard.elemID
   )
 
   let mockUpdate: jest.Mock

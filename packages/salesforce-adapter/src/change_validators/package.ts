@@ -12,8 +12,7 @@ export const hasNamespace = (customElement: Element): boolean => {
   if (_.isUndefined(apiNameResult)) {
     return false
   }
-  const relativeApiName = apiName(customElement, true)
-  const partialFullName = relativeApiName.split('-')[0]
+  const partialFullName = apiNameResult.split('-')[0]
   const cleanFullName = partialFullName.endsWith(SALESFORCE_CUSTOM_SUFFIX)
     ? partialFullName.slice(0, -3) : partialFullName
   return cleanFullName.includes(NAMESPACE_SEPARATOR)

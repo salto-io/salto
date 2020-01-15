@@ -192,11 +192,6 @@ export const isEqualValues = (first: Value, second: Value): boolean => _.isEqual
         ? f.elemId.isEqual(s.elemId)
         : isEqualValues(fValue, sValue)
     }
-    // eslint-disable-next-line @typescript-eslint/no-use-before-define
-    if (isElement(f) || isElement(s)) {
-      // eslint-disable-next-line @typescript-eslint/no-use-before-define
-      return isEqualElements(f, s)
-    }
     return undefined
   }
 )

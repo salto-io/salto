@@ -112,7 +112,7 @@ describe('SalesforceAdapter fetch', () => {
       expect(flow.fields.enum.annotations[CORE_ANNOTATIONS.DEFAULT]).toBe('yes')
       // Note the order here is important because we expect restriction values to be sorted
       expect(flow.fields.enum.annotations[CORE_ANNOTATIONS.VALUES]).toEqual(['no', 'yes'])
-      expect(flow.path).toEqual([constants.SALESFORCE, 'types', 'Flow'])
+      expect(flow.path).toEqual([constants.SALESFORCE, constants.TYPES_PATH, 'Flow'])
       expect(flow.fields[constants.INSTANCE_FULL_NAME_FIELD].type).toEqual(BuiltinTypes.SERVICE_ID)
       expect(flow.annotationTypes[constants.METADATA_TYPE]).toEqual(BuiltinTypes.SERVICE_ID)
       expect(flow.annotations[constants.METADATA_TYPE]).toEqual('Flow')
@@ -476,7 +476,7 @@ describe('SalesforceAdapter fetch', () => {
       const testInst = testElem as InstanceElement
       expect(testInst).toBeDefined()
       expect(testInst.path)
-        .toEqual([constants.SALESFORCE, 'records', 'EmailTemplate', 'MyFolder_MyEmailTemplate'])
+        .toEqual([constants.SALESFORCE, constants.RECORDS_PATH, 'EmailTemplate', 'MyFolder_MyEmailTemplate'])
       expect(testInst.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('MyFolder/MyEmailTemplate')
       expect(testInst.value.name).toEqual('My Email Template')
       expect(testInst.value.content).toEqual('Email Body')
@@ -503,7 +503,7 @@ describe('SalesforceAdapter fetch', () => {
       const testInst = testElem as InstanceElement
       expect(testInst).toBeDefined()
       expect(testInst.path)
-        .toEqual([constants.SALESFORCE, 'records', 'EmailFolder', 'MyFolder'])
+        .toEqual([constants.SALESFORCE, constants.RECORDS_PATH, 'EmailFolder', 'MyFolder'])
       expect(testInst.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('MyFolder')
       expect(testInst.value.name).toEqual('My folder')
     })
@@ -519,8 +519,8 @@ describe('SalesforceAdapter fetch', () => {
       const [testInst] = findElements(result, 'ApexPage', 'th_con_app__ThHomepage')
       expect(testInst).toBeDefined()
       expect(testInst.path)
-        .toEqual([constants.SALESFORCE, 'installedPackages',
-          namespaceName, 'records', 'ApexPage', 'th_con_app__ThHomepage'])
+        .toEqual([constants.SALESFORCE, constants.INSTALLED_PACKAGES_PATH,
+          namespaceName, constants.RECORDS_PATH, 'ApexPage', 'th_con_app__ThHomepage'])
     })
 
     it('should fetch metadata instances with namespace', async () => {
@@ -532,8 +532,8 @@ describe('SalesforceAdapter fetch', () => {
       const [testInst] = findElements(result, 'Test', 'asd__Test')
       expect(testInst).toBeDefined()
       expect(testInst.path)
-        .toEqual([constants.SALESFORCE, 'installedPackages',
-          namespaceName, 'records', 'Test', 'asd__Test'])
+        .toEqual([constants.SALESFORCE, constants.INSTALLED_PACKAGES_PATH,
+          namespaceName, constants.RECORDS_PATH, 'Test', 'asd__Test'])
     })
 
     it('should fetch metadata instances with namespace when fullname already includes the namespace', async () => {
@@ -545,7 +545,8 @@ describe('SalesforceAdapter fetch', () => {
       const [testInst] = findElements(result, 'Test', 'asd__Test')
       expect(testInst).toBeDefined()
       expect(testInst.path).toEqual(
-        [constants.SALESFORCE, 'installedPackages', namespaceName, 'records', 'Test', 'asd__Test']
+        [constants.SALESFORCE, constants.INSTALLED_PACKAGES_PATH, namespaceName,
+          constants.RECORDS_PATH, 'Test', 'asd__Test']
       )
     })
 

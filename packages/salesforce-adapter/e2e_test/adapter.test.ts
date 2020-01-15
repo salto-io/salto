@@ -706,7 +706,8 @@ describe('Salesforce adapter E2E with real account', () => {
       it('should set workflow instance path correctly', async () => {
         const leadWorkflow = findElements(result, constants.WORKFLOW_METADATA_TYPE, 'Lead')[0] as InstanceElement
         expect(leadWorkflow.path)
-          .toEqual([constants.SALESFORCE, 'records', 'WorkflowRules', 'LeadWorkflowRules'])
+          .toEqual([constants.SALESFORCE, constants.RECORDS_PATH, 'WorkflowRules',
+            'LeadWorkflowRules'])
       })
     })
   })

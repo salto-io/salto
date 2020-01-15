@@ -6,7 +6,7 @@ import filterCreator, {
 } from '../../src/filters/workflow'
 import mockClient from '../client'
 import {
-  API_NAME_SEPERATOR, INSTANCE_FULL_NAME_FIELD, SALESFORCE, WORKFLOW_METADATA_TYPE,
+  API_NAME_SEPERATOR, INSTANCE_FULL_NAME_FIELD, RECORDS_PATH, SALESFORCE, WORKFLOW_METADATA_TYPE,
 } from '../../src/constants'
 
 describe('Workflow filter', () => {
@@ -42,8 +42,8 @@ describe('Workflow filter', () => {
           [INSTANCE_FULL_NAME_FIELD]: `${fullNamePrefix}MyWorkflowRule`,
         },
       },
-      beforeFetch ? [SALESFORCE, 'records', WORKFLOW_METADATA_TYPE, 'Account']
-        : [SALESFORCE, 'records', 'WorkflowRules', 'AccountWorkflowRules'])
+      beforeFetch ? [SALESFORCE, RECORDS_PATH, WORKFLOW_METADATA_TYPE, 'Account']
+        : [SALESFORCE, RECORDS_PATH, 'WorkflowRules', 'AccountWorkflowRules'])
   }
 
   describe('on fetch', () => {
@@ -82,7 +82,7 @@ describe('Workflow filter', () => {
       const workflowWithInnerTypes = generateWorkFlowInstance(true)
       await filter.onFetch([workflowWithInnerTypes])
       expect(workflowWithInnerTypes.path)
-        .toEqual([SALESFORCE, 'records', 'WorkflowRules', 'AccountWorkflowRules'])
+        .toEqual([SALESFORCE, RECORDS_PATH, 'WorkflowRules', 'AccountWorkflowRules'])
     })
 
     it('should set non workflow instances path correctly', async () => {

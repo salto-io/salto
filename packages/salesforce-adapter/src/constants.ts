@@ -222,3 +222,4 @@ export const MAX_METADATA_RESTRICTION_VALUES = 500
 // Metadata types
 export const TOPICS_FOR_OBJECTS_METADATA_TYPE = 'TopicsForObjects'
 export const PROFILE_METADATA_TYPE = 'Profile'
+export const WORKFLOW_METADATA_TYPE = 'Workflow'

@@ -34,7 +34,7 @@ import lookupFiltersFilter from './filters/lookup_filters'
 import animationRulesFilter from './filters/animation_rules'
 import samlInitMethodFilter from './filters/saml_initiation_method'
 import settingsFilter from './filters/settings_type'
-import workflowActions from './filters/workflow_actions'
+import workflowFilter from './filters/workflow'
 import topicsForObjectsFilter from './filters/topics_for_objects'
 import globalValueSetFilter from './filters/global_value_sets'
 import {
@@ -80,6 +80,9 @@ export interface SalesforceAdapterParams {
   // using the deploy API endpoint
   metadataToRetrieveAndDeploy?: Record<string, string | undefined>
 
+  // Metadata types that we should not create, update or delete in the main adapter code
+  metadataTypesToSkipMutation?: string[]
+
   // Filters to deploy to all adapter operations
   filterCreators?: FilterCreator[]
 
@@ -109,6 +112,7 @@ export default class SalesforceAdapter {
   private metadataTypeBlacklist: string[]
   private metadataToRetrieveAndDeploy: Record<string, string | undefined>
   private metadataAdditionalTypes: string[]
+  private metadataTypesToSkipMutation: string[]
   private filterCreators: FilterCreator[]
   private client: SalesforceClient
   private systemFields: string[]
@@ -138,6 +142,15 @@ export default class SalesforceAdapter {
       'EmailFolder',
       'ReportFolder',
       'DashboardFolder',
+      'WorkflowAlert',
+      'WorkflowFieldUpdate',
+      'WorkflowFlowAction',
+      'WorkflowKnowledgePublish',
+      'WorkflowOutboundMessage',
+      'WorkflowTask',
+    ],
+    metadataTypesToSkipMutation = [
+      'Workflow', // handled in workflow filter
     ],
     filterCreators = [
       CustomObjectsFilter,
@@ -152,7 +165,7 @@ export default class SalesforceAdapter {
       animationRulesFilter,
       samlInitMethodFilter,
       settingsFilter,
-      workflowActions,
+      workflowFilter,
       topicsForObjectsFilter,
       globalValueSetFilter,
       // The following filters should remain last in order to make sure they fix all elements
@@ -184,6 +197,7 @@ export default class SalesforceAdapter {
     this.metadataTypeBlacklist = metadataTypeBlacklist
     this.metadataToRetrieveAndDeploy = metadataToRetrieveAndDeploy
     this.metadataAdditionalTypes = metadataAdditionalTypes
+    this.metadataTypesToSkipMutation = metadataTypesToSkipMutation
     this.filterCreators = filterCreators
     this.client = client
     this.systemFields = systemFields
@@ -397,7 +411,7 @@ export default class SalesforceAdapter {
     addInstanceDefaults(post)
     if (this.isMetadataTypeToRetrieveAndDeploy(type)) {
       await this.deployInstance(post)
-    } else {
+    } else if (!this.metadataTypesToSkipMutation.includes(metadataType(post))) {
       await this.client.upsert(type, toMetadataInfo(apiName(post), post.value))
     }
     return post
@@ -424,7 +438,7 @@ export default class SalesforceAdapter {
     if (isInstanceElement(resolved)
       && this.isMetadataTypeToRetrieveAndDeploy(type)) {
       await this.deployInstance(resolved, true)
-    } else {
+    } else if (!(isInstanceElement(resolved) && this.metadataTypesToSkipMutation.includes(type))) {
       await this.client.delete(type, apiName(resolved))
     }
     await this.runFiltersOnRemove(resolved)
@@ -534,8 +548,11 @@ export default class SalesforceAdapter {
   private async updateInstance(prevInstance: InstanceElement, newInstance: InstanceElement):
     Promise<InstanceElement> {
     validateApiName(prevInstance, newInstance)
-
     const typeName = metadataType(newInstance)
+    if (this.metadataTypesToSkipMutation.includes(typeName)) {
+      return newInstance
+    }
+
     if (this.isMetadataTypeToRetrieveAndDeploy(typeName)) {
       await this.deployInstance(newInstance)
     } else {

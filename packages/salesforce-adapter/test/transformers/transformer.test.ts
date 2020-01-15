@@ -341,6 +341,78 @@ describe('transformer', () => {
         expect(fieldElement.type).not.toEqual(Types.primitiveDataTypes.Summary)
       })
     })
+
+    describe('number field transformation', () => {
+      const origNumberField: SalesforceField = {
+        aggregatable: true,
+        cascadeDelete: false,
+        dependentPicklist: false,
+        externalId: false,
+        htmlFormatted: false,
+        autoNumber: false,
+        byteLength: 0,
+        calculated: false,
+        caseSensitive: false,
+        createable: true,
+        custom: true,
+        defaultedOnCreate: false,
+        deprecatedAndHidden: false,
+        digits: 0,
+        filterable: true,
+        groupable: false,
+        idLookup: false,
+        label: 'yooo',
+        length: 0,
+        name: 'yooo__c',
+        nameField: false,
+        namePointing: false,
+        nillable: true,
+        permissionable: true,
+        polymorphicForeignKey: false,
+        precision: 8,
+        queryByDistance: false,
+        restrictedPicklist: false,
+        scale: 5,
+        searchPrefilterable: false,
+        soapType: 'xsd:double',
+        sortable: true,
+        type: 'double',
+        unique: false,
+        updateable: true,
+      }
+
+      let salesforceNumberField: SalesforceField
+      beforeEach(() => {
+        salesforceNumberField = _.cloneDeep(origNumberField)
+      })
+
+      const dummyElem = new ObjectType({
+        elemID: new ElemID('adapter', 'dummy'),
+        annotations: {
+          [API_NAME]: 'Dummy',
+        },
+      })
+
+      it('should fetch double field and init its annotations', async () => {
+        const precision = 9
+        const scale = 6
+        salesforceNumberField.precision = precision
+        salesforceNumberField.scale = scale
+        const fieldElement = getSObjectFieldElement(dummyElem, salesforceNumberField, {})
+        expect(fieldElement.annotations[FIELD_ANNOTATIONS.PRECISION]).toEqual(precision)
+        expect(fieldElement.annotations[FIELD_ANNOTATIONS.SCALE]).toEqual(scale)
+        expect(fieldElement.type).toEqual(Types.primitiveDataTypes.Number)
+      })
+
+      it('should fetch int field and init its annotations', async () => {
+        const precision = 8
+        salesforceNumberField.type = 'int'
+        salesforceNumberField.digits = precision
+        const fieldElement = getSObjectFieldElement(dummyElem, salesforceNumberField, {})
+        expect(fieldElement.annotations[FIELD_ANNOTATIONS.PRECISION]).toEqual(precision)
+        expect(fieldElement.type).toEqual(Types.primitiveDataTypes.Number)
+      })
+    })
   })
 
   describe('toCustomObject', () => {

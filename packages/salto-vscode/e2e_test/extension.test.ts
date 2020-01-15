@@ -42,16 +42,22 @@ describe('extension e2e', () => {
     const ctx = await getPositionContext(workspace, await readTextFile(path.join(wsPath, filename)),
       filename, pos)
     const suggestions = provideWorkspaceCompletionItems(workspace, ctx, '', pos)
-    expect(suggestions).toEqual([])
+    expect(suggestions.map(s => s.label).sort()).toEqual(
+      ['boolean', 'number', 'salto', 'salto_complex', 'salto_complex2', 'salto_num', 'salto_number',
+        'salto_obj', 'salto_str', 'salto_string', 'serviceid', 'string', 'type']
+    )
   })
 
-  it('should diagnostics on validations errors', async () => {
+  it('should diagnostics on errors', async () => {
     const diag = await getDiagnostics(workspace)
-    expect(Object.values(diag)).toHaveLength(1)
-    expect(diag['error.bp'][0].msg).toContain(
-      'Invalid value type for salto.number : "ooppps"'
+    const err = diag['error.bp'][0]
+    expect(err.msg).toContain(
+      'Error merging salto.complex.instance.inst1: duplicate key str'
     )
-    expect(diag.severity).toBe('Warning')
+    expect(err.severity).toBe('Error')
+    const warn = diag['error.bp'][2]
+    expect(warn.msg).toContain('Invalid value type for salto.number')
+    expect(warn.severity).toBe('Warning')
   })
 
 
@@ -62,6 +68,10 @@ describe('extension e2e', () => {
       filename, pos)
     const defs = await provideWorkspaceDefinition(workspace, ctx, 'salto_number')
     expect(defs.length).toBe(1)
-    expect(defs[0].range.start.line).toBe(13)
+    expect(defs[0].filename).toBe('simple_types.bp')
+    expect(defs[0].range.start.line).toBe(4)
+    expect(defs[0].range.start.col).toBe(1)
+    expect(defs[0].range.end.line).toBe(5)
+    expect(defs[0].range.end.col).toBe(2)
   })
 })

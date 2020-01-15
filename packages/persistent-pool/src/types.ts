@@ -10,7 +10,8 @@ export type Lease<T = unknown> = {
 }
 
 export type LeaseWithStatus<T> = Lease<T> & (
-  { status: 'leased'; leaseExpiresBy: Date; clientId: string } | { status: 'available' }
+  { status: 'leased' | 'suspended'; leaseExpiresBy: Date; clientId: string }
+  | { status: 'available' }
 )
 
 export type LeaseUpdateOpts = { validateClientId: boolean }
@@ -20,6 +21,12 @@ export const DEFAULT_LEASE_UPDATE_OPTS: LeaseUpdateOpts = Object.freeze({ valida
 export type Pool<T = unknown> = AsyncIterable<LeaseWithStatus<T>> & {
   register(value: T, id?: InstanceId): Promise<InstanceId>
   unregister(id: InstanceId): Promise<void>
+  suspend(
+    id: InstanceId,
+    reason: string,
+    timeout: number,
+    opts?: Partial<LeaseUpdateOpts>,
+  ): Promise<void>
   lease(returnTimeout: number): Promise<Lease<T> | null>
   waitForLease(returnTimeout: number, retryStrategy: () => RetryStrategy): Promise<Lease<T>>
   updateTimeout(id: InstanceId, newTimeout: number, opts?: Partial<LeaseUpdateOpts>): Promise<void>

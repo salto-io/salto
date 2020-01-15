@@ -15,3 +15,12 @@ export type PoolOpts = {
   globalArgs: GlobalArgs
   adapterName: string
 }
+
+export class SuspendCredentialsError extends Error {
+  constructor(
+    readonly reason: Error,
+    readonly timeout: number,
+  ) {
+    super(`Credentials validation error: ${reason}, suspending for ${timeout} ms`)
+  }
+}

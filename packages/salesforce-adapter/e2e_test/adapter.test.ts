@@ -71,12 +71,13 @@ describe('Salesforce adapter E2E with real account', () => {
   }
 
   const fetchedRollupSummaryFieldName = 'rollupsummary__c'
+  const fetchedGlobalPicklistFieldName = 'gpicklist__c'
+  const accountApiName = 'Account'
 
   beforeAll(async () => {
     // enrich the salesforce account with several objects and fields that does not exist by default
     // in order to enrich our fetch test
     const verifyAccountWithRollupSummaryExists = async (): Promise<void> => {
-      const accountApiName = 'Account'
       await client.upsert(constants.CUSTOM_FIELD, {
         fullName: `${accountApiName}.${fetchedRollupSummaryFieldName}`,
         label: 'Test Fetch Rollup Summary Field',
@@ -90,12 +91,6 @@ describe('Salesforce adapter E2E with real account', () => {
         summaryOperation: 'sum',
         type: 'Summary',
       } as MetadataInfo)
-      await client.update(PROFILE_METADATA_TYPE,
-        new ProfileInfo(sfCase(ADMIN_PROFILE), [{
-          field: `${accountApiName}.${fetchedRollupSummaryFieldName}`,
-          editable: true,
-          readable: true,
-        }]))
     }
 
     const verifyEmailTemplateAndFolderExist = async (): Promise<void> => {
@@ -300,10 +295,8 @@ describe('Salesforce adapter E2E with real account', () => {
         ],
       } as MetadataInfo)
 
-      const accountApiName = 'Account'
-      const globalPicklistFieldName = 'gpicklist__c'
       await client.upsert(constants.CUSTOM_FIELD, {
-        fullName: `${accountApiName}.${globalPicklistFieldName}`,
+        fullName: `${accountApiName}.${fetchedGlobalPicklistFieldName}`,
         label: 'Test Fetch Global Picklist Field',
         required: false,
         valueSet: {
@@ -312,12 +305,21 @@ describe('Salesforce adapter E2E with real account', () => {
         },
         type: 'Picklist',
       } as MetadataInfo)
+    }
+
+    const verifyUpsertedCustomFieldsHavePermissions = async (): Promise<void> => {
       await client.update(PROFILE_METADATA_TYPE,
         new ProfileInfo(sfCase(ADMIN_PROFILE), [{
-          field: `${accountApiName}.${globalPicklistFieldName}`,
+          field: `${accountApiName}.${fetchedRollupSummaryFieldName}`,
           editable: true,
           readable: true,
-        }]))
+        },
+        {
+          field: `${accountApiName}.${fetchedGlobalPicklistFieldName}`,
+          editable: true,
+          readable: true,
+        },
+        ]))
     }
 
     await Promise.all([
@@ -328,6 +330,7 @@ describe('Salesforce adapter E2E with real account', () => {
       verifyCustomObjectInnerTypesExist(),
       verifyGlobalValueSetAndCustomObjectExist(),
     ])
+    await verifyUpsertedCustomFieldsHavePermissions()
     result = await adapter.fetch()
   })
 
@@ -2146,7 +2149,7 @@ describe('Salesforce adapter E2E with real account', () => {
     it('should fetch GlobalValueSet', async () => {
       const account = findElements(result, 'account')[1] as ObjectType
 
-      expect(account.fields.gpicklist__c
+      expect(account.fields[fetchedGlobalPicklistFieldName]
         .annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME])
         .toEqual(new ReferenceExpression(
           new ElemID(

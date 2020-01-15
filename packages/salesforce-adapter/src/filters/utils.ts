@@ -3,7 +3,7 @@ import { logger } from '@salto/logging'
 import { Element, Field, isObjectType, ObjectType, InstanceElement, isInstanceElement,
   isField, Type, BuiltinTypes } from 'adapter-api'
 import { API_NAME, LABEL, CUSTOM_OBJECT,
-  METADATA_TYPE, NAMESPACE_SEPARATOR, API_NAME_SEPERATOR } from '../constants'
+  METADATA_TYPE, NAMESPACE_SEPARATOR, API_NAME_SEPERATOR, INSTANCE_FULL_NAME_FIELD } from '../constants'
 import { JSONBool } from '../client/types'
 import { isCustomObject, metadataType, sfCase, apiName } from '../transformers/transformer'
 
@@ -89,5 +89,6 @@ export const hasNamespace = (customElement: Field | ObjectType): boolean => (
 export const getNamespace = (customElement: Field | ObjectType): string =>
   apiName(customElement, true).split(NAMESPACE_SEPARATOR)[0]
 
-export const extractFullNamesFromValueList = (values: {full_name: string}[]): string[] =>
-  values.map(v => v.full_name)
+export const extractFullNamesFromValueList = (values: { [INSTANCE_FULL_NAME_FIELD]: string }[]):
+  string[] =>
+  values.map(v => v[INSTANCE_FULL_NAME_FIELD])

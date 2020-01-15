@@ -166,7 +166,8 @@ describe('SalesforceAdapter fetch', () => {
         + 1 /* security classification */
         + 1 /* business status */
         + 1 /* value set */
-        + 2 /* field dependency & value settings */)
+        + 2 /* field dependency & value settings */
+        + 9 /* range restrictions */)
 
       const types = _.assign({}, ...result.map(t => ({ [id(t)]: t })))
       const nestingType = types['salesforce.NestingType']

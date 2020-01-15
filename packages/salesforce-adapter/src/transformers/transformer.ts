@@ -96,6 +96,21 @@ type RestrictedNumberName = 'TextLength' | 'TextAreaLength' | 'EncryptedTextLeng
    | 'Precision' | 'Scale' | 'LocationScale' | 'LongTextAreaVisibleLines'
    | 'MultiPicklistVisibleLines' | 'RichTextAreaVisibleLines'
 
+const restrictedNumber = (name: RestrictedNumberName, min: number, max: number, enforce = true):
+ Record<string, PrimitiveType> => ({
+  [name]: new PrimitiveType({
+    elemID: new ElemID(SALESFORCE, name),
+    primitive: PrimitiveTypes.NUMBER,
+    annotations: {
+      [CORE_ANNOTATIONS.RESTRICTION]: {
+        [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: enforce,
+        [RESTRICTION_ANNOTATIONS.MIN]: min,
+        [RESTRICTION_ANNOTATIONS.MAX]: max,
+      },
+    },
+  }),
+})
+
 export class Types {
   private static getElemIdFunc: ElemIdGetter
 
@@ -351,35 +366,16 @@ export class Types {
     },
   })
 
-  private static restrictedNumber = (
-    name: RestrictedNumberName,
-    min: number,
-    max: number,
-    enforce = true
-  ): Record<string, PrimitiveType> => ({
-    [name]: new PrimitiveType({
-      elemID: new ElemID(SALESFORCE, name),
-      primitive: PrimitiveTypes.NUMBER,
-      annotations: {
-        [CORE_ANNOTATIONS.RESTRICTION]: {
-          [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: enforce,
-          [RESTRICTION_ANNOTATIONS.MIN]: min,
-          [RESTRICTION_ANNOTATIONS.MAX]: max,
-        },
-      },
-    }),
-  })
-
   private static restrictedNumberTypes: Record<RestrictedNumberName, PrimitiveType> = _.merge(
-    Types.restrictedNumber('TextLength', 1, 255, false),
-    Types.restrictedNumber('TextAreaLength', 1, 131072),
-    Types.restrictedNumber('EncryptedTextLength', 1, 175),
-    Types.restrictedNumber('Precision', 1, 18),
-    Types.restrictedNumber('Scale', 0, 17),
-    Types.restrictedNumber('LocationScale', 0, 15),
-    Types.restrictedNumber('LongTextAreaVisibleLines', 2, 50),
-    Types.restrictedNumber('MultiPicklistVisibleLines', 3, 10, false),
-    Types.restrictedNumber('RichTextAreaVisibleLines', 10, 50),
+    restrictedNumber('TextLength', 1, 255, false),
+    restrictedNumber('TextAreaLength', 1, 131072),
+    restrictedNumber('EncryptedTextLength', 1, 175),
+    restrictedNumber('Precision', 1, 18),
+    restrictedNumber('Scale', 0, 17),
+    restrictedNumber('LocationScale', 0, 15),
+    restrictedNumber('LongTextAreaVisibleLines', 2, 50),
+    restrictedNumber('MultiPicklistVisibleLines', 3, 10, false),
+    restrictedNumber('RichTextAreaVisibleLines', 10, 50),
   )
 
   private static commonAnnotationTypes = {
@@ -725,11 +721,7 @@ export class Types {
       Types.valueSettingsType, Types.lookupFilterType, Types.filterItemType,
       Types.encryptedTextMaskCharType, Types.encryptedTextMaskTypeType,
       Types.BusinessStatusType, Types.SecurityClassificationType, Types.valueSetType,
-      Types.restrictedNumberTypes.EncryptedTextLength, Types.restrictedNumberTypes.TextAreaLength,
-      Types.restrictedNumberTypes.Scale, Types.restrictedNumberTypes.LocationScale,
-      Types.restrictedNumberTypes.Precision, Types.restrictedNumberTypes.LongTextAreaVisibleLines,
-      Types.restrictedNumberTypes.MultiPicklistVisibleLines,
-      Types.restrictedNumberTypes.RichTextAreaVisibleLines, Types.restrictedNumberTypes.TextLength,
+      ...Object.values(Types.restrictedNumberTypes),
     ]
       .map(type => {
         const fieldType = type.clone()

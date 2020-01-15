@@ -8,6 +8,9 @@ import {
 import {
   OBJECTS_NAMES,
 } from '../src/constants'
+import {
+  formsMockArray, workflowsMockArray,
+} from './common/mock_elements'
 
 
 describe('Test HubSpot client', () => {
@@ -53,55 +56,12 @@ describe('Test HubSpot client', () => {
 
         beforeEach(() => {
           const getAllFormsResultMock = (): RequestPromise => (
-              [
-                {
-                  portalId: 6774238,
-                  guid: '3e2e7ef3-d0d4-418f-92e0-ad40ae2b622c',
-                  name: 'formTest1',
-                  action: '',
-                  method: 'POST',
-                  cssClass: 'abc',
-                  followUpId: 'DEPRECATED',
-                  editable: true,
-                  createdAt: 1571588456053,
-                  cloneable: true,
-                },
-                {
-                  portalId: 6774238,
-                  guid: '123e11f3-111-418f-92e0-cwwwe2b6999',
-                  name: 'formTest2',
-                  action: '',
-                  method: 'POST',
-                  cssClass: 'css',
-                  followUpId: 'DEPRECATED',
-                  editable: false,
-                  createdAt: 1561581451052,
-                  cloneable: true,
-                  captchaEnabled: false,
-                },
-              ] as unknown as RequestPromise)
+            formsMockArray as RequestPromise)
 
-          const getAllWorkflowsResultMock = (): RequestPromise => ({ workflows: [
+          const getAllWorkflowsResultMock = (): RequestPromise => (
             {
-              id: 12345,
-              name: 'workflowTest1',
-              type: 'DRIP_DELAY',
-              unsupportedField: 'bla',
-            },
-            {
-              id: 54321,
-              name: 'workflowTest1',
-              type: 'DRIP_DELAY',
-              enabled: false,
-              contactListIds: {
-                enrolled: 1,
-                active: 2,
-                completed: 3,
-                succeeded: 4,
-
-              },
-            },
-          ] } as unknown as RequestPromise)
+              workflows: workflowsMockArray,
+            } as unknown as RequestPromise)
           mockGetAllForms = jest.fn().mockImplementation(getAllFormsResultMock)
 
           connection.forms.getAll = mockGetAllForms

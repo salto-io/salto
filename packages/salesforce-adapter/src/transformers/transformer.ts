@@ -21,6 +21,7 @@ import {
   OBJECT_LEVEL_SECURITY_FIELDS, NAMESPACE_SEPARATOR, DESCRIPTION, HELP_TEXT, BUSINESS_STATUS,
   SECURITY_CLASSIFICATION, BUSINESS_OWNER_GROUP, BUSINESS_OWNER_USER, COMPLIANCE_GROUP,
   VALUE_SET_DEFINITION_VALUE_FIELDS, API_NAME_SEPERATOR, MAX_METADATA_RESTRICTION_VALUES,
+  VALUE_SET_FIELDS,
 } from '../constants'
 import SalesforceClient from '../client/client'
 
@@ -450,6 +451,7 @@ export class Types {
         [FIELD_ANNOTATIONS.FIELD_DEPENDENCY]: Types.fieldDependencyType,
         [FIELD_ANNOTATIONS.VALUE_SET]: Types.valueSetType,
         [FIELD_ANNOTATIONS.RESTRICTED]: BuiltinTypes.BOOLEAN,
+        [VALUE_SET_FIELDS.VALUE_SET_NAME]: BuiltinTypes.STRING,
       },
     }),
     multipicklist: new PrimitiveType({
@@ -461,6 +463,7 @@ export class Types {
         [FIELD_ANNOTATIONS.FIELD_DEPENDENCY]: Types.fieldDependencyType,
         [FIELD_ANNOTATIONS.VALUE_SET]: Types.valueSetType,
         [FIELD_ANNOTATIONS.RESTRICTED]: BuiltinTypes.BOOLEAN,
+        [VALUE_SET_FIELDS.VALUE_SET_NAME]: BuiltinTypes.STRING,
       },
     }),
     email: new PrimitiveType({
@@ -753,6 +756,7 @@ export const toCustomField = (
     fieldDependency?.[FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD],
     valueSettings,
     field.annotations[FIELD_ANNOTATIONS.RESTRICTED],
+    field.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME],
     field.annotations[FORMULA],
     summaryFilterItems,
     field.annotations[FIELD_ANNOTATIONS.REFERENCE_TO],
@@ -766,6 +770,7 @@ export const toCustomField = (
     FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION, // handled in the CustomField constructor
     FIELD_ANNOTATIONS.VALUE_SET, // handled in the CustomField constructor
     FIELD_ANNOTATIONS.RESTRICTED, // handled in the CustomField constructor
+    VALUE_SET_FIELDS.VALUE_SET_NAME, // handled in the CustomField constructor
     FIELD_ANNOTATIONS.FIELD_DEPENDENCY, // handled in field_dependencies filter
     FIELD_ANNOTATIONS.LOOKUP_FILTER, // handled in lookup_filters filter
     FIELD_LEVEL_SECURITY_ANNOTATION,

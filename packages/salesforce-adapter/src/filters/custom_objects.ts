@@ -173,9 +173,19 @@ const transfromAnnotationsNames = (fields: Values, parentApiName: string): Value
         }
         break
       case FIELD_ANNOTATIONS.VALUE_SET:
-        annotations[FIELD_ANNOTATIONS.VALUE_SET] = v[VALUE_SET_FIELDS
-          .VALUE_SET_DEFINITION][VALUE_SET_DEFINITION_FIELDS.VALUE]
-        annotations[FIELD_ANNOTATIONS.RESTRICTED] = v[VALUE_SET_FIELDS.RESTRICTED] || false
+        // Checks for global value set
+        if (!_.isUndefined(v[VALUE_SET_FIELDS.VALUE_SET_NAME])) {
+          annotations[VALUE_SET_FIELDS.VALUE_SET_NAME] = v[VALUE_SET_FIELDS.VALUE_SET_NAME]
+          annotations[FIELD_ANNOTATIONS.RESTRICTED] = true
+        } else {
+          const valueSetDefinition = v[VALUE_SET_FIELDS.VALUE_SET_DEFINITION]
+          if (valueSetDefinition) {
+            annotations[FIELD_ANNOTATIONS.VALUE_SET] = valueSetDefinition[
+              VALUE_SET_DEFINITION_FIELDS.VALUE
+            ]
+            annotations[FIELD_ANNOTATIONS.RESTRICTED] = v[VALUE_SET_FIELDS.RESTRICTED] || false
+          }
+        }
         if (!_.isUndefined(getFieldDependency(v))) {
           annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY] = getFieldDependency(v)
         }
@@ -270,6 +280,10 @@ const mergeCustomObjectWithInstance = (
       fieldNameToFieldAnnotations[apiName(field, true)] || {},
       apiName(instance)
     ))
+    if (field.annotations[FIELD_ANNOTATIONS.VALUE_SET]
+      && field.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME]) {
+      delete field.annotations[FIELD_ANNOTATIONS.VALUE_SET]
+    }
   })
   if (customObject.annotations[API_NAME]) {
     // assigning annotations only to the "main" ObjectType

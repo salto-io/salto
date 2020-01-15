@@ -7,6 +7,7 @@ import { MetadataInfo, PicklistEntry, RetrieveResult } from 'jsforce'
 import { collections } from '@salto/lowerdash'
 import * as constants from '../src/constants'
 import { STANDARD_VALUE_SET } from '../src/filters/standard_value_sets'
+import { GLOBAL_VALUE_SET } from '../src/filters/global_value_sets'
 import {
   CustomObject,
   ProfileInfo,
@@ -70,13 +71,37 @@ describe('Salesforce adapter E2E with real account', () => {
   }
 
   const fetchedRollupSummaryFieldName = 'rollupsummary__c'
+  const fetchedGlobalPicklistFieldName = 'gpicklist__c'
+  const accountApiName = 'Account'
 
   beforeAll(async () => {
     // enrich the salesforce account with several objects and fields that does not exist by default
     // in order to enrich our fetch test
-    const verifyAccountWithRollupSummaryExists = async (): Promise<void> => {
-      const accountApiName = 'Account'
-      await client.upsert(constants.CUSTOM_FIELD, {
+    const verifyCustomFieldsExists = async (): Promise<void> => {
+      // Add Global Value Set (needed for one of the custom fields)
+      const gvsName = 'TestGlobalValueSet'
+      await client.upsert('GlobalValueSet', {
+        fullName: gvsName,
+        masterLabel: gvsName,
+        sorted: false,
+        description: 'GlobalValueSet that should be fetched in e2e test',
+        customValue: [
+          {
+            fullName: 'Val1',
+            default: true,
+            label: 'Val1',
+          },
+          {
+            fullName: 'Val2',
+            default: false,
+            label: 'Val2',
+          },
+        ],
+      } as MetadataInfo)
+
+      // Add the custom fields
+      await client.upsert(constants.CUSTOM_FIELD, [
+      {
         fullName: `${accountApiName}.${fetchedRollupSummaryFieldName}`,
         label: 'Test Fetch Rollup Summary Field',
         summarizedField: 'Opportunity.Amount',
@@ -88,13 +113,32 @@ describe('Salesforce adapter E2E with real account', () => {
         summaryForeignKey: 'Opportunity.AccountId',
         summaryOperation: 'sum',
         type: 'Summary',
-      } as MetadataInfo)
+      } as MetadataInfo,
+      {
+        fullName: `${accountApiName}.${fetchedGlobalPicklistFieldName}`,
+        label: 'Test Fetch Global Picklist Field',
+        required: false,
+        valueSet: {
+          restricted: true,
+          valueSetName: gvsName,
+        },
+        type: 'Picklist',
+      } as MetadataInfo,
+      ])
+
+      // Add the fields permissions
       await client.update(PROFILE_METADATA_TYPE,
         new ProfileInfo(sfCase(ADMIN_PROFILE), [{
           field: `${accountApiName}.${fetchedRollupSummaryFieldName}`,
           editable: true,
           readable: true,
-        }]))
+        },
+        {
+          field: `${accountApiName}.${fetchedGlobalPicklistFieldName}`,
+          editable: true,
+          readable: true,
+        },
+        ]))
     }
 
     const verifyEmailTemplateAndFolderExist = async (): Promise<void> => {
@@ -279,7 +323,7 @@ describe('Salesforce adapter E2E with real account', () => {
     }
 
     await Promise.all([
-      verifyAccountWithRollupSummaryExists(),
+      verifyCustomFieldsExists(),
       verifyEmailTemplateAndFolderExist(),
       verifyReportAndFolderExist(),
       verifyDashboardAndFolderExist(),
@@ -2098,6 +2142,21 @@ describe('Salesforce adapter E2E with real account', () => {
 
       // Clean-up
       await adapter.remove(oldElement)
+    })
+
+    it('should fetch GlobalValueSet', async () => {
+      const account = findElements(result, 'account')[1] as ObjectType
+
+      expect(account.fields[fetchedGlobalPicklistFieldName]
+        .annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME])
+        .toEqual(new ReferenceExpression(
+          new ElemID(
+            constants.SALESFORCE,
+            bpCase(GLOBAL_VALUE_SET),
+            'instance',
+            'test_global_value_set'
+          ).createNestedID(constants.INSTANCE_FULL_NAME_FIELD)
+        ))
     })
 
     // Assignment rules are special because they use the Deploy API so they get their own test

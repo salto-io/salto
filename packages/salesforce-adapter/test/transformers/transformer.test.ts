@@ -12,7 +12,7 @@ import {
   FIELD_ANNOTATIONS, FIELD_TYPE_NAMES, LABEL, FIELD_TYPE_API_NAMES, ADDRESS_FIELDS,
   SALESFORCE, GEOLOCATION_FIELDS, NAME_FIELDS, API_NAME,
   FIELD_LEVEL_SECURITY_ANNOTATION, FIELD_LEVEL_SECURITY_FIELDS, FIELD_DEPENDENCY_FIELDS,
-  VALUE_SETTINGS_FIELDS, FILTER_ITEM_FIELDS, METADATA_TYPE, CUSTOM_OBJECT,
+  VALUE_SETTINGS_FIELDS, FILTER_ITEM_FIELDS, METADATA_TYPE, CUSTOM_OBJECT, VALUE_SET_FIELDS,
 } from '../../src/constants'
 import { CustomField, FilterItem, CustomObject } from '../../src/client/types'
 import SalesforceClient from '../../src/client/client'
@@ -546,6 +546,35 @@ describe('transformer', () => {
           .toEqual(FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.PICKLIST])
         expect(customFieldWithFieldDependency?.valueSet?.controllingField).toBeUndefined()
         expect(customFieldWithFieldDependency?.valueSet?.valueSettings).toBeUndefined()
+      })
+    })
+
+    describe('global picklist transformation', () => {
+      const annotations: Values = {
+        [API_NAME]: 'field_name',
+        [LABEL]: 'field_label',
+        [CORE_ANNOTATIONS.REQUIRED]: false,
+        [VALUE_SET_FIELDS.VALUE_SET_NAME]: 'gvs',
+      }
+      const fieldName = 'field_name'
+      const origObjectType = new ObjectType({
+        elemID,
+        fields: {
+          [fieldName]: new TypeField(elemID, fieldName, Types.primitiveDataTypes.picklist,
+            annotations),
+        },
+      })
+      let obj: ObjectType
+      beforeEach(() => {
+        obj = _.cloneDeep(origObjectType)
+      })
+
+      it('should transform global picklist field', async () => {
+        const customFieldWithGlobalPicklist = toCustomField(obj.fields[fieldName])
+        expect(customFieldWithGlobalPicklist.type)
+          .toEqual(FIELD_TYPE_API_NAMES[FIELD_TYPE_NAMES.PICKLIST])
+        expect(customFieldWithGlobalPicklist?.valueSet?.valueSetName).toEqual('gvs')
+        expect(customFieldWithGlobalPicklist?.valueSet?.restricted).toBe(true)
       })
     })
 

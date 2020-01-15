@@ -6,10 +6,11 @@ import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
 import {
-  makeFilter, extractFullNamesFromValueList, STANDARD_VALUE_SET, STANDARD_VALUE,
+  makeFilter, STANDARD_VALUE_SET, STANDARD_VALUE,
 } from '../../src/filters/standard_value_sets'
 import SalesforceClient from '../../src/client/client'
 import { Types } from '../../src/transformers/transformer'
+import { extractFullNamesFromValueList } from '../../src/filters/utils'
 
 const createStandardValueSetMetadataInfo = (name: string, values: string[]): MetadataInfo =>
   ({

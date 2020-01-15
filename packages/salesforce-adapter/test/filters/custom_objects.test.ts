@@ -440,7 +440,7 @@ describe('Custom Objects filter', () => {
       expect(testElements).toHaveLength(1)
       const [test] = testElements
       expect(test.path)
-        .toEqual([SALESFORCE, 'installed_packages',
+        .toEqual([SALESFORCE, 'installedPackages',
           namespaceName, 'objects', 'namespaceName__Test__c'])
       expect(test.fields.dummy).toBeDefined()
       expect(test.fields.CustomField__c).toBeDefined()
@@ -467,7 +467,7 @@ describe('Custom Objects filter', () => {
       expect(obj.fields.dummy).toBeDefined()
       expect(obj.fields.namespaceName__PackagedField__c).toBeUndefined()
       expect(packagedObj.path)
-        .toEqual([SALESFORCE, 'installed_packages', namespaceName, 'objects', 'Test__c'])
+        .toEqual([SALESFORCE, 'installedPackages', namespaceName, 'objects', 'Test__c'])
       expect(packagedObj.fields.dummy).toBeUndefined()
       expect(packagedObj.fields.namespaceName__PackagedField__c).toBeDefined()
     })
@@ -505,7 +505,7 @@ describe('Custom Objects filter', () => {
       expect(customObj.fields.CustomField__c).toBeDefined()
       expect(customObj.fields.namespaceName__PackagedField__c).toBeUndefined()
       expect(packagedObj.path)
-        .toEqual([SALESFORCE, 'installed_packages', namespaceName, 'objects', 'Test__c'])
+        .toEqual([SALESFORCE, 'installedPackages', namespaceName, 'objects', 'Test__c'])
       expect(packagedObj.fields.dummy).toBeUndefined()
       expect(packagedObj.fields.CustomField__c).toBeUndefined()
       expect(packagedObj.fields.namespaceName__PackagedField__c).toBeDefined()
@@ -880,7 +880,7 @@ describe('Custom Objects filter', () => {
           expect(leadElements).toBeDefined()
           expect(leadElements).toHaveLength(2)
           const [leadsWithApiName, leadsWithoutApiName] = _.partition(leadElements,
-            elem => elem.annotations.api_name)
+            elem => elem.annotations[API_NAME])
 
           expect(leadsWithApiName).toHaveLength(1)
           const leadWithApiName = leadsWithApiName[0] as ObjectType

@@ -519,7 +519,7 @@ describe('SalesforceAdapter fetch', () => {
       const [testInst] = findElements(result, 'ApexPage', 'th_con_app__ThHomepage')
       expect(testInst).toBeDefined()
       expect(testInst.path)
-        .toEqual([constants.SALESFORCE, 'installed_packages',
+        .toEqual([constants.SALESFORCE, 'installedPackages',
           namespaceName, 'records', 'ApexPage', 'th_con_app__ThHomepage'])
     })
 
@@ -532,7 +532,7 @@ describe('SalesforceAdapter fetch', () => {
       const [testInst] = findElements(result, 'Test', 'asd__Test')
       expect(testInst).toBeDefined()
       expect(testInst.path)
-        .toEqual([constants.SALESFORCE, 'installed_packages',
+        .toEqual([constants.SALESFORCE, 'installedPackages',
           namespaceName, 'records', 'Test', 'asd__Test'])
     })
 
@@ -545,7 +545,7 @@ describe('SalesforceAdapter fetch', () => {
       const [testInst] = findElements(result, 'Test', 'asd__Test')
       expect(testInst).toBeDefined()
       expect(testInst.path).toEqual(
-        [constants.SALESFORCE, 'installed_packages', namespaceName, 'records', 'Test', 'asd__Test']
+        [constants.SALESFORCE, 'installedPackages', namespaceName, 'records', 'Test', 'asd__Test']
       )
     })
 

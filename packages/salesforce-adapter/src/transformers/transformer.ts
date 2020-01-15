@@ -1011,7 +1011,7 @@ export const createInstanceElement = (mdInfo: MetadataInfo, type: ObjectType,
         // Some CustomApplications have 'standard' namespace although they are not part of a package
         return [SALESFORCE]
       }
-      return [SALESFORCE, 'installed_packages', namespacePrefix]
+      return [SALESFORCE, 'installedPackages', namespacePrefix]
     }
     return [SALESFORCE]
   }

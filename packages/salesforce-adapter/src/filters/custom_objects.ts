@@ -57,7 +57,7 @@ const createObjectWithFields = (objectName: string, serviceIds: ServiceIds,
 
 const getCustomObjectPackagePath = (obj: ObjectType): string[] => {
   if (hasNamespace(obj)) {
-    return [SALESFORCE, 'installed_packages', getNamespace(obj), 'objects', obj.elemID.name]
+    return [SALESFORCE, 'installedPackages', getNamespace(obj), 'objects', obj.elemID.name]
   }
   return [SALESFORCE, 'objects', 'custom', obj.elemID.name]
 }
@@ -70,7 +70,7 @@ const getPartialCustomObjects = (customFields: Field[], objectName: string,
   const customParts = Object.entries(namespaceToFields)
     .map(([namespace, packageFields]) => {
       const packageObj = createObjectWithFields(objectName, serviceIds, packageFields)
-      packageObj.path = [SALESFORCE, 'installed_packages',
+      packageObj.path = [SALESFORCE, 'installedPackages',
         namespace, 'objects', packageObj.elemID.name]
       return packageObj
     })
@@ -210,7 +210,7 @@ const transfromAnnotationsNames = (fields: Values, parentApiName: string): Value
 }
 
 const buildAnnotationsObjectType = (fieldType: Type): ObjectType => {
-  const annotationTypesElemID = new ElemID(SALESFORCE, 'annotation_type')
+  const annotationTypesElemID = new ElemID(SALESFORCE, 'AnnotationType')
   return new ObjectType({ elemID: annotationTypesElemID,
     fields: Object.assign({}, ...Object.entries(fieldType.annotationTypes)
       .concat(Object.entries(BuiltinAnnotationTypes))

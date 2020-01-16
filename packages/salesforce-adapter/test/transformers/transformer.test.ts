@@ -559,7 +559,7 @@ describe('transformer', () => {
         objectType.fields[fieldName].annotations[FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION] = false
         const customLookupField = toCustomField(objectType.fields[fieldName])
         assertCustomFieldTransformation(customLookupField,
-          FIELD_TYPE_NAMES.LOOKUP, 'FieldName', 'Restrict', relatedTo)
+          FIELD_TYPE_NAMES.LOOKUP, 'Name', 'Restrict', relatedTo)
       })
 
       it('should transform lookup field with no deletion constraint', async () => {
@@ -567,7 +567,7 @@ describe('transformer', () => {
         objectType.fields[fieldName].annotations[FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION] = true
         const customLookupField = toCustomField(objectType.fields[fieldName])
         assertCustomFieldTransformation(customLookupField,
-          FIELD_TYPE_NAMES.LOOKUP, 'FieldName', 'SetNull', relatedTo)
+          FIELD_TYPE_NAMES.LOOKUP, 'Name', 'SetNull', relatedTo)
       })
 
       it('should transform masterdetail field', async () => {
@@ -577,7 +577,7 @@ describe('transformer', () => {
         masterDetailField.annotations[FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL] = true
         const customMasterDetailField = toCustomField(masterDetailField)
         assertCustomFieldTransformation(customMasterDetailField,
-          FIELD_TYPE_NAMES.MASTER_DETAIL, 'FieldName', undefined, relatedTo)
+          FIELD_TYPE_NAMES.MASTER_DETAIL, 'Name', undefined, relatedTo)
         expect(customMasterDetailField.reparentableMasterDetail).toBe(true)
         expect(customMasterDetailField.writeRequiresMasterRead).toBe(true)
       })

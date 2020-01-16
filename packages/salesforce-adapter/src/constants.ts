@@ -34,7 +34,7 @@ export enum FIELD_TYPE_NAMES {
 
 export enum COMPOUND_FIELD_TYPE_NAMES {
   ADDRESS = 'Address',
-  FIELD_NAME = 'FieldName',
+  FIELD_NAME = 'Name',
   LOCATION = 'Location',
 }
 

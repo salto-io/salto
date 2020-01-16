@@ -590,7 +590,7 @@ export class Types {
   }
 
   // Type mapping for compound fields
-  public static compoundDataTypes: Record<string, ObjectType> = {
+  public static compoundDataTypes: Record<COMPOUND_FIELD_TYPE_NAMES, ObjectType> = {
     Address: new ObjectType({
       elemID: addressElemID,
       fields: {
@@ -673,7 +673,8 @@ export class Types {
 
   static getKnownType(name: string, customObject = true): Type {
     return customObject
-      ? this.primitiveDataTypes[name as FIELD_TYPE_NAMES] || this.compoundDataTypes[name]
+      ? this.primitiveDataTypes[name as FIELD_TYPE_NAMES]
+      || this.compoundDataTypes[name as COMPOUND_FIELD_TYPE_NAMES]
       : this.metadataPrimitiveTypes[name.toLowerCase()]
   }
 

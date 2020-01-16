@@ -58,10 +58,11 @@ describe('Test HubSpot client', () => {
           const getAllFormsResultMock = (): RequestPromise => (
             formsMockArray as RequestPromise)
 
-          const getAllWorkflowsResultMock = (): RequestPromise => (
-            {
+          const getAllWorkflowsResultMock = (): RequestPromise =>
+            Promise.resolve({
               workflows: workflowsMockArray,
-            } as unknown as RequestPromise)
+            }) as unknown as RequestPromise
+
           mockGetAllForms = jest.fn().mockImplementation(getAllFormsResultMock)
 
           connection.forms.getAll = mockGetAllForms

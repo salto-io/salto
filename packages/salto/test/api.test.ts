@@ -1,7 +1,15 @@
 import _ from 'lodash'
 import {
-  ElemID, InstanceElement, ObjectType, Field, BuiltinTypes, Element,
-  PrimitiveType, PrimitiveTypes, DataModificationResult, Adapter,
+  Adapter,
+  BuiltinTypes,
+  DataModificationResult,
+  Element,
+  ElemID,
+  Field,
+  InstanceElement,
+  ObjectType,
+  PrimitiveType,
+  PrimitiveTypes,
 } from 'adapter-api'
 import wu from 'wu'
 import { Config } from '../src/workspace/config'
@@ -13,6 +21,7 @@ import * as fetch from '../src/core/fetch'
 import * as deploy from '../src/core/deploy'
 import * as records from '../src/core/records'
 import * as adapters from '../src/core/adapters/adapters'
+import adapterCreators from '../src/core/adapters/creators'
 
 import * as mockElements from './common/elements'
 import * as mockPlan from './common/plan'
@@ -55,6 +64,8 @@ jest.mock('../src/core/fetch')
 jest.mock('../src/core/plan')
 jest.mock('../src/core/deploy')
 jest.mock('../src/core/records')
+jest.mock('../src/core/adapters/creators')
+
 describe('api.ts', () => {
   const initAdapters = adapters.initAdapters as jest.Mock
   initAdapters.mockReturnValue({
@@ -184,7 +195,9 @@ describe('api.ts', () => {
       expect(wu(result.errors).toArray()).toHaveLength(1)
     }
 
-    beforeEach(() => { mockStateGet.mockClear() })
+    beforeEach(() => {
+      mockStateGet.mockClear()
+    })
 
     describe('export', () => {
       const mockGetInstancesOfType = records.getInstancesOfType as jest.Mock
@@ -239,10 +252,31 @@ describe('api.ts', () => {
     ]
     const ws = mockWorkspace(elements)
 
+    it('should call validateConfig', async () => {
+      const newConf = mockConfigInstance.clone()
+      newConf.value.password = 'bla'
+
+      await api.updateLoginConfig(ws, newConf)
+
+      const adapterCreator = adapterCreators.salesforce
+      expect(adapterCreator.validateConfig).toHaveBeenCalledTimes(1)
+    })
+
+    describe('validateConfig', () => {
+      it('should throw if passed unknown adapter name', () => {
+        const newConf = mockConfigInstance.clone()
+        newConf.value.password = 'bla'
+        newConf.elemID = new ElemID('unknownService')
+
+        return expect(api.updateLoginConfig(ws, newConf)).rejects.toThrow('unknown adapter: unknownService')
+      })
+    })
+
+
     it('should persist a new config', async () => {
       const newConf = mockConfigInstance.clone()
       newConf.value.password = 'bla'
-      await api.updateLoginConfig(ws, [newConf])
+      await api.updateLoginConfig(ws, newConf)
       expect((ws.credentials.set as jest.Mock).call).toHaveLength(1)
       expect((ws.flush as jest.Mock).call).toHaveLength(1)
     })

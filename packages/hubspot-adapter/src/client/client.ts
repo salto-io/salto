@@ -75,6 +75,14 @@ export default class HubspotClient {
   private conn: Connection
   private readonly hubspotObjectAPI: Record<string, HubspotObjectAPI>
 
+  static validateCredentials(credentials: Credentials): Promise<void> {
+    const { apiKey } = credentials
+    const connection = new Hubspot({ apiKey })
+
+    return connection.integrations.getAccountDetails()
+      .then(result => result) // convert to regular promise
+  }
+
   constructor(
     { credentials, connection }: HubspotClientOpts
   ) {

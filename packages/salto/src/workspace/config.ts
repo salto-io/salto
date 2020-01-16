@@ -153,5 +153,5 @@ export const addServiceToConfig = async (currentConfig: Config, service: string
   }
   const config = parseConfig(await readFile(getConfigPath(currentConfig.baseDir)))
   config.services = [...currentServices, service]
-  dumpConfig(currentConfig.baseDir, config)
+  await dumpConfig(currentConfig.baseDir, config)
 }

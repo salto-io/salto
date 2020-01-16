@@ -1,44 +1,53 @@
 import wu from 'wu'
 import {
-  ObjectType, InstanceElement, Element, DataModificationResult,
-  ChangeValidator, ElemID, ActionName, Adapter, ElemIdGetter,
+  ActionName,
+  Adapter,
+  ChangeValidator,
+  DataModificationResult,
+  Element,
+  ElemID,
+  ElemIdGetter,
+  InstanceElement,
+  ObjectType,
 } from 'adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto/logging'
 import _ from 'lodash'
 import { promises } from '@salto/lowerdash'
-import {
-  deployActions, ItemStatus, DeployError,
-} from './core/deploy'
-import {
-  getInstancesOfType, importInstancesOfType, deleteInstancesOfType,
-} from './core/records'
-import { initAdapters, getAdaptersLoginConf } from './core/adapters/adapters'
+import { deployActions, DeployError, ItemStatus } from './core/deploy'
+import { deleteInstancesOfType, getInstancesOfType, importInstancesOfType } from './core/records'
+import { getAdaptersConfigType, initAdapters } from './core/adapters/adapters'
 import { addServiceToConfig, loadConfig } from './workspace/config'
 import adapterCreators from './core/adapters/creators'
 import { getPlan, Plan, PlanItem } from './core/plan'
 import { findElement, SearchResult } from './core/search'
 import {
-  fetchChanges, FetchChange, getDetailedChanges, createElemIdGetter, toChangesWithPath,
-  MergeErrorWithElements, FatalFetchMergeError, FetchProgressEvents,
+  createElemIdGetter,
+  FatalFetchMergeError,
+  FetchChange,
+  fetchChanges,
+  FetchProgressEvents,
+  getDetailedChanges,
+  MergeErrorWithElements,
+  toChangesWithPath,
 } from './core/fetch'
 import { Workspace } from './workspace/workspace'
 import Credentials from './workspace/credentials'
-
-export { ItemStatus }
 
 const log = logger(module)
 
 export const updateLoginConfig = async (
   workspace: Workspace,
-  newConfigs: Readonly<InstanceElement[]>
+  newConfig: Readonly<InstanceElement>
 ): Promise<void> => {
-  if (newConfigs.length > 0) {
-    await Promise.all(newConfigs
-      .map(config => workspace.credentials.set(config.elemID.adapter, config)))
-    const newAdapters = newConfigs.map(config => config.elemID.adapter)
-    log.debug(`persisted new configs for adapers: ${newAdapters.join(',')}`)
+  const adapterCreator = adapterCreators[newConfig.elemID.adapter]
+  if (adapterCreator) {
+    await adapterCreator.validateConfig(newConfig)
+  } else {
+    throw new Error(`unknown adapter: ${newConfig.elemID.adapter}`)
   }
+  await workspace.credentials.set(newConfig.elemID.adapter, newConfig)
+  log.debug(`persisted new configs for adapter: ${newConfig.elemID.adapter}`)
 }
 
 const filterElementsByServices = (
@@ -78,6 +87,7 @@ export interface DeployResult {
   errors: DeployError[]
   changes?: Iterable<FetchChange>
 }
+
 export const deploy = async (
   workspace: Workspace,
   shouldDeploy: (plan: Plan) => Promise<boolean>,
@@ -256,7 +266,7 @@ export const addAdapter = async (
   workspaceDir: string,
   adapterName: string
 ): Promise<ObjectType> => {
-  const adapterConfig = getAdaptersLoginConf([adapterName])[adapterName]
+  const adapterConfig = getAdaptersConfigType([adapterName])[adapterName]
   if (!adapterConfig) {
     throw new Error('No adapter available for this service')
   }
@@ -269,7 +279,7 @@ export const getLoginStatuses = async (
   workspace: Workspace,
   adapterNames = workspace.config.services,
 ): Promise<Record<string, LoginStatus>> => {
-  const logins = _.mapValues(getAdaptersLoginConf(adapterNames),
+  const logins = _.mapValues(getAdaptersConfigType(adapterNames),
     async (config, adapter) =>
       ({
         configType: config,

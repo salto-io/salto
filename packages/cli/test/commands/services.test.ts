@@ -1,8 +1,12 @@
-import { Workspace, updateLoginConfig, LoginStatus } from 'salto'
+import { LoginStatus, updateLoginConfig, Workspace } from 'salto'
 import { ObjectType } from 'adapter-api'
 import { command } from '../../src/commands/services'
 import {
-  MockWriteStream, getWorkspaceErrors, mockLoadConfig, mockGetConfigFromUser, mockConfigType,
+  createMockGetConfigFromUser,
+  getWorkspaceErrors,
+  mockConfigType,
+  mockLoadConfig,
+  MockWriteStream,
 } from '../mocks'
 
 jest.mock('salto', () => ({
@@ -16,7 +20,7 @@ jest.mock('salto', () => ({
     }
     return Promise.resolve(mockConfigType(adapterName))
   }),
-  updateLoginConfig: jest.fn(),
+  updateLoginConfig: jest.fn().mockResolvedValue(true),
   getLoginStatuses: jest.fn().mockImplementation((
     _workspace: Workspace,
     serviceNames: string[]
@@ -60,6 +64,12 @@ jest.mock('salto', () => ({
 
 describe('services command', () => {
   let cliOutput: { stdout: MockWriteStream; stderr: MockWriteStream }
+  const mockGetConfigFromUser = createMockGetConfigFromUser({
+    username: 'test@test',
+    password: 'test',
+    token: 'test',
+    sandbox: false,
+  })
 
   beforeEach(() => {
     cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
@@ -139,8 +149,35 @@ describe('services command', () => {
           expect(cliOutput.stdout.content).toContain('added to the workspace')
         })
 
-        it('should print it logged in', async () => {
-          expect(cliOutput.stdout.content).toContain('Login information succesfully updated')
+        it('should print please enter credentials', async () => {
+          expect(cliOutput.stdout.content).toContain('Please enter your Newadapter credentials:')
+        })
+
+        describe('when called with valid credentials', () => {
+          beforeEach(async () => {
+            await command('', 'add', cliOutput, mockGetConfigFromUser, 'newAdapter').execute()
+          })
+          it('should print login information updated', async () => {
+            expect(cliOutput.stdout.content).toContain('Login information successfully updated!')
+          })
+        })
+
+        describe('when called with invalid credentials', () => {
+          beforeEach(async () => {
+            (updateLoginConfig as jest.Mock).mockRejectedValue('Rejected!')
+            await command('', 'add', cliOutput, mockGetConfigFromUser, 'newAdapter').execute()
+          })
+          afterEach(() => {
+            (updateLoginConfig as jest.Mock).mockResolvedValue(true)
+          })
+
+          it('should print login error', async () => {
+            expect(cliOutput.stderr.content).toContain('Could not login to newAdapter')
+          })
+
+          it('should print try again text', async () => {
+            expect(cliOutput.stderr.content).toContain('To try again run: `salto services login newAdapter`')
+          })
         })
       })
     })
@@ -166,7 +203,7 @@ describe('services command', () => {
         })
 
         it('should print logged in', () => {
-          expect(cliOutput.stdout.content).toContain('Login information succesfully updated')
+          expect(cliOutput.stdout.content).toContain('Login information successfully updated')
         })
       })
 
@@ -194,7 +231,7 @@ describe('services command', () => {
         })
 
         it('should print it logged in', async () => {
-          expect(cliOutput.stdout.content).toContain('Login information succesfully updated')
+          expect(cliOutput.stdout.content).toContain('Login information successfully updated')
         })
       })
     })

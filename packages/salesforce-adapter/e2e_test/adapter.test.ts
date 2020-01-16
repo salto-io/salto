@@ -79,6 +79,7 @@ describe('Salesforce adapter E2E with real account', () => {
   const gvsName = 'TestGlobalValueSet'
   const fetchedRollupSummaryFieldName = 'rollupsummary__c'
   const fetchedGlobalPicklistFieldName = 'gpicklist__c'
+  const fetchedLocationFieldName = 'location__c'
   const accountApiName = 'Account'
 
   beforeAll(async () => {
@@ -130,6 +131,14 @@ describe('Salesforce adapter E2E with real account', () => {
         },
         type: 'Picklist',
       } as MetadataInfo,
+      {
+        fullName: `${accountApiName}.${fetchedLocationFieldName}`,
+        label: 'Test Fetch Location Field',
+        required: false,
+        scale: 10,
+        displayLocationInDecimal: true,
+        type: 'Location',
+      } as MetadataInfo,
       ])
 
       // Add the fields permissions
@@ -141,6 +150,11 @@ describe('Salesforce adapter E2E with real account', () => {
         },
         {
           field: `${accountApiName}.${fetchedGlobalPicklistFieldName}`,
+          editable: true,
+          readable: true,
+        },
+        {
+          field: `${accountApiName}.${fetchedLocationFieldName}`,
           editable: true,
           readable: true,
         },
@@ -444,11 +458,11 @@ describe('Salesforce adapter E2E with real account', () => {
         const lead = findElements(result, 'Lead')[0] as ObjectType
 
         // Test few possible types
-        expect(lead.fields.Address.type.elemID).toEqual(Types.compoundDataTypes.address.elemID)
+        expect(lead.fields.Address.type.elemID).toEqual(Types.compoundDataTypes.Address.elemID)
         expect(lead.fields.Description.type.elemID).toEqual(
           Types.primitiveDataTypes.LongTextArea.elemID,
         )
-        expect(lead.fields.Name.type.elemID).toEqual(Types.compoundDataTypes.name.elemID)
+        expect(lead.fields.Name.type.elemID).toEqual(Types.compoundDataTypes.Name.elemID)
         expect(lead.fields.OwnerId.type.elemID).toEqual(Types.primitiveDataTypes.Lookup.elemID)
 
         // Test label
@@ -1673,7 +1687,7 @@ describe('Salesforce adapter E2E with real account', () => {
           Golf: new Field(
             mockElemID,
             'Golf',
-            Types.compoundDataTypes.location,
+            Types.compoundDataTypes.Location,
             {
               [constants.LABEL]: 'Location description label',
               [constants.FIELD_ANNOTATIONS.SCALE]: 2,
@@ -2312,6 +2326,14 @@ describe('Salesforce adapter E2E with real account', () => {
             bpCase(gvsName),
           ).createNestedID(constants.INSTANCE_FULL_NAME_FIELD)
         ))
+    })
+
+    it('should fetch Location field', async () => {
+      const account = findElements(result, 'Account')[1] as ObjectType
+      const locationField = account.fields[fetchedLocationFieldName]
+      expect(locationField.annotations[constants.FIELD_ANNOTATIONS.SCALE]).toEqual(10)
+      expect(locationField.annotations[constants.FIELD_ANNOTATIONS.DISPLAY_LOCATION_IN_DECIMAL])
+        .toBe(true)
     })
 
     // Assignment rules are special because they use the Deploy API so they get their own test

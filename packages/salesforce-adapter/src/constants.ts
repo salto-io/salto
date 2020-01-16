@@ -34,12 +34,13 @@ export enum FIELD_TYPE_NAMES {
 
 export enum COMPOUND_FIELD_TYPE_NAMES {
   ADDRESS = 'Address',
-  FIELD_NAME = 'FieldName',
+  FIELD_NAME = 'Name',
   LOCATION = 'Location',
 }
 
-export const FIELD_SOAP_TYPE_NAMES: Record<string, FIELD_TYPE_NAMES> = {
-  // address: returns from the SOAP api but has special treatment in the code
+export const FIELD_SOAP_TYPE_NAMES:
+Record<string, FIELD_TYPE_NAMES | COMPOUND_FIELD_TYPE_NAMES> = {
+  address: COMPOUND_FIELD_TYPE_NAMES.ADDRESS,
   anyType: FIELD_TYPE_NAMES.TEXT, // TODO: define specific type
   base64: FIELD_TYPE_NAMES.TEXT, // TODO: define specific type
   boolean: FIELD_TYPE_NAMES.CHECKBOX,
@@ -54,6 +55,7 @@ export const FIELD_SOAP_TYPE_NAMES: Record<string, FIELD_TYPE_NAMES> = {
   id: FIELD_TYPE_NAMES.TEXT, // TODO: define specific type
   int: FIELD_TYPE_NAMES.NUMBER,
   json: FIELD_TYPE_NAMES.TEXT, // TODO: define specific type
+  location: COMPOUND_FIELD_TYPE_NAMES.LOCATION,
   multipicklist: FIELD_TYPE_NAMES.MULTIPICKLIST,
   percent: FIELD_TYPE_NAMES.PERCENT,
   phone: FIELD_TYPE_NAMES.PHONE,

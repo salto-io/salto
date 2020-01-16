@@ -1,6 +1,9 @@
 export const HUBSPOT = 'hubspot'
+export const NAME = 'name'
+const LABEL = 'label'
+const PROPERTY_OPTIONS = 'options'
 
-export const OBJECTS_NAMES = {
+export const OBJECTS_NAMES = { // TODO: Align names
   FORM: 'form',
   WORKFLOWS: 'workflows',
   MARKETINGEMAIL: 'marketingEmail',
@@ -18,6 +21,10 @@ export const OBJECTS_NAMES = {
   CRITERIALIST: 'criteriaList',
   EVENTANCHOR: 'eventAnchor',
   CONDITIONACTION: 'conditionAction',
+  CONTACT_PROPERTY: 'ContactProperty',
+  DEPENDENT_FIELD_FILTER: 'dependentFieldFilter',
+  FIELD_FILTER: 'fieldFilter',
+  DEPEDENT_FORM_PROPERTY: 'dependentFormProperty',
 }
 
 export const FIELD_TYPES = {
@@ -34,7 +41,7 @@ export const FIELD_TYPES = {
 
 export const FORM_FIELDS = {
   GUID: 'guid',
-  NAME: 'name',
+  NAME,
   CSSCLASS: 'cssClass',
   REDIRECT: 'redirect',
   SUBMITTEXT: 'submitText',
@@ -155,29 +162,62 @@ export const RSSTOEMAILTIMING_FIELDS = {
   TIME: 'time',
 }
 
-export const PROPERTY_GROUP_FIELDS = {
+export const FORM_PROPERTY_GROUP_FIELDS = {
   DEFAULT: 'default',
   FIELDS: 'fields',
   ISSMARTGROUP: 'isSmartGroup',
 }
 
-export const PROPERTY_FIELDS = {
-  NAME: 'name',
-  LABEL: 'label',
+export const FORM_PROPERTY_FIELDS = {
+  LABEL,
   DESCRIPTION: 'description',
-  GROUPNAME: 'groupName',
-  TYPE: 'type',
-  FIELDTYPE: 'fieldType',
   REQUIRED: 'required',
   HIDDEN: 'hidden',
   ISSMARTFIELD: 'isSmartField',
   DEFAULTVALUE: 'defaultValue',
   SELECTEDOPTIONS: 'selectedOptions',
-  OPTIONS: 'options',
+  OPTIONS: PROPERTY_OPTIONS,
+  DEPENDENTFIELDFILTERS: 'dependentFieldFilters',
+  PLACEHOLDER: 'placeholder',
+  CONTACT_PROPERTY: 'contactProperty',
+}
+
+export const DEPENDENT_FIELD_FILTER_FIELDS = {
+  FILTERS: 'filters',
+  DEPEDENTFORMFIELD: 'dependentFormField',
+  FORMFIELDACTION: 'formFieldAction',
+}
+
+export const FIELD_FILTER_FIELDS = {
+  OPERATOR: 'operator',
+  STRVALUE: 'strValue',
+  NUMBERVALUE: 'numValue',
+  BOOLVALUE: 'boolValue',
+  STRVALUES: 'strValues',
+  NUMVALUES: 'mnumberValues',
+}
+
+export const CONTACT_PROPERTY_FIELDS = {
+  NAME,
+  LABEL,
+  DESCRIPTION: 'description',
+  GROUPNAME: 'groupName',
+  TYPE: 'type',
+  FIELDTYPE: 'fieldType',
+  OPTIONS: PROPERTY_OPTIONS,
+  DELETED: 'deteled',
+  FORMFIELD: 'formField',
+  DISPLAYORDER: 'displayOrder',
+  READONLYVALUE: 'readOnlyValue',
+  READONLYDEFINITION: 'readOnlyDefinition',
+  MUTABLEDEFINITIONNOTDELETABLE: 'mutableDefinitionNotDeletable',
+  HIDDEN: 'hidden',
+  CALCULATED: 'calculcated',
+  EXTERNALOPTIONS: 'externalOptions',
 }
 
 export const OPTIONS_FIELDS = {
-  LABEL: 'label',
+  LABEL,
   DESCRIPTION: 'description',
   VALUE: 'value',
   HIDDEN: 'hidden',

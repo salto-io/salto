@@ -13,9 +13,7 @@ import HubspotClient from '../src/client/client'
 import {
   Form, HubspotMetadata, MarketingEmail, Workflows,
 } from '../src/client/types'
-import {
-  Types,
-} from '../src/transformers/transformer'
+import { Types } from '../src/transformers/transformer'
 import {
   OBJECTS_NAMES,
 } from '../src/constants'
@@ -71,7 +69,7 @@ describe('Hubspot Adapter Operations', () => {
 
     it('should fetch basic', async () => {
       const result = await adapter.fetch()
-      expect(result).toHaveLength(29)
+      expect(result).toHaveLength(32)
     })
   })
 
@@ -472,9 +470,7 @@ describe('Hubspot Adapter Operations', () => {
           expect(res.value.formFieldGroups[0].isSmartGroup).toEqual(false)
           expect(res.value.formFieldGroups[0].richText).toBeUndefined()
           expect(res.value.formFieldGroups[0].fields).toHaveLength(1)
-          expect(res.value.formFieldGroups[0].fields[0].name).toEqual('state')
           expect(res.value.formFieldGroups[0].fields[0].label).toEqual('State/Region')
-          expect(res.value.formFieldGroups[0].fields[0].type).toEqual('string')
           expect(res.value.formFieldGroups[0].fields[0].description).toBeUndefined()
           expect(res.value.formFieldGroups[0].fields[0].propertyObjectType).toBeUndefined()
           expect(res.value.formFieldGroups[0].fields[0].options).toHaveLength(1)
@@ -492,9 +488,7 @@ describe('Hubspot Adapter Operations', () => {
           expect(res.value.formFieldGroups[1].isSmartGroup).toEqual(false)
           expect(res.value.formFieldGroups[1].richText).toBeUndefined()
           expect(res.value.formFieldGroups[1].fields).toHaveLength(1)
-          expect(res.value.formFieldGroups[1].fields[0].name).toEqual('g1')
           expect(res.value.formFieldGroups[1].fields[0].label).toEqual('g1')
-          expect(res.value.formFieldGroups[1].fields[0].type).toEqual('string')
           expect(res.value.formFieldGroups[1].fields[0].description).toBeUndefined()
           expect(res.value.formFieldGroups[1].fields[0].propertyObjectType).toBeUndefined()
           expect(res.value.formFieldGroups[1].fields[0].options).toBeUndefined()

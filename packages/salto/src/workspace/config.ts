@@ -138,31 +138,20 @@ const baseDirFromLookup = async (lookupDir: string): Promise<string> => {
   return baseDir
 }
 
-export const loadRawConfig = async (lookupDir: string): Promise<Partial<Config>> => {
+export const loadConfig = async (lookupDir: string): Promise<Config> => {
   const baseDir = await baseDirFromLookup(lookupDir)
   const config = parseConfig(await readFile(getConfigPath(baseDir)))
   log.debug(`loaded raw config ${JSON.stringify(config)}`)
-  return config
+  return completeConfig(baseDir, config)
 }
 
-export const loadConfig = async (lookupDir: string): Promise<Config> => {
-  const config = await loadRawConfig(lookupDir)
-  return completeConfig(await baseDirFromLookup(lookupDir), config)
-}
-
-export const addServiceToConfig = async (currentConfig: Partial<Config>, service: string
+export const addServiceToConfig = async (currentConfig: Config, service: string
 ): Promise<void> => {
   const currentServices = currentConfig.services ? currentConfig.services : []
   if (currentServices.includes(service)) {
     throw new ServiceDuplicationError(service)
   }
-  currentServices.push(service)
-  const updatedConfig = {
-    ...currentConfig,
-    services: currentServices,
-  }
-  if (!currentConfig?.baseDir) {
-    throw new Error('cannot dump config as baseDir is missing')
-  }
-  dumpConfig(currentConfig.baseDir, updatedConfig)
+  const config = parseConfig(await readFile(getConfigPath(currentConfig.baseDir)))
+  config.services = [...currentServices, service]
+  dumpConfig(currentConfig.baseDir, config)
 }

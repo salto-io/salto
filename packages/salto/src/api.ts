@@ -14,7 +14,7 @@ import {
   getInstancesOfType, importInstancesOfType, deleteInstancesOfType,
 } from './core/records'
 import { initAdapters, getAdaptersLoginConf } from './core/adapters/adapters'
-import { addServiceToConfig, loadRawConfig } from './workspace/config'
+import { addServiceToConfig, loadConfig } from './workspace/config'
 import adapterCreators from './core/adapters/creators'
 import { getPlan, Plan, PlanItem } from './core/plan'
 import { findElement, SearchResult } from './core/search'
@@ -259,7 +259,7 @@ export const addAdapter = async (
   if (!adapterConfig) {
     throw new Error('No adapter available for this service')
   }
-  await addServiceToConfig(await loadRawConfig(workspaceDir), adapterName)
+  await addServiceToConfig(await loadConfig(workspaceDir), adapterName)
   return adapterConfig
 }
 

@@ -79,6 +79,7 @@ type LeaseDoc<T> = {
   version: number
   leaseExpiresBy: string
   leasingClientId: string
+  suspensionReason?: string
 }
 
 export const dynamoDbInstances = (opts: DynamoInstancesOrConfig): DynamoDbInstances => {
@@ -211,9 +212,12 @@ export const repo = defaultOpts.withRequired<
         UpdateExpression: DynamoDB.UpdateExpression
         ExpressionAttributeValues?: DynamoDB.DocumentClient.ExpressionAttributeValueMap
       },
-      updateOpts?: Partial<LeaseUpdateOpts>,
+      updateOpts?: Partial<LeaseUpdateOpts> & { validateLeased: boolean },
     ): Promise<void> => {
-      const { validateClientId } = { ...DEFAULT_LEASE_UPDATE_OPTS, ...updateOpts }
+      const { validateClientId, validateLeased } = {
+        ...DEFAULT_LEASE_UPDATE_OPTS,
+        ...updateOpts,
+      }
 
       return withOptimisticLock(async (): Promise<void> => {
         const item = (await dbDoc.get({
@@ -228,9 +232,10 @@ export const repo = defaultOpts.withRequired<
           throw new InstanceNotFoundError({ id, typeName })
         }
 
-        if (item.leaseExpiresBy === NOT_LEASED || (
-          validateClientId && item.leasingClientId !== clientId
-        )) {
+        if (
+          (validateLeased && item.leaseExpiresBy === NOT_LEASED)
+          || (validateClientId && item.leasingClientId !== clientId)
+        ) {
           throw new InstanceNotLeasedError({ id, typeName, clientId })
         }
 
@@ -297,6 +302,28 @@ export const repo = defaultOpts.withRequired<
         }
       },
 
+      async suspend(
+        id: InstanceId,
+        reason: string,
+        timeout: number,
+        suspendOpts?: Partial<LeaseUpdateOpts>,
+      ): Promise<void> {
+        const now = Date.now()
+        const leaseExpiresBy = new Date(now + timeout).toISOString()
+
+        return updateLease(
+          id,
+          {
+            UpdateExpression: 'set #version = :newVersion, leaseExpiresBy = :leaseExpiresBy, suspensionReason = :suspensionReason',
+            ExpressionAttributeValues: {
+              ':leaseExpiresBy': leaseExpiresBy,
+              ':suspensionReason': reason,
+            },
+          },
+          { ...suspendOpts, validateLeased: false },
+        )
+      },
+
       async lease(returnTimeout: number): Promise<Lease<T> | null> {
         return lease(returnTimeout)
       },
@@ -321,7 +348,7 @@ export const repo = defaultOpts.withRequired<
             UpdateExpression: 'set #version = :newVersion, leaseExpiresBy = :leaseExpiresBy',
             ExpressionAttributeValues: { ':leaseExpiresBy': leaseExpiresBy },
           },
-          extendOpts,
+          { ...extendOpts, validateLeased: true },
         )
       },
 
@@ -332,10 +359,10 @@ export const repo = defaultOpts.withRequired<
         return updateLease(
           id,
           {
-            UpdateExpression: 'set #version = :newVersion, leaseExpiresBy = :NOT_LEASED remove leasingClientId',
+            UpdateExpression: 'set #version = :newVersion, leaseExpiresBy = :NOT_LEASED remove leasingClientId, supensionReason',
             ExpressionAttributeValues: { ':NOT_LEASED': NOT_LEASED },
           },
-          returnOpts,
+          { ...returnOpts, validateLeased: true },
         )
       },
 
@@ -350,7 +377,7 @@ export const repo = defaultOpts.withRequired<
             id: d.id,
             value: d.value,
             ...isLeased ? {
-              status: 'leased',
+              status: (d.suspensionReason !== undefined ? 'suspended' : 'leased'),
               leaseExpiresBy: new Date(leaseExpiresBy),
               clientId: d.leasingClientId,
             } : {

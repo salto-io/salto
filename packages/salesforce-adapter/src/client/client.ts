@@ -120,9 +120,20 @@ export const realConnection = (
   return connection
 }
 
-export const validateCredentials = async (creds: Credentials): Promise<void> => {
+export class ApiLimitsTooLowError extends Error {}
+
+export const validateCredentials = async (
+  creds: Credentials,
+  minApiRequestsRemaining = 0,
+): Promise<void> => {
   const conn = realConnection(creds.isSandbox, { maxAttempts: 1 })
   await conn.login(creds.username, creds.password + (creds.apiToken ?? ''))
+  const limits = await conn.limits()
+  if (limits.DailyApiRequests.Remaining < minApiRequestsRemaining) {
+    throw new ApiLimitsTooLowError(
+      `Remaining limits: ${limits.DailyApiRequests.Remaining}, needed: ${minApiRequestsRemaining}`
+    )
+  }
 }
 
 const sendChunked = async <TIn, TOut>(input: TIn | TIn[],

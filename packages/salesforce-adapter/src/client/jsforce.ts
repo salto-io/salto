@@ -45,6 +45,14 @@ export interface Global {
   sobjects: DescribeGlobalSObjectResult[]
 }
 
+export type Limit = {
+  Remaining: number
+}
+
+export type Limits = {
+  DailyApiRequests: Limit
+}
+
 export default interface Connection {
   login(user: string, password: string): Promise<unknown>
   metadata: Metadata
@@ -54,4 +62,5 @@ export default interface Connection {
   query(soql: string): Promise<QueryResult<Value>>
   queryMore(locator: string): Promise<QueryResult<Value>>
   destroy(type: string, ids: string | string[]): Promise<(RecordResult | RecordResult[])>
+  limits(): Promise<Limits>
 }

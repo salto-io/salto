@@ -41,6 +41,7 @@ describe('dynamoDB repo', () => {
   })
 
   const timeout = 1000 * 60
+  const suspensionReason = 'it was not being very nice'
 
   describe('repo', () => {
     let repo: Repo
@@ -732,6 +733,172 @@ describe('dynamoDB repo', () => {
       })
     })
 
+    describe('suspend', () => {
+      describe('when the specified id does not exist', () => {
+        const id = 'nosuchid'
+        let result: Promise<unknown>
+        beforeEach(() => {
+          result = pool.suspend(id, suspensionReason, timeout)
+        })
+
+        it(
+          'should throw a InstanceNotFoundError error',
+          () => expect(result).rejects.toThrow(InstanceNotFoundError)
+        )
+
+        it(
+          'should throw an error with the correct message',
+          () => expect(result).rejects.toThrow(
+            new RegExp(`Instance "${id}" of type "${myTypeName}": not found`)
+          )
+        )
+
+        it(
+          'should throw an error with the specified id and typeName',
+          () => expect(result).rejects.toMatchObject({
+            id: 'nosuchid',
+            typeName: myTypeName,
+          })
+        )
+      })
+
+      describe('when the instance exists', () => {
+        let id: InstanceId
+
+        beforeEach(async () => {
+          id = await pool.register(myVal)
+        })
+
+        describe('when the instance is not leased', () => {
+          beforeEach(async () => {
+            await pool.suspend(id, suspensionReason, timeout, { validateClientId: false })
+          })
+
+          it('should make the instance suspended', async () => {
+            const lease = await pool.lease(timeout)
+            expect(lease).toBeNull()
+          })
+        })
+
+        describe('when the instance is leased by another client', () => {
+          let result: Promise<unknown>
+          const CLIENT_ID2 = 'otherClient'
+          let pool2: Pool<MyType>
+
+          beforeEach(async () => {
+            const lease = await pool.lease(0)
+            expect(lease).not.toBeNull()
+            expect(lease?.id).toEqual(id)
+            const repo2 = await makeRepo({ ...repoOpts(), clientId: CLIENT_ID2 })
+            pool2 = await repo2.pool(myTypeName)
+          })
+
+          describe('when validateClientId is the default true', () => {
+            beforeEach(() => {
+              result = pool2.suspend(id, suspensionReason, timeout)
+            })
+
+            it(
+              'should throw a InstanceNotLeasedError error',
+              () => expect(result).rejects.toThrow(InstanceNotLeasedError)
+            )
+
+            it(
+              'should throw an error with the correct message',
+              () => expect(result).rejects.toThrow(
+                new RegExp(
+                  `Instance "${id}" of type "${myTypeName}": not leased by client "${CLIENT_ID2}"`
+                )
+              )
+            )
+
+            it(
+              'should throw an error with the specified id and typeName',
+              () => expect(result).rejects.toMatchObject({
+                id,
+                typeName: myTypeName,
+                clientId: CLIENT_ID2,
+              })
+            )
+          })
+
+          describe('when validateClientId is false', () => {
+            beforeEach(async () => {
+              await pool2.suspend(id, suspensionReason, timeout, { validateClientId: false })
+            })
+
+            it('should make the instance suspended', async () => {
+              const lease = await pool.lease(timeout)
+              expect(lease).toBeNull()
+            })
+          })
+        })
+
+        describe('when the instance is leased', () => {
+          beforeEach(async () => {
+            await pool.lease(timeout)
+            await pool.suspend(id, suspensionReason, timeout)
+          })
+
+          it('should make the instance suspended', async () => {
+            const lease = await pool.lease(timeout)
+            expect(lease).toBeNull()
+          })
+        })
+
+        describe('when there is a race condition', () => {
+          beforeEach(async () => {
+            await pool.lease(timeout)
+          })
+
+          beforeEach(async () => {
+            const original = dynamo.dbDoc.update
+            // simulate another call to update just after the first return call's "get" is
+            // completed, at the "update" call.
+            jest.spyOn(dynamo.dbDoc, 'update').mockImplementationOnce(
+              function mock(
+                this: DynamoDB,
+                ...args: Parameters<typeof original>
+              ) {
+                const promise = async (): Promise<unknown> => {
+                  await pool.return(id)
+                  return original.apply(this, args).promise()
+                }
+                return { promise } as ReturnType<typeof dynamo.dbDoc.update>
+              }
+            )
+          })
+
+          let result: Promise<void>
+
+          beforeEach(() => {
+            result = pool.updateTimeout(id, timeout)
+          })
+
+          it(
+            'should throw a InstanceNotLeasedError',
+            () => expect(result).rejects.toThrow(InstanceNotLeasedError)
+          )
+
+          it(
+            'should throw an error with the correct message',
+            () => expect(result).rejects.toThrow(
+              new RegExp(`Instance "${id}" of type "${myTypeName}": not leased by client "${CLIENT_ID}"`)
+            )
+          )
+
+          it(
+            'should throw an error with the specified id and typeName',
+            () => expect(result).rejects.toMatchObject({
+              id,
+              typeName: myTypeName,
+              clientId: CLIENT_ID,
+            })
+          )
+        })
+      })
+    })
+
     describe('iteration', () => {
       let listResult: ReadonlyArray<LeaseWithStatus<MyType>>
 
@@ -850,6 +1017,31 @@ describe('dynamoDB repo', () => {
         it('should return the instance details', () => {
           expect(details).toMatchObject({
             status: 'leased',
+            id,
+            value: myVal,
+            clientId: CLIENT_ID,
+            leaseExpiresBy: new Date(now + timeout),
+          })
+        })
+      })
+
+      describe('when there is a suspended instance', () => {
+        let id: InstanceId
+        let details: LeaseWithStatus<MyType>
+        const now = Date.now()
+
+        beforeEach(async () => {
+          id = await pool.register(myVal)
+          jest.spyOn(Date, 'now').mockImplementation(() => now)
+          expect(await pool.lease(timeout)).not.toBeNull()
+          await pool.suspend(id, suspensionReason, timeout)
+          listResult = await asyncToArray(pool);
+          [details] = listResult
+        })
+
+        it('should return the instance details', () => {
+          expect(details).toMatchObject({
+            status: 'suspended',
             id,
             value: myVal,
             clientId: CLIENT_ID,

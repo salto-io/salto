@@ -531,9 +531,9 @@ export class Types {
   }
 }
 
-const createInstanceName = (
+export const createInstanceName = (
   name: string
-): string => name.split(' ').join('_')
+): string => name.trim().split(' ').join('_')
 
 /**
  * This method generate (instance) values by iterating hubspot object fields.

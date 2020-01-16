@@ -77,6 +77,7 @@ describe('Salesforce adapter E2E with real account', () => {
   const gvsName = 'TestGlobalValueSet'
   const fetchedRollupSummaryFieldName = 'rollupsummary__c'
   const fetchedGlobalPicklistFieldName = 'gpicklist__c'
+  const fetchedLocationFieldName = 'location__c'
   const accountApiName = 'Account'
 
   beforeAll(async () => {
@@ -128,6 +129,14 @@ describe('Salesforce adapter E2E with real account', () => {
         },
         type: 'Picklist',
       } as MetadataInfo,
+      {
+        fullName: `${accountApiName}.${fetchedLocationFieldName}`,
+        label: 'Test Fetch Location Field',
+        required: false,
+        scale: 10,
+        displayLocationInDecimal: true,
+        type: 'Location',
+      } as MetadataInfo,
       ])
 
       // Add the fields permissions
@@ -139,6 +148,11 @@ describe('Salesforce adapter E2E with real account', () => {
         },
         {
           field: `${accountApiName}.${fetchedGlobalPicklistFieldName}`,
+          editable: true,
+          readable: true,
+        },
+        {
+          field: `${accountApiName}.${fetchedLocationFieldName}`,
           editable: true,
           readable: true,
         },
@@ -2309,6 +2323,14 @@ describe('Salesforce adapter E2E with real account', () => {
             bpCase(gvsName),
           ).createNestedID(constants.INSTANCE_FULL_NAME_FIELD)
         ))
+    })
+
+    it('should fetch Location field', async () => {
+      const account = findElements(result, 'Account')[1] as ObjectType
+      const locationField = account.fields[fetchedLocationFieldName]
+      expect(locationField.annotations[constants.FIELD_ANNOTATIONS.SCALE]).toEqual(10)
+      expect(locationField.annotations[constants.FIELD_ANNOTATIONS.DISPLAY_LOCATION_IN_DECIMAL])
+        .toBe(true)
     })
 
     // Assignment rules are special because they use the Deploy API so they get their own test

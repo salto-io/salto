@@ -410,6 +410,64 @@ describe('transformer', () => {
         expect(fieldElement.type).toEqual(Types.primitiveDataTypes.Number)
       })
     })
+
+    describe('name field transformation', () => {
+      const origSalesforceNameField: SalesforceField = {
+        aggregatable: true,
+        cascadeDelete: false,
+        dependentPicklist: false,
+        externalId: false,
+        htmlFormatted: false,
+        autoNumber: false,
+        byteLength: 363,
+        calculated: false,
+        caseSensitive: false,
+        createable: false,
+        custom: false,
+        defaultedOnCreate: false,
+        deprecatedAndHidden: false,
+        digits: 0,
+        extraTypeInfo: 'personname',
+        filterable: true,
+        groupable: true,
+        idLookup: false,
+        label: 'Full Name',
+        length: 121,
+        name: 'Name',
+        nameField: true,
+        namePointing: false,
+        nillable: false,
+        permissionable: false,
+        polymorphicForeignKey: false,
+        precision: 0,
+        queryByDistance: false,
+        restrictedPicklist: false,
+        scale: 0,
+        searchPrefilterable: false,
+        soapType: 'xsd:string',
+        sortable: true,
+        type: 'string',
+        unique: false,
+        updateable: false,
+      }
+
+      let salesforceNameField: SalesforceField
+      beforeEach(() => {
+        salesforceNameField = _.cloneDeep(origSalesforceNameField)
+      })
+
+      const dummyElem = new ObjectType({
+        elemID: new ElemID('adapter', 'dummy'),
+        annotations: {
+          [API_NAME]: 'Dummy',
+        },
+      })
+
+      it('should fetch name field with the right type', async () => {
+        const fieldElement = getSObjectFieldElement(dummyElem, salesforceNameField, {})
+        expect(fieldElement.type).toEqual(Types.compoundDataTypes.Name)
+      })
+    })
   })
 
   describe('toCustomObject', () => {

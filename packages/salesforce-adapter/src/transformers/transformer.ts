@@ -994,8 +994,8 @@ export const getSObjectFieldElement = (parent: Element, field: Field,
       annotations[FIELD_ANNOTATIONS.LOOKUP_FILTER] = {}
     }
     // Compound fields
-  } else if (field.name === 'Name' && field.label === 'Full Name') {
-    bpFieldType = Types.compoundDataTypes[field.name]
+  } else if (field.nameField) {
+    bpFieldType = Types.compoundDataTypes.Name
   }
   if (!_.isEmpty(bpFieldType.annotationTypes)) {
     // Get the rest of the annotations if their name matches exactly the API response

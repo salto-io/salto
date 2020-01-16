@@ -993,7 +993,7 @@ export const getSObjectFieldElement = (parent: Element, field: Field,
       // will be populated in the lookup_filter filter
       annotations[FIELD_ANNOTATIONS.LOOKUP_FILTER] = {}
     }
-    // Compound fields
+    // Name Field
   } else if (field.nameField) {
     bpFieldType = Types.compoundDataTypes.Name
   }

@@ -22,7 +22,7 @@ const PROPERTY_OPTIONS = 'options'
 const DISPLAYORDER = 'displayOrder'
 const CREATEDAT = 'createdAt'
 
-export const OBJECTS_NAMES = {
+export const OBJECTS_NAMES = { // TODO: Align names
   FORM: 'form',
   MARKETINGEMAIL: 'marketingEmail',
   WORKFLOWS: 'workflows',

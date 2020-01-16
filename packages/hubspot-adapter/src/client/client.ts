@@ -58,17 +58,19 @@ export default class HubspotClient {
   }
 
   private async getAllForms(): Promise<Form[]> {
-    const resp = await this.conn.forms.getAll()
+    const resp = this.conn.forms.getAll()
     await validateResponse(resp)
 
     return resp
   }
 
   private async getAllWorkflows(): Promise<Workflows[]> {
-    const resp = await this.conn.workflows.getAll()
-    await validateResponse(resp)
+    // This is special issue for workflows objects:
+    // Only account with special permission can fetch instances
+    const resp = this.conn.workflows.getAll()
+      .catch(_ => ({ workflows: [] }))
 
-    return resp.workflows
+    return (await resp).workflows
   }
 
   private static async getAllMarketingEmail(): Promise<MarketingEmail[]> {

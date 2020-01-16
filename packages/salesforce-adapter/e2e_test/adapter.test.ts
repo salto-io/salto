@@ -2,6 +2,7 @@ import _ from 'lodash'
 import {
   ObjectType, ElemID, InstanceElement, Field, Value, Element, Values, BuiltinTypes,
   isInstanceElement, ReferenceExpression, CORE_ANNOTATIONS, RESTRICTION_ANNOTATIONS, findElement,
+  findObjectType,
 } from 'adapter-api'
 import { MetadataInfo, PicklistEntry, RetrieveResult } from 'jsforce'
 import { collections } from '@salto/lowerdash'
@@ -28,6 +29,7 @@ import { fromRetrieveResult, toMetadataPackageZip } from '../src/transformers/xm
 import {
   WORKFLOW_ALERTS_FIELD, WORKFLOW_FIELD_UPDATES_FIELD, WORKFLOW_RULES_FIELD, WORKFLOW_TASKS_FIELD,
 } from '../src/filters/workflow'
+import { LAYOUT_TYPE_ID } from '../src/filters/layouts'
 
 const { makeArray } = collections.array
 const {
@@ -3865,6 +3867,221 @@ describe('Salesforce adapter E2E with real account', () => {
         expect((await innerTypesExist()).every(Boolean)).toBeTruthy()
         await adapter.remove(workflowWithInnerTypes)
         expect((await innerTypesExist()).some(Boolean)).toBeFalsy()
+      })
+    })
+
+    describe('layout manipulations', () => {
+      let layout: InstanceElement
+      beforeAll(async () => {
+        const layoutType = findObjectType(result, LAYOUT_TYPE_ID) as ObjectType
+        layout = new InstanceElement('MyLayout', layoutType, {
+          [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead-MyLayout',
+          layoutSections: [
+            {
+              customLabel: false,
+              detailHeading: false,
+              editHeading: true,
+              label: 'Lead Information',
+              layoutColumns: [
+                {
+                  layoutItems: [
+                    {
+                      behavior: 'Required',
+                      field: 'Name',
+                    },
+                    {
+                      behavior: 'Required',
+                      field: 'Company',
+                    },
+                  ],
+                },
+                {
+                  layoutItems: [
+                    {
+                      behavior: 'Edit',
+                      field: 'Email',
+                    },
+                    {
+                      behavior: 'Required',
+                      field: 'Status',
+                    },
+                    {
+                      behavior: 'Edit',
+                      field: 'Rating',
+                    },
+                  ],
+                },
+              ],
+              style: 'TwoColumnsTopToBottom',
+            },
+            {
+              customLabel: false,
+              detailHeading: false,
+              editHeading: true,
+              label: 'Address Information',
+              layoutColumns: [
+                {
+                  layoutItems: [
+                    {
+                      behavior: 'Edit',
+                      field: 'Address',
+                    },
+                  ],
+                },
+              ],
+              style: 'OneColumn',
+            },
+          ],
+          quickActionList: {
+            quickActionListItems: [
+              {
+                quickActionName: 'FeedItem.LinkPost',
+              },
+              {
+                quickActionName: 'FeedItem.PollPost',
+              },
+            ],
+          },
+          relatedContent: {
+            relatedContentItems: [
+              {
+                layoutItem: {
+                  behavior: 'Readonly',
+                  field: 'CampaignId',
+                },
+              },
+              {
+                layoutItem: {
+                  component: 'runtime_sales_social:socialPanel',
+                },
+              },
+            ],
+          },
+          relatedLists: [
+            {
+              fields: [
+                'TASK.STATUS',
+                'ACTIVITY.TASK',
+              ],
+              relatedList: 'RelatedActivityList',
+            },
+            {
+              fields: [
+                'TASK.SUBJECT',
+                'TASK.DUE_DATE',
+              ],
+              relatedList: 'RelatedHistoryList',
+            },
+          ],
+        })
+
+        // make sure we create a new layout and don't use an old one
+        await adapter.remove(layout).catch(() => undefined)
+      })
+
+      describe('create layout', () => {
+        it('should create layout', async () => {
+          layout = (await adapter.add(layout)) as InstanceElement
+          expect(await objectExists('Layout', 'Lead-MyLayout')).toBeTruthy()
+        })
+      })
+
+      describe('update layout', () => {
+        it('should update layout', async () => {
+          const newLayout = layout.clone()
+
+          // edit layout sections
+          newLayout.value.layoutSections[0].style = 'OneColumn'
+          newLayout.value.layoutSections[0].layoutColumns = {
+            layoutItems: [
+              {
+                behavior: 'Required',
+                field: 'Name',
+              },
+              {
+                behavior: 'Edit',
+                field: 'Phone',
+              },
+              {
+                behavior: 'Required',
+                field: 'Company',
+              },
+              {
+                behavior: 'Edit',
+                field: 'Email',
+              },
+              {
+                behavior: 'Required',
+                field: 'Status',
+              },
+            ],
+          }
+          newLayout.value.layoutSections[1].label = 'Updated Label'
+
+          // edit layout quick actions
+          newLayout.value.quickActionList.quickActionListItems = [
+            {
+              quickActionName: 'FeedItem.PollPost',
+            },
+            {
+              quickActionName: 'FeedItem.ContentPost',
+            },
+
+          ]
+
+          // edit layout related lists
+          newLayout.value.relatedLists = [{
+            fields: [
+              'TASK.LAST_UPDATE',
+              'TASK.DUE_DATE',
+            ],
+            relatedList: 'RelatedHistoryList',
+          }]
+
+          layout = (await adapter.update(layout, newLayout,
+            [{ action: 'modify', data: { before: layout, after: newLayout } }])) as InstanceElement
+
+          const layoutInfo = (await client.readMetadata('Layout', 'Lead-MyLayout'))[0]
+          expect(layoutInfo).toBeDefined()
+          const layoutSections = _.get(layoutInfo, 'layoutSections')
+          expect(layoutSections[0].style).toEqual('OneColumn')
+          expect(layoutSections[0].layoutColumns.layoutItems)
+            .toEqual([
+              {
+                behavior: 'Required',
+                field: 'Name',
+              },
+              {
+                behavior: 'Edit',
+                field: 'Phone',
+              },
+              {
+                behavior: 'Required',
+                field: 'Company',
+              },
+              {
+                behavior: 'Edit',
+                field: 'Email',
+              },
+              {
+                behavior: 'Required',
+                field: 'Status',
+              },
+            ])
+          expect(layoutSections[1].label).toEqual('Updated Label')
+          const quickActionItems = _.get(layoutInfo, 'quickActionList').quickActionListItems
+          expect(quickActionItems[0].quickActionName).toEqual('FeedItem.PollPost')
+          expect(quickActionItems[1].quickActionName).toEqual('FeedItem.ContentPost')
+          const relatedLists = _.get(layoutInfo, 'relatedLists')
+          expect(relatedLists.fields).toEqual(['TASK.LAST_UPDATE', 'TASK.DUE_DATE'])
+        })
+      })
+
+      describe('delete layout', () => {
+        it('should delete layout', async () => {
+          await adapter.remove(layout)
+          expect(await objectExists('Layout', 'Lead-MyLayout')).toBeFalsy()
+        })
       })
     })
   })

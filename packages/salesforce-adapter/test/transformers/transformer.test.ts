@@ -1044,11 +1044,14 @@ describe('transformer', () => {
     const objectApiName = 'Object'
     const regValue = 'REG'
     const newValue = 'NEW'
-
+    const elementID = new ElemID('salesforce', 'elememt')
     const element = new ObjectType({
-      elemID: new ElemID('salesforce', 'elememt'),
+      elemID: elementID,
       annotations: {
         [API_NAME]: objectApiName,
+        typeRef: new ReferenceExpression(
+          elementID.createNestedID('annotation', API_NAME), objectApiName
+        )
       },
     })
 
@@ -1069,7 +1072,7 @@ describe('transformer', () => {
         changeToRef: regValue,
       },
       fields: {
-        field: new Field(elemID, 'field', BuiltinTypes.STRING, {
+        field: new Field(elemID, 'field', element, {
           instanceRef,
           objectRef: elementRef,
           valueRef,
@@ -1078,8 +1081,12 @@ describe('transformer', () => {
         }),
       },
     })
-
+    const origCopy = _.cloneDeep(orig)
     const modified = transformReferences(orig)
+    
+    it ('should not modify the original element', () => {
+      expect(orig).toEqual(origCopy)
+    })
 
     it('should transform element ref values', () => {
       expect(modified.annotations.instanceRef).toEqual(instanceFullName)
@@ -1097,6 +1104,7 @@ describe('transformer', () => {
       expect(modified.annotations.changeToRef).toEqual(regValue)
       expect(modified.fields.field.annotations.reg).toEqual(regValue)
       expect(modified.fields.field.annotations.changeToRef).toEqual(regValue)
+      expect(modified.fields.field.type.annotations.typeRef).toEqual(objectApiName)
     })
 
     it('should transform back to orig value', () => {

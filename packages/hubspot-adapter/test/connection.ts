@@ -30,7 +30,7 @@ const mockMadKu: () => Connection = () => ({
   } as Workflow,
   marketingEmail: {
     getAll: jest.fn().mockImplementation((): RequestPromise =>
-      ({ workflows: [] } as unknown as RequestPromise)),
+      ({ objects: [] } as unknown as RequestPromise)),
     create: jest.fn().mockImplementation((): RequestPromise =>
       ({} as unknown as RequestPromise)),
     update: jest.fn().mockImplementation((): RequestPromise =>

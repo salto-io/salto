@@ -9,7 +9,7 @@ import {
   OBJECTS_NAMES,
 } from '../src/constants'
 import {
-  formsMockArray, workflowsMockArray,
+  formsMockArray, marketingEmailMockArray, workflowsMockArray,
 } from './common/mock_elements'
 
 
@@ -63,16 +63,22 @@ describe('Test HubSpot client', () => {
               workflows: workflowsMockArray,
             }) as unknown as RequestPromise
 
+          const getAllMarketingEmailResultMock = (): RequestPromise =>
+            Promise.resolve({
+              objects: marketingEmailMockArray,
+            }) as unknown as RequestPromise
+
           mockGetAllForms = jest.fn().mockImplementation(getAllFormsResultMock)
 
           connection.forms.getAll = mockGetAllForms
           connection.workflows.getAll = getAllWorkflowsResultMock
+          connection.marketingEmail.getAll = getAllMarketingEmailResultMock
         })
 
         it('should success', async () => {
           expect(await client.getAllInstances(OBJECTS_NAMES.FORM)).toHaveLength(2)
           expect(await client.getAllInstances(OBJECTS_NAMES.WORKFLOWS)).toHaveLength(2)
-          expect(await client.getAllInstances(OBJECTS_NAMES.MARKETINGEMAIL)).toHaveLength(0)
+          expect(await client.getAllInstances(OBJECTS_NAMES.MARKETINGEMAIL)).toHaveLength(3)
         })
       })
 

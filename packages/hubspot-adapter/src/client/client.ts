@@ -40,7 +40,7 @@ export default class HubspotClient {
     this.getAllFunctions = {
       form: this.getAllForms,
       workflows: this.getAllWorkflows,
-      marketingEmail: HubspotClient.getAllMarketingEmail,
+      marketingEmail: this.getAllMarketingEmail,
     }
   }
 
@@ -73,8 +73,11 @@ export default class HubspotClient {
     return (await resp).workflows
   }
 
-  private static async getAllMarketingEmail(): Promise<MarketingEmail[]> {
-    return []
+  private async getAllMarketingEmail(): Promise<MarketingEmail[]> {
+    const resp = this.conn.marketingEmail.getAll()
+      .catch(_ => ({ objects: [] }))
+
+    return (await resp).objects
   }
 
 

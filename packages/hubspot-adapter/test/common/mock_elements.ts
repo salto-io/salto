@@ -72,7 +72,7 @@ const firstMarketingEmailMock = {
   ab: true,
   abHoursToWait: 12,
   abVariation: false,
-  abSampleSizeDefault: 'VARIANT',
+  abSampleSizeDefault: null,
   abSamplingDefault: 'MASTER',
   abStatus: 'MASTER',
   abSuccessMetric: 'OPENS_BY_DELIVERED',

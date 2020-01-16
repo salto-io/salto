@@ -3877,126 +3877,124 @@ describe('Salesforce adapter E2E with real account', () => {
         }
         return undefined
       }
+      let layout: InstanceElement
+      beforeAll(async () => {
+        const layoutType = findElements(result, 'Layout')[0] as ObjectType
+        layout = new InstanceElement('MyLayout', layoutType, {
+          [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead-MyLayout',
+          layoutSections: [
+            {
+              customLabel: false,
+              detailHeading: false,
+              editHeading: true,
+              label: 'Lead Information',
+              layoutColumns: [
+                {
+                  layoutItems: [
+                    {
+                      behavior: 'Required',
+                      field: 'Name',
+                    },
+                    {
+                      behavior: 'Required',
+                      field: 'Company',
+                    },
+                  ],
+                },
+                {
+                  layoutItems: [
+                    {
+                      behavior: 'Edit',
+                      field: 'Email',
+                    },
+                    {
+                      behavior: 'Required',
+                      field: 'Status',
+                    },
+                    {
+                      behavior: 'Edit',
+                      field: 'Rating',
+                    },
+                  ],
+                },
+              ],
+              style: 'TwoColumnsTopToBottom',
+            },
+            {
+              customLabel: false,
+              detailHeading: false,
+              editHeading: true,
+              label: 'Address Information',
+              layoutColumns: [
+                {
+                  layoutItems: [
+                    {
+                      behavior: 'Edit',
+                      field: 'Address',
+                    },
+                  ],
+                },
+              ],
+              style: 'OneColumn',
+            },
+          ],
+          quickActionList: {
+            quickActionListItems: [
+              {
+                quickActionName: 'FeedItem.LinkPost',
+              },
+              {
+                quickActionName: 'FeedItem.PollPost',
+              },
+            ],
+          },
+          relatedContent: {
+            relatedContentItems: [
+              {
+                layoutItem: {
+                  behavior: 'Readonly',
+                  field: 'CampaignId',
+                },
+              },
+              {
+                layoutItem: {
+                  component: 'runtime_sales_social:socialPanel',
+                },
+              },
+            ],
+          },
+          relatedLists: [
+            {
+              fields: [
+                'TASK.STATUS',
+                'ACTIVITY.TASK',
+              ],
+              relatedList: 'RelatedActivityList',
+            },
+            {
+              fields: [
+                'TASK.SUBJECT',
+                'TASK.DUE_DATE',
+              ],
+              relatedList: 'RelatedHistoryList',
+            },
+          ],
+        })
+      })
 
       describe('create layout', () => {
         it('should create layout', async () => {
-          const layoutType = findElements(result, 'Layout')[0] as ObjectType
-          const layout = new InstanceElement('MyLayout', layoutType, {
-            [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead-MyLayout',
-            layoutSections: [
-              {
-                customLabel: false,
-                detailHeading: false,
-                editHeading: true,
-                label: 'Lead Information',
-                layoutColumns: [
-                  {
-                    layoutItems: [
-                      {
-                        behavior: 'Required',
-                        field: 'Name',
-                      },
-                      {
-                        behavior: 'Required',
-                        field: 'Company',
-                      },
-                    ],
-                  },
-                  {
-                    layoutItems: [
-                      {
-                        behavior: 'Edit',
-                        field: 'Email',
-                      },
-                      {
-                        behavior: 'Required',
-                        field: 'Status',
-                      },
-                      {
-                        behavior: 'Edit',
-                        field: 'Rating',
-                      },
-                    ],
-                  },
-                ],
-                style: 'TwoColumnsTopToBottom',
-              },
-              {
-                customLabel: false,
-                detailHeading: false,
-                editHeading: true,
-                label: 'Address Information',
-                layoutColumns: [
-                  {
-                    layoutItems: [
-                      {
-                        behavior: 'Edit',
-                        field: 'Address',
-                      },
-                    ],
-                  },
-                ],
-                style: 'OneColumn',
-              },
-            ],
-            quickActionList: {
-              quickActionListItems: [
-                {
-                  quickActionName: 'FeedItem.LinkPost',
-                },
-                {
-                  quickActionName: 'FeedItem.PollPost',
-                },
-              ],
-            },
-            relatedContent: {
-              relatedContentItems: [
-                {
-                  layoutItem: {
-                    behavior: 'Readonly',
-                    field: 'CampaignId',
-                  },
-                },
-                {
-                  layoutItem: {
-                    component: 'runtime_sales_social:socialPanel',
-                  },
-                },
-              ],
-            },
-            relatedLists: [
-              {
-                fields: [
-                  'TASK.STATUS',
-                  'ACTIVITY.TASK',
-                ],
-                relatedList: 'RelatedActivityList',
-              },
-              {
-                fields: [
-                  'TASK.SUBJECT',
-                  'TASK.DUE_DATE',
-                ],
-                relatedList: 'RelatedHistoryList',
-              },
-            ],
-          })
-
           // make sure we create a new layout and don't use an old one
           await adapter.remove(layout).catch(() => undefined)
-          const createdLayout = await adapter.add(layout)
+          layout = (await adapter.add(layout)) as InstanceElement
 
           expect(await objectExists('Layout', 'Lead-MyLayout')).toBeTruthy()
-          // add the created layout to the list of elements to save another call to fetch
-          result.push(createdLayout)
         })
       })
 
       describe('update layout', () => {
         it('should update layout', async () => {
-          const oldLayout = findElements(result, 'Layout', 'MyLayout')[0] as InstanceElement
-          expect(oldLayout).toBeDefined()
-          const newLayout = oldLayout.clone()
+          const newLayout = layout.clone()
 
           // edit layout sections
           newLayout.value.layoutSections[0].style = 'OneColumn'
@@ -4046,8 +4044,8 @@ describe('Salesforce adapter E2E with real account', () => {
             relatedList: 'RelatedHistoryList',
           }]
 
-          await adapter.update(oldLayout, newLayout,
-            [{ action: 'modify', data: { before: oldLayout, after: newLayout } }])
+          layout = (await adapter.update(layout, newLayout,
+            [{ action: 'modify', data: { before: layout, after: newLayout } }])) as InstanceElement
 
           const layoutInfo = await findInstance('Layout', 'Lead-MyLayout')
           expect(layoutInfo).toBeDefined()
@@ -4087,8 +4085,7 @@ describe('Salesforce adapter E2E with real account', () => {
 
       describe('delete layout', () => {
         it('should delete layout', async () => {
-          const oldLayout = findElements(result, 'Layout', 'MyLayout')[0] as InstanceElement
-          await adapter.remove(oldLayout)
+          await adapter.remove(layout)
           expect(await objectExists('Layout', 'Lead-MyLayout')).toBeFalsy()
         })
       })

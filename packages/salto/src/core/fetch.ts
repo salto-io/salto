@@ -279,9 +279,7 @@ export const fetchChanges = async (
     progressEmitter.emit('diffWillBeCalculated', calculateDiffEmitter)
   }
 
-  const notConfig = (elem: Element): boolean => !elem.elemID.isConfig()
-  const isFirstFetch = workspaceElements.filter(notConfig)
-    .concat(stateElements.filter(notConfig)).length === 0
+  const isFirstFetch = workspaceElements.concat(stateElements).length === 0
   const changes = isFirstFetch
     ? serviceElements.map(toAddFetchChange)
     : await calcFetchChanges(serviceElements, processErrorsResult.keptElements, stateElements,

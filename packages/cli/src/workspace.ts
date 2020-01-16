@@ -64,8 +64,7 @@ export const updateWorkspace = async (ws: Workspace, cliOutput: CliOutput,
   if (changes.length > 0) {
     log.info(`going to update workspace with ${changes.length} changes out of ${
       changes.length} changes`)
-    const isEmpty = ws.elements ? !ws.elements.some(elem => !elem.elemID.isConfig()) : false
-    if (!isEmpty) {
+    if (!_.isEmpty(ws.elements.length)) {
       formatDetailedChanges([changes.map(c => c.change)]).split('\n').forEach(s => log.info(s))
     }
 

@@ -1,10 +1,9 @@
 import _ from 'lodash'
 import {
   ElemID, InstanceElement, ObjectType, Field, BuiltinTypes, Element,
-  PrimitiveType, PrimitiveTypes, isInstanceElement, DataModificationResult,
+  PrimitiveType, PrimitiveTypes, DataModificationResult, Adapter,
 } from 'adapter-api'
 import wu from 'wu'
-import mockState from './common/state'
 import { Config } from '../src/workspace/config'
 import { Workspace } from '../src/workspace/workspace'
 import * as api from '../src/api'
@@ -13,53 +12,58 @@ import * as plan from '../src/core/plan'
 import * as fetch from '../src/core/fetch'
 import * as deploy from '../src/core/deploy'
 import * as records from '../src/core/records'
+import * as adapters from '../src/core/adapters/adapters'
 
 import * as mockElements from './common/elements'
 import * as mockPlan from './common/plan'
+import mockState from './common/state'
 
 const SERVICES = ['salesforce']
 
-const mockWorkspace = (elements: Element[] = [], config?: Partial<Config>): Workspace => {
-  const configID = new ElemID(SERVICES[0])
-  const mockConfigType = new ObjectType({
-    elemID: configID,
-    fields: {
-      username: new Field(configID, 'username', BuiltinTypes.STRING),
-      password: new Field(configID, 'password', BuiltinTypes.STRING),
-      token: new Field(configID, 'token', BuiltinTypes.STRING),
-      sandbox: new Field(configID, 'sandbox', BuiltinTypes.BOOLEAN),
-    },
-  })
-  const mockConfigInstance = new InstanceElement(ElemID.CONFIG_NAME, mockConfigType, {
-    username: 'test@test',
-    password: 'test',
-    token: 'test',
-    sandbox: false,
-  })
+const configID = new ElemID(SERVICES[0])
+const mockConfigType = new ObjectType({
+  elemID: configID,
+  fields: {
+    username: new Field(configID, 'username', BuiltinTypes.STRING),
+    password: new Field(configID, 'password', BuiltinTypes.STRING),
+    token: new Field(configID, 'token', BuiltinTypes.STRING),
+    sandbox: new Field(configID, 'sandbox', BuiltinTypes.BOOLEAN),
+  },
+})
+const mockConfigInstance = new InstanceElement(ElemID.CONFIG_NAME, mockConfigType, {
+  username: 'test@test',
+  password: 'test',
+  token: 'test',
+  sandbox: false,
+})
+const mockWorkspace = (elements: Element[] = [], config?: Partial<Config>): Workspace => ({
+  elements,
+  config: config || { stateLocation: '.', services: SERVICES },
+  state: mockState(),
+  resolvePath: _.identity,
+  updateBlueprints: jest.fn(),
+  flush: jest.fn(),
+  credentials: {
+    get: () => jest.fn().mockImplementation(() => Promise.resolve(mockConfigInstance)),
+    set: () => jest.fn().mockImplementation(() => Promise.resolve()),
+  },
+  getWorkspaceErrors: async () => [],
+} as unknown as Workspace)
 
-  const wsElements = elements.concat([mockConfigType, mockConfigInstance])
-
-  return {
-    elements: wsElements,
-    config: config || { stateLocation: '.', services: SERVICES },
-    state: mockState(),
-    resolvePath: _.identity,
-    updateBlueprints: jest.fn(),
-    flush: jest.fn(),
-    configElements: wsElements.filter(e => e.elemID.isConfig()),
-    getWorkspaceErrors: async () => [],
-  } as unknown as Workspace
-}
-
-jest.mock('../src/core/adapters/creators')
+jest.mock('../src/core/adapters/adapters')
 jest.mock('../src/core/fetch')
 jest.mock('../src/core/plan')
 jest.mock('../src/core/deploy')
 jest.mock('../src/core/records')
 describe('api.ts', () => {
+  const initAdapters = adapters.initAdapters as jest.Mock
+  initAdapters.mockReturnValue({
+    [SERVICES[0]]: {} as unknown as Adapter,
+  })
+
   describe('fetch', () => {
     const mockedFetchChanges = fetch.fetchChanges as jest.Mock
-    const objType = new ObjectType({ elemID: new ElemID('salesforce', 'dummy') })
+    const objType = new ObjectType({ elemID: new ElemID(SERVICES[0], 'dummy') })
     const fetchedElements = [
       objType,
       new InstanceElement('instance_1', objType, {}),
@@ -71,7 +75,7 @@ describe('api.ts', () => {
       mergeErrors: [],
     })
 
-    const stateElements = [{ elemID: new ElemID('salesforce', 'test') }]
+    const stateElements = [{ elemID: new ElemID(SERVICES[0], 'test') }]
     const ws = mockWorkspace()
     ws.state.list = jest.fn().mockImplementation(() => Promise.resolve(stateElements))
 
@@ -163,7 +167,7 @@ describe('api.ts', () => {
 
   describe('data migration', () => {
     const ws = mockWorkspace()
-    const testType = new ObjectType({ elemID: new ElemID('salesforce', 'test') })
+    const testType = new ObjectType({ elemID: new ElemID(SERVICES[0], 'test') })
     const mockStateGet = jest.fn().mockImplementation(() => Promise.resolve(testType))
     ws.state.get = mockStateGet
 
@@ -227,31 +231,20 @@ describe('api.ts', () => {
   })
 
   describe('login', () => {
-    const mockedToAddFetchChange = fetch.toAddFetchChange as jest.Mock
-    mockedToAddFetchChange.mockImplementation((elem: Element): fetch.FetchChange => {
-      const change: plan.DetailedChange = { action: 'add', id: elem.elemID, data: { after: elem } }
-      return { change, serviceChange: change }
-    })
-
     const elements: Element[] = [
       new PrimitiveType({
-        elemID: new ElemID('salesforce', 'prim'),
+        elemID: new ElemID(SERVICES[0], 'prim'),
         primitive: PrimitiveTypes.STRING,
       }),
     ]
     const ws = mockWorkspace(elements)
-    const newConf = ws.configElements.filter(isInstanceElement)
-      .map(e => {
-        const clone = e.clone()
-        clone.value.password = 'bla'
-        return clone
-      })
 
     it('should persist a new config', async () => {
-      await api.updateLoginConfig(ws, newConf)
-      expect(mockedToAddFetchChange).toHaveBeenCalledTimes(1)
-      expect(ws.updateBlueprints).toHaveBeenCalled()
-      expect(ws.flush).toHaveBeenCalled()
+      const newConf = mockConfigInstance.clone()
+      newConf.value.password = 'bla'
+      await api.updateLoginConfig(ws, [newConf])
+      expect((ws.credentials.set as jest.Mock).call).toHaveLength(1)
+      expect((ws.flush as jest.Mock).call).toHaveLength(1)
     })
   })
 })

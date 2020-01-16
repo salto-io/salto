@@ -182,7 +182,7 @@ export const elements = (): Element[] => {
 }
 
 export const mockLoadConfig = (workspaceDir: string): Config =>
-  ({ uid: '123', baseDir: workspaceDir, additionalBlueprints: [], services: ['salesforce', 'hubspot'], name: 'mock-ws', localStorage: '', stateLocation: '' })
+  ({ uid: '123', baseDir: workspaceDir, services: ['salesforce', 'hubspot'], name: 'mock-ws', localStorage: '', stateLocation: '' })
 
 export const mockConfigType = (adapterName: string): ObjectType => {
   const configID = new ElemID(adapterName)
@@ -215,8 +215,8 @@ export const detailedChange = (
 }
 
 export const dummyChanges: DetailedChange[] = [
-  detailedChange('add', ['adapter', 'dummy'], undefined, 'asd'),
-  detailedChange('remove', ['adapter', 'other'], 'asd', undefined),
+  detailedChange('add', ['adapter', 'dummy'], undefined, 'after-add-dummy1'),
+  detailedChange('remove', ['adapter', 'dummy2'], 'before-remove-dummy2', undefined),
 ]
 
 export const preview = (): Plan => {

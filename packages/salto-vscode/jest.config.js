@@ -24,5 +24,8 @@ module.exports = deepMerge(
         statements: 90,
       },
     },
+    testEnvironment: process.env.RUN_E2E_TESTS
+    ? 'salesforce-adapter/dist/e2e_test/jest_environment'
+    : undefined,
   }
 )

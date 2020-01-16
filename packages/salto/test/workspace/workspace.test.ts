@@ -8,12 +8,13 @@ import {
 } from 'adapter-api'
 import { Config } from '../../src/workspace/config'
 import {
-  Workspace, Blueprint, ParsedBlueprint, parseBlueprints,
+  Workspace, ParsedBlueprint, parseBlueprints,
 } from '../../src/workspace/workspace'
 import { DetailedChange } from '../../src/core/plan'
 import { rm, mkdirp, writeFile, exists, readTextFile } from '../../src/file'
 import { UnresolvedReferenceValidationError, InvalidValueValidationError } from '../../src/core/validator'
 import * as dump from '../../src/parser/dump'
+import { Blueprint } from '../../src/workspace/blueprint'
 
 describe('Workspace', () => {
   const workspaceFiles = {
@@ -464,7 +465,6 @@ type salesforce_lead {
         name: 'test',
         localStorage: path.join(tmpHome.path, '.salto', 'test'),
         baseDir: getPath('salto'),
-        additionalBlueprints: [getPath('/outside/file.bp')],
         services,
         stateLocation: '/salto/latest_state.bp',
       }
@@ -482,9 +482,6 @@ type salesforce_lead {
       it('should find blueprint files', () => {
         expect(_.keys(workspace.parsedBlueprints)).toContain('file.bp')
         expect(_.keys(workspace.parsedBlueprints)).toContain('subdir/file.bp')
-      })
-      it('should find files that are added explicitly', () => {
-        expect(_.keys(workspace.parsedBlueprints)).toContain('../outside/file.bp')
       })
       it('should not find hidden files and directories', () => {
         expect(_.keys(workspace.parsedBlueprints)).not.toContain('subdir/.hidden.bp')
@@ -521,10 +518,6 @@ type salesforce_lead {
           .map(
             async p => expect(await exists(path.join(workspace.config.baseDir, p))).toBeTruthy()
           ))
-      })
-      it('should save credentials in localstorage', async () => {
-        const filename = path.join(workspace.config.localStorage, configBP.filename)
-        expect(await exists(filename)).toBeTruthy()
       })
     })
 

@@ -1,5 +1,5 @@
 import * as vscode from 'vscode'
-import { loadConfig } from 'salto'
+import { loadConfig, Workspace } from 'salto'
 import { EditorWorkspace } from './salto/workspace'
 import { onTextChangeEvent, onFileChange, onFileDelete, onReportErrorsEvent, onFileOpen } from './events'
 import {
@@ -22,13 +22,9 @@ const onActivate = async (context: vscode.ExtensionContext): Promise<void> => {
   console.log('Workspace init started', new Date())
   const { name, rootPath } = vscode.workspace
   if (name && rootPath) {
-    const settings = vscode.workspace.getConfiguration('salto')
     const diagCollection = vscode.languages.createDiagnosticCollection('salto')
     const config = await loadConfig(rootPath)
-    const workspace = await EditorWorkspace.load(
-      config,
-      settings.additionalBlueprints
-    )
+    const workspace = new EditorWorkspace(await Workspace.load(config))
 
     const completionProvider = vscode.languages.registerCompletionItemProvider(
       { scheme: 'file', pattern: { base: rootPath, pattern: '**/*.bp' } },

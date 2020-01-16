@@ -727,12 +727,12 @@ describe('transformer', () => {
         elemID,
         fields: {
           [fieldName]: new TypeField(
-            addressElemID, fieldName, Types.compoundDataTypes.address
+            addressElemID, fieldName, Types.compoundDataTypes.Address
           ),
         },
       })
       const fields = getCompoundChildFields(testedObjectType)
-      expect(fields).toHaveLength(Object.values(Types.compoundDataTypes.address.fields).length)
+      expect(fields).toHaveLength(Object.values(Types.compoundDataTypes.Address.fields).length)
       const fieldNamesSet = new Set<string>(fields.map(f => f.name))
       Object.values(ADDRESS_FIELDS).forEach(field => {
         expect(fieldNamesSet).toContain(`${testName}${field}`)
@@ -748,12 +748,12 @@ describe('transformer', () => {
         elemID,
         fields: {
           [fieldName]: new TypeField(
-            geoLocationElemID, fieldName, Types.compoundDataTypes.location, annotations
+            geoLocationElemID, fieldName, Types.compoundDataTypes.Location, annotations
           ),
         },
       })
       const fields = getCompoundChildFields(testedObjectType)
-      expect(fields).toHaveLength(Object.values(Types.compoundDataTypes.location.fields).length)
+      expect(fields).toHaveLength(Object.values(Types.compoundDataTypes.Location.fields).length)
       const fieldNamesSet = new Set<string>(fields.map(f => f.name))
       Object.values(GEOLOCATION_FIELDS).forEach(field => {
         const expectedFieldName = `${testName}__${field}`
@@ -774,12 +774,12 @@ describe('transformer', () => {
         elemID,
         fields: {
           [fieldName]: new TypeField(
-            geoLocationElemID, fieldName, Types.compoundDataTypes.location, annotations
+            geoLocationElemID, fieldName, Types.compoundDataTypes.Location, annotations
           ),
         },
       })
       const fields = getCompoundChildFields(testedObjectType)
-      expect(fields).toHaveLength(Object.values(Types.compoundDataTypes.location.fields).length)
+      expect(fields).toHaveLength(Object.values(Types.compoundDataTypes.Location.fields).length)
       const fieldNamesSet = new Set<string>(fields.map(f => f.name))
       Object.values(GEOLOCATION_FIELDS).forEach(field => {
         const expectedFieldName = `${testName}__${field}`
@@ -800,12 +800,12 @@ describe('transformer', () => {
         elemID,
         fields: {
           [fieldName]: new TypeField(
-            nameElemID, fieldName, Types.compoundDataTypes.name, annotations
+            nameElemID, fieldName, Types.compoundDataTypes.Name, annotations
           ),
         },
       })
       const fields = getCompoundChildFields(testedObjectType)
-      expect(fields).toHaveLength(Object.values(Types.compoundDataTypes.name.fields).length)
+      expect(fields).toHaveLength(Object.values(Types.compoundDataTypes.Name.fields).length)
       const fieldNamesSet = new Set<string>(fields.map(f => f.name))
       Object.values(NAME_FIELDS).forEach(field => {
         expect(fieldNamesSet).toContain(field)
@@ -821,7 +821,7 @@ describe('transformer', () => {
         elemID,
         fields: {
           [fieldName]: new TypeField(
-            nameElemID, fieldName, Types.compoundDataTypes.name, annotations
+            nameElemID, fieldName, Types.compoundDataTypes.Name, annotations
           ),
         },
       })

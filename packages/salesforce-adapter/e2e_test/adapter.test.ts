@@ -442,11 +442,11 @@ describe('Salesforce adapter E2E with real account', () => {
         const lead = findElements(result, 'Lead')[0] as ObjectType
 
         // Test few possible types
-        expect(lead.fields.Address.type.elemID).toEqual(Types.compoundDataTypes.address.elemID)
+        expect(lead.fields.Address.type.elemID).toEqual(Types.compoundDataTypes.Address.elemID)
         expect(lead.fields.Description.type.elemID).toEqual(
           Types.primitiveDataTypes.LongTextArea.elemID,
         )
-        expect(lead.fields.Name.type.elemID).toEqual(Types.compoundDataTypes.name.elemID)
+        expect(lead.fields.Name.type.elemID).toEqual(Types.compoundDataTypes.Name.elemID)
         expect(lead.fields.OwnerId.type.elemID).toEqual(Types.primitiveDataTypes.Lookup.elemID)
 
         // Test label
@@ -1670,7 +1670,7 @@ describe('Salesforce adapter E2E with real account', () => {
           Golf: new Field(
             mockElemID,
             'Golf',
-            Types.compoundDataTypes.location,
+            Types.compoundDataTypes.Location,
             {
               [constants.LABEL]: 'Location description label',
               [constants.FIELD_ANNOTATIONS.SCALE]: 2,

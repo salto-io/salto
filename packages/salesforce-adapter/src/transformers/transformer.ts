@@ -591,7 +591,7 @@ export class Types {
 
   // Type mapping for compound fields
   public static compoundDataTypes: Record<string, ObjectType> = {
-    address: new ObjectType({
+    Address: new ObjectType({
       elemID: addressElemID,
       fields: {
         [ADDRESS_FIELDS.CITY]: new TypeField(
@@ -623,7 +623,7 @@ export class Types {
         ...Types.commonAnnotationTypes,
       },
     }),
-    name: new ObjectType({
+    Name: new ObjectType({
       elemID: nameElemID,
       fields: {
         [NAME_FIELDS.FIRST_NAME]: new TypeField(
@@ -640,7 +640,7 @@ export class Types {
         ...Types.commonAnnotationTypes,
       },
     }),
-    location: new ObjectType({
+    Location: new ObjectType({
       elemID: geoLocationElemID,
       fields: {
         [GEOLOCATION_FIELDS.LATITUDE]: new TypeField(
@@ -698,10 +698,6 @@ export class Types {
     return (customObject && this.getElemIdFunc && serviceIds)
       ? (this.getElemIdFunc as ElemIdGetter)(SALESFORCE, serviceIds as ServiceIds, bpCase(name))
       : new ElemID(SALESFORCE, bpCase(name))
-  }
-
-  static getCompound(name: string): Type {
-    return this.compoundDataTypes[name.toLowerCase()]
   }
 
   static getAllFieldTypes(): Type[] {
@@ -998,10 +994,8 @@ export const getSObjectFieldElement = (parent: Element, field: Field,
       annotations[FIELD_ANNOTATIONS.LOOKUP_FILTER] = {}
     }
     // Compound fields
-  } else if (['address', 'location'].includes(field.type)) {
-    bpFieldType = Types.getCompound(field.type)
   } else if (field.name === 'Name' && field.label === 'Full Name') {
-    bpFieldType = Types.getCompound(field.name)
+    bpFieldType = Types.compoundDataTypes[field.name]
   }
   if (!_.isEmpty(bpFieldType.annotationTypes)) {
     // Get the rest of the annotations if their name matches exactly the API response
@@ -1190,13 +1184,13 @@ export const getCompoundChildFields = (objectType: ObjectType): TypeField[] => {
   )
   const handleAddressFields = (object: ObjectType): void => {
     // Find the address fields
-    const addressFields = _.pickBy(object.fields, isFieldType(Types.compoundDataTypes.address))
+    const addressFields = _.pickBy(object.fields, isFieldType(Types.compoundDataTypes.Address))
 
     // For each address field, get its prefix, then find its corresponding child fields by
     // this prefix.
     Object.keys(addressFields).forEach(key => {
       const addressPrefix = key.replace(/Address/, '')
-      Object.values(Types.compoundDataTypes.address.fields).forEach(childField => {
+      Object.values(Types.compoundDataTypes.Address.fields).forEach(childField => {
         const clonedField = childField.clone()
         // Add the child fields to the object type
         const childFieldName = addressPrefix + clonedField.name
@@ -1223,7 +1217,7 @@ export const getCompoundChildFields = (objectType: ObjectType): TypeField[] => {
       return
     }
     // Add the child fields to the object type
-    Object.values(Types.compoundDataTypes.name.fields).forEach(childField => {
+    Object.values(Types.compoundDataTypes.Name.fields).forEach(childField => {
       const clonedField = childField.clone()
       clonedField.annotations = {
         [API_NAME]: [apiName(object), childField.name].join(API_NAME_SEPERATOR),
@@ -1236,14 +1230,14 @@ export const getCompoundChildFields = (objectType: ObjectType): TypeField[] => {
 
   const handleGeolocationFields = (object: ObjectType): void => {
     // Find the  geolocation fields
-    const locationFields = _.pickBy(object.fields, isFieldType(Types.compoundDataTypes.location))
+    const locationFields = _.pickBy(object.fields, isFieldType(Types.compoundDataTypes.Location))
 
     // For each geolocation field, get its name, then find its corresponding child fields by
     // this name.
     Object.keys(locationFields).forEach(key => {
       const isCustomField = key.endsWith(SALESFORCE_CUSTOM_SUFFIX)
       const keyBaseName = isCustomField ? key.slice(0, -SALESFORCE_CUSTOM_SUFFIX.length) : key
-      Object.values(Types.compoundDataTypes.location.fields).forEach(childField => {
+      Object.values(Types.compoundDataTypes.Location.fields).forEach(childField => {
         const clonedField = childField.clone()
         // Add the child fields to the object type
         const childFieldName = `${keyBaseName}__${clonedField.name}`

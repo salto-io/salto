@@ -66,7 +66,7 @@ describe('XML Transformer', () => {
     })
 
     describe('apex class', () => {
-      const apexTypeElemID = new ElemID(SALESFORCE, 'apex_class')
+      const apexTypeElemID = new ElemID(SALESFORCE, 'ApexClass')
       const apiVersion = 'apiVersion'
       const apexClassType = new ObjectType({
         elemID: apexTypeElemID,
@@ -122,7 +122,7 @@ describe('XML Transformer', () => {
     })
 
     describe('email folder', () => {
-      const emailFolderElemID = new ElemID(SALESFORCE, 'email_folder')
+      const emailFolderElemID = new ElemID(SALESFORCE, 'EmailFolder')
       const emailFolderType = new ObjectType({
         elemID: emailFolderElemID,
         annotations: {
@@ -170,7 +170,7 @@ describe('XML Transformer', () => {
 
   describe('toMetadataPackageZip in deletion flow', () => {
     describe('apex class', () => {
-      const apexTypeElemID = new ElemID(SALESFORCE, 'apex_class')
+      const apexTypeElemID = new ElemID(SALESFORCE, 'ApexClass')
       const apiVersion = 'apiVersion'
       const apexClassType = new ObjectType({
         elemID: apexTypeElemID,
@@ -219,7 +219,7 @@ describe('XML Transformer', () => {
     })
 
     describe('email folder', () => {
-      const emailFolderElemID = new ElemID(SALESFORCE, 'email_folder')
+      const emailFolderElemID = new ElemID(SALESFORCE, 'EmailFolder')
       const emailFolderType = new ObjectType({
         elemID: emailFolderElemID,
         annotations: {

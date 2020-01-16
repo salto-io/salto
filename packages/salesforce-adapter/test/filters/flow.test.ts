@@ -1,12 +1,11 @@
 import {
-  ObjectType, ElemID, Field, BuiltinTypes, CORE_ANNOTATIONS, RESTRICTION_ANNOTATIONS,
+  ObjectType, Field, BuiltinTypes, CORE_ANNOTATIONS, RESTRICTION_ANNOTATIONS,
 } from 'adapter-api'
-import filterCreator from '../../src/filters/flow'
-import { SALESFORCE } from '../../src/constants'
+import filterCreator, { FLOW_METADATA_TYPE_ID } from '../../src/filters/flow'
 
 describe('flow filter', () => {
   const filter = filterCreator()
-  const elemID = new ElemID(SALESFORCE, 'flow_metadata_value')
+  const elemID = FLOW_METADATA_TYPE_ID
   const values = ['ObjectType', 'TriggerType', 'ObjectVariable', 'OldObjectVariable',
     'RecursiveCountVariable', 'EventType']
   const mockFlow = new ObjectType({

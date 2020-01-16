@@ -2,6 +2,7 @@ import _ from 'lodash'
 import {
   ObjectType, ElemID, InstanceElement, Field, Value, Element, Values, BuiltinTypes,
   isInstanceElement, ReferenceExpression, CORE_ANNOTATIONS, RESTRICTION_ANNOTATIONS, findElement,
+  findObjectType,
 } from 'adapter-api'
 import { MetadataInfo, PicklistEntry, RetrieveResult } from 'jsforce'
 import { collections } from '@salto/lowerdash'
@@ -28,6 +29,7 @@ import { fromRetrieveResult, toMetadataPackageZip } from '../src/transformers/xm
 import {
   WORKFLOW_ALERTS_FIELD, WORKFLOW_FIELD_UPDATES_FIELD, WORKFLOW_RULES_FIELD, WORKFLOW_TASKS_FIELD,
 } from '../src/filters/workflow'
+import { LAYOUT_TYPE_ID } from '../src/filters/layouts'
 
 const { makeArray } = collections.array
 const {
@@ -3869,17 +3871,9 @@ describe('Salesforce adapter E2E with real account', () => {
     })
 
     describe('layout manipulations', () => {
-      const findInstance = async (type: string, fullName: string):
-        Promise<MetadataInfo | undefined> => {
-        const instanceInfo = (await client.readMetadata(type, fullName))[0]
-        if (instanceInfo && instanceInfo.fullName) {
-          return instanceInfo
-        }
-        return undefined
-      }
       let layout: InstanceElement
       beforeAll(async () => {
-        const layoutType = findElements(result, 'Layout')[0] as ObjectType
+        const layoutType = findObjectType(result, LAYOUT_TYPE_ID) as ObjectType
         layout = new InstanceElement('MyLayout', layoutType, {
           [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead-MyLayout',
           layoutSections: [
@@ -3980,14 +3974,14 @@ describe('Salesforce adapter E2E with real account', () => {
             },
           ],
         })
+
+        // make sure we create a new layout and don't use an old one
+        await adapter.remove(layout).catch(() => undefined)
       })
 
       describe('create layout', () => {
         it('should create layout', async () => {
-          // make sure we create a new layout and don't use an old one
-          await adapter.remove(layout).catch(() => undefined)
           layout = (await adapter.add(layout)) as InstanceElement
-
           expect(await objectExists('Layout', 'Lead-MyLayout')).toBeTruthy()
         })
       })
@@ -4047,7 +4041,7 @@ describe('Salesforce adapter E2E with real account', () => {
           layout = (await adapter.update(layout, newLayout,
             [{ action: 'modify', data: { before: layout, after: newLayout } }])) as InstanceElement
 
-          const layoutInfo = await findInstance('Layout', 'Lead-MyLayout')
+          const layoutInfo = (await client.readMetadata('Layout', 'Lead-MyLayout'))[0]
           expect(layoutInfo).toBeDefined()
           const layoutSections = _.get(layoutInfo, 'layoutSections')
           expect(layoutSections[0].style).toEqual('OneColumn')

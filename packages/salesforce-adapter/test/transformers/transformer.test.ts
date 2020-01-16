@@ -1051,7 +1051,7 @@ describe('transformer', () => {
         [API_NAME]: objectApiName,
         typeRef: new ReferenceExpression(
           elementID.createNestedID('annotation', API_NAME), objectApiName
-        )
+        ),
       },
     })
 
@@ -1083,8 +1083,8 @@ describe('transformer', () => {
     })
     const origCopy = _.cloneDeep(orig)
     const modified = transformReferences(orig)
-    
-    it ('should not modify the original element', () => {
+
+    it('should not modify the original element', () => {
       expect(orig).toEqual(origCopy)
     })
 

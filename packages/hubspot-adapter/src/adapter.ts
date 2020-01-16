@@ -44,7 +44,7 @@ export default class HubspotAdapter {
    */
   public async fetch(): Promise<Element[]> {
     const fieldTypes = Types.getAllFieldTypes()
-    const objects = Types.hubspotObjects
+    const objects = Object.values(Types.hubspotObjects)
     const subTypes = Types.hubspotSubTypes
     const instances = await this.fetchHubInstances(objects)
 
@@ -62,7 +62,7 @@ export default class HubspotAdapter {
   }
 
   private async fetchHubspotInstances(type: ObjectType): Promise<InstanceElement[]> {
-    const instances = await this.client.getAllForms()
+    const instances = await this.client.getAllInstances(type.elemID.name)
     return instances
       .map(i => createHubspotInstanceElement(i, type))
   }

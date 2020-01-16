@@ -4,9 +4,19 @@ import {
 import HubspotAdapter from '../src/adapter'
 
 import mockAdapter from './mock'
+import {
+  formsMockArray, workflowsMockArray, marketingEmailMockArray,
+} from './common/mock_elements'
 import HubspotClient from '../src/client/client'
-import { Form } from '../src/client/types'
-import { Types } from '../src/transformers/transformer'
+import {
+  Form, HubspotMetadata, MarketingEmail, Workflows,
+} from '../src/client/types'
+import {
+  Types,
+} from '../src/transformers/transformer'
+import {
+  OBJECTS_NAMES,
+} from '../src/constants'
 
 
 describe('Hubspot Adapter Operations', () => {
@@ -24,49 +34,37 @@ describe('Hubspot Adapter Operations', () => {
   })
 
   describe('Fetch operation', () => {
-    let mockGetAllForms: jest.Mock
+    let mockGetAllInstances: jest.Mock
 
     beforeEach(async () => {
-      const getAllResult = (): Promise<Form[]> => Promise.resolve(
-        [
-          {
-            guid: '12345',
-            portalId: 123,
-            name: 'formTest1',
-            method: 'POST',
-            cssClass: 'abc',
-            followUpId: 'DEPRECATED',
-            editable: true,
-            cloneable: true,
-            captchaEnabled: false,
-            createdAt: 1500588456053,
-          },
-          {
-            guid: '11111',
-            name: 'formTest1',
-            cssClass: 'abc',
-            editable: true,
-            cloneable: true,
-            captchaEnabled: false,
-            createdAt: 1500588456053,
-          },
-        ] as Form[]
-      )
+      const getAllResult = (type: string): Promise<HubspotMetadata[]> => {
+        if (type === OBJECTS_NAMES.WORKFLOWS) {
+          return workflowsMockArray as unknown as Promise<Workflows[]>
+        }
+        if (type === OBJECTS_NAMES.FORM) {
+          return formsMockArray as Promise<Form[]>
+        }
+        if (type === OBJECTS_NAMES.MARKETINGEMAIL) {
+          return marketingEmailMockArray as unknown as Promise<MarketingEmail[]>
+        }
+        return (
+          [] as unknown as Promise<HubspotMetadata[]>)
+      }
 
-      mockGetAllForms = jest.fn().mockImplementation(getAllResult)
-      client.getAllForms = mockGetAllForms
+      mockGetAllInstances = jest.fn().mockImplementation(getAllResult)
+      client.getAllInstances = mockGetAllInstances
     })
 
     it('should fetch basic', async () => {
       const result = await adapter.fetch()
-      expect(result).toHaveLength(15)
+      expect(result).toHaveLength(23)
     })
   })
 
   describe('Add operation', () => {
     const formInstance = new InstanceElement(
       'formInstance',
-      Types.hubspotObjects[0],
+      Types.hubspotObjects.form,
       {
         name: 'formInstanceTest',
         method: 'POST',
@@ -175,7 +173,7 @@ describe('Hubspot Adapter Operations', () => {
   describe('Remove operation', () => {
     const formInstance = new InstanceElement(
       'formInstance',
-      Types.hubspotObjects[0],
+      Types.hubspotObjects.form,
       {
         name: 'formInstanceTest',
         guid: 'guid',
@@ -219,7 +217,7 @@ describe('Hubspot Adapter Operations', () => {
 
     const beforeUpdateInstance = new InstanceElement(
       'formInstance',
-      Types.hubspotObjects[0],
+      Types.hubspotObjects.form,
       {
         name: 'beforeUpdateInstance',
         guid: 'guid',
@@ -255,7 +253,7 @@ describe('Hubspot Adapter Operations', () => {
 
     const afterUpdateInstance = new InstanceElement(
       'formInstance',
-      Types.hubspotObjects[0],
+      Types.hubspotObjects.form,
       {
         name: 'afterUpdateInstance',
         guid: 'guid',

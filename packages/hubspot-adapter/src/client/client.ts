@@ -3,7 +3,7 @@ import {
   RequestPromise,
 } from 'requestretry'
 import {
-  Form,
+  Form, HubspotMetadata, MarketingEmail, Workflows,
 } from './types'
 import Connection from './madku'
 
@@ -17,8 +17,18 @@ export type HubspotClientOpts = {
   connection?: Connection
 }
 
+const validateResponse = async (
+  response: RequestPromise
+): Promise<void> => {
+  const resp = await response
+  if (resp.status) {
+    throw new Error(resp.message)
+  }
+}
+
 export default class HubspotClient {
   private conn: Connection
+  private readonly getAllFunctions: Record<string, () => Promise<HubspotMetadata[]>>
 
   constructor(
     { credentials, connection }: HubspotClientOpts
@@ -26,36 +36,57 @@ export default class HubspotClient {
     const apiKeyOptions: ApiOptions = { apiKey: credentials.apiKey }
     this.conn = connection
       || new Hubspot(apiKeyOptions)
+
+    this.getAllFunctions = {
+      form: this.getAllForms,
+      workflows: this.getAllWorkflows,
+      marketingEmail: HubspotClient.getAllMarketingEmail,
+    }
   }
 
   getAllContacts(): RequestPromise {
     return this.conn.contacts.get()
   }
 
-  async getAllForms(): Promise<Form[]> {
-    const resp = await this.conn.forms.getAll()
-
-    if (resp.status) {
-      throw new Error(resp.message)
+  async getAllInstances(typeName: string): Promise<HubspotMetadata[]> {
+    const getAllFunction = this.getAllFunctions[typeName]
+    if (getAllFunction) {
+      return getAllFunction.apply(this)
     }
 
+    throw new Error(`Unknown HubSpot type: ${typeName}.`)
+  }
+
+  private async getAllForms(): Promise<Form[]> {
+    const resp = this.conn.forms.getAll()
+    await validateResponse(resp)
+
     return resp
+  }
+
+  private async getAllWorkflows(): Promise<Workflows[]> {
+    // This is special issue for workflows objects:
+    // Only account with special permission can fetch instances
+    const resp = this.conn.workflows.getAll()
+      .catch(_ => ({ workflows: [] }))
+
+    return (await resp).workflows
+  }
+
+  private static async getAllMarketingEmail(): Promise<MarketingEmail[]> {
+    return []
   }
 
 
   async createForm(f: Form): Promise<Form> {
     const resp = await this.conn.forms.create(f)
-    if (resp.status) {
-      throw new Error(resp.message)
-    }
+    await validateResponse(resp)
     return resp
   }
 
   async updateForm(f: Form): Promise<Form> {
     const resp = await this.conn.forms.update(f.guid, f)
-    if (resp.status) {
-      throw new Error(resp.message)
-    }
+    await validateResponse(resp)
     return resp
   }
 

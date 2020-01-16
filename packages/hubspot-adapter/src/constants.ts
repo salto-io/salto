@@ -2,9 +2,14 @@ export const HUBSPOT = 'hubspot'
 
 export const OBJECTS_NAMES = {
   FORM: 'form',
+  WORKFLOWS: 'workflows',
+  MARKETINGEMAIL: 'marketingEmail',
+
+  // subtypes
   PROPERTYGROUP: 'PropertyGroup',
   PROPERTY: 'Property',
   OPTIONS: 'options',
+  CONTACTLISTIDS: 'contactListIds',
 }
 
 // fields types
@@ -67,4 +72,33 @@ export const OPTIONS_FIELDS = {
   HIDDEN: 'hidden',
   ISSMARTFIELD: 'isSmartField',
   DISPLAYORDER: 'displayOrder',
+}
+
+export const WORKFLOWS_FIELDS = {
+  ID: 'id',
+  NAME: 'name',
+  TYPE: 'type',
+  ENABLED: 'enabled',
+  INSERTEDAT: 'insertedAt',
+  UPDATEDAT: 'updatedAt',
+  PERSONTALIDS: 'personaTagIds',
+  CONTACTLISTIDS: 'contactListIds',
+}
+
+export const CONTACTLISTIDS_FIELDS = {
+  ENROLLED: 'enrolled',
+  ACTIVE: 'active',
+  COMPLETED: 'completed',
+  SUCCEEDED: 'succeeded',
+}
+
+export const MARKETINGEMAIL_FIELDS = {
+  ID: 'id',
+  NAME: 'name',
+  AB: 'ab',
+  ABHOURSTOWAIT: 'abHoursToWait',
+  ABVARIATION: 'abVariation',
+  ABSAMPLESIZEDEFAULT: 'abSampleSizeDefault',
+  ABSAMPLINGDEFAULT: 'abSamplingDefault',
+  ABSTATUS: 'abStatus',
 }

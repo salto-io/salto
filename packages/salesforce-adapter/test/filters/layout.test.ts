@@ -30,7 +30,7 @@ describe('Test layout filter', () => {
           elemID: LAYOUT_TYPE_ID,
         }),
         { [constants.INSTANCE_FULL_NAME_FIELD]: fullName },
-        ['records', 'layout', bpCase(fullName)]
+        [constants.RECORDS_PATH, 'layout', bpCase(fullName)]
       )
       testLayout.value[constants.INSTANCE_FULL_NAME_FIELD] = `${apiName}-Test layout`
       const elements = [testSObj, testLayout]
@@ -39,7 +39,7 @@ describe('Test layout filter', () => {
 
       const instance = elements[1] as InstanceElement
       expect(id(instance)).toBe('salesforce.layout.instance.test')
-      expect(instance.path?.join()).toBe('records,layout,test')
+      expect(instance.path).toEqual([constants.RECORDS_PATH, 'layout', 'test'])
 
       const sobject = elements[0] as ObjectType
       expect((sobject.annotations[LAYOUT_ANNOTATION][0] as ReferenceExpression).traversalParts)

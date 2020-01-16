@@ -9,10 +9,24 @@ import {
   getValueTypeFieldElement, getCompoundChildFields, createMetadataTypeElements,
 } from '../../src/transformers/transformer'
 import {
-  FIELD_ANNOTATIONS, FIELD_TYPE_NAMES, LABEL, ADDRESS_FIELDS,
-  SALESFORCE, GEOLOCATION_FIELDS, NAME_FIELDS, API_NAME, COMPOUND_FIELD_TYPE_NAMES,
-  FIELD_LEVEL_SECURITY_ANNOTATION, FIELD_LEVEL_SECURITY_FIELDS, FIELD_DEPENDENCY_FIELDS,
-  VALUE_SETTINGS_FIELDS, FILTER_ITEM_FIELDS, METADATA_TYPE, CUSTOM_OBJECT, VALUE_SET_FIELDS,
+  FIELD_ANNOTATIONS,
+  FIELD_TYPE_NAMES,
+  LABEL,
+  ADDRESS_FIELDS,
+  SALESFORCE,
+  GEOLOCATION_FIELDS,
+  NAME_FIELDS,
+  API_NAME,
+  COMPOUND_FIELD_TYPE_NAMES,
+  FIELD_LEVEL_SECURITY_ANNOTATION,
+  FIELD_LEVEL_SECURITY_FIELDS,
+  FIELD_DEPENDENCY_FIELDS,
+  VALUE_SETTINGS_FIELDS,
+  FILTER_ITEM_FIELDS,
+  METADATA_TYPE,
+  CUSTOM_OBJECT,
+  VALUE_SET_FIELDS,
+  SUBTYPES_PATH,
 } from '../../src/constants'
 import { CustomField, FilterItem, CustomObject } from '../../src/client/types'
 import SalesforceClient from '../../src/client/client'
@@ -887,7 +901,7 @@ describe('transformer', () => {
         new Set(['BaseType']),
         client,
       )
-      expect(element.path).not.toContain('subtypes')
+      expect(element.path).not.toContain(SUBTYPES_PATH)
     })
 
     it('should create a type which is not a base element as subtype', async () => {
@@ -898,7 +912,7 @@ describe('transformer', () => {
         new Set(),
         client,
       )
-      expect(element.path).toContain('subtypes')
+      expect(element.path).toContain(SUBTYPES_PATH)
     })
 
     it('should not create a field which is a base element as subtype', async () => {
@@ -912,8 +926,8 @@ describe('transformer', () => {
       )
       expect(elements).toHaveLength(2)
       const [element, fieldType] = elements
-      expect(element.path).not.toContain('subtypes')
-      expect(fieldType.path).not.toContain('subtypes')
+      expect(element.path).not.toContain(SUBTYPES_PATH)
+      expect(fieldType.path).not.toContain(SUBTYPES_PATH)
       expect(client.describeMetadataType).toHaveBeenCalledTimes(0)
     })
 
@@ -935,10 +949,10 @@ describe('transformer', () => {
       )
       expect(elements).toHaveLength(3)
       const [element, fieldType, nestedFieldType] = elements
-      expect(element.path).not.toContain('subtypes')
-      expect(fieldType.path).toContain('subtypes')
+      expect(element.path).not.toContain(SUBTYPES_PATH)
+      expect(fieldType.path).toContain(SUBTYPES_PATH)
       expect(client.describeMetadataType).toHaveBeenCalledTimes(1)
-      expect(nestedFieldType.path).toContain('subtypes')
+      expect(nestedFieldType.path).toContain(SUBTYPES_PATH)
       expect(nestedFieldType.fields.inner.type).toEqual(BuiltinTypes.STRING)
     })
 
@@ -960,9 +974,9 @@ describe('transformer', () => {
       )
       expect(elements).toHaveLength(3)
       const [element, fieldType, nestedFieldType] = elements
-      expect(element.path).not.toContain('subtypes')
-      expect(fieldType.path).not.toContain('subtypes')
-      expect(nestedFieldType.path).toContain('subtypes')
+      expect(element.path).not.toContain(SUBTYPES_PATH)
+      expect(fieldType.path).not.toContain(SUBTYPES_PATH)
+      expect(nestedFieldType.path).toContain(SUBTYPES_PATH)
       expect(client.describeMetadataType).toHaveBeenCalledTimes(1)
     })
 
@@ -977,8 +991,8 @@ describe('transformer', () => {
       )
       expect(elements).toHaveLength(2)
       const [element, fieldType] = elements
-      expect(element.path).not.toContain('subtypes')
-      expect(fieldType.path).not.toContain('subtypes')
+      expect(element.path).not.toContain(SUBTYPES_PATH)
+      expect(fieldType.path).not.toContain(SUBTYPES_PATH)
       expect(client.describeMetadataType).toHaveBeenCalledTimes(1)
     })
 
@@ -1006,7 +1020,7 @@ describe('transformer', () => {
         client,
       )
       expect(elements).toHaveLength(1)
-      expect(elements[0].path).not.toContain('subtypes')
+      expect(elements[0].path).not.toContain(SUBTYPES_PATH)
       expect(client.describeMetadataType).toHaveBeenCalledTimes(0)
     })
 
@@ -1031,7 +1045,7 @@ describe('transformer', () => {
         client,
       )
       expect(elements).toHaveLength(1)
-      expect(elements[0].path).not.toContain('subtypes')
+      expect(elements[0].path).not.toContain(SUBTYPES_PATH)
       expect(client.describeMetadataType).toHaveBeenCalledTimes(0)
     })
   })

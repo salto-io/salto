@@ -13,6 +13,15 @@ export interface Workflow {
   getAll(opts?: {}): RequestPromise
   enroll(workflowId: number, email: string): RequestPromise
   unenroll(workflowId: number, email: string): RequestPromise
+  create(data: {}): RequestPromise
+  delete(workflowId: string): RequestPromise
+}
+
+export interface MarketingEmail {
+  getAll(opts?: {}): RequestPromise
+  create(data: {}): RequestPromise
+  update(id: string, data: {}): RequestPromise
+  delete(id: string): RequestPromise
 }
 
 export interface Contact {
@@ -23,5 +32,6 @@ export interface Contact {
 export default interface Connection {
   forms: Form
   workflows: Workflow
+  marketingEmail: MarketingEmail
   contacts: Contact
 }

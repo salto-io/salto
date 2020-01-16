@@ -424,7 +424,7 @@ export class Types {
           },
         ),
         [MARKETINGEMAIL_FIELDS.AB]: new TypeField(
-          marketingEmailElemID, MARKETINGEMAIL_FIELDS.AB, BuiltinTypes.STRING, {
+          marketingEmailElemID, MARKETINGEMAIL_FIELDS.AB, BuiltinTypes.BOOLEAN, {
             name: MARKETINGEMAIL_FIELDS.AB,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,

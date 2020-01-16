@@ -1,31 +1,31 @@
 import wu from 'wu'
 import {
   ObjectType, InstanceElement, Element, DataModificationResult,
-  ChangeValidator, ElemID, ActionName,
+  ChangeValidator, ElemID, ActionName, Adapter, ElemIdGetter,
 } from 'adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto/logging'
 import _ from 'lodash'
+import { promises } from '@salto/lowerdash'
 import {
   deployActions, ItemStatus, DeployError,
 } from './core/deploy'
 import {
   getInstancesOfType, importInstancesOfType, deleteInstancesOfType,
 } from './core/records'
-import { initAdapters, getAdaptersLoginStatus, LoginStatus } from './core/adapters/adapters'
-import { addServiceToConfig } from './workspace/config'
+import { initAdapters, getAdaptersLoginConf } from './core/adapters/adapters'
+import { addServiceToConfig, loadConfig } from './workspace/config'
 import adapterCreators from './core/adapters/creators'
-import {
-  getPlan, Plan, PlanItem, DetailedChange,
-} from './core/plan'
+import { getPlan, Plan, PlanItem } from './core/plan'
 import { findElement, SearchResult } from './core/search'
 import {
   fetchChanges, FetchChange, getDetailedChanges, createElemIdGetter, toChangesWithPath,
-  MergeErrorWithElements, FatalFetchMergeError, FetchProgressEvents, toAddFetchChange,
+  MergeErrorWithElements, FatalFetchMergeError, FetchProgressEvents,
 } from './core/fetch'
-import { Workspace, CREDS_DIR } from './workspace/workspace'
+import { Workspace } from './workspace/workspace'
+import Credentials from './workspace/credentials'
 
-export { ItemStatus, LoginStatus }
+export { ItemStatus }
 
 const log = logger(module)
 
@@ -33,21 +33,11 @@ export const updateLoginConfig = async (
   workspace: Workspace,
   newConfigs: Readonly<InstanceElement[]>
 ): Promise<void> => {
-  const configToChange = (config: InstanceElement): DetailedChange => {
-    config.path = [CREDS_DIR, config.elemID.adapter]
-    return toAddFetchChange(config).change
-  }
   if (newConfigs.length > 0) {
-    await workspace.updateBlueprints(...newConfigs.map(configToChange))
-    const criticalErrors = (await workspace.getWorkspaceErrors())
-      .filter(e => e.severity === 'Error')
-    if (criticalErrors.length > 0) {
-      log.warn('can not persist new configs due to critical workspace errors.')
-    } else {
-      await workspace.flush()
-      const newAdapters = newConfigs.map(config => config.elemID.adapter)
-      log.debug(`persisted new configs for adapers: ${newAdapters.join(',')}`)
-    }
+    await Promise.all(newConfigs
+      .map(config => workspace.credentials.set(config.elemID.adapter, config)))
+    const newAdapters = newConfigs.map(config => config.elemID.adapter)
+    log.debug(`persisted new configs for adapers: ${newAdapters.join(',')}`)
   }
 }
 
@@ -72,6 +62,17 @@ export const preview = async (
   getChangeValidators()
 )
 
+const getAdapters = async (
+  credentials: Credentials,
+  adapters: string[],
+  elemIdGetter?: ElemIdGetter,
+): Promise<Record<string, Adapter>> => {
+  const adaptersCredentials = _.fromPairs(await Promise.all(adapters.map(
+    async adapter => ([adapter, await credentials.get(adapter)])
+  )))
+  return initAdapters(adaptersCredentials, elemIdGetter)
+}
+
 export interface DeployResult {
   success: boolean
   errors: DeployError[]
@@ -91,7 +92,7 @@ export const deploy = async (
     getChangeValidators()
   )
   if (force || await shouldDeploy(actionPlan)) {
-    const adapters = await initAdapters(workspace.configElements, services)
+    const adapters = await getAdapters(workspace.credentials, services)
 
     const postDeploy = async (action: ActionName, element: Element): Promise<void> =>
       ((action === 'remove')
@@ -157,8 +158,8 @@ export const fetch: fetchFunc = async (
   const filteredStateElements = filterElementsByServices(await workspace.state.getAll(),
     services)
 
-  const adapters = await initAdapters(
-    workspace.configElements,
+  const adapters = await getAdapters(
+    workspace.credentials,
     services,
     createElemIdGetter(filteredStateElements)
   )
@@ -221,7 +222,7 @@ export const exportToCsv = async (
   workspace: Workspace,
 ): Promise<DataModificationResult> => {
   const type = await getTypeForDataMigration(workspace, typeId)
-  const adapters = await initAdapters(workspace.configElements, [type.elemID.adapter])
+  const adapters = await getAdapters(workspace.credentials, [type.elemID.adapter])
   return getInstancesOfType(type as ObjectType, adapters, outPath)
 }
 
@@ -231,7 +232,7 @@ export const importFromCsvFile = async (
   workspace: Workspace,
 ): Promise<DataModificationResult> => {
   const type = await getTypeForDataMigration(workspace, typeId)
-  const adapters = await initAdapters(workspace.configElements, [type.elemID.adapter])
+  const adapters = await getAdapters(workspace.credentials, [type.elemID.adapter])
   return importInstancesOfType(type as ObjectType, inputPath, adapters)
 }
 
@@ -241,7 +242,7 @@ export const deleteFromCsvFile = async (
   workspace: Workspace,
 ): Promise<DataModificationResult> => {
   const type = await getTypeForDataMigration(workspace, typeId)
-  const adapters = await initAdapters(workspace.configElements, [type.elemID.adapter])
+  const adapters = await getAdapters(workspace.credentials, [type.elemID.adapter])
   return deleteInstancesOfType(type as ObjectType, inputPath, adapters)
 }
 
@@ -253,22 +254,27 @@ export const init = async (workspaceName?: string): Promise<Workspace> => {
 
 export const addAdapter = async (
   workspaceDir: string,
-  workspace: Workspace,
   adapterName: string
 ): Promise<ObjectType> => {
-  const adapterLoginStatus = (await getAdaptersLoginStatus(
-    workspace.configElements,
-    [adapterName]
-  ))[adapterName]
-  if (!adapterLoginStatus) {
+  const adapterConfig = getAdaptersLoginConf([adapterName])[adapterName]
+  if (!adapterConfig) {
     throw new Error('No adapter available for this service')
   }
-  await addServiceToConfig(workspaceDir, adapterName)
-  return adapterLoginStatus.configType
+  await addServiceToConfig(await loadConfig(workspaceDir), adapterName)
+  return adapterConfig
 }
 
+export type LoginStatus = { configType: ObjectType; isLoggedIn: boolean }
 export const getLoginStatuses = async (
   workspace: Workspace,
   adapterNames = workspace.config.services,
-): Promise<Record<string, LoginStatus>> =>
-  getAdaptersLoginStatus(workspace.configElements, adapterNames)
+): Promise<Record<string, LoginStatus>> => {
+  const logins = _.mapValues(getAdaptersLoginConf(adapterNames),
+    async (config, adapter) =>
+      ({
+        configType: config,
+        isLoggedIn: !!await workspace.credentials.get(adapter),
+      }))
+
+  return promises.object.resolveValues(logins)
+}

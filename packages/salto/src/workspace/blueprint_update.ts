@@ -5,10 +5,9 @@ import { AdditionDiff } from '@salto/dag'
 import { DetailedChange } from '../core/plan'
 import { SourceRange } from '../parser/parse'
 import { dump as saltoDump } from '../parser/dump'
+import { BP_EXTENSION } from './blueprint'
 
 type DetailedChangeWithSource = DetailedChange & { location: SourceRange }
-
-export const BP_EXTENSION = '.bp'
 
 const createFileNameFromPath = (pathParts?: string[]): string =>
   (pathParts

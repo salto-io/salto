@@ -45,16 +45,6 @@ describe('fetch', () => {
       ext: new Field(newTypeID, 'ext', BuiltinTypes.STRING),
     },
   })
-  const configID = new ElemID('conf')
-  const configType = new ObjectType({
-    elemID: configID,
-    fields: {
-      username: new Field(configID, 'username', BuiltinTypes.STRING),
-    },
-    annotationTypes: {},
-    annotations: {},
-  })
-  const config = new InstanceElement(ElemID.CONFIG_NAME, configType, { username: 'bla' })
 
   beforeEach(() => jest.spyOn(merger, 'mergeElements').mockRestore())
 
@@ -492,8 +482,8 @@ describe('fetch', () => {
         )
         const result = await fetchChanges(
           mockAdapters as unknown as Record<string, Adapter>,
-          [configType, config],
-          [configType, config],
+          [],
+          [],
         )
         changes = [...result.changes]
       })

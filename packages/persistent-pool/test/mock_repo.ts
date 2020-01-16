@@ -24,6 +24,7 @@ export const createMockPool = <T>(): MockObj<Pool<T>> => ({
   [Symbol.asyncIterator]: jest.fn<AsyncIterator<LeaseWithStatus<T>>, []>(),
   register: mockPoolFunc<T, 'register'>(),
   unregister: mockPoolFunc<T, 'unregister'>(),
+  suspend: mockPoolFunc<T, 'suspend'>(),
   lease: mockPoolFunc<T, 'lease'>(),
   waitForLease: mockPoolFunc<T, 'waitForLease'>(),
   updateTimeout: mockPoolFunc<T, 'updateTimeout'>(),

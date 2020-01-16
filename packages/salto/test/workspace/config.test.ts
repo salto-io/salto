@@ -32,7 +32,6 @@ describe('load proper configuration', () => {
         baseDir: '/workspace',
         stateLocation: '/states/test.bpc',
         services: [],
-        additionalBlueprints: ['/moreBP/test.bp'],
         uid: 'uid',
       }
     )
@@ -46,7 +45,6 @@ describe('load proper configuration', () => {
         baseDir: defaultsWorkspaceDir,
         stateLocation: path.join(defaultsWorkspaceDir, 'salto.config', 'state.bpc'),
         services: [],
-        additionalBlueprints: [],
         uid: defaultUUID,
       }
     )
@@ -61,7 +59,6 @@ describe('load proper configuration', () => {
         localStorage: path.join(homeVar, defaultLocalStorageName),
         baseDir: defaultsWorkspaceDir,
         stateLocation: path.join(defaultsWorkspaceDir, 'salto.config', 'state.bpc'),
-        additionalBlueprints: [],
         services: [],
         uid: defaultUUID,
       }

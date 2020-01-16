@@ -24,7 +24,7 @@ const apiNameAnno = (
   field: string
 ): Record<string, string> => ({ [API_NAME]: [obj, field].join(API_NAME_SEPERATOR) })
 
-describe('commands e2e', () => {
+describe('cli e2e', () => {
   jest.setTimeout(15 * 60 * 1000)
 
   beforeAll(() => {
@@ -70,7 +70,7 @@ describe('commands e2e', () => {
     newInstanceFullName = `NewInstanceName${randomString}`
     newObjectElemName = NEW_OBJECT_BASE_ELEM_NAME + randomString
     newObjectApiName = `NewObjectName${randomString}${SALESFORCE_CUSTOM_SUFFIX}`
-    tmpBP = `${fetchOutputDir}/salesforce/objects/custom/${newObjectElemName}.bp`
+    tmpBP = `${fetchOutputDir}/salesforce/Objects/custom/${newObjectElemName}.bp`
 
     process.env[SALTO_HOME_VAR] = homePath
     client = new SalesforceClient({ credentials: salesforceTestHelpers().credentials })

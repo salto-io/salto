@@ -51,13 +51,6 @@ export const saltoConfigType = new ObjectType({
       {},
       true
     ),
-    additionalBlueprints: new Field(
-      saltoConfigElemID,
-      'additional_blueprints',
-      BuiltinTypes.STRING,
-      {},
-      true
-    ),
   },
   annotationTypes: {},
   annotations: {},
@@ -70,7 +63,6 @@ export interface Config {
   localStorage: string
   name: string
   services: string[]
-  additionalBlueprints?: string[]
 }
 
 const createDefaultConfig = (
@@ -85,7 +77,6 @@ const createDefaultConfig = (
     uid,
     baseDir,
     stateLocation: path.join(baseDir, CONFIG_DIR_NAME, 'state.bpc'),
-    additionalBlueprints: [],
     services: [],
     localStorage: path.join(saltoHome, `${name}-${uid}`),
     name,
@@ -104,8 +95,6 @@ export const completeConfig = (baseDir: string, config: Partial<Config>): Config
   return {
     stateLocation: resolvePath(baseDir, fullConfig.stateLocation),
     localStorage: resolvePath(baseDir, fullConfig.localStorage),
-    additionalBlueprints: (fullConfig.additionalBlueprints || [])
-      .map(bp => resolvePath(baseDir, bp)),
     ...fullConfig,
   }
 }
@@ -149,30 +138,20 @@ const baseDirFromLookup = async (lookupDir: string): Promise<string> => {
   return baseDir
 }
 
-const getConfigData = async (baseDir: string): Promise<Partial<Config>> => {
-  const configPath = getConfigPath(baseDir)
-  return parseConfig(await readFile(configPath))
-}
-
 export const loadConfig = async (lookupDir: string): Promise<Config> => {
   const baseDir = await baseDirFromLookup(lookupDir)
-  const configData = await getConfigData(baseDir)
-  const config = completeConfig(baseDir, configData)
-  log.debug(`loaded config ${JSON.stringify(config)}`)
-  return config
+  const config = parseConfig(await readFile(getConfigPath(baseDir)))
+  log.debug(`loaded raw config ${JSON.stringify(config)}`)
+  return completeConfig(baseDir, config)
 }
 
-export const addServiceToConfig = async (lookupDir: string, service: string): Promise<void> => {
-  const baseDir = await baseDirFromLookup(lookupDir)
-  const currentConfig = await getConfigData(baseDir)
+export const addServiceToConfig = async (currentConfig: Config, service: string
+): Promise<void> => {
   const currentServices = currentConfig.services ? currentConfig.services : []
   if (currentServices.includes(service)) {
     throw new ServiceDuplicationError(service)
   }
-  currentServices.push(service)
-  const updatedConfig = {
-    ...currentConfig,
-    services: currentServices,
-  }
-  dumpConfig(baseDir, updatedConfig)
+  const config = parseConfig(await readFile(getConfigPath(currentConfig.baseDir)))
+  config.services = [...currentServices, service]
+  dumpConfig(currentConfig.baseDir, config)
 }

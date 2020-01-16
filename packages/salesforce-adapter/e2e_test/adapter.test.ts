@@ -706,7 +706,8 @@ describe('Salesforce adapter E2E with real account', () => {
       it('should set workflow instance path correctly', async () => {
         const leadWorkflow = findElements(result, constants.WORKFLOW_METADATA_TYPE, 'Lead')[0] as InstanceElement
         expect(leadWorkflow.path)
-          .toEqual([constants.SALESFORCE, 'records', 'WorkflowRules', 'LeadWorkflowRules'])
+          .toEqual([constants.SALESFORCE, constants.RECORDS_PATH, 'WorkflowRules',
+            'LeadWorkflowRules'])
       })
     })
   })
@@ -2390,7 +2391,7 @@ describe('Salesforce adapter E2E with real account', () => {
         rule.ruleEntry = _.flatten([rule.ruleEntry])
         rule.ruleEntry.push(_.merge({}, validAssignment, {
           assignedTo: validAssignment.assignedTo,
-          assignedToType: validAssignment.assigned_to_type,
+          assignedToType: validAssignment.assignedToType,
           criteriaItems: [
             {
               field: 'Lead.City',
@@ -2977,7 +2978,8 @@ describe('Salesforce adapter E2E with real account', () => {
 
       describe('web links manipulations', () => {
         beforeAll(async () => {
-          await removeIfAlreadyExists('WebLink', 'Lead.MyWebLink', 'web_links')
+          await removeIfAlreadyExists('WebLink', 'Lead.MyWebLink',
+            CUSTOM_OBJECT_ANNOTATIONS.WEB_LINKS)
         })
 
         describe('create web link', () => {
@@ -3001,7 +3003,7 @@ describe('Salesforce adapter E2E with real account', () => {
               position: 'none',
               protected: false,
               url: '{!Lead.CreatedBy} = "MyName"',
-            }, ...makeArray(newLead.annotations.web_links)]
+            }, ...makeArray(newLead.annotations[CUSTOM_OBJECT_ANNOTATIONS.WEB_LINKS])]
 
             await adapter.update(oldLead, newLead,
               [{ action: 'modify', data: { before: oldLead, after: newLead } }])
@@ -3050,7 +3052,7 @@ describe('Salesforce adapter E2E with real account', () => {
 
       describe('list views manipulations', () => {
         beforeAll(async () => {
-          await removeIfAlreadyExists('ListView', 'Lead.MyListView', '[CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS]')
+          await removeIfAlreadyExists('ListView', 'Lead.MyListView', CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS)
         })
 
         describe('create list view', () => {
@@ -3115,7 +3117,8 @@ describe('Salesforce adapter E2E with real account', () => {
 
       describe('compact layouts manipulations', () => {
         beforeAll(async () => {
-          await removeIfAlreadyExists('CompactLayout', 'Lead.MyCompactLayout', 'compact_layouts')
+          await removeIfAlreadyExists('CompactLayout', 'Lead.MyCompactLayout',
+            CUSTOM_OBJECT_ANNOTATIONS.COMPACT_LAYOUTS)
         })
 
         describe('create compact layout', () => {
@@ -3129,7 +3132,7 @@ describe('Salesforce adapter E2E with real account', () => {
                 'Address',
                 'Company',
               ],
-            }, ...makeArray(newLead.annotations.compact_layouts)]
+            }, ...makeArray(newLead.annotations[CUSTOM_OBJECT_ANNOTATIONS.COMPACT_LAYOUTS])]
 
             await adapter.update(oldLead, newLead,
               [{ action: 'modify', data: { before: oldLead, after: newLead } }])
@@ -3178,7 +3181,8 @@ describe('Salesforce adapter E2E with real account', () => {
 
       describe('field sets manipulations', () => {
         beforeAll(async () => {
-          await removeIfAlreadyExists('FieldSet', 'Lead.MyFieldSet', 'field_sets')
+          await removeIfAlreadyExists('FieldSet', 'Lead.MyFieldSet',
+            CUSTOM_OBJECT_ANNOTATIONS.FIELD_SETS)
         })
 
         describe('create field set', () => {
@@ -3201,7 +3205,7 @@ describe('Salesforce adapter E2E with real account', () => {
                 },
               ],
               label: 'My Field Set',
-            }, ...makeArray(newLead.annotations.field_sets)]
+            }, ...makeArray(newLead.annotations[CUSTOM_OBJECT_ANNOTATIONS.FIELD_SETS])]
 
             await adapter.update(oldLead, newLead,
               [{ action: 'modify', data: { before: oldLead, after: newLead } }])

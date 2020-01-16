@@ -216,6 +216,14 @@ export const TOPICS_FOR_OBJECTS_FIELDS = {
   ENTITY_API_NAME: 'entityApiName',
 }
 
+// BPs path
+export const RECORDS_PATH = 'Records'
+export const SETTINGS_PATH = 'Settings'
+export const OBJECTS_PATH = 'Objects'
+export const TYPES_PATH = 'Types'
+export const SUBTYPES_PATH = 'Subtypes'
+export const INSTALLED_PACKAGES_PATH = 'InstalledPackages'
+
 // Limits
 export const MAX_METADATA_RESTRICTION_VALUES = 500
 

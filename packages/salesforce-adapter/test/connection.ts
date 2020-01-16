@@ -24,6 +24,9 @@ const mockJsforce: () => Connection = () => ({
   query: jest.fn().mockImplementation(() => Promise.resolve()),
   queryMore: jest.fn().mockImplementation(() => Promise.resolve()),
   destroy: jest.fn().mockImplementation(() => Promise.resolve()),
+  limits: jest.fn().mockImplementation(() => Promise.resolve({
+    DailyApiRequests: { Remaining: 10000 },
+  })),
 })
 
 export default mockJsforce

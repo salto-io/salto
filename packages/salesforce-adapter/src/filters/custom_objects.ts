@@ -14,6 +14,7 @@ import {
   SALESFORCE_CUSTOM_SUFFIX, LABEL, FIELD_DEPENDENCY_FIELDS, LOOKUP_FILTER_FIELDS,
   VALUE_SETTINGS_FIELDS, API_NAME_SEPERATOR, FIELD_ANNOTATIONS, VALUE_SET_DEFINITION_FIELDS,
   CUSTOM_OBJECT_ANNOTATIONS, VALUE_SET_FIELDS, DEFAULT_VALUE_FORMULA, FIELD_TYPE_NAMES,
+  OBJECTS_PATH, INSTALLED_PACKAGES_PATH,
 } from '../constants'
 import { FilterCreator } from '../filter'
 import {
@@ -57,9 +58,9 @@ const createObjectWithFields = (objectName: string, serviceIds: ServiceIds,
 
 const getCustomObjectPackagePath = (obj: ObjectType): string[] => {
   if (hasNamespace(obj)) {
-    return [SALESFORCE, 'installed_packages', getNamespace(obj), 'objects', obj.elemID.name]
+    return [SALESFORCE, INSTALLED_PACKAGES_PATH, getNamespace(obj), OBJECTS_PATH, obj.elemID.name]
   }
-  return [SALESFORCE, 'objects', 'custom', obj.elemID.name]
+  return [SALESFORCE, OBJECTS_PATH, 'custom', obj.elemID.name]
 }
 
 const getPartialCustomObjects = (customFields: Field[], objectName: string,
@@ -70,14 +71,14 @@ const getPartialCustomObjects = (customFields: Field[], objectName: string,
   const customParts = Object.entries(namespaceToFields)
     .map(([namespace, packageFields]) => {
       const packageObj = createObjectWithFields(objectName, serviceIds, packageFields)
-      packageObj.path = [SALESFORCE, 'installed_packages',
-        namespace, 'objects', packageObj.elemID.name]
+      packageObj.path = [SALESFORCE, INSTALLED_PACKAGES_PATH,
+        namespace, OBJECTS_PATH, packageObj.elemID.name]
       return packageObj
     })
   if (!_.isEmpty(regularCustomFields)) {
     // Custom fields go in a separate element
     const customPart = createObjectWithFields(objectName, serviceIds, regularCustomFields)
-    customPart.path = [SALESFORCE, 'objects', 'custom', customPart.elemID.name]
+    customPart.path = [SALESFORCE, OBJECTS_PATH, 'custom', customPart.elemID.name]
     customParts.push(customPart)
   }
   return customParts
@@ -127,7 +128,7 @@ const createSObjectTypes = (
   }
 
   // This is a standard object
-  element.path = [SALESFORCE, 'objects', 'standard', element.elemID.name]
+  element.path = [SALESFORCE, OBJECTS_PATH, 'standard', element.elemID.name]
 
   if (_.isEmpty(customFields)) {
     // No custom parts, only standard element needed
@@ -210,7 +211,7 @@ const transfromAnnotationsNames = (fields: Values, parentApiName: string): Value
 }
 
 const buildAnnotationsObjectType = (fieldType: Type): ObjectType => {
-  const annotationTypesElemID = new ElemID(SALESFORCE, 'annotation_type')
+  const annotationTypesElemID = new ElemID(SALESFORCE, 'AnnotationType')
   return new ObjectType({ elemID: annotationTypesElemID,
     fields: Object.assign({}, ...Object.entries(fieldType.annotationTypes)
       .concat(Object.entries(BuiltinAnnotationTypes))
@@ -298,8 +299,7 @@ const createObjectTypeFromInstance = (instance: InstanceElement): ObjectType => 
       [METADATA_TYPE]: CUSTOM_OBJECT,
       [LABEL]: instance.value[LABEL] } })
   const objectPathType = objectName.endsWith(SALESFORCE_CUSTOM_SUFFIX) ? 'custom' : 'standard'
-  object.path = [SALESFORCE, 'objects',
-    objectPathType, bpCase(objectName)]
+  object.path = [SALESFORCE, OBJECTS_PATH, objectPathType, bpCase(objectName)]
   return object
 }
 

@@ -3,7 +3,7 @@ import {
   Workspace, Plan, PlanItem, Config,
 } from 'salto'
 import { Spinner, SpinnerCreator } from 'src/types'
-import { deploy, preview, mockSpinnerCreator, MockWriteStream, getWorkspaceErrors, mockLoadConfig } from '../mocks'
+import { deploy, preview, mockSpinnerCreator, MockWriteStream, getWorkspaceErrors, mockLoadConfig, elements } from '../mocks'
 import { DeployCommand } from '../../src/commands/deploy'
 
 const mockDeploy = deploy
@@ -24,6 +24,7 @@ jest.mock('salto', () => ({
           },
           getWorkspaceErrors,
           config,
+          elements: elements(),
         }
       }
       return {
@@ -31,6 +32,7 @@ jest.mock('salto', () => ({
         updateBlueprints: mockUpdateBlueprints,
         flush: mockFlush,
         config,
+        elements: elements(),
       }
     }),
   },

@@ -1,4 +1,4 @@
-import { State } from '../../src/workspace/state'
+import State from '../../src/workspace/state'
 
 const mockState = (): State => ({
   list: jest.fn().mockImplementation(() => Promise.resolve([])),

@@ -1,29 +1,19 @@
 import * as path from 'path'
-
-import { Config } from 'salto'
 import { EditorWorkspace } from '../../src/salto/workspace'
 import { provideWorkspaceReferences } from '../../src/salto/usage'
 import { SaltoElemLocation } from '../../src/salto/location'
+import { mockWorkspace } from './workspace'
 
 describe('Test go to definitions', () => {
-  const getConfig = (baseDir: string, additionalBlueprints: string[]): Config => ({
-    baseDir,
-    additionalBlueprints,
-    stateLocation: path.join(baseDir, 'salto.config', 'state.bpc'),
-    localStorage: '.',
-    name: 'test',
-    services: ['salesforce'],
-    uid: '',
-  })
   let workspace: EditorWorkspace
-  const baseBPDir = path.resolve(`${__dirname}/../../../test/salto/completionsBP`)
+  const filename = path.resolve(`${__dirname}/../../../test/salto/test-bps/all.bp`)
 
   const getRefLines = (
     defs: SaltoElemLocation[]
   ): number[] => defs.map(d => d.range.start.line).sort((a, b) => a - b)
 
   beforeAll(async () => {
-    workspace = await EditorWorkspace.load(getConfig(baseBPDir, []), false)
+    workspace = new EditorWorkspace(await mockWorkspace(filename))
   })
 
   it('should give all fields usages of a type', async () => {

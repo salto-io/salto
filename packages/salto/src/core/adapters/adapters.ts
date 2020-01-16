@@ -1,40 +1,29 @@
 import _ from 'lodash'
 import {
-  InstanceElement, ObjectType, Adapter, ElemIdGetter,
+  ObjectType, Adapter, ElemIdGetter, InstanceElement,
 } from 'adapter-api'
-import { promises } from '@salto/lowerdash'
 import adapterCreators from './creators'
 
-export type LoginStatus = { configType: ObjectType; isLoggedIn: boolean }
-
-export const getAdaptersLoginStatus = async (
-  configs: Readonly<InstanceElement[]>,
-  names: string[],
-): Promise<Record<string, LoginStatus>> => {
+export const getAdaptersLoginConf = (
+  names: string[]
+): Record<string, ObjectType> => {
   const relevantAdapterCreators = _.pick(adapterCreators, names)
-  const adaptersToLoggedIn = _.mapValues(relevantAdapterCreators,
-    creator => ({
-      configType: creator.configType,
-      isLoggedIn: !!configs.find(e => e.elemID.adapter === creator.configType.elemID.adapter),
-    }))
-  return adaptersToLoggedIn
+  return _.mapValues(relevantAdapterCreators, creator => creator.configType)
 }
 
-export const initAdapters = async (
-  configs: Readonly<InstanceElement[]>,
-  names: string[],
+export const initAdapters = (
+  credentials: Record<string, InstanceElement | undefined>,
   getElemIdFunc?: ElemIdGetter,
-): Promise<Record<string, Adapter>> => {
-  const relevantAdapterCreators = _.pick(adapterCreators, names)
-  const adapterPromises: Record<string, Promise<Adapter>> = _.mapValues(
-    relevantAdapterCreators, async creator => {
-      const config = configs.find(e => e.elemID.adapter === creator.configType.elemID.adapter)
-      if (!config) {
-        throw new Error(`${creator.configType.elemID.adapter} is not logged in.\n\nPlease login and try again.`)
+): Record<string, Adapter> =>
+  _.mapValues(
+    credentials, (creds, adapter) => {
+      if (!creds) {
+        throw new Error(`${adapter} is not logged in.\n\nPlease login and try again.`)
       }
-      return creator.create({ config, getElemIdFunc })
+      const creator = adapterCreators[adapter]
+      if (!creator) {
+        throw new Error(`${adapter} adapter is not registered.`)
+      }
+      return creator.create({ config: creds, getElemIdFunc })
     }
   )
-  const adapters = await promises.object.resolveValues(adapterPromises)
-  return adapters
-}

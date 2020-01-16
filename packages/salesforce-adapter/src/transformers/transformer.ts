@@ -22,6 +22,7 @@ import {
   SECURITY_CLASSIFICATION, BUSINESS_OWNER_GROUP, BUSINESS_OWNER_USER, COMPLIANCE_GROUP,
   VALUE_SET_DEFINITION_VALUE_FIELDS, API_NAME_SEPERATOR, MAX_METADATA_RESTRICTION_VALUES,
   VALUE_SET_FIELDS, COMPOUND_FIELD_TYPE_NAMES, ANNOTATION_TYPE_NAMES, FIELD_SOAP_TYPE_NAMES,
+  RECORDS_PATH, SETTINGS_PATH, TYPES_PATH, SUBTYPES_PATH, INSTALLED_PACKAGES_PATH,
 } from '../constants'
 import SalesforceClient from '../client/client'
 
@@ -710,7 +711,7 @@ export class Types {
       Object.values(Types.compoundDataTypes),
     ).map(type => {
       const fieldType = type.clone()
-      fieldType.path = [SALESFORCE, 'types', 'field_types']
+      fieldType.path = [SALESFORCE, TYPES_PATH, 'field_types']
       return fieldType
     })
   }
@@ -725,7 +726,7 @@ export class Types {
     ]
       .map(type => {
         const fieldType = type.clone()
-        fieldType.path = [SALESFORCE, 'types', 'annotation_types']
+        fieldType.path = [SALESFORCE, TYPES_PATH, 'annotation_types']
         return fieldType
       })
   }
@@ -1047,7 +1048,7 @@ export const createInstanceElement = (mdInfo: MetadataInfo, type: ObjectType,
         // Some CustomApplications have 'standard' namespace although they are not part of a package
         return [SALESFORCE]
       }
-      return [SALESFORCE, 'installed_packages', namespacePrefix]
+      return [SALESFORCE, INSTALLED_PACKAGES_PATH, namespacePrefix]
     }
     return [SALESFORCE]
   }
@@ -1079,8 +1080,8 @@ export const createInstanceElement = (mdInfo: MetadataInfo, type: ObjectType,
     type.isSettings ? ElemID.CONFIG_NAME : name(),
     type,
     fromMetadataInfo(mdInfo),
-    [...getPackagePath(), 'records',
-      type.isSettings ? 'settings' : typeName, bpCase(mdInfo.fullName)],
+    [...getPackagePath(), RECORDS_PATH,
+      type.isSettings ? SETTINGS_PATH : typeName, bpCase(mdInfo.fullName)],
   )
 }
 
@@ -1103,8 +1104,8 @@ export const createMetadataTypeElements = async (
   element.annotate({ [METADATA_TYPE]: objectName })
   element.path = [
     SALESFORCE,
-    'types',
-    ...(baseTypeNames.has(objectName) ? [] : ['subtypes']),
+    TYPES_PATH,
+    ...(baseTypeNames.has(objectName) ? [] : [SUBTYPES_PATH]),
     element.elemID.name,
   ]
   if (!fields || _.isEmpty(fields)) {

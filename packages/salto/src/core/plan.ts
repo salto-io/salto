@@ -105,7 +105,7 @@ const toNodeMap = (
 ): DataNodeMap<Node> => log.time(() => {
   const nodeMap = new DataNodeMap<Node>()
 
-  elements.filter(e => !e.elemID.isConfig()).filter(isObjectType).forEach(obj => {
+  elements.filter(isObjectType).forEach(obj => {
     // Add object type
     nodeMap.addNode(id(obj.elemID), [], obj)
     // Add object type fields
@@ -115,7 +115,7 @@ const toNodeMap = (
     )
   })
 
-  elements.filter(e => !e.elemID.isConfig()).filter(isInstanceElement).forEach(inst => {
+  elements.filter(isInstanceElement).forEach(inst => {
     // Add instance elements
     const instanceDependencies = withDependencies ? [id(inst.type.elemID)] : []
     nodeMap.addNode(id(inst.elemID), instanceDependencies, inst)

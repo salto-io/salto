@@ -1,6 +1,11 @@
 import { logger } from '@salto/logging'
-import { JestEnvironment, createEnvUtils, CredsSpec } from '@salto/e2e-credentials-store'
-import { Credentials, validateCredentials } from '../src/client/client'
+import {
+  JestEnvironment, createEnvUtils, CredsSpec, SuspendCredentialsError,
+} from '@salto/e2e-credentials-store'
+import { Credentials, validateCredentials, ApiLimitsTooLowError } from '../src/client/client'
+
+const MIN_API_REQUESTS_NEEDED = 500
+const NOT_ENOUGH_API_REQUESTS_SUSPENSION_TIMEOUT = 1000 * 60 * 60
 
 const log = logger(module)
 
@@ -15,7 +20,16 @@ export const credsSpec: CredsSpec<Credentials> = {
       isSandbox: envUtils.bool('SF_SANDBOX'),
     }
   },
-  validate: validateCredentials,
+  validate: async (creds: Credentials): Promise<void> => {
+    try {
+      await validateCredentials(creds, MIN_API_REQUESTS_NEEDED)
+    } catch (e) {
+      if (e instanceof ApiLimitsTooLowError) {
+        throw new SuspendCredentialsError(e, NOT_ENOUGH_API_REQUESTS_SUSPENSION_TIMEOUT)
+      }
+      throw e
+    }
+  },
   typeName: 'salesforce',
   globalProp: 'salesforceCredentials',
 }

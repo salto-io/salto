@@ -34,7 +34,8 @@ export const updateLoginConfig = async (
   newConfigs: Readonly<InstanceElement[]>
 ): Promise<void> => {
   if (newConfigs.length > 0) {
-    newConfigs.forEach(config => workspace.credentials.set(config.elemID.adapter, config))
+    await Promise.all(newConfigs
+      .map(config => workspace.credentials.set(config.elemID.adapter, config)))
     const newAdapters = newConfigs.map(config => config.elemID.adapter)
     log.debug(`persisted new configs for adapers: ${newAdapters.join(',')}`)
   }

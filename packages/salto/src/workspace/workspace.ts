@@ -206,6 +206,8 @@ const ensureEmptyWorkspace = async (config: Config): Promise<void> => {
 export class Workspace {
   private workspaceState: WorkspaceState
   private dirtyBlueprints: Set<string>
+  readonly state: State
+  readonly credentials: Credentials
 
   /**
    * Load a collection of blueprint files as a workspace
@@ -251,12 +253,10 @@ export class Workspace {
   constructor(
     public config: Config,
     blueprints: ReadonlyArray<ParsedBlueprint>,
-    readonly useCache: boolean = true,
-    readonly state: State = new LocalState(config.stateLocation),
-    readonly credentials: Credentials = new LocalCredentials(
-      path.join(config.localStorage, 'credentials')
-    ),
+    readonly useCache: boolean = true
   ) {
+    this.state = new LocalState(config.stateLocation)
+    this.credentials = new LocalCredentials(path.join(config.localStorage, 'credentials'))
     this.workspaceState = createWorkspaceState(blueprints)
     this.dirtyBlueprints = new Set<string>()
   }

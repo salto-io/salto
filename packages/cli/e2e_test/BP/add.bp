@@ -9,6 +9,7 @@ type salesforce_NewObjectName {
   }
 }
 
-salesforce_Profile NewInstanceName {
+salesforce_Role NewInstanceName {
   description = "To Be Modified"
+  name = "New Role Instance"
 }

@@ -173,26 +173,26 @@ describe('Field Permissions filter', () => {
       const fieldLevelSecurity = objectTypes[0].fields.description
         .annotations[FIELD_LEVEL_SECURITY_ANNOTATION]
       expect(fieldLevelSecurity.readable[0].elemId).toEqual(
-        mockAdmin.elemID.createNestedID(INSTANCE_FULL_NAME_FIELD)
+        mockAdmin.elemID
       )
       expect(fieldLevelSecurity.editable[0].elemId).toEqual(
-        mockStandard.elemID.createNestedID(INSTANCE_FULL_NAME_FIELD)
+        mockStandard.elemID
       )
 
       const fieldLevelSecurityPlus = objectTypes[1].fields.plus
         .annotations[FIELD_LEVEL_SECURITY_ANNOTATION]
       expect(fieldLevelSecurityPlus.readable[0].elemId).toEqual(
-        mockAdmin.elemID.createNestedID(INSTANCE_FULL_NAME_FIELD)
+        mockAdmin.elemID
       )
       expect(fieldLevelSecurityPlus.editable).toEqual([])
 
       const fieldLevelSecurityNoStandard = objectTypes[0].fields.noStandard
         .annotations[FIELD_LEVEL_SECURITY_ANNOTATION]
       expect(fieldLevelSecurityNoStandard.readable[0].elemId).toEqual(
-        mockAdmin.elemID.createNestedID(INSTANCE_FULL_NAME_FIELD)
+        mockAdmin.elemID
       )
       expect(fieldLevelSecurityNoStandard.editable[0].elemId).toEqual(
-        mockAdmin.elemID.createNestedID(INSTANCE_FULL_NAME_FIELD)
+        mockAdmin.elemID
       )
 
       // Check profile instances' field_permissions were deleted
@@ -369,7 +369,7 @@ describe('Field Permissions filter', () => {
     await filter().onAdd(after)
 
     const adminRef = new ReferenceExpression(
-      mockAdmin.elemID.createNestedID(INSTANCE_FULL_NAME_FIELD)
+      mockAdmin.elemID
     )
 
     expect(after.fields.description.annotations[FIELD_LEVEL_SECURITY_ANNOTATION])

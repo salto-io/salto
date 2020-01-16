@@ -115,38 +115,38 @@ describe('Test Salto Expressions', () => {
 
     it('should resolve simple references', () => {
       const element = findResolved<InstanceElement>(simpleRefInst)
-      expect(element.value.test).toEqual('simple')
+      expect(element.value.test.value).toEqual('simple')
     })
 
     it('should resolve nested references', () => {
       const element = findResolved<InstanceElement>(nestedRefInst)
-      expect(element.value.test).toEqual('nested')
+      expect(element.value.test.value).toEqual('nested')
     })
 
     it('should resolve array references', () => {
       const element = findResolved<InstanceElement>(arrayRefInst)
-      expect(element.value.test0).toEqual('A')
-      expect(element.value.test1).toEqual('B')
+      expect(element.value.test0.value).toEqual('A')
+      expect(element.value.test1.value).toEqual('B')
     })
 
     it('should resolve annotations references', () => {
       const element = findResolved<InstanceElement>(annoRefInst)
-      expect(element.value.test).toEqual('base_anno')
+      expect(element.value.test.value).toEqual('base_anno')
     })
 
     it('should resolve field annotation values references', () => {
       const element = findResolved<InstanceElement>(fieldAnnoRefInst)
-      expect(element.value.test).toEqual('field_anno')
+      expect(element.value.test.value).toEqual('field_anno')
     })
 
     it('should resolve references with no path', () => {
       const element = findResolved<InstanceElement>(noPathInst)
-      expect(element.value.test).toEqual(baseInst.value)
+      expect(element.value.test.value).toEqual(baseInst)
     })
 
     it('should resolve chained references', () => {
       const element = findResolved<InstanceElement>(chainedRefInst)
-      expect(element.value.test).toEqual('simple')
+      expect(element.value.test.value).toEqual('simple')
     })
 
     it('should detect reference cycles', () => {
@@ -156,7 +156,7 @@ describe('Test Salto Expressions', () => {
       secondRef.value.test = refTo(firstRef, 'test')
       const chained = [firstRef, secondRef]
       const inst = resolve(chained)[0] as InstanceElement
-      expect(inst.value.test).toBeInstanceOf(CircularReference)
+      expect(inst.value.test.value).toBeInstanceOf(CircularReference)
     })
 
     it('should fail on unresolvable', () => {
@@ -166,7 +166,7 @@ describe('Test Salto Expressions', () => {
       })
       const bad = [firstRef, secondRef]
       const res = resolve(bad)[1] as InstanceElement
-      expect(res.value.test).toBeInstanceOf(UnresolvedReference)
+      expect(res.value.test.value).toBeInstanceOf(UnresolvedReference)
     })
 
     it('should fail on unresolvable roots', () => {
@@ -177,8 +177,8 @@ describe('Test Salto Expressions', () => {
       )
       const bad = [firstRef]
       const res = resolve(bad)[0] as InstanceElement
-      expect(res.value.test).toBeInstanceOf(UnresolvedReference)
-      expect(res.value.test.ref).toEqual('noop.test')
+      expect(res.value.test.value).toBeInstanceOf(UnresolvedReference)
+      expect(res.value.test.value.ref).toEqual('noop.test')
     })
   })
 

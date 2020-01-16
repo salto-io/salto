@@ -28,7 +28,10 @@ const resolveMaybeExpression: Resolver<Value> = (
   visited: Set<string> = new Set<string>(),
 ): Value => {
   if (value instanceof ReferenceExpression) {
-    return resolveReferenceExpression(value, contextElements, visited)
+    return new ReferenceExpression(
+      value.elemId,
+      resolveReferenceExpression(value, contextElements, visited)
+    )
   }
 
   if (value instanceof TemplateExpression) {
@@ -55,7 +58,7 @@ resolveReferenceExpression = (
 
   const resolvePath = (rootElement: Element): Value => {
     if (isInstanceElement(rootElement)) {
-      return (!_.isEmpty(path)) ? _.get(rootElement.value, path) : rootElement.value
+      return (!_.isEmpty(path)) ? _.get(rootElement.value, path) : rootElement
     }
 
     if (isObjectType(rootElement) && rootElement.fields[path[0]]) {
@@ -90,7 +93,10 @@ resolveTemplateExpression = (
   contextElements: Record<string, Element[]>,
   visited: Set<string> = new Set<string>(),
 ): Value => expression.parts
-  .map(p => resolveMaybeExpression(p, contextElements, visited) || p)
+  .map(p => {
+    const res = resolveMaybeExpression(p, contextElements, visited)
+    return res ? res?.value ?? res : p
+  })
   .join('')
 
 export const resolveElement = (

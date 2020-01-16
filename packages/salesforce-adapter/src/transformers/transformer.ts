@@ -6,8 +6,8 @@ import {
 import {
   Type, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values, Value, Field as TypeField,
   BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter,
-  ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER,
-  CORE_ANNOTATIONS, PrimitiveValue, RESTRICTION_ANNOTATIONS,
+  ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, CORE_ANNOTATIONS,
+  ReferenceExpression, isElement, PrimitiveValue, RESTRICTION_ANNOTATIONS,
 } from 'adapter-api'
 import { collections } from '@salto/lowerdash'
 import { CustomObject, CustomField } from '../client/types'
@@ -1266,4 +1266,34 @@ export const getCompoundChildFields = (objectType: ObjectType): TypeField[] => {
   // 3) Handle geolocation fields
   handleGeolocationFields(clonedObject)
   return Object.values(clonedObject.fields)
+}
+
+const getLookUpName = (refValue: Value): Value => {
+  if (isElement(refValue)) {
+    return apiName(refValue)
+  }
+  return refValue
+}
+
+export const transformReferences = <T extends Element>(element: T): T => {
+  const refReplacer = (value: Value): Value => {
+    if (value instanceof ReferenceExpression) return getLookUpName(value.value)
+    if (isElement(value)) return transformReferences(value)
+    return undefined
+  }
+  return _.mergeWith(element.clone(), element, refReplacer)
+}
+
+export const restoreReferences = <T extends Element>(orig: T, modified: T): T => {
+  const resResotrer = (obj: Value, src: Value): Value => {
+    if (isElement(obj) && isElement(src)) {
+      return restoreReferences(obj, src)
+    }
+    if (obj instanceof ReferenceExpression && !(src instanceof ReferenceExpression)) {
+      return (getLookUpName(obj.value) === src) ? obj : src
+    }
+    return undefined
+  }
+
+  return _.mergeWith(orig.clone(), modified, resResotrer)
 }

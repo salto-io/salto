@@ -3,7 +3,7 @@ import wu from 'wu'
 import {
   Element, ElemID, isObjectType, isInstanceElement, Value, Values, ChangeDataType, isField, Change,
   getChangeElement, isEqualElements, isPrimitiveType, ObjectType, PrimitiveType, ChangeError,
-  ChangeValidator, InstanceElement, Type, isRemovalDiff,
+  ChangeValidator, InstanceElement, Type, isRemovalDiff, isEqualValues,
 } from 'adapter-api'
 import {
   buildDiffGraph, buildGroupedGraph, Group, DataNodeMap, NodeId, GroupedNodeMap,
@@ -38,7 +38,7 @@ export type Plan = GroupedNodeMap<Change> & {
  * Create detailed changes from change data (before and after values)
  */
 const getValuesChanges = (id: ElemID, before: Value, after: Value): DetailedChange[] => {
-  if (isEqualElements(before, after) || _.isEqual(before, after)) {
+  if (isEqualElements(before, after) || isEqualValues(before, after)) {
     return []
   }
   if (before === undefined) {

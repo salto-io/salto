@@ -7,9 +7,9 @@ import { FilterCreator } from '../filter'
 import { SALESFORCE, SALESFORCE_CUSTOM_SUFFIX } from '../constants'
 import { id } from './utils'
 
-export const LAYOUT_TYPE_ID = new ElemID(SALESFORCE, 'layout')
+export const LAYOUT_TYPE_ID = new ElemID(SALESFORCE, 'Layout')
 export const LAYOUT_ANNOTATION = 'layouts'
-export const LAYOUT_SUFFIX = 'layout'
+export const LAYOUT_SUFFIX = 'Layout'
 
 const MIN_NAME_LENGTH = 4
 

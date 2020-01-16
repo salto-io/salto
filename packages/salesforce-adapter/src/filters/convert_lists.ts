@@ -13,44 +13,44 @@ export type UnorderedList = {
 
 const allListsToSort: ReadonlyArray<UnorderedList> = [
   {
-    fieldId: new ElemID(SALESFORCE, 'clean_data_service', 'field', 'clean_rules'),
-    orderBy: 'developer_name',
+    fieldId: new ElemID(SALESFORCE, 'CleanDataService', 'field', 'cleanRules'),
+    orderBy: 'developerName',
   },
   {
-    fieldId: new ElemID(SALESFORCE, 'clean_rule', 'field', 'field_mappings'),
-    orderBy: 'developer_name',
+    fieldId: new ElemID(SALESFORCE, 'CleanRule', 'field', 'fieldMappings'),
+    orderBy: 'developerName',
   },
   {
-    fieldId: new ElemID(SALESFORCE, 'field_mapping', 'field', 'field_mapping_rows'),
-    orderBy: 'field_name',
+    fieldId: new ElemID(SALESFORCE, 'FieldMapping', 'field', 'fieldMappingRows'),
+    orderBy: 'fieldName',
   },
   {
-    fieldId: new ElemID(SALESFORCE, 'field_mapping_row', 'field', 'field_mapping_fields'),
-    orderBy: 'data_service_field',
+    fieldId: new ElemID(SALESFORCE, 'FieldMappingRow', 'field', 'fieldMappingFields'),
+    orderBy: 'dataServiceField',
   },
   {
-    fieldId: new ElemID(SALESFORCE, 'duplicate_rule', 'field', 'duplicate_rule_match_rules'),
-    orderBy: 'matching_rule',
+    fieldId: new ElemID(SALESFORCE, 'DuplicateRule', 'field', 'duplicateRuleMatchRules'),
+    orderBy: 'matchingRule',
   },
   {
-    fieldId: new ElemID(SALESFORCE, 'duplicate_rule_match_rule', 'field', 'object_mapping'),
-    orderBy: ['input_object', 'output_object'],
+    fieldId: new ElemID(SALESFORCE, 'DuplicateRuleMatchRule', 'field', 'objectMapping'),
+    orderBy: ['inputObject', 'outputObject'],
   },
   {
-    fieldId: new ElemID(SALESFORCE, 'object_mapping', 'field', 'mapping_fields'),
-    orderBy: ['input_field', 'output_field'],
+    fieldId: new ElemID(SALESFORCE, 'ObjectMapping', 'field', 'mappingFields'),
+    orderBy: ['inputField', 'outputField'],
   },
   {
-    fieldId: new ElemID(SALESFORCE, 'business_process', 'field', 'values'),
+    fieldId: new ElemID(SALESFORCE, 'BusinessProcess', 'field', 'values'),
     orderBy: 'fullName',
   },
   {
-    fieldId: new ElemID(SALESFORCE, 'platform_action_list', 'field', 'platform_action_list_items'),
-    orderBy: val => Number(val.sort_order),
+    fieldId: new ElemID(SALESFORCE, 'PlatformActionList', 'field', 'platformActionListItems'),
+    orderBy: val => Number(val.sortOrder),
   },
   {
-    fieldId: new ElemID(SALESFORCE, 'quick_action_list', 'field', 'quick_action_list_items'),
-    orderBy: 'quick_action_name',
+    fieldId: new ElemID(SALESFORCE, 'QuickActionList', 'field', 'quickActionListItems'),
+    orderBy: 'quickActionName',
   },
 ]
 

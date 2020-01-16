@@ -4,11 +4,12 @@ import {
 } from 'adapter-api'
 import SalesforceAdapter from '../src/adapter'
 import Connection from '../src/client/jsforce'
-import { Types, bpCase } from '../src/transformers/transformer'
+import { Types } from '../src/transformers/transformer'
 import { findElements } from './utils'
 import mockAdapter from './adapter'
 import { id } from '../src/filters/utils'
 import * as constants from '../src/constants'
+import { LAYOUT_TYPE_ID } from '../src/filters/layouts'
 
 describe('SalesforceAdapter fetch', () => {
   let connection: Connection
@@ -351,9 +352,9 @@ describe('SalesforceAdapter fetch', () => {
       })
 
       const result = await adapter.fetch()
-      const layout = findElements(result, 'Layout', bpCase(layoutName)).pop() as InstanceElement
-      expect(layout.type.elemID).toEqual(new ElemID(constants.SALESFORCE, 'Layout'))
-      expect(layout.value[constants.INSTANCE_FULL_NAME_FIELD]).toBe('Order-Order Layout')
+      const layout = findElements(result, 'Layout', 'Order').pop() as InstanceElement
+      expect(layout.type.elemID).toEqual(LAYOUT_TYPE_ID)
+      expect(layout.value[constants.INSTANCE_FULL_NAME_FIELD]).toBe(layoutName)
       expect(layout.value.layoutSections.length).toBe(3)
       expect(layout.value.layoutSections[0].label).toBe('Description Information')
       expect(layout.value.layoutSections[0].layoutColumns[0].layoutItems.behavior).toBe('Edit')

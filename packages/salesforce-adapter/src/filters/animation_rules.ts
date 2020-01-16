@@ -5,9 +5,9 @@ import {
 import { FilterWith } from '../filter'
 import { SALESFORCE } from '../constants'
 
-export const ANIMATION_RULE_TYPE_ID = new ElemID(SALESFORCE, 'animation_rule')
-export const ANIMATION_FREQUENCY = 'animation_frequency'
-export const RECORD_TYPE_CONTEXT = 'record_type_context'
+export const ANIMATION_RULE_TYPE_ID = new ElemID(SALESFORCE, 'AnimationRule')
+export const ANIMATION_FREQUENCY = 'animationFrequency'
+export const RECORD_TYPE_CONTEXT = 'recordTypeContext'
 
 /**
  * Declare the animation rules filter, this filter transforms ANIMATION_FREQUENCY &

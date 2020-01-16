@@ -284,6 +284,13 @@ export class Types {
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
+        ),
+        [FIELD_FILTER_FIELDS.NUMVALUES]: new TypeField(
+          fieldFilterElemID, FIELD_FILTER_FIELDS.NUMVALUES, BuiltinTypes.NUMBER, {
+            name: FIELD_FILTER_FIELDS.NUMVALUES,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
           true,
         ),
       },

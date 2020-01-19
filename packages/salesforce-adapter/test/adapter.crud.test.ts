@@ -1701,5 +1701,20 @@ describe('SalesforceAdapter CRUD', () => {
         expect(mockUpdate.mock.calls.length).toBe(0)
       })
     })
+
+    it('should update certain metadata types using upsert', async () => {
+      const beforeFlowInstance = new InstanceElement(
+        mockInstanceName,
+        new ObjectType({
+          elemID: new ElemID(constants.SALESFORCE, 'Flow'),
+          annotations: {
+            [constants.METADATA_TYPE]: 'Flow',
+          },
+        }), {}
+      )
+      await adapter.update(beforeFlowInstance, beforeFlowInstance.clone(), [])
+      expect(mockUpdate.mock.calls.length).toBe(0)
+      expect(mockUpsert.mock.calls.length).toBe(1)
+    })
   })
 })

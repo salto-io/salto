@@ -53,6 +53,8 @@ describe('Test HubSpot client', () => {
 
       describe('valid apikey', () => {
         let mockGetAllForms: jest.Mock
+        let mockGetAllWorkflows: jest.Mock
+        let mockGetAllMarketingEmail: jest.Mock
 
         beforeEach(() => {
           const getAllFormsResultMock = (): RequestPromise => (
@@ -69,10 +71,12 @@ describe('Test HubSpot client', () => {
             }) as unknown as RequestPromise
 
           mockGetAllForms = jest.fn().mockImplementation(getAllFormsResultMock)
+          mockGetAllWorkflows = jest.fn().mockImplementation(getAllWorkflowsResultMock)
+          mockGetAllMarketingEmail = jest.fn().mockImplementation(getAllMarketingEmailResultMock)
 
           connection.forms.getAll = mockGetAllForms
-          connection.workflows.getAll = getAllWorkflowsResultMock
-          connection.marketingEmail.getAll = getAllMarketingEmailResultMock
+          connection.workflows.getAll = jest.fn().mockImplementation(mockGetAllWorkflows)
+          connection.marketingEmail.getAll = jest.fn().mockImplementation(mockGetAllMarketingEmail)
         })
 
         it('should success', async () => {

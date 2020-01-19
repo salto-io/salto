@@ -26,6 +26,10 @@ const validateResponse = async (
   }
 }
 
+const hubspotTypeErr = async (typeName: string): Promise<void> => {
+  throw new Error(`Unknown HubSpot type: ${typeName}.`)
+}
+
 export default class HubspotClient {
   private conn: Connection
   private readonly getAllFunctions: Record<string, () => Promise<HubspotMetadata[]>>
@@ -50,11 +54,11 @@ export default class HubspotClient {
 
   async getAllInstances(typeName: string): Promise<HubspotMetadata[]> {
     const getAllFunction = this.getAllFunctions[typeName]
-    if (getAllFunction) {
-      return getAllFunction.apply(this)
+    if (!getAllFunction) {
+      await hubspotTypeErr(typeName)
     }
 
-    throw new Error(`Unknown HubSpot type: ${typeName}.`)
+    return getAllFunction.apply(this)
   }
 
   private async getAllForms(): Promise<Form[]> {
@@ -80,9 +84,27 @@ export default class HubspotClient {
     return (await resp).objects
   }
 
+  async createInstance(
+    typeName: string,
+    hubspotMetadata: HubspotMetadata
+  ): Promise<HubspotMetadata> {
+    const createInstanceTypeFuncMap: {
+      [key: string]: (hubspotMetadata: HubspotMetadata)
+        => RequestPromise} = {
+          form: ():
+            RequestPromise => this.conn.forms.create(hubspotMetadata),
+          workflows: ():
+            RequestPromise => this.conn.workflows.create(hubspotMetadata),
+          marketingEmail: ():
+            RequestPromise => this.conn.marketingEmail.create(hubspotMetadata),
+        }
 
-  async createForm(f: Form): Promise<Form> {
-    const resp = await this.conn.forms.create(f)
+    const createFunc = createInstanceTypeFuncMap[typeName]
+    if (!createFunc) {
+      await hubspotTypeErr(typeName)
+    }
+
+    const resp = createFunc(hubspotMetadata)
     await validateResponse(resp)
     return resp
   }

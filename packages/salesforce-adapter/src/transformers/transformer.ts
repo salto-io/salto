@@ -7,7 +7,7 @@ import {
   Type, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values, Value, Field as TypeField,
   BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter,
   ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, CORE_ANNOTATIONS,
-  ReferenceExpression, isElement, PrimitiveValue, RESTRICTION_ANNOTATIONS,
+  ReferenceExpression, isElement, PrimitiveValue, RESTRICTION_ANNOTATIONS, PrimitiveField,
 } from 'adapter-api'
 import { collections } from '@salto/lowerdash'
 import { CustomObject, CustomField } from '../client/types'
@@ -850,7 +850,7 @@ const convertXsdTypeFuncMap: Record<string, ConvertXsdTypeFunc> = {
   'xsd:long': Number,
 }
 
-export const transformPrimitive = (val: PrimitiveValue, primitive: PrimitiveTypes):
+export const transformPrimitive = (val: PrimitiveValue, field: PrimitiveField):
   PrimitiveValue | undefined => {
   // Salesforce returns nulls as objects like { $: { 'xsi:nil': 'true' } }
   if (_.isObject(val) && _.get(val, ['$', 'xsi:nil']) === 'true') {
@@ -862,9 +862,9 @@ export const transformPrimitive = (val: PrimitiveValue, primitive: PrimitiveType
   // { "_": "fieldValue", "$": { "xsi:type": "xsd:string" } }
   if (_.isObject(val) && Object.keys(val).includes('_')) {
     const convertFunc = convertXsdTypeFuncMap[_.get(val, ['$', 'xsi:type'])] || (v => v)
-    return transformPrimitive(convertFunc(_.get(val, '_')), primitive)
+    return transformPrimitive(convertFunc(_.get(val, '_')), field)
   }
-  switch (primitive) {
+  switch (field.type.primitive) {
     case PrimitiveTypes.NUMBER:
       return Number(val)
     case PrimitiveTypes.BOOLEAN:

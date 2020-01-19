@@ -4,7 +4,7 @@ import {
   PrimitiveValue, Values,
 } from '../src/elements'
 import {
-  transform,
+  transform, PrimitiveField,
 } from '../src/utils'
 
 describe('Test utils.ts', () => {
@@ -134,9 +134,9 @@ describe('Test utils.ts', () => {
         })
       })
 
-      const transformPrimitiveTest = (val: PrimitiveValue, primitive: PrimitiveTypes):
+      const transformPrimitiveTest = (val: PrimitiveValue, field: PrimitiveField):
         PrimitiveValue | undefined => {
-        switch (primitive) {
+        switch (field.type.primitive) {
           case PrimitiveTypes.NUMBER:
             return Number(val)
           case PrimitiveTypes.BOOLEAN:

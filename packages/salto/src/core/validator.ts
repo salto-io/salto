@@ -137,6 +137,7 @@ const validateAnnotationsValue = (
 ): ValidationError[] | undefined => {
   const shouldEnforceValue = (): boolean =>
     annotations[CORE_ANNOTATIONS.RESTRICTION]?.[RESTRICTION_ANNOTATIONS.ENFORCE_VALUE] !== false
+    && !(value instanceof ReferenceExpression && isElement(value.value))
 
   const validateRestrictionsValue = (val: Value):
     ValidationError[] => {

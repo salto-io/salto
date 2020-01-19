@@ -3,7 +3,7 @@ import { collections } from '@salto/lowerdash'
 import {
   ADAPTER, Element, Field, ObjectType, ServiceIds, Type, isObjectType, InstanceElement,
   Values, isInstanceElement, ElemID, BuiltinTypes,
-  CORE_ANNOTATIONS, BuiltinAnnotationTypes, RESTRICTION_ANNOTATIONS,
+  CORE_ANNOTATIONS, RESTRICTION_ANNOTATIONS,
   transform, TypeMap, getChangeElement, Value, findObjectType, Change,
 } from 'adapter-api'
 import { SalesforceClient } from 'index'
@@ -22,7 +22,7 @@ import {
   toMetadataInfo,
 } from '../transformers/transformer'
 import { id, addApiName, addMetadataType, addLabel, hasNamespace,
-  getNamespace, boolValue } from './utils'
+  getNamespace, boolValue, buildAnnotationsObjectType } from './utils'
 import { convertList } from './convert_lists'
 
 const log = logger(module)
@@ -208,14 +208,6 @@ const transfromAnnotationsNames = (fields: Values, parentApiName: string): Value
     }
   })
   return annotations
-}
-
-const buildAnnotationsObjectType = (fieldType: Type): ObjectType => {
-  const annotationTypesElemID = new ElemID(SALESFORCE, 'AnnotationType')
-  return new ObjectType({ elemID: annotationTypesElemID,
-    fields: Object.assign({}, ...Object.entries(fieldType.annotationTypes)
-      .concat(Object.entries(BuiltinAnnotationTypes))
-      .map(([k, v]) => ({ [k]: new Field(annotationTypesElemID, k, v) }))) })
 }
 
 const transformFieldAnnotations = (

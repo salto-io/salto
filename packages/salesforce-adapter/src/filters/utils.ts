@@ -1,9 +1,9 @@
 import _ from 'lodash'
 import { logger } from '@salto/logging'
 import { Element, Field, isObjectType, ObjectType, InstanceElement, isInstanceElement,
-  isField, Type, BuiltinTypes } from 'adapter-api'
+  isField, Type, BuiltinTypes, ElemID, BuiltinAnnotationTypes } from 'adapter-api'
 import { API_NAME, LABEL, CUSTOM_OBJECT,
-  METADATA_TYPE, NAMESPACE_SEPARATOR, API_NAME_SEPERATOR, INSTANCE_FULL_NAME_FIELD } from '../constants'
+  METADATA_TYPE, NAMESPACE_SEPARATOR, API_NAME_SEPERATOR, INSTANCE_FULL_NAME_FIELD, SALESFORCE } from '../constants'
 import { JSONBool } from '../client/types'
 import { isCustomObject, metadataType, apiName, defaultApiName } from '../transformers/transformer'
 
@@ -88,3 +88,12 @@ export const getNamespace = (customElement: Field | ObjectType): string =>
 export const extractFullNamesFromValueList = (values: { [INSTANCE_FULL_NAME_FIELD]: string }[]):
   string[] =>
   values.map(v => v[INSTANCE_FULL_NAME_FIELD])
+
+
+export const buildAnnotationsObjectType = (fieldType: Type): ObjectType => {
+  const annotationTypesElemID = new ElemID(SALESFORCE, 'AnnotationType')
+  return new ObjectType({ elemID: annotationTypesElemID,
+    fields: Object.assign({}, ...Object.entries(fieldType.annotationTypes)
+      .concat(Object.entries(BuiltinAnnotationTypes))
+      .map(([k, v]) => ({ [k]: new Field(annotationTypesElemID, k, v) }))) })
+}

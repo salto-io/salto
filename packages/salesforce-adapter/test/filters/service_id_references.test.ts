@@ -1,12 +1,12 @@
 /* eslint @typescript-eslint/camelcase: 0 */
-import { InstanceElement, ObjectType, ElemID, BuiltinTypes, ReferenceExpression, Type, Field, PrimitiveType, PrimitiveTypes } from 'adapter-api'
+import { InstanceElement, ObjectType, ElemID, BuiltinTypes, ReferenceExpression, Field, PrimitiveType, PrimitiveTypes, CORE_ANNOTATIONS } from 'adapter-api'
 import _ from 'lodash'
 import { INSTANCE_FULL_NAME_FIELD, METADATA_TYPE, API_NAME, CUSTOM_OBJECT } from '../../src/constants'
 import mockClient from '../client'
 import { Filter } from '../../src/filter'
 import serviceIdReferenceFilter from '../../src/filters/service_id_references'
 
-describe('replace entities', () => {
+describe('service_id_references filter', () => {
   const refType = new ObjectType(
     {
       elemID: new ElemID('salesforce', 'ref'),
@@ -42,7 +42,7 @@ describe('replace entities', () => {
     }
   )
   const refAnno = {
-    [Type.VALUES]: [
+    [CORE_ANNOTATIONS.VALUES]: [
       'InstRef',
       'Meta',
       'Ref',
@@ -76,11 +76,12 @@ describe('replace entities', () => {
       flat_meta: annoStringType,
       nested: nestedType,
       arr: annoStringType,
+      nestedArr: nestedType,
     },
     annotations: {
       [METADATA_TYPE]: CUSTOM_OBJECT,
       [API_NAME]: 'Obj',
-      [Type.VALUES]: [
+      [CORE_ANNOTATIONS.VALUES]: [
         'InstRef',
       ],
       reg: 'orig',
@@ -91,7 +92,10 @@ describe('replace entities', () => {
       nested: {
         nested_inst: 'InstRef',
       },
-      arr: ['InstRef'],
+      arr: ['InstRef', 'notRef'],
+      nestedArr: [{
+        nested_inst: 'InstRef',
+      }],
     },
     fields: {
       reg: new Field(ObjTypeId, 'reg', BuiltinTypes.STRING),
@@ -170,8 +174,10 @@ describe('replace entities', () => {
       expect(replacedType.annotations.reg).not.toBeInstanceOf(ReferenceExpression)
     })
     it('should not replace default annotations', () => {
-      expect(replacedType.annotations[Type.VALUES]).toEqual(objType.annotations[Type.VALUES])
-      expect(replacedType.annotations[Type.VALUES][0]).not.toBeInstanceOf(ReferenceExpression)
+      expect(replacedType.annotations[CORE_ANNOTATIONS.VALUES])
+        .toEqual(objType.annotations[CORE_ANNOTATIONS.VALUES])
+      expect(replacedType.annotations[CORE_ANNOTATIONS.VALUES][0])
+        .not.toBeInstanceOf(ReferenceExpression)
     })
     it('should replace values referencing an instance in annotations', () => {
       expect(replacedType.annotations.flat_inst).not.toEqual(objType.annotations.flat_inst)

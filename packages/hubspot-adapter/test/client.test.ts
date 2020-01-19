@@ -3,13 +3,14 @@ import {
 } from 'requestretry'
 import createClient from './client'
 import {
-  Form, HubspotMetadata,
+  Form, HubspotMetadata, Workflows, MarketingEmail,
 } from '../src/client/types'
 import {
   OBJECTS_NAMES,
 } from '../src/constants'
 import {
-  formsMockArray, marketingEmailMockArray, workflowsMockArray,
+  formsMockArray, marketingEmailMockArray, workflowsMockArray, workflowsMockCreate,
+  marketingEmailMockCreate, marketingEmailCreateResponse, workflowsCreateResponse,
 } from './common/mock_elements'
 
 
@@ -81,8 +82,8 @@ describe('Test HubSpot client', () => {
 
         it('should success', async () => {
           expect(await client.getAllInstances(OBJECTS_NAMES.FORM)).toHaveLength(2)
-          expect(await client.getAllInstances(OBJECTS_NAMES.WORKFLOWS)).toHaveLength(2)
-          expect(await client.getAllInstances(OBJECTS_NAMES.MARKETINGEMAIL)).toHaveLength(3)
+          expect(await client.getAllInstances(OBJECTS_NAMES.WORKFLOWS)).toHaveLength(3)
+          expect(await client.getAllInstances(OBJECTS_NAMES.MARKETINGEMAIL)).toHaveLength(4)
         })
       })
 
@@ -102,7 +103,7 @@ describe('Test HubSpot client', () => {
     })
 
     describe('Valid HubSpot type', () => {
-      let mockCreateForm: jest.Mock
+      let mockCreateInstance: jest.Mock
 
       const formToCreate = {
         name: 'newTestForm',
@@ -114,6 +115,10 @@ describe('Test HubSpot client', () => {
         unsupportedField: 'bla',
       } as unknown as Form
 
+      const marketingEmailToCreate = marketingEmailMockCreate as unknown as MarketingEmail
+
+      const workflowsToCreate = workflowsMockCreate as unknown as Workflows
+
       describe('wrong apikey', () => {
         beforeEach(() => {
           const unauthorizedResultMock = (): RequestPromise => (
@@ -124,64 +129,140 @@ describe('Test HubSpot client', () => {
               requestId: '493c8493-861b-4f56-be3b-3f6067238efd',
             } as unknown as RequestPromise)
 
-          mockCreateForm = jest.fn().mockImplementation(unauthorizedResultMock)
+          mockCreateInstance = jest.fn().mockImplementation(unauthorizedResultMock)
 
-          connection.forms.create = mockCreateForm
-          connection.workflows.create = mockCreateForm
-          connection.marketingEmail.create = mockCreateForm
+          connection.forms.create = mockCreateInstance
+          connection.workflows.create = mockCreateInstance
+          connection.marketingEmail.create = mockCreateInstance
         })
 
         it('should return error (FORM type)', async () => {
           await expect(client.createInstance(OBJECTS_NAMES.FORM, formToCreate)).rejects
             .toThrow('This apikey doesnt exist.')
+          expect(mockCreateInstance.mock.calls[0][0]).toMatchObject(formToCreate)
         })
 
         it('should return error (WORKFLOWS type)', async () => {
-          await expect(client.createInstance(OBJECTS_NAMES.WORKFLOWS, formToCreate)).rejects
+          await expect(client.createInstance(OBJECTS_NAMES.WORKFLOWS, workflowsToCreate)).rejects
             .toThrow('This apikey doesnt exist.')
+          expect(mockCreateInstance.mock.calls[0][0]).toMatchObject(workflowsToCreate)
         })
 
         it('should return error (MARKETINGEMAIL type)', async () => {
-          await expect(client.createInstance(OBJECTS_NAMES.MARKETINGEMAIL, formToCreate)).rejects
-            .toThrow('This apikey doesnt exist.')
+          await expect(client.createInstance(OBJECTS_NAMES.MARKETINGEMAIL, marketingEmailToCreate))
+            .rejects.toThrow('This apikey doesnt exist.')
+          expect(mockCreateInstance.mock.calls[0][0]).toMatchObject(marketingEmailToCreate)
         })
       })
 
-      describe('valid apikey', () => {
-        beforeEach(() => {
-          const createFormResultMock = (f: Form): RequestPromise => (
-            {
-              guid: '3e2e7ef3-d0d4-418f-92e0-ad40ae2b622c',
-              name: f.name,
-              createdAt: 1435353453,
-              captchaEnabled: f.captchaEnabled,
-              cloneable: f.cloneable,
-              editable: false,
-              cssClass: f.cssClass,
-              submitText: f.submitText,
-              deletable: f.deletable,
-            } as unknown as RequestPromise)
+      describe('when instance create success', () => {
+        describe('Form instance', () => {
+          beforeEach(() => {
+            const createFormResultMock = (f: Form): RequestPromise => (
+              {
+                guid: '3e2e7ef3-d0d4-418f-92e0-ad40ae2b622c',
+                name: f.name,
+                createdAt: 1435353453,
+                captchaEnabled: f.captchaEnabled,
+                cloneable: f.cloneable,
+                editable: false,
+                cssClass: f.cssClass,
+                submitText: f.submitText,
+                deletable: f.deletable,
+              } as unknown as RequestPromise)
 
-          mockCreateForm = jest.fn().mockImplementation(createFormResultMock)
+            mockCreateInstance = jest.fn().mockImplementation(createFormResultMock)
 
-          connection.forms.create = mockCreateForm
+            connection.forms.create = mockCreateInstance
+          })
+
+          it('should return the new Form instance', async () => {
+            const resp = await client.createInstance(OBJECTS_NAMES.FORM, formToCreate) as Form
+
+            // Autogenerated fields
+            expect(resp.guid).toEqual('3e2e7ef3-d0d4-418f-92e0-ad40ae2b622c')
+            expect(resp.createdAt).toEqual(1435353453)
+            expect(resp.editable).toBeFalsy()
+
+            // Fields from user (the creator)
+            expect(resp.name).toEqual(formToCreate.name)
+            expect(resp.captchaEnabled).toEqual(formToCreate.captchaEnabled)
+            expect(resp.cloneable).toEqual(formToCreate.cloneable)
+            expect(resp.cssClass).toEqual(formToCreate.cssClass)
+            expect(resp.submitText).toEqual(formToCreate.submitText)
+            expect(resp.deletable).toEqual(formToCreate.deletable)
+          })
         })
 
-        it('should success', async () => {
-          const resp = await client.createInstance(OBJECTS_NAMES.FORM, formToCreate) as Form
+        describe('Workflow instance', () => {
+          beforeEach(() => {
+            const createWorkflowResult = (): RequestPromise => (
+              workflowsCreateResponse as unknown as RequestPromise)
 
-          // Autogenerated fields
-          expect(resp.guid).toEqual('3e2e7ef3-d0d4-418f-92e0-ad40ae2b622c')
-          expect(resp.createdAt).toEqual(1435353453)
-          expect(resp.editable).toBeFalsy()
+            mockCreateInstance = jest.fn().mockImplementation(createWorkflowResult)
 
-          // Fields from user (the creator)
-          expect(resp.name).toEqual(formToCreate.name)
-          expect(resp.captchaEnabled).toEqual(formToCreate.captchaEnabled)
-          expect(resp.cloneable).toEqual(formToCreate.cloneable)
-          expect(resp.cssClass).toEqual(formToCreate.cssClass)
-          expect(resp.submitText).toEqual(formToCreate.submitText)
-          expect(resp.deletable).toEqual(formToCreate.deletable)
+            connection.workflows.create = mockCreateInstance
+          })
+
+          it('should return the new Workflow instance', async () => {
+            const resp = await client.createInstance(
+              OBJECTS_NAMES.WORKFLOWS,
+              workflowsToCreate
+            ) as Workflows
+
+            // Autogenerated fields
+            expect(resp.id).toEqual(9274658)
+            expect(resp.insertedAt).toEqual(1579426531213)
+            expect(resp.updatedAt).toEqual(1579426531143)
+
+            // Fields from user (the creator)
+            expect(resp.name).toEqual(workflowsToCreate.name)
+            expect(resp.type).toEqual(workflowsToCreate.type)
+            expect(resp.enabled).toEqual(workflowsToCreate.enabled)
+          })
+        })
+
+        describe('MarketingEmail instance', () => {
+          beforeEach(() => {
+            const createMarketingEmailResult = (): RequestPromise => (
+              marketingEmailCreateResponse as unknown as RequestPromise)
+
+            mockCreateInstance = jest.fn().mockImplementation(createMarketingEmailResult)
+
+            connection.marketingEmail.create = mockCreateInstance
+          })
+
+          it('should return the new marketingEmail instance', async () => {
+            const resp = await client.createInstance(
+              OBJECTS_NAMES.MARKETINGEMAIL,
+              marketingEmailToCreate
+            ) as MarketingEmail
+
+            // Autogenerated fields
+            expect(resp.id).toEqual(1234566)
+
+            // Fields from user (the creator)
+            expect(resp.name).toEqual(marketingEmailToCreate.name)
+            expect(resp.abHoursToWait).toEqual(marketingEmailToCreate.abHoursToWait)
+            expect(resp.abVariation).toEqual(marketingEmailToCreate.abVariation)
+            expect(resp.archived).toEqual(marketingEmailToCreate.archived)
+            expect(resp.campaign).toEqual(marketingEmailToCreate.campaign)
+            expect(resp.campaignName).toEqual(marketingEmailToCreate.campaignName)
+            expect(resp.emailBody).toEqual(marketingEmailToCreate.emailBody)
+            expect(resp.isLocalTimezoneSend).toEqual(marketingEmailToCreate.isLocalTimezoneSend)
+            expect(resp.feedbackEmailCategory).toEqual(marketingEmailToCreate.feedbackEmailCategory)
+            expect(resp.freezeDate).toEqual(marketingEmailToCreate.freezeDate)
+
+
+            // Default values
+            expect(resp.abVariation).toEqual(false)
+            expect(resp.abSampleSizeDefault).toBeNull()
+            expect(resp.abSamplingDefault).toBeNull()
+            expect(resp.domain).toEqual('')
+            expect(resp.htmlTitle).toEqual('')
+            expect(resp.emailNote).toEqual('')
+            expect(resp.isPublished).toEqual(false)
+          })
         })
       })
 
@@ -197,14 +278,26 @@ describe('Test HubSpot client', () => {
               requestId: '1c68e5ab-0729-4b9c-9848-f32cd237e058',
             } as unknown as RequestPromise)
 
-          mockCreateForm = jest.fn().mockImplementation(formAlreadyExistsResultMock)
+          mockCreateInstance = jest.fn().mockImplementation(formAlreadyExistsResultMock)
 
-          connection.forms.create = mockCreateForm
+          connection.forms.create = mockCreateInstance
+          connection.workflows.create = mockCreateInstance
+          connection.marketingEmail.create = mockCreateInstance
         })
 
-        it('should return error', async () => {
+        it('should return error 409 (FORM type)', async () => {
           await expect(client.createInstance(OBJECTS_NAMES.FORM, formToCreate)).rejects
             .toThrow(formAlreadyExiststErrStr)
+        })
+
+        it('should return error 409 (WORKFLOWS type)', async () => {
+          await expect(client.createInstance(OBJECTS_NAMES.WORKFLOWS, workflowsToCreate)).rejects
+            .toThrow(formAlreadyExiststErrStr)
+        })
+
+        it('should return error 409 (MarketingEmail type)', async () => {
+          await expect(client.createInstance(OBJECTS_NAMES.MARKETINGEMAIL, marketingEmailToCreate))
+            .rejects.toThrow(formAlreadyExiststErrStr)
         })
       })
 
@@ -220,9 +313,9 @@ describe('Test HubSpot client', () => {
               requestId: '2b4100f6-b32c-4902-96ab-c94f4fe960d5',
             } as unknown as RequestPromise)
 
-          mockCreateForm = jest.fn().mockImplementation(formWrongValueResultMock)
+          mockCreateInstance = jest.fn().mockImplementation(formWrongValueResultMock)
 
-          connection.forms.create = mockCreateForm
+          connection.forms.create = mockCreateInstance
         })
 
         it('should return error', async () => {
@@ -232,14 +325,8 @@ describe('Test HubSpot client', () => {
       })
 
       afterEach(() => {
-        expect(mockCreateForm.mock.calls).toHaveLength(1)
-        expect(mockCreateForm.mock.calls[0]).toHaveLength(1)
-        expect(mockCreateForm.mock.calls[0][0]).toMatchObject(formToCreate)
-
-        const object = mockCreateForm.mock.calls[0][0]
-        expect(object.name).toBe('newTestForm')
-        expect(object.submitText).toBe('Submit')
-        expect(object.deletable).toBeFalsy()
+        expect(mockCreateInstance.mock.calls).toHaveLength(1)
+        expect(mockCreateInstance.mock.calls[0]).toHaveLength(1)
       })
     })
   })

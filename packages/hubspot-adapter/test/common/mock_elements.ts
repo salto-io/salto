@@ -58,9 +58,75 @@ const secondWorkflowMock = {
   },
 }
 
+export const workflowsMockCreate = {
+  name: 'Test Workflow',
+  type: 'DRIP_DELAY',
+  enabled: false,
+  contactListIds: {
+    enrolled: 20,
+    active: 21,
+    completed: 22,
+    succeeded: 23,
+  },
+  unsupportedField: 'bla',
+}
+
+export const workflowsCreateResponse = {
+  portalId: 62515,
+  id: 9274658,
+  name: workflowsMockCreate.name,
+  updatedAt: 1579426531143,
+  insertedAt: 1579426531213,
+  type: workflowsMockCreate.type,
+  enabled: workflowsMockCreate.enabled,
+  description: '',
+  contactCounts: {
+    active: 0,
+    enrolled: 0,
+  },
+  migrationStatus: {
+    portalId: 62515,
+    flowId: 7102706,
+    workflowId: 5488642,
+    migrationStatus: 'EXECUTION_MIGRATED',
+    platformOwnsActions: true,
+    lastSuccessfulMigrationTimestamp: null,
+  },
+  originalAuthorUserId: 215482,
+  creationSource: {
+    sourceApplication: {
+      source: 'WORKFLOWS_APP',
+      serviceName: 'https://app.hubspot.com/workflows/6962502/platform/create/new',
+    },
+    createdByUser: {
+      userId: 9379192,
+      userEmail: 'adam.rosenthal@salto.io',
+    },
+    createdAt: 1579069732474,
+  },
+  updateSource: {
+    sourceApplication: {
+      source: 'WORKFLOWS_APP',
+      serviceName: 'https://app.hubspot.com/workflows/6962502/platform/flow/18538464/edit/actions/enrollment/filters',
+    },
+    updatedByUser: {
+      userId: 9379192,
+      userEmail: 'adam.rosenthal@salto.io',
+    },
+    updatedAt: 1579070462059,
+    contactListIds: {
+      enrolled: 20,
+      active: 21,
+      completed: 22,
+      succeeded: 23,
+    },
+  },
+}
+
 export const workflowsMockArray = [
   firstWorkflowMock,
   secondWorkflowMock,
+  workflowsMockCreate,
 ]
 
 
@@ -194,8 +260,73 @@ const thirdMarketingEmailMock = {
   name: 'marketingEmail instance3 name',
 }
 
+export const marketingEmailMockCreate = {
+  name: 'newTestMarketingEmail',
+  ab: false,
+  abHoursToWait: 123,
+  abVariation: false,
+  abStatus: 'VARIANT',
+  archived: 'archived',
+  author: 'mail,e@gmail.com',
+  authorEmail: 'mail134@gmail.com',
+  authorName: 'userNameOther1',
+  blogEmailType: 'daily',
+  campaign: 'campaignID',
+  campaignName: 'campaignName',
+  canSpamSettingsId: 'id123',
+  clonedFrom: 1234,
+  created: 12334567,
+  emailBody: 'main body',
+  emailType: 'ABC_EMAIL',
+  feedbackEmailCategory: 'CUSTOM',
+  feedbackSurveyId: 111,
+  folderId: 919,
+  freezeDate: 170456443,
+  fromName: 'sender name',
+  id: 973111,
+  isGraymailSuppressionEnabled: true,
+  isLocalTimezoneSend: true,
+}
+
+export const marketingEmailCreateResponse = {
+  name: 'newTestMarketingEmail',
+  ab: false,
+  abHoursToWait: 123,
+  abVariation: false,
+  abSampleSizeDefault: null,
+  abSamplingDefault: null,
+  abStatus: 'VARIANT',
+  archived: 'archived',
+  author: 'mail,e@gmail.com',
+  authorEmail: 'mail134@gmail.com',
+  authorName: 'userNameOther1',
+  blogEmailType: 'daily',
+  campaign: 'campaignID',
+  campaignName: 'campaignName',
+  canSpamSettingsId: 'id123',
+  clonedFrom: 1234,
+  createPage: false,
+  created: 12334567,
+  currentlyPublished: false,
+  domain: '',
+  emailBody: 'main body',
+  emailNote: '',
+  emailType: 'ABC_EMAIL',
+  feedbackEmailCategory: 'CUSTOM',
+  feedbackSurveyId: 111,
+  folderId: 919,
+  freezeDate: 170456443,
+  fromName: 'sender name',
+  htmlTitle: '',
+  id: 1234566,
+  isGraymailSuppressionEnabled: true,
+  isLocalTimezoneSend: true,
+  isPublished: false,
+}
+
 export const marketingEmailMockArray = [
   firstMarketingEmailMock,
   secondMarketingEmailMock,
   thirdMarketingEmailMock,
+  marketingEmailMockCreate,
 ]

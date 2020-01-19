@@ -1,6 +1,7 @@
+import wu from 'wu'
 import _ from 'lodash'
 import {
-  Change, ObjectType, isObjectType,
+  Change, ObjectType, isObjectType, ElemID, getChangeElement,
 } from 'adapter-api'
 import { GroupedNodeMap } from '@salto/dag'
 import { Plan, PlanItem } from '../../src/core/plan'
@@ -34,3 +35,10 @@ export const getPlan = (): Plan => {
   })
   return result as Plan
 }
+
+export const getFirstPlanItem = (plan: Plan): PlanItem =>
+  wu(plan.itemsByEvalOrder()).next().value
+
+export const getChange = (item: PlanItem, elemID: ElemID): Change =>
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  wu(item.changes()).find(change => getChangeElement(change).elemID.isEqual(elemID))!

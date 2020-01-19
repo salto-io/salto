@@ -84,6 +84,9 @@ export interface SalesforceAdapterParams {
   // Metadata types that we should not create, update or delete in the main adapter code
   metadataTypesToSkipMutation?: string[]
 
+  // Metadata types that we should not use client.update but client.upsert upon instance update
+  metadataTypesToUseUpsertUponUpdate?: string[]
+
   // Filters to deploy to all adapter operations
   filterCreators?: FilterCreator[]
 
@@ -114,6 +117,7 @@ export default class SalesforceAdapter {
   private metadataToRetrieveAndDeploy: Record<string, string | undefined>
   private metadataAdditionalTypes: string[]
   private metadataTypesToSkipMutation: string[]
+  private metadataTypesToUseUpsertUponUpdate: string[]
   private filterCreators: FilterCreator[]
   private client: SalesforceClient
   private systemFields: string[]
@@ -152,6 +156,9 @@ export default class SalesforceAdapter {
     ],
     metadataTypesToSkipMutation = [
       'Workflow', // handled in workflow filter
+    ],
+    metadataTypesToUseUpsertUponUpdate = [
+      'Flow', // update fails for Active flows
     ],
     filterCreators = [
       CustomObjectsFilter,
@@ -200,6 +207,7 @@ export default class SalesforceAdapter {
     this.metadataToRetrieveAndDeploy = metadataToRetrieveAndDeploy
     this.metadataAdditionalTypes = metadataAdditionalTypes
     this.metadataTypesToSkipMutation = metadataTypesToSkipMutation
+    this.metadataTypesToUseUpsertUponUpdate = metadataTypesToUseUpsertUponUpdate
     this.filterCreators = filterCreators
     this.client = client
     this.systemFields = systemFields
@@ -557,6 +565,8 @@ export default class SalesforceAdapter {
 
     if (this.isMetadataTypeToRetrieveAndDeploy(typeName)) {
       await this.deployInstance(newInstance)
+    } else if (this.metadataTypesToUseUpsertUponUpdate.includes(typeName)) {
+      await this.client.upsert(typeName, toMetadataInfo(apiName(newInstance), newInstance.value))
     } else {
       await this.client.update(typeName, toMetadataInfo(
         apiName(newInstance),

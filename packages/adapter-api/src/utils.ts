@@ -97,6 +97,9 @@ export const transform = (
     if (_.isArray(value) && value.every(s => s === '')) {
       return undefined
     }
+    if (value === null) {
+      return undefined
+    }
     // we get empty strings that we would like to filter out
     if (value === '') {
       return undefined

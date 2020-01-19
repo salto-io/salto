@@ -424,7 +424,7 @@ export class Types {
           },
         ),
         [MARKETINGEMAIL_FIELDS.AB]: new TypeField(
-          marketingEmailElemID, MARKETINGEMAIL_FIELDS.AB, BuiltinTypes.STRING, {
+          marketingEmailElemID, MARKETINGEMAIL_FIELDS.AB, BuiltinTypes.BOOLEAN, {
             name: MARKETINGEMAIL_FIELDS.AB,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
@@ -531,9 +531,9 @@ export class Types {
   }
 }
 
-const createInstanceName = (
+export const createInstanceName = (
   name: string
-): string => name.split(' ').join('_')
+): string => name.trim().split(' ').join('_')
 
 /**
  * This method generate (instance) values by iterating hubspot object fields.

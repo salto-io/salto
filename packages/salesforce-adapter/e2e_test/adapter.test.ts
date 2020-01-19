@@ -2,6 +2,7 @@ import _ from 'lodash'
 import {
   ObjectType, ElemID, InstanceElement, Field, Value, Element, Values, BuiltinTypes,
   isInstanceElement, ReferenceExpression, CORE_ANNOTATIONS, RESTRICTION_ANNOTATIONS, findElement,
+  findObjectType,
 } from 'adapter-api'
 import { MetadataInfo, PicklistEntry, RetrieveResult } from 'jsforce'
 import { collections } from '@salto/lowerdash'
@@ -28,6 +29,7 @@ import { fromRetrieveResult, toMetadataPackageZip } from '../src/transformers/xm
 import {
   WORKFLOW_ALERTS_FIELD, WORKFLOW_FIELD_UPDATES_FIELD, WORKFLOW_RULES_FIELD, WORKFLOW_TASKS_FIELD,
 } from '../src/filters/workflow'
+import { LAYOUT_TYPE_ID } from '../src/filters/layouts'
 
 const { makeArray } = collections.array
 const {
@@ -77,6 +79,7 @@ describe('Salesforce adapter E2E with real account', () => {
   const gvsName = 'TestGlobalValueSet'
   const fetchedRollupSummaryFieldName = 'rollupsummary__c'
   const fetchedGlobalPicklistFieldName = 'gpicklist__c'
+  const fetchedLocationFieldName = 'location__c'
   const accountApiName = 'Account'
 
   beforeAll(async () => {
@@ -128,6 +131,14 @@ describe('Salesforce adapter E2E with real account', () => {
         },
         type: 'Picklist',
       } as MetadataInfo,
+      {
+        fullName: `${accountApiName}.${fetchedLocationFieldName}`,
+        label: 'Test Fetch Location Field',
+        required: false,
+        scale: 10,
+        displayLocationInDecimal: true,
+        type: 'Location',
+      } as MetadataInfo,
       ])
 
       // Add the fields permissions
@@ -139,6 +150,11 @@ describe('Salesforce adapter E2E with real account', () => {
         },
         {
           field: `${accountApiName}.${fetchedGlobalPicklistFieldName}`,
+          editable: true,
+          readable: true,
+        },
+        {
+          field: `${accountApiName}.${fetchedLocationFieldName}`,
           editable: true,
           readable: true,
         },
@@ -420,6 +436,196 @@ describe('Salesforce adapter E2E with real account', () => {
       return verifyLeadHasWorkflowRule() // WorkflowRule depends on Alert, FieldUpdate & Task
     }
 
+    const verifyFlowExists = async (): Promise<void> => {
+      await client.upsert('Flow', {
+        fullName: 'TestFlow',
+        decisions: {
+          processMetadataValues: {
+            name: 'index',
+            value: {
+              numberValue: '0.0',
+            },
+          },
+          name: 'myDecision',
+          label: 'myDecision2',
+          locationX: '50',
+          locationY: '0',
+          defaultConnectorLabel: 'default',
+          rules: {
+            name: 'myRule_1',
+            conditionLogic: 'and',
+            conditions: {
+              processMetadataValues: [
+                {
+                  name: 'inputDataType',
+                  value: {
+                    stringValue: 'String',
+                  },
+                },
+                {
+                  name: 'leftHandSideType',
+                  value: {
+                    stringValue: 'String',
+                  },
+                },
+                {
+                  name: 'operatorDataType',
+                  value: {
+                    stringValue: 'String',
+                  },
+                },
+                {
+                  name: 'rightHandSideType',
+                  value: {
+                    stringValue: 'String',
+                  },
+                },
+              ],
+              leftValueReference: 'myVariable_current.FirstName',
+              operator: 'EqualTo',
+              rightValue: {
+                stringValue: 'BLA',
+              },
+            },
+            connector: {
+              targetReference: 'myRule_1_A1',
+            },
+            label: 'NameIsBla',
+          },
+        },
+        interviewLabel: 'TestFlow-1_InterviewLabel',
+        label: 'TestFlow',
+        processMetadataValues: [
+          {
+            name: 'ObjectType',
+            value: {
+              stringValue: 'Contact',
+            },
+          },
+          {
+            name: 'ObjectVariable',
+            value: {
+              elementReference: 'myVariable_current',
+            },
+          },
+          {
+            name: 'OldObjectVariable',
+            value: {
+              elementReference: 'myVariable_old',
+            },
+          },
+          {
+            name: 'TriggerType',
+            value: {
+              stringValue: 'onCreateOnly',
+            },
+          },
+        ],
+        processType: 'Workflow',
+        recordUpdates: {
+          processMetadataValues: [
+            {
+              name: 'evaluationType',
+              value: {
+                stringValue: 'always',
+              },
+            },
+            {
+              name: 'extraTypeInfo',
+            },
+            {
+              name: 'isChildRelationship',
+              value: {
+                booleanValue: 'false',
+              },
+            },
+            {
+              name: 'reference',
+              value: {
+                stringValue: '[Contact]',
+              },
+            },
+            {
+              name: 'referenceTargetField',
+            },
+          ],
+          name: 'myRule_1_A1',
+          label: 'UpdateLastName',
+          locationX: '100',
+          locationY: '200',
+          filters: {
+            processMetadataValues: {
+              name: 'implicit',
+              value: {
+                booleanValue: 'true',
+              },
+            },
+            field: 'Id',
+            operator: 'EqualTo',
+            value: {
+              elementReference: 'myVariable_current.Id',
+            },
+          },
+          inputAssignments: {
+            processMetadataValues: [
+              {
+                name: 'dataType',
+                value: {
+                  stringValue: 'String',
+                },
+              },
+              {
+                name: 'isRequired',
+                value: {
+                  booleanValue: 'false',
+                },
+              },
+              {
+                name: 'leftHandSideLabel',
+                value: {
+                  stringValue: 'Last Name',
+                },
+              },
+              {
+                name: 'leftHandSideReferenceTo',
+              },
+              {
+                name: 'rightHandSideType',
+                value: {
+                  stringValue: 'String',
+                },
+              },
+            ],
+            field: 'LastName',
+            value: {
+              stringValue: 'Updated Name',
+            },
+          },
+          object: 'Contact',
+        },
+        startElementReference: 'myDecision',
+        status: 'Draft',
+        variables: [
+          {
+            name: 'myVariable_current',
+            dataType: 'SObject',
+            isCollection: 'false',
+            isInput: 'true',
+            isOutput: 'true',
+            objectType: 'Contact',
+          },
+          {
+            name: 'myVariable_old',
+            dataType: 'SObject',
+            isCollection: 'false',
+            isInput: 'true',
+            isOutput: 'false',
+            objectType: 'Contact',
+          },
+        ],
+      } as MetadataInfo)
+    }
+
     await Promise.all([
       verifyCustomFieldsExists(),
       verifyEmailTemplateAndFolderExist(),
@@ -427,6 +633,7 @@ describe('Salesforce adapter E2E with real account', () => {
       verifyDashboardAndFolderExist(),
       verifyCustomObjectInnerTypesExist(),
       verifyLeadWorkflowInnerTypesExist(),
+      verifyFlowExists(),
     ])
     result = await adapter.fetch()
   })
@@ -442,11 +649,11 @@ describe('Salesforce adapter E2E with real account', () => {
         const lead = findElements(result, 'Lead')[0] as ObjectType
 
         // Test few possible types
-        expect(lead.fields.Address.type.elemID).toEqual(Types.compoundDataTypes.address.elemID)
+        expect(lead.fields.Address.type.elemID).toEqual(Types.compoundDataTypes.Address.elemID)
         expect(lead.fields.Description.type.elemID).toEqual(
           Types.primitiveDataTypes.LongTextArea.elemID,
         )
-        expect(lead.fields.Name.type.elemID).toEqual(Types.compoundDataTypes.name.elemID)
+        expect(lead.fields.Name.type.elemID).toEqual(Types.compoundDataTypes.Name.elemID)
         expect(lead.fields.OwnerId.type.elemID).toEqual(Types.primitiveDataTypes.Lookup.elemID)
 
         // Test label
@@ -668,6 +875,14 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(dashboardFolder.value[constants.INSTANCE_FULL_NAME_FIELD])
         .toEqual('TestDashboardFolder')
       expect(dashboardFolder.value.name).toEqual('Test Dashboard Folder Name')
+    })
+
+    it('should fetch Flow instance', () => {
+      const flow = findElements(result, 'Flow', 'TestFlow')[0] as InstanceElement
+      expect(flow.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('TestFlow')
+      expect(flow.value.status).toEqual('Draft')
+      expect(flow.value.variables[0].dataType).toEqual('SObject')
+      expect(flow.value.processType).toEqual('Workflow')
     })
 
     describe('should fetch Workflow instance', () => {
@@ -1671,7 +1886,7 @@ describe('Salesforce adapter E2E with real account', () => {
           Golf: new Field(
             mockElemID,
             'Golf',
-            Types.compoundDataTypes.location,
+            Types.compoundDataTypes.Location,
             {
               [constants.LABEL]: 'Location description label',
               [constants.FIELD_ANNOTATIONS.SCALE]: 2,
@@ -2310,6 +2525,14 @@ describe('Salesforce adapter E2E with real account', () => {
             bpCase(gvsName),
           ).createNestedID(constants.INSTANCE_FULL_NAME_FIELD)
         ))
+    })
+
+    it('should fetch Location field', async () => {
+      const account = findElements(result, 'Account')[1] as ObjectType
+      const locationField = account.fields[fetchedLocationFieldName]
+      expect(locationField.annotations[constants.FIELD_ANNOTATIONS.SCALE]).toEqual(10)
+      expect(locationField.annotations[constants.FIELD_ANNOTATIONS.DISPLAY_LOCATION_IN_DECIMAL])
+        .toBe(true)
     })
 
     // Assignment rules are special because they use the Deploy API so they get their own test
@@ -3386,6 +3609,235 @@ describe('Salesforce adapter E2E with real account', () => {
       })
     })
 
+    describe('flow instance manipulations', () => {
+      let flow: InstanceElement
+      beforeAll(async () => {
+        const flowType = findObjectType(result, new ElemID(constants.SALESFORCE, 'Flow')) as ObjectType
+        flow = new InstanceElement('MyFlow', flowType, {
+          [constants.INSTANCE_FULL_NAME_FIELD]: 'MyFlow',
+          decisions: {
+            processMetadataValues: {
+              name: 'index',
+              value: {
+                numberValue: '0.0',
+              },
+            },
+            name: 'myDecision',
+            label: 'myDecision2',
+            locationX: '50',
+            locationY: '0',
+            defaultConnectorLabel: 'default',
+            rules: {
+              name: 'myRule_1',
+              conditionLogic: 'and',
+              conditions: {
+                processMetadataValues: [
+                  {
+                    name: 'inputDataType',
+                    value: {
+                      stringValue: 'String',
+                    },
+                  },
+                  {
+                    name: 'leftHandSideType',
+                    value: {
+                      stringValue: 'String',
+                    },
+                  },
+                  {
+                    name: 'operatorDataType',
+                    value: {
+                      stringValue: 'String',
+                    },
+                  },
+                  {
+                    name: 'rightHandSideType',
+                    value: {
+                      stringValue: 'String',
+                    },
+                  },
+                ],
+                leftValueReference: 'myVariable_current.FirstName',
+                operator: 'EqualTo',
+                rightValue: {
+                  stringValue: 'BLA',
+                },
+              },
+              connector: {
+                targetReference: 'myRule_1_A1',
+              },
+              label: 'NameIsBla',
+            },
+          },
+          interviewLabel: 'MyFlow-1_InterviewLabel',
+          label: 'MyFlow',
+          processMetadataValues: [
+            {
+              name: 'ObjectType',
+              value: {
+                stringValue: 'Contact',
+              },
+            },
+            {
+              name: 'ObjectVariable',
+              value: {
+                elementReference: 'myVariable_current',
+              },
+            },
+            {
+              name: 'OldObjectVariable',
+              value: {
+                elementReference: 'myVariable_old',
+              },
+            },
+            {
+              name: 'TriggerType',
+              value: {
+                stringValue: 'onCreateOnly',
+              },
+            },
+          ],
+          processType: 'Workflow',
+          recordUpdates: {
+            processMetadataValues: [
+              {
+                name: 'evaluationType',
+                value: {
+                  stringValue: 'always',
+                },
+              },
+              {
+                name: 'extraTypeInfo',
+              },
+              {
+                name: 'isChildRelationship',
+                value: {
+                  booleanValue: 'false',
+                },
+              },
+              {
+                name: 'reference',
+                value: {
+                  stringValue: '[Contact]',
+                },
+              },
+              {
+                name: 'referenceTargetField',
+              },
+            ],
+            name: 'myRule_1_A1',
+            label: 'UpdateLastName',
+            locationX: '100',
+            locationY: '200',
+            filters: {
+              processMetadataValues: {
+                name: 'implicit',
+                value: {
+                  booleanValue: 'true',
+                },
+              },
+              field: 'Id',
+              operator: 'EqualTo',
+              value: {
+                elementReference: 'myVariable_current.Id',
+              },
+            },
+            inputAssignments: {
+              processMetadataValues: [
+                {
+                  name: 'dataType',
+                  value: {
+                    stringValue: 'String',
+                  },
+                },
+                {
+                  name: 'isRequired',
+                  value: {
+                    booleanValue: 'false',
+                  },
+                },
+                {
+                  name: 'leftHandSideLabel',
+                  value: {
+                    stringValue: 'Last Name',
+                  },
+                },
+                {
+                  name: 'leftHandSideReferenceTo',
+                },
+                {
+                  name: 'rightHandSideType',
+                  value: {
+                    stringValue: 'String',
+                  },
+                },
+              ],
+              field: 'LastName',
+              value: {
+                stringValue: 'Updated Name',
+              },
+            },
+            object: 'Contact',
+          },
+          startElementReference: 'myDecision',
+          status: 'Draft',
+          variables: [
+            {
+              name: 'myVariable_current',
+              dataType: 'SObject',
+              isCollection: 'false',
+              isInput: 'true',
+              isOutput: 'true',
+              objectType: 'Contact',
+            },
+            {
+              name: 'myVariable_old',
+              dataType: 'SObject',
+              isCollection: 'false',
+              isInput: 'true',
+              isOutput: 'false',
+              objectType: 'Contact',
+            },
+          ],
+        })
+
+        // make sure we create a new flow and don't use an old one
+        await adapter.remove(flow).catch(() => undefined)
+      })
+
+      describe('create flow', () => {
+        it('should create flow', async () => {
+          flow = (await adapter.add(flow)) as InstanceElement
+          const flowInfo = (await client.readMetadata('Flow', 'MyFlow'))[0]
+          expect(flowInfo).toBeDefined()
+          expect(flowInfo[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('MyFlow')
+          expect(_.get(flowInfo, 'variables')[0].dataType).toEqual('SObject')
+        })
+      })
+
+      describe('update flow', () => {
+        it('should update flow', async () => {
+          const newFlow = flow.clone()
+          newFlow.value.decisions.rules.conditions.operator = 'NotEqualTo'
+
+          flow = (await adapter.update(flow, newFlow,
+            [{ action: 'modify', data: { before: flow, after: newFlow } }])) as InstanceElement
+
+          const flowInfo = (await client.readMetadata('Flow', 'MyFlow'))[0]
+          expect(flowInfo).toBeDefined()
+          expect(flowInfo[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('MyFlow')
+          expect(_.get(flowInfo, 'decisions').rules.conditions.operator).toEqual('NotEqualTo')
+        })
+      })
+
+      describe('delete flow', () => {
+        it('should delete flow', async () => {
+          await adapter.remove(flow)
+          expect(await objectExists('Flow', 'MyFlow')).toBeFalsy()
+        })
+      })
+    })
+
     describe('workflow instance manipulations', () => {
       const findInstance = async (type: string, fullName: string):
         Promise<MetadataInfo | undefined> => {
@@ -3865,6 +4317,221 @@ describe('Salesforce adapter E2E with real account', () => {
         expect((await innerTypesExist()).every(Boolean)).toBeTruthy()
         await adapter.remove(workflowWithInnerTypes)
         expect((await innerTypesExist()).some(Boolean)).toBeFalsy()
+      })
+    })
+
+    describe('layout manipulations', () => {
+      let layout: InstanceElement
+      beforeAll(async () => {
+        const layoutType = findObjectType(result, LAYOUT_TYPE_ID) as ObjectType
+        layout = new InstanceElement('MyLayout', layoutType, {
+          [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead-MyLayout',
+          layoutSections: [
+            {
+              customLabel: false,
+              detailHeading: false,
+              editHeading: true,
+              label: 'Lead Information',
+              layoutColumns: [
+                {
+                  layoutItems: [
+                    {
+                      behavior: 'Required',
+                      field: 'Name',
+                    },
+                    {
+                      behavior: 'Required',
+                      field: 'Company',
+                    },
+                  ],
+                },
+                {
+                  layoutItems: [
+                    {
+                      behavior: 'Edit',
+                      field: 'Email',
+                    },
+                    {
+                      behavior: 'Required',
+                      field: 'Status',
+                    },
+                    {
+                      behavior: 'Edit',
+                      field: 'Rating',
+                    },
+                  ],
+                },
+              ],
+              style: 'TwoColumnsTopToBottom',
+            },
+            {
+              customLabel: false,
+              detailHeading: false,
+              editHeading: true,
+              label: 'Address Information',
+              layoutColumns: [
+                {
+                  layoutItems: [
+                    {
+                      behavior: 'Edit',
+                      field: 'Address',
+                    },
+                  ],
+                },
+              ],
+              style: 'OneColumn',
+            },
+          ],
+          quickActionList: {
+            quickActionListItems: [
+              {
+                quickActionName: 'FeedItem.LinkPost',
+              },
+              {
+                quickActionName: 'FeedItem.PollPost',
+              },
+            ],
+          },
+          relatedContent: {
+            relatedContentItems: [
+              {
+                layoutItem: {
+                  behavior: 'Readonly',
+                  field: 'CampaignId',
+                },
+              },
+              {
+                layoutItem: {
+                  component: 'runtime_sales_social:socialPanel',
+                },
+              },
+            ],
+          },
+          relatedLists: [
+            {
+              fields: [
+                'TASK.STATUS',
+                'ACTIVITY.TASK',
+              ],
+              relatedList: 'RelatedActivityList',
+            },
+            {
+              fields: [
+                'TASK.SUBJECT',
+                'TASK.DUE_DATE',
+              ],
+              relatedList: 'RelatedHistoryList',
+            },
+          ],
+        })
+
+        // make sure we create a new layout and don't use an old one
+        await adapter.remove(layout).catch(() => undefined)
+      })
+
+      describe('create layout', () => {
+        it('should create layout', async () => {
+          layout = (await adapter.add(layout)) as InstanceElement
+          expect(await objectExists('Layout', 'Lead-MyLayout')).toBeTruthy()
+        })
+      })
+
+      describe('update layout', () => {
+        it('should update layout', async () => {
+          const newLayout = layout.clone()
+
+          // edit layout sections
+          newLayout.value.layoutSections[0].style = 'OneColumn'
+          newLayout.value.layoutSections[0].layoutColumns = {
+            layoutItems: [
+              {
+                behavior: 'Required',
+                field: 'Name',
+              },
+              {
+                behavior: 'Edit',
+                field: 'Phone',
+              },
+              {
+                behavior: 'Required',
+                field: 'Company',
+              },
+              {
+                behavior: 'Edit',
+                field: 'Email',
+              },
+              {
+                behavior: 'Required',
+                field: 'Status',
+              },
+            ],
+          }
+          newLayout.value.layoutSections[1].label = 'Updated Label'
+
+          // edit layout quick actions
+          newLayout.value.quickActionList.quickActionListItems = [
+            {
+              quickActionName: 'FeedItem.PollPost',
+            },
+            {
+              quickActionName: 'FeedItem.ContentPost',
+            },
+
+          ]
+
+          // edit layout related lists
+          newLayout.value.relatedLists = [{
+            fields: [
+              'TASK.LAST_UPDATE',
+              'TASK.DUE_DATE',
+            ],
+            relatedList: 'RelatedHistoryList',
+          }]
+
+          layout = (await adapter.update(layout, newLayout,
+            [{ action: 'modify', data: { before: layout, after: newLayout } }])) as InstanceElement
+
+          const layoutInfo = (await client.readMetadata('Layout', 'Lead-MyLayout'))[0]
+          expect(layoutInfo).toBeDefined()
+          const layoutSections = _.get(layoutInfo, 'layoutSections')
+          expect(layoutSections[0].style).toEqual('OneColumn')
+          expect(layoutSections[0].layoutColumns.layoutItems)
+            .toEqual([
+              {
+                behavior: 'Required',
+                field: 'Name',
+              },
+              {
+                behavior: 'Edit',
+                field: 'Phone',
+              },
+              {
+                behavior: 'Required',
+                field: 'Company',
+              },
+              {
+                behavior: 'Edit',
+                field: 'Email',
+              },
+              {
+                behavior: 'Required',
+                field: 'Status',
+              },
+            ])
+          expect(layoutSections[1].label).toEqual('Updated Label')
+          const quickActionItems = _.get(layoutInfo, 'quickActionList').quickActionListItems
+          expect(quickActionItems[0].quickActionName).toEqual('FeedItem.PollPost')
+          expect(quickActionItems[1].quickActionName).toEqual('FeedItem.ContentPost')
+          const relatedLists = _.get(layoutInfo, 'relatedLists')
+          expect(relatedLists.fields).toEqual(['TASK.LAST_UPDATE', 'TASK.DUE_DATE'])
+        })
+      })
+
+      describe('delete layout', () => {
+        it('should delete layout', async () => {
+          await adapter.remove(layout)
+          expect(await objectExists('Layout', 'Lead-MyLayout')).toBeFalsy()
+        })
       })
     })
   })

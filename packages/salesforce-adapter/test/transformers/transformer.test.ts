@@ -427,6 +427,64 @@ describe('transformer', () => {
         expect(fieldElement.type).toEqual(Types.primitiveDataTypes.Number)
       })
     })
+
+    describe('name field transformation', () => {
+      const origSalesforceNameField: SalesforceField = {
+        aggregatable: true,
+        cascadeDelete: false,
+        dependentPicklist: false,
+        externalId: false,
+        htmlFormatted: false,
+        autoNumber: false,
+        byteLength: 363,
+        calculated: false,
+        caseSensitive: false,
+        createable: false,
+        custom: false,
+        defaultedOnCreate: false,
+        deprecatedAndHidden: false,
+        digits: 0,
+        extraTypeInfo: 'personname',
+        filterable: true,
+        groupable: true,
+        idLookup: false,
+        label: 'Full Name',
+        length: 121,
+        name: 'Name',
+        nameField: true,
+        namePointing: false,
+        nillable: false,
+        permissionable: false,
+        polymorphicForeignKey: false,
+        precision: 0,
+        queryByDistance: false,
+        restrictedPicklist: false,
+        scale: 0,
+        searchPrefilterable: false,
+        soapType: 'xsd:string',
+        sortable: true,
+        type: 'string',
+        unique: false,
+        updateable: false,
+      }
+
+      let salesforceNameField: SalesforceField
+      beforeEach(() => {
+        salesforceNameField = _.cloneDeep(origSalesforceNameField)
+      })
+
+      const dummyElem = new ObjectType({
+        elemID: new ElemID('adapter', 'dummy'),
+        annotations: {
+          [API_NAME]: 'Dummy',
+        },
+      })
+
+      it('should fetch name field with the right type', async () => {
+        const fieldElement = getSObjectFieldElement(dummyElem, salesforceNameField, {})
+        expect(fieldElement.type).toEqual(Types.compoundDataTypes.Name)
+      })
+    })
   })
 
   describe('toCustomObject', () => {
@@ -518,7 +576,7 @@ describe('transformer', () => {
         objectType.fields[fieldName].annotations[FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION] = false
         const customLookupField = toCustomField(objectType.fields[fieldName])
         assertCustomFieldTransformation(customLookupField,
-          FIELD_TYPE_NAMES.LOOKUP, 'FieldName', 'Restrict', relatedTo)
+          FIELD_TYPE_NAMES.LOOKUP, 'Name', 'Restrict', relatedTo)
       })
 
       it('should transform lookup field with no deletion constraint', async () => {
@@ -526,7 +584,7 @@ describe('transformer', () => {
         objectType.fields[fieldName].annotations[FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION] = true
         const customLookupField = toCustomField(objectType.fields[fieldName])
         assertCustomFieldTransformation(customLookupField,
-          FIELD_TYPE_NAMES.LOOKUP, 'FieldName', 'SetNull', relatedTo)
+          FIELD_TYPE_NAMES.LOOKUP, 'Name', 'SetNull', relatedTo)
       })
 
       it('should transform masterdetail field', async () => {
@@ -536,7 +594,7 @@ describe('transformer', () => {
         masterDetailField.annotations[FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL] = true
         const customMasterDetailField = toCustomField(masterDetailField)
         assertCustomFieldTransformation(customMasterDetailField,
-          FIELD_TYPE_NAMES.MASTER_DETAIL, 'FieldName', undefined, relatedTo)
+          FIELD_TYPE_NAMES.MASTER_DETAIL, 'Name', undefined, relatedTo)
         expect(customMasterDetailField.reparentableMasterDetail).toBe(true)
         expect(customMasterDetailField.writeRequiresMasterRead).toBe(true)
       })
@@ -744,12 +802,12 @@ describe('transformer', () => {
         elemID,
         fields: {
           [fieldName]: new TypeField(
-            addressElemID, fieldName, Types.compoundDataTypes.address
+            addressElemID, fieldName, Types.compoundDataTypes.Address
           ),
         },
       })
       const fields = getCompoundChildFields(testedObjectType)
-      expect(fields).toHaveLength(Object.values(Types.compoundDataTypes.address.fields).length)
+      expect(fields).toHaveLength(Object.values(Types.compoundDataTypes.Address.fields).length)
       const fieldNamesSet = new Set<string>(fields.map(f => f.name))
       Object.values(ADDRESS_FIELDS).forEach(field => {
         expect(fieldNamesSet).toContain(`${testName}${field}`)
@@ -765,12 +823,12 @@ describe('transformer', () => {
         elemID,
         fields: {
           [fieldName]: new TypeField(
-            geoLocationElemID, fieldName, Types.compoundDataTypes.location, annotations
+            geoLocationElemID, fieldName, Types.compoundDataTypes.Location, annotations
           ),
         },
       })
       const fields = getCompoundChildFields(testedObjectType)
-      expect(fields).toHaveLength(Object.values(Types.compoundDataTypes.location.fields).length)
+      expect(fields).toHaveLength(Object.values(Types.compoundDataTypes.Location.fields).length)
       const fieldNamesSet = new Set<string>(fields.map(f => f.name))
       Object.values(GEOLOCATION_FIELDS).forEach(field => {
         const expectedFieldName = `${testName}__${field}`
@@ -791,12 +849,12 @@ describe('transformer', () => {
         elemID,
         fields: {
           [fieldName]: new TypeField(
-            geoLocationElemID, fieldName, Types.compoundDataTypes.location, annotations
+            geoLocationElemID, fieldName, Types.compoundDataTypes.Location, annotations
           ),
         },
       })
       const fields = getCompoundChildFields(testedObjectType)
-      expect(fields).toHaveLength(Object.values(Types.compoundDataTypes.location.fields).length)
+      expect(fields).toHaveLength(Object.values(Types.compoundDataTypes.Location.fields).length)
       const fieldNamesSet = new Set<string>(fields.map(f => f.name))
       Object.values(GEOLOCATION_FIELDS).forEach(field => {
         const expectedFieldName = `${testName}__${field}`
@@ -817,12 +875,12 @@ describe('transformer', () => {
         elemID,
         fields: {
           [fieldName]: new TypeField(
-            nameElemID, fieldName, Types.compoundDataTypes.name, annotations
+            nameElemID, fieldName, Types.compoundDataTypes.Name, annotations
           ),
         },
       })
       const fields = getCompoundChildFields(testedObjectType)
-      expect(fields).toHaveLength(Object.values(Types.compoundDataTypes.name.fields).length)
+      expect(fields).toHaveLength(Object.values(Types.compoundDataTypes.Name.fields).length)
       const fieldNamesSet = new Set<string>(fields.map(f => f.name))
       Object.values(NAME_FIELDS).forEach(field => {
         expect(fieldNamesSet).toContain(field)
@@ -838,7 +896,7 @@ describe('transformer', () => {
         elemID,
         fields: {
           [fieldName]: new TypeField(
-            nameElemID, fieldName, Types.compoundDataTypes.name, annotations
+            nameElemID, fieldName, Types.compoundDataTypes.Name, annotations
           ),
         },
       })

@@ -3068,7 +3068,7 @@ columnify@^1.5.4:
     strip-ansi "^3.0.0"
     wcwidth "^1.0.0"
 
-combined-stream@^1.0.6, combined-stream@~1.0.6:
+combined-stream@^1.0.6, combined-stream@^1.0.8, combined-stream@~1.0.6:
   version "1.0.8"
   resolved "https://registry.yarnpkg.com/combined-stream/-/combined-stream-1.0.8.tgz#c3d45a8b34fd730631a110a8a2520682b31d5a7f"
   integrity sha512-FQN4MRfuJeHf7cBbBMJFXhKSDq+2kAArBlmRBvcvFE5BB1HZKXtSFASDhdlz9zOYwxh8lDdnvmMOe/+5cdoEdg==
@@ -4739,13 +4739,22 @@ forever-agent@~0.6.1:
   resolved "https://registry.yarnpkg.com/forever-agent/-/forever-agent-0.6.1.tgz#fbc71f0c41adeb37f96c577ad1ed42d8fdacca91"
   integrity sha1-+8cfDEGt6zf5bFd60e1C2P2sypE=
 
-form-data@^2.5.0, form-data@^2.5.1:
+form-data@^2.5.0:
   version "2.5.1"
   resolved "https://registry.yarnpkg.com/form-data/-/form-data-2.5.1.tgz#f2cbec57b5e59e23716e128fe44d4e5dd23895f4"
   integrity sha512-m21N3WOmEEURgk6B9GLOE4RuWOFf28Lhh9qGYeNlGq4VDXUlJy2th2slBNU8Gp8EzloYZOibZJ7t5ecIrFSjVA==
   dependencies:
     asynckit "^0.4.0"
     combined-stream "^1.0.6"
+    mime-types "^2.1.12"
+
+form-data@^3.0.0:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/form-data/-/form-data-3.0.0.tgz#31b7e39c85f1355b7139ee0c647cf0de7f83c682"
+  integrity sha512-CKMFDglpbMi6PyN+brwB9Q/GOw0eAnsrEZDgcsH5Krhz5Od/haKHAX0NmQfha2zPPz0JpWzA7GJHGSnvCRLWsg==
+  dependencies:
+    asynckit "^0.4.0"
+    combined-stream "^1.0.8"
     mime-types "^2.1.12"
 
 form-data@~2.3.2:
@@ -5366,14 +5375,14 @@ https-proxy-agent@^2.2.1, https-proxy-agent@^2.2.3, https-proxy-agent@^2.2.4:
     agent-base "^4.3.0"
     debug "^3.1.0"
 
-hubspot@^2.3.4:
-  version "2.3.5"
-  resolved "https://registry.yarnpkg.com/hubspot/-/hubspot-2.3.5.tgz#c973d5073932d383ff779a26e43497cc43e3aff2"
-  integrity sha512-CXHX3UXc5nnzj9elSN6GZAom8DKhgL4DoJzCbjzMCBJLmja+zyQny1Y6JBGs4sps7FB4dzOwK+uSMLm+JgF/Cw==
+hubspot@^2.3.7:
+  version "2.3.7"
+  resolved "https://registry.yarnpkg.com/hubspot/-/hubspot-2.3.7.tgz#4e36248f009b108a01db99d49c916d1428ad15bb"
+  integrity sha512-cDcge5wC//mVpmu6nLKI0kVyA6GtfAGVS5CNmywLb2qwRxH+zZlV6puOdsPqFgS/IZpq5Qcg8aXjHuwW2Mf2fw==
   dependencies:
     bottleneck "^2.19.5"
     debug "^4.1.1"
-    form-data "^2.5.1"
+    form-data "^3.0.0"
     lodash "^4.17.15"
     node-fetch "^2.6.0"
     request "^2.88.0"

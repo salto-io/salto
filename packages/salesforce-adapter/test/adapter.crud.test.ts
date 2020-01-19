@@ -332,7 +332,7 @@ describe('SalesforceAdapter CRUD', () => {
           golf: new Field(
             mockElemID,
             'location',
-            Types.compoundDataTypes.location,
+            Types.compoundDataTypes.Location,
             {
               [constants.LABEL]: 'Location description label',
               [constants.FIELD_ANNOTATIONS.SCALE]: 2,
@@ -1700,6 +1700,21 @@ describe('SalesforceAdapter CRUD', () => {
         await adapter.update(beforeWorkflowInstance, beforeWorkflowInstance.clone(), [])
         expect(mockUpdate.mock.calls.length).toBe(0)
       })
+    })
+
+    it('should update certain metadata types using upsert', async () => {
+      const beforeFlowInstance = new InstanceElement(
+        mockInstanceName,
+        new ObjectType({
+          elemID: new ElemID(constants.SALESFORCE, 'Flow'),
+          annotations: {
+            [constants.METADATA_TYPE]: 'Flow',
+          },
+        }), {}
+      )
+      await adapter.update(beforeFlowInstance, beforeFlowInstance.clone(), [])
+      expect(mockUpdate.mock.calls.length).toBe(0)
+      expect(mockUpsert.mock.calls.length).toBe(1)
     })
   })
 })

@@ -142,6 +142,157 @@ const allMissingFields: {id: ElemID; fields: MissingField[]}[] = [
       },
     ],
   },
+  {
+    id: new ElemID(SALESFORCE, 'FlowCondition'),
+    fields: [
+      {
+        name: 'operator',
+        type: BuiltinTypes.STRING,
+        annotations: {
+          [CORE_ANNOTATIONS.VALUES]: ['EqualTo', 'NotEqualTo', 'GreaterThan', 'LessThan',
+            'GreaterThanOrEqualTo', 'LessThanOrEqualTo', 'StartsWith', 'EndsWith', 'Contains',
+            'IsNull', 'WasSet', 'WasSelected', 'WasVisited'],
+        },
+      },
+    ],
+  },
+  {
+    id: new ElemID(SALESFORCE, 'FlowAssignmentItem'),
+    fields: [
+      {
+        name: 'operator',
+        type: BuiltinTypes.STRING,
+        annotations: {
+          [CORE_ANNOTATIONS.VALUES]: ['Add', 'AddAtStart', 'AddItem', 'Assign', 'AssignCount',
+            'RemoveAfterFirst', 'RemoveAll', 'RemoveBeforeFirst', 'RemoveFirst', 'RemovePosition',
+            'RemoveUncommon', 'Subtract'],
+        },
+      },
+    ],
+  },
+  {
+    id: new ElemID(SALESFORCE, 'FlowRecordFilter'),
+    fields: [
+      {
+        name: 'operator',
+        type: BuiltinTypes.STRING,
+        annotations: {
+          [CORE_ANNOTATIONS.VALUES]: ['EqualTo', 'NotEqualTo', 'GreaterThan', 'LessThan',
+            'GreaterThanOrEqualTo', 'LessThanOrEqualTo', 'StartsWith', 'EndsWith', 'Contains',
+            'IsNull'],
+        },
+      },
+    ],
+  },
+  {
+    id: new ElemID(SALESFORCE, 'FlowDynamicChoiceSet'),
+    fields: [
+      {
+        name: 'dataType',
+        type: BuiltinTypes.STRING,
+        annotations: {
+          [CORE_ANNOTATIONS.VALUES]: ['Currency', 'Date', 'Number', 'String', 'Boolean', 'Picklist',
+            'Multipicklist'],
+        },
+      },
+    ],
+  },
+  {
+    id: new ElemID(SALESFORCE, 'FlowScreenField'),
+    fields: [
+      {
+        name: 'dataType',
+        type: BuiltinTypes.STRING,
+        annotations: {
+          [CORE_ANNOTATIONS.VALUES]: ['Boolean', 'Currency', 'Date', 'DateTime', 'Number',
+            'String'],
+        },
+      },
+      {
+        name: 'fieldType',
+        type: BuiltinTypes.STRING,
+        annotations: {
+          [CORE_ANNOTATIONS.VALUES]: ['DisplayText', 'InputField', 'LargeTextArea', 'PasswordField',
+            'RadioButtons', 'DropdownBox', 'MultiSelectCheckboxes', 'MultiSelectPicklist',
+            'ComponentInstance'],
+        },
+      },
+    ],
+  },
+  {
+    id: new ElemID(SALESFORCE, 'FlowVariable'),
+    fields: [
+      {
+        name: 'dataType',
+        type: BuiltinTypes.STRING,
+        annotations: {
+          [CORE_ANNOTATIONS.VALUES]: ['Apex', 'Boolean', 'Currency', 'Date', 'DateTime', 'Number',
+            'Multipicklist', 'Picklist', 'String', 'SObject'],
+        },
+      },
+    ],
+  },
+  {
+    id: new ElemID(SALESFORCE, 'FlowChoice'),
+    fields: [
+      {
+        name: 'dataType',
+        type: BuiltinTypes.STRING,
+        annotations: {
+          [CORE_ANNOTATIONS.VALUES]: ['Boolean', 'Currency', 'Date', 'Number', 'String'],
+        },
+      },
+    ],
+  },
+  {
+    id: new ElemID(SALESFORCE, 'FlowConstant'),
+    fields: [
+      {
+        name: 'dataType',
+        type: BuiltinTypes.STRING,
+        annotations: {
+          [CORE_ANNOTATIONS.VALUES]: ['Boolean', 'Currency', 'Date', 'Number', 'String'],
+        },
+      },
+    ],
+  },
+  {
+    id: new ElemID(SALESFORCE, 'FlowFormula'),
+    fields: [
+      {
+        name: 'dataType',
+        type: BuiltinTypes.STRING,
+        annotations: {
+          [CORE_ANNOTATIONS.VALUES]: ['Boolean', 'Currency', 'Date', 'DateTime', 'Number',
+            'String'],
+        },
+      },
+    ],
+  },
+  {
+    id: new ElemID(SALESFORCE, 'FlowRecordLookup'),
+    fields: [
+      {
+        name: 'sortOrder',
+        type: BuiltinTypes.STRING,
+        annotations: {
+          [CORE_ANNOTATIONS.VALUES]: ['ASC', 'DESC'],
+        },
+      },
+    ],
+  },
+  {
+    id: new ElemID(SALESFORCE, 'FlowLoop'),
+    fields: [
+      {
+        name: 'iterationOrder',
+        type: BuiltinTypes.STRING,
+        annotations: {
+          [CORE_ANNOTATIONS.VALUES]: ['ASC', 'DESC'],
+        },
+      },
+    ],
+  },
 ]
 
 export const makeFilter = (

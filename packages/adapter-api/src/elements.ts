@@ -479,6 +479,8 @@ export class InstanceElement implements Element {
   }
 }
 
+export type PrimitiveField = Field & {type: PrimitiveType}
+
 export class ElementsRegistry {
   registeredElements: ElementMap
   constructor(initElements: Element[] = []) {
@@ -613,6 +615,11 @@ export function isPrimitiveType(
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 export function isField(element: any): element is Field {
   return element instanceof Field
+}
+
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+export function isPrimitiveField(element: any): element is PrimitiveField {
+  return isField(element) && isPrimitiveType(element.type)
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

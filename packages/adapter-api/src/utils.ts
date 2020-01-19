@@ -1,15 +1,13 @@
 import _ from 'lodash'
 import {
   isObjectType, Type, Field, ObjectType, ElemID, isField, Values,
-  Element, isPrimitiveType, PrimitiveValue, PrimitiveType, isExpression,
+  Element, PrimitiveValue, isExpression, PrimitiveField, isPrimitiveField,
 } from './elements'
 
 interface AnnoRef {
   annoType?: Type
   annoName?: string
 }
-
-export type PrimitiveField = Field & {type: PrimitiveType}
 
 export const getSubElement = (baseType: Type, pathParts: string[]): Field| Type | undefined => {
   // This is a little tricky. Since many fields can have _ in them,
@@ -114,11 +112,11 @@ export const transform = (
             .filter(v => !_.isEmpty(v))
           : transform(value, fieldType, transformPrimitives, strict)
       }
-      if (isPrimitiveType(fieldType)) {
+      if (isPrimitiveField(field)) {
         return _.isArray(value)
           ? value.map(v => transformPrimitives(v, field as PrimitiveField))
             .filter(v => !_.isArrayLike(v) || !_.isEmpty(v))
-          : transformPrimitives(value, field as PrimitiveField)
+          : transformPrimitives(value, field)
       }
     }
 

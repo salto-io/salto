@@ -1,10 +1,10 @@
 import {
   BuiltinTypes,
   ElemID, Field, InstanceElement, ObjectType, PrimitiveTypes,
-  PrimitiveValue, Values,
+  PrimitiveValue, Values, PrimitiveField,
 } from '../src/elements'
 import {
-  transform, PrimitiveField,
+  transform,
 } from '../src/utils'
 
 describe('Test utils.ts', () => {

@@ -53,6 +53,15 @@ export default class HubspotClient {
   }
 
 
+  private async extractHubspotObjectAPI(typeName: string): Promise<HubspotObjectAPI> {
+    const objectAPI = this.hubspotObjectAPI[typeName]
+    if (!objectAPI) {
+      await hubspotTypeErr(typeName)
+    }
+
+    return objectAPI
+  }
+
   async getAllInstances(typeName: string): Promise<HubspotMetadata[]> {
     // This is special issue for workflows objects:
     // Only account with special permission can fetch instances
@@ -68,10 +77,7 @@ export default class HubspotClient {
       return (await resp).objects
     }
 
-    const objectAPI = this.hubspotObjectAPI[typeName]
-    if (!objectAPI) {
-      await hubspotTypeErr(typeName)
-    }
+    const objectAPI = await this.extractHubspotObjectAPI(typeName)
 
     const resp = objectAPI.getAll()
     switch (typeName) {
@@ -90,10 +96,7 @@ export default class HubspotClient {
     typeName: string,
     hubspotMetadata: HubspotMetadata
   ): Promise<HubspotMetadata> {
-    const objectAPI = this.hubspotObjectAPI[typeName]
-    if (!objectAPI) {
-      await hubspotTypeErr(typeName)
-    }
+    const objectAPI = await this.extractHubspotObjectAPI(typeName)
 
     const resp = objectAPI.create(hubspotMetadata)
     await validateResponse(resp)

@@ -5,7 +5,7 @@ import {
 import {
   Form, HubspotMetadata, MarketingEmail, Workflows,
 } from './types'
-import Connection from './madku'
+import Connection, { HubspotObjectAPI } from './madku'
 
 
 export type Credentials = {
@@ -26,9 +26,13 @@ const validateResponse = async (
   }
 }
 
+const hubspotTypeErr = (typeName: string): void => {
+  throw new Error(`Unknown HubSpot type: ${typeName}.`)
+}
+
 export default class HubspotClient {
   private conn: Connection
-  private readonly getAllFunctions: Record<string, () => Promise<HubspotMetadata[]>>
+  private readonly hubspotObjectAPI: Record<string, HubspotObjectAPI>
 
   constructor(
     { credentials, connection }: HubspotClientOpts
@@ -37,10 +41,10 @@ export default class HubspotClient {
     this.conn = connection
       || new Hubspot(apiKeyOptions)
 
-    this.getAllFunctions = {
-      form: this.getAllForms,
-      workflows: this.getAllWorkflows,
-      marketingEmail: this.getAllMarketingEmail,
+    this.hubspotObjectAPI = {
+      form: this.conn.forms,
+      workflows: this.conn.workflows,
+      marketingEmail: this.conn.marketingEmail,
     }
   }
 
@@ -48,41 +52,51 @@ export default class HubspotClient {
     return this.conn.contacts.get()
   }
 
-  async getAllInstances(typeName: string): Promise<HubspotMetadata[]> {
-    const getAllFunction = this.getAllFunctions[typeName]
-    if (getAllFunction) {
-      return getAllFunction.apply(this)
+
+  private extractHubspotObjectAPI(typeName: string): HubspotObjectAPI {
+    const objectAPI = this.hubspotObjectAPI[typeName]
+    if (!objectAPI) {
+      hubspotTypeErr(typeName)
     }
 
-    throw new Error(`Unknown HubSpot type: ${typeName}.`)
+    return objectAPI
   }
 
-  private async getAllForms(): Promise<Form[]> {
-    const resp = this.conn.forms.getAll()
-    await validateResponse(resp)
-
-    return resp
-  }
-
-  private async getAllWorkflows(): Promise<Workflows[]> {
+  async getAllInstances(typeName: string): Promise<HubspotMetadata[]> {
     // This is special issue for workflows objects:
     // Only account with special permission can fetch instances
-    const resp = this.conn.workflows.getAll()
-      .catch(_ => ({ workflows: [] }))
+    const getAllWorkflowsResponse = async (resp: RequestPromise): Promise<Workflows[]> =>
+      (await resp.catch(_ => ({ workflows: [] }))).workflows
 
-    return (await resp).workflows
+    // This is special issue for MarketingEmail objects:
+    // Only account with special permission can fetch instances
+    const getAllMarketingEmailResponse = async (resp: RequestPromise):
+      Promise<MarketingEmail[]> =>
+      (await resp.catch(_ => ({ objects: [] }))).objects
+
+
+    const objectAPI = await this.extractHubspotObjectAPI(typeName)
+
+    const resp = objectAPI.getAll()
+    switch (typeName) {
+      case 'workflows':
+        return getAllWorkflowsResponse(resp)
+      case 'marketingEmail':
+        return getAllMarketingEmailResponse(resp)
+      default:
+        await validateResponse(resp)
+        return resp
+    }
   }
 
-  private async getAllMarketingEmail(): Promise<MarketingEmail[]> {
-    const resp = this.conn.marketingEmail.getAll()
-      .catch(_ => ({ objects: [] }))
 
-    return (await resp).objects
-  }
+  async createInstance(
+    typeName: string,
+    hubspotMetadata: HubspotMetadata
+  ): Promise<HubspotMetadata> {
+    const objectAPI = await this.extractHubspotObjectAPI(typeName)
 
-
-  async createForm(f: Form): Promise<Form> {
-    const resp = await this.conn.forms.create(f)
+    const resp = objectAPI.create(hubspotMetadata)
     await validateResponse(resp)
     return resp
   }

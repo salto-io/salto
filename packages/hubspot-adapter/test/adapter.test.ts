@@ -82,7 +82,7 @@ describe('Hubspot Adapter Operations', () => {
         const createAlreadyExistsResult = ():
           Error => { throw new Error(formAlreadyExistErrStr) }
         mockCreate = jest.fn().mockImplementation(createAlreadyExistsResult)
-        client.createForm = mockCreate
+        client.createInstance = mockCreate
       })
 
       it('should return error (409 response)', async () => {
@@ -96,7 +96,7 @@ describe('Hubspot Adapter Operations', () => {
         const createErrorResult = ():
           Error => { throw new Error(apikeyDoesntExistErrStr) }
         mockCreate = jest.fn().mockImplementation(createErrorResult)
-        client.createForm = mockCreate
+        client.createInstance = mockCreate
       })
 
       it('should return error (401 response)', async () => {
@@ -107,7 +107,7 @@ describe('Hubspot Adapter Operations', () => {
 
     describe('When a form is successfully added', () => {
       beforeEach(async () => {
-        const createResult = (f: Form): Promise<Form> =>
+        const createResult = (_t: string, f: Form): Promise<Form> =>
           Promise.resolve(
             {
               guid: '12345',
@@ -119,7 +119,7 @@ describe('Hubspot Adapter Operations', () => {
             } as Form
           )
         mockCreate = jest.fn().mockImplementation(createResult)
-        client.createForm = mockCreate
+        client.createInstance = mockCreate
       })
 
       it('should return the new form', async () => {
@@ -152,7 +152,7 @@ describe('Hubspot Adapter Operations', () => {
           throw new Error(privilegeErrStr)
         }
         mockCreate = jest.fn().mockImplementation(createWrongValueResult)
-        client.createForm = mockCreate
+        client.createInstance = mockCreate
       })
 
       it('should return error (403 response)', async () => {
@@ -163,9 +163,9 @@ describe('Hubspot Adapter Operations', () => {
 
     afterEach(() => {
       expect(mockCreate.mock.calls).toHaveLength(1)
-      expect(mockCreate.mock.calls[0]).toHaveLength(1)
+      expect(mockCreate.mock.calls[0]).toHaveLength(2)
 
-      const object = mockCreate.mock.calls[0][0]
+      const object = mockCreate.mock.calls[0][1]
       expect(object.name).toBe('formInstanceTest')
     })
   })

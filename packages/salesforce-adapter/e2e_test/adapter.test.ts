@@ -299,7 +299,6 @@ describe('Salesforce adapter E2E with real account', () => {
           type: 'Text',
         },
         pluralLabel: 'test object with various field typess',
-        // sharingModel: 'ControlledByParent',
         sharingModel: 'ReadWrite',
       }
       const additionalFieldsToAdd = [{

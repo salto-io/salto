@@ -792,7 +792,7 @@ export const toCustomField = (
     field.annotations[FORMULA],
     field.annotations[FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS],
     field.annotations[FIELD_ANNOTATIONS.REFERENCE_TO],
-    field.name,
+    field.name.split(SALESFORCE_CUSTOM_SUFFIX)[0],
     field.annotations[FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION]
   )
 
@@ -944,8 +944,7 @@ export const getSObjectFieldElement = (parent: Element, field: Field,
   }
 
   if (field.defaultValueFormula) {
-    // TODO check that it is correct in all fields cases
-    annotations[FIELD_ANNOTATIONS.DEFAULT_VALUE] = field.defaultValueFormula
+    annotations[DEFAULT_VALUE_FORMULA] = field.defaultValueFormula
   }
 
   const defaultValue = getDefaultValue(field)

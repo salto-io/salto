@@ -57,10 +57,10 @@ describe('service_id_references filter', () => {
   const nestedType = new ObjectType({
     elemID: nestedId,
     fields: {
-      nested_inst: new Field(nestedId, 'nested_inst', BuiltinTypes.STRING, refAnno),
+      nestedInst: new Field(nestedId, 'nestedInst', BuiltinTypes.STRING, refAnno),
     },
     annotationTypes: {
-      flat_inst: annoStringType,
+      flatInst: annoStringType,
     },
   })
   const ObjTypeId = new ElemID('salesforce', 'obj')
@@ -71,9 +71,9 @@ describe('service_id_references filter', () => {
       [API_NAME]: BuiltinTypes.SERVICE_ID,
       reg: BuiltinTypes.STRING,
       hering: BuiltinTypes.STRING,
-      flat_inst: annoStringType,
-      flat_type: annoStringType,
-      flat_meta: annoStringType,
+      flatInst: annoStringType,
+      flatType: annoStringType,
+      flatMeta: annoStringType,
       nested: nestedType,
       arr: annoStringType,
       nestedArr: nestedType,
@@ -86,25 +86,25 @@ describe('service_id_references filter', () => {
       ],
       reg: 'orig',
       hering: 'InstRef',
-      flat_inst: 'InstRef',
-      flat_type: 'Ref',
-      flat_meta: 'Meta',
+      flatInst: 'InstRef',
+      flatType: 'Ref',
+      flatMeta: 'Meta',
       nested: {
-        nested_inst: 'InstRef',
+        nestedInst: 'InstRef',
       },
       arr: ['InstRef', 'notRef'],
       nestedArr: [{
-        nested_inst: 'InstRef',
+        nestedInst: 'InstRef',
       }],
     },
     fields: {
       reg: new Field(ObjTypeId, 'reg', BuiltinTypes.STRING),
       hering: new Field(ObjTypeId, 'hering', BuiltinTypes.STRING),
-      flat_inst: new Field(ObjTypeId, 'flat_inst', BuiltinTypes.STRING, refAnno),
-      flat_type: new Field(ObjTypeId, 'flat_type', BuiltinTypes.STRING, refAnno),
-      flat_meta: new Field(ObjTypeId, 'flat_meta', BuiltinTypes.STRING, refAnno),
+      flatInst: new Field(ObjTypeId, 'flatInst', BuiltinTypes.STRING, refAnno),
+      flatType: new Field(ObjTypeId, 'flatType', BuiltinTypes.STRING, refAnno),
+      flatMeta: new Field(ObjTypeId, 'flatMeta', BuiltinTypes.STRING, refAnno),
       nested: new Field(ObjTypeId, 'nested', nestedType, {
-        flat_inst: 'InstRef',
+        flatInst: 'InstRef',
       }),
       nested_plain: new Field(ObjTypeId, 'nested', nestedType),
       arr: new Field(ObjTypeId, 'arr', BuiltinTypes.STRING, refAnno, true),
@@ -114,11 +114,11 @@ describe('service_id_references filter', () => {
   const inst = new InstanceElement('inst', objType, {
     reg: 'orig',
     hering: 'InstRef',
-    flat_inst: 'InstRef',
-    flat_type: 'Ref',
-    flat_meta: 'Meta',
+    flatInst: 'InstRef',
+    flatType: 'Ref',
+    flatMeta: 'Meta',
     nested: {
-      nested_inst: 'InstRef',
+      nestedInst: 'InstRef',
     },
     arr: ['InstRef'],
   })
@@ -144,20 +144,20 @@ describe('service_id_references filter', () => {
       expect(replaced.value.reg).not.toBeInstanceOf(ReferenceExpression)
     })
     it('should replace values referencing an instance in values', () => {
-      expect(replaced.value.flat_inst).not.toEqual(inst.value.flat_inst)
-      expect(replaced.value.flat_inst).toBeInstanceOf(ReferenceExpression)
+      expect(replaced.value.flatInst).not.toEqual(inst.value.flatInst)
+      expect(replaced.value.flatInst).toBeInstanceOf(ReferenceExpression)
     })
     it('should replace values referencing a type in values', () => {
-      expect(replaced.value.flat_type).not.toEqual(inst.value.flat_type)
-      expect(replaced.value.flat_type).toBeInstanceOf(ReferenceExpression)
+      expect(replaced.value.flatType).not.toEqual(inst.value.flatType)
+      expect(replaced.value.flatType).toBeInstanceOf(ReferenceExpression)
     })
     it('should replace values referencing a metadata type in values', () => {
-      expect(replaced.value.flat_meta).not.toEqual(inst.value.flat_meta)
-      expect(replaced.value.flat_meta).toBeInstanceOf(ReferenceExpression)
+      expect(replaced.value.flatMeta).not.toEqual(inst.value.flatMeta)
+      expect(replaced.value.flatMeta).toBeInstanceOf(ReferenceExpression)
     })
     it('should replace nested value in values', () => {
-      expect(replaced.value.nested.nested_inst).not.toEqual(inst.value.nested.nested_inst)
-      expect(replaced.value.nested.nested_inst).toBeInstanceOf(ReferenceExpression)
+      expect(replaced.value.nested.nestedInst).not.toEqual(inst.value.nested.nestedInst)
+      expect(replaced.value.nested.nestedInst).toBeInstanceOf(ReferenceExpression)
     })
     it('should replace value in array in values', () => {
       expect(replaced.value.arr[0]).not.toEqual(inst.value.arr[0])
@@ -180,30 +180,30 @@ describe('service_id_references filter', () => {
         .not.toBeInstanceOf(ReferenceExpression)
     })
     it('should replace values referencing an instance in annotations', () => {
-      expect(replacedType.annotations.flat_inst).not.toEqual(objType.annotations.flat_inst)
-      expect(replacedType.annotations.flat_inst).toBeInstanceOf(ReferenceExpression)
+      expect(replacedType.annotations.flatInst).not.toEqual(objType.annotations.flatInst)
+      expect(replacedType.annotations.flatInst).toBeInstanceOf(ReferenceExpression)
     })
     it('should replace values referencing a type in annotations', () => {
-      expect(replacedType.annotations.flat_type).not.toEqual(objType.annotations.flat_type)
-      expect(replacedType.annotations.flat_type).toBeInstanceOf(ReferenceExpression)
+      expect(replacedType.annotations.flatType).not.toEqual(objType.annotations.flatType)
+      expect(replacedType.annotations.flatType).toBeInstanceOf(ReferenceExpression)
     })
     it('should replace values referencing a metadata type in annotations', () => {
-      expect(replacedType.annotations.flat_meta).not.toEqual(objType.annotations.flat_meta)
-      expect(replacedType.annotations.flat_meta).toBeInstanceOf(ReferenceExpression)
+      expect(replacedType.annotations.flatMeta).not.toEqual(objType.annotations.flatMeta)
+      expect(replacedType.annotations.flatMeta).toBeInstanceOf(ReferenceExpression)
     })
     it('should replace nested value in annotations', () => {
-      expect(replacedType.annotations.nested.nested_inst)
-        .not.toEqual(objType.annotations.nested.nested_inst)
-      expect(replacedType.annotations.nested.nested_inst).toBeInstanceOf(ReferenceExpression)
+      expect(replacedType.annotations.nested.nestedInst)
+        .not.toEqual(objType.annotations.nested.nestedInst)
+      expect(replacedType.annotations.nested.nestedInst).toBeInstanceOf(ReferenceExpression)
     })
     it('should replace value in array in annotations', () => {
       expect(replacedType.annotations.arr[0]).not.toEqual(objType.annotations.arr[0])
       expect(replacedType.annotations.arr[0]).toBeInstanceOf(ReferenceExpression)
     })
     it('should replace annotations in fields', () => {
-      expect(replacedType.fields.nested.annotations.flat_inst)
-        .not.toEqual(objType.fields.nested.annotations.flat_inst)
-      expect(replacedType.fields.nested.annotations.flat_inst)
+      expect(replacedType.fields.nested.annotations.flatInst)
+        .not.toEqual(objType.fields.nested.annotations.flatInst)
+      expect(replacedType.fields.nested.annotations.flatInst)
         .toBeInstanceOf(ReferenceExpression)
     })
     it('should not replace value whos type is not designated as replace type in annotations', () => {

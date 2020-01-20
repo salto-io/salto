@@ -30,19 +30,19 @@ const hubspotTypeErr = (typeName: string): void => {
   throw new Error(`Unknown HubSpot type: ${typeName}.`)
 }
 
-function isForm(hubspotMetadata: HubspotMetadata): hubspotMetadata is Form {
-  return (hubspotMetadata as Form).guid !== undefined
-}
 
-function isMarketingEmail(
+const isForm = (
   hubspotMetadata: HubspotMetadata
-): hubspotMetadata is MarketingEmail {
-  return (hubspotMetadata as MarketingEmail).id !== undefined
-}
+): hubspotMetadata is Form => (hubspotMetadata as Form).guid !== undefined
 
-function isWorkflow(hubspotMetadata: HubspotMetadata): hubspotMetadata is Workflows {
-  return (hubspotMetadata as Workflows).id !== undefined
-}
+const isMarketingEmail = (
+  hubspotMetadata: HubspotMetadata
+): hubspotMetadata is MarketingEmail => (hubspotMetadata as MarketingEmail).id !== undefined
+
+const isWorkflow = (
+  hubspotMetadata: HubspotMetadata
+): hubspotMetadata is Workflows => (hubspotMetadata as Workflows).id !== undefined
+
 
 const ExtractInstanceId = (hubspotMetadata: HubspotMetadata): string => {
   if (isForm(hubspotMetadata)) {

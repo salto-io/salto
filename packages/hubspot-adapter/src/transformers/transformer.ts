@@ -465,6 +465,147 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
+        [MARKETINGEMAIL_FIELDS.ABSUCCESSMETRIC]: new TypeField(
+          marketingEmailElemID, MARKETINGEMAIL_FIELDS.ABSUCCESSMETRIC, BuiltinTypes.STRING, {
+            name: MARKETINGEMAIL_FIELDS.ABSUCCESSMETRIC,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [MARKETINGEMAIL_FIELDS.ABTESTID]: new TypeField(
+          marketingEmailElemID, MARKETINGEMAIL_FIELDS.ABTESTID, BuiltinTypes.STRING, {
+            name: MARKETINGEMAIL_FIELDS.ABTESTID,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [MARKETINGEMAIL_FIELDS.ABTESTPERCENTAGE]: new TypeField(
+          marketingEmailElemID, MARKETINGEMAIL_FIELDS.ABTESTPERCENTAGE, BuiltinTypes.NUMBER, {
+            name: MARKETINGEMAIL_FIELDS.ABTESTPERCENTAGE,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [MARKETINGEMAIL_FIELDS.ABSOLUTEURL]: new TypeField(
+          marketingEmailElemID, MARKETINGEMAIL_FIELDS.ABSOLUTEURL, BuiltinTypes.STRING, {
+            name: MARKETINGEMAIL_FIELDS.ABSOLUTEURL,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [MARKETINGEMAIL_FIELDS.ALLEMAILCAMPAIGNIDS]: new TypeField(
+          marketingEmailElemID, MARKETINGEMAIL_FIELDS.ALLEMAILCAMPAIGNIDS, BuiltinTypes.STRING, {
+            name: MARKETINGEMAIL_FIELDS.ALLEMAILCAMPAIGNIDS,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+          true,
+        ),
+        [MARKETINGEMAIL_FIELDS.ANALYTICSPAGEID]: new TypeField(
+          marketingEmailElemID, MARKETINGEMAIL_FIELDS.ANALYTICSPAGEID, BuiltinTypes.STRING, {
+            name: MARKETINGEMAIL_FIELDS.ANALYTICSPAGEID,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [MARKETINGEMAIL_FIELDS.ARCHIVED]: new TypeField(
+          marketingEmailElemID, MARKETINGEMAIL_FIELDS.ARCHIVED, BuiltinTypes.STRING, {
+            name: MARKETINGEMAIL_FIELDS.ARCHIVED,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [MARKETINGEMAIL_FIELDS.AUTHOR]: new TypeField(
+          marketingEmailElemID, MARKETINGEMAIL_FIELDS.AUTHOR, BuiltinTypes.STRING, {
+            name: MARKETINGEMAIL_FIELDS.AUTHOR,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [MARKETINGEMAIL_FIELDS.AUTHOREMAIL]: new TypeField(
+          marketingEmailElemID, MARKETINGEMAIL_FIELDS.AUTHOREMAIL, BuiltinTypes.STRING, {
+            name: MARKETINGEMAIL_FIELDS.AUTHOREMAIL,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [MARKETINGEMAIL_FIELDS.AUTHORNAME]: new TypeField(
+          marketingEmailElemID, MARKETINGEMAIL_FIELDS.AUTHORNAME, BuiltinTypes.STRING, {
+            name: MARKETINGEMAIL_FIELDS.AUTHORNAME,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [MARKETINGEMAIL_FIELDS.BLOGEMAILTYPED]: new TypeField(
+          marketingEmailElemID, MARKETINGEMAIL_FIELDS.BLOGEMAILTYPED, BuiltinTypes.STRING, {
+            name: MARKETINGEMAIL_FIELDS.BLOGEMAILTYPED,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [MARKETINGEMAIL_FIELDS.CAMPAIGN]: new TypeField(
+          marketingEmailElemID, MARKETINGEMAIL_FIELDS.CAMPAIGN, BuiltinTypes.STRING, {
+            name: MARKETINGEMAIL_FIELDS.CAMPAIGN,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [MARKETINGEMAIL_FIELDS.CAMPAIGNNAME]: new TypeField(
+          marketingEmailElemID, MARKETINGEMAIL_FIELDS.CAMPAIGNNAME, BuiltinTypes.STRING, {
+            name: MARKETINGEMAIL_FIELDS.CAMPAIGNNAME,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [MARKETINGEMAIL_FIELDS.CANSPAMID]: new TypeField(
+          marketingEmailElemID, MARKETINGEMAIL_FIELDS.CANSPAMID, BuiltinTypes.NUMBER, {
+            name: MARKETINGEMAIL_FIELDS.CANSPAMID,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [MARKETINGEMAIL_FIELDS.CLONEDFORM]: new TypeField(
+          marketingEmailElemID, MARKETINGEMAIL_FIELDS.CLONEDFORM, BuiltinTypes.NUMBER, {
+            name: MARKETINGEMAIL_FIELDS.CLONEDFORM,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [MARKETINGEMAIL_FIELDS.CREATEPAGE]: new TypeField(
+          marketingEmailElemID, MARKETINGEMAIL_FIELDS.CREATEPAGE, BuiltinTypes.BOOLEAN, {
+            name: MARKETINGEMAIL_FIELDS.CREATEPAGE,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [MARKETINGEMAIL_FIELDS.CREATED]: new TypeField(
+          marketingEmailElemID, MARKETINGEMAIL_FIELDS.CREATED, BuiltinTypes.NUMBER, {
+            name: MARKETINGEMAIL_FIELDS.CREATED,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [MARKETINGEMAIL_FIELDS.CURRENTLYPUBLISHED]: new TypeField(
+          marketingEmailElemID, MARKETINGEMAIL_FIELDS.CURRENTLYPUBLISHED, BuiltinTypes.BOOLEAN, {
+            name: MARKETINGEMAIL_FIELDS.CURRENTLYPUBLISHED,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [MARKETINGEMAIL_FIELDS.DOMAIN]: new TypeField(
+          marketingEmailElemID, MARKETINGEMAIL_FIELDS.DOMAIN, BuiltinTypes.STRING, {
+            name: MARKETINGEMAIL_FIELDS.DOMAIN,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [MARKETINGEMAIL_FIELDS.EMAILBODY]: new TypeField(
+          marketingEmailElemID, MARKETINGEMAIL_FIELDS.EMAILBODY, BuiltinTypes.STRING, {
+            name: MARKETINGEMAIL_FIELDS.EMAILBODY,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
       },
       path: [HUBSPOT, 'objects', marketingEmailElemID.name],
     }),

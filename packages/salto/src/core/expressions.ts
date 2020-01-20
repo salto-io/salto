@@ -57,6 +57,10 @@ resolveReferenceExpression = (
   const { parent, path } = ElemID.fromFullName(traversal).createTopLevelParentID()
 
   const resolvePath = (rootElement: Element): Value => {
+    if (_.isEmpty(path)) {
+      return rootElement
+    }
+
     if (isInstanceElement(rootElement)) {
       return (!_.isEmpty(path)) ? _.get(rootElement.value, path) : rootElement
     }

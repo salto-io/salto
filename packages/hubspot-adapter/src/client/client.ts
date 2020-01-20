@@ -30,6 +30,32 @@ const hubspotTypeErr = (typeName: string): void => {
   throw new Error(`Unknown HubSpot type: ${typeName}.`)
 }
 
+function isForm(hubspotMetadata: HubspotMetadata): hubspotMetadata is Form {
+  return (hubspotMetadata as Form).guid !== undefined
+}
+
+function isMarketingEmail(
+  hubspotMetadata: HubspotMetadata
+): hubspotMetadata is MarketingEmail {
+  return (hubspotMetadata as MarketingEmail).id !== undefined
+}
+
+function isWorkflow(hubspotMetadata: HubspotMetadata): hubspotMetadata is Workflows {
+  return (hubspotMetadata as Workflows).id !== undefined
+}
+
+const ExtractInstanceId = (hubspotMetadata: HubspotMetadata): string => {
+  if (isForm(hubspotMetadata)) {
+    return hubspotMetadata.guid
+  }
+
+  if (isMarketingEmail(hubspotMetadata) && isWorkflow(hubspotMetadata)) {
+    return hubspotMetadata.id.toString()
+  }
+
+  throw new Error(`Instance id not found, instance name: ${hubspotMetadata.name}.`)
+}
+
 export default class HubspotClient {
   private conn: Connection
   private readonly hubspotObjectAPI: Record<string, HubspotObjectAPI>
@@ -107,8 +133,12 @@ export default class HubspotClient {
     return resp
   }
 
-  async deleteForm(f: Form): Promise<void> {
-    const resp = await this.conn.forms.delete(f.guid)
+  async deleteInstance(typeName: string, hubspotMetadata: HubspotMetadata): Promise<void> {
+    const objectAPI = await this.extractHubspotObjectAPI(typeName)
+
+    // The instance id have different names in each HubSpot object
+    const instanceId = ExtractInstanceId(hubspotMetadata)
+    const resp = await objectAPI.delete(instanceId)
     if (resp) {
       throw new Error(resp.message)
     }

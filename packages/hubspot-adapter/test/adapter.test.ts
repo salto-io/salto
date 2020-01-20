@@ -6,7 +6,7 @@ import HubspotAdapter from '../src/adapter'
 import mockAdapter from './mock'
 import {
   formsMockArray, workflowsMockArray, marketingEmailMockArray, workflowsCreateResponse,
-  workflowsMockCreate, marketingEmailMockCreate, marketingEmailCreateResponse,
+  workflowsMock, marketingEmailMock, marketingEmailCreateResponse,
 } from './common/mock_elements'
 import HubspotClient from '../src/client/client'
 import {
@@ -149,7 +149,7 @@ describe('Hubspot Adapter Operations', () => {
         const workflowsInstance = new InstanceElement(
           'workflowInstance',
           Types.hubspotObjects.workflows,
-          workflowsMockCreate
+          workflowsMock
         )
 
         beforeEach(async () => {
@@ -188,7 +188,7 @@ describe('Hubspot Adapter Operations', () => {
         const marketingEmailInstance = new InstanceElement(
           'marketingEmailInstance',
           Types.hubspotObjects.marketingEmail,
-          marketingEmailMockCreate
+          marketingEmailMock
         )
 
         beforeEach(async () => {
@@ -271,7 +271,7 @@ describe('Hubspot Adapter Operations', () => {
         const deleteErrorResult = ():
           Error => { throw new Error(apikeyDoesntExistErrStr) }
         mockDelete = jest.fn().mockImplementation(deleteErrorResult)
-        client.deleteForm = mockDelete
+        client.deleteInstance = mockDelete
       })
 
       it('should return error (401 response)', async () => {
@@ -286,7 +286,7 @@ describe('Hubspot Adapter Operations', () => {
           Promise.resolve(undefined)
 
         mockDelete = jest.fn().mockImplementation(deleteResult)
-        client.deleteForm = mockDelete
+        client.deleteInstance = mockDelete
       })
 
       it('should return 204 response', async () => {

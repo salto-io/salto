@@ -9,8 +9,8 @@ import {
   OBJECTS_NAMES,
 } from '../src/constants'
 import {
-  formsMockArray, marketingEmailMockArray, workflowsMockArray, workflowsMockCreate,
-  marketingEmailMockCreate, marketingEmailCreateResponse, workflowsCreateResponse,
+  formsMockArray, marketingEmailMockArray, workflowsMockArray, workflowsMock,
+  marketingEmailMock, marketingEmailCreateResponse, workflowsCreateResponse,
 } from './common/mock_elements'
 
 
@@ -19,6 +19,9 @@ describe('Test HubSpot client', () => {
 
   const apiKeyDoesntExistErrStr = "This apikey doesn't exist."
   const privilegeErrStr = 'You do not have enough privileges to change the editable property on this form'
+
+  const workflowsMetadata = workflowsMock as unknown as Workflows
+  const marketingEmailMetadata = marketingEmailMock as unknown as MarketingEmail
 
 
   describe('Test getAllInstances', () => {
@@ -115,9 +118,6 @@ describe('Test HubSpot client', () => {
         unsupportedField: 'bla',
       } as unknown as Form
 
-      const marketingEmailMetadata = marketingEmailMockCreate as unknown as MarketingEmail
-
-      const workflowsMetadata = workflowsMockCreate as unknown as Workflows
 
       describe('wrong apikey', () => {
         beforeEach(() => {
@@ -331,8 +331,8 @@ describe('Test HubSpot client', () => {
     })
   })
 
-  describe('Test deleteForm', () => {
-    let mockDeleteForm: jest.Mock
+  describe('Test deleteInstance Func', () => {
+    let mockDeleteInstance: jest.Mock
 
     const formToDelete = {
       guid: 'guidToDelete',
@@ -342,6 +342,12 @@ describe('Test HubSpot client', () => {
 
     } as Form
 
+    describe('When id missing', () => {
+      it('should return error', async () => {
+        await expect(client.deleteInstance(OBJECTS_NAMES.FORM, {} as HubspotMetadata))
+          .rejects.toThrow('Instance id not found, instance name:')
+      })
+    })
 
     describe('wrong apikey', () => {
       beforeEach(() => {
@@ -353,35 +359,75 @@ describe('Test HubSpot client', () => {
             requestId: '493c8493-861b-4f56-be3b-3f6067238efd',
           } as unknown as RequestPromise)
 
-        mockDeleteForm = jest.fn().mockImplementation(unauthorizedResultMock)
-        connection.forms.delete = mockDeleteForm
+        mockDeleteInstance = jest.fn().mockImplementation(unauthorizedResultMock)
+        connection.forms.delete = mockDeleteInstance
       })
 
       it('should return error', async () => {
-        await expect(client.deleteForm(formToDelete)).rejects
-          .toThrow(apiKeyDoesntExistErrStr)
+        await expect(client.deleteInstance(OBJECTS_NAMES.FORM, formToDelete as HubspotMetadata))
+          .rejects.toThrow(apiKeyDoesntExistErrStr)
       })
     })
 
-    describe('When a form is successfully deleted', () => {
-      beforeEach(() => {
-        const deleteFormResultMock = (): RequestPromise => (
-          undefined as unknown as RequestPromise)
-        mockDeleteForm = jest.fn().mockImplementation(deleteFormResultMock)
-        connection.forms.delete = mockDeleteForm
+    describe('When delete instance success', () => {
+      describe('Delete Form instance', () => {
+        beforeEach(() => {
+          const deleteFormResultMock = (): RequestPromise => (
+            undefined as unknown as RequestPromise)
+          mockDeleteInstance = jest.fn().mockImplementation(deleteFormResultMock)
+          connection.forms.delete = mockDeleteInstance
+        })
+
+        it('should return 204 response', async () => {
+          const resp = await client.deleteInstance(
+            OBJECTS_NAMES.FORM,
+            formToDelete as HubspotMetadata
+          )
+          expect(resp).toBeUndefined()
+          expect(mockDeleteInstance.mock.calls[0][0]).toEqual('guidToDelete')
+        })
       })
 
-      it('should return 204 response', async () => {
-        const resp = await client.deleteForm(formToDelete)
-        expect(resp).toBeUndefined()
+      describe('Delete Workflow instance', () => {
+        beforeEach(() => {
+          const deleteWorkflowResultMock = (): RequestPromise => (
+            undefined as unknown as RequestPromise)
+          mockDeleteInstance = jest.fn().mockImplementation(deleteWorkflowResultMock)
+          connection.workflows.delete = mockDeleteInstance
+        })
+
+        it('should return 204 response', async () => {
+          const resp = await client.deleteInstance(
+            OBJECTS_NAMES.WORKFLOWS,
+            workflowsMetadata as HubspotMetadata
+          )
+          expect(resp).toBeUndefined()
+          expect(mockDeleteInstance.mock.calls[0][0]).toEqual('12345')
+        })
       })
-    })
 
+      describe('Delete MarketingEmail instance', () => {
+        beforeEach(() => {
+          const deleteMarketingEmailResultMock = (): RequestPromise => (
+            undefined as unknown as RequestPromise)
+          mockDeleteInstance = jest.fn().mockImplementation(deleteMarketingEmailResultMock)
+          connection.marketingEmail.delete = mockDeleteInstance
+        })
 
-    afterEach(() => {
-      expect(mockDeleteForm.mock.calls).toHaveLength(1)
-      expect(mockDeleteForm.mock.calls[0]).toHaveLength(1)
-      expect(mockDeleteForm.mock.calls[0][0]).toEqual('guidToDelete')
+        it('should return 204 response', async () => {
+          const resp = await client.deleteInstance(
+            OBJECTS_NAMES.MARKETINGEMAIL,
+            marketingEmailMetadata as HubspotMetadata
+          )
+          expect(resp).toBeUndefined()
+          expect(mockDeleteInstance.mock.calls[0][0]).toEqual('973111')
+        })
+      })
+
+      afterEach(() => {
+        expect(mockDeleteInstance.mock.calls).toHaveLength(1)
+        expect(mockDeleteInstance.mock.calls[0]).toHaveLength(1)
+      })
     })
   })
 

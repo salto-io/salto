@@ -93,7 +93,10 @@ export default class HubspotAdapter {
    * @throws error in case of failure
    */
   public async remove(instance: InstanceElement): Promise<void> {
-    await this.client.deleteForm(instance.value as Form)
+    await this.client.deleteInstance(
+      instance.type.elemID.name,
+      instance.value as HubspotMetadata
+    )
   }
 
   /**

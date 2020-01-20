@@ -512,7 +512,6 @@ describe('SalesforceAdapter CRUD', () => {
         expect(object.fields[5].type).toBe('Email')
         expect(object.fields[5].label).toBe('Email description label')
         expect(object.fields[5].unique).toBe(true)
-        expect(object.fields[5].caseSensitive).toBe(true)
         // Location
         expect(object.fields[6].fullName).toBe('location__c')
         expect(object.fields[6].type).toBe('Location')

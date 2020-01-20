@@ -210,7 +210,7 @@ const transfromAnnotationsNames = (fields: Values, parentApiName: string): Value
   return annotations
 }
 
-const transformFieldAnnotations = (
+export const transformFieldAnnotations = (
   instanceFieldValues: Values,
   parentApiName: string
 ): Values => {

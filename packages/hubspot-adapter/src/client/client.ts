@@ -30,8 +30,21 @@ const hubspotTypeErr = (typeName: string): void => {
   throw new Error(`Unknown HubSpot type: ${typeName}.`)
 }
 
-
+/**
+ * Extracting instance id for the delete && update operations,
+ * The instance id have different names in each HubSpot object.
+ *
+ * The type name doesn't part of the metadata (instance), but we need this info to determine
+ * about the instance type.
+ *
+ * @param hubspotMetadata
+ * @param typeName
+ */
 const extractInstanceId = (hubspotMetadata: HubspotMetadata, typeName: string): string => {
+  // The id/guid field checking is not enough in all is(Form/MarketingEmail/Workflow) functions,
+  // Although the type-guard using.
+  // We added the typeName checking for that reason,
+  // and this data will always in the client scope.
   const isForm = (
     formMetadata: HubspotMetadata
   ): formMetadata is Form => (formMetadata as Form).guid !== undefined
@@ -81,6 +94,12 @@ export default class HubspotClient {
   }
 
 
+  /**
+   * Returning the appropriate HubspotObjectAPI for using HubSpot CRUD API operations
+   * @param typeName
+   *
+   * @throws error in case wrong type received
+   */
   private extractHubspotObjectAPI(typeName: string): HubspotObjectAPI {
     const objectAPI = this.hubspotObjectAPI[typeName]
     if (!objectAPI) {

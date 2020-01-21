@@ -18,6 +18,7 @@ import {
   ObjectPermissions,
   CustomField,
   TopicsForObjectsInfo,
+  FilterItem,
 } from '../src/client/types'
 import {
   Types, fromMetadataInfo, metadataType, apiName, bpCase,
@@ -78,9 +79,11 @@ describe('Salesforce adapter E2E with real account', () => {
   }
 
   const gvsName = 'TestGlobalValueSet'
+  const accountApiName = 'Account'
   const fetchedRollupSummaryFieldName = 'rollupsummary__c'
   const customObjectWithFieldsName = 'TestFields__c'
   const picklistFieldName = 'Pickle__c'
+  const customObjectWithFieldsRandomString = String(Date.now()).substring(6)
 
   beforeAll(async () => {
     const verifyObjectsDependentFieldsExist = async (): Promise<void> => {
@@ -291,7 +294,19 @@ describe('Salesforce adapter E2E with real account', () => {
             },
             type: constants.FIELD_TYPE_NAMES.PICKLIST,
           },
-        ],
+          {
+            fullName: `Romeo${customObjectWithFieldsRandomString}__c`,
+            label: 'MasterDetail label',
+            referenceTo: [
+              'Case',
+            ],
+            relationshipName: `Romeo${customObjectWithFieldsRandomString}`,
+            reparentableMasterDetail: true,
+            required: false,
+            type: constants.FIELD_TYPE_NAMES.MASTER_DETAIL,
+            writeRequiresMasterRead: true,
+          },
+        ] as CustomField[],
         fullName: customObjectWithFieldsName,
         label: 'test object with various field types',
         nameField: {
@@ -299,7 +314,7 @@ describe('Salesforce adapter E2E with real account', () => {
           type: 'Text',
         },
         pluralLabel: 'test object with various field typess',
-        sharingModel: 'ReadWrite',
+        sharingModel: 'ControlledByParent',
       }
       const additionalFieldsToAdd = [{
         fullName: `${customObjectWithFieldsName}.Hotel__c`,
@@ -340,7 +355,49 @@ describe('Salesforce adapter E2E with real account', () => {
           ],
         },
         visibleLines: 4,
+      },
+      {
+        fullName: `${accountApiName}.${fetchedRollupSummaryFieldName}`,
+        label: 'Summary label',
+        summarizedField: 'Opportunity.Amount',
+        summaryFilterItems: {
+          field: 'Opportunity.Amount',
+          operation: 'greaterThan',
+          value: '1',
+        },
+        summaryForeignKey: 'Opportunity.AccountId',
+        summaryOperation: 'sum',
+        type: 'Summary',
       }]
+      const lookupFieldName = `Quebec${customObjectWithFieldsRandomString}`
+      const lookupFieldApiName = `${lookupFieldName}__c`
+      const loookupField = {
+        deleteConstraint: 'Restrict',
+        fullName: lookupFieldApiName,
+        label: 'Lookup label',
+        referenceTo: ['Case'],
+        relationshipName: lookupFieldName,
+        required: false,
+        type: constants.FIELD_TYPE_NAMES.LOOKUP,
+      } as CustomField
+      objectToAdd.fields.push(loookupField)
+      const lookupFilter = {
+        active: true,
+        booleanFilter: '1 OR 2',
+        errorMessage: 'This is the Error message',
+        infoMessage: 'This is the Info message',
+        isOptional: false,
+        filterItems: [{
+          field: 'Case.OwnerId',
+          operation: 'equals',
+          valueField: '$User.Id',
+        },
+        {
+          field: 'Case.ParentId',
+          operation: 'equals',
+          value: 'ParentIdValue',
+        }],
+      }
       await verifyObjectsDependentFieldsExist()
       if (await objectExists(constants.CUSTOM_OBJECT, customObjectWithFieldsName)) {
         await client.delete(constants.CUSTOM_OBJECT, customObjectWithFieldsName)
@@ -351,6 +408,7 @@ describe('Salesforce adapter E2E with real account', () => {
       // Add the fields permissions
       const objectFieldNames = objectToAdd.fields
         .filter(field => !field.required)
+        .filter(field => field.type !== constants.FIELD_TYPE_NAMES.MASTER_DETAIL)
         .map(field => `${customObjectWithFieldsName}.${field.fullName}`)
       const additionalFieldNames = additionalFieldsToAdd
         .filter(field => !field.required)
@@ -359,38 +417,14 @@ describe('Salesforce adapter E2E with real account', () => {
       await client.update(PROFILE_METADATA_TYPE,
         new ProfileInfo(ADMIN, fieldNames.map(name => ({
           field: name,
-          editable: false,
-          readable: true,
-        }))))
-    }
-    // enrich the salesforce account with several objects and fields that does not exist by default
-    // in order to enrich our fetch test
-    const verifyAccountWithRollupSummaryExists = async (): Promise<void> => {
-      const accountApiName = 'Account'
-      await client.upsert(constants.CUSTOM_FIELD, [
-      {
-        fullName: `${accountApiName}.${fetchedRollupSummaryFieldName}`,
-        label: 'Test Fetch Rollup Summary Field',
-        summarizedField: 'Opportunity.Amount',
-        summaryFilterItems: {
-          field: 'Opportunity.Amount',
-          operation: 'greaterThan',
-          value: '1',
-        },
-        summaryForeignKey: 'Opportunity.AccountId',
-        summaryOperation: 'sum',
-        type: 'Summary',
-      } as MetadataInfo,
-      ])
-
-      // Add the fields permissions
-      await client.update(PROFILE_METADATA_TYPE,
-        new ProfileInfo(ADMIN, [{
-          field: `${accountApiName}.${fetchedRollupSummaryFieldName}`,
           editable: true,
           readable: true,
-        },
-        ]))
+        }))))
+
+      // update lookup filter
+      await client.update(constants.CUSTOM_FIELD,
+        Object.assign(loookupField,
+          { fullName: `${customObjectWithFieldsName}.${lookupFieldApiName}`, lookupFilter }))
     }
 
     const verifyEmailTemplateAndFolderExist = async (): Promise<void> => {
@@ -860,7 +894,6 @@ describe('Salesforce adapter E2E with real account', () => {
 
     await Promise.all([
       addCustomObjectWithVariousFields(),
-      verifyAccountWithRollupSummaryExists(),
       verifyEmailTemplateAndFolderExist(),
       verifyReportAndFolderExist(),
       verifyDashboardAndFolderExist(),
@@ -945,28 +978,6 @@ describe('Salesforce adapter E2E with real account', () => {
         expect(lead.fields.Status.annotations[constants.FIELD_ANNOTATIONS.DEFAULT_VALUE]).toBe(
           'Open - Not Contacted'
         )
-
-        // Test Rollup Summary
-        const account = (findElements(result, 'Account') as ObjectType[])
-          .filter(a => a.fields[fetchedRollupSummaryFieldName])[0]
-        expect(account).toBeDefined()
-        const rollupSummary = account.fields[fetchedRollupSummaryFieldName]
-        expect(rollupSummary.type.elemID).toEqual(Types.primitiveDataTypes.Summary.elemID)
-        expect(rollupSummary.annotations).toHaveProperty(
-          constants.FIELD_ANNOTATIONS.SUMMARIZED_FIELD
-        )
-        expect(rollupSummary.annotations[constants.FIELD_ANNOTATIONS.SUMMARIZED_FIELD])
-          .toEqual('Opportunity.Amount')
-        expect(rollupSummary.annotations[constants.FIELD_ANNOTATIONS.SUMMARY_FOREIGN_KEY])
-          .toEqual('Opportunity.AccountId')
-        expect(rollupSummary.annotations[constants.FIELD_ANNOTATIONS.SUMMARY_OPERATION])
-          .toEqual('sum')
-        const filterItems = rollupSummary
-          .annotations[constants.FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS]
-        expect(filterItems).toHaveLength(1)
-        expect(filterItems[0][constants.FILTER_ITEM_FIELDS.FIELD]).toEqual('Opportunity.Amount')
-        expect(filterItems[0][constants.FILTER_ITEM_FIELDS.OPERATION]).toEqual('greaterThan')
-        expect(filterItems[0][constants.FILTER_ITEM_FIELDS.VALUE]).toEqual('1')
       })
 
       describe('should fetch sobject annotations from the custom object instance', () => {
@@ -2196,6 +2207,57 @@ describe('Salesforce adapter E2E with real account', () => {
         expect(annotations[constants.FIELD_ANNOTATIONS.RESTRICTED]).toBe(true)
       }
 
+      const testLookup = (annotations: Values): void => {
+        expect(annotations[constants.LABEL]).toBe('Lookup label')
+        expect(annotations[constants.FIELD_ANNOTATIONS.REFERENCE_TO]).toEqual(['Case'])
+        expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
+        const lookupFilter = annotations[constants.FIELD_ANNOTATIONS.LOOKUP_FILTER]
+        expect(lookupFilter).toBeDefined()
+        expect(lookupFilter[constants.LOOKUP_FILTER_FIELDS.ACTIVE]).toBe(true)
+        expect(lookupFilter[constants.LOOKUP_FILTER_FIELDS.BOOLEAN_FILTER]).toBe('1 OR 2')
+        expect(lookupFilter[constants.LOOKUP_FILTER_FIELDS.ERROR_MESSAGE])
+          .toBe('This is the Error message')
+        expect(lookupFilter[constants.LOOKUP_FILTER_FIELDS.INFO_MESSAGE])
+          .toBe('This is the Info message')
+        expect(lookupFilter[constants.LOOKUP_FILTER_FIELDS.IS_OPTIONAL]).toBe(false)
+        const filterItems = lookupFilter[constants.LOOKUP_FILTER_FIELDS.FILTER_ITEMS]
+        expect(filterItems).toBeDefined()
+        expect(filterItems).toEqual([{
+          [constants.FILTER_ITEM_FIELDS.FIELD]: 'Case.OwnerId',
+          [constants.FILTER_ITEM_FIELDS.OPERATION]: 'equals',
+          [constants.FILTER_ITEM_FIELDS.VALUE_FIELD]: '$User.Id',
+        },
+        {
+          [constants.FILTER_ITEM_FIELDS.FIELD]: 'Case.ParentId',
+          [constants.FILTER_ITEM_FIELDS.OPERATION]: 'equals',
+          [constants.FILTER_ITEM_FIELDS.VALUE]: 'ParentIdValue',
+        }])
+      }
+
+      const testMasterDetail = (annotations: Values): void => {
+        expect(annotations[constants.LABEL]).toBe('MasterDetail label')
+        expect(annotations[constants.FIELD_ANNOTATIONS.REFERENCE_TO]).toEqual(['Case'])
+        expect(annotations[constants.FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL])
+          .toBe(true)
+        expect(annotations[constants.FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ])
+          .toBe(true)
+      }
+
+      const testSummary = (annotations: Values): void => {
+        expect(annotations[constants.LABEL]).toEqual('Summary label')
+        expect(annotations[constants.FIELD_ANNOTATIONS.SUMMARIZED_FIELD])
+          .toEqual('Opportunity.Amount')
+        expect(annotations[constants.FIELD_ANNOTATIONS.SUMMARY_FOREIGN_KEY])
+          .toEqual('Opportunity.AccountId')
+        expect(annotations[constants.FIELD_ANNOTATIONS.SUMMARY_OPERATION])
+          .toEqual('sum')
+        const filterItems = annotations[constants.FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS]
+        expect(filterItems).toHaveLength(1)
+        expect(filterItems[0][constants.FILTER_ITEM_FIELDS.FIELD]).toEqual('Opportunity.Amount')
+        expect(filterItems[0][constants.FILTER_ITEM_FIELDS.OPERATION]).toEqual('greaterThan')
+        expect(filterItems[0][constants.FILTER_ITEM_FIELDS.VALUE]).toEqual('1')
+      }
+
       describe('fetch', () => {
         let customObject: Element
 
@@ -2321,11 +2383,34 @@ describe('Salesforce adapter E2E with real account', () => {
           it('checkbox', () => {
             verifyFieldFetch(fields.Tango__c, testCheckbox, Types.primitiveDataTypes.Checkbox)
           })
+
+          it('lookup', () => {
+            const field = fields[`Quebec${customObjectWithFieldsRandomString}__c`]
+            verifyFieldFetch(field, testLookup, Types.primitiveDataTypes.Lookup)
+            expect(field.annotations[constants.FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION])
+              .toBe(false)
+          })
+
+          it('master-detail', () => {
+            verifyFieldFetch(
+              fields[`Romeo${customObjectWithFieldsRandomString}__c`],
+              testMasterDetail,
+              Types.primitiveDataTypes.MasterDetail,
+            )
+          })
+
+          it('rollup summary', () => {
+            const field = (findElements(result, 'Account') as ObjectType[])
+              .find(a => a.fields[fetchedRollupSummaryFieldName])
+              ?.fields[fetchedRollupSummaryFieldName] as Field
+            verifyFieldFetch(field, testSummary, Types.primitiveDataTypes.Summary)
+          })
         })
       })
 
       describe('add', () => {
         const customObjectName = 'TestAddFields__c'
+        const testAddFieldPrefix = 'TestAdd'
         const mockElemID = new ElemID(constants.SALESFORCE, 'test add object with field types')
         let customObject: ObjectType
         let post: ObjectType
@@ -2336,10 +2421,18 @@ describe('Salesforce adapter E2E with real account', () => {
           const newCustomObject = new ObjectType({
             elemID: mockElemID,
             fields: _(Object.values(customObject.fields))
-              .map(field => [
-                field.name,
-                new Field(mockElemID, field.name, field.type, field.annotations, field.isList),
-              ])
+              .map(field => {
+                const name = [
+                  `Romeo${customObjectWithFieldsRandomString}__c`,
+                  `Quebec${customObjectWithFieldsRandomString}__c`,
+                ].includes(field.name) ? `${testAddFieldPrefix}${field.name}` : field.name
+                const newField = field.clone()
+                newField.annotations[constants.API_NAME] = `${customObjectName}.${name}`
+                return [
+                  name,
+                  new Field(mockElemID, name, newField.type, newField.annotations, newField.isList),
+                ]
+              })
               .fromPairs()
               .value(),
             annotations: {
@@ -2376,6 +2469,8 @@ describe('Salesforce adapter E2E with real account', () => {
 
         describe('fields', () => {
           let fields: Values
+          const masterDetailApiName = `${testAddFieldPrefix}Romeo${customObjectWithFieldsRandomString}__c`
+          const currencyFieldApiName = 'Alpha__c'
           beforeAll(async () => {
             fields = _(makeArray(objectInfo.fields)
               .filter(f => f[INSTANCE_TYPE_FIELD]))
@@ -2508,6 +2603,117 @@ describe('Salesforce adapter E2E with real account', () => {
           it('checkbox', () => {
             verifyFieldAddition(fields.Tango__c, testCheckbox, constants.FIELD_TYPE_NAMES.CHECKBOX)
           })
+
+          it('lookup', () => {
+            const fieldName = `${testAddFieldPrefix}Quebec${customObjectWithFieldsRandomString}__c`
+            verifyFieldAddition(fields[fieldName], testLookup, constants.FIELD_TYPE_NAMES.LOOKUP)
+            expect(makeArray(objectInfo?.fields)
+              .find(f => f.fullName === fieldName)?.deleteConstraint)
+              .toEqual('Restrict')
+          })
+
+          it('master-detail', () => {
+            verifyFieldAddition(
+              fields[masterDetailApiName],
+              testMasterDetail,
+              constants.FIELD_TYPE_NAMES.MASTER_DETAIL,
+            )
+          })
+
+          it('rollup summary', async () => {
+            const rollupSummaryFieldName = 'summary'
+            const rollupSummaryFieldApiName = `${rollupSummaryFieldName}__c`
+
+            const findCustomCase = (): ObjectType => {
+              const caseObjects = findElements(result, 'Case') as ObjectType[]
+              const customCase = caseObjects
+                .filter(c => _.isUndefined(c.annotations[constants.API_NAME]))[0]
+              const caseObject = customCase ?? caseObjects[0]
+              // we add API_NAME annotation so the adapter will be
+              //  able to construct the fields full name
+              // upon update. in a real scenario, the case object is merged in the core and passed
+              // to the adapter with the API_NAME annotation
+              caseObject.annotations[constants.API_NAME] = 'Case'
+              return caseObject
+            }
+
+            const normalizeReferences = (obj: ObjectType): void => {
+              const resolveRef = (ref: ReferenceExpression): string | undefined => {
+                const elem = findElement(result, ref.elemId)
+                return elem ? apiName(elem) : undefined
+              }
+              Object.values(obj.fields)
+                .map(field => field.annotations[FIELD_LEVEL_SECURITY_ANNOTATION])
+                .filter(fieldSecurity => fieldSecurity !== undefined)
+                .forEach(fieldSecurity => {
+                  Object.entries(fieldSecurity).forEach(([key, values]) => {
+                    fieldSecurity[key] = (values as ReferenceExpression[]).map(resolveRef)
+                  })
+                })
+            }
+
+            let origCase = findCustomCase()
+            normalizeReferences(origCase)
+
+            const removeRollupSummaryFieldFromCase = async (caseObj: ObjectType, fieldName: string):
+              Promise<ObjectType> => {
+              const caseAfterFieldRemoval = caseObj.clone()
+              delete caseAfterFieldRemoval.fields[fieldName]
+              await adapter.update(caseObj, caseAfterFieldRemoval,
+                [{ action: 'remove',
+                  data: { before: caseObj.fields[fieldName] } }])
+              return caseAfterFieldRemoval
+            }
+            if (await objectExists(constants.CUSTOM_OBJECT, 'Case', [rollupSummaryFieldApiName])) {
+              origCase = await removeRollupSummaryFieldFromCase(origCase, rollupSummaryFieldApiName)
+            }
+
+            const addRollupSummaryField = async (): Promise<ObjectType> => {
+              const caseAfterFieldAddition = origCase.clone()
+              caseAfterFieldAddition.fields[rollupSummaryFieldName] = new Field(
+                caseAfterFieldAddition.elemID,
+                rollupSummaryFieldName,
+                Types.primitiveDataTypes.Summary,
+                {
+                  [CORE_ANNOTATIONS.REQUIRED]: false,
+                  [constants.LABEL]: 'Summary label',
+                  [constants.API_NAME]: apiNameAnno('Case', rollupSummaryFieldApiName),
+                  [constants.FIELD_ANNOTATIONS.SUMMARIZED_FIELD]: `${customObjectName}.${currencyFieldApiName}`,
+                  [constants.FIELD_ANNOTATIONS.SUMMARY_FOREIGN_KEY]: `${customObjectName}.${masterDetailApiName}`,
+                  [constants.FIELD_ANNOTATIONS.SUMMARY_OPERATION]: 'max',
+                  [constants.FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS]: [
+                    {
+                      [constants.FILTER_ITEM_FIELDS.FIELD]: `${customObjectName}.${currencyFieldApiName}`,
+                      [constants.FILTER_ITEM_FIELDS.OPERATION]: 'greaterThan',
+                      [constants.FILTER_ITEM_FIELDS.VALUE]: '1',
+                    },
+                  ],
+                }
+              )
+              await adapter.update(origCase, caseAfterFieldAddition,
+                [{ action: 'add',
+                  data: { after: caseAfterFieldAddition.fields[rollupSummaryFieldName] } }])
+              return caseAfterFieldAddition
+            }
+            const verifyRollupSummaryField = async (): Promise<void> => {
+              const fetchedRollupSummary = (await client.readMetadata(constants.CUSTOM_FIELD,
+                `Case.${rollupSummaryFieldApiName}`))[0] as CustomField
+              expect(_.get(fetchedRollupSummary, 'summarizedField'))
+                .toEqual(`${customObjectName}.${currencyFieldApiName}`)
+              expect(_.get(fetchedRollupSummary, 'summaryForeignKey'))
+                .toEqual(`${customObjectName}.${masterDetailApiName}`)
+              expect(_.get(fetchedRollupSummary, 'summaryOperation')).toEqual('max')
+              expect(fetchedRollupSummary.summaryFilterItems).toBeDefined()
+              const filterItems = fetchedRollupSummary.summaryFilterItems as FilterItem
+              expect(filterItems.field).toEqual(`${customObjectName}.${currencyFieldApiName}`)
+              expect(filterItems.operation).toEqual('greaterThan')
+              expect(filterItems.value).toEqual('1')
+            }
+
+            const caseAfterFieldAddition = await addRollupSummaryField()
+            await verifyRollupSummaryField()
+            await removeRollupSummaryFieldFromCase(caseAfterFieldAddition, rollupSummaryFieldName)
+          })
         })
       })
     })
@@ -2607,6 +2813,7 @@ describe('Salesforce adapter E2E with real account', () => {
       // Clean-up
       await adapter.remove(oldElement)
     })
+
     it('should add default TopicsForObjects values', async () => {
       const customObjectName = 'TestAddDefaultTopicsForObjects__c'
       const mockElemID = new ElemID(constants.SALESFORCE, 'test add default topic for objects')

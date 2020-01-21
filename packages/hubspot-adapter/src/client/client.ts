@@ -31,25 +31,27 @@ const hubspotTypeErr = (typeName: string): void => {
 }
 
 
-const isForm = (
-  hubspotMetadata: HubspotMetadata
-): hubspotMetadata is Form => (hubspotMetadata as Form).guid !== undefined
+const extractInstanceId = (hubspotMetadata: HubspotMetadata, typeName: string): string => {
+  const isForm = (
+    formMetadata: HubspotMetadata
+  ): formMetadata is Form => (formMetadata as Form).guid !== undefined
+    && typeName === 'form'
 
-const isMarketingEmail = (
-  hubspotMetadata: HubspotMetadata
-): hubspotMetadata is MarketingEmail => (hubspotMetadata as MarketingEmail).id !== undefined
+  const isMarketingEmail = (
+    marketingMetadata: HubspotMetadata
+  ): marketingMetadata is MarketingEmail => (marketingMetadata as MarketingEmail).id !== undefined
+    && typeName === 'marketingEmail'
 
-const isWorkflow = (
-  hubspotMetadata: HubspotMetadata
-): hubspotMetadata is Workflows => (hubspotMetadata as Workflows).id !== undefined
+  const isWorkflow = (
+    workflowMetadata: HubspotMetadata
+  ): workflowMetadata is Workflows => (workflowMetadata as Workflows).id !== undefined
+    && typeName === 'workflows'
 
-
-const extractInstanceId = (hubspotMetadata: HubspotMetadata): string => {
   if (isForm(hubspotMetadata)) {
     return hubspotMetadata.guid
   }
 
-  if (isMarketingEmail(hubspotMetadata) && isWorkflow(hubspotMetadata)) {
+  if (isMarketingEmail(hubspotMetadata) || isWorkflow(hubspotMetadata)) {
     return hubspotMetadata.id.toString()
   }
 
@@ -137,7 +139,7 @@ export default class HubspotClient {
     const objectAPI = await this.extractHubspotObjectAPI(typeName)
 
     // The instance id have different names in each HubSpot object
-    const instanceId = extractInstanceId(hubspotMetadata)
+    const instanceId = extractInstanceId(hubspotMetadata, typeName)
     const resp = await objectAPI.delete(instanceId)
     if (resp) {
       throw new Error(resp.message)

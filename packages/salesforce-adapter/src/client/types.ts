@@ -202,7 +202,7 @@ export class CustomField implements MetadataInfo {
           this.valueSet.valueSettings = valueSettings
         }
       }
-    } else if (type === FIELD_TYPE_NAMES.CHECKBOX) {
+    } else if (type === FIELD_TYPE_NAMES.CHECKBOX && !formula) {
       // For Checkbox the default value comes from defaultVal and not defaultValFormula
       this.defaultValue = defaultVal
     } else if (type === FIELD_TYPE_NAMES.LOOKUP) {
@@ -216,8 +216,13 @@ export class CustomField implements MetadataInfo {
       this.summaryFilterItems = summaryFilterItems
     }
 
-    // Checkbox and Formula fields should not have required field
-    if ((this.type !== FIELD_TYPE_NAMES.CHECKBOX) && !formula) {
+    // Checkbox, Formula, AutoNumber, LongTextArea and RichTextArea
+    //  fields should not have required field
+    if (!([FIELD_TYPE_NAMES.CHECKBOX,
+      FIELD_TYPE_NAMES.AUTONUMBER,
+      FIELD_TYPE_NAMES.LONGTEXTAREA,
+      FIELD_TYPE_NAMES.RICHTEXTAREA] as string[]).includes(this.type)
+      && !formula) {
       this.required = required
     }
   }

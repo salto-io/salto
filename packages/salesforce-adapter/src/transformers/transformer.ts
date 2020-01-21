@@ -60,7 +60,7 @@ export const apiName = (elem: Element, relative = false): string => {
   return name && relative ? _.last(name.split(API_NAME_SEPERATOR)) : name
 }
 
-const formulaTypeName = (baseTypeName: string): string =>
+export const formulaTypeName = (baseTypeName: string): string =>
   `${FORMULA_TYPE_PREFIX}${baseTypeName}`
 const fieldTypeName = (typeName: string): string => (
   typeName.startsWith(FORMULA_TYPE_PREFIX) ? typeName.slice(FORMULA_TYPE_PREFIX.length) : typeName
@@ -392,6 +392,10 @@ export class Types {
     [COMPLIANCE_GROUP]: BuiltinTypes.STRING,
   }
 
+  private static formulaAnnotationTypes = {
+    [FORMULA]: BuiltinTypes.STRING,
+  }
+
   // Type mapping for custom objects
   public static primitiveDataTypes: Record<FIELD_TYPE_NAMES, Type> = {
     Text: new PrimitiveType({
@@ -399,10 +403,12 @@ export class Types {
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
         ...Types.commonAnnotationTypes,
+        ...Types.formulaAnnotationTypes,
         [FIELD_ANNOTATIONS.UNIQUE]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.EXTERNAL_ID]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.CASE_SENSITIVE]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.LENGTH]: Types.restrictedNumberTypes.TextLength,
+        [DEFAULT_VALUE_FORMULA]: BuiltinTypes.STRING,
       },
     }),
     Number: new PrimitiveType({
@@ -410,10 +416,12 @@ export class Types {
       primitive: PrimitiveTypes.NUMBER,
       annotationTypes: {
         ...Types.commonAnnotationTypes,
+        ...Types.formulaAnnotationTypes,
         [FIELD_ANNOTATIONS.SCALE]: Types.restrictedNumberTypes.Scale,
         [FIELD_ANNOTATIONS.PRECISION]: Types.restrictedNumberTypes.Precision,
         [FIELD_ANNOTATIONS.UNIQUE]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.EXTERNAL_ID]: BuiltinTypes.BOOLEAN,
+        [DEFAULT_VALUE_FORMULA]: BuiltinTypes.NUMBER,
       },
     }),
     AutoNumber: new PrimitiveType({
@@ -430,6 +438,7 @@ export class Types {
       primitive: PrimitiveTypes.BOOLEAN,
       annotationTypes: {
         ...Types.commonAnnotationTypes,
+        ...Types.formulaAnnotationTypes,
         [FIELD_ANNOTATIONS.DEFAULT_VALUE]: BuiltinTypes.BOOLEAN,
       },
     }),
@@ -438,6 +447,8 @@ export class Types {
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
         ...Types.commonAnnotationTypes,
+        ...Types.formulaAnnotationTypes,
+        [DEFAULT_VALUE_FORMULA]: BuiltinTypes.STRING,
       },
     }),
     Time: new PrimitiveType({
@@ -445,6 +456,8 @@ export class Types {
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
         ...Types.commonAnnotationTypes,
+        ...Types.formulaAnnotationTypes,
+        [DEFAULT_VALUE_FORMULA]: BuiltinTypes.STRING,
       },
     }),
     DateTime: new PrimitiveType({
@@ -452,6 +465,8 @@ export class Types {
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
         ...Types.commonAnnotationTypes,
+        ...Types.formulaAnnotationTypes,
+        [DEFAULT_VALUE_FORMULA]: BuiltinTypes.STRING,
       },
     }),
     Currency: new PrimitiveType({
@@ -459,8 +474,10 @@ export class Types {
       primitive: PrimitiveTypes.NUMBER,
       annotationTypes: {
         ...Types.commonAnnotationTypes,
+        ...Types.formulaAnnotationTypes,
         [FIELD_ANNOTATIONS.SCALE]: Types.restrictedNumberTypes.Scale,
         [FIELD_ANNOTATIONS.PRECISION]: Types.restrictedNumberTypes.Precision,
+        [DEFAULT_VALUE_FORMULA]: BuiltinTypes.NUMBER,
       },
     }),
     Picklist: new PrimitiveType({
@@ -472,6 +489,7 @@ export class Types {
         [FIELD_ANNOTATIONS.VALUE_SET]: Types.valueSetType,
         [FIELD_ANNOTATIONS.RESTRICTED]: BuiltinTypes.BOOLEAN,
         [VALUE_SET_FIELDS.VALUE_SET_NAME]: BuiltinTypes.STRING,
+        [DEFAULT_VALUE_FORMULA]: BuiltinTypes.STRING,
       },
     }),
     MultiselectPicklist: new PrimitiveType({
@@ -484,6 +502,7 @@ export class Types {
         [FIELD_ANNOTATIONS.VALUE_SET]: Types.valueSetType,
         [FIELD_ANNOTATIONS.RESTRICTED]: BuiltinTypes.BOOLEAN,
         [VALUE_SET_FIELDS.VALUE_SET_NAME]: BuiltinTypes.STRING,
+        [DEFAULT_VALUE_FORMULA]: BuiltinTypes.STRING,
       },
     }),
     Email: new PrimitiveType({
@@ -493,7 +512,7 @@ export class Types {
         ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.UNIQUE]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.EXTERNAL_ID]: BuiltinTypes.BOOLEAN,
-        [FIELD_ANNOTATIONS.CASE_SENSITIVE]: BuiltinTypes.BOOLEAN,
+        [DEFAULT_VALUE_FORMULA]: BuiltinTypes.STRING,
       },
     }),
     Percent: new PrimitiveType({
@@ -501,8 +520,10 @@ export class Types {
       primitive: PrimitiveTypes.NUMBER,
       annotationTypes: {
         ...Types.commonAnnotationTypes,
+        ...Types.formulaAnnotationTypes,
         [FIELD_ANNOTATIONS.SCALE]: Types.restrictedNumberTypes.Scale,
         [FIELD_ANNOTATIONS.PRECISION]: Types.restrictedNumberTypes.Precision,
+        [DEFAULT_VALUE_FORMULA]: BuiltinTypes.NUMBER,
       },
     }),
     Phone: new PrimitiveType({
@@ -510,6 +531,7 @@ export class Types {
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
         ...Types.commonAnnotationTypes,
+        [DEFAULT_VALUE_FORMULA]: BuiltinTypes.STRING,
       },
     }),
     LongTextArea: new PrimitiveType({
@@ -519,6 +541,7 @@ export class Types {
         ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.VISIBLE_LINES]: Types.restrictedNumberTypes.LongTextAreaVisibleLines,
         [FIELD_ANNOTATIONS.LENGTH]: Types.restrictedNumberTypes.TextAreaLength,
+        [DEFAULT_VALUE_FORMULA]: BuiltinTypes.STRING,
       },
     }),
     Html: new PrimitiveType({
@@ -535,6 +558,7 @@ export class Types {
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
         ...Types.commonAnnotationTypes,
+        [DEFAULT_VALUE_FORMULA]: BuiltinTypes.STRING,
       },
     }),
     EncryptedText: new PrimitiveType({
@@ -552,6 +576,7 @@ export class Types {
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
         ...Types.commonAnnotationTypes,
+        [DEFAULT_VALUE_FORMULA]: BuiltinTypes.STRING,
       },
     }),
     Lookup: new PrimitiveType({
@@ -767,7 +792,7 @@ export const toCustomField = (
     field.annotations[FORMULA],
     field.annotations[FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS],
     field.annotations[FIELD_ANNOTATIONS.REFERENCE_TO],
-    field.name,
+    field.name.split(SALESFORCE_CUSTOM_SUFFIX)[0],
     field.annotations[FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION]
   )
 
@@ -778,6 +803,7 @@ export const toCustomField = (
     FIELD_ANNOTATIONS.VALUE_SET, // handled in the CustomField constructor
     FIELD_ANNOTATIONS.RESTRICTED, // handled in the CustomField constructor
     VALUE_SET_FIELDS.VALUE_SET_NAME, // handled in the CustomField constructor
+    DEFAULT_VALUE_FORMULA, // handled in the CustomField constructor
     FIELD_ANNOTATIONS.FIELD_DEPENDENCY, // handled in field_dependencies filter
     FIELD_ANNOTATIONS.LOOKUP_FILTER, // handled in lookup_filters filter
     FIELD_LEVEL_SECURITY_ANNOTATION,
@@ -916,13 +942,14 @@ export const getSObjectFieldElement = (parent: Element, field: Field,
     // boolean (i.e. Checkbox) must not have required field
     annotations[CORE_ANNOTATIONS.REQUIRED] = !field.nillable
   }
-  const defaultValue = getDefaultValue(field)
-  if (defaultValue !== undefined) {
-    annotations[FIELD_ANNOTATIONS.DEFAULT_VALUE] = defaultValue
-  }
 
   if (field.defaultValueFormula) {
     annotations[DEFAULT_VALUE_FORMULA] = field.defaultValueFormula
+  }
+
+  const defaultValue = getDefaultValue(field)
+  if (defaultValue !== undefined) {
+    annotations[FIELD_ANNOTATIONS.DEFAULT_VALUE] = defaultValue
   }
 
   // Handle specific field types that need to be converted from their primitive type to their

@@ -3,10 +3,12 @@ import {
   ObjectType, ElemID, InstanceElement, Field, Value, Element, Values, BuiltinTypes,
   isInstanceElement, ReferenceExpression, CORE_ANNOTATIONS, RESTRICTION_ANNOTATIONS, findElement,
   findObjectType,
+  Type,
 } from 'adapter-api'
-import { MetadataInfo, PicklistEntry, RetrieveResult } from 'jsforce'
+import { MetadataInfo, RetrieveResult } from 'jsforce'
 import { collections } from '@salto/lowerdash'
 import * as constants from '../src/constants'
+import { INSTANCE_TYPE_FIELD, transformFieldAnnotations } from '../src/filters/custom_objects'
 import { STANDARD_VALUE_SET, STANDARD_VALUE } from '../src/filters/standard_value_sets'
 import { GLOBAL_VALUE_SET } from '../src/filters/global_value_sets'
 import {
@@ -15,8 +17,8 @@ import {
   FieldPermissions,
   ObjectPermissions,
   CustomField,
-  FilterItem,
   TopicsForObjectsInfo,
+  FilterItem,
 } from '../src/client/types'
 import {
   Types, fromMetadataInfo, metadataType, apiName, bpCase,
@@ -77,40 +79,286 @@ describe('Salesforce adapter E2E with real account', () => {
   }
 
   const gvsName = 'TestGlobalValueSet'
-  const fetchedRollupSummaryFieldName = 'rollupsummary__c'
-  const fetchedGlobalPicklistFieldName = 'gpicklist__c'
-  const fetchedLocationFieldName = 'location__c'
   const accountApiName = 'Account'
+  const fetchedRollupSummaryFieldName = 'rollupsummary__c'
+  const customObjectWithFieldsName = 'TestFields__c'
+  const picklistFieldName = 'Pickle__c'
+  const customObjectWithFieldsRandomString = String(Date.now()).substring(6)
 
   beforeAll(async () => {
-    // enrich the salesforce account with several objects and fields that does not exist by default
-    // in order to enrich our fetch test
-    const verifyCustomFieldsExists = async (): Promise<void> => {
-      // Add Global Value Set (needed for one of the custom fields)
-      await client.upsert('GlobalValueSet', {
-        fullName: gvsName,
-        masterLabel: gvsName,
-        sorted: false,
-        description: 'GlobalValueSet that should be fetched in e2e test',
-        customValue: [
+    const verifyObjectsDependentFieldsExist = async (): Promise<void> => {
+      const verifyGlobalValueSetExists = async (): Promise<void> => {
+        await client.upsert('GlobalValueSet', {
+          fullName: gvsName,
+          masterLabel: gvsName,
+          sorted: false,
+          description: 'GlobalValueSet that should be fetched in e2e test',
+          customValue: [
+            {
+              fullName: 'Val1',
+              default: true,
+              label: 'Val1',
+            },
+            {
+              fullName: 'Val2',
+              default: false,
+              label: 'Val2',
+            },
+          ],
+        } as MetadataInfo)
+      }
+      Promise.all([
+        verifyGlobalValueSetExists(),
+      ])
+    }
+    const addCustomObjectWithVariousFields = async (): Promise<void> => {
+      const objectToAdd = {
+        deploymentStatus: 'Deployed',
+        fields: [
           {
-            fullName: 'Val1',
-            default: true,
-            label: 'Val1',
+            fullName: picklistFieldName,
+            label: 'Picklist label',
+            required: false,
+            type: constants.FIELD_TYPE_NAMES.PICKLIST,
+            valueSet: {
+              restricted: true,
+              valueSetDefinition: {
+                value: [
+                  {
+                    default: true,
+                    fullName: 'NEW',
+                    label: 'NEW',
+                  },
+                  {
+                    default: false,
+                    fullName: 'OLD',
+                    label: 'OLD',
+                  },
+                ],
+              },
+            },
           },
           {
-            fullName: 'Val2',
-            default: false,
-            label: 'Val2',
+            defaultValue: 25,
+            fullName: 'Alpha__c',
+            label: 'Currency label',
+            description: 'Currency description',
+            inlineHelpText: 'Currency help',
+            precision: 18,
+            required: true,
+            scale: 3,
+            type: constants.FIELD_TYPE_NAMES.CURRENCY,
           },
-        ],
-      } as MetadataInfo)
-
-      // Add the custom fields
-      await client.upsert(constants.CUSTOM_FIELD, [
+          {
+            displayFormat: 'ZZZ-{0000}',
+            fullName: 'Bravo__c',
+            label: 'Autonumber label',
+            description: 'Autonumber description',
+            inlineHelpText: 'Autonumber help',
+            externalId: true,
+            type: constants.FIELD_TYPE_NAMES.AUTONUMBER,
+          },
+          {
+            defaultValue: 'Today() + 7',
+            fullName: 'Charlie__c',
+            label: 'Date label',
+            description: 'Date description',
+            inlineHelpText: 'Date help',
+            required: false,
+            type: constants.FIELD_TYPE_NAMES.DATE,
+          },
+          {
+            defaultValue: 'TIMENOW() + 5',
+            fullName: 'Delta__c',
+            label: 'Time label',
+            description: 'Time description',
+            inlineHelpText: 'Time help',
+            required: true,
+            type: constants.FIELD_TYPE_NAMES.TIME,
+          },
+          {
+            defaultValue: 'NOW() + 7',
+            fullName: 'Echo__c',
+            label: 'DateTime label',
+            description: 'DateTime description',
+            inlineHelpText: 'DateTime help',
+            required: false,
+            type: constants.FIELD_TYPE_NAMES.DATETIME,
+          },
+          {
+            fullName: 'Foxtrot__c',
+            label: 'Email label',
+            required: false,
+            unique: true,
+            externalId: true,
+            type: constants.FIELD_TYPE_NAMES.EMAIL,
+          },
+          {
+            displayLocationInDecimal: true,
+            fullName: 'Golf__c',
+            label: 'Location label',
+            required: false,
+            scale: 2,
+            type: constants.COMPOUND_FIELD_TYPE_NAMES.LOCATION,
+          },
+          {
+            fullName: 'India__c',
+            label: 'Percent label',
+            description: 'Percent description',
+            precision: 12,
+            required: false,
+            scale: 3,
+            type: constants.FIELD_TYPE_NAMES.PERCENT,
+          },
+          {
+            fullName: 'Juliett__c',
+            label: 'Phone label',
+            inlineHelpText: 'Phone help',
+            required: true,
+            type: constants.FIELD_TYPE_NAMES.PHONE,
+          },
+          {
+            fullName: 'Kilo__c',
+            label: 'LongTextArea label',
+            length: 32700,
+            required: false,
+            type: constants.FIELD_TYPE_NAMES.LONGTEXTAREA,
+            visibleLines: 5,
+          },
+          {
+            fullName: 'Lima__c',
+            label: 'RichTextArea label',
+            description: 'RichTextArea description',
+            inlineHelpText: 'RichTextArea help',
+            length: 32600,
+            required: false,
+            type: constants.FIELD_TYPE_NAMES.RICHTEXTAREA,
+            visibleLines: 32,
+          },
+          {
+            fullName: 'Mike__c',
+            label: 'TextArea label',
+            description: 'TextArea description',
+            inlineHelpText: 'TextArea help',
+            required: false,
+            type: constants.FIELD_TYPE_NAMES.TEXTAREA,
+          },
+          {
+            fullName: 'November__c',
+            label: 'EncryptedText label',
+            length: 35,
+            maskChar: 'asterisk',
+            maskType: 'creditCard',
+            required: false,
+            type: constants.FIELD_TYPE_NAMES.ENCRYPTEDTEXT,
+          },
+          {
+            fullName: 'Oscar__c',
+            label: 'Url label',
+            required: false,
+            type: constants.FIELD_TYPE_NAMES.URL,
+          },
+          {
+            defaultValue: 42,
+            fullName: 'Papa__c',
+            label: 'Number label',
+            precision: 15,
+            required: false,
+            scale: 3,
+            type: constants.FIELD_TYPE_NAMES.NUMBER,
+            unique: true,
+          },
+          {
+            fullName: 'Sierra__c',
+            label: 'Text label',
+            required: false,
+            length: 100,
+            caseSensitive: true,
+            externalId: true,
+            type: constants.FIELD_TYPE_NAMES.TEXT,
+            unique: true,
+          },
+          {
+            defaultValue: true,
+            fullName: 'Tango__c',
+            label: 'Checkbox label',
+            type: constants.FIELD_TYPE_NAMES.CHECKBOX,
+          },
+          {
+            fullName: 'Uniform__c',
+            label: 'Global Picklist label',
+            required: false,
+            valueSet: {
+              restricted: true,
+              valueSetName: gvsName,
+            },
+            type: constants.FIELD_TYPE_NAMES.PICKLIST,
+          },
+          {
+            fullName: `Romeo${customObjectWithFieldsRandomString}__c`,
+            label: 'MasterDetail label',
+            referenceTo: [
+              'Case',
+            ],
+            relationshipName: `Romeo${customObjectWithFieldsRandomString}`,
+            reparentableMasterDetail: true,
+            required: false,
+            type: constants.FIELD_TYPE_NAMES.MASTER_DETAIL,
+            writeRequiresMasterRead: true,
+          },
+        ] as CustomField[],
+        fullName: customObjectWithFieldsName,
+        label: 'test object with various field types',
+        nameField: {
+          label: 'Name',
+          type: 'Text',
+        },
+        pluralLabel: 'test object with various field typess',
+        sharingModel: 'ControlledByParent',
+      }
+      const additionalFieldsToAdd = [{
+        fullName: `${customObjectWithFieldsName}.Hotel__c`,
+        label: 'Multipicklist label',
+        required: false,
+        type: constants.FIELD_TYPE_NAMES.MULTIPICKLIST,
+        valueSet: {
+          controllingField: picklistFieldName,
+          restricted: false,
+          valueSetDefinition: {
+            value: [
+              {
+                default: true,
+                fullName: 'DO',
+                label: 'DO',
+              },
+              {
+                default: false,
+                fullName: 'RE',
+                label: 'RE',
+              },
+            ],
+          },
+          valueSettings: [
+            {
+              controllingFieldValue: [
+                'NEW',
+                'OLD',
+              ],
+              valueName: 'DO',
+            },
+            {
+              controllingFieldValue: [
+                'OLD',
+              ],
+              valueName: 'RE',
+            },
+          ],
+        },
+        visibleLines: 4,
+      },
       {
         fullName: `${accountApiName}.${fetchedRollupSummaryFieldName}`,
-        label: 'Test Fetch Rollup Summary Field',
+        label: 'Summary label',
         summarizedField: 'Opportunity.Amount',
         summaryFilterItems: {
           field: 'Opportunity.Amount',
@@ -120,45 +368,63 @@ describe('Salesforce adapter E2E with real account', () => {
         summaryForeignKey: 'Opportunity.AccountId',
         summaryOperation: 'sum',
         type: 'Summary',
-      } as MetadataInfo,
-      {
-        fullName: `${accountApiName}.${fetchedGlobalPicklistFieldName}`,
-        label: 'Test Fetch Global Picklist Field',
+      }]
+      const lookupFieldName = `Quebec${customObjectWithFieldsRandomString}`
+      const lookupFieldApiName = `${lookupFieldName}__c`
+      const lookupField = {
+        deleteConstraint: 'Restrict',
+        fullName: lookupFieldApiName,
+        label: 'Lookup label',
+        referenceTo: ['Case'],
+        relationshipName: lookupFieldName,
         required: false,
-        valueSet: {
-          restricted: true,
-          valueSetName: gvsName,
+        type: constants.FIELD_TYPE_NAMES.LOOKUP,
+      } as CustomField
+      objectToAdd.fields.push(lookupField)
+      const lookupFilter = {
+        active: true,
+        booleanFilter: '1 OR 2',
+        errorMessage: 'This is the Error message',
+        infoMessage: 'This is the Info message',
+        isOptional: false,
+        filterItems: [{
+          field: 'Case.OwnerId',
+          operation: 'equals',
+          valueField: '$User.Id',
         },
-        type: 'Picklist',
-      } as MetadataInfo,
-      {
-        fullName: `${accountApiName}.${fetchedLocationFieldName}`,
-        label: 'Test Fetch Location Field',
-        required: false,
-        scale: 10,
-        displayLocationInDecimal: true,
-        type: 'Location',
-      } as MetadataInfo,
-      ])
+        {
+          field: 'Case.ParentId',
+          operation: 'equals',
+          value: 'ParentIdValue',
+        }],
+      }
+      await verifyObjectsDependentFieldsExist()
+      if (await objectExists(constants.CUSTOM_OBJECT, customObjectWithFieldsName)) {
+        await client.delete(constants.CUSTOM_OBJECT, customObjectWithFieldsName)
+      }
+      await client.upsert(constants.CUSTOM_OBJECT, objectToAdd as MetadataInfo)
+      await client.upsert(constants.CUSTOM_FIELD, additionalFieldsToAdd as MetadataInfo[])
 
       // Add the fields permissions
+      const objectFieldNames = objectToAdd.fields
+        .filter(field => !field.required)
+        .filter(field => field.type !== constants.FIELD_TYPE_NAMES.MASTER_DETAIL)
+        .map(field => `${customObjectWithFieldsName}.${field.fullName}`)
+      const additionalFieldNames = additionalFieldsToAdd
+        .filter(field => !field.required)
+        .map(f => f.fullName)
+      const fieldNames = objectFieldNames.concat(additionalFieldNames)
       await client.update(PROFILE_METADATA_TYPE,
-        new ProfileInfo(ADMIN, [{
-          field: `${accountApiName}.${fetchedRollupSummaryFieldName}`,
+        new ProfileInfo(ADMIN, fieldNames.map(name => ({
+          field: name,
           editable: true,
           readable: true,
-        },
-        {
-          field: `${accountApiName}.${fetchedGlobalPicklistFieldName}`,
-          editable: true,
-          readable: true,
-        },
-        {
-          field: `${accountApiName}.${fetchedLocationFieldName}`,
-          editable: true,
-          readable: true,
-        },
-        ]))
+        }))))
+
+      // update lookup filter
+      await client.update(constants.CUSTOM_FIELD,
+        Object.assign(lookupField,
+          { fullName: `${customObjectWithFieldsName}.${lookupFieldApiName}`, lookupFilter }))
     }
 
     const verifyEmailTemplateAndFolderExist = async (): Promise<void> => {
@@ -627,7 +893,7 @@ describe('Salesforce adapter E2E with real account', () => {
     }
 
     await Promise.all([
-      verifyCustomFieldsExists(),
+      addCustomObjectWithVariousFields(),
       verifyEmailTemplateAndFolderExist(),
       verifyReportAndFolderExist(),
       verifyDashboardAndFolderExist(),
@@ -712,28 +978,6 @@ describe('Salesforce adapter E2E with real account', () => {
         expect(lead.fields.Status.annotations[constants.FIELD_ANNOTATIONS.DEFAULT_VALUE]).toBe(
           'Open - Not Contacted'
         )
-
-        // Test Rollup Summary
-        const account = (findElements(result, 'Account') as ObjectType[])
-          .filter(a => a.fields[fetchedRollupSummaryFieldName])[0]
-        expect(account).toBeDefined()
-        const rollupSummary = account.fields[fetchedRollupSummaryFieldName]
-        expect(rollupSummary.type.elemID).toEqual(Types.primitiveDataTypes.Summary.elemID)
-        expect(rollupSummary.annotations).toHaveProperty(
-          constants.FIELD_ANNOTATIONS.SUMMARIZED_FIELD
-        )
-        expect(rollupSummary.annotations[constants.FIELD_ANNOTATIONS.SUMMARIZED_FIELD])
-          .toEqual('Opportunity.Amount')
-        expect(rollupSummary.annotations[constants.FIELD_ANNOTATIONS.SUMMARY_FOREIGN_KEY])
-          .toEqual('Opportunity.AccountId')
-        expect(rollupSummary.annotations[constants.FIELD_ANNOTATIONS.SUMMARY_OPERATION])
-          .toEqual('sum')
-        const filterItems = rollupSummary
-          .annotations[constants.FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS]
-        expect(filterItems).toHaveLength(1)
-        expect(filterItems[0][constants.FILTER_ITEM_FIELDS.FIELD]).toEqual('Opportunity.Amount')
-        expect(filterItems[0][constants.FILTER_ITEM_FIELDS.OPERATION]).toEqual('greaterThan')
-        expect(filterItems[0][constants.FILTER_ITEM_FIELDS.VALUE]).toEqual('1')
       })
 
       describe('should fetch sobject annotations from the custom object instance', () => {
@@ -1777,541 +2021,701 @@ describe('Salesforce adapter E2E with real account', () => {
       await adapter.remove(oldElement)
     })
 
-    it('should add a custom object with various field types', async () => {
-      const customObjectName = 'TestAddFields__c'
-      const mockElemID = new ElemID(constants.SALESFORCE, 'test add object with various field types')
-      const adminReadable = {
-        [FIELD_LEVEL_SECURITY_ANNOTATION]: {
-          editable: [],
-          readable: [ADMIN],
-        },
-      }
-      // we use random suffix for the reference field names since they cannot be created
-      // more than once until they are permanently deleted (after 15 days)
-      const randomString = String(Date.now()).substring(6)
-      const picklistFieldApiName = 'Pickle__c'
-      const element = new ObjectType({
-        elemID: mockElemID,
-        annotations: {
-          [constants.API_NAME]: customObjectName,
-          [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
-        },
-        fields: {
-          Pickle: new Field(
-            mockElemID,
-            'Pickle',
-            Types.primitiveDataTypes.Picklist,
-            {
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-              [constants.LABEL]: 'Picklist description label',
-              [constants.FIELD_ANNOTATIONS.RESTRICTED]: true,
-              [constants.FIELD_ANNOTATIONS.VALUE_SET]: [
-                {
-                  [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'NEW',
-                  [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: true,
-                },
-                {
-                  [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'OLD',
-                  [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: false,
-                },
-              ],
-              ...adminReadable,
-            },
-          ),
-          Alpha: new Field(
-            mockElemID,
-            'Alpha',
-            Types.primitiveDataTypes.Currency,
-            {
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-              [constants.DEFAULT_VALUE_FORMULA]: 25,
-              [constants.LABEL]: 'Currency description label',
-              [constants.FIELD_ANNOTATIONS.SCALE]: 3,
-              [constants.FIELD_ANNOTATIONS.PRECISION]: 18,
-              ...adminReadable,
-            },
-          ),
-          Bravo: new Field(
-            mockElemID,
-            'Bravo',
-            Types.primitiveDataTypes.AutoNumber,
-            {
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-              [constants.LABEL]: 'Autonumber description label',
-              [constants.FIELD_ANNOTATIONS.DISPLAY_FORMAT]: 'ZZZ-{0000}',
-              ...adminReadable,
-            },
-          ),
-          Charlie: new Field(
-            mockElemID,
-            'Charlie',
-            Types.primitiveDataTypes.Date,
-            {
-              [constants.LABEL]: 'Date description label',
-              [constants.DEFAULT_VALUE_FORMULA]: 'Today() + 7',
-              ...adminReadable,
-            },
-          ),
-          Delta: new Field(
-            mockElemID,
-            'Delta',
-            Types.primitiveDataTypes.Time,
-            {
-              [constants.LABEL]: 'Time description label',
-              [constants.DEFAULT_VALUE_FORMULA]: 'TIMENOW() + 5',
-              ...adminReadable,
-            },
-          ),
-          Echo: new Field(
-            mockElemID,
-            'Echo',
-            Types.primitiveDataTypes.DateTime,
-            {
-              [constants.LABEL]: 'DateTime description label',
-              [constants.DEFAULT_VALUE_FORMULA]: 'Now() + 7',
-              ...adminReadable,
-            },
-          ),
-          Foxtrot: new Field(
-            mockElemID,
-            'Foxtrot',
-            Types.primitiveDataTypes.Email,
-            {
-              [constants.LABEL]: 'Email description label',
-              [constants.FIELD_ANNOTATIONS.UNIQUE]: true,
-              [constants.FIELD_ANNOTATIONS.CASE_SENSITIVE]: true,
-              ...adminReadable,
-            },
-          ),
-          Golf: new Field(
-            mockElemID,
-            'Golf',
-            Types.compoundDataTypes.Location,
-            {
-              [constants.LABEL]: 'Location description label',
-              [constants.FIELD_ANNOTATIONS.SCALE]: 2,
-              [constants.FIELD_ANNOTATIONS.DISPLAY_LOCATION_IN_DECIMAL]: true,
-              ...adminReadable,
-            },
-          ),
-          Hotel: new Field(
-            mockElemID,
-            'Hotel',
-            Types.primitiveDataTypes.MultiselectPicklist,
-            {
-              [constants.LABEL]: 'Multipicklist description label',
-              [constants.FIELD_ANNOTATIONS.VALUE_SET]: [
-                {
-                  [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'DO',
-                  [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: true,
-                },
-                {
-                  [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'RE',
-                  [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: false,
-                },
-              ],
-              [constants.FIELD_ANNOTATIONS.VISIBLE_LINES]: 4,
-              [constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY]: {
-                [constants.FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD]: picklistFieldApiName,
-                [constants.FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS]: [
-                  {
-                    [constants.VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE]: ['NEW', 'OLD'],
-                    [constants.VALUE_SETTINGS_FIELDS.VALUE_NAME]: 'DO',
-                  },
-                  {
-                    [constants.VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE]: ['OLD'],
-                    [constants.VALUE_SETTINGS_FIELDS.VALUE_NAME]: 'RE',
-                  },
-                ],
-              },
-              ...adminReadable,
-            },
-          ),
-          India: new Field(
-            mockElemID,
-            'India',
-            Types.primitiveDataTypes.Percent,
-            {
-              [constants.LABEL]: 'Percent description label',
-              [constants.FIELD_ANNOTATIONS.SCALE]: 3,
-              [constants.FIELD_ANNOTATIONS.PRECISION]: 12,
-              ...adminReadable,
-            },
-          ),
-          Juliett: new Field(
-            mockElemID,
-            'Juliett',
-            Types.primitiveDataTypes.Phone,
-            {
-              [constants.LABEL]: 'Phone description label',
-              ...adminReadable,
-            },
-          ),
-          Kilo: new Field(
-            mockElemID,
-            'Kilo',
-            Types.primitiveDataTypes.LongTextArea,
-            {
-              [constants.LABEL]: 'LongTextArea description label',
-              [constants.FIELD_ANNOTATIONS.VISIBLE_LINES]: 5,
-              ...adminReadable,
-            },
-          ),
-          Lima: new Field(
-            mockElemID,
-            'Lima',
-            Types.primitiveDataTypes.Html,
-            {
-              [constants.LABEL]: 'RichTextArea description label',
-              [constants.FIELD_ANNOTATIONS.VISIBLE_LINES]: 27,
-              ...adminReadable,
-            },
-          ),
-          Mike: new Field(
-            mockElemID,
-            'Mike',
-            Types.primitiveDataTypes.TextArea,
-            {
-              [constants.LABEL]: 'TextArea description label',
-              ...adminReadable,
-            },
-          ),
-          November: new Field(
-            mockElemID,
-            'November',
-            Types.primitiveDataTypes.EncryptedText,
-            {
-              [constants.LABEL]: 'EncryptedText description label',
-              [constants.FIELD_ANNOTATIONS.MASK_TYPE]: 'creditCard',
-              [constants.FIELD_ANNOTATIONS.MASK_CHAR]: 'X',
-              [constants.FIELD_ANNOTATIONS.LENGTH]: 35,
-              ...adminReadable,
-            },
-          ),
-          Oscar: new Field(
-            mockElemID,
-            'Oscar',
-            Types.primitiveDataTypes.Url,
-            {
-              [constants.LABEL]: 'Url description label',
-              ...adminReadable,
-            },
-          ),
-          Papa: new Field(
-            mockElemID,
-            'Papa',
-            Types.primitiveDataTypes.Number,
-            {
-              [constants.FIELD_ANNOTATIONS.SCALE]: 3,
-              [constants.FIELD_ANNOTATIONS.PRECISION]: 15,
-              [constants.FIELD_ANNOTATIONS.UNIQUE]: true,
-              [constants.DEFAULT_VALUE_FORMULA]: 42,
-              [constants.LABEL]: 'Number description label',
-              ...adminReadable,
-            },
-          ),
-          Queen: new Field(
-            mockElemID,
-            `Queen${randomString}`,
-            Types.primitiveDataTypes.Lookup,
-            {
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-              [constants.FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION]: false,
-              [constants.FIELD_ANNOTATIONS.REFERENCE_TO]: ['Case'],
-              [constants.LABEL]: 'Lookup description label',
-              [constants.FIELD_ANNOTATIONS.LOOKUP_FILTER]: {
-                [constants.LOOKUP_FILTER_FIELDS.ACTIVE]: true,
-                [constants.LOOKUP_FILTER_FIELDS.BOOLEAN_FILTER]: '1 OR 2',
-                [constants.LOOKUP_FILTER_FIELDS.ERROR_MESSAGE]: 'This is the Error message',
-                [constants.LOOKUP_FILTER_FIELDS.INFO_MESSAGE]: 'This is the Info message',
-                [constants.LOOKUP_FILTER_FIELDS.IS_OPTIONAL]: false,
-                [constants.LOOKUP_FILTER_FIELDS.FILTER_ITEMS]: [{
-                  [constants.FILTER_ITEM_FIELDS.FIELD]: 'Case.OwnerId',
-                  [constants.FILTER_ITEM_FIELDS.OPERATION]: 'equals',
-                  [constants.FILTER_ITEM_FIELDS.VALUE_FIELD]: '$User.Id',
-                },
-                {
-                  [constants.FILTER_ITEM_FIELDS.FIELD]: 'Case.ParentId',
-                  [constants.FILTER_ITEM_FIELDS.OPERATION]: 'equals',
-                  [constants.FILTER_ITEM_FIELDS.VALUE]: 'ParentIdValue',
-                }],
-              },
-              ...adminReadable,
-            }
-          ),
-          Rocket: new Field(
-            mockElemID,
-            `Rocket${randomString}`,
-            Types.primitiveDataTypes.MasterDetail,
-            {
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-              [constants.FIELD_ANNOTATIONS.REFERENCE_TO]: ['Case'],
-              [constants.LABEL]: 'MasterDetail description label',
-              [constants.FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ]: true,
-              [constants.FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL]: true,
-            }
-          ),
-        },
-      })
-      const rollupSummaryFieldName = 'susu'
-      const rollupSummaryFieldApiName = `${rollupSummaryFieldName}__c`
-
-      const findCustomCase = (): ObjectType => {
-        const caseObjects = findElements(result, 'Case') as ObjectType[]
-        const customCase = caseObjects
-          .filter(c => _.isUndefined(c.annotations[constants.API_NAME]))[0]
-        const caseObject = customCase ?? caseObjects[0]
-        // we add API_NAME annotation so the adapter will be able to construct the fields full name
-        // upon update. in a real scenario, the case object is merged in the core and passed
-        // to the adapter with the API_NAME annotation
-        caseObject.annotations[constants.API_NAME] = 'Case'
-        return caseObject
+    describe('should fetch and add custom object with various field types', () => {
+      const testCurrency = (annotations: Values): void => {
+        expect(annotations[constants.LABEL]).toBe('Currency label')
+        expect(annotations[constants.DESCRIPTION]).toBe('Currency description')
+        expect(annotations[constants.HELP_TEXT]).toBe('Currency help')
+        expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(true)
+        expect(annotations[constants.FIELD_ANNOTATIONS.SCALE]).toBe(3)
+        expect(annotations[constants.FIELD_ANNOTATIONS.PRECISION]).toBe(18)
+        expect(annotations[constants.DEFAULT_VALUE_FORMULA]).toEqual(25)
       }
 
-      const normalizeReferences = (obj: ObjectType): void => {
-        const resolveRef = (ref: ReferenceExpression): string | undefined => {
-          const elem = findElement(result, ref.elemId)
-          return elem ? apiName(elem) : undefined
-        }
-        Object.values(obj.fields)
-          .map(field => field.annotations[FIELD_LEVEL_SECURITY_ANNOTATION])
-          .filter(fieldSecurity => fieldSecurity !== undefined)
-          .forEach(fieldSecurity => {
-            Object.entries(fieldSecurity).forEach(([key, values]) => {
-              fieldSecurity[key] = (values as ReferenceExpression[]).map(resolveRef)
-            })
+      const testAutoNumber = (annotations: Values): void => {
+        expect(annotations[constants.LABEL]).toBe('Autonumber label')
+        expect(annotations[constants.DESCRIPTION]).toBe('Autonumber description')
+        expect(annotations[constants.HELP_TEXT]).toBe('Autonumber help')
+        expect(annotations[constants.FIELD_ANNOTATIONS.EXTERNAL_ID]).toBe(true)
+        expect(annotations[constants.FIELD_ANNOTATIONS.DISPLAY_FORMAT]).toBe('ZZZ-{0000}')
+      }
+
+      const testDate = (annotations: Values): void => {
+        expect(annotations[constants.LABEL]).toBe('Date label')
+        expect(annotations[constants.DESCRIPTION]).toBe('Date description')
+        expect(annotations[constants.HELP_TEXT]).toBe('Date help')
+        expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
+        expect(annotations[constants.DEFAULT_VALUE_FORMULA]).toEqual('Today() + 7')
+      }
+
+      const testTime = (annotations: Values): void => {
+        expect(annotations[constants.LABEL]).toBe('Time label')
+        expect(annotations[constants.DESCRIPTION]).toBe('Time description')
+        expect(annotations[constants.HELP_TEXT]).toBe('Time help')
+        expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(true)
+        expect(annotations[constants.DEFAULT_VALUE_FORMULA]).toBe('TIMENOW() + 5')
+      }
+
+      const testDatetime = (annotations: Values): void => {
+        expect(annotations[constants.LABEL]).toBe('DateTime label')
+        expect(annotations[constants.DESCRIPTION]).toBe('DateTime description')
+        expect(annotations[constants.HELP_TEXT]).toBe('DateTime help')
+        expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
+        expect(annotations[constants.DEFAULT_VALUE_FORMULA]).toBe('NOW() + 7')
+      }
+
+      const testEmail = (annotations: Values): void => {
+        expect(annotations[constants.LABEL]).toBe('Email label')
+        expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
+        expect(annotations[constants.FIELD_ANNOTATIONS.UNIQUE]).toBe(true)
+        expect(annotations[constants.FIELD_ANNOTATIONS.EXTERNAL_ID]).toBe(true)
+      }
+
+      const testLocation = (annotations: Values): void => {
+        expect(annotations[constants.LABEL]).toBe('Location label')
+        expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
+        expect(annotations[constants.FIELD_ANNOTATIONS.DISPLAY_LOCATION_IN_DECIMAL])
+          .toBe(true)
+        expect(annotations[constants.FIELD_ANNOTATIONS.SCALE]).toBe(2)
+      }
+
+      const testPicklist = (annotations: Values): void => {
+        expect(annotations[constants.LABEL]).toBe('Picklist label')
+        expect(annotations[constants.FIELD_ANNOTATIONS.RESTRICTED]).toBe(true)
+        expect(annotations[constants.FIELD_ANNOTATIONS.VALUE_SET]).toEqual([
+          {
+            [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'NEW',
+            [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: true,
+            [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'NEW',
+          },
+          {
+            [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'OLD',
+            [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: false,
+            [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'OLD',
+          },
+        ])
+        expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
+      }
+
+      const testMultiSelectPicklist = (annotations: Values): void => {
+        expect(annotations[constants.LABEL]).toBe('Multipicklist label')
+        expect(annotations[constants.FIELD_ANNOTATIONS.RESTRICTED]).toBe(false)
+        expect(annotations[constants.FIELD_ANNOTATIONS.VISIBLE_LINES]).toBe(4)
+        expect(annotations[constants.FIELD_ANNOTATIONS.VALUE_SET]).toEqual([
+          {
+            [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'DO',
+            [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: true,
+            [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'DO',
+          },
+          {
+            [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'RE',
+            [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: false,
+            [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'RE',
+          },
+        ])
+        const fieldDependency = annotations[constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY]
+        expect(fieldDependency[constants.FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD])
+          .toEqual(picklistFieldName)
+        expect(fieldDependency[constants.FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS])
+          .toEqual([
+            {
+              [constants.VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE]: ['NEW', 'OLD'],
+              [constants.VALUE_SETTINGS_FIELDS.VALUE_NAME]: 'DO',
+            },
+            {
+              [constants.VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE]: ['OLD'],
+              [constants.VALUE_SETTINGS_FIELDS.VALUE_NAME]: 'RE',
+            },
+          ])
+        expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
+      }
+
+      const testPercent = (annotations: Values): void => {
+        expect(annotations[constants.LABEL]).toBe('Percent label')
+        expect(annotations[constants.DESCRIPTION]).toBe('Percent description')
+        expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
+        expect(annotations[constants.FIELD_ANNOTATIONS.PRECISION]).toBe(12)
+        expect(annotations[constants.FIELD_ANNOTATIONS.SCALE]).toBe(3)
+      }
+
+      const testPhone = (annotations: Values): void => {
+        expect(annotations[constants.LABEL]).toBe('Phone label')
+        expect(annotations[constants.HELP_TEXT]).toBe('Phone help')
+        expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(true)
+      }
+
+      const testLongTextArea = (annotations: Values): void => {
+        expect(annotations[constants.LABEL]).toBe('LongTextArea label')
+        expect(annotations[constants.FIELD_ANNOTATIONS.LENGTH]).toBe(32700)
+        expect(annotations[constants.FIELD_ANNOTATIONS.VISIBLE_LINES]).toBe(5)
+      }
+
+      const testRichTextArea = (annotations: Values): void => {
+        expect(annotations[constants.LABEL]).toBe('RichTextArea label')
+        expect(annotations[constants.DESCRIPTION]).toBe('RichTextArea description')
+        expect(annotations[constants.HELP_TEXT]).toBe('RichTextArea help')
+        expect(annotations[constants.FIELD_ANNOTATIONS.LENGTH]).toBe(32600)
+        expect(annotations[constants.FIELD_ANNOTATIONS.VISIBLE_LINES]).toBe(32)
+      }
+
+      const testTextArea = (annotations: Values): void => {
+        expect(annotations[constants.LABEL]).toBe('TextArea label')
+        expect(annotations[constants.DESCRIPTION]).toBe('TextArea description')
+        expect(annotations[constants.HELP_TEXT]).toBe('TextArea help')
+        expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
+      }
+
+      const testEncryptedText = (annotations: Values): void => {
+        expect(annotations[constants.LABEL]).toBe('EncryptedText label')
+        expect(annotations[constants.FIELD_ANNOTATIONS.LENGTH]).toBe(35)
+        expect(annotations[constants.FIELD_ANNOTATIONS.MASK_CHAR]).toBe('asterisk')
+        expect(annotations[constants.FIELD_ANNOTATIONS.MASK_TYPE]).toBe('creditCard')
+        expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
+      }
+
+      const testUrl = (annotations: Values): void => {
+        expect(annotations[constants.LABEL]).toBe('Url label')
+        expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
+      }
+
+      const testNumber = (annotations: Values): void => {
+        expect(annotations[constants.LABEL]).toBe('Number label')
+        expect(annotations[constants.FIELD_ANNOTATIONS.PRECISION]).toBe(15)
+        expect(annotations[constants.FIELD_ANNOTATIONS.SCALE]).toBe(3)
+        expect(annotations[constants.FIELD_ANNOTATIONS.UNIQUE]).toBe(true)
+        expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
+        expect(annotations[constants.DEFAULT_VALUE_FORMULA]).toBe(42)
+      }
+
+      const testText = (annotations: Values): void => {
+        expect(annotations[constants.LABEL]).toBe('Text label')
+        expect(annotations[constants.FIELD_ANNOTATIONS.LENGTH]).toBe(100)
+        expect(annotations[constants.FIELD_ANNOTATIONS.EXTERNAL_ID]).toBe(true)
+        expect(annotations[constants.FIELD_ANNOTATIONS.CASE_SENSITIVE]).toBe(true)
+        expect(annotations[constants.FIELD_ANNOTATIONS.UNIQUE]).toBe(true)
+        expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
+      }
+
+      const testCheckbox = (annotations: Values): void => {
+        expect(annotations[constants.LABEL]).toBe('Checkbox label')
+        expect(annotations[constants.FIELD_ANNOTATIONS.DEFAULT_VALUE]).toBe(true)
+      }
+
+      const testGlobalPicklist = (annotations: Values): void => {
+        expect(annotations[constants.LABEL]).toBe('Global Picklist label')
+        expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
+        expect(annotations[constants.FIELD_ANNOTATIONS.RESTRICTED]).toBe(true)
+      }
+
+      const testLookup = (annotations: Values): void => {
+        expect(annotations[constants.LABEL]).toBe('Lookup label')
+        expect(annotations[constants.FIELD_ANNOTATIONS.REFERENCE_TO]).toEqual(['Case'])
+        expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
+        const lookupFilter = annotations[constants.FIELD_ANNOTATIONS.LOOKUP_FILTER]
+        expect(lookupFilter).toBeDefined()
+        expect(lookupFilter[constants.LOOKUP_FILTER_FIELDS.ACTIVE]).toBe(true)
+        expect(lookupFilter[constants.LOOKUP_FILTER_FIELDS.BOOLEAN_FILTER]).toBe('1 OR 2')
+        expect(lookupFilter[constants.LOOKUP_FILTER_FIELDS.ERROR_MESSAGE])
+          .toBe('This is the Error message')
+        expect(lookupFilter[constants.LOOKUP_FILTER_FIELDS.INFO_MESSAGE])
+          .toBe('This is the Info message')
+        expect(lookupFilter[constants.LOOKUP_FILTER_FIELDS.IS_OPTIONAL]).toBe(false)
+        const filterItems = lookupFilter[constants.LOOKUP_FILTER_FIELDS.FILTER_ITEMS]
+        expect(filterItems).toBeDefined()
+        expect(filterItems).toEqual([{
+          [constants.FILTER_ITEM_FIELDS.FIELD]: 'Case.OwnerId',
+          [constants.FILTER_ITEM_FIELDS.OPERATION]: 'equals',
+          [constants.FILTER_ITEM_FIELDS.VALUE_FIELD]: '$User.Id',
+        },
+        {
+          [constants.FILTER_ITEM_FIELDS.FIELD]: 'Case.ParentId',
+          [constants.FILTER_ITEM_FIELDS.OPERATION]: 'equals',
+          [constants.FILTER_ITEM_FIELDS.VALUE]: 'ParentIdValue',
+        }])
+      }
+
+      const testMasterDetail = (annotations: Values): void => {
+        expect(annotations[constants.LABEL]).toBe('MasterDetail label')
+        expect(annotations[constants.FIELD_ANNOTATIONS.REFERENCE_TO]).toEqual(['Case'])
+        expect(annotations[constants.FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL])
+          .toBe(true)
+        expect(annotations[constants.FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ])
+          .toBe(true)
+      }
+
+      const testSummary = (annotations: Values): void => {
+        expect(annotations[constants.LABEL]).toEqual('Summary label')
+        expect(annotations[constants.FIELD_ANNOTATIONS.SUMMARIZED_FIELD])
+          .toEqual('Opportunity.Amount')
+        expect(annotations[constants.FIELD_ANNOTATIONS.SUMMARY_FOREIGN_KEY])
+          .toEqual('Opportunity.AccountId')
+        expect(annotations[constants.FIELD_ANNOTATIONS.SUMMARY_OPERATION])
+          .toEqual('sum')
+        const filterItems = annotations[constants.FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS]
+        expect(filterItems).toHaveLength(1)
+        expect(filterItems[0][constants.FILTER_ITEM_FIELDS.FIELD]).toEqual('Opportunity.Amount')
+        expect(filterItems[0][constants.FILTER_ITEM_FIELDS.OPERATION]).toEqual('greaterThan')
+        expect(filterItems[0][constants.FILTER_ITEM_FIELDS.VALUE]).toEqual('1')
+      }
+
+      describe('fetch', () => {
+        let customObject: Element
+
+        it('fetch customObject', () => {
+          [customObject] = findElements(result, customObjectWithFieldsName)
+          expect(customObject).toBeDefined()
+        })
+
+        describe('fetch fields', () => {
+          const verifyFieldFetch = (
+            field: Field,
+            verificationFunc: (annotations: Values) => void,
+            expectedType: Type
+          ): void => {
+            expect(field).toBeDefined()
+            verificationFunc(field.annotations)
+            expect(field.type.elemID).toEqual(expectedType.elemID)
+          }
+
+          let fields: Record<string, Field>
+          beforeAll(() => {
+            fields = (customObject as ObjectType).fields
           })
-      }
 
-      let origCase = findCustomCase()
-      normalizeReferences(origCase)
+          it('currency', () => {
+            verifyFieldFetch(fields.Alpha__c, testCurrency, Types.primitiveDataTypes.Currency)
+          })
 
-      const removeRollupSummaryFieldFromCase = async (caseObj: ObjectType, fieldName: string):
-        Promise<ObjectType> => {
-        const caseAfterFieldRemoval = caseObj.clone()
-        delete caseAfterFieldRemoval.fields[fieldName]
-        await adapter.update(caseObj, caseAfterFieldRemoval,
-          [{ action: 'remove',
-            data: { before: caseObj.fields[fieldName] } }])
-        return caseAfterFieldRemoval
-      }
-      if (await objectExists(constants.CUSTOM_OBJECT, 'Case', [rollupSummaryFieldApiName])) {
-        origCase = await removeRollupSummaryFieldFromCase(origCase, rollupSummaryFieldApiName)
-      }
-      if (await objectExists(constants.CUSTOM_OBJECT, customObjectName)) {
-        await adapter.remove(element)
-      }
-      const post = await adapter.add(element)
+          it('autonumber', () => {
+            verifyFieldFetch(fields.Bravo__c, testAutoNumber, Types.primitiveDataTypes.AutoNumber)
+          })
 
-      // Test
-      const objectFields = await client.describeSObjects([customObjectName])
-      expect(objectFields[0]).toBeDefined()
-      const allFields = objectFields[0].fields
-      // Verify picklist
-      const picklistField = allFields.filter(field => field.name === picklistFieldApiName)[0]
-      expect(picklistField).toBeDefined()
-      expect(picklistField.label).toBe('Picklist description label')
-      expect(picklistField.type).toBe('picklist')
-      expect(picklistField.dependentPicklist).toBeFalsy()
-      expect(picklistField.restrictedPicklist).toBeTruthy()
-      expect(_.isEqual((picklistField.picklistValues as PicklistEntry[]).map(value => value.label), ['NEW', 'OLD'])).toBeTruthy()
-      const picklistValueNew = (picklistField.picklistValues as PicklistEntry[]).filter(value => value.label === 'NEW')[0]
-      expect(picklistValueNew).toBeDefined()
-      expect(picklistValueNew.defaultValue).toEqual(true)
-      const picklistValueOld = (picklistField.picklistValues as PicklistEntry[]).filter(value => value.label === 'OLD')[0]
-      expect(picklistValueOld).toBeDefined()
-      expect(picklistValueOld.defaultValue).toEqual(false)
+          it('date', () => {
+            verifyFieldFetch(fields.Charlie__c, testDate, Types.primitiveDataTypes.Date)
+          })
 
-      // Verify currency
-      const currencyFieldApiName = 'Alpha__c'
-      const currencyField = allFields.filter(field => field.name === currencyFieldApiName)[0]
-      expect(currencyField).toBeDefined()
-      expect(currencyField.label).toBe('Currency description label')
-      expect(currencyField.scale).toBe(3)
-      expect(currencyField.precision).toBe(18)
-      expect(currencyField.type).toBe('currency')
-      // Verify autonumber
-      const autonumber = allFields.filter(field => field.name === 'Bravo__c')[0]
-      expect(autonumber).toBeDefined()
-      expect(autonumber.label).toBe('Autonumber description label')
-      expect(autonumber.type).toBe('string')
-      // TODO: As of this point we do not know how to retrieve the displayFormat annotation from
-      // the autonumber field
+          it('time', () => {
+            verifyFieldFetch(fields.Delta__c, testTime, Types.primitiveDataTypes.Time)
+          })
 
-      // Verify date
-      const date = allFields.filter(field => field.name === 'Charlie__c')[0]
-      expect(date).toBeDefined()
-      expect(date.label).toBe('Date description label')
-      expect(date.type).toBe('date')
-      // Verify time
-      const time = allFields.filter(field => field.name === 'Delta__c')[0]
-      expect(time).toBeDefined()
-      expect(time.label).toBe('Time description label')
-      expect(time.type).toBe('time')
-      // Verify datetime
-      const datetime = allFields.filter(field => field.name === 'Echo__c')[0]
-      expect(datetime).toBeDefined()
-      expect(datetime.label).toBe('DateTime description label')
-      expect(datetime.type).toBe('datetime')
-      // Verify email
-      const email = allFields.filter(field => field.name === 'Foxtrot__c')[0]
-      expect(email).toBeDefined()
-      expect(email.label).toBe('Email description label')
-      expect(email.type).toBe('email')
-      expect(email.unique).toBe(true)
-      expect(email.caseSensitive).toBe(true)
-      // Verify location
-      const location = allFields.filter(field => field.name === 'Golf__c')[0]
-      expect(location).toBeDefined()
-      expect(location.label).toBe('Location description label')
-      expect(location.type).toBe('location')
-      expect(location.displayLocationInDecimal).toBe(true)
-      // TODO: From some reason the api returns scale = 0 despite the fact that it successfully
-      // sets the scale to what was defined (verified in Salesforce UX)
-      // expect(location.scale).toBe(2)
+          it('datetime', () => {
+            verifyFieldFetch(fields.Echo__c, testDatetime, Types.primitiveDataTypes.DateTime)
+          })
 
-      // Verify multipicklist
-      const multipicklist = allFields.filter(field => field.name === 'Hotel__c')[0]
-      expect(multipicklist).toBeDefined()
-      expect(multipicklist.label).toBe('Multipicklist description label')
-      expect(multipicklist.type).toBe('multipicklist')
-      expect(multipicklist.precision).toBe(4)
-      expect(multipicklist.dependentPicklist).toBeTruthy()
-      expect(_.isEqual((multipicklist.picklistValues as PicklistEntry[]).map(value => value.label), ['DO', 'RE'])).toBeTruthy()
-      const multipicklistValueDo = (multipicklist.picklistValues as PicklistEntry[]).filter(value => value.label === 'DO')[0]
-      expect(multipicklistValueDo).toBeDefined()
-      expect(multipicklistValueDo.defaultValue).toEqual(true)
-      const multipicklistValueRe = (multipicklist.picklistValues as PicklistEntry[]).filter(value => value.label === 'RE')[0]
-      expect(multipicklistValueRe).toBeDefined()
-      expect(multipicklistValueRe.defaultValue).toEqual(false)
-      // Verify percent
-      const percentField = allFields.filter(field => field.name === 'India__c')[0]
-      expect(percentField).toBeDefined()
-      expect(percentField.label).toBe('Percent description label')
-      expect(percentField.type).toBe('percent')
-      expect(percentField.scale).toBe(3)
-      expect(percentField.precision).toBe(12)
-      // Verify phone
-      const phoneField = allFields.filter(field => field.name === 'Juliett__c')[0]
-      expect(phoneField).toBeDefined()
-      expect(phoneField.label).toBe('Phone description label')
-      expect(phoneField.type).toBe('phone')
-      // Verify longtextarea
-      // TODO: We do not know how to retrieve the visible lines info when fetching
-      // long text area
-      const longTextAreaField = allFields.filter(field => field.name === 'Kilo__c')[0]
-      expect(longTextAreaField).toBeDefined()
-      expect(longTextAreaField.label).toBe('LongTextArea description label')
-      expect(longTextAreaField.type).toBe('textarea')
-      expect(longTextAreaField.length).toBe(32768)
-      // Verify richtextarea
-      // TODO: We do not know how to retrieve the visible lines info when fetching
-      // rich text area
-      const richTextAreaField = allFields.filter(field => field.name === 'Lima__c')[0]
-      expect(richTextAreaField).toBeDefined()
-      expect(richTextAreaField.label).toBe('RichTextArea description label')
-      expect(richTextAreaField.type).toBe('textarea')
-      expect(richTextAreaField.length).toBe(32768)
-      // Verify textarea
-      const textAreaField = allFields.filter(field => field.name === 'Mike__c')[0]
-      expect(textAreaField).toBeDefined()
-      expect(textAreaField.label).toBe('TextArea description label')
-      expect(textAreaField.type).toBe('textarea')
-      // Verify Encrypted Text
-      const encryptedTextField = allFields.filter(field => field.name === 'November__c')[0]
-      expect(encryptedTextField).toBeDefined()
-      expect(encryptedTextField.label).toBe('EncryptedText description label')
-      expect(encryptedTextField.type).toBe('encryptedstring')
-      expect(encryptedTextField.mask).toBe('X')
-      expect(encryptedTextField.maskType).toBe('creditCard')
-      expect(encryptedTextField.length).toBe(35)
-      // Verify textarea
-      const urlField = allFields.filter(field => field.name === 'Oscar__c')[0]
-      expect(urlField).toBeDefined()
-      expect(urlField.label).toBe('Url description label')
-      expect(urlField.type).toBe('url')
-      // Verify number
-      const numberField = allFields.filter(field => field.name === 'Papa__c')[0]
-      expect(numberField).toBeDefined()
-      expect(numberField.label).toBe('Number description label')
-      expect(numberField.type).toBe('double')
-      expect(numberField.defaultValueFormula).toBe('42')
-      expect(numberField.scale).toBe(3)
-      expect(numberField.precision).toBe(15)
-      expect(numberField.unique).toBe(true)
-      // Verify lookup
-      const lookupField = allFields.filter(field => field.name === `Queen${randomString}__c`)[0]
-      expect(lookupField).toBeDefined()
-      expect(lookupField.label).toBe('Lookup description label')
-      expect(lookupField.type).toBe('reference')
-      expect(lookupField.relationshipName).toBe(`Queen${randomString}__r`)
-      expect(lookupField.referenceTo).toEqual(['Case'])
-      expect(_.get(lookupField, 'restrictedDelete')).toBe(true)
-      expect(lookupField.filteredLookupInfo).toBeDefined()
-      // Verify masterdetail
-      const masterDetailApiName = `Rocket${randomString}__c`
-      const masterDetailField = allFields.filter(field => field.name === masterDetailApiName)[0]
-      expect(masterDetailField).toBeDefined()
-      expect(masterDetailField.label).toBe('MasterDetail description label')
-      expect(masterDetailField.type).toBe('reference')
-      expect(masterDetailField.relationshipName).toBe(`Rocket${randomString}__r`)
-      expect(masterDetailField.referenceTo).toEqual(['Case'])
-      expect(masterDetailField.cascadeDelete).toBe(true)
-      expect(masterDetailField.writeRequiresMasterRead).toBe(true)
-      expect(masterDetailField.updateable).toBe(true)
+          it('email', () => {
+            verifyFieldFetch(fields.Foxtrot__c, testEmail, Types.primitiveDataTypes.Email)
+          })
 
-      const verifyRollupSummaryFieldAddition = async (): Promise<void> => {
-        const addRollupSummaryField = async (): Promise<ObjectType> => {
-          const caseAfterFieldAddition = origCase.clone()
-          caseAfterFieldAddition.fields[rollupSummaryFieldName] = new Field(
-            caseAfterFieldAddition.elemID,
-            rollupSummaryFieldName,
-            Types.primitiveDataTypes.Summary,
-            {
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-              [constants.LABEL]: 'Rollup Summary description label',
-              [constants.API_NAME]: apiNameAnno('Case', rollupSummaryFieldApiName),
-              [constants.FIELD_ANNOTATIONS.SUMMARIZED_FIELD]: `${customObjectName}.${currencyFieldApiName}`,
-              [constants.FIELD_ANNOTATIONS.SUMMARY_FOREIGN_KEY]: `${customObjectName}.${masterDetailApiName}`,
-              [constants.FIELD_ANNOTATIONS.SUMMARY_OPERATION]: 'max',
-              [constants.FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS]: [
-                {
-                  [constants.FILTER_ITEM_FIELDS.FIELD]: `${customObjectName}.${currencyFieldApiName}`,
-                  [constants.FILTER_ITEM_FIELDS.OPERATION]: 'greaterThan',
-                  [constants.FILTER_ITEM_FIELDS.VALUE]: '1',
-                },
-              ],
+          it('location', () => {
+            verifyFieldFetch(fields.Golf__c, testLocation, Types.compoundDataTypes.Location)
+          })
+
+          it('picklist', () => {
+            verifyFieldFetch(fields.Pickle__c, testPicklist, Types.primitiveDataTypes.Picklist)
+          })
+
+          it('global picklist', () => {
+            const field = fields.Uniform__c
+            verifyFieldFetch(field, testGlobalPicklist, Types.primitiveDataTypes.Picklist)
+            expect(field.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME])
+              .toEqual(new ReferenceExpression(
+                new ElemID(
+                  constants.SALESFORCE,
+                  bpCase(GLOBAL_VALUE_SET),
+                  'instance',
+                  bpCase(gvsName),
+                ).createNestedID(constants.INSTANCE_FULL_NAME_FIELD)
+              ))
+          })
+
+          it('multipicklist', () => {
+            verifyFieldFetch(
+              fields.Hotel__c,
+              testMultiSelectPicklist,
+              Types.primitiveDataTypes.MultiselectPicklist
+            )
+          })
+
+          it('percent', () => {
+            verifyFieldFetch(fields.India__c, testPercent, Types.primitiveDataTypes.Percent)
+          })
+
+          it('phone', () => {
+            verifyFieldFetch(fields.Juliett__c, testPhone, Types.primitiveDataTypes.Phone)
+          })
+
+          it('long text area', () => {
+            verifyFieldFetch(
+              fields.Kilo__c,
+              testLongTextArea,
+              Types.primitiveDataTypes.LongTextArea
+            )
+          })
+
+          it('rich text area', () => {
+            verifyFieldFetch(fields.Lima__c, testRichTextArea, Types.primitiveDataTypes.Html)
+          })
+
+          it('text area', () => {
+            verifyFieldFetch(fields.Mike__c, testTextArea, Types.primitiveDataTypes.TextArea)
+          })
+
+          it('encrypted text', () => {
+            verifyFieldFetch(
+              fields.November__c,
+              testEncryptedText,
+              Types.primitiveDataTypes.EncryptedText
+            )
+          })
+
+          it('url', () => {
+            verifyFieldFetch(fields.Oscar__c, testUrl, Types.primitiveDataTypes.Url)
+          })
+
+          it('number', () => {
+            verifyFieldFetch(fields.Papa__c, testNumber, Types.primitiveDataTypes.Number)
+          })
+
+          it('text', () => {
+            verifyFieldFetch(fields.Sierra__c, testText, Types.primitiveDataTypes.Text)
+          })
+
+          it('checkbox', () => {
+            verifyFieldFetch(fields.Tango__c, testCheckbox, Types.primitiveDataTypes.Checkbox)
+          })
+
+          it('lookup', () => {
+            const field = fields[`Quebec${customObjectWithFieldsRandomString}__c`]
+            verifyFieldFetch(field, testLookup, Types.primitiveDataTypes.Lookup)
+            expect(field.annotations[constants.FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION])
+              .toBe(false)
+          })
+
+          it('master-detail', () => {
+            verifyFieldFetch(
+              fields[`Romeo${customObjectWithFieldsRandomString}__c`],
+              testMasterDetail,
+              Types.primitiveDataTypes.MasterDetail,
+            )
+          })
+
+          it('rollup summary', () => {
+            const field = (findElements(result, 'Account') as ObjectType[])
+              .find(a => a.fields[fetchedRollupSummaryFieldName])
+              ?.fields[fetchedRollupSummaryFieldName] as Field
+            verifyFieldFetch(field, testSummary, Types.primitiveDataTypes.Summary)
+          })
+        })
+      })
+
+      describe('add', () => {
+        const customObjectName = 'TestAddFields__c'
+        const testAddFieldPrefix = 'TestAdd'
+        const mockElemID = new ElemID(constants.SALESFORCE, 'test add object with field types')
+        let customObject: ObjectType
+        let post: ObjectType
+        let objectInfo: CustomObject
+
+        beforeAll(async () => {
+          customObject = findElements(result, customObjectWithFieldsName)[0] as ObjectType
+          const newCustomObject = new ObjectType({
+            elemID: mockElemID,
+            fields: _(Object.values(customObject.fields))
+              .map(field => {
+                const name = [
+                  `Romeo${customObjectWithFieldsRandomString}__c`,
+                  `Quebec${customObjectWithFieldsRandomString}__c`,
+                ].includes(field.name) ? `${testAddFieldPrefix}${field.name}` : field.name
+                const newField = field.clone()
+                newField.annotations[constants.API_NAME] = `${customObjectName}.${name}`
+                return [
+                  name,
+                  new Field(mockElemID, name, newField.type, newField.annotations, newField.isList),
+                ]
+              })
+              .fromPairs()
+              .value(),
+            annotations: {
+              [constants.API_NAME]: customObjectName,
+              [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
+            },
+          })
+
+          // Resolve GVS valueSetName reference expression
+          const normalizeGVSReference = (ref: ReferenceExpression): string | undefined => {
+            const elem = findElement(result, ref.elemId.createParentID())
+            return elem ? apiName(elem) : undefined
+          }
+          Object.values(newCustomObject.fields)
+            .filter(f => f.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME]
+              instanceof ReferenceExpression)
+            .forEach(f => {
+              f.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME] = normalizeGVSReference(
+                f.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME]
+              )
+            })
+
+          if (await objectExists(constants.CUSTOM_OBJECT, customObjectName)) {
+            await adapter.remove(newCustomObject)
+          }
+          post = await adapter.add(newCustomObject) as ObjectType
+          objectInfo = (
+            await client.readMetadata(constants.CUSTOM_OBJECT, customObjectName))[0] as CustomObject
+        })
+
+        it('custom object', async () => {
+          expect(post).toBeDefined()
+        })
+
+        describe('fields', () => {
+          let fields: Values
+          const masterDetailApiName = `${testAddFieldPrefix}Romeo${customObjectWithFieldsRandomString}__c`
+          const currencyFieldApiName = 'Alpha__c'
+          beforeAll(async () => {
+            fields = _(makeArray(objectInfo.fields)
+              .filter(f => f[INSTANCE_TYPE_FIELD]))
+              .map(f => [
+                f.fullName,
+                Object.assign(
+                  transformFieldAnnotations(f, objectInfo.fullName),
+                  { [INSTANCE_TYPE_FIELD]: f[INSTANCE_TYPE_FIELD] }
+                ),
+              ])
+              .fromPairs()
+              .value()
+          })
+
+          const verifyFieldAddition = (field: Values,
+            verificationFunc: (f: Values) => void,
+            expectedType: constants.FIELD_TYPE_NAMES | constants.COMPOUND_FIELD_TYPE_NAMES):
+            void => {
+            expect(field).toBeDefined()
+            verificationFunc(field)
+            expect(field[INSTANCE_TYPE_FIELD]).toEqual(expectedType)
+          }
+
+          it('currency', async () => {
+            verifyFieldAddition(fields.Alpha__c, testCurrency, constants.FIELD_TYPE_NAMES.CURRENCY)
+          })
+
+          it('autonumber', async () => {
+            verifyFieldAddition(
+              fields.Bravo__c,
+              testAutoNumber,
+              constants.FIELD_TYPE_NAMES.AUTONUMBER
+            )
+          })
+
+          it('date', () => {
+            verifyFieldAddition(fields.Charlie__c, testDate, constants.FIELD_TYPE_NAMES.DATE)
+          })
+
+          it('time', () => {
+            verifyFieldAddition(fields.Delta__c, testTime, constants.FIELD_TYPE_NAMES.TIME)
+          })
+
+          it('datetime', () => {
+            verifyFieldAddition(fields.Echo__c, testDatetime, constants.FIELD_TYPE_NAMES.DATETIME)
+          })
+
+          it('email', () => {
+            verifyFieldAddition(fields.Foxtrot__c, testEmail, constants.FIELD_TYPE_NAMES.EMAIL)
+          })
+
+          it('location', () => {
+            verifyFieldAddition(
+              fields.Golf__c,
+              testLocation,
+              constants.COMPOUND_FIELD_TYPE_NAMES.LOCATION,
+            )
+          })
+
+          it('picklist', () => {
+            verifyFieldAddition(fields.Pickle__c, testPicklist, constants.FIELD_TYPE_NAMES.PICKLIST)
+          })
+
+          it('multipicklist', () => {
+            verifyFieldAddition(
+              fields.Hotel__c,
+              testMultiSelectPicklist,
+              constants.FIELD_TYPE_NAMES.MULTIPICKLIST
+            )
+          })
+
+          it('global picklist', () => {
+            const field = fields.Uniform__c
+            verifyFieldAddition(
+              field,
+              testGlobalPicklist,
+              constants.FIELD_TYPE_NAMES.PICKLIST
+            )
+            expect(field[constants.VALUE_SET_FIELDS.VALUE_SET_NAME]).toEqual(gvsName)
+          })
+
+          it('percent', () => {
+            verifyFieldAddition(fields.India__c, testPercent, constants.FIELD_TYPE_NAMES.PERCENT)
+          })
+
+          it('phone', () => {
+            verifyFieldAddition(fields.Juliett__c, testPhone, constants.FIELD_TYPE_NAMES.PHONE)
+          })
+
+          it('long text area', () => {
+            verifyFieldAddition(
+              fields.Kilo__c,
+              testLongTextArea,
+              constants.FIELD_TYPE_NAMES.LONGTEXTAREA,
+            )
+          })
+
+          it('rich text area', () => {
+            verifyFieldAddition(
+              fields.Lima__c,
+              testRichTextArea,
+              constants.FIELD_TYPE_NAMES.RICHTEXTAREA,
+            )
+          })
+
+          it('text area', () => {
+            verifyFieldAddition(fields.Mike__c, testTextArea, constants.FIELD_TYPE_NAMES.TEXTAREA)
+          })
+
+          it('encrypted text', () => {
+            verifyFieldAddition(
+              fields.November__c,
+              testEncryptedText,
+              constants.FIELD_TYPE_NAMES.ENCRYPTEDTEXT,
+            )
+          })
+
+          it('url', () => {
+            verifyFieldAddition(fields.Oscar__c, testUrl, constants.FIELD_TYPE_NAMES.URL)
+          })
+
+          it('number', () => {
+            verifyFieldAddition(fields.Papa__c, testNumber, constants.FIELD_TYPE_NAMES.NUMBER)
+          })
+
+          it('text', () => {
+            verifyFieldAddition(fields.Sierra__c, testText, constants.FIELD_TYPE_NAMES.TEXT)
+          })
+
+          it('checkbox', () => {
+            verifyFieldAddition(fields.Tango__c, testCheckbox, constants.FIELD_TYPE_NAMES.CHECKBOX)
+          })
+
+          it('lookup', () => {
+            const fieldName = `${testAddFieldPrefix}Quebec${customObjectWithFieldsRandomString}__c`
+            verifyFieldAddition(fields[fieldName], testLookup, constants.FIELD_TYPE_NAMES.LOOKUP)
+            expect(makeArray(objectInfo?.fields)
+              .find(f => f.fullName === fieldName)?.deleteConstraint)
+              .toEqual('Restrict')
+          })
+
+          it('master-detail', () => {
+            verifyFieldAddition(
+              fields[masterDetailApiName],
+              testMasterDetail,
+              constants.FIELD_TYPE_NAMES.MASTER_DETAIL,
+            )
+          })
+
+          it('rollup summary', async () => {
+            const rollupSummaryFieldName = 'summary'
+            const rollupSummaryFieldApiName = `${rollupSummaryFieldName}__c`
+
+            const findCustomCase = (): ObjectType => {
+              const caseObjects = findElements(result, 'Case') as ObjectType[]
+              const customCase = caseObjects
+                .filter(c => _.isUndefined(c.annotations[constants.API_NAME]))[0]
+              const caseObject = customCase ?? caseObjects[0]
+              // we add API_NAME annotation so the adapter will be
+              //  able to construct the fields full name
+              // upon update. in a real scenario, the case object is merged in the core and passed
+              // to the adapter with the API_NAME annotation
+              caseObject.annotations[constants.API_NAME] = 'Case'
+              return caseObject
             }
-          )
-          await adapter.update(origCase, caseAfterFieldAddition,
-            [{ action: 'add',
-              data: { after: caseAfterFieldAddition.fields[rollupSummaryFieldName] } }])
-          return caseAfterFieldAddition
-        }
 
-        const verifyRollupSummaryField = async (): Promise<void> => {
-          const fetchedRollupSummary = (await client.readMetadata(constants.CUSTOM_FIELD,
-            `Case.${rollupSummaryFieldApiName}`))[0] as CustomField
-          expect(_.get(fetchedRollupSummary, 'summarizedField'))
-            .toEqual(`${customObjectName}.${currencyFieldApiName}`)
-          expect(_.get(fetchedRollupSummary, 'summaryForeignKey'))
-            .toEqual(`${customObjectName}.${masterDetailApiName}`)
-          expect(_.get(fetchedRollupSummary, 'summaryOperation')).toEqual('max')
-          expect(fetchedRollupSummary.summaryFilterItems).toBeDefined()
-          const filterItems = fetchedRollupSummary.summaryFilterItems as FilterItem
-          expect(filterItems.field).toEqual(`${customObjectName}.${currencyFieldApiName}`)
-          expect(filterItems.operation).toEqual('greaterThan')
-          expect(filterItems.value).toEqual('1')
-        }
+            const normalizeReferences = (obj: ObjectType): void => {
+              const resolveRef = (ref: ReferenceExpression): string | undefined => {
+                const elem = findElement(result, ref.elemId)
+                return elem ? apiName(elem) : undefined
+              }
+              Object.values(obj.fields)
+                .map(field => field.annotations[FIELD_LEVEL_SECURITY_ANNOTATION])
+                .filter(fieldSecurity => fieldSecurity !== undefined)
+                .forEach(fieldSecurity => {
+                  Object.entries(fieldSecurity).forEach(([key, values]) => {
+                    fieldSecurity[key] = (values as ReferenceExpression[]).map(resolveRef)
+                  })
+                })
+            }
 
-        const caseAfterFieldAddition = await addRollupSummaryField()
-        await verifyRollupSummaryField()
-        await removeRollupSummaryFieldFromCase(caseAfterFieldAddition, rollupSummaryFieldName)
-      }
+            let origCase = findCustomCase()
+            normalizeReferences(origCase)
 
-      await verifyRollupSummaryFieldAddition()
-      // Clean-up
-      await adapter.remove(post as ObjectType)
+            const removeRollupSummaryFieldFromCase = async (caseObj: ObjectType, fieldName: string):
+              Promise<ObjectType> => {
+              const caseAfterFieldRemoval = caseObj.clone()
+              delete caseAfterFieldRemoval.fields[fieldName]
+              await adapter.update(caseObj, caseAfterFieldRemoval,
+                [{ action: 'remove',
+                  data: { before: caseObj.fields[fieldName] } }])
+              return caseAfterFieldRemoval
+            }
+            if (await objectExists(constants.CUSTOM_OBJECT, 'Case', [rollupSummaryFieldApiName])) {
+              origCase = await removeRollupSummaryFieldFromCase(origCase, rollupSummaryFieldApiName)
+            }
+
+            const addRollupSummaryField = async (): Promise<ObjectType> => {
+              const caseAfterFieldAddition = origCase.clone()
+              caseAfterFieldAddition.fields[rollupSummaryFieldName] = new Field(
+                caseAfterFieldAddition.elemID,
+                rollupSummaryFieldName,
+                Types.primitiveDataTypes.Summary,
+                {
+                  [CORE_ANNOTATIONS.REQUIRED]: false,
+                  [constants.LABEL]: 'Summary label',
+                  [constants.API_NAME]: apiNameAnno('Case', rollupSummaryFieldApiName),
+                  [constants.FIELD_ANNOTATIONS.SUMMARIZED_FIELD]: `${customObjectName}.${currencyFieldApiName}`,
+                  [constants.FIELD_ANNOTATIONS.SUMMARY_FOREIGN_KEY]: `${customObjectName}.${masterDetailApiName}`,
+                  [constants.FIELD_ANNOTATIONS.SUMMARY_OPERATION]: 'max',
+                  [constants.FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS]: [
+                    {
+                      [constants.FILTER_ITEM_FIELDS.FIELD]: `${customObjectName}.${currencyFieldApiName}`,
+                      [constants.FILTER_ITEM_FIELDS.OPERATION]: 'greaterThan',
+                      [constants.FILTER_ITEM_FIELDS.VALUE]: '1',
+                    },
+                  ],
+                }
+              )
+              await adapter.update(origCase, caseAfterFieldAddition,
+                [{ action: 'add',
+                  data: { after: caseAfterFieldAddition.fields[rollupSummaryFieldName] } }])
+              return caseAfterFieldAddition
+            }
+            const verifyRollupSummaryField = async (): Promise<void> => {
+              const fetchedRollupSummary = (await client.readMetadata(constants.CUSTOM_FIELD,
+                `Case.${rollupSummaryFieldApiName}`))[0] as CustomField
+              expect(_.get(fetchedRollupSummary, 'summarizedField'))
+                .toEqual(`${customObjectName}.${currencyFieldApiName}`)
+              expect(_.get(fetchedRollupSummary, 'summaryForeignKey'))
+                .toEqual(`${customObjectName}.${masterDetailApiName}`)
+              expect(_.get(fetchedRollupSummary, 'summaryOperation')).toEqual('max')
+              expect(fetchedRollupSummary.summaryFilterItems).toBeDefined()
+              const filterItems = fetchedRollupSummary.summaryFilterItems as FilterItem
+              expect(filterItems.field).toEqual(`${customObjectName}.${currencyFieldApiName}`)
+              expect(filterItems.operation).toEqual('greaterThan')
+              expect(filterItems.value).toEqual('1')
+            }
+
+            const caseAfterFieldAddition = await addRollupSummaryField()
+            await verifyRollupSummaryField()
+            await removeRollupSummaryFieldFromCase(caseAfterFieldAddition, rollupSummaryFieldName)
+          })
+        })
+      })
     })
 
     it('should add lookupFilter to an existing lookup field', async () => {
@@ -2409,6 +2813,7 @@ describe('Salesforce adapter E2E with real account', () => {
       // Clean-up
       await adapter.remove(oldElement)
     })
+
     it('should add default TopicsForObjects values', async () => {
       const customObjectName = 'TestAddDefaultTopicsForObjects__c'
       const mockElemID = new ElemID(constants.SALESFORCE, 'test add default topic for objects')
@@ -2510,29 +2915,6 @@ describe('Salesforce adapter E2E with real account', () => {
 
       // Clean-up
       await adapter.remove(oldElement)
-    })
-
-    it('should fetch GlobalValueSet', async () => {
-      const account = findElements(result, 'Account')[1] as ObjectType
-
-      expect(account.fields[fetchedGlobalPicklistFieldName]
-        .annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME])
-        .toEqual(new ReferenceExpression(
-          new ElemID(
-            constants.SALESFORCE,
-            bpCase(GLOBAL_VALUE_SET),
-            'instance',
-            bpCase(gvsName),
-          ).createNestedID(constants.INSTANCE_FULL_NAME_FIELD)
-        ))
-    })
-
-    it('should fetch Location field', async () => {
-      const account = findElements(result, 'Account')[1] as ObjectType
-      const locationField = account.fields[fetchedLocationFieldName]
-      expect(locationField.annotations[constants.FIELD_ANNOTATIONS.SCALE]).toEqual(10)
-      expect(locationField.annotations[constants.FIELD_ANNOTATIONS.DISPLAY_LOCATION_IN_DECIMAL])
-        .toBe(true)
     })
 
     // Assignment rules are special because they use the Deploy API so they get their own test

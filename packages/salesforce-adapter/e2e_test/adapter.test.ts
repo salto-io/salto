@@ -371,7 +371,7 @@ describe('Salesforce adapter E2E with real account', () => {
       }]
       const lookupFieldName = `Quebec${customObjectWithFieldsRandomString}`
       const lookupFieldApiName = `${lookupFieldName}__c`
-      const loookupField = {
+      const lookupField = {
         deleteConstraint: 'Restrict',
         fullName: lookupFieldApiName,
         label: 'Lookup label',
@@ -380,7 +380,7 @@ describe('Salesforce adapter E2E with real account', () => {
         required: false,
         type: constants.FIELD_TYPE_NAMES.LOOKUP,
       } as CustomField
-      objectToAdd.fields.push(loookupField)
+      objectToAdd.fields.push(lookupField)
       const lookupFilter = {
         active: true,
         booleanFilter: '1 OR 2',
@@ -423,7 +423,7 @@ describe('Salesforce adapter E2E with real account', () => {
 
       // update lookup filter
       await client.update(constants.CUSTOM_FIELD,
-        Object.assign(loookupField,
+        Object.assign(lookupField,
           { fullName: `${customObjectWithFieldsName}.${lookupFieldApiName}`, lookupFilter }))
     }
 

@@ -29,7 +29,7 @@ import {
   CUSTOM_OBJECT,
   VALUE_SET_FIELDS,
   SUBTYPES_PATH,
-  INSTANCE_FULL_NAME_FIELD,
+  INSTANCE_FULL_NAME_FIELD, CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS, DESCRIPTION,
 } from '../../src/constants'
 import { CustomField, FilterItem, CustomObject, CustomPicklistValue } from '../../src/client/types'
 import SalesforceClient from '../../src/client/client'
@@ -489,6 +489,47 @@ describe('transformer', () => {
 
   describe('toCustomObject', () => {
     const elemID = new ElemID('salesforce', 'test')
+
+    describe('annotations transformation', () => {
+      const notInAnnotationTypes = 'notInAnnotationTypes'
+      const objType = new ObjectType({
+        elemID,
+        annotationTypes: {
+          [API_NAME]: BuiltinTypes.SERVICE_ID,
+          [METADATA_TYPE]: BuiltinTypes.STRING,
+          [DESCRIPTION]: BuiltinTypes.STRING,
+          [CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.VALIDATION_RULES]: BuiltinTypes.STRING,
+        },
+        annotations: {
+          [API_NAME]: 'Test__c',
+          [notInAnnotationTypes]: 'Dummy',
+          [METADATA_TYPE]: CUSTOM_OBJECT,
+          [DESCRIPTION]: 'MyDescription',
+          [CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.VALIDATION_RULES]: 'Dummy',
+        },
+      })
+
+      let customObj: CustomObject
+      beforeEach(() => {
+        customObj = toCustomObject(objType, false)
+      })
+
+      it('should transform annotations', () => {
+        expect(_.get(customObj, DESCRIPTION)).toEqual('MyDescription')
+      })
+
+      it('should not transform blacklisted annotations', () => {
+        expect(_.get(customObj, API_NAME)).toBeUndefined()
+        expect(_.get(customObj, METADATA_TYPE)).toBeUndefined()
+        expect(_.get(customObj, CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.VALIDATION_RULES))
+          .toBeUndefined()
+      })
+
+      it('should not transform annotations that are not in annotationTypes', () => {
+        expect(_.get(customObj, notInAnnotationTypes)).toBeUndefined()
+      })
+    })
+
     describe('standard field transformation', () => {
       const ignoredField = 'ignored'
       const existingField = 'test'
@@ -507,6 +548,7 @@ describe('transformer', () => {
           [METADATA_TYPE]: CUSTOM_OBJECT,
         },
       })
+
       describe('with fields', () => {
         let customObj: CustomObject
         beforeEach(() => {
@@ -529,6 +571,7 @@ describe('transformer', () => {
           )
         })
       })
+
       describe('without fields', () => {
         let customObj: CustomObject
         beforeEach(() => {
@@ -539,6 +582,7 @@ describe('transformer', () => {
         })
       })
     })
+
     describe('reference field transformation', () => {
       const relatedTo = ['User', 'Property__c']
       const annotations: Values = {

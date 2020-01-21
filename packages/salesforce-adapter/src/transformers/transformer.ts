@@ -22,6 +22,7 @@ import {
   CUSTOM_VALUE, API_NAME_SEPERATOR, MAX_METADATA_RESTRICTION_VALUES,
   VALUE_SET_FIELDS, COMPOUND_FIELD_TYPE_NAMES, ANNOTATION_TYPE_NAMES, FIELD_SOAP_TYPE_NAMES,
   RECORDS_PATH, SETTINGS_PATH, TYPES_PATH, SUBTYPES_PATH, INSTALLED_PACKAGES_PATH,
+  CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS,
 } from '../constants'
 import SalesforceClient from '../client/client'
 
@@ -867,8 +868,8 @@ export const toCustomField = (
 
 export const toCustomObject = (
   element: ObjectType, includeFields: boolean, skipFields: string[] = [],
-): CustomObject =>
-  new CustomObject(
+): CustomObject => {
+  const newCustomObject = new CustomObject(
     apiName(element),
     element.annotations[LABEL],
     includeFields
@@ -877,6 +878,25 @@ export const toCustomObject = (
         .filter(field => !skipFields.includes(field.fullName))
       : undefined
   )
+  // Skip the assignment of the following annotations that are defined as annotationType
+  const blacklistedAnnotations: string[] = [
+    API_NAME, // we use it as fullName
+    METADATA_TYPE, // internal annotation
+    LABEL, // we send it in CustomObject constructor to enable default for pluralLabels
+    ...Object.values(CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS), // done in custom_objects filter
+  ]
+
+  const isAllowed = (annotationName: string): boolean => (
+    Object.keys(element.annotationTypes).includes(annotationName)
+    && !blacklistedAnnotations.includes(annotationName)
+  )
+
+  _.assign(
+    newCustomObject,
+    _.pickBy(element.annotations, (_val, annotationName) => isAllowed(annotationName)),
+  )
+  return newCustomObject
+}
 
 export const getValueTypeFieldElement = (parentID: ElemID, field: ValueTypeField,
   knownTypes: Map<string, Type>): TypeField => {

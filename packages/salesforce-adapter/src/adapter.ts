@@ -161,12 +161,12 @@ export default class SalesforceAdapter {
       'Flow', // update fails for Active flows
     ],
     filterCreators = [
+      missingFieldsFilter,
       CustomObjectsFilter,
       profilePermissionsFilter,
       layoutFilter,
       assignmentRulesFilter,
       standardValueSetFilter,
-      missingFieldsFilter,
       flowFilter,
       leadConvertSettingsFilter,
       lookupFiltersFilter,
@@ -530,17 +530,15 @@ export default class SalesforceAdapter {
         .filter(isModificationDiff)
         .filter(c => shouldUpdateField(c.data.before, c.data.after))
         .map(c => clonedObject.fields[c.data.after.name])),
-      this.updateObjectAnnotations(before, clonedObject, changes),
+      this.updateObjectAnnotations(clonedObject, changes),
     ])
     return clonedObject
   }
 
-  private async updateObjectAnnotations(before: ObjectType, clonedObject: ObjectType,
+  private async updateObjectAnnotations(clonedObject: ObjectType,
     changes: ReadonlyArray<Change<Field | ObjectType>>): Promise<SaveResult[]> {
-    if (!_.isEqual(clonedObject.annotations[constants.LABEL], before.annotations[constants.LABEL])
-      && apiName(clonedObject).endsWith(constants.SALESFORCE_CUSTOM_SUFFIX)
-      && changes.some(c => isObjectType(getChangeElement(c)))) {
-      // Update object without custom object annotations (handled in custom_objects filter) & fields
+    if (changes.some(c => isObjectType(getChangeElement(c)))) {
+      // Update object without independent annotations (handled in custom_objects filter) & fields
       return this.client.update(
         metadataType(clonedObject),
         toCustomObject(clonedObject, false)

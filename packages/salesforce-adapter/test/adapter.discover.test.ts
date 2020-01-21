@@ -156,7 +156,8 @@ describe('SalesforceAdapter fetch', () => {
 
       expect(result).toHaveLength(_.concat(
         Object.keys(Types.primitiveDataTypes),
-        Object.keys(Types.compoundDataTypes)
+        Object.keys(Types.compoundDataTypes),
+        Object.keys(Types.formulaDataTypes)
       ).length
         + 2 /* LookupFilter & filter items */
         + 1 /* rollup summary operation */
@@ -168,7 +169,7 @@ describe('SalesforceAdapter fetch', () => {
         + 1 /* business status */
         + 1 /* value set */
         + 2 /* field dependency & value settings */
-        + 9 /* range restrictions */)
+        + 10 /* range restrictions */)
 
       const types = _.assign({}, ...result.map(t => ({ [id(t)]: t })))
       const nestingType = types['salesforce.NestingType']

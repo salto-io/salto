@@ -21,7 +21,7 @@ import {
   FilterItem,
 } from '../src/client/types'
 import {
-  Types, fromMetadataInfo, metadataType, apiName, bpCase,
+  Types, fromMetadataInfo, metadataType, apiName, bpCase, formulaTypeName,
 } from '../src/transformers/transformer'
 import realAdapter from './adapter'
 import { findElements } from '../test/utils'
@@ -305,6 +305,16 @@ describe('Salesforce adapter E2E with real account', () => {
             required: false,
             type: constants.FIELD_TYPE_NAMES.MASTER_DETAIL,
             writeRequiresMasterRead: true,
+            relationshipOrder: 0,
+          },
+          {
+            formula: '5 > 4',
+            fullName: 'Whiskey__c',
+            label: 'Formula Checkbox label',
+            businessStatus: 'Hidden',
+            securityClassification: 'Restricted',
+            formulaTreatBlanksAs: 'BlankAsZero',
+            type: constants.FIELD_TYPE_NAMES.CHECKBOX,
           },
         ] as CustomField[],
         fullName: customObjectWithFieldsName,
@@ -2241,6 +2251,7 @@ describe('Salesforce adapter E2E with real account', () => {
           .toBe(true)
         expect(annotations[constants.FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ])
           .toBe(true)
+        expect(annotations[constants.FIELD_ANNOTATIONS.RELATIONSHIP_ORDER]).toBe(0)
       }
 
       const testSummary = (annotations: Values): void => {
@@ -2256,6 +2267,14 @@ describe('Salesforce adapter E2E with real account', () => {
         expect(filterItems[0][constants.FILTER_ITEM_FIELDS.FIELD]).toEqual('Opportunity.Amount')
         expect(filterItems[0][constants.FILTER_ITEM_FIELDS.OPERATION]).toEqual('greaterThan')
         expect(filterItems[0][constants.FILTER_ITEM_FIELDS.VALUE]).toEqual('1')
+      }
+
+      const testFormula = (annotations: Values): void => {
+        expect(annotations[constants.LABEL]).toBe('Formula Checkbox label')
+        expect(annotations[constants.FORMULA]).toBe('5 > 4')
+        expect(annotations[constants.FIELD_ANNOTATIONS.FORMULA_TREAT_BLANKS_AS]).toBe('BlankAsZero')
+        expect(annotations[constants.BUSINESS_STATUS]).toBe('Hidden')
+        expect(annotations[constants.SECURITY_CLASSIFICATION]).toBe('Restricted')
       }
 
       describe('fetch', () => {
@@ -2405,6 +2424,16 @@ describe('Salesforce adapter E2E with real account', () => {
               ?.fields[fetchedRollupSummaryFieldName] as Field
             verifyFieldFetch(field, testSummary, Types.primitiveDataTypes.Summary)
           })
+
+          it('formula', () => {
+            verifyFieldFetch(
+              fields.Whiskey__c,
+              testFormula,
+              Types.formulaDataTypes[
+                formulaTypeName(constants.FIELD_TYPE_NAMES.CHECKBOX)
+              ]
+            )
+          })
         })
       })
 
@@ -2487,7 +2516,7 @@ describe('Salesforce adapter E2E with real account', () => {
 
           const verifyFieldAddition = (field: Values,
             verificationFunc: (f: Values) => void,
-            expectedType: constants.FIELD_TYPE_NAMES | constants.COMPOUND_FIELD_TYPE_NAMES):
+            expectedType: string):
             void => {
             expect(field).toBeDefined()
             verificationFunc(field)
@@ -2713,6 +2742,14 @@ describe('Salesforce adapter E2E with real account', () => {
             const caseAfterFieldAddition = await addRollupSummaryField()
             await verifyRollupSummaryField()
             await removeRollupSummaryFieldFromCase(caseAfterFieldAddition, rollupSummaryFieldName)
+          })
+
+          it('formula', () => {
+            verifyFieldAddition(
+              fields.Whiskey__c,
+              testFormula,
+              constants.FIELD_TYPE_NAMES.CHECKBOX
+            )
           })
         })
       })

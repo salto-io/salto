@@ -2,7 +2,7 @@ export const SALESFORCE = 'salesforce'
 export const CUSTOM_FIELD = 'CustomField'
 export const CUSTOM_OBJECT = 'CustomObject'
 export const INSTANCE_FULL_NAME_FIELD = 'fullName'
-export const FORMULA_TYPE_PREFIX = 'Formula'
+export const FORMULA_TYPE_NAME = 'Formula'
 export const SALESFORCE_CUSTOM_SUFFIX = '__c'
 export const ADMIN_PROFILE = 'Admin'
 export const NAMESPACE_SEPARATOR = '__'
@@ -112,6 +112,7 @@ export const FIELD_ANNOTATIONS = {
   ALLOW_LOOKUP_RECORD_DELETION: 'allowLookupRecordDeletion',
   REPARENTABLE_MASTER_DETAIL: 'reparentableMasterDetail',
   WRITE_REQUIRES_MASTER_READ: 'writeRequiresMasterRead',
+  RELATIONSHIP_ORDER: 'relationshipOrder',
   LOOKUP_FILTER: 'lookupFilter',
   FIELD_DEPENDENCY: 'fieldDependency',
   SUMMARIZED_FIELD: 'summarizedField',
@@ -121,6 +122,7 @@ export const FIELD_ANNOTATIONS = {
   RESTRICTED: 'restricted',
   VALUE_SET: 'valueSet',
   DEFAULT_VALUE: 'defaultValue',
+  FORMULA_TREAT_BLANKS_AS: 'formulaTreatBlanksAs',
 }
 
 export const CUSTOM_OBJECT_ANNOTATIONS = {

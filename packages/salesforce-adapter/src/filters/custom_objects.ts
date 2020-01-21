@@ -14,12 +14,13 @@ import {
   SALESFORCE_CUSTOM_SUFFIX, LABEL, FIELD_DEPENDENCY_FIELDS, LOOKUP_FILTER_FIELDS,
   VALUE_SETTINGS_FIELDS, API_NAME_SEPERATOR, FIELD_ANNOTATIONS, VALUE_SET_DEFINITION_FIELDS,
   CUSTOM_OBJECT_ANNOTATIONS, VALUE_SET_FIELDS, DEFAULT_VALUE_FORMULA, FIELD_TYPE_NAMES,
-  OBJECTS_PATH, INSTALLED_PACKAGES_PATH,
+  OBJECTS_PATH, INSTALLED_PACKAGES_PATH, FORMULA,
 } from '../constants'
 import { FilterCreator } from '../filter'
 import {
   getSObjectFieldElement, Types, isCustomObject, bpCase, apiName, transformPrimitive,
   toMetadataInfo,
+  formulaTypeName,
 } from '../transformers/transformer'
 import { id, addApiName, addMetadataType, addLabel, hasNamespace,
   getNamespace, boolValue, buildAnnotationsObjectType } from './utils'
@@ -43,6 +44,11 @@ export const customObjectAnnotationTypeIds = {
   [CUSTOM_OBJECT_ANNOTATIONS.SHARING_REASONS]: new ElemID(SALESFORCE, 'SharingReason'),
   [CUSTOM_OBJECT_ANNOTATIONS.INDEXES]: new ElemID(SALESFORCE, 'Index'),
 }
+
+const getFieldName = (annotations: Values): string =>
+  (annotations[FORMULA]
+    ? formulaTypeName(annotations[INSTANCE_TYPE_FIELD] as FIELD_TYPE_NAMES)
+    : annotations[INSTANCE_TYPE_FIELD])
 
 const getFieldType = (type: string): Type =>
   (_.isUndefined(type) ? BuiltinTypes.STRING : Types.get(type))
@@ -219,7 +225,7 @@ export const transformFieldAnnotations = (
     return {}
   }
 
-  const fieldType = Types.getKnownType(instanceFieldValues[INSTANCE_TYPE_FIELD], true)
+  const fieldType = Types.getKnownType(getFieldName(instanceFieldValues), true)
   if (_.isUndefined(fieldType)) {
     return {}
   }
@@ -283,9 +289,12 @@ const createObjectTypeFromInstance = (instance: InstanceElement): ObjectType => 
     fields: Object.assign({}, ...instanceFields
       .map((field: Values) => {
         const fieldFullName = bpCase(field[INSTANCE_FULL_NAME_FIELD])
-        return { [fieldFullName]: new Field(objectElemID,
-          fieldFullName, getFieldType(field[INSTANCE_TYPE_FIELD]),
-          transformFieldAnnotations(field, objectName)) }
+        return { [fieldFullName]: new Field(
+          objectElemID,
+          fieldFullName,
+          getFieldType(getFieldName(field)),
+          transformFieldAnnotations(field, objectName)
+        ) }
       })),
     annotations: { [API_NAME]: objectName,
       [METADATA_TYPE]: CUSTOM_OBJECT,

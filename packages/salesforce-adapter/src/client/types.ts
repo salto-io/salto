@@ -114,6 +114,7 @@ export class CustomField implements MetadataInfo {
   readonly deleteConstraint?: string
   readonly reparentableMasterDetail?: boolean
   readonly writeRequiresMasterRead?: boolean
+  readonly relationshipOrder?: number
   readonly lookupFilter?: LookupFilter
 
   // To be used for rollupSummary type
@@ -121,6 +122,9 @@ export class CustomField implements MetadataInfo {
 
   // To be used for Text types fields
   readonly length?: number
+
+  // To be used for Formula types fields
+  readonly formulaTreatBlanksAs?: string
 
   // For the rest of the annotation values required by the rest of the field types:
   scale?: number

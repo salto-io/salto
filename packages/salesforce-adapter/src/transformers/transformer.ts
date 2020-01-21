@@ -12,13 +12,12 @@ import {
 import { collections } from '@salto/lowerdash'
 import { CustomObject, CustomField } from '../client/types'
 import {
-  API_NAME, CUSTOM_OBJECT, LABEL, SALESFORCE, FORMULA,
-  FORMULA_TYPE_PREFIX, FIELD_TYPE_NAMES,
+  API_NAME, CUSTOM_OBJECT, LABEL, SALESFORCE, FORMULA, FIELD_TYPE_NAMES,
   METADATA_TYPE, FIELD_ANNOTATIONS, SALESFORCE_CUSTOM_SUFFIX, DEFAULT_VALUE_FORMULA,
   LOOKUP_FILTER_FIELDS, ADDRESS_FIELDS, NAME_FIELDS, GEOLOCATION_FIELDS, INSTANCE_FULL_NAME_FIELD,
   FIELD_LEVEL_SECURITY_ANNOTATION, FIELD_LEVEL_SECURITY_FIELDS, FIELD_DEPENDENCY_FIELDS,
   VALUE_SETTINGS_FIELDS, FILTER_ITEM_FIELDS, OBJECT_LEVEL_SECURITY_ANNOTATION,
-  OBJECT_LEVEL_SECURITY_FIELDS, DESCRIPTION, HELP_TEXT, BUSINESS_STATUS,
+  OBJECT_LEVEL_SECURITY_FIELDS, DESCRIPTION, HELP_TEXT, BUSINESS_STATUS, FORMULA_TYPE_NAME,
   SECURITY_CLASSIFICATION, BUSINESS_OWNER_GROUP, BUSINESS_OWNER_USER, COMPLIANCE_GROUP,
   VALUE_SET_DEFINITION_VALUE_FIELDS, API_NAME_SEPERATOR, MAX_METADATA_RESTRICTION_VALUES,
   VALUE_SET_FIELDS, COMPOUND_FIELD_TYPE_NAMES, ANNOTATION_TYPE_NAMES, FIELD_SOAP_TYPE_NAMES,
@@ -60,10 +59,11 @@ export const apiName = (elem: Element, relative = false): string => {
   return name && relative ? _.last(name.split(API_NAME_SEPERATOR)) : name
 }
 
-export const formulaTypeName = (baseTypeName: string): string =>
-  `${FORMULA_TYPE_PREFIX}${baseTypeName}`
+export const formulaTypeName = (baseTypeName: FIELD_TYPE_NAMES): string =>
+  `${FORMULA_TYPE_NAME}${baseTypeName}`
+
 const fieldTypeName = (typeName: string): string => (
-  typeName.startsWith(FORMULA_TYPE_PREFIX) ? typeName.slice(FORMULA_TYPE_PREFIX.length) : typeName
+  typeName.startsWith(FORMULA_TYPE_NAME) ? typeName.slice(FORMULA_TYPE_NAME.length) : typeName
 )
 
 const createPicklistValuesAnnotations = (picklistValues: PicklistEntry[]): Values =>
@@ -95,7 +95,7 @@ const geoLocationElemID = new ElemID(SALESFORCE, COMPOUND_FIELD_TYPE_NAMES.LOCAT
 
 type RestrictedNumberName = 'TextLength' | 'TextAreaLength' | 'EncryptedTextLength'
    | 'Precision' | 'Scale' | 'LocationScale' | 'LongTextAreaVisibleLines'
-   | 'MultiPicklistVisibleLines' | 'RichTextAreaVisibleLines'
+   | 'MultiPicklistVisibleLines' | 'RichTextAreaVisibleLines' | 'RelationshipOrder'
 
 const restrictedNumber = (name: RestrictedNumberName, min: number, max: number, enforce = true):
  Record<string, PrimitiveType> => ({
@@ -367,6 +367,19 @@ export class Types {
     },
   })
 
+  private static TreatBlankAsTypeElemID = new ElemID(SALESFORCE, SECURITY_CLASSIFICATION)
+
+  private static TreatBlankAsType = new PrimitiveType({
+    elemID: Types.TreatBlankAsTypeElemID,
+    primitive: PrimitiveTypes.STRING,
+    annotations: {
+      [CORE_ANNOTATIONS.RESTRICTION]: { [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: true },
+      [CORE_ANNOTATIONS.VALUES]: [
+        'BlankAsBlank', 'BlankAsZero',
+      ],
+    },
+  })
+
   private static restrictedNumberTypes: Record<RestrictedNumberName, PrimitiveType> = _.merge(
     restrictedNumber('TextLength', 1, 255, false),
     restrictedNumber('TextAreaLength', 1, 131072),
@@ -377,6 +390,7 @@ export class Types {
     restrictedNumber('LongTextAreaVisibleLines', 2, 50),
     restrictedNumber('MultiPicklistVisibleLines', 3, 10, false),
     restrictedNumber('RichTextAreaVisibleLines', 10, 50),
+    restrictedNumber('RelationshipOrder', 0, 1),
   )
 
   private static commonAnnotationTypes = {
@@ -392,18 +406,13 @@ export class Types {
     [COMPLIANCE_GROUP]: BuiltinTypes.STRING,
   }
 
-  private static formulaAnnotationTypes = {
-    [FORMULA]: BuiltinTypes.STRING,
-  }
-
   // Type mapping for custom objects
-  public static primitiveDataTypes: Record<FIELD_TYPE_NAMES, Type> = {
+  public static primitiveDataTypes: Record<FIELD_TYPE_NAMES, PrimitiveType> = {
     Text: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.TEXT),
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
         ...Types.commonAnnotationTypes,
-        ...Types.formulaAnnotationTypes,
         [FIELD_ANNOTATIONS.UNIQUE]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.EXTERNAL_ID]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.CASE_SENSITIVE]: BuiltinTypes.BOOLEAN,
@@ -416,7 +425,6 @@ export class Types {
       primitive: PrimitiveTypes.NUMBER,
       annotationTypes: {
         ...Types.commonAnnotationTypes,
-        ...Types.formulaAnnotationTypes,
         [FIELD_ANNOTATIONS.SCALE]: Types.restrictedNumberTypes.Scale,
         [FIELD_ANNOTATIONS.PRECISION]: Types.restrictedNumberTypes.Precision,
         [FIELD_ANNOTATIONS.UNIQUE]: BuiltinTypes.BOOLEAN,
@@ -438,7 +446,6 @@ export class Types {
       primitive: PrimitiveTypes.BOOLEAN,
       annotationTypes: {
         ...Types.commonAnnotationTypes,
-        ...Types.formulaAnnotationTypes,
         [FIELD_ANNOTATIONS.DEFAULT_VALUE]: BuiltinTypes.BOOLEAN,
       },
     }),
@@ -447,7 +454,6 @@ export class Types {
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
         ...Types.commonAnnotationTypes,
-        ...Types.formulaAnnotationTypes,
         [DEFAULT_VALUE_FORMULA]: BuiltinTypes.STRING,
       },
     }),
@@ -456,7 +462,6 @@ export class Types {
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
         ...Types.commonAnnotationTypes,
-        ...Types.formulaAnnotationTypes,
         [DEFAULT_VALUE_FORMULA]: BuiltinTypes.STRING,
       },
     }),
@@ -465,7 +470,6 @@ export class Types {
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
         ...Types.commonAnnotationTypes,
-        ...Types.formulaAnnotationTypes,
         [DEFAULT_VALUE_FORMULA]: BuiltinTypes.STRING,
       },
     }),
@@ -474,7 +478,6 @@ export class Types {
       primitive: PrimitiveTypes.NUMBER,
       annotationTypes: {
         ...Types.commonAnnotationTypes,
-        ...Types.formulaAnnotationTypes,
         [FIELD_ANNOTATIONS.SCALE]: Types.restrictedNumberTypes.Scale,
         [FIELD_ANNOTATIONS.PRECISION]: Types.restrictedNumberTypes.Precision,
         [DEFAULT_VALUE_FORMULA]: BuiltinTypes.NUMBER,
@@ -520,7 +523,6 @@ export class Types {
       primitive: PrimitiveTypes.NUMBER,
       annotationTypes: {
         ...Types.commonAnnotationTypes,
-        ...Types.formulaAnnotationTypes,
         [FIELD_ANNOTATIONS.SCALE]: Types.restrictedNumberTypes.Scale,
         [FIELD_ANNOTATIONS.PRECISION]: Types.restrictedNumberTypes.Precision,
         [DEFAULT_VALUE_FORMULA]: BuiltinTypes.NUMBER,
@@ -598,6 +600,7 @@ export class Types {
         [FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.LOOKUP_FILTER]: Types.lookupFilterType,
         [FIELD_ANNOTATIONS.REFERENCE_TO]: BuiltinTypes.STRING,
+        [FIELD_ANNOTATIONS.RELATIONSHIP_ORDER]: Types.restrictedNumberTypes.RelationshipOrder,
       },
     }),
     Summary: new PrimitiveType({
@@ -614,6 +617,32 @@ export class Types {
       },
     }),
   }
+
+  private static getFormulaDataType = (baseTypeName: FIELD_TYPE_NAMES):
+  Record<string, PrimitiveType> => {
+    const baseType = Types.primitiveDataTypes[baseTypeName]
+    const typeName = formulaTypeName(baseTypeName)
+    return { [typeName]: new PrimitiveType({
+      elemID: new ElemID(SALESFORCE, typeName),
+      primitive: baseType.primitive,
+      annotationTypes: {
+        ...baseType.annotationTypes,
+        [FORMULA]: BuiltinTypes.STRING,
+        [FIELD_ANNOTATIONS.FORMULA_TREAT_BLANK_AS]: Types.TreatBlankAsType,
+      },
+    }) }
+  }
+
+  public static formulaDataTypes: Record<string, PrimitiveType> = _.merge(
+    Types.getFormulaDataType(FIELD_TYPE_NAMES.CHECKBOX),
+    Types.getFormulaDataType(FIELD_TYPE_NAMES.CURRENCY),
+    Types.getFormulaDataType(FIELD_TYPE_NAMES.DATE),
+    Types.getFormulaDataType(FIELD_TYPE_NAMES.DATETIME),
+    Types.getFormulaDataType(FIELD_TYPE_NAMES.NUMBER),
+    Types.getFormulaDataType(FIELD_TYPE_NAMES.PERCENT),
+    Types.getFormulaDataType(FIELD_TYPE_NAMES.TEXT),
+    Types.getFormulaDataType(FIELD_TYPE_NAMES.TIME),
+  )
 
   // Type mapping for compound fields
   public static compoundDataTypes: Record<COMPOUND_FIELD_TYPE_NAMES, ObjectType> = {
@@ -701,6 +730,7 @@ export class Types {
     return customObject
       ? this.primitiveDataTypes[name as FIELD_TYPE_NAMES]
       || this.compoundDataTypes[name as COMPOUND_FIELD_TYPE_NAMES]
+      || this.formulaDataTypes[name as FIELD_TYPE_NAMES]
       : this.metadataPrimitiveTypes[name.toLowerCase()]
   }
 
@@ -729,8 +759,9 @@ export class Types {
 
   static getAllFieldTypes(): Type[] {
     return _.concat(
-      Object.values(Types.primitiveDataTypes),
-      Object.values(Types.compoundDataTypes),
+      Object.values(Types.primitiveDataTypes) as Type[],
+      Object.values(Types.compoundDataTypes) as Type[],
+      Object.values(Types.formulaDataTypes) as Type[],
     ).map(type => {
       const fieldType = type.clone()
       fieldType.path = [SALESFORCE, TYPES_PATH, 'field_types']
@@ -991,7 +1022,7 @@ export const getSObjectFieldElement = (parent: Element, field: Field,
   } else if (field.calculated) {
     if (!_.isEmpty(field.calculatedFormula)) {
       // Formulas
-      bpFieldType = getFieldType(formulaTypeName(bpFieldType.elemID.name))
+      bpFieldType = getFieldType(formulaTypeName(bpFieldType.elemID.name as FIELD_TYPE_NAMES))
       annotations[FORMULA] = field.calculatedFormula
     } else {
       // Rollup Summary

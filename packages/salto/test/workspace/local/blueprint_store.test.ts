@@ -6,7 +6,6 @@ import * as file from '../../../src/file'
 jest.mock('../../../src/file')
 jest.mock('readdirp')
 describe('localBlueprintsStore', () => {
-  const baseName = '/Users/hadar/Work/salto_monorepo/packages/salto/'
   beforeEach(() => {
     jest.clearAllMocks()
   })
@@ -42,7 +41,7 @@ describe('localBlueprintsStore', () => {
       mockFileExists.mockResolvedValue(false)
       const bp = await localBlueprintsStore(dir).get(bpName)
       expect(bp).toBeUndefined()
-      expect(mockFileExists).toHaveBeenCalledWith(path.join(baseName, dir, bpName))
+      expect(mockFileExists.mock.calls[0][0]).toMatch(path.join(dir, bpName))
       expect(mockReadFile).not.toHaveBeenCalled()
     })
 
@@ -55,8 +54,8 @@ describe('localBlueprintsStore', () => {
       mockState.mockResolvedValue({ mtimeMs: 7 })
       const bp = await localBlueprintsStore(dir).get(bpName)
       expect(bp?.buffer).toBe(content)
-      expect(mockFileExists).toHaveBeenCalledWith(path.join(baseName, dir, bpName))
-      expect(mockReadFile).toHaveBeenCalledWith(path.join(baseName, dir, bpName))
+      expect(mockFileExists.mock.calls[0][0]).toMatch(path.join(dir, bpName))
+      expect(mockReadFile.mock.calls[0][0]).toMatch(path.join(dir, bpName))
     })
   })
 
@@ -68,8 +67,9 @@ describe('localBlueprintsStore', () => {
       mockReplaceContents.mockResolvedValue(true)
       mockMkdir.mockResolvedValue(true)
       await localBlueprintsStore('').set({ filename, buffer })
-      expect(mockMkdir).toHaveBeenCalledWith(path.join(baseName, 'inner'))
-      expect(mockReplaceContents).toHaveBeenLastCalledWith(path.join(baseName, filename), buffer)
+      expect(mockMkdir.mock.calls[0][0]).toMatch('inner')
+      expect(mockReplaceContents.mock.calls[0][0]).toMatch(filename)
+      expect(mockReplaceContents.mock.calls[0][1]).toEqual(buffer)
     })
   })
 })

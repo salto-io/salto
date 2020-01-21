@@ -44,7 +44,7 @@ const isWorkflow = (
 ): hubspotMetadata is Workflows => (hubspotMetadata as Workflows).id !== undefined
 
 
-const ExtractInstanceId = (hubspotMetadata: HubspotMetadata): string => {
+const extractInstanceId = (hubspotMetadata: HubspotMetadata): string => {
   if (isForm(hubspotMetadata)) {
     return hubspotMetadata.guid
   }
@@ -137,7 +137,7 @@ export default class HubspotClient {
     const objectAPI = await this.extractHubspotObjectAPI(typeName)
 
     // The instance id have different names in each HubSpot object
-    const instanceId = ExtractInstanceId(hubspotMetadata)
+    const instanceId = extractInstanceId(hubspotMetadata)
     const resp = await objectAPI.delete(instanceId)
     if (resp) {
       throw new Error(resp.message)

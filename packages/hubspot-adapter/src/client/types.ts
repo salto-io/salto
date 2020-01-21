@@ -158,6 +158,8 @@ export interface MarketingEmail extends HubspotMetadata {
   // the id of the feedback survey that is linked to the email.
   folderId: number
   // if the email is in a folder, id of that folder.
+  flexAreas: {}
+  // Describes the layout of the drag and drop email template.
   freezeDate: number
   // The publish date or updated date if the email is not published.
   fromName: string
@@ -282,7 +284,7 @@ export interface MarketingEmail extends HubspotMetadata {
   // A list of contact IDs to exclude from being sent the email.
   vidsIncluded: []
   // A list of contacts IDs to include in the email send.
-  widgets: string
+  widgets: {}
   // The content of layout sections of the email (widgets).
   workflowNames: []
   // a list of all linked workflows to this email.

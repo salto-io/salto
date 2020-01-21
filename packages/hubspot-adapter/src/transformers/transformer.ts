@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import {
   ElemID, ObjectType,
-  PrimitiveType, PrimitiveTypes,
+  PrimitiveType, PrimitiveTypes, PrimitiveValue, PrimitiveField,
   Field as TypeField, BuiltinTypes, InstanceElement, Values,
   TypeElement, CORE_ANNOTATIONS, transform, TypeMap,
 } from 'adapter-api'
@@ -24,6 +24,45 @@ const marketingEmailElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.MARKETINGEMAIL)
 const rssToEmailTimingElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.RSSTOEMAILTIMING)
 
 export class Types {
+  private static fieldTypes: TypeMap = {
+    [FIELD_TYPES.TEXTAREA]: new PrimitiveType({
+      elemID: new ElemID(HUBSPOT, FIELD_TYPES.TEXTAREA),
+      primitive: PrimitiveTypes.STRING,
+    }),
+    [FIELD_TYPES.TEXT]: new PrimitiveType({
+      elemID: new ElemID(HUBSPOT, FIELD_TYPES.TEXT),
+      primitive: PrimitiveTypes.STRING,
+    }),
+    [FIELD_TYPES.DATE]: new PrimitiveType({
+      elemID: new ElemID(HUBSPOT, FIELD_TYPES.DATE),
+      primitive: PrimitiveTypes.STRING,
+    }),
+    [FIELD_TYPES.FILE]: new PrimitiveType({
+      elemID: new ElemID(HUBSPOT, FIELD_TYPES.FILE),
+      primitive: PrimitiveTypes.STRING,
+    }),
+    [FIELD_TYPES.NUMBER]: new PrimitiveType({
+      elemID: new ElemID(HUBSPOT, FIELD_TYPES.NUMBER),
+      primitive: PrimitiveTypes.NUMBER,
+    }),
+    [FIELD_TYPES.SELECT]: new PrimitiveType({
+      elemID: new ElemID(HUBSPOT, FIELD_TYPES.SELECT),
+      primitive: PrimitiveTypes.NUMBER,
+    }),
+    [FIELD_TYPES.RADIO]: new PrimitiveType({
+      elemID: new ElemID(HUBSPOT, FIELD_TYPES.RADIO),
+      primitive: PrimitiveTypes.NUMBER,
+    }),
+    [FIELD_TYPES.CHECKBOX]: new PrimitiveType({
+      elemID: new ElemID(HUBSPOT, FIELD_TYPES.CHECKBOX),
+      primitive: PrimitiveTypes.NUMBER,
+    }),
+    [FIELD_TYPES.BOOLEANCHECKBOX]: new PrimitiveType({
+      elemID: new ElemID(HUBSPOT, FIELD_TYPES.BOOLEANCHECKBOX),
+      primitive: PrimitiveTypes.NUMBER,
+    }),
+  }
+
   private static optionsType: ObjectType =
     new ObjectType({
       elemID: optionsElemID,
@@ -586,7 +625,8 @@ export class Types {
             [CORE_ANNOTATIONS.VALUES]: ['instant', 'daily', 'weekly', 'monthly'],
           }
         ),
-        [MARKETING_EMAIL_FIELDS.BLOGRSSSETTINGS]: new TypeField( // TODO: More human readable
+        [MARKETING_EMAIL_FIELDS.BLOGRSSSETTINGS]: new TypeField(
+          // TODO: Format this the right way
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.BLOGRSSSETTINGS, BuiltinTypes.NUMBER, {
             name: MARKETING_EMAIL_FIELDS.BLOGRSSSETTINGS,
             _readOnly: false,
@@ -645,8 +685,8 @@ export class Types {
           }
         ),
         [MARKETING_EMAIL_FIELDS.CREATED]: new TypeField(
+          // TODO: Move to state only
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.CREATED, BuiltinTypes.NUMBER, {
-            // TODO: Move to state only
             name: MARKETING_EMAIL_FIELDS.CREATED,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
@@ -707,8 +747,7 @@ export class Types {
           }
         ),
         [MARKETING_EMAIL_FIELDS.FLEXAREAS]: new TypeField(
-          // TODO: Check the real type of this (sub-type)
-          marketingEmailElemID, MARKETING_EMAIL_FIELDS.FLEXAREAS, BuiltinTypes.STRING, {
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.FLEXAREAS, BuiltinTypes.JSON, {
             name: MARKETING_EMAIL_FIELDS.FLEXAREAS,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
@@ -919,7 +958,8 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.REPLYTO]: new TypeField( // Enforce linked to fromName?
+        [MARKETING_EMAIL_FIELDS.REPLYTO]: new TypeField(
+          // TODO: Decide if to enforce link to fromName?
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.REPLYTO, BuiltinTypes.STRING, {
             name: MARKETING_EMAIL_FIELDS.REPLYTO,
             _readOnly: false,
@@ -1011,14 +1051,14 @@ export class Types {
         ),
         [MARKETING_EMAIL_FIELDS.SMARTEMAILFIELDS]: new TypeField(
         // TODO: Understand this and convert to a list of smart fields
-          marketingEmailElemID, MARKETING_EMAIL_FIELDS.SMARTEMAILFIELDS, BuiltinTypes.STRING, {
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.SMARTEMAILFIELDS, BuiltinTypes.JSON, {
             name: MARKETING_EMAIL_FIELDS.SMARTEMAILFIELDS,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
         [MARKETING_EMAIL_FIELDS.STYLESETTINGS]: new TypeField(
-          marketingEmailElemID, MARKETING_EMAIL_FIELDS.STYLESETTINGS, BuiltinTypes.STRING, {
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.STYLESETTINGS, BuiltinTypes.JSON, {
             name: MARKETING_EMAIL_FIELDS.STYLESETTINGS,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
@@ -1135,7 +1175,7 @@ export class Types {
           true
         ),
         [MARKETING_EMAIL_FIELDS.WIDGETS]: new TypeField(
-          marketingEmailElemID, MARKETING_EMAIL_FIELDS.WIDGETS, BuiltinTypes.STRING, {
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.WIDGETS, BuiltinTypes.JSON, {
             name: MARKETING_EMAIL_FIELDS.WIDGETS,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
@@ -1149,147 +1189,6 @@ export class Types {
           },
           true,
         ),
-        [MARKETING_EMAIL_FIELDS.ABSUCCESSMETRIC]: new TypeField(
-          marketingEmailElemID, MARKETING_EMAIL_FIELDS.ABSUCCESSMETRIC, BuiltinTypes.STRING, {
-            name: MARKETING_EMAIL_FIELDS.ABSUCCESSMETRIC,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
-        [MARKETING_EMAIL_FIELDS.ABTESTID]: new TypeField(
-          marketingEmailElemID, MARKETING_EMAIL_FIELDS.ABTESTID, BuiltinTypes.STRING, {
-            name: MARKETING_EMAIL_FIELDS.ABTESTID,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
-        [MARKETING_EMAIL_FIELDS.ABTESTPERCENTAGE]: new TypeField(
-          marketingEmailElemID, MARKETING_EMAIL_FIELDS.ABTESTPERCENTAGE, BuiltinTypes.NUMBER, {
-            name: MARKETING_EMAIL_FIELDS.ABTESTPERCENTAGE,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
-        [MARKETING_EMAIL_FIELDS.ABSOLUTEURL]: new TypeField(
-          marketingEmailElemID, MARKETING_EMAIL_FIELDS.ABSOLUTEURL, BuiltinTypes.STRING, {
-            name: MARKETING_EMAIL_FIELDS.ABSOLUTEURL,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
-        [MARKETING_EMAIL_FIELDS.ALLEMAILCAMPAIGNIDS]: new TypeField(
-          marketingEmailElemID, MARKETING_EMAIL_FIELDS.ALLEMAILCAMPAIGNIDS, BuiltinTypes.NUMBER, {
-            name: MARKETING_EMAIL_FIELDS.ALLEMAILCAMPAIGNIDS,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-          true,
-        ),
-        [MARKETING_EMAIL_FIELDS.ANALYTICSPAGEID]: new TypeField(
-          marketingEmailElemID, MARKETING_EMAIL_FIELDS.ANALYTICSPAGEID, BuiltinTypes.STRING, {
-            name: MARKETING_EMAIL_FIELDS.ANALYTICSPAGEID,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
-        [MARKETING_EMAIL_FIELDS.ARCHIVED]: new TypeField(
-          marketingEmailElemID, MARKETING_EMAIL_FIELDS.ARCHIVED, BuiltinTypes.BOOLEAN, {
-            name: MARKETING_EMAIL_FIELDS.ARCHIVED,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
-        [MARKETING_EMAIL_FIELDS.AUTHOR]: new TypeField(
-          marketingEmailElemID, MARKETING_EMAIL_FIELDS.AUTHOR, BuiltinTypes.STRING, {
-            name: MARKETING_EMAIL_FIELDS.AUTHOR,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
-        [MARKETING_EMAIL_FIELDS.AUTHOREMAIL]: new TypeField(
-          marketingEmailElemID, MARKETING_EMAIL_FIELDS.AUTHOREMAIL, BuiltinTypes.STRING, {
-            name: MARKETING_EMAIL_FIELDS.AUTHOREMAIL,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
-        [MARKETING_EMAIL_FIELDS.AUTHORNAME]: new TypeField(
-          marketingEmailElemID, MARKETING_EMAIL_FIELDS.AUTHORNAME, BuiltinTypes.STRING, {
-            name: MARKETING_EMAIL_FIELDS.AUTHORNAME,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
-        [MARKETING_EMAIL_FIELDS.BLOGEMAILTYPE]: new TypeField(
-          marketingEmailElemID, MARKETING_EMAIL_FIELDS.BLOGEMAILTYPE, BuiltinTypes.STRING, {
-            name: MARKETING_EMAIL_FIELDS.BLOGEMAILTYPE,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
-        [MARKETING_EMAIL_FIELDS.CAMPAIGN]: new TypeField(
-          marketingEmailElemID, MARKETING_EMAIL_FIELDS.CAMPAIGN, BuiltinTypes.STRING, {
-            name: MARKETING_EMAIL_FIELDS.CAMPAIGN,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
-        [MARKETING_EMAIL_FIELDS.CAMPAIGNNAME]: new TypeField(
-          marketingEmailElemID, MARKETING_EMAIL_FIELDS.CAMPAIGNNAME, BuiltinTypes.STRING, {
-            name: MARKETING_EMAIL_FIELDS.CAMPAIGNNAME,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
-        [MARKETING_EMAIL_FIELDS.CANSPAMSETTINGSID]: new TypeField(
-          marketingEmailElemID, MARKETING_EMAIL_FIELDS.CANSPAMSETTINGSID, BuiltinTypes.NUMBER, {
-            name: MARKETING_EMAIL_FIELDS.CANSPAMSETTINGSID,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
-        [MARKETING_EMAIL_FIELDS.CLONEDFROM]: new TypeField(
-          marketingEmailElemID, MARKETING_EMAIL_FIELDS.CLONEDFROM, BuiltinTypes.NUMBER, {
-            name: MARKETING_EMAIL_FIELDS.CLONEDFROM,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
-        [MARKETING_EMAIL_FIELDS.CREATEPAGE]: new TypeField(
-          marketingEmailElemID, MARKETING_EMAIL_FIELDS.CREATEPAGE, BuiltinTypes.BOOLEAN, {
-            name: MARKETING_EMAIL_FIELDS.CREATEPAGE,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
-        [MARKETING_EMAIL_FIELDS.CREATED]: new TypeField(
-          marketingEmailElemID, MARKETING_EMAIL_FIELDS.CREATED, BuiltinTypes.NUMBER, {
-            name: MARKETING_EMAIL_FIELDS.CREATED,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
-        [MARKETING_EMAIL_FIELDS.CURRENTLYPUBLISHED]: new TypeField(
-          marketingEmailElemID, MARKETING_EMAIL_FIELDS.CURRENTLYPUBLISHED, BuiltinTypes.BOOLEAN, {
-            name: MARKETING_EMAIL_FIELDS.CURRENTLYPUBLISHED,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
-        [MARKETING_EMAIL_FIELDS.DOMAIN]: new TypeField(
-          marketingEmailElemID, MARKETING_EMAIL_FIELDS.DOMAIN, BuiltinTypes.STRING, {
-            name: MARKETING_EMAIL_FIELDS.DOMAIN,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
-        [MARKETING_EMAIL_FIELDS.EMAILBODY]: new TypeField(
-          marketingEmailElemID, MARKETING_EMAIL_FIELDS.EMAILBODY, BuiltinTypes.STRING, {
-            name: MARKETING_EMAIL_FIELDS.EMAILBODY,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
       },
       path: [HUBSPOT, 'objects', marketingEmailElemID.name],
     }),
@@ -1302,45 +1201,6 @@ export class Types {
     Types.optionsType,
     Types.contactListIdsType,
   ]
-
-  private static fieldTypes: TypeMap = {
-    [FIELD_TYPES.TEXTAREA]: new PrimitiveType({
-      elemID: new ElemID(HUBSPOT, FIELD_TYPES.TEXTAREA),
-      primitive: PrimitiveTypes.STRING,
-    }),
-    [FIELD_TYPES.TEXT]: new PrimitiveType({
-      elemID: new ElemID(HUBSPOT, FIELD_TYPES.TEXT),
-      primitive: PrimitiveTypes.STRING,
-    }),
-    [FIELD_TYPES.DATE]: new PrimitiveType({
-      elemID: new ElemID(HUBSPOT, FIELD_TYPES.DATE),
-      primitive: PrimitiveTypes.STRING,
-    }),
-    [FIELD_TYPES.FILE]: new PrimitiveType({
-      elemID: new ElemID(HUBSPOT, FIELD_TYPES.FILE),
-      primitive: PrimitiveTypes.STRING,
-    }),
-    [FIELD_TYPES.NUMBER]: new PrimitiveType({
-      elemID: new ElemID(HUBSPOT, FIELD_TYPES.NUMBER),
-      primitive: PrimitiveTypes.NUMBER,
-    }),
-    [FIELD_TYPES.SELECT]: new PrimitiveType({
-      elemID: new ElemID(HUBSPOT, FIELD_TYPES.SELECT),
-      primitive: PrimitiveTypes.NUMBER,
-    }),
-    [FIELD_TYPES.RADIO]: new PrimitiveType({
-      elemID: new ElemID(HUBSPOT, FIELD_TYPES.RADIO),
-      primitive: PrimitiveTypes.NUMBER,
-    }),
-    [FIELD_TYPES.CHECKBOX]: new PrimitiveType({
-      elemID: new ElemID(HUBSPOT, FIELD_TYPES.CHECKBOX),
-      primitive: PrimitiveTypes.NUMBER,
-    }),
-    [FIELD_TYPES.BOOLEANCHECKBOX]: new PrimitiveType({
-      elemID: new ElemID(HUBSPOT, FIELD_TYPES.BOOLEANCHECKBOX),
-      primitive: PrimitiveTypes.NUMBER,
-    }),
-  }
 
   /**
    * This method create all the (basic) field types
@@ -1360,6 +1220,23 @@ export const createInstanceName = (
   name: string
 ): string => name.trim().split(' ').join('_')
 
+const transformPrimitive = (val: PrimitiveValue, field: PrimitiveField):
+  PrimitiveValue | undefined => {
+  if (field.type.isEqual(BuiltinTypes.JSON)) {
+    return JSON.stringify(val)
+  }
+  switch (field.type.primitive) {
+    case PrimitiveTypes.NUMBER:
+      return Number(val)
+    case PrimitiveTypes.BOOLEAN:
+      return val.toString().toLowerCase() === 'true'
+    case PrimitiveTypes.STRING:
+      return val.toString().length === 0 ? undefined : val.toString()
+    default:
+      return val
+  }
+}
+
 /**
  * This method generate (instance) values by iterating hubspot object fields.
  * Also ensure that only expected fields will shown
@@ -1370,7 +1247,7 @@ export const fromHubspotObject = (
   info: HubspotMetadata,
   infoType: ObjectType
 ): Values =>
-  transform(info as Values, infoType) || {}
+  transform(info as Values, infoType, transformPrimitive) || {}
 
 /**
  * Creating all the instance for specific type

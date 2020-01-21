@@ -18,6 +18,10 @@ export const BuiltinTypes: Record<string, PrimitiveType> = {
     elemID: new ElemID('', 'serviceid'),
     primitive: PrimitiveTypes.STRING,
   }),
+  JSON: new PrimitiveType({
+    elemID: new ElemID('', 'json'),
+    primitive: PrimitiveTypes.STRING,
+  }),
 }
 
 export const CORE_ANNOTATIONS = {

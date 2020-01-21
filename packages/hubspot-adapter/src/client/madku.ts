@@ -4,27 +4,27 @@ import {
 
 export interface Form extends HubspotObjectAPI {
   update(guid: string, data: {}): RequestPromise
-  delete(guid: string): RequestPromise
 }
 
 export interface Workflow extends HubspotObjectAPI {
   enroll(workflowId: number, email: string): RequestPromise
   unenroll(workflowId: number, email: string): RequestPromise
-  delete(workflowId: string): RequestPromise
 }
 
 export interface MarketingEmail extends HubspotObjectAPI {
   update(id: string, data: {}): RequestPromise
-  delete(id: string): RequestPromise
 }
 
-export interface Contact extends HubspotObjectAPI {
+export interface Contact {
   get(opts?: {}): RequestPromise
+  getAll(opts?: {}): RequestPromise
+  create(data: {}): RequestPromise
 }
 
 export interface HubspotObjectAPI {
   getAll(opts?: {}): RequestPromise
   create(data: {}): RequestPromise
+  delete(id: string): RequestPromise
 }
 export default interface Connection {
   forms: Form

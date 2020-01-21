@@ -58,7 +58,8 @@ const secondWorkflowMock = {
   },
 }
 
-export const workflowsMockCreate = {
+export const workflowsMock = {
+  id: 12345,
   name: 'Test Workflow',
   type: 'DRIP_DELAY',
   enabled: false,
@@ -74,11 +75,11 @@ export const workflowsMockCreate = {
 export const workflowsCreateResponse = {
   portalId: 62515,
   id: 9274658,
-  name: workflowsMockCreate.name,
+  name: workflowsMock.name,
   updatedAt: 1579426531143,
   insertedAt: 1579426531213,
-  type: workflowsMockCreate.type,
-  enabled: workflowsMockCreate.enabled,
+  type: workflowsMock.type,
+  enabled: workflowsMock.enabled,
   description: '',
   contactCounts: {
     active: 0,
@@ -126,7 +127,7 @@ export const workflowsCreateResponse = {
 export const workflowsMockArray = [
   firstWorkflowMock,
   secondWorkflowMock,
-  workflowsMockCreate,
+  workflowsMock,
 ]
 
 
@@ -260,7 +261,7 @@ const thirdMarketingEmailMock = {
   name: 'marketingEmail instance3 name',
 }
 
-export const marketingEmailMockCreate = {
+export const marketingEmailMock = {
   name: 'newTestMarketingEmail',
   ab: false,
   abHoursToWait: 123,
@@ -328,5 +329,5 @@ export const marketingEmailMockArray = [
   firstMarketingEmailMock,
   secondMarketingEmailMock,
   thirdMarketingEmailMock,
-  marketingEmailMockCreate,
+  marketingEmailMock,
 ]

@@ -494,7 +494,7 @@ export class Types {
           },
         ),
         [MARKETINGEMAIL_FIELDS.ALLEMAILCAMPAIGNIDS]: new TypeField(
-          marketingEmailElemID, MARKETINGEMAIL_FIELDS.ALLEMAILCAMPAIGNIDS, BuiltinTypes.STRING, {
+          marketingEmailElemID, MARKETINGEMAIL_FIELDS.ALLEMAILCAMPAIGNIDS, BuiltinTypes.NUMBER, {
             name: MARKETINGEMAIL_FIELDS.ALLEMAILCAMPAIGNIDS,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
@@ -509,7 +509,7 @@ export class Types {
           },
         ),
         [MARKETINGEMAIL_FIELDS.ARCHIVED]: new TypeField(
-          marketingEmailElemID, MARKETINGEMAIL_FIELDS.ARCHIVED, BuiltinTypes.STRING, {
+          marketingEmailElemID, MARKETINGEMAIL_FIELDS.ARCHIVED, BuiltinTypes.BOOLEAN, {
             name: MARKETINGEMAIL_FIELDS.ARCHIVED,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,

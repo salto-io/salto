@@ -2272,7 +2272,7 @@ describe('Salesforce adapter E2E with real account', () => {
       const testFormula = (annotations: Values): void => {
         expect(annotations[constants.LABEL]).toBe('Formula Checkbox label')
         expect(annotations[constants.FORMULA]).toBe('5 > 4')
-        expect(annotations[constants.FIELD_ANNOTATIONS.FORMULA_TREAT_BLANK_AS]).toBe('BlankAsZero')
+        expect(annotations[constants.FIELD_ANNOTATIONS.FORMULA_TREAT_BLANKS_AS]).toBe('BlankAsZero')
         expect(annotations[constants.BUSINESS_STATUS]).toBe('Hidden')
         expect(annotations[constants.SECURITY_CLASSIFICATION]).toBe('Restricted')
       }

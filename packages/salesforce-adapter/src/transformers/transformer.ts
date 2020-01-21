@@ -367,7 +367,10 @@ export class Types {
     },
   })
 
-  private static TreatBlankAsTypeElemID = new ElemID(SALESFORCE, SECURITY_CLASSIFICATION)
+  private static TreatBlankAsTypeElemID = new ElemID(
+    SALESFORCE,
+    FIELD_ANNOTATIONS.FORMULA_TREAT_BLANKS_AS
+  )
 
   private static TreatBlankAsType = new PrimitiveType({
     elemID: Types.TreatBlankAsTypeElemID,
@@ -628,7 +631,7 @@ export class Types {
       annotationTypes: {
         ...baseType.annotationTypes,
         [FORMULA]: BuiltinTypes.STRING,
-        [FIELD_ANNOTATIONS.FORMULA_TREAT_BLANK_AS]: Types.TreatBlankAsType,
+        [FIELD_ANNOTATIONS.FORMULA_TREAT_BLANKS_AS]: Types.TreatBlankAsType,
       },
     }) }
   }

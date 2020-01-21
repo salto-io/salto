@@ -122,7 +122,7 @@ export const FIELD_ANNOTATIONS = {
   RESTRICTED: 'restricted',
   VALUE_SET: 'valueSet',
   DEFAULT_VALUE: 'defaultValue',
-  FORMULA_TREAT_BLANK_AS: 'formulaTreatBlanksAs',
+  FORMULA_TREAT_BLANKS_AS: 'formulaTreatBlanksAs',
 }
 
 export const CUSTOM_OBJECT_ANNOTATIONS = {

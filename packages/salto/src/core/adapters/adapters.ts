@@ -4,7 +4,7 @@ import {
 } from 'adapter-api'
 import adapterCreators from './creators'
 
-export const getAdaptersLoginConf = (
+export const getAdaptersConfigType = (
   names: string[]
 ): Record<string, ObjectType> => {
   const relevantAdapterCreators = _.pick(adapterCreators, names)

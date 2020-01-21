@@ -35,6 +35,7 @@ export type ElemIdGetter = (adapterName: string, serviceIds: ServiceIds, name: s
 
 export type AdapterCreator = {
   create: (opts: { config: InstanceElement; getElemIdFunc?: ElemIdGetter }) => Adapter
+  validateConfig: (config: Readonly<InstanceElement>) => Promise<void>
   configType: ObjectType
   changeValidator?: ChangeValidator
 }

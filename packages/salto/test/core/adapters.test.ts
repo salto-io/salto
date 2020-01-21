@@ -1,6 +1,6 @@
 import { InstanceElement, ElemID, ObjectType } from 'adapter-api'
 import { creator } from 'salesforce-adapter'
-import { initAdapters, getAdaptersLoginConf } from '../../src/core/adapters/adapters'
+import { initAdapters, getAdaptersConfigType } from '../../src/core/adapters/adapters'
 
 describe('adapters.ts', () => {
   const { configType } = creator
@@ -10,12 +10,12 @@ describe('adapters.ts', () => {
     let configs: Record<string, ObjectType>
 
     it('should return config for defined adapter', () => {
-      configs = getAdaptersLoginConf(services)
+      configs = getAdaptersConfigType(services)
       expect(configs.salesforce).toEqual(configType)
     })
 
     it('should return undefined for non defined adapter', () => {
-      configs = getAdaptersLoginConf(services.concat('fake'))
+      configs = getAdaptersConfigType(services.concat('fake'))
       expect(configs.salesforce).toEqual(configType)
       expect(configs.fake).toBeUndefined()
     })

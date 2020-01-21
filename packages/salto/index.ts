@@ -19,6 +19,8 @@ export { dumpCsv, readCsvFromStream } from './src/core/csv'
 export { FetchChange, FetchProgressEvents, StepEmitter, MergeErrorWithElements as MergeError } from './src/core/fetch'
 export * from './src/api'
 export { FoundSearchResult, SearchResult } from './src/core/search'
+export { ItemStatus } from './src/core/deploy'
+export { getAdaptersConfigType } from './src/core/adapters/adapters'
 export {
   Workspace, Errors, ParsedBlueprintMap,
   WorkspaceError, SourceFragment,

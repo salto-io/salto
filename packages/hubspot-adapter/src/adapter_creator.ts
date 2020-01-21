@@ -31,5 +31,9 @@ export const creator: AdapterCreator = {
   create: ({ config }) => new HubspotAdapter({
     client: clientFromConfig(config),
   }),
+  validateConfig: config => {
+    const credentials = credentialsFromConfig(config)
+    return HubspotClient.validateCredentials(credentials)
+  },
   configType,
 }

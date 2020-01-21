@@ -22,6 +22,8 @@ export const warn = (txt: string): string => chalk.yellow.bold(txt)
 
 export const success = (txt: string): string => chalk.green(txt)
 
+export const formatSuccess = (txt: string): string => `${success('✔')} ${txt}`
+
 export const error = (txt: string): string => chalk.red.bold(txt)
 
 export const emptyLine = (): string => ''
@@ -448,7 +450,7 @@ export const formatShouldContinueWithWarning = (numWarnings: number): string =>
 export const formatCancelCommand = header(`${Prompts.CANCELED}\n`)
 
 export const formatLoginUpdated = [
-  Prompts.SERVICES_LOGIN_UPDATED,
+  formatSuccess(Prompts.SERVICES_LOGIN_UPDATED),
   emptyLine(),
 ].join('\n')
 
@@ -485,11 +487,18 @@ export const formatConfiguredServices = (serviceNames: string[]): string => {
 }
 
 export const formatServiceAdded = (serviceName: string): string => [
-  Prompts.SERVICE_ADDED(serviceName),
+  formatSuccess(Prompts.SERVICE_ADDED(serviceName)),
+  emptyLine(),
   emptyLine(),
 ].join('\n')
 
 export const formatServiceAlreadyAdded = (serviceName: string): string => [
   formatSimpleError(Prompts.SERVICE_ALREADY_ADDED(serviceName)),
+  emptyLine(),
+].join('\n')
+
+export const formatLoginToServiceFailed = (serviceName: string, errorMessage: string): string => [
+  formatSimpleError(Prompts.SERVICE_LOGIN_FAILED(serviceName, errorMessage)),
+  Prompts.SERVICE_LOGIN_FAILED_TRY_AGAIN(serviceName),
   emptyLine(),
 ].join('\n')

@@ -1,7 +1,7 @@
 import { GroupedNodeMap } from '@salto/dag'
 import {
   BuiltinTypes, Change, Element, ElemID, Field, getChangeElement, InstanceElement,
-  ObjectType, CORE_ANNOTATIONS, SaltoError,
+  ObjectType, CORE_ANNOTATIONS, SaltoError, Values,
 } from 'adapter-api'
 import _ from 'lodash'
 import {
@@ -76,18 +76,11 @@ export const cli = async ({
   return { err: output.stderr.content, out: output.stdout.content, exitCode }
 }
 
-export const mockGetConfigFromUser = jest.fn(async (
-  configObjType: ObjectType
-): Promise<InstanceElement> => {
-  const value = {
-    username: 'test@test',
-    password: 'test',
-    token: 'test',
-    sandbox: false,
-  }
 
-  return new InstanceElement(ElemID.CONFIG_NAME, configObjType, value)
-})
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+export const createMockGetConfigFromUser = (value: Values) =>
+  jest.fn(async (configObjType: ObjectType): Promise<InstanceElement> =>
+    new InstanceElement(ElemID.CONFIG_NAME, configObjType, value))
 
 export const elements = (): Element[] => {
   const addrElemID = new ElemID('salto', 'address')

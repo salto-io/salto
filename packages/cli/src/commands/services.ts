@@ -1,6 +1,14 @@
 import _ from 'lodash'
 import { EOL } from 'os'
-import { addAdapter, loadConfig, getLoginStatuses, LoginStatus, updateLoginConfig, Workspace } from 'salto'
+import {
+  addAdapter,
+  loadConfig,
+  getLoginStatuses,
+  LoginStatus,
+  updateLoginConfig,
+  Workspace,
+} from 'salto'
+
 import { InstanceElement, ObjectType } from 'adapter-api'
 import { createCommandBuilder } from '../command_builder'
 import { CliOutput, ParsedCliInput, CliCommand, CliExitCode, WriteStream } from '../types'
@@ -10,7 +18,7 @@ import { serviceCmdFilter, ServiceCmdArgs } from '../filters/services'
 import {
   formatServiceConfigured, formatServiceNotConfigured, formatConfiguredServices,
   formatLoginUpdated, formatLoginOverride, formatServiceAdded,
-  formatServiceAlreadyAdded, formatConfigHeader,
+  formatServiceAlreadyAdded, formatConfigHeader, formatLoginToServiceFailed,
 } from '../formatter'
 
 const getLoginInputFlow = async (
@@ -21,7 +29,7 @@ const getLoginInputFlow = async (
 ): Promise<void> => {
   stdout.write(formatConfigHeader(configType.elemID.adapter))
   const newConfig = await getLoginInput(configType)
-  await updateLoginConfig(workspace, [newConfig])
+  await updateLoginConfig(workspace, newConfig)
   stdout.write(EOL)
   stdout.write(formatLoginUpdated)
 }
@@ -41,9 +49,16 @@ const addService = async (
     stderr.write(formatServiceAlreadyAdded(serviceName))
     return CliExitCode.UserInputError
   }
+
   const adapterConfigType = await addAdapter(workspaceDir, serviceName)
   stdout.write(formatServiceAdded(serviceName))
-  await getLoginInputFlow(workspace, adapterConfigType, getLoginInput, stdout)
+
+  try {
+    await getLoginInputFlow(workspace, adapterConfigType, getLoginInput, stdout)
+  } catch (e) {
+    stderr.write(formatLoginToServiceFailed(serviceName, e.message))
+  }
+
   return CliExitCode.Success
 }
 

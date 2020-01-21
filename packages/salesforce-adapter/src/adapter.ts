@@ -11,7 +11,7 @@ import {
 import _ from 'lodash'
 import { logger } from '@salto/logging'
 import { decorators } from '@salto/lowerdash'
-import SalesforceClient, { API_VERSION, Credentials } from './client/client'
+import SalesforceClient, { API_VERSION, Credentials, validateCredentials } from './client/client'
 import * as constants from './constants'
 import {
   toCustomField, toCustomObject, apiName, Types, toMetadataInfo, createInstanceElement,
@@ -854,6 +854,10 @@ export const creator: AdapterCreator = {
     client: clientFromConfig(config),
     getElemIdFunc,
   }),
+  validateConfig: config => {
+    const credentials = credentialsFromConfig(config)
+    return validateCredentials(credentials)
+  },
   configType,
   changeValidator,
 }

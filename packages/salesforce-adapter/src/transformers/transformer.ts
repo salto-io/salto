@@ -787,6 +787,7 @@ export class Types {
       Types.valueSettingsType, Types.lookupFilterType, Types.filterItemType,
       Types.encryptedTextMaskCharType, Types.encryptedTextMaskTypeType,
       Types.BusinessStatusType, Types.SecurityClassificationType, Types.valueSetType,
+      Types.TreatBlankAsType,
       ...Object.values(Types.restrictedNumberTypes),
     ]
       .map(type => {

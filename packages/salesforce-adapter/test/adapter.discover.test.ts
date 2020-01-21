@@ -167,6 +167,7 @@ describe('SalesforceAdapter fetch', () => {
         + 2 /* mask char & type */
         + 1 /* security classification */
         + 1 /* business status */
+        + 1 /* treat blank as */
         + 1 /* value set */
         + 2 /* field dependency & value settings */
         + 10 /* range restrictions */)

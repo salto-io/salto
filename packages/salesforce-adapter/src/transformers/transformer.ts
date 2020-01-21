@@ -19,7 +19,7 @@ import {
   VALUE_SETTINGS_FIELDS, FILTER_ITEM_FIELDS, OBJECT_LEVEL_SECURITY_ANNOTATION,
   OBJECT_LEVEL_SECURITY_FIELDS, DESCRIPTION, HELP_TEXT, BUSINESS_STATUS, FORMULA_TYPE_NAME,
   SECURITY_CLASSIFICATION, BUSINESS_OWNER_GROUP, BUSINESS_OWNER_USER, COMPLIANCE_GROUP,
-  VALUE_SET_DEFINITION_VALUE_FIELDS, API_NAME_SEPERATOR, MAX_METADATA_RESTRICTION_VALUES,
+  CUSTOM_VALUE, API_NAME_SEPERATOR, MAX_METADATA_RESTRICTION_VALUES,
   VALUE_SET_FIELDS, COMPOUND_FIELD_TYPE_NAMES, ANNOTATION_TYPE_NAMES, FIELD_SOAP_TYPE_NAMES,
   RECORDS_PATH, SETTINGS_PATH, TYPES_PATH, SUBTYPES_PATH, INSTALLED_PACKAGES_PATH,
 } from '../constants'
@@ -68,9 +68,10 @@ const fieldTypeName = (typeName: string): string => (
 
 const createPicklistValuesAnnotations = (picklistValues: PicklistEntry[]): Values =>
   picklistValues.map(val => ({
-    [VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: val.value,
-    [VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: val.defaultValue,
-    [VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: val.label || val.value,
+    [CUSTOM_VALUE.FULL_NAME]: val.value,
+    [CUSTOM_VALUE.DEFAULT]: val.defaultValue,
+    [CUSTOM_VALUE.LABEL]: val.label || val.value,
+    [CUSTOM_VALUE.IS_ACTIVE]: val.active,
   }))
 
 const addPicklistAnnotations = (
@@ -237,17 +238,25 @@ export class Types {
   private static valueSetType = new ObjectType({
     elemID: Types.valueSetElemID,
     fields: {
-      [VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: new TypeField(
-        Types.valueSetElemID, VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME,
+      [CUSTOM_VALUE.FULL_NAME]: new TypeField(
+        Types.valueSetElemID, CUSTOM_VALUE.FULL_NAME,
         BuiltinTypes.STRING,
       ),
-      [VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: new TypeField(
-        Types.valueSetElemID, VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL,
+      [CUSTOM_VALUE.LABEL]: new TypeField(
+        Types.valueSetElemID, CUSTOM_VALUE.LABEL,
         BuiltinTypes.STRING,
       ),
-      [VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: new TypeField(
-        Types.valueSetElemID, VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT,
+      [CUSTOM_VALUE.DEFAULT]: new TypeField(
+        Types.valueSetElemID, CUSTOM_VALUE.DEFAULT,
         BuiltinTypes.BOOLEAN,
+      ),
+      [CUSTOM_VALUE.IS_ACTIVE]: new TypeField(
+        Types.valueSetElemID, CUSTOM_VALUE.IS_ACTIVE,
+        BuiltinTypes.BOOLEAN,
+      ),
+      [CUSTOM_VALUE.COLOR]: new TypeField(
+        Types.valueSetElemID, CUSTOM_VALUE.COLOR,
+        BuiltinTypes.STRING,
       ),
     },
   })

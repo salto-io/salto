@@ -21,9 +21,10 @@ const createGlobalValueSetInstanceElement = (name: string, values: string[]): In
     sorted: false,
     [CUSTOM_VALUE]: values.map(v => (
       {
-        [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: v,
-        [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: false,
-        [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: v,
+        [constants.CUSTOM_VALUE.FULL_NAME]: v,
+        [constants.CUSTOM_VALUE.DEFAULT]: false,
+        [constants.CUSTOM_VALUE.LABEL]: v,
+        [constants.CUSTOM_VALUE.IS_ACTIVE]: true,
       })),
   })
 

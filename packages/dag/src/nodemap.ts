@@ -340,6 +340,11 @@ export class DataNodeMap<T> extends AbstractNodeMap {
     this.nodeData.set(id, data)
   }
 
+  dataEntries(): Iterable<[NodeId, T]> {
+    return wu(this.keys())
+      .map(id => [id, this.getData(id)])
+  }
+
   reverse(): this {
     return super.reverse().setDataFrom(this)
   }

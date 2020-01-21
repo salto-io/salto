@@ -104,11 +104,11 @@ export interface MarketingEmail extends HubspotMetadata {
   // the size of the test group (40% will receive variation A, the other 60% variation B).
   absoluteUrl: string
   // The URL of the web version of the email.
-  allEmailCampaignIds: []
+  allEmailCampaignIds: number[]
   // A list of email IDs that are associated with the email.
   analyticsPageId: string
   // the id used to access the analytics page of the email(in most cases, the same as the email ID)
-  archived: string
+  archived: boolean
   // determines whether the email is archived or not.
   author: string
   // the email of the user who made the last update to the email.

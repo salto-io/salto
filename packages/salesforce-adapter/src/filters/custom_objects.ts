@@ -54,6 +54,9 @@ const CUSTOM_ONLY_ANNOTATION_TYPE_NAMES = ['allowInChatterGroups', 'customHelp',
   'enableReports', 'enableSearch', 'enableSharing', 'enableStreamingApi', 'gender',
   'nameField', 'pluralLabel', 'sharingModel', 'startsWith', 'visibility']
 
+const ANNOTATIONS_TO_IGNORE_FROM_INSTANCE = ['eventType', 'publishBehavior', 'fields',
+  INSTANCE_FULL_NAME_FIELD, LABEL, 'household', 'articleTypeChannelDisplay']
+
 const getFieldName = (annotations: Values): string =>
   (annotations[FORMULA]
     ? formulaTypeName(annotations[INSTANCE_TYPE_FIELD] as FIELD_TYPE_NAMES)
@@ -417,11 +420,9 @@ const filterCreator: FilterCreator = ({ client }) => ({
         if (_.isUndefined(customObjectType)) {
           return {}
         }
-        const annotationsToIgnoreFromInstance = ['eventType', 'publishBehavior', 'fields',
-          INSTANCE_FULL_NAME_FIELD, LABEL, 'household', 'articleTypeChannelDisplay']
         const annotationTypesFromInstance: TypeMap = _(customObjectType.fields)
           .entries()
-          .filter(([name, _field]) => !annotationsToIgnoreFromInstance.includes(name))
+          .filter(([name, _field]) => !ANNOTATIONS_TO_IGNORE_FROM_INSTANCE.includes(name))
           .map(([name, field]) => [name, field.type])
           .fromPairs()
           .value()
@@ -431,13 +432,10 @@ const filterCreator: FilterCreator = ({ client }) => ({
       }
 
       const annotationTypesFromInstance = getAllAnnotationTypesFromInstance()
-      const annotationTypes = _.omitBy(annotationTypesFromInstance,
-        (_type, name) => CUSTOM_ONLY_ANNOTATION_TYPE_NAMES.includes(name))
-      const customOnlyAnnotationTypes = _.pickBy(annotationTypesFromInstance,
-        (_type, name) => CUSTOM_ONLY_ANNOTATION_TYPE_NAMES.includes(name))
+      const annotationTypes = _.omit(annotationTypesFromInstance, CUSTOM_ONLY_ANNOTATION_TYPE_NAMES)
       return {
         standardObjectAnnotationTypes: annotationTypes,
-        customObjectAnnotationTypes: { ...annotationTypes, ...customOnlyAnnotationTypes },
+        customObjectAnnotationTypes: annotationTypesFromInstance,
       }
     }
 

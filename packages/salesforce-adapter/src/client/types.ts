@@ -50,13 +50,18 @@ export class TopicsForObjectsInfo implements MetadataInfo {
   ) {}
 }
 
-class CustomPicklistValue implements MetadataInfo {
+export class CustomPicklistValue implements MetadataInfo {
   readonly default: boolean
-  constructor(public readonly fullName: string, isDefault: boolean, readonly label?: string) {
+  color?: string
+  constructor(public readonly fullName: string, isDefault: boolean, readonly isActive: boolean,
+    readonly label?: string, color?: string) {
     if (!this.label) {
       this.label = fullName
     }
     this.default = isDefault
+    if (color) {
+      this.color = color
+    }
   }
 }
 
@@ -69,6 +74,8 @@ export interface PicklistValue {
   fullName: string
   label: string
   default: boolean
+  color: string
+  isActive: boolean
 }
 
 export interface ValueSet {
@@ -192,7 +199,9 @@ export class CustomField implements MetadataInfo {
             restricted: picklistRestricted || false,
             valueSetDefinition: {
               value: values.map(val =>
-                new CustomPicklistValue(val.fullName, val.default, val.label)),
+                new CustomPicklistValue(
+                  val.fullName, val.default, val.isActive ?? true, val.label, val.color,
+                )),
             },
           }
         } else {

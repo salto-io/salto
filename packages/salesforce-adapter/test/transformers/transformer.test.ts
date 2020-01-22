@@ -31,7 +31,7 @@ import {
   SUBTYPES_PATH,
   INSTANCE_FULL_NAME_FIELD,
 } from '../../src/constants'
-import { CustomField, FilterItem, CustomObject } from '../../src/client/types'
+import { CustomField, FilterItem, CustomObject, CustomPicklistValue } from '../../src/client/types'
 import SalesforceClient from '../../src/client/client'
 import mockClient from '../client'
 import { createValueSetEntry } from '../utils'
@@ -623,7 +623,7 @@ describe('transformer', () => {
         [CORE_ANNOTATIONS.REQUIRED]: false,
         [FIELD_ANNOTATIONS.VALUE_SET]: [
           createValueSetEntry('Val1'),
-          createValueSetEntry('Val2'),
+          createValueSetEntry('Val2', false, 'Val2', true, '#FFFF00'),
         ],
         [FIELD_ANNOTATIONS.FIELD_DEPENDENCY]: {
           [FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD]: 'ControllingFieldName',
@@ -648,6 +648,16 @@ describe('transformer', () => {
       let obj: ObjectType
       beforeEach(() => {
         obj = _.cloneDeep(origObjectType)
+      })
+
+      it('should transform value set for picklist field', async () => {
+        const picklistField = toCustomField(obj.fields[fieldName])
+        expect(picklistField.type)
+          .toEqual(FIELD_TYPE_NAMES.PICKLIST)
+        expect(picklistField?.valueSet?.valueSetDefinition?.value).toEqual([
+          new CustomPicklistValue('Val1', false, true),
+          new CustomPicklistValue('Val2', false, true, 'Val2', '#FFFF00'),
+        ])
       })
 
       it('should transform field dependency for picklist field', async () => {

@@ -10,7 +10,7 @@ import {
   CUSTOM_OBJECT, INSTANCE_FULL_NAME_FIELD, LABEL, NAMESPACE_SEPARATOR,
   SALESFORCE_CUSTOM_SUFFIX, API_NAME, FORMULA, LOOKUP_FILTER_FIELDS,
   FIELD_DEPENDENCY_FIELDS, VALUE_SETTINGS_FIELDS, VALUE_SET_FIELDS,
-  VALUE_SET_DEFINITION_VALUE_FIELDS, VALUE_SET_DEFINITION_FIELDS,
+  CUSTOM_VALUE, VALUE_SET_DEFINITION_FIELDS,
   DESCRIPTION, CUSTOM_OBJECT_ANNOTATIONS, OBJECTS_PATH, INSTALLED_PACKAGES_PATH, TYPES_PATH,
 } from '../../src/constants'
 import mockAdapter from '../adapter'
@@ -547,16 +547,32 @@ describe('Custom Objects filter', () => {
           [INSTANCE_TYPE_FIELD]: 'Picklist',
           [INSTANCE_REQUIRED_FIELD]: 'true',
           [FIELD_ANNOTATIONS.DEFAULT_VALUE]: 'YES',
-          [FIELD_ANNOTATIONS.VALUE_SET]:
-          { [VALUE_SET_FIELDS.RESTRICTED]: 'true',
-            [VALUE_SET_FIELDS.VALUE_SET_DEFINITION]:
-            { [VALUE_SET_DEFINITION_FIELDS.VALUE]: [
-              { [VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'YES',
-                [VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'YES',
-                [VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: 'true' },
-              { [VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'NO',
-                [VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'NO',
-                [VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: 'false' }] } },
+          [FIELD_ANNOTATIONS.VALUE_SET]: {
+            [VALUE_SET_FIELDS.RESTRICTED]: 'true',
+            [VALUE_SET_FIELDS.VALUE_SET_DEFINITION]: {
+              [VALUE_SET_DEFINITION_FIELDS.VALUE]:
+              [
+                {
+                  [CUSTOM_VALUE.FULL_NAME]: 'YES',
+                  [CUSTOM_VALUE.LABEL]: 'YES',
+                  [CUSTOM_VALUE.DEFAULT]: 'true',
+                },
+                {
+                  [CUSTOM_VALUE.FULL_NAME]: 'NO',
+                  [CUSTOM_VALUE.LABEL]: 'NO',
+                  [CUSTOM_VALUE.DEFAULT]: 'false',
+                  [CUSTOM_VALUE.IS_ACTIVE]: 'true',
+                  [CUSTOM_VALUE.COLOR]: '#FF0000',
+                },
+                {
+                  [CUSTOM_VALUE.FULL_NAME]: 'MAYBE',
+                  [CUSTOM_VALUE.DEFAULT]: 'false',
+                  [CUSTOM_VALUE.LABEL]: 'MAYBE',
+                  [CUSTOM_VALUE.IS_ACTIVE]: 'false',
+                },
+              ],
+            },
+          },
         },
         {
           [INSTANCE_FULL_NAME_FIELD]: 'MyCheckbox',
@@ -623,14 +639,14 @@ describe('Custom Objects filter', () => {
             [VALUE_SET_FIELDS.VALUE_SET_DEFINITION]: {
               [VALUE_SET_DEFINITION_FIELDS.VALUE]: [
                 {
-                  [VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'Val1',
-                  [VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: 'false',
-                  [VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'Val1',
+                  [CUSTOM_VALUE.FULL_NAME]: 'Val1',
+                  [CUSTOM_VALUE.DEFAULT]: 'false',
+                  [CUSTOM_VALUE.LABEL]: 'Val1',
                 },
                 {
-                  [VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'Val2',
-                  [VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: 'false',
-                  [VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'Val2',
+                  [CUSTOM_VALUE.FULL_NAME]: 'Val2',
+                  [CUSTOM_VALUE.DEFAULT]: 'false',
+                  [CUSTOM_VALUE.LABEL]: 'Val2',
                 },
               ],
             },
@@ -691,7 +707,8 @@ describe('Custom Objects filter', () => {
         expect(leadObjectType.fields.MyPicklist.annotations[FIELD_ANNOTATIONS.VALUE_SET])
           .toEqual([
             createValueSetEntry('YES', true),
-            createValueSetEntry('NO'),
+            createValueSetEntry('NO', false, 'NO', true, '#FF0000'),
+            createValueSetEntry('MAYBE', false, 'MAYBE', false),
           ])
         expect(leadObjectType.fields.MyPicklist.annotations[FIELD_ANNOTATIONS.RESTRICTED])
           .toBeTruthy()

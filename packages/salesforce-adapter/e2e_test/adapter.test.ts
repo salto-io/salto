@@ -118,6 +118,7 @@ describe('Salesforce adapter E2E with real account', () => {
           {
             fullName: picklistFieldName,
             label: 'Picklist label',
+            description: 'Picklist description',
             required: false,
             type: constants.FIELD_TYPE_NAMES.PICKLIST,
             valueSet: {
@@ -128,11 +129,19 @@ describe('Salesforce adapter E2E with real account', () => {
                     default: true,
                     fullName: 'NEW',
                     label: 'NEW',
+                    color: '#FF0000',
                   },
                   {
                     default: false,
                     fullName: 'OLD',
                     label: 'OLD',
+                    isActive: true,
+                  },
+                  {
+                    default: false,
+                    fullName: 'OLDEST',
+                    label: 'OLDEST',
+                    isActive: false,
                   },
                 ],
               },
@@ -960,7 +969,7 @@ describe('Salesforce adapter E2E with real account', () => {
         expect(
           lead.fields.CleanStatus
             .annotations[constants.FIELD_ANNOTATIONS.VALUE_SET]
-            .map((val: Values) => val[constants.VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]).sort()
+            .map((val: Values) => val[constants.CUSTOM_VALUE.FULL_NAME]).sort()
         ).toEqual([
           'Acknowledged',
           'Different',
@@ -2091,17 +2100,25 @@ describe('Salesforce adapter E2E with real account', () => {
 
       const testPicklist = (annotations: Values): void => {
         expect(annotations[constants.LABEL]).toBe('Picklist label')
+        expect(annotations[constants.DESCRIPTION]).toBe('Picklist description')
         expect(annotations[constants.FIELD_ANNOTATIONS.RESTRICTED]).toBe(true)
         expect(annotations[constants.FIELD_ANNOTATIONS.VALUE_SET]).toEqual([
           {
-            [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'NEW',
-            [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: true,
-            [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'NEW',
+            [constants.CUSTOM_VALUE.FULL_NAME]: 'NEW',
+            [constants.CUSTOM_VALUE.DEFAULT]: true,
+            [constants.CUSTOM_VALUE.LABEL]: 'NEW',
+            [constants.CUSTOM_VALUE.COLOR]: '#FF0000',
           },
           {
-            [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'OLD',
-            [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: false,
-            [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'OLD',
+            [constants.CUSTOM_VALUE.FULL_NAME]: 'OLD',
+            [constants.CUSTOM_VALUE.DEFAULT]: false,
+            [constants.CUSTOM_VALUE.LABEL]: 'OLD',
+          },
+          {
+            [constants.CUSTOM_VALUE.FULL_NAME]: 'OLDEST',
+            [constants.CUSTOM_VALUE.DEFAULT]: false,
+            [constants.CUSTOM_VALUE.LABEL]: 'OLDEST',
+            [constants.CUSTOM_VALUE.IS_ACTIVE]: false,
           },
         ])
         expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
@@ -2113,14 +2130,14 @@ describe('Salesforce adapter E2E with real account', () => {
         expect(annotations[constants.FIELD_ANNOTATIONS.VISIBLE_LINES]).toBe(4)
         expect(annotations[constants.FIELD_ANNOTATIONS.VALUE_SET]).toEqual([
           {
-            [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'DO',
-            [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: true,
-            [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'DO',
+            [constants.CUSTOM_VALUE.FULL_NAME]: 'DO',
+            [constants.CUSTOM_VALUE.DEFAULT]: true,
+            [constants.CUSTOM_VALUE.LABEL]: 'DO',
           },
           {
-            [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: 'RE',
-            [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: false,
-            [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: 'RE',
+            [constants.CUSTOM_VALUE.FULL_NAME]: 'RE',
+            [constants.CUSTOM_VALUE.DEFAULT]: false,
+            [constants.CUSTOM_VALUE.LABEL]: 'RE',
           },
         ])
         const fieldDependency = annotations[constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY]

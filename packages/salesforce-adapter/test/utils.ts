@@ -1,3 +1,4 @@
+import _ from 'lodash'
 import { Element, ElemID, findElements as findElementsByID, Values } from 'adapter-api'
 import * as constants from '../src/constants'
 
@@ -11,7 +12,19 @@ export const findElements = (
   return [...findElementsByID(elements, expectedElemId)]
 }
 
-export const createValueSetEntry = (name: string, defaultValue = false, label?: string): Values =>
-  ({ [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: name,
-    [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: label || name,
-    [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: defaultValue })
+export const createValueSetEntry = (
+  name: string,
+  defaultValue = false,
+  label?: string,
+  isActive?: boolean,
+  color?: string,
+): Values => _.omitBy(
+  {
+    [constants.CUSTOM_VALUE.FULL_NAME]: name,
+    [constants.CUSTOM_VALUE.LABEL]: label || name,
+    [constants.CUSTOM_VALUE.DEFAULT]: defaultValue,
+    isActive,
+    color,
+  },
+  _.isUndefined
+)

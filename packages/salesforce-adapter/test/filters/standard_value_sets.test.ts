@@ -43,9 +43,9 @@ const createPicklistObjectType = (
         [constants.API_NAME]: apiName,
         label: 'test label',
         [constants.FIELD_ANNOTATIONS.VALUE_SET]: pickListValues.map(val => ({
-          [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.FULL_NAME]: val,
-          [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.LABEL]: val,
-          [constants.VALUE_SET_DEFINITION_VALUE_FIELDS.DEFAULT]: val === 'Bart',
+          [constants.CUSTOM_VALUE.FULL_NAME]: val,
+          [constants.CUSTOM_VALUE.LABEL]: val,
+          [constants.CUSTOM_VALUE.DEFAULT]: val === 'Bart',
         })),
       }
     ),

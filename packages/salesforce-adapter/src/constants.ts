@@ -157,10 +157,12 @@ export const VALUE_SET_DEFINITION_FIELDS = {
   VALUE: 'value',
 }
 
-export const VALUE_SET_DEFINITION_VALUE_FIELDS = {
+export const CUSTOM_VALUE = {
   FULL_NAME: INSTANCE_FULL_NAME_FIELD,
   DEFAULT: 'default',
   LABEL: 'label',
+  IS_ACTIVE: 'isActive',
+  COLOR: 'color',
 }
 
 export const LOOKUP_FILTER_FIELDS = {

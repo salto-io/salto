@@ -7,10 +7,10 @@ import {
 import { DataNodeMap, DiffNode, NodeId } from '@salto/dag'
 import { DiffGraphTransformer } from './common'
 
-
+type ChangeId = NodeId
 type Dependency = {
-  source: NodeId
-  target: NodeId
+  source: ChangeId
+  target: ChangeId
 }
 type DependencyChange = {
   action: 'add' | 'remove'
@@ -18,7 +18,7 @@ type DependencyChange = {
 }
 
 type ChangeNode<T = ChangeDataType> = {
-  id: NodeId
+  id: ChangeId
   change: Change<T>
 }
 
@@ -27,7 +27,7 @@ export type DependencyProvider = (
 ) => ReadonlyArray<DependencyChange>
 
 const dependencyChange = (
-  action: DependencyChange['action'], source: NodeId, target: NodeId
+  action: DependencyChange['action'], source: ChangeId, target: ChangeId
 ): DependencyChange => ({ action, dependency: { source, target } })
 
 // TODO:ORI - move to different file (dependency common)

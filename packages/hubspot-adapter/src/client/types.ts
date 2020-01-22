@@ -198,8 +198,6 @@ export interface MarketingEmail extends HubspotMetadata {
   // after the web version of the email expires.
   pageRedirected: boolean
   // Boolean; indicates if the email's web version has already been set to redirect
-  portalId: number
-  // Integer; the id of the parent portal.
   previewKey: string
   // String; the preview key used to generate the preview url before the email is published
   processingStatus: string
@@ -247,7 +245,7 @@ export interface MarketingEmail extends HubspotMetadata {
   // A dictionary that determines what time the RSS email should be sent out.
   slug: string
   // String; path of the web version URL.
-  smartEmailFields: string
+  smartEmailFields: {}
   // String; lists the smart objects in email fields (from address, subject..)
   styleSettings: string
   // String; Custom email style settings (background color, primary font);

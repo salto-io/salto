@@ -567,14 +567,6 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.ANALYTICSPAGETYPE]: new TypeField( // TODO: Decide if to keep
-          marketingEmailElemID, MARKETING_EMAIL_FIELDS.ANALYTICSPAGETYPE, BuiltinTypes.STRING, {
-            name: MARKETING_EMAIL_FIELDS.ANALYTICSPAGETYPE,
-            _readOnly: true,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-            [CORE_ANNOTATIONS.DEFAULT]: 'email',
-          }
-        ),
         [MARKETING_EMAIL_FIELDS.ARCHIVED]: new TypeField(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.ARCHIVED, BuiltinTypes.BOOLEAN, {
             name: MARKETING_EMAIL_FIELDS.ARCHIVED,
@@ -654,27 +646,11 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.CATEGORYID]: new TypeField( // TODO: Decide if to keep
-          marketingEmailElemID, MARKETING_EMAIL_FIELDS.CATEGORYID, BuiltinTypes.NUMBER, {
-            name: MARKETING_EMAIL_FIELDS.CATEGORYID,
-            _readOnly: true,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-            [CORE_ANNOTATIONS.DEFAULT]: 2,
-          }
-        ),
         [MARKETING_EMAIL_FIELDS.CLONEDFROM]: new TypeField(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.CLONEDFROM, BuiltinTypes.NUMBER, {
             name: MARKETING_EMAIL_FIELDS.CLONEDFROM,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
-          }
-        ),
-        [MARKETING_EMAIL_FIELDS.CONTENTTYPECATEGORY]: new TypeField( // TODO: Decide if to keep
-          marketingEmailElemID, MARKETING_EMAIL_FIELDS.CONTENTTYPECATEGORY, BuiltinTypes.NUMBER, {
-            name: MARKETING_EMAIL_FIELDS.CONTENTTYPECATEGORY,
-            _readOnly: true,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-            [CORE_ANNOTATIONS.DEFAULT]: 2,
           }
         ),
         [MARKETING_EMAIL_FIELDS.CREATEPAGE]: new TypeField(
@@ -888,13 +864,6 @@ export class Types {
         [MARKETING_EMAIL_FIELDS.PAGEREDIRECTED]: new TypeField(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.PAGEREDIRECTED, BuiltinTypes.BOOLEAN, {
             name: MARKETING_EMAIL_FIELDS.PAGEREDIRECTED,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          }
-        ),
-        [MARKETING_EMAIL_FIELDS.PORTALID]: new TypeField( // TODO: Remove this?
-          marketingEmailElemID, MARKETING_EMAIL_FIELDS.PORTALID, BuiltinTypes.NUMBER, {
-            name: MARKETING_EMAIL_FIELDS.PORTALID,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }

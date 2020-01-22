@@ -238,7 +238,6 @@ const firstMarketingEmailMock = {
     123,
   ],
   analyticsPageId: '1234',
-  analyticsPageType: 'email',
   archived: false,
   author: 'mail@gmail.com',
   authorEmail: 'mail123@gmail.com',
@@ -268,8 +267,6 @@ const firstMarketingEmailMock = {
   authorAt: 124543,
   authorUserId: 12345,
   canSpamSettingsId: 67899,
-  categoryId: 2,
-  contentCategoryType: 2,
   flexArea: {
     main: {
       boxFirstElementIndex: 0,
@@ -305,7 +302,6 @@ const firstMarketingEmailMock = {
   metaDescription: '',
   pageExpirtyDate: 1234563463,
   pageExpiryRedirectId: 356,
-  portalId: 12345,
   previewKey: 'abcDeGHY',
   processingStatus: 'UNDEFINED',
   publishDate: 12423432523,
@@ -425,8 +421,6 @@ const secondMarketingEmailMock = {
   authorAt: 124543,
   authorUserId: 12345,
   canSpamSettingsId: 67899,
-  categoryId: 2,
-  contentCategoryType: 2,
   flexArea: {
     main: {
       boxFirstElementIndex: 0,
@@ -462,7 +456,6 @@ const secondMarketingEmailMock = {
   metaDescription: '',
   pageExpirtyDate: 1234563463,
   pageExpiryRedirectId: 356,
-  portalId: 12345,
   previewKey: 'abcDeGHY',
   processingStatus: 'UNDEFINED',
   publishDate: 12423432523,
@@ -582,8 +575,6 @@ const thirdMarketingEmailMock = {
   authorAt: 124543,
   authorUserId: 12345,
   canSpamSettingsId: 67899,
-  categoryId: 2,
-  contentCategoryType: 2,
   flexArea: {
     main: {
       boxFirstElementIndex: 0,
@@ -619,7 +610,6 @@ const thirdMarketingEmailMock = {
   metaDescription: '',
   pageExpirtyDate: 1234563463,
   pageExpiryRedirectId: 356,
-  portalId: 12345,
   previewKey: 'abcDeGHY',
   processingStatus: 'UNDEFINED',
   publishDate: 12423432523,
@@ -725,8 +715,6 @@ export const marketingEmailMock = {
   authorAt: 124543,
   authorUserId: 12345,
   canSpamSettingsId: 67899,
-  categoryId: 2,
-  contentCategoryType: 2,
   flexArea: {
     main: {
       boxFirstElementIndex: 0,
@@ -762,7 +750,6 @@ export const marketingEmailMock = {
   metaDescription: '',
   pageExpirtyDate: 1234563463,
   pageExpiryRedirectId: 356,
-  portalId: 12345,
   previewKey: 'abcDeGHY',
   processingStatus: 'UNDEFINED',
   publishDate: 12423432523,
@@ -913,7 +900,6 @@ export const marketingEmailCreateResponse = {
   metaDescription: '',
   pageExpirtyDate: 1234563463,
   pageExpiryRedirectId: 356,
-  portalId: 12345,
   previewKey: 'abcDeGHY',
   processingStatus: 'UNDEFINED',
   publishDate: 12423432523,

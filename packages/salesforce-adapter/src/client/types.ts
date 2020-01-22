@@ -50,7 +50,7 @@ export class TopicsForObjectsInfo implements MetadataInfo {
   ) {}
 }
 
-class CustomPicklistValue implements MetadataInfo {
+export class CustomPicklistValue implements MetadataInfo {
   readonly default: boolean
   color?: string
   constructor(public readonly fullName: string, isDefault: boolean, readonly isActive: boolean,

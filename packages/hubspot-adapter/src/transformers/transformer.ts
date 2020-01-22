@@ -1225,16 +1225,7 @@ const transformPrimitive = (val: PrimitiveValue, field: PrimitiveField):
   if (field.type.isEqual(BuiltinTypes.JSON)) {
     return JSON.stringify(val)
   }
-  switch (field.type.primitive) {
-    case PrimitiveTypes.NUMBER:
-      return Number(val)
-    case PrimitiveTypes.BOOLEAN:
-      return val.toString().toLowerCase() === 'true'
-    case PrimitiveTypes.STRING:
-      return val.toString().length === 0 ? undefined : val.toString()
-    default:
-      return val
-  }
+  return val
 }
 
 /**

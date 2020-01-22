@@ -530,14 +530,15 @@ export default class SalesforceAdapter {
         .filter(isModificationDiff)
         .filter(c => shouldUpdateField(c.data.before, c.data.after))
         .map(c => clonedObject.fields[c.data.after.name])),
-      this.updateObjectAnnotations(clonedObject, changes),
+      this.updateObjectAnnotations(before, clonedObject, changes),
     ])
     return clonedObject
   }
 
-  private async updateObjectAnnotations(clonedObject: ObjectType,
+  private async updateObjectAnnotations(before: ObjectType, clonedObject: ObjectType,
     changes: ReadonlyArray<Change<Field | ObjectType>>): Promise<SaveResult[]> {
-    if (changes.some(c => isObjectType(getChangeElement(c)))) {
+    if (changes.some(c => isObjectType(getChangeElement(c)))
+      && !_.isEqual(toCustomObject(before, false), toCustomObject(clonedObject, false))) {
       // Update object without independent annotations (handled in custom_objects filter) & fields
       return this.client.update(
         metadataType(clonedObject),

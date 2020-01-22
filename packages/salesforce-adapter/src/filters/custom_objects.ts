@@ -49,6 +49,11 @@ type AnnotationTypesFromInstance = { standardObjectAnnotationTypes: TypeMap
 
 export const CUSTOM_OBJECT_TYPE_ID = new ElemID(SALESFORCE, CUSTOM_OBJECT)
 
+const CUSTOM_ONLY_ANNOTATION_TYPE_NAMES = ['allowInChatterGroups', 'customHelp', 'customHelpPage',
+  'customSettingsType', 'deploymentStatus', 'deprecated', 'enableActivities', 'enableBulkApi',
+  'enableReports', 'enableSearch', 'enableSharing', 'enableStreamingApi', 'gender',
+  'nameField', 'pluralLabel', 'sharingModel', 'startsWith', 'visibility']
+
 const getFieldName = (annotations: Values): string =>
   (annotations[FORMULA]
     ? formulaTypeName(annotations[INSTANCE_TYPE_FIELD] as FIELD_TYPE_NAMES)
@@ -426,15 +431,10 @@ const filterCreator: FilterCreator = ({ client }) => ({
       }
 
       const annotationTypesFromInstance = getAllAnnotationTypesFromInstance()
-      const customOnlyAnnotationTypeNames = ['allowInChatterGroups', 'customHelp', 'customHelpPage',
-        'customSettingsType', 'deploymentStatus', 'deprecated', 'enableActivities', 'enableBulkApi',
-        'enableReports', 'enableSearch', 'enableSharing', 'enableStreamingApi', 'gender',
-        'nameField', 'pluralLabel', 'sharingModel', 'startsWith', 'visibility']
-
       const annotationTypes = _.omitBy(annotationTypesFromInstance,
-        (_type, name) => customOnlyAnnotationTypeNames.includes(name))
+        (_type, name) => CUSTOM_ONLY_ANNOTATION_TYPE_NAMES.includes(name))
       const customOnlyAnnotationTypes = _.pickBy(annotationTypesFromInstance,
-        (_type, name) => customOnlyAnnotationTypeNames.includes(name))
+        (_type, name) => CUSTOM_ONLY_ANNOTATION_TYPE_NAMES.includes(name))
       return {
         standardObjectAnnotationTypes: annotationTypes,
         customObjectAnnotationTypes: { ...annotationTypes, ...customOnlyAnnotationTypes },

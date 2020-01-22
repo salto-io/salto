@@ -371,6 +371,15 @@ const createCustomObjectTypesFromSObjectsAndInstances = (
     return objects
   }))
 
+const removeIrrelevantElements = (elements: Element[]): void => {
+  _.remove(elements, elem => (isCustomObject(elem) && isInstanceElement(elem)))
+  _.remove(elements, elem => elem.elemID.isEqual(CUSTOM_OBJECT_TYPE_ID))
+  // We currently don't support platform event and article type objects (SALTO-530, SALTO-531)
+  _.remove(elements, elem => (isObjectType(elem) && isCustomObject(elem) && apiName(elem)
+    && (apiName(elem).endsWith('__e') || apiName(elem).endsWith('__kav'))))
+  _.remove(elements, elem => (isObjectType(elem)
+    && ['ArticleTypeChannelDisplay', 'ArticleTypeTemplate'].includes(metadataType(elem))))
+}
 // ---
 
 /**
@@ -379,15 +388,6 @@ const createCustomObjectTypesFromSObjectsAndInstances = (
  */
 const filterCreator: FilterCreator = ({ client }) => ({
   onFetch: async (elements: Element[]): Promise<void> => {
-    const removeIrrelevantElements = (): void => {
-      _.remove(elements, elem => (isCustomObject(elem) && isInstanceElement(elem)))
-      _.remove(elements, elem => elem.elemID.isEqual(CUSTOM_OBJECT_TYPE_ID))
-      // We currently don't support platform event and article type objects (SALTO-530, SALTO-531)
-      _.remove(elements, elem => (isObjectType(elem) && isCustomObject(elem) && apiName(elem)
-        && (apiName(elem).endsWith('__e') || apiName(elem).endsWith('__kav'))))
-      _.remove(elements, elem => (isObjectType(elem)
-        && ['ArticleTypeChannelDisplay', 'ArticleTypeTemplate'].includes(metadataType(elem))))
-    }
     const sObjects = await fetchSObjects(client).catch(e => {
       log.error('failed to fetch sobjects reason: %o', e)
       return []
@@ -453,7 +453,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
       }
     })
 
-    removeIrrelevantElements()
+    removeIrrelevantElements(elements)
     const objectTypeFullNames = new Set(elements.filter(isObjectType).map(elem => id(elem)))
     customObjectTypes
       .filter(obj => !objectTypeFullNames.has(id(obj)))

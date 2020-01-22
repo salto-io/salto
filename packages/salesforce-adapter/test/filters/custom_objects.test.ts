@@ -98,7 +98,7 @@ describe('Custom Objects filter', () => {
         getElemIdFunc: mockGetElemIdFunc,
       },
     }))
-    customObjectType = _.cloneDeep(origCustomObjectType)
+    customObjectType = origCustomObjectType.clone()
     result = [customObjectType]
   })
 
@@ -978,7 +978,7 @@ describe('Custom Objects filter', () => {
 
         it('should merge independent instance element annotation values into the object type when annotation value is an array', async () => {
           mockSingleSObject('Lead', [], false, true, false, 'Instance Label')
-          const instanceWithAnnotationArray = _.cloneDeep(customObjectInstance)
+          const instanceWithAnnotationArray = customObjectInstance.clone()
           // eslint-disable-next-line @typescript-eslint/camelcase
           instanceWithAnnotationArray.value[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.LIST_VIEWS] = [{
             columns: 'ListViewName1',

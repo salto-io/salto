@@ -5,7 +5,9 @@ import {
 } from 'adapter-api'
 import { logger } from '@salto/logging'
 import { FilterCreator } from '../filter'
-import { SALESFORCE, WORKFLOW_METADATA_TYPE } from '../constants'
+import {
+  CUSTOM_FIELD, CUSTOM_OBJECT, FIELD_TYPE_NAME_VALUES, SALESFORCE, WORKFLOW_METADATA_TYPE,
+} from '../constants'
 import { LEAD_CONVERT_SETTINGS_TYPE_ID } from './lead_convert_settings'
 import { id } from './utils'
 import {
@@ -289,6 +291,115 @@ const allMissingFields: {id: ElemID; fields: MissingField[]}[] = [
         type: BuiltinTypes.STRING,
         annotations: {
           [CORE_ANNOTATIONS.VALUES]: ['ASC', 'DESC'],
+        },
+      },
+    ],
+  },
+  {
+    id: new ElemID(SALESFORCE, CUSTOM_OBJECT),
+    fields: [
+      {
+        name: 'customSettingsType',
+        type: BuiltinTypes.STRING,
+        annotations: {
+          [CORE_ANNOTATIONS.VALUES]: ['List', 'Hierarchy'],
+        },
+      },
+      {
+        name: 'deploymentStatus',
+        type: BuiltinTypes.STRING,
+        annotations: {
+          [CORE_ANNOTATIONS.VALUES]: ['InDevelopment', 'Deployed'],
+        },
+      },
+      {
+        name: 'externalSharingModel',
+        type: BuiltinTypes.STRING,
+        annotations: {
+          [CORE_ANNOTATIONS.VALUES]: ['Private', 'Read', 'ReadWrite', 'ReadWriteTransfer',
+            'FullAccess', 'ControlledByParent', 'ControlledByCampaign', 'ControlledByLeadOrContact',
+          ],
+        },
+      },
+      {
+        name: 'gender',
+        type: BuiltinTypes.STRING,
+        annotations: {
+          [CORE_ANNOTATIONS.VALUES]: ['Masculine', 'Feminine', 'Neuter', 'AnimateMasculine'],
+        },
+      },
+      {
+        name: 'sharingModel',
+        type: BuiltinTypes.STRING,
+        annotations: {
+          [CORE_ANNOTATIONS.VALUES]: ['Private', 'Read', 'ReadWrite', 'ReadWriteTransfer',
+            'FullAccess', 'ControlledByParent', 'ControlledByCampaign', 'ControlledByLeadOrContact',
+          ],
+        },
+      },
+      {
+        name: 'startsWith',
+        type: BuiltinTypes.STRING,
+        annotations: {
+          [CORE_ANNOTATIONS.VALUES]: ['Consonant', 'Vowel', 'Special'],
+        },
+      },
+      {
+        name: 'visibility',
+        type: BuiltinTypes.STRING,
+        annotations: {
+          [CORE_ANNOTATIONS.VALUES]: ['Public', 'Protected', 'PackageProtected'],
+        },
+      },
+    ],
+  },
+  {
+    id: new ElemID(SALESFORCE, CUSTOM_FIELD),
+    fields: [
+      {
+        name: 'type',
+        type: BuiltinTypes.STRING,
+        annotations: {
+          [CORE_ANNOTATIONS.VALUES]: FIELD_TYPE_NAME_VALUES,
+        },
+      },
+    ],
+  },
+  {
+    id: new ElemID(SALESFORCE, 'ListView'),
+    fields: [
+      {
+        name: 'filterScope',
+        type: BuiltinTypes.STRING,
+        annotations: {
+          [CORE_ANNOTATIONS.VALUES]: ['Everything', 'Mine', 'MineAndMyGroups', 'Queue', 'Delegated',
+            'MyTerritory', 'MyTeamTerritory', 'Team'],
+        },
+      },
+    ],
+  },
+  {
+    id: new ElemID(SALESFORCE, 'ListViewFilter'),
+    fields: [
+      {
+        name: 'operation',
+        type: BuiltinTypes.STRING,
+        annotations: {
+          [CORE_ANNOTATIONS.VALUES]: ['equals', 'notEqual', 'lessThan', 'greaterThan',
+            'lessOrEqual', 'greaterOrEqual', 'contains', 'notContain', 'startsWith', 'includes',
+            'excludes', 'within'],
+        },
+      },
+    ],
+  },
+  {
+    id: new ElemID(SALESFORCE, 'WebLink'),
+    fields: [
+      {
+        name: 'displayType',
+        type: BuiltinTypes.STRING,
+        annotations: {
+          [CORE_ANNOTATIONS.VALUES]: ['link', 'button', 'massActionButton'],
         },
       },
     ],

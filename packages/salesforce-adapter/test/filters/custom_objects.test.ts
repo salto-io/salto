@@ -10,13 +10,15 @@ import {
   CUSTOM_OBJECT, INSTANCE_FULL_NAME_FIELD, LABEL, NAMESPACE_SEPARATOR,
   SALESFORCE_CUSTOM_SUFFIX, API_NAME, FORMULA, LOOKUP_FILTER_FIELDS,
   FIELD_DEPENDENCY_FIELDS, VALUE_SETTINGS_FIELDS, VALUE_SET_FIELDS,
-  CUSTOM_VALUE, VALUE_SET_DEFINITION_FIELDS,
-  DESCRIPTION, CUSTOM_OBJECT_ANNOTATIONS, OBJECTS_PATH, INSTALLED_PACKAGES_PATH, TYPES_PATH,
+  CUSTOM_VALUE, VALUE_SET_DEFINITION_FIELDS, DESCRIPTION, CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS,
+  OBJECTS_PATH, INSTALLED_PACKAGES_PATH, TYPES_PATH,
 } from '../../src/constants'
 import mockAdapter from '../adapter'
 import { findElements, createValueSetEntry } from '../utils'
-import filterCreator, { INSTANCE_REQUIRED_FIELD, INSTANCE_TYPE_FIELD,
-  customObjectAnnotationTypeIds } from '../../src/filters/custom_objects'
+import filterCreator, {
+  INSTANCE_REQUIRED_FIELD, INSTANCE_TYPE_FIELD, customObjectIndependentAnnotations,
+  CUSTOM_OBJECT_TYPE_ID,
+} from '../../src/filters/custom_objects'
 import { FilterWith } from '../../src/filter'
 
 describe('Custom Objects filter', () => {
@@ -30,9 +32,9 @@ describe('Custom Objects filter', () => {
   const filter = (): FilterType => filterCreator({ client }) as FilterType
   let result: Element[]
 
-  const generateFetchedAnnotationTypes = (): ObjectType[] => {
+  const generateCustomObjectType = (): ObjectType => {
     const generateAnnotationTypeFields = (annotationName: string, elemID: ElemID): FieldMap => {
-      if (annotationName === CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS) {
+      if (annotationName === CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.LIST_VIEWS) {
         const listViewFilterElemId = new ElemID(SALESFORCE, 'ListViewFilter')
         return {
           [INSTANCE_FULL_NAME_FIELD]: new Field(elemID, INSTANCE_FULL_NAME_FIELD,
@@ -47,7 +49,7 @@ describe('Custom Objects filter', () => {
           })),
         }
       }
-      if (annotationName === CUSTOM_OBJECT_ANNOTATIONS.FIELD_SETS) {
+      if (annotationName === CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.FIELD_SETS) {
         return {
           availableFields: new Field(elemID, 'availableFields', BuiltinTypes.STRING),
           displayedFields: new Field(elemID, 'displayedFields', BuiltinTypes.STRING),
@@ -56,32 +58,48 @@ describe('Custom Objects filter', () => {
 
         }
       }
-      if (annotationName === CUSTOM_OBJECT_ANNOTATIONS.COMPACT_LAYOUTS) {
+      if (annotationName === CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.COMPACT_LAYOUTS) {
         return {
           fields: new Field(elemID, 'fields', BuiltinTypes.STRING),
           [INSTANCE_FULL_NAME_FIELD]: new Field(elemID, INSTANCE_FULL_NAME_FIELD,
             BuiltinTypes.STRING),
-
         }
       }
       return {}
     }
 
-    const annotationTypesFromInstance = Object.entries(customObjectAnnotationTypeIds)
-      .map(([annotationName, elemID]) => new ObjectType({
-        elemID, fields: generateAnnotationTypeFields(annotationName, elemID),
-      }))
-    return annotationTypesFromInstance
+    const independentAnnotationsFromInstance = _(customObjectIndependentAnnotations)
+      .entries()
+      .map(([annotationName, typeName]) => {
+        const elemID = new ElemID(SALESFORCE, typeName)
+        return [annotationName, new Field(CUSTOM_OBJECT_TYPE_ID, annotationName, new ObjectType({
+          elemID, fields: generateAnnotationTypeFields(annotationName, elemID),
+        }))]
+      })
+      .fromPairs()
+      .value()
+
+    const customObjectType = new ObjectType({ elemID: CUSTOM_OBJECT_TYPE_ID,
+      fields: {
+        ...independentAnnotationsFromInstance,
+        [INSTANCE_FULL_NAME_FIELD]: new Field(CUSTOM_OBJECT_TYPE_ID, INSTANCE_FULL_NAME_FIELD,
+          BuiltinTypes.STRING),
+        pluralLabel: new Field(CUSTOM_OBJECT_TYPE_ID, 'pluralLabel', BuiltinTypes.STRING),
+        enableFeeds: new Field(CUSTOM_OBJECT_TYPE_ID, 'enableFeeds', BuiltinTypes.BOOLEAN),
+      } })
+    return customObjectType
   }
 
-  const annotationTypesFromInstance = generateFetchedAnnotationTypes()
+  const origCustomObjectType = generateCustomObjectType()
+  let customObjectType: ObjectType
   beforeEach(() => {
     ({ connection, client } = mockAdapter({
       adapterParams: {
         getElemIdFunc: mockGetElemIdFunc,
       },
     }))
-    result = _.cloneDeep(annotationTypesFromInstance)
+    customObjectType = origCustomObjectType.clone()
+    result = [customObjectType]
   })
 
   afterEach(() => {
@@ -531,6 +549,7 @@ describe('Custom Objects filter', () => {
       expect(Object.keys(flow.fields)).toHaveLength(0)
       expect(flow.path).toEqual([SALESFORCE, TYPES_PATH, 'flow'])
     })
+
     describe('Merge elements', () => {
       const testInstanceElement = new InstanceElement('Lead', new ObjectType(
         { elemID: mockGetElemIdFunc(SALESFORCE, {}, CUSTOM_OBJECT) }
@@ -810,37 +829,79 @@ describe('Custom Objects filter', () => {
         let customObjectInstance: InstanceElement
         beforeEach(() => {
           customObjectInstance = new InstanceElement('Lead',
-            new ObjectType({ elemID: mockGetElemIdFunc(SALESFORCE, {}, CUSTOM_OBJECT) }), {
+            customObjectType, {
               [INSTANCE_FULL_NAME_FIELD]: 'Lead',
-              [CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS]: {
+              [CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.LIST_VIEWS]: {
                 [INSTANCE_FULL_NAME_FIELD]: 'PartialFullName',
                 columns: 'ListViewName',
               },
+              pluralLabel: 'Leads',
+              enableFeeds: 'True',
             })
         })
 
-        it('should modify the annotationTypesFromInstance', async () => {
+        it('should modify the customObjectType', async () => {
           await filter().onFetch(result)
 
-          const listViewAnnoType = result.filter(o => o.elemID.name === 'ListView').pop() as ObjectType
+          const listViewAnnoType = customObjectType
+            .fields[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.LIST_VIEWS].type as ObjectType
           expect(listViewAnnoType.fields.columns.isList).toBeTruthy()
-          expect(listViewAnnoType.fields.filterScope).toBeDefined()
           expect(listViewAnnoType.fields.filters.isList).toBeTruthy()
-          expect((listViewAnnoType.fields.filters.type as ObjectType).fields.operation)
-            .toBeDefined()
 
-          const fieldSetAnnoType = result.filter(o => o.elemID.name === 'FieldSet').pop() as ObjectType
+          const fieldSetAnnoType = customObjectType
+            .fields[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.FIELD_SETS].type as ObjectType
           expect(fieldSetAnnoType.fields.availableFields.isList).toBeTruthy()
           expect(fieldSetAnnoType.fields.displayedFields.isList).toBeTruthy()
 
-          const compactLayoutAnnoType = result.filter(o => o.elemID.name === 'CompactLayout').pop() as ObjectType
+          const compactLayoutAnnoType = customObjectType
+            .fields[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.COMPACT_LAYOUTS].type as ObjectType
           expect(compactLayoutAnnoType.fields.fields.isList).toBeTruthy()
-
-          const webLinkAnnoType = result.filter(o => o.elemID.name === 'WebLink').pop() as ObjectType
-          expect(webLinkAnnoType.fields.displayType).toBeDefined()
         })
 
-        it('should merge instance element annotation values into the object type', async () => {
+        it('should remove the custom object type and its instances from the fetch result', async () => {
+          mockSingleSObject('Lead', [], false, true, false, 'Instance Label')
+          result.push(customObjectInstance)
+          await filter().onFetch(result)
+          expect(result).toHaveLength(1)
+          const lead = result.filter(o => o.elemID.name === 'Lead').pop()
+          expect(lead).toBeDefined()
+        })
+
+        it('should remove platform event and article type related elements', async () => {
+          mockSingleSObject('Lead', [], false, true, false, 'Instance Label')
+          const articleTypeObj = new ObjectType({ elemID: new ElemID(SALESFORCE, 'ArticleType'),
+            annotations: {
+              [API_NAME]: 'ArticleType__kav',
+            } })
+          const platformEventObj = new ObjectType({ elemID: new ElemID(SALESFORCE, 'PlatformEvent'),
+            annotations: {
+              [API_NAME]: 'PlatformEvent__e',
+            } })
+          const articleTypeChannelDisplayTypeObj = new ObjectType(
+            {
+              elemID: new ElemID(SALESFORCE, 'ArticleTypeChannelDisplay'),
+              annotations: {
+                [METADATA_TYPE]: 'ArticleTypeChannelDisplay',
+              },
+            }
+          )
+          const articleTypeTemplateTypeObj = new ObjectType(
+            {
+              elemID: new ElemID(SALESFORCE, 'ArticleTypeTemplate'),
+              annotations: {
+                [METADATA_TYPE]: 'ArticleTypeTemplate',
+              },
+            }
+          )
+          result.push(customObjectInstance, articleTypeObj, platformEventObj,
+            articleTypeChannelDisplayTypeObj, articleTypeTemplateTypeObj)
+          await filter().onFetch(result)
+          expect(result).toHaveLength(1)
+          const lead = result.filter(o => o.elemID.name === 'Lead').pop()
+          expect(lead).toBeDefined()
+        })
+
+        it('should filter out ignored annotations and not set them on the custom object', async () => {
           mockSingleSObject('Lead', [], false, true, false, 'Instance Label')
           result.push(customObjectInstance)
           await filter().onFetch(result)
@@ -848,18 +909,78 @@ describe('Custom Objects filter', () => {
           expect(lead).toBeDefined()
           expect(isObjectType(lead)).toBeTruthy()
           const leadObjectType = lead as ObjectType
-          expect(leadObjectType.annotationTypes[CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS]).toBeDefined()
-          expect(leadObjectType.annotations[CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS]).toBeDefined()
-          const listViews = leadObjectType.annotations[CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS]
+          expect(leadObjectType.annotationTypes[INSTANCE_FULL_NAME_FIELD]).toBeUndefined()
+        })
+
+        it('should merge regular instance element annotation values into the standard-custom object type', async () => {
+          mockSingleSObject('Lead', [], false, true, false, 'Instance Label')
+          result.push(customObjectInstance)
+          await filter().onFetch(result)
+          const lead = result.filter(o => o.elemID.name === 'Lead').pop()
+          expect(lead).toBeDefined()
+          expect(isObjectType(lead)).toBeTruthy()
+          const leadObjectType = lead as ObjectType
+          expect(leadObjectType.annotationTypes.enableFeeds).toBeDefined()
+          expect(leadObjectType.annotations.enableFeeds).toBeTruthy()
+          expect(leadObjectType.annotationTypes.pluralLabel).toBeUndefined()
+          expect(leadObjectType.annotations.pluralLabel).toBeUndefined()
+        })
+
+        it('should merge regular instance element annotation values into the custom-custom object type', async () => {
+          mockSingleSObject('Lead', [], false, true, true, 'Instance Label')
+          result.push(customObjectInstance)
+          await filter().onFetch(result)
+          const lead = result.filter(o => o.elemID.name === 'Lead').pop()
+          expect(lead).toBeDefined()
+          expect(isObjectType(lead)).toBeTruthy()
+          const leadObjectType = lead as ObjectType
+          expect(leadObjectType.annotationTypes.enableFeeds).toBeDefined()
+          expect(leadObjectType.annotations.enableFeeds).toBeTruthy()
+          expect(leadObjectType.annotationTypes.pluralLabel).toBeDefined()
+          expect(leadObjectType.annotations.pluralLabel).toEqual('Leads')
+        })
+
+        it('should merge independent instance element annotation values into the custom object type', async () => {
+          mockSingleSObject('Lead', [], false, true, true, 'Instance Label')
+          result.push(customObjectInstance)
+          await filter().onFetch(result)
+          const lead = result.filter(o => o.elemID.name === 'Lead').pop()
+          expect(lead).toBeDefined()
+          expect(isObjectType(lead)).toBeTruthy()
+          const leadObjectType = lead as ObjectType
+          expect(leadObjectType.annotationTypes[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.LIST_VIEWS])
+            .toBeDefined()
+          expect(leadObjectType.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.LIST_VIEWS])
+            .toBeDefined()
+          const listViews = leadObjectType.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS
+            .LIST_VIEWS]
           expect(listViews.columns).toEqual('ListViewName')
           expect(listViews[INSTANCE_FULL_NAME_FIELD]).toEqual('Lead.PartialFullName')
         })
 
-        it('should merge instance element annotation values into the object type when annotation value is an array', async () => {
+        it('should merge independent instance element annotation values into the standard object type', async () => {
           mockSingleSObject('Lead', [], false, true, false, 'Instance Label')
-          const instanceWithAnnotationArray = _.cloneDeep(customObjectInstance)
+          result.push(customObjectInstance)
+          await filter().onFetch(result)
+          const lead = result.filter(o => o.elemID.name === 'Lead').pop()
+          expect(lead).toBeDefined()
+          expect(isObjectType(lead)).toBeTruthy()
+          const leadObjectType = lead as ObjectType
+          expect(leadObjectType.annotationTypes[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.LIST_VIEWS])
+            .toBeDefined()
+          expect(leadObjectType.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.LIST_VIEWS])
+            .toBeDefined()
+          const listViews = leadObjectType.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS
+            .LIST_VIEWS]
+          expect(listViews.columns).toEqual('ListViewName')
+          expect(listViews[INSTANCE_FULL_NAME_FIELD]).toEqual('Lead.PartialFullName')
+        })
+
+        it('should merge independent instance element annotation values into the object type when annotation value is an array', async () => {
+          mockSingleSObject('Lead', [], false, true, false, 'Instance Label')
+          const instanceWithAnnotationArray = customObjectInstance.clone()
           // eslint-disable-next-line @typescript-eslint/camelcase
-          instanceWithAnnotationArray.value[CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS] = [{
+          instanceWithAnnotationArray.value[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.LIST_VIEWS] = [{
             columns: 'ListViewName1',
             [INSTANCE_FULL_NAME_FIELD]: 'PartialName1',
           },
@@ -873,10 +994,14 @@ describe('Custom Objects filter', () => {
           expect(lead).toBeDefined()
           expect(isObjectType(lead)).toBeTruthy()
           const leadObjectType = lead as ObjectType
-          expect(leadObjectType.annotationTypes[CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS]).toBeDefined()
-          expect(leadObjectType.annotations[CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS]).toBeDefined()
-          expect(leadObjectType.annotations[CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS]).toHaveLength(2)
-          const listViews = leadObjectType.annotations[CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS]
+          expect(leadObjectType.annotationTypes[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.LIST_VIEWS])
+            .toBeDefined()
+          expect(leadObjectType.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.LIST_VIEWS])
+            .toBeDefined()
+          expect(leadObjectType.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.LIST_VIEWS])
+            .toHaveLength(2)
+          const listViews = leadObjectType.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS
+            .LIST_VIEWS]
           expect(listViews[0].columns).toEqual('ListViewName1')
           expect(listViews[0][INSTANCE_FULL_NAME_FIELD]).toEqual('Lead.PartialName1')
           expect(listViews[1].columns).toEqual('ListViewName2')
@@ -902,21 +1027,30 @@ describe('Custom Objects filter', () => {
           expect(leadsWithApiName).toHaveLength(1)
           const leadWithApiName = leadsWithApiName[0] as ObjectType
           expect(
-            leadWithApiName.annotationTypes[CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS]
+            leadWithApiName.annotationTypes[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.LIST_VIEWS]
           ).toBeDefined()
-          expect(leadWithApiName.annotations[CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS]).toBeDefined()
-          const listViews = leadWithApiName.annotations[CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS]
+          expect(leadWithApiName.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.LIST_VIEWS])
+            .toBeDefined()
+          const listViews = leadWithApiName.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS
+            .LIST_VIEWS]
           expect(listViews.columns).toEqual('ListViewName')
           expect(listViews[INSTANCE_FULL_NAME_FIELD]).toEqual('Lead.PartialFullName')
 
           expect(leadsWithoutApiName).toHaveLength(1)
           const leadWithoutApiName = leadsWithoutApiName[0] as ObjectType
           expect(
-            leadWithoutApiName.annotationTypes[CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS]
+            leadWithoutApiName.annotationTypes[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.LIST_VIEWS]
           ).toBeUndefined()
           expect(
-            leadWithoutApiName.annotations[CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS]
+            leadWithoutApiName.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.LIST_VIEWS]
           ).toBeUndefined()
+        })
+
+        it('custom object independent annotations should be defined correctly', async () => {
+          expect(_.size(customObjectIndependentAnnotations))
+            .toBe(_.size(CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS))
+          expect(Object.keys(customObjectIndependentAnnotations))
+            .toEqual(Object.values(CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS))
         })
       })
     })
@@ -942,7 +1076,7 @@ describe('Custom Objects filter', () => {
         annotations: {
           label: 'test label',
           [API_NAME]: 'Test__c',
-          [CUSTOM_OBJECT_ANNOTATIONS.VALIDATION_RULES]: [{
+          [CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.VALIDATION_RULES]: [{
             [INSTANCE_FULL_NAME_FIELD]: 'Test__c.val1',
             [DESCRIPTION]: 'to be edited',
           },
@@ -958,7 +1092,7 @@ describe('Custom Objects filter', () => {
         annotations: {
           label: 'test label',
           [API_NAME]: 'Test__c',
-          [CUSTOM_OBJECT_ANNOTATIONS.VALIDATION_RULES]: [{
+          [CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.VALIDATION_RULES]: [{
             [INSTANCE_FULL_NAME_FIELD]: 'Test__c.val1',
             [DESCRIPTION]: 'edited description',
           },
@@ -966,7 +1100,7 @@ describe('Custom Objects filter', () => {
             [INSTANCE_FULL_NAME_FIELD]: 'Test__c.val3',
             [DESCRIPTION]: 'created',
           }],
-          [CUSTOM_OBJECT_ANNOTATIONS.RECORD_TYPES]: {
+          [CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.RECORD_TYPES]: {
             [INSTANCE_FULL_NAME_FIELD]: 'Test__c.record',
             [DESCRIPTION]: 'created description',
           },
@@ -1023,7 +1157,7 @@ describe('Custom Objects filter', () => {
         annotations: {
           label: 'test label',
           [API_NAME]: 'Test__c',
-          [CUSTOM_OBJECT_ANNOTATIONS.VALIDATION_RULES]: [{
+          [CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.VALIDATION_RULES]: [{
             [INSTANCE_FULL_NAME_FIELD]: 'Test__c.val1',
             [DESCRIPTION]: 'created1',
           },
@@ -1031,7 +1165,7 @@ describe('Custom Objects filter', () => {
             [INSTANCE_FULL_NAME_FIELD]: 'Test__c.val2',
             [DESCRIPTION]: 'created2',
           }],
-          [CUSTOM_OBJECT_ANNOTATIONS.RECORD_TYPES]: {
+          [CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.RECORD_TYPES]: {
             [INSTANCE_FULL_NAME_FIELD]: 'Test__c.record',
             [DESCRIPTION]: 'created',
           },

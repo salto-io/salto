@@ -1,10 +1,9 @@
 import { logger } from '@salto/logging'
 import { collections } from '@salto/lowerdash'
 import {
-  ADAPTER, Element, Field, ObjectType, ServiceIds, Type, isObjectType, InstanceElement,
-  Values, isInstanceElement, ElemID, BuiltinTypes,
-  CORE_ANNOTATIONS, RESTRICTION_ANNOTATIONS,
-  transform, TypeMap, getChangeElement, Value, findObjectType, Change,
+  ADAPTER, Element, Field, ObjectType, ServiceIds, Type, isObjectType, InstanceElement, Values,
+  isInstanceElement, ElemID, BuiltinTypes, CORE_ANNOTATIONS, transform, TypeMap, getChangeElement,
+  Value, findObjectType, Change, PrimitiveField, PrimitiveType,
 } from 'adapter-api'
 import { SalesforceClient } from 'index'
 import { DescribeSObjectResult, Field as SObjField, SaveResult, UpsertResult } from 'jsforce'
@@ -13,14 +12,13 @@ import {
   API_NAME, CUSTOM_OBJECT, METADATA_TYPE, SALESFORCE, INSTANCE_FULL_NAME_FIELD,
   SALESFORCE_CUSTOM_SUFFIX, LABEL, FIELD_DEPENDENCY_FIELDS, LOOKUP_FILTER_FIELDS,
   VALUE_SETTINGS_FIELDS, API_NAME_SEPERATOR, FIELD_ANNOTATIONS, VALUE_SET_DEFINITION_FIELDS,
-  CUSTOM_OBJECT_ANNOTATIONS, VALUE_SET_FIELDS, DEFAULT_VALUE_FORMULA, FIELD_TYPE_NAMES,
+  CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS, VALUE_SET_FIELDS, DEFAULT_VALUE_FORMULA, FIELD_TYPE_NAMES,
   OBJECTS_PATH, INSTALLED_PACKAGES_PATH, FORMULA,
 } from '../constants'
 import { FilterCreator } from '../filter'
 import {
   getSObjectFieldElement, Types, isCustomObject, bpCase, apiName, transformPrimitive,
-  toMetadataInfo,
-  formulaTypeName,
+  toMetadataInfo, formulaTypeName, metadataType,
 } from '../transformers/transformer'
 import { id, addApiName, addMetadataType, addLabel, hasNamespace,
   getNamespace, boolValue, buildAnnotationsObjectType } from './utils'
@@ -32,18 +30,32 @@ const { makeArray } = collections.array
 export const INSTANCE_REQUIRED_FIELD = 'required'
 export const INSTANCE_TYPE_FIELD = 'type'
 
-// The below annotationTypes' data is returned when using ReadMetadata on the CustomObject instances
-export const customObjectAnnotationTypeIds = {
-  [CUSTOM_OBJECT_ANNOTATIONS.WEB_LINKS]: new ElemID(SALESFORCE, 'WebLink'),
-  [CUSTOM_OBJECT_ANNOTATIONS.VALIDATION_RULES]: new ElemID(SALESFORCE, 'ValidationRule'),
-  [CUSTOM_OBJECT_ANNOTATIONS.BUSINESS_PROCESSES]: new ElemID(SALESFORCE, 'BusinessProcess'),
-  [CUSTOM_OBJECT_ANNOTATIONS.RECORD_TYPES]: new ElemID(SALESFORCE, 'RecordType'),
-  [CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS]: new ElemID(SALESFORCE, 'ListView'),
-  [CUSTOM_OBJECT_ANNOTATIONS.FIELD_SETS]: new ElemID(SALESFORCE, 'FieldSet'),
-  [CUSTOM_OBJECT_ANNOTATIONS.COMPACT_LAYOUTS]: new ElemID(SALESFORCE, 'CompactLayout'),
-  [CUSTOM_OBJECT_ANNOTATIONS.SHARING_REASONS]: new ElemID(SALESFORCE, 'SharingReason'),
-  [CUSTOM_OBJECT_ANNOTATIONS.INDEXES]: new ElemID(SALESFORCE, 'Index'),
+// The below annotationTypes extend Metadata and are mutable using a specific API call
+// (they are not updated when updating the custom object)
+export const customObjectIndependentAnnotations = {
+  [CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.WEB_LINKS]: 'WebLink',
+  [CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.VALIDATION_RULES]: 'ValidationRule',
+  [CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.BUSINESS_PROCESSES]: 'BusinessProcess',
+  [CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.RECORD_TYPES]: 'RecordType',
+  [CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.LIST_VIEWS]: 'ListView',
+  [CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.FIELD_SETS]: 'FieldSet',
+  [CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.COMPACT_LAYOUTS]: 'CompactLayout',
+  [CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.SHARING_REASONS]: 'SharingReason',
+  [CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.INDEXES]: 'Index',
 }
+
+type AnnotationTypesFromInstance = { standardObjectAnnotationTypes: TypeMap
+  customObjectAnnotationTypes: TypeMap }
+
+export const CUSTOM_OBJECT_TYPE_ID = new ElemID(SALESFORCE, CUSTOM_OBJECT)
+
+const CUSTOM_ONLY_ANNOTATION_TYPE_NAMES = ['allowInChatterGroups', 'customHelp', 'customHelpPage',
+  'customSettingsType', 'deploymentStatus', 'deprecated', 'enableActivities', 'enableBulkApi',
+  'enableReports', 'enableSearch', 'enableSharing', 'enableStreamingApi', 'gender',
+  'nameField', 'pluralLabel', 'sharingModel', 'startsWith', 'visibility']
+
+const ANNOTATIONS_TO_IGNORE_FROM_INSTANCE = ['eventType', 'publishBehavior', 'fields',
+  INSTANCE_FULL_NAME_FIELD, LABEL, 'household', 'articleTypeChannelDisplay']
 
 const getFieldName = (annotations: Values): string =>
   (annotations[FORMULA]
@@ -239,11 +251,22 @@ export const transformFieldAnnotations = (
 
 const transformObjectAnnotations = (customObject: ObjectType, annotationTypesFromInstance: TypeMap,
   instance: InstanceElement): void => {
-  const transformAnnotationValue = (values: Values, annotationType: ObjectType):
-    Values | undefined => {
-    values[INSTANCE_FULL_NAME_FIELD] = [apiName(instance), values[INSTANCE_FULL_NAME_FIELD]]
-      .join(API_NAME_SEPERATOR)
-    return transform(values, annotationType, transformPrimitive)
+  const transformAnnotationValue = (value: Value, annotationType: Type): Value | undefined => {
+    const buildAnnotationPrimitiveField = (type: PrimitiveType): PrimitiveField => {
+      const annotationTypesElemID = new ElemID(SALESFORCE, 'AnnotationType')
+      return new Field(annotationTypesElemID, type.elemID.name, type) as PrimitiveField
+    }
+
+    if (isObjectType(annotationType)) {
+      const transformedValue = transform(value, annotationType, transformPrimitive)
+      if (!_.isUndefined(transformedValue)
+        && Object.values(customObjectIndependentAnnotations).includes(annotationType.elemID.name)) {
+        transformedValue[INSTANCE_FULL_NAME_FIELD] = [apiName(instance),
+          transformedValue[INSTANCE_FULL_NAME_FIELD]].join(API_NAME_SEPERATOR)
+      }
+      return transformedValue
+    }
+    return transformPrimitive(value, buildAnnotationPrimitiveField(annotationType as PrimitiveType))
   }
 
   Object.assign(customObject.annotationTypes, annotationTypesFromInstance)
@@ -252,11 +275,11 @@ const transformObjectAnnotations = (customObject: ObjectType, annotationTypesFro
     ...Object.entries(instance.value)
       .filter(([k, _v]) => Object.keys(annotationTypesFromInstance).includes(k))
       .map(([k, v]) => {
-        const annotationType = customObject.annotationTypes[k] as ObjectType
+        const annotationType = customObject.annotationTypes[k]
         const transformedValue = _.isArray(v)
           ? v.map(innerValue => transformAnnotationValue(innerValue, annotationType))
             .filter(innerValue => !_.isUndefined(innerValue))
-          : transformAnnotationValue(v, annotationType) || {}
+          : transformAnnotationValue(v, annotationType) ?? {}
         return { [k]: transformedValue }
       }))
 }
@@ -330,7 +353,7 @@ const fetchSObjects = async (client: SalesforceClient):
 const createCustomObjectTypesFromSObjectsAndInstances = (
   sObjects: DescribeSObjectResult[],
   instances: Record<string, InstanceElement>,
-  annotationTypesFromInstance: TypeMap
+  annotationTypesFromInstance: AnnotationTypesFromInstance
 ): ObjectType[] =>
   _.flatten(sObjects.map(({ name, label, custom, fields }) => {
     const objects = createSObjectTypes(name, label, custom, fields)
@@ -340,12 +363,23 @@ const createCustomObjectTypesFromSObjectsAndInstances = (
         .fromPairs()
         .value()
       objects.forEach(obj => mergeCustomObjectWithInstance(
-        obj, fieldNameToFieldAnnotations, instances[name], annotationTypesFromInstance
+        obj, fieldNameToFieldAnnotations, instances[name], custom
+          ? annotationTypesFromInstance.customObjectAnnotationTypes
+          : annotationTypesFromInstance.standardObjectAnnotationTypes
       ))
     }
     return objects
   }))
 
+const removeIrrelevantElements = (elements: Element[]): void => {
+  _.remove(elements, elem => (isCustomObject(elem) && isInstanceElement(elem)))
+  _.remove(elements, elem => elem.elemID.isEqual(CUSTOM_OBJECT_TYPE_ID))
+  // We currently don't support platform event and article type objects (SALTO-530, SALTO-531)
+  _.remove(elements, elem => (isObjectType(elem) && isCustomObject(elem) && apiName(elem)
+    && (apiName(elem).endsWith('__e') || apiName(elem).endsWith('__kav'))))
+  _.remove(elements, elem => (isObjectType(elem)
+    && ['ArticleTypeChannelDisplay', 'ArticleTypeTemplate'].includes(metadataType(elem))))
+}
 // ---
 
 /**
@@ -366,58 +400,43 @@ const filterCreator: FilterCreator = ({ client }) => ({
       .fromPairs()
       .value()
 
-    const annotationTypesToMergeFromInstance = (): TypeMap => {
-      const annotationTypesFromInstance = _(customObjectAnnotationTypeIds)
-        .entries()
-        .map(([name, elemID]) => [name, findObjectType(elements, elemID) as ObjectType])
-        .fromPairs()
-        .value()
-      // Fix some annotationTypes definitions
-      if (annotationTypesFromInstance[CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS]) {
-        const listViews = annotationTypesFromInstance[CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS]
-        listViews.fields.columns.isList = true
-        listViews.fields.filters.isList = true
-        listViews.fields.filters.type.fields.operation = new Field(
-          listViews.fields.filters.type.elemID, 'operation',
-          BuiltinTypes.STRING, {
-            [CORE_ANNOTATIONS.RESTRICTION]: { [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: true },
-            [CORE_ANNOTATIONS.VALUES]: [
-              'equals', 'notEqual', 'lessThan', 'greaterThan', 'lessOrEqual',
-              'greaterOrEqual', 'contains', 'notContain', 'startsWith',
-              'includes', 'excludes', 'within',
-            ],
-          },
-        )
-        listViews.fields.filterScope = new Field(
-          customObjectAnnotationTypeIds[CUSTOM_OBJECT_ANNOTATIONS.LIST_VIEWS], 'filterScope',
-          BuiltinTypes.STRING, {
-            [CORE_ANNOTATIONS.RESTRICTION]: { [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: true },
-            [CORE_ANNOTATIONS.VALUES]: ['Everything', 'Mine',
-              'MineAndMyGroups', 'Queue', 'Delegated', 'MyTerritory', 'MyTeamTerritory', 'Team'],
-          }
-        )
+    const annotationTypesToMergeFromInstance = (): AnnotationTypesFromInstance => {
+      const fixAnnotationTypesDefinitions = (annotationTypesFromInstance: TypeMap): void => {
+        const listViewType = annotationTypesFromInstance[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS
+          .LIST_VIEWS] as ObjectType
+        listViewType.fields.columns.isList = true
+        listViewType.fields.filters.isList = true
+        const fieldSetType = annotationTypesFromInstance[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS
+          .FIELD_SETS] as ObjectType
+        fieldSetType.fields.availableFields.isList = true
+        fieldSetType.fields.displayedFields.isList = true
+        const compactLayoutType = annotationTypesFromInstance[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS
+          .COMPACT_LAYOUTS] as ObjectType
+        compactLayoutType.fields.fields.isList = true
       }
-      if (annotationTypesFromInstance[CUSTOM_OBJECT_ANNOTATIONS.FIELD_SETS]) {
-        annotationTypesFromInstance[CUSTOM_OBJECT_ANNOTATIONS.FIELD_SETS].fields.availableFields
-          .isList = true
-        annotationTypesFromInstance[CUSTOM_OBJECT_ANNOTATIONS.FIELD_SETS].fields.displayedFields
-          .isList = true
+
+      const getAllAnnotationTypesFromInstance = (): TypeMap => {
+        const customObjectType = findObjectType(elements, CUSTOM_OBJECT_TYPE_ID)
+        if (_.isUndefined(customObjectType)) {
+          return {}
+        }
+        const annotationTypesFromInstance: TypeMap = _(customObjectType.fields)
+          .entries()
+          .filter(([name, _field]) => !ANNOTATIONS_TO_IGNORE_FROM_INSTANCE.includes(name))
+          .map(([name, field]) => [name, field.type])
+          .fromPairs()
+          .value()
+
+        fixAnnotationTypesDefinitions(annotationTypesFromInstance)
+        return annotationTypesFromInstance
       }
-      if (annotationTypesFromInstance[CUSTOM_OBJECT_ANNOTATIONS.COMPACT_LAYOUTS]) {
-        annotationTypesFromInstance[CUSTOM_OBJECT_ANNOTATIONS.COMPACT_LAYOUTS].fields.fields
-          .isList = true
+
+      const annotationTypesFromInstance = getAllAnnotationTypesFromInstance()
+      const annotationTypes = _.omit(annotationTypesFromInstance, CUSTOM_ONLY_ANNOTATION_TYPE_NAMES)
+      return {
+        standardObjectAnnotationTypes: annotationTypes,
+        customObjectAnnotationTypes: annotationTypesFromInstance,
       }
-      if (annotationTypesFromInstance[CUSTOM_OBJECT_ANNOTATIONS.WEB_LINKS]) {
-        const webLinks = annotationTypesFromInstance[CUSTOM_OBJECT_ANNOTATIONS.WEB_LINKS]
-        webLinks.fields.displayType = new Field(
-          customObjectAnnotationTypeIds[CUSTOM_OBJECT_ANNOTATIONS.WEB_LINKS], 'displayType',
-          BuiltinTypes.STRING, {
-            [CORE_ANNOTATIONS.RESTRICTION]: { [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: true },
-            [CORE_ANNOTATIONS.VALUES]: ['link', 'button', 'massActionButton'],
-          }
-        )
-      }
-      return annotationTypesFromInstance
     }
 
     const customObjectTypes = createCustomObjectTypesFromSObjectsAndInstances(
@@ -434,8 +453,8 @@ const filterCreator: FilterCreator = ({ client }) => ({
       }
     })
 
+    removeIrrelevantElements(elements)
     const objectTypeFullNames = new Set(elements.filter(isObjectType).map(elem => id(elem)))
-    _.remove(elements, elem => (isCustomObject(elem) && isInstanceElement(elem)))
     customObjectTypes
       .filter(obj => !objectTypeFullNames.has(id(obj)))
       .forEach(elem => elements.push(elem))
@@ -476,18 +495,18 @@ const filterCreator: FilterCreator = ({ client }) => ({
       ])
     }
 
-    return _.flatten(_.flatten((await Promise.all(Object.entries(customObjectAnnotationTypeIds)
-      .map(([annotationName, elemID]) =>
-        handleObjectAnnotationChanges(annotationName, elemID.name))))))
+    return _.flatten(_.flatten((await Promise.all(Object.entries(customObjectIndependentAnnotations)
+      .map(([annotationName, typeName]) =>
+        handleObjectAnnotationChanges(annotationName, typeName))))))
   },
 
   onAdd: async (after: Element): Promise<UpsertResult[]> => {
     if (!(isObjectType(after))) {
       return []
     }
-    return _.flatten((await Promise.all(Object.entries(customObjectAnnotationTypeIds)
-      .map(([annotationName, elemID]) =>
-        client.upsert(elemID.name,
+    return _.flatten((await Promise.all(Object.entries(customObjectIndependentAnnotations)
+      .map(([annotationName, typeName]) =>
+        client.upsert(typeName,
           makeArray(after.annotations[annotationName])
             .map(val => toMetadataInfo(val[INSTANCE_FULL_NAME_FIELD], val)))))))
   },

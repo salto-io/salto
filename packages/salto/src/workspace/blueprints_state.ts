@@ -10,13 +10,6 @@ import { ParseError } from '../parser/parse'
 
 const log = logger(module)
 
-export interface ParsedBlueprint {
-  filename: string
-  elements: Element[]
-  errors: ParseError[]
-  timestamp: number
-}
-
 export class Errors extends types.Bean<Readonly<{
   parse: ReadonlyArray<ParseError>
   merge: ReadonlyArray<MergeError>
@@ -35,7 +28,14 @@ export class Errors extends types.Bean<Readonly<{
   }
 }
 
-export interface ParsedBlueprintMap {
+export type ParsedBlueprint = {
+  filename: string
+  elements: Element[]
+  errors: ParseError[]
+  timestamp: number
+}
+
+export type ParsedBlueprintMap = {
   [key: string]: ParsedBlueprint
 }
 

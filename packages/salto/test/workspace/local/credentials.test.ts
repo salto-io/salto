@@ -20,32 +20,28 @@ describe('localCredentials', () => {
     password: 'test',
   })
 
-  const setNewMock = jest.fn().mockResolvedValueOnce(true)
-  bpStoreMockLoad.mockImplementation(name => {
-    if (name === 'set-new') {
-      return { set: setNewMock }
-    }
-    if (name === 'get-exists') {
-      return {
-        get: jest.fn().mockResolvedValueOnce(
-          { filename: `${adapter}.bp`, buffer: dump([creds]) }
-        ),
-      }
-    }
-    return { get: jest.fn().mockResolvedValueOnce(undefined) }
+  const mockSet = jest.fn()
+  const mockGet = jest.fn()
+  const dumpedCredentials = { filename: `${adapter}.bp`, buffer: dump([creds]) }
+
+  beforeEach(() => {
+    bpStoreMockLoad.mockReturnValue({ get: mockGet, set: mockSet })
   })
 
   it('should set new credentials', async () => {
-    await localCredentials('set-new').set(adapter, creds)
-    expect(setNewMock).toHaveBeenCalledWith({ filename: `${adapter}.bp`, buffer: dump([creds]) })
+    mockSet.mockResolvedValueOnce(true)
+    await localCredentials('').set(adapter, creds)
+    expect(mockSet).toHaveBeenCalledWith(dumpedCredentials)
   })
 
   it('should get credentials if exists', async () => {
-    const fromCredsStore = await localCredentials('get-exists').get(adapter)
+    mockGet.mockResolvedValueOnce(dumpedCredentials)
+    const fromCredsStore = await localCredentials('').get(adapter)
     expect(fromCredsStore?.value).toEqual(creds.value)
   })
 
   it('shouldnt fail if credentials not exists', async () => {
+    mockGet.mockResolvedValueOnce(undefined)
     const fromCredsStore = await localCredentials('').get(adapter)
     expect(fromCredsStore).toBeUndefined()
   })

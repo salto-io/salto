@@ -79,12 +79,20 @@ export class Workspace {
   private cache: ParseResultCache
   private blueprintsState: Promise<BlueprintsState>
 
-  /**
-   * Load a collection of blueprint files as a workspace
-   * @param blueprintsDir Base directory to load blueprints from
-   * @param blueprintsFiles Paths to additional files (outside the blueprints dir) to include
-   *   in the workspace
-   */
+  constructor(public config: Config) {
+    this.blueprintsStore = localBlueprintsStore(config.baseDir)
+    this.state = localState(config.stateLocation)
+    this.credentials = localCredentials(path.join(config.localStorage, 'credentials'))
+    this.cache = localParseResultCache(path.join(this.config.localStorage, '.cache'))
+
+    const readAllBps = async (blueprintsStore: BlueprintsStore): Promise<Blueprint[]> => (
+      Promise.all((await blueprintsStore.list())
+        .map(async filename => this.blueprintsStore.get(filename))) as Promise<Blueprint[]>
+    )
+    this.blueprintsState = readAllBps(this.blueprintsStore)
+      .then(bps => this.buildBlueprintsState(bps, {}))
+  }
+
   static async init(baseDir: string, workspaceName?: string): Promise<Workspace> {
     const absBaseDir = path.resolve(baseDir)
     const minimalConfig = {
@@ -107,19 +115,6 @@ export class Workspace {
     const newParsed = _.keyBy(await this.parseBlueprints(newBps), parsed => parsed.filename)
     const allParsed = _.omitBy({ ...current, ...newParsed }, parsed => _.isEmpty(parsed.elements))
     return blueprintState(Object.values(allParsed))
-  }
-
-  constructor(public config: Config) {
-    this.blueprintsStore = localBlueprintsStore(config.baseDir)
-    this.state = localState(config.stateLocation)
-    this.credentials = localCredentials(path.join(config.localStorage, 'credentials'))
-    this.cache = localParseResultCache(path.join(this.config.localStorage, '.cache'))
-
-    const readAllBps = async (blueprintsStore: BlueprintsStore):
-    Promise<Blueprint[]> => Promise.all((await blueprintsStore.list())
-      .map(async filename => this.blueprintsStore.get(filename))) as Promise<Blueprint[]>
-    this.blueprintsState = readAllBps(this.blueprintsStore)
-      .then(bps => this.buildBlueprintsState(bps, {}))
   }
 
   async isEmpty(): Promise<boolean> {
@@ -247,7 +242,7 @@ export class Workspace {
       .flatten().uniq().value()
     const parsedBlueprints = await this.parsedBlueprints
     const changeSourceMaps = await Promise.all(bps
-      .map(async bp => this.getSourceMap(parsedBlueprints[bp])))
+      .map(bp => this.getSourceMap(parsedBlueprints[bp])))
 
     const mergedSourceMap = mergeSourceMaps(changeSourceMaps)
     const updatedBlueprints = (await Promise.all(

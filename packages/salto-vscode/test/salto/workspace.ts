@@ -63,5 +63,8 @@ export const mockWorkspace = async (blueprint?: string, config?: Partial<Config>
 
     setBlueprints: jest.fn().mockReturnValue(Promise.resolve()),
     removeBlueprints: jest.fn().mockReturnValue(Promise.resolve()),
+    blueprintsStore: {
+      list: jest.fn().mockResolvedValue([filename]),
+    },
   } as unknown as Workspace
 }

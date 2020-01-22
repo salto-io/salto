@@ -63,7 +63,7 @@ export const updateWorkspace = async (ws: Workspace, cliOutput: CliOutput,
   if (changes.length > 0) {
     log.info(`going to update workspace with ${changes.length} changes out of ${
       changes.length} changes`)
-    if (await ws.isEmpty()) {
+    if (!await ws.isEmpty()) {
       formatDetailedChanges([changes.map(c => c.change)]).split('\n').forEach(s => log.info(s))
     }
 
@@ -74,7 +74,7 @@ export const updateWorkspace = async (ws: Workspace, cliOutput: CliOutput,
       log.warn(formatWorkspaceErrors(wsErrors))
       return false
     }
-    log.debug('finished to flush workspace state')
+    log.debug('finished to updating workspace blueprints')
   }
   return true
 }

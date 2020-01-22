@@ -1,11 +1,13 @@
-import { Workspace } from 'salto'
+import { Workspace, FetchChange, DetailedChange } from 'salto'
 import { Spinner } from '../src/types'
-import { validateWorkspace, loadWorkspace } from '../src/workspace'
-import { MockWriteStream } from './mocks'
+import { validateWorkspace, loadWorkspace, updateWorkspace } from '../src/workspace'
+import { MockWriteStream, dummyChanges } from './mocks'
 
 const mockWs = {
-  hasErrors: jest.fn(),
+  hasErrors: jest.fn().mockResolvedValue(false),
   getWorkspaceErrors: jest.fn(),
+  updateBlueprints: jest.fn(),
+  isEmpty: jest.fn(),
 } as unknown as Workspace
 jest.mock('salto', () => ({
   ...jest.requireActual('salto'),
@@ -120,6 +122,23 @@ describe('workspace', () => {
 
       expect(cliOutput.stderr.content).toContain('Error BLA')
       expect(spinner.fail).toHaveBeenCalled()
+    })
+  })
+
+  describe('updateWorkspace', () => {
+    it('no changes', async () => {
+      const result = await updateWorkspace(mockWs, cliOutput)
+      expect(result).toBeTruthy()
+    })
+
+    it('with changes', async () => {
+      mockWs.hasErrors = jest.fn().mockResolvedValue(false)
+      const result = await updateWorkspace(mockWs, cliOutput,
+        ...dummyChanges.map((change: DetailedChange): FetchChange =>
+          ({ change, serviceChange: change })))
+      expect(result).toBeTruthy()
+      expect(mockWs.updateBlueprints).toHaveBeenCalledWith(...dummyChanges)
+      expect(mockWs.hasErrors).toHaveBeenCalled()
     })
   })
 })

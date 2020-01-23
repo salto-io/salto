@@ -89,6 +89,7 @@ describe('Salesforce adapter E2E with real account', () => {
   const fetchedRollupSummaryFieldName = 'rollupsummary__c'
   const customObjectWithFieldsName = 'TestFields__c'
   const picklistFieldName = 'Pickle__c'
+  const multiselectPicklistFieldName = 'Hotel__c'
   const customObjectWithFieldsRandomString = String(Date.now()).substring(6)
 
   beforeAll(async () => {
@@ -342,7 +343,7 @@ describe('Salesforce adapter E2E with real account', () => {
         sharingModel: 'ControlledByParent',
       }
       const additionalFieldsToAdd = [{
-        fullName: `${customObjectWithFieldsName}.Hotel__c`,
+        fullName: `${customObjectWithFieldsName}.${multiselectPicklistFieldName}`,
         label: 'Multipicklist label',
         required: false,
         type: constants.FIELD_TYPE_NAMES.MULTIPICKLIST,
@@ -350,7 +351,6 @@ describe('Salesforce adapter E2E with real account', () => {
           controllingField: picklistFieldName,
           restricted: false,
           valueSetDefinition: {
-            sorted: true,
             value: [
               {
                 default: false,
@@ -2236,22 +2236,26 @@ describe('Salesforce adapter E2E with real account', () => {
         expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
       }
 
-      const testMultiSelectPicklist = (annotations: Values): void => {
+      const testMultiSelectPicklist = (annotations: Values, sorted = false): void => {
         expect(annotations[constants.LABEL]).toBe('Multipicklist label')
         expect(annotations[constants.FIELD_ANNOTATIONS.RESTRICTED]).toBe(false)
         expect(annotations[constants.FIELD_ANNOTATIONS.VISIBLE_LINES]).toBe(4)
-        expect(annotations[constants.FIELD_ANNOTATIONS.VALUE_SET]).toEqual([
-          {
-            [constants.CUSTOM_VALUE.FULL_NAME]: 'DO',
-            [constants.CUSTOM_VALUE.DEFAULT]: true,
-            [constants.CUSTOM_VALUE.LABEL]: 'DO',
-          },
+        const expectedValueSet = [
           {
             [constants.CUSTOM_VALUE.FULL_NAME]: 'RE',
             [constants.CUSTOM_VALUE.DEFAULT]: false,
             [constants.CUSTOM_VALUE.LABEL]: 'RE',
           },
-        ])
+          {
+            [constants.CUSTOM_VALUE.FULL_NAME]: 'DO',
+            [constants.CUSTOM_VALUE.DEFAULT]: true,
+            [constants.CUSTOM_VALUE.LABEL]: 'DO',
+          },
+        ]
+        expect(annotations[constants.FIELD_ANNOTATIONS.VALUE_SET])
+          .toEqual(sorted
+            ? _.sortBy(expectedValueSet, constants.CUSTOM_VALUE.FULL_NAME)
+            : expectedValueSet)
         const fieldDependency = annotations[constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY]
         expect(fieldDependency[constants.FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD])
           .toEqual(picklistFieldName)
@@ -2459,7 +2463,11 @@ describe('Salesforce adapter E2E with real account', () => {
           })
 
           it('picklist', () => {
-            verifyFieldFetch(fields.Pickle__c, testPicklist, Types.primitiveDataTypes.Picklist)
+            verifyFieldFetch(
+              fields[picklistFieldName],
+              testPicklist,
+              Types.primitiveDataTypes.Picklist
+            )
           })
 
           it('global picklist', () => {
@@ -2478,7 +2486,7 @@ describe('Salesforce adapter E2E with real account', () => {
 
           it('multipicklist', () => {
             verifyFieldFetch(
-              fields.Hotel__c,
+              fields[multiselectPicklistFieldName],
               testMultiSelectPicklist,
               Types.primitiveDataTypes.MultiselectPicklist
             )
@@ -2586,6 +2594,10 @@ describe('Salesforce adapter E2E with real account', () => {
                 ].includes(field.name) ? `${testAddFieldPrefix}${field.name}` : field.name
                 const newField = field.clone()
                 newField.annotations[constants.API_NAME] = `${customObjectName}.${name}`
+
+                if (name === multiselectPicklistFieldName) {
+                  newField.annotations[constants.VALUE_SET_DEFINITION_FIELDS.SORTED] = true
+                }
                 return [
                   name,
                   new Field(mockElemID, name, newField.type, newField.annotations, newField.isList),
@@ -2689,13 +2701,19 @@ describe('Salesforce adapter E2E with real account', () => {
           })
 
           it('picklist', () => {
-            verifyFieldAddition(fields.Pickle__c, testPicklist, constants.FIELD_TYPE_NAMES.PICKLIST)
+            verifyFieldAddition(
+              fields[picklistFieldName],
+              testPicklist,
+              constants.FIELD_TYPE_NAMES.PICKLIST
+            )
           })
 
           it('multipicklist', () => {
+            const testMultiSelectPicklistAdd = (annotations: Values): void =>
+              testMultiSelectPicklist(annotations, true)
             verifyFieldAddition(
               fields.Hotel__c,
-              testMultiSelectPicklist,
+              testMultiSelectPicklistAdd,
               constants.FIELD_TYPE_NAMES.MULTIPICKLIST
             )
           })

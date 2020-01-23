@@ -89,7 +89,7 @@ describe('Salesforce adapter E2E with real account', () => {
   const fetchedRollupSummaryFieldName = 'rollupsummary__c'
   const customObjectWithFieldsName = 'TestFields__c'
   const picklistFieldName = 'Pickle__c'
-  const multiselectPicklistFieldName = 'Hotel__c'
+  const multiSelectPicklistFieldName = 'Hotel__c'
   const customObjectWithFieldsRandomString = String(Date.now()).substring(6)
 
   beforeAll(async () => {
@@ -343,7 +343,7 @@ describe('Salesforce adapter E2E with real account', () => {
         sharingModel: 'ControlledByParent',
       }
       const additionalFieldsToAdd = [{
-        fullName: `${customObjectWithFieldsName}.${multiselectPicklistFieldName}`,
+        fullName: `${customObjectWithFieldsName}.${multiSelectPicklistFieldName}`,
         label: 'Multipicklist label',
         required: false,
         type: constants.FIELD_TYPE_NAMES.MULTIPICKLIST,
@@ -2486,7 +2486,7 @@ describe('Salesforce adapter E2E with real account', () => {
 
           it('multipicklist', () => {
             verifyFieldFetch(
-              fields[multiselectPicklistFieldName],
+              fields[multiSelectPicklistFieldName],
               testMultiSelectPicklist,
               Types.primitiveDataTypes.MultiselectPicklist
             )
@@ -2595,7 +2595,7 @@ describe('Salesforce adapter E2E with real account', () => {
                 const newField = field.clone()
                 newField.annotations[constants.API_NAME] = `${customObjectName}.${name}`
 
-                if (name === multiselectPicklistFieldName) {
+                if (name === multiSelectPicklistFieldName) {
                   newField.annotations[constants.VALUE_SET_DEFINITION_FIELDS.SORTED] = true
                 }
                 return [

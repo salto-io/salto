@@ -63,7 +63,7 @@ const addElements = (
 /**
  * Check if 2 nodes in the DAG are equals or not
  */
-const isEqualsNode = (node1?: Node, node2?: Node): boolean => {
+const isEqualsNode = (node1: Node, node2: Node): boolean => {
   if (isObjectType(node1) && isObjectType(node2)) {
     // We would like to check equality only on type level prop (annotations) and not fields
     return node1.isAnnotationsEqual(node2)
@@ -77,7 +77,7 @@ const isEqualsNode = (node1?: Node, node2?: Node): boolean => {
   if (isField(node1) && isField(node2)) {
     return node1.isEqual(node2)
   }
-  // If we got here, at least one of the nodes is undefined
+  // Assume we shouldn't reach this point
   return _.isEqual(node1, node2)
 }
 

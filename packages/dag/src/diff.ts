@@ -36,20 +36,28 @@ export type DiffGraph<T> = DataNodeMap<DiffNode<T>>
 
 export type DiffGraphTransformer<T> = (graph: DiffGraph<T>) => DiffGraph<T>
 
-type NodeEqualityFunc<T> = (node1?: T, node2?: T) => boolean
+const getDiffNodeData = <T>(diff: DiffNode<T>): T => (
+  diff.action === 'remove' ? diff.data.before : diff.data.after
+)
+
+type NodeEqualityFunc<T> = (node1: T, node2: T) => boolean
 export const removeEqualNodes = <T>(equals: NodeEqualityFunc<T>): DiffGraphTransformer<T> => (
   graph => {
-    const getDiffNodeData = (diff: DiffNode<T>): T => (
-      diff.action === 'remove' ? diff.data.before : diff.data.after
-    )
+    const differentNodes = (ids: ReadonlyArray<NodeId>): boolean => {
+      if (ids.length !== 2) {
+        return true
+      }
+      const [node1, node2] = ids.map(id => getDiffNodeData(graph.getData(id)))
+      return !equals(node1, node2)
+    }
 
     const outputGraph = new DataNodeMap<DiffNode<T>>()
-    _([...graph.dataEntries()])
-      .groupBy(([_id, data]) => data.originalId)
+    _([...graph.keys()])
+      .groupBy(id => graph.getData(id).originalId)
       .values()
-      .filter(nodes => !equals(...nodes.map(([_id, data]) => getDiffNodeData(data))))
+      .filter(differentNodes)
       .flatten()
-      .forEach(([id, data]) => { outputGraph.addNode(id, [], data) })
+      .forEach(id => { outputGraph.addNode(id, [], graph.getData(id)) })
     return outputGraph
   }
 )
@@ -57,10 +65,12 @@ export const removeEqualNodes = <T>(equals: NodeEqualityFunc<T>): DiffGraphTrans
 const mergeNodes = <T>(
   target: DiffGraph<T>, oldIds: NodeId[], newId: NodeId, newData: DiffNode<T>
 ): void => {
-  const deps = new Set<NodeId>(wu.chain(oldIds.map(id => target.get(id))).flatten())
-
-  // delete old nodes
-  oldIds.forEach(oldId => deps.delete(oldId))
+  const deps = new Set<NodeId>(
+    wu.chain(oldIds.map(id => target.get(id)))
+      .flatten()
+      // filter out old nodes from dependecy list
+      .filter(id => !oldIds.includes(id))
+  )
 
   // update reverse deps to new node
   oldIds.forEach(
@@ -98,15 +108,15 @@ const tryCreateModificationNode = <T>(
 
 export const mergeNodesToModify = <T>(target: DiffGraph<T>): DiffGraph<T> => {
   // Find all pairs of nodes pointing to the same original ID
-  const mergeCandidates = _([...target.dataEntries()])
-    .groupBy(([_id, data]) => data.originalId)
+  const mergeCandidates = _([...target.keys()])
+    .groupBy(id => target.getData(id).originalId)
     .values()
     .filter(nodes => nodes.length === 2)
     .value()
 
   return mergeCandidates
-    .map(nodes => nodes.sort((a, _b) => (a[1].action === 'add' ? -1 : 1)))
-    .map(nodes => nodes.map(([id]) => id))
+    // Make sure the add node comes before the remove node
+    .map(nodes => nodes.sort(node => (target.getData(node).action === 'add' ? -1 : 1)))
     .reduce(
       (graph, [add, remove]) => tryCreateModificationNode(graph, add, remove),
       target,

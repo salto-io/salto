@@ -105,6 +105,10 @@ export class EditorWorkspace {
     return this.workspace.getBlueprint(filename)
   }
 
+  flush(): Promise<void> {
+    return this.workspace.flush()
+  }
+
   setBlueprints(...blueprints: Blueprint[]): Promise<void> {
     this.addPendingBlueprints(blueprints)
     return this.triggerAggregatedSetOperation()

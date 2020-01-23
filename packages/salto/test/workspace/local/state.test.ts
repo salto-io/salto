@@ -92,9 +92,6 @@ describe('local state', () => {
   it('should write file on flush', async () => {
     const state = localState('on-flush')
     await state.set([mockElement])
-    if (state.flush === undefined) {
-      throw Error('local state should have flush')
-    }
     await state.flush()
     const onFlush = findReplaceContentCall('on-flush')
     expect(onFlush).toBeDefined()
@@ -103,9 +100,6 @@ describe('local state', () => {
 
   it('shouldnt write file if state was not loaded on flush', async () => {
     const state = localState('not-flush')
-    if (state.flush === undefined) {
-      throw Error('local state should have flush')
-    }
     await state.flush()
     expect(findReplaceContentCall('not-flush')).toBeUndefined()
   })

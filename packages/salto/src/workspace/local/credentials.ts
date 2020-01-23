@@ -22,6 +22,7 @@ export const localCredentials = (credsDir: string): Credentials => {
 
     set: async (adapter: string, credentials: InstanceElement): Promise<void> => {
       await bpStore.set({ filename: filename(adapter), buffer: dump([credentials]) })
+      await bpStore.flush()
       log.info('set credentials for %s', adapter)
     },
   }

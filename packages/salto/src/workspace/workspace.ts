@@ -314,4 +314,10 @@ export class Workspace {
       })))
     )
   }
+
+  async flush(): Promise<void> {
+    await this.state.flush()
+    await this.blueprintsStore.flush()
+    await this.cache.flush()
+  }
 }

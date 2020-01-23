@@ -1,36 +1,41 @@
 import _ from 'lodash'
 import { logger } from '@salto/logging'
-import path from 'path'
 import * as parseResultSerializer from '../../serializer/parse_result'
-import { stat, mkdirp, writeFile, readTextFile } from '../../file'
 import { ParseResultCache, ParseResultKey } from '../cache'
 import { ParseResult } from '../../parser/parse'
+import { localDirectoryStore } from './dir_store'
 
 const log = logger(module)
 
+const CACHE_EXTENSION = '.bpc'
 export const localParseResultCache = (cacheDir: string): ParseResultCache => {
-  const resolveCacheFilePath = (key: ParseResultKey): string =>
-    path.join(cacheDir, _.replace(key.filename, /.bp$/, '.bpc'))
+  const dirStore = localDirectoryStore(cacheDir, `*${CACHE_EXTENSION}`)
+  const resolveCacheFileName = (key: ParseResultKey): string =>
+    _.replace(key.filename, /.bp$/, CACHE_EXTENSION)
 
   return {
-    put: async (key: ParseResultKey, value: ParseResult): Promise<void> => {
-      const filePath = resolveCacheFilePath(key)
-      await mkdirp(path.parse(filePath).dir)
-      return writeFile(filePath, parseResultSerializer.serialize(value))
-    },
+    put: async (key: ParseResultKey, value: ParseResult): Promise<void> =>
+      dirStore.set({
+        filename: resolveCacheFileName(key),
+        buffer: parseResultSerializer.serialize(value),
+      }),
 
     get: async (key: ParseResultKey): Promise<ParseResult | undefined> => {
-      const cacheFilePath = resolveCacheFilePath(key)
-      const cacheTimeMs = (await stat.notFoundAsUndefined(cacheFilePath))?.mtimeMs || -1
+      const cacheFileName = resolveCacheFileName(key)
+      const cacheTimeMs = await dirStore.mtimestamp(cacheFileName) || -1
       if ((cacheTimeMs > key.lastModified) || (cacheTimeMs === key.lastModified)) {
-        const fileContent = await readTextFile(cacheFilePath)
+        const fileContent = (await dirStore.get(cacheFileName))?.buffer
         try {
-          return parseResultSerializer.deserialize(fileContent)
+          return _.isUndefined(fileContent)
+            ? Promise.resolve(undefined)
+            : parseResultSerializer.deserialize(fileContent)
         } catch (err) {
-          log.debug('Failed to handle cache file "%o": %o', cacheFilePath, err)
+          log.debug('Failed to handle cache file "%o": %o', cacheFileName, err)
         }
       }
       return Promise.resolve(undefined)
     },
+
+    flush: dirStore.flush,
   }
 }

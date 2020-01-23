@@ -11,4 +11,5 @@ export default interface BlueprintsStore {
   get(filename: string): Promise<Blueprint | undefined>
   set(blueprint: Blueprint): Promise<void>
   delete(filename: string): Promise<void>
+  flush(): Promise<void>
 }

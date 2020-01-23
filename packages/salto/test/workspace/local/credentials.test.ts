@@ -22,16 +22,19 @@ describe('localCredentials', () => {
 
   const mockSet = jest.fn()
   const mockGet = jest.fn()
+  const mockFlush = jest.fn()
   const dumpedCredentials = { filename: `${adapter}.bp`, buffer: dump([creds]) }
 
   beforeEach(() => {
-    bpStoreMockLoad.mockReturnValue({ get: mockGet, set: mockSet })
+    bpStoreMockLoad.mockReturnValue({ get: mockGet, set: mockSet, flush: mockFlush })
   })
 
   it('should set new credentials', async () => {
     mockSet.mockResolvedValueOnce(true)
+    mockFlush.mockResolvedValue(true)
     await localCredentials('').set(adapter, creds)
     expect(mockSet).toHaveBeenCalledWith(dumpedCredentials)
+    expect(mockFlush).toHaveBeenCalledTimes(1)
   })
 
   it('should get credentials if exists', async () => {

@@ -457,4 +457,17 @@ describe('workspace', () => {
       }).severity).toBe('Warning')
     })
   })
+
+  describe('flush', () => {
+    it('should flush all data sources', async () => {
+      const mockFlush = jest.fn()
+      const flushable = { flush: mockFlush }
+      const workspace = createWorkspace()
+      _.set(workspace, 'state', flushable)
+      _.set(workspace, 'blueprintsStore', flushable)
+      _.set(workspace, 'cache', flushable)
+      await workspace.flush()
+      expect(mockFlush).toHaveBeenCalledTimes(3)
+    })
+  })
 })

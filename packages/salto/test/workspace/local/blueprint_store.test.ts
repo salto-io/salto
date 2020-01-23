@@ -60,16 +60,24 @@ describe('localBlueprintsStore', () => {
   })
 
   describe('set', () => {
+    const filename = 'inner/file'
+    const buffer = 'bla'
+    const bpStore = localBlueprintsStore('')
+
     it('writes a content with the right filename', async () => {
-      const filename = 'inner/file'
-      const buffer = 'bla'
       mockFileExists.mockResolvedValue(false)
       mockReplaceContents.mockResolvedValue(true)
       mockMkdir.mockResolvedValue(true)
-      await localBlueprintsStore('').set({ filename, buffer })
+      await bpStore.set({ filename, buffer })
+      expect(mockMkdir).not.toHaveBeenCalled()
+      expect(mockReplaceContents).not.toHaveBeenCalled()
+      await bpStore.flush()
       expect(mockMkdir.mock.calls[0][0]).toMatch('inner')
       expect(mockReplaceContents.mock.calls[0][0]).toMatch(filename)
       expect(mockReplaceContents.mock.calls[0][1]).toEqual(buffer)
+      mockReplaceContents.mockClear()
+      await bpStore.flush()
+      expect(mockReplaceContents).not.toHaveBeenCalled()
     })
   })
 })

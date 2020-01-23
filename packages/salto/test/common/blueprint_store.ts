@@ -50,5 +50,6 @@ export const mockBpsStore = (exclude: string[] = ['error.bp', 'dup.bp']): Bluepr
     get: jest.fn().mockImplementation((filename: string) => Promise.resolve(bps[filename])),
     set: jest.fn().mockImplementation(() => Promise.resolve()),
     delete: jest.fn().mockImplementation(() => Promise.resolve()),
+    flush: jest.fn().mockImplementation(() => Promise.resolve()),
   }
 )

@@ -8,6 +8,7 @@ const mockWs = {
   getWorkspaceErrors: jest.fn(),
   updateBlueprints: jest.fn(),
   isEmpty: jest.fn(),
+  flush: jest.fn(),
 } as unknown as Workspace
 jest.mock('salto', () => ({
   ...jest.requireActual('salto'),
@@ -138,6 +139,7 @@ describe('workspace', () => {
           ({ change, serviceChange: change })))
       expect(result).toBeTruthy()
       expect(mockWs.updateBlueprints).toHaveBeenCalledWith(...dummyChanges)
+      expect(mockWs.flush).toHaveBeenCalledTimes(1)
       expect(mockWs.hasErrors).toHaveBeenCalled()
     })
   })

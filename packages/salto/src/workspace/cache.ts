@@ -1,8 +1,8 @@
 import { ParseResult } from '../parser/parse'
 
-export interface AsyncCache<K, V> {
-    get(key: K): Promise<V | undefined>
-    put(key: K, value: V): Promise<void>
+type AsyncCache<K, V> = {
+  get(key: K): Promise<V | undefined>
+  put(key: K, value: V): Promise<void>
 }
 
 export type ParseResultKey = {
@@ -10,4 +10,5 @@ export type ParseResultKey = {
   lastModified: number
 }
 
-export type ParseResultCache = AsyncCache<ParseResultKey, ParseResult>
+export type ParseResultCache = AsyncCache<ParseResultKey, ParseResult> &
+{ flush: () => Promise<void> }

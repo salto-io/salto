@@ -74,6 +74,7 @@ export const updateWorkspace = async (ws: Workspace, cliOutput: CliOutput,
       log.warn(formatWorkspaceErrors(wsErrors))
       return false
     }
+    await ws.flush()
     log.debug('finished to updating workspace blueprints')
   }
   return true

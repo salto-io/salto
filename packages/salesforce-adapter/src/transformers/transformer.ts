@@ -998,9 +998,9 @@ const getDefaultValue = (field: Field): PrimitiveValue | undefined => {
 
 // The following method is used during the fetchy process and is used in building the objects
 // and their fields described in the blueprint
-export const getSObjectFieldElement = (parent: Element, field: Field,
+export const getSObjectFieldElement = (parentElemID: ElemID, field: Field,
   parentServiceIds: ServiceIds): TypeField => {
-  const fieldApiName = [apiName(parent), field.name].join(API_NAME_SEPERATOR)
+  const fieldApiName = [parentServiceIds[API_NAME], field.name].join(API_NAME_SEPERATOR)
   const serviceIds = {
     [ADAPTER]: SALESFORCE,
     [API_NAME]: fieldApiName,
@@ -1119,7 +1119,7 @@ export const getSObjectFieldElement = (parent: Element, field: Field,
   }
 
   const fieldName = Types.getElemId(field.name, true, serviceIds).name
-  return new TypeField(parent.elemID, fieldName, bpFieldType, annotations)
+  return new TypeField(parentElemID, fieldName, bpFieldType, annotations)
 }
 
 export const fromMetadataInfo = (info: MetadataInfo): Values => info

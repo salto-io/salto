@@ -8,17 +8,17 @@ import {
 import { MetadataInfo, RetrieveResult } from 'jsforce'
 import { collections } from '@salto/lowerdash'
 import * as constants from '../src/constants'
-import { INSTANCE_TYPE_FIELD, transformFieldAnnotations } from '../src/filters/custom_objects'
-import { STANDARD_VALUE_SET, STANDARD_VALUE } from '../src/filters/standard_value_sets'
+import {
+  annotationsFileName, customFieldsFileName,
+  INSTANCE_TYPE_FIELD,
+  standardFieldsFileName,
+  transformFieldAnnotations,
+} from '../src/filters/custom_objects'
+import { STANDARD_VALUE, STANDARD_VALUE_SET } from '../src/filters/standard_value_sets'
 import { GLOBAL_VALUE_SET } from '../src/filters/global_value_sets'
 import {
-  CustomObject,
-  ProfileInfo,
-  FieldPermissions,
-  ObjectPermissions,
-  CustomField,
+  CustomField, CustomObject, FieldPermissions, FilterItem, ObjectPermissions, ProfileInfo,
   TopicsForObjectsInfo,
-  FilterItem,
 } from '../src/client/types'
 import {
   Types, fromMetadataInfo, metadataType, apiName, bpCase, formulaTypeName,
@@ -82,6 +82,29 @@ describe('Salesforce adapter E2E with real account', () => {
       }
     }
     return true
+  }
+
+  const findLeadObjectWithAnnotation = (annotationName: string): ObjectType | undefined => {
+    const leadObjects = findElements(result, 'Lead') as ObjectType[]
+    return leadObjects.find(obj => _.has(obj.annotations, annotationName))
+  }
+
+  const findCustomFieldsObject = (elements: Element[], name: string): ObjectType => {
+    const customObjects = findElements(elements, name) as ObjectType[]
+    return customObjects
+      .find(obj => obj.path?.slice(-1)[0] === customFieldsFileName(name)) as ObjectType
+  }
+
+  const findStandardFieldsObject = (elements: Element[], name: string): ObjectType => {
+    const customObjects = findElements(elements, name) as ObjectType[]
+    return customObjects
+      .find(obj => obj.path?.slice(-1)[0] === standardFieldsFileName(name)) as ObjectType
+  }
+
+  const findAnnotationsObject = (elements: Element[], name: string): ObjectType => {
+    const customObjects = findElements(elements, name) as ObjectType[]
+    return customObjects
+      .find(obj => obj.path?.slice(-1)[0] === annotationsFileName(name)) as ObjectType
   }
 
   const gvsName = 'TestGlobalValueSet'
@@ -983,8 +1006,7 @@ describe('Salesforce adapter E2E with real account', () => {
     describe('should fetch sobject', () => {
       it('should fetch sobject fields', async () => {
         // Check few field types on lead object
-        const lead = findElements(result, 'Lead')[0] as ObjectType
-
+        const lead = findStandardFieldsObject(result, 'Lead')
         // Test few possible types
         expect(lead.fields.Address.type.elemID).toEqual(Types.compoundDataTypes.Address.elemID)
         expect(lead.fields.Description.type.elemID).toEqual(
@@ -1049,94 +1071,67 @@ describe('Salesforce adapter E2E with real account', () => {
       })
 
       describe('should fetch sobject annotations from the custom object instance', () => {
+        let leadAnnotationsObj: ObjectType
+        beforeAll(() => {
+          leadAnnotationsObj = findAnnotationsObject(result, 'Lead')
+        })
+
         describe('independent annotations', () => {
+          const verifyIndependentAnnotationFetch = (annotationName: string,
+            expectedFullName: string, expectedValues: Values): void => {
+            const leadIndependentAnnotationObj = findLeadObjectWithAnnotation(annotationName)
+              ?? findElements(result, 'Lead')[0] as ObjectType
+
+            expect(leadAnnotationsObj.annotationTypes).toHaveProperty(annotationName)
+
+            const independentAnnotations = leadIndependentAnnotationObj.annotations[annotationName]
+            expect(independentAnnotations).toBeDefined()
+            const independentAnnotation = makeArray(independentAnnotations)
+              .find(anno => anno[constants.INSTANCE_FULL_NAME_FIELD] === expectedFullName)
+            Object.entries(expectedValues)
+              .forEach(([key, val]) => expect(independentAnnotation[key]).toEqual(val))
+          }
+
           it('should fetch validation rules', async () => {
-            const lead = findElements(result, 'Lead')[0] as ObjectType
-            expect(lead.annotationTypes).toHaveProperty(CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS
-              .VALIDATION_RULES)
-            expect(lead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.VALIDATION_RULES])
-              .toBeDefined()
-            const validationRule = makeArray(
-              lead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.VALIDATION_RULES]
-            ).find(rule => rule[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.TestValidationRule')
-            expect(validationRule.active).toBeTruthy()
+            verifyIndependentAnnotationFetch(CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.VALIDATION_RULES,
+              'Lead.TestValidationRule', { active: true })
           })
 
           it('should fetch business processes', async () => {
-            const lead = findElements(result, 'Lead')[0] as ObjectType
-            expect(lead.annotationTypes[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.BUSINESS_PROCESSES])
-              .toBeDefined()
-            expect(lead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.BUSINESS_PROCESSES])
-              .toBeDefined()
-            const businessProcess = makeArray(
-              lead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.BUSINESS_PROCESSES]
-            ).find(process =>
-              process[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.TestBusinessProcess')
-            expect(businessProcess.isActive).toBeTruthy()
+            verifyIndependentAnnotationFetch(
+              CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.BUSINESS_PROCESSES, 'Lead.TestBusinessProcess',
+              { isActive: true }
+            )
           })
 
           it('should fetch record types', async () => {
-            const lead = findElements(result, 'Lead')[0] as ObjectType
-            expect(lead.annotationTypes[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.RECORD_TYPES])
-              .toBeDefined()
-            expect(lead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.RECORD_TYPES])
-              .toBeDefined()
-            const recordType = makeArray(
-              lead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.RECORD_TYPES]
-            ).find(record => record[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.TestRecordType')
-            expect(recordType.active).toBeTruthy()
-            expect(recordType.businessProcess).toEqual('TestBusinessProcess')
+            verifyIndependentAnnotationFetch(CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.RECORD_TYPES,
+              'Lead.TestRecordType', { active: true, businessProcess: 'TestBusinessProcess' })
           })
 
           it('should fetch web links', async () => {
-            const lead = findElements(result, 'Lead')[0] as ObjectType
-            expect(lead.annotationTypes[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.WEB_LINKS])
-              .toBeDefined()
-            expect(lead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.WEB_LINKS])
-              .toBeDefined()
-            const webLink = makeArray(lead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS
-              .WEB_LINKS])
-              .find(link => link[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.TestWebLink')
-            expect(webLink.availability).toEqual('online')
+            verifyIndependentAnnotationFetch(CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.WEB_LINKS,
+              'Lead.TestWebLink', { availability: 'online' })
           })
 
           it('should fetch list views', async () => {
-            const lead = findElements(result, 'Lead')[0] as ObjectType
-            expect(lead.annotationTypes[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.LIST_VIEWS])
-              .toBeDefined()
-            expect(lead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.LIST_VIEWS]).toBeDefined()
-            const listView = makeArray(lead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS
-              .LIST_VIEWS])
-              .find(view => view[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.TestListView')
-            expect(listView.label).toEqual('E2E Fetch ListView')
+            verifyIndependentAnnotationFetch(CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.LIST_VIEWS,
+              'Lead.TestListView', { label: 'E2E Fetch ListView' })
           })
 
           it('should fetch field sets', async () => {
-            const lead = findElements(result, 'Lead')[0] as ObjectType
-            expect(lead.annotationTypes[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.FIELD_SETS])
-              .toBeDefined()
-            expect(lead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.FIELD_SETS]).toBeDefined()
-            const fieldSet = makeArray(lead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS
-              .FIELD_SETS])
-              .find(field => field[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.TestFieldSet')
-            expect(fieldSet.label).toEqual('E2E Fetch FieldSet')
+            verifyIndependentAnnotationFetch(CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.FIELD_SETS,
+              'Lead.TestFieldSet', { label: 'E2E Fetch FieldSet' })
           })
 
           it('should fetch compact layouts', async () => {
-            const lead = findElements(result, 'Lead')[0] as ObjectType
-            expect(lead.annotationTypes[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.COMPACT_LAYOUTS])
-              .toBeDefined()
-            expect(lead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.COMPACT_LAYOUTS])
-              .toBeDefined()
-            const compactLayouts = makeArray(
-              lead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.COMPACT_LAYOUTS]
-            ).find(layout => layout[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.TestCompactLayout')
-            expect(compactLayouts.label).toEqual('E2E Fetch CompactLayout')
+            verifyIndependentAnnotationFetch(CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.COMPACT_LAYOUTS,
+              'Lead.TestCompactLayout', { label: 'E2E Fetch CompactLayout' })
           })
         })
 
         it('should fetch relevant simple annotations for standard object', () => {
-          const lead = findElements(result, 'Lead')[0] as ObjectType
+          const lead = findAnnotationsObject(result, 'Lead')
           expect(lead.annotationTypes).toHaveProperty('enableFeeds')
           expect(lead.annotations.enableFeeds).toBeDefined()
 
@@ -1145,7 +1140,7 @@ describe('Salesforce adapter E2E with real account', () => {
         })
 
         it('should fetch relevant simple annotations for custom object', () => {
-          const customObj = findElements(result, 'TestFields__c')[0] as ObjectType
+          const customObj = findAnnotationsObject(result, 'TestFields__c')
           expect(customObj.annotationTypes).toHaveProperty('enableFeeds')
           expect(customObj.annotations.enableFeeds).toBeDefined()
           expect(customObj.annotationTypes).toHaveProperty('deploymentStatus')
@@ -2453,11 +2448,10 @@ describe('Salesforce adapter E2E with real account', () => {
       }
 
       describe('fetch', () => {
-        let customObject: Element
+        let customFieldsObject: ObjectType
 
-        it('fetch customObject', () => {
-          [customObject] = findElements(result, customObjectWithFieldsName)
-          expect(customObject).toBeDefined()
+        beforeAll(() => {
+          customFieldsObject = findCustomFieldsObject(result, customObjectWithFieldsName)
         })
 
         describe('fetch fields', () => {
@@ -2473,7 +2467,7 @@ describe('Salesforce adapter E2E with real account', () => {
 
           let fields: Record<string, Field>
           beforeAll(() => {
-            fields = (customObject as ObjectType).fields
+            fields = customFieldsObject.fields
           })
 
           it('currency', () => {
@@ -2656,15 +2650,15 @@ describe('Salesforce adapter E2E with real account', () => {
         const customObjectName = 'TestAddFields__c'
         const testAddFieldPrefix = 'TestAdd'
         const mockElemID = new ElemID(constants.SALESFORCE, 'test add object with field types')
-        let customObject: ObjectType
+        let customFieldsObject: ObjectType
         let post: ObjectType
         let objectInfo: CustomObject
 
         beforeAll(async () => {
-          customObject = findElements(result, customObjectWithFieldsName)[0] as ObjectType
+          customFieldsObject = findCustomFieldsObject(result, customObjectWithFieldsName)
           const newCustomObject = new ObjectType({
             elemID: mockElemID,
-            fields: _(Object.values(customObject.fields))
+            fields: _(Object.values(customFieldsObject.fields))
               .map(field => {
                 const name = [
                   masterDetailFieldName,
@@ -3269,15 +3263,15 @@ describe('Salesforce adapter E2E with real account', () => {
         }
 
         beforeAll(async () => {
-          const customObject = findElements(result, customObjectWithFieldsName)[0] as ObjectType
-          const newCustomObject = customObject.clone()
-          updateAnnotations(newCustomObject, customObject, fieldNamesToAnnotations)
-          await adapter.update(customObject,
+          const customFieldsObject = findCustomFieldsObject(result, customObjectWithFieldsName)
+          const newCustomObject = customFieldsObject.clone()
+          updateAnnotations(newCustomObject, customFieldsObject, fieldNamesToAnnotations)
+          await adapter.update(customFieldsObject,
             newCustomObject,
             Object.keys(fieldNamesToAnnotations)
               .map(f => ({
                 action: 'modify',
-                data: { before: customObject.fields[f], after: newCustomObject.fields[f] },
+                data: { before: customFieldsObject.fields[f], after: newCustomObject.fields[f] },
               })))
           objectInfo = (
             await client.readMetadata(
@@ -4279,22 +4273,26 @@ describe('Salesforce adapter E2E with real account', () => {
         Promise<void> => {
         if (await objectExists(type, fullName)) {
           await client.delete(type, fullName)
-          const lead = findElements(result, 'Lead')[0] as ObjectType
-          lead.annotations[annotationName] = makeArray(lead.annotations[annotationName])
-            .filter(rule => rule[constants.INSTANCE_FULL_NAME_FIELD] !== fullName)
+          const leadObjWithAnnotations = findLeadObjectWithAnnotation(annotationName)
+          if (leadObjWithAnnotations) {
+            leadObjWithAnnotations.annotations[annotationName] = makeArray(
+              leadObjWithAnnotations.annotations[annotationName]
+            ).filter(val => val[constants.INSTANCE_FULL_NAME_FIELD] !== fullName)
+          }
         }
       }
 
       describe('validation rules manipulations', () => {
         beforeAll(async () => {
-          await removeIfAlreadyExists(
-            'ValidationRule', 'Lead.MyValidationRule', CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.VALIDATION_RULES,
-          )
+          await removeIfAlreadyExists('ValidationRule', 'Lead.MyValidationRule',
+            CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.VALIDATION_RULES)
         })
 
         describe('create validation rule', () => {
           it('should create validation rule', async () => {
-            const oldLead = findElements(result, 'Lead')[0] as ObjectType
+            const oldLead = findLeadObjectWithAnnotation(
+              CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.VALIDATION_RULES
+            ) ?? findElements(result, 'Lead')[0] as ObjectType
             const newLead = oldLead.clone()
             newLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.VALIDATION_RULES] = [{
               [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead.MyValidationRule',
@@ -4310,16 +4308,16 @@ describe('Salesforce adapter E2E with real account', () => {
 
             expect(await objectExists('ValidationRule', 'Lead.MyValidationRule')).toBeTruthy()
             // to save another fetch, we set the new validation rule on the old object
-            const newValidations = newLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS
-              .VALIDATION_RULES]
-            oldLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS
-              .VALIDATION_RULES] = newValidations
+            oldLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.VALIDATION_RULES] = newLead
+              .annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.VALIDATION_RULES]
           })
         })
 
         describe('update validation rule', () => {
           it('should update validation rule', async () => {
-            const oldLead = findElements(result, 'Lead')[0] as ObjectType
+            const oldLead = findLeadObjectWithAnnotation(
+              CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.VALIDATION_RULES
+            ) as ObjectType
             const newLead = oldLead.clone()
             const validationRuleToUpdate = makeArray(
               newLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.VALIDATION_RULES]
@@ -4341,7 +4339,9 @@ describe('Salesforce adapter E2E with real account', () => {
 
         describe('delete validation rule', () => {
           it('should delete validation rule', async () => {
-            const oldLead = findElements(result, 'Lead')[0] as ObjectType
+            const oldLead = findLeadObjectWithAnnotation(
+              CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.VALIDATION_RULES
+            ) as ObjectType
             const newLead = oldLead.clone()
             newLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.VALIDATION_RULES] = makeArray(
               newLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.VALIDATION_RULES],
@@ -4363,9 +4363,11 @@ describe('Salesforce adapter E2E with real account', () => {
 
         describe('create web link', () => {
           it('should create web link', async () => {
-            const oldLead = findElements(result, 'Lead')[0] as ObjectType
+            const oldLead = findLeadObjectWithAnnotation(
+              CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.WEB_LINKS
+            ) ?? findElements(result, 'Lead')[0] as ObjectType
             const newLead = oldLead.clone()
-            newLead.annotations[constants.CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.WEB_LINKS] = [{
+            newLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.WEB_LINKS] = [{
               [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead.MyWebLink',
               availability: 'online',
               description: 'My Web Link',
@@ -4389,18 +4391,19 @@ describe('Salesforce adapter E2E with real account', () => {
 
             expect(await objectExists('WebLink', 'Lead.MyWebLink')).toBeTruthy()
             // to save another fetch, we set the new web link on the old object
-            const links = newLead.annotations[constants.CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS
-              .WEB_LINKS]
-            oldLead.annotations[constants.CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.WEB_LINKS] = links
+            oldLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.WEB_LINKS] = newLead
+              .annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.WEB_LINKS]
           })
         })
 
         describe('update web link', () => {
           it('should update web link', async () => {
-            const oldLead = findElements(result, 'Lead')[0] as ObjectType
+            const oldLead = findLeadObjectWithAnnotation(
+              CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.WEB_LINKS
+            ) as ObjectType
             const newLead = oldLead.clone()
             const webLinkToUpdate = makeArray(
-              newLead.annotations[constants.CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.WEB_LINKS]
+              newLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.WEB_LINKS]
             ).find(link => link[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.MyWebLink')
             expect(webLinkToUpdate).toBeDefined()
             webLinkToUpdate.description = 'My Updated Web Link'
@@ -4416,11 +4419,13 @@ describe('Salesforce adapter E2E with real account', () => {
 
         describe('delete web link', () => {
           it('should delete web link', async () => {
-            const oldLead = findElements(result, 'Lead')[0] as ObjectType
+            const oldLead = findLeadObjectWithAnnotation(
+              CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.WEB_LINKS
+            ) as ObjectType
             const newLead = oldLead.clone()
-            newLead.annotations[constants.CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS
+            newLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS
               .WEB_LINKS] = makeArray(
-              newLead.annotations[constants.CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.WEB_LINKS]
+              newLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.WEB_LINKS]
             ).filter(link => link[constants.INSTANCE_FULL_NAME_FIELD] !== 'Lead.MyWebLink')
 
             await adapter.update(oldLead, newLead,
@@ -4439,7 +4444,9 @@ describe('Salesforce adapter E2E with real account', () => {
 
         describe('create list view', () => {
           it('should create list view', async () => {
-            const oldLead = findElements(result, 'Lead')[0] as ObjectType
+            const oldLead = findLeadObjectWithAnnotation(
+              CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.LIST_VIEWS
+            ) ?? findElements(result, 'Lead')[0] as ObjectType
             const newLead = oldLead.clone()
             newLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.LIST_VIEWS] = [{
               [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead.MyListView',
@@ -4457,14 +4464,16 @@ describe('Salesforce adapter E2E with real account', () => {
 
             expect(await objectExists('ListView', 'Lead.MyListView')).toBeTruthy()
             // to save another fetch, we set the new list view on the old object
-            const newLists = newLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.LIST_VIEWS]
-            oldLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.LIST_VIEWS] = newLists
+            oldLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.LIST_VIEWS] = newLead
+              .annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.LIST_VIEWS]
           })
         })
 
         describe('update list view', () => {
           it('should update list view', async () => {
-            const oldLead = findElements(result, 'Lead')[0] as ObjectType
+            const oldLead = findLeadObjectWithAnnotation(
+              CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.LIST_VIEWS
+            ) as ObjectType
             const newLead = oldLead.clone()
             const listViewToUpdate = makeArray(
               newLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.LIST_VIEWS]
@@ -4483,7 +4492,9 @@ describe('Salesforce adapter E2E with real account', () => {
 
         describe('delete list view', () => {
           it('should delete list view', async () => {
-            const oldLead = findElements(result, 'Lead')[0] as ObjectType
+            const oldLead = findLeadObjectWithAnnotation(
+              CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.LIST_VIEWS
+            ) as ObjectType
             const newLead = oldLead.clone()
             newLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.LIST_VIEWS] = makeArray(
               newLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.LIST_VIEWS]
@@ -4505,10 +4516,11 @@ describe('Salesforce adapter E2E with real account', () => {
 
         describe('create compact layout', () => {
           it('should create compact layout', async () => {
-            const oldLead = findElements(result, 'Lead')[0] as ObjectType
+            const oldLead = findLeadObjectWithAnnotation(
+              CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.COMPACT_LAYOUTS
+            ) ?? findElements(result, 'Lead')[0] as ObjectType
             const newLead = oldLead.clone()
-            newLead.annotations[constants.CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS
-              .COMPACT_LAYOUTS] = [{
+            newLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.COMPACT_LAYOUTS] = [{
               [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead.MyCompactLayout',
               label: 'My Compact Layout',
               fields: [
@@ -4523,19 +4535,19 @@ describe('Salesforce adapter E2E with real account', () => {
 
             expect(await objectExists('CompactLayout', 'Lead.MyCompactLayout')).toBeTruthy()
             // to save another fetch, we set the new compact layout on the old object
-            const layouts = newLead.annotations[constants.CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS
-              .COMPACT_LAYOUTS]
-            oldLead.annotations[constants.CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS
-              .COMPACT_LAYOUTS] = layouts
+            oldLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.COMPACT_LAYOUTS] = newLead
+              .annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.COMPACT_LAYOUTS]
           })
         })
 
         describe('update compact layout', () => {
           it('should update compact layout', async () => {
-            const oldLead = findElements(result, 'Lead')[0] as ObjectType
+            const oldLead = findLeadObjectWithAnnotation(
+              CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.COMPACT_LAYOUTS
+            ) as ObjectType
             const newLead = oldLead.clone()
             const compactLayoutToUpdate = makeArray(
-              newLead.annotations[constants.CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.COMPACT_LAYOUTS]
+              newLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.COMPACT_LAYOUTS]
             ).find(layout => layout[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.MyCompactLayout')
             expect(compactLayoutToUpdate).toBeDefined()
             compactLayoutToUpdate.label = 'My Updated Compact Layout'
@@ -4551,11 +4563,13 @@ describe('Salesforce adapter E2E with real account', () => {
 
         describe('delete compact layout', () => {
           it('should delete compact layout', async () => {
-            const oldLead = findElements(result, 'Lead')[0] as ObjectType
+            const oldLead = findLeadObjectWithAnnotation(
+              CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.COMPACT_LAYOUTS
+            ) as ObjectType
             const newLead = oldLead.clone()
-            newLead.annotations[constants.CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS
+            newLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS
               .COMPACT_LAYOUTS] = makeArray(
-              newLead.annotations[constants.CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.COMPACT_LAYOUTS]
+              newLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.COMPACT_LAYOUTS]
             ).filter(layout => layout[constants.INSTANCE_FULL_NAME_FIELD] !== 'Lead.MyCompactLayout')
 
             await adapter.update(oldLead, newLead,
@@ -4574,9 +4588,11 @@ describe('Salesforce adapter E2E with real account', () => {
 
         describe('create field set', () => {
           it('should create field set', async () => {
-            const oldLead = findElements(result, 'Lead')[0] as ObjectType
+            const oldLead = findLeadObjectWithAnnotation(
+              CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.FIELD_SETS
+            ) ?? findElements(result, 'Lead')[0] as ObjectType
             const newLead = oldLead.clone()
-            newLead.annotations[constants.CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.FIELD_SETS] = [{
+            newLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.FIELD_SETS] = [{
               [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead.MyFieldSet',
               description: 'My Field Set',
               displayedFields: [
@@ -4599,19 +4615,19 @@ describe('Salesforce adapter E2E with real account', () => {
 
             expect(await objectExists('FieldSet', 'Lead.MyFieldSet')).toBeTruthy()
             // to save another fetch, we set the new field sets on the old object
-            const fieldSets = newLead.annotations[constants.CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS
-              .FIELD_SETS]
-            oldLead.annotations[constants.CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS
-              .FIELD_SETS] = fieldSets
+            oldLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.FIELD_SETS] = newLead
+              .annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.FIELD_SETS]
           })
         })
 
         describe('update field set', () => {
           it('should update field set', async () => {
-            const oldLead = findElements(result, 'Lead')[0] as ObjectType
+            const oldLead = findLeadObjectWithAnnotation(
+              CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.FIELD_SETS
+            ) as ObjectType
             const newLead = oldLead.clone()
             const fieldSetToUpdate = makeArray(
-              newLead.annotations[constants.CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.FIELD_SETS]
+              newLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.FIELD_SETS]
             ).find(fieldSet => fieldSet[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.MyFieldSet')
             expect(fieldSetToUpdate).toBeDefined()
             fieldSetToUpdate.description = 'My Updated Field Set'
@@ -4627,9 +4643,11 @@ describe('Salesforce adapter E2E with real account', () => {
 
         describe('delete field set', () => {
           it('should delete field set', async () => {
-            const oldLead = findElements(result, 'Lead')[0] as ObjectType
+            const oldLead = findLeadObjectWithAnnotation(
+              CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.FIELD_SETS
+            ) as ObjectType
             const newLead = oldLead.clone()
-            newLead.annotations[constants.CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS
+            newLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS
               .FIELD_SETS] = makeArray(newLead.annotations[constants
               .CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.FIELD_SETS])
               .filter(fieldSet =>
@@ -4648,10 +4666,12 @@ describe('Salesforce adapter E2E with real account', () => {
         // Thus, we only update the existing BusinessProcess and not create new one.
         describe('update business process', () => {
           it('should update business process', async () => {
-            const oldLead = findElements(result, 'Lead')[0] as ObjectType
+            const oldLead = findLeadObjectWithAnnotation(
+              CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.BUSINESS_PROCESSES
+            ) as ObjectType
             const newLead = oldLead.clone()
-            const businessProcessToUpdate = makeArray(newLead.annotations[constants
-              .CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.BUSINESS_PROCESSES])
+            const businessProcessToUpdate = makeArray(newLead.annotations[
+              CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.BUSINESS_PROCESSES])
               .find(process =>
                 process[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.TestBusinessProcess')
             expect(businessProcessToUpdate).toBeDefined()
@@ -4674,10 +4694,12 @@ describe('Salesforce adapter E2E with real account', () => {
         // Thus, we only update the existing RecordType and not create new one.
         describe('update record type', () => {
           it('should update record type', async () => {
-            const oldLead = findElements(result, 'Lead')[0] as ObjectType
+            const oldLead = findLeadObjectWithAnnotation(
+              CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.RECORD_TYPES
+            ) as ObjectType
             const newLead = oldLead.clone()
             const recordTypeToUpdate = makeArray(
-              newLead.annotations[constants.CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.RECORD_TYPES]
+              newLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.RECORD_TYPES]
             ).find(record => record[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.TestRecordType')
             expect(recordTypeToUpdate).toBeDefined()
             const description = `RecordType that should be fetched in e2e test updated ${String(Date.now()).substring(6)}`
@@ -4701,7 +4723,7 @@ describe('Salesforce adapter E2E with real account', () => {
           annotations: {
             [constants.API_NAME]: customObjectName,
             [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
-            [constants.CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.WEB_LINKS]: {
+            [CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.WEB_LINKS]: {
               [constants.INSTANCE_FULL_NAME_FIELD]: apiNameAnno(customObjectName, 'WebLink'),
               availability: 'online',
               description: 'My Web Link',
@@ -4719,7 +4741,7 @@ describe('Salesforce adapter E2E with real account', () => {
               protected: false,
               url: `!${customObjectName}.CreatedBy} = "MyName"`,
             },
-            [constants.CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.FIELD_SETS]: [
+            [CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.FIELD_SETS]: [
               {
                 [constants.INSTANCE_FULL_NAME_FIELD]: apiNameAnno(customObjectName, 'FieldSet1'),
                 description: 'My Field Set 1',
@@ -4762,7 +4784,7 @@ describe('Salesforce adapter E2E with real account', () => {
         }
         const created = await adapter.add(objectWithInnerTypes)
         expect(await objectExists(constants.CUSTOM_OBJECT, customObjectName)).toBeTruthy()
-        const webLinks = created.annotations[constants.CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS
+        const webLinks = created.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS
           .WEB_LINKS]
         expect(webLinks[constants.INSTANCE_FULL_NAME_FIELD]).toEqual(
           apiNameAnno(customObjectName, 'WebLink')

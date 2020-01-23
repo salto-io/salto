@@ -1,4 +1,9 @@
 type salesforce_NewObjectName {
+  annotations {
+    serviceid metadata_type {
+    }
+  }
+  metadata_type = "CustomObject"
   salesforce_Text Alpha {
     label = "Alpha"
     _required = false

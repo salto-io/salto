@@ -2,7 +2,7 @@ import { file, Plan, Workspace } from 'salto'
 import _ from 'lodash'
 import {
   ActionName, Change, ElemID, findElement, getChangeElement, InstanceElement, ObjectType, Values,
-  Element,
+  Element, TypeMap,
 } from 'adapter-api'
 import wu from 'wu'
 import { command as fetch } from '../../src/commands/fetch'
@@ -81,9 +81,6 @@ export const verifyChanges = (plan: Plan,
       && getChangedElementName(change) === expectedChange.element))).toBeTruthy()
 }
 
-const findObject = (elements: ReadonlyArray<Element>, adapter: string, name: string): ObjectType =>
-  findElement(elements, new ElemID(adapter, name)) as ObjectType
-
 const findInstance = (elements: ReadonlyArray<Element>, adapter: string, typeName: string,
   name: string): InstanceElement =>
   findElement(elements,
@@ -92,19 +89,20 @@ const findInstance = (elements: ReadonlyArray<Element>, adapter: string, typeNam
 export const verifyInstance = (elements: ReadonlyArray<Element>, adapter: string, typeName: string,
   name: string, expectedValues: Values): void => {
   const newInstance = findInstance(elements, adapter, typeName, name)
-  Object.entries(expectedValues).forEach(entry =>
-    expect(newInstance.value[entry[0]]).toEqual(entry[1]))
+  Object.entries(expectedValues).forEach(([key, value]) =>
+    expect(newInstance.value[key]).toEqual(value))
 }
 
-export const verifyObject = (elements: ReadonlyArray<Element>, adapter: string, name: string,
-  expectedAnnotations: Values, expectedFieldAnnotations: Record<string, Values>): void => {
-  const newObject = findObject(elements, adapter, name)
-  Object.entries(expectedAnnotations).forEach(entry =>
-    expect(newObject.annotations[entry[0]]).toEqual(entry[1]))
-  Object.entries(expectedFieldAnnotations).forEach(fieldNameToAnnotations => {
-    const fieldName = fieldNameToAnnotations[0]
-    const fieldAnnotations = fieldNameToAnnotations[1]
-    expect(newObject.fields[fieldName].annotations[fieldAnnotations[0]])
-      .toEqual(fieldAnnotations[1])
+export const verifyObject = (elements: ReadonlyArray<Element>, adapter: string, typeName: string,
+  expectedAnnotationTypes: TypeMap, expectedAnnotations: Values,
+  expectedFieldAnnotations: Record<string, Values>): ObjectType => {
+  const object = findElement(elements, new ElemID(adapter, typeName)) as ObjectType
+  Object.entries(expectedAnnotationTypes).forEach(([key, value]) =>
+    expect(object.annotationTypes[key]).toEqual(value))
+  Object.entries(expectedAnnotations).forEach(([key, value]) =>
+    expect(object.annotations[key]).toEqual(value))
+  Object.entries(expectedFieldAnnotations).forEach(([fieldName, fieldAnnotation]) => {
+    expect(object.fields[fieldName].annotations[fieldAnnotation[0]]).toEqual(fieldAnnotation[1])
   })
+  return object
 }

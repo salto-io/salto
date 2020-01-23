@@ -162,6 +162,7 @@ export const VALUE_SETTINGS_FIELDS = {
 }
 
 export const VALUE_SET_DEFINITION_FIELDS = {
+  SORTED: 'sorted',
   VALUE: 'value',
 }
 

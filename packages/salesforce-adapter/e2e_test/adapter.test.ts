@@ -350,16 +350,17 @@ describe('Salesforce adapter E2E with real account', () => {
           controllingField: picklistFieldName,
           restricted: false,
           valueSetDefinition: {
+            sorted: true,
             value: [
-              {
-                default: true,
-                fullName: 'DO',
-                label: 'DO',
-              },
               {
                 default: false,
                 fullName: 'RE',
                 label: 'RE',
+              },
+              {
+                default: true,
+                fullName: 'DO',
+                label: 'DO',
               },
             ],
           },

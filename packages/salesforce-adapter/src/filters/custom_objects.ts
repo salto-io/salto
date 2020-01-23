@@ -202,6 +202,9 @@ const transfromAnnotationsNames = (fields: Values, parentApiName: string): Value
             annotations[FIELD_ANNOTATIONS.VALUE_SET] = valueSetDefinition[
               VALUE_SET_DEFINITION_FIELDS.VALUE
             ]
+            annotations[VALUE_SET_DEFINITION_FIELDS.SORTED] = valueSetDefinition[
+              VALUE_SET_DEFINITION_FIELDS.SORTED
+            ] || false
             annotations[FIELD_ANNOTATIONS.RESTRICTED] = v[VALUE_SET_FIELDS.RESTRICTED] || false
           }
         }

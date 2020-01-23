@@ -656,6 +656,7 @@ describe('Custom Objects filter', () => {
               },
             ],
             [VALUE_SET_FIELDS.VALUE_SET_DEFINITION]: {
+              [VALUE_SET_DEFINITION_FIELDS.SORTED]: false,
               [VALUE_SET_DEFINITION_FIELDS.VALUE]: [
                 {
                   [CUSTOM_VALUE.FULL_NAME]: 'Val1',
@@ -730,7 +731,9 @@ describe('Custom Objects filter', () => {
             createValueSetEntry('MAYBE', false, 'MAYBE', false),
           ])
         expect(leadObjectType.fields.MyPicklist.annotations[FIELD_ANNOTATIONS.RESTRICTED])
-          .toBeTruthy()
+          .toBe(true)
+        expect(leadObjectType.fields.MyPicklist.annotations[VALUE_SET_DEFINITION_FIELDS.SORTED])
+          .toBe(false)
         expect(leadObjectType.fields.MyPicklist
           .annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(true)
 

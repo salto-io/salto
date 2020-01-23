@@ -23,6 +23,7 @@ import {
   VALUE_SET_FIELDS, COMPOUND_FIELD_TYPE_NAMES, ANNOTATION_TYPE_NAMES, FIELD_SOAP_TYPE_NAMES,
   RECORDS_PATH, SETTINGS_PATH, TYPES_PATH, SUBTYPES_PATH, INSTALLED_PACKAGES_PATH,
   CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS,
+  VALUE_SET_DEFINITION_FIELDS,
 } from '../constants'
 import SalesforceClient from '../client/client'
 
@@ -505,6 +506,7 @@ export class Types {
         [FIELD_ANNOTATIONS.VALUE_SET]: Types.valueSetType,
         [FIELD_ANNOTATIONS.RESTRICTED]: BuiltinTypes.BOOLEAN,
         [VALUE_SET_FIELDS.VALUE_SET_NAME]: BuiltinTypes.STRING,
+        [VALUE_SET_DEFINITION_FIELDS.SORTED]: BuiltinTypes.BOOLEAN,
         [DEFAULT_VALUE_FORMULA]: BuiltinTypes.STRING,
       },
     }),
@@ -518,6 +520,7 @@ export class Types {
         [FIELD_ANNOTATIONS.VALUE_SET]: Types.valueSetType,
         [FIELD_ANNOTATIONS.RESTRICTED]: BuiltinTypes.BOOLEAN,
         [VALUE_SET_FIELDS.VALUE_SET_NAME]: BuiltinTypes.STRING,
+        [VALUE_SET_DEFINITION_FIELDS.SORTED]: BuiltinTypes.BOOLEAN,
         [DEFAULT_VALUE_FORMULA]: BuiltinTypes.STRING,
       },
     }),
@@ -833,6 +836,7 @@ export const toCustomField = (
     fieldDependency?.[FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD],
     fieldDependency?.[FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS],
     field.annotations[FIELD_ANNOTATIONS.RESTRICTED],
+    field.annotations[VALUE_SET_DEFINITION_FIELDS.SORTED],
     field.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME],
     field.annotations[FORMULA],
     field.annotations[FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS],
@@ -847,6 +851,7 @@ export const toCustomField = (
     FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION, // handled in the CustomField constructor
     FIELD_ANNOTATIONS.VALUE_SET, // handled in the CustomField constructor
     FIELD_ANNOTATIONS.RESTRICTED, // handled in the CustomField constructor
+    VALUE_SET_DEFINITION_FIELDS.SORTED, // handled in the CustomField constructor
     VALUE_SET_FIELDS.VALUE_SET_NAME, // handled in the CustomField constructor
     DEFAULT_VALUE_FORMULA, // handled in the CustomField constructor
     FIELD_ANNOTATIONS.FIELD_DEPENDENCY, // handled in field_dependencies filter

@@ -110,7 +110,10 @@ export class CustomField implements MetadataInfo {
   valueSet?: {
     restricted?: boolean
     controllingField?: string
-    valueSetDefinition?: { value: CustomPicklistValue[] }
+    valueSetDefinition?: {
+      sorted: boolean
+      value: CustomPicklistValue[]
+    }
     valueSettings?: ValueSettings[]
     valueSetName?: string
   }
@@ -160,6 +163,7 @@ export class CustomField implements MetadataInfo {
     controllingField?: string,
     valueSettings?: ValueSettings[],
     picklistRestricted?: boolean,
+    picklistSorted?: boolean,
     valueSetName?: string,
     formula?: string,
     summaryFilterItems?: FilterItem[],
@@ -198,6 +202,7 @@ export class CustomField implements MetadataInfo {
           this.valueSet = {
             restricted: picklistRestricted || false,
             valueSetDefinition: {
+              sorted: picklistSorted || false,
               value: values.map(val =>
                 new CustomPicklistValue(
                   val.fullName, val.default, val.isActive ?? true, val.label, val.color,

@@ -76,14 +76,14 @@ export class Workspace {
   readonly state: State
   readonly credentials: Credentials
   readonly blueprintsStore: BlueprintsStore
-  private cache: ParseResultCache
+  private readonly cache: ParseResultCache
   private blueprintsState: Promise<BlueprintsState>
 
   constructor(public config: Config) {
     this.blueprintsStore = localBlueprintsStore(config.baseDir)
     this.state = localState(config.stateLocation)
     this.credentials = localCredentials(path.join(config.localStorage, 'credentials'))
-    this.cache = localParseResultCache(path.join(this.config.localStorage, '.cache'))
+    this.cache = localParseResultCache(path.join(config.localStorage, '.cache'))
 
     const readAllBps = async (blueprintsStore: BlueprintsStore): Promise<Blueprint[]> => (
       Promise.all((await blueprintsStore.list())
@@ -112,7 +112,13 @@ export class Workspace {
   private async buildBlueprintsState(newBps: Blueprint[], current: ParsedBlueprintMap):
   Promise<BlueprintsState> {
     log.debug(`going to parse ${newBps.length} blueprints`)
-    const newParsed = _.keyBy(await this.parseBlueprints(newBps), parsed => parsed.filename)
+    const parsedBlueprints = await this.parseBlueprints(newBps)
+    const errored = parsedBlueprints.filter(parsed => !_.isEmpty(parsed.errors))
+    errored.forEach(parsed => {
+      log.error('failed to parse %s due to:\n%s', parsed.filename,
+        parsed.errors.map(error => error.message).join())
+    })
+    const newParsed = _.keyBy(parsedBlueprints, parsed => parsed.filename)
     const allParsed = _.omitBy({ ...current, ...newParsed }, parsed => _.isEmpty(parsed.elements))
     return blueprintState(Object.values(allParsed))
   }
@@ -198,18 +204,19 @@ export class Workspace {
     }
   }
 
+  private async transformParseError(error: ParseError): Promise<WorkspaceError<SaltoError>> {
+    return {
+      ...error,
+      sourceFragments: [await this.getSourceFragment(error.subject)],
+    }
+  }
+
   async getWorkspaceErrors(): Promise<ReadonlyArray<WorkspaceError<SaltoError>>> {
     const wsErrors = await this.errors
     return Promise.all(_.flatten([
-      wsErrors.parse.map(
-        async (parseError: ParseError): Promise<WorkspaceError<SaltoError>> =>
-          ({ ...parseError,
-            sourceFragments: [await this.getSourceFragment(parseError.subject)] })
-      ),
-      wsErrors.merge.map(mergeError =>
-        this.transformToWorkspaceError(mergeError)),
-      wsErrors.validation.map(validationError =>
-        this.transformToWorkspaceError(validationError)),
+      wsErrors.parse.map(parseError => this.transformParseError(parseError)),
+      wsErrors.merge.map(mergeError => this.transformToWorkspaceError(mergeError)),
+      wsErrors.validation.map(validationError => this.transformToWorkspaceError(validationError)),
     ]))
   }
 
@@ -305,14 +312,15 @@ export class Workspace {
   }
 
   private async parseBlueprints(blueprints: Blueprint[]): Promise<ParsedBlueprint[]> {
-    return Promise.all(
-      blueprints.map(bp => this.parseBlueprint(bp).then(parseResult => ({
+    return Promise.all(blueprints.map(async bp => {
+      const parsed = await this.parseBlueprint(bp)
+      return {
         timestamp: bp.timestamp || Date.now(),
         filename: bp.filename,
-        elements: parseResult.elements,
-        errors: parseResult.errors,
-      })))
-    )
+        elements: parsed.elements,
+        errors: parsed.errors,
+      }
+    }))
   }
 
   async flush(): Promise<void> {

@@ -401,7 +401,7 @@ describe('Salesforce adapter E2E with real account', () => {
         deleteConstraint: 'Restrict',
         fullName: lookupFieldApiName,
         label: 'Lookup label',
-        referenceTo: ['Case'],
+        referenceTo: ['Opportunity'],
         relationshipName: lookupFieldName,
         required: false,
         type: constants.FIELD_TYPE_NAMES.LOOKUP,
@@ -414,14 +414,14 @@ describe('Salesforce adapter E2E with real account', () => {
         infoMessage: 'This is the Info message',
         isOptional: false,
         filterItems: [{
-          field: 'Case.OwnerId',
+          field: 'Opportunity.OwnerId',
           operation: 'equals',
           valueField: '$User.Id',
         },
         {
-          field: 'Case.ParentId',
+          field: 'Opportunity.NextStep',
           operation: 'equals',
-          value: 'ParentIdValue',
+          value: 'NextStepValue',
         }],
       }
       await verifyObjectsDependentFieldsExist()
@@ -2352,7 +2352,7 @@ describe('Salesforce adapter E2E with real account', () => {
 
       const testLookup = (annotations: Values): void => {
         expect(annotations[constants.LABEL]).toBe('Lookup label')
-        expect(annotations[constants.FIELD_ANNOTATIONS.REFERENCE_TO]).toEqual(['Case'])
+        expect(annotations[constants.FIELD_ANNOTATIONS.REFERENCE_TO]).toEqual(['Opportunity'])
         expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
         const lookupFilter = annotations[constants.FIELD_ANNOTATIONS.LOOKUP_FILTER]
         expect(lookupFilter).toBeDefined()
@@ -2366,14 +2366,14 @@ describe('Salesforce adapter E2E with real account', () => {
         const filterItems = lookupFilter[constants.LOOKUP_FILTER_FIELDS.FILTER_ITEMS]
         expect(filterItems).toBeDefined()
         expect(filterItems).toEqual([{
-          [constants.FILTER_ITEM_FIELDS.FIELD]: 'Case.OwnerId',
+          [constants.FILTER_ITEM_FIELDS.FIELD]: 'Opportunity.OwnerId',
           [constants.FILTER_ITEM_FIELDS.OPERATION]: 'equals',
           [constants.FILTER_ITEM_FIELDS.VALUE_FIELD]: '$User.Id',
         },
         {
-          [constants.FILTER_ITEM_FIELDS.FIELD]: 'Case.ParentId',
+          [constants.FILTER_ITEM_FIELDS.FIELD]: 'Opportunity.NextStep',
           [constants.FILTER_ITEM_FIELDS.OPERATION]: 'equals',
-          [constants.FILTER_ITEM_FIELDS.VALUE]: 'ParentIdValue',
+          [constants.FILTER_ITEM_FIELDS.VALUE]: 'NextStepValue',
         }])
       }
 

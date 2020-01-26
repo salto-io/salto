@@ -84,8 +84,7 @@ export class Workspace {
   readonly state: State
   readonly credentials: Credentials
   private readonly blueprintsSource: BlueprintsSource
-  private mergedState?: Promise<MergedState>
-
+  private mergedStatePromise?: Promise<MergedState>
 
   constructor(public config: Config) {
     const blueprintsStore = localDirectoryStore(config.baseDir, `*${BP_EXTENSION}`)
@@ -111,13 +110,7 @@ export class Workspace {
     return new Workspace(config)
   }
 
-  async isEmpty(): Promise<boolean> {
-    const notConfig = (elem: Element): boolean => !elem.elemID.isConfig()
-    return _.isEmpty((await this.elements).filter(notConfig))
-    && _.isEmpty((await this.state.getAll()).filter(notConfig))
-  }
-
-  private initMergedState(): void {
+  private get mergedState(): Promise<MergedState> {
     const buildMergedState = async (): Promise<MergedState> => {
       const { merged: mergedElements, errors: mergeErrors } = mergeElements(
         await this.blueprintsSource.getAll()
@@ -132,25 +125,34 @@ export class Workspace {
         }),
       }
     }
-    if (_.isUndefined(this.mergedState)) {
-      this.mergedState = buildMergedState()
+    if (_.isUndefined(this.mergedStatePromise)) {
+      this.mergedStatePromise = buildMergedState()
     }
+    return this.mergedStatePromise as Promise<MergedState>
+  }
+
+  private resetMergedState(): void {
+    this.mergedStatePromise = undefined
+  }
+
+  async isEmpty(blueprintsOnly = false): Promise<boolean> {
+    const notConfig = (elem: Element): boolean => !elem.elemID.isConfig()
+    const isBlueprintsSourceEmpty = _.isEmpty((await this.elements).filter(notConfig))
+    const isStateEmpty = _.isEmpty((await this.state.getAll()).filter(notConfig))
+    return blueprintsOnly === true
+      ? isBlueprintsSourceEmpty
+      : isBlueprintsSourceEmpty && isStateEmpty
   }
 
   get elements(): Promise<ReadonlyArray<Element>> {
-    this.initMergedState()
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    return this.mergedState!.then(state => state.mergedElements)
+    return this.mergedState.then(state => state.mergedElements)
   }
 
   get errors(): Promise<Errors> {
-    this.initMergedState()
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    return this.mergedState!.then(state => state.errors)
+    return this.mergedState.then(state => state.errors)
   }
 
   hasErrors(): Promise<boolean> {
-    this.initMergedState()
     return this.errors.then(errors => errors.hasErrors())
   }
 
@@ -171,21 +173,21 @@ export class Workspace {
   }
 
   async setBlueprints(...blueprints: Blueprint[]): Promise<void> {
-    this.mergedState = undefined
+    this.resetMergedState()
     return this.blueprintsSource.setBlueprints(...blueprints)
-  }
-
-  async removeBlueprints(...names: string[]): Promise<void> {
-    this.mergedState = undefined
-    return this.blueprintsSource.removeBlueprints(...names)
   }
 
   async getElements(filename: string): Promise<Element[]> {
     return this.blueprintsSource.getElements(filename)
   }
 
+  async removeBlueprints(...names: string[]): Promise<void> {
+    this.resetMergedState()
+    return this.blueprintsSource.removeBlueprints(...names)
+  }
+
   async updateBlueprints(...changes: DetailedChange[]): Promise<void> {
-    this.mergedState = undefined
+    this.resetMergedState()
     return this.blueprintsSource.update(...changes)
   }
 

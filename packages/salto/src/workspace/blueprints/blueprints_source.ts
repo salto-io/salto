@@ -79,13 +79,9 @@ BlueprintsSource => {
     Promise<BlueprintsState> => {
     log.debug(`going to parse ${newBps.length} blueprints`)
     const parsedBlueprints = await parseBlueprints(newBps)
-    const errored = parsedBlueprints.filter(parsed => !_.isEmpty(parsed.errors))
-    errored.forEach(parsed => {
-      log.error('failed to parse %s due to:\n%s', parsed.filename,
-        parsed.errors.map(error => error.message).join())
-    })
     const newParsed = _.keyBy(parsedBlueprints, parsed => parsed.filename)
-    const allParsed = _.omitBy({ ...current, ...newParsed }, parsed => _.isEmpty(parsed.elements))
+    const allParsed = _.omitBy({ ...current, ...newParsed },
+      parsed => (_.isEmpty(parsed.elements) && _.isEmpty(parsed.errors)))
 
     const elementsIndex: Record<string, string[]> = {}
     Object.values(allParsed).forEach(bp => Object.keys(bp.elements)
@@ -95,9 +91,9 @@ BlueprintsSource => {
       }))
 
     log.info('workspace has %d elements and %d parsed blueprints',
-      elementsIndex.length, allParsed.length)
+      _.size(elementsIndex), _.size(allParsed))
     return {
-      parsedBlueprints: { ...allParsed, ..._.keyBy(errored, parsed => parsed.filename) },
+      parsedBlueprints: allParsed,
       elementsIndex,
     }
   }
@@ -171,32 +167,6 @@ BlueprintsSource => {
     return setBlueprints(...updatedBlueprints)
   }
 
-  const listBlueprints = (): Promise<string[]> =>
-    blueprintsStore.list()
-
-  const getBlueprint = (filename: string): Promise<Blueprint | undefined> =>
-    blueprintsStore.get(filename)
-
-  /**
-   * Remove specific blueprints from the workspace
-   * @param names Names of the blueprints to remove
-   */
-  const removeBlueprints = async (...names: string[]): Promise<void> => {
-    await Promise.all(names.map(name => blueprintsStore.delete(name)))
-    state = buildBlueprintsState(names
-      .map(filename => ({ filename, buffer: '' })), (await state).parsedBlueprints)
-  }
-
-  const getSourceRanges = async (elemID: ElemID): Promise<SourceRange[]> => {
-    const bps = await getElementBlueprints(elemID)
-    const sourceRanges = await Promise.all(bps
-      .map(async bp => (await getSourceMap(bp)).get(elemID.getFullName()) || []))
-    return _.flatten(sourceRanges)
-  }
-
-  const getElements = async (filename: string): Promise<Element[]> =>
-    Object.values((await state).parsedBlueprints[filename]?.elements) || []
-
   return {
     list: async (): Promise<ElemID[]> =>
       Object.keys((await state).elementsIndex).map(name => ElemID.fromFullName(name)),
@@ -213,20 +183,35 @@ BlueprintsSource => {
         .map(parsed => Object.values(parsed.elements))),
 
     flush: async (): Promise<void> => {
-      blueprintsStore.flush()
-      cache.flush()
+      await blueprintsStore.flush()
+      await cache.flush()
     },
 
     getParseErrors: async (): Promise<ParseError[]> =>
       _.flatten(Object.values((await state).parsedBlueprints).map(parsed => parsed.errors)),
 
+    listBlueprints: () => blueprintsStore.list(),
+
+    getBlueprint: filename => blueprintsStore.get(filename),
+
+    getElements: async filename =>
+      Object.values((await state).parsedBlueprints[filename]?.elements) || [],
+
+    getSourceRanges: async elemID => {
+      const bps = await getElementBlueprints(elemID)
+      const sourceRanges = await Promise.all(bps
+        .map(async bp => (await getSourceMap(bp)).get(elemID.getFullName()) || []))
+      return _.flatten(sourceRanges)
+    },
+
+    removeBlueprints: async (...names: string[]) => {
+      await Promise.all(names.map(name => blueprintsStore.delete(name)))
+      state = buildBlueprintsState(names
+        .map(filename => ({ filename, buffer: '' })), (await state).parsedBlueprints)
+    },
+
     update,
-    listBlueprints,
-    getBlueprint,
     setBlueprints,
-    removeBlueprints,
     getSourceMap,
-    getSourceRanges,
-    getElements,
   }
 }

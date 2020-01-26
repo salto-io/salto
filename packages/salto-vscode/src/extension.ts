@@ -24,7 +24,7 @@ const onActivate = async (context: vscode.ExtensionContext): Promise<void> => {
   if (name && rootPath) {
     const diagCollection = vscode.languages.createDiagnosticCollection('salto')
     const config = await loadConfig(rootPath)
-    const workspace = new EditorWorkspace(await Workspace.load(config))
+    const workspace = new EditorWorkspace(new Workspace(config))
 
     const completionProvider = vscode.languages.registerCompletionItemProvider(
       { scheme: 'file', pattern: { base: rootPath, pattern: '**/*.bp' } },

@@ -3,7 +3,7 @@ import wu from 'wu'
 import {
   Element, isField, isType, isObjectType, findElement,
 } from 'adapter-api'
-import { ParsedBlueprint } from 'salto'
+import { SourceMap } from 'salto'
 import { EditorWorkspace } from './workspace'
 
 type PositionContextType = 'global'|'instance'|'type'|'field'
@@ -93,8 +93,8 @@ const getPositionContextType = (
 }
 
 const flattenBlueprintRanges = (
-  parsedBlueprint: ParsedBlueprint
-): NamedRange[] => wu(parsedBlueprint.sourceMap.entries())
+  sourceMap: SourceMap
+): NamedRange[] => wu(sourceMap.entries())
   .map(([name, ranges]) => ranges.map(range => ({ name, range })))
   .flatten()
   .toArray()
@@ -146,7 +146,8 @@ const extractFields = (elements: readonly Element[]): Element[] => (
 
 export const buildDefinitionsTree = (
   fileContent: string,
-  parsedBlueprint: ParsedBlueprint
+  sourceMap: SourceMap,
+  elements: ReadonlyArray<Element>,
 ): PositionContext => {
   const startPosComparator = (left: NamedRange, right: NamedRange): number => (
     (left.range.start.line === right.range.start.line)
@@ -155,15 +156,15 @@ export const buildDefinitionsTree = (
   )
 
   return buildPositionContext(
-    extractFields(parsedBlueprint.elements),
+    extractFields(elements),
     fileContent,
     GLOBAL_RANGE,
-    flattenBlueprintRanges(parsedBlueprint).sort(startPosComparator)
+    flattenBlueprintRanges(sourceMap).sort(startPosComparator)
   )
 }
 
-const getFullElement = (workspace: EditorWorkspace, partial: Element): Element => {
-  const fullElement = findElement(extractFields(workspace.elements || []), partial.elemID)
+const getFullElement = (elements: ReadonlyArray<Element>, partial: Element): Element => {
+  const fullElement = findElement(extractFields(elements || []), partial.elemID)
   return fullElement || partial
 }
 
@@ -178,15 +179,20 @@ const getPositionFromTree = (
 
 export const getPositionContext = async (
   workspace: EditorWorkspace,
-  fileContent: string,
   filename: string,
   position: EditorPosition
 ): Promise<PositionContext> => {
-  const parsedBlueprint = await workspace.getParsedBlueprint(filename)
-  const definitionsTree = buildDefinitionsTree(fileContent, parsedBlueprint)
+  const definitionsTree = buildDefinitionsTree(
+    // TODO: check what to do if buffer is undefined
+    (await workspace.workspace.getBlueprint(filename))?.buffer as string,
+    await workspace.workspace.getSourceMap(filename),
+    await workspace.workspace.getElements(filename),
+  )
   const partialContext = getPositionFromTree(definitionsTree, position)
   const fullRef = (partialContext.ref)
-    ? { ...partialContext.ref, element: getFullElement(workspace, partialContext.ref.element) }
+    ? { ...partialContext.ref,
+      element: getFullElement(await workspace.workspace.elements,
+        partialContext.ref.element) }
     : undefined
   return { ...partialContext, ref: fullRef }
 }

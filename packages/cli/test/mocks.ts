@@ -177,6 +177,14 @@ export const elements = (): Element[] => {
 export const mockLoadConfig = (workspaceDir: string): Config =>
   ({ uid: '123', baseDir: workspaceDir, services: ['salesforce', 'hubspot'], name: 'mock-ws', localStorage: '', stateLocation: '' })
 
+export const mockLoadWorkspace = (workspaceDir: string): Workspace =>
+  ({
+    config: mockLoadConfig(workspaceDir),
+    elements: jest.fn().mockResolvedValue([] as ReadonlyArray<Element>),
+    hasErrors: () => jest.fn().mockResolvedValue(false),
+    isEmpty: jest.fn().mockResolvedValue(false),
+  } as unknown as Workspace)
+
 export const mockConfigType = (adapterName: string): ObjectType => {
   const configID = new ElemID(adapterName)
   return new ObjectType({

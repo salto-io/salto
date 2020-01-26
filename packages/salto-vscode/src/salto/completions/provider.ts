@@ -123,15 +123,17 @@ const createCompletionItems = (
 // the suggestions to the last token which is the token which we want
 // to complete. (We return all values, VS filter by token prefix)
 // The token to needed types mapping is in LINE_SUGGESTIONS.
-export const provideWorkspaceCompletionItems = (
+export const provideWorkspaceCompletionItems = async (
   workspace: EditorWorkspace,
   context: PositionContext,
   line: string,
   position: EditorPosition
-): SaltoCompletion[] => {
+): Promise<SaltoCompletion[]> => {
   const tokens = getLineTokens(removeLinePrefix(line))
   const lineType = getLineType(context, tokens, position)
-  const suggestionsParams = { workspace, tokens, ref: context.ref }
+  const suggestionsParams = { elements: await workspace.workspace.elements,
+    tokens,
+    ref: context.ref }
   const lineSuggestions = LINE_SUGGESTIONS[lineType]
   const tokenSuggestions = lineSuggestions[tokens.length - 1]
   const suggestions = (tokenSuggestions) ? tokenSuggestions(suggestionsParams) : []

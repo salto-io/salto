@@ -1,62 +1,54 @@
 import wu from 'wu'
 import {
-  Workspace, Plan, PlanItem, Config,
+  Workspace, Plan, PlanItem,
 } from 'salto'
-import { Spinner, SpinnerCreator } from 'src/types'
-import { deploy, preview, mockSpinnerCreator, MockWriteStream, getWorkspaceErrors, mockLoadConfig, elements } from '../mocks'
+import { Spinner, SpinnerCreator, CliExitCode } from '../../src/types'
+import { deploy, preview, mockSpinnerCreator, MockWriteStream } from '../mocks'
 import { DeployCommand } from '../../src/commands/deploy'
+import * as workspace from '../../src/workspace'
 
 const mockDeploy = deploy
-const mockUpdateBlueprints = jest.fn().mockImplementation(() => Promise.resolve())
-const mockFlush = jest.fn().mockImplementation(() => Promise.resolve())
 jest.mock('salto', () => ({
   ...jest.requireActual('salto'),
-  loadConfig: jest.fn().mockImplementation((workspaceDir: string) => mockLoadConfig(workspaceDir)),
-  Workspace: {
-    load: jest.fn().mockImplementation((
-      config: Config
-    ) => {
-      if (config.baseDir === 'errorDir') {
-        return {
-          hasErrors: () => true,
-          errors: {
-            strings: () => ['Error', 'Error'],
-          },
-          getWorkspaceErrors,
-          config,
-          elements: elements(),
-        }
-      }
-      return {
-        hasErrors: () => false,
-        updateBlueprints: mockUpdateBlueprints,
-        flush: mockFlush,
-        config,
-        elements: elements(),
-      }
-    }),
-  },
   deploy: jest.fn().mockImplementation((
-    workspace: Workspace,
+    ws: Workspace,
     shouldDeploy: (plan: Plan) => Promise<boolean>,
     reportProgress: (action: PlanItem, step: string, details?: string) => void,
     force = false,
-    services = workspace.config.services as string[]
+    services = ws.config.services as string[]
   ) =>
   // Deploy with blueprints will fail, doing this trick as we cannot reference vars, we get error:
   // "The module factory of `jest.mock()` is not allowed to reference any
   // out-of-scope variables."
   // Notice that blueprints are ignored in mockDeploy.
 
-    mockDeploy(workspace, shouldDeploy, reportProgress, services, force)),
+    mockDeploy(ws, shouldDeploy, reportProgress, services, force)),
 }))
-
+jest.mock('../../src/workspace')
 describe('deploy command', () => {
   let cliOutput: { stdout: MockWriteStream; stderr: MockWriteStream }
   let command: DeployCommand
   const spinners: Spinner[] = []
   let spinnerCreator: SpinnerCreator
   const services = ['salesforce']
+
+  const mockLoadWorkspace = workspace.loadWorkspace as jest.Mock
+  mockLoadWorkspace.mockImplementation((baseDir: string) => {
+    if (baseDir === 'errorDir') {
+      return {
+        workspace: {},
+        errored: true,
+      }
+    }
+    return {
+      workspace: {},
+      errored: false,
+    }
+  })
+
+  beforeEach(() => {
+    cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
+  })
 
   beforeEach(() => {
     cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
@@ -99,14 +91,13 @@ describe('deploy command', () => {
         content = cliOutput.stdout.content
       })
       it('should load workspace', () => {
-        expect(Workspace.load).toHaveBeenCalled()
+        expect(mockLoadWorkspace).toHaveBeenCalled()
       })
       it('should print completeness', () => {
         expect(content).toContain('Deployment succeeded')
       })
-      it('should Update workspace', () => {
-        expect(mockUpdateBlueprints).toHaveBeenCalledTimes(1)
-        expect(mockFlush).toHaveBeenCalledTimes(1)
+      it('should update workspace', () => {
+        expect(workspace.updateWorkspace as jest.Mock).toHaveBeenCalledTimes(1)
       })
     })
   })
@@ -117,8 +108,8 @@ describe('deploy command', () => {
       command = new DeployCommand('errorDir', true, services, cliOutput, spinnerCreator)
     })
     it('should fail gracefully', async () => {
-      await command.execute()
-      expect(cliOutput.stderr.content.search('Error')).toBeGreaterThan(0)
+      const result = await command.execute()
+      expect(result).toBe(CliExitCode.AppError)
     })
   })
 })

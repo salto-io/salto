@@ -1,13 +1,9 @@
 import { LoginStatus, updateLoginConfig, Workspace } from 'salto'
 import { ObjectType } from 'adapter-api'
+import { CliExitCode } from '../../src/types'
 import { command } from '../../src/commands/services'
-import {
-  createMockGetConfigFromUser,
-  getWorkspaceErrors,
-  mockConfigType,
-  mockLoadConfig,
-  MockWriteStream,
-} from '../mocks'
+import * as mocks from '../mocks'
+import * as workspace from '../../src/workspace'
 
 jest.mock('salto', () => ({
   ...jest.requireActual('salto'),
@@ -18,7 +14,7 @@ jest.mock('salto', () => ({
     if (adapterName === 'noAdapter') {
       throw Error('no adapater')
     }
-    return Promise.resolve(mockConfigType(adapterName))
+    return Promise.resolve(mocks.mockConfigType(adapterName))
   }),
   updateLoginConfig: jest.fn().mockResolvedValue(true),
   getLoginStatuses: jest.fn().mockImplementation((
@@ -30,58 +26,62 @@ jest.mock('salto', () => ({
       if (serviceName === 'salesforce') {
         loginStatuses[serviceName] = {
           isLoggedIn: true,
-          configType: mockConfigType(serviceName),
+          configType: mocks.mockConfigType(serviceName),
         }
       } else {
         loginStatuses[serviceName] = {
           isLoggedIn: false,
-          configType: mockConfigType(serviceName),
+          configType: mocks.mockConfigType(serviceName),
         }
       }
     })
     return loginStatuses
   }),
-  Workspace: {
-    load: jest.fn().mockImplementation(config => {
-      if (config.baseDir === 'errdir') {
-        return {
-          hasErrors: () => true,
-          errors: {
-            strings: () => ['Error', 'Error'],
-          },
-          getWorkspaceErrors,
-          config,
-        }
-      }
-      return {
-        hasErrors: () => false,
-        config,
-      }
-    }),
-  },
-  loadConfig: jest.fn().mockImplementation((workspaceDir: string) => mockLoadConfig(workspaceDir)),
+  loadConfig: jest.fn().mockImplementation((workspaceDir: string) =>
+    mocks.mockLoadConfig(workspaceDir)),
 }))
-
+jest.mock('../../src/workspace')
 describe('services command', () => {
-  let cliOutput: { stdout: MockWriteStream; stderr: MockWriteStream }
-  const mockGetConfigFromUser = createMockGetConfigFromUser({
+  let cliOutput: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }
+  const mockGetConfigFromUser = mocks.createMockGetConfigFromUser({
     username: 'test@test',
     password: 'test',
     token: 'test',
     sandbox: false,
   })
+  const mockLoadWorkspace = workspace.loadWorkspace as jest.Mock
+  mockLoadWorkspace.mockImplementation(baseDir => {
+    if (baseDir === 'errdir') {
+      return { workspace: {
+        hasErrors: () => true,
+        errors: {
+          strings: () => ['Error', 'Error'],
+        },
+        getWorkspaceErrors: mocks.getWorkspaceErrors,
+        config: mocks.mockLoadConfig(baseDir),
+      },
+      errored: true }
+    }
+    return { workspace: {
+      hasErrors: () => false,
+      config: mocks.mockLoadConfig(baseDir),
+    },
+    errored: false }
+  })
 
   beforeEach(() => {
-    cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
+    cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
   })
 
   describe('when workspace fails to load', () => {
+    let result: number
     beforeEach(async () => {
-      await command('errdir', 'add', cliOutput, mockGetConfigFromUser, 'service').execute()
+      result = await command('errdir', 'add', cliOutput, mockGetConfigFromUser, 'service')
+        .execute()
     })
 
-    it('should print the error', async () => {
-      expect(cliOutput.stderr.content).toContain('Error')
+    it('should fail', async () => {
+      expect(result).toBe(CliExitCode.AppError)
     })
   })
 
@@ -93,7 +93,7 @@ describe('services command', () => {
         })
 
         it('should load the workspace', () => {
-          expect(Workspace.load).toHaveBeenCalled()
+          expect(mockLoadWorkspace).toHaveBeenCalled()
         })
 
         it('should print configured services', () => {
@@ -108,7 +108,7 @@ describe('services command', () => {
         })
 
         it('should load the workspace', async () => {
-          expect(Workspace.load).toHaveBeenCalled()
+          expect(mockLoadWorkspace).toHaveBeenCalled()
         })
 
         it('should print configured services', async () => {

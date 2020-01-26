@@ -6,6 +6,7 @@ const mockState = (): State => ({
   getAll: jest.fn().mockImplementation(() => Promise.resolve([])),
   set: jest.fn().mockImplementation(() => Promise.resolve()),
   remove: jest.fn().mockImplementation(() => Promise.resolve()),
+  flush: jest.fn().mockImplementation(() => Promise.resolve()),
 })
 
 export default mockState

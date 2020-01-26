@@ -134,7 +134,7 @@ describe('cli e2e', () => {
     })
     it('should update the object in the BP', async () => {
       verifyObject(
-        workspace,
+        await workspace.elements,
         SALESFORCE,
         newObjectElemName, { [API_NAME]: newObjectApiName },
         {
@@ -144,7 +144,7 @@ describe('cli e2e', () => {
       )
     })
     it('should update the instance in the BP', async () => {
-      verifyInstance(workspace, SALESFORCE, ROLE, newInstanceElemName,
+      verifyInstance(await workspace.elements, SALESFORCE, ROLE, newInstanceElemName,
         { description: 'To Be Modified', [INSTANCE_FULL_NAME_FIELD]: newInstanceFullName })
     })
     afterAll(async () => {
@@ -186,7 +186,7 @@ describe('cli e2e', () => {
     })
     it('should have no change in the object', async () => {
       verifyObject(
-        workspace,
+        await workspace.elements,
         SALESFORCE,
         newObjectElemName, { [API_NAME]: newObjectApiName },
         {
@@ -196,7 +196,7 @@ describe('cli e2e', () => {
       )
     })
     it('should have no change in the instance', async () => {
-      verifyInstance(workspace, SALESFORCE, ROLE, newInstanceElemName,
+      verifyInstance(await workspace.elements, SALESFORCE, ROLE, newInstanceElemName,
         { description: 'I Am Modified', [INSTANCE_FULL_NAME_FIELD]: newInstanceFullName })
     })
     afterAll(async () => {

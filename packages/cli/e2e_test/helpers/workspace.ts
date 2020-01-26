@@ -2,6 +2,7 @@ import { file, Plan, Workspace } from 'salto'
 import _ from 'lodash'
 import {
   ActionName, Change, ElemID, findElement, getChangeElement, InstanceElement, ObjectType, Values,
+  Element,
 } from 'adapter-api'
 import wu from 'wu'
 import { command as fetch } from '../../src/commands/fetch'
@@ -80,24 +81,24 @@ export const verifyChanges = (plan: Plan,
       && getChangedElementName(change) === expectedChange.element))).toBeTruthy()
 }
 
-const findObject = (workspace: Workspace, adapter: string, name: string): ObjectType =>
-  findElement(workspace.elements, new ElemID(adapter, name)) as ObjectType
+const findObject = (elements: ReadonlyArray<Element>, adapter: string, name: string): ObjectType =>
+  findElement(elements, new ElemID(adapter, name)) as ObjectType
 
-const findInstance = (workspace: Workspace, adapter: string, typeName: string,
+const findInstance = (elements: ReadonlyArray<Element>, adapter: string, typeName: string,
   name: string): InstanceElement =>
-  findElement(workspace.elements,
+  findElement(elements,
     new ElemID(adapter, typeName, 'instance', name)) as InstanceElement
 
-export const verifyInstance = (workspace: Workspace, adapter: string, typeName: string,
+export const verifyInstance = (elements: ReadonlyArray<Element>, adapter: string, typeName: string,
   name: string, expectedValues: Values): void => {
-  const newInstance = findInstance(workspace, adapter, typeName, name)
+  const newInstance = findInstance(elements, adapter, typeName, name)
   Object.entries(expectedValues).forEach(entry =>
     expect(newInstance.value[entry[0]]).toEqual(entry[1]))
 }
 
-export const verifyObject = (workspace: Workspace, adapter: string, name: string,
+export const verifyObject = (elements: ReadonlyArray<Element>, adapter: string, name: string,
   expectedAnnotations: Values, expectedFieldAnnotations: Record<string, Values>): void => {
-  const newObject = findObject(workspace, adapter, name)
+  const newObject = findObject(elements, adapter, name)
   Object.entries(expectedAnnotations).forEach(entry =>
     expect(newObject.annotations[entry[0]]).toEqual(entry[1]))
   Object.entries(expectedFieldAnnotations).forEach(fieldNameToAnnotations => {

@@ -1,16 +1,17 @@
-import _ from 'lodash'
+import * as path from 'path'
 import { EditorWorkspace } from '../../src/salto/workspace'
 import { mockWorkspace } from './workspace'
 
 describe('workspace', () => {
   const bpFileName = `${__dirname}/../../../test/salto/test-bps/all.bp`
-  const validate = (workspace: EditorWorkspace, elements: number, bps: number): void => {
-    expect(workspace.elements && workspace.elements.length).toBe(elements)
-    expect(_.keys(workspace.parsedBlueprints).length).toBe(bps)
+  const validate = async (workspace: EditorWorkspace, elements: number):
+  Promise<void> => {
+    const wsElements = await workspace.workspace.elements
+    expect(wsElements && wsElements.length).toBe(elements)
   }
   it('should initiate a workspace', async () => {
     const workspace = new EditorWorkspace(await mockWorkspace(bpFileName))
-    validate(workspace, 14, 1)
+    await validate(workspace, 14)
   })
 
   it('should collect errors', async () => {
@@ -34,15 +35,15 @@ describe('workspace', () => {
     baseWs.hasErrors = jest.fn().mockImplementation(() => true)
     workspace.setBlueprints({ filename: 'error', buffer: 'error content' })
     await workspace.awaitAllUpdates()
-    expect(workspace.elements).toBeDefined()
+    expect(workspace.workspace.elements).toBeDefined()
     expect(workspace.hasErrors()).toBeTruthy()
-    validate(workspace, 14, 1)
+    await validate(workspace, 14)
   })
 
   it('should support file removal', async () => {
     const baseWs = await mockWorkspace(bpFileName)
     const workspace = new EditorWorkspace(baseWs)
-    workspace.removeBlueprints(bpFileName)
+    workspace.removeBlueprints(path.basename(bpFileName))
     await workspace.awaitAllUpdates()
     const removeBlueprintsMock = baseWs.removeBlueprints as jest.Mock
     expect(removeBlueprintsMock.mock.calls[0][0]).toBe('all.bp')
@@ -54,15 +55,15 @@ describe('workspace', () => {
     const workspace = new EditorWorkspace(baseWs)
     const shouldBeCurrent = workspace.getValidCopy()
     if (!shouldBeCurrent) throw new Error('lastValid not defined')
-    expect(shouldBeCurrent.elements).toEqual(workspace.elements)
-    expect(shouldBeCurrent.errors).toEqual(workspace.errors)
+    expect(await shouldBeCurrent.workspace.elements).toEqual(await workspace.workspace.elements)
+    expect(await shouldBeCurrent.workspace.errors).toEqual(await workspace.workspace.errors)
 
     baseWs.hasErrors = jest.fn().mockImplementation(() => true)
     workspace.setBlueprints({ filename: 'error', buffer: 'error' })
     await workspace.awaitAllUpdates()
-    expect(workspace.elements).toBeDefined()
+    expect(await workspace.workspace.elements).toBeDefined()
     expect(workspace.hasErrors()).toBeTruthy()
-    validate(workspace, 14, 1)
+    await validate(workspace, 14)
     const lastValid = workspace.getValidCopy()
     if (!lastValid) throw new Error('lastValid not defined')
     expect(lastValid).not.toEqual(workspace)

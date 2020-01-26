@@ -15,7 +15,10 @@ export type WorkspaceSaltoDiagnostics = Record<string, SaltoDiagnostic[]>
 export const getDiagnostics = async (
   workspace: EditorWorkspace,
 ): Promise<WorkspaceSaltoDiagnostics> => {
-  const emptyDiagFiles = _.mapValues(workspace.parsedBlueprints, _k => [])
+  const emptyDiagFiles: WorkspaceSaltoDiagnostics = _.fromPairs(
+    (await workspace.workspace.listBlueprints())
+      .map(filename => [filename, []])
+  )
   const diag = _(await workspace.workspace.getWorkspaceErrors())
     .map(err => err.sourceFragments.map(f => ({
       filename: f.sourceRange.filename,

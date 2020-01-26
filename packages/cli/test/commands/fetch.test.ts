@@ -1,81 +1,90 @@
+import _ from 'lodash'
 import { ElemID, ObjectType, Element } from 'adapter-api'
 import {
-  Workspace, fetch, loadConfig, FetchChange, DetailedChange, FetchProgressEvents, StepEmitter,
+  Workspace, fetch, FetchChange, DetailedChange, FetchProgressEvents, StepEmitter,
 } from 'salto'
 import { EventEmitter } from 'pietile-eventemitter'
 import { Spinner, SpinnerCreator, CliExitCode } from '../../src/types'
 import { command, fetchCommand } from '../../src/commands/fetch'
-import { MockWriteStream, getWorkspaceErrors, dummyChanges, mockSpinnerCreator, mockLoadConfig,
-  elements as mockElements } from '../mocks'
+import * as mocks from '../mocks'
 import Prompts from '../../src/prompts'
+import * as mockCliWorkspace from '../../src/workspace'
 
 jest.mock('salto', () => ({
   ...jest.requireActual('salto'),
   fetch: jest.fn().mockImplementation(() => Promise.resolve({
     changes: [],
     mergeErrors: [],
-    sucess: true,
+    success: true,
   })),
-  Workspace: {
-    load: jest.fn().mockImplementation(
-      config => ({ config, elements: [], hasErrors: () => false }),
-    ),
-  },
-  loadConfig: jest.fn().mockImplementation((workspaceDir: string) => mockLoadConfig(workspaceDir)),
 }))
-
-
+jest.mock('../../src/workspace')
 describe('fetch command', () => {
-  const workspaceDir = 'dummy_dir'
   let spinners: Spinner[]
   let spinnerCreator: SpinnerCreator
   const services = ['salesforce']
-  let cliOutput: { stdout: MockWriteStream; stderr: MockWriteStream }
+  let cliOutput: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }
+  const mockLoadWorkspace = mockCliWorkspace.loadWorkspace as jest.Mock
+  const mockUpdateWorkspace = mockCliWorkspace.updateWorkspace as jest.Mock
+  mockUpdateWorkspace.mockImplementation(ws =>
+    Promise.resolve(ws.config.baseDir !== 'exist-on-error'))
+  const findWsUpdateCalls = (workspaceDir: string): unknown[][] =>
+    mockUpdateWorkspace.mock.calls.filter(args => args[0].config.baseDir === workspaceDir)
 
   beforeEach(() => {
-    cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
+    cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
     spinners = []
-    spinnerCreator = mockSpinnerCreator(spinners)
+    spinnerCreator = mocks.mockSpinnerCreator(spinners)
   })
 
   describe('execute', () => {
+    let result: number
     describe('with errored workspace', () => {
       beforeEach(async () => {
         const erroredWorkspace = {
           hasErrors: () => true,
           errors: { strings: () => ['some error'] },
           config: { services },
-          getWorkspaceErrors,
+          getWorkspaceErrors: mocks.getWorkspaceErrors,
         } as unknown as Workspace
-        (Workspace.load as jest.Mock).mockResolvedValueOnce(Promise.resolve(erroredWorkspace))
-        await command(workspaceDir, true, false, cliOutput, spinnerCreator, services).execute()
+        mockLoadWorkspace.mockResolvedValueOnce({ workspace: erroredWorkspace, errored: true })
+        result = await command('', true, false, cliOutput, spinnerCreator, services)
+          .execute()
       })
 
       it('should fail', async () => {
-        expect(cliOutput.stderr.content).toContain('Error')
+        expect(result).toBe(CliExitCode.AppError)
         expect(fetch).not.toHaveBeenCalled()
       })
     })
 
     describe('with valid workspace', () => {
-      beforeEach(async () => {
-        await command(workspaceDir, true, false, cliOutput, spinnerCreator, services).execute()
+      const workspaceDir = 'valid-ws'
+      beforeAll(async () => {
+        mockLoadWorkspace.mockResolvedValue({ workspace: mocks.mockLoadWorkspace(workspaceDir),
+          errored: false })
+        result = await command(workspaceDir, true, false, cliOutput, spinnerCreator, services)
+          .execute()
       })
 
-      it('should load the workspace from the provided directory', () => {
-        expect(Workspace.load).toHaveBeenCalledWith(loadConfig(workspaceDir))
+      it('should return success code', () => {
+        expect(result).toBe(CliExitCode.Success)
       })
       it('should call fetch', () => {
         expect(fetch).toHaveBeenCalled()
       })
+
+      it('should update changes', () => {
+        const calls = findWsUpdateCalls(workspaceDir)
+        expect(calls).toHaveLength(1)
+        expect(_.isEmpty(calls[0][2])).toBeTruthy()
+      })
     })
 
     describe('fetch command', () => {
-      const mockFetch = jest.fn().mockResolvedValue(
-        Promise.resolve({ changes: [], mergeErrors: [], success: true })
-      )
+      const mockFetch = jest.fn().mockResolvedValue({ changes: [], mergeErrors: [], success: true })
       const mockFailedFetch = jest.fn().mockResolvedValue(
-        Promise.resolve({ changes: [], mergeErrors: [], success: false })
+        { changes: [], mergeErrors: [], success: false }
       )
       const mockEmptyApprove = jest.fn().mockResolvedValue([])
 
@@ -85,6 +94,7 @@ describe('fetch command', () => {
         config: { services },
         updateBlueprints: jest.fn(),
         flush: jest.fn(),
+        isEmpty: () => (elements || []).length === 0,
       } as unknown as Workspace)
 
       describe('with emitters called', () => {
@@ -124,6 +134,7 @@ describe('fetch command', () => {
       })
       describe('with no upstream changes', () => {
         let workspace: Workspace
+        const workspaceDir = 'no-changes'
         beforeEach(async () => {
           workspace = mockWorkspace()
           await fetchCommand({
@@ -137,25 +148,28 @@ describe('fetch command', () => {
           })
         })
         it('should not update workspace', () => {
-          expect(workspace.updateBlueprints).not.toHaveBeenCalled()
-          expect(workspace.flush).not.toHaveBeenCalled()
+          const calls = findWsUpdateCalls(workspaceDir)
+          expect(calls).toHaveLength(0)
         })
       })
       describe('with upstream changes', () => {
+        const changes = mocks.dummyChanges.map(
+          (change: DetailedChange): FetchChange => ({ change, serviceChange: change })
+        )
         const mockFetchWithChanges = jest.fn().mockResolvedValue(
           {
-            changes: dummyChanges.map(
-              (change: DetailedChange): FetchChange => ({ change, serviceChange: change })
-            ),
+            changes,
             mergeErrors: [],
             success: true,
           }
         )
         describe('when called with force', () => {
+          const workspaceDir = 'with-force'
           let workspace: Workspace
           beforeEach(async () => {
             workspace = mockWorkspace()
-            const result = await fetchCommand({
+            workspace.config.baseDir = workspaceDir
+            result = await fetchCommand({
               workspace,
               force: true,
               interactive: false,
@@ -167,11 +181,15 @@ describe('fetch command', () => {
             expect(result).toBe(CliExitCode.Success)
           })
           it('should deploy all changes', () => {
-            expect(workspace.updateBlueprints).toHaveBeenCalledWith(...dummyChanges)
+            const calls = findWsUpdateCalls(workspaceDir)
+            expect(calls).toHaveLength(1)
+            expect(calls[0].slice(2)).toEqual(changes)
           })
         })
         describe('when initial workspace is empty', () => {
+          const workspaceDir = 'ws-empty'
           const workspace = mockWorkspace()
+          workspace.config.baseDir = workspaceDir
           beforeEach(async () => {
             await fetchCommand({
               workspace,
@@ -184,12 +202,15 @@ describe('fetch command', () => {
             })
           })
           it('should deploy all changes', () => {
-            expect(workspace.updateBlueprints).toHaveBeenCalledWith(...dummyChanges)
+            const calls = findWsUpdateCalls(workspaceDir)
+            expect(calls).toHaveLength(1)
+            expect(calls[0].slice(2)).toEqual(changes)
           })
         })
         describe('when initial workspace is not empty', () => {
           describe('if no change is approved', () => {
             let workspace: Workspace
+            const workspaceDir = 'no-approve'
             beforeEach(async () => {
               workspace = mockWorkspace([new ObjectType({ elemID: new ElemID('adapter', 'type') })])
               await fetchCommand({
@@ -203,16 +224,18 @@ describe('fetch command', () => {
               })
             })
             it('should not update workspace', () => {
-              expect(workspace.updateBlueprints).not.toHaveBeenCalled()
-              expect(workspace.flush).not.toHaveBeenCalled()
+              const calls = findWsUpdateCalls(workspaceDir)
+              expect(calls).toHaveLength(0)
             })
           })
           describe('if some changes are approved', () => {
-            const mockSingleChangeApprove = jest.fn().mockImplementation(changes =>
-              Promise.resolve([changes[0]]))
+            const mockSingleChangeApprove = jest.fn().mockImplementation(cs =>
+              Promise.resolve([cs[0]]))
 
             it('should update workspace only with approved changes', async () => {
-              const workspace = mockWorkspace(mockElements())
+              const workspace = mockWorkspace(mocks.elements())
+              const workspaceDir = 'single-approve'
+              workspace.config.baseDir = workspaceDir
               await fetchCommand({
                 workspace,
                 force: false,
@@ -222,20 +245,23 @@ describe('fetch command', () => {
                 fetch: mockFetchWithChanges,
                 getApprovedChanges: mockSingleChangeApprove,
               })
-              expect(workspace.updateBlueprints).toHaveBeenCalledWith(dummyChanges[0])
-              expect(workspace.flush).toHaveBeenCalledTimes(1)
+              const calls = findWsUpdateCalls(workspaceDir)
+              expect(calls).toHaveLength(1)
+              expect(calls[0][2]).toEqual(changes[0])
             })
 
             it('should exit if errors identified in workspace after update', async () => {
-              const workspace = mockWorkspace(mockElements())
+              const workspace = mockWorkspace(mocks.elements())
+              const workspaceDir = 'exist-on-error'
+              workspace.config.baseDir = workspaceDir
               workspace.getWorkspaceErrors = async () => [{
                 sourceFragments: [],
                 message: 'BLA Error',
                 severity: 'Error',
               }]
-              workspace.hasErrors = () => true
+              workspace.hasErrors = () => Promise.resolve(true)
 
-              await fetchCommand({
+              const res = await fetchCommand({
                 workspace,
                 force: false,
                 interactive: false,
@@ -244,21 +270,23 @@ describe('fetch command', () => {
                 fetch: mockFetchWithChanges,
                 getApprovedChanges: mockSingleChangeApprove,
               })
-              expect(workspace.updateBlueprints).toHaveBeenCalledWith(dummyChanges[0])
-              expect(cliOutput.stderr.content).toContain('Error')
-              expect(cliOutput.stderr.content).toContain('BLA Error')
-              expect(workspace.flush).not.toHaveBeenCalled()
+              const calls = findWsUpdateCalls(workspaceDir)
+              expect(calls).toHaveLength(1)
+              expect(calls[0][2]).toEqual(changes[0])
+              expect(res).toBe(CliExitCode.AppError)
             })
             it('should not exit if warning identified in workspace after update', async () => {
-              const workspace = mockWorkspace(mockElements())
+              const workspace = mockWorkspace(mocks.elements())
+              const workspaceDir = 'warn'
+              workspace.config.baseDir = workspaceDir
               workspace.getWorkspaceErrors = async () => [{
                 sourceFragments: [],
                 message: 'BLA Warning',
                 severity: 'Warning',
               }]
-              workspace.hasErrors = () => true
+              workspace.hasErrors = () => Promise.resolve(true)
 
-              await fetchCommand({
+              const res = await fetchCommand({
                 workspace,
                 force: false,
                 interactive: false,
@@ -267,15 +295,17 @@ describe('fetch command', () => {
                 fetch: mockFetchWithChanges,
                 getApprovedChanges: mockSingleChangeApprove,
               })
-              expect(workspace.updateBlueprints).toHaveBeenCalledWith(dummyChanges[0])
+              const calls = findWsUpdateCalls(workspaceDir)
+              expect(calls).toHaveLength(1)
+              expect(calls[0][2]).toEqual(changes[0])
               expect(cliOutput.stderr.content).not.toContain(Prompts.SHOULDCONTINUE(1))
               expect(cliOutput.stdout.content).not.toContain(Prompts.SHOULDCONTINUE(1))
-              expect(cliOutput.stdout.content).toContain('Warning')
-              expect(cliOutput.stdout.content).toContain('BLA Warning')
-              expect(workspace.flush).toHaveBeenCalled()
+              expect(res).toBe(CliExitCode.Success)
             })
             it('should not update workspace if fetch failed', async () => {
-              const workspace = mockWorkspace(mockElements())
+              const workspace = mockWorkspace(mocks.elements())
+              const workspaceDir = 'fail'
+              workspace.config.baseDir = workspaceDir
               await fetchCommand({
                 workspace,
                 force: false,
@@ -286,8 +316,8 @@ describe('fetch command', () => {
                 getApprovedChanges: mockSingleChangeApprove,
               })
               expect(cliOutput.stderr.content).toContain('Error')
-              expect(workspace.flush).not.toHaveBeenCalled()
-              expect(workspace.updateBlueprints).not.toHaveBeenCalled()
+              const calls = findWsUpdateCalls(workspaceDir)
+              expect(calls).toHaveLength(0)
             })
           })
         })

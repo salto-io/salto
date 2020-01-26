@@ -1,18 +1,16 @@
-import path from 'path'
 import _ from 'lodash'
 import { logger } from '@salto/logging'
-import { stat, mkdirp, writeFile, readTextFile } from '../file'
 import { ParseResult } from '../parser/parse'
 import * as parseResultSerializer from '../serializer/parse_result'
+import { DirectoryStore } from './dir_store'
 
 const log = logger(module)
 
-const EXTERNAL_BP_CACHE_DIR = 'external_bp'
-const CACHE_FOLDER = '.cache'
+const CACHE_EXTENSION = '.bpc'
 
-export interface AsyncCache<K, V> {
-    get(key: K): Promise<V | undefined>
-    put(key: K, value: V): Promise<void>
+type AsyncCache<K, V> = {
+  get(key: K): Promise<V | undefined>
+  put(key: K, value: V): Promise<void>
 }
 
 export type ParseResultKey = {
@@ -20,52 +18,36 @@ export type ParseResultKey = {
   lastModified: number
 }
 
-export type ParseResultCache = AsyncCache<ParseResultKey, ParseResult>
+export type ParseResultCache = AsyncCache<ParseResultKey, ParseResult> &
+{ flush: () => Promise<void> }
 
-export class ParseResultFSCache implements ParseResultCache {
-      private baseCacheDir: string
-      private baseWorkspaceDir: string
+export const parseResultCache = (dirStore: DirectoryStore): ParseResultCache => {
+  const resolveCacheFileName = (key: ParseResultKey): string =>
+    _.replace(key.filename, /.bp$/, CACHE_EXTENSION)
 
-      constructor(localStorageDir: string, baseWorkspaceDir: string) {
-        this.baseCacheDir = path.join(localStorageDir, CACHE_FOLDER)
-        this.baseWorkspaceDir = baseWorkspaceDir
-      }
+  return {
+    put: async (key: ParseResultKey, value: ParseResult): Promise<void> =>
+      dirStore.set({
+        filename: resolveCacheFileName(key),
+        buffer: parseResultSerializer.serialize(value),
+      }),
 
-      private resolveCacheFilePath = (key: ParseResultKey): string => {
-        // First, we normalize the filename to be relative to the workspace
-        // We need to do this to support external BP in both abs and rel notation
-        const getExternalFileCachePath = (extFileNormName: string): string => {
-          const absPathParts = path.parse(path.resolve(this.baseWorkspaceDir, extFileNormName))
-          return path.join(absPathParts.dir.replace(absPathParts.root, ''), absPathParts.base)
+    get: async (key: ParseResultKey): Promise<ParseResult | undefined> => {
+      const cacheFileName = resolveCacheFileName(key)
+      const cacheTimeMs = await dirStore.mtimestamp(cacheFileName) || -1
+      if ((cacheTimeMs > key.lastModified) || (cacheTimeMs === key.lastModified)) {
+        const fileContent = (await dirStore.get(cacheFileName))?.buffer
+        try {
+          return _.isUndefined(fileContent)
+            ? Promise.resolve(undefined)
+            : parseResultSerializer.deserialize(fileContent)
+        } catch (err) {
+          log.debug('Failed to handle cache file "%o": %o', cacheFileName, err)
         }
-
-        const normFilename = path.isAbsolute(key.filename)
-          ? path.relative(this.baseWorkspaceDir, key.filename)
-          : key.filename
-        const cacheFileName = normFilename.startsWith('..') // Indicates that the file is external
-          ? path.join(EXTERNAL_BP_CACHE_DIR, getExternalFileCachePath(normFilename))
-          : normFilename
-        return path.join(this.baseCacheDir, _.replace(cacheFileName, /.bp$/, '.bpc'))
       }
+      return Promise.resolve(undefined)
+    },
 
-      async put(key: ParseResultKey, value: ParseResult): Promise<void> {
-        const filePath = this.resolveCacheFilePath(key)
-        await mkdirp(path.parse(filePath).dir)
-        return writeFile(filePath, parseResultSerializer.serialize(value))
-      }
-
-      async get(key: ParseResultKey): Promise<ParseResult | undefined> {
-        const cacheFilePath = this.resolveCacheFilePath(key)
-
-        const s = await stat.notFoundAsUndefined(cacheFilePath)
-        if (s && s.mtimeMs > key.lastModified) {
-          const fileContent = await readTextFile(cacheFilePath)
-          try {
-            return parseResultSerializer.deserialize(fileContent)
-          } catch (err) {
-            log.debug('Failed to handle cache file "%o": %o', cacheFilePath, err)
-          }
-        }
-        return Promise.resolve(undefined)
-      }
+    flush: dirStore.flush,
+  }
 }

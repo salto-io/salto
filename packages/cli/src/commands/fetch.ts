@@ -80,7 +80,7 @@ export const fetchCommand = async (
     inputServices,
     fetchProgress,
   )
-  if (!fetchResult.success) {
+  if (fetchResult.success === false) {
     output.stderr.write(formatFatalFetchError(fetchResult.mergeErrors))
     return CliExitCode.AppError
   }
@@ -96,7 +96,7 @@ export const fetchCommand = async (
   // Unpack changes to array so we can iterate on them more than once
   const changes = [...fetchResult.changes]
   // If the workspace starts empty there is no point in showing a huge amount of changes
-  const changesToApply = force || _.isEmpty(workspace.elements)
+  const changesToApply = force || (await workspace.isEmpty())
     ? changes
     : await getApprovedChanges(changes, interactive)
 

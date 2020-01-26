@@ -3,6 +3,7 @@ import {
   Type, ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field, Values,
   Element, InstanceElement, SaltoError,
 } from 'adapter-api'
+import { collections } from '@salto/lowerdash'
 import {
   SourceRange as InternalSourceRange, SourceMap as SourceMapImpl,
   ParsedHclBlock, HclParseError,
@@ -16,6 +17,16 @@ export type SourceRange = InternalSourceRange
 export type ParseError = HclParseError & SaltoError
 
 export type SourceMap = ReadonlyMap<string, SourceRange[]>
+
+export const mergeSourceMaps = (sourceMaps: SourceMap[]): SourceMap => {
+  const result = new collections.map.DefaultMap<string, SourceRange[]>(() => [])
+  sourceMaps.forEach(sourceMap => {
+    sourceMap.forEach((ranges, key) => {
+      result.get(key).push(...ranges)
+    })
+  })
+  return result
+}
 
 export const parseElemID = (fullname: string): ElemID => {
   const separatorIdx = fullname.indexOf(Keywords.NAMESPACE_SEPARATOR)

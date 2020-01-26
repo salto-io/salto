@@ -1,40 +1,41 @@
-import { Workspace } from 'salto'
 import { command } from '../../src/commands/preview'
 import { preview, MockWriteStream, getWorkspaceErrors, mockSpinnerCreator, mockLoadConfig, transformToWorkspaceError } from '../mocks'
-import { SpinnerCreator, Spinner } from '../../src/types'
+import { SpinnerCreator, Spinner, CliExitCode } from '../../src/types'
+import * as workspace from '../../src/workspace'
 
 const mockPreview = preview
 jest.mock('salto', () => ({
   ...jest.requireActual('salto'),
   preview: jest.fn().mockImplementation(() => mockPreview()),
-  Workspace: {
-    load: jest.fn().mockImplementation(config => {
-      if (config.baseDir === 'errdir') {
-        return {
-          hasErrors: () => true,
-          errors: {
-            strings: () => ['Error', 'Error'],
-          },
-          getWorkspaceErrors,
-          config,
-          transformToWorkspaceError,
-        }
-      }
-      return {
-        hasErrors: () => false,
-        config,
-        transformToWorkspaceError,
-      }
-    }),
-  },
-  loadConfig: jest.fn().mockImplementation((workspaceDir: string) => mockLoadConfig(workspaceDir)),
 }))
-
+jest.mock('../../src/workspace')
 describe('preview command', () => {
   let cliOutput: { stdout: MockWriteStream; stderr: MockWriteStream }
   let spinners: Spinner[]
   let spinnerCreator: SpinnerCreator
   const services = ['salesforce']
+
+  const mockLoadWorkspace = workspace.loadWorkspace as jest.Mock
+  mockLoadWorkspace.mockImplementation(baseDir => {
+    if (baseDir === 'errdir') {
+      return { workspace: {
+        hasErrors: () => true,
+        errors: {
+          strings: () => ['Error', 'Error'],
+        },
+        getWorkspaceErrors,
+        config: mockLoadConfig(baseDir),
+        transformToWorkspaceError,
+      },
+      errored: true }
+    }
+    return { workspace: {
+      hasErrors: () => false,
+      config: mockLoadConfig(baseDir),
+      transformToWorkspaceError,
+    },
+    errored: false }
+  })
 
   beforeEach(() => {
     cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
@@ -48,7 +49,7 @@ describe('preview command', () => {
     })
 
     it('should load the workspace', async () => {
-      expect(Workspace.load).toHaveBeenCalled()
+      expect(mockLoadWorkspace).toHaveBeenCalled()
     })
 
     it('should print summary', async () => {
@@ -67,20 +68,20 @@ describe('preview command', () => {
 
     it('should have started spinner and it should succeed (and not fail)', async () => {
       expect(spinnerCreator).toHaveBeenCalled()
-      expect(spinners).toHaveLength(2) // first is for workspace load
-      expect(spinners[1].fail).not.toHaveBeenCalled()
-      expect(spinners[1].succeed).toHaveBeenCalled()
-      expect((spinners[1].succeed as jest.Mock).mock.calls[0][0]).toContain('Calculated')
+      expect(spinners[0].fail).not.toHaveBeenCalled()
+      expect(spinners[0].succeed).toHaveBeenCalled()
+      expect((spinners[0].succeed as jest.Mock).mock.calls[0][0]).toContain('Calculated')
     })
   })
 
   describe('when the workspace fails to load', () => {
+    let result: number
     beforeEach(async () => {
-      await command('errdir', cliOutput, spinnerCreator, services).execute()
+      result = await command('errdir', cliOutput, spinnerCreator, services).execute()
     })
 
-    it('should print the error', () => {
-      expect(cliOutput.stderr.content).toContain('Error')
+    it('should fail', () => {
+      expect(result).toBe(CliExitCode.AppError)
     })
 
     it('should not start the preview spinner', () => {

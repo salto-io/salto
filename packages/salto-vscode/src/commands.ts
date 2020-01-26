@@ -107,8 +107,6 @@ export const deployCommand = async (
     await workspace.updateBlueprints(...wu(result.changes || []).map(c => c.change).toArray())
     if (await hasCriticalErrors(workspace)) {
       (await getCriticalErrors(workspace)).forEach(e => displayError(e.message))
-    } else {
-      await workspace.flush()
     }
   } catch (e) {
     displayError(e.message)

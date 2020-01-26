@@ -1,4 +1,3 @@
-import wu from 'wu'
 import _ from 'lodash'
 import { types } from '@salto/lowerdash'
 /**
@@ -39,12 +38,6 @@ export class TemplateExpression extends types.Bean<{ parts: TemplatePart[] }> {}
 export type Expression = ReferenceExpression | TemplateExpression
 
 export type TemplatePart = string | Expression
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const isExpression = (value: any): value is Expression => (
-  value instanceof ReferenceExpression
-    || value instanceof TemplateExpression
-)
 
 export type FieldMap = Record<string, Field>
 export type TypeMap = Record<string, Type>
@@ -481,59 +474,6 @@ export class InstanceElement implements Element {
 
 export type PrimitiveField = Field & {type: PrimitiveType}
 
-export class ElementsRegistry {
-  registeredElements: ElementMap
-  constructor(initElements: Element[] = []) {
-    this.registeredElements = {}
-    initElements.forEach(type => this.registerElement(type))
-  }
-
-  registerElement(elementToRegister: Element): void {
-    const key = elementToRegister.elemID.getFullName()
-    const existingElement = this.registeredElements[key]
-    if (existingElement) {
-      throw new Error('Type extension is not supported for now')
-    }
-    this.registeredElements[key] = elementToRegister
-  }
-
-  hasElement(elemID: ElemID): boolean {
-    const fullName = elemID.getFullName()
-    return Object.prototype.hasOwnProperty.call(this.registeredElements, fullName)
-  }
-
-  getAllElements(): Element[] {
-    return Object.values(this.registeredElements)
-  }
-
-  getElement(
-    elemID: ElemID,
-    type?: PrimitiveTypes|ObjectType,
-    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-  ): any {
-    // Using any here is ugly, but I can't find a better compiling solution. TODO - fix this
-    const key = elemID.getFullName()
-    let res: Element = this.registeredElements[key]
-    if (!res) {
-      if (type === undefined) {
-        res = new ObjectType({ elemID })
-        /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-      } else if (type as any in PrimitiveTypes) {
-        res = new PrimitiveType({ elemID, primitive: type as PrimitiveTypes })
-      } else {
-        res = new InstanceElement(elemID.name, type as ObjectType, {})
-      }
-      this.registerElement(res)
-    }
-    return res
-  }
-
-  merge(otherRegistry: ElementsRegistry): ElementsRegistry {
-    const allElements = this.getAllElements().concat(otherRegistry.getAllElements())
-    return new ElementsRegistry(allElements)
-  }
-}
-
 export const BuiltinTypes: Record<string, PrimitiveType> = {
   STRING: new PrimitiveType({
     elemID: new ElemID('', 'string'),
@@ -583,81 +523,4 @@ export const BuiltinAnnotationTypes: Record<string, Type> = {
         restrictionElemID, RESTRICTION_ANNOTATIONS.MAX, BuiltinTypes.NUMBER
       ),
     } }),
-}
-
-/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-export function isElement(value: any): value is Element {
-  return value && value.elemID && value.elemID instanceof ElemID
-}
-
-/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-export function isType(element: any): element is Type {
-  return element instanceof Type
-}
-
-/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-export function isObjectType(element: any): element is ObjectType {
-  return element instanceof ObjectType
-}
-
-/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-export function isInstanceElement(element: any): element is InstanceElement {
-  return element instanceof InstanceElement
-}
-
-export function isPrimitiveType(
-  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-  element: any,
-): element is PrimitiveType {
-  return element instanceof PrimitiveType
-}
-
-/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-export function isField(element: any): element is Field {
-  return element instanceof Field
-}
-
-/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-export function isPrimitiveField(element: any): element is PrimitiveField {
-  return isField(element) && isPrimitiveType(element.type)
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function isEqualElements(first?: any, second?: any): boolean {
-  if (!(first && second)) {
-    return false
-  }
-  // first.isEqual line appears multiple times since the compiler is not smart
-  // enough to understand the 'they are the same type' concept when using or
-  if (isPrimitiveType(first) && isPrimitiveType(second)) {
-    return first.isEqual(second)
-  } if (isObjectType(first) && isObjectType(second)) {
-    return first.isEqual(second)
-  } if (isField(first) && isField(second)) {
-    return first.isEqual(second)
-  } if (isInstanceElement(first) && isInstanceElement(second)) {
-    return first.isEqual(second)
-  }
-  return false
-}
-
-export const findElements = (elements: Iterable<Element>, id: ElemID): Iterable<Element> => (
-  wu(elements).filter(e => e.elemID.isEqual(id))
-)
-
-export const findElement = (elements: Iterable<Element>, id: ElemID): Element | undefined => (
-  wu(elements).find(e => e.elemID.isEqual(id))
-)
-
-export const findObjectType = (elements: Iterable<Element>, id: ElemID): ObjectType | undefined => {
-  const objects = wu(elements).filter(isObjectType) as wu.WuIterable<ObjectType>
-  return objects.find(e => e.elemID.isEqual(id))
-}
-
-export const findInstances = (
-  elements: Iterable<Element>,
-  typeID: ElemID,
-): Iterable<InstanceElement> => {
-  const instances = wu(elements).filter(isInstanceElement) as wu.WuIterable<InstanceElement>
-  return instances.filter(e => e.type.elemID.isEqual(typeID))
 }

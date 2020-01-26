@@ -96,7 +96,10 @@ BlueprintsSource => {
 
     log.info('workspace has %d elements and %d parsed blueprints',
       elementsIndex.length, allParsed.length)
-    return { parsedBlueprints: allParsed, elementsIndex }
+    return {
+      parsedBlueprints: { ...allParsed, ..._.keyBy(errored, parsed => parsed.filename) },
+      elementsIndex,
+    }
   }
 
   let state: Promise<BlueprintsState> = readAllBps()

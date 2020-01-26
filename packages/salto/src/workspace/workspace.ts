@@ -1,25 +1,21 @@
 import _ from 'lodash'
 import path from 'path'
 import uuidv4 from 'uuid/v4'
-import { Element, ElemID, SaltoError, SaltoElementError } from 'adapter-api'
+import { Element, SaltoError, SaltoElementError, ElemID } from 'adapter-api'
 import { logger } from '@salto/logging'
-import { DefaultMap } from '@salto/lowerdash/dist/src/collections/map'
-import { mkdirp, exists } from '../file'
-import { SourceMap, parse, SourceRange, ParseError, ParseResult } from '../parser/parse'
+import { types } from '@salto/lowerdash'
 import { DetailedChange } from '../core/plan'
-import { ParseResultCache } from './cache'
-import { getChangeLocations, updateBlueprintData, getChangesToUpdate } from './blueprint_update'
-import { Config, dumpConfig, locateWorkspaceRoot, getConfigPath, completeConfig } from './config'
-import Credentials from './credentials'
-import { localCredentials } from './local/credentials'
+import { MergeError, mergeElements } from '../core/merger'
+import { ValidationError, validateElements } from '../core/validator'
+import { mkdirp, exists } from '../file'
+import { SourceRange, ParseError, SourceMap } from '../parser/parse'
+import { Config, dumpConfig, locateWorkspaceRoot, getConfigPath, completeConfig, saltoConfigType } from './config'
+import Credentials, { adapterCredentials } from './credentials'
 import State from './state'
 import { localState } from './local/state'
-import BlueprintsStore, { Blueprint } from './blueprints_store'
-import { localBlueprintsStore } from './local/blueprints_store'
-import {
-  BlueprintsState, ParsedBlueprintMap, blueprintState, ParsedBlueprint, Errors,
-} from './blueprints_state'
-import { localParseResultCache } from './local/cache'
+import { blueprintsSource, BP_EXTENSION, BlueprintsSource, Blueprint } from './blueprints/blueprints_source'
+import { parseResultCache } from './cache'
+import { localDirectoryStore } from './local/dir_store'
 
 const log = logger(module)
 
@@ -44,6 +40,24 @@ export type SourceFragment = {
   fragment: string
 }
 
+export class Errors extends types.Bean<Readonly<{
+  parse: ReadonlyArray<ParseError>
+  merge: ReadonlyArray<MergeError>
+  validation: ReadonlyArray<ValidationError>
+}>> {
+  hasErrors(): boolean {
+    return [this.parse, this.merge, this.validation].some(errors => errors.length > 0)
+  }
+
+  strings(): ReadonlyArray<string> {
+    return [
+      ...this.parse.map(error => error.detail),
+      ...this.merge.map(error => error.error),
+      ...this.validation.map(error => error.error),
+    ]
+  }
+}
+
 const ensureEmptyWorkspace = async (config: Config): Promise<void> => {
   if (await locateWorkspaceRoot(path.resolve(config.baseDir))) {
     throw new ExistingWorkspaceError()
@@ -61,36 +75,24 @@ const ensureEmptyWorkspace = async (config: Config): Promise<void> => {
   }
 }
 
-/**
- * The Workspace class exposes the content of a collection (usually a directory) of blueprints
- * in the form of Elements.
- *
- * Changes to elements represented in the workspace should be updated in the workspace through
- * one of the update methods and eventually flushed to persistent storage with "flush"
- *
- * Note that the workspace assumes users wait for operations to finish before another operation
- * is started, calling update / flush before another update / flush is finished will operate on
- * an out of date workspace and will probably lead to undesired behavior
- */
+type MergedState = {
+  readonly mergedElements: Element[]
+  readonly errors: Errors
+}
+
 export class Workspace {
   readonly state: State
   readonly credentials: Credentials
-  readonly blueprintsStore: BlueprintsStore
-  private readonly cache: ParseResultCache
-  private blueprintsState: Promise<BlueprintsState>
+  private readonly blueprintsSource: BlueprintsSource
+  private mergedState?: Promise<MergedState>
+
 
   constructor(public config: Config) {
-    this.blueprintsStore = localBlueprintsStore(config.baseDir)
+    const blueprintsStore = localDirectoryStore(config.baseDir, `*${BP_EXTENSION}`)
+    const cacheStore = localDirectoryStore(path.join(config.localStorage, '.cache'))
+    this.blueprintsSource = blueprintsSource(blueprintsStore, parseResultCache(cacheStore))
     this.state = localState(config.stateLocation)
-    this.credentials = localCredentials(path.join(config.localStorage, 'credentials'))
-    this.cache = localParseResultCache(path.join(config.localStorage, '.cache'))
-
-    const readAllBps = async (blueprintsStore: BlueprintsStore): Promise<Blueprint[]> => (
-      Promise.all((await blueprintsStore.list())
-        .map(async filename => this.blueprintsStore.get(filename))) as Promise<Blueprint[]>
-    )
-    this.blueprintsState = readAllBps(this.blueprintsStore)
-      .then(bps => this.buildBlueprintsState(bps, {}))
+    this.credentials = adapterCredentials(localDirectoryStore(path.join(config.localStorage, 'credentials')))
   }
 
   static async init(baseDir: string, workspaceName?: string): Promise<Workspace> {
@@ -109,80 +111,86 @@ export class Workspace {
     return new Workspace(config)
   }
 
-  private async buildBlueprintsState(newBps: Blueprint[], current: ParsedBlueprintMap):
-  Promise<BlueprintsState> {
-    log.debug(`going to parse ${newBps.length} blueprints`)
-    const parsedBlueprints = await this.parseBlueprints(newBps)
-    const errored = parsedBlueprints.filter(parsed => !_.isEmpty(parsed.errors))
-    errored.forEach(parsed => {
-      log.error('failed to parse %s due to:\n%s', parsed.filename,
-        parsed.errors.map(error => error.message).join())
-    })
-    const newParsed = _.keyBy(parsedBlueprints, parsed => parsed.filename)
-    const allParsed = _.omitBy({ ...current, ...newParsed }, parsed => _.isEmpty(parsed.elements))
-    return blueprintState(Object.values(allParsed))
-  }
-
   async isEmpty(): Promise<boolean> {
     const notConfig = (elem: Element): boolean => !elem.elemID.isConfig()
     return _.isEmpty((await this.elements).filter(notConfig))
     && _.isEmpty((await this.state.getAll()).filter(notConfig))
   }
 
-  // Accessors into blueprint state
+  private initMergedState(): void {
+    const buildMergedState = async (): Promise<MergedState> => {
+      const { merged: mergedElements, errors: mergeErrors } = mergeElements(
+        await this.blueprintsSource.getAll()
+      )
+      mergedElements.push(saltoConfigType)
+      return {
+        mergedElements,
+        errors: new Errors({
+          parse: Object.freeze(await this.blueprintsSource.getParseErrors()),
+          merge: mergeErrors,
+          validation: validateElements(mergedElements),
+        }),
+      }
+    }
+    if (_.isUndefined(this.mergedState)) {
+      this.mergedState = buildMergedState()
+    }
+  }
+
   get elements(): Promise<ReadonlyArray<Element>> {
-    return this.blueprintsState.then(ws => ws.elements)
+    this.initMergedState()
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    return this.mergedState!.then(state => state.mergedElements)
   }
 
   get errors(): Promise<Errors> {
-    return this.blueprintsState.then(ws => ws.errors)
-  }
-
-  get parsedBlueprints(): Promise<ParsedBlueprintMap> {
-    return this.blueprintsState.then(ws => ws.parsedBlueprints)
-  }
-
-  private get elementsIndex(): Promise<Record<string, string[]>> {
-    return this.blueprintsState.then(ws => ws.elementsIndex)
+    this.initMergedState()
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    return this.mergedState!.then(state => state.errors)
   }
 
   hasErrors(): Promise<boolean> {
-    return this.blueprintsState.then(ws => ws.errors.hasErrors())
+    this.initMergedState()
+    return this.errors.then(errors => errors.hasErrors())
   }
 
-  private async getElementBlueprints(elemID: ElemID): Promise<string[]> {
-    const topLevelID = elemID.createTopLevelParentID()
-    const elementsIndex = await this.elementsIndex
-    return elementsIndex[topLevelID.parent.getFullName()] || []
+  getSourceMap(filename: string): Promise<SourceMap> {
+    return this.blueprintsSource.getSourceMap(filename)
   }
 
-  async getSourceMap(parsedBp: ParsedBlueprint): Promise<SourceMap> {
-    const { filename } = parsedBp
-    const cachedParsedResult = await this.cache.get({ filename, lastModified: parsedBp.timestamp })
-    if (_.isUndefined(cachedParsedResult)) {
-      log.warn('expected to find source map for filename %s, going to re-parse', filename)
-      const buffer = (await this.blueprintsStore.get(filename))?.buffer
-      if (_.isUndefined(buffer)) {
-        log.error('failed to find %s in blueprint store', filename)
-        return new Map<string, SourceRange[]>()
-      }
-      return (await this.parseBlueprint({ filename, buffer })).sourceMap
-    }
-    return cachedParsedResult.sourceMap
+  getSourceRanges(elemID: ElemID): Promise<SourceRange[]> {
+    return this.blueprintsSource.getSourceRanges(elemID)
   }
 
-  async getSourceRanges(elemID: ElemID): Promise<SourceRange[]> {
-    const bps = await this.getElementBlueprints(elemID)
-    const parsedBlueprints = await this.parsedBlueprints
-    const sourceRanges = await Promise.all(bps
-      .map(async bp =>
-        (await this.getSourceMap(parsedBlueprints[bp])).get(elemID.getFullName())
-        || []))
-    return _.flatten(sourceRanges)
+  async listBlueprints(): Promise<string[]> {
+    return this.blueprintsSource.listBlueprints()
+  }
+
+  async getBlueprint(filename: string): Promise<Blueprint | undefined> {
+    return this.blueprintsSource.getBlueprint(filename)
+  }
+
+  async setBlueprints(...blueprints: Blueprint[]): Promise<void> {
+    this.mergedState = undefined
+    return this.blueprintsSource.setBlueprints(...blueprints)
+  }
+
+  async removeBlueprints(...names: string[]): Promise<void> {
+    this.mergedState = undefined
+    return this.blueprintsSource.removeBlueprints(...names)
+  }
+
+  async getElements(filename: string): Promise<Element[]> {
+    return this.blueprintsSource.getElements(filename)
+  }
+
+  async updateBlueprints(...changes: DetailedChange[]): Promise<void> {
+    this.mergedState = undefined
+    return this.blueprintsSource.update(...changes)
   }
 
   private async getSourceFragment(sourceRange: SourceRange): Promise<SourceFragment> {
-    const bp = await this.blueprintsStore.get(sourceRange.filename)
+    const bp = await this.blueprintsSource.getBlueprint(sourceRange.filename)
     const fragment = bp ? bp.buffer.substring(sourceRange.start.byte, sourceRange.end.byte) : ''
     if (!bp) {
       log.warn('failed to resolve source fragment for %o', sourceRange)
@@ -195,7 +203,7 @@ export class Workspace {
 
   async transformToWorkspaceError<T extends SaltoElementError>(saltoElemErr: T):
   Promise<Readonly<WorkspaceError<T>>> {
-    const sourceRanges = await this.getSourceRanges(saltoElemErr.elemID)
+    const sourceRanges = await this.blueprintsSource.getSourceRanges(saltoElemErr.elemID)
     const sourceFragments = await Promise.all(sourceRanges.map(sr => this.getSourceFragment(sr)))
     return {
       ...saltoElemErr,
@@ -220,112 +228,8 @@ export class Workspace {
     ]))
   }
 
-  /**
-   * Update workspace with changes to elements in the workspace
-   *
-   * @param changes The changes to apply
-   */
-  async updateBlueprints(...changes: DetailedChange[]): Promise<void> {
-    const getBlueprintData = async (filename: string): Promise<string> => {
-      const bp = await this.blueprintsStore.get(filename)
-      return bp ? bp.buffer : ''
-    }
-
-    const mergeSourceMaps = (sourceMaps: SourceMap[]): SourceMap => {
-      const result = new DefaultMap<string, SourceRange[]>(() => [])
-      sourceMaps.forEach(sourceMap => {
-        sourceMap.forEach((ranges, key) => {
-          result.get(key).push(...ranges)
-        })
-      })
-      return result
-    }
-
-    log.debug('going to calculate new blueprints data')
-    const changesToUpdate = getChangesToUpdate(changes, await this.elementsIndex)
-    const bps = _(await Promise.all(changesToUpdate
-      .map(change => change.id)
-      .map(elemID => this.getElementBlueprints(elemID))))
-      .flatten().uniq().value()
-    const parsedBlueprints = await this.parsedBlueprints
-    const changeSourceMaps = await Promise.all(bps
-      .map(bp => this.getSourceMap(parsedBlueprints[bp])))
-
-    const mergedSourceMap = mergeSourceMaps(changeSourceMaps)
-    const updatedBlueprints = (await Promise.all(
-      _(changesToUpdate)
-        .map(change => getChangeLocations(change, mergedSourceMap))
-        .flatten()
-        .groupBy(change => change.location.filename)
-        .entries()
-        .map(async ([filename, fileChanges]) => {
-          try {
-            const buffer = updateBlueprintData(await getBlueprintData(filename), fileChanges)
-            return { filename, buffer }
-          } catch (e) {
-            log.error('failed to update blueprint %s with %o changes due to: %o',
-              filename, fileChanges, e)
-            return undefined
-          }
-        })
-        .value()
-    )).filter(b => b !== undefined) as Blueprint[]
-
-    log.debug('going to set the new blueprints')
-    return this.setBlueprints(...updatedBlueprints)
-  }
-
-  async getBlueprint(name: string): Promise<Blueprint | undefined> {
-    return this.blueprintsStore.get(name)
-  }
-
-  /**
-   * Low level interface for updating/adding a specific blueprint to a workspace
-   *
-   * @param blueprints New blueprint or existing blueprint with new content
-   */
-  async setBlueprints(...blueprints: Blueprint[]): Promise<void> {
-    await Promise.all(blueprints.map(bp => this.blueprintsStore.set(bp)))
-    // Swap state
-    this.blueprintsState = this.buildBlueprintsState(blueprints, await this.parsedBlueprints)
-  }
-
-  /**
-   * Remove specific blueprints from the workspace
-   * @param names Names of the blueprints to remove
-   */
-  async removeBlueprints(...names: string[]): Promise<void> {
-    await Promise.all(names.map(name => this.blueprintsStore.delete(name)))
-    // Swap state
-    this.blueprintsState = this.buildBlueprintsState(names
-      .map(filename => ({ filename, buffer: '' })), await this.parsedBlueprints)
-  }
-
-  private async parseBlueprint(bp: Blueprint): Promise<ParseResult> {
-    const key = { filename: bp.filename, lastModified: bp.timestamp || Date.now() }
-    let parseResult = await this.cache.get(key)
-    if (parseResult === undefined) {
-      parseResult = parse(Buffer.from(bp.buffer), bp.filename)
-      await this.cache.put(key, parseResult)
-    }
-    return parseResult
-  }
-
-  private async parseBlueprints(blueprints: Blueprint[]): Promise<ParsedBlueprint[]> {
-    return Promise.all(blueprints.map(async bp => {
-      const parsed = await this.parseBlueprint(bp)
-      return {
-        timestamp: bp.timestamp || Date.now(),
-        filename: bp.filename,
-        elements: parsed.elements,
-        errors: parsed.errors,
-      }
-    }))
-  }
-
   async flush(): Promise<void> {
     await this.state.flush()
-    await this.blueprintsStore.flush()
-    await this.cache.flush()
+    await this.blueprintsSource.flush()
   }
 }

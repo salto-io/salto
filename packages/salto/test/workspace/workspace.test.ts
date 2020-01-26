@@ -3,19 +3,17 @@ import path from 'path'
 import _ from 'lodash'
 import {
   Element, ObjectType, ElemID, CORE_ANNOTATIONS, Field, BuiltinTypes,
-  findElement, isObjectType,
+  findElement,
 } from 'adapter-api'
-import BlueprintsStore from 'src/workspace/blueprints_store'
-import { ParsedBlueprintMap } from '../../src/workspace/blueprints_state'
+import { DirectoryStore } from '../../src/workspace/dir_store'
+import { blueprintsSource } from '../../src/workspace/blueprints/blueprints_source'
 import { Workspace } from '../../src/workspace/workspace'
 import { DetailedChange } from '../../src/core/plan'
 import * as file from '../../src/file'
 import { UnresolvedReferenceValidationError, InvalidValueValidationError } from '../../src/core/validator'
 
 import * as dump from '../../src/parser/dump'
-import * as localBpStore from '../../src/workspace/local/blueprints_store'
 import * as config from '../../src/workspace/config'
-import * as localCach from '../../src/workspace/local/cache'
 
 import { mockBpsStore } from '../common/blueprint_store'
 
@@ -35,9 +33,8 @@ const newBP = {
 }
 const services = ['salesforce']
 
-const createWorkspace = (bpStore?: BlueprintsStore): Workspace => {
-  (localBpStore.localBlueprintsStore as jest.Mock).mockReturnValueOnce(bpStore || mockBpsStore())
-  return new Workspace({
+const createWorkspace = (bpStore?: DirectoryStore): Workspace => {
+  const ws = new Workspace({
     uid: '',
     name: 'test',
     localStorage: path.join(os.homedir(), '.salto', 'test'),
@@ -45,21 +42,20 @@ const createWorkspace = (bpStore?: BlueprintsStore): Workspace => {
     services,
     stateLocation: '/salto/latest_state.bp',
   })
+  _.set(ws, 'blueprintsSource', blueprintsSource(bpStore || mockBpsStore(),
+    {
+      put: () => Promise.resolve(),
+      get: () => Promise.resolve(undefined),
+      flush: () => Promise.resolve(undefined),
+    }))
+  return ws
 }
 
 const getElemMap = (elements: ReadonlyArray<Element>): Record<string, Element> =>
   _.keyBy(elements, elem => elem.elemID.getFullName())
 
-jest.mock('../../src/workspace/local/blueprints_store')
-jest.mock('../../src/workspace/local/cache')
+jest.mock('../../src/workspace/dir_store')
 describe('workspace', () => {
-  // TODO: test with cache
-  const cache = localCach.localParseResultCache as jest.Mock
-  cache.mockReturnValue({
-    put: () => Promise.resolve(),
-    get: () => Promise.resolve(undefined),
-  })
-
   describe('loaded elements', () => {
     const workspace = createWorkspace()
     let elemMap: Record<string, Element>
@@ -73,10 +69,6 @@ describe('workspace', () => {
     it('should be merged', () => {
       const lead = elemMap['salesforce.lead'] as ObjectType
       expect(_.keys(lead.fields)).toHaveLength(4)
-    })
-
-    it('should have parsed blueprints', async () => {
-      expect(_.size(await workspace.parsedBlueprints)).toBe(3)
     })
   })
 
@@ -144,12 +136,6 @@ describe('workspace', () => {
       elemMap = getElemMap(await workspace.elements)
     })
 
-    it('should remove blueprints from parsed blueprints', () => {
-      removedPaths.forEach(
-        filename => expect(_.keys(workspace.parsedBlueprints)).not.toContain(filename)
-      )
-    })
-
     it('should update elements to not include fields from removed blueprints', () => {
       const lead = elemMap['salesforce.lead'] as ObjectType
       expect(_.keys(lead.fields)).toHaveLength(1)
@@ -171,9 +157,6 @@ describe('workspace', () => {
       elemMap = getElemMap(await workspace.elements)
     })
 
-    it('should add new blueprints', async () => {
-      expect(_.keys(await workspace.parsedBlueprints)).toContain('new.bp')
-    })
     it('should add new elements', () => {
       expect(elemMap).toHaveProperty(['salesforce.new'])
     })
@@ -181,9 +164,6 @@ describe('workspace', () => {
       const lead = elemMap['salesforce.lead'] as ObjectType
       expect(lead.fields.new_base).toBeDefined()
       expect(lead.fields.base_field).not.toBeDefined()
-    })
-    it('should remove empty blueprints', async () => {
-      expect(_.keys(await workspace.parsedBlueprints)).not.toContain('willbempty.bp')
     })
 
     it('should create blueprints that were added', async () => {
@@ -309,7 +289,6 @@ describe('workspace', () => {
     ]
 
     let lead: ObjectType
-    let parsedBlueprints: ParsedBlueprintMap
     let elemMap: Record<string, Element>
 
     const bpStore = mockBpsStore()
@@ -317,7 +296,6 @@ describe('workspace', () => {
     beforeAll(async () => {
       await workspace.updateBlueprints(...changes)
       elemMap = getElemMap(await workspace.elements)
-      parsedBlueprints = await workspace.parsedBlueprints
       lead = elemMap['salesforce.lead'] as ObjectType
     })
 
@@ -335,38 +313,6 @@ describe('workspace', () => {
     })
     it('should add new element', () => {
       expect(elemMap[newElemID.getFullName()]).toBeDefined()
-    })
-    it('should add new blueprint', () => {
-      expect(Object.keys(parsedBlueprints)).toContain('test/new.bp')
-    })
-
-    it('should add new blueprint for field with path', () => {
-      expect(Object.keys(parsedBlueprints)).toContain('other/bar.bp')
-      expect(parsedBlueprints['other/bar.bp'].elements[0].elemID.getFullName()).toEqual('salesforce.lead')
-      expect((parsedBlueprints['other/bar.bp'].elements.filter(e => isObjectType(e))[0] as ObjectType).fields.lala).toBeDefined()
-    })
-
-    it('should add new blueprint for annotation with path', () => {
-      expect(Object.keys(parsedBlueprints)).toContain('other/battr.bp')
-      expect(parsedBlueprints['other/battr.bp'].elements[0].elemID.getFullName()).toEqual('salesforce.lead')
-      expect((parsedBlueprints['other/battr.bp'].elements.filter(e => isObjectType(e))[0] as ObjectType).annotations.bobo).toBeDefined()
-    })
-
-    it('should add nested attributes with same parent on the same path to the same wrapper',
-      async () => {
-        expect(Object.keys(await workspace.parsedBlueprints)).toContain('other/boo.bp')
-        expect(parsedBlueprints['other/boo.bp'].elements.length).toBe(1)
-        expect(parsedBlueprints['other/boo.bp'].elements[0].annotations.nono).toBeDefined()
-        expect(parsedBlueprints['other/boo.bp'].elements[0].annotations.momo).toBeDefined()
-      })
-    it('should add to an exiting type another nested addition', () => {
-      // original file.bp had 2 elements in it
-      expect(parsedBlueprints['file.bp'].elements.length).toBe(2)
-      expect(parsedBlueprints['file.bp'].elements[0].annotations.dodo).toBeDefined()
-    })
-
-    it('should not add new blueprint for deeply nested type ', () => {
-      expect(Object.keys(parsedBlueprints)).not.toContain('other/foo/bar.bp')
     })
 
     it('should add annotations under correct field', () => {
@@ -433,11 +379,6 @@ describe('workspace', () => {
       jest.spyOn(config, 'locateWorkspaceRoot').mockResolvedValueOnce('found')
       await expect(Workspace.init('bla')).rejects.toThrow()
     })
-    it('should parse existing bps', async () => {
-      (localBpStore.localBlueprintsStore as jest.Mock).mockReturnValueOnce(mockBpsStore())
-      const workspace = await Workspace.init('test')
-      expect((await workspace.elements).length).toBeGreaterThan(0)
-    })
   })
 
   describe('validation errors serverity', () => {
@@ -464,10 +405,9 @@ describe('workspace', () => {
       const flushable = { flush: mockFlush }
       const workspace = createWorkspace()
       _.set(workspace, 'state', flushable)
-      _.set(workspace, 'blueprintsStore', flushable)
-      _.set(workspace, 'cache', flushable)
+      _.set(workspace, 'blueprintsSource', flushable)
       await workspace.flush()
-      expect(mockFlush).toHaveBeenCalledTimes(3)
+      expect(mockFlush).toHaveBeenCalledTimes(2)
     })
   })
 })

@@ -1,5 +1,5 @@
 import * as path from 'path'
-import { Config, Workspace, parse, file, SourceRange, ParsedBlueprint } from 'salto'
+import { Config, Workspace, parse, file, SourceRange } from 'salto'
 import { InstanceElement, ElemID, ObjectType, Field, BuiltinTypes } from 'adapter-api'
 import _ from 'lodash'
 import { ParseError } from 'salto/dist/src/parser/parse'
@@ -25,12 +25,6 @@ export const mockWorkspace = async (blueprint?: string, config?: Partial<Config>
   const parseResult = blueprint
     ? parse(Buffer.from(buffer), filename)
     : { elements: [], errors: [] as ParseError[], sourceMap: { get: () => undefined } }
-  const parsedBlueprint: ParsedBlueprint = {
-    filename,
-    elements: parseResult.elements,
-    errors: parseResult.errors,
-    timestamp: Date.now(),
-  }
   const merged = mergeElements(parseResult.elements)
   return {
     elements: merged.merged,
@@ -40,7 +34,6 @@ export const mockWorkspace = async (blueprint?: string, config?: Partial<Config>
       validation: [],
       hasErrors: () => (!_.isEmpty(parseResult.errors)),
     },
-    parsedBlueprints: jest.fn().mockResolvedValue({ [filename]: parsedBlueprint }),
     hasErrors: jest.fn().mockImplementation(() => !_.isEmpty(parseResult.errors)),
     getSourceMap: jest.fn().mockResolvedValue(parseResult.sourceMap),
     getSourceRanges: jest.fn().mockImplementation((elemID: ElemID): SourceRange[] =>
@@ -56,15 +49,11 @@ export const mockWorkspace = async (blueprint?: string, config?: Partial<Config>
     getWorkspaceErrors: jest.fn().mockImplementation(() => parseResult.errors.map(e => e && {
       sourceFragments: [{ sourceRange: { filename, start: 1, end: 2 } }],
     })),
-    resolveParsedBlueprint: jest.fn().mockImplementation((bp: ParsedBlueprint): Promise<unknown> =>
-      (bp.filename === filename
-        ? Promise.resolve({ ...parsedBlueprint, sourceMap: parseResult.sourceMap, buffer })
-        : Promise.resolve(undefined))),
-
     setBlueprints: jest.fn().mockReturnValue(Promise.resolve()),
     removeBlueprints: jest.fn().mockReturnValue(Promise.resolve()),
     blueprintsStore: {
       list: jest.fn().mockResolvedValue([filename]),
     },
+    listBlueprints: jest.fn().mockResolvedValue([filename]),
   } as unknown as Workspace
 }

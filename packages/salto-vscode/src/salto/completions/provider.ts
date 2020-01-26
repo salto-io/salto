@@ -131,7 +131,9 @@ export const provideWorkspaceCompletionItems = async (
 ): Promise<SaltoCompletion[]> => {
   const tokens = getLineTokens(removeLinePrefix(line))
   const lineType = getLineType(context, tokens, position)
-  const suggestionsParams = { elements: await workspace.elements, tokens, ref: context.ref }
+  const suggestionsParams = { elements: await workspace.workspace.elements,
+    tokens,
+    ref: context.ref }
   const lineSuggestions = LINE_SUGGESTIONS[lineType]
   const tokenSuggestions = lineSuggestions[tokens.length - 1]
   const suggestions = (tokenSuggestions) ? tokenSuggestions(suggestionsParams) : []

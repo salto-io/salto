@@ -1,6 +1,6 @@
 import { CORE_ANNOTATIONS } from 'adapter-api'
 import _ from 'lodash'
-import BlueprintsStore, { Blueprint } from '../../src/workspace/blueprints_store'
+import { DirectoryStore, File } from 'src/workspace/dir_store'
 
 const workspaceFiles = {
   'file.bp': `
@@ -41,15 +41,16 @@ string base_field {}
   'willbempty.bp': 'type nonempty { a = 2 }',
 }
 
-const bps: Record<string, Blueprint> = _.mapValues(workspaceFiles,
+const bps: Record<string, File> = _.mapValues(workspaceFiles,
   (buffer, filename) => ({ filename, buffer }))
 
-export const mockBpsStore = (exclude: string[] = ['error.bp', 'dup.bp']): BlueprintsStore => (
+export const mockBpsStore = (exclude: string[] = ['error.bp', 'dup.bp']): DirectoryStore => (
   {
     list: jest.fn().mockResolvedValue(Object.keys(bps).filter(name => !exclude.includes(name))),
     get: jest.fn().mockImplementation((filename: string) => Promise.resolve(bps[filename])),
     set: jest.fn().mockImplementation(() => Promise.resolve()),
     delete: jest.fn().mockImplementation(() => Promise.resolve()),
     flush: jest.fn().mockImplementation(() => Promise.resolve()),
+    mtimestamp: jest.fn(),
   }
 )

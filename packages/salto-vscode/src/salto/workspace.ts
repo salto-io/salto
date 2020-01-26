@@ -1,8 +1,5 @@
 import _ from 'lodash'
-import { Element, ElemID, SaltoError } from 'adapter-api'
-import {
-  Workspace, Blueprint, Errors, DetailedChange, SourceRange, SourceMap, WorkspaceError,
-} from 'salto'
+import { Workspace, Blueprint, DetailedChange } from 'salto'
 
 export class EditorWorkspace {
   workspace: Workspace
@@ -22,11 +19,6 @@ export class EditorWorkspace {
       this.lastValidCopy = _.clone(workspace)
     }
   }
-
-  // Accessors into workspace
-  get elements(): Promise<ReadonlyArray<Element>> { return this.workspace.elements }
-  get errors(): Promise<Errors> { return this.workspace.errors }
-  get baseDir(): string { return this.workspace.config.baseDir }
 
   private hasPendingUpdates(): boolean {
     return !(_.isEmpty(this.pendingSets) && _.isEmpty(this.pendingDeletes))
@@ -60,7 +52,7 @@ export class EditorWorkspace {
       }
       // After we ran the update we check if the operation resulted with no
       // errors. If so - we update the last valid state.
-      if (_.isEmpty((await this.errors).parse) && !_.isEmpty(this.elements)) {
+      if (_.isEmpty((await this.workspace.errors).parse) && !_.isEmpty(this.workspace.elements)) {
         this.lastValidCopy = _.clone(this.workspace)
       }
       // We recall this method to make sure no pending were added since
@@ -79,34 +71,12 @@ export class EditorWorkspace {
     return this.runningSetOperation
   }
 
-  async getSourceRanges(elemID: ElemID): Promise<SourceRange[]> {
-    return this.workspace.getSourceRanges(elemID)
-  }
-
-  async getSourceMap(filename: string): Promise<SourceMap> {
-    const parsedBlueprints = await this.workspace.parsedBlueprints
-    return this.workspace.getSourceMap(parsedBlueprints[filename])
-  }
-
-  async getElements(filename: string): Promise<ReadonlyArray<Element>> {
-    const parsedBlueprints = await this.workspace.parsedBlueprints
-    return parsedBlueprints[filename].elements
-  }
-
   async updateBlueprints(...changes: DetailedChange[]): Promise<void> {
     if (this.runningSetOperation === undefined) {
       this.runningSetOperation = this.workspace.updateBlueprints(...changes)
       return this.runningSetOperation
     }
     throw new Error('Can not update blueprints during a running set operation')
-  }
-
-  async getBlueprint(filename: string): Promise<Blueprint | undefined> {
-    return this.workspace.getBlueprint(filename)
-  }
-
-  flush(): Promise<void> {
-    return this.workspace.flush()
   }
 
   setBlueprints(...blueprints: Blueprint[]): Promise<void> {
@@ -125,10 +95,6 @@ export class EditorWorkspace {
 
   hasErrors(): Promise<boolean> {
     return this.workspace.hasErrors()
-  }
-
-  getWorkspaceErrors(): Promise<ReadonlyArray<WorkspaceError<SaltoError>>> {
-    return this.workspace.getWorkspaceErrors()
   }
 
   async awaitAllUpdates(): Promise<void> {

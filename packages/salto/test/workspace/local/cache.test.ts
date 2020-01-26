@@ -1,6 +1,7 @@
 import * as path from 'path'
 import { ObjectType, ElemID } from 'adapter-api'
-import { localParseResultCache } from '../../../src/workspace/local/cache'
+import { localDirectoryStore } from '../../../src/workspace/local/dir_store'
+import { parseResultCache } from '../../../src/workspace/cache'
 import { SourceMap } from '../../../src/parser/internal/types'
 import { stat, mkdirp, replaceContents, readTextFile, exists } from '../../../src/file'
 
@@ -15,7 +16,7 @@ describe('localParseResultCache', () => {
   const mockReplaceContents = replaceContents as jest.Mock
   const mockMkdir = mkdirp as jest.Mock
 
-  const cache = localParseResultCache(mockBaseDirPath)
+  const cache = parseResultCache(localDirectoryStore(mockBaseDirPath))
   const sourceMap = new SourceMap()
   const dummyObjectType = new ObjectType({ elemID: new ElemID('salesforce', 'dummy') })
   sourceMap.push(new ElemID('salesforce', 'dummy'), {

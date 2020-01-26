@@ -1,12 +1,11 @@
 import { ElemID, ObjectType, Field, BuiltinTypes, InstanceElement } from 'adapter-api'
-import { dump } from '../../../src/parser/dump'
-import { localCredentials } from '../../../src/workspace/local/credentials'
-import * as bpStore from '../../../src/workspace/local/blueprints_store'
+import { DirectoryStore } from '../../src/workspace/dir_store'
+import { dump } from '../../src/parser/dump'
+import { adapterCredentials } from '../../src/workspace/credentials'
 
-jest.mock('../../../src/workspace/local/blueprints_store')
-describe('localCredentials', () => {
+jest.mock('../../../src/workspace/local/dir_store')
+describe('credentials', () => {
   const adapter = 'mockadapter'
-  const bpStoreMockLoad = bpStore.localBlueprintsStore as jest.Mock
   const configID = new ElemID(adapter)
   const configType = new ObjectType({
     elemID: configID,
@@ -24,28 +23,29 @@ describe('localCredentials', () => {
   const mockGet = jest.fn()
   const mockFlush = jest.fn()
   const dumpedCredentials = { filename: `${adapter}.bp`, buffer: dump([creds]) }
-
-  beforeEach(() => {
-    bpStoreMockLoad.mockReturnValue({ get: mockGet, set: mockSet, flush: mockFlush })
-  })
+  const mockedDirStore = {
+    get: mockGet,
+    set: mockSet,
+    flush: mockFlush,
+  } as unknown as DirectoryStore
 
   it('should set new credentials', async () => {
     mockSet.mockResolvedValueOnce(true)
     mockFlush.mockResolvedValue(true)
-    await localCredentials('').set(adapter, creds)
+    await adapterCredentials(mockedDirStore).set(adapter, creds)
     expect(mockSet).toHaveBeenCalledWith(dumpedCredentials)
     expect(mockFlush).toHaveBeenCalledTimes(1)
   })
 
   it('should get credentials if exists', async () => {
     mockGet.mockResolvedValueOnce(dumpedCredentials)
-    const fromCredsStore = await localCredentials('').get(adapter)
+    const fromCredsStore = await adapterCredentials(mockedDirStore).get(adapter)
     expect(fromCredsStore?.value).toEqual(creds.value)
   })
 
   it('shouldnt fail if credentials not exists', async () => {
     mockGet.mockResolvedValueOnce(undefined)
-    const fromCredsStore = await localCredentials('').get(adapter)
+    const fromCredsStore = await adapterCredentials(mockedDirStore).get(adapter)
     expect(fromCredsStore).toBeUndefined()
   })
 })

@@ -2,27 +2,13 @@ import readdirp from 'readdirp'
 import path from 'path'
 import _ from 'lodash'
 import { stat, readTextFile, Stats, exists, rm, mkdirp, replaceContents } from '../../file'
-
-export type File = {
-  filename: string
-  buffer: string
-  timestamp?: number
-}
-
-export type DirectoryStore = {
-  list(): Promise<string[]>
-  get(filename: string): Promise<File | undefined>
-  set(file: File): Promise<void>
-  delete(filename: string): Promise<void>
-  flush(): Promise<void>
-  mtimestamp(filename: string): Promise<number | undefined>
-}
+import { DirectoryStore, File } from '../dir_store'
 
 type FileMap = {
   [key: string]: File
 }
 
-export const localDirectoryStore = (dir: string, fileFilter: string): DirectoryStore => {
+export const localDirectoryStore = (dir: string, fileFilter?: string): DirectoryStore => {
   let updated: FileMap = {}
   let deleted: string[] = []
 

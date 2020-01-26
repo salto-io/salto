@@ -1,11 +1,11 @@
 import * as path from 'path'
 import readdirp from 'readdirp'
-import { localBlueprintsStore } from '../../../src/workspace/local/blueprints_store'
+import { localDirectoryStore } from '../../../src/workspace/local/dir_store'
 import * as file from '../../../src/file'
 
 jest.mock('../../../src/file')
 jest.mock('readdirp')
-describe('localBlueprintsStore', () => {
+describe('localDirectoryStore', () => {
   beforeEach(() => {
     jest.clearAllMocks()
   })
@@ -19,17 +19,18 @@ describe('localBlueprintsStore', () => {
   describe('list', () => {
     it('returns empty list if dir not exists', async () => {
       mockFileExists.mockResolvedValue(false)
-      const result = await localBlueprintsStore('').list()
+      const result = await localDirectoryStore('').list()
       expect(result).toEqual([])
     })
     it('skip hidden directories', async () => {
+      const fileFilter = '*.bp'
       const dir = 'hidden'
       mockFileExists.mockResolvedValue(true)
       mockReaddirp.mockResolvedValue([{ fullPath: 'test1' }, { fullPath: 'test2' }])
-      const result = await localBlueprintsStore(dir).list()
+      const result = await localDirectoryStore(dir, fileFilter).list()
       expect(result).toEqual(['test1', 'test2'])
       expect(mockReaddirp.mock.calls[0][0]).toEqual(dir)
-      expect(mockReaddirp.mock.calls[0][1].fileFilter).toEqual('*.bp')
+      expect(mockReaddirp.mock.calls[0][1].fileFilter).toEqual(fileFilter)
       expect(mockReaddirp.mock.calls[0][1].directoryFilter({ basename: '.hidden' })).toBeFalsy()
     })
   })
@@ -39,7 +40,7 @@ describe('localBlueprintsStore', () => {
       const dir = 'not-exists'
       const bpName = 'blabla/notexist.bp'
       mockFileExists.mockResolvedValue(false)
-      const bp = await localBlueprintsStore(dir).get(bpName)
+      const bp = await localDirectoryStore(dir).get(bpName)
       expect(bp).toBeUndefined()
       expect(mockFileExists.mock.calls[0][0]).toMatch(path.join(dir, bpName))
       expect(mockReadFile).not.toHaveBeenCalled()
@@ -52,7 +53,7 @@ describe('localBlueprintsStore', () => {
       mockFileExists.mockResolvedValue(true)
       mockReadFile.mockResolvedValue(content)
       mockState.mockResolvedValue({ mtimeMs: 7 })
-      const bp = await localBlueprintsStore(dir).get(bpName)
+      const bp = await localDirectoryStore(dir).get(bpName)
       expect(bp?.buffer).toBe(content)
       expect(mockFileExists.mock.calls[0][0]).toMatch(path.join(dir, bpName))
       expect(mockReadFile.mock.calls[0][0]).toMatch(path.join(dir, bpName))
@@ -62,7 +63,7 @@ describe('localBlueprintsStore', () => {
   describe('set', () => {
     const filename = 'inner/file'
     const buffer = 'bla'
-    const bpStore = localBlueprintsStore('')
+    const bpStore = localDirectoryStore('')
 
     it('writes a content with the right filename', async () => {
       mockFileExists.mockResolvedValue(false)

@@ -16,10 +16,10 @@ export const getDiagnostics = async (
   workspace: EditorWorkspace,
 ): Promise<WorkspaceSaltoDiagnostics> => {
   const emptyDiagFiles: WorkspaceSaltoDiagnostics = _.fromPairs(
-    (await workspace.workspace.blueprintsStore.list())
+    (await workspace.workspace.listBlueprints())
       .map(filename => [filename, []])
   )
-  const diag = _(await workspace.getWorkspaceErrors())
+  const diag = _(await workspace.workspace.getWorkspaceErrors())
     .map(err => err.sourceFragments.map(f => ({
       filename: f.sourceRange.filename,
       severity: err.severity,

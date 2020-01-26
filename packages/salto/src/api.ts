@@ -210,7 +210,7 @@ const getTypeFromState = async (ws: Workspace, typeId: string): Promise<Element>
   if (!type) {
     throw new Error(`Couldn't find the type you are looking for: ${typeId}. Have you run salto fetch yet?`)
   }
-  return type
+  return type as Element
 }
 
 const getTypeForDataMigration = async (workspace: Workspace, typeId: string): Promise<Element> => {

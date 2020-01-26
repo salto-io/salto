@@ -15,8 +15,9 @@ const MAX_LOCATION_SEARCH_RESULT = 20
 export const getLocations = async (
   workspace: EditorWorkspace,
   fullname: string
-): Promise<SaltoElemLocation[]> => (await workspace.getSourceRanges(ElemID.fromFullName(fullname)))
-  .map(range => ({ fullname, filename: range.filename, range }))
+): Promise<SaltoElemLocation[]> =>
+  (await workspace.workspace.getSourceRanges(ElemID.fromFullName(fullname)))
+    .map(range => ({ fullname, filename: range.filename, range }))
 
 export const getQueryLocations = async (
   workspace: EditorWorkspace,
@@ -33,7 +34,7 @@ export const getQueryLocations = async (
     return isPartOfLastNamePart || isPrefix || isSuffix
   }
 
-  const matchingNames = (await workspace.elements)
+  const matchingNames = (await workspace.workspace.elements)
     .filter(lastIDPartContains)
     .map(e => e.elemID.getFullName())
     .slice(0, MAX_LOCATION_SEARCH_RESULT)

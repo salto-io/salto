@@ -1,39 +1,32 @@
 import _ from 'lodash'
 import {
-  ElementsRegistry,
   ElemID,
   Field,
   InstanceElement,
+  ObjectType,
+  PrimitiveType,
+  PrimitiveTypes,
+} from '../src/elements'
+
+import {
   isEqualElements,
   isInstanceElement,
   isObjectType,
   isPrimitiveType,
   isType,
-  ObjectType,
-  PrimitiveType,
-  PrimitiveTypes,
-  Value,
   findElement,
   findElements,
   findObjectType,
   findInstances,
-} from '../src/elements'
+} from '../src/utils'
 
 describe('Test elements.ts', () => {
   /**   ElemIDs   * */
   const primID = new ElemID('test', 'prim')
-  const elemID = new ElemID('', 'string')
 
   /**   primitives   * */
   const primStr = new PrimitiveType({
     elemID: primID,
-    primitive: PrimitiveTypes.STRING,
-    annotationTypes: {},
-    annotations: {},
-  })
-
-  const prim2Str = new PrimitiveType({
-    elemID: new ElemID('test', 'prim2'),
     primitive: PrimitiveTypes.STRING,
     annotationTypes: {},
     annotations: {},
@@ -58,12 +51,6 @@ describe('Test elements.ts', () => {
     },
     annotationTypes: {},
     annotations: {},
-  })
-
-  let registry: ElementsRegistry
-
-  beforeEach(async () => {
-    registry = new ElementsRegistry()
   })
 
   it('should create a basic primitive type with all params passed to the constructor', () => {
@@ -163,124 +150,6 @@ describe('Test elements.ts', () => {
       ],
       description: 'new unit test instance profile',
     },)
-  })
-
-  it('should allow to create types from the correct type them using registry.getElement method', () => {
-    const st = registry.getElement(elemID, PrimitiveTypes.STRING)
-    expect(st).toBeInstanceOf(PrimitiveType)
-
-    const ot1 = registry.getElement(new ElemID('', 'object'))
-    expect(ot1).toBeInstanceOf(ObjectType)
-  })
-
-  it('should reuse created types', () => {
-    const st = registry.getElement(elemID, PrimitiveTypes.STRING)
-    const st2 = registry.getElement(elemID, PrimitiveTypes.STRING)
-    const st3 = registry.getElement(
-      new ElemID('', 'string2'),
-      PrimitiveTypes.STRING,
-    )
-
-    expect(st).toBe(st2)
-    expect(st).not.toBe(st3)
-  })
-
-  it('should register types that were registered explicitly', () => {
-    registry.registerElement(primStr)
-    expect(primStr).toBe(registry.getElement(primID))
-  })
-
-  it('should not allow registration of same type id twice', () => {
-    registry.registerElement(primStr)
-    expect(() => { registry.registerElement(primStr) }).toThrow()
-  })
-
-  it('should allow clone without annotations.', () => {
-    const saltoAddr = registry.getElement(new ElemID('salto', 'address'))
-    saltoAddr.annotationTypes.label = registry.getElement(elemID)
-    saltoAddr.fields.country = registry.getElement(elemID)
-    saltoAddr.fields.city = registry.getElement(elemID)
-
-    const saltoAddr2 = saltoAddr.clone()
-    expect(saltoAddr).not.toBe(saltoAddr2)
-    expect(saltoAddr).toEqual(saltoAddr2)
-
-    const prim = registry.getElement(
-      new ElemID('', 'prim'),
-      PrimitiveTypes.STRING,
-    )
-    const prim2 = prim.clone()
-
-    expect(prim).not.toBe(prim2)
-    expect(prim).toEqual(prim2)
-  })
-
-  it('should allow clone with annotationTypes.', () => {
-    const annotations: { [key: string]: Value } = {}
-    annotations.label = 'label'
-
-    // Object
-    const stringType = registry.getElement(elemID)
-    const saltoAddr = registry.getElement(new ElemID('salto', 'address'))
-    saltoAddr.fields.country = new Field(saltoAddr.elemID, 'country', stringType)
-    saltoAddr.fields.city = new Field(saltoAddr.elemID, 'city', stringType)
-
-    const saltoAddr2 = saltoAddr.clone(annotations)
-    expect(saltoAddr).not.toBe(saltoAddr2)
-    expect(saltoAddr2).toMatchObject(saltoAddr)
-
-    const prim = registry.getElement(
-      new ElemID('', 'prim'),
-      PrimitiveTypes.STRING,
-    )
-    const prim2 = prim.clone(annotations)
-
-    expect(prim).not.toBe(prim2)
-    expect(prim2).toMatchObject(prim)
-  })
-
-  it('should provide type guard for all types', () => {
-    const pt = registry.getElement(elemID, PrimitiveTypes.STRING)
-    const ot1 = registry.getElement(primID)
-
-    expect(isObjectType(ot1)).toBeTruthy()
-    expect(isPrimitiveType(pt)).toBeTruthy()
-  })
-
-  it('should allow to init a registry with types', () => {
-    registry = new ElementsRegistry([prim2Str, primNum])
-    expect(registry.hasElement(prim2Str.elemID)).toBeTruthy()
-    expect(registry.hasElement(primNum.elemID)).toBeTruthy()
-
-    const allTypes = registry.getAllElements()
-    expect(allTypes).toContain(prim2Str)
-    expect(allTypes).toContain(primNum)
-  })
-
-  it('should allow basic registry merge', () => {
-    registry = new ElementsRegistry([primStr])
-    const registry2 = new ElementsRegistry([prim2Str])
-    const mergedReg = registry.merge(registry2)
-
-    expect(mergedReg.hasElement(primStr.elemID)).toBeTruthy()
-    expect(mergedReg.hasElement(prim2Str.elemID)).toBeTruthy()
-  })
-
-  it('should create a basic instance element', () => {
-    const ot1 = registry.getElement(
-      new ElemID('test', 'ot1')
-    )
-    const inst = new InstanceElement('test', ot1, { test: 'test' })
-    expect(inst.elemID).toEqual(new ElemID('test', 'ot1', 'instance', 'test'))
-    expect(inst.type).toBe(ot1)
-    expect(inst.value.test).toBe('test')
-  })
-
-  it('should create a basic instance element from registry', () => {
-    const ot1 = registry.getElement(elemID)
-    const inst = registry.getElement(primID, ot1)
-
-    expect(inst.type).toBe(ot1)
   })
 
   describe('isEqualElements and type guards', () => {

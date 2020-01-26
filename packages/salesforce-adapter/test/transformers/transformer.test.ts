@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import {
-  ObjectType, ElemID, Field, BuiltinTypes, Type, Field as TypeField, Values, CORE_ANNOTATIONS,
-  ReferenceExpression, InstanceElement,
+  ObjectType, ElemID, Field, BuiltinTypes, TypeElement, Field as TypeField, Values,
+  CORE_ANNOTATIONS, ReferenceExpression, InstanceElement,
 } from 'adapter-api'
 import { collections } from '@salto/lowerdash'
 import { Field as SalesforceField, ValueTypeField } from 'jsforce'
@@ -152,7 +152,7 @@ describe('transformer', () => {
       })
 
       const assertReferenceFieldTransformation = (fieldElement: Field, expectedRelatedTo: string[],
-        expectedType: Type, expectedAllowLookupRecordDeletion: boolean | undefined,
+        expectedType: TypeElement, expectedAllowLookupRecordDeletion: boolean | undefined,
         expectedLookupFilter: object | undefined):
         void => {
         expect(fieldElement.type).toEqual(expectedType)
@@ -1012,7 +1012,7 @@ describe('transformer', () => {
       const [element] = await createMetadataTypeElements(
         'BaseType',
         [],
-        new Map<string, Type>(),
+        new Map<string, TypeElement>(),
         new Set(['BaseType']),
         client,
       )
@@ -1023,7 +1023,7 @@ describe('transformer', () => {
       const [element] = await createMetadataTypeElements(
         'BaseType',
         [],
-        new Map<string, Type>(),
+        new Map<string, TypeElement>(),
         new Set(),
         client,
       )
@@ -1035,7 +1035,7 @@ describe('transformer', () => {
       const elements = await createMetadataTypeElements(
         'BaseType',
         [field],
-        new Map<string, Type>(),
+        new Map<string, TypeElement>(),
         new Set(['BaseType', 'FieldType', 'NestedFieldType']),
         client,
       )
@@ -1058,7 +1058,7 @@ describe('transformer', () => {
       const elements = await createMetadataTypeElements(
         'BaseType',
         [field],
-        new Map<string, Type>(),
+        new Map<string, TypeElement>(),
         new Set(['BaseType']),
         client,
       )
@@ -1083,7 +1083,7 @@ describe('transformer', () => {
       const elements = await createMetadataTypeElements(
         'BaseType',
         [field],
-        new Map<string, Type>(),
+        new Map<string, TypeElement>(),
         new Set(['BaseType', 'FieldType']),
         client,
       )
@@ -1100,7 +1100,7 @@ describe('transformer', () => {
       const elements = await createMetadataTypeElements(
         'BaseType',
         [field],
-        new Map<string, Type>(),
+        new Map<string, TypeElement>(),
         new Set(['BaseType', 'FieldType']),
         client,
       )
@@ -1130,7 +1130,7 @@ describe('transformer', () => {
           soapType: 'MyPicklist',
           valueRequired: false,
         }],
-        new Map<string, Type>(),
+        new Map<string, TypeElement>(),
         new Set(['BaseType']),
         client,
       )
@@ -1155,7 +1155,7 @@ describe('transformer', () => {
           soapType: 'base64Binary',
           valueRequired: false,
         }],
-        new Map<string, Type>(),
+        new Map<string, TypeElement>(),
         new Set(['BaseType']),
         client,
       )

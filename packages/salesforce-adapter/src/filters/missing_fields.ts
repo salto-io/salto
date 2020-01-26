@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import {
-  isObjectType, Field, Values, Type, isType, BuiltinTypes, ElemID, Element,
-  CORE_ANNOTATIONS, RESTRICTION_ANNOTATIONS,
+  isObjectType, Field, Values, TypeElement, isType, BuiltinTypes, ElemID, Element,
+  CORE_ANNOTATIONS, RESTRICTION_ANNOTATIONS, TypeMap,
 } from 'adapter-api'
 import { logger } from '@salto/logging'
 import { FilterCreator } from '../filter'
@@ -19,7 +19,7 @@ const log = logger(module)
 
 interface MissingField {
   name: string
-  type: Type | ElemID
+  type: TypeElement | ElemID
   annotations?: Values
   isList?: boolean
 }
@@ -411,7 +411,7 @@ export const makeFilter = (
 ): FilterCreator => () => ({
   onFetch: async function onFetch(elements) {
     // We need a mapping of all the types so we can replace type names with the correct types
-    const typeMap: Record<string, Type> = _(elements)
+    const typeMap: TypeMap = _(elements)
       .filter(isType)
       .map(t => [id(t), t])
       .fromPairs()

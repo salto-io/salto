@@ -1,5 +1,5 @@
 import _ from 'lodash'
-import { Type, Field, isObjectType, isInstanceElement, isPrimitiveType,
+import { TypeElement, Field, isObjectType, isInstanceElement, isPrimitiveType,
   isField, PrimitiveTypes, BuiltinTypes, isType, Value, getField,
   getFieldNames, getFieldType, getAnnotationKey, ElemID, Element,
   Values, CORE_ANNOTATIONS } from 'adapter-api'
@@ -26,7 +26,8 @@ export const isInsertText = (value: any): value is InsertText => (
   value.label !== undefined && value.insertText !== undefined
 )
 
-const getRestrictionValues = (annotatingElem: Type|Field, valueType: Type): Value[]|undefined =>
+const getRestrictionValues = (annotatingElem: TypeElement|Field, valueType: TypeElement):
+Value[]|undefined =>
   annotatingElem.annotations[CORE_ANNOTATIONS.VALUES]
   || valueType.annotations[CORE_ANNOTATIONS.VALUES]
 
@@ -125,8 +126,8 @@ const referenceSuggestions = (
 
 export const valueSuggestions = (
   attrName: string,
-  annotatingElem: Type|Field,
-  valueType: Type
+  annotatingElem: TypeElement|Field,
+  valueType: TypeElement
 ): Suggestions => {
   // If the annotating element is a list and we are not in a list content
   // we need to created one

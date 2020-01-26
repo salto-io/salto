@@ -1,5 +1,88 @@
 import _ from 'lodash'
-import { types } from '@salto/lowerdash'
+import { ElemID } from './element_id'
+import { Values, isEqualValues } from './values'
+
+/**
+ * An abstract class that represent the base element.
+ * Contains the base function and fields.
+ * Each subclass needs to implement the clone function as it is members
+ * dependent.
+ */
+export abstract class Element {
+  readonly elemID: ElemID
+  annotations: Values
+  annotationTypes: TypeMap
+  path?: ReadonlyArray<string>
+  constructor({
+    elemID,
+    annotations,
+    annotationTypes,
+    path,
+  }: {
+    elemID: ElemID
+    annotationTypes?: TypeMap
+    annotations?: Values
+    path?: ReadonlyArray<string>
+  }) {
+    this.elemID = elemID
+    this.annotations = annotations || {}
+    this.annotationTypes = annotationTypes || {}
+    this.path = path
+  }
+
+  /**
+   * Return a deep copy of the instance annotations by recursively
+   * cloning all annotations (by invoking their clone method)
+   */
+  protected cloneAnnotationTypes(): TypeMap {
+    const clonedAnnotationTypes: TypeMap = {}
+    Object.keys(this.annotationTypes).forEach(key => {
+      clonedAnnotationTypes[key] = this.annotationTypes[key].clone()
+    })
+    return clonedAnnotationTypes
+  }
+
+  /**
+   * Return a deep copy of the instance annotations values.
+   */
+  protected cloneAnnotations(): Values {
+    return _.cloneDeep(this.annotations)
+  }
+
+  isEqual(other: Element): boolean {
+    return _.isEqual(this.elemID, other.elemID)
+      && this.isAnnotationsEqual(other)
+  }
+
+  isAnnotationsEqual(other: Element): boolean {
+    return this.isAnnotationsTypesEqual(other)
+      && isEqualValues(this.annotations, other.annotations)
+  }
+
+  isAnnotationsTypesEqual(other: Element): boolean {
+    return _.isEqual(
+      _.mapValues(this.annotationTypes, a => a.elemID),
+      _.mapValues(other.annotationTypes, a => a.elemID)
+    )
+  }
+
+  annotate(annotations: Values): void {
+    // Should we override? I'm adding right now as it seems more
+    // useful. (Roi R)
+    Object.keys(annotations).forEach(key => {
+      this.annotations[key] = annotations[key]
+    })
+  }
+
+  /**
+   * Return an independent copy of this instance. Needs to be implemented
+   * by each subclass as this is structure dependent.
+   * @return {Type} the cloned instance
+   */
+  abstract clone(annotations?: Values): Element
+}
+export type ElementMap = Record<string, Element>
+
 /**
  * Defines the list of supported types.
  */
@@ -9,209 +92,21 @@ export enum PrimitiveTypes {
   BOOLEAN,
 }
 
-export type PrimitiveValue = string | boolean | number
-
-/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-export type Value = any
-export interface Values {
-  [key: string]: Value
-}
-
-export class ReferenceExpression {
-  constructor(
-    public readonly elemId: ElemID, private resValue?: Value
-  ) {}
-
-  get traversalParts(): string[] {
-    return this.elemId.getFullNameParts()
-  }
-
-  get value(): Value {
-    return (this.resValue instanceof ReferenceExpression)
-      ? this.resValue.value
-      : this.resValue
-  }
-}
-
-export class TemplateExpression extends types.Bean<{ parts: TemplatePart[] }> {}
-
-export type Expression = ReferenceExpression | TemplateExpression
-
-export type TemplatePart = string | Expression
-
-export type FieldMap = Record<string, Field>
-export type TypeMap = Record<string, Type>
-
-export type ElemIDType = 'type' | 'field' | 'instance' | 'attr' | 'annotation'
-export const ElemIDTypes = ['type', 'field', 'instance', 'attr', 'annotation'] as ReadonlyArray<string>
-export const isElemIDType = (v: string): v is ElemIDType => ElemIDTypes.includes(v)
-
-export class ElemID {
-  static readonly NAMESPACE_SEPARATOR = '.'
-  static readonly CONFIG_NAME = '_config'
-
-  static fromFullName(fullName: string): ElemID {
-    const [adapter, typeName, idType, ...name] = fullName.split(ElemID.NAMESPACE_SEPARATOR)
-    if (idType === undefined) {
-      return new ElemID(adapter, typeName)
-    }
-    if (!isElemIDType(idType)) {
-      throw new Error(`Invalid ID type ${idType}`)
-    }
-    if (idType === 'instance' && _.isEmpty(name)) {
-      // This is a config instance (the last name part is omitted)
-      return new ElemID(adapter, typeName, idType, ElemID.CONFIG_NAME)
-    }
-    return new ElemID(adapter, typeName, idType, ...name)
-  }
-
-  readonly adapter: string
-  readonly typeName: string
-  readonly idType: ElemIDType
-  private readonly nameParts: ReadonlyArray<string>
-  constructor(
-    adapter: string,
-    typeName?: string,
-    idType?: ElemIDType,
-    ...name: ReadonlyArray<string>
-  ) {
-    this.adapter = adapter
-    this.typeName = _.isEmpty(typeName) ? ElemID.CONFIG_NAME : typeName as string
-    this.idType = idType || 'type'
-    this.nameParts = name
-  }
-
-  get name(): string {
-    return this.fullNameParts().slice(-1)[0]
-  }
-
-  get nestingLevel(): number {
-    if (this.isTopLevel()) {
-      return 0
-    }
-    if (this.idType === 'instance') {
-      // First name part is the instance name which is top level
-      return this.nameParts.length - 1
-    }
-    return this.nameParts.length
-  }
-
-  private fullNameParts(): string[] {
-    const parts = this.idType === 'type'
-      ? [this.adapter, this.typeName]
-      : [this.adapter, this.typeName, this.idType, ...this.nameParts]
-    return parts.filter(part => !_.isEmpty(part)) as string[]
-  }
-
-  getFullName(): string {
-    const nameParts = this.fullNameParts()
-    return this.fullNameParts()
-      // If the last part of the name is empty we can omit it
-      .filter((part, idx) => idx !== nameParts.length - 1 || part !== ElemID.CONFIG_NAME)
-      .join(ElemID.NAMESPACE_SEPARATOR)
-  }
-
-  getFullNameParts(): string[] {
-    const nameParts = this.fullNameParts()
-    return this.fullNameParts()
-      // If the last part of the name is empty we can omit it
-      .filter((part, idx) => idx !== nameParts.length - 1 || part !== ElemID.CONFIG_NAME)
-  }
-
-  isConfig(): boolean {
-    return this.typeName === ElemID.CONFIG_NAME
-  }
-
-  isTopLevel(): boolean {
-    return this.idType === 'type'
-      || (this.idType === 'instance' && this.nameParts.length === 1)
-  }
-
-  isEqual(other: ElemID): boolean {
-    return this.getFullName() === other.getFullName()
-  }
-
-  createNestedID(...nameParts: string[]): ElemID {
-    if (this.idType === 'type') {
-      // IDs nested under type IDs should have a different type
-      const [nestedIDType, ...nestedNameParts] = nameParts
-      if (!isElemIDType(nestedIDType)) {
-        throw new Error(`Invalid ID type ${nestedIDType}`)
-      }
-      return new ElemID(this.adapter, this.typeName, nestedIDType, ...nestedNameParts)
-    }
-    return new ElemID(this.adapter, this.typeName, this.idType, ...this.nameParts, ...nameParts)
-  }
-
-  createParentID(): ElemID {
-    const newNameParts = this.nameParts.slice(0, -1)
-    if (!_.isEmpty(newNameParts)) {
-      // Parent should have the same type as this ID
-      return new ElemID(this.adapter, this.typeName, this.idType, ...newNameParts)
-    }
-    if (this.isTopLevel()) {
-      // The parent of top level elements is the adapter
-      return new ElemID(this.adapter)
-    }
-    // The parent of all other id types is the type
-    return new ElemID(this.adapter, this.typeName)
-  }
-
-  createTopLevelParentID(): { parent: ElemID; path: ReadonlyArray<string> } {
-    if (this.isTopLevel()) {
-      // This is already the top level ID
-      return { parent: this, path: [] }
-    }
-    if (this.idType === 'instance') {
-      // Instance is a top level ID, the name of the instance is always the first name part
-      return {
-        parent: new ElemID(this.adapter, this.typeName, this.idType, this.nameParts[0]),
-        path: this.nameParts.slice(1),
-      }
-    }
-    // Everything other than instance is nested under type
-    return { parent: new ElemID(this.adapter, this.typeName), path: this.nameParts }
-  }
-}
-
-export const isEqualValues = (first: Value, second: Value): boolean => _.isEqualWith(
-  first,
-  second,
-  (f, s) => {
-    if (f instanceof ReferenceExpression || s instanceof ReferenceExpression) {
-      const fValue = f instanceof ReferenceExpression ? f.value : f
-      const sValue = s instanceof ReferenceExpression ? s.value : s
-      return (f instanceof ReferenceExpression && s instanceof ReferenceExpression)
-        ? f.elemId.isEqual(s.elemId)
-        : isEqualValues(fValue, sValue)
-    }
-    return undefined
-  }
-)
-
-export interface Element {
-  elemID: ElemID
-  path?: ReadonlyArray<string>
-  annotations: Values
-  clone: () => Element
-}
-
-export type ElementMap = Record<string, Element>
+export type TypeElement = PrimitiveType | ObjectType
+export type TypeMap = Record<string, TypeElement>
 
 /**
  * Represents a field inside a type
  */
-export class Field implements Element {
-  readonly elemID: ElemID
-
+export class Field extends Element {
   public constructor(
     public parentID: ElemID,
     public name: string,
-    public type: Type,
-    public annotations: Values = {},
+    public type: TypeElement,
+    annotations: Values = {},
     public isList: boolean = false,
   ) {
-    this.elemID = parentID.createNestedID('field', name)
+    super({ elemID: parentID.createNestedID('field', name), annotations })
   }
 
   isEqual(other: Field): boolean {
@@ -236,93 +131,12 @@ export class Field implements Element {
     )
   }
 }
-
-/**
- * An abstract class that represent the base type.
- * Contains the base function and fields.
- * Each subclass needs to implement the clone function as it is members
- * dependent.
- */
-export abstract class Type implements Element {
-  readonly elemID: ElemID
-  path?: ReadonlyArray<string>
-  annotationTypes: TypeMap
-  public readonly annotations: Values
-  constructor({
-    annotationTypes,
-    annotations,
-    elemID,
-    path,
-  }: {
-    elemID: ElemID
-    annotationTypes: TypeMap
-    annotations: Values
-    path?: ReadonlyArray<string>
-  }) {
-    this.annotationTypes = annotationTypes
-    this.annotations = annotations
-    this.elemID = elemID
-    this.path = path
-    // Prevents reregistration of clones, we only want to register
-    // first creation
-  }
-
-  /**
-   * Return a deep copy of the instance annotations by recursively
-   * cloning all annotations (by invoking their clone method)
-   */
-  protected cloneAnnotationTypes(): TypeMap {
-    const clonedAnnotationTypes: TypeMap = {}
-    Object.keys(this.annotationTypes).forEach(key => {
-      clonedAnnotationTypes[key] = this.annotationTypes[key].clone()
-    })
-    return clonedAnnotationTypes
-  }
-
-  /**
-   * Return a deep copy of the instance annotations values.
-   */
-  protected cloneAnnotations(): Values {
-    return _.cloneDeep(this.annotations)
-  }
-
-  isEqual(other: Type): boolean {
-    return _.isEqual(this.elemID, other.elemID)
-      && this.isAnnotationsEqual(other)
-  }
-
-  isAnnotationsEqual(other: Type): boolean {
-    return this.isAnnotationsTypesEqual(other)
-      && isEqualValues(this.annotations, other.annotations)
-  }
-
-  isAnnotationsTypesEqual(other: Type): boolean {
-    return _.isEqual(
-      _.mapValues(this.annotationTypes, a => a.elemID),
-      _.mapValues(other.annotationTypes, a => a.elemID)
-    )
-  }
-
-  annotate(annotations: Values): void {
-    // Should we override? I'm adding right now as it seems more
-    // useful. (Roi R)
-    Object.keys(annotations).forEach(key => {
-      this.annotations[key] = annotations[key]
-    })
-  }
-
-  /**
-   * Return an independent copy of this instance. Needs to be implemented
-   * by each subclass as this is structure dependent.
-   * @return {Type} the cloned instance
-   */
-  abstract clone(annotations?: Values): Type
-}
+export type FieldMap = Record<string, Field>
 
 /**
  * Defines a type that represents a primitive value (This comment WAS NOT auto generated)
  */
-export class PrimitiveType extends Type {
+export class PrimitiveType extends Element {
   primitive: PrimitiveTypes
   constructor({
     elemID,
@@ -365,7 +179,7 @@ export class PrimitiveType extends Type {
 /**
  * Defines a type that represents an object (Also NOT auto generated)
  */
-export class ObjectType extends Type {
+export class ObjectType extends Element {
   fields: FieldMap
   isSettings: boolean
 
@@ -431,20 +245,12 @@ export class ObjectType extends Type {
   }
 }
 
-export class InstanceElement implements Element {
-  elemID: ElemID
-  path?: ReadonlyArray<string>
-  type: ObjectType
-  value: Values
-  constructor(name: string, type: ObjectType, value: Values, path?: ReadonlyArray<string>) {
-    this.elemID = type.elemID.createNestedID('instance', name)
-    this.type = type
-    this.value = value
-    this.path = path
-  }
-
-  get annotations(): Values {
-    return this.type.annotations
+export class InstanceElement extends Element {
+  constructor(name: string,
+    public type: ObjectType,
+    public value: Values = {},
+    path?: ReadonlyArray<string>) {
+    super({ elemID: type.elemID.createNestedID('instance', name), path })
   }
 
   isEqual(other: InstanceElement): boolean {
@@ -473,54 +279,3 @@ export class InstanceElement implements Element {
 }
 
 export type PrimitiveField = Field & {type: PrimitiveType}
-
-export const BuiltinTypes: Record<string, PrimitiveType> = {
-  STRING: new PrimitiveType({
-    elemID: new ElemID('', 'string'),
-    primitive: PrimitiveTypes.STRING,
-  }),
-  NUMBER: new PrimitiveType({
-    elemID: new ElemID('', 'number'),
-    primitive: PrimitiveTypes.NUMBER,
-  }),
-  BOOLEAN: new PrimitiveType({
-    elemID: new ElemID('', 'boolean'),
-    primitive: PrimitiveTypes.BOOLEAN,
-  }),
-  SERVICE_ID: new PrimitiveType({
-    elemID: new ElemID('', 'serviceid'),
-    primitive: PrimitiveTypes.STRING,
-  }),
-}
-
-export const CORE_ANNOTATIONS = {
-  DEFAULT: '_default',
-  REQUIRED: '_required',
-  VALUES: '_values',
-  RESTRICTION: '_restriction',
-}
-
-export const RESTRICTION_ANNOTATIONS = {
-  ENFORCE_VALUE: 'enforce_value',
-  MIN: 'min',
-  MAX: 'max',
-}
-
-const restrictionElemID = new ElemID('', 'restriction')
-export const BuiltinAnnotationTypes: Record<string, Type> = {
-  [CORE_ANNOTATIONS.DEFAULT]: BuiltinTypes.STRING,
-  [CORE_ANNOTATIONS.REQUIRED]: BuiltinTypes.BOOLEAN,
-  [CORE_ANNOTATIONS.VALUES]: BuiltinTypes.STRING,
-  [CORE_ANNOTATIONS.RESTRICTION]: new ObjectType({ elemID: restrictionElemID,
-    fields: {
-      [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: new Field(
-        restrictionElemID, RESTRICTION_ANNOTATIONS.ENFORCE_VALUE, BuiltinTypes.BOOLEAN
-      ),
-      [RESTRICTION_ANNOTATIONS.MIN]: new Field(
-        restrictionElemID, RESTRICTION_ANNOTATIONS.MIN, BuiltinTypes.NUMBER
-      ),
-      [RESTRICTION_ANNOTATIONS.MAX]: new Field(
-        restrictionElemID, RESTRICTION_ANNOTATIONS.MAX, BuiltinTypes.NUMBER
-      ),
-    } }),
-}

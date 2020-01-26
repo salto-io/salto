@@ -1,5 +1,5 @@
 import {
-  isObjectType, Type, InstanceElement, Value,
+  isObjectType, TypeElement, InstanceElement, Value,
 } from 'adapter-api'
 import { readCsvFromStream } from '../../src/core/csv'
 
@@ -8,7 +8,7 @@ import { readCsvFromStream } from '../../src/core/csv'
  * This is slightly different than just deep equality because
  * in fields and annotations we only expect the type ID to match
  */
-export const expectTypesToMatch = (actual: Type, expected: Type): void => {
+export const expectTypesToMatch = (actual: TypeElement, expected: TypeElement): void => {
   expect(typeof actual).toBe(typeof expected)
   expect(actual.elemID).toEqual(expected.elemID)
   expect(actual.annotations).toEqual(expected.annotations)

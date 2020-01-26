@@ -1,4 +1,8 @@
-import { Element, ElemID, isType, isInstanceElement, isObjectType, Type, isField, Values, Field, Value, ReferenceExpression, CORE_ANNOTATIONS, transform, PrimitiveValue, ObjectType, PrimitiveField } from 'adapter-api'
+import {
+  Element, ElemID, isType, isInstanceElement, isObjectType, TypeElement,
+  isField, Values, Field, Value, ReferenceExpression, CORE_ANNOTATIONS,
+  transform, PrimitiveValue, ObjectType, PrimitiveField,
+} from 'adapter-api'
 import _ from 'lodash'
 import { FilterCreator } from '../filter'
 import { apiName } from '../transformers/transformer'
@@ -55,7 +59,7 @@ const replaceValue = (
   return transform(values, refElement, transformReferences, false) || values
 }
 const replaceAnnotations = (
-  element: Type | Field,
+  element: TypeElement | Field,
   apiToIdMap: Record<string, ElemID>,
   replaceTypes: Set<string>
 ): Values => {

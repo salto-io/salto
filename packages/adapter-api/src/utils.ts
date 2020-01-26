@@ -1,24 +1,19 @@
 import wu from 'wu'
 import _ from 'lodash'
 import {
-  Type, Field, ObjectType, ElemID, Values, Element, PrimitiveValue, PrimitiveField,
-  InstanceElement, PrimitiveType, Expression, ReferenceExpression, TemplateExpression,
-  Value,
+  TypeElement, Field, ObjectType, Element, PrimitiveField, InstanceElement, PrimitiveType,
 } from './elements'
+import { Values, PrimitiveValue, Expression, ReferenceExpression, TemplateExpression } from './values'
+import { ElemID } from './element_id'
 
 interface AnnoRef {
-  annoType?: Type
+  annoType?: TypeElement
   annoName?: string
 }
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 export function isElement(value: any): value is Element {
   return value && value.elemID && value.elemID instanceof ElemID
-}
-
-/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-export function isType(element: any): element is Type {
-  return element instanceof Type
 }
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
@@ -36,6 +31,11 @@ export function isPrimitiveType(
   element: any,
 ): element is PrimitiveType {
   return element instanceof PrimitiveType
+}
+
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+export function isType(element: any): element is TypeElement {
+  return isPrimitiveType(element) || isObjectType(element)
 }
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
@@ -73,7 +73,8 @@ export const isExpression = (value: any): value is Expression => (
     || value instanceof TemplateExpression
 )
 
-export const getSubElement = (baseType: Type, pathParts: string[]): Field| Type | undefined => {
+export const getSubElement = (baseType: TypeElement, pathParts: string[]):
+Field | TypeElement | undefined => {
   // This is a little tricky. Since many fields can have _ in them,
   // and we can't tell of the _ is path separator or a part of the
   // the path name. As long as path is not empty we will try to advance
@@ -83,7 +84,7 @@ export const getSubElement = (baseType: Type, pathParts: string[]): Field| Type 
 
   // We start by filtering out numbers from the path as they are
   // list indexes, which are irrelevant for type extractions
-  const getChildElement = (source: Type, key: string): Field | Type | undefined => {
+  const getChildElement = (source: TypeElement, key: string): Field | TypeElement| undefined => {
     if (source.annotationTypes[key]) return source.annotationTypes[key]
     if (isObjectType(source)) return source.fields[key]
     return undefined
@@ -108,12 +109,13 @@ export const getSubElement = (baseType: Type, pathParts: string[]): Field| Type 
   return getSubElement(baseType, [nextCur, ...nextRest])
 }
 
-export const getField = (baseType: Type, pathParts: string[]): Field | undefined => {
+export const getField = (baseType: TypeElement, pathParts: string[]): Field | undefined => {
   const element = getSubElement(baseType, pathParts)
   return isField(element) ? element : undefined
 }
 
-export const getFieldType = (baseType: Type, pathParts: string[]): Type|undefined => {
+export const getFieldType = (baseType: TypeElement, pathParts: string[]):
+TypeElement | undefined => {
   const field = getField(baseType, pathParts)
   return (isField(field)) ? field.type : undefined
 }
@@ -129,7 +131,8 @@ export const getFieldNames = (refType: ObjectType, path: string): string[] => {
   return []
 }
 
-export const getAnnotationKey = (annotations: {[key: string]: Type}, path: string): AnnoRef => {
+export const getAnnotationKey = (annotations: {[key: string]: TypeElement}, path: string):
+AnnoRef => {
   // Looking for the longest key in annotations that start with pathParts
   const annoName = _(annotations).keys().filter(k => path.startsWith(k))
     .sortBy(k => k.length)

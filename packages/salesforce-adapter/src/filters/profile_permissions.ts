@@ -101,7 +101,7 @@ const filterPermissions = <T = PermissionsTypes>(
         .filter(f => _.isUndefined(findPermissions(afterProfilePermissions, getElementName(f))))
         .map(emptyPermissions))
 
-const getPermissionsValues = (element: Element,
+const getPermissionsValues = (element: ObjectType | Field,
   permissionFields: readonly PermissionsOptionsFieldsTypes[],
   annotationName: string): Record<string, string[]> =>
   Object.values(permissionFields)
@@ -159,8 +159,8 @@ const profile2ObjectPermissions = (profileInstance: InstanceElement):
   Record<string, ProfileToObjectPermissions> =>
   profile2Permissions(id(profileInstance), profileInstance.value[OBJECT_PERMISSIONS])
 
-const toProfilePermissions = <T = PermissionsTypes>(element: Element, annotationName: string,
-  permissionsOptionsFields: readonly PermissionsOptionsFieldsTypes[],
+const toProfilePermissions = <T = PermissionsTypes>(element: ObjectType | Field,
+  annotationName: string, permissionsOptionsFields: readonly PermissionsOptionsFieldsTypes[],
   fullNameObject: Record<string, string>, permissions: Record<string, T[]> = {}):
    Record<string, T[]> => {
   if (!getAnnotationValue(element, annotationName)) {

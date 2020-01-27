@@ -1,7 +1,6 @@
 import wu from 'wu'
+import { SetId } from './set'
 
-// disabled because we will probably have more exports here
-// eslint-disable-next-line import/prefer-default-export
 export class DefaultMap<K, V> extends Map<K, V> {
   constructor(readonly initDefault: (key: K) => V, entries?: Iterable<[K, V]>) {
     super(wu(entries || []))
@@ -20,3 +19,10 @@ export class DefaultMap<K, V> extends Map<K, V> {
 export interface DefaultMap<K, V> extends Map<K, V> {
   get(key: K): V
 }
+
+export const groupBy = <T>(elements: Iterable<T>, groupFunc: (t: T) => SetId): Map<SetId, T[]> => (
+  new Map(wu(elements).reduce(
+    (groupMap, elem) => { groupMap.get(groupFunc(elem)).push(elem); return groupMap },
+    new DefaultMap<SetId, T[]>(() => []),
+  ))
+)

@@ -943,6 +943,21 @@ describe('NodeMap', () => {
       })
     })
   })
+
+  describe('transformAsync', () => {
+    let output: NodeMap
+    const expectedResult = new NodeMap([[1, new Set([2, 3])]])
+    const dummyTransform = jest.fn().mockResolvedValue(expectedResult)
+    beforeEach(async () => {
+      output = await subject.transformAsync(dummyTransform)
+    })
+    it('should call transform function', () => {
+      expect(dummyTransform).toHaveBeenCalled()
+    })
+    it('should return the return value from the transform function', () => {
+      expect(output).toEqual(expectedResult)
+    })
+  })
 })
 
 describe('DataNodeMap', () => {

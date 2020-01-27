@@ -34,7 +34,7 @@ export type DiffNode<T> = AdditionDiffNode<T> | RemovalDiffNode<T> | Modificatio
 
 export type DiffGraph<T> = DataNodeMap<DiffNode<T>>
 
-export type DiffGraphTransformer<T> = (graph: DiffGraph<T>) => DiffGraph<T>
+export type DiffGraphTransformer<T> = (graph: DiffGraph<T>) => Promise<DiffGraph<T>>
 
 const getDiffNodeData = <T>(diff: DiffNode<T>): T => (
   diff.action === 'remove' ? diff.data.before : diff.data.after
@@ -42,7 +42,7 @@ const getDiffNodeData = <T>(diff: DiffNode<T>): T => (
 
 type NodeEqualityFunc<T> = (node1: T, node2: T) => boolean
 export const removeEqualNodes = <T>(equals: NodeEqualityFunc<T>): DiffGraphTransformer<T> => (
-  graph => {
+  async graph => {
     const differentNodes = (ids: ReadonlyArray<NodeId>): boolean => {
       if (ids.length !== 2) {
         return true
@@ -106,7 +106,7 @@ const tryCreateModificationNode = <T>(
   })[0]
 }
 
-export const mergeNodesToModify = <T>(target: DiffGraph<T>): DiffGraph<T> => {
+export const mergeNodesToModify = async <T>(target: DiffGraph<T>): Promise<DiffGraph<T>> => {
   // Find all pairs of nodes pointing to the same original ID
   const mergeCandidates = _([...target.keys()])
     .groupBy(id => target.getData(id).originalId)

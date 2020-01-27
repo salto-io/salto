@@ -255,6 +255,10 @@ export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<Node
     return [result, !hasCycles]
   }
 
+  transformAsync(transform: (nodeMap: this) => Promise<this>): Promise<this> {
+    return transform(this)
+  }
+
   reverse(): this {
     const result = new (this.constructor as new() => this)()
     wu(this.entries()).forEach(([id, deps]) => {
@@ -338,11 +342,6 @@ export class DataNodeMap<T> extends AbstractNodeMap {
 
   setData(id: NodeId, data: T): void {
     this.nodeData.set(id, data)
-  }
-
-  dataEntries(): Iterable<[NodeId, T]> {
-    return wu(this.keys())
-      .map(id => [id, this.getData(id)])
   }
 
   reverse(): this {

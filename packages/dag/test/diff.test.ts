@@ -1,153 +1,148 @@
-// import { collections } from '@salto/lowerdash'
-// import {
-//   removeEqualNodes, mergeNodesToModify, DiffGraph, DiffNode,
-// } from '../src/diff'
-// import { DataNodeMap } from '../src/nodemap'
-
-// const { equals: setEquals } = collections.set
+import wu from 'wu'
+import { collections } from '@salto/lowerdash'
+import { DataNodeMap } from '../src/nodemap'
+import { removeEqualNodes, DiffNode, DiffGraph, mergeNodesToModify, ModificationDiff } from '../src/diff'
 
 describe('DiffGraph functions', () => {
+  const diffNode = <T>(
+    originalId: DiffNode<T>['originalId'],
+    action: 'add' | 'remove',
+    data: T
+  ): DiffNode<T> => (
+      action === 'add'
+        ? { action, originalId, data: { after: data } }
+        : { action, originalId, data: { before: data } }
+    )
+
+  let subject: DiffGraph<string>
+  const graph = new DataNodeMap<DiffNode<string>>()
+
+  beforeEach(() => {
+    graph.clear()
+  })
+
   describe('removeEqualNodes', () => {
-    // TODO:ORI - test
-    it('dummy', () => {
-      expect(true).toBe(true)
+    let equalNodes: jest.Mock
+    beforeEach(() => {
+      equalNodes = jest.fn().mockReturnValue(true)
+    })
+
+    describe('with two nodes for the same id', () => {
+      beforeEach(() => {
+        graph.addNode('remove', [], diffNode(1, 'remove', 'data'))
+        graph.addNode('add', [], diffNode(1, 'add', 'data'))
+      })
+
+      describe('when nodes are equal', () => {
+        beforeEach(async () => {
+          equalNodes.mockReturnValueOnce(true)
+          subject = await removeEqualNodes(equalNodes)(graph)
+        })
+        it('should call equals func', () => {
+          expect(equalNodes).toHaveBeenCalled()
+        })
+        it('should remove the nodes', () => {
+          expect(subject.size).toBe(0)
+        })
+      })
+
+      describe('when nodes are not equal', () => {
+        beforeEach(async () => {
+          equalNodes.mockReturnValueOnce(false)
+          subject = await removeEqualNodes(equalNodes)(graph)
+        })
+        it('should call equals func', () => {
+          expect(equalNodes).toHaveBeenCalled()
+        })
+        it('should not remove the nodes', () => {
+          expect(subject.size).toBe(2)
+        })
+      })
+    })
+
+    describe('with nodes of different ids', () => {
+      beforeEach(async () => {
+        graph.addNode('remove', [], diffNode(1, 'remove', 'data'))
+        graph.addNode('add', [], diffNode(2, 'add', 'data'))
+
+        subject = await removeEqualNodes(equalNodes)(graph)
+      })
+      it('should not call equals func', () => {
+        expect(equalNodes).not.toHaveBeenCalled()
+      })
+      it('should not remove the nodes', () => {
+        expect(subject.size).toBe(2)
+      })
     })
   })
 
   describe('mergeNodesToModify', () => {
-    // TODO:ORI - test
-    it('dummy', () => {
-      expect(true).toBe(true)
+    describe('when add and remove are not of the same id', () => {
+      beforeEach(async () => {
+        graph.addNode('remove', [], diffNode(1, 'remove', 'data'))
+        graph.addNode('add', [], diffNode(2, 'add', 'data'))
+
+        subject = await mergeNodesToModify(graph)
+      })
+      it('should not merge nodes', () => {
+        expect(subject.size).toBe(2)
+      })
+    })
+    describe('when add and remove are of the same id', () => {
+      describe('when add and remove can be merged with no cycle', () => {
+        beforeEach(async () => {
+          graph.addNode(1, [3], diffNode(1, 'remove', 'before'))
+          graph.addNode(2, [1, 4], diffNode(1, 'add', 'after'))
+          graph.addNode(3, [], diffNode(2, 'add', ''))
+          graph.addNode(4, [], diffNode(3, 'add', ''))
+          graph.addNode(5, [1], diffNode(4, 'add', ''))
+          graph.addNode(6, [2], diffNode(5, 'add', ''))
+
+          subject = await mergeNodesToModify(graph)
+        })
+        it('should merge the nodes', () => {
+          expect(subject.size).toBe(graph.size - 1)
+        })
+        describe('merged node', () => {
+          let mergedId: collections.set.SetId
+          let mergedNode: DiffNode<string>
+          let deps: Set<collections.set.SetId>
+          beforeEach(() => {
+            [mergedId] = wu(subject.keys()).filter(key => subject.getData(key).originalId === 1)
+            mergedNode = subject.getData(mergedId)
+            deps = subject.get(mergedId)
+          })
+          it('should have modification action', () => {
+            expect(mergedNode.action).toEqual('modify')
+          })
+          it('should have before and after data', () => {
+            expect((mergedNode as ModificationDiff<string>).data.before).toEqual('before')
+            expect((mergedNode as ModificationDiff<string>).data.after).toEqual('after')
+          })
+          it('should have the same original id', () => {
+            expect(mergedNode.originalId).toEqual(1)
+          })
+          it('should have the dependencies of both original nodes', () => {
+            expect(deps).toEqual(new Set([3, 4]))
+          })
+          it('should have the reverse dependencies of original nodes', () => {
+            expect(subject.get(5)).toContain(mergedId)
+            expect(subject.get(6)).toContain(mergedId)
+          })
+        })
+      })
+      describe('when merging add and remove would cause a cycle', () => {
+        beforeEach(async () => {
+          graph.addNode(1, [], diffNode(1, 'add', 'after'))
+          graph.addNode(2, [1, 3], diffNode(1, 'remove', 'before'))
+          graph.addNode(3, [1], diffNode(2, 'add', 'data'))
+
+          subject = await mergeNodesToModify(graph)
+        })
+        it('should not merge the nodes', () => {
+          expect(subject).toEqual(graph)
+        })
+      })
     })
   })
-
-  // const before = new DataNodeMap<string>()
-  // const after = new DataNodeMap<string>()
-
-  // beforeEach(() => {
-  //   before.clear()
-  //   after.clear()
-  // })
-
-  // const depsEqual = (n: collections.set.SetId): boolean => setEquals(before.get(n), after.get(n))
-  // const getDiffNodes = (): DiffNode<string>[] => [...subject.evaluationOrder()]
-  //   .map(diffNodeId => subject.getData(diffNodeId) as DiffNode<string>)
-
-  // describe('given an empty "before" graph', () => {
-  //   beforeEach(() => {
-  //     after.addNode(2, [], 'n2')
-  //     after.addNode(3, [], 'n3')
-  //     after.addNode(1, [2, 3], 'n1')
-
-  //     subject = buildDiffGraph(before, after, _n => false)
-  //   })
-
-  //   it('should return a diff graph that builds the "after" graph', () => {
-  //     expect(getDiffNodes()).toEqual([
-  //       { action: 'add', originalId: 2, data: { after: 'n2' } },
-  //       { action: 'add', originalId: 3, data: { after: 'n3' } },
-  //       { action: 'add', originalId: 1, data: { after: 'n1' } },
-  //     ])
-  //   })
-  // })
-
-  // describe('given an empty "after" graph', () => {
-  //   beforeEach(() => {
-  //     before.addNode(2, [], 'n2')
-  //     before.addNode(3, [], 'n3')
-  //     before.addNode(1, [2, 3], 'n1')
-  //     subject = buildDiffGraph(before, after, _n => false)
-  //   })
-
-  //   it('should return a diff graph that deletes the "before" graph', () => {
-  //     expect(getDiffNodes()).toEqual([
-  //       { action: 'remove', originalId: 1, data: { before: 'n1' } },
-  //       { action: 'remove', originalId: 2, data: { before: 'n2' } },
-  //       { action: 'remove', originalId: 3, data: { before: 'n3' } },
-  //     ])
-  //   })
-  // })
-
-  // describe('given identical "before" and "after" graphs', () => {
-  //   beforeEach(() => {
-  //     before.addNode(2, [], 'n2')
-  //     before.addNode(3, [], 'n3')
-  //     before.addNode(1, [2, 3], 'n1')
-  //     after.addNode(2, [], 'n2')
-  //     after.addNode(3, [], 'n3')
-  //     after.addNode(1, [2, 3], 'n1')
-
-  //     subject = buildDiffGraph(before, after, _n => true)
-  //   })
-
-  //   it('returns an empty diff graph', () => {
-  //     expect(getDiffNodes()).toEqual([])
-  //   })
-  // })
-
-  // describe('when a node is not equal and can be modified', () => {
-  //   beforeEach(() => {
-  //     before.addNode(1, [2], 'n1')
-  //     before.addNode(2, [], 'n2')
-  //     after.addNode(1, [2], 'n1t')
-  //     after.addNode(2, [], 'n2')
-
-  //     subject = buildDiffGraph(before, after, n => n === 2)
-  //   })
-
-  //   it('should return a modification', () => {
-  //     expect(getDiffNodes()).toEqual([
-  //       { action: 'modify', originalId: 1, data: { before: 'n1', after: 'n1t' } },
-  //     ])
-  //   })
-  // })
-
-  // describe('when a modification needs to be broken up into addition and removal', () => {
-  //   beforeEach(() => {
-  //     before.addNode(2, [], 'n2')
-  //     before.addNode(1, [2], 'n1')
-  //     after.addNode(2, [], 'n2t')
-  //     after.addNode(1, [2], 'n1')
-
-  //     subject = buildDiffGraph(before, after, _n => false)
-  //   })
-
-  //   it('should break up the modification', () => {
-  //     expect(getDiffNodes()).toEqual([
-  //       { action: 'remove', originalId: 1, data: { before: 'n1' } },
-  //       { action: 'modify', originalId: 2, data: { before: 'n2', after: 'n2t' } },
-  //       { action: 'add', originalId: 1, data: { after: 'n1' } },
-  //     ])
-  //   })
-  // })
-
-  // describe('given two graphs with data', () => {
-  //   beforeEach(() => {
-  //     before.addNode(1, [2], 'n1')
-  //     before.addNode(2, [3, 4], 'n2')
-  //     before.addNode(3, [], 'n3')
-  //     before.addNode(4, [5, 6], 'n4')
-  //     before.addNode(5, [], 'n5')
-  //     before.addNode(6, [], 'n6')
-
-  //     after.addNode(1, [4, 6], 'n1')
-  //     after.addNode(4, [5, 7], 'n4')
-  //     after.addNode(5, [], 'n5')
-  //     after.addNode(6, [], 'n6')
-  //     after.addNode(7, [], 'n7')
-
-  //     subject = buildDiffGraph(before, after, depsEqual)
-  //   })
-
-  //   it('should break up the modification', () => {
-  //     expect(getDiffNodes()).toEqual([
-  //       { action: 'remove', originalId: 1, data: { before: 'n1' } },
-  //       { action: 'add', originalId: 7, data: { after: 'n7' } },
-  //       { action: 'remove', originalId: 2, data: { before: 'n2' } },
-  //       { action: 'remove', originalId: 3, data: { before: 'n3' } },
-  //       { action: 'modify', originalId: 4, data: { before: 'n4', after: 'n4' } },
-  //       { action: 'add', originalId: 1, data: { after: 'n1' } },
-  //     ])
-  //   })
-  // })
 })

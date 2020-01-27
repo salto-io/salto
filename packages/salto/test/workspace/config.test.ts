@@ -33,6 +33,7 @@ describe('load proper configuration', () => {
         stateLocation: '/states/test.bpc',
         services: [],
         uid: 'uid',
+        envs: [],
       }
     )
   })
@@ -46,6 +47,7 @@ describe('load proper configuration', () => {
         stateLocation: path.join(defaultsWorkspaceDir, 'salto.config', 'state.bpc'),
         services: [],
         uid: defaultUUID,
+        envs: [],
       }
     )
   })
@@ -61,6 +63,7 @@ describe('load proper configuration', () => {
         stateLocation: path.join(defaultsWorkspaceDir, 'salto.config', 'state.bpc'),
         services: [],
         uid: defaultUUID,
+        envs: [],
       }
     )
   })

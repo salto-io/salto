@@ -1,12 +1,14 @@
 import _ from 'lodash'
 import { logger } from '@salto/logging'
 import { Element, ElemID, ElementMap } from 'adapter-api'
+import { mergeElements, MergeError } from '../../core/merger'
 import { getChangeLocations, updateBlueprintData, getChangesToUpdate } from './blueprint_update'
 import { mergeSourceMaps, SourceMap, parse, SourceRange, ParseError, ParseResult } from '../../parser/parse'
 import { ElementsSource } from '../elements_source'
 import { ParseResultCache } from '../cache'
 import { DetailedChange } from '../../core/plan'
 import { DirectoryStore } from '../dir_store'
+import { Errors } from '../errors'
 
 const log = logger(module)
 
@@ -19,7 +21,7 @@ export type Blueprint = {
 }
 
 export type BlueprintsSource = ElementsSource & {
-  update: (...changes: DetailedChange[]) => Promise<void>
+  update: (changes: DetailedChange[]) => Promise<void>
   listBlueprints: () => Promise<string[]>
   getBlueprint: (filename: string) => Promise<Blueprint | undefined>
   // TODO: this should be for single?
@@ -27,7 +29,7 @@ export type BlueprintsSource = ElementsSource & {
   removeBlueprints: (...names: string[]) => Promise<void>
   getSourceMap: (filename: string) => Promise<SourceMap>
   getSourceRanges: (elemID: ElemID) => Promise<SourceRange[]>
-  getParseErrors: () => Promise< ParseError[]>
+  getErrors: () => Promise<Errors>
   getElements: (filename: string) => Promise<Element[]>
 }
 
@@ -42,9 +44,12 @@ type ParsedBlueprintMap = {
   [key: string]: ParsedBlueprint
 }
 
-type BlueprintsState = {
+export type BlueprintsState = {
   readonly parsedBlueprints: ParsedBlueprintMap
   readonly elementsIndex: Record<string, string[]>
+  readonly elements: Record<string, Element>
+  readonly errors: MergeError[]
+
 }
 
 export const blueprintsSource = (blueprintsStore: DirectoryStore, cache: ParseResultCache):
@@ -90,10 +95,16 @@ BlueprintsSource => {
         elementsIndex[key] = _.uniq([...elementsIndex[key], bp.filename])
       }))
 
+    const mergeResult = mergeElements(
+      _.flatten(Object.values(allParsed).map(parsed => Object.values(parsed.elements)))
+    )
+
     log.info('workspace has %d elements and %d parsed blueprints',
       _.size(elementsIndex), _.size(allParsed))
     return {
       parsedBlueprints: allParsed,
+      elements: _.keyBy(mergeResult.merged, e => e.elemID.getFullName()),
+      errors: mergeResult.errors,
       elementsIndex,
     }
   }
@@ -127,7 +138,7 @@ BlueprintsSource => {
     state = buildBlueprintsState(blueprints, (await state).parsedBlueprints)
   }
 
-  const update = async (...changes: DetailedChange[]): Promise<void> => {
+  const update = async (changes: DetailedChange[]): Promise<void> => {
     const getBlueprintData = async (filename: string): Promise<string> => {
       const bp = await blueprintsStore.get(filename)
       return bp ? bp.buffer : ''
@@ -171,24 +182,23 @@ BlueprintsSource => {
     list: async (): Promise<ElemID[]> =>
       Object.keys((await state).elementsIndex).map(name => ElemID.fromFullName(name)),
 
-    get: async (id: ElemID): Promise<Element[]> => {
+    get: async (id: ElemID): Promise<Element> => {
       const currentState = await state
-      const filenames = currentState.elementsIndex[id.getFullName()] || []
-      return _.flatten(filenames
-        .map(name => currentState.parsedBlueprints[name].elements[id.getFullName()]))
+      return currentState.elements[id.getFullName()]
     },
 
-    getAll: async (): Promise<Element[]> =>
-      _.flatten(Object.values((await state).parsedBlueprints)
-        .map(parsed => Object.values(parsed.elements))),
+    getAll: async (): Promise<Element[]> => _.values((await state).elements),
 
     flush: async (): Promise<void> => {
       await blueprintsStore.flush()
       await cache.flush()
     },
 
-    getParseErrors: async (): Promise<ParseError[]> =>
-      _.flatten(Object.values((await state).parsedBlueprints).map(parsed => parsed.errors)),
+    getErrors: async (): Promise<Errors> => new Errors({
+      parse: _.flatten(Object.values((await state).parsedBlueprints).map(parsed => parsed.errors)),
+      merge: (await state).errors,
+      validation: [],
+    }),
 
     listBlueprints: () => blueprintsStore.list(),
 

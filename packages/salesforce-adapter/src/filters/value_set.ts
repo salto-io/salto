@@ -1,8 +1,8 @@
-import wu, { WuIterable } from 'wu'
+import wu from 'wu'
 import { collections } from '@salto/lowerdash'
 import {
   Element, Field, isObjectType, Change, getChangeElement,
-  isField, isModificationDiff, ChangeDataType, isInstanceElement, InstanceElement,
+  isField, isModificationDiff, ChangeDataType, isInstanceElement,
 } from 'adapter-api'
 import { SaveResult } from 'jsforce'
 import { FilterWith } from '../filter'
@@ -10,7 +10,6 @@ import { FIELD_ANNOTATIONS } from '../constants'
 import { PicklistValue } from '../client/types'
 import { Types, metadataType } from '../transformers/transformer'
 import { GLOBAL_VALUE_SET, CUSTOM_VALUE } from './global_value_sets'
-import { ModificationDiff } from '@salto/dag'
 
 const { makeArray } = collections.array
 
@@ -48,28 +47,30 @@ const filterCreator = (): FilterWith<'onUpdate'> => ({
         .map(v => setCustomValueInactive(v))
     }
 
-    (wu(changes).filter(isModificationDiff) as WuIterable<ModificationDiff<ChangeDataType>>)
+    wu(changes)
       .forEach(c => {
-        const changedElement = getChangeElement(c)
-        if (isRestrictedPicklistField(changedElement)
-        && isObjectType(after)
-        && isObjectType(before)) {
-          const beforeCustomValues = makeArray(
-            c.data.before.annotations[FIELD_ANNOTATIONS.VALUE_SET]
-          )
-          const afterCustomValues = makeArray(
-            c.data.after.annotations[FIELD_ANNOTATIONS.VALUE_SET]
-          )
-          after.fields[changedElement.name].annotations[FIELD_ANNOTATIONS.VALUE_SET]
-            .push(...getRemovedCustomValues(beforeCustomValues, afterCustomValues))
-        }
+        if (isModificationDiff(c)) {
+          const changedElement = getChangeElement(c)
+          if (isRestrictedPicklistField(changedElement)
+          && isObjectType(after)
+          && isObjectType(before)) {
+            const beforeCustomValues = makeArray(
+              c.data.before.annotations[FIELD_ANNOTATIONS.VALUE_SET]
+            )
+            const afterCustomValues = makeArray(
+              c.data.after.annotations[FIELD_ANNOTATIONS.VALUE_SET]
+            )
+            after.fields[changedElement.name].annotations[FIELD_ANNOTATIONS.VALUE_SET]
+              .push(...getRemovedCustomValues(beforeCustomValues, afterCustomValues))
+          }
 
-        if (isInstanceGlobalSetValue(changedElement)
-          && isInstanceElement(after) && isInstanceElement(before)) {
-          const beforeCustomValues = makeArray(before.value[CUSTOM_VALUE])
-          const afterCustomValues = makeArray(after.value[CUSTOM_VALUE])
-          after.value[CUSTOM_VALUE]
-            .push(...getRemovedCustomValues(beforeCustomValues, afterCustomValues))
+          if (isInstanceGlobalSetValue(changedElement)
+            && isInstanceElement(after) && isInstanceElement(before)) {
+            const beforeCustomValues = makeArray(before.value[CUSTOM_VALUE])
+            const afterCustomValues = makeArray(after.value[CUSTOM_VALUE])
+            after.value[CUSTOM_VALUE]
+              .push(...getRemovedCustomValues(beforeCustomValues, afterCustomValues))
+          }
         }
       })
 

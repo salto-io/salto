@@ -1594,10 +1594,10 @@
   resolved "https://registry.yarnpkg.com/@types/vscode/-/vscode-1.37.0.tgz#fb26ffabfabcd50ba70e8b454122a91b84548080"
   integrity sha512-PRfeuqYuzk3vjf+puzxltIUWC+AhEGYpFX29/37w30DQSQnpf5AgMVf7GDBAdmTbWTBou+EMFz/Ne6XCM/KxzQ==
 
-"@types/wu@^2.1.39":
-  version "2.1.39"
-  resolved "https://registry.yarnpkg.com/@types/wu/-/wu-2.1.39.tgz#84ec33c25115514ed95b899aee52e707f70b2c45"
-  integrity sha512-GcWc+khCfE3yBonhADArZxvWqgxp3HzzjG720JSB+5s5jFlN0OMcTIOUCBmnPx8tSzj6HNKty7S5zOtZ6VKKSA==
+"@types/wu@^2.1.40":
+  version "2.1.40"
+  resolved "https://registry.yarnpkg.com/@types/wu/-/wu-2.1.40.tgz#12072855b9dd0cb3b11e9f102e3e07ab6a1e13cd"
+  integrity sha512-Y1Eda7/w3lnPFOfaTnR1h6uu2xdqFe6VGzLRzxd9VBaH7rafVlp85QOgJzUfZW5a/OLDtIk5ovxxtyHMEIYB8Q==
 
 "@types/yargs-parser@*":
   version "13.1.0"

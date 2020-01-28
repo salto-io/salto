@@ -192,6 +192,31 @@ describe('lookup filters filter', () => {
           },
           ])
       })
+
+      it('should not add values to global picklist field in custom object', () => {
+        const beforeObject = createObjectWithPicklistField(createPicklistField(['val1']))
+        const picklistFieldWithNoValueSet = createPicklistField([])
+        delete picklistFieldWithNoValueSet.annotations[constants.FIELD_ANNOTATIONS.VALUE_SET]
+        const afterObject = createObjectWithPicklistField(picklistFieldWithNoValueSet)
+
+        filter.onUpdate(
+          beforeObject,
+          afterObject,
+          [{ action: 'modify',
+            data: {
+              before: beforeObject.fields[fieldName],
+              after: afterObject.fields[fieldName],
+            } }]
+        )
+        expect(afterObject.fields[fieldName].annotations[constants.FIELD_ANNOTATIONS.VALUE_SET])
+          .toEqual([{
+            [constants.CUSTOM_VALUE.FULL_NAME]: 'val1',
+            [constants.CUSTOM_VALUE.DEFAULT]: false,
+            [constants.CUSTOM_VALUE.LABEL]: 'val1',
+            [constants.CUSTOM_VALUE.IS_ACTIVE]: false,
+          },
+          ])
+      })
     })
   })
 })

@@ -8,7 +8,11 @@ type FileMap = {
   [key: string]: File
 }
 
-export const localDirectoryStore = (dir: string, fileFilter?: string): DirectoryStore => {
+export const localDirectoryStore = (
+  dir: string,
+  fileFilter?: string,
+  directoryFilter?: (path: string) => boolean
+): DirectoryStore => {
   let updated: FileMap = {}
   let deleted: string[] = []
 
@@ -17,7 +21,8 @@ export const localDirectoryStore = (dir: string, fileFilter?: string): Directory
   const listDirFiles = async (): Promise<string[]> => (await exists(dir)
     ? readdirp.promise(dir, {
       fileFilter,
-      directoryFilter: e => e.basename[0] !== '.',
+      directoryFilter: e => e.basename[0] !== '.'
+        && (!directoryFilter || directoryFilter(e.fullPath)),
     }).then(entries => entries.map(e => e.fullPath))
     : [])
 

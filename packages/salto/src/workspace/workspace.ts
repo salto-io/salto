@@ -62,8 +62,16 @@ type MergedState = {
   readonly errors: Errors
 }
 
-const loadBlueprintSource = (baseDir: string, localStorage: string): BlueprintsSource => {
-  const blueprintsStore = localDirectoryStore(baseDir, `*${BP_EXTENSION}`)
+const loadBlueprintSource = (
+  baseDir: string,
+  localStorage: string,
+  excludeDirs: string[] = []
+): BlueprintsSource => {
+  const blueprintsStore = localDirectoryStore(
+    baseDir,
+    `*${BP_EXTENSION}`,
+    (dirParh: string) => !excludeDirs.includes(dirParh)
+  )
   const cacheStore = localDirectoryStore(path.join(localStorage, '.cache'))
   return blueprintsSource(blueprintsStore, parseResultCache(cacheStore))
 }
@@ -72,16 +80,32 @@ const loadMultiEnvSource = (config: Config): BlueprintsSource => {
   if (!config.currentEnv || _.isEmpty(config.envs)) {
     throw new Error('can not load a multi env source without envs and current env settings')
   }
-  const activeEnvSettings = config.envs.find(env => env.name === config.currentEnv)
-  if (!activeEnvSettings) {
+  const activeEnv = config.envs.find(env => env.name === config.currentEnv)
+  if (!activeEnv) {
     throw new Error('Unknown active env')
   }
-  const inactiveEnvs = config.envs.filter(env => !_.isEqual(env, activeEnvSettings))
+  const inactiveEnvs = config.envs.filter(env => !_.isEqual(env, activeEnv))
+  const baseDirs = [
+    config.baseDir,
+    activeEnv.baseDir,
+    ...inactiveEnvs.map(env => env.baseDir),
+  ]
   return multiEnvSource(
-    loadBlueprintSource(activeEnvSettings.baseDir, config.localStorage),
-    loadBlueprintSource(config.baseDir, config.localStorage),
+    loadBlueprintSource(
+      activeEnv.baseDir,
+      config.localStorage,
+      _.without(baseDirs, activeEnv.baseDir)
+    ),
+    loadBlueprintSource(
+      config.baseDir,
+      config.localStorage,
+      _.without(baseDirs, config.baseDir)
+    ),
     _(inactiveEnvs)
-      .map(env => [env.name, loadBlueprintSource(env.name, config.localStorage)])
+      .map(env => [
+        env.name,
+        loadBlueprintSource(env.baseDir, config.localStorage, _.without(baseDirs, env.baseDir)),
+      ])
       .fromPairs()
       .value()
   )

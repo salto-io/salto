@@ -3,7 +3,7 @@ import {
   ElemID, ObjectType,
   PrimitiveType, PrimitiveTypes, PrimitiveValue, PrimitiveField,
   Field as TypeField, BuiltinTypes, InstanceElement, Values,
-  TypeElement, CORE_ANNOTATIONS, transform, TypeMap,
+  TypeElement, CORE_ANNOTATIONS, transform, TypeMap, isPrimitiveField,
 } from 'adapter-api'
 import {
   FIELD_TYPES, FORM_FIELDS, HUBSPOT, OBJECTS_NAMES, PROPERTY_FIELDS, RSSTOEMAILTIMING_FIELDS,
@@ -1208,6 +1208,18 @@ export const fromHubspotObject = (
   infoType: ObjectType
 ): Values =>
   transform(info as Values, infoType, transformPrimitive) || {}
+
+export const createHubspotMetadataFromInstanceElement = (element: InstanceElement):
+  HubspotMetadata => {
+  element.value = _.mapValues(element.value, (val, key) => {
+    const field = element.type.fields[key]
+    if (isPrimitiveField(field) && field.type.isEqual(BuiltinTypes.JSON)) {
+      return JSON.parse(val)
+    }
+    return val
+  })
+  return element.value as HubspotMetadata
+}
 
 /**
  * Creating all the instance for specific type

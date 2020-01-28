@@ -715,32 +715,9 @@ export const marketingEmailMock = {
   authorAt: 124543,
   authorUserId: 12345,
   canSpamSettingsId: 67899,
-  flexArea: {
-    main: {
-      boxFirstElementIndex: 0,
-      boxLastElementIndex: 0,
-      boxed: false,
-      isSingleColumnFullWidth: false,
-      sections: [
-        {
-          columns: [
-            {
-              id: 'builtin_column_0-0',
-              widgets: ['builtin_module_0_0_0'],
-              width: 12,
-            },
-          ],
-          id: 'builtin_section-0',
-          style: {
-            backgroundColor: '#EAF0F6',
-            backgroundType: 'CONTENT',
-            paddingBottom: '10px',
-            paddingTop: '10px',
-          },
-        },
-      ],
-    },
-  },
+  categoryId: 2,
+  contentCategoryType: 2,
+  flexArea: '{"main":{"boxFirstElementIndex":0,"boxLastElementIndex":0,"boxed":false,"isSingleColumnFullWidth":false,"sections":[{"columns":[{"id":"builtin_column_0-0","widgets":["builtin_module_0_0_0"],"width":12}],"id":"builtin_section-0","style":{"backgroundColor":"#EAF0F6","backgroundType":"CONTENT","paddingBottom":"10px","paddingTop":"10px"}}]}}',
   isRecipientFatigueSuppressionEnabled: false,
   leadFlowId: 1234,
   liveDomain: 'my-website.hs-sites.com',
@@ -777,11 +754,8 @@ export const marketingEmailMock = {
     time: '9:00 am',
   },
   slug: 'slug-23412423423',
-  smartEmailFields: {},
-  styleSettings: {
-    // eslint-disable-next-line @typescript-eslint/camelcase
-    background_color: '#EAF0F6',
-  },
+  smartEmailFields: '{}',
+  styleSettings: '{ "background_color": "#EAF0F6" }',
   subcategory: 'blog_email',
   subject: 'Subject line 2',
   subscription: 123456,
@@ -797,33 +771,7 @@ export const marketingEmailMock = {
   useRssHeadlineAsSubject: false,
   vidsExcluded: [1234],
   vidsIncluded: [12],
-  widgets: {
-    // eslint-disable-next-line @typescript-eslint/camelcase
-    builtin_module_0_0_0: {
-      body: {
-        alignment: 'center',
-        // eslint-disable-next-line @typescript-eslint/camelcase
-        hs_enable_module_padding: true,
-        img: {
-          alt: 'HubSpot logo orange',
-          height: 72,
-          src: 'https://static.hsappstatic.net/TemplateAssets/static-1.46/img/hs_default_template_images/email_dnd_template_images/company-logo-orange.png',
-          width: 240,
-        },
-        // eslint-disable-next-line @typescript-eslint/camelcase
-        module_id: 1367093,
-      },
-      // eslint-disable-next-line @typescript-eslint/camelcase
-      child_css: {},
-      css: {},
-      id: 'builtin_module_0_0_0',
-      // eslint-disable-next-line @typescript-eslint/camelcase
-      module_id: 1367093,
-      name: 'builtin_module_0_0_0',
-      order: 1,
-      type: 'module',
-    },
-  },
+  widgets: '{"builtin_module_0_0_0":{"body":{"alignment":"center","hs_enable_module_padding":true,"img":{"alt":"HubSpot logo orange","height":72,"src":"https://static.hsappstatic.net/TemplateAssets/static-1.46/img/hs_default_template_images/email_dnd_template_images/company-logo-orange.png","width":240},"module_id":1367093},"child_css":{},"css":{},"id":"builtin_module_0_0_0","module_id":1367093,"name":"builtin_module_0_0_0","order":1,"type":"module"}}',
   workflowNames: [],
 }
 

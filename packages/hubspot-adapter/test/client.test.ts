@@ -431,7 +431,7 @@ describe('Test HubSpot client', () => {
     })
   })
 
-  describe('Test updateForm', () => {
+  describe('Test updateInstance', () => {
     let mockUpdateForm: jest.Mock
 
     const formToUpdate = {
@@ -443,101 +443,125 @@ describe('Test HubSpot client', () => {
     } as Form
 
 
-    describe('wrong apikey', () => {
-      beforeEach(() => {
-        const unauthorizedResultMock = (): RequestPromise => (
-          {
-            status: 'error',
-            message: apiKeyDoesntExistErrStr,
-            correlationId: 'db8f8a2f-d799-4353-8a67-b85df639b3df',
-            requestId: '493c8493-861b-4f56-be3b-3f6067238efd',
-          } as unknown as RequestPromise)
-
-        mockUpdateForm = jest.fn().mockImplementation(unauthorizedResultMock)
-        connection.forms.update = mockUpdateForm
-      })
-
-      it('should return error', async () => {
-        await expect(client.updateForm(formToUpdate)).rejects
-          .toThrow(apiKeyDoesntExistErrStr)
+    describe('Unsupported type', () => {
+      it('should return Unsupported type error', async () => {
+        await expect(client.updateInstance(OBJECTS_NAMES.WORKFLOWS, {} as HubspotMetadata)).rejects
+          .toThrow("workflows can't updated via API")
       })
     })
 
-    describe('When no form found with guid', () => {
-      const noFormFoundErrStr = "No form found with guid 'guidToUpdate'"
-      beforeEach(() => {
-        const notFoundResult = (): RequestPromise => (
-          {
-            status: 'error',
-            message: noFormFoundErrStr,
-            correlationId: '3c40a0ef-0bb8-4606-9133-1ddc3f947e49',
-            type: 'NOT_FOUND',
-            requestId: '873184b8-2842-4514-ac19-2b5a36413789',
-          } as unknown as RequestPromise)
+    describe('supported type', () => {
+      describe('wrong apikey', () => {
+        beforeEach(() => {
+          const unauthorizedResultMock = (): RequestPromise => (
+            {
+              status: 'error',
+              message: apiKeyDoesntExistErrStr,
+              correlationId: 'db8f8a2f-d799-4353-8a67-b85df639b3df',
+              requestId: '493c8493-861b-4f56-be3b-3f6067238efd',
+            } as unknown as RequestPromise)
 
-        mockUpdateForm = jest.fn().mockImplementation(notFoundResult)
-        connection.forms.update = mockUpdateForm
+          mockUpdateForm = jest.fn().mockImplementation(unauthorizedResultMock)
+          connection.forms.update = mockUpdateForm
+        })
+
+        it('should return error', async () => {
+          await expect(client.updateInstance(
+            OBJECTS_NAMES.FORM,
+            formToUpdate as HubspotMetadata
+          )).rejects
+            .toThrow(apiKeyDoesntExistErrStr)
+        })
       })
 
-      it('should return error(404 response)', async () => {
-        await expect(client.updateForm(formToUpdate)).rejects
-          .toThrow(noFormFoundErrStr)
-      })
-    })
+      describe('When no instance found with guid', () => {
+        const noFormFoundErrStr = "No form found with guid 'guidToUpdate'"
+        beforeEach(() => {
+          const notFoundResult = (): RequestPromise => (
+            {
+              status: 'error',
+              message: noFormFoundErrStr,
+              correlationId: '3c40a0ef-0bb8-4606-9133-1ddc3f947e49',
+              type: 'NOT_FOUND',
+              requestId: '873184b8-2842-4514-ac19-2b5a36413789',
+            } as unknown as RequestPromise)
 
-    describe('When a form is successfully updated', () => {
-      beforeEach(() => {
-        const updatedFormResult = (): RequestPromise => (
-          {
-            portalId: 6774238,
-            guid: 'guidToUpdate',
-            name: 'updateTestForm',
-            submitText: 'Submit',
-            deletable: true,
-            redirect: 'google.com',
-          } as unknown as RequestPromise)
+          mockUpdateForm = jest.fn().mockImplementation(notFoundResult)
+          connection.forms.update = mockUpdateForm
+        })
 
-        mockUpdateForm = jest.fn().mockImplementation(updatedFormResult)
-        connection.forms.update = mockUpdateForm
-      })
-
-      it('should return the updated form', async () => {
-        const resp = await client.updateForm(formToUpdate)
-        expect(resp.name).toEqual(formToUpdate.name)
-        expect(resp.guid).toEqual(formToUpdate.guid)
-        expect(resp.submitText).toEqual(formToUpdate.submitText)
-        expect(resp.deletable).toEqual(formToUpdate.deletable)
-        expect(resp.redirect).not.toEqual(formToUpdate.redirect)
-        expect(resp.redirect).toEqual('google.com')
-      })
-    })
-
-    describe('Wrong value', () => {
-      beforeEach(() => {
-        formToUpdate.editable = false
-        const wrongValueResult = (): RequestPromise => (
-          {
-            status: 'error',
-            message: privilegeErrStr,
-            correlationId: '00bf4db3-337a-4497-b899-6cc10f1bfde3',
-            requestId: '14e208be-e7ac-43ac-b7e4-c242bb6548b5',
-          } as unknown as RequestPromise)
-
-        mockUpdateForm = jest.fn().mockImplementation(wrongValueResult)
-        connection.forms.update = mockUpdateForm
+        it('should return error(404 response)', async () => {
+          await expect(client.updateInstance(
+            OBJECTS_NAMES.FORM,
+            formToUpdate as HubspotMetadata
+          )).rejects
+            .toThrow(noFormFoundErrStr)
+        })
       })
 
-      it('should return error', async () => {
-        await expect(client.updateForm(formToUpdate)).rejects
-          .toThrow(privilegeErrStr)
-      })
-    })
+      describe('When instance is successfully updated', () => {
+        describe('Form type', () => {
+          beforeEach(() => {
+            const updatedFormResult = (): RequestPromise => (
+              {
+                portalId: 6774238,
+                guid: 'guidToUpdate',
+                name: 'updateTestForm',
+                submitText: 'Submit',
+                deletable: true,
+                redirect: 'google.com',
+              } as unknown as RequestPromise)
 
-    afterEach(() => {
-      expect(mockUpdateForm.mock.calls).toHaveLength(1)
-      expect(mockUpdateForm.mock.calls[0]).toHaveLength(2)
-      expect(mockUpdateForm.mock.calls[0][0]).toEqual('guidToUpdate')
-      expect(mockUpdateForm.mock.calls[0][1]).toMatchObject(formToUpdate)
+            mockUpdateForm = jest.fn().mockImplementation(updatedFormResult)
+            connection.forms.update = mockUpdateForm
+          })
+
+          it('should return the updated form', async () => {
+            const resp = await client.updateInstance(
+              OBJECTS_NAMES.FORM,
+              formToUpdate as HubspotMetadata
+            ) as Form
+
+            expect(resp.name).toEqual(formToUpdate.name)
+            expect(resp.guid).toEqual(formToUpdate.guid)
+            expect(resp.submitText).toEqual(formToUpdate.submitText)
+            expect(resp.deletable).toEqual(formToUpdate.deletable)
+            expect(resp.redirect).not.toEqual(formToUpdate.redirect)
+            expect(resp.redirect).toEqual('google.com')
+          })
+        })
+      })
+
+      describe('Wrong value', () => {
+        beforeEach(() => {
+          formToUpdate.editable = false
+          const wrongValueResult = (): RequestPromise => (
+            {
+              status: 'error',
+              message: privilegeErrStr,
+              correlationId: '00bf4db3-337a-4497-b899-6cc10f1bfde3',
+              requestId: '14e208be-e7ac-43ac-b7e4-c242bb6548b5',
+            } as unknown as RequestPromise)
+
+          mockUpdateForm = jest.fn().mockImplementation(wrongValueResult)
+          connection.forms.update = mockUpdateForm
+        })
+
+        it('should return error', async () => {
+          await expect(client.updateInstance(
+            OBJECTS_NAMES.FORM,
+            formToUpdate as HubspotMetadata
+          )).rejects
+            .toThrow(privilegeErrStr)
+        })
+      })
+
+      afterEach(() => {
+        expect(mockUpdateForm.mock.calls).toHaveLength(1)
+        expect(mockUpdateForm.mock.calls[0]).toHaveLength(2)
+        expect(mockUpdateForm.mock.calls[0][0]).toEqual('guidToUpdate')
+        expect(mockUpdateForm.mock.calls[0][1]).toMatchObject(formToUpdate)
+      })
     })
   })
 })

@@ -406,11 +406,11 @@ describe('Hubspot Adapter Operations', () => {
 
     describe('When Update success', () => {
       beforeEach(async () => {
-        const updateResult = (f: Form): Promise<Form> =>
+        const updateResult = (_t: string, f: Form): Promise<Form> =>
           Promise.resolve(
             {
               portalId: 6774238,
-              guid: f.guid,
+              guid: 'guid',
               name: f.name,
               action: '',
               method: 'POST',
@@ -507,14 +507,14 @@ describe('Hubspot Adapter Operations', () => {
           )
 
         mockUpdate = jest.fn().mockImplementation(updateResult)
-        client.updateForm = mockUpdate
+        client.updateInstance = mockUpdate
       })
 
       it('should return the updated form', async () => {
         const res = await adapter.update(
           beforeUpdateInstance,
           afterUpdateInstance
-        ) as InstanceElement
+        ) as InstanceElement //
 
         // Updated fields
         expect(res.value.guid).toEqual(afterUpdateInstance.value.guid)
@@ -580,7 +580,7 @@ describe('Hubspot Adapter Operations', () => {
           Error => { throw new Error(noFormFoundErrStr) }
 
         mockUpdate = jest.fn().mockImplementation(notFoundError)
-        client.updateForm = mockUpdate
+        client.updateInstance = mockUpdate
       })
 
       it('should return 404 response', async () => {

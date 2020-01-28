@@ -97,3 +97,10 @@ export const buildAnnotationsObjectType = (fieldType: Type): ObjectType => {
       .concat(Object.entries(BuiltinAnnotationTypes))
       .map(([k, v]) => ({ [k]: new Field(annotationTypesElemID, k, v) }))) })
 }
+
+export const getFieldNameFromFullName = (fieldFullName: string): string => {
+  const fieldNameParts = fieldFullName.split(API_NAME_SEPERATOR)
+  return fieldNameParts.length === 1
+    ? fieldNameParts[0]
+    : fieldNameParts.slice(1).join(API_NAME_SEPERATOR)
+}

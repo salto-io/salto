@@ -2,10 +2,12 @@ import { Change, Element, ChangeValidator, ChangeError } from 'adapter-api'
 import { types } from '@salto/lowerdash'
 import _ from 'lodash'
 import packageValidator from './change_validators/package'
+import profilePermissionsValidator from './change_validators/profile_permissions'
 
 
 const changeValidators: Partial<ChangeValidator>[] = [
   packageValidator,
+  profilePermissionsValidator,
 ]
 
 const runOnUpdateValidators = async (changes: ReadonlyArray<Change>):

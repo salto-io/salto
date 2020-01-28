@@ -13,7 +13,7 @@ import { createElementsMap } from '../search'
 import { PlanItem, addPlanItemAccessors, PlanItemId } from './plan_item'
 import { buildGroupedGraphFromDiffGraph, findGroupLevelChange } from './group'
 import { filterInvalidChanges } from './filter'
-import { addNodeDependencies, typeDependencyProvider, objectDependencyProvider } from './dependency'
+import { addNodeDependencies, addFieldToObjectDependency, addTypeDependency } from './dependency'
 import { PlanTransformer, changeId } from './common'
 
 const log = logger(module)
@@ -128,17 +128,17 @@ export const getPlan = async (
   const resolvedBefore = resolve(beforeElements)
   const resolvedAfter = resolve(afterElements)
 
-  // For function interface backwards compatibility we build the provider list here
-  // TODO:ORI - change the function interface to get the list of providers
-  const dependecyProviders = withDependencies
-    ? [typeDependencyProvider, objectDependencyProvider]
+  // For function interface backwards compatibility we build the changer list here
+  // TODO:ORI - change the function interface to get the list of changers
+  const dependecyChangers = withDependencies
+    ? [addTypeDependency, addFieldToObjectDependency]
     : []
 
   const diffGraph = await buildDiffGraph(
     addElements(resolvedBefore, 'remove'),
     addElements(resolvedAfter, 'add'),
     removeEqualNodes(isEqualsNode),
-    addNodeDependencies(dependecyProviders),
+    addNodeDependencies(dependecyChangers),
     mergeNodesToModify,
   )
 

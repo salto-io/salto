@@ -15,7 +15,7 @@ export type DependencyChange = {
   dependency: Dependency
 }
 
-export type DependencyProvider = (
+export type DependencyChanger = (
   changes: ReadonlyMap<ChangeId, Change>, dependencies: ReadonlyMap<ChangeId, ReadonlySet<ChangeId>>
 ) => Promise<Iterable<DependencyChange>>
 

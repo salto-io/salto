@@ -5,7 +5,7 @@ import { collections } from '@salto/lowerdash'
 import { ChangeDataType } from 'adapter-api'
 import { DataNodeMap, DiffNode } from '@salto/dag'
 import { PlanTransformer } from '../common'
-import { DependencyProvider, DependencyChange, ChangeId } from './common'
+import { DependencyChanger, DependencyChange, ChangeId } from './common'
 
 const log = logger(module)
 
@@ -32,11 +32,11 @@ const updateDeps = (
 )
 
 export const addNodeDependencies = (
-  providers: ReadonlyArray<DependencyProvider>
+  changers: ReadonlyArray<DependencyChanger>
 ): PlanTransformer => graph => log.time(async () => {
   const changeData = new Map(wu(graph.keys()).map(id => [id, graph.getData(id)]))
-  const outputDependencies = providers.reduce(
-    async (deps, provider) => updateDeps(await deps, await provider(changeData, await deps)),
+  const outputDependencies = changers.reduce(
+    async (deps, changer) => updateDeps(await deps, await changer(changeData, await deps)),
     Promise.resolve(new Map(graph)),
   )
   return new DataNodeMap<DiffNode<ChangeDataType>>(await outputDependencies, changeData)

@@ -2,7 +2,7 @@ import wu from 'wu'
 import { collections } from '@salto/lowerdash'
 import { Field, InstanceElement, isType, getChangeElement } from 'adapter-api'
 import {
-  ChangeEntry, isFieldChange, isInstanceChange, DependencyProvider, DependencyChange,
+  ChangeEntry, isFieldChange, isInstanceChange, DependencyChanger, DependencyChange,
   addReferenceDependency,
 } from './common'
 
@@ -12,13 +12,13 @@ const isFieldOrInstanceChange = (entry: ChangeEntry): entry is FieldOrInstanceCh
   isFieldChange(entry) || isInstanceChange(entry)
 )
 
-export const typeDependencyProvider: DependencyProvider = async changes => {
+export const addTypeDependency: DependencyChanger = async changes => {
   const typeChanges = collections.iterable.groupBy(
     wu(changes).filter(([_id, change]) => isType(getChangeElement(change))),
     ([_id, change]) => getChangeElement(change).elemID.getFullName(),
   )
 
-  const addTypeDependency = ([id, change]: FieldOrInstanceChange): DependencyChange[] => (
+  const addChangeTypeDependency = ([id, change]: FieldOrInstanceChange): DependencyChange[] => (
     (typeChanges.get(getChangeElement(change).type.elemID.getFullName()) ?? [])
       .filter(([_id, typeChange]) => typeChange.action === change.action)
       .map(([typeChangeId]) => addReferenceDependency(change.action, id, typeChangeId))
@@ -26,6 +26,6 @@ export const typeDependencyProvider: DependencyProvider = async changes => {
 
   return wu(changes)
     .filter(isFieldOrInstanceChange)
-    .map(addTypeDependency)
+    .map(addChangeTypeDependency)
     .flatten()
 }

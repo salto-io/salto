@@ -24,38 +24,49 @@ const projectValues = (src: Values, target: Values): Values => {
   return projection
 }
 
-const projectType = (src: Type, target: Type): Type => {
+const projectType = (src: Type, target: Type): Type | undefined => {
   const annotations = projectValues(src.annotations, target.annotations)
   const annotationTypes = _.pick(src.annotationTypes, _.keys(target.annotationTypes))
   if (isObjectType(src) && isObjectType(target)) {
     const fields = _.pick(src.fields, _.keys(target.fields))
-    return new ObjectType({
+    return _.isEmpty(annotations) && _.isEmpty(annotationTypes) && _.isEmpty(fields)
+      ? undefined
+      : new ObjectType({
+        ...target,
+        annotationTypes,
+        annotations,
+        fields,
+      })
+  }
+  return _.isEmpty(annotations) && _.isEmpty(annotationTypes)
+    ? undefined
+    : new PrimitiveType({
+      ...target as PrimitiveType,
       annotationTypes,
       annotations,
-      fields,
-      ...target,
     })
-  }
-  return new PrimitiveType({
-    annotationTypes,
-    annotations,
-    ...target as PrimitiveType,
-  })
 }
 
-const projectField = (src: Field, target: Field): Field => {
+const projectField = (src: Field, target: Field): Field | undefined => {
   const annotations = projectValues(src.annotations, target.annotations)
-  return new Field(src.parentID, src.name, src.type, annotations, src.isList)
+  return _.isEmpty(annotations)
+    ? undefined
+    : new Field(src.parentID, src.name, src.type, annotations, src.isList)
 }
 
 const projectInstance = (
   src: InstanceElement,
   target: InstanceElement
-): InstanceElement => new InstanceElement(
-  src.elemID.name,
-  src.type,
-  projectValues(src.value, target.value)
-)
+): InstanceElement | undefined => {
+  const projectedValue = projectValues(src.value, target.value)
+  return _.isEmpty(projectedValue)
+    ? undefined
+    : new InstanceElement(
+      src.elemID.name,
+      src.type,
+      projectedValue
+    )
+}
 
 export const projectElementToEnv = async (
   element: Element,
@@ -102,7 +113,6 @@ export const projectChange = async (
   const afterProjection = change.action !== 'remove'
     ? await projectElementToEnv(change.data.after, env)
     : undefined
-
   if (change.action === 'add') {
     if (afterProjection) {
       throw new InvalidProjectionError(

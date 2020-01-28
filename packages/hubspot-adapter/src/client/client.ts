@@ -162,6 +162,8 @@ export default class HubspotClient {
     hubspotMetadata: HubspotMetadata
   ): Promise<HubspotMetadata> {
     const objectAPI = await this.extractHubspotObjectAPI(typeName)
+
+    // TODO: remove this error checking when HubSpot API will support update operation for workflow
     if (objectAPI.update === undefined) {
       throw new Error(`${typeName} can't updated via API`)
     }

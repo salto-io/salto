@@ -6,7 +6,8 @@ import HubspotAdapter from '../src/adapter'
 import mockAdapter from './mock'
 import {
   formsMockArray, workflowsMockArray, marketingEmailMockArray, workflowsCreateResponse,
-  workflowsMock, marketingEmailMock, marketingEmailCreateResponse,
+  workflowsMock, marketingEmailMock, marketingEmailCreateResponse, beforeFormMock,
+  afterFormMock,
 } from './common/mock_elements'
 import HubspotClient from '../src/client/client'
 import {
@@ -309,271 +310,187 @@ describe('Hubspot Adapter Operations', () => {
     const beforeUpdateInstance = new InstanceElement(
       'formInstance',
       Types.hubspotObjects.form,
-      {
-        name: 'beforeUpdateInstance',
-        guid: 'guid',
-        cssClass: 'abc',
-        followUpId: 'DEPRECATED',
-        editable: true,
-        cloneable: true,
-        captchaEnabled: false,
-        createdAt: 1500588456053,
-        formFieldGroups: [
-          {
-            fields: [
-              {
-                name: 'g1',
-                label: 'g1',
-                type: 'string',
-                fieldType: 'text',
-                description: '',
-                required: false,
-                hidden: false,
-                defaultValue: '',
-                isSmartField: false,
-                selectedOptions: [],
-                options: [],
-              },
-            ],
-            default: true,
-            isSmartGroup: false,
-          },
-        ],
-      }
+      beforeFormMock,
     )
 
     const afterUpdateInstance = new InstanceElement(
       'formInstance',
       Types.hubspotObjects.form,
-      {
-        name: 'afterUpdateInstance',
-        guid: 'guid',
-        followUpId: 'DEPRECATED',
-        editable: true,
-        cloneable: true,
-        captchaEnabled: false,
-        redirect: 'google.com',
-        createdAt: 9999999999999,
-        formFieldGroups: [
-          {
-            fields: [
-              {
-                name: 'g1',
-                label: 'g1',
-                type: 'string',
-                fieldType: 'text',
-                description: '',
-                required: false,
-                hidden: false,
-                defaultValue: '',
-                isSmartField: false,
-                selectedOptions: [],
-                options: [],
-              },
-            ],
-            default: true,
-            isSmartGroup: false,
-          },
-          {
-            fields: [
-              {
-                name: 'state',
-                label: 'State/Region',
-                type: 'string',
-                fieldType: 'text',
-                description: '',
-                required: false,
-                hidden: false,
-                defaultValue: '',
-                isSmartField: false,
-                selectedOptions: [],
-                options: [
-                  {
-                    label: 'opt1',
-                    value: 'val1',
-                    hidden: true,
-                    readOnly: true,
-                  },
-                ],
-              },
-            ],
-            default: true,
-            isSmartGroup: false,
-          },
-        ],
-      }
+      afterFormMock,
     )
 
     describe('When Update success', () => {
-      beforeEach(async () => {
-        const updateResult = (_t: string, f: Form): Promise<Form> =>
-          Promise.resolve(
-            {
-              portalId: 6774238,
-              guid: 'guid',
-              name: f.name,
-              action: '',
-              method: 'POST',
-              cssClass: f.cssClass,
-              editable: f.editable,
-              deletable: false,
-              createdAt: 1500588456053,
-              redirect: 'google.com',
-              submitText: '',
-              cloneable: false,
-              captchaEnabled: true,
-              formFieldGroups: [
-                {
-                  fields: [
-                    {
-                      name: 'state',
-                      label: 'State/Region',
-                      type: 'string',
-                      fieldType: 'text',
-                      description: '',
-                      groupName: 'contactinformation',
-                      displayOrder: -1,
-                      required: false,
-                      selectedOptions: [],
-                      options: [
-                        {
-                          label: 'opt1',
-                          value: 'val1',
-                          hidden: true,
-                          readOnly: true,
-                          description: '',
+      describe('Form type', () => {
+        beforeEach(async () => {
+          const updateResult = (_t: string, f: Form): Promise<Form> =>
+            Promise.resolve(
+              {
+                portalId: 6774238,
+                guid: 'guid',
+                name: f.name,
+                action: '',
+                method: 'POST',
+                cssClass: f.cssClass,
+                editable: f.editable,
+                deletable: false,
+                createdAt: 1500588456053,
+                redirect: 'google.com',
+                submitText: '',
+                cloneable: false,
+                captchaEnabled: true,
+                formFieldGroups: [
+                  {
+                    fields: [
+                      {
+                        name: 'state',
+                        label: 'State/Region',
+                        type: 'string',
+                        fieldType: 'text',
+                        description: '',
+                        groupName: 'contactinformation',
+                        displayOrder: -1,
+                        required: false,
+                        selectedOptions: [],
+                        options: [
+                          {
+                            label: 'opt1',
+                            value: 'val1',
+                            hidden: true,
+                            readOnly: true,
+                            description: '',
+                          },
+                        ],
+                        validation: {
+                          name: '',
+                          message: '',
+                          data: '',
+                          useDefaultBlockList: false,
+                          blockedEmailAddresses: [],
                         },
-                      ],
-                      validation: {
-                        name: '',
-                        message: '',
-                        data: '',
-                        useDefaultBlockList: false,
-                        blockedEmailAddresses: [],
+                        enabled: true,
+                        hidden: false,
+                        defaultValue: '',
+                        isSmartField: false,
+                        unselectedLabel: '',
+                        placeholder: '',
+                        dependentFieldFilters: [],
+                        labelHidden: false,
+                        propertyObjectType: 'CONTACT',
+                        metaData: [],
                       },
-                      enabled: true,
-                      hidden: false,
-                      defaultValue: '',
-                      isSmartField: false,
-                      unselectedLabel: '',
-                      placeholder: '',
-                      dependentFieldFilters: [],
-                      labelHidden: false,
-                      propertyObjectType: 'CONTACT',
-                      metaData: [],
+                    ],
+                    default: true,
+                    isSmartGroup: false,
+                    richText: {
+                      content: '',
                     },
-                  ],
-                  default: true,
-                  isSmartGroup: false,
-                  richText: {
-                    content: '',
                   },
-                },
-                {
-                  fields: [
-                    {
-                      name: 'g1',
-                      label: 'g1',
-                      type: 'string',
-                      fieldType: 'text',
-                      description: '',
-                      groupName: 'contactinformation',
-                      displayOrder: 1,
-                      required: false,
-                      selectedOptions: [],
-                      options: [],
-                      validation: {},
-                      enabled: true,
-                      hidden: false,
-                      defaultValue: '',
-                      isSmartField: false,
-                      unselectedLabel: '',
-                      placeholder: '',
-                      dependentFieldFilters: [],
-                      labelHidden: false,
-                      propertyObjectType: 'CONTACT',
-                      metaData: [],
+                  {
+                    fields: [
+                      {
+                        name: 'g1',
+                        label: 'g1',
+                        type: 'string',
+                        fieldType: 'text',
+                        description: '',
+                        groupName: 'contactinformation',
+                        displayOrder: 1,
+                        required: false,
+                        selectedOptions: [],
+                        options: [],
+                        validation: {},
+                        enabled: true,
+                        hidden: false,
+                        defaultValue: '',
+                        isSmartField: false,
+                        unselectedLabel: '',
+                        placeholder: '',
+                        dependentFieldFilters: [],
+                        labelHidden: false,
+                        propertyObjectType: 'CONTACT',
+                        metaData: [],
 
-                    },
-                  ],
-                  isSmartGroup: false,
-                  default: true,
-                },
-              ],
-              ignoreCurrentValues: false,
-              inlineMessage: '',
-              notifyRecipients: '',
-            } as unknown as Form
-          )
+                      },
+                    ],
+                    isSmartGroup: false,
+                    default: true,
+                  },
+                ],
+                ignoreCurrentValues: false,
+                inlineMessage: '',
+                notifyRecipients: '',
+              } as unknown as Form
+            )
 
-        mockUpdate = jest.fn().mockImplementation(updateResult)
-        client.updateInstance = mockUpdate
-      })
+          mockUpdate = jest.fn().mockImplementation(updateResult)
+          client.updateInstance = mockUpdate
+        })
 
-      it('should return the updated form', async () => {
-        const res = await adapter.update(
-          beforeUpdateInstance,
-          afterUpdateInstance
-        ) as InstanceElement //
+        it('should return the updated form', async () => {
+          const res = await adapter.update(
+            beforeUpdateInstance,
+            afterUpdateInstance
+          ) as InstanceElement
 
-        // Updated fields
-        expect(res.value.guid).toEqual(afterUpdateInstance.value.guid)
-        expect(res.value.name).toEqual(afterUpdateInstance.value.name)
-        expect(res.value.redirect).toEqual(afterUpdateInstance.value.redirect)
-        expect(res.value.cssClass).toEqual(afterUpdateInstance.value.cssClass)
-        expect(res.value.editable).toEqual(afterUpdateInstance.value.editable)
+          // Updated fields
+          expect(res.value.guid).toEqual(afterUpdateInstance.value.guid)
+          expect(res.value.name).toEqual(afterUpdateInstance.value.name)
+          expect(res.value.redirect).toEqual(afterUpdateInstance.value.redirect)
+          expect(res.value.cssClass).toEqual(afterUpdateInstance.value.cssClass)
+          expect(res.value.editable).toEqual(afterUpdateInstance.value.editable)
 
-        // Unsupported fields
-        expect(res.value.portalId).toBeUndefined()
-        expect(res.value.action).toBeUndefined()
-        expect(res.value.inlineMessage).toBeUndefined()
-        expect(res.value.notifyRecipients).toBeUndefined()
-        expect(res.value.submitText).toBeUndefined()
-        expect(res.value.method).toBeUndefined()
+          // Unsupported fields
+          expect(res.value.portalId).toBeUndefined()
+          expect(res.value.action).toBeUndefined()
+          expect(res.value.inlineMessage).toBeUndefined()
+          expect(res.value.notifyRecipients).toBeUndefined()
+          expect(res.value.submitText).toBeUndefined()
+          expect(res.value.method).toBeUndefined()
 
-        // Read-only (autogenerated) fields
-        expect(res.value.createdAt).toEqual(beforeUpdateInstance.value.createdAt)
-        expect(res.value.deletable).toEqual(false)
+          // Read-only (autogenerated) fields
+          expect(res.value.createdAt).toEqual(beforeUpdateInstance.value.createdAt)
+          expect(res.value.deletable).toEqual(false)
 
-        // formFieldGroups
-        expect(res.value.formFieldGroups).toBeDefined()
-        expect(res.value.formFieldGroups).toHaveLength(2)
+          // formFieldGroups
+          expect(res.value.formFieldGroups).toBeDefined()
+          expect(res.value.formFieldGroups).toHaveLength(2)
 
-        // formFieldGroups[0]
-        expect(res.value.formFieldGroups[0].default).toEqual(true)
-        expect(res.value.formFieldGroups[0].isSmartGroup).toEqual(false)
-        expect(res.value.formFieldGroups[0].richText).toBeUndefined()
-        expect(res.value.formFieldGroups[0].fields).toHaveLength(1)
-        expect(res.value.formFieldGroups[0].fields[0].name).toEqual('state')
-        expect(res.value.formFieldGroups[0].fields[0].label).toEqual('State/Region')
-        expect(res.value.formFieldGroups[0].fields[0].type).toEqual('string')
-        expect(res.value.formFieldGroups[0].fields[0].description).toBeUndefined()
-        expect(res.value.formFieldGroups[0].fields[0].propertyObjectType).toBeUndefined()
-        expect(res.value.formFieldGroups[0].fields[0].options).toHaveLength(1)
-        expect(res.value.formFieldGroups[0].fields[0].options[0].label).toEqual('opt1')
-        expect(res.value.formFieldGroups[0].fields[0].options[0].hidden).toEqual(true)
-        expect(res.value.formFieldGroups[0].fields[0].options[0].description).toBeUndefined()
+          // formFieldGroups[0]
+          expect(res.value.formFieldGroups[0].default).toEqual(true)
+          expect(res.value.formFieldGroups[0].isSmartGroup).toEqual(false)
+          expect(res.value.formFieldGroups[0].richText).toBeUndefined()
+          expect(res.value.formFieldGroups[0].fields).toHaveLength(1)
+          expect(res.value.formFieldGroups[0].fields[0].name).toEqual('state')
+          expect(res.value.formFieldGroups[0].fields[0].label).toEqual('State/Region')
+          expect(res.value.formFieldGroups[0].fields[0].type).toEqual('string')
+          expect(res.value.formFieldGroups[0].fields[0].description).toBeUndefined()
+          expect(res.value.formFieldGroups[0].fields[0].propertyObjectType).toBeUndefined()
+          expect(res.value.formFieldGroups[0].fields[0].options).toHaveLength(1)
+          expect(res.value.formFieldGroups[0].fields[0].options[0].label).toEqual('opt1')
+          expect(res.value.formFieldGroups[0].fields[0].options[0].hidden).toEqual(true)
+          expect(res.value.formFieldGroups[0].fields[0].options[0].description).toBeUndefined()
 
 
-        // formFieldGroups[1]
-        expect(res.value.formFieldGroups[1].default).toEqual(true)
-        expect(res.value.formFieldGroups[1].isSmartGroup).toEqual(false)
-        expect(res.value.formFieldGroups[1].richText).toBeUndefined()
-        expect(res.value.formFieldGroups[1].fields).toHaveLength(1)
-        expect(res.value.formFieldGroups[1].default).toEqual(true)
-        expect(res.value.formFieldGroups[1].isSmartGroup).toEqual(false)
-        expect(res.value.formFieldGroups[1].richText).toBeUndefined()
-        expect(res.value.formFieldGroups[1].fields).toHaveLength(1)
-        expect(res.value.formFieldGroups[1].fields[0].name).toEqual('g1')
-        expect(res.value.formFieldGroups[1].fields[0].label).toEqual('g1')
-        expect(res.value.formFieldGroups[1].fields[0].type).toEqual('string')
-        expect(res.value.formFieldGroups[1].fields[0].description).toBeUndefined()
-        expect(res.value.formFieldGroups[1].fields[0].propertyObjectType).toBeUndefined()
-        expect(res.value.formFieldGroups[1].fields[0].options).toBeUndefined()
+          // formFieldGroups[1]
+          expect(res.value.formFieldGroups[1].default).toEqual(true)
+          expect(res.value.formFieldGroups[1].isSmartGroup).toEqual(false)
+          expect(res.value.formFieldGroups[1].richText).toBeUndefined()
+          expect(res.value.formFieldGroups[1].fields).toHaveLength(1)
+          expect(res.value.formFieldGroups[1].default).toEqual(true)
+          expect(res.value.formFieldGroups[1].isSmartGroup).toEqual(false)
+          expect(res.value.formFieldGroups[1].richText).toBeUndefined()
+          expect(res.value.formFieldGroups[1].fields).toHaveLength(1)
+          expect(res.value.formFieldGroups[1].fields[0].name).toEqual('g1')
+          expect(res.value.formFieldGroups[1].fields[0].label).toEqual('g1')
+          expect(res.value.formFieldGroups[1].fields[0].type).toEqual('string')
+          expect(res.value.formFieldGroups[1].fields[0].description).toBeUndefined()
+          expect(res.value.formFieldGroups[1].fields[0].propertyObjectType).toBeUndefined()
+          expect(res.value.formFieldGroups[1].fields[0].options).toBeUndefined()
+        })
       })
     })
 
-    describe('When Form not found', () => {
+    describe('When Instance was not found', () => {
       const noFormFoundErrStr = "No form found with guid 'guid'"
       beforeEach(async () => {
         const notFoundError = ():

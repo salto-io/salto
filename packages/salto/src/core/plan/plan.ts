@@ -17,6 +17,7 @@ import {
   addNodeDependencies, addFieldToObjectDependency, addTypeDependency, addAfterRemoveDependency,
 } from './dependency'
 import { PlanTransformer, changeId } from './common'
+import { DependencyChanger } from './dependency/common'
 
 const log = logger(module)
 
@@ -120,21 +121,21 @@ const buildDiffGraph = (
   )
 )
 
+const defaultDependencyChangers = [
+  addAfterRemoveDependency,
+  addTypeDependency,
+  addFieldToObjectDependency,
+]
+
 export const getPlan = async (
   beforeElements: readonly Element[],
   afterElements: readonly Element[],
   changeValidators: Record<string, ChangeValidator> = {},
-  withDependencies = true
+  dependecyChangers: ReadonlyArray<DependencyChanger> = defaultDependencyChangers,
 ): Promise<Plan> => log.time(async () => {
   // Resolve elements before adding them to the graph
   const resolvedBefore = resolve(beforeElements)
   const resolvedAfter = resolve(afterElements)
-
-  // For function interface backwards compatibility we build the changer list here
-  // TODO:ORI - change the function interface to get the list of changers
-  const dependecyChangers = withDependencies
-    ? [addAfterRemoveDependency, addTypeDependency, addFieldToObjectDependency]
-    : []
 
   const diffGraph = await buildDiffGraph(
     addElements(resolvedBefore, 'remove'),

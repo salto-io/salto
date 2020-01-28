@@ -19,7 +19,7 @@ export type DependencyChanger = (
   changes: ReadonlyMap<ChangeId, Change>, dependencies: ReadonlyMap<ChangeId, ReadonlySet<ChangeId>>
 ) => Promise<Iterable<DependencyChange>>
 
-const dependencyChange = (
+export const dependencyChange = (
   action: DependencyChange['action'], source: ChangeId, target: ChangeId
 ): DependencyChange => ({ action, dependency: { source, target } })
 

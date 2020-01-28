@@ -13,7 +13,9 @@ import { createElementsMap } from '../search'
 import { PlanItem, addPlanItemAccessors, PlanItemId } from './plan_item'
 import { buildGroupedGraphFromDiffGraph, findGroupLevelChange } from './group'
 import { filterInvalidChanges } from './filter'
-import { addNodeDependencies, addFieldToObjectDependency, addTypeDependency } from './dependency'
+import {
+  addNodeDependencies, addFieldToObjectDependency, addTypeDependency, addAfterRemoveDependency,
+} from './dependency'
 import { PlanTransformer, changeId } from './common'
 
 const log = logger(module)
@@ -131,7 +133,7 @@ export const getPlan = async (
   // For function interface backwards compatibility we build the changer list here
   // TODO:ORI - change the function interface to get the list of changers
   const dependecyChangers = withDependencies
-    ? [addTypeDependency, addFieldToObjectDependency]
+    ? [addAfterRemoveDependency, addTypeDependency, addFieldToObjectDependency]
     : []
 
   const diffGraph = await buildDiffGraph(

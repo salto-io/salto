@@ -34,11 +34,30 @@ describe('profile permissions change validator', () => {
         expect(changeErrors[0].elemID).toEqual(newField.elemID)
       })
 
-      it('should have no change error when adding a field required field without permissions', async () => {
+      it('should have no change error when updating a required field without permissions', async () => {
         delete newField.annotations[FIELD_LEVEL_SECURITY_ANNOTATION]
         const changeErrors = await profilePermissionsValidator.onUpdate([{
           action: 'modify',
           data: { before: field, after: newField },
+        }])
+        expect(changeErrors).toHaveLength(0)
+      })
+
+      it('should have change error when adding a required field with permissions', async () => {
+        const changeErrors = await profilePermissionsValidator.onUpdate([{
+          action: 'add',
+          data: { after: newField },
+        }])
+        expect(changeErrors).toHaveLength(1)
+        expect(changeErrors[0].severity).toEqual('Error')
+        expect(changeErrors[0].elemID).toEqual(newField.elemID)
+      })
+
+      it('should have no change error when adding a required field without permissions', async () => {
+        delete newField.annotations[FIELD_LEVEL_SECURITY_ANNOTATION]
+        const changeErrors = await profilePermissionsValidator.onUpdate([{
+          action: 'add',
+          data: { after: newField },
         }])
         expect(changeErrors).toHaveLength(0)
       })

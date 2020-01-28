@@ -255,10 +255,6 @@ export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<Node
     return [result, !hasCycles]
   }
 
-  transformAsync(transform: (nodeMap: this) => Promise<this>): Promise<this> {
-    return transform(this)
-  }
-
   reverse(): this {
     const result = new (this.constructor as new() => this)()
     wu(this.entries()).forEach(([id, deps]) => {

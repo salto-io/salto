@@ -13,7 +13,7 @@ const isFieldOrInstanceChange = (entry: ChangeEntry): entry is FieldOrInstanceCh
 )
 
 export const typeDependencyProvider: DependencyProvider = async changes => {
-  const typeChanges = collections.map.groupBy(
+  const typeChanges = collections.iterable.groupBy(
     wu(changes).filter(([_id, change]) => isType(getChangeElement(change))),
     ([_id, change]) => getChangeElement(change).elemID.getFullName(),
   )
@@ -26,6 +26,6 @@ export const typeDependencyProvider: DependencyProvider = async changes => {
 
   return wu(changes)
     .filter(isFieldOrInstanceChange)
-    .map(change => addTypeDependency(change as FieldOrInstanceChange))
+    .map(addTypeDependency)
     .flatten()
 }

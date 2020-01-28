@@ -7,7 +7,7 @@ import {
 } from './common'
 
 export const objectDependencyProvider: DependencyProvider = async changes => {
-  const objectChanges = collections.map.groupBy(
+  const objectChanges = collections.iterable.groupBy(
     wu(changes).filter(isObjectTypeChange),
     ([_id, change]) => getChangeElement(change).elemID.getFullName(),
   )

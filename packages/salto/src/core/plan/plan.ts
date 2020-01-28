@@ -5,7 +5,7 @@ import {
   ChangeValidator, Change, ChangeError, ElementMap,
 } from 'adapter-api'
 import {
-  DataNodeMap, GroupedNodeMap, DiffNode, mergeNodesToModify, removeEqualNodes,
+  DataNodeMap, GroupedNodeMap, DiffNode, mergeNodesToModify, removeEqualNodes, DiffGraph,
 } from '@salto/dag'
 import { logger } from '@salto/logging'
 import { resolve } from '../expressions'
@@ -39,10 +39,12 @@ const addElements = (
     outputGraph.addNode(changeId(elem, action), [], toChange(elem))
   }
 
+  const isTopLevelElement = (elem: Element): elem is ChangeDataType => (
+    isObjectType(elem) || isPrimitiveType(elem) || isInstanceElement(elem)
+  )
+
   // Add top level elements to the graph
-  elements.filter(isObjectType).forEach(addElemToOutputGraph)
-  elements.filter(isPrimitiveType).forEach(addElemToOutputGraph)
-  elements.filter(isInstanceElement).forEach(addElemToOutputGraph)
+  elements.filter(isTopLevelElement).forEach(addElemToOutputGraph)
 
   // We add fields to the graph seperately from their object types to allow for better granularity
   // of cycle aviodance
@@ -107,6 +109,15 @@ export type Plan = GroupedNodeMap<Change> & {
   changeErrors: ReadonlyArray<ChangeError>
 }
 
+const buildDiffGraph = (
+  ...transforms: ReadonlyArray<PlanTransformer>
+): Promise<DiffGraph<ChangeDataType>> => (
+  transforms.reduce(
+    async (graph, transform) => transform(await graph),
+    Promise.resolve(new DataNodeMap<DiffNode<ChangeDataType>>()),
+  )
+)
+
 export const getPlan = async (
   beforeElements: readonly Element[],
   afterElements: readonly Element[],
@@ -123,12 +134,13 @@ export const getPlan = async (
     ? [typeDependencyProvider, objectDependencyProvider]
     : []
 
-  const diffGraph = await Promise.resolve(new DataNodeMap<DiffNode<ChangeDataType>>())
-    .then(graph => graph.transformAsync(addElements(resolvedBefore, 'remove')))
-    .then(graph => graph.transformAsync(addElements(resolvedAfter, 'add')))
-    .then(graph => graph.transformAsync(removeEqualNodes(isEqualsNode)))
-    .then(graph => graph.transformAsync(addNodeDependencies(dependecyProviders)))
-    .then(graph => graph.transformAsync(mergeNodesToModify))
+  const diffGraph = await buildDiffGraph(
+    addElements(resolvedBefore, 'remove'),
+    addElements(resolvedAfter, 'add'),
+    removeEqualNodes(isEqualsNode),
+    addNodeDependencies(dependecyProviders),
+    mergeNodesToModify,
+  )
 
   // filter invalid changes from the graph and the after elements
   const beforeElementsMap = createElementsMap(resolvedBefore)

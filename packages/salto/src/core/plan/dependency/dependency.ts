@@ -14,7 +14,7 @@ const updateDeps = (
 ): Map<ChangeId, Set<ChangeId>> => (
   new Map(wu.chain(
     deps,
-    wu(collections.map.groupBy(changes, change => change.dependency.source))
+    wu(collections.iterable.groupBy(changes, change => change.dependency.source))
       .map(([sourceId, srcChanges]) => {
         const [toAdd, toRemove] = _.partition(
           [...srcChanges.values()],

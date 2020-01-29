@@ -1,18 +1,30 @@
 import {
   BuiltinTypes,
   ElemID, Field, InstanceElement, ObjectType, PrimitiveTypes,
-  PrimitiveValue, Values, PrimitiveField,
+  PrimitiveValue, Values, PrimitiveField, PrimitiveType,
 } from '../src/elements'
 import {
-  transform,
+  transform, resolvePath,
 } from '../src/utils'
 
 describe('Test utils.ts', () => {
   const mockElem = new ElemID('mockAdapter', 'test')
   const mockType = new ObjectType({
     elemID: mockElem,
+    annotationTypes : {
+      testAnno : new PrimitiveType({
+        elemID : new ElemID('mockAdapter', 'str'), 
+        primitive: PrimitiveTypes.STRING, 
+        annotations :{ testAnno : 'TEST ANNO TYPE' }
+      })
+    },
+    annotations : {
+      testAnno : 'TEST ANNO'
+    },
     fields: {
-      str: new Field(mockElem, 'str', BuiltinTypes.STRING),
+      str: new Field(mockElem, 'str', BuiltinTypes.STRING, {
+        testAnno : 'TEST FIELD ANNO'
+      }),
       bool: new Field(mockElem, 'bool', BuiltinTypes.BOOLEAN),
       num: new Field(mockElem, 'num', BuiltinTypes.NUMBER),
       emptyStr: new Field(mockElem, 'emptyStr', BuiltinTypes.STRING),
@@ -222,6 +234,42 @@ describe('Test utils.ts', () => {
           .toEqual(mockInstance.value.obj[1].innerObj.magical.deepName)
         expect(resp.obj[2].innerObj.magical.deepName).toBeUndefined()
       })
+    })
+  })
+
+  describe('resolve path func', () => {
+    it('should fail when the base element is not a parent of the full elemID', () => {
+      expect(resolvePath(mockType, new ElemID('salto', 'nope'))).toBe(undefined)
+    })
+    it('should fail on a non existing path', () => {
+      expect(resolvePath(mockType, mockElem.createNestedID('field', 'nope'))).toBe(undefined)
+    })
+    it ('should return base element when no pass is provided', () => {
+      expect(resolvePath(mockType, mockType.elemID)).toEqual(mockType)
+    })
+    it('should resolve a field annotation path', () => {
+      expect(resolvePath(
+        mockType, 
+        mockType.fields.str.elemID.createNestedID('testAnno')
+      )).toBe('TEST FIELD ANNO')
+    })
+    it('should resolve an annotation path', () => {
+      expect(resolvePath(
+        mockType, 
+        mockType.elemID.createNestedID('attr', 'testAnno')
+      )).toBe('TEST ANNO')
+    })
+    it('should resolve an annotation type path', () => {
+      expect(resolvePath(
+        mockType, 
+        mockType.elemID.createNestedID('annotation', 'testAnno', 'testAnno')
+      )).toBe('TEST ANNO TYPE')
+    })
+    it('should resolve an instance value path', () => {
+      expect(resolvePath(
+        mockInstance, 
+        mockInstance.elemID.createNestedID('str')
+      )).toBe('val')
     })
   })
 })

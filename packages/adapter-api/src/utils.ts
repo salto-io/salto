@@ -3,7 +3,7 @@ import _ from 'lodash'
 import {
   Type, Field, ObjectType, ElemID, Values, Element, PrimitiveValue, PrimitiveField,
   InstanceElement, PrimitiveType, Expression, ReferenceExpression, TemplateExpression,
-  Value
+  Value,
 } from './elements'
 
 interface AnnoRef {
@@ -214,21 +214,28 @@ export const findInstances = (
   return instances.filter(e => e.type.elemID.isEqual(typeID))
 }
 
-export const resolvePath = (rootElement: Element, path: readonly string[]): Value => {
+export const resolvePath = (rootElement: Element, fullElemID: ElemID): Value => {
+  const { parent, path } = fullElemID.createTopLevelParentID()
+  if (!_.isEqual(parent, rootElement.elemID)) return undefined
+
   if (_.isEmpty(path)) {
     return rootElement
   }
 
-  if (isInstanceElement(rootElement)) {
+  if (isInstanceElement(rootElement) && fullElemID.idType === 'instance') {
     return (!_.isEmpty(path)) ? _.get(rootElement.value, path) : rootElement
   }
 
-  if (isObjectType(rootElement) && rootElement.fields[path[0]]) {
-    return _.get(rootElement.fields[path[0]].annotations, path.slice(1))
+  if (isObjectType(rootElement) && fullElemID.idType === 'field') {
+    return _.get(rootElement.fields[path[0]]?.annotations, path.slice(1))
   }
 
-  if (isType(rootElement)) {
+  if (isType(rootElement) && fullElemID.idType === 'attr') {
     return _.get(rootElement.annotations, path)
+  }
+
+  if (isType(rootElement) && fullElemID.idType === 'annotation') {
+    return _.get(rootElement.annotationTypes[path[0]]?.annotations, path.slice(1))
   }
 
   return undefined

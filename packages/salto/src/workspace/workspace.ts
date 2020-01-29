@@ -14,7 +14,7 @@ import { localState } from './local/state'
 import { blueprintsSource, BP_EXTENSION, BlueprintsSource, Blueprint } from './blueprints/blueprints_source'
 import { parseResultCache } from './cache'
 import { localDirectoryStore } from './local/dir_store'
-import { multiEnvSource } from './mutil_env/multi_env_source'
+import { multiEnvSource } from './blueprints/mutil_env/multi_env_source'
 import { Errors } from './errors'
 
 const log = logger(module)

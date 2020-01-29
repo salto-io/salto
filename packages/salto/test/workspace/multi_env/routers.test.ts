@@ -3,7 +3,7 @@ import _ from 'lodash'
 import { RemovalDiff, ModificationDiff } from '@salto/dag'
 import { createMockBlueprintSource } from '../../common/blueprint_source'
 import { DetailedChange } from '../../../src/core/plan'
-import { routeChanges } from '../../../src/workspace/mutil_env/routers'
+import { routeChanges } from '../../../src/workspace/blueprints/mutil_env/routers'
 
 const objectElemID = new ElemID('salto', 'object')
 const commonField = new Field(objectElemID, 'commonField', BuiltinTypes.STRING)

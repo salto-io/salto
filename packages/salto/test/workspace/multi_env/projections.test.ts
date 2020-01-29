@@ -3,7 +3,7 @@ import _ from 'lodash'
 import { AdditionDiff, ModificationDiff, RemovalDiff } from '@salto/dag'
 import { createMockBlueprintSource } from '../../common/blueprint_source'
 import { DetailedChange } from '../../../src/core/plan'
-import { projectChange } from '../../../src/workspace/mutil_env/projections'
+import { projectChange } from '../../../src/workspace/blueprints/mutil_env/projections'
 
 describe('projections', () => {
   const nestedElemID = new ElemID('salto', 'nested')

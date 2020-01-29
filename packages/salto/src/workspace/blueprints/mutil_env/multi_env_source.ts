@@ -1,12 +1,12 @@
 import _ from 'lodash'
-import { Element, ElemID, getChangeElement } from 'adapter-api'
+import { Element, ElemID, getChangeElement, Value } from 'adapter-api'
 import { ParseError, SourceMap, SourceRange } from 'src/parser/parse'
 import { ValidationError } from 'src/core/validator'
-import { mergeElements, MergeError } from '../../core/merger'
-import { DetailedChange } from '../../core/plan'
+import { mergeElements, MergeError } from '../../../core/merger'
+import { DetailedChange } from '../../../core/plan'
 import { routeChanges } from './routers'
-import { BlueprintsSource, Blueprint } from '../blueprints/blueprints_source'
-import { Errors } from '../errors'
+import { BlueprintsSource, Blueprint } from '../blueprints_source'
+import { Errors } from '../../errors'
 
 export class UnknownEnviornmentError extends Error {
   constructor(envName: string) {
@@ -29,10 +29,10 @@ type Sources = {
   commonSource?: BlueprintsSource
 }
 
-export type MultiEnvState = Sources & {
+type MultiEnvState = Sources & {
   elements: Record<string, Element>
-  errors: MergeError[]
-  blueprintIndex: Record<string, BlueprintsSource>
+  mergeErrors: MergeError[]
+  fileToBlueprintIndex: Record<string, BlueprintsSource>
 }
 
 export const multiEnvSource = (
@@ -41,7 +41,6 @@ export const multiEnvSource = (
   secondarySources: Record<string, BlueprintsSource> = {}
 ): BlueprintsSource => {
   let state: Promise<MultiEnvState>
-
 
   const getActiveSources = async (sources? : Sources): Promise<BlueprintsSource[]> => {
     const relSources = sources || await state
@@ -79,22 +78,21 @@ export const multiEnvSource = (
     return {
       ...sources,
       elements,
-      errors,
-      blueprintIndex,
+      mergeErrors: errors,
+      fileToBlueprintIndex: blueprintIndex,
     }
   }
 
   state = buildMutiEnvState({ primarySource, commonSource, secondarySources })
 
-  const getBlueprint = async (filename: string): Promise<Blueprint | undefined> => {
-    const activeSources = await getActiveSources()
-    return (await Promise.all(activeSources.map(src => src.getBlueprint(filename))))
-      .find(bp => bp !== undefined)
-  }
-
   const getSourceForBlueprint = async (
     filename: string
-  ): Promise<BlueprintsSource | undefined> => (await state).blueprintIndex[filename]
+  ): Promise<BlueprintsSource | undefined> => (await state).fileToBlueprintIndex[filename]
+
+  const getBlueprint = async (filename: string): Promise<Blueprint | undefined> => {
+    const source = await getSourceForBlueprint(filename)
+    return source && source.getBlueprint(filename)
+  }
 
   const setBlueprint = async (blueprint: Blueprint): Promise<void> => {
     const relevantSource = await getSourceForBlueprint(blueprint.filename) || primarySource
@@ -143,12 +141,12 @@ export const multiEnvSource = (
     update,
     flush,
     list: async (): Promise<ElemID[]> => _.values((await state).elements).map(e => e.elemID),
-    get: async (id: ElemID): Promise<Element | undefined> => (
+    get: async (id: ElemID): Promise<Element | Value> => (
       (await state).elements[id.getFullName()]
     ),
     getAll: async (): Promise<Element[]> => _.values((await state).elements),
     listBlueprints: async (): Promise<string[]> => (
-      getFromAllActiveSources(src => src.listBlueprints())
+      _.keys((await state).fileToBlueprintIndex)
     ),
     setBlueprints: async (...blueprints: Blueprint[]): Promise<void> => {
       await Promise.all(blueprints.map(setBlueprint))

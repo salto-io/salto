@@ -1,10 +1,10 @@
 import { getChangeElement } from 'adapter-api'
 import _ from 'lodash'
-import { ElementsSource } from '../elements_source'
+import { ElementsSource } from '../../elements_source'
 import {
   projectChange, projectElementToEnv, createAddChange, createRemoveChange,
 } from './projections'
-import { DetailedChange } from '../../core/plan'
+import { DetailedChange } from '../../../core/plan'
 
 export interface RoutedChanges {
     primarySource?: DetailedChange[]

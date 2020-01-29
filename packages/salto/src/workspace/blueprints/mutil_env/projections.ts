@@ -4,7 +4,7 @@ import {
 } from 'adapter-api'
 import _ from 'lodash'
 import { DetailedChange } from 'src/core/plan'
-import { ElementsSource } from '../elements_source'
+import { ElementsSource } from '../../elements_source'
 
 export class InvalidProjectionError extends Error {
   constructor(change: DetailedChange, reason: string) {

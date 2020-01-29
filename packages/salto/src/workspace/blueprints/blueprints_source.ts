@@ -44,12 +44,11 @@ type ParsedBlueprintMap = {
   [key: string]: ParsedBlueprint
 }
 
-export type BlueprintsState = {
+type BlueprintsState = {
   readonly parsedBlueprints: ParsedBlueprintMap
   readonly elementsIndex: Record<string, string[]>
   readonly elements: Record<string, Element>
-  readonly errors: MergeError[]
-
+  readonly mergeErrors: MergeError[]
 }
 
 export const blueprintsSource = (blueprintsStore: DirectoryStore, cache: ParseResultCache):
@@ -104,7 +103,7 @@ BlueprintsSource => {
     return {
       parsedBlueprints: allParsed,
       elements: _.keyBy(mergeResult.merged, e => e.elemID.getFullName()),
-      errors: mergeResult.errors,
+      mergeErrors: mergeResult.errors,
       elementsIndex,
     }
   }
@@ -182,7 +181,7 @@ BlueprintsSource => {
     list: async (): Promise<ElemID[]> =>
       Object.keys((await state).elementsIndex).map(name => ElemID.fromFullName(name)),
 
-    get: async (id: ElemID): Promise<Value> => {
+    get: async (id: ElemID): Promise<Element | Value> => {
       const currentState = await state
       const { parent, path } = id.createTopLevelParentID()
       const baseElement = currentState.elements[parent.getFullName()]
@@ -198,7 +197,7 @@ BlueprintsSource => {
 
     getErrors: async (): Promise<Errors> => new Errors({
       parse: _.flatten(Object.values((await state).parsedBlueprints).map(parsed => parsed.errors)),
-      merge: (await state).errors,
+      merge: (await state).mergeErrors,
       validation: [],
     }),
 

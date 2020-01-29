@@ -1,6 +1,6 @@
 import {
   Values, isObjectType, Type, ObjectType, PrimitiveType, Field, InstanceElement,
-  Element, isType, isField, isInstanceElement, getChangeElement,
+  Element, isType, isField, isInstanceElement, getChangeElement, Value,
 } from 'adapter-api'
 import _ from 'lodash'
 import { DetailedChange } from 'src/core/plan'
@@ -12,20 +12,22 @@ export class InvalidProjectionError extends Error {
   }
 }
 
-const projectValues = (src: Values, target: Values): Values => {
-  const projection: Values = {}
-  _.keys(src).forEach(key => {
-    if (target[key]) {
-      projection[key] = _.isPlainObject(src[key])
-        ? projectValues(src[key], target[key])
-        : src[key]
-    }
-  })
-  return projection
+const projectValue = (src: Value, target: Value): Value => {
+  if (_.isPlainObject(src) && _.isPlainObject(target)) {
+    // console.log(src, target)
+    const projection: Values = {}
+    _.keys(src).forEach(key => {
+      if (target[key]) {
+        projection[key] = projectValue(src[key], target[key])
+      }
+    })
+    return projection
+  }
+  return target !== undefined ? src : undefined
 }
 
 const projectType = (src: Type, target: Type): Type | undefined => {
-  const annotations = projectValues(src.annotations, target.annotations)
+  const annotations = projectValue(src.annotations, target.annotations)
   const annotationTypes = _.pick(src.annotationTypes, _.keys(target.annotationTypes))
   if (isObjectType(src) && isObjectType(target)) {
     const fields = _.pick(src.fields, _.keys(target.fields))
@@ -48,7 +50,7 @@ const projectType = (src: Type, target: Type): Type | undefined => {
 }
 
 const projectField = (src: Field, target: Field): Field | undefined => {
-  const annotations = projectValues(src.annotations, target.annotations)
+  const annotations = projectValue(src.annotations, target.annotations)
   return _.isEmpty(annotations)
     ? undefined
     : new Field(src.parentID, src.name, src.type, annotations, src.isList)
@@ -58,7 +60,7 @@ const projectInstance = (
   src: InstanceElement,
   target: InstanceElement
 ): InstanceElement | undefined => {
-  const projectedValue = projectValues(src.value, target.value)
+  const projectedValue = projectValue(src.value, target.value)
   return _.isEmpty(projectedValue)
     ? undefined
     : new InstanceElement(
@@ -82,7 +84,7 @@ export const projectElementToEnv = async (
   if (isInstanceElement(element) && isInstanceElement(targetElement)) {
     return projectInstance(element as InstanceElement, targetElement)
   }
-  return undefined
+  return projectValue(element, targetElement)
 }
 
 export const createAddChange = (element: Element): DetailedChange => ({

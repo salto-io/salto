@@ -57,17 +57,16 @@ export const routeCompact = async (
     throw Error('Missing element in common')
   }
   // Add the changed part of common to the target source
-  const addCommonProjectionToCurrentChanges = await projectChange(
-    createAddChange(commonChangeProjection),
-    primarySource
-  )
+  const addCommonProjectionToCurrentChanges = change.action === 'modify'
+    ? await projectChange(createAddChange(commonChangeProjection), primarySource)
+    : []
   // Add the old value of common to the inactive sources
   const secondaryChanges = _.fromPairs(
     await Promise.all(
       _.entries(secondarySources)
-        .map(([name, source]) => [
+        .map(async ([name, source]) => [
           name,
-          projectChange(createAddChange(currentCommonElement), source),
+          await projectChange(createAddChange(currentCommonElement), source),
         ])
     )
   )
@@ -94,7 +93,9 @@ export const routeChanges = async (
     secondarySources: _.mergeWith(
       {},
       ...routedChanges.map(r => r.secondarySources || {}),
-      (objValue: DetailedChange[], srcValue: DetailedChange[]) => [...objValue, ...srcValue]
+      (objValue: DetailedChange[], srcValue: DetailedChange[]) => (
+        objValue ? [...objValue, ...srcValue] : srcValue
+      )
     ),
   }
 }

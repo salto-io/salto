@@ -186,7 +186,7 @@ BlueprintsSource => {
       const currentState = await state
       const { parent, path } = id.createTopLevelParentID()
       const baseElement = currentState.elements[parent.getFullName()]
-      return _.isEmpty(path) ? baseElement : resolvePath(baseElement, path)
+      return _.isEmpty(path) ? baseElement : resolvePath(baseElement, id)
     },
 
     getAll: async (): Promise<Element[]> => _.values((await state).elements),

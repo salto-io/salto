@@ -1,4 +1,4 @@
-import { BuiltinTypes, ElemID, Field, ObjectType, CORE_ANNOTATIONS } from 'adapter-api'
+import { BuiltinTypes, ElemID, Field, ObjectType, CORE_ANNOTATIONS, InstanceElement } from 'adapter-api'
 import profilePermissionsValidator from '../../src/change_validators/profile_permissions'
 import { API_NAME, FIELD_LEVEL_SECURITY_ANNOTATION, FIELD_LEVEL_SECURITY_FIELDS } from '../../src/constants'
 
@@ -6,6 +6,8 @@ describe('profile permissions change validator', () => {
   const obj = new ObjectType({
     elemID: new ElemID('salesforce', 'obj'),
   })
+
+  const ins = new InstanceElement('ins', obj, {})
 
   describe('onAdd', () => {
     const fieldName = 'testField'
@@ -50,6 +52,11 @@ describe('profile permissions change validator', () => {
       it('should have no change error when updating a required field without permissions', async () => {
         delete newObj.fields[fieldName].annotations[FIELD_LEVEL_SECURITY_ANNOTATION]
         const changeErrors = await profilePermissionsValidator.onAdd(newObj)
+        expect(changeErrors).toHaveLength(0)
+      })
+
+      it('should have no change error when the added element is instance', async () => {
+        const changeErrors = await profilePermissionsValidator.onAdd(ins)
         expect(changeErrors).toHaveLength(0)
       })
     })

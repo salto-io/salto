@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import { logger } from '@salto/logging'
-import { Element, ElemID, ElementMap } from 'adapter-api'
+import { Element, ElemID, ElementMap, resolvePath, Value } from 'adapter-api'
 import { mergeElements, MergeError } from '../../core/merger'
 import { getChangeLocations, updateBlueprintData, getChangesToUpdate } from './blueprint_update'
 import { mergeSourceMaps, SourceMap, parse, SourceRange, ParseError, ParseResult } from '../../parser/parse'
@@ -182,9 +182,11 @@ BlueprintsSource => {
     list: async (): Promise<ElemID[]> =>
       Object.keys((await state).elementsIndex).map(name => ElemID.fromFullName(name)),
 
-    get: async (id: ElemID): Promise<Element> => {
+    get: async (id: ElemID): Promise<Value> => {
       const currentState = await state
-      return currentState.elements[id.getFullName()]
+      const { parent, path } = id.createTopLevelParentID()
+      const baseElement = currentState.elements[parent.getFullName()]
+      return _.isEmpty(path) ? baseElement : resolvePath(baseElement, path)
     },
 
     getAll: async (): Promise<Element[]> => _.values((await state).elements),

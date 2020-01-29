@@ -3,6 +3,7 @@ import _ from 'lodash'
 import {
   Type, Field, ObjectType, ElemID, Values, Element, PrimitiveValue, PrimitiveField,
   InstanceElement, PrimitiveType, Expression, ReferenceExpression, TemplateExpression,
+  Value
 } from './elements'
 
 interface AnnoRef {
@@ -211,4 +212,24 @@ export const findInstances = (
 ): Iterable<InstanceElement> => {
   const instances = wu(elements).filter(isInstanceElement) as wu.WuIterable<InstanceElement>
   return instances.filter(e => e.type.elemID.isEqual(typeID))
+}
+
+export const resolvePath = (rootElement: Element, path: readonly string[]): Value => {
+  if (_.isEmpty(path)) {
+    return rootElement
+  }
+
+  if (isInstanceElement(rootElement)) {
+    return (!_.isEmpty(path)) ? _.get(rootElement.value, path) : rootElement
+  }
+
+  if (isObjectType(rootElement) && rootElement.fields[path[0]]) {
+    return _.get(rootElement.fields[path[0]].annotations, path.slice(1))
+  }
+
+  if (isType(rootElement)) {
+    return _.get(rootElement.annotations, path)
+  }
+
+  return undefined
 }

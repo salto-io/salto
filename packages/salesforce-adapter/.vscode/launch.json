@@ -32,7 +32,9 @@
         "${workspaceRoot}/node_modules/.bin/jest",
         "--runInBand",
         "--config",
-        "${workspaceRoot}/jest.config.js"
+        "${workspaceRoot}/jest.config.js",
+        "-t",
+        "'should received multiple change error when adding an object with multiple required fields that include permissions'"
       ],
       "windows": {
         "args": [
@@ -59,7 +61,9 @@
           "${workspaceRoot}/node_modules/.bin/jest",
           "--runInBand",
           "--config",
-          "${workspaceRoot}/jest.config.js"
+          "${workspaceRoot}/jest.config.js",
+          "-t",
+          "'should fetch and add custom object with various field types'"
         ],
         "windows": {
             "args": [

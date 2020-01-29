@@ -14,7 +14,7 @@ const createPermissionChangeError = (elemID: ElemID, fieldName: string): ChangeE
     elemID,
     severity: 'Error',
     message: `You cannot deploy required field with field permissions. Field: ${fieldName}`,
-    detailedMessage: 'You cannot deploy required field with field permissions',
+    detailedMessage: 'You cannot deploy a required field with field level security annotation',
   })
 
 export const changeValidator = {
@@ -32,12 +32,10 @@ export const changeValidator = {
       .filter(change => isModificationDiff(change) || isAdditionDiff(change))
       .filter(change => isField(getChangeElement(change)))
       .filter(change => isRequiredFieldWithPermissions(getChangeElement(change)))
-      .map(change => ({
-        elemID: getChangeElement(change).elemID,
-        severity: 'Error',
-        message: `You cannot deploy required field with field permissions. Field: ${(getChangeElement(change) as Field).name}`,
-        detailedMessage: 'You cannot deploy required field with field permissions',
-      })),
+      .map(change => createPermissionChangeError(
+        getChangeElement(change).elemID,
+        (getChangeElement(change) as Field).name
+      )),
 }
 
 export default changeValidator

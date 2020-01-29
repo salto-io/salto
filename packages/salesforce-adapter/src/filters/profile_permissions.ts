@@ -305,7 +305,8 @@ const filterCreator: FilterCreator = ({ client }) => ({
     const notRequiredField = (permission: FieldPermissions): boolean => {
       const afterField = Object.values(after.fields)
         .find(field => apiName(field) === permission.field)
-      return !_.isUndefined(afterField) && !afterField.annotations[CORE_ANNOTATIONS.REQUIRED]
+      return !_.isUndefined(afterField)
+        && (afterField.annotations[CORE_ANNOTATIONS.REQUIRED] === false)
     }
 
     const beforeProfiles = toProfiles(before)

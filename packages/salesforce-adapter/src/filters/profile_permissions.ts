@@ -92,13 +92,12 @@ const getElementName = <T = PermissionsTypes>(element: T): string =>
 
 const filterPermissions = <T = PermissionsTypes>(
   permissions: T[], beforeProfilePermissions: T[], afterProfilePermissions: T[],
-  emptyPermissions: (permissions: T) => T, notRemovedField?: (element: T) => boolean): T[] =>
+  emptyPermissions: (permissions: T) => T): T[] =>
     permissions
       // Filter out permissions that were already updated
       .filter(f => !_.isEqual(findPermissions(beforeProfilePermissions, getElementName(f)), f))
       // Add missing permissions with =false for all the permissions options
       .concat(beforeProfilePermissions
-        .filter(_.isUndefined(notRemovedField) ? (() => true) : notRemovedField)
         .filter(f => _.isUndefined(findPermissions(afterProfilePermissions, getElementName(f))))
         .map(emptyPermissions))
 
@@ -189,16 +188,21 @@ const toProfilesObjectPermissions = (object: ObjectType): Record<string, ObjectP
     OBJECT_PERMISSIONS_OPTIONS, { object: apiName(object) })
 
 const toProfilesFieldPermissions = (object: ObjectType): Record<string, FieldPermissions[]> =>
-  Object.values(object.fields).reduce((permissions, field) =>
-    (toProfilePermissions(field, FIELD_LEVEL_SECURITY_ANNOTATION,
-      FIELD_PERMISSIONS_OPTIONS, { field: apiName(field) },
-      permissions)), {} as Record<string, FieldPermissions[]>)
+  Object.values(object.fields)
+    .filter(field => !field.annotations[CORE_ANNOTATIONS.REQUIRED])
+    .reduce((permissions, field) =>
+      (toProfilePermissions(field, FIELD_LEVEL_SECURITY_ANNOTATION,
+        FIELD_PERMISSIONS_OPTIONS, { field: apiName(field) },
+        permissions)), {} as Record<string, FieldPermissions[]>)
 
 const toProfiles = (object: ObjectType): ProfileInfo[] => {
   const profileToObjectPermissions = toProfilesObjectPermissions(object)
   const profileToFieldPermissions = toProfilesFieldPermissions(object)
-  const profiles = Object.keys(profileToObjectPermissions)
-    .concat(Object.keys(profileToFieldPermissions))
+  const profiles = Array.from(
+    new Set(
+      Object.keys(profileToObjectPermissions).concat(Object.keys(profileToFieldPermissions))
+    )
+  )
   return profiles.map(profile => new ProfileInfo(profile,
     profileToFieldPermissions[profile] || [], profileToObjectPermissions[profile] || []))
 }
@@ -298,6 +302,14 @@ const filterCreator: FilterCreator = ({ client }) => ({
     const notRemovedField = (permission: FieldPermissions): boolean =>
       !removedElements.includes(getElementName(permission))
 
+    const notRequiredField = (permission: FieldPermissions): boolean => {
+      const afterField = Object.values(after.fields)
+        .find(field => apiName(field) === permission.field)
+      return !_.isUndefined(afterField)
+        && !afterField.annotations[CORE_ANNOTATIONS.REQUIRED]
+        && (afterField.type.elemID !== Types.primitiveDataTypes.MasterDetail.elemID)
+    }
+
     const beforeProfiles = toProfiles(before)
     const afterProfiles = toProfiles(after)
     const profiles = afterProfiles
@@ -306,7 +318,9 @@ const filterCreator: FilterCreator = ({ client }) => ({
         const beforeProfile = findProfile(beforeProfiles, afterProfile.fullName)
         if (beforeProfile) {
           fieldPermissions = filterPermissions(fieldPermissions, beforeProfile.fieldPermissions,
-            afterProfile.fieldPermissions, emptyFieldPermissions, notRemovedField)
+            afterProfile.fieldPermissions, emptyFieldPermissions)
+            .filter(notRemovedField)
+            .filter(notRequiredField)
           objectPermissions = filterPermissions(objectPermissions, beforeProfile.objectPermissions,
             afterProfile.objectPermissions, emptyObjectPermissions)
         }
@@ -314,10 +328,13 @@ const filterCreator: FilterCreator = ({ client }) => ({
       })
       // Add missing permissions for profiles that dosen't exists in after
       //   with =false values for all the permissions options
+      //   except for removed and required fields
       .concat(beforeProfiles
         .filter(p => _.isUndefined(findProfile(afterProfiles, p.fullName)))
         .map(p => ({ fullName: p.fullName,
-          fieldPermissions: p.fieldPermissions.filter(notRemovedField)
+          fieldPermissions: p.fieldPermissions
+            .filter(notRemovedField)
+            .filter(notRequiredField)
             .map(emptyFieldPermissions),
           objectPermissions: p.objectPermissions.map(emptyObjectPermissions) })))
       // Filter out empty permissions

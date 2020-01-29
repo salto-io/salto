@@ -398,10 +398,8 @@ export default class SalesforceAdapter {
     const post = element.clone()
     addDefaults(post)
 
-    const a = toCustomObject(post, true, this.systemFields)
-
     await this.client.upsert(
-      constants.CUSTOM_OBJECT, a,
+      constants.CUSTOM_OBJECT, toCustomObject(post, true, this.systemFields),
     )
 
     return post
@@ -589,9 +587,9 @@ export default class SalesforceAdapter {
    * @returns successfully managed to update all fields
    */
   private async updateFields(fieldsToUpdate: Field[]): Promise<SaveResult[]> {
-    const b = fieldsToUpdate.map(f => toCustomField(f, true))
     return this.client.update(
-      constants.CUSTOM_FIELD, b,
+      constants.CUSTOM_FIELD,
+      fieldsToUpdate.map(f => toCustomField(f, true)),
     )
   }
 

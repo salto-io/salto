@@ -38,6 +38,7 @@ import workflowFilter from './filters/workflow'
 import topicsForObjectsFilter from './filters/topics_for_objects'
 import globalValueSetFilter from './filters/global_value_sets'
 import serviceIdReferencesFilter from './filters/service_id_references'
+import valueSetFilter from './filters/value_set'
 import {
   FilterCreator, Filter, FilterWith, filtersWith,
 } from './filter'
@@ -175,6 +176,7 @@ export default class SalesforceAdapter {
       settingsFilter,
       workflowFilter,
       topicsForObjectsFilter,
+      valueSetFilter,
       globalValueSetFilter,
       // The following filters should remain last in order to make sure they fix all elements
       convertListsFilter,

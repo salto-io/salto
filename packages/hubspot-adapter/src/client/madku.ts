@@ -25,7 +25,9 @@ export interface HubspotObjectAPI {
   getAll(opts?: {}): RequestPromise
   create(data: {}): RequestPromise
   delete(id: string): RequestPromise
+  update?(id: string, data: {}): RequestPromise
 }
+
 export default interface Connection {
   forms: Form
   workflows: Workflow

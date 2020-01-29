@@ -1,9 +1,9 @@
 import {
-  CORE_ANNOTATIONS, BuiltinTypes, ElemID, ObjectType,
-  Field, InstanceElement, Element,
+  CORE_ANNOTATIONS, BuiltinTypes, ElemID, ObjectType, Field, InstanceElement, PrimitiveType,
 } from 'adapter-api'
 
-export const getAllElements = (): Element[] => {
+type AllElementsTypes = [PrimitiveType, ObjectType, ObjectType, ObjectType, InstanceElement]
+export const getAllElements = (): AllElementsTypes => {
   const addrElemID = new ElemID('salto', 'address')
   const saltoAddr = new ObjectType({
     elemID: addrElemID,

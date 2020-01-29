@@ -156,8 +156,22 @@ export default class HubspotClient {
     return resp
   }
 
-  async updateForm(f: Form): Promise<Form> {
-    const resp = await this.conn.forms.update(f.guid, f)
+
+  async updateInstance(
+    typeName: string,
+    hubspotMetadata: HubspotMetadata
+  ): Promise<HubspotMetadata> {
+    const objectAPI = await this.extractHubspotObjectAPI(typeName)
+
+    // TODO: remove this error checking when HubSpot API will support update operation for workflow
+    if (objectAPI.update === undefined) {
+      throw new Error(`${typeName} can't updated via API`)
+    }
+
+    const resp = objectAPI.update(
+      extractInstanceId(hubspotMetadata, typeName),
+      hubspotMetadata
+    )
     await validateResponse(resp)
     return resp
   }

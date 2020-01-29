@@ -1017,7 +1017,7 @@ export const getSObjectFieldElement = (parent: Element, field: Field,
   }
 
   const defaultValue = getDefaultValue(field)
-  if (defaultValue !== undefined) {
+  if ((defaultValue !== undefined) && (_.isEmpty(field.picklistValues))) {
     annotations[FIELD_ANNOTATIONS.DEFAULT_VALUE] = defaultValue
   }
 

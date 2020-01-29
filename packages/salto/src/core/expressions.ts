@@ -54,7 +54,8 @@ resolveReferenceExpression = (
   }
   visited.add(traversal)
 
-  const { parent, path } = ElemID.fromFullName(traversal).createTopLevelParentID()
+  const fullElemID = ElemID.fromFullName(traversal)
+  const { parent } = fullElemID.createTopLevelParentID()
   // Validation should throw an error if there is not match, or more than one match
   const rootElement = contextElements[parent.getFullName()]
     && contextElements[parent.getFullName()][0]
@@ -63,7 +64,8 @@ resolveReferenceExpression = (
     return new UnresolvedReference(traversal)
   }
 
-  const value = resolvePath(rootElement, path)
+  const value = resolvePath(rootElement, fullElemID)
+
   if (value === undefined) {
     return new UnresolvedReference(traversal)
   }

@@ -39,7 +39,7 @@
     "@types/node": "^12.7.1",
     "@types/shelljs": "^0.7.8",
     "@types/supertest": "^2.0.4",
-    "@types/wu": "^2.1.39",
+    "@types/wu": "^2.1.40",
     "@typescript-eslint/eslint-plugin": "^2.6.1",
     "@typescript-eslint/parser": "^2.6.1",
     "eslint": "^6.2.2",

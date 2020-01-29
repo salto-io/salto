@@ -33,6 +33,95 @@ export const formsMockArray = [
   secondFormMock,
 ] as unknown
 
+export const beforeFormMock = {
+  name: 'beforeUpdateInstance',
+  guid: 'guid',
+  cssClass: 'abc',
+  followUpId: 'DEPRECATED',
+  editable: true,
+  cloneable: true,
+  captchaEnabled: false,
+  createdAt: 1500588456053,
+  formFieldGroups: [
+    {
+      fields: [
+        {
+          name: 'g1',
+          label: 'g1',
+          type: 'string',
+          fieldType: 'text',
+          description: '',
+          required: false,
+          hidden: false,
+          defaultValue: '',
+          isSmartField: false,
+          selectedOptions: [],
+          options: [],
+        },
+      ],
+      default: true,
+      isSmartGroup: false,
+    },
+  ],
+}
+
+export const afterFormMock = {
+  name: 'afterUpdateInstance',
+  guid: 'guid',
+  followUpId: 'DEPRECATED',
+  editable: true,
+  cloneable: true,
+  captchaEnabled: false,
+  redirect: 'google.com',
+  createdAt: 9999999999999,
+  formFieldGroups: [
+    {
+      fields: [
+        {
+          name: 'g1',
+          label: 'g1',
+          type: 'string',
+          fieldType: 'text',
+          description: '',
+          required: false,
+          hidden: false,
+          defaultValue: '',
+          isSmartField: false,
+          selectedOptions: [],
+          options: [],
+        },
+      ],
+      default: true,
+      isSmartGroup: false,
+    },
+    {
+      fields: [
+        {
+          name: 'state',
+          label: 'State/Region',
+          type: 'string',
+          fieldType: 'text',
+          description: '',
+          required: false,
+          hidden: false,
+          defaultValue: '',
+          isSmartField: false,
+          selectedOptions: [],
+          options: [
+            {
+              label: 'opt1',
+              value: 'val1',
+              hidden: true,
+              readOnly: true,
+            },
+          ],
+        },
+      ],
+      default: true,
+      isSmartGroup: false,
+    },
+  ],
+}
 
 /**
  * Workflow Mock Instances

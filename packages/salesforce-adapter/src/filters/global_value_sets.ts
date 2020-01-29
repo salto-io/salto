@@ -7,7 +7,7 @@ import { VALUE_SET_FIELDS, INSTANCE_FULL_NAME_FIELD } from '../constants'
 import { metadataType, isCustomObject } from '../transformers/transformer'
 
 export const GLOBAL_VALUE_SET = 'GlobalValueSet'
-export const CUSTOM_VALUE = 'custom_value'
+export const CUSTOM_VALUE = 'customValue'
 export const MASTER_LABEL = 'master_label'
 
 type GlobalValueSetsLookup = Record<string, ReferenceExpression>

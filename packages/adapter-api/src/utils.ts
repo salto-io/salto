@@ -1,14 +1,76 @@
+import wu from 'wu'
 import _ from 'lodash'
 import {
-  isObjectType, Type, Field, ObjectType, ElemID, isField, Values,
-  Element, PrimitiveValue, isExpression, PrimitiveField, isPrimitiveField,
-  Value, isInstanceElement, isType,
+  Type, Field, ObjectType, ElemID, Values, Element, PrimitiveValue, PrimitiveField, Value, 
+  InstanceElement, PrimitiveType, Expression, ReferenceExpression, TemplateExpression,
 } from './elements'
 
 interface AnnoRef {
   annoType?: Type
   annoName?: string
 }
+
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+export function isElement(value: any): value is Element {
+  return value && value.elemID && value.elemID instanceof ElemID
+}
+
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+export function isType(element: any): element is Type {
+  return element instanceof Type
+}
+
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+export function isObjectType(element: any): element is ObjectType {
+  return element instanceof ObjectType
+}
+
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+export function isInstanceElement(element: any): element is InstanceElement {
+  return element instanceof InstanceElement
+}
+
+export function isPrimitiveType(
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+  element: any,
+): element is PrimitiveType {
+  return element instanceof PrimitiveType
+}
+
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+export function isField(element: any): element is Field {
+  return element instanceof Field
+}
+
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+export function isPrimitiveField(element: any): element is PrimitiveField {
+  return isField(element) && isPrimitiveType(element.type)
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function isEqualElements(first?: any, second?: any): boolean {
+  if (!(first && second)) {
+    return false
+  }
+  // first.isEqual line appears multiple times since the compiler is not smart
+  // enough to understand the 'they are the same type' concept when using or
+  if (isPrimitiveType(first) && isPrimitiveType(second)) {
+    return first.isEqual(second)
+  } if (isObjectType(first) && isObjectType(second)) {
+    return first.isEqual(second)
+  } if (isField(first) && isField(second)) {
+    return first.isEqual(second)
+  } if (isInstanceElement(first) && isInstanceElement(second)) {
+    return first.isEqual(second)
+  }
+  return false
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const isExpression = (value: any): value is Expression => (
+  value instanceof ReferenceExpression
+    || value instanceof TemplateExpression
+)
 
 export const getSubElement = (baseType: Type, pathParts: string[]): Field| Type | undefined => {
   // This is a little tricky. Since many fields can have _ in them,
@@ -130,21 +192,49 @@ export const transform = (
   return _.isEmpty(result) ? undefined : result
 }
 
-export const resolvePath = (rootElement: Element, path: readonly string[]): Value => {
+export const findElements = (elements: Iterable<Element>, id: ElemID): Iterable<Element> => (
+  wu(elements).filter(e => e.elemID.isEqual(id))
+)
+
+export const findElement = (elements: Iterable<Element>, id: ElemID): Element | undefined => (
+  wu(elements).find(e => e.elemID.isEqual(id))
+)
+
+export const findObjectType = (elements: Iterable<Element>, id: ElemID): ObjectType | undefined => {
+  const objects = wu(elements).filter(isObjectType) as wu.WuIterable<ObjectType>
+  return objects.find(e => e.elemID.isEqual(id))
+}
+
+export const findInstances = (
+  elements: Iterable<Element>,
+  typeID: ElemID,
+): Iterable<InstanceElement> => {
+  const instances = wu(elements).filter(isInstanceElement) as wu.WuIterable<InstanceElement>
+  return instances.filter(e => e.type.elemID.isEqual(typeID))
+}
+
+export const resolvePath = (rootElement: Element, fullElemID: ElemID): Value => {
+  const { parent, path } = fullElemID.createTopLevelParentID()
+  if (!_.isEqual(parent, rootElement.elemID)) return undefined
+
   if (_.isEmpty(path)) {
     return rootElement
   }
 
-  if (isInstanceElement(rootElement)) {
+  if (isInstanceElement(rootElement) && fullElemID.idType === 'instance') {
     return (!_.isEmpty(path)) ? _.get(rootElement.value, path) : rootElement
   }
 
-  if (isObjectType(rootElement) && rootElement.fields[path[0]]) {
-    return _.get(rootElement.fields[path[0]].annotations, path.slice(1))
+  if (isObjectType(rootElement) && fullElemID.idType === 'field') {
+    return _.get(rootElement.fields[path[0]]?.annotations, path.slice(1))
   }
 
-  if (isType(rootElement)) {
+  if (isType(rootElement) && fullElemID.idType === 'attr') {
     return _.get(rootElement.annotations, path)
+  }
+
+  if (isType(rootElement) && fullElemID.idType === 'annotation') {
+    return _.get(rootElement.annotationTypes[path[0]]?.annotations, path.slice(1))
   }
 
   return undefined

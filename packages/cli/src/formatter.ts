@@ -2,9 +2,9 @@ import _ from 'lodash'
 import chalk from 'chalk'
 import wu from 'wu'
 import {
-  isType, Element, Type, isInstanceElement, Values, Change, Value, getChangeElement, ElemID,
+  isType, Element, isInstanceElement, Values, Change, Value, getChangeElement, ElemID,
   isObjectType, isField, isPrimitiveType, Field, PrimitiveTypes, ReferenceExpression,
-  ActionName, ChangeError, SaltoError, isElement,
+  ActionName, ChangeError, SaltoError, isElement, TypeMap,
 } from 'adapter-api'
 import {
   Plan, PlanItem, FoundSearchResult, SearchResult, DetailedChange, WorkspaceError,
@@ -66,7 +66,7 @@ const formatSimpleError = (errorMsg: string): string => header(error(`Error: ${e
 const formatValue = (value: Element | Value): string => {
   const formatAnnotations = (annotations: Values): string =>
     (_.isEmpty(annotations) ? '' : formatValue(annotations))
-  const formatAnnotationTypes = (types: Record<string, Type>): string =>
+  const formatAnnotationTypes = (types: TypeMap): string =>
     (_.isEmpty(types) ? '' : indent(`\nannotations:${formatValue(types)}`, 2))
   const formatFields = (fields: Record<string, Field>): string =>
     (_.isEmpty(fields) ? '' : indent(`\nfields:${formatValue(fields)}`, 2))

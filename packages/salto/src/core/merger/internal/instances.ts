@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import {
-  InstanceElement, ElemID, ObjectType, Type, Values, isObjectType, CORE_ANNOTATIONS,
+  InstanceElement, ElemID, ObjectType, TypeElement, Values, isObjectType, CORE_ANNOTATIONS,
 } from 'adapter-api'
 import { logger } from '@salto/logging'
 import {
@@ -19,7 +19,7 @@ export class DuplicateInstanceKeyError extends MergeError {
 }
 
 const buildDefaults = (
-  type: Type
+  type: TypeElement
 ): Values | undefined => {
   const buildObjectDefaults = (object: ObjectType): Values | undefined => {
     const def = _(object.fields).mapValues(field =>

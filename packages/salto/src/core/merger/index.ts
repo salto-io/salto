@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import {
   ObjectType, isType, isObjectType, isInstanceElement, Element,
-  Type, isPrimitiveType, BuiltinTypes,
+  isPrimitiveType, BuiltinTypes, TypeMap,
 } from 'adapter-api'
 import { logger } from '@salto/logging'
 import { mergeObjectTypes } from './internal/object_types'
@@ -27,7 +27,7 @@ const log = logger(module)
  */
 const updateMergedTypes = (
   elements: Element[],
-  mergedTypes: Record<string, Type>
+  mergedTypes: TypeMap
 ): Element[] => elements.map(elem => {
   if (isType(elem)) {
     elem.annotationTypes = _.mapValues(

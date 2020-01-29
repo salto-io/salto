@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import {
-  Type, Field, Values, isObjectType, PrimitiveTypes,
+  TypeElement, Field, Values, isObjectType, PrimitiveTypes,
   isPrimitiveType, Element, isInstanceElement, isField, isElement, Value,
 } from 'adapter-api'
 import { dump as hclDump } from './internal/dump'
@@ -24,7 +24,7 @@ const getPrimitiveTypeName = (primitiveType: PrimitiveTypes): string => {
   return Keywords.TYPE_OBJECT
 }
 
-export const dumpElemID = ({ elemID }: Type): string => {
+export const dumpElemID = ({ elemID }: TypeElement): string => {
   if (elemID.isConfig()) {
     return elemID.adapter
   }
@@ -47,7 +47,7 @@ const dumpListFieldBlock = (field: Field): DumpedHclBlock => ({
   blocks: [],
 })
 
-const dumpAnnotationsBlock = (element: Type): DumpedHclBlock[] =>
+const dumpAnnotationsBlock = (element: TypeElement): DumpedHclBlock[] =>
   (_.isEmpty(element.annotationTypes) ? [] : [{
     type: Keywords.ANNOTATIONS_DEFINITION,
     labels: [],

@@ -1,9 +1,9 @@
 import { logger } from '@salto/logging'
 import { collections } from '@salto/lowerdash'
 import {
-  ADAPTER, Element, Field, ObjectType, ServiceIds, Type, isObjectType, InstanceElement, Values,
+  ADAPTER, Element, Field, ObjectType, ServiceIds, TypeElement, isObjectType, InstanceElement,
   isInstanceElement, ElemID, BuiltinTypes, CORE_ANNOTATIONS, transform, TypeMap, getChangeElement,
-  Value, findObjectType, Change, PrimitiveField, PrimitiveType,
+  Value, findObjectType, Change, PrimitiveField, PrimitiveType, Values,
 } from 'adapter-api'
 import { SalesforceClient } from 'index'
 import { DescribeSObjectResult, Field as SObjField, SaveResult, UpsertResult } from 'jsforce'
@@ -62,7 +62,7 @@ const getFieldName = (annotations: Values): string =>
     ? formulaTypeName(annotations[INSTANCE_TYPE_FIELD] as FIELD_TYPE_NAMES)
     : annotations[INSTANCE_TYPE_FIELD])
 
-const getFieldType = (type: string): Type =>
+const getFieldType = (type: string): TypeElement =>
   (_.isUndefined(type) ? BuiltinTypes.STRING : Types.get(type))
 
 const createObjectWithFields = (objectName: string, serviceIds: ServiceIds,
@@ -254,7 +254,8 @@ export const transformFieldAnnotations = (
 
 const transformObjectAnnotations = (customObject: ObjectType, annotationTypesFromInstance: TypeMap,
   instance: InstanceElement): void => {
-  const transformAnnotationValue = (value: Value, annotationType: Type): Value | undefined => {
+  const transformAnnotationValue = (value: Value, annotationType: TypeElement):
+  Value | undefined => {
     const buildAnnotationPrimitiveField = (type: PrimitiveType): PrimitiveField => {
       const annotationTypesElemID = new ElemID(SALESFORCE, 'AnnotationType')
       return new Field(annotationTypesElemID, type.elemID.name, type) as PrimitiveField

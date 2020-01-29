@@ -1,6 +1,7 @@
 import {
-  InstanceElement, ObjectType, Element, ElemID,
+  InstanceElement, ObjectType, Element,
 } from './elements'
+import { ElemID } from './element_id'
 import { Change } from './change'
 import { ChangeValidator } from './change_validators'
 

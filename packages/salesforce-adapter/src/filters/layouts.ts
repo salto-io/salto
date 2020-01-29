@@ -28,7 +28,7 @@ const fixNames = (layouts: InstanceElement[]): void => {
     if (!names.includes(newId.getFullName())) {
       names = _.without(names, id(layout))
       names.push(newId.getFullName())
-      layout.elemID = newId
+      _.set(layout, 'elemID', newId)
     }
   }
 

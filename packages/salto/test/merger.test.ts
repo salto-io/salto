@@ -1,6 +1,6 @@
 import {
   ObjectType, ElemID, Field, BuiltinTypes, InstanceElement, PrimitiveType,
-  PrimitiveTypes, Type,
+  PrimitiveTypes, TypeElement,
 } from 'adapter-api'
 import {
   mergeElements,
@@ -360,7 +360,8 @@ describe('merger', () => {
   })
 
   describe('replace type defs', () => {
-    const typeRef = (typeToRef: Type): ObjectType => new ObjectType({ elemID: typeToRef.elemID })
+    const typeRef = (typeToRef: TypeElement): ObjectType =>
+      new ObjectType({ elemID: typeToRef.elemID })
 
     const strType = new PrimitiveType({
       elemID: new ElemID('salto', 'string'),

@@ -3,7 +3,7 @@ import _ from 'lodash'
 
 import { DataNodeMap, Group, NodeId } from '@salto/dag'
 import {
-  ChangeError, Change, ElementMap, InstanceElement, Type, ChangeValidator, getChangeElement,
+  ChangeError, Change, ElementMap, InstanceElement, TypeElement, ChangeValidator, getChangeElement,
   ElemID, ObjectType, ChangeDataType, isRemovalDiff, Element,
 } from 'adapter-api'
 import { buildGroupedGraphFromDiffGraph, getOrCreateGroupLevelChange } from './group'
@@ -14,7 +14,7 @@ type FilterResult = {
   validAfterElementsMap: ElementMap
 }
 
-type TopLevelElement = InstanceElement | Type
+type TopLevelElement = InstanceElement | TypeElement
 
 export const filterInvalidChanges = async (
   beforeElementsMap: ElementMap,

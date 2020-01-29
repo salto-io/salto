@@ -3,7 +3,7 @@ import {
   ObjectType, ElemID, InstanceElement, Field, Value, Element, Values, BuiltinTypes,
   isInstanceElement, ReferenceExpression, CORE_ANNOTATIONS, RESTRICTION_ANNOTATIONS, findElement,
   findObjectType,
-  Type,
+  TypeElement,
 } from 'adapter-api'
 import { MetadataInfo, RetrieveResult } from 'jsforce'
 import { collections } from '@salto/lowerdash'
@@ -2420,7 +2420,7 @@ describe('Salesforce adapter E2E with real account', () => {
           const verifyFieldFetch = (
             field: Field,
             verificationFunc: (annotations: Values) => void,
-            expectedType: Type
+            expectedType: TypeElement
           ): void => {
             expect(field).toBeDefined()
             verificationFunc(field.annotations)

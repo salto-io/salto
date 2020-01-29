@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import { logger } from '@salto/logging'
 import { Element, Field, isObjectType, ObjectType, InstanceElement, isInstanceElement,
-  isField, Type, BuiltinTypes, ElemID, BuiltinAnnotationTypes } from 'adapter-api'
+  isField, TypeElement, BuiltinTypes, ElemID, BuiltinAnnotationTypes } from 'adapter-api'
 import { API_NAME, LABEL, CUSTOM_OBJECT,
   METADATA_TYPE, NAMESPACE_SEPARATOR, API_NAME_SEPERATOR, INSTANCE_FULL_NAME_FIELD, SALESFORCE } from '../constants'
 import { JSONBool } from '../client/types'
@@ -44,7 +44,7 @@ export const removeFieldsFromInstanceAndType = (elements: Element[], fieldNamesT
       .forEach(fieldNameToDelete => delete elementType.fields[fieldNameToDelete]))
 }
 
-export const addLabel = (elem: Type | Field, label?: string): void => {
+export const addLabel = (elem: TypeElement | Field, label?: string): void => {
   const { name } = elem.elemID
   const { annotations } = elem
   if (!annotations[LABEL]) {
@@ -53,7 +53,8 @@ export const addLabel = (elem: Type | Field, label?: string): void => {
   }
 }
 
-export const addApiName = (elem: Type | Field, name?: string, parentName?: string): void => {
+export const addApiName = (elem: TypeElement | Field, name?: string, parentName?: string):
+void => {
   if (!elem.annotations[API_NAME]) {
     const newApiName = name ?? defaultApiName(elem)
     const fullApiName = parentName ? [parentName, newApiName].join(API_NAME_SEPERATOR) : newApiName
@@ -65,8 +66,7 @@ export const addApiName = (elem: Type | Field, name?: string, parentName?: strin
   }
 }
 
-export const addMetadataType = (elem: ObjectType,
-  metadataTypeValue = CUSTOM_OBJECT): void => {
+export const addMetadataType = (elem: ObjectType, metadataTypeValue = CUSTOM_OBJECT): void => {
   const { annotations, annotationTypes } = elem
   if (!annotationTypes[METADATA_TYPE]) {
     annotationTypes[METADATA_TYPE] = BuiltinTypes.SERVICE_ID
@@ -90,7 +90,7 @@ export const extractFullNamesFromValueList = (values: { [INSTANCE_FULL_NAME_FIEL
   values.map(v => v[INSTANCE_FULL_NAME_FIELD])
 
 
-export const buildAnnotationsObjectType = (fieldType: Type): ObjectType => {
+export const buildAnnotationsObjectType = (fieldType: TypeElement): ObjectType => {
   const annotationTypesElemID = new ElemID(SALESFORCE, 'AnnotationType')
   return new ObjectType({ elemID: annotationTypesElemID,
     fields: Object.assign({}, ...Object.entries(fieldType.annotationTypes)

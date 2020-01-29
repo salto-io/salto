@@ -6,7 +6,7 @@ import { DirectoryStore } from './dir_store'
 
 export default interface Credentials {
   get(adapter: string): Promise<InstanceElement | undefined>
-  set(adapter: string, credentials: InstanceElement): Promise<void>
+  set(adapter: string, credentials: Readonly<InstanceElement>): Promise<void>
 }
 
 export const adapterCredentials = (dirStore: DirectoryStore): Credentials => {

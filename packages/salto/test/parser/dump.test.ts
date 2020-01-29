@@ -1,7 +1,6 @@
 import {
-  ObjectType, PrimitiveType, PrimitiveTypes, ElemID, Type, InstanceElement,
-  Field,
-  BuiltinTypes,
+  ObjectType, PrimitiveType, PrimitiveTypes, ElemID, TypeElement, InstanceElement,
+  Field, BuiltinTypes,
 } from 'adapter-api'
 import * as TestHelpers from '../common/helpers'
 import { parse } from '../../src/parser/parse'
@@ -138,8 +137,8 @@ describe('Salto Dump', () => {
       expect(elements[0]).toEqual(strType)
       expect(elements[1]).toEqual(numType)
       expect(elements[2]).toEqual(boolType)
-      TestHelpers.expectTypesToMatch(elements[3] as Type, fieldType)
-      TestHelpers.expectTypesToMatch(elements[4] as Type, model)
+      TestHelpers.expectTypesToMatch(elements[3] as TypeElement, fieldType)
+      TestHelpers.expectTypesToMatch(elements[4] as TypeElement, model)
       TestHelpers.expectInstancesToMatch(elements[5] as InstanceElement, instance)
       TestHelpers.expectInstancesToMatch(elements[6] as InstanceElement, config)
       TestHelpers.expectInstancesToMatch(elements[7] as InstanceElement, instanceStartsWithNumber)

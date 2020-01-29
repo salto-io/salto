@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import {
   Element, InstanceElement, isObjectType,
-  ObjectType, Type,
+  ObjectType, TypeElement,
 } from 'adapter-api'
 import { logger } from '@salto/logging'
 import { MetadataInfo } from 'jsforce-types'
@@ -21,7 +21,7 @@ export const SETTINGS_METADATA_TYPE = 'Settings'
 const createSettingsType = async (
   client: SalesforceClient,
   settingsTypesName: string,
-  knownTypes: Map<string, Type>): Promise<ObjectType[]> => {
+  knownTypes: Map<string, TypeElement>): Promise<ObjectType[]> => {
   const typeFields = await client.describeMetadataType(settingsTypesName)
   const baseTypeNames = new Set([settingsTypesName])
   return createMetadataTypeElements(settingsTypesName, typeFields, knownTypes, baseTypeNames,
@@ -31,7 +31,7 @@ const createSettingsType = async (
 const createSettingsTypes = async (
   client: SalesforceClient,
   settingsTypesNames: string[]): Promise<ObjectType[]> => {
-  const knownTypes = new Map<string, Type>()
+  const knownTypes = new Map<string, TypeElement>()
   return _.flatten(await Promise.all(settingsTypesNames
     .map(settingsName => settingsName.concat(SETTINGS_METADATA_TYPE))
     .map(settingsTypesName => createSettingsType(client, settingsTypesName, knownTypes)

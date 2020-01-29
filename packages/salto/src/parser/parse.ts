@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import {
-  Type, ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field, Values,
-  Element, InstanceElement, SaltoError,
+  TypeElement, ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field, Values,
+  Element, InstanceElement, SaltoError, TypeMap,
 } from 'adapter-api'
 import { collections } from '@salto/lowerdash'
 import {
@@ -49,7 +49,7 @@ const primitiveType = (typeName: string): PrimitiveTypes => {
   return PrimitiveTypes.BOOLEAN
 }
 
-const annotationTypes = (block: ParsedHclBlock): Record <string, Type> => block.blocks
+const annotationTypes = (block: ParsedHclBlock): TypeMap => block.blocks
   .filter(b => b.type === Keywords.ANNOTATIONS_DEFINITION)
   .map(b => _(b.blocks)
     .map(blk => [blk.labels[0], new ObjectType({ elemID: parseElemID(blk.type) })])
@@ -85,7 +85,7 @@ export const parse = (blueprint: Buffer, filename: string): ParseResult => {
       .value()
   )
 
-  const parseType = (typeBlock: ParsedHclBlock, isSettings = false): Type => {
+  const parseType = (typeBlock: ParsedHclBlock, isSettings = false): TypeElement => {
     const [typeName] = typeBlock.labels
     const typeObj = new ObjectType(
       {
@@ -128,7 +128,7 @@ export const parse = (blueprint: Buffer, filename: string): ParseResult => {
     return typeObj
   }
 
-  const parsePrimitiveType = (typeBlock: ParsedHclBlock): Type => {
+  const parsePrimitiveType = (typeBlock: ParsedHclBlock): TypeElement => {
     const [typeName, kw, baseType] = typeBlock.labels
     if (kw !== Keywords.TYPE_INHERITANCE_SEPARATOR) {
       throw new Error(`expected keyword ${Keywords.TYPE_INHERITANCE_SEPARATOR}. found ${kw}`)

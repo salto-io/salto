@@ -1,13 +1,12 @@
 import _ from 'lodash'
 import {
-  ElemID,
   Field,
   InstanceElement,
   ObjectType,
   PrimitiveType,
   PrimitiveTypes,
 } from '../src/elements'
-
+import { ElemID } from '../src/element_id'
 import {
   isEqualElements,
   isInstanceElement,

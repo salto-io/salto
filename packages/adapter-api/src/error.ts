@@ -1,4 +1,4 @@
-import { ElemID } from './elements'
+import { ElemID } from './element_id'
 
 export type SaltoErrorSeverity = 'Error' | 'Warning'
 

@@ -21,7 +21,7 @@ import { ProfileInfo, FieldPermissions, FieldPermissionsOptions, ObjectPermissio
   ObjectPermissions, OBJECT_PERMISSIONS_OPTIONS, FIELD_PERMISSIONS_OPTIONS,
   PermissionsTypes, PermissionsOptionsFieldsTypes } from '../client/types'
 import { getCustomObjects, id, boolValue,
-  getInstancesOfMetadataType, removeFieldsFromInstanceAndType, getFieldNameFromFullName } from './utils'
+  getInstancesOfMetadataType, removeFieldsFromInstanceAndType } from './utils'
 
 const log = logger(module)
 

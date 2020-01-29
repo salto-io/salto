@@ -264,11 +264,12 @@ describe('api.ts', () => {
 
     describe('validateConfig', () => {
       it('should throw if passed unknown adapter name', () => {
-        const newConf = mockConfigInstance.clone()
-        newConf.value.password = 'bla'
-        _.set(newConf, 'elemID', new ElemID('unknownService'))
-
-        return expect(api.updateLoginConfig(ws, newConf)).rejects.toThrow('unknown adapter: unknownService')
+        const newConfType = new ObjectType({ elemID: new ElemID('unknownService'),
+          fields: mockConfigType.fields })
+        const newConf = new InstanceElement(ElemID.CONFIG_NAME, newConfType,
+          mockConfigInstance.value)
+        return expect(api.updateLoginConfig(ws, newConf)).rejects
+          .toThrow('unknown adapter: unknownService')
       })
     })
 

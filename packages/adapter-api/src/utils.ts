@@ -3,7 +3,7 @@ import _ from 'lodash'
 import {
   TypeElement, Field, ObjectType, Element, PrimitiveField, InstanceElement, PrimitiveType,
 } from './elements'
-import { Values, PrimitiveValue, Expression, ReferenceExpression, TemplateExpression } from './values'
+import { Values, PrimitiveValue, Expression, ReferenceExpression, TemplateExpression, Value } from './values'
 import { ElemID } from './element_id'
 
 interface AnnoRef {

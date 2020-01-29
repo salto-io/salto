@@ -1,5 +1,5 @@
 import {
-  Field, InstanceElement, ObjectType, PrimitiveTypes, PrimitiveField,
+  Field, InstanceElement, ObjectType, PrimitiveTypes, PrimitiveField, PrimitiveType,
 } from '../src/elements'
 import { PrimitiveValue, Values } from '../src/values'
 import { ElemID } from '../src/element_id'

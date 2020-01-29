@@ -1019,12 +1019,9 @@ describe('Salesforce adapter E2E with real account', () => {
           lead.fields.OwnerId.annotations[constants.FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION]
         ).toBe(true)
 
-        // Test _default
-        // TODO: add test to primitive with _default and combobox _default
-        //  (no real example for lead)
-        expect(lead.fields.Status.annotations[constants.FIELD_ANNOTATIONS.DEFAULT_VALUE]).toBe(
-          'Open - Not Contacted'
-        )
+        // Test default value for checkbox
+        expect(lead.fields.IsConverted.annotations[constants.FIELD_ANNOTATIONS.DEFAULT_VALUE])
+          .toBe(false)
       })
 
       describe('should fetch sobject annotations from the custom object instance', () => {

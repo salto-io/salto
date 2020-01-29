@@ -20,7 +20,7 @@ type PlanGenerators = {
 export const planGenerators = (allElements: ReadonlyArray<Element>): PlanGenerators => ({
   planWithTypeChanges: async () => {
     const afterElements = mock.getAllElements()
-    const saltoOffice = afterElements[2] as ObjectType
+    const saltoOffice = afterElements[2]
     saltoOffice.annotations.label = 'new label'
     saltoOffice.annotations.new = 'new annotation'
     const plan = await getPlan(allElements, afterElements)
@@ -29,7 +29,7 @@ export const planGenerators = (allElements: ReadonlyArray<Element>): PlanGenerat
 
   planWithFieldChanges: async () => {
     const afterElements = mock.getAllElements()
-    const saltoOffice = afterElements[2] as ObjectType
+    const saltoOffice = afterElements[2]
     // Adding new field
     saltoOffice.fields.new = new Field(saltoOffice.elemID, 'new', BuiltinTypes.STRING)
     // Sub element change
@@ -49,7 +49,7 @@ export const planGenerators = (allElements: ReadonlyArray<Element>): PlanGenerat
 
   planWithInstanceChange: async () => {
     const afterElements = mock.getAllElements()
-    const updatedEmployee = afterElements[4] as InstanceElement
+    const updatedEmployee = afterElements[4]
     updatedEmployee.value.nicknames[1] = 'new'
     delete updatedEmployee.value.office.name
     const plan = await getPlan(allElements, afterElements)
@@ -58,7 +58,7 @@ export const planGenerators = (allElements: ReadonlyArray<Element>): PlanGenerat
 
   planWithListChange: async () => {
     const afterElements = mock.getAllElements()
-    const updatedEmployee = afterElements[4] as InstanceElement
+    const updatedEmployee = afterElements[4]
     updatedEmployee.value.nicknames.push('new')
     const plan = await getPlan(allElements, afterElements)
     return [plan, updatedEmployee]
@@ -66,7 +66,7 @@ export const planGenerators = (allElements: ReadonlyArray<Element>): PlanGenerat
 
   planWithAnnotationTypesChanges: async () => {
     const afterElements = mock.getAllElements()
-    const saltoOffice = afterElements[2] as ObjectType
+    const saltoOffice = afterElements[2]
     // update existing field
     saltoOffice.fields.name.annotations.new = 'new'
     // update annotation types
@@ -77,7 +77,7 @@ export const planGenerators = (allElements: ReadonlyArray<Element>): PlanGenerat
 
   planWithFieldIsListChanges: async () => {
     const afterElements = mock.getAllElements()
-    const saltoOffice = afterElements[2] as ObjectType
+    const saltoOffice = afterElements[2]
     // Adding new field
     saltoOffice.fields.name.isList = true
     const plan = await getPlan(allElements, afterElements)
@@ -137,7 +137,7 @@ describe('getPlan', () => {
 
   it('should create plan with modification changes due to value change', async () => {
     const post = mock.getAllElements()
-    const employee = post[4] as InstanceElement
+    const employee = post[4]
     employee.value.name = 'SecondEmployee'
     const plan = await getPlan(allElements, post)
     expect(plan.size).toBe(1)

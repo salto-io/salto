@@ -1,12 +1,9 @@
 import _ from 'lodash'
-import wu from 'wu'
+import wu, { WuIterable } from 'wu'
 import { collections } from '@salto/lowerdash'
-import { logger } from '@salto/logging'
 import { NodeId, DataNodeMap } from './nodemap'
 
-const log = logger(module)
-
-const { intersection, difference } = collections.set
+const { iterable } = collections
 
 export type DiffNodeId = string
 
@@ -40,148 +37,92 @@ export type DiffNode<T> = AdditionDiffNode<T> | RemovalDiffNode<T> | Modificatio
 
 export type DiffGraph<T> = DataNodeMap<DiffNode<T>>
 
-export const buildDiffGraph = (() => {
-  const addBeforeNodesAsRemovals = <T>(
-    target: DiffGraph<T>,
-    beforeNodeMap: DataNodeMap<T>
-  ): Map<NodeId, DiffNodeId> => {
-    const reverseBefore = beforeNodeMap.reverse()
-    const removals = new Map<NodeId, DiffNodeId>()
+export type DiffGraphTransformer<T> = (graph: DiffGraph<T>) => Promise<DiffGraph<T>>
 
-    const addRemovalNode = (originalId: NodeId): DiffNodeId =>
-      removals.get(originalId) || ((): DiffNodeId => {
-        const diffNodeId = _.uniqueId()
-        removals.set(originalId, diffNodeId)
+const getDiffNodeData = <T>(diff: DiffNode<T>): T => (
+  diff.action === 'remove' ? diff.data.before : diff.data.after
+)
 
-        const diffNode: RemovalDiffNode<T> = {
-          action: 'remove',
-          originalId,
-          data: { before: beforeNodeMap.getData(originalId) as T },
-        }
-
-        const deps = [...wu(reverseBefore.get(originalId)).map(oid => addRemovalNode(oid))]
-        target.addNode(diffNodeId, deps, diffNode)
-        return diffNodeId
-      })()
-
-    wu(beforeNodeMap.nodes()).forEach(addRemovalNode)
-
-    return removals
-  }
-
-  const addAfterNodesAsAdditions = <T>(
-    target: DiffGraph<T>,
-    afterNodeMap: DataNodeMap<T>,
-    removals: Map<NodeId, DiffNodeId>
-  ): Map<NodeId, DiffNodeId> => {
-    const additions = new Map<NodeId, DiffNodeId>()
-
-    const calcDeps = (
-      additionNodeFactory: (depId: NodeId) => DiffNodeId,
-      originalId: NodeId,
-    ): DiffNodeId[] => {
-      const depNodeIds = [...wu(afterNodeMap.get(originalId)).map(additionNodeFactory)]
-      const removeDiffNodeId = removals.get(originalId)
-      if (removeDiffNodeId !== undefined) {
-        depNodeIds.push(removeDiffNodeId)
+type NodeEqualityFunc<T> = (node1: T, node2: T) => boolean
+export const removeEqualNodes = <T>(equals: NodeEqualityFunc<T>): DiffGraphTransformer<T> => (
+  async graph => {
+    const differentNodes = (ids: ReadonlyArray<NodeId>): boolean => {
+      if (ids.length !== 2) {
+        return true
       }
-      return depNodeIds
+      const [node1, node2] = ids.map(id => getDiffNodeData(graph.getData(id)))
+      return !equals(node1, node2)
     }
 
-    const addAdditionNode = (originalId: NodeId): DiffNodeId =>
-      additions.get(originalId) || ((): DiffNodeId => {
-        const diffNodeId = _.uniqueId()
+    const outputGraph = new DataNodeMap<DiffNode<T>>()
+    wu(iterable.groupBy(graph.keys(), id => graph.getData(id).originalId).values())
+      .filter(differentNodes)
+      .flatten()
+      .forEach(id => { outputGraph.addNode(id, [], graph.getData(id)) })
+    return outputGraph
+  }
+)
 
-        additions.set(originalId, diffNodeId)
+const mergeNodes = <T>(
+  target: DiffGraph<T>, oldIds: NodeId[], newId: NodeId, newData: DiffNode<T>
+): void => {
+  const deps = new Set<NodeId>(
+    wu.chain(oldIds.map(id => target.get(id)))
+      .flatten()
+      // filter out old nodes from dependecy list
+      .filter(id => !oldIds.includes(id))
+  )
 
-        const diffNode: AdditionDiffNode<T> = {
-          action: 'add',
-          originalId,
-          data: { after: afterNodeMap.getData(originalId) },
-        }
+  // update reverse deps to new node
+  oldIds.forEach(
+    oldId => target.deleteNode(oldId).forEach(affected => target.get(affected).add(newId))
+  )
 
-        const deps = calcDeps(addAdditionNode, originalId)
-        target.addNode(diffNodeId, deps, diffNode)
+  target.addNode(newId, deps, newData)
+}
 
-        return diffNodeId
-      })()
+const tryCreateModificationNode = <T>(
+  target: DiffGraph<T>,
+  additionNodeId: NodeId,
+  removalNodeId: NodeId,
+): DiffGraph<T> => {
+  const removalNode = target.getData(removalNodeId) as RemovalDiffNode<T>
+  const additionNode = target.getData(additionNodeId) as AdditionDiffNode<T>
+  const { originalId } = removalNode
 
-    wu(afterNodeMap.nodes()).forEach(addAdditionNode)
-
-    return additions
+  const modificationNode: ModificationDiffNode<T> = {
+    action: 'modify',
+    originalId,
+    data: {
+      before: removalNode.data.before,
+      after: additionNode.data.after,
+    },
   }
 
-  const mergeNodes = <T>(
-    target: DiffGraph<T>, oldIds: NodeId[], newId: NodeId, newData: DiffNode<T>
-  ): void => {
-    const deps = new Set<NodeId>(wu.chain(oldIds.map(id => target.get(id))).flatten())
+  const modificationNodeId = _.uniqueId()
 
-    // delete old nodes
-    oldIds.forEach(oldId => deps.delete(oldId))
+  return target.tryTransform(t => {
+    mergeNodes(t, [removalNodeId, additionNodeId], modificationNodeId, modificationNode)
+    return modificationNodeId
+  })[0]
+}
 
-    // update reverse deps to new node
-    oldIds.forEach(
-      oldId => target.deleteNode(oldId).forEach(affected => target.get(affected).add(newId))
-    )
-
-    target.addNode(newId, deps, newData)
+type SetIdPair = [collections.set.SetId, collections.set.SetId]
+export const mergeNodesToModify = async <T>(target: DiffGraph<T>): Promise<DiffGraph<T>> => {
+  const addBeforeRemove = (nodes: SetIdPair): SetIdPair => {
+    const [adds, removes] = _.partition(nodes, node => target.getData(node).action === 'add')
+    return [adds[0], removes[0]]
   }
 
-  const tryCreateModificationNode = <T>(
-    target: DiffGraph<T>,
-    removalNodeId: DiffNodeId,
-    additionNodeId: DiffNodeId,
-  ): DiffGraph<T> => {
-    const removalNode = target.getData(removalNodeId) as RemovalDiffNode<T>
-    const additionNode = target.getData(additionNodeId) as AdditionDiffNode<T>
-    const { originalId } = removalNode
+  // Find all pairs of nodes pointing to the same original ID
+  const mergeCandidates = wu(
+    iterable.groupBy(target.keys(), id => target.getData(id).originalId).values()
+  ).filter(nodes => nodes.length === 2) as WuIterable<SetIdPair>
 
-    const modificationNode: ModificationDiffNode<T> = {
-      action: 'modify',
-      originalId,
-      data: {
-        before: removalNode.data.before,
-        after: additionNode.data.after,
-      },
-    }
-
-    const modificationNodeId = _.uniqueId()
-
-    return target.tryTransform(t => {
-      mergeNodes(t, [removalNodeId, additionNodeId], modificationNodeId, modificationNode)
-      return modificationNodeId
-    })[0]
-  }
-
-  return <T>(
-    before: DataNodeMap<T>,
-    after: DataNodeMap<T>,
-    equals: (id: NodeId) => boolean,
-  ): DiffGraph<T> => log.time(() => {
-    let result = new DataNodeMap<DiffNode<T>>()
-
-    const removals = addBeforeNodesAsRemovals(result, before)
-    const additions = addAfterNodesAsAdditions(result, after, removals)
-
-    const removedAndAdded = intersection(removals.keys(), new Set<NodeId>(additions.keys()))
-    const equalNodes = new Set<NodeId>(wu(removedAndAdded).filter(equals))
-
-    const removalAndAdditionIds = (originalId: NodeId): [DiffNodeId, DiffNodeId] =>
-      [removals, additions]
-        .map(s => s.get(originalId) as DiffNodeId) as [DiffNodeId, DiffNodeId]
-
-    // remove equal nodes
-    const equalDiffNodeIds = new Set<DiffNodeId>(
-      wu(equalNodes).map(removalAndAdditionIds).flatten(true)
+  return mergeCandidates
+    .map(addBeforeRemove)
+    .reduce(
+      (graph, [add, remove]) => tryCreateModificationNode(graph, add, remove),
+      target,
     )
-    result = result.cloneWithout(equalDiffNodeIds)
-
-    const modifyCandidates = difference(removedAndAdded, equalNodes)
-
-    // try to merge removals and additions for unequal nodes
-    return wu(modifyCandidates).reduce(
-      (res, originalId) => tryCreateModificationNode(res, ...removalAndAdditionIds(originalId)),
-      result,
-    )
-  }, 'build diff graph for %o -> %o nodes', before.size, after.size)
-})()
+}

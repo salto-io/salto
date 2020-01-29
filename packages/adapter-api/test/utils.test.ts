@@ -244,7 +244,7 @@ describe('Test utils.ts', () => {
     it('should fail on a non existing path', () => {
       expect(resolvePath(mockType, mockElem.createNestedID('field', 'nope'))).toBe(undefined)
     })
-    it('should return base element when no pass is provided', () => {
+    it('should return base element when no path is provided', () => {
       expect(resolvePath(mockType, mockType.elemID)).toEqual(mockType)
     })
     it('should resolve a field annotation path', () => {

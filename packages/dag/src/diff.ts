@@ -1,6 +1,9 @@
 import _ from 'lodash'
-import wu from 'wu'
+import wu, { WuIterable } from 'wu'
+import { collections } from '@salto/lowerdash'
 import { NodeId, DataNodeMap } from './nodemap'
+
+const { iterable } = collections
 
 export type DiffNodeId = string
 
@@ -52,9 +55,7 @@ export const removeEqualNodes = <T>(equals: NodeEqualityFunc<T>): DiffGraphTrans
     }
 
     const outputGraph = new DataNodeMap<DiffNode<T>>()
-    _([...graph.keys()])
-      .groupBy(id => graph.getData(id).originalId)
-      .values()
+    wu(iterable.groupBy(graph.keys(), id => graph.getData(id).originalId).values())
       .filter(differentNodes)
       .flatten()
       .forEach(id => { outputGraph.addNode(id, [], graph.getData(id)) })
@@ -106,17 +107,20 @@ const tryCreateModificationNode = <T>(
   })[0]
 }
 
+type SetIdPair = [collections.set.SetId, collections.set.SetId]
 export const mergeNodesToModify = async <T>(target: DiffGraph<T>): Promise<DiffGraph<T>> => {
+  const addBeforeRemove = (nodes: SetIdPair): SetIdPair => {
+    const [adds, removes] = _.partition(nodes, node => target.getData(node).action === 'add')
+    return [adds[0], removes[0]]
+  }
+
   // Find all pairs of nodes pointing to the same original ID
-  const mergeCandidates = _([...target.keys()])
-    .groupBy(id => target.getData(id).originalId)
-    .values()
-    .filter(nodes => nodes.length === 2)
-    .value()
+  const mergeCandidates = wu(
+    iterable.groupBy(target.keys(), id => target.getData(id).originalId).values()
+  ).filter(nodes => nodes.length === 2) as WuIterable<SetIdPair>
 
   return mergeCandidates
-    // Make sure the add node comes before the remove node
-    .map(nodes => nodes.sort(node => (target.getData(node).action === 'add' ? -1 : 1)))
+    .map(addBeforeRemove)
     .reduce(
       (graph, [add, remove]) => tryCreateModificationNode(graph, add, remove),
       target,

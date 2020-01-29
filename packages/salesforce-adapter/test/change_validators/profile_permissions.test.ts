@@ -7,6 +7,79 @@ describe('profile permissions change validator', () => {
     elemID: new ElemID('salesforce', 'obj'),
   })
 
+  describe('onAdd', () => {
+    const fieldName = 'testField'
+    const field = new Field(obj.elemID, fieldName, BuiltinTypes.STRING,
+      {
+        [API_NAME]: 'MyNamespace__FieldName__c',
+        [CORE_ANNOTATIONS.REQUIRED]: false,
+        [FIELD_LEVEL_SECURITY_ANNOTATION]: {
+          [FIELD_LEVEL_SECURITY_FIELDS.EDITABLE]: ['Admin'],
+          [FIELD_LEVEL_SECURITY_FIELDS.READABLE]: ['Admin'],
+        },
+      })
+    let newField: Field
+    let newObj: ObjectType
+
+    describe('add object with required field', () => {
+      beforeEach(() => {
+        newField = field.clone()
+        newField.annotations[CORE_ANNOTATIONS.REQUIRED] = true
+        newObj = obj.clone()
+        newObj.fields[fieldName] = newField
+      })
+      it('should have change error when adding an object with a required field that includes permissions', async () => {
+        const changeErrors = await profilePermissionsValidator.onAdd(newObj)
+        expect(changeErrors).toHaveLength(1)
+        expect(changeErrors[0].severity).toEqual('Error')
+        expect(changeErrors[0].elemID).toEqual(newField.elemID)
+      })
+
+      it('should received multiple change error when adding an object with multiple required fields that include permissions', async () => {
+        const newFieldName = `new_${fieldName}`
+        newObj.fields[newFieldName] = newField.clone()
+        newObj.fields[newFieldName].name = newFieldName
+        const changeErrors = await profilePermissionsValidator.onAdd(newObj)
+        expect(changeErrors).toHaveLength(2)
+        expect(changeErrors[0].severity).toEqual('Error')
+        expect(changeErrors[0].elemID).toEqual(newField.elemID)
+        expect(changeErrors[1].severity).toEqual('Error')
+        expect(changeErrors[1].elemID).toEqual(newField.elemID)
+      })
+
+      it('should have no change error when updating a required field without permissions', async () => {
+        delete newObj.fields[fieldName].annotations[FIELD_LEVEL_SECURITY_ANNOTATION]
+        const changeErrors = await profilePermissionsValidator.onAdd(newObj)
+        expect(changeErrors).toHaveLength(0)
+      })
+    })
+
+    describe('update a non required field', () => {
+      beforeEach(() => {
+        newField = field.clone()
+      })
+
+      it('should have no change error when updating a field to be non required with permissions', async () => {
+        newField.annotations[FIELD_LEVEL_SECURITY_ANNOTATION][FIELD_LEVEL_SECURITY_FIELDS.EDITABLE].push('Standard')
+        newField.annotations[FIELD_LEVEL_SECURITY_ANNOTATION][FIELD_LEVEL_SECURITY_FIELDS.READABLE].push('Standard')
+        const changeErrors = await profilePermissionsValidator.onUpdate([{
+          action: 'modify',
+          data: { before: field, after: newField },
+        }])
+        expect(changeErrors).toHaveLength(0)
+      })
+
+      it('should have no change error when updating a field to be non required without permissions', async () => {
+        delete newField.annotations[FIELD_LEVEL_SECURITY_ANNOTATION]
+        const changeErrors = await profilePermissionsValidator.onUpdate([{
+          action: 'modify',
+          data: { before: field, after: newField },
+        }])
+        expect(changeErrors).toHaveLength(0)
+      })
+    })
+  })
+
   describe('onUpdate', () => {
     const field = new Field(obj.elemID, 'field', BuiltinTypes.STRING,
       {

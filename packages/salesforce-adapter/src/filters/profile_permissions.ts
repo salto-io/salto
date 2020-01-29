@@ -21,7 +21,7 @@ import { ProfileInfo, FieldPermissions, FieldPermissionsOptions, ObjectPermissio
   ObjectPermissions, OBJECT_PERMISSIONS_OPTIONS, FIELD_PERMISSIONS_OPTIONS,
   PermissionsTypes, PermissionsOptionsFieldsTypes } from '../client/types'
 import { getCustomObjects, id, boolValue,
-  getInstancesOfMetadataType, removeFieldsFromInstanceAndType, getFieldNameFromFullName } from './utils'
+  getInstancesOfMetadataType, removeFieldsFromInstanceAndType } from './utils'
 
 const log = logger(module)
 
@@ -303,8 +303,9 @@ const filterCreator: FilterCreator = ({ client }) => ({
       !removedElements.includes(getElementName(permission))
 
     const notRequiredField = (permission: FieldPermissions): boolean => {
-      const afterField = after.fields[getFieldNameFromFullName(permission.field)]
-      return afterField && !afterField.annotations[CORE_ANNOTATIONS.REQUIRED]
+      const afterField = Object.values(after.fields)
+        .find(field => apiName(field) === permission.field)
+      return !_.isUndefined(afterField) && !afterField.annotations[CORE_ANNOTATIONS.REQUIRED]
     }
 
     const beforeProfiles = toProfiles(before)
@@ -325,7 +326,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
       })
       // Add missing permissions for profiles that dosen't exists in after
       //   with =false values for all the permissions options
-      //   except from removed and required fields
+      //   except for removed and required fields
       .concat(beforeProfiles
         .filter(p => _.isUndefined(findProfile(afterProfiles, p.fullName)))
         .map(p => ({ fullName: p.fullName,

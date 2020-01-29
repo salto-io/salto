@@ -1,7 +1,7 @@
 import wu from 'wu'
 import _ from 'lodash'
 import {
-  Type, Field, ObjectType, ElemID, Values, Element, PrimitiveValue, PrimitiveField, Value, 
+  Type, Field, ObjectType, ElemID, Values, Element, PrimitiveValue, PrimitiveField, Value,
   InstanceElement, PrimitiveType, Expression, ReferenceExpression, TemplateExpression,
 } from './elements'
 

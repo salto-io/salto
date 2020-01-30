@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import { ChangeError, Change, isInstanceElement, Element,
-  BuiltinTypes, isPrimitiveField, getChangeElement, isModificationDiff, InstanceElement } from 'adapter-api'
+  BuiltinTypes, getChangeElement, isModificationDiff, InstanceElement, isPrimitiveType } from 'adapter-api'
 
 const getJsonValidationErrorsFromAfter = async (after: Element):
   Promise<ReadonlyArray<ChangeError>> => {
@@ -9,7 +9,8 @@ const getJsonValidationErrorsFromAfter = async (after: Element):
   }
   const errors = Object.values(_.pickBy(_.mapValues(after.value, (val, key) => {
     const field = after.type.fields[key]
-    if (isPrimitiveField(field) && field.type.isEqual(BuiltinTypes.JSON)) {
+    const fieldType = field.type
+    if (isPrimitiveType(fieldType) && fieldType.isEqual(BuiltinTypes.JSON)) {
       try {
         JSON.parse(val)
       } catch (error) {

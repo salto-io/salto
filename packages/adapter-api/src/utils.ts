@@ -1,7 +1,7 @@
 import wu from 'wu'
 import _ from 'lodash'
 import {
-  TypeElement, Field, ObjectType, Element, PrimitiveField, InstanceElement, PrimitiveType, TypeMap,
+  TypeElement, Field, ObjectType, Element, InstanceElement, PrimitiveType, TypeMap,
 } from './elements'
 import { Values, PrimitiveValue, Expression, ReferenceExpression, TemplateExpression, Value } from './values'
 import { ElemID } from './element_id'
@@ -41,11 +41,6 @@ export function isType(element: any): element is TypeElement {
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 export function isField(element: any): element is Field {
   return element instanceof Field
-}
-
-/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-export function isPrimitiveField(element: any): element is PrimitiveField {
-  return isField(element) && isPrimitiveType(element.type)
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -149,12 +144,11 @@ type TransformValueType = PrimitiveValue | Expression
 export type TransformValueFunc = (
   val: TransformValueType, field?: Field,
 ) => TransformValueType | undefined
-// By default we want to filter out empty strings
-const defaultValueTransform: TransformValueFunc = val => (val === '' ? undefined : val)
+
 export const transform = (
   obj: Values,
   type: ObjectType | TypeMap,
-  transformPrimitives: TransformValueFunc = defaultValueTransform,
+  transformPrimitives: TransformValueFunc,
   strict = true
 ): Values | undefined => {
   const transformValue = (value: Value, field?: Field): Value => {

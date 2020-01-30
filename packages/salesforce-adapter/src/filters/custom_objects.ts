@@ -3,7 +3,7 @@ import { collections } from '@salto/lowerdash'
 import {
   ADAPTER, Element, Field, ObjectType, ServiceIds, TypeElement, isObjectType, InstanceElement,
   isInstanceElement, ElemID, BuiltinTypes, CORE_ANNOTATIONS, transform, TypeMap, getChangeElement,
-  Value, findObjectType, Change, PrimitiveField, PrimitiveType, Values,
+  Value, findObjectType, Change, Values, TransformValueFunc,
 } from 'adapter-api'
 import { SalesforceClient } from 'index'
 import { DescribeSObjectResult, Field as SObjField, SaveResult, UpsertResult } from 'jsforce'
@@ -254,38 +254,20 @@ export const transformFieldAnnotations = (
 
 const transformObjectAnnotations = (customObject: ObjectType, annotationTypesFromInstance: TypeMap,
   instance: InstanceElement): void => {
-  const transformAnnotationValue = (value: Value, annotationType: TypeElement):
-  Value | undefined => {
-    const buildAnnotationPrimitiveField = (type: PrimitiveType): PrimitiveField => {
-      const annotationTypesElemID = new ElemID(SALESFORCE, 'AnnotationType')
-      return new Field(annotationTypesElemID, type.elemID.name, type) as PrimitiveField
+  const transformPrimitiveOrApiName: TransformValueFunc = (val, field) => {
+    if (field?.name === INSTANCE_FULL_NAME_FIELD
+      && Object.values(customObjectIndependentAnnotations).includes(field?.parentID?.name)) {
+      return [apiName(instance), val].join(API_NAME_SEPERATOR)
     }
-
-    if (isObjectType(annotationType)) {
-      const transformedValue = transform(value, annotationType, transformPrimitive)
-      if (!_.isUndefined(transformedValue)
-        && Object.values(customObjectIndependentAnnotations).includes(annotationType.elemID.name)) {
-        transformedValue[INSTANCE_FULL_NAME_FIELD] = [apiName(instance),
-          transformedValue[INSTANCE_FULL_NAME_FIELD]].join(API_NAME_SEPERATOR)
-      }
-      return transformedValue
-    }
-    return transformPrimitive(value, buildAnnotationPrimitiveField(annotationType as PrimitiveType))
+    return transformPrimitive(val, field)
   }
 
   Object.assign(customObject.annotationTypes, annotationTypesFromInstance)
 
-  Object.assign(customObject.annotations,
-    ...Object.entries(instance.value)
-      .filter(([k, _v]) => Object.keys(annotationTypesFromInstance).includes(k))
-      .map(([k, v]) => {
-        const annotationType = customObject.annotationTypes[k]
-        const transformedValue = _.isArray(v)
-          ? v.map(innerValue => transformAnnotationValue(innerValue, annotationType))
-            .filter(innerValue => !_.isUndefined(innerValue))
-          : transformAnnotationValue(v, annotationType) ?? {}
-        return { [k]: transformedValue }
-      }))
+  Object.assign(
+    customObject.annotations,
+    transform(instance.value, customObject.annotationTypes, transformPrimitiveOrApiName),
+  )
 }
 
 const mergeCustomObjectWithInstance = (

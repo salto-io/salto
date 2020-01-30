@@ -278,5 +278,3 @@ export class InstanceElement extends Element {
     return new InstanceElement(this.elemID.name, this.type, _.cloneDeep(this.value), this.path)
   }
 }
-
-export type PrimitiveField = Field & {type: PrimitiveType}

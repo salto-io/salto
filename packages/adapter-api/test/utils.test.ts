@@ -1,3 +1,4 @@
+import _ from 'lodash'
 import {
   Field, InstanceElement, ObjectType, PrimitiveTypes, PrimitiveType, TypeMap,
 } from '../src/elements'
@@ -28,9 +29,7 @@ describe('Test utils.ts', () => {
       }),
       bool: new Field(mockElem, 'bool', BuiltinTypes.BOOLEAN),
       num: new Field(mockElem, 'num', BuiltinTypes.NUMBER),
-      emptyStr: new Field(mockElem, 'emptyStr', BuiltinTypes.STRING),
       numArray: new Field(mockElem, 'numArray', BuiltinTypes.NUMBER, {}, true),
-      emptyArray: new Field(mockElem, 'emptyArray', BuiltinTypes.STRING, {}, true),
       obj: new Field(mockElem, 'obj', new ObjectType({
         elemID: mockElem,
         fields: {
@@ -62,9 +61,7 @@ describe('Test utils.ts', () => {
       str: 'val',
       bool: 'true',
       num: '99',
-      emptyStr: '',
       numArray: ['12', '13', '14'],
-      emptyArray: ['', ''],
       notExist: 'notExist',
       notExistArray: ['', ''],
       obj: [
@@ -113,12 +110,54 @@ describe('Test utils.ts', () => {
   describe('transform func', () => {
     let resp: Values
 
-    describe('with the default transformPrimitives func', () => {
-      describe('when called with object type', () => {
+    describe('with empty transformPrimitives func', () => {
+      let transfromFunc: jest.Mock
+      beforeEach(() => {
+        transfromFunc = jest.fn().mockImplementation(val => val)
+      })
+
+      describe('when called with instance and object type', () => {
         beforeEach(async () => {
-          const result = transform(mockInstance.value, mockType)
+          const result = transform(mockInstance.value, mockType, transfromFunc)
           expect(result).toBeDefined()
           resp = result as Values
+        })
+
+        it('should call transform on top level primitive values', () => {
+          const primitiveFieldNames = ['str', 'bool', 'num']
+          primitiveFieldNames.forEach(field => {
+            expect(transfromFunc).toHaveBeenCalledWith(
+              mockInstance.value[field], mockType.fields[field],
+            )
+          })
+        })
+
+        it('should call transfrom on array elements', () => {
+          (mockInstance.value.numArray as string[]).forEach(
+            val => expect(transfromFunc).toHaveBeenCalledWith(val, mockType.fields.numArray)
+          )
+        })
+
+        it('should call transfrom on primitive types in nested objects', () => {
+          const getField = (type: ObjectType, path: (string | number)[]): Field => {
+            if (typeof path[0] === 'number') {
+              return getField(type, path.slice(1))
+            }
+            const field = type.fields[path[0]]
+            return path.length === 1 ? field : getField(field.type as ObjectType, path.slice(1))
+          }
+          const nestedPrimitivePaths = [
+            ['obj', 0, 'field'],
+            ['obj', 1, 'field'],
+            ['obj', 2, 'field'],
+            ['obj', 0, 'innerObj', 'name'],
+            ['obj', 0, 'innerObj', 'magical', 'deepName'],
+          ]
+          nestedPrimitivePaths.forEach(
+            path => expect(transfromFunc).toHaveBeenCalledWith(
+              _.get(mockInstance.value, path), getField(mockType, path),
+            )
+          )
         })
 
         it('should omit undefined fields in object', () => {
@@ -130,17 +169,6 @@ describe('Test utils.ts', () => {
           const { magical } = resp?.obj[1]?.innerObj
           expect(magical).toBeDefined()
           expect(magical).not.toHaveProperty('notExist2')
-        })
-
-        it('should omit empty strings and arrays', () => {
-          expect(resp).not.toHaveProperty('emptyStr')
-          expect(resp).not.toHaveProperty('emptyArray')
-        })
-
-        it('should omit empty objects', () => {
-          const { innerObj } = resp?.obj[2]
-          expect(innerObj).toBeDefined()
-          expect(innerObj).not.toHaveProperty('magical')
         })
 
         it('should keep all defined field values', () => {
@@ -166,9 +194,19 @@ describe('Test utils.ts', () => {
             bool: BuiltinTypes.BOOLEAN,
             nums: BuiltinTypes.NUMBER,
           }
-          const result = transform(origValue, typeMap)
+          const result = transform(origValue, typeMap, transfromFunc)
           expect(result).toBeDefined()
           resp = result as Values
+        })
+        it('should call transfrom func on all defined types', () => {
+          const mockField = (name: string): Field => new Field(new ElemID(''), name, typeMap[name])
+          const primitiveTypes = ['str', 'num', 'bool']
+          primitiveTypes.forEach(
+            name => expect(transfromFunc).toHaveBeenCalledWith(origValue[name], mockField(name))
+          )
+          origValue.nums.forEach(
+            (val: string) => expect(transfromFunc).toHaveBeenCalledWith(val, mockField('nums'))
+          )
         })
         it('should omit undefined fields values', () => {
           expect(resp).not.toHaveProperty('notExist')

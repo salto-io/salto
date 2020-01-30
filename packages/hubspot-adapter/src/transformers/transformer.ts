@@ -10,6 +10,7 @@ import {
   FORM_FIELDS, ACTION_FIELDS, ANCHOR_SETTING_FIELDS, CRITERIA_FIELDS,
   HUBSPOT, OBJECTS_NAMES, PROPERTY_FIELDS, PROPERTY_GROUP_FIELDS,
   OPTIONS_FIELDS, CONTACTLISTIDS_FIELDS, WORKFLOWS_FIELDS, MARKETING_EMAIL_FIELDS,
+  EVENTANCHOR_FIELDS, CONDITIONACTION_FIELDS,
 } from '../constants'
 import {
   HubspotMetadata,
@@ -27,6 +28,9 @@ const nurtureTimeRangeElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.NURTURETIMERANG
 const anchorSettingElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.ANCHORSETTING)
 const actionElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.ACTION)
 const criteriaElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.CRITERIA)
+const criteriaListElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.CRITERIALIST)
+const eventAnchorElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.EVENTANCHOR)
+const conditionActionElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.CONDITIONACTION)
 
 export class Types {
   private static fieldTypes: TypeMap = {
@@ -292,6 +296,45 @@ export class Types {
       path: [HUBSPOT, 'types', 'subtypes', criteriaElemID.name],
     })
 
+    private static criteriaList: ObjectType =
+      new ObjectType({
+        elemID: criteriaListElemID,
+        fields: {
+          criterias: new TypeField(
+            criteriaListElemID, 'criterias', Types.criteriaType, {
+              name: 'criterias',
+              _readOnly: false,
+              [CORE_ANNOTATIONS.REQUIRED]: false,
+            },
+            true,
+          ),
+        },
+        path: [HUBSPOT, 'types', 'subtypes', criteriaListElemID.name],
+      })
+
+  private static eventAnchorType: ObjectType =
+    new ObjectType({
+      elemID: eventAnchorElemID,
+      fields: {
+        [EVENTANCHOR_FIELDS.CONTACTPROPERTYANCHOR]: new TypeField(
+          eventAnchorElemID, EVENTANCHOR_FIELDS.CONTACTPROPERTYANCHOR, BuiltinTypes.STRING, {
+            name: EVENTANCHOR_FIELDS.CONTACTPROPERTYANCHOR,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [EVENTANCHOR_FIELDS.STATICDATEANCHOR]: new TypeField(
+          eventAnchorElemID, EVENTANCHOR_FIELDS.STATICDATEANCHOR,
+          BuiltinTypes.STRING, {
+            name: EVENTANCHOR_FIELDS.STATICDATEANCHOR,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+      },
+      path: [HUBSPOT, 'types', 'subtypes', eventAnchorElemID.name],
+    })
+
   private static anchorSettingType: ObjectType =
     new ObjectType({
       elemID: anchorSettingElemID,
@@ -321,6 +364,49 @@ export class Types {
       path: [HUBSPOT, 'types', 'subtypes', anchorSettingElemID.name],
     })
 
+  private static conditionActionType: ObjectType =
+    new ObjectType({
+      elemID: conditionActionElemID,
+      fields: {
+        [CONDITIONACTION_FIELDS.TYPE]: new TypeField(
+          conditionActionElemID, CONDITIONACTION_FIELDS.TYPE, BuiltinTypes.STRING, {
+            name: CONDITIONACTION_FIELDS.TYPE,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [CONDITIONACTION_FIELDS.BODY]: new TypeField(
+          conditionActionElemID, CONDITIONACTION_FIELDS.BODY, BuiltinTypes.STRING, {
+            name: CONDITIONACTION_FIELDS.BODY,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [CONDITIONACTION_FIELDS.STATICTO]: new TypeField(
+          conditionActionElemID, CONDITIONACTION_FIELDS.STATICTO, BuiltinTypes.STRING, {
+            name: CONDITIONACTION_FIELDS.STATICTO,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [CONDITIONACTION_FIELDS.ACTIONID]: new TypeField(
+          conditionActionElemID, CONDITIONACTION_FIELDS.ACTIONID, BuiltinTypes.NUMBER, {
+            name: CONDITIONACTION_FIELDS.ACTIONID,
+            _readOnly: true,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [CONDITIONACTION_FIELDS.STEPID]: new TypeField(
+          conditionActionElemID, CONDITIONACTION_FIELDS.STEPID, BuiltinTypes.NUMBER, {
+            name: CONDITIONACTION_FIELDS.STEPID,
+            _readOnly: true,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+      },
+      path: [HUBSPOT, 'types', 'subtypes', conditionActionElemID.name],
+    })
+
   private static actionType: ObjectType =
     new ObjectType({
       elemID: actionElemID,
@@ -335,7 +421,7 @@ export class Types {
         [ACTION_FIELDS.ACTIONID]: new TypeField(
           actionElemID, ACTION_FIELDS.ACTIONID, BuiltinTypes.NUMBER, {
             name: ACTION_FIELDS.ACTIONID,
-            _readOnly: false,
+            _readOnly: true,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
@@ -359,6 +445,36 @@ export class Types {
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
+        ),
+        [ACTION_FIELDS.FILTERLISTID]: new TypeField(
+          actionElemID, ACTION_FIELDS.FILTERLISTID, BuiltinTypes.NUMBER, {
+            name: ACTION_FIELDS.FILTERLISTID,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [ACTION_FIELDS.NEWVALUE]: new TypeField(
+          actionElemID, ACTION_FIELDS.NEWVALUE, BuiltinTypes.STRING, {
+            name: ACTION_FIELDS.NEWVALUE,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [ACTION_FIELDS.ACCEPTACTIONS]: new TypeField(
+          actionElemID, ACTION_FIELDS.ACCEPTACTIONS, Types.conditionActionType, {
+            name: ACTION_FIELDS.ACCEPTACTIONS,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+          true,
+        ),
+        [ACTION_FIELDS.REJECTACTIONS]: new TypeField(
+          actionElemID, ACTION_FIELDS.REJECTACTIONS, Types.conditionActionType, {
+            name: ACTION_FIELDS.REJECTACTIONS,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+          true,
         ),
       },
       path: [HUBSPOT, 'types', 'subtypes', actionElemID.name],
@@ -606,6 +722,7 @@ export class Types {
             name: WORKFLOWS_FIELDS.TYPE,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.VALUES]: ['PROPERTY_ANCHOR', 'STATIC_ANCHOR', 'DRIP_DELAY'],
           },
         ),
         [WORKFLOWS_FIELDS.ENABLED]: new TypeField(
@@ -702,8 +819,15 @@ export class Types {
           },
           true,
         ),
+        [WORKFLOWS_FIELDS.EVENTANCHOR]: new TypeField(
+          workflowsElemID, WORKFLOWS_FIELDS.EVENTANCHOR, Types.eventAnchorType, {
+            name: WORKFLOWS_FIELDS.EVENTANCHOR,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
         [WORKFLOWS_FIELDS.GOALCRITERIA]: new TypeField(
-          workflowsElemID, WORKFLOWS_FIELDS.GOALCRITERIA, Types.criteriaType, {
+          workflowsElemID, WORKFLOWS_FIELDS.GOALCRITERIA, Types.criteriaList, {
             name: WORKFLOWS_FIELDS.GOALCRITERIA,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
@@ -711,7 +835,7 @@ export class Types {
           true,
         ),
         [WORKFLOWS_FIELDS.SEGMENTCRITERIA]: new TypeField(
-          workflowsElemID, WORKFLOWS_FIELDS.SEGMENTCRITERIA, Types.criteriaType, {
+          workflowsElemID, WORKFLOWS_FIELDS.SEGMENTCRITERIA, Types.criteriaList, {
             name: WORKFLOWS_FIELDS.SEGMENTCRITERIA,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,

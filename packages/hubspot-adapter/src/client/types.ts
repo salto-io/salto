@@ -87,12 +87,18 @@ export interface Workflows extends HubspotMetadata {
   nurtureTimeRange: NurtureTimeRange
   listening: boolean
   allowContactToTriggerMultipleTimes: boolean
-  goalCriteria: Criteria[][]
   onlyEnrollsManually: boolean
   enrollOnCriteriaUpdate: boolean
   lastUpdatedBy: string
+  eventAnchor: EventAnchor
   supressionListIds: number[]
+  goalCriteria: Criteria[][]
   segmentCriteria: Criteria[][]
+}
+
+interface EventAnchor {
+  staticDateAnchor: string
+  contactPropertyAnchor: string
 }
 
 interface Action {
@@ -100,6 +106,18 @@ interface Action {
   anchorSetting: AnchorSetting
   actionId: number
   delayMillis: number
+  stepId: number
+  filterListId: number
+  newValue: string
+  acceptActions: ConditionAction[]
+  rejectActions: ConditionAction[]
+}
+
+interface ConditionAction {
+  type: string
+  body: string
+  staticTo: string
+  actionId: number
   stepId: number
 }
 

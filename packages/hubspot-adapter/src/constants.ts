@@ -15,6 +15,9 @@ export const OBJECTS_NAMES = {
   ACTION: 'action',
   ANCHORSETTING: 'anchorSetting',
   CRITERIA: 'criteria',
+  CRITERIALIST: 'criteriaList',
+  EVENTANCHOR: 'eventAnchor',
+  CONDITIONACTION: 'conditionAction',
 }
 
 export const FIELD_TYPES = {
@@ -203,6 +206,12 @@ export const WORKFLOWS_FIELDS = {
   LASTUPDATEDBY: 'lastUpdatedBy',
   SUPRESSIONLISTIDS: 'supressionListIds',
   SEGMENTCRITERIA: 'segmentCriteria',
+  EVENTANCHOR: 'eventAnchor',
+}
+
+export const EVENTANCHOR_FIELDS = {
+  STATICDATEANCHOR: 'staticDateAnchor',
+  CONTACTPROPERTYANCHOR: 'contactPropertyAnchor',
 }
 
 export const NURTURETIMERANGE_FIELDS = {
@@ -216,6 +225,18 @@ export const ACTION_FIELDS = {
   ANCHORSETTING: 'anchorSetting',
   ACTIONID: 'actionId',
   DELAYMILLS: 'delayMillis',
+  STEPID: 'stepId',
+  FILTERLISTID: 'filterListId',
+  NEWVALUE: 'newValue',
+  ACCEPTACTIONS: 'acceptActions',
+  REJECTACTIONS: 'rejectActions',
+}
+
+export const CONDITIONACTION_FIELDS = {
+  TYPE: 'type',
+  BODY: 'body',
+  STATICTO: 'staticTo',
+  ACTIONID: 'actionId',
   STEPID: 'stepId',
 }
 

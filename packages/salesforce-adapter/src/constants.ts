@@ -117,6 +117,7 @@ export const FIELD_ANNOTATIONS = {
   MASK: 'mask',
   DISPLAY_LOCATION_IN_DECIMAL: 'displayLocationInDecimal',
   REFERENCE_TO: 'referenceTo',
+  RELATIONSHIP_NAME: 'relationshipName',
   ALLOW_LOOKUP_RECORD_DELETION: 'allowLookupRecordDeletion',
   REPARENTABLE_MASTER_DETAIL: 'reparentableMasterDetail',
   WRITE_REQUIRES_MASTER_READ: 'writeRequiresMasterRead',

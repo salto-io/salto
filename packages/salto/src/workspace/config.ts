@@ -90,6 +90,8 @@ export interface Config {
   currentEnv? : string
 }
 
+type EnvConfig = Omit<Config, 'name' | 'envs' | 'currentEnv' | 'uid'>
+
 const createDefaultConfig = (
   baseDir: string,
   workspaceName? : string,
@@ -168,7 +170,7 @@ export const loadConfig = async (lookupDir: string): Promise<Config> => {
   const loadActiveEnvConfig = async (
     baseDir: string,
     baseConfig: Partial<Config>
-  ): Promise<Config | undefined> => {
+  ): Promise<EnvConfig | undefined> => {
     const activeEnvSettings = baseConfig.currentEnv
       && baseConfig?.envs?.find(env => env.name === baseConfig.currentEnv)
     if (activeEnvSettings) {

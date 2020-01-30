@@ -23,13 +23,7 @@ export class UnsupportedNewEnvChangeError extends Error {
   }
 }
 
-type Sources = {
-  primarySource: BlueprintsSource
-  secondarySources: Record<string, BlueprintsSource>
-  commonSource?: BlueprintsSource
-}
-
-type MultiEnvState = Sources & {
+type MultiEnvState = {
   elements: Record<string, Element>
   mergeErrors: MergeError[]
   fileToBlueprintIndex: Record<string, BlueprintsSource>
@@ -42,48 +36,33 @@ export const multiEnvSource = (
 ): BlueprintsSource => {
   let state: Promise<MultiEnvState>
 
-  const getActiveSources = async (sources? : Sources): Promise<BlueprintsSource[]> => {
-    const relSources = sources || await state
-    return relSources.commonSource
-      ? [relSources.primarySource, relSources.commonSource]
-      : [relSources.primarySource]
-  }
+  const getActiveSources = (): BlueprintsSource[] => (commonSource
+    ? [primarySource, commonSource]
+    : [primarySource])
 
   const getFromAllActiveSources = async <T>(
     callback: (bp: BlueprintsSource) => Promise<T[]>,
-    sources? : Sources
   ): Promise<T[]> => {
-    const activeSources = await getActiveSources(sources)
+    const activeSources = getActiveSources()
     return _.flatten(await Promise.all(activeSources.map(callback)))
   }
 
-  const buildMutiEnvState = async (params: {
-    primarySource: BlueprintsSource
-    commonSource?: BlueprintsSource
-    secondarySources: Record<string, BlueprintsSource>
-  }): Promise<MultiEnvState> => {
-    const sources = {
-      primarySource: _.clone(params.primarySource),
-      commonSource: _.clone(params.commonSource),
-      secondarySources: _.mapValues(params.secondarySources, _.clone),
-    }
+  const buildMutiEnvState = async (): Promise<MultiEnvState> => {
     const blueprintIndex = _.fromPairs(await getFromAllActiveSources(
-      async src => (await src.listBlueprints()).map(filename => ([filename, src])),
-      sources
+      async src => (await src.listBlueprints()).map(filename => ([filename, src]))
     ))
-    const allActiveElements = await getFromAllActiveSources(s => s.getAll(), sources)
+    const allActiveElements = await getFromAllActiveSources(s => s.getAll())
     const mergeResult = mergeElements(allActiveElements)
     const elements = _.keyBy(mergeResult.merged, e => e.elemID.getFullName())
     const { errors } = mergeResult
     return {
-      ...sources,
       elements,
       mergeErrors: errors,
       fileToBlueprintIndex: blueprintIndex,
     }
   }
 
-  state = buildMutiEnvState({ primarySource, commonSource, secondarySources })
+  state = buildMutiEnvState()
 
   const getSourceForBlueprint = async (
     filename: string
@@ -97,13 +76,13 @@ export const multiEnvSource = (
   const setBlueprint = async (blueprint: Blueprint): Promise<void> => {
     const relevantSource = await getSourceForBlueprint(blueprint.filename) || primarySource
     await relevantSource.setBlueprints(blueprint)
-    state = buildMutiEnvState({ ...(await state) })
+    state = buildMutiEnvState()
   }
   const removeBlueprint = async (filename: string): Promise<void> => {
     const source = await getSourceForBlueprint(filename)
     if (source) {
       await source.removeBlueprints(filename)
-      state = buildMutiEnvState({ ...(await state) })
+      state = buildMutiEnvState()
     }
   }
 
@@ -125,7 +104,7 @@ export const multiEnvSource = (
         ..._.keys(secondaryChanges).map(k => secondarySources[k].update(secondaryChanges[k])),
       ])
     }
-    state = buildMutiEnvState({ ...(await state) })
+    state = buildMutiEnvState()
   }
 
   const flush = async (): Promise<void> => {
@@ -150,11 +129,11 @@ export const multiEnvSource = (
     ),
     setBlueprints: async (...blueprints: Blueprint[]): Promise<void> => {
       await Promise.all(blueprints.map(setBlueprint))
-      state = buildMutiEnvState({ ...(await state) })
+      state = buildMutiEnvState()
     },
     removeBlueprints: async (...names: string[]): Promise<void> => {
       await Promise.all(names.map(name => removeBlueprint(name)))
-      state = buildMutiEnvState({ ...(await state) })
+      state = buildMutiEnvState()
     },
     getSourceMap: async (filename: string): Promise<SourceMap> => (
       (await getSourceForBlueprint(filename))?.getSourceMap(filename)

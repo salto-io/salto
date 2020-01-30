@@ -111,7 +111,7 @@ export const realConnection = (
   })
   // Set poll interval and timeout for deploy
   connection.metadata.pollInterval = 3000
-  connection.metadata.pollTimeout = 600000
+  connection.metadata.pollTimeout = 1800000
 
   // Set poll interval and timeout for bulk ops, (e.g, CSV deletes)
   connection.bulk.pollInterval = 3000

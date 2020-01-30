@@ -5,7 +5,7 @@ import {
 import {
   Form, HubspotMetadata, MarketingEmail, Workflows,
 } from './types'
-import Connection, { HubspotObjectAPI } from './madku'
+import Connection, { HubspotObjectAPI, Workflow } from './madku'
 
 
 export type Credentials = {
@@ -120,8 +120,16 @@ export default class HubspotClient {
   async getAllInstances(typeName: string): Promise<HubspotMetadata[]> {
     // This is special issue for workflows objects:
     // Only account with special permission can fetch instances
-    const getAllWorkflowsResponse = async (resp: RequestPromise): Promise<Workflows[]> =>
-      (await resp.catch(_ => ({ workflows: [] }))).workflows
+    const getAllWorkflowsResponse = async (resp: RequestPromise): Promise<Workflows[]> => {
+      const { workflows } = await resp.catch(_ => ({ workflows: [] }))
+      const workflowsAPI = this.hubspotObjectAPI.workflows as Workflow
+      const workflowsResp = workflows.map(async (basicWorkflow: Workflows): Promise<Workflows> => {
+        const workflowResp = workflowsAPI.get(basicWorkflow.id)
+        validateResponse(workflowResp)
+        return workflowResp
+      })
+      return await Promise.all(workflowsResp) as Workflows[]
+    }
 
     // This is special issue for MarketingEmail objects:
     // Only account with special permission can fetch instances

@@ -11,6 +11,10 @@ export const OBJECTS_NAMES = {
   OPTIONS: 'options',
   CONTACTLISTIDS: 'contactListIds',
   RSSTOEMAILTIMING: 'rssToEmailTiming',
+  NURTURETIMERANGE: 'nurtureTimeTange',
+  ACTION: 'action',
+  ANCHORSETTING: 'anchorSetting',
+  CRITERIA: 'criteria',
 }
 
 export const FIELD_TYPES = {
@@ -187,6 +191,48 @@ export const WORKFLOWS_FIELDS = {
   UPDATEDAT: 'updatedAt',
   PERSONTALIDS: 'personaTagIds',
   CONTACTLISTIDS: 'contactListIds',
+  ACTIONS: 'actions',
+  INTERNAL: 'internal',
+  ONLYEXECONBIZDAYS: 'onlyExecOnBizDays',
+  NURTURETIMERANGE: 'nurtureTimeRange',
+  LISTENING: 'listening',
+  ALLOWCONTACTTOTRIGGERMULTIPLETIMES: 'allowContactToTriggerMultipleTimes',
+  GOALCRITERIA: 'goalCriteria',
+  ONLYENROLLMANUALLY: 'onlyEnrollsManually',
+  ENROLLONCRITERIAUPDATE: 'enrollOnCriteriaUpdate',
+  LASTUPDATEDBY: 'lastUpdatedBy',
+  SUPRESSIONLISTIDS: 'supressionListIds',
+  SEGMENTCRITERIA: 'segmentCriteria',
+}
+
+export const NURTURETIMERANGE_FIELDS = {
+  ENABLED: 'enabled',
+  STARTHOUR: 'startHour',
+  STOPHOUR: 'stopHour',
+}
+
+export const ACTION_FIELDS = {
+  TYPE: 'type',
+  ANCHORSETTING: 'anchorSetting',
+  ACTIONID: 'actionId',
+  DELAYMILLS: 'delayMillis',
+  STEPID: 'stepId',
+}
+
+export const ANCHOR_SETTING_FIELDS = {
+  EXECTIMEOFDAY: 'execTimeOfDay',
+  EXECTIMEINMINUTES: 'execTimeInMinutes',
+  BOUNDARY: 'boundary',
+}
+
+export const CRITERIA_FIELDS = {
+  PROPERTYOBJECTTYPE: 'propertyObjectType',
+  FILTERFAMILY: 'filterFamily',
+  WITHINTIMEMODE: 'withinTimeMode',
+  PROPERTY: 'property',
+  VALUE: 'value',
+  TYPE: 'type',
+  OPERATOR: 'operator',
 }
 
 export const CONTACTLISTIDS_FIELDS = {

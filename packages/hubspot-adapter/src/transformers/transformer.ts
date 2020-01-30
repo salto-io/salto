@@ -6,9 +6,10 @@ import {
   TypeElement, CORE_ANNOTATIONS, transform, TypeMap, isPrimitiveField,
 } from 'adapter-api'
 import {
-  FIELD_TYPES, FORM_FIELDS, HUBSPOT, OBJECTS_NAMES, PROPERTY_FIELDS, RSSTOEMAILTIMING_FIELDS,
-  PROPERTY_GROUP_FIELDS, OPTIONS_FIELDS, CONTACTLISTIDS_FIELDS,
-  WORKFLOWS_FIELDS, MARKETING_EMAIL_FIELDS,
+  FIELD_TYPES, NURTURETIMERANGE_FIELDS, RSSTOEMAILTIMING_FIELDS,
+  FORM_FIELDS, ACTION_FIELDS, ANCHOR_SETTING_FIELDS, CRITERIA_FIELDS,
+  HUBSPOT, OBJECTS_NAMES, PROPERTY_FIELDS, PROPERTY_GROUP_FIELDS,
+  OPTIONS_FIELDS, CONTACTLISTIDS_FIELDS, WORKFLOWS_FIELDS, MARKETING_EMAIL_FIELDS,
 } from '../constants'
 import {
   HubspotMetadata,
@@ -22,6 +23,10 @@ const optionsElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.OPTIONS)
 const contactListIdsElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.CONTACTLISTIDS)
 const marketingEmailElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.MARKETINGEMAIL)
 const rssToEmailTimingElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.RSSTOEMAILTIMING)
+const nurtureTimeRangeElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.NURTURETIMERANGE)
+const anchorSettingElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.ANCHORSETTING)
+const actionElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.ACTION)
+const criteriaElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.CRITERIA)
 
 export class Types {
   private static fieldTypes: TypeMap = {
@@ -228,6 +233,165 @@ export class Types {
         ),
       },
       path: [HUBSPOT, 'types', 'subtypes', propertyGroupElemID.name],
+    })
+
+  private static criteriaType: ObjectType =
+    new ObjectType({
+      elemID: criteriaElemID,
+      fields: {
+        [CRITERIA_FIELDS.PROPERTYOBJECTTYPE]: new TypeField(
+          criteriaElemID, CRITERIA_FIELDS.PROPERTYOBJECTTYPE, BuiltinTypes.STRING, {
+            name: CRITERIA_FIELDS.PROPERTYOBJECTTYPE,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [CRITERIA_FIELDS.FILTERFAMILY]: new TypeField(
+          criteriaElemID, CRITERIA_FIELDS.FILTERFAMILY, BuiltinTypes.STRING, {
+            name: CRITERIA_FIELDS.FILTERFAMILY,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [CRITERIA_FIELDS.WITHINTIMEMODE]: new TypeField(
+          criteriaElemID, CRITERIA_FIELDS.WITHINTIMEMODE, BuiltinTypes.STRING, {
+            name: CRITERIA_FIELDS.WITHINTIMEMODE,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [CRITERIA_FIELDS.PROPERTY]: new TypeField(
+          criteriaElemID, CRITERIA_FIELDS.PROPERTY, BuiltinTypes.STRING, {
+            name: CRITERIA_FIELDS.PROPERTY,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [CRITERIA_FIELDS.VALUE]: new TypeField(
+          criteriaElemID, CRITERIA_FIELDS.VALUE, BuiltinTypes.STRING, {
+            name: CRITERIA_FIELDS.VALUE,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [CRITERIA_FIELDS.TYPE]: new TypeField(
+          criteriaElemID, CRITERIA_FIELDS.TYPE, BuiltinTypes.STRING, {
+            name: CRITERIA_FIELDS.TYPE,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [CRITERIA_FIELDS.OPERATOR]: new TypeField(
+          criteriaElemID, CRITERIA_FIELDS.OPERATOR, BuiltinTypes.STRING, {
+            name: CRITERIA_FIELDS.OPERATOR,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+      },
+      path: [HUBSPOT, 'types', 'subtypes', criteriaElemID.name],
+    })
+
+  private static anchorSettingType: ObjectType =
+    new ObjectType({
+      elemID: anchorSettingElemID,
+      fields: {
+        [ANCHOR_SETTING_FIELDS.EXECTIMEOFDAY]: new TypeField(
+          anchorSettingElemID, ANCHOR_SETTING_FIELDS.EXECTIMEOFDAY, BuiltinTypes.STRING, {
+            name: ANCHOR_SETTING_FIELDS.EXECTIMEOFDAY,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [ANCHOR_SETTING_FIELDS.EXECTIMEINMINUTES]: new TypeField(
+          anchorSettingElemID, ANCHOR_SETTING_FIELDS.EXECTIMEINMINUTES, BuiltinTypes.NUMBER, {
+            name: ANCHOR_SETTING_FIELDS.EXECTIMEINMINUTES,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [ANCHOR_SETTING_FIELDS.BOUNDARY]: new TypeField(
+          anchorSettingElemID, ANCHOR_SETTING_FIELDS.BOUNDARY, BuiltinTypes.STRING, {
+            name: ANCHOR_SETTING_FIELDS.BOUNDARY,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+      },
+      path: [HUBSPOT, 'types', 'subtypes', anchorSettingElemID.name],
+    })
+
+  private static actionType: ObjectType =
+    new ObjectType({
+      elemID: actionElemID,
+      fields: {
+        [ACTION_FIELDS.TYPE]: new TypeField(
+          actionElemID, ACTION_FIELDS.TYPE, BuiltinTypes.STRING, {
+            name: ACTION_FIELDS.TYPE,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [ACTION_FIELDS.ACTIONID]: new TypeField(
+          actionElemID, ACTION_FIELDS.ACTIONID, BuiltinTypes.NUMBER, {
+            name: ACTION_FIELDS.ACTIONID,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [ACTION_FIELDS.DELAYMILLS]: new TypeField(
+          actionElemID, ACTION_FIELDS.DELAYMILLS, BuiltinTypes.NUMBER, {
+            name: ACTION_FIELDS.DELAYMILLS,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [ACTION_FIELDS.STEPID]: new TypeField(
+          actionElemID, ACTION_FIELDS.STEPID, BuiltinTypes.NUMBER, {
+            name: ACTION_FIELDS.STEPID,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [ACTION_FIELDS.ANCHORSETTING]: new TypeField(
+          actionElemID, ACTION_FIELDS.ANCHORSETTING, Types.anchorSettingType, {
+            name: ACTION_FIELDS.ANCHORSETTING,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+      },
+      path: [HUBSPOT, 'types', 'subtypes', actionElemID.name],
+    })
+
+  private static nurtureTimeRangeType: ObjectType =
+    new ObjectType({
+      elemID: nurtureTimeRangeElemID,
+      fields: {
+        [NURTURETIMERANGE_FIELDS.ENABLED]: new TypeField(
+          contactListIdsElemID, NURTURETIMERANGE_FIELDS.ENABLED, BuiltinTypes.BOOLEAN, {
+            name: NURTURETIMERANGE_FIELDS.ENABLED,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.DEFAULT]: true,
+          },
+        ),
+        [NURTURETIMERANGE_FIELDS.STARTHOUR]: new TypeField(
+          contactListIdsElemID, NURTURETIMERANGE_FIELDS.STARTHOUR, BuiltinTypes.NUMBER, {
+            name: NURTURETIMERANGE_FIELDS.STARTHOUR,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [NURTURETIMERANGE_FIELDS.STOPHOUR]: new TypeField(
+          contactListIdsElemID, NURTURETIMERANGE_FIELDS.STOPHOUR, BuiltinTypes.NUMBER, {
+            name: NURTURETIMERANGE_FIELDS.STOPHOUR,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+      },
+      path: [HUBSPOT, 'types', 'subtypes', nurtureTimeRangeElemID.name],
     })
 
   private static contactListIdsType: ObjectType =
@@ -471,6 +635,88 @@ export class Types {
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
+        ),
+        [WORKFLOWS_FIELDS.INTERNAL]: new TypeField(
+          workflowsElemID, WORKFLOWS_FIELDS.INTERNAL, BuiltinTypes.BOOLEAN, {
+            name: WORKFLOWS_FIELDS.INTERNAL,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [WORKFLOWS_FIELDS.ONLYEXECONBIZDAYS]: new TypeField(
+          workflowsElemID, WORKFLOWS_FIELDS.ONLYEXECONBIZDAYS, BuiltinTypes.BOOLEAN, {
+            name: WORKFLOWS_FIELDS.ONLYEXECONBIZDAYS,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [WORKFLOWS_FIELDS.NURTURETIMERANGE]: new TypeField(
+          workflowsElemID, WORKFLOWS_FIELDS.NURTURETIMERANGE, Types.nurtureTimeRangeType, {
+            name: WORKFLOWS_FIELDS.NURTURETIMERANGE,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [WORKFLOWS_FIELDS.ACTIONS]: new TypeField(
+          workflowsElemID, WORKFLOWS_FIELDS.ACTIONS, Types.actionType, {
+            name: WORKFLOWS_FIELDS.ACTIONS,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+          true,
+        ),
+        [WORKFLOWS_FIELDS.LISTENING]: new TypeField(
+          workflowsElemID, WORKFLOWS_FIELDS.LISTENING, BuiltinTypes.BOOLEAN, {
+            name: WORKFLOWS_FIELDS.LISTENING,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [WORKFLOWS_FIELDS.ALLOWCONTACTTOTRIGGERMULTIPLETIMES]: new TypeField(
+          workflowsElemID, WORKFLOWS_FIELDS.ALLOWCONTACTTOTRIGGERMULTIPLETIMES,
+          BuiltinTypes.BOOLEAN, {
+            name: WORKFLOWS_FIELDS.ALLOWCONTACTTOTRIGGERMULTIPLETIMES,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [WORKFLOWS_FIELDS.ONLYENROLLMANUALLY]: new TypeField(
+          workflowsElemID, WORKFLOWS_FIELDS.ONLYENROLLMANUALLY, BuiltinTypes.BOOLEAN, {
+            name: WORKFLOWS_FIELDS.ONLYENROLLMANUALLY,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [WORKFLOWS_FIELDS.ENROLLONCRITERIAUPDATE]: new TypeField(
+          workflowsElemID, WORKFLOWS_FIELDS.ENROLLONCRITERIAUPDATE, BuiltinTypes.BOOLEAN, {
+            name: WORKFLOWS_FIELDS.ENROLLONCRITERIAUPDATE,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [WORKFLOWS_FIELDS.SUPRESSIONLISTIDS]: new TypeField(
+          workflowsElemID, WORKFLOWS_FIELDS.SUPRESSIONLISTIDS, BuiltinTypes.NUMBER, {
+            name: WORKFLOWS_FIELDS.SUPRESSIONLISTIDS,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+          true,
+        ),
+        [WORKFLOWS_FIELDS.GOALCRITERIA]: new TypeField(
+          workflowsElemID, WORKFLOWS_FIELDS.GOALCRITERIA, Types.criteriaType, {
+            name: WORKFLOWS_FIELDS.GOALCRITERIA,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+          true,
+        ),
+        [WORKFLOWS_FIELDS.SEGMENTCRITERIA]: new TypeField(
+          workflowsElemID, WORKFLOWS_FIELDS.SEGMENTCRITERIA, Types.criteriaType, {
+            name: WORKFLOWS_FIELDS.SEGMENTCRITERIA,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+          true,
         ),
       },
       path: [HUBSPOT, 'objects', workflowsElemID.name],

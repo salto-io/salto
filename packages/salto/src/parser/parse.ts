@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import {
   TypeElement, ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field, Values,
-  Element, InstanceElement, SaltoError, TypeMap,
+  Element, InstanceElement, SaltoError, TypeMap, INSTANCE_ANNOTATIONS,
 } from 'adapter-api'
 import { collections } from '@salto/lowerdash'
 import {
@@ -11,6 +11,8 @@ import {
 import { parse as hclParse } from './internal/parse'
 import evaluate from './expressions'
 import { Keywords } from './language'
+
+const INSTANCE_ANNOTATIONS_ATTRS: string[] = Object.values(INSTANCE_ANNOTATIONS)
 
 // Re-export these types because we do not want code outside the parser to import hcl
 export type SourceRange = InternalSourceRange
@@ -156,6 +158,7 @@ export const parse = (blueprint: Buffer, filename: string): ParseResult => {
       typeID = new ElemID(typeID.name)
     }
     const name = instanceBlock.labels[0] || ElemID.CONFIG_NAME
+    const attrs = attrValues(instanceBlock, typeID.createNestedID('instance', name))
 
     const inst = new InstanceElement(
       name,
@@ -163,7 +166,9 @@ export const parse = (blueprint: Buffer, filename: string): ParseResult => {
         elemID: typeID,
         isSettings: instanceBlock.labels.length === 0 && !typeID.isConfig(),
       }),
-      attrValues(instanceBlock, typeID.createNestedID('instance', name)),
+      _.omit(attrs, INSTANCE_ANNOTATIONS_ATTRS),
+      undefined,
+      _.pick(attrs, INSTANCE_ANNOTATIONS_ATTRS),
     )
     sourceMap.push(inst.elemID, instanceBlock)
     return inst

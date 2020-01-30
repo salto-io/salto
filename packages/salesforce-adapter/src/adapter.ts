@@ -831,7 +831,8 @@ const configType = new ObjectType({
   fields: {
     username: new Field(configID, 'username', BuiltinTypes.STRING),
     password: new Field(configID, 'password', BuiltinTypes.STRING),
-    token: new Field(configID, 'token', BuiltinTypes.STRING),
+    token: new Field(configID, 'token', BuiltinTypes.STRING,
+      { message: 'Token (empty if your org uses IP whitelisting)' }),
     sandbox: new Field(configID, 'sandbox', BuiltinTypes.BOOLEAN),
   },
   annotationTypes: {},

@@ -114,7 +114,7 @@ export const getConfigFromUser = async (configType: ObjectType): Promise<Instanc
       type: getFieldInputType(configType.fields[fieldName].type, fieldName),
       mask: '*',
       name: fieldName,
-      message: formatConfigFieldInput(fieldName),
+      message: formatConfigFieldInput(fieldName, configType.fields[fieldName].annotations.message),
     }))
   const values = await inquirer.prompt(questions)
   return new InstanceElement(ElemID.CONFIG_NAME, configType, values)

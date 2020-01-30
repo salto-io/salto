@@ -404,7 +404,8 @@ export const formatChangesSummary = (changes: number, approved: number): string 
   return Prompts.FETCH_CHANGES_TO_APPLY(approved)
 }
 
-export const formatConfigFieldInput = (fieldName: string): string => `${_.capitalize(fieldName)}:`
+export const formatConfigFieldInput = (fieldName: string, message: string): string =>
+  `${message ?? _.capitalize(fieldName)}:`
 
 export const formatConfigHeader = (adapterName: string): string => [
   Prompts.CONFIG_HEADER(_.capitalize(adapterName)),

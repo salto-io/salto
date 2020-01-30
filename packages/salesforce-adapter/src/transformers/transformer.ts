@@ -44,7 +44,7 @@ export const metadataType = (element: Element): string => (
 )
 
 export const isCustomObject = (element: Element): boolean =>
-  (metadataType(isInstanceElement(element) ? element.type : element) === CUSTOM_OBJECT)
+  metadataType(element) === CUSTOM_OBJECT
 
 export const defaultApiName = (element: Element): string => {
   const { name } = element.elemID

@@ -249,8 +249,9 @@ export class InstanceElement extends Element {
   constructor(name: string,
     public type: ObjectType,
     public value: Values = {},
-    path?: ReadonlyArray<string>) {
-    super({ elemID: type.elemID.createNestedID('instance', name), path })
+    path?: ReadonlyArray<string>,
+    annotations?: Values) {
+    super({ elemID: type.elemID.createNestedID('instance', name), annotations, path })
   }
 
   isEqual(other: InstanceElement): boolean {

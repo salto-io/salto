@@ -27,6 +27,10 @@ export const CORE_ANNOTATIONS = {
   RESTRICTION: '_restriction',
 }
 
+export const INSTANCE_ANNOTATIONS = {
+  DEPENDS_ON: '_depends_on',
+}
+
 export const RESTRICTION_ANNOTATIONS = {
   ENFORCE_VALUE: 'enforce_value',
   MIN: 'min',

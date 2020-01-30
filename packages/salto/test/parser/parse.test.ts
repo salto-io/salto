@@ -56,6 +56,7 @@ describe('Salto parser', () => {
       }
 
       salesforce_test inst {
+        _depends_on = "fake1"
         name = "me"
       }
 
@@ -243,6 +244,12 @@ describe('Salto parser', () => {
       })
       it('should not be setting', () => {
         expect(inst.type.isSettings).toBeFalsy()
+      })
+
+      it('should have annotations', () => {
+        expect(inst.annotations).toHaveProperty('_depends_on')
+        // eslint-disable-next-line no-underscore-dangle
+        expect(inst.annotations._depends_on).toEqual('fake1')
       })
     })
 

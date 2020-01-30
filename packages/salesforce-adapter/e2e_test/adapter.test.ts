@@ -88,7 +88,7 @@ describe('Salesforce adapter E2E with real account', () => {
   const accountApiName = 'Account'
   const fetchedRollupSummaryFieldName = 'rollupsummary__c'
   const customObjectWithFieldsName = 'TestFields__c'
-  const customObjectWithFieldsRandomString = String(Date.now()).substring(6)
+  const randomString = String(Date.now()).substring(6)
 
   // Custom field names
   const picklistFieldName = 'Pickle__c'
@@ -111,8 +111,8 @@ describe('Salesforce adapter E2E with real account', () => {
   const textFieldName = 'Sierra__c'
   const checkboxFieldName = 'Tango__c'
   const globalPicklistFieldName = 'Uniform__c'
-  const lookupFieldName = `Quebec${customObjectWithFieldsRandomString}__c`
-  const masterDetailFieldName = `Romeo${customObjectWithFieldsRandomString}__c`
+  const lookupFieldName = `Quebec${randomString}__c`
+  const masterDetailFieldName = `Romeo${randomString}__c`
   const formulaFieldName = 'Whiskey__c'
 
   beforeAll(async () => {
@@ -3469,8 +3469,7 @@ describe('Salesforce adapter E2E with real account', () => {
     it('should add lookupFilter to an existing lookup field', async () => {
       const customObjectName = 'TestAddLookupFilter__c'
       const mockElemID = new ElemID(constants.SALESFORCE, 'test add lookupFilter')
-      const randomString = String(Date.now()).substring(6)
-      const fieldName = `lookup${randomString}`
+      const fieldName = `lookup${String(Date.now()).substring(6)}`
       const lookupFieldApiName = `${_.camelCase(fieldName)}__c`
       const lookupFieldApiFullName = [
         customObjectName,
@@ -4632,8 +4631,8 @@ describe('Salesforce adapter E2E with real account', () => {
               .find(process =>
                 process[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.TestBusinessProcess')
             expect(businessProcessToUpdate).toBeDefined()
-            const randomString = String(Date.now()).substring(6)
-            businessProcessToUpdate.description = `BusinessProcess that should be fetched in e2e test updated ${randomString}`
+            const description = `BusinessProcess that should be fetched in e2e test updated ${String(Date.now()).substring(6)}`
+            businessProcessToUpdate.description = description
 
             await adapter.update(oldLead, newLead,
               [{ action: 'modify', data: { before: oldLead, after: newLead } }])
@@ -4641,8 +4640,7 @@ describe('Salesforce adapter E2E with real account', () => {
             const businessProcessInfo = await findInstance('BusinessProcess',
               'Lead.TestBusinessProcess')
             expect(businessProcessInfo).toBeDefined()
-            expect(_.get(businessProcessInfo, 'description'))
-              .toEqual(`BusinessProcess that should be fetched in e2e test updated ${randomString}`)
+            expect(_.get(businessProcessInfo, 'description')).toEqual(description)
           })
         })
       })
@@ -4658,16 +4656,15 @@ describe('Salesforce adapter E2E with real account', () => {
               newLead.annotations[constants.CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.RECORD_TYPES]
             ).find(record => record[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.TestRecordType')
             expect(recordTypeToUpdate).toBeDefined()
-            const randomString = String(Date.now()).substring(6)
-            recordTypeToUpdate.description = `RecordType that should be fetched in e2e test updated ${randomString}`
+            const description = `RecordType that should be fetched in e2e test updated ${String(Date.now()).substring(6)}`
+            recordTypeToUpdate.description = description
 
             await adapter.update(oldLead, newLead,
               [{ action: 'modify', data: { before: oldLead, after: newLead } }])
 
             const validationRuleInfo = await findInstance('RecordType', 'Lead.TestRecordType')
             expect(validationRuleInfo).toBeDefined()
-            expect(_.get(validationRuleInfo, 'description'))
-              .toEqual(`RecordType that should be fetched in e2e test updated ${randomString}`)
+            expect(_.get(validationRuleInfo, 'description')).toEqual(description)
           })
         })
       })

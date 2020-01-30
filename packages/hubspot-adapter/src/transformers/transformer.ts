@@ -6,11 +6,10 @@ import {
   TypeElement, CORE_ANNOTATIONS, transform, TypeMap, isPrimitiveField,
 } from 'adapter-api'
 import {
-  FIELD_TYPES, NURTURETIMERANGE_FIELDS, RSSTOEMAILTIMING_FIELDS,
-  FORM_FIELDS, ACTION_FIELDS, ANCHOR_SETTING_FIELDS, CRITERIA_FIELDS,
+  FIELD_TYPES, NURTURETIMERANGE_FIELDS, RSSTOEMAILTIMING_FIELDS, CONDITIONACTION_FIELDS,
+  FORM_FIELDS, ACTION_FIELDS, ANCHOR_SETTING_FIELDS, EVENTANCHOR_FIELDS,
   HUBSPOT, OBJECTS_NAMES, PROPERTY_FIELDS, PROPERTY_GROUP_FIELDS,
   OPTIONS_FIELDS, CONTACTLISTIDS_FIELDS, WORKFLOWS_FIELDS, MARKETING_EMAIL_FIELDS,
-  EVENTANCHOR_FIELDS, CONDITIONACTION_FIELDS,
 } from '../constants'
 import {
   HubspotMetadata,
@@ -27,8 +26,6 @@ const rssToEmailTimingElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.RSSTOEMAILTIMIN
 const nurtureTimeRangeElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.NURTURETIMERANGE)
 const anchorSettingElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.ANCHORSETTING)
 const actionElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.ACTION)
-const criteriaElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.CRITERIA)
-const criteriaListElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.CRITERIALIST)
 const eventAnchorElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.EVENTANCHOR)
 const conditionActionElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.CONDITIONACTION)
 
@@ -238,79 +235,6 @@ export class Types {
       },
       path: [HUBSPOT, 'types', 'subtypes', propertyGroupElemID.name],
     })
-
-  private static criteriaType: ObjectType =
-    new ObjectType({
-      elemID: criteriaElemID,
-      fields: {
-        [CRITERIA_FIELDS.PROPERTYOBJECTTYPE]: new TypeField(
-          criteriaElemID, CRITERIA_FIELDS.PROPERTYOBJECTTYPE, BuiltinTypes.STRING, {
-            name: CRITERIA_FIELDS.PROPERTYOBJECTTYPE,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
-        [CRITERIA_FIELDS.FILTERFAMILY]: new TypeField(
-          criteriaElemID, CRITERIA_FIELDS.FILTERFAMILY, BuiltinTypes.STRING, {
-            name: CRITERIA_FIELDS.FILTERFAMILY,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
-        [CRITERIA_FIELDS.WITHINTIMEMODE]: new TypeField(
-          criteriaElemID, CRITERIA_FIELDS.WITHINTIMEMODE, BuiltinTypes.STRING, {
-            name: CRITERIA_FIELDS.WITHINTIMEMODE,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
-        [CRITERIA_FIELDS.PROPERTY]: new TypeField(
-          criteriaElemID, CRITERIA_FIELDS.PROPERTY, BuiltinTypes.STRING, {
-            name: CRITERIA_FIELDS.PROPERTY,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
-        [CRITERIA_FIELDS.VALUE]: new TypeField(
-          criteriaElemID, CRITERIA_FIELDS.VALUE, BuiltinTypes.STRING, {
-            name: CRITERIA_FIELDS.VALUE,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
-        [CRITERIA_FIELDS.TYPE]: new TypeField(
-          criteriaElemID, CRITERIA_FIELDS.TYPE, BuiltinTypes.STRING, {
-            name: CRITERIA_FIELDS.TYPE,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
-        [CRITERIA_FIELDS.OPERATOR]: new TypeField(
-          criteriaElemID, CRITERIA_FIELDS.OPERATOR, BuiltinTypes.STRING, {
-            name: CRITERIA_FIELDS.OPERATOR,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
-      },
-      path: [HUBSPOT, 'types', 'subtypes', criteriaElemID.name],
-    })
-
-    private static criteriaList: ObjectType =
-      new ObjectType({
-        elemID: criteriaListElemID,
-        fields: {
-          criterias: new TypeField(
-            criteriaListElemID, 'criterias', Types.criteriaType, {
-              name: 'criterias',
-              _readOnly: false,
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-            },
-            true,
-          ),
-        },
-        path: [HUBSPOT, 'types', 'subtypes', criteriaListElemID.name],
-      })
 
   private static eventAnchorType: ObjectType =
     new ObjectType({
@@ -825,22 +749,6 @@ export class Types {
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
-        ),
-        [WORKFLOWS_FIELDS.GOALCRITERIA]: new TypeField(
-          workflowsElemID, WORKFLOWS_FIELDS.GOALCRITERIA, Types.criteriaList, {
-            name: WORKFLOWS_FIELDS.GOALCRITERIA,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-          true,
-        ),
-        [WORKFLOWS_FIELDS.SEGMENTCRITERIA]: new TypeField(
-          workflowsElemID, WORKFLOWS_FIELDS.SEGMENTCRITERIA, Types.criteriaList, {
-            name: WORKFLOWS_FIELDS.SEGMENTCRITERIA,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-          true,
         ),
       },
       path: [HUBSPOT, 'objects', workflowsElemID.name],

@@ -246,16 +246,6 @@ export const ANCHOR_SETTING_FIELDS = {
   BOUNDARY: 'boundary',
 }
 
-export const CRITERIA_FIELDS = {
-  PROPERTYOBJECTTYPE: 'propertyObjectType',
-  FILTERFAMILY: 'filterFamily',
-  WITHINTIMEMODE: 'withinTimeMode',
-  PROPERTY: 'property',
-  VALUE: 'value',
-  TYPE: 'type',
-  OPERATOR: 'operator',
-}
-
 export const CONTACTLISTIDS_FIELDS = {
   ENROLLED: 'enrolled',
   ACTIVE: 'active',

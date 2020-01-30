@@ -92,8 +92,6 @@ export interface Workflows extends HubspotMetadata {
   lastUpdatedBy: string
   eventAnchor: EventAnchor
   supressionListIds: number[]
-  goalCriteria: Criteria[][]
-  segmentCriteria: Criteria[][]
 }
 
 interface EventAnchor {
@@ -125,16 +123,6 @@ interface AnchorSetting {
   execTimeOfDay: string
   execTimeInMinutes: number
   boundary: string
-}
-
-interface Criteria {
-  propertyObjectType: string
-  filterFamily: string
-  withinTimeMode: string
-  property: string
-  value: string
-  type: string
-  operator: string
 }
 
 interface NurtureTimeRange {

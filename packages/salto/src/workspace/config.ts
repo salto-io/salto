@@ -52,6 +52,7 @@ export const saltoConfigType = new ObjectType({
     uid: new Field(saltoConfigElemID, 'uid', BuiltinTypes.STRING, requireAnno),
     baseDir: new Field(saltoConfigElemID, 'base_dir', BuiltinTypes.STRING),
     stateLocation: new Field(saltoConfigElemID, 'state_location', BuiltinTypes.STRING),
+    credentialsLocation: new Field(saltoConfigElemID, 'state_location', BuiltinTypes.STRING),
     localStorage: new Field(saltoConfigElemID, 'local_storage', BuiltinTypes.STRING),
     name: new Field(saltoConfigElemID, 'name', BuiltinTypes.STRING, requireAnno),
     currentEnv: new Field(saltoConfigElemID, 'name', BuiltinTypes.STRING, requireAnno),
@@ -83,6 +84,7 @@ export interface Config {
   uid: string
   baseDir: string
   stateLocation: string
+  credentialsLocation: string
   localStorage: string
   name: string
   services: string[]
@@ -90,7 +92,7 @@ export interface Config {
   currentEnv? : string
 }
 
-type EnvConfig = Omit<Config, 'name' | 'envs' | 'currentEnv' | 'uid'>
+type EnvConfig = Pick<Config, 'services' | 'stateLocation' | 'credentialsLocation'>
 
 const createDefaultConfig = (
   baseDir: string,
@@ -104,6 +106,7 @@ const createDefaultConfig = (
     uid,
     baseDir,
     stateLocation: path.join(baseDir, CONFIG_DIR_NAME, 'state.bpc'),
+    credentialsLocation: 'credentials',
     services: [],
     localStorage: path.join(saltoHome, `${name}-${uid}`),
     name,

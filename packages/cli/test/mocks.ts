@@ -182,6 +182,7 @@ export const mockLoadConfig = (workspaceDir: string): Config =>
     name: 'mock-ws',
     localStorage: '',
     stateLocation: '',
+    credentialsLocation: 'credentials',
     envs: [],
   })
 

@@ -63,14 +63,16 @@ type MergedState = {
 }
 
 const loadBlueprintSource = (
-  baseDir: string,
+  workspaceBaseDir: string,
+  sourceBaseDir: string,
   localStorage: string,
   excludeDirs: string[] = []
 ): BlueprintsSource => {
   const blueprintsStore = localDirectoryStore(
-    baseDir,
+    workspaceBaseDir,
     `*${BP_EXTENSION}`,
-    (dirParh: string) => !excludeDirs.includes(dirParh)
+    (dirParh: string) => !excludeDirs.includes(dirParh),
+    sourceBaseDir
   )
   const cacheStore = localDirectoryStore(path.join(localStorage, '.cache'))
   return blueprintsSource(blueprintsStore, parseResultCache(cacheStore))
@@ -85,26 +87,26 @@ const loadMultiEnvSource = (config: Config): BlueprintsSource => {
     throw new Error('Unknown active env')
   }
   const inactiveEnvs = config.envs.filter(env => !_.isEqual(env, activeEnv))
-  const baseDirs = [
-    config.baseDir,
+  const envDirs = [
     activeEnv.baseDir,
     ...inactiveEnvs.map(env => env.baseDir),
   ]
   return multiEnvSource(
     loadBlueprintSource(
+      config.baseDir,
       activeEnv.baseDir,
       config.localStorage,
-      _.without(baseDirs, activeEnv.baseDir)
     ),
     loadBlueprintSource(
       config.baseDir,
+      config.baseDir,
       config.localStorage,
-      _.without(baseDirs, config.baseDir)
+      envDirs
     ),
     _(inactiveEnvs)
       .map(env => [
         env.name,
-        loadBlueprintSource(env.baseDir, config.localStorage, _.without(baseDirs, env.baseDir)),
+        loadBlueprintSource(config.baseDir, env.baseDir, config.localStorage),
       ])
       .fromPairs()
       .value()
@@ -119,10 +121,12 @@ export class Workspace {
 
   constructor(public config: Config) {
     this.blueprintsSource = _.isEmpty(config.envs)
-      ? loadBlueprintSource(config.baseDir, config.localStorage)
+      ? loadBlueprintSource(config.baseDir, config.baseDir, config.localStorage)
       : loadMultiEnvSource(config)
     this.state = localState(config.stateLocation)
-    this.credentials = adapterCredentials(localDirectoryStore(path.join(config.localStorage, 'credentials')))
+    this.credentials = adapterCredentials(
+      localDirectoryStore(path.resolve(config.localStorage, config.credentialsLocation))
+    )
   }
 
   static async init(baseDir: string, workspaceName?: string): Promise<Workspace> {

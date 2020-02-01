@@ -41,6 +41,7 @@ const createWorkspace = (bpStore?: DirectoryStore): Workspace => {
     baseDir: '/salto',
     services,
     stateLocation: '/salto/latest_state.bp',
+    credentialsLocation: 'credentials',
     envs: [],
   })
   _.set(ws, 'blueprintsSource', blueprintsSource(bpStore || mockBpsStore(),

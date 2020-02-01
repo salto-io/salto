@@ -96,7 +96,7 @@ export const routeChanges = async (
 ): Promise<RoutedChanges> => {
   const routedChanges = await Promise.all(changes.map(c => (newEnv
     ? routeNewEnv(c, primarySource, commonSource, secondarySources)
-    : routeFetch(c, primarySource, commonSource))))
+    : routeFetch(c, primarySource, commonSource, secondarySources))))
   return {
     primarySource: _.flatten(routedChanges.map(r => r.primarySource || [])),
     commonSource: _.flatten(routedChanges.map(r => r.commonSource || [])),

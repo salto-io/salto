@@ -4,10 +4,11 @@ import {
   Record as SfRecord, PicklistEntry,
 } from 'jsforce'
 import {
-  Type, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values, Value, Field as TypeField,
+  TypeElement, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values, Value,
   BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter,
   ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, CORE_ANNOTATIONS,
   ReferenceExpression, isElement, PrimitiveValue, RESTRICTION_ANNOTATIONS, PrimitiveField,
+  Field as TypeField, TypeMap,
 } from 'adapter-api'
 import { collections } from '@salto/lowerdash'
 import { CustomObject, CustomField } from '../client/types'
@@ -37,11 +38,13 @@ export const bpCase = (name?: string): string => (
 )
 
 export const metadataType = (element: Element): string => (
-  element.annotations[METADATA_TYPE] || CUSTOM_OBJECT
+  isInstanceElement(element)
+    ? metadataType(element.type)
+    : element.annotations[METADATA_TYPE] || CUSTOM_OBJECT
 )
 
 export const isCustomObject = (element: Element): boolean =>
-  (metadataType(element) === CUSTOM_OBJECT)
+  metadataType(element) === CUSTOM_OBJECT
 
 export const defaultApiName = (element: Element): string => {
   const { name } = element.elemID
@@ -730,7 +733,7 @@ export class Types {
   }
 
   // Type mapping for metadata types
-  private static metadataPrimitiveTypes: Record<string, Type> = {
+  private static metadataPrimitiveTypes: TypeMap = {
     string: BuiltinTypes.STRING,
     double: BuiltinTypes.NUMBER,
     int: BuiltinTypes.NUMBER,
@@ -742,7 +745,7 @@ export class Types {
     this.getElemIdFunc = getElemIdFunc
   }
 
-  static getKnownType(name: string, customObject = true): Type {
+  static getKnownType(name: string, customObject = true): TypeElement {
     return customObject
       ? this.primitiveDataTypes[name as FIELD_TYPE_NAMES]
       || this.compoundDataTypes[name as COMPOUND_FIELD_TYPE_NAMES]
@@ -750,7 +753,8 @@ export class Types {
       : this.metadataPrimitiveTypes[name.toLowerCase()]
   }
 
-  static get(name: string, customObject = true, isSettings = false, serviceIds?: ServiceIds): Type {
+  static get(name: string, customObject = true, isSettings = false, serviceIds?: ServiceIds):
+  TypeElement {
     const type = Types.getKnownType(name, customObject)
     if (type === undefined) {
       return this.createObjectType(name, customObject, isSettings, serviceIds)
@@ -773,11 +777,11 @@ export class Types {
       : new ElemID(SALESFORCE, bpCase(name))
   }
 
-  static getAllFieldTypes(): Type[] {
+  static getAllFieldTypes(): TypeElement[] {
     return _.concat(
-      Object.values(Types.primitiveDataTypes) as Type[],
-      Object.values(Types.compoundDataTypes) as Type[],
-      Object.values(Types.formulaDataTypes) as Type[],
+      Object.values(Types.primitiveDataTypes) as TypeElement[],
+      Object.values(Types.compoundDataTypes) as TypeElement[],
+      Object.values(Types.formulaDataTypes) as TypeElement[],
     ).map(type => {
       const fieldType = type.clone()
       fieldType.path = [SALESFORCE, TYPES_PATH, 'field_types']
@@ -785,7 +789,7 @@ export class Types {
     })
   }
 
-  static getAnnotationTypes(): Type[] {
+  static getAnnotationTypes(): TypeElement[] {
     return [Types.fieldLevelSecurityType, Types.fieldDependencyType,
       Types.rollupSummaryOperationType, Types.objectLevelSecurityType,
       Types.valueSettingsType, Types.lookupFilterType, Types.filterItemType,
@@ -904,7 +908,7 @@ export const toCustomObject = (
 }
 
 export const getValueTypeFieldElement = (parentID: ElemID, field: ValueTypeField,
-  knownTypes: Map<string, Type>): TypeField => {
+  knownTypes: Map<string, TypeElement>): TypeField => {
   const bpFieldType = (field.name === INSTANCE_FULL_NAME_FIELD)
     ? BuiltinTypes.SERVICE_ID
     : knownTypes.get(field.soapType) || Types.get(field.soapType, false)
@@ -996,7 +1000,7 @@ export const getSObjectFieldElement = (parent: Element, field: Field,
     [OBJECT_SERVICE_ID]: toServiceIdsString(parentServiceIds),
   }
 
-  const getFieldType = (typeName: string): Type => (
+  const getFieldType = (typeName: string): TypeElement => (
     Types.get(typeName, true, false, serviceIds)
   )
 
@@ -1180,7 +1184,7 @@ export const createInstanceElement = (mdInfo: MetadataInfo, type: ObjectType,
 export const createMetadataTypeElements = async (
   objectName: string,
   fields: ValueTypeField[],
-  knownTypes: Map<string, Type>,
+  knownTypes: Map<string, TypeElement>,
   baseTypeNames: Set<string>,
   client: SalesforceClient,
   isSettings = false,
@@ -1277,7 +1281,7 @@ SfRecord[] => ElemIDs.map(elem => ({ Id: elem.name }))
 // during import
 export const getCompoundChildFields = (objectType: ObjectType): TypeField[] => {
   // Internal functions
-  const isFieldType = (fieldType: Type) => (field: TypeField): boolean => (
+  const isFieldType = (fieldType: TypeElement) => (field: TypeField): boolean => (
     field.type.elemID.isEqual(fieldType.elemID)
   )
   const handleAddressFields = (object: ObjectType): void => {

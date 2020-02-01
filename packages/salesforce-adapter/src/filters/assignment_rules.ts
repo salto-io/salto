@@ -2,6 +2,7 @@ import wu from 'wu'
 import {
   Element, ElemID, findInstances,
 } from 'adapter-api'
+import _ from 'lodash'
 import { FilterCreator } from '../filter'
 import { apiName } from '../transformers/transformer'
 import { SALESFORCE } from '../constants'
@@ -26,7 +27,7 @@ const filterCreator: FilterCreator = () => ({
         // AssignmentRules to get the desired name
         const newName = `${apiName(rule)}${ASSIGNMENT_RULES_TYPE_ID.name}`
         // Replace the element ID
-        rule.elemID = rule.type.elemID.createNestedID('instance', newName)
+        _.set(rule, 'elemID', rule.type.elemID.createNestedID('instance', newName))
       })
   },
 })

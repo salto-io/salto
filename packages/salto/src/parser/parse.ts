@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import {
-  Type, ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field, Values,
-  Element, InstanceElement, SaltoError,
+  TypeElement, ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field, Values,
+  Element, InstanceElement, SaltoError, TypeMap, INSTANCE_ANNOTATIONS,
 } from 'adapter-api'
 import { collections } from '@salto/lowerdash'
 import {
@@ -11,6 +11,8 @@ import {
 import { parse as hclParse } from './internal/parse'
 import evaluate from './expressions'
 import { Keywords } from './language'
+
+const INSTANCE_ANNOTATIONS_ATTRS: string[] = Object.values(INSTANCE_ANNOTATIONS)
 
 // Re-export these types because we do not want code outside the parser to import hcl
 export type SourceRange = InternalSourceRange
@@ -49,7 +51,7 @@ const primitiveType = (typeName: string): PrimitiveTypes => {
   return PrimitiveTypes.BOOLEAN
 }
 
-const annotationTypes = (block: ParsedHclBlock): Record <string, Type> => block.blocks
+const annotationTypes = (block: ParsedHclBlock): TypeMap => block.blocks
   .filter(b => b.type === Keywords.ANNOTATIONS_DEFINITION)
   .map(b => _(b.blocks)
     .map(blk => [blk.labels[0], new ObjectType({ elemID: parseElemID(blk.type) })])
@@ -85,7 +87,7 @@ export const parse = (blueprint: Buffer, filename: string): ParseResult => {
       .value()
   )
 
-  const parseType = (typeBlock: ParsedHclBlock, isSettings = false): Type => {
+  const parseType = (typeBlock: ParsedHclBlock, isSettings = false): TypeElement => {
     const [typeName] = typeBlock.labels
     const typeObj = new ObjectType(
       {
@@ -128,7 +130,7 @@ export const parse = (blueprint: Buffer, filename: string): ParseResult => {
     return typeObj
   }
 
-  const parsePrimitiveType = (typeBlock: ParsedHclBlock): Type => {
+  const parsePrimitiveType = (typeBlock: ParsedHclBlock): TypeElement => {
     const [typeName, kw, baseType] = typeBlock.labels
     if (kw !== Keywords.TYPE_INHERITANCE_SEPARATOR) {
       throw new Error(`expected keyword ${Keywords.TYPE_INHERITANCE_SEPARATOR}. found ${kw}`)
@@ -156,6 +158,7 @@ export const parse = (blueprint: Buffer, filename: string): ParseResult => {
       typeID = new ElemID(typeID.name)
     }
     const name = instanceBlock.labels[0] || ElemID.CONFIG_NAME
+    const attrs = attrValues(instanceBlock, typeID.createNestedID('instance', name))
 
     const inst = new InstanceElement(
       name,
@@ -163,7 +166,9 @@ export const parse = (blueprint: Buffer, filename: string): ParseResult => {
         elemID: typeID,
         isSettings: instanceBlock.labels.length === 0 && !typeID.isConfig(),
       }),
-      attrValues(instanceBlock, typeID.createNestedID('instance', name)),
+      _.omit(attrs, INSTANCE_ANNOTATIONS_ATTRS),
+      undefined,
+      _.pick(attrs, INSTANCE_ANNOTATIONS_ATTRS),
     )
     sourceMap.push(inst.elemID, instanceBlock)
     return inst

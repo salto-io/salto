@@ -1,8 +1,9 @@
 import {
-  BuiltinTypes,
-  ElemID, Field, InstanceElement, ObjectType, PrimitiveTypes,
-  PrimitiveValue, Values, PrimitiveField, PrimitiveType,
+  Field, InstanceElement, ObjectType, PrimitiveTypes, PrimitiveField, PrimitiveType,
 } from '../src/elements'
+import { PrimitiveValue, Values } from '../src/values'
+import { ElemID } from '../src/element_id'
+import { BuiltinTypes } from '../src/builtins'
 import {
   transform, resolvePath,
 } from '../src/utils'

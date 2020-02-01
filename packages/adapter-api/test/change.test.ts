@@ -1,6 +1,6 @@
-import {
-  ObjectType, ElemID, BuiltinTypes, Field, InstanceElement,
-} from '../src/elements'
+import { ObjectType, Field, InstanceElement } from '../src/elements'
+import { ElemID } from '../src/element_id'
+import { BuiltinTypes } from '../src/builtins'
 import { getChangeElement } from '../src/change'
 
 describe('change.ts', () => {

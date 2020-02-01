@@ -1,4 +1,7 @@
 export * from './src/elements'
+export * from './src/element_id'
+export * from './src/values'
+export * from './src/builtins'
 export * from './src/adapter'
 export * from './src/change_validators'
 export * from './src/change'

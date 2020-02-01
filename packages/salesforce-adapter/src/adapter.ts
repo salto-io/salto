@@ -1,5 +1,5 @@
 import {
-  BuiltinTypes, Type, ObjectType, ElemID, InstanceElement, isModificationDiff,
+  BuiltinTypes, TypeElement, ObjectType, ElemID, InstanceElement, isModificationDiff,
   isRemovalDiff, isAdditionDiff, Field, Element, isObjectType, isInstanceElement, AdapterCreator,
   Value, Change, getChangeElement, isField, isElement, ElemIdGetter,
   DataModificationResult,
@@ -625,9 +625,9 @@ export default class SalesforceAdapter {
 
   @logDuration('fetching metadata types')
   private async fetchMetadataTypes(typeNamesPromise: Promise<string[]>,
-    knownMetadataTypes: Type[]): Promise<Type[]> {
+    knownMetadataTypes: TypeElement[]): Promise<TypeElement[]> {
     const typeNames = await typeNamesPromise
-    const knownTypes = new Map<string, Type>(
+    const knownTypes = new Map<string, TypeElement>(
       knownMetadataTypes.map(mdType => [apiName(mdType), mdType])
     )
     return _.flatten(await Promise.all((typeNames)
@@ -640,9 +640,9 @@ export default class SalesforceAdapter {
 
   private async fetchMetadataType(
     objectName: string,
-    knownTypes: Map<string, Type>,
+    knownTypes: Map<string, TypeElement>,
     baseTypeNames: Set<string>
-  ): Promise<Type[]> {
+  ): Promise<TypeElement[]> {
     const fields = await this.client.describeMetadataType(objectName)
     return createMetadataTypeElements(objectName, fields, knownTypes, baseTypeNames, this.client)
   }
@@ -697,7 +697,7 @@ export default class SalesforceAdapter {
   }
 
   @logDuration('fetching instances')
-  private async fetchMetadataInstances(typeNames: Promise<string[]>, types: Promise<Type[]>):
+  private async fetchMetadataInstances(typeNames: Promise<string[]>, types: Promise<TypeElement[]>):
     Promise<InstanceElement[]> {
     type TypeAndInstances = { type: ObjectType; namespaceAndInstances: NamespaceAndInstances[] }
     const readInstances = async (metadataTypesToRead: ObjectType[]):
@@ -831,14 +831,13 @@ const configType = new ObjectType({
   fields: {
     username: new Field(configID, 'username', BuiltinTypes.STRING),
     password: new Field(configID, 'password', BuiltinTypes.STRING),
-    token: new Field(configID, 'token', BuiltinTypes.STRING),
+    token: new Field(configID, 'token', BuiltinTypes.STRING,
+      { message: 'Token (empty if your org uses IP whitelisting)' }),
     sandbox: new Field(configID, 'sandbox', BuiltinTypes.BOOLEAN),
   },
-  annotationTypes: {},
-  annotations: {},
 })
 
-const credentialsFromConfig = (config: InstanceElement): Credentials => ({
+const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => ({
   username: config.value.username,
   password: config.value.password,
   apiToken: config.value.token,

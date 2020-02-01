@@ -3,7 +3,7 @@ import {
   ElemID, ObjectType,
   PrimitiveType, PrimitiveTypes,
   Field as TypeField, BuiltinTypes, InstanceElement, Values,
-  Type, CORE_ANNOTATIONS, transform,
+  TypeElement, CORE_ANNOTATIONS, transform, TypeMap,
 } from 'adapter-api'
 import {
   FIELD_TYPES,
@@ -619,7 +619,7 @@ export class Types {
     Types.contactListIdsType,
   ]
 
-  private static fieldTypes: Record<string, Type> = {
+  private static fieldTypes: TypeMap = {
     [FIELD_TYPES.TEXTAREA]: new PrimitiveType({
       elemID: new ElemID(HUBSPOT, FIELD_TYPES.TEXTAREA),
       primitive: PrimitiveTypes.STRING,
@@ -661,7 +661,7 @@ export class Types {
   /**
    * This method create all the (basic) field types
    */
-  static getAllFieldTypes(): Type[] {
+  static getAllFieldTypes(): TypeElement[] {
     return _.concat(
       Object.values(Types.fieldTypes),
     ).map(type => {

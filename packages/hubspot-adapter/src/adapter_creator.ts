@@ -16,7 +16,7 @@ const configType = new ObjectType({
   annotations: {},
 })
 
-const credentialsFromConfig = (config: InstanceElement): Credentials => ({
+const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => ({
   apiKey: config.value.apiKey,
 })
 

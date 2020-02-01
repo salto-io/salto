@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import { types } from '@salto/lowerdash'
 import {
-  Element, isObjectType, isInstanceElement, Type, InstanceElement, Field, PrimitiveTypes,
+  Element, isObjectType, isInstanceElement, TypeElement, InstanceElement, Field, PrimitiveTypes,
   isPrimitiveType, Value, ElemID, CORE_ANNOTATIONS, SaltoElementError, SaltoErrorSeverity,
   ReferenceExpression, Values, isElement, RESTRICTION_ANNOTATIONS,
 } from 'adapter-api'
@@ -33,7 +33,8 @@ const primitiveValidators = {
  * @param value
  * @param type
  */
-const validateAnnotations = (elemID: ElemID, value: Value, type: Type): ValidationError[] => {
+const validateAnnotations = (elemID: ElemID, value: Value, type: TypeElement):
+ValidationError[] => {
   if (isObjectType(type)) {
     return _.flatten(Object.keys(type.fields).map(
       // eslint-disable-next-line @typescript-eslint/no-use-before-define
@@ -133,7 +134,7 @@ export class CircularReferenceValidationError extends ValidationError {
 }
 
 const validateAnnotationsValue = (
-  elemID: ElemID, value: Value, annotations: Values, type: Type
+  elemID: ElemID, value: Value, annotations: Values, type: TypeElement
 ): ValidationError[] | undefined => {
   const shouldEnforceValue = (): boolean =>
     annotations[CORE_ANNOTATIONS.RESTRICTION]?.[RESTRICTION_ANNOTATIONS.ENFORCE_VALUE] !== false
@@ -224,9 +225,9 @@ const validateFieldAnnotations = (
 
 export class InvalidValueTypeValidationError extends ValidationError {
   readonly value: Value
-  readonly type: Type
+  readonly type: TypeElement
 
-  constructor({ elemID, value, type }: { elemID: ElemID; value: Value; type: Type }) {
+  constructor({ elemID, value, type }: { elemID: ElemID; value: Value; type: TypeElement }) {
     super({
       elemID,
       error: `Invalid value type for ${type.elemID.getFullName()} : ${JSON.stringify(value)}`,
@@ -238,7 +239,7 @@ export class InvalidValueTypeValidationError extends ValidationError {
 }
 
 const validateValue = (elemID: ElemID, value: Value,
-  type: Type, isAnnotations = false): ValidationError[] => {
+  type: TypeElement, isAnnotations = false): ValidationError[] => {
   if (value instanceof ReferenceExpression) {
     return isElement(value.value) ? [] : validateValue(elemID, value.value, type)
   }
@@ -302,7 +303,7 @@ const validateField = (field: Field): ValidationError[] =>
       true
     )))
 
-const validateType = (element: Type): ValidationError[] => {
+const validateType = (element: TypeElement): ValidationError[] => {
   const errors = _.flatten(Object.keys(element.annotations)
     .filter(k => element.annotationTypes[k]).map(
       k => validateValue(
@@ -329,7 +330,7 @@ const validateInstanceElements = (element: InstanceElement): ValidationError[] =
 
 export const validateElements = (elements: Element[]): ValidationError[] => (
   _(resolve(elements))
-    .map(e => (isInstanceElement(e) ? validateInstanceElements(e) : validateType(e as Type)))
+    .map(e => (isInstanceElement(e) ? validateInstanceElements(e) : validateType(e as TypeElement)))
     .flatten()
     .value()
 )

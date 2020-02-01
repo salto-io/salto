@@ -37,10 +37,9 @@ describe('localParseResultCache', () => {
     errors: [],
     sourceMap,
   }
-  const mockSerializedBPC = `[{"annotationTypes":{},"annotations":{},"elemID":{"adapter":"salesforce","typeName":"dummy","idType":"type","nameParts":[]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"}]
+  const mockSerializedBPC = `[{"elemID":{"adapter":"salesforce","typeName":"dummy","idType":"type","nameParts":[]},"annotations":{},"annotationTypes":{},"fields":{},"isSettings":false,"_salto_class":"ObjectType"}]
 []
 [["salesforce.dummy",[{"filename":"dummy.bp","start":{"line":1,"col":1,"byte":2},"end":{"line":12,"col":3,"byte":4}}]]]`
-
 
   beforeEach(() => {
     jest.clearAllMocks()

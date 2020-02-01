@@ -2,7 +2,7 @@ import _ from 'lodash'
 // TODO: This import breaks the abstraction of CliOutput as it communicate directly with console
 import * as inquirer from 'inquirer'
 import {
-  Type, ObjectType, ElemID, InstanceElement,
+  TypeElement, ObjectType, ElemID, InstanceElement,
   isPrimitiveType, PrimitiveTypes,
 } from 'adapter-api'
 import { Plan, FetchChange, Workspace } from 'salto'
@@ -90,7 +90,7 @@ export const getApprovedChanges = async (
 const isPasswordInputType = (fieldName: string): boolean =>
   ['token', 'password'].includes(fieldName)
 
-export const getFieldInputType = (fieldType: Type, fieldName: string): string => {
+export const getFieldInputType = (fieldType: TypeElement, fieldName: string): string => {
   if (!isPrimitiveType(fieldType)) {
     throw new Error('Only primitive configuration values are supported')
   }
@@ -114,7 +114,7 @@ export const getConfigFromUser = async (configType: ObjectType): Promise<Instanc
       type: getFieldInputType(configType.fields[fieldName].type, fieldName),
       mask: '*',
       name: fieldName,
-      message: formatConfigFieldInput(fieldName),
+      message: formatConfigFieldInput(fieldName, configType.fields[fieldName].annotations.message),
     }))
   const values = await inquirer.prompt(questions)
   return new InstanceElement(ElemID.CONFIG_NAME, configType, values)

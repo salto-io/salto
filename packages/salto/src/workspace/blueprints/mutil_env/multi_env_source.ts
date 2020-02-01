@@ -26,7 +26,7 @@ export class UnsupportedNewEnvChangeError extends Error {
 type MultiEnvState = {
   elements: Record<string, Element>
   mergeErrors: MergeError[]
-  fileToBlueprintIndex: Record<string, BlueprintsSource>
+  fileToSource: Record<string, BlueprintsSource>
 }
 
 export const multiEnvSource = (
@@ -58,7 +58,7 @@ export const multiEnvSource = (
     return {
       elements,
       mergeErrors: errors,
-      fileToBlueprintIndex: blueprintIndex,
+      fileToSource: blueprintIndex,
     }
   }
 
@@ -66,7 +66,7 @@ export const multiEnvSource = (
 
   const getSourceForBlueprint = async (
     filename: string
-  ): Promise<BlueprintsSource | undefined> => (await state).fileToBlueprintIndex[filename]
+  ): Promise<BlueprintsSource | undefined> => (await state).fileToSource[filename]
 
   const getBlueprint = async (filename: string): Promise<Blueprint | undefined> => {
     const source = await getSourceForBlueprint(filename)
@@ -86,7 +86,7 @@ export const multiEnvSource = (
     }
   }
 
-  const update = async (changes: DetailedChange[], compact = false): Promise<void> => {
+  const update = async (changes: DetailedChange[], newEnv = false): Promise<void> => {
     if (!commonSource) {
       await primarySource.update(changes)
     } else {
@@ -95,7 +95,7 @@ export const multiEnvSource = (
         primarySource,
         commonSource,
         secondarySources,
-        compact
+        newEnv
       )
       const secondaryChanges = routedChanges.secondarySources || {}
       await Promise.all([
@@ -125,7 +125,7 @@ export const multiEnvSource = (
     ),
     getAll: async (): Promise<Element[]> => _.values((await state).elements),
     listBlueprints: async (): Promise<string[]> => (
-      _.keys((await state).fileToBlueprintIndex)
+      _.keys((await state).fileToSource)
     ),
     setBlueprints: async (...blueprints: Blueprint[]): Promise<void> => {
       await Promise.all(blueprints.map(setBlueprint))

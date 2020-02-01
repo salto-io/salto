@@ -15,11 +15,21 @@ export interface RoutedChanges {
 export const routeFetch = async (
   change: DetailedChange,
   primarySource: ElementsSource,
-  commonSource: ElementsSource
+  commonSource: ElementsSource,
+  secondarySources: Record<string, ElementsSource>
 ): Promise<RoutedChanges> => {
+  // If the add change projects to a secondary source we can't
+  // add it to common since it is already marked as env specific.
   if (change.action === 'add') {
-    return { commonSource: [change] }
+    const secondaryProjections = await Promise.all(
+      _.values(secondarySources)
+        .map(src => projectChange(change, src))
+    )
+    return _.some(secondaryProjections)
+      ? { primarySource: [change] }
+      : { commonSource: [change] }
   }
+  // We add to the current defining source.
   const currentChanges = await projectChange(change, primarySource)
   const commonChanges = await projectChange(change, commonSource)
   return {
@@ -28,7 +38,7 @@ export const routeFetch = async (
   }
 }
 
-export const routeCompact = async (
+export const routeNewEnv = async (
   change: DetailedChange,
   primarySource: ElementsSource,
   commonSource: ElementsSource,
@@ -82,10 +92,10 @@ export const routeChanges = async (
   primarySource: ElementsSource,
   commonSource: ElementsSource,
   secondarySources: Record<string, ElementsSource>,
-  compact: boolean
+  newEnv: boolean
 ): Promise<RoutedChanges> => {
-  const routedChanges = await Promise.all(changes.map(c => (compact
-    ? routeCompact(c, primarySource, commonSource, secondarySources)
+  const routedChanges = await Promise.all(changes.map(c => (newEnv
+    ? routeNewEnv(c, primarySource, commonSource, secondarySources)
     : routeFetch(c, primarySource, commonSource))))
   return {
     primarySource: _.flatten(routedChanges.map(r => r.primarySource || [])),

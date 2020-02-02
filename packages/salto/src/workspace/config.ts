@@ -4,7 +4,7 @@ import uuidv5 from 'uuid/v5'
 import _ from 'lodash'
 import { ObjectType, ElemID, BuiltinTypes, Field, InstanceElement, findInstances, CORE_ANNOTATIONS } from 'adapter-api'
 import { logger } from '@salto/logging'
-import { dump } from '../parser/dump'
+import { dumpElements } from '../parser/dump'
 import { parse } from '../parser/parse'
 import { mkdirp, exists, readFile, replaceContents } from '../file'
 
@@ -157,7 +157,7 @@ export const dumpConfig = async (baseDir: string, config: Partial<Config>): Prom
     saltoConfigType,
     _.mapKeys(config as object, (_v, k) => _.snakeCase(k))
   )
-  return replaceContents(configPath, dump([configInstance]))
+  return replaceContents(configPath, dumpElements([configInstance]))
 }
 
 const baseDirFromLookup = async (lookupDir: string): Promise<string> => {

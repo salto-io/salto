@@ -90,14 +90,14 @@ describe('PlanItem', () => {
       expect(listChange.id).toEqual(updatedInst.elemID.createNestedID('nicknames'))
     })
 
-    it('should return only top level change in case of annotationType change', async () => {
+    it('should return list of annotationType changes in case of annotationType change', async () => {
       const [plan, obj] = await planWithAnnotationTypesChanges()
       const planItem = getFirstPlanItem(plan)
       const changes = [...planItem.detailedChanges()]
       expect(changes).toHaveLength(1)
       const [annoChange] = changes
-      expect(annoChange.action).toEqual('modify')
-      expect(annoChange.id).toEqual(obj.elemID)
+      expect(annoChange.action).toEqual('add')
+      expect(annoChange.id).toEqual(obj.elemID.createNestedID('annotation', 'new'))
     })
 
     it('should return is list value modification when a field is changed to list', async () => {

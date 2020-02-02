@@ -67,8 +67,6 @@ export const planGenerators = (allElements: ReadonlyArray<Element>): PlanGenerat
   planWithAnnotationTypesChanges: async () => {
     const afterElements = mock.getAllElements()
     const saltoOffice = afterElements[2]
-    // update existing field
-    saltoOffice.fields.name.annotations.new = 'new'
     // update annotation types
     saltoOffice.annotationTypes.new = BuiltinTypes.STRING
     const plan = await getPlan(allElements, afterElements)

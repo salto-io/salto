@@ -1,6 +1,6 @@
 import { ElemID, ObjectType, Field, BuiltinTypes, InstanceElement } from 'adapter-api'
 import { DirectoryStore } from '../../src/workspace/dir_store'
-import { dump } from '../../src/parser/dump'
+import { dumpElements } from '../../src/parser/dump'
 import { adapterCredentials } from '../../src/workspace/credentials'
 
 jest.mock('../../../src/workspace/local/dir_store')
@@ -22,7 +22,7 @@ describe('credentials', () => {
   const mockSet = jest.fn()
   const mockGet = jest.fn()
   const mockFlush = jest.fn()
-  const dumpedCredentials = { filename: `${adapter}.bp`, buffer: dump([creds]) }
+  const dumpedCredentials = { filename: `${adapter}.bp`, buffer: dumpElements([creds]) }
   const mockedDirStore = {
     get: mockGet,
     set: mockSet,

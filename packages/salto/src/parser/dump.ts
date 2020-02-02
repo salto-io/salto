@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import {
-  TypeElement, Field, Values, isObjectType, PrimitiveTypes,
+  TypeElement, Field, Values, isObjectType, PrimitiveTypes, TypeMap,
   isPrimitiveType, Element, isInstanceElement, isField, isElement, Value,
 } from 'adapter-api'
 import { dump as hclDump } from './internal/dump'
@@ -47,17 +47,20 @@ const dumpListFieldBlock = (field: Field): DumpedHclBlock => ({
   blocks: [],
 })
 
-const dumpAnnotationsBlock = (element: TypeElement): DumpedHclBlock[] =>
-  (_.isEmpty(element.annotationTypes) ? [] : [{
+const dumpAnnotationTypeBlock = (key: string, type: TypeElement): DumpedHclBlock => ({
+  type: dumpElemID(type),
+  labels: [key],
+  attrs: {},
+  blocks: [],
+})
+
+const dumpAnnotationTypesBlock = (annotationTypes: TypeMap): DumpedHclBlock[] =>
+  (_.isEmpty(annotationTypes) ? [] : [{
     type: Keywords.ANNOTATIONS_DEFINITION,
     labels: [],
     attrs: {},
-    blocks: Object.entries(element.annotationTypes).map(([key, type]) => ({
-      type: dumpElemID(type),
-      labels: [key],
-      attrs: {},
-      blocks: [],
-    })),
+    blocks: Object.entries(annotationTypes)
+      .map(([key, type]) => dumpAnnotationTypeBlock(key, type)),
   }])
 
 let dumpBlock: (value: Element | Values) => DumpedHclBlock
@@ -68,7 +71,7 @@ const dumpElementBlock = (elem: Element): DumpedHclBlock => {
       type: elem.isSettings ? Keywords.SETTINGS_DEFINITION : Keywords.TYPE_DEFINITION,
       labels: [dumpElemID(elem)],
       attrs: elem.annotations,
-      blocks: dumpAnnotationsBlock(elem).concat(
+      blocks: dumpAnnotationTypesBlock(elem.annotationTypes).concat(
         Object.values(elem.fields).map(dumpBlock)
       ),
     }
@@ -82,7 +85,7 @@ const dumpElementBlock = (elem: Element): DumpedHclBlock => {
         getPrimitiveTypeName(elem.primitive),
       ],
       attrs: elem.annotations,
-      blocks: dumpAnnotationsBlock(elem),
+      blocks: dumpAnnotationTypesBlock(elem.annotationTypes),
     }
   }
   if (isInstanceElement(elem)) {
@@ -130,18 +133,22 @@ const primitiveSerializers: Record<string, PrimitiveSerializer> = {
   boolean: val => (val ? 'true' : 'false'),
 }
 
-export const dump = (
-  elementsOrValues: Element | Element[] | Values | Value | Value[]
-): string => {
-  // If we got a single element, put it in an array because we need to wrap it with an empty block
-  const elemListOrValues = isElement(elementsOrValues) ? [elementsOrValues] : elementsOrValues
+export const dumpElements = (elements: Element[]): string =>
+  hclDump(wrapBlocks(elements.map(dumpBlock)))
 
-  if (_.isArray(elemListOrValues) && !isElement(elemListOrValues[0])) {
-    // We got a Value array, we need to serialize this "manually" because our HCL implementation
-    // only accepts blocks
-    const nestedValues = elemListOrValues.map(elem => {
-      const serializedElem = dump(elem)
-      if ((_.isElement(elem) || _.isPlainObject(elem)) && !(serializedElem[0] === '{')) {
+export const dumpSingleAnnotationType = (name: string, type: TypeElement): string =>
+  hclDump(wrapBlocks([dumpAnnotationTypeBlock(name, type)]))
+
+export const dumpAnnotationTypes = (annotationTypes: TypeMap): string =>
+  hclDump(wrapBlocks(dumpAnnotationTypesBlock(annotationTypes)))
+
+export const dumpValues = (value: Value): string => {
+  if (_.isArray(value)) {
+    // We got a Value array, we need to serialize it "manually" because our HCL implementation
+    // accepts only blocks
+    const nestedValues = value.map(elem => {
+      const serializedElem = dumpValues(elem)
+      if ((_.isPlainObject(elem)) && !(serializedElem[0] === '{')) {
         // We need to make sure nested complex elements are wrapped in {}
         return `{\n${serializedElem}\n}`
       }
@@ -149,16 +156,11 @@ export const dump = (
     })
     return `[\n${nestedValues.join(',\n  ')}\n]`
   }
-  if (!_.isArray(elemListOrValues) && !_.isPlainObject(elemListOrValues)) {
+  if (!_.isArray(value) && !_.isPlainObject(value)) {
     // We got a single primitive value, again we need to serialize "manually"
-    const serializer = primitiveSerializers[typeof elemListOrValues]
-    return serializer(elementsOrValues)
+    const serializer = primitiveSerializers[typeof value]
+    return serializer(value)
   }
-
-  // We got a list of elements or a values object, in both cases we can use the HCL serializer
-  const body = _.isArray(elemListOrValues)
-    ? wrapBlocks(elemListOrValues.map(dumpBlock))
-    : dumpBlock(elemListOrValues)
-
-  return hclDump(body)
+  // We got a values object, we can use the HCL serializer
+  return hclDump(dumpBlock(value))
 }

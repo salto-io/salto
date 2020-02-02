@@ -1,8 +1,12 @@
 import _ from 'lodash'
 import { logger } from '@salto/logging'
-import { Element, ElemID, ElementMap, resolvePath, Value } from 'adapter-api'
+import {
+  Element, ElemID, ElementMap, resolvePath, Value,
+} from 'adapter-api'
 import { mergeElements, MergeError } from '../../core/merger'
-import { getChangeLocations, updateBlueprintData, getChangesToUpdate } from './blueprint_update'
+import {
+  getChangeLocations, updateBlueprintData, getChangesToUpdate, groupAnnotationTypeChanges,
+} from './blueprint_update'
 import { mergeSourceMaps, SourceMap, parse, SourceRange, ParseError, ParseResult } from '../../parser/parse'
 import { ElementsSource } from '../elements_source'
 import { ParseResultCache } from '../cache'
@@ -150,10 +154,12 @@ BlueprintsSource => {
       .map(elemID => getElementBlueprints(elemID))))
       .flatten().uniq().value()
     const { parsedBlueprints } = await state
-    const changeSourceMaps = await Promise.all(bps
-      .map(bp => getSourceMap(parsedBlueprints[bp].filename)))
+    const changedFileToSourceMap: Record<string, SourceMap> = _.fromPairs(await Promise.all(
+      bps.map(async bp =>
+        [parsedBlueprints[bp].filename, await getSourceMap(parsedBlueprints[bp].filename)])
+    ))
 
-    const mergedSourceMap = mergeSourceMaps(changeSourceMaps)
+    const mergedSourceMap = mergeSourceMaps(Object.values(changedFileToSourceMap))
     const updatedBlueprints = (await Promise.all(
       _(changesToUpdate)
         .map(change => getChangeLocations(change, mergedSourceMap))
@@ -162,7 +168,10 @@ BlueprintsSource => {
         .entries()
         .map(async ([filename, fileChanges]) => {
           try {
-            const buffer = updateBlueprintData(await getBlueprintData(filename), fileChanges)
+            const updatedFileChanges = groupAnnotationTypeChanges(fileChanges,
+              changedFileToSourceMap[filename])
+            const buffer = await updateBlueprintData(await getBlueprintData(filename),
+              updatedFileChanges)
             return { filename, buffer }
           } catch (e) {
             log.error('failed to update blueprint %s with %o changes due to: %o',

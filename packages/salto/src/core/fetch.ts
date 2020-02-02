@@ -74,15 +74,14 @@ const findNestedElementPath = (
     case 'field':
       return originalParentElements
         .filter(isObjectType)
-        .find(e => e.fields[propName])?.path
+        .find(e => _.has(e.fields, propName))?.path
     case 'attr':
       return originalParentElements
-        .find(e => e.annotations[propName])?.path
-    // This is still not supprted as we have no changes for annotation types ATM.
+        .find(e => _.has(e.annotations, propName))?.path
     case 'annotation':
       return originalParentElements
         .filter(isObjectType)
-        .find(e => e.annotationTypes[propName])?.path
+        .find(e => _.has(e.annotationTypes, propName))?.path
     default: return undefined
   }
 }

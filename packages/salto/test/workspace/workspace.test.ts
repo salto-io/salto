@@ -288,6 +288,24 @@ describe('workspace', () => {
         action: 'add',
         data: { after: 'dodo' },
       },
+      { // new annotation type to a type with no annotation types block
+        path: ['file'],
+        id: new ElemID('salesforce', 'lead', 'annotation', 'newAnnoType1'),
+        action: 'add',
+        data: { after: BuiltinTypes.STRING },
+      },
+      { // new annotation type to a type with no annotation types block
+        path: ['file'],
+        id: new ElemID('salesforce', 'lead', 'annotation', 'newAnnoType2'),
+        action: 'add',
+        data: { after: BuiltinTypes.NUMBER },
+      },
+      { // new annotation type to a type with annotation types block
+        path: ['file'],
+        id: new ElemID('salesforce', 'WithAnnotationsBlock', 'annotation', 'secondAnnotation'),
+        action: 'add',
+        data: { after: BuiltinTypes.NUMBER },
+      },
     ]
 
     let lead: ObjectType
@@ -321,6 +339,19 @@ describe('workspace', () => {
       expect(lead.fields.base_field.annotations).toHaveProperty('complex')
       expect(lead.fields.base_field.annotations.complex).toEqual({ key: 'value' })
     })
+    it('should add annotation types block when having new annotation type changes', () => {
+      expect(lead.annotationTypes).toHaveProperty('newAnnoType1')
+      expect(lead.annotationTypes.newAnnoType1).toEqual(BuiltinTypes.STRING)
+      expect(lead.annotationTypes).toHaveProperty('newAnnoType2')
+      expect(lead.annotationTypes.newAnnoType2).toEqual(BuiltinTypes.NUMBER)
+    })
+    it('should add annotation type to the existing annotations block', () => {
+      const objWithAnnotationsBlock = elemMap['salesforce.WithAnnotationsBlock'] as ObjectType
+      expect(objWithAnnotationsBlock.annotationTypes).toHaveProperty('firstAnnotation')
+      expect(objWithAnnotationsBlock.annotationTypes.firstAnnotation).toEqual(BuiltinTypes.STRING)
+      expect(objWithAnnotationsBlock.annotationTypes).toHaveProperty('secondAnnotation')
+      expect(objWithAnnotationsBlock.annotationTypes.secondAnnotation).toEqual(BuiltinTypes.NUMBER)
+    })
     it('should remove all definitions in remove', () => {
       expect(Object.keys(elemMap)).not.toContain('multi_loc')
     })
@@ -333,7 +364,7 @@ describe('workspace', () => {
     })
 
     it('shouldnt fail in case one of the changes fails', async () => {
-      jest.spyOn(dump, 'dump').mockImplementationOnce(() => { throw new Error('failed') })
+      jest.spyOn(dump, 'dumpValues').mockImplementationOnce(() => { throw new Error('failed') })
       const realChange = _.cloneDeep(changes[0])
       _.set(realChange.data, 'after', 'blabla')
       const fakeChange = _.cloneDeep(changes[0])

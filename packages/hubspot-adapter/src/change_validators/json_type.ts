@@ -4,26 +4,26 @@ import { ChangeError, Change, isInstanceElement, Element,
 
 const getJsonValidationErrorsFromAfter = async (after: Element):
   Promise<ReadonlyArray<ChangeError>> => {
-  if (isInstanceElement(after)) {
-    const errors = Object.values(_.pickBy(_.mapValues(after.value, (val, key) => {
-      const field = after.type.fields[key]
-      if (isPrimitiveField(field) && field.type.isEqual(BuiltinTypes.JSON)) {
-        try {
-          JSON.parse(val)
-        } catch (error) {
-          return {
-            elemID: after.elemID,
-            severity: 'Error',
-            message: `Error parsing the json string in field ${after.elemID.name}.${field.name}`,
-            detailedMessage: `Error (${error.message}) parsing the json string in field ${after.elemID.name}.${field.name}`,
-          }
+  if (!isInstanceElement(after)) {
+    return []
+  }
+  const errors = Object.values(_.pickBy(_.mapValues(after.value, (val, key) => {
+    const field = after.type.fields[key]
+    if (isPrimitiveField(field) && field.type.isEqual(BuiltinTypes.JSON)) {
+      try {
+        JSON.parse(val)
+      } catch (error) {
+        return {
+          elemID: after.elemID,
+          severity: 'Error',
+          message: `Error parsing the json string in field ${after.elemID.name}.${field.name}`,
+          detailedMessage: `Error (${error.message}) parsing the json string in field ${after.elemID.name}.${field.name}`,
         }
       }
-      return undefined
-    }), v => !_.isUndefined(v))) as ChangeError[]
-    return errors
-  }
-  return []
+    }
+    return undefined
+  }), v => !_.isUndefined(v))) as ChangeError[]
+  return errors
 }
 
 export const changeValidator = {

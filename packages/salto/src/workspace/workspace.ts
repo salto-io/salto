@@ -17,6 +17,7 @@ import { localDirectoryStore } from './local/dir_store'
 import { multiEnvSource } from './blueprints/mutil_env/multi_env_source'
 import { Errors } from './errors'
 
+const COMMON_ENV_PREFIX = ''
 const log = logger(module)
 
 class ExistingWorkspaceError extends Error {
@@ -63,16 +64,14 @@ type MergedState = {
 }
 
 const loadBlueprintSource = (
-  workspaceBaseDir: string,
   sourceBaseDir: string,
   localStorage: string,
   excludeDirs: string[] = []
 ): BlueprintsSource => {
   const blueprintsStore = localDirectoryStore(
-    workspaceBaseDir,
+    sourceBaseDir,
     `*${BP_EXTENSION}`,
     (dirParh: string) => !excludeDirs.includes(dirParh),
-    sourceBaseDir
   )
   const cacheStore = localDirectoryStore(path.join(localStorage, '.cache'))
   return blueprintsSource(blueprintsStore, parseResultCache(cacheStore))
@@ -86,31 +85,23 @@ const loadMultiEnvSource = (config: Config): BlueprintsSource => {
   if (!activeEnv) {
     throw new Error('Unknown active env')
   }
-  const inactiveEnvs = config.envs.filter(env => !_.isEqual(env, activeEnv))
-  const envDirs = [
-    activeEnv.baseDir,
-    ...inactiveEnvs.map(env => env.baseDir),
-  ]
-  return multiEnvSource(
-    loadBlueprintSource(
-      config.baseDir,
-      activeEnv.baseDir,
-      config.localStorage,
-    ),
-    loadBlueprintSource(
-      config.baseDir,
+
+  const sources = {
+    ..._.fromPairs(config.envs.map(env =>
+      [
+        env.baseDir,
+        loadBlueprintSource(
+          path.resolve(config.baseDir, env.baseDir),
+          path.resolve(config.localStorage, env.baseDir)
+        ),
+      ])),
+    [COMMON_ENV_PREFIX]: loadBlueprintSource(
       config.baseDir,
       config.localStorage,
-      envDirs
+      _.values(config.envs.map(env => env.baseDir))
     ),
-    _(inactiveEnvs)
-      .map(env => [
-        env.name,
-        loadBlueprintSource(config.baseDir, env.baseDir, config.localStorage),
-      ])
-      .fromPairs()
-      .value()
-  )
+  }
+  return multiEnvSource(sources, activeEnv.baseDir, COMMON_ENV_PREFIX)
 }
 
 export class Workspace {
@@ -121,7 +112,7 @@ export class Workspace {
 
   constructor(public config: Config) {
     this.blueprintsSource = _.isEmpty(config.envs)
-      ? loadBlueprintSource(config.baseDir, config.baseDir, config.localStorage)
+      ? loadBlueprintSource(config.baseDir, config.localStorage)
       : loadMultiEnvSource(config)
     this.state = localState(config.stateLocation)
     this.credentials = adapterCredentials(

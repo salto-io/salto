@@ -12,7 +12,6 @@ export const localDirectoryStore = (
   baseDir: string,
   fileFilter?: string,
   directoryFilter?: (path: string) => boolean,
-  bpsDir? : string
 ): DirectoryStore => {
   let updated: FileMap = {}
   let deleted: string[] = []
@@ -23,16 +22,13 @@ export const localDirectoryStore = (
     ? path.relative(baseDir, filename)
     : filename)
 
-  const listDirFiles = async (): Promise<string[]> => {
-    const dir = bpsDir || baseDir
-    return (await exists(dir)
-      ? readdirp.promise(dir, {
-        fileFilter,
-        directoryFilter: e => e.basename[0] !== '.'
+  const listDirFiles = async (): Promise<string[]> => (await exists(baseDir)
+    ? readdirp.promise(baseDir, {
+      fileFilter,
+      directoryFilter: e => e.basename[0] !== '.'
           && (!directoryFilter || directoryFilter(e.fullPath)),
-      }).then(entries => entries.map(e => e.fullPath).map(getRelativeFileName))
-      : [])
-  }
+    }).then(entries => entries.map(e => e.fullPath).map(getRelativeFileName))
+    : [])
 
   const readFile = async (filename: string): Promise<File | undefined> => {
     const absFileName = getAbsFileName(filename)

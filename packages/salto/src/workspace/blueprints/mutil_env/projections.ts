@@ -1,5 +1,5 @@
 import {
-  Values, isObjectType, Type, ObjectType, PrimitiveType, Field, InstanceElement,
+  Values, isObjectType, TypeElement, ObjectType, PrimitiveType, Field, InstanceElement,
   Element, isType, isField, isInstanceElement, getChangeElement, Value,
 } from 'adapter-api'
 import _ from 'lodash'
@@ -26,7 +26,7 @@ const projectValue = (src: Value, target: Value): Value => {
   return target !== undefined ? src : undefined
 }
 
-const projectType = (src: Type, target: Type): Type | undefined => {
+const projectType = (src: TypeElement, target: TypeElement): TypeElement | undefined => {
   const annotations = projectValue(src.annotations, target.annotations)
   const annotationTypes = _.pick(src.annotationTypes, _.keys(target.annotationTypes))
   if (isObjectType(src) && isObjectType(target)) {

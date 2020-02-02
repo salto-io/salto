@@ -106,7 +106,9 @@ interface Action {
   delayMillis: number
   stepId: number
   filterListId: number
+  filters: string[]
   newValue: string
+  propertyName: string
   acceptActions: ConditionAction[]
   rejectActions: ConditionAction[]
 }

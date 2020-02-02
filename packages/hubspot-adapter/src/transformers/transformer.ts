@@ -370,9 +370,9 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [ACTION_FIELDS.FILTERLISTID]: new TypeField(
-          actionElemID, ACTION_FIELDS.FILTERLISTID, BuiltinTypes.NUMBER, {
-            name: ACTION_FIELDS.FILTERLISTID,
+        [ACTION_FIELDS.FILTERSLISTID]: new TypeField(
+          actionElemID, ACTION_FIELDS.FILTERSLISTID, BuiltinTypes.NUMBER, {
+            name: ACTION_FIELDS.FILTERSLISTID,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
@@ -391,6 +391,13 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
           true,
+        ),
+        [ACTION_FIELDS.PROPERTYNAME]: new TypeField(
+          actionElemID, ACTION_FIELDS.PROPERTYNAME, BuiltinTypes.STRING, {
+            name: ACTION_FIELDS.PROPERTYNAME,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
         ),
         [ACTION_FIELDS.REJECTACTIONS]: new TypeField(
           actionElemID, ACTION_FIELDS.REJECTACTIONS, Types.conditionActionType, {
@@ -713,6 +720,13 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
+        [WORKFLOWS_FIELDS.EVENTANCHOR]: new TypeField(
+          workflowsElemID, WORKFLOWS_FIELDS.EVENTANCHOR, Types.eventAnchorType, {
+            name: WORKFLOWS_FIELDS.EVENTANCHOR,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
         [WORKFLOWS_FIELDS.ALLOWCONTACTTOTRIGGERMULTIPLETIMES]: new TypeField(
           workflowsElemID, WORKFLOWS_FIELDS.ALLOWCONTACTTOTRIGGERMULTIPLETIMES,
           BuiltinTypes.BOOLEAN, {
@@ -742,13 +756,6 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
           true,
-        ),
-        [WORKFLOWS_FIELDS.EVENTANCHOR]: new TypeField(
-          workflowsElemID, WORKFLOWS_FIELDS.EVENTANCHOR, Types.eventAnchorType, {
-            name: WORKFLOWS_FIELDS.EVENTANCHOR,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
         ),
       },
       path: [HUBSPOT, 'objects', workflowsElemID.name],
@@ -1447,6 +1454,10 @@ export class Types {
     Types.propertyType,
     Types.optionsType,
     Types.contactListIdsType,
+    Types.eventAnchorType,
+    Types.nurtureTimeRangeType,
+    Types.actionType,
+    Types.anchorSettingType,
   ]
 
   /**

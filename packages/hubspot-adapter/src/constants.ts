@@ -226,9 +226,10 @@ export const ACTION_FIELDS = {
   ACTIONID: 'actionId',
   DELAYMILLS: 'delayMillis',
   STEPID: 'stepId',
-  FILTERLISTID: 'filterListId',
+  FILTERSLISTID: 'filtersListId',
   NEWVALUE: 'newValue',
   ACCEPTACTIONS: 'acceptActions',
+  PROPERTYNAME: 'propertyName',
   REJECTACTIONS: 'rejectActions',
 }
 

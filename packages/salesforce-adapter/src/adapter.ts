@@ -681,7 +681,10 @@ export default class SalesforceAdapter {
         ({ name: type,
           members: retrieveTypeToFiles[type].map(file => file.fullName) })) },
     }
+
+    log.debug(`Retrieve Request: ${JSON.stringify(retrieveRequest)}`)
     const retrieveResult = await this.client.retrieve(retrieveRequest)
+    log.debug(`Retrieve Result: ${JSON.stringify(retrieveResult)}`)
     const typeToInstanceInfos = await fromRetrieveResult(retrieveResult, metadataTypes)
     const fullNameToNamespace: Record<string, string> = _(Object.values(retrieveTypeToFiles))
       .flatten()

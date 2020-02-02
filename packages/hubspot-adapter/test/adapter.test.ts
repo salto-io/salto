@@ -71,7 +71,7 @@ describe('Hubspot Adapter Operations', () => {
 
     it('should fetch basic', async () => {
       const result = await adapter.fetch()
-      expect(result).toHaveLength(25)
+      expect(result).toHaveLength(29)
     })
   })
 
@@ -181,6 +181,18 @@ describe('Hubspot Adapter Operations', () => {
           expect(result.value.type).toBe(workflowsInstance.value.type)
           expect(result.value.name).toEqual(workflowsInstance.value.name)
           expect(result.value.enabled).toEqual(workflowsInstance.value.enabled)
+          expect(result.value.actions).toEqual(workflowsInstance.value.actions)
+          expect(result.value.internal).toEqual(workflowsInstance.value.internal)
+          expect(result.value.onlyExecOnBizDays).toEqual(workflowsInstance.value.onlyExecOnBizDays)
+          expect(result.value.nurtureTimeRange).toEqual(workflowsInstance.value.nurtureTimeRange)
+          expect(result.value.listening).toEqual(workflowsInstance.value.listening)
+          expect(result.value.allowContactToTriggerMultipleTimes)
+            .toEqual(workflowsInstance.value.allowContactToTriggerMultipleTimes)
+          expect(result.value.onlyEnrollsManually)
+            .toEqual(workflowsInstance.value.onlyEnrollsManually)
+          expect(result.value.enrollOnCriteriaUpdate)
+            .toEqual(workflowsInstance.value.enrollOnCriteriaUpdate)
+          expect(result.value.eventAnchor).toEqual(workflowsInstance.value.eventAnchor)
 
 
           // Filtered out unsupported fields

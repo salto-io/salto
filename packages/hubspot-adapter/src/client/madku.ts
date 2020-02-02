@@ -7,6 +7,7 @@ export interface Form extends HubspotObjectAPI {
 }
 
 export interface Workflow extends HubspotObjectAPI {
+  get(workflowId: number): RequestPromise
   enroll(workflowId: number, email: string): RequestPromise
   unenroll(workflowId: number, email: string): RequestPromise
 }

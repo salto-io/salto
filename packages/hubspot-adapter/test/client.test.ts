@@ -402,7 +402,7 @@ describe('Test HubSpot client', () => {
             workflowsMetadata as HubspotMetadata
           )
           expect(resp).toBeUndefined()
-          expect(mockDeleteInstance.mock.calls[0][0]).toEqual('12345')
+          expect(mockDeleteInstance.mock.calls[0][0]).toEqual('1234')
         })
       })
 

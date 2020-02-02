@@ -129,36 +129,220 @@ export const afterFormMock = {
 const firstWorkflowMock = {
   id: 12345,
   name: 'workflowTest1',
-  type: 'DRIP_DELAY',
+  type: 'PROPERTY_ANCHOR"',
   unsupportedField: 'bla',
+  enabled: true,
+  insertedAt: 13423432,
+  updatedAt: 2423432,
+  internal: false,
+  onlyExecOnBizDays: false,
+  listening: true,
+  allowContactToTriggerMultipleTimes: true,
+  onlyEnrollManually: false,
+  enrollOnCriteriaUpdate: true,
+  lastUpdatedBy: 'asb@gm.il',
+  supressionListIds: [
+    1234,
+    1,
+  ],
+  eventAnchor: {
+    contactPropertyAnchor: 'hs_content_membership_registered_at',
+  },
+  nurtureTimeRange: {
+    enabled: false,
+    startHour: 9,
+    stopHour: 10,
+  },
+  actions: [
+    {
+      type: 'DELAY',
+      delayMillis: 0,
+      actionId: 170629910,
+      anchorSetting: {
+        execTimeOfDay: '11:30 AM',
+        execTimeInMinutes: 690,
+        boundary: 'ON',
+      },
+      stepId: 2,
+    },
+    {
+      type: 'SET_CONTACT_PROPERTY',
+      propertyName: 'fax',
+      newValue: 'abcdefg',
+      actionId: 170629911,
+      stepId: 2,
+    },
+    {
+      type: 'BRANCH',
+      actionId: 170629912,
+      filtersListId: 29,
+      stepId: 2,
+      acceptActions: [
+        {
+          type: 'SMS_NOTIFICATION',
+          staticTo: '+113455333434',
+          body: 'Hello world',
+          actionId: 170629913,
+          stepId: 1,
+        },
+      ],
+      rejectActions: [
+        {
+          type: 'SMS_NOTIFICATION',
+          staticTo: '+113455333434',
+          body: 'Hello world',
+          actionId: 170629913,
+          stepId: 1,
+        },
+      ],
+    },
+  ],
 }
 
 const secondWorkflowMock = {
-  id: 54321,
-  name: 'workflowTest1',
-  type: 'DRIP_DELAY',
-  enabled: false,
-  contactListIds: {
-    enrolled: 1,
-    active: 2,
-    completed: 3,
-    succeeded: 4,
-
+  id: 123456,
+  name: 'workflowTest2',
+  type: 'PROPERTY_ANCHOR"',
+  unsupportedField: 'bla',
+  enabled: true,
+  insertedAt: 13423432,
+  updatedAt: 2423432,
+  internal: false,
+  onlyExecOnBizDays: false,
+  listening: true,
+  allowContactToTriggerMultipleTimes: true,
+  onlyEnrollManually: false,
+  enrollOnCriteriaUpdate: true,
+  lastUpdatedBy: 'asb@gm.il',
+  supressionListIds: [
+    1234,
+    1,
+  ],
+  eventAnchor: {
+    contactPropertyAnchor: 'hs_content_membership_registered_at',
   },
+  nurtureTimeRange: {
+    enabled: false,
+    startHour: 9,
+    stopHour: 10,
+  },
+  actions: [
+    {
+      type: 'DELAY',
+      delayMillis: 0,
+      actionId: 170629910,
+      anchorSetting: {
+        execTimeOfDay: '11:30 AM',
+        execTimeInMinutes: 690,
+        boundary: 'ON',
+      },
+      stepId: 2,
+    },
+    {
+      type: 'SET_CONTACT_PROPERTY',
+      propertyName: 'fax',
+      newValue: 'abcdefg',
+      actionId: 170629911,
+      stepId: 2,
+    },
+    {
+      type: 'BRANCH',
+      actionId: 170629912,
+      filtersListId: 29,
+      stepId: 2,
+      acceptActions: [
+        {
+          type: 'SMS_NOTIFICATION',
+          staticTo: '+113455333434',
+          body: 'Hello world',
+          actionId: 170629913,
+          stepId: 1,
+        },
+      ],
+      rejectActions: [
+        {
+          type: 'SMS_NOTIFICATION',
+          staticTo: '+113455333434',
+          body: 'Hello world',
+          actionId: 170629913,
+          stepId: 1,
+        },
+      ],
+    },
+  ],
 }
 
 export const workflowsMock = {
-  id: 12345,
-  name: 'Test Workflow',
-  type: 'DRIP_DELAY',
-  enabled: false,
-  contactListIds: {
-    enrolled: 20,
-    active: 21,
-    completed: 22,
-    succeeded: 23,
-  },
+  id: 1234,
+  name: 'workflowTest',
+  type: 'PROPERTY_ANCHOR"',
   unsupportedField: 'bla',
+  enabled: true,
+  insertedAt: 13423432,
+  updatedAt: 2423432,
+  internal: false,
+  onlyExecOnBizDays: false,
+  listening: true,
+  allowContactToTriggerMultipleTimes: true,
+  onlyEnrollManually: false,
+  enrollOnCriteriaUpdate: true,
+  lastUpdatedBy: 'asb@gm.il',
+  supressionListIds: [
+    1234,
+    1,
+  ],
+  eventAnchor: {
+    contactPropertyAnchor: 'hs_content_membership_registered_at',
+  },
+  nurtureTimeRange: {
+    enabled: false,
+    startHour: 9,
+    stopHour: 10,
+  },
+  actions: [
+    {
+      type: 'DELAY',
+      delayMillis: 0,
+      actionId: 170629910,
+      anchorSetting: {
+        execTimeOfDay: '11:30 AM',
+        execTimeInMinutes: 690,
+        boundary: 'ON',
+      },
+      stepId: 2,
+    },
+    {
+      type: 'SET_CONTACT_PROPERTY',
+      propertyName: 'fax',
+      newValue: 'abcdefg',
+      actionId: 170629911,
+      stepId: 2,
+    },
+    {
+      type: 'BRANCH',
+      actionId: 170629912,
+      filtersListId: 29,
+      stepId: 2,
+      acceptActions: [
+        {
+          type: 'SMS_NOTIFICATION',
+          staticTo: '+113455333434',
+          body: 'Hello world',
+          actionId: 170629913,
+          stepId: 1,
+        },
+      ],
+      rejectActions: [
+        {
+          type: 'SMS_NOTIFICATION',
+          staticTo: '+113455333434',
+          body: 'Hello world',
+          actionId: 170629913,
+          stepId: 1,
+        },
+      ],
+    },
+  ],
 }
 
 export const workflowsCreateResponse = {
@@ -173,6 +357,9 @@ export const workflowsCreateResponse = {
   contactCounts: {
     active: 0,
     enrolled: 0,
+  },
+  eventAnchor: {
+    contactPropertyAnchor: 'hs_content_membership_registered_at',
   },
   migrationStatus: {
     portalId: 62515,
@@ -211,6 +398,66 @@ export const workflowsCreateResponse = {
       succeeded: 23,
     },
   },
+  internal: false,
+  onlyExecOnBizDays: false,
+  listening: true,
+  allowContactToTriggerMultipleTimes: true,
+  onlyEnrollManually: false,
+  enrollOnCriteriaUpdate: true,
+  lastUpdatedBy: 'asb@gm.il',
+  supressionListIds: [
+    12345,
+    12,
+  ],
+  nurtureTimeRange: {
+    enabled: false,
+    startHour: 9,
+    stopHour: 10,
+  },
+  actions: [
+    {
+      type: 'DELAY',
+      delayMillis: 0,
+      actionId: 170629910,
+      anchorSetting: {
+        execTimeOfDay: '11:30 AM',
+        execTimeInMinutes: 690,
+        boundary: 'ON',
+      },
+      stepId: 2,
+    },
+    {
+      type: 'SET_CONTACT_PROPERTY',
+      propertyName: 'fax',
+      newValue: 'abcdefg',
+      actionId: 170629911,
+      stepId: 2,
+    },
+    {
+      type: 'BRANCH',
+      actionId: 170629912,
+      filtersListId: 29,
+      stepId: 2,
+      acceptActions: [
+        {
+          type: 'SMS_NOTIFICATION',
+          staticTo: '+113455333434',
+          body: 'Hello world',
+          actionId: 170629913,
+          stepId: 1,
+        },
+      ],
+      rejectActions: [
+        {
+          type: 'SMS_NOTIFICATION',
+          staticTo: '+113455333434',
+          body: 'Hello world',
+          actionId: 170629913,
+          stepId: 1,
+        },
+      ],
+    },
+  ],
 }
 
 export const workflowsMockArray = [

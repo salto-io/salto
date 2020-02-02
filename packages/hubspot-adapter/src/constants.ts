@@ -11,6 +11,13 @@ export const OBJECTS_NAMES = {
   OPTIONS: 'options',
   CONTACTLISTIDS: 'contactListIds',
   RSSTOEMAILTIMING: 'rssToEmailTiming',
+  NURTURETIMERANGE: 'nurtureTimeTange',
+  ACTION: 'action',
+  ANCHORSETTING: 'anchorSetting',
+  CRITERIA: 'criteria',
+  CRITERIALIST: 'criteriaList',
+  EVENTANCHOR: 'eventAnchor',
+  CONDITIONACTION: 'conditionAction',
 }
 
 export const FIELD_TYPES = {
@@ -187,6 +194,57 @@ export const WORKFLOWS_FIELDS = {
   UPDATEDAT: 'updatedAt',
   PERSONTALIDS: 'personaTagIds',
   CONTACTLISTIDS: 'contactListIds',
+  ACTIONS: 'actions',
+  INTERNAL: 'internal',
+  ONLYEXECONBIZDAYS: 'onlyExecOnBizDays',
+  NURTURETIMERANGE: 'nurtureTimeRange',
+  LISTENING: 'listening',
+  ALLOWCONTACTTOTRIGGERMULTIPLETIMES: 'allowContactToTriggerMultipleTimes',
+  GOALCRITERIA: 'goalCriteria',
+  ONLYENROLLMANUALLY: 'onlyEnrollsManually',
+  ENROLLONCRITERIAUPDATE: 'enrollOnCriteriaUpdate',
+  LASTUPDATEDBY: 'lastUpdatedBy',
+  SUPRESSIONLISTIDS: 'supressionListIds',
+  SEGMENTCRITERIA: 'segmentCriteria',
+  EVENTANCHOR: 'eventAnchor',
+}
+
+export const EVENTANCHOR_FIELDS = {
+  STATICDATEANCHOR: 'staticDateAnchor',
+  CONTACTPROPERTYANCHOR: 'contactPropertyAnchor',
+}
+
+export const NURTURETIMERANGE_FIELDS = {
+  ENABLED: 'enabled',
+  STARTHOUR: 'startHour',
+  STOPHOUR: 'stopHour',
+}
+
+export const ACTION_FIELDS = {
+  TYPE: 'type',
+  ANCHORSETTING: 'anchorSetting',
+  ACTIONID: 'actionId',
+  DELAYMILLS: 'delayMillis',
+  STEPID: 'stepId',
+  FILTERSLISTID: 'filtersListId',
+  NEWVALUE: 'newValue',
+  ACCEPTACTIONS: 'acceptActions',
+  PROPERTYNAME: 'propertyName',
+  REJECTACTIONS: 'rejectActions',
+}
+
+export const CONDITIONACTION_FIELDS = {
+  TYPE: 'type',
+  BODY: 'body',
+  STATICTO: 'staticTo',
+  ACTIONID: 'actionId',
+  STEPID: 'stepId',
+}
+
+export const ANCHOR_SETTING_FIELDS = {
+  EXECTIMEOFDAY: 'execTimeOfDay',
+  EXECTIMEINMINUTES: 'execTimeInMinutes',
+  BOUNDARY: 'boundary',
 }
 
 export const CONTACTLISTIDS_FIELDS = {

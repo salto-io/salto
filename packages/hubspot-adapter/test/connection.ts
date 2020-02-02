@@ -27,6 +27,8 @@ const mockMadKu: () => Connection = () => ({
       ({} as unknown as RequestPromise)),
     delete: jest.fn().mockImplementation((): RequestPromise =>
       (undefined as unknown as RequestPromise)),
+    get: jest.fn().mockImplementation((): RequestPromise =>
+      (undefined as unknown as RequestPromise)),
   } as Workflow,
   marketingEmail: {
     getAll: jest.fn().mockImplementation((): RequestPromise =>

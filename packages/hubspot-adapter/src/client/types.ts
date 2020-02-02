@@ -75,11 +75,62 @@ export interface Property {
 
 export interface Workflows extends HubspotMetadata {
   id: number
+  name: string
   type: string
   enabled: boolean
   insertedAt: number
   updatedAt: number
   contactListIds: ContactListIds
+  actions: Action[]
+  internal: boolean
+  onlyExecOnBizDays: boolean
+  nurtureTimeRange: NurtureTimeRange
+  listening: boolean
+  allowContactToTriggerMultipleTimes: boolean
+  onlyEnrollsManually: boolean
+  enrollOnCriteriaUpdate: boolean
+  lastUpdatedBy: string
+  eventAnchor: EventAnchor
+  supressionListIds: number[]
+}
+
+interface EventAnchor {
+  staticDateAnchor: string
+  contactPropertyAnchor: string
+}
+
+interface Action {
+  type: string
+  anchorSetting: AnchorSetting
+  actionId: number
+  delayMillis: number
+  stepId: number
+  filterListId: number
+  filters: string[]
+  newValue: string
+  propertyName: string
+  acceptActions: ConditionAction[]
+  rejectActions: ConditionAction[]
+}
+
+interface ConditionAction {
+  type: string
+  body: string
+  staticTo: string
+  actionId: number
+  stepId: number
+}
+
+interface AnchorSetting {
+  execTimeOfDay: string
+  execTimeInMinutes: number
+  boundary: string
+}
+
+interface NurtureTimeRange {
+  enabled: boolean
+  startHour: number
+  stopHour: number
 }
 
 interface ContactListIds {

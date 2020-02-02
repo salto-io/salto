@@ -192,7 +192,6 @@ describe('Hubspot Adapter Operations', () => {
             .toEqual(workflowsInstance.value.onlyEnrollsManually)
           expect(result.value.enrollOnCriteriaUpdate)
             .toEqual(workflowsInstance.value.enrollOnCriteriaUpdate)
-          // expect(result.value).toEqual(undefined)
           expect(result.value.eventAnchor).toEqual(workflowsInstance.value.eventAnchor)
 
 

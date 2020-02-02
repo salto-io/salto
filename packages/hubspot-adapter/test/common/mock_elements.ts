@@ -146,7 +146,7 @@ const firstWorkflowMock = {
     1,
   ],
   eventAnchor: {
-    conctactPropertyAnchor: 'hs_content_membership_registered_at',
+    contactPropertyAnchor: 'hs_content_membership_registered_at',
   },
   nurtureTimeRange: {
     enabled: false,
@@ -219,7 +219,7 @@ const secondWorkflowMock = {
     1,
   ],
   eventAnchor: {
-    conctactPropertyAnchor: 'hs_content_membership_registered_at',
+    contactPropertyAnchor: 'hs_content_membership_registered_at',
   },
   nurtureTimeRange: {
     enabled: false,
@@ -292,7 +292,7 @@ export const workflowsMock = {
     1,
   ],
   eventAnchor: {
-    conctactPropertyAnchor: 'hs_content_membership_registered_at',
+    contactPropertyAnchor: 'hs_content_membership_registered_at',
   },
   nurtureTimeRange: {
     enabled: false,
@@ -359,7 +359,7 @@ export const workflowsCreateResponse = {
     enrolled: 0,
   },
   eventAnchor: {
-    conctactPropertyAnchor: 'hs_content_membership_registered_at',
+    contactPropertyAnchor: 'hs_content_membership_registered_at',
   },
   migrationStatus: {
     portalId: 62515,

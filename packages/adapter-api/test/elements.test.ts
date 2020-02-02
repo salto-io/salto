@@ -223,6 +223,8 @@ describe('Test elements.ts', () => {
   describe('ElemID', () => {
     const typeId = new ElemID('adapter', 'example')
     const fieldId = typeId.createNestedID('field', 'test')
+    const annotationTypeId = typeId.createNestedID('annotation', 'anno')
+    const annotationTypesId = typeId.createNestedID('annotation')
     const typeInstId = typeId.createNestedID('instance', 'test')
     const valueId = typeInstId.createNestedID('nested', 'value')
     const configTypeId = new ElemID('adapter')
@@ -234,6 +236,12 @@ describe('Test elements.ts', () => {
       })
       it('should contain type id and field name for field ID', () => {
         expect(fieldId.getFullName()).toEqual(`${typeId.getFullName()}.field.test`)
+      })
+      it('should contain type id and annotation type name for annotation ID', () => {
+        expect(annotationTypeId.getFullName()).toEqual(`${typeId.getFullName()}.annotation.anno`)
+      })
+      it('should contain type id and annotation for annotation ID', () => {
+        expect(annotationTypesId.getFullName()).toEqual(`${typeId.getFullName()}.annotation`)
       })
       it('should contain type id and instance name for instance ID', () => {
         expect(typeInstId.getFullName()).toEqual(`${typeId.getFullName()}.instance.test`)
@@ -253,7 +261,8 @@ describe('Test elements.ts', () => {
 
     describe('fromFullName', () => {
       it('should create elem ID from its full name', () => {
-        [typeId, fieldId, typeInstId, valueId, configTypeId, configInstId]
+        [typeId, fieldId, annotationTypesId, annotationTypeId, typeInstId, valueId, configTypeId,
+          configInstId]
           .forEach(id => expect(ElemID.fromFullName(id.getFullName())).toEqual(id))
       })
       it('should fail on invalid id type', () => {
@@ -274,6 +283,8 @@ describe('Test elements.ts', () => {
         it('should match the number of name parts', () => {
           expect(fieldId.nestingLevel).toEqual(1)
           expect(fieldId.createNestedID('a', 'b').nestingLevel).toEqual(3)
+          expect(annotationTypesId.nestingLevel).toEqual(1)
+          expect(annotationTypeId.nestingLevel).toEqual(2)
         })
         it('should match path length in instance values', () => {
           expect(valueId.nestingLevel).toEqual(2)
@@ -318,6 +329,18 @@ describe('Test elements.ts', () => {
           expect(nestedId.name).toEqual('nested')
         })
       })
+      describe('from annotation ID', () => {
+        let nestedId: ElemID
+        beforeEach(() => {
+          nestedId = annotationTypeId.createNestedID('nested')
+        })
+        it('should keep the original id type', () => {
+          expect(nestedId.idType).toEqual(annotationTypeId.idType)
+        })
+        it('should have the new name', () => {
+          expect(nestedId.name).toEqual('nested')
+        })
+      })
     })
 
     describe('createParentID', () => {
@@ -339,6 +362,16 @@ describe('Test elements.ts', () => {
       describe('from field ID', () => {
         it('should return the type ID', () => {
           expect(fieldId.createParentID()).toEqual(new ElemID(fieldId.adapter, fieldId.typeName))
+        })
+      })
+      describe('from annotation types ID', () => {
+        it('should return the type ID', () => {
+          expect(annotationTypesId.createParentID()).toEqual(typeId)
+        })
+      })
+      describe('from annotation type ID', () => {
+        it('should return the type ID', () => {
+          expect(annotationTypeId.createParentID()).toEqual(annotationTypesId)
         })
       })
       describe('from nested ID', () => {
@@ -372,6 +405,34 @@ describe('Test elements.ts', () => {
         })
         it('should return the field name as the path', () => {
           expect(path).toEqual([fieldId.name])
+        })
+      })
+      describe('from annotation types id', () => {
+        let parent: ElemID
+        let path: ReadonlyArray<string>
+        beforeAll(() => {
+          ({ parent, path } = annotationTypesId.createTopLevelParentID())
+        })
+
+        it('should return the type', () => {
+          expect(parent).toEqual(new ElemID(annotationTypesId.adapter, annotationTypesId.typeName))
+        })
+        it('should return empty path', () => {
+          expect(path).toEqual([])
+        })
+      })
+      describe('from annotation type id', () => {
+        let parent: ElemID
+        let path: ReadonlyArray<string>
+        beforeAll(() => {
+          ({ parent, path } = annotationTypeId.createTopLevelParentID())
+        })
+
+        it('should return the type', () => {
+          expect(parent).toEqual(new ElemID(annotationTypeId.adapter, annotationTypeId.typeName))
+        })
+        it('should return the annotation name as the path', () => {
+          expect(path).toEqual([annotationTypeId.name])
         })
       })
       describe('from value id', () => {

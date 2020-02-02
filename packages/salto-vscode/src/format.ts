@@ -1,7 +1,10 @@
 import * as Diff from 'diff'
 import { Diff2Html } from 'diff2html'
-import { Element, getChangeElement, isObjectType, isInstanceElement, isField, ObjectType, isPrimitiveType, PrimitiveType, Field, Value } from 'adapter-api'
-import { dump, PlanItem } from 'salto'
+import {
+  Element, getChangeElement, isObjectType, isInstanceElement, isField, ObjectType, isPrimitiveType,
+  PrimitiveType, Field, Value,
+} from 'adapter-api'
+import { dumpElements, PlanItem } from 'salto'
 import wu from 'wu'
 import _ from 'lodash'
 
@@ -74,10 +77,10 @@ export const createChangeDiff = async (
 ): Promise<UnifiedDiff> => {
   const changeData = change.parent().data as {before?: Element; after?: Element}
   const beforeHCL = changeData.before
-    ? dump([orderByAfterElement(changeData.before, changeData.after)])
+    ? dumpElements([orderByAfterElement(changeData.before, changeData.after)])
     : ''
   const afterHCL = changeData.after
-    ? dump([changeData.after])
+    ? dumpElements([changeData.after])
     : ''
   const step = `Step ${stepIndex} - `
   const patchName = `${step}${getActionName(change)}`

@@ -21,6 +21,14 @@ number not_a_list_yet_field {
 
 }
 }
+
+type salesforce_WithAnnotationsBlock {
+  annotations {
+    string firstAnnotation {
+    }
+  }
+}
+
 type multi_loc { a = 1 }
 type one_liner { a = 1 }`,
   'subdir/file.bp': `

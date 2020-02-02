@@ -51,6 +51,10 @@ export class ElemID {
       // First name part is the instance name which is top level
       return this.nameParts.length - 1
     }
+    if (this.idType === 'annotation') {
+      // annotation is already 1 level nested
+      return this.nameParts.length + 1
+    }
     return this.nameParts.length
   }
 
@@ -110,6 +114,10 @@ export class ElemID {
     if (this.isTopLevel()) {
       // The parent of top level elements is the adapter
       return new ElemID(this.adapter)
+    }
+    if (this.idType === 'annotation' && this.nameParts.length === 1) {
+      // The parent of an annotationType is annotationTypes
+      return new ElemID(this.adapter, this.typeName, this.idType)
     }
     // The parent of all other id types is the type
     return new ElemID(this.adapter, this.typeName)

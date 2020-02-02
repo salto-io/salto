@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import {
   TypeElement, ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field, Values,
-  Element, InstanceElement, SaltoError, TypeMap, INSTANCE_ANNOTATIONS,
+  Element, InstanceElement, SaltoError, INSTANCE_ANNOTATIONS,
 } from 'adapter-api'
 import { collections } from '@salto/lowerdash'
 import {
@@ -51,14 +51,6 @@ const primitiveType = (typeName: string): PrimitiveTypes => {
   return PrimitiveTypes.BOOLEAN
 }
 
-const annotationTypes = (block: ParsedHclBlock): TypeMap => block.blocks
-  .filter(b => b.type === Keywords.ANNOTATIONS_DEFINITION)
-  .map(b => _(b.blocks)
-    .map(blk => [blk.labels[0], new ObjectType({ elemID: parseElemID(blk.type) })])
-    .fromPairs()
-    .value())
-  .pop() || {}
-
 export type ParseResult = {
   elements: Element[]
   errors: ParseError[]
@@ -77,6 +69,22 @@ export const parse = (blueprint: Buffer, filename: string): ParseResult => {
   const { body, errors: parseErrors } = hclParse(blueprint, filename)
   const sourceMap = new SourceMapImpl()
 
+  const annotationTypes = (block: ParsedHclBlock, annotationTypesId: ElemID):
+    Record <string, TypeElement> =>
+    block.blocks
+      .filter(b => b.type === Keywords.ANNOTATIONS_DEFINITION)
+      .map(annoTypesBlk => {
+        sourceMap.push(annotationTypesId, annoTypesBlk.source)
+        return _(annoTypesBlk.blocks)
+          .map(innerBlock => {
+            sourceMap.push(annotationTypesId.createNestedID(innerBlock.labels[0]),
+              innerBlock.source)
+            return [innerBlock.labels[0], new ObjectType({ elemID: parseElemID(innerBlock.type) })]
+          })
+          .fromPairs()
+          .value()
+      }).pop() || {}
+
   const attrValues = (block: ParsedHclBlock, parentId: ElemID): Values => (
     _(block.attrs).mapValues((val, key) => {
       const exp = val.expressions[0]
@@ -89,11 +97,12 @@ export const parse = (blueprint: Buffer, filename: string): ParseResult => {
 
   const parseType = (typeBlock: ParsedHclBlock, isSettings = false): TypeElement => {
     const [typeName] = typeBlock.labels
+    const elemID = parseElemID(typeName)
     const typeObj = new ObjectType(
       {
-        elemID: parseElemID(typeName),
-        annotationTypes: annotationTypes(typeBlock),
-        annotations: attrValues(typeBlock, parseElemID(typeName).createNestedID('attr')),
+        elemID,
+        annotationTypes: annotationTypes(typeBlock, elemID.createNestedID('annotation')),
+        annotations: attrValues(typeBlock, elemID.createNestedID('attr')),
         isSettings,
       }
     )
@@ -141,11 +150,12 @@ export const parse = (blueprint: Buffer, filename: string): ParseResult => {
       return parseType(typeBlock)
     }
 
+    const elemID = parseElemID(typeName)
     const typeObj = new PrimitiveType({
-      elemID: parseElemID(typeName),
+      elemID,
       primitive: primitiveType(baseType),
-      annotationTypes: annotationTypes(typeBlock),
-      annotations: attrValues(typeBlock, parseElemID(typeName).createNestedID('attr')),
+      annotationTypes: annotationTypes(typeBlock, elemID.createNestedID('annotation')),
+      annotations: attrValues(typeBlock, elemID.createNestedID('attr')),
     })
     sourceMap.push(typeObj.elemID, typeBlock)
     return typeObj

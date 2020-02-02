@@ -4,7 +4,9 @@ import {
 } from 'adapter-api'
 import * as TestHelpers from '../common/helpers'
 import { parse } from '../../src/parser/parse'
-import { dump } from '../../src/parser/dump'
+import {
+  dumpAnnotationTypes, dumpElements, dumpSingleAnnotationType, dumpValues,
+} from '../../src/parser/dump'
 
 describe('Salto Dump', () => {
   const strType = new PrimitiveType({
@@ -35,6 +37,9 @@ describe('Salto Dump', () => {
 
   const model = new ObjectType({
     elemID: new ElemID('salesforce', 'test'),
+    annotationTypes: {
+      ServiceId: BuiltinTypes.SERVICE_ID,
+    },
   })
   model.fields.name = new Field(model.elemID, 'name', strType, { label: 'Name' })
   model.fields.num = new Field(model.elemID, 'num', numType)
@@ -80,7 +85,7 @@ describe('Salto Dump', () => {
     let body: string
 
     beforeAll(() => {
-      body = dump([strType, numType, boolType, fieldType, model, instance, config,
+      body = dumpElements([strType, numType, boolType, fieldType, model, instance, config,
         instanceStartsWithNumber])
     })
 
@@ -108,6 +113,10 @@ describe('Salto Dump', () => {
     describe('dumped model', () => {
       it('has correct block type and label', () => {
         expect(body).toMatch(/type salesforce_test {/)
+      })
+      it('has annotations block', () => {
+        expect(body).toMatch(/annotations {/)
+        expect(body).toMatch(/serviceid ServiceId {/)
       })
       it('has complex attributes', () => {
         expect(body).toMatch(
@@ -148,7 +157,7 @@ describe('Salto Dump', () => {
     let body: string
 
     beforeAll(() => {
-      body = dump(model.fields.name)
+      body = dumpElements([model.fields.name])
     })
 
     it('should contain only field', () => {
@@ -159,25 +168,49 @@ describe('Salto Dump', () => {
     let body: string
 
     beforeAll(() => {
-      body = dump({ attr: 'value' })
+      body = dumpValues({ attr: 'value' })
     })
 
     it('should contain only attribute', () => {
       expect(body).toMatch(/^attr\s+=\s+"value"$/m)
     })
   })
+  describe('dump annotations', () => {
+    describe('single annotation type', () => {
+      let body: string
+
+      beforeAll(() => {
+        body = dumpSingleAnnotationType('ServiceId', BuiltinTypes.SERVICE_ID)
+      })
+
+      it('should contain only the annotation type definition', () => {
+        expect(body).toMatch(/^serviceid ServiceId {\s}\s$/gm)
+      })
+    })
+    describe('annotations block', () => {
+      let body: string
+
+      beforeAll(() => {
+        body = dumpAnnotationTypes({ ServiceId: BuiltinTypes.SERVICE_ID })
+      })
+
+      it('should contain only the annotations block definition', () => {
+        expect(body).toMatch(/^annotations {\s*serviceid ServiceId {\s*}\s}\s/gm)
+      })
+    })
+  })
   describe('dump primitive', () => {
     it('should serialize numbers', async () => {
-      expect(dump(123)).toEqual('123')
+      expect(dumpValues(123)).toEqual('123')
     })
     it('should serialize strings', async () => {
-      expect(dump('aaa')).toEqual('"aaa"')
+      expect(dumpValues('aaa')).toEqual('"aaa"')
     })
     it('should serialize booleans', async () => {
-      expect(dump(false)).toEqual('false')
+      expect(dumpValues(false)).toEqual('false')
     })
     it('should dump list', async () => {
-      expect(dump([1, 'asd', true, { complex: 'value' }])).toMatch(
+      expect(dumpValues([1, 'asd', true, { complex: 'value' }])).toMatch(
         /\[\s+1,\s+"asd",\s+true,\s+\{\s+complex = "value"\s+\}\s+]/s
       )
     })

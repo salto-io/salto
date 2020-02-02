@@ -28,7 +28,7 @@ export { Errors } from './src/workspace/errors'
 export { Blueprint } from './src/workspace/blueprints/blueprints_source'
 export { Config, loadConfig, addServiceToConfig } from './src/workspace/config'
 export { parse, SourceMap, SourceRange, parseElemID } from './src/parser/parse'
-export { dump, dumpElemID } from './src/parser/dump'
+export { dumpElements, dumpElemID } from './src/parser/dump'
 export { readAllCsvContents } from './test/common/helpers'
 export { SALTO_HOME_VAR } from './src/workspace/config'
 

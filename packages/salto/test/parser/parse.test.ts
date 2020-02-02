@@ -375,6 +375,19 @@ describe('Salto parser', () => {
         const nestedAttrSource = sourceMap.get(nestedAttrId.getFullName())
         expect(nestedAttrSource).toHaveLength(1)
       })
+      it('should contain annotation types', () => {
+        const annotationTypesId = model.elemID
+          .createNestedID('annotation')
+        const annotationTypesSource = sourceMap.get(annotationTypesId.getFullName())
+        expect(annotationTypesSource).toHaveLength(1)
+      })
+      it('should contain a single annotation type', () => {
+        const annotationTypeId = model.elemID
+          .createNestedID('annotation')
+          .createNestedID('convert_settings')
+        const annotationTypeSource = sourceMap.get(annotationTypeId.getFullName())
+        expect(annotationTypeSource).toHaveLength(1)
+      })
     })
   })
 

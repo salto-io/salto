@@ -1,15 +1,19 @@
 import _ from 'lodash'
 import path from 'path'
-import { getChangeElement, isElement, ObjectType, ElemID, Element } from 'adapter-api'
+import {
+  getChangeElement, isElement, ObjectType, ElemID, Element, isType, isAdditionDiff,
+} from 'adapter-api'
 import { AdditionDiff } from '@salto/dag'
 import { DetailedChange } from '../../core/plan'
-import { SourceRange } from '../../parser/parse'
-import { dump as saltoDump } from '../../parser/dump'
+import { SourceMap, SourceRange } from '../../parser/parse'
+import {
+  dumpAnnotationTypes, dumpElements, dumpSingleAnnotationType, dumpValues,
+} from '../../parser/dump'
 
 // Declared again to prevent cyclic dependency
 const BP_EXTENSION = '.bp'
 
-type DetailedChangeWithSource = DetailedChange & { location: SourceRange }
+export type DetailedChangeWithSource = DetailedChange & { location: SourceRange }
 
 const createFileNameFromPath = (pathParts?: string[]): string =>
   (pathParts
@@ -97,6 +101,49 @@ const indent = (data: string, indentLevel: number, newValue: boolean): string =>
   ].join('\n')
 }
 
+export const groupAnnotationTypeChanges = (fileChanges: DetailedChangeWithSource[],
+  existingFileSourceMap?: SourceMap): DetailedChangeWithSource[] => {
+  const isAnnotationTypeAddChange = (change: DetailedChangeWithSource): boolean =>
+    change.id.idType === 'annotation' && isAdditionDiff(change)
+
+  const objectHasAnnotationTypesBlock = (topLevelIdFullName: string): boolean =>
+    !_.isUndefined(existingFileSourceMap)
+    && existingFileSourceMap
+      .has(ElemID.fromFullName(topLevelIdFullName).createNestedID('annotation').getFullName())
+
+  const createGroupedAddAnnotationTypesChange = (annotationTypesAddChanges:
+    DetailedChangeWithSource[]): DetailedChangeWithSource => {
+    const change = annotationTypesAddChanges[0]
+    const groupedChange: DetailedChange = {
+      id: new ElemID(change.id.adapter, change.id.typeName, 'annotation'),
+      action: 'add',
+      data: { after: _(annotationTypesAddChanges as DetailedAddition[])
+        .map(c => [c.id.name, c.data.after])
+        .fromPairs()
+        .value() },
+    }
+    // we should find a new location for the grouped change
+    return getChangeLocations(groupedChange, existingFileSourceMap
+      ?? {} as ReadonlyMap<string, SourceRange[]>)[0]
+  }
+
+  const [annotationTypesAddChanges, otherChanges] = _.partition(fileChanges,
+    c => isAnnotationTypeAddChange(c))
+  const topLevelIdToAnnoTypeAddChanges = _.groupBy(annotationTypesAddChanges,
+    change => change.id.createTopLevelParentID().parent.getFullName())
+  const transformedAnnotationTypeChanges = _(topLevelIdToAnnoTypeAddChanges)
+    .entries()
+    .map(([topLevelIdFullName, objectAnnotationTypesAddChanges]) => {
+      if (objectHasAnnotationTypesBlock(topLevelIdFullName)) {
+        return objectAnnotationTypesAddChanges
+      }
+      return [createGroupedAddAnnotationTypesChange(objectAnnotationTypesAddChanges)]
+    })
+    .flatten()
+    .value()
+  return [...otherChanges, ...transformedAnnotationTypeChanges]
+}
+
 export const updateBlueprintData = (
   currentData: string,
   changes: DetailedChangeWithSource[]
@@ -106,23 +153,34 @@ export const updateBlueprintData = (
     start: number
     end: number
   }
+  const addLeadingLineBreak = (data: string): string =>
+    // We need a leading line break if we are in an empty scope (otherwise we get values
+    // in the same line as the opening bracket), since finding out whether we are in an empty
+    // scope isn't easy and adding a line break where we don't need it doesn't actually do
+    // harm, we add the leading line break anyway
+    `\n${data}`
+
   const toBufferChange = (change: DetailedChangeWithSource): BufferChange => {
     const elem = change.action === 'remove' ? undefined : change.data.after
     let newData: string
     if (elem !== undefined) {
       const changeKey = change.id.name
       const isListElement = changeKey.match(/^\d+$/) !== null
-      if (isElement(elem) || isListElement) {
-        // elements and list values do not need to be serialized with their key
-        newData = saltoDump(elem)
+      if (change.id.idType === 'annotation') {
+        if (isType(elem)) {
+          newData = dumpSingleAnnotationType(changeKey, elem)
+        } else {
+          newData = dumpAnnotationTypes(elem)
+        }
+        newData = addLeadingLineBreak(newData)
+      } else if (isElement(elem)) {
+        newData = dumpElements([elem])
+      } else if (isListElement) {
+        newData = dumpValues(elem)
       } else {
         // When dumping values (attributes) we need to dump the key as well
-        newData = saltoDump({ [changeKey]: elem })
-        // We need a leading line break if we are in an empty scope (otherwise we get values
-        // in the same line as the opening bracket), since finding out whether we are in an empty
-        // scope isn't easy and adding a line break where we don't need it doesn't actually do
-        // harm, we add the leading line break anyway
-        newData = `\n${newData}`
+        newData = dumpValues({ [changeKey]: elem })
+        newData = addLeadingLineBreak(newData)
       }
       if (change.action === 'modify' && newData.slice(-1)[0] === '\n') {
         // Trim trailing newline (the original value already has one)
@@ -205,7 +263,7 @@ export const getChangesToUpdate = (
 ): DetailedChange[] => {
   const isNestedAddition = (dc: DetailedChange): boolean => (dc.path || false)
     && dc.action === 'add'
-    && dc.id.nestingLevel === 1
+    && dc.id.nestingLevel === (dc.id.idType === 'annotation' ? 2 : 1)
     && !parentElementExistsInPath(dc, elementsIndex)
 
   const [nestedAdditionsWithPath, otherChanges] = _.partition(

@@ -2,7 +2,7 @@ import {
   BuiltinTypes, TypeElement, ObjectType, ElemID, InstanceElement, isModificationDiff,
   isRemovalDiff, isAdditionDiff, Field, Element, isObjectType, isInstanceElement, AdapterCreator,
   Value, Change, getChangeElement, isField, isElement, ElemIdGetter,
-  DataModificationResult,
+  DataModificationResult, Values,
 } from 'adapter-api'
 import {
   SaveResult, MetadataInfo, QueryResult, FileProperties,
@@ -10,7 +10,7 @@ import {
 } from 'jsforce'
 import _ from 'lodash'
 import { logger } from '@salto/logging'
-import { decorators } from '@salto/lowerdash'
+import { decorators, collections } from '@salto/lowerdash'
 import SalesforceClient, { API_VERSION, Credentials, validateCredentials } from './client/client'
 import * as constants from './constants'
 import {
@@ -46,6 +46,7 @@ import {
 import { id, addApiName, addMetadataType, addLabel } from './filters/utils'
 import { changeValidator } from './change_validator'
 
+const { makeArray } = collections.array
 const log = logger(module)
 
 const RECORDS_CHUNK_SIZE = 10000
@@ -89,6 +90,9 @@ export interface SalesforceAdapterParams {
   // Metadata types that we should not use client.update but client.upsert upon instance update
   metadataTypesToUseUpsertUponUpdate?: string[]
 
+  // Metadata types that that includes metadata types inside them
+  metadataTypesConsistsOfMetadataTypes?: Record<string, string[]>
+
   // Filters to deploy to all adapter operations
   filterCreators?: FilterCreator[]
 
@@ -120,6 +124,7 @@ export default class SalesforceAdapter {
   private metadataAdditionalTypes: string[]
   private metadataTypesToSkipMutation: string[]
   private metadataTypesToUseUpsertUponUpdate: string[]
+  private metadataTypesConsistsOfMetadataTypes: Record<string, string[]>
   private filterCreators: FilterCreator[]
   private client: SalesforceClient
   private systemFields: string[]
@@ -163,6 +168,15 @@ export default class SalesforceAdapter {
     metadataTypesToUseUpsertUponUpdate = [
       'Flow', // update fails for Active flows
     ],
+    metadataTypesConsistsOfMetadataTypes = {
+      CustomLabels: ['labels'],
+      AssignmentRules: ['assignmentRule'],
+      AutoResponseRules: ['autoresponseRule'],
+      EscalationRules: ['escalationRule'],
+      MatchingRules: ['matchingRules'],
+      SharingRules: ['sharingCriteriaRules', 'sharingGuestRules',
+        'sharingOwnerRules', 'sharingTerritoryRules'],
+    },
     filterCreators = [
       missingFieldsFilter,
       CustomObjectsFilter,
@@ -213,6 +227,7 @@ export default class SalesforceAdapter {
     this.metadataAdditionalTypes = metadataAdditionalTypes
     this.metadataTypesToSkipMutation = metadataTypesToSkipMutation
     this.metadataTypesToUseUpsertUponUpdate = metadataTypesToUseUpsertUponUpdate
+    this.metadataTypesConsistsOfMetadataTypes = metadataTypesConsistsOfMetadataTypes
     this.filterCreators = filterCreators
     this.client = client
     this.systemFields = systemFields
@@ -553,6 +568,22 @@ export default class SalesforceAdapter {
     return []
   }
 
+  private async deleteRemovedMetadataObjects(oldInstance: InstanceElement,
+    newInstance: InstanceElement, fieldName: string): Promise<void> {
+    const getDeletedObjectsNames = (oldObjects: Values[], newObjects: Values[]): string[] => {
+      const newObjectsNames = newObjects.map(o => o.fullName)
+      return oldObjects.filter(o => !newObjectsNames.includes(o.fullName)).map(o => o.fullName)
+    }
+
+    const deletedObjects = getDeletedObjectsNames(
+      makeArray(oldInstance.value[fieldName]), makeArray(newInstance.value[fieldName])
+    )
+    if (!_.isEmpty(deletedObjects)) {
+      await this.client.delete(metadataType(newInstance.type.fields[fieldName].type),
+        deletedObjects)
+    }
+  }
+
   /**
    * Update an instance
    * @param prevInstance The metadata of the old instance
@@ -565,6 +596,13 @@ export default class SalesforceAdapter {
     const typeName = metadataType(newInstance)
     if (this.metadataTypesToSkipMutation.includes(typeName)) {
       return newInstance
+    }
+
+    if (Object.keys(this.metadataTypesConsistsOfMetadataTypes).includes(typeName)) {
+      // Checks if we need to delete metadata objects
+      this.metadataTypesConsistsOfMetadataTypes[typeName]
+        .forEach(fieldName =>
+          this.deleteRemovedMetadataObjects(prevInstance, newInstance, fieldName))
     }
 
     if (this.isMetadataTypeToRetrieveAndDeploy(typeName)) {

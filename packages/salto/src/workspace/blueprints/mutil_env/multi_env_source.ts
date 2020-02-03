@@ -55,17 +55,29 @@ export const multiEnvSource = (
     }
   }
 
+  const isContained = (relPath: string, baseDir: string): boolean => {
+    const baseDirParts = baseDir.split(path.sep)
+    const relPathParts = relPath.split(path.sep)
+    return _.isEqual(baseDirParts, relPathParts.slice(0, baseDirParts.length))
+  }
+
   state = buildMutiEnvState()
 
   const getSourceForBlueprint = (
-    filename: string
+    fullName: string
   ): {source: BlueprintsSource; relPath: string} => {
     const [prefix, source] = _.entries(sources)
-      .find(([key, _v]) => key !== commonSourcePrefix && filename.startsWith(key)) || []
+      .filter(([srcPrefix, _v]) => srcPrefix !== commonSourcePrefix)
+      .find(([srcPrefix, _v]) => isContained(fullName, srcPrefix)) || []
     return prefix && source
-      ? { relPath: filename.slice(prefix.length + 1), source }
-      : { relPath: filename, source: commonSource() }
+      ? { relPath: fullName.slice(prefix.length + 1), source }
+      : { relPath: fullName, source: commonSource() }
   }
+
+  const buildWorkspaceFileName = (prefix: string, relPath: string): string => (
+    path.join(prefix, relPath)
+  )
+
   const getBlueprint = async (filename: string): Promise<Blueprint | undefined> => {
     const { source, relPath } = getSourceForBlueprint(filename)
     return source.getBlueprint(relPath)
@@ -125,7 +137,7 @@ export const multiEnvSource = (
     listBlueprints: async (): Promise<string[]> => (
       _.flatten(await Promise.all(_.entries(sources)
         .map(async ([prefix, source]) => (
-          await source.listBlueprints()).map(p => path.join(prefix, p)))))
+          await source.listBlueprints()).map(p => buildWorkspaceFileName(prefix, p)))))
     ),
     setBlueprints: async (...blueprints: Blueprint[]): Promise<void> => {
       await Promise.all(blueprints.map(setBlueprint))
@@ -143,7 +155,7 @@ export const multiEnvSource = (
       _.flatten(await Promise.all(_.entries(sources)
         .map(async ([prefix, source]) =>
           (await source.getSourceRanges(elemID)).map(sourceRange => (
-            { filename: path.join(prefix, sourceRange.filename), ...sourceRange })))))
+            { filename: buildWorkspaceFileName(prefix, sourceRange.filename), ...sourceRange })))))
     ),
     getErrors: async (): Promise<Errors> => {
       const srcErrors = _.flatten(await Promise.all(_.entries(sources)
@@ -155,22 +167,21 @@ export const multiEnvSource = (
               ...err,
               subject: {
                 ...err.subject,
-                filename: path.join(prefix, err.subject.filename),
+                filename: buildWorkspaceFileName(prefix, err.subject.filename),
               },
               context: err.context && {
                 ...err.context,
-                filename: path.join(prefix, err.context.filename),
+                filename: buildWorkspaceFileName(prefix, err.context.filename),
               },
             })),
           }
         })))
       const { mergeErrors } = await state
-      return new Errors(_.reduce(srcErrors, (acc, errors) => {
-        acc.parse = [...acc.parse, ...errors.parse]
-        acc.merge = [...acc.merge, ...errors.merge]
-        acc.validation = []
-        return acc
-      },
+      return new Errors(_.reduce(srcErrors, (acc, errors) => ({
+        ...acc,
+        parse: [...acc.parse, ...errors.parse],
+        merge: [...acc.merge, ...errors.merge],
+      }),
       {
         merge: mergeErrors,
         parse: [] as ParseError[],

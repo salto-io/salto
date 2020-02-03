@@ -45,18 +45,10 @@ export const multiEnvSource = (
 
   const getActiveSources = (): BlueprintsSource[] => [primarySource(), commonSource()]
 
-  const getFromAllActiveSources = async <T>(
-    callback: (bp: BlueprintsSource) => Promise<T[]>,
-  ): Promise<T[]> => {
-    const activeSources = getActiveSources()
-    return _.flatten(await Promise.all(activeSources.map(callback)))
-  }
-
   const buildMutiEnvState = async (): Promise<MultiEnvState> => {
-    const allActiveElements = await getFromAllActiveSources(s => s.getAll())
-    const mergeResult = mergeElements(allActiveElements)
-    const elements = _.keyBy(mergeResult.merged, e => e.elemID.getFullName())
-    const { errors } = mergeResult
+    const allActiveElements = _.flatten(await Promise.all(getActiveSources().map(s => s.getAll())))
+    const { errors, merged } = mergeElements(allActiveElements)
+    const elements = _.keyBy(merged, e => e.elemID.getFullName())
     return {
       elements,
       mergeErrors: errors,
@@ -84,6 +76,7 @@ export const multiEnvSource = (
     await source.setBlueprints({ ...blueprint, filename: relPath })
     state = buildMutiEnvState()
   }
+
   const removeBlueprint = async (filename: string): Promise<void> => {
     const { source, relPath } = getSourceForBlueprint(filename)
     await source.removeBlueprints(relPath)
@@ -105,7 +98,8 @@ export const multiEnvSource = (
       await Promise.all([
         primarySource().update(routedChanges.primarySource || []),
         commonSource().update(routedChanges.commonSource || []),
-        ..._.keys(secondaryChanges).map(k => secondarySources()[k].update(secondaryChanges[k])),
+        ..._.keys(secondaryChanges)
+          .map(srcName => secondarySources()[srcName].update(secondaryChanges[srcName])),
       ])
     }
     state = buildMutiEnvState()
@@ -170,6 +164,7 @@ export const multiEnvSource = (
             })),
           }
         })))
+      const { mergeErrors } = await state
       return new Errors(_.reduce(srcErrors, (acc, errors) => {
         acc.parse = [...acc.parse, ...errors.parse]
         acc.merge = [...acc.merge, ...errors.merge]
@@ -177,8 +172,8 @@ export const multiEnvSource = (
         return acc
       },
       {
+        merge: mergeErrors,
         parse: [] as ParseError[],
-        merge: [] as MergeError[],
         validation: [] as ValidationError[],
       }))
     },

@@ -14,7 +14,6 @@ export class InvalidProjectionError extends Error {
 
 const projectValue = (src: Value, target: Value): Value => {
   if (_.isPlainObject(src) && _.isPlainObject(target)) {
-    // console.log(src, target)
     const projection: Values = {}
     _.keys(src).forEach(key => {
       if (target[key]) {

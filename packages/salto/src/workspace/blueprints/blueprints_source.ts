@@ -185,7 +185,7 @@ BlueprintsSource => {
       const currentState = await state
       const { parent, path } = id.createTopLevelParentID()
       const baseElement = currentState.elements[parent.getFullName()]
-      return _.isEmpty(path) ? baseElement : resolvePath(baseElement, id)
+      return baseElement && !_.isEmpty(path) ? resolvePath(baseElement, id) : baseElement
     },
 
     getAll: async (): Promise<Element[]> => _.values((await state).elements),
@@ -195,11 +195,14 @@ BlueprintsSource => {
       await cache.flush()
     },
 
-    getErrors: async (): Promise<Errors> => new Errors({
-      parse: _.flatten(Object.values((await state).parsedBlueprints).map(parsed => parsed.errors)),
-      merge: (await state).mergeErrors,
-      validation: [],
-    }),
+    getErrors: async (): Promise<Errors> => {
+      const currentState = await state
+      return new Errors({
+        parse: _.flatten(Object.values(currentState.parsedBlueprints).map(parsed => parsed.errors)),
+        merge: currentState.mergeErrors,
+        validation: [],
+      })
+    },
 
     listBlueprints: () => blueprintsStore.list(),
 

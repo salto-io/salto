@@ -128,6 +128,7 @@ export default class SalesforceAdapter {
       'CustomField', // We have special treatment for this type
       'Settings',
       'StaticResource',
+      'NetworkBranding',
       // readMetadata fails on those and pass on the parents (AssignmentRules and EscalationRules)
       'AssignmentRule', 'EscalationRule',
     ],
@@ -684,7 +685,8 @@ export default class SalesforceAdapter {
 
     log.debug(`Retrieve Request: ${JSON.stringify(retrieveRequest)}`)
     const retrieveResult = await this.client.retrieve(retrieveRequest)
-    log.debug(`Retrieve Result: ${JSON.stringify(retrieveResult)}`)
+    log.debug(`Retrieve Result Type: ${typeof retrieveResult.zipFile}`)
+    log.debug(`Retrieve Result messages: ${retrieveResult.messages}`)
     const typeToInstanceInfos = await fromRetrieveResult(retrieveResult, metadataTypes)
     const fullNameToNamespace: Record<string, string> = _(Object.values(retrieveTypeToFiles))
       .flatten()

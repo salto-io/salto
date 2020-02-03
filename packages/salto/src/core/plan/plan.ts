@@ -15,6 +15,7 @@ import { buildGroupedGraphFromDiffGraph, findGroupLevelChange } from './group'
 import { filterInvalidChanges } from './filter'
 import {
   addNodeDependencies, addFieldToObjectDependency, addTypeDependency, addAfterRemoveDependency,
+  addReferencesDependency,
 } from './dependency'
 import { PlanTransformer, changeId } from './common'
 import { DependencyChanger } from './dependency/common'
@@ -125,6 +126,7 @@ const defaultDependencyChangers = [
   addAfterRemoveDependency,
   addTypeDependency,
   addFieldToObjectDependency,
+  addReferencesDependency,
 ]
 
 export const getPlan = async (

@@ -1,8 +1,9 @@
 import wu from 'wu'
 import { DiffGraph, DataNodeMap, DiffNode } from '@salto/dag'
-import { ChangeDataType, Change, ObjectType, InstanceElement } from 'adapter-api'
+import { ChangeDataType, Change, ObjectType, InstanceElement, ElemID, ReferenceExpression, Field, BuiltinTypes, PrimitiveType, PrimitiveTypes } from 'adapter-api'
 import {
   addNodeDependencies, addAfterRemoveDependency, addFieldToObjectDependency, addTypeDependency,
+  addReferencesDependency,
 } from '../../../src/core/plan/dependency'
 import { DependencyChange, ChangeId } from '../../../src/core/plan/dependency/common'
 import { getAllElements } from '../../common/elements'
@@ -238,6 +239,84 @@ describe('dependecy changers', () => {
         expect(dependencyChanges[0].action).toEqual('add')
         expect(dependencyChanges[0].dependency.source).toEqual(0)
         expect(dependencyChanges[0].dependency.target).toEqual(1)
+      })
+    })
+  })
+
+  describe('addReferecesDependency', () => {
+    const testTypeId = new ElemID('test', 'type')
+    let testAnnoType: PrimitiveType
+    let testType: ObjectType
+    let testInstance: InstanceElement
+
+    beforeEach(() => {
+      testAnnoType = new PrimitiveType({
+        elemID: new ElemID('test', 'anno'),
+        primitive: PrimitiveTypes.STRING,
+      })
+      testType = new ObjectType({
+        elemID: testTypeId,
+        fields: { ref: new Field(testTypeId, 'ref', BuiltinTypes.STRING) },
+        annotations: { annoRef: new ReferenceExpression(testAnnoType.elemID) },
+        annotationTypes: { annoRef: testAnnoType },
+      })
+      testInstance = new InstanceElement(
+        'test',
+        testType,
+        { ref: new ReferenceExpression(testTypeId) },
+      )
+    })
+
+    describe('when reference and target are added', () => {
+      beforeEach(async () => {
+        const inputChanges = new Map([
+          [0, toChange('add', testType)],
+          [1, toChange('add', testInstance)],
+          [2, toChange('add', testAnnoType)],
+        ])
+        dependencyChanges = [...await addReferencesDependency(inputChanges, new Map())]
+      })
+      it('should add dependency for references from values and from annotations', () => {
+        expect(dependencyChanges).toHaveLength(2)
+      })
+      it('should add dependency from value reference to target', () => {
+        expect(dependencyChanges).toContainEqual(
+          { action: 'add', dependency: { source: 1, target: 0 } }
+        )
+      })
+      it('should add dependency from annotation reference to target', () => {
+        expect(dependencyChanges).toContainEqual(
+          { action: 'add', dependency: { source: 0, target: 2 } }
+        )
+      })
+    })
+    describe('when reference and target are removed', () => {
+      beforeEach(async () => {
+        const inputChanges = new Map([
+          [0, toChange('remove', testType)],
+          [1, toChange('remove', testInstance)],
+        ])
+        dependencyChanges = [...await addReferencesDependency(inputChanges, new Map())]
+      })
+      it('should add dependency from target to reference', () => {
+        expect(dependencyChanges).toHaveLength(1)
+        expect(dependencyChanges[0].action).toEqual('add')
+        expect(dependencyChanges[0].dependency.source).toEqual(0)
+        expect(dependencyChanges[0].dependency.target).toEqual(1)
+      })
+    })
+    describe('when reference target is not an element', () => {
+      beforeEach(async () => {
+        testType.annotations.annoRef = 'value'
+        testInstance.value.ref = new ReferenceExpression(testTypeId.createNestedID('attr', 'bla'))
+        const inputChanges = new Map([
+          [0, toChange('add', testType)],
+          [1, toChange('add', testInstance)],
+        ])
+        dependencyChanges = [...await addReferencesDependency(inputChanges, new Map())]
+      })
+      it('should not add dependency', () => {
+        expect(dependencyChanges).toHaveLength(0)
       })
     })
   })

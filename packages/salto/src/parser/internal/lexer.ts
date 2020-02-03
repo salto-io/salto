@@ -8,7 +8,7 @@ const lexer = moo.states({
     mlStart: { match: /<<EOF[ \t]*\n/, lineBreaks: true, push: 'multilineString' },
     dq: { match: '"', push: 'string' },
     // string: /".*?"/,
-    number: /\d+\.?\d*/,
+    number: /[-+]?\d+\.?\d*/,
     boolean: /true|false/,
     word: /[\d\w.]+/,
     arrOpen: '[',

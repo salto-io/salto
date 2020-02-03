@@ -128,6 +128,7 @@ export default class SalesforceAdapter {
       'CustomField', // We have special treatment for this type
       'Settings',
       'StaticResource',
+      'NetworkBranding',
       // readMetadata fails on those and pass on the parents (AssignmentRules and EscalationRules)
       'AssignmentRule', 'EscalationRule',
     ],

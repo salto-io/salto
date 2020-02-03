@@ -75,6 +75,11 @@ interface PropertyGroup {
   fields: FormProperty[]
   default: boolean
   isSmartGroup: boolean
+  richText: RichText
+}
+
+interface RichText {
+  content: string
 }
 
 interface Options {
@@ -123,7 +128,16 @@ export interface FormProperty {
   defaultValue: string
   // The default value of the field
   selectedOptions: string[]
+  // For enumerated fields, this will be a list of Strings.
+  // Representing the options that will be selected by default
   options: Options[]
+  // For enumerated fields, this will be a list of Strings representing the options for the field
+  // Will be empty for non-enumerated fields.
+  placeholder: string
+  // String; The placeholder text for the field, which will display
+  displayOrder: number
+  // Integer; The order to display the fields in.
+  // If the values are negative, the fields appear in the order they appear in the 'fields' list
 }
 
 export interface Workflows extends HubspotMetadata {

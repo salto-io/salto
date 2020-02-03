@@ -25,6 +25,7 @@ export const OBJECTS_NAMES = { // TODO: Align names
   DEPENDENT_FIELD_FILTER: 'dependentFieldFilter',
   FIELD_FILTER: 'fieldFilter',
   DEPEDENT_FORM_PROPERTY: 'dependentFormProperty',
+  RICHTEXT: 'richText',
 }
 
 export const FIELD_TYPES = {
@@ -166,6 +167,11 @@ export const FORM_PROPERTY_GROUP_FIELDS = {
   DEFAULT: 'default',
   FIELDS: 'fields',
   ISSMARTGROUP: 'isSmartGroup',
+  RICHTEXT: 'richText',
+}
+
+export const RICHTEXT_FIELDS = {
+  CONTENT: 'content',
 }
 
 export const FORM_PROPERTY_FIELDS = {
@@ -180,6 +186,9 @@ export const FORM_PROPERTY_FIELDS = {
   DEPENDENTFIELDFILTERS: 'dependentFieldFilters',
   PLACEHOLDER: 'placeholder',
   CONTACT_PROPERTY: 'contactProperty',
+  DISPLAYORDER: 'displayOrder',
+  TYPE: 'type',
+  FIELDTYPE: 'fieldType',
 }
 
 export const DEPENDENT_FIELD_FILTER_FIELDS = {

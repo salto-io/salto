@@ -11,6 +11,7 @@ import {
   CONTACT_PROPERTY_FIELDS, CONTACTLISTIDS_FIELDS, RSSTOEMAILTIMING_FIELDS,
   DEPENDENT_FIELD_FILTER_FIELDS, FIELD_FILTER_FIELDS, WORKFLOWS_FIELDS,
   MARKETING_EMAIL_FIELDS,
+  RICHTEXT_FIELDS,
 } from '../constants'
 import {
   HubspotMetadata,
@@ -33,6 +34,11 @@ const conditionActionElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.CONDITIONACTION)
 const contactPropertyElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.CONTACT_PROPERTY)
 const dependentFormFieldFilterElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.DEPENDENT_FIELD_FILTER)
 const fieldFilterElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.FIELD_FILTER)
+const richTextElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.RICHTEXT)
+
+const contactPropertyTypeValues = ['string', 'number', 'date', 'datetime', 'enumeration']
+const contactPropertyFieldTypeValues = ['textarea', 'text', 'date', 'file', 'number', 'select',
+  'radio', 'checkbox', 'booleancheckbox']
 
 export class Types {
   private static fieldTypes: TypeMap = {
@@ -154,7 +160,7 @@ export class Types {
             name: CONTACT_PROPERTY_FIELDS.TYPE,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: true,
-            [CORE_ANNOTATIONS.VALUES]: ['string', 'number', 'date', 'datetime', 'enumeration'],
+            [CORE_ANNOTATIONS.VALUES]: contactPropertyTypeValues,
           },
         ),
         [CONTACT_PROPERTY_FIELDS.FIELDTYPE]: new TypeField(
@@ -162,8 +168,7 @@ export class Types {
             name: CONTACT_PROPERTY_FIELDS.FIELDTYPE,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: true,
-            [CORE_ANNOTATIONS.VALUES]: ['textarea', 'text', 'date', 'file', 'number', 'select',
-              'radio', 'checkbox', 'booleancheckbox'],
+            [CORE_ANNOTATIONS.VALUES]: contactPropertyFieldTypeValues,
           },
         ),
         [CONTACT_PROPERTY_FIELDS.OPTIONS]: new TypeField(
@@ -380,6 +385,29 @@ export class Types {
               [CORE_ANNOTATIONS.REQUIRED]: false,
             }
           ),
+          [FORM_PROPERTY_FIELDS.DISPLAYORDER]: new TypeField(
+            elemID, FORM_PROPERTY_FIELDS.DISPLAYORDER, BuiltinTypes.NUMBER, {
+              name: FORM_PROPERTY_FIELDS.DISPLAYORDER,
+              _readOnly: false,
+              [CORE_ANNOTATIONS.REQUIRED]: false,
+            }
+          ),
+          [FORM_PROPERTY_FIELDS.TYPE]: new TypeField(
+            elemID, FORM_PROPERTY_FIELDS.TYPE, BuiltinTypes.STRING, {
+              name: FORM_PROPERTY_FIELDS.TYPE,
+              _readOnly: true,
+              [CORE_ANNOTATIONS.REQUIRED]: true,
+              [CORE_ANNOTATIONS.VALUES]: contactPropertyTypeValues,
+            }
+          ),
+          [FORM_PROPERTY_FIELDS.FIELDTYPE]: new TypeField(
+            elemID, FORM_PROPERTY_FIELDS.FIELDTYPE, BuiltinTypes.STRING, {
+              name: FORM_PROPERTY_FIELDS.FIELDTYPE,
+              _readOnly: true,
+              [CORE_ANNOTATIONS.REQUIRED]: true,
+              [CORE_ANNOTATIONS.VALUES]: contactPropertyFieldTypeValues,
+            }
+          ),
         },
         path: [HUBSPOT, 'types', 'subtypes', elemID.name],
       })
@@ -391,7 +419,8 @@ export class Types {
               name: FORM_PROPERTY_FIELDS.DEPENDENTFIELDFILTERS,
               _readOnly: false,
               [CORE_ANNOTATIONS.REQUIRED]: false,
-            }
+            },
+            true,
           ),
         })
       }
@@ -421,6 +450,7 @@ export class Types {
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: true,
           },
+          true,
         ),
         [DEPENDENT_FIELD_FILTER_FIELDS.DEPEDENTFORMFIELD]: new TypeField(
           dependentFormFieldFilterElemID, DEPENDENT_FIELD_FILTER_FIELDS.DEPEDENTFORMFIELD,
@@ -435,6 +465,21 @@ export class Types {
     })
 
   private static propertyType = Types.createFormPropertyType(propertyElemID, true)
+
+  private static richTextType: ObjectType =
+    new ObjectType({
+      elemID: richTextElemID,
+      fields: {
+        [RICHTEXT_FIELDS.CONTENT]: new TypeField(
+          richTextElemID, RICHTEXT_FIELDS.CONTENT, BuiltinTypes.STRING, {
+            name: RICHTEXT_FIELDS.CONTENT,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+      },
+      path: [HUBSPOT, 'types', 'subtypes', richTextElemID.name],
+    })
 
   private static propertyGroupType: ObjectType =
     new ObjectType({
@@ -461,6 +506,13 @@ export class Types {
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
+        ),
+        [FORM_PROPERTY_GROUP_FIELDS.RICHTEXT]: new TypeField(
+          propertyGroupElemID, FORM_PROPERTY_GROUP_FIELDS.RICHTEXT, Types.richTextType, {
+            name: FORM_PROPERTY_GROUP_FIELDS.RICHTEXT,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
         ),
       },
       path: [HUBSPOT, 'types', 'subtypes', propertyGroupElemID.name],

@@ -6,7 +6,7 @@ const LABEL = 'label'
 const PROPERTY_OPTIONS = 'options'
 const DISPLAYORDER = 'displayOrder'
 
-export const OBJECTS_NAMES = { // TODO: Align names
+export const OBJECTS_NAMES = {
   FORM: 'form',
   WORKFLOWS: 'workflows',
   MARKETINGEMAIL: 'marketingEmail',

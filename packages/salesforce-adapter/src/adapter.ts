@@ -27,6 +27,7 @@ import assignmentRulesFilter from './filters/assignment_rules'
 import convertListsFilter from './filters/convert_lists'
 import convertTypeFilter from './filters/convert_types'
 import missingFieldsFilter from './filters/missing_fields'
+import removeFieldsFilter from './filters/remove_fields'
 import standardValueSetFilter from './filters/standard_value_sets'
 import flowFilter from './filters/flow'
 import leadConvertSettingsFilter from './filters/lead_convert_settings'
@@ -164,6 +165,7 @@ export default class SalesforceAdapter {
     filterCreators = [
       missingFieldsFilter,
       CustomObjectsFilter,
+      removeFieldsFilter,
       profilePermissionsFilter,
       layoutFilter,
       assignmentRulesFilter,

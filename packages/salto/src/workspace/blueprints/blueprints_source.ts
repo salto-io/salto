@@ -47,7 +47,7 @@ type ParsedBlueprintMap = {
 type BlueprintsState = {
   readonly parsedBlueprints: ParsedBlueprintMap
   readonly elementsIndex: Record<string, string[]>
-  readonly elements: Record<string, Element>
+  readonly mergedElements: Record<string, Element>
   readonly mergeErrors: MergeError[]
 }
 
@@ -102,7 +102,7 @@ BlueprintsSource => {
       _.size(elementsIndex), _.size(allParsed))
     return {
       parsedBlueprints: allParsed,
-      elements: _.keyBy(mergeResult.merged, e => e.elemID.getFullName()),
+      mergedElements: _.keyBy(mergeResult.merged, e => e.elemID.getFullName()),
       mergeErrors: mergeResult.errors,
       elementsIndex,
     }
@@ -184,11 +184,11 @@ BlueprintsSource => {
     get: async (id: ElemID): Promise<Element | Value> => {
       const currentState = await state
       const { parent, path } = id.createTopLevelParentID()
-      const baseElement = currentState.elements[parent.getFullName()]
+      const baseElement = currentState.mergedElements[parent.getFullName()]
       return baseElement && !_.isEmpty(path) ? resolvePath(baseElement, id) : baseElement
     },
 
-    getAll: async (): Promise<Element[]> => _.values((await state).elements),
+    getAll: async (): Promise<Element[]> => _.values((await state).mergedElements),
 
     flush: async (): Promise<void> => {
       await blueprintsStore.flush()

@@ -32,15 +32,15 @@ type MultiEnvState = {
 
 export const multiEnvSource = (
   sources: Record<string, BlueprintsSource>,
-  primarySourcePrefix: string,
-  commonSourcePrefix: string,
+  primarySourceName: string,
+  commonSourceName: string,
 ): BlueprintsSource => {
   let state: Promise<MultiEnvState>
 
-  const primarySource = (): BlueprintsSource => sources[primarySourcePrefix]
-  const commonSource = (): BlueprintsSource => sources[commonSourcePrefix]
+  const primarySource = (): BlueprintsSource => sources[primarySourceName]
+  const commonSource = (): BlueprintsSource => sources[commonSourceName]
   const secondarySources = (): Record<string, BlueprintsSource> => (
-    _.omit(sources, [primarySourcePrefix, commonSourcePrefix])
+    _.omit(sources, [primarySourceName, commonSourceName])
   )
 
   const getActiveSources = (): BlueprintsSource[] => [primarySource(), commonSource()]
@@ -48,34 +48,34 @@ export const multiEnvSource = (
   const buildMutiEnvState = async (): Promise<MultiEnvState> => {
     const allActiveElements = _.flatten(await Promise.all(getActiveSources().map(s => s.getAll())))
     const { errors, merged } = mergeElements(allActiveElements)
-    const elements = _.keyBy(merged, e => e.elemID.getFullName())
     return {
-      elements,
+      elements: _.keyBy(merged, e => e.elemID.getFullName()),
       mergeErrors: errors,
     }
   }
 
-  const isContained = (relPath: string, baseDir: string): boolean => {
-    const baseDirParts = baseDir.split(path.sep)
-    const relPathParts = relPath.split(path.sep)
-    return _.isEqual(baseDirParts, relPathParts.slice(0, baseDirParts.length))
-  }
 
   state = buildMutiEnvState()
 
   const getSourceForBlueprint = (
     fullName: string
   ): {source: BlueprintsSource; relPath: string} => {
+    const isContained = (relPath: string, basePath: string): boolean => {
+      const baseDirParts = basePath.split(path.sep)
+      const relPathParts = relPath.split(path.sep)
+      return _.isEqual(baseDirParts, relPathParts.slice(0, baseDirParts.length))
+    }
+
     const [prefix, source] = _.entries(sources)
-      .filter(([srcPrefix, _v]) => srcPrefix !== commonSourcePrefix)
+      .filter(([srcPrefix, _v]) => srcPrefix !== commonSourceName)
       .find(([srcPrefix, _v]) => isContained(fullName, srcPrefix)) || []
     return prefix && source
       ? { relPath: fullName.slice(prefix.length + 1), source }
       : { relPath: fullName, source: commonSource() }
   }
 
-  const buildWorkspaceFileName = (prefix: string, relPath: string): string => (
-    path.join(prefix, relPath)
+  const buidFullPath = (basePath: string, relPath: string): string => (
+    path.join(basePath, relPath)
   )
 
   const getBlueprint = async (filename: string): Promise<Blueprint | undefined> => {
@@ -137,7 +137,7 @@ export const multiEnvSource = (
     listBlueprints: async (): Promise<string[]> => (
       _.flatten(await Promise.all(_.entries(sources)
         .map(async ([prefix, source]) => (
-          await source.listBlueprints()).map(p => buildWorkspaceFileName(prefix, p)))))
+          await source.listBlueprints()).map(p => buidFullPath(prefix, p)))))
     ),
     setBlueprints: async (...blueprints: Blueprint[]): Promise<void> => {
       await Promise.all(blueprints.map(setBlueprint))
@@ -155,7 +155,7 @@ export const multiEnvSource = (
       _.flatten(await Promise.all(_.entries(sources)
         .map(async ([prefix, source]) =>
           (await source.getSourceRanges(elemID)).map(sourceRange => (
-            { filename: buildWorkspaceFileName(prefix, sourceRange.filename), ...sourceRange })))))
+            { filename: buidFullPath(prefix, sourceRange.filename), ...sourceRange })))))
     ),
     getErrors: async (): Promise<Errors> => {
       const srcErrors = _.flatten(await Promise.all(_.entries(sources)
@@ -167,11 +167,11 @@ export const multiEnvSource = (
               ...err,
               subject: {
                 ...err.subject,
-                filename: buildWorkspaceFileName(prefix, err.subject.filename),
+                filename: buidFullPath(prefix, err.subject.filename),
               },
               context: err.context && {
                 ...err.context,
-                filename: buildWorkspaceFileName(prefix, err.context.filename),
+                filename: buidFullPath(prefix, err.context.filename),
               },
             })),
           }

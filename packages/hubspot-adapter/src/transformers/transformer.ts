@@ -416,22 +416,21 @@ export class Types {
       elemID: nurtureTimeRangeElemID,
       fields: {
         [NURTURETIMERANGE_FIELDS.ENABLED]: new TypeField(
-          contactListIdsElemID, NURTURETIMERANGE_FIELDS.ENABLED, BuiltinTypes.BOOLEAN, {
+          nurtureTimeRangeElemID, NURTURETIMERANGE_FIELDS.ENABLED, BuiltinTypes.BOOLEAN, {
             name: NURTURETIMERANGE_FIELDS.ENABLED,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
-            [CORE_ANNOTATIONS.DEFAULT]: true,
           },
         ),
         [NURTURETIMERANGE_FIELDS.STARTHOUR]: new TypeField(
-          contactListIdsElemID, NURTURETIMERANGE_FIELDS.STARTHOUR, BuiltinTypes.NUMBER, {
+          nurtureTimeRangeElemID, NURTURETIMERANGE_FIELDS.STARTHOUR, BuiltinTypes.NUMBER, {
             name: NURTURETIMERANGE_FIELDS.STARTHOUR,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
         [NURTURETIMERANGE_FIELDS.STOPHOUR]: new TypeField(
-          contactListIdsElemID, NURTURETIMERANGE_FIELDS.STOPHOUR, BuiltinTypes.NUMBER, {
+          nurtureTimeRangeElemID, NURTURETIMERANGE_FIELDS.STOPHOUR, BuiltinTypes.NUMBER, {
             name: NURTURETIMERANGE_FIELDS.STOPHOUR,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,

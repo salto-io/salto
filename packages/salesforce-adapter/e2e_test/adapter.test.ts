@@ -1204,7 +1204,7 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(flow.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('TestFlow')
       expect(flow.value.status).toEqual('Draft')
       expect(flow.value.variables[0].dataType).toEqual('SObject')
-      expect(flow.value.processType).toBeInstanceOf(ReferenceExpression)
+      expect(flow.value.processType).toEqual('Workflow')
     })
 
     describe('should fetch Workflow instance', () => {

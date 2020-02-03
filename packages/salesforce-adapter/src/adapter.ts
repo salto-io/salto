@@ -49,7 +49,21 @@ import { changeValidator } from './change_validator'
 const { makeArray } = collections.array
 const log = logger(module)
 
+const { makeArray } = collections.array
 const RECORDS_CHUNK_SIZE = 10000
+
+const metadataTypesConsistsOfMetadataTypesWithObjectNames: Record<string, string[]> = {
+  CustomLabels: ['labels'],
+}
+
+const metadataTypesConsistsOfMetadataTypesWithFieldNames: Record<string, string[]> = {
+  AssignmentRules: ['assignmentRule'],
+  AutoResponseRules: ['autoresponseRule'],
+  EscalationRules: ['escalationRule'],
+  MatchingRules: ['matchingRules'],
+  SharingRules: ['sharingCriteriaRules', 'sharingGuestRules',
+    'sharingOwnerRules', 'sharingTerritoryRules'],
+}
 
 // Add elements defaults
 const addDefaults = (element: ObjectType): void => {
@@ -169,13 +183,8 @@ export default class SalesforceAdapter {
       'Flow', // update fails for Active flows
     ],
     metadataTypesConsistsOfMetadataTypes = {
-      CustomLabels: ['labels'],
-      AssignmentRules: ['assignmentRule'],
-      AutoResponseRules: ['autoresponseRule'],
-      EscalationRules: ['escalationRule'],
-      MatchingRules: ['matchingRules'],
-      SharingRules: ['sharingCriteriaRules', 'sharingGuestRules',
-        'sharingOwnerRules', 'sharingTerritoryRules'],
+      ...metadataTypesConsistsOfMetadataTypesWithObjectNames,
+      ...metadataTypesConsistsOfMetadataTypesWithFieldNames,
     },
     filterCreators = [
       missingFieldsFilter,
@@ -569,18 +578,18 @@ export default class SalesforceAdapter {
   }
 
   private async deleteRemovedMetadataObjects(oldInstance: InstanceElement,
-    newInstance: InstanceElement, fieldName: string): Promise<void> {
+    newInstance: InstanceElement, fieldName: string, withObjectPrefix: boolean): Promise<void> {
     const getDeletedObjectsNames = (oldObjects: Values[], newObjects: Values[]): string[] => {
       const newObjectsNames = newObjects.map(o => o.fullName)
       return oldObjects.filter(o => !newObjectsNames.includes(o.fullName)).map(o => o.fullName)
     }
 
+    const metadataTypeName = metadataType(newInstance.type.fields[fieldName].type)
     const deletedObjects = getDeletedObjectsNames(
       makeArray(oldInstance.value[fieldName]), makeArray(newInstance.value[fieldName])
-    )
+    ).map(o => (withObjectPrefix ? `${oldInstance.value.fullName}.${o}` : o))
     if (!_.isEmpty(deletedObjects)) {
-      await this.client.delete(metadataType(newInstance.type.fields[fieldName].type),
-        deletedObjects)
+      await this.client.delete(metadataTypeName, deletedObjects)
     }
   }
 
@@ -602,7 +611,12 @@ export default class SalesforceAdapter {
       // Checks if we need to delete metadata objects
       this.metadataTypesConsistsOfMetadataTypes[typeName]
         .forEach(fieldName =>
-          this.deleteRemovedMetadataObjects(prevInstance, newInstance, fieldName))
+          this.deleteRemovedMetadataObjects(
+            prevInstance,
+            newInstance,
+            fieldName,
+            Object.keys(metadataTypesConsistsOfMetadataTypesWithFieldNames).includes(typeName)
+          ))
     }
 
     if (this.isMetadataTypeToRetrieveAndDeploy(typeName)) {

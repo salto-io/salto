@@ -740,7 +740,7 @@ describe('SalesforceAdapter CRUD', () => {
           },
           annotationTypes: {},
           annotations: {
-            [constants.METADATA_TYPE]: constants.PROFILE_METADATA_TYPE,
+            [constants.METADATA_TYPE]: 'AssignmentRules',
           },
         }),
         { [constants.INSTANCE_FULL_NAME_FIELD]: mockInstanceName },

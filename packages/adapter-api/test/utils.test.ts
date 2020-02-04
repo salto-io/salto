@@ -218,7 +218,7 @@ describe('Test utils.ts', () => {
     })
 
     const transformPrimitiveTest: TransformValueFunc = (val, field) => {
-      const fieldType = field?.type
+      const fieldType = field.type
       if (!isPrimitiveType(fieldType)) {
         return val
       }

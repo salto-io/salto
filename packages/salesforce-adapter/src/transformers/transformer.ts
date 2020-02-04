@@ -947,12 +947,12 @@ const convertXsdTypeFuncMap: Record<string, ConvertXsdTypeFunc> = {
 }
 
 export const transformPrimitive: TransformValueFunc = (val, field) => {
-  const fieldType = field?.type
+  const fieldType = field.type
   if (!isPrimitiveType(fieldType)) {
     return val
   }
-  // We sometimes get empty strings and nulls that we want to filter out
-  if (val === null || val === '') {
+  // We sometimes get empty strings that we want to filter out
+  if (val === '') {
     return undefined
   }
   // Salesforce returns nulls as objects like { $: { 'xsi:nil': 'true' } }

@@ -53,7 +53,7 @@ const replaceValue = (
   )
 
   const transformReferences: TransformValueFunc = (val, field) => (
-    isRefElement(field) || isRefElement(field?.type) ? replacePrimitive(val) : val
+    isRefElement(field) || isRefElement(field.type) ? replacePrimitive(val) : val
   )
 
   return transform(values, refElement, transformReferences, false) || values

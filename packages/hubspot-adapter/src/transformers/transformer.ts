@@ -1477,11 +1477,11 @@ export const createInstanceName = (
 ): string => name.trim().split(' ').join('_')
 
 const transformPrimitive: TransformValueFunc = (val, field) => {
-  const fieldType = field?.type
-  // remove values that are just an empty string
-  if (val === '') {
+  // remove values that are just an empty string or null
+  if (val === '' || val === null) {
     return undefined
   }
+  const fieldType = field.type
   if (isPrimitiveType(fieldType) && fieldType.isEqual(BuiltinTypes.JSON)) {
     return JSON.stringify(val)
   }

@@ -255,8 +255,8 @@ export const transformFieldAnnotations = (
 const transformObjectAnnotations = (customObject: ObjectType, annotationTypesFromInstance: TypeMap,
   instance: InstanceElement): void => {
   const transformPrimitiveOrApiName: TransformValueFunc = (val, field) => {
-    if (field?.name === INSTANCE_FULL_NAME_FIELD
-      && Object.values(customObjectIndependentAnnotations).includes(field?.parentID?.name)) {
+    if (field.name === INSTANCE_FULL_NAME_FIELD
+      && Object.values(customObjectIndependentAnnotations).includes(field.parentID.name)) {
       return [apiName(instance), val].join(API_NAME_SEPERATOR)
     }
     return transformPrimitive(val, field)

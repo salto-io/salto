@@ -9,7 +9,7 @@ const getJsonValidationErrorsFromAfter = async (after: Element):
   }
   const errors = Object.values(_.pickBy(_.mapValues(after.value, (val, key) => {
     const field = after.type.fields[key]
-    const fieldType = field.type
+    const fieldType = field?.type
     if (isPrimitiveType(fieldType) && fieldType.isEqual(BuiltinTypes.JSON)) {
       try {
         JSON.parse(val)

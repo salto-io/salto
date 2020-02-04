@@ -142,7 +142,7 @@ export const getAnnotationValue = (element: Element, annotation: string): Values
 
 type TransformValueType = PrimitiveValue | Expression
 export type TransformValueFunc = (
-  val: TransformValueType, field?: Field,
+  val: TransformValueType, field: Field,
 ) => TransformValueType | undefined
 
 export const transform = (
@@ -152,8 +152,8 @@ export const transform = (
   strict = true
 ): Values | undefined => {
   const transformValue = (value: Value, field?: Field): Value => {
-    if (strict && field === undefined) {
-      return undefined
+    if (field === undefined) {
+      return strict ? undefined : value
     }
     if (_.isArray(value)) {
       const transformed = value
@@ -161,7 +161,7 @@ export const transform = (
         .filter(val => !_.isUndefined(val))
       return transformed.length === 0 ? undefined : transformed
     }
-    if (field === undefined || isPrimitiveType(field.type) || isExpression(value)) {
+    if (isPrimitiveType(field.type) || isExpression(value)) {
       return transformPrimitives(value, field)
     }
     if (isObjectType(field.type)) {

@@ -60,6 +60,8 @@ export const deserialize = (data: string): Element[] => {
       reviveElemID(v.elemID).name,
       v.type,
       v.value,
+      undefined,
+      v.annotations,
     ),
     [ObjectType.name]: v => new ObjectType({
       elemID: reviveElemID(v.elemID),

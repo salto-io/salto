@@ -45,6 +45,8 @@ describe('State serialization', () => {
     'me',
     model,
     { name: 'me', num: 7 },
+    ['path', 'test'],
+    { test: 'annotation' },
   )
 
   const refInstance = new InstanceElement(

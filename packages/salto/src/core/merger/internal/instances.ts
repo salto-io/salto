@@ -4,7 +4,7 @@ import {
 } from 'adapter-api'
 import { logger } from '@salto/logging'
 import {
-  MergeResult, MergeError, mergeNoDuplicates,
+  MergeResult, MergeError, mergeNoDuplicates, DuplicateAnnotationError,
 } from './common'
 
 const log = logger(module)
@@ -46,13 +46,20 @@ const mergeInstanceDefinitions = (
     errors: [],
   }
 
+  const annotationsMergeResults = mergeNoDuplicates(
+    instanceDefs.map(o => o.annotations),
+    key => new DuplicateAnnotationError({ elemID, key }),
+  )
+
   const defaults = buildDefaults(type)
   const valueWithDefault = !_.isEmpty(defaults)
     ? _.merge({}, defaults || {}, valueMergeResult.merged)
     : valueMergeResult.merged
   return {
-    merged: new InstanceElement(elemID.name, type, valueWithDefault),
-    errors: valueMergeResult.errors,
+    merged: new InstanceElement(
+      elemID.name, type, valueWithDefault, undefined, annotationsMergeResults.merged,
+    ),
+    errors: [...valueMergeResult.errors, ...annotationsMergeResults.errors],
   }
 }
 

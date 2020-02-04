@@ -404,6 +404,18 @@ const allMissingFields: {id: ElemID; fields: MissingField[]}[] = [
       },
     ],
   },
+  {
+    id: new ElemID(SALESFORCE, 'StandardValue'),
+    fields: [
+      {
+        name: 'forecastCategory',
+        type: BuiltinTypes.STRING,
+        annotations: {
+          [CORE_ANNOTATIONS.VALUES]: ['Omitted', 'Pipeline', 'BestCase', 'Forecast', 'Closed'],
+        },
+      },
+    ],
+  },
 ]
 
 export const makeFilter = (

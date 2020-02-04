@@ -49,14 +49,13 @@ import { changeValidator } from './change_validator'
 const { makeArray } = collections.array
 const log = logger(module)
 
-const { makeArray } = collections.array
 const RECORDS_CHUNK_SIZE = 10000
 
-const metadataTypesConsistsOfMetadataTypesWithObjectNames: Record<string, string[]> = {
+const metadataTypesConsistsOfMetadataTypesWithAbsoluteNames: Record<string, string[]> = {
   CustomLabels: ['labels'],
 }
 
-const metadataTypesConsistsOfMetadataTypesWithFieldNames: Record<string, string[]> = {
+const metadataTypesConsistsOfMetadataTypesWithNestedNames: Record<string, string[]> = {
   AssignmentRules: ['assignmentRule'],
   AutoResponseRules: ['autoresponseRule'],
   EscalationRules: ['escalationRule'],
@@ -183,8 +182,8 @@ export default class SalesforceAdapter {
       'Flow', // update fails for Active flows
     ],
     metadataTypesConsistsOfMetadataTypes = {
-      ...metadataTypesConsistsOfMetadataTypesWithObjectNames,
-      ...metadataTypesConsistsOfMetadataTypesWithFieldNames,
+      ...metadataTypesConsistsOfMetadataTypesWithAbsoluteNames,
+      ...metadataTypesConsistsOfMetadataTypesWithNestedNames,
     },
     filterCreators = [
       missingFieldsFilter,
@@ -584,7 +583,11 @@ export default class SalesforceAdapter {
       return oldObjects.filter(o => !newObjectsNames.includes(o.fullName)).map(o => o.fullName)
     }
 
-    const metadataTypeName = metadataType(newInstance.type.fields[fieldName].type)
+    const instanceType = newInstance.type?.fields?.[fieldName]?.type
+    if (_.isUndefined(instanceType)) {
+      return
+    }
+    const metadataTypeName = metadataType(instanceType)
     const deletedObjects = getDeletedObjectsNames(
       makeArray(oldInstance.value[fieldName]), makeArray(newInstance.value[fieldName])
     ).map(o => (withObjectPrefix ? `${oldInstance.value.fullName}.${o}` : o))
@@ -615,7 +618,7 @@ export default class SalesforceAdapter {
             prevInstance,
             newInstance,
             fieldName,
-            Object.keys(metadataTypesConsistsOfMetadataTypesWithFieldNames).includes(typeName)
+            Object.keys(metadataTypesConsistsOfMetadataTypesWithNestedNames).includes(typeName)
           ))
     }
 

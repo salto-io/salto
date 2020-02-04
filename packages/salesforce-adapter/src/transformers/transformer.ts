@@ -7,8 +7,8 @@ import {
   TypeElement, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values, Value,
   BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter,
   ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, CORE_ANNOTATIONS,
-  ReferenceExpression, isElement, PrimitiveValue, RESTRICTION_ANNOTATIONS, PrimitiveField,
-  Field as TypeField, TypeMap,
+  ReferenceExpression, isElement, PrimitiveValue, RESTRICTION_ANNOTATIONS,
+  Field as TypeField, TypeMap, TransformValueFunc,
 } from 'adapter-api'
 import { collections } from '@salto/lowerdash'
 import { CustomObject, CustomField } from '../client/types'
@@ -946,10 +946,17 @@ const convertXsdTypeFuncMap: Record<string, ConvertXsdTypeFunc> = {
   'xsd:long': Number,
 }
 
-export const transformPrimitive = (val: PrimitiveValue, field: PrimitiveField):
-  PrimitiveValue | undefined => {
+export const transformPrimitive: TransformValueFunc = (val, field) => {
+  const fieldType = field.type
+  if (!isPrimitiveType(fieldType)) {
+    return val
+  }
+  // We sometimes get empty strings that we want to filter out
+  if (val === '') {
+    return undefined
+  }
   // Salesforce returns nulls as objects like { $: { 'xsi:nil': 'true' } }
-  if (_.isObject(val) && _.get(val, ['$', 'xsi:nil']) === 'true') {
+  if ((_.isObject(val) && _.get(val, ['$', 'xsi:nil']) === 'true')) {
     // We transform null to undefined as currently we don't support null in Salto language
     // and the undefined values are omitted later in the code
     return undefined
@@ -960,7 +967,7 @@ export const transformPrimitive = (val: PrimitiveValue, field: PrimitiveField):
     const convertFunc = convertXsdTypeFuncMap[_.get(val, ['$', 'xsi:type'])] || (v => v)
     return transformPrimitive(convertFunc(_.get(val, '_')), field)
   }
-  switch (field.type.primitive) {
+  switch (fieldType.primitive) {
     case PrimitiveTypes.NUMBER:
       return Number(val)
     case PrimitiveTypes.BOOLEAN:

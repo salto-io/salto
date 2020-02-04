@@ -1,11 +1,12 @@
+import _ from 'lodash'
 import {
-  Field, InstanceElement, ObjectType, PrimitiveTypes, PrimitiveField, PrimitiveType,
+  Field, InstanceElement, ObjectType, PrimitiveTypes, PrimitiveType, TypeMap,
 } from '../src/elements'
-import { PrimitiveValue, Values } from '../src/values'
+import { Values } from '../src/values'
 import { ElemID } from '../src/element_id'
 import { BuiltinTypes } from '../src/builtins'
 import {
-  transform, resolvePath,
+  transform, resolvePath, TransformValueFunc, isPrimitiveType,
 } from '../src/utils'
 
 describe('Test utils.ts', () => {
@@ -28,7 +29,6 @@ describe('Test utils.ts', () => {
       }),
       bool: new Field(mockElem, 'bool', BuiltinTypes.BOOLEAN),
       num: new Field(mockElem, 'num', BuiltinTypes.NUMBER),
-      emptyStr: new Field(mockElem, 'emptyStr', BuiltinTypes.STRING),
       numArray: new Field(mockElem, 'numArray', BuiltinTypes.NUMBER, {}, true),
       obj: new Field(mockElem, 'obj', new ObjectType({
         elemID: mockElem,
@@ -59,12 +59,11 @@ describe('Test utils.ts', () => {
     mockType,
     {
       str: 'val',
-      emptyStr: '',
       bool: 'true',
       num: '99',
       numArray: ['12', '13', '14'],
       notExist: 'notExist',
-      emptyStrArray: ['', ''],
+      notExistArray: ['', ''],
       obj: [
         {
           field: 'firstField',
@@ -99,7 +98,7 @@ describe('Test utils.ts', () => {
             name: 'name1',
             listOfNames: ['str4', 'str1', 'str2'],
             magical: {
-              deepNumber: '12345',
+              deepNumber: '',
               deepName: '',
             },
           },
@@ -109,131 +108,170 @@ describe('Test utils.ts', () => {
   )
 
   describe('transform func', () => {
-    describe('should return undefined when:', () => {
-      it('empty string', () => {
-        expect(transform({ str: '' }, mockType)).toBeUndefined()
+    let resp: Values
+
+    describe('with empty transformPrimitives func', () => {
+      let transfromFunc: jest.Mock
+      beforeEach(() => {
+        transfromFunc = jest.fn().mockImplementation(val => val)
       })
 
-      it('values are not exists as fields in the type', () => {
-        expect(transform({ notExist1: '', notExist2: 'true' }, mockType)).toBeUndefined()
+      describe('when called with instance and object type', () => {
+        beforeEach(async () => {
+          const result = transform(mockInstance.value, mockType, transfromFunc)
+          expect(result).toBeDefined()
+          resp = result as Values
+        })
+
+        it('should call transform on top level primitive values', () => {
+          const primitiveFieldNames = ['str', 'bool', 'num']
+          primitiveFieldNames.forEach(field => {
+            expect(transfromFunc).toHaveBeenCalledWith(
+              mockInstance.value[field], mockType.fields[field],
+            )
+          })
+        })
+
+        it('should call transfrom on array elements', () => {
+          (mockInstance.value.numArray as string[]).forEach(
+            val => expect(transfromFunc).toHaveBeenCalledWith(val, mockType.fields.numArray)
+          )
+        })
+
+        it('should call transfrom on primitive types in nested objects', () => {
+          const getField = (type: ObjectType, path: (string | number)[]): Field => {
+            if (typeof path[0] === 'number') {
+              return getField(type, path.slice(1))
+            }
+            const field = type.fields[path[0]]
+            return path.length === 1 ? field : getField(field.type as ObjectType, path.slice(1))
+          }
+          const nestedPrimitivePaths = [
+            ['obj', 0, 'field'],
+            ['obj', 1, 'field'],
+            ['obj', 2, 'field'],
+            ['obj', 0, 'innerObj', 'name'],
+            ['obj', 0, 'innerObj', 'magical', 'deepName'],
+          ]
+          nestedPrimitivePaths.forEach(
+            path => expect(transfromFunc).toHaveBeenCalledWith(
+              _.get(mockInstance.value, path), getField(mockType, path),
+            )
+          )
+        })
+
+        it('should omit undefined fields in object', () => {
+          expect(resp).not.toHaveProperty('notExist')
+          expect(resp).not.toHaveProperty('notExistArray')
+        })
+
+        it('should omit undefined fields in nested objects', () => {
+          const { magical } = resp?.obj[1]?.innerObj
+          expect(magical).toBeDefined()
+          expect(magical).not.toHaveProperty('notExist2')
+        })
+
+        it('should keep all defined field values', () => {
+          Object.keys(mockType.fields)
+            .filter(key => !['obj', 'emptyStr', 'emptyArray'].includes(key))
+            .forEach(key => {
+              expect(resp[key]).toEqual(mockInstance.value[key])
+            })
+        })
+
+        it('should keep all nested defined fields values', () => {
+          expect(resp.obj[0]).toEqual(mockInstance.value.obj[0])
+        })
+      })
+      describe('when called with type map', () => {
+        let origValue: Values
+        let typeMap: TypeMap
+        beforeEach(() => {
+          origValue = { str: 'asd', num: '10', bool: 'true', nums: ['1', '2'], notExist: 'a' }
+          typeMap = {
+            str: BuiltinTypes.STRING,
+            num: BuiltinTypes.NUMBER,
+            bool: BuiltinTypes.BOOLEAN,
+            nums: BuiltinTypes.NUMBER,
+          }
+          const result = transform(origValue, typeMap, transfromFunc)
+          expect(result).toBeDefined()
+          resp = result as Values
+        })
+        it('should call transfrom func on all defined types', () => {
+          const mockField = (name: string): Field => new Field(new ElemID(''), name, typeMap[name])
+          const primitiveTypes = ['str', 'num', 'bool']
+          primitiveTypes.forEach(
+            name => expect(transfromFunc).toHaveBeenCalledWith(origValue[name], mockField(name))
+          )
+          origValue.nums.forEach(
+            (val: string) => expect(transfromFunc).toHaveBeenCalledWith(val, mockField('nums'))
+          )
+        })
+        it('should omit undefined fields values', () => {
+          expect(resp).not.toHaveProperty('notExist')
+        })
+        it('should keep all defined fields values', () => {
+          expect(origValue).toMatchObject(resp)
+        })
       })
     })
 
-    describe('should return values when:', () => {
-      let resp: Values
-
-      describe('when apply the default transformPrimitives func', () => {
-        beforeEach(async () => {
-          // @ts-ignore
-          resp = transform(mockInstance.value, mockType)
-        })
-
-        it('should remove emptyStr field', () => {
-          expect(resp.bool).toEqual('true')
-          expect(resp.num).toEqual('99')
-
-          expect(resp.notExist).toBeUndefined()
-        })
-
-        it('should transform inner object', () => {
-          expect(resp.obj[0]).toEqual(mockInstance.value.obj[0])
-          expect(resp.obj[0].innerObj.magical.deepName)
-            .toEqual(mockInstance.value.obj[0].innerObj.magical.deepName)
-          expect(resp.obj[1]).not.toEqual(mockInstance.value.obj[1])
-          expect(resp.obj[1].innerObj.listOfNames).toBeUndefined()
-          expect(resp.obj[1].innerObj.magical.notExist2).toBeUndefined()
-          expect(resp.obj[2]).not.toEqual(mockInstance.value.obj[2])
-          expect(resp.obj[2].innerObj.magical.deepNumber).toEqual('12345')
-        })
-      })
-
-      const transformPrimitiveTest = (val: PrimitiveValue, field: PrimitiveField):
-        PrimitiveValue | undefined => {
-        switch (field.type.primitive) {
-          case PrimitiveTypes.NUMBER:
-            return Number(val)
-          case PrimitiveTypes.BOOLEAN:
-            return val.toString().toLowerCase() === 'true'
-          case PrimitiveTypes.STRING:
-            return val.toString().length === 0 ? undefined : val.toString()
-          default:
-            return val
-        }
+    const transformPrimitiveTest: TransformValueFunc = (val, field) => {
+      const fieldType = field.type
+      if (!isPrimitiveType(fieldType)) {
+        return val
       }
+      switch (fieldType.primitive) {
+        case PrimitiveTypes.NUMBER:
+          return Number(val)
+        case PrimitiveTypes.BOOLEAN:
+          return val.toString().toLowerCase() === 'true'
+        case PrimitiveTypes.STRING:
+          return val.toString().length === 0 ? undefined : val.toString()
+        default:
+          return val
+      }
+    }
 
-      describe('when transformPrimitives was received', () => {
-        beforeEach(async () => {
-          // @ts-ignore
-          resp = transform(mockInstance.value, mockType, transformPrimitiveTest)
-        })
-
-        it('should transform primitive types', () => {
-          expect(resp.notExist).toBeUndefined()
-          expect(resp.bool).toEqual(true)
-          expect(resp.num).toEqual(99)
-        })
-
-        it('should transform inner object', () => {
-          expect(resp.obj[0]).not.toEqual(mockInstance.value.obj[0])
-          expect(resp.obj[0].innerObj.magical.deepName)
-            .toEqual(mockInstance.value.obj[0].innerObj.magical.deepName)
-
-          expect(resp.obj[0].innerObj.magical.deepNumber)
-            .toEqual(888)
-          expect(resp.obj[0].value.anotherVal).toBeUndefined()
-          expect(resp.obj[1].innerObj.magical.deepNumber).toBeUndefined()
-          expect(resp.obj[1]).not.toEqual(mockInstance.value.obj[1])
-          expect(resp.obj[1].innerObj.listOfNames).toBeUndefined()
-          expect(resp.obj[1].innerObj.magical.notExist2).toBeUndefined()
-          expect(resp.obj[2]).not.toEqual(mockInstance.value.obj[2])
-          expect(resp.obj[2].innerObj.magical.deepNumber).toEqual(12345)
-        })
+    describe('when transformPrimitives was received', () => {
+      beforeEach(async () => {
+        const result = transform(mockInstance.value, mockType, transformPrimitiveTest)
+        expect(result).toBeDefined()
+        resp = result as Values
       })
 
-      describe('when strict was received as false', () => {
-        beforeEach(async () => {
-          // @ts-ignore
-          resp = transform(mockInstance.value, mockType, transformPrimitiveTest, false)
-        })
-
-        it('should transform primitive types', () => {
-          expect(resp.emptyStr).toBeUndefined()
-          expect(resp.bool).toEqual(true)
-          expect(resp.num).toEqual(99)
-          expect(resp.notExist).toEqual('notExist')
-        })
-
-        it('should transform inner object', () => {
-          expect(resp.obj[0]).not.toEqual(mockInstance.value.obj[0])
-          expect(resp.obj[0].value.anotherVal).toBeUndefined()
-          expect(resp.obj[1].innerObj.magical.deepNumber).toBeUndefined()
-          expect(resp.obj[1].innerObj.magical.notExist2).toEqual('false')
-          expect(resp.obj[2]).not.toEqual(mockInstance.value.obj[2])
-        })
-      })
-
-      afterEach(async () => {
-        /**
-         *  primitive fields
-         */
-        expect(resp).toBeDefined()
+      it('should transform primitive types', () => {
         expect(resp.str).toEqual('val')
+        expect(resp.bool).toEqual(true)
+        expect(resp.num).toEqual(99)
+      })
+
+      it('should transform inner object', () => {
+        expect(resp.obj[0].innerObj.magical.deepNumber).toEqual(888)
+      })
+    })
+
+    describe('when strict is false', () => {
+      beforeEach(async () => {
+        const result = transform(mockInstance.value, mockType, transformPrimitiveTest, false)
+        expect(result).toBeDefined()
+        resp = result as Values
+      })
+
+      it('should transform primitive types', () => {
         expect(resp.emptyStr).toBeUndefined()
-        expect(resp.numArray).toHaveLength(3)
+        expect(resp.bool).toEqual(true)
+        expect(resp.num).toEqual(99)
+        expect(resp.notExist).toEqual('notExist')
+      })
 
-        /**
-         *  non primitive fields
-         */
-        expect(resp.emptyStrArray).toBeUndefined()
-        expect(resp.obj).not.toEqual(mockInstance.value.obj)
-
-        expect(resp.obj[0].field).toEqual('firstField')
-        expect(resp.obj[1].field).toEqual('true')
-        expect(resp.obj[2].field).toEqual('123')
-
-        expect(resp.obj[1].innerObj.magical.deepName)
-          .toEqual(mockInstance.value.obj[1].innerObj.magical.deepName)
-        expect(resp.obj[2].innerObj.magical.deepName).toBeUndefined()
+      it('should transform inner object', () => {
+        expect(resp.obj[0]).not.toEqual(mockInstance.value.obj[0])
+        expect(resp.obj[0].value.anotherVal).toBeUndefined()
+        expect(resp.obj[1].innerObj.magical.deepNumber).toBeUndefined()
+        expect(resp.obj[1].innerObj.magical.notExist2).toEqual('false')
+        expect(resp.obj[2]).not.toEqual(mockInstance.value.obj[2])
       })
     })
   })

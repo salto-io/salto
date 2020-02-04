@@ -1,7 +1,7 @@
 import wu from 'wu'
 import _ from 'lodash'
 import {
-  TypeElement, Field, ObjectType, Element, PrimitiveField, InstanceElement, PrimitiveType,
+  TypeElement, Field, ObjectType, Element, InstanceElement, PrimitiveType, TypeMap,
 } from './elements'
 import { Values, PrimitiveValue, Expression, ReferenceExpression, TemplateExpression, Value } from './values'
 import { ElemID } from './element_id'
@@ -41,11 +41,6 @@ export function isType(element: any): element is TypeElement {
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 export function isField(element: any): element is Field {
   return element instanceof Field
-}
-
-/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-export function isPrimitiveField(element: any): element is PrimitiveField {
-  return isField(element) && isPrimitiveType(element.type)
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -145,53 +140,47 @@ AnnoRef => {
 export const getAnnotationValue = (element: Element, annotation: string): Values =>
   (element.annotations[annotation] || {})
 
+type TransformValueType = PrimitiveValue | Expression
+export type TransformValueFunc = (
+  val: TransformValueType, field: Field,
+) => TransformValueType | undefined
 
 export const transform = (
   obj: Values,
-  type: ObjectType,
-  transformPrimitives: (
-    val: PrimitiveValue,
-    p: PrimitiveField
-  ) => PrimitiveValue | undefined = val => (val),
+  type: ObjectType | TypeMap,
+  transformPrimitives: TransformValueFunc,
   strict = true
 ): Values | undefined => {
-  const result = _(obj).mapValues((value, key) => {
-    // We don't go out of the transformed element scope
-    if (isExpression(value)) return value
-    // we get lists of empty strings that we would like to filter out
-    if (_.isArray(value) && value.every(s => s === '')) {
-      return undefined
+  const transformValue = (value: Value, field?: Field): Value => {
+    if (field === undefined) {
+      return strict ? undefined : value
     }
-    if (value === null) {
-      return undefined
+    if (_.isArray(value)) {
+      const transformed = value
+        .map(item => transformValue(item, field))
+        .filter(val => !_.isUndefined(val))
+      return transformed.length === 0 ? undefined : transformed
     }
-    // we get empty strings that we would like to filter out
-    if (value === '') {
-      return undefined
+    if (isPrimitiveType(field.type) || isExpression(value)) {
+      return transformPrimitives(value, field)
     }
+    if (isObjectType(field.type)) {
+      const transformed = _.omitBy(
+        transform(value, field.type, transformPrimitives, strict),
+        _.isUndefined
+      )
+      return _.isEmpty(transformed) ? undefined : transformed
+    }
+    return undefined
+  }
 
-    const field = type.fields[key]
-    if (field !== undefined) {
-      const fieldType = field.type
-      if (isObjectType(fieldType)) {
-        return _.isArray(value)
-          ? value.map(v => transform(v, fieldType, transformPrimitives, strict))
-            .filter(v => !_.isEmpty(v))
-          : transform(value, fieldType, transformPrimitives, strict)
-      }
-      if (isPrimitiveField(field)) {
-        return _.isArray(value)
-          ? value.map(v => transformPrimitives(v, field as PrimitiveField))
-            .filter(v => !_.isArrayLike(v) || !_.isEmpty(v))
-          : transformPrimitives(value, field)
-      }
-    }
+  const fieldMap = isObjectType(type)
+    ? type.fields
+    : _.mapValues(type, (fieldType, name) => new Field(new ElemID(''), name, fieldType))
 
-    if (strict) {
-      return undefined
-    }
-    return value
-  }).omitBy(_.isUndefined)
+  const result = _(obj)
+    .mapValues((value, key) => transformValue(value, fieldMap[key]))
+    .omitBy(_.isUndefined)
     .value()
   return _.isEmpty(result) ? undefined : result
 }

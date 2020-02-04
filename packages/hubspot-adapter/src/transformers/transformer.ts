@@ -1,9 +1,8 @@
 import _ from 'lodash'
 import {
   ElemID, ObjectType,
-  PrimitiveType, PrimitiveTypes, PrimitiveValue, PrimitiveField,
-  Field as TypeField, BuiltinTypes, InstanceElement, Values,
-  TypeElement, CORE_ANNOTATIONS, transform, TypeMap, isPrimitiveField,
+  PrimitiveType, PrimitiveTypes, Field as TypeField, BuiltinTypes, InstanceElement, TypeElement,
+  CORE_ANNOTATIONS, transform, TypeMap, Values, TransformValueFunc, isPrimitiveType,
 } from 'adapter-api'
 import {
   FIELD_TYPES, NURTURETIMERANGE_FIELDS, RSSTOEMAILTIMING_FIELDS, CONDITIONACTION_FIELDS,
@@ -1477,9 +1476,13 @@ export const createInstanceName = (
   name: string
 ): string => name.trim().split(' ').join('_')
 
-const transformPrimitive = (val: PrimitiveValue, field: PrimitiveField):
-  PrimitiveValue | undefined => {
-  if (field.type.isEqual(BuiltinTypes.JSON)) {
+const transformPrimitive: TransformValueFunc = (val, field) => {
+  // remove values that are just an empty string or null
+  if (val === '' || val === null) {
+    return undefined
+  }
+  const fieldType = field.type
+  if (isPrimitiveType(fieldType) && fieldType.isEqual(BuiltinTypes.JSON)) {
     return JSON.stringify(val)
   }
   return val
@@ -1500,8 +1503,8 @@ export const fromHubspotObject = (
 export const createHubspotMetadataFromInstanceElement = (element: InstanceElement):
   HubspotMetadata => {
   element.value = _.mapValues(element.value, (val, key) => {
-    const field = element.type.fields[key]
-    if (isPrimitiveField(field) && field.type.isEqual(BuiltinTypes.JSON)) {
+    const fieldType = element.type.fields[key]?.type
+    if (isPrimitiveType(fieldType) && fieldType.isEqual(BuiltinTypes.JSON)) {
       return JSON.parse(val)
     }
     return val

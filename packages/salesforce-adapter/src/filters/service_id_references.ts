@@ -1,7 +1,7 @@
 import {
   Element, ElemID, isType, isInstanceElement, isObjectType, TypeElement,
   isField, Values, Field, Value, ReferenceExpression, CORE_ANNOTATIONS,
-  transform, PrimitiveValue, ObjectType, PrimitiveField,
+  transform, ObjectType, TransformValueFunc,
 } from 'adapter-api'
 import _ from 'lodash'
 import { FilterCreator } from '../filter'
@@ -44,15 +44,15 @@ const replaceValue = (
   apiToIdMap: Record<string, ElemID>,
   replaceTypes: Set<string>
 ): Values => {
-  const isRefElement = (element: Element): boolean => (
-    replaceTypes.has(element.elemID.getFullName())
+  const isRefElement = (element?: Element): boolean => (
+    element !== undefined && replaceTypes.has(element.elemID.getFullName())
   )
 
   const replacePrimitive = (val: Value): Value => (
     _.isString(val) && apiToIdMap[val] ? new ReferenceExpression(apiToIdMap[val]) : val
   )
 
-  const transformReferences = (val: PrimitiveValue, field: PrimitiveField): Value => (
+  const transformReferences: TransformValueFunc = (val, field) => (
     isRefElement(field) || isRefElement(field.type) ? replacePrimitive(val) : val
   )
 

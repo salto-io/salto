@@ -34,7 +34,6 @@ export type DumpedHclBlock = HclBlock<Values> & {
 // https://github.com/hashicorp/hcl2/blob/f45c1cd/hcl/diagnostic.go#L26
 // TODO: include expression and evalContext when it's needed
 export interface HclParseError {
-  severity: number
   summary: string
   detail: string
   subject: SourceRange

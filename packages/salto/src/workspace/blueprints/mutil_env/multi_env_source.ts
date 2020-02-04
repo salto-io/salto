@@ -4,6 +4,7 @@ import path from 'path'
 import { Element, ElemID, getChangeElement, Value } from 'adapter-api'
 import { ParseError, SourceMap, SourceRange } from 'src/parser/parse'
 import { ValidationError } from 'src/core/validator'
+import wu from 'wu'
 import { mergeElements, MergeError } from '../../../core/merger'
 import { DetailedChange } from '../../../core/plan'
 import { routeChanges } from './routers'
@@ -43,10 +44,15 @@ export const multiEnvSource = (
     _.omit(sources, [primarySourceName, commonSourceName])
   )
 
-  const getActiveSources = (): BlueprintsSource[] => [primarySource(), commonSource()]
+  const getActiveSources = (): Record<string, BlueprintsSource> => ({
+    [primarySourceName]: sources[primarySourceName],
+    [commonSourceName]: sources[commonSourceName],
+  })
 
   const buildMutiEnvState = async (): Promise<MultiEnvState> => {
-    const allActiveElements = _.flatten(await Promise.all(getActiveSources().map(s => s.getAll())))
+    const allActiveElements = _.flatten(await Promise.all(
+      _.values(getActiveSources()).map(s => s.getAll())
+    ))
     const { errors, merged } = mergeElements(allActiveElements)
     return {
       elements: _.keyBy(merged, e => e.elemID.getFullName()),
@@ -80,7 +86,8 @@ export const multiEnvSource = (
 
   const getBlueprint = async (filename: string): Promise<Blueprint | undefined> => {
     const { source, relPath } = getSourceForBlueprint(filename)
-    return source.getBlueprint(relPath)
+    const bp = await source.getBlueprint(relPath)
+    return bp ? { ...bp, filename } : undefined
   }
 
   const setBlueprint = async (blueprint: Blueprint): Promise<void> => {
@@ -96,24 +103,20 @@ export const multiEnvSource = (
   }
 
   const update = async (changes: DetailedChange[], newEnv = false): Promise<void> => {
-    if (!commonSource) {
-      await primarySource().update(changes)
-    } else {
-      const routedChanges = await routeChanges(
-        changes,
-        primarySource(),
-        commonSource(),
-        secondarySources(),
-        newEnv
-      )
-      const secondaryChanges = routedChanges.secondarySources || {}
-      await Promise.all([
-        primarySource().update(routedChanges.primarySource || []),
-        commonSource().update(routedChanges.commonSource || []),
-        ..._.keys(secondaryChanges)
-          .map(srcName => secondarySources()[srcName].update(secondaryChanges[srcName])),
-      ])
-    }
+    const routedChanges = await routeChanges(
+      changes,
+      primarySource(),
+      commonSource(),
+      secondarySources(),
+      newEnv
+    )
+    const secondaryChanges = routedChanges.secondarySources || {}
+    await Promise.all([
+      primarySource().update(routedChanges.primarySource || []),
+      commonSource().update(routedChanges.commonSource || []),
+      ..._.keys(secondaryChanges)
+        .map(srcName => secondarySources()[srcName].update(secondaryChanges[srcName])),
+    ])
     state = buildMutiEnvState()
   }
 
@@ -135,7 +138,7 @@ export const multiEnvSource = (
     ),
     getAll: async (): Promise<Element[]> => _.values((await state).elements),
     listBlueprints: async (): Promise<string[]> => (
-      _.flatten(await Promise.all(_.entries(sources)
+      _.flatten(await Promise.all(_.entries(getActiveSources())
         .map(async ([prefix, source]) => (
           await source.listBlueprints()).map(p => buidFullPath(prefix, p)))))
     ),
@@ -149,16 +152,22 @@ export const multiEnvSource = (
     },
     getSourceMap: async (filename: string): Promise<SourceMap> => {
       const { source, relPath } = getSourceForBlueprint(filename)
-      return source.getSourceMap(relPath) || new Map<string, SourceRange[]>()
+      const sourceMap = await source.getSourceMap(relPath)
+      return sourceMap
+        ? new Map(wu(sourceMap.entries()).map(([name, ranges]) => [
+          name,
+          ranges.map(r => ({ ...r, filename })),
+        ]))
+        : new Map<string, SourceRange[]>()
     },
     getSourceRanges: async (elemID: ElemID): Promise<SourceRange[]> => (
-      _.flatten(await Promise.all(_.entries(sources)
+      _.flatten(await Promise.all(_.entries(getActiveSources())
         .map(async ([prefix, source]) =>
           (await source.getSourceRanges(elemID)).map(sourceRange => (
-            { filename: buidFullPath(prefix, sourceRange.filename), ...sourceRange })))))
+            { ...sourceRange, filename: buidFullPath(prefix, sourceRange.filename) })))))
     ),
     getErrors: async (): Promise<Errors> => {
-      const srcErrors = _.flatten(await Promise.all(_.entries(sources)
+      const srcErrors = _.flatten(await Promise.all(_.entries(getActiveSources())
         .map(async ([prefix, source]) => {
           const errors = await source.getErrors()
           return {

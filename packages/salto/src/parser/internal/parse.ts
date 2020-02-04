@@ -37,7 +37,6 @@ const convertParserError = (
     ?? { line: token.line, col: token.col, byte: token.offset } as unknown as SourcePos
   return {
     summary,
-    severity: 1,
     detail: `Expected ${expectedMsg} token but found: ${text} instead.`,
     subject: {
       filename,
@@ -70,7 +69,6 @@ const unexpectedEOFError = (src: string, filename: string): HclParseError => {
     byte: src.length,
   }
   return {
-    severity: 1,
     summary: 'Unexpected end of file',
     detail: 'Unexpected end of file', // TODO - improve this
     subject: {

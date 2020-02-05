@@ -278,7 +278,7 @@ const allMissingFields: {id: ElemID; fields: MissingField[]}[] = [
         name: 'sortOrder',
         type: BuiltinTypes.STRING,
         annotations: {
-          [CORE_ANNOTATIONS.VALUES]: ['ASC', 'DESC'],
+          [CORE_ANNOTATIONS.VALUES]: ['Asc', 'Desc'],
         },
       },
     ],
@@ -290,7 +290,7 @@ const allMissingFields: {id: ElemID; fields: MissingField[]}[] = [
         name: 'iterationOrder',
         type: BuiltinTypes.STRING,
         annotations: {
-          [CORE_ANNOTATIONS.VALUES]: ['ASC', 'DESC'],
+          [CORE_ANNOTATIONS.VALUES]: ['Asc', 'Desc'],
         },
       },
     ],

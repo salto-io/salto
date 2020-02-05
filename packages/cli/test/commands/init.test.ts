@@ -10,8 +10,10 @@ jest.mock('salto', () => ({
       localStorage: '',
       baseDir: '',
       stateLocation: '',
+      credentialsLocation: 'credentials',
       services: ['salesforce'],
       uid: '',
+      envs: [],
     } }
   }),
 }))

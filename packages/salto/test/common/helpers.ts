@@ -64,3 +64,7 @@ export const readAllCsvContents = async (
   }
   return results
 }
+
+export const expectToContainAllItems = <T>(arr: T[], items: T[]): void => {
+  items.forEach(item => expect(arr).toContain(item))
+}

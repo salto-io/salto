@@ -1,12 +1,14 @@
 import _ from 'lodash'
 import { logger } from '@salto/logging'
-import { Element, ElemID, ElementMap } from 'adapter-api'
+import { Element, ElemID, ElementMap, resolvePath, Value } from 'adapter-api'
+import { mergeElements, MergeError } from '../../core/merger'
 import { getChangeLocations, updateBlueprintData, getChangesToUpdate } from './blueprint_update'
 import { mergeSourceMaps, SourceMap, parse, SourceRange, ParseError, ParseResult } from '../../parser/parse'
 import { ElementsSource } from '../elements_source'
 import { ParseResultCache } from '../cache'
 import { DetailedChange } from '../../core/plan'
 import { DirectoryStore } from '../dir_store'
+import { Errors } from '../errors'
 
 const log = logger(module)
 
@@ -19,7 +21,7 @@ export type Blueprint = {
 }
 
 export type BlueprintsSource = ElementsSource & {
-  update: (...changes: DetailedChange[]) => Promise<void>
+  update: (changes: DetailedChange[]) => Promise<void>
   listBlueprints: () => Promise<string[]>
   getBlueprint: (filename: string) => Promise<Blueprint | undefined>
   // TODO: this should be for single?
@@ -27,7 +29,7 @@ export type BlueprintsSource = ElementsSource & {
   removeBlueprints: (...names: string[]) => Promise<void>
   getSourceMap: (filename: string) => Promise<SourceMap>
   getSourceRanges: (elemID: ElemID) => Promise<SourceRange[]>
-  getParseErrors: () => Promise< ParseError[]>
+  getErrors: () => Promise<Errors>
   getElements: (filename: string) => Promise<Element[]>
 }
 
@@ -45,6 +47,8 @@ type ParsedBlueprintMap = {
 type BlueprintsState = {
   readonly parsedBlueprints: ParsedBlueprintMap
   readonly elementsIndex: Record<string, string[]>
+  readonly mergedElements: Record<string, Element>
+  readonly mergeErrors: MergeError[]
 }
 
 export const blueprintsSource = (blueprintsStore: DirectoryStore, cache: ParseResultCache):
@@ -90,10 +94,16 @@ BlueprintsSource => {
         elementsIndex[key] = _.uniq([...elementsIndex[key], bp.filename])
       }))
 
+    const mergeResult = mergeElements(
+      _.flatten(Object.values(allParsed).map(parsed => Object.values(parsed.elements)))
+    )
+
     log.info('workspace has %d elements and %d parsed blueprints',
       _.size(elementsIndex), _.size(allParsed))
     return {
       parsedBlueprints: allParsed,
+      mergedElements: _.keyBy(mergeResult.merged, e => e.elemID.getFullName()),
+      mergeErrors: mergeResult.errors,
       elementsIndex,
     }
   }
@@ -127,7 +137,7 @@ BlueprintsSource => {
     state = buildBlueprintsState(blueprints, (await state).parsedBlueprints)
   }
 
-  const update = async (...changes: DetailedChange[]): Promise<void> => {
+  const update = async (changes: DetailedChange[]): Promise<void> => {
     const getBlueprintData = async (filename: string): Promise<string> => {
       const bp = await blueprintsStore.get(filename)
       return bp ? bp.buffer : ''
@@ -171,24 +181,28 @@ BlueprintsSource => {
     list: async (): Promise<ElemID[]> =>
       Object.keys((await state).elementsIndex).map(name => ElemID.fromFullName(name)),
 
-    get: async (id: ElemID): Promise<Element[]> => {
+    get: async (id: ElemID): Promise<Element | Value> => {
       const currentState = await state
-      const filenames = currentState.elementsIndex[id.getFullName()] || []
-      return _.flatten(filenames
-        .map(name => currentState.parsedBlueprints[name].elements[id.getFullName()]))
+      const { parent, path } = id.createTopLevelParentID()
+      const baseElement = currentState.mergedElements[parent.getFullName()]
+      return baseElement && !_.isEmpty(path) ? resolvePath(baseElement, id) : baseElement
     },
 
-    getAll: async (): Promise<Element[]> =>
-      _.flatten(Object.values((await state).parsedBlueprints)
-        .map(parsed => Object.values(parsed.elements))),
+    getAll: async (): Promise<Element[]> => _.values((await state).mergedElements),
 
     flush: async (): Promise<void> => {
       await blueprintsStore.flush()
       await cache.flush()
     },
 
-    getParseErrors: async (): Promise<ParseError[]> =>
-      _.flatten(Object.values((await state).parsedBlueprints).map(parsed => parsed.errors)),
+    getErrors: async (): Promise<Errors> => {
+      const currentState = await state
+      return new Errors({
+        parse: _.flatten(Object.values(currentState.parsedBlueprints).map(parsed => parsed.errors)),
+        merge: currentState.mergeErrors,
+        validation: [],
+      })
+    },
 
     listBlueprints: () => blueprintsStore.list(),
 

@@ -65,6 +65,7 @@ resolveReferenceExpression = (
   }
 
   const value = resolvePath(rootElement, fullElemID)
+
   if (value === undefined) {
     return new UnresolvedReference(traversal)
   }

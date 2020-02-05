@@ -3,10 +3,8 @@ import path from 'path'
 import uuidv4 from 'uuid/v4'
 import { Element, SaltoError, SaltoElementError, ElemID } from 'adapter-api'
 import { logger } from '@salto/logging'
-import { types } from '@salto/lowerdash'
 import { DetailedChange } from '../core/plan'
-import { MergeError, mergeElements } from '../core/merger'
-import { ValidationError, validateElements } from '../core/validator'
+import { validateElements } from '../core/validator'
 import { mkdirp, exists } from '../file'
 import { SourceRange, ParseError, SourceMap } from '../parser/parse'
 import { Config, dumpConfig, locateWorkspaceRoot, getConfigPath, completeConfig, saltoConfigType } from './config'
@@ -16,7 +14,10 @@ import { localState } from './local/state'
 import { blueprintsSource, BP_EXTENSION, BlueprintsSource, Blueprint } from './blueprints/blueprints_source'
 import { parseResultCache } from './cache'
 import { localDirectoryStore } from './local/dir_store'
+import { multiEnvSource } from './blueprints/mutil_env/multi_env_source'
+import { Errors } from './errors'
 
+const COMMON_ENV_PREFIX = ''
 const log = logger(module)
 
 class ExistingWorkspaceError extends Error {
@@ -38,24 +39,6 @@ export type WorkspaceError<T extends SaltoError > = Readonly<T & {
 export type SourceFragment = {
   sourceRange: SourceRange
   fragment: string
-}
-
-export class Errors extends types.Bean<Readonly<{
-  parse: ReadonlyArray<ParseError>
-  merge: ReadonlyArray<MergeError>
-  validation: ReadonlyArray<ValidationError>
-}>> {
-  hasErrors(): boolean {
-    return [this.parse, this.merge, this.validation].some(errors => errors.length > 0)
-  }
-
-  strings(): ReadonlyArray<string> {
-    return [
-      ...this.parse.map(error => error.detail),
-      ...this.merge.map(error => error.error),
-      ...this.validation.map(error => error.error),
-    ]
-  }
 }
 
 const ensureEmptyWorkspace = async (config: Config): Promise<void> => {
@@ -80,6 +63,47 @@ type MergedState = {
   readonly errors: Errors
 }
 
+const loadBlueprintSource = (
+  sourceBaseDir: string,
+  localStorage: string,
+  excludeDirs: string[] = []
+): BlueprintsSource => {
+  const blueprintsStore = localDirectoryStore(
+    sourceBaseDir,
+    `*${BP_EXTENSION}`,
+    (dirParh: string) => !excludeDirs.includes(dirParh),
+  )
+  const cacheStore = localDirectoryStore(path.join(localStorage, '.cache'))
+  return blueprintsSource(blueprintsStore, parseResultCache(cacheStore))
+}
+
+const loadMultiEnvSource = (config: Config): BlueprintsSource => {
+  if (!config.currentEnv || _.isEmpty(config.envs)) {
+    throw new Error('can not load a multi env source without envs and current env settings')
+  }
+  const activeEnv = config.envs.find(env => env.name === config.currentEnv)
+  if (!activeEnv) {
+    throw new Error('Unknown active env')
+  }
+
+  const sources = {
+    ..._.fromPairs(config.envs.map(env =>
+      [
+        env.baseDir,
+        loadBlueprintSource(
+          path.resolve(config.baseDir, env.baseDir),
+          path.resolve(config.localStorage, env.baseDir)
+        ),
+      ])),
+    [COMMON_ENV_PREFIX]: loadBlueprintSource(
+      config.baseDir,
+      config.localStorage,
+      _.values(config.envs.map(env => env.baseDir))
+    ),
+  }
+  return multiEnvSource(sources, activeEnv.baseDir, COMMON_ENV_PREFIX)
+}
+
 export class Workspace {
   readonly state: State
   readonly credentials: Credentials
@@ -87,11 +111,13 @@ export class Workspace {
   private mergedStatePromise?: Promise<MergedState>
 
   constructor(public config: Config) {
-    const blueprintsStore = localDirectoryStore(config.baseDir, `*${BP_EXTENSION}`)
-    const cacheStore = localDirectoryStore(path.join(config.localStorage, '.cache'))
-    this.blueprintsSource = blueprintsSource(blueprintsStore, parseResultCache(cacheStore))
+    this.blueprintsSource = _.isEmpty(config.envs)
+      ? loadBlueprintSource(config.baseDir, config.localStorage)
+      : loadMultiEnvSource(config)
     this.state = localState(config.stateLocation)
-    this.credentials = adapterCredentials(localDirectoryStore(path.join(config.localStorage, 'credentials')))
+    this.credentials = adapterCredentials(
+      localDirectoryStore(path.resolve(config.localStorage, config.credentialsLocation))
+    )
   }
 
   static async init(baseDir: string, workspaceName?: string): Promise<Workspace> {
@@ -112,15 +138,12 @@ export class Workspace {
 
   private get mergedState(): Promise<MergedState> {
     const buildMergedState = async (): Promise<MergedState> => {
-      const { merged: mergedElements, errors: mergeErrors } = mergeElements(
-        await this.blueprintsSource.getAll()
-      )
+      const mergedElements = await this.blueprintsSource.getAll()
       mergedElements.push(saltoConfigType)
       return {
         mergedElements,
         errors: new Errors({
-          parse: Object.freeze(await this.blueprintsSource.getParseErrors()),
-          merge: mergeErrors,
+          ...await this.blueprintsSource.getErrors(),
           validation: validateElements(mergedElements),
         }),
       }
@@ -188,7 +211,7 @@ export class Workspace {
 
   async updateBlueprints(...changes: DetailedChange[]): Promise<void> {
     this.resetMergedState()
-    return this.blueprintsSource.update(...changes)
+    return this.blueprintsSource.update(changes)
   }
 
   private async getSourceFragment(sourceRange: SourceRange): Promise<SourceFragment> {

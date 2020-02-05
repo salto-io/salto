@@ -22,8 +22,9 @@ export { FoundSearchResult, SearchResult } from './src/core/search'
 export { ItemStatus } from './src/core/deploy'
 export { getAdaptersConfigType } from './src/core/adapters/adapters'
 export {
-  Workspace, WorkspaceError, SourceFragment, Errors,
+  Workspace, WorkspaceError, SourceFragment,
 } from './src/workspace/workspace'
+export { Errors } from './src/workspace/errors'
 export { Blueprint } from './src/workspace/blueprints/blueprints_source'
 export { Config, loadConfig, addServiceToConfig } from './src/workspace/config'
 export { parse, SourceMap, SourceRange, parseElemID } from './src/parser/parse'

@@ -31,8 +31,10 @@ describe('load proper configuration', () => {
         localStorage: '/.salto/workspace',
         baseDir: '/workspace',
         stateLocation: '/states/test.bpc',
+        credentialsLocation: 'credentials',
         services: [],
         uid: 'uid',
+        envs: [],
       }
     )
   })
@@ -44,8 +46,10 @@ describe('load proper configuration', () => {
         localStorage: path.join(os.homedir(), '.salto', defaultLocalStorageName),
         baseDir: defaultsWorkspaceDir,
         stateLocation: path.join(defaultsWorkspaceDir, 'salto.config', 'state.bpc'),
+        credentialsLocation: 'credentials',
         services: [],
         uid: defaultUUID,
+        envs: [],
       }
     )
   })
@@ -59,8 +63,10 @@ describe('load proper configuration', () => {
         localStorage: path.join(homeVar, defaultLocalStorageName),
         baseDir: defaultsWorkspaceDir,
         stateLocation: path.join(defaultsWorkspaceDir, 'salto.config', 'state.bpc'),
+        credentialsLocation: 'credentials',
         services: [],
         uid: defaultUUID,
+        envs: [],
       }
     )
   })

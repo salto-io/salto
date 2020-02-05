@@ -175,7 +175,16 @@ export const elements = (): Element[] => {
 }
 
 export const mockLoadConfig = (workspaceDir: string): Config =>
-  ({ uid: '123', baseDir: workspaceDir, services: ['salesforce', 'hubspot'], name: 'mock-ws', localStorage: '', stateLocation: '' })
+  ({
+    uid: '123',
+    baseDir: workspaceDir,
+    services: ['salesforce', 'hubspot'],
+    name: 'mock-ws',
+    localStorage: '',
+    stateLocation: '',
+    credentialsLocation: 'credentials',
+    envs: [],
+  })
 
 export const mockLoadWorkspace = (workspaceDir: string): Workspace =>
   ({

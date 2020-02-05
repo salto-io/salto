@@ -34,20 +34,39 @@ class ServiceDuplicationError extends Error {
   }
 }
 
-const saltoConfigElemID = new ElemID('salto')
+
 const requireAnno = { [CORE_ANNOTATIONS.REQUIRED]: true }
+const saltoEnvConfigElemID = new ElemID('salto', 'env_config')
+const saltoEnvConfigType = new ObjectType({
+  elemID: saltoEnvConfigElemID,
+  fields: {
+    name: new Field(saltoEnvConfigElemID, 'name', BuiltinTypes.STRING, requireAnno),
+    baseDir: new Field(saltoEnvConfigElemID, 'name', BuiltinTypes.STRING, requireAnno),
+  },
+})
+
+const saltoConfigElemID = new ElemID('salto')
 export const saltoConfigType = new ObjectType({
   elemID: saltoConfigElemID,
   fields: {
     uid: new Field(saltoConfigElemID, 'uid', BuiltinTypes.STRING, requireAnno),
     baseDir: new Field(saltoConfigElemID, 'base_dir', BuiltinTypes.STRING),
     stateLocation: new Field(saltoConfigElemID, 'state_location', BuiltinTypes.STRING),
+    credentialsLocation: new Field(saltoConfigElemID, 'state_location', BuiltinTypes.STRING),
     localStorage: new Field(saltoConfigElemID, 'local_storage', BuiltinTypes.STRING),
     name: new Field(saltoConfigElemID, 'name', BuiltinTypes.STRING, requireAnno),
+    currentEnv: new Field(saltoConfigElemID, 'name', BuiltinTypes.STRING, requireAnno),
     services: new Field(
       saltoConfigElemID,
       'services',
       BuiltinTypes.STRING,
+      {},
+      true
+    ),
+    envs: new Field(
+      saltoConfigElemID,
+      'envs',
+      saltoEnvConfigType,
       {},
       true
     ),
@@ -56,14 +75,24 @@ export const saltoConfigType = new ObjectType({
   annotations: {},
 })
 
+interface EnvSettings {
+  name: string
+  baseDir: string
+}
+
 export interface Config {
   uid: string
   baseDir: string
   stateLocation: string
+  credentialsLocation: string
   localStorage: string
   name: string
   services: string[]
+  envs: EnvSettings[]
+  currentEnv? : string
 }
+
+type EnvConfig = Pick<Config, 'services' | 'stateLocation' | 'credentialsLocation'>
 
 const createDefaultConfig = (
   baseDir: string,
@@ -77,9 +106,11 @@ const createDefaultConfig = (
     uid,
     baseDir,
     stateLocation: path.join(baseDir, CONFIG_DIR_NAME, 'state.bpc'),
+    credentialsLocation: 'credentials',
     services: [],
     localStorage: path.join(saltoHome, `${name}-${uid}`),
     name,
+    envs: [],
   }
 }
 
@@ -139,9 +170,23 @@ const baseDirFromLookup = async (lookupDir: string): Promise<string> => {
 }
 
 export const loadConfig = async (lookupDir: string): Promise<Config> => {
+  const loadActiveEnvConfig = async (
+    baseDir: string,
+    baseConfig: Partial<Config>
+  ): Promise<EnvConfig | undefined> => {
+    const activeEnvSettings = baseConfig.currentEnv
+      && baseConfig?.envs?.find(env => env.name === baseConfig.currentEnv)
+    if (activeEnvSettings) {
+      return loadConfig(path.join(baseDir, activeEnvSettings.baseDir))
+    }
+    return undefined
+  }
+
   const baseDir = await baseDirFromLookup(lookupDir)
-  const config = parseConfig(await readFile(getConfigPath(baseDir)))
-  log.debug(`loaded raw config ${JSON.stringify(config)}`)
+  const baseConfig = parseConfig(await readFile(getConfigPath(baseDir)))
+  log.debug(`loaded raw base config ${JSON.stringify(baseConfig)}`)
+  const activeEnvConfig = await loadActiveEnvConfig(baseDir, baseConfig)
+  const config = _.merge({}, baseConfig, activeEnvConfig || {})
   return completeConfig(baseDir, config)
 }
 

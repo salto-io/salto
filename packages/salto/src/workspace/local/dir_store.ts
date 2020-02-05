@@ -8,17 +8,26 @@ type FileMap = {
   [key: string]: File
 }
 
-export const localDirectoryStore = (dir: string, fileFilter?: string): DirectoryStore => {
+export const localDirectoryStore = (
+  baseDir: string,
+  fileFilter?: string,
+  directoryFilter?: (path: string) => boolean,
+): DirectoryStore => {
   let updated: FileMap = {}
   let deleted: string[] = []
 
-  const getAbsFileName = (filename: string): string => path.resolve(dir, filename)
+  const getAbsFileName = (filename: string): string => path.resolve(baseDir, filename)
 
-  const listDirFiles = async (): Promise<string[]> => (await exists(dir)
-    ? readdirp.promise(dir, {
+  const getRelativeFileName = (filename: string): string => (path.isAbsolute(filename)
+    ? path.relative(baseDir, filename)
+    : filename)
+
+  const listDirFiles = async (): Promise<string[]> => (await exists(baseDir)
+    ? readdirp.promise(baseDir, {
       fileFilter,
-      directoryFilter: e => e.basename[0] !== '.',
-    }).then(entries => entries.map(e => e.fullPath))
+      directoryFilter: e => e.basename[0] !== '.'
+          && (!directoryFilter || directoryFilter(e.fullPath)),
+    }).then(entries => entries.map(e => e.fullPath).map(getRelativeFileName))
     : [])
 
   const readFile = async (filename: string): Promise<File | undefined> => {
@@ -53,22 +62,28 @@ export const localDirectoryStore = (dir: string, fileFilter?: string): Directory
         .uniq()
         .value(),
 
-    get: async (filename: string): Promise<File | undefined> =>
-      (updated[filename] ? updated[filename] : readFile(filename)),
+    get: async (filename: string): Promise<File | undefined> => {
+      const relFilename = getRelativeFileName(filename)
+      return (updated[relFilename] ? updated[relFilename] : readFile(relFilename))
+    },
 
     set: async (file: File): Promise<void> => {
+      const relFilename = getRelativeFileName(file.filename)
       file.timestamp = Date.now()
-      updated[file.filename] = file
+      updated[relFilename] = file
     },
 
     delete: async (filename: string): Promise<void> => {
-      deleted.push(filename)
+      const relFilename = getRelativeFileName(filename)
+      deleted.push(relFilename)
     },
 
-    mtimestamp: async (filename: string): Promise<undefined | number> =>
-      (updated[filename]
-        ? Promise.resolve(updated[filename].timestamp)
-        : mtimestampFile(filename)),
+    mtimestamp: async (filename: string): Promise<undefined | number> => {
+      const relFilename = getRelativeFileName(filename)
+      return (updated[relFilename]
+        ? Promise.resolve(updated[relFilename].timestamp)
+        : mtimestampFile(relFilename))
+    },
 
     flush: async (): Promise<void> => {
       await Promise.all(Object.values(updated).map(writeFile))

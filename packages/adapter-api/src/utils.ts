@@ -63,9 +63,18 @@ export function isEqualElements(first?: any, second?: any): boolean {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const isExpression = (value: any): value is Expression => (
+export const isReferenceExpression = (value: any): value is ReferenceExpression => (
   value instanceof ReferenceExpression
-    || value instanceof TemplateExpression
+)
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const isTemplateExpression = (value: any): value is TemplateExpression => (
+  value instanceof TemplateExpression
+)
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const isExpression = (value: any): value is Expression => (
+  isReferenceExpression(value) || isTemplateExpression(value)
 )
 
 export const getSubElement = (baseType: TypeElement, pathParts: string[]):

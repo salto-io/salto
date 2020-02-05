@@ -401,7 +401,7 @@ export class Types {
     restrictedNumber('TextLength', 1, 255, false),
     restrictedNumber('TextAreaLength', 1, 131072),
     restrictedNumber('EncryptedTextLength', 1, 175),
-    restrictedNumber('Precision', 1, 18),
+    restrictedNumber('Precision', 1, 18, false),
     restrictedNumber('Scale', 0, 17),
     restrictedNumber('LocationScale', 0, 15),
     restrictedNumber('LongTextAreaVisibleLines', 2, 50),

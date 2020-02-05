@@ -174,6 +174,7 @@ export default class SalesforceAdapter {
       'WorkflowKnowledgePublish',
       'WorkflowOutboundMessage',
       'WorkflowTask',
+      'ForecastingCategoryMapping',
     ],
     metadataTypesToSkipMutation = [
       'Workflow', // handled in workflow filter

@@ -56,6 +56,7 @@ export const FORM_FIELDS = {
   EDITABLE: 'editable',
   STYLE: 'style',
   FORMFIELDGROUPS: 'formFieldGroups',
+  THEMENAME: 'themeName',
 }
 
 export const MARKETING_EMAIL_FIELDS = {
@@ -175,6 +176,7 @@ export const RICHTEXT_FIELDS = {
 }
 
 export const FORM_PROPERTY_FIELDS = {
+  NAME,
   LABEL,
   DESCRIPTION: 'description',
   REQUIRED: 'required',
@@ -187,6 +189,7 @@ export const FORM_PROPERTY_FIELDS = {
   PLACEHOLDER: 'placeholder',
   CONTACT_PROPERTY: 'contactProperty',
   DISPLAYORDER: 'displayOrder',
+  GROUPNAME: 'groupName',
   TYPE: 'type',
   FIELDTYPE: 'fieldType',
 }

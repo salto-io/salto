@@ -313,6 +313,13 @@ export class Types {
       const formPropertyType = new ObjectType({
         elemID,
         fields: {
+          [FORM_PROPERTY_FIELDS.NAME]: new TypeField(
+            elemID, FORM_PROPERTY_FIELDS.NAME, BuiltinTypes.STRING, {
+              name: FORM_PROPERTY_FIELDS.NAME,
+              _readOnly: false,
+              [CORE_ANNOTATIONS.REQUIRED]: false,
+            },
+          ),
           [FORM_PROPERTY_FIELDS.LABEL]: new TypeField(
             elemID, FORM_PROPERTY_FIELDS.LABEL, BuiltinTypes.STRING, {
               name: FORM_PROPERTY_FIELDS.LABEL,
@@ -399,6 +406,13 @@ export class Types {
               [CORE_ANNOTATIONS.REQUIRED]: true,
               [CORE_ANNOTATIONS.VALUES]: contactPropertyTypeValues,
             }
+          ),
+          [FORM_PROPERTY_FIELDS.GROUPNAME]: new TypeField(
+            elemID, FORM_PROPERTY_FIELDS.GROUPNAME, BuiltinTypes.STRING, {
+              name: FORM_PROPERTY_FIELDS.GROUPNAME,
+              _readOnly: false,
+              [CORE_ANNOTATIONS.REQUIRED]: true,
+            },
           ),
           [FORM_PROPERTY_FIELDS.FIELDTYPE]: new TypeField(
             elemID, FORM_PROPERTY_FIELDS.FIELDTYPE, BuiltinTypes.STRING, {
@@ -906,6 +920,13 @@ export class Types {
           formElemID, FORM_FIELDS.EDITABLE, BuiltinTypes.BOOLEAN, {
             name: FORM_FIELDS.EDITABLE,
             _readOnly: true,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [FORM_FIELDS.THEMENAME]: new TypeField(
+          formElemID, FORM_FIELDS.THEMENAME, BuiltinTypes.STRING, {
+            name: FORM_FIELDS.THEMENAME,
+            _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),

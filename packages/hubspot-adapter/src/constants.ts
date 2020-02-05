@@ -4,14 +4,14 @@ const LABEL = 'label'
 const PROPERTY_OPTIONS = 'options'
 const DISPLAYORDER = 'displayOrder'
 
-export const OBJECTS_NAMES = { // TODO: Align names
+export const OBJECTS_NAMES = {
   FORM: 'form',
   WORKFLOWS: 'workflows',
   MARKETINGEMAIL: 'marketingEmail',
 
   // Subtypes
-  PROPERTYGROUP: 'PropertyGroup',
-  PROPERTY: 'Property',
+  PROPERTYGROUP: 'propertyGroup',
+  PROPERTY: 'property',
   OPTIONS: 'options',
   CONTACTLISTIDS: 'contactListIds',
   RSSTOEMAILTIMING: 'rssToEmailTiming',
@@ -22,7 +22,7 @@ export const OBJECTS_NAMES = { // TODO: Align names
   CRITERIALIST: 'criteriaList',
   EVENTANCHOR: 'eventAnchor',
   CONDITIONACTION: 'conditionAction',
-  CONTACT_PROPERTY: 'ContactProperty',
+  CONTACT_PROPERTY: 'contactProperty',
   DEPENDENT_FIELD_FILTER: 'dependentFieldFilter',
   FIELD_FILTER: 'fieldFilter',
   DEPEDENT_FORM_PROPERTY: 'dependentFormProperty',

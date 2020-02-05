@@ -939,6 +939,29 @@ describe('Salesforce adapter E2E with real account', () => {
       } as MetadataInfo)
     }
 
+    const verifyRolesExist = async (): Promise<void> => {
+      await client.upsert('Role', {
+        fullName: 'TestParentRole',
+        name: 'TestParentRole',
+        caseAccessLevel: 'Edit',
+        contactAccessLevel: 'Edit',
+        opportunityAccessLevel: 'Edit',
+        description: 'TestParentRole',
+        mayForecastManagerShare: 'false',
+      } as MetadataInfo)
+
+      await client.upsert('Role', {
+        fullName: 'TestChildRole',
+        name: 'TestChildRole',
+        caseAccessLevel: 'Edit',
+        contactAccessLevel: 'Edit',
+        opportunityAccessLevel: 'Edit',
+        description: 'TestChildRole',
+        mayForecastManagerShare: 'false',
+        parentRole: 'TestParentRole',
+      } as MetadataInfo)
+    }
+
     await Promise.all([
       addCustomObjectWithVariousFields(),
       verifyEmailTemplateAndFolderExist(),
@@ -947,6 +970,7 @@ describe('Salesforce adapter E2E with real account', () => {
       verifyCustomObjectInnerTypesExist(),
       verifyLeadWorkflowInnerTypesExist(),
       verifyFlowExists(),
+      verifyRolesExist(),
     ])
     result = await adapter.fetch()
   })
@@ -1204,7 +1228,7 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(flow.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('TestFlow')
       expect(flow.value.status).toEqual('Draft')
       expect(flow.value.variables[0].dataType).toEqual('SObject')
-      expect(flow.value.processType).toBeInstanceOf(ReferenceExpression)
+      expect(flow.value.processType).toEqual('Workflow')
     })
 
     describe('should fetch Workflow instance', () => {
@@ -5674,6 +5698,14 @@ describe('Salesforce adapter E2E with real account', () => {
         it('should delete layout', async () => {
           await adapter.remove(layout)
           expect(await objectExists('Layout', 'Lead-MyLayout')).toBeFalsy()
+        })
+      })
+
+      describe('instance reference string is resolved as a reference', () => {
+        it('should point parentRole to a Role instance', () => {
+          const childRole = findElements(result, 'Role', 'TestChildRole')[0] as InstanceElement
+          expect(childRole.value.parentRole).toBeInstanceOf(ReferenceExpression)
+          expect(childRole.value.parentRole.elemId.typeName).toEqual('Role')
         })
       })
     })

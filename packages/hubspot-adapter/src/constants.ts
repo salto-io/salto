@@ -2,6 +2,7 @@ export const HUBSPOT = 'hubspot'
 export const NAME = 'name'
 const LABEL = 'label'
 const PROPERTY_OPTIONS = 'options'
+const DISPLAYORDER = 'displayOrder'
 
 export const OBJECTS_NAMES = { // TODO: Align names
   FORM: 'form',
@@ -188,7 +189,7 @@ export const FORM_PROPERTY_FIELDS = {
   DEPENDENTFIELDFILTERS: 'dependentFieldFilters',
   PLACEHOLDER: 'placeholder',
   CONTACT_PROPERTY: 'contactProperty',
-  DISPLAYORDER: 'displayOrder',
+  DISPLAYORDER,
   GROUPNAME: 'groupName',
   TYPE: 'type',
   FIELDTYPE: 'fieldType',
@@ -219,7 +220,7 @@ export const CONTACT_PROPERTY_FIELDS = {
   OPTIONS: PROPERTY_OPTIONS,
   DELETED: 'deteled',
   FORMFIELD: 'formField',
-  DISPLAYORDER: 'displayOrder',
+  DISPLAYORDER,
   READONLYVALUE: 'readOnlyValue',
   READONLYDEFINITION: 'readOnlyDefinition',
   MUTABLEDEFINITIONNOTDELETABLE: 'mutableDefinitionNotDeletable',
@@ -234,7 +235,7 @@ export const OPTIONS_FIELDS = {
   VALUE: 'value',
   HIDDEN: 'hidden',
   ISSMARTFIELD: 'isSmartField',
-  DISPLAYORDER: 'displayOrder',
+  DISPLAYORDER,
 }
 
 export const WORKFLOWS_FIELDS = {

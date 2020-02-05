@@ -352,14 +352,72 @@ describe('Hubspot Adapter Operations', () => {
                   {
                     fields: [
                       {
+                        name: 'g1',
+                        label: 'g1',
+                        type: 'string',
+                        fieldType: 'text',
+                        description: '',
+                        required: false,
+                        hidden: false,
+                        displayOrder: 1,
+                        defaultValue: '',
+                        isSmartField: false,
+                        selectedOptions: [],
+                        options: [],
+                        dependentFieldFilters: [
+                          {
+                            filters: [
+                              {
+                                operator: 'EQ',
+                                strValue: 'em@salto.io',
+                                boolValue: false,
+                                numberValue: 0,
+                                strValues: [],
+                                numberValues: [],
+                              },
+                            ],
+                            dependentFormField: {
+                              name: 'date_of_birth',
+                              label: 'Date of birth',
+                              type: 'string',
+                              fieldType: 'text',
+                              description: 'desc',
+                              groupName: 'contactinformation',
+                              displayOrder: -1,
+                              required: false,
+                              selectedOptions: [],
+                              options: [],
+                              enabled: true,
+                              hidden: false,
+                              isSmartField: false,
+                              unselectedLabel: 'unselected',
+                              placeholder: 'place',
+                              dependentFieldFilters: [],
+                              labelHidden: false,
+                              propertyObjectType: 'CONTACT',
+                              metaData: [],
+                            },
+                            formFieldAction: 'DISPLAY',
+                          },
+                        ],
+                      },
+                    ],
+                    default: true,
+                    isSmartGroup: false,
+                  },
+                  {
+                    fields: [
+                      {
                         name: 'state',
                         label: 'State/Region',
                         type: 'string',
                         fieldType: 'text',
                         description: '',
-                        groupName: 'contactinformation',
-                        displayOrder: -1,
                         required: false,
+                        hidden: false,
+                        defaultValue: '',
+                        isSmartField: false,
+                        displayOrder: 1,
                         selectedOptions: [],
                         options: [
                           {
@@ -367,67 +425,17 @@ describe('Hubspot Adapter Operations', () => {
                             value: 'val1',
                             hidden: true,
                             readOnly: true,
-                            description: '',
                           },
                         ],
-                        validation: {
-                          name: '',
-                          message: '',
-                          data: '',
-                          useDefaultBlockList: false,
-                          blockedEmailAddresses: [],
-                        },
-                        enabled: true,
-                        hidden: false,
-                        defaultValue: '',
-                        isSmartField: false,
-                        unselectedLabel: '',
-                        placeholder: '',
-                        dependentFieldFilters: [],
-                        labelHidden: false,
-                        propertyObjectType: 'CONTACT',
-                        metaData: [],
                       },
                     ],
                     default: true,
                     isSmartGroup: false,
-                    richText: {
-                      content: '',
-                    },
-                  },
-                  {
-                    fields: [
-                      {
-                        name: 'g1',
-                        label: 'g1',
-                        type: 'string',
-                        fieldType: 'text',
-                        description: '',
-                        groupName: 'contactinformation',
-                        displayOrder: 1,
-                        required: false,
-                        selectedOptions: [],
-                        options: [],
-                        validation: {},
-                        enabled: true,
-                        hidden: false,
-                        defaultValue: '',
-                        isSmartField: false,
-                        unselectedLabel: '',
-                        placeholder: '',
-                        dependentFieldFilters: [],
-                        labelHidden: false,
-                        propertyObjectType: 'CONTACT',
-                        metaData: [],
-
-                      },
-                    ],
-                    isSmartGroup: false,
-                    default: true,
                   },
                 ],
                 ignoreCurrentValues: false,
-                inlineMessage: '',
+                inlineMessage: 'inline',
+                themeName: 'theme',
                 notifyRecipients: '',
               } as unknown as Form
             )
@@ -448,11 +456,12 @@ describe('Hubspot Adapter Operations', () => {
           expect(res.value.redirect).toEqual(afterUpdateInstance.value.redirect)
           expect(res.value.cssClass).toEqual(afterUpdateInstance.value.cssClass)
           expect(res.value.editable).toEqual(afterUpdateInstance.value.editable)
+          expect(res.value.inlineMessage).toEqual(afterUpdateInstance.value.inlineMessage)
+          expect(res.value.themeName).toEqual(afterUpdateInstance.value.themeName)
 
           // Unsupported fields
           expect(res.value.portalId).toBeUndefined()
           expect(res.value.action).toBeUndefined()
-          expect(res.value.inlineMessage).toBeUndefined()
           expect(res.value.notifyRecipients).toBeUndefined()
           expect(res.value.submitText).toBeUndefined()
           expect(res.value.method).toBeUndefined()
@@ -470,28 +479,58 @@ describe('Hubspot Adapter Operations', () => {
           expect(res.value.formFieldGroups[0].isSmartGroup).toEqual(false)
           expect(res.value.formFieldGroups[0].richText).toBeUndefined()
           expect(res.value.formFieldGroups[0].fields).toHaveLength(1)
-          expect(res.value.formFieldGroups[0].fields[0].label).toEqual('State/Region')
+          expect(res.value.formFieldGroups[0].default).toEqual(true)
+          expect(res.value.formFieldGroups[0].isSmartGroup).toEqual(false)
+          expect(res.value.formFieldGroups[0].fields).toHaveLength(1)
+          expect(res.value.formFieldGroups[0].fields[0].label).toEqual('g1')
           expect(res.value.formFieldGroups[0].fields[0].description).toBeUndefined()
           expect(res.value.formFieldGroups[0].fields[0].propertyObjectType).toBeUndefined()
-          expect(res.value.formFieldGroups[0].fields[0].options).toHaveLength(1)
-          expect(res.value.formFieldGroups[0].fields[0].options[0].label).toEqual('opt1')
-          expect(res.value.formFieldGroups[0].fields[0].options[0].hidden).toEqual(true)
-          expect(res.value.formFieldGroups[0].fields[0].options[0].description).toBeUndefined()
+          expect(res.value.formFieldGroups[0].fields[0].options).toBeUndefined()
 
+          // dependentFieldFilters
+          expect(res.value.formFieldGroups[0].fields[0].dependentFieldFilters).toBeDefined()
+          expect(res.value.formFieldGroups[0].fields[0].dependentFieldFilters).toHaveLength(1)
+
+          // dependentFieldFilters[0]
+          expect(res.value.formFieldGroups[0].fields[0].dependentFieldFilters[0].filters)
+            .toBeDefined()
+          expect(res.value.formFieldGroups[0].fields[0].dependentFieldFilters[0].filters)
+            .toHaveLength(1)
+          expect(res.value.formFieldGroups[0].fields[0].dependentFieldFilters[0].filters[0].operator).toEqual('EQ')
+          expect(res.value.formFieldGroups[0].fields[0].dependentFieldFilters[0].filters[0].strValue).toEqual('em@salto.io')
+          expect(res.value.formFieldGroups[0].fields[0].dependentFieldFilters[0].formFieldAction).toEqual('DISPLAY')
+          expect(res.value.formFieldGroups[0].fields[0].dependentFieldFilters[0].dependentFormField)
+            .toBeDefined()
+          expect(res.value.formFieldGroups[0].fields[0].dependentFieldFilters[0].dependentFormField.name).toEqual('date_of_birth')
+          expect(res.value.formFieldGroups[0].fields[0].dependentFieldFilters[0].dependentFormField.label).toEqual('Date of birth')
+          expect(res.value.formFieldGroups[0].fields[0].dependentFieldFilters[0].dependentFormField.type).toEqual('string')
+          expect(res.value.formFieldGroups[0].fields[0].dependentFieldFilters[0].dependentFormField.fieldType).toEqual('text')
+          expect(res.value.formFieldGroups[0].fields[0].dependentFieldFilters[0].dependentFormField.description).toEqual('desc')
+          expect(res.value.formFieldGroups[0].fields[0].dependentFieldFilters[0].dependentFormField.groupName).toEqual('contactinformation')
+          expect(res.value.formFieldGroups[0].fields[0].dependentFieldFilters[0].dependentFormField
+            .displayOrder).toEqual(-1)
+          expect(res.value.formFieldGroups[0].fields[0].dependentFieldFilters[0].dependentFormField
+            .required).toEqual(false)
+          expect(res.value.formFieldGroups[0].fields[0].dependentFieldFilters[0].dependentFormField
+            .hidden).toEqual(false)
+          expect(res.value.formFieldGroups[0].fields[0].dependentFieldFilters[0].dependentFormField
+            .isSmartField).toEqual(false)
+          expect(res.value.formFieldGroups[0].fields[0].dependentFieldFilters[0].dependentFormField
+            .placeholder).toEqual('place')
 
           // formFieldGroups[1]
           expect(res.value.formFieldGroups[1].default).toEqual(true)
           expect(res.value.formFieldGroups[1].isSmartGroup).toEqual(false)
           expect(res.value.formFieldGroups[1].richText).toBeUndefined()
           expect(res.value.formFieldGroups[1].fields).toHaveLength(1)
-          expect(res.value.formFieldGroups[1].default).toEqual(true)
-          expect(res.value.formFieldGroups[1].isSmartGroup).toEqual(false)
-          expect(res.value.formFieldGroups[1].richText).toBeUndefined()
-          expect(res.value.formFieldGroups[1].fields).toHaveLength(1)
-          expect(res.value.formFieldGroups[1].fields[0].label).toEqual('g1')
+          expect(res.value.formFieldGroups[1].fields[0].label).toEqual('State/Region')
           expect(res.value.formFieldGroups[1].fields[0].description).toBeUndefined()
+          expect(res.value.formFieldGroups[1].fields[0].displayOrder).toEqual(1)
           expect(res.value.formFieldGroups[1].fields[0].propertyObjectType).toBeUndefined()
-          expect(res.value.formFieldGroups[1].fields[0].options).toBeUndefined()
+          expect(res.value.formFieldGroups[1].fields[0].options).toHaveLength(1)
+          expect(res.value.formFieldGroups[1].fields[0].options[0].label).toEqual('opt1')
+          expect(res.value.formFieldGroups[1].fields[0].options[0].hidden).toEqual(true)
+          expect(res.value.formFieldGroups[1].fields[0].options[0].description).toBeUndefined()
         })
       })
     })

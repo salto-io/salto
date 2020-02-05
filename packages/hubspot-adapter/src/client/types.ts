@@ -69,6 +69,7 @@ export interface Form extends HubspotMetadata {
   captchaEnabled: boolean
   cloneable: boolean
   editable: boolean
+  themeName: string
 }
 
 interface PropertyGroup {

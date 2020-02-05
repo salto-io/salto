@@ -51,11 +51,11 @@ const log = logger(module)
 
 const RECORDS_CHUNK_SIZE = 10000
 
-const metadataTypesConsistsOfMetadataTypesWithAbsoluteNames: Record<string, string[]> = {
+const absoluteIDMetadataTypes: Record<string, string[]> = {
   CustomLabels: ['labels'],
 }
 
-const metadataTypesConsistsOfMetadataTypesWithNestedNames: Record<string, string[]> = {
+const nestedIDMetadataTypes: Record<string, string[]> = {
   AssignmentRules: ['assignmentRule'],
   AutoResponseRules: ['autoresponseRule'],
   EscalationRules: ['escalationRule'],
@@ -182,8 +182,8 @@ export default class SalesforceAdapter {
       'Flow', // update fails for Active flows
     ],
     metadataTypesConsistsOfMetadataTypes = {
-      ...metadataTypesConsistsOfMetadataTypesWithAbsoluteNames,
-      ...metadataTypesConsistsOfMetadataTypesWithNestedNames,
+      ...absoluteIDMetadataTypes,
+      ...nestedIDMetadataTypes,
     },
     filterCreators = [
       missingFieldsFilter,
@@ -580,14 +580,15 @@ export default class SalesforceAdapter {
     newInstance: InstanceElement, fieldName: string, withObjectPrefix: boolean): Promise<void> {
     const getDeletedObjectsNames = (oldObjects: Values[], newObjects: Values[]): string[] => {
       const newObjectsNames = newObjects.map(o => o.fullName)
-      return oldObjects.filter(o => !newObjectsNames.includes(o.fullName)).map(o => o.fullName)
+      const oldObjectsNames = oldObjects.map(o => o.fullName)
+      return oldObjectsNames.filter(o => !newObjectsNames.includes(o))
     }
 
-    const instanceType = newInstance.type?.fields?.[fieldName]?.type
-    if (_.isUndefined(instanceType)) {
+    const fieldType = newInstance.type.fields[fieldName]?.type
+    if (_.isUndefined(fieldType)) {
       return
     }
-    const metadataTypeName = metadataType(instanceType)
+    const metadataTypeName = metadataType(fieldType)
     const deletedObjects = getDeletedObjectsNames(
       makeArray(oldInstance.value[fieldName]), makeArray(newInstance.value[fieldName])
     ).map(o => (withObjectPrefix ? `${oldInstance.value.fullName}.${o}` : o))
@@ -618,7 +619,7 @@ export default class SalesforceAdapter {
             prevInstance,
             newInstance,
             fieldName,
-            Object.keys(metadataTypesConsistsOfMetadataTypesWithNestedNames).includes(typeName)
+            Object.keys(nestedIDMetadataTypes).includes(typeName)
           ))
     }
 

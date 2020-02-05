@@ -3706,7 +3706,15 @@ describe('Salesforce adapter E2E with real account', () => {
           .filter(isObjectType)
           .find(e => metadataType(e) === assignmentRulesTypeName) as ObjectType
 
-        await client.delete('AssignmentRule', 'Lead.NonStandard').catch(() => undefined)
+        const leadAssignmentRule = result
+          .filter(e => metadataType(e) === assignmentRulesTypeName)
+          .filter(isInstanceElement)
+          .find(e => e.value[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead') as InstanceElement
+
+        if (makeArray(leadAssignmentRule.value.assignmentRule)
+          .find(rule => rule[constants.INSTANCE_FULL_NAME_FIELD] === 'NonStandard')) {
+          await client.delete('AssignmentRule', 'Lead.NonStandard').catch(() => undefined)
+        }
 
         before = new InstanceElement(
           'LeadAssignmentRules',

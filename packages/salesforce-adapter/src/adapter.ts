@@ -103,8 +103,8 @@ export interface SalesforceAdapterParams {
   // Metadata types that we should not use client.update but client.upsert upon instance update
   metadataTypesToUseUpsertUponUpdate?: string[]
 
-  // Metadata types that that includes metadata types inside them
-  metadataTypesConsistsOfMetadataTypes?: Record<string, string[]>
+  // Metadata types that that include metadata types inside them
+  nestedMetadataTypes?: Record<string, string[]>
 
   // Filters to deploy to all adapter operations
   filterCreators?: FilterCreator[]
@@ -137,7 +137,7 @@ export default class SalesforceAdapter {
   private metadataAdditionalTypes: string[]
   private metadataTypesToSkipMutation: string[]
   private metadataTypesToUseUpsertUponUpdate: string[]
-  private metadataTypesConsistsOfMetadataTypes: Record<string, string[]>
+  private nestedMetadataTypes: Record<string, string[]>
   private filterCreators: FilterCreator[]
   private client: SalesforceClient
   private systemFields: string[]
@@ -181,7 +181,7 @@ export default class SalesforceAdapter {
     metadataTypesToUseUpsertUponUpdate = [
       'Flow', // update fails for Active flows
     ],
-    metadataTypesConsistsOfMetadataTypes = {
+    nestedMetadataTypes = {
       ...absoluteIDMetadataTypes,
       ...nestedIDMetadataTypes,
     },
@@ -235,7 +235,7 @@ export default class SalesforceAdapter {
     this.metadataAdditionalTypes = metadataAdditionalTypes
     this.metadataTypesToSkipMutation = metadataTypesToSkipMutation
     this.metadataTypesToUseUpsertUponUpdate = metadataTypesToUseUpsertUponUpdate
-    this.metadataTypesConsistsOfMetadataTypes = metadataTypesConsistsOfMetadataTypes
+    this.nestedMetadataTypes = nestedMetadataTypes
     this.filterCreators = filterCreators
     this.client = client
     this.systemFields = systemFields
@@ -591,7 +591,8 @@ export default class SalesforceAdapter {
     const metadataTypeName = metadataType(fieldType)
     const deletedObjects = getDeletedObjectsNames(
       makeArray(oldInstance.value[fieldName]), makeArray(newInstance.value[fieldName])
-    ).map(o => (withObjectPrefix ? `${oldInstance.value.fullName}.${o}` : o))
+    ).map(o => (withObjectPrefix ? [oldInstance.value.fullName, o] : [o])
+      .join(constants.API_NAME_SEPERATOR))
     if (!_.isEmpty(deletedObjects)) {
       await this.client.delete(metadataTypeName, deletedObjects)
     }
@@ -611,9 +612,9 @@ export default class SalesforceAdapter {
       return newInstance
     }
 
-    if (Object.keys(this.metadataTypesConsistsOfMetadataTypes).includes(typeName)) {
+    if (Object.keys(this.nestedMetadataTypes).includes(typeName)) {
       // Checks if we need to delete metadata objects
-      this.metadataTypesConsistsOfMetadataTypes[typeName]
+      this.nestedMetadataTypes[typeName]
         .forEach(fieldName =>
           this.deleteRemovedMetadataObjects(
             prevInstance,

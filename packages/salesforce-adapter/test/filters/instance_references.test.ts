@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import { InstanceElement, ObjectType, ElemID, BuiltinTypes, Field, ReferenceExpression } from 'adapter-api'
 import { INSTANCE_FULL_NAME_FIELD, SALESFORCE } from '../../src/constants'
-import { replaceInstances, groupByAPIName } from '../../src/filters/instance_to_instance_references'
+import { replaceInstances, groupByAPIName } from '../../src/filters/instance_references'
 
 describe('instance_to_instance_reference filter', () => {
   // Definitions
@@ -79,6 +79,7 @@ describe('instance_to_instance_reference filter', () => {
   describe('replace values', () => {
     it('should replace regular values to references', () => {
       expect(referrerInstanceFiltered.value.parentObj).toBeInstanceOf(ReferenceExpression)
+      expect(referrerInstanceFiltered.value.parentObj.elemId.typeName).toEqual(objTypeID.typeName)
     })
 
     it('should replace nested objects to references', () => {

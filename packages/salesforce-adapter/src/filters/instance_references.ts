@@ -1,4 +1,4 @@
-import { Field, Element, isObjectType, isInstanceElement, Value, Values, ObjectType, ElemID, ReferenceExpression, PrimitiveValue, PrimitiveField, transform } from 'adapter-api'
+import { Field, Element, isObjectType, isInstanceElement, Value, Values, ObjectType, ElemID, ReferenceExpression, TransformValueFunc, transform } from 'adapter-api'
 import _ from 'lodash'
 import { FilterCreator } from '../filter'
 import { SALESFORCE } from '../constants'
@@ -11,7 +11,7 @@ const fieldToTypeMappingDefs: Array<[ElemID, string]> = [
 ]
 
 export const fieldToTypeMapping = new Map(
-  fieldToTypeMappingDefs.map(([fieldID, metadataType]) => [fieldID.getFullName(), metadataType])
+  fieldToTypeMappingDefs.map(([fieldID, typeName]) => [fieldID.getFullName(), typeName])
 )
 
 const mapElemTypeToElemID = (elements: Element[]): Record<string, ElemID> => (
@@ -37,7 +37,7 @@ const replaceReferenceValues = (
   apiToIdMap: Record<string, Record<string, ElemID>>
 ): Values => {
   const shouldReplace = (element: Element): boolean => (
-    replaceTypes.has(element.elemID.getFullName())
+    !_.isUndefined(element) && replaceTypes.has(element.elemID.getFullName())
   )
 
   const replacePrimitive = (val: Value, field: Field): Value => {
@@ -59,8 +59,7 @@ const replaceReferenceValues = (
     return _.isString(val) ? new ReferenceExpression(elemID) : val
   }
 
-
-  const transformReferences = (val: PrimitiveValue, field: PrimitiveField): Value => (
+  const transformReferences: TransformValueFunc = (val, field) => (
     shouldReplace(field) ? replacePrimitive(val, field) : val
   )
 

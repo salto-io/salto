@@ -5705,6 +5705,7 @@ describe('Salesforce adapter E2E with real account', () => {
         it('should point parentRole to a Role instance', () => {
           const childRole = findElements(result, 'Role', 'TestChildRole')[0] as InstanceElement
           expect(childRole.value.parentRole).toBeInstanceOf(ReferenceExpression)
+          expect(childRole.value.parentRole.elemId.typeName).toEqual('Role')
         })
       })
     })

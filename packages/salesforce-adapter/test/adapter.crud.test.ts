@@ -740,7 +740,7 @@ describe('SalesforceAdapter CRUD', () => {
           },
           annotationTypes: {},
           annotations: {
-            [constants.METADATA_TYPE]: constants.PROFILE_METADATA_TYPE,
+            [constants.METADATA_TYPE]: 'AssignmentRules',
           },
         }),
         { [constants.INSTANCE_FULL_NAME_FIELD]: mockInstanceName },
@@ -777,6 +777,130 @@ describe('SalesforceAdapter CRUD', () => {
 
         it('should not call the connection', () => {
           expect(mockUpdate.mock.calls.length).toBe(0)
+        })
+      })
+
+      describe('delete metadata objects inside of instances upon update', () => {
+        describe('objects names are nested', () => {
+          const assignmentRuleFieldName = 'assignmentRule'
+          const mockAssignmentRulesObjectType = new ObjectType({
+            elemID: mockElemID,
+            fields: {
+              [constants.INSTANCE_FULL_NAME_FIELD]:
+                new Field(mockElemID, constants.INSTANCE_FULL_NAME_FIELD, BuiltinTypes.SERVICE_ID),
+              [assignmentRuleFieldName]:
+                new Field(mockElemID, assignmentRuleFieldName, new ObjectType({
+                  elemID: mockElemID,
+                  fields: {
+                    [constants.INSTANCE_FULL_NAME_FIELD]:
+                      new Field(
+                        mockElemID,
+                        constants.INSTANCE_FULL_NAME_FIELD,
+                        BuiltinTypes.SERVICE_ID
+                      ),
+                  },
+                  annotations: {
+                    [constants.METADATA_TYPE]: 'AssignmentRule',
+                  },
+                })),
+            },
+            annotationTypes: {},
+            annotations: {
+              [constants.METADATA_TYPE]: 'AssignmentRules',
+            },
+          })
+          const oldAssignmentRules = new InstanceElement(
+            mockInstanceName,
+            mockAssignmentRulesObjectType,
+            { [constants.INSTANCE_FULL_NAME_FIELD]: mockInstanceName,
+              [assignmentRuleFieldName]: [
+                { [constants.INSTANCE_FULL_NAME_FIELD]: 'Val1' },
+                { [constants.INSTANCE_FULL_NAME_FIELD]: 'Val2' },
+              ] },
+          )
+          const newAssignmentRules = new InstanceElement(
+            mockInstanceName,
+            mockAssignmentRulesObjectType,
+            { [constants.INSTANCE_FULL_NAME_FIELD]: mockInstanceName,
+              [assignmentRuleFieldName]: [
+                { [constants.INSTANCE_FULL_NAME_FIELD]: 'Val1' },
+              ] },
+          )
+
+          beforeEach(async () => {
+            adapter.update(
+              oldAssignmentRules,
+              newAssignmentRules,
+              [{ action: 'modify', data: { before: oldAssignmentRules, after: newAssignmentRules } }]
+            )
+          })
+
+          it('should call delete on remove metadata objects with field names', () => {
+            expect(mockDelete.mock.calls.length).toBe(1)
+            expect(mockDelete.mock.calls[0][1][0]).toEqual('Instance.Val2')
+            expect(mockDelete.mock.calls[0][0]).toEqual('AssignmentRule')
+          })
+        })
+
+        describe('objects names are absolute', () => {
+          const customLabelsFieldName = 'labels'
+          const mockCustomLabelsObjectType = new ObjectType({
+            elemID: mockElemID,
+            fields: {
+              [constants.INSTANCE_FULL_NAME_FIELD]:
+                new Field(mockElemID, constants.INSTANCE_FULL_NAME_FIELD, BuiltinTypes.SERVICE_ID),
+              [customLabelsFieldName]:
+                new Field(mockElemID, customLabelsFieldName, new ObjectType({
+                  elemID: mockElemID,
+                  fields: {
+                    [constants.INSTANCE_FULL_NAME_FIELD]:
+                      new Field(
+                        mockElemID,
+                        constants.INSTANCE_FULL_NAME_FIELD,
+                        BuiltinTypes.SERVICE_ID
+                      ),
+                  },
+                  annotations: {
+                    [constants.METADATA_TYPE]: 'CustomLabel',
+                  },
+                })),
+            },
+            annotationTypes: {},
+            annotations: {
+              [constants.METADATA_TYPE]: 'CustomLabels',
+            },
+          })
+          const oldCustomLabels = new InstanceElement(
+            mockInstanceName,
+            mockCustomLabelsObjectType,
+            { [constants.INSTANCE_FULL_NAME_FIELD]: mockInstanceName,
+              [customLabelsFieldName]: [
+                { [constants.INSTANCE_FULL_NAME_FIELD]: 'Val1' },
+                { [constants.INSTANCE_FULL_NAME_FIELD]: 'Val2' },
+              ] },
+          )
+          const newCustomLabels = new InstanceElement(
+            mockInstanceName,
+            mockCustomLabelsObjectType,
+            { [constants.INSTANCE_FULL_NAME_FIELD]: mockInstanceName,
+              [customLabelsFieldName]: [
+                { [constants.INSTANCE_FULL_NAME_FIELD]: 'Val1' },
+              ] },
+          )
+
+          beforeEach(async () => {
+            await adapter.update(
+              oldCustomLabels,
+              newCustomLabels,
+              [{ action: 'modify', data: { before: oldCustomLabels, after: newCustomLabels } }]
+            )
+          })
+
+          it('should call delete on remove metadata objects with object names', () => {
+            expect(mockDelete.mock.calls.length).toBe(1)
+            expect(mockDelete.mock.calls[0][1][0]).toEqual('Val2')
+            expect(mockDelete.mock.calls[0][0]).toEqual('CustomLabel')
+          })
         })
       })
     })

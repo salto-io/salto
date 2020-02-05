@@ -4,6 +4,7 @@ import {
   isInstanceElement, ReferenceExpression, CORE_ANNOTATIONS, RESTRICTION_ANNOTATIONS, findElement,
   findObjectType,
   TypeElement,
+  isObjectType,
 } from 'adapter-api'
 import { MetadataInfo, RetrieveResult } from 'jsforce'
 import { collections } from '@salto/lowerdash'
@@ -3679,16 +3680,10 @@ describe('Salesforce adapter E2E with real account', () => {
 
     // Assignment rules are special because they use the Deploy API so they get their own test
     describe('assignment rules manipulation', () => {
+      const assignmentRulesTypeName = 'AssignmentRules'
       const getRulesFromClient = async (): Promise<Values> => fromMetadataInfo(
-        (await client.readMetadata('AssignmentRules', 'Lead'))[0]
+        (await client.readMetadata(assignmentRulesTypeName, 'Lead'))[0]
       )
-
-      const dummyAssignmentRulesType = new ObjectType({
-        elemID: new ElemID(constants.SALESFORCE, 'AssignmentRules'),
-        annotations: {
-          [constants.METADATA_TYPE]: 'AssignmentRules',
-        },
-      })
 
       let before: InstanceElement
       let after: InstanceElement
@@ -3696,11 +3691,23 @@ describe('Salesforce adapter E2E with real account', () => {
 
       beforeAll(async () => {
         // Make sure our test rule does not exist before we start
-        await client.delete('AssignmentRule', 'Lead.NonStandard').catch(() => undefined)
+        const assignmentRulesType = result
+          .filter(isObjectType)
+          .find(e => metadataType(e) === assignmentRulesTypeName) as ObjectType
+
+        const leadAssignmentRule = result
+          .filter(e => metadataType(e) === assignmentRulesTypeName)
+          .filter(isInstanceElement)
+          .find(e => e.value[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead') as InstanceElement
+
+        if (makeArray(leadAssignmentRule.value.assignmentRule)
+          .find(rule => rule[constants.INSTANCE_FULL_NAME_FIELD] === 'NonStandard')) {
+          await client.delete('AssignmentRule', 'Lead.NonStandard').catch(() => undefined)
+        }
 
         before = new InstanceElement(
           'LeadAssignmentRules',
-          dummyAssignmentRulesType,
+          assignmentRulesType,
           await getRulesFromClient(),
         )
         validAssignment = _.omit(
@@ -3715,10 +3722,6 @@ describe('Salesforce adapter E2E with real account', () => {
           before.type,
           _.cloneDeep(before.value),
         )
-      })
-
-      afterEach(async () => {
-        await adapter.update(after, before, [])
       })
 
       it('should create rule', async () => {
@@ -3743,12 +3746,10 @@ describe('Salesforce adapter E2E with real account', () => {
         // Since assignment rules order is not relevant so we have to compare sets
         expect(new Set(updatedRules.assignmentRule)).toEqual(new Set(after.value.assignmentRule))
 
-        // Because removing assignment rules does not work currently, we have to clean up with a
-        // different api call, this part of the test should be changed once removing rules works
-        // we should be issuing another `sfAdater.update` call here in order to remove the rule
-        await client.delete('AssignmentRule', 'Lead.NonStandard')
-
-        // TODO: test deletion of assignment rule once it is fixed
+        await adapter.update(after, before, [{ action: 'modify', data: { before: after, after: before } }])
+        const rules = await getRulesFromClient()
+        expect(new Set(makeArray(rules.assignmentRule)))
+          .toEqual(new Set(makeArray(before.value.assignmentRule)))
       })
 
       it('should update existing', async () => {
@@ -3776,6 +3777,7 @@ describe('Salesforce adapter E2E with real account', () => {
 
         const updatedRules = await getRulesFromClient()
         expect(updatedRules).toEqual(after.value)
+        await adapter.update(after, before, [])
       })
     })
 

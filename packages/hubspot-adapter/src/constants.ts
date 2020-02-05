@@ -8,8 +8,8 @@ const DISPLAYORDER = 'displayOrder'
 
 export const OBJECTS_NAMES = {
   FORM: 'form',
-  WORKFLOWS: 'workflows',
   MARKETINGEMAIL: 'marketingEmail',
+  WORKFLOWS: 'workflows',
 
   // Subtypes
   PROPERTYGROUP: 'propertyGroup',

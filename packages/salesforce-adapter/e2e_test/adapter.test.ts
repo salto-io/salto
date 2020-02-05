@@ -117,29 +117,24 @@ describe('Salesforce adapter E2E with real account', () => {
 
   beforeAll(async () => {
     const verifyObjectsDependentFieldsExist = async (): Promise<void> => {
-      const verifyGlobalValueSetExists = async (): Promise<void> => {
-        await client.upsert('GlobalValueSet', {
-          fullName: gvsName,
-          masterLabel: gvsName,
-          sorted: false,
-          description: 'GlobalValueSet that should be fetched in e2e test',
-          customValue: [
-            {
-              fullName: 'Val1',
-              default: true,
-              label: 'Val1',
-            },
-            {
-              fullName: 'Val2',
-              default: false,
-              label: 'Val2',
-            },
-          ],
-        } as MetadataInfo)
-      }
-      Promise.all([
-        verifyGlobalValueSetExists(),
-      ])
+      await client.upsert('GlobalValueSet', {
+        fullName: gvsName,
+        masterLabel: gvsName,
+        sorted: false,
+        description: 'GlobalValueSet that should be fetched in e2e test',
+        customValue: [
+          {
+            fullName: 'Val1',
+            default: true,
+            label: 'Val1',
+          },
+          {
+            fullName: 'Val2',
+            default: false,
+            label: 'Val2',
+          },
+        ],
+      } as MetadataInfo)
     }
     const addCustomObjectWithVariousFields = async (): Promise<void> => {
       const objectToAdd = {

@@ -1,7 +1,7 @@
 import {
-  ObjectType, ElemID, InstanceElement,
+  ObjectType, ElemID, InstanceElement, INSTANCE_ANNOTATIONS, ReferenceExpression,
 } from 'adapter-api'
-import makeFilter, { LAYOUT_ANNOTATION, LAYOUT_TYPE_ID } from '../../src/filters/layouts'
+import makeFilter, { LAYOUT_TYPE_ID } from '../../src/filters/layouts'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
@@ -19,29 +19,33 @@ describe('Test layout filter', () => {
 
   describe('Test layout fetch', () => {
     const fetch = async (apiName: string, opts = { fixedName: true }): Promise<void> => {
+      const testSobjPath = ['object', 'test', 'standard']
       const testSObj = mockSObject.clone()
       testSObj.annotate({ [constants.API_NAME]: apiName })
+      testSObj.path = testSobjPath
 
-      const fixedName = 'Test'
-      const fullName = `${apiName}-${fixedName} Layout`
+      const shortName = 'Test Layout'
+      const fullName = `${apiName}-${shortName}`
+      const instName = bpCase(opts.fixedName ? shortName : fullName)
       const testLayout = new InstanceElement(
-        opts.fixedName ? fixedName : bpCase(fullName),
+        instName,
         new ObjectType({
           elemID: LAYOUT_TYPE_ID,
         }),
         { [constants.INSTANCE_FULL_NAME_FIELD]: fullName },
-        [constants.RECORDS_PATH, 'Layout', bpCase(fullName)]
+        [constants.RECORDS_PATH, 'Layout', instName]
       )
       const elements = [testSObj, testLayout]
 
       await filter.onFetch(elements)
 
       const instance = elements[1] as InstanceElement
-      expect(instance.elemID).toEqual(LAYOUT_TYPE_ID.createNestedID('instance', fixedName))
-      expect(instance.path).toEqual([constants.RECORDS_PATH, 'Layout', fixedName])
+      expect(instance.elemID).toEqual(LAYOUT_TYPE_ID.createNestedID('instance', bpCase(shortName)))
+      expect(instance.path).toEqual([...testSobjPath.slice(0, -1), 'Layout', instance.elemID.name])
 
-      const sobject = elements[0] as ObjectType
-      expect(sobject.annotations[LAYOUT_ANNOTATION][0].elemId).toEqual(instance.elemID)
+      expect(instance.annotations[INSTANCE_ANNOTATIONS.DEPENDS_ON]).toContainEqual(
+        new ReferenceExpression(testSObj.elemID)
+      )
     }
 
     it('should add relation between layout to related sobject', async () => {

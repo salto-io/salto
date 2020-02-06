@@ -10,35 +10,16 @@ import {
   EVENTANCHOR_FIELDS, ACTION_FIELDS, FORM_PROPERTY_GROUP_FIELDS, OPTIONS_FIELDS,
   CONTACT_PROPERTY_FIELDS, CONTACTLISTIDS_FIELDS, RSSTOEMAILTIMING_FIELDS,
   DEPENDENT_FIELD_FILTER_FIELDS, FIELD_FILTER_FIELDS, WORKFLOWS_FIELDS,
-  MARKETING_EMAIL_FIELDS,
-  RICHTEXT_FIELDS,
+  MARKETING_EMAIL_FIELDS, RICHTEXT_FIELDS, formElemID, workflowsElemID,
+  propertyGroupElemID, propertyElemID, dependeeFormPropertyElemID, optionsElemID,
+  contactListIdsElemID, marketingEmailElemID, rssToEmailTimingElemID,
+  nurtureTimeRangeElemID, anchorSettingElemID, actionElemID, eventAnchorElemID,
+  conditionActionElemID, contactPropertyElemID, dependentFormFieldFilterElemID,
+  fieldFilterElemID, richTextElemID, contactPropertyTypeValues, contactPropertyFieldTypeValues,
 } from '../constants'
 import {
   HubspotMetadata,
 } from '../client/types'
-
-const formElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.FORM)
-const workflowsElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.WORKFLOWS)
-const propertyGroupElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.PROPERTYGROUP)
-const propertyElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.PROPERTY)
-const dependeeFormPropertyElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.DEPEDENT_FORM_PROPERTY)
-const optionsElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.OPTIONS)
-const contactListIdsElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.CONTACTLISTIDS)
-const marketingEmailElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.MARKETINGEMAIL)
-const rssToEmailTimingElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.RSSTOEMAILTIMING)
-const nurtureTimeRangeElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.NURTURETIMERANGE)
-const anchorSettingElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.ANCHORSETTING)
-const actionElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.ACTION)
-const eventAnchorElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.EVENTANCHOR)
-const conditionActionElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.CONDITIONACTION)
-const contactPropertyElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.CONTACT_PROPERTY)
-const dependentFormFieldFilterElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.DEPENDENT_FIELD_FILTER)
-const fieldFilterElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.FIELD_FILTER)
-const richTextElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.RICHTEXT)
-
-const contactPropertyTypeValues = ['string', 'number', 'date', 'datetime', 'enumeration']
-const contactPropertyFieldTypeValues = ['textarea', 'text', 'date', 'file', 'number', 'select',
-  'radio', 'checkbox', 'booleancheckbox']
 
 export class Types {
   private static fieldTypes: TypeMap = {

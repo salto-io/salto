@@ -1,3 +1,5 @@
+import { ElemID } from 'adapter-api'
+
 export const HUBSPOT = 'hubspot'
 export const NAME = 'name'
 const LABEL = 'label'
@@ -306,3 +308,27 @@ export const CONTACTLISTIDS_FIELDS = {
   COMPLETED: 'completed',
   SUCCEEDED: 'succeeded',
 }
+
+export const contactPropertyTypeValues = ['string', 'number', 'date', 'datetime', 'enumeration']
+export const contactPropertyFieldTypeValues = ['textarea', 'text', 'date', 'file', 'number', 'select',
+  'radio', 'checkbox', 'booleancheckbox']
+
+export const formElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.FORM)
+export const workflowsElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.WORKFLOWS)
+export const propertyGroupElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.PROPERTYGROUP)
+export const propertyElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.PROPERTY)
+export const dependeeFormPropertyElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.DEPEDENT_FORM_PROPERTY)
+export const optionsElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.OPTIONS)
+export const contactListIdsElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.CONTACTLISTIDS)
+export const marketingEmailElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.MARKETINGEMAIL)
+export const rssToEmailTimingElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.RSSTOEMAILTIMING)
+export const nurtureTimeRangeElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.NURTURETIMERANGE)
+export const anchorSettingElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.ANCHORSETTING)
+export const actionElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.ACTION)
+export const eventAnchorElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.EVENTANCHOR)
+export const conditionActionElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.CONDITIONACTION)
+export const contactPropertyElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.CONTACT_PROPERTY)
+export const dependentFormFieldFilterElemID = new ElemID(HUBSPOT,
+  OBJECTS_NAMES.DEPENDENT_FIELD_FILTER)
+export const fieldFilterElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.FIELD_FILTER)
+export const richTextElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.RICHTEXT)

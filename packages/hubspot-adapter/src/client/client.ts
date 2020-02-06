@@ -175,7 +175,6 @@ export default class HubspotClient {
     if (objectAPI.update === undefined) {
       throw new Error(`${typeName} can't updated via API`)
     }
-
     const resp = objectAPI.update(
       extractInstanceId(hubspotMetadata, typeName),
       hubspotMetadata

@@ -5,28 +5,21 @@ import {
   CORE_ANNOTATIONS, transform, TypeMap, Values, TransformValueFunc, isPrimitiveType,
 } from 'adapter-api'
 import {
-  FIELD_TYPES, NURTURETIMERANGE_FIELDS, RSSTOEMAILTIMING_FIELDS, CONDITIONACTION_FIELDS,
-  FORM_FIELDS, ACTION_FIELDS, ANCHOR_SETTING_FIELDS, EVENTANCHOR_FIELDS,
-  HUBSPOT, OBJECTS_NAMES, PROPERTY_FIELDS, PROPERTY_GROUP_FIELDS,
-  OPTIONS_FIELDS, CONTACTLISTIDS_FIELDS, WORKFLOWS_FIELDS, MARKETING_EMAIL_FIELDS,
+  FIELD_TYPES, FORM_FIELDS, HUBSPOT, OBJECTS_NAMES, FORM_PROPERTY_FIELDS,
+  NURTURETIMERANGE_FIELDS, CONDITIONACTION_FIELDS, ANCHOR_SETTING_FIELDS,
+  EVENTANCHOR_FIELDS, ACTION_FIELDS, FORM_PROPERTY_GROUP_FIELDS, OPTIONS_FIELDS,
+  CONTACT_PROPERTY_FIELDS, CONTACTLISTIDS_FIELDS, RSSTOEMAILTIMING_FIELDS,
+  DEPENDENT_FIELD_FILTER_FIELDS, FIELD_FILTER_FIELDS, WORKFLOWS_FIELDS,
+  MARKETING_EMAIL_FIELDS, RICHTEXT_FIELDS, formElemID, workflowsElemID,
+  propertyGroupElemID, propertyElemID, dependeeFormPropertyElemID, optionsElemID,
+  contactListIdsElemID, marketingEmailElemID, rssToEmailTimingElemID,
+  nurtureTimeRangeElemID, anchorSettingElemID, actionElemID, eventAnchorElemID,
+  conditionActionElemID, contactPropertyElemID, dependentFormFieldFilterElemID,
+  fieldFilterElemID, richTextElemID, contactPropertyTypeValues, contactPropertyFieldTypeValues,
 } from '../constants'
 import {
   HubspotMetadata,
 } from '../client/types'
-
-const formElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.FORM)
-const workflowsElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.WORKFLOWS)
-const propertyGroupElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.PROPERTYGROUP)
-const propertyElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.PROPERTY)
-const optionsElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.OPTIONS)
-const contactListIdsElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.CONTACTLISTIDS)
-const marketingEmailElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.MARKETINGEMAIL)
-const rssToEmailTimingElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.RSSTOEMAILTIMING)
-const nurtureTimeRangeElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.NURTURETIMERANGE)
-const anchorSettingElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.ANCHORSETTING)
-const actionElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.ACTION)
-const eventAnchorElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.EVENTANCHOR)
-const conditionActionElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.CONDITIONACTION)
 
 export class Types {
   private static fieldTypes: TypeMap = {
@@ -111,125 +104,410 @@ export class Types {
       path: [HUBSPOT, 'types', 'subtypes', optionsElemID.name],
     })
 
-  private static propertyType: ObjectType =
+    public static contactProperty: ObjectType =
     new ObjectType({
-      elemID: propertyElemID,
+      elemID: contactPropertyElemID,
       fields: {
-        [PROPERTY_FIELDS.NAME]: new TypeField(
-          propertyElemID, PROPERTY_FIELDS.NAME, BuiltinTypes.STRING, {
-            name: PROPERTY_FIELDS.NAME,
+        [CONTACT_PROPERTY_FIELDS.NAME]: new TypeField(
+          contactPropertyElemID, CONTACT_PROPERTY_FIELDS.NAME, BuiltinTypes.STRING, {
+            name: CONTACT_PROPERTY_FIELDS.NAME,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: true,
+          },
+        ),
+        [CONTACT_PROPERTY_FIELDS.LABEL]: new TypeField(
+          contactPropertyElemID, CONTACT_PROPERTY_FIELDS.LABEL, BuiltinTypes.STRING, {
+            name: CONTACT_PROPERTY_FIELDS.LABEL,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [PROPERTY_FIELDS.LABEL]: new TypeField(
-          propertyElemID, PROPERTY_FIELDS.LABEL, BuiltinTypes.STRING, {
-            name: PROPERTY_FIELDS.LABEL,
+        [CONTACT_PROPERTY_FIELDS.DESCRIPTION]: new TypeField(
+          contactPropertyElemID, CONTACT_PROPERTY_FIELDS.DESCRIPTION, BuiltinTypes.STRING, {
+            name: CONTACT_PROPERTY_FIELDS.DESCRIPTION,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [PROPERTY_FIELDS.DESCRIPTION]: new TypeField(
-          propertyElemID, PROPERTY_FIELDS.DESCRIPTION, BuiltinTypes.STRING, {
-            name: PROPERTY_FIELDS.DESCRIPTION,
+        [CONTACT_PROPERTY_FIELDS.GROUPNAME]: new TypeField(
+          contactPropertyElemID, CONTACT_PROPERTY_FIELDS.GROUPNAME, BuiltinTypes.STRING, {
+            name: CONTACT_PROPERTY_FIELDS.GROUPNAME,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: true,
+          },
+        ),
+        [CONTACT_PROPERTY_FIELDS.TYPE]: new TypeField(
+          contactPropertyElemID, CONTACT_PROPERTY_FIELDS.TYPE, BuiltinTypes.STRING, {
+            name: CONTACT_PROPERTY_FIELDS.TYPE,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: true,
+            [CORE_ANNOTATIONS.VALUES]: contactPropertyTypeValues,
+          },
+        ),
+        [CONTACT_PROPERTY_FIELDS.FIELDTYPE]: new TypeField(
+          contactPropertyElemID, CONTACT_PROPERTY_FIELDS.FIELDTYPE, BuiltinTypes.STRING, {
+            name: CONTACT_PROPERTY_FIELDS.FIELDTYPE,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: true,
+            [CORE_ANNOTATIONS.VALUES]: contactPropertyFieldTypeValues,
+          },
+        ),
+        [CONTACT_PROPERTY_FIELDS.OPTIONS]: new TypeField(
+          contactPropertyElemID, CONTACT_PROPERTY_FIELDS.OPTIONS, Types.optionsType, {
+            name: CONTACT_PROPERTY_FIELDS.OPTIONS,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
+          true
         ),
-        [PROPERTY_FIELDS.GROUPNAME]: new TypeField(
-          propertyElemID, PROPERTY_FIELDS.GROUPNAME, BuiltinTypes.STRING, {
-            name: PROPERTY_FIELDS.GROUPNAME,
+        [CONTACT_PROPERTY_FIELDS.DELETED]: new TypeField(
+          // TODO: Check if this works and decide if to keep
+          contactPropertyElemID, CONTACT_PROPERTY_FIELDS.GROUPNAME, BuiltinTypes.BOOLEAN, {
+            name: CONTACT_PROPERTY_FIELDS.GROUPNAME,
             _readOnly: true,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.REQUIRED]: true,
+            [CORE_ANNOTATIONS.DEFAULT]: false,
           },
         ),
-        [PROPERTY_FIELDS.TYPE]: new TypeField(
-          propertyElemID, PROPERTY_FIELDS.TYPE, BuiltinTypes.STRING, {
-            name: PROPERTY_FIELDS.TYPE,
+        [CONTACT_PROPERTY_FIELDS.FORMFIELD]: new TypeField(
+          contactPropertyElemID, CONTACT_PROPERTY_FIELDS.FORMFIELD, BuiltinTypes.BOOLEAN, {
+            name: CONTACT_PROPERTY_FIELDS.FORMFIELD,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: true,
+          },
+        ),
+        [CONTACT_PROPERTY_FIELDS.DISPLAYORDER]: new TypeField(
+          contactPropertyElemID, CONTACT_PROPERTY_FIELDS.DISPLAYORDER, BuiltinTypes.NUMBER, {
+            name: CONTACT_PROPERTY_FIELDS.DISPLAYORDER,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.DEFAULT]: -1,
+          },
+        ),
+        [CONTACT_PROPERTY_FIELDS.READONLYVALUE]: new TypeField(
+          contactPropertyElemID, CONTACT_PROPERTY_FIELDS.READONLYVALUE, BuiltinTypes.BOOLEAN, {
+            name: CONTACT_PROPERTY_FIELDS.READONLYVALUE,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.DEFAULT]: false,
+          },
+        ),
+        [CONTACT_PROPERTY_FIELDS.READONLYDEFINITION]: new TypeField(
+          contactPropertyElemID, CONTACT_PROPERTY_FIELDS.READONLYDEFINITION, BuiltinTypes.BOOLEAN, {
+            name: CONTACT_PROPERTY_FIELDS.READONLYDEFINITION,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.DEFAULT]: false,
+          },
+        ),
+        [CONTACT_PROPERTY_FIELDS.HIDDEN]: new TypeField(
+          contactPropertyElemID, CONTACT_PROPERTY_FIELDS.HIDDEN, BuiltinTypes.BOOLEAN, {
+            name: CONTACT_PROPERTY_FIELDS.HIDDEN,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.DEFAULT]: false,
+          },
+        ),
+        [CONTACT_PROPERTY_FIELDS.MUTABLEDEFINITIONNOTDELETABLE]: new TypeField(
+          contactPropertyElemID, CONTACT_PROPERTY_FIELDS.MUTABLEDEFINITIONNOTDELETABLE,
+          BuiltinTypes.BOOLEAN, {
+            name: CONTACT_PROPERTY_FIELDS.MUTABLEDEFINITIONNOTDELETABLE,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.DEFAULT]: false,
+          },
+        ),
+        [CONTACT_PROPERTY_FIELDS.CALCULATED]: new TypeField(
+          contactPropertyElemID, CONTACT_PROPERTY_FIELDS.CALCULATED, BuiltinTypes.BOOLEAN, {
+            name: CONTACT_PROPERTY_FIELDS.CALCULATED,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.DEFAULT]: false,
+          },
+        ),
+        [CONTACT_PROPERTY_FIELDS.CALCULATED]: new TypeField(
+          contactPropertyElemID, CONTACT_PROPERTY_FIELDS.CALCULATED, BuiltinTypes.BOOLEAN, {
+            name: CONTACT_PROPERTY_FIELDS.CALCULATED,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.DEFAULT]: false,
+          },
+        ),
+      },
+      path: [HUBSPOT, 'types', contactPropertyElemID.name],
+    })
+
+  private static fieldFilterType: ObjectType =
+    new ObjectType({
+      elemID: fieldFilterElemID,
+      fields: {
+        [FIELD_FILTER_FIELDS.OPERATOR]: new TypeField(
+          fieldFilterElemID, FIELD_FILTER_FIELDS.OPERATOR, BuiltinTypes.STRING, {
+            name: FIELD_FILTER_FIELDS.OPERATOR,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: true,
+            // TODO: Find the values
+          },
+        ),
+        [FIELD_FILTER_FIELDS.STRVALUE]: new TypeField(
+          fieldFilterElemID, FIELD_FILTER_FIELDS.STRVALUE, BuiltinTypes.STRING, {
+            name: FIELD_FILTER_FIELDS.STRVALUE,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [PROPERTY_FIELDS.FIELDTYPE]: new TypeField(
-          propertyElemID, PROPERTY_FIELDS.FIELDTYPE, BuiltinTypes.STRING, {
-            name: PROPERTY_FIELDS.FIELDTYPE,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
-        [PROPERTY_FIELDS.ISSMARTFIELD]: new TypeField(
-          propertyElemID, PROPERTY_FIELDS.ISSMARTFIELD, BuiltinTypes.BOOLEAN, {
-            name: PROPERTY_FIELDS.ISSMARTFIELD,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
-        [PROPERTY_FIELDS.REQUIRED]: new TypeField(
-          propertyElemID, PROPERTY_FIELDS.REQUIRED, BuiltinTypes.BOOLEAN, {
-            name: PROPERTY_FIELDS.REQUIRED,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
-        [PROPERTY_FIELDS.HIDDEN]: new TypeField(
-          propertyElemID, PROPERTY_FIELDS.HIDDEN, BuiltinTypes.BOOLEAN, {
-            name: PROPERTY_FIELDS.HIDDEN,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
-        [PROPERTY_FIELDS.DEFAULTVALUE]: new TypeField(
-          propertyElemID, PROPERTY_FIELDS.DEFAULTVALUE, BuiltinTypes.STRING, {
-            name: PROPERTY_FIELDS.DEFAULTVALUE,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
-        [PROPERTY_FIELDS.SELECTEDOPTIONS]: new TypeField(
-          propertyElemID, PROPERTY_FIELDS.SELECTEDOPTIONS, BuiltinTypes.STRING, {
-            name: PROPERTY_FIELDS.SELECTEDOPTIONS,
+        [FIELD_FILTER_FIELDS.STRVALUES]: new TypeField(
+          fieldFilterElemID, FIELD_FILTER_FIELDS.STRVALUES, BuiltinTypes.STRING, {
+            name: FIELD_FILTER_FIELDS.STRVALUES,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
           true,
         ),
-        [PROPERTY_FIELDS.OPTIONS]: new TypeField(
-          propertyElemID, PROPERTY_FIELDS.OPTIONS, Types.optionsType, {
-            name: PROPERTY_FIELDS.OPTIONS,
+        [FIELD_FILTER_FIELDS.BOOLVALUE]: new TypeField(
+          fieldFilterElemID, FIELD_FILTER_FIELDS.BOOLVALUE, BuiltinTypes.BOOLEAN, {
+            name: FIELD_FILTER_FIELDS.BOOLVALUE,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [FIELD_FILTER_FIELDS.NUMBERVALUE]: new TypeField(
+          fieldFilterElemID, FIELD_FILTER_FIELDS.NUMBERVALUE, BuiltinTypes.NUMBER, {
+            name: FIELD_FILTER_FIELDS.NUMBERVALUE,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [FIELD_FILTER_FIELDS.NUMVALUES]: new TypeField(
+          fieldFilterElemID, FIELD_FILTER_FIELDS.NUMVALUES, BuiltinTypes.NUMBER, {
+            name: FIELD_FILTER_FIELDS.NUMVALUES,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
           true,
         ),
       },
-      path: [HUBSPOT, 'types', 'subtypes', propertyElemID.name],
+      path: [HUBSPOT, 'types', 'subtypes', fieldFilterElemID.name],
+    })
+
+    static createFormPropertyType = (elemID: ElemID, isFatherProperty: boolean): ObjectType => {
+      const formPropertyType = new ObjectType({
+        elemID,
+        fields: {
+          [FORM_PROPERTY_FIELDS.NAME]: new TypeField(
+            elemID, FORM_PROPERTY_FIELDS.NAME, BuiltinTypes.STRING, {
+              name: FORM_PROPERTY_FIELDS.NAME,
+              _readOnly: false,
+              [CORE_ANNOTATIONS.REQUIRED]: false,
+            },
+          ),
+          [FORM_PROPERTY_FIELDS.LABEL]: new TypeField(
+            elemID, FORM_PROPERTY_FIELDS.LABEL, BuiltinTypes.STRING, {
+              name: FORM_PROPERTY_FIELDS.LABEL,
+              _readOnly: false,
+              [CORE_ANNOTATIONS.REQUIRED]: false,
+            },
+          ),
+          [FORM_PROPERTY_FIELDS.DESCRIPTION]: new TypeField(
+            elemID, FORM_PROPERTY_FIELDS.DESCRIPTION, BuiltinTypes.STRING, {
+              name: FORM_PROPERTY_FIELDS.DESCRIPTION,
+              _readOnly: false,
+              [CORE_ANNOTATIONS.REQUIRED]: false,
+            },
+          ),
+          [FORM_PROPERTY_FIELDS.ISSMARTFIELD]: new TypeField(
+            elemID, FORM_PROPERTY_FIELDS.ISSMARTFIELD, BuiltinTypes.BOOLEAN, {
+              name: FORM_PROPERTY_FIELDS.ISSMARTFIELD,
+              _readOnly: false,
+              [CORE_ANNOTATIONS.REQUIRED]: false,
+            },
+          ),
+          [FORM_PROPERTY_FIELDS.REQUIRED]: new TypeField(
+            elemID, FORM_PROPERTY_FIELDS.REQUIRED, BuiltinTypes.BOOLEAN, {
+              name: FORM_PROPERTY_FIELDS.REQUIRED,
+              _readOnly: false,
+              [CORE_ANNOTATIONS.REQUIRED]: false,
+            },
+          ),
+          [FORM_PROPERTY_FIELDS.HIDDEN]: new TypeField(
+            elemID, FORM_PROPERTY_FIELDS.HIDDEN, BuiltinTypes.BOOLEAN, {
+              name: FORM_PROPERTY_FIELDS.HIDDEN,
+              _readOnly: false,
+              [CORE_ANNOTATIONS.REQUIRED]: false,
+            },
+          ),
+          [FORM_PROPERTY_FIELDS.DEFAULTVALUE]: new TypeField(
+            elemID, FORM_PROPERTY_FIELDS.DEFAULTVALUE, BuiltinTypes.STRING, {
+              name: FORM_PROPERTY_FIELDS.DEFAULTVALUE,
+              _readOnly: false,
+              [CORE_ANNOTATIONS.REQUIRED]: false,
+            },
+          ),
+          [FORM_PROPERTY_FIELDS.PLACEHOLDER]: new TypeField(
+            elemID, FORM_PROPERTY_FIELDS.PLACEHOLDER, BuiltinTypes.STRING, {
+              name: FORM_PROPERTY_FIELDS.PLACEHOLDER,
+              _readOnly: false,
+              [CORE_ANNOTATIONS.REQUIRED]: false,
+            },
+          ),
+          [FORM_PROPERTY_FIELDS.SELECTEDOPTIONS]: new TypeField(
+            elemID, FORM_PROPERTY_FIELDS.SELECTEDOPTIONS, BuiltinTypes.STRING, {
+              name: FORM_PROPERTY_FIELDS.SELECTEDOPTIONS,
+              _readOnly: false,
+              [CORE_ANNOTATIONS.REQUIRED]: false,
+            },
+            true,
+          ),
+          [FORM_PROPERTY_FIELDS.OPTIONS]: new TypeField(
+            elemID, FORM_PROPERTY_FIELDS.OPTIONS, Types.optionsType, {
+              name: FORM_PROPERTY_FIELDS.OPTIONS,
+              _readOnly: false,
+              [CORE_ANNOTATIONS.REQUIRED]: false,
+            },
+            true,
+          ),
+          [FORM_PROPERTY_FIELDS.CONTACT_PROPERTY]: new TypeField(
+            elemID, FORM_PROPERTY_FIELDS.CONTACT_PROPERTY, Types.contactProperty, {
+              name: FORM_PROPERTY_FIELDS.CONTACT_PROPERTY,
+              _readOnly: false,
+              [CORE_ANNOTATIONS.REQUIRED]: false,
+            }
+          ),
+          [FORM_PROPERTY_FIELDS.DISPLAYORDER]: new TypeField(
+            elemID, FORM_PROPERTY_FIELDS.DISPLAYORDER, BuiltinTypes.NUMBER, {
+              name: FORM_PROPERTY_FIELDS.DISPLAYORDER,
+              _readOnly: false,
+              [CORE_ANNOTATIONS.REQUIRED]: false,
+            }
+          ),
+          [FORM_PROPERTY_FIELDS.TYPE]: new TypeField(
+            elemID, FORM_PROPERTY_FIELDS.TYPE, BuiltinTypes.STRING, {
+              name: FORM_PROPERTY_FIELDS.TYPE,
+              _readOnly: true,
+              [CORE_ANNOTATIONS.REQUIRED]: true,
+              [CORE_ANNOTATIONS.VALUES]: contactPropertyTypeValues,
+            }
+          ),
+          [FORM_PROPERTY_FIELDS.GROUPNAME]: new TypeField(
+            elemID, FORM_PROPERTY_FIELDS.GROUPNAME, BuiltinTypes.STRING, {
+              name: FORM_PROPERTY_FIELDS.GROUPNAME,
+              _readOnly: false,
+              [CORE_ANNOTATIONS.REQUIRED]: true,
+            },
+          ),
+          [FORM_PROPERTY_FIELDS.FIELDTYPE]: new TypeField(
+            elemID, FORM_PROPERTY_FIELDS.FIELDTYPE, BuiltinTypes.STRING, {
+              name: FORM_PROPERTY_FIELDS.FIELDTYPE,
+              _readOnly: true,
+              [CORE_ANNOTATIONS.REQUIRED]: true,
+              [CORE_ANNOTATIONS.VALUES]: contactPropertyFieldTypeValues,
+            }
+          ),
+        },
+        path: [HUBSPOT, 'types', 'subtypes', elemID.name],
+      })
+      if (isFatherProperty) {
+        Object.assign(formPropertyType.fields, {
+          [FORM_PROPERTY_FIELDS.DEPENDENTFIELDFILTERS]: new TypeField(
+            elemID, FORM_PROPERTY_FIELDS.DEPENDENTFIELDFILTERS,
+            Types.dependentFormFieldFilterType, {
+              name: FORM_PROPERTY_FIELDS.DEPENDENTFIELDFILTERS,
+              _readOnly: false,
+              [CORE_ANNOTATIONS.REQUIRED]: false,
+            },
+            true,
+          ),
+        })
+      }
+      return formPropertyType
+    }
+
+  private static dependeeFormFieldType =
+    Types.createFormPropertyType(dependeeFormPropertyElemID, false)
+
+  private static dependentFormFieldFilterType: ObjectType =
+    new ObjectType({
+      elemID: dependentFormFieldFilterElemID,
+      fields: {
+        [DEPENDENT_FIELD_FILTER_FIELDS.FORMFIELDACTION]: new TypeField(
+          dependentFormFieldFilterElemID, DEPENDENT_FIELD_FILTER_FIELDS.FORMFIELDACTION,
+          BuiltinTypes.STRING, {
+            name: DEPENDENT_FIELD_FILTER_FIELDS.FORMFIELDACTION,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: true,
+            // TODO: See if this can be anything else other than DISPLAY
+          },
+        ),
+        [DEPENDENT_FIELD_FILTER_FIELDS.FILTERS]: new TypeField(
+          dependentFormFieldFilterElemID, DEPENDENT_FIELD_FILTER_FIELDS.FILTERS,
+          Types.fieldFilterType, {
+            name: DEPENDENT_FIELD_FILTER_FIELDS.FILTERS,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: true,
+          },
+          true,
+        ),
+        [DEPENDENT_FIELD_FILTER_FIELDS.DEPEDENTFORMFIELD]: new TypeField(
+          dependentFormFieldFilterElemID, DEPENDENT_FIELD_FILTER_FIELDS.DEPEDENTFORMFIELD,
+          Types.dependeeFormFieldType, {
+            name: DEPENDENT_FIELD_FILTER_FIELDS.DEPEDENTFORMFIELD,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: true,
+          }
+        ),
+      },
+      path: [HUBSPOT, 'types', 'subtypes', dependentFormFieldFilterElemID.name],
+    })
+
+  private static propertyType = Types.createFormPropertyType(propertyElemID, true)
+
+  private static richTextType: ObjectType =
+    new ObjectType({
+      elemID: richTextElemID,
+      fields: {
+        [RICHTEXT_FIELDS.CONTENT]: new TypeField(
+          richTextElemID, RICHTEXT_FIELDS.CONTENT, BuiltinTypes.STRING, {
+            name: RICHTEXT_FIELDS.CONTENT,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+      },
+      path: [HUBSPOT, 'types', 'subtypes', richTextElemID.name],
     })
 
   private static propertyGroupType: ObjectType =
     new ObjectType({
       elemID: propertyGroupElemID,
       fields: {
-        [PROPERTY_GROUP_FIELDS.DEFAULT]: new TypeField(
-          propertyGroupElemID, PROPERTY_GROUP_FIELDS.DEFAULT, BuiltinTypes.BOOLEAN, {
-            name: PROPERTY_GROUP_FIELDS.DEFAULT,
+        [FORM_PROPERTY_GROUP_FIELDS.DEFAULT]: new TypeField(
+          propertyGroupElemID, FORM_PROPERTY_GROUP_FIELDS.DEFAULT, BuiltinTypes.BOOLEAN, {
+            name: FORM_PROPERTY_GROUP_FIELDS.DEFAULT,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [PROPERTY_GROUP_FIELDS.FIELDS]: new TypeField(
-          propertyGroupElemID, PROPERTY_GROUP_FIELDS.FIELDS, Types.propertyType, {
-            name: PROPERTY_GROUP_FIELDS.FIELDS,
+        [FORM_PROPERTY_GROUP_FIELDS.FIELDS]: new TypeField(
+          propertyGroupElemID, FORM_PROPERTY_GROUP_FIELDS.FIELDS, Types.propertyType, {
+            name: FORM_PROPERTY_GROUP_FIELDS.FIELDS,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
           true,
         ),
-        [PROPERTY_GROUP_FIELDS.ISSMARTGROUP]: new TypeField(
-          propertyGroupElemID, PROPERTY_GROUP_FIELDS.ISSMARTGROUP, BuiltinTypes.BOOLEAN, {
-            name: PROPERTY_GROUP_FIELDS.ISSMARTGROUP,
+        [FORM_PROPERTY_GROUP_FIELDS.ISSMARTGROUP]: new TypeField(
+          propertyGroupElemID, FORM_PROPERTY_GROUP_FIELDS.ISSMARTGROUP, BuiltinTypes.BOOLEAN, {
+            name: FORM_PROPERTY_GROUP_FIELDS.ISSMARTGROUP,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
+        ),
+        [FORM_PROPERTY_GROUP_FIELDS.RICHTEXT]: new TypeField(
+          propertyGroupElemID, FORM_PROPERTY_GROUP_FIELDS.RICHTEXT, Types.richTextType, {
+            name: FORM_PROPERTY_GROUP_FIELDS.RICHTEXT,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
         ),
       },
       path: [HUBSPOT, 'types', 'subtypes', propertyGroupElemID.name],
@@ -623,6 +901,13 @@ export class Types {
           formElemID, FORM_FIELDS.EDITABLE, BuiltinTypes.BOOLEAN, {
             name: FORM_FIELDS.EDITABLE,
             _readOnly: true,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [FORM_FIELDS.THEMENAME]: new TypeField(
+          formElemID, FORM_FIELDS.THEMENAME, BuiltinTypes.STRING, {
+            name: FORM_FIELDS.THEMENAME,
+            _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
@@ -1456,6 +1741,9 @@ export class Types {
     Types.nurtureTimeRangeType,
     Types.actionType,
     Types.anchorSettingType,
+    Types.dependentFormFieldFilterType,
+    Types.fieldFilterType,
+    Types.dependeeFormFieldType,
   ]
 
   /**

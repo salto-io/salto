@@ -1,10 +1,13 @@
 import { getChangeElement } from 'adapter-api'
 import _ from 'lodash'
+import { collections } from '@salto/lowerdash'
 import { ElementsSource } from '../../elements_source'
 import {
   projectChange, projectElementToEnv, createAddChange, createRemoveChange,
 } from './projections'
 import { DetailedChange } from '../../../core/plan'
+
+const { concatArrayCustomizer } = collections.array
 
 export interface RoutedChanges {
     primarySource?: DetailedChange[]
@@ -103,9 +106,7 @@ export const routeChanges = async (
     secondarySources: _.mergeWith(
       {},
       ...routedChanges.map(r => r.secondarySources || {}),
-      (objValue: DetailedChange[], srcValue: DetailedChange[]) => (
-        objValue ? [...objValue, ...srcValue] : srcValue
-      )
+      concatArrayCustomizer
     ),
   }
 }

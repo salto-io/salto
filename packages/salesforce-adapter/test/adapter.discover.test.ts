@@ -2,10 +2,11 @@ import _ from 'lodash'
 import {
   ObjectType, InstanceElement, ServiceIds, ElemID, BuiltinTypes, Element, CORE_ANNOTATIONS,
 } from 'adapter-api'
-import SalesforceAdapter from '../src/adapter'
+import { MetadataInfo } from 'jsforce'
+import SalesforceAdapter, { RECORDS_CHUNK_SIZE } from '../src/adapter'
 import Connection from '../src/client/jsforce'
 import { Types } from '../src/transformers/transformer'
-import { findElements } from './utils'
+import { createEncodedZipContent, findElements, ZipFile } from './utils'
 import mockAdapter from './adapter'
 import { id } from '../src/filters/utils'
 import * as constants from '../src/constants'
@@ -58,7 +59,7 @@ describe('SalesforceAdapter fetch', () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       data: Record<string, any>,
       namespace?: string,
-      retrievedZipFile?: string
+      zipFiles?: ZipFile[]
     ): void => {
       connection.metadata.list = jest.fn()
         .mockImplementation(async () => [{ fullName: name, namespacePrefix: namespace }])
@@ -66,9 +67,9 @@ describe('SalesforceAdapter fetch', () => {
       connection.metadata.read = jest.fn()
         .mockImplementation(async () => data)
 
-      if (retrievedZipFile) {
+      if (!_.isUndefined(zipFiles)) {
         connection.metadata.retrieve = jest.fn().mockImplementation(() =>
-          ({ complete: async () => ({ zipFile: retrievedZipFile }) }))
+          ({ complete: async () => ({ zipFile: await createEncodedZipContent(zipFiles) }) }))
       }
     }
 
@@ -470,10 +471,22 @@ describe('SalesforceAdapter fetch', () => {
         soapType: 'string',
         valueRequired: false,
       }])
+
       mockSingleMetadataInstance('MyFolder/MyEmailTemplate',
         { fullName: 'MyFolder/MyEmailTemplate' }, undefined,
-        // encoded zip with a package.xml and EmailTemplate named MyFolder/MyEmailTemplate
-        'UEsDBBQACAgIAI1pnU8AAAAAAAAAAAAAAAAvAAAAdW5wYWNrYWdlZC9lbWFpbC9NeUZvbGRlci9NeUVtYWlsVGVtcGxhdGUuZW1haWxzzU3MzFFwyk+pBABQSwcIx/Bz0AwAAAAKAAAAUEsDBBQACAgIAI1pnU8AAAAAAAAAAAAAAAA4AAAAdW5wYWNrYWdlZC9lbWFpbC9NeUZvbGRlci9NeUVtYWlsVGVtcGxhdGUuZW1haWwtbWV0YS54bWxVkMtuwkAMRff5itHsE4eqVGk1GcSCSgihLkg/wAQDqeYRMQaRv+80E9TWq+vj64esFndrxI0uofOulrOilIJc6w+dO9Xys3nPK7nQmVpZ7ExDtjfIJGKPC7U8M/dvAMFjX4Sjv7RUtN7CU1m+QPkMlhgPyCh1JmIovMUZuDekj2gCKfgFyfBYvKFBr3cfeVXNX/OZgr88OR1a0ttBjGeJx10KRp4sgYc42HkXcdITv+6/qOXYvUsqlieUDDz0pJnusTDKRK9d85MsjT+jginLFPx7jM6+AVBLBwhq/zc91wAAAFABAABQSwMEFAAICAgAjWmdTwAAAAAAAAAAAAAAABYAAAB1bnBhY2thZ2VkL3BhY2thZ2UueG1sXY9NC4JAEIbv/grZeztbiESs6ylvQgf7AZNOJu2HuEvkv0/8oGhO8w7P8PDK/G10/KLBd85mbM8Fi8nWrulsm7FrVeyOLFeRvGD9xJbiibY+Y48Q+hOAd9hzf3dDTbx2Bg5CpCASMBSwwYBMRfE0Mow9+WWfsyFzm5SqHAunGxqgHM8GO12R6TUGkrAR3x+LhtQfNd8WBfw45NpHJSkXErYUSVhrqOgDUEsHCKDBWBKoAAAA+AAAAFBLAQIUABQACAgIAI1pnU/H8HPQDAAAAAoAAAAvAAAAAAAAAAAAAAAAAAAAAAB1bnBhY2thZ2VkL2VtYWlsL015Rm9sZGVyL015RW1haWxUZW1wbGF0ZS5lbWFpbFBLAQIUABQACAgIAI1pnU9q/zc91wAAAFABAAA4AAAAAAAAAAAAAAAAAGkAAAB1bnBhY2thZ2VkL2VtYWlsL015Rm9sZGVyL015RW1haWxUZW1wbGF0ZS5lbWFpbC1tZXRhLnhtbFBLAQIUABQACAgIAI1pnU+gwVgSqAAAAPgAAAAWAAAAAAAAAAAAAAAAAKYBAAB1bnBhY2thZ2VkL3BhY2thZ2UueG1sUEsFBgAAAAADAAMABwEAAJICAAAAAA==')
+        [{ path: 'unpackaged/email/MyFolder/MyEmailTemplate.email-meta.xml',
+          content: '<?xml version="1.0" encoding="UTF-8"?>\n'
+            + '<EmailTemplate xmlns="http://soap.sforce.com/2006/04/metadata">\n'
+            + '    <available>false</available>\n'
+            + '    <encodingKey>ISO-8859-1</encodingKey>\n'
+            + '    <name>My Email Template</name>\n'
+            + '    <style>none</style>\n'
+            + '    <subject>MySubject</subject>\n'
+            + '    <type>text</type>\n'
+            + '    <uiType>Aloha</uiType>\n'
+            + '</EmailTemplate>\n' },
+        { path: 'unpackaged/email/MyFolder/MyEmailTemplate.email',
+          content: 'Email Body' }])
 
       const result = await adapter.fetch()
       const [testElem] = findElements(result, 'EmailTemplate', 'MyFolder_MyEmailTemplate')
@@ -486,21 +499,91 @@ describe('SalesforceAdapter fetch', () => {
       expect(testInst.value.content).toEqual('Email Body')
     })
 
-    it('should fetch metadata instances folders using retrieve', async () => {
-      mockSingleMetadataType('EmailFolder', [{
+    it('should fetch metadata instances using retrieve in chunks', async () => {
+      mockSingleMetadataType('ApexClass', [{
         name: 'fullName',
         soapType: 'string',
         valueRequired: true,
       },
       {
-        name: 'name',
+        name: 'content',
         soapType: 'string',
         valueRequired: false,
       }])
+
+      const generateInstancesMocks = (numberOfInstances: number): MetadataInfo[] =>
+        _.fill(Array(numberOfInstances), { fullName: 'dummyApexClass' })
+
+      const metadataInfos = generateInstancesMocks(RECORDS_CHUNK_SIZE * 2)
+      connection.metadata.list = jest.fn()
+        .mockImplementation(async () => metadataInfos)
+
+      const mockRetrieve = jest.fn().mockImplementationOnce(() =>
+        ({ complete: async () => ({ zipFile: await createEncodedZipContent(
+          [{ path: 'unpackaged/classes/MyApexClass.cls-meta.xml',
+            content: '<?xml version="1.0" encoding="UTF-8"?>\n'
+              + '<ApexClass xmlns="http://soap.sforce.com/2006/04/metadata">\n'
+              + '    <apiVersion>47.0</apiVersion>\n'
+              + '    <status>Active</status>\n'
+              + '</ApexClass>\n' }, { path: 'unpackaged/classes/MyApexClass.cls',
+            content: 'public class MyApexClass {\n'
+              + '    public void printLog() {\n'
+              + '        System.debug(\'Instance1\');\n'
+              + '    }\n'
+              + '}' }]
+        ) }) })).mockImplementationOnce(() =>
+        ({ complete: async () => ({ zipFile: await createEncodedZipContent(
+          [{ path: 'unpackaged/classes/MyApexClass2.cls-meta.xml',
+            content: '<?xml version="1.0" encoding="UTF-8"?>\n'
+              + '<ApexClass xmlns="http://soap.sforce.com/2006/04/metadata">\n'
+              + '    <apiVersion>47.0</apiVersion>\n'
+              + '    <status>Active</status>\n'
+              + '</ApexClass>\n' }, { path: 'unpackaged/classes/MyApexClass2.cls',
+            content: 'public class MyApexClass2 {\n'
+              + '    public void printLog() {\n'
+              + '        System.debug(\'Instance2\');\n'
+              + '    }\n'
+              + '}' }]
+        ) }) }))
+      connection.metadata.retrieve = mockRetrieve
+
+      const result = await adapter.fetch()
+      expect(mockRetrieve.mock.calls.length).toBe(2)
+      const [first] = findElements(result, 'ApexClass', 'MyApexClass') as InstanceElement[]
+      const [second] = findElements(result, 'ApexClass', 'MyApexClass2') as InstanceElement[]
+      expect(first.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('MyApexClass')
+      expect(second.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('MyApexClass2')
+      expect(first.value.content.includes('Instance1')).toBeTruthy()
+      expect(second.value.content.includes('Instance2')).toBeTruthy()
+    })
+
+    it('should fetch metadata instances folders using retrieve', async () => {
+      connection.metadata.describe = jest.fn()
+        .mockImplementation(async () => ({
+          metadataObjects: [{ xmlName: 'EmailTemplate' }, { xmlName: 'EmailFolder' }],
+        }))
+
+      connection.metadata.describeValueType = jest.fn()
+        .mockImplementation(async () => ({ valueTypeFields: [{
+          name: 'fullName',
+          soapType: 'string',
+          valueRequired: true,
+        },
+        {
+          name: 'name',
+          soapType: 'string',
+          valueRequired: false,
+        }] }))
+
       mockSingleMetadataInstance('MyFolder',
         { fullName: 'MyFolder' }, undefined,
-        // encoded zip with a package.xml and EmailFolder named MyFolder
-        'UEsDBBQACAgIAI1rnU8AAAAAAAAAAAAAAAAiAAAAdW5wYWNrYWdlZC9lbWFpbC9NeUZvbGRlci1tZXRhLnhtbG2OzQrCMBCE73mKkLvdKCIiaYoHexNEKp5jutVA80MSxb69pb304N5mZz5mRPW1Pf1gTMa7kq0Lzig67VvjniW7NfVqzypJxMkq09e+bzHSkXCpZK+cwwEgeRWK1PmosdDewobzHfAtWMyqVVkxSeh4QmmNKTVDQHl5P3qjBSxec8Ypi/I80G4qEjDp2QoTMy84Tpy8omrv0WQU8MclAhajJfkBUEsHCDx5OaSkAAAA6gAAAFBLAwQUAAgICACNa51PAAAAAAAAAAAAAAAAFgAAAHVucGFja2FnZWQvcGFja2FnZS54bWxNTksKwjAU3PcUJXvzopQikqYruxNc1AM802ctNh+aIPb2ln7QWc0Mw8zI8mP69E1D6Jwt2J4LlpLVrulsW7BbXe2OrFSJvKJ+YUvplLahYM8Y/QkgOPQ8PNygiWtn4CBEDiIDQxEbjMhUkk6QcfQUFj5rQ+Y+TarLWLm+oUHC5vwyFg2ps8Gur8n4HiNJmL2lEv465fpfZTkXEjaVSFhvq+QLUEsHCJHJKn2jAAAA6AAAAFBLAQIUABQACAgIAI1rnU88eTmkpAAAAOoAAAAiAAAAAAAAAAAAAAAAAAAAAAB1bnBhY2thZ2VkL2VtYWlsL015Rm9sZGVyLW1ldGEueG1sUEsBAhQAFAAICAgAjWudT5HJKn2jAAAA6AAAABYAAAAAAAAAAAAAAAAA9AAAAHVucGFja2FnZWQvcGFja2FnZS54bWxQSwUGAAAAAAIAAgCUAAAA2wEAAAAA')
+        [{ path: 'unpackaged/email/MyFolder-meta.xml',
+          content: '<?xml version="1.0" encoding="UTF-8"?>\n'
+            + '<EmailFolder xmlns="http://soap.sforce.com/2006/04/metadata">\n'
+            + '    <accessType>Public</accessType>\n'
+            + '    <name>My folder</name>\n'
+            + '    <publicFolderAccess>ReadWrite</publicFolderAccess>\n'
+            + '</EmailFolder>\n' }])
 
       const result = await adapter.fetch()
       const [testElem] = findElements(result, 'EmailFolder', 'MyFolder')
@@ -515,9 +598,16 @@ describe('SalesforceAdapter fetch', () => {
     it('should fetch metadata instances with namespace using retrieve', async () => {
       mockSingleMetadataType('ApexPage', [])
       const namespaceName = 'th_con_app'
-      mockSingleMetadataInstance('th_con_app__ThHomepage', { fullName: 'th_con_app__ThHomepage' }, namespaceName,
-        // encoded zip with a package.xml and an packaged ApexPage named th_con_app__ThHomepage
-        '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')
+      mockSingleMetadataInstance('th_con_app__ThHomepage', { fullName: 'th_con_app__ThHomepage' },
+        namespaceName, [{ path: 'unpackaged/pages/th_con_app__ThHomepage.page-meta.xml',
+          content: '<?xml version="1.0" encoding="UTF-8"?>\n'
+          + '<ApexPage xmlns="http://soap.sforce.com/2006/04/metadata">\n'
+          + '    <apiVersion>38.0</apiVersion>\n'
+          + '    <availableInTouch>false</availableInTouch>\n'
+          + '    <confirmationTokenRequired>false</confirmationTokenRequired>\n'
+          + '    <label>ThHomepage</label>\n'
+          + '</ApexPage>\n' }, { path: 'unpackaged/pages/th_con_app__ThHomepage.page',
+          content: '<apex:page sidebar="false" standardStylesheets="false"/>' }])
 
       const result = await adapter.fetch()
       const [testInst] = findElements(result, 'ApexPage', 'th_con_app__ThHomepage')

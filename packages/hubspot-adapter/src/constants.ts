@@ -310,9 +310,9 @@ export const CONTACTLISTIDS_FIELDS = {
   SUCCEEDED: 'succeeded',
 }
 
-export const contactPropertyTypeValues = ['string', 'number', 'date', 'datetime', 'enumeration']
+export const contactPropertyTypeValues = ['string', 'number', 'date', 'datetime', 'enumeration', 'bool', 'phone_number']
 export const contactPropertyFieldTypeValues = ['textarea', 'text', 'date', 'file', 'number', 'select',
-  'radio', 'checkbox', 'booleancheckbox']
+  'radio', 'checkbox', 'booleancheckbox', 'calculation_score', 'phonenumber', 'calculation_read_time']
 
 export const formElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.FORM)
 export const workflowsElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.WORKFLOWS)

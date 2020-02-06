@@ -15,9 +15,9 @@
 */
 import _ from 'lodash'
 import {
-  ElemID, ObjectType,
-  PrimitiveType, PrimitiveTypes, Field as TypeField, BuiltinTypes, InstanceElement, TypeElement,
-  CORE_ANNOTATIONS, transform, TypeMap, Values, TransformValueFunc, isPrimitiveType, bpCase,
+  ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field as TypeField,
+  BuiltinTypes, InstanceElement, TypeElement, CORE_ANNOTATIONS, transform,
+  TypeMap, Values, TransformValueFunc, isPrimitiveType, bpCase,
 } from '@salto-io/adapter-api'
 import {
   FIELD_TYPES, FORM_FIELDS, HUBSPOT, OBJECTS_NAMES, FORM_PROPERTY_FIELDS,

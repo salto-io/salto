@@ -5,8 +5,8 @@
     "version": "0.0.1",
     "icon": "icons/images/file_type_salto_opaque.png",
     "galleryBanner": {
-      "color": "#C80000",
-      "theme": "dark"
+        "color": "#C80000",
+        "theme": "dark"
     },
     "engines": {
         "vscode": "^1.37.0"
@@ -94,7 +94,7 @@
                     "when": "resourceExtname == .bp"
                 }
             ],
-            "touchBar" : [
+            "touchBar": [
                 {
                     "command": "salto.preview",
                     "when": "resourceExtname == .bp"
@@ -126,7 +126,7 @@
         "watch-test": "yarn run tsc-watch --onSuccess 'yarn run clean-ts-test'",
         "lint": "eslint --cache --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
         "lint-fix": "yarn run lint --fix",
-        "package" : "bash ./scripts/package.sh",
+        "package": "bash ./scripts/package.sh",
         "generate-yarn-lock": "yarn workspaces run generate-lock-entry | sed '1,2d' | sed -n -e :a -e '1,1!{P;N;D;};N;ba' >> yarn.lock"
     },
     "dependencies": {
@@ -143,14 +143,15 @@
         "@types/jest-cli": "^23.6.0",
         "@types/node": "^12.7.1",
         "@types/vscode": "1.37",
+        "eslint-plugin-header": "^3.0.0",
         "jest-circus": "^24.9.0",
         "jest-cli": "^24.8.0",
         "jest-core": "^0.0.0",
+        "readdirp": "^3.1.1",
+        "tmp-promise": "^2.0.2",
         "tslint": "^5.12.1",
         "typescript": "^3.7.2",
         "vsce": "^1.66.0",
-        "vscode-test": "^1.0.2",
-        "readdirp": "^3.1.1",
-        "tmp-promise": "^2.0.2"
+        "vscode-test": "^1.0.2"
     }
 }

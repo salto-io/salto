@@ -51,6 +51,7 @@ export const expectInstancesToMatch = (
   expect(expected.elemID).toEqual(actual.elemID)
   expect(expected.value).toEqual(actual.value)
   expect(expected.type.elemID).toEqual(actual.type.elemID)
+  expect(expected.annotations).toEqual(actual.annotations)
 }
 
 export const readAllCsvContents = async (

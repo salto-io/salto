@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import {
   TypeElement, Field, Values, isObjectType, PrimitiveTypes, TypeMap,
-  isPrimitiveType, Element, isInstanceElement, isField, isElement, Value,
+  isPrimitiveType, Element, isInstanceElement, isField, isElement, Value, INSTANCE_ANNOTATIONS,
 } from 'adapter-api'
 import { dump as hclDump } from './internal/dump'
 import { DumpedHclBlock } from './internal/types'
@@ -94,7 +94,7 @@ const dumpElementBlock = (elem: Element): DumpedHclBlock => {
       labels: elem.elemID.isConfig() || elem.type.isSettings
         ? []
         : [elem.elemID.name],
-      attrs: elem.value,
+      attrs: _.merge({}, elem.value, _.pick(elem.annotations, _.values(INSTANCE_ANNOTATIONS))),
       blocks: [],
     }
   }

@@ -1,6 +1,6 @@
 import {
   ObjectType, PrimitiveType, PrimitiveTypes, ElemID, TypeElement, InstanceElement,
-  Field, BuiltinTypes,
+  Field, BuiltinTypes, INSTANCE_ANNOTATIONS,
 } from 'adapter-api'
 import * as TestHelpers from '../common/helpers'
 import { parse } from '../../src/parser/parse'
@@ -67,6 +67,8 @@ describe('Salto Dump', () => {
     'me',
     model,
     { name: 'me', num: 7 },
+    undefined,
+    { [INSTANCE_ANNOTATIONS.DEPENDS_ON]: 'test' },
   )
 
   const config = new InstanceElement(
@@ -102,8 +104,13 @@ describe('Salto Dump', () => {
       expect(body).toMatch(/type salesforce_field is number {.*?annotations {.*?string jerry {/s)
     })
 
-    it('dumps instance elements', () => {
-      expect(body).toMatch(/salesforce_test me {/)
+    describe('dumped instance elements', () => {
+      it('has instance block', () => {
+        expect(body).toMatch(/salesforce_test me {/)
+      })
+      it('has annotation values', () => {
+        expect(body).toMatch(new RegExp(`${INSTANCE_ANNOTATIONS.DEPENDS_ON}\\s+=\\s+"test"`))
+      })
     })
 
     it('dumps config elements', () => {

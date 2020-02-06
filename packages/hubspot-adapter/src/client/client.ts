@@ -3,7 +3,7 @@ import {
   RequestPromise,
 } from 'requestretry'
 import {
-  Form, HubspotMetadata, MarketingEmail, Workflows,
+  Form, HubspotMetadata, MarketingEmail, Workflows, ContactProperty,
 } from './types'
 import Connection, { HubspotObjectAPI, Workflow } from './madku'
 
@@ -60,8 +60,17 @@ const extractInstanceId = (hubspotMetadata: HubspotMetadata, typeName: string): 
   ): workflowMetadata is Workflows => (workflowMetadata as Workflows).id !== undefined
     && typeName === 'workflows'
 
+  const isContactProperty = (
+    contactPropertyMetadata: HubspotMetadata
+  ): contactPropertyMetadata is ContactProperty =>
+    (contactPropertyMetadata as ContactProperty).name !== undefined && typeName === 'contactProperty'
+
   if (isForm(hubspotMetadata)) {
     return hubspotMetadata.guid
+  }
+
+  if (isContactProperty(hubspotMetadata)) {
+    return hubspotMetadata.name
   }
 
   if (isMarketingEmail(hubspotMetadata) || isWorkflow(hubspotMetadata)) {
@@ -94,13 +103,9 @@ export default class HubspotClient {
       form: this.conn.forms,
       workflows: this.conn.workflows,
       marketingEmail: this.conn.marketingEmail,
+      contactProperty: this.conn.contacts.properties,
     }
   }
-
-  getAllContacts(): RequestPromise {
-    return this.conn.contacts.get()
-  }
-
 
   /**
    * Returning the appropriate HubspotObjectAPI for using HubSpot CRUD API operations

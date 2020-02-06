@@ -16,17 +16,19 @@ export interface MarketingEmail extends HubspotObjectAPI {
   update(id: string, data: {}): RequestPromise
 }
 
-export interface Contact {
-  get(opts?: {}): RequestPromise
-  getAll(opts?: {}): RequestPromise
-  create(data: {}): RequestPromise
+export interface ContactProperty extends HubspotObjectAPI {
+  update(id: string, data: {}): RequestPromise
+}
+
+export interface Contact extends HubspotObjectAPI {
+  properties: ContactProperty
 }
 
 export interface HubspotObjectAPI {
   getAll(opts?: {}): RequestPromise
   create(data: {}): RequestPromise
-  delete(id: string): RequestPromise
-  update?(id: string, data: {}): RequestPromise
+  delete(id: string | number): RequestPromise
+  update?(id: string | number, data: {}): RequestPromise
 }
 
 export default interface Connection {

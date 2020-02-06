@@ -237,6 +237,7 @@ export const OPTIONS_FIELDS = {
   VALUE: 'value',
   HIDDEN: 'hidden',
   ISSMARTFIELD: 'isSmartField',
+  READONLY: 'readOnly',
   DISPLAYORDER,
 }
 

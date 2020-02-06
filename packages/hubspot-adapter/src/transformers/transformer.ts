@@ -69,14 +69,21 @@ export class Types {
           optionsElemID, OPTIONS_FIELDS.LABEL, BuiltinTypes.STRING, {
             name: OPTIONS_FIELDS.LABEL,
             _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: true,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
         [OPTIONS_FIELDS.VALUE]: new TypeField(
           optionsElemID, OPTIONS_FIELDS.VALUE, BuiltinTypes.STRING, {
             name: OPTIONS_FIELDS.VALUE,
             _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: true,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [OPTIONS_FIELDS.READONLY]: new TypeField(
+          optionsElemID, OPTIONS_FIELDS.READONLY, BuiltinTypes.BOOLEAN, {
+            name: OPTIONS_FIELDS.READONLY,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
         [OPTIONS_FIELDS.DISPLAYORDER]: new TypeField(
@@ -102,139 +109,6 @@ export class Types {
         ),
       },
       path: [HUBSPOT, 'types', 'subtypes', optionsElemID.name],
-    })
-
-    public static contactProperty: ObjectType =
-    new ObjectType({
-      elemID: contactPropertyElemID,
-      fields: {
-        [CONTACT_PROPERTY_FIELDS.NAME]: new TypeField(
-          contactPropertyElemID, CONTACT_PROPERTY_FIELDS.NAME, BuiltinTypes.STRING, {
-            name: CONTACT_PROPERTY_FIELDS.NAME,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: true,
-          },
-        ),
-        [CONTACT_PROPERTY_FIELDS.LABEL]: new TypeField(
-          contactPropertyElemID, CONTACT_PROPERTY_FIELDS.LABEL, BuiltinTypes.STRING, {
-            name: CONTACT_PROPERTY_FIELDS.LABEL,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
-        [CONTACT_PROPERTY_FIELDS.DESCRIPTION]: new TypeField(
-          contactPropertyElemID, CONTACT_PROPERTY_FIELDS.DESCRIPTION, BuiltinTypes.STRING, {
-            name: CONTACT_PROPERTY_FIELDS.DESCRIPTION,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
-        [CONTACT_PROPERTY_FIELDS.GROUPNAME]: new TypeField(
-          contactPropertyElemID, CONTACT_PROPERTY_FIELDS.GROUPNAME, BuiltinTypes.STRING, {
-            name: CONTACT_PROPERTY_FIELDS.GROUPNAME,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: true,
-          },
-        ),
-        [CONTACT_PROPERTY_FIELDS.TYPE]: new TypeField(
-          contactPropertyElemID, CONTACT_PROPERTY_FIELDS.TYPE, BuiltinTypes.STRING, {
-            name: CONTACT_PROPERTY_FIELDS.TYPE,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: true,
-            [CORE_ANNOTATIONS.VALUES]: contactPropertyTypeValues,
-          },
-        ),
-        [CONTACT_PROPERTY_FIELDS.FIELDTYPE]: new TypeField(
-          contactPropertyElemID, CONTACT_PROPERTY_FIELDS.FIELDTYPE, BuiltinTypes.STRING, {
-            name: CONTACT_PROPERTY_FIELDS.FIELDTYPE,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: true,
-            [CORE_ANNOTATIONS.VALUES]: contactPropertyFieldTypeValues,
-          },
-        ),
-        [CONTACT_PROPERTY_FIELDS.OPTIONS]: new TypeField(
-          contactPropertyElemID, CONTACT_PROPERTY_FIELDS.OPTIONS, Types.optionsType, {
-            name: CONTACT_PROPERTY_FIELDS.OPTIONS,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-          true
-        ),
-        [CONTACT_PROPERTY_FIELDS.DELETED]: new TypeField(
-          // TODO: Check if this works and decide if to keep
-          contactPropertyElemID, CONTACT_PROPERTY_FIELDS.GROUPNAME, BuiltinTypes.BOOLEAN, {
-            name: CONTACT_PROPERTY_FIELDS.GROUPNAME,
-            _readOnly: true,
-            [CORE_ANNOTATIONS.REQUIRED]: true,
-            [CORE_ANNOTATIONS.DEFAULT]: false,
-          },
-        ),
-        [CONTACT_PROPERTY_FIELDS.FORMFIELD]: new TypeField(
-          contactPropertyElemID, CONTACT_PROPERTY_FIELDS.FORMFIELD, BuiltinTypes.BOOLEAN, {
-            name: CONTACT_PROPERTY_FIELDS.FORMFIELD,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: true,
-          },
-        ),
-        [CONTACT_PROPERTY_FIELDS.DISPLAYORDER]: new TypeField(
-          contactPropertyElemID, CONTACT_PROPERTY_FIELDS.DISPLAYORDER, BuiltinTypes.NUMBER, {
-            name: CONTACT_PROPERTY_FIELDS.DISPLAYORDER,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-            [CORE_ANNOTATIONS.DEFAULT]: -1,
-          },
-        ),
-        [CONTACT_PROPERTY_FIELDS.READONLYVALUE]: new TypeField(
-          contactPropertyElemID, CONTACT_PROPERTY_FIELDS.READONLYVALUE, BuiltinTypes.BOOLEAN, {
-            name: CONTACT_PROPERTY_FIELDS.READONLYVALUE,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-            [CORE_ANNOTATIONS.DEFAULT]: false,
-          },
-        ),
-        [CONTACT_PROPERTY_FIELDS.READONLYDEFINITION]: new TypeField(
-          contactPropertyElemID, CONTACT_PROPERTY_FIELDS.READONLYDEFINITION, BuiltinTypes.BOOLEAN, {
-            name: CONTACT_PROPERTY_FIELDS.READONLYDEFINITION,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-            [CORE_ANNOTATIONS.DEFAULT]: false,
-          },
-        ),
-        [CONTACT_PROPERTY_FIELDS.HIDDEN]: new TypeField(
-          contactPropertyElemID, CONTACT_PROPERTY_FIELDS.HIDDEN, BuiltinTypes.BOOLEAN, {
-            name: CONTACT_PROPERTY_FIELDS.HIDDEN,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-            [CORE_ANNOTATIONS.DEFAULT]: false,
-          },
-        ),
-        [CONTACT_PROPERTY_FIELDS.MUTABLEDEFINITIONNOTDELETABLE]: new TypeField(
-          contactPropertyElemID, CONTACT_PROPERTY_FIELDS.MUTABLEDEFINITIONNOTDELETABLE,
-          BuiltinTypes.BOOLEAN, {
-            name: CONTACT_PROPERTY_FIELDS.MUTABLEDEFINITIONNOTDELETABLE,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-            [CORE_ANNOTATIONS.DEFAULT]: false,
-          },
-        ),
-        [CONTACT_PROPERTY_FIELDS.CALCULATED]: new TypeField(
-          contactPropertyElemID, CONTACT_PROPERTY_FIELDS.CALCULATED, BuiltinTypes.BOOLEAN, {
-            name: CONTACT_PROPERTY_FIELDS.CALCULATED,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-            [CORE_ANNOTATIONS.DEFAULT]: false,
-          },
-        ),
-        [CONTACT_PROPERTY_FIELDS.CALCULATED]: new TypeField(
-          contactPropertyElemID, CONTACT_PROPERTY_FIELDS.CALCULATED, BuiltinTypes.BOOLEAN, {
-            name: CONTACT_PROPERTY_FIELDS.CALCULATED,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-            [CORE_ANNOTATIONS.DEFAULT]: false,
-          },
-        ),
-      },
-      path: [HUBSPOT, 'types', contactPropertyElemID.name],
     })
 
   private static fieldFilterType: ObjectType =
@@ -372,13 +246,6 @@ export class Types {
               [CORE_ANNOTATIONS.REQUIRED]: false,
             },
             true,
-          ),
-          [FORM_PROPERTY_FIELDS.CONTACT_PROPERTY]: new TypeField(
-            elemID, FORM_PROPERTY_FIELDS.CONTACT_PROPERTY, Types.contactProperty, {
-              name: FORM_PROPERTY_FIELDS.CONTACT_PROPERTY,
-              _readOnly: false,
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-            }
           ),
           [FORM_PROPERTY_FIELDS.DISPLAYORDER]: new TypeField(
             elemID, FORM_PROPERTY_FIELDS.DISPLAYORDER, BuiltinTypes.NUMBER, {
@@ -1735,6 +1602,134 @@ export class Types {
         ),
       },
       path: [HUBSPOT, 'objects', marketingEmailElemID.name],
+    }),
+    [OBJECTS_NAMES.CONTACT_PROPERTY]: new ObjectType({
+      elemID: contactPropertyElemID,
+      fields: {
+        [CONTACT_PROPERTY_FIELDS.NAME]: new TypeField(
+          contactPropertyElemID, CONTACT_PROPERTY_FIELDS.NAME, BuiltinTypes.STRING, {
+            name: CONTACT_PROPERTY_FIELDS.NAME,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: true,
+          },
+        ),
+        [CONTACT_PROPERTY_FIELDS.LABEL]: new TypeField(
+          contactPropertyElemID, CONTACT_PROPERTY_FIELDS.LABEL, BuiltinTypes.STRING, {
+            name: CONTACT_PROPERTY_FIELDS.LABEL,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [CONTACT_PROPERTY_FIELDS.DESCRIPTION]: new TypeField(
+          contactPropertyElemID, CONTACT_PROPERTY_FIELDS.DESCRIPTION, BuiltinTypes.STRING, {
+            name: CONTACT_PROPERTY_FIELDS.DESCRIPTION,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [CONTACT_PROPERTY_FIELDS.GROUPNAME]: new TypeField(
+          contactPropertyElemID, CONTACT_PROPERTY_FIELDS.GROUPNAME, BuiltinTypes.STRING, {
+            name: CONTACT_PROPERTY_FIELDS.GROUPNAME,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: true,
+          },
+        ),
+        [CONTACT_PROPERTY_FIELDS.TYPE]: new TypeField(
+          contactPropertyElemID, CONTACT_PROPERTY_FIELDS.TYPE, BuiltinTypes.STRING, {
+            name: CONTACT_PROPERTY_FIELDS.TYPE,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: true,
+            [CORE_ANNOTATIONS.VALUES]: contactPropertyTypeValues,
+          },
+        ),
+        [CONTACT_PROPERTY_FIELDS.FIELDTYPE]: new TypeField(
+          contactPropertyElemID, CONTACT_PROPERTY_FIELDS.FIELDTYPE, BuiltinTypes.STRING, {
+            name: CONTACT_PROPERTY_FIELDS.FIELDTYPE,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: true,
+            [CORE_ANNOTATIONS.VALUES]: contactPropertyFieldTypeValues,
+          },
+        ),
+        [CONTACT_PROPERTY_FIELDS.OPTIONS]: new TypeField(
+          contactPropertyElemID, CONTACT_PROPERTY_FIELDS.OPTIONS, Types.optionsType, {
+            name: CONTACT_PROPERTY_FIELDS.OPTIONS,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+          true
+        ),
+        [CONTACT_PROPERTY_FIELDS.DELETED]: new TypeField(
+          contactPropertyElemID, CONTACT_PROPERTY_FIELDS.DELETED, BuiltinTypes.BOOLEAN, {
+            name: CONTACT_PROPERTY_FIELDS.DELETED,
+            _readOnly: true,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [CONTACT_PROPERTY_FIELDS.FORMFIELD]: new TypeField(
+          contactPropertyElemID, CONTACT_PROPERTY_FIELDS.FORMFIELD, BuiltinTypes.BOOLEAN, {
+            name: CONTACT_PROPERTY_FIELDS.FORMFIELD,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: true,
+          },
+        ),
+        [CONTACT_PROPERTY_FIELDS.DISPLAYORDER]: new TypeField(
+          contactPropertyElemID, CONTACT_PROPERTY_FIELDS.DISPLAYORDER, BuiltinTypes.NUMBER, {
+            name: CONTACT_PROPERTY_FIELDS.DISPLAYORDER,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.DEFAULT]: -1,
+          },
+        ),
+        [CONTACT_PROPERTY_FIELDS.READONLYVALUE]: new TypeField(
+          contactPropertyElemID, CONTACT_PROPERTY_FIELDS.READONLYVALUE, BuiltinTypes.BOOLEAN, {
+            name: CONTACT_PROPERTY_FIELDS.READONLYVALUE,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.DEFAULT]: false,
+          },
+        ),
+        [CONTACT_PROPERTY_FIELDS.READONLYDEFINITION]: new TypeField(
+          contactPropertyElemID, CONTACT_PROPERTY_FIELDS.READONLYDEFINITION, BuiltinTypes.BOOLEAN, {
+            name: CONTACT_PROPERTY_FIELDS.READONLYDEFINITION,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.DEFAULT]: false,
+          },
+        ),
+        [CONTACT_PROPERTY_FIELDS.HIDDEN]: new TypeField(
+          contactPropertyElemID, CONTACT_PROPERTY_FIELDS.HIDDEN, BuiltinTypes.BOOLEAN, {
+            name: CONTACT_PROPERTY_FIELDS.HIDDEN,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.DEFAULT]: false,
+          },
+        ),
+        [CONTACT_PROPERTY_FIELDS.MUTABLEDEFINITIONNOTDELETABLE]: new TypeField(
+          contactPropertyElemID, CONTACT_PROPERTY_FIELDS.MUTABLEDEFINITIONNOTDELETABLE,
+          BuiltinTypes.BOOLEAN, {
+            name: CONTACT_PROPERTY_FIELDS.MUTABLEDEFINITIONNOTDELETABLE,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.DEFAULT]: false,
+          },
+        ),
+        [CONTACT_PROPERTY_FIELDS.CALCULATED]: new TypeField(
+          contactPropertyElemID, CONTACT_PROPERTY_FIELDS.CALCULATED, BuiltinTypes.BOOLEAN, {
+            name: CONTACT_PROPERTY_FIELDS.CALCULATED,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [CONTACT_PROPERTY_FIELDS.EXTERNALOPTIONS]: new TypeField(
+          contactPropertyElemID, CONTACT_PROPERTY_FIELDS.EXTERNALOPTIONS, BuiltinTypes.BOOLEAN, {
+            name: CONTACT_PROPERTY_FIELDS.EXTERNALOPTIONS,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.DEFAULT]: false,
+          },
+        ),
+      },
+      path: [HUBSPOT, 'objects', contactPropertyElemID.name],
     }),
   }
 

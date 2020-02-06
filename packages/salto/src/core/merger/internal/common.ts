@@ -23,6 +23,15 @@ export abstract class MergeError extends types.Bean<Readonly<{
   }
 }
 
+export class DuplicateAnnotationError extends MergeError {
+  readonly key: string
+
+  constructor({ elemID, key }: { elemID: ElemID; key: string }) {
+    super({ elemID, error: `duplicate annotation '${key}'` })
+    this.key = key
+  }
+}
+
 export type MergeResult<T> = {
   merged: T
   errors: MergeError[]

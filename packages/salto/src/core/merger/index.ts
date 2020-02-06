@@ -9,12 +9,12 @@ import { mergeInstances } from './internal/instances'
 import { mergePrimitives } from './internal/primitives'
 import { MergeResult as InternalMergeResult } from './internal/common'
 
-export { MergeError } from './internal/common'
+export { MergeError, DuplicateAnnotationError } from './internal/common'
 export type MergeResult = InternalMergeResult<Element[]>
 
 export {
   FieldDefinitionMergeError, NoBaseDefinitionMergeError, MultipleBaseDefinitionsMergeError,
-  DuplicateAnnotationFieldDefinitionError, DuplicateAnnotationError, DuplicateAnnotationTypeError,
+  DuplicateAnnotationFieldDefinitionError, DuplicateAnnotationTypeError,
 } from './internal/object_types'
 
 export { DuplicateInstanceKeyError } from './internal/instances'

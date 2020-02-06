@@ -5,7 +5,7 @@ import {
 import { logger } from '@salto/logging'
 import { Keywords } from '../../../parser/language'
 import {
-  MergeResult, MergeError, mergeNoDuplicates,
+  MergeResult, MergeError, mergeNoDuplicates, DuplicateAnnotationError,
 } from './common'
 
 const log = logger(module)
@@ -62,15 +62,6 @@ export class DuplicateAnnotationTypeError extends MergeError {
 
   constructor({ elemID, key }: { elemID: ElemID; key: string }) {
     super({ elemID, error: `duplicate annotation type '${key}'` })
-    this.key = key
-  }
-}
-
-export class DuplicateAnnotationError extends MergeError {
-  readonly key: string
-
-  constructor({ elemID, key }: { elemID: ElemID; key: string }) {
-    super({ elemID, error: `duplicate annotation '${key}'` })
     this.key = key
   }
 }

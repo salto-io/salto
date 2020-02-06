@@ -8,9 +8,9 @@ import {
   fetchChanges, FetchChange, generateServiceIdToStateElemId,
   FetchChangesResult, FetchProgressEvents,
 } from '../../src/core/fetch'
-
 import * as merger from '../../src/core/merger'
-import { DuplicateAnnotationError } from '../../src/core/merger/internal/object_types'
+
+const { DuplicateAnnotationError } = merger
 
 jest.mock('pietile-eventemitter')
 

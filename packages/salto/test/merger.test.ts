@@ -253,16 +253,20 @@ describe('merger', () => {
         base: new Field(nestedElemID, 'field2', base),
       },
     })
-    const ins1 = new InstanceElement('ins', nested, {
-      field1: 'ins1',
-      field2: 'ins1',
-    })
-    const ins2 = new InstanceElement('ins', nested, {
-      base: {
-        field1: 'ins2',
-        field2: 'ins2',
-      },
-    })
+    const ins1 = new InstanceElement(
+      'ins',
+      nested,
+      { field1: 'ins1', field2: 'ins1' },
+      undefined,
+      { anno: 1 },
+    )
+    const ins2 = new InstanceElement(
+      'ins',
+      nested,
+      { base: { field1: 'ins2', field2: 'ins2' } },
+      undefined,
+      { anno2: 1 },
+    )
     const shouldUseFieldDef = new InstanceElement('ins', nested, {
       field2: 'ins1',
     })
@@ -284,6 +288,7 @@ describe('merger', () => {
           field2: 'ins2',
         },
       })
+      expect(ins.annotations).toEqual({ anno: 1, anno2: 1 })
     })
 
     it('should use field defaults', () => {
@@ -336,6 +341,14 @@ describe('merger', () => {
       const { errors } = mergeElements(elements)
       expect(errors).toHaveLength(1)
       expect(errors[0]).toBeInstanceOf(DuplicateInstanceKeyError)
+    })
+
+    it('should fail on multiple values for same annotation', () => {
+      const conflicting = ins2.clone()
+      conflicting.annotations = ins1.annotations
+      const { errors } = mergeElements([ins1, conflicting])
+      expect(errors).toHaveLength(1)
+      expect(errors[0]).toBeInstanceOf(DuplicateAnnotationError)
     })
   })
 

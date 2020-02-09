@@ -1671,12 +1671,6 @@ describe('Salesforce adapter E2E with real account', () => {
             enabled: 'false',
           },
         ],
-        classAccesses: [
-          {
-            apexClass: 'ChangePasswordController',
-            enabled: 'false',
-          },
-        ],
         loginHours: {
           sundayStart: '480',
           sundayEnd: '1380',
@@ -1750,12 +1744,6 @@ describe('Salesforce adapter E2E with real account', () => {
             enabled: 'true',
           },
         ],
-        classAccesses: [
-          {
-            apexClass: 'ChangePasswordController',
-            enabled: 'false',
-          },
-        ],
         loginHours: {
           sundayStart: '300',
           sundayEnd: '420',
@@ -1798,7 +1786,6 @@ describe('Salesforce adapter E2E with real account', () => {
       savedInstance.objectPermissions.forEach((f: Value) => valuesMap.set(f.object, f))
       savedInstance.userPermissions.forEach((f: Value) => valuesMap.set(f.name, f))
       savedInstance.pageAccesses.forEach((f: Value) => valuesMap.set(f.apexPage, f))
-      savedInstance.classAccesses.forEach((f: Value) => valuesMap.set(f.apexClass, f))
 
       expect((newValues.fieldPermissions as []).some((v: Value) =>
         _.isEqual(v, valuesMap.get(v.field)))).toBeTruthy()
@@ -1817,9 +1804,6 @@ describe('Salesforce adapter E2E with real account', () => {
 
       expect((newValues.pageAccesses as []).some((v: Value) =>
         _.isEqual(v, valuesMap.get(v.apexPage)))).toBeTruthy()
-
-      expect((newValues.classAccesses as []).some((v: Value) =>
-        _.isEqual(v, valuesMap.get(v.apexClass)))).toBeTruthy()
 
       expect(newValues.loginHours).toEqual(savedInstance.loginHours)
 

@@ -331,6 +331,8 @@ export const contactPropertyTypeValues = ['string', 'number', 'date', 'datetime'
 export const contactPropertyFieldTypeValues = ['textarea', 'text', 'date', 'file', 'number', 'select',
   'radio', 'checkbox', 'booleancheckbox', 'calculation_score', 'phonenumber', 'calculation_read_time']
 
+
+// ElemIDs
 export const formElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.FORM)
 export const workflowsElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.WORKFLOWS)
 export const propertyGroupElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.PROPERTYGROUP)

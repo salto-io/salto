@@ -109,7 +109,9 @@ jobs:
               echo 'cannot find eslintrc file'
               exit 1
             fi
-            license_header=$(node -e "var license_head = require('./eslintrc'); console.log(\`/*\${license_head.rules['header/header'][2].join('\n')}*/\`)")
+            license_header=$(node \
+              -e "var license_head = require('./eslintrc'); \
+                  console.log(\`/*\${license_head.rules['header/header'][2].join('\n')}*/\`)")
             src_files_without_license_header=""
             for f in $(find . -type f -name '*.js' -not -path '*node_modules*' -not -path '*dist\/*' ); do
               if grep -q "$license_header" "$f"; then

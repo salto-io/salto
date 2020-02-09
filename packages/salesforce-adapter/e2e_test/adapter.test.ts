@@ -1308,7 +1308,7 @@ describe('Salesforce adapter E2E with real account', () => {
 
     const stringType = Types.primitiveDataTypes.Text
 
-    it('should add new profile instance', async () => {
+    it('should add new profile instance from scratch', async () => {
       const instanceElementName = 'TestAddProfileInstance__c'
       const mockElemID = new ElemID(constants.SALESFORCE, 'test')
 
@@ -1665,6 +1665,22 @@ describe('Salesforce adapter E2E with real account', () => {
             enabled: 'false',
           },
         ],
+        pageAccesses: [
+          {
+            apexPage: 'AnswersHome',
+            enabled: 'false',
+          },
+        ],
+        classAccesses: [
+          {
+            apexClass: 'ChangePasswordController',
+            enabled: 'false',
+          },
+        ],
+        loginHours: {
+          sundayStart: '480',
+          sundayEnd: '1380',
+        },
         description: 'new e2e profile',
         [constants.INSTANCE_FULL_NAME_FIELD]: instanceElementName,
 
@@ -1728,6 +1744,22 @@ describe('Salesforce adapter E2E with real account', () => {
             enabled: 'true',
           },
         ],
+        pageAccesses: [
+          {
+            apexPage: 'AnswersHome',
+            enabled: 'true',
+          },
+        ],
+        classAccesses: [
+          {
+            apexClass: 'ChangePasswordController',
+            enabled: 'false',
+          },
+        ],
+        loginHours: {
+          sundayStart: '300',
+          sundayEnd: '420',
+        },
         description: 'updated e2e profile',
         [constants.INSTANCE_FULL_NAME_FIELD]: instanceElementName,
 
@@ -1753,6 +1785,9 @@ describe('Salesforce adapter E2E with real account', () => {
         applicationVisibilities: Record<string, Value>
         objectPermissions: Record<string, Value>
         userPermissions: Record<string, Value>
+        pageAccesses: Record<string, Value>
+        classAccesses: Record<string, Value>
+        loginHours: Values
       }
 
       const valuesMap = new Map<string, Value>()
@@ -1762,6 +1797,8 @@ describe('Salesforce adapter E2E with real account', () => {
       savedInstance.applicationVisibilities.forEach((f: Value) => valuesMap.set(f.application, f))
       savedInstance.objectPermissions.forEach((f: Value) => valuesMap.set(f.object, f))
       savedInstance.userPermissions.forEach((f: Value) => valuesMap.set(f.name, f))
+      savedInstance.pageAccesses.forEach((f: Value) => valuesMap.set(f.apexPage, f))
+      savedInstance.classAccesses.forEach((f: Value) => valuesMap.set(f.apexClass, f))
 
       expect((newValues.fieldPermissions as []).some((v: Value) =>
         _.isEqual(v, valuesMap.get(v.field)))).toBeTruthy()
@@ -1778,8 +1815,26 @@ describe('Salesforce adapter E2E with real account', () => {
       expect((newValues.userPermissions as []).some((v: Value) =>
         _.isEqual(v, valuesMap.get(v.name)))).toBeTruthy()
 
+      expect((newValues.pageAccesses as []).some((v: Value) =>
+        _.isEqual(v, valuesMap.get(v.apexPage)))).toBeTruthy()
+
+      expect((newValues.classAccesses as []).some((v: Value) =>
+        _.isEqual(v, valuesMap.get(v.apexClass)))).toBeTruthy()
+
+      expect(newValues.loginHours).toEqual(savedInstance.loginHours)
+
       // Clean-up
       await adapter.remove(post)
+      expect(await objectExists(PROFILE_METADATA_TYPE, apiName(oldInstance))).toBe(false)
+    })
+
+    // This test should be removed and replace with an appropriate one as soon as SALTO-551 is done
+    it('should not fetch tabVisibilities from profile', () => {
+      const [adminProfile] = result
+        .filter(isInstanceElement)
+        .filter(e => metadataType(e) === PROFILE_METADATA_TYPE)
+        .filter(e => apiName(e) === ADMIN) as InstanceElement[]
+      expect(adminProfile.value.tabVisibilities).toBeUndefined()
     })
 
     it("should modify an object's annotations", async () => {

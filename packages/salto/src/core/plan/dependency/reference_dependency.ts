@@ -1,9 +1,26 @@
 import wu from 'wu'
 import { collections } from '@salto/lowerdash'
-import { Element, getChangeElement, transform, isInstanceElement, TransformValueFunc, isReferenceExpression } from 'adapter-api'
+import {
+  Element, getChangeElement, transform, isInstanceElement, TransformValueFunc,
+  isReferenceExpression, isField, BuiltinTypes, TypeMap, INSTANCE_ANNOTATIONS,
+  CORE_ANNOTATIONS,
+} from 'adapter-api'
 import {
   DependencyChanger, ChangeEntry, DependencyChange, addReferenceDependency,
 } from './common'
+
+const getAnnotationTypes = (element: Element): TypeMap => {
+  // Actual type doesn't really matter here, we just need the annotations to be defined
+  const builtinAnnotations: TypeMap = Object.assign(
+    {} as TypeMap,
+    ...[...Object.values(INSTANCE_ANNOTATIONS), ...Object.values(CORE_ANNOTATIONS)]
+      .map(key => ({ [key]: BuiltinTypes.STRING })),
+  )
+  const elementAnnotations = isInstanceElement(element) || isField(element)
+    ? element.type.annotationTypes
+    : element.annotationTypes
+  return Object.assign(builtinAnnotations, elementAnnotations)
+}
 
 const getAllReferencedIds = (elem: Element): Set<string> => {
   const allReferencedIds = new Set<string>()
@@ -15,9 +32,9 @@ const getAllReferencedIds = (elem: Element): Set<string> => {
   }
 
   if (isInstanceElement(elem)) {
-    transform(elem.value, elem.type, transformCallback, false)
+    transform(elem.value, elem.type, transformCallback)
   }
-  transform(elem.annotations, elem.annotationTypes, transformCallback, false)
+  transform(elem.annotations, getAnnotationTypes(elem), transformCallback)
   return allReferencedIds
 }
 

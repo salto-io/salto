@@ -5,6 +5,7 @@ export const NAME = 'name'
 const LABEL = 'label'
 const PROPERTY_OPTIONS = 'options'
 const DISPLAYORDER = 'displayOrder'
+const CREATEDAT = 'createdAt'
 
 export const OBJECTS_NAMES = {
   FORM: 'form',
@@ -53,7 +54,7 @@ export const FORM_FIELDS = {
   IGNORECURRENTVALUES: 'ignoreCurrentValues',
   DELETABLE: 'deletable',
   INLINEMESSAGE: 'inlineMessage',
-  CREATEDAT: 'createdAt',
+  CREATEDAT,
   CAPTCHAENABLED: 'captchaEnabled',
   CLONEABLE: 'cloneable',
   EDITABLE: 'editable',
@@ -222,6 +223,7 @@ export const CONTACT_PROPERTY_FIELDS = {
   OPTIONS: PROPERTY_OPTIONS,
   DELETED: 'deleted',
   FORMFIELD: 'formField',
+  CREATEDAT,
   DISPLAYORDER,
   READONLYVALUE: 'readOnlyValue',
   READONLYDEFINITION: 'readOnlyDefinition',

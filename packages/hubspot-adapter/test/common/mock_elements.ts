@@ -765,7 +765,7 @@ export const contactPropertyMocks = [
   contactPropertyMock,
   firstContactPropertyMock,
   secondContactPropertyMock,
-]
+] as unknown
 
 /**
  * MarketingEmail Mock Instances

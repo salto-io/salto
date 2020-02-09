@@ -1720,6 +1720,14 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
+        [CONTACT_PROPERTY_FIELDS.CREATEDAT]: new TypeField(
+          // TODO: Move to state only
+          contactPropertyElemID, CONTACT_PROPERTY_FIELDS.CREATEDAT, BuiltinTypes.NUMBER, {
+            name: CONTACT_PROPERTY_FIELDS.CREATEDAT,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
         [CONTACT_PROPERTY_FIELDS.EXTERNALOPTIONS]: new TypeField(
           contactPropertyElemID, CONTACT_PROPERTY_FIELDS.EXTERNALOPTIONS, BuiltinTypes.BOOLEAN, {
             name: CONTACT_PROPERTY_FIELDS.EXTERNALOPTIONS,

@@ -195,7 +195,7 @@ describe('Hubspot Adapter Operations', () => {
           expect(res.value.mutableDefinitionNotDeletable)
             .toEqual(contactPropertyInstance.value.mutableDefinitionNotDeletable)
           expect(res.value.calculated).toEqual(contactPropertyInstance.value.calculated)
-          expect(res.value.externalOption).toEqual(contactPropertyInstance.value.externalOption)
+          expect(res.value.externalOptions).toEqual(contactPropertyInstance.value.externalOptions)
 
           // Options
           expect(res.value.options).toBeDefined()

@@ -1713,43 +1713,6 @@ describe('SalesforceAdapter CRUD', () => {
             expect(updatedObject.fields).toBeUndefined()
           })
         })
-
-        describe('when only object independent annotations change', () => {
-          const oldElement = new ObjectType({
-            elemID: mockElemID,
-            annotations: {
-              [constants.CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.VALIDATION_RULES]: 'BLA',
-              label: 'test label',
-              [constants.API_NAME]: 'Test__c',
-            },
-          })
-
-          const newElement = new ObjectType({
-            elemID: mockElemID,
-            annotations: {
-              [constants.CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.VALIDATION_RULES]: 'Edited',
-              label: 'test label',
-              [constants.API_NAME]: 'Test__c',
-            },
-          })
-
-          beforeEach(async () => {
-            result = await adapter.update(oldElement, newElement,
-              [
-                { action: 'modify', data: { before: oldElement, after: newElement } },
-              ])
-          })
-
-          it('should return an instance of ObjectType', () => {
-            expect(result).toBeInstanceOf(ObjectType)
-          })
-
-          it('should not call update twice', () => {
-            expect(mockUpsert.mock.calls.length).toBe(0)
-            expect(mockDelete.mock.calls.length).toBe(0)
-            expect(mockUpdate.mock.calls.length).toBe(0)
-          })
-        })
       })
     })
 

@@ -29,7 +29,7 @@ import {
   CUSTOM_OBJECT,
   VALUE_SET_FIELDS,
   SUBTYPES_PATH,
-  INSTANCE_FULL_NAME_FIELD, CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS, DESCRIPTION,
+  INSTANCE_FULL_NAME_FIELD, DESCRIPTION,
 } from '../../src/constants'
 import { CustomField, FilterItem, CustomObject, CustomPicklistValue } from '../../src/client/types'
 import SalesforceClient from '../../src/client/client'
@@ -488,14 +488,12 @@ describe('transformer', () => {
           [API_NAME]: BuiltinTypes.SERVICE_ID,
           [METADATA_TYPE]: BuiltinTypes.STRING,
           [DESCRIPTION]: BuiltinTypes.STRING,
-          [CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.VALIDATION_RULES]: BuiltinTypes.STRING,
         },
         annotations: {
           [API_NAME]: 'Test__c',
           [notInAnnotationTypes]: 'Dummy',
           [METADATA_TYPE]: CUSTOM_OBJECT,
           [DESCRIPTION]: 'MyDescription',
-          [CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.VALIDATION_RULES]: 'Dummy',
         },
       })
 
@@ -511,8 +509,6 @@ describe('transformer', () => {
       it('should not transform blacklisted annotations', () => {
         expect(_.get(customObj, API_NAME)).toBeUndefined()
         expect(_.get(customObj, METADATA_TYPE)).toBeUndefined()
-        expect(_.get(customObj, CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.VALIDATION_RULES))
-          .toBeUndefined()
       })
 
       it('should not transform annotations that are not in annotationTypes', () => {

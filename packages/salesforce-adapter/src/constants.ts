@@ -134,18 +134,6 @@ export const FIELD_ANNOTATIONS = {
   FORMULA_TREAT_BLANKS_AS: 'formulaTreatBlanksAs',
 }
 
-export const CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS = {
-  WEB_LINKS: 'webLinks',
-  VALIDATION_RULES: 'validationRules',
-  BUSINESS_PROCESSES: 'businessProcesses',
-  RECORD_TYPES: 'recordTypes',
-  LIST_VIEWS: 'listViews',
-  FIELD_SETS: 'fieldSets',
-  COMPACT_LAYOUTS: 'compactLayouts',
-  SHARING_REASONS: 'sharingReasons',
-  INDEXES: 'indexes',
-}
-
 export const VALUE_SET_FIELDS = {
   RESTRICTED: 'restricted',
   VALUE_SET_DEFINITION: 'valueSetDefinition',

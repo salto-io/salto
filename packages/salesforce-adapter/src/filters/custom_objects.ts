@@ -2,23 +2,23 @@ import { logger } from '@salto/logging'
 import { collections } from '@salto/lowerdash'
 import {
   ADAPTER, Element, Field, ObjectType, ServiceIds, TypeElement, isObjectType, InstanceElement,
-  isInstanceElement, ElemID, BuiltinTypes, CORE_ANNOTATIONS, transform, TypeMap, getChangeElement,
-  Value, findObjectType, Change, Values,
+  isInstanceElement, ElemID, BuiltinTypes, CORE_ANNOTATIONS, transform, TypeMap, findObjectType,
+  Values,
 } from 'adapter-api'
 import { SalesforceClient } from 'index'
-import { DescribeSObjectResult, Field as SObjField, SaveResult, UpsertResult } from 'jsforce'
+import { DescribeSObjectResult, Field as SObjField } from 'jsforce'
 import _ from 'lodash'
 import {
   API_NAME, CUSTOM_OBJECT, METADATA_TYPE, SALESFORCE, INSTANCE_FULL_NAME_FIELD,
   SALESFORCE_CUSTOM_SUFFIX, LABEL, FIELD_DEPENDENCY_FIELDS, LOOKUP_FILTER_FIELDS,
   VALUE_SETTINGS_FIELDS, API_NAME_SEPERATOR, FIELD_ANNOTATIONS, VALUE_SET_DEFINITION_FIELDS,
-  CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS, VALUE_SET_FIELDS, DEFAULT_VALUE_FORMULA, FIELD_TYPE_NAMES,
-  OBJECTS_PATH, INSTALLED_PACKAGES_PATH, FORMULA,
+  VALUE_SET_FIELDS, DEFAULT_VALUE_FORMULA, FIELD_TYPE_NAMES, OBJECTS_PATH, INSTALLED_PACKAGES_PATH,
+  FORMULA,
 } from '../constants'
 import { FilterCreator } from '../filter'
 import {
   getSObjectFieldElement, Types, isCustomObject, bpCase, apiName, transformPrimitive,
-  toMetadataInfo, formulaTypeName, metadataType,
+  formulaTypeName, metadataType,
 } from '../transformers/transformer'
 import { id, addApiName, addMetadataType, addLabel, hasNamespace,
   getNamespace, boolValue, buildAnnotationsObjectType } from './utils'
@@ -30,24 +30,47 @@ const { makeArray } = collections.array
 export const INSTANCE_REQUIRED_FIELD = 'required'
 export const INSTANCE_TYPE_FIELD = 'type'
 
-// The below annotationTypes extend Metadata and are mutable using a specific API call
-// (they are not updated when updating the custom object)
-export const customObjectIndependentAnnotations = {
-  [CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.WEB_LINKS]: 'WebLink',
-  [CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.VALIDATION_RULES]: 'ValidationRule',
-  [CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.BUSINESS_PROCESSES]: 'BusinessProcess',
-  [CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.RECORD_TYPES]: 'RecordType',
-  [CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.LIST_VIEWS]: 'ListView',
-  [CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.FIELD_SETS]: 'FieldSet',
-  [CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.COMPACT_LAYOUTS]: 'CompactLayout',
-  [CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.SHARING_REASONS]: 'SharingReason',
-  [CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.INDEXES]: 'Index',
+export const NESTED_INSTANCE_VALUE_NAME = {
+  WEB_LINKS: 'webLinks',
+  VALIDATION_RULES: 'validationRules',
+  BUSINESS_PROCESSES: 'businessProcesses',
+  RECORD_TYPES: 'recordTypes',
+  LIST_VIEWS: 'listViews',
+  FIELD_SETS: 'fieldSets',
+  COMPACT_LAYOUTS: 'compactLayouts',
+  SHARING_REASONS: 'sharingReasons',
+  INDEXES: 'indexes',
 }
 
-type AnnotationTypesFromInstance = {
+export const NESTED_INSTANCE_TYPE_NAME = {
+  WEB_LINK: 'WebLink',
+  VALIDATION_RULE: 'ValidationRule',
+  BUSINESS_PROCESS: 'BusinessProcess',
+  RECORD_TYPE: 'RecordType',
+  LIST_VIEW: 'ListView',
+  FIELD_SET: 'FieldSet',
+  COMPACT_LAYOUT: 'CompactLayout',
+  SHARING_REASON: 'SharingReason',
+  INDEX: 'Index',
+}
+
+// The below metadata types extend Metadata and are mutable using a specific API call
+export const NESTED_INSTANCE_VALUE_TO_TYPE_NAME = {
+  [NESTED_INSTANCE_VALUE_NAME.WEB_LINKS]: NESTED_INSTANCE_TYPE_NAME.WEB_LINK,
+  [NESTED_INSTANCE_VALUE_NAME.VALIDATION_RULES]: NESTED_INSTANCE_TYPE_NAME.VALIDATION_RULE,
+  [NESTED_INSTANCE_VALUE_NAME.BUSINESS_PROCESSES]: NESTED_INSTANCE_TYPE_NAME.BUSINESS_PROCESS,
+  [NESTED_INSTANCE_VALUE_NAME.RECORD_TYPES]: NESTED_INSTANCE_TYPE_NAME.RECORD_TYPE,
+  [NESTED_INSTANCE_VALUE_NAME.LIST_VIEWS]: NESTED_INSTANCE_TYPE_NAME.LIST_VIEW,
+  [NESTED_INSTANCE_VALUE_NAME.FIELD_SETS]: NESTED_INSTANCE_TYPE_NAME.FIELD_SET,
+  [NESTED_INSTANCE_VALUE_NAME.COMPACT_LAYOUTS]: NESTED_INSTANCE_TYPE_NAME.COMPACT_LAYOUT,
+  [NESTED_INSTANCE_VALUE_NAME.SHARING_REASONS]: NESTED_INSTANCE_TYPE_NAME.SHARING_REASON,
+  [NESTED_INSTANCE_VALUE_NAME.INDEXES]: NESTED_INSTANCE_TYPE_NAME.INDEX,
+}
+
+type TypesFromInstance = {
   standardAnnotationTypes: TypeMap
   customAnnotationTypes: TypeMap
-  independentAnnotationTypes: TypeMap
+  nestedMetadataTypes: Record<string, ObjectType>
 }
 
 export const CUSTOM_OBJECT_TYPE_ID = new ElemID(SALESFORCE, CUSTOM_OBJECT)
@@ -242,9 +265,8 @@ const transformObjectAnnotationValues = (instance: InstanceElement,
 }
 
 const transformObjectAnnotations = (customObject: ObjectType, annotationTypesFromInstance: TypeMap,
-  independentAnnotationTypes: TypeMap, instance: InstanceElement): void => {
-  Object.assign(customObject.annotationTypes, annotationTypesFromInstance,
-    independentAnnotationTypes)
+  instance: InstanceElement): void => {
+  Object.assign(customObject.annotationTypes, annotationTypesFromInstance)
 
   Object.assign(customObject.annotations,
     transformObjectAnnotationValues(instance, annotationTypesFromInstance))
@@ -252,8 +274,7 @@ const transformObjectAnnotations = (customObject: ObjectType, annotationTypesFro
 
 const mergeCustomObjectWithInstance = (
   customObject: ObjectType, fieldNameToFieldAnnotations: Record<string, Values>,
-  instance: InstanceElement, annotationTypesFromInstance: TypeMap,
-  independentAnnotationTypesFromInstance: TypeMap
+  instance: InstanceElement, annotationTypesFromInstance: TypeMap
 ): void => {
   _(customObject.fields).forEach(field => {
     Object.assign(field.annotations, transformFieldAnnotations(
@@ -267,8 +288,7 @@ const mergeCustomObjectWithInstance = (
   })
   if (customObject.annotations[API_NAME]) {
     // assigning annotations only to the "AnnotationsObjectType"
-    transformObjectAnnotations(customObject, annotationTypesFromInstance,
-      independentAnnotationTypesFromInstance, instance)
+    transformObjectAnnotations(customObject, annotationTypesFromInstance, instance)
   }
 }
 
@@ -289,36 +309,27 @@ const createObjectTypeWithBaseAnnotations = (name: string, label: string):
   return { serviceIds, object, namespace }
 }
 
-const createIndependentAnnotationObjects = (instance: InstanceElement,
-  independentAnnotationTypes: TypeMap, objectName: string, serviceIds: ServiceIds,
-  namespace?: string): ObjectType[] => {
-  const transformedIndependentAnnotations = transformObjectAnnotationValues(instance,
-    independentAnnotationTypes)
-  if (_.isUndefined(transformedIndependentAnnotations)) {
-    return []
-  }
+const createNestedMetadataInstances = (instance: InstanceElement,
+  nestedMetadataTypes: Record<string, ObjectType>, objectDirectoryPath: string[]):
+  InstanceElement[] =>
+  _.flatten(Object.entries(nestedMetadataTypes)
+    .map(([name, type]) => {
+      const nestedInstances = makeArray(instance.value[name])
+      if (_.isEmpty(nestedInstances)) {
+        return []
+      }
+      return nestedInstances.map(nestedInstance => {
+        const fullName = [objectDirectoryPath.slice(-1)[0],
+          nestedInstance[INSTANCE_FULL_NAME_FIELD]].join(API_NAME_SEPERATOR)
+        const elemIdName = fullName.replace(API_NAME_SEPERATOR, '_')
+        nestedInstance[INSTANCE_FULL_NAME_FIELD] = fullName
+        return new InstanceElement(elemIdName, type, nestedInstance,
+          [...objectDirectoryPath, type.elemID.name, elemIdName])
+      })
+    }))
 
-  _(transformedIndependentAnnotations)
-    .values()
-    .flatten()
-    .forEach(annotationInst => {
-      annotationInst[INSTANCE_FULL_NAME_FIELD] = [objectName,
-        annotationInst[INSTANCE_FULL_NAME_FIELD]].join(API_NAME_SEPERATOR)
-    })
-
-  return Object.entries(transformedIndependentAnnotations)
-    .map(([annoName, value]) => {
-      const independentAnnotationObj = Types.get(objectName, true, false, serviceIds) as ObjectType
-      independentAnnotationObj.annotations[annoName] = value
-      independentAnnotationObj.path = [
-        ...getObjectDirectoryPath(independentAnnotationObj, namespace),
-        `${objectName}${annoName[0].toUpperCase()}${annoName.slice(1)}`]
-      return independentAnnotationObj
-    })
-}
-
-const createObjectTypesFromInstance = (instance: InstanceElement,
-  annotationTypesFromInstance: AnnotationTypesFromInstance): ObjectType[] => {
+const createFromInstance = (instance: InstanceElement,
+  typesFromInstance: TypesFromInstance): Element[] => {
   const createFieldsFromInstanceFields = (instanceFields: Values, elemID: ElemID,
     objectName: string): Field[] =>
     instanceFields
@@ -333,15 +344,14 @@ const createObjectTypesFromInstance = (instance: InstanceElement,
       })
 
   const objectName = instance.value[INSTANCE_FULL_NAME_FIELD]
-  const objects: ObjectType[] = []
+  const newElements: Element[] = []
   const { serviceIds, object: annotationsObject, namespace } = createObjectTypeWithBaseAnnotations(
     objectName, instance.value[LABEL]
   )
   transformObjectAnnotations(annotationsObject, objectName.endsWith(SALESFORCE_CUSTOM_SUFFIX)
-    ? annotationTypesFromInstance.customAnnotationTypes
-    : annotationTypesFromInstance.standardAnnotationTypes,
-  annotationTypesFromInstance.independentAnnotationTypes, instance)
-  objects.push(annotationsObject)
+    ? typesFromInstance.customAnnotationTypes
+    : typesFromInstance.standardAnnotationTypes, instance)
+  newElements.push(annotationsObject)
 
   const instanceFields = makeArray(instance.value.fields)
   const [instanceCustomFields, instanceStandardFields] = _.partition(instanceFields, field =>
@@ -356,15 +366,15 @@ const createObjectTypesFromInstance = (instance: InstanceElement,
       })
     standardFieldsElement.path = [...getObjectDirectoryPath(standardFieldsElement, namespace),
       standardFieldsFileName(standardFieldsElement.elemID.name)]
-    objects.push(standardFieldsElement)
+    newElements.push(standardFieldsElement)
   }
   const customFields = createFieldsFromInstanceFields(instanceCustomFields,
     annotationsObject.elemID, objectName)
-  objects.push(...createCustomFieldsObjects(customFields, objectName, serviceIds, namespace))
-  const independentAnnotationObjects = createIndependentAnnotationObjects(instance,
-    annotationTypesFromInstance.independentAnnotationTypes, objectName, serviceIds, namespace)
-  objects.push(...independentAnnotationObjects)
-  return objects
+  newElements.push(...createCustomFieldsObjects(customFields, objectName, serviceIds, namespace))
+  const nestedMetadataInstances = createNestedMetadataInstances(instance,
+    typesFromInstance.nestedMetadataTypes, getObjectDirectoryPath(annotationsObject, namespace))
+  newElements.push(...nestedMetadataInstances)
+  return newElements
 }
 
 const fetchSObjects = async (client: SalesforceClient):
@@ -393,27 +403,27 @@ const fetchSObjects = async (client: SalesforceClient):
 const createFromSObjectsAndInstances = (
   sObjects: DescribeSObjectResult[],
   instances: Record<string, InstanceElement>,
-  annotationTypesFromInstance: AnnotationTypesFromInstance
-): ObjectType[] =>
+  typesFromInstance: TypesFromInstance
+): Element[] =>
   _.flatten(sObjects.map(({ name, label, custom, fields }) => {
     const { serviceIds, object, namespace } = createObjectTypeWithBaseAnnotations(name, label)
-    const objects = [object, ...createSObjectTypesWithFields(name, fields, serviceIds, namespace)]
+    const objects = [object, ...createSObjectTypesWithFields(name, fields,
+      serviceIds, namespace)]
     const instance = instances[name]
-    if (instance) {
-      const fieldNameToFieldAnnotations = _(makeArray(instance.value.fields))
-        .map(field => [field[INSTANCE_FULL_NAME_FIELD], field])
-        .fromPairs()
-        .value()
-      objects.forEach(obj => mergeCustomObjectWithInstance(
-        obj, fieldNameToFieldAnnotations, instance, custom
-          ? annotationTypesFromInstance.customAnnotationTypes
-          : annotationTypesFromInstance.standardAnnotationTypes,
-        annotationTypesFromInstance.independentAnnotationTypes
-      ))
-      objects.push(...createIndependentAnnotationObjects(instance,
-        annotationTypesFromInstance.independentAnnotationTypes, name, serviceIds, namespace))
+    if (!instance) {
+      return objects
     }
-    return objects
+    const fieldNameToFieldAnnotations = _(makeArray(instance.value.fields))
+      .map(field => [field[INSTANCE_FULL_NAME_FIELD], field])
+      .fromPairs()
+      .value()
+    objects.forEach(obj => mergeCustomObjectWithInstance(
+      obj, fieldNameToFieldAnnotations, instance, custom
+        ? typesFromInstance.customAnnotationTypes
+        : typesFromInstance.standardAnnotationTypes
+    ))
+    return [...objects, ...createNestedMetadataInstances(instance,
+      typesFromInstance.nestedMetadataTypes, getObjectDirectoryPath(object, namespace))]
   }))
 
 const removeIrrelevantElements = (elements: Element[]): void => {
@@ -445,123 +455,69 @@ const filterCreator: FilterCreator = ({ client }) => ({
       .fromPairs()
       .value()
 
-    const annotationTypesToMergeFromInstance = (): AnnotationTypesFromInstance => {
-      const fixAnnotationTypesDefinitions = (annotationTypesFromInstance: TypeMap): void => {
-        const listViewType = annotationTypesFromInstance[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS
-          .LIST_VIEWS] as ObjectType
+    const typesToMergeFromInstance = (): TypesFromInstance => {
+      const fixTypesDefinitions = (typesFromInstance: TypeMap): void => {
+        const listViewType = typesFromInstance[NESTED_INSTANCE_VALUE_NAME.LIST_VIEWS] as ObjectType
         listViewType.fields.columns.isList = true
         listViewType.fields.filters.isList = true
-        const fieldSetType = annotationTypesFromInstance[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS
-          .FIELD_SETS] as ObjectType
+        const fieldSetType = typesFromInstance[NESTED_INSTANCE_VALUE_NAME.FIELD_SETS] as ObjectType
         fieldSetType.fields.availableFields.isList = true
         fieldSetType.fields.displayedFields.isList = true
-        const compactLayoutType = annotationTypesFromInstance[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS
-          .COMPACT_LAYOUTS] as ObjectType
+        const compactLayoutType = typesFromInstance[NESTED_INSTANCE_VALUE_NAME.COMPACT_LAYOUTS] as
+          ObjectType
         compactLayoutType.fields.fields.isList = true
       }
 
-      const getAllAnnotationTypesFromInstance = (): TypeMap => {
+      const getAllTypesFromInstance = (): TypeMap => {
         const customObjectType = findObjectType(elements, CUSTOM_OBJECT_TYPE_ID)
         if (_.isUndefined(customObjectType)) {
           return {}
         }
-        const annotationTypesFromInstance: TypeMap = _(customObjectType.fields)
+        const typesFromInstance: TypeMap = _(customObjectType.fields)
           .entries()
           .filter(([name, _field]) => !ANNOTATIONS_TO_IGNORE_FROM_INSTANCE.includes(name))
           .map(([name, field]) => [name, field.type])
           .fromPairs()
           .value()
 
-        fixAnnotationTypesDefinitions(annotationTypesFromInstance)
-        return annotationTypesFromInstance
+        fixTypesDefinitions(typesFromInstance)
+        return typesFromInstance
       }
 
-      const annotationTypesFromInstance = getAllAnnotationTypesFromInstance()
-      const independentAnnotationTypes = _.pick(annotationTypesFromInstance,
-        Object.keys(customObjectIndependentAnnotations))
-      const customOnlyAnnotationTypes = _.pick(annotationTypesFromInstance,
+      const typesFromInstance = getAllTypesFromInstance()
+      const nestedMetadataTypes = _.pick(typesFromInstance,
+        Object.keys(NESTED_INSTANCE_VALUE_TO_TYPE_NAME)) as Record<string, ObjectType>
+      const customOnlyAnnotationTypes = _.pick(typesFromInstance,
         CUSTOM_ONLY_ANNOTATION_TYPE_NAMES)
-      const standardAnnotationTypes = _.omit(annotationTypesFromInstance,
-        Object.keys(customObjectIndependentAnnotations), CUSTOM_ONLY_ANNOTATION_TYPE_NAMES)
+      const standardAnnotationTypes = _.omit(typesFromInstance,
+        Object.keys(NESTED_INSTANCE_VALUE_TO_TYPE_NAME), CUSTOM_ONLY_ANNOTATION_TYPE_NAMES)
       return {
         standardAnnotationTypes,
         customAnnotationTypes: { ...standardAnnotationTypes, ...customOnlyAnnotationTypes },
-        independentAnnotationTypes,
+        nestedMetadataTypes,
       }
     }
 
-    const annotationTypesFromInstance = annotationTypesToMergeFromInstance()
-    const customObjectTypes = createFromSObjectsAndInstances(
+    const typesFromInstance = typesToMergeFromInstance()
+    const newElements: Element[] = createFromSObjectsAndInstances(
       _.flatten(Object.values(sObjects)),
       customObjectInstances,
-      annotationTypesFromInstance,
+      typesFromInstance,
     )
 
     const objectTypeNames = new Set(Object.keys(sObjects))
     Object.entries(customObjectInstances).forEach(([instanceApiName, instance]) => {
       // Adds objects that exists in the metadata api but don't exist in the soap api
       if (!objectTypeNames.has(instanceApiName)) {
-        customObjectTypes.push(...createObjectTypesFromInstance(instance,
-          annotationTypesFromInstance))
+        newElements.push(...createFromInstance(instance, typesFromInstance))
       }
     })
 
     removeIrrelevantElements(elements)
-    const objectTypeFullNames = new Set(elements.filter(isObjectType).map(elem => id(elem)))
-    customObjectTypes
-      .filter(obj => !objectTypeFullNames.has(id(obj)))
-      .forEach(elem => elements.push(elem))
-  },
-
-  onUpdate: async (before: Element, after: Element, changes: ReadonlyArray<Change>):
-    Promise<(SaveResult| UpsertResult)[]> => {
-    if (!(isObjectType(before) && isObjectType(after)
-      && changes.some(c => isObjectType(getChangeElement(c))))) {
-      return []
-    }
-    const handleObjectAnnotationChanges = async (annotationName: string, typeName: string):
-      Promise<(SaveResult | UpsertResult)[][]> => {
-      const getFullNameToAnnotation = (obj: ObjectType): Record<string, Value> =>
-        _(makeArray(obj.annotations[annotationName]))
-          .map(annotation => [annotation[INSTANCE_FULL_NAME_FIELD], annotation])
-          .fromPairs()
-          .value()
-
-      const nameToBeforeAnnotation = getFullNameToAnnotation(before)
-      const nameToAfterAnnotation = getFullNameToAnnotation(after)
-      if (_.isEqual(nameToBeforeAnnotation, nameToAfterAnnotation)) {
-        return Promise.resolve([])
-      }
-      return Promise.all([
-        client.upsert(typeName,
-          Object.entries(nameToAfterAnnotation)
-            .filter(([fullName, _val]) => _.isUndefined(nameToBeforeAnnotation[fullName]))
-            .map(([fullName, val]) => toMetadataInfo(fullName, val))),
-        client.update(typeName,
-          Object.entries(nameToAfterAnnotation)
-            .filter(([fullName, val]) => nameToBeforeAnnotation[fullName]
-              && !_.isEqual(val, nameToBeforeAnnotation[fullName]))
-            .map(([fullName, val]) => toMetadataInfo(fullName, val))),
-        client.delete(typeName,
-          Object.keys(nameToBeforeAnnotation)
-            .filter(fullName => _.isUndefined(nameToAfterAnnotation[fullName]))),
-      ])
-    }
-
-    return _.flatten(_.flatten((await Promise.all(Object.entries(customObjectIndependentAnnotations)
-      .map(([annotationName, typeName]) =>
-        handleObjectAnnotationChanges(annotationName, typeName))))))
-  },
-
-  onAdd: async (after: Element): Promise<UpsertResult[]> => {
-    if (!(isObjectType(after))) {
-      return []
-    }
-    return _.flatten((await Promise.all(Object.entries(customObjectIndependentAnnotations)
-      .map(([annotationName, typeName]) =>
-        client.upsert(typeName,
-          makeArray(after.annotations[annotationName])
-            .map(val => toMetadataInfo(val[INSTANCE_FULL_NAME_FIELD], val)))))))
+    const elementFullNames = new Set(elements.map(elem => id(elem)))
+    newElements
+      .filter(newElem => !elementFullNames.has(id(newElem)))
+      .forEach(newElem => elements.push(newElem))
   },
 })
 

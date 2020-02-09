@@ -11,7 +11,7 @@ import { collections } from '@salto/lowerdash'
 import * as constants from '../src/constants'
 import {
   annotationsFileName, customFieldsFileName,
-  INSTANCE_TYPE_FIELD,
+  INSTANCE_TYPE_FIELD, NESTED_INSTANCE_TYPE_NAME,
   standardFieldsFileName,
   transformFieldAnnotations,
 } from '../src/filters/custom_objects'
@@ -35,9 +35,7 @@ import {
 import { LAYOUT_TYPE_ID } from '../src/filters/layouts'
 
 const { makeArray } = collections.array
-const {
-  FIELD_LEVEL_SECURITY_ANNOTATION, PROFILE_METADATA_TYPE, CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS,
-} = constants
+const { FIELD_LEVEL_SECURITY_ANNOTATION, PROFILE_METADATA_TYPE } = constants
 
 const ADMIN = 'Admin'
 const STANDARD = 'Standard'
@@ -83,11 +81,6 @@ describe('Salesforce adapter E2E with real account', () => {
       }
     }
     return true
-  }
-
-  const findLeadObjectWithAnnotation = (annotationName: string): ObjectType | undefined => {
-    const leadObjects = findElements(result, 'Lead') as ObjectType[]
-    return leadObjects.find(obj => _.has(obj.annotations, annotationName))
   }
 
   const findCustomFieldsObject = (elements: Element[], name: string): ObjectType => {
@@ -1067,65 +1060,6 @@ describe('Salesforce adapter E2E with real account', () => {
       })
 
       describe('should fetch sobject annotations from the custom object instance', () => {
-        let leadAnnotationsObj: ObjectType
-        beforeAll(() => {
-          leadAnnotationsObj = findAnnotationsObject(result, 'Lead')
-        })
-
-        describe('independent annotations', () => {
-          const verifyIndependentAnnotationFetch = (annotationName: string,
-            expectedFullName: string, expectedValues: Values): void => {
-            const leadIndependentAnnotationObj = findLeadObjectWithAnnotation(annotationName)
-              ?? findElements(result, 'Lead')[0] as ObjectType
-
-            expect(leadAnnotationsObj.annotationTypes).toHaveProperty(annotationName)
-
-            const independentAnnotations = leadIndependentAnnotationObj.annotations[annotationName]
-            expect(independentAnnotations).toBeDefined()
-            const independentAnnotation = makeArray(independentAnnotations)
-              .find(anno => anno[constants.INSTANCE_FULL_NAME_FIELD] === expectedFullName)
-            Object.entries(expectedValues)
-              .forEach(([key, val]) => expect(independentAnnotation[key]).toEqual(val))
-          }
-
-          it('should fetch validation rules', async () => {
-            verifyIndependentAnnotationFetch(CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.VALIDATION_RULES,
-              'Lead.TestValidationRule', { active: true })
-          })
-
-          it('should fetch business processes', async () => {
-            verifyIndependentAnnotationFetch(
-              CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.BUSINESS_PROCESSES, 'Lead.TestBusinessProcess',
-              { isActive: true }
-            )
-          })
-
-          it('should fetch record types', async () => {
-            verifyIndependentAnnotationFetch(CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.RECORD_TYPES,
-              'Lead.TestRecordType', { active: true, businessProcess: 'TestBusinessProcess' })
-          })
-
-          it('should fetch web links', async () => {
-            verifyIndependentAnnotationFetch(CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.WEB_LINKS,
-              'Lead.TestWebLink', { availability: 'online' })
-          })
-
-          it('should fetch list views', async () => {
-            verifyIndependentAnnotationFetch(CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.LIST_VIEWS,
-              'Lead.TestListView', { label: 'E2E Fetch ListView' })
-          })
-
-          it('should fetch field sets', async () => {
-            verifyIndependentAnnotationFetch(CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.FIELD_SETS,
-              'Lead.TestFieldSet', { label: 'E2E Fetch FieldSet' })
-          })
-
-          it('should fetch compact layouts', async () => {
-            verifyIndependentAnnotationFetch(CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.COMPACT_LAYOUTS,
-              'Lead.TestCompactLayout', { label: 'E2E Fetch CompactLayout' })
-          })
-        })
-
         it('should fetch relevant simple annotations for standard object', () => {
           const lead = findAnnotationsObject(result, 'Lead')
           expect(lead.annotationTypes).toHaveProperty('enableFeeds')
@@ -1141,6 +1075,62 @@ describe('Salesforce adapter E2E with real account', () => {
           expect(customObj.annotations.enableFeeds).toBeDefined()
           expect(customObj.annotationTypes).toHaveProperty('deploymentStatus')
           expect(customObj.annotations.deploymentStatus).toBeDefined()
+        })
+      })
+
+      describe('should fetch inner metadata types from the custom object instance', () => {
+        const verifyInnerMetadataInstanceFetch = (typeName: string, expectedName: string,
+          expectedValues: Values): void => {
+          const innerMetadataInstance = findElements(result, typeName, expectedName)[0] as
+            InstanceElement
+          expect(innerMetadataInstance).toBeDefined()
+          Object.entries(expectedValues)
+            .forEach(([key, val]) => expect(innerMetadataInstance.value[key]).toEqual(val))
+        }
+
+        it('should fetch validation rules', async () => {
+          verifyInnerMetadataInstanceFetch(NESTED_INSTANCE_TYPE_NAME.VALIDATION_RULE,
+            'Lead_TestValidationRule',
+            { [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead.TestValidationRule', active: true })
+        })
+
+        it('should fetch business processes', async () => {
+          verifyInnerMetadataInstanceFetch(
+            NESTED_INSTANCE_TYPE_NAME.BUSINESS_PROCESS, 'Lead_TestBusinessProcess',
+            { [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead.TestBusinessProcess', isActive: true }
+          )
+        })
+
+        it('should fetch record types', async () => {
+          verifyInnerMetadataInstanceFetch(NESTED_INSTANCE_TYPE_NAME.RECORD_TYPE,
+            'Lead_TestRecordType', { [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead.TestRecordType',
+              active: true,
+              businessProcess: 'TestBusinessProcess' })
+        })
+
+        it('should fetch web links', async () => {
+          verifyInnerMetadataInstanceFetch(NESTED_INSTANCE_TYPE_NAME.WEB_LINK,
+            'Lead_TestWebLink', { [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead.TestWebLink',
+              availability: 'online' })
+        })
+
+        it('should fetch list views', async () => {
+          verifyInnerMetadataInstanceFetch(NESTED_INSTANCE_TYPE_NAME.LIST_VIEW,
+            'Lead_TestListView', { [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead.TestListView',
+              label: 'E2E Fetch ListView' })
+        })
+
+        it('should fetch field sets', async () => {
+          verifyInnerMetadataInstanceFetch(NESTED_INSTANCE_TYPE_NAME.FIELD_SET,
+            'Lead_TestFieldSet', { [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead.TestFieldSet',
+              label: 'E2E Fetch FieldSet' })
+        })
+
+        it('should fetch compact layouts', async () => {
+          verifyInnerMetadataInstanceFetch(NESTED_INSTANCE_TYPE_NAME.COMPACT_LAYOUT,
+            'Lead_TestCompactLayout',
+            { [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead.TestCompactLayout',
+              label: 'E2E Fetch CompactLayout' })
         })
       })
     })
@@ -4253,545 +4243,6 @@ describe('Salesforce adapter E2E with real account', () => {
             })
           })
         })
-      })
-    })
-
-    describe('custom object inner types manipulations', () => {
-      const findInstance = async (type: string, fullName: string):
-        Promise<MetadataInfo | undefined> => {
-        const instanceInfo = (await client.readMetadata(type, fullName))[0]
-        if (instanceInfo && instanceInfo.fullName) {
-          return instanceInfo
-        }
-        return undefined
-      }
-
-      const removeIfAlreadyExists = async (type: string, fullName: string, annotationName: string):
-        Promise<void> => {
-        if (await objectExists(type, fullName)) {
-          await client.delete(type, fullName)
-          const leadObjWithAnnotations = findLeadObjectWithAnnotation(annotationName)
-          if (leadObjWithAnnotations) {
-            leadObjWithAnnotations.annotations[annotationName] = makeArray(
-              leadObjWithAnnotations.annotations[annotationName]
-            ).filter(val => val[constants.INSTANCE_FULL_NAME_FIELD] !== fullName)
-          }
-        }
-      }
-
-      describe('validation rules manipulations', () => {
-        beforeAll(async () => {
-          await removeIfAlreadyExists('ValidationRule', 'Lead.MyValidationRule',
-            CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.VALIDATION_RULES)
-        })
-
-        describe('create validation rule', () => {
-          it('should create validation rule', async () => {
-            const oldLead = findLeadObjectWithAnnotation(
-              CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.VALIDATION_RULES
-            ) ?? findElements(result, 'Lead')[0] as ObjectType
-            const newLead = oldLead.clone()
-            newLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.VALIDATION_RULES] = [{
-              [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead.MyValidationRule',
-              active: true,
-              description: 'My Validation Rule',
-              errorConditionFormula: '$User.IsActive  = true',
-              errorMessage: 'Error Message!',
-            }, ...makeArray(newLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS
-              .VALIDATION_RULES])]
-
-            await adapter.update(oldLead, newLead,
-              [{ action: 'modify', data: { before: oldLead, after: newLead } }])
-
-            expect(await objectExists('ValidationRule', 'Lead.MyValidationRule')).toBeTruthy()
-            // to save another fetch, we set the new validation rule on the old object
-            oldLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.VALIDATION_RULES] = newLead
-              .annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.VALIDATION_RULES]
-          })
-        })
-
-        describe('update validation rule', () => {
-          it('should update validation rule', async () => {
-            const oldLead = findLeadObjectWithAnnotation(
-              CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.VALIDATION_RULES
-            ) as ObjectType
-            const newLead = oldLead.clone()
-            const validationRuleToUpdate = makeArray(
-              newLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.VALIDATION_RULES]
-            ).find(rule => rule[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.MyValidationRule')
-            expect(validationRuleToUpdate).toBeDefined()
-            validationRuleToUpdate.description = 'My Updated Validation Rule'
-            validationRuleToUpdate.active = false
-            validationRuleToUpdate.errorDisplayField = 'Company'
-            await adapter.update(oldLead, newLead,
-              [{ action: 'modify', data: { before: oldLead, after: newLead } }])
-
-            const validationRuleInfo = await findInstance('ValidationRule', 'Lead.MyValidationRule')
-            expect(validationRuleInfo).toBeDefined()
-            expect(_.get(validationRuleInfo, 'description')).toEqual('My Updated Validation Rule')
-            expect(_.get(validationRuleInfo, 'active')).toEqual('false')
-            expect(_.get(validationRuleInfo, 'errorDisplayField')).toEqual('Company')
-          })
-        })
-
-        describe('delete validation rule', () => {
-          it('should delete validation rule', async () => {
-            const oldLead = findLeadObjectWithAnnotation(
-              CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.VALIDATION_RULES
-            ) as ObjectType
-            const newLead = oldLead.clone()
-            newLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.VALIDATION_RULES] = makeArray(
-              newLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.VALIDATION_RULES],
-            ).filter(rule => rule[constants.INSTANCE_FULL_NAME_FIELD] !== 'Lead.MyValidationRule')
-
-            await adapter.update(oldLead, newLead,
-              [{ action: 'modify', data: { before: oldLead, after: newLead } }])
-
-            expect(await objectExists('ValidationRule', 'Lead.MyValidationRule')).toBeFalsy()
-          })
-        })
-      })
-
-      describe('web links manipulations', () => {
-        beforeAll(async () => {
-          await removeIfAlreadyExists('WebLink', 'Lead.MyWebLink',
-            CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.WEB_LINKS)
-        })
-
-        describe('create web link', () => {
-          it('should create web link', async () => {
-            const oldLead = findLeadObjectWithAnnotation(
-              CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.WEB_LINKS
-            ) ?? findElements(result, 'Lead')[0] as ObjectType
-            const newLead = oldLead.clone()
-            newLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.WEB_LINKS] = [{
-              [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead.MyWebLink',
-              availability: 'online',
-              description: 'My Web Link',
-              displayType: 'button',
-              encodingKey: 'UTF-8',
-              hasMenubar: false,
-              hasScrollbars: true,
-              hasToolbar: false,
-              height: 600,
-              isResizable: true,
-              linkType: 'url',
-              masterLabel: 'E2E Fetch WebLink',
-              openType: 'newWindow',
-              position: 'none',
-              protected: false,
-              url: '{!Lead.CreatedBy} = "MyName"',
-            }, ...makeArray(newLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.WEB_LINKS])]
-
-            await adapter.update(oldLead, newLead,
-              [{ action: 'modify', data: { before: oldLead, after: newLead } }])
-
-            expect(await objectExists('WebLink', 'Lead.MyWebLink')).toBeTruthy()
-            // to save another fetch, we set the new web link on the old object
-            oldLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.WEB_LINKS] = newLead
-              .annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.WEB_LINKS]
-          })
-        })
-
-        describe('update web link', () => {
-          it('should update web link', async () => {
-            const oldLead = findLeadObjectWithAnnotation(
-              CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.WEB_LINKS
-            ) as ObjectType
-            const newLead = oldLead.clone()
-            const webLinkToUpdate = makeArray(
-              newLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.WEB_LINKS]
-            ).find(link => link[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.MyWebLink')
-            expect(webLinkToUpdate).toBeDefined()
-            webLinkToUpdate.description = 'My Updated Web Link'
-
-            await adapter.update(oldLead, newLead,
-              [{ action: 'modify', data: { before: oldLead, after: newLead } }])
-
-            const webLinkInfo = await findInstance('WebLink', 'Lead.MyWebLink')
-            expect(webLinkInfo).toBeDefined()
-            expect(_.get(webLinkInfo, 'description')).toEqual('My Updated Web Link')
-          })
-        })
-
-        describe('delete web link', () => {
-          it('should delete web link', async () => {
-            const oldLead = findLeadObjectWithAnnotation(
-              CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.WEB_LINKS
-            ) as ObjectType
-            const newLead = oldLead.clone()
-            newLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS
-              .WEB_LINKS] = makeArray(
-              newLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.WEB_LINKS]
-            ).filter(link => link[constants.INSTANCE_FULL_NAME_FIELD] !== 'Lead.MyWebLink')
-
-            await adapter.update(oldLead, newLead,
-              [{ action: 'modify', data: { before: oldLead, after: newLead } }])
-
-            expect(await objectExists('WebLink', 'Lead.MyWebLink')).toBeFalsy()
-          })
-        })
-      })
-
-      describe('list views manipulations', () => {
-        beforeAll(async () => {
-          await removeIfAlreadyExists('ListView', 'Lead.MyListView',
-            CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.LIST_VIEWS)
-        })
-
-        describe('create list view', () => {
-          it('should create list view', async () => {
-            const oldLead = findLeadObjectWithAnnotation(
-              CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.LIST_VIEWS
-            ) ?? findElements(result, 'Lead')[0] as ObjectType
-            const newLead = oldLead.clone()
-            newLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.LIST_VIEWS] = [{
-              [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead.MyListView',
-              label: 'My List View',
-              filterScope: 'Everything',
-              filters: {
-                field: 'LEAD.STATUS',
-                operation: 'equals',
-                value: 'closed',
-              },
-            }, ...makeArray(newLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.LIST_VIEWS])]
-
-            await adapter.update(oldLead, newLead,
-              [{ action: 'modify', data: { before: oldLead, after: newLead } }])
-
-            expect(await objectExists('ListView', 'Lead.MyListView')).toBeTruthy()
-            // to save another fetch, we set the new list view on the old object
-            oldLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.LIST_VIEWS] = newLead
-              .annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.LIST_VIEWS]
-          })
-        })
-
-        describe('update list view', () => {
-          it('should update list view', async () => {
-            const oldLead = findLeadObjectWithAnnotation(
-              CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.LIST_VIEWS
-            ) as ObjectType
-            const newLead = oldLead.clone()
-            const listViewToUpdate = makeArray(
-              newLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.LIST_VIEWS]
-            ).find(view => view[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.MyListView')
-            expect(listViewToUpdate).toBeDefined()
-            listViewToUpdate.label = 'My Updated List View'
-
-            await adapter.update(oldLead, newLead,
-              [{ action: 'modify', data: { before: oldLead, after: newLead } }])
-
-            const listViewInfo = await findInstance('ListView', 'Lead.MyListView')
-            expect(listViewInfo).toBeDefined()
-            expect(_.get(listViewInfo, 'label')).toEqual('My Updated List View')
-          })
-        })
-
-        describe('delete list view', () => {
-          it('should delete list view', async () => {
-            const oldLead = findLeadObjectWithAnnotation(
-              CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.LIST_VIEWS
-            ) as ObjectType
-            const newLead = oldLead.clone()
-            newLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.LIST_VIEWS] = makeArray(
-              newLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.LIST_VIEWS]
-            ).filter(view => view[constants.INSTANCE_FULL_NAME_FIELD] !== 'Lead.MyListView')
-
-            await adapter.update(oldLead, newLead,
-              [{ action: 'modify', data: { before: oldLead, after: newLead } }])
-
-            expect(await objectExists('ListView', 'Lead.MyListView')).toBeFalsy()
-          })
-        })
-      })
-
-      describe('compact layouts manipulations', () => {
-        beforeAll(async () => {
-          await removeIfAlreadyExists('CompactLayout', 'Lead.MyCompactLayout',
-            CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.COMPACT_LAYOUTS)
-        })
-
-        describe('create compact layout', () => {
-          it('should create compact layout', async () => {
-            const oldLead = findLeadObjectWithAnnotation(
-              CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.COMPACT_LAYOUTS
-            ) ?? findElements(result, 'Lead')[0] as ObjectType
-            const newLead = oldLead.clone()
-            newLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.COMPACT_LAYOUTS] = [{
-              [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead.MyCompactLayout',
-              label: 'My Compact Layout',
-              fields: [
-                'Address',
-                'Company',
-              ],
-            }, ...makeArray(newLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS
-              .COMPACT_LAYOUTS])]
-
-            await adapter.update(oldLead, newLead,
-              [{ action: 'modify', data: { before: oldLead, after: newLead } }])
-
-            expect(await objectExists('CompactLayout', 'Lead.MyCompactLayout')).toBeTruthy()
-            // to save another fetch, we set the new compact layout on the old object
-            oldLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.COMPACT_LAYOUTS] = newLead
-              .annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.COMPACT_LAYOUTS]
-          })
-        })
-
-        describe('update compact layout', () => {
-          it('should update compact layout', async () => {
-            const oldLead = findLeadObjectWithAnnotation(
-              CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.COMPACT_LAYOUTS
-            ) as ObjectType
-            const newLead = oldLead.clone()
-            const compactLayoutToUpdate = makeArray(
-              newLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.COMPACT_LAYOUTS]
-            ).find(layout => layout[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.MyCompactLayout')
-            expect(compactLayoutToUpdate).toBeDefined()
-            compactLayoutToUpdate.label = 'My Updated Compact Layout'
-
-            await adapter.update(oldLead, newLead,
-              [{ action: 'modify', data: { before: oldLead, after: newLead } }])
-
-            const compactLayoutInfo = await findInstance('CompactLayout', 'Lead.MyCompactLayout')
-            expect(compactLayoutInfo).toBeDefined()
-            expect(_.get(compactLayoutInfo, 'label')).toEqual('My Updated Compact Layout')
-          })
-        })
-
-        describe('delete compact layout', () => {
-          it('should delete compact layout', async () => {
-            const oldLead = findLeadObjectWithAnnotation(
-              CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.COMPACT_LAYOUTS
-            ) as ObjectType
-            const newLead = oldLead.clone()
-            newLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS
-              .COMPACT_LAYOUTS] = makeArray(
-              newLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.COMPACT_LAYOUTS]
-            ).filter(layout => layout[constants.INSTANCE_FULL_NAME_FIELD] !== 'Lead.MyCompactLayout')
-
-            await adapter.update(oldLead, newLead,
-              [{ action: 'modify', data: { before: oldLead, after: newLead } }])
-
-            expect(await objectExists('CompactLayout', 'Lead.MyCompactLayout')).toBeFalsy()
-          })
-        })
-      })
-
-      describe('field sets manipulations', () => {
-        beforeAll(async () => {
-          await removeIfAlreadyExists('FieldSet', 'Lead.MyFieldSet',
-            CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.FIELD_SETS)
-        })
-
-        describe('create field set', () => {
-          it('should create field set', async () => {
-            const oldLead = findLeadObjectWithAnnotation(
-              CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.FIELD_SETS
-            ) ?? findElements(result, 'Lead')[0] as ObjectType
-            const newLead = oldLead.clone()
-            newLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.FIELD_SETS] = [{
-              [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead.MyFieldSet',
-              description: 'My Field Set',
-              displayedFields: [
-                {
-                  field: 'State',
-                  isFieldManaged: false,
-                  isRequired: false,
-                },
-                {
-                  field: 'Status',
-                  isFieldManaged: false,
-                  isRequired: false,
-                },
-              ],
-              label: 'My Field Set',
-            }, ...makeArray(newLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.FIELD_SETS])]
-
-            await adapter.update(oldLead, newLead,
-              [{ action: 'modify', data: { before: oldLead, after: newLead } }])
-
-            expect(await objectExists('FieldSet', 'Lead.MyFieldSet')).toBeTruthy()
-            // to save another fetch, we set the new field sets on the old object
-            oldLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.FIELD_SETS] = newLead
-              .annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.FIELD_SETS]
-          })
-        })
-
-        describe('update field set', () => {
-          it('should update field set', async () => {
-            const oldLead = findLeadObjectWithAnnotation(
-              CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.FIELD_SETS
-            ) as ObjectType
-            const newLead = oldLead.clone()
-            const fieldSetToUpdate = makeArray(
-              newLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.FIELD_SETS]
-            ).find(fieldSet => fieldSet[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.MyFieldSet')
-            expect(fieldSetToUpdate).toBeDefined()
-            fieldSetToUpdate.description = 'My Updated Field Set'
-
-            await adapter.update(oldLead, newLead,
-              [{ action: 'modify', data: { before: oldLead, after: newLead } }])
-
-            const fieldSetInfo = await findInstance('FieldSet', 'Lead.MyFieldSet')
-            expect(fieldSetInfo).toBeDefined()
-            expect(_.get(fieldSetInfo, 'description')).toEqual('My Updated Field Set')
-          })
-        })
-
-        describe('delete field set', () => {
-          it('should delete field set', async () => {
-            const oldLead = findLeadObjectWithAnnotation(
-              CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.FIELD_SETS
-            ) as ObjectType
-            const newLead = oldLead.clone()
-            newLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS
-              .FIELD_SETS] = makeArray(newLead.annotations[constants
-              .CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.FIELD_SETS])
-              .filter(fieldSet =>
-                fieldSet[constants.INSTANCE_FULL_NAME_FIELD] !== 'Lead.MyFieldSet')
-
-            await adapter.update(oldLead, newLead,
-              [{ action: 'modify', data: { before: oldLead, after: newLead } }])
-
-            expect(await objectExists('FieldSet', 'Lead.MyFieldSet')).toBeFalsy()
-          })
-        })
-      })
-
-      describe('business processes manipulations', () => {
-        // BusinessProcess deletion is not supported through API.
-        // Thus, we only update the existing BusinessProcess and not create new one.
-        describe('update business process', () => {
-          it('should update business process', async () => {
-            const oldLead = findLeadObjectWithAnnotation(
-              CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.BUSINESS_PROCESSES
-            ) as ObjectType
-            const newLead = oldLead.clone()
-            const businessProcessToUpdate = makeArray(newLead.annotations[
-              CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.BUSINESS_PROCESSES])
-              .find(process =>
-                process[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.TestBusinessProcess')
-            expect(businessProcessToUpdate).toBeDefined()
-            const description = `BusinessProcess that should be fetched in e2e test updated ${String(Date.now()).substring(6)}`
-            businessProcessToUpdate.description = description
-
-            await adapter.update(oldLead, newLead,
-              [{ action: 'modify', data: { before: oldLead, after: newLead } }])
-
-            const businessProcessInfo = await findInstance('BusinessProcess',
-              'Lead.TestBusinessProcess')
-            expect(businessProcessInfo).toBeDefined()
-            expect(_.get(businessProcessInfo, 'description')).toEqual(description)
-          })
-        })
-      })
-
-      describe('record types manipulations', () => {
-        // RecordType deletion is not supported through API.
-        // Thus, we only update the existing RecordType and not create new one.
-        describe('update record type', () => {
-          it('should update record type', async () => {
-            const oldLead = findLeadObjectWithAnnotation(
-              CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.RECORD_TYPES
-            ) as ObjectType
-            const newLead = oldLead.clone()
-            const recordTypeToUpdate = makeArray(
-              newLead.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.RECORD_TYPES]
-            ).find(record => record[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.TestRecordType')
-            expect(recordTypeToUpdate).toBeDefined()
-            const description = `RecordType that should be fetched in e2e test updated ${String(Date.now()).substring(6)}`
-            recordTypeToUpdate.description = description
-
-            await adapter.update(oldLead, newLead,
-              [{ action: 'modify', data: { before: oldLead, after: newLead } }])
-
-            const validationRuleInfo = await findInstance('RecordType', 'Lead.TestRecordType')
-            expect(validationRuleInfo).toBeDefined()
-            expect(_.get(validationRuleInfo, 'description')).toEqual(description)
-          })
-        })
-      })
-
-      it('should create an object with inner types', async () => {
-        const customObjectName = 'TestAddObjectWithInnerTypes__c'
-        const elemID = new ElemID(constants.SALESFORCE, 'test_object')
-        const objectWithInnerTypes = new ObjectType({
-          elemID,
-          annotations: {
-            [constants.API_NAME]: customObjectName,
-            [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
-            [CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.WEB_LINKS]: {
-              [constants.INSTANCE_FULL_NAME_FIELD]: apiNameAnno(customObjectName, 'WebLink'),
-              availability: 'online',
-              description: 'My Web Link',
-              displayType: 'button',
-              encodingKey: 'UTF-8',
-              hasMenubar: false,
-              hasScrollbars: true,
-              hasToolbar: false,
-              height: 600,
-              isResizable: true,
-              linkType: 'url',
-              masterLabel: 'E2E Fetch WebLink',
-              openType: 'newWindow',
-              position: 'none',
-              protected: false,
-              url: `!${customObjectName}.CreatedBy} = "MyName"`,
-            },
-            [CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.FIELD_SETS]: [
-              {
-                [constants.INSTANCE_FULL_NAME_FIELD]: apiNameAnno(customObjectName, 'FieldSet1'),
-                description: 'My Field Set 1',
-                displayedFields: [
-                  {
-                    field: 'description__c',
-                    isFieldManaged: false,
-                    isRequired: false,
-                  },
-                ],
-                label: 'My Field Set 1',
-              },
-              {
-                [constants.INSTANCE_FULL_NAME_FIELD]: apiNameAnno(customObjectName, 'FieldSet2'),
-                description: 'My Field Set 2',
-                displayedFields: [
-                  {
-                    field: 'description__c',
-                    isFieldManaged: false,
-                    isRequired: false,
-                  },
-                ],
-                label: 'My Field Set 2',
-              }],
-          },
-          fields: {
-            description: new Field(
-              elemID,
-              'description',
-              stringType,
-              {
-                [CORE_ANNOTATIONS.REQUIRED]: false,
-                [constants.LABEL]: 'description label',
-              },
-            ),
-          },
-        })
-        if (await objectExists(constants.CUSTOM_OBJECT, customObjectName)) {
-          await adapter.remove(objectWithInnerTypes)
-        }
-        const created = await adapter.add(objectWithInnerTypes)
-        expect(await objectExists(constants.CUSTOM_OBJECT, customObjectName)).toBeTruthy()
-        const webLinks = created.annotations[CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS
-          .WEB_LINKS]
-        expect(webLinks[constants.INSTANCE_FULL_NAME_FIELD]).toEqual(
-          apiNameAnno(customObjectName, 'WebLink')
-        )
-        expect(await objectExists('WebLink', apiNameAnno(customObjectName, 'WebLink'))).toBeTruthy()
-        expect(await objectExists('FieldSet', apiNameAnno(customObjectName, 'FieldSet1')))
-          .toBeTruthy()
-        expect(await objectExists('FieldSet', apiNameAnno(customObjectName, 'FieldSet2')))
-          .toBeTruthy()
-        await adapter.remove(objectWithInnerTypes)
       })
     })
 

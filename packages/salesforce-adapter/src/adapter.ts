@@ -568,7 +568,7 @@ export default class SalesforceAdapter {
     changes: ReadonlyArray<Change<Field | ObjectType>>): Promise<SaveResult[]> {
     if (changes.some(c => isObjectType(getChangeElement(c)))
       && !_.isEqual(toCustomObject(before, false), toCustomObject(clonedObject, false))) {
-      // Update object without independent annotations (handled in custom_objects filter) & fields
+      // Update object without its fields
       return this.client.update(
         metadataType(clonedObject),
         toCustomObject(clonedObject, false)

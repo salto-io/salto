@@ -179,7 +179,6 @@ export default class SalesforceAdapter {
       'WorkflowKnowledgePublish',
       'WorkflowOutboundMessage',
       'WorkflowTask',
-      'ForecastingCategoryMapping',
     ],
     metadataTypesToSkipMutation = [
       'Workflow', // handled in workflow filter
@@ -193,6 +192,7 @@ export default class SalesforceAdapter {
     },
     filterCreators = [
       missingFieldsFilter,
+      settingsFilter,
       CustomObjectsFilter,
       removeFieldsFilter,
       profilePermissionsFilter,
@@ -204,7 +204,6 @@ export default class SalesforceAdapter {
       lookupFiltersFilter,
       animationRulesFilter,
       samlInitMethodFilter,
-      settingsFilter,
       workflowFilter,
       topicsForObjectsFilter,
       valueSetFilter,

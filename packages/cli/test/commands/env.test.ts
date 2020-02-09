@@ -1,5 +1,6 @@
 import * as mocks from '../mocks'
 import { command } from '../../src/commands/env'
+import * as workspace from '../../src/workspace'
 
 jest.mock('salto', () => ({
   ...jest.requireActual('salto'),
@@ -9,7 +10,10 @@ jest.mock('salto', () => ({
     mocks.mockLoadConfig(workspaceDir)),
 }))
 
+jest.mock('../../src/workspace')
 describe('env commands', () => {
+  const mockLoadWorkspace = workspace.loadWorkspace as jest.Mock
+  mockLoadWorkspace.mockImplementation(baseDir => ({ workspace: mocks.mockLoadWorkspace(baseDir) }))
   let cliOutput: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }
   const spinner = mocks.mockSpinnerCreator([])
 

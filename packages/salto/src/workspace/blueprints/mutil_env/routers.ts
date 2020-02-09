@@ -92,9 +92,9 @@ export const routeChanges = async (
   primarySource: ElementsSource,
   commonSource: ElementsSource,
   secondarySources: Record<string, ElementsSource>,
-  newEnv: boolean
+  mode?: string
 ): Promise<RoutedChanges> => {
-  const routedChanges = await Promise.all(changes.map(c => (newEnv
+  const routedChanges = await Promise.all(changes.map(c => (mode === 'strict'
     ? routeNewEnv(c, primarySource, commonSource, secondarySources)
     : routeFetch(c, primarySource, commonSource, secondarySources))))
   return {

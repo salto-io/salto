@@ -2,7 +2,7 @@ import _ from 'lodash'
 import { Workspace, loadConfig, FetchChange, WorkspaceError } from 'salto'
 import { SaltoError } from 'adapter-api'
 import { logger } from '@salto/logging'
-import { formatWorkspaceErrors, formatWorkspaceAbort, formatDetailedChanges } from './formatter'
+import { formatWorkspaceErrors, formatWorkspaceAbort, formatDetailedChanges, formatFinishedLoading } from './formatter'
 import { CliOutput, SpinnerCreator } from './types'
 import { shouldContinueInCaseOfWarnings } from './callbacks'
 import Prompts from './prompts'
@@ -42,7 +42,7 @@ export const loadWorkspace = async (workingDir: string, cliOutput: CliOutput,
   const wsStatus = await validateWorkspace(workspace, cliOutput)
 
   if (wsStatus === 'Warning') {
-    spinner.succeed(Prompts.FINISHED_LOADING)
+    spinner.succeed(formatFinishedLoading(workspace.config.currentEnv))
     const numWarnings = (await workspace.getWorkspaceErrors()).filter(e => !isError(e)).length
     const shouldContinue = await shouldContinueInCaseOfWarnings(numWarnings, cliOutput)
     return { workspace, errored: !shouldContinue }
@@ -52,14 +52,14 @@ export const loadWorkspace = async (workingDir: string, cliOutput: CliOutput,
     const numErrors = (await workspace.getWorkspaceErrors()).filter(isError).length
     spinner.fail(formatWorkspaceAbort(numErrors))
   } else {
-    spinner.succeed(Prompts.FINISHED_LOADING)
+    spinner.succeed(formatFinishedLoading(workspace.config.currentEnv))
   }
 
   return { workspace, errored: wsStatus === 'Error' }
 }
 
 export const updateWorkspace = async (ws: Workspace, cliOutput: CliOutput,
-  ...changes: FetchChange[]): Promise<boolean> => {
+  changes: readonly FetchChange[], strict = false): Promise<boolean> => {
   if (changes.length > 0) {
     log.info(`going to update workspace with ${changes.length} changes out of ${
       changes.length} changes`)
@@ -67,7 +67,10 @@ export const updateWorkspace = async (ws: Workspace, cliOutput: CliOutput,
       formatDetailedChanges([changes.map(c => c.change)]).split('\n').forEach(s => log.info(s))
     }
 
-    await ws.updateBlueprints(...changes.map(c => c.change))
+    await ws.updateBlueprints(
+      changes.map(c => c.change),
+      strict ? 'strict' : undefined
+    )
     if (await validateWorkspace(ws, cliOutput) === 'Error') {
       const wsErrors = await ws.getWorkspaceErrors()
       log.warn('workspace has %d errors - ABORT', wsErrors.filter(isError).length)

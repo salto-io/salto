@@ -12,6 +12,8 @@ import { Errors } from '../errors'
 
 const log = logger(module)
 
+export type UpdateMode = 'strict'
+
 export const BP_EXTENSION = '.bp'
 
 export type Blueprint = {
@@ -21,7 +23,7 @@ export type Blueprint = {
 }
 
 export type BlueprintsSource = ElementsSource & {
-  update: (changes: DetailedChange[]) => Promise<void>
+  update: (changes: DetailedChange[], mode?: UpdateMode) => Promise<void>
   listBlueprints: () => Promise<string[]>
   getBlueprint: (filename: string) => Promise<Blueprint | undefined>
   // TODO: this should be for single?

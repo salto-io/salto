@@ -1,7 +1,13 @@
 salto {
-    name =  "workspace"
-    local_storage = "/.salto/workspace"
-    base_dir = "/workspace"
-    state_location = "/states/test.bpc"
-    uid = "uid"
+  name = "workspace"
+  local_storage = "/.salto/workspace"
+  uid = "uid"
+  envs = [
+      {
+        baseDir = "default",
+        name = "default",
+      },
+  ]
+  current_env = "default"
 }
+

@@ -29,10 +29,11 @@ type approveChangesFunc = (
 ) => Promise<ReadonlyArray<FetchChange>>
 
 export const fetchCommand = async (
-  { workspace, force, interactive, inputServices, output, fetch, getApprovedChanges }: {
+  { workspace, force, interactive, strict, inputServices, output, fetch, getApprovedChanges }: {
     workspace: Workspace
     force: boolean
     interactive: boolean
+    strict?: boolean
     output: CliOutput
     fetch: fetchFunc
     getApprovedChanges: approveChangesFunc
@@ -102,7 +103,7 @@ export const fetchCommand = async (
 
   const updatingWsEmitter = new StepEmitter()
   fetchProgress.emit('workspaceWillBeUpdated', updatingWsEmitter, changes.length, changesToApply.length)
-  const updatingWsSucceeded = await updateWorkspace(workspace, output, ...changesToApply)
+  const updatingWsSucceeded = await updateWorkspace(workspace, output, changesToApply, strict)
   if (updatingWsSucceeded) {
     updatingWsEmitter.emit('completed')
     outputLine(formatFetchFinish())
@@ -121,10 +122,11 @@ export const command = (
   output: CliOutput,
   spinnerCreator: SpinnerCreator,
   inputServices: string[],
+  strict?: boolean
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
     log.debug(`running fetch command on '${workspaceDir}' [force=${force}, interactive=${
-      interactive}]`)
+      interactive}, strict=${strict}]`)
     const { workspace, errored } = await loadWorkspace(workspaceDir, output, spinnerCreator)
     if (errored) {
       return CliExitCode.AppError
@@ -137,6 +139,7 @@ export const command = (
       output,
       fetch: apiFetch,
       getApprovedChanges: cliGetApprovedChanges,
+      strict,
     })
   },
 })
@@ -144,6 +147,7 @@ export const command = (
 type FetchArgs = {
   force: boolean
   interactive: boolean
+  strict: boolean
 } & ServicesArgs
 type FetchParsedCliInput = ParsedCliInput<FetchArgs>
 
@@ -166,13 +170,28 @@ const fetchBuilder = createCommandBuilder({
         default: false,
         demandOption: false,
       },
+      strict: {
+        alias: ['t'],
+        describe: 'Apply the fetch changes to the active enviornment only',
+        boolean: true,
+        default: false,
+        demandOption: false,
+      },
     },
   },
 
   filters: [servicesFilter],
 
   async build(input: FetchParsedCliInput, output: CliOutput, spinnerCreator: SpinnerCreator) {
-    return command('.', input.args.force, input.args.interactive, output, spinnerCreator, input.args.services)
+    return command(
+      '.',
+      input.args.force,
+      input.args.interactive,
+      output,
+      spinnerCreator,
+      input.args.services,
+      input.args.strict
+    )
   },
 })
 

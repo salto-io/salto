@@ -252,7 +252,10 @@ export const deleteFromCsvFile = async (
   return deleteInstancesOfType(type as ObjectType, inputPath, adapters)
 }
 
-export const init = async (workspaceName?: string): Promise<Workspace> => Workspace.init('.', workspaceName)
+export const init = async (
+  workspaceName?: string,
+  defaultEnvName = 'default'
+): Promise<Workspace> => Workspace.init('.', workspaceName, defaultEnvName)
 
 export const addAdapter = async (
   workspaceDir: string,

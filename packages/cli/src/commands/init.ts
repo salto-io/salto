@@ -3,14 +3,17 @@ import { init } from 'salto'
 import Prompts from '../prompts'
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'
+import { getEnvName } from '../callbacks'
 
 export const command = (
   workspaceName: string | undefined,
-  { stdout, stderr }: CliOutput
+  { stdout, stderr }: CliOutput,
+  getEnvNameCallback: (currentEnvName: string) => Promise<string>
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
     try {
-      const workspace = await init(workspaceName)
+      const defaultEnvName = await getEnvNameCallback('default')
+      const workspace = await init(workspaceName, defaultEnvName)
       stdout.write(
         Prompts.initCompleted(workspace.config.name, path.resolve(workspace.config.baseDir))
       )
@@ -42,7 +45,7 @@ const initBuilder = createCommandBuilder({
   },
 
   async build(input: InitParsedCliInput, output: CliOutput) {
-    return command(input.args['workspace-name'], output)
+    return command(input.args['workspace-name'], output, getEnvName)
   },
 })
 

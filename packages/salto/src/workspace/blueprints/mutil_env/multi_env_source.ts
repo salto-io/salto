@@ -8,7 +8,7 @@ import wu from 'wu'
 import { mergeElements, MergeError } from '../../../core/merger'
 import { DetailedChange } from '../../../core/plan'
 import { routeChanges } from './routers'
-import { BlueprintsSource, Blueprint } from '../blueprints_source'
+import { BlueprintsSource, Blueprint, UpdateMode } from '../blueprints_source'
 import { Errors } from '../../errors'
 
 export class UnknownEnviornmentError extends Error {
@@ -102,13 +102,13 @@ export const multiEnvSource = (
     state = buildMutiEnvState()
   }
 
-  const update = async (changes: DetailedChange[], newEnv = false): Promise<void> => {
+  const update = async (changes: DetailedChange[], mode?: UpdateMode): Promise<void> => {
     const routedChanges = await routeChanges(
       changes,
       primarySource(),
       commonSource(),
       secondarySources(),
-      newEnv
+      mode
     )
     const secondaryChanges = routedChanges.secondarySources || {}
     await Promise.all([

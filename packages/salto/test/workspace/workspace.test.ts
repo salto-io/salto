@@ -296,7 +296,7 @@ describe('workspace', () => {
     const bpStore = mockBpsStore()
     const workspace = createWorkspace(bpStore)
     beforeAll(async () => {
-      await workspace.updateBlueprints(...changes)
+      await workspace.updateBlueprints(changes)
       elemMap = getElemMap(await workspace.elements)
       lead = elemMap['salesforce.lead'] as ObjectType
     })
@@ -339,7 +339,7 @@ describe('workspace', () => {
       const fakeChange = _.cloneDeep(changes[0])
       fakeChange.id = new ElemID('salesforce', 'lead').createNestedID('field', 'fake')
 
-      await workspace.updateBlueprints(fakeChange, realChange)
+      await workspace.updateBlueprints([fakeChange, realChange])
       lead = findElement(await workspace.elements, new ElemID('salesforce', 'lead')) as ObjectType
       expect(lead.fields.base_field.annotations[CORE_ANNOTATIONS.DEFAULT]).toEqual('blabla')
     })

@@ -11,7 +11,7 @@ import { Config, dumpConfig, locateWorkspaceRoot, getConfigPath, completeConfig,
 import Credentials, { adapterCredentials } from './credentials'
 import State from './state'
 import { localState } from './local/state'
-import { blueprintsSource, BP_EXTENSION, BlueprintsSource, Blueprint } from './blueprints/blueprints_source'
+import { blueprintsSource, BP_EXTENSION, BlueprintsSource, Blueprint, UpdateMode } from './blueprints/blueprints_source'
 import { parseResultCache } from './cache'
 import { localDirectoryStore } from './local/dir_store'
 import { multiEnvSource } from './blueprints/mutil_env/multi_env_source'
@@ -98,7 +98,7 @@ const loadMultiEnvSource = (config: Config): BlueprintsSource => {
     [COMMON_ENV_PREFIX]: loadBlueprintSource(
       config.baseDir,
       config.localStorage,
-      _.values(config.envs.map(env => env.baseDir))
+      _.values(config.envs.map(env => path.join(config.baseDir, env.baseDir)))
     ),
   }
   return multiEnvSource(sources, activeEnv.baseDir, COMMON_ENV_PREFIX)
@@ -120,12 +120,21 @@ export class Workspace {
     )
   }
 
-  static async init(baseDir: string, workspaceName?: string): Promise<Workspace> {
+  static async init(
+    baseDir: string,
+    workspaceName?: string,
+    defaultEnvName = 'default'
+  ): Promise<Workspace> {
     const absBaseDir = path.resolve(baseDir)
     const minimalConfig = {
       uid: uuidv4(),
       name: workspaceName || path.basename(absBaseDir),
       services: [],
+      envs: [{
+        name: defaultEnvName,
+        baseDir: path.join('envs', defaultEnvName),
+      }],
+      currentEnv: defaultEnvName,
     }
     const config = completeConfig(absBaseDir, minimalConfig)
     // We want to make sure that *ALL* of the paths we are going to create
@@ -209,9 +218,9 @@ export class Workspace {
     return this.blueprintsSource.removeBlueprints(...names)
   }
 
-  async updateBlueprints(...changes: DetailedChange[]): Promise<void> {
+  async updateBlueprints(changes: DetailedChange[], mode?: UpdateMode): Promise<void> {
     this.resetMergedState()
-    return this.blueprintsSource.update(changes)
+    return this.blueprintsSource.update(changes, mode)
   }
 
   private async getSourceFragment(sourceRange: SourceRange): Promise<SourceFragment> {

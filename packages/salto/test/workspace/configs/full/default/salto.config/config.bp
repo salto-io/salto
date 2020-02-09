@@ -1,0 +1,4 @@
+salto {
+    state_location = "/states/test.bpc"
+    credentialsLocation = "/creds/default"
+}

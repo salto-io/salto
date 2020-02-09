@@ -122,7 +122,7 @@ export class DeployCommand implements CliCommand {
       const changes = [...result.changes]
       this.stdout.write(EOL)
       return await updateWorkspace(workspace, { stderr: this.stderr, stdout: this.stdout },
-        ...changes)
+        changes)
         ? CliExitCode.Success
         : CliExitCode.AppError
     }

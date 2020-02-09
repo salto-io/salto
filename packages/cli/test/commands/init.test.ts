@@ -26,12 +26,12 @@ describe('describe command', () => {
   })
 
   it('should invoke api\'s init', async () => {
-    await command('test', cliOutput).execute()
+    await command('test', cliOutput, mocks.createMockEnvNameGetter()).execute()
     expect(cliOutput.stdout.content.search('test')).toBeGreaterThan(0)
   })
 
   it('should print errors', async () => {
-    await command('error', cliOutput).execute()
+    await command('error', cliOutput, mocks.createMockEnvNameGetter()).execute()
     expect(cliOutput.stderr.content.search('failed')).toBeGreaterThan(0)
   })
 })

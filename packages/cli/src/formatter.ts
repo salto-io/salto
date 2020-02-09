@@ -503,3 +503,29 @@ export const formatLoginToServiceFailed = (serviceName: string, errorMessage: st
   Prompts.SERVICE_LOGIN_FAILED_TRY_AGAIN(serviceName),
   emptyLine(),
 ].join('\n')
+
+export const formatEnvListItem = (envNames: string[], currentEnv: string | undefined): string => (
+  envNames
+    .map(name => `${name === currentEnv ? '*' : ' '} ${name}`)
+    .join('\n')
+)
+
+export const formatCurrentEnv = (envName: string | undefined): string => (
+  envName
+    ? [Prompts.WORKING_ON_ENV, envName].join(' ')
+    : Prompts.NO_CURRENT_ENV
+)
+
+export const formatSetEnv = (envName: string): string => (
+  [Prompts.SET_ENV, envName].join(' ')
+)
+
+export const formatCreateEnv = (envName: string): string => (
+  [Prompts.CREATED_ENV, envName].join(' ')
+)
+
+export const formatFinishedLoading = (envName: string | undefined): string => (
+  envName
+    ? [Prompts.FINISHED_LOADING_FOR_ENV, envName].join(' ')
+    : Prompts.FINISHED_LOADING
+)

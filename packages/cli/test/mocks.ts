@@ -183,7 +183,11 @@ export const mockLoadConfig = (workspaceDir: string): Config =>
     localStorage: '',
     stateLocation: '',
     credentialsLocation: 'credentials',
-    envs: [],
+    envs: [
+      { name: 'active', baseDir: 'active' },
+      { name: 'inactive', baseDir: 'inactive' },
+    ],
+    currentEnv: 'active',
   })
 
 export const mockLoadWorkspace = (workspaceDir: string): Workspace =>
@@ -371,3 +375,10 @@ export const transformToWorkspaceError = (): Readonly<WorkspaceError<SaltoError>
   message: 'Error',
   severity: 'Error',
 })
+
+export const createMockEnvNameGetter = (
+  newEnvName = 'default'
+): (oldEnvName: string
+) => Promise<string> => (
+  (_oldEnvName: string) => Promise.resolve(newEnvName)
+)

@@ -105,12 +105,12 @@ jobs:
           command: |
             # get the license header from the eslintrc configuration
             set -e
-            if [ ! -f 'eslintrc' ]; then
-              echo 'cannot find eslintrc file'
+            if [ ! -f 'eslintrc.js' ]; then
+              echo 'cannot find eslintrc.js file'
               exit 1
             fi
             license_header=$(node \
-              -e "var license_head = require('./eslintrc'); \
+              -e "var license_head = require('./eslintrc.js'); \
                   console.log(\`/*\${license_head.rules['header/header'][2].join('\n')}*/\`)")
             src_files_without_license_header=""
             for f in $(find . -type f -name '*.js' -not -path '*node_modules*' -not -path '*dist\/*' ); do

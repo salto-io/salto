@@ -193,6 +193,7 @@ export default class SalesforceAdapter {
     filterCreators = [
       missingFieldsFilter,
       settingsFilter,
+      // CustomObjectsFilter depends on missingFieldsFilter and settingsFilter
       CustomObjectsFilter,
       removeFieldsFilter,
       profilePermissionsFilter,

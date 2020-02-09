@@ -741,10 +741,14 @@ export default class SalesforceAdapter {
         })
     ).then(pairs => _(pairs).fromPairs().value())
 
-    const retrieveMembers: RetrieveMember[] = _.flatten(retrieveMetadataTypes
-      .map(type =>
-        _.uniqBy(retrieveTypeToFiles[type], 'fullName')
-          .map(file => ({ type, name: file.fullName }))))
+    const retrieveMembers: RetrieveMember[] = _(retrieveTypeToFiles)
+      .entries()
+      .map(([type, files]) => _(files)
+        .map(constants.INSTANCE_FULL_NAME_FIELD).uniq().map(name => ({ type, name }))
+        .value())
+      .flatten()
+      .value()
+
     const typeToInstanceInfos = await this.retrieveChunked(retrieveMembers, metadataTypes)
     const fullNameToNamespace: Record<string, string> = _(Object.values(retrieveTypeToFiles))
       .flatten()
@@ -770,34 +774,29 @@ export default class SalesforceAdapter {
           _.concat(makeArray(objValue), srcValue))
     }
 
-    const createRetrieveRequest = (typeToMembers: Record<string, RetrieveMember[]>):
-      RetrieveRequest => ({
-      apiVersion: API_VERSION,
-      singlePackage: false,
-      unpackaged: {
-        types: Object.entries(typeToMembers).map(([type, members]) =>
-          ({
-            name: type,
-            members: members.map(member => member.name),
-          })),
-      },
-    })
-
-    // we trigger serial retrieve requests to avoid passing the rate limit for slow concurrent calls
-    // https://developer.salesforce.com/docs/atlas.en-us.salesforce_app_limits_cheatsheet.meta/salesforce_app_limits_cheatsheet/salesforce_app_limits_platform_api.htm
-    const retrieveChunksSerially = async (): Promise<RetrieveResult[]> => {
-      const membersChunks = _.chunk(retrieveMembers, MAX_ITEMS_IN_RETRIEVE_REQUEST)
-      return membersChunks.reduce(async (retrieveResults, membersChunk) => {
-        const typeToMembers = _.groupBy(membersChunk, retrieveMember => retrieveMember.type)
-        const retrieveRequest = createRetrieveRequest(typeToMembers)
-        return retrieveResults.then(async results => {
-          results.push(await this.client.retrieve(retrieveRequest))
-          return results
-        })
-      }, Promise.resolve([] as RetrieveResult[]))
+    const createRetrieveRequest = (membersChunk: RetrieveMember[]): RetrieveRequest => {
+      const typeToMembers = _.groupBy(membersChunk, retrieveMember => retrieveMember.type)
+      return {
+        apiVersion: API_VERSION,
+        singlePackage: false,
+        unpackaged: {
+          types: Object.entries(typeToMembers).map(([type, members]) =>
+            ({
+              name: type,
+              members: members.map(member => member.name),
+            })),
+        },
+      }
     }
-    const retrieveResults = retrieveChunksSerially()
-    return fromRetrieveResults(await retrieveResults)
+
+    const retrieveResults = await _.chunk(retrieveMembers, MAX_ITEMS_IN_RETRIEVE_REQUEST)
+      .reduce(async (prevResults, membersChunk) => {
+      // Wait for previous results before triggering another request to avoid passing the API limit
+        const results = await prevResults
+        return [...results, await this.client.retrieve(createRetrieveRequest(membersChunk))]
+      },
+      Promise.resolve<RetrieveResult[]>([]))
+    return fromRetrieveResults(retrieveResults)
   }
 
   @logDuration('fetching instances')
